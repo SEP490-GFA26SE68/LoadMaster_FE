@@ -2,7 +2,7 @@ import { createViewerDraft, patchPlacement, type PlacementPatch, type ViewerDraf
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { EDITOR_RULES } from './geometry'
 
-export type CommandType = 'MOVE' | 'ROTATE' | 'PIN' | 'UNPIN' | 'RESET_PLACEMENT' | 'RESET_DRAFT'
+export type CommandType = 'MOVE' | 'ROTATE' | 'PIN' | 'UNPIN' | 'RESET_PLACEMENT' | 'RESET_DRAFT' | 'GRAVITY_MOVE'
 type Change = { id: string; before?: PlacementPatch; after?: PlacementPatch }
 type Command = { type: CommandType; changes: Change[] }
 export type DraftHistory = { draft: ViewerDraft; past: Command[]; future: Command[] }
@@ -21,6 +21,34 @@ export function commitCommand(
     .map((key) => ({ id: key, before: history.draft.patches.get(key), after: next.patches.get(key) }))
   if (!changes.length) return history
   return { draft: next, past: [...history.past, { type, changes }].slice(-EDITOR_RULES.historyLimit), future: [] }
+}
+
+/**
+ * Commit một gravity-move: item chính + các items bị rớt xuống đều được record
+ * trong 1 command duy nhất để undo/redo hoạt động đúng.
+ */
+export function commitGravityMove(
+  model: ViewerSceneModel,
+  history: DraftHistory,
+  primaryId: string,
+  primaryPatch: PlacementPatch,
+  fallenItems: Array<{ id: string; patch: PlacementPatch }>,
+): DraftHistory {
+  let next = history.draft
+  next = patchPlacement(model, next, primaryId, primaryPatch)
+  for (const { id, patch } of fallenItems) {
+    next = patchPlacement(model, next, id, patch)
+  }
+  const allIds = [primaryId, ...fallenItems.map((f) => f.id)]
+  const changes = allIds
+    .filter((id) => history.draft.patches.get(id) !== next.patches.get(id))
+    .map((id) => ({ id, before: history.draft.patches.get(id), after: next.patches.get(id) }))
+  if (!changes.length) return history
+  return {
+    draft: next,
+    past: [...history.past, { type: 'GRAVITY_MOVE', changes }].slice(-EDITOR_RULES.historyLimit),
+    future: [],
+  }
 }
 
 export function travelHistory(history: DraftHistory, direction: 'undo' | 'redo'): DraftHistory {

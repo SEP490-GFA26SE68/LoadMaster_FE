@@ -3,7 +3,7 @@ import type { CameraPreset, ColorMode, PlaybackSpeed } from '@/features/viewer3d
 import type { OrientationCode } from '@/domain/geometry'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { resolveEffectiveScene, type PlacementPatch } from './viewer-draft'
-import { commitCommand, createDraftHistory, travelHistory, type CommandType } from './editor/draft-history'
+import { commitCommand, commitGravityMove, createDraftHistory, travelHistory, type CommandType } from './editor/draft-history'
 
 /**
  * Toàn bộ state tương tác của màn xem phương án 3D.
@@ -77,6 +77,14 @@ export function useLoadPlanViewer(
   const commitDraft = useCallback((type: CommandType, id?: string, patch?: PlacementPatch) => {
     setHistory((current) => commitCommand(sceneModel, current, type, id, patch))
   }, [sceneModel])
+
+  const commitGravityMoveFn = useCallback((
+    primaryId: string,
+    primaryPatch: PlacementPatch,
+    fallenItems: Array<{ id: string; patch: PlacementPatch }>,
+  ) => {
+    setHistory((current) => commitGravityMove(sceneModel, current, primaryId, primaryPatch, fallenItems))
+  }, [sceneModel])
   const undo = useCallback(() => setHistory((current) => travelHistory(current, 'undo')), [])
   const redo = useCallback(() => setHistory((current) => travelHistory(current, 'redo')), [])
   const stopPlaying = useCallback(() => setPlaying(false), [])
@@ -107,7 +115,7 @@ export function useLoadPlanViewer(
   return {
     sceneModel,
     draft,
-    commitDraft, undo, redo, canUndo: history.past.length > 0, canRedo: history.future.length > 0, stopPlaying,
+    commitDraft, commitGravityMove: commitGravityMoveFn, undo, redo, canUndo: history.past.length > 0, canRedo: history.future.length > 0, stopPlaying,
     updatePlacement,
     placements,
     totalSteps,

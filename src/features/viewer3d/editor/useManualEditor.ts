@@ -8,6 +8,8 @@ import { roundPosition, type Axis } from './geometry'
 import { useEditorValidation } from './useEditorValidation'
 import { createPreviewStore } from './preview-store'
 import { snapPosition } from './snapping'
+import { simulateGravityAfterMove } from './gravity'
+import { commitGravityMove } from './draft-history'
 
 export type DragPlane = 'xy' | 'xz' | 'yz'
 export const PLANE_AXES: Record<DragPlane, readonly Axis[]> = { xy: ['x', 'y'], xz: ['x', 'z'], yz: ['y', 'z'] }
@@ -38,8 +40,21 @@ export function useManualEditor(state: LoadPlanViewerState) {
     const result = inspect(candidate)
     preview.publish({ id, position: candidate.position, result, sources: [], dragging: false,
       message: t(result.valid ? 'viewer.editor.placed' : 'viewer.editor.placeRejected') }, true)
-    if (result.valid) state.commitDraft('MOVE', id, { position: candidate.position })
-    return result.valid
+    if (!result.valid) return false
+
+    // Simulate gravity: find items that were resting on `p` and now float
+    const prevPlacements = placements
+    const nextPlacements = placements.map((item) => item.id === id ? candidate : item)
+    const fallen = simulateGravityAfterMove(id, prevPlacements, nextPlacements)
+
+    if (fallen.length > 0) {
+      // Commit primary + fallen items atomically (1 undo step)
+      state.commitGravityMove(id, { position: candidate.position }, fallen.map((f) => ({ id: f.id, patch: { position: f.position } })))
+      console.log(`[gravity] item ${id} moved → ${fallen.length} items settled:`, fallen.map(f => `${f.id} z:${f.position.z}`))
+    } else {
+      state.commitDraft('MOVE', id, { position: candidate.position })
+    }
+    return true
   }
   const rotate = (orientation: OrientationCode) => {
     if (!selected || selected.pinned || preview.getLatest()?.dragging) return
