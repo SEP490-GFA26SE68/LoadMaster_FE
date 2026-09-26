@@ -1,4 +1,4 @@
-import { Download, LayoutDashboard, Plus } from 'lucide-react'
+import { Download, Plus } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
@@ -43,14 +43,13 @@ export function DashboardPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={LayoutDashboard}
         title={t('manager.title')}
         description={t('pageHero.dashboard')}
         actions={
           <>
             {canExport ? (
               <Button
-                variant={canCreate ? 'secondary' : 'primary'}
+                variant={canCreate ? 'glass' : 'primary'}
                 loading={exportReport.isPending}
                 disabled={!summary || exportReport.isPending}
                 onClick={() => {

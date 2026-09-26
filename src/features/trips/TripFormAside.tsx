@@ -41,7 +41,7 @@ export function TripFormAside({ stopCount, vehicle, existing }: {
         </ol>
       </div>
 
-      <section aria-label={t('trips.create.summaryLabel')} className="glass-tile flex flex-col rounded-xl px-4.5 py-2">
+      <section aria-label={t('trips.create.summaryLabel')} className="flex flex-col rounded-lg border border-border bg-bg px-4.5 py-2 shadow-card">
         <dl className="m-0 flex flex-col">
           {rows.map((row) => (
             <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-border py-3 last:border-b-0">

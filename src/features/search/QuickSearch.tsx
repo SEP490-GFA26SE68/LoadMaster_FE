@@ -7,6 +7,7 @@ import { useCan } from '@/features/auth/useCan'
 import { useT } from '@/lib/i18n'
 import { GROUP_PERMISSION, SEARCH_GROUPS } from './quick-search'
 import { QuickSearchPanel } from './QuickSearchPanel'
+import { SHORTCUT_KEYS } from './shortcut'
 
 /** Ctrl+K (Windows, Linux) hoặc ⌘K (Mac), không kèm phím bổ trợ khác. */
 function isShortcut(event: KeyboardEvent): boolean {
@@ -53,17 +54,27 @@ export function QuickSearch() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <NavRailButton
-          orientation="horizontal"
           icon={Search}
           label={t('search.button')}
           aria-keyshortcuts="Control+K Meta+K"
+          // Màn rộng: ô kính 176px "Tìm nhanh · Ctrl K" (V2.3 `.glass-search.compact`); hẹp hơn thì chỉ còn icon 36px
+          className="w-9 px-0 min-[1440px]:w-44 min-[1440px]:justify-start min-[1440px]:px-3"
+          text={
+            <span className="hidden min-[1440px]:contents">
+              <span className="text-small whitespace-nowrap">{t('search.button')}</span>
+              <kbd className="ml-auto rounded-sm border border-sky-glass-border px-1.5 py-0.75 font-sans text-micro leading-none font-medium whitespace-nowrap">
+                {SHORTCUT_KEYS}
+              </kbd>
+            </span>
+          }
           onClick={() => {
             returnFocus.current = null
           }}
         />
       </DialogTrigger>
       <DialogContent
-        className="mt-[12vh] self-start"
+        // Kính tối (`.glass-dark`, V2.3 TimNhanh): nền, viền và bóng của lớp kính thay nền trắng của hộp thoại
+        className="glass-dark mt-[12vh] self-start"
         onCloseAutoFocus={(event) => {
           const target = returnFocus.current
           returnFocus.current = null
@@ -75,7 +86,10 @@ export function QuickSearch() {
       >
         <DialogTitle className="sr-only">{t('search.title')}</DialogTitle>
         <DialogDescription className="sr-only">{t('search.placeholder')}</DialogDescription>
-        <QuickSearchPanel groups={groups} onOpenResult={handleOpenResult} />
+        {/* Hộp tìm nhanh của bản mẫu đặc hơn kính trên khung 3D vì nằm trên lớp phủ, đè cả bảng trắng: một lớp `--cyan-950` mờ */}
+        <div className="flex min-h-0 flex-col bg-cyan-950/40">
+          <QuickSearchPanel groups={groups} onOpenResult={handleOpenResult} />
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -8,6 +8,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './Select'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { FieldLabel, FieldMessage } from './field-styles'
 
 /** `disabled`: hiện trong danh sách nhưng không chọn được — nhãn tự nói lý do (xe đang bảo dưỡng, LM-088). */
 export type SelectOption = { value: string; label: string; disabled?: boolean }
@@ -44,16 +45,13 @@ export function SelectField<TValues extends FieldValues>({
         const message = fieldState.error?.message
         return (
           <div className={cn('flex flex-col gap-1.5', className)}>
-            <label htmlFor={id} className="text-body font-medium text-text">
-              {label}
-            </label>
+            <FieldLabel htmlFor={id}>{label}</FieldLabel>
             <Select value={field.value ?? ''} onValueChange={field.onChange}>
               <SelectTrigger
                 id={id}
                 ref={field.ref}
                 onBlur={field.onBlur}
                 aria-invalid={message ? true : undefined}
-                className={message ? 'border-danger' : undefined}
               >
                 <SelectValue placeholder={placeholder ?? t('common.selectPlaceholder')} />
               </SelectTrigger>
@@ -65,11 +63,7 @@ export function SelectField<TValues extends FieldValues>({
                 ))}
               </SelectContent>
             </Select>
-            {message ? (
-              <span className="text-caption text-danger">{message}</span>
-            ) : hint ? (
-              <span className="text-caption text-text-3">{hint}</span>
-            ) : null}
+            <FieldMessage error={message} hint={hint} />
           </div>
         )
       }}

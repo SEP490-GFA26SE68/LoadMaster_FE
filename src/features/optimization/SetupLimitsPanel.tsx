@@ -22,7 +22,7 @@ export function SetupLimitsPanel({ setup }: { setup: OptimizationSetup }) {
   ]
 
   return (
-    <section aria-labelledby="setup-limits" className="glass-tile flex flex-col gap-4 rounded-xl px-5 py-4">
+    <section aria-labelledby="setup-limits" className="flex flex-col gap-4 rounded-lg border border-border bg-bg px-5 py-4 shadow-card">
       <div className="flex flex-col gap-0.5">
         <span className="text-caption text-ink-3">{t('optimization.limits.eyebrow')}</span>
         <h2 id="setup-limits" className="text-h3 font-semibold text-ink-strong">{t('optimization.limits.title')}</h2>

@@ -32,7 +32,7 @@ export function KpiRow({ summary }: { summary: DashboardSummary }) {
         label={t('manager.kpi.fill')}
         value={fill.averagePercent === null ? t('manager.noValue') : format.percent(fill.averagePercent)}
         note={fill.averagePercent === null ? t('manager.kpi.tile.fillEmpty') : t('manager.kpi.tile.fill', { count: fill.planCount })}
-        badge={fill.isMockResult ? <Badge tone="warning">MOCK RESULT</Badge> : null}
+        badge={fill.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
       />
       <KpiTile
         icon={Weight}

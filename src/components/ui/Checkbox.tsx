@@ -5,8 +5,7 @@ import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Checkbox 18px, radius 4px. Chọn: nền primary, dấu tích trắng stroke 3.
- * Theo mục 5 style sheet.
+ * Checkbox 18px (V2.3 `.cbx`): viền 1,5px `--n-500`, bo 4px. Chọn: nền `--primary` (cyan-700), dấu tích trắng stroke 3.
  */
 export function Checkbox({
   className,
@@ -24,12 +23,12 @@ export function Checkbox({
         id={boxId}
         disabled={disabled}
         className={cn(
-          'grid size-4.5 flex-none place-items-center rounded-xs border',
+          'grid size-4.5 flex-none place-items-center rounded-xs border-[1.5px]',
           'transition-colors duration-(--dur-fast) ease-standard',
           'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-          'border-text-disabled bg-bg',
+          'border-n-500 bg-bg',
           'data-[state=checked]:border-primary data-[state=checked]:bg-primary',
-          'disabled:cursor-not-allowed disabled:border-border disabled:bg-surface',
+          'disabled:cursor-not-allowed disabled:border-n-300 disabled:bg-n-100',
           className,
         )}
         {...props}
@@ -43,7 +42,7 @@ export function Checkbox({
           htmlFor={boxId}
           className={cn(
             'cursor-pointer text-body',
-            disabled ? 'cursor-not-allowed text-text-disabled' : 'text-text',
+            disabled ? 'cursor-not-allowed text-n-600' : 'text-text',
           )}
         >
           {label}

@@ -31,10 +31,12 @@ màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quả
 quản trị `/nguoi-dung`); liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
 nhân viên kho và tài xế **ở màn danh sách** thì **đăng xuất** (màn chính của họ), **trong phiên xếp / trong chuyến** thì về danh sách
-(`/kho`, `/tai-xe`, LM-086/087); điều phối viên và quản trị viên về trang chuyến, vai trò khác về màn chính. *(đã điều chỉnh 23/09/2026)* Điều hướng là **thanh ngang 56 px** ở đầu trang (`app/NavRail.tsx`): logo trái, nhóm mục giữa, chuông và
-menu tài khoản phải. Mục đang mở có chữ xanh, weight 600 và một **chỉ báo kính trượt theo con trỏ** — chỉ báo là phản hồi nền duy nhất,
-mục đang mở **không** có nền riêng, nếu không sẽ thành hai lớp chồng nhau. Trước 23/09/2026 đây là rail dọc 96 px; đổi sang ngang theo
-hướng V2 để chiều cao dành cho dữ liệu. Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem; màn toàn màn hình không
+(`/kho`, `/tai-xe`, LM-086/087); điều phối viên và quản trị viên về trang chuyến, vai trò khác về màn chính. *(đã điều chỉnh 26/09/2026, V2.3)* Điều hướng là **thanh ngang 60 px trên dải trời** ở đầu trang (`app/NavRail.tsx`): logo
+trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ · chuông · tài khoản phải. Mục đang mở có **nền riêng** (cyan
+trong + viền + quầng, `--nav-on`) và chữ trắng 600; chỉ báo kính trượt theo con trỏ của V2 đã bỏ (hai lớp phản hồi sẽ chồng nhau).
+Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
+`LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
+rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
@@ -186,9 +188,11 @@ Bản thiết kế đã chốt nằm ở `design/v2.3/` (`README.md` thứ tự 
 - `@theme` xoá thang mặc định `cyan/amber/violet/green/red` của Tailwind rồi khai lại bằng token: `bg-cyan-600`, `text-red-700`… là màu
   của bảng này, không có bậc nào ngoài bảng (`bg-red-300` không sinh class).
 - `font-display` là họ chữ trong `cn()` (`THEME_FONT_FAMILIES` của `lib/utils.ts`); thêm họ chữ mới vào `@theme` thì thêm tên vào đó.
-- Vật liệu kính **sáng** của V2 (`--nav-glass`, `--follow-glass`, `--tile-glass`, `--glass-edge`, `--tile-lift`, `--hero-icon`,
-  `--icon-ring`, `--chrome`, `--table-head`…) còn giữ cho tới khi đợt 2 chuyển component sang kính tối; đợt 1 chỉ đổi sắc của chúng
-  sang cyan. Component cuối cùng thôi dùng token nào thì xoá token đó — không để song song hai hệ kính.
+- *(đợt 2, 26/09/2026)* Kính sáng của V2 đã xoá (`--nav-glass`, `--follow-*`, `--tile-*`, `--glass-edge`, `--icon-ring`, `--spring`,
+  lớp `.glass-follow`, `.glass-tile`). Còn lại tới đợt của màn dùng chúng: `--chrome` (header trắng của Chi tiết chuyến, So sánh),
+  `--hero-icon` (form xe), `--table-head`. Thêm cho dải trời: `--sky-end`, `--sky-h`, `--sky-dots`, `--sky-overlap`, `--sky-text*`,
+  `--sky-glass*`, `--nav-on*`, `--brand-mark*`, `--avatar-fill`; cho thành phần: `--scrim`, `--danger-shadow`, `--meter-fill`,
+  `--focus-ring`, `--error-ring`. Lớp dùng chung trong `index.css`: `.sky`, `.glass-nav`, `.glass-dark`, utility `sky-overlap`.
 
 ```css
 :root {
@@ -314,6 +318,8 @@ gói cùng app; Be Vietnam Pro và JetBrains Mono vẫn nạp từ Google Fonts 
 | lede | 13,5/22 | câu mô tả dưới tiêu đề màn (`PageHero`) *(V2, 23/09/2026)* |
 | micro | 11/14 | nhãn trục biểu đồ, nhãn trong panel nổi *(bổ sung)* |
 | note | 11,5/17 | ghi chú nguồn của ô số liệu (`KpiTile`) *(V2, 23/09/2026)* |
+| small | 13/18 | chữ phụ trong card, ghi chú đầu card, nút `sm`, mô tả toast *(V2.3, 26/09/2026)* |
+| fine | 12,5/18 | chip trạng thái, gợi ý và lỗi dưới ô nhập, tooltip *(V2.3, 26/09/2026)* |
 
 **Số liệu lớn** không nằm trong thang trên vì chúng là hình khối chứ không phải chữ đọc:
 `18px` mã kiện trên header · `22px` mã chuyến · `40px` tỷ lệ lấp đầy trong hộp thoại — JetBrains Mono.
@@ -350,6 +356,8 @@ trong `src/`; muốn dùng class từ nơi khác thì thêm `@source` tường m
   nên `index.css` đặt lại `solid` cho `:focus-visible` ngoài `@layer` để `focus-visible:outline-2` vẽ được vòng — không bỏ rule đó.
 - Loading: giữ nguyên chiều rộng, thêm spinner 16px bên trái chữ.
 - Nút phụ: nền trắng, viền 1px `--border`. Nút ghost: trong suốt. Nút nguy hiểm: nền đặc `--danger`.
+  *(bổ sung 26/09/2026, V2.3)* Nút phụ có bóng 1 px (`--e1`), nút nguy hiểm có quầng đỏ (`--danger-shadow`); thêm `variant="glass"` cho
+  nút phụ **trên nền tối** (dải trời, khung 3D) và cỡ `sm` 32 px / `lg` 48 px. Nút phụ trên dải trời dùng `glass`, không dùng nút trắng.
 - Nút chỉ có icon: 36×36 desktop, 48×48 di động.
 - Nút dùng `asChild` bọc `<Link>` thì **không kèm spinner** — Radix `Slot` chỉ nhận đúng một phần tử con.
 - *(bổ sung 19/09/2026, LM-092)* Hành động bị chặn vì luật (tự khoá mình, quản trị viên cuối…) hiện mờ kèm lý do ngay tại chỗ, không để
@@ -359,6 +367,25 @@ trong `src/`; muốn dùng class từ nơi khác thì thêm `@source` tường m
   lưới `--border` 1 px; nhãn trục micro 11 px, số mono; cột ≤ 24 px bo 4 px đầu dữ liệu; tắt animation; tooltip là lớp nổi (`--e2`).
   Hình `aria-hidden`, có bảng số `sr-only` cùng giá trị (`ChartCard`/`ChartTable`).
 
+### Thành phần V2.3 *(bổ sung 26/09/2026, LM-102)*
+
+Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanCuc.jpg`; kiểu gốc `design/v2.3/tokens/v3.css`.
+
+- **Chip trạng thái** (`Badge`, `StatusBadge`): cao 26, chữ `fine` 600, nền tint không viền. **Ngữ pháp chấm**: đặc = trạng thái · vòng
+  rỗng = chờ người kế tiếp · quầng = đang chạy · quay = đang tính. Màu kể giai đoạn của chuyến: xám nháp, hổ phách cần bạn (đã tối ưu vòng
+  rỗng, cần xem lại có quầng + viền), cyan đã duyệt, **tím** đang chạy (đang tối ưu, đang xếp, đã xếp xong vòng rỗng, đang giao), xanh lá
+  hoàn thành, đã huỷ chip xám chữ gạch chấm đỏ. Xe: sẵn sàng xanh lá, đang phục vụ chuyến tím có quầng, bảo dưỡng xám. Tài khoản: đang
+  hoạt động xanh lá, đã khoá xám. `shape="tag"` (20 px) cho phiên bản, "Đã chỉnh tay" (tím) và **MOCK RESULT** (`tone="mock"`).
+- **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
+- **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
+  `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
+- **Tab**: `TabsList tone="light" | "sky"`, vạch `--cyan-500` / `--cyan-400`; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+- **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
+- **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
+- **Banner** (`components/Banner.tsx`): info / warning / danger / neutral, hành động dồn phải. `TripLockBanner` dựng trên nó.
+- **Trạng thái rỗng**: không khung nét đứt; ô minh hoạ 64 px bo 18 theo nghĩa (`icon` + `tone`), tiêu đề Archivo 700.
+- **Menu, Select, tooltip**: menu trắng đặc bo 14 padding 6, mục 36 px, `tone="danger"`; tooltip nền `--cyan-950`.
+
 ### Thanh tiêu đề màn *(bổ sung)*
 
 *(bổ sung 19/09/2026, LM-094)* Planner từ 1.366 px: thanh trên 56 px là hàng điều khiển duy nhất (mã chuyến, MOCK RESULT, chỉ số,
@@ -366,16 +393,18 @@ Xếp/Dỡ, điểm giao, góc nhìn, trạng thái duyệt, Chỉnh sửa, So s
 công cụ riêng (tablet hai hàng 56 px). Thêm gì vào hàng này phải đo lại ở 1.366 px (`e2e/planner-compact.spec.ts`). Thanh công cụ
 Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòng) giữ `<select>` gốc.
 
-Cao **72px** cho mọi màn có thanh điều hướng. Chỉ **56px** cho màn xem phương án 3D, vì ở đó
-chiều cao nhường cho khung 3D. Không tự chọn chiều cao khác — lệch là nội dung nhảy
-khi chuyển màn.
+*(đã điều chỉnh 26/09/2026, V2.3)* Thanh tiêu đề của màn trong khung ứng dụng nằm trên **dải trời** nên cao theo nội dung (tiêu
+đề 32 px + mô tả, thêm tab nếu màn có), không còn cố định 72 px. Chỉ **56px** cho màn xem phương án 3D, vì ở đó chiều cao nhường cho
+khung 3D. Header riêng còn nền trắng (Chi tiết chuyến, form xe) giữ 72 px tới đợt của màn đó.
 
-*(bổ sung 23/09/2026, V2)* Màn trong khung ứng dụng dùng `components/PageHero.tsx`: ô icon 44 px `.hero-icon` (gradient xanh nhạt,
-viền trắng, bóng nhẹ), tiêu đề h1 24 px `--ink-strong`, `meta` (số đếm, mã) mono `--ink-3`, một câu mô tả cỡ `lede` từ nhánh
-`pageHero` của từ điển, hành động ở phải. Ba luật của nó:
-icon là `<span aria-hidden>` **ngoài** `<h1>` (tên truy cập của tiêu đề giữ đúng chữ, test đọc `exact: true`); hành động nằm trong
-**cùng** `<header>` với tiêu đề; mô tả ẩn dưới 768 px để thanh giữ đúng 72 px. Mô tả nói màn dùng để làm gì — không số, không
-trạng thái. **Không** dùng `PageHero` khi tiêu đề là dữ liệu (mã chuyến ở Chi tiết chuyến, tên xe ở form xe) hay cho thanh 56 px
+*(đã điều chỉnh 26/09/2026, V2.3)* Màn trong khung ứng dụng dùng `components/PageHero.tsx` trên dải trời (`.sky`): tiêu đề h1
+**Archivo 700 32 px rộng 112 %** chữ trắng, `meta` (số đếm, mã) mono `--sky-text-3`, một câu mô tả từ nhánh `pageHero` của từ điển,
+hành động ở phải, tab của màn (`TabsList tone="sky"`) truyền làm `children`. Ô icon `.hero-icon` của V2 đã bỏ. Luật của nó:
+`<h1>` chỉ chứa chữ tiêu đề (test đọc `exact: true`); hành động nằm trong **cùng** `<header>` với tiêu đề; mô tả ẩn dưới 768 px. Mô
+tả nói màn dùng để làm gì — không số, không trạng thái. **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp
+`.sky` gắn ảnh vào khung nhìn (`background-attachment: fixed`), không phải một khối bọc. **Card đè lên dải**: `overlap` kéo dải
+thêm `--sky-overlap` (44 px) và vùng cuộn đặt `sky-overlap` (`margin-top: -44px`, lề trên 0). Chỉ bật khi thứ đầu tiên của vùng cuộn
+là card nền đặc — chữ trần trên dải trời không đọc được (Bảng điều khiển có dòng chọn kỳ, Hồ sơ có cột thông tin: chưa bật). **Không** dùng `PageHero` khi tiêu đề là dữ liệu (mã chuyến ở Chi tiết chuyến, tên xe ở form xe) hay cho thanh 56 px
 của Planner; những màn đó giữ header riêng nhưng vẫn theo lề `px-shell`. Màn mới trong khung ứng dụng dùng `PageHero`.
 Bản V2 gốc có hoạ tiết đường nét phía sau tiêu đề — người dùng chọn **không** đưa vào production (23/09/2026).
 
@@ -384,15 +413,15 @@ và khi cột rộng hơn `--shell-max` thì nội dung dừng ở `--shell-max`
 để vùng cuộn vẫn rộng hết cột (thanh cuộn ở mép) và nền chrome vẫn tràn ngang — trên màn 2K logo, mục điều hướng, tiêu đề và nội
 dung cùng thẳng một cột. Không đặt lại `px-6`/`px-8` cho màn trong khung ứng dụng.
 
-*(bổ sung 23/09/2026, V2)* Ô số liệu là `components/KpiTile.tsx` (lên `components/` từ `features/manager`): kính `.glass-tile` bo
-`--r-xl`, viền sáng trong + bóng nâng nhẹ (`--glass-edge`, `--tile-lift`), nền đặc dự phòng; icon trên nền tint theo nghĩa cố định
-(mục 4); số 26 px **sans** `tabular-nums` `--ink-strong` (không mono — mono dành cho mã và số đo trong bảng, theo brief V2); nhãn
-`--ink-2`; ghi chú nguồn cỡ `note` `--ink-3`. Mọi số cùng màu mực — màu chỉ ở icon, không nói số tốt hay xấu. Vỏ ngoài
+*(đã điều chỉnh 26/09/2026, V2.3)* Ô số liệu là `components/KpiTile.tsx`: **card nền đặc** (bo `--r-lg`, viền, `--card-shadow`) —
+kính sáng `.glass-tile` của V2 đã bỏ; `variant="sky"` là ô kính tối chỉ đặt trên dải trời. Icon trên nền tint theo nghĩa cố định
+(mục 4); số 26 px **Archivo 700** `tabular-nums` `--ink-strong` (không mono — mono dành cho mã); nhãn `--ink-2`; ghi chú nguồn cỡ
+`note` `--ink-3`. Mọi số cùng màu mực — màu chỉ ở icon, không nói số tốt hay xấu. Vỏ ngoài
 `role="group"` + `aria-label` = nhãn; `value` và `unit` là hai text node liền nhau, không khoảng trắng JSX ở giữa.
 *(bổ sung 23/09/2026, bước 5)* Ô số liệu làm **công tắc lọc** (Đội xe): truyền `onPress` + `pressed`; ô dựng `<button aria-pressed>`
 **bên trong** vỏ group, không biến vỏ thành nút. Bấm đi qua `list.setFilter` của `useListUrlState` (URL đổi, cùng bộ lọc với ô
-chọn), bấm lại ô đang lọc thì bỏ lọc. Rê chuột đổi viền và nâng bóng (`--tile-hover-border`, `--tile-lift-hover`), không phóng
-to; đang lọc: viền `--primary` đậm gấp đôi. Số của ô đếm trên cả tập dữ liệu, không theo ô tìm.
+chọn), bấm lại ô đang lọc thì bỏ lọc. Rê chuột đổi viền sang `--cyan-300`, không phóng to, không nâng bóng; đang lọc: viền
+`--primary` đậm gấp đôi. Số của ô đếm trên cả tập dữ liệu, không theo ô tìm.
 
 ### Thử nghiệm visual V2 (21/09/2026)
 

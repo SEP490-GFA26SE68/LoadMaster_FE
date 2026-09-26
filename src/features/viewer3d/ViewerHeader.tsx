@@ -41,8 +41,8 @@ export function ViewerHeader({ tripId, metrics, placedCount, totalCount, isMockR
       {/* Hai nhãn của kết quả xếp chồng (22 + 4 + 22 px vừa hàng 56 px): hàng gộp vừa 1.366 px cả khi bản đã duyệt có chỉnh tay */}
       {isMockResult || manuallyEdited ? (
         <div className="flex shrink-0 flex-col items-start gap-1">
-          {isMockResult ? <Badge tone="warning">MOCK RESULT</Badge> : null}
-          {manuallyEdited ? <Badge tone="info">{t('viewer.plan.manuallyEdited')}</Badge> : null}
+          {isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
+          {manuallyEdited ? <Badge shape="tag" tone="violet">{t('viewer.plan.manuallyEdited')}</Badge> : null}
         </div>
       ) : null}
 

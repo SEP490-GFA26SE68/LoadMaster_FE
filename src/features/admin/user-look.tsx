@@ -9,10 +9,11 @@ const THUMB: Record<UserStatus, string> = {
   suspended: 'bg-tint-amber text-tint-amber-fg',
 }
 
-/** Badge trạng thái (V2): đang hoạt động là trạng thái đang diễn ra nên có chấm; đã khoá là cần chú ý — cùng tông hổ phách với ô số liệu. */
-const STATUS_BADGE: Record<UserStatus, { tone: 'success' | 'warning'; dot: boolean }> = {
+/** Chip trạng thái theo ngữ pháp chấm V2.3 (Main.jpg): đang hoạt động chấm xanh lá; đã khoá chip xám chấm xám — khoá là một trạng
+ * thái của tài khoản, không phải cảnh báo. */
+const STATUS_BADGE: Record<UserStatus, { tone: 'success' | 'neutral'; dot: true }> = {
   active: { tone: 'success', dot: true },
-  suspended: { tone: 'warning', dot: false },
+  suspended: { tone: 'neutral', dot: true },
 }
 
 /**

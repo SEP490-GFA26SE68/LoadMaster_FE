@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Play, SlidersHorizontal } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
@@ -84,7 +84,7 @@ export function OptimizationSetupPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={SlidersHorizontal}
+        overlap
         title={t('optimization.title')}
         meta={tripId}
         description={t('pageHero.optimization')}
@@ -108,7 +108,7 @@ export function OptimizationSetupPage() {
           <Button variant="secondary" asChild><Link to="/chuyen">{t('optimization.back')}</Link></Button>
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-6 overflow-auto px-shell py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-6 overflow-auto px-shell pb-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           {locked ? <div className="lg:col-span-2"><TripLockBanner trip={setup.trip} /></div> : null}
           {/* V2: một thẻ gồm các phần đánh số; nút chính giữ ở thanh tiêu đề (AGENTS mục 5: một nút primary mỗi màn) */}
           <div className="flex min-w-0 flex-col gap-6 rounded-lg border border-border bg-bg p-6">

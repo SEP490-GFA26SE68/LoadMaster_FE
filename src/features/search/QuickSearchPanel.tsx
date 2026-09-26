@@ -3,15 +3,15 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type R
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { searchSources, type SearchGroup } from './quick-search'
+import { SearchKbd } from './SearchKbd'
 import { SearchResults } from './SearchResults'
+import { SHORTCUT_KEYS } from './shortcut'
 import { useSearchSourcesQuery } from './useSearchSourcesQuery'
 
-/** Máy Mac dùng ⌘, máy khác dùng Ctrl — chỉ để hiện gợi ý phím, phím tắt nhận cả hai. */
-const SHORTCUT_KEYS = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘ K' : 'Ctrl K'
-
 /**
- * Nội dung hộp thoại tìm nhanh (LM-099): ô nhập là combobox, kết quả là listbox chia nhóm. Mũi tên lên/xuống chọn (vòng tròn), Enter
- * mở, Esc đóng (Radix Dialog). Gắn khi hộp thoại mở nên mỗi lần mở là ô trống và dữ liệu đọc lại từ kho.
+ * Nội dung hộp thoại tìm nhanh (LM-099; V2.3 TimNhanh, kính tối): ô nhập là combobox, kết quả là listbox chia nhóm. Hàng ô nhập có
+ * số kết quả (vùng `status`, trình đọc màn hình nghe mỗi lần gõ) và gợi ý `Esc`. Mũi tên lên/xuống chọn (vòng tròn), Enter mở, Esc
+ * đóng (Radix Dialog). Gắn khi hộp thoại mở nên mỗi lần mở là ô trống và dữ liệu đọc lại từ kho.
  */
 export function QuickSearchPanel({ groups, onOpenResult }: { groups: readonly SearchGroup[]; onOpenResult: (href: string) => void }) {
   const t = useT()
@@ -53,25 +53,27 @@ export function QuickSearchPanel({ groups, onOpenResult }: { groups: readonly Se
   }
 
   const typed = query.trim() !== ''
+  const message = 'px-5 py-6 text-body text-glass-dark-muted'
   let body: ReactNode
   if (!typed) {
     const scope = format.list(groups.map((group) => t(`search.scope.${group}`)))
-    body = <p className="px-4 py-6 text-body text-text-2">{t('search.hint', { scope })}</p>
+    body = <p className={message}>{t('search.hint', { scope })}</p>
   } else if (sources.isPending) {
-    body = <p className="px-4 py-6 text-body text-text-2">{t('search.loading')}</p>
+    body = <p className={message}>{t('search.loading')}</p>
   } else if (sources.isError) {
     body = (
-      <div className="flex items-center justify-between gap-3 px-4 py-4">
-        <p className="text-body text-text-2">{t('search.error')}</p>
+      <div className="flex items-center justify-between gap-3 px-5 py-4">
+        <p className="text-body text-glass-dark-muted">{t('search.error')}</p>
         <Button variant="secondary" onClick={() => void sources.refetch()}>{t('search.retry')}</Button>
       </div>
     )
   } else if (flat.length === 0) {
-    body = <p className="px-4 py-6 text-body text-text-2">{t('search.noResults', { query: query.trim() })}</p>
+    body = <p className={message}>{t('search.noResults', { query: query.trim() })}</p>
   } else {
     body = (
       <SearchResults
         listId={listId}
+        query={query}
         groups={resultGroups}
         activeIndex={activeIndex}
         indexOf={indexOf}
@@ -84,8 +86,8 @@ export function QuickSearchPanel({ groups, onOpenResult }: { groups: readonly Se
 
   return (
     <>
-      <div className="flex items-center gap-3 border-b border-border px-4">
-        <Search className="size-5 flex-none text-text-3" strokeWidth={1.5} aria-hidden />
+      <div className="flex h-15 items-center gap-3 border-b border-glass-dark-border pr-4 pl-4.5">
+        <Search className="size-5 flex-none text-cyan-200" strokeWidth={1.5} aria-hidden />
         <input
           role="combobox"
           aria-label={t('search.inputLabel')}
@@ -103,23 +105,23 @@ export function QuickSearchPanel({ groups, onOpenResult }: { groups: readonly Se
             if (listRef.current) listRef.current.scrollTop = 0
           }}
           onKeyDown={handleKeyDown}
-          className="h-14 min-w-0 flex-1 bg-transparent text-body-lg text-text outline-none placeholder:text-text-3"
+          className="h-full min-w-0 flex-1 bg-transparent text-body-lg font-medium text-sky-text caret-cyan-300 outline-none placeholder:text-glass-dark-muted"
         />
+        <p role="status" className="flex-none text-small whitespace-nowrap text-glass-dark-muted">
+          {typed && sources.data ? t('search.count', { count: flat.length }) : ''}
+        </p>
+        <SearchKbd>Esc</SearchKbd>
       </div>
 
       <div ref={listRef} className="max-h-[min(28rem,60vh)] min-h-20 overflow-y-auto">
         {body}
       </div>
-      {/* Trình đọc màn hình nghe số kết quả mỗi lần gõ */}
-      <p role="status" className="sr-only">{typed && sources.data ? t('search.count', { count: flat.length }) : ''}</p>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border px-4 py-2.5 text-caption text-text-3">
-        <span className="flex items-center gap-3">
-          <KeyHint keys={['↑', '↓']} label={t('search.keys.move')} />
-          <KeyHint keys={['Enter']} label={t('search.keys.open')} />
-          <KeyHint keys={['Esc']} label={t('search.keys.close')} />
-        </span>
-        <span>{t('search.shortcut', { keys: SHORTCUT_KEYS })}</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-glass-dark-border bg-cyan-950/35 px-4.5 py-2.75 text-fine text-glass-dark-muted">
+        <KeyHint keys={['↑', '↓']} label={t('search.keys.move')} />
+        <KeyHint keys={['Enter']} label={t('search.keys.open')} />
+        <KeyHint keys={['Esc']} label={t('search.keys.close')} />
+        <span className="ml-auto">{t('search.shortcut', { keys: SHORTCUT_KEYS })}</span>
       </div>
     </>
   )
@@ -127,10 +129,8 @@ export function QuickSearchPanel({ groups, onOpenResult }: { groups: readonly Se
 
 function KeyHint({ keys, label }: { keys: readonly string[]; label: string }) {
   return (
-    <span className="flex items-center gap-1">
-      {keys.map((key) => (
-        <kbd key={key} className="rounded-sm border border-border bg-surface px-1.5 font-mono text-caption text-text-2">{key}</kbd>
-      ))}
+    <span className="flex items-center gap-1.5">
+      {keys.map((key) => <SearchKbd key={key}>{key}</SearchKbd>)}
       {label}
     </span>
   )

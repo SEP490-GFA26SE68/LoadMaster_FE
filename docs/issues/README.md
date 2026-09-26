@@ -145,6 +145,15 @@ Nhánh `feat/ui-complete`. Đợt nền làm tuần tự; đợt màn song song,
 | [LM-100](LM-100-hoan-thien-nho.md) | Hoàn thiện nhỏ | 1d | 088 |
 | [LM-101](LM-101-nghiem-thu-dot-6.md) | Nghiệm thu đợt 6 | 1d | 086 → 100, 073 |
 
+### V2.3 "Cyan kính" *(bổ sung 26/09/2026)*
+
+Thứ tự đợt và màn đích: [design/v2.3/README.md](../../design/v2.3/README.md). Đợt 1 (token) không có file issue riêng — xem
+[progress.md](../progress.md) ngày 26/09/2026.
+
+| ID | Việc | Ước lượng | Phụ thuộc |
+|---|---|---|---|
+| [LM-102](LM-102-v23-thanh-phan.md) | Đợt 2: thành phần dùng chung, dải trời + thanh điều hướng, /kieu-dang, /thanh-phan | 3d | đợt 1 |
+
 ## 3. Đường găng và luồng song song
 
 **Đường găng** (chuỗi phụ thuộc có tổng ước lượng dài nhất, ~26 ngày; trễ issue nào trên chuỗi là trễ cả dự án):

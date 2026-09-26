@@ -15,10 +15,10 @@ export function Skeleton({
     <span
       aria-hidden
       className={cn(
-        'block rounded-[4px]',
+        'block rounded-sm',
         dark
           ? 'bg-white/8 animate-[lm-pulse_1.8s_ease-in-out_infinite]'
-          : 'bg-[linear-gradient(90deg,var(--surface)_25%,var(--border)_50%,var(--surface)_75%)] bg-[length:200%_100%] animate-[lm-shimmer_1.6s_linear_infinite]',
+          : 'bg-[linear-gradient(90deg,var(--n-100)_25%,var(--n-50)_50%,var(--n-100)_75%)] bg-[length:200%_100%] animate-[lm-shimmer_1.6s_linear_infinite]',
         className,
       )}
       {...props}

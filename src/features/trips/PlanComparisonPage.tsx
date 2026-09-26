@@ -1,4 +1,4 @@
-import { ArrowRight, Columns3 } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
@@ -27,7 +27,7 @@ export function PlanComparisonPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={Columns3}
+        overlap
         title={t('trips.compare.title')}
         meta={tripId}
         description={query.data ? `${query.data.trip.name} · ${t('trips.compare.subtitle', { count: cards.length })}` : undefined}
@@ -89,7 +89,7 @@ function Comparison({ tripId, cards, canRun }: { tripId: string; cards: readonly
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-shell py-6">
+      <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-shell pb-6">
         <ComparisonMatrix cards={cards} best={best} selectedId={selected?.id} onSelect={setChosenId} />
       </div>
 

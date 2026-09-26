@@ -34,6 +34,18 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 26/09/2026 — V2.3 "Cyan kính", đợt 2: thành phần (LM-102)
+
+Nhánh `feat/v2-3-thanh-phan` từ `developer` sau khi gộp đợt 1 (PR #2). Đối chiếu năm màn nhóm Hệ thống (`Main`, `ThanhPhan`,
+`TrangThaiChung`, `MenuToanCuc`, `TimNhanh`), danh sách lệch K1–K12, T1–T17 ở [LM-102](issues/LM-102-v23-thanh-phan.md).
+
+Phần nền làm tuần tự: dải trời `.sky` cho thanh điều hướng và `PageHero` (ảnh gắn khung nhìn nên hai phần nối liền; card đè dải 44 px
+bằng `sky-overlap`), thanh điều hướng kính tối 60 px, menu ngôn ngữ, và các thành phần dùng chung: nút, chip trạng thái theo ngữ pháp chấm,
+card, ô nhập, tab, hộp thoại, menu, tooltip, toast, banner, trạng thái rỗng, thước đo, ô số liệu nền đặc. Sau đó hai việc không chung file
+chạy song song trong worktree riêng: hai trang `/kieu-dang` + `/thanh-phan`, và chuông + tìm nhanh; người điều phối gộp, kiểm lại trên
+nhánh gộp. Bảng tương phản của `/kieu-dang` tính từ token và làm lộ chữ trắng trên mốc điểm giao 3, 6, 7 dưới 4,5:1; đã sửa `lib/stops.ts`.
+829 unit/DOM. Ảnh trước / sau / đích: `docs/screenshots/v2.3/dot2-thanh-phan/`.
+
 ### 26/09/2026 — V2.3 "Cyan kính", đợt 1: token
 
 Nhận gói bàn giao V2.3 (`design/v2.3/`), áp `AGENTS.v2.3.diff` vào AGENTS.md (6/6 đoạn khớp). Trước khi làm, gộp V2 production

@@ -1,9 +1,9 @@
 import { cn } from '@/lib/utils'
 
 /**
- * Nhóm nút chọn một — dùng cho preset camera, chế độ tô màu, tốc độ phát.
- * Bản `md` là panel nổi trên khung 3D (được phép có bóng, mục 5);
- * bản `sm` gọn hơn, viền 1px, cho thanh timeline.
+ * Nhóm nút chọn một — preset camera, chế độ tô màu, tốc độ phát, kỳ báo cáo. V2.3 `.seg`: rãnh `--n-100` bo 10px, ô đang chọn nền
+ * trắng chữ đậm có bóng nhẹ. Bản `md` 30px chữ 13px; bản `sm` gọn cho thanh timeline. `floating`: panel nổi trên khung 3D được
+ * thêm bóng `--e2` (mục 5).
  */
 export type SegmentedOption<T extends string | number> = {
   value: T
@@ -35,8 +35,8 @@ export function SegmentedControl<T extends string | number>({
       role="group"
       aria-label={ariaLabel}
       className={cn(
-        'flex border border-border bg-bg',
-        size === 'md' ? 'gap-0.5 rounded-md p-1' : 'gap-0.5 rounded-sm p-0.5',
+        'flex gap-0.5 bg-n-100',
+        size === 'md' ? 'rounded-md p-0.75' : 'rounded-sm p-0.5',
         floating && 'shadow-e2',
         className,
       )}
@@ -53,12 +53,12 @@ export function SegmentedControl<T extends string | number>({
               'whitespace-nowrap font-medium transition-colors duration-(--dur-fast) ease-standard',
               'outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary',
               size === 'md'
-                ? 'h-7 rounded-sm px-2.5 text-caption'
-                : 'h-[22px] rounded-[4px] px-2 text-[11px] leading-[14px]',
+                ? 'h-7.5 rounded-sm px-3 text-small'
+                : 'h-5.5 rounded-xs px-2 text-micro',
               mono && 'font-mono',
               active
-                ? 'bg-primary-bg text-primary-hover'
-                : 'text-text-2 hover:bg-surface',
+                ? 'bg-bg font-semibold text-ink-strong shadow-e1'
+                : 'text-ink-2 hover:text-ink-1',
             )}
           >
             {option.label}

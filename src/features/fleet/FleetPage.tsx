@@ -1,4 +1,4 @@
-import { Plus, RotateCcw, Warehouse } from 'lucide-react'
+import { Plus, RotateCcw } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable } from '@/components/DataTable'
@@ -49,7 +49,7 @@ export function FleetPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={Warehouse}
+        overlap
         title={t('fleet.title')}
         meta={vehiclesQuery.isSuccess ? t('fleet.count', { count: vehicles.length }) : undefined}
         description={t('pageHero.fleet')}
@@ -63,7 +63,7 @@ export function FleetPage() {
         ) : null}
       />
 
-      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
+      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
         {isPending ? (
           <div className="flex items-center justify-center py-16" role="status" aria-label={t('fleet.loading')}>
             <Spinner />

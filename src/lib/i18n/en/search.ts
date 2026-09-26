@@ -16,7 +16,6 @@ export const search = {
   groups: { trips: 'Trips', packages: 'Packages', vehicles: 'Vehicles', users: 'Users' },
   results: 'Quick search results',
   count: { one: '{count} result', other: '{count} results' },
-  inTrip: '{trip} · {name}',
   loading: 'Loading data to search…',
   error: 'Could not load data to search.',
   retry: 'Try again',
