@@ -2,6 +2,7 @@ import type { PlacementPatch } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import type { User, UserStatus } from '@/types/user'
 import type { AuditEvent } from './audit'
+import type { Review1Db } from './db-api-review1'
 import type {
   AuditFilter,
   DeliveryIssue,
@@ -28,7 +29,9 @@ export type DeliveryIssueInput = Pick<DeliveryIssue, 'stopNumber' | 'kind' | 'no
  * Kho dữ liệu in-memory thay backend (D-06). Mọi hàm bất đồng bộ như gọi mạng thật, trả bản sao, và từ chối bằng
  * `MockDbError` (mã `NOT_FOUND` khi không có bản ghi). Mỗi hàm ghi thêm một sự kiện nhật ký với người làm là phiên hiện tại (D-43).
  */
-export type MockDb = {
+export type MockDb = CoreMockDb & Review1Db
+
+type CoreMockDb = {
   /** Theo thứ tự tạo: xe seed trước. */
   listVehicles(): Promise<VehicleConfig[]>
   getVehicle(id: string): Promise<VehicleConfig>

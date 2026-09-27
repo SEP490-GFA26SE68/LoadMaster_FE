@@ -25,6 +25,14 @@ import { notifications } from './en/notifications'
 import { search } from './en/search'
 import { titles } from './en/titles'
 import { pageHero } from './en/pageHero'
+import { qr } from './en/qr'
+import { sourcing } from './en/sourcing'
+import { orders } from './en/orders'
+import { review } from './en/review'
+import { readiness } from './en/readiness'
+import { vehicleTypes } from './en/vehicleTypes'
+import { tripReport } from './en/tripReport'
+import { runs } from './en/runs'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -53,4 +61,12 @@ export const en = {
   search,
   titles,
   pageHero,
+  qr,
+  sourcing,
+  orders,
+  review,
+  readiness,
+  vehicleTypes,
+  tripReport,
+  runs,
 } satisfies Dictionary<typeof vi>

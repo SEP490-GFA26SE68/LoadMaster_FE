@@ -1,4 +1,4 @@
-import { getMockDb, MockDbError, type DeliveryIssueInput, type MockDb, type Revision, type Trip } from '@/lib/mock-db'
+import { getMockDb, MockDbError, type DeliveryIssueInput, type MockDb, type Revision, type ScanResult, type Trip, type TripLabel } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { driverPlan, isVisibleTo, myTrips, type MyTrips } from './my-trips'
 
@@ -52,4 +52,19 @@ export function reportDeliveryIssue(tripId: string, issue: DeliveryIssueInput): 
 /** Hoàn tất điểm giao; điểm cuối chuyển chuyến sang `completed`. */
 export function completeStop(tripId: string, stopNumber: number): Promise<Trip> {
   return getMockDb().completeStop(tripId, stopNumber)
+}
+
+// Review 1 (LM-104): quét QR khi dỡ
+
+/** Nhãn QR các kiện của chuyến (danh sách chọn tay khi không quét được); chuyến của tài xế khác trả `NOT_FOUND`. */
+export async function fetchDriverTripLabels(tripId: string): Promise<TripLabel[]> {
+  const db = getMockDb()
+  const viewer = sessionUser(db)
+  if (!isVisibleTo(await db.getTrip(tripId), viewer)) throw new MockDbError('NOT_FOUND', { collection: 'trips', id: tripId })
+  return db.listTripLabels(tripId)
+}
+
+/** Quét QR kiện ở điểm giao hiện tại: ghi "đã dỡ". Kiện của điểm khác: `QR_WRONG_STOP` (kèm số điểm của kiện). */
+export function confirmUnloadByQr(tripId: string, stopNumber: number, token: string): Promise<ScanResult<Trip>> {
+  return getMockDb().confirmUnloadByQr(tripId, stopNumber, token)
 }

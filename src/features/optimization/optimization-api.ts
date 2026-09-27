@@ -1,6 +1,14 @@
 import type { OptimizationRequest, OptimizationResult, VehicleConfig } from '@/domain/models'
-import { getMockDb, type Revision, type Trip, type VehicleStatus } from '@/lib/mock-db'
-import { createOptimizationService, type OptimizationProgress } from '@/services/optimization'
+import {
+  DEFAULT_RUN_SETTINGS,
+  getMockDb,
+  type OptimizationRun,
+  type Revision,
+  type RunSettings,
+  type Trip,
+  type VehicleStatus,
+} from '@/lib/mock-db'
+import { createOptimizationService, OptimizationServiceError, type OptimizationProgress } from '@/services/optimization'
 
 /**
  * Lớp dữ liệu của Thiết lập tối ưu và job (LM-047, LM-048): nơi duy nhất trong feature biết về kho và service tối ưu.
@@ -33,6 +41,8 @@ export type RunInput = {
   readonly simulateFailure: boolean
   readonly signal?: AbortSignal
   readonly onProgress?: (progress: OptimizationProgress) => void
+  /** Mục tiêu và thuật toán người dùng chọn (LM-104); vắng thì mặc định. Mock bỏ qua, kho lưu vào lịch sử lần chạy. */
+  readonly run?: RunSettings
 }
 
 /** `revision` khi service trả kết quả chạy xong (kể cả kết quả một phần); `failed` khi request bị service từ chối. */
@@ -44,10 +54,26 @@ export type RunOutcome =
  * Chạy tối ưu qua `createOptimizationService` (Web Worker trong trình duyệt, D-30) rồi lưu kết quả thành revision bất biến
  * (D-31). `status: FAILED` không lưu revision. Lỗi service (`OptimizationServiceError`) và huỷ (`AbortError`) ném lên cho UI.
  */
-export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress }: RunInput): Promise<RunOutcome> {
+export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, run = DEFAULT_RUN_SETTINGS }: RunInput): Promise<RunOutcome> {
   const service = createOptimizationService({ simulateFailure })
-  const result = await service.optimize(request, { signal, onProgress })
-  if (result.status === 'FAILED') return { kind: 'failed', result }
-  const revision = await getMockDb().addRevision({ tripId, request, result })
+  const db = getMockDb()
+  let result: OptimizationResult
+  try {
+    result = await service.optimize(request, { signal, onProgress })
+  } catch (error) {
+    // Lịch sử lần chạy (LM-104): service không phản hồi vẫn là một lần chạy; người dùng huỷ thì không
+    if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { ...run, failureCode: 'SERVICE_UNAVAILABLE' })
+    throw error
+  }
+  if (result.status === 'FAILED') {
+    await db.recordFailedRun(tripId, { ...run, failureCode: 'REQUEST_REJECTED' })
+    return { kind: 'failed', result }
+  }
+  const revision = await db.addRevision({ tripId, request, result, run })
   return { kind: 'saved', revision }
+}
+
+/** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: mục tiêu, thuật toán, kết quả hoặc lý do không ra kết quả. */
+export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]> {
+  return getMockDb().listOptimizationRuns(tripId)
 }

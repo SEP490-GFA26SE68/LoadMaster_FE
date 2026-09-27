@@ -49,6 +49,8 @@ export const admin = {
       driver: 'Điện thoại',
       manager: 'Máy tính / máy tính bảng',
       admin: 'Máy tính',
+      manufacturer: 'Máy tính',
+      logistics: 'Điện thoại hoặc máy tính bảng tại kho',
     },
     /** Menu thao tác ở cuối mỗi dòng. */
     menu: {
@@ -140,12 +142,17 @@ export const admin = {
       reports: { export: 'Xuất báo cáo .xlsx' },
       trips: { view: 'Xem chuyến hàng', edit: 'Tạo, sửa, huỷ chuyến' },
       optimization: { run: 'Chạy tối ưu' },
-      plans: { view: 'Xem phương án 3D và so sánh', approve: 'Chỉnh sửa và duyệt phương án' },
+      plans: { view: 'Xem phương án 3D và so sánh', approve: 'Chỉnh sửa và duyệt phương án', review: 'Hàng đợi chờ duyệt: duyệt, từ chối, yêu cầu tối ưu lại' },
       fleet: { view: 'Xem đội xe', edit: 'Thêm, sửa, xoá xe và bảo dưỡng' },
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
       users: { manage: 'Quản lý người dùng' },
       audit: { view: 'Xem nhật ký hệ thống' },
+      packages: { register: 'Loại kiện, đăng ký kiện và in nhãn QR' },
+      shipments: { manage: 'Tạo và bàn giao lô hàng' },
+      receiving: { operate: 'Quét QR nhận hàng' },
+      orders: { view: 'Xem đơn hàng', edit: 'Tạo, sửa đơn hàng và gán vào điểm giao' },
+      vehicleTypes: { edit: 'Thêm, sửa, xoá loại xe' },
     },
   },
 } as const

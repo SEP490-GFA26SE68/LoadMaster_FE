@@ -88,11 +88,12 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
     'US-0001', '0901 234 567', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
   ])
-  // Tám quyền của điều phối viên, nhãn lấy từ ma trận quyền
+  // Quyền của điều phối viên (tám quyền gốc + đơn hàng và loại xe của Review 1, LM-104), nhãn lấy từ ma trận quyền
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
   expect(chips.map((chip) => chip.textContent)).toStrictEqual([
     'Xem bảng điều khiển', 'Xem chuyến hàng', 'Tạo, sửa, huỷ chuyến', 'Chạy tối ưu', 'Xem phương án 3D và so sánh',
     'Chỉnh sửa và duyệt phương án', 'Xem đội xe', 'Thêm, sửa, xoá xe và bảo dưỡng',
+    'Xem đơn hàng', 'Tạo, sửa đơn hàng và gán vào điểm giao', 'Thêm, sửa, xoá loại xe',
   ])
   expect(columnHeaders()).not.toContain('Điện thoại')
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'true')
@@ -104,7 +105,7 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
 
   await user.click(within(await rowOf('Trần Thị Mai')).getByText('quanly@loadmaster.vn'))
   const next = screen.getByRole('complementary', { name: 'Chi tiết tài khoản Trần Thị Mai' })
-  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(5)
+  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(7)
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(within(next).getByRole('button', { name: 'Đóng chi tiết tài khoản' }))
@@ -131,7 +132,7 @@ test('panel chi tiết bằng bàn phím: nút ở tên mở, Esc đóng và tr�
   await user.keyboard('{Escape}')
   expect(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Lê Văn Hải' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(13))
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(16))
 
   // Esc ở chỗ khác thì đóng và con trỏ về nút tên
   within(screen.getByRole('complementary')).getByRole('heading', { level: 2 }).focus()

@@ -1,7 +1,18 @@
 import type { TripPhase } from './types'
 
 /** Bộ sưu tập của kho mock. */
-export type MockDbCollection = 'vehicles' | 'trips' | 'revisions' | 'users'
+export type MockDbCollection =
+  | 'vehicles'
+  | 'trips'
+  | 'revisions'
+  | 'users'
+  // LM-104
+  | 'companies'
+  | 'packageTypes'
+  | 'registeredPackages'
+  | 'shipments'
+  | 'orders'
+  | 'vehicleTypes'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -55,6 +66,46 @@ export type MockDbErrorParams = {
   USER_IN_USE: { userId: string; tripIds: string[] }
   PASSWORD_INCORRECT: Record<string, never>
   PASSWORD_TOO_SHORT: { min: number }
+
+  // Review 1 (LM-104)
+  /** Loại kiện sai dữ liệu: mã issue của model (`package.*`, `D-28`), UI dịch qua nhánh `issues`. */
+  PACKAGE_TYPE_INVALID: { codes: string[] }
+  /** Xoá loại kiện còn kiện đăng ký dùng. */
+  PACKAGE_TYPE_IN_USE: { packageTypeId: string; count: number }
+  /** Đăng ký theo số lượng ngoài khoảng cho phép. */
+  QUANTITY_INVALID: { min: number; max: number }
+  /** Người đăng ký / tạo lô không gắn công ty nhà sản xuất (quản trị viên phải chọn công ty). */
+  COMPANY_REQUIRED: Record<string, never>
+  /** Công ty được chọn không đúng loại (ví dụ giao lô hàng cho một nhà sản xuất). */
+  COMPANY_KIND_INVALID: { companyId: string }
+  /** Kiện không ở trạng thái cần cho thao tác (đã vào lô khác, chưa nhận, đã có đơn…). */
+  PACKAGE_UNAVAILABLE: { packageId: string; status: string }
+  /** Kiện không thuộc nhà sản xuất của lô hàng. */
+  PACKAGE_NOT_OWNED: { packageId: string }
+  /** Lô hàng hoặc đơn hàng không có kiện nào. */
+  PACKAGES_REQUIRED: Record<string, never>
+  SHIPMENT_STATUS_INVALID: { shipmentId: string; status: string }
+  /** Mã QR không khớp kiện nào. */
+  QR_UNKNOWN: { token: string }
+  /** Người quét không thuộc công ty logistics được giao lô hàng. */
+  RECEIVING_FORBIDDEN: { shipmentId: string }
+  /** Kiện đã được quét nhận trước đó. */
+  PACKAGE_ALREADY_RECEIVED: { packageId: string }
+  ORDER_STATUS_INVALID: { orderId: string; status: string }
+  /** Điểm giao không có trong chuyến. */
+  STOP_NOT_FOUND: { tripId: string; stopId: string }
+  /** Phương án không còn chờ duyệt: đã duyệt, lỗi thời, chưa hoàn tất hoặc đã có bản mới hơn. */
+  REVISION_NOT_REVIEWABLE: { revisionId: string }
+  VEHICLE_TYPE_INVALID: { field: string }
+  VEHICLE_TYPE_IN_USE: { vehicleTypeId: string; vehicleIds: string[] }
+  /** Mã QR quét được không thuộc phương án / chuyến đang làm. */
+  QR_NOT_IN_TRIP: { tripId: string; token: string }
+  /** Quét đúng kiện của chuyến nhưng không phải kiện của bước hiện tại. */
+  QR_WRONG_PACKAGE: { expected: string; scanned: string }
+  /** Kiện quét được thuộc điểm giao khác. */
+  QR_WRONG_STOP: { packageInstanceId: string; stopNumber: number }
+  /** Số seal trống hoặc dài quá. */
+  SEAL_INVALID: { max: number }
 }
 
 export type MockDbErrorCode = keyof MockDbErrorParams

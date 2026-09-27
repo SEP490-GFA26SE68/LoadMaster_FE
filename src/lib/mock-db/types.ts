@@ -1,6 +1,7 @@
 import type { PlacementPatch } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, OptimizationResult } from '@/domain/models'
 import type { User } from '@/types/user'
+import type { RunSettings } from './source-types'
 
 /** Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`. */
 export type DeliveryStop = {
@@ -31,7 +32,9 @@ export type LoadingProgress = {
   startedBy: string | null
   completedAt?: string
   /** Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. */
-  steps: { packageInstanceId: string; outcome: LoadingOutcome; at: string }[]
+  steps: { packageInstanceId: string; outcome: LoadingOutcome; at: string; via?: 'qr' }[]
+  /** Số seal niêm phong thùng, ghi khi xếp xong (LM-104). */
+  seal?: { number: string; at: string; by: string | null }
 }
 
 export const DELIVERY_ISSUE_KINDS = ['damaged', 'missing', 'refused', 'other'] as const
@@ -53,6 +56,8 @@ export type StopProgress = {
   /** Số điểm giao, khớp vị trí trong `Trip.stops` + 1. */
   number: number
   unloadedIds: string[]
+  /** Kiện dỡ được xác nhận bằng quét QR (tập con của `unloadedIds`, LM-104). */
+  qrConfirmedIds?: string[]
   completedAt?: string
 }
 
@@ -127,10 +132,17 @@ export type Revision = {
   manuallyEdited: boolean
   /** Thứ tự xếp/dỡ được tính lại ở FE khi Duyệt (D-32); UI gắn nhãn khi `true`. */
   ordersRecomputed: boolean
+  /** Mục tiêu và thuật toán của lần chạy tạo revision (LM-104); revision đã duyệt giữ của revision nguồn. */
+  run?: RunSettings
+  /** Chỉ ở revision đã duyệt: người bấm Duyệt (`null` khi không có phiên — seed cũ, test). */
+  approvedBy?: string | null
 }
 
-/** Kết quả tối ưu cần lưu: `request` đã gửi service và `result` nhận về. `jobId` lấy từ `result`. */
-export type NewRevision = Pick<Revision, 'tripId' | 'request' | 'result'>
+/**
+ * Kết quả tối ưu cần lưu: `request` đã gửi service và `result` nhận về. `jobId` lấy từ `result`. `run` vắng thì kho ghi mục tiêu và
+ * thuật toán mặc định (`DEFAULT_RUN_SETTINGS`).
+ */
+export type NewRevision = Pick<Revision, 'tripId' | 'request' | 'result'> & { run?: RunSettings }
 
 /** Trạng thái xe (D-53): suy từ chuyến đang chạy, riêng bảo dưỡng đặt tay. */
 export type VehicleStatus = 'available' | 'in_use' | 'maintenance'
@@ -145,7 +157,7 @@ export type VehicleState = {
 }
 
 /** Dữ liệu tạo người dùng: kho cấp mã, trạng thái hoạt động và mật khẩu tạm. */
-export type NewUser = Pick<User, 'fullName' | 'email' | 'phone' | 'role' | 'depot'>
+export type NewUser = Pick<User, 'fullName' | 'email' | 'phone' | 'role' | 'depot'> & Partial<Pick<User, 'companyId'>>
 
 export type UserChanges = Partial<Pick<User, 'fullName' | 'email' | 'phone' | 'role' | 'depot'>>
 
@@ -169,6 +181,8 @@ export type MockDbOptions = {
   today?: string
   /** Đồng hồ cho dữ liệu ghi mới (thời điểm tạo, sự kiện). Mặc định giờ máy. */
   now?: () => Date
+  /** Nguồn ngẫu nhiên [0, 1) cho mã QR của kiện đăng ký mới (LM-104). Mặc định bộ có hạt giống cố định (tất định); app truyền `Math.random`. */
+  random?: () => number
 }
 
 export type { DeliveryIssueInput, LoadingStepInput, MockDb, TemporaryPassword } from './db-api'

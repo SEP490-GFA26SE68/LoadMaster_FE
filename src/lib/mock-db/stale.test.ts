@@ -21,6 +21,8 @@ test('a result is added as a revision stamped with the input version of the trip
     createdAt: '2026-09-15T08:30:00.000Z',
     manuallyEdited: false,
     ordersRecomputed: false,
+    // LM-104: nơi gọi không chọn thì kho ghi mục tiêu và thuật toán mặc định
+    run: { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF' },
   })
   expect(await db.listRevisions(trip.id)).toStrictEqual([revision])
   expect(await db.getRevision(revision.id)).toStrictEqual(revision)

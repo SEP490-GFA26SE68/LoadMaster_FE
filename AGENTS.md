@@ -10,7 +10,7 @@ dấu *(đã điều chỉnh)* là chỗ hướng đi ban đầu đã đổi và
 
 LoadMaster là hệ thống lập kế hoạch và tối ưu chất xếp hàng hóa 3D cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam. Đây là repo frontend.
 
-Giao diện **tiếng Việt**. Một codebase responsive phục vụ 5 vai trò:
+Giao diện **tiếng Việt**. Một codebase responsive phục vụ 7 vai trò (hai vai trò cuối thêm cho Review 1, *bổ sung 27/09/2026, LM-104*):
 
 | Vai trò | Thiết bị | Đặc điểm |
 |---|---|---|
@@ -19,6 +19,8 @@ Giao diện **tiếng Việt**. Một codebase responsive phục vụ 5 vai trò
 | Driver | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
 | Manager | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo |
 | Admin | Desktop | Người dùng, phân quyền, nhật ký |
+| Manufacturer (nhà sản xuất) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
+| Logistics (công ty logistics) | Tablet / điện thoại tại kho | Quét QR nhận từng kiện của lô hàng |
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
@@ -26,7 +28,14 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 **giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo);
 mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
-E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 17/09/2026)* Đăng nhập xong mở
+E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 27/09/2026, LM-104)* Quyền Review 1
+thêm **cộng dồn** qua `permissionsOf(role)` (`ROLE_PERMISSIONS` + `REVIEW1_EXTRA`; đọc quyền luôn qua `can`/`permissionsOf`, không đọc
+thẳng `ROLE_PERMISSIONS`): `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics), `orders.view`/`orders.edit`
+(điều phối; quản lý chỉ xem), `plans.review` (quản lý — hàng đợi `/duyet`), `vehicleTypes.edit` (điều phối). Tài khoản nhà sản xuất / logistics
+gắn `User.companyId` (`MFR-…`, `LOG-…`); kho lọc dữ liệu theo công ty như server (nhà sản xuất chỉ thấy kiện, lô của mình; logistics chỉ nhận lô
+giao cho công ty mình). Hai vai trò này dùng khung ứng dụng (thanh ngang), màn chính `/kien-hang` và `/nhan-hang`. Mục điều hướng Review 1 khai
+`roles` trong `NAV_ITEMS` để chỉ hiện cho vai trò dùng hằng ngày — quản trị viên mở các màn đó bằng đường dẫn, thanh ngang của họ giữ 7 mục cho
+vừa 1.366 px. Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
 quản trị `/nguoi-dung`); liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
@@ -82,6 +91,8 @@ recharts                 — 3 biểu đồ bảng điều khiển (LM-090, D-48
 write-excel-file         — xuất báo cáo .xlsx: import('write-excel-file/browser') khi bấm (LM-090)
 read-excel-file          — nhập kiện .xlsx: import('read-excel-file/browser') khi mở file (LM-093)
 dnd-kit                  — kéo thả thứ tự điểm giao, ghim kiện
+qrcode-generator         — mã hoá QR (MIT, không phụ thuộc) cho components/QrCode (LM-104); quét QR dùng BarcodeDetector gốc
+                           của trình duyệt trong components/QrScanDialog, không thêm thư viện quét
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
 motion                   — animation 2D
@@ -131,7 +142,8 @@ src/
     design-system/      2 trang tài liệu bàn giao (/kieu-dang, /thanh-phan)
   components/ui/        primitive tự viết trên Radix
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
-                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu)...
+                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
+                        ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -142,10 +154,19 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
+    packages-source/    loại kiện, kiện đăng ký, nhãn QR — nhà sản xuất (LM-104)
+    shipments/          lô hàng giao công ty logistics (LM-104)
+    receiving/          logistics quét QR nhận hàng (LM-104)
+    orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
+    review/             hàng đợi chờ duyệt, quyết định của quản lý (LM-104)
+    vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
-                        bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083)
+                        bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
+                        Review 1 (LM-104): công ty, loại kiện, kiện đăng ký + mã QR, lô hàng + nhận hàng, đơn hàng, quyết định
+                        duyệt, lần chạy tối ưu, loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
+                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -784,6 +805,16 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 *(đã điều chỉnh 19/09/2026)* Không còn màn nào giữ dữ liệu nghiệp vụ ở `useState`: Đội xe (LM-040), Người dùng (LM-092, `users-api.ts` →
 `useUsersQuery` + mutation), Nhật ký (`audit-api.ts`), kho và tài xế (LM-086/087) đều đọc/ghi kho mock qua Query. Trạng thái xe đọc
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.
+
+*(bổ sung 27/09/2026, LM-104)* Dữ liệu 5 luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `shipments-api.ts`,
+`receiving-api.ts`, `orders-api.ts`, `review-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
+chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
+`['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['review', …]`, `['vehicle-types', …]` (không đặt
+dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, nhãn, báo cáo, lần chạy, quyết định duyệt)
+nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu lọc theo công ty có mã người dùng trong khoá.
+Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng. Mã QR là chuỗi
+ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
+Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
 
 ### Dữ liệu dùng chung và tối ưu *(bổ sung 15/09/2026, D-06, D-30, D-31)*
 

@@ -79,7 +79,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
   const panel = page.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng', exact: true })
   await expect(panel.getByRole('heading', { level: 2, name: 'Nguyễn Thanh Tùng', exact: true })).toBeFocused()
   await expect(panel).toContainText('0901 234 567')
-  await expect(panel.getByRole('listitem')).toHaveCount(8)
+  await expect(panel.getByRole('listitem')).toHaveCount(11)
   await expect(phoneHeader).toHaveCount(0)
 
   // Panel nằm cạnh bảng, không xuống dưới; không có gì cuộn ngang

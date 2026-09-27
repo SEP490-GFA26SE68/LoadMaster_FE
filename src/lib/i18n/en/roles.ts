@@ -7,4 +7,6 @@ export const roles = {
   driver: 'Driver',
   manager: 'Manager',
   admin: 'System administrator',
+  manufacturer: 'Manufacturer',
+  logistics: 'Logistics company',
 } satisfies Dictionary<typeof source>

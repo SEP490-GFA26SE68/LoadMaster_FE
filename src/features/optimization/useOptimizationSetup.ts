@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import type { OptimizationRequest } from '@/domain/models'
+import type { RunSettings } from '@/lib/mock-db'
 import type { OptimizationProgress } from '@/services/optimization'
 import { changeTripVehicle, fetchOptimizationSetup, runOptimization } from './optimization-api'
 
@@ -30,10 +31,10 @@ export function useOptimizationRun(tripId: string) {
   const controller = useRef<AbortController | null>(null)
   const [progress, setProgress] = useState<OptimizationProgress | null>(null)
   const mutation = useMutation({
-    mutationFn: ({ request, simulateFailure }: { request: OptimizationRequest; simulateFailure: boolean }) => {
+    mutationFn: ({ request, simulateFailure, run }: { request: OptimizationRequest; simulateFailure: boolean; run?: RunSettings }) => {
       controller.current = new AbortController()
       setProgress({ placed: 0, total: request.packages.reduce((sum, pkg) => sum + pkg.quantity, 0) })
-      return runOptimization({ tripId, request, simulateFailure, signal: controller.current.signal, onProgress: setProgress })
+      return runOptimization({ tripId, request, simulateFailure, run, signal: controller.current.signal, onProgress: setProgress })
     },
     onSettled: () => {
       controller.current = null

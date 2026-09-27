@@ -9,7 +9,26 @@ test('each role lands on its own screen and sees only its nav items', async ({ p
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe'])
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('manufacturer and logistics land on their Review 1 screens inside the app shell (LM-104)', async ({ page, login, browserErrors }) => {
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await login('/', 'manufacturer')
+  await page.waitForURL((url) => url.pathname === '/kien-hang')
+  await expect(page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true })).toBeVisible()
+  await expect(nav.getByRole('link')).toHaveText(['Kiện hàng', 'Lô hàng', 'Loại kiện'])
+  await expect(page.getByText('42 kiện đã đăng ký', { exact: true })).toBeVisible()
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('a logistics user opening the manufacturer screen gets 403 with a way back to receiving', async ({ page, login, browserErrors }) => {
+  await login('/kien-hang', 'logistics')
+  await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/nhan-hang')
+  await expect(page.getByText('8 kiện đang chờ quét nhận', { exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 

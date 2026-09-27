@@ -10,7 +10,7 @@ type UserSeed = Omit<User, 'lastActiveAt'> & {
 }
 
 /**
- * 12 người dùng (D-44): đủ 5 vai trò, mỗi vai trò có một tài khoản demo (5 tài khoản đầu, đăng nhập ở màn đăng nhập),
+ * 15 người dùng (D-44, LM-104): đủ 7 vai trò, mỗi vai trò có một tài khoản demo (tài khoản đầu tiên của vai trò, đăng nhập ở màn đăng nhập),
  * một nhân viên kho bị khoá và một điều phối viên chưa đăng nhập lần nào. Mã và email cố định.
  */
 const USERS: readonly UserSeed[] = [
@@ -26,6 +26,10 @@ const USERS: readonly UserSeed[] = [
   { id: 'US-0010', fullName: 'Trương Văn Lộc', email: 'loc.truong@loadmaster.vn', phone: '0912 345 670', role: 'driver', status: 'active', depot: 'Kho Long Bình', lastActive: [2, '18:10'] },
   { id: 'US-0011', fullName: 'Đỗ Thị Hạnh', email: 'hanh.do@loadmaster.vn', phone: '0913 456 781', role: 'warehouse', status: 'active', depot: 'Kho Sóng Thần', lastActive: [0, '05:45'] },
   { id: 'US-0012', fullName: 'Lý Minh Châu', email: 'chau.ly@loadmaster.vn', phone: '0914 567 892', role: 'manager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', lastActive: [4, '09:30'] },
+  // Review 1 (LM-104): nhà sản xuất và công ty logistics — tài khoản demo đầu tiên của mỗi vai trò, và một logistics của công ty khác
+  { id: 'US-0013', fullName: 'Phan Thị Thu Trang', email: 'sanxuat@loadmaster.vn', phone: '0915 234 108', role: 'manufacturer', status: 'active', depot: 'Công ty CP Thực phẩm Minh Phát', companyId: 'MFR-001', lastActive: [0, '08:20'] },
+  { id: 'US-0014', fullName: 'Huỳnh Văn Phước', email: 'logistics@loadmaster.vn', phone: '0916 345 219', role: 'logistics', status: 'active', depot: 'Kho Long Bình', companyId: 'LOG-001', lastActive: [0, '08:03'] },
+  { id: 'US-0015', fullName: 'Lâm Quốc Việt', email: 'viet.lam@phuongnam.vn', phone: '0917 456 320', role: 'logistics', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: 'LOG-002', lastActive: [3, '15:10'] },
 ]
 
 /** Người dùng seed, `lastActiveAt` tính từ ngày neo `today`. */
@@ -36,5 +40,5 @@ export function seedUsers(today: string): User[] {
   }))
 }
 
-/** Tài khoản demo hiện ở màn đăng nhập: tài khoản đầu tiên của mỗi vai trò. */
-export const DEMO_ACCOUNTS = USERS.slice(0, 5).map(({ id, role, email }) => ({ id, role, email }))
+/** Tài khoản demo hiện ở màn đăng nhập: tài khoản đầu tiên của mỗi vai trò, theo thứ tự trong seed. */
+export const DEMO_ACCOUNTS = USERS.filter((user, index) => USERS.findIndex((item) => item.role === user.role) === index).map(({ id, role, email }) => ({ id, role, email }))

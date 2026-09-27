@@ -1,6 +1,15 @@
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
-import { DELIVERY_ISSUE_KINDS, PACKAGE_CHANGE_FIELDS, type AuditAction, type AuditEvent } from '@/lib/mock-db'
+import {
+  DELIVERY_ISSUE_KINDS,
+  OPTIMIZATION_ALGORITHMS,
+  OPTIMIZATION_OBJECTIVES,
+  PACKAGE_CHANGE_FIELDS,
+  REVIEW_DECISION_KINDS,
+  RUN_FAILURE_CODES,
+  type AuditAction,
+  type AuditEvent,
+} from '@/lib/mock-db'
 import { ROLES, type Role } from '@/types/user'
 import { actorInitials } from './audit-look'
 
@@ -39,6 +48,9 @@ export type AuditLogRow = AuditRow & {
 const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
+  // LM-104
+  'count', 'packageTypeId', 'lastPackageId', 'logisticsCompanyId', 'received', 'customerName', 'tripId', 'suggestion', 'objective',
+  'algorithm', 'reasonCode', 'vehicleTypeId', 'sealNumber',
 ] as const
 
 const FIELD_NAMES = [
@@ -105,6 +117,17 @@ function targetOf({ target, params }: AuditEvent, directory: AuditDirectory): Au
     }
     case 'revision':
       return { id, label: null, href: null }
+    // Review 1 (LM-104): mở màn danh sách / chi tiết của đối tượng
+    case 'packageType':
+      return { id, label: saved, href: '/loai-kien' }
+    case 'package':
+      return { id, label: saved, href: `/kien-hang?q=${encodeURIComponent(id)}` }
+    case 'shipment':
+      return { id, label: saved, href: `/lo-hang/${encodeURIComponent(id)}` }
+    case 'order':
+      return { id, label: typeof params.customerName === 'string' ? params.customerName : saved, href: `/don-hang?q=${encodeURIComponent(id)}` }
+    case 'vehicleType':
+      return { id, label: saved, href: '/doi-xe/loai-xe' }
   }
 }
 
@@ -124,6 +147,15 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return isOneOf(DELIVERY_ISSUE_KINDS, value) ? t(`common.deliveryIssueKinds.${value}`) : value
     case 'role':
       return isOneOf(ROLES, value) ? t(`roles.${value}`) : value
+    // LM-104: mã của kho dịch qua nhánh của màn
+    case 'objective':
+      return isOneOf(OPTIMIZATION_OBJECTIVES, value) ? t(`runs.objectives.${value}`) : value
+    case 'algorithm':
+      return isOneOf(OPTIMIZATION_ALGORITHMS, value) ? t(`runs.algorithms.${value}`) : value
+    case 'reasonCode':
+      return isOneOf(RUN_FAILURE_CODES, value) ? t(`runs.failures.${value}`) : value
+    case 'suggestion':
+      return isOneOf(REVIEW_DECISION_KINDS, value) ? t(`review.decisions.${value}`) : value
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho
       return event.action === 'auth.signInFailed' && isOneOf(REASONS, value) ? t(`audit.log.reasons.${value}`) : value

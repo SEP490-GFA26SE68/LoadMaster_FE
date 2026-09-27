@@ -10,6 +10,8 @@ export const DEMO_EMAILS: Readonly<Record<Role, string>> = {
   warehouse: 'kho@loadmaster.vn',
   driver: 'taixe@loadmaster.vn',
   admin: 'quantri@loadmaster.vn',
+  manufacturer: 'sanxuat@loadmaster.vn',
+  logistics: 'logistics@loadmaster.vn',
 }
 export const DEMO_PASSWORD = 'loadmaster'
 

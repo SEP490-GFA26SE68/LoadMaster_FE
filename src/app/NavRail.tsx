@@ -1,4 +1,20 @@
-import { Box, LayoutDashboard, LogOut, ScrollText, Tablet, Truck, UserRound, Users, Warehouse } from 'lucide-react'
+import {
+  Box,
+  ClipboardCheck,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  PackageCheck,
+  ScanLine,
+  ScrollText,
+  Shapes,
+  Tablet,
+  Truck,
+  UserRound,
+  Users,
+  Warehouse,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { LanguageMenu } from '@/components/LanguageMenu'
@@ -12,13 +28,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { ROLE_HOME } from '@/features/auth/landing'
 import type { Permission } from '@/features/auth/permissions'
 import { useCan } from '@/features/auth/useCan'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { QuickSearch } from '@/features/search/QuickSearch'
 import { useT, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { initialsOf } from '@/types/user'
+import { initialsOf, type Role } from '@/types/user'
 import { BrandMark } from './BrandMark'
 import { useGlassFollow } from './useGlassFollow'
 
@@ -28,12 +45,24 @@ type NavItem = {
   icon: LucideIcon
   /** Mục chỉ hiện khi người đăng nhập có quyền mở màn đích (D-41). */
   permission: Permission
+  /**
+   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền). Mục của Review 1 (LM-104) chỉ hiện cho vai trò dùng nó hằng ngày: thanh
+   * ngang không chứa đủ mọi mục cho quản trị viên ở 1.366 px — quản trị viên vẫn mở được màn bằng đường dẫn.
+   */
+  roles?: readonly Role[]
 }
 
 /** Thứ tự và nhãn lấy từ thanh điều hướng trong bản design. */
 const NAV_ITEMS = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
+  // LM-104: đơn hàng của điều phối, hàng đợi duyệt của quản lý, nguồn hàng của nhà sản xuất, nhận hàng của logistics
+  { to: '/don-hang', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view', roles: ['dispatcher'] },
+  { to: '/duyet', labelKey: 'nav.review', icon: ClipboardCheck, permission: 'plans.review', roles: ['manager'] },
+  { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.register', roles: ['manufacturer'] },
+  { to: '/lo-hang', labelKey: 'nav.shipments', icon: PackageCheck, permission: 'shipments.manage', roles: ['manufacturer'] },
+  { to: '/loai-kien', labelKey: 'nav.packageTypes', icon: Shapes, permission: 'packages.register', roles: ['manufacturer'] },
+  { to: '/nhan-hang', labelKey: 'nav.receiving', icon: ScanLine, permission: 'receiving.operate', roles: ['logistics'] },
   { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
   { to: '/tai-xe', labelKey: 'nav.driver', icon: Box, permission: 'driver.operate' },
   { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
@@ -77,7 +106,7 @@ export function NavRail() {
   return (
     <header className="sky flex h-15 flex-none items-center gap-5 px-4 xl:gap-6 xl:px-shell">
       <Link
-        to="/"
+        to={can('dashboard.view') || !user ? '/' : ROLE_HOME[user.role]}
         aria-label={t('nav.home')}
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >
@@ -93,7 +122,7 @@ export function NavRail() {
         className="glass-nav relative flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-lg p-1 min-[1400px]:flex-none"
       >
         <span ref={followRef} aria-hidden className="glass-follow" />
-        {NAV_ITEMS.filter((item) => can(item.permission)).map(({ to, labelKey, icon: Icon }) => (
+        {NAV_ITEMS.filter((item: NavItem) => can(item.permission) && (item.roles === undefined || (user !== null && item.roles.includes(user.role)))).map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

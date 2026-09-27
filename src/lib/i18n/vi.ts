@@ -23,6 +23,14 @@ import { notifications } from './vi/notifications'
 import { search } from './vi/search'
 import { titles } from './vi/titles'
 import { pageHero } from './vi/pageHero'
+import { qr } from './vi/qr'
+import { sourcing } from './vi/sourcing'
+import { orders } from './vi/orders'
+import { review } from './vi/review'
+import { readiness } from './vi/readiness'
+import { vehicleTypes } from './vi/vehicleTypes'
+import { tripReport } from './vi/tripReport'
+import { runs } from './vi/runs'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -59,4 +67,12 @@ export const vi = {
   search,
   titles,
   pageHero,
+  qr,
+  sourcing,
+  orders,
+  review,
+  readiness,
+  vehicleTypes,
+  tripReport,
+  runs,
 } as const

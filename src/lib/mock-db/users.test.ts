@@ -30,11 +30,11 @@ test('an account created by the admin signs in with its temporary password; the 
   await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
   const input = { fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình' }
   const { user, temporaryPassword } = await db.createUser(input)
-  expect(user).toStrictEqual({ ...input, id: 'US-0013', status: 'active', lastActiveAt: null })
+  expect(user).toStrictEqual({ ...input, id: 'US-0016', status: 'active', lastActiveAt: null })
   expect(temporaryPassword).toMatch(/^[A-Za-z2-9]{10}$/)
   await expect(db.createUser({ ...input, email: 'YEN.PHAN@loadmaster.vn' })).rejects.toMatchObject({ code: 'EMAIL_TAKEN' })
   await db.signOut()
-  expect((await db.authenticate('yen.phan@loadmaster.vn', temporaryPassword)).id).toBe('US-0013')
+  expect((await db.authenticate('yen.phan@loadmaster.vn', temporaryPassword)).id).toBe('US-0016')
 })
 
 test('resetting a password invalidates the old one; changing it needs the current password and 8 characters', async () => {

@@ -47,6 +47,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.45.0",
     "motion": "^13.2.0",
+    "qrcode-generator": "^2.0.4",
     "react": "~19.2.0",
     "react-dom": "~19.2.0",
     "react-hook-form": "^7.87.0",

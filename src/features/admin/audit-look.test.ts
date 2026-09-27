@@ -6,8 +6,12 @@ import { actorInitials, auditActionLook } from './audit-look'
 /** Dáng của một dòng nhật ký (V2): icon theo nhóm hành động, tint theo nghĩa cố định của AGENTS mục 4, chữ tắt của người làm. */
 const toneOf = (actions: readonly AuditAction[]) => actions.map((action) => auditActionLook(action).tone)
 
-test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện, huỷ, đăng nhập sai, khoá tài khoản, đưa xe vào bảo dưỡng', () => {
-  const attention = ['delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn'] as const
+test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện, huỷ, đăng nhập sai, khoá tài khoản, bảo dưỡng, quyết định duyệt trả lại', () => {
+  const attention = [
+    'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
+    // LM-104: đơn bị huỷ / bỏ gán, phương án bị trả lại, lần chạy tối ưu hỏng
+    'order.cancelled', 'order.unassigned', 'review.rejected', 'review.reoptimizeRequested', 'review.changeSuggested', 'optimization.failed',
+  ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(
     AUDIT_ACTIONS.filter((action) => (attention as readonly string[]).includes(action)),

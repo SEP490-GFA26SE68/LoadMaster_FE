@@ -1,5 +1,8 @@
-/** Năm vai trò trong hệ thống (AGENTS.md mục 1). Tên hiển thị: key `roles.<vai trò>` của từ điển. */
-export const ROLES = ['dispatcher', 'warehouse', 'driver', 'manager', 'admin'] as const
+/**
+ * Vai trò trong hệ thống (AGENTS.md mục 1). Tên hiển thị: key `roles.<vai trò>` của từ điển. `manufacturer` (nhà sản xuất đăng ký
+ * kiện, giao lô hàng) và `logistics` (công ty logistics nhận hàng) thêm cho luồng 1 của Review 1 (LM-104).
+ */
+export const ROLES = ['dispatcher', 'warehouse', 'driver', 'manager', 'admin', 'manufacturer', 'logistics'] as const
 
 export type Role = (typeof ROLES)[number]
 
@@ -19,6 +22,11 @@ export type User = {
   depot: string
   /** ISO 8601; null khi chưa đăng nhập lần nào */
   lastActiveAt: string | null
+  /**
+   * Công ty của tài khoản nhà sản xuất hoặc logistics (`MFR-…`, `LOG-…`, LM-104): kiện đăng ký thuộc công ty này, lô hàng chỉ công ty
+   * logistics được giao mới nhận. Vai trò khác không có.
+   */
+  companyId?: string
 }
 
 /** Chữ viết tắt hiển thị trên nav rail: lấy chữ cái đầu của hai từ cuối. */

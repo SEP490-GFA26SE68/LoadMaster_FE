@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { LoadingStepInput } from '@/lib/mock-db'
-import { completeLoading, fetchWarehouseTrip, fetchWarehouseTrips, recordLoadingStep, startLoading } from './warehouse-api'
+import {
+  completeLoading,
+  confirmLoadingByQr,
+  fetchTripLabels,
+  fetchWarehouseTrip,
+  fetchWarehouseTrips,
+  recordLoadingStep,
+  recordSeal,
+  startLoading,
+} from './warehouse-api'
 
 /**
  * Dữ liệu màn kho qua TanStack Query — component không gọi `warehouse-api.ts` trực tiếp (mục 9).
@@ -38,4 +47,22 @@ export function useRecordLoadingStepMutation(tripId: string) {
 export function useCompleteLoadingMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: () => completeLoading(tripId), onSettled: () => refreshAfterWrite(client) })
+}
+
+// Review 1 (LM-104)
+
+/** Nhãn QR của chuyến — danh sách chọn tay trong hộp thoại quét. Nhãn đổi khi dòng kiện đổi, không đổi trong phiên xếp. */
+export function useTripLabelsQuery(tripId: string) {
+  return useQuery({ queryKey: ['warehouse', 'labels', tripId], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
+}
+
+/** Quét QR xác nhận kiện của bước hiện tại; trả mã instance vừa ghi. Lỗi `QR_WRONG_PACKAGE` / `QR_NOT_IN_TRIP` hiện qua `dataErrorMessage`. */
+export function useConfirmLoadingByQrMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (token: string) => confirmLoadingByQr(tripId, token), onSettled: () => refreshAfterWrite(client) })
+}
+
+export function useRecordSealMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (sealNumber: string) => recordSeal(tripId, sealNumber), onSettled: () => refreshAfterWrite(client) })
 }

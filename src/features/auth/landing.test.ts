@@ -7,6 +7,9 @@ test('each role lands on its own screen when nothing else was asked for', () => 
   expect(landingPath('warehouse')).toBe('/kho')
   expect(landingPath('driver')).toBe('/tai-xe')
   expect(landingPath('admin')).toBe('/nguoi-dung')
+  // LM-104
+  expect(landingPath('manufacturer')).toBe('/kien-hang')
+  expect(landingPath('logistics', '/?lang=en')).toBe('/nhan-hang?lang=en')
 })
 
 test('opening the app root is not a choice: the role screen wins', () => {

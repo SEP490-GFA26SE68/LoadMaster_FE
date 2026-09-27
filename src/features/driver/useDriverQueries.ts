@@ -4,6 +4,8 @@ import type { DeliveryIssueInput } from '@/lib/mock-db'
 import { withUnload } from './delivery-progress'
 import {
   completeStop,
+  confirmUnloadByQr,
+  fetchDriverTripLabels,
   fetchDriverTrip,
   fetchMyTrips,
   recordUnload,
@@ -74,6 +76,21 @@ export function useRecordUnloadMutation(tripId: string) {
         data && { ...data, trip: withUnload(data.trip, stopNumber, packageInstanceId, unloaded) })
     },
     onSettled: () => (client.isMutating({ mutationKey: unloadKey(tripId) }) === 1 ? refreshAfterWrite(client) : undefined),
+  })
+}
+
+// Review 1 (LM-104): quét QR khi dỡ
+
+export function useDriverTripLabelsQuery(tripId: string) {
+  return useQuery({ queryKey: ['trips', 'driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
+}
+
+/** Quét QR xác nhận dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */
+export function useConfirmUnloadByQrMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ stopNumber, token }: { stopNumber: number; token: string }) => confirmUnloadByQr(tripId, stopNumber, token),
+    onSettled: () => refreshAfterWrite(client),
   })
 }
 

@@ -16,6 +16,8 @@ export function getMockDb(): MockDb {
   appDb ??= createMockDb({
     latencyMs: APP_LATENCY_MS,
     today: import.meta.env.MODE === 'test' ? SEED_ANCHOR_DATE : vnDate(new Date()),
+    // Mã QR của kiện đăng ký mới: ngẫu nhiên thật trong app, tất định dưới Vitest
+    ...(import.meta.env.MODE === 'test' ? {} : { random: Math.random }),
   })
   return appDb
 }

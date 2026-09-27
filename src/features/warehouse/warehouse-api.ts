@@ -1,4 +1,4 @@
-import { getMockDb, loadingRemaining, type LoadingStepInput, type Revision, type Trip } from '@/lib/mock-db'
+import { getMockDb, loadingRemaining, type LoadingStepInput, type Revision, type ScanResult, type Trip, type TripLabel } from '@/lib/mock-db'
 import { warehouseTripRows, type WarehouseTripRow } from './warehouse-trips'
 
 /**
@@ -40,4 +40,27 @@ export async function recordLoadingStep(tripId: string, step: LoadingStepInput):
 /** Hoàn tất xếp khi mọi kiện đã có kết quả — dùng lại khi lần hoàn tất tự động ở bước cuối không thành. */
 export function completeLoading(tripId: string): Promise<Trip> {
   return getMockDb().completeLoading(tripId)
+}
+
+// Review 1 (LM-104): quét QR khi xếp, số seal khi xếp xong, nhãn QR của chuyến
+
+/** Nhãn QR mọi kiện của chuyến: hộp thoại quét dùng làm danh sách chọn tay khi không quét được. */
+export function fetchTripLabels(tripId: string): Promise<TripLabel[]> {
+  return getMockDb().listTripLabels(tripId)
+}
+
+/**
+ * Quét QR kiện của bước hiện tại: kho ghi "đã xếp" (`via: 'qr'`). Kiện khác của chuyến: `QR_WRONG_PACKAGE` (kèm mã kiện cần xếp).
+ * Kiện cuối cùng thì hoàn tất xếp luôn, như `recordLoadingStep`.
+ */
+export async function confirmLoadingByQr(tripId: string, token: string): Promise<ScanResult<Trip>> {
+  const db = getMockDb()
+  const result = await db.confirmLoadingByQr(tripId, token)
+  const plan = await db.getRevision(result.trip.loading?.revisionId ?? '')
+  return loadingRemaining(result.trip, plan) === 0 ? { ...result, trip: await db.completeLoading(tripId) } : result
+}
+
+/** Ghi số seal niêm phong khi đã xếp xong (`loaded`), trước khi xe chạy. */
+export function recordSeal(tripId: string, sealNumber: string): Promise<Trip> {
+  return getMockDb().recordSeal(tripId, sealNumber)
 }
