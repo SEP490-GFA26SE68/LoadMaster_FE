@@ -1,19 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Ban } from 'lucide-react'
 import { useMemo, type RefObject } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/Dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Textarea } from '@/components/ui/Textarea'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useCancelTripMutation } from './useTripsQuery'
 
 type CancelValues = { reason: string }
 
+/** Kho giới hạn lý do huỷ ở 300 ký tự (D-45). */
+const MAX_REASON = 300
+
 /**
- * Huỷ chuyến trước khi giao (D-45, LM-088): lý do bắt buộc, nút nguy hiểm. Kho từ chối (pha không huỷ được, thiếu lý do) thì câu lỗi
- * hiện ngay trong hộp thoại, không đóng. Đóng hộp thoại trả tiêu điểm về nút mở menu thao tác.
+ * Huỷ chuyến trước khi giao (D-45, LM-088; V2.3 `HopThoaiChuyen.jpg`): đầu hộp thoại có ô icon đỏ, lý do bắt buộc kèm bộ đếm ký tự,
+ * nút nguy hiểm. Kho từ chối (pha không huỷ được, thiếu lý do) thì câu lỗi hiện ngay trong hộp thoại, không đóng. Đóng hộp thoại trả
+ * tiêu điểm về nút mở menu thao tác.
  */
 export function CancelTripDialog({ tripId, open, onOpenChange, returnFocusTo }: {
   tripId: string
@@ -22,11 +27,13 @@ export function CancelTripDialog({ tripId, open, onOpenChange, returnFocusTo }: 
   returnFocusTo?: RefObject<HTMLElement | null>
 }) {
   const t = useT()
+  const format = useFormat()
   const cancel = useCancelTripMutation(tripId)
   const schema = useMemo(() => z.object({
-    reason: z.string().trim().min(1, t('trips.cancel.reasonRequired')).max(300, t('trips.cancel.tooLong')),
+    reason: z.string().trim().min(1, t('trips.cancel.reasonRequired')).max(MAX_REASON, t('trips.cancel.tooLong')),
   }), [t])
   const form = useForm<CancelValues>({ resolver: zodResolver(schema), defaultValues: { reason: '' } })
+  const reason = useWatch({ control: form.control, name: 'reason' })
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -36,8 +43,8 @@ export function CancelTripDialog({ tripId, open, onOpenChange, returnFocusTo }: 
     onOpenChange(next)
   }
 
-  function handleSubmit({ reason }: CancelValues) {
-    cancel.mutate(reason, {
+  function handleSubmit({ reason: value }: CancelValues) {
+    cancel.mutate(value, {
       onSuccess: () => {
         toast.success(t('trips.cancel.done', { id: tripId }))
         handleOpenChange(false)
@@ -56,17 +63,17 @@ export function CancelTripDialog({ tripId, open, onOpenChange, returnFocusTo }: 
         }}
       >
         <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
-          <div className="flex flex-col gap-4 px-7 pt-6 pb-2">
-            <div className="flex flex-col gap-2">
-              <DialogTitle className="text-h2 font-semibold">{t('trips.cancel.title', { id: tripId })}</DialogTitle>
-              <DialogDescription className="text-body text-text-2">{t('trips.cancel.description')}</DialogDescription>
-            </div>
+          <DialogHeader icon={Ban} tone="danger" title={t('trips.cancel.title', { id: tripId })} description={t('trips.cancel.description')} />
+          <div className="flex flex-col gap-1.5 px-7 py-5">
             <Textarea
               label={t('trips.cancel.reason')}
               placeholder={t('trips.cancel.reasonPlaceholder')}
               error={form.formState.errors.reason?.message}
               {...form.register('reason')}
             />
+            <span className="self-end text-note text-ink-3 tabular-nums">
+              {t('trips.cancel.counter', { count: format.integer(reason.length), max: format.integer(MAX_REASON) })}
+            </span>
             {cancel.isError ? (
               <p role="alert" className="text-caption text-danger">{dataErrorMessage(cancel.error, t)}</p>
             ) : null}

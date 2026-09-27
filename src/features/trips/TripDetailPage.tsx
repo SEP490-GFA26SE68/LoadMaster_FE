@@ -1,24 +1,20 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { TripLockBanner } from '@/components/TripLockBanner'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import type { CargoPackage } from '@/domain/models'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { CargoSummaryCard } from './CargoSummaryCard'
-import { FragileNote } from './FragileNote'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { RouteDiagram } from './RouteDiagram'
-import { StopList } from './StopList'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
 import { TripDetailHeader } from './TripDetailHeader'
-import { TripProgressCard } from './TripProgressCard'
+import { TripDetailSide } from './TripDetailSide'
 import {
   useDeletePackageMutation,
   useDuplicatePackageMutation,
@@ -27,11 +23,12 @@ import {
   useTripDetailQuery,
   useTripStopsMutation,
 } from './useTripsQuery'
-import { VehicleCard } from './VehicleCard'
 
 /**
- * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097): sơ đồ tuyến, xe và tài xế, thứ tự điểm giao kéo thả, tóm
- * tắt hàng, tiến trình, bảng kiện và nhập kiện từ file.
+ * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097; V2.3 LM-103): dải trời có tên chuyến, tiến trình và banner
+ * theo pha; card sơ đồ tuyến đè lên đáy dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
+ * phải (tóm tắt hàng, phương tiện, sự cố). Chọn một kiện thì cột phải thành panel kiện và sơ đồ tuyến thu về cột trái
+ * (`ChiTietChuyenKien.jpg`).
  * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
  * xếp, banner nói lý do và mọi thao tác sửa ẩn đi.
  */
@@ -48,7 +45,7 @@ export function TripDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [draft, setDraft] = useState<CargoPackage | null>(null)
   const [importing, setImporting] = useState(false)
-  // Điểm giao đang lọc bảng kiện: cột điểm giao bên trái và ô chọn trên bảng dùng chung (V2)
+  // Điểm giao đang lọc bảng kiện: điểm trên sơ đồ tuyến và ô chọn trên bảng dùng chung
   const [stopFilter, setStopFilter] = useState<number | null>(null)
 
   const trip = query.data?.trip
@@ -102,31 +99,21 @@ export function TripDetailPage() {
           <Button variant="secondary" asChild><Link to="/chuyen">{t('common.backToTrips')}</Link></Button>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-shell pt-6 pb-8">
-          <TripLockBanner trip={trip} />
-          {/* V2: tiến trình ngang chiếm cả hàng (tới 7 mốc); sơ đồ tuyến gập được để bảng kiện lên cao */}
-          <TripProgressCard trip={trip} />
-          {/* Dấu đã giao chỉ khi chuyến đang giao hoặc đã hoàn thành (LM-097) — khi đó sơ đồ mở sẵn */}
-          <RouteDiagram
-            collapsible
-            defaultOpen={delivered}
-            stops={stops}
-            delivery={delivered ? trip.delivery : undefined}
-          />
-
+        // V2.3: vùng cuộn đè lên đáy dải trời (`sky-overlap`), card sơ đồ tuyến nằm nửa trên dải
+        <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-8">
           {/*
-            V2: trái là tóm tắt hàng và thứ tự điểm giao (bấm để lọc bảng), giữa là bảng kiện, phải là phương tiện; chọn một kiện thì
-            cột phải thành panel kiện (xem + form). Từ 1.536 px đủ ba cột như V2; 1.280–1.535 px thẻ phương tiện xuống dưới cột trái để
-            bảng kiện giữ ~1.050 px (ba cột ở 1.366 px chỉ còn ~650 px, tên kiện bị cắt). Hẹp hơn thì xếp chồng một cột (LM-095).
+            Không chọn kiện: sơ đồ tuyến chiếm cả hàng, dưới là bảng kiện và cột phải 360 px. Chọn một kiện: panel kiện chiếm cột phải
+            452 px từ đỉnh vùng, sơ đồ tuyến thu về cột trái (`ChiTietChuyenKien.jpg`). Hẹp hơn 1.280 px thì xếp chồng một cột.
             Vị trí đổi bằng grid-template-areas, không dựng thẻ hai lần.
           */}
-          <div className={cn('grid items-start gap-5', editing
-            ? 'xl:grid-cols-[272px_minmax(0,1fr)_336px] xl:[grid-template-areas:"left_main_side"]'
-            : 'xl:grid-cols-[272px_minmax(0,1fr)] xl:[grid-template-areas:"left_main"_"side_main"] 2xl:grid-cols-[272px_minmax(0,1fr)_336px] 2xl:[grid-template-areas:"left_main_side"]')}>
-            <div className="flex min-w-0 flex-col gap-4 xl:[grid-area:left]">
-              <CargoSummaryCard summary={summary} />
-              <StopList
+          <div className={cn('grid items-start gap-4', editing
+            ? 'xl:grid-cols-[minmax(0,1fr)_452px] xl:[grid-template-areas:"route_side"_"main_side"]'
+            : 'xl:grid-cols-[minmax(0,1fr)_360px] xl:[grid-template-areas:"route_route"_"main_side"]')}>
+            <div className="min-w-0 xl:[grid-area:route]">
+              {/* Trạng thái giao chỉ khi chuyến đang giao hoặc đã hoàn thành (LM-097) */}
+              <RouteDiagram
                 stops={stops}
+                delivery={delivered ? trip.delivery : undefined}
                 readOnly={!editable}
                 onReorder={(next) => stopsMutation.mutate(next)}
                 onRemove={handleRemoveStop}
@@ -151,7 +138,8 @@ export function TripDetailPage() {
             </div>
 
             {editing ? (
-              <div className="min-w-0 xl:sticky xl:top-0 xl:[grid-area:side]">
+              // Ô lưới giãn hết hai hàng để panel tự dính (sticky, card riêng của panel) khi cuộn bảng kiện; không bọc thêm card
+              <div className="min-w-0 xl:self-stretch xl:[grid-area:side]">
               <PackageFormPanel
                 key={editing.id}
                 value={editing}
@@ -167,9 +155,8 @@ export function TripDetailPage() {
               />
               </div>
             ) : (
-              <div className="flex min-w-0 flex-col gap-4 xl:[grid-area:side]">
-                <VehicleCard vehicle={vehicle} tripId={tripId} driverId={trip.driverId} driver={query.data?.driver} canChange={editable} usage={summary} />
-                <FragileNote packages={trip.packages} />
+              <div className="min-w-0 xl:[grid-area:side]">
+                <TripDetailSide trip={trip} vehicle={vehicle} driver={query.data?.driver ?? null} summary={summary} editable={editable} />
               </div>
             )}
           </div>

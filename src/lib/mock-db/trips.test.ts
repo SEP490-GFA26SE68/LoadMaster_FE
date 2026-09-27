@@ -40,3 +40,35 @@ test('revisions cannot be listed or added for a trip that does not exist', async
   const newRevision = { tripId: 'TRIP-404', request: twoCartonRequest(), result: twoCartonResult() }
   await expect(db.addRevision(newRevision)).rejects.toMatchObject(missingTrip)
 })
+
+test('an edit that changes one value logs it before → after; an edit of several values logs only the field names', async () => {
+  const db = createMockDb()
+  const trip = await db.getTrip('TRIP-2026-0914')
+  const latest = async () => (await db.listEvents({ targetId: trip.id }))[0]
+
+  await db.updateTrip(trip.id, { name: 'Tuyến Dĩ An – Biên Hoà' })
+  expect((await latest())?.params).toStrictEqual({ fields: 'name', before: trip.name, after: 'Tuyến Dĩ An – Biên Hoà' })
+
+  await db.updateTrip(trip.id, { driverId: null })
+  expect((await latest())?.params).toStrictEqual({ fields: 'driverId', before: trip.driverId, after: '' })
+
+  const [first, ...rest] = trip.packages
+  await db.updateTrip(trip.id, { packages: [{ ...first!, quantity: 40 }, ...rest] })
+  expect((await latest())?.params).toStrictEqual({ fields: 'packages', packageId: 'PKG-001', field: 'quantity', before: 38, after: 40 })
+
+  // Hướng đặt là danh sách: chỉ ghi mã kiện
+  await db.updateTrip(trip.id, { packages: [{ ...first!, quantity: 40, allowedOrientations: ['LWH'] }, ...rest] })
+  expect((await latest())?.params).toStrictEqual({ fields: 'packages', packageId: 'PKG-001' })
+
+  // Hai dòng kiện đổi, hoặc hai trường chuyến đổi: không có trước → sau
+  await db.updateTrip(trip.id, { packages: trip.packages.map((pkg) => ({ ...pkg, quantity: pkg.quantity + 1 })) })
+  expect((await latest())?.params).toStrictEqual({ fields: 'packages' })
+  await db.updateTrip(trip.id, { name: 'Tuyến Q.7', scheduledDate: '2026-09-30' })
+  expect((await latest())?.params).toStrictEqual({ fields: 'name,scheduledDate' })
+})
+
+test('the seeded stale trip logs which package line changed after approval, before → after', async () => {
+  const db = createMockDb()
+  const edit = (await db.listEvents({ targetId: 'TRIP-013' })).find((event) => event.action === 'trip.updated')
+  expect(edit?.params).toStrictEqual({ fields: 'packages', packageId: 'PKG-001', field: 'quantity', before: 80, after: 86 })
+})

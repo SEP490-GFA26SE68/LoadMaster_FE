@@ -93,6 +93,11 @@ export const audit = {
       kind: 'Loại sự cố',
       stops: 'Số điểm giao',
       issues: 'Sự cố',
+      /** Sửa đúng một giá trị (V2.3, quyết định 2): dòng kiện, trường và giá trị trước → sau. */
+      packageId: 'Kiện',
+      field: 'Trường',
+      before: 'Trước',
+      after: 'Sau',
     },
     /** Giá trị của tham số `fields`: tên trường chuyến hoặc tài khoản đã sửa. */
     fieldNames: {
@@ -110,5 +115,18 @@ export const audit = {
     },
     /** Mã lý do đăng nhập không thành công. */
     reasons: { suspended: 'Tài khoản đã bị khoá' },
+    /** Giá trị của tham số `field`: trường của một dòng kiện (`PACKAGE_CHANGE_FIELDS` của kho). */
+    packageFields: {
+      name: 'Tên kiện',
+      lengthCm: 'Dài',
+      widthCm: 'Rộng',
+      heightCm: 'Cao',
+      weightKg: 'Khối lượng',
+      quantity: 'Số lượng',
+      deliveryStop: 'Điểm giao',
+      fragilityLevel: 'Mức dễ vỡ',
+      maxTopLoadKg: 'Tải tối đa bên trên',
+      priority: 'Ưu tiên',
+    },
   },
 } as const

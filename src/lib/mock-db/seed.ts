@@ -11,6 +11,7 @@ import { seedTrip } from './seed-trip'
 import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
 import { SEED_PASSWORD, seedUsers } from './seed-users'
 import { seedVehicles } from './seed-vehicles'
+import { tripChangeParams } from './trip-changes'
 import type { Revision, Trip } from './types'
 
 export type SeedData = {
@@ -129,9 +130,11 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: Plan, 
 
   if (spec.outcome === 'stale' && spec.staleEdit) {
     const { line, quantity } = spec.staleEdit
-    trip = { ...trip, inputVersion: 2, packages: packages.map((pkg, i) => (i === line ? { ...pkg, quantity } : pkg)) }
-    events.push({ at: vnTime(planDay, '11:40'), actorId: SEED_DISPATCHER, action: 'trip.updated', target, params: { fields: 'packages' } })
-    return trip
+    const edited: Trip = { ...trip, inputVersion: 2, packages: packages.map((pkg, i) => (i === line ? { ...pkg, quantity } : pkg)) }
+    // Như `updateTrip`: nhật ký giữ trước → sau của dòng kiện đã sửa (V2.3, quyết định 2)
+    const params = { fields: 'packages', ...tripChangeParams(trip, edited, ['packages']) }
+    events.push({ at: vnTime(planDay, '11:40'), actorId: SEED_DISPATCHER, action: 'trip.updated', target, params })
+    return edited
   }
   if (spec.outcome === 'cancelled') {
     const cancelledAt = at(-1, '18:05')

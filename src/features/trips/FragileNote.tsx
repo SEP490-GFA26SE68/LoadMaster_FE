@@ -15,11 +15,12 @@ export function FragileNote({ packages }: { packages: readonly CargoPackage[] })
   const count = fragile.reduce((sum, pkg) => sum + pkg.quantity, 0)
 
   return (
-    <section role="note" className="flex gap-2.5 rounded-lg bg-tint-amber px-4 py-3 text-tint-amber-fg">
-      <TriangleAlert aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
+    // V2.3: ô ghi chú hổ phách trong mục Tóm tắt hàng hoá (`ChiTietChuyen.jpg` .note)
+    <section role="note" className="flex gap-2.5 rounded-md border border-amber-200 bg-amber-50 p-3 text-small text-ink-strong">
+      <TriangleAlert aria-hidden className="mt-0.5 size-4 flex-none text-amber-700" strokeWidth={1.75} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-body font-semibold">{t('trips.packages.fragileTitle', { count })}</span>
-        <span className="text-caption">{t('trips.packages.fragileNote', { names: format.list(fragile.map((pkg) => pkg.name)) })}</span>
+        <span className="font-semibold text-amber-700">{t('trips.packages.fragileTitle', { count })}</span>
+        <span className="text-ink-2">{t('trips.packages.fragileNote', { names: format.list(fragile.map((pkg) => pkg.name)) })}</span>
       </div>
     </section>
   )

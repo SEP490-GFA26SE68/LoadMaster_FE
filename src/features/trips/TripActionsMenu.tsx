@@ -28,9 +28,9 @@ export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase'> }) 
         // Không modal: hộp thoại huỷ mở ngay từ một mục menu, menu modal sẽ để lại `pointer-events: none` trên body
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button ref={triggerRef} variant="secondary">
-              <Ellipsis strokeWidth={1.5} />
-              {t('trips.detail.actions')}
+            {/* V2.3: nút kính chỉ có icon trên dải trời; tên truy cập giữ "Thao tác" */}
+            <Button ref={triggerRef} variant="glass" className="size-10 px-0 [&_svg]:size-4.5" aria-label={t('trips.detail.actions')}>
+              <Ellipsis strokeWidth={1.75} aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -43,7 +43,7 @@ export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase'> }) 
               </DropdownMenuItem>
             ) : null}
             {canCancel ? (
-              <DropdownMenuItem className="text-danger [&_svg]:text-danger" onSelect={() => setCancelOpen(true)}>
+              <DropdownMenuItem tone="danger" onSelect={() => setCancelOpen(true)}>
                 <CircleX strokeWidth={1.5} />
                 {t('trips.detail.cancel')}
               </DropdownMenuItem>

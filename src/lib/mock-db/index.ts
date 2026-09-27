@@ -16,6 +16,7 @@ export {
   tripStatus,
 } from './operations'
 export { isStale } from './revisions'
+export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
 export { DEMO_ACCOUNTS, SEED_PASSWORD } from './seed-users'
 export {
   DELIVERY_ISSUE_KINDS,

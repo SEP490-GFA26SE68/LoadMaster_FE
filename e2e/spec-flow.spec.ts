@@ -66,6 +66,8 @@ for (const device of ['desktop', 'tablet'] as const) {
     await editPanel.getByRole('button', { name: 'Nhân bản', exact: true }).click()
     await expect(page.getByText('Đã tạo bản sao PKG-002')).toBeVisible()
     await expect(page.getByRole('row', { name: /Thùng sơn PKG-002 · 120 × 100 × 100 cm 200 kg 4/ })).toBeVisible()
+    // V2.3: panel kiện chiếm cột phải thay cho Tóm tắt hàng hoá — đóng panel bản sao để đọc lại tổng
+    await page.getByRole('complementary', { name: 'Kiện PKG-002' }).getByRole('button', { name: 'Đóng panel kiện', exact: true }).click()
     await expect(page.getByText(/Kiện\s*8\s*Thể tích\s*9,6 m³\s*Khối lượng\s*1\.600 kg/)).toBeVisible()
     await expect(panel).toHaveCount(0)
 
@@ -302,8 +304,9 @@ test('switching to English mid-flow keeps form input and formats numbers the Eng
   await page.getByRole('button', { name: 'Create trip', exact: true }).click()
   await expect(page.getByText('Created trip TRIP-015')).toBeVisible()
   await addPackageEn(page)
-  await expect(page.getByText(/1\.2 m³/)).toBeVisible()
-  // Dòng kiện, không lấy chữ đầu tiên khớp: sơ đồ tuyến gập sẵn cũng có "1 package · 1,234.5 kg"
+  // Tổng thể tích ở mục Tóm tắt hàng hoá; ô tỷ lệ bên dưới có thêm "1.2 m³ / 40.6 m³"
+  await expect(page.getByText('1.2 m³', { exact: true })).toBeVisible()
+  // Dòng kiện, không lấy chữ đầu tiên khớp: sơ đồ tuyến cũng có "1 package · 1,234.5 kg"
   await expect(page.getByRole('row', { name: /Tủ đông .*1,234\.5 kg/ })).toBeVisible()
 })
 

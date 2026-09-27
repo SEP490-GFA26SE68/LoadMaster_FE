@@ -33,7 +33,7 @@ test('a trip created with a run date and a driver is found again with the list f
   await expect(page.locator('header').getByText('Nháp', { exact: true })).toBeVisible()
 
   // Danh sách: lọc theo tài xế và ngày chạy thì còn đúng chuyến vừa tạo
-  await page.getByRole('link', { name: 'Quay lại danh sách chuyến', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Vị trí trang', exact: true }).getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
   await page.waitForURL(/\/chuyen$/)
   const filters = page.getByRole('search', { name: 'Tìm và lọc' })
   await filters.getByRole('combobox', { name: 'Tài xế', exact: true }).click()
@@ -88,7 +88,7 @@ test('cancelling a trip needs a reason, shows "Đã huỷ" and writes the cancel
     params: { reason: 'Khách đổi lịch nhận hàng sang tuần sau' },
   })
 
-  await page.getByRole('link', { name: 'Quay lại danh sách chuyến', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Vị trí trang', exact: true }).getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
   await expect(page.getByRole('row', { name: /TRIP-014/ })).toContainText('Đã huỷ')
   expect(browserErrors).toStrictEqual([])
 })

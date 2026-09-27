@@ -1,6 +1,7 @@
 import { found, nextId, put, sameData, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
+import { tripChangeParams } from './trip-changes'
 import type { MockDb, Trip, TripChanges } from './types'
 
 type TripMethods = Pick<MockDb, 'listTrips' | 'getTrip' | 'createTrip' | 'updateTrip' | 'cancelTrip'>
@@ -67,7 +68,7 @@ export function tripMethods(ctx: DbContext): TripMethods {
         for (const field of changed) Object.assign(next, { [field]: changes[field] })
         const inputChanged = changed.includes('vehicleId') || changed.includes('packages')
         next.inputVersion = current.inputVersion + (inputChanged ? 1 : 0)
-        ctx.log('trip.updated', { type: 'trip', id }, { fields: changed.join(',') })
+        ctx.log('trip.updated', { type: 'trip', id }, { fields: changed.join(','), ...tripChangeParams(current, next, changed) })
         return put(trips, next)
       }),
     cancelTrip: (id, reason) =>
