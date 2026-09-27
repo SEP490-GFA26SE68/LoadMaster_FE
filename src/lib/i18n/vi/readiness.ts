@@ -1,11 +1,21 @@
 /**
- * Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2 Review 1, LM-104): key trùng `READINESS_CODES` của `@/domain/constraints`. Mỗi mã có
- * nhãn, câu khi đạt và khi chưa đạt; riêng điểm giao có thêm câu cảnh báo. Số truyền vào đã format theo ngôn ngữ.
+ * Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2 Review 1, LM-104) — card ở cột phải Chi tiết chuyến: key `checks` trùng
+ * `READINESS_CODES` của `@/domain/constraints`. Mỗi mã có nhãn, câu khi đạt và khi chưa đạt; riêng điểm giao có thêm câu cảnh báo. Số
+ * truyền vào đã format theo ngôn ngữ.
  */
 export const readiness = {
-  title: 'Sẵn sàng tối ưu',
+  title: 'Kiểm tra trước khi tối ưu',
   ready: 'Sẵn sàng tối ưu',
   notReady: 'Chưa sẵn sàng tối ưu',
+  loading: 'Đang kiểm tra chuyến',
+  readyNote: 'Chuyến đủ điều kiện chạy tối ưu. Xếp được hết hay không vẫn do lần tối ưu quyết định.',
+  blocked: { one: '{count} mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.', other: '{count} mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.' },
+  status: { pass: 'Đạt', warn: 'Cảnh báo', fail: 'Chưa đạt' },
+  fix: {
+    editTrip: 'Sửa chuyến',
+    assignOrder: 'Gán đơn hàng',
+    reviewPackages: 'Xem kiện lỗi',
+  },
   checks: {
     VEHICLE_ASSIGNED: { label: 'Xe', pass: 'Đã chọn xe', fail: 'Chưa chọn xe, hoặc xe đang bảo dưỡng' },
     PACKAGES_PRESENT: { label: 'Kiện hàng', pass: '{count} kiện', fail: 'Chưa có kiện nào' },
