@@ -445,7 +445,7 @@ export const viewer = {
     nudgeGroup: 'Dịch chuyển kiện',
     decrease: 'Giảm {axis}',
     increase: 'Tăng {axis}',
-    axesHint: 'X: dọc thùng · Y: ngang thùng · Z: chiều cao. Nút dịch chuyển đi đúng bước cm, không tự hút.',
+    axesHint: 'X: dọc thùng · Y: ngang thùng · Z: chiều cao. Nắm mũi tên X, Y, Z trên kiện để kéo theo một trục; kéo lại gần chỗ cũ thì kiện hút về vị trí gốc. Nút dịch chuyển đi đúng bước cm, không tự hút.',
     rotation: 'Hướng xoay',
     plane: 'Mặt phẳng kéo',
     planes: {
@@ -477,6 +477,7 @@ export const viewer = {
       package: 'Mặt kiện {id}',
       obstacle: 'Mặt vật cản {id}',
       grid: 'Lưới',
+      original: 'Vị trí gốc',
     },
     /** Đường đo của `editorMeasurements` (mã `MeasurementLabel`). */
     guides: {

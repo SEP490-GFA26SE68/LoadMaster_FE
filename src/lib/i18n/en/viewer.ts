@@ -421,7 +421,7 @@ export const viewer = {
     nudgeGroup: 'Move package',
     decrease: 'Decrease {axis}',
     increase: 'Increase {axis}',
-    axesHint: 'X: along the cargo space · Y: across · Z: height. Move buttons step exactly in cm, without snapping.',
+    axesHint: 'X: along the cargo space · Y: across · Z: height. Grab the X, Y or Z arrow on the package to drag along one axis; drag back near its old spot and it snaps home. Move buttons step exactly in cm, without snapping.',
     rotation: 'Orientation',
     plane: 'Drag plane',
     planes: {
@@ -452,6 +452,7 @@ export const viewer = {
       package: 'Face of {id}',
       obstacle: 'Obstacle face {id}',
       grid: 'Grid',
+      original: 'Original position',
     },
     guides: {
       door: 'Door',

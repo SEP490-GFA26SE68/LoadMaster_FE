@@ -10,8 +10,8 @@ import { roundCm } from '@/domain/geometry'
 import { boxCenter, boxSize, fromScene, toScene } from '../scene/units'
 import { snapPosition } from './snapping'
 import { PLANE_AXES, type ManualEditor } from './useManualEditor'
-import type { GeometryResult } from './geometry'
-import { EditorAxes } from './EditorGuides'
+import type { Axis, GeometryResult } from './geometry'
+import { EditorAxisHandles } from './EditorAxisHandles'
 import { EditorSpatialFeedback } from './EditorSpatialFeedback'
 import { SceneCallout } from '../scene/SceneCallout'
 import { SceneTag, type SceneTagTone } from '../scene/SceneTag'
@@ -49,7 +49,24 @@ export function EditorProxy({ placement, state, editor }: {
   })
   useEffect(() => () => { cancel.current?.() }, [])
 
-  function handlePointerDown(event: ThreeEvent<PointerEvent>) {
+  // Vị trí gốc của kiện trong phương án: kéo về gần thì hút đúng chỗ cũ (LM-108)
+  const home = state.sceneModel.placements.find((item) => item.id === placement.id)?.position
+
+  /**
+   * Bắt đầu kéo. `axis` vắng: kéo thân kiện trên mặt phẳng kéo đang chọn. Có `axis` (nắm mũi tên, LM-108): kiện chỉ chạy theo trục đó —
+   * mặt phẳng kéo chứa trục và quay về phía camera, phần dời lấy hình chiếu lên trục.
+   */
+  /**
+   * Mũi tên chĩa gần thẳng về camera thì kéo theo nó không dời được bao nhiêu, và vùng nắm của nó phủ lên giữa kiện: nhường cú bấm cho thân
+   * kiện (không dừng lan truyền) để kéo trên mặt phẳng như cũ.
+   */
+  function handleGrabAxis(axis: Axis, event: ThreeEvent<PointerEvent>) {
+    const direction = axis === 'x' ? new Vector3(1, 0, 0) : axis === 'y' ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0)
+    if (Math.abs(event.ray.direction.dot(direction)) > 0.85) return
+    handlePointerDown(event, axis)
+  }
+
+  function handlePointerDown(event: ThreeEvent<PointerEvent>, axis?: Axis) {
     event.stopPropagation()
     if (placement.pinned || event.button !== 0 || cancel.current) return
     const object = group.current
@@ -57,9 +74,12 @@ export function EditorProxy({ placement, state, editor }: {
     const canvas = gl.domElement
     const controls = get().controls as ComponentRef<typeof CameraControls> | null
     const pointerId = event.pointerId
-    const normal = editor.plane === 'xy' ? new Vector3(0, 1, 0)
-      : editor.plane === 'xz' ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0)
-    if (Math.abs(event.ray.direction.dot(normal)) < 0.08) {
+    // Trục cm → hướng cảnh: x dọc thùng, y cm là z cảnh, z cm là y cảnh
+    const direction = axis === 'x' ? new Vector3(1, 0, 0) : axis === 'y' ? new Vector3(0, 0, 1) : axis === 'z' ? new Vector3(0, 1, 0) : null
+    const normal = direction
+      ? direction.clone().cross(event.ray.direction).cross(direction).normalize()
+      : editor.plane === 'xy' ? new Vector3(0, 1, 0) : editor.plane === 'xz' ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0)
+    if (normal.lengthSq() < 1e-6 || Math.abs(event.ray.direction.dot(normal)) < 0.08) {
       editor.preview.publish({ id: placement.id, position: placement.position, result: editor.inspect(placement), sources: [], dragging: false,
         message: t('viewer.editor.wrongView') }, true)
       return
@@ -85,12 +105,16 @@ export function EditorProxy({ placement, state, editor }: {
       pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1)
       raycaster.setFromCamera(pointer, camera)
       if (!raycaster.ray.intersectPlane(plane, hit)) return
+      const delta = hit.clone().sub(initialHit)
+      // Theo trục: chỉ giữ phần dời dọc trục, hai trục kia đứng yên
+      if (direction) { const along = delta.dot(direction); delta.copy(direction).multiplyScalar(along) }
       const requested = {
-        x: roundCm(placement.position.x + fromScene(hit.x - initialHit.x)),
-        y: roundCm(placement.position.y + fromScene(hit.z - initialHit.z)),
-        z: roundCm(placement.position.z + fromScene(hit.y - initialHit.y)),
+        x: roundCm(placement.position.x + fromScene(delta.x)),
+        y: roundCm(placement.position.y + fromScene(delta.z)),
+        z: roundCm(placement.position.z + fromScene(delta.y)),
       }
-      const snapped = editor.snapping ? snapPosition(placement, requested, state.placements, state.sceneModel.vehicle, PLANE_AXES[editor.plane])
+      const axes = axis ? [axis] : PLANE_AXES[editor.plane]
+      const snapped = editor.snapping ? snapPosition(placement, requested, state.placements, state.sceneModel.vehicle, axes, home)
         : { position: requested, sources: [], targets: [] }
       candidate = { ...placement, position: snapped.position }
       moved = true
@@ -147,8 +171,8 @@ export function EditorProxy({ placement, state, editor }: {
     <>
     <EditorSpatialFeedback placement={placement} state={state} editor={editor} />
     <group ref={group} name="editor-proxy" position={boxCenter(placement)}>
-      <EditorAxes />
-      <mesh scale={boxSize(placement)} onPointerDown={handlePointerDown} onClick={(e) => e.stopPropagation()}>
+      <EditorAxisHandles size={boxSize(placement)} disabled={placement.pinned} onGrab={handleGrabAxis} />
+      <mesh scale={boxSize(placement)} onPointerDown={(event) => handlePointerDown(event)} onClick={(e) => e.stopPropagation()}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial ref={material} transparent opacity={0.85} roughness={0.8} />
         <Edges color={readToken('--bg')} raycast={() => null} />

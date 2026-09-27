@@ -6,6 +6,8 @@ export type Axis = keyof PositionCm
 export const AXES: readonly Axis[] = ['x', 'y', 'z']
 export const EDITOR_RULES = Object.freeze({
   gridCm: 5, snapThresholdCm: 2,
+  /** Kéo về gần chỗ cũ trong khoảng này thì hút đúng vị trí gốc của phương án (LM-108): dễ trả kiện về mà không cần Khôi phục. */
+  homeSnapCm: 6,
   historyLimit: 200,
 })
 /** LM-034: nút dịch chuyển đi đúng 1, 5 hoặc 10 cm. */

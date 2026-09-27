@@ -758,6 +758,9 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(đã điều chỉnh, LM-035)* Tính hợp lệ khi kéo/thả/xoay/nudge/căn/khôi phục do constraint engine của domain quyết định (`editor/editor-engine.ts`, dựng một lần mỗi snapshot, `sync` theo placement hiệu lực trước mỗi lần kiểm nên undo/redo/reset không lệch): issue `error` dính tới kiện (chủ thể hoặc `relatedIds`) chặn commit, `warning` vẫn commit; câu qua `formatIssue`. Issue toàn phương án (trọng tâm) không chặn thao tác. Đo Node: snap + sync + kiểm ở 1.000 kiện p95 ≈ 2,7 ms.
 - Lịch sử giữ patch trước/sau theo ID, tối đa 200 lệnh, không snapshot placements mỗi lần di chuột. Ghim khóa move/rotate cho đến khi bỏ ghim. Reset mọi chỉnh sửa cần dialog; reset riêng bị chặn nếu vị trí gốc đang bị kiện khác chiếm.
 - Không tạo placement từ UnplacedPackage, không lưu draft qua phiên/trang và không coi kiểm tra frontend là kết quả tối ưu authoritative.
+- *(bổ sung 28/09/2026, LM-108)* **Tay kéo theo trục**: ba mũi tên X/Y/Z trên kiện đang chọn (`EditorAxisHandles`, số mesh cố định, vùng nắm
+  không vẽ, luôn vẽ đè); nắm mũi tên thì kiện chỉ chạy theo trục đó và chỉ hút mặt trên trục đó; kéo thân kiện vẫn theo mặt phẳng kéo. Kéo
+  một trục về trong 6 cm quanh vị trí trong phương án thì hút đúng vị trí gốc (`homeSnapCm`, thắng các mặt khác).
 - *(bổ sung 28/09/2026, LM-108)* **Trọng lực khi chỉnh tay** (`editor/gravity.ts`, từ nhánh `fix/update-animation` của minkoi): dời một
   kiện hợp lệ thì các kiện đang tựa lên nó mà mất chỗ đỡ rơi thẳng xuống mặt đỡ cao nhất bên dưới (kiện khác, nóc vật cản, sàn), rơi dây
   chuyền lên trên; chỉ đổi `z`, không trượt ngang; kiện đã ghim đứng yên. Kiện dời + các kiện rơi là **một** lệnh lịch sử

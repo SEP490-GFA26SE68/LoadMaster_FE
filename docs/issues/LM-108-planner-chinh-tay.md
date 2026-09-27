@@ -41,3 +41,20 @@ nút chính là "Lưu bản chỉnh": lưu thành phương án mới chưa duy�
   nhích kiện dưới ra 60 cm → kiện trên rơi z 50 → 0, hoàn tác một lần trả lại, Lưu bản chỉnh → đứng trong hàng đợi duyệt); `rbac` đổi theo
   quyền mới.
 - Kiểm tra: tsc, lint, build sạch; 979 passed unit/DOM; E2E đủ bộ 92/95 lần đầu — 2 test đo thời gian (`viewer-benchmark-cm`, `fleet-vehicle-preview`) chạy riêng xanh, `planner-compact` tablet sửa theo quyền mới rồi 4/4.
+
+### Tay kéo theo trục và hút về vị trí gốc (28/09/2026)
+
+Người dùng: kéo thả khó, "kéo một hồi không đưa thùng về chỗ cũ được". Kéo thân kiện là kéo tự do trên cả mặt phẳng kéo (X–Y, X–Z, Y–Z)
+nên khó giữ một hướng; ba trục X/Y/Z trên kiện chỉ là đường vẽ.
+
+- **Tay kéo theo trục** (`editor/EditorAxisHandles.tsx`): ba mũi tên X (dọc thùng), Y (ngang thùng), Z (chiều cao) mọc từ mặt kiện đang chọn,
+  luôn vẽ đè (không bị kiện khác che), rê chuột thì sáng `--highlight`. Nắm mũi tên nào kiện chỉ chạy theo trục đó: mặt phẳng kéo chứa trục
+  và quay về camera, phần dời lấy hình chiếu lên trục; hút mặt chỉ trên trục đó. Kéo thân kiện vẫn như cũ. Vùng nắm là hình trụ bán kính
+  4,5 cm không vẽ (`visible={false}` trên vật liệu vẫn nhận raycast); số mesh cố định (6 mesh vẽ + 3 vùng nắm), không theo số kiện. Kiện
+  ghim thì mũi tên mờ, không nắm được. Thay `EditorAxes` (đường trục không tương tác).
+- **Hút về vị trí gốc**: kéo một trục về trong 6 cm (`EDITOR_RULES.homeSnapCm`) quanh vị trí của kiện trong phương án thì trục đó hút đúng
+  vị trí gốc, thắng mọi mặt hút khác (`snapPosition(..., home)`, nguồn hút "Vị trí gốc"). Vẫn còn "Khôi phục kiện này" và hoàn tác.
+- Lỗi gặp khi làm: chiếu phần dời lên trục bằng `delta.copy(dir).multiplyScalar(delta.dot(dir))` — `copy` chạy trước nên mọi cú kéo nhảy đúng
+  1 đơn vị cảnh (100 cm); tính tích vô hướng trước rồi mới ghi.
+- Test: `tests/viewer-editor.test.ts` (+1, hút vị trí gốc); E2E `planner-manual-edit` (+1: nắm mũi tên Z nâng `PKG-004-13` lên, chỉ `z` đổi,
+  hạ về gần chỗ cũ thì hút đúng vị trí gốc).
