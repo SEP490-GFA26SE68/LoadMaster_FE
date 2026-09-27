@@ -109,6 +109,8 @@ const WHEEL_SCREENS: readonly Screen[] = [
   { name: 'vehicle-detail', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
   { name: 'fleet', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
   { name: 'audit', route: '/nhat-ky', ready: async (page) => { await expect(page.getByRole('row')).not.toHaveCount(0) } },
+  { name: 'packages', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /RPK-00/ }).first()).toBeVisible() } },
+  { name: 'labels', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
 ]
 
 test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page itself stays put', async ({ page, login }) => {
