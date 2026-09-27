@@ -384,6 +384,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
+  *(bổ sung 27/09/2026, LM-103)* Dấu `*` bắt buộc là `aria-hidden`, ô có `aria-required`: tên truy cập giữ đúng chữ nhãn ("Tên xe", không
+  "Tên xe *") — test đọc nhãn bằng `exact: true`.
 - **Tab**: `TabsList tone="light" | "sky"`, vạch `--cyan-500` / `--cyan-400`; `TabCount` Archivo, `tone="warn"` nền hổ phách.
 - **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
@@ -400,17 +402,20 @@ Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòn
 
 *(đã điều chỉnh 26/09/2026, V2.3)* Thanh tiêu đề của màn trong khung ứng dụng nằm trên **dải trời** nên cao theo nội dung (tiêu
 đề 32 px + mô tả, thêm tab nếu màn có), không còn cố định 72 px. Chỉ **56px** cho màn xem phương án 3D, vì ở đó chiều cao nhường cho
-khung 3D. Header riêng còn nền trắng (Chi tiết chuyến, form xe) giữ 72 px tới đợt của màn đó.
+khung 3D. Header riêng còn nền trắng (form xe) giữ 72 px tới đợt của màn đó.
 
 *(đã điều chỉnh 26/09/2026, V2.3)* Màn trong khung ứng dụng dùng `components/PageHero.tsx` trên dải trời (`.sky`): tiêu đề h1
 **Archivo 700 32 px rộng 112 %** chữ trắng, `meta` (số đếm, mã) mono `--sky-text-3`, một câu mô tả từ nhánh `pageHero` của từ điển,
 hành động ở phải, tab của màn (`TabsList tone="sky"`) truyền làm `children`. Ô icon `.hero-icon` của V2 đã bỏ. Luật của nó:
 `<h1>` chỉ chứa chữ tiêu đề (test đọc `exact: true`); hành động nằm trong **cùng** `<header>` với tiêu đề; mô tả ẩn dưới 768 px. Mô
-tả nói màn dùng để làm gì — không số, không trạng thái. **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp
+tả nói màn dùng để làm gì — không số, không trạng thái. *(đã điều chỉnh 27/09/2026, LM-103)* Ngoại lệ: dòng dưới tiêu đề được là
+**dòng số đếm lấy từ kho** (danh sách chuyến: "15 chuyến · 3 đang chạy · 2 cần bạn xử lý") hoặc **dòng dữ liệu của đối tượng** (chi tiết
+chuyến: ngày chạy · xe · tài xế) — không bao giờ là số nghĩ ra. **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp
 `.sky` gắn ảnh vào khung nhìn (`background-attachment: fixed`), không phải một khối bọc. **Card đè lên dải**: `overlap` kéo dải
 thêm `--sky-overlap` (44 px) và vùng cuộn đặt `sky-overlap` (`margin-top: -44px`, lề trên 0). Chỉ bật khi thứ đầu tiên của vùng cuộn
-là card nền đặc — chữ trần trên dải trời không đọc được (Bảng điều khiển có dòng chọn kỳ, Hồ sơ có cột thông tin: chưa bật). **Không** dùng `PageHero` khi tiêu đề là dữ liệu (mã chuyến ở Chi tiết chuyến, tên xe ở form xe) hay cho thanh 56 px
-của Planner; những màn đó giữ header riêng nhưng vẫn theo lề `px-shell`. Màn mới trong khung ứng dụng dùng `PageHero`.
+là card nền đặc — chữ trần trên dải trời không đọc được (Bảng điều khiển có dòng chọn kỳ, Hồ sơ có cột thông tin: chưa bật). *(đã điều chỉnh 27/09/2026, LM-103)* V2.3 cho tiêu đề là dữ liệu:
+Chi tiết chuyến dùng `PageHero` với tên tuyến, `crumbs` ("Chuyến hàng / TRIP-…"), `badge` (chip trạng thái, nằm ngoài `<h1>`) và
+`children` là bước tiến trình + banner theo pha. Thanh 56 px của Planner vẫn là header riêng theo lề `px-shell`. Màn mới trong khung ứng dụng dùng `PageHero`.
 Bản V2 gốc có hoạ tiết đường nét phía sau tiêu đề — người dùng chọn **không** đưa vào production (23/09/2026).
 
 *(bổ sung 23/09/2026, V2)* Lề ngang của thanh điều hướng, thanh tiêu đề và vùng cuộn dùng utility `px-shell` (`index.css`): 24 px,

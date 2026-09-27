@@ -1,6 +1,6 @@
 # Theo dõi tiến độ — LoadMaster FE MVP
 
-Cập nhật lần cuối: **26/09/2026**
+Cập nhật lần cuối: **27/09/2026**
 
 Tài liệu liên quan: [PRD](prd.md) · [Gói issue](issues/README.md) · [Build Spec](build-spec.md) · [AGENTS.md](../AGENTS.md) · [handoff.md](handoff.md)
 
@@ -33,6 +33,19 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 ---
 
 ## 2. Nhật ký
+
+### 27/09/2026 — V2.3 "Cyan kính", đợt 3: Chuyến hàng (LM-103); đối chiếu backend
+
+Gộp đợt 2 (PR #3) vào `developer`, tách `feat/v2-3-chuyen`. Phần dùng chung làm trước (`PageHero` có đường dẫn và chip cạnh tiêu đề,
+nút `skyGhost`), rồi bốn việc không chung file chạy song song trong worktree riêng: danh sách chuyến, form tạo/sửa, chi tiết chuyến
+(7 trạng thái), bảng + panel kiện; người điều phối gộp, nối prop giữa hai bên, chụp lại 12 màn và ghép với ảnh đích. Danh sách lệch và lệch
+có chủ ý ở [LM-103](issues/LM-103-v23-chuyen.md). Kho ghi trước → sau khi sửa chuyến/kiện (CHANGES quyết định 2). Dấu `*` bắt buộc
+thôi làm bẩn tên truy cập của ô nhập. 861 unit/DOM.
+
+Đối chiếu tài liệu "5 Main Flow — Review 1" với backend (`LoadMaster_BE`) và frontend: [backend-gap-2026-09-27.md](backend-gap-2026-09-27.md).
+Spring mới có một controller (loại xe); FastAPI có tối ưu + duyệt; luồng Register, Plan, Execute chưa có API. Frontend thiếu cả luồng 1
+(loại kiện, đăng ký kiện, QR, lô hàng, quét nhận hàng), đơn hàng, hàng đợi duyệt của quản lý, từ chối / yêu cầu tối ưu lại, quét QR ở kho
+và tài xế.
 
 ### 26/09/2026 — V2.3 "Cyan kính", đợt 2: thành phần (LM-102)
 

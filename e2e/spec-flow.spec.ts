@@ -21,7 +21,7 @@ for (const device of ['desktop', 'tablet'] as const) {
     // Xe "Truck 6m" có hốc bánh xe, tạo ở Đội xe
     await login('/doi-xe', 'admin')
     await page.getByRole('link', { name: 'Thêm xe', exact: true }).click()
-    await page.getByRole('textbox', { name: 'Tên xe *' }).fill('Truck 6m')
+    await page.getByRole('textbox', { name: 'Tên xe', exact: true }).fill('Truck 6m')
     // §15 "Tạo xe bằng cm/kg" + "Mọi field hiển thị đơn vị": ô lòng thùng là cm, tải trọng là kg
     const lengthField = page.getByRole('spinbutton', { name: 'Chiều dài lòng thùng', exact: true })
     await expect(lengthField).toHaveValue('600')

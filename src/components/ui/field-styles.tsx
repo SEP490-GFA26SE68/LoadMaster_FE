@@ -32,7 +32,8 @@ export function FieldLabel({ htmlFor, required, children }: { htmlFor: string; r
   return (
     <label htmlFor={htmlFor} className={fieldLabelClass}>
       {children}
-      {required ? <span className="text-danger"> *</span> : null}
+      {/* Dấu * chỉ để nhìn: tên truy cập của ô giữ đúng chữ nhãn ("Tên xe"), ô tự báo bắt buộc bằng aria-required */}
+      {required ? <span aria-hidden className="text-danger"> *</span> : null}
     </label>
   )
 }

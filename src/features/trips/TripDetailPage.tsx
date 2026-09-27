@@ -142,6 +142,7 @@ export function TripDetailPage() {
               <div className="min-w-0 xl:self-stretch xl:[grid-area:side]">
               <PackageFormPanel
                 key={editing.id}
+                tripId={tripId}
                 value={editing}
                 vehicle={vehicle}
                 stops={stops}
