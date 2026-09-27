@@ -335,6 +335,9 @@ export const trips = {
       weight: 'Khối lượng',
       quantity: 'SL',
       stop: 'Điểm',
+      /** Bảng dòng lỗi: mã · tên kiện, rồi mọi lỗi của dòng. */
+      package: 'Kiện',
+      problems: 'Lỗi',
     },
   },
   /** Bảng giữ chỗ khi danh sách chuyến đang tải. */
@@ -397,11 +400,21 @@ export const trips = {
     priority: 'Độ ưu tiên',
     mustLoad: 'Bắt buộc phải xếp',
     notes: 'Ghi chú',
+    optional: '(không bắt buộc)',
+    uprightHint: 'Kiện giữ thẳng đứng chỉ được đặt LWH hoặc WLH.',
+    minSupportRatioHint: 'Trong khoảng 0 đến 1.',
+    /** Đầu panel (V2.3): nhãn trước mã kiện. */
+    code: 'Kiện',
+    /** Cảnh báo đầu form: lưu thay đổi làm revision đang hiển thị lỗi thời (D-31). */
+    staleLead: 'Lưu thay đổi sẽ làm {revision} lỗi thời.',
+    staleApproved: 'Chuyến chuyển sang Cần xem lại, cần duyệt lại trước khi kho xếp.',
+    staleOptimized: 'Chuyến chuyển sang Cần xem lại, cần chạy tối ưu lại.',
     save: 'Lưu kiện',
     saveAndNew: 'Lưu và thêm tiếp',
     duplicate: 'Nhân bản',
     delete: 'Xoá kiện',
     close: 'Đóng panel kiện',
+    closeDialog: 'Đóng',
     saved: 'Đã lưu kiện {id}',
     duplicated: 'Đã tạo bản sao {id}',
     deleted: 'Đã xoá kiện {id}',
@@ -437,7 +450,6 @@ export const trips = {
       requirements: 'Yêu cầu',
       issues: 'Lỗi',
     },
-    hint: 'Chọn một kiện để xem kích thước và yêu cầu xếp.',
     search: 'Tìm mã hoặc tên kiện',
     filterStop: 'Lọc theo điểm giao',
     allStops: 'Tất cả điểm giao',
@@ -461,6 +473,10 @@ export const trips = {
     preview: {
       label: 'Hình kiện {size}, không theo vị trí xếp',
       dims: 'Dài × Rộng × Cao',
+      /** Nhãn đường kích thước trên hình kiện: D 60 · R 50 · C 50. */
+      lengthShort: 'D',
+      widthShort: 'R',
+      heightShort: 'C',
       quantity: 'Số lượng',
       each: 'Mỗi kiện',
       totalWeight: 'Tổng khối lượng',
