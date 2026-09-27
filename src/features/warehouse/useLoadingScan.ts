@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { QrScanOption } from '@/components/QrScanDialog'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { dataErrorMessage, useT, type TFunction } from '@/lib/i18n'
-import { isMockDbError, type MockDbError, type TripLabel } from '@/lib/mock-db'
+import { isMockDbError, type MockDbError } from '@/lib/mock-db'
 import { useConfirmLoadingByQrMutation, useTripLabelsQuery } from './useWarehouseQueries'
 
 /**
@@ -24,6 +24,13 @@ export function useLoadingScan({ tripId, pending, onConfirmed }: {
   const [error, setError] = useState<string | null>(null)
 
   const labelById = useMemo(() => new Map((labels.data ?? []).map((label) => [label.packageInstanceId, label])), [labels.data])
+  // Tên kiện lấy từ phương án của phiên (luôn có sẵn), nhãn chỉ bổ sung: nhãn tải riêng, quét trước khi nhãn về thì câu báo sai kiện
+  // vẫn phải có tên (máy CI chậm từng in mã thay tên)
+  const nameById = useMemo(() => {
+    const names = new Map((labels.data ?? []).map((label) => [label.packageInstanceId, label.name]))
+    for (const placement of pending) names.set(placement.id, placement.name)
+    return names
+  }, [labels.data, pending])
   const options = useMemo(
     () => pending.flatMap((placement): QrScanOption[] => {
       const label = labelById.get(placement.id)
@@ -47,7 +54,7 @@ export function useLoadingScan({ tripId, pending, onConfirmed }: {
         setOpen(false)
         onConfirmed(result.packageInstanceId, nextStep)
       },
-      onError: (failure) => setError(scanErrorMessage(failure, t, labelById)),
+      onError: (failure) => setError(scanErrorMessage(failure, t, nameById)),
     })
   }
 
@@ -55,14 +62,14 @@ export function useLoadingScan({ tripId, pending, onConfirmed }: {
 }
 
 /** Quét sai kiện: câu riêng nêu cả hai mã kèm tên kiện; lỗi khác của kho dùng câu chung (`dataErrors`). */
-export function scanErrorMessage(error: unknown, t: TFunction, labelById: ReadonlyMap<string, TripLabel>): string {
+export function scanErrorMessage(error: unknown, t: TFunction, nameById: ReadonlyMap<string, string>): string {
   if (isMockDbError(error) && error.code === 'QR_WRONG_PACKAGE') {
     const { expected, scanned } = (error as MockDbError<'QR_WRONG_PACKAGE'>).params
     return t('warehouse.scan.wrongPackage', {
       scanned,
-      scannedName: labelById.get(scanned)?.name ?? scanned,
+      scannedName: nameById.get(scanned) ?? scanned,
       expected,
-      expectedName: labelById.get(expected)?.name ?? expected,
+      expectedName: nameById.get(expected) ?? expected,
     })
   }
   return dataErrorMessage(error, t)
