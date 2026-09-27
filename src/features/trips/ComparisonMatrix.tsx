@@ -82,7 +82,7 @@ export function ComparisonMatrix({ cards, best, selectedId, onSelect, footer }: 
                   <td key={card.id} className={cn('py-3.5 pr-4 pl-11', cellTone(card))}>
                     <div className={cn('overflow-hidden rounded-md', card.id === selectedId && 'ring-2 ring-cyan-500')}>
                       <PlanThumbnail revisionId={card.id} request={card.revision.request} placements={card.revision.result.placements}
-                        totalCount={card.placedCount + card.unplacedCount} />
+                        totalCount={card.placedCount + card.unplacedCount} className="h-44" />
                     </div>
                   </td>
                 ))}

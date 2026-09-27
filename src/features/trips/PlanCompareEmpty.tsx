@@ -25,6 +25,7 @@ export function PlanCompareEmpty({ tripId, cards, canRun }: { tripId: string; ca
       <Card className="flex flex-none flex-col overflow-hidden">
         <EmptyState
           mascot="empty"
+          wide
           className="py-10"
           title={t('trips.compare.emptyTitle')}
           description={t('trips.compare.emptyDescription', { count: cards.length })}
@@ -75,7 +76,7 @@ function SavedRevision({ card }: { card: RevisionCardModel }) {
     <article aria-label={card.id} className="flex gap-5 rounded-lg border border-border bg-bg p-3.5 max-lg:flex-col">
       <div className="w-70 flex-none overflow-hidden rounded-md max-lg:w-full">
         <PlanThumbnail revisionId={card.id} request={card.revision.request} placements={card.revision.result.placements}
-          totalCount={card.placedCount + card.unplacedCount} />
+          totalCount={card.placedCount + card.unplacedCount} className="h-[150px]" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-3 py-0.5">
         <div className="flex flex-wrap items-center gap-2.5">

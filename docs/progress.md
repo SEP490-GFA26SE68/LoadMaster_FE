@@ -34,6 +34,13 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 27/09/2026 — V2.3 đợt 4: Tối ưu (LM-106); gộp PR #4, #5, #6
+
+- Gộp vào `developer`: PR #4 (đợt 3), #5 (Review 1, sau khi sửa câu quét sai kiện chờ nhãn tải — CI chậm lộ ra), #6 (thương hiệu).
+- Đợt 4, hai worktree song song: Thiết lập tối ưu (+ có lỗi, đang tối ưu, hộp thoại lỗi) và So sánh phương án (+ chưa đủ phương án).
+  Giữ nguyên phần LM-104 (mục tiêu, thuật toán, lịch sử lần chạy, banner quyết định). Dùng chung: `EmptyState wide`, `PlanThumbnail`
+  nhận chiều cao. 973/973 unit/DOM; 94/94 E2E.
+
 ### 27/09/2026 — Thương hiệu đợt 3: in ấn và màn kho (LM-105)
 
 Logo một màu trên nhãn QR (bản xem và bản in) và đầu báo cáo chuyến bản in; biểu tượng ở màn chính của kho. Không thêm logo vào thanh
