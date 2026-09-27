@@ -34,6 +34,9 @@ const buttonVariants = cva(
         danger:
           'border-none bg-danger text-white shadow-danger hover:bg-danger-hover disabled:bg-border disabled:text-text-disabled disabled:shadow-none',
         // Nút phụ đặt trên dải trời hoặc khung 3D (V2.3 .btn-glass): kính sáng mờ, chữ trắng. Chỉ dùng trên nền tối.
+        // Hành động phụ nhẹ nhất trên nền tối ("Huỷ" cạnh "Tạo chuyến" ở TaoChuyen.jpg): chữ trắng, không nền, rê chuột hiện kính mờ.
+        skyGhost:
+          'border-none bg-transparent text-sky-text hover:bg-sky-glass disabled:text-sky-text-2 disabled:opacity-60',
         glass:
           'border border-sky-glass-border bg-sky-glass text-sky-text backdrop-blur-[16px] hover:bg-sky-glass-hover disabled:text-sky-text-2 disabled:opacity-60',
       },
@@ -83,7 +86,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   // Nút chính V2.3 chữ tối nên spinner tối; nút nguy hiểm và nút kính chữ trắng
-  const isLight = variant === 'danger' || variant === 'glass'
+  const isLight = variant === 'danger' || variant === 'glass' || variant === 'skyGhost'
   const classes = cn(buttonVariants({ variant, size, block }), className)
 
   // Slot của Radix yêu cầu đúng một phần tử con, nên khi asChild không chèn spinner.
