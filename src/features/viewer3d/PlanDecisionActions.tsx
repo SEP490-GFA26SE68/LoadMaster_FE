@@ -27,7 +27,7 @@ export function PlanDecisionActions({ revisionId, vehicles, currentVehicleId }: 
   return (
     <>
       {/* Điện thoại và hàng gộp 1.280–1.679 px không còn chỗ: "Từ chối" là mục đầu của menu; tablet và từ 1.680 px là nút riêng */}
-      <Button variant="secondary" className="hidden h-14 px-4 text-body-lg md:flex xl:hidden min-[105rem]:flex min-[105rem]:h-10 min-[105rem]:px-3 min-[105rem]:text-body" onClick={() => setDialog('reject')}>
+      <Button variant="glass" className="hidden h-14 px-4 text-body-lg md:flex xl:hidden min-[105rem]:flex min-[105rem]:h-9.5 min-[105rem]:px-3 min-[105rem]:text-body" onClick={() => setDialog('reject')}>
         <XCircle strokeWidth={1.5} aria-hidden />
         {t('review.decide.reject')}
       </Button>
@@ -36,7 +36,7 @@ export function PlanDecisionActions({ revisionId, vehicles, currentVehicleId }: 
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" aria-label={more} className="size-14 px-0 xl:size-10">
+              <Button variant="glass" aria-label={more} className="size-14 px-0 xl:size-9.5">
                 <Ellipsis strokeWidth={1.5} aria-hidden />
               </Button>
             </DropdownMenuTrigger>

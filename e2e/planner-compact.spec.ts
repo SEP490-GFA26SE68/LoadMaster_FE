@@ -134,13 +134,15 @@ test('a plan awaiting approval keeps Approve and the other decisions on one row:
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason', async ({ page, login, browserErrors }, testInfo) => {
+test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason with the warehouse progress (V2.3)', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
   await login('/chuyen/TRIP-011/phuong-an')
   await page.locator('canvas').waitFor()
 
-  await expect(page.getByRole('status').filter({ hasText: 'phương án đã chốt' }))
-    .toHaveText('Chuyến đang xếp hàng — phương án đã chốt.')
+  // V2.3 Planner3DKhoa: lý do khoá, câu giải thích và dòng tiến độ kho lấy từ kho (seed TRIP-011: 110 / 280 kiện)
+  const lock = page.locator('[data-planner-lock="loading"]')
+  await expect(lock).toContainText('Chuyến đang xếp hàng — phương án đã chốt. Kho đang xếp hàng theo phương án đã duyệt')
+  await expect(lock).toContainText(/Kho đã xếp 110 \/ 280 kiện · bắt đầu \d{2}:\d{2} · \d{2}\/\d{2}/)
   for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }

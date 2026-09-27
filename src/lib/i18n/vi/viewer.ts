@@ -17,7 +17,25 @@ export const viewer = {
     /** Thay "Đã duyệt lúc" khi kho biết người duyệt (LM-104): đọc liền với dòng giờ + ngày bên dưới. */
     approvedBy: 'Duyệt bởi {name} lúc',
     compare: 'So sánh phương án',
+    /** Nhãn cạnh mã revision ở thanh trên (V2.3): bản lỗi thời, và lần chạy tắt "Bắt buộc thứ tự dỡ theo điểm giao". */
+    staleTag: 'Lỗi thời',
+    lifoOff: 'LIFO: tắt',
     staleBanner: 'Kết quả đã lỗi thời — xe hoặc kiện đã thay đổi sau lần tối ưu này.',
+    /** Dòng thứ hai của thanh lỗi thời (V2.3 `Planner3DLoiThoi`): lần sửa làm lỗi thời, số kiện phương án ↔ chuyến. */
+    staleSince: 'Sau lần tối ưu {time} · {date}:',
+    staleChange: '{field} {before} → {after}',
+    staleWhen: '({time} · {date}).',
+    staleWhenBy: '({time} · {date} · {name}).',
+    staleFields: 'đã sửa {fields}',
+    staleCounts: 'Phương án tính cho {plan} kiện, chuyến hiện có {trip}.',
+    staleStops: 'Chênh theo điểm giao: {list}.',
+    staleStop: 'Điểm {number} {delta}',
+    staleApprove: 'Kho chỉ xếp được khi quản lý công ty duyệt lại.',
+    /** Đang xem một revision chưa duyệt qua `?revision=` trong khi chuyến đã có bản duyệt khác (V2.3 `Planner3DBanChuaDuyet`). */
+    viewing: 'Đang xem {revision} — kết quả tối ưu lúc {time} · {date}, chưa duyệt.',
+    viewingApproved: 'Kho và tài xế đang đọc bản đã duyệt {revision} ({time} · {date}). Duyệt bản đang xem sẽ tạo bản duyệt mới thay thế.',
+    viewingApprovedStale: 'Bản đã duyệt gần nhất là {revision} ({time} · {date}), đã lỗi thời.',
+    openApproved: 'Mở bản đã duyệt {revision}',
     rerun: 'Tới Thiết lập tối ưu',
     emptyTitle: 'Chuyến chưa có phương án',
     emptyDescription: 'Chạy tối ưu để có phương án xếp hàng 3D.',
@@ -48,7 +66,17 @@ export const viewer = {
       title: 'Duyệt phương án này?',
       description: 'Duyệt tạo một revision mới đã duyệt; revision đang xem giữ nguyên. Kho và tài xế đọc bản đã duyệt.',
       blockersTitle: 'Phải xử lý trước khi duyệt',
+      close: 'Đóng',
+      noBlockers: 'Không có lỗi chặn duyệt',
       warnings: { one: '{count} cảnh báo vẫn còn (không chặn duyệt).', other: '{count} cảnh báo vẫn còn (không chặn duyệt).' },
+      /** Lần chạy tắt LIFO (V2.3 `Planner3DTatLIFO`): cảnh báo LIFO là hệ quả của thiết lập, không phải lỗi của phương án. */
+      lifoOnly: {
+        one: 'Cả {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+        other: 'Cả {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+      },
+      lifoSome: '{lifo} / {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+      moreWarnings: { one: '… và {count} cảnh báo khác.', other: '… và {count} cảnh báo khác.' },
+      showUnloading: 'Xem mô phỏng dỡ hàng',
       noWarnings: 'Không còn cảnh báo ràng buộc.',
       manual: { one: 'Có {count} kiện chỉnh tay sẽ được áp vào bản duyệt.', other: 'Có {count} kiện chỉnh tay sẽ được áp vào bản duyệt.' },
       noManual: 'Không có chỉnh tay.',
@@ -76,6 +104,13 @@ export const viewer = {
   },
   /** Planner chỉ xem (LM-094): lý do không có Chỉnh sửa và Duyệt, nói một lần. Key trùng pha chuyến (D-45), hoặc `readOnly`. */
   lock: {
+    /** Câu thứ hai và dòng tiến độ kho của thanh khoá khi kho đang / đã xếp (V2.3 `Planner3DKhoa`). */
+    detail: {
+      loading: 'Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
+      loaded: 'Kho đã xếp xong theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
+    },
+    progress: 'Kho đã xếp {loaded} / {total} kiện · bắt đầu {time} · {date}',
+    progressBy: 'Kho đã xếp {loaded} / {total} kiện · bắt đầu {time} · {date} · {name}',
     loading: 'Chuyến đang xếp hàng — phương án đã chốt.',
     loaded: 'Chuyến đã xếp xong — phương án đã chốt.',
     delivering: 'Chuyến đang giao — phương án đã chốt.',

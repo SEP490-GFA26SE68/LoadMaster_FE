@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
 import { usePlanReviewQuery } from '@/features/review/useReviewQuery'
 import { useT } from '@/lib/i18n'
@@ -19,13 +19,15 @@ import { useOperations } from './operations/useOperations'
 import { PlannerActions } from './panels/PlannerActions'
 import { canDecide } from './plan-decision'
 import { PlanDecisionActions } from './PlanDecisionActions'
-import { PlanDecisionNotice } from './PlanDecisionNotice'
+import { PlannerNotices } from './PlannerNotices'
+import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
-import { SimulationControls, WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
+import { WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
 import type { ViewerSceneModel } from './scene-input'
 import { Timeline } from './Timeline'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
+import type { PlanSource } from './viewer-api'
 import { ViewerHeader } from './ViewerHeader'
 import { debugQualityTier } from './viewer-options'
 import { ViewerSkeleton } from './ViewerSkeleton'
@@ -40,7 +42,7 @@ const LoadPlanViewer = lazy(() => import('./LoadPlanViewer').then((module) => ({
  * không có chuyến trong kho nên coi như đang lập kế hoạch.
  * Phím tắt: Space phát/dừng, ←/→ lùi/tiến một bước, Home về đầu.
  */
-export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel; phase?: TripPhase }) {
+export function ViewerSession({ model: plan, phase, source }: { model: ViewerSceneModel; phase?: TripPhase; source?: PlanSource }) {
   const params = useParams()
   const [searchParams] = useSearchParams()
   const tripId = params.tripId ?? plan.tripId
@@ -94,31 +96,30 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
   }, [togglePlaying, stepForward, stepBackward, goToStart, editor.mode])
 
   function handleModeChange(mode: 'view' | 'edit') { operations.stop(); operations.setFollow('off'); editor.setMode(mode) }
+  /** Từ hộp thoại Duyệt: đóng hộp thoại, về chế độ Xem và mở mô phỏng dỡ hàng để xem kiện chắn lối (V2.3 Planner3DTatLIFO). */
+  function handleShowUnloading() { setApproveOpen(false); if (editor.mode === 'edit') handleModeChange('view'); operations.setKind('unloading') }
 
   const simulation = { operations, stops: plan.stops, preset: state.cameraPreset, onPreset: state.setCameraPreset }
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-bg">
+    <div className="flex h-dvh flex-col overflow-hidden bg-canvas-1">
       <ViewerHeader
         tripId={tripId}
+        title={source?.trip.name}
+        revisionId={plan.revision?.id ?? null}
+        stale={plan.revision?.stale ?? false}
+        lifoOff={plan.engineInput?.settings.enforceLifo === false}
         metrics={plan.metrics}
         placedCount={plan.placements.length}
         totalCount={totalPackages}
         isMockResult={plan.isMockResult}
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
-        controls={editor.mode === 'view' ? <SimulationControls {...simulation} /> : undefined}
+        controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
         <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={review?.approvedByName} decisions={decide}
           onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
-      <PlanDecisionNotice lock={access.lock} decision={review?.decision ?? null}
+      <PlannerNotices model={plan} source={source} lock={access.lock} decision={review?.decision ?? null}
         rerunTo={can('optimization.run') && (phase ?? 'planning') === 'planning' ? `/chuyen/${tripId}/toi-uu` : undefined} />
-      {plan.revision?.stale ? (
-        <div role="alert" className="flex flex-none flex-wrap items-center gap-3 border-b border-badge-warning-border bg-badge-warning-bg px-4 py-2 text-body text-badge-warning-fg">
-          <span>{t('viewer.plan.staleBanner')}</span>
-          {/* Tối ưu lại là việc của điều phối viên, không cần quyền Duyệt (LM-104); chỉ khi chuyến còn lập kế hoạch */}
-          {can('optimization.run') && (phase ?? 'planning') === 'planning' ? <Link to={`/chuyen/${tripId}/toi-uu`} className="font-medium text-primary">{t('viewer.plan.rerun')}</Link> : null}
-        </div>
-      ) : null}
       {editor.mode === 'edit' ? <EditorToolbar state={state} editor={editor} onModeChange={handleModeChange} /> :
         <WorkspaceToolbar {...simulation} onEdit={handleEdit} />}
       <div className={`relative flex min-h-0 flex-1 ${editor.mode === 'edit' ? 'flex-col xl:flex-row' : ''}`}>
@@ -168,6 +169,9 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
           checks={approvalChecks}
           pending={approval.pending}
           onConfirm={() => approval.confirm(() => setApproveOpen(false))}
+          isMockResult={plan.isMockResult}
+          lifoOff={plan.engineInput?.settings.enforceLifo === false}
+          onShowUnloading={handleShowUnloading}
         />
       ) : null}
     </div>

@@ -39,9 +39,15 @@ test('approving the seed source revision creates a new approved revision and reo
   await closeInspector(page)
 
   await navigateInApp(page, SOURCE_REVISION)
+  // V2.3 Planner3DBanChuaDuyet: bản chưa duyệt nói kho đang đọc bản nào và có lối mở bản đó
+  const unapproved = page.locator('[data-planner-unapproved]')
+  await expect(unapproved).toContainText('Đang xem REV-001 — kết quả tối ưu lúc')
+  await expect(unapproved).toContainText('Kho và tài xế đang đọc bản đã duyệt REV-002')
+  await expect(unapproved.getByRole('link', { name: 'Mở bản đã duyệt REV-002', exact: true })).toHaveAttribute('href', `${PLANNER}?revision=REV-002`)
   const before = await revisionCount(page)
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Duyệt phương án này?' })
+  await expect(dialog).toContainText('Không có lỗi chặn duyệt')
   await expect(dialog).toContainText('Không có chỉnh tay.')
   await dialog.getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
@@ -63,7 +69,11 @@ test('changing cargo after optimisation marks the plan stale and blocks approval
   }, { url: MOCK_DB, tripId: TRIP_ID })
   await navigateInApp(page, PLANNER)
 
-  await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toBeVisible()
+  const stale = page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })
+  await expect(stale).toBeVisible()
+  // V2.3 Planner3DLoiThoi: thanh nói lần sửa nào làm lỗi thời (trường, trước → sau) và ai phải duyệt lại
+  await expect(stale).toContainText(/Sau lần tối ưu \d{2}:\d{2} · \d{2}\/\d{2}: PKG-\S+ .+ · Khối lượng /)
+  await expect(stale).toContainText('Kho chỉ xếp được khi quản lý công ty duyệt lại.')
   await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveAttribute('href', `/chuyen/${TRIP_ID}/toi-uu`)
   // Bản đã duyệt không có nút Duyệt (LM-094); revision nguồn chưa duyệt thì có, kèm lý do chặn trong nút và hộp thoại
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
