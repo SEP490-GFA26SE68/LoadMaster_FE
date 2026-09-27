@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { readToken } from '@/lib/tokens'
 import { boxCenter, SCENE_SCALE, type Vec3 } from '../scene/units'
 import { SceneCallout } from '../scene/SceneCallout'
+import { SceneTag } from '../scene/SceneTag'
 
 /** Hành lang dỡ thẳng về cửa sau (hình ảnh, không phải lộ trình đã chứng minh). `blockers`: kiện giao sau che lối dỡ theo kiểm LIFO của domain, gần kiện đích trước. */
 export function ExtractionCorridor({ target, vehicle, blockers, reducedMotion }: {
@@ -42,7 +43,7 @@ export function ExtractionCorridor({ target, vehicle, blockers, reducedMotion }:
     </mesh>
     <Line points={points} segments color={color} lineWidth={2} raycast={() => null} />
     {blockers[0] ? <SceneCallout position={boxCenter(blockers[0])} offset={[150, 36]} width={180}>
-      <span className="inline-block rounded-sm border border-warning bg-panel-dark px-2 py-1 text-body text-bg">{t('viewer.operations.blockers.callout', { count: blockers.length })}</span>
+      <SceneTag tone="warn" title={t('viewer.operations.blockers.callout', { count: blockers.length })} />
     </SceneCallout> : null}
   </group>
 }

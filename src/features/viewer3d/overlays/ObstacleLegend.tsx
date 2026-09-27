@@ -18,15 +18,15 @@ export function ObstacleLegend({ obstacles }: { obstacles: readonly VehicleObsta
         style: { background: 'repeating-linear-gradient(135deg, var(--obstacle) 0 3px, transparent 3px 6px)' } } : null,
   ].filter((row) => row !== null)
   return (
-    <section aria-label={t('viewer.obstacles.legendTitle')} className="flex min-w-50 flex-col gap-1.5 rounded-md border border-border bg-bg px-3 py-2.5">
-      <span className="text-body-lg font-medium xl:text-caption">{t('viewer.obstacles.legendTitle')}</span>
+    <section aria-label={t('viewer.obstacles.legendTitle')} className="flex min-w-50 flex-col gap-1.5 rounded-lg border border-glass-dark-border bg-canvas-2/45 px-3 py-2.5">
+      <span className="text-body-lg font-semibold text-sky-text xl:text-caption">{t('viewer.obstacles.legendTitle')}</span>
       {rows.map((row) => (
         <span key={row.key} className="flex items-center gap-2 text-body-lg xl:text-caption">
           <span aria-hidden className="size-2.5 flex-none rounded-[3px] border border-border-dark" style={row.style} />
           <span className="flex-1">{row.label}</span>
         </span>
       ))}
-      <span className="text-body-lg text-text-3 xl:text-caption">{t('viewer.obstacles.legendHint')}</span>
+      <span className="text-body-lg text-glass-dark-muted xl:text-caption">{t('viewer.obstacles.legendHint')}</span>
     </section>
   )
 }

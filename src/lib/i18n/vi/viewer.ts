@@ -178,8 +178,12 @@ export const viewer = {
     next: 'Tiếp theo: {id} · Điểm {stop}',
     done: 'Đã hoàn tất mô phỏng.',
     manualEdits: 'Có chỉnh sửa thủ công',
+    /** Panel dỡ hàng nổi bên phải khung 3D (V2.3). */
+    panelLabel: 'Mô phỏng dỡ hàng',
     blockers: {
       title: 'Kiện chắn lối dỡ',
+      lifoCheck: 'Kiểm tra LIFO',
+      edit: 'Chỉnh sửa {id}',
       toggleShow: 'Xem kiện chắn lối dỡ',
       toggleHide: 'Ẩn kiện chắn lối dỡ',
       pick: 'Chọn kiện để xem lối dỡ',
@@ -266,7 +270,8 @@ export const viewer = {
     pause: 'Tạm dừng',
     play: 'Phát',
     forward: 'Tiến một bước',
-    current: 'Hiện tại · Điểm {stop} · {id}',
+    /** Mã kiện hiện tại đứng ngay sau, mono cyan (V2.3). */
+    current: 'Hiện tại · Điểm {stop}',
     done: 'Hoàn tất mô phỏng',
     next: 'Tiếp theo · Điểm {stop}',
     valueText: '{label}: {step} trên {total}',
@@ -278,6 +283,8 @@ export const viewer = {
     current: 'Hiện tại · Điểm {stop}',
     next: 'Tiếp theo · Điểm {stop}',
     selected: 'Đã chọn · Điểm {stop}',
+    /** Kiện đang kéo vào chỗ không hợp lệ (V2.3 quyết định 3). */
+    cannotPlace: 'Không thể đặt · Điểm {stop}',
   },
   /** Khung 3D ở màn kho (`PositionViewer`). */
   position: {
@@ -316,6 +323,12 @@ export const viewer = {
     unplacedHint: 'Không vừa chỗ trống còn lại.',
     pinnedHint: 'Kiện đã ghim giữ nguyên vị trí khi chạy tối ưu lại.',
     pinned: 'Đã ghim',
+    noPinned: 'Chưa ghim kiện nào',
+    allPlaced: 'Không có kiện chưa xếp — đã xếp đủ {placed} / {total} kiện.',
+    byLoadingOrder: 'theo thứ tự xếp',
+    /** Nhãn hổ phách của kiện có cảnh báo: tỷ lệ đỡ đáy khi kiện không được đỡ trọn. */
+    support: 'Đỡ đáy {value}',
+    warning: 'Cảnh báo',
     where: '{layer} · {side}',
     floor: 'Sàn',
     layer: 'Lớp {layer}',
@@ -344,6 +357,7 @@ export const viewer = {
   },
   /** HUD trên khung 3D của Planner. */
   hud: {
+    stopsTitle: 'Điểm giao · thứ tự dỡ',
     stopOf: '{kind} · Điểm {number} / {total}',
     packagesHere: { one: '{count} kiện tại điểm này', other: '{count} kiện tại điểm này' },
     loadingHint: 'Theo bước phương án',
@@ -382,6 +396,36 @@ export const viewer = {
     hasNotes: 'Có lưu ý',
     empty: 'Chọn kiện trong scene hoặc danh sách “Chọn kiện” để chỉnh sửa.',
     keyboard: 'Kéo kiện đang chọn trên mặt phẳng đã chọn. Mũi tên: X/Y · Page Up/Down: Z · R: xoay · Esc: hủy kéo · Ctrl/Cmd + Z: hoàn tác · thêm Shift: làm lại.',
+    /** HUD góc dưới trái khi chỉnh sửa (V2.3): câu dẫn, rồi từng phím và việc của nó. */
+    keyboardLead: 'Kéo kiện đang chọn trên mặt phẳng đã chọn.',
+    shortcuts: {
+      arrows: 'Mũi tên',
+      arrowsAction: 'X/Y',
+      pageKeys: 'Page Up/Down',
+      pageAction: 'Z',
+      rotateKey: 'R',
+      rotateAction: 'xoay',
+      escKey: 'Esc',
+      escAction: 'hủy kéo',
+      undoKey: 'Ctrl/Cmd + Z',
+      undoAction: 'hoàn tác',
+      redoLead: 'thêm',
+      shiftKey: 'Shift',
+      redoAction: 'làm lại',
+    },
+    dropKeeps: 'Thả ra: kiện giữ vị trí trước đó.',
+    draggingValid: 'Đang kéo: thả ra để đặt kiện ở đây. Các nút bên dưới tạm khoá đến khi thả kiện.',
+    draggingInvalid: 'Đang kéo: thả ra ở đây thì kiện giữ vị trí trước đó. Các nút bên dưới tạm khoá đến khi thả kiện.',
+    /** Vật cản mà kiện chồng lên: nhãn neo trên vật cản và dòng mô tả dưới câu lỗi. */
+    obstacleTag: 'Vật cản {id}',
+    obstacleLine: '{type} {id} · {range} · {bearing}',
+    /** Chú giải ba trạng thái khi dời kiện (V2.3 quyết định 3). */
+    legend: {
+      title: 'Trạng thái khi dời kiện',
+      moved: 'hợp lệ, đã dời',
+      soft: 'vi phạm ràng buộc mềm',
+      hard: 'lỗi cứng: chồng lấn, ngoài thùng',
+    },
     disclaimer: 'Kiểm tra hình học hỗ trợ chỉnh sửa; cảnh báo nâng đỡ không thay thế đánh giá ổn định hay tối ưu chất xếp.',
     resetAll: 'Khôi phục mọi chỉnh sửa',
     resetTitle: 'Khôi phục mọi chỉnh sửa?',
@@ -414,7 +458,6 @@ export const viewer = {
     gesturePlane: 'Mặt phẳng {plane} · {status}',
     wrongView: 'Đổi góc nhìn để kéo trên mặt phẳng này: Trên cho X–Y, Bên hông cho X–Z, Cửa sau cho Y–Z.',
     originalPosition: 'Vị trí gốc',
-    manualNote: 'Vị trí hoặc hướng đặt đã chỉnh thủ công',
     placed: 'Đã đặt kiện',
     placeRejected: 'Không thể đặt — đã giữ vị trí trước đó',
     rotated: 'Đã đổi hướng đặt',

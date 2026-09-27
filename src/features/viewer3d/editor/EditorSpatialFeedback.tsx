@@ -6,8 +6,10 @@ import { readToken } from '@/lib/tokens'
 import { useFormat, useT } from '@/lib/i18n'
 import type { ScenePlacement, PositionCm } from '@/features/viewer3d/scene-input'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
-import { boxCenter, boxSize, SCENE_SCALE, type Vec3 } from '../scene/units'
+import { boxCenter, boxSize, obstacleCenter, obstacleSize, SCENE_SCALE, type Vec3 } from '../scene/units'
 import { SceneCallout } from '../scene/SceneCallout'
+import { SceneTag } from '../scene/SceneTag'
+import { useObstacleText } from '../overlays/useObstacleText'
 import type { ManualEditor } from './useManualEditor'
 import { editorMeasurements, overlapRegions, snapFeedbackBoxes, type FeedbackBox } from './spatial-feedback'
 
@@ -22,6 +24,8 @@ export function EditorSpatialFeedback({ placement, state, editor }: {
   const snap = useRef<InstancedMesh>(null), conflict = useRef<InstancedMesh>(null)
   const snapMaterial = useRef<MeshBasicMaterial>(null)
   const labels = useRef<Array<Group | null>>([]), texts = useRef<Array<HTMLSpanElement | null>>([])
+  const obstacleAnchor = useRef<Group>(null), obstacleTitle = useRef<HTMLSpanElement>(null), obstacleNote = useRef<HTMLSpanElement>(null)
+  const obstacleText = useObstacleText()
   const previous = useRef<unknown>(undefined)
   const invalidate = useThree((s) => s.invalidate)
   const format = useFormat()
@@ -51,6 +55,17 @@ export function EditorSpatialFeedback({ placement, state, editor }: {
       labels.current[i]?.position.set(...point({ x: (g.from.x + g.to.x) / 2, y: (g.from.y + g.to.y) / 2, z: (g.from.z + g.to.z) / 2 }))
       if (texts.current[i]) texts.current[i]!.textContent = `${t(`viewer.editor.guides.${g.label}`)} ${format.length(g.cm)}`
     })
+    // Vật cản đầu tiên kiện đang chồng lên / tựa lên: một nhãn neo đỏ trên đỉnh vật cản (V2.3 Planner3DKhongTheDat), không thêm mesh.
+    const obstacle = state.sceneModel.vehicle.obstacles.find((o) => result.obstacleIds.includes(o.id))
+    if (obstacleAnchor.current) {
+      obstacleAnchor.current.visible = Boolean(obstacle)
+      if (obstacle) {
+        const [ox, oy, oz] = obstacleCenter(obstacle)
+        obstacleAnchor.current.position.set(ox, oy + obstacleSize(obstacle)[1] / 2, oz)
+        if (obstacleTitle.current) obstacleTitle.current.textContent = t('viewer.editor.obstacleTag', { id: obstacle.id })
+        if (obstacleNote.current) obstacleNote.current.textContent = `${obstacleText.type(obstacle)} · ${obstacleText.bearing(obstacle)}`
+      }
+    }
     const color = readToken(!result.valid ? '--danger' : result.advisories.length ? '--warning' : '--success')
     snapMaterial.current?.color.set(color)
     function write(mesh: InstancedMesh | null, boxes: FeedbackBox[]) {
@@ -80,7 +95,7 @@ export function EditorSpatialFeedback({ placement, state, editor }: {
       <lineSegments geometry={edges} position={boxCenter(source)} scale={boxSize(source)} raycast={() => null}>
         <lineBasicMaterial color={readToken('--bg')} transparent opacity={0.3} />
       </lineSegments>
-      {showMeasurements ? <SceneCallout position={boxCenter(source)} offset={[-140, 112]} width={160}><span className="rounded-sm bg-panel-dark px-2 py-1 text-caption text-bg">{t('viewer.editor.originalPosition')}</span></SceneCallout> : null}
+      {showMeasurements ? <SceneCallout position={boxCenter(source)} offset={[-140, 112]} width={160}><SceneTag dashed title={t('viewer.editor.originalPosition')} /></SceneCallout> : null}
     </group>
     <mesh ref={plane} name="movement-plane" raycast={() => null}>
       <boxGeometry /><meshBasicMaterial color={readToken('--info')} transparent opacity={0.1} depthWrite={false} />
@@ -93,8 +108,13 @@ export function EditorSpatialFeedback({ placement, state, editor }: {
     </instancedMesh>
     {showMeasurements ? [0, 1, 2].map((i) => <group key={i} ref={(g) => { labels.current[i] = g }}>
       <SceneCallout offset={i === 0 ? [150, -32] : i === 1 ? [-170, -32] : [-160, 60]} width={180}>
-        <span ref={(el) => { texts.current[i] = el }} className="inline-block rounded-sm border border-border-dark bg-panel-dark px-2 py-1 font-mono text-body whitespace-nowrap text-bg" />
+        <SceneTag mono><span ref={(el) => { texts.current[i] = el }} /></SceneTag>
       </SceneCallout>
     </group>) : null}
+    <group ref={obstacleAnchor} name="editor-obstacle-anchor" visible={false}>
+      <SceneCallout offset={[90, 70]} width={220} anchor>
+        <SceneTag tone="bad" title={<span ref={obstacleTitle} />} code={<span ref={obstacleNote} className="font-sans" />} />
+      </SceneCallout>
+    </group>
   </group>
 }

@@ -36,7 +36,12 @@ export const obstacleBox = ({ id, xCm, yCm, zCm, lengthCm, widthCm, heightCm }: 
 export type GeometryResult = {
   valid: boolean
   errors: string[]
+  /** Cảnh báo ràng buộc thật (vẫn commit). Chỉnh tay hợp lệ không phải cảnh báo: xem `manual` (V2.3 quyết định 3). */
   advisories: string[]
+  /** Tư thế khác phương án gốc: nhãn xám "Đã chỉnh thủ công", không tô hổ phách. */
+  manual: boolean
   supportRatio: number
   overlapIds: readonly string[]
+  /** Vật cản kiện chồng lên hoặc tựa lên (`params.obstacleId` của issue), để mô tả vật cản bên cạnh câu lỗi. */
+  obstacleIds: readonly string[]
 }

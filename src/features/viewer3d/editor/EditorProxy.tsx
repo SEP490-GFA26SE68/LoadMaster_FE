@@ -1,4 +1,4 @@
-import { Edges, Html, type CameraControls } from '@react-three/drei'
+import { Edges, type CameraControls } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useRef, type ComponentRef } from 'react'
 import { Plane, Raycaster, Vector2, Vector3, type Group, type MeshStandardMaterial } from 'three'
@@ -13,6 +13,13 @@ import { PLANE_AXES, type ManualEditor } from './useManualEditor'
 import type { GeometryResult } from './geometry'
 import { EditorAxes } from './EditorGuides'
 import { EditorSpatialFeedback } from './EditorSpatialFeedback'
+import { SceneCallout } from '../scene/SceneCallout'
+import { SceneTag, type SceneTagTone } from '../scene/SceneTag'
+
+type LabelTone = Extract<SceneTagTone, 'selected' | 'warn' | 'bad'>
+const LABEL_TONES: readonly LabelTone[] = ['selected', 'warn', 'bad']
+/** Quyết định 3 của V2.3: chỉ lỗi cứng đỏ, chỉ ràng buộc thật hổ phách; dời hợp lệ vẫn là kiện đang chọn bình thường. */
+const toneOf = (result: GeometryResult): LabelTone => !result.valid ? 'bad' : result.advisories.length ? 'warn' : 'selected'
 
 /** Exactly one proxy. Native captured gestures bypass instance raycasts after picking. */
 export function EditorProxy({ placement, state, editor }: {
@@ -27,9 +34,13 @@ export function EditorProxy({ placement, state, editor }: {
   const setEvents = useThree((s) => s.setEvents)
   const get = useThree((s) => s.get)
   const invalidate = useThree((s) => s.invalidate)
-  const colorFor = (result: GeometryResult) => readToken(
-    !result.valid ? '--danger' : result.advisories.length ? '--warning' : '--success',
-  )
+  const labels = useRef<Partial<Record<LabelTone, HTMLSpanElement | null>>>({})
+  const colorFor = (result: GeometryResult) => {
+    // Nhãn neo đổi theo tư thế ngay trong lúc kéo: chỉ bật/tắt DOM, không qua React (mục 7).
+    const tone = toneOf(result)
+    for (const key of LABEL_TONES) { const el = labels.current[key]; if (el) el.style.display = key === tone ? '' : 'none' }
+    return readToken(tone === 'bad' ? '--danger' : tone === 'warn' ? '--warning' : '--success')
+  }
 
   useLayoutEffect(() => {
     group.current?.position.set(...boxCenter(placement))
@@ -142,11 +153,12 @@ export function EditorProxy({ placement, state, editor }: {
         <meshStandardMaterial ref={material} transparent opacity={0.85} roughness={0.8} />
         <Edges color={readToken('--bg')} raycast={() => null} />
       </mesh>
-      <Html position={[0, toScene(placement.heightCm) / 2, 0]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="block -translate-x-1/2 -translate-y-full rounded-sm bg-bg px-2 py-1 font-mono text-body whitespace-nowrap text-text">
-          {t('common.packageAtStop', { id: placement.id, stop: placement.stop })}
-        </span>
-      </Html>
+      <SceneCallout position={[0, toScene(placement.heightCm) / 2, 0]} offset={[-130, -96]} width={190} anchor>
+        {LABEL_TONES.map((tone) => <span key={tone} ref={(el) => { labels.current[tone] = el }} className="inline-block" style={{ display: 'none' }}>
+          <SceneTag tone={tone} code={placement.id}
+            title={t(tone === 'bad' ? 'viewer.selectionLabel.cannotPlace' : 'viewer.selectionLabel.selected', { stop: placement.stop })} />
+        </span>)}
+      </SceneCallout>
     </group>
     </>
   )

@@ -22,9 +22,9 @@ export function SlicePanel({
   const label = sliceCm >= maxCm ? t('viewer.slice.all') : format.length(sliceCm)
 
   return (
-    <div className="flex w-full max-w-80 flex-col gap-2 rounded-md border border-border bg-bg p-3 xl:w-70">
+    <div className="flex w-full flex-col gap-2 rounded-lg border border-glass-dark-border bg-canvas-2/45 p-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-body-lg font-medium text-text-2 xl:text-caption">
+        <span className="text-body-lg font-semibold text-sky-text xl:text-caption">
           {t('viewer.slice.title')}
         </span>
         <span className="font-mono text-body-lg font-medium xl:text-caption">{label}</span>
@@ -39,9 +39,9 @@ export function SlicePanel({
         onChange={(event) => onChange(Number(event.target.value))}
         aria-label={t('viewer.slice.title')}
         aria-valuetext={label}
-        style={{ '--lm-range-fill': `${percent}%` } as CSSProperties}
+        style={{ '--lm-range-fill': `${percent}%`, '--border': 'var(--border-dark)' } as CSSProperties}
       />
-      <div className="flex justify-between font-mono text-body-lg text-text-2 xl:text-caption">
+      <div className="flex justify-between text-body-lg text-glass-dark-muted xl:text-caption">
         <span>{t('viewer.slice.frontWall')}</span>
         <span>{t('viewer.slice.rearDoor')}</span>
       </div>

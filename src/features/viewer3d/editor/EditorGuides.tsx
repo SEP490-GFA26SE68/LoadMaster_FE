@@ -34,7 +34,7 @@ export function EditorAxes() {
       <lineBasicMaterial color={readToken('--bg')} />
     </lineSegments>
     {AXIS_ENDPOINTS.map(({ label, position }) => <Html key={label} position={position} zIndexRange={[19, 0]} style={{ pointerEvents: 'none' }}>
-      <span className="block -translate-x-1/2 -translate-y-1/2 rounded-sm border border-border-dark bg-panel-dark px-2 py-1 font-mono text-body text-bg">{label}</span>
+      <span className="block -translate-x-1/2 -translate-y-1/2 rounded-sm border border-glass-dark-border bg-panel-dark/85 px-1.5 py-0.5 font-mono text-body font-semibold text-glass-dark-text xl:text-note">{label}</span>
     </Html>)}
   </group>
 }

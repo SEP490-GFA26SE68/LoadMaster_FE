@@ -9,8 +9,8 @@ export function PlanMetricsPanel({ metrics }: { metrics: OptimizationResult['met
   const cog = metrics.centerOfGravityCm
   return (
     <section className="flex flex-col gap-3 p-4 text-body-lg xl:text-body">
-      <h2 className="font-medium">{t('viewer.plan.metrics.title')}</h2>
-      <dl className="flex flex-col border-t border-border">
+      <h2 className="font-display font-[650] text-sky-text">{t('viewer.plan.metrics.title')}</h2>
+      <dl className="flex flex-col border-t border-glass-dark-border">
         <Row label={t('viewer.plan.metrics.totalVehicleVolume')}>{format.volumeM3(metrics.totalVehicleVolumeCm3)}</Row>
         <Row label={t('viewer.plan.metrics.usedVolume')}>{format.volumeM3(metrics.usedVolumeCm3)}</Row>
         <Row label={t('viewer.plan.metrics.volumeUtilization')}>{format.percent(metrics.volumeUtilizationPercent)}</Row>
@@ -32,9 +32,9 @@ export function PlanMetricsPanel({ metrics }: { metrics: OptimizationResult['met
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-border py-2.5">
-      <dt className="text-text-2">{label}</dt>
-      <dd className="text-right font-mono">{children}</dd>
+    <div className="flex justify-between gap-3 border-b border-glass-dark-border py-2.5">
+      <dt className="text-glass-dark-muted">{label}</dt>
+      <dd className="text-right font-display font-semibold tabular-nums text-sky-text">{children}</dd>
     </div>
   )
 }
