@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, expect, test } from 'vitest'
@@ -34,8 +34,9 @@ test('a trip names its tab with the trip code and follows the interface language
   openAt('/chuyen/TRIP-011', 'dispatcher')
   await waitFor(() => expect(document.title).toBe('Chuyến TRIP-011 · LoadMaster'))
 
-  const language = await screen.findByRole('group', { name: 'Ngôn ngữ giao diện' })
-  await user.click(within(language).getByRole('button', { name: /^EN/ }))
+  // V2.3: ngôn ngữ trên thanh điều hướng là một nút mở menu chọn
+  await user.click(await screen.findByRole('button', { name: 'Ngôn ngữ giao diện' }))
+  await user.click(await screen.findByRole('menuitemradio', { name: 'EN English' }))
   await waitFor(() => expect(document.title).toBe('Trip TRIP-011 · LoadMaster'))
 })
 

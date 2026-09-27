@@ -7,6 +7,8 @@ export const notifications = {
   /** Nhãn đọc của nút chuông khi có thông báo chưa đọc; bắt đầu bằng nhãn nhìn thấy. */
   labelUnread: { one: 'Thông báo, {count} chưa đọc', other: 'Thông báo, {count} chưa đọc' },
   title: 'Thông báo',
+  /** Chip cạnh tiêu đề danh sách (V2.3): số chưa đọc — nút chuông chỉ còn chấm, số nằm ở đây và trong nhãn đọc. */
+  unreadCount: { one: '{count} chưa đọc', other: '{count} chưa đọc' },
   markAllRead: 'Đánh dấu đã đọc',
   unread: 'Chưa đọc',
   loading: 'Đang tải thông báo…',
@@ -17,6 +19,4 @@ export const notifications = {
   scope: 'Sự kiện {days} ngày gần nhất, không gồm việc bạn làm.',
   /** Giờ kèm ngày khi thông báo không phải của hôm nay. */
   dateTime: '{time} · {date}',
-  /** Đối tượng: tên hiện tại kèm mã. */
-  target: '{label} · {id}',
 } as const

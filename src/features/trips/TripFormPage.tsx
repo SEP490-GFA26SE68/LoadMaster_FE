@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Route, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router'
@@ -59,12 +59,12 @@ function FormShell({ title, backTo, children }: { title: string; backTo: string;
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={Route}
+        overlap
         title={title}
         description={t('pageHero.tripForm')}
         back={{ to: backTo, label: t('trips.create.back') }}
       />
-      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">{children}</div>
+      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">{children}</div>
     </div>
   )
 }

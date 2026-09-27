@@ -69,6 +69,8 @@ test('Ctrl+K opens the search; arrows move and wrap, Enter opens the trip; Esc r
   ])
   // Trình đọc màn hình nghe số kết quả
   expect(screen.getByText('8 kết quả')).toHaveAttribute('role', 'status')
+  // Phần khớp từ khoá được tô trong mã chuyến
+  expect([...(options()[0]?.querySelectorAll('mark') ?? [])].map((mark) => mark.textContent)).toStrictEqual(['TRIP-00'])
   const combobox = screen.getByRole('combobox', { name: 'Từ khoá tìm nhanh' })
   expect(options()[0]).toHaveAttribute('aria-selected', 'true')
   expect(combobox).toHaveAttribute('aria-activedescendant', options()[0]?.id)
@@ -118,7 +120,7 @@ test('the admin searches users and vehicles; a click on a result opens it', asyn
   expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), xe (tên, biển số) và người dùng (tên, email).')).toBeInTheDocument()
   await user.keyboard('hanh.do')
   const users = await screen.findByRole('group', { name: 'Người dùng' }, SLOW)
-  expect(within(users).getByRole('option')).toHaveTextContent('Đỗ Thị Hạnhhanh.do@loadmaster.vn · Nhân viên kho')
+  expect(within(users).getByRole('option')).toHaveTextContent('Đỗ Thị HạnhUS-0011 · hanh.do@loadmaster.vn · Nhân viên kho')
   await user.keyboard('{Enter}')
   expect(route()).toHaveTextContent('/nguoi-dung?q=US-0011')
 

@@ -14,10 +14,8 @@ export const search = {
   },
   groups: { trips: 'Chuyến', packages: 'Kiện', vehicles: 'Xe', users: 'Người dùng' },
   results: 'Kết quả tìm nhanh',
-  /** Đọc cho trình đọc màn hình mỗi lần kết quả đổi. */
+  /** Số kết quả ở hàng ô nhập (V2.3); trình đọc màn hình cũng nghe nó mỗi lần kết quả đổi. */
   count: { one: '{count} kết quả', other: '{count} kết quả' },
-  /** Dòng phụ của kiện: chuyến chứa kiện. */
-  inTrip: '{trip} · {name}',
   loading: 'Đang tải dữ liệu để tìm…',
   error: 'Không tải được dữ liệu để tìm.',
   retry: 'Thử lại',

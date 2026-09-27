@@ -26,7 +26,7 @@ export function FillByDayChart({ days, isMockResult, className }: {
       className={className}
       title={title}
       note={t('manager.charts.fill.note')}
-      badge={isMockResult ? <Badge tone="warning">MOCK RESULT</Badge> : null}
+      badge={isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
       empty={withData.length === 0 ? t('manager.charts.fill.empty') : undefined}
       table={
         <ChartTable

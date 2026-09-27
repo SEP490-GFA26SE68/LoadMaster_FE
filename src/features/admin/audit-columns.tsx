@@ -15,7 +15,7 @@ const TINT: Record<KpiTone, string> = {
   blue: 'bg-tint-blue text-tint-blue-fg',
   green: 'bg-tint-green text-tint-green-fg',
   amber: 'bg-tint-amber text-tint-amber-fg',
-  violet: 'bg-tint-violet text-tint-violet-fg',
+  azure: 'bg-tint-azure text-tint-azure-fg',
   slate: 'bg-tint-slate text-tint-slate-fg',
 }
 

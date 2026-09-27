@@ -1,4 +1,5 @@
 import { CircleCheck } from 'lucide-react'
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Trip } from '@/lib/mock-db'
@@ -7,7 +8,7 @@ import { cargoSummary } from './trip-summary'
 const CHECKS = ['name', 'vehicle', 'stops', 'cargo'] as const
 
 /**
- * Cột phải của form chuyến (V2): danh sách tự kiểm trước khi lưu và một khối tổng hợp kính. Chỉ số có nguồn: số điểm giao đếm theo
+ * Cột phải của form chuyến: card danh sách tự kiểm trước khi lưu và một card tổng hợp. Chỉ số có nguồn: số điểm giao đếm theo
  * form đang nhập, tải trọng từ xe đang chọn, kiện và khối lượng từ chuyến đã lưu (tạo mới chưa có kiện — không hiện số bịa).
  */
 export function TripFormAside({ stopCount, vehicle, existing }: {
@@ -29,9 +30,12 @@ export function TripFormAside({ stopCount, vehicle, existing }: {
 
   return (
     <aside className="flex flex-col gap-5 xl:sticky xl:top-0">
-      <div className="flex flex-col gap-3">
-        <h2 className="text-h3 font-semibold text-ink-strong">{t('trips.create.checklistTitle')}</h2>
-        <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
+      {/* Card nền đặc (V2.3 TaoChuyen.jpg): cột này bắt đầu ngay trên dải trời (PageHero overlap), chữ trần ở đó không đọc được */}
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">{t('trips.create.checklistTitle')}</CardTitle>
+        </CardHeader>
+        <ol className="m-0 flex list-none flex-col gap-2.5 px-4.5 py-4">
           {CHECKS.map((check) => (
             <li key={check} className="flex items-start gap-2 text-body text-ink-2">
               <CircleCheck aria-hidden className="mt-0.5 size-4 flex-none text-ink-3" strokeWidth={1.5} />
@@ -39,9 +43,9 @@ export function TripFormAside({ stopCount, vehicle, existing }: {
             </li>
           ))}
         </ol>
-      </div>
+      </Card>
 
-      <section aria-label={t('trips.create.summaryLabel')} className="glass-tile flex flex-col rounded-xl px-4.5 py-2">
+      <section aria-label={t('trips.create.summaryLabel')} className="flex flex-col rounded-lg border border-border bg-bg px-4.5 py-2 shadow-card">
         <dl className="m-0 flex flex-col">
           {rows.map((row) => (
             <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-border py-3 last:border-b-0">

@@ -28,15 +28,22 @@ const buttonVariants = cva(
           'disabled:border-transparent disabled:bg-none disabled:bg-border disabled:text-text-disabled disabled:shadow-none',
         ],
         secondary:
-          'border border-border bg-bg text-text hover:bg-surface disabled:border-none disabled:bg-border disabled:text-text-disabled',
+          'border border-border bg-bg text-text shadow-e1 hover:bg-surface disabled:border-none disabled:bg-border disabled:text-text-disabled disabled:shadow-none',
         ghost:
           'border-none bg-transparent text-text hover:bg-surface disabled:bg-transparent disabled:text-text-disabled',
         danger:
-          'border-none bg-danger text-white hover:bg-danger-hover disabled:bg-border disabled:text-text-disabled',
+          'border-none bg-danger text-white shadow-danger hover:bg-danger-hover disabled:bg-border disabled:text-text-disabled disabled:shadow-none',
+        // Nút phụ đặt trên dải trời hoặc khung 3D (V2.3 .btn-glass): kính sáng mờ, chữ trắng. Chỉ dùng trên nền tối.
+        glass:
+          'border border-sky-glass-border bg-sky-glass text-sky-text backdrop-blur-[16px] hover:bg-sky-glass-hover disabled:text-sky-text-2 disabled:opacity-60',
       },
       size: {
         /** Desktop — 40px */
         md: 'h-10 px-4 text-body [&_svg]:size-4',
+        /** Nút nhỏ trong đầu card, thanh công cụ, dòng bảng — 32px, chữ 13px (V2.3 .btn-sm) */
+        sm: 'h-8 px-3 text-small [&_svg]:size-4',
+        /** Nút lớn cho hộp thoại xác nhận cảm ứng — 48px, chữ 16px (V2.3 .btn-lg) */
+        lg: 'h-12 rounded-lg px-5 text-body-lg [&_svg]:size-5',
         /** Tablet và điện thoại — 56px, chữ 16px, icon 20px */
         touch: 'h-14 px-5 text-body-lg [&_svg]:size-5',
         /** Nút chỉ có icon — 36px desktop */
@@ -75,8 +82,8 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  // Nút chính V2.3 chữ tối nên spinner tối; chỉ nút nguy hiểm còn chữ trắng
-  const isLight = variant === 'danger'
+  // Nút chính V2.3 chữ tối nên spinner tối; nút nguy hiểm và nút kính chữ trắng
+  const isLight = variant === 'danger' || variant === 'glass'
   const classes = cn(buttonVariants({ variant, size, block }), className)
 
   // Slot của Radix yêu cầu đúng một phần tử con, nên khi asChild không chèn spinner.

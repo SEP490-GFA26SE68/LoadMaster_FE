@@ -14,12 +14,12 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
   )
 })
 
-test('xong hoặc sẵn sàng là xanh lá; vận hành là xanh dương; kết quả tối ưu là tím; tài khoản và phiên là xám', () => {
+test('xong hoặc sẵn sàng là xanh lá; vận hành là xanh dương; kết quả tối ưu là xanh lam; tài khoản và phiên là xám', () => {
   expect(toneOf(['loading.completed', 'delivery.stopCompleted', 'delivery.completed', 'revision.approved', 'vehicle.maintenanceOff']))
     .toStrictEqual(['green', 'green', 'green', 'green', 'green'])
   expect(toneOf(['trip.created', 'trip.updated', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
     .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
-  expect(toneOf(['optimization.saved'])).toStrictEqual(['violet'])
+  expect(toneOf(['optimization.saved'])).toStrictEqual(['azure'])
   expect(toneOf(['auth.signedIn', 'auth.signedOut', 'user.created', 'user.passwordReset', 'user.deleted', 'vehicle.deleted']))
     .toStrictEqual(['slate', 'slate', 'slate', 'slate', 'slate', 'slate'])
 })

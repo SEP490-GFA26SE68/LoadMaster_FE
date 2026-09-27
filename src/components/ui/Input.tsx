@@ -1,15 +1,12 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
+import { disabledClass, FieldLabel, FieldMessage, fieldBoxClass, focusClass, focusWithinClass, readOnlyClass } from './field-styles'
 
 /**
- * Ô nhập theo mục 5 style sheet.
- * Cao 40px, viền 1px, radius 8px. Focus: viền primary + vòng 2px ngoài.
- * Nhãn 14px/500 phía trên, gợi ý hoặc lỗi 12px phía dưới.
+ * Ô nhập V2.3 (`field-styles.tsx`): cao 40px, viền `--line-strong`, bo 10px; focus viền cyan + quầng 3px.
+ * Nhãn 13/600 phía trên, gợi ý hoặc lỗi 12,5px phía dưới.
  */
-const fieldRing =
-  'focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-
 type InputProps = Omit<ComponentProps<'input'>, 'size'> & {
   label?: ReactNode
   /** Gợi ý dưới ô nhập */
@@ -19,21 +16,11 @@ type InputProps = Omit<ComponentProps<'input'>, 'size'> & {
   required?: boolean
   /** Số dùng mono, canh phải */
   numeric?: boolean
-  /** Hậu tố đơn vị: kg, m³, mm… */
+  /** Hậu tố đơn vị: kg, m³, cm… */
   suffix?: ReactNode
 }
 
-export function Input({
-  className,
-  label,
-  hint,
-  error,
-  required,
-  numeric = false,
-  suffix,
-  id,
-  ...props
-}: InputProps) {
+export function Input({ className, label, hint, error, required, numeric = false, suffix, id, ...props }: InputProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
   const describedById = `${inputId}-mo-ta`
@@ -45,13 +32,11 @@ export function Input({
       aria-invalid={invalid || undefined}
       aria-describedby={hint || error ? describedById : undefined}
       className={cn(
-        'h-10 w-full min-w-0 rounded-md border bg-bg px-3 text-body text-text outline-none',
         'placeholder:text-text-3',
-        'disabled:bg-surface disabled:text-text-disabled',
         numeric && 'text-right font-mono',
-        invalid ? 'border-danger' : 'border-border',
-        !suffix && fieldRing,
-        suffix && 'h-auto border-none bg-transparent px-0 focus-visible:outline-none',
+        suffix
+          ? 'h-auto w-full min-w-0 border-none bg-transparent px-0 text-body text-text outline-none'
+          : cn('h-10 w-full min-w-0 px-3', fieldBoxClass(invalid), focusClass, disabledClass, readOnlyClass),
         className,
       )}
       {...props}
@@ -61,36 +46,21 @@ export function Input({
   return (
     <div className="flex flex-col gap-1.5">
       {label ? (
-        <label htmlFor={inputId} className="text-body font-medium text-text">
+        <FieldLabel htmlFor={inputId} required={required}>
           {label}
-          {required ? <span className="text-danger"> *</span> : null}
-        </label>
+        </FieldLabel>
       ) : null}
 
       {suffix ? (
-        <div
-          className={cn(
-            'flex h-10 items-center gap-2 rounded-md border bg-bg px-3',
-            invalid ? 'border-danger' : 'border-border',
-            'focus-within:border-primary focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary',
-          )}
-        >
+        <div className={cn('flex h-10 items-center gap-2 px-3', fieldBoxClass(invalid), focusWithinClass)}>
           {control}
-          <span className="shrink-0 text-body text-text-3">{suffix}</span>
+          <span className="shrink-0 text-small text-ink-3">{suffix}</span>
         </div>
       ) : (
         control
       )}
 
-      {error ? (
-        <span id={describedById} className="text-caption text-danger">
-          {error}
-        </span>
-      ) : hint ? (
-        <span id={describedById} className="text-caption text-text-3">
-          {hint}
-        </span>
-      ) : null}
+      <FieldMessage id={describedById} error={error} hint={hint} />
     </div>
   )
 }

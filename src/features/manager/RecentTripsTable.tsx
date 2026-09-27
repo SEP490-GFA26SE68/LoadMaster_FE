@@ -1,8 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { useId, useMemo } from 'react'
+import { Box } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable, type BaseTableFeatures, type ColumnMeta } from '@/components/DataTable'
 import { StatusBadge } from '@/components/StatusBadge'
+import { Button } from '@/components/ui/Button'
 import { VehicleName } from '@/components/VehicleName'
 import type { Formatter } from '@/lib/format'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
@@ -75,18 +77,17 @@ function createColumns(t: TFunction, format: Formatter) {
     }),
     helper.accessor('plan', {
       header: t('manager.recent.plan'),
-      meta: { width: '136px' } satisfies ColumnMeta,
+      meta: { width: '164px' } satisfies ColumnMeta,
       cell: (info) => {
         const plan = info.getValue()
+        // Nút phụ cỡ nhỏ (V2.3 .btn-sm) có icon khối 3D như "Xem phương án 3D": là hành động mở màn khác, không phải chữ liên kết
         return plan ? (
-          <Link
-            to={plannerPath(plan)}
-            onClick={stop}
-            aria-label={t('manager.recent.openPlanFor', { name: info.row.original.name })}
-            className={cn('font-medium text-primary hover:text-primary-hover', LINK_FOCUS)}
-          >
-            {t('manager.recent.openPlan')}
-          </Link>
+          <Button variant="secondary" size="sm" asChild>
+            <Link to={plannerPath(plan)} onClick={stop} aria-label={t('manager.recent.openPlanFor', { name: info.row.original.name })}>
+              <Box strokeWidth={1.75} aria-hidden />
+              {t('manager.recent.openPlan')}
+            </Link>
+          </Button>
         ) : null
       },
     }),

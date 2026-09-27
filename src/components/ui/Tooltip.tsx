@@ -3,8 +3,7 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Tooltip nền tối, chữ trắng 12px, radius 6px.
- * Là lớp nổi nên được dùng bóng (mục 5 AGENTS.md).
+ * Tooltip V2.3 (`.tip`): nền `--cyan-950`, chữ `--cyan-50` 12,5px, bo 6px. Là lớp nổi nên được dùng bóng (mục 5 AGENTS.md).
  */
 export const TooltipProvider = TooltipPrimitive.Provider
 export const Tooltip = TooltipPrimitive.Root
@@ -20,8 +19,8 @@ export function TooltipContent({
       <TooltipPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-100 rounded-sm bg-text px-2 py-1.5',
-          'text-caption text-white shadow-e2',
+          'z-100 rounded-sm bg-cyan-950 px-2.5 py-1.5',
+          'text-fine text-cyan-50 shadow-e2',
           'select-none',
           className,
         )}

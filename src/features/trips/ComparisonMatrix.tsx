@@ -149,7 +149,7 @@ function RevisionHeader({ card, selected, onSelect }: { card: RevisionCardModel;
       <span className="flex min-w-0 flex-col gap-1.5">
         <span className="font-mono text-h3 font-semibold text-ink-strong">{card.id}</span>
         <span className="flex flex-wrap gap-1.5">
-          {card.isMockResult ? <Badge tone="warning">MOCK RESULT</Badge> : null}
+          {card.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
           {card.latest ? <Badge tone="info">{t('trips.compare.status.latest')}</Badge> : null}
           {card.approved ? <Badge tone="success">{t('trips.compare.status.approved')}</Badge> : null}
           {card.stale ? <Badge tone="danger">{t('trips.compare.status.stale')}</Badge> : null}

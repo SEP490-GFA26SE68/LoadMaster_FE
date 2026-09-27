@@ -75,10 +75,10 @@
   --amber-200: #fbd98f;
   --amber-500: #faab35;
   --amber-700: #9d580c;
-  --violet-50: #f3f1ff;
-  --violet-200: #d6cefd;
-  --violet-500: #8264e7;
-  --violet-700: #613ebe;
+  --azure-50: #ecf3ff;
+  --azure-200: #c2d6fa;
+  --azure-500: #3a78e6;
+  --azure-700: #1d4fae;
   --green-50: #e5faeb;
   --green-200: #b2ebc3;
   --green-500: #36ac62;
@@ -131,7 +131,7 @@
   --danger-hover: #8e2224;
   --info: var(--cyan-700);
 
-  /* tông badge: nền nhạt + chữ đậm + viền cùng tông. 6 tông cũ + violet (đang chạy / đang tối ưu / đã xếp xong) */
+  /* tông badge: nền nhạt + chữ đậm + viền cùng tông. 6 tông cũ + azure (đang chạy / đang tối ưu / đã xếp xong) */
   --badge-neutral-bg: var(--n-100);
   --badge-neutral-fg: var(--n-700);
   --badge-neutral-border: var(--n-200);
@@ -150,9 +150,9 @@
   --badge-danger-bg: var(--red-50);
   --badge-danger-fg: var(--red-700);
   --badge-danger-border: var(--red-200);
-  --badge-violet-bg: var(--violet-50);
-  --badge-violet-fg: var(--violet-700);
-  --badge-violet-border: var(--violet-200);
+  --badge-azure-bg: var(--azure-50);
+  --badge-azure-fg: var(--azure-700);
+  --badge-azure-border: var(--azure-200);
 
   /* vùng 3D, luôn tối (theme dầu) */
   --canvas-1: #031f29;
@@ -189,22 +189,56 @@
 
   /* năm cặp tint cho nền icon và chip. Nghĩa cố định, không mượn sang mục đích khác:
      blue = vận hành (V2.3: nay là cyan) · green = sẵn sàng/xong · amber = cần chú ý
-     violet = phân tích phụ · slate = ngữ cảnh (không phải số đo) */
+     azure = phân tích phụ · slate = ngữ cảnh (không phải số đo) */
   --tint-blue: var(--cyan-50);
   --tint-blue-fg: var(--cyan-800);
   --tint-green: var(--green-50);
   --tint-green-fg: var(--green-700);
   --tint-amber: var(--amber-50);
   --tint-amber-fg: var(--amber-700);
-  --tint-violet: var(--violet-50);
-  --tint-violet-fg: var(--violet-700);
+  --tint-azure: var(--azure-50);
+  --tint-azure-fg: var(--azure-700);
   --tint-slate: var(--n-100);
   --tint-slate-fg: var(--n-700);
 
-  /* dải trời đầu trang: thanh điều hướng + tiêu đề màn nằm trên nền này (đợt 2 mới dùng) */
+  /* dải trời đầu trang: thanh điều hướng + tiêu đề màn + tab nằm trên nền này (.sky, đợt 2) */
   --sky: radial-gradient(1100px 380px at 12% -60%, rgba(0, 195, 212, 0.42), transparent 62%),
     radial-gradient(900px 340px at 92% -50%, rgba(0, 138, 157, 0.45), transparent 60%),
     linear-gradient(180deg, #02222d 0%, #053341 100%);
+  /* màu cuối của --sky: nền dự phòng và phần dải dài hơn ảnh */
+  --sky-end: #053341;
+  /* chiều cao ảnh trời. Thanh điều hướng và thanh tiêu đề cùng gắn ảnh vào khung nhìn (background-attachment: fixed)
+     nên hai phần liền một dải dù là hai phần tử */
+  --sky-h: 360px;
+  /* lưới chấm như sàn kho trên dải trời */
+  --sky-dots: radial-gradient(rgba(155, 237, 242, 0.12) 1px, transparent 1.4px);
+  /* phần card đè lên dải trời */
+  --sky-overlap: 44px;
+  /* chữ và kính sáng trên dải trời */
+  --sky-text: #ffffff;
+  --sky-text-2: rgba(231, 252, 253, 0.72);
+  --sky-text-3: rgba(203, 247, 249, 0.78);
+  --sky-glass: rgba(255, 255, 255, 0.07);
+  --sky-glass-hover: rgba(255, 255, 255, 0.13);
+  --sky-glass-border: rgba(255, 255, 255, 0.14);
+  /* mục điều hướng đang mở: nền cyan trong + viền + quầng */
+  --nav-on: linear-gradient(180deg, rgba(0, 195, 212, 0.34), rgba(0, 195, 212, 0.14));
+  --nav-on-shadow: inset 0 0 0 1px rgba(92, 219, 230, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 22px -4px rgba(0, 195, 212, 0.65);
+  /* chuyển động lò xo của chỉ báo kính trên thanh điều hướng: vượt nhẹ rồi lắng lại */
+  --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);
+  /* ô logo và ảnh đại diện trên dải trời */
+  --brand-mark: linear-gradient(145deg, #5cdbe6, #00a9bb 55%, #006f81);
+  --brand-mark-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 18px -6px rgba(0, 195, 212, 0.7);
+  --avatar-fill: linear-gradient(145deg, #9bedf2, #00a9bb);
+  /* lớp phủ hộp thoại */
+  --scrim: rgba(2, 34, 45, 0.5);
+  /* quầng của nút nguy hiểm, bóng nhẹ của nút phụ */
+  --danger-shadow: 0 8px 20px -12px rgba(176, 42, 45, 0.8);
+  /* thanh tiến độ, thước đo */
+  --meter-fill: linear-gradient(90deg, var(--cyan-300), var(--cyan-600));
+  /* quầng focus của ô nhập */
+  --focus-ring: 0 0 0 3px rgba(0, 195, 212, 0.22);
+  --error-ring: 0 0 0 3px rgba(219, 66, 65, 0.12);
   /* trường nền của trang. V2.3 bỏ hai vệt xanh của V2, còn nền phẳng --app. Vẫn là ảnh (không phải màu)
      vì AppShell đọc nó qua bg-(image:--field). */
   --field: linear-gradient(var(--n-50), var(--n-50));
@@ -213,27 +247,13 @@
      điều phối cần thêm dòng, không cần thêm chiều ngang */
   --shell-max: 1680px;
 
-  /* ---- vật liệu kính sáng của V2 (thanh điều hướng, ô số liệu, ô icon tiêu đề). V2.3 thay bằng kính TỐI trên dải trời
-     (.glass-nav) và trên khung 3D (.glass-dark); đợt 1 chưa đổi component nên vẫn giữ, chỉ chuyển sắc xanh dương sang
-     cyan / xám ánh cyan. Xoá khi component cuối cùng thôi dùng — không để song song hai hệ kính. */
-  /* nền của dải chrome đè lên trường: đủ đục để chữ đọc rõ */
+  /* ---- còn lại của V2: header trắng của Chi tiết chuyến, form xe, So sánh (đợt 3–7 chuyển sang dải trời) */
+  /* nền của dải chrome: đủ đục để chữ đọc rõ */
   --chrome: #ffffffd9;
-  --nav-glass: 130deg, #ffffffc2, #ffffff45;
-  --nav-glass-shadow: 0 8px 20px rgba(2, 34, 45, 0.06), inset 0 1px 0 #fff;
-  --follow-glass: linear-gradient(125deg, #ffffffe0, #ffffff55 60%, #ffffffad);
-  --follow-shadow: 0 5px 10px rgba(2, 34, 45, 0.13), inset 0 1px 0 #fff, inset 0 -1px 1px rgba(155, 237, 242, 0.3);
-  --tile-glass: 118deg, #ffffffc4, #ffffff5c;
-  --glass-edge: inset 0 2px 1px #fff, inset 0 -1px 2px #ffffffaa;
-  --tile-lift: 0 7px 18px rgba(2, 34, 45, 0.08);
   --hero-icon: 140deg, var(--cyan-50), var(--cyan-100);
   --hero-icon-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px rgba(92, 219, 230, 0.35), 0 2px 6px rgba(2, 34, 45, 0.1);
-  --icon-ring: inset 0 0 0 1px #ffffff9c;
-  --tile-hover-border: var(--cyan-200);
-  --tile-lift-hover: 0 10px 24px rgba(2, 34, 45, 0.14);
-  /* nền tiêu đề cột của bảng kiểu V2 (DataTable appearance="paper") — V2.3 dùng --n-25 */
+  /* nền tiêu đề cột của bảng (DataTable appearance="paper") */
   --table-head: var(--n-25);
-  /* chuyển động lò xo của chỉ báo: vượt nhẹ rồi lắng lại */
-  --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);
 
   /* bo góc V2.3 */
   --r-sm: 6px; /* tag, mốc điểm giao */
@@ -287,8 +307,8 @@
   --color-tint-green-fg: var(--tint-green-fg);
   --color-tint-amber: var(--tint-amber);
   --color-tint-amber-fg: var(--tint-amber-fg);
-  --color-tint-violet: var(--tint-violet);
-  --color-tint-violet-fg: var(--tint-violet-fg);
+  --color-tint-azure: var(--tint-azure);
+  --color-tint-azure-fg: var(--tint-azure-fg);
   --color-tint-slate: var(--tint-slate);
   --color-tint-slate-fg: var(--tint-slate-fg);
   --color-table-head: var(--table-head);
@@ -307,12 +327,21 @@
   --color-primary-fill-hover-from: var(--primary-fill-hover-from);
   --color-primary-fill-hover-to: var(--primary-fill-hover-to);
   --color-on-primary: var(--on-primary);
+  --color-sky-end: var(--sky-end);
+  --color-sky-text: var(--sky-text);
+  --color-sky-text-2: var(--sky-text-2);
+  --color-sky-text-3: var(--sky-text-3);
+  --color-sky-glass: var(--sky-glass);
+  --color-sky-glass-hover: var(--sky-glass-hover);
+  --color-sky-glass-border: var(--sky-glass-border);
+  --color-scrim: var(--scrim);
 
   /* thang V2.3. Xoá thang mặc định cùng tên của Tailwind trước: `bg-cyan-600`, `text-red-300`… chỉ được là màu của
      bảng token, không lẫn màu Tailwind (mục 5 "Không dùng màu ngoài bảng token"). */
   --color-cyan-*: initial;
   --color-amber-*: initial;
   --color-violet-*: initial;
+  --color-purple-*: initial;
   --color-green-*: initial;
   --color-red-*: initial;
   --color-cyan-50: var(--cyan-50);
@@ -342,10 +371,10 @@
   --color-amber-200: var(--amber-200);
   --color-amber-500: var(--amber-500);
   --color-amber-700: var(--amber-700);
-  --color-violet-50: var(--violet-50);
-  --color-violet-200: var(--violet-200);
-  --color-violet-500: var(--violet-500);
-  --color-violet-700: var(--violet-700);
+  --color-azure-50: var(--azure-50);
+  --color-azure-200: var(--azure-200);
+  --color-azure-500: var(--azure-500);
+  --color-azure-700: var(--azure-700);
   --color-green-50: var(--green-50);
   --color-green-200: var(--green-200);
   --color-green-500: var(--green-500);
@@ -379,9 +408,9 @@
   --color-badge-danger-bg: var(--badge-danger-bg);
   --color-badge-danger-fg: var(--badge-danger-fg);
   --color-badge-danger-border: var(--badge-danger-border);
-  --color-badge-violet-bg: var(--badge-violet-bg);
-  --color-badge-violet-fg: var(--badge-violet-fg);
-  --color-badge-violet-border: var(--badge-violet-border);
+  --color-badge-azure-bg: var(--badge-azure-bg);
+  --color-badge-azure-fg: var(--badge-azure-fg);
+  --color-badge-azure-border: var(--badge-azure-border);
 
   --color-canvas-1: var(--canvas-1);
   --color-canvas-2: var(--canvas-2);
@@ -410,6 +439,11 @@
   --shadow-e3: var(--e3);
   --shadow-card: var(--card-shadow);
   --shadow-primary-fill: var(--primary-fill-shadow);
+  --shadow-danger: var(--danger-shadow);
+  --shadow-focus: var(--focus-ring);
+  --shadow-error: var(--error-ring);
+  --shadow-nav-on: var(--nav-on-shadow);
+  --shadow-brand: var(--brand-mark-shadow);
 
   --ease-standard: var(--ease-standard);
   --ease-decelerate: var(--ease-decelerate);
@@ -445,6 +479,11 @@
   --text-note--line-height: 17px;
   --text-lede: 13.5px;
   --text-lede--line-height: 22px;
+  /* hai bậc V2.3: small 13 — chữ phụ trong card, nút nhỏ, meta; fine 12,5 — chip trạng thái, gợi ý và lỗi dưới ô nhập */
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-fine: 12.5px;
+  --text-fine--line-height: 18px;
 }
 
 /* Lề ngang của vùng làm việc (V2): 24px, và từ khi cột rộng hơn --shell-max thì nội dung
@@ -640,31 +679,59 @@
   }
 }
 
-/* Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (V2, `app/useGlassFollow.ts`).
-   Vị trí và kích thước do hook đặt inline; ở đây chỉ có vật liệu và chuyển động. */
+/* ---------------------------------------------------------------------------
+   Vật liệu V2.3 (design/v2.3/tokens/v3.css). Kính chỉ có hai chỗ: kính tối trên dải trời (thanh điều hướng, nút trên
+   dải, hộp tìm nhanh) và trên khung 3D (.glass-dark). Bảng, form, card đọc lâu giữ nền đặc (AGENTS mục 5).
+   --------------------------------------------------------------------------- */
+
+/* Dải trời. Thanh điều hướng (AppShell) và thanh tiêu đề (PageHero) là hai phần tử: ảnh gắn vào khung nhìn nên hai
+   phần nối liền một dải, hai vệt cyan không bị cắt ở ranh giới. Phần dài hơn ảnh lấy màu cuối --sky-end. */
+.sky {
+  background-color: var(--sky-end);
+  background-image: var(--sky-dots), var(--sky);
+  background-size:
+    22px 22px,
+    100% var(--sky-h),
+    100% var(--sky-h),
+    100% var(--sky-h);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+  color: var(--sky-text);
+}
+
+/* Nhóm mục điều hướng trên dải trời */
+.glass-nav {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 10px 30px -12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px) saturate(1.6);
+}
+
+/* Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (`app/useGlassFollow.ts`). Vị trí và kích thước do hook đặt inline;
+   ở đây chỉ có vật liệu và chuyển động. V2.3: kính cyan trong + viền cyan + quầng (`--nav-on`) — nằm dưới mục đang mở khi con trỏ
+   ở ngoài thanh, bám mục đang rê / focus khi con trỏ ở trong. Mục đang mở không có nền riêng: chỉ báo là phản hồi nền duy nhất. */
 .glass-follow {
   position: absolute;
   top: 0;
   pointer-events: none;
   overflow: hidden;
-  border: 1px solid #fff;
   border-radius: var(--r-md);
-  background: var(--follow-glass);
-  box-shadow: var(--follow-shadow);
-  backdrop-filter: blur(5px) saturate(1.4);
+  background: var(--nav-on);
+  box-shadow: var(--nav-on-shadow);
+  backdrop-filter: blur(6px) saturate(1.4);
 }
-/* Phản sáng hai góc — thứ làm bề mặt trông như kính chứ không phải ô trắng. */
+/* Phản sáng góc trên — thứ làm bề mặt trông như kính chứ không phải ô màu. */
 .glass-follow::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background:
-    radial-gradient(ellipse at 15% 0, #fff, transparent 55%),
-    radial-gradient(ellipse at 90% 100%, #ffffff9c, transparent 55%);
+  background: radial-gradient(ellipse at 18% 0, rgba(255, 255, 255, 0.28), transparent 60%);
 }
-/* Chỉ bật chuyển động sau khi hook đã đặt đúng chỗ ở frame đầu, nếu không lúc tải
-   trang chỉ báo sẽ trượt từ mép trái thanh vào mục đang mở. */
+/* Chỉ bật chuyển động sau khi hook đã đặt đúng chỗ ở frame đầu, nếu không lúc tải trang chỉ báo sẽ trượt từ mép trái vào mục
+   đang mở. Giảm chuyển động: khối toàn cục ép transition 100ms (mục 8) nên chỉ báo nhảy tới gần như tức thì. */
 .glass-nav[data-follow='ready'] .glass-follow {
   transition:
     transform 1s var(--spring),
@@ -672,61 +739,56 @@
     width 1s var(--spring),
     height 1s var(--spring);
 }
-/* Ô số liệu (`components/KpiTile.tsx`) — "khối tổng hợp số liệu" của luật kính, mục 5.
-   Viền sáng trong + bóng nâng nhẹ theo V2; không lồng thêm kính nào bên trong. */
-.glass-tile {
-  border: 1px solid #fff;
-  background: linear-gradient(var(--tile-glass));
-  box-shadow: var(--glass-edge), var(--tile-lift);
-  backdrop-filter: blur(10px) saturate(1.45);
+
+/* Bề mặt kính tối: panel nổi trên khung 3D, hộp tìm nhanh */
+.glass-dark {
+  border: 1px solid var(--glass-dark-border);
+  background: var(--glass-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px) saturate(1.5);
+  color: var(--glass-dark-text);
 }
-/* Ô số liệu bấm được (lọc danh sách): rê chuột đổi viền và nâng bóng như V2, không phóng
-   to. Đang lọc: viền primary đậm gấp đôi. Specificity cao hơn nhánh dự phòng bên dưới nên
-   trạng thái đang lọc vẫn thấy khi không có kính. */
-.glass-tile[data-pressable]:has(> button:hover) {
-  border-color: var(--tile-hover-border);
-  box-shadow: var(--glass-edge), var(--tile-lift-hover);
+
+/* Trình duyệt thiếu backdrop-filter, hoặc người dùng xin bớt trong suốt: nền đặc tối */
+@supports not (backdrop-filter: blur(5px)) {
+  .glass-nav {
+    background: var(--cyan-900);
+  }
+  .glass-follow {
+    background: var(--cyan-800);
+  }
+  .glass-dark {
+    background: var(--panel-dark);
+  }
 }
-.glass-tile[data-pressed='true'] {
-  border-color: var(--primary);
-  box-shadow: var(--glass-edge), 0 0 0 1px var(--primary), var(--tile-lift);
+@media (prefers-reduced-transparency: reduce) {
+  .glass-nav {
+    background: var(--cyan-900);
+    backdrop-filter: none;
+  }
+  .glass-follow {
+    background: var(--cyan-800);
+    backdrop-filter: none;
+  }
+  .glass-dark {
+    background: var(--panel-dark);
+    backdrop-filter: none;
+  }
 }
-/* Ô icon nhận diện màn trên thanh tiêu đề (`components/PageHero.tsx`). Không dùng
-   backdrop-filter nên chỉ cần nhánh bớt trong suốt ở dưới. */
+
+/* Ô icon nhận diện màn trên header trắng còn lại của V2 (form xe) — bỏ khi màn đó lên dải trời */
 .hero-icon {
   border: 1px solid #fff;
   background: linear-gradient(var(--hero-icon));
   box-shadow: var(--hero-icon-shadow);
 }
-/* Trình duyệt thiếu backdrop-filter, hoặc người dùng xin bớt trong suốt: nền đặc. */
-@supports not (backdrop-filter: blur(5px)) {
-  .glass-nav,
-  .glass-follow {
-    background: var(--surface);
-    backdrop-filter: none;
-  }
-  /* ô số liệu nằm trên trường nền, nên nền đặc là trắng như mọi bề mặt đọc, kèm viền */
-  .glass-tile {
-    border-color: var(--border);
-    background: var(--bg);
-    backdrop-filter: none;
-  }
+
+/* Nội dung đè lên dải trời: vùng cuộn ngay dưới thanh tiêu đề kéo lên --sky-overlap, card đầu tiên nằm nửa trên dải
+   (ChuyenHang.html: .wrap { margin-top: -44px }). Vùng cuộn trong suốt nên dải trời của thanh tiêu đề hiện phía sau.
+   Thanh tiêu đề chừa thêm đúng khoảng đó ở đáy (PageHero). */
+@utility sky-overlap {
+  position: relative;
+  margin-top: calc(var(--sky-overlap) * -1);
 }
-@media (prefers-reduced-transparency: reduce) {
-  .glass-nav,
-  .glass-follow {
-    background: var(--surface);
-    backdrop-filter: none;
-  }
-  .glass-tile {
-    border-color: var(--border);
-    background: var(--bg);
-    backdrop-filter: none;
-  }
-  .hero-icon {
-    background: var(--bg);
-  }
-}
-/* Không cần rule prefers-reduced-motion riêng: khối toàn cục phía trên đã ép
-   transition-duration 100ms !important cho mọi phần tử (AGENTS mục 8), nên chỉ báo
-   nhảy tới nơi gần như tức thì thay vì bật lò xo. */

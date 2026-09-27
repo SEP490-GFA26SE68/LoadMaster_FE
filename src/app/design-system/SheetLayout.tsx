@@ -1,132 +1,118 @@
 import type { ReactNode } from 'react'
-import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { Link } from 'react-router'
+import { LanguageMenu } from '@/components/LanguageMenu'
+import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { BrandMark } from '../BrandMark'
 
 /**
- * Khung chung cho hai trang bàn giao (kiểu dáng, thành phần): tiêu đề,
- * mô tả, chip nhảy mục, các mục đánh số. Không có nav rail — đây là tài
- * liệu sống cho đội dev/design, không phải màn nghiệp vụ.
+ * Khung chung của hai trang tài liệu bàn giao V2.3 (`Main.jpg`, `ThanhPhan.jpg`): **dải trời** có logo và chọn ngôn ngữ, đường dẫn
+ * "Hệ thống / /route", tiêu đề Archivo 32px chữ trắng, một đoạn mô tả; rồi lưới thẻ đè lên đáy dải `--sky-overlap` (44px) như
+ * `PageHero overlap`. Hai trang mở công khai, không đăng nhập nên không có mục điều hướng — chỉ logo về trang chính.
  */
-
-export type SheetNavItem = { id: string; label: string }
-
 export function SheetLayout({
-  badge,
+  path,
   title,
-  description,
-  nav,
+  lede,
+  aside,
   children,
 }: {
-  badge: string
+  /** Route của trang, hiện trong đường dẫn: `/kieu-dang`. */
+  path: string
   title: string
-  description: string
-  nav: SheetNavItem[]
+  lede: string
+  /** Khối bên phải tiêu đề, trên dải trời (hai thẻ "có kính / không kính" ở `/kieu-dang`). */
+  aside?: ReactNode
   children: ReactNode
 }) {
   const t = useT()
   return (
-    <div className="min-h-dvh bg-bg">
-      <div className="mx-auto flex max-w-300 flex-col gap-16 px-10 pt-14 pb-24">
-        <header className="flex flex-col gap-3 border-b border-border pb-7">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-7 place-items-center rounded-md bg-primary">
-              <span className="h-2.5 w-3.5 rounded-xs border-2 border-t-4 border-white" />
-            </span>
-            <span className="text-body-lg font-semibold tracking-[-0.01em]">LoadMaster</span>
-            <span className="rounded-full border border-border px-2 py-0.5 font-mono text-caption font-medium text-text-3">
-              {badge}
-            </span>
-            <LanguageSwitch className="ml-auto" />
+    <div className="min-h-dvh bg-app">
+      <header className="sky pb-[calc(var(--sky-overlap)+24px)]">
+        <div className="mx-auto max-w-shell px-7 max-sm:px-4">
+          <div className="flex h-15 items-center gap-4">
+            <Link
+              to="/"
+              aria-label={t('nav.home')}
+              className="flex items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+            >
+              <BrandMark />
+              <span aria-hidden className="font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-sky-text font-stretch-112%">
+                Load<span className="text-cyan-300">Master</span>
+              </span>
+            </Link>
+            <div className="ml-auto">
+              <LanguageMenu />
+            </div>
           </div>
-          <h1 className="text-display font-semibold tracking-[-0.02em]">{title}</h1>
-          <p className="max-w-190 text-body-lg text-pretty text-text-2">{description}</p>
-          <nav aria-label={t('designSystem.sections')} className="flex flex-wrap gap-2 text-caption">
-            {nav.map((item, index) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className="rounded-full border border-border px-2.5 py-1 text-text-2 transition-colors duration-(--dur-fast) hover:bg-surface"
-              >
-                {index + 1} · {item.label}
-              </a>
-            ))}
-          </nav>
-        </header>
-        {children}
-      </div>
+
+          <div className="flex flex-wrap items-end gap-x-10 gap-y-6 pt-3">
+            <div className="flex min-w-[min(100%,520px)] flex-1 flex-col gap-2">
+              <nav aria-label={t('designSystem.frame.breadcrumb')}>
+                <ol className="m-0 flex list-none items-center gap-1.5 p-0 text-fine text-sky-text-3">
+                  <li>{t('designSystem.frame.system')}</li>
+                  <li aria-hidden>/</li>
+                  <li aria-current="page" className="font-mono">{path}</li>
+                </ol>
+              </nav>
+              <h1 className="font-display text-display leading-[1.1] font-bold tracking-[-0.5px] text-sky-text font-stretch-112%">{title}</h1>
+              <p className={cn('max-w-160 text-pretty text-sky-text-3', aside ? 'text-body-lg leading-6.5' : 'text-body')}>{lede}</p>
+            </div>
+            {aside ? <div className="w-full lg:w-[min(46%,690px)]">{aside}</div> : null}
+          </div>
+        </div>
+      </header>
+
+      <main className="sky-overlap mx-auto max-w-shell px-7 pb-10 max-sm:px-4">{children}</main>
     </div>
   )
 }
 
-export function SheetSection({
-  id,
-  number,
+/** Thẻ của lưới tài liệu: đầu thẻ Archivo 16px + ghi chú, thân tuỳ chọn padding (`bare` cho bảng, khung tràn mép). */
+export function SheetCard({
   title,
-  description,
-  children,
-}: {
-  id: string
-  number: string
-  title: string
-  description?: string
-  children: ReactNode
-}) {
-  return (
-    <section id={id} className="flex scroll-mt-6 flex-col gap-7">
-      <div className="flex flex-col gap-1.5">
-        <span className="font-mono text-caption font-medium text-text-3">{number}</span>
-        <h2 className="text-h1 font-semibold tracking-[-0.01em]">{title}</h2>
-        {description ? <p className="max-w-160 text-body text-pretty text-text-2">{description}</p> : null}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-/** Một hàng trong mục: tên thành phần + ghi chú bên trái, mẫu bên phải. */
-export function SheetRow({
-  name,
-  note,
-  children,
+  meta,
+  bare = false,
   className,
+  bodyClassName,
+  children,
 }: {
-  name: string
-  note?: string
-  children: ReactNode
+  title: string
+  meta?: string
+  bare?: boolean
   className?: string
+  bodyClassName?: string
+  children: ReactNode
 }) {
   return (
-    <div className="grid grid-cols-[280px_minmax(0,1fr)] gap-6 border-t border-border py-5">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-h3 font-medium">{name}</h3>
-        {note ? <p className="text-body text-pretty text-text-2">{note}</p> : null}
-      </div>
-      <div className={cn('flex min-w-0 flex-wrap items-start gap-4', className)}>{children}</div>
-    </div>
+    <Card className={cn('flex min-w-0 flex-col', className)}>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {meta ? <CardMeta>{meta}</CardMeta> : null}
+      </CardHeader>
+      {bare ? children : <CardBody className={cn('flex flex-col gap-3.5', bodyClassName)}>{children}</CardBody>}
+    </Card>
   )
 }
 
-/** Nhãn nhỏ dưới một mẫu: "Default", "Hover"… */
-export function Sample({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
-  return (
-    <div className={cn('flex flex-col gap-2', className)}>
-      <div>{children}</div>
-      <span className="font-mono text-caption text-text-3">{label}</span>
-    </div>
-  )
+/**
+ * Khối nền trời thu nhỏ trong thẻ — cho thành phần chỉ dùng trên dải trời hoặc khung 3D (nút kính, tab trên dải, ô số liệu kính).
+ * Ảnh `--sky` co theo khối, không gắn vào khung nhìn như `.sky` của đầu trang.
+ */
+export function SkyStage({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cn('rounded-lg bg-sky-end bg-(image:--sky) p-4 text-sky-text', className)}>{children}</div>
 }
 
-/** Khung nền tối cho các thành phần vùng 3D. */
-export function DarkStage({ children, className }: { children: ReactNode; className?: string }) {
+/**
+ * Bản xem trước không bấm được: nút, hộp thoại, toast, menu vẽ bằng đúng lớp của thành phần thật nhưng `inert` — không nhận bàn
+ * phím, chuột hay trình đọc màn hình, nên không thành "nút giả" (AGENTS mục 6). Tên nhóm đọc được nằm ở vỏ ngoài.
+ */
+export function Preview({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  const t = useT()
   return (
-    <div
-      className={cn(
-        'relative min-h-60 w-full overflow-hidden rounded-md bg-[linear-gradient(180deg,var(--canvas-1)_0%,var(--canvas-2)_100%)] p-4',
-        className,
-      )}
-    >
-      {children}
+    <div role="group" aria-label={t('designSystem.components.preview', { name: label })} className={className}>
+      <div inert className="contents">{children}</div>
     </div>
   )
 }

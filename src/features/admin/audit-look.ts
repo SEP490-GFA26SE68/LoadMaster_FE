@@ -16,7 +16,7 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
 
 /**
  * Tint nói hành động có nghĩa gì, theo nghĩa cố định của AGENTS mục 4 — không mượn màu của nhóm: xanh dương = việc vận hành,
- * xanh lá = xong / sẵn sàng, hổ phách = cần người xem lại, tím = kết quả phân tích (tối ưu), xám = ngữ cảnh (phiên, tài khoản,
+ * xanh lá = xong / sẵn sàng, hổ phách = cần người xem lại, xanh lam = kết quả phân tích (tối ưu), xám = ngữ cảnh (phiên, tài khoản,
  * xoá bản ghi). Khai theo từng mã nên thêm mã vào kho mà chưa chọn tint là lỗi kiểu.
  */
 const ACTION_TONE: Record<AuditAction, KpiTone> = {
@@ -31,7 +31,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.created': 'blue',
   'trip.updated': 'blue',
   'trip.cancelled': 'amber',
-  'optimization.saved': 'violet',
+  'optimization.saved': 'azure',
   'revision.approved': 'green',
   'loading.started': 'blue',
   'loading.missing': 'amber',

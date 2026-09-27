@@ -84,3 +84,41 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
     .map((group) => ({ group, results: matchers[group]().slice(0, RESULTS_PER_GROUP) }))
     .filter((entry) => entry.results.length > 0)
 }
+
+/** Một đoạn của chữ hiển thị: `match` là phần khớp từ khoá, tô để người dùng thấy vì sao dòng này hiện ra. */
+export type TextPart = { readonly text: string; readonly match: boolean }
+
+/** Một ký tự gốc sau khi bỏ dấu như `normalizeSearchText`; khoảng trắng giữ thành một dấu cách để từ khoá không khớp qua hai từ. */
+function foldChar(char: string): string {
+  return /\s/.test(char) ? ' ' : normalizeSearchText(char)
+}
+
+/**
+ * Tách `text` thành các đoạn khớp / không khớp theo đúng luật tìm (`matchesQuery`): bỏ dấu, không phân biệt hoa thường, mỗi từ của
+ * từ khoá tô mọi chỗ nó xuất hiện. Bỏ dấu theo **từng ký tự gốc** nên vị trí tô trên chữ có dấu vẫn đúng ("hoa" tô "Hoà").
+ * Từ khoá rỗng hoặc không khớp: một đoạn duy nhất không tô.
+ */
+export function highlightParts(text: string, query: string): TextPart[] {
+  const terms = normalizeSearchText(query).split(' ').filter((term) => term !== '')
+  const chars = [...text]
+  const folds = chars.map(foldChar)
+  // Ký tự thứ i của chữ đã bỏ dấu đến từ ký tự gốc nào
+  const origin = folds.flatMap((fold, index) => [...fold].map(() => index))
+  const folded = folds.join('')
+  const marked = chars.map(() => false)
+  for (const term of terms) {
+    for (let from = folded.indexOf(term); from !== -1; from = folded.indexOf(term, from + 1)) {
+      for (let i = from; i < from + term.length; i++) marked[origin[i] ?? 0] = true
+    }
+  }
+  const parts: TextPart[] = []
+  chars.forEach((char, index) => {
+    // Dấu rời (chữ chưa dựng sẵn NFC) không còn gì sau khi bỏ dấu: đi theo ký tự gốc đứng trước nó
+    const match = folds[index] === '' && index > 0 ? (marked[index - 1] ?? false) : (marked[index] ?? false)
+    marked[index] = match
+    const last = parts.at(-1)
+    if (last && last.match === match) parts[parts.length - 1] = { text: last.text + char, match }
+    else parts.push({ text: char, match })
+  })
+  return parts.length > 0 ? parts : [{ text, match: false }]
+}

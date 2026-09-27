@@ -1,4 +1,3 @@
-import { UserRound } from 'lucide-react'
 import { PageHero } from '@/components/PageHero'
 import { useCurrentUser } from '@/features/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
@@ -17,7 +16,7 @@ export function ProfilePage() {
   const user = useCurrentUser()
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <PageHero icon={UserRound} title={t('profile.title')} description={t('pageHero.profile')} />
+      <PageHero title={t('profile.title')} description={t('pageHero.profile')} />
       <main className="min-h-0 flex-1 overflow-y-auto px-shell py-6 max-sm:p-4">
         <div className="grid max-w-300 grid-cols-1 items-start gap-6 pointer-coarse:text-body-lg lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8">
           <ProfileIdentity user={user} />

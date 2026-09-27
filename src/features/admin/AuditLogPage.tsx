@@ -1,4 +1,3 @@
-import { ScrollText } from 'lucide-react'
 import { useMemo } from 'react'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
@@ -82,14 +81,14 @@ export function AuditLogPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={ScrollText}
+        overlap
         title={t('audit.log.title')}
         meta={events.data ? t('audit.log.count', { count: rows.length }) : undefined}
         description={t('pageHero.audit')}
         actions={<Badge>{t('audit.log.readOnly')}</Badge>}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell py-6">
+      <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
         {failed ? (
           <EmptyState
             title={t('audit.log.errorTitle')}

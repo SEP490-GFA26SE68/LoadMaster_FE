@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { EmptyTripsIllustration } from '@/features/trips/EmptyTripsIllustration'
 import { cn } from '@/lib/utils'
+import { BrandMark } from './BrandMark'
 
 /**
  * Khung màn lỗi dùng chung (404, lỗi render, 403): logo, hình minh hoạ, mã, tiêu đề, mô tả và nút. Màn không có dữ liệu nghiệp vụ
@@ -16,13 +17,13 @@ export function ErrorScreen({ code, title, description, actions, className }: {
   return (
     <main className={cn('flex min-h-dvh flex-1 flex-col items-center justify-center gap-8 overflow-auto bg-(image:--field) px-6 py-16 in-[.app-shell]:min-h-0 in-[.app-shell]:bg-none', className)}>
       <div className="flex items-center gap-2.5">
-        <span className="grid size-9 place-items-center rounded-md bg-primary">
-          <span className="h-3 w-4.5 rounded-xs border-2 border-t-4 border-white" />
+        <BrandMark />
+        <span className="font-display text-[18px] leading-none font-bold tracking-[-0.2px] font-stretch-112%">
+          Load<span className="text-primary">Master</span>
         </span>
-        <span className="text-h3 font-semibold tracking-[-0.01em]">LoadMaster</span>
       </div>
 
-      <div className="flex w-full max-w-120 flex-col items-center gap-6 rounded-md border border-border bg-bg px-8 py-10 text-center">
+      <div className="flex w-full max-w-120 flex-col items-center gap-6 rounded-lg border border-border bg-bg px-8 py-10 text-center shadow-card">
         <EmptyTripsIllustration />
         <div className="flex flex-col items-center gap-2">
           <span className="font-mono text-body font-medium text-text-3">{code}</span>

@@ -1,6 +1,7 @@
-import { Bell } from 'lucide-react'
+import { Bell, Check } from 'lucide-react'
 import { useMemo } from 'react'
 import { NavRailButton } from '@/components/NavRailButton'
+import { Badge } from '@/components/ui/Badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Spinner } from '@/components/ui/Spinner'
-import { describeEvent } from '@/features/admin/audit-log'
+import { describeLogRow } from '@/features/admin/audit-log'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useFormat, useT } from '@/lib/i18n'
 import { hasNotifications, NOTIFICATION_WINDOW_DAYS } from './notifications'
@@ -18,9 +19,10 @@ import { markNotificationsRead, useReadNotifications } from './read-state'
 import { useNotificationsQuery } from './useNotificationsQuery'
 
 /**
- * Chuông thông báo trên nav rail (LM-098, D-55): số chưa đọc trên icon, mở danh sách sự kiện nhật ký liên quan vai trò — mới nhất
- * trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại kho; "Đánh dấu đã đọc" giữ trong phiên. Vai trò không có
- * loại thông báo nào (kho, tài xế) thì không có chuông: không hiện nút không làm gì (D-20).
+ * Chuông thông báo trên thanh điều hướng (LM-098, D-55; V2.3 MenuToanCuc): chấm hổ phách trên icon khi có tin chưa đọc — số nằm trong
+ * nhãn đọc của nút và chip cạnh tiêu đề danh sách. Danh sách (nền trắng đặc, không kính) là sự kiện nhật ký liên quan vai trò — mới
+ * nhất trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại kho; "Đánh dấu đã đọc" giữ trong phiên. Vai trò
+ * không có loại thông báo nào (kho, tài xế) thì không có chuông: không hiện nút không làm gì (D-20).
  */
 export function NotificationBell() {
   const t = useT()
@@ -30,7 +32,7 @@ export function NotificationBell() {
   const read = useReadNotifications(user?.id ?? '')
   const feed = query.data
   const rows = useMemo(
-    () => (feed ? feed.events.map((event) => describeEvent(event, feed.directory, t, format)) : []),
+    () => (feed ? feed.events.map((event) => describeLogRow(event, feed.directory, t, format)) : []),
     [feed, t, format],
   )
   if (!user || !hasNotifications(user.role)) return null
@@ -50,7 +52,6 @@ export function NotificationBell() {
     <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <NavRailButton
-          orientation="horizontal"
           icon={Bell}
           label={t('notifications.label')}
           aria-label={unreadCount > 0 ? t('notifications.labelUnread', { count: unreadCount }) : undefined}
@@ -58,40 +59,45 @@ export function NotificationBell() {
             unreadCount > 0 ? (
               <span
                 aria-hidden
-                className="absolute -top-1.5 right-1 grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1 font-mono text-[11px] leading-none font-semibold text-white"
-              >
-                {unreadCount > 9 ? `${format.integer(9)}+` : format.integer(unreadCount)}
-              </span>
+                data-unread-dot
+                className="absolute top-1.75 right-2 size-1.75 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--sky-end)]"
+              />
             ) : null
           }
         />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="end" className="flex w-96 max-w-[calc(100vw-112px)] flex-col p-0">
-        <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-1.5 pr-1.5 pl-4">
-          <DropdownMenuLabel className="p-0 text-h3 font-semibold text-text">{t('notifications.title')}</DropdownMenuLabel>
+      <DropdownMenuContent side="bottom" align="end" className="flex w-102 max-w-[calc(100vw-32px)] flex-col p-0">
+        <div className="flex min-h-13 items-center gap-2.5 border-b border-line-soft py-2 pr-2.5 pl-4.5">
+          <DropdownMenuLabel className="p-0 font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">
+            {t('notifications.title')}
+          </DropdownMenuLabel>
           {unreadCount > 0 ? (
-            <DropdownMenuItem
-              className="px-3 font-medium text-primary-hover"
-              onSelect={(event) => {
-                // Giữ danh sách mở để thấy mọi dòng đã chuyển sang đã đọc
-                event.preventDefault()
-                markNotificationsRead(userId, rows.map((row) => row.id))
-              }}
-            >
-              {t('notifications.markAllRead')}
-            </DropdownMenuItem>
+            <>
+              <Badge shape="tag" tone="cyan">{t('notifications.unreadCount', { count: unreadCount })}</Badge>
+              <DropdownMenuItem
+                className="ml-auto h-8 gap-1.5 px-2.5 text-small font-semibold text-cyan-700 [&_svg]:size-3.75 [&_svg]:text-current"
+                onSelect={(event) => {
+                  // Giữ danh sách mở để thấy mọi dòng đã chuyển sang đã đọc
+                  event.preventDefault()
+                  markNotificationsRead(userId, rows.map((row) => row.id))
+                }}
+              >
+                <Check strokeWidth={2} aria-hidden />
+                {t('notifications.markAllRead')}
+              </DropdownMenuItem>
+            </>
           ) : null}
         </div>
 
-        <div className="max-h-[min(28rem,60vh)] overflow-y-auto p-1">
+        <div className="max-h-[min(28rem,60vh)] overflow-y-auto p-1.5">
           {query.isPending ? (
-            <p className="flex items-center gap-2 px-3 py-6 text-body text-text-2">
+            <p className="flex items-center gap-2 px-3 py-6 text-body text-ink-2">
               <Spinner />
               {t('notifications.loading')}
             </p>
           ) : query.isError ? (
             <>
-              <p className="px-3 pt-4 pb-2 text-body text-text-2">{t('notifications.error')}</p>
+              <p className="px-3 pt-4 pb-2 text-body text-ink-2">{t('notifications.error')}</p>
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault()
@@ -102,21 +108,23 @@ export function NotificationBell() {
               </DropdownMenuItem>
             </>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-6 text-center text-body text-text-2">{t('notifications.empty', { days: NOTIFICATION_WINDOW_DAYS })}</p>
+            <p className="px-3 py-6 text-center text-body text-ink-2">{t('notifications.empty', { days: NOTIFICATION_WINDOW_DAYS })}</p>
           ) : (
-            rows.map((row) => (
-              <NotificationItem
-                key={row.id}
-                row={row}
-                unread={!read.has(row.id)}
-                when={whenOf(row.at)}
-                onSelect={() => markNotificationsRead(userId, [row.id])}
-              />
-            ))
+            <div className="flex flex-col gap-0.5">
+              {rows.map((row) => (
+                <NotificationItem
+                  key={row.id}
+                  row={row}
+                  unread={!read.has(row.id)}
+                  when={whenOf(row.at)}
+                  onSelect={() => markNotificationsRead(userId, [row.id])}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        <p className="border-t border-border px-4 py-2.5 text-caption text-text-3">
+        <p className="border-t border-line-soft bg-n-25 px-4.5 pt-2.5 pb-3 text-fine text-ink-3">
           {t('notifications.scope', { days: NOTIFICATION_WINDOW_DAYS })}
         </p>
       </DropdownMenuContent>

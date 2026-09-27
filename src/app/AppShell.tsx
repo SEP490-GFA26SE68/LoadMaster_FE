@@ -2,7 +2,7 @@ import { Outlet } from 'react-router'
 import { NavRail } from './NavRail'
 
 /**
- * Khung desktop: thanh điều hướng ngang ở trên, nội dung màn bên dưới.
+ * Khung desktop: thanh điều hướng ngang trên dải trời, nội dung màn bên dưới trên nền phẳng `--app` (V2.3).
  *
  * Màn nằm trong một **hàng** flex `min-h-0`, không nằm thẳng trong cột: mọi màn viết cho bối cảnh hàng (thời rail dọc) —
  * gốc `flex-1 flex-col`, vùng cuộn `min-h-0 flex-1 overflow-auto`. Đặt thẳng vào cột thì gốc màn cao theo nội dung
@@ -13,7 +13,7 @@ import { NavRail } from './NavRail'
  */
 export function AppShell() {
   return (
-    <div className="app-shell flex h-dvh flex-col overflow-hidden bg-(image:--field)">
+    <div className="app-shell flex h-dvh flex-col overflow-hidden bg-app">
       <NavRail />
       <div className="relative flex min-h-0 min-w-0 flex-1">
         <Outlet />

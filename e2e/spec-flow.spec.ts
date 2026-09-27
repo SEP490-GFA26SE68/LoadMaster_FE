@@ -286,7 +286,9 @@ test('switching to English mid-flow keeps form input and formats numbers the Eng
   await page.getByRole('option', { name: 'Hyundai HD210 · 60C-446.32', exact: true }).click()
   await expect(page.locator('form').getByText('9.500 kg', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'EN English', exact: true }).click()
+  // V2.3: ngôn ngữ trên thanh điều hướng là một nút mở menu chọn
+  await page.getByRole('button', { name: 'Ngôn ngữ giao diện', exact: true }).click()
+  await page.getByRole('menuitemradio', { name: 'EN English', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Create trip', exact: true })).toBeVisible()
   // Dữ liệu đang nhập giữ nguyên, không tải lại trang
   await expect(page.getByRole('textbox', { name: 'Trip name', exact: true })).toHaveValue('Tuyến Q.7 – Dĩ An')

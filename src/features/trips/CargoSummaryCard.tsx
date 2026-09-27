@@ -21,7 +21,7 @@ export function CargoSummaryCard({ summary }: { summary: CargoSummary }) {
   ]
   // Nằm ở cột hẹp (~300 px): mỗi số một dòng "nhãn — số", không chia ba cột để số dài như "4.042,5 kg" không tràn
   return (
-    <section aria-label={t('trips.cargoSummary')} className="glass-tile flex flex-col rounded-xl px-4.5 py-1.5">
+    <section aria-label={t('trips.cargoSummary')} className="flex flex-col rounded-lg border border-border bg-bg px-4.5 py-1.5 shadow-card">
       {metrics.map((metric) => {
         const [number, unit] = splitUnit(metric.value)
         return (

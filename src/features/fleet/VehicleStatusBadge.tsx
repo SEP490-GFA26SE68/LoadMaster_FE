@@ -1,20 +1,18 @@
 import { Truck } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { Link } from 'react-router'
-import { Badge } from '@/components/ui/Badge'
+import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { useT } from '@/lib/i18n'
 import type { VehicleState, VehicleStatus } from '@/lib/mock-db'
 
-type BadgeTone = 'success' | 'info' | 'warning'
-
 /**
- * Tông badge theo trạng thái xe; chấm cho trạng thái đang diễn ra (mục 4 style sheet, như trạng thái chuyến). Xe đang phục vụ
- * chuyến dùng tông xanh dương — cùng nghĩa "vận hành" với icon tint của nó (V2).
+ * Chip trạng thái xe theo ngữ pháp chấm V2.3 (Main.jpg): sẵn sàng chấm xanh lá, đang phục vụ chuyến xanh lam có quầng (đang chạy, cùng
+ * tông với chuyến đang xếp / đang giao), bảo dưỡng chip xám.
  */
-const TONE: Record<VehicleStatus, { tone: BadgeTone; dot?: boolean }> = {
-  available: { tone: 'success' },
-  in_use: { tone: 'info', dot: true },
-  maintenance: { tone: 'warning' },
+const TONE: Record<VehicleStatus, { tone: BadgeTone; dot: BadgeDot }> = {
+  available: { tone: 'success', dot: 'solid' },
+  in_use: { tone: 'azure', dot: 'halo' },
+  maintenance: { tone: 'neutral', dot: 'solid' },
 }
 
 /** Tint của icon xe đầu dòng — cùng nghĩa với ô số liệu của trạng thái đó (AGENTS mục 4). */

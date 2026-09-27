@@ -62,24 +62,26 @@ async function actAs<T>(userId: string | null, backTo: string, action: () => Pro
   }
 }
 
+const menuItems = () => within(screen.getByRole('menu')).getAllByRole('menuitem').filter((item) => item.querySelector('time'))
+const part = (item: Element, name: string) => item.querySelector(`[data-part="${name}"]`)?.textContent
+
 /** Các dòng thông báo (bỏ mục "Đánh dấu đã đọc"): hành động, đối tượng, thời điểm, đã đọc hay chưa, nơi mở. */
 function notificationRows() {
-  return within(screen.getByRole('menu'))
-    .getAllByRole('menuitem')
-    .filter((item) => item.querySelector('time'))
-    .map((item) => ({
-      text: [...item.querySelectorAll(':scope > span > span > span:first-child, :scope > span > span.truncate')].map((part) => part.textContent),
-      at: item.querySelector('time')?.getAttribute('datetime'),
-      unread: item.textContent?.endsWith('Chưa đọc') ?? false,
-      href: item.getAttribute('href'),
-    }))
+  return menuItems().map((item) => ({
+    text: [part(item, 'action'), part(item, 'target')],
+    at: item.querySelector('time')?.getAttribute('datetime'),
+    unread: item.textContent?.endsWith('Chưa đọc') ?? false,
+    href: item.getAttribute('href'),
+  }))
 }
 
 test('the dispatcher sees what others did in the last seven days; opening one marks it read, then mark all read', async () => {
   const user = userEvent.setup()
   renderBell('dispatcher')
   const bell = await screen.findByRole('button', { name: 'Thông báo, 4 chưa đọc' }, SLOW)
-  expect(within(bell).getByText('4')).toBeInTheDocument()
+  // Nút chuông chỉ có chấm, không in số: số nằm trong nhãn đọc và chip của danh sách
+  expect(bell).not.toHaveTextContent(/\d/)
+  expect(bell.querySelector('[data-unread-dot]')).not.toBeNull()
 
   await user.click(bell)
   await screen.findByRole('menu')
@@ -89,6 +91,14 @@ test('the dispatcher sees what others did in the last seven days; opening one ma
     { text: ['Hoàn thành chuyến', 'Tuyến Biên Hoà – Thủ Đức – Bình Thạnh – Q.3 · TRIP-008'], at: '2026-09-11T06:50:30.000Z', unread: true, href: '/chuyen/TRIP-008' },
     { text: ['Xếp xong', 'Tuyến Biên Hoà – Thủ Đức – Bình Thạnh – Q.3 · TRIP-008'], at: '2026-09-11T01:50:30.000Z', unread: true, href: '/chuyen/TRIP-008' },
   ])
+  // Dòng thứ ba: người làm và chi tiết đúng như nhật ký ghi
+  expect(menuItems().map((item) => part(item, 'meta'))).toStrictEqual([
+    'Lê Văn Hải · Đã lên xe: 210 · Thiếu ở kho: 0',
+    'Lê Văn Hải · Đã lên xe: 160 · Thiếu ở kho: 0',
+    'Đặng Hoài Nam · Số điểm giao: 4 · Sự cố: 0',
+    'Đỗ Thị Hạnh · Đã lên xe: 400 · Thiếu ở kho: 0',
+  ])
+  expect(within(screen.getByRole('menu')).getByText('4 chưa đọc')).toBeInTheDocument()
   expect(screen.getByText('Sự kiện 7 ngày gần nhất, không gồm việc bạn làm.')).toBeInTheDocument()
 
   // Bàn phím: mũi tên xuống tới "Hoàn thành chuyến" rồi Enter mở chuyến
@@ -98,13 +108,15 @@ test('the dispatcher sees what others did in the last seven days; opening one ma
   expect(screen.getByRole('button', { name: 'Thông báo, 3 chưa đọc' })).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Thông báo, 3 chưa đọc' }))
+  expect(await screen.findByText('3 chưa đọc')).toBeInTheDocument()
   await user.click(await screen.findByRole('menuitem', { name: 'Đánh dấu đã đọc' }))
-  // Danh sách vẫn mở, mọi dòng đã đọc, nút chuông hết số
+  // Danh sách vẫn mở, mọi dòng đã đọc, chip số chưa đọc biến mất
   expect(notificationRows().map((row) => row.unread)).toStrictEqual([false, false, false, false])
   expect(screen.queryByRole('menuitem', { name: 'Đánh dấu đã đọc' })).not.toBeInTheDocument()
-  // Menu đang mở che phần còn lại khỏi cây truy cập: đóng rồi mới đọc nhãn chuông
+  expect(screen.queryByText('3 chưa đọc')).not.toBeInTheDocument()
+  // Menu đang mở che phần còn lại khỏi cây truy cập: đóng rồi mới đọc nhãn chuông — hết chấm chưa đọc
   await user.keyboard('{Escape}')
-  expect(screen.getByRole('button', { name: 'Thông báo' })).not.toHaveTextContent(/\d/)
+  expect(screen.getByRole('button', { name: 'Thông báo' }).querySelector('[data-unread-dot]')).toBeNull()
 })
 
 test('the manager gets completed and cancelled trips; opening the bell reads the store again', async () => {
@@ -120,7 +132,7 @@ test('the manager gets completed and cancelled trips; opening the bell reads the
     { text: ['Hoàn thành chuyến', 'Tuyến Biên Hoà – Thủ Đức – Bình Thạnh – Q.3 · TRIP-008'], href: '/chuyen/TRIP-008' },
   ])
   await user.keyboard('{Escape}')
-  expect(screen.getByRole('button', { name: 'Thông báo, 2 chưa đọc' })).toHaveTextContent('2')
+  expect(screen.getByRole('button', { name: 'Thông báo, 2 chưa đọc' }).querySelector('[data-unread-dot]')).not.toBeNull()
 })
 
 test('the admin: empty at first, then account events by others and failed sign-ins', async () => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (V2). Một thanh một chỉ báo:
+ * Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (V2, vật liệu kính cyan của V2.3 ở `.glass-follow`). Một thanh một chỉ báo:
  * bám mục đang hover hoặc đang focus, trả về mục đang mở khi con trỏ rời thanh hoặc
  * focus đi ra ngoài, neo lại khi thanh đổi kích thước.
  *

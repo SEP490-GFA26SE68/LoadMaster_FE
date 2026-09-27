@@ -8,7 +8,7 @@ import type { DashboardSummary } from './dashboard-summary'
  * Năm KPI của kỳ (LM-090), mỗi ô một dòng nói nguồn trong kho. Kỳ chưa có số để tính tỷ lệ thì ô hiện "—" kèm lý do,
  * không hiện 0% như thể đã đo được.
  *
- * Tông icon theo nghĩa cố định của tint (AGENTS mục 4): xong → green, vận hành → blue, phân tích phụ → violet. Số luôn cùng
+ * Tông icon theo nghĩa cố định của tint (AGENTS mục 4): xong → green, vận hành → blue, phân tích phụ → azure. Số luôn cùng
  * màu mực; màu không nói số tốt hay xấu.
  */
 export function KpiRow({ summary }: { summary: DashboardSummary }) {
@@ -28,11 +28,11 @@ export function KpiRow({ summary }: { summary: DashboardSummary }) {
       />
       <KpiTile
         icon={Boxes}
-        tone="violet"
+        tone="azure"
         label={t('manager.kpi.fill')}
         value={fill.averagePercent === null ? t('manager.noValue') : format.percent(fill.averagePercent)}
         note={fill.averagePercent === null ? t('manager.kpi.tile.fillEmpty') : t('manager.kpi.tile.fill', { count: fill.planCount })}
-        badge={fill.isMockResult ? <Badge tone="warning">MOCK RESULT</Badge> : null}
+        badge={fill.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
       />
       <KpiTile
         icon={Weight}

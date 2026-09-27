@@ -1,4 +1,4 @@
-import { Plus, Users as UsersIcon } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
@@ -30,9 +30,9 @@ export function UsersPage() {
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <Tabs defaultValue="accounts" className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={UsersIcon}
+        overlap
         title={t('admin.users.title')}
         meta={query.data ? t('admin.users.count', { count: users.length }) : undefined}
         description={t('pageHero.users')}
@@ -42,14 +42,15 @@ export function UsersPage() {
             {t('admin.users.form.createTitle')}
           </Button>
         }
-      />
-
-      <Tabs defaultValue="accounts" className="flex min-h-0 flex-1 flex-col">
-        <TabsList className="flex-none bg-chrome px-shell">
+      >
+        {/* V2.3: tab nằm trong dải trời, dưới tiêu đề */}
+        <TabsList tone="sky">
           <TabsTrigger value="accounts">{t('admin.users.tabs.accounts')}</TabsTrigger>
           <TabsTrigger value="permissions">{t('admin.users.tabs.permissions')}</TabsTrigger>
         </TabsList>
-        <TabsContent value="accounts" className="min-h-0 flex-1 overflow-auto px-shell py-6">
+      </PageHero>
+
+        <TabsContent value="accounts" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
           {query.isPending ? (
             <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
           ) : query.isError ? (
@@ -62,10 +63,9 @@ export function UsersPage() {
             <UsersTable users={users} currentUserId={currentUser?.id ?? null} onAction={actions.handleAction} />
           )}
         </TabsContent>
-        <TabsContent value="permissions" className="min-h-0 flex-1 overflow-auto px-shell py-6">
+        <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
           <PermissionMatrix />
         </TabsContent>
-      </Tabs>
 
       {dialog?.kind === 'create' || dialog?.kind === 'edit' ? (
         <UserFormDialog
@@ -106,6 +106,6 @@ export function UsersPage() {
           onConfirm={() => actions.confirmDelete(dialog.user)}
         />
       ) : null}
-    </div>
+    </Tabs>
   )
 }

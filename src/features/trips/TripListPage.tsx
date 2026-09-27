@@ -1,4 +1,4 @@
-import { Plus, Truck } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable } from '@/components/DataTable'
@@ -49,7 +49,7 @@ export function TripListPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        icon={Truck}
+        overlap
         title={t('trips.list.title')}
         description={t('pageHero.trips')}
         actions={hasTrips && canCreate ? (
@@ -62,7 +62,7 @@ export function TripListPage() {
         ) : null}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell py-6">
+      <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
         {query.isPending ? (
           <TripListSkeleton />
         ) : query.isError ? (

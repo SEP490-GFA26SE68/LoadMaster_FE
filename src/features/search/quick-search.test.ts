@@ -1,5 +1,7 @@
 import { expect, test } from 'vitest'
-import { RESULTS_PER_GROUP, SEARCH_GROUPS, searchSources, type SearchResultGroup, type SearchSources } from './quick-search'
+import {
+  highlightParts, RESULTS_PER_GROUP, SEARCH_GROUPS, searchSources, type SearchResultGroup, type SearchSources,
+} from './quick-search'
 
 /** Tìm nhanh (LM-099): nguồn dựng tay, tên tiếng Việt có dấu để kiểm tìm không dấu. */
 const SOURCES: SearchSources = {
@@ -65,4 +67,26 @@ test(`at most ${RESULTS_PER_GROUP} results per group, in the store order`, () =>
   expect(trips?.results.map((result) => result.id)).toStrictEqual([
     'TRIP-100', 'TRIP-101', 'TRIP-102', 'TRIP-103', 'TRIP-104', 'TRIP-105', 'TRIP-106', 'TRIP-107',
   ])
+})
+
+/** Đoạn tô viết gọn: phần khớp nằm trong [ ]. */
+const marked = (text: string, query: string) =>
+  highlightParts(text, query).map((part) => (part.match ? `[${part.text}]` : part.text)).join('')
+
+test('highlight marks every occurrence of every term, accent- and case-insensitively, on the original characters', () => {
+  expect(marked('TRIP-006', '006')).toBe('TRIP-[006]')
+  expect(marked('US-0006', '006')).toBe('US-0[006]')
+  expect(marked('Tuyến Biên Hoà – Thủ Đức', 'bien hoa')).toBe('Tuyến [Biên] [Hoà] – Thủ Đức')
+  expect(marked('Tuyến Thủ Đức – Thủ Dầu Một', 'thu')).toBe('Tuyến [Thủ] Đức – [Thủ] Dầu Một')
+  expect(marked('Đỗ Thị Hạnh', 'do')).toBe('[Đỗ] Thị Hạnh')
+  // Chữ có dấu rời (NFD): dấu đi cùng chữ gốc của nó
+  expect(marked('Hòa', 'hoa')).toBe('[Hòa]')
+  // Không khớp qua khoảng trắng giữa hai từ
+  expect(marked('Thu Duc', 'huduc')).toBe('Thu Duc')
+})
+
+test('highlight of an empty query or a text without a match is one plain part', () => {
+  expect(highlightParts('PKG-001', '')).toStrictEqual([{ text: 'PKG-001', match: false }])
+  expect(highlightParts('PKG-001', 'xe')).toStrictEqual([{ text: 'PKG-001', match: false }])
+  expect(highlightParts('', 'xe')).toStrictEqual([{ text: '', match: false }])
 })

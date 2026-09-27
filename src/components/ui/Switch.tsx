@@ -4,8 +4,7 @@ import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Switch 36×20, núm 16px. Bật: nền primary, núm trượt sang 18px.
- * Theo mục 5 style sheet.
+ * Switch 36×20, núm 16px (V2.3 `.tgl`). Tắt: rãnh `--switch-off` (3,9:1); bật: nền `--primary`, núm trượt sang 18px.
  */
 export function Switch({
   className,
@@ -34,7 +33,7 @@ export function Switch({
       >
         <SwitchPrimitive.Thumb
           className={cn(
-            'block size-4 rounded-full bg-bg shadow-[0_1px_2px_rgba(16,24,40,.2)]',
+            'block size-4 rounded-full bg-bg shadow-e1',
             'translate-x-0.5 transition-transform duration-150 ease-standard',
             'data-[state=checked]:translate-x-[18px]',
             'data-[disabled]:bg-surface data-[disabled]:shadow-none',
@@ -46,7 +45,7 @@ export function Switch({
           htmlFor={switchId}
           className={cn(
             'cursor-pointer text-body',
-            disabled ? 'cursor-not-allowed text-text-disabled' : 'text-text',
+            disabled ? 'cursor-not-allowed text-n-600' : 'text-text',
           )}
         >
           {label}

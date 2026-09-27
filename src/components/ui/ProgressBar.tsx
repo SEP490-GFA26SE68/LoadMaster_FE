@@ -2,9 +2,8 @@ import { formatInteger } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 /**
- * Thanh tiến độ 8px, bo tròn hoàn toàn, viền 1px, nền surface.
- * Dạng viên thuốc ở đây là thanh chỉ báo chứ không phải nút, nên không
- * vướng luật "không bo tròn hoàn toàn cho nút hành động" (mục 5).
+ * Thước đo V2.3 (`.meter`): rãnh 8px `--n-100` bo tròn, phần đã đi gradient `--cyan-300 → --cyan-600`; cảnh báo / vượt ngưỡng tô
+ * hổ phách / đỏ. Nhãn 13px `--ink-3`, số Archivo 650 15px. Dạng viên thuốc ở đây là thanh chỉ báo chứ không phải nút (mục 5).
  */
 export function ProgressBar({
   label,
@@ -24,8 +23,8 @@ export function ProgressBar({
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label ? (
         <div className="flex justify-between gap-3">
-          <span className="text-caption text-text-2">{label}</span>
-          <span className="font-mono text-caption font-medium">
+          <span className="text-small text-ink-3">{label}</span>
+          <span className="font-display text-body-lg leading-none font-[650] text-ink-strong tabular-nums">
             {formatInteger(clamped)}%
           </span>
         </div>
@@ -36,14 +35,14 @@ export function ProgressBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={label}
-        className="h-2 overflow-hidden rounded-full border border-border bg-surface"
+        className="h-2 overflow-hidden rounded-full bg-n-100"
       >
         <div
           className={cn(
-            'h-full transition-[width] duration-(--dur-md) ease-decelerate',
-            tone === 'primary' && 'bg-primary',
+            'h-full rounded-full transition-[width] duration-(--dur-md) ease-decelerate',
+            tone === 'primary' && 'bg-(image:--meter-fill)',
             tone === 'warning' && 'bg-warning',
-            tone === 'danger' && 'bg-danger',
+            tone === 'danger' && 'bg-red-500',
           )}
           style={{ width: `${clamped}%` }}
         />
