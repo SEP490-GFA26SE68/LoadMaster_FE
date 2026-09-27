@@ -1,5 +1,5 @@
 import { CheckCircle2, Pin } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
@@ -101,21 +101,23 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
 function Section({ title, count, tone = 'plain', action, inline, hint, children }: {
   title: string; count: number; tone?: 'plain' | 'warn'; action?: ReactNode; inline?: string; hint?: string; children?: ReactNode
 }) {
+  const titleId = useId()
+  // Vùng có tên (tiêu đề khối): "Kiện chưa xếp", "Kiện đã ghim" đọc được như một mục riêng, thay các tab con cũ
   return (
-    <div className={cn('px-3 py-2.5', DARK_SUBCARD, tone === 'warn' && 'border-amber-500/35')} title={hint}>
-      <SectionHeader title={title} count={count} inline={inline} action={action} />
+    <section aria-labelledby={titleId} className={cn('px-3 py-2.5', DARK_SUBCARD, tone === 'warn' && 'border-amber-500/35')} title={hint}>
+      <SectionHeader titleId={titleId} title={title} count={count} inline={inline} action={action} />
       {children}
-    </div>
+    </section>
   )
 }
 
-function SectionHeader({ title, count, inline, note, action, className }: {
-  title: string; count: number; inline?: string; note?: string; action?: ReactNode; className?: string
+function SectionHeader({ titleId, title, count, inline, note, action, className }: {
+  titleId?: string; title: string; count: number; inline?: string; note?: string; action?: ReactNode; className?: string
 }) {
   const format = useFormat()
   return (
     <div className={cn('flex min-h-7.5 flex-wrap items-center gap-2', className)}>
-      <h3 className="font-semibold text-sky-text xl:text-lede">{title}</h3>
+      <h3 id={titleId} className="font-semibold text-sky-text xl:text-lede">{title}</h3>
       <span className="rounded-sm bg-sky-glass-hover px-1.5 py-0.5 font-display text-caption font-semibold tabular-nums">{format.integer(count)}</span>
       {inline ? <span className={cn('xl:text-fine', MUTED)}>· {inline}</span> : null}
       {note ? <span className={cn('ml-auto text-caption', MUTED)}>{note}</span> : null}

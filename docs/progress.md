@@ -34,6 +34,13 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 28/09/2026 — V2.3 đợt 5: Planner 3D (LM-107)
+
+Hai worktree song song: thanh trên + hộp thoại Duyệt + thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) và phần trong
+khung 3D (panel điểm giao, thẻ kiện nổi, nhãn neo, dòng thời gian, hộp Chi tiết, chỉnh tay, không thể đặt, dỡ hàng). Nền trang Planner tối,
+thanh trên kính tối. Sửa trên nhánh gộp: tiêu đề không cắt chữ ở 1.366 px, đơn vị và khối lượng như câu nghiệm thu, `review1-approve` hết đỏ
+ngẫu nhiên. 970/970 unit/DOM; E2E xem [LM-107](issues/LM-107-v23-planner.md).
+
 ### 27/09/2026 — Thương hiệu đợt 3: in ấn và màn kho (LM-105)
 
 Logo một màu trên nhãn QR (bản xem và bản in) và đầu báo cáo chuyến bản in; biểu tượng ở màn chính của kho. Không thêm logo vào thanh

@@ -134,7 +134,8 @@ export function StopMark({ stop, decorative = false, className }: {
 export function GlassValue({ value, unit, mono = false, className }: { value: ReactNode; unit?: ReactNode; mono?: boolean; className?: string }) {
   return (
     <span className={cn(mono ? 'font-mono font-medium' : 'font-display font-[650]', 'text-sky-text tabular-nums', className)}>
-      {value}{unit !== undefined ? <small className={cn('ml-0.5 text-caption font-medium', MUTED)}>{unit}</small> : null}
+      {/* Khoảng trắng thật giữa số và đơn vị: chữ đọc được "120 × 100 × 100 cm" (trình đọc màn hình, sao chép, test nghiệm thu §15) */}
+      {value}{unit !== undefined ? <>{' '}<small className={cn('text-caption font-medium', MUTED)}>{unit}</small></> : null}
     </span>
   )
 }

@@ -87,7 +87,7 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
           <Cell label={t('viewer.selected.size')} wide>
             <GlassValue value={`${cm(placement.lengthCm)} × ${cm(placement.widthCm)} × ${cm(placement.heightCm)}`} unit="cm" mono />
           </Cell>
-          <Cell label={t('viewer.selected.weight')}><GlassValue value={format.weight(placement.weightKg)} mono /></Cell>
+          <Cell label={t('viewer.selected.weight')}><GlassValue value={format.decimal(placement.weightKg)} unit="kg" mono /></Cell>
           <Cell label={t('viewer.selected.sourcePackage')}>
             <Link to={`/chuyen/${tripId}?kien=${encodeURIComponent(placement.packageId)}`}
               className="font-mono text-body text-cyan-200 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">

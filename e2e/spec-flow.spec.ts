@@ -228,9 +228,10 @@ test('cargo that does not fit lists unplaced packages with a reason in the Plann
 
   // §15 "Hiển thị kiện chưa xếp và lý do"
   const inspector = await openInspector(page, 'packages')
-  const tab = inspector.getByRole('tab', { name: `Kiện chưa xếp ${unplaced}`, exact: true })
-  await expect(tab).toHaveAttribute('aria-selected', 'true')
-  const list = inspector.getByRole('tabpanel', { name: `Kiện chưa xếp ${unplaced}` })
+  // V2.3 (LM-107): tab "Danh sách" xếp các khối chồng nhau — kiện chưa xếp là khối đầu, có số đếm
+  const list = inspector.getByRole('region', { name: 'Kiện chưa xếp', exact: true })
+  await expect(list.getByRole('heading', { name: 'Kiện chưa xếp', exact: true })).toBeVisible()
+  await expect(list).toContainText(String(unplaced))
   await expect(list).toContainText('PKG-007-')
   await expect(list).toContainText('Không vừa chỗ trống còn lại.')
 })

@@ -48,14 +48,22 @@ export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, 
           <ChevronLeft className="size-5" strokeWidth={1.5} aria-hidden />
         </Link>
 
-        {/* Tên tuyến và mã cắt bằng dấu ba chấm để hàng gộp vừa 1.366 px; nhãn của kết quả không bao giờ bị cắt */}
+        {/* Không cắt chữ bằng dấu ba chấm (AGENTS mục 5, `layout-1366`): tên tuyến dài chỉ hiện từ 1.680 px; hẹp hơn tiêu đề là mã
+            chuyến và dòng dưới chỉ còn mã revision (LM-107) */}
         <div className="flex min-w-0 flex-[0_1_25rem] flex-col gap-1.5">
-          <h1 className="hidden truncate font-display text-h3 leading-5 font-bold text-sky-text font-stretch-106% md:block" title={title ?? tripId}>
-            {title ?? tripId}
+          <h1 className="hidden font-display text-h3 leading-5 font-bold whitespace-nowrap text-sky-text font-stretch-106% md:block" title={title ?? tripId}>
+            {title ? (
+              <>
+                <span className="hidden min-[1680px]:inline">{title}</span>
+                <span className="font-mono text-body min-[1680px]:hidden">{tripId}</span>
+              </>
+            ) : tripId}
           </h1>
           {/* Điện thoại: không có tên tuyến và mã, hai nhãn chính xếp chồng (22 + 4 + 22 px vừa hàng 56 px); Lỗi thời và LIFO tắt đã có ở thanh thông báo / hộp thoại */}
           <div className="flex min-w-0 flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
-            <span className="hidden min-w-0 truncate font-mono text-caption leading-4 text-cyan-200 md:inline">{codes}</span>
+            <span className="hidden font-mono text-caption leading-4 whitespace-nowrap text-cyan-200 md:inline">
+              {title ? <><span className="hidden min-[1680px]:inline">{codes}</span><span className="min-[1680px]:hidden">{revisionId ?? tripId}</span></> : codes}
+            </span>
             {isMockResult ? <Badge shape="tag" tone="mock" className="border-amber-500/45 text-amber-500">MOCK RESULT</Badge> : null}
             {manuallyEdited ? <Badge shape="tag" tone="azure" className="bg-azure-500/20 text-azure-200">{t('viewer.plan.manuallyEdited')}</Badge> : null}
             {stale ? <Badge shape="tag" outlined className="hidden border-amber-500/40 bg-amber-500/15 text-amber-200 md:inline-flex">{t('viewer.plan.staleTag')}</Badge> : null}
