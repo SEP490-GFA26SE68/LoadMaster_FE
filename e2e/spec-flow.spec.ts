@@ -296,7 +296,8 @@ test('switching to English mid-flow keeps form input and formats numbers the Eng
   await expect(page.getByRole('combobox', { name: 'Vehicle', exact: true })).toHaveText('Hyundai HD210 · 60C-446.32')
   // Số theo en-US
   await expect(page.locator('form').getByText('9,500 kg', { exact: true })).toBeVisible()
-  await expect(page.getByText('720 × 235 × 240 cm', { exact: true })).toBeVisible()
+  // Kích thước lòng thùng có ở ô thông số trong form và ở thẻ Tóm tắt chuyến (V2.3); đọc ô trong form
+  await expect(page.locator('form').getByText('720 × 235 × 240 cm', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Create trip', exact: true }).click()
   await expect(page.getByText('Created trip TRIP-015')).toBeVisible()

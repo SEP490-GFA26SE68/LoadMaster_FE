@@ -39,9 +39,11 @@ async function choose(user: ReturnType<typeof userEvent.setup>, combobox: string
 test('creating a trip writes run date, driver and stop contacts to the repository, then opens its detail', async () => {
   const { user } = renderForm('/chuyen/moi')
   await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
-  expect(await screen.findByText('Nhập tên chuyến')).toBeInTheDocument()
-  expect(screen.getByText('Chọn xe')).toBeInTheDocument()
-  expect(screen.getByText('Nhập tên điểm giao')).toBeInTheDocument()
+  // Lỗi hiện dưới từng ô và cùng lúc trong thẻ kiểm tra bên phải
+  expect(await screen.findByText('3 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Tên chuyến' })).toHaveAccessibleDescription('Nhập tên chuyến')
+  expect(screen.getByRole('textbox', { name: 'Tên điểm giao 1' })).toHaveAccessibleDescription('Nhập tên điểm giao')
+  expect(screen.getAllByText('Chọn xe')).toHaveLength(2)
 
   const [vehicle] = await getMockDb().listVehicles()
   await user.type(screen.getByLabelText('Tên chuyến'), 'Tuyến Q.9 – Thủ Đức')
@@ -90,7 +92,33 @@ test('a phone number with letters is rejected at its field', async () => {
   const { user } = renderForm('/chuyen/moi')
   await user.type(await screen.findByLabelText('Số điện thoại điểm giao 1'), 'gọi sau')
   await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
-  expect(await screen.findByText('Chỉ gồm chữ số, dấu cách và + - . ( )')).toBeInTheDocument()
+  expect(await screen.findByText('4 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Số điện thoại điểm giao 1' })).toHaveAccessibleDescription('Chỉ gồm chữ số, dấu cách và + - . ( )')
+})
+
+test('the check card reads the form live: empty required fields first, an error once a field is left, and a jump to that field', async () => {
+  const { user } = renderForm('/chuyen/moi')
+  const checks = within(await screen.findByRole('region', { name: 'Kiểm tra trước khi lưu' }))
+  // Form mới mở: ô bắt buộc còn trống chưa tính là lỗi
+  expect(checks.getByRole('status')).toHaveTextContent('Còn 3 ô bắt buộc chưa nhập')
+
+  const phone = screen.getByRole('textbox', { name: 'Số điện thoại điểm giao 1' })
+  await user.type(phone, '0918 407 331/332')
+  await user.tab()
+  // Rời ô là thấy lỗi dưới ô và trong thẻ kiểm tra, chưa cần bấm lưu
+  expect(phone).toHaveAccessibleDescription('Chỉ gồm chữ số, dấu cách và + - . ( )')
+  expect(checks.getByRole('status')).toHaveTextContent('1 lỗi cần sửa trước khi lưu')
+  const stopsRow = checks.getByText('Số điện thoại điểm giao 1').closest('li') as HTMLElement
+  expect(stopsRow).toHaveTextContent('Chỉ gồm chữ số, dấu cách và + - . ( )')
+  await user.click(within(stopsRow).getByRole('button', { name: 'Tới ô cần sửa' }))
+  expect(phone).toHaveFocus()
+
+  await user.clear(phone)
+  await user.type(phone, '0918 407 331')
+  await user.type(screen.getByRole('textbox', { name: 'Tên chuyến' }), 'Tuyến Thủ Đức')
+  await user.type(screen.getByRole('textbox', { name: 'Tên điểm giao 1' }), 'Thủ Đức')
+  await choose(user, 'Xe', 'Truck 6m')
+  expect(checks.getByRole('status')).toHaveTextContent('Không có lỗi — có thể lưu.')
 })
 
 test('a vehicle under maintenance is listed with the reason but cannot be chosen (D-53)', async () => {
@@ -143,7 +171,8 @@ test('leaving with unsaved changes asks first; staying keeps the input, confirmi
   expect(router.state.location.pathname).toBe('/chuyen/moi')
   expect(screen.getByLabelText('Tên chuyến')).toHaveValue('Tuyến chưa lưu')
 
-  await user.click(screen.getByRole('link', { name: 'Quay lại' }))
+  // V2.3: đầu màn không còn nút quay lại; đường dẫn "Chuyến hàng / Tạo chuyến mới" dẫn về danh sách
+  await user.click(screen.getByRole('link', { name: 'Chuyến hàng' }))
   await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Rời trang' }))
   expect(await screen.findByText('Danh sách chuyến')).toBeInTheDocument()
 })
