@@ -540,7 +540,6 @@ export const trips = {
   /** Màn So sánh phương án: các revision đã lưu của chuyến (LM-051). */
   compare: {
     title: 'So sánh phương án',
-    back: 'Quay lại chi tiết chuyến',
     subtitle: { one: '{count} phương án đã lưu', other: '{count} phương án đã lưu' },
     loading: 'Đang tải phương án…',
     errorTitle: 'Không tải được phương án của chuyến',
@@ -591,5 +590,7 @@ export const trips = {
     },
     emptyAction: 'Thiết lập tối ưu',
     openOnly: 'Mở phương án đã có',
+    /** Trạng thái rỗng có một bản (V2.3): mục liệt kê bản đã lưu dưới lời mời chạy thêm. */
+    savedTitle: 'Phương án đã lưu',
   },
 } as const

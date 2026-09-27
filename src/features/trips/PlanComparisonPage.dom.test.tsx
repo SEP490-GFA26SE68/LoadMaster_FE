@@ -32,6 +32,18 @@ function renderComparison(tripId: string) {
   return container
 }
 
+/**
+ * Phần tử sâu nhất có đúng chữ `text` (hoặc bắt đầu bằng nó): câu có mã bản bọc trong span mono (V2.3) nên chữ bị chia qua nhiều
+ * nút, matcher mặc định của Testing Library không đọc được.
+ */
+function byFullText(text: string, { prefix = false } = {}) {
+  const matches = (element: Element | null) => {
+    const content = element?.textContent ?? ''
+    return prefix ? content.startsWith(text) : content === text
+  }
+  return (_: string, element: Element | null) => matches(element) && !Array.from(element?.children ?? []).some(matches)
+}
+
 /** Nút hoặc link mang lớp nền primary của `Button` — màn chỉ được có đúng một (AGENTS.md mục 5). */
 function primaryActions(container: HTMLElement) {
   return container.querySelectorAll('a.text-on-primary, button.text-on-primary')
@@ -51,6 +63,15 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
   const container = renderComparison(SEED_TRIP)
 
   await screen.findByRole('radio', { name: approved.id })
+  // Dải trời V2.3: đường dẫn về chuyến, chip trạng thái chuyến và dòng tuyến · số bản · xe đọc từ kho
+  const trip = await getMockDb().getTrip(SEED_TRIP)
+  const crumbs = screen.getByRole('navigation', { name: 'Vị trí trang' })
+  expect(within(crumbs).getByRole('link', { name: SEED_TRIP })).toHaveAttribute('href', `/chuyen/${SEED_TRIP}`)
+  const hero = screen.getByRole('heading', { level: 1, name: 'So sánh phương án' }).closest('header')
+  if (!hero) throw new Error('Tiêu đề phải nằm trong header')
+  expect(await within(hero).findByText('Đã duyệt')).toBeInTheDocument()
+  expect(within(hero).getByText(trip.name)).toBeInTheDocument()
+  expect(within(hero).getByText('2 phương án đã lưu')).toBeInTheDocument()
   const sourceColumn = columnTexts(source.id)
   const approvedColumn = columnTexts(approved.id)
 
@@ -77,7 +98,7 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
   expect(sourceHeader.queryByText('Mới nhất')).not.toBeInTheDocument()
   expect(sourceColumn[0]).toContain(`Đã duyệt thành ${approved.id}`)
   expect(screen.queryByText('Lỗi thời')).not.toBeInTheDocument()
-  expect(screen.getByText(`${approved.id} được duyệt từ ${source.id}.`, { exact: false })).toBeInTheDocument()
+  expect(screen.getByText(byFullText(`${approved.id} được duyệt từ ${source.id}. Hai bản có cùng chỉ số chất xếp`, { prefix: true }))).toBeInTheDocument()
 
   // Mặc định chọn bản đã duyệt; chọn bản nguồn thì hành động chính đổi theo, vẫn chỉ một nút primary.
   expect(screen.getByRole('radio', { name: approved.id })).toBeChecked()
@@ -89,7 +110,7 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
   await userEvent.setup().click(screen.getByRole('radio', { name: source.id }))
   expect(screen.getByRole('radio', { name: source.id })).toBeChecked()
   expect(screen.getByRole('radio', { name: approved.id })).not.toBeChecked()
-  expect(screen.getByText(`Đang chọn: ${source.id}`)).toBeInTheDocument()
+  expect(screen.getByText(byFullText(`Đang chọn: ${source.id}`))).toBeInTheDocument()
   expect(screen.getByRole('link', { name: `Mở ${source.id} trong 3D` })).toHaveAttribute(
     'href',
     `/chuyen/${SEED_TRIP}/phuong-an?revision=${encodeURIComponent(source.id)}`,
@@ -138,4 +159,9 @@ test('chuyến có đúng một revision: trạng thái rỗng, kèm lối mở 
     `/chuyen/${trip.id}/phuong-an?revision=${only.id}`,
   )
   expect(screen.getByRole('link', { name: 'Thiết lập tối ưu' })).toHaveAttribute('href', `/chuyen/${trip.id}/toi-uu`)
+  // Mục "Phương án đã lưu" (V2.3) liệt kê bản duy nhất với số thật của revision
+  const saved = screen.getByRole('article', { name: only.id })
+  expect(within(saved).getByText('MOCK RESULT')).toBeInTheDocument()
+  expect(within(saved).getByText(vi.percent(only.result.metrics.volumeUtilizationPercent))).toBeInTheDocument()
+  expect(within(saved).getByText(only.jobId)).toBeInTheDocument()
 })
