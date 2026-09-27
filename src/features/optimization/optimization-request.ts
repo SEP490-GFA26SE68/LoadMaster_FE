@@ -1,7 +1,11 @@
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, VehicleConfig } from '@/domain/models'
+import { DEFAULT_RUN_SETTINGS, type RunSettings } from '@/lib/mock-db'
 
-/** Thiết lập tối ưu trên form (Spec 9.4). Chỉ `MOCK` chạy được trong MVP; các phương pháp khác hiện nhưng khoá (LM-047). */
+/**
+ * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT); thuật toán người
+ * dùng chọn đi riêng trong `RunSettings` (LM-104), nên màn không còn hiện ô "Phương pháp" khoá.
+ */
 export type OptimizationSettings = OptimizationRequest['settings']
 
 export const METHODS = ['MOCK', 'EP_DBLF', 'GA', 'SA', 'BBMP_DCS_PQNET'] as const satisfies readonly OptimizationSettings['method'][]
@@ -12,6 +16,19 @@ export const DEFAULT_SETTINGS: OptimizationSettings = {
   randomSeed: 1,
   enforceLifo: true,
   prioritizeLowCenterOfGravity: true,
+}
+
+/**
+ * Giá trị form của màn thiết lập: thiết lập Spec gửi service cộng mục tiêu và thuật toán của lần chạy (luồng 3 Review 1, LM-104).
+ * Mục tiêu và thuật toán không thuộc contract `OptimizationRequest` — kho lưu chúng vào lịch sử lần chạy, mock tối ưu bỏ qua.
+ */
+export type SetupValues = OptimizationSettings & RunSettings
+
+export const DEFAULT_SETUP: SetupValues = { ...DEFAULT_SETTINGS, ...DEFAULT_RUN_SETTINGS }
+
+/** Tách giá trị form thành thiết lập của request và lựa chọn của lần chạy. */
+export function splitSetup({ objective, algorithm, ...settings }: SetupValues): { settings: OptimizationSettings; run: RunSettings } {
+  return { settings, run: { objective, algorithm } }
 }
 
 /** Request gửi service: xe đang chọn, kiện của chuyến (đã có `deliveryStop` theo thứ tự điểm giao, LM-046) và thiết lập. */

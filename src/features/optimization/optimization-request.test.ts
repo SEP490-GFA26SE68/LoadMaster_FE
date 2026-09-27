@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { validateRequest } from '@/domain/constraints'
 import { SPEC_CARTON_A, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import type { CargoPackage } from '@/domain/models'
-import { buildOptimizationRequest, DEFAULT_SETTINGS, groupRequestIssues } from './optimization-request'
+import { buildOptimizationRequest, DEFAULT_SETTINGS, DEFAULT_SETUP, groupRequestIssues, splitSetup } from './optimization-request'
 
 const trip = { id: 'TRIP-TEST', packages: [SPEC_CARTON_A] }
 
@@ -14,6 +14,13 @@ test('the request carries the trip packages, the chosen vehicle and the form set
     settings,
   })
   expect(DEFAULT_SETTINGS.method).toBe('MOCK')
+})
+
+test('objective and algorithm stay out of the Spec request and travel as the run choice (LM-104)', () => {
+  const { settings, run } = splitSetup({ ...DEFAULT_SETUP, objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM' })
+  expect(settings).toStrictEqual(DEFAULT_SETTINGS)
+  expect(run).toStrictEqual({ objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM' })
+  expect(DEFAULT_SETUP).toMatchObject({ objective: 'MAX_VOLUME', algorithm: 'EP_DBLF' })
 })
 
 test('a package with no usable orientation blocks the run and points at that package', () => {

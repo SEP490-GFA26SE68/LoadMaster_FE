@@ -15,7 +15,10 @@ import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { OptimizationServiceError } from '@/services/optimization'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
-import { buildOptimizationRequest, DEFAULT_SETTINGS, groupRequestIssues, METHODS, type OptimizationSettings } from './optimization-request'
+import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
+import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, splitSetup, type SetupValues } from './optimization-request'
+import { OpenDecisionBanner } from './OpenDecisionBanner'
+import { RunHistoryCard } from './RunHistoryCard'
 import { RequestIssueList } from './RequestIssueList'
 import { SetupContextPanels } from './SetupContextPanels'
 import { SetupLimitsPanel } from './SetupLimitsPanel'
@@ -44,8 +47,10 @@ export function OptimizationSetupPage() {
     randomSeed: z.number({ error: t('optimization.seedInteger') }).int(t('optimization.seedInteger')).min(0, t('optimization.seedInteger')).optional(),
     enforceLifo: z.boolean(),
     prioritizeLowCenterOfGravity: z.boolean(),
+    objective: z.enum(OPTIMIZATION_OBJECTIVES),
+    algorithm: z.enum(OPTIMIZATION_ALGORITHMS),
   }), [t])
-  const form = useForm<OptimizationSettings>({ resolver: zodResolver(schema), defaultValues: DEFAULT_SETTINGS, mode: 'onChange' })
+  const form = useForm<SetupValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_SETUP, mode: 'onChange' })
   const watched = useWatch({ control: form.control })
   // Đọc ngay ở mỗi lần render để react-hook-form theo dõi `isValid` từ lúc mount. Đọc sau `!summary?.canRun ||` thì
   // lần mở lại với bản cache còn lỗi bỏ qua nó, và nút Tối ưu kẹt ở trạng thái tắt sau khi dữ liệu đã sửa (LM-054).
@@ -53,14 +58,15 @@ export function OptimizationSetupPage() {
 
   const setup = query.data
   const locked = setup !== undefined && setup.trip.phase !== 'planning'
-  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, { ...DEFAULT_SETTINGS, ...watched }) : null
+  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, splitSetup({ ...DEFAULT_SETUP, ...watched }).settings) : null
   const summary = request && setup ? groupRequestIssues(validateRequest(request), { tripId, vehicleId: setup.vehicle.id }) : null
 
-  function start(values: OptimizationSettings) {
+  function start(values: SetupValues) {
     if (!setup) return
     setFailure(null)
-    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, values)
-    run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
+    const { settings, run: choice } = splitSetup(values)
+    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, settings)
+    run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi', run: choice }, {
       onSuccess: (outcome) => {
         if (outcome.kind === 'failed') {
           setFailure({ kind: 'failed', messages: validateRequest(payload).map((issue) => formatIssue(issue, t, format)) })
@@ -110,17 +116,23 @@ export function OptimizationSetupPage() {
       ) : (
         <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-6 overflow-auto px-shell pb-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           {locked ? <div className="lg:col-span-2"><TripLockBanner trip={setup.trip} /></div> : null}
-          {/* V2: một thẻ gồm các phần đánh số; nút chính giữ ở thanh tiêu đề (AGENTS mục 5: một nút primary mỗi màn) */}
-          <div className="flex min-w-0 flex-col gap-6 rounded-lg border border-border bg-bg p-6">
-            <FormSection number={1} title={t('optimization.inputTitle')} description={<><span className="font-mono">{tripId}</span>{` · ${setup.trip.name}`}</>}>
-              <SetupContextPanels tripId={tripId} setup={setup} locked={locked} />
-            </FormSection>
-            <FormSection number={2} title={t('optimization.requirementsTitle')} description={t('optimization.requirementsHint')}>
-              <SetupRequirementFields form={form} />
-            </FormSection>
-            <div className="border-t border-border pt-5">
-              <SetupAdvancedFields form={form} />
+          {/* Quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó: lý do nằm ngay chỗ điều phối sẽ chạy lại (LM-104) */}
+          {!locked ? <OpenDecisionBanner tripId={tripId} className="lg:col-span-2" /> : null}
+          <div className="flex min-w-0 flex-col gap-6">
+            {/* V2: một thẻ gồm các phần đánh số; nút chính giữ ở thanh tiêu đề (AGENTS mục 5: một nút primary mỗi màn) */}
+            <div className="flex min-w-0 flex-col gap-6 rounded-lg border border-border bg-bg p-6">
+              <FormSection number={1} title={t('optimization.inputTitle')} description={<><span className="font-mono">{tripId}</span>{` · ${setup.trip.name}`}</>}>
+                <SetupContextPanels tripId={tripId} setup={setup} locked={locked} />
+              </FormSection>
+              <FormSection number={2} title={t('optimization.requirementsTitle')} description={t('optimization.requirementsHint')}>
+                <SetupRequirementFields form={form} />
+              </FormSection>
+              <div className="border-t border-border pt-5">
+                <SetupAdvancedFields form={form} />
+              </div>
             </div>
+            {/* Lịch sử lần chạy (LM-104): mục tiêu, thuật toán, kết quả và số phận của từng phương án */}
+            <RunHistoryCard tripId={tripId} />
           </div>
           <div className="flex flex-col gap-5 lg:sticky lg:top-0">
             <SetupLimitsPanel setup={setup} />

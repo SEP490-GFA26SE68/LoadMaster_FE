@@ -9,6 +9,7 @@ import {
   type VehicleStatus,
 } from '@/lib/mock-db'
 import { createOptimizationService, OptimizationServiceError, type OptimizationProgress } from '@/services/optimization'
+import { buildRunHistory, type RunHistory } from './run-history'
 
 /**
  * Lớp dữ liệu của Thiết lập tối ưu và job (LM-047, LM-048): nơi duy nhất trong feature biết về kho và service tối ưu.
@@ -76,4 +77,23 @@ export async function runOptimization({ tripId, request, simulateFailure, signal
 /** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: mục tiêu, thuật toán, kết quả hoặc lý do không ra kết quả. */
 export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]> {
   return getMockDb().listOptimizationRuns(tripId)
+}
+
+/**
+ * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu: lần chạy kèm người chạy, thiết lập và số của revision nó tạo, số phận của phương án
+ * (đã duyệt / chờ duyệt / quản lý trả lại) và quyết định của quản lý còn chờ điều phối xử lý.
+ */
+export async function fetchRunHistory(tripId: string): Promise<RunHistory> {
+  const db = getMockDb()
+  const [runs, revisions, decisions, queue, users, vehicles] = await Promise.all([
+    db.listOptimizationRuns(tripId), db.listRevisions(tripId), db.listReviewDecisions(tripId), db.listReviewQueue(), db.listUsers(), db.listVehicles(),
+  ])
+  return buildRunHistory({
+    runs,
+    revisions,
+    decisions,
+    pendingRevisionIds: new Set(queue.map((item) => item.revisionId)),
+    userNames: new Map(users.map((user) => [user.id, user.fullName])),
+    vehicleNames: new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name])),
+  })
 }

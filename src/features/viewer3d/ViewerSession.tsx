@@ -1,7 +1,7 @@
-import { Lock } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
+import { usePlanReviewQuery } from '@/features/review/useReviewQuery'
 import { useT } from '@/lib/i18n'
 import type { TripPhase } from '@/lib/mock-db'
 import { ApprovePlanDialog } from './ApprovePlanDialog'
@@ -17,6 +17,9 @@ import { operationApprovalChecks } from './operations/approval-checks'
 import { SceneHud } from './operations/SceneHud'
 import { useOperations } from './operations/useOperations'
 import { PlannerActions } from './panels/PlannerActions'
+import { canDecide } from './plan-decision'
+import { PlanDecisionActions } from './PlanDecisionActions'
+import { PlanDecisionNotice } from './PlanDecisionNotice'
 import { SceneInspector } from './panels/SceneInspector'
 import { SimulationControls, WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
 import type { ViewerSceneModel } from './scene-input'
@@ -52,8 +55,13 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
   const approval = useViewerApproval(plan, state)
   // Chỉ dời/xoay kiện là chỉnh sửa cần Duyệt lại; ghim không thuộc phương án gửi Duyệt.
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
-  // Chỉ quản lý công ty duyệt (LM-104): điều phối viên xem chỉ đọc; chuyến đã sang pha vận hành thì phương án đã chốt (D-45).
-  const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
+  // Chỉ quản lý công ty duyệt (LM-104): điều phối viên xem chỉ đọc; chuyến đã sang pha vận hành thì phương án đã chốt (D-45);
+  // bản quản lý đã trả lại (từ chối, yêu cầu tối ưu lại, đề xuất) thì chỉ xem và dòng khoá kể quyết định.
+  const review = usePlanReviewQuery(tripId, plan.revision?.id).data
+  const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits, decided: Boolean(review?.decision) })
+  const decide = plan.revision && review && canDecide({ access, reviewable: review.reviewable, canReview: can('plans.review') })
+    ? <PlanDecisionActions revisionId={plan.revision.id} vehicles={review.vehicles} currentVehicleId={plan.vehicle.id} />
+    : null
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
   const perfStore = useMemo(() => createPerfStore(), [])
@@ -99,15 +107,11 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
         controls={editor.mode === 'view' ? <SimulationControls {...simulation} /> : undefined}
       >
-        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason}
+        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={review?.approvedByName} decisions={decide}
           onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
-      {access.lock ? (
-        <div role="status" className="flex flex-none items-center gap-2 border-b border-border bg-surface px-4 py-2 text-body-lg text-text-2 xl:text-body" data-planner-lock={access.lock}>
-          <Lock className="size-4 flex-none" strokeWidth={1.5} aria-hidden />
-          <span>{t(`viewer.lock.${access.lock}`)}</span>
-        </div>
-      ) : null}
+      <PlanDecisionNotice lock={access.lock} decision={review?.decision ?? null}
+        rerunTo={can('optimization.run') && (phase ?? 'planning') === 'planning' ? `/chuyen/${tripId}/toi-uu` : undefined} />
       {plan.revision?.stale ? (
         <div role="alert" className="flex flex-none flex-wrap items-center gap-3 border-b border-badge-warning-border bg-badge-warning-bg px-4 py-2 text-body text-badge-warning-fg">
           <span>{t('viewer.plan.staleBanner')}</span>

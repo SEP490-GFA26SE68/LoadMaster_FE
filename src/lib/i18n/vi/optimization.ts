@@ -15,7 +15,24 @@ export const optimization = {
   lifoHint: 'Kiện của điểm giao đến trước nằm gần cửa hơn để lấy ra trước.',
   lowCenterHint: 'Tâm khối lượng của hàng đã xếp, không phải của cả xe.',
   advancedTitle: 'Thiết lập nâng cao',
-  advancedHint: 'Phương pháp, thời gian giới hạn và random seed.',
+  advancedHint: 'Mục tiêu, thuật toán, thời gian giới hạn và random seed.',
+  /** Một dòng giải thích dưới từng mục tiêu / thuật toán (LM-104); tên nằm ở nhánh `runs`. */
+  objectiveHints: {
+    MAX_VOLUME: 'Xếp được nhiều hàng nhất trong lòng thùng.',
+    AXLE_BALANCE: 'Phân khối lượng đều lên các trục xe.',
+  },
+  algorithmHints: {
+    EP_DBLF: 'Đặt từng kiện vào điểm trống sâu – thấp – trái nhất; chạy nhanh.',
+    GENETIC_ALGORITHM: 'Thử nhiều thứ tự xếp, giữ phương án tốt nhất; chạy lâu hơn.',
+  },
+  runChoiceNote: 'Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT. Mục tiêu và thuật toán được lưu cùng lần chạy.',
+  /** Banner khi quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó; câu quyết định ở nhánh `review.notice`. */
+  decision: {
+    rerun: 'Chạy lại với thiết lập mới, hoặc đổi xe / kiện trước khi chạy.',
+  },
+  history: {
+    description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
+  },
   limits: {
     eyebrow: 'Trước khi xếp',
     title: 'Hai giới hạn khác nhau',
@@ -25,7 +42,7 @@ export const optimization = {
     note: 'Thể tích còn trống không bảo đảm mọi kiện đều xếp vừa — kết quả hình học mới quyết định.',
   },
   afterTitle: 'Sau khi chạy',
-  afterSteps: 'Xem phương án → kiểm tra kiện chưa xếp và cảnh báo → duyệt để kho thực hiện.',
+  afterSteps: 'Xem phương án → kiểm tra kiện chưa xếp và cảnh báo → quản lý công ty duyệt để kho thực hiện.',
   method: 'Phương pháp',
   methodUnavailable: 'Chưa có trong bản MVP: chỉ phương án mock chạy được.',
   methods: {

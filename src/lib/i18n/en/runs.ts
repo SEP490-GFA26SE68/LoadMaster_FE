@@ -10,8 +10,8 @@ export const runs = {
     AXLE_BALANCE: 'Balance axle load',
   },
   algorithms: {
-    EP_DBLF: 'EP-DBLF (extreme points, deepest–bottom–left)',
-    GENETIC_ALGORITHM: 'Genetic algorithm',
+    EP_DBLF: 'EP + DBLF',
+    GENETIC_ALGORITHM: 'Genetic (GA)',
   },
   status: {
     COMPLETED: 'Has a result',
@@ -23,4 +23,20 @@ export const runs = {
   },
   count: { one: '{count} run', other: '{count} runs' },
   empty: 'This trip has not been optimized yet.',
+  columns: {
+    at: 'Time',
+    runner: 'Run by',
+    choice: 'Objective · algorithm',
+    limits: 'Limit · seed',
+    status: 'Result',
+    plan: 'Plan',
+    review: 'Approval',
+  },
+  limitSeconds: '{seconds} s',
+  seed: 'seed {seed}',
+  noValue: '—',
+  planMetrics: 'Volume {volume} · payload {payload}',
+  unplaced: { one: '{count} package not placed', other: '{count} packages not placed' },
+  allPlaced: 'All {count} packages placed',
+  openPlan: 'Open plan {revision} in the Planner',
 } satisfies Dictionary<typeof source>

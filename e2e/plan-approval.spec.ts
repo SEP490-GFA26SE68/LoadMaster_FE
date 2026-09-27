@@ -12,6 +12,8 @@ const TRIP_ID = 'TRIP-2026-0914'
 const PLANNER = `/chuyen/${TRIP_ID}/phuong-an`
 const SOURCE_REVISION = `${PLANNER}?revision=REV-001`
 const MOCK_DB = '/src/lib/mock-db/index.ts'
+/** "Duyệt bởi <tên> lúc HH:mm dd/MM" (LM-104): quản lý công ty demo là Trần Thị Mai. */
+const APPROVED_BY_MANAGER = /Duyệt bởi Trần Thị Mai lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
 
 function revisionCount(page: Page) {
   return page.evaluate(async ({ url, tripId }) => {
@@ -26,7 +28,8 @@ test('approving the seed source revision creates a new approved revision and reo
   await page.locator('canvas').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
-  await expect(header).toContainText(/Đã duyệt lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/)
+  // LM-104: người duyệt bản seed lấy từ nhật ký (seed cũ không lưu `approvedBy`)
+  await expect(header).toContainText(APPROVED_BY_MANAGER)
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
 
   // Tab Chỉ số: số lấy thẳng từ `result.metrics` của revision seed
@@ -44,7 +47,7 @@ test('approving the seed source revision creates a new approved revision and reo
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
   await page.waitForURL(/\/phuong-an\?revision=REV-(?!001)/)
   expect(await revisionCount(page)).toBe(before + 1)
-  await expect(header).toContainText(/Đã duyệt lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/)
+  await expect(header).toContainText(APPROVED_BY_MANAGER)
   expect(browserErrors).toStrictEqual([])
 })
 
