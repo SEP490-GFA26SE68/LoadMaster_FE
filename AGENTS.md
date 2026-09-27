@@ -143,6 +143,7 @@ src/
   app/                  router, providers, app shell, thanh điều hướng, route-title.ts (tiêu đề tab)
     design-system/      2 trang tài liệu bàn giao (/kieu-dang, /thanh-phan)
   components/ui/        primitive tự viết trên Radix
+  components/brand/     logo LoadMaster: LogoMark (biểu tượng SVG), Logo (bộ ghép + khẩu hiệu) — LM-105
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
                         VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
@@ -216,7 +217,7 @@ Bản thiết kế đã chốt nằm ở `design/v2.3/` (`README.md` thứ tự 
 - *(đợt 2, 26/09/2026)* Kính sáng của V2 đã xoá (`--nav-glass`, `--follow-*`, `--tile-*`, `--glass-edge`, `--icon-ring`, `--spring`,
   lớp `.glass-follow`, `.glass-tile`). Còn lại tới đợt của màn dùng chúng: `--chrome` (header trắng của Chi tiết chuyến, So sánh),
   `--hero-icon` (form xe), `--table-head`. Thêm cho dải trời: `--sky-end`, `--sky-h`, `--sky-dots`, `--sky-overlap`, `--sky-text*`,
-  `--sky-glass*`, `--nav-on*`, `--brand-mark*`, `--avatar-fill`; cho thành phần: `--scrim`, `--danger-shadow`, `--meter-fill`,
+  `--sky-glass*`, `--nav-on*`, `--avatar-fill`, `--logo-*` (ba màu logo, LM-105); cho thành phần: `--scrim`, `--danger-shadow`, `--meter-fill`,
   `--focus-ring`, `--error-ring`. Lớp dùng chung trong `index.css`: `.sky`, `.glass-nav`, `.glass-dark`, utility `sky-overlap`.
 
 ```css
@@ -464,6 +465,31 @@ kính sáng `.glass-tile` của V2 đã bỏ; `variant="sky"` là ô kính tối
 chọn), bấm lại ô đang lọc thì bỏ lọc. Rê chuột đổi viền sang `--cyan-300`, không phóng to, không nâng bóng; đang lọc: viền
 `--primary` đậm gấp đôi. Số của ô đếm trên cả tập dữ liệu, không theo ô tìm.
 
+### Thương hiệu *(bổ sung 27/09/2026, LM-105)*
+
+Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.svg`, `logo-horizontal*.png` là bản xuất). Kế hoạch và quyết định:
+[LM-105](docs/issues/LM-105-thuong-hieu.md).
+
+- **Logo** là biểu tượng khối (nắp · chữ L · chữ n) dựng lại bằng SVG: `components/brand/LogoMark.tsx` (`tone` `color` nền sáng · `dark`
+  nền tối, chữ n trắng · `mono` `currentColor` cho giấy in) và `components/brand/Logo.tsx` (biểu tượng + chữ "LoadMaster" Archivo 700 +
+  khẩu hiệu tuỳ chọn, `role="img"`, trong liên kết đã có nhãn thì `decorative`). Ba màu `--logo-sky`, `--logo-blue`, `--logo-navy`
+  **chỉ dùng trong logo** — giao diện vẫn cyan; người dùng chọn giữ màu xanh gốc thay vì đổi logo sang cyan.
+- Khẩu hiệu "Plan smarter. Load further." (`BRAND_TAGLINE`) và tên linh vật **Lumo** là tên riêng: tiếng Anh ở mọi ngôn ngữ, không vào
+  từ điển. Khẩu hiệu viết như câu, không viết hoa giãn chữ như bản gốc (luật "Cấm tuyệt đối").
+- Chỗ đặt: thanh điều hướng, màn đăng nhập (logo ngang + khẩu hiệu), màn lỗi / 404 / 403, trang tài liệu (`BrandCard` ở `/thanh-phan`),
+  `favicon.svg` (chữ n đổi trắng khi tab tối), `apple-touch-icon.png`, `icon-192/512.png`, `manifest.webmanifest`, README; bản
+  `mono` ở góc **nhãn QR** (in đen trắng dán lên kiện) và đầu **báo cáo chuyến bản in**; thanh màn chính của kho (`/kho`). **Không** đặt
+  logo ở thanh của tài xế (điện thoại 360–390 px: tiêu đề gãy ba dòng) và ở thanh phiên xếp / điểm giao (một thao tác mỗi màn).
+- Nhỏ nhất 16 px; chừa trống quanh logo ít nhất một phần tư chiều cao biểu tượng. Không đổ bóng, không đặt logo trong ô màu (ô gradient
+  `--brand-mark` của V2.3 đã bỏ).
+- **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
+  mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
+  · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong, hàng đợi
+  duyệt trống) · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
+  `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
+
 ### Thử nghiệm visual V2 (21/09/2026)
 
 *(đã điều chỉnh 25/09/2026)* V2.3 "Cyan kính" (`design/v2.3/`) **thay** phần hình ảnh của V2 dưới đây: kính sáng, `PageHero` nền
@@ -520,6 +546,8 @@ bám mép trên thì nội dung trôi lạc giữa vùng trống, nhìn như tra
 
 - **Màn vận hành** (có dữ liệu): nội dung căn trái, bám mép trên, không tiêu đề khổng lồ căn giữa, không hình minh hoạ lớn. Đây là mặc định.
 - **Màn không có dữ liệu**: được phép bố cục hai cột, căn giữa theo chiều dọc, và có hình minh hoạ. Hình minh hoạ phải dựng từ chính sản phẩm (phép chiếu đẳng cự ở `lib/isometric.ts`, bảng màu điểm giao), không mượn ảnh trang trí bên ngoài.
+  *(đã điều chỉnh 27/09/2026, LM-105)* Linh vật cáo **Lumo** là tài sản thương hiệu của sản phẩm, được dùng ở màn không có dữ liệu theo bảng
+  tư thế ở mục "Thương hiệu"; ngoài Lumo vẫn không mượn ảnh trang trí.
 
 **Cuộn trong khung ứng dụng** *(bổ sung 23/09/2026)*: trang không bao giờ cuộn; mỗi màn tự cuộn vùng nội dung của nó. `AppShell` đặt màn
 trong một **hàng** flex `relative min-h-0` dưới thanh điều hướng. Gốc màn `flex min-w-0 flex-1 flex-col`, vùng cuộn

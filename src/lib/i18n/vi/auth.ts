@@ -2,6 +2,8 @@
 export const auth = {
   login: {
     title: 'Đăng nhập',
+    /** Lời chào của linh vật (LM-105); "Lumo" là tên riêng, không dịch. */
+    greeting: 'Xin chào, mình là Lumo!',
     subtitle: 'Hệ thống lập kế hoạch và tối ưu chất xếp hàng hoá 3D.',
     email: 'Email',
     emailPlaceholder: 'ten@loadmaster.vn',

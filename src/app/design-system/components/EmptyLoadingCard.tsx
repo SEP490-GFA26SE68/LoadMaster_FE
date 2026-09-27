@@ -1,4 +1,4 @@
-import { Plus, Route } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Link } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
@@ -18,8 +18,8 @@ export function EmptyLoadingCard() {
     <SheetCard title={t('designSystem.components.empty.title')} bare>
       <div className="grid grid-cols-1 sm:grid-cols-2">
         <EmptyState
-          icon={Route}
-          tone="info"
+          mascot="empty"
+          compact
           title={t('trips.list.emptyTitle')}
           description={t('trips.list.emptyDescription')}
           className="px-5 py-9 sm:border-r sm:border-line-soft"

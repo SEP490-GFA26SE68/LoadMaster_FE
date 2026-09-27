@@ -124,6 +124,31 @@ export const designSystem = {
       meta: 'nhãn luôn nằm trên · viền 3:1',
       notesPlaceholder: 'Ví dụ: gọi trước khi tới điểm giao',
     },
+    /** Thẻ Thương hiệu (LM-105) */
+    brand: {
+      title: 'Thương hiệu',
+      meta: 'Logo LoadMaster',
+      sizes: 'Biểu tượng: 16 · 24 · 32 · 48 px, một màu, trên nền tối',
+      colors: 'Ba màu gốc — chỉ dùng trong logo',
+      swatches: { lid: 'Nắp', letterL: 'Chữ L', letterN: 'Chữ n' },
+      lumo: 'Linh vật Lumo — mỗi tư thế một nghĩa',
+      poses: {
+        greet: 'Chào',
+        empty: 'Chưa có dữ liệu',
+        notFound: 'Không tìm thấy',
+        error: 'Có sự cố',
+        done: 'Xong việc',
+        warehouseWaiting: 'Kho chờ hàng',
+        driverWaiting: 'Tài xế chờ chuyến',
+      },
+      rules: {
+        color: 'Màu xanh của logo chỉ nằm trong logo; nút, liên kết, biểu đồ vẫn dùng cyan của giao diện.',
+        dark: 'Trên nền tối, chữ n đổi sang trắng và chữ "Master" sang xanh nắp để đủ tương phản.',
+        space: 'Nhỏ nhất 16 px; chừa trống quanh logo ít nhất một phần tư chiều cao biểu tượng.',
+        tagline: 'Khẩu hiệu và tên Lumo giữ nguyên ở mọi ngôn ngữ.',
+        lumo: 'Lumo chỉ ở màn không có dữ liệu để bày; không đặt trong bảng, form, khung 3D, bảng điều khiển, toast hay hộp thoại.',
+      },
+    },
     labels: {
       title: 'Nhãn, vai trò, người',
       versions: 'Nhãn phiên bản phương án',

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import type { LumoPose } from '@/components/brand/Lumo'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { ExitIconButton } from '@/features/auth/ExitControl'
@@ -10,7 +11,13 @@ import { DRIVER_TRIP_SCREEN } from './DriverStopHeader'
  * Chuyến mở bằng URL mà không giao được (LM-087): chưa có bản duyệt, đã huỷ, không phải chuyến của tài xế này, hoặc không tải được.
  * Nói rõ lý do, có lối về danh sách chuyến 56px nhìn thấy được (mục 10). Không dựng phương án giả.
  */
-export function DriverNotice({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+/** `mascot` (LM-105): tài xế chờ việc (mặc định) hoặc `error` (lỗi tải, chuyến đã huỷ). */
+export function DriverNotice({ mascot = 'driverWaiting', title, description, action }: {
+  mascot?: LumoPose
+  title: string
+  description: string
+  action?: ReactNode
+}) {
   const t = useT()
   return (
     <div className="flex h-dvh flex-col bg-bg text-body-lg">
@@ -19,6 +26,7 @@ export function DriverNotice({ title, description, action }: { title: string; de
       </header>
       <div className="flex flex-1 flex-col justify-center p-4">
         <EmptyState
+          mascot={mascot}
           // Mô tả của EmptyState là 14px; màn tài xế chạy trên điện thoại nên nâng mọi chữ lên 16px (mục 10)
           className="[&_span]:text-body-lg"
           title={title}

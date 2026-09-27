@@ -1,4 +1,4 @@
-import { Printer, QrCode } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
 import { Banner } from '@/components/Banner'
@@ -62,7 +62,7 @@ export function PackageLabelsPage() {
         ) : query.error ? (
           <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
         ) : labels.length === 0 ? (
-          <EmptyState icon={QrCode} title={t('sourcing.packages.empty')} description={t('sourcing.labels.emptyDescription')} />
+          <EmptyState mascot="empty" title={t('sourcing.packages.empty')} description={t('sourcing.labels.emptyDescription')} />
         ) : (
           <div className="flex flex-col gap-4">
             <Banner tone="info" icon={Printer}>{t('sourcing.labels.hint')}</Banner>

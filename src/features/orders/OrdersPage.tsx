@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
@@ -86,7 +86,7 @@ export function OrdersPage() {
         ) : query.isError ? (
           <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
         ) : all.length === 0 ? (
-          <EmptyState icon={ClipboardList} title={t('orders.empty')} description={t('orders.emptyDescription')} action={createButton ?? undefined} />
+          <EmptyState mascot="empty" title={t('orders.empty')} description={t('orders.emptyDescription')} action={createButton ?? undefined} />
         ) : (
           <div className="flex flex-col gap-3">
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card">

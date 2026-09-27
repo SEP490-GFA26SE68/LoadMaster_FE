@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react'
-import { EmptyTripsIllustration } from '@/features/trips/EmptyTripsIllustration'
+import { Logo } from '@/components/brand/Logo'
+import { Lumo, type LumoPose } from '@/components/brand/Lumo'
 import { cn } from '@/lib/utils'
-import { BrandMark } from './BrandMark'
 
 /**
- * Khung màn lỗi dùng chung (404, lỗi render, 403): logo, hình minh hoạ, mã, tiêu đề, mô tả và nút. Màn không có dữ liệu nghiệp vụ
- * nên được căn giữa và có hình minh hoạ (AGENTS mục 5).
+ * Khung màn lỗi dùng chung (404, lỗi render, 403): logo, Lumo, mã, tiêu đề, mô tả và nút. Màn không có dữ liệu nghiệp vụ nên được
+ * căn giữa và có hình minh hoạ (AGENTS mục 5). Lumo (LM-105): `notFound` (suy nghĩ) khi không có trang, `error` (ngạc nhiên) khi lỗi
+ * hoặc thiếu quyền.
  */
-export function ErrorScreen({ code, title, description, actions, className }: {
+export function ErrorScreen({ code, mascot, title, description, actions, className }: {
   code: string
+  mascot: LumoPose
   title: string
   description: string
   actions: ReactNode
@@ -16,15 +18,10 @@ export function ErrorScreen({ code, title, description, actions, className }: {
 }) {
   return (
     <main className={cn('flex min-h-dvh flex-1 flex-col items-center justify-center gap-8 overflow-auto bg-(image:--field) px-6 py-16 in-[.app-shell]:min-h-0 in-[.app-shell]:bg-none', className)}>
-      <div className="flex items-center gap-2.5">
-        <BrandMark />
-        <span className="font-display text-[18px] leading-none font-bold tracking-[-0.2px] font-stretch-112%">
-          Load<span className="text-primary">Master</span>
-        </span>
-      </div>
+      <Logo size="sm" />
 
       <div className="flex w-full max-w-120 flex-col items-center gap-6 rounded-lg border border-border bg-bg px-8 py-10 text-center shadow-card">
-        <EmptyTripsIllustration />
+        <Lumo pose={mascot} size="lg" />
         <div className="flex flex-col items-center gap-2">
           <span className="font-mono text-body font-medium text-text-3">{code}</span>
           <h1 className="text-h1 font-semibold tracking-[-0.01em]">{title}</h1>

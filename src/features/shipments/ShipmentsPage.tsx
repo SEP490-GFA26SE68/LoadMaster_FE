@@ -1,4 +1,4 @@
-import { PackageCheck, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -90,7 +90,7 @@ export function ShipmentsPage() {
         ) : query.error ? (
           <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
         ) : !hasRows ? (
-          <EmptyState icon={PackageCheck} title={t('sourcing.shipments.empty')} description={t('sourcing.shipments.emptyDescription')} action={createButton ?? undefined} />
+          <EmptyState mascot="empty" title={t('sourcing.shipments.empty')} description={t('sourcing.shipments.emptyDescription')} action={createButton ?? undefined} />
         ) : (
           <div className="flex flex-col gap-3">
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card">

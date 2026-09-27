@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { LogoMark } from '@/components/brand/LogoMark'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { BrandMark } from '../BrandMark'
 
 /**
  * Khung chung của hai trang tài liệu bàn giao V2.3 (`Main.jpg`, `ThanhPhan.jpg`): **dải trời** có logo và chọn ngôn ngữ, đường dẫn
@@ -37,9 +37,9 @@ export function SheetLayout({
               aria-label={t('nav.home')}
               className="flex items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
             >
-              <BrandMark />
-              <span aria-hidden className="font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-sky-text font-stretch-112%">
-                Load<span className="text-cyan-300">Master</span>
+              <LogoMark tone="dark" />
+              <span aria-hidden className="font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-(--logo-on-dark) font-stretch-106%">
+                Load<span className="text-(--logo-sky)">Master</span>
               </span>
             </Link>
             <div className="ml-auto">

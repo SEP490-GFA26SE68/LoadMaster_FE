@@ -91,6 +91,7 @@ export function AuditLogPage() {
       <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
         {failed ? (
           <EmptyState
+            mascot="error"
             title={t('audit.log.errorTitle')}
             description={t('audit.log.errorDescription')}
             action={

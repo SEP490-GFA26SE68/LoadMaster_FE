@@ -23,6 +23,7 @@ export function NotFoundPage() {
   return (
     <ErrorScreen
       code={code}
+      mascot={isNotFound ? 'notFound' : 'error'}
       title={isNotFound ? t('notFound.title') : t('notFound.errorTitle')}
       description={isNotFound ? t('notFound.description') : t('notFound.errorDescription')}
       actions={

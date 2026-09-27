@@ -1,4 +1,4 @@
-import { Container, Plus, RotateCcw } from 'lucide-react'
+import { Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -112,13 +112,12 @@ export function VehicleTypesPage() {
           <div role="status" aria-label={t('vehicleTypes.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : typesQuery.isError ? (
           <EmptyState
-            icon={Container}
-            tone="danger"
+            mascot="error"
             title={dataErrorMessage(typesQuery.error, t)}
             action={<Button variant="secondary" onClick={() => void typesQuery.refetch()}><RotateCcw strokeWidth={1.5} />{t('tripReport.retry')}</Button>}
           />
         ) : types.length === 0 ? (
-          <EmptyState icon={Container} title={t('vehicleTypes.empty')} description={t('vehicleTypes.emptyDescription')} action={addButton ?? undefined} />
+          <EmptyState mascot="empty" title={t('vehicleTypes.empty')} description={t('vehicleTypes.emptyDescription')} action={addButton ?? undefined} />
         ) : (
           <VehicleTypesTableContext value={context}>
             <div className="flex flex-col gap-4">

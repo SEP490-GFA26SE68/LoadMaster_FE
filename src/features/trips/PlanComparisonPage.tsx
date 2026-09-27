@@ -60,6 +60,7 @@ function NotEnoughRevisions({ tripId, cards, canRun }: { tripId: string; cards: 
   return (
     <div className="px-shell py-6">
       <EmptyState
+        mascot="empty"
         title={t('trips.compare.emptyTitle')}
         description={t('trips.compare.emptyDescription', { count: cards.length })}
         action={

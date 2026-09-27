@@ -81,6 +81,7 @@ export function FleetPage() {
           </div>
         ) : isError ? (
           <EmptyState
+            mascot="error"
             title={t('fleet.error.title')}
             description={t('fleet.error.description')}
             action={
@@ -92,6 +93,7 @@ export function FleetPage() {
           />
         ) : vehicles.length === 0 ? (
           <EmptyState
+            mascot="empty"
             title={t('fleet.empty.title')}
             description={t('fleet.empty.description')}
             action={canEdit ? (

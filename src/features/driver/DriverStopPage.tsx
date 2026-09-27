@@ -32,10 +32,10 @@ function DriverTripScreen({ tripId }: { tripId: string }) {
       </div>
     )
   }
-  if (query.isError) return <DriverNotice title={t('driver.loadErrorTitle')} description={dataErrorMessage(query.error, t)} />
+  if (query.isError) return <DriverNotice mascot="error" title={t('driver.loadErrorTitle')} description={dataErrorMessage(query.error, t)} />
   const { trip, plan } = query.data
   if (trip.phase === 'cancelled') {
-    return <DriverNotice title={t('driver.cancelledTitle')} description={t('driver.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })} />
+    return <DriverNotice mascot="error" title={t('driver.cancelledTitle')} description={t('driver.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })} />
   }
   if (!plan) return <DriverNotice title={t('driver.emptyTitle')} description={t('driver.emptyTripDescription', { tripId })} />
   if (trip.phase === 'completed') return <TripSummary trip={trip} plan={plan} />

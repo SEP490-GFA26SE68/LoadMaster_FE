@@ -31,7 +31,7 @@ export function ReviewQueuePage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section aria-label={t('review.title')}>
           {rows.length === 0 ? (
-            <EmptyState icon={ClipboardCheck} title={t('review.empty')} description={t('review.emptyDescription')} />
+            <EmptyState mascot="done" title={t('review.empty')} description={t('review.emptyDescription')} />
           ) : (
             <div className="grid gap-4 xl:grid-cols-2" data-review-queue>
               {rows.map((row, index) => <ReviewPlanCard key={row.revisionId} row={row} primary={index === 0} now={now} />)}
