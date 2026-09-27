@@ -1,6 +1,7 @@
 import { Printer, RotateCcw } from 'lucide-react'
 import { useMemo } from 'react'
 import { useParams } from 'react-router'
+import { Logo } from '@/components/brand/Logo'
 import { Banner } from '@/components/Banner'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
@@ -100,12 +101,16 @@ function PrintHeading({ tripId, tripName }: { tripId: string; tripName: string }
   const format = useFormat()
   const now = new Date()
   return (
-    <header className="flex items-end justify-between gap-4 border-b border-border pb-3">
+    <header className="flex flex-col gap-4 border-b border-border pb-3">
+      {/* Logo một màu đầu trang in (LM-105): in đen trắng vẫn rõ */}
+      <div className="flex items-center justify-between gap-4">
+        <Logo tone="mono" size="sm" tagline className="text-ink-strong" />
+        <p className="m-0 text-caption text-ink-3">{t('tripReport.printedAt', { time: format.time(now), date: format.date(now) })}</p>
+      </div>
       <div className="flex flex-col gap-1">
         <h1 className="font-display text-h1 font-bold">{t('tripReport.title')} <span className="font-mono">{tripId}</span></h1>
         <p className="m-0 text-body text-ink-2">{tripName}</p>
       </div>
-      <p className="m-0 text-caption text-ink-3">{t('tripReport.printedAt', { time: format.time(now), date: format.date(now) })}</p>
     </header>
   )
 }

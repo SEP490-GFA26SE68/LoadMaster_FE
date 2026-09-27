@@ -34,6 +34,11 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 27/09/2026 — Thương hiệu đợt 3: in ấn và màn kho (LM-105)
+
+Logo một màu trên nhãn QR (bản xem và bản in) và đầu báo cáo chuyến bản in; biểu tượng ở màn chính của kho. Không thêm logo vào thanh
+tài xế (360–390 px quá chật) và thanh phiên xếp / điểm giao. LM-105 xong ba đợt. 966/966 unit/DOM, 17/17 E2E liên quan.
+
 ### 27/09/2026 — Thương hiệu đợt 2: linh vật Lumo (LM-105)
 
 7 tư thế Lumo xuất WebP (~20 KB mỗi ảnh), `Lumo` + `EmptyState mascot`; gắn vào màn rỗng, màn lỗi / 404 / 403, màn chờ việc của kho,

@@ -477,8 +477,9 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - Khẩu hiệu "Plan smarter. Load further." (`BRAND_TAGLINE`) và tên linh vật **Lumo** là tên riêng: tiếng Anh ở mọi ngôn ngữ, không vào
   từ điển. Khẩu hiệu viết như câu, không viết hoa giãn chữ như bản gốc (luật "Cấm tuyệt đối").
 - Chỗ đặt: thanh điều hướng, màn đăng nhập (logo ngang + khẩu hiệu), màn lỗi / 404 / 403, trang tài liệu (`BrandCard` ở `/thanh-phan`),
-  `favicon.svg` (chữ n đổi trắng khi tab tối), `apple-touch-icon.png`, `icon-192/512.png`, `manifest.webmanifest`, README.
-  Đợt sau: nhãn QR và báo cáo chuyến bản in (bản `mono`), thanh 56 px của kho và tài xế.
+  `favicon.svg` (chữ n đổi trắng khi tab tối), `apple-touch-icon.png`, `icon-192/512.png`, `manifest.webmanifest`, README; bản
+  `mono` ở góc **nhãn QR** (in đen trắng dán lên kiện) và đầu **báo cáo chuyến bản in**; thanh màn chính của kho (`/kho`). **Không** đặt
+  logo ở thanh của tài xế (điện thoại 360–390 px: tiêu đề gãy ba dòng) và ở thanh phiên xếp / điểm giao (một thao tác mỗi màn).
 - Nhỏ nhất 16 px; chừa trống quanh logo ít nhất một phần tư chiều cao biểu tượng. Không đổ bóng, không đặt logo trong ô màu (ô gradient
   `--brand-mark` của V2.3 đã bỏ).
 - **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):

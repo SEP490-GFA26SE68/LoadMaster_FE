@@ -1,3 +1,4 @@
+import { LogoMark } from '@/components/brand/LogoMark'
 import { EmptyState } from '@/components/EmptyState'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { Button } from '@/components/ui/Button'
@@ -19,6 +20,8 @@ export function WarehouseTripsPage() {
     <div className="flex h-dvh flex-col bg-bg text-body-lg">
       <header className="flex h-18 flex-none items-center gap-3 border-b border-border pr-6 pl-3">
         <ExitIconButton screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />
+        {/* Logo ở màn chính của kho (LM-105); phiên xếp giữ thanh gọn cho một thao tác mỗi màn */}
+        <LogoMark className="size-8" />
         <h1 className="min-w-0 flex-1 truncate text-h1 font-semibold">{t('warehouse.list.title')}</h1>
         <LanguageSwitch size="touch" className="flex-none" />
         <AccountMenu />

@@ -138,3 +138,17 @@ nét chữ tròn của ảnh gốc (ảnh gốc là raster, không có font); tr
 
 **Không đặt Lumo** (theo nguyên tắc): bảng điều khiển khi kỳ không có dữ liệu, bảng lọc không khớp, tìm nhanh không có kết quả, màn tạo
 chuyến, mọi hộp thoại.
+
+### Đợt 3 — in ấn và màn cảm ứng (27/09/2026)
+
+Ảnh: `docs/screenshots/brand/dot3-*.png`.
+
+- **Nhãn QR** (`PackageLabel`, bản xem và bản in A4): biểu tượng một màu + chữ "LoadMaster" ở góc phải hàng mã kiện, cỡ 4 mm khi in —
+  in đen trắng vẫn rõ, không lấn chỗ của mã QR và số đo.
+- **Báo cáo chuyến bản in**: đầu trang là logo ngang một màu kèm khẩu hiệu, giờ in bên phải; tiêu đề và tên tuyến xuống dòng dưới.
+- **Màn chính của kho** (`/kho`, tablet): biểu tượng 32 px giữa nút thoát và tiêu đề "Chuyến cần xếp".
+- **Không làm theo kế hoạch:** logo ở thanh của tài xế — ở 360–390 px thanh đã có nút thoát, tiêu đề, chọn ngôn ngữ và nút tài khoản,
+  thêm biểu tượng làm tiêu đề "Chuyến của tôi" gãy ba dòng; tài xế đã gặp thương hiệu ở màn đăng nhập và Lumo. Thanh phiên xếp của kho và
+  thanh điểm giao cũng không thêm logo (một thao tác mỗi màn).
+- Kiểm tra: tsc, lint sạch; 966/966 unit/DOM; E2E `review1-register`, `review1-execute`, `warehouse`, `warehouse-progress`, `layout-1366`,
+  `i18n-en` 17/17.
