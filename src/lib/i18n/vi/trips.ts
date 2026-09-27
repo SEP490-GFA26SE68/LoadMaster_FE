@@ -20,14 +20,51 @@ export const trips = {
     loadError: 'Không tải được danh sách chuyến.',
     search: 'Tìm theo mã, tên, tuyến, xe, tài xế',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
-    /** Ba ô số liệu (V2): đếm trên cả danh sách, hai ô nhóm bấm để lọc. Nhãn nhóm cũng là dòng đầu của ô chọn trạng thái. */
-    summary: {
-      total: 'Chuyến trong danh sách',
-      totalNote: 'Mọi chuyến, kể cả đã huỷ',
+    /** V2.3 (`ChuyenHang.jpg`): cột Tuyến = tên chuyến + "N điểm · tuyến"; tài xế trống thì nói rõ cả câu. */
+    route: 'Tuyến',
+    routeLine: '{stops} · {route}',
+    stopsShort: { one: '{count} điểm', other: '{count} điểm' },
+    unassignedDriver: 'Chưa gán tài xế',
+    /** Dòng số dưới tiêu đề: đếm trên cả kho, không theo bộ lọc. Số đứng trước chữ, in đậm riêng nên không nằm trong câu. */
+    stats: {
+      total: { one: 'chuyến', other: 'chuyến' },
+      active: 'đang chạy',
+      review: 'cần bạn xử lý',
+    },
+    /** Tab trên dải trời là bộ lọc trạng thái (`trang-thai`); số của tab theo tìm và các bộ lọc khác. */
+    tabs: {
+      label: 'Giai đoạn của chuyến',
+      all: 'Tất cả',
+      review: 'Cần xử lý',
+      upcoming: 'Sắp chạy',
       active: 'Đang thực hiện',
-      activeNote: 'Kho đang xếp, đã xếp xong hoặc đang giao',
-      review: 'Cần xem phương án',
-      reviewNote: 'Đã tối ưu chờ duyệt, hoặc cần xem lại',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã huỷ',
+    },
+    /** Bộ lọc dạng chip trong đầu thẻ bảng: "Xe: tất cả". */
+    chip: '{label}: {value}',
+    chipAll: 'tất cả',
+    dateFrom: 'từ {date}',
+    dateTo: 'đến {date}',
+    dateRange: '{from} – {to}',
+    /** Dòng nhóm theo ngày chạy (khi sắp theo ngày chạy). */
+    group: {
+      day: '{weekday}, {date}',
+      count: { one: '{count} chuyến', other: '{count} chuyến' },
+      today: 'Hôm nay',
+      tomorrow: 'Ngày mai',
+      byDateDesc: 'Nhóm theo ngày chạy · mới nhất trước',
+      byDateAsc: 'Nhóm theo ngày chạy · cũ nhất trước',
+      byDate: 'Nhóm theo ngày chạy',
+    },
+    weekdays: {
+      sun: 'Chủ Nhật',
+      mon: 'Thứ Hai',
+      tue: 'Thứ Ba',
+      wed: 'Thứ Tư',
+      thu: 'Thứ Năm',
+      fri: 'Thứ Sáu',
+      sat: 'Thứ Bảy',
     },
   },
   /** Form tạo/sửa chuyến (LM-053, LM-088). */
@@ -70,20 +107,49 @@ export const trips = {
     cargoLines: { one: '{count} dòng kiện · {instances} kiện', other: '{count} dòng kiện · {instances} kiện' },
     openCargo: 'Mở danh sách kiện',
     checklistTitle: 'Kiểm tra trước khi lưu',
+    /** Thẻ kiểm tra (V2.3): đọc trực tiếp lỗi của form đang nhập, cùng schema với lỗi dưới ô. */
     checklist: {
       name: 'Tên tuyến và ngày chạy',
       vehicle: 'Xe đủ chỗ cho hàng dự kiến',
       stops: 'Thứ tự điểm giao đúng thực tế — điểm cuối xếp sâu nhất',
       cargo: 'Sau khi lưu: thêm kiện rồi chạy tối ưu',
+      failCount: { one: '{count} lỗi cần sửa trước khi lưu', other: '{count} lỗi cần sửa trước khi lưu' },
+      todoCount: { one: 'Còn {count} ô bắt buộc chưa nhập', other: 'Còn {count} ô bắt buộc chưa nhập' },
+      ok: 'Không có lỗi — có thể lưu.',
+      namePass: 'Đã đặt tên · chạy {date}',
+      vehiclePass: '{vehicle} · {volume} · {payload}',
+      vehicleCargo: '{vehicle} · {weight} / {payload} · {volume} / {capacity}',
+      vehicleOver: 'Hàng vượt tải trọng xe: {weight} / {payload}',
+      stopsPass: { one: '{count} điểm giao · điểm cuối: {last}', other: '{count} điểm giao · điểm cuối: {last}' },
+      stopsLocked: 'Đã khoá: kho đang xếp theo phương án đã duyệt.',
+      cargoLocked: 'Không áp dụng khi kho đang xếp hàng.',
+      goToField: 'Tới ô cần sửa',
+      foot: 'Bấm “Tới ô cần sửa” để đưa con trỏ tới đúng ô.',
     },
     summaryLabel: 'Tóm tắt chuyến',
+    summaryVehicle: 'Xe',
     summaryStops: 'Điểm giao',
     summaryPayload: 'Tải trọng xe',
     summaryPackages: 'Kiện hàng',
     summaryWeight: 'Khối lượng',
     summaryNoVehicle: 'Chưa chọn xe',
     summaryNote: 'Số điểm giao theo form đang nhập; kiện và khối lượng lấy từ chuyến đã lưu.',
-    summaryNoteNew: 'Kiện thêm ở Chi tiết chuyến sau khi tạo.',
+    /** Đầu màn V2.3: đường dẫn, dòng phụ của form sửa, dấu bắt buộc và gợi ý ngày chạy. */
+    crumbTrips: 'Chuyến hàng',
+    crumbEdit: 'Sửa',
+    heroLoaded: 'Đã xếp {loaded} / {total} kiện',
+    optional: '(không bắt buộc)',
+    weekdays: { sun: 'Chủ Nhật', mon: 'Thứ Hai', tue: 'Thứ Ba', wed: 'Thứ Tư', thu: 'Thứ Năm', fri: 'Thứ Sáu', sat: 'Thứ Bảy' },
+    relativeDay: { yesterday: 'hôm qua', today: 'hôm nay', tomorrow: 'ngày mai' },
+    relativeDayTitle: { yesterday: 'Hôm qua', today: 'Hôm nay', tomorrow: 'Ngày mai' },
+    dateHint: '{weekday} · {relative}',
+    dayAndDate: '{day}, {date}',
+    vehicleLockedHint: 'Đã khoá: kho đã bắt đầu xếp hàng theo phương án đã duyệt.',
+    stopField: { name: 'Tên', address: 'Địa chỉ', phone: 'Số điện thoại', contactName: 'Người liên hệ' },
+    stopCount: { one: '{count} điểm', other: '{count} điểm' },
+    locked: 'Đã khoá',
+    cargoLater: 'Kiện thêm ở Chi tiết chuyến sau khi tạo.',
+    cargoLoaded: 'Kho đã xếp {loaded} / {total} kiện theo phương án',
     lockedHint: 'Kho đã bắt đầu xếp hàng nên xe và điểm giao đã khoá; vẫn sửa được tên, ngày chạy và tài xế.',
     notEditable: 'Chuyến {id} đã rời kho hoặc đã kết thúc nên không sửa được nữa.',
     submitCreate: 'Tạo chuyến',
@@ -105,28 +171,36 @@ export const trips = {
     description: 'Thay đổi trên form chuyến sẽ mất nếu rời trang bây giờ.',
     stay: 'Ở lại',
     confirm: 'Rời trang',
+    close: 'Đóng',
   },
   vehicle: 'Phương tiện',
   changeVehicle: 'Đổi xe',
-  /** Thẻ xe ở Chi tiết chuyến: xe và tài xế đi cùng (LM-088). */
+  /** Mục Phương tiện ở cột phải Chi tiết chuyến: xe và tài xế đi cùng (LM-088, V2.3). */
   vehicleCard: {
+    vehicle: 'Xe',
     cargoSpace: 'Lòng thùng (D × R × C)',
     door: 'Cửa (R × C)',
     obstacles: 'Vật cản',
     driver: 'Tài xế',
     unassigned: 'Chưa gán',
+    /** Tài xế kèm số điện thoại trên một dòng. */
+    driverPhone: '{name} · {phone}',
   },
-  /** Vỏ màn Chi tiết chuyến: header, menu thao tác, banner khoá (LM-088). */
+  /** Vỏ màn Chi tiết chuyến: dải trời, menu thao tác, banner theo pha, cột phải (LM-088, V2.3 LM-103). */
   detail: {
-    back: 'Quay lại danh sách chuyến',
     runOptimization: 'Chạy tối ưu',
     openPlan: 'Xem phương án 3D',
     loading: 'Đang tải chuyến',
     notFound: 'Không tìm thấy chuyến {id}',
-    scheduledDate: 'Ngày chạy {date}',
+    /** Dòng dưới tiêu đề: ngày chạy · xe · tài xế. */
+    runDate: 'Ngày chạy',
+    driver: 'Tài xế',
+    noDriver: 'Chưa gán tài xế',
     actions: 'Thao tác',
     edit: 'Sửa thông tin chuyến',
     cancel: 'Huỷ chuyến',
+    /** Chạy tối ưu bị chặn: lý do hiện ngay dưới nút (AGENTS mục 5). */
+    runBlocked: { noPackages: 'Chưa chạy được: chuyến chưa có kiện nào.' },
     /** Lý do chuyến không sửa được, theo pha (D-45). */
     locked: {
       loading: 'Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
@@ -135,6 +209,25 @@ export const trips = {
       completed: 'Chuyến đã hoàn thành; màn này chỉ để xem.',
       cancelled: 'Chuyến đã huỷ lúc {time} {date}. Lý do: {reason}',
     },
+    /** Kho đang xếp / đã xếp xong: phần khung chuyến vẫn sửa được (D-45). */
+    stillEditable: 'Vẫn sửa được tên, ngày chạy và tài xế.',
+    /** Chuyến đã huỷ: nhãn ở cuối banner. */
+    readOnly: 'Chỉ xem',
+    /** Bản đã duyệt lỗi thời (D-31): nói vì sao, lấy từ nhật ký (V2.3, quyết định 2). */
+    stale: {
+      title: 'Phương án {revision} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',
+      body: 'Kho chỉ xếp được khi điều phối viên duyệt lại.',
+      editedAt: 'Sửa lúc {time} {date}',
+      fields: 'Đã sửa: {fields}',
+      change: 'từ {before} thành {after}',
+      action: 'Tới Thiết lập tối ưu',
+    },
+    /** Cột phải. */
+    ofTotal: '{used} / {total}',
+    issuesTitle: { one: '{count} sự cố giao hàng', other: '{count} sự cố giao hàng' },
+    missingTitle: { one: '{count} kiện thiếu ở kho', other: '{count} kiện thiếu ở kho' },
+    wholeStop: 'Cả điểm giao',
+    at: '{time} {date}',
   },
   /** Hộp thoại huỷ chuyến (D-45): lý do bắt buộc, ghi nhật ký. */
   cancel: {
@@ -144,11 +237,13 @@ export const trips = {
     reasonPlaceholder: 'Ví dụ: khách hoãn nhận hàng',
     reasonRequired: 'Nhập lý do huỷ chuyến',
     tooLong: 'Lý do dài quá 300 ký tự',
+    /** Bộ đếm ký tự dưới ô lý do. */
+    counter: '{count} / {max}',
     keep: 'Không huỷ',
     confirm: 'Huỷ chuyến',
     done: 'Đã huỷ chuyến {id}',
   },
-  /** Thẻ Tiến trình ở Chi tiết chuyến (LM-088, D-47). */
+  /** Tiến trình trên dải trời ở Chi tiết chuyến (LM-088, D-47, V2.3). */
   progress: {
     title: 'Tiến trình',
     steps: {
@@ -162,16 +257,16 @@ export const trips = {
       cancelled: 'Đã huỷ',
     },
     state: { done: 'đã xong', current: 'đang diễn ra', pending: 'chưa tới' },
+    /** Bước duyệt khi bản duyệt lỗi thời: nhãn cạnh tên bước và câu cho trình đọc màn hình. */
+    staleTag: 'Lỗi thời',
+    staleA11y: 'phương án lỗi thời',
+    note: { next: 'Tiếp theo', waitApproval: 'Chờ duyệt lại' },
     loadingCount: 'Đã xếp {loaded} / {total} kiện',
     missingCount: { one: 'thiếu {count} kiện', other: 'thiếu {count} kiện' },
     deliveryCount: 'Đã giao {done} / {total} điểm',
     at: '{time} {date}',
-    reason: 'Lý do: {reason}',
-    missingTitle: { one: '{count} kiện thiếu ở kho', other: '{count} kiện thiếu ở kho' },
-    issuesTitle: { one: '{count} sự cố giao hàng', other: '{count} sự cố giao hàng' },
-    wholeStop: 'Cả điểm giao',
   },
-  /** Sơ đồ tuyến ở Chi tiết chuyến (LM-097, D-50): kho → các điểm giao theo thứ tự, không bản đồ địa lý. */
+  /** Sơ đồ tuyến ở Chi tiết chuyến (LM-097, D-50, V2.3): kho → các điểm giao theo thứ tự, không bản đồ địa lý. */
   route: {
     title: 'Sơ đồ tuyến',
     count: { one: 'Kho xuất phát và {count} điểm giao', other: 'Kho xuất phát và {count} điểm giao' },
@@ -180,9 +275,24 @@ export const trips = {
       other: 'Kho xuất phát rồi {count} điểm giao theo thứ tự giao',
     },
     depot: 'Kho xuất phát',
+    departed: 'Xuất phát {time}',
     stop: 'Điểm {number} / {total}: {name}, {packages}, {weight}',
     state: { done: 'Đã giao {time}', current: 'Đang giao', pending: 'Chưa giao' },
     stateA11y: { done: 'đã giao lúc {time}', current: 'đang giao', pending: 'chưa giao' },
+    unloaded: 'Đã dỡ {done} / {total}',
+    issueTag: { one: '{count} sự cố', other: '{count} sự cố' },
+    /** Số tổng hợp ở đầu sơ đồ khi chuyến đang giao / đã hoàn thành. */
+    summary: {
+      stops: 'Đã giao',
+      stopsUnit: 'điểm',
+      packages: 'Đã dỡ',
+      packagesUnit: 'kiện',
+      ratio: '{done} / {total}',
+      issues: 'Sự cố',
+      departed: 'Xuất phát',
+      window: 'Thời gian',
+      windowValue: '{from} – {to}',
+    },
   },
   /** Nhập kiện từ file .csv/.xlsx ở bảng kiện (LM-093, D-49): hộp thoại, file mẫu, xem trước, lỗi theo dòng. */
   import: {
@@ -268,17 +378,20 @@ export const trips = {
       weight: 'Khối lượng',
       quantity: 'SL',
       stop: 'Điểm',
+      /** Bảng dòng lỗi: mã · tên kiện, rồi mọi lỗi của dòng. */
+      package: 'Kiện',
+      problems: 'Lỗi',
     },
   },
   /** Bảng giữ chỗ khi danh sách chuyến đang tải. */
   skeleton: {
     loading: 'Đang tải danh sách chuyến',
     loadingText: 'Đang tải danh sách chuyến…',
-    date: 'Ngày chạy',
     id: 'Mã chuyến',
-    route: 'Chuyến và tuyến',
+    route: 'Tuyến',
     vehicle: 'Xe',
     driver: 'Tài xế',
+    packages: 'Kiện',
     fill: 'Lấp đầy',
     status: 'Trạng thái',
   },
@@ -290,17 +403,13 @@ export const trips = {
   volumeUsage: 'Thể tích sử dụng',
   payloadUsage: 'Tải trọng sử dụng',
   overPayload: 'Vượt tải trọng xe',
+  /** Điểm giao trên sơ đồ tuyến ở Chi tiết chuyến: kéo ngang để đổi thứ tự (LM-046), bấm để lọc bảng kiện, xoá điểm. */
   stops: {
-    title: 'Thứ tự điểm giao',
-    count: { one: '{count} điểm', other: '{count} điểm' },
+    /** Gợi ý của tay nắm kéo. */
     hint: 'Kéo để sắp xếp · điểm cuối được xếp sâu nhất',
-    /** V2: bấm một điểm để lọc bảng kiện theo điểm đó, bấm lại để bỏ lọc. */
-    filterHint: 'Bấm một điểm để lọc danh sách kiện.',
     filter: 'Lọc kiện theo điểm {number}: {name}',
     remove: 'Xoá điểm giao {name}',
     dragHandle: 'Kéo để đổi thứ tự {name}',
-    packagesUnit: 'kiện',
-    numberLabel: 'Điểm {number}:',
     removeBlocked: {
       one: 'Không xoá được {name}: còn {count} kiện giao tại điểm này.',
       other: 'Không xoá được {name}: còn {count} kiện giao tại điểm này.',
@@ -330,11 +439,21 @@ export const trips = {
     priority: 'Độ ưu tiên',
     mustLoad: 'Bắt buộc phải xếp',
     notes: 'Ghi chú',
+    optional: '(không bắt buộc)',
+    uprightHint: 'Kiện giữ thẳng đứng chỉ được đặt LWH hoặc WLH.',
+    minSupportRatioHint: 'Trong khoảng 0 đến 1.',
+    /** Đầu panel (V2.3): nhãn trước mã kiện. */
+    code: 'Kiện',
+    /** Cảnh báo đầu form: lưu thay đổi làm revision đang hiển thị lỗi thời (D-31). */
+    staleLead: 'Lưu thay đổi sẽ làm {revision} lỗi thời.',
+    staleApproved: 'Chuyến chuyển sang Cần xem lại, cần duyệt lại trước khi kho xếp.',
+    staleOptimized: 'Chuyến chuyển sang Cần xem lại, cần chạy tối ưu lại.',
     save: 'Lưu kiện',
     saveAndNew: 'Lưu và thêm tiếp',
     duplicate: 'Nhân bản',
     delete: 'Xoá kiện',
     close: 'Đóng panel kiện',
+    closeDialog: 'Đóng',
     saved: 'Đã lưu kiện {id}',
     duplicated: 'Đã tạo bản sao {id}',
     deleted: 'Đã xoá kiện {id}',
@@ -370,7 +489,6 @@ export const trips = {
       requirements: 'Yêu cầu',
       issues: 'Lỗi',
     },
-    hint: 'Chọn một kiện để xem kích thước và yêu cầu xếp.',
     search: 'Tìm mã hoặc tên kiện',
     filterStop: 'Lọc theo điểm giao',
     allStops: 'Tất cả điểm giao',
@@ -394,6 +512,10 @@ export const trips = {
     preview: {
       label: 'Hình kiện {size}, không theo vị trí xếp',
       dims: 'Dài × Rộng × Cao',
+      /** Nhãn đường kích thước trên hình kiện: D 60 · R 50 · C 50. */
+      lengthShort: 'D',
+      widthShort: 'R',
+      heightShort: 'C',
       quantity: 'Số lượng',
       each: 'Mỗi kiện',
       totalWeight: 'Tổng khối lượng',

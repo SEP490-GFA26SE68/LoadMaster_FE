@@ -3,6 +3,7 @@
  * trạng thái: những thứ đó nằm trong nội dung màn và phải truy được về kho (AGENTS mục 6).
  */
 export const pageHero = {
+  breadcrumb: 'Vị trí trang',
   trips: 'Chuyến trong kỳ, trạng thái phương án và việc cần xử lý trước khi bàn giao kho.',
   tripForm: 'Nhập thông tin chuyến, chọn xe và sắp thứ tự điểm giao.',
   optimization: 'Khai báo yêu cầu xếp và kiểm tra đầu vào trước khi chạy tối ưu.',

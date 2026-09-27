@@ -153,6 +153,7 @@ Thứ tự đợt và màn đích: [design/v2.3/README.md](../../design/v2.3/REA
 | ID | Việc | Ước lượng | Phụ thuộc |
 |---|---|---|---|
 | [LM-102](LM-102-v23-thanh-phan.md) | Đợt 2: thành phần dùng chung, dải trời + thanh điều hướng, /kieu-dang, /thanh-phan | 3d | đợt 1 |
+| [LM-103](LM-103-v23-chuyen.md) | Đợt 3: Chuyến hàng — danh sách, tạo/sửa, chi tiết 7 trạng thái, kiện | 4d | 102 |
 
 ## 3. Đường găng và luồng song song
 

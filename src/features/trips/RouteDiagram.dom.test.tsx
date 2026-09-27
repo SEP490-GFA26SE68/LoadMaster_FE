@@ -65,6 +65,16 @@ test('more than six stops keep every stop with its own number, colour cycling af
   const list = renderDiagram(many)
   const items = within(list).getAllByRole('listitem')
   expect(items).toHaveLength(10)
-  expect(items.at(-1)!.querySelector('text')).toHaveTextContent('9')
-  expect(items.at(-1)!.querySelector('circle')).toHaveAttribute('fill', items[1]!.querySelector('circle')!.getAttribute('fill'))
+  const marker = (item: HTMLElement) => item.querySelector<HTMLElement>('[data-stop-marker]')!
+  expect(marker(items.at(-1)!)).toHaveTextContent('9')
+  expect(marker(items.at(-1)!).style.background).toBe(marker(items[1]!).style.background)
+})
+
+test('while delivering, the route card sums up stops delivered, packages unloaded, issues and departure time', () => {
+  render(<I18nProvider><RouteDiagram stops={STOPS} delivery={DELIVERING} /></I18nProvider>)
+  const summary = screen.getByRole('heading', { name: 'Sơ đồ tuyến' }).closest('summary')!
+  expect(summary).toHaveTextContent('Đã giao1 / 3 điểm')
+  expect(summary).toHaveTextContent('Đã dỡ0 / 43 kiện')
+  expect(summary).toHaveTextContent('Sự cố0')
+  expect(summary).toHaveTextContent(`Xuất phát${vi.time(DELIVERING.startedAt)}`)
 })

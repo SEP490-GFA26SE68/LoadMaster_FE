@@ -53,12 +53,49 @@ test('a trip being loaded is locked: the banner says why, edit actions are gone,
   expect(screen.getByRole('link', { name: 'Xem phương án 3D' })).toHaveAttribute('href', expect.stringContaining('/chuyen/TRIP-011/phuong-an?revision='))
   expect(primaryActions(container)).toHaveLength(1)
 
+  // Banner: phần khung chuyến vẫn sửa được, dẫn tới form sửa
+  expect(screen.getByText('Vẫn sửa được tên, ngày chạy và tài xế.', { exact: false })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Sửa thông tin chuyến' })).toHaveAttribute('href', '/chuyen/TRIP-011/sua')
+
   const plan = (await getMockDb().listRevisions('TRIP-011')).findLast((revision) => revision.approvedAt !== undefined)
-  const progress = within(screen.getByRole('heading', { name: 'Tiến trình' }).closest('div')!)
-  expect(await progress.findByText(`Đã xếp 110 / ${plan!.result.placements.length} kiện`, {}, SLOW)).toBeInTheDocument()
+  const progress = within(await screen.findByRole('list', { name: 'Tiến trình' }, SLOW))
+  expect(progress.getByText(`Đã xếp 110 / ${plan!.result.placements.length} kiện`)).toBeInTheDocument()
   expect(progress.getByText('Xếp hàng')).toHaveTextContent('Xếp hàng, đang diễn ra')
-  // Tài xế hiện cạnh xe
+  // Tài xế ở dòng dưới tên chuyến; cột phải có tài xế kèm số điện thoại
   expect(screen.getByText('Đặng Hoài Nam')).toBeInTheDocument()
+  expect(screen.getByText('Đặng Hoài Nam · 0907 890 123')).toBeInTheDocument()
+})
+
+test('a stale trip says which approved plan is out of date and why — the package line changed, before → after — and links to setup', async () => {
+  renderDetail('TRIP-013')
+  const approved = (await getMockDb().listRevisions('TRIP-013')).findLast((revision) => revision.approvedAt !== undefined)
+  const banner = (await screen.findByText(`Phương án ${approved!.id} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.`, {}, SLOW)).closest('[role="status"]')!
+  expect(banner).toHaveTextContent(/Nguyễn Thanh Tùng — PKG-001 Kiện nước giặt 4 can · Số lượng/)
+  expect(within(banner as HTMLElement).getByText('từ 80 thành 86')).toBeInTheDocument()
+  expect(within(banner as HTMLElement).getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveAttribute('href', '/chuyen/TRIP-013/toi-uu')
+  // Tiến trình: mốc duyệt lỗi thời, kho chờ duyệt lại
+  const progress = within(screen.getByRole('list', { name: 'Tiến trình' }))
+  expect(progress.getByText('Duyệt phương án')).toHaveTextContent('Duyệt phương án, đã xong, phương án lỗi thời')
+  expect(progress.getByText('Chờ duyệt lại')).toBeInTheDocument()
+})
+
+test('a trip with a plan offers both actions — "Xem phương án 3D" primary, "Chạy tối ưu" secondary; a draft only runs optimization', async () => {
+  const { container } = renderDetail('TRIP-2026-0914')
+  const openPlan = await screen.findByRole('link', { name: 'Xem phương án 3D' }, SLOW)
+  const run = screen.getByRole('link', { name: 'Chạy tối ưu' })
+  expect([...primaryActions(container)]).toStrictEqual([openPlan])
+  expect(run).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/toi-uu')
+  expect(within(await screen.findByRole('list', { name: 'Tiến trình' }, SLOW)).getByText('Tiếp theo')).toBeInTheDocument()
+})
+
+test('a draft trip without packages cannot run yet and says why under the button', async () => {
+  const created = await getMockDb().createTrip({ name: 'Tuyến thử chưa có kiện', vehicleId: 'VEHICLE-001', stops: [], packages: [], scheduledDate: '2026-09-30' })
+  const { container } = renderDetail(created.id)
+  const run = await screen.findByRole('button', { name: 'Chạy tối ưu' }, SLOW)
+  expect(run).toBeDisabled()
+  expect(run).toHaveAccessibleDescription('Chưa chạy được: chuyến chưa có kiện nào.')
+  expect(screen.queryByRole('link', { name: 'Xem phương án 3D' })).not.toBeInTheDocument()
+  expect(primaryActions(container)).toHaveLength(1)
 })
 
 test('cancelling a trip needs a reason, then shows "Đã huỷ" and writes the cancellation to the log', async () => {
@@ -72,10 +109,10 @@ test('cancelling a trip needs a reason, then shows "Đã huỷ" and writes the c
 
   await user.type(within(dialog).getByLabelText('Lý do huỷ'), 'Khách hoãn đơn sang tuần sau')
   await user.click(within(dialog).getByRole('button', { name: 'Huỷ chuyến' }))
-  // Banner nói lý do khoá, thẻ Tiến trình ghi mốc huỷ — cả hai có lý do
-  expect(await screen.findAllByText(/Lý do: Khách hoãn đơn sang tuần sau/, {}, SLOW)).toHaveLength(2)
+  // Banner nói lúc huỷ và lý do; tiến trình kết thúc ở mốc huỷ
+  expect(await screen.findByText(/Lý do: Khách hoãn đơn sang tuần sau/, {}, SLOW)).toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  expect(screen.getAllByText('Đã huỷ').length).toBeGreaterThan(0)
+  expect(within(screen.getByRole('list', { name: 'Tiến trình' })).getByText('Đã huỷ')).toHaveTextContent('Đã huỷ, đã xong')
   expect(screen.queryByRole('button', { name: 'Thao tác' })).not.toBeInTheDocument()
 
   const trip = await getMockDb().getTrip('TRIP-014')
@@ -87,9 +124,13 @@ test('cancelling a trip needs a reason, then shows "Đã huỷ" and writes the c
 test('a completed trip lists its delivery issues with kind, stop and note, and is read-only', async () => {
   renderDetail('TRIP-005')
   expect(await screen.findByText('1 sự cố giao hàng', {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByText('Thùng móp góc do xóc đường, khách vẫn nhận')).toBeInTheDocument()
-  expect(screen.getByText(/Hàng hỏng · Điểm 2/)).toBeInTheDocument()
+  const issue = screen.getByText('Thùng móp góc do xóc đường, khách vẫn nhận').closest('li')!
+  expect(issue).toHaveTextContent(/^Hàng hỏng·2Điểm 2/)
   expect(screen.getByText('Chuyến đã hoàn thành; màn này chỉ để xem.')).toBeInTheDocument()
+  // Sơ đồ tuyến có số tổng hợp của chuyến đã giao xong
+  const route = screen.getByRole('heading', { name: 'Sơ đồ tuyến' }).closest('summary')!
+  expect(route).toHaveTextContent('Đã giao3 / 3 điểm')
+  expect(route).toHaveTextContent('Sự cố1')
   expect(screen.queryByRole('button', { name: 'Thao tác' })).not.toBeInTheDocument()
 })
 

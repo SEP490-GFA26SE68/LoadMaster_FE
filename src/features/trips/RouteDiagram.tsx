@@ -1,160 +1,93 @@
-import { ChevronRight, Warehouse } from 'lucide-react'
-import { useId } from 'react'
-import type { Formatter } from '@/lib/format'
+import { ChevronDown } from 'lucide-react'
+import { useId, type ComponentProps, type ReactNode } from 'react'
+import { Card } from '@/components/ui/Card'
 import type { DeliveryProgress } from '@/lib/mock-db'
-import { useFormat, useT, type TFunction } from '@/lib/i18n'
-import { stopColor, stopForeground } from '@/lib/stops'
+import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { StopState } from './StopCard'
+import { StopList } from './StopList'
+import { routeProgress, type RouteProgress } from './trip-detail'
 import type { StopRow } from './trip-summary'
 
-/** Quá 6 điểm giao thì mỗi điểm rộng cố định và khung cuộn ngang; từ 6 trở xuống thì chia đều chiều rộng. */
-const SCROLL_AFTER = 6
+type StopListProps = ComponentProps<typeof StopList>
 
-type StopState = { kind: 'done'; at: string } | { kind: 'current' } | { kind: 'pending' }
-
-/** Trạng thái giao của từng điểm: điểm đã hoàn tất, điểm chưa hoàn tất đầu tiên là điểm đang giao (khi chuyến chưa xong). */
-function stopStates(stops: readonly StopRow[], delivery: DeliveryProgress | undefined): (StopState | null)[] {
-  if (!delivery) return stops.map(() => null)
-  const progress = new Map(delivery.stops.map((stop) => [stop.number, stop]))
+/** Trạng thái giao từng điểm: điểm đã hoàn tất, điểm chưa hoàn tất đầu tiên là điểm đang giao (khi chuyến chưa xong). */
+function stopStates(stops: readonly StopRow[], delivery: DeliveryProgress, progress: RouteProgress): StopState[] {
+  const done = new Map(delivery.stops.map((stop) => [stop.number, stop.completedAt]))
   const current = delivery.completedAt === undefined ? delivery.stops.find((stop) => stop.completedAt === undefined)?.number : undefined
   return stops.map(({ number }) => {
-    const completedAt = progress.get(number)?.completedAt
-    if (completedAt !== undefined) return { kind: 'done', at: completedAt }
-    return number === current ? { kind: 'current' } : { kind: 'pending' }
+    const { unloaded = 0, issues = 0 } = progress.byStop.get(number) ?? {}
+    const completedAt = done.get(number)
+    if (completedAt !== undefined) return { kind: 'done', at: completedAt, issues }
+    return number === current ? { kind: 'current', unloaded, issues } : { kind: 'pending', issues }
   })
 }
 
 /**
- * Sơ đồ tuyến ở Chi tiết chuyến (LM-097, D-50): kho xuất phát → điểm 1 → … theo thứ tự giao, mỗi điểm một vòng màu định danh luôn
- * kèm số, tên, số kiện và khối lượng. `delivery` chỉ truyền khi chuyến đang giao hoặc đã hoàn thành: điểm đã giao có dấu hoàn tất và
- * đoạn đường tới nó liền nét. SVG tự vẽ, không địa lý, không thư viện bản đồ. Trình đọc màn hình đọc từng điểm theo thứ tự kèm trạng thái.
+ * Sơ đồ tuyến ở Chi tiết chuyến (LM-097, D-50; V2.3): card đè lên đáy dải trời, kho xuất phát → các điểm theo thứ tự giao, mỗi điểm
+ * một mốc màu định danh luôn kèm số, tên, địa chỉ, số kiện và khối lượng. `delivery` chỉ truyền khi chuyến đang giao hoặc đã hoàn
+ * thành: card có đầu "Sơ đồ tuyến" gập được với số tổng hợp (điểm đã giao, kiện đã dỡ, sự cố, giờ xuất phát / khoảng thời gian), mỗi
+ * điểm có trạng thái giao và đoạn đường nối. Không địa lý, không thư viện bản đồ.
  */
-export function RouteDiagram({ stops, delivery, collapsible = false, defaultOpen = false }: {
-  stops: readonly StopRow[]
-  delivery?: DeliveryProgress
-  /**
-   * Chi tiết chuyến (V2): sơ đồ nằm trong một mục gập được để bảng kiện lên cao; cột điểm giao bên trái đã có thứ tự. Tiêu đề là
-   * `<summary>` nên bàn phím mở/đóng được; `defaultOpen` cho chuyến đang giao / đã hoàn thành, khi dấu đã giao là thông tin chính.
-   */
-  collapsible?: boolean
-  defaultOpen?: boolean
-}) {
+export function RouteDiagram({ stops, delivery, ...list }: { stops: readonly StopRow[]; delivery?: DeliveryProgress } & Omit<StopListProps, 'stops' | 'states' | 'departedAt'>) {
   const t = useT()
-  const format = useFormat()
   const titleId = useId()
-  const wide = stops.length > SCROLL_AFTER
-  const states = stopStates(stops, delivery)
-  // Ô không có đệm ngang để đoạn đường nối liền giữa hai ô; chữ tự lùi vào bằng `px-1`
-  const item = cn('flex flex-col items-center gap-1.5 text-center', wide ? 'w-36 flex-none' : 'min-w-24 flex-1')
-
-  const list = (
-      <div className={cn('overflow-x-auto bg-bg', collapsible ? 'border-t border-border' : 'rounded-md border border-border')}>
-        <ol aria-label={t('trips.route.label', { count: stops.length })} className={cn('m-0 flex list-none px-2 py-4', wide ? 'w-max' : 'w-full')}>
-          <li className={item}>
-            <div aria-hidden className="flex w-full flex-col items-center gap-1.5">
-              <svg className="h-10 w-full overflow-visible">
-                {stops.length > 0 ? <Leg from="50%" to="100%" state={states[0] ?? null} /> : null}
-                <svg x="50%" y="20" overflow="visible">
-                  <rect x="-14" y="-14" width="28" height="28" rx="6" className="fill-surface stroke-text-3" strokeWidth="1.5" />
-                  <Warehouse x={-9} y={-9} width={18} height={18} strokeWidth={1.5} className="text-text-2" />
-                </svg>
-              </svg>
-              <span className="w-full truncate px-1 text-caption font-medium">{t('trips.route.depot')}</span>
-            </div>
-            <span className="sr-only">{t('trips.route.depot')}</span>
-          </li>
-          {stops.map((stop, index) => {
-            const state = states[index] ?? null
-            const packages = t('common.packageCount', { count: stop.packageCount })
-            const weight = format.weight(stop.weightKg)
-            return (
-              <li key={stop.id} className={item}>
-                <div aria-hidden className="flex w-full flex-col items-center gap-1.5">
-                  <svg className="h-10 w-full overflow-visible">
-                    <Leg from="0" to="50%" state={state} />
-                    {index < stops.length - 1 ? <Leg from="50%" to="100%" state={states[index + 1] ?? null} /> : null}
-                    <svg x="50%" y="20" overflow="visible">
-                      <circle r="14" fill={stopColor(stop.number)} />
-                      <text
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fill={stopForeground(stop.number)}
-                        className="font-mono text-caption font-semibold"
-                      >
-                        {stop.number}
-                      </text>
-                      {state?.kind === 'done' ? (
-                        <g transform="translate(11 -11)">
-                          <circle r="7" className="fill-success stroke-bg" strokeWidth="2" />
-                          <path d="M -3 0 L -1 2 L 3 -2" fill="none" className="stroke-bg" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </g>
-                      ) : null}
-                    </svg>
-                  </svg>
-                  <span className="w-full truncate px-1 text-caption font-medium" title={stop.name}>{stop.name}</span>
-                  <span className="px-1 font-mono text-caption whitespace-nowrap text-text-3">{packages} · {weight}</span>
-                  {state ? <StateText state={state} /> : null}
-                </div>
-                <span className="sr-only">
-                  {t('trips.route.stop', { number: stop.number, total: stops.length, name: stop.name, packages, weight })}
-                  {state ? `, ${stateLabel(state, t, format)}` : null}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      </div>
-  )
-
-  if (collapsible) {
+  if (!delivery) {
     return (
-      // flex-none: con overflow-hidden của cột flex bị co về 0 (AGENTS mục 5, "Cuộn trong khung ứng dụng")
-      <details open={defaultOpen} className="group relative flex-none overflow-hidden rounded-lg border border-border bg-bg">
-        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
-          <ChevronRight aria-hidden className="size-4 flex-none text-ink-3 transition-transform duration-(--dur-fast) group-open:rotate-90" strokeWidth={1.5} />
-          <h2 id={titleId} className="text-h3 font-semibold text-ink-strong">{t('trips.route.title')}</h2>
-          <span className="text-caption text-ink-3">{t('trips.route.count', { count: stops.length })}</span>
-        </summary>
-        {list}
-      </details>
+      <Card>
+        <section aria-label={t('trips.route.title')}>
+          <StopList stops={stops} {...list} />
+        </section>
+      </Card>
     )
   }
 
+  const progress = routeProgress(stops, delivery)
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-3">
-      <h2 id={titleId} className="px-1 text-h3 font-semibold">{t('trips.route.title')}</h2>
-      {list}
-    </section>
+    <Card className="overflow-hidden">
+      <details open className="group">
+        <summary className="flex min-h-14 cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line-soft py-3 pr-4.5 pl-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+          <span aria-hidden className="grid size-7.5 flex-none place-items-center rounded-sm text-ink-3">
+            <ChevronDown className="size-4 -rotate-90 transition-transform duration-(--dur-fast) group-open:rotate-0" strokeWidth={1.75} />
+          </span>
+          <h2 id={titleId} className="font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{t('trips.route.title')}</h2>
+          <span className="text-small text-ink-3">{t('trips.route.count', { count: stops.length })}</span>
+          <RouteSummary progress={progress} />
+        </summary>
+        <StopList stops={stops} states={stopStates(stops, delivery, progress)} departedAt={delivery.startedAt} {...list} />
+      </details>
+    </Card>
   )
 }
 
-/** Nửa đoạn đường trong ô của một điểm: tới điểm đã giao thì liền nét màu hoàn tất, còn lại nét đứt. */
-function Leg({ from, to, state }: { from: string; to: string; state: StopState | null }) {
-  const done = state?.kind === 'done'
-  return (
-    <line
-      x1={from}
-      x2={to}
-      y1="20"
-      y2="20"
-      strokeWidth="2"
-      strokeDasharray={done ? undefined : '4 4'}
-      className={done ? 'stroke-success' : 'stroke-text-disabled'}
-    />
-  )
-}
-
-function StateText({ state }: { state: StopState }) {
+function RouteSummary({ progress }: { progress: RouteProgress }) {
   const t = useT()
   const format = useFormat()
-  if (state.kind === 'done') {
-    return <span className="text-caption text-badge-success-fg">{t('trips.route.state.done', { time: format.time(state.at) })}</span>
-  }
-  if (state.kind === 'current') return <span className="text-caption font-medium text-badge-cyan-fg">{t('trips.route.state.current')}</span>
-  return <span className="text-caption text-text-3">{t('trips.route.state.pending')}</span>
-}
-
-function stateLabel(state: StopState, t: TFunction, format: Formatter): string {
-  if (state.kind === 'done') return t('trips.route.stateA11y.done', { time: format.time(state.at) })
-  return state.kind === 'current' ? t('trips.route.stateA11y.current') : t('trips.route.stateA11y.pending')
+  const n = format.integer
+  const bold = (value: string, tone?: 'ok' | 'warn') => (
+    <b className={cn('font-display text-body-lg font-[650] text-ink-strong tabular-nums', tone === 'ok' && 'text-green-700', tone === 'warn' && 'text-amber-700')}>{value}</b>
+  )
+  const { stops, packages, issues, departedAt, completedAt } = progress
+  const ratio = (done: number, total: number) => t('trips.route.summary.ratio', { done: n(done), total: n(total) })
+  const items: { label: string; value: ReactNode }[] = [
+    {
+      label: t('trips.route.summary.stops'),
+      value: <>{bold(ratio(stops.done, stops.total), stops.done === stops.total ? 'ok' : undefined)} {t('trips.route.summary.stopsUnit')}</>,
+    },
+    { label: t('trips.route.summary.packages'), value: <>{bold(ratio(packages.done, packages.total))} {t('trips.route.summary.packagesUnit')}</> },
+    { label: t('trips.route.summary.issues'), value: bold(n(issues), issues > 0 ? 'warn' : undefined) },
+    completedAt
+      ? { label: t('trips.route.summary.window'), value: bold(t('trips.route.summary.windowValue', { from: format.time(departedAt), to: format.time(completedAt) })) }
+      : { label: t('trips.route.summary.departed'), value: bold(format.time(departedAt)) },
+  ]
+  return (
+    <dl className="m-0 ml-auto flex items-center">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-baseline gap-2 border-l border-border px-4 whitespace-nowrap first:border-l-0 first:pl-0 last:pr-0">
+          <dt className="text-small text-ink-3">{item.label}</dt>
+          <dd className="m-0 text-small text-ink-2">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
 }

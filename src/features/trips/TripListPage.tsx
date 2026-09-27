@@ -1,26 +1,30 @@
 import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
-import { FilterBar, type FilterField } from '@/components/FilterBar'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
+import { Tabs, TabsContent } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { EmptyTripsIllustration } from './EmptyTripsIllustration'
-import { FILTERABLE_STATUSES, filterTripRows, TRIP_LIST_FILTERS, TRIP_STATUS_GROUP_SLUGS, tripFilterOptions, UNASSIGNED_DRIVER, type TripListFilter, type TripRow } from './trip-list'
+import { todayInVietnam } from './trip-dates'
+import { filterTripRows, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
 import { TripListSkeleton } from './TripListSkeleton'
-import { TripSummary } from './TripSummary'
+import { TripListTable } from './TripListTable'
+import { TripListStats, TripListTabs } from './TripListTabs'
+import { TripListToolbar } from './TripListToolbar'
 import { useTripsQuery } from './useTripsQuery'
 
 const NO_ROWS: TripRow[] = []
+const BY_DATE = 'scheduledDate'
 
 /**
- * Danh sách chuyến (LM-053, LM-088): đọc kho qua `useTripsQuery`; tìm bỏ dấu, lọc trạng thái / khoảng ngày chạy / xe / tài xế,
- * sắp xếp (mặc định ngày chạy mới nhất trước) và phân trang, giữ trên URL (D-52).
+ * Danh sách chuyến V2.3 (`ChuyenHang.jpg`; LM-053, LM-088, LM-103): đọc kho qua `useTripsQuery`. Dải trời có dòng số (cả kho) và tab
+ * giai đoạn — tab là bộ lọc `trang-thai`; thẻ bảng đè lên dải có ô tìm bỏ dấu, chip ngày chạy / xe / tài xế, bảng nhóm theo ngày chạy
+ * (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52).
  */
 export function TripListPage() {
   const navigate = useNavigate()
@@ -28,30 +32,41 @@ export function TripListPage() {
   const format = useFormat()
   const canCreate = useCan()('trips.edit')
   const query = useTripsQuery()
-  const list = useListUrlState({ filters: TRIP_LIST_FILTERS, defaultSort: { id: 'scheduledDate', desc: true } })
+  const list = useListUrlState({ filters: TRIP_LIST_FILTERS, defaultSort: { id: BY_DATE, desc: true } })
   const columns = useMemo(() => createTripColumns(t, format), [t, format])
   const trips = query.data ?? NO_ROWS
+  const status = list.filters['trang-thai']
   const rows = useMemo(() => filterTripRows(trips, list.query, list.filters), [trips, list.query, list.filters])
-  const fields = useMemo<FilterField<TripListFilter>[]>(() => {
+  // Số trên tab: theo tìm và các bộ lọc khác, bỏ riêng bộ lọc trạng thái (chính là tab)
+  const tabCounts = useMemo(
+    () => tripTabCounts(filterTripRows(trips, list.query, { ...list.filters, 'trang-thai': '' })),
+    [trips, list.query, list.filters],
+  )
+  const stats = useMemo(() => tripTabCounts(trips), [trips])
+  const countsByDate = useMemo(() => tripsPerDate(rows), [rows])
+  const options = useMemo(() => {
     const { vehicles, drivers } = tripFilterOptions(trips)
-    // Hai nhóm của ô số liệu đứng đầu danh sách trạng thái: bấm ô thì ô chọn hiện đúng nhóm đang lọc
-    const groups = (['active', 'review'] as const).map((group) => ({ value: TRIP_STATUS_GROUP_SLUGS[group], label: t(`trips.list.summary.${group}`) }))
-    const statuses = FILTERABLE_STATUSES.map((status) => ({ value: status, label: t(`status.${status}`) }))
-    return [
-      { kind: 'select', name: 'trang-thai', label: t('trips.list.status'), options: [...groups, ...statuses] },
-      { kind: 'dateRange', label: t('trips.list.date'), from: 'tu', to: 'den', secondary: true },
-      { kind: 'select', name: 'xe', label: t('trips.list.vehicle'), options: vehicles, secondary: true },
-      { kind: 'select', name: 'tai-xe', label: t('trips.list.driver'), options: [{ value: UNASSIGNED_DRIVER, label: t('trips.list.unassigned') }, ...drivers], secondary: true },
-    ]
+    return { vehicles, drivers: [{ value: UNASSIGNED_DRIVER, label: t('trips.list.unassigned') }, ...drivers] }
   }, [trips, t])
+  const [sort] = list.sorting
+  const grouped = sort?.id === BY_DATE
+  const newestFirst = sort?.desc ?? true
+  // Giá trị lạ trên URL (một trạng thái đơn như `dang_giao`) vẫn lọc được, chỉ là không tab nào sáng
+  const tab = TRIP_LIST_TABS.find((item) => item.value === status)?.key ?? status
   const hasTrips = trips.length > 0
+  // Card đè lên dải trời chỉ khi thứ đầu tiên của vùng cuộn là thẻ nền đặc (bảng hoặc khung tải), không phải chữ trần
+  const overlap = query.isPending || (query.isSuccess && hasTrips)
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <Tabs
+      value={tab}
+      onValueChange={(key) => list.setFilter('trang-thai', TRIP_LIST_TABS.find((item) => item.key === key)?.value ?? '')}
+      className="flex min-w-0 flex-1 flex-col"
+    >
       <PageHero
-        overlap
+        overlap={overlap}
         title={t('trips.list.title')}
-        description={t('pageHero.trips')}
+        description={hasTrips ? <TripListStats total={stats.all} active={stats.active} review={stats.review} /> : t('pageHero.trips')}
         actions={hasTrips && canCreate ? (
           <Button variant="primary" asChild>
             <Link to="/chuyen/moi">
@@ -60,9 +75,11 @@ export function TripListPage() {
             </Link>
           </Button>
         ) : null}
-      />
+      >
+        {query.isError || (query.isSuccess && !hasTrips) ? null : <TripListTabs counts={hasTrips ? tabCounts : null} />}
+      </PageHero>
 
-      <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
+      <div className={overlap ? 'sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-7' : 'flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6'}>
         {query.isPending ? (
           <TripListSkeleton />
         ) : query.isError ? (
@@ -82,43 +99,35 @@ export function TripListPage() {
             ) : undefined}
           />
         ) : (
-          <>
-            <TripSummary trips={trips} status={list.filters['trang-thai']} onStatusChange={(value) => list.setFilter('trang-thai', value)} />
-            {/* Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới (V2). flex-none: con overflow-hidden của cột flex không được co. */}
-            <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg">
-              <FilterBar
-                layout="toolbar"
-                className="border-b border-border px-4 py-3"
-                query={list.query}
-                onQueryChange={list.setQuery}
-                searchLabel={t('trips.list.search')}
-                fields={fields}
-                values={list.filters}
-                onValueChange={list.setFilter}
-                onClear={list.clearAll}
-              />
-              {/* Màn điều phối là màn desktop (AGENTS mục 5): khung hẹp hơn bảng thì cuộn ngang trong khung, không bóp cột */}
-              <div className="relative overflow-x-auto">
-                <div className="min-w-285">
-                  <DataTable
-                    data={rows}
-                    columns={columns}
-                    getRowId={(row) => row.id}
-                    density="roomy"
-                    appearance="paper"
-                    sorting={list.sorting}
-                    onSortingChange={list.setSorting}
-                    pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
-                    isFiltering={list.isFiltering}
-                    onClearFilters={list.clearAll}
-                    onRowClick={(trip) => void navigate(`/chuyen/${trip.id}`)}
-                  />
-                </div>
+          // Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới. flex-none: con overflow-hidden của cột flex không được co.
+          <TabsContent value={tab} className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+            <TripListToolbar
+              list={list}
+              vehicles={options.vehicles}
+              drivers={options.drivers}
+              grouped={grouped}
+              newestFirst={newestFirst}
+              onGroupByDate={() => list.setSorting([{ id: BY_DATE, desc: grouped ? !newestFirst : true }])}
+            />
+            {/* Màn điều phối là màn desktop (AGENTS mục 5): khung hẹp hơn bảng thì cuộn ngang trong khung, không bóp cột */}
+            <div className="relative overflow-x-auto">
+              <div className="min-w-285">
+                <TripListTable
+                  data={rows}
+                  columns={columns}
+                  sorting={list.sorting}
+                  onSortingChange={list.setSorting}
+                  pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+                  countsByDate={countsByDate}
+                  today={todayInVietnam()}
+                  onClearFilters={list.clearAll}
+                  onRowClick={(trip) => void navigate(`/chuyen/${trip.id}`)}
+                />
               </div>
-            </section>
-          </>
+            </div>
+          </TabsContent>
         )}
       </div>
-    </div>
+    </Tabs>
   )
 }

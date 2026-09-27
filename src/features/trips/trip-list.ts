@@ -64,28 +64,41 @@ export type TripListFilter = (typeof TRIP_LIST_FILTERS)[number]
 /** Giá trị lọc "chuyến chưa gán tài xế" của tham số `tai-xe`. */
 export const UNASSIGNED_DRIVER = 'chua-gan'
 
-/** Trạng thái chọn được ở bộ lọc, theo vòng đời chuyến. `dang_toi_uu` chỉ có khi đang chạy job nên không lọc theo nó. */
-export const FILTERABLE_STATUSES: readonly TripStatus[] = [
-  'nhap', 'da_toi_uu', 'da_duyet', 'can_xem_lai', 'dang_xep_hang', 'da_xep_xong', 'dang_giao', 'hoan_thanh', 'da_huy',
-]
-
 /**
- * Nhóm trạng thái của ô số liệu trên đầu danh sách (V2). Giá trị `trang-thai` trên URL là một trạng thái đơn hoặc slug của nhóm:
- * - đang thực hiện: kho đang/đã xếp hoặc tài xế đang giao;
- * - cần xem phương án: đã tối ưu chờ duyệt, hoặc cần xem lại vì dữ liệu đổi sau khi tối ưu.
+ * Nhóm trạng thái của tab trên dải trời (V2.3, `ChuyenHang.jpg`). Giá trị `trang-thai` trên URL là một trạng thái đơn hoặc slug nhóm:
+ * - sắp chạy: còn ở pha lập kế hoạch (nháp → đã duyệt), chưa bàn giao kho;
+ * - cần xử lý: đã tối ưu chờ duyệt, hoặc cần xem lại vì dữ liệu đổi sau khi tối ưu — một phần của "sắp chạy";
+ * - đang thực hiện: kho đang/đã xếp hoặc tài xế đang giao.
  */
 export const TRIP_STATUS_GROUPS = {
-  active: ['dang_xep_hang', 'da_xep_xong', 'dang_giao'],
+  upcoming: ['nhap', 'dang_toi_uu', 'da_toi_uu', 'can_xem_lai', 'da_duyet'],
   review: ['da_toi_uu', 'can_xem_lai'],
+  active: ['dang_xep_hang', 'da_xep_xong', 'dang_giao'],
 } as const satisfies Record<string, readonly TripStatus[]>
 
 export type TripStatusGroup = keyof typeof TRIP_STATUS_GROUPS
 
 /** Slug nhóm trên URL, tiếng Việt không dấu như mọi tham số màn danh sách (D-52). */
 export const TRIP_STATUS_GROUP_SLUGS = {
+  upcoming: 'sap-chay',
+  review: 'can-xu-ly',
   active: 'dang-thuc-hien',
-  review: 'can-xem-phuong-an',
 } as const satisfies Record<TripStatusGroup, string>
+
+/**
+ * Tab của danh sách theo thứ tự trên dải trời; `value` là giá trị `trang-thai` trên URL (rỗng là không lọc). Hoàn thành và đã huỷ
+ * là trạng thái đơn, giữ mã trạng thái như khi lọc một trạng thái bằng URL.
+ */
+export const TRIP_LIST_TABS = [
+  { key: 'all', value: '' },
+  { key: 'review', value: TRIP_STATUS_GROUP_SLUGS.review },
+  { key: 'upcoming', value: TRIP_STATUS_GROUP_SLUGS.upcoming },
+  { key: 'active', value: TRIP_STATUS_GROUP_SLUGS.active },
+  { key: 'completed', value: 'hoan_thanh' },
+  { key: 'cancelled', value: 'da_huy' },
+] as const satisfies readonly { key: string; value: string }[]
+
+export type TripListTab = (typeof TRIP_LIST_TABS)[number]['key']
 
 function matchesStatus(status: TripStatus, filter: string): boolean {
   if (filter === '') return true
@@ -93,10 +106,23 @@ function matchesStatus(status: TripStatus, filter: string): boolean {
   return group ? (TRIP_STATUS_GROUPS[group] as readonly TripStatus[]).includes(status) : status === filter
 }
 
-/** Số của ba ô số liệu: mọi chuyến (kể cả đã huỷ) và từng nhóm — đếm trên cả danh sách, không theo ô tìm. */
-export function tripStatusGroupCounts(rows: readonly TripRow[]): { total: number } & Record<TripStatusGroup, number> {
-  const count = (group: TripStatusGroup) => rows.filter((row) => matchesStatus(row.status, TRIP_STATUS_GROUP_SLUGS[group])).length
-  return { total: rows.length, active: count('active'), review: count('review') }
+/** Số trên từng tab, đếm trên các dòng truyền vào (màn truyền danh sách đã tìm/lọc mọi thứ trừ trạng thái). */
+export function tripTabCounts(rows: readonly TripRow[]): Record<TripListTab, number> {
+  const entries = TRIP_LIST_TABS.map(({ key, value }) => [key, rows.filter((row) => matchesStatus(row.status, value)).length])
+  return Object.fromEntries(entries) as Record<TripListTab, number>
+}
+
+/** Số chuyến của từng ngày chạy — số ở dòng nhóm, đếm trên cả danh sách đã lọc chứ không riêng trang đang xem. */
+export function tripsPerDate(rows: readonly TripRow[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>()
+  for (const row of rows) counts.set(row.scheduledDate, (counts.get(row.scheduledDate) ?? 0) + 1)
+  return counts
+}
+
+/** "Hyundai HD210 · 60C-446.32" → tên và biển số (kho ghép hai phần bằng " · "); tên không có biển số thì `plate` rỗng. */
+export function splitVehicleName(name: string): { model: string; plate: string } {
+  const cut = name.lastIndexOf(' · ')
+  return cut === -1 ? { model: name, plate: '' } : { model: name.slice(0, cut), plate: name.slice(cut + 3) }
 }
 
 /**

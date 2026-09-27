@@ -1,6 +1,6 @@
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
-import { DELIVERY_ISSUE_KINDS, type AuditAction, type AuditEvent } from '@/lib/mock-db'
+import { DELIVERY_ISSUE_KINDS, PACKAGE_CHANGE_FIELDS, type AuditAction, type AuditEvent } from '@/lib/mock-db'
 import { ROLES, type Role } from '@/types/user'
 import { actorInitials } from './audit-look'
 
@@ -38,7 +38,7 @@ export type AuditLogRow = AuditRow & {
 /** Tham số kho ghi (`ctx.log`) có nhãn trong từ điển `audit.log.params`. */
 const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
-  'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues',
+  'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
 ] as const
 
 const FIELD_NAMES = [
@@ -117,6 +117,9 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
   switch (key) {
     case 'fields':
       return format.list(value.split(',').map((field) => (isOneOf(FIELD_NAMES, field) ? t(`audit.log.fieldNames.${field}`) : field)))
+    case 'field':
+      // Trường của một dòng kiện vừa sửa (V2.3, quyết định 2)
+      return isOneOf(PACKAGE_CHANGE_FIELDS, value) ? t(`audit.log.packageFields.${value}`) : value
     case 'kind':
       return isOneOf(DELIVERY_ISSUE_KINDS, value) ? t(`common.deliveryIssueKinds.${value}`) : value
     case 'role':

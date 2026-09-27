@@ -69,6 +69,24 @@ test('a cancelled trip keeps the steps it reached, then ends with the cancellati
   })
 })
 
+test('with nothing in progress, the first step not reached yet is marked as next', async () => {
+  const draft = await progressOf('TRIP-014')
+  expect(draft.steps.filter((item) => item.note).map((item) => `${item.kind}:${item.note}`)).toStrictEqual(['optimized:next'])
+  const approved = await progressOf('TRIP-2026-0914')
+  expect(approved.steps.filter((item) => item.note).map((item) => `${item.kind}:${item.note}`)).toStrictEqual(['loading:next'])
+  // Đang xếp, đã hoàn thành, đã huỷ: không có "tiếp theo"
+  for (const tripId of ['TRIP-011', 'TRIP-007', 'TRIP-004']) {
+    expect((await progressOf(tripId)).steps.some((item) => item.note)).toBe(false)
+  }
+})
+
+test('an approved plan made out of date by an edit marks the approval stale; loading waits for re-approval', async () => {
+  const { steps } = await progressOf('TRIP-013')
+  expect(step(steps, 'approved')).toMatchObject({ state: 'done', stale: true })
+  expect(step(steps, 'loading')).toMatchObject({ state: 'pending', note: 'waitApproval' })
+  expect(step((await progressOf('TRIP-2026-0914')).steps, 'approved')?.stale).toBeUndefined()
+})
+
 test('cancelling at runtime is recorded with the signed-in user and the reason', async () => {
   const db = createMockDb()
   const user = await db.authenticate('dieuphoi@loadmaster.vn', 'loadmaster')

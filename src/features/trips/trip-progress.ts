@@ -1,5 +1,5 @@
 import { expandPackages } from '@/domain/cargo'
-import { latestApproved, plannedStops, type AuditAction, type AuditEvent, type Revision, type Trip } from '@/lib/mock-db'
+import { isStale, latestApproved, plannedStops, type AuditAction, type AuditEvent, type Revision, type Trip } from '@/lib/mock-db'
 
 /**
  * Tiến trình của chuyến ở Chi tiết chuyến (LM-088, D-45, D-47): tạo → tối ưu → duyệt → xếp → xếp xong → giao → hoàn thành, hoặc
@@ -25,9 +25,16 @@ export type ProgressStep = {
   readonly delivery?: { readonly done: number; readonly total: number }
   /** Bước huỷ: lý do người huỷ nhập. */
   readonly reason?: string
+  /** Bước duyệt: bản đã duyệt lỗi thời vì xe hoặc kiện đổi sau lần tối ưu (D-31) — kho chỉ xếp được sau khi duyệt lại. */
+  readonly stale?: boolean
+  /**
+   * Bước chờ tới đầu tiên khi không có bước nào đang diễn ra: `next` là việc tiếp theo, `waitApproval` khi bản duyệt lỗi thời nên
+   * kho phải chờ duyệt lại. Chuyến đã hoàn thành hoặc đã huỷ không có.
+   */
+  readonly note?: 'next' | 'waitApproval'
 }
 
-type ProgressTrip = Pick<Trip, 'phase' | 'createdAt' | 'loading' | 'delivery' | 'cancellation'>
+type ProgressTrip = Pick<Trip, 'phase' | 'createdAt' | 'loading' | 'delivery' | 'cancellation' | 'inputVersion'>
 
 /**
  * `revisions` theo thứ tự kho trả (cũ trước); `events` là nhật ký của chuyến, mới nhất trước (`listEvents`). Chuyến đã huỷ chỉ giữ
@@ -39,6 +46,8 @@ export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[],
   const optimized = revisions.findLast((revision) => revision.approvedAt === undefined)
   const approved = latestApproved(revisions)
   const { loading, delivery } = trip
+  // Chỉ pha lập kế hoạch mới "lỗi thời": từ lúc kho xếp, xe và kiện đã khoá theo bản duyệt kho làm theo
+  const stale = trip.phase === 'planning' && approved !== undefined && isStale(approved, trip)
 
   const steps: ProgressStep[] = [
     { kind: 'created', state: 'done', at: trip.createdAt, actorId: actorOf('trip.created') },
@@ -46,7 +55,7 @@ export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[],
       ? { kind: 'optimized', state: 'done', at: optimized.createdAt, actorId: actorOf('optimization.saved', optimized.id) }
       : { kind: 'optimized', state: 'pending' },
     approved?.approvedAt
-      ? { kind: 'approved', state: 'done', at: approved.approvedAt, actorId: actorOf('revision.approved', approved.id) }
+      ? { kind: 'approved', state: 'done', at: approved.approvedAt, actorId: actorOf('revision.approved', approved.id), ...(stale ? { stale } : {}) }
       : { kind: 'approved', state: 'pending' },
     loading
       ? {
@@ -75,7 +84,11 @@ export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[],
   ]
 
   const { cancellation } = trip
-  if (trip.phase !== 'cancelled' || !cancellation) return steps
+  if (trip.phase !== 'cancelled' || !cancellation) {
+    if (steps.some((item) => item.state === 'current')) return steps
+    const next = steps.findIndex((item) => item.state === 'pending')
+    return steps.map((item, index) => (index === next ? { ...item, note: stale ? 'waitApproval' : 'next' } : item))
+  }
   return [
     ...steps.filter((step) => step.state !== 'pending'),
     { kind: 'cancelled', state: 'done', at: cancellation.at, actorId: cancellation.by, reason: cancellation.reason },

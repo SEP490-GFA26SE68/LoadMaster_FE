@@ -79,6 +79,10 @@ export const audit = {
       kind: 'Issue type',
       stops: 'Stops',
       issues: 'Issues',
+      packageId: 'Package',
+      field: 'Field',
+      before: 'Before',
+      after: 'After',
     },
     fieldNames: {
       name: 'Trip name',
@@ -94,5 +98,17 @@ export const audit = {
       depot: 'Depot / branch',
     },
     reasons: { suspended: 'Account locked' },
+    packageFields: {
+      name: 'Package name',
+      lengthCm: 'Length',
+      widthCm: 'Width',
+      heightCm: 'Height',
+      weightKg: 'Weight',
+      quantity: 'Quantity',
+      deliveryStop: 'Delivery stop',
+      fragilityLevel: 'Fragility',
+      maxTopLoadKg: 'Max load on top',
+      priority: 'Priority',
+    },
   },
 } satisfies Dictionary<typeof source>

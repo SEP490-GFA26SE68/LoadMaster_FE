@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /**
@@ -15,7 +16,10 @@ import { cn } from '@/lib/utils'
  * - `overlap`: dải trời kéo thêm `--sky-overlap` (44px) ở đáy để card đầu tiên của vùng cuộn đè lên (vùng cuộn đặt `sky-overlap`).
  *   Chỉ bật khi thứ đầu tiên của vùng cuộn là card nền đặc — chữ trần trên nền trời tối không đọc được.
  *
- * Không dùng cho màn có tiêu đề là dữ liệu (mã chuyến, tên xe) hay thanh 56 px của Planner (AGENTS mục 5).
+ * - `crumbs`: đường dẫn nhỏ phía trên tiêu đề ("Chuyến hàng / TRIP-2026-0914"); mục có `to` là liên kết, mục cuối là chỗ đang đứng.
+ * - `badge`: chip đứng cạnh tiêu đề (trạng thái chuyến), nằm ngoài `<h1>` để tên truy cập của tiêu đề giữ đúng chữ.
+ *
+ * V2.3 cho phép tiêu đề là dữ liệu (tên tuyến ở Chi tiết chuyến, `ChiTietChuyen.jpg`). Thanh 56 px của Planner vẫn là header riêng.
  */
 export function PageHero({
   title,
@@ -23,6 +27,8 @@ export function PageHero({
   description,
   actions,
   back,
+  crumbs,
+  badge,
   overlap = false,
   children,
 }: {
@@ -31,9 +37,13 @@ export function PageHero({
   description?: ReactNode
   actions?: ReactNode
   back?: { to: string; label: string }
+  crumbs?: readonly { label: string; to?: string; mono?: boolean }[]
+  badge?: ReactNode
   overlap?: boolean
   children?: ReactNode
 }) {
+  const t = useT()
+  const crumbsLabel = t('pageHero.breadcrumb')
   return (
     <header
       className={cn(
@@ -51,10 +61,27 @@ export function PageHero({
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {crumbs?.length ? (
+            <nav aria-label={crumbsLabel} className="flex min-w-0 items-center gap-2 text-small text-sky-text-3">
+              {crumbs.map((crumb, index) => (
+                <span key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-2">
+                  {index > 0 ? <span aria-hidden>/</span> : null}
+                  {crumb.to ? (
+                    <Link to={crumb.to} className={cn('truncate rounded-sm hover:text-sky-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300', crumb.mono && 'font-mono text-caption text-cyan-200')}>
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span aria-current="page" className={cn('truncate', crumb.mono && 'font-mono text-caption text-cyan-200')}>{crumb.label}</span>
+                  )}
+                </span>
+              ))}
+            </nav>
+          ) : null}
           <div className="flex min-w-0 items-baseline gap-3">
             <h1 className="font-display text-display leading-[1.1] font-bold tracking-[-0.5px] whitespace-nowrap text-sky-text font-stretch-112%">
               {title}
             </h1>
+            {badge ? <span className="flex-none self-center">{badge}</span> : null}
             {meta ? <span className="truncate font-mono text-caption text-sky-text-3">{meta}</span> : null}
           </div>
           {description ? <p className="hidden truncate text-body text-sky-text-3 md:block">{description}</p> : null}

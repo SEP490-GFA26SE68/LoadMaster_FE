@@ -2,6 +2,7 @@ import type { Dictionary } from '../types'
 import type { pageHero as source } from '../vi/pageHero'
 
 export const pageHero = {
+  breadcrumb: 'Breadcrumb',
   trips: 'Trips in the period, plan status and what needs handling before handover to the warehouse.',
   tripForm: 'Enter trip details, pick a vehicle and order the delivery stops.',
   optimization: 'Set loading requirements and check the input before running the optimization.',

@@ -30,6 +30,7 @@ export function Input({ className, label, hint, error, required, numeric = false
     <input
       id={inputId}
       aria-invalid={invalid || undefined}
+      aria-required={required || undefined}
       aria-describedby={hint || error ? describedById : undefined}
       className={cn(
         'placeholder:text-text-3',

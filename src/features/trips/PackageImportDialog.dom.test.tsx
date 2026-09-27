@@ -53,7 +53,9 @@ test('a file with one bad row: the preview names the row and why, then only the 
 
   expect(await dialog.findByText('Đọc được 3 dòng: 2 hợp lệ, 1 lỗi.')).toBeInTheDocument()
   expect(dialog.getByText('Cao (cm): "abc" không phải là số.')).toBeInTheDocument()
-  expect(dialog.getByText('Dòng 3')).toBeInTheDocument()
+  // V2.3: dòng lỗi là một hàng của bảng lỗi — số dòng, mã · tên kiện, rồi lỗi
+  const errors = within(dialog.getByRole('region', { name: '1 dòng lỗi, sẽ bỏ qua' }))
+  expect(errors.getByRole('row', { name: /^3 PKG-011 · Thùng nồi cơm/ })).toBeInTheDocument()
   expect(dialog.getByText('Bỏ qua 1 dòng lỗi.')).toBeInTheDocument()
   await user.click(dialog.getByRole('button', { name: 'Nhập 2 dòng hợp lệ' }))
 
