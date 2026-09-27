@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
 import { createMockDb } from '@/lib/mock-db'
-import { filterTripRows, TRIP_STATUS_GROUP_SLUGS, tripFilterOptions, tripRow, tripStatusGroupCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
+import {
+  filterTripRows, splitVehicleName, TRIP_STATUS_GROUP_SLUGS, tripFilterOptions, tripRow, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow,
+} from './trip-list'
 
 /** Seam: dòng danh sách chuyến dựng từ dữ liệu kho (chuyến + xe + tài xế + revision), không có số nào ngoài kho. */
 async function seed() {
@@ -91,12 +93,32 @@ test('status, run-date range, vehicle and driver filters combine; "unassigned" f
   expect(ids({ 'tai-xe': 'US-0004', tu: '2026-09-14' })).toStrictEqual(['TRIP-010', 'TRIP-2026-0914'])
 })
 
-test('status groups of the summary tiles: "in progress" is loading, loaded and delivering; "needs a plan review" is optimised or needing review', async () => {
+test('status groups of the tabs: "upcoming" is still planning, "needs action" is optimised or needing review, "in progress" is loading, loaded and delivering', async () => {
   const rows = await seedRows()
   const ids = (status: string) => filterTripRows(rows, '', { ...NO_FILTER, 'trang-thai': status }).map((row) => row.id).toSorted()
-  expect(ids(TRIP_STATUS_GROUP_SLUGS.active)).toStrictEqual(['TRIP-009', 'TRIP-010', 'TRIP-011'])
+  expect(ids(TRIP_STATUS_GROUP_SLUGS.upcoming)).toStrictEqual(['TRIP-012', 'TRIP-013', 'TRIP-014', 'TRIP-2026-0914'])
   expect(ids(TRIP_STATUS_GROUP_SLUGS.review)).toStrictEqual(['TRIP-012', 'TRIP-013'])
-  expect(tripStatusGroupCounts(rows)).toStrictEqual({ total: rows.length, active: 3, review: 2 })
+  expect(ids(TRIP_STATUS_GROUP_SLUGS.active)).toStrictEqual(['TRIP-009', 'TRIP-010', 'TRIP-011'])
+})
+
+test('tab counts: every trip, each group, completed and cancelled — upcoming, in progress, completed and cancelled add up to all', async () => {
+  const rows = await seedRows()
+  // Seed neo 14/09/2026: 15 chuyến; TRIP-004 đã huỷ; TRIP-001…008 trừ 004 đã hoàn thành
+  const counts = tripTabCounts(rows)
+  expect(counts).toStrictEqual({ all: 15, review: 2, upcoming: 4, active: 3, completed: 7, cancelled: 1 })
+  expect(counts.upcoming + counts.active + counts.completed + counts.cancelled).toBe(counts.all)
+})
+
+test('trips per run date count the whole filtered list, one entry per date', async () => {
+  const rows = await seedRows()
+  const perDate = tripsPerDate(rows)
+  expect(perDate.get('2026-09-14')).toBe(4)
+  expect([...perDate.values()].reduce((sum, count) => sum + count, 0)).toBe(rows.length)
+})
+
+test('vehicle names split into model and plate at " · "; a name without a plate keeps an empty plate', () => {
+  expect(splitVehicleName('Hyundai HD210 · 60C-446.32')).toStrictEqual({ model: 'Hyundai HD210', plate: '60C-446.32' })
+  expect(splitVehicleName('Truck 6m')).toStrictEqual({ model: 'Truck 6m', plate: '' })
 })
 
 test('each row counts its delivery stops', async () => {

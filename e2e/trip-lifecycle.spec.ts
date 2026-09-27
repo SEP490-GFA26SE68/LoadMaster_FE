@@ -40,17 +40,21 @@ test('a trip created with a run date and a driver is found again with the list f
   await page.getByRole('option', { name: 'Trương Văn Lộc', exact: true }).click()
   // Chờ URL nhận bộ lọc trước khi đổi bộ lọc kế: router đổi URL trong transition
   await expect(page).toHaveURL(/\?tai-xe=US-0010$/)
+  // V2.3: chip "Ngày chạy" mở hai ô ngày; ngày chạy là dòng nhóm phía trên các chuyến của ngày đó (khác năm thì in cả năm)
+  await filters.getByRole('button', { name: /^Ngày chạy: / }).click()
   await filters.getByLabel('Từ ngày', { exact: true }).fill(runDate.iso)
   await expect(page).toHaveURL(new RegExp(`\\?tai-xe=US-0010&tu=${runDate.iso}$`))
   const row = page.getByRole('row', { name: /TRIP-015/ })
-  await expect(row).toContainText(runDate.shown)
   await expect(row).toContainText('Trương Văn Lộc')
-  await expect(page.getByRole('row')).toHaveCount(2)
+  // Tiêu đề cột, dòng nhóm ngày chạy, dòng chuyến
+  const rows = page.getByRole('row')
+  await expect(rows).toHaveCount(3)
+  await expect(rows.nth(1)).toContainText(`${runDate.shown}1 chuyến`)
 
   // Tìm bỏ dấu cũng ra
   await filters.getByRole('button', { name: 'Xoá lọc', exact: true }).click()
   await filters.getByRole('searchbox').fill('tan uyen e2e')
-  await expect(page.getByRole('row')).toHaveCount(2)
+  await expect(page.getByRole('row')).toHaveCount(3)
   await expect(row).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })

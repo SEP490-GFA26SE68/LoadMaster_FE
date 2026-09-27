@@ -20,14 +20,51 @@ export const trips = {
     loadError: 'Không tải được danh sách chuyến.',
     search: 'Tìm theo mã, tên, tuyến, xe, tài xế',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
-    /** Ba ô số liệu (V2): đếm trên cả danh sách, hai ô nhóm bấm để lọc. Nhãn nhóm cũng là dòng đầu của ô chọn trạng thái. */
-    summary: {
-      total: 'Chuyến trong danh sách',
-      totalNote: 'Mọi chuyến, kể cả đã huỷ',
+    /** V2.3 (`ChuyenHang.jpg`): cột Tuyến = tên chuyến + "N điểm · tuyến"; tài xế trống thì nói rõ cả câu. */
+    route: 'Tuyến',
+    routeLine: '{stops} · {route}',
+    stopsShort: { one: '{count} điểm', other: '{count} điểm' },
+    unassignedDriver: 'Chưa gán tài xế',
+    /** Dòng số dưới tiêu đề: đếm trên cả kho, không theo bộ lọc. Số đứng trước chữ, in đậm riêng nên không nằm trong câu. */
+    stats: {
+      total: { one: 'chuyến', other: 'chuyến' },
+      active: 'đang chạy',
+      review: 'cần bạn xử lý',
+    },
+    /** Tab trên dải trời là bộ lọc trạng thái (`trang-thai`); số của tab theo tìm và các bộ lọc khác. */
+    tabs: {
+      label: 'Giai đoạn của chuyến',
+      all: 'Tất cả',
+      review: 'Cần xử lý',
+      upcoming: 'Sắp chạy',
       active: 'Đang thực hiện',
-      activeNote: 'Kho đang xếp, đã xếp xong hoặc đang giao',
-      review: 'Cần xem phương án',
-      reviewNote: 'Đã tối ưu chờ duyệt, hoặc cần xem lại',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã huỷ',
+    },
+    /** Bộ lọc dạng chip trong đầu thẻ bảng: "Xe: tất cả". */
+    chip: '{label}: {value}',
+    chipAll: 'tất cả',
+    dateFrom: 'từ {date}',
+    dateTo: 'đến {date}',
+    dateRange: '{from} – {to}',
+    /** Dòng nhóm theo ngày chạy (khi sắp theo ngày chạy). */
+    group: {
+      day: '{weekday}, {date}',
+      count: { one: '{count} chuyến', other: '{count} chuyến' },
+      today: 'Hôm nay',
+      tomorrow: 'Ngày mai',
+      byDateDesc: 'Nhóm theo ngày chạy · mới nhất trước',
+      byDateAsc: 'Nhóm theo ngày chạy · cũ nhất trước',
+      byDate: 'Nhóm theo ngày chạy',
+    },
+    weekdays: {
+      sun: 'Chủ Nhật',
+      mon: 'Thứ Hai',
+      tue: 'Thứ Ba',
+      wed: 'Thứ Tư',
+      thu: 'Thứ Năm',
+      fri: 'Thứ Sáu',
+      sat: 'Thứ Bảy',
     },
   },
   /** Form tạo/sửa chuyến (LM-053, LM-088). */
@@ -274,11 +311,11 @@ export const trips = {
   skeleton: {
     loading: 'Đang tải danh sách chuyến',
     loadingText: 'Đang tải danh sách chuyến…',
-    date: 'Ngày chạy',
     id: 'Mã chuyến',
-    route: 'Chuyến và tuyến',
+    route: 'Tuyến',
     vehicle: 'Xe',
     driver: 'Tài xế',
+    packages: 'Kiện',
     fill: 'Lấp đầy',
     status: 'Trạng thái',
   },
