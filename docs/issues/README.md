@@ -157,6 +157,7 @@ Thứ tự đợt và màn đích: [design/v2.3/README.md](../../design/v2.3/REA
 | [LM-104](LM-104-review1-5-luong.md) | Review 1: giao diện demo 5 luồng (Register → Plan → Optimize → Approve → Execute) | 3d | 103 |
 | [LM-105](LM-105-thuong-hieu.md) | Thương hiệu: logo SVG, favicon, linh vật Lumo | 3d | 104 |
 | [LM-107](LM-107-v23-planner.md) | Đợt 5: Planner 3D — 11 trạng thái | 3d | 104 |
+| [LM-108](LM-108-planner-chinh-tay.md) | Planner: điều phối chỉnh tay + "Lưu bản chỉnh", trọng lực khi kéo kiện | 1d | 107 |
 
 ## 3. Đường găng và luồng song song
 

@@ -70,6 +70,12 @@ type CoreMockDb = {
    * `REVISION_NOT_COMPLETED`, `PATCH_UNKNOWN_INSTANCE` (patch cho kiện không có placement); không lưu gì khi từ chối.
    */
   approveRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
+  /**
+   * Lưu bản chỉnh tay (LM-108): như Duyệt — revision **mới** áp `patches`, tính lại thứ tự và metrics, revision nguồn giữ nguyên — nhưng
+   * **chưa duyệt**: là bản mới nhất nên vào hàng đợi `/duyet` của quản lý công ty. Điều phối viên dùng khi chỉnh tay mà không có quyền
+   * Duyệt. Từ chối như `approveRevision`, thêm `NO_EDITS` khi không có patch.
+   */
+  saveEditedRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
 
   /** Kho bắt đầu xếp theo bản duyệt mới nhất (không lỗi thời): `planning` → `loading`. */
   startLoading(tripId: string): Promise<Trip>

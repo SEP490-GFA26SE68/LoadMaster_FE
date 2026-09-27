@@ -5,6 +5,7 @@ import { DynamicDrawUsage, type InstancedMesh } from 'three'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { AnimationQuality } from '../usePerformanceFlags'
 import { cargoBounds, DROP_HEIGHT, HULL_PADDING, writeCargoMatrix } from './cargo-buffers'
+import { toScene } from './units'
 import { cargoVisibility, sameGeometry, type InstanceLayout } from './instance-layout'
 import type { SceneSemantics } from '../operations/scene-semantics'
 
@@ -48,6 +49,8 @@ export function useCargoMatrices({
   const [settleSpring, settleApi] = useSpring(() => ({ t: 1 }))
   /** Snapshot position của các placement trước lần render — để detect item nào đã dịch chuyển xuống */
   const previousPositions = useRef<Map<string, { z: number }>>(new Map())
+  /** Đổi phương án (layout mới) thì không coi chênh `z` giữa hai phương án là kiện rơi */
+  const previousLayout = useRef(layout)
 
   useLayoutEffect(() => {
     const opaque = meshes.opaque.current
@@ -63,18 +66,19 @@ export function useCargoMatrices({
     const placementCountChanged = cache.current.length !== placements.length
     let geometryChanged = recreated || placementCountChanged
 
-    // Detect items đã dịch chuyển xuống (z giảm) — xảy ra khi item bên dưới bị di chuyển đi
-    // và backend recalculate positions của các item phía trên
+    // Kiện rơi theo trọng lực khi chỉnh tay (LM-108): `z` giảm so với lần vẽ trước thì rơi từ chỗ cũ xuống chỗ mới. Kiện đang kéo
+    // (`hiddenId`, proxy thay nó) đã hiện đúng chỗ nên không rơi lại; đổi phương án thì không phải rơi. Reduced motion: đặt thẳng.
     const newSettles = new Map<string, AnimatedItem>()
+    if (layout !== previousLayout.current) previousPositions.current = new Map()
+    previousLayout.current = layout
     if (!reducedMotion && animationQuality !== 'none' && previousPositions.current.size > 0) {
       for (const placement of placements) {
         const prev = previousPositions.current.get(placement.id)
-        if (prev && placement.position.z < prev.z - 0.5) {
-          // Item này đã rơi xuống — animate settle từ vị trí cũ (trước khi backend cập nhật)
-          const fallHeight = (prev.z - placement.position.z) * 0.01 // scale cm → scene units
-          const height = Math.min(fallHeight, animationQuality === 'full' ? DROP_HEIGHT : REDUCED_DROP_HEIGHT)
-          newSettles.set(placement.id, { id: placement.id, height, type: 'settle' })
-        }
+        if (placement.id === hiddenId || !prev || placement.position.z >= prev.z - 0.5) continue
+        // Chất lượng thấp chỉ rơi một quãng ngắn như kiện mới xếp, không vẽ cả quãng rơi
+        const fall = toScene(prev.z - placement.position.z)
+        const height = animationQuality === 'full' ? fall : Math.min(fall, REDUCED_DROP_HEIGHT)
+        newSettles.set(placement.id, { id: placement.id, height, type: 'settle' })
       }
     }
     settleAnimations.current = newSettles

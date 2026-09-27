@@ -7,9 +7,8 @@ import { useT } from '@/lib/i18n'
 import { roundPosition, type Axis } from './geometry'
 import { useEditorValidation } from './useEditorValidation'
 import { createPreviewStore } from './preview-store'
+import { settleAfterMove } from './gravity'
 import { snapPosition } from './snapping'
-import { simulateGravityAfterMove } from './gravity'
-import { commitGravityMove } from './draft-history'
 
 export type DragPlane = 'xy' | 'xz' | 'yz'
 export const PLANE_AXES: Record<DragPlane, readonly Axis[]> = { xy: ['x', 'y'], xz: ['x', 'z'], yz: ['y', 'z'] }
@@ -41,16 +40,10 @@ export function useManualEditor(state: LoadPlanViewerState) {
     preview.publish({ id, position: candidate.position, result, sources: [], dragging: false,
       message: t(result.valid ? 'viewer.editor.placed' : 'viewer.editor.placeRejected') }, true)
     if (!result.valid) return false
-
-    // Simulate gravity: find items that were resting on `p` and now float
-    const prevPlacements = placements
-    const nextPlacements = placements.map((item) => item.id === id ? candidate : item)
-    const fallen = simulateGravityAfterMove(id, prevPlacements, nextPlacements)
-
+    // Trọng lực (LM-108): kiện đang tựa lên kiện vừa dời mà mất chỗ đỡ thì rơi xuống; kiện dời và các kiện rơi là một lệnh hoàn tác
+    const fallen = settleAfterMove(id, placements, placements.map((item) => item.id === id ? candidate : item), sceneModel.vehicle.obstacles)
     if (fallen.length > 0) {
-      // Commit primary + fallen items atomically (1 undo step)
-      state.commitGravityMove(id, { position: candidate.position }, fallen.map((f) => ({ id: f.id, patch: { position: f.position } })))
-      console.log(`[gravity] item ${id} moved → ${fallen.length} items settled:`, fallen.map(f => `${f.id} z:${f.position.z}`))
+      state.commitGravityMove(id, { position: candidate.position }, fallen.map((item) => ({ id: item.id, patch: { position: item.position } })))
     } else {
       state.commitDraft('MOVE', id, { position: candidate.position })
     }

@@ -11,6 +11,10 @@ export const viewer = {
     approveShort: 'Duyệt',
     /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094). */
     approveDraft: 'Duyệt bản chỉnh',
+    /** Điều phối viên lưu bản chỉnh tay thành phương án mới chờ quản lý công ty duyệt (LM-108) */
+    saveEdits: 'Lưu bản chỉnh',
+    saved: 'Đã lưu {revisionId} — chờ quản lý công ty duyệt.',
+    saveFailed: 'Không lưu được bản chỉnh. Thử lại.',
     /** Thay nút Duyệt khi revision đã duyệt và không có chỉnh sửa: nhãn trên, giờ + ngày dưới. */
     approvedAt: 'Đã duyệt lúc',
     approvedAtValue: '{time} {date}',
@@ -116,7 +120,7 @@ export const viewer = {
     delivering: 'Chuyến đang giao — phương án đã chốt.',
     completed: 'Chuyến đã hoàn thành — phương án đã chốt.',
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
-    awaitingApproval: 'Chờ quản lý công ty duyệt — bạn chỉ xem phương án.',
+    awaitingApproval: 'Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.',
     readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
     /** Quản lý công ty đã trả lại bản này (LM-104); dòng khoá hiện câu quyết định thay câu này. */
     decided: 'Phương án đã được quản lý công ty trả lại — chỉ xem.',

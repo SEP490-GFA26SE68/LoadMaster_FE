@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Columns2, Pencil } from 'lucide-react'
+import { Check, CircleAlert, Columns2, Pencil, Save } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
@@ -13,11 +13,14 @@ import type { PlannerAccess } from '../approval/planner-access'
  * LM-104: `decisions` là thanh quyết định khác của quản lý công ty (Từ chối, Quyết định khác) đứng ngay trước nút Duyệt; `approvedBy`
  * đổi nhãn thành "Duyệt bởi … lúc" khi kho biết người duyệt.
  */
-export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdit, approvedBy = null, decisions }: {
+export function PlannerActions({ tripId, access, blockedReason, onApprove, onSave, saving = false, onEdit, approvedBy = null, decisions }: {
   tripId: string
   access: PlannerAccess
   blockedReason: string | null
   onApprove: () => void
+  /** "Lưu bản chỉnh" của điều phối viên (LM-108, `access.approve === 'save'`). */
+  onSave?: () => void
+  saving?: boolean
   /** Vắng khi Planner khoá hoặc đang ở chế độ Chỉnh sửa. */
   onEdit?: () => void
   approvedBy?: string | null
@@ -35,7 +38,8 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdi
       ) : null}
       <CompareLink tripId={tripId} />
       {decisions}
-      {access.approve ? <ApproveButton draft={access.approve === 'draft'} short={Boolean(decisions)} blockedReason={blockedReason} onClick={onApprove} /> : null}
+      {access.approve === 'save' ? <ApproveButton kind="save" blockedReason={blockedReason} loading={saving} onClick={onSave ?? (() => undefined)} />
+        : access.approve ? <ApproveButton kind={access.approve} short={Boolean(decisions)} blockedReason={blockedReason} onClick={onApprove} /> : null}
     </div>
   )
 }
@@ -85,19 +89,27 @@ function CompareLink({ tripId }: { tripId: string }) {
  * `short`: thanh quyết định của quản lý đứng cạnh (LM-104) — trên điện thoại chữ rút còn "Duyệt" để thanh 390 px vẫn một hàng; tên
  * truy cập giữ đủ.
  */
-function ApproveButton({ draft, short = false, blockedReason, onClick }: { draft: boolean; short?: boolean; blockedReason: string | null; onClick: () => void }) {
+function ApproveButton({ kind, short = false, blockedReason, loading = false, onClick }: {
+  kind: 'plan' | 'draft' | 'save'
+  short?: boolean
+  blockedReason: string | null
+  loading?: boolean
+  onClick: () => void
+}) {
   const t = useT()
   const reasonId = useId()
-  const label = t(draft ? 'viewer.plan.approveDraft' : 'viewer.plan.approve')
+  const label = t(kind === 'save' ? 'viewer.plan.saveEdits' : kind === 'draft' ? 'viewer.plan.approveDraft' : 'viewer.plan.approve')
+  const Icon = blockedReason ? CircleAlert : kind === 'save' ? Save : Check
   const button = (
     <Button
       variant="primary"
       className="h-14 px-4 text-body-lg xl:h-10 xl:text-body"
       aria-label={short ? label : undefined}
       aria-describedby={blockedReason ? reasonId : undefined}
+      loading={loading}
       onClick={onClick}
     >
-      {blockedReason ? <CircleAlert strokeWidth={1.5} /> : <Check strokeWidth={1.5} />}
+      {loading ? null : <Icon strokeWidth={1.5} />}
       {short ? <><span className="md:hidden">{t('viewer.plan.approveShort')}</span><span className="hidden md:inline">{label}</span></> : label}
     </Button>
   )

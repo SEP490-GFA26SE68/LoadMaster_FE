@@ -136,6 +136,11 @@ export type Revision = {
   run?: RunSettings
   /** Chỉ ở revision đã duyệt: người bấm Duyệt (`null` khi không có phiên — seed cũ, test). */
   approvedBy?: string | null
+  /**
+   * Chỉ ở bản chỉnh tay chưa duyệt (LM-108): người lưu bản chỉnh (`saveEditedRevision`). Bản này có `sourceRevisionId`, `draftPatches`,
+   * `manuallyEdited` như bản đã duyệt nhưng không có `approvedAt` — nó vào hàng đợi duyệt của quản lý công ty.
+   */
+  editedBy?: string | null
 }
 
 /**

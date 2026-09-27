@@ -60,11 +60,12 @@ test('the company manager reads trips without editing them and is the one who ap
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the dispatcher sees an unapproved plan read-only, waiting for the company manager (LM-104)', async ({ page, login, browserErrors }) => {
+test('the dispatcher cannot approve an unapproved plan, waiting for the company manager, but may still edit it (LM-104, LM-108)', async ({ page, login, browserErrors }) => {
   await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
   await page.locator('canvas').waitFor()
-  await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toHaveText('Chờ quản lý công ty duyệt — bạn chỉ xem phương án.')
+  await expect(page.locator('[data-planner-lock="awaitingApproval"]'))
+    .toHaveText('Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.')
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })

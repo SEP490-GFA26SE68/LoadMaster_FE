@@ -24,8 +24,7 @@ export function commitCommand(
 }
 
 /**
- * Commit một gravity-move: item chính + các items bị rớt xuống đều được record
- * trong 1 command duy nhất để undo/redo hoạt động đúng.
+ * Dời một kiện kèm các kiện rơi xuống theo trọng lực (LM-108): một lệnh duy nhất trong lịch sử, nên Hoàn tác trả cả chồng về chỗ cũ.
  */
 export function commitGravityMove(
   model: ViewerSceneModel,
@@ -39,16 +38,12 @@ export function commitGravityMove(
   for (const { id, patch } of fallenItems) {
     next = patchPlacement(model, next, id, patch)
   }
-  const allIds = [primaryId, ...fallenItems.map((f) => f.id)]
-  const changes = allIds
+  const changes = [primaryId, ...fallenItems.map((item) => item.id)]
     .filter((id) => history.draft.patches.get(id) !== next.patches.get(id))
     .map((id) => ({ id, before: history.draft.patches.get(id), after: next.patches.get(id) }))
   if (!changes.length) return history
-  return {
-    draft: next,
-    past: [...history.past, { type: 'GRAVITY_MOVE', changes }].slice(-EDITOR_RULES.historyLimit),
-    future: [],
-  }
+  const command: Command = { type: 'GRAVITY_MOVE', changes }
+  return { draft: next, past: [...history.past, command].slice(-EDITOR_RULES.historyLimit), future: [] }
 }
 
 export function travelHistory(history: DraftHistory, direction: 'undo' | 'redo'): DraftHistory {

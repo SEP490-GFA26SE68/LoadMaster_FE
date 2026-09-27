@@ -34,6 +34,12 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 28/09/2026 — Planner: điều phối chỉnh tay lại được, trọng lực khi kéo kiện (LM-108)
+
+Người dùng báo mất kéo thả kiện: từ LM-104 điều phối viên chỉ xem. Chốt: điều phối chỉnh tay, "Lưu bản chỉnh" gửi bản mới chưa duyệt vào
+`/duyet`, quản lý công ty duyệt. Đưa trọng lực của nhánh `fix/update-animation` (minkoi) vào mã hiện tại: viết lại cho qua TypeScript,
+thêm vật cản làm mặt đỡ, kiện ghim đứng yên, hoàn tác một lần, test thuần + E2E. Dọn các nhánh đã gộp.
+
 ### 28/09/2026 — V2.3 đợt 5: Planner 3D (LM-107)
 
 Hai worktree song song: thanh trên + hộp thoại Duyệt + thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) và phần trong

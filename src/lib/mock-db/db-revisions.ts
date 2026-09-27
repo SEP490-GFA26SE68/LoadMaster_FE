@@ -4,7 +4,7 @@ import { approvedResult, isStale } from './revisions'
 import { DEFAULT_RUN_SETTINGS } from './source-types'
 import type { MockDb, Trip } from './types'
 
-type RevisionMethods = Pick<MockDb, 'listRevisions' | 'getRevision' | 'addRevision' | 'approveRevision'>
+type RevisionMethods = Pick<MockDb, 'listRevisions' | 'getRevision' | 'addRevision' | 'approveRevision' | 'saveEditedRevision'>
 
 /** Tối ưu và Duyệt chỉ ở pha lập kế hoạch: kho đã bắt đầu xếp thì phương án đã chốt (D-45). */
 function assertPlanning(trip: Trip) {
@@ -77,6 +77,34 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
           edits: patches.length,
         })
         return approved
+      }),
+    saveEditedRevision: (revisionId, patches) =>
+      ctx.respond(() => {
+        const source = found(revisions, 'revisions', revisionId)
+        const trip = found(trips, 'trips', source.tripId)
+        assertPlanning(trip)
+        if (isStale(source, trip)) throw new MockDbError('REVISION_STALE', { revisionId })
+        if (source.result.status !== 'COMPLETED') throw new MockDbError('REVISION_NOT_COMPLETED', { revisionId })
+        if (patches.length === 0) throw new MockDbError('NO_EDITS', { revisionId })
+        // Bản nguồn có thể là bản đã duyệt: bản chỉnh không mang dấu duyệt của nó
+        const { approvedAt: _approvedAt, approvedBy: _approvedBy, ...base } = source
+        const edited = put(revisions, {
+          ...base,
+          id: nextId('REV', revisions.keys()),
+          result: approvedResult(source.request, source.result, patches),
+          createdAt: ctx.nowIso(),
+          draftPatches: [...patches],
+          sourceRevisionId: source.id,
+          manuallyEdited: true,
+          ordersRecomputed: true,
+          editedBy: ctx.state.session.userId,
+        })
+        ctx.log('revision.edited', { type: 'trip', id: trip.id }, {
+          revisionId: edited.id,
+          sourceRevisionId: source.id,
+          edits: patches.length,
+        })
+        return edited
       }),
   }
 }
