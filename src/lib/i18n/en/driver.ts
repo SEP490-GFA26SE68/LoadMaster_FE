@@ -63,6 +63,16 @@ export const driver = {
     area: { front: 'Front wall', middle: 'Middle', door: 'Near the door' },
     layer: { floor: 'floor', lower: 'lower layer', upper: 'upper layer' },
   },
+  scan: {
+    open: 'Scan to unload',
+    title: 'Scan to unload at stop {number}',
+    description: 'Scan the QR label of each package as it leaves the vehicle. Stop {number}: {done} / {total} packages unloaded.',
+    lastUnloaded: 'Just unloaded {id} · {name}.',
+    optionDescription: '{name} · Unload #{order}',
+    wrongStop: 'Package {id} ({name}) belongs to stop {stop} · {stopName}, not this one. Nothing was recorded — keep it on the vehicle.',
+    unloaded: '{id} unloaded',
+    viaQr: 'Unloaded · QR scan',
+  },
   issue: {
     report: 'Report an issue',
     title: 'Report an issue at stop {number}',

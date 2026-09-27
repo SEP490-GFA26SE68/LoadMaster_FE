@@ -53,7 +53,8 @@ export function useCompleteLoadingMutation(tripId: string) {
 
 /** Nhãn QR của chuyến — danh sách chọn tay trong hộp thoại quét. Nhãn đổi khi dòng kiện đổi, không đổi trong phiên xếp. */
 export function useTripLabelsQuery(tripId: string) {
-  return useQuery({ queryKey: ['warehouse', 'labels', tripId], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
+  // Ngoài khoá `['warehouse']`: nhãn không đổi trong phiên xếp (chuyến đã khoá), mỗi bước ghi không phải đọc lại
+  return useQuery({ queryKey: ['warehouse-labels', tripId], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
 }
 
 /** Quét QR xác nhận kiện của bước hiện tại; trả mã instance vừa ghi. Lỗi `QR_WRONG_PACKAGE` / `QR_NOT_IN_TRIP` hiện qua `dataErrorMessage`. */

@@ -1,6 +1,7 @@
-import { Check, PackageX } from 'lucide-react'
+import { Check, PackageX, ScanLine } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { QrScanDialog } from '@/components/QrScanDialog'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
@@ -11,6 +12,7 @@ import { MissingPackageDialog } from './MissingPackageDialog'
 import { PackageInstructionCard } from './PackageInstructionCard'
 import { PlanNotices } from './PlanNotices'
 import { StepHeader } from './StepHeader'
+import { useLoadingScan } from './useLoadingScan'
 import { useLoadingSession } from './useLoadingSession'
 import { useSessionModel } from './useSessionModel'
 import { useCompleteLoadingMutation } from './useWarehouseQueries'
@@ -26,13 +28,18 @@ const PositionViewer = lazy(() =>
  *
  * Lệch có chủ ý khỏi design: nút xác nhận trong design màu xanh lá và viết hoa toàn bộ; mục 5 chỉ định nghĩa nút chính nền
  * `--primary` và cấm viết hoa, nên ở đây là nút primary "Xác nhận đã xếp".
+ *
+ * Review 1 (LM-104): nút phụ "Quét QR kiện" cạnh nút xác nhận — quét đúng nhãn kiện của bước là xác nhận luôn, quét sai thì hộp thoại
+ * nói rõ kiện vừa quét và kiện cần xếp. Xác nhận bằng tay vẫn giữ cho khi nhãn hỏng hoặc không có máy quét.
  */
 export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
   const model = useSessionModel(trip, plan)
   const session = useLoadingSession(trip.id, model.placements, trip.loading)
+  const scan = useLoadingScan({ tripId: trip.id, pending: session.pending, onConfirmed: session.celebrate })
   const [missingTarget, setMissingTarget] = useState<ScenePlacement | null>(null)
   const current = session.current
+  const busy = session.busy || scan.pending
   // Kiện báo thiếu không lên xe: khung 3D không vẽ chúng như đã xếp
   const missingIds = useMemo(() => new Set(session.missing.map((placement) => placement.id)), [session.missing])
 
@@ -71,16 +78,22 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
 
       {current ? (
         <div className="flex flex-none flex-col gap-2 px-3 pb-3">
-          <Button variant="primary" block className="h-14 gap-3 text-body-lg [&_svg]:size-6" onClick={session.confirm} disabled={session.busy}>
-            <Check strokeWidth={2.5} />
-            {t('warehouse.confirm')}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="touch" className="flex-none gap-2.5 [&_svg]:size-6" disabled={busy} onClick={() => scan.setOpen(true)}>
+              <ScanLine strokeWidth={2} />
+              {t('warehouse.scan.open')}
+            </Button>
+            <Button variant="primary" className="h-14 min-w-0 flex-1 gap-3 text-body-lg [&_svg]:size-6" onClick={session.confirm} disabled={busy}>
+              <Check strokeWidth={2.5} />
+              {t('warehouse.confirm')}
+            </Button>
+          </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Button
               variant="ghost"
               size="touch"
               className="font-medium text-text-2 hover:text-text"
-              disabled={session.busy}
+              disabled={busy}
               onClick={() => setMissingTarget(current)}
             >
               <PackageX className="size-4.5" strokeWidth={2} />
@@ -96,6 +109,19 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
         onConfirm={(id) => void handleMissing(id)}
         pending={session.recording}
       />
+
+      {current ? (
+        <QrScanDialog
+          open={scan.open}
+          onOpenChange={scan.setOpen}
+          title={t('warehouse.scan.title', { step: current.step })}
+          description={t('warehouse.scan.description', { id: current.id, name: current.name })}
+          onScan={scan.handleScan}
+          options={scan.options}
+          error={scan.error}
+          pending={scan.pending}
+        />
+      ) : null}
     </div>
   )
 }

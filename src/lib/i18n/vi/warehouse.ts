@@ -65,6 +65,30 @@ export const warehouse = {
     noMissing: 'Không có kiện thiếu.',
     description: 'Đóng cửa thùng và bàn giao cho tài xế.',
   },
+  /** Quét QR khi xếp (luồng 5 Review 1, LM-104): chỉ kiện của bước hiện tại được ghi. */
+  scan: {
+    open: 'Quét QR kiện',
+    title: 'Quét QR kiện bước {step}',
+    description: 'Quét nhãn QR trên kiện đang cầm. Bước này cần kiện {id} · {name}.',
+    optionDescription: '{name} · Điểm {stop}',
+    wrongPackage: 'Sai kiện: vừa quét {scanned} ({scannedName}), bước này cần {expected} ({expectedName}). Chưa ghi gì — để kiện này sang bên và quét đúng kiện.',
+    recordedByQr: { one: 'Đã xác nhận bằng quét QR {count} kiện', other: 'Đã xác nhận bằng quét QR {count} kiện' },
+  },
+  /** Số seal niêm phong thùng khi xếp xong (luồng 5 Review 1, LM-104): không bắt buộc, có thì ghi vào chuyến. */
+  seal: {
+    title: 'Niêm phong thùng',
+    description: 'Ghi số seal trên niêm phong cửa thùng để tài xế và người nhận đối chiếu. Không có seal thì bỏ qua.',
+    label: 'Số seal',
+    hint: 'Tối đa {max} ký tự, ví dụ SEAL-240914.',
+    required: 'Nhập số seal trước khi ghi.',
+    tooLong: 'Số seal tối đa {max} ký tự.',
+    submit: 'Ghi số seal',
+    change: 'Đổi số seal',
+    recorded: 'Số seal {number} · ghi lúc {time}',
+    saved: 'Đã ghi số seal {number}',
+    none: 'Chuyến này không ghi số seal.',
+    locked: 'Xe đã rời kho: không đổi số seal được nữa.',
+  },
   tiles: {
     position: 'Vị trí',
     orientation: 'Hướng đặt',

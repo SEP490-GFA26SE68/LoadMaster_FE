@@ -42,6 +42,8 @@ export type LoadingProgressView = {
   readonly loaded: number
   /** Kiện kho báo thiếu, theo thứ tự xếp. */
   readonly missing: readonly ScenePlacement[]
+  /** Kiện chưa có kết quả theo thứ tự xếp, bắt đầu từ `current`. */
+  readonly pending: readonly ScenePlacement[]
 }
 
 /** Tiến độ xếp đọc từ kho: kiện của phương án theo thứ tự xếp, đối chiếu với các bước kho đã ghi. */
@@ -53,7 +55,8 @@ export function loadingProgress(
   const sequence = placements.toSorted((a, b) => a.step - b.step)
   const missing = sequence.filter((p) => outcome.get(p.id) === 'missing')
   const recorded = sequence.filter((p) => outcome.has(p.id)).length
-  const [current, next] = sequence.filter((p) => !outcome.has(p.id))
+  const pending = sequence.filter((p) => !outcome.has(p.id))
+  const [current, next] = pending
   return {
     current,
     next,
@@ -61,5 +64,6 @@ export function loadingProgress(
     recorded,
     loaded: recorded - missing.length,
     missing,
+    pending,
   }
 }

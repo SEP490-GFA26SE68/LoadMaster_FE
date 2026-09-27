@@ -65,6 +65,17 @@ export const driver = {
     area: { front: 'Sát vách trước', middle: 'Giữa xe', door: 'Gần cửa' },
     layer: { floor: 'sàn', lower: 'lớp dưới', upper: 'lớp trên' },
   },
+  /** Quét QR khi dỡ (luồng 5 Review 1, LM-104): chỉ kiện của điểm đang giao được ghi "đã dỡ". */
+  scan: {
+    open: 'Quét QR dỡ',
+    title: 'Quét QR dỡ tại điểm {number}',
+    description: 'Quét nhãn QR của từng kiện khi đưa xuống xe. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    lastUnloaded: 'Vừa dỡ {id} · {name}.',
+    optionDescription: '{name} · Dỡ thứ {order}',
+    wrongStop: 'Kiện {id} ({name}) thuộc điểm {stop} · {stopName}, không phải điểm này. Chưa ghi gì — để kiện lại trên xe.',
+    unloaded: 'Đã dỡ {id}',
+    viaQr: 'Đã dỡ · quét QR',
+  },
   /** Hộp "Báo sự cố" cho một kiện (D-47): loại + ghi chú, "Khác" bắt buộc ghi chú. */
   issue: {
     report: 'Báo sự cố',

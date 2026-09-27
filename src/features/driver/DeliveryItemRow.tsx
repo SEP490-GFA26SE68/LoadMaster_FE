@@ -14,9 +14,12 @@ export function DeliveryItemRow({
   onToggle,
   issueLabel,
   readOnly = false,
+  viaQr = false,
 }: {
   item: DeliveryItem
   done: boolean
+  /** Kiện dỡ được xác nhận bằng quét QR (LM-104): dòng "Đã dỡ" ghi thêm "quét QR". */
+  viaQr?: boolean
   onToggle: (id: string) => void
   /** Loại sự cố đã báo cho kiện, đã dịch. */
   issueLabel?: string
@@ -51,7 +54,7 @@ export function DeliveryItemRow({
         {done ? (
           <span className="inline-flex items-center gap-1.5 text-body-lg leading-5.5 font-medium text-badge-success-fg">
             <CircleCheck className="size-4 flex-none" strokeWidth={2} aria-hidden />
-            {t('driver.item.done')}
+            {viaQr ? t('driver.scan.viaQr') : t('driver.item.done')}
           </span>
         ) : null}
         {issueLabel ? (

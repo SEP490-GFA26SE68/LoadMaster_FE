@@ -132,7 +132,10 @@ test('a completed trip lists its delivery issues with kind, stop and note, and i
   const route = screen.getByRole('heading', { name: 'Sơ đồ tuyến' }).closest('summary')!
   expect(route).toHaveTextContent('Đã giao3 / 3 điểm')
   expect(route).toHaveTextContent('Sự cố1')
-  expect(screen.queryByRole('button', { name: 'Thao tác' })).not.toBeInTheDocument()
+  // Menu thao tác chỉ còn mở báo cáo chuyến (LM-104): không sửa, không huỷ
+  await userEvent.click(screen.getByRole('button', { name: 'Thao tác' }))
+  expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toStrictEqual(['Báo cáo chuyến'])
+  expect(screen.getByRole('menuitem', { name: 'Báo cáo chuyến' })).toHaveAttribute('href', '/chuyen/TRIP-005/bao-cao')
 })
 
 test('a package the warehouse reported missing is listed with its stop', async () => {

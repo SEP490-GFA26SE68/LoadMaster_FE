@@ -82,7 +82,9 @@ export function useRecordUnloadMutation(tripId: string) {
 // Review 1 (LM-104): quét QR khi dỡ
 
 export function useDriverTripLabelsQuery(tripId: string) {
-  return useQuery({ queryKey: ['trips', 'driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
+  // Ngoài khoá `['trips']`: nhãn không đổi khi đang giao (chuyến đã khoá), mỗi lần ghi dỡ không phải đọc lại — và lượt ghi không phải
+  // chờ lần đọc lại đó trước khi xong
+  return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
 }
 
 /** Quét QR xác nhận dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */
