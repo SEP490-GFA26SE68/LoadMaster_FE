@@ -3,6 +3,7 @@ import { DEFAULT_PERIOD, type PeriodPreset } from '@/features/manager/dashboard-
 import { useTripsQuery } from '@/features/trips/useTripsQuery'
 import { useT } from '@/lib/i18n'
 import { BannersCard } from './components/BannersCard'
+import { BrandCard } from './components/BrandCard'
 import { ButtonsCard } from './components/ButtonsCard'
 import { ChoicesCard } from './components/ChoicesCard'
 import { DialogCard } from './components/DialogCard'
@@ -46,6 +47,7 @@ export function ComponentSheetPage() {
             <FieldsCard sample={sample} />
             <LabelsCard sample={sample} />
             <MetersCard sample={sample} />
+            <BrandCard />
           </div>
         </div>
 

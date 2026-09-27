@@ -226,9 +226,13 @@
   --nav-on-shadow: inset 0 0 0 1px rgba(92, 219, 230, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 22px -4px rgba(0, 195, 212, 0.65);
   /* chuyển động lò xo của chỉ báo kính trên thanh điều hướng: vượt nhẹ rồi lắng lại */
   --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);
-  /* ô logo và ảnh đại diện trên dải trời */
-  --brand-mark: linear-gradient(145deg, #5cdbe6, #00a9bb 55%, #006f81);
-  --brand-mark-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 18px -6px rgba(0, 195, 212, 0.7);
+  /* logo LoadMaster (LM-105): ba màu gốc của biểu tượng khối — nắp, chữ L, chữ n. Chỉ dùng trong logo, giao diện vẫn cyan.
+     Trên nền tối chữ n đổi sang --logo-on-dark (navy chìm vào dải trời); chữ "Master" trên nền tối dùng --logo-sky (5,4:1 trên --cyan-950). */
+  --logo-sky: #0196fd;
+  --logo-blue: #0052fc;
+  --logo-navy: #00276f;
+  --logo-on-dark: #ffffff;
+  /* ảnh đại diện trên dải trời */
   --avatar-fill: linear-gradient(145deg, #9bedf2, #00a9bb);
   /* lớp phủ hộp thoại */
   --scrim: rgba(2, 34, 45, 0.5);
@@ -443,7 +447,6 @@
   --shadow-focus: var(--focus-ring);
   --shadow-error: var(--error-ring);
   --shadow-nav-on: var(--nav-on-shadow);
-  --shadow-brand: var(--brand-mark-shadow);
 
   --ease-standard: var(--ease-standard);
   --ease-decelerate: var(--ease-decelerate);

@@ -1,7 +1,14 @@
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/brand/logo-horizontal-dark.png">
+    <img src="design/brand/logo-horizontal.png" alt="LoadMaster — Plan smarter. Load further." width="360">
+  </picture>
+</p>
+
 # LoadMaster — Frontend
 
 Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam.
-Một codebase responsive phục vụ 5 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
+Một codebase responsive phục vụ 7 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
 ![Xem phương án 3D](docs/screenshots/handoff/vi-planner-success.png)

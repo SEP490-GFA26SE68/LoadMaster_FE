@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
+import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
@@ -87,12 +88,7 @@ export function LoginPage() {
       <main className="flex flex-col items-center justify-center px-8 py-12 sm:px-14">
         <div className="flex w-full max-w-115 flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-md bg-primary">
-                <span className="h-3 w-4.5 rounded-xs border-2 border-t-4 border-white" />
-              </span>
-              <span className="text-h3 font-semibold tracking-[-0.01em]">LoadMaster</span>
-            </div>
+            <Logo size="md" tagline className="mb-2 self-start" />
 
             <div className="flex flex-col gap-1.5">
               <h1 className="text-h1 font-semibold tracking-[-0.01em]">{t('auth.login.title')}</h1>

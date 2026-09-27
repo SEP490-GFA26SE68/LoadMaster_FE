@@ -34,6 +34,13 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 27/09/2026 — Thương hiệu đợt 1: logo LoadMaster (LM-105)
+
+Kế hoạch logo + linh vật cáo **Lumo** ([LM-105](issues/LM-105-thuong-hieu.md)); người dùng chốt giữ màu xanh gốc của logo, khẩu hiệu tiếng
+Anh, Lumo có ở màn rỗng / xong việc của kho và tài xế. Đợt 1: biểu tượng dựng lại bằng SVG, `LogoMark` / `Logo`, thay ở thanh điều hướng,
+đăng nhập, màn lỗi, trang tài liệu; favicon, icon cài đặt, manifest; logo README; thẻ Thương hiệu ở `/thanh-phan`. 963/963 unit/DOM,
+19/19 E2E liên quan.
+
 ### 27/09/2026 — Giao diện demo 5 luồng Review 1 (LM-104)
 
 Nhánh `feat/review1-5-luong` (xếp trên PR đợt 3). Quyết định của nhóm: đơn vị cm/kg theo Spec; Quản lý công ty duyệt phương án;

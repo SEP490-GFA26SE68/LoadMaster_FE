@@ -154,6 +154,8 @@ Thứ tự đợt và màn đích: [design/v2.3/README.md](../../design/v2.3/REA
 |---|---|---|---|
 | [LM-102](LM-102-v23-thanh-phan.md) | Đợt 2: thành phần dùng chung, dải trời + thanh điều hướng, /kieu-dang, /thanh-phan | 3d | đợt 1 |
 | [LM-103](LM-103-v23-chuyen.md) | Đợt 3: Chuyến hàng — danh sách, tạo/sửa, chi tiết 7 trạng thái, kiện | 4d | 102 |
+| [LM-104](LM-104-review1-5-luong.md) | Review 1: giao diện demo 5 luồng (Register → Plan → Optimize → Approve → Execute) | 3d | 103 |
+| [LM-105](LM-105-thuong-hieu.md) | Thương hiệu: logo SVG, favicon, linh vật Lumo | 3d | 104 |
 
 ## 3. Đường găng và luồng song song
 

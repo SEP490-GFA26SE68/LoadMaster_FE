@@ -117,6 +117,19 @@ export const designSystem = {
       meta: 'label always on top · 3:1 border',
       notesPlaceholder: 'E.g. call before arriving at the stop',
     },
+    brand: {
+      title: 'Brand',
+      meta: 'LoadMaster logo',
+      sizes: 'Mark: 16 · 24 · 32 · 48 px, one colour, on dark',
+      colors: 'Three original colours — logo only',
+      swatches: { lid: 'Lid', letterL: 'Letter L', letterN: 'Letter n' },
+      rules: {
+        color: 'The logo blues stay inside the logo; buttons, links and charts keep the interface cyan.',
+        dark: 'On dark backgrounds the letter n turns white and "Master" uses the lid blue for contrast.',
+        space: 'At least 16 px; keep clear space of a quarter of the mark height around the logo.',
+        tagline: 'The tagline stays in English in every language.',
+      },
+    },
     labels: {
       title: 'Labels, roles, people',
       versions: 'Plan version labels',

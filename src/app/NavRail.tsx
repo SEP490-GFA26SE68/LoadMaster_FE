@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router'
+import { LogoMark } from '@/components/brand/LogoMark'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -36,7 +37,6 @@ import { QuickSearch } from '@/features/search/QuickSearch'
 import { useT, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { initialsOf, type Role } from '@/types/user'
-import { BrandMark } from './BrandMark'
 import { useGlassFollow } from './useGlassFollow'
 
 type NavItem = {
@@ -110,9 +110,9 @@ export function NavRail() {
         aria-label={t('nav.home')}
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >
-        <BrandMark />
-        <span aria-hidden className="hidden font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-sky-text font-stretch-112% lg:inline">
-          Load<span className="text-cyan-300">Master</span>
+        <LogoMark tone="dark" />
+        <span aria-hidden className="hidden font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-(--logo-on-dark) font-stretch-106% lg:inline">
+          Load<span className="text-(--logo-sky)">Master</span>
         </span>
       </Link>
 
