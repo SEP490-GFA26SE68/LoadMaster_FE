@@ -20,7 +20,7 @@ export function LoadingStepPage({ tripId }: { tripId: string }) {
 
   if (query.isPending) return <FullScreenStatus label={t('warehouse.loading')} />
   if (query.isError) {
-    return <WarehouseEmpty tripId={tripId} title={t('warehouse.loadErrorTitle')} description={dataErrorMessage(query.error, t)} />
+    return <WarehouseEmpty tripId={tripId} mascot="error" title={t('warehouse.loadErrorTitle')} description={dataErrorMessage(query.error, t)} />
   }
   const { trip, revisions } = query.data
   const session = warehouseSession(trip, revisions)
@@ -31,6 +31,7 @@ export function LoadingStepPage({ tripId }: { tripId: string }) {
       return (
         <WarehouseEmpty
           tripId={tripId}
+          mascot="error"
           title={t('warehouse.cancelledTitle')}
           description={t('warehouse.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })}
         />
@@ -74,6 +75,7 @@ function StartingSession({ tripId }: { tripId: string }) {
     return (
       <WarehouseEmpty
         tripId={tripId}
+        mascot="error"
         title={t('warehouse.startErrorTitle')}
         description={dataErrorMessage(error, t)}
         action={

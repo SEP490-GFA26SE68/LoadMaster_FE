@@ -1,4 +1,4 @@
-import { FileText, Printer, RotateCcw } from 'lucide-react'
+import { Printer, RotateCcw } from 'lucide-react'
 import { useMemo } from 'react'
 import { useParams } from 'react-router'
 import { Banner } from '@/components/Banner'
@@ -33,8 +33,7 @@ export function TripReportPage() {
   } else if (query.isError) {
     body = (
       <EmptyState
-        icon={FileText}
-        tone="danger"
+        mascot="error"
         title={dataErrorMessage(query.error, t)}
         action={
           <Button variant="secondary" onClick={() => void query.refetch()} loading={query.isFetching}>

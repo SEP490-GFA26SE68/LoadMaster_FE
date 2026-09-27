@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { Logo } from '@/components/brand/Logo'
+import { Lumo } from '@/components/brand/Lumo'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
@@ -90,9 +91,14 @@ export function LoginPage() {
           <div className="flex flex-col gap-4">
             <Logo size="md" tagline className="mb-2 self-start" />
 
-            <div className="flex flex-col gap-1.5">
-              <h1 className="text-h1 font-semibold tracking-[-0.01em]">{t('auth.login.title')}</h1>
-              <p className="text-body text-text-2">{t('auth.login.subtitle')}</p>
+            {/* Lumo chào (LM-105): trang trí, chữ bên cạnh nói đủ */}
+            <div className="flex items-center gap-4">
+              <Lumo pose="greet" size="sm" />
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <p className="text-small font-medium text-primary">{t('auth.login.greeting')}</p>
+                <h1 className="text-h1 font-semibold tracking-[-0.01em]">{t('auth.login.title')}</h1>
+                <p className="text-body text-text-2">{t('auth.login.subtitle')}</p>
+              </div>
             </div>
           </div>
 

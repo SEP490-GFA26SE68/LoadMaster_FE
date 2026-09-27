@@ -1,4 +1,5 @@
 import { Logo } from '@/components/brand/Logo'
+import { Lumo, LUMO_POSES, type LumoPose } from '@/components/brand/Lumo'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { useT } from '@/lib/i18n'
 import { SheetCard, SkyStage } from '../SheetLayout'
@@ -13,6 +14,8 @@ const SWATCHES = [
 ] as const
 
 const SIZES = ['size-4', 'size-6', 'size-8', 'size-12'] as const
+
+const POSES = Object.keys(LUMO_POSES) as LumoPose[]
 
 /**
  * Thương hiệu (LM-105): bộ ghép logo trên nền sáng và trên dải trời, biểu tượng ở các cỡ dùng trong app (16 favicon · 24 · 32 thanh
@@ -58,11 +61,24 @@ export function BrandCard() {
         </ul>
       </div>
 
+      <div>
+        <p className={caption}>{t('designSystem.components.brand.lumo')}</p>
+        <ul className="m-0 grid list-none grid-cols-4 gap-2 p-0 sm:grid-cols-7">
+          {POSES.map((pose) => (
+            <li key={pose} className="flex flex-col items-center gap-1 text-center">
+              <Lumo pose={pose} className="size-16" />
+              <span className="text-fine text-ink-2">{t(`designSystem.components.brand.poses.${pose}`)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-small text-ink-2">
         <li>{t('designSystem.components.brand.rules.color')}</li>
         <li>{t('designSystem.components.brand.rules.dark')}</li>
         <li>{t('designSystem.components.brand.rules.space')}</li>
         <li>{t('designSystem.components.brand.rules.tagline')}</li>
+        <li>{t('designSystem.components.brand.rules.lumo')}</li>
       </ul>
     </SheetCard>
   )

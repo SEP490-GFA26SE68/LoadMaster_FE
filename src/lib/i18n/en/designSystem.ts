@@ -123,11 +123,22 @@ export const designSystem = {
       sizes: 'Mark: 16 · 24 · 32 · 48 px, one colour, on dark',
       colors: 'Three original colours — logo only',
       swatches: { lid: 'Lid', letterL: 'Letter L', letterN: 'Letter n' },
+      lumo: 'Lumo the mascot — one meaning per pose',
+      poses: {
+        greet: 'Hello',
+        empty: 'No data yet',
+        notFound: 'Not found',
+        error: 'Something went wrong',
+        done: 'All done',
+        warehouseWaiting: 'Warehouse waiting',
+        driverWaiting: 'Driver waiting',
+      },
       rules: {
         color: 'The logo blues stay inside the logo; buttons, links and charts keep the interface cyan.',
         dark: 'On dark backgrounds the letter n turns white and "Master" uses the lid blue for contrast.',
         space: 'At least 16 px; keep clear space of a quarter of the mark height around the logo.',
-        tagline: 'The tagline stays in English in every language.',
+        tagline: 'The tagline and the name Lumo stay the same in every language.',
+        lumo: 'Lumo only appears where there is no data to show; never in tables, forms, the 3D view, the dashboard, toasts or dialogs.',
       },
     },
     labels: {

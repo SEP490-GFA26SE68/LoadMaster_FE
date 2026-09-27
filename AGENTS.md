@@ -481,9 +481,13 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   Đợt sau: nhãn QR và báo cáo chuyến bản in (bản `mono`), thanh 56 px của kho và tài xế.
 - Nhỏ nhất 16 px; chừa trống quanh logo ít nhất một phần tư chiều cao biểu tượng. Không đổ bóng, không đặt logo trong ô màu (ô gradient
   `--brand-mark` của V2.3 đã bỏ).
-- **Lumo** (đợt 2): mỗi tư thế một nghĩa — chào (đăng nhập), bê thùng (chưa có dữ liệu), suy nghĩ (không tìm thấy), ngạc nhiên (sự cố),
-  giơ ngón cái (xong việc lớn), máy quét (kho / logistics chờ việc), tablet (tài xế chờ việc). Luôn `aria-hidden`, không ở bảng, form,
-  Planner, bảng điều khiển, toast, hộp thoại; ở màn kho và tài xế chỉ màn rỗng và màn xong việc.
+- **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
+  mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
+  · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong, hàng đợi
+  duyệt trống) · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
+  `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
 
 ### Thử nghiệm visual V2 (21/09/2026)
 

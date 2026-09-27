@@ -1,4 +1,4 @@
-import { Package, PackagePlus } from 'lucide-react'
+import { PackagePlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -126,7 +126,7 @@ export function PackagesPage() {
         ) : error ? (
           <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
         ) : !hasRows ? (
-          <EmptyState icon={Package} title={t('sourcing.packages.empty')} description={t('sourcing.packages.emptyDescription')} action={registerButton ?? undefined} />
+          <EmptyState mascot="empty" title={t('sourcing.packages.empty')} description={t('sourcing.packages.emptyDescription')} action={registerButton ?? undefined} />
         ) : (
           <div className="flex flex-col gap-3">
             <TabsContent value={tab} className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card outline-none">

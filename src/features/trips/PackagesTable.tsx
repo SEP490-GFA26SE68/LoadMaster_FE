@@ -7,7 +7,6 @@ import { Card, CardActions, CardHeader, CardMeta, CardTitle } from '@/components
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
-import { EmptyTripsIllustration } from './EmptyTripsIllustration'
 import { createPackageColumns, type PackageRow } from './package-columns'
 import { packageIssues } from './package-issues'
 import { isFragile } from './package-requirements'
@@ -72,7 +71,8 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
   if (packages.length === 0) {
     // Nút phụ: hành động chính của màn là "Chạy tối ưu" ở header (AGENTS mục 5, mỗi màn một nút primary)
     return <EmptyState
-      illustration={<EmptyTripsIllustration />}
+      mascot="empty"
+      compact
       title={t('trips.packages.emptyTitle')}
       description={t('trips.packages.emptyDescription')}
       action={onAdd || onImport ? (

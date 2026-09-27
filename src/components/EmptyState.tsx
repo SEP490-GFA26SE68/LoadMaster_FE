@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Lumo, type LumoPose } from '@/components/brand/Lumo'
 import { cn } from '@/lib/utils'
 
 const ART: Record<'info' | 'warning' | 'danger', string> = {
@@ -12,9 +13,15 @@ const ART: Record<'info' | 'warning' | 'danger', string> = {
  * Trạng thái rỗng V2.3 (`.empty`, `TrangThaiChung.jpg`): không khung, căn giữa; ô minh hoạ 64px bo 18px tô theo nghĩa (`icon` +
  * `tone`: cyan = chưa có dữ liệu / không khớp, hổ phách = cần chú ý, đỏ = lỗi) hoặc hình minh hoạ riêng (`illustration`), tiêu đề
  * Archivo 700, mô tả tối đa 400px, và đúng một hành động chính.
+ *
+ * *(LM-105)* `mascot`: linh vật Lumo thay ô icon ở màn không có dữ liệu — `empty` chưa có dữ liệu, `notFound` lọc không khớp, `error`
+ * lỗi tải, `done` đã xong hết, `warehouseWaiting` / `driverWaiting` màn chờ việc của kho / tài xế. `compact` cho trạng thái rỗng nằm
+ * trong card (96 px).
  */
 export function EmptyState({
   illustration,
+  mascot,
+  compact = false,
   icon: Icon,
   tone = 'info',
   title,
@@ -23,6 +30,8 @@ export function EmptyState({
   className,
 }: {
   illustration?: ReactNode
+  mascot?: LumoPose
+  compact?: boolean
   icon?: LucideIcon
   tone?: keyof typeof ART
   title: string
@@ -37,7 +46,9 @@ export function EmptyState({
         className,
       )}
     >
-      {Icon ? (
+      {mascot ? (
+        <Lumo pose={mascot} size={compact ? 'sm' : 'md'} />
+      ) : Icon ? (
         <span aria-hidden className={cn('grid size-16 place-items-center rounded-xl', ART[tone])}>
           <Icon className="size-6" strokeWidth={1.5} />
         </span>

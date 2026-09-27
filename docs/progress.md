@@ -34,6 +34,11 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 27/09/2026 — Thương hiệu đợt 2: linh vật Lumo (LM-105)
+
+7 tư thế Lumo xuất WebP (~20 KB mỗi ảnh), `Lumo` + `EmptyState mascot`; gắn vào màn rỗng, màn lỗi / 404 / 403, màn chờ việc của kho,
+logistics, tài xế, màn xong việc của kho và tài xế, hàng đợi duyệt trống, lời chào màn đăng nhập. 966/966 unit/DOM, 30/30 E2E liên quan.
+
 ### 27/09/2026 — Thương hiệu đợt 1: logo LoadMaster (LM-105)
 
 Kế hoạch logo + linh vật cáo **Lumo** ([LM-105](issues/LM-105-thuong-hieu.md)); người dùng chốt giữ màu xanh gốc của logo, khẩu hiệu tiếng

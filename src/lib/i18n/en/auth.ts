@@ -4,6 +4,7 @@ import type { auth as source } from '../vi/auth'
 export const auth = {
   login: {
     title: 'Sign in',
+    greeting: "Hi, I'm Lumo!",
     subtitle: '3D cargo load planning and optimization system.',
     email: 'Email',
     emailPlaceholder: 'name@loadmaster.vn',

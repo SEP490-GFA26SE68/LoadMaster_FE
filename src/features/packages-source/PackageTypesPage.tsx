@@ -1,4 +1,4 @@
-import { Plus, Shapes } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
@@ -89,7 +89,7 @@ export function PackageTypesPage() {
         ) : error ? (
           <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
         ) : !hasRows ? (
-          <EmptyState icon={Shapes} title={t('sourcing.packageTypes.empty')} description={t('sourcing.packageTypes.emptyDescription')} action={addButton ?? undefined} />
+          <EmptyState mascot="empty" title={t('sourcing.packageTypes.empty')} description={t('sourcing.packageTypes.emptyDescription')} action={addButton ?? undefined} />
         ) : (
           <div className="flex flex-col gap-3">
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card">

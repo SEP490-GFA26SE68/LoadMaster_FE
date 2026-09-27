@@ -42,6 +42,7 @@ function TripList() {
   if (query.isError) {
     return (
       <EmptyState
+        mascot="error"
         className={TOUCH_EMPTY}
         title={t('warehouse.loadErrorTitle')}
         description={dataErrorMessage(query.error, t)}
@@ -50,7 +51,7 @@ function TripList() {
     )
   }
   if (query.data.length === 0) {
-    return <EmptyState className={TOUCH_EMPTY} title={t('warehouse.list.emptyTitle')} description={t('warehouse.list.emptyDescription')} />
+    return <EmptyState mascot="warehouseWaiting" className={TOUCH_EMPTY} title={t('warehouse.list.emptyTitle')} description={t('warehouse.list.emptyDescription')} />
   }
   // Một nút primary mỗi màn (mục 5): chuyến nên làm trước — đang xếp dở, không thì chuyến chờ xếp sớm nhất
   const primaryId = query.data.find((row) => row.stage !== 'stale')?.id

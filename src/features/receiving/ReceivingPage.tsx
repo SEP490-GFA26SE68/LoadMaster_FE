@@ -101,7 +101,7 @@ export function ReceivingPage() {
         ) : query.isError ? (
           <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
         ) : rows.length === 0 ? (
-          <EmptyState icon={ScanLine} title={t('sourcing.receiving.noShipments')} description={t('sourcing.receiving.noShipmentsDescription')} />
+          <EmptyState mascot="warehouseWaiting" title={t('sourcing.receiving.noShipments')} description={t('sourcing.receiving.noShipmentsDescription')} />
         ) : (
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
             <section aria-label={t('sourcing.receiving.shipments')} className="flex min-w-0 flex-col gap-4">

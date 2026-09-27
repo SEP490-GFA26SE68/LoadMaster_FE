@@ -45,6 +45,7 @@ function ResultSession() {
     return (
       <div className="flex h-dvh flex-col bg-bg p-8">
         <EmptyState
+          mascot={query.isError ? 'error' : 'empty'}
           title={query.isError ? t('viewer.plan.loadErrorTitle') : t('viewer.plan.emptyTitle')}
           description={query.isError ? t('viewer.plan.loadErrorDescription', { tripId }) : t('viewer.plan.emptyDescription')}
           action={<Button variant={query.isError ? 'secondary' : 'primary'} asChild>

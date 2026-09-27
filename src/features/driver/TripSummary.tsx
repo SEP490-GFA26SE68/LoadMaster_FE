@@ -1,6 +1,7 @@
-import { CircleCheck, TriangleAlert } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { Lumo } from '@/components/brand/Lumo'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { Button } from '@/components/ui/Button'
 import { expandPackages } from '@/domain/cargo'
@@ -34,12 +35,13 @@ export function TripSummary({ trip, plan }: { trip: Trip; plan: Revision }) {
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-4">
-        <div className="flex flex-col gap-1">
-          <p className="m-0 flex items-center gap-2 text-h3 font-semibold">
-            <CircleCheck className="size-6 flex-none text-success" strokeWidth={1.5} aria-hidden />
-            {t('driver.tripSummary.heading', { tripId: trip.id })}
-          </p>
-          <p className="m-0 text-text-2">{trip.name}</p>
+        {/* Lumo giơ ngón cái: xong việc lớn (LM-105) */}
+        <div className="flex items-center gap-3">
+          <Lumo pose="done" size="sm" />
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="m-0 text-h3 font-semibold">{t('driver.tripSummary.heading', { tripId: trip.id })}</p>
+            <p className="m-0 text-text-2">{trip.name}</p>
+          </div>
         </div>
 
         <dl className="m-0 grid grid-cols-2 gap-3">

@@ -40,6 +40,7 @@ function TripGroups() {
   if (query.isError) {
     return (
       <EmptyState
+        mascot="error"
         className="[&_span]:text-body-lg"
         title={t('driver.loadErrorTitle')}
         description={dataErrorMessage(query.error, t)}
@@ -49,7 +50,7 @@ function TripGroups() {
   }
   const { ready, preparing, recent } = query.data
   if (ready.length + preparing.length + recent.length === 0) {
-    return <EmptyState className="[&_span]:text-body-lg" title={t('driver.list.emptyTitle')} description={t('driver.list.emptyDescription')} />
+    return <EmptyState mascot="driverWaiting" className="[&_span]:text-body-lg" title={t('driver.list.emptyTitle')} description={t('driver.list.emptyDescription')} />
   }
   return (
     <div className="flex flex-col gap-6">

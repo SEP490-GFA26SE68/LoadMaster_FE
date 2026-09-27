@@ -53,8 +53,8 @@ mà không làm rối các màn vận hành dày dữ liệu.
 |---|---|---|
 | Chân dung mỉm cười (`fox_avatar`) | Chào | Màn đăng nhập, cạnh lời chào; khối tài khoản demo |
 | Bê thùng (`carrying_box`) | Chưa có dữ liệu | Trạng thái rỗng: danh sách chuyến, kiện đã đăng ký, lô hàng, đơn hàng, loại kiện, loại xe |
-| Suy nghĩ (`avatar_thinking`) | Không tìm thấy | Lọc / tìm không có kết quả, tìm nhanh không có kết quả |
-| Ngạc nhiên (`avatar_surprised`) | Có sự cố | 404, lỗi tải dữ liệu, màn lỗi router, 403 |
+| Suy nghĩ (`avatar_thinking`) | Không tìm thấy | 404 *(đổi khi làm: lọc không khớp nằm trong bảng, tìm nhanh là hộp thoại — cả hai thuộc chỗ không đặt cáo)* |
+| Ngạc nhiên (`avatar_surprised`) | Có sự cố | Lỗi tải dữ liệu, màn lỗi router, 403, chuyến đã huỷ ở kho / tài xế |
 | Giơ ngón cái (`fox_thumbs_up`) | Xong việc lớn | Kho xếp xong chuyến, tài xế hoàn tất chuyến, hàng đợi duyệt trống ("đã duyệt hết") |
 | Máy quét + checklist (`fox_scanner_checklist`) | Chờ việc ở kho | Kho chưa có chuyến chờ xếp, logistics chưa có lô đang đến |
 | Cầm tablet (`fox_tablet`) | Chờ việc của tài xế | "Chuyến của tôi" chưa có chuyến |
@@ -112,3 +112,29 @@ Nhánh `feat/lm-105-thuong-hieu` (xếp trên `feat/review1-5-luong`). Ảnh: `d
 
 **Lệch có chủ ý:** khẩu hiệu viết như câu thay vì viết hoa giãn chữ (luật "Cấm tuyệt đối"); chữ "LoadMaster" dùng Archivo của app thay vì
 nét chữ tròn của ảnh gốc (ảnh gốc là raster, không có font); trên nền tối "Master" dùng xanh nắp thay xanh chữ L để đủ tương phản.
+
+### Đợt 2 — Lumo (27/09/2026)
+
+Ảnh: `docs/screenshots/brand/dot2-*.png`.
+
+- **Ảnh:** 7 tư thế xuất từ `design/brand/source/` bằng canvas của Chromium (cắt sát hình theo kênh alpha, vuông 320 px, lề 2 %, WebP
+  chất lượng 0,82): 19–24 KB mỗi ảnh, tổng khoảng 150 KB, ở `src/assets/brand/lumo/`. Vite phát riêng từng file, màn nào dùng mới tải.
+  Tư thế "suy nghĩ" xoá mẩu tai dính ở mép trái của file gốc.
+- `components/brand/Lumo.tsx` (`pose`, `size` sm 96 · md 96→120 · lg 112→140 · xl 128→160 px); `EmptyState` nhận `mascot` và `compact`.
+- **Gắn vào:**
+  - Chưa có dữ liệu (`empty`): danh sách chuyến, kiện trong chuyến (`compact`), đội xe, đơn hàng, kiện đã đăng ký, nhãn QR, loại kiện, lô
+    hàng, loại xe, Planner khi chưa có phương án, So sánh phương án, mẫu ở `/thanh-phan`.
+  - Có sự cố (`error`): lỗi tải ở nhật ký, người dùng, đội xe, bảng điều khiển, báo cáo chuyến, loại xe, Planner, danh sách kho / tài xế;
+    403; lỗi render; phiên kho không tải hoặc không bắt đầu được, chuyến đã huỷ.
+  - Không tìm thấy (`notFound`): 404.
+  - Xong việc (`done`): kho xếp xong chuyến, tài xế giao xong chuyến (thay icon tích xanh), hàng đợi duyệt trống.
+  - Chờ việc: `warehouseWaiting` ở danh sách kho rỗng, phiên kho chưa có bản duyệt / bản duyệt lỗi thời, logistics chưa có lô đang đến;
+    `driverWaiting` ở "Chuyến của tôi" rỗng và điểm giao chưa có phương án.
+  - Chào (`greet`): màn đăng nhập, cạnh "Xin chào, mình là Lumo!" (câu trong từ điển, tên không dịch).
+- Xoá `trips/EmptyTripsIllustration.tsx` (không còn chỗ dùng). Thẻ Thương hiệu ở `/thanh-phan` có hàng 7 tư thế kèm nghĩa.
+- Kiểm tra: tsc, lint, build sạch; 966/966 unit/DOM (thêm 3 test `Lumo`); E2E 30/30 (`layout-1366`, `i18n-en`, `rbac`,
+  `plan-compare-404`, `warehouse`, `warehouse-progress`, `driver-delivery`, `driver-approved-plan`, `review1-approve`, `review1-execute`,
+  `trip-lifecycle`).
+
+**Không đặt Lumo** (theo nguyên tắc): bảng điều khiển khi kỳ không có dữ liệu, bảng lọc không khớp, tìm nhanh không có kết quả, màn tạo
+chuyến, mọi hộp thoại.

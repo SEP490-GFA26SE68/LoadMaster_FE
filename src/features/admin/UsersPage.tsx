@@ -55,6 +55,7 @@ export function UsersPage() {
             <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
           ) : query.isError ? (
             <EmptyState
+              mascot="error"
               title={t('admin.users.errorTitle')}
               description={t('admin.users.errorDescription')}
               action={<Button variant="secondary" onClick={() => void query.refetch()}>{t('admin.users.retry')}</Button>}

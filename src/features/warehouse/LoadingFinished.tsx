@@ -1,5 +1,5 @@
-import { CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
+import { Lumo } from '@/components/brand/Lumo'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { Button } from '@/components/ui/Button'
 import { ExitIconButton } from '@/features/auth/ExitControl'
@@ -31,8 +31,9 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="flex max-w-200 flex-col items-start gap-4">
-          <h1 className="flex items-center gap-3 text-h1 font-semibold">
-            <CircleCheck className="size-6 flex-none text-success" strokeWidth={1.5} aria-hidden />
+          {/* Lumo giơ ngón cái: xong việc lớn (LM-105) */}
+          <Lumo pose="done" size="lg" />
+          <h1 className="text-h1 font-semibold">
             {t('warehouse.finished.title', { tripId: trip.id })}
           </h1>
           <p className="m-0 text-h2 font-medium">

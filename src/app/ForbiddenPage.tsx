@@ -12,6 +12,7 @@ export function ForbiddenPage() {
   return (
     <ErrorScreen
       code="403"
+      mascot="error"
       title={t('notFound.forbiddenTitle')}
       description={t('notFound.forbiddenDescription', { role: user ? t(`roles.${user.role}`) : '' })}
       actions={

@@ -83,6 +83,7 @@ export function DashboardPage() {
           <p className="text-body text-text-2">{t('manager.loading')}</p>
         ) : query.isError ? (
           <EmptyState
+            mascot="error"
             title={t('manager.errorTitle')}
             description={t('manager.errorDescription')}
             action={

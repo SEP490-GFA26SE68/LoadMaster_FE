@@ -8,7 +8,6 @@ import { Tabs, TabsContent } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
-import { EmptyTripsIllustration } from './EmptyTripsIllustration'
 import { todayInVietnam } from './trip-dates'
 import { filterTripRows, normalizeStatusFilter, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
@@ -86,7 +85,7 @@ export function TripListPage() {
           <p role="alert" className="text-body text-danger">{t('trips.list.loadError')}</p>
         ) : !hasTrips ? (
           <EmptyState
-            illustration={<EmptyTripsIllustration />}
+            mascot="empty"
             title={t('trips.list.emptyTitle')}
             description={t('trips.list.emptyDescription')}
             action={canCreate ? (
