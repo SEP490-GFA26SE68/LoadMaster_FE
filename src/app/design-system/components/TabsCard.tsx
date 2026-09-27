@@ -34,7 +34,7 @@ export function TabsCard({ rows, packageCount }: { rows: readonly TripRow[] | un
     <SheetCard title={t('designSystem.components.tabs.title')} meta={t('designSystem.components.tabs.meta')}>
       <SkyStage className="px-1.5 py-0">
         <Tabs value={group} onValueChange={(value) => { const next = GROUP_KEYS.find((key) => key === value); if (next) setGroup(next) }}>
-          <TabsList tone="sky" aria-label={t('designSystem.components.tabs.groups')} className="px-3.5">
+          <TabsList tone="sky" aria-label={t('designSystem.components.tabs.groups')} className="mx-3.5 my-4">
             {GROUP_KEYS.map((key) => (
               <TabsTrigger key={key} value={key}>
                 {t(`designSystem.components.tabs.${key}`)}

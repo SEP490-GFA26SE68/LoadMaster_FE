@@ -414,7 +414,10 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
   *(bổ sung 27/09/2026, LM-103)* Dấu `*` bắt buộc là `aria-hidden`, ô có `aria-required`: tên truy cập giữ đúng chữ nhãn ("Tên xe", không
   "Tên xe *") — test đọc nhãn bằng `exact: true`.
-- **Tab**: `TabsList tone="light" | "sky"`, vạch `--cyan-500` / `--cyan-400`; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+- **Tab**: `TabsList tone="light"` gạch chân `--cyan-500` trên nền trắng; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+  *(đã điều chỉnh 27/09/2026)* `tone="sky"` là **nhóm tab kính** trong dải trời: khay `--sky-glass` viền bo 12, tab 36 px bo 10, tab mở là
+  kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề và cách card đè dải 16 px, số 0 mờ đi. Bản mẫu V2.3 vẽ tab gạch
+  chân trên dải — vạch nằm sát mép card nên nhìn như đường kẻ thừa; người dùng yêu cầu làm lại.
 - **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
 - **Banner** (`components/Banner.tsx`): info / warning / danger / neutral, hành động dồn phải. `TripLockBanner` dựng trên nó.
