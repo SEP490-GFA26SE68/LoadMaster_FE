@@ -31,6 +31,30 @@ export const AUDIT_ACTIONS = [
   'user.passwordReset',
   'user.passwordChanged',
   'user.profileUpdated',
+  // Review 1 (LM-104)
+  'packageType.created',
+  'packageType.updated',
+  'packageType.deleted',
+  'package.registered',
+  'shipment.created',
+  'shipment.updated',
+  'shipment.deleted',
+  'shipment.handedOver',
+  'shipment.packageReceived',
+  'order.created',
+  'order.updated',
+  'order.cancelled',
+  'order.assigned',
+  'order.unassigned',
+  'review.rejected',
+  'review.reoptimizeRequested',
+  'review.changeSuggested',
+  'optimization.failed',
+  'vehicleType.created',
+  'vehicleType.updated',
+  'vehicleType.deleted',
+  'vehicleType.assigned',
+  'loading.sealed',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -40,7 +64,17 @@ export type AuditGroup = AuditAction extends `${infer Group}.${string}` ? Group 
 
 export const AUDIT_GROUPS = [...new Set(AUDIT_ACTIONS.map((action) => action.split('.')[0]))] as AuditGroup[]
 
-export type AuditTargetType = 'trip' | 'vehicle' | 'user' | 'revision'
+export type AuditTargetType =
+  | 'trip'
+  | 'vehicle'
+  | 'user'
+  | 'revision'
+  // LM-104
+  | 'packageType'
+  | 'package'
+  | 'shipment'
+  | 'order'
+  | 'vehicleType'
 
 export type AuditEvent = {
   /** `EV-NNNNNN`, tăng theo thứ tự ghi. */

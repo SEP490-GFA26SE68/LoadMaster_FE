@@ -9,7 +9,8 @@ test.use({ collectConsoleErrors: true })
 const TRIP_ID = 'TRIP-2026-0914'
 
 test('compare plans: every revision column is MOCK RESULT and the chosen one opens in the Planner', async ({ page, login, browserErrors }) => {
-  await login(`/chuyen/${TRIP_ID}/so-sanh`)
+  // Quản lý công ty duyệt (LM-104): mở bản chưa duyệt thì có nút Duyệt
+  await login(`/chuyen/${TRIP_ID}/so-sanh`, 'manager')
   await expect(page.getByRole('heading', { level: 1, name: 'So sánh phương án', exact: true })).toBeVisible()
   await expect(page).toHaveTitle(`So sánh phương án ${TRIP_ID} · LoadMaster`)
 

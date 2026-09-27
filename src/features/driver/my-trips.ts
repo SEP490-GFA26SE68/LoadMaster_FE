@@ -1,5 +1,5 @@
-import { latestApproved, missingIds, plannedStops, tripStatus, type Revision, type Trip } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import { latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 
 /** Một chuyến và các revision của nó theo thứ tự kho trả (cũ trước). */
@@ -13,13 +13,12 @@ export type MyTripRow = {
   /** Tên xe (có biển số); xe không còn trong kho thì là mã xe. */
   readonly vehicleName: string
   readonly status: TripStatus
+  /** Dòng phụ dưới chip (LM-104): kho đang xếp hoặc đã xếp xong. */
+  readonly sub: TripSubStatus | null
   readonly stopCount: number
   /** Kiện của phương án trừ kiện kho báo thiếu — số kiện trên xe (hoặc sẽ lên xe). */
   readonly packageCount: number
-  /** Kiện kho đã có kết quả xếp (đã xếp hoặc thiếu) và tổng kiện của phương án. */
-  readonly loadingRecorded: number
-  readonly loadingTotal: number
-  /** Đang giao: điểm chưa hoàn tất đầu tiên. */
+  /** Đang vận chuyển: điểm chưa hoàn tất đầu tiên. */
   readonly currentStop: number | undefined
   /** Hoàn thành: thời điểm giao xong (ISO 8601). */
   readonly completedAt: string | undefined
@@ -27,9 +26,9 @@ export type MyTripRow = {
 }
 
 export type MyTrips = {
-  /** Đã xếp xong hoặc đang giao — tài xế mở được. */
+  /** Đang vận chuyển, hoặc đã duyệt và kho đã xếp xong — tài xế mở được. */
   readonly ready: readonly MyTripRow[]
-  /** Đã duyệt hoặc kho đang xếp — hiện để tài xế biết, chưa mở được. */
+  /** Đã duyệt, kho chưa xếp xong — hiện để tài xế biết, chưa mở được. */
   readonly preparing: readonly MyTripRow[]
   /** Hoàn thành gần đây, mới nhất trước. */
   readonly recent: readonly MyTripRow[]
@@ -49,31 +48,38 @@ export function driverPlan<R extends Pick<Revision, 'id' | 'approvedAt'>>(trip: 
   return loadedWith === undefined ? latestApproved(revisions) : revisions.find((revision) => revision.id === loadedWith)
 }
 
-const READY: readonly TripStatus[] = ['dang_giao', 'da_xep_xong']
-const PREPARING: readonly TripStatus[] = ['dang_xep_hang', 'da_duyet']
+/** Chuyến tài xế mở được: đang vận chuyển, hoặc kho đã xếp xong. */
+export function isReadyToDrive(row: Pick<MyTripRow, 'status' | 'sub'>): boolean {
+  return row.status === 'dang_van_chuyen' || row.sub?.kind === 'loaded'
+}
 
-function row(trip: Trip, plan: Revision, status: TripStatus, vehicleNames: ReadonlyMap<string, string>): MyTripRow {
+/** Thứ tự trong nhóm (đang làm trước): đang vận chuyển, đã xếp xong, kho đang xếp, chờ kho xếp. */
+function stage(row: Pick<MyTripRow, 'status' | 'sub'>): number {
+  if (row.status === 'dang_van_chuyen') return 0
+  if (row.sub?.kind === 'loaded') return 1
+  return row.sub?.kind === 'loading' ? 2 : 3
+}
+
+function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicleNames: ReadonlyMap<string, string>): MyTripRow {
   const total = plannedStops(plan).size
   return {
     id: trip.id,
     name: trip.name,
     scheduledDate: trip.scheduledDate,
     vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
-    status,
+    status: tripStatus(trip, revisions),
+    sub: tripSubStatus(trip, revisions),
     stopCount: trip.stops.length,
     packageCount: total - missingIds(trip).size,
-    loadingRecorded: trip.loading?.steps.length ?? 0,
-    loadingTotal: total,
     currentStop: trip.delivery?.stops.find((stop) => stop.completedAt === undefined)?.number,
     completedAt: trip.delivery?.completedAt,
     issueCount: trip.delivery?.issues.length ?? 0,
   }
 }
 
-/** Nhóm theo thứ tự trong `order` (đang làm trước), rồi ngày chạy sớm trước, rồi mã chuyến. */
-function byStatusThenDate(order: readonly TripStatus[]) {
-  return (a: MyTripRow, b: MyTripRow) =>
-    order.indexOf(a.status) - order.indexOf(b.status) || a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id)
+/** Theo giai đoạn (đang làm trước), rồi ngày chạy sớm trước, rồi mã chuyến. */
+function byStageThenDate(a: MyTripRow, b: MyTripRow): number {
+  return stage(a) - stage(b) || a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id)
 }
 
 /**
@@ -88,14 +94,14 @@ export function myTrips(entries: readonly TripRevisions[], vehicleNames: Readonl
     if (!isVisibleTo(trip, viewer)) continue
     const plan = driverPlan(trip, revisions)
     if (!plan) continue
-    const status = tripStatus(trip, revisions)
-    if (READY.includes(status)) ready.push(row(trip, plan, status, vehicleNames))
-    else if (PREPARING.includes(status)) preparing.push(row(trip, plan, status, vehicleNames))
-    else if (status === 'hoan_thanh') recent.push(row(trip, plan, status, vehicleNames))
+    const item = row(trip, plan, revisions, vehicleNames)
+    if (isReadyToDrive(item)) ready.push(item)
+    else if (item.status === 'da_duyet') preparing.push(item)
+    else if (item.status === 'hoan_thanh') recent.push(item)
   }
   return {
-    ready: ready.toSorted(byStatusThenDate(READY)),
-    preparing: preparing.toSorted(byStatusThenDate(PREPARING)),
+    ready: ready.toSorted(byStageThenDate),
+    preparing: preparing.toSorted(byStageThenDate),
     recent: recent.toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT),
   }
 }

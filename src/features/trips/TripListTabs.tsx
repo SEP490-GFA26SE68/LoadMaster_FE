@@ -3,10 +3,10 @@ import { useFormat, useT } from '@/lib/i18n'
 import { TRIP_LIST_TABS, type TripListTab } from './trip-list'
 
 /**
- * Dòng số dưới tiêu đề (`ChuyenHang.jpg` `.page-head .sub`): tổng chuyến · đang chạy · cần bạn xử lý, đếm trên cả kho (không theo bộ
+ * Dòng số dưới tiêu đề (`ChuyenHang.jpg` `.page-head .sub`): tổng chuyến · đang vận chuyển · cần bạn xử lý, đếm trên cả kho (không theo bộ
  * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số của tab "Cần xử lý".
  */
-export function TripListStats({ total, active, review }: { total: number; active: number; review: number }) {
+export function TripListStats({ total, transit, review }: { total: number; transit: number; review: number }) {
   const t = useT()
   const format = useFormat()
   const number = 'font-semibold text-sky-text tabular-nums'
@@ -14,7 +14,7 @@ export function TripListStats({ total, active, review }: { total: number; active
     <span className="flex gap-3.5">
       <span><b className={number}>{format.integer(total)}</b> {t('trips.list.stats.total', { count: total })}</span>
       <span aria-hidden>·</span>
-      <span><b className={number}>{format.integer(active)}</b> {t('trips.list.stats.active')}</span>
+      <span><b className={number}>{format.integer(transit)}</b> {t('trips.list.stats.transit')}</span>
       <span aria-hidden>·</span>
       <span><b className="font-semibold text-amber-500 tabular-nums">{format.integer(review)}</b> {t('trips.list.stats.review')}</span>
     </span>

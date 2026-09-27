@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { ROLE_PERMISSIONS } from '@/features/auth/permissions'
+import { permissionsOf } from '@/features/auth/permissions'
 import { useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import type { AccountGuards } from './account-guards'
@@ -10,7 +10,7 @@ import type { UserAction } from './UserRowMenu'
 
 /**
  * Panel chi tiết người dùng (V2), cột phải của tab Tài khoản: danh tính (ô chữ viết tắt vuông bo góc, tên, email, vai trò, trạng thái),
- * thông tin cá nhân (chỉ những trường kho có), quyền của vai trò dựng từ `ROLE_PERMISSIONS` và nút thao tác cùng luật với menu dòng.
+ * thông tin cá nhân (chỉ những trường kho có), quyền của vai trò dựng từ `permissionsOf` và nút thao tác cùng luật với menu dòng.
  * Nền đặc, viền 1 px, không bóng — inspector là bề mặt đọc lâu, không dùng kính (AGENTS mục 5).
  * Mở hoặc đổi người thì con trỏ về tiêu đề panel (trình đọc màn hình đọc tên; dưới 1.280 px panel nằm dưới bảng nên cũng cuộn tới).
  */
@@ -73,7 +73,7 @@ export function UserDetailPanel({ id, user, guards, onAction, onClose }: {
           <h3 id={`${titleId}-permissions`} className="text-body font-semibold text-ink-strong">{t('admin.users.detail.permissions')}</h3>
           <p className="text-caption text-ink-2">{t('admin.users.detail.permissionsNote', { role })}</p>
           <ul className="flex flex-wrap gap-1.5">
-            {ROLE_PERMISSIONS[user.role].map((permission) => (
+            {permissionsOf(user.role).map((permission) => (
               <li key={permission} className="rounded-sm border border-border bg-surface px-2 py-1 text-caption text-ink-1">
                 {t(`admin.permissions.labels.${permission}`)}
               </li>

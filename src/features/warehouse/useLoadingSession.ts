@@ -34,15 +34,21 @@ export function useLoadingSession(tripId: string, placements: readonly ScenePlac
     toast.error(dataErrorMessage(error, t))
   }
 
-  function confirm() {
-    const current = progress.current
-    if (!current || busy) return
-    setOverlay({ id: current.id, nextStep: progress.next?.step })
+  /** Hiện lớp phủ "Đã xếp `id`" tối thiểu 1,2 giây — dùng chung cho nút xác nhận và quét QR đúng kiện. */
+  function celebrate(id: string, nextStep: number | undefined) {
+    setOverlay({ id, nextStep })
     setHolding(true)
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null
       setHolding(false)
     }, CONFIRMED_OVERLAY_MS)
+  }
+
+  function confirm() {
+    const current = progress.current
+    if (!current || busy) return
+    celebrate(current.id, progress.next?.step)
     record.mutate({ packageInstanceId: current.id, outcome: 'loaded' }, { onError: showError })
   }
 
@@ -67,6 +73,7 @@ export function useLoadingSession(tripId: string, placements: readonly ScenePlac
     overlay: overlay !== null && busy ? overlay : null,
     recording: record.isPending,
     confirm,
+    celebrate,
     reportMissing,
   }
 }

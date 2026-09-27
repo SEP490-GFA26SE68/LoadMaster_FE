@@ -27,4 +27,15 @@ export const titles = {
   notFound: 'Không tìm thấy trang',
   error: 'Đã xảy ra lỗi',
   forbidden: 'Không có quyền truy cập',
+  // Review 1 (LM-104)
+  packageTypes: 'Loại kiện',
+  packages: 'Kiện hàng',
+  labels: 'In nhãn QR',
+  shipments: 'Lô hàng',
+  shipment: 'Lô hàng {id}',
+  receiving: 'Nhận hàng',
+  orders: 'Đơn hàng',
+  review: 'Chờ duyệt',
+  vehicleTypes: 'Loại xe',
+  tripReport: 'Báo cáo chuyến {id}',
 } as const

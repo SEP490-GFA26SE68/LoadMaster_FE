@@ -28,7 +28,7 @@ export const trips = {
     /** Dòng số dưới tiêu đề: đếm trên cả kho, không theo bộ lọc. Số đứng trước chữ, in đậm riêng nên không nằm trong câu. */
     stats: {
       total: { one: 'chuyến', other: 'chuyến' },
-      active: 'đang chạy',
+      transit: 'đang vận chuyển',
       review: 'cần bạn xử lý',
     },
     /** Tab trên dải trời là bộ lọc trạng thái (`trang-thai`); số của tab theo tìm và các bộ lọc khác. */
@@ -37,7 +37,7 @@ export const trips = {
       all: 'Tất cả',
       review: 'Cần xử lý',
       upcoming: 'Sắp chạy',
-      active: 'Đang thực hiện',
+      transit: 'Đang vận chuyển',
       completed: 'Hoàn thành',
       cancelled: 'Đã huỷ',
     },
@@ -216,7 +216,7 @@ export const trips = {
     /** Bản đã duyệt lỗi thời (D-31): nói vì sao, lấy từ nhật ký (V2.3, quyết định 2). */
     stale: {
       title: 'Phương án {revision} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',
-      body: 'Kho chỉ xếp được khi điều phối viên duyệt lại.',
+      body: 'Kho chỉ xếp được khi điều phối viên tối ưu lại và quản lý công ty duyệt.',
       editedAt: 'Sửa lúc {time} {date}',
       fields: 'Đã sửa: {fields}',
       change: 'từ {before} thành {after}',
@@ -446,8 +446,8 @@ export const trips = {
     code: 'Kiện',
     /** Cảnh báo đầu form: lưu thay đổi làm revision đang hiển thị lỗi thời (D-31). */
     staleLead: 'Lưu thay đổi sẽ làm {revision} lỗi thời.',
-    staleApproved: 'Chuyến chuyển sang Cần xem lại, cần duyệt lại trước khi kho xếp.',
-    staleOptimized: 'Chuyến chuyển sang Cần xem lại, cần chạy tối ưu lại.',
+    staleApproved: 'Chuyến về Đã tối ưu, cần tối ưu lại và quản lý công ty duyệt trước khi kho xếp.',
+    staleOptimized: 'Phương án thành lỗi thời, cần chạy tối ưu lại.',
     save: 'Lưu kiện',
     saveAndNew: 'Lưu và thêm tiếp',
     duplicate: 'Nhân bản',

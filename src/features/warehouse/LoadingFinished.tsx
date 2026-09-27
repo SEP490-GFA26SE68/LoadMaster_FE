@@ -6,18 +6,21 @@ import { ExitIconButton } from '@/features/auth/ExitControl'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Revision, Trip } from '@/lib/mock-db'
 import { loadingProgress } from './loading-session'
+import { SealCard } from './SealCard'
 import { useSessionModel } from './useSessionModel'
 import { loadingSessionPath } from './warehouse-trips'
 
 /**
  * Màn "Xếp xong" (LM-086): số kiện đã xếp trên tổng, danh sách kiện kho báo thiếu, nút về danh sách chuyến. Mọi số đọc từ tiến độ
- * trong kho (D-47). Mở lại chuyến đã xếp xong (kể cả khi xe đã đi giao) cũng ra màn này.
+ * trong kho (D-47). Mở lại chuyến đã xếp xong (kể cả khi xe đã đi giao) cũng ra màn này. Review 1 (LM-104): số kiện xác nhận bằng quét
+ * QR và ô niêm phong thùng (số seal, không bắt buộc).
  */
 export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
   const format = useFormat()
   const model = useSessionModel(trip, plan)
   const progress = loadingProgress(model.placements, trip.loading)
+  const loadedByQr = trip.loading?.steps.filter((step) => step.outcome === 'loaded' && step.via === 'qr').length ?? 0
 
   return (
     <div className="flex h-dvh flex-col bg-bg text-body-lg">
@@ -51,7 +54,10 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
           ) : (
             <p className="m-0 text-text-2">{t('warehouse.finished.noMissing')}</p>
           )}
-          <Button asChild variant="primary" size="touch">
+          {loadedByQr > 0 ? <p className="m-0 text-text-2">{t('warehouse.scan.recordedByQr', { count: loadedByQr })}</p> : null}
+          <SealCard trip={trip} />
+          {/* Chưa ghi seal khi xe còn ở kho: nút ghi seal là nút chính, lối về danh sách là nút phụ (một nút chính mỗi màn) */}
+          <Button asChild variant={trip.phase === 'loaded' && !trip.loading?.seal ? 'secondary' : 'primary'} size="touch">
             <Link to="/kho">{t('warehouse.backToList')}</Link>
           </Button>
         </div>

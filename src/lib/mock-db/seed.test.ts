@@ -102,10 +102,11 @@ test('the seed spreads 15 trips over 30 days around the anchor day with every st
   const statuses = await Promise.all(trips.map(async (trip) => tripStatus(trip, await db.listRevisions(trip.id))))
   const count = (status: string) => statuses.filter((item) => item === status).length
   expect(trips).toHaveLength(15)
+  // LM-104: đã duyệt gồm chuyến chính, kho đang xếp (TRIP-011) và đã xếp xong (TRIP-010); đã tối ưu gồm bản lỗi thời (TRIP-013)
   expect({
-    hoan_thanh: count('hoan_thanh'), da_huy: count('da_huy'), dang_giao: count('dang_giao'), da_xep_xong: count('da_xep_xong'),
-    dang_xep_hang: count('dang_xep_hang'), da_duyet: count('da_duyet'), da_toi_uu: count('da_toi_uu'), can_xem_lai: count('can_xem_lai'), nhap: count('nhap'),
-  }).toStrictEqual({ hoan_thanh: 7, da_huy: 1, dang_giao: 1, da_xep_xong: 1, dang_xep_hang: 1, da_duyet: 1, da_toi_uu: 1, can_xem_lai: 1, nhap: 1 })
+    hoan_thanh: count('hoan_thanh'), da_huy: count('da_huy'), dang_van_chuyen: count('dang_van_chuyen'),
+    da_duyet: count('da_duyet'), da_toi_uu: count('da_toi_uu'), nhap: count('nhap'),
+  }).toStrictEqual({ hoan_thanh: 7, da_huy: 1, dang_van_chuyen: 1, da_duyet: 3, da_toi_uu: 2, nhap: 1 })
   const dates = trips.map((trip) => trip.scheduledDate).toSorted()
   expect([dates[0], dates.at(-1)]).toStrictEqual(['2026-08-23', '2026-09-21'])
   // the main trip moves with the anchor day
@@ -141,11 +142,11 @@ test('seeded operations match their trips: warehouse progress, deliveries, issue
   ])
 })
 
-test('twelve seeded users cover the five roles; the history names only real users, newest first', async () => {
+test('fifteen seeded users cover the seven roles; the history names only real users, newest first', async () => {
   const db = createMockDb()
   const users = await db.listUsers()
-  expect(users).toHaveLength(12)
-  expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set(['dispatcher', 'manager', 'warehouse', 'driver', 'admin']))
+  expect(users).toHaveLength(15)
+  expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set(['dispatcher', 'manager', 'warehouse', 'driver', 'admin', 'manufacturer', 'logistics']))
   expect(users.filter((user) => user.status === 'suspended').map((user) => user.id)).toStrictEqual(['US-0008'])
   const events = await db.listEvents()
   const ids = new Set(users.map((user) => user.id))

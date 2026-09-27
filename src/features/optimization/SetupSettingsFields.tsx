@@ -1,11 +1,13 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { Switch } from '@/components/ui/Switch'
 import { useT } from '@/lib/i18n'
-import { METHODS, type OptimizationSettings } from './optimization-request'
+import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
+import type { SetupValues } from './optimization-request'
 
-type Form = { form: UseFormReturn<OptimizationSettings> }
+type Form = { form: UseFormReturn<SetupValues> }
 
 /** Phần "Yêu cầu xếp hàng" (Spec 9.4, V2): hai công tắc, mỗi công tắc một câu giải thích nối bằng `aria-describedby`. */
 export function SetupRequirementFields({ form }: Form) {
@@ -33,14 +35,16 @@ export function SetupRequirementFields({ form }: Form) {
 }
 
 /**
- * Phần "Thiết lập nâng cao" gập trong `<details>` (V2): phương pháp (ngoài `MOCK` hiện nhưng khoá kèm lý do — MVP chỉ có mock),
- * thời gian giới hạn và random seed. Có lỗi ở hai ô số thì phần này tự mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt.
+ * Phần "Thiết lập nâng cao" gập trong `<details>` (V2): mục tiêu và thuật toán của lần chạy (luồng 3 Review 1, LM-104 — kho lưu vào
+ * lịch sử lần chạy; mock tối ưu bỏ qua nên câu ghi chú nói rõ kết quả vẫn là MOCK RESULT), thời gian giới hạn và random seed. Có lỗi ở
+ * hai ô số thì phần này tự mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt.
  */
 export function SetupAdvancedFields({ form }: Form) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const { control, register, setValue, formState: { errors } } = form
-  const method = useWatch({ control, name: 'method' })
+  const objective = useWatch({ control, name: 'objective' })
+  const algorithm = useWatch({ control, name: 'algorithm' })
   const hasError = errors.timeLimitSeconds !== undefined || errors.randomSeed !== undefined
 
   return (
@@ -49,25 +53,32 @@ export function SetupAdvancedFields({ form }: Form) {
         {t('optimization.advancedTitle')}
         <span className="ml-2 text-caption font-normal text-ink-3">{t('optimization.advancedHint')}</span>
       </summary>
-      <div className="flex flex-col gap-4 pt-4">
-        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-          <legend className="mb-1 text-caption font-medium text-ink-2">{t('optimization.method')}</legend>
-          {METHODS.map((code) => (
-            <label key={code} className="flex items-center gap-2 text-body has-disabled:text-text-disabled">
-              <input
-                type="radio"
-                name="method"
-                value={code}
-                checked={method === code}
-                disabled={code !== 'MOCK'}
-                onChange={() => setValue('method', code, { shouldDirty: true })}
-                className="size-4 accent-primary"
-              />
-              {t(`optimization.methods.${code}`)}
-            </label>
-          ))}
-          <p className="text-caption text-ink-3">{t('optimization.methodUnavailable')}</p>
-        </fieldset>
+      <div className="flex flex-col gap-5 pt-4">
+        <div className="grid gap-5 md:grid-cols-2">
+          <Choice legend={t('runs.objective')}>
+            <RadioGroup aria-label={t('runs.objective')} value={objective}
+              onValueChange={(value) => {
+                const code = OPTIMIZATION_OBJECTIVES.find((item) => item === value)
+                if (code) setValue('objective', code, { shouldDirty: true })
+              }}>
+              {OPTIMIZATION_OBJECTIVES.map((code) => (
+                <Option key={code} value={code} label={t(`runs.objectives.${code}`)} hint={t(`optimization.objectiveHints.${code}`)} />
+              ))}
+            </RadioGroup>
+          </Choice>
+          <Choice legend={t('runs.algorithm')}>
+            <RadioGroup aria-label={t('runs.algorithm')} value={algorithm}
+              onValueChange={(value) => {
+                const code = OPTIMIZATION_ALGORITHMS.find((item) => item === value)
+                if (code) setValue('algorithm', code, { shouldDirty: true })
+              }}>
+              {OPTIMIZATION_ALGORITHMS.map((code) => (
+                <Option key={code} value={code} label={t(`runs.algorithms.${code}`)} hint={t(`optimization.algorithmHints.${code}`)} />
+              ))}
+            </RadioGroup>
+          </Choice>
+        </div>
+        <p className="text-caption text-ink-3">{t('optimization.runChoiceNote')}</p>
 
         <div className="grid grid-cols-2 gap-3">
           <Input label={t('optimization.timeLimit')} numeric suffix="s" type="number" step="1"
@@ -77,5 +88,24 @@ export function SetupAdvancedFields({ form }: Form) {
         </div>
       </div>
     </details>
+  )
+}
+
+function Choice({ legend, children }: { legend: string; children: ReactNode }) {
+  return (
+    <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+      <legend className="mb-1 text-caption font-medium text-ink-2">{legend}</legend>
+      {children}
+    </fieldset>
+  )
+}
+
+/** Một lựa chọn: nhãn và một dòng giải thích ngay dưới, thẳng hàng với chữ của nhãn. */
+function Option({ value, label, hint }: { value: string; label: string; hint: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <RadioGroupItem value={value} label={label} />
+      <span className="pl-7 text-caption text-ink-3">{hint}</span>
+    </div>
   )
 }

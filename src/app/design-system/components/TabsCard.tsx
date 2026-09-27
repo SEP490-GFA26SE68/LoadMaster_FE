@@ -5,13 +5,13 @@ import { useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import { SheetCard, SkyStage } from '../SheetLayout'
 
-const GROUP_KEYS = ['all', 'review', 'active', 'completed'] as const
+const GROUP_KEYS = ['all', 'review', 'transit', 'completed'] as const
 type Group = (typeof GROUP_KEYS)[number]
 
 const GROUPS: Record<Group, readonly TripStatus[] | null> = {
   all: null,
   review: TRIP_STATUS_GROUPS.review,
-  active: TRIP_STATUS_GROUPS.active,
+  transit: ['dang_van_chuyen'],
   completed: ['hoan_thanh'],
 }
 
@@ -34,7 +34,7 @@ export function TabsCard({ rows, packageCount }: { rows: readonly TripRow[] | un
     <SheetCard title={t('designSystem.components.tabs.title')} meta={t('designSystem.components.tabs.meta')}>
       <SkyStage className="px-1.5 py-0">
         <Tabs value={group} onValueChange={(value) => { const next = GROUP_KEYS.find((key) => key === value); if (next) setGroup(next) }}>
-          <TabsList tone="sky" aria-label={t('designSystem.components.tabs.groups')} className="px-3.5">
+          <TabsList tone="sky" aria-label={t('designSystem.components.tabs.groups')} className="mx-3.5 my-4">
             {GROUP_KEYS.map((key) => (
               <TabsTrigger key={key} value={key}>
                 {t(`designSystem.components.tabs.${key}`)}

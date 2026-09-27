@@ -8,7 +8,7 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } })
 const DRAW_DEADLINE_MS = 2_000
 
 test('reduced motion draws a camera preset change without a manual frame request', async ({ page, login, browserErrors }) => {
-  await login(`${PLANNER_ROUTE}?debug`)
+  await login(`${PLANNER_ROUTE}?debug`, 'manager')
   await waitIdle(page)
   await waitCameraSettled(page)
 

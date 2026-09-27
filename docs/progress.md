@@ -34,6 +34,18 @@ Trạng thái: ⬜ Chưa bắt đầu · 🟦 Đang làm · 🟨 Chờ / bị ch
 
 ## 2. Nhật ký
 
+### 27/09/2026 — Giao diện demo 5 luồng Review 1 (LM-104)
+
+Nhánh `feat/review1-5-luong` (xếp trên PR đợt 3). Quyết định của nhóm: đơn vị cm/kg theo Spec; Quản lý công ty duyệt phương án;
+trạng thái chuyến theo backend (5 + Đã huỷ, tiến độ kho và lỗi thời là dòng phụ); FE làm trước giao diện demo cho phần backend chưa có.
+- Giai đoạn 1: A — trạng thái + quyền duyệt; B — nền (vai trò Nhà sản xuất, Logistics; kho mock loại kiện, kiện + QR, lô hàng, đơn
+  hàng, quyết định duyệt, lần chạy, loại xe, seal, báo cáo; API + hook; `QrCode`, `QrScanDialog`; 10 route).
+- Giai đoạn 2, bốn worktree song song: C — loại kiện, đăng ký kiện, nhãn QR, lô hàng; D — logistics quét QR nhận hàng, đơn hàng, gán
+  đơn, kiểm tra sẵn sàng tối ưu; E — mục tiêu / thuật toán, lịch sử lần chạy, hàng đợi `/duyet`, Từ chối / Yêu cầu tối ưu lại / Đề xuất
+  trong Planner; F — quét QR khi xếp và dỡ, seal, báo cáo chuyến, danh mục loại xe.
+- Người điều phối: sửa lớp phủ `Dialog` tràn khung 390 px; ghi ngoại lệ khoá Query vào AGENTS mục 9.
+- Kiểm tra trên nhánh gộp: tsc, lint, build sạch; 956/956 unit/DOM; E2E 93/94 — `i18n-en` tablet-1024 hết giờ chờ tối ưu khi chạy cả bộ, chạy riêng 3/3 qua.
+
 ### 27/09/2026 — V2.3 "Cyan kính", đợt 3: Chuyến hàng (LM-103); đối chiếu backend
 
 Gộp đợt 2 (PR #3) vào `developer`, tách `feat/v2-3-chuyen`. Phần dùng chung làm trước (`PageHero` có đường dẫn và chip cạnh tiêu đề,

@@ -15,7 +15,7 @@ export type PackageChangeField = (typeof PACKAGE_CHANGE_FIELDS)[number]
 type Params = Record<string, string | number>
 
 /**
- * Tham số "trước → sau" của sự kiện `trip.updated` (V2.3, quyết định 2): nhật ký và banner "Cần xem lại" nói **cái gì** đã đổi.
+ * Tham số "trước → sau" của sự kiện `trip.updated` (V2.3, quyết định 2): nhật ký và banner lỗi thời nói **cái gì** đã đổi.
  * Chỉ ghi khi lần sửa đổi đúng một giá trị — một trường đơn của chuyến (`before`, `after`), hoặc một trường của một dòng kiện
  * (`packageId`, `field`, `before`, `after`). Sửa nhiều chỗ một lúc thì chỉ còn tham số `fields` như trước. Không ghi câu hiển thị.
  */

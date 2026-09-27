@@ -32,7 +32,7 @@ function obstacleHits(page: Page) {
 }
 
 test('obstacles add a fixed two draw calls whether there are 1 or 20 of them, and none without obstacles', async ({ page, login, browserErrors }, testInfo) => {
-  await login(route())
+  await login(route(), 'manager')
   const drawCalls: Record<string, number> = { none: await restingDrawCalls(page) }
   expect(await hasSceneObject(page, 'vehicle-obstacles')).toBe(false)
   for (const count of [0, 1, 20] as const) {
@@ -49,7 +49,7 @@ test('obstacles add a fixed two draw calls whether there are 1 or 20 of them, an
 })
 
 test('clicking the Spec wheel arch shows its type, corner, size in cm and load bearing; edit mode never raycasts it', async ({ page, login, browserErrors }) => {
-  await login(route(1))
+  await login(route(1), 'manager')
   await waitIdle(page)
   await renderCameraChange(page, () => cameraPreset(page, 'Trên'))
   const point = await instancePoint(page, 0, 'obstacle-body')

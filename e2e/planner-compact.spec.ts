@@ -9,7 +9,8 @@ import { enterEdit, selectPlacement, SOURCE_MODULES } from './viewer-helpers'
  */
 test.use({ collectConsoleErrors: true })
 
-const APPROVED_AT = /Đã duyệt lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
+/** "Duyệt bởi <tên> lúc …" khi kho biết người duyệt (LM-104), "Đã duyệt lúc …" khi không. */
+const APPROVED_AT = /(Đã duyệt|Duyệt bởi .+) lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true })
 const header = (page: Page) => page.locator('header').first()
 
@@ -73,7 +74,7 @@ async function nudgeOnePackage(page: Page) {
 
 test('an approved plan shows when it was approved; one edited package turns it into "Duyệt bản chỉnh"', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
-  await login(PLANNER_ROUTE)
+  await login(PLANNER_ROUTE, 'manager')
   await page.locator('canvas').waitFor()
 
   await expect(header(page)).toContainText(APPROVED_AT)
@@ -110,6 +111,29 @@ test('an approved plan shows when it was approved; one edited package turns it i
   expect(browserErrors).toStrictEqual([])
 })
 
+test('a plan awaiting approval keeps Approve and the other decisions on one row: Reject joins the menu below 1,680 px (LM-104)', async ({ page, login, browserErrors }, testInfo) => {
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await login('/duyet', 'manager')
+  await page.getByRole('link', { name: 'Xem và duyệt phương án của TRIP-012', exact: true }).click()
+  await page.locator('canvas').waitFor()
+
+  await expect(button(page, 'Duyệt phương án')).toBeVisible()
+  await expect(button(page, 'Quyết định khác')).toBeVisible()
+  await expect(button(page, 'Từ chối')).toBeHidden()
+  await expectOneRow(page, 1366)
+  await attachScreenshot(page, testInfo, 'planner-pending-1366')
+  await button(page, 'Quyết định khác').click()
+  await expect(page.getByRole('menuitem')).toHaveText(['Từ chối', 'Yêu cầu tối ưu lại', 'Đề xuất đổi xe / tách chuyến'])
+  await page.keyboard.press('Escape')
+  await expectOneRow(page, 1600)
+  await expectOneRow(page, 1760)
+  await expect(button(page, 'Từ chối')).toBeVisible()
+  await button(page, 'Quyết định khác').click()
+  await expect(page.getByRole('menuitem', { name: 'Từ chối', exact: true })).toBeHidden()
+  await page.keyboard.press('Escape')
+  expect(browserErrors).toStrictEqual([])
+})
+
 test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
   await login('/chuyen/TRIP-011/phuong-an')
@@ -126,19 +150,19 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
   expect(browserErrors).toStrictEqual([])
 })
 
-test('tablet keeps two 56 px control rows; the manager reads the plan with one reason and no actions', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
-  await login(PLANNER_ROUTE, 'manager')
+test('tablet keeps two 56 px control rows; the dispatcher reads the approved plan with one reason and no actions (LM-104)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
+  await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()
   expect((await toolbar.getByRole('combobox', { name: 'Góc nhìn', exact: true }).boundingBox())!.height).toBe(56)
   expect((await header(page).boundingBox())!.height).toBe(56)
   await expect(page.getByRole('status').filter({ hasText: 'Chỉ xem' }))
-    .toHaveText('Chỉ xem: tài khoản của bạn không chỉnh sửa hay duyệt phương án.')
+    .toHaveText('Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.')
   for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }
   expect(await headerOverflow(page), 'tablet header').toStrictEqual([])
-  await attachScreenshot(page, testInfo, 'planner-manager-tablet')
+  await attachScreenshot(page, testInfo, 'planner-dispatcher-tablet')
   expect(browserErrors).toStrictEqual([])
 })

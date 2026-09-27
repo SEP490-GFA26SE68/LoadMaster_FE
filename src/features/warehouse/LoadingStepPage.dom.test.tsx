@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { expect, test, vi } from 'vitest'
@@ -115,9 +115,51 @@ test('two-carton trip: cm measures of step 1, then missing, then the last confir
   expect((await db.getTrip(trip.id)).phase).toBe('loaded')
 }, 20_000)
 
+test('QR scan (LM-104): a wrong package is explained and not recorded; the right ones load; the seal is recorded when finished', async () => {
+  const { db, trip } = await approvedTwoCartonTrip()
+  const token = Object.fromEntries((await db.listTripLabels(trip.id)).map((label) => [label.packageInstanceId, label.qrToken]))
+  renderWarehouse(`/kho?chuyen=${trip.id}`)
+  await screen.findByRole('heading', { level: 1, name: 'PKG-001-01' }, LOAD)
+
+  async function scan(value: string) {
+    const dialog = screen.getByRole('dialog')
+    const input = within(dialog).getByRole('textbox', { name: 'Nhập mã' })
+    await userEvent.clear(input)
+    await userEvent.type(input, value)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận mã' }))
+  }
+
+  await userEvent.click(screen.getByRole('button', { name: 'Quét QR kiện' }))
+  expect(screen.getByRole('dialog', { name: 'Quét QR kiện bước 1' })).toHaveTextContent('Bước này cần kiện PKG-001-01 · Carton A')
+  await scan(token['PKG-002-01'] ?? '')
+  expect(await within(screen.getByRole('dialog')).findByRole('alert', {}, LOAD)).toHaveTextContent(
+    'Sai kiện: vừa quét PKG-002-01 (Carton A), bước này cần PKG-001-01 (Carton A). Chưa ghi gì — để kiện này sang bên và quét đúng kiện.',
+  )
+  expect((await db.getTrip(trip.id)).loading?.steps).toStrictEqual([])
+
+  await scan(token['PKG-001-01'] ?? '')
+  expect(await screen.findByText('Đã xếp PKG-001-01', {}, LOAD)).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { level: 1, name: 'PKG-002-01' }, NEXT)).toBeInTheDocument()
+
+  // Lớp phủ "Đã xếp" giữ các nút tới khi hết 1,2 giây
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Quét QR kiện' })).toBeEnabled(), NEXT)
+  await userEvent.click(screen.getByRole('button', { name: 'Quét QR kiện' }))
+  await scan(token['PKG-002-01'] ?? '')
+  expect(await screen.findByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${trip.id}` }, NEXT)).toBeInTheDocument()
+  expect(screen.getByText('Đã xác nhận bằng quét QR 2 kiện')).toBeInTheDocument()
+  // Chưa ghi seal: nút ghi seal là nút chính, lối về danh sách là nút phụ
+  await userEvent.click(screen.getByRole('button', { name: 'Ghi số seal' }))
+  expect(screen.getByText('Nhập số seal trước khi ghi.')).toBeInTheDocument()
+  await userEvent.type(screen.getByRole('textbox', { name: 'Số seal' }), 'SEAL-0915')
+  await userEvent.click(screen.getByRole('button', { name: 'Ghi số seal' }))
+  expect(await screen.findByText(/^Số seal SEAL-0915 · ghi lúc/, {}, LOAD)).toBeInTheDocument()
+  const stored = await db.getTrip(trip.id)
+  expect([stored.phase, stored.loading?.seal?.number, stored.loading?.steps.map((step) => step.via)]).toStrictEqual(['loaded', 'SEAL-0915', ['qr', 'qr']])
+}, 20_000)
+
 test('a stale approved plan does not start: the worker waits for the dispatcher to approve again', async () => {
   renderWarehouse('/kho?chuyen=TRIP-013')
-  expect(await screen.findByText('Chờ điều phối viên duyệt lại', {}, LOAD)).toBeInTheDocument()
+  expect(await screen.findByText('Chờ tối ưu và duyệt lại', {}, LOAD)).toBeInTheDocument()
   expect(screen.getByText(/^Phương án đã duyệt của chuyến TRIP-013 lỗi thời/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Xác nhận đã xếp' })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
@@ -129,7 +171,7 @@ test('no approved plan, a cancelled trip or an unknown trip: say why, with the w
   const { trip } = await optimizedTwoCartonTrip(db)
   const view = renderWarehouse(`/kho?chuyen=${trip.id}`)
   expect(await screen.findByText('Chưa có phương án đã duyệt', {}, LOAD)).toBeInTheDocument()
-  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Điều phối viên cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
+  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Quản lý công ty cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
   view.unmount()
 

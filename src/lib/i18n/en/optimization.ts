@@ -16,7 +16,22 @@ export const optimization = {
   lifoHint: 'Packages for earlier stops sit nearer the door so they come out first.',
   lowCenterHint: 'The center of mass of the loaded cargo, not of the whole vehicle.',
   advancedTitle: 'Advanced settings',
-  advancedHint: 'Method, time limit and random seed.',
+  advancedHint: 'Objective, algorithm, time limit and random seed.',
+  objectiveHints: {
+    MAX_VOLUME: 'Fit as much cargo as possible into the cargo space.',
+    AXLE_BALANCE: 'Spread the weight evenly over the axles.',
+  },
+  algorithmHints: {
+    EP_DBLF: 'Places each package at the deepest, lowest, leftmost free point; fast.',
+    GENETIC_ALGORITHM: 'Tries many loading orders and keeps the best plan; takes longer.',
+  },
+  runChoiceNote: 'Demo build: the plan comes from the simulated optimizer and carries MOCK RESULT. The objective and algorithm are saved with the run.',
+  decision: {
+    rerun: 'Run again with new settings, or change the vehicle or cargo first.',
+  },
+  history: {
+    description: 'Every run of this trip, including runs without a result.',
+  },
   limits: {
     eyebrow: 'Before loading',
     title: 'Two separate limits',
@@ -26,7 +41,7 @@ export const optimization = {
     note: 'Free space does not guarantee every package fits — only the geometric result decides.',
   },
   afterTitle: 'After the run',
-  afterSteps: 'Open the plan → check unplaced packages and warnings → approve so the warehouse can load.',
+  afterSteps: 'Open the plan → check unplaced packages and warnings → the company manager approves it so the warehouse can load.',
   method: 'Method',
   methodUnavailable: 'Not in the MVP: only the mock optimizer runs.',
   methods: {

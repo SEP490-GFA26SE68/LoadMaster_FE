@@ -35,7 +35,7 @@ export type StaleReason = {
 const INPUT_FIELDS = new Set(['vehicleId', 'packages'])
 
 /**
- * Vì sao chuyến "Cần xem lại": bản duyệt mới nhất lỗi thời trong pha lập kế hoạch, kèm lần sửa xe/kiện mới nhất sau lúc duyệt.
+ * Vì sao phương án của chuyến lỗi thời: bản duyệt mới nhất lỗi thời trong pha lập kế hoạch, kèm lần sửa xe/kiện mới nhất sau lúc duyệt.
  * `events` là nhật ký của chuyến, mới nhất trước (`listEvents`). Không lỗi thời thì `null`.
  */
 export function staleReason(

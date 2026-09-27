@@ -35,6 +35,22 @@ test('an approved plan without edits says when it was approved and has no Approv
   expect(screen.getByRole('link', { name: 'So sánh phương án' })).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/so-sanh')
 })
 
+test('when the store knows who approved, the label names them (LM-104)', () => {
+  const onApprove = vi.fn()
+  render(
+    <I18nProvider>
+      <TooltipProvider>
+        <MemoryRouter>
+          <PlannerActions tripId="TRIP-2026-0914" access={plannerAccess({ canApprove: false, approvedAt: APPROVED_AT, hasEdits: false })}
+            blockedReason={null} onApprove={onApprove} approvedBy="Trần Thị Mai" />
+        </MemoryRouter>
+      </TooltipProvider>
+    </I18nProvider>,
+  )
+  expect(screen.getByText('Duyệt bởi Trần Thị Mai lúc')).toBeInTheDocument()
+  expect(screen.getByText('09:15 14/09')).toBeInTheDocument()
+})
+
 test('edits turn the primary action into "Duyệt bản chỉnh"', async () => {
   const { onApprove, user } = renderActions(plannerAccess({ canApprove: true, approvedAt: APPROVED_AT, hasEdits: true }))
   expect(screen.queryByText('Đã duyệt lúc')).toBeNull()

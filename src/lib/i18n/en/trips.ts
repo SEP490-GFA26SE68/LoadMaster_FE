@@ -27,7 +27,7 @@ export const trips = {
     unassignedDriver: 'No driver assigned',
     stats: {
       total: { one: 'trip', other: 'trips' },
-      active: 'in progress',
+      transit: 'in transit',
       review: 'need your action',
     },
     tabs: {
@@ -35,7 +35,7 @@ export const trips = {
       all: 'All',
       review: 'Needs action',
       upcoming: 'Upcoming',
-      active: 'In progress',
+      transit: 'In transit',
       completed: 'Completed',
       cancelled: 'Cancelled',
     },
@@ -198,7 +198,7 @@ export const trips = {
     readOnly: 'Read-only',
     stale: {
       title: 'Plan {revision} is out of date: the vehicle or packages changed after it was optimized.',
-      body: 'The warehouse can load only after a dispatcher approves again.',
+      body: 'The warehouse can load only after the dispatcher optimizes again and the company manager approves.',
       editedAt: 'Edited at {time} {date}',
       fields: 'Changed: {fields}',
       change: 'from {before} to {after}',
@@ -411,8 +411,8 @@ export const trips = {
     minSupportRatioHint: 'Between 0 and 1.',
     code: 'Package',
     staleLead: 'Saving changes makes {revision} outdated.',
-    staleApproved: 'The trip moves to Needs review and must be approved again before the warehouse loads it.',
-    staleOptimized: 'The trip moves to Needs review and must be optimized again.',
+    staleApproved: 'The trip goes back to Optimized and must be optimized again and approved by the company manager before the warehouse loads it.',
+    staleOptimized: 'The plan becomes outdated and must be optimized again.',
     save: 'Save package',
     saveAndNew: 'Save and add another',
     duplicate: 'Duplicate',

@@ -8,6 +8,13 @@ export const nav = {
   fleet: 'Đội xe',
   users: 'Người dùng',
   audit: 'Nhật ký',
+  // Review 1 (LM-104): nhà sản xuất, logistics, điều phối (đơn hàng), quản lý (chờ duyệt)
+  packageTypes: 'Loại kiện',
+  packages: 'Kiện hàng',
+  shipments: 'Lô hàng',
+  receiving: 'Nhận hàng',
+  orders: 'Đơn hàng',
+  review: 'Chờ duyệt',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

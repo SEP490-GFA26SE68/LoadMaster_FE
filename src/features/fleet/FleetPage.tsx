@@ -1,4 +1,4 @@
-import { Plus, RotateCcw } from 'lucide-react'
+import { Container, Plus, RotateCcw } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable } from '@/components/DataTable'
@@ -53,14 +53,25 @@ export function FleetPage() {
         title={t('fleet.title')}
         meta={vehiclesQuery.isSuccess ? t('fleet.count', { count: vehicles.length }) : undefined}
         description={t('pageHero.fleet')}
-        actions={vehicles.length > 0 && canEdit ? (
-          <Button variant="primary" asChild>
-            <Link to="/doi-xe/moi">
-              <Plus strokeWidth={1.5} />
-              {t('fleet.add')}
-            </Link>
-          </Button>
-        ) : null}
+        actions={
+          <>
+            {/* Review 1 (LM-104): danh mục loại xe nằm dưới Đội xe, không thêm mục vào thanh điều hướng */}
+            <Button variant="glass" asChild>
+              <Link to="/doi-xe/loai-xe">
+                <Container strokeWidth={1.5} />
+                {t('vehicleTypes.title')}
+              </Link>
+            </Button>
+            {vehicles.length > 0 && canEdit ? (
+              <Button variant="primary" asChild>
+                <Link to="/doi-xe/moi">
+                  <Plus strokeWidth={1.5} />
+                  {t('fleet.add')}
+                </Link>
+              </Button>
+            ) : null}
+          </>
+        }
       />
 
       <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">

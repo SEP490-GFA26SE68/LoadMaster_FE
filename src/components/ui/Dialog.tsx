@@ -22,7 +22,7 @@ export function DialogContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
         className={cn(
-          'fixed inset-0 z-300 grid place-items-center overflow-y-auto p-6',
+          'fixed inset-0 z-300 grid grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto p-6',
           'bg-scrim',
           'data-[state=open]:animate-[lm-fade-in_220ms_var(--ease-standard)]',
         )}

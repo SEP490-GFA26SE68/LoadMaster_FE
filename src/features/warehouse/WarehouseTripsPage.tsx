@@ -53,7 +53,7 @@ function TripList() {
     return <EmptyState className={TOUCH_EMPTY} title={t('warehouse.list.emptyTitle')} description={t('warehouse.list.emptyDescription')} />
   }
   // Một nút primary mỗi màn (mục 5): chuyến nên làm trước — đang xếp dở, không thì chuyến chờ xếp sớm nhất
-  const primaryId = query.data.find((row) => row.status !== 'can_xem_lai')?.id
+  const primaryId = query.data.find((row) => row.stage !== 'stale')?.id
   return (
     <ul aria-label={t('warehouse.list.title')} className="m-0 flex list-none flex-col gap-3 p-0">
       {query.data.map((row) => <WarehouseTripCard key={row.id} row={row} primary={row.id === primaryId} />)}

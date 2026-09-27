@@ -12,7 +12,7 @@ import { WarehouseEmpty } from './WarehouseEmpty'
 /**
  * Phiên xếp chuyến `/kho?chuyen=<mã>` (LM-086). Theo pha và revision của chuyến trong kho: vào lần đầu là bắt đầu xếp theo bản duyệt
  * mới nhất; đang xếp thì tiếp tục ở kiện chưa ghi đầu tiên; đã xếp xong thì ra màn Xếp xong. Bản duyệt lỗi thời không bắt đầu được —
- * chờ điều phối viên duyệt lại (D-31); chưa có bản duyệt hoặc chuyến đã huỷ thì nói rõ, có lối về danh sách.
+ * chờ tối ưu lại và quản lý công ty duyệt (D-31); chưa có bản duyệt hoặc chuyến đã huỷ thì nói rõ, có lối về danh sách.
  */
 export function LoadingStepPage({ tripId }: { tripId: string }) {
   const t = useT()

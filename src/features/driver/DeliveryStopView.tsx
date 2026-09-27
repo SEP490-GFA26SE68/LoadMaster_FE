@@ -1,5 +1,6 @@
-import { ArrowRight, TriangleAlert } from 'lucide-react'
+import { ArrowRight, ScanLine, TriangleAlert } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
+import { QrScanDialog } from '@/components/QrScanDialog'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -14,6 +15,7 @@ import { DriverStopHeader } from './DriverStopHeader'
 import { ReportIssueDialog } from './ReportIssueDialog'
 import { StopContactCard } from './StopContactCard'
 import { useDeliveryStop } from './useDeliveryStop'
+import { useUnloadScan } from './useUnloadScan'
 
 const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoViewer').then((m) => ({ default: m.DriverCargoViewer })))
 
@@ -24,6 +26,9 @@ const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoView
  *
  * Lệch có chủ ý khỏi design: nút chỉ đường trong design màu primary — mỗi màn chỉ một nút primary (mục 5) nên đổi sang secondary;
  * nhãn nút chính viết hoa trong design — mục 5 cấm; bỏ thanh tab đáy vì các tab khác chưa có màn (LM-053, D-20).
+ *
+ * Review 1 (LM-104): khi đang giao có nút phụ "Quét QR dỡ" — quét nhãn từng kiện của điểm này để ghi đã dỡ; kiện của điểm khác được
+ * giải thích và không ghi. Đánh dấu tay từng dòng vẫn giữ; dòng dỡ bằng quét QR ghi rõ "quét QR".
  */
 export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
@@ -33,6 +38,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
   const stops = useMemo(() => stopDeliveries(tripStops, model), [tripStops, model])
   const view = deliveryView(trip, stops)
   const actions = useDeliveryStop(trip.id, view, stops.length)
+  const scan = useUnloadScan(trip.id, view, stops)
   const [cargoOpen, setCargoOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
   // Kiện không còn trên xe với khung 3D: đã dỡ ở mọi điểm, và kiện kho báo thiếu (chưa từng lên xe)
@@ -44,6 +50,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
   // Chuyến không có điểm giao nào: vẫn giữ lối về danh sách (mục 10)
   if (!view) return <DriverNotice title={t('driver.noItems')} description="" />
 
+  const qrIds = new Set(delivery?.stops.find((stop) => stop.number === view.stop.number)?.qrConfirmedIds)
   const handled = view.items.length - view.remaining
   const percent = view.items.length === 0 ? 100 : Math.round((handled / view.items.length) * 100)
 
@@ -74,6 +81,12 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
           </div>
 
           <div className="flex flex-none flex-wrap gap-2 *:grow">
+            {view.mode === 'delivering' && view.remaining > 0 ? (
+              <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
+                <ScanLine strokeWidth={2} />
+                {t('driver.scan.open')}
+              </Button>
+            ) : null}
             <DialogTrigger asChild><Button variant="secondary" size="touch">{t('driver.viewCargo')}</Button></DialogTrigger>
             {view.mode === 'delivering' && view.items.length > 0 ? (
               <Button variant="secondary" size="touch" onClick={() => setIssueOpen(true)}>
@@ -90,6 +103,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
                   key={item.id}
                   item={item}
                   done={unloaded}
+                  viaQr={qrIds.has(item.id)}
                   issueLabel={issue ? t(`common.deliveryIssueKinds.${issue.kind}`) : undefined}
                   readOnly={view.mode !== 'delivering'}
                   onToggle={actions.toggle}
@@ -152,6 +166,22 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
           if (await actions.reportIssue(values)) setIssueOpen(false)
         }}
       />
+
+      {view.mode === 'delivering' ? (
+        <QrScanDialog
+          open={scan.open}
+          onOpenChange={scan.setOpen}
+          title={t('driver.scan.title', { number: view.stop.number })}
+          description={[
+            t('driver.scan.description', { number: view.stop.number, done: view.unloadedCount, total: view.items.length }),
+            scan.last ? t('driver.scan.lastUnloaded', { id: scan.last, name: scan.lastName ?? '' }) : '',
+          ].join(' ').trim()}
+          onScan={scan.handleScan}
+          options={scan.options}
+          error={scan.error}
+          pending={scan.pending}
+        />
+      ) : null}
     </Dialog>
   )
 }

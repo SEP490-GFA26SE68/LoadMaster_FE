@@ -3,18 +3,33 @@ import { matchesQuery, normalizeSearchText } from '@/lib/list-filter'
 import type { Role } from '@/types/user'
 
 /**
- * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng. Hàm thuần: `search-api.ts` đọc kho, màn gọi `searchSources` mỗi lần
+ * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng; thêm cho Review 1 (LM-104): kiện đã đăng ký, loại kiện, lô hàng
+ * (nhà sản xuất), lô đang đến (logistics), đơn hàng. Hàm thuần: `search-api.ts` đọc kho, màn gọi `searchSources` mỗi lần
  * gõ. Tìm không phân biệt dấu và hoa thường, mọi từ phải có (`matchesQuery` của danh sách, LM-085).
  */
-export const SEARCH_GROUPS = ['trips', 'packages', 'vehicles', 'users'] as const
+export const SEARCH_GROUPS = ['trips', 'packages', 'orders', 'registered', 'shipments', 'packageTypes', 'incoming', 'vehicles', 'users'] as const
 export type SearchGroup = (typeof SEARCH_GROUPS)[number]
 
 /** Quyền để thấy một nhóm — trùng quyền mở màn đích. Kiện mở trong chi tiết chuyến nên theo quyền xem chuyến. */
 export const GROUP_PERMISSION: Readonly<Record<SearchGroup, Permission>> = {
   trips: 'trips.view',
   packages: 'trips.view',
+  orders: 'orders.view',
+  registered: 'packages.register',
+  shipments: 'shipments.manage',
+  packageTypes: 'packages.register',
+  incoming: 'receiving.operate',
   vehicles: 'fleet.view',
   users: 'users.manage',
+}
+
+/**
+ * Nhóm người đăng nhập được tìm, theo thứ tự hiện. Có cả lô hàng lẫn lô đang đến (quản trị) thì chỉ giữ lô hàng — cùng một lô, màn chi
+ * tiết lô nói đủ hơn.
+ */
+export function searchGroupsFor(can: (permission: Permission) => boolean): SearchGroup[] {
+  const groups = SEARCH_GROUPS.filter((group) => can(GROUP_PERMISSION[group]))
+  return groups.includes('shipments') ? groups.filter((group) => group !== 'incoming') : groups
 }
 
 export const RESULTS_PER_GROUP = 8
@@ -30,6 +45,12 @@ export type SearchSources = {
   }[]
   readonly vehicles: readonly { readonly id: string; readonly name: string }[]
   readonly users: readonly { readonly id: string; readonly fullName: string; readonly email: string; readonly role: Role }[]
+  readonly orders: readonly { readonly id: string; readonly customerName: string; readonly deliveryAddress: string }[]
+  /** Kiện nhà sản xuất đã đăng ký: mã, mã lô / SKU, mã QR, tên loại. */
+  readonly registered: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
+  /** Lô hàng kèm tên hai công ty: nhà sản xuất tìm theo công ty logistics nhận, logistics tìm theo nhà sản xuất gửi. */
+  readonly shipments: readonly { readonly id: string; readonly manufacturer: string; readonly logistics: string }[]
+  readonly packageTypes: readonly { readonly id: string; readonly name: string }[]
 }
 
 type ResultBase = { readonly key: string; readonly href: string; readonly id: string }
@@ -39,6 +60,10 @@ export type SearchResult =
   | (ResultBase & { readonly group: 'packages'; readonly tripId: string; readonly tripName: string })
   | (ResultBase & { readonly group: 'vehicles'; readonly name: string })
   | (ResultBase & { readonly group: 'users'; readonly name: string; readonly email: string; readonly role: Role })
+  | (ResultBase & { readonly group: 'orders'; readonly name: string; readonly detail: string })
+  | (ResultBase & { readonly group: 'registered'; readonly name: string; readonly reference?: string })
+  | (ResultBase & { readonly group: 'shipments' | 'incoming'; readonly name: string })
+  | (ResultBase & { readonly group: 'packageTypes'; readonly name: string })
 
 export type SearchResultGroup = { readonly group: SearchGroup; readonly results: readonly SearchResult[] }
 
@@ -51,6 +76,8 @@ const path = (value: string) => encodeURIComponent(value)
  * - Kiện: mã kiện gốc → chi tiết chuyến mở đúng kiện (`?kien=`, LM-047).
  * - Xe: mã, tên (tên xe gồm biển số) → chi tiết xe.
  * - Người dùng: họ tên, email, mã → danh sách người dùng lọc đúng mã.
+ * - Đơn hàng: mã, khách, địa chỉ → danh sách đơn lọc đúng mã. Kiện đã đăng ký: mã, mã lô / SKU, mã QR, tên loại → danh sách kiện lọc
+ *   đúng mã. Loại kiện: mã, tên → danh sách loại lọc đúng mã. Lô hàng: mã, công ty → chi tiết lô; lô đang đến → màn nhận hàng.
  */
 export function searchSources(sources: SearchSources, query: string, groups: readonly SearchGroup[]): SearchResultGroup[] {
   if (normalizeSearchText(query) === '') return []
@@ -79,6 +106,32 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
           group: 'users', key: `user:${user.id}`, href: `/nguoi-dung?q=${path(user.id)}`,
           id: user.id, name: user.fullName, email: user.email, role: user.role,
         })),
+    orders: () =>
+      sources.orders
+        .filter((order) => matchesQuery([order.id, order.customerName, order.deliveryAddress], query))
+        .map((order) => ({
+          group: 'orders', key: `order:${order.id}`, href: `/don-hang?q=${path(order.id)}`,
+          id: order.id, name: order.customerName, detail: order.deliveryAddress,
+        })),
+    registered: () =>
+      sources.registered
+        .filter((pkg) => matchesQuery([pkg.id, pkg.reference ?? '', pkg.qrToken, pkg.typeName], query))
+        .map((pkg) => ({
+          group: 'registered', key: `registered:${pkg.id}`, href: `/kien-hang?q=${path(pkg.id)}`,
+          id: pkg.id, name: pkg.typeName, reference: pkg.reference,
+        })),
+    shipments: () =>
+      sources.shipments
+        .filter((shipment) => matchesQuery([shipment.id, shipment.logistics], query))
+        .map((shipment) => ({ group: 'shipments', key: `shipment:${shipment.id}`, href: `/lo-hang/${path(shipment.id)}`, id: shipment.id, name: shipment.logistics })),
+    packageTypes: () =>
+      sources.packageTypes
+        .filter((type) => matchesQuery([type.id, type.name], query))
+        .map((type) => ({ group: 'packageTypes', key: `package-type:${type.id}`, href: `/loai-kien?q=${path(type.id)}`, id: type.id, name: type.name })),
+    incoming: () =>
+      sources.shipments
+        .filter((shipment) => matchesQuery([shipment.id, shipment.manufacturer], query))
+        .map((shipment) => ({ group: 'incoming', key: `incoming:${shipment.id}`, href: '/nhan-hang', id: shipment.id, name: shipment.manufacturer })),
   }
   return groups
     .map((group) => ({ group, results: matchers[group]().slice(0, RESULTS_PER_GROUP) }))

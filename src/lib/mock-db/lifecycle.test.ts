@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { createMockDb, tripStatus, type MockDb } from '@/lib/mock-db'
+import { createMockDb, tripStatus, tripSubStatus, type MockDb } from '@/lib/mock-db'
 import { twoCartonTrip } from '@/test/mock-db-samples'
 
 /** Kho neo 14/09 với phiên của nhân viên kho demo — sự kiện ghi người làm là phiên. */
@@ -30,7 +30,8 @@ test('the warehouse starts loading the latest approved plan, records each packag
   const [completed, missing] = await db.listEvents({ targetId: 'TRIP-2026-0914' })
   expect([completed?.action, completed?.params, completed?.actorId]).toStrictEqual(['loading.completed', { loaded: 131, missing: 1 }, 'US-0003'])
   expect([missing?.action, missing?.params]).toStrictEqual(['loading.missing', { packageInstanceId: ids[0] }])
-  expect(tripStatus(loaded, await db.listRevisions(loaded.id))).toBe('da_xep_xong')
+  const revisions = await db.listRevisions(loaded.id)
+  expect([tripStatus(loaded, revisions), tripSubStatus(loaded, revisions)]).toStrictEqual(['da_duyet', { kind: 'loaded' }])
 })
 
 test('once loading starts, vehicle, stops and packages are locked; name, date and driver can still change (D-45)', async () => {
@@ -132,14 +133,31 @@ test('only an active driver can be assigned to a trip', async () => {
   expect((await db.updateTrip('TRIP-012', { driverId: 'US-0006' })).driverId).toBe('US-0006')
 })
 
-test('trip status: operation phases first, then the planning status from the revisions', () => {
+test('trip status follows the backend (LM-104): warehouse phases stay approved, a stale plan is optimized again', () => {
   const approved = { approvedAt: '2026-09-14T02:00:00.000Z', inputVersion: 1 }
   const planning = { phase: 'planning' as const, inputVersion: 1 }
   expect(tripStatus(planning, [])).toBe('nhap')
   expect(tripStatus(planning, [{ inputVersion: 1 }])).toBe('da_toi_uu')
   expect(tripStatus(planning, [{ inputVersion: 1 }, approved])).toBe('da_duyet')
-  expect(tripStatus({ ...planning, inputVersion: 2 }, [approved])).toBe('can_xem_lai')
-  expect(tripStatus({ phase: 'loading', inputVersion: 1 }, [approved])).toBe('dang_xep_hang')
-  expect(tripStatus({ phase: 'delivering', inputVersion: 1 }, [approved])).toBe('dang_giao')
+  expect(tripStatus({ ...planning, inputVersion: 2 }, [approved])).toBe('da_toi_uu')
+  expect(tripStatus({ phase: 'loading', inputVersion: 1 }, [approved])).toBe('da_duyet')
+  expect(tripStatus({ phase: 'loaded', inputVersion: 1 }, [approved])).toBe('da_duyet')
+  expect(tripStatus({ phase: 'delivering', inputVersion: 1 }, [approved])).toBe('dang_van_chuyen')
   expect(tripStatus({ phase: 'completed', inputVersion: 1 }, [approved])).toBe('hoan_thanh')
+  expect(tripStatus({ phase: 'cancelled', inputVersion: 1 }, [approved])).toBe('da_huy')
+})
+
+test('secondary line (LM-104): stale plan while planning, warehouse progress against the plan loading started with, fully loaded', async () => {
+  const db = createMockDb()
+  const trips = await db.listTrips()
+  const lineOf = async (id: string) => {
+    const trip = trips.find((item) => item.id === id)
+    if (!trip) throw new Error(id)
+    return tripSubStatus(trip, await db.listRevisions(id))
+  }
+  // seed-trips.ts: TRIP-011 kho đã ghi 110 / 280 kiện; TRIP-010 đã xếp xong; TRIP-013 sửa số lượng sau khi duyệt
+  expect(await lineOf('TRIP-011')).toStrictEqual({ kind: 'loading', recorded: 110, total: 280 })
+  expect(await lineOf('TRIP-010')).toStrictEqual({ kind: 'loaded' })
+  expect(await lineOf('TRIP-013')).toStrictEqual({ kind: 'stale' })
+  for (const id of ['TRIP-2026-0914', 'TRIP-012', 'TRIP-014', 'TRIP-009', 'TRIP-001', 'TRIP-004']) expect(await lineOf(id)).toBeNull()
 })

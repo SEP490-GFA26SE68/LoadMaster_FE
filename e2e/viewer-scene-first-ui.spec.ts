@@ -25,7 +25,7 @@ function shooter(page: Page, testInfo: TestInfo) {
 
 test('planner defaults to the scene; follow step, stop focus, unloading advisory and centre of mass', async ({ page, login, browserErrors }, testInfo) => {
   const { shot, scenes } = shooter(page, testInfo)
-  await login(`${PLANNER_ROUTE}?debug&quality=balanced`); await settle(page)
+  await login(`${PLANNER_ROUTE}?debug&quality=balanced`, 'manager'); await settle(page)
   expect(await page.getByRole('dialog').count()).toBe(0)
   expect((await page.locator('canvas').boundingBox())!.width).toBeGreaterThanOrEqual(1580)
   expect(await hasSceneObject(page, 'stop-distribution')).toBe(false)
@@ -82,7 +82,7 @@ test('hover and double-click focus keep the view; editor shows valid snap and ov
   // Mọi lần đọc tư thế camera hoặc chiếu điểm 3D ra màn hình đều chờ thêm camera đứng yên thật:
   // `settle` có thể thoát giữa lúc camera đang chuyển khi một frame SwiftShader chậm quá 250 ms
   // (overlay báo nghỉ trong khi R3F còn frame chờ vẽ); bản `.mjs` trượt phép so hướng 1/3 lần chạy.
-  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=balanced`); await settle(page)
+  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=balanced`, 'manager'); await settle(page)
   await cameraPreset(page, 'Trên'); await settle(page); await waitCameraSettled(page)
   const point = await instancePoint(page, 999), cameraBefore = await sceneSnapshot(page)
   await page.mouse.move(point.x, point.y); await page.waitForTimeout(200)
@@ -112,9 +112,9 @@ test('hover and double-click focus keep the view; editor shows valid snap and ov
 })
 
 /** Timeline giữ ô đều nhau (≤ 64 ô) và nhãn neo 3D không tràn khỏi canvas ở khổ hẹp. */
-async function checkPlannerLayout(page: Page, login: (route: string) => Promise<void>, testInfo: TestInfo) {
+async function checkPlannerLayout(page: Page, login: (route: string, role?: 'manager') => Promise<void>, testInfo: TestInfo) {
   const { shot, scenes } = shooter(page, testInfo)
-  await login(`${PLANNER_ROUTE}?debug&quality=balanced`); await settle(page)
+  await login(`${PLANNER_ROUTE}?debug&quality=balanced`, 'manager'); await settle(page)
   await page.getByRole('slider', { name: 'Bước xếp', exact: true }).fill('47')
   const cells = page.locator('[data-sequence-cell]')
   expect(await cells.count()).toBeLessThanOrEqual(64)

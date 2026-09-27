@@ -1,4 +1,20 @@
-import { Boxes, ClipboardCheck, KeyRound, MapPin, Package, Route, Truck, UserRound, type LucideIcon } from 'lucide-react'
+import {
+  Boxes,
+  ClipboardCheck,
+  ClipboardList,
+  Container,
+  Gavel,
+  KeyRound,
+  MapPin,
+  Package,
+  PackageCheck,
+  QrCode,
+  Route,
+  Shapes,
+  Truck,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react'
 import type { KpiTone } from '@/components/KpiTile'
 import { auditGroup, type AuditAction, type AuditGroup } from '@/lib/mock-db'
 
@@ -12,6 +28,12 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   loading: Package,
   delivery: MapPin,
   user: UserRound,
+  packageType: Shapes,
+  package: QrCode,
+  shipment: PackageCheck,
+  order: ClipboardList,
+  review: Gavel,
+  vehicleType: Container,
 }
 
 /**
@@ -48,6 +70,29 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'user.passwordReset': 'slate',
   'user.passwordChanged': 'slate',
   'user.profileUpdated': 'slate',
+  'packageType.created': 'blue',
+  'packageType.updated': 'blue',
+  'packageType.deleted': 'slate',
+  'package.registered': 'blue',
+  'shipment.created': 'blue',
+  'shipment.updated': 'blue',
+  'shipment.deleted': 'slate',
+  'shipment.handedOver': 'blue',
+  'shipment.packageReceived': 'green',
+  'order.created': 'blue',
+  'order.updated': 'blue',
+  'order.cancelled': 'amber',
+  'order.assigned': 'blue',
+  'order.unassigned': 'amber',
+  'review.rejected': 'amber',
+  'review.reoptimizeRequested': 'amber',
+  'review.changeSuggested': 'amber',
+  'optimization.failed': 'amber',
+  'vehicleType.created': 'blue',
+  'vehicleType.updated': 'blue',
+  'vehicleType.deleted': 'slate',
+  'vehicleType.assigned': 'blue',
+  'loading.sealed': 'green',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

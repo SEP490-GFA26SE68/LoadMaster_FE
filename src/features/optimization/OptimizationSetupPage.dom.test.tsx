@@ -29,6 +29,18 @@ test('the seed trip is ready to optimize, and the screen never says "AI"', async
   expect(document.body.textContent ?? '').not.toMatch(/\bAI\b/)
 })
 
+test('the run history lists every run newest first, the failed one with its reason (LM-104)', async () => {
+  renderSetup()
+  const history = within(await screen.findByRole('region', { name: 'Lần chạy tối ưu' }))
+  const rows = await history.findAllByRole('row')
+  expect(rows).toHaveLength(3)
+  expect(rows[1]).toHaveTextContent('RUN-002')
+  expect(rows[1]).toHaveTextContent('Đã duyệt')
+  expect(within(rows[1] as HTMLElement).getByRole('link', { name: 'Mở phương án REV-001 trong Planner' })).toBeInTheDocument()
+  expect(rows[2]).toHaveTextContent('Cân bằng tải trục')
+  expect(rows[2]).toHaveTextContent('Dịch vụ tối ưu không phản hồi')
+})
+
 test('a package with no usable orientation disables Optimize and the summary links to exactly that package', async () => {
   const db = getMockDb()
   const trip = await db.getTrip(TRIP_ID)

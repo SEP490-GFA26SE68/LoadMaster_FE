@@ -42,7 +42,7 @@ async function drag(page: Page, delta: Vector3Tuple, { cancel = false, measure =
 
 test('nudge, history, pin, rotation, reset, focus and pointer drags on 1,000 packages', async ({ page, login, browserErrors }, testInfo) => {
   const status = editorStatus(page)
-  await login(EDITOR_ROUTE)
+  await login(EDITOR_ROUTE, 'manager')
   await waitIdle(page)
   expect((await sceneSnapshot(page)).proxy, 'view mode has no draggable proxy').toBe(undefined)
   await button(page, 'Chỉnh sửa').click()
@@ -122,7 +122,7 @@ test('edit mode keeps a fixed mesh budget from 132 to 1,000 packages', async ({ 
   const benchmarks = []
   for (const count of [132, 300, 500, 1000]) {
     const route = `${PLANNER_ROUTE}?debug&packages=${count}&quality=low`
-    await (count === 132 ? login(route) : page.goto(route))
+    await (count === 132 ? login(route, 'manager') : page.goto(route))
     await waitIdle(page)
     const viewMetrics = await metrics(page)
     await button(page, 'Chỉnh sửa').click()
@@ -145,7 +145,7 @@ test('edit mode keeps a fixed mesh budget from 132 to 1,000 packages', async ({ 
 
 test('touch editing uses 56px controls, a full-width scene and captured touch drags', { tag: ['@tablet', '@phone'] }, async ({ page, login, browserErrors }, testInfo) => {
   const viewport = page.viewportSize()!, status = editorStatus(page)
-  await login(EDITOR_ROUTE)
+  await login(EDITOR_ROUTE, 'manager')
   // Bản `.mjs` so với vị trí đọc ở lượt desktop; trang mới chưa có draft nên đó là vị trí nguồn.
   const initialX = await page.evaluate(async (url) => {
     const { benchmarkScene } = (await import(url)) as typeof import('@/test/scene')

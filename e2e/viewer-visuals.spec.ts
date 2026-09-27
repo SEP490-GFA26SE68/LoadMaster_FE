@@ -53,7 +53,7 @@ function animationFrames(page: Page, kind: 'loading' | 'unloading'): Promise<Ani
 const range = (values: number[]) => Math.max(...values) - Math.min(...values)
 
 test('truck details, loading spring, unloading fade and reduced motion all return to idle', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?debug&quality=high`); await settle(page)
+  await login(`${PLANNER_ROUTE}?debug&quality=high`, 'manager'); await settle(page)
   await cameraPreset(page, 'Trước'); await settle(page)
   const bounds = (await page.locator('canvas').boundingBox())!
   await page.mouse.move(bounds.x + 45, bounds.y + bounds.height / 2)
@@ -86,7 +86,7 @@ test('truck details, loading spring, unloading fade and reduced motion all retur
 })
 
 test('runtime quality monitor downgrades to low under sustained software-renderer load', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?debug&packages=1000`); await settle(page)
+  await login(`${PLANNER_ROUTE}?debug&packages=1000`, 'manager'); await settle(page)
   const adaptation: { initial: string; samples: ViewerMetrics[]; final?: string } = { initial: (await metrics(page)).qualityTier, samples: [] }
   const r = (await page.locator('canvas').boundingBox())!
   await page.mouse.move(r.x + 40, r.y + r.height * 0.5); await page.mouse.down()

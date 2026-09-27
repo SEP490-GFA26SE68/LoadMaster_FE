@@ -20,9 +20,10 @@ test('the manager switches to 7 days and exports a three-sheet report named afte
   const trips = page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })
   await expect(trips).toContainText('7/ 12 chuyến')
   await expect(page.getByRole('figure', { name: 'Lấp đầy theo ngày', exact: true })).toBeVisible()
-  // Hai biểu đồ cột ngang vẽ bằng recharts trong lưới V2: mỗi trạng thái / mỗi xe đã giao một cột
+  // Hai biểu đồ cột ngang vẽ bằng recharts trong lưới V2: mỗi trạng thái / mỗi xe đã giao một cột. LM-104: kỳ 30 ngày có
+  // đã duyệt, đang vận chuyển, hoàn thành, đã huỷ
   await expect(page.getByRole('figure', { name: 'Chuyến theo trạng thái', exact: true }).locator('.recharts-bar-rectangle'))
-    .toHaveCount(6)
+    .toHaveCount(4)
   await expect(page.getByRole('figure', { name: 'Khối lượng đã giao theo xe', exact: true }).locator('.recharts-bar-rectangle').first())
     .toBeVisible()
   // Thẻ đội xe (V2): ba trạng thái với nhãn của màn Đội xe, không theo kỳ; quản lý được xem đội xe nên có lối sang

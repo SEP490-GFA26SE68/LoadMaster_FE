@@ -8,10 +8,12 @@ import { approvedResult } from './revisions'
 import { CARGO, CUSTOMERS } from './seed-directory'
 import { seedDelivery, seedLoading, type SeedEvent } from './seed-progress'
 import { seedTrip } from './seed-trip'
-import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
+import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, SEED_MANAGER, TRIP_SPECS, type TripSpec } from './seed-trips'
 import { SEED_PASSWORD, seedUsers } from './seed-users'
 import { seedVehicles } from './seed-vehicles'
 import { tripChangeParams } from './trip-changes'
+import { seedSourcing, type SourcingSeed } from './seed-sourcing'
+import { DEFAULT_RUN_SETTINGS, type OptimizationRun } from './source-types'
 import type { Revision, Trip } from './types'
 
 export type SeedData = {
@@ -23,7 +25,9 @@ export type SeedData = {
   trips: Trip[]
   revisions: Revision[]
   events: AuditEvent[]
-}
+  /** Lần chạy tối ưu (LM-104): mỗi revision tối ưu một lần chạy xong, cộng một lần hỏng của chuyến chính. */
+  runs: OptimizationRun[]
+} & SourcingSeed
 
 const cache = new Map<string, SeedData>()
 
@@ -45,7 +49,9 @@ function createSeed(today: string): SeedData {
   const vehicleById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]))
   const events: SeedEvent[] = []
   const revisions: Revision[] = []
+  const runs: OptimizationRun[] = []
   const nextRevisionId = () => `REV-${String(revisions.length + 1).padStart(3, '0')}`
+  const nextRunId = () => `RUN-${String(runs.length + 1).padStart(3, '0')}`
 
   /** Một lần tối ưu (và Duyệt) của chuyến: seed ngẫu nhiên cố định, `runtimeMs` = 0 vì không đo lần chạy lúc nạp kho. */
   function plan(trip: Trip, randomSeed: number, times: { optimized: string; approved?: string }): Revision | undefined {
@@ -59,9 +65,14 @@ function createSeed(today: string): SeedData {
     const result = runMockOptimization(request, { clock: () => 0 })
     const optimized: Revision = {
       id: nextRevisionId(), jobId: result.jobId, tripId: trip.id, request, result, inputVersion: trip.inputVersion,
-      createdAt: times.optimized, manuallyEdited: false, ordersRecomputed: false,
+      createdAt: times.optimized, manuallyEdited: false, ordersRecomputed: false, run: { ...DEFAULT_RUN_SETTINGS },
     }
     revisions.push(optimized)
+    runs.push({
+      id: nextRunId(), tripId: trip.id, ...DEFAULT_RUN_SETTINGS, status: 'COMPLETED', at: times.optimized, by: SEED_DISPATCHER,
+      revisionId: optimized.id, jobId: optimized.jobId, placedCount: result.metrics.placedCount, unplacedCount: result.metrics.unplacedCount,
+      volumeUtilizationPercent: result.metrics.volumeUtilizationPercent,
+    })
     const target = { type: 'trip' as const, id: trip.id }
     events.push({ at: times.optimized, actorId: SEED_DISPATCHER, action: 'optimization.saved', target, params: { revisionId: optimized.id, placed: result.metrics.placedCount, unplaced: result.metrics.unplacedCount } })
     if (times.approved === undefined) return undefined
@@ -70,13 +81,17 @@ function createSeed(today: string): SeedData {
       draftPatches: [], approvedAt: times.approved, sourceRevisionId: optimized.id, ordersRecomputed: true,
     }
     revisions.push(approved)
-    events.push({ at: times.approved, actorId: SEED_DISPATCHER, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })
+    events.push({ at: times.approved, actorId: SEED_MANAGER, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })
     return approved
   }
 
   // Chuyến chính: REV-001 tối ưu 08:30, REV-002 duyệt 09:00 ngày neo — giữ đúng mã và thời điểm của seed trước đợt 6
   const hero = seedTrip(today)
   events.push({ at: hero.createdAt, actorId: SEED_DISPATCHER, action: 'trip.created', target: { type: 'trip', id: hero.id }, params: { name: hero.name } })
+  // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu chọn cân bằng tải trục + GA, service không phản hồi; lần sau ra REV-001
+  const failedAt = vnTime(today, '08:20')
+  runs.push({ id: nextRunId(), tripId: hero.id, objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', status: 'FAILED', at: failedAt, by: SEED_DISPATCHER, failureCode: 'SERVICE_UNAVAILABLE' })
+  events.push({ at: failedAt, actorId: SEED_DISPATCHER, action: 'optimization.failed', target: { type: 'trip', id: hero.id }, params: { objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', reasonCode: 'SERVICE_UNAVAILABLE' } })
   plan(hero, 20_260_914, { optimized: vnTime(today, '08:30'), approved: vnTime(today, '09:00') })
   const trips = [hero, ...TRIP_SPECS.map((spec, index) => seedTripFrom(spec, index, today, plan, events))]
 
@@ -86,6 +101,7 @@ function createSeed(today: string): SeedData {
   })
   const users = seedUsers(today)
   events.push(...accountEvents(today, users))
+  const sourcing = seedSourcing(today, events)
 
   return {
     vehicles,
@@ -94,6 +110,8 @@ function createSeed(today: string): SeedData {
     passwords: users.map((user) => [user.id, SEED_PASSWORD]),
     trips,
     revisions,
+    runs,
+    ...sourcing,
     events: events
       .toSorted((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
       .map((event, index) => ({ ...event, id: nextEventId(index), params: event.params ?? {} })),

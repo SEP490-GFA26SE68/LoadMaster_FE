@@ -15,11 +15,11 @@ test('the demo driver sees only their trips: the loaded one to deliver, the main
   // TRIP-010: 80 + 40 + 45 + 45 kiện, 3 điểm, đã xếp xong
   expect(groups.ready).toStrictEqual([{
     id: 'TRIP-010', name: 'Tuyến Thủ Đức – An Phú – Phú Nhuận', scheduledDate: '2026-09-14', vehicleName: 'Isuzu NQR 550 · 51C-284.19',
-    status: 'da_xep_xong', stopCount: 3, packageCount: 210, loadingRecorded: 210, loadingTotal: 210, currentStop: undefined,
+    status: 'da_duyet', sub: { kind: 'loaded' }, stopCount: 3, packageCount: 210, currentStop: undefined,
     completedAt: undefined, issueCount: 0,
   }])
-  expect(groups.preparing.map((row) => [row.id, row.status, row.stopCount, row.packageCount, row.loadingRecorded])).toStrictEqual([
-    ['TRIP-2026-0914', 'da_duyet', 4, 132, 0],
+  expect(groups.preparing.map((row) => [row.id, row.status, row.sub, row.stopCount, row.packageCount])).toStrictEqual([
+    ['TRIP-2026-0914', 'da_duyet', null, 4, 132],
   ])
   // Hoàn thành mới nhất trước: TRIP-007 (7 ngày trước, 1 sự cố khách từ chối) rồi TRIP-002 (24 ngày trước)
   expect(groups.recent.map((row) => [row.id, row.status, row.issueCount])).toStrictEqual([['TRIP-007', 'hoan_thanh', 1], ['TRIP-002', 'hoan_thanh', 0]])
@@ -28,12 +28,12 @@ test('the demo driver sees only their trips: the loaded one to deliver, the main
 test('an admin sees every trip: delivering before loaded, loading before approved, the five latest completed', async () => {
   const groups = await tripsFor(createMockDb(), 'US-0005', 'admin')
   expect(groups.ready.map((row) => [row.id, row.status, row.currentStop])).toStrictEqual([
-    ['TRIP-009', 'dang_giao', 2],
-    ['TRIP-010', 'da_xep_xong', undefined],
+    ['TRIP-009', 'dang_van_chuyen', 2],
+    ['TRIP-010', 'da_duyet', undefined],
   ])
-  expect(groups.preparing.map((row) => [row.id, row.status, row.loadingRecorded, row.loadingTotal])).toStrictEqual([
-    ['TRIP-011', 'dang_xep_hang', 110, 280],
-    ['TRIP-2026-0914', 'da_duyet', 0, 132],
+  expect(groups.preparing.map((row) => [row.id, row.status, row.sub])).toStrictEqual([
+    ['TRIP-011', 'da_duyet', { kind: 'loading', recorded: 110, total: 280 }],
+    ['TRIP-2026-0914', 'da_duyet', null],
   ])
   // Huỷ (TRIP-004), đã tối ưu (TRIP-012), lỗi thời (TRIP-013), nháp (TRIP-014) không hiện; TRIP-003 có 1 kiện kho báo thiếu
   expect(groups.recent.map((row) => [row.id, row.packageCount])).toStrictEqual([

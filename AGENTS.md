@@ -10,7 +10,7 @@ dấu *(đã điều chỉnh)* là chỗ hướng đi ban đầu đã đổi và
 
 LoadMaster là hệ thống lập kế hoạch và tối ưu chất xếp hàng hóa 3D cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam. Đây là repo frontend.
 
-Giao diện **tiếng Việt**. Một codebase responsive phục vụ 5 vai trò:
+Giao diện **tiếng Việt**. Một codebase responsive phục vụ 7 vai trò (hai vai trò cuối thêm cho Review 1, *bổ sung 27/09/2026, LM-104*):
 
 | Vai trò | Thiết bị | Đặc điểm |
 |---|---|---|
@@ -19,14 +19,25 @@ Giao diện **tiếng Việt**. Một codebase responsive phục vụ 5 vai trò
 | Driver | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
 | Manager | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo |
 | Admin | Desktop | Người dùng, phân quyền, nhật ký |
+| Manufacturer (nhà sản xuất) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
+| Logistics (công ty logistics) | Tablet / điện thoại tại kho | Quét QR nhận từng kiện của lô hàng |
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
 **Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
-**giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo);
+**giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo
+*(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
+điều phối lập chuyến, chạy tối ưu nhưng không duyệt — Planner của điều phối chỉ xem, một dòng lý do "Chờ quản lý công ty duyệt");
 mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
-E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 17/09/2026)* Đăng nhập xong mở
+E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 27/09/2026, LM-104)* Quyền Review 1
+thêm **cộng dồn** qua `permissionsOf(role)` (`ROLE_PERMISSIONS` + `REVIEW1_EXTRA`; đọc quyền luôn qua `can`/`permissionsOf`, không đọc
+thẳng `ROLE_PERMISSIONS`): `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics), `orders.view`/`orders.edit`
+(điều phối; quản lý chỉ xem), `plans.review` (quản lý — hàng đợi `/duyet`), `vehicleTypes.edit` (điều phối). Tài khoản nhà sản xuất / logistics
+gắn `User.companyId` (`MFR-…`, `LOG-…`); kho lọc dữ liệu theo công ty như server (nhà sản xuất chỉ thấy kiện, lô của mình; logistics chỉ nhận lô
+giao cho công ty mình). Hai vai trò này dùng khung ứng dụng (thanh ngang), màn chính `/kien-hang` và `/nhan-hang`. Mục điều hướng Review 1 khai
+`roles` trong `NAV_ITEMS` để chỉ hiện cho vai trò dùng hằng ngày — quản trị viên mở các màn đó bằng đường dẫn, thanh ngang của họ giữ 7 mục cho
+vừa 1.366 px. Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
 quản trị `/nguoi-dung`); liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
@@ -38,7 +49,7 @@ trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn 
 riêng, nếu không sẽ thành hai lớp chồng nhau. *(26/09/2026)* Bản đầu của đợt 2 bỏ chỉ báo này; người dùng yêu cầu giữ lại.
 Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
 `LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
-rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem; màn toàn màn hình không
+rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm đơn hàng, kiện đã đăng ký, loại kiện, lô hàng, lô đang đến nên nhà sản xuất và logistics cũng có; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
@@ -82,6 +93,8 @@ recharts                 — 3 biểu đồ bảng điều khiển (LM-090, D-48
 write-excel-file         — xuất báo cáo .xlsx: import('write-excel-file/browser') khi bấm (LM-090)
 read-excel-file          — nhập kiện .xlsx: import('read-excel-file/browser') khi mở file (LM-093)
 dnd-kit                  — kéo thả thứ tự điểm giao, ghim kiện
+qrcode-generator         — mã hoá QR (MIT, không phụ thuộc) cho components/QrCode (LM-104); quét QR dùng BarcodeDetector gốc
+                           của trình duyệt trong components/QrScanDialog, không thêm thư viện quét
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
 motion                   — animation 2D
@@ -131,7 +144,8 @@ src/
     design-system/      2 trang tài liệu bàn giao (/kieu-dang, /thanh-phan)
   components/ui/        primitive tự viết trên Radix
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
-                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu)...
+                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
+                        ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -142,10 +156,19 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
+    packages-source/    loại kiện, kiện đăng ký, nhãn QR — nhà sản xuất (LM-104)
+    shipments/          lô hàng giao công ty logistics (LM-104)
+    receiving/          logistics quét QR nhận hàng (LM-104)
+    orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
+    review/             hàng đợi chờ duyệt, quyết định của quản lý (LM-104)
+    vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
-                        bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083)
+                        bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
+                        Review 1 (LM-104): công ty, loại kiện, kiện đăng ký + mã QR, lô hàng + nhận hàng, đơn hàng, quyết định
+                        duyệt, lần chạy tối ưu, loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
+                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -381,12 +404,20 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   *(đã điều chỉnh 26/09/2026)* Bản mẫu V2.3 dùng **tím** cho "đang chạy" và tint "phân tích phụ"; người dùng thấy tím không hợp nên đổi
   sang thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu, cùng họ màu lạnh). `@theme` xoá thang `violet`/`purple` của Tailwind:
   không dùng tím ở đâu trong app. "Đã huỷ" cũng lệch bản mẫu: chip đỏ trọn thay vì chip xám gạch chữ.
+  *(đã điều chỉnh 27/09/2026, LM-104)* Chuyến chỉ còn **6 trạng thái** theo backend (`DRAFT`, `OPTIMIZED`, `APPROVED`, `IN_TRANSIT`,
+  `COMPLETED`) cộng Đã huỷ: nháp xám đặc · đã tối ưu hổ phách vòng rỗng · đã duyệt cyan đặc · đang vận chuyển xanh lam có quầng · hoàn
+  thành xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Tiến độ kho và phương án
+  lỗi thời là **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`): "Lỗi thời — cần tối ưu lại" hổ phách có viền, "Kho đang
+  xếp 110 / 280" và "Đã xếp xong" xanh lam. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
   *(bổ sung 27/09/2026, LM-103)* Dấu `*` bắt buộc là `aria-hidden`, ô có `aria-required`: tên truy cập giữ đúng chữ nhãn ("Tên xe", không
   "Tên xe *") — test đọc nhãn bằng `exact: true`.
-- **Tab**: `TabsList tone="light" | "sky"`, vạch `--cyan-500` / `--cyan-400`; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+- **Tab**: `TabsList tone="light"` gạch chân `--cyan-500` trên nền trắng; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+  *(đã điều chỉnh 27/09/2026)* `tone="sky"` là **nhóm tab kính** trong dải trời: khay `--sky-glass` viền bo 12, tab 36 px bo 10, tab mở là
+  kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề và cách card đè dải 16 px, số 0 mờ đi. Bản mẫu V2.3 vẽ tab gạch
+  chân trên dải — vạch nằm sát mép card nên nhìn như đường kẻ thừa; người dùng yêu cầu làm lại.
 - **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
 - **Banner** (`components/Banner.tsx`): info / warning / danger / neutral, hành động dồn phải. `TripLockBanner` dựng trên nó.
@@ -703,6 +734,9 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
   Lý do chặn Duyệt ở tooltip + `aria-describedby` của nút, không in ở thanh. Pha chuyến khác `planning` hoặc thiếu `plans.approve`: không
   Chỉnh sửa, không Duyệt, một dòng lý do (`viewer.lock`). Hộp thông tin chỉ mở từ nút "Chi tiết / Hiển thị" ở góc khung 3D và thẻ kiện.
+  *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty (và quản trị) có `plans.approve`. Thiếu quyền: bản chưa duyệt là
+  `awaitingApproval` ("Chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. Liên kết "Tới Thiết lập tối ưu" của banner lỗi thời theo
+  `optimization.run` và pha `planning`, không theo quyền Duyệt. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `manager`.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - *(bổ sung, LM-042)* Xem trước 3D ở form xe: `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
@@ -785,6 +819,19 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 `useUsersQuery` + mutation), Nhật ký (`audit-api.ts`), kho và tài xế (LM-086/087) đều đọc/ghi kho mock qua Query. Trạng thái xe đọc
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.
 
+*(bổ sung 27/09/2026, LM-104)* Dữ liệu 5 luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `shipments-api.ts`,
+`receiving-api.ts`, `orders-api.ts`, `review-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
+chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
+`['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['review', …]`, `['vehicle-types', …]` (không đặt
+dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy, quyết định duyệt)
+nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu lọc theo công ty có mã người dùng trong khoá.
+Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: **trạng thái duyệt của Planner** `['review', 'plan', tripId,
+revisionId]` (dưới khoá chuyến thì bấm Duyệt chờ nó, Planner dựng lại trên revision mới và mất toast lẫn điều hướng) và **nhãn QR** của
+kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ tải lại nhãn).
+Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng. Mã QR là chuỗi
+ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
+Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
+
 ### Dữ liệu dùng chung và tối ưu *(bổ sung 15/09/2026, D-06, D-30, D-31)*
 
 - Dữ liệu đi qua nhiều màn (xe, chuyến, kiện, revision kết quả) nằm trong **mock repository
@@ -803,7 +850,12 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
   `loaded` (hai pha sau khoá xe và điểm giao). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ
   mục `DropdownMenu` dùng `modal={false}` cho menu để focus về đúng hộp thoại.
 - *(bổ sung 19/09/2026, LM-081 → LM-083)* Kho lưu **pha** chuyến `planning → loading → loaded → delivering → completed` (+ `cancelled`);
-  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). Từ `loading` trở đi xe/điểm giao/kiện,
+  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). *(đã điều chỉnh 27/09/2026, LM-104)*
+  `TripStatus` chỉ còn 6 giá trị theo backend: `nhap`, `da_toi_uu`, `da_duyet` (gồm pha `loading`/`loaded`), `dang_van_chuyen`
+  (`delivering`), `hoan_thanh`, `da_huy`; bản hiển thị lỗi thời là `da_toi_uu`. Tiến độ kho và lỗi thời là dòng phụ `tripSubStatus`
+  (`stale` · `loading` đã ghi / tổng · `loaded`), hiện bằng `TripSubStatusTag`; lọc/nhóm theo trạng thái, logic kho/tài xế theo pha hoặc
+  dòng phụ. Tab danh sách chuyến: Tất cả · Cần xử lý (`da_toi_uu`) · Sắp chạy (`da_duyet`) · Đang vận chuyển · Hoàn thành · Đã huỷ; giá
+  trị `trang-thai` cũ (`dang-thuc-hien`, `dang_giao`…) đọc sang giá trị mới (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện,
   tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành
   của kho (`startLoading`…`completeStop`). Bảo dưỡng xe lưu ngoài `VehicleConfig` (`listVehicleStates`, D-04).
 - Người dùng và mật khẩu nằm trong kho; kho giữ **phiên** như cookie server (`authenticate`, `restoreSession`) và mọi hàm ghi thêm

@@ -2,6 +2,17 @@ import type { VehicleConfig } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
+import { randomQrToken } from './qr-token'
+import type {
+  Company,
+  OptimizationRun,
+  PackageType,
+  RegisteredPackage,
+  ReviewDecision,
+  Shipment,
+  TransportOrder,
+  VehicleType,
+} from './source-types'
 import type { Revision, Trip } from './types'
 
 /** Toàn bộ dữ liệu của một kho. Chỉ các module `db-*.ts` đọc/ghi; bên ngoài đi qua `MockDb`. */
@@ -18,6 +29,19 @@ export type DbState = {
   events: AuditEvent[]
   /** Phiên của "server", như cookie: người làm của mọi sự kiện ghi mới. */
   session: { userId: string | null }
+
+  // Review 1 (LM-104)
+  companies: Map<string, Company>
+  packageTypes: Map<string, PackageType>
+  registeredPackages: Map<string, RegisteredPackage>
+  shipments: Map<string, Shipment>
+  orders: Map<string, TransportOrder>
+  /** Cũ trước. */
+  reviews: ReviewDecision[]
+  runs: Map<string, OptimizationRun>
+  vehicleTypes: Map<string, VehicleType>
+  /** Xe → loại xe; lưu ngoài `VehicleConfig` (D-04). */
+  vehicleTypeOf: Map<string, string>
 }
 
 export type DbContext = {
@@ -30,13 +54,19 @@ export type DbContext = {
   respond<T>(operation: () => T): Promise<T>
   /** Thêm một sự kiện nhật ký, người làm là phiên hiện tại. */
   log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>): void
+  /** Mã QR mới cho kiện đăng ký, không trùng mã đã cấp (LM-104). */
+  newQrToken(): string
 }
 
-export function createDbContext(state: DbState, latencyMs: number, now: () => Date): DbContext {
+export function createDbContext(state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random): DbContext {
   const nowIso = () => now().toISOString()
   return {
     state,
     nowIso,
+    newQrToken: () => {
+      const taken = new Set([...state.registeredPackages.values()].map((pkg) => pkg.qrToken))
+      return randomQrToken(random, (token) => taken.has(token))
+    },
     async respond(operation) {
       if (latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, latencyMs))
       return structuredClone(operation())
@@ -63,6 +93,17 @@ export function found<T>(table: ReadonlyMap<string, T>, collection: MockDbCollec
   const record = table.get(id)
   if (record === undefined) throw new MockDbError('NOT_FOUND', { collection, id })
   return record
+}
+
+/** Người của phiên hiện tại; `undefined` khi chưa đăng nhập (test logic kho không đăng nhập). */
+export function sessionUserOf(state: DbState): User | undefined {
+  return state.session.userId === null ? undefined : state.users.get(state.session.userId)
+}
+
+/** Chuỗi đã bỏ khoảng trắng hai đầu; rỗng thì bỏ hẳn trường (không lưu chuỗi rỗng). */
+export function optionalText(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
 }
 
 /** Ghi bản sao của `record`: nơi gọi sửa object của mình sau đó không đổi dữ liệu trong kho. */

@@ -5,14 +5,14 @@ import { cameraPreset, closeInspector, metrics, openInspector, SOURCE_MODULES, w
 const selectedPanel = (page: Page) => page.getByRole('complementary', { name: 'Kiện đang chọn' })
 
 /** Lượt đầu vào route qua form đăng nhập (app quay lại đúng route), các lượt sau điều hướng thẳng. */
-async function openViewer(page: Page, route: string, login?: (route: string) => Promise<void>) {
-  await (login ? login(route) : page.goto(route))
+async function openViewer(page: Page, route: string, login?: (route: string, role?: 'manager') => Promise<void>) {
+  await (login ? login(route, 'manager') : page.goto(route))
   await page.locator('canvas').waitFor()
   await waitIdle(page)
 }
 
 test('planner idles under debug and keeps presets, edit toggles, colour modes, slice and playback working', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?debug&quality=balanced`)
+  await login(`${PLANNER_ROUTE}?debug&quality=balanced`, 'manager')
   await waitIdle(page)
   const normal = await metrics(page)
   expect(normal.placementCount).toBe('132')

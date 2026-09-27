@@ -246,7 +246,8 @@ test('an unavailable optimisation service shows the error dialog and retry', asy
 })
 
 test('editing a package after optimising makes the plan stale and blocks approval', async ({ page, login }) => {
-  await login(`/chuyen/${SEED_TRIP}/toi-uu`)
+  // Tối ưu, sửa kiện rồi Duyệt: cần cả quyền điều phối lẫn quyền của quản lý công ty (LM-104) — dùng quản trị
+  await login(`/chuyen/${SEED_TRIP}/toi-uu`, 'admin')
   await optimizeAndOpenPlanner(page)
   const plannerUrl = page.url()
   // §15 "Mock service trả đúng OptimizationResult": revision vừa lưu qua đúng schema contract Spec

@@ -9,14 +9,22 @@ export const audit = {
     auth: { signedIn: 'Đăng nhập', signedOut: 'Đăng xuất', signInFailed: 'Đăng nhập không thành công' },
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
     trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến' },
-    optimization: { saved: 'Lưu kết quả tối ưu' },
+    optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
-    loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong' },
+    loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },
     delivery: { started: 'Xuất phát giao hàng', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến' },
     user: {
       created: 'Tạo tài khoản', updated: 'Sửa tài khoản', locked: 'Khoá tài khoản', unlocked: 'Mở khoá tài khoản', deleted: 'Xoá tài khoản',
       passwordReset: 'Đặt lại mật khẩu', passwordChanged: 'Đổi mật khẩu', profileUpdated: 'Sửa hồ sơ cá nhân',
     },
+    packageType: { created: 'Thêm loại kiện', updated: 'Sửa loại kiện', deleted: 'Xoá loại kiện' },
+    package: { registered: 'Đăng ký kiện' },
+    shipment: {
+      created: 'Tạo lô hàng', updated: 'Sửa lô hàng', deleted: 'Xoá lô hàng nháp', handedOver: 'Bàn giao lô hàng', packageReceived: 'Quét nhận kiện',
+    },
+    order: { created: 'Tạo đơn hàng', updated: 'Sửa đơn hàng', cancelled: 'Huỷ đơn hàng', assigned: 'Gán đơn vào điểm giao', unassigned: 'Bỏ gán đơn' },
+    review: { rejected: 'Từ chối phương án', reoptimizeRequested: 'Yêu cầu tối ưu lại', changeSuggested: 'Đề xuất đổi xe hoặc tách chuyến' },
+    vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -27,6 +35,12 @@ export const audit = {
     loading: 'Kho',
     delivery: 'Giao hàng',
     user: 'Người dùng',
+    packageType: 'Loại kiện',
+    package: 'Kiện đăng ký',
+    shipment: 'Lô hàng',
+    order: 'Đơn hàng',
+    review: 'Quyết định duyệt',
+    vehicleType: 'Loại xe',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -98,6 +112,20 @@ export const audit = {
       field: 'Trường',
       before: 'Trước',
       after: 'Sau',
+      // LM-104
+      count: 'Số kiện',
+      packageTypeId: 'Loại kiện',
+      lastPackageId: 'Đến kiện',
+      logisticsCompanyId: 'Công ty logistics',
+      received: 'Đã nhận',
+      customerName: 'Khách hàng',
+      tripId: 'Chuyến',
+      suggestion: 'Đề xuất',
+      objective: 'Mục tiêu',
+      algorithm: 'Thuật toán',
+      reasonCode: 'Lý do',
+      vehicleTypeId: 'Loại xe',
+      sealNumber: 'Số seal',
     },
     /** Giá trị của tham số `fields`: tên trường chuyến hoặc tài khoản đã sửa. */
     fieldNames: {

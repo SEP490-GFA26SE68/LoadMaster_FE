@@ -42,18 +42,19 @@ test('tablet: pick the main trip, record two loaded and one missing, leave and r
   // Rời phiên bằng nút thoát — nhân viên kho về danh sách chuyến, không đăng xuất — rồi vào lại
   await page.getByRole('link', { name: 'Thoát phiên xếp hàng', exact: true }).tap()
   await page.waitForURL((url) => url.pathname === '/kho' && url.search === '')
-  await expect(card.getByText('Đang xếp hàng', { exact: true })).toBeVisible()
+  await expect(card.getByText('Kho đang xếp 3 / 132', { exact: true })).toBeVisible()
   await expect(card.getByText('· thiếu 1', { exact: true })).toBeVisible()
   await card.getByRole('link', { name: 'Tiếp tục (3/132)', exact: true }).tap()
   await expect(heading(fourth)).toBeVisible()
   await expect(page.getByText('Bước 4 / 132', { exact: true })).toBeVisible()
 
-  // Điều phối viên đọc cùng kho: chuyến "Đang xếp hàng", kiện thiếu đúng kiện vừa báo
+  // Điều phối viên đọc cùng kho: chuyến vẫn Đã duyệt, dòng phụ kho đang xếp (LM-104), kiện thiếu đúng kiện vừa báo
   const store = await page.evaluate(async ({ db, tripId }) => {
-    const { getMockDb, missingIds, tripStatus } = (await import(db)) as typeof import('@/lib/mock-db')
+    const { getMockDb, missingIds, tripStatus, tripSubStatus } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
-    return { status: tripStatus(trip, await getMockDb().listRevisions(tripId)), missing: [...missingIds(trip)], recorded: trip.loading?.steps.length }
+    const revisions = await getMockDb().listRevisions(tripId)
+    return { status: tripStatus(trip, revisions), sub: tripSubStatus(trip, revisions), missing: [...missingIds(trip)] }
   }, { db: MOCK_DB, tripId: SEED_TRIP })
-  expect(store).toStrictEqual({ status: 'dang_xep_hang', missing: [third], recorded: 3 })
+  expect(store).toStrictEqual({ status: 'da_duyet', sub: { kind: 'loading', recorded: 3, total: 132 }, missing: [third] })
   expect(browserErrors).toStrictEqual([])
 })

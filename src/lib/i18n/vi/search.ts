@@ -3,7 +3,7 @@ export const search = {
   button: 'Tìm nhanh',
   title: 'Tìm nhanh',
   inputLabel: 'Từ khoá tìm nhanh',
-  placeholder: 'Gõ mã, tên hoặc điểm giao…',
+  placeholder: 'Gõ mã hoặc tên…',
   /** Gợi ý khi chưa gõ: ghép các phạm vi người dùng được tìm. */
   hint: 'Tìm {scope}.',
   scope: {
@@ -11,8 +11,23 @@ export const search = {
     packages: 'kiện (mã)',
     vehicles: 'xe (tên, biển số)',
     users: 'người dùng (tên, email)',
+    orders: 'đơn hàng (mã, khách, địa chỉ)',
+    registered: 'kiện đã đăng ký (mã, mã lô, mã QR, loại)',
+    shipments: 'lô hàng (mã, công ty logistics)',
+    packageTypes: 'loại kiện (mã, tên)',
+    incoming: 'lô đang đến (mã, nhà sản xuất)',
   },
-  groups: { trips: 'Chuyến', packages: 'Kiện', vehicles: 'Xe', users: 'Người dùng' },
+  groups: {
+    trips: 'Chuyến',
+    packages: 'Kiện',
+    vehicles: 'Xe',
+    users: 'Người dùng',
+    orders: 'Đơn hàng',
+    registered: 'Kiện đã đăng ký',
+    shipments: 'Lô hàng',
+    packageTypes: 'Loại kiện',
+    incoming: 'Lô đang đến',
+  },
   results: 'Kết quả tìm nhanh',
   /** Số kết quả ở hàng ô nhập (V2.3); trình đọc màn hình cũng nghe nó mỗi lần kết quả đổi. */
   count: { one: '{count} kết quả', other: '{count} kết quả' },

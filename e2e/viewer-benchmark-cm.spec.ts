@@ -28,7 +28,7 @@ async function openRoute(page: Page, search: string) {
 test('draw calls stay flat from 132 to 1,000 cm packages in every tier, idle renders no extra frame, editor check fits the drop budget', async ({ page, login, browserErrors }, testInfo) => {
   test.setTimeout(8 * 60_000)
   const samples: { count: number; tier: string; rest: ViewerMetrics }[] = []
-  await login(`${PLANNER_ROUTE}?debug&packages=132&quality=low`)
+  await login(`${PLANNER_ROUTE}?debug&packages=132&quality=low`, 'manager')
   await waitIdle(page)
   for (const tier of TIERS) {
     for (const count of COUNTS) {

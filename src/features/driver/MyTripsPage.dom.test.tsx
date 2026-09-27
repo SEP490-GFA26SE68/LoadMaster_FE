@@ -48,7 +48,8 @@ test('an admin sees every trip: delivering first with its current stop, loading 
 
   const preparing = within(screen.getByRole('region', { name: 'Kho đang chuẩn bị' }))
   expect(preparing.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011', 'TRIP-2026-0914'])
-  expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp 110/280 kiện — chưa giao được.')).toBeInTheDocument()
+  expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp 110 / 280')).toBeInTheDocument()
+  expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp — chưa giao được.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Thoát màn hình tài xế' })).toHaveAttribute('href', '/nguoi-dung')
 }, 15_000)
 

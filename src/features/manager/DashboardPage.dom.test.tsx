@@ -112,12 +112,10 @@ test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuy�
   renderDashboard('manager')
 
   const status = await screen.findByRole('table', { name: 'Bảng số của biểu đồ Chuyến theo trạng thái' }, SLOW)
-  // Chuyến chính đã duyệt; 011 đang xếp, 010 đã xếp xong, 009 đang giao; 7 hoàn thành; TRIP-004 huỷ — tỷ lệ trên 12 chuyến
+  // Đã duyệt: chuyến chính, 011 kho đang xếp, 010 đã xếp xong (LM-104); 009 đang vận chuyển; 7 hoàn thành; TRIP-004 huỷ — trên 12 chuyến
   expect(within(status).getAllByRole('row').slice(1).map((row) => [...row.children].map((cell) => cell.textContent))).toStrictEqual([
-    ['Đã duyệt', '1', '8,3%'],
-    ['Đang xếp hàng', '1', '8,3%'],
-    ['Đã xếp xong', '1', '8,3%'],
-    ['Đang giao', '1', '8,3%'],
+    ['Đã duyệt', '3', '25,0%'],
+    ['Đang vận chuyển', '1', '8,3%'],
     ['Hoàn thành', '7', '58,3%'],
     ['Đã huỷ', '1', '8,3%'],
   ])

@@ -47,11 +47,14 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
 
 /** D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở; quản trị thấy tất cả. */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đội xe']],
-  ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Đội xe']],
+  ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Đội xe']],
+  ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
+  // Mục Review 1 chỉ hiện cho vai trò dùng hằng ngày (LM-104): quản trị giữ 7 mục cho vừa 1.366 px
   ['admin', ['Bảng điều khiển', 'Chuyến hàng', 'Kho', 'Tài xế', 'Đội xe', 'Người dùng', 'Nhật ký']],
+  ['manufacturer', ['Kiện hàng', 'Lô hàng', 'Loại kiện']],
+  ['logistics', ['Nhận hàng']],
 ])('nav rail của %s chỉ có mục được phép', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
@@ -80,6 +83,16 @@ test.each<[Role, boolean]>([
 ])('nút Tìm nhanh của %s: %s', (role, shown) => {
   renderRail(role)
   expect(screen.queryByRole('button', { name: 'Tìm nhanh' }) !== null).toBe(shown)
+})
+
+/** LM-104: vai trò không có bảng điều khiển về màn chính của mình khi bấm logo, không rơi vào màn 403. */
+test.each<[Role, string]>([
+  ['manufacturer', '/kien-hang'],
+  ['logistics', '/nhan-hang'],
+  ['dispatcher', '/'],
+])('logo của %s mở %s', (role, href) => {
+  renderRail(role)
+  expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', href)
 })
 
 /** LM-096: menu tài khoản mở hồ sơ cá nhân trước mục đăng xuất. */

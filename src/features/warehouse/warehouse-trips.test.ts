@@ -17,9 +17,9 @@ test('seed on 14/09: loading first, then approved waiting, then the stale approv
   const rows = warehouseTripRows(await entries(db), await vehicleNames(db))
   // seed-trips.ts: TRIP-011 = 80 + 60 + 80 + 60 kiện, kho đã ghi 110 bước; TRIP-013 duyệt 80 + 60 + 60 kiện rồi mới sửa số lượng
   expect(rows).toStrictEqual([
-    { id: 'TRIP-011', name: 'Tuyến Tân Bình – Q.1 – Q.7', scheduledDate: '2026-09-14', vehicleName: 'Isuzu FVR 900 · 51D-622.14', status: 'dang_xep_hang', total: 280, recorded: 110, missing: 0 },
-    { id: 'TRIP-2026-0914', name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', scheduledDate: '2026-09-14', vehicleName: 'Hyundai HD210 · 60C-446.32', status: 'da_duyet', total: 132, recorded: 0, missing: 0 },
-    { id: 'TRIP-013', name: 'Tuyến Biên Hoà – Long Bình Tân', scheduledDate: '2026-09-15', vehicleName: 'Truck 6m', status: 'can_xem_lai', total: 200, recorded: 0, missing: 0 },
+    { id: 'TRIP-011', name: 'Tuyến Tân Bình – Q.1 – Q.7', scheduledDate: '2026-09-14', vehicleName: 'Isuzu FVR 900 · 51D-622.14', status: 'da_duyet', sub: { kind: 'loading', recorded: 110, total: 280 }, stage: 'loading', total: 280, recorded: 110, missing: 0 },
+    { id: 'TRIP-2026-0914', name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', scheduledDate: '2026-09-14', vehicleName: 'Hyundai HD210 · 60C-446.32', status: 'da_duyet', sub: null, stage: 'waiting', total: 132, recorded: 0, missing: 0 },
+    { id: 'TRIP-013', name: 'Tuyến Biên Hoà – Long Bình Tân', scheduledDate: '2026-09-15', vehicleName: 'Truck 6m', status: 'da_toi_uu', sub: { kind: 'stale' }, stage: 'stale', total: 200, recorded: 0, missing: 0 },
   ])
 })
 
@@ -32,10 +32,10 @@ test('a started trip counts loaded and missing packages; the list leaves it once
   await db.recordLoadingStep('TRIP-2026-0914', { packageInstanceId: second ?? '', outcome: 'missing' })
 
   const rows = warehouseTripRows(await entries(db), await vehicleNames(db))
-  expect(rows.map(({ id, status, recorded, missing }) => [id, status, recorded, missing])).toStrictEqual([
-    ['TRIP-011', 'dang_xep_hang', 110, 0],
-    ['TRIP-2026-0914', 'dang_xep_hang', 2, 1],
-    ['TRIP-013', 'can_xem_lai', 0, 0],
+  expect(rows.map(({ id, stage, recorded, missing }) => [id, stage, recorded, missing])).toStrictEqual([
+    ['TRIP-011', 'loading', 110, 0],
+    ['TRIP-2026-0914', 'loading', 2, 1],
+    ['TRIP-013', 'stale', 0, 0],
   ])
 
   for (const placement of plan.result.placements) {

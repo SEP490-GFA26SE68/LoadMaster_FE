@@ -7,11 +7,15 @@ export const viewer = {
     placed: 'Đã xếp',
     manuallyEdited: 'Đã chỉnh tay',
     approve: 'Duyệt phương án',
+    /** Chữ của nút Duyệt trên điện thoại khi thanh quyết định của quản lý đứng cạnh (LM-104); tên truy cập vẫn là `approve`. */
+    approveShort: 'Duyệt',
     /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094). */
     approveDraft: 'Duyệt bản chỉnh',
     /** Thay nút Duyệt khi revision đã duyệt và không có chỉnh sửa: nhãn trên, giờ + ngày dưới. */
     approvedAt: 'Đã duyệt lúc',
     approvedAtValue: '{time} {date}',
+    /** Thay "Đã duyệt lúc" khi kho biết người duyệt (LM-104): đọc liền với dòng giờ + ngày bên dưới. */
+    approvedBy: 'Duyệt bởi {name} lúc',
     compare: 'So sánh phương án',
     staleBanner: 'Kết quả đã lỗi thời — xe hoặc kiện đã thay đổi sau lần tối ưu này.',
     rerun: 'Tới Thiết lập tối ưu',
@@ -77,7 +81,10 @@ export const viewer = {
     delivering: 'Chuyến đang giao — phương án đã chốt.',
     completed: 'Chuyến đã hoàn thành — phương án đã chốt.',
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
-    readOnly: 'Chỉ xem: tài khoản của bạn không chỉnh sửa hay duyệt phương án.',
+    awaitingApproval: 'Chờ quản lý công ty duyệt — bạn chỉ xem phương án.',
+    readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
+    /** Quản lý công ty đã trả lại bản này (LM-104); dòng khoá hiện câu quyết định thay câu này. */
+    decided: 'Phương án đã được quản lý công ty trả lại — chỉ xem.',
   },
   axles: {
     title: 'Tải trục',
