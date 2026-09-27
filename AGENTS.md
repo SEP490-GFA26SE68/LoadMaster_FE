@@ -820,8 +820,11 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 `receiving-api.ts`, `orders-api.ts`, `review-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
 `['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['review', …]`, `['vehicle-types', …]` (không đặt
-dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, nhãn, báo cáo, lần chạy, quyết định duyệt)
+dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy, quyết định duyệt)
 nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu lọc theo công ty có mã người dùng trong khoá.
+Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: **trạng thái duyệt của Planner** `['review', 'plan', tripId,
+revisionId]` (dưới khoá chuyến thì bấm Duyệt chờ nó, Planner dựng lại trên revision mới và mất toast lẫn điều hướng) và **nhãn QR** của
+kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ tải lại nhãn).
 Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng. Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
