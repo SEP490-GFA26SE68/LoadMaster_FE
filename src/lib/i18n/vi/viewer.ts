@@ -77,7 +77,8 @@ export const viewer = {
     delivering: 'Chuyến đang giao — phương án đã chốt.',
     completed: 'Chuyến đã hoàn thành — phương án đã chốt.',
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
-    readOnly: 'Chỉ xem: tài khoản của bạn không chỉnh sửa hay duyệt phương án.',
+    awaitingApproval: 'Chờ quản lý công ty duyệt — bạn chỉ xem phương án.',
+    readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
   },
   axles: {
     title: 'Tải trục',

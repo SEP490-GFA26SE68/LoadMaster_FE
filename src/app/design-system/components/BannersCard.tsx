@@ -8,12 +8,12 @@ import { SheetCard } from '../SheetLayout'
 
 /**
  * Bốn tông `Banner` với câu thật của các màn: khoá khi kho đã xếp (form chuyến), phương án lỗi thời (Planner, kèm liên kết tới
- * Thiết lập tối ưu của chuyến đang "Cần xem lại" trong kho), chuyến đã huỷ (giờ và lý do lấy từ chuyến huỷ trong kho), chỉ xem.
+ * Thiết lập tối ưu của chuyến có phương án lỗi thời trong kho), chuyến đã huỷ (giờ và lý do lấy từ chuyến huỷ trong kho), chỉ xem.
  */
 export function BannersCard({ sample, rows }: { sample: SheetSample | undefined; rows: readonly TripRow[] | undefined }) {
   const t = useT()
   const format = useFormat()
-  const stale = rows?.find((row) => row.status === 'can_xem_lai')
+  const stale = rows?.find((row) => row.sub?.kind === 'stale')
   const cancellation = sample?.cancellation
 
   return (

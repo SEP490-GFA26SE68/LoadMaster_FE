@@ -24,7 +24,9 @@ test('a trip past planning locks the plan with its phase as the reason, whatever
     .toStrictEqual({ lock: 'cancelled', approve: null, approvedAt: null })
 })
 
-test('an account without the approve permission reads the plan only', () => {
+test('an account without the approve permission reads the plan only: waiting for the company manager, or already approved (LM-104)', () => {
   expect(plannerAccess({ phase: 'planning', canApprove: false, approvedAt: null, hasEdits: false }))
-    .toStrictEqual({ lock: 'readOnly', approve: null, approvedAt: null })
+    .toStrictEqual({ lock: 'awaitingApproval', approve: null, approvedAt: null })
+  expect(plannerAccess({ phase: 'planning', canApprove: false, approvedAt: APPROVED_AT, hasEdits: false }))
+    .toStrictEqual({ lock: 'readOnly', approve: null, approvedAt: APPROVED_AT })
 })

@@ -48,7 +48,7 @@ test('ba chuỗi biểu đồ: lấp đầy theo ngày, chuyến theo trạng th
     { status: 'nhap', count: 1 },
     { status: 'da_toi_uu', count: 1 },
     { status: 'da_duyet', count: 1 },
-    { status: 'dang_giao', count: 1 },
+    { status: 'dang_van_chuyen', count: 1 },
     { status: 'hoan_thanh', count: 2 },
     { status: 'da_huy', count: 1 },
   ])

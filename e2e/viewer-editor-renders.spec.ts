@@ -42,7 +42,7 @@ const commits = (page: Page) => page.evaluate(() => ({ ...(window as CommitWindo
 const total = (counts: Record<string, number>) => Object.values(counts).reduce((sum, value) => sum + value, 0)
 
 test('dragging a package commits React at the preview throttle rate, not once per pointer move', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=low`)
+  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=low`, 'manager')
   await waitIdle(page)
   expect(total(await commits(page)), 'the injected hook sees React commits').toBeGreaterThan(0)
   await page.getByRole('button', { name: 'Chỉnh sửa', exact: true }).click()

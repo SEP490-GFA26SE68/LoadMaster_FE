@@ -13,7 +13,7 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
   const report: { initialTier: QualityTier; samples: ViewerMetrics[]; tiers: ViewerMetrics[]; environment?: unknown } = {
     initialTier: INITIAL_TIER, samples: [], tiers: [],
   }
-  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=${INITIAL_TIER}`)
+  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=${INITIAL_TIER}`, 'manager')
   await waitIdle(page)
   expect((await metrics(page)).dpr).toBe(EXPECTED_DPR[INITIAL_TIER])
   report.environment = await page.locator('canvas').evaluate((canvas) => {

@@ -43,10 +43,14 @@ test('/kieu-dang: dải trời có đường dẫn và tiêu đề, thẻ dựng
   const crumb = screen.getByRole('navigation', { name: 'Vị trí trang' })
   expect(within(crumb).getByText('/kieu-dang')).toHaveAttribute('aria-current', 'page')
 
-  // Mười trạng thái vòng đời của chuyến, đúng nhãn `StatusBadge`
-  for (const label of ['Nháp', 'Đang tối ưu', 'Đã tối ưu', 'Cần xem lại', 'Đã duyệt', 'Đang xếp hàng', 'Đã xếp xong', 'Đang giao', 'Hoàn thành', 'Đã huỷ']) {
+  // Năm trạng thái của backend cộng Đã huỷ (LM-104), đúng nhãn `StatusBadge`
+  for (const label of ['Nháp', 'Đã tối ưu', 'Đã duyệt', 'Đang vận chuyển', 'Hoàn thành', 'Đã huỷ']) {
     expect(screen.getByText(label)).toBeInTheDocument()
   }
+  // Dòng phụ lấy từ chuyến thật của kho: TRIP-013 lỗi thời, TRIP-011 kho đang xếp 110 / 280, TRIP-010 đã xếp xong
+  expect(await screen.findByText('Kho đang xếp 110 / 280', {}, SLOW)).toBeInTheDocument()
+  expect(screen.getByText('Lỗi thời — cần tối ưu lại')).toBeInTheDocument()
+  expect(screen.getByText('Đã xếp xong')).toBeInTheDocument()
 
   // Thang chữ dùng tên chuyến đầu kho và mã của nó
   expect(await screen.findByText('Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', {}, SLOW)).toBeInTheDocument()
@@ -75,7 +79,7 @@ test('/thanh-phan: bảng, tab và ô số liệu đếm chuyến thật của k
   expect(await screen.findByText('1–15 / 15', {}, SLOW)).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Bảng' })).getByText('TRIP-2026-0914 · 4 điểm giao')).toBeInTheDocument()
 
-  // Tab trên dải trời: "Cần xử lý" đếm chuyến chờ duyệt hoặc cần xem lại
+  // Tab trên dải trời: "Cần xử lý" đếm chuyến đã tối ưu chờ duyệt, kể cả bản lỗi thời
   const groups = screen.getByRole('tablist', { name: 'Nhóm chuyến' })
   expect(within(groups).getByRole('tab', { name: /^Tất cả\s*15$/ })).toHaveAttribute('aria-selected', 'true')
   expect(within(groups).getByRole('tab', { name: /^Cần xử lý\s*2$/ })).toBeInTheDocument()

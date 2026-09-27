@@ -5,13 +5,13 @@ import { useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import { SheetCard, SkyStage } from '../SheetLayout'
 
-const GROUP_KEYS = ['all', 'review', 'active', 'completed'] as const
+const GROUP_KEYS = ['all', 'review', 'transit', 'completed'] as const
 type Group = (typeof GROUP_KEYS)[number]
 
 const GROUPS: Record<Group, readonly TripStatus[] | null> = {
   all: null,
   review: TRIP_STATUS_GROUPS.review,
-  active: TRIP_STATUS_GROUPS.active,
+  transit: ['dang_van_chuyen'],
   completed: ['hoan_thanh'],
 }
 

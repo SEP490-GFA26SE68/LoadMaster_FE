@@ -73,7 +73,7 @@ async function nudgeOnePackage(page: Page) {
 
 test('an approved plan shows when it was approved; one edited package turns it into "Duyệt bản chỉnh"', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
-  await login(PLANNER_ROUTE)
+  await login(PLANNER_ROUTE, 'manager')
   await page.locator('canvas').waitFor()
 
   await expect(header(page)).toContainText(APPROVED_AT)
@@ -126,19 +126,19 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
   expect(browserErrors).toStrictEqual([])
 })
 
-test('tablet keeps two 56 px control rows; the manager reads the plan with one reason and no actions', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
-  await login(PLANNER_ROUTE, 'manager')
+test('tablet keeps two 56 px control rows; the dispatcher reads the approved plan with one reason and no actions (LM-104)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
+  await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()
   expect((await toolbar.getByRole('combobox', { name: 'Góc nhìn', exact: true }).boundingBox())!.height).toBe(56)
   expect((await header(page).boundingBox())!.height).toBe(56)
   await expect(page.getByRole('status').filter({ hasText: 'Chỉ xem' }))
-    .toHaveText('Chỉ xem: tài khoản của bạn không chỉnh sửa hay duyệt phương án.')
+    .toHaveText('Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.')
   for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }
   expect(await headerOverflow(page), 'tablet header').toStrictEqual([])
-  await attachScreenshot(page, testInfo, 'planner-manager-tablet')
+  await attachScreenshot(page, testInfo, 'planner-dispatcher-tablet')
   expect(browserErrors).toStrictEqual([])
 })

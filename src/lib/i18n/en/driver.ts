@@ -24,7 +24,7 @@ export const driver = {
     stops: { one: '{count} stop', other: '{count} stops' },
     atStop: 'Delivering stop {number} / {total}',
     waitingApproved: 'The warehouse has not started loading — not ready to deliver.',
-    waitingLoading: 'The warehouse is loading {done}/{total} packages — not ready to deliver.',
+    waitingLoading: 'The warehouse is loading — not ready to deliver.',
     completed: 'Completed at {time} · {date}',
     issues: { one: '{count} issue', other: '{count} issues' },
     emptyTitle: 'No trips yet',

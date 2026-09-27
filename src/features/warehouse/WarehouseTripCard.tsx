@@ -1,7 +1,7 @@
 import { TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
@@ -21,7 +21,10 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
     <li className="flex flex-col gap-3 rounded-md border border-border bg-bg p-4">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="font-mono text-[22px] leading-7 font-semibold">{row.id}</h2>
-        <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
+        <span className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
+          <TripSubStatusTag sub={row.sub} className="h-8 px-3 text-body-lg" />
+        </span>
       </div>
       <p className="text-pretty">{row.name}</p>
       <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-[1fr_1.7fr_0.8fr_1fr]">
@@ -33,7 +36,7 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
           {row.missing > 0 ? <span className="text-badge-warning-fg"> · {t('warehouse.list.missing', { count: row.missing })}</span> : null}
         </Fact>
       </dl>
-      {row.status === 'dang_xep_hang' ? (
+      {row.stage === 'loading' ? (
         <div
           role="progressbar"
           aria-valuenow={percent}
@@ -45,7 +48,7 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
           <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       ) : null}
-      {row.status === 'can_xem_lai' ? (
+      {row.stage === 'stale' ? (
         <p className="m-0 flex items-start gap-3 rounded-md border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
           <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
           {t('warehouse.list.stale')}
@@ -53,7 +56,7 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
       ) : (
         <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className="self-start">
           <Link to={loadingSessionPath(row.id)}>
-            {row.status === 'dang_xep_hang'
+            {row.stage === 'loading'
               ? t('warehouse.list.resume', { done: format.integer(row.recorded), total: format.integer(row.total) })
               : t('warehouse.list.start')}
           </Link>

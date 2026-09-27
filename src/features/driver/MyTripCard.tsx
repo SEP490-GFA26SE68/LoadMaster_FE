@@ -1,10 +1,10 @@
 import { Clock } from 'lucide-react'
 import { Link } from 'react-router'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
-import type { MyTripRow } from './my-trips'
+import { isReadyToDrive, type MyTripRow } from './my-trips'
 
 /** Mở một chuyến ở màn điểm giao (hoặc tổng kết nếu đã hoàn thành). */
 export function driverTripPath(tripId: string): string {
@@ -18,13 +18,16 @@ export function driverTripPath(tripId: string): string {
 export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?: boolean }) {
   const t = useT()
   const format = useFormat()
-  const preparing = row.status === 'da_duyet' || row.status === 'dang_xep_hang'
+  const preparing = row.status === 'da_duyet' && !isReadyToDrive(row)
 
   return (
     <li className="flex flex-col gap-2 rounded-md border border-border bg-bg p-4">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h3 className="font-mono text-[22px] leading-7 font-semibold">{row.id}</h3>
-        <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
+        <span className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
+          <TripSubStatusTag sub={row.sub} className="h-8 px-3 text-body-lg" />
+        </span>
       </div>
       <p className="m-0 text-pretty">{row.name}</p>
       <p className="m-0 text-text-2">
@@ -34,14 +37,14 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {/* Tên xe có biển số: dòng riêng để biển số không bị ngắt ở dấu gạch trên điện thoại */}
       <p className="m-0 text-text-2">{row.vehicleName}</p>
 
-      {row.status === 'dang_giao' && row.currentStop !== undefined ? (
+      {row.status === 'dang_van_chuyen' && row.currentStop !== undefined ? (
         <p className="m-0 font-medium">{t('driver.list.atStop', { number: row.currentStop, total: row.stopCount })}</p>
       ) : null}
       {preparing ? (
         <p className="m-0 flex items-start gap-2 rounded-md border border-border bg-surface px-3 py-2 text-text-2">
           <Clock className="mt-0.5 size-5 flex-none" strokeWidth={1.5} aria-hidden />
-          {row.status === 'dang_xep_hang'
-            ? t('driver.list.waitingLoading', { done: format.integer(row.loadingRecorded), total: format.integer(row.loadingTotal) })
+          {row.sub?.kind === 'loading'
+            ? t('driver.list.waitingLoading')
             : t('driver.list.waitingApproved')}
         </p>
       ) : null}
@@ -55,7 +58,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {preparing ? null : (
         <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className="mt-1 self-start">
           <Link to={driverTripPath(row.id)}>
-            {row.status === 'dang_giao' ? t('driver.list.resume') : row.status === 'hoan_thanh' ? t('driver.list.viewSummary') : t('driver.list.open')}
+            {row.status === 'dang_van_chuyen' ? t('driver.list.resume') : row.status === 'hoan_thanh' ? t('driver.list.viewSummary') : t('driver.list.open')}
           </Link>
         </Button>
       )}

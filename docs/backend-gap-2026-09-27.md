@@ -42,7 +42,7 @@ Nguồn: tài liệu nhóm "LoadMaster — Mô tả 5 Main Flow cho Review 1" (R
 | 10 | Optimize: lịch sử lần chạy, trạng thái realtime, lý do không xếp được | Tab "Lần chạy" trong chuyến | `jobs/{id}`, `jobs/{id}/plans`, WebSocket | trung bình |
 | 11 | Approve: hàng đợi chờ duyệt của quản lý | `/duyet` | Chưa có API liệt kê plan | cao |
 | 12 | Approve: từ chối / yêu cầu tối ưu lại / đề xuất đổi xe, tách chuyến, kèm lý do | Thanh quyết định ở Planner | Chỉ có approve | cao |
-| 13 | Approve: người duyệt là quản lý | Đổi quyền `plans.approve` (FE hiện cho điều phối + quản trị, quản lý chỉ đọc) | BE cho DISPATCHER/ADMIN | cao — cần chốt với BE |
+| 13 | Approve: người duyệt là quản lý | FE đã đổi (LM-104 A, 27/09/2026): `plans.approve` cho quản lý công ty + quản trị, điều phối chỉ xem | BE cho DISPATCHER/ADMIN | cao — BE cần đổi theo |
 | 14 | Execute: kho quét QR từng kiện → hiện vị trí, hướng, bước | Nút quét trong `/kho?chuyen=` | Chưa có | cao |
 | 15 | Execute: tài xế quét QR khi dỡ | Nút quét trong `/tai-xe/diem-giao` | Chưa có | trung bình |
 | 16 | Execute: báo cáo chuyến sau khi hoàn thành | `/chuyen/:id/bao-cao` | Chưa có | thấp |
@@ -55,7 +55,9 @@ Nguồn: tài liệu nhóm "LoadMaster — Mô tả 5 Main Flow cho Review 1" (R
   1000 ra m); placement trả mét `Numeric(10,2)`; Spring khai `PackagePlacement.pos_*` là `Integer`. `volume_utilization` 0–1 lưu `Numeric(5,2)`
   mất chính xác.
 - **ID**: FE dùng chuỗi (`TRIP-2026-0914`); Spring `Long`; Python khai `Trip.id` là `String(64)` còn `validate` đòi UUID.
-- **Trạng thái chuyến**: FE 10 trạng thái; BE 5 (DRAFT, OPTIMIZED, APPROVED, IN_TRANSIT, COMPLETED) — thiếu đang tối ưu, đang xếp, đã xếp
+- **Trạng thái chuyến**: FE đã theo BE (LM-104 A, 27/09/2026): 5 trạng thái (DRAFT, OPTIMIZED, APPROVED, IN_TRANSIT, COMPLETED) + Đã huỷ —
+  đề nghị BE thêm `CANCELLED`. Tiến độ kho (đang xếp, đã xếp xong) và lỗi thời là dòng phụ, FE suy từ pha và revision. Trước đó FE 10
+  trạng thái, BE thiếu đang tối ưu, đang xếp, đã xếp
   xong, cần xem lại, đã huỷ. `DeliveryStopStatus` BE có ARRIVED, SKIPPED.
 - **Vai trò**: FE `warehouse`, `manager`; BE `WAREHOUSE_STAFF`, `CUSTOMER`.
 - **Trường**: Trip BE không có tài xế (tài xế nằm trên Vehicle), tên, mô tả; Stop không có số điện thoại, người liên hệ; kiện BE đi theo

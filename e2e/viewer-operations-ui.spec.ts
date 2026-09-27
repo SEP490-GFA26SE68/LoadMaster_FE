@@ -27,7 +27,7 @@ async function cameraMotion(page: Page) {
 }
 
 test('loading, unloading advisories, blockers and approval wording on 1,000 packages', async ({ page, login, browserErrors }, testInfo) => {
-  await login(OPERATIONS_ROUTE)
+  await login(OPERATIONS_ROUTE, 'manager')
   await settle(page)
   expect(await page.locator('[data-experience="planner"]').count()).toBe(1)
   expect(Number(await page.locator('[data-timeline-bins]').getAttribute('data-timeline-bins'))).toBeLessThanOrEqual(80)
@@ -102,7 +102,7 @@ test('camera orbit keeps draw calls and cargo instances bounded; balanced/high a
   const benchmarks = []
   for (const count of [132, 300, 500, 1000]) {
     const route = `${PLANNER_ROUTE}?debug&packages=${count}&quality=low`
-    await (count === 132 ? login(route) : page.goto(route)); await settle(page)
+    await (count === 132 ? login(route, 'manager') : page.goto(route)); await settle(page)
     const active = await cameraMotion(page)
     await settle(page)
     const resting = await metrics(page), scene = await sceneSnapshot(page)
@@ -178,9 +178,9 @@ test.describe('touch', () => {
     expect(await page.locator('canvas').count()).toBe(0)
     await button(page, 'Bắt đầu giao').waitFor()
 
-    // Tài xế không mở được Planner (403 từ LM-084): đăng xuất rồi vào lại bằng tài khoản điều phối
+    // Tài xế không mở được Planner (403 từ LM-084): đăng xuất rồi vào lại bằng tài khoản quản lý công ty (người duyệt, LM-104)
     await page.evaluate(() => sessionStorage.clear())
-    await login(OPERATIONS_ROUTE); await settle(page)
+    await login(OPERATIONS_ROUTE, 'manager'); await settle(page)
     await button(page, 'Dỡ hàng').tap()
     await button(page, 'Chi tiết / Hiển thị').tap()
     const drawer = page.getByRole('dialog')

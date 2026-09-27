@@ -21,7 +21,8 @@ function revisionCount(page: Page) {
 }
 
 test('approving the seed source revision creates a new approved revision and reopens it', async ({ page, login, browserErrors }) => {
-  await login(PLANNER)
+  // LM-104: quản lý công ty duyệt
+  await login(PLANNER, 'manager')
   await page.locator('canvas').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
@@ -49,7 +50,8 @@ test('approving the seed source revision creates a new approved revision and reo
 
 test('changing cargo after optimisation marks the plan stale and blocks approval', async ({ page, login }) => {
   // Sửa kho trước khi Planner đọc (Query giữ dữ liệu 30 s).
-  await login('/doi-xe')
+  // Kịch bản cần cả quyền tối ưu lại lẫn quyền Duyệt (LM-104 tách hai vai trò): dùng quản trị
+  await login('/doi-xe', 'admin')
   await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
     const db = getMockDb()

@@ -1,8 +1,8 @@
-import { latestApproved, missingIds, plannedStops, tripStatus, type Revision, type Trip } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import { isStaleTrip, latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 
-/** Trạng thái chuyến hiện ở danh sách kho (D-46): đang xếp, chờ xếp, và bản duyệt lỗi thời chờ điều phối viên duyệt lại. */
-export type WarehouseTripStatus = Extract<TripStatus, 'dang_xep_hang' | 'da_duyet' | 'can_xem_lai'>
+/** Giai đoạn của chuyến ở danh sách kho (D-46): đang xếp, chờ xếp, và bản duyệt lỗi thời chờ tối ưu lại và quản lý công ty duyệt. */
+export type WarehouseStage = 'loading' | 'waiting' | 'stale'
 
 /** Một chuyến và các revision của nó theo thứ tự kho trả (cũ trước). */
 export type TripRevisions = { readonly trip: Trip; readonly revisions: readonly Revision[] }
@@ -14,7 +14,10 @@ export type WarehouseTripRow = {
   readonly scheduledDate: string
   /** Tên xe (có biển số); xe không còn trong kho thì là mã xe. */
   readonly vehicleName: string
-  readonly status: WarehouseTripStatus
+  /** Trạng thái chuyến (chip) và dòng phụ (tiến độ kho, lỗi thời) như mọi màn (LM-104). */
+  readonly status: TripStatus
+  readonly sub: TripSubStatus | null
+  readonly stage: WarehouseStage
   /** Kiện của phương án kho xếp theo. */
   readonly total: number
   /** Kiện đã có kết quả ở kho: đã xếp hoặc báo thiếu. */
@@ -31,10 +34,14 @@ export function loadingSessionPath(tripId: string): string {
 }
 
 /** Đang xếp trước (làm tiếp cho xong), rồi chờ xếp, cuối cùng chuyến đang chặn chờ duyệt lại. */
-const STATUS_ORDER: Readonly<Record<WarehouseTripStatus, number>> = { dang_xep_hang: 0, da_duyet: 1, can_xem_lai: 2 }
+const STAGE_ORDER: Readonly<Record<WarehouseStage, number>> = { loading: 0, waiting: 1, stale: 2 }
 
-function isWarehouseStatus(status: TripStatus): status is WarehouseTripStatus {
-  return status in STATUS_ORDER
+/** Chuyến kho cần thấy: đang xếp, đã duyệt chờ xếp, hoặc bản duyệt lỗi thời trong pha lập kế hoạch; còn lại không hiện. */
+function warehouseStage(trip: Trip, revisions: readonly Revision[]): WarehouseStage | null {
+  if (trip.phase === 'loading') return 'loading'
+  if (trip.phase !== 'planning') return null
+  if (isStaleTrip(trip, revisions)) return 'stale'
+  return tripStatus(trip, revisions) === 'da_duyet' ? 'waiting' : null
 }
 
 /**
@@ -53,20 +60,22 @@ export function warehousePlan<R extends Pick<Revision, 'id' | 'approvedAt'>>(tri
 export function warehouseTripRows(entries: readonly TripRevisions[], vehicleNames: ReadonlyMap<string, string>): WarehouseTripRow[] {
   const rows: WarehouseTripRow[] = []
   for (const { trip, revisions } of entries) {
-    const status = tripStatus(trip, revisions)
+    const stage = warehouseStage(trip, revisions)
     const plan = warehousePlan(trip, revisions)
-    if (!plan || !isWarehouseStatus(status)) continue
+    if (!plan || !stage) continue
     rows.push({
       id: trip.id,
       name: trip.name,
       scheduledDate: trip.scheduledDate,
       vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
-      status,
+      status: tripStatus(trip, revisions),
+      sub: tripSubStatus(trip, revisions),
+      stage,
       total: plannedStops(plan).size,
       recorded: trip.loading?.steps.length ?? 0,
       missing: missingIds(trip).size,
     })
   }
   return rows.toSorted((a, b) =>
-    STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id))
+    STAGE_ORDER[a.stage] - STAGE_ORDER[b.stage] || a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id))
 }

@@ -4,6 +4,7 @@ import {
   isMockDbError,
   latestApproved,
   tripStatus,
+  tripSubStatus,
   vnDate,
   type AuditEvent,
   type DeliveryStop,
@@ -11,7 +12,7 @@ import {
   type Trip,
   type VehicleStatus,
 } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { tripRow, type TripRow } from './trip-list'
 import { duplicatePackage, renumberDeliveryStops, stopRemoval, type StopRemoval } from './trip-packages'
@@ -103,6 +104,8 @@ export type TripDetail = {
   /** `null` khi chưa gán, hoặc tài khoản đã bị xoá khỏi kho. */
   readonly driver: User | null
   readonly status: TripStatus
+  /** Dòng phụ dưới chip: tiến độ kho hoặc phương án lỗi thời (LM-104). */
+  readonly sub: TripSubStatus | null
   /** Revision Planner mở mặc định (bản đã duyệt mới nhất, không có thì bản mới nhất); `null` khi chưa tối ưu. */
   readonly plan: { readonly jobId: string; readonly revisionId: string } | null
 }
@@ -120,6 +123,7 @@ export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
   return {
     trip, vehicle, driver,
     status: tripStatus(trip, revisions),
+    sub: tripSubStatus(trip, revisions),
     plan: shown ? { jobId: shown.jobId, revisionId: shown.id } : null,
   }
 }

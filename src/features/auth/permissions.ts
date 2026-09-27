@@ -30,11 +30,14 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number]
 
-/** Quản trị toàn quyền; quản lý chỉ đọc + xuất báo cáo; kho và tài xế chỉ màn vận hành của mình. */
+/**
+ * Quản trị toàn quyền; điều phối lập chuyến và chạy tối ưu nhưng không duyệt; quản lý công ty đọc, xuất báo cáo và **duyệt phương
+ * án** (LM-104, quyết định 27/09/2026); kho và tài xế chỉ màn vận hành của mình.
+ */
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   admin: PERMISSIONS,
-  dispatcher: ['dashboard.view', 'trips.view', 'trips.edit', 'optimization.run', 'plans.view', 'plans.approve', 'fleet.view', 'fleet.edit'],
-  manager: ['dashboard.view', 'reports.export', 'trips.view', 'plans.view', 'fleet.view'],
+  dispatcher: ['dashboard.view', 'trips.view', 'trips.edit', 'optimization.run', 'plans.view', 'fleet.view', 'fleet.edit'],
+  manager: ['dashboard.view', 'reports.export', 'trips.view', 'plans.view', 'plans.approve', 'fleet.view'],
   warehouse: ['warehouse.operate'],
   driver: ['driver.operate'],
   manufacturer: ['packages.register', 'shipments.manage'],

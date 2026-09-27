@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
  * - `shape="chip"` (mặc định): cao 26, chữ 12,5/600, nền tint không viền. Chấm kể trạng thái theo **ngữ pháp chấm**:
  *   `solid` = trạng thái · `ring` (vòng rỗng) = chờ người kế tiếp · `halo` (có quầng) = đang chạy · `spin` = đang tính.
  * - `shape="tag"`: nhãn 20 px, chữ 11,5/600 — phiên bản, "Đã chỉnh tay", MOCK RESULT (`tone="mock"`: viền hổ phách, nền trong).
- * - `outlined`: thêm viền cùng tông, cho trạng thái cần người dùng xử lý ("Cần xem lại").
+ * - `outlined`: thêm viền cùng tông, cho nhãn cần người dùng xử lý ("Lỗi thời — cần tối ưu lại").
  */
 const badgeVariants = cva(['inline-flex shrink-0 items-center whitespace-nowrap border font-semibold leading-none'], {
   variants: {

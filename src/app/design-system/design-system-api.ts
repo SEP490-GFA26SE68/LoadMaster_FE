@@ -2,7 +2,7 @@ import { expandPackages } from '@/domain/cargo'
 import type { VehicleConfig } from '@/domain/models'
 import { tripProgress, type ProgressStep } from '@/features/trips/trip-progress'
 import { fetchTripActivity } from '@/features/trips/trips-api'
-import { getMockDb, latestApproved, tripStatus, type Revision, type Trip } from '@/lib/mock-db'
+import { getMockDb, isStaleTrip, latestApproved, tripStatus, type Revision, type Trip } from '@/lib/mock-db'
 import type { UserStatus } from '@/types/user'
 
 /**
@@ -88,7 +88,7 @@ export async function fetchSheetSample(): Promise<SheetSample> {
     .filter(({ trip }) => trip.phase !== 'cancelled')
     .reduce<SheetTrip | null>((best, { row }) => ((row.payloadPercent ?? -1) > (best?.payloadPercent ?? -1) ? row : best), null)
   const cancelled = trips.find((trip) => trip.cancellation)?.cancellation
-  const waiting = rows.find(({ trip, revisions: list }) => tripStatus(trip, list) === 'da_toi_uu')
+  const waiting = rows.find(({ trip, revisions: list }) => tripStatus(trip, list) === 'da_toi_uu' && !isStaleTrip(trip, list))
   const activity = waiting ? await fetchTripActivity(waiting.trip.id) : null
 
   return {

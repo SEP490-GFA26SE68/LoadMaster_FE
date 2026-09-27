@@ -117,7 +117,7 @@ test('two-carton trip: cm measures of step 1, then missing, then the last confir
 
 test('a stale approved plan does not start: the worker waits for the dispatcher to approve again', async () => {
   renderWarehouse('/kho?chuyen=TRIP-013')
-  expect(await screen.findByText('Chờ điều phối viên duyệt lại', {}, LOAD)).toBeInTheDocument()
+  expect(await screen.findByText('Chờ tối ưu và duyệt lại', {}, LOAD)).toBeInTheDocument()
   expect(screen.getByText(/^Phương án đã duyệt của chuyến TRIP-013 lỗi thời/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Xác nhận đã xếp' })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
@@ -129,7 +129,7 @@ test('no approved plan, a cancelled trip or an unknown trip: say why, with the w
   const { trip } = await optimizedTwoCartonTrip(db)
   const view = renderWarehouse(`/kho?chuyen=${trip.id}`)
   expect(await screen.findByText('Chưa có phương án đã duyệt', {}, LOAD)).toBeInTheDocument()
-  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Điều phối viên cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
+  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Quản lý công ty cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
   view.unmount()
 

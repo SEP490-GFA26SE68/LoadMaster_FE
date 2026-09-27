@@ -5,7 +5,7 @@ import { warehousePlan } from './warehouse-trips'
 /**
  * Việc màn kho làm với chuyến `/kho?chuyen=` (LM-086), suy từ pha và revision của chuyến (D-45):
  * - `start`: đã duyệt, chưa xếp — vào màn là bắt đầu xếp theo bản duyệt mới nhất;
- * - `stale`: bản duyệt mới nhất lỗi thời — không bắt đầu, chờ điều phối viên duyệt lại;
+ * - `stale`: bản duyệt mới nhất lỗi thời — không bắt đầu, chờ tối ưu lại và quản lý công ty duyệt;
  * - `loading`: đang xếp theo bản đã chốt lúc bắt đầu; `finished`: kho đã xếp xong (kể cả khi xe đã đi giao);
  * - `no-plan`: chưa có bản duyệt; `cancelled`: chuyến đã huỷ.
  */

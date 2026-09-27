@@ -13,7 +13,9 @@ export {
   missingIds,
   plannedStops,
   stopItemIds,
+  isStaleTrip,
   tripStatus,
+  tripSubStatus,
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'

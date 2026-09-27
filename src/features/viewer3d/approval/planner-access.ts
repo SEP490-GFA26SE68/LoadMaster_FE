@@ -1,7 +1,10 @@
 import type { TripPhase } from '@/lib/mock-db'
 
-/** Vì sao Planner chỉ xem: chuyến đã sang pha vận hành (D-45) hoặc tài khoản không có quyền Duyệt (D-41). */
-export type PlannerLock = Exclude<TripPhase, 'planning'> | 'readOnly'
+/**
+ * Vì sao Planner chỉ xem: chuyến đã sang pha vận hành (D-45), hoặc tài khoản không có quyền Duyệt (D-41) — chỉ quản lý công ty duyệt
+ * (LM-104): bản chưa duyệt là `awaitingApproval` ("chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`.
+ */
+export type PlannerLock = Exclude<TripPhase, 'planning'> | 'awaitingApproval' | 'readOnly'
 
 export type PlannerAccess = {
   /** `null`: chỉnh sửa và duyệt được. Có lý do thì Planner ẩn Chỉnh sửa, Duyệt và nói lý do một lần. */
@@ -23,7 +26,7 @@ export function plannerAccess({ phase = 'planning', canApprove, approvedAt, hasE
   approvedAt: string | null
   hasEdits: boolean
 }): PlannerAccess {
-  const lock: PlannerLock | null = phase !== 'planning' ? phase : canApprove ? null : 'readOnly'
+  const lock: PlannerLock | null = phase !== 'planning' ? phase : canApprove ? null : approvedAt === null ? 'awaitingApproval' : 'readOnly'
   const approve = lock !== null ? null : hasEdits ? 'draft' : approvedAt === null ? 'plan' : null
   return { lock, approve, approvedAt: hasEdits ? null : approvedAt }
 }

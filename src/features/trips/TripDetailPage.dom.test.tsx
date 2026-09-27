@@ -43,7 +43,8 @@ const primaryActions = (container: HTMLElement) => container.querySelectorAll('a
 test('a trip being loaded is locked: the banner says why, edit actions are gone, progress shows packages loaded so far', async () => {
   const { container } = renderDetail('TRIP-011')
   expect(await screen.findByText('Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.', {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByText('Đang xếp hàng')).toBeInTheDocument()
+  // LM-104: chip vẫn Đã duyệt, tiến độ kho là dòng phụ cạnh chip
+  expect(screen.getByText(/^Kho đang xếp \d+ \/ 280$/).previousElementSibling).toHaveTextContent('Đã duyệt')
   expect(screen.queryByRole('link', { name: 'Chạy tối ưu' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Thêm kiện' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Nhập từ file' })).not.toBeInTheDocument()

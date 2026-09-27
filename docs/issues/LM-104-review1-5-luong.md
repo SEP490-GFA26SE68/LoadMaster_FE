@@ -25,7 +25,7 @@ Nguồn: tài liệu nhóm "LoadMaster — Mô tả 5 Main Flow cho Review 1"; �
 ## Việc
 
 ### Giai đoạn 1 (song song)
-- [ ] A — Trạng thái chuyến 5 + Đã huỷ, dòng phụ tiến độ kho / lỗi thời; quyền duyệt chuyển sang Quản lý công ty.
+- [x] A — Trạng thái chuyến 5 + Đã huỷ, dòng phụ tiến độ kho / lỗi thời; quyền duyệt chuyển sang Quản lý công ty.
 - [x] B — Nền: kho mock cho loại kiện, kiện đăng ký + mã QR, lô hàng + công ty logistics + nhận hàng, đơn hàng, quyết định duyệt (duyệt /
       từ chối / yêu cầu tối ưu lại / đề xuất đổi xe, tách chuyến), lịch sử lần chạy (mục tiêu, thuật toán), loại xe, seal, báo cáo chuyến;
       vai trò Nhà sản xuất, Logistics; route + thanh điều hướng + quyền; component QR (vẽ + quét).
@@ -112,4 +112,14 @@ chỉ ghi khi đi qua `runOptimization`.
 
 ## Kết quả
 
-*(điền khi xong)*
+### A — trạng thái theo backend, người duyệt là Quản lý công ty (27/09/2026)
+
+- `TripStatus` còn 6 giá trị: `nhap`, `da_toi_uu`, `da_duyet`, `dang_van_chuyen`, `hoan_thanh`, `da_huy`. Pha kho vẫn trong kho mock
+  (`planning → loading → loaded → delivering → completed | cancelled`); `loading`/`loaded` hiện Đã duyệt, bản lỗi thời hiện Đã tối ưu.
+- Dòng phụ `tripSubStatus` (`stale` · `loading` đã ghi / tổng · `loaded`) và `TripSubStatusTag` dùng chung: danh sách chuyến, chi tiết
+  chuyến, danh sách kho, "Chuyến của tôi", `/kieu-dang`.
+- Tab danh sách: Tất cả · Cần xử lý · Sắp chạy · Đang vận chuyển · Hoàn thành · Đã huỷ; giá trị `trang-thai` cũ đọc sang giá trị mới.
+- `plans.approve` chuyển từ điều phối sang quản lý công ty (`roles.manager` = "Quản lý công ty"). Planner của điều phối chỉ xem: bản chưa
+  duyệt nói "Chờ quản lý công ty duyệt", bản đã duyệt "chỉ quản lý công ty chỉnh sửa và duyệt". Seed ghi lần duyệt cho quản lý (US-0002).
+- Test: unit/DOM cập nhật theo nhãn và quyền mới; E2E của Planner đăng nhập `manager`, `workday` đổi người giữa tối ưu và duyệt, kịch
+  bản cần cả tối ưu lẫn duyệt dùng `admin`, thêm E2E điều phối chỉ xem.

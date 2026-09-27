@@ -59,9 +59,9 @@ export type DashboardSummary = {
   readonly trips: readonly DashboardTripRow[]
 }
 
-/** Thứ tự vòng đời (D-45) cho biểu đồ chuyến theo trạng thái. `dang_toi_uu` là trạng thái tạm của màn, kho không lưu. */
+/** Thứ tự vòng đời cho biểu đồ chuyến theo trạng thái: năm trạng thái của backend cộng Đã huỷ (LM-104). */
 const STATUS_ORDER: readonly TripStatus[] = [
-  'nhap', 'da_toi_uu', 'da_duyet', 'can_xem_lai', 'dang_xep_hang', 'da_xep_xong', 'dang_giao', 'hoan_thanh', 'da_huy',
+  'nhap', 'da_toi_uu', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy',
 ]
 
 function average(values: readonly number[]): number | null {

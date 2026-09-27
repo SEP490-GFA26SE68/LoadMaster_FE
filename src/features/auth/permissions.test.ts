@@ -10,10 +10,15 @@ test('the admin has every permission; nobody else has users or audit (D-41)', ()
   }
 })
 
-test('the manager reads and exports but writes nothing', () => {
-  expect(ROLE_PERMISSIONS.manager.filter((permission) => /\.(edit|run|approve|operate)$/.test(permission))).toStrictEqual([])
+test('the company manager reads, exports and approves plans, and writes nothing else (LM-104)', () => {
+  expect(ROLE_PERMISSIONS.manager.filter((permission) => /\.(edit|run|approve|operate)$/.test(permission))).toStrictEqual(['plans.approve'])
   expect(can('manager', 'reports.export')).toBe(true)
   expect(can('manager', 'trips.view')).toBe(true)
+})
+
+test('the dispatcher plans and optimizes but does not approve (LM-104)', () => {
+  expect([can('dispatcher', 'trips.edit'), can('dispatcher', 'optimization.run'), can('dispatcher', 'plans.view')]).toStrictEqual([true, true, true])
+  expect(can('dispatcher', 'plans.approve')).toBe(false)
 })
 
 test('warehouse staff and drivers only operate their own screen', () => {

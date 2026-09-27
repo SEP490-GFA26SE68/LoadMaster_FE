@@ -1,8 +1,8 @@
 import { expandPackages } from '@/domain/cargo'
 import type { VehicleConfig } from '@/domain/models'
 import { compareText, isWithinDateRange, matchesQuery } from '@/lib/list-filter'
-import { latestApproved, tripStatus, type Revision, type Trip, type TripPhase } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import { latestApproved, tripStatus, tripSubStatus, type Revision, type Trip, type TripPhase } from '@/lib/mock-db'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 
 /** Một dòng danh sách chuyến (LM-053, LM-088): mọi giá trị lấy từ kho — chuyến, xe, tài xế và revision. */
@@ -25,6 +25,8 @@ export type TripRow = {
   /** Tỷ lệ thể tích của revision Planner mở mặc định; `null` khi chưa tối ưu */
   readonly volumePercent: number | null
   readonly status: TripStatus
+  /** Dòng phụ dưới chip: tiến độ kho hoặc phương án lỗi thời (LM-104). */
+  readonly sub: TripSubStatus | null
   readonly phase: TripPhase
 }
 
@@ -52,6 +54,7 @@ export function tripRow(
     stopCount: trip.stops.length,
     volumePercent: shown ? shown.result.metrics.volumeUtilizationPercent : null,
     status: tripStatus(trip, revisions),
+    sub: tripSubStatus(trip, revisions),
     phase: trip.phase,
   }
 }
@@ -65,42 +68,60 @@ export type TripListFilter = (typeof TRIP_LIST_FILTERS)[number]
 export const UNASSIGNED_DRIVER = 'chua-gan'
 
 /**
- * Nhóm trạng thái của tab trên dải trời (V2.3, `ChuyenHang.jpg`). Giá trị `trang-thai` trên URL là một trạng thái đơn hoặc slug nhóm:
- * - sắp chạy: còn ở pha lập kế hoạch (nháp → đã duyệt), chưa bàn giao kho;
- * - cần xử lý: đã tối ưu chờ duyệt, hoặc cần xem lại vì dữ liệu đổi sau khi tối ưu — một phần của "sắp chạy";
- * - đang thực hiện: kho đang/đã xếp hoặc tài xế đang giao.
+ * Nhóm trạng thái của tab trên dải trời (V2.3 `ChuyenHang.jpg`, LM-104). Giá trị `trang-thai` trên URL là một trạng thái đơn hoặc slug
+ * nhóm:
+ * - cần xử lý: đã tối ưu chờ quản lý duyệt, gồm cả phương án lỗi thời cần tối ưu lại (cũng là Đã tối ưu, kèm dòng phụ);
+ * - sắp chạy: đã duyệt, xe chưa rời kho — kể cả khi kho đang xếp hoặc đã xếp xong (dòng phụ nói tiến độ kho).
+ * Đang vận chuyển, hoàn thành và đã huỷ là trạng thái đơn. Nháp chỉ nằm ở Tất cả.
  */
 export const TRIP_STATUS_GROUPS = {
-  upcoming: ['nhap', 'dang_toi_uu', 'da_toi_uu', 'can_xem_lai', 'da_duyet'],
-  review: ['da_toi_uu', 'can_xem_lai'],
-  active: ['dang_xep_hang', 'da_xep_xong', 'dang_giao'],
+  review: ['da_toi_uu'],
+  upcoming: ['da_duyet'],
 } as const satisfies Record<string, readonly TripStatus[]>
 
 export type TripStatusGroup = keyof typeof TRIP_STATUS_GROUPS
 
 /** Slug nhóm trên URL, tiếng Việt không dấu như mọi tham số màn danh sách (D-52). */
 export const TRIP_STATUS_GROUP_SLUGS = {
-  upcoming: 'sap-chay',
   review: 'can-xu-ly',
-  active: 'dang-thuc-hien',
+  upcoming: 'sap-chay',
 } as const satisfies Record<TripStatusGroup, string>
 
 /**
- * Tab của danh sách theo thứ tự trên dải trời; `value` là giá trị `trang-thai` trên URL (rỗng là không lọc). Hoàn thành và đã huỷ
- * là trạng thái đơn, giữ mã trạng thái như khi lọc một trạng thái bằng URL.
+ * Giá trị `trang-thai` của bản trước LM-104 (mười trạng thái, nhóm "đang thực hiện") còn nằm trong liên kết đã lưu: đọc sang giá trị
+ * mới gần nghĩa nhất để liên kết cũ vẫn lọc được và sáng đúng tab.
+ */
+const LEGACY_STATUS_FILTERS: Readonly<Record<string, string>> = {
+  'dang-thuc-hien': 'dang_van_chuyen',
+  dang_giao: 'dang_van_chuyen',
+  dang_xep_hang: TRIP_STATUS_GROUP_SLUGS.upcoming,
+  da_xep_xong: TRIP_STATUS_GROUP_SLUGS.upcoming,
+  can_xem_lai: TRIP_STATUS_GROUP_SLUGS.review,
+  dang_toi_uu: TRIP_STATUS_GROUP_SLUGS.review,
+}
+
+/** Giá trị `trang-thai` trên URL, giá trị cũ đã đọc sang giá trị mới. */
+export function normalizeStatusFilter(value: string): string {
+  return LEGACY_STATUS_FILTERS[value] ?? value
+}
+
+/**
+ * Tab của danh sách theo thứ tự trên dải trời; `value` là giá trị `trang-thai` trên URL (rỗng là không lọc). Đang vận chuyển,
+ * hoàn thành và đã huỷ là trạng thái đơn, giữ mã trạng thái như khi lọc một trạng thái bằng URL.
  */
 export const TRIP_LIST_TABS = [
   { key: 'all', value: '' },
   { key: 'review', value: TRIP_STATUS_GROUP_SLUGS.review },
   { key: 'upcoming', value: TRIP_STATUS_GROUP_SLUGS.upcoming },
-  { key: 'active', value: TRIP_STATUS_GROUP_SLUGS.active },
+  { key: 'transit', value: 'dang_van_chuyen' },
   { key: 'completed', value: 'hoan_thanh' },
   { key: 'cancelled', value: 'da_huy' },
 ] as const satisfies readonly { key: string; value: string }[]
 
 export type TripListTab = (typeof TRIP_LIST_TABS)[number]['key']
 
-function matchesStatus(status: TripStatus, filter: string): boolean {
+function matchesStatus(status: TripStatus, value: string): boolean {
+  const filter = normalizeStatusFilter(value)
   if (filter === '') return true
   const group = (Object.keys(TRIP_STATUS_GROUP_SLUGS) as TripStatusGroup[]).find((key) => TRIP_STATUS_GROUP_SLUGS[key] === filter)
   return group ? (TRIP_STATUS_GROUPS[group] as readonly TripStatus[]).includes(status) : status === filter

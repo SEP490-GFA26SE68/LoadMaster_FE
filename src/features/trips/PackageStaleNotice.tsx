@@ -4,7 +4,7 @@ import { staleOnSave } from './package-stale'
 import { useTripRevisionsQuery } from './useTripsQuery'
 
 /**
- * Cảnh báo đầu form kiện (V2.3 `ChiTietChuyenKien`): lưu thay đổi sẽ làm revision đang hiển thị lỗi thời và đưa chuyến về Cần xem lại
+ * Cảnh báo đầu form kiện (V2.3 `ChiTietChuyenKien`): lưu thay đổi sẽ làm revision đang hiển thị lỗi thời và đưa chuyến về Đã tối ưu kèm dòng phụ lỗi thời (LM-104)
  * (D-31). Đọc revision thật của chuyến; chưa tối ưu hoặc bản hiển thị đã lỗi thời thì không hiện gì.
  */
 export function PackageStaleNotice({ tripId }: { tripId: string }) {

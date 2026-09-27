@@ -16,7 +16,7 @@ export type DeliveryStop = {
 
 /**
  * Pha vận hành của chuyến (D-45), do kho lưu. `planning` là mọi thứ trước khi kho bắt đầu xếp — trạng thái hiển thị của pha này
- * (Nháp / Đã tối ưu / Đã duyệt / Cần xem lại) suy từ revision (`tripStatus`). Từ `loading` trở đi xe, điểm giao và kiện bị khoá.
+ * (Nháp / Đã tối ưu / Đã duyệt, dòng phụ lỗi thời) suy từ revision (`tripStatus`). Từ `loading` trở đi xe, điểm giao và kiện bị khoá.
  */
 export const TRIP_PHASES = ['planning', 'loading', 'loaded', 'delivering', 'completed', 'cancelled'] as const
 export type TripPhase = (typeof TRIP_PHASES)[number]

@@ -2,7 +2,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
@@ -113,8 +113,14 @@ export function createTripColumns(t: TFunction, format: Formatter) {
     }),
     helper.accessor('status', {
       header: t('trips.list.status'),
-      meta: { width: '160px' } satisfies TripColumnMeta,
-      cell: (info) => <StatusBadge status={info.getValue()} />,
+      meta: { width: '184px' } satisfies TripColumnMeta,
+      // Dòng phụ (LM-104) nằm dưới chip: tiến độ kho hoặc phương án lỗi thời — hai dòng vừa hàng 56 px
+      cell: (info) => (
+        <span className="flex flex-col items-start gap-1">
+          <StatusBadge status={info.getValue()} />
+          <TripSubStatusTag sub={info.row.original.sub} />
+        </span>
+      ),
     }),
     helper.display({
       id: 'open',

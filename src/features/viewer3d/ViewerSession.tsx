@@ -52,7 +52,7 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
   const approval = useViewerApproval(plan, state)
   // Chỉ dời/xoay kiện là chỉnh sửa cần Duyệt lại; ghim không thuộc phương án gửi Duyệt.
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
-  // Quản lý xem phương án chỉ đọc (D-41); chuyến đã sang pha vận hành thì phương án đã chốt (D-45).
+  // Chỉ quản lý công ty duyệt (LM-104): điều phối viên xem chỉ đọc; chuyến đã sang pha vận hành thì phương án đã chốt (D-45).
   const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
@@ -111,7 +111,8 @@ export function ViewerSession({ model: plan, phase }: { model: ViewerSceneModel;
       {plan.revision?.stale ? (
         <div role="alert" className="flex flex-none flex-wrap items-center gap-3 border-b border-badge-warning-border bg-badge-warning-bg px-4 py-2 text-body text-badge-warning-fg">
           <span>{t('viewer.plan.staleBanner')}</span>
-          {can('optimization.run') && access.lock === null ? <Link to={`/chuyen/${tripId}/toi-uu`} className="font-medium text-primary">{t('viewer.plan.rerun')}</Link> : null}
+          {/* Tối ưu lại là việc của điều phối viên, không cần quyền Duyệt (LM-104); chỉ khi chuyến còn lập kế hoạch */}
+          {can('optimization.run') && (phase ?? 'planning') === 'planning' ? <Link to={`/chuyen/${tripId}/toi-uu`} className="font-medium text-primary">{t('viewer.plan.rerun')}</Link> : null}
         </div>
       ) : null}
       {editor.mode === 'edit' ? <EditorToolbar state={state} editor={editor} onModeChange={handleModeChange} /> :

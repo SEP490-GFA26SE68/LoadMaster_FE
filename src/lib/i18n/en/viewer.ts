@@ -75,7 +75,8 @@ export const viewer = {
     delivering: 'The trip is out for delivery — the plan is final.',
     completed: 'The trip is completed — the plan is final.',
     cancelled: 'The trip was cancelled — the plan is view only.',
-    readOnly: 'View only: your account cannot edit or approve plans.',
+    awaitingApproval: 'Waiting for company manager approval — you can view the plan only.',
+    readOnly: 'View only: only the company manager edits and approves plans.',
   },
   axles: {
     title: 'Axle load',

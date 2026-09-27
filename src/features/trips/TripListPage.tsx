@@ -10,7 +10,7 @@ import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { EmptyTripsIllustration } from './EmptyTripsIllustration'
 import { todayInVietnam } from './trip-dates'
-import { filterTripRows, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
+import { filterTripRows, normalizeStatusFilter, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
 import { TripListSkeleton } from './TripListSkeleton'
 import { TripListTable } from './TripListTable'
@@ -51,8 +51,8 @@ export function TripListPage() {
   const [sort] = list.sorting
   const grouped = sort?.id === BY_DATE
   const newestFirst = sort?.desc ?? true
-  // Giá trị lạ trên URL (một trạng thái đơn như `dang_giao`) vẫn lọc được, chỉ là không tab nào sáng
-  const tab = TRIP_LIST_TABS.find((item) => item.value === status)?.key ?? status
+  // Giá trị cũ trên URL (trước LM-104) đọc sang giá trị mới; giá trị lạ khác vẫn lọc được, chỉ là không tab nào sáng
+  const tab = TRIP_LIST_TABS.find((item) => item.value === normalizeStatusFilter(status))?.key ?? status
   const hasTrips = trips.length > 0
   // Card đè lên dải trời chỉ khi thứ đầu tiên của vùng cuộn là thẻ nền đặc (bảng hoặc khung tải), không phải chữ trần
   const overlap = query.isPending || (query.isSuccess && hasTrips)
@@ -66,7 +66,7 @@ export function TripListPage() {
       <PageHero
         overlap={overlap}
         title={t('trips.list.title')}
-        description={hasTrips ? <TripListStats total={stats.all} active={stats.active} review={stats.review} /> : t('pageHero.trips')}
+        description={hasTrips ? <TripListStats total={stats.all} transit={stats.transit} review={stats.review} /> : t('pageHero.trips')}
         actions={hasTrips && canCreate ? (
           <Button variant="primary" asChild>
             <Link to="/chuyen/moi">

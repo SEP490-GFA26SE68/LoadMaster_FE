@@ -26,7 +26,7 @@ export const driver = {
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
     atStop: 'Đang giao điểm {number} / {total}',
     waitingApproved: 'Kho chưa bắt đầu xếp — chưa giao được.',
-    waitingLoading: 'Kho đang xếp {done}/{total} kiện — chưa giao được.',
+    waitingLoading: 'Kho đang xếp — chưa giao được.',
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
     emptyTitle: 'Chưa có chuyến nào',

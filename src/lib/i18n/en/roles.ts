@@ -5,7 +5,7 @@ export const roles = {
   dispatcher: 'Dispatcher',
   warehouse: 'Warehouse staff',
   driver: 'Driver',
-  manager: 'Manager',
+  manager: 'Company manager',
   admin: 'System administrator',
   manufacturer: 'Manufacturer',
   logistics: 'Logistics company',

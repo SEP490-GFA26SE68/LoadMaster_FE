@@ -25,7 +25,9 @@ Giao diện **tiếng Việt**. Một codebase responsive phục vụ 7 vai trò
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
 **Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
-**giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo);
+**giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo
+*(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
+điều phối lập chuyến, chạy tối ưu nhưng không duyệt — Planner của điều phối chỉ xem, một dòng lý do "Chờ quản lý công ty duyệt");
 mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
 E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 27/09/2026, LM-104)* Quyền Review 1
@@ -402,6 +404,11 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   *(đã điều chỉnh 26/09/2026)* Bản mẫu V2.3 dùng **tím** cho "đang chạy" và tint "phân tích phụ"; người dùng thấy tím không hợp nên đổi
   sang thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu, cùng họ màu lạnh). `@theme` xoá thang `violet`/`purple` của Tailwind:
   không dùng tím ở đâu trong app. "Đã huỷ" cũng lệch bản mẫu: chip đỏ trọn thay vì chip xám gạch chữ.
+  *(đã điều chỉnh 27/09/2026, LM-104)* Chuyến chỉ còn **6 trạng thái** theo backend (`DRAFT`, `OPTIMIZED`, `APPROVED`, `IN_TRANSIT`,
+  `COMPLETED`) cộng Đã huỷ: nháp xám đặc · đã tối ưu hổ phách vòng rỗng · đã duyệt cyan đặc · đang vận chuyển xanh lam có quầng · hoàn
+  thành xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Tiến độ kho và phương án
+  lỗi thời là **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`): "Lỗi thời — cần tối ưu lại" hổ phách có viền, "Kho đang
+  xếp 110 / 280" và "Đã xếp xong" xanh lam. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
@@ -724,6 +731,9 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
   Lý do chặn Duyệt ở tooltip + `aria-describedby` của nút, không in ở thanh. Pha chuyến khác `planning` hoặc thiếu `plans.approve`: không
   Chỉnh sửa, không Duyệt, một dòng lý do (`viewer.lock`). Hộp thông tin chỉ mở từ nút "Chi tiết / Hiển thị" ở góc khung 3D và thẻ kiện.
+  *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty (và quản trị) có `plans.approve`. Thiếu quyền: bản chưa duyệt là
+  `awaitingApproval` ("Chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. Liên kết "Tới Thiết lập tối ưu" của banner lỗi thời theo
+  `optimization.run` và pha `planning`, không theo quyền Duyệt. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `manager`.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - *(bổ sung, LM-042)* Xem trước 3D ở form xe: `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
@@ -834,7 +844,12 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   `loaded` (hai pha sau khoá xe và điểm giao). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ
   mục `DropdownMenu` dùng `modal={false}` cho menu để focus về đúng hộp thoại.
 - *(bổ sung 19/09/2026, LM-081 → LM-083)* Kho lưu **pha** chuyến `planning → loading → loaded → delivering → completed` (+ `cancelled`);
-  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). Từ `loading` trở đi xe/điểm giao/kiện,
+  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). *(đã điều chỉnh 27/09/2026, LM-104)*
+  `TripStatus` chỉ còn 6 giá trị theo backend: `nhap`, `da_toi_uu`, `da_duyet` (gồm pha `loading`/`loaded`), `dang_van_chuyen`
+  (`delivering`), `hoan_thanh`, `da_huy`; bản hiển thị lỗi thời là `da_toi_uu`. Tiến độ kho và lỗi thời là dòng phụ `tripSubStatus`
+  (`stale` · `loading` đã ghi / tổng · `loaded`), hiện bằng `TripSubStatusTag`; lọc/nhóm theo trạng thái, logic kho/tài xế theo pha hoặc
+  dòng phụ. Tab danh sách chuyến: Tất cả · Cần xử lý (`da_toi_uu`) · Sắp chạy (`da_duyet`) · Đang vận chuyển · Hoàn thành · Đã huỷ; giá
+  trị `trang-thai` cũ (`dang-thuc-hien`, `dang_giao`…) đọc sang giá trị mới (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện,
   tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành
   của kho (`startLoading`…`completeStop`). Bảo dưỡng xe lưu ngoài `VehicleConfig` (`listVehicleStates`, D-04).
 - Người dùng và mật khẩu nằm trong kho; kho giữ **phiên** như cookie server (`authenticate`, `restoreSession`) và mọi hàm ghi thêm

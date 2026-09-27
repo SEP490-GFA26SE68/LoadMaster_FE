@@ -41,20 +41,30 @@ test('a driver opening the admin screen gets 403 with a way back', { tag: '@phon
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the manager reads trips and plans without any write action', async ({ page, login, browserErrors }) => {
+test('the company manager reads trips without editing them and is the one who approves plans (LM-104)', async ({ page, login, browserErrors }) => {
   await login(`/chuyen/${SEED_TRIP}`, 'manager')
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Đổi xe', exact: true })).toHaveCount(0)
 
-  await navigateInApp(page, `/chuyen/${SEED_TRIP}/phuong-an`)
+  // Bản chưa duyệt REV-001: quản lý công ty có Chỉnh sửa và Duyệt, không có dòng khoá
+  await navigateInApp(page, `/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`)
   await page.locator('canvas').waitFor()
   await expect(page.getByText('MOCK RESULT', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toBeVisible()
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
 
   await navigateInApp(page, `/chuyen/${SEED_TRIP}/toi-uu`)
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('the dispatcher sees an unapproved plan read-only, waiting for the company manager (LM-104)', async ({ page, login, browserErrors }) => {
+  await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
+  await page.locator('canvas').waitFor()
+  await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toHaveText('Chờ quản lý công ty duyệt — bạn chỉ xem phương án.')
+  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toHaveCount(0)
   expect(browserErrors).toStrictEqual([])
 })

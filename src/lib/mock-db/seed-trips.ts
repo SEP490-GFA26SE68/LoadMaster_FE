@@ -127,6 +127,8 @@ export const TRIP_SPECS: readonly TripSpec[] = [
 /** Xe bảo dưỡng trong seed (D-53): bật 4 ngày trước ngày neo. */
 export const MAINTENANCE_SPEC = { vehicleId: 'VEHICLE-008', daysAgo: 4, time: '09:15', note: 'Thay má phanh và bảo dưỡng định kỳ 20.000 km' } as const
 
-/** Người điều phối làm mọi thao tác lập kế hoạch trong seed. */
+/** Người điều phối làm mọi thao tác lập kế hoạch trong seed (trừ duyệt). */
 export const SEED_DISPATCHER = 'US-0001'
+/** Quản lý công ty duyệt mọi phương án trong seed (LM-104). */
+export const SEED_MANAGER = 'US-0002'
 export const SEED_ADMIN = 'US-0005'

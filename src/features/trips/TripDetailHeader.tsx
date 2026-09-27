@@ -2,7 +2,7 @@ import { Box, Info, Lock, Play } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { PageHero } from '@/components/PageHero'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
@@ -51,7 +51,12 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
       overlap
       crumbs={[{ label: t('trips.list.title'), to: '/chuyen' }, { label: tripId, mono: true }]}
       title={trip?.name ?? tripId}
-      badge={detail ? <StatusBadge status={detail.status} /> : undefined}
+      badge={detail ? (
+        <span className="flex items-center gap-2">
+          <StatusBadge status={detail.status} />
+          <TripSubStatusTag sub={detail.sub} />
+        </span>
+      ) : undefined}
       description={detail ? <TripMeta detail={detail} /> : undefined}
       actions={
         <div className="flex flex-col items-end gap-2">

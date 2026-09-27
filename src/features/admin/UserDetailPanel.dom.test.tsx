@@ -88,11 +88,11 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
     'US-0001', '0901 234 567', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
   ])
-  // Quyền của điều phối viên (tám quyền gốc + đơn hàng và loại xe của Review 1, LM-104), nhãn lấy từ ma trận quyền
+  // Mười quyền của điều phối viên: bảy quyền gốc (không duyệt phương án — quản lý công ty duyệt) + đơn hàng và loại xe của Review 1 (LM-104)
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
   expect(chips.map((chip) => chip.textContent)).toStrictEqual([
     'Xem bảng điều khiển', 'Xem chuyến hàng', 'Tạo, sửa, huỷ chuyến', 'Chạy tối ưu', 'Xem phương án 3D và so sánh',
-    'Chỉnh sửa và duyệt phương án', 'Xem đội xe', 'Thêm, sửa, xoá xe và bảo dưỡng',
+    'Xem đội xe', 'Thêm, sửa, xoá xe và bảo dưỡng',
     'Xem đơn hàng', 'Tạo, sửa đơn hàng và gán vào điểm giao', 'Thêm, sửa, xoá loại xe',
   ])
   expect(columnHeaders()).not.toContain('Điện thoại')
@@ -104,8 +104,9 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng' })).toBeInTheDocument()
 
   await user.click(within(await rowOf('Trần Thị Mai')).getByText('quanly@loadmaster.vn'))
+  // Quản lý công ty: năm quyền đọc/xuất cộng duyệt phương án (LM-104)
   const next = screen.getByRole('complementary', { name: 'Chi tiết tài khoản Trần Thị Mai' })
-  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(7)
+  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(8)
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(within(next).getByRole('button', { name: 'Đóng chi tiết tài khoản' }))

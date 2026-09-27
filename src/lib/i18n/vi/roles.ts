@@ -3,7 +3,7 @@ export const roles = {
   dispatcher: 'Điều phối viên',
   warehouse: 'Nhân viên kho',
   driver: 'Tài xế',
-  manager: 'Quản lý',
+  manager: 'Quản lý công ty',
   admin: 'Quản trị hệ thống',
   manufacturer: 'Nhà sản xuất',
   logistics: 'Công ty logistics',

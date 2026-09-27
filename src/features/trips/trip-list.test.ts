@@ -44,10 +44,10 @@ test('a trip without revisions is a draft with no utilisation and no driver', as
   expect(tripRow(created, vehicle, [])).toMatchObject({ packageCount: 0, volumePercent: null, status: 'nhap', driverName: null })
 })
 
-test('changing cargo after optimisation makes the trip need review', async () => {
+test('changing cargo after optimisation makes the approved plan stale: optimised again, with the stale line (LM-104)', async () => {
   const { db, trip, vehicle } = await seed()
   const changed = await db.updateTrip(trip.id, { packages: trip.packages.slice(1) })
-  expect(tripRow(changed, vehicle, await db.listRevisions(trip.id)).status).toBe('can_xem_lai')
+  expect(tripRow(changed, vehicle, await db.listRevisions(trip.id))).toMatchObject({ status: 'da_toi_uu', sub: { kind: 'stale' } })
 })
 
 test('an optimised but not yet approved trip is "optimised"', async () => {
@@ -56,11 +56,13 @@ test('an optimised but not yet approved trip is "optimised"', async () => {
   expect(tripRow(trip, vehicle, [source!]).status).toBe('da_toi_uu')
 })
 
-test('operational phases show the phase status, not the plan status (D-45)', async () => {
+test('warehouse phases stay approved with a progress line; delivering is in transit (LM-104)', async () => {
   const rows = await seedRows()
   const statusOf = (id: string) => rows.find((row) => row.id === id)?.status
   expect([statusOf('TRIP-011'), statusOf('TRIP-010'), statusOf('TRIP-009'), statusOf('TRIP-001'), statusOf('TRIP-004')])
-    .toStrictEqual(['dang_xep_hang', 'da_xep_xong', 'dang_giao', 'hoan_thanh', 'da_huy'])
+    .toStrictEqual(['da_duyet', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy'])
+  expect([rows.find((row) => row.id === 'TRIP-011')?.sub, rows.find((row) => row.id === 'TRIP-010')?.sub])
+    .toStrictEqual([{ kind: 'loading', recorded: 110, total: 280 }, { kind: 'loaded' }])
 })
 
 test('search ignores diacritics across name and route: "bien hoa" finds every trip through Biên Hoà and nothing else', async () => {
@@ -85,7 +87,10 @@ test('status, run-date range, vehicle and driver filters combine; "unassigned" f
   const rows = await seedRows()
   const ids = (filters: Partial<Record<keyof typeof NO_FILTER, string>>) =>
     filterTripRows(rows, '', { ...NO_FILTER, ...filters }).map((row) => row.id).toSorted()
+  expect(ids({ 'trang-thai': 'dang_van_chuyen' })).toStrictEqual(['TRIP-009'])
+  // Liên kết cũ (trước LM-104) vẫn lọc được
   expect(ids({ 'trang-thai': 'dang_giao' })).toStrictEqual(['TRIP-009'])
+  expect(ids({ 'trang-thai': 'dang-thuc-hien' })).toStrictEqual(['TRIP-009'])
   expect(ids({ tu: '2026-09-14', den: '2026-09-14' })).toStrictEqual(['TRIP-009', 'TRIP-010', 'TRIP-011', 'TRIP-2026-0914'])
   expect(ids({ xe: 'VEHICLE-006' })).toStrictEqual(['TRIP-004', 'TRIP-005', 'TRIP-009'])
   expect(ids({ 'tai-xe': 'US-0004' })).toStrictEqual(['TRIP-002', 'TRIP-007', 'TRIP-010', 'TRIP-2026-0914'])
@@ -93,20 +98,21 @@ test('status, run-date range, vehicle and driver filters combine; "unassigned" f
   expect(ids({ 'tai-xe': 'US-0004', tu: '2026-09-14' })).toStrictEqual(['TRIP-010', 'TRIP-2026-0914'])
 })
 
-test('status groups of the tabs: "upcoming" is still planning, "needs action" is optimised or needing review, "in progress" is loading, loaded and delivering', async () => {
+test('status groups of the tabs (LM-104): "needs action" is optimised (stale included), "upcoming" is approved before the truck leaves', async () => {
   const rows = await seedRows()
   const ids = (status: string) => filterTripRows(rows, '', { ...NO_FILTER, 'trang-thai': status }).map((row) => row.id).toSorted()
-  expect(ids(TRIP_STATUS_GROUP_SLUGS.upcoming)).toStrictEqual(['TRIP-012', 'TRIP-013', 'TRIP-014', 'TRIP-2026-0914'])
   expect(ids(TRIP_STATUS_GROUP_SLUGS.review)).toStrictEqual(['TRIP-012', 'TRIP-013'])
-  expect(ids(TRIP_STATUS_GROUP_SLUGS.active)).toStrictEqual(['TRIP-009', 'TRIP-010', 'TRIP-011'])
+  expect(ids(TRIP_STATUS_GROUP_SLUGS.upcoming)).toStrictEqual(['TRIP-010', 'TRIP-011', 'TRIP-2026-0914'])
+  expect(ids('dang_van_chuyen')).toStrictEqual(['TRIP-009'])
 })
 
-test('tab counts: every trip, each group, completed and cancelled — upcoming, in progress, completed and cancelled add up to all', async () => {
+test('tab counts: every trip, each group, in transit, completed and cancelled — with the draft they add up to all', async () => {
   const rows = await seedRows()
-  // Seed neo 14/09/2026: 15 chuyến; TRIP-004 đã huỷ; TRIP-001…008 trừ 004 đã hoàn thành
+  // Seed neo 14/09/2026: 15 chuyến; TRIP-004 đã huỷ; TRIP-001…008 trừ 004 đã hoàn thành; TRIP-014 nháp chỉ nằm ở Tất cả
   const counts = tripTabCounts(rows)
-  expect(counts).toStrictEqual({ all: 15, review: 2, upcoming: 4, active: 3, completed: 7, cancelled: 1 })
-  expect(counts.upcoming + counts.active + counts.completed + counts.cancelled).toBe(counts.all)
+  expect(counts).toStrictEqual({ all: 15, review: 2, upcoming: 3, transit: 1, completed: 7, cancelled: 1 })
+  const drafts = rows.filter((row) => row.status === 'nhap').length
+  expect(drafts + counts.review + counts.upcoming + counts.transit + counts.completed + counts.cancelled).toBe(counts.all)
 })
 
 test('trips per run date count the whole filtered list, one entry per date', async () => {
