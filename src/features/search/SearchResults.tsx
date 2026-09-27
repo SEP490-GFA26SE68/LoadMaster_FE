@@ -1,4 +1,4 @@
-import { Package, Truck, UserRound, Warehouse, type LucideIcon } from 'lucide-react'
+import { Boxes, ClipboardList, Package, PackageCheck, Shapes, Truck, UserRound, Warehouse, type LucideIcon } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 import { useT, type TFunction } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,11 @@ const GROUP_ICONS: Readonly<Record<SearchGroup, LucideIcon>> = {
   packages: Package,
   vehicles: Warehouse,
   users: UserRound,
+  orders: ClipboardList,
+  registered: Package,
+  shipments: Boxes,
+  packageTypes: Shapes,
+  incoming: PackageCheck,
 }
 
 /**
@@ -115,8 +120,13 @@ function titleOf(result: SearchResult, mark: (text: string) => ReactNode): React
   switch (result.group) {
     case 'trips':
     case 'users':
+    case 'orders':
+    case 'packageTypes':
       return mark(result.name)
     case 'packages':
+    case 'registered':
+    case 'shipments':
+    case 'incoming':
       return <span className="font-mono text-body font-medium">{mark(result.id)}</span>
     case 'vehicles': {
       // Tên xe gồm biển số ("Isuzu NQR 550 · 51C-284.19"): biển số là mã, chữ mono
@@ -136,7 +146,15 @@ function detailOf(result: SearchResult, mark: (text: string) => ReactNode, t: TF
   switch (result.group) {
     case 'trips':
     case 'vehicles':
+    case 'packageTypes':
       return <span className={CODE}>{mark(result.id)}</span>
+    case 'orders':
+      return <><span className={CODE}>{mark(result.id)}</span> · {mark(result.detail)}</>
+    case 'registered':
+      return <>{mark(result.name)}{result.reference ? <> · <span className={CODE}>{mark(result.reference)}</span></> : null}</>
+    case 'shipments':
+    case 'incoming':
+      return mark(result.name)
     case 'packages':
       return <><span className={CODE}>{result.tripId}</span> · {result.tripName}</>
     case 'users':

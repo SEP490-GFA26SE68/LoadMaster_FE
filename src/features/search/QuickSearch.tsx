@@ -5,7 +5,7 @@ import { NavRailButton } from '@/components/NavRailButton'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import { useCan } from '@/features/auth/useCan'
 import { useT } from '@/lib/i18n'
-import { GROUP_PERMISSION, SEARCH_GROUPS } from './quick-search'
+import { searchGroupsFor } from './quick-search'
 import { QuickSearchPanel } from './QuickSearchPanel'
 import { SHORTCUT_KEYS } from './shortcut'
 
@@ -16,14 +16,14 @@ function isShortcut(event: KeyboardEvent): boolean {
 
 /**
  * Tìm nhanh (LM-099, D-55): nút "Tìm nhanh" trên nav rail và phím Ctrl+K / ⌘K ở mọi màn có nav rail mở hộp thoại tìm chuyến, kiện,
- * xe, người dùng — chỉ nhóm người đăng nhập được xem (`trips.view`, `fleet.view`, `users.manage`). Không nhóm nào (kho, tài xế) thì
+ * xe, người dùng, đơn hàng, kiện đã đăng ký, loại kiện, lô hàng — chỉ nhóm người đăng nhập được xem (`searchGroupsFor`). Không nhóm nào (kho, tài xế) thì
  * không có nút và không bắt phím. Mở bằng phím tắt thì đóng xong con trỏ về chỗ cũ; mở bằng nút thì về nút.
  */
 export function QuickSearch() {
   const t = useT()
   const can = useCan()
   const navigate = useNavigate()
-  const groups = useMemo(() => SEARCH_GROUPS.filter((group) => can(GROUP_PERMISSION[group])), [can])
+  const groups = useMemo(() => searchGroupsFor(can), [can])
   const [open, setOpen] = useState(false)
   const returnFocus = useRef<HTMLElement | null>(null)
   const enabled = groups.length > 0
