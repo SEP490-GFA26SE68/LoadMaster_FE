@@ -22,6 +22,7 @@ export function EmptyState({
   illustration,
   mascot,
   compact = false,
+  wide = false,
   icon: Icon,
   tone = 'info',
   title,
@@ -32,6 +33,8 @@ export function EmptyState({
   illustration?: ReactNode
   mascot?: LumoPose
   compact?: boolean
+  /** Mô tả rộng tới 520 px thay vì 400 px — câu dài trong card rộng (LM-106, So sánh phương án). */
+  wide?: boolean
   icon?: LucideIcon
   tone?: keyof typeof ART
   title: string
@@ -58,7 +61,7 @@ export function EmptyState({
       <div className="flex flex-col gap-1.5">
         <span className="font-display text-h2 leading-6 font-bold text-ink-strong font-stretch-106%">{title}</span>
         {description ? (
-          <span className="max-w-100 text-body leading-5.25 text-pretty text-ink-2">{description}</span>
+          <span className={cn('text-body leading-5.25 text-pretty text-ink-2', wide ? 'max-w-130' : 'max-w-100')}>{description}</span>
         ) : null}
       </div>
       {action}

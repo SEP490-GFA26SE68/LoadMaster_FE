@@ -499,7 +499,6 @@ export const trips = {
   },
   compare: {
     title: 'Compare plans',
-    back: 'Back to trip details',
     subtitle: { one: '{count} saved plan', other: '{count} saved plans' },
     loading: 'Loading plans…',
     errorTitle: 'Could not load the plans of this trip',
@@ -549,5 +548,6 @@ export const trips = {
     },
     emptyAction: 'Optimization setup',
     openOnly: 'Open the saved plan',
+    savedTitle: 'Saved plans',
   },
 } satisfies Dictionary<typeof source>
