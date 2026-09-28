@@ -52,8 +52,12 @@ test('a package with no usable orientation disables Optimize and the summary lin
   const summary = within(await screen.findByRole('region', { name: 'Kiểm tra trước khi tối ưu' }))
   const link = await summary.findByRole('link', { name: /PKG-900/ })
   expect(link).toHaveAttribute('href', `/chuyen/${TRIP_ID}?kien=PKG-900`)
-  expect(summary.getAllByRole('link')).toHaveLength(1)
+  // Liên kết còn lại của thẻ là "Xem kiện" của mục thông tin kiện không bắt buộc (V2.3), không phải một issue
+  expect(summary.getAllByRole('link').filter((item) => item.getAttribute('href')?.includes('PKG-900'))).toHaveLength(1)
+  expect(summary.getByRole('alert')).toHaveTextContent('Còn lỗi: sửa các mục đánh dấu đỏ để tối ưu.')
   expect(screen.getByRole('button', { name: 'Tối ưu' })).toBeDisabled()
+  // Lý do tắt nằm ngay trên nút (LM-106): một lỗi, ở nhóm Kiện
+  expect(screen.getByRole('button', { name: 'Tối ưu' })).toHaveAccessibleDescription('Chưa chạy được: 1 lỗi cần sửa ở Kiện.')
 
   await db.updateTrip(TRIP_ID, { packages: trip.packages })
 })
@@ -91,4 +95,18 @@ test('a vehicle under maintenance is listed with the reason but cannot be chosen
   const select = await screen.findByRole('combobox', { name: 'Xe chở chuyến này' })
   expect(within(select).getByRole('option', { name: 'Hyundai Mighty EX8 · 50H-118.29 · đang bảo dưỡng' })).toBeDisabled()
   expect(within(select).getByRole('option', { name: 'Truck 6m' })).toBeEnabled()
+})
+
+test('the sky header reads like the trip: breadcrumb, status chip and the trip data line (V2.3, LM-106)', async () => {
+  renderSetup(undefined, 'TRIP-014')
+  const header = (await screen.findByRole('heading', { name: 'Thiết lập tối ưu' })).closest('header') as HTMLElement
+  const crumbs = within(header).getByRole('navigation')
+  expect(within(crumbs).getByRole('link', { name: 'TRIP-014' })).toHaveAttribute('href', '/chuyen/TRIP-014')
+  expect(await within(header).findByText('Nháp')).toBeInTheDocument()
+  expect(header).toHaveTextContent('Tuyến Tân An – Dĩ An')
+  expect(header).toHaveTextContent('Chưa gán tài xế')
+  // Danh sách kiểm tra: mục đạt nói số của chuyến, không chỉ "đạt"
+  const summary = within(screen.getByRole('region', { name: 'Kiểm tra trước khi tối ưu' }))
+  expect(summary.getByText('3 dòng kiện · 140 kiện, không trùng mã')).toBeInTheDocument()
+  expect(summary.getByText('40 kiện không bắt buộc xếp')).toBeInTheDocument()
 })

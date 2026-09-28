@@ -10,6 +10,7 @@ import {
   shellColors,
   sortByDepth,
 } from '@/lib/isometric'
+import { cn } from '@/lib/utils'
 import { revisionThumbnail } from './revision-thumbnail'
 
 const SCALE = 21
@@ -24,11 +25,14 @@ export function PlanThumbnail({
   request,
   placements,
   totalCount,
+  className,
 }: {
   revisionId: string
   request: Pick<OptimizationRequest, 'vehicle' | 'packages'>
   placements: readonly PackagePlacement[]
   totalCount: number
+  /** Chiều cao khung (mặc định 190 px). V2.3: 176 px trong ma trận so sánh, 150 px ở thẻ bản lưu (LM-106). */
+  className?: string
 }) {
   const t = useT()
   const format = useFormat()
@@ -48,7 +52,7 @@ export function PlanThumbnail({
   }, [request, placements])
 
   return (
-    <div className="relative h-[190px] flex-none bg-canvas-1">
+    <div className={cn('relative h-[190px] flex-none bg-canvas-1', className)}>
       <svg
         viewBox={frame.viewBox}
         preserveAspectRatio="xMidYMid meet"

@@ -13,6 +13,9 @@ test('compare plans: every revision column is MOCK RESULT and the chosen one ope
   await login(`/chuyen/${TRIP_ID}/so-sanh`, 'manager')
   await expect(page.getByRole('heading', { level: 1, name: 'So sánh phương án', exact: true })).toBeVisible()
   await expect(page).toHaveTitle(`So sánh phương án ${TRIP_ID} · LoadMaster`)
+  // Dải trời V2.3: đường dẫn về chi tiết chuyến thay cho nút quay lại
+  await expect(page.getByRole('navigation', { name: 'Vị trí trang' }).getByRole('link', { name: TRIP_ID, exact: true }))
+    .toHaveAttribute('href', `/chuyen/${TRIP_ID}`)
 
   // Seed: bản tối ưu REV-001 và bản đã duyệt REV-002 tạo từ nó — mỗi bản một cột, đầu cột có radio chọn bản
   const radios = page.getByRole('radio')

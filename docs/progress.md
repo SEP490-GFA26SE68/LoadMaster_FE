@@ -46,6 +46,12 @@ Hai worktree song song: thanh trên + hộp thoại Duyệt + thanh thông báo 
 khung 3D (panel điểm giao, thẻ kiện nổi, nhãn neo, dòng thời gian, hộp Chi tiết, chỉnh tay, không thể đặt, dỡ hàng). Nền trang Planner tối,
 thanh trên kính tối. Sửa trên nhánh gộp: tiêu đề không cắt chữ ở 1.366 px, đơn vị và khối lượng như câu nghiệm thu, `review1-approve` hết đỏ
 ngẫu nhiên. 970/970 unit/DOM; E2E xem [LM-107](issues/LM-107-v23-planner.md).
+### 27/09/2026 — V2.3 đợt 4: Tối ưu (LM-106); gộp PR #4, #5, #6
+
+- Gộp vào `developer`: PR #4 (đợt 3), #5 (Review 1, sau khi sửa câu quét sai kiện chờ nhãn tải — CI chậm lộ ra), #6 (thương hiệu).
+- Đợt 4, hai worktree song song: Thiết lập tối ưu (+ có lỗi, đang tối ưu, hộp thoại lỗi) và So sánh phương án (+ chưa đủ phương án).
+  Giữ nguyên phần LM-104 (mục tiêu, thuật toán, lịch sử lần chạy, banner quyết định). Dùng chung: `EmptyState wide`, `PlanThumbnail`
+  nhận chiều cao. 973/973 unit/DOM; 94/94 E2E.
 
 ### 27/09/2026 — Thương hiệu đợt 3: in ấn và màn kho (LM-105)
 

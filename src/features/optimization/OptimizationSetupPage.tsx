@@ -1,33 +1,37 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Play } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { FormSection } from '@/components/FormSection'
-import { PageHero } from '@/components/PageHero'
 import { TripLockBanner } from '@/components/TripLockBanner'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { validateRequest } from '@/domain/constraints'
+import { TripFormSection } from '@/features/trips/TripFormSection'
 import { formatIssue, useFormat, useT } from '@/lib/i18n'
+import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
+import { OpenDecisionBanner } from './OpenDecisionBanner'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
-import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
+import { OptimizationSetupHero } from './OptimizationSetupHero'
 import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, splitSetup, type SetupValues } from './optimization-request'
-import { OpenDecisionBanner } from './OpenDecisionBanner'
-import { RunHistoryCard } from './RunHistoryCard'
 import { RequestIssueList } from './RequestIssueList'
+import { RunHistoryCard } from './RunHistoryCard'
+import { buildSetupChecklist } from './setup-checklist'
+import { SetupAfterSteps } from './SetupAfterSteps'
 import { SetupContextPanels } from './SetupContextPanels'
 import { SetupLimitsPanel } from './SetupLimitsPanel'
 import { SetupAdvancedFields, SetupRequirementFields } from './SetupSettingsFields'
+import { useRunHistoryQuery } from './useOptimizationRuns'
 import { useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
 /**
- * Thiết lập tối ưu (LM-047) và chạy job (LM-048): chọn xe, xem tóm tắt hàng, chỉnh thiết lập, validation summary gom
- * theo nhóm; nút primary duy nhất "Tối ưu" khoá khi còn lỗi. Chạy xong mở Planner với revision mới.
+ * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
+ * và nút primary duy nhất "Tối ưu" (khoá khi còn lỗi, lý do ngay trên nút). Cột trái một thẻ ba mục đánh số rồi bảng "Lần chạy tối ưu"
+ * (LM-104); cột phải 416 px: "Hai giới hạn", danh sách kiểm tra trực tiếp, "Sau khi chạy". Chạy xong mở Planner với revision mới.
  * Chuyến đã sang pha vận hành (D-45, LM-088): banner nói lý do, không đổi xe, nút Tối ưu tắt — kho cũng từ chối `TRIP_LOCKED`.
  */
 export function OptimizationSetupPage() {
@@ -38,6 +42,7 @@ export function OptimizationSetupPage() {
   const format = useFormat()
   const query = useOptimizationSetupQuery(tripId)
   const run = useOptimizationRun(tripId)
+  const openDecision = useRunHistoryQuery(tripId).data?.openDecision
   const [failure, setFailure] = useState<OptimizationFailure | null>(null)
 
   const schema = useMemo(() => z.object({
@@ -52,24 +57,42 @@ export function OptimizationSetupPage() {
   }), [t])
   const form = useForm<SetupValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_SETUP, mode: 'onChange' })
   const watched = useWatch({ control: form.control })
-  // Đọc ngay ở mỗi lần render để react-hook-form theo dõi `isValid` từ lúc mount. Đọc sau `!summary?.canRun ||` thì
+  // Đọc ngay ở mỗi lần render để react-hook-form theo dõi `isValid` và `errors` từ lúc mount. Đọc sau `!summary?.canRun ||` thì
   // lần mở lại với bản cache còn lỗi bỏ qua nó, và nút Tối ưu kẹt ở trạng thái tắt sau khi dữ liệu đã sửa (LM-054).
-  const { isValid } = form.formState
+  const { isValid, errors } = form.formState
+  const values: SetupValues = { ...DEFAULT_SETUP, ...watched }
 
   const setup = query.data
   const locked = setup !== undefined && setup.trip.phase !== 'planning'
-  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, splitSetup({ ...DEFAULT_SETUP, ...watched }).settings) : null
+  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, splitSetup(values).settings) : null
   const summary = request && setup ? groupRequestIssues(validateRequest(request), { tripId, vehicleId: setup.vehicle.id }) : null
+  const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary) : null
+  const formErrors = (errors.timeLimitSeconds ? 1 : 0) + (errors.randomSeed ? 1 : 0)
+  const blockedReason = !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
+    ? t('optimization.blockedHint', {
+      count: checklist.errorCount + formErrors,
+      places: format.list([
+        ...checklist.errorGroups.map((group) => t(`optimization.groups.${group}`)),
+        ...(formErrors > 0 ? [t('optimization.advancedTitle')] : []),
+      ]),
+    })
+    : null
 
-  function start(values: SetupValues) {
+  function start(submitted: SetupValues) {
     if (!setup) return
     setFailure(null)
-    const { settings, run: choice } = splitSetup(values)
+    const { settings, run: choice } = splitSetup(submitted)
     const payload = buildOptimizationRequest(setup.trip, setup.vehicle, settings)
     run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi', run: choice }, {
       onSuccess: (outcome) => {
         if (outcome.kind === 'failed') {
-          setFailure({ kind: 'failed', messages: validateRequest(payload).map((issue) => formatIssue(issue, t, format)) })
+          setFailure({
+            kind: 'failed',
+            issues: validateRequest(payload).map((issue) => ({
+              severity: issue.severity === 'error' ? 'error' : 'warning',
+              message: formatIssue(issue, t, format),
+            })),
+          })
           return
         }
         const unplaced = outcome.revision.result.unplacedPackages.length
@@ -87,68 +110,62 @@ export function OptimizationSetupPage() {
     })
   }
 
+  const handleRun = form.handleSubmit(start)
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <PageHero
-        overlap
-        title={t('optimization.title')}
-        meta={tripId}
-        description={t('pageHero.optimization')}
-        back={{ to: `/chuyen/${tripId}`, label: t('optimization.back') }}
-        actions={
-          <Button
-            variant="primary"
-            disabled={locked || !summary?.canRun || run.isPending || !isValid}
-            onClick={form.handleSubmit(start)}
-          >
-            <Play strokeWidth={1.5} />
-            {t('optimization.run')}
-          </Button>
-        }
-      />
+      <OptimizationSetupHero
+        tripId={tripId}
+        setup={setup}
+        disabled={locked || !summary?.canRun || run.isPending || !isValid}
+        blockedReason={run.isPending ? null : blockedReason}
+        onRun={() => void handleRun()}
+      >
+        {setup && locked ? <TripLockBanner trip={setup.trip} /> : null}
+        {/* Quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó: lý do nằm ngay chỗ điều phối sẽ chạy lại (LM-104) */}
+        {setup && !locked && openDecision ? <OpenDecisionBanner tripId={tripId} /> : null}
+      </OptimizationSetupHero>
 
       {query.isPending ? (
         <div role="status" className="grid flex-1 place-items-center"><Spinner /></div>
-      ) : !setup || !summary ? (
+      ) : !setup || !summary || !checklist ? (
         <div className="px-shell py-6">
           <Button variant="secondary" asChild><Link to="/chuyen">{t('optimization.back')}</Link></Button>
         </div>
       ) : (
-        <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-6 overflow-auto px-shell pb-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-          {locked ? <div className="lg:col-span-2"><TripLockBanner trip={setup.trip} /></div> : null}
-          {/* Quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó: lý do nằm ngay chỗ điều phối sẽ chạy lại (LM-104) */}
-          {!locked ? <OpenDecisionBanner tripId={tripId} className="lg:col-span-2" /> : null}
-          <div className="flex min-w-0 flex-col gap-6">
-            {/* V2: một thẻ gồm các phần đánh số; nút chính giữ ở thanh tiêu đề (AGENTS mục 5: một nút primary mỗi màn) */}
-            <div className="flex min-w-0 flex-col gap-6 rounded-lg border border-border bg-bg p-6">
-              <FormSection number={1} title={t('optimization.inputTitle')} description={<><span className="font-mono">{tripId}</span>{` · ${setup.trip.name}`}</>}>
-                <SetupContextPanels tripId={tripId} setup={setup} locked={locked} />
-              </FormSection>
-              <FormSection number={2} title={t('optimization.requirementsTitle')} description={t('optimization.requirementsHint')}>
+        <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            {/* Một thẻ ba mục đánh số; nút chính giữ ở dải trời (AGENTS mục 5: một nút primary mỗi màn) */}
+            <Card className="overflow-hidden">
+              <TripFormSection number={1} title={t('optimization.inputTitle')}>
+                <SetupContextPanels tripId={tripId} setup={setup} locked={locked} payloadError={checklist.payload.state === 'fail'} />
+              </TripFormSection>
+              <TripFormSection number={2} title={t('optimization.requirementsTitle')} description={t('optimization.requirementsHint')}>
                 <SetupRequirementFields form={form} />
-              </FormSection>
-              <div className="border-t border-border pt-5">
+              </TripFormSection>
+              <section className="border-t border-line-soft px-7 pt-5.5 pb-6.5 max-sm:px-4">
                 <SetupAdvancedFields form={form} />
-              </div>
-            </div>
+              </section>
+            </Card>
             {/* Lịch sử lần chạy (LM-104): mục tiêu, thuật toán, kết quả và số phận của từng phương án */}
             <RunHistoryCard tripId={tripId} />
           </div>
-          <div className="flex flex-col gap-5 lg:sticky lg:top-0">
+          <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-0">
             <SetupLimitsPanel setup={setup} />
-            <RequestIssueList summary={summary} />
-            <div className="flex flex-col gap-1 px-1">
-              <span className="text-caption font-medium text-ink-2">{t('optimization.afterTitle')}</span>
-              <p className="text-caption text-ink-3">{t('optimization.afterSteps')}</p>
-            </div>
-          </div>
+            <RequestIssueList tripId={tripId} setup={setup} checklist={checklist} canRun={summary.canRun} locked={locked} />
+            <SetupAfterSteps />
+          </aside>
         </div>
       )}
 
-      {run.isPending ? <OptimizationRunDialog progress={run.progress} onCancel={run.cancel} /> : null}
-      {failure ? (
-        <OptimizationErrorDialog failure={failure} onClose={() => setFailure(null)} onRetry={form.handleSubmit(start)} />
+      {run.isPending && setup ? (
+        <OptimizationRunDialog
+          progress={run.progress}
+          context={{ tripId, vehicleName: setup.vehicle.name, total: checklist?.dimensions.instances ?? 0, values }}
+          onCancel={run.cancel}
+        />
       ) : null}
+      {failure ? <OptimizationErrorDialog failure={failure} onClose={() => setFailure(null)} onRetry={() => void handleRun()} /> : null}
     </div>
   )
 }

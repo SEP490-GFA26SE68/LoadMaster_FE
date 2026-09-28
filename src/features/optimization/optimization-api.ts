@@ -6,8 +6,11 @@ import {
   type Revision,
   type RunSettings,
   type Trip,
+  tripStatus,
+  tripSubStatus,
   type VehicleStatus,
 } from '@/lib/mock-db'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createOptimizationService, OptimizationServiceError, type OptimizationProgress } from '@/services/optimization'
 import { buildRunHistory, type RunHistory } from './run-history'
 
@@ -22,13 +25,24 @@ export type OptimizationSetup = {
   readonly vehicles: readonly VehicleConfig[]
   /** Trạng thái từng xe (D-53): xe bảo dưỡng hiện trong ô chọn nhưng không chọn được (LM-088). */
   readonly vehicleStatus: Readonly<Record<string, VehicleStatus>>
+  /** Chip trạng thái và dòng phụ ở đầu màn (V2.3, LM-106), cùng cách tính với Chi tiết chuyến. */
+  readonly status: TripStatus
+  readonly sub: TripSubStatus | null
+  /** Họ tên tài xế; `null` khi chưa gán hoặc tài khoản không còn trong kho. */
+  readonly driverName: string | null
 }
 
 export async function fetchOptimizationSetup(tripId: string): Promise<OptimizationSetup> {
   const db = getMockDb()
-  const [trip, vehicles, states] = await Promise.all([db.getTrip(tripId), db.listVehicles(), db.listVehicleStates()])
+  const [trip, vehicles, states, revisions, users] = await Promise.all([
+    db.getTrip(tripId), db.listVehicles(), db.listVehicleStates(), db.listRevisions(tripId), db.listUsers(),
+  ])
   const vehicleStatus = Object.fromEntries(states.map((state) => [state.vehicleId, state.status]))
-  return { trip, vehicle: await db.getVehicle(trip.vehicleId), vehicles, vehicleStatus }
+  const driverName = trip.driverId === null ? null : users.find((user) => user.id === trip.driverId)?.fullName ?? null
+  return {
+    trip, vehicle: await db.getVehicle(trip.vehicleId), vehicles, vehicleStatus,
+    status: tripStatus(trip, revisions), sub: tripSubStatus(trip, revisions), driverName,
+  }
 }
 
 export async function changeTripVehicle(tripId: string, vehicleId: string): Promise<Trip> {
