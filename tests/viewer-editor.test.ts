@@ -111,3 +111,15 @@ test('measure snapping + constraint-engine check at each benchmark count (no har
   console.log('EDITOR_BENCHMARK', JSON.stringify(results))
   // Engine thật mỗi lần kiểm: vượt mặc định 5 s khi máy/CI đang tải nặng.
 }, 30_000)
+
+test('dragging back within 6 cm of the plan position snaps exactly home on that axis, ahead of any other face (LM-108)', () => {
+  const p = box('a', 100, 50, 0)
+  const home = { x: 100, y: 50, z: 0 }
+  // 105,5 cm: lưới 105 chỉ cách 0,5 cm nhưng vị trí gốc (cách 5,5 cm ≤ 6) thắng
+  expect(snapPosition(p, { x: 105.5, y: 50, z: 0 }, [], vehicle, ['x'], home))
+    .toMatchObject({ position: { x: 100, y: 50, z: 0 }, sources: [{ axis: 'x', kind: 'original' }] })
+  // 106,5 cm: xa hơn 6 cm thì về luật hút thường (lưới 105 cách 1,5 cm)
+  expect(snapPosition(p, { x: 106.5, y: 50, z: 0 }, [], vehicle, ['x'], home).position.x).toBe(105)
+  // Chỉ trục đang kéo được hút: y lệch 3 cm vẫn giữ nguyên khi kéo theo x
+  expect(snapPosition(p, { x: 102, y: 53, z: 0 }, [], vehicle, ['x'], home).position).toStrictEqual({ x: 100, y: 53, z: 0 })
+})

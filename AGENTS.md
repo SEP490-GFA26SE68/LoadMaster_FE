@@ -27,7 +27,8 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 **Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
 **giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo
 *(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
-điều phối lập chuyến, chạy tối ưu nhưng không duyệt — Planner của điều phối chỉ xem, một dòng lý do "Chờ quản lý công ty duyệt");
+điều phối lập chuyến, chạy tối ưu nhưng không duyệt — *(đã điều chỉnh 28/09/2026, LM-108)* điều phối vẫn **chỉnh tay** trong Planner và
+"Lưu bản chỉnh" gửi bản mới vào hàng đợi duyệt; bản chưa duyệt có một dòng "Chờ quản lý công ty duyệt");
 mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
 E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 27/09/2026, LM-104)* Quyền Review 1
@@ -432,6 +433,13 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
 Xếp/Dỡ, điểm giao, góc nhìn, trạng thái duyệt, Chỉnh sửa, So sánh, Duyệt); hẹp hơn thì điều khiển mô phỏng và Chỉnh sửa xuống thanh
 công cụ riêng (tablet hai hàng 56 px). Thêm gì vào hàng này phải đo lại ở 1.366 px (`e2e/planner-compact.spec.ts`). Thanh công cụ
 Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòng) giữ `<select>` gốc.
+*(đã điều chỉnh 28/09/2026, V2.3, LM-107)* Trang Planner nền tối `--canvas-1`; thanh trên là kính tối (`.glass-dark`) nổi cách mép 14 px
+từ 1.280 px, vẫn cao 56 px. Tiêu đề là tên tuyến **chỉ từ 1.680 px**; hẹp hơn là mã chuyến và dòng dưới chỉ còn mã revision — không cắt chữ
+bằng dấu ba chấm (`layout-1366`). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, quyết định của quản lý, chỉ xem) nằm trong
+luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
+(hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
+bằng DOM/SVG, nền đặc 85 % thay `backdrop-filter` vì chúng di chuyển mỗi khung hình. Nút nhấn giữ (Xếp/Dỡ, Theo bước) là nền cyan mờ +
+viền trong, không gradient. Số đo và mã giữ JetBrains Mono; đơn vị có khoảng trắng thật sau số ("120 × 100 × 100 cm", "200,0 kg").
 
 *(đã điều chỉnh 26/09/2026, V2.3)* Thanh tiêu đề của màn trong khung ứng dụng nằm trên **dải trời** nên cao theo nội dung (tiêu
 đề 32 px + mô tả, thêm tab nếu màn có), không còn cố định 72 px. Chỉ **56px** cho màn xem phương án 3D, vì ở đó chiều cao nhường cho
@@ -751,6 +759,14 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(đã điều chỉnh, LM-035)* Tính hợp lệ khi kéo/thả/xoay/nudge/căn/khôi phục do constraint engine của domain quyết định (`editor/editor-engine.ts`, dựng một lần mỗi snapshot, `sync` theo placement hiệu lực trước mỗi lần kiểm nên undo/redo/reset không lệch): issue `error` dính tới kiện (chủ thể hoặc `relatedIds`) chặn commit, `warning` vẫn commit; câu qua `formatIssue`. Issue toàn phương án (trọng tâm) không chặn thao tác. Đo Node: snap + sync + kiểm ở 1.000 kiện p95 ≈ 2,7 ms.
 - Lịch sử giữ patch trước/sau theo ID, tối đa 200 lệnh, không snapshot placements mỗi lần di chuột. Ghim khóa move/rotate cho đến khi bỏ ghim. Reset mọi chỉnh sửa cần dialog; reset riêng bị chặn nếu vị trí gốc đang bị kiện khác chiếm.
 - Không tạo placement từ UnplacedPackage, không lưu draft qua phiên/trang và không coi kiểm tra frontend là kết quả tối ưu authoritative.
+- *(bổ sung 28/09/2026, LM-108)* **Tay kéo theo trục**: ba mũi tên X/Y/Z trên kiện đang chọn (`EditorAxisHandles`, số mesh cố định, vùng nắm
+  không vẽ, luôn vẽ đè); nắm mũi tên thì kiện chỉ chạy theo trục đó và chỉ hút mặt trên trục đó; kéo thân kiện vẫn theo mặt phẳng kéo. Kéo
+  một trục về trong 6 cm quanh vị trí trong phương án thì hút đúng vị trí gốc (`homeSnapCm`, thắng các mặt khác).
+- *(bổ sung 28/09/2026, LM-108)* **Trọng lực khi chỉnh tay** (`editor/gravity.ts`, từ nhánh `fix/update-animation` của minkoi): dời một
+  kiện hợp lệ thì các kiện đang tựa lên nó mà mất chỗ đỡ rơi thẳng xuống mặt đỡ cao nhất bên dưới (kiện khác, nóc vật cản, sàn), rơi dây
+  chuyền lên trên; chỉ đổi `z`, không trượt ngang; kiện đã ghim đứng yên. Kiện dời + các kiện rơi là **một** lệnh lịch sử
+  (`GRAVITY_MOVE`, hoàn tác một lần). Hoạt ảnh rơi trong `useCargoMatrices` (spring riêng, ghi ma trận ngoài React), bỏ qua kiện đang kéo và
+  lần đổi phương án; reduced motion đặt thẳng. Dung sai chạm mặt 0,5 cm.
 
 ### Operations và scene dùng chung *(bổ sung)*
 
@@ -766,6 +782,10 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty (và quản trị) có `plans.approve`. Thiếu quyền: bản chưa duyệt là
   `awaitingApproval` ("Chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. Liên kết "Tới Thiết lập tối ưu" của banner lỗi thời theo
   `optimization.run` và pha `planning`, không theo quyền Duyệt. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `manager`.
+  *(đã điều chỉnh 28/09/2026, LM-108)* Người dùng thấy mất kéo thả kiện khi điều phối viên chỉ xem, nên **chỉnh tay** theo quyền
+  `plans.approve` **hoặc** `optimization.run` (`plannerAccess({ canEdit })`): điều phối viên không bị khoá, nút chính khi đã dời / xoay kiện là
+  "Lưu bản chỉnh" (`saveEditedRevision` của kho: revision **mới chưa duyệt**, `editedBy`, vào `/duyet`), chưa chỉnh gì thì dòng
+  `awaitingApproval` là thông báo chứ không phải khoá. `awaitingApproval` / `readOnly` là khoá chỉ khi tài khoản không chỉnh cũng không duyệt.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - *(bổ sung, LM-042)* Xem trước 3D ở form xe: `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.

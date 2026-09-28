@@ -24,3 +24,8 @@ export async function fetchPlanSource(tripId: string, ref?: string): Promise<{ t
 export async function approvePlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
   return getMockDb().approveRevision(revisionId, patches)
 }
+
+/** Lưu bản chỉnh tay chưa duyệt (LM-108): điều phối viên gửi bản đã dời / xoay kiện vào hàng đợi duyệt của quản lý công ty. */
+export async function saveEditedPlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
+  return getMockDb().saveEditedRevision(revisionId, patches)
+}

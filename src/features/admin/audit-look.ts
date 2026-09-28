@@ -55,6 +55,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.cancelled': 'amber',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
+  'revision.edited': 'blue',
   'loading.started': 'blue',
   'loading.missing': 'amber',
   'loading.completed': 'green',

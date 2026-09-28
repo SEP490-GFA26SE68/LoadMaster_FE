@@ -11,13 +11,35 @@ export const viewer = {
     approveShort: 'Duyệt',
     /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094). */
     approveDraft: 'Duyệt bản chỉnh',
+    /** Điều phối viên lưu bản chỉnh tay thành phương án mới chờ quản lý công ty duyệt (LM-108) */
+    saveEdits: 'Lưu bản chỉnh',
+    saved: 'Đã lưu {revisionId} — chờ quản lý công ty duyệt.',
+    saveFailed: 'Không lưu được bản chỉnh. Thử lại.',
     /** Thay nút Duyệt khi revision đã duyệt và không có chỉnh sửa: nhãn trên, giờ + ngày dưới. */
     approvedAt: 'Đã duyệt lúc',
     approvedAtValue: '{time} {date}',
     /** Thay "Đã duyệt lúc" khi kho biết người duyệt (LM-104): đọc liền với dòng giờ + ngày bên dưới. */
     approvedBy: 'Duyệt bởi {name} lúc',
     compare: 'So sánh phương án',
+    /** Nhãn cạnh mã revision ở thanh trên (V2.3): bản lỗi thời, và lần chạy tắt "Bắt buộc thứ tự dỡ theo điểm giao". */
+    staleTag: 'Lỗi thời',
+    lifoOff: 'LIFO: tắt',
     staleBanner: 'Kết quả đã lỗi thời — xe hoặc kiện đã thay đổi sau lần tối ưu này.',
+    /** Dòng thứ hai của thanh lỗi thời (V2.3 `Planner3DLoiThoi`): lần sửa làm lỗi thời, số kiện phương án ↔ chuyến. */
+    staleSince: 'Sau lần tối ưu {time} · {date}:',
+    staleChange: '{field} {before} → {after}',
+    staleWhen: '({time} · {date}).',
+    staleWhenBy: '({time} · {date} · {name}).',
+    staleFields: 'đã sửa {fields}',
+    staleCounts: 'Phương án tính cho {plan} kiện, chuyến hiện có {trip}.',
+    staleStops: 'Chênh theo điểm giao: {list}.',
+    staleStop: 'Điểm {number} {delta}',
+    staleApprove: 'Kho chỉ xếp được khi quản lý công ty duyệt lại.',
+    /** Đang xem một revision chưa duyệt qua `?revision=` trong khi chuyến đã có bản duyệt khác (V2.3 `Planner3DBanChuaDuyet`). */
+    viewing: 'Đang xem {revision} — kết quả tối ưu lúc {time} · {date}, chưa duyệt.',
+    viewingApproved: 'Kho và tài xế đang đọc bản đã duyệt {revision} ({time} · {date}). Duyệt bản đang xem sẽ tạo bản duyệt mới thay thế.',
+    viewingApprovedStale: 'Bản đã duyệt gần nhất là {revision} ({time} · {date}), đã lỗi thời.',
+    openApproved: 'Mở bản đã duyệt {revision}',
     rerun: 'Tới Thiết lập tối ưu',
     emptyTitle: 'Chuyến chưa có phương án',
     emptyDescription: 'Chạy tối ưu để có phương án xếp hàng 3D.',
@@ -48,7 +70,17 @@ export const viewer = {
       title: 'Duyệt phương án này?',
       description: 'Duyệt tạo một revision mới đã duyệt; revision đang xem giữ nguyên. Kho và tài xế đọc bản đã duyệt.',
       blockersTitle: 'Phải xử lý trước khi duyệt',
+      close: 'Đóng',
+      noBlockers: 'Không có lỗi chặn duyệt',
       warnings: { one: '{count} cảnh báo vẫn còn (không chặn duyệt).', other: '{count} cảnh báo vẫn còn (không chặn duyệt).' },
+      /** Lần chạy tắt LIFO (V2.3 `Planner3DTatLIFO`): cảnh báo LIFO là hệ quả của thiết lập, không phải lỗi của phương án. */
+      lifoOnly: {
+        one: 'Cả {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+        other: 'Cả {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+      },
+      lifoSome: '{lifo} / {count} cảnh báo đến từ kiểm tra LIFO: lần tối ưu này tắt “{setting}”.',
+      moreWarnings: { one: '… và {count} cảnh báo khác.', other: '… và {count} cảnh báo khác.' },
+      showUnloading: 'Xem mô phỏng dỡ hàng',
       noWarnings: 'Không còn cảnh báo ràng buộc.',
       manual: { one: 'Có {count} kiện chỉnh tay sẽ được áp vào bản duyệt.', other: 'Có {count} kiện chỉnh tay sẽ được áp vào bản duyệt.' },
       noManual: 'Không có chỉnh tay.',
@@ -76,12 +108,19 @@ export const viewer = {
   },
   /** Planner chỉ xem (LM-094): lý do không có Chỉnh sửa và Duyệt, nói một lần. Key trùng pha chuyến (D-45), hoặc `readOnly`. */
   lock: {
+    /** Câu thứ hai và dòng tiến độ kho của thanh khoá khi kho đang / đã xếp (V2.3 `Planner3DKhoa`). */
+    detail: {
+      loading: 'Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
+      loaded: 'Kho đã xếp xong theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
+    },
+    progress: 'Kho đã xếp {loaded} / {total} kiện · bắt đầu {time} · {date}',
+    progressBy: 'Kho đã xếp {loaded} / {total} kiện · bắt đầu {time} · {date} · {name}',
     loading: 'Chuyến đang xếp hàng — phương án đã chốt.',
     loaded: 'Chuyến đã xếp xong — phương án đã chốt.',
     delivering: 'Chuyến đang giao — phương án đã chốt.',
     completed: 'Chuyến đã hoàn thành — phương án đã chốt.',
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
-    awaitingApproval: 'Chờ quản lý công ty duyệt — bạn chỉ xem phương án.',
+    awaitingApproval: 'Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.',
     readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
     /** Quản lý công ty đã trả lại bản này (LM-104); dòng khoá hiện câu quyết định thay câu này. */
     decided: 'Phương án đã được quản lý công ty trả lại — chỉ xem.',
@@ -143,8 +182,12 @@ export const viewer = {
     next: 'Tiếp theo: {id} · Điểm {stop}',
     done: 'Đã hoàn tất mô phỏng.',
     manualEdits: 'Có chỉnh sửa thủ công',
+    /** Panel dỡ hàng nổi bên phải khung 3D (V2.3). */
+    panelLabel: 'Mô phỏng dỡ hàng',
     blockers: {
       title: 'Kiện chắn lối dỡ',
+      lifoCheck: 'Kiểm tra LIFO',
+      edit: 'Chỉnh sửa {id}',
       toggleShow: 'Xem kiện chắn lối dỡ',
       toggleHide: 'Ẩn kiện chắn lối dỡ',
       pick: 'Chọn kiện để xem lối dỡ',
@@ -231,7 +274,8 @@ export const viewer = {
     pause: 'Tạm dừng',
     play: 'Phát',
     forward: 'Tiến một bước',
-    current: 'Hiện tại · Điểm {stop} · {id}',
+    /** Mã kiện hiện tại đứng ngay sau, mono cyan (V2.3). */
+    current: 'Hiện tại · Điểm {stop}',
     done: 'Hoàn tất mô phỏng',
     next: 'Tiếp theo · Điểm {stop}',
     valueText: '{label}: {step} trên {total}',
@@ -243,6 +287,8 @@ export const viewer = {
     current: 'Hiện tại · Điểm {stop}',
     next: 'Tiếp theo · Điểm {stop}',
     selected: 'Đã chọn · Điểm {stop}',
+    /** Kiện đang kéo vào chỗ không hợp lệ (V2.3 quyết định 3). */
+    cannotPlace: 'Không thể đặt · Điểm {stop}',
   },
   /** Khung 3D ở màn kho (`PositionViewer`). */
   position: {
@@ -281,6 +327,12 @@ export const viewer = {
     unplacedHint: 'Không vừa chỗ trống còn lại.',
     pinnedHint: 'Kiện đã ghim giữ nguyên vị trí khi chạy tối ưu lại.',
     pinned: 'Đã ghim',
+    noPinned: 'Chưa ghim kiện nào',
+    allPlaced: 'Không có kiện chưa xếp — đã xếp đủ {placed} / {total} kiện.',
+    byLoadingOrder: 'theo thứ tự xếp',
+    /** Nhãn hổ phách của kiện có cảnh báo: tỷ lệ đỡ đáy khi kiện không được đỡ trọn. */
+    support: 'Đỡ đáy {value}',
+    warning: 'Cảnh báo',
     where: '{layer} · {side}',
     floor: 'Sàn',
     layer: 'Lớp {layer}',
@@ -309,6 +361,7 @@ export const viewer = {
   },
   /** HUD trên khung 3D của Planner. */
   hud: {
+    stopsTitle: 'Điểm giao · thứ tự dỡ',
     stopOf: '{kind} · Điểm {number} / {total}',
     packagesHere: { one: '{count} kiện tại điểm này', other: '{count} kiện tại điểm này' },
     loadingHint: 'Theo bước phương án',
@@ -347,6 +400,36 @@ export const viewer = {
     hasNotes: 'Có lưu ý',
     empty: 'Chọn kiện trong scene hoặc danh sách “Chọn kiện” để chỉnh sửa.',
     keyboard: 'Kéo kiện đang chọn trên mặt phẳng đã chọn. Mũi tên: X/Y · Page Up/Down: Z · R: xoay · Esc: hủy kéo · Ctrl/Cmd + Z: hoàn tác · thêm Shift: làm lại.',
+    /** HUD góc dưới trái khi chỉnh sửa (V2.3): câu dẫn, rồi từng phím và việc của nó. */
+    keyboardLead: 'Kéo kiện đang chọn trên mặt phẳng đã chọn.',
+    shortcuts: {
+      arrows: 'Mũi tên',
+      arrowsAction: 'X/Y',
+      pageKeys: 'Page Up/Down',
+      pageAction: 'Z',
+      rotateKey: 'R',
+      rotateAction: 'xoay',
+      escKey: 'Esc',
+      escAction: 'hủy kéo',
+      undoKey: 'Ctrl/Cmd + Z',
+      undoAction: 'hoàn tác',
+      redoLead: 'thêm',
+      shiftKey: 'Shift',
+      redoAction: 'làm lại',
+    },
+    dropKeeps: 'Thả ra: kiện giữ vị trí trước đó.',
+    draggingValid: 'Đang kéo: thả ra để đặt kiện ở đây. Các nút bên dưới tạm khoá đến khi thả kiện.',
+    draggingInvalid: 'Đang kéo: thả ra ở đây thì kiện giữ vị trí trước đó. Các nút bên dưới tạm khoá đến khi thả kiện.',
+    /** Vật cản mà kiện chồng lên: nhãn neo trên vật cản và dòng mô tả dưới câu lỗi. */
+    obstacleTag: 'Vật cản {id}',
+    obstacleLine: '{type} {id} · {range} · {bearing}',
+    /** Chú giải ba trạng thái khi dời kiện (V2.3 quyết định 3). */
+    legend: {
+      title: 'Trạng thái khi dời kiện',
+      moved: 'hợp lệ, đã dời',
+      soft: 'vi phạm ràng buộc mềm',
+      hard: 'lỗi cứng: chồng lấn, ngoài thùng',
+    },
     disclaimer: 'Kiểm tra hình học hỗ trợ chỉnh sửa; cảnh báo nâng đỡ không thay thế đánh giá ổn định hay tối ưu chất xếp.',
     resetAll: 'Khôi phục mọi chỉnh sửa',
     resetTitle: 'Khôi phục mọi chỉnh sửa?',
@@ -362,7 +445,7 @@ export const viewer = {
     nudgeGroup: 'Dịch chuyển kiện',
     decrease: 'Giảm {axis}',
     increase: 'Tăng {axis}',
-    axesHint: 'X: dọc thùng · Y: ngang thùng · Z: chiều cao. Nút dịch chuyển đi đúng bước cm, không tự hút.',
+    axesHint: 'X: dọc thùng · Y: ngang thùng · Z: chiều cao. Nắm mũi tên X, Y, Z trên kiện để kéo theo một trục; kéo lại gần chỗ cũ thì kiện hút về vị trí gốc. Nút dịch chuyển đi đúng bước cm, không tự hút.',
     rotation: 'Hướng xoay',
     plane: 'Mặt phẳng kéo',
     planes: {
@@ -379,7 +462,6 @@ export const viewer = {
     gesturePlane: 'Mặt phẳng {plane} · {status}',
     wrongView: 'Đổi góc nhìn để kéo trên mặt phẳng này: Trên cho X–Y, Bên hông cho X–Z, Cửa sau cho Y–Z.',
     originalPosition: 'Vị trí gốc',
-    manualNote: 'Vị trí hoặc hướng đặt đã chỉnh thủ công',
     placed: 'Đã đặt kiện',
     placeRejected: 'Không thể đặt — đã giữ vị trí trước đó',
     rotated: 'Đã đổi hướng đặt',
@@ -395,6 +477,7 @@ export const viewer = {
       package: 'Mặt kiện {id}',
       obstacle: 'Mặt vật cản {id}',
       grid: 'Lưới',
+      original: 'Vị trí gốc',
     },
     /** Đường đo của `editorMeasurements` (mã `MeasurementLabel`). */
     guides: {

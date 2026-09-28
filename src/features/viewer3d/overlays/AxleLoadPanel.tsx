@@ -12,11 +12,11 @@ export function AxleLoadPanel({ axles = [], compact = false }: { axles?: readonl
   return (
     <section
       aria-label={t('viewer.axles.title')}
-      className={cn('flex min-w-64 flex-col gap-2 rounded-md border border-border bg-bg p-3', compact ? 'w-70' : 'w-full')}
+      className={cn('flex min-w-64 flex-col gap-2 rounded-lg border border-glass-dark-border bg-canvas-2/45 p-3', compact ? 'w-70' : 'w-full')}
     >
       <div className="flex items-center justify-between gap-3 text-body-lg xl:text-caption">
-        <span className="font-medium">{t('viewer.axles.title')}</span>
-        <span className="text-text-2">{t('viewer.axles.comingLater')}</span>
+        <span className="font-semibold text-sky-text">{t('viewer.axles.title')}</span>
+        <span className="text-glass-dark-muted">{t('viewer.axles.comingLater')}</span>
       </div>
       {axles.length > 0 ? (
         <ul className="flex flex-col gap-1 font-mono text-body-lg xl:text-caption">
@@ -31,7 +31,7 @@ export function AxleLoadPanel({ axles = [], compact = false }: { axles?: readonl
           ))}
         </ul>
       ) : null}
-      {!compact ? <p className="text-body-lg text-text-2 xl:text-caption">{t('viewer.axles.pending')}</p> : null}
+      {!compact ? <p className="text-body-lg text-glass-dark-muted xl:text-caption">{t('viewer.axles.pending')}</p> : null}
     </section>
   )
 }

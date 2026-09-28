@@ -6,6 +6,8 @@ export type Axis = keyof PositionCm
 export const AXES: readonly Axis[] = ['x', 'y', 'z']
 export const EDITOR_RULES = Object.freeze({
   gridCm: 5, snapThresholdCm: 2,
+  /** Kéo về gần chỗ cũ trong khoảng này thì hút đúng vị trí gốc của phương án (LM-108): dễ trả kiện về mà không cần Khôi phục. */
+  homeSnapCm: 6,
   historyLimit: 200,
 })
 /** LM-034: nút dịch chuyển đi đúng 1, 5 hoặc 10 cm. */
@@ -36,7 +38,12 @@ export const obstacleBox = ({ id, xCm, yCm, zCm, lengthCm, widthCm, heightCm }: 
 export type GeometryResult = {
   valid: boolean
   errors: string[]
+  /** Cảnh báo ràng buộc thật (vẫn commit). Chỉnh tay hợp lệ không phải cảnh báo: xem `manual` (V2.3 quyết định 3). */
   advisories: string[]
+  /** Tư thế khác phương án gốc: nhãn xám "Đã chỉnh thủ công", không tô hổ phách. */
+  manual: boolean
   supportRatio: number
   overlapIds: readonly string[]
+  /** Vật cản kiện chồng lên hoặc tựa lên (`params.obstacleId` của issue), để mô tả vật cản bên cạnh câu lỗi. */
+  obstacleIds: readonly string[]
 }

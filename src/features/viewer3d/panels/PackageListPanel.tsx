@@ -1,45 +1,25 @@
-import { ChevronLeft, Pin } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { CheckCircle2, Pin } from 'lucide-react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { ConstraintIssue } from '@/domain/constraints'
-import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { useFormat, useT } from '@/lib/i18n'
-import { stopColor, stopForeground } from '@/lib/stops'
-import { cn } from '@/lib/utils'
-import { describeWhere } from './placement-relations'
-import type { ScenePlacement, SceneStop, SceneUnplaced } from '@/features/viewer3d/scene-input'
 import type { VehicleConfig } from '@/domain/models'
-import type { LeftTab } from '../useLoadPlanViewer'
+import { useFormat, useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import type { ScenePlacement, SceneStop, SceneUnplaced } from '@/features/viewer3d/scene-input'
+import { describeWhere } from './placement-relations'
 import { PlacedPackageList } from './PlacedPackageList'
+import { DARK_FIELD, DARK_SUBCARD, GLASS_PRESSED, MUTED, StopMark } from './scene-ui'
 
 /**
- * Danh sách kiện: chưa xếp (lọc theo lý do), đã ghim, đã xếp (LM-049: tìm, lọc điểm giao, chỉ kiện có cảnh báo).
- * Lệch có chủ ý: bản design gợi ý "kéo vào vùng 3D để xếp thủ công" —
+ * Tab "Danh sách" của hộp thông tin (V2.3 Planner3DThongTin): ba khối xếp chồng — chưa xếp (lọc theo lý do), đã ghim, đã xếp
+ * (LM-049: tìm, lọc điểm giao, chỉ kiện có cảnh báo). Lệch có chủ ý: bản design gốc gợi ý "kéo vào vùng 3D để xếp thủ công" —
  * thao tác đó chưa được nối nên không hiện cursor kéo lẫn câu gợi ý.
  */
-export function PackageListPanel({
-  unplaced,
-  pinned,
-  placements,
-  vehicle,
-  open,
-  onToggle,
-  tab,
-  onTabChange,
-  selectedId,
-  onSelect,
-  stops,
-  issues,
-  tripId,
-}: {
+export function PackageListPanel({ unplaced, pinned, placements, vehicle, selectedId, onSelect, stops, issues, tripId }: {
   unplaced: readonly SceneUnplaced[]
-  pinned: ScenePlacement[]
-  placements: ScenePlacement[]
+  pinned: readonly ScenePlacement[]
+  placements: readonly ScenePlacement[]
   vehicle: VehicleConfig
-  open: boolean
-  onToggle: () => void
-  tab: LeftTab
-  onTabChange: (tab: LeftTab) => void
   selectedId: string | null
   onSelect: (id: string) => void
   stops: readonly SceneStop[]
@@ -52,138 +32,97 @@ export function PackageListPanel({
   const [reason, setReason] = useState('')
   const reasons = useMemo(() => [...new Set(unplaced.flatMap((item) => item.reasonCode ? [item.reasonCode] : []))], [unplaced])
   const shownUnplaced = reason === '' ? unplaced : unplaced.filter((item) => item.reasonCode === reason)
+  const total = placements.length + unplaced.length
   return (
-    <aside
-      aria-label={t('viewer.packageList.label')}
-      className={cn(
-        'flex flex-none flex-col overflow-hidden border-r border-border bg-bg',
-        'transition-[width] duration-(--dur-md) ease-standard',
-        open ? 'w-70' : 'w-12',
-      )}
-    >
-      <div className="flex h-11 flex-none items-center justify-between border-b border-border pr-2 pl-4">
-        {open ? (
-          <span className="text-body font-medium whitespace-nowrap">{t('viewer.packageList.label')}</span>
-        ) : null}
-        <button
-          type="button"
-          aria-label={t(open ? 'viewer.packageList.collapse' : 'viewer.packageList.expand')}
-          aria-expanded={open}
-          onClick={onToggle}
-          className="grid size-8 place-items-center rounded-md text-text-3 transition-colors duration-(--dur-fast) ease-standard hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          <ChevronLeft
-            className={cn('size-4 transition-transform duration-(--dur-md) ease-standard', !open && 'rotate-180')}
-            strokeWidth={1.5}
-            aria-hidden
-          />
-        </button>
-      </div>
-
-      {open ? (
-        <Tabs
-          value={tab}
-          onValueChange={(value) => onTabChange(value === 'pinned' || value === 'placed' ? value : 'unplaced')}
-          className="flex min-h-0 flex-1 flex-col"
-        >
-          <TabsList>
-            <TabsTrigger value="unplaced">
-              {t('viewer.packageList.unplacedTab')} <TabCount tone="danger">{unplaced.length}</TabCount>
-            </TabsTrigger>
-            <TabsTrigger value="pinned">
-              {t('viewer.packageList.pinnedTab')} <TabCount>{pinned.length}</TabCount>
-            </TabsTrigger>
-            <TabsTrigger value="placed">
-              {t('viewer.plan.filters.placedTab')} <TabCount>{placements.length}</TabCount>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="unplaced" className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
-            <p className="px-1 pb-1 text-caption text-text-3">
-              {t('viewer.packageList.unplacedHint')}
-            </p>
-            {reasons.length > 1 ? (
-              <select aria-label={t('viewer.plan.filters.reason')} value={reason} onChange={(event) => setReason(event.target.value)}
-                className="h-14 rounded-md border border-border bg-bg px-2 text-body-lg xl:h-10 xl:text-body">
-                <option value="">{t('viewer.plan.filters.allReasons')}</option>
-                {reasons.map((code) => <option key={code} value={code}>{t(`viewer.unplacedReasons.${code}`)}</option>)}
-              </select>
-            ) : null}
+    <section aria-label={t('viewer.packageList.label')} className="flex min-h-full flex-col gap-2 p-3 text-body-lg xl:text-body">
+      <Section title={t('viewer.packageList.unplacedTab')} count={unplaced.length} tone={unplaced.length ? 'warn' : 'plain'}
+        action={reasons.length > 1 ? (
+          <select aria-label={t('viewer.plan.filters.reason')} value={reason} onChange={(event) => setReason(event.target.value)} className={cn(DARK_FIELD, 'xl:h-7.5')}>
+            <option value="">{t('viewer.plan.filters.allReasons')}</option>
+            {reasons.map((code) => <option key={code} value={code}>{t(`viewer.unplacedReasons.${code}`)}</option>)}
+          </select>
+        ) : null}>
+        {unplaced.length === 0 ? (
+          <p className={cn('mt-1 flex items-start gap-2 xl:text-fine', MUTED)}>
+            <CheckCircle2 className="mt-0.5 size-4 flex-none text-green-500" strokeWidth={1.5} aria-hidden />
+            {t('viewer.packageList.allPlaced', { placed: format.integer(placements.length), total: format.integer(total) })}
+          </p>
+        ) : <>
+          <p className={cn('mt-1 xl:text-caption', MUTED)}>{t('viewer.packageList.unplacedHint')}</p>
+          <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
             {shownUnplaced.map((item) => (
-              <div
-                key={item.id}
-                className="flex gap-3 rounded-md border border-dashed border-switch-off bg-bg p-3"
-              >
-                <StopSquare stop={item.stop} />
+              <li key={item.id} className="flex gap-2.5 rounded-md border border-dashed border-amber-500/45 p-2.5">
+                <StopMark stop={item.stop} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <Link to={`/chuyen/${tripId}?kien=${encodeURIComponent(item.packageId)}`} className="font-mono text-body font-medium text-primary">{item.id}</Link>
-                  <span className="truncate font-mono text-caption text-text-3">
+                  <Link to={`/chuyen/${tripId}?kien=${encodeURIComponent(item.packageId)}`} className="font-mono font-medium text-cyan-200">{item.id}</Link>
+                  <span className={cn('font-mono text-caption', MUTED)}>
                     {format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}
                   </span>
-                  <span className="text-caption text-badge-warning-fg">{t(`viewer.unplacedReasons.${item.reasonCode ?? 'UNKNOWN'}`)}</span>
+                  <span className="text-caption text-amber-200">{t(`viewer.unplacedReasons.${item.reasonCode ?? 'UNKNOWN'}`)}</span>
                   {/* `message` của service thật có thể khác mã lý do; mock ghi lại đúng mã nên không lặp */}
-                  {item.message && item.message !== item.reasonCode ? <span className="text-caption text-text-2">{item.message}</span> : null}
+                  {item.message && item.message !== item.reasonCode ? <span className={cn('text-caption', MUTED)}>{item.message}</span> : null}
                 </div>
-              </div>
+              </li>
             ))}
-          </TabsContent>
+          </ul>
+        </>}
+      </Section>
 
-          <TabsContent value="pinned" className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
-            <p className="px-1 pb-1 text-caption text-text-3">
-              {t('viewer.packageList.pinnedHint')}
-            </p>
-            {pinned.map((item) => {
-              const selected = item.id === selectedId
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onSelect(item.id)}
-                  aria-pressed={selected}
-                  className={cn(
-                    'flex gap-3 rounded-md border p-3 text-left transition-colors duration-(--dur-fast) ease-standard',
-                    'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-                    selected ? 'border-primary bg-primary-bg' : 'border-border bg-bg hover:bg-surface',
-                  )}
-                >
-                  <StopSquare stop={item.stop} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="flex items-center gap-1.5 font-mono text-body font-medium">
-                      {item.id}
-                      <Pin className="size-3.5 fill-warning text-warning" strokeWidth={1.5} aria-label={t('viewer.packageList.pinned')} />
-                    </span>
-                    <span className="font-mono text-caption text-text-3">
-                      {format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}
-                    </span>
-                    <span className="text-caption text-text-2">
-                      <PinnedWhere where={describeWhere(item, placements, vehicle)} />
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </TabsContent>
+      <Section title={t('viewer.packageList.pinnedTab')} count={pinned.length} hint={t('viewer.packageList.pinnedHint')}
+        inline={pinned.length === 0 ? t('viewer.packageList.noPinned') : undefined}>
+        {pinned.length ? <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
+          {pinned.map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={() => onSelect(item.id)} aria-pressed={item.id === selectedId}
+                className={cn('flex w-full gap-2.5 rounded-md border border-glass-dark-border bg-sky-glass/60 p-2.5 text-left hover:bg-sky-glass-hover',
+                  'focus-visible:outline-2 focus-visible:outline-primary', GLASS_PRESSED)}>
+                <StopMark stop={item.stop} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex items-center gap-1.5 font-mono font-medium text-sky-text">
+                    {item.id}<Pin className="size-3.5 text-amber-500" strokeWidth={1.5} aria-label={t('viewer.packageList.pinned')} />
+                  </span>
+                  <span className={cn('font-mono text-caption', MUTED)}>{format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}</span>
+                  <span className={cn('text-caption', MUTED)}><PinnedWhere where={describeWhere(item, placements, vehicle)} /></span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul> : null}
+      </Section>
 
-          <TabsContent value="placed" className="flex min-h-0 flex-1 flex-col">
-            <PlacedPackageList placements={placements} stops={stops} issues={issues} selectedId={selectedId} onSelect={onSelect} />
-          </TabsContent>
-        </Tabs>
-      ) : null}
-    </aside>
+      <div className={cn('flex min-h-96 flex-1 flex-col', DARK_SUBCARD)}>
+        <SectionHeader title={t('viewer.plan.filters.placedTab')} count={placements.length} note={t('viewer.packageList.byLoadingOrder')} className="px-3 pt-2.5" />
+        <PlacedPackageList placements={placements} stops={stops} issues={issues} selectedId={selectedId} onSelect={onSelect} />
+      </div>
+    </section>
   )
 }
 
-function StopSquare({ stop }: { stop: number }) {
-  const t = useT()
+function Section({ title, count, tone = 'plain', action, inline, hint, children }: {
+  title: string; count: number; tone?: 'plain' | 'warn'; action?: ReactNode; inline?: string; hint?: string; children?: ReactNode
+}) {
+  const titleId = useId()
+  // Vùng có tên (tiêu đề khối): "Kiện chưa xếp", "Kiện đã ghim" đọc được như một mục riêng, thay các tab con cũ
+  return (
+    <section aria-labelledby={titleId} className={cn('px-3 py-2.5', DARK_SUBCARD, tone === 'warn' && 'border-amber-500/35')} title={hint}>
+      <SectionHeader titleId={titleId} title={title} count={count} inline={inline} action={action} />
+      {children}
+    </section>
+  )
+}
+
+function SectionHeader({ titleId, title, count, inline, note, action, className }: {
+  titleId?: string; title: string; count: number; inline?: string; note?: string; action?: ReactNode; className?: string
+}) {
   const format = useFormat()
   return (
-    <span
-      className="grid size-9 flex-none place-items-center rounded-sm font-mono text-caption font-semibold leading-none"
-      style={{ background: stopColor(stop), color: stopForeground(stop) }}
-    >
-      <span className="sr-only">{t('viewer.selected.stop')} </span>
-      {format.integer(stop)}
-    </span>
+    <div className={cn('flex min-h-7.5 flex-wrap items-center gap-2', className)}>
+      <h3 id={titleId} className="font-semibold text-sky-text xl:text-lede">{title}</h3>
+      <span className="rounded-sm bg-sky-glass-hover px-1.5 py-0.5 font-display text-caption font-semibold tabular-nums">{format.integer(count)}</span>
+      {inline ? <span className={cn('xl:text-fine', MUTED)}>· {inline}</span> : null}
+      {note ? <span className={cn('ml-auto text-caption', MUTED)}>{note}</span> : null}
+      {action ? <span className="ml-auto">{action}</span> : null}
+    </div>
   )
 }
 

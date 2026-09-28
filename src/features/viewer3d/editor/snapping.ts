@@ -5,7 +5,7 @@ import type { TFunction } from '@/lib/i18n'
 import { AXES, EDITOR_RULES, extent, limit, obstacleBox, roundPosition, type Axis, type EditorBox } from './geometry'
 
 /** Mặt hút, không kèm câu chữ: UI dịch qua `formatSnapSource` (LM-070). */
-export type SnapSourceKind = 'floor' | 'wall' | 'ceiling' | 'package' | 'obstacle' | 'grid'
+export type SnapSourceKind = 'floor' | 'wall' | 'ceiling' | 'package' | 'obstacle' | 'grid' | 'original'
 export type SnapSource = { axis: Axis; kind: SnapSourceKind; id?: string }
 export type SnapTarget = SnapSource & { coordinateCm: number; placementId?: string }
 
@@ -19,15 +19,23 @@ export function formatSnapSource({ axis, kind, id = '' }: SnapSource, t: TFuncti
 /**
  * All thresholds and face distances are cm. Fixed axes stay fixed during a gesture. Magnetic faces: floor, walls, grid, other
  * packages and load-bearing obstacles (LM-034) — a non-bearing obstacle must not invite a drop the engine then rejects.
+ * `home` (LM-108): vị trí gốc của kiện trong phương án — trong `homeSnapCm` thì trục đó hút về đúng vị trí gốc, thắng mọi mặt khác.
  */
 export function snapPosition(
   p: ScenePlacement, requested: PositionCm, placements: readonly ScenePlacement[], vehicle: VehicleConfig,
   axes: readonly Axis[] = AXES,
+  home?: PositionCm,
 ): { position: PositionCm; sources: SnapSource[]; targets: SnapTarget[] } {
   const position = roundPosition(requested)
   const sources: SnapSource[] = []
   const targets: SnapTarget[] = []
   for (const axis of axes) {
+    if (home && !gt(Math.abs(position[axis] - home[axis]), EDITOR_RULES.homeSnapCm)) {
+      position[axis] = home[axis]
+      sources.push({ axis, kind: 'original' })
+      targets.push({ axis, kind: 'original', coordinateCm: home[axis] })
+      continue
+    }
     const size = extent(p, axis)
     const candidates: { value: number; coordinateCm: number; kind: SnapSourceKind; id?: string; placementId?: string }[] = [
       { value: 0, coordinateCm: 0, kind: axis === 'z' ? 'floor' : 'wall' },

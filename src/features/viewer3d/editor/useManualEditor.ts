@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { roundPosition, type Axis } from './geometry'
 import { useEditorValidation } from './useEditorValidation'
 import { createPreviewStore } from './preview-store'
+import { settleAfterMove } from './gravity'
 import { snapPosition } from './snapping'
 
 export type DragPlane = 'xy' | 'xz' | 'yz'
@@ -38,8 +39,15 @@ export function useManualEditor(state: LoadPlanViewerState) {
     const result = inspect(candidate)
     preview.publish({ id, position: candidate.position, result, sources: [], dragging: false,
       message: t(result.valid ? 'viewer.editor.placed' : 'viewer.editor.placeRejected') }, true)
-    if (result.valid) state.commitDraft('MOVE', id, { position: candidate.position })
-    return result.valid
+    if (!result.valid) return false
+    // Trọng lực (LM-108): kiện đang tựa lên kiện vừa dời mà mất chỗ đỡ thì rơi xuống; kiện dời và các kiện rơi là một lệnh hoàn tác
+    const fallen = settleAfterMove(id, placements, placements.map((item) => item.id === id ? candidate : item), sceneModel.vehicle.obstacles)
+    if (fallen.length > 0) {
+      state.commitGravityMove(id, { position: candidate.position }, fallen.map((item) => ({ id: item.id, patch: { position: item.position } })))
+    } else {
+      state.commitDraft('MOVE', id, { position: candidate.position })
+    }
+    return true
   }
   const rotate = (orientation: OrientationCode) => {
     if (!selected || selected.pinned || preview.getLatest()?.dragging) return

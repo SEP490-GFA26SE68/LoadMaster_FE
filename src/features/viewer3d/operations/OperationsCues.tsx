@@ -12,6 +12,7 @@ import { cargoCenterOfMass } from './operations-model'
 import { interiorStopMap } from './stop-map'
 import { SCENE_SCALE } from '../scene/units'
 import { SceneCallout } from '../scene/SceneCallout'
+import { SceneTag } from '../scene/SceneTag'
 
 export function RearDoorCue({ vehicle }: { vehicle: VehicleConfig }) {
   const t = useT()
@@ -27,7 +28,7 @@ export function RearDoorCue({ vehicle }: { vehicle: VehicleConfig }) {
       <lineBasicMaterial color={readToken('--bg')} />
     </lineSegments>
     <Html position={[x + 0.7, 0.05, z]} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-      <span className="block w-max max-w-44 -translate-x-1/2 rounded-sm bg-panel-dark px-2 py-1 text-center text-body text-bg sm:max-w-none sm:whitespace-nowrap">{t('viewer.cues.rearDoor')}</span>
+      <span className="block w-max -translate-x-1/2"><SceneTag title={t('viewer.cues.rearDoor')} className="max-w-44 whitespace-normal sm:max-w-none sm:whitespace-nowrap" /></span>
     </Html>
   </group>
 }
@@ -76,8 +77,8 @@ export function CargoMassMarker({ placements, vehicle }: { placements: readonly 
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]} raycast={() => null}>
       <ringGeometry args={[0.06, 0.09, 16]} /><meshBasicMaterial color={color} side={DoubleSide} />
     </mesh>
-    <SceneCallout position={[0, mass.position.z * SCENE_SCALE, 0]} offset={[-140, 90]} width={180}>
-      <span className="inline-block rounded-sm border border-highlight bg-panel-dark px-2 py-1 text-body text-bg">{t('viewer.cues.centerOfMass')}</span>
+    <SceneCallout position={[0, mass.position.z * SCENE_SCALE, 0]} offset={[-140, 90]} width={180} anchor>
+      <SceneTag tone="warn" title={t('viewer.cues.centerOfMass')} />
     </SceneCallout>
   </group>
 }

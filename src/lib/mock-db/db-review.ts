@@ -24,7 +24,8 @@ export function pendingRevision(state: DbState, tripId: string): Revision | unde
 
 /** Người chạy tối ưu tạo revision, lấy từ lịch sử lần chạy. */
 function runnerOf(state: DbState, revisionId: string): string | null {
-  return [...state.runs.values()].find((run) => run.revisionId === revisionId)?.by ?? null
+  // Bản chỉnh tay (LM-108) không có lần chạy: người gửi là người lưu bản chỉnh
+  return [...state.runs.values()].find((run) => run.revisionId === revisionId)?.by ?? state.revisions.get(revisionId)?.editedBy ?? null
 }
 
 /** Quyết định của quản lý (luồng 4) và lịch sử lần chạy tối ưu (luồng 3), LM-104. */

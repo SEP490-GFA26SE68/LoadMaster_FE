@@ -134,13 +134,15 @@ test('a plan awaiting approval keeps Approve and the other decisions on one row:
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason', async ({ page, login, browserErrors }, testInfo) => {
+test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason with the warehouse progress (V2.3)', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
   await login('/chuyen/TRIP-011/phuong-an')
   await page.locator('canvas').waitFor()
 
-  await expect(page.getByRole('status').filter({ hasText: 'phương án đã chốt' }))
-    .toHaveText('Chuyến đang xếp hàng — phương án đã chốt.')
+  // V2.3 Planner3DKhoa: lý do khoá, câu giải thích và dòng tiến độ kho lấy từ kho (seed TRIP-011: 110 / 280 kiện)
+  const lock = page.locator('[data-planner-lock="loading"]')
+  await expect(lock).toContainText('Chuyến đang xếp hàng — phương án đã chốt. Kho đang xếp hàng theo phương án đã duyệt')
+  await expect(lock).toContainText(/Kho đã xếp 110 \/ 280 kiện · bắt đầu \d{2}:\d{2} · \d{2}\/\d{2}/)
   for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }
@@ -150,16 +152,16 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
   expect(browserErrors).toStrictEqual([])
 })
 
-test('tablet keeps two 56 px control rows; the dispatcher reads the approved plan with one reason and no actions (LM-104)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
+test('tablet keeps two 56 px control rows; the dispatcher may edit the approved plan by hand but never approves it (LM-104, LM-108)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
   await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()
   expect((await toolbar.getByRole('combobox', { name: 'Góc nhìn', exact: true }).boundingBox())!.height).toBe(56)
   expect((await header(page).boundingBox())!.height).toBe(56)
-  await expect(page.getByRole('status').filter({ hasText: 'Chỉ xem' }))
-    .toHaveText('Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.')
-  for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
+  // LM-108: điều phối viên chỉnh tay rồi "Lưu bản chỉnh"; không khoá, không nút Duyệt
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
+  for (const name of ['Duyệt phương án', 'Duyệt bản chỉnh', 'Lưu bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }
   expect(await headerOverflow(page), 'tablet header').toStrictEqual([])

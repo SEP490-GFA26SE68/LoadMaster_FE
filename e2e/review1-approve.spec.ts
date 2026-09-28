@@ -12,13 +12,17 @@ test.use({ collectConsoleErrors: true })
 const TRIP = 'TRIP-2026-0914'
 const SETUP = `/chuyen/${TRIP}/toi-uu`
 const NAMES = { dispatcher: 'Nguyễn Thanh Tùng', manager: 'Trần Thị Mai' } as const
+const ROLE_HOME_URL = { dispatcher: /\/chuyen$/, manager: /:\d+\/$/ } as const
 const REASON = 'Hàng dồn về phía sau, cần cân bằng lại tải trục'
 
 async function signIn(page: Page, role: keyof typeof NAMES) {
   await page.getByLabel('Email', { exact: true }).fill(DEMO_EMAILS[role])
   await page.getByLabel('Mật khẩu', { exact: true }).fill(DEMO_PASSWORD)
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
-  await page.waitForURL((url) => url.pathname !== '/dang-nhap')
+  // Chờ màn chính của vai trò dựng xong (khung ứng dụng có nút tài khoản): điều hướng ngay sau khi rời màn đăng nhập thì lần chuyển về
+  // màn chính của đăng nhập có thể đè lên, trang ở lại `/` hoặc `/chuyen` (đỏ ngẫu nhiên, LM-107)
+  await page.waitForURL(ROLE_HOME_URL[role])
+  await expect(page.getByRole('button', { name: `Tài khoản ${NAMES[role]}`, exact: true })).toBeVisible()
 }
 
 async function signOut(page: Page, role: keyof typeof NAMES) {

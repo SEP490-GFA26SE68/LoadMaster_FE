@@ -30,7 +30,8 @@ test('lists placed packages and narrows by stop and by id search', async () => {
 
   const target = atStop2[0]!
   await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm theo mã kiện' }), target.id)
-  expect(rows().map((row) => row.textContent)).toContain(`2${target.id}`)
+  // Dòng: ô điểm giao, mã kiện, rồi kích thước · khối lượng (V2.3)
+  expect(rows().map((row) => row.textContent?.slice(0, target.id.length + 1))).toContain(`2${target.id}`)
 })
 
 test('only-warnings keeps the packages an issue names, and a click selects', async () => {

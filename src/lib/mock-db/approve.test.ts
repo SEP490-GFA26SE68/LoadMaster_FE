@@ -133,3 +133,30 @@ test('a draft cannot move a package the revision did not place, and an unknown r
   })
   expect(await db.listRevisions(trip.id)).toStrictEqual([revision])
 })
+
+test('saving a manual edit (LM-108) creates a new unapproved revision that the company manager then finds in the review queue', async () => {
+  vi.setSystemTime(new Date('2026-09-15T08:30:00.000Z'))
+  const db = createMockDb()
+  const { trip, revision: source } = await optimizedTwoCartonTrip(db)
+  vi.setSystemTime(new Date('2026-09-15T10:15:00.000Z'))
+  const edited = await db.saveEditedRevision(source.id, [LIFT_ONTO_PKG_002])
+  expect(await db.getRevision(source.id)).toStrictEqual(source)
+  expect(edited).toMatchObject({
+    tripId: trip.id,
+    createdAt: '2026-09-15T10:15:00.000Z',
+    sourceRevisionId: source.id,
+    draftPatches: [LIFT_ONTO_PKG_002],
+    manuallyEdited: true,
+    ordersRecomputed: true,
+  })
+  expect(edited.approvedAt).toBeUndefined()
+  expect(edited.result.placements).toStrictEqual((await db.approveRevision(source.id, [LIFT_ONTO_PKG_002])).result.placements)
+})
+
+test('the saved edit is the one waiting in the review queue, and an edit without any move is refused (LM-108)', async () => {
+  const db = createMockDb()
+  const { trip, revision: source } = await optimizedTwoCartonTrip(db)
+  const edited = await db.saveEditedRevision(source.id, [LIFT_ONTO_PKG_002])
+  expect((await db.listReviewQueue()).find((item) => item.tripId === trip.id)).toMatchObject({ revisionId: edited.id, manuallyEdited: true })
+  await expect(db.saveEditedRevision(source.id, [])).rejects.toMatchObject({ code: 'NO_EDITS' })
+})
