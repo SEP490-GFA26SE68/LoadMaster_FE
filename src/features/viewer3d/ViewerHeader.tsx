@@ -59,15 +59,16 @@ export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, 
               </>
             ) : tripId}
           </h1>
-          {/* Điện thoại: không có tên tuyến và mã, hai nhãn chính xếp chồng (22 + 4 + 22 px vừa hàng 56 px); Lỗi thời và LIFO tắt đã có ở thanh thông báo / hộp thoại */}
+          {/* Dưới 1.536 px chỉ còn mã và MOCK RESULT: font Linux của CI rộng hơn, hàng nhãn đủ ba tag tràn ở 1.366 px. "Đã chỉnh tay" còn ở
+              panel chỉnh sửa, Lỗi thời và LIFO tắt ở thanh thông báo / hộp thoại Duyệt; điện thoại không có tên tuyến và mã */}
           <div className="flex min-w-0 flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
             <span className="hidden font-mono text-caption leading-4 whitespace-nowrap text-cyan-200 md:inline">
               {title ? <><span className="hidden min-[1680px]:inline">{codes}</span><span className="min-[1680px]:hidden">{revisionId ?? tripId}</span></> : codes}
             </span>
             {isMockResult ? <Badge shape="tag" tone="mock" className="border-amber-500/45 text-amber-500">MOCK RESULT</Badge> : null}
-            {manuallyEdited ? <Badge shape="tag" tone="azure" className="bg-azure-500/20 text-azure-200">{t('viewer.plan.manuallyEdited')}</Badge> : null}
-            {stale ? <Badge shape="tag" outlined className="hidden border-amber-500/40 bg-amber-500/15 text-amber-200 md:inline-flex">{t('viewer.plan.staleTag')}</Badge> : null}
-            {lifoOff ? <Badge shape="tag" outlined className="hidden border-sky-glass-border bg-sky-glass text-glass-dark-text md:inline-flex">{t('viewer.plan.lifoOff')}</Badge> : null}
+            {manuallyEdited ? <Badge shape="tag" tone="azure" className="hidden bg-azure-500/20 text-azure-200 2xl:inline-flex">{t('viewer.plan.manuallyEdited')}</Badge> : null}
+            {stale ? <Badge shape="tag" outlined className="hidden border-amber-500/40 bg-amber-500/15 text-amber-200 2xl:inline-flex">{t('viewer.plan.staleTag')}</Badge> : null}
+            {lifoOff ? <Badge shape="tag" outlined className="hidden border-sky-glass-border bg-sky-glass text-glass-dark-text 2xl:inline-flex">{t('viewer.plan.lifoOff')}</Badge> : null}
           </div>
         </div>
 

@@ -74,7 +74,10 @@ test('dragging a package commits React at the preview throttle rate, not once pe
   // Mỗi pointer frame một commit sẽ ≥ số lần di chuyển. preview-store gửi snapshot tối đa ~10 lần/giây (đo: 34 commit react-dom
   // trong 3,3 s trên SwiftShader), nên số commit bám theo thời gian chứ không theo số lần di chuyển.
   const detail = `commits ${JSON.stringify(perRenderer)} over ${moves} moves in ${elapsedMs} ms`
-  expect(dragCommits, detail).toBeLessThan(moves)
+  // Nhịp commit ~10 lần/giây là thứ cần giữ. "Ít commit hơn số lần di" chỉ chứng minh được khi các lần di dày hơn nhịp đó: máy CI
+  // (SwiftShader, 2 nhân) mất ~120 ms mỗi lần di với 1.000 kiện, nên 60 lần di kéo dài hơn 6 s và số commit theo thời gian vượt 60
+  // dù vẫn đúng nhịp (LM-108: 66 commit trong 7,7 s)
+  if (elapsedMs / moves < 90) expect(dragCommits, detail).toBeLessThan(moves)
   expect(dragCommits, detail).toBeLessThanOrEqual(Math.ceil(elapsedMs / 100) + 6)
   expect(browserErrors).toStrictEqual([])
 })
