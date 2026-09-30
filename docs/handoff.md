@@ -87,8 +87,7 @@ pnpm lint; pnpm build; pnpm test; pnpm test:e2e     # E2E tự bật Vite ở 12
 ## 5. Cách làm việc với người dùng
 
 - Trả lời **tiếng Việt, ngắn gọn**, chỉ kết quả.
-- **Hỏi trước khi xoá nhánh.** Đang còn 3 nhánh đã gộp chưa xoá (`feat/v2-3-toi-uu`, `feat/v2-3-planner`, `feat/lm-108-planner-chinh-tay`) —
-  người dùng chưa trả lời có xoá hay không.
+- **Hỏi trước khi xoá nhánh.** Nhánh đã gộp được dọn sau khi người dùng đồng ý (30/09: còn `main`, `developer`).
 - Commit: ký `tankhang6a6@gmail.com`, thông điệp tiếng Việt kiểu Conventional Commits, **không** dòng đồng tác giả / tên công cụ (AGENTS §13).
   Mỗi việc một nhánh `feat/…` từ `developer`, PR vào `developer`, chờ CI xanh rồi mới gộp.
 - Làm song song bằng agent: mỗi agent một worktree, chia file sở hữu rõ, người điều phối cherry-pick và chạy lại đủ bộ kiểm tra.
