@@ -11,8 +11,6 @@ Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho
 Một codebase responsive phục vụ 7 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
-![Xem phương án 3D](docs/screenshots/handoff/vi-planner-success.png)
-
 ## Làm được gì
 
 | Vai trò | Thiết bị | Luồng chính |
@@ -98,11 +96,8 @@ Luật viết code, đặt tên, design token, quy ước 3D và quy ước git 
 | Tài liệu | Nội dung |
 |---|---|
 | [AGENTS.md](AGENTS.md) | Luật của repo: design token, luật thành phần, quy ước 3D, cách viết test |
-| [docs/build-spec.md](docs/build-spec.md) | Đặc tả gốc: mô hình dữ liệu, contract tối ưu, tiêu chí nghiệm thu |
-| [docs/prd.md](docs/prd.md) | Quyết định phạm vi (D-01 → D-57) |
-| [docs/handoff.md](docs/handoff.md) | Bàn giao hiện trạng: route, dữ liệu mẫu, nợ kỹ thuật |
-| [docs/acceptance.md](docs/acceptance.md) | Nghiệm thu, đối chiếu từng dòng tiêu chí với test |
-| [docs/progress.md](docs/progress.md) | Nhật ký tiến độ theo ngày |
-| [docs/screenshots/handoff/](docs/screenshots/handoff/) | Ảnh toàn bộ màn, bản tiếng Việt và tiếng Anh |
+
+Tài liệu nội bộ của nhóm — Build Spec, PRD, issue, bàn giao, nghiệm thu, nhật ký tiến độ, ảnh chụp màn — nằm trong thư mục `docs/`
+trên máy của nhóm và **không đưa lên repo** (AGENTS mục 13). Cần bản nào thì hỏi nhóm.
 
 Hai trang tài liệu giao diện chạy được trong app: `/kieu-dang` (style sheet) và `/thanh-phan` (bảng thành phần).

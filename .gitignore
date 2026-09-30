@@ -42,5 +42,7 @@ blob-report/
 CLAUDE.md
 
 # gói bàn giao nén (nội dung đã giải nén vào design/, docs/)
-docs/*.zip
 /*.zip
+
+# tài liệu nội bộ (PRD, issue, nhật ký, bàn giao, ảnh chụp, số đo) chỉ lưu trên máy, không commit — AGENTS mục 13
+docs/
