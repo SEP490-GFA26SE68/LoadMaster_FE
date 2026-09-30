@@ -4,8 +4,6 @@ Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho
 Một codebase responsive phục vụ 5 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
-![Xem phương án 3D](docs/screenshots/handoff/vi-planner-success.png)
-
 ## Làm được gì
 
 | Vai trò | Thiết bị | Luồng chính |
@@ -32,7 +30,7 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 ## Trạng thái
 
-- **MVP theo Build Spec**, nghiệm thu 16/09/2026 — đối chiếu từng dòng tiêu chí trong [docs/acceptance.md](docs/acceptance.md).
+- **MVP theo Build Spec**, nghiệm thu 16/09/2026.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang.
   Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -66,11 +64,8 @@ CI chạy lint, kiểm kiểu, unit và E2E trên mỗi lần push (`.github/wor
 | Tài liệu | Nội dung |
 |---|---|
 | [AGENTS.md](AGENTS.md) | Luật của repo: design token, luật thành phần, quy ước 3D, cách viết test |
-| [docs/build-spec.md](docs/build-spec.md) | Đặc tả gốc: mô hình dữ liệu, contract tối ưu, tiêu chí nghiệm thu |
-| [docs/prd.md](docs/prd.md) | Quyết định phạm vi |
-| [docs/handoff.md](docs/handoff.md) | Bàn giao hiện trạng: route, dữ liệu mẫu, nợ kỹ thuật |
-| [docs/acceptance.md](docs/acceptance.md) | Nghiệm thu, đối chiếu từng dòng tiêu chí với test |
-| [docs/progress.md](docs/progress.md) | Nhật ký tiến độ theo ngày |
-| [docs/screenshots/handoff/](docs/screenshots/handoff/) | Ảnh toàn bộ màn, bản tiếng Việt và tiếng Anh |
+
+Tài liệu nội bộ của nhóm — Build Spec, PRD, bàn giao, nghiệm thu, nhật ký tiến độ, ảnh chụp màn — nằm trong thư mục `docs/`
+trên máy của nhóm và **không đưa lên repo**. Cần bản nào thì hỏi nhóm.
 
 Hai trang tài liệu giao diện chạy được trong app: `/kieu-dang` (style sheet) và `/thanh-phan` (bảng thành phần).

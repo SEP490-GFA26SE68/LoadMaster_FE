@@ -39,5 +39,5 @@ blob-report/
 .claude/
 CLAUDE.md
 
-# gói bàn giao nén
-docs/*.zip
+# tài liệu nội bộ (PRD, issue, nhật ký, bàn giao, ảnh chụp, số đo) chỉ lưu trên máy, không commit
+docs/
