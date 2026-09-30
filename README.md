@@ -11,8 +11,6 @@ Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho
 Một codebase responsive phục vụ 7 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
-![Xem phương án 3D](docs/screenshots/handoff/vi-planner-success.png)
-
 ## Làm được gì
 
 | Vai trò | Thiết bị | Luồng chính |
@@ -44,13 +42,16 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 | Kho | `kho@loadmaster.vn` | `/kho` |
 | Tài xế | `taixe@loadmaster.vn` | `/tai-xe` |
 | Quản trị | `quantri@loadmaster.vn` | `/nguoi-dung` |
+| Nhà sản xuất | `sanxuat@loadmaster.vn` | `/kien-hang` |
+| Logistics | `logistics@loadmaster.vn` | `/nhan-hang` |
 
 Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 ## Trạng thái
 
-- Cả 5 vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu: điều phối lập kế hoạch → kho xếp theo thứ tự →
-  tài xế giao theo thứ tự dỡ → quản lý xem số liệu → quản trị đọc nhật ký. Kịch bản một ngày làm việc có test đầu-cuối.
+- 7 vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu, theo 5 luồng Review 1: nhà sản xuất đăng ký kiện và in tem QR →
+  logistics quét nhận → điều phối lập chuyến, gán đơn, chạy tối ưu, chỉnh tay → quản lý công ty duyệt → kho quét QR xếp, tài xế quét QR
+  dỡ → báo cáo chuyến. Quản trị quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -72,12 +73,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 778 test unit + DOM
-pnpm test:e2e      # Playwright: 81 test trên desktop / tablet / phone
+pnpm test          # Vitest: 980 test unit + DOM
+pnpm test:e2e      # Playwright: 96 test trên desktop / tablet / phone
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất: lint, build, 778/778 unit, 81/81 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (28/09/2026, nhánh `developer`): lint, build, 980/980 unit, 96/96 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 
@@ -95,11 +96,8 @@ Luật viết code, đặt tên, design token, quy ước 3D và quy ước git 
 | Tài liệu | Nội dung |
 |---|---|
 | [AGENTS.md](AGENTS.md) | Luật của repo: design token, luật thành phần, quy ước 3D, cách viết test |
-| [docs/build-spec.md](docs/build-spec.md) | Đặc tả gốc: mô hình dữ liệu, contract tối ưu, tiêu chí nghiệm thu |
-| [docs/prd.md](docs/prd.md) | Quyết định phạm vi (D-01 → D-57) |
-| [docs/handoff.md](docs/handoff.md) | Bàn giao hiện trạng: route, dữ liệu mẫu, nợ kỹ thuật |
-| [docs/acceptance.md](docs/acceptance.md) | Nghiệm thu, đối chiếu từng dòng tiêu chí với test |
-| [docs/progress.md](docs/progress.md) | Nhật ký tiến độ theo ngày |
-| [docs/screenshots/handoff/](docs/screenshots/handoff/) | Ảnh toàn bộ màn, bản tiếng Việt và tiếng Anh |
+
+Tài liệu nội bộ của nhóm — Build Spec, PRD, issue, bàn giao, nghiệm thu, nhật ký tiến độ, ảnh chụp màn — nằm trong thư mục `docs/`
+trên máy của nhóm và **không đưa lên repo** (AGENTS mục 13). Cần bản nào thì hỏi nhóm.
 
 Hai trang tài liệu giao diện chạy được trong app: `/kieu-dang` (style sheet) và `/thanh-phan` (bảng thành phần).

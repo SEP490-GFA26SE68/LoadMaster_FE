@@ -76,6 +76,12 @@ MVP đã nghiệm thu và nằm ở `main`. Đợt 6 làm trên `feat/ui-complet
 (bảo vệ SEP490): [rà soát giao diện](docs/ui-audit-2026-09-19.md), [PRD mục 15](docs/prd.md) (D-40 → D-57), issue LM-080 → LM-101.
 Không chờ backend: giả lập phân quyền, **không** giả lập lưu bền — kho vẫn in-memory.
 
+### Kế hoạch sau Review 1 *(bổ sung 30/09/2026)*
+
+Quyết định và issue của giai đoạn sau Review 1 nằm ở `docs/prd-v2.md` và `docs/issues-2-fe/` — tài liệu nội bộ, chỉ có trên máy của
+nhóm (mục 13). Đọc hai tài liệu đó trước khi làm việc thuộc giai đoạn này. Luật ở các mục dưới mô tả code hiện tại; issue nào đổi luật
+thì sửa luật ở đây cùng lúc (danh sách ở `docs/prd-v2.md` mục 15).
+
 ## 2. Tech stack
 
 Khóa version trong lockfile, không tự nâng major. Dùng **pnpm**, không dùng npm/yarn
@@ -1047,6 +1053,9 @@ bộ 124 commit** để dọn — làm đúng từ đầu thì không phải là
 
 - Gốc repo chỉ giữ: file cấu hình công cụ bắt buộc, `README.md`, `AGENTS.md`. **Tài liệu mới đặt trong `docs/`**,
   không thêm `.md` ở gốc. Cấu hình cá nhân của công cụ soạn thảo không commit (đã nằm trong `.gitignore`).
+- *(bổ sung 01/10/2026)* **`docs/` nằm trong `.gitignore`**: PRD, issue, nhật ký, bàn giao, ảnh chụp, số đo chỉ lưu trên máy, không
+  commit, không đưa lên GitHub; chia sẻ với nhóm bằng kênh khác. Test và script chỉ được **ghi** vào `docs/` (ảnh, số đo), không được
+  **đọc** từ đó — CI không có thư mục này. Liên kết tới `docs/` trong `AGENTS.md`, `README.md` chỉ mở được ở bản checkout có thư mục đó.
 - `README.md` là trang đọc đầu tiên: mô tả sản phẩm, cách chạy, trạng thái và số liệu kiểm thử **thật**. Trạng thái đổi
   thì sửa README cùng lúc — repo từng để nguyên template mặc định của Vite suốt nhiều tuần.
 
