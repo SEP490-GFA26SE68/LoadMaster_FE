@@ -7,8 +7,8 @@ import { routes } from './App'
 import { Providers } from './providers'
 
 /**
- * LM-104: route Review 1 trong bảng route thật — đúng nhóm quyền, tiêu đề tab, và khung màn đếm dữ liệu thật của kho (seed neo
- * 14/09/2026, kho dùng chung có độ trễ giả). Vai trò không có quyền gặp màn 403.
+ * LM-104, FE-0-06: route Review 1 trong bảng route thật — đúng nhóm quyền, tiêu đề tab, và khung màn đếm dữ liệu thật của kho (seed neo
+ * 14/09/2026, kho dùng chung có độ trễ giả). Vai trò không có quyền gặp màn 403; route đã bỏ (lô hàng, nhận hàng) là màn 404.
  */
 const SLOW = { timeout: 8000 }
 
@@ -23,13 +23,12 @@ beforeEach(() => {
 })
 
 test.each<[Role, string, string, string]>([
-  ['manufacturer', '/kien-hang', 'Kiện hàng', '42 kiện đã đăng ký'],
-  ['manufacturer', '/loai-kien', 'Loại kiện', '8 loại kiện trong danh mục'],
-  ['manufacturer', '/lo-hang', 'Lô hàng', '2 lô hàng'],
-  ['logistics', '/nhan-hang', 'Nhận hàng', '8 kiện đang chờ quét nhận'],
+  // FE-0-06: ba màn kiện là của điều phối viên (`packages.manage`); điều phối thấy cả 48 kiện của seed
+  ['dispatcher', '/kien-hang', 'Kiện hàng', '48 kiện đã đăng ký'],
+  ['dispatcher', '/loai-kien', 'Loại kiện', '8 loại kiện trong danh mục'],
+  ['dispatcher', '/kien-hang/nhan?kien=RPK-0001,RPK-0002', 'In nhãn QR', '2 nhãn có thể in'],
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
-  ['manufacturer', '/lo-hang/SHP-002', 'Lô hàng SHP-002', '12 kiện trong lô, đã nhận 4'],
 ])('%s mở %s', async (role, path, title, summary) => {
   openAt(path, role)
   expect(await screen.findByRole('heading', { level: 1, name: title }, SLOW)).toBeInTheDocument()
@@ -44,16 +43,31 @@ test('the trip report summarizes a completed trip from its recorded progress', a
 })
 
 test.each<[Role, string]>([
-  ['logistics', '/kien-hang'],
-  ['manufacturer', '/nhan-hang'],
   ['warehouse', '/don-hang'],
-  // FE-0-01: quản trị hệ thống không còn quyền vận hành; quyền mới (`packages.view`…) chưa mở route nào của Review 1
-  ['systemAdmin', '/lo-hang/SHP-002'],
+  // FE-0-01: quản trị hệ thống không còn quyền vận hành
   ['systemAdmin', '/don-hang'],
-  ['dispatcher', '/kien-hang'],
+  ['systemAdmin', '/kien-hang'],
+  // FE-0-06: `packages.view` của quản lý công ty và `labels.print` của kho chưa mở màn nào; ba màn kiện theo `packages.manage`
+  ['manager', '/kien-hang'],
+  ['manager', '/loai-kien'],
+  ['warehouse', '/kien-hang/nhan'],
+  ['companyAdmin', '/loai-kien'],
 ])('%s không mở được %s', async (role, path) => {
   openAt(path, role)
   expect(await screen.findByRole('heading', { name: 'Không có quyền truy cập' }, SLOW)).toBeInTheDocument()
+})
+
+/** FE-0-06: lô hàng và nhận hàng đã bỏ — đường dẫn cũ là màn 404 (không phải 403) với mọi vai trò, kể cả vai trò từng mở được màn kiện. */
+test.each<[Role, string]>([
+  ['dispatcher', '/lo-hang'],
+  ['dispatcher', '/lo-hang/SHP-002'],
+  ['dispatcher', '/nhan-hang'],
+  ['warehouse', '/nhan-hang'],
+  ['systemAdmin', '/lo-hang'],
+])('%s mở %s gặp màn không tìm thấy trang', async (role, path) => {
+  openAt(path, role)
+  expect(await screen.findByRole('heading', { level: 1, name: 'Không tìm thấy trang' }, SLOW)).toBeInTheDocument()
+  await waitFor(() => expect(document.title).toBe('Không tìm thấy trang · LoadMaster'))
 })
 
 /** FE-0-07: hàng đợi duyệt của quản lý đã bỏ — đường dẫn cũ là màn 404, không phải 403. */

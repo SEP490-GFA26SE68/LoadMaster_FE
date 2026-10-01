@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 /**
  * Tư thế của Lumo — mỗi tư thế **một nghĩa cố định** (LM-105, AGENTS "Thương hiệu"), để người dùng đọc tình huống qua hình:
  * - `greet` chào (màn đăng nhập) · `empty` chưa có dữ liệu · `notFound` lọc / tìm không có kết quả · `error` có sự cố (404, 403, lỗi tải)
- * - `done` xong việc lớn (xếp xong, giao xong, duyệt hết) · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến
+ * - `done` xong việc lớn (xếp xong, giao xong, duyệt hết) · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến
  *
  * Ảnh WebP 320 px, vuông, nền trong suốt, mỗi tư thế khoảng 20 KB, xuất từ `design/brand/source/` (cắt sát hình, lề 2 %). Vite trả URL,
  * ảnh chỉ tải khi màn dùng nó hiện ra.

@@ -4,10 +4,7 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
-  PackageCheck,
-  ScanLine,
   ScrollText,
-  Shapes,
   Tablet,
   Truck,
   UserRound,
@@ -45,8 +42,8 @@ type NavItem = {
   /** Mục chỉ hiện khi người đăng nhập có quyền mở màn đích (D-41). */
   permission: Permission
   /**
-   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền). Mục của Review 1 (LM-104) chỉ hiện cho vai trò dùng nó hằng ngày; vai trò
-   * khác có quyền (quản lý công ty xem đơn hàng) vẫn mở được màn bằng đường dẫn.
+   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền): mục chỉ hiện cho vai trò dùng nó hằng ngày; vai trò khác có quyền (quản
+   * lý công ty xem đơn hàng) vẫn mở được màn bằng đường dẫn.
    */
   roles?: readonly Role[]
 }
@@ -55,12 +52,9 @@ type NavItem = {
 const NAV_ITEMS = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
-  // LM-104: đơn hàng của điều phối, nguồn hàng của nhà sản xuất, nhận hàng của logistics
+  // Điều phối: đơn hàng (LM-104) và kiện đăng ký — từ FE-0-06 là màn của điều phối; Loại kiện và In nhãn mở từ màn Kiện hàng
   { to: '/don-hang', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view', roles: ['dispatcher'] },
-  { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.register', roles: ['manufacturer'] },
-  { to: '/lo-hang', labelKey: 'nav.shipments', icon: PackageCheck, permission: 'shipments.manage', roles: ['manufacturer'] },
-  { to: '/loai-kien', labelKey: 'nav.packageTypes', icon: Shapes, permission: 'packages.register', roles: ['manufacturer'] },
-  { to: '/nhan-hang', labelKey: 'nav.receiving', icon: ScanLine, permission: 'receiving.operate', roles: ['logistics'] },
+  { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.manage' },
   { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
   { to: '/tai-xe', labelKey: 'nav.driver', icon: Box, permission: 'driver.operate' },
   { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },

@@ -16,10 +16,7 @@ export const pageHero = {
   packageTypes: 'Khuôn kích thước, khối lượng và cách xếp để đăng ký kiện.',
   packages: 'Kiện của công ty đã đăng ký, mã QR và trạng thái tới khi giao.',
   labels: 'Nhãn QR của kiện đã đăng ký, in để dán lên từng kiện.',
-  shipments: 'Nhóm kiện đã đăng ký và bàn giao cho công ty logistics.',
-  shipment: 'Kiện trong lô và tiến độ công ty logistics quét nhận.',
-  receiving: 'Quét mã QR từng kiện để xác nhận đã nhận lô hàng.',
-  orders: 'Đơn vận chuyển từ kiện đã nhận, gán vào điểm giao của chuyến.',
+  orders: 'Đơn vận chuyển từ kiện đã nhận ở kho, gán vào điểm giao của chuyến.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
 } as const

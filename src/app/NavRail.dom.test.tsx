@@ -45,16 +45,17 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
   expect(screen.getByRole('link', { name: 'Bảng điều khiển' })).not.toHaveAttribute('aria-current')
 })
 
-/** D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở. FE-0-01: quản trị hệ thống và quản trị công ty chỉ còn người dùng, nhật ký. */
+/**
+ * D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở. FE-0-01: quản trị hệ thống và quản trị công ty chỉ còn người dùng, nhật ký.
+ * FE-0-06: mục Kiện hàng là của điều phối viên; không còn mục Lô hàng, Loại kiện, Nhận hàng.
+ */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Đội xe']],
+  ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Kiện hàng', 'Đội xe']],
   ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
   ['companyAdmin', ['Người dùng', 'Nhật ký']],
-  ['manufacturer', ['Kiện hàng', 'Lô hàng', 'Loại kiện']],
-  ['logistics', ['Nhận hàng']],
 ])('nav rail của %s chỉ có mục được phép', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
@@ -101,14 +102,23 @@ test.each<[Role, boolean]>([
 
 /** LM-104: vai trò không có bảng điều khiển về màn chính của mình khi bấm logo, không rơi vào màn 403. */
 test.each<[Role, string]>([
-  ['manufacturer', '/kien-hang'],
-  ['logistics', '/nhan-hang'],
   ['dispatcher', '/'],
+  ['manager', '/'],
   ['systemAdmin', '/nguoi-dung'],
   ['companyAdmin', '/nguoi-dung'],
 ])('logo của %s mở %s', (role, href) => {
   renderRail(role)
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', href)
+})
+
+/** FE-0-06: mục Kiện hàng của điều phối viên mở `/kien-hang` và vẫn là mục đang mở ở trang in nhãn; màn kho, tài xế không có mục này. */
+test('mục Kiện hàng của điều phối viên mở /kien-hang và sáng ở cả trang in nhãn', () => {
+  renderRail('dispatcher', '/kien-hang/nhan')
+  const packages = screen.getByRole('link', { name: 'Kiện hàng' })
+  expect(packages).toHaveAttribute('href', '/kien-hang')
+  expect(packages).toHaveAttribute('aria-current', 'page')
+  expect(screen.queryByRole('link', { name: 'Lô hàng' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Nhận hàng' })).not.toBeInTheDocument()
 })
 
 /** LM-096: menu tài khoản mở hồ sơ cá nhân trước mục đăng xuất. */

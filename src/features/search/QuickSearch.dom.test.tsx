@@ -53,7 +53,8 @@ test('Ctrl+K opens the search; arrows move and wrap, Enter opens the trip; Esc r
   const dialog = screen.getByRole('dialog', { name: 'Tìm nhanh' })
   const input = within(dialog).getByRole('combobox', { name: 'Từ khoá tìm nhanh' })
   expect(input).toHaveFocus()
-  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ) và xe (tên, biển số).')).toBeInTheDocument()
+  // FE-0-06: điều phối viên tìm thêm kiện đã đăng ký và loại kiện (màn `/kien-hang`, `/loai-kien` nay là của điều phối)
+  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ), kiện đã đăng ký (mã, mã lô, mã QR, loại), loại kiện (mã, tên) và xe (tên, biển số).')).toBeInTheDocument()
 
   // Esc đóng, con trỏ về ô đang gõ trước khi mở
   await user.keyboard('{Escape}')
@@ -160,29 +161,32 @@ test('warehouse workers have nothing to search: no button, Ctrl+K does nothing',
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('the manufacturer searches their registered packages and shipments (LM-104)', async () => {
+test('the dispatcher searches registered packages and package types; shipments are no longer found (FE-0-06)', async () => {
   const user = userEvent.setup()
-  renderSearch('manufacturer')
+  renderSearch('dispatcher')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   await user.keyboard('rpk-0001')
   const packages = await screen.findByRole('group', { name: 'Kiện đã đăng ký' }, SLOW)
-  expect(within(packages).getByRole('option')).toHaveTextContent('RPK-0001')
+  expect(within(packages).getByRole('option')).toHaveTextContent('RPK-0001Thùng nước suối 24 chai · MP-NS24-0911')
   await user.keyboard('{Enter}')
   expect(route()).toHaveTextContent('/kien-hang?q=RPK-0001')
 
   await user.keyboard('{Control>}k{/Control}')
+  await user.keyboard('pt-003')
+  const types = await screen.findByRole('group', { name: 'Loại kiện' }, SLOW)
+  await user.click(within(types).getByRole('option', { name: /Thùng dầu ăn 12 chai/ }))
+  expect(route()).toHaveTextContent('/loai-kien?q=PT-003')
+
+  await user.keyboard('{Control>}k{/Control}')
   await user.keyboard('shp-001')
-  const shipments = await screen.findByRole('group', { name: 'Lô hàng' }, SLOW)
-  await user.click(within(shipments).getByRole('option'))
-  expect(route()).toHaveTextContent('/lo-hang/SHP-001')
+  expect(await screen.findByText('Không tìm thấy kết quả cho “shp-001”.', {}, SLOW)).toBeInTheDocument()
 })
 
-test('logistics finds shipments handed over to their company and opens receiving', async () => {
+test('the company manager does not find registered packages: that screen is the dispatcher’s (FE-0-06)', async () => {
   const user = userEvent.setup()
-  renderSearch('logistics')
+  renderSearch('manager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
-  await user.keyboard('shp-002')
-  const incoming = await screen.findByRole('group', { name: 'Lô đang đến' }, SLOW)
-  await user.click(within(incoming).getByRole('option'))
-  expect(route()).toHaveTextContent('/nhan-hang')
+  expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ) và xe (tên, biển số).')).toBeInTheDocument()
+  await user.keyboard('rpk-0001')
+  expect(await screen.findByText('Không tìm thấy kết quả cho “rpk-0001”.', {}, SLOW)).toBeInTheDocument()
 })
