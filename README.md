@@ -18,7 +18,7 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 | Điều phối | Desktop | Tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
-| Quản lý | Desktop | Bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx` |
+| Quản lý công ty | Desktop | Bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
 | Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
@@ -56,11 +56,11 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 ## Trạng thái
 
 - Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu, theo 5 luồng Review 1: nhà sản xuất đăng ký kiện và in tem QR →
-  logistics quét nhận → điều phối lập chuyến, gán đơn, chạy tối ưu, chỉnh tay → quản lý công ty duyệt → kho quét QR xếp, tài xế quét QR
+  logistics quét nhận → điều phối lập chuyến, gán đơn, chạy tối ưu, chỉnh tay và duyệt → kho quét QR xếp, tài xế quét QR
   dỡ → báo cáo chuyến. Quản trị hệ thống và quản trị công ty quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
 - Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đủ tám vai trò và hai công ty logistics; quản trị hệ thống
-  không còn quyền vận hành. Màn của quản lý nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và việc bỏ hai vai trò Review 1 làm
-  ở các bước sau.
+  không còn quyền vận hành; điều phối viên là người duyệt phương án, quản lý công ty chỉ xem (không còn hàng đợi duyệt). Màn của quản lý
+  nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và việc bỏ hai vai trò Review 1 làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
