@@ -108,7 +108,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
 })
 
 /**
- * FE-0-01 (quyết định G13): ma trận quyền 10 vai trò × 39 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
+ * FE-0-01 (quyết định G13): ma trận quyền 10 vai trò × 38 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
  * xuống tối đa hai dòng và không tràn sang cột bên, nhãn quyền không bị cắt ở dòng cuối. Kiểm cả bản tiếng Anh (tên vai trò dài hơn).
  */
 for (const lang of ['vi', 'en'] as const) {
@@ -119,7 +119,7 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(11)
-    await expect(matrix.getByRole('row')).toHaveCount(40)
+    await expect(matrix.getByRole('row')).toHaveCount(39)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!
