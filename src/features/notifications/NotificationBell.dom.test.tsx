@@ -135,9 +135,9 @@ test('the manager gets completed and cancelled trips; opening the bell reads the
   expect(screen.getByRole('button', { name: 'Thông báo, 2 chưa đọc' }).querySelector('[data-unread-dot]')).not.toBeNull()
 })
 
-test('the admin: empty at first, then account events by others and failed sign-ins', async () => {
+test('the system administrator: empty at first, then account events by others and failed sign-ins', async () => {
   const user = userEvent.setup()
-  const admin = renderBell('admin')
+  const admin = renderBell('systemAdmin')
   await user.click(screen.getByRole('button', { name: 'Thông báo' }))
   expect(await screen.findByText('Không có thông báo nào trong 7 ngày qua.', {}, SLOW)).toBeInTheDocument()
   await user.keyboard('{Escape}')

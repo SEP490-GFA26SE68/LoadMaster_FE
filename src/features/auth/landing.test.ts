@@ -6,10 +6,16 @@ test('each role lands on its own screen when nothing else was asked for', () => 
   expect(landingPath('manager')).toBe('/')
   expect(landingPath('warehouse')).toBe('/kho')
   expect(landingPath('driver')).toBe('/tai-xe')
-  expect(landingPath('admin')).toBe('/nguoi-dung')
+  expect(landingPath('companyAdmin')).toBe('/nguoi-dung')
   // LM-104
   expect(landingPath('manufacturer')).toBe('/kien-hang')
   expect(landingPath('logistics', '/?lang=en')).toBe('/nhan-hang?lang=en')
+})
+
+test('the platform roles land on a screen that exists today: users for the system administrator, the profile for the other two (FE-0-03)', () => {
+  expect(landingPath('systemAdmin')).toBe('/nguoi-dung')
+  expect(landingPath('systemManager')).toBe('/ho-so')
+  expect(landingPath('systemSupporter', '/?lang=en')).toBe('/ho-so?lang=en')
 })
 
 test('opening the app root is not a choice: the role screen wins', () => {
@@ -22,5 +28,5 @@ test('a deep link opened before signing in is kept', () => {
 })
 
 test('the login page itself is never a landing target', () => {
-  expect(landingPath('admin', '/dang-nhap')).toBe('/nguoi-dung')
+  expect(landingPath('systemAdmin', '/dang-nhap')).toBe('/nguoi-dung')
 })

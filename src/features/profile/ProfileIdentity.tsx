@@ -9,9 +9,10 @@ import { initialsOf, type User } from '@/types/user'
  */
 export function ProfileIdentity({ user }: { user: User }) {
   const t = useT()
+  // Người dùng nền tảng không thuộc kho nào (FE-0-03): không có dòng kho thay vì một dòng trống
   const facts = [
     { label: t('profile.identity.email'), value: user.email },
-    { label: t('profile.identity.depot'), value: user.depot },
+    ...(user.depot ? [{ label: t('profile.identity.depot'), value: user.depot }] : []),
   ]
 
   return (

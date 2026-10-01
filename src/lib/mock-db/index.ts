@@ -19,7 +19,8 @@ export {
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
-export { DEMO_ACCOUNTS, SEED_PASSWORD } from './seed-users'
+export { COMPANIES as SEED_COMPANIES } from './seed-sourcing'
+export { DEMO_ACCOUNTS, QUICK_LOGIN_ACCOUNTS, SEED_PASSWORD, type DemoAccount } from './seed-users'
 // Review 1 (LM-104)
 export type { Review1Db } from './db-api-review1'
 export { MAX_REGISTER_QUANTITY } from './db-registered'

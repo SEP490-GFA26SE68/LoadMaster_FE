@@ -8,8 +8,8 @@ import { loadingSessionPath } from './warehouse-trips'
  *
  * Bản design không có nút thoát vì vẽ màn kiosk chạy suốt ca; thực tế nhân viên vẫn cần rời phiên khi chọn nhầm chuyến hoặc xếp
  * xong, nên thêm nút quay lại cỡ cảm ứng 56px (mục 10). Nút chuyển ngôn ngữ cũng 56px (LM-071); đổi ngôn ngữ không remount phiên
- * nên bước đang xếp giữ nguyên. Nút thoát theo vai trò (`exitAction`): nhân viên kho về danh sách chuyến (LM-086), điều phối viên
- * và quản trị viên về chi tiết chuyến. Thanh tiến độ tính theo số kiện đã có kết quả trong kho, không theo số bước.
+ * nên bước đang xếp giữ nguyên. Nút thoát theo vai trò (`exitAction`): nhân viên kho về danh sách chuyến (LM-086) — từ FE-0-01 chỉ
+ * nhân viên kho mở được màn này. Thanh tiến độ tính theo số kiện đã có kết quả trong kho, không theo số bước.
  */
 export function StepHeader({ step, totalSteps, recorded, tripId }: {
   step: number

@@ -1,4 +1,4 @@
-import type { User } from '@/types/user'
+import { isPlatformRole, type User } from '@/types/user'
 import { found, nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import type { MockDb, UserChanges } from './types'
@@ -22,6 +22,16 @@ function temporaryPassword(): string {
 
 const USER_FIELDS = ['fullName', 'email', 'phone', 'role', 'depot'] as const satisfies readonly (keyof UserChanges)[]
 
+/**
+ * Người dùng nền tảng không thuộc kho hay công ty nào (FE-0-03): tài khoản tạo với vai trò nền tảng, hoặc đổi sang vai trò nền tảng,
+ * thì bỏ cả `depot` lẫn `companyId` trước khi ghi — dù nơi gọi có gửi.
+ */
+function withoutCompanyForPlatform(user: User): User {
+  if (!isPlatformRole(user.role)) return user
+  const { depot: _depot, companyId: _companyId, ...rest } = user
+  return rest
+}
+
 export function userMethods(ctx: DbContext): UserMethods {
   const { users, passwords, trips, session } = ctx.state
 
@@ -39,10 +49,10 @@ export function userMethods(ctx: DbContext): UserMethods {
     if (session.userId === id) throw new MockDbError('SELF_CHANGE_FORBIDDEN', {})
   }
 
-  /** Không để hệ thống mất quản trị viên đang hoạt động cuối cùng. */
+  /** Không để hệ thống mất quản trị hệ thống đang hoạt động cuối cùng. Luật theo từng công ty cho quản trị công ty: FE-0-08. */
   function assertNotLastAdmin(user: User) {
-    if (user.role !== 'admin' || user.status !== 'active') return
-    const activeAdmins = [...users.values()].filter((item) => item.role === 'admin' && item.status === 'active')
+    if (user.role !== 'systemAdmin' || user.status !== 'active') return
+    const activeAdmins = [...users.values()].filter((item) => item.role === 'systemAdmin' && item.status === 'active')
     if (activeAdmins.length <= 1) throw new MockDbError('LAST_ADMIN', {})
   }
 
@@ -95,15 +105,17 @@ export function userMethods(ctx: DbContext): UserMethods {
     createUser: (input) =>
       ctx.respond(() => {
         assertEmailFree(input.email)
-        const user = put(users, { ...input, email: input.email.trim(), id: nextId('US', users.keys(), 4), status: 'active', lastActiveAt: null })
+        const user = put(users, withoutCompanyForPlatform({ ...input, email: input.email.trim(), id: nextId('US', users.keys(), 4), status: 'active', lastActiveAt: null }))
         const password = temporaryPassword()
         passwords.set(user.id, password)
         ctx.log('user.created', { type: 'user', id: user.id }, { fullName: user.fullName, role: user.role })
         return { user, temporaryPassword: password }
       }),
-    updateUser: (id, changes) =>
+    updateUser: (id, input) =>
       ctx.respond(() => {
         const current = found(users, 'users', id)
+        // Vai trò sau khi sửa là vai trò nền tảng thì kho gửi kèm không tính là thay đổi (form luôn gửi cả ô kho)
+        const changes: UserChanges = isPlatformRole(input.role ?? current.role) ? { ...input, depot: undefined } : input
         const changed = USER_FIELDS.filter((field) => changes[field] !== undefined && changes[field] !== current[field])
         if (changed.length === 0) return current
         if (changed.includes('email')) assertEmailFree(changes.email ?? '', id)
@@ -115,7 +127,7 @@ export function userMethods(ctx: DbContext): UserMethods {
         const next = { ...current }
         for (const field of changed) Object.assign(next, { [field]: changes[field] })
         ctx.log('user.updated', { type: 'user', id }, { fields: changed.join(',') })
-        return put(users, next)
+        return put(users, withoutCompanyForPlatform(next))
       }),
     setUserStatus: (id, status) =>
       ctx.respond(() => {

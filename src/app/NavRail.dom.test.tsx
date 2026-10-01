@@ -45,14 +45,14 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
   expect(screen.getByRole('link', { name: 'Bảng điều khiển' })).not.toHaveAttribute('aria-current')
 })
 
-/** D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở; quản trị thấy tất cả. */
+/** D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở. FE-0-01: quản trị hệ thống và quản trị công ty chỉ còn người dùng, nhật ký. */
 test.each<[Role, string[]]>([
   ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Đội xe']],
   ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
-  // Mục Review 1 chỉ hiện cho vai trò dùng hằng ngày (LM-104): quản trị giữ 7 mục cho vừa 1.366 px
-  ['admin', ['Bảng điều khiển', 'Chuyến hàng', 'Kho', 'Tài xế', 'Đội xe', 'Người dùng', 'Nhật ký']],
+  ['systemAdmin', ['Người dùng', 'Nhật ký']],
+  ['companyAdmin', ['Người dùng', 'Nhật ký']],
   ['manufacturer', ['Kiện hàng', 'Lô hàng', 'Loại kiện']],
   ['logistics', ['Nhận hàng']],
 ])('nav rail của %s chỉ có mục được phép', (role, items) => {
@@ -61,13 +61,24 @@ test.each<[Role, string[]]>([
   expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
 })
 
+/** FE-0-03 (quyết định G1): hai vai trò nền tảng chưa có màn riêng — không vẽ khay điều hướng rỗng, logo và menu tài khoản vẫn có. */
+test.each<Role>(['systemManager', 'systemSupporter'])('nav rail của %s không có khay điều hướng', (role) => {
+  renderRail(role, '/ho-so')
+  expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-so')
+  expect(screen.getByRole('button', { name: /^Tài khoản / })).toBeInTheDocument()
+})
+
 /** LM-098: chuông chỉ có ở vai trò có loại thông báo; kho và tài xế không có nút không làm gì (D-20). */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
   ['manager', true],
-  ['admin', true],
+  ['systemAdmin', true],
+  ['companyAdmin', true],
   ['warehouse', false],
   ['driver', false],
+  ['systemManager', false],
+  ['systemSupporter', false],
 ])('chuông thông báo của %s: %s', (role, shown) => {
   renderRail(role)
   expect(screen.queryByRole('button', { name: /^Thông báo/ }) !== null).toBe(shown)
@@ -77,9 +88,12 @@ test.each<[Role, boolean]>([
 test.each<[Role, boolean]>([
   ['dispatcher', true],
   ['manager', true],
-  ['admin', true],
+  ['systemAdmin', true],
+  ['companyAdmin', true],
   ['warehouse', false],
   ['driver', false],
+  ['systemManager', false],
+  ['systemSupporter', false],
 ])('nút Tìm nhanh của %s: %s', (role, shown) => {
   renderRail(role)
   expect(screen.queryByRole('button', { name: 'Tìm nhanh' }) !== null).toBe(shown)
@@ -90,6 +104,8 @@ test.each<[Role, string]>([
   ['manufacturer', '/kien-hang'],
   ['logistics', '/nhan-hang'],
   ['dispatcher', '/'],
+  ['systemAdmin', '/nguoi-dung'],
+  ['companyAdmin', '/nguoi-dung'],
 ])('logo của %s mở %s', (role, href) => {
   renderRail(role)
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', href)
@@ -103,4 +119,15 @@ test('menu tài khoản có mục Hồ sơ cá nhân mở /ho-so', async () => {
   const items = await screen.findAllByRole('menuitem')
   expect(items.map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Đăng xuất'])
   expect(items[0]).toHaveAttribute('href', '/ho-so')
+  // Dưới tên và email: vai trò và kho trực thuộc
+  expect(screen.getByRole('menu')).toHaveTextContent('Trần Thị Maiquanly@loadmaster.vnQuản lý công tyTrụ sở TP. Hồ Chí Minh')
+})
+
+/** FE-0-03 (quyết định G13): người dùng nền tảng không thuộc kho nào — menu chỉ còn vai trò, không có dòng kho trống. */
+test('menu tài khoản của quản trị hệ thống không có kho', async () => {
+  const user = userEvent.setup()
+  renderRail('systemAdmin')
+  await user.click(screen.getByRole('button', { name: 'Tài khoản Võ Minh Khoa' }))
+  await screen.findAllByRole('menuitem')
+  expect(screen.getByRole('menu')).toHaveTextContent(/Võ Minh Khoaquantri@loadmaster\.vnQuản trị hệ thốngHồ sơ cá nhânĐăng xuất$/)
 })

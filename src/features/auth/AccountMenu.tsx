@@ -49,7 +49,8 @@ export function AccountMenu({ className }: { className?: string }) {
         <DropdownMenuLabel className="px-3 text-body-lg">
           <span className="font-medium text-text">{user.fullName}</span>
           <span className="break-all text-text-3">{user.email}</span>
-          <span className="text-text-3">{t(`roles.${user.role}`)} · {user.depot}</span>
+          {/* Kho là tuỳ chọn (người dùng nền tảng không có): không có thì chỉ còn tên vai trò, không để dấu chấm treo */}
+          <span className="text-text-3">{[t(`roles.${user.role}`), user.depot].filter(Boolean).join(' · ')}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className={TOUCH_ITEM}>

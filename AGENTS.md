@@ -10,40 +10,62 @@ dấu *(đã điều chỉnh)* là chỗ hướng đi ban đầu đã đổi và
 
 LoadMaster là hệ thống lập kế hoạch và tối ưu chất xếp hàng hóa 3D cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam. Đây là repo frontend.
 
-Giao diện **tiếng Việt**. Một codebase responsive phục vụ 7 vai trò (hai vai trò cuối thêm cho Review 1, *bổ sung 27/09/2026, LM-104*):
+Giao diện **tiếng Việt**. Một codebase responsive phục vụ **8 vai trò** của backend v2 *(đã điều chỉnh 01/10/2026, FE-0-01, FE-0-03)* — ba
+vai trò nền tảng, năm vai trò của công ty logistics — cùng hai vai trò của Review 1 (LM-104) **còn tạm tới FE-0-06**. Mã FE là nội bộ; mã
+backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi nối API:
 
-| Vai trò | Thiết bị | Đặc điểm |
+| Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
-| Dispatcher | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột |
-| Warehouse worker | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
-| Driver | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
-| Manager | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo |
-| Admin | Desktop | Người dùng, phân quyền, nhật ký |
-| Manufacturer (nhà sản xuất) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
-| Logistics (công ty logistics) | Tablet / điện thoại tại kho | Quét QR nhận từng kiện của lô hàng |
+| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
+| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: gói cước — màn tới Sprint 8 mới có |
+| Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
+| Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; tạm vẫn duyệt phương án |
+| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột |
+| Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
+| Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
+| Nhà sản xuất (`manufacturer`, tạm) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
+| Logistics (`logistics`, tạm) | Tablet / điện thoại tại kho | Quét QR nhận từng kiện của lô hàng |
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
 **Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
-**giả lập ở FE**: ma trận `features/auth/permissions.ts` (`ROLE_PERMISSIONS`, quản trị toàn quyền, quản lý chỉ đọc + xuất báo cáo
-*(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
+**giả lập ở FE**: ma trận `features/auth/permissions.ts` — *(đã điều chỉnh 01/10/2026, FE-0-01, FE-0-03)* **một bảng** `ROLE_PERMISSIONS` theo
+PRD v2 mục 5.2 (`REVIEW1_EXTRA` đã gộp vào; đọc quyền qua `can`/`permissionsOf`), thứ tự của `PERMISSIONS` là thứ tự dòng của Ma trận quyền.
+Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ thống (trước là `admin` toàn quyền) chỉ còn `companies.manage`, `users.manage`,
+`audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`. Quản trị công ty có `users.manage`, `audit.view`,
+`billing.manage`, `support.create` — mở cùng màn `/nguoi-dung`, `/nhat-ky` với quản trị hệ thống, **chưa chia phạm vi** (FE-0-08). Quản lý chỉ đọc
++ xuất báo cáo *(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
 điều phối lập chuyến, chạy tối ưu nhưng không duyệt — *(đã điều chỉnh 28/09/2026, LM-108)* điều phối vẫn **chỉnh tay** trong Planner và
-"Lưu bản chỉnh" gửi bản mới vào hàng đợi duyệt; bản chưa duyệt có một dòng "Chờ quản lý công ty duyệt");
-mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
+"Lưu bản chỉnh" gửi bản mới vào hàng đợi duyệt; bản chưa duyệt có một dòng "Chờ quản lý công ty duyệt". **Còn tạm** sau FE-0-01: quản lý vẫn giữ
+`plans.approve` + `plans.review` (hàng đợi `/duyet`; FE-0-07 chuyển duyệt sang điều phối); `orders.view`/`orders.edit` (điều phối; quản lý chỉ
+xem) giữ tới FE-4b-02; `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics) bỏ ở FE-0-06. 19 quyền mới của PRD
+v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
+`exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
+nhãn nhưng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue làm màn nào thì nối quyền
+của màn đó, route đang có giữ nhóm quyền cũ.
+Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
-E2E đăng nhập bằng `login(route, role)`, kịch bản đi qua nhiều vai trò dùng `admin`. *(bổ sung 27/09/2026, LM-104)* Quyền Review 1
-thêm **cộng dồn** qua `permissionsOf(role)` (`ROLE_PERMISSIONS` + `REVIEW1_EXTRA`; đọc quyền luôn qua `can`/`permissionsOf`, không đọc
-thẳng `ROLE_PERMISSIONS`): `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics), `orders.view`/`orders.edit`
-(điều phối; quản lý chỉ xem), `plans.review` (quản lý — hàng đợi `/duyet`), `vehicleTypes.edit` (điều phối). Tài khoản nhà sản xuất / logistics
-gắn `User.companyId` (`MFR-…`, `LOG-…`); kho lọc dữ liệu theo công ty như server (nhà sản xuất chỉ thấy kiện, lô của mình; logistics chỉ nhận lô
-giao cho công ty mình). Hai vai trò này dùng khung ứng dụng (thanh ngang), màn chính `/kien-hang` và `/nhan-hang`. Mục điều hướng Review 1 khai
-`roles` trong `NAV_ITEMS` để chỉ hiện cho vai trò dùng hằng ngày — quản trị viên mở các màn đó bằng đường dẫn, thanh ngang của họ giữ 7 mục cho
-vừa 1.366 px. Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
+E2E đăng nhập bằng `login(route, role)`; *(đã điều chỉnh 01/10/2026, FE-0-03)* không còn vai trò toàn quyền nên kịch bản đi qua nhiều vai trò
+**đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser` (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho), và test
+DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`. Tài khoản công ty gắn `User.companyId`: nhân viên seed thuộc `LOG-001`
+(Long Bình), năm tài khoản `@phuongnam.vn` thuộc `LOG-002`, nhà sản xuất `MFR-…`; ba tài khoản nền tảng không có công ty và không có kho
+(`User.depot` tuỳ chọn; kho bỏ cả hai khi vai trò là nền tảng). Kho **mới chỉ** lọc dữ liệu theo công ty cho nhà sản xuất và logistics (nhà sản
+xuất chỉ thấy kiện, lô của mình; logistics chỉ nhận lô giao cho công ty mình) — cách ly theo công ty cho các vai trò còn lại là FE-0-02. Tài khoản
+seed thêm ở FE-0-03 mang mã ngoài dạng `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên.
+Ô đăng nhập nhanh (`DemoAccounts`) chia nhóm "Nền tảng" rồi từng công ty (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong ô đó tới
+khi có màn riêng. Nhà sản xuất và logistics dùng khung ứng dụng (thanh ngang), màn chính `/kien-hang` và `/nhan-hang`. Mục điều hướng Review 1
+khai `roles` trong `NAV_ITEMS` để chỉ hiện cho vai trò dùng hằng ngày; vai trò chưa có mục nào (quản lý nền tảng, hỗ trợ khách hàng) thì thanh
+không vẽ khay điều hướng. Nhật ký và chuông chỉ biến đối tượng thành liên kết khi người xem có quyền mở trang đích (`describeEvent(…, can)`) —
+quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
+Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
-quản trị `/nguoi-dung`); liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
+quản trị hệ thống và quản trị công ty `/nguoi-dung`; *(tạm, FE-0-03)* quản lý nền tảng và hỗ trợ khách hàng `/ho-so` tới khi có màn nền tảng ở
+Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
+trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
 nhân viên kho và tài xế **ở màn danh sách** thì **đăng xuất** (màn chính của họ), **trong phiên xếp / trong chuyến** thì về danh sách
-(`/kho`, `/tai-xe`, LM-086/087); điều phối viên và quản trị viên về trang chuyến, vai trò khác về màn chính. *(đã điều chỉnh 26/09/2026, V2.3)* Điều hướng là **thanh ngang 60 px trên dải trời** ở đầu trang (`app/NavRail.tsx`): logo
+(`/kho`, `/tai-xe`, LM-086/087); vai trò khác về màn chính của mình (luật "điều phối viên về trang chuyến" còn trong `exitAction`, nhưng từ FE-0-01 chỉ nhân viên kho và tài xế mở được hai màn này). *(đã điều chỉnh 26/09/2026, V2.3)* Điều hướng là **thanh ngang 60 px trên dải trời** ở đầu trang (`app/NavRail.tsx`): logo
 trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ · chuông · tài khoản phải. Mục đang mở nằm dưới kính cyan
 (trong + viền + quầng, `--nav-on`), và kính đó là **chỉ báo trượt theo con trỏ** (`useGlassFollow`, `.glass-follow`): bám mục
 đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục đang mở chỉ có chữ trắng 600, **không** nền
@@ -785,7 +807,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
   Lý do chặn Duyệt ở tooltip + `aria-describedby` của nút, không in ở thanh. Pha chuyến khác `planning` hoặc thiếu `plans.approve`: không
   Chỉnh sửa, không Duyệt, một dòng lý do (`viewer.lock`). Hộp thông tin chỉ mở từ nút "Chi tiết / Hiển thị" ở góc khung 3D và thẻ kiện.
-  *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty (và quản trị) có `plans.approve`. Thiếu quyền: bản chưa duyệt là
+  *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty có `plans.approve` (FE-0-01 bỏ quyền này của quản trị). Thiếu quyền: bản chưa duyệt là
   `awaitingApproval` ("Chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. Liên kết "Tới Thiết lập tối ưu" của banner lỗi thời theo
   `optimization.run` và pha `planning`, không theo quyền Duyệt. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `manager`.
   *(đã điều chỉnh 28/09/2026, LM-108)* Người dùng thấy mất kéo thả kiện khi điều phối viên chỉ xem, nên **chỉnh tay** theo quyền

@@ -1,5 +1,5 @@
 import { attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
-import { heightOf, MOCK_DB, navigateInApp, overflowingText, SEED_TRIP } from './spec-flow-helpers'
+import { heightOf, MOCK_DB, navigateInApp, overflowingText, SEED_TRIP, switchUser } from './spec-flow-helpers'
 
 /**
  * Màn kho đọc revision đã duyệt (LM-060); `/kho` là danh sách chuyến, `/kho?chuyen=` là phiên xếp (LM-086). Kho dữ liệu nằm trong
@@ -12,8 +12,8 @@ for (const device of ['desktop', 'tablet'] as const) {
   const details = device === 'tablet' ? { tag: '@tablet' } : {}
 
   test(`${device}: approving in the Planner then opening the trip in /kho starts at loadingOrder 1 of that revision`, details, async ({ page, login, browserErrors }) => {
-    // Bản seed đã duyệt không có nút Duyệt (LM-094): duyệt lại revision nguồn chưa duyệt REV-001
-    await login(`${PLANNER_ROUTE}?revision=REV-001`, 'admin')
+    // Bản seed đã duyệt không có nút Duyệt (LM-094): quản lý công ty duyệt lại revision nguồn chưa duyệt REV-001
+    await login(`${PLANNER_ROUTE}?revision=REV-001`, 'manager')
     await page.locator('canvas').waitFor()
     await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
     await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
@@ -28,6 +28,8 @@ for (const device of ['desktop', 'tablet'] as const) {
     }, { db: MOCK_DB, tripId: SEED_TRIP })
     expect(approved.id).toBe(approvedId)
 
+    // Nhân viên kho đăng nhập ngay trong app (tải lại là mất bản vừa duyệt) rồi mở phiên xếp của chuyến
+    await switchUser(page, 'warehouse')
     await navigateInApp(page, `/kho?chuyen=${SEED_TRIP}`)
     const heading = page.getByRole('heading', { level: 1, name: approved.first, exact: true })
     await expect(heading).toBeVisible()
@@ -115,7 +117,7 @@ test('tablet: the warehouse runs in English and switching language mid-session k
 })
 
 test('a trip without an approved plan shows the empty state with a way out', async ({ page, login, browserErrors }) => {
-  await login('/chuyen', 'admin')
+  await login('/kho', 'warehouse')
   const tripId = await page.evaluate(async (db) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const store = getMockDb()

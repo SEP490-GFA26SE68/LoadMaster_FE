@@ -10,7 +10,7 @@ import { MyTripCard } from './MyTripCard'
 import { useMyTripsQuery } from './useDriverQueries'
 
 /**
- * "Chuyến của tôi" `/tai-xe` (LM-087, D-46) — màn chính của tài xế: chuyến gán cho mình (quản trị thấy mọi chuyến) chia ba nhóm: sẵn
+ * "Chuyến của tôi" `/tai-xe` (LM-087, D-46) — màn chính của tài xế: chuyến gán cho mình (từ FE-0-01 chỉ tài xế mở được) chia ba nhóm: sẵn
  * sàng giao, kho đang chuẩn bị (không bấm được), đã hoàn thành gần đây. Điện thoại: chữ 16px, nút 56px. Nút thoát ở đây là đăng xuất;
  * nút tài khoản mở hồ sơ cá nhân hoặc đăng xuất (LM-096).
  */

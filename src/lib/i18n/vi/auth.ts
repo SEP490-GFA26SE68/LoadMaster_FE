@@ -27,5 +27,7 @@ export const auth = {
   demo: {
     title: 'Tài khoản dùng thử',
     password: 'mật khẩu {password}',
+    /** Nhóm tài khoản không thuộc công ty nào; các nhóm còn lại mang tên công ty trong dữ liệu (FE-0-03). */
+    platform: 'Nền tảng',
   },
 } as const

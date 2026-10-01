@@ -69,8 +69,8 @@ export type Review1Db = {
   /** Nháp → đã bàn giao; kiện sang `in_shipment`. */
   handOverShipment(id: string): Promise<Shipment>
   /**
-   * Logistics quét QR nhận một kiện: kiện phải trong lô đã bàn giao cho **công ty của người quét** (quản trị viên nhận thay được),
-   * chưa nhận. Nhận đủ thì lô `received`, chưa đủ `partially_received`.
+   * Logistics quét QR nhận một kiện: kiện phải trong lô đã bàn giao cho **công ty của người quét**, chưa nhận. Vai trò khác bị từ chối
+   * `RECEIVING_FORBIDDEN` — quản trị hệ thống không còn nhận thay (FE-0-01). Nhận đủ thì lô `received`, chưa đủ `partially_received`.
    */
   receivePackageByQr(token: string): Promise<ReceiptResult>
 

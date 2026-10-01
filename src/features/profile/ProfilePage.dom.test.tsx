@@ -70,6 +70,16 @@ test('name and phone are editable, email, role and depot read only; saving updat
   expect(identity.getByRole('heading', { level: 2, name: 'Nguyễn Thanh Tùng Anh' })).toBeInTheDocument()
 })
 
+/** FE-0-03: hồ sơ là màn chính tạm của quản lý nền tảng và hỗ trợ khách hàng; người dùng nền tảng không thuộc kho nào. */
+test('a platform account has no depot: the identity column shows the role and the email only', () => {
+  renderProfile('systemManager')
+  const identity = within(screen.getByRole('complementary', { name: 'Tài khoản' }))
+  expect(identity.getByRole('heading', { level: 2, name: 'Đinh Quang Huy' })).toBeInTheDocument()
+  expect(identity.getByText('Quản lý nền tảng')).toBeInTheDocument()
+  const readOnly = identity.getByText('nentang@loadmaster.vn').closest('dl') as HTMLElement
+  expect([...readOnly.querySelectorAll('dt, dd')].map((cell) => cell.textContent)).toStrictEqual(['Email', 'nentang@loadmaster.vn'])
+})
+
 test('an empty name and a malformed phone are reported at their fields and nothing is saved', async () => {
   const user = userEvent.setup()
   renderProfile('warehouse')

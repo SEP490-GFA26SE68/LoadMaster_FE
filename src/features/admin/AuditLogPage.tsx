@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
+import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { compareText } from '@/lib/list-filter'
 import { AUDIT_GROUPS, type AuditGroup } from '@/lib/mock-db'
@@ -32,11 +33,13 @@ function isAuditGroup(value: string): value is AuditGroup {
 /**
  * Nhật ký hệ thống `/nhat-ky` (LM-091, D-43, V2) cho quản trị viên: ba ô tóm tắt cả nhật ký, rồi một thẻ gồm thanh tìm/lọc và bảng
  * mọi thao tác ghi của kho, mới nhất trước, lọc theo kỳ, người làm, nhóm hành động và mã đối tượng, phân trang. Màn chỉ đọc nên
- * không có nút primary.
+ * không có nút primary. Quản trị hệ thống và quản trị công ty (FE-0-03) không xem được chuyến, xe: đối tượng chỉ là liên kết khi người
+ * xem có quyền mở trang đích.
  */
 export function AuditLogPage() {
   const t = useT()
   const format = useFormat()
+  const can = useCan()
   const list = useListUrlState({ filters: FILTERS, defaultSort: { id: 'at', desc: true }, defaultPageSize: AUDIT_PAGE_SIZE })
   const { tu: from, den: to, 'nguoi-lam': actorId, nhom: group } = list.filters
   const targetId = list.query.trim()
@@ -59,8 +62,8 @@ export function AuditLogPage() {
     vehicles: new Map(directoryQuery.data.vehicles.map((vehicle) => [vehicle.id, vehicle.name])),
   }, [directoryQuery.data])
   const rows = useMemo(
-    () => (events.data && directory ? events.data.map((event) => describeLogRow(event, directory, t, format)) : []),
-    [events.data, directory, t, format],
+    () => (events.data && directory ? events.data.map((event) => describeLogRow(event, directory, t, format, can)) : []),
+    [events.data, directory, t, format, can],
   )
   const columns = useMemo(() => auditColumns(t, format), [t, format])
   const actorOptions = useMemo(() => (directoryQuery.data?.users ?? [])

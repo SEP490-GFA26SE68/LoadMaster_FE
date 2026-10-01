@@ -113,22 +113,43 @@ test('only permitted groups: the manager does not find users and is told so', as
   expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
 })
 
-test('the admin searches users and vehicles; a click on a result opens it', async () => {
+test.each<Role>(['systemAdmin', 'companyAdmin'])('the %s searches users only: no trips, packages or vehicles (FE-0-01)', async (role) => {
   const user = userEvent.setup()
-  renderSearch('admin')
+  renderSearch(role)
   await user.keyboard('{Control>}k{/Control}')
-  expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ), kiện đã đăng ký (mã, mã lô, mã QR, loại), lô hàng (mã, công ty logistics), loại kiện (mã, tên), xe (tên, biển số) và người dùng (tên, email).')).toBeInTheDocument()
+  expect(screen.getByText('Tìm người dùng (tên, email).')).toBeInTheDocument()
   await user.keyboard('hanh.do')
   const users = await screen.findByRole('group', { name: 'Người dùng' }, SLOW)
   expect(within(users).getByRole('option')).toHaveTextContent('Đỗ Thị HạnhUS-0011 · hanh.do@loadmaster.vn · Nhân viên kho')
   await user.keyboard('{Enter}')
   expect(route()).toHaveTextContent('/nguoi-dung?q=US-0011')
 
+  // Biển số của VEHICLE-003 và mã chuyến seed: không còn nhóm nào để tìm
+  await user.keyboard('{Control>}k{/Control}')
+  await user.keyboard('51c-284')
+  expect(await screen.findByText('Không tìm thấy kết quả cho “51c-284”.', {}, SLOW)).toBeInTheDocument()
+  await user.clear(screen.getByRole('combobox', { name: 'Từ khoá tìm nhanh' }))
+  await user.keyboard('trip-00')
+  expect(await screen.findByText('Không tìm thấy kết quả cho “trip-00”.', {}, SLOW)).toBeInTheDocument()
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+})
+
+test('the dispatcher finds a vehicle by its plate; a click on a result opens it', async () => {
+  const user = userEvent.setup()
+  renderSearch('dispatcher')
   await user.keyboard('{Control>}k{/Control}')
   await user.keyboard('51c-284')
   const vehicles = await screen.findByRole('group', { name: 'Xe' }, SLOW)
   await user.click(within(vehicles).getByRole('option', { name: /Isuzu NQR 550/ }))
   expect(route()).toHaveTextContent('/doi-xe/VEHICLE-003')
+})
+
+test.each<Role>(['systemManager', 'systemSupporter'])('the %s has nothing to search: no button, Ctrl+K does nothing', async (role) => {
+  const user = userEvent.setup()
+  renderSearch(role)
+  expect(screen.queryByRole('button', { name: 'Tìm nhanh' })).not.toBeInTheDocument()
+  await user.keyboard('{Control>}k{/Control}')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('warehouse workers have nothing to search: no button, Ctrl+K does nothing', async () => {

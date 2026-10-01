@@ -15,13 +15,13 @@ type Account = Pick<User, 'id' | 'role' | 'status'>
 
 /**
  * Chặn trước, kèm lý do, những thao tác kho sẽ từ chối (LM-092, cùng luật `SELF_CHANGE_FORBIDDEN`, `LAST_ADMIN` của kho): không tự
- * khoá, xoá hay đổi vai trò của mình; không để hệ thống mất quản trị viên đang hoạt động cuối cùng. Luật cần dữ liệu khác (tài xế còn
- * chuyến) để kho trả lỗi.
+ * khoá, xoá hay đổi vai trò của mình; không để hệ thống mất quản trị hệ thống đang hoạt động cuối cùng (FE-0-01: vai trò `systemAdmin`;
+ * quản trị công ty chưa có luật riêng — FE-0-08). Luật cần dữ liệu khác (tài xế còn chuyến) để kho trả lỗi.
  */
 export function accountGuards(user: Account, currentUserId: string | null, users: readonly Pick<User, 'role' | 'status'>[]): AccountGuards {
   if (user.id === currentUserId) return { lock: 'self', remove: 'self', role: 'self' }
-  const activeAdmins = users.filter((item) => item.role === 'admin' && item.status === 'active').length
-  const block = user.role === 'admin' && user.status === 'active' && activeAdmins <= 1 ? 'lastAdmin' : null
+  const activeAdmins = users.filter((item) => item.role === 'systemAdmin' && item.status === 'active').length
+  const block = user.role === 'systemAdmin' && user.status === 'active' && activeAdmins <= 1 ? 'lastAdmin' : null
   return { lock: block, remove: block, role: block }
 }
 

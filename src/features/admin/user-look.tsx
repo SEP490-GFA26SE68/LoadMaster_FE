@@ -56,6 +56,16 @@ export function LastActive({ value }: { value: string | null }) {
   )
 }
 
+/** Kho / chi nhánh của người dùng; người dùng nền tảng không thuộc kho nào (FE-0-03) thì nói rõ bằng chữ nhạt, không để ô trống. */
+export function UserDepot({ value, className }: { value: string | undefined; className?: string }) {
+  const t = useT()
+  return value ? (
+    <span className={cn('text-ink-1', className)}>{value}</span>
+  ) : (
+    <span className={cn('text-caption text-ink-3', className)}>{t('admin.users.noDepot')}</span>
+  )
+}
+
 export function UserStatusBadge({ status }: { status: UserStatus }) {
   const t = useT()
   const badge = STATUS_BADGE[status]

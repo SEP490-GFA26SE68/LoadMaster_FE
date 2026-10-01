@@ -125,7 +125,8 @@ export function shipmentMethods(ctx: DbContext): ShipmentMethods {
         const shipment = pkg?.shipmentId === undefined ? undefined : shipments.get(pkg.shipmentId)
         if (!pkg || !shipment || shipment.status === 'draft') throw new MockDbError('QR_UNKNOWN', { token: wanted })
         const user = sessionUserOf(state)
-        const allowed = user === undefined || user.role === 'admin' || (user.role === 'logistics' && user.companyId === shipment.logisticsCompanyId)
+        // Quản trị hệ thống không còn quyền vận hành (FE-0-01): chỉ logistics của công ty được giao lô mới nhận
+        const allowed = user === undefined || (user.role === 'logistics' && user.companyId === shipment.logisticsCompanyId)
         if (!allowed) throw new MockDbError('RECEIVING_FORBIDDEN', { shipmentId: shipment.id })
         if (pkg.status !== 'in_shipment') throw new MockDbError('PACKAGE_ALREADY_RECEIVED', { packageId: pkg.id })
         const at = ctx.nowIso()

@@ -11,14 +11,14 @@ import { signedInAs } from '@/test/signed-in'
 import { UsersPage } from './UsersPage'
 
 /**
- * Seam: kho dùng chung (15 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là quản trị viên demo Võ Minh Khoa
+ * Seam: kho dùng chung (22 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là quản trị hệ thống demo Võ Minh Khoa
  * (US-0005). Các test trong file dùng chung kho nên mỗi test thao tác trên người dùng khác nhau.
  */
 const SLOW = { timeout: 5000 }
 
 function renderUsers(url = '/nguoi-dung') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  signedInAs('admin')
+  signedInAs('systemAdmin')
   render(
     <QueryClientProvider client={client}>
       <I18nProvider>
@@ -56,13 +56,13 @@ async function openMenu(user: UserEvent, name: string) {
 test('danh sách từ kho: sắp theo tên, tìm, lọc vai trò và trạng thái trên URL', async () => {
   renderUsers('/nguoi-dung?vai-tro=driver')
   await screen.findByRole('table', {}, SLOW)
-  // Bốn tài xế của seed, theo thứ tự chữ cái tiếng Việt (ô đầu: chữ viết tắt, tên, email)
+  // Năm tài xế của seed (bốn của Long Bình, một của Phương Nam), theo thứ tự chữ cái tiếng Việt (ô đầu: chữ viết tắt, tên, email)
   const names = within(screen.getByRole('table')).getAllByRole('row').slice(1).map((row) => row.querySelector('td')?.textContent)
   expect(names).toStrictEqual([
     'HNĐặng Hoài Nam nam.dang@loadmaster.vn', 'VBNgô Văn Bảo bao.ngo@loadmaster.vn', 'QDPhạm Quốc Dũng taixe@loadmaster.vn',
-    'VLTrương Văn Lộc loc.truong@loadmaster.vn',
+    'VSThái Văn Sơn taixe@phuongnam.vn', 'VLTrương Văn Lộc loc.truong@loadmaster.vn',
   ])
-  expect(screen.getByText('15 tài khoản')).toBeInTheDocument()
+  expect(screen.getByText('22 tài khoản')).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Vai trò' })).toHaveTextContent('Tài xế')
 })
 
@@ -73,7 +73,8 @@ test('tìm theo số điện thoại không dấu cách và lọc tài khoản �
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
   await user.type(screen.getByRole('searchbox', { name: 'Tìm theo tên, email, số điện thoại, mã' }), '0905678901')
   await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2))
-  expect(await rowOf('Võ Minh Khoa')).toBeInTheDocument()
+  // Quản trị hệ thống là tài khoản nền tảng: cột kho nói rõ là không thuộc kho nào (FE-0-03)
+  expect(within(await rowOf('Võ Minh Khoa')).getByText('Không thuộc kho nào')).toBeInTheDocument()
 })
 
 /** Ô số liệu theo nhãn (vỏ `role="group"`), để không bắt nhầm số hay chữ trùng trong bảng. */
@@ -82,12 +83,12 @@ function tile(label: string) {
 }
 
 test('ô số liệu đếm trên cả danh sách, không theo ô tìm; ô tổng chỉ hiển thị', async () => {
-  // Seed: 15 tài khoản, chỉ Bùi Thị Lan đã khoá. Ô tìm đang lọc còn một dòng, ô số liệu không đổi.
+  // Seed: 22 tài khoản, chỉ Bùi Thị Lan đã khoá. Ô tìm đang lọc còn một dòng, ô số liệu không đổi.
   renderUsers('/nguoi-dung?q=khoa')
   await rowOf('Võ Minh Khoa')
-  expect(tile('Tổng tài khoản').getByText('15')).toBeInTheDocument()
+  expect(tile('Tổng tài khoản').getByText('22')).toBeInTheDocument()
   expect(tile('Tổng tài khoản').getByText('Mọi vai trò, kể cả tài khoản đã khoá')).toBeInTheDocument()
-  expect(tile('Đang hoạt động').getByText('14')).toBeInTheDocument()
+  expect(tile('Đang hoạt động').getByText('21')).toBeInTheDocument()
   expect(tile('Đã khoá').getByText('1')).toBeInTheDocument()
   expect(tile('Tổng tài khoản').queryByRole('button')).toBeNull()
 })
@@ -108,11 +109,11 @@ test('ô trạng thái lọc danh sách cùng bộ lọc với ô chọn; bấm 
   // Chuyển thẳng sang ô khác bằng bàn phím
   tile('Đang hoạt động').getByRole('button').focus()
   await user.keyboard('{Enter}')
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(15))
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(22))
   expect(suspended).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(tile('Đang hoạt động').getByRole('button'))
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(16))
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(23))
   expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Mọi trạng thái')
 })
 
@@ -214,13 +215,12 @@ test('sửa: lưu thay đổi; email trùng thì báo trong hộp thoại, dữ 
   await waitFor(async () => expect(within(await rowOf('Trương Văn Lộc')).getByText('Kho Sóng Thần')).toBeInTheDocument(), SLOW)
 })
 
-test('ma trận quyền chỉ đọc, dựng từ ROLE_PERMISSIONS', async () => {
+test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSIONS (chi tiết ở PermissionMatrix.dom.test)', async () => {
   const user = userEvent.setup()
   renderUsers()
   await user.click(screen.getByRole('tab', { name: 'Ma trận quyền' }))
   const matrix = await screen.findByRole('table')
-  const row = within(matrix).getAllByRole('row').find((item) => item.textContent?.startsWith('Xuất báo cáo .xlsx'))
-  // Cột: quyền, điều phối, kho, tài xế, quản lý, quản trị, nhà sản xuất, logistics
-  expect(within(row!).getAllByRole('cell').slice(1).map((cell) => cell.textContent)).toStrictEqual(['Không', 'Không', 'Không', 'Có', 'Có', 'Không', 'Không'])
-  expect(within(matrix).getAllByRole('row')).toHaveLength(21)
+  // Một dòng tiêu đề và 39 quyền; cột đầu là tên quyền, mười cột còn lại là vai trò
+  expect(within(matrix).getAllByRole('row')).toHaveLength(40)
+  expect(within(matrix).getAllByRole('columnheader')).toHaveLength(11)
 })

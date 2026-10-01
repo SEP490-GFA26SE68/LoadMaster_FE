@@ -46,8 +46,8 @@ type NavItem = {
   /** Mục chỉ hiện khi người đăng nhập có quyền mở màn đích (D-41). */
   permission: Permission
   /**
-   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền). Mục của Review 1 (LM-104) chỉ hiện cho vai trò dùng nó hằng ngày: thanh
-   * ngang không chứa đủ mọi mục cho quản trị viên ở 1.366 px — quản trị viên vẫn mở được màn bằng đường dẫn.
+   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền). Mục của Review 1 (LM-104) chỉ hiện cho vai trò dùng nó hằng ngày; vai trò
+   * khác có quyền (quản lý công ty xem đơn hàng) vẫn mở được màn bằng đường dẫn.
    */
   roles?: readonly Role[]
 }
@@ -97,6 +97,7 @@ export function NavRail() {
   const can = useCan()
   const navigate = useNavigate()
   const { navRef, followRef } = useGlassFollow<HTMLElement>()
+  const items = NAV_ITEMS.filter((item: NavItem) => can(item.permission) && (item.roles === undefined || (user !== null && item.roles.includes(user.role))))
 
   async function handleSignOut() {
     await signOut()
@@ -116,36 +117,39 @@ export function NavRail() {
         </span>
       </Link>
 
-      <nav
-        ref={navRef}
-        aria-label={t('nav.label')}
-        className="glass-nav relative flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-lg p-1 min-[1400px]:flex-none"
-      >
-        <span ref={followRef} aria-hidden className="glass-follow" />
-        {NAV_ITEMS.filter((item: NavItem) => can(item.permission) && (item.roles === undefined || (user !== null && item.roles.includes(user.role)))).map(({ to, labelKey, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            aria-label={t(labelKey)}
-            className={({ isActive }) =>
-              cn(
-                'relative z-1 flex h-9 items-center gap-2 rounded-md px-2.5 text-body whitespace-nowrap xl:px-3.5',
-                'transition-colors duration-(--dur-fast) ease-standard',
-                'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
-                isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon className={cn('size-4.5 flex-none', isActive ? 'text-cyan-200' : 'opacity-80')} strokeWidth={isActive ? 2 : 1.5} aria-hidden />
-                <span className="hidden min-[1340px]:inline">{t(labelKey)}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+      {/* Vai trò chưa có màn nào (quản lý nền tảng, hỗ trợ khách hàng — tới Sprint 8) thì không vẽ khay kính rỗng */}
+      {items.length > 0 ? (
+        <nav
+          ref={navRef}
+          aria-label={t('nav.label')}
+          className="glass-nav relative flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-lg p-1 min-[1400px]:flex-none"
+        >
+          <span ref={followRef} aria-hidden className="glass-follow" />
+          {items.map(({ to, labelKey, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              aria-label={t(labelKey)}
+              className={({ isActive }) =>
+                cn(
+                  'relative z-1 flex h-9 items-center gap-2 rounded-md px-2.5 text-body whitespace-nowrap xl:px-3.5',
+                  'transition-colors duration-(--dur-fast) ease-standard',
+                  'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
+                  isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className={cn('size-4.5 flex-none', isActive ? 'text-cyan-200' : 'opacity-80')} strokeWidth={isActive ? 2 : 1.5} aria-hidden />
+                  <span className="hidden min-[1340px]:inline">{t(labelKey)}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+      ) : null}
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
         <QuickSearch />
@@ -168,6 +172,7 @@ export function NavRail() {
                   <span className="truncate text-small text-ink-3">{user.email}</span>
                 </span>
               </DropdownMenuLabel>
+              {/* Người dùng nền tảng không thuộc kho nào (FE-0-03): chỉ còn nhãn vai trò */}
               <div className="flex flex-wrap items-center gap-1.5 px-2.5 pb-2 text-small text-ink-3">
                 <Badge>{t(`roles.${user.role}`)}</Badge>
                 {user.depot}

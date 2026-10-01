@@ -12,6 +12,7 @@ import {
 import { Spinner } from '@/components/ui/Spinner'
 import { describeLogRow } from '@/features/admin/audit-log'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { hasNotifications, NOTIFICATION_WINDOW_DAYS } from './notifications'
 import { NotificationItem } from './NotificationItem'
@@ -28,12 +29,13 @@ export function NotificationBell() {
   const t = useT()
   const format = useFormat()
   const { user } = useAuth()
+  const can = useCan()
   const query = useNotificationsQuery()
   const read = useReadNotifications(user?.id ?? '')
   const feed = query.data
   const rows = useMemo(
-    () => (feed ? feed.events.map((event) => describeLogRow(event, feed.directory, t, format)) : []),
-    [feed, t, format],
+    () => (feed ? feed.events.map((event) => describeLogRow(event, feed.directory, t, format, can)) : []),
+    [feed, t, format, can],
   )
   if (!user || !hasNotifications(user.role)) return null
 

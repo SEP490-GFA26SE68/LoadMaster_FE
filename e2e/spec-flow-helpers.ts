@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect } from './fixtures'
+import type { Role } from '@/types/user'
+import { DEMO_EMAILS, DEMO_PASSWORD, expect } from './fixtures'
+import { R3F_DEPS, type R3FModule } from './viewer-helpers'
 
 /**
  * Bước dùng chung của E2E luồng Spec (LM-054). Kho dữ liệu nằm trong bộ nhớ trang: tải lại là mất, nên
@@ -14,6 +16,71 @@ export async function navigateInApp(page: Page, route: string) {
     history.pushState({}, '', to)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }, route)
+}
+
+/** Nút tài khoản: ở thanh điều hướng của khung ứng dụng, hoặc ở thanh màn chính của kho và tài xế — mỗi màn đúng một nút. */
+const accountButton = (page: Page) => page.getByRole('button', { name: /^Tài khoản / })
+
+/**
+ * Đăng xuất **trong app** từ bất kỳ màn nào, không tải lại trang: mở Hồ sơ cá nhân (vai trò nào cũng mở được và có thanh điều hướng,
+ * kể cả kho, tài xế và Planner vốn là màn toàn màn hình) rồi đăng xuất bằng menu tài khoản. Giao diện phải đang ở tiếng Việt.
+ *
+ * Chờ màn hồ sơ dựng xong rồi mới mở menu: màn chính của kho và tài xế có nút tài khoản cùng nhãn, mở menu của màn đang rời thì menu
+ * bị gỡ cùng màn đó khi route đổi và mục "Đăng xuất" không bao giờ bấm được.
+ */
+export async function signOutInApp(page: Page) {
+  await navigateInApp(page, '/ho-so')
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ cá nhân', exact: true })).toBeVisible()
+  await accountButton(page).click()
+  await page.getByRole('menuitem', { name: 'Đăng xuất', exact: true }).click()
+  await page.waitForURL(/\/dang-nhap$/)
+}
+
+/**
+ * Điền form đăng nhập đang mở và chờ màn chính của vai trò dựng xong (màn chính nào cũng có nút tài khoản). Chỉ chờ URL rời
+ * `/dang-nhap` là chưa đủ: màn đăng nhập còn trên trang thì lần chuyển về màn chính của nó có thể đè lên `navigateInApp` gọi ngay sau
+ * đó, trang ở lại màn chính (đỏ ngẫu nhiên, LM-107).
+ */
+export async function signInWith(page: Page, email: string, password = DEMO_PASSWORD) {
+  await page.getByLabel('Email', { exact: true }).fill(email)
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
+  await page.waitForURL((url) => url.pathname !== '/dang-nhap')
+  await expect(accountButton(page)).toBeVisible()
+}
+
+/**
+ * Đổi sang tài khoản demo của `role` mà không tải lại trang — kho in-memory và mọi thứ vừa ghi được giữ (FE-0-03: không còn vai trò
+ * toàn quyền, mỗi bước của kịch bản do đúng vai trò của nó làm). Xong thì đang ở màn chính của vai trò đó; kịch bản tự mở màn cần
+ * tới bằng thao tác hoặc `navigateInApp`.
+ */
+export async function switchUser(page: Page, role: Role) {
+  await signOutInApp(page)
+  await signInWith(page, DEMO_EMAILS[role])
+}
+
+/**
+ * Chờ scene của canvas đang có mặt dựng xong: canvas vào DOM trước khi R3F tạo root (R3F đo khung rồi mới tạo) và trước khi
+ * camera-controls gắn vào. Gọi sau khi mở lại Planner mà bước kế tiếp đọc thẳng R3F (`waitCameraSettled`, `sceneSnapshot`) — ví dụ
+ * ngay sau khi đổi người dùng trong app, lúc chunk 3D đã nạp sẵn nên không còn quãng chờ tải nào che khoảng trống đó.
+ *
+ * Tự lặp theo animation frame trong `page.evaluate`, không dùng `page.waitForFunction`: hàm kiểm phải `await import(...)` nên là
+ * async, mà `waitForFunction` coi Promise nó trả là "đã đạt" và trả về ngay sau lần gọi đầu, không chờ gì.
+ */
+export async function waitSceneReady(page: Page) {
+  await page.evaluate(async (url) => {
+    const { _roots } = (await import(url)) as R3FModule
+    const started = performance.now()
+    await new Promise<void>((resolve, reject) => {
+      const tick = () => {
+        const canvas = document.querySelector('canvas')
+        if (canvas && _roots.get(canvas)?.store.getState().controls) resolve()
+        else if (performance.now() - started > 30_000) reject(new Error('scene was not ready within 30 s'))
+        else requestAnimationFrame(tick)
+      }
+      tick()
+    })
+  }, R3F_DEPS)
 }
 
 export type PackageInput = {

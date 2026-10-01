@@ -25,8 +25,8 @@ test('the demo driver sees only their trips: the loaded one to deliver, the main
   expect(groups.recent.map((row) => [row.id, row.status, row.issueCount])).toStrictEqual([['TRIP-007', 'hoan_thanh', 1], ['TRIP-002', 'hoan_thanh', 0]])
 })
 
-test('an admin sees every trip: delivering before loaded, loading before approved, the five latest completed', async () => {
-  const groups = await tripsFor(createMockDb(), 'US-0005', 'admin')
+test('a viewer who is not a driver sees every trip: delivering before loaded, loading before approved, the five latest completed', async () => {
+  const groups = await tripsFor(createMockDb(), 'US-0001', 'dispatcher')
   expect(groups.ready.map((row) => [row.id, row.status, row.currentStop])).toStrictEqual([
     ['TRIP-009', 'dang_van_chuyen', 2],
     ['TRIP-010', 'da_duyet', undefined],
@@ -52,5 +52,5 @@ test('visibility: a driver sees trips assigned to them only, other roles see all
   expect(isVisibleTo({ driverId: 'US-0004' }, { id: 'US-0004', role: 'driver' })).toBe(true)
   expect(isVisibleTo({ driverId: 'US-0006' }, { id: 'US-0004', role: 'driver' })).toBe(false)
   expect(isVisibleTo({ driverId: null }, { id: 'US-0004', role: 'driver' })).toBe(false)
-  expect(isVisibleTo({ driverId: null }, { id: 'US-0005', role: 'admin' })).toBe(true)
+  expect(isVisibleTo({ driverId: null }, { id: 'US-0001', role: 'dispatcher' })).toBe(true)
 })
