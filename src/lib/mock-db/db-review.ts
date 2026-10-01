@@ -2,13 +2,10 @@ import { found, nextId, type DbContext, type DbState } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { isStale } from './revisions'
-import type { OptimizationRun, ReviewDecision, ReviewDecisionKind, ReviewQueueItem } from './source-types'
+import type { ReviewDecision, ReviewDecisionKind, ReviewQueueItem } from './source-types'
 import type { Revision } from './types'
 
-type ReviewMethods = Pick<
-  Review1Db,
-  'listReviewQueue' | 'listReviewDecisions' | 'rejectRevision' | 'requestReoptimization' | 'suggestPlanChange' | 'listOptimizationRuns' | 'recordFailedRun'
->
+type ReviewMethods = Pick<Review1Db, 'listReviewQueue' | 'listReviewDecisions' | 'rejectRevision' | 'requestReoptimization' | 'suggestPlanChange'>
 
 /**
  * Bản chờ duyệt của chuyến: bản tối ưu **mới nhất** (revision cuối, chưa duyệt) của chuyến ở pha lập kế hoạch, hoàn tất, không lỗi thời
@@ -28,10 +25,10 @@ function runnerOf(state: DbState, revisionId: string): string | null {
   return [...state.runs.values()].find((run) => run.revisionId === revisionId)?.by ?? state.revisions.get(revisionId)?.editedBy ?? null
 }
 
-/** Quyết định của quản lý (luồng 4) và lịch sử lần chạy tối ưu (luồng 3), LM-104. */
+/** Quyết định của quản lý (luồng 4), LM-104. Lịch sử lần chạy tối ưu nằm ở `db-runs.ts`. */
 export function reviewMethods(ctx: DbContext): ReviewMethods {
   const { state } = ctx
-  const { trips, revisions, reviews, runs } = state
+  const { trips, revisions, reviews } = state
 
   function decide(revisionId: string, kind: ReviewDecisionKind, reason: string, vehicleId?: string): ReviewDecision {
     const revision = found(revisions, 'revisions', revisionId)
@@ -72,20 +69,5 @@ export function reviewMethods(ctx: DbContext): ReviewMethods {
     requestReoptimization: (revisionId, reason) => ctx.respond(() => decide(revisionId, 'reoptimize_requested', reason)),
     suggestPlanChange: (revisionId, { kind, note, vehicleId }) =>
       ctx.respond(() => decide(revisionId, kind === 'change_vehicle' ? 'change_vehicle_suggested' : 'split_trip_suggested', note, kind === 'change_vehicle' ? vehicleId : undefined)),
-    listOptimizationRuns: (tripId) =>
-      ctx.respond(() => {
-        found(trips, 'trips', tripId)
-        return [...runs.values()].filter((run) => run.tripId === tripId)
-      }),
-    recordFailedRun: (tripId, { objective, algorithm, failureCode }) =>
-      ctx.respond(() => {
-        found(trips, 'trips', tripId)
-        const run: OptimizationRun = {
-          id: nextId('RUN', runs.keys()), tripId, objective, algorithm, status: 'FAILED', at: ctx.nowIso(), by: state.session.userId, failureCode,
-        }
-        runs.set(run.id, structuredClone(run))
-        ctx.log('optimization.failed', { type: 'trip', id: tripId }, { objective, algorithm, reasonCode: failureCode })
-        return run
-      }),
   }
 }

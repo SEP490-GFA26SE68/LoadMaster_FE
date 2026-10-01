@@ -1,8 +1,7 @@
 import { expect, test } from 'vitest'
 import { createMockDb } from '@/lib/mock-db'
-import { optimizedTwoCartonTrip, twoCartonRequest, twoCartonResult } from '@/test/mock-db-samples'
 
-/** Luồng 3 + 4 Review 1 (LM-104): lịch sử lần chạy (mục tiêu, thuật toán), hàng đợi chờ duyệt và quyết định của quản lý. */
+/** Luồng 4 Review 1 (LM-104): hàng đợi chờ duyệt và quyết định của quản lý. Lịch sử lần chạy: `runs.test.ts`. */
 
 test('the review queue holds the latest completed, fresh, unapproved plan of each planning trip', async () => {
   const db = createMockDb()
@@ -43,21 +42,4 @@ test('a new optimization puts the trip back in the queue; approving takes it out
   expect(approved).toMatchObject({ approvedBy: 'US-0002', run: { objective: 'AXLE_BALANCE' } })
   expect(await db.listReviewQueue()).toStrictEqual([])
   expect(trip.phase).toBe('planning')
-})
-
-test('optimization run history: the main trip keeps a failed run and the run behind REV-001; new runs are appended', async () => {
-  const db = createMockDb()
-  const runs = await db.listOptimizationRuns('TRIP-2026-0914')
-  expect(runs.map(({ id, status, objective, algorithm, revisionId, failureCode }) => ({ id, status, objective, algorithm, revisionId, failureCode }))).toStrictEqual([
-    { id: 'RUN-001', status: 'FAILED', objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', revisionId: undefined, failureCode: 'SERVICE_UNAVAILABLE' },
-    { id: 'RUN-002', status: 'COMPLETED', objective: 'MAX_VOLUME', algorithm: 'EP_DBLF', revisionId: 'REV-001', failureCode: undefined },
-  ])
-  const failed = await db.recordFailedRun('TRIP-2026-0914', { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF', failureCode: 'REQUEST_REJECTED' })
-  expect(failed).toMatchObject({ status: 'FAILED', failureCode: 'REQUEST_REJECTED' })
-  expect((await db.listEvents())[0]).toMatchObject({ action: 'optimization.failed', params: { reasonCode: 'REQUEST_REJECTED' } })
-
-  const { trip, revision } = await optimizedTwoCartonTrip(db)
-  const [run] = await db.listOptimizationRuns(trip.id)
-  expect(run).toMatchObject({ status: 'COMPLETED', revisionId: revision.id, jobId: twoCartonResult().jobId, placedCount: twoCartonResult().metrics.placedCount })
-  expect(twoCartonRequest().packages).toHaveLength(revision.request.packages.length)
 })

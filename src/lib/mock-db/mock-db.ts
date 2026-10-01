@@ -7,6 +7,7 @@ import { packageTypeMethods } from './db-package-types'
 import { registeredMethods } from './db-registered'
 import { reviewMethods } from './db-review'
 import { revisionMethods } from './db-revisions'
+import { runMethods } from './db-runs'
 import { scanMethods } from './db-scans'
 import { shipmentMethods } from './db-shipments'
 import { tripMethods } from './db-trips'
@@ -49,6 +50,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...vehicleMethods(ctx),
     ...tripMethods(ctx),
     ...revisionMethods(ctx),
+    ...runMethods(ctx),
     ...operationMethods(ctx),
     ...userMethods(ctx),
     ...auditMethods(ctx),
