@@ -27,6 +27,7 @@ import type { ViewerSceneModel } from './scene-input'
 import { Timeline } from './Timeline'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
+import { usePlanApprovalQuery } from './usePlanSourceQuery'
 import type { PlanSource } from './viewer-api'
 import { ViewerHeader } from './ViewerHeader'
 import { debugQualityTier } from './viewer-options'
@@ -60,6 +61,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   // Chỉ quản lý công ty duyệt (LM-104): điều phối viên xem chỉ đọc; chuyến đã sang pha vận hành thì phương án đã chốt (D-45);
   // bản quản lý đã trả lại (từ chối, yêu cầu tối ưu lại, đề xuất) thì chỉ xem và dòng khoá kể quyết định.
   const review = usePlanReviewQuery(tripId, plan.revision?.id).data
+  const approvedBy = usePlanApprovalQuery(plan.revision?.id).data?.approvedByName
   // Điều phối viên chỉnh tay rồi "Lưu bản chỉnh" gửi quản lý duyệt (LM-108); quản lý công ty chỉnh và duyệt
   const access = plannerAccess({ phase, canApprove: can('plans.approve'), canEdit: can('plans.approve') || can('optimization.run'),
     approvedAt: plan.revision?.approvedAt ?? null, hasEdits, decided: Boolean(review?.decision) })
@@ -117,7 +119,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
-        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={review?.approvedByName} decisions={decide}
+        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy} decisions={decide}
           onApprove={() => setApproveOpen(true)} onSave={approval.save} saving={approval.saving} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
       <PlannerNotices model={plan} source={source} lock={access.lock ?? access.notice} decision={review?.decision ?? null}

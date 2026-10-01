@@ -1,12 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PlacementPatch } from '@/domain/constraints'
-import { approvePlanRevision, fetchPlanSource, saveEditedPlanRevision } from './viewer-api'
+import { approvePlanRevision, fetchPlanApproval, fetchPlanSource, saveEditedPlanRevision } from './viewer-api'
 
 /** Phương án của chuyến qua TanStack Query; component không gọi `viewer-api.ts` trực tiếp (mục 9). */
 export function usePlanSourceQuery(tripId: string, ref?: string) {
   return useQuery({
     queryKey: ['trips', tripId, 'plan', { ref }],
     queryFn: () => fetchPlanSource(tripId, ref),
+  })
+}
+
+/**
+ * Người đã duyệt revision đang xem ở Planner. Vắng `revisionId` (fixture benchmark không có trong kho) thì không đọc.
+ * Khoá `['plan-approval', revisionId]`, **không** dưới `['trips', tripId]`: Duyệt chờ làm mới mọi truy vấn của chuyến rồi mới gọi
+ * callback mở bản đã duyệt; thêm một truy vấn nữa vào đó thì Planner kịp dựng lại theo revision mới, phiên cũ bị gỡ và callback
+ * (toast, điều hướng) không chạy. Revision bất biến (D-31) — bản duyệt là revision mới, đọc theo khoá mới — nên không cần làm mới.
+ */
+export function usePlanApprovalQuery(revisionId: string | undefined) {
+  return useQuery({
+    queryKey: ['plan-approval', revisionId],
+    queryFn: () => fetchPlanApproval(revisionId ?? ''),
+    enabled: revisionId !== undefined,
   })
 }
 

@@ -22,8 +22,8 @@ export function useRecentDecisionsQuery() {
 }
 
 /**
- * Trạng thái duyệt của revision đang xem ở Planner: còn chờ duyệt không (thanh quyết định), quyết định mới nhất (dòng dưới thanh trên)
- * và người đã duyệt. Vắng `revisionId` (fixture benchmark không có trong kho) thì không đọc.
+ * Trạng thái xét duyệt của revision đang xem ở Planner: còn chờ duyệt không (thanh quyết định) và quyết định mới nhất (dòng dưới thanh
+ * trên). Vắng `revisionId` (fixture benchmark không có trong kho) thì không đọc.
  * Khoá nằm dưới `['review']`, **không** dưới `['trips', tripId]`: Duyệt chờ làm mới mọi truy vấn của chuyến rồi mới gọi callback mở
  * bản đã duyệt; thêm một truy vấn chậm vào đó thì Planner kịp dựng lại theo revision mới, phiên cũ bị gỡ và callback (toast, điều
  * hướng) không chạy. Bản duyệt là revision mới nên truy vấn này đọc lại theo khoá mới; quyết định làm mới `['review']`.

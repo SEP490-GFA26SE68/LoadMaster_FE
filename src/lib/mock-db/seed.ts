@@ -78,7 +78,7 @@ function createSeed(today: string): SeedData {
     if (times.approved === undefined) return undefined
     const approved: Revision = {
       ...optimized, id: nextRevisionId(), result: approvedResult(request, result, []), createdAt: times.approved,
-      draftPatches: [], approvedAt: times.approved, sourceRevisionId: optimized.id, ordersRecomputed: true,
+      draftPatches: [], approvedAt: times.approved, approvedBy: SEED_MANAGER, sourceRevisionId: optimized.id, ordersRecomputed: true,
     }
     revisions.push(approved)
     events.push({ at: times.approved, actorId: SEED_MANAGER, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })

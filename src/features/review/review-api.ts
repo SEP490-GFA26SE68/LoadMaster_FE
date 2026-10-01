@@ -60,31 +60,23 @@ function named(decision: ReviewDecision, users: readonly User[], vehicles: reado
   }
 }
 
-/** Trạng thái duyệt của một revision ở Planner: còn trong hàng đợi không, quyết định mới nhất, và ai đã duyệt. */
+/** Trạng thái xét duyệt của một revision ở Planner: còn trong hàng đợi không và quyết định mới nhất. Người đã duyệt: `viewer-api.ts`. */
 export type PlanReview = {
   readonly reviewable: boolean
   readonly decision: NamedDecision | null
-  /** Tên người duyệt khi revision là bản đã duyệt: `approvedBy` của kho, bản seed cũ thì lấy từ nhật ký; không rõ thì `null`. */
-  readonly approvedByName: string | null
   /** Xe để chọn trong đề xuất đổi xe. */
   readonly vehicles: readonly VehicleConfig[]
 }
 
 export async function fetchPlanReview(tripId: string, revisionId: string): Promise<PlanReview> {
   const db = getMockDb()
-  const [revision, decisions, queue, users, vehicles] = await Promise.all([
-    db.getRevision(revisionId), db.listReviewDecisions(tripId), db.listReviewQueue(), db.listUsers(), db.listVehicles(),
+  const [decisions, queue, users, vehicles] = await Promise.all([
+    db.listReviewDecisions(tripId), db.listReviewQueue(), db.listUsers(), db.listVehicles(),
   ])
   const decision = decisions.findLast((item) => item.revisionId === revisionId)
-  let approverId = revision.approvedBy ?? null
-  if (revision.approvedAt !== undefined && approverId === null) {
-    const events = await db.listEvents({ targetId: tripId })
-    approverId = events.find((event) => event.action === 'revision.approved' && event.params.revisionId === revisionId)?.actorId ?? null
-  }
   return {
     reviewable: queue.some((item) => item.revisionId === revisionId),
     decision: decision ? named(decision, users, vehicles) : null,
-    approvedByName: revision.approvedAt === undefined ? null : (users.find((user) => user.id === approverId)?.fullName ?? null),
     vehicles,
   }
 }

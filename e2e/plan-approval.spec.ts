@@ -28,7 +28,7 @@ test('approving the seed source revision creates a new approved revision and reo
   await page.locator('canvas').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
-  // LM-104: người duyệt bản seed lấy từ nhật ký (seed cũ không lưu `approvedBy`)
+  // LM-104: người duyệt do kho ghi vào revision đã duyệt (`approvedBy`), kể cả bản seed
   await expect(header).toContainText(APPROVED_BY_MANAGER)
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
 

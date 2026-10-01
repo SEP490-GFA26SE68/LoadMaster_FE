@@ -20,6 +20,20 @@ export async function fetchPlanSource(tripId: string, ref?: string): Promise<{ t
   return { trip, revision }
 }
 
+/** Trạng thái duyệt của một revision ở thanh trên Planner ("Duyệt bởi … lúc …"). */
+export type PlanApproval = {
+  /** Họ tên người bấm Duyệt; `null` khi revision chưa duyệt, hoặc kho không biết người duyệt (duyệt khi không có phiên, tài khoản đã xoá). */
+  readonly approvedByName: string | null
+}
+
+/** Ai đã duyệt revision: kho ghi người bấm Duyệt vào revision đã duyệt (`approvedBy`), tên lấy từ danh sách người dùng. */
+export async function fetchPlanApproval(revisionId: string): Promise<PlanApproval> {
+  const db = getMockDb()
+  const [revision, users] = await Promise.all([db.getRevision(revisionId), db.listUsers()])
+  const approverId = revision.approvedAt === undefined ? null : (revision.approvedBy ?? null)
+  return { approvedByName: users.find((user) => user.id === approverId)?.fullName ?? null }
+}
+
 /** Duyệt (LM-050, D-31): kho tạo revision approved mới từ revision đang xem và patch của draft; revision nguồn giữ nguyên. */
 export async function approvePlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
   return getMockDb().approveRevision(revisionId, patches)
