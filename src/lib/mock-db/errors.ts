@@ -96,8 +96,6 @@ export type MockDbErrorParams = {
   ORDER_STATUS_INVALID: { orderId: string; status: string }
   /** Điểm giao không có trong chuyến. */
   STOP_NOT_FOUND: { tripId: string; stopId: string }
-  /** Phương án không còn chờ duyệt: đã duyệt, lỗi thời, chưa hoàn tất hoặc đã có bản mới hơn. */
-  REVISION_NOT_REVIEWABLE: { revisionId: string }
   VEHICLE_TYPE_INVALID: { field: string }
   VEHICLE_TYPE_IN_USE: { vehicleTypeId: string; vehicleIds: string[] }
   /** Mã QR quét được không thuộc phương án / chuyến đang làm. */

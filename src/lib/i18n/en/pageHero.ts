@@ -18,7 +18,6 @@ export const pageHero = {
   shipment: 'Packages in the shipment and how many the logistics company has scanned in.',
   receiving: 'Scan each package’s QR code to confirm the shipment was received.',
   orders: 'Transport orders built from received packages, assigned to trip stops.',
-  review: 'Optimized plans waiting for the manager to approve, reject or send back.',
   vehicleTypes: 'Cargo dimensions and payload by vehicle type.',
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
 } satisfies Dictionary<typeof source>

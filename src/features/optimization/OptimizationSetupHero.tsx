@@ -10,8 +10,8 @@ import type { OptimizationSetup } from './optimization-api'
 /**
  * Dải trời của Thiết lập tối ưu (V2.3 `ThietLapToiUu.jpg`, LM-106): đường dẫn "Chuyến hàng / mã / Thiết lập tối ưu", tiêu đề và chip
  * trạng thái chuyến (kèm dòng phụ lỗi thời), dòng dữ liệu của chuyến (tên · ngày chạy · xe · tài xế), nút chính "Tối ưu" ở phải. Nút
- * bị chặn thì lý do nằm ngay trên nút ("Chưa chạy được: 2 lỗi cần sửa ở …", `aria-describedby`). `children`: banner khoá / quyết định
- * của quản lý nằm trong dải, dưới dòng dữ liệu.
+ * bị chặn thì lý do nằm ngay trên nút ("Chưa chạy được: 2 lỗi cần sửa ở …", `aria-describedby`). `children`: banner khoá nằm trong dải,
+ * dưới dòng dữ liệu.
  */
 export function OptimizationSetupHero({ tripId, setup, disabled, blockedReason, onRun, children }: {
   tripId: string

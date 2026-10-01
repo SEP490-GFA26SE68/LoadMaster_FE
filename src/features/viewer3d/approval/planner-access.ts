@@ -2,12 +2,11 @@ import type { TripPhase } from '@/lib/mock-db'
 
 /**
  * Vì sao Planner chỉ xem: chuyến đã sang pha vận hành (D-45), hoặc tài khoản không có quyền Duyệt (D-41) — chỉ quản lý công ty duyệt
- * (LM-104): bản chưa duyệt là `awaitingApproval` ("chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. `decided`: quản lý công
- * ty đã trả lại bản này (từ chối, yêu cầu tối ưu lại, đề xuất) — không ai duyệt hay chỉnh nó nữa, điều phối chạy lại.
+ * (LM-104): bản chưa duyệt là `awaitingApproval` ("chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`.
  * *(LM-108)* Điều phối viên (chạy tối ưu, không duyệt) được **chỉnh tay** lại: không khoá, nút chính là "Lưu bản chỉnh" khi đã dời / xoay
  * kiện; `awaitingApproval` / `readOnly` chỉ còn cho tài khoản không chỉnh cũng không duyệt.
  */
-export type PlannerLock = Exclude<TripPhase, 'planning'> | 'awaitingApproval' | 'readOnly' | 'decided'
+export type PlannerLock = Exclude<TripPhase, 'planning'> | 'awaitingApproval' | 'readOnly'
 
 export type PlannerAccess = {
   /** `null`: chỉnh sửa và duyệt được. Có lý do thì Planner ẩn Chỉnh sửa, Duyệt và nói lý do một lần. */
@@ -21,22 +20,20 @@ export type PlannerAccess = {
 }
 
 /**
- * Hành động của Planner (LM-094, D-51). Pha khoá thắng quyền: chuyến đang xếp thì "phương án đã chốt" đúng với mọi vai trò; rồi tới
- * quyết định trả lại của quản lý (LM-104), rồi quyền. `hasEdits`: draft có dời hoặc xoay kiện (thứ được gửi khi Duyệt; ghim không
- * tính). `approvedAt`: `null` khi revision chưa duyệt hoặc là fixture benchmark. `decided`: revision đang xem có quyết định trả lại.
+ * Hành động của Planner (LM-094, D-51). Pha khoá thắng quyền: chuyến đang xếp thì "phương án đã chốt" đúng với mọi vai trò.
+ * `hasEdits`: draft có dời hoặc xoay kiện (thứ được gửi khi Duyệt; ghim không tính). `approvedAt`: `null` khi revision chưa duyệt
+ * hoặc là fixture benchmark.
  */
-export function plannerAccess({ phase = 'planning', canApprove, canEdit = canApprove, approvedAt, hasEdits, decided = false }: {
+export function plannerAccess({ phase = 'planning', canApprove, canEdit = canApprove, approvedAt, hasEdits }: {
   phase?: TripPhase
   canApprove: boolean
   /** Dời / xoay kiện được (LM-108): người duyệt, hoặc điều phối viên (quyền chạy tối ưu). Mặc định theo `canApprove`. */
   canEdit?: boolean
   approvedAt: string | null
   hasEdits: boolean
-  decided?: boolean
 }): PlannerAccess {
   const lock: PlannerLock | null = phase !== 'planning' ? phase
-    : decided ? 'decided'
-      : canApprove || canEdit ? null : approvedAt === null ? 'awaitingApproval' : 'readOnly'
+    : canApprove || canEdit ? null : approvedAt === null ? 'awaitingApproval' : 'readOnly'
   const approve = lock !== null ? null
     : canApprove ? (hasEdits ? 'draft' : approvedAt === null ? 'plan' : null)
       : hasEdits ? 'save' : null

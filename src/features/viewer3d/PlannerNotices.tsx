@@ -1,29 +1,27 @@
 import { ArrowRight, Clock, SlidersHorizontal, TriangleAlert } from 'lucide-react'
 import { useMemo } from 'react'
-import type { DecisionView } from '@/features/review/DecisionSummary'
 import { staleReason, type StaleEdit } from '@/features/trips/trip-detail'
 import { useTripActivityQuery } from '@/features/trips/useTripsQuery'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { isStale, type Trip } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import type { PlannerLock } from './approval/planner-access'
-import { PlanDecisionNotice } from './PlanDecisionNotice'
 import { approvedElsewhere, planTripDelta, warehouseProgress } from './plan-notices'
+import { PlannerLockNotice } from './PlannerLockNotice'
 import { PlannerNoticeBar, PlannerNoticeLink } from './PlannerNoticeBar'
 import type { ViewerSceneModel } from './scene-input'
 import type { PlanSource } from './viewer-api'
 
 /**
- * Các thanh thông báo dưới thanh trên Planner (V2.3, LM-107), trên nền tối, xếp dọc: quyết định của quản lý hoặc lý do khoá (kèm tiến
- * độ kho, `Planner3DKhoa`), phương án lỗi thời (lần sửa làm lỗi thời, số kiện phương án ↔ chuyến, chênh theo điểm giao,
- * `Planner3DLoiThoi`) và đang xem một bản chưa duyệt trong khi kho đọc bản đã duyệt (`Planner3DBanChuaDuyet`). Mọi số lấy từ kho qua
- * nhật ký chuyến; fixture benchmark (không có `source`) chỉ có thanh khoá.
+ * Các thanh thông báo dưới thanh trên Planner (V2.3, LM-107), trên nền tối, xếp dọc: lý do khoá (kèm tiến độ kho, `Planner3DKhoa`),
+ * phương án lỗi thời (lần sửa làm lỗi thời, số kiện phương án ↔ chuyến, chênh theo điểm giao, `Planner3DLoiThoi`) và đang xem một bản
+ * chưa duyệt trong khi kho đọc bản đã duyệt (`Planner3DBanChuaDuyet`). Mọi số lấy từ kho qua nhật ký chuyến; fixture benchmark
+ * (không có `source`) chỉ có thanh khoá.
  */
-export function PlannerNotices({ model, source, lock, decision, rerunTo }: {
+export function PlannerNotices({ model, source, lock, rerunTo }: {
   model: ViewerSceneModel
   source?: PlanSource
   lock: PlannerLock | null
-  decision: DecisionView | null
   /** Lối tới Thiết lập tối ưu khi người xem chạy lại được và chuyến còn lập kế hoạch (LM-104). */
   rerunTo?: string
 }) {
@@ -43,7 +41,7 @@ export function PlannerNotices({ model, source, lock, decision, rerunTo }: {
 
   return (
     <div className="flex flex-none flex-col items-start gap-2 px-2 pt-2 empty:hidden xl:px-3.5 xl:pt-2.5">
-      <PlanDecisionNotice lock={lock} decision={decision} rerunTo={rerunTo} detail={progressLine} />
+      <PlannerLockNotice lock={lock} detail={progressLine} />
       {model.revision?.stale ? <StaleNotice source={source} users={activity?.users ?? []}
         edit={source && activity ? staleEditOf(source.trip, activity, viewedId) : null} rerunTo={rerunTo} /> : null}
       {source && approved && viewedId ? (

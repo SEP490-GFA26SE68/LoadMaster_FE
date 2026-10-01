@@ -48,7 +48,7 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
 /** D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở. FE-0-01: quản trị hệ thống và quản trị công ty chỉ còn người dùng, nhật ký. */
 test.each<[Role, string[]]>([
   ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Đội xe']],
-  ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe']],
+  ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],

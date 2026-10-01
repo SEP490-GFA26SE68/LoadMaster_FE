@@ -47,7 +47,6 @@ export const dataErrors = {
   PACKAGE_ALREADY_RECEIVED: 'Kiện {packageId} đã được nhận trước đó.',
   ORDER_STATUS_INVALID: 'Đơn hàng {orderId} không còn làm được thao tác này.',
   STOP_NOT_FOUND: 'Chuyến {tripId} không có điểm giao {stopId}.',
-  REVISION_NOT_REVIEWABLE: 'Phương án {revisionId} không còn chờ duyệt.',
   VEHICLE_TYPE_INVALID: 'Loại xe chưa hợp lệ: cần tên, kích thước lòng thùng và tải trọng lớn hơn 0.',
   VEHICLE_TYPE_IN_USE: 'Loại xe {vehicleTypeId} còn gắn với xe {vehicleIds} nên không xoá được.',
   PACKAGE_NOT_IN_TRIP: 'Mã {token} không thuộc chuyến {tripId}.',

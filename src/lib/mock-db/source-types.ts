@@ -1,8 +1,8 @@
-import type { FragilityLevel, OptimizationResult, OrientationCode } from '@/domain/models'
+import type { FragilityLevel, OrientationCode } from '@/domain/models'
 
 /**
- * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, kiện đăng ký, công ty, lô hàng), đơn hàng, quyết định duyệt, lần chạy tối
- * ưu, loại xe và nhãn QR. Đơn vị cm / kg như mọi dữ liệu của kho (D-03).
+ * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, kiện đăng ký, công ty, lô hàng), đơn hàng, lần chạy tối ưu, loại xe và nhãn
+ * QR. Đơn vị cm / kg như mọi dữ liệu của kho (D-03).
  */
 
 export const COMPANY_KINDS = ['manufacturer', 'logistics'] as const
@@ -143,44 +143,6 @@ export type TransportOrder = {
 
 export type OrderInput = Pick<TransportOrder, 'customerName' | 'deliveryAddress' | 'contactName' | 'phone' | 'packageIds' | 'note'>
 export type OrderChanges = Partial<OrderInput>
-
-/** Quyết định của quản lý với một phương án chờ duyệt, ngoài Duyệt (Duyệt tạo revision mới như trước, D-31). */
-export const REVIEW_DECISION_KINDS = ['rejected', 'reoptimize_requested', 'change_vehicle_suggested', 'split_trip_suggested'] as const
-export type ReviewDecisionKind = (typeof REVIEW_DECISION_KINDS)[number]
-
-export type ReviewDecision = {
-  /** `RVW-NNN` */
-  id: string
-  tripId: string
-  revisionId: string
-  kind: ReviewDecisionKind
-  /** Lý do / ghi chú người duyệt nhập (bắt buộc). */
-  reason: string
-  /** Chỉ ở đề xuất đổi xe: xe đề xuất, tuỳ chọn. */
-  vehicleId?: string
-  at: string
-  by: string | null
-}
-
-export type PlanSuggestion = { kind: 'change_vehicle' | 'split_trip'; note: string; vehicleId?: string }
-
-/** Một phương án đang chờ quản lý duyệt: bản tối ưu mới nhất của chuyến ở pha lập kế hoạch, chưa duyệt, không lỗi thời. */
-export type ReviewQueueItem = {
-  tripId: string
-  tripName: string
-  scheduledDate: string
-  vehicleId: string
-  revisionId: string
-  jobId: string
-  /** Lúc lưu kết quả tối ưu (ISO 8601) — UI tính tuổi từ đây. */
-  submittedAt: string
-  /** Người chạy tối ưu, nếu kho biết. */
-  submittedBy: string | null
-  metrics: OptimizationResult['metrics']
-  isMockResult: boolean
-  manuallyEdited: boolean
-  run?: RunSettings
-}
 
 export const OPTIMIZATION_OBJECTIVES = ['MAX_VOLUME', 'AXLE_BALANCE'] as const
 export type OptimizationObjective = (typeof OPTIMIZATION_OBJECTIVES)[number]

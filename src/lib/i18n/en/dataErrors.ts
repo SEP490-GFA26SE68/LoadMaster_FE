@@ -43,7 +43,6 @@ export const dataErrors = {
   PACKAGE_ALREADY_RECEIVED: 'Package {packageId} was already received.',
   ORDER_STATUS_INVALID: 'Order {orderId} can no longer do this.',
   STOP_NOT_FOUND: 'Trip {tripId} has no stop {stopId}.',
-  REVISION_NOT_REVIEWABLE: 'Plan {revisionId} is no longer awaiting review.',
   VEHICLE_TYPE_INVALID: 'The vehicle type is not valid: it needs a name, cargo dimensions and a payload above 0.',
   VEHICLE_TYPE_IN_USE: 'Vehicle type {vehicleTypeId} is still set on vehicles {vehicleIds}, so it cannot be deleted.',
   PACKAGE_NOT_IN_TRIP: 'Code {token} is not part of trip {tripId}.',

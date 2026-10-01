@@ -108,7 +108,7 @@ test('each role lands on its own screen and sees only its nav items', async ({ p
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đội xe'])
   expect(browserErrors).toStrictEqual([])
 })
 

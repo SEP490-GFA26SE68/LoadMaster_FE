@@ -24,15 +24,12 @@ export function usePlanApprovalQuery(revisionId: string | undefined) {
   })
 }
 
-/** Lưu bản chỉnh (LM-108): xong thì làm mới revision của chuyến và hàng đợi duyệt của quản lý. */
+/** Lưu bản chỉnh (LM-108): xong thì làm mới revision của chuyến. */
 export function useSaveEditedRevisionMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ revisionId, patches }: { revisionId: string; patches: readonly PlacementPatch[] }) => saveEditedPlanRevision(revisionId, patches),
-    onSuccess: () => Promise.all([
-      client.invalidateQueries({ queryKey: ['trips', tripId] }),
-      client.invalidateQueries({ queryKey: ['review'] }),
-    ]),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['trips', tripId] }),
   })
 }
 

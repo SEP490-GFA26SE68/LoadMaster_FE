@@ -7,8 +7,6 @@ export const viewer = {
     placed: 'Đã xếp',
     manuallyEdited: 'Đã chỉnh tay',
     approve: 'Duyệt phương án',
-    /** Chữ của nút Duyệt trên điện thoại khi thanh quyết định của quản lý đứng cạnh (LM-104); tên truy cập vẫn là `approve`. */
-    approveShort: 'Duyệt',
     /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094). */
     approveDraft: 'Duyệt bản chỉnh',
     /** Điều phối viên lưu bản chỉnh tay thành phương án mới chờ quản lý công ty duyệt (LM-108) */
@@ -122,8 +120,6 @@ export const viewer = {
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
     awaitingApproval: 'Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.',
     readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
-    /** Quản lý công ty đã trả lại bản này (LM-104); dòng khoá hiện câu quyết định thay câu này. */
-    decided: 'Phương án đã được quản lý công ty trả lại — chỉ xem.',
   },
   axles: {
     title: 'Tải trục',

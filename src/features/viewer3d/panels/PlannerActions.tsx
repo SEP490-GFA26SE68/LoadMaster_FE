@@ -1,5 +1,5 @@
 import { Check, CircleAlert, Columns2, Pencil, Save } from 'lucide-react'
-import { useId, type ReactNode } from 'react'
+import { useId } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip'
@@ -10,10 +10,9 @@ import type { PlannerAccess } from '../approval/planner-access'
  * Bên phải thanh trên Planner (LM-094, D-51): "Đã duyệt lúc …" thay nút Duyệt khi bản đã duyệt chưa có chỉnh sửa, nút Chỉnh sửa
  * của hàng gộp (≥ 1.366 px), So sánh phương án, và một nút primary Duyệt ("Duyệt phương án" / "Duyệt bản chỉnh"). Lý do chặn
  * Duyệt nằm trong tooltip và mô tả của nút, không chen chữ đỏ vào thanh (U-5); hộp thoại Duyệt liệt kê đủ.
- * LM-104: `decisions` là thanh quyết định khác của quản lý công ty (Từ chối, Quyết định khác) đứng ngay trước nút Duyệt; `approvedBy`
- * đổi nhãn thành "Duyệt bởi … lúc" khi kho biết người duyệt.
+ * LM-104: `approvedBy` đổi nhãn thành "Duyệt bởi … lúc" khi kho biết người duyệt.
  */
-export function PlannerActions({ tripId, access, blockedReason, onApprove, onSave, saving = false, onEdit, approvedBy = null, decisions }: {
+export function PlannerActions({ tripId, access, blockedReason, onApprove, onSave, saving = false, onEdit, approvedBy = null }: {
   tripId: string
   access: PlannerAccess
   blockedReason: string | null
@@ -24,7 +23,6 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onSav
   /** Vắng khi Planner khoá hoặc đang ở chế độ Chỉnh sửa. */
   onEdit?: () => void
   approvedBy?: string | null
-  decisions?: ReactNode
 }) {
   const t = useT()
   return (
@@ -37,9 +35,8 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onSav
         </Button>
       ) : null}
       <CompareLink tripId={tripId} />
-      {decisions}
       {access.approve === 'save' ? <ApproveButton kind="save" blockedReason={blockedReason} loading={saving} onClick={onSave ?? (() => undefined)} />
-        : access.approve ? <ApproveButton kind={access.approve} short={Boolean(decisions)} blockedReason={blockedReason} onClick={onApprove} /> : null}
+        : access.approve ? <ApproveButton kind={access.approve} blockedReason={blockedReason} onClick={onApprove} /> : null}
     </div>
   )
 }
@@ -85,13 +82,8 @@ function CompareLink({ tripId }: { tripId: string }) {
   )
 }
 
-/**
- * `short`: thanh quyết định của quản lý đứng cạnh (LM-104) — trên điện thoại chữ rút còn "Duyệt" để thanh 390 px vẫn một hàng; tên
- * truy cập giữ đủ.
- */
-function ApproveButton({ kind, short = false, blockedReason, loading = false, onClick }: {
+function ApproveButton({ kind, blockedReason, loading = false, onClick }: {
   kind: 'plan' | 'draft' | 'save'
-  short?: boolean
   blockedReason: string | null
   loading?: boolean
   onClick: () => void
@@ -104,13 +96,12 @@ function ApproveButton({ kind, short = false, blockedReason, loading = false, on
     <Button
       variant="primary"
       className="h-14 px-4 text-body-lg xl:h-10 xl:text-body"
-      aria-label={short ? label : undefined}
       aria-describedby={blockedReason ? reasonId : undefined}
       loading={loading}
       onClick={onClick}
     >
       {loading ? null : <Icon strokeWidth={1.5} />}
-      {short ? <><span className="md:hidden">{t('viewer.plan.approveShort')}</span><span className="hidden md:inline">{label}</span></> : label}
+      {label}
     </Button>
   )
   if (!blockedReason) return button

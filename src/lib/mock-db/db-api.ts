@@ -72,8 +72,8 @@ type CoreMockDb = {
   approveRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
   /**
    * Lưu bản chỉnh tay (LM-108): như Duyệt — revision **mới** áp `patches`, tính lại thứ tự và metrics, revision nguồn giữ nguyên — nhưng
-   * **chưa duyệt**: là bản mới nhất nên vào hàng đợi `/duyet` của quản lý công ty. Điều phối viên dùng khi chỉnh tay mà không có quyền
-   * Duyệt. Từ chối như `approveRevision`, thêm `NO_EDITS` khi không có patch.
+   * **chưa duyệt**: là bản mới nhất của chuyến, chờ quản lý công ty duyệt trong Planner. Điều phối viên dùng khi chỉnh tay mà không có
+   * quyền Duyệt. Từ chối như `approveRevision`, thêm `NO_EDITS` khi không có patch.
    */
   saveEditedRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
 

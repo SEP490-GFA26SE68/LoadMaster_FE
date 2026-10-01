@@ -35,7 +35,6 @@ export const titles = {
   shipment: 'Lô hàng {id}',
   receiving: 'Nhận hàng',
   orders: 'Đơn hàng',
-  review: 'Chờ duyệt',
   vehicleTypes: 'Loại xe',
   tripReport: 'Báo cáo chuyến {id}',
 } as const

@@ -20,7 +20,6 @@ export const audit = {
       created: 'Created shipment', updated: 'Edited shipment', deleted: 'Deleted draft shipment', handedOver: 'Handed over shipment', packageReceived: 'Scanned package in',
     },
     order: { created: 'Created order', updated: 'Edited order', cancelled: 'Cancelled order', assigned: 'Assigned order to stop', unassigned: 'Unassigned order' },
-    review: { rejected: 'Rejected plan', reoptimizeRequested: 'Requested re-optimization', changeSuggested: 'Suggested vehicle change or trip split' },
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
   },
   groups: {
@@ -36,7 +35,6 @@ export const audit = {
     package: 'Registered packages',
     shipment: 'Shipments',
     order: 'Orders',
-    review: 'Review decisions',
     vehicleType: 'Vehicle types',
   },
   log: {
@@ -104,7 +102,6 @@ export const audit = {
       received: 'Received',
       customerName: 'Customer',
       tripId: 'Trip',
-      suggestion: 'Suggestion',
       objective: 'Objective',
       algorithm: 'Algorithm',
       reasonCode: 'Reason',

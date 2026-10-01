@@ -13,7 +13,6 @@ import { TripFormSection } from '@/features/trips/TripFormSection'
 import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
-import { OpenDecisionBanner } from './OpenDecisionBanner'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
 import { OptimizationSetupHero } from './OptimizationSetupHero'
@@ -25,7 +24,6 @@ import { SetupAfterSteps } from './SetupAfterSteps'
 import { SetupContextPanels } from './SetupContextPanels'
 import { SetupLimitsPanel } from './SetupLimitsPanel'
 import { SetupAdvancedFields, SetupRequirementFields } from './SetupSettingsFields'
-import { useRunHistoryQuery } from './useOptimizationRuns'
 import { useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
 /**
@@ -42,7 +40,6 @@ export function OptimizationSetupPage() {
   const format = useFormat()
   const query = useOptimizationSetupQuery(tripId)
   const run = useOptimizationRun(tripId)
-  const openDecision = useRunHistoryQuery(tripId).data?.openDecision
   const [failure, setFailure] = useState<OptimizationFailure | null>(null)
 
   const schema = useMemo(() => z.object({
@@ -122,8 +119,6 @@ export function OptimizationSetupPage() {
         onRun={() => void handleRun()}
       >
         {setup && locked ? <TripLockBanner trip={setup.trip} /> : null}
-        {/* Quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó: lý do nằm ngay chỗ điều phối sẽ chạy lại (LM-104) */}
-        {setup && !locked && openDecision ? <OpenDecisionBanner tripId={tripId} /> : null}
       </OptimizationSetupHero>
 
       {query.isPending ? (
@@ -147,7 +142,7 @@ export function OptimizationSetupPage() {
                 <SetupAdvancedFields form={form} />
               </section>
             </Card>
-            {/* Lịch sử lần chạy (LM-104): mục tiêu, thuật toán, kết quả và số phận của từng phương án */}
+            {/* Lịch sử lần chạy (LM-104): mục tiêu, thuật toán, kết quả và phương án đã duyệt hay còn chờ duyệt */}
             <RunHistoryCard tripId={tripId} />
           </div>
           <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-0">

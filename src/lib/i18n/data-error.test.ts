@@ -45,7 +45,6 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_ALREADY_RECEIVED: { packageId: 'RPK-0001' },
   ORDER_STATUS_INVALID: { orderId: 'ORD-001', status: 'assigned' },
   STOP_NOT_FOUND: { tripId: 'TRIP-014', stopId: 'STOP-09' },
-  REVISION_NOT_REVIEWABLE: { revisionId: 'REV-002' },
   VEHICLE_TYPE_INVALID: { field: 'payloadKg' },
   VEHICLE_TYPE_IN_USE: { vehicleTypeId: 'VT-001', vehicleIds: ['VEHICLE-001'] },
   PACKAGE_NOT_IN_TRIP: { tripId: 'TRIP-011', token: 'LM-0000-0000-0000' },

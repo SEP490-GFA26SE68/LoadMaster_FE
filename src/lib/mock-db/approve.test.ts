@@ -134,7 +134,21 @@ test('a draft cannot move a package the revision did not place, and an unknown r
   expect(await db.listRevisions(trip.id)).toStrictEqual([revision])
 })
 
-test('saving a manual edit (LM-108) creates a new unapproved revision that the company manager then finds in the review queue', async () => {
+test('approval records the signed-in user as the approver, in the revision and in the audit log; without a session there is none', async () => {
+  const db = createMockDb()
+  const { trip, revision: source } = await optimizedTwoCartonTrip(db)
+  expect((await db.approveRevision(source.id, [])).approvedBy).toBeNull()
+  await db.authenticate('quanly@loadmaster.vn', 'loadmaster')
+  const approved = await db.approveRevision(source.id, [])
+  expect(approved.approvedBy).toBe('US-0002')
+  expect((await db.listEvents({ targetId: trip.id }))[0]).toMatchObject({
+    action: 'revision.approved',
+    actorId: 'US-0002',
+    params: { revisionId: approved.id, sourceRevisionId: source.id, edits: 0 },
+  })
+})
+
+test('saving a manual edit (LM-108) creates a new unapproved revision and leaves the source revision as it was', async () => {
   vi.setSystemTime(new Date('2026-09-15T08:30:00.000Z'))
   const db = createMockDb()
   const { trip, revision: source } = await optimizedTwoCartonTrip(db)
@@ -153,10 +167,10 @@ test('saving a manual edit (LM-108) creates a new unapproved revision that the c
   expect(edited.result.placements).toStrictEqual((await db.approveRevision(source.id, [LIFT_ONTO_PKG_002])).result.placements)
 })
 
-test('the saved edit is the one waiting in the review queue, and an edit without any move is refused (LM-108)', async () => {
+test('the saved edit is the newest revision of the trip, and an edit without any move is refused (LM-108)', async () => {
   const db = createMockDb()
   const { trip, revision: source } = await optimizedTwoCartonTrip(db)
   const edited = await db.saveEditedRevision(source.id, [LIFT_ONTO_PKG_002])
-  expect((await db.listReviewQueue()).find((item) => item.tripId === trip.id)).toMatchObject({ revisionId: edited.id, manuallyEdited: true })
+  expect((await db.listRevisions(trip.id)).at(-1)).toMatchObject({ id: edited.id, manuallyEdited: true })
   await expect(db.saveEditedRevision(source.id, [])).rejects.toMatchObject({ code: 'NO_EDITS' })
 })

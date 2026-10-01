@@ -108,9 +108,9 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng' })).toBeInTheDocument()
 
   await user.click(within(await rowOf('Trần Thị Mai')).getByText('quanly@loadmaster.vn'))
-  // Quản lý công ty: 11 quyền của PRD v2, cộng duyệt phương án, hàng đợi duyệt và xem đơn hàng còn tạm (FE-0-01)
+  // Quản lý công ty: 11 quyền của PRD v2, cộng duyệt phương án và xem đơn hàng còn tạm (FE-0-01)
   const next = screen.getByRole('complementary', { name: 'Chi tiết tài khoản Trần Thị Mai' })
-  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(14)
+  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(13)
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(within(next).getByRole('button', { name: 'Đóng chi tiết tài khoản' }))

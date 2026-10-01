@@ -167,7 +167,7 @@ export const admin = {
       trips: { view: 'Xem chuyến hàng', edit: 'Tạo, sửa, huỷ chuyến' },
       routes: { optimize: 'Tối ưu tuyến' },
       optimization: { run: 'Chạy tối ưu' },
-      plans: { view: 'Xem phương án 3D và so sánh', approve: 'Chỉnh sửa và duyệt phương án', review: 'Hàng đợi chờ duyệt: duyệt, từ chối, yêu cầu tối ưu lại' },
+      plans: { view: 'Xem phương án 3D và so sánh', approve: 'Chỉnh sửa và duyệt phương án' },
       manualConfirm: { approve: 'Duyệt kiện xác nhận tay' },
       monitoring: { view: 'Xem giám sát chuyến đang chạy' },
       fleet: { view: 'Xem đội xe', edit: 'Thêm, sửa, xoá xe và bảo dưỡng' },

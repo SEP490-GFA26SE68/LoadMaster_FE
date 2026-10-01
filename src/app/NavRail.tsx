@@ -1,6 +1,5 @@
 import {
   Box,
-  ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -56,9 +55,8 @@ type NavItem = {
 const NAV_ITEMS = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
-  // LM-104: đơn hàng của điều phối, hàng đợi duyệt của quản lý, nguồn hàng của nhà sản xuất, nhận hàng của logistics
+  // LM-104: đơn hàng của điều phối, nguồn hàng của nhà sản xuất, nhận hàng của logistics
   { to: '/don-hang', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view', roles: ['dispatcher'] },
-  { to: '/duyet', labelKey: 'nav.review', icon: ClipboardCheck, permission: 'plans.review', roles: ['manager'] },
   { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.register', roles: ['manufacturer'] },
   { to: '/lo-hang', labelKey: 'nav.shipments', icon: PackageCheck, permission: 'shipments.manage', roles: ['manufacturer'] },
   { to: '/loai-kien', labelKey: 'nav.packageTypes', icon: Shapes, permission: 'packages.register', roles: ['manufacturer'] },

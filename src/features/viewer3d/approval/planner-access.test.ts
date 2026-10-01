@@ -40,10 +40,3 @@ test('an account that may neither edit nor approve reads the plan only (LM-104)'
   expect(plannerAccess({ phase: 'planning', canApprove: false, approvedAt: APPROVED_AT, hasEdits: false }))
     .toStrictEqual({ lock: 'readOnly', approve: null, approvedAt: APPROVED_AT, notice: null })
 })
-
-test('a plan the company manager sent back is view only for everyone, but a trip phase still wins (LM-104)', () => {
-  expect(plannerAccess({ canApprove: true, approvedAt: null, hasEdits: false, decided: true }))
-    .toStrictEqual({ lock: 'decided', approve: null, approvedAt: null, notice: null })
-  expect(plannerAccess({ canApprove: false, canEdit: true, approvedAt: null, hasEdits: false, decided: true }).lock).toBe('decided')
-  expect(plannerAccess({ phase: 'cancelled', canApprove: true, approvedAt: null, hasEdits: false, decided: true }).lock).toBe('cancelled')
-})

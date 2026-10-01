@@ -8,7 +8,6 @@ import type {
   OptimizationRun,
   PackageType,
   RegisteredPackage,
-  ReviewDecision,
   Shipment,
   TransportOrder,
   VehicleType,
@@ -36,8 +35,6 @@ export type DbState = {
   registeredPackages: Map<string, RegisteredPackage>
   shipments: Map<string, Shipment>
   orders: Map<string, TransportOrder>
-  /** Cũ trước. */
-  reviews: ReviewDecision[]
   runs: Map<string, OptimizationRun>
   vehicleTypes: Map<string, VehicleType>
   /** Xe → loại xe; lưu ngoài `VehicleConfig` (D-04). */

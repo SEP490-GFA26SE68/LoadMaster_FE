@@ -4,7 +4,7 @@ import { R3F_DEPS, type R3FModule } from './viewer-helpers'
 
 /**
  * Chỉnh tay trong Planner (LM-108): điều phối viên kéo / nhích kiện được như Planner trước LM-104, trọng lực làm kiện đang tựa lên kiện
- * bị kéo đi rơi xuống, và "Lưu bản chỉnh" gửi bản mới vào hàng đợi duyệt của quản lý công ty.
+ * bị kéo đi rơi xuống, và "Lưu bản chỉnh" tạo bản mới chưa duyệt chờ quản lý công ty.
  * Chồng kiện của chuyến mẫu: `PKG-001-16` nằm sàn (dài 60 cm, cao 50 cm), `PKG-001-05` tựa lên nó ở z = 50; phía cửa còn trống 130 cm.
  */
 const BOTTOM = 'PKG-001-16'
@@ -20,7 +20,7 @@ async function select(page: Page, id: string) {
   await expect(picker).toHaveValue(id)
 }
 
-test('the dispatcher edits by hand: pulling the bottom package out drops the one on top, undo lifts it back, "Save edits" queues it for the manager', async ({ page, login, browserErrors }) => {
+test('the dispatcher edits by hand: pulling the bottom package out drops the one on top, undo lifts it back, "Save edits" leaves a new unapproved revision', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
   await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
@@ -51,14 +51,14 @@ test('the dispatcher edits by hand: pulling the bottom package out drops the one
   await button(page, 'Lưu bản chỉnh').click()
   await expect(page).toHaveURL(/revision=REV-\d+/)
   const saved = new URL(page.url()).searchParams.get('revision')
-  // Bản vừa lưu chưa duyệt: điều phối viên thấy dòng chờ quản lý, và nó đứng trong hàng đợi duyệt
+  // Bản vừa lưu chưa duyệt: điều phối viên thấy dòng chờ quản lý, và nó là bản mới nhất của chuyến
   await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toBeVisible()
-  const queued = await page.evaluate(async ({ url, tripId }) => {
+  const newest = await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
-    return (await getMockDb().listReviewQueue()).find((item) => item.tripId === tripId)
+    return (await getMockDb().listRevisions(tripId)).at(-1)
   }, { url: MOCK_DB, tripId: 'TRIP-2026-0914' })
-  expect(queued?.revisionId).toBe(saved)
-  expect(queued?.manuallyEdited).toBe(true)
+  expect(newest?.id).toBe(saved)
+  expect([newest?.manuallyEdited, newest?.approvedAt]).toStrictEqual([true, undefined])
   expect(browserErrors).toStrictEqual([])
 })
 

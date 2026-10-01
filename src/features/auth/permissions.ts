@@ -40,9 +40,8 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
-  // Tạm, không có trong ma trận PRD v2: hàng đợi duyệt của quản lý (bỏ ở FE-0-07), đơn hàng (giữ tới FE-4b-02, quyết định G3),
-  // nguồn hàng của nhà sản xuất và nhận hàng của logistics (bỏ ở FE-0-06).
-  'plans.review',
+  // Tạm, không có trong ma trận PRD v2: đơn hàng (giữ tới FE-4b-02, quyết định G3), nguồn hàng của nhà sản xuất và nhận hàng của
+  // logistics (bỏ ở FE-0-06).
   'orders.view',
   'orders.edit',
   'packages.register',
@@ -55,7 +54,7 @@ export type Permission = (typeof PERMISSIONS)[number]
 /**
  * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2, trừ
  * ba chỗ còn tạm:
- * - `plans.approve` vẫn ở Quản lý công ty; FE-0-07 chuyển sang Điều phối viên cùng lúc với Planner và bỏ `plans.review`.
+ * - `plans.approve` vẫn ở Quản lý công ty; FE-0-07 chuyển sang Điều phối viên cùng lúc với Planner.
  * - `orders.view` / `orders.edit` giữ nguyên tới khi Yêu cầu giao thay Đơn hàng (FE-4b-02).
  * - `manufacturer`, `logistics` và ba quyền của họ còn tới FE-0-06.
  *
@@ -70,7 +69,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.approve', 'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
-    'plans.review', 'orders.view',
+    'orders.view',
   ],
   dispatcher: [
     'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',

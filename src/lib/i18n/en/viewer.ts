@@ -8,7 +8,6 @@ export const viewer = {
     placed: 'Placed',
     manuallyEdited: 'Manually edited',
     approve: 'Approve plan',
-    approveShort: 'Approve',
     approveDraft: 'Approve edits',
     saveEdits: 'Save edits',
     saved: 'Saved {revisionId} — waiting for company manager approval.',
@@ -112,7 +111,6 @@ export const viewer = {
     cancelled: 'The trip was cancelled — the plan is view only.',
     awaitingApproval: 'Waiting for company manager approval. You can still edit by hand — "Save edits" sends a new version to the manager.',
     readOnly: 'View only: only the company manager edits and approves plans.',
-    decided: 'The company manager sent this plan back — view only.',
   },
   axles: {
     title: 'Axle load',

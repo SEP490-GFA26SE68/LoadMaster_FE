@@ -39,7 +39,7 @@ export async function approvePlanRevision(revisionId: string, patches: readonly 
   return getMockDb().approveRevision(revisionId, patches)
 }
 
-/** Lưu bản chỉnh tay chưa duyệt (LM-108): điều phối viên gửi bản đã dời / xoay kiện vào hàng đợi duyệt của quản lý công ty. */
+/** Lưu bản chỉnh tay chưa duyệt (LM-108): bản đã dời / xoay kiện của điều phối viên thành revision mới chờ quản lý công ty duyệt. */
 export async function saveEditedPlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
   return getMockDb().saveEditedRevision(revisionId, patches)
 }
