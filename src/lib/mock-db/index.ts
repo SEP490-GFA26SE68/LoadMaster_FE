@@ -13,7 +13,6 @@ export {
   missingIds,
   plannedStops,
   stopItemIds,
-  isStaleTrip,
   tripStatus,
   tripSubStatus,
 } from './operations'

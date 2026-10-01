@@ -3,7 +3,7 @@ import { useId, useMemo } from 'react'
 import { Box } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable, type BaseTableFeatures, type ColumnMeta } from '@/components/DataTable'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { VehicleName } from '@/components/VehicleName'
 import type { Formatter } from '@/lib/format'
@@ -52,10 +52,16 @@ function createColumns(t: TFunction, format: Formatter) {
       meta: { width: '200px' } satisfies ColumnMeta,
       cell: (info) => <VehicleName name={info.getValue()} className="line-clamp-2 whitespace-normal text-ink-1" />,
     }),
+    // Chip và dòng phụ như danh sách chuyến (FE-0-05): hai dòng vừa hàng 56 px, cột rộng bằng cột trạng thái của danh sách
     helper.accessor('status', {
       header: t('manager.recent.status'),
-      meta: { width: '148px' } satisfies ColumnMeta,
-      cell: (info) => <StatusBadge status={info.getValue()} />,
+      meta: { width: '184px' } satisfies ColumnMeta,
+      cell: (info) => (
+        <span className="flex flex-col items-start gap-1">
+          <StatusBadge status={info.getValue()} />
+          <TripSubStatusTag sub={info.row.original.sub} />
+        </span>
+      ),
     }),
     helper.accessor('packageCount', {
       header: t('manager.recent.packages'),

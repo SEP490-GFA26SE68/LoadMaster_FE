@@ -62,7 +62,7 @@ test('search ignores accents, filters combine, and a filter change goes back to 
 
 test('a filter with no match says so inside the table and clears everything in one click', async () => {
   const user = userEvent.setup()
-  render(renderTripList('/chuyen?trang-thai=da_duyet&sap-xep=id'))
+  render(renderTripList('/chuyen?trang-thai=da-lap-ke-hoach&sap-xep=id'))
 
   await user.type(screen.getByRole('searchbox'), 'vung tau')
   expect(screen.getByRole('status')).toHaveTextContent('Không có kết quả khớp bộ lọc')
@@ -103,10 +103,10 @@ test('pages of 25 by default, next and previous, page size 50, all on the URL', 
 
 test('opening the list from a URL restores it, and coming back from a detail page keeps it', async () => {
   const user = userEvent.setup()
-  render(renderTripList('/chuyen?q=bien+hoa&trang-thai=da_duyet&tu=2026-09-05&sap-xep=id'))
+  render(renderTripList('/chuyen?q=bien+hoa&trang-thai=da-lap-ke-hoach&tu=2026-09-05&sap-xep=id'))
 
   expect(screen.getByRole('searchbox')).toHaveValue('bien hoa')
-  expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Đã duyệt')
+  expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Đã lập kế hoạch')
   expect(screen.getByLabelText('Từ ngày')).toHaveValue('2026-09-05')
   expect(header('Mã chuyến')).toHaveAttribute('aria-sort', 'ascending')
   expect(firstCells()).toStrictEqual(['TRIP-006', 'TRIP-009', 'TRIP-011', 'TRIP-014', 'TRIP-021', 'TRIP-024', 'TRIP-026', 'TRIP-029'])
@@ -115,7 +115,7 @@ test('opening the list from a URL restores it, and coming back from a detail pag
   expect(url()).toBe('/chuyen/TRIP-011')
   await user.click(screen.getByRole('button', { name: 'Quay lại danh sách' }))
 
-  expect(url()).toBe('/chuyen?q=bien+hoa&trang-thai=da_duyet&tu=2026-09-05&sap-xep=id')
+  expect(url()).toBe('/chuyen?q=bien+hoa&trang-thai=da-lap-ke-hoach&tu=2026-09-05&sap-xep=id')
   expect(screen.getByRole('searchbox')).toHaveValue('bien hoa')
   expect(firstCells()[0]).toBe('TRIP-006')
 })

@@ -11,7 +11,7 @@ import { StyleSheetPage } from './StyleSheetPage'
 /**
  * Hai trang tài liệu V2.3 đọc kho thật (`@/lib/mock-db`, seed neo 14/09/2026) qua hook của chính các màn — không giả lập module nào.
  * Số kỳ vọng lấy từ nguồn độc lập với code: bản mẫu `design/v2.3/screens/web/ThanhPhan.jpg` in "7 / 12" chuyến hoàn thành, 15 chuyến,
- * "Cần xử lý 2"; tên chuyến đầu kho lấy từ `seed-trips.ts`.
+ * 2 chuyến cần xử lý; tên chuyến đầu kho lấy từ `seed-trips.ts`.
  */
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -43,14 +43,16 @@ test('/kieu-dang: dải trời có đường dẫn và tiêu đề, thẻ dựng
   const crumb = screen.getByRole('navigation', { name: 'Vị trí trang' })
   expect(within(crumb).getByText('/kieu-dang')).toHaveAttribute('aria-current', 'page')
 
-  // Năm trạng thái của backend cộng Đã huỷ (LM-104), đúng nhãn `StatusBadge`
-  for (const label of ['Nháp', 'Đã tối ưu', 'Đã duyệt', 'Đang vận chuyển', 'Hoàn thành', 'Đã huỷ']) {
+  // Sáu trạng thái của backend (FE-0-05), đúng nhãn `StatusBadge`
+  for (const label of ['Nháp', 'Đã lập kế hoạch', 'Đang xếp hàng', 'Đang vận chuyển', 'Đã giao', 'Đã huỷ']) {
     expect(screen.getByText(label)).toBeInTheDocument()
   }
-  // Dòng phụ lấy từ chuyến thật của kho: TRIP-013 lỗi thời, TRIP-011 kho đang xếp 110 / 280, TRIP-010 đã xếp xong
-  expect(await screen.findByText('Kho đang xếp 110 / 280', {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByText('Lỗi thời — cần tối ưu lại')).toBeInTheDocument()
-  expect(screen.getByText('Đã xếp xong')).toBeInTheDocument()
+  // Dòng phụ lấy từ chuyến thật của kho: TRIP-012 chờ duyệt, chuyến chính đã duyệt, TRIP-013 lỗi thời, TRIP-011 kho đang xếp
+  // 110 / 280, TRIP-010 xếp xong
+  expect(await screen.findByText('Đang xếp 110 / 280', {}, SLOW)).toBeInTheDocument()
+  for (const line of ['Chờ duyệt', 'Đã duyệt', 'Lỗi thời — cần tối ưu lại', 'Xếp xong — chờ xuất phát']) {
+    expect(screen.getByText(line)).toBeInTheDocument()
+  }
 
   // Thang chữ dùng tên chuyến đầu kho và mã của nó
   expect(await screen.findByText('Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', {}, SLOW)).toBeInTheDocument()
@@ -79,10 +81,11 @@ test('/thanh-phan: bảng, tab và ô số liệu đếm chuyến thật của k
   expect(await screen.findByText('1–15 / 15', {}, SLOW)).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Bảng' })).getByText('TRIP-2026-0914 · 4 điểm giao')).toBeInTheDocument()
 
-  // Tab trên dải trời: "Cần xử lý" đếm chuyến đã tối ưu chờ duyệt, kể cả bản lỗi thời
-  const groups = screen.getByRole('tablist', { name: 'Nhóm chuyến' })
+  // Tab trên dải trời: tab "Đã lập kế hoạch" có 3 chuyến, số hổ phách đếm 2 chuyến chờ duyệt hoặc lỗi thời
+  const groups = screen.getByRole('tablist', { name: 'Trạng thái chuyến' })
   expect(within(groups).getByRole('tab', { name: /^Tất cả\s*15$/ })).toHaveAttribute('aria-selected', 'true')
-  expect(within(groups).getByRole('tab', { name: /^Cần xử lý\s*2$/ })).toBeInTheDocument()
+  expect(within(groups).getByRole('tab', { name: /^Đã lập kế hoạch\s*3\s*2 cần bạn xử lý$/ })).toBeInTheDocument()
+  expect(within(groups).getByRole('tab', { name: /^Đã giao\s*7$/ })).toBeInTheDocument()
 
   // Ô số liệu kính: kỳ 30 ngày mặc định như Bảng điều khiển
   const completed = await screen.findByRole('group', { name: 'Chuyến hoàn thành' }, SLOW)

@@ -5,9 +5,9 @@ import { BAR_FILL, ChartTooltip, HOVER_CURSOR, INITIAL_SIZE, rowsHeight, TICK, V
 import type { DashboardSummary } from './dashboard-summary'
 
 /**
- * Chuyến theo trạng thái, cột ngang theo thứ tự vòng đời (nháp → hoàn thành → huỷ). Nhãn trạng thái nằm trên trục, số chuyến ở
- * đầu mỗi cột nên không cần trục số; tổng chuyến của kỳ ở góc phải tiêu đề, tỷ lệ trên tổng trong tooltip và bảng số. Một màu cho
- * mọi cột: màu badge trạng thái để dành cho badge, không mượn làm màu chuỗi.
+ * Chuyến theo sáu trạng thái của backend, cột ngang theo thứ tự vòng đời (nháp → đã giao → huỷ). Nhãn trạng thái nằm trên trục, số
+ * chuyến ở đầu mỗi cột nên không cần trục số; tổng chuyến của kỳ ở góc phải tiêu đề, tỷ lệ trên tổng trong tooltip và bảng số. Một
+ * màu cho mọi cột: màu badge trạng thái để dành cho badge, không mượn làm màu chuỗi.
  */
 export function TripsByStatusChart({ entries, total, className }: {
   entries: DashboardSummary['tripsByStatus']

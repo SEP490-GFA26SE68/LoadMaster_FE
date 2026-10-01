@@ -15,13 +15,15 @@ test('in-progress trip first with Continue (110/280), then the approved trip, th
   const list = await screen.findByRole('list', { name: 'Chuyến cần xếp' }, LOAD)
   expect(within(list).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011', 'TRIP-2026-0914', 'TRIP-013'])
 
+  // Chip trạng thái và dòng phụ như mọi màn (FE-0-05)
   const loading = cardOf('TRIP-011')
-  expect(loading.getByText('Đã duyệt')).toBeInTheDocument()
-  expect(loading.getByText('Kho đang xếp 110 / 280')).toBeInTheDocument()
+  expect(loading.getByText('Đang xếp hàng')).toBeInTheDocument()
+  expect(loading.getByText('Đang xếp 110 / 280')).toBeInTheDocument()
   expect(loading.getByRole('link', { name: 'Tiếp tục (110/280)' })).toHaveAttribute('href', '/kho?chuyen=TRIP-011')
   expect(loading.getByRole('progressbar', { name: 'Tiến độ xếp chuyến TRIP-011' })).toHaveAttribute('aria-valuenow', '39')
 
   const approved = cardOf('TRIP-2026-0914')
+  expect(approved.getByText('Đã lập kế hoạch')).toBeInTheDocument()
   expect(approved.getByText('Đã duyệt')).toBeInTheDocument()
   expect(approved.getByText('14/09/2026')).toBeInTheDocument()
   expect(approved.getByText('Hyundai HD210 · 60C-446.32')).toBeInTheDocument()
@@ -30,7 +32,7 @@ test('in-progress trip first with Continue (110/280), then the approved trip, th
   expect(approved.getByRole('link', { name: 'Bắt đầu xếp' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')
 
   const stale = cardOf('TRIP-013')
-  expect(stale.getByText('Đã tối ưu')).toBeInTheDocument()
+  expect(stale.getByText('Đã lập kế hoạch')).toBeInTheDocument()
   expect(stale.getByText('Lỗi thời — cần tối ưu lại')).toBeInTheDocument()
   expect(stale.getByText(/^Phương án đã duyệt lỗi thời/)).toBeInTheDocument()
   expect(stale.queryByRole('link')).not.toBeInTheDocument()

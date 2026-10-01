@@ -2,6 +2,7 @@ import type { Cell, Row } from 'write-excel-file/browser'
 import { roundKg } from '@/domain/geometry'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
+import { tripSubStatusLabel } from '@/lib/trip-sub-status'
 import type { DashboardSummary } from './dashboard-summary'
 
 /**
@@ -16,7 +17,13 @@ const COUNT = '#,##0'
 const KG = '#,##0.00'
 const PERCENT = '0.0'
 
-const TRIP_COLUMNS = ['id', 'name', 'date', 'vehicle', 'driver', 'status', 'packages', 'cargoWeight', 'volume', 'delivered', 'issues'] as const
+/**
+ * Cột của sheet Chuyến. `statusDetail` là dòng phụ của trạng thái (FE-0-05): chờ duyệt / đã duyệt / lỗi thời, tiến độ kho — cột riêng
+ * để cột Trạng thái chỉ có sáu giá trị, lọc được trong Excel.
+ */
+const TRIP_COLUMNS = [
+  'id', 'name', 'date', 'vehicle', 'driver', 'status', 'statusDetail', 'packages', 'cargoWeight', 'volume', 'delivered', 'issues',
+] as const
 
 const bold = (value: string): Cell => ({ value, fontWeight: 'bold' })
 const numberCell = (value: number | null, format: string): Cell => (value === null ? null : { value, format })
@@ -27,11 +34,12 @@ export function reportSheets(summary: DashboardSummary, t: TFunction, format: Fo
     { sheet: t('manager.export.sheets.overview'), columns: [{ width: 32 }, { width: 24 }, { width: 10 }, { width: 70 }], data: overview(summary, t, format, exportedAt) },
     {
       sheet: t('manager.export.sheets.trips'),
-      columns: [14, 42, 14, 34, 24, 16, 10, 20, 28, 22, 12].map((width) => ({ width })),
+      columns: [14, 42, 14, 34, 24, 16, 28, 10, 20, 28, 22, 12].map((width) => ({ width })),
       data: [
         TRIP_COLUMNS.map((key) => bold(t(`manager.export.trips.${key}`))),
         ...summary.trips.map((row): Row => [
           row.id, row.name, dateCell(row.scheduledDate), row.vehicleName, row.driverName, t(`status.${row.status}`),
+          row.sub ? tripSubStatusLabel(row.sub, t, format) : null,
           numberCell(row.packageCount, COUNT), numberCell(roundKg(row.cargoWeightKg), KG), numberCell(row.volumePercent, PERCENT),
           numberCell(roundKg(row.deliveredWeightKg), KG), numberCell(row.issueCount, COUNT),
         ]),

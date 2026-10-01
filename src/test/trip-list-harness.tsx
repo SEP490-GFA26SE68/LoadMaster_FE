@@ -11,7 +11,7 @@ import { isWithinDateRange, matchesQuery } from '@/lib/list-filter'
  * Màn danh sách chuyến thu nhỏ cho DOM test LM-085: `FilterBar` + `DataTable` + `useListUrlState` trong MemoryRouter,
  * đúng cách các màn chuyến, đội xe, người dùng, nhật ký sẽ ghép. Bấm một dòng mở trang chi tiết có nút Quay lại.
  */
-export type TripFixture = { id: string; route: string; date: string; status: 'nhap' | 'da_duyet'; packages: number }
+export type TripFixture = { id: string; route: string; date: string; status: 'nhap' | 'da-lap-ke-hoach'; packages: number }
 
 const ROUTES = [
   'Tuyến Thủ Đức – Dĩ An – Biên Hoà',
@@ -32,7 +32,7 @@ export const TRIPS: readonly TripFixture[] = Array.from({ length: 30 }, (_, inde
     id: `TRIP-${String(number).padStart(3, '0')}`,
     route: ROUTES[index % ROUTES.length]!,
     date: `2026-09-${String(number).padStart(2, '0')}`,
-    status: index % 3 === 0 ? 'nhap' : 'da_duyet',
+    status: index % 3 === 0 ? 'nhap' : 'da-lap-ke-hoach',
     packages: number === 7 ? 150 : number === 13 ? 12 : 40 + number,
   }
 })
@@ -48,7 +48,7 @@ const COLUMNS = helper.columns([
 
 const STATUS_OPTIONS = [
   { value: 'nhap', label: 'Nháp' },
-  { value: 'da_duyet', label: 'Đã duyệt' },
+  { value: 'da-lap-ke-hoach', label: 'Đã lập kế hoạch' },
 ]
 
 function TripList() {

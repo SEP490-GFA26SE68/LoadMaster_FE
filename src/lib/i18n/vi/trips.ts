@@ -31,15 +31,14 @@ export const trips = {
       transit: 'đang vận chuyển',
       review: 'cần bạn xử lý',
     },
-    /** Tab trên dải trời là bộ lọc trạng thái (`trang-thai`); số của tab theo tìm và các bộ lọc khác. */
+    /**
+     * Tab trên dải trời là bộ lọc trạng thái (`trang-thai`); số của tab theo tìm và các bộ lọc khác. Nhãn tab trạng thái lấy ở nhánh
+     * `status`. `needAction`: số hổ phách trên tab Đã lập kế hoạch (phương án chờ duyệt hoặc lỗi thời).
+     */
     tabs: {
-      label: 'Giai đoạn của chuyến',
+      label: 'Trạng thái của chuyến',
       all: 'Tất cả',
-      review: 'Cần xử lý',
-      upcoming: 'Sắp chạy',
-      transit: 'Đang vận chuyển',
-      completed: 'Hoàn thành',
-      cancelled: 'Đã huỷ',
+      needAction: { one: '{count} cần bạn xử lý', other: '{count} cần bạn xử lý' },
     },
     /** Bộ lọc dạng chip trong đầu thẻ bảng: "Xe: tất cả". */
     chip: '{label}: {value}',
@@ -446,7 +445,7 @@ export const trips = {
     code: 'Kiện',
     /** Cảnh báo đầu form: lưu thay đổi làm revision đang hiển thị lỗi thời (D-31). */
     staleLead: 'Lưu thay đổi sẽ làm {revision} lỗi thời.',
-    staleApproved: 'Chuyến về Đã tối ưu, cần tối ưu lại và quản lý công ty duyệt trước khi kho xếp.',
+    staleApproved: 'Bản đã duyệt hết hiệu lực, cần tối ưu lại và quản lý công ty duyệt trước khi kho xếp.',
     staleOptimized: 'Phương án thành lỗi thời, cần chạy tối ưu lại.',
     save: 'Lưu kiện',
     saveAndNew: 'Lưu và thêm tiếp',

@@ -2,7 +2,7 @@ import { roundKg } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
 import type { VehicleState, VehicleStatus } from '@/lib/mock-db'
 import { compareText } from '@/lib/list-filter'
-import type { TripStatus } from '@/types/trip'
+import { TRIP_STATUSES, type TripStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { daysOf, isWithinPeriod, type DateRange } from './dashboard-period'
 import { tripFacts, type TripFacts, type TripWithRevisions } from './trip-facts'
@@ -35,6 +35,7 @@ export type DashboardSummary = {
   readonly period: DateRange
   /** Chuyến có ngày chạy trong kỳ, gồm cả chuyến huỷ. */
   readonly tripCount: number
+  /** Chuyến Đã giao (`DELIVERED`) trong kỳ. */
   readonly completedCount: number
   /** Trung bình lấp đầy thể tích của bản đã duyệt mới nhất, chuyến không huỷ. */
   readonly fill: { readonly averagePercent: number | null; readonly planCount: number; readonly isMockResult: boolean }
@@ -51,18 +52,13 @@ export type DashboardSummary = {
   }
   /** Mỗi ngày của kỳ một phần tử; ngày không có bản đã duyệt thì `null`. */
   readonly fillByDay: readonly { readonly date: string; readonly averagePercent: number | null; readonly planCount: number }[]
-  /** Theo vòng đời chuyến, chỉ trạng thái có chuyến. */
+  /** Theo vòng đời chuyến (sáu trạng thái của backend, `TRIP_STATUSES`), chỉ trạng thái có chuyến. */
   readonly tripsByStatus: readonly { readonly status: TripStatus; readonly count: number }[]
   /** Xe có chuyến trong kỳ, khối lượng đã giao giảm dần. */
   readonly byVehicle: readonly VehicleSummary[]
   /** Chuyến trong kỳ, ngày chạy mới nhất trước. */
   readonly trips: readonly DashboardTripRow[]
 }
-
-/** Thứ tự vòng đời cho biểu đồ chuyến theo trạng thái: năm trạng thái của backend cộng Đã huỷ (LM-104). */
-const STATUS_ORDER: readonly TripStatus[] = [
-  'nhap', 'da_toi_uu', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy',
-]
 
 function average(values: readonly number[]): number | null {
   return values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length
@@ -99,7 +95,7 @@ export function summarizeDashboard(data: DashboardData, period: DateRange): Dash
   return {
     period,
     tripCount: rows.length,
-    completedCount: rows.filter((row) => row.status === 'hoan_thanh').length,
+    completedCount: rows.filter((row) => row.status === 'DELIVERED').length,
     fill: {
       averagePercent: average(fills),
       planCount: fills.length,
@@ -112,7 +108,7 @@ export function summarizeDashboard(data: DashboardData, period: DateRange): Dash
       const values = fillValues(rows.filter((row) => row.scheduledDate === date))
       return { date, averagePercent: average(values), planCount: values.length }
     }),
-    tripsByStatus: STATUS_ORDER
+    tripsByStatus: TRIP_STATUSES
       .map((status) => ({ status, count: rows.filter((row) => row.status === status).length }))
       .filter((entry) => entry.count > 0),
     byVehicle: summarizeVehicles(rows),

@@ -9,7 +9,7 @@ import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { todayInVietnam } from './trip-dates'
-import { filterTripRows, normalizeStatusFilter, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
+import { filterTripRows, needsAction, normalizeStatusFilter, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
 import { TripListSkeleton } from './TripListSkeleton'
 import { TripListTable } from './TripListTable'
@@ -22,8 +22,8 @@ const BY_DATE = 'scheduledDate'
 
 /**
  * Danh sách chuyến V2.3 (`ChuyenHang.jpg`; LM-053, LM-088, LM-103): đọc kho qua `useTripsQuery`. Dải trời có dòng số (cả kho) và tab
- * giai đoạn — tab là bộ lọc `trang-thai`; thẻ bảng đè lên dải có ô tìm bỏ dấu, chip ngày chạy / xe / tài xế, bảng nhóm theo ngày chạy
- * (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52).
+ * theo sáu trạng thái của chuyến (FE-0-05) — tab là bộ lọc `trang-thai`; thẻ bảng đè lên dải có ô tìm bỏ dấu, chip ngày chạy / xe /
+ * tài xế, bảng nhóm theo ngày chạy (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52).
  */
 export function TripListPage() {
   const navigate = useNavigate()
@@ -37,10 +37,11 @@ export function TripListPage() {
   const status = list.filters['trang-thai']
   const rows = useMemo(() => filterTripRows(trips, list.query, list.filters), [trips, list.query, list.filters])
   // Số trên tab: theo tìm và các bộ lọc khác, bỏ riêng bộ lọc trạng thái (chính là tab)
-  const tabCounts = useMemo(
-    () => tripTabCounts(filterTripRows(trips, list.query, { ...list.filters, 'trang-thai': '' })),
+  const tabRows = useMemo(
+    () => filterTripRows(trips, list.query, { ...list.filters, 'trang-thai': '' }),
     [trips, list.query, list.filters],
   )
+  const tabCounts = useMemo(() => tripTabCounts(tabRows), [tabRows])
   const stats = useMemo(() => tripTabCounts(trips), [trips])
   const countsByDate = useMemo(() => tripsPerDate(rows), [rows])
   const options = useMemo(() => {
@@ -50,7 +51,7 @@ export function TripListPage() {
   const [sort] = list.sorting
   const grouped = sort?.id === BY_DATE
   const newestFirst = sort?.desc ?? true
-  // Giá trị cũ trên URL (trước LM-104) đọc sang giá trị mới; giá trị lạ khác vẫn lọc được, chỉ là không tab nào sáng
+  // Giá trị cũ trên URL (trước FE-0-05) đọc sang slug mới; giá trị lạ không khớp chuyến nào và không tab nào sáng
   const tab = TRIP_LIST_TABS.find((item) => item.value === normalizeStatusFilter(status))?.key ?? status
   const hasTrips = trips.length > 0
   // Card đè lên dải trời chỉ khi thứ đầu tiên của vùng cuộn là thẻ nền đặc (bảng hoặc khung tải), không phải chữ trần
@@ -65,7 +66,9 @@ export function TripListPage() {
       <PageHero
         overlap={overlap}
         title={t('trips.list.title')}
-        description={hasTrips ? <TripListStats total={stats.all} transit={stats.transit} review={stats.review} /> : t('pageHero.trips')}
+        description={hasTrips
+          ? <TripListStats total={stats.all} transit={stats.IN_TRANSIT} review={trips.filter(needsAction).length} />
+          : t('pageHero.trips')}
         actions={hasTrips && canCreate ? (
           <Button variant="primary" asChild>
             <Link to="/chuyen/moi">
@@ -75,7 +78,9 @@ export function TripListPage() {
           </Button>
         ) : null}
       >
-        {query.isError || (query.isSuccess && !hasTrips) ? null : <TripListTabs counts={hasTrips ? tabCounts : null} />}
+        {query.isError || (query.isSuccess && !hasTrips)
+          ? null
+          : <TripListTabs counts={hasTrips ? tabCounts : null} needAction={tabRows.filter(needsAction).length} />}
       </PageHero>
 
       <div className={overlap ? 'sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-7' : 'flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6'}>

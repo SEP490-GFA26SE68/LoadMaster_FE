@@ -4,19 +4,17 @@ import { VehicleStatusBadge } from '@/features/fleet/VehicleStatusBadge'
 import { useTripsQuery } from '@/features/trips/useTripsQuery'
 import { useT } from '@/lib/i18n'
 import { STOP_COUNT, stopColor, stopForeground } from '@/lib/stops'
-import type { TripStatus, TripSubStatus } from '@/types/trip'
+import { TRIP_STATUSES, type TripSubStatus } from '@/types/trip'
 import { SheetCard } from '../SheetLayout'
 
-/** Theo vòng đời (LM-104: năm trạng thái của backend cộng Đã huỷ), hai cột đọc theo hàng: nháp · đã tối ưu, đã duyệt · đang vận chuyển… */
-const ORDER: readonly TripStatus[] = ['nhap', 'da_toi_uu', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy']
-
 /** Dòng phụ theo thứ tự vòng đời; mỗi loại lấy từ chuyến đầu tiên của kho đang có nó (số kho đang xếp là số thật). */
-const SUB_ORDER: readonly TripSubStatus['kind'][] = ['stale', 'loading', 'loaded']
+const SUB_ORDER: readonly TripSubStatus['kind'][] = ['awaitingApproval', 'approved', 'stale', 'loading', 'loaded']
 
 const STOPS = Array.from({ length: STOP_COUNT }, (_, index) => index + 1)
 
 /**
- * Chip trạng thái thật của app: chuyến (`StatusBadge`) và dòng phụ của nó (`TripSubStatusTag`), xe (`VehicleStatusBadge`), tài
+ * Chip trạng thái thật của app: chuyến (`StatusBadge` — sáu trạng thái của backend theo vòng đời, FE-0-05; hai cột đọc theo hàng:
+ * nháp · đã lập kế hoạch, đang xếp hàng · đang vận chuyển…) và dòng phụ của nó (`TripSubStatusTag`), xe (`VehicleStatusBadge`), tài
  * khoản (`UserStatusBadge`), rồi tám mốc điểm giao tô bằng `lib/stops` — đúng màu nền và màu chữ các màn đang dùng.
  */
 export function LifecycleCard() {
@@ -29,7 +27,7 @@ export function LifecycleCard() {
   return (
     <SheetCard title={t('designSystem.style.lifecycle.title')} meta={t('designSystem.style.lifecycle.meta')} className="col-span-12 lg:col-span-6">
       <dl className="m-0 grid grid-cols-1 gap-x-4.5 gap-y-2.5 sm:grid-cols-2">
-        {ORDER.map((status) => (
+        {TRIP_STATUSES.map((status) => (
           <div key={status} className="flex min-w-0 items-center gap-3">
             <dt><StatusBadge status={status} /></dt>
             <dd className="m-0 truncate text-small text-ink-3">{t(`designSystem.style.lifecycle.notes.${status}`)}</dd>

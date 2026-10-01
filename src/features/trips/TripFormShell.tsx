@@ -1,20 +1,21 @@
 import type { ReactNode } from 'react'
 import { PageHero } from '@/components/PageHero'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Trip } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { useRunDateText } from './trip-form-dates'
 
 /**
  * Khung màn tạo / sửa chuyến trên dải trời V2.3: đường dẫn "Chuyến hàng / Tạo chuyến mới" (sửa: "Chuyến hàng / TRIP-011 / Sửa"), tiêu
- * đề, chip trạng thái và dòng phụ của chuyến đang sửa (tên · ngày chạy · tiến độ xếp), hành động "Huỷ" + nút chính ở phải. Vùng cuộn
- * bắt đầu bằng card nền đặc nên dải trời kéo xuống đè (`overlap`).
+ * đề, chip trạng thái kèm dòng phụ của trạng thái (FE-0-05) và dòng dữ liệu của chuyến đang sửa (tên · ngày chạy · tiến độ xếp), hành
+ * động "Huỷ" + nút chính ở phải. Vùng cuộn bắt đầu bằng card nền đặc nên dải trời kéo xuống đè (`overlap`).
  */
-export function TripFormShell({ trip, status, actions, children }: {
+export function TripFormShell({ trip, status, sub, actions, children }: {
   /** Chuyến đang sửa; vắng khi tạo mới. `null`: màn sửa chưa có dữ liệu (đang tải, không tìm thấy). */
   trip?: { id: string; data: Trip | null }
   status?: TripStatus
+  sub?: TripSubStatus | null
   actions?: ReactNode
   children?: ReactNode
 }) {
@@ -32,7 +33,12 @@ export function TripFormShell({ trip, status, actions, children }: {
         overlap
         title={trip ? t('trips.create.editTitle', { id: trip.id }) : t('trips.create.title')}
         crumbs={crumbs}
-        badge={status ? <StatusBadge status={status} /> : undefined}
+        badge={status ? (
+          <span className="flex items-center gap-2">
+            <StatusBadge status={status} />
+            <TripSubStatusTag sub={sub} />
+          </span>
+        ) : undefined}
         description={trip?.data ? <EditSubline trip={trip.data} /> : t('pageHero.tripForm')}
         actions={actions}
       />

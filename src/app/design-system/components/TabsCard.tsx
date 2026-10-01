@@ -1,34 +1,30 @@
 import { useState } from 'react'
 import { TabCount, Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { TRIP_STATUS_GROUPS, type TripRow } from '@/features/trips/trip-list'
+import { needsAction, type TripRow } from '@/features/trips/trip-list'
+import { NeedActionCount } from '@/features/trips/TripListTabs'
 import { useT } from '@/lib/i18n'
-import type { TripStatus } from '@/types/trip'
 import { SheetCard, SkyStage } from '../SheetLayout'
 
-const GROUP_KEYS = ['all', 'review', 'transit', 'completed'] as const
+/**
+ * Bốn tab mẫu của danh sách chuyến: Tất cả và ba trong sáu trạng thái — đủ để thấy tab có số hổ phách cạnh số của nó, và vừa bề
+ * ngang thẻ ở 1.366 px (đủ bảy tab thì khay phải cuộn ngang).
+ */
+const GROUP_KEYS = ['all', 'DRAFT', 'PLANNED', 'DELIVERED'] as const
 type Group = (typeof GROUP_KEYS)[number]
-
-const GROUPS: Record<Group, readonly TripStatus[] | null> = {
-  all: null,
-  review: TRIP_STATUS_GROUPS.review,
-  transit: ['dang_van_chuyen'],
-  completed: ['hoan_thanh'],
-}
 
 const INSPECTOR_TABS = ['operations', 'package', 'display', 'packages'] as const
 
 /**
- * Tab trên dải trời (`tone="sky"`) đếm chuyến thật của kho theo nhóm của danh sách chuyến — "Cần xử lý" dùng số hổ phách vì là
- * việc chờ người dùng; tab trên nền trắng là tab của hộp thông tin Planner, "Danh sách" đếm kiện của chuyến đầu kho.
+ * Tab trên dải trời (`tone="sky"`) đếm chuyến thật của kho theo trạng thái như danh sách chuyến — tab "Đã lập kế hoạch" có thêm số
+ * hổ phách vì là việc chờ người dùng (phương án chờ duyệt hoặc lỗi thời); tab trên nền trắng là tab của hộp thông tin Planner,
+ * "Danh sách" đếm kiện của chuyến đầu kho.
  */
 export function TabsCard({ rows, packageCount }: { rows: readonly TripRow[] | undefined; packageCount: number | undefined }) {
   const t = useT()
   const [group, setGroup] = useState<Group>('all')
   const [inspector, setInspector] = useState<string>('operations')
-  const inGroup = (key: Group) => {
-    const statuses = GROUPS[key]
-    return (rows ?? []).filter((row) => statuses === null || statuses.includes(row.status))
-  }
+  const trips = rows ?? []
+  const needAction = trips.filter(needsAction).length
 
   return (
     <SheetCard title={t('designSystem.components.tabs.title')} meta={t('designSystem.components.tabs.meta')}>
@@ -37,8 +33,9 @@ export function TabsCard({ rows, packageCount }: { rows: readonly TripRow[] | un
           <TabsList tone="sky" aria-label={t('designSystem.components.tabs.groups')} className="mx-3.5 my-4">
             {GROUP_KEYS.map((key) => (
               <TabsTrigger key={key} value={key}>
-                {t(`designSystem.components.tabs.${key}`)}
-                <TabCount tone={key === 'review' ? 'warn' : 'neutral'}>{inGroup(key).length}</TabCount>
+                {key === 'all' ? t('trips.list.tabs.all') : t(`status.${key}`)}
+                <TabCount>{trips.filter((row) => key === 'all' || row.status === key).length}</TabCount>
+                {key === 'PLANNED' && needAction > 0 ? <NeedActionCount count={needAction} /> : null}
               </TabsTrigger>
             ))}
           </TabsList>
