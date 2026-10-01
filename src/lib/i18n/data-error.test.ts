@@ -48,8 +48,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   REVISION_NOT_REVIEWABLE: { revisionId: 'REV-002' },
   VEHICLE_TYPE_INVALID: { field: 'payloadKg' },
   VEHICLE_TYPE_IN_USE: { vehicleTypeId: 'VT-001', vehicleIds: ['VEHICLE-001'] },
-  QR_NOT_IN_TRIP: { tripId: 'TRIP-011', token: 'LM-0000-0000-0000' },
-  QR_WRONG_PACKAGE: { expected: 'PKG-001-02', scanned: 'PKG-001-05' },
+  PACKAGE_NOT_IN_TRIP: { tripId: 'TRIP-011', token: 'LM-0000-0000-0000' },
+  WRONG_PACKAGE_SCANNED: { expected: 'PKG-001-02', scanned: 'PKG-001-05' },
   QR_WRONG_STOP: { packageInstanceId: 'PKG-002-01', stopNumber: 3 },
   SEAL_INVALID: { max: 32 },
 }

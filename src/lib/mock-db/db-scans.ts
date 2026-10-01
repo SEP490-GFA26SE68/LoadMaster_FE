@@ -25,10 +25,10 @@ export function scanMethods(ctx: DbContext): ScanMethods {
     return tripLabels(trip, orders.values(), registeredPackages)
   }
 
-  /** Nhãn khớp mã quét trong chuyến; không có thì `QR_NOT_IN_TRIP`. */
+  /** Nhãn khớp mã quét trong chuyến; không có thì `PACKAGE_NOT_IN_TRIP`. */
   function scanned(trip: Trip, token: string): TripLabel {
     const label = labelByToken(labelsOf(trip), token)
-    if (!label) throw new MockDbError('QR_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(token) })
+    if (!label) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(token) })
     return label
   }
 
@@ -55,12 +55,12 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         const loading = trip.loading
         const plan = planOf(trip)
         const label = scanned(trip, token)
-        if (!plannedStops(plan).has(label.packageInstanceId)) throw new MockDbError('QR_NOT_IN_TRIP', { tripId, token: label.qrToken })
+        if (!plannedStops(plan).has(label.packageInstanceId)) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
         // Bước hiện tại: kiện chưa có kết quả đầu tiên theo thứ tự xếp — cùng cách màn kho chọn kiện (`loadingProgress`)
         const recorded = new Set(loading?.steps.map((step) => step.packageInstanceId))
         const expected = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).find((p) => !recorded.has(p.packageInstanceId))
         if (!loading || expected?.packageInstanceId !== label.packageInstanceId) {
-          throw new MockDbError('QR_WRONG_PACKAGE', { expected: expected?.packageInstanceId ?? '', scanned: label.packageInstanceId })
+          throw new MockDbError('WRONG_PACKAGE_SCANNED', { expected: expected?.packageInstanceId ?? '', scanned: label.packageInstanceId })
         }
         const steps = [...loading.steps, { packageInstanceId: label.packageInstanceId, outcome: 'loaded' as const, at: ctx.nowIso(), via: 'qr' as const }]
         return { trip: put(trips, { ...trip, loading: { ...loading, steps } }), packageInstanceId: label.packageInstanceId }
@@ -85,7 +85,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         if (!delivery || current?.number !== stopNumber) throw new MockDbError('STOP_NOT_CURRENT', { tripId, stopNumber })
         const label = scanned(trip, token)
         const plannedStop = plannedStops(planOf(trip)).get(label.packageInstanceId)
-        if (plannedStop === undefined) throw new MockDbError('QR_NOT_IN_TRIP', { tripId, token: label.qrToken })
+        if (plannedStop === undefined) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
         if (plannedStop !== stopNumber) throw new MockDbError('QR_WRONG_STOP', { packageInstanceId: label.packageInstanceId, stopNumber: plannedStop })
         if (missingIds(trip).has(label.packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId, packageInstanceId: label.packageInstanceId })
         const id = label.packageInstanceId
