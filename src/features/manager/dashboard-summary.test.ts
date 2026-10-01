@@ -43,14 +43,14 @@ test('ba chuỗi biểu đồ: lấp đầy theo ngày, chuyến theo trạng th
     { date: '2026-09-13', averagePercent: null, planCount: 0 },
     { date: '2026-09-14', averagePercent: 50, planCount: 1 },
   ])
-  // Thứ tự vòng đời, chỉ trạng thái có chuyến
+  // Thứ tự vòng đời, chỉ trạng thái có chuyến: 105 nháp · 104 (đã duyệt) và 107 (chờ duyệt) đã lập kế hoạch · 102 đang vận chuyển ·
+  // 101, 108 đã giao · 103 huỷ; không chuyến nào đang xếp hàng
   expect(summary.tripsByStatus).toStrictEqual([
-    { status: 'nhap', count: 1 },
-    { status: 'da_toi_uu', count: 1 },
-    { status: 'da_duyet', count: 1 },
-    { status: 'dang_van_chuyen', count: 1 },
-    { status: 'hoan_thanh', count: 2 },
-    { status: 'da_huy', count: 1 },
+    { status: 'DRAFT', count: 1 },
+    { status: 'PLANNED', count: 2 },
+    { status: 'IN_TRANSIT', count: 1 },
+    { status: 'DELIVERED', count: 2 },
+    { status: 'CANCELLED', count: 1 },
   ])
   // A: 50 + 30 kg, lấp đầy (40 + 60) / 2 · B: 16 kg, (50 + 30) / 2 · C: chỉ chuyến nháp
   expect(summary.byVehicle).toStrictEqual([
@@ -65,13 +65,17 @@ test('dòng chuyến trong kỳ: ngày chạy mới nhất trước, đủ số 
 
   expect(trips.map((row) => row.id)).toStrictEqual(['TRIP-104', 'TRIP-105', 'TRIP-107', 'TRIP-102', 'TRIP-108', 'TRIP-101', 'TRIP-103'])
   expect(trips.find((row) => row.id === 'TRIP-101')).toMatchObject({
-    name: 'Tuyến TRIP-101', scheduledDate: '2026-09-10', vehicleName: 'Xe A', driverName: 'Phạm Quốc Dũng', status: 'hoan_thanh',
+    name: 'Tuyến TRIP-101', scheduledDate: '2026-09-10', vehicleName: 'Xe A', driverName: 'Phạm Quốc Dũng', status: 'DELIVERED', sub: null,
     packageCount: 5, cargoWeightKg: 70, volumePercent: 40, deliveredWeightKg: 50, issueCount: 1,
     plan: { tripId: 'TRIP-101', jobId: 'JOB-REV-101', revisionId: 'REV-101' },
   })
-  // Chưa duyệt: không có tỷ lệ lấp đầy, Planner mở bản tối ưu mới nhất; nháp không có phương án
-  expect(trips.find((row) => row.id === 'TRIP-107')).toMatchObject({ status: 'da_toi_uu', volumePercent: null, plan: { revisionId: 'REV-107' } })
-  expect(trips.find((row) => row.id === 'TRIP-105')).toMatchObject({ status: 'nhap', volumePercent: null, plan: undefined, driverName: null })
+  // Đã lập kế hoạch, dòng phụ nói phương án đã duyệt hay còn chờ. Chưa duyệt: không có tỷ lệ lấp đầy, Planner mở bản tối ưu mới nhất
+  expect(trips.find((row) => row.id === 'TRIP-104')).toMatchObject({ status: 'PLANNED', sub: { kind: 'approved' }, volumePercent: 50 })
+  expect(trips.find((row) => row.id === 'TRIP-107')).toMatchObject({
+    status: 'PLANNED', sub: { kind: 'awaitingApproval' }, volumePercent: null, plan: { revisionId: 'REV-107' },
+  })
+  // Nháp không có phương án
+  expect(trips.find((row) => row.id === 'TRIP-105')).toMatchObject({ status: 'DRAFT', sub: null, volumePercent: null, plan: undefined, driverName: null })
 })
 
 test('kỳ không có chuyến: mọi tổng bằng 0, tỷ lệ không có, chuỗi rỗng', () => {

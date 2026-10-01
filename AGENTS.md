@@ -434,11 +434,13 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   *(đã điều chỉnh 26/09/2026)* Bản mẫu V2.3 dùng **tím** cho "đang chạy" và tint "phân tích phụ"; người dùng thấy tím không hợp nên đổi
   sang thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu, cùng họ màu lạnh). `@theme` xoá thang `violet`/`purple` của Tailwind:
   không dùng tím ở đâu trong app. "Đã huỷ" cũng lệch bản mẫu: chip đỏ trọn thay vì chip xám gạch chữ.
-  *(đã điều chỉnh 27/09/2026, LM-104)* Chuyến chỉ còn **6 trạng thái** theo backend (`DRAFT`, `OPTIMIZED`, `APPROVED`, `IN_TRANSIT`,
-  `COMPLETED`) cộng Đã huỷ: nháp xám đặc · đã tối ưu hổ phách vòng rỗng · đã duyệt cyan đặc · đang vận chuyển xanh lam có quầng · hoàn
-  thành xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Tiến độ kho và phương án
-  lỗi thời là **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`): "Lỗi thời — cần tối ưu lại" hổ phách có viền, "Kho đang
-  xếp 110 / 280" và "Đã xếp xong" xanh lam. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip.
+  *(đã điều chỉnh 02/10/2026, FE-0-05, D-81)* Chuyến có **6 trạng thái của backend** (`DRAFT`, `PLANNED`, `LOADING`, `IN_TRANSIT`,
+  `DELIVERED`, `CANCELLED`): nháp xám đặc · đã lập kế hoạch cyan đặc · đang xếp hàng và đang vận chuyển xanh lam có quầng · đã giao
+  xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
+  **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`) — màu "cần bạn" (hổ phách) nằm ở dòng phụ: dưới Đã lập kế hoạch là
+  "Chờ duyệt" hổ phách chấm vòng rỗng, "Đã duyệt" cyan, "Lỗi thời — cần tối ưu lại" hổ phách có viền; dưới Đang xếp hàng là "Đang xếp
+  110 / 280" và "Xếp xong — chờ xuất phát" xanh lam. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
+  (27/09/2026) dùng nháp · đã tối ưu · đã duyệt · đang vận chuyển · hoàn thành · đã huỷ, dòng phụ chỉ có lỗi thời và tiến độ kho.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
@@ -927,12 +929,15 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   `loaded` (hai pha sau khoá xe và điểm giao). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ
   mục `DropdownMenu` dùng `modal={false}` cho menu để focus về đúng hộp thoại.
 - *(bổ sung 19/09/2026, LM-081 → LM-083)* Kho lưu **pha** chuyến `planning → loading → loaded → delivering → completed` (+ `cancelled`);
-  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). *(đã điều chỉnh 27/09/2026, LM-104)*
-  `TripStatus` chỉ còn 6 giá trị theo backend: `nhap`, `da_toi_uu`, `da_duyet` (gồm pha `loading`/`loaded`), `dang_van_chuyen`
-  (`delivering`), `hoan_thanh`, `da_huy`; bản hiển thị lỗi thời là `da_toi_uu`. Tiến độ kho và lỗi thời là dòng phụ `tripSubStatus`
-  (`stale` · `loading` đã ghi / tổng · `loaded`), hiện bằng `TripSubStatusTag`; lọc/nhóm theo trạng thái, logic kho/tài xế theo pha hoặc
-  dòng phụ. Tab danh sách chuyến: Tất cả · Cần xử lý (`da_toi_uu`) · Sắp chạy (`da_duyet`) · Đang vận chuyển · Hoàn thành · Đã huỷ; giá
-  trị `trang-thai` cũ (`dang-thuc-hien`, `dang_giao`…) đọc sang giá trị mới (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện,
+  trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). *(đã điều chỉnh 02/10/2026, FE-0-05,
+  D-81)* `TripStatus` là 6 trạng thái của backend: `DRAFT`, `PLANNED`, `LOADING` (pha `loading`/`loaded`), `IN_TRANSIT` (`delivering`),
+  `DELIVERED` (`completed`), `CANCELLED`. Luật **tạm** tới khi có tối ưu tuyến (FE-4b-09): pha `planning` đã có revision là `PLANNED`,
+  chưa có là `DRAFT`. Dòng phụ `tripSubStatus`, hiện bằng `TripSubStatusTag`: dưới `PLANNED` là `awaitingApproval` · `approved` · `stale`
+  (theo revision hiển thị: bản duyệt mới nhất, không có thì bản mới nhất), dưới `LOADING` là `loading` đã ghi / tổng · `loaded`. Lọc/nhóm
+  theo trạng thái; logic kho, tài xế và số "cần bạn xử lý" theo pha hoặc dòng phụ. Tab danh sách chuyến: Tất cả · Nháp · Đã lập kế hoạch
+  (thêm số hổ phách: chờ duyệt + lỗi thời) · Đang xếp hàng · Đang vận chuyển · Đã giao · Đã huỷ; `trang-thai` trên URL là slug không dấu
+  (`nhap`, `da-lap-ke-hoach`, `dang-xep-hang`, `dang-van-chuyen`, `da-giao`, `da-huy`), giá trị cũ (`da_duyet`, `hoan_thanh`, `sap-chay`,
+  `dang_giao`…) đọc sang slug mới (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện,
   tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành
   của kho (`startLoading`…`completeStop`). Bảo dưỡng xe lưu ngoài `VehicleConfig` (`listVehicleStates`, D-04).
 - Người dùng và mật khẩu nằm trong kho; kho giữ **phiên** như cookie server (`authenticate`, `restoreSession`) và mọi hàm ghi thêm

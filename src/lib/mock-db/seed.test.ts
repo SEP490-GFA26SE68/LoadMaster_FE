@@ -102,11 +102,11 @@ test('the seed spreads 15 trips over 30 days around the anchor day with every st
   const statuses = await Promise.all(trips.map(async (trip) => tripStatus(trip, await db.listRevisions(trip.id))))
   const count = (status: string) => statuses.filter((item) => item === status).length
   expect(trips).toHaveLength(15)
-  // LM-104: đã duyệt gồm chuyến chính, kho đang xếp (TRIP-011) và đã xếp xong (TRIP-010); đã tối ưu gồm bản lỗi thời (TRIP-013)
+  // FE-0-05: đã lập kế hoạch gồm chuyến chính (đã duyệt), TRIP-012 (chờ duyệt), TRIP-013 (lỗi thời); đang xếp hàng gồm TRIP-011, TRIP-010
   expect({
-    hoan_thanh: count('hoan_thanh'), da_huy: count('da_huy'), dang_van_chuyen: count('dang_van_chuyen'),
-    da_duyet: count('da_duyet'), da_toi_uu: count('da_toi_uu'), nhap: count('nhap'),
-  }).toStrictEqual({ hoan_thanh: 7, da_huy: 1, dang_van_chuyen: 1, da_duyet: 3, da_toi_uu: 2, nhap: 1 })
+    DELIVERED: count('DELIVERED'), CANCELLED: count('CANCELLED'), IN_TRANSIT: count('IN_TRANSIT'),
+    LOADING: count('LOADING'), PLANNED: count('PLANNED'), DRAFT: count('DRAFT'),
+  }).toStrictEqual({ DELIVERED: 7, CANCELLED: 1, IN_TRANSIT: 1, LOADING: 2, PLANNED: 3, DRAFT: 1 })
   const dates = trips.map((trip) => trip.scheduledDate).toSorted()
   expect([dates[0], dates.at(-1)]).toStrictEqual(['2026-08-23', '2026-09-21'])
   // the main trip moves with the anchor day

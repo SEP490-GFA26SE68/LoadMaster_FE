@@ -57,7 +57,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
   const plannerRoute = new URL(page.url()).pathname + new URL(page.url()).search
   await page.getByRole('link', { name: 'Quay lại chuyến', exact: true }).click()
-  await expect(page.locator('header').getByText('Đã tối ưu', { exact: true })).toBeVisible()
+  await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
   await signOut(page, NAMES.dispatcher)
 
   // Quản lý công ty: duyệt phương án vừa tối ưu
@@ -160,6 +160,6 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
     const trip = await getMockDb().getTrip(tripId)
     return { status: tripStatus(trip, await getMockDb().listRevisions(tripId)), issues: trip.delivery?.issues.map((item) => item.kind) }
   }, { db: MOCK_DB, tripId: TRIP })
-  expect(store).toStrictEqual({ status: 'hoan_thanh', issues: ['damaged'] })
+  expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
   expect(browserErrors).toStrictEqual([])
 })

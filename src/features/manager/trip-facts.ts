@@ -1,6 +1,6 @@
 import { expandPackages } from '@/domain/cargo'
-import { latestApproved, stopItemIds, tripStatus, type Revision, type Trip } from '@/lib/mock-db'
-import type { TripStatus } from '@/types/trip'
+import { latestApproved, stopItemIds, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 
 /** Chuyến kèm mọi revision của nó theo thứ tự kho trả (cũ trước). */
 export type TripWithRevisions = { readonly trip: Trip; readonly revisions: readonly Revision[] }
@@ -18,6 +18,8 @@ export type TripFacts = {
   readonly vehicleId: string
   readonly driverId: string | null
   readonly status: TripStatus
+  /** Dòng phụ của trạng thái (FE-0-05): phương án chờ duyệt / đã duyệt / lỗi thời, tiến độ kho. */
+  readonly sub: TripSubStatus | null
   readonly cancelled: boolean
   /** Số kiện vật lý (đã mở rộng `quantity`) và tổng khối lượng hàng của chuyến, kg. */
   readonly packageCount: number
@@ -47,6 +49,7 @@ export function tripFacts({ trip, revisions }: TripWithRevisions): TripFacts {
     vehicleId: trip.vehicleId,
     driverId: trip.driverId,
     status: tripStatus(trip, revisions),
+    sub: tripSubStatus(trip, revisions),
     cancelled: trip.phase === 'cancelled',
     packageCount: instances.length,
     cargoWeightKg: instances.reduce((sum, instance) => sum + instance.weightKg, 0),

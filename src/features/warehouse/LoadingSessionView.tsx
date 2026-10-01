@@ -127,7 +127,7 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
 }
 
 /**
- * Mọi kiện đã có kết quả nhưng chuyến chưa sang Đã xếp xong: bước cuối tự hoàn tất, nên chỉ gặp khi lần hoàn tất đó không thành
+ * Mọi kiện đã có kết quả nhưng chuyến chưa sang "Xếp xong — chờ xuất phát": bước cuối tự hoàn tất, nên chỉ gặp khi lần hoàn tất đó không thành
  * (ví dụ mất kết nối). Cho bấm hoàn tất lại, không bịa là đã xong.
  */
 function AllRecorded({ tripId }: { tripId: string }) {

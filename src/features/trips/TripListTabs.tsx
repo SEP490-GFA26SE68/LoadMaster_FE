@@ -4,7 +4,7 @@ import { TRIP_LIST_TABS, type TripListTab } from './trip-list'
 
 /**
  * Dòng số dưới tiêu đề (`ChuyenHang.jpg` `.page-head .sub`): tổng chuyến · đang vận chuyển · cần bạn xử lý, đếm trên cả kho (không theo bộ
- * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số của tab "Cần xử lý".
+ * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số hổ phách trên tab "Đã lập kế hoạch".
  */
 export function TripListStats({ total, transit, review }: { total: number; transit: number; review: number }) {
   const t = useT()
@@ -22,19 +22,36 @@ export function TripListStats({ total, transit, review }: { total: number; trans
 }
 
 /**
- * Tab trên dải trời thay hàng ô số liệu của V2: mỗi tab là một giá trị của bộ lọc `trang-thai` (`TRIP_LIST_TABS`), số trên tab theo
- * tìm và các bộ lọc khác. "Cần xử lý" dùng số hổ phách vì là việc chờ người dùng. Phải nằm trong `Tabs` của màn.
+ * Tab trên dải trời (FE-0-05): Tất cả rồi sáu trạng thái của chuyến, mỗi tab là một giá trị của bộ lọc `trang-thai`
+ * (`TRIP_LIST_TABS`); số trên tab đếm chuyến của tab theo tìm và các bộ lọc khác. Tab "Đã lập kế hoạch" có thêm số hổ phách: chuyến
+ * cần người dùng xử lý (phương án chờ duyệt hoặc lỗi thời) — chỉ hiện khi có. Phải nằm trong `Tabs` của màn.
  */
-export function TripListTabs({ counts }: { counts: Record<TripListTab, number> | null }) {
+export function TripListTabs({ counts, needAction }: { counts: Record<TripListTab, number> | null; needAction: number }) {
   const t = useT()
   return (
     <TabsList tone="sky" aria-label={t('trips.list.tabs.label')}>
       {TRIP_LIST_TABS.map(({ key }) => (
         <TabsTrigger key={key} value={key}>
-          {t(`trips.list.tabs.${key}`)}
-          {counts ? <TabCount tone={key === 'review' && counts.review > 0 ? 'warn' : 'neutral'}>{counts[key]}</TabCount> : null}
+          {key === 'all' ? t('trips.list.tabs.all') : t(`status.${key}`)}
+          {counts ? <TabCount>{counts[key]}</TabCount> : null}
+          {counts && key === 'PLANNED' && needAction > 0 ? <NeedActionCount count={needAction} /> : null}
         </TabsTrigger>
       ))}
     </TabsList>
+  )
+}
+
+/**
+ * Số hổ phách cạnh số của tab: chuyến cần người dùng xử lý. Hình là con số; trình đọc màn hình và chú thích nổi có cả câu
+ * "2 cần bạn xử lý". Dùng lại ở thẻ Tab của `/thanh-phan`.
+ */
+export function NeedActionCount({ count }: { count: number }) {
+  const t = useT()
+  const label = t('trips.list.tabs.needAction', { count })
+  return (
+    <span className="relative flex" title={label}>
+      <span aria-hidden className="flex"><TabCount tone="warn">{count}</TabCount></span>
+      <span className="sr-only">{label}</span>
+    </span>
   )
 }

@@ -112,11 +112,13 @@ test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuy�
   renderDashboard('manager')
 
   const status = await screen.findByRole('table', { name: 'Bảng số của biểu đồ Chuyến theo trạng thái' }, SLOW)
-  // Đã duyệt: chuyến chính, 011 kho đang xếp, 010 đã xếp xong (LM-104); 009 đang vận chuyển; 7 hoàn thành; TRIP-004 huỷ — trên 12 chuyến
+  // Sáu trạng thái của backend (FE-0-05), chỉ trạng thái có chuyến trong kỳ: chuyến chính đã lập kế hoạch; 011 kho đang xếp, 010 xếp
+  // xong; 009 đang vận chuyển; 7 đã giao; TRIP-004 huỷ — trên 12 chuyến
   expect(within(status).getAllByRole('row').slice(1).map((row) => [...row.children].map((cell) => cell.textContent))).toStrictEqual([
-    ['Đã duyệt', '3', '25,0%'],
+    ['Đã lập kế hoạch', '1', '8,3%'],
+    ['Đang xếp hàng', '2', '16,7%'],
     ['Đang vận chuyển', '1', '8,3%'],
-    ['Hoàn thành', '7', '58,3%'],
+    ['Đã giao', '7', '58,3%'],
     ['Đã huỷ', '1', '8,3%'],
   ])
   expect(screen.getByRole('figure', { name: 'Chuyến theo trạng thái' })).toHaveTextContent('12 chuyến')
@@ -131,6 +133,10 @@ test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuy�
   // Cột Kiện (V2): 132 kiện của chuyến mẫu
   expect(screen.getByRole('columnheader', { name: 'Kiện' })).toBeInTheDocument()
   expect(screen.getByRole('row', { name: /TRIP-2026-0914/ })).toHaveTextContent('132')
+  // Cột Trạng thái: chip và dòng phụ như danh sách chuyến (FE-0-05)
+  expect(screen.getByRole('row', { name: /TRIP-2026-0914/ })).toHaveTextContent('Đã lập kế hoạchĐã duyệt')
+  expect(screen.getByRole('row', { name: /TRIP-011/ })).toHaveTextContent('Đang xếp hàngĐang xếp 110 / 280')
+  expect(screen.getByRole('row', { name: /TRIP-010/ })).toHaveTextContent('Đang xếp hàngXếp xong — chờ xuất phát')
 })
 
 test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, có lối sang Đội xe', async () => {

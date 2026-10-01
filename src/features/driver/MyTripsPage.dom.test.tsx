@@ -17,13 +17,17 @@ test('the demo driver: the loaded trip to open, the main trip still at the wareh
   expect(screen.getByRole('heading', { level: 1, name: 'Chuyến của tôi' })).toBeInTheDocument()
 
   expect(ready.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-010'])
+  // Chip trạng thái và dòng phụ như mọi màn (FE-0-05)
   const loaded = card(ready, 'TRIP-010')
-  expect(loaded.getByText('Đã xếp xong')).toBeInTheDocument()
+  expect(loaded.getByText('Đang xếp hàng')).toBeInTheDocument()
+  expect(loaded.getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
   expect(loaded.getByText('14/09/2026 · 3 điểm giao · 210 kiện')).toBeInTheDocument()
   expect(loaded.getByText('Isuzu NQR 550 · 51C-284.19')).toBeInTheDocument()
   expect(loaded.getByRole('link', { name: 'Mở chuyến' })).toHaveAttribute('href', '/tai-xe/diem-giao?chuyen=TRIP-010')
 
   const waiting = card(preparing, 'TRIP-2026-0914')
+  expect(waiting.getByText('Đã lập kế hoạch')).toBeInTheDocument()
+  expect(waiting.getByText('Đã duyệt')).toBeInTheDocument()
   expect(waiting.getByText('Kho chưa bắt đầu xếp — chưa giao được.')).toBeInTheDocument()
   expect(waiting.queryByRole('link')).not.toBeInTheDocument()
 
@@ -52,7 +56,7 @@ test('the driver of a trip in delivery continues it at its current stop; another
   renderDriver('/tai-xe', 'US-0007')
   const preparing = within(await screen.findByRole('region', { name: 'Kho đang chuẩn bị' }, LOAD))
   expect(preparing.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011'])
-  expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp 110 / 280')).toBeInTheDocument()
+  expect(card(preparing, 'TRIP-011').getByText('Đang xếp 110 / 280')).toBeInTheDocument()
   expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp — chưa giao được.')).toBeInTheDocument()
   // Màn chính của tài xế: thoát là đăng xuất
   expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeInTheDocument()

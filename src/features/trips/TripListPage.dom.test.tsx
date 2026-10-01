@@ -62,9 +62,13 @@ test('newest run date first, grouped by run date with a trip count, driver and l
   expect(first).toHaveTextContent('2 điểm · ')
   expect(screen.getByRole('row', { name: /TRIP-2026-0914/ })).toHaveTextContent(/Hyundai HD210\s*60C-446\.32/)
   expect(screen.getByRole('row', { name: /TRIP-009/ })).toHaveTextContent('Đang vận chuyển')
-  // Dòng phụ dưới chip (LM-104): tiến độ kho, phương án lỗi thời
-  expect(screen.getByRole('row', { name: /TRIP-011/ })).toHaveTextContent('Đã duyệtKho đang xếp 110 / 280')
-  expect(screen.getByRole('row', { name: /TRIP-013/ })).toHaveTextContent('Đã tối ưuLỗi thời — cần tối ưu lại')
+  // Dòng phụ dưới chip (FE-0-05): phương án đã duyệt / chờ duyệt / lỗi thời dưới Đã lập kế hoạch, tiến độ kho dưới Đang xếp hàng
+  expect(screen.getByRole('row', { name: /TRIP-2026-0914/ })).toHaveTextContent('Đã lập kế hoạchĐã duyệt')
+  expect(screen.getByRole('row', { name: /TRIP-012/ })).toHaveTextContent('Đã lập kế hoạchChờ duyệt')
+  expect(screen.getByRole('row', { name: /TRIP-013/ })).toHaveTextContent('Đã lập kế hoạchLỗi thời — cần tối ưu lại')
+  expect(screen.getByRole('row', { name: /TRIP-011/ })).toHaveTextContent('Đang xếp hàngĐang xếp 110 / 280')
+  expect(screen.getByRole('row', { name: /TRIP-010/ })).toHaveTextContent('Đang xếp hàngXếp xong — chờ xuất phát')
+  expect(screen.getByRole('row', { name: /TRIP-001/ })).toHaveTextContent('Đã giao')
   expect(screen.getByRole('row', { name: /TRIP-004/ })).toHaveTextContent('Đã huỷ')
   expect(screen.getByRole('button', { name: 'Nhóm theo ngày chạy · mới nhất trước' })).toBeInTheDocument()
 })
@@ -87,7 +91,7 @@ test('sorting by another column drops the date groups; the grouping button bring
 })
 
 test('filters read from the URL: status, and a driver-less trip through the driver chip', async () => {
-  const { user, router } = renderList('/chuyen?trang-thai=dang_van_chuyen')
+  const { user, router } = renderList('/chuyen?trang-thai=dang-van-chuyen')
   await screen.findByRole('row', { name: /TRIP-009/ }, SLOW)
   expect(tripIds()).toStrictEqual(['TRIP-009'])
   expect(screen.getByRole('tab', { name: /^Đang vận chuyển/ })).toHaveAttribute('aria-selected', 'true')
@@ -114,31 +118,41 @@ test('the run-date chip opens the two date fields; a date filter on the URL open
   expect(screen.queryByLabelText('Từ ngày')).toBeNull()
 })
 
-test('the stats line counts the whole store; tabs filter by stage on the URL with counts that follow the other filters', async () => {
+test('a saved link with an old status value still filters and lights the matching tab', async () => {
+  // `da_duyet` của LM-104 nay là Đã lập kế hoạch: chuyến chính (đã duyệt), TRIP-012 (chờ duyệt), TRIP-013 (lỗi thời)
+  renderList('/chuyen?trang-thai=da_duyet')
+  await screen.findByRole('row', { name: /TRIP-2026-0914/ }, SLOW)
+  expect(tripIds().toSorted()).toStrictEqual(['TRIP-012', 'TRIP-013', 'TRIP-2026-0914'])
+  expect(screen.getByRole('tab', { name: /^Đã lập kế hoạch/ })).toHaveAttribute('aria-selected', 'true')
+})
+
+test('the stats line counts the whole store; tabs are the six statuses, filter on the URL, and their counts follow the other filters', async () => {
   const { user, router } = renderList()
   await screen.findByRole('row', { name: /TRIP-014/ }, SLOW)
-  // Seed (LM-104): 15 chuyến; TRIP-009 đang vận chuyển; chuyến chính, TRIP-010/011 đã duyệt (kho đã/đang xếp); TRIP-012 đã tối ưu,
-  // TRIP-013 đã tối ưu vì bản duyệt lỗi thời
+  // Seed (FE-0-05): 15 chuyến; TRIP-014 nháp; chuyến chính (đã duyệt), TRIP-012 (chờ duyệt), TRIP-013 (lỗi thời) đã lập kế hoạch;
+  // TRIP-011/010 kho đang xếp / xếp xong; TRIP-009 đang vận chuyển; 7 đã giao; TRIP-004 đã huỷ
   expect(screen.getByRole('heading', { name: 'Chuyến hàng' }).closest('header')).toHaveTextContent('15 chuyến·1 đang vận chuyển·2 cần bạn xử lý')
+  const tabs = within(screen.getByRole('tablist', { name: 'Trạng thái của chuyến' })).getAllByRole('tab')
+  // Tab Đã lập kế hoạch: số của tab, rồi số hổ phách chuyến cần người dùng (chờ duyệt + lỗi thời)
+  expect(tabs.map((item) => item.getAttribute('aria-selected'))).toStrictEqual(['true', 'false', 'false', 'false', 'false', 'false', 'false'])
+  const names = [/^Tất cả\s*15$/, /^Nháp\s*1$/, /^Đã lập kế hoạch\s*3\s*2 cần bạn xử lý$/, /^Đang xếp hàng\s*2$/, /^Đang vận chuyển\s*1$/, /^Đã giao\s*7$/, /^Đã huỷ\s*1$/]
+  expect(tabs).toHaveLength(names.length)
+  for (const [index, name] of names.entries()) expect(tabs[index]).toHaveAccessibleName(name)
   const tab = (name: RegExp) => screen.getByRole('tab', { name })
-  expect(tab(/^Tất cả/)).toHaveTextContent('Tất cả15')
-  expect(tab(/^Cần xử lý/)).toHaveTextContent('2')
-  expect(tab(/^Sắp chạy/)).toHaveTextContent('3')
-  expect(tab(/^Đang vận chuyển/)).toHaveTextContent('1')
-  expect(tab(/^Hoàn thành/)).toHaveTextContent('7')
-  expect(tab(/^Đã huỷ/)).toHaveTextContent('1')
 
-  await user.click(tab(/^Sắp chạy/))
-  expect(router.state.location.search).toBe('?trang-thai=sap-chay')
-  expect(tripIds().toSorted()).toStrictEqual(['TRIP-010', 'TRIP-011', 'TRIP-2026-0914'])
-  expect(tab(/^Sắp chạy/)).toHaveAttribute('aria-selected', 'true')
+  await user.click(tab(/^Đang xếp hàng/))
+  expect(router.state.location.search).toBe('?trang-thai=dang-xep-hang')
+  expect(tripIds().toSorted()).toStrictEqual(['TRIP-010', 'TRIP-011'])
+  expect(tab(/^Đang xếp hàng/)).toHaveAttribute('aria-selected', 'true')
 
   // Chọn một tài xế: số trên tab đếm lại theo bộ lọc đó, dòng số dưới tiêu đề vẫn là cả kho
   await user.click(screen.getByRole('combobox', { name: 'Tài xế' }))
   await user.click(await screen.findByRole('option', { name: 'Phạm Quốc Dũng' }))
-  expect(tab(/^Tất cả/)).toHaveTextContent('Tất cả4')
-  expect(tripIds().toSorted()).toStrictEqual(['TRIP-010', 'TRIP-2026-0914'])
-  expect(screen.getByRole('heading', { name: 'Chuyến hàng' }).closest('header')).toHaveTextContent('15 chuyến')
+  expect(tab(/^Tất cả/)).toHaveAccessibleName(/^Tất cả\s*4$/)
+  expect(tripIds()).toStrictEqual(['TRIP-010'])
+  // Chuyến đã lập kế hoạch của tài xế này là chuyến chính, phương án đã duyệt: không còn số hổ phách
+  expect(tab(/^Đã lập kế hoạch/)).toHaveAccessibleName(/^Đã lập kế hoạch\s*1$/)
+  expect(screen.getByRole('heading', { name: 'Chuyến hàng' }).closest('header')).toHaveTextContent('15 chuyến·1 đang vận chuyển·2 cần bạn xử lý')
 
   await user.click(tab(/^Tất cả/))
   expect(router.state.location.search).toBe('?tai-xe=US-0004')

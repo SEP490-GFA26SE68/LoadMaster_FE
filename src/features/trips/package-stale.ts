@@ -8,7 +8,7 @@ export type StaleOnSave = {
 }
 
 /**
- * Lưu một thay đổi kiện làm revision nào lỗi thời (D-31)? Cùng cách `tripStatus` chọn revision hiển thị: bản duyệt mới nhất, không có
+ * Lưu một thay đổi kiện làm revision nào lỗi thời (D-31)? Cùng cách `tripSubStatus` chọn revision hiển thị: bản duyệt mới nhất, không có
  * thì bản mới nhất. Đã lỗi thời sẵn, chưa tối ưu hay chuyến đã rời pha lập kế hoạch thì không còn gì để cảnh báo.
  */
 export function staleOnSave(

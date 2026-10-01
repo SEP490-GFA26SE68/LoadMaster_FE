@@ -56,7 +56,7 @@ export const warehouse = {
   },
   missingRecorded: 'Đã ghi thiếu {id}',
   missingRecordedDescription: 'Chuyển sang kiện kế tiếp.',
-  allRecorded: 'Mọi kiện đã có kết quả. Bấm Hoàn tất xếp hàng để chuyển chuyến sang Đã xếp xong.',
+  allRecorded: 'Mọi kiện đã có kết quả. Bấm Hoàn tất xếp hàng để chuyển chuyến sang Xếp xong — chờ xuất phát.',
   complete: 'Hoàn tất xếp hàng',
   finished: {
     title: 'Đã xếp xong chuyến {tripId}',
