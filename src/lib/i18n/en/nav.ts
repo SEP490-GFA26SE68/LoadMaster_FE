@@ -15,7 +15,6 @@ export const nav = {
   shipments: 'Shipments',
   receiving: 'Receiving',
   orders: 'Orders',
-  review: 'Approvals',
   account: 'Account {name}',
   signOut: 'Sign out',
   profile: 'My profile',

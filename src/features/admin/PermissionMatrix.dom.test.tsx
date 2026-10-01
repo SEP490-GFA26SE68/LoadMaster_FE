@@ -4,8 +4,8 @@ import { I18nProvider } from '@/lib/i18n'
 import { PermissionMatrix } from './PermissionMatrix'
 
 /**
- * Tab "Ma trận quyền" (LM-092, FE-0-01): bảng chỉ đọc dựng từ `ROLE_PERMISSIONS`. Kỳ vọng chép tay từ ma trận của PRD v2 mục 5.2 và ba
- * chỗ còn tạm (quản lý công ty vẫn duyệt, đơn hàng, hai vai trò Review 1), không đọc lại bảng quyền.
+ * Tab "Ma trận quyền" (LM-092, FE-0-01): bảng chỉ đọc dựng từ `ROLE_PERMISSIONS`. Kỳ vọng chép tay từ ma trận của PRD v2 mục 5.2 và hai
+ * chỗ còn tạm (đơn hàng, hai vai trò Review 1), không đọc lại bảng quyền.
  */
 function renderMatrix() {
   render(<I18nProvider><PermissionMatrix /></I18nProvider>)
@@ -22,13 +22,13 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('mười cột vai trò theo thứ tự nền tảng → công ty → tạm, 39 dòng quyền kèm mã', () => {
+test('mười cột vai trò theo thứ tự nền tảng → công ty → tạm, 38 dòng quyền kèm mã', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế', 'Nhà sản xuất', 'Công ty logistics',
   ])
-  expect(within(matrix).getAllByRole('row')).toHaveLength(40)
+  expect(within(matrix).getAllByRole('row')).toHaveLength(39)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = within(matrix).getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Quét QR nhận hàngreceiving.operate'])
@@ -52,11 +52,11 @@ test('quản trị hệ thống và quản trị công ty quản lý người d�
   expect(cellsOf(matrix, 'Giao hàng')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, YES, NO, NO])
 })
 
-test('chỉ quản lý công ty xuất báo cáo và (tạm tới FE-0-07) duyệt phương án; điều phối chạy tối ưu', () => {
+test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ưu, chỉnh sửa và duyệt phương án (FE-0-07)', () => {
   const matrix = renderMatrix()
   expect(cellsOf(matrix, 'Xuất báo cáo .xlsx')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO, NO, NO])
-  expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO, NO, NO])
-  expect(cellsOf(matrix, 'Hàng đợi chờ duyệt')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Xem phương án 3D và so sánh')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Xem đơn hàng')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Loại kiện, đăng ký kiện và in nhãn QR')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, NO, YES, NO])

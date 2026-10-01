@@ -4,7 +4,7 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 /**
  * Phân quyền giả lập ở FE (LM-084, D-41): mỗi vai trò mở đúng màn chính, nav chỉ có mục được phép, route không có quyền là 403
  * có lối về, quản lý xem chuyến và phương án chỉ đọc. FE-0-01, FE-0-03: tám vai trò của PRD v2 (cùng hai vai trò Review 1 còn tạm),
- * tài khoản của hai công ty, quản trị hệ thống không còn quyền vận hành.
+ * tài khoản của hai công ty, quản trị hệ thống không còn quyền vận hành. FE-0-07: điều phối viên duyệt phương án, hàng đợi `/duyet` đã bỏ.
  */
 
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
@@ -108,7 +108,7 @@ test('each role lands on its own screen and sees only its nav items', async ({ p
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Chờ duyệt', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đội xe'])
   expect(browserErrors).toStrictEqual([])
 })
 
@@ -140,31 +140,40 @@ test('a driver opening the admin screen gets 403 with a way back', { tag: '@phon
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the company manager reads trips without editing them and is the one who approves plans (LM-104)', async ({ page, login, browserErrors }) => {
+test('the company manager reads trips and plans without any write action; the approval queue is gone (FE-0-07)', async ({ page, login, browserErrors }) => {
   await login(`/chuyen/${SEED_TRIP}`, 'manager')
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Đổi xe', exact: true })).toHaveCount(0)
 
-  // Bản chưa duyệt REV-001: quản lý công ty có Chỉnh sửa và Duyệt, không có dòng khoá
-  await navigateInApp(page, `/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`)
-  await page.locator('canvas').waitFor()
-  await expect(page.getByText('MOCK RESULT', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toBeVisible()
-  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
+  // Planner chỉ xem, cả bản đã duyệt lẫn bản chưa duyệt REV-001: không Chỉnh sửa, không Duyệt, một dòng lý do
+  for (const route of [`/chuyen/${SEED_TRIP}/phuong-an`, `/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`]) {
+    await navigateInApp(page, route)
+    await page.locator('canvas').waitFor()
+    await expect(page.getByText('MOCK RESULT', { exact: true }), route).toBeVisible()
+    await expect(page.locator('[data-planner-lock="readOnly"]'), route).toHaveText('Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.')
+    for (const name of ['Chỉnh sửa', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
+      await expect(page.getByRole('button', { name, exact: true }), `${route}: ${name}`).toHaveCount(0)
+    }
+  }
 
   await navigateInApp(page, `/chuyen/${SEED_TRIP}/toi-uu`)
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
+  // Hàng đợi duyệt của quản lý đã bỏ: đường dẫn cũ là màn 404 (không phải 403), có lối về màn chính
+  await navigateInApp(page, '/duyet')
+  await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/')
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the dispatcher cannot approve an unapproved plan, waiting for the company manager, but may still edit it (LM-104, LM-108)', async ({ page, login, browserErrors }) => {
+test('the dispatcher edits and approves an unapproved plan: no lock, no line about waiting for someone else (FE-0-07)', async ({ page, login, browserErrors }) => {
   await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
   await page.locator('canvas').waitFor()
-  await expect(page.locator('[data-planner-lock="awaitingApproval"]'))
-    .toHaveText('Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.')
-  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toBeVisible()
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
+  await expect(page.getByText(/quản lý công ty/i)).toHaveCount(0)
   expect(browserErrors).toStrictEqual([])
 })

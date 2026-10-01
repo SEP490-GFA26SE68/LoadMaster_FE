@@ -6,13 +6,10 @@ import type {
   OrderInput,
   PackageType,
   PackageTypeInput,
-  PlanSuggestion,
   ReceiptResult,
   RegisteredPackage,
   RegisteredPackageInput,
   RegisteredPackageRow,
-  ReviewDecision,
-  ReviewQueueItem,
   RunFailureCode,
   RunSettings,
   ScanResult,
@@ -90,14 +87,6 @@ export type Review1Db = {
   assignOrder(orderId: string, tripId: string, stopId: string): Promise<{ order: TransportOrder; trip: Trip }>
   /** Bỏ gán: gỡ các dòng kiện của đơn khỏi chuyến (chuyến còn lập kế hoạch) và trả đơn về `pending`. */
   unassignOrder(orderId: string): Promise<TransportOrder>
-
-  /** Bản tối ưu chờ quản lý duyệt, cũ nhất trước. */
-  listReviewQueue(): Promise<ReviewQueueItem[]>
-  /** Quyết định của chuyến (hoặc mọi chuyến), cũ trước. */
-  listReviewDecisions(tripId?: string): Promise<ReviewDecision[]>
-  rejectRevision(revisionId: string, reason: string): Promise<ReviewDecision>
-  requestReoptimization(revisionId: string, reason: string): Promise<ReviewDecision>
-  suggestPlanChange(revisionId: string, suggestion: PlanSuggestion): Promise<ReviewDecision>
 
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>

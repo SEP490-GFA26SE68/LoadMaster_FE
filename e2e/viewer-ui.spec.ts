@@ -5,14 +5,14 @@ import { cameraPreset, closeInspector, metrics, openInspector, SOURCE_MODULES, w
 const selectedPanel = (page: Page) => page.getByRole('complementary', { name: 'Kiện đang chọn' })
 
 /** Lượt đầu vào route qua form đăng nhập (app quay lại đúng route), các lượt sau điều hướng thẳng. */
-async function openViewer(page: Page, route: string, login?: (route: string, role?: 'manager') => Promise<void>) {
-  await (login ? login(route, 'manager') : page.goto(route))
+async function openViewer(page: Page, route: string, login?: (route: string) => Promise<void>) {
+  await (login ? login(route) : page.goto(route))
   await page.locator('canvas').waitFor()
   await waitIdle(page)
 }
 
 test('planner idles under debug and keeps presets, edit toggles, colour modes, slice and playback working', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?debug&quality=balanced`, 'manager')
+  await login(`${PLANNER_ROUTE}?debug&quality=balanced`)
   await waitIdle(page)
   const normal = await metrics(page)
   expect(normal.placementCount).toBe('132')
@@ -112,7 +112,7 @@ test('explicit quality tiers are honoured, including under reduced motion', asyn
 
 test('benchmark fixture requires debug; warehouse camera, next step and driver 2D route still work', async ({ page, login, browserErrors }, testInfo) => {
   // Mỗi màn do vai trò của nó mở (FE-0-01); mỗi lượt là một lần tải trang — kho mới — nên đổi vai trò bằng cách bỏ phiên của tab
-  await login(`${PLANNER_ROUTE}?packages=1000`, 'manager')
+  await login(`${PLANNER_ROUTE}?packages=1000`)
   await page.locator('canvas').waitFor()
   expect(await page.locator('[data-viewer-performance]').count()).toBe(0)
   expect(await page.locator('header').innerText()).toMatch(/132/)

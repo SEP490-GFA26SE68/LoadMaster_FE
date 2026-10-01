@@ -1,40 +1,24 @@
 import type { Page } from '@playwright/test'
-import { attachScreenshot, DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { navigateInApp, optimizeAndOpenPlanner } from './spec-flow-helpers'
+import { attachScreenshot, expect, test } from './fixtures'
+import { navigateInApp, optimizeAndOpenPlanner, switchUser } from './spec-flow-helpers'
 
 /**
- * Luồng 3 + 4 Review 1 (LM-104) trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập, không tải lại trang): điều phối chạy
- * tối ưu với mục tiêu + thuật toán và thấy lần chạy trong lịch sử → quản lý công ty thấy phương án ở "Chờ duyệt", từ chối kèm lý do →
- * điều phối đọc lý do ở Planner và Thiết lập tối ưu → quản lý duyệt phương án còn lại, Planner ghi "Duyệt bởi … lúc …".
+ * Luồng tối ưu → duyệt (LM-104; FE-0-07, D-80) trên cùng một kho in-memory, đổi người ngay trong app: điều phối viên chạy tối ưu với mục
+ * tiêu + thuật toán, thấy lần chạy "Chờ duyệt" trong lịch sử, rồi **tự duyệt** phương án trong Planner — Planner ghi "Duyệt bởi … lúc
+ * …", lần chạy thành "Đã duyệt". Quản lý công ty mở cùng phương án ở chế độ chỉ xem; hàng đợi `/duyet` không còn.
  */
 test.use({ collectConsoleErrors: true })
 
 const TRIP = 'TRIP-2026-0914'
 const SETUP = `/chuyen/${TRIP}/toi-uu`
-const NAMES = { dispatcher: 'Nguyễn Thanh Tùng', manager: 'Trần Thị Mai' } as const
-const ROLE_HOME_URL = { dispatcher: /\/chuyen$/, manager: /:\d+\/$/ } as const
-const REASON = 'Hàng dồn về phía sau, cần cân bằng lại tải trục'
+const DISPATCHER = 'Nguyễn Thanh Tùng'
+const APPROVED_BY_DISPATCHER = new RegExp(`Duyệt bởi ${DISPATCHER} lúc\\s*\\d{2}:\\d{2} \\d{2}/\\d{2}`)
 
-async function signIn(page: Page, role: keyof typeof NAMES) {
-  await page.getByLabel('Email', { exact: true }).fill(DEMO_EMAILS[role])
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(DEMO_PASSWORD)
-  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
-  // Chờ màn chính của vai trò dựng xong (khung ứng dụng có nút tài khoản): điều hướng ngay sau khi rời màn đăng nhập thì lần chuyển về
-  // màn chính của đăng nhập có thể đè lên, trang ở lại `/` hoặc `/chuyen` (đỏ ngẫu nhiên, LM-107)
-  await page.waitForURL(ROLE_HOME_URL[role])
-  await expect(page.getByRole('button', { name: `Tài khoản ${NAMES[role]}`, exact: true })).toBeVisible()
-}
-
-async function signOut(page: Page, role: keyof typeof NAMES) {
-  await page.getByRole('button', { name: `Tài khoản ${NAMES[role]}`, exact: true }).click()
-  await page.getByRole('menuitem', { name: 'Đăng xuất', exact: true }).click()
-  await page.waitForURL(/\/dang-nhap$/)
-}
-
+const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true })
 /** Dòng mới nhất của bảng "Lần chạy tối ưu" (dòng 0 là tiêu đề). */
 const newestRun = (page: Page) => page.locator('[data-run-history]').getByRole('row').nth(1)
 
-test('dispatcher optimizes with an objective and algorithm; the company manager rejects it with a reason, then approves another plan', async ({ page, login, browserErrors }, testInfo) => {
+test('the dispatcher optimizes with an objective and algorithm, then approves the plan; the company manager reads it and has no approval queue', async ({ page, login, browserErrors }, testInfo) => {
   test.setTimeout(4 * 60_000)
 
   // Điều phối: chọn mục tiêu + thuật toán trong thiết lập nâng cao, chạy tối ưu
@@ -43,66 +27,50 @@ test('dispatcher optimizes with an objective and algorithm; the company manager 
   await page.getByRole('radio', { name: 'Cân bằng tải trục', exact: true }).click()
   await page.getByRole('radio', { name: 'Di truyền (GA)', exact: true }).click()
   await optimizeAndOpenPlanner(page)
-  await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toBeVisible()
-  const plannerRoute = new URL(page.url()).pathname + new URL(page.url()).search
+  // Phương án mới chưa duyệt: điều phối viên có nút Duyệt, không có dòng nào bảo chờ người khác
+  await expect(button(page, 'Duyệt phương án')).toBeVisible()
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
 
-  // Lịch sử lần chạy: lần mới nhất đứng đầu, mang đúng lựa chọn và đang chờ duyệt
+  // Lịch sử lần chạy: lần mới nhất đứng đầu, mang đúng lựa chọn và đang chờ duyệt; lần ra bản đã duyệt của seed vẫn "Đã duyệt"
   await navigateInApp(page, SETUP)
   await expect(newestRun(page)).toContainText('Cân bằng tải trục')
   await expect(newestRun(page)).toContainText('Di truyền (GA)')
-  await expect(newestRun(page)).toContainText(NAMES.dispatcher)
+  await expect(newestRun(page)).toContainText(DISPATCHER)
   await expect(newestRun(page)).toContainText('Có kết quả')
   await expect(newestRun(page)).toContainText('Chờ duyệt')
   await expect(page.locator('[data-run-history]').getByRole('row')).toHaveCount(4)
+  await expect(page.locator('[data-run-history]').getByRole('row').nth(2)).toContainText('Đã duyệt')
   await attachScreenshot(page, testInfo, 'luong-3-lich-su-lan-chay')
-  await signOut(page, 'dispatcher')
 
-  // Quản lý công ty: phương án ở hàng đợi chờ duyệt, từ chối kèm lý do (lý do bắt buộc)
-  await signIn(page, 'manager')
-  await navigateInApp(page, '/duyet')
-  const card = page.locator(`[data-review-trip="${TRIP}"]`)
-  await expect(card).toContainText('Cân bằng tải trục · Di truyền (GA)')
-  await expect(card).toContainText(`Chạy bởi ${NAMES.dispatcher}`)
-  await card.getByRole('link', { name: `Xem và duyệt phương án của ${TRIP}`, exact: true }).click()
+  // Điều phối viên tự duyệt phương án vừa tối ưu: mở đúng bản đó từ lịch sử lần chạy, Duyệt tạo revision đã duyệt mới và mở nó
+  await newestRun(page).getByRole('link', { name: /^Mở phương án REV-\d+ trong Planner$/ }).click()
   await page.locator('canvas').waitFor()
-  await page.getByRole('button', { name: 'Quyết định khác', exact: true }).click()
-  await page.getByRole('menuitem', { name: 'Từ chối', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: 'Từ chối phương án?' })
-  await dialog.getByRole('button', { name: 'Từ chối', exact: true }).click()
-  await expect(dialog.getByText('Nhập lý do.', { exact: true })).toBeVisible()
-  await dialog.getByLabel('Lý do', { exact: true }).fill(REASON)
-  await dialog.getByRole('button', { name: 'Từ chối', exact: true }).click()
-  await expect(dialog).toBeHidden()
-  const notice = page.locator('[data-plan-decision="rejected"]')
-  await expect(notice).toContainText(`Lý do: ${REASON}`)
-  await expect(notice).toContainText(NAMES.manager)
-  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
-
-  await navigateInApp(page, '/duyet')
-  await expect(page.locator(`[data-review-trip="${TRIP}"]`)).toHaveCount(0)
-  await expect(page.locator('[data-recent-decisions]')).toContainText(REASON)
-  await signOut(page, 'manager')
-
-  // Điều phối: đọc lý do ở Planner và ở Thiết lập tối ưu, lần chạy mang nhãn "Bị từ chối"
-  await signIn(page, 'dispatcher')
-  await navigateInApp(page, plannerRoute)
-  await expect(page.locator('[data-plan-decision="rejected"]')).toContainText(`Lý do: ${REASON}`)
-  await expect(page.locator('[data-plan-decision="rejected"]').getByRole('link', { name: 'Tới Thiết lập tối ưu', exact: true })).toBeVisible()
-  await navigateInApp(page, SETUP)
-  await expect(page.locator('[data-open-decision="rejected"]')).toContainText(REASON)
-  await expect(newestRun(page)).toContainText('Bị từ chối')
-  await signOut(page, 'dispatcher')
-
-  // Quản lý công ty: duyệt phương án còn lại trong hàng đợi (TRIP-012)
-  await signIn(page, 'manager')
-  await navigateInApp(page, '/duyet')
-  await page.getByRole('link', { name: 'Xem và duyệt phương án của TRIP-012', exact: true }).click()
-  await page.locator('canvas').waitFor()
-  await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
+  const sourceRevision = new URL(page.url()).searchParams.get('revision')
+  expect(sourceRevision).toMatch(/^REV-\d+$/)
+  await button(page, 'Duyệt phương án').click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
-  await page.waitForURL(/\/chuyen\/TRIP-012\/phuong-an\?revision=REV-/)
-  await expect(page.locator('header').first()).toContainText(/Duyệt bởi Trần Thị Mai lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/)
+  await page.waitForURL(new RegExp(`/chuyen/${TRIP}/phuong-an\\?revision=REV-(?!${sourceRevision?.slice(4)}$)`))
+  await expect(page.locator('header').first()).toContainText(APPROVED_BY_DISPATCHER)
+  const approvedRoute = new URL(page.url()).pathname + new URL(page.url()).search
+  await navigateInApp(page, SETUP)
+  await expect(newestRun(page)).toContainText('Đã duyệt')
+  await expect(newestRun(page)).not.toContainText('Chờ duyệt')
+
+  // Quản lý công ty: cùng phương án, chỉ xem — không Chỉnh sửa, không Duyệt, một dòng lý do; bản nguồn chưa duyệt cũng vậy
+  await switchUser(page, 'manager')
+  for (const route of [approvedRoute, `/chuyen/${TRIP}/phuong-an?revision=${sourceRevision}`]) {
+    await navigateInApp(page, route)
+    await page.locator('canvas').waitFor()
+    await expect(page.locator('[data-planner-lock="readOnly"]'), route).toHaveText('Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.')
+    for (const name of ['Chỉnh sửa', 'Duyệt phương án', 'Duyệt bản chỉnh']) await expect(button(page, name), `${route}: ${name}`).toHaveCount(0)
+  }
+  await navigateInApp(page, approvedRoute)
+  await expect(page.locator('header').first()).toContainText(APPROVED_BY_DISPATCHER)
+
+  // Hàng đợi duyệt đã bỏ: không còn mục điều hướng, đường dẫn cũ là màn 404
+  await navigateInApp(page, '/')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đội xe'])
   await navigateInApp(page, '/duyet')
-  await expect(page.getByText('Không có phương án nào chờ duyệt.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })

@@ -12,7 +12,7 @@ import {
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createOptimizationService, OptimizationServiceError, type OptimizationProgress } from '@/services/optimization'
-import { buildRunHistory, type RunHistory } from './run-history'
+import { buildRunHistory, type RunHistoryRow } from './run-history'
 
 /**
  * Lớp dữ liệu của Thiết lập tối ưu và job (LM-047, LM-048): nơi duy nhất trong feature biết về kho và service tối ưu.
@@ -94,20 +94,13 @@ export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]
 }
 
 /**
- * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu: lần chạy kèm người chạy, thiết lập và số của revision nó tạo, số phận của phương án
- * (đã duyệt / chờ duyệt / quản lý trả lại) và quyết định của quản lý còn chờ điều phối xử lý.
+ * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu, mới nhất trước: lần chạy kèm người chạy, thiết lập và số của revision nó tạo, và phương
+ * án đó đã duyệt hay còn chờ duyệt.
  */
-export async function fetchRunHistory(tripId: string): Promise<RunHistory> {
+export async function fetchRunHistory(tripId: string): Promise<RunHistoryRow[]> {
   const db = getMockDb()
-  const [runs, revisions, decisions, queue, users, vehicles] = await Promise.all([
-    db.listOptimizationRuns(tripId), db.listRevisions(tripId), db.listReviewDecisions(tripId), db.listReviewQueue(), db.listUsers(), db.listVehicles(),
+  const [trip, runs, revisions, users] = await Promise.all([
+    db.getTrip(tripId), db.listOptimizationRuns(tripId), db.listRevisions(tripId), db.listUsers(),
   ])
-  return buildRunHistory({
-    runs,
-    revisions,
-    decisions,
-    pendingRevisionIds: new Set(queue.map((item) => item.revisionId)),
-    userNames: new Map(users.map((user) => [user.id, user.fullName])),
-    vehicleNames: new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name])),
-  })
+  return buildRunHistory({ trip, runs, revisions, userNames: new Map(users.map((user) => [user.id, user.fullName])) })
 }

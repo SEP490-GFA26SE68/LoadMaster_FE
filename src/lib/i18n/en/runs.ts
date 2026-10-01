@@ -30,7 +30,11 @@ export const runs = {
     limits: 'Limit · seed',
     status: 'Result',
     plan: 'Plan',
-    review: 'Approval',
+    approval: 'Approval',
+  },
+  approval: {
+    approved: 'Approved',
+    pending: 'Awaiting approval',
   },
   limitSeconds: '{seconds} s',
   seed: 'seed {seed}',

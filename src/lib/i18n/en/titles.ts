@@ -33,7 +33,6 @@ export const titles = {
   shipment: 'Shipment {id}',
   receiving: 'Receiving',
   orders: 'Orders',
-  review: 'Awaiting approval',
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
 } satisfies Dictionary<typeof source>

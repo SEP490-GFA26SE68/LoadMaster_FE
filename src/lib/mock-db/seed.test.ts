@@ -124,6 +124,17 @@ test('every seeded plan passes the constraint engine and places every package', 
   }
 })
 
+test('every seeded plan was approved by the dispatcher: the approver on the revision and the actor in the audit log (FE-0-07)', async () => {
+  const db = createMockDb()
+  const revisions = (await Promise.all((await db.listTrips()).map((trip) => db.listRevisions(trip.id)))).flat()
+  const approved = revisions.filter((revision) => revision.approvedAt !== undefined)
+  // 27 seeded revisions: 14 optimizations (every trip but the draft TRIP-014) and 13 approvals (every optimized trip but TRIP-012)
+  expect([revisions.length, approved.length]).toStrictEqual([27, 13])
+  expect(new Set(approved.map((revision) => revision.approvedBy))).toStrictEqual(new Set(['US-0001']))
+  const approvals = (await db.listEvents()).filter((event) => event.action === 'revision.approved')
+  expect(approvals.map((event) => event.actorId)).toStrictEqual(approved.map(() => 'US-0001'))
+})
+
 test('seeded operations match their trips: warehouse progress, deliveries, issues and one vehicle in maintenance', async () => {
   const db = createMockDb()
   const trips = new Map((await db.listTrips()).map((trip) => [trip.id, trip]))

@@ -1,7 +1,7 @@
 import { latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 
-/** Giai đoạn của chuyến ở danh sách kho (D-46): đang xếp, chờ xếp, và bản duyệt lỗi thời chờ tối ưu lại và quản lý công ty duyệt. */
+/** Giai đoạn của chuyến ở danh sách kho (D-46): đang xếp, chờ xếp, và bản duyệt lỗi thời chờ điều phối viên tối ưu lại và duyệt. */
 export type WarehouseStage = 'loading' | 'waiting' | 'stale'
 
 /** Một chuyến và các revision của nó theo thứ tự kho trả (cũ trước). */

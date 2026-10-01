@@ -26,9 +26,6 @@ export const optimization = {
     GENETIC_ALGORITHM: 'Tries many loading orders and keeps the best plan; takes longer.',
   },
   runChoiceNote: 'Demo build: the plan comes from the simulated optimizer and carries MOCK RESULT. The objective and algorithm are saved with the run.',
-  decision: {
-    rerun: 'Run again with new settings, or change the vehicle or cargo first.',
-  },
   history: {
     description: 'Every run of this trip, including runs without a result.',
   },
@@ -45,7 +42,7 @@ export const optimization = {
   afterSteps: {
     view: 'Open the plan',
     check: 'Check unplaced packages and warnings',
-    approve: 'The company manager approves it so the warehouse can load',
+    approve: 'Approve it so the warehouse can load',
   },
   method: 'Method',
   methodUnavailable: 'Not in the MVP: only the mock optimizer runs.',

@@ -27,10 +27,6 @@ export const optimization = {
     GENETIC_ALGORITHM: 'Thử nhiều thứ tự xếp, giữ phương án tốt nhất; chạy lâu hơn.',
   },
   runChoiceNote: 'Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT. Mục tiêu và thuật toán được lưu cùng lần chạy.',
-  /** Banner khi quản lý công ty đã trả lại phương án mà chưa có lần chạy nào sau đó; câu quyết định ở nhánh `review.notice`. */
-  decision: {
-    rerun: 'Chạy lại với thiết lập mới, hoặc đổi xe / kiện trước khi chạy.',
-  },
   history: {
     description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
   },
@@ -44,11 +40,11 @@ export const optimization = {
     over: 'vượt {value}',
   },
   afterTitle: 'Sau khi chạy',
-  /** Ba bước "Sau khi chạy" (V2.3): bước cuối là quản lý công ty duyệt (LM-104). */
+  /** Ba bước "Sau khi chạy" (V2.3): bước cuối là điều phối viên duyệt trong Planner (FE-0-07). */
   afterSteps: {
     view: 'Xem phương án',
     check: 'Kiểm tra kiện chưa xếp và cảnh báo',
-    approve: 'Quản lý công ty duyệt để kho thực hiện',
+    approve: 'Duyệt để kho thực hiện',
   },
   method: 'Phương pháp',
   methodUnavailable: 'Chưa có trong bản MVP: chỉ phương án mock chạy được.',

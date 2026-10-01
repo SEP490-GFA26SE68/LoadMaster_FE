@@ -38,7 +38,6 @@ const ShipmentsPage = lazy(() => import('@/features/shipments/ShipmentsPage').th
 const ShipmentDetailPage = lazy(() => import('@/features/shipments/ShipmentDetailPage').then((m) => ({ default: m.ShipmentDetailPage })))
 const ReceivingPage = lazy(() => import('@/features/receiving/ReceivingPage').then((m) => ({ default: m.ReceivingPage })))
 const OrdersPage = lazy(() => import('@/features/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })))
-const ReviewQueuePage = lazy(() => import('@/features/review/ReviewQueuePage').then((m) => ({ default: m.ReviewQueuePage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
@@ -125,7 +124,7 @@ export const routes: RouteObject[] = [
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
-                  // Review 1 (LM-104): nguồn hàng của nhà sản xuất, nhận hàng của logistics, đơn hàng, hàng đợi duyệt, loại xe, báo cáo chuyến
+                  // Review 1 (LM-104): nguồn hàng của nhà sản xuất, nhận hàng của logistics, đơn hàng, loại xe, báo cáo chuyến
                   guarded('packages.register', [
                     { path: '/loai-kien', element: <PackageTypesPage />, handle: titled((t) => t('titles.packageTypes')) },
                     { path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) },
@@ -137,7 +136,6 @@ export const routes: RouteObject[] = [
                   ]),
                   guarded('receiving.operate', [{ path: '/nhan-hang', element: <ReceivingPage />, handle: titled((t) => t('titles.receiving')) }]),
                   guarded('orders.view', [{ path: '/don-hang', element: <OrdersPage />, handle: titled((t) => t('titles.orders')) }]),
-                  guarded('plans.review', [{ path: '/duyet', element: <ReviewQueuePage />, handle: titled((t) => t('titles.review')) }]),
                   guarded('fleet.view', [{ path: '/doi-xe/loai-xe', element: <VehicleTypesPage />, handle: titled((t) => t('titles.vehicleTypes')) }]),
                   guarded('trips.view', [
                     { path: '/chuyen/:tripId/bao-cao', element: <TripReportPage />, handle: titled((t, s) => t('titles.tripReport', idParam(s, 'tripId'))) },

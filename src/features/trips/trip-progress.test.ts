@@ -26,8 +26,8 @@ test('while the warehouse loads, loading is the current step with packages loade
   const { trip, revisions, steps } = await progressOf('TRIP-011')
   const plan = latestApproved(revisions)!
   expect(states(steps).slice(0, 5)).toStrictEqual(['created:done', 'optimized:done', 'approved:done', 'loading:current', 'loaded:pending'])
-  // LM-104: quản lý công ty (US-0002) duyệt
-  expect(step(steps, 'approved')).toMatchObject({ at: plan.approvedAt, actorId: 'US-0002' })
+  // FE-0-07: điều phối viên (US-0001) duyệt
+  expect(step(steps, 'approved')).toMatchObject({ at: plan.approvedAt, actorId: 'US-0001' })
   expect(step(steps, 'loading')).toMatchObject({
     at: trip.loading?.startedAt,
     actorId: 'US-0011',

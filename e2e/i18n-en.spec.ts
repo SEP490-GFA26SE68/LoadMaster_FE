@@ -104,7 +104,7 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name}: trip detail, optimization setup and Planner in English`, async ({ page, login, browserErrors }, testInfo) => {
     const phone = viewport.width < 600
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
-    // Tạo chuyến, tối ưu rồi mở Chỉnh sửa trong Planner: đều là việc của điều phối viên (chỉnh tay theo `optimization.run`, LM-108)
+    // Tạo chuyến, tối ưu rồi mở Chỉnh sửa trong Planner: đều là việc của điều phối viên (chỉnh tay và duyệt theo `plans.approve`, FE-0-07)
     await login('/chuyen', 'dispatcher')
     // `?lang=en` đọc lúc tải trang; tải lại trước khi ghi kho, phiên đăng nhập nằm trong sessionStorage.
     await page.goto('/chuyen?lang=en')

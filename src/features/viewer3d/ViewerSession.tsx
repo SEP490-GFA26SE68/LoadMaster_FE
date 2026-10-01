@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
-import { usePlanReviewQuery } from '@/features/review/useReviewQuery'
 import { useT } from '@/lib/i18n'
 import type { TripPhase } from '@/lib/mock-db'
 import { ApprovePlanDialog } from './ApprovePlanDialog'
@@ -17,8 +16,6 @@ import { operationApprovalChecks } from './operations/approval-checks'
 import { SceneHud } from './operations/SceneHud'
 import { useOperations } from './operations/useOperations'
 import { PlannerActions } from './panels/PlannerActions'
-import { canDecide } from './plan-decision'
-import { PlanDecisionActions } from './PlanDecisionActions'
 import { PlannerNotices } from './PlannerNotices'
 import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
@@ -27,6 +24,7 @@ import type { ViewerSceneModel } from './scene-input'
 import { Timeline } from './Timeline'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
+import { usePlanApprovalQuery } from './usePlanSourceQuery'
 import type { PlanSource } from './viewer-api'
 import { ViewerHeader } from './ViewerHeader'
 import { debugQualityTier } from './viewer-options'
@@ -57,15 +55,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const approval = useViewerApproval(plan, state)
   // Chỉ dời/xoay kiện là chỉnh sửa cần Duyệt lại; ghim không thuộc phương án gửi Duyệt.
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
-  // Chỉ quản lý công ty duyệt (LM-104): điều phối viên xem chỉ đọc; chuyến đã sang pha vận hành thì phương án đã chốt (D-45);
-  // bản quản lý đã trả lại (từ chối, yêu cầu tối ưu lại, đề xuất) thì chỉ xem và dòng khoá kể quyết định.
-  const review = usePlanReviewQuery(tripId, plan.revision?.id).data
-  // Điều phối viên chỉnh tay rồi "Lưu bản chỉnh" gửi quản lý duyệt (LM-108); quản lý công ty chỉnh và duyệt
-  const access = plannerAccess({ phase, canApprove: can('plans.approve'), canEdit: can('plans.approve') || can('optimization.run'),
-    approvedAt: plan.revision?.approvedAt ?? null, hasEdits, decided: Boolean(review?.decision) })
-  const decide = plan.revision && review && canDecide({ access, reviewable: review.reviewable, canReview: can('plans.review') })
-    ? <PlanDecisionActions revisionId={plan.revision.id} vehicles={review.vehicles} currentVehicleId={plan.vehicle.id} />
-    : null
+  // Điều phối viên chỉnh tay và duyệt (`plans.approve`, FE-0-07), quản lý công ty chỉ xem; chuyến đã sang pha vận hành thì phương án
+  // đã chốt với mọi vai trò (D-45)
+  const approvedBy = usePlanApprovalQuery(plan.revision?.id).data?.approvedByName
+  const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
   const perfStore = useMemo(() => createPerfStore(), [])
@@ -117,10 +110,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
-        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={review?.approvedByName} decisions={decide}
-          onApprove={() => setApproveOpen(true)} onSave={approval.save} saving={approval.saving} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
+        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy}
+          onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
-      <PlannerNotices model={plan} source={source} lock={access.lock ?? access.notice} decision={review?.decision ?? null}
+      <PlannerNotices model={plan} source={source} lock={access.lock}
         rerunTo={can('optimization.run') && (phase ?? 'planning') === 'planning' ? `/chuyen/${tripId}/toi-uu` : undefined} />
       {editor.mode === 'edit' ? <EditorToolbar state={state} editor={editor} onModeChange={handleModeChange} /> :
         <WorkspaceToolbar {...simulation} onEdit={handleEdit} />}

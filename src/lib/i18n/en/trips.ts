@@ -194,7 +194,7 @@ export const trips = {
     readOnly: 'Read-only',
     stale: {
       title: 'Plan {revision} is out of date: the vehicle or packages changed after it was optimized.',
-      body: 'The warehouse can load only after the dispatcher optimizes again and the company manager approves.',
+      body: 'The warehouse can load only after the dispatcher optimizes again and approves.',
       editedAt: 'Edited at {time} {date}',
       fields: 'Changed: {fields}',
       change: 'from {before} to {after}',
@@ -407,7 +407,7 @@ export const trips = {
     minSupportRatioHint: 'Between 0 and 1.',
     code: 'Package',
     staleLead: 'Saving changes makes {revision} outdated.',
-    staleApproved: 'The approved plan no longer applies: it must be optimized again and approved by the company manager before the warehouse loads it.',
+    staleApproved: 'The approved plan no longer applies: it must be optimized and approved again before the warehouse loads it.',
     staleOptimized: 'The plan becomes outdated and must be optimized again.',
     save: 'Save package',
     saveAndNew: 'Save and add another',

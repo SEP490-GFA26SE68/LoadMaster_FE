@@ -30,8 +30,6 @@ export type MockDbErrorParams = {
   REVISION_STALE: { revisionId: string }
   /** Duyệt revision có `result.status` khác `COMPLETED`. */
   REVISION_NOT_COMPLETED: { revisionId: string }
-  /** Lưu bản chỉnh mà không có dời / xoay kiện nào (LM-108). */
-  NO_EDITS: { revisionId: string }
   /** Draft chỉnh một kiện không có placement trong revision (mã lạ, hoặc kiện nằm trong `unplacedPackages`). */
   PATCH_UNKNOWN_INSTANCE: { packageInstanceId: string }
   /** Sửa dữ liệu, tối ưu hoặc Duyệt chuyến đã sang pha vận hành (D-45). */
@@ -96,8 +94,6 @@ export type MockDbErrorParams = {
   ORDER_STATUS_INVALID: { orderId: string; status: string }
   /** Điểm giao không có trong chuyến. */
   STOP_NOT_FOUND: { tripId: string; stopId: string }
-  /** Phương án không còn chờ duyệt: đã duyệt, lỗi thời, chưa hoàn tất hoặc đã có bản mới hơn. */
-  REVISION_NOT_REVIEWABLE: { revisionId: string }
   VEHICLE_TYPE_INVALID: { field: string }
   VEHICLE_TYPE_IN_USE: { vehicleTypeId: string; vehicleIds: string[] }
   /** Mã QR quét được không thuộc phương án / chuyến đang làm. */

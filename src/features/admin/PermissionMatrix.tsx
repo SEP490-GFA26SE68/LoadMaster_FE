@@ -57,7 +57,7 @@ function createColumns(t: TFunction) {
  * Bảng V2 dạng "paper" trong một thẻ; dòng hai tầng (tên quyền + mã quyền) nên cao 56 px.
  *
  * Câu mô tả là dòng đầu của thẻ, không đứng trần phía trên: tab đè lên dải trời (`sky-overlap`), chữ trần ở đó không đọc được
- * (AGENTS mục 5). Thẻ cắt góc bằng `overflow-clip` chứ không `overflow-hidden`: 39 dòng quyền dài hơn màn hình, tiêu đề cột (tên vai
+ * (AGENTS mục 5). Thẻ cắt góc bằng `overflow-clip` chứ không `overflow-hidden`: 38 dòng quyền dài hơn màn hình, tiêu đề cột (tên vai
  * trò) phải dính khi cuộn, mà `overflow-hidden` biến thẻ thành khung cuộn và giữ tiêu đề lại trong thẻ.
  */
 export function PermissionMatrix() {

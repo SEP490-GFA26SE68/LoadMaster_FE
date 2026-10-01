@@ -28,7 +28,6 @@ test.each<[Role, string, string, string]>([
   ['manufacturer', '/lo-hang', 'Lô hàng', '2 lô hàng'],
   ['logistics', '/nhan-hang', 'Nhận hàng', '8 kiện đang chờ quét nhận'],
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
-  ['manager', '/duyet', 'Chờ duyệt', '1 phương án chờ duyệt'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
   ['manufacturer', '/lo-hang/SHP-002', 'Lô hàng SHP-002', '12 kiện trong lô, đã nhận 4'],
 ])('%s mở %s', async (role, path, title, summary) => {
@@ -48,13 +47,18 @@ test.each<[Role, string]>([
   ['logistics', '/kien-hang'],
   ['manufacturer', '/nhan-hang'],
   ['warehouse', '/don-hang'],
-  ['dispatcher', '/duyet'],
   // FE-0-01: quản trị hệ thống không còn quyền vận hành; quyền mới (`packages.view`…) chưa mở route nào của Review 1
   ['systemAdmin', '/lo-hang/SHP-002'],
   ['systemAdmin', '/don-hang'],
-  ['companyAdmin', '/duyet'],
   ['dispatcher', '/kien-hang'],
 ])('%s không mở được %s', async (role, path) => {
   openAt(path, role)
   expect(await screen.findByRole('heading', { name: 'Không có quyền truy cập' }, SLOW)).toBeInTheDocument()
+})
+
+/** FE-0-07: hàng đợi duyệt của quản lý đã bỏ — đường dẫn cũ là màn 404, không phải 403. */
+test.each<Role>(['manager', 'dispatcher'])('%s mở /duyet gặp màn không tìm thấy trang', async (role) => {
+  openAt('/duyet', role)
+  expect(await screen.findByRole('heading', { level: 1, name: 'Không tìm thấy trang' }, SLOW)).toBeInTheDocument()
+  await waitFor(() => expect(document.title).toBe('Không tìm thấy trang · LoadMaster'))
 })

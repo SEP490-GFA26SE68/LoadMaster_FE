@@ -10,7 +10,7 @@ export const audit = {
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
     trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
-    revision: { approved: 'Duyệt phương án', edited: 'Lưu bản chỉnh tay chờ duyệt' },
+    revision: { approved: 'Duyệt phương án' },
     loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },
     delivery: { started: 'Xuất phát giao hàng', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến' },
     user: {
@@ -23,7 +23,6 @@ export const audit = {
       created: 'Tạo lô hàng', updated: 'Sửa lô hàng', deleted: 'Xoá lô hàng nháp', handedOver: 'Bàn giao lô hàng', packageReceived: 'Quét nhận kiện',
     },
     order: { created: 'Tạo đơn hàng', updated: 'Sửa đơn hàng', cancelled: 'Huỷ đơn hàng', assigned: 'Gán đơn vào điểm giao', unassigned: 'Bỏ gán đơn' },
-    review: { rejected: 'Từ chối phương án', reoptimizeRequested: 'Yêu cầu tối ưu lại', changeSuggested: 'Đề xuất đổi xe hoặc tách chuyến' },
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
   } satisfies AuditActionLabels,
   groups: {
@@ -39,7 +38,6 @@ export const audit = {
     package: 'Kiện đăng ký',
     shipment: 'Lô hàng',
     order: 'Đơn hàng',
-    review: 'Quyết định duyệt',
     vehicleType: 'Loại xe',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
@@ -120,7 +118,6 @@ export const audit = {
       received: 'Đã nhận',
       customerName: 'Khách hàng',
       tripId: 'Chuyến',
-      suggestion: 'Đề xuất',
       objective: 'Mục tiêu',
       algorithm: 'Thuật toán',
       reasonCode: 'Lý do',

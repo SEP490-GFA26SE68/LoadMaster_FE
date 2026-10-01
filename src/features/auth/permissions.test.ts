@@ -3,8 +3,8 @@ import { BACKEND_ROLE_CODES, isPlatformRole, PLATFORM_ROLES, ROLES, type Role } 
 import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } from './permissions'
 
 /**
- * Ma trận quyền (FE-0-01): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2 — cộng ba chỗ còn tạm (quản lý công ty vẫn
- * duyệt và có hàng đợi duyệt, đơn hàng, hai vai trò của Review 1) — không tính lại từ bảng trong code.
+ * Ma trận quyền (FE-0-01, FE-0-07): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2 — cộng hai chỗ còn tạm (đơn hàng,
+ * hai vai trò của Review 1) — không tính lại từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
@@ -13,13 +13,13 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.approve', 'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate', 'plans.review', 'orders.view',
+    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate', 'orders.view',
   ],
   dispatcher: [
     'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
-    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'manualConfirm.approve', 'plans.view', 'monitoring.view',
-    'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create', 'pickups.approve',
-    'orders.view', 'orders.edit',
+    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
+    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
+    'pickups.approve', 'orders.view', 'orders.edit',
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
@@ -48,9 +48,9 @@ test('eight roles of the backend plus the two Review 1 roles that stay until FE-
   })
 })
 
-test('one table: 39 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  expect(PERMISSIONS).toHaveLength(39)
-  expect(new Set(PERMISSIONS).size).toBe(39)
+test('one table: 38 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  expect(PERMISSIONS).toHaveLength(38)
+  expect(new Set(PERMISSIONS).size).toBe(38)
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
   for (const role of ROLES) {
     // Cùng thứ tự với cột của Ma trận quyền và chip "Công việc được phép"; không có bảng phụ nào cộng thêm quyền
@@ -63,7 +63,7 @@ test('one table: 39 permissions, each granted to at least one role; a role lists
 test('the three platform roles have no operational permission: no packages, trips, plans, fleet, warehouse or driver work', () => {
   const operational = PERMISSIONS.filter((permission) =>
     /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver|orders|shipments|receiving)\./.test(permission))
-  expect(operational).toHaveLength(32)
+  expect(operational).toHaveLength(31)
   expect(PLATFORM_ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
   for (const role of PLATFORM_ROLES) {
     expect(isPlatformRole(role), role).toBe(true)
@@ -78,10 +78,10 @@ test('users and the audit log belong to the system administrator and the company
   }
 })
 
-test('for now the company manager approves plans and the dispatcher does not (FE-0-07 moves it); the manager writes nothing else', () => {
-  expect(ROLES.filter((role) => can(role, 'plans.approve'))).toStrictEqual(['manager'])
-  expect(ROLES.filter((role) => can(role, 'plans.review'))).toStrictEqual(['manager'])
+test('the dispatcher edits and approves plans, the company manager only reads them (FE-0-07); the manager edits no trip or order', () => {
+  expect(ROLES.filter((role) => can(role, 'plans.approve'))).toStrictEqual(['dispatcher'])
   expect(can('dispatcher', 'optimization.run')).toBe(true)
+  expect(can('manager', 'plans.view')).toBe(true)
   expect(can('manager', 'optimization.run')).toBe(false)
   expect(can('manager', 'trips.edit')).toBe(false)
   expect(can('manager', 'orders.edit')).toBe(false)

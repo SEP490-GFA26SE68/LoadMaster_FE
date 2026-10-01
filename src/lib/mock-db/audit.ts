@@ -16,8 +16,6 @@ export const AUDIT_ACTIONS = [
   'trip.cancelled',
   'optimization.saved',
   'revision.approved',
-  // Điều phối viên lưu bản chỉnh tay thành phương án mới chờ quản lý duyệt (LM-108)
-  'revision.edited',
   'loading.started',
   'loading.missing',
   'loading.completed',
@@ -48,9 +46,6 @@ export const AUDIT_ACTIONS = [
   'order.cancelled',
   'order.assigned',
   'order.unassigned',
-  'review.rejected',
-  'review.reoptimizeRequested',
-  'review.changeSuggested',
   'optimization.failed',
   'vehicleType.created',
   'vehicleType.updated',

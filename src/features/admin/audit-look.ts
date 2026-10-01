@@ -3,7 +3,6 @@ import {
   ClipboardCheck,
   ClipboardList,
   Container,
-  Gavel,
   KeyRound,
   MapPin,
   Package,
@@ -32,7 +31,6 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   package: QrCode,
   shipment: PackageCheck,
   order: ClipboardList,
-  review: Gavel,
   vehicleType: Container,
 }
 
@@ -55,7 +53,6 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.cancelled': 'amber',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
-  'revision.edited': 'blue',
   'loading.started': 'blue',
   'loading.missing': 'amber',
   'loading.completed': 'green',
@@ -85,9 +82,6 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'order.cancelled': 'amber',
   'order.assigned': 'blue',
   'order.unassigned': 'amber',
-  'review.rejected': 'amber',
-  'review.reoptimizeRequested': 'amber',
-  'review.changeSuggested': 'amber',
   'optimization.failed': 'amber',
   'vehicleType.created': 'blue',
   'vehicleType.updated': 'blue',

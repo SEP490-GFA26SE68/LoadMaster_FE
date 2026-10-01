@@ -7,14 +7,8 @@ export const viewer = {
     placed: 'Đã xếp',
     manuallyEdited: 'Đã chỉnh tay',
     approve: 'Duyệt phương án',
-    /** Chữ của nút Duyệt trên điện thoại khi thanh quyết định của quản lý đứng cạnh (LM-104); tên truy cập vẫn là `approve`. */
-    approveShort: 'Duyệt',
-    /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094). */
+    /** Nút Duyệt khi draft có dời hoặc xoay kiện (LM-094): duyệt luôn bản chỉnh tay, không có bước lưu riêng (FE-0-07). */
     approveDraft: 'Duyệt bản chỉnh',
-    /** Điều phối viên lưu bản chỉnh tay thành phương án mới chờ quản lý công ty duyệt (LM-108) */
-    saveEdits: 'Lưu bản chỉnh',
-    saved: 'Đã lưu {revisionId} — chờ quản lý công ty duyệt.',
-    saveFailed: 'Không lưu được bản chỉnh. Thử lại.',
     /** Thay nút Duyệt khi revision đã duyệt và không có chỉnh sửa: nhãn trên, giờ + ngày dưới. */
     approvedAt: 'Đã duyệt lúc',
     approvedAtValue: '{time} {date}',
@@ -34,7 +28,7 @@ export const viewer = {
     staleCounts: 'Phương án tính cho {plan} kiện, chuyến hiện có {trip}.',
     staleStops: 'Chênh theo điểm giao: {list}.',
     staleStop: 'Điểm {number} {delta}',
-    staleApprove: 'Kho chỉ xếp được khi quản lý công ty duyệt lại.',
+    staleApprove: 'Kho chỉ xếp được khi điều phối viên tối ưu lại và duyệt.',
     /** Đang xem một revision chưa duyệt qua `?revision=` trong khi chuyến đã có bản duyệt khác (V2.3 `Planner3DBanChuaDuyet`). */
     viewing: 'Đang xem {revision} — kết quả tối ưu lúc {time} · {date}, chưa duyệt.',
     viewingApproved: 'Kho và tài xế đang đọc bản đã duyệt {revision} ({time} · {date}). Duyệt bản đang xem sẽ tạo bản duyệt mới thay thế.',
@@ -106,7 +100,10 @@ export const viewer = {
       noIssues: 'Không có lỗi hay cảnh báo',
     },
   },
-  /** Planner chỉ xem (LM-094): lý do không có Chỉnh sửa và Duyệt, nói một lần. Key trùng pha chuyến (D-45), hoặc `readOnly`. */
+  /**
+   * Planner chỉ xem (LM-094): lý do không có Chỉnh sửa và Duyệt, nói một lần. Key trùng pha chuyến (D-45), hoặc `readOnly` — tài khoản
+   * không có quyền chỉnh sửa và duyệt phương án (quản lý công ty, FE-0-07).
+   */
   lock: {
     /** Câu thứ hai và dòng tiến độ kho của thanh khoá khi kho đang / đã xếp (V2.3 `Planner3DKhoa`). */
     detail: {
@@ -120,10 +117,7 @@ export const viewer = {
     delivering: 'Chuyến đang giao — phương án đã chốt.',
     completed: 'Chuyến đã hoàn thành — phương án đã chốt.',
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
-    awaitingApproval: 'Chờ quản lý công ty duyệt. Bạn vẫn chỉnh tay được — "Lưu bản chỉnh" gửi bản mới cho quản lý.',
-    readOnly: 'Chỉ xem: chỉ quản lý công ty chỉnh sửa và duyệt phương án.',
-    /** Quản lý công ty đã trả lại bản này (LM-104); dòng khoá hiện câu quyết định thay câu này. */
-    decided: 'Phương án đã được quản lý công ty trả lại — chỉ xem.',
+    readOnly: 'Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.',
   },
   axles: {
     title: 'Tải trục',

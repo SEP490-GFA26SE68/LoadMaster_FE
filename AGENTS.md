@@ -20,8 +20,8 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: gói cước — màn tới Sprint 8 mới có |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
-| Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; tạm vẫn duyệt phương án |
-| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột |
+| Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; xem chuyến và phương án chỉ đọc |
+| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập chuyến, tối ưu, duyệt phương án |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
 | Nhà sản xuất (`manufacturer`, tạm) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
@@ -34,11 +34,12 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 PRD v2 mục 5.2 (`REVIEW1_EXTRA` đã gộp vào; đọc quyền qua `can`/`permissionsOf`), thứ tự của `PERMISSIONS` là thứ tự dòng của Ma trận quyền.
 Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ thống (trước là `admin` toàn quyền) chỉ còn `companies.manage`, `users.manage`,
 `audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`. Quản trị công ty có `users.manage`, `audit.view`,
-`billing.manage`, `support.create` — mở cùng màn `/nguoi-dung`, `/nhat-ky` với quản trị hệ thống, **chưa chia phạm vi** (FE-0-08). Quản lý chỉ đọc
-+ xuất báo cáo *(đã điều chỉnh 27/09/2026, LM-104)* **+ duyệt phương án**: vai trò `manager` là "Quản lý công ty" và là người duyệt (`plans.approve`);
-điều phối lập chuyến, chạy tối ưu nhưng không duyệt — *(đã điều chỉnh 28/09/2026, LM-108)* điều phối vẫn **chỉnh tay** trong Planner và
-"Lưu bản chỉnh" gửi bản mới vào hàng đợi duyệt; bản chưa duyệt có một dòng "Chờ quản lý công ty duyệt". **Còn tạm** sau FE-0-01: quản lý vẫn giữ
-`plans.approve` + `plans.review` (hàng đợi `/duyet`; FE-0-07 chuyển duyệt sang điều phối); `orders.view`/`orders.edit` (điều phối; quản lý chỉ
+`billing.manage`, `support.create` — mở cùng màn `/nguoi-dung`, `/nhat-ky` với quản trị hệ thống, **chưa chia phạm vi** (FE-0-08).
+*(đã điều chỉnh 02/10/2026, FE-0-07, D-80)* **Điều phối viên duyệt phương án**: `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều
+phối — lập chuyến, chạy tối ưu, chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty (`manager`) chỉ đọc + xuất báo cáo: mở
+Planner ở chế độ chỉ xem, một dòng lý do. Không còn hàng đợi `/duyet` (đường dẫn cũ là màn 404), quyền `plans.review` và các quyết định trả lại
+của quản lý (từ chối, yêu cầu tối ưu lại, đề xuất đổi xe / tách chuyến). Trước đó LM-104 (27/09/2026) giao duyệt cho quản lý công ty và LM-108
+(28/09/2026) cho điều phối "Lưu bản chỉnh" vào hàng đợi duyệt. **Còn tạm** sau FE-0-01: `orders.view`/`orders.edit` (điều phối; quản lý chỉ
 xem) giữ tới FE-4b-02; `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics) bỏ ở FE-0-06. 19 quyền mới của PRD
 v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
@@ -190,14 +191,13 @@ src/
     shipments/          lô hàng giao công ty logistics (LM-104)
     receiving/          logistics quét QR nhận hàng (LM-104)
     orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
-    review/             hàng đợi chờ duyệt, quyết định của quản lý (LM-104)
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
                         bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
-                        Review 1 (LM-104): công ty, loại kiện, kiện đăng ký + mã QR, lô hàng + nhận hàng, đơn hàng, quyết định
-                        duyệt, lần chạy tối ưu, loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
+                        Review 1 (LM-104): công ty, loại kiện, kiện đăng ký + mã QR, lô hàng + nhận hàng, đơn hàng, lần chạy
+                        tối ưu (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
@@ -465,7 +465,10 @@ công cụ riêng (tablet hai hàng 56 px). Thêm gì vào hàng này phải đo
 Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòng) giữ `<select>` gốc.
 *(đã điều chỉnh 28/09/2026, V2.3, LM-107)* Trang Planner nền tối `--canvas-1`; thanh trên là kính tối (`.glass-dark`) nổi cách mép 14 px
 từ 1.280 px, vẫn cao 56 px. Tiêu đề là tên tuyến **chỉ từ 1.680 px**; hẹp hơn là mã chuyến và dòng dưới chỉ còn mã revision — không cắt chữ
-bằng dấu ba chấm (`layout-1366`). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, quyết định của quản lý, chỉ xem) nằm trong
+bằng dấu ba chấm (`layout-1366`). *(bổ sung 02/10/2026, FE-0-07)* Nhãn "Duyệt bởi <tên> lúc" mang họ tên người duyệt: rộng tới 208 px
+(điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và nút So sánh phương án **chỉ icon dưới 1.760 px** — để chữ
+từ 1.536 px như trước thì khối tiêu đề hết chỗ, nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
+thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
 luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
 (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
 bằng DOM/SVG, nền đặc 85 % thay `backdrop-filter` vì chúng di chuyển mỗi khung hình. Nút nhấn giữ (Xếp/Dỡ, Theo bước) là nền cyan mờ +
@@ -523,8 +526,8 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   `--brand-mark` của V2.3 đã bỏ).
 - **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
   mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
-  · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong, hàng đợi
-  duyệt trống) · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong)
+  · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
   `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
@@ -809,13 +812,14 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
   Lý do chặn Duyệt ở tooltip + `aria-describedby` của nút, không in ở thanh. Pha chuyến khác `planning` hoặc thiếu `plans.approve`: không
   Chỉnh sửa, không Duyệt, một dòng lý do (`viewer.lock`). Hộp thông tin chỉ mở từ nút "Chi tiết / Hiển thị" ở góc khung 3D và thẻ kiện.
-  *(đã điều chỉnh 27/09/2026, LM-104)* Chỉ quản lý công ty có `plans.approve` (FE-0-01 bỏ quyền này của quản trị). Thiếu quyền: bản chưa duyệt là
-  `awaitingApproval` ("Chờ quản lý công ty duyệt"), bản đã duyệt là `readOnly`. Liên kết "Tới Thiết lập tối ưu" của banner lỗi thời theo
-  `optimization.run` và pha `planning`, không theo quyền Duyệt. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `manager`.
-  *(đã điều chỉnh 28/09/2026, LM-108)* Người dùng thấy mất kéo thả kiện khi điều phối viên chỉ xem, nên **chỉnh tay** theo quyền
-  `plans.approve` **hoặc** `optimization.run` (`plannerAccess({ canEdit })`): điều phối viên không bị khoá, nút chính khi đã dời / xoay kiện là
-  "Lưu bản chỉnh" (`saveEditedRevision` của kho: revision **mới chưa duyệt**, `editedBy`, vào `/duyet`), chưa chỉnh gì thì dòng
-  `awaitingApproval` là thông báo chứ không phải khoá. `awaitingApproval` / `readOnly` là khoá chỉ khi tài khoản không chỉnh cũng không duyệt.
+  *(đã điều chỉnh 02/10/2026, FE-0-07, D-80)* Chỉ **điều phối viên** có `plans.approve`: chỉnh tay và Duyệt trong Planner
+  (`plannerAccess({ canApprove })`). Đã dời / xoay kiện thì nút chính là "Duyệt bản chỉnh": `approveRevision` của kho áp patch của draft và tạo
+  revision **đã duyệt** mới — không có bước lưu bản chưa duyệt. Thiếu quyền (quản lý công ty) là khoá `readOnly`, kể cả ở bản chưa duyệt. Kho ghi
+  người bấm Duyệt vào revision (`approvedBy`, seed là điều phối viên) nên nhãn là "Duyệt bởi <tên> lúc …". Liên kết "Tới Thiết lập tối ưu" của
+  banner lỗi thời theo `optimization.run` và pha `planning`. E2E của Planner (chỉnh sửa, Duyệt) đăng nhập `dispatcher` — mặc định của `login`.
+  Đã bỏ: quản lý công ty duyệt và khoá `awaitingApproval` "Chờ quản lý công ty duyệt" (LM-104, 27/09/2026), hàng đợi `/duyet` cùng các quyết
+  định trả lại, "Lưu bản chỉnh" / `saveEditedRevision` tạo revision chưa duyệt (LM-108, 28/09/2026). Dòng phụ `awaitingApproval` của **chuyến**
+  ("Chờ duyệt", mục 9) là thứ khác và vẫn còn.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - *(bổ sung, LM-042)* Xem trước 3D ở form xe: `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
@@ -899,14 +903,16 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.
 
 *(bổ sung 27/09/2026, LM-104)* Dữ liệu 5 luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `shipments-api.ts`,
-`receiving-api.ts`, `orders-api.ts`, `review-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
+`receiving-api.ts`, `orders-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
-`['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['review', …]`, `['vehicle-types', …]` (không đặt
-dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy, quyết định duyệt)
+`['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
+dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy)
 nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu lọc theo công ty có mã người dùng trong khoá.
-Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: **trạng thái duyệt của Planner** `['review', 'plan', tripId,
-revisionId]` (dưới khoá chuyến thì bấm Duyệt chờ nó, Planner dựng lại trên revision mới và mất toast lẫn điều hướng) và **nhãn QR** của
-kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ tải lại nhãn).
+Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở
+Planner** `['plan-approval', revisionId]` (`viewer-api.ts` → `usePlanApprovalQuery`; dưới khoá chuyến thì bấm Duyệt chờ nó, Planner dựng lại
+trên revision mới và mất toast lẫn điều hướng; revision bất biến nên khoá này không cần làm mới — `review-api.ts` và khoá `['review', …]` đã bỏ
+cùng hàng đợi duyệt) và **nhãn QR** của kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ
+tải lại nhãn).
 Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng. Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
@@ -1036,6 +1042,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Chữ 11px và 13px rải rác | Ép về 11px (micro) hoặc 12/14px | Giữ thang chữ ở mục 4 |
 | Màn kho không có nút thoát | Thêm nút quay lại 56px | Mục 10: màn toàn màn hình phải có lối ra |
 | Ô vị trí 3D ở màn kho là ảnh tĩnh | Three.js xoay được | Công nhân cần nhìn quanh kiện để đặt đúng |
+| Planner 1.536 px: nút "So sánh phương án" có chữ | Chỉ icon dưới 1.760 px, chữ ở tooltip | Nhãn "Duyệt bởi <tên> lúc" dài hơn "Đã duyệt lúc" của bản mẫu; để chữ thì tiêu đề đè lên chỉ số (FE-0-07) |
 
 ## 12. Tối ưu token và context *(bổ sung)*
 

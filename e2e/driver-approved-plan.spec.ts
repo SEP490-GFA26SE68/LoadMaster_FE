@@ -99,8 +99,8 @@ test('phone: the driver screens run in English and switching language mid-delive
 })
 
 test('a newly approved revision reaches the driver screen without reload', async ({ page, login, browserErrors }) => {
-  // Bản seed đã duyệt không có nút Duyệt (LM-094): quản lý công ty duyệt lại revision nguồn chưa duyệt REV-001
-  await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'manager')
+  // Bản seed đã duyệt không có nút Duyệt (LM-094): điều phối viên duyệt lại revision nguồn chưa duyệt REV-001
+  await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
   await page.locator('canvas').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()

@@ -215,7 +215,7 @@ export const trips = {
     /** Bản đã duyệt lỗi thời (D-31): nói vì sao, lấy từ nhật ký (V2.3, quyết định 2). */
     stale: {
       title: 'Phương án {revision} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',
-      body: 'Kho chỉ xếp được khi điều phối viên tối ưu lại và quản lý công ty duyệt.',
+      body: 'Kho chỉ xếp được khi điều phối viên tối ưu lại và duyệt.',
       editedAt: 'Sửa lúc {time} {date}',
       fields: 'Đã sửa: {fields}',
       change: 'từ {before} thành {after}',
@@ -445,7 +445,7 @@ export const trips = {
     code: 'Kiện',
     /** Cảnh báo đầu form: lưu thay đổi làm revision đang hiển thị lỗi thời (D-31). */
     staleLead: 'Lưu thay đổi sẽ làm {revision} lỗi thời.',
-    staleApproved: 'Bản đã duyệt hết hiệu lực, cần tối ưu lại và quản lý công ty duyệt trước khi kho xếp.',
+    staleApproved: 'Bản đã duyệt hết hiệu lực, cần tối ưu lại và duyệt lại trước khi kho xếp.',
     staleOptimized: 'Phương án thành lỗi thời, cần chạy tối ưu lại.',
     save: 'Lưu kiện',
     saveAndNew: 'Lưu và thêm tiếp',

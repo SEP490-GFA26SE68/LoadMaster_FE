@@ -6,7 +6,6 @@ import {
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
   PACKAGE_CHANGE_FIELDS,
-  REVIEW_DECISION_KINDS,
   RUN_FAILURE_CODES,
   type AuditAction,
   type AuditEvent,
@@ -54,7 +53,7 @@ const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
-  'count', 'packageTypeId', 'lastPackageId', 'logisticsCompanyId', 'received', 'customerName', 'tripId', 'suggestion', 'objective',
+  'count', 'packageTypeId', 'lastPackageId', 'logisticsCompanyId', 'received', 'customerName', 'tripId', 'objective',
   'algorithm', 'reasonCode', 'vehicleTypeId', 'sealNumber',
 ] as const
 
@@ -183,8 +182,6 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return isOneOf(OPTIMIZATION_ALGORITHMS, value) ? t(`runs.algorithms.${value}`) : value
     case 'reasonCode':
       return isOneOf(RUN_FAILURE_CODES, value) ? t(`runs.failures.${value}`) : value
-    case 'suggestion':
-      return isOneOf(REVIEW_DECISION_KINDS, value) ? t(`review.decisions.${value}`) : value
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho
       return event.action === 'auth.signInFailed' && isOneOf(REASONS, value) ? t(`audit.log.reasons.${value}`) : value

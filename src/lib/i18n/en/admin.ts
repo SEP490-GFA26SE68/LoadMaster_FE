@@ -151,7 +151,7 @@ export const admin = {
       trips: { view: 'View trips', edit: 'Create, edit, cancel trips' },
       routes: { optimize: 'Optimize routes' },
       optimization: { run: 'Run optimization' },
-      plans: { view: 'View 3D plans and compare', approve: 'Edit and approve plans', review: 'Approval queue: approve, reject, request re-optimization' },
+      plans: { view: 'View 3D plans and compare', approve: 'Edit and approve plans' },
       manualConfirm: { approve: 'Approve manually confirmed packages' },
       monitoring: { view: 'View monitoring of running trips' },
       fleet: { view: 'View the fleet', edit: 'Add, edit, delete vehicles and maintenance' },

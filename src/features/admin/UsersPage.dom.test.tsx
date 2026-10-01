@@ -220,7 +220,7 @@ test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSION
   renderUsers()
   await user.click(screen.getByRole('tab', { name: 'Ma trận quyền' }))
   const matrix = await screen.findByRole('table')
-  // Một dòng tiêu đề và 39 quyền; cột đầu là tên quyền, mười cột còn lại là vai trò
-  expect(within(matrix).getAllByRole('row')).toHaveLength(40)
+  // Một dòng tiêu đề và 38 quyền; cột đầu là tên quyền, mười cột còn lại là vai trò
+  expect(within(matrix).getAllByRole('row')).toHaveLength(39)
   expect(within(matrix).getAllByRole('columnheader')).toHaveLength(11)
 })

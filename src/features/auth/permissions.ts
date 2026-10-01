@@ -40,9 +40,8 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
-  // Tạm, không có trong ma trận PRD v2: hàng đợi duyệt của quản lý (bỏ ở FE-0-07), đơn hàng (giữ tới FE-4b-02, quyết định G3),
-  // nguồn hàng của nhà sản xuất và nhận hàng của logistics (bỏ ở FE-0-06).
-  'plans.review',
+  // Tạm, không có trong ma trận PRD v2: đơn hàng (giữ tới FE-4b-02, quyết định G3), nguồn hàng của nhà sản xuất và nhận hàng của
+  // logistics (bỏ ở FE-0-06).
   'orders.view',
   'orders.edit',
   'packages.register',
@@ -54,10 +53,12 @@ export type Permission = (typeof PERMISSIONS)[number]
 
 /**
  * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2, trừ
- * ba chỗ còn tạm:
- * - `plans.approve` vẫn ở Quản lý công ty; FE-0-07 chuyển sang Điều phối viên cùng lúc với Planner và bỏ `plans.review`.
+ * hai chỗ còn tạm:
  * - `orders.view` / `orders.edit` giữ nguyên tới khi Yêu cầu giao thay Đơn hàng (FE-4b-02).
  * - `manufacturer`, `logistics` và ba quyền của họ còn tới FE-0-06.
+ *
+ * `plans.approve` — chỉnh tay và duyệt phương án trong Planner — là của Điều phối viên (FE-0-07, D-80); Quản lý công ty xem phương án
+ * chỉ đọc.
  *
  * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
  * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
@@ -69,13 +70,14 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.approve', 'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
-    'plans.review', 'orders.view',
+    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
+    'orders.view',
   ],
   dispatcher: [
     'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
-    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'manualConfirm.approve', 'plans.view', 'monitoring.view',
-    'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create', 'pickups.approve',
+    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
+    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
+    'pickups.approve',
     'orders.view', 'orders.edit',
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],

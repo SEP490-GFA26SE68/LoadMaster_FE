@@ -9,7 +9,7 @@ import { enterEdit, selectPlacement, SOURCE_MODULES } from './viewer-helpers'
  */
 test.use({ collectConsoleErrors: true })
 
-/** "Duyệt bởi <tên> lúc …" khi kho biết người duyệt (LM-104), "Đã duyệt lúc …" khi không. */
+/** "Duyệt bởi <tên> lúc …" khi kho biết người duyệt, "Đã duyệt lúc …" khi không. */
 const APPROVED_AT = /(Đã duyệt|Duyệt bởi .+) lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true })
 const header = (page: Page) => page.locator('header').first()
@@ -74,7 +74,7 @@ async function nudgeOnePackage(page: Page) {
 
 test('an approved plan shows when it was approved; one edited package turns it into "Duyệt bản chỉnh"', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
-  await login(PLANNER_ROUTE, 'manager')
+  await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
 
   await expect(header(page)).toContainText(APPROVED_AT)
@@ -83,6 +83,9 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-approved-1366')
   await expectOneRow(page, 1600)
+  // 1.680 px: tiêu đề đổi sang tên tuyến; nhãn "Duyệt bởi <tên> lúc" không được lấy chỗ của nó (FE-0-07)
+  await expectOneRow(page, 1680)
+  await expect(page.getByRole('heading', { level: 1, name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', exact: true })).toBeVisible()
   await page.setViewportSize({ width: 1366, height: 768 })
 
   await enterEdit(page)
@@ -108,29 +111,24 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await expect(approveEdits).toHaveCount(0)
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-approved-edited-1366')
+  // 1.536 px: nhãn "Đã chỉnh tay" hiện cạnh MOCK RESULT và vẫn nằm trong khối tiêu đề, không đè lên chỉ số (FE-0-07)
+  await expectOneRow(page, 1536)
+  await expect(header(page).getByText('Đã chỉnh tay', { exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a plan awaiting approval keeps Approve and the other decisions on one row: Reject joins the menu below 1,680 px (LM-104)', async ({ page, login, browserErrors }, testInfo) => {
+test('a plan awaiting approval keeps "Duyệt phương án" on the one control row', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
-  await login('/duyet', 'manager')
-  await page.getByRole('link', { name: 'Xem và duyệt phương án của TRIP-012', exact: true }).click()
+  // Seed TRIP-012: đã tối ưu, chưa duyệt
+  await login('/chuyen/TRIP-012/phuong-an', 'dispatcher')
   await page.locator('canvas').waitFor()
 
   await expect(button(page, 'Duyệt phương án')).toBeVisible()
-  await expect(button(page, 'Quyết định khác')).toBeVisible()
-  await expect(button(page, 'Từ chối')).toBeHidden()
+  await expect(header(page)).not.toContainText(APPROVED_AT)
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-pending-1366')
-  await button(page, 'Quyết định khác').click()
-  await expect(page.getByRole('menuitem')).toHaveText(['Từ chối', 'Yêu cầu tối ưu lại', 'Đề xuất đổi xe / tách chuyến'])
-  await page.keyboard.press('Escape')
   await expectOneRow(page, 1600)
   await expectOneRow(page, 1760)
-  await expect(button(page, 'Từ chối')).toBeVisible()
-  await button(page, 'Quyết định khác').click()
-  await expect(page.getByRole('menuitem', { name: 'Từ chối', exact: true })).toBeHidden()
-  await page.keyboard.press('Escape')
   expect(browserErrors).toStrictEqual([])
 })
 
@@ -152,19 +150,20 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
   expect(browserErrors).toStrictEqual([])
 })
 
-test('tablet keeps two 56 px control rows; the dispatcher may edit the approved plan by hand but never approves it (LM-104, LM-108)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
-  await login(PLANNER_ROUTE, 'dispatcher')
+test('tablet keeps two 56 px control rows; the company manager reads the plan with one reason and no actions (FE-0-07)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
+  await login(PLANNER_ROUTE, 'manager')
   await page.locator('canvas').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()
   expect((await toolbar.getByRole('combobox', { name: 'Góc nhìn', exact: true }).boundingBox())!.height).toBe(56)
   expect((await header(page).boundingBox())!.height).toBe(56)
-  // LM-108: điều phối viên chỉnh tay rồi "Lưu bản chỉnh"; không khoá, không nút Duyệt
-  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
-  for (const name of ['Duyệt phương án', 'Duyệt bản chỉnh', 'Lưu bản chỉnh']) {
+  // Quản lý công ty không có quyền chỉnh sửa và duyệt phương án: một dòng lý do, không nút Chỉnh sửa, không nút Duyệt
+  await expect(page.locator('[data-planner-lock="readOnly"]')).toHaveText('Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.')
+  for (const name of ['Chỉnh sửa', 'Chỉnh sửa kiện', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
     await expect(button(page, name), name).toHaveCount(0)
   }
+  await expect(header(page)).toContainText(APPROVED_AT)
   expect(await headerOverflow(page), 'tablet header').toStrictEqual([])
-  await attachScreenshot(page, testInfo, 'planner-dispatcher-tablet')
+  await attachScreenshot(page, testInfo, 'planner-manager-tablet')
   expect(browserErrors).toStrictEqual([])
 })
