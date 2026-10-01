@@ -13,8 +13,8 @@ const ROWS: PermissionRow[] = PERMISSIONS.map((permission) => ({ permission }))
 
 /**
  * Phần bề rộng bảng (%) chia đều cho các cột vai trò; cột tên quyền nhận phần còn lại. Theo tỷ lệ chứ không px cố định (AGENTS mục 5,
- * LM-095): mười cột vai trò vẫn vừa 1.366 px không cuộn ngang (FE-0-01, quyết định G13 — trước đây mỗi cột 156 px), tên vai trò xuống
- * tối đa hai dòng, và cột tên quyền còn khoảng 370 px cho nhãn dài nhất trong hai dòng.
+ * LM-095): các cột vai trò vừa 1.366 px không cuộn ngang (FE-0-01, quyết định G13 — trước đây mỗi cột 156 px; tám vai trò từ
+ * FE-0-06), tên vai trò xuống tối đa hai dòng, và cột tên quyền còn khoảng 370 px cho nhãn dài nhất trong hai dòng.
  */
 const ROLE_COLUMNS_SHARE = 72
 const ROLE_COLUMN_WIDTH = `${ROLE_COLUMNS_SHARE / ROLES.length}%`
@@ -57,7 +57,7 @@ function createColumns(t: TFunction) {
  * Bảng V2 dạng "paper" trong một thẻ; dòng hai tầng (tên quyền + mã quyền) nên cao 56 px.
  *
  * Câu mô tả là dòng đầu của thẻ, không đứng trần phía trên: tab đè lên dải trời (`sky-overlap`), chữ trần ở đó không đọc được
- * (AGENTS mục 5). Thẻ cắt góc bằng `overflow-clip` chứ không `overflow-hidden`: 38 dòng quyền dài hơn màn hình, tiêu đề cột (tên vai
+ * (AGENTS mục 5). Thẻ cắt góc bằng `overflow-clip` chứ không `overflow-hidden`: 35 dòng quyền dài hơn màn hình, tiêu đề cột (tên vai
  * trò) phải dính khi cuộn, mà `overflow-hidden` biến thẻ thành khung cuộn và giữ tiêu đề lại trong thẻ.
  */
 export function PermissionMatrix() {

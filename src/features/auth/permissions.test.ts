@@ -3,8 +3,8 @@ import { BACKEND_ROLE_CODES, isPlatformRole, PLATFORM_ROLES, ROLES, type Role } 
 import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } from './permissions'
 
 /**
- * Ma trận quyền (FE-0-01, FE-0-07): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2 — cộng hai chỗ còn tạm (đơn hàng,
- * hai vai trò của Review 1) — không tính lại từ bảng trong code.
+ * Ma trận quyền (FE-0-01, FE-0-07, FE-0-06): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2 — cộng một chỗ còn tạm
+ * (đơn hàng) — không tính lại từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
@@ -23,19 +23,15 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
-  manufacturer: ['packages.register', 'shipments.manage'],
-  logistics: ['receiving.operate'],
 }
 
 test.each(ROLES)('%s has exactly its permissions from the matrix', (role) => {
   expect(PERMISSIONS.filter((permission) => can(role, permission))).toStrictEqual(EXPECTED[role])
 })
 
-test('eight roles of the backend plus the two Review 1 roles that stay until FE-0-06; each backend role has its code', () => {
-  expect(ROLES).toStrictEqual([
-    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver',
-    'manufacturer', 'logistics',
-  ])
+test('exactly the eight roles of the backend, each with its backend code; manufacturer and logistics are gone (FE-0-06)', () => {
+  expect(ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
+  expect(Object.keys(BACKEND_ROLE_CODES)).toStrictEqual([...ROLES])
   expect(BACKEND_ROLE_CODES).toStrictEqual({
     systemAdmin: 'SYSTEM_ADMIN',
     systemManager: 'SYSTEM_MANAGER',
@@ -48,9 +44,12 @@ test('eight roles of the backend plus the two Review 1 roles that stay until FE-
   })
 })
 
-test('one table: 38 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  expect(PERMISSIONS).toHaveLength(38)
-  expect(new Set(PERMISSIONS).size).toBe(38)
+test('one table: 35 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  // 33 quyền của ma trận PRD v2 và hai quyền đơn hàng còn tạm; ba quyền của nhà sản xuất và logistics đã bỏ (FE-0-06)
+  expect(PERMISSIONS).toHaveLength(35)
+  expect(new Set(PERMISSIONS).size).toBe(35)
+  expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.)/.test(permission))).toStrictEqual([])
+  expect(PERMISSIONS.slice(-2)).toStrictEqual(['orders.view', 'orders.edit'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
   for (const role of ROLES) {
     // Cùng thứ tự với cột của Ma trận quyền và chip "Công việc được phép"; không có bảng phụ nào cộng thêm quyền
@@ -62,20 +61,27 @@ test('one table: 38 permissions, each granted to at least one role; a role lists
 
 test('the three platform roles have no operational permission: no packages, trips, plans, fleet, warehouse or driver work', () => {
   const operational = PERMISSIONS.filter((permission) =>
-    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver|orders|shipments|receiving)\./.test(permission))
-  expect(operational).toHaveLength(31)
+    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver|orders)\./.test(permission))
+  expect(operational).toHaveLength(28)
   expect(PLATFORM_ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
   for (const role of PLATFORM_ROLES) {
     expect(isPlatformRole(role), role).toBe(true)
     expect(operational.filter((permission) => can(role, permission)), role).toStrictEqual([])
   }
-  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver', 'manufacturer', 'logistics'])
+  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
 })
 
 test('users and the audit log belong to the system administrator and the company administrator only', () => {
   for (const permission of ['users.manage', 'audit.view'] as const) {
     expect(ROLES.filter((role) => can(role, permission)), permission).toStrictEqual(['systemAdmin', 'companyAdmin'])
   }
+})
+
+test('registering packages, package types and QR labels belong to the dispatcher alone, through packages.manage (FE-0-06)', () => {
+  expect(ROLES.filter((role) => can(role, 'packages.manage'))).toStrictEqual(['dispatcher'])
+  // Quản lý công ty xem kho kiện (màn tới sau), không mở được màn đăng ký kiện của điều phối
+  expect(can('manager', 'packages.view')).toBe(true)
+  expect(can('manager', 'packages.manage')).toBe(false)
 })
 
 test('the dispatcher edits and approves plans, the company manager only reads them (FE-0-07); the manager edits no trip or order', () => {

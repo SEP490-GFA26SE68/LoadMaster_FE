@@ -15,9 +15,6 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
   dispatcher: '/chuyen',
   warehouse: '/kho',
   driver: '/tai-xe',
-  // LM-104: nhà sản xuất mở danh sách kiện đã đăng ký, công ty logistics mở màn nhận hàng (cả hai trong khung ứng dụng)
-  manufacturer: '/kien-hang',
-  logistics: '/nhan-hang',
 }
 
 /**

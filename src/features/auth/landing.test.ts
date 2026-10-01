@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { landingPath } from './landing'
+import { ROLES } from '@/types/user'
+import { landingPath, ROLE_HOME } from './landing'
 
 test('each role lands on its own screen when nothing else was asked for', () => {
   expect(landingPath('dispatcher')).toBe('/chuyen')
@@ -7,9 +8,13 @@ test('each role lands on its own screen when nothing else was asked for', () => 
   expect(landingPath('warehouse')).toBe('/kho')
   expect(landingPath('driver')).toBe('/tai-xe')
   expect(landingPath('companyAdmin')).toBe('/nguoi-dung')
-  // LM-104
-  expect(landingPath('manufacturer')).toBe('/kien-hang')
-  expect(landingPath('logistics', '/?lang=en')).toBe('/nhan-hang?lang=en')
+})
+
+test('every role has a home that is still a route: no role lands on the removed receiving screen (FE-0-06)', () => {
+  expect(ROLES.map((role) => [role, ROLE_HOME[role]])).toStrictEqual([
+    ['systemAdmin', '/nguoi-dung'], ['systemManager', '/ho-so'], ['systemSupporter', '/ho-so'], ['companyAdmin', '/nguoi-dung'],
+    ['manager', '/'], ['dispatcher', '/chuyen'], ['warehouse', '/kho'], ['driver', '/tai-xe'],
+  ])
 })
 
 test('the platform roles land on a screen that exists today: users for the system administrator, the profile for the other two (FE-0-03)', () => {

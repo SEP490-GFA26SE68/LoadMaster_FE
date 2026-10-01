@@ -108,7 +108,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
 })
 
 /**
- * FE-0-01 (quyết định G13): ma trận quyền 10 vai trò × 38 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
+ * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 35 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
  * xuống tối đa hai dòng và không tràn sang cột bên, nhãn quyền không bị cắt ở dòng cuối. Kiểm cả bản tiếng Anh (tên vai trò dài hơn).
  */
 for (const lang of ['vi', 'en'] as const) {
@@ -118,8 +118,8 @@ for (const lang of ['vi', 'en'] as const) {
     if (lang === 'en') await page.goto('/nguoi-dung?lang=en')
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
-    await expect(matrix.getByRole('columnheader')).toHaveCount(11)
-    await expect(matrix.getByRole('row')).toHaveCount(39)
+    await expect(matrix.getByRole('columnheader')).toHaveCount(9)
+    await expect(matrix.getByRole('row')).toHaveCount(36)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!
@@ -138,7 +138,7 @@ for (const lang of ['vi', 'en'] as const) {
     })
     expect(layout.scrolling).toStrictEqual([])
     expect(layout.right).toBeLessThanOrEqual(1366)
-    expect(layout.headers).toHaveLength(10)
+    expect(layout.headers).toHaveLength(8)
     expect(layout.headers.filter((header) => !header.inside || header.lines > 2)).toStrictEqual([])
     expect(layout.cut).toStrictEqual([])
     expect(browserErrors).toStrictEqual([])

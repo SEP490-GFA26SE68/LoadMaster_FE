@@ -32,13 +32,13 @@ async function pickRole(user: UserEvent, form: ReturnType<typeof renderForm>['fo
   await user.click(await screen.findByRole('option', { name: role }))
 }
 
-test('ô vai trò liệt kê mười vai trò theo thứ tự cột của ma trận quyền', async () => {
+test('ô vai trò liệt kê tám vai trò theo thứ tự cột của ma trận quyền', async () => {
   const user = userEvent.setup()
   const { form } = renderForm()
   await user.click(form.getByRole('combobox', { name: 'Vai trò' }))
   expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toStrictEqual([
     'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
-    'Nhân viên kho', 'Tài xế', 'Nhà sản xuất', 'Công ty logistics',
+    'Nhân viên kho', 'Tài xế',
   ])
 })
 

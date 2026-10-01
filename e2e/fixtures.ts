@@ -5,7 +5,7 @@ export { expect } from '@playwright/test'
 
 /**
  * Tài khoản demo công khai theo vai trò (seed kho, `src/lib/mock-db/seed-users.ts`), chung mật khẩu: tài khoản đầu tiên của vai trò —
- * tám vai trò của FE-0-01 (nhân sự công ty là của Long Bình) và hai vai trò Review 1 còn tạm.
+ * tám vai trò của backend (nhân sự công ty là của Long Bình).
  */
 export const DEMO_EMAILS: Readonly<Record<Role, string>> = {
   systemAdmin: 'quantri@loadmaster.vn',
@@ -16,8 +16,6 @@ export const DEMO_EMAILS: Readonly<Record<Role, string>> = {
   dispatcher: 'dieuphoi@loadmaster.vn',
   warehouse: 'kho@loadmaster.vn',
   driver: 'taixe@loadmaster.vn',
-  manufacturer: 'sanxuat@loadmaster.vn',
-  logistics: 'logistics@loadmaster.vn',
 }
 export const DEMO_PASSWORD = 'loadmaster'
 

@@ -17,7 +17,7 @@ test('a valid account is normalised: text trimmed, phone stored in its display f
 })
 
 test('a company role needs a depot; a blank one is reported at the depot field', () => {
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver', 'manufacturer', 'logistics'] as const) {
+  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(errorsOf({ ...VALID, role, depot: '   ' }), role).toStrictEqual(['depot: admin.users.errors.depotRequired'])
   }
 })
