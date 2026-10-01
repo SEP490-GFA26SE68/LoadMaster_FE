@@ -63,8 +63,8 @@ export function useLoadingScan({ tripId, pending, onConfirmed }: {
 
 /** Quét sai kiện: câu riêng nêu cả hai mã kèm tên kiện; lỗi khác của kho dùng câu chung (`dataErrors`). */
 export function scanErrorMessage(error: unknown, t: TFunction, nameById: ReadonlyMap<string, string>): string {
-  if (isMockDbError(error) && error.code === 'QR_WRONG_PACKAGE') {
-    const { expected, scanned } = (error as MockDbError<'QR_WRONG_PACKAGE'>).params
+  if (isMockDbError(error) && error.code === 'WRONG_PACKAGE_SCANNED') {
+    const { expected, scanned } = (error as MockDbError<'WRONG_PACKAGE_SCANNED'>).params
     return t('warehouse.scan.wrongPackage', {
       scanned,
       scannedName: nameById.get(scanned) ?? scanned,

@@ -101,9 +101,9 @@ export type MockDbErrorParams = {
   VEHICLE_TYPE_INVALID: { field: string }
   VEHICLE_TYPE_IN_USE: { vehicleTypeId: string; vehicleIds: string[] }
   /** Mã QR quét được không thuộc phương án / chuyến đang làm. */
-  QR_NOT_IN_TRIP: { tripId: string; token: string }
+  PACKAGE_NOT_IN_TRIP: { tripId: string; token: string }
   /** Quét đúng kiện của chuyến nhưng không phải kiện của bước hiện tại. */
-  QR_WRONG_PACKAGE: { expected: string; scanned: string }
+  WRONG_PACKAGE_SCANNED: { expected: string; scanned: string }
   /** Kiện quét được thuộc điểm giao khác. */
   QR_WRONG_STOP: { packageInstanceId: string; stopNumber: number }
   /** Số seal trống hoặc dài quá. */

@@ -25,9 +25,9 @@ test('the warehouse confirms the current step by scanning its label; another pac
   const db = createMockDb()
   const [current, following] = await nextLoadingInstance(db, 'TRIP-011')
   await expect(db.confirmLoadingByQr('TRIP-011', await tokenOf(db, 'TRIP-011', following ?? ''))).rejects.toMatchObject({
-    code: 'QR_WRONG_PACKAGE', params: { expected: current, scanned: following },
+    code: 'WRONG_PACKAGE_SCANNED', params: { expected: current, scanned: following },
   })
-  await expect(db.confirmLoadingByQr('TRIP-011', await tokenOf(db, 'TRIP-010', 'PKG-001-01'))).rejects.toMatchObject({ code: 'QR_NOT_IN_TRIP' })
+  await expect(db.confirmLoadingByQr('TRIP-011', await tokenOf(db, 'TRIP-010', 'PKG-001-01'))).rejects.toMatchObject({ code: 'PACKAGE_NOT_IN_TRIP' })
   const { trip, packageInstanceId } = await db.confirmLoadingByQr('TRIP-011', (await tokenOf(db, 'TRIP-011', current ?? '')).toLowerCase())
   expect(packageInstanceId).toBe(current)
   expect(trip.loading?.steps.at(-1)).toMatchObject({ packageInstanceId: current, outcome: 'loaded', via: 'qr' })

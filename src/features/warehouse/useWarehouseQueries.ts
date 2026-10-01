@@ -57,7 +57,7 @@ export function useTripLabelsQuery(tripId: string) {
   return useQuery({ queryKey: ['warehouse-labels', tripId], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
 }
 
-/** Quét QR xác nhận kiện của bước hiện tại; trả mã instance vừa ghi. Lỗi `QR_WRONG_PACKAGE` / `QR_NOT_IN_TRIP` hiện qua `dataErrorMessage`. */
+/** Quét QR xác nhận kiện của bước hiện tại; trả mã instance vừa ghi. Lỗi `WRONG_PACKAGE_SCANNED` / `PACKAGE_NOT_IN_TRIP` hiện qua `dataErrorMessage`. */
 export function useConfirmLoadingByQrMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: (token: string) => confirmLoadingByQr(tripId, token), onSettled: () => refreshAfterWrite(client) })

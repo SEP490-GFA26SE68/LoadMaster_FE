@@ -50,8 +50,8 @@ export const dataErrors = {
   REVISION_NOT_REVIEWABLE: 'Phương án {revisionId} không còn chờ duyệt.',
   VEHICLE_TYPE_INVALID: 'Loại xe chưa hợp lệ: cần tên, kích thước lòng thùng và tải trọng lớn hơn 0.',
   VEHICLE_TYPE_IN_USE: 'Loại xe {vehicleTypeId} còn gắn với xe {vehicleIds} nên không xoá được.',
-  QR_NOT_IN_TRIP: 'Mã {token} không thuộc chuyến {tripId}.',
-  QR_WRONG_PACKAGE: 'Đã quét kiện {scanned}, bước này cần kiện {expected}.',
+  PACKAGE_NOT_IN_TRIP: 'Mã {token} không thuộc chuyến {tripId}.',
+  WRONG_PACKAGE_SCANNED: 'Đã quét kiện {scanned}, bước này cần kiện {expected}.',
   QR_WRONG_STOP: 'Kiện {packageInstanceId} thuộc điểm giao {stopNumber}.',
   SEAL_INVALID: 'Số seal cần từ 1 đến {max} ký tự.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */

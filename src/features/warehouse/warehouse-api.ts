@@ -50,7 +50,7 @@ export function fetchTripLabels(tripId: string): Promise<TripLabel[]> {
 }
 
 /**
- * Quét QR kiện của bước hiện tại: kho ghi "đã xếp" (`via: 'qr'`). Kiện khác của chuyến: `QR_WRONG_PACKAGE` (kèm mã kiện cần xếp).
+ * Quét QR kiện của bước hiện tại: kho ghi "đã xếp" (`via: 'qr'`). Kiện khác của chuyến: `WRONG_PACKAGE_SCANNED` (kèm mã kiện cần xếp).
  * Kiện cuối cùng thì hoàn tất xếp luôn, như `recordLoadingStep`.
  */
 export async function confirmLoadingByQr(tripId: string, token: string): Promise<ScanResult<Trip>> {

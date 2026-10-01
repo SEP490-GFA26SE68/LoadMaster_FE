@@ -118,7 +118,7 @@ export type Review1Db = {
   listTripLabels(tripId: string): Promise<TripLabel[]>
   /** Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2). */
   getTripReadiness(tripId: string): Promise<TripReadiness>
-  /** Kho quét QR kiện của bước hiện tại (kiện chưa ghi đầu tiên theo thứ tự xếp): ghi "đã xếp". Kiện khác: `QR_WRONG_PACKAGE`. */
+  /** Kho quét QR kiện của bước hiện tại (kiện chưa ghi đầu tiên theo thứ tự xếp): ghi "đã xếp". Kiện khác: `WRONG_PACKAGE_SCANNED`. */
   confirmLoadingByQr(tripId: string, token: string): Promise<ScanResult<Trip>>
   /** Ghi số seal khi đã xếp xong (`loaded`), trước khi xe chạy. */
   recordSeal(tripId: string, sealNumber: string): Promise<Trip>
