@@ -83,6 +83,9 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-approved-1366')
   await expectOneRow(page, 1600)
+  // 1.680 px: tiêu đề đổi sang tên tuyến; nhãn "Duyệt bởi <tên> lúc" không được lấy chỗ của nó (FE-0-07)
+  await expectOneRow(page, 1680)
+  await expect(page.getByRole('heading', { level: 1, name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà', exact: true })).toBeVisible()
   await page.setViewportSize({ width: 1366, height: 768 })
 
   await enterEdit(page)
@@ -108,6 +111,9 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await expect(approveEdits).toHaveCount(0)
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-approved-edited-1366')
+  // 1.536 px: nhãn "Đã chỉnh tay" hiện cạnh MOCK RESULT và vẫn nằm trong khối tiêu đề, không đè lên chỉ số (FE-0-07)
+  await expectOneRow(page, 1536)
+  await expect(header(page).getByText('Đã chỉnh tay', { exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 

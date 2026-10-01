@@ -465,7 +465,10 @@ công cụ riêng (tablet hai hàng 56 px). Thêm gì vào hàng này phải đo
 Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòng) giữ `<select>` gốc.
 *(đã điều chỉnh 28/09/2026, V2.3, LM-107)* Trang Planner nền tối `--canvas-1`; thanh trên là kính tối (`.glass-dark`) nổi cách mép 14 px
 từ 1.280 px, vẫn cao 56 px. Tiêu đề là tên tuyến **chỉ từ 1.680 px**; hẹp hơn là mã chuyến và dòng dưới chỉ còn mã revision — không cắt chữ
-bằng dấu ba chấm (`layout-1366`). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
+bằng dấu ba chấm (`layout-1366`). *(bổ sung 02/10/2026, FE-0-07)* Nhãn "Duyệt bởi <tên> lúc" mang họ tên người duyệt: rộng tới 208 px
+(điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và nút So sánh phương án **chỉ icon dưới 1.760 px** — để chữ
+từ 1.536 px như trước thì khối tiêu đề hết chỗ, nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
+thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
 luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
 (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
 bằng DOM/SVG, nền đặc 85 % thay `backdrop-filter` vì chúng di chuyển mỗi khung hình. Nút nhấn giữ (Xếp/Dỡ, Theo bước) là nền cyan mờ +
@@ -1039,6 +1042,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Chữ 11px và 13px rải rác | Ép về 11px (micro) hoặc 12/14px | Giữ thang chữ ở mục 4 |
 | Màn kho không có nút thoát | Thêm nút quay lại 56px | Mục 10: màn toàn màn hình phải có lối ra |
 | Ô vị trí 3D ở màn kho là ảnh tĩnh | Three.js xoay được | Công nhân cần nhìn quanh kiện để đặt đúng |
+| Planner 1.536 px: nút "So sánh phương án" có chữ | Chỉ icon dưới 1.760 px, chữ ở tooltip | Nhãn "Duyệt bởi <tên> lúc" dài hơn "Đã duyệt lúc" của bản mẫu; để chữ thì tiêu đề đè lên chỉ số (FE-0-07) |
 
 ## 12. Tối ưu token và context *(bổ sung)*
 
