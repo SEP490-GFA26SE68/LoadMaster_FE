@@ -1,17 +1,20 @@
 /**
- * Trạng thái chuyến của `StatusBadge` (LM-070, LM-104). Key trùng `TripStatus`: năm trạng thái của backend cộng Đã huỷ.
- * `sub` là dòng phụ (`TripSubStatusTag`): tiến độ kho và phương án lỗi thời — không phải trạng thái.
+ * Trạng thái chuyến của `StatusBadge` (LM-070, FE-0-05). Key trùng `TripStatus`: sáu trạng thái của backend.
+ * `sub` là dòng phụ (`TripSubStatusTag`): dưới Đã lập kế hoạch là phương án chờ duyệt, đã duyệt, lỗi thời; dưới Đang xếp hàng là
+ * tiến độ kho — không phải trạng thái.
  */
 export const status = {
-  nhap: 'Nháp',
-  da_toi_uu: 'Đã tối ưu',
-  da_duyet: 'Đã duyệt',
-  dang_van_chuyen: 'Đang vận chuyển',
-  hoan_thanh: 'Hoàn thành',
-  da_huy: 'Đã huỷ',
+  DRAFT: 'Nháp',
+  PLANNED: 'Đã lập kế hoạch',
+  LOADING: 'Đang xếp hàng',
+  IN_TRANSIT: 'Đang vận chuyển',
+  DELIVERED: 'Đã giao',
+  CANCELLED: 'Đã huỷ',
   sub: {
+    awaitingApproval: 'Chờ duyệt',
+    approved: 'Đã duyệt',
     stale: 'Lỗi thời — cần tối ưu lại',
-    loading: 'Kho đang xếp {recorded} / {total}',
-    loaded: 'Đã xếp xong',
+    loading: 'Đang xếp {recorded} / {total}',
+    loaded: 'Xếp xong — chờ xuất phát',
   },
 } as const

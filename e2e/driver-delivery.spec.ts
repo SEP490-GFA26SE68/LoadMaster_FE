@@ -3,7 +3,7 @@ import { heightOf, MOCK_DB, overflowingText } from './spec-flow-helpers'
 
 /**
  * LM-087: tài xế demo giao hết chuyến đã xếp xong `TRIP-010` (3 điểm, 210 kiện) trên điện thoại, báo một sự cố, thấy tổng kết;
- * điều phối viên đọc cùng kho thấy chuyến "Hoàn thành" và sự cố. Kho nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang.
+ * điều phối viên đọc cùng kho thấy chuyến "Đã giao" và sự cố. Kho nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -77,7 +77,7 @@ test('phone: the demo driver delivers every stop, reports one issue and sees the
   await expect(issues).toContainText('Khách đổi đơn, hẹn giao lại')
   expect(await overflowingText(page)).toStrictEqual([])
 
-  // Điều phối viên đọc cùng kho: chuyến Hoàn thành, đúng một sự cố
+  // Điều phối viên đọc cùng kho: chuyến Đã giao, đúng một sự cố
   const store = await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb, tripStatus } = (await import(url)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
@@ -86,7 +86,7 @@ test('phone: the demo driver delivers every stop, reports one issue and sees the
       issues: trip.delivery?.issues.map((issue) => [issue.kind, issue.packageInstanceId, issue.stopNumber, issue.reportedBy]),
     }
   }, { url: MOCK_DB, tripId: TRIP })
-  expect(store).toStrictEqual({ status: 'hoan_thanh', issues: [['refused', refused, 1, 'US-0004']] })
+  expect(store).toStrictEqual({ status: 'DELIVERED', issues: [['refused', refused, 1, 'US-0004']] })
 
   // Về danh sách: chuyến nằm ở nhóm đã hoàn thành
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).last().tap()

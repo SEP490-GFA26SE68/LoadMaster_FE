@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import { createMockDb } from '@/lib/mock-db'
 import {
-  filterTripRows, splitVehicleName, TRIP_STATUS_GROUP_SLUGS, tripFilterOptions, tripRow, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow,
+  filterTripRows, needsAction, normalizeStatusFilter, splitVehicleName, TRIP_LIST_TABS, tripFilterOptions, tripRow, tripsPerDate, tripTabCounts,
+  UNASSIGNED_DRIVER, type TripRow,
 } from './trip-list'
 
 /** Seam: dòng danh sách chuyến dựng từ dữ liệu kho (chuyến + xe + tài xế + revision), không có số nào ngoài kho. */
@@ -26,41 +27,41 @@ async function seedRows(): Promise<TripRow[]> {
 
 const NO_FILTER = { 'trang-thai': '', tu: '', den: '', xe: '', 'tai-xe': '' } as const
 
-test('seed trip: approved revision gives its volume utilisation, the "approved" status, run date and driver', async () => {
+test('seed trip: approved revision gives its volume utilisation, the "planned" status with the "approved" line, run date and driver', async () => {
   const { db, trip, vehicle } = await seed()
   const driver = await db.getUser('US-0004')
   const row = tripRow(trip, vehicle, await db.listRevisions(trip.id), driver)
   expect(row).toMatchObject({
     id: 'TRIP-2026-0914', name: trip.name, vehicleName: vehicle.name, scheduledDate: '2026-09-14',
-    driverId: 'US-0004', driverName: 'Phạm Quốc Dũng', packageCount: 132, status: 'da_duyet', phase: 'planning',
+    driverId: 'US-0004', driverName: 'Phạm Quốc Dũng', packageCount: 132, status: 'PLANNED', sub: { kind: 'approved' }, phase: 'planning',
   })
   expect(row.volumePercent).toBeCloseTo(40.8, 1)
   expect(row.route).toBe(trip.stops.map((stop) => stop.name).join(' → '))
 })
 
-test('a trip without revisions is a draft with no utilisation and no driver', async () => {
+test('a trip without revisions is a draft with no secondary line, no utilisation and no driver', async () => {
   const { db, vehicle } = await seed()
   const created = await db.createTrip({ name: 'Chuyến Q.7', vehicleId: vehicle.id, stops: [{ id: 'S1', name: 'Q.7', address: '' }], packages: [], scheduledDate: '2026-09-15' })
-  expect(tripRow(created, vehicle, [])).toMatchObject({ packageCount: 0, volumePercent: null, status: 'nhap', driverName: null })
+  expect(tripRow(created, vehicle, [])).toMatchObject({ packageCount: 0, volumePercent: null, status: 'DRAFT', sub: null, driverName: null })
 })
 
-test('changing cargo after optimisation makes the approved plan stale: optimised again, with the stale line (LM-104)', async () => {
+test('changing cargo after optimisation makes the approved plan stale: still planned, with the stale line (FE-0-05)', async () => {
   const { db, trip, vehicle } = await seed()
   const changed = await db.updateTrip(trip.id, { packages: trip.packages.slice(1) })
-  expect(tripRow(changed, vehicle, await db.listRevisions(trip.id))).toMatchObject({ status: 'da_toi_uu', sub: { kind: 'stale' } })
+  expect(tripRow(changed, vehicle, await db.listRevisions(trip.id))).toMatchObject({ status: 'PLANNED', sub: { kind: 'stale' } })
 })
 
-test('an optimised but not yet approved trip is "optimised"', async () => {
+test('an optimised but not yet approved trip is planned, awaiting approval', async () => {
   const { db, trip, vehicle } = await seed()
   const [source] = await db.listRevisions(trip.id)
-  expect(tripRow(trip, vehicle, [source!]).status).toBe('da_toi_uu')
+  expect(tripRow(trip, vehicle, [source!])).toMatchObject({ status: 'PLANNED', sub: { kind: 'awaitingApproval' } })
 })
 
-test('warehouse phases stay approved with a progress line; delivering is in transit (LM-104)', async () => {
+test('warehouse phases are "loading" with a progress line; delivering is in transit, completed is delivered (FE-0-05)', async () => {
   const rows = await seedRows()
   const statusOf = (id: string) => rows.find((row) => row.id === id)?.status
   expect([statusOf('TRIP-011'), statusOf('TRIP-010'), statusOf('TRIP-009'), statusOf('TRIP-001'), statusOf('TRIP-004')])
-    .toStrictEqual(['da_duyet', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy'])
+    .toStrictEqual(['LOADING', 'LOADING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'])
   expect([rows.find((row) => row.id === 'TRIP-011')?.sub, rows.find((row) => row.id === 'TRIP-010')?.sub])
     .toStrictEqual([{ kind: 'loading', recorded: 110, total: 280 }, { kind: 'loaded' }])
 })
@@ -87,10 +88,7 @@ test('status, run-date range, vehicle and driver filters combine; "unassigned" f
   const rows = await seedRows()
   const ids = (filters: Partial<Record<keyof typeof NO_FILTER, string>>) =>
     filterTripRows(rows, '', { ...NO_FILTER, ...filters }).map((row) => row.id).toSorted()
-  expect(ids({ 'trang-thai': 'dang_van_chuyen' })).toStrictEqual(['TRIP-009'])
-  // Liên kết cũ (trước LM-104) vẫn lọc được
-  expect(ids({ 'trang-thai': 'dang_giao' })).toStrictEqual(['TRIP-009'])
-  expect(ids({ 'trang-thai': 'dang-thuc-hien' })).toStrictEqual(['TRIP-009'])
+  expect(ids({ 'trang-thai': 'dang-van-chuyen' })).toStrictEqual(['TRIP-009'])
   expect(ids({ tu: '2026-09-14', den: '2026-09-14' })).toStrictEqual(['TRIP-009', 'TRIP-010', 'TRIP-011', 'TRIP-2026-0914'])
   expect(ids({ xe: 'VEHICLE-006' })).toStrictEqual(['TRIP-004', 'TRIP-005', 'TRIP-009'])
   expect(ids({ 'tai-xe': 'US-0004' })).toStrictEqual(['TRIP-002', 'TRIP-007', 'TRIP-010', 'TRIP-2026-0914'])
@@ -98,21 +96,58 @@ test('status, run-date range, vehicle and driver filters combine; "unassigned" f
   expect(ids({ 'tai-xe': 'US-0004', tu: '2026-09-14' })).toStrictEqual(['TRIP-010', 'TRIP-2026-0914'])
 })
 
-test('status groups of the tabs (LM-104): "needs action" is optimised (stale included), "upcoming" is approved before the truck leaves', async () => {
+test('the status filter takes one slug per status, Vietnamese without diacritics (FE-0-05)', async () => {
   const rows = await seedRows()
   const ids = (status: string) => filterTripRows(rows, '', { ...NO_FILTER, 'trang-thai': status }).map((row) => row.id).toSorted()
-  expect(ids(TRIP_STATUS_GROUP_SLUGS.review)).toStrictEqual(['TRIP-012', 'TRIP-013'])
-  expect(ids(TRIP_STATUS_GROUP_SLUGS.upcoming)).toStrictEqual(['TRIP-010', 'TRIP-011', 'TRIP-2026-0914'])
-  expect(ids('dang_van_chuyen')).toStrictEqual(['TRIP-009'])
+  // Seed neo 14/09/2026: TRIP-014 nháp; chuyến chính đã duyệt, TRIP-012 chờ duyệt, TRIP-013 lỗi thời; TRIP-011 đang xếp, TRIP-010 xếp xong
+  expect(ids('nhap')).toStrictEqual(['TRIP-014'])
+  expect(ids('da-lap-ke-hoach')).toStrictEqual(['TRIP-012', 'TRIP-013', 'TRIP-2026-0914'])
+  expect(ids('dang-xep-hang')).toStrictEqual(['TRIP-010', 'TRIP-011'])
+  expect(ids('dang-van-chuyen')).toStrictEqual(['TRIP-009'])
+  expect(ids('da-giao')).toStrictEqual(['TRIP-001', 'TRIP-002', 'TRIP-003', 'TRIP-005', 'TRIP-006', 'TRIP-007', 'TRIP-008'])
+  expect(ids('da-huy')).toStrictEqual(['TRIP-004'])
+  // Giá trị lạ không khớp chuyến nào
+  expect(ids('khong-co')).toStrictEqual([])
 })
 
-test('tab counts: every trip, each group, in transit, completed and cancelled — with the draft they add up to all', async () => {
+test('old status values on saved links read as the new slugs and still filter (FE-0-05)', async () => {
+  // Sáu trạng thái của LM-104
+  expect(['nhap', 'da_toi_uu', 'da_duyet', 'dang_van_chuyen', 'hoan_thanh', 'da_huy'].map(normalizeStatusFilter))
+    .toStrictEqual(['nhap', 'da-lap-ke-hoach', 'da-lap-ke-hoach', 'dang-van-chuyen', 'da-giao', 'da-huy'])
+  // Hai nhóm tab của LM-104
+  expect(['can-xu-ly', 'sap-chay'].map(normalizeStatusFilter)).toStrictEqual(['da-lap-ke-hoach', 'da-lap-ke-hoach'])
+  // Trước LM-104: mười trạng thái và nhóm "đang thực hiện"
+  expect(['dang-thuc-hien', 'dang_giao', 'dang_xep_hang', 'da_xep_xong', 'can_xem_lai', 'dang_toi_uu'].map(normalizeStatusFilter))
+    .toStrictEqual(['dang-van-chuyen', 'dang-van-chuyen', 'dang-xep-hang', 'dang-xep-hang', 'da-lap-ke-hoach', 'da-lap-ke-hoach'])
+  // Slug mới và rỗng giữ nguyên
+  expect(['', 'da-lap-ke-hoach', 'dang-xep-hang', 'da-giao'].map(normalizeStatusFilter)).toStrictEqual(['', 'da-lap-ke-hoach', 'dang-xep-hang', 'da-giao'])
+
   const rows = await seedRows()
-  // Seed neo 14/09/2026: 15 chuyến; TRIP-004 đã huỷ; TRIP-001…008 trừ 004 đã hoàn thành; TRIP-014 nháp chỉ nằm ở Tất cả
-  const counts = tripTabCounts(rows)
-  expect(counts).toStrictEqual({ all: 15, review: 2, upcoming: 3, transit: 1, completed: 7, cancelled: 1 })
-  const drafts = rows.filter((row) => row.status === 'nhap').length
-  expect(drafts + counts.review + counts.upcoming + counts.transit + counts.completed + counts.cancelled).toBe(counts.all)
+  const ids = (status: string) => filterTripRows(rows, '', { ...NO_FILTER, 'trang-thai': status }).map((row) => row.id).toSorted()
+  expect(ids('da_duyet')).toStrictEqual(['TRIP-012', 'TRIP-013', 'TRIP-2026-0914'])
+  expect(ids('hoan_thanh')).toHaveLength(7)
+  expect(ids('dang_giao')).toStrictEqual(['TRIP-009'])
+  expect(ids('da_xep_xong')).toStrictEqual(['TRIP-010', 'TRIP-011'])
+})
+
+test('tabs are "all" then the six statuses in lifecycle order, each with its URL slug; their counts add up to all', async () => {
+  expect(TRIP_LIST_TABS).toStrictEqual([
+    { key: 'all', value: '' },
+    { key: 'DRAFT', value: 'nhap' },
+    { key: 'PLANNED', value: 'da-lap-ke-hoach' },
+    { key: 'LOADING', value: 'dang-xep-hang' },
+    { key: 'IN_TRANSIT', value: 'dang-van-chuyen' },
+    { key: 'DELIVERED', value: 'da-giao' },
+    { key: 'CANCELLED', value: 'da-huy' },
+  ])
+  const rows = await seedRows()
+  // Seed neo 14/09/2026: 15 chuyến; TRIP-004 đã huỷ; TRIP-001…008 trừ 004 đã giao; TRIP-014 nháp
+  expect(tripTabCounts(rows)).toStrictEqual({ all: 15, DRAFT: 1, PLANNED: 3, LOADING: 2, IN_TRANSIT: 1, DELIVERED: 7, CANCELLED: 1 })
+})
+
+test('trips that need the user: planned with a plan awaiting approval or a stale plan — not the approved one, not warehouse phases', async () => {
+  const rows = await seedRows()
+  expect(rows.filter(needsAction).map((row) => row.id).toSorted()).toStrictEqual(['TRIP-012', 'TRIP-013'])
 })
 
 test('trips per run date count the whole filtered list, one entry per date', async () => {

@@ -139,6 +139,8 @@ export const manager = {
       vehicle: 'Xe',
       driver: 'Tài xế',
       status: 'Trạng thái',
+      /** Dòng phụ của trạng thái: phương án chờ duyệt / đã duyệt / lỗi thời, tiến độ kho. */
+      statusDetail: 'Chi tiết trạng thái',
       packages: 'Số kiện',
       cargoWeight: 'Khối lượng hàng (kg)',
       volume: 'Lấp đầy thể tích bản duyệt (%)',

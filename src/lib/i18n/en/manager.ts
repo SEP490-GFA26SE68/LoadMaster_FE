@@ -125,6 +125,7 @@ export const manager = {
       vehicle: 'Vehicle',
       driver: 'Driver',
       status: 'Status',
+      statusDetail: 'Status detail',
       packages: 'Packages',
       cargoWeight: 'Cargo weight (kg)',
       volume: 'Approved plan volume utilization (%)',

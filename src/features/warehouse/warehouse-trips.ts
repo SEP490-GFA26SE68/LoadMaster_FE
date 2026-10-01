@@ -1,4 +1,4 @@
-import { isStaleTrip, latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
+import { latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 
 /** Giai đoạn của chuyến ở danh sách kho (D-46): đang xếp, chờ xếp, và bản duyệt lỗi thời chờ tối ưu lại và quản lý công ty duyệt. */
@@ -14,7 +14,7 @@ export type WarehouseTripRow = {
   readonly scheduledDate: string
   /** Tên xe (có biển số); xe không còn trong kho thì là mã xe. */
   readonly vehicleName: string
-  /** Trạng thái chuyến (chip) và dòng phụ (tiến độ kho, lỗi thời) như mọi màn (LM-104). */
+  /** Trạng thái chuyến (chip) và dòng phụ (đã duyệt, lỗi thời, tiến độ kho) như mọi màn (FE-0-05). */
   readonly status: TripStatus
   readonly sub: TripSubStatus | null
   readonly stage: WarehouseStage
@@ -36,12 +36,16 @@ export function loadingSessionPath(tripId: string): string {
 /** Đang xếp trước (làm tiếp cho xong), rồi chờ xếp, cuối cùng chuyến đang chặn chờ duyệt lại. */
 const STAGE_ORDER: Readonly<Record<WarehouseStage, number>> = { loading: 0, waiting: 1, stale: 2 }
 
-/** Chuyến kho cần thấy: đang xếp, đã duyệt chờ xếp, hoặc bản duyệt lỗi thời trong pha lập kế hoạch; còn lại không hiện. */
+/**
+ * Chuyến kho cần thấy: đang xếp, đã duyệt chờ xếp, hoặc bản duyệt lỗi thời trong pha lập kế hoạch; còn lại không hiện. Pha lập kế
+ * hoạch đọc dòng phụ của chuyến (`tripSubStatus`): "đã duyệt" là chờ xếp, "lỗi thời" là chờ tối ưu và duyệt lại.
+ */
 function warehouseStage(trip: Trip, revisions: readonly Revision[]): WarehouseStage | null {
   if (trip.phase === 'loading') return 'loading'
   if (trip.phase !== 'planning') return null
-  if (isStaleTrip(trip, revisions)) return 'stale'
-  return tripStatus(trip, revisions) === 'da_duyet' ? 'waiting' : null
+  const plan = tripSubStatus(trip, revisions)?.kind
+  if (plan === 'stale') return 'stale'
+  return plan === 'approved' ? 'waiting' : null
 }
 
 /**

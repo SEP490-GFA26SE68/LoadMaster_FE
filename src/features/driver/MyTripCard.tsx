@@ -4,7 +4,7 @@ import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
-import { isReadyToDrive, type MyTripRow } from './my-trips'
+import { isPreparing, type MyTripRow } from './my-trips'
 
 /** Mở một chuyến ở màn điểm giao (hoặc tổng kết nếu đã hoàn thành). */
 export function driverTripPath(tripId: string): string {
@@ -18,7 +18,7 @@ export function driverTripPath(tripId: string): string {
 export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?: boolean }) {
   const t = useT()
   const format = useFormat()
-  const preparing = row.status === 'da_duyet' && !isReadyToDrive(row)
+  const preparing = isPreparing(row)
 
   return (
     <li className="flex flex-col gap-2 rounded-md border border-border bg-bg p-4">
@@ -37,7 +37,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {/* Tên xe có biển số: dòng riêng để biển số không bị ngắt ở dấu gạch trên điện thoại */}
       <p className="m-0 text-text-2">{row.vehicleName}</p>
 
-      {row.status === 'dang_van_chuyen' && row.currentStop !== undefined ? (
+      {row.status === 'IN_TRANSIT' && row.currentStop !== undefined ? (
         <p className="m-0 font-medium">{t('driver.list.atStop', { number: row.currentStop, total: row.stopCount })}</p>
       ) : null}
       {preparing ? (
@@ -48,7 +48,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
             : t('driver.list.waitingApproved')}
         </p>
       ) : null}
-      {row.status === 'hoan_thanh' && row.completedAt ? (
+      {row.status === 'DELIVERED' && row.completedAt ? (
         <p className="m-0 text-text-2">
           {t('driver.list.completed', { time: format.time(row.completedAt), date: format.date(row.completedAt) })}
           {row.issueCount > 0 ? <span className="font-medium text-badge-warning-fg"> · {t('driver.list.issues', { count: row.issueCount })}</span> : null}
@@ -58,7 +58,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {preparing ? null : (
         <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className="mt-1 self-start">
           <Link to={driverTripPath(row.id)}>
-            {row.status === 'dang_van_chuyen' ? t('driver.list.resume') : row.status === 'hoan_thanh' ? t('driver.list.viewSummary') : t('driver.list.open')}
+            {row.status === 'IN_TRANSIT' ? t('driver.list.resume') : row.status === 'DELIVERED' ? t('driver.list.viewSummary') : t('driver.list.open')}
           </Link>
         </Button>
       )}

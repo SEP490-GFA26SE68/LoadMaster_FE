@@ -26,41 +26,28 @@ export function latestApproved<R extends Pick<Revision, 'approvedAt'>>(revisions
 }
 
 /**
- * Trạng thái hiển thị của chuyến (D-45, LM-104): năm trạng thái của backend cộng Đã huỷ. Pha kho (`loading`, `loaded`) vẫn là Đã
- * duyệt — tiến độ kho là dòng phụ (`tripSubStatus`); `delivering` là Đang vận chuyển. Pha `planning` suy từ revision hiển thị (bản
- * duyệt mới nhất, không có thì bản mới nhất): chưa có là Nháp; lỗi thời là Đã tối ưu (bản duyệt lỗi thời hết hiệu lực, kho không
- * xếp theo nó) kèm dòng phụ "lỗi thời"; đã duyệt là Đã duyệt; còn lại Đã tối ưu.
+ * Trạng thái hiển thị của chuyến (D-81, FE-0-05): sáu trạng thái của backend, suy từ pha kho lưu. `loading` và `loaded` là Đang xếp
+ * hàng, `delivering` là Đang vận chuyển, `completed` là Đã giao, `cancelled` là Đã huỷ.
+ *
+ * Pha `planning` theo luật TẠM, bỏ khi FE-4b-09 có tối ưu tuyến (backend chỉ sang `PLANNED` khi tối ưu tuyến xong): chuyến đã có
+ * revision là Đã lập kế hoạch, chưa có là Nháp. Phương án chờ duyệt, đã duyệt hay lỗi thời nằm ở dòng phụ (`tripSubStatus`).
  */
-export function tripStatus(
-  trip: Pick<Trip, 'phase' | 'inputVersion'>,
-  revisions: readonly Pick<Revision, 'approvedAt' | 'inputVersion'>[],
-): TripStatus {
+export function tripStatus(trip: Pick<Trip, 'phase'>, revisions: readonly Pick<Revision, 'id'>[]): TripStatus {
   switch (trip.phase) {
-    case 'cancelled': return 'da_huy'
-    case 'completed': return 'hoan_thanh'
-    case 'delivering': return 'dang_van_chuyen'
+    case 'cancelled': return 'CANCELLED'
+    case 'completed': return 'DELIVERED'
+    case 'delivering': return 'IN_TRANSIT'
     case 'loaded':
-    case 'loading': return 'da_duyet'
-    case 'planning': break
+    case 'loading': return 'LOADING'
+    case 'planning': return revisions.length > 0 ? 'PLANNED' : 'DRAFT'
   }
-  const shown = latestApproved(revisions) ?? revisions.at(-1)
-  if (!shown) return 'nhap'
-  if (isStale(shown, trip)) return 'da_toi_uu'
-  return shown.approvedAt !== undefined ? 'da_duyet' : 'da_toi_uu'
-}
-
-/** Pha lập kế hoạch và revision hiển thị lỗi thời: dữ liệu xe/kiện đổi sau lần tối ưu, cần tối ưu lại (D-31). */
-export function isStaleTrip(
-  trip: Pick<Trip, 'phase' | 'inputVersion'>,
-  revisions: readonly Pick<Revision, 'approvedAt' | 'inputVersion'>[],
-): boolean {
-  const shown = latestApproved(revisions) ?? revisions.at(-1)
-  return trip.phase === 'planning' && shown !== undefined && isStale(shown, trip)
 }
 
 /**
- * Dòng phụ dưới chip trạng thái (LM-104), mọi màn hiện giống nhau: phương án hiển thị lỗi thời trong pha lập kế hoạch; kho đang xếp
- * (kiện đã có kết quả / kiện của phương án kho xếp theo — bản ghi lúc bắt đầu xếp); kho đã xếp xong. Không có thì `null`.
+ * Dòng phụ dưới chip trạng thái (FE-0-05), mọi màn hiện giống nhau. Không có thì `null`.
+ * - Đang xếp hàng: kho đang xếp (kiện đã có kết quả / kiện của phương án kho xếp theo — bản ghi lúc bắt đầu xếp), hoặc đã xếp xong.
+ * - Đã lập kế hoạch: theo revision hiển thị (bản duyệt mới nhất, không có thì bản mới nhất) — lỗi thời khi xe/kiện đổi sau lần tối
+ *   ưu (D-31; bản duyệt lỗi thời hết hiệu lực, kho không xếp theo nó), đã duyệt, còn lại là chờ duyệt.
  */
 export function tripSubStatus(
   trip: Pick<Trip, 'phase' | 'inputVersion' | 'loading'>,
@@ -72,7 +59,11 @@ export function tripSubStatus(
     const plan = revisions.find((revision) => revision.id === startedWith) ?? latestApproved(revisions)
     return { kind: 'loading', recorded: trip.loading?.steps.length ?? 0, total: plan ? plannedStops(plan).size : 0 }
   }
-  return isStaleTrip(trip, revisions) ? { kind: 'stale' } : null
+  if (trip.phase !== 'planning') return null
+  const shown = latestApproved(revisions) ?? revisions.at(-1)
+  if (!shown) return null
+  if (isStale(shown, trip)) return { kind: 'stale' }
+  return { kind: shown.approvedAt === undefined ? 'awaitingApproval' : 'approved' }
 }
 
 /** Kiện đã xếp trong phương án: mã instance → số điểm giao. */

@@ -5,7 +5,7 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from './DataTablePagination'
 
 /**
  * Tham số URL chung của màn danh sách, tiếng Việt không dấu (D-52). Tên bộ lọc của màn không được trùng các tên này.
- * Ví dụ: `?q=bien+hoa&trang-thai=da_duyet&sap-xep=-scheduledDate&trang=2&so-dong=50`.
+ * Ví dụ: `?q=bien+hoa&trang-thai=da-lap-ke-hoach&sap-xep=-scheduledDate&trang=2&so-dong=50`.
  * - `sap-xep`: mã cột, thêm `-` phía trước là giảm dần; vắng là `defaultSort`.
  * - `trang`: đếm từ 1; vắng là trang 1. `so-dong`: 25/50/100; vắng là cỡ mặc định của màn (`defaultPageSize`, thường 25).
  */

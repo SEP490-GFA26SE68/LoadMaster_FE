@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import type { Trip, TripPhase } from '@/lib/mock-db'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { TripStatus } from '@/types/trip'
+import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createTripFormSchema, driverIdOf, tripFormDefaults, type TripFormValues } from './trip-form.schema'
 import { tripFormChoices } from './trip-form-choices'
 import { TripFormAside } from './TripFormAside'
@@ -45,10 +45,10 @@ export function TripFormPage() {
       </TripFormShell>
     )
   }
-  const { trip, status } = detail.data
+  const { trip, status, sub } = detail.data
   if (!EDITABLE_PHASES.includes(trip.phase)) {
     return (
-      <TripFormShell trip={{ id: tripId, data: trip }} status={status}>
+      <TripFormShell trip={{ id: tripId, data: trip }} status={status} sub={sub}>
         <Card className="flex flex-col items-start gap-3 p-6">
           <p role="alert" className="text-body text-text-2">{t('trips.create.notEditable', { id: tripId })}</p>
           <Button variant="secondary" asChild><Link to={`/chuyen/${tripId}`}>{t('trips.create.back')}</Link></Button>
@@ -56,10 +56,10 @@ export function TripFormPage() {
       </TripFormShell>
     )
   }
-  return <TripForm key={trip.id} existing={trip} status={status} />
+  return <TripForm key={trip.id} existing={trip} status={status} sub={sub} />
 }
 
-function TripForm({ existing, status }: { existing?: Trip; status?: TripStatus }) {
+function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripStatus; sub?: TripSubStatus | null }) {
   const t = useT()
   const formId = useId()
   const navigate = useNavigate()
@@ -121,7 +121,7 @@ function TripForm({ existing, status }: { existing?: Trip; status?: TripStatus }
   )
 
   return (
-    <TripFormShell trip={existing ? { id: existing.id, data: existing } : undefined} status={status} actions={actions}>
+    <TripFormShell trip={existing ? { id: existing.id, data: existing } : undefined} status={status} sub={sub} actions={actions}>
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_416px]">
         <Card className="min-w-0 overflow-hidden">
           <form id={formId} noValidate onSubmit={form.handleSubmit(handleSubmit)}>

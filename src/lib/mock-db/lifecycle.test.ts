@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { createMockDb, tripStatus, tripSubStatus, type MockDb } from '@/lib/mock-db'
-import { twoCartonTrip } from '@/test/mock-db-samples'
+import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
 
 /** Kho neo 14/09 với phiên của nhân viên kho demo — sự kiện ghi người làm là phiên. */
 async function signedInDb(email = 'kho@loadmaster.vn') {
@@ -31,7 +31,7 @@ test('the warehouse starts loading the latest approved plan, records each packag
   expect([completed?.action, completed?.params, completed?.actorId]).toStrictEqual(['loading.completed', { loaded: 131, missing: 1 }, 'US-0003'])
   expect([missing?.action, missing?.params]).toStrictEqual(['loading.missing', { packageInstanceId: ids[0] }])
   const revisions = await db.listRevisions(loaded.id)
-  expect([tripStatus(loaded, revisions), tripSubStatus(loaded, revisions)]).toStrictEqual(['da_duyet', { kind: 'loaded' }])
+  expect([tripStatus(loaded, revisions), tripSubStatus(loaded, revisions)]).toStrictEqual(['LOADING', { kind: 'loaded' }])
 })
 
 test('once loading starts, vehicle, stops and packages are locked; name, date and driver can still change (D-45)', async () => {
@@ -112,7 +112,7 @@ test('a trip is cancelled with a reason before it leaves, never after (D-45)', a
   expect([cancelled.phase, cancelled.cancellation]).toStrictEqual([
     'cancelled', { at: '2026-09-14T03:00:00.000Z', by: 'US-0001', reason: 'Khách huỷ đơn', fromPhase: 'planning' },
   ])
-  expect(tripStatus(cancelled, await db.listRevisions(cancelled.id))).toBe('da_huy')
+  expect(tripStatus(cancelled, await db.listRevisions(cancelled.id))).toBe('CANCELLED')
   await expect(db.updateTrip('TRIP-012', { name: 'Tuyến mới' })).rejects.toMatchObject({ code: 'TRIP_LOCKED', params: { phase: 'cancelled' } })
 })
 
@@ -133,21 +133,45 @@ test('only an active driver can be assigned to a trip', async () => {
   expect((await db.updateTrip('TRIP-012', { driverId: 'US-0006' })).driverId).toBe('US-0006')
 })
 
-test('trip status follows the backend (LM-104): warehouse phases stay approved, a stale plan is optimized again', () => {
-  const approved = { approvedAt: '2026-09-14T02:00:00.000Z', inputVersion: 1 }
-  const planning = { phase: 'planning' as const, inputVersion: 1 }
-  expect(tripStatus(planning, [])).toBe('nhap')
-  expect(tripStatus(planning, [{ inputVersion: 1 }])).toBe('da_toi_uu')
-  expect(tripStatus(planning, [{ inputVersion: 1 }, approved])).toBe('da_duyet')
-  expect(tripStatus({ ...planning, inputVersion: 2 }, [approved])).toBe('da_toi_uu')
-  expect(tripStatus({ phase: 'loading', inputVersion: 1 }, [approved])).toBe('da_duyet')
-  expect(tripStatus({ phase: 'loaded', inputVersion: 1 }, [approved])).toBe('da_duyet')
-  expect(tripStatus({ phase: 'delivering', inputVersion: 1 }, [approved])).toBe('dang_van_chuyen')
-  expect(tripStatus({ phase: 'completed', inputVersion: 1 }, [approved])).toBe('hoan_thanh')
-  expect(tripStatus({ phase: 'cancelled', inputVersion: 1 }, [approved])).toBe('da_huy')
+test('trip status is one of the six backend statuses (FE-0-05): the phase decides; while planning, a trip with a plan is planned', () => {
+  const plan = [{ id: 'REV-001' }]
+  // Luật tạm tới FE-4b-09: pha lập kế hoạch đã có revision là Đã lập kế hoạch — dù bản đó chờ duyệt, đã duyệt hay lỗi thời
+  expect(tripStatus({ phase: 'planning' }, [])).toBe('DRAFT')
+  expect(tripStatus({ phase: 'planning' }, plan)).toBe('PLANNED')
+  expect(tripStatus({ phase: 'planning' }, [{ id: 'REV-001' }, { id: 'REV-002' }])).toBe('PLANNED')
+  expect(tripStatus({ phase: 'loading' }, plan)).toBe('LOADING')
+  expect(tripStatus({ phase: 'loaded' }, plan)).toBe('LOADING')
+  expect(tripStatus({ phase: 'delivering' }, plan)).toBe('IN_TRANSIT')
+  expect(tripStatus({ phase: 'completed' }, plan)).toBe('DELIVERED')
+  expect(tripStatus({ phase: 'cancelled' }, plan)).toBe('CANCELLED')
+  // Huỷ khi chưa tối ưu vẫn là Đã huỷ, không phải Nháp
+  expect(tripStatus({ phase: 'cancelled' }, [])).toBe('CANCELLED')
 })
 
-test('secondary line (LM-104): stale plan while planning, warehouse progress against the plan loading started with, fully loaded', async () => {
+test('secondary line under Planned (FE-0-05): awaiting approval, approved, stale — the latest approved plan decides, else the latest plan', () => {
+  const plan = (id: string, inputVersion: number, approved: boolean) => ({
+    id, inputVersion, request: twoCartonRequest(), result: twoCartonResult(), ...(approved ? { approvedAt: '2026-09-14T02:00:00.000Z' } : {}),
+  })
+  const planning = { phase: 'planning' as const, inputVersion: 1 }
+  expect(tripSubStatus(planning, [])).toBeNull()
+  expect(tripSubStatus(planning, [plan('REV-001', 1, false)])).toStrictEqual({ kind: 'awaitingApproval' })
+  expect(tripSubStatus(planning, [plan('REV-001', 1, false), plan('REV-002', 1, true)])).toStrictEqual({ kind: 'approved' })
+  // Chạy lại sau khi đã duyệt: bản duyệt còn hiệu lực nên vẫn là đã duyệt
+  expect(tripSubStatus(planning, [plan('REV-001', 1, true), plan('REV-002', 1, false)])).toStrictEqual({ kind: 'approved' })
+  // Xe / kiện đổi sau lần tối ưu (inputVersion 2): bản chưa duyệt lẫn bản đã duyệt đều lỗi thời
+  expect(tripSubStatus({ ...planning, inputVersion: 2 }, [plan('REV-001', 1, false)])).toStrictEqual({ kind: 'stale' })
+  expect(tripSubStatus({ ...planning, inputVersion: 2 }, [plan('REV-001', 1, true)])).toStrictEqual({ kind: 'stale' })
+  // Tối ưu lại sau khi bản duyệt lỗi thời: vẫn lỗi thời tới khi bản mới được duyệt
+  expect(tripSubStatus({ ...planning, inputVersion: 2 }, [plan('REV-001', 1, true), plan('REV-002', 2, false)])).toStrictEqual({ kind: 'stale' })
+  expect(tripSubStatus({ ...planning, inputVersion: 2 }, [plan('REV-001', 1, true), plan('REV-002', 2, false), plan('REV-003', 2, true)]))
+    .toStrictEqual({ kind: 'approved' })
+  // Ngoài pha lập kế hoạch và pha kho: không có dòng phụ
+  for (const phase of ['delivering', 'completed', 'cancelled'] as const) {
+    expect(tripSubStatus({ phase, inputVersion: 1 }, [plan('REV-001', 1, true)])).toBeNull()
+  }
+})
+
+test('secondary line on the seed (FE-0-05): plan approval while planning, warehouse progress against the plan loading started with', async () => {
   const db = createMockDb()
   const trips = await db.listTrips()
   const lineOf = async (id: string) => {
@@ -155,9 +179,13 @@ test('secondary line (LM-104): stale plan while planning, warehouse progress aga
     if (!trip) throw new Error(id)
     return tripSubStatus(trip, await db.listRevisions(id))
   }
-  // seed-trips.ts: TRIP-011 kho đã ghi 110 / 280 kiện; TRIP-010 đã xếp xong; TRIP-013 sửa số lượng sau khi duyệt
+  // seed-trips.ts: chuyến chính đã duyệt chờ kho; TRIP-012 đã tối ưu chưa duyệt; TRIP-013 sửa số lượng sau khi duyệt
+  expect(await lineOf('TRIP-2026-0914')).toStrictEqual({ kind: 'approved' })
+  expect(await lineOf('TRIP-012')).toStrictEqual({ kind: 'awaitingApproval' })
+  expect(await lineOf('TRIP-013')).toStrictEqual({ kind: 'stale' })
+  // TRIP-011 kho đã ghi 110 / 280 kiện; TRIP-010 đã xếp xong
   expect(await lineOf('TRIP-011')).toStrictEqual({ kind: 'loading', recorded: 110, total: 280 })
   expect(await lineOf('TRIP-010')).toStrictEqual({ kind: 'loaded' })
-  expect(await lineOf('TRIP-013')).toStrictEqual({ kind: 'stale' })
-  for (const id of ['TRIP-2026-0914', 'TRIP-012', 'TRIP-014', 'TRIP-009', 'TRIP-001', 'TRIP-004']) expect(await lineOf(id)).toBeNull()
+  // Nháp, đang vận chuyển, đã giao, đã huỷ: không có dòng phụ
+  for (const id of ['TRIP-014', 'TRIP-009', 'TRIP-001', 'TRIP-004']) expect(await lineOf(id)).toBeNull()
 })
