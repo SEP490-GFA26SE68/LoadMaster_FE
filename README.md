@@ -8,14 +8,14 @@
 # LoadMaster — Frontend
 
 Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam.
-Một codebase responsive phục vụ 8 vai trò (cùng hai vai trò tạm của Review 1), từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
+Một codebase responsive phục vụ 8 vai trò của một công ty logistics và của nền tảng, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
 ## Làm được gì
 
 | Vai trò | Thiết bị | Luồng chính |
 |---|---|---|
-| Điều phối | Desktop | Tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
+| Điều phối | Desktop | Đăng ký kiện và in nhãn QR, tạo đơn hàng, tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
 | Quản lý công ty | Desktop | Bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
@@ -45,22 +45,22 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
 | Kho | `kho@loadmaster.vn` | `/kho` |
 | Tài xế | `taixe@loadmaster.vn` | `/tai-xe` |
-| Nhà sản xuất (tạm) | `sanxuat@loadmaster.vn` | `/kien-hang` |
-| Logistics (tạm) | `logistics@loadmaster.vn` | `/nhan-hang` |
 
-Các tài khoản trên (trừ ba tài khoản nền tảng và nhà sản xuất) thuộc Công ty TNHH Vận tải Long Bình. Công ty thứ hai, Giao nhận Phương Nam,
-có `qtcongty@`, `quanly@`, `dieuphoi@`, `taixe@phuongnam.vn`.
+Các tài khoản trên (trừ ba tài khoản nền tảng) thuộc Công ty TNHH Vận tải Long Bình. Công ty thứ hai, Giao nhận Phương Nam, cũng đủ năm
+vai trò công ty: `qtcongty@`, `quanly@`, `dieuphoi@`, `taixe@phuongnam.vn` và nhân viên kho `viet.lam@phuongnam.vn`.
 
 Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 ## Trạng thái
 
-- Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu, theo 5 luồng Review 1: nhà sản xuất đăng ký kiện và in tem QR →
-  logistics quét nhận → điều phối lập chuyến, gán đơn, chạy tối ưu, chỉnh tay và duyệt → kho quét QR xếp, tài xế quét QR
-  dỡ → báo cáo chuyến. Quản trị hệ thống và quản trị công ty quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
-- Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đủ tám vai trò và hai công ty logistics; quản trị hệ thống
-  không còn quyền vận hành; điều phối viên là người duyệt phương án, quản lý công ty chỉ xem (không còn hàng đợi duyệt). Màn của quản lý
-  nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và việc bỏ hai vai trò Review 1 làm ở các bước sau.
+- Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu: điều phối đăng ký kiện, in nhãn QR, tạo đơn từ kiện đã ở kho, lập
+  chuyến, gán đơn, chạy tối ưu, chỉnh tay và duyệt → kho quét QR xếp, tài xế quét QR dỡ → báo cáo chuyến. Quản trị hệ thống và quản trị
+  công ty quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
+- Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đúng tám vai trò và hai công ty logistics; quản trị hệ thống
+  không còn quyền vận hành; điều phối viên là người duyệt phương án, quản lý công ty chỉ xem (không còn hàng đợi duyệt). Khách hàng của app là
+  công ty logistics: hai vai trò Nhà sản xuất, Logistics của Review 1 cùng lô hàng và luồng quét nhận hàng giữa hai bên đã bỏ; kiện đăng ký
+  thuộc công ty của người đăng ký. Màn của quản lý nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và kho kiện theo mô hình
+  backend làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
