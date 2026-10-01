@@ -142,11 +142,13 @@ test('seeded operations match their trips: warehouse progress, deliveries, issue
   ])
 })
 
-test('fifteen seeded users cover the seven roles; the history names only real users, newest first', async () => {
+test('twenty-two seeded users cover the ten roles; the history names only real users, newest first', async () => {
   const db = createMockDb()
   const users = await db.listUsers()
-  expect(users).toHaveLength(15)
-  expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set(['dispatcher', 'manager', 'warehouse', 'driver', 'admin', 'manufacturer', 'logistics']))
+  expect(users).toHaveLength(22)
+  expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set([
+    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver', 'manufacturer', 'logistics',
+  ]))
   expect(users.filter((user) => user.status === 'suspended').map((user) => user.id)).toStrictEqual(['US-0008'])
   const events = await db.listEvents()
   const ids = new Set(users.map((user) => user.id))

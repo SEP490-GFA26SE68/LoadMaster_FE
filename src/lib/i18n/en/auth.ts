@@ -27,5 +27,6 @@ export const auth = {
   demo: {
     title: 'Demo accounts',
     password: 'password {password}',
+    platform: 'Platform',
   },
 } satisfies Dictionary<typeof source>

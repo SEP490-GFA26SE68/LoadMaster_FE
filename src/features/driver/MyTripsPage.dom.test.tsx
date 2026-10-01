@@ -43,18 +43,23 @@ test('the demo driver: the loaded trip to open, the main trip still at the wareh
   expect(screen.getByRole('button', { name: 'Tài khoản Phạm Quốc Dũng' })).toHaveClass('size-14')
 }, 15_000)
 
-test('an admin sees every trip: delivering first with its current stop, loading before approved; exit leaves the driver screen', async () => {
-  renderDriver('/tai-xe', 'admin')
+test('the driver of a trip in delivery continues it at its current stop; another driver sees the warehouse still loading theirs', async () => {
+  // Chỉ tài xế mở được màn này (FE-0-01): mỗi người thấy chuyến của mình. Ngô Văn Bảo (US-0006) đang giao TRIP-009
+  const delivering = renderDriver('/tai-xe', 'US-0006')
   const ready = within(await screen.findByRole('region', { name: 'Sẵn sàng giao' }, LOAD))
-  expect(ready.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-009', 'TRIP-010'])
+  expect(ready.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-009'])
   expect(card(ready, 'TRIP-009').getByText('Đang giao điểm 2 / 3')).toBeInTheDocument()
   expect(card(ready, 'TRIP-009').getByRole('link', { name: 'Tiếp tục giao' })).toHaveClass('text-on-primary')
+  delivering.unmount()
 
-  const preparing = within(screen.getByRole('region', { name: 'Kho đang chuẩn bị' }))
-  expect(preparing.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011', 'TRIP-2026-0914'])
+  // Đặng Hoài Nam (US-0007): kho đang xếp TRIP-011
+  renderDriver('/tai-xe', 'US-0007')
+  const preparing = within(await screen.findByRole('region', { name: 'Kho đang chuẩn bị' }, LOAD))
+  expect(preparing.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011'])
   expect(card(preparing, 'TRIP-011').getByText('Đang xếp 110 / 280')).toBeInTheDocument()
   expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp — chưa giao được.')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Thoát màn hình tài xế' })).toHaveAttribute('href', '/nguoi-dung')
+  // Màn chính của tài xế: thoát là đăng xuất
+  expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeInTheDocument()
 }, 15_000)
 
 test('opening a ready trip goes to its first stop, waiting for the driver to start', async () => {

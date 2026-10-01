@@ -40,14 +40,18 @@ test('a trip names its tab with the trip code and follows the interface language
   await waitFor(() => expect(document.title).toBe('Trip TRIP-011 · LoadMaster'))
 })
 
-test('moving to another screen renames the tab; a query code is part of the name', async () => {
-  const router = openAt('/chuyen', 'admin')
+test('moving to another screen renames the tab', async () => {
+  const router = openAt('/chuyen', 'dispatcher')
   await waitFor(() => expect(document.title).toBe('Chuyến hàng · LoadMaster'))
 
   await router.navigate('/doi-xe/VEHICLE-002')
   await waitFor(() => expect(document.title).toBe('Xe VEHICLE-002 · LoadMaster'))
-  await router.navigate('/tai-xe/diem-giao?chuyen=TRIP-009')
-  await waitFor(() => expect(document.title).toBe('Giao hàng TRIP-009 · LoadMaster'))
+})
+
+test('a code in the query is part of the tab name', async () => {
+  // Tài xế demo (US-0004) mở chuyến đã xếp xong của mình rồi về danh sách
+  const router = openAt('/tai-xe/diem-giao?chuyen=TRIP-010', 'driver')
+  await waitFor(() => expect(document.title).toBe('Giao hàng TRIP-010 · LoadMaster'))
   await router.navigate('/tai-xe')
   await waitFor(() => expect(document.title).toBe('Chuyến của tôi · LoadMaster'))
 })

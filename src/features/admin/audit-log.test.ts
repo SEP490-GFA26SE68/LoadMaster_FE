@@ -23,8 +23,11 @@ function event(
   return { id: 'EV-000200', at: '2026-09-13T11:05:00.000Z', actorId, action, target, params }
 }
 
+/** Người xem mở được mọi trang đích: liên kết chỉ còn phụ thuộc vào đối tượng có còn trong kho hay không. */
+const canOpenAll = () => true
+
 function describe(value: AuditEvent, { t, format } = vi) {
-  return describeEvent(value, DIRECTORY, t, format)
+  return describeEvent(value, DIRECTORY, t, format, canOpenAll)
 }
 
 test('huỷ chuyến: người làm, hành động, chuyến dẫn tới chi tiết và lý do người dùng nhập', () => {
@@ -92,18 +95,44 @@ test('đối tượng đã xoá khỏi kho: giữ tên trong tham số, không d
 test('dòng của màn nhật ký: mã hành động, chữ tắt và vai trò hiện tại của người làm; không còn tài khoản thì không có hai thứ đó', () => {
   const directory: AuditDirectory = { ...DIRECTORY, roles: new Map([['US-0001', 'dispatcher']]) }
   const cancelled = event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }, { reason: 'Khách hoãn nhận hàng' })
-  expect(describeLogRow(cancelled, directory, vi.t, vi.format)).toStrictEqual({
+  expect(describeLogRow(cancelled, directory, vi.t, vi.format, canOpenAll)).toStrictEqual({
     ...describe(cancelled),
     actionCode: 'trip.cancelled',
     actorInitials: 'TT',
     actorRole: 'Điều phối viên',
   })
-  expect(describeLogRow(cancelled, directory, en.t, en.format)).toMatchObject({ actorInitials: 'TT', actorRole: 'Dispatcher' })
+  expect(describeLogRow(cancelled, directory, en.t, en.format, canOpenAll)).toMatchObject({ actorInitials: 'TT', actorRole: 'Dispatcher' })
   // Có tên nhưng kho không trả vai trò: chữ tắt vẫn có, vai trò thì không
-  expect(describeLogRow(event('auth.signedIn', { type: 'user', id: 'US-0010' }, {}, 'US-0010'), directory, vi.t, vi.format))
+  expect(describeLogRow(event('auth.signedIn', { type: 'user', id: 'US-0010' }, {}, 'US-0010'), directory, vi.t, vi.format, canOpenAll))
     .toMatchObject({ actor: 'Trương Văn Lộc', actorInitials: 'VL', actorRole: null })
-  expect(describeLogRow(event('vehicle.maintenanceOff', { type: 'vehicle', id: 'VEHICLE-008' }, {}, null), directory, vi.t, vi.format))
+  expect(describeLogRow(event('vehicle.maintenanceOff', { type: 'vehicle', id: 'VEHICLE-008' }, {}, null), directory, vi.t, vi.format, canOpenAll))
     .toMatchObject({ actor: 'Hệ thống', actorInitials: null, actorRole: null })
-  expect(describeLogRow(event('user.created', { type: 'user', id: 'US-0010' }, {}, 'US-0005'), directory, vi.t, vi.format))
+  expect(describeLogRow(event('user.created', { type: 'user', id: 'US-0010' }, {}, 'US-0005'), directory, vi.t, vi.format, canOpenAll))
     .toMatchObject({ actor: 'Tài khoản đã xoá (US-0005)', actorInitials: null, actorRole: null })
+})
+
+test('đối tượng chỉ là liên kết khi người xem có quyền mở trang đích: quản trị viên đọc nhật ký nhưng không xem được chuyến, xe (FE-0-03)', () => {
+  // Quyền của quản trị hệ thống và quản trị công ty liên quan tới nhật ký: người dùng có, chuyến và xe không
+  const adminCan = (permission: string) => permission === 'users.manage' || permission === 'audit.view'
+  const target = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, adminCan).target
+
+  expect(target(event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }, { reason: 'Khách hoãn nhận hàng' })))
+    .toStrictEqual({ id: 'TRIP-004', label: 'Tuyến Tân An – Biên Hoà', href: null })
+  expect(target(event('vehicle.maintenanceOff', { type: 'vehicle', id: 'VEHICLE-008' })))
+    .toStrictEqual({ id: 'VEHICLE-008', label: 'Hyundai Mighty EX8 · 50H-118.29', href: null })
+  expect(target(event('user.locked', { type: 'user', id: 'US-0010' })))
+    .toStrictEqual({ id: 'US-0010', label: 'Trương Văn Lộc', href: '/nguoi-dung?q=US-0010' })
+  // Đơn hàng, loại kiện, lô hàng, loại xe theo quyền của màn đó
+  expect(target(event('order.created', { type: 'order', id: 'ORD-001' }, { customerName: 'Co.opmart Bình Dương', count: 12 })).href).toBeNull()
+  expect(target(event('shipment.created', { type: 'shipment', id: 'SHP-001' }, { count: 22 })).href).toBeNull()
+  expect(target(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }, { name: 'Xe tải 5 tấn thùng 6 m' })).href).toBeNull()
+
+  // Điều phối viên: mở được chuyến, xe, đơn hàng; không mở được danh sách người dùng, lô hàng
+  const dispatcherCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view'].includes(permission)
+  const forDispatcher = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, dispatcherCan).target.href
+  expect(forDispatcher(event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }))).toBe('/chuyen/TRIP-004')
+  expect(forDispatcher(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }))).toBe('/doi-xe/loai-xe')
+  expect(forDispatcher(event('order.created', { type: 'order', id: 'ORD-001' }))).toBe('/don-hang?q=ORD-001')
+  expect(forDispatcher(event('user.locked', { type: 'user', id: 'US-0010' }))).toBeNull()
+  expect(forDispatcher(event('shipment.created', { type: 'shipment', id: 'SHP-001' }))).toBeNull()
 })

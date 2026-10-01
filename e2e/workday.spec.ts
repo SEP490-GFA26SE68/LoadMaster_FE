@@ -135,8 +135,8 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   expect(download.suggestedFilename()).toMatch(/^bao-cao-van-hanh_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.xlsx$/)
   await signOut(page, NAMES.manager)
 
-  // Quản trị: nhật ký có đủ chuỗi việc của chuyến, đúng người làm
-  await signIn(page, 'admin')
+  // Quản trị hệ thống: nhật ký có đủ chuỗi việc của chuyến, đúng người làm
+  await signIn(page, 'systemAdmin')
   await page.getByRole('link', { name: 'Nhật ký', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Tìm theo mã chuyến, xe, người dùng', exact: true }).fill(TRIP)
   const log = page.locator('tbody')

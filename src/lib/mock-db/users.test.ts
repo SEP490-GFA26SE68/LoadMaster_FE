@@ -37,6 +37,52 @@ test('an account created by the admin signs in with its temporary password; the 
   expect((await db.authenticate('yen.phan@loadmaster.vn', temporaryPassword)).id).toBe('US-0016')
 })
 
+test('the seed has three platform accounts without a company or depot, and the staff of two logistics companies (FE-0-03)', async () => {
+  const db = newDb()
+  const users = await db.listUsers()
+  const account = (email: string) => {
+    const user = users.find((item) => item.email === email)
+    return user && { id: user.id, role: user.role, companyId: user.companyId, depot: user.depot }
+  }
+  expect(account('quantri@loadmaster.vn')).toStrictEqual({ id: 'US-0005', role: 'systemAdmin', companyId: undefined, depot: undefined })
+  expect(account('nentang@loadmaster.vn')).toStrictEqual({ id: 'US-NT-01', role: 'systemManager', companyId: undefined, depot: undefined })
+  expect(account('hotro@loadmaster.vn')).toStrictEqual({ id: 'US-NT-02', role: 'systemSupporter', companyId: undefined, depot: undefined })
+  expect(account('qtcongty@loadmaster.vn')).toStrictEqual({ id: 'US-LB-01', role: 'companyAdmin', companyId: 'LOG-001', depot: 'Trụ sở TP. Hồ Chí Minh' })
+  expect(users.filter((user) => user.companyId === undefined).map((user) => user.role)).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
+  // Long Bình: 11 nhân viên có từ trước, tài khoản logistics của Review 1 và quản trị công ty mới
+  expect(users.filter((user) => user.companyId === 'LOG-001')).toHaveLength(13)
+  expect(users.filter((user) => user.companyId === 'LOG-002').map((user) => [user.id, user.email, user.role])).toStrictEqual([
+    ['US-0015', 'viet.lam@phuongnam.vn', 'logistics'],
+    ['US-PN-01', 'qtcongty@phuongnam.vn', 'companyAdmin'],
+    ['US-PN-02', 'quanly@phuongnam.vn', 'manager'],
+    ['US-PN-03', 'dieuphoi@phuongnam.vn', 'dispatcher'],
+    ['US-PN-04', 'taixe@phuongnam.vn', 'driver'],
+  ])
+  // Tài khoản mới đăng nhập được bằng mật khẩu chung của seed
+  expect((await db.authenticate('nentang@loadmaster.vn', 'loadmaster')).role).toBe('systemManager')
+  expect((await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')).id).toBe('US-PN-03')
+})
+
+test('a platform account has no depot or company: both are dropped on creation and when a role becomes a platform role (FE-0-03)', async () => {
+  const db = newDb()
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  const { user } = await db.createUser({ fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926 971 238', role: 'systemSupporter', depot: 'Kho Long Bình', companyId: 'LOG-001' })
+  expect(user).toStrictEqual({ fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926 971 238', role: 'systemSupporter', id: 'US-0016', status: 'active', lastActiveAt: null })
+
+  // Sửa một tài khoản nền tảng mà form gửi kèm ô kho rỗng: không tính là thay đổi, không ghi nhật ký
+  const before = (await db.listEvents()).length
+  expect(await db.updateUser('US-NT-01', { depot: '' })).not.toHaveProperty('depot')
+  expect((await db.listEvents()).length).toBe(before)
+  await db.updateUser('US-NT-01', { phone: '0918 204 000', depot: 'Kho Sóng Thần' })
+  expect((await db.listEvents())[0]).toMatchObject({ action: 'user.updated', params: { fields: 'phone' } })
+  expect(await db.getUser('US-NT-01')).not.toHaveProperty('depot')
+
+  // Điều phối viên của Long Bình thành hỗ trợ khách hàng: rời kho và công ty; đổi lại thì kho phải nhập lại
+  const moved = await db.updateUser('US-0009', { role: 'systemSupporter' })
+  expect([moved.role, 'depot' in moved, 'companyId' in moved]).toStrictEqual(['systemSupporter', false, false])
+  expect((await db.updateUser('US-0009', { role: 'dispatcher', depot: 'Kho Sóng Thần' })).depot).toBe('Kho Sóng Thần')
+})
+
 test('resetting a password invalidates the old one; changing it needs the current password and 8 characters', async () => {
   const db = newDb()
   await db.authenticate('quantri@loadmaster.vn', 'loadmaster')

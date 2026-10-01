@@ -111,13 +111,15 @@ test('explicit quality tiers are honoured, including under reduced motion', asyn
 })
 
 test('benchmark fixture requires debug; warehouse camera, next step and driver 2D route still work', async ({ page, login, browserErrors }, testInfo) => {
-  await login(`${PLANNER_ROUTE}?packages=1000`, 'admin')
+  // Mỗi màn do vai trò của nó mở (FE-0-01); mỗi lượt là một lần tải trang — kho mới — nên đổi vai trò bằng cách bỏ phiên của tab
+  await login(`${PLANNER_ROUTE}?packages=1000`, 'manager')
   await page.locator('canvas').waitFor()
   expect(await page.locator('[data-viewer-performance]').count()).toBe(0)
   expect(await page.locator('header').innerText()).toMatch(/132/)
 
   // Tải trang là kho mới: vào phiên chuyến seed là bắt đầu xếp ở bước 1 (LM-086)
-  await page.goto('/kho?chuyen=TRIP-2026-0914')
+  await page.evaluate(() => sessionStorage.clear())
+  await login('/kho?chuyen=TRIP-2026-0914', 'warehouse')
   await page.locator('canvas').waitFor()
   await page.getByRole('combobox', { name: 'Góc nhìn thùng xe', exact: true }).selectOption('cua-sau')
   await page.waitForTimeout(1000)
@@ -130,9 +132,10 @@ test('benchmark fixture requires debug; warehouse camera, next step and driver 2
   await page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: second, exact: true })).toBeVisible()
 
-  // Chuyến đang giao của seed (quản trị thấy mọi chuyến, LM-087): màn điểm giao 2D, chưa tải Three.js
-  await page.goto('/tai-xe/diem-giao?chuyen=TRIP-009')
-  await page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true }).waitFor()
+  // Chuyến đã xếp xong của tài xế demo (LM-087, tài xế chỉ thấy chuyến của mình): màn điểm giao 2D, chưa tải Three.js
+  await page.evaluate(() => sessionStorage.clear())
+  await login('/tai-xe/diem-giao?chuyen=TRIP-010', 'driver')
+  await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).waitFor()
   expect(await page.locator('canvas').count()).toBe(0)
   expect(browserErrors).toStrictEqual([])
 })

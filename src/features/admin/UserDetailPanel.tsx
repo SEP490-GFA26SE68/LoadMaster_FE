@@ -5,7 +5,7 @@ import { useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import type { AccountGuards } from './account-guards'
 import { UserDetailActions } from './UserDetailActions'
-import { LastActive, RoleLabel, UserAvatar, UserStatusBadge } from './user-look'
+import { LastActive, RoleLabel, UserAvatar, UserDepot, UserStatusBadge } from './user-look'
 import type { UserAction } from './UserRowMenu'
 
 /**
@@ -64,7 +64,7 @@ export function UserDetailPanel({ id, user, guards, onAction, onClose }: {
           <dl className="flex flex-col gap-3">
             <Field label={t('admin.users.detail.id')}><span className="font-mono text-caption text-ink-1">{user.id}</span></Field>
             <Field label={t('admin.users.columns.phone')}><span className="font-mono text-caption text-ink-1">{user.phone}</span></Field>
-            <Field label={t('admin.users.columns.depot')}>{user.depot}</Field>
+            <Field label={t('admin.users.columns.depot')}><UserDepot value={user.depot} /></Field>
             <Field label={t('admin.users.columns.lastActive')}><LastActive value={user.lastActiveAt} /></Field>
           </dl>
         </section>

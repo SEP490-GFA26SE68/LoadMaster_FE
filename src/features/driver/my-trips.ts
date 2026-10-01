@@ -37,7 +37,10 @@ export type MyTrips = {
 /** Số chuyến hoàn thành gần đây hiện ở danh sách. */
 export const RECENT_LIMIT = 5
 
-/** Tài xế chỉ thấy chuyến gán cho mình; quản trị viên (vai trò khác có quyền mở màn tài xế) thấy mọi chuyến (D-46). */
+/**
+ * Tài xế chỉ thấy chuyến gán cho mình (D-46). Vai trò khác không bị lọc ở đây: từ FE-0-01 chỉ tài xế có `driver.operate`, nên không
+ * vai trò nào khác mở được màn này.
+ */
 export function isVisibleTo(trip: Pick<Trip, 'driverId'>, viewer: Pick<User, 'id' | 'role'>): boolean {
   return viewer.role !== 'driver' || trip.driverId === viewer.id
 }

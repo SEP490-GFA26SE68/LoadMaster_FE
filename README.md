@@ -8,7 +8,7 @@
 # LoadMaster — Frontend
 
 Hệ thống lập kế hoạch và **tối ưu chất xếp hàng hoá 3D** cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam.
-Một codebase responsive phục vụ 7 vai trò, từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
+Một codebase responsive phục vụ 8 vai trò (cùng hai vai trò tạm của Review 1), từ màn điều phối nhiều cột trên desktop tới màn tài xế một tay trên điện thoại.
 Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên làm việc.
 
 ## Làm được gì
@@ -19,7 +19,7 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
 | Quản lý | Desktop | Bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx` |
-| Quản trị | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
+| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
 (chồng lấn, quá tải, chịu tải, hướng đặt, khoảng hở cửa) chạy ngay khi thả kiện.
@@ -33,25 +33,34 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có nút chọn nhanh:
+Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có nút chọn nhanh chia theo nền tảng và từng công ty:
 
 | Vai trò | Email | Mở ra |
 |---|---|---|
+| Quản trị hệ thống | `quantri@loadmaster.vn` | `/nguoi-dung` |
+| Quản lý nền tảng | `nentang@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
+| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
+| Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
+| Quản lý công ty | `quanly@loadmaster.vn` | `/` |
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
-| Quản lý | `quanly@loadmaster.vn` | `/` |
 | Kho | `kho@loadmaster.vn` | `/kho` |
 | Tài xế | `taixe@loadmaster.vn` | `/tai-xe` |
-| Quản trị | `quantri@loadmaster.vn` | `/nguoi-dung` |
-| Nhà sản xuất | `sanxuat@loadmaster.vn` | `/kien-hang` |
-| Logistics | `logistics@loadmaster.vn` | `/nhan-hang` |
+| Nhà sản xuất (tạm) | `sanxuat@loadmaster.vn` | `/kien-hang` |
+| Logistics (tạm) | `logistics@loadmaster.vn` | `/nhan-hang` |
+
+Các tài khoản trên (trừ ba tài khoản nền tảng và nhà sản xuất) thuộc Công ty TNHH Vận tải Long Bình. Công ty thứ hai, Giao nhận Phương Nam,
+có `qtcongty@`, `quanly@`, `dieuphoi@`, `taixe@phuongnam.vn`.
 
 Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 ## Trạng thái
 
-- 7 vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu, theo 5 luồng Review 1: nhà sản xuất đăng ký kiện và in tem QR →
+- Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu, theo 5 luồng Review 1: nhà sản xuất đăng ký kiện và in tem QR →
   logistics quét nhận → điều phối lập chuyến, gán đơn, chạy tối ưu, chỉnh tay → quản lý công ty duyệt → kho quét QR xếp, tài xế quét QR
-  dỡ → báo cáo chuyến. Quản trị quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
+  dỡ → báo cáo chuyến. Quản trị hệ thống và quản trị công ty quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
+- Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đủ tám vai trò và hai công ty logistics; quản trị hệ thống
+  không còn quyền vận hành. Màn của quản lý nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và việc bỏ hai vai trò Review 1 làm
+  ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).

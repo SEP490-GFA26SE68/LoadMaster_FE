@@ -24,8 +24,8 @@ export const GROUP_PERMISSION: Readonly<Record<SearchGroup, Permission>> = {
 }
 
 /**
- * Nhóm người đăng nhập được tìm, theo thứ tự hiện. Có cả lô hàng lẫn lô đang đến (quản trị) thì chỉ giữ lô hàng — cùng một lô, màn chi
- * tiết lô nói đủ hơn.
+ * Nhóm người đăng nhập được tìm, theo thứ tự hiện. Có cả lô hàng lẫn lô đang đến thì chỉ giữ lô hàng — cùng một lô, màn chi tiết lô
+ * nói đủ hơn (từ FE-0-01 không vai trò nào có cả hai quyền; trước đó là quản trị viên toàn quyền).
  */
 export function searchGroupsFor(can: (permission: Permission) => boolean): SearchGroup[] {
   const groups = SEARCH_GROUPS.filter((group) => can(GROUP_PERMISSION[group]))

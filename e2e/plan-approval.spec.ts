@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
-import { navigateInApp } from './spec-flow-helpers'
+import { navigateInApp, switchUser } from './spec-flow-helpers'
 import { closeInspector, openInspector } from './viewer-helpers'
 
 /**
@@ -59,8 +59,8 @@ test('approving the seed source revision creates a new approved revision and reo
 
 test('changing cargo after optimisation marks the plan stale and blocks approval', async ({ page, login }) => {
   // Sửa kho trước khi Planner đọc (Query giữ dữ liệu 30 s).
-  // Kịch bản cần cả quyền tối ưu lại lẫn quyền Duyệt (LM-104 tách hai vai trò): dùng quản trị
-  await login('/doi-xe', 'admin')
+  // Hai vai trò (LM-104): điều phối viên sửa kiện và được dẫn tới Thiết lập tối ưu; quản lý công ty là người bị chặn Duyệt.
+  await login('/doi-xe', 'dispatcher')
   await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
     const db = getMockDb()
@@ -75,6 +75,12 @@ test('changing cargo after optimisation marks the plan stale and blocks approval
   await expect(stale).toContainText(/Sau lần tối ưu \d{2}:\d{2} · \d{2}\/\d{2}: PKG-\S+ .+ · Khối lượng /)
   await expect(stale).toContainText('Kho chỉ xếp được khi quản lý công ty duyệt lại.')
   await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveAttribute('href', `/chuyen/${TRIP_ID}/toi-uu`)
+
+  // Quản lý công ty đăng nhập ngay trong app (tải lại là mất lần sửa kiện): cùng thanh lỗi thời, không có lối sang Thiết lập tối ưu
+  await switchUser(page, 'manager')
+  await navigateInApp(page, PLANNER)
+  await expect(stale).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveCount(0)
   // Bản đã duyệt không có nút Duyệt (LM-094); revision nguồn chưa duyệt thì có, kèm lý do chặn trong nút và hộp thoại
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
   await navigateInApp(page, SOURCE_REVISION)

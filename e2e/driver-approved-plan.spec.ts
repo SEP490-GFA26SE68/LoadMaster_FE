@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { attachScreenshot, expect, test } from './fixtures'
-import { heightOf, MOCK_DB, navigateInApp, overflowingText, SEED_TRIP } from './spec-flow-helpers'
+import { heightOf, MOCK_DB, navigateInApp, overflowingText, SEED_TRIP, switchUser } from './spec-flow-helpers'
 
 /**
  * Màn tài xế đọc revision đã duyệt (LM-061); `/tai-xe` là "Chuyến của tôi", `/tai-xe/diem-giao?chuyen=` là một chuyến (LM-087).
@@ -99,14 +99,16 @@ test('phone: the driver screens run in English and switching language mid-delive
 })
 
 test('a newly approved revision reaches the driver screen without reload', async ({ page, login, browserErrors }) => {
-  // Bản seed đã duyệt không có nút Duyệt (LM-094): duyệt lại revision nguồn chưa duyệt REV-001
-  await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'admin')
+  // Bản seed đã duyệt không có nút Duyệt (LM-094): quản lý công ty duyệt lại revision nguồn chưa duyệt REV-001
+  await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'manager')
   await page.locator('canvas').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
   await page.waitForURL(/\/phuong-an\?revision=REV-(?!001)/)
 
+  // Tài xế của chuyến (tài khoản demo) đăng nhập ngay trong app: tải lại trang là mất bản vừa duyệt
+  await switchUser(page, 'driver')
   await navigateInApp(page, `${DRIVER}?chuyen=${SEED_TRIP}`)
   await expect(page.getByRole('heading', { name: 'Điểm 1 / 4', exact: true })).toBeVisible()
   const expected = await planUnloadOrder(page, SEED_TRIP, 1)

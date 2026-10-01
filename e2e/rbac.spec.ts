@@ -1,10 +1,109 @@
 import { expect, test } from './fixtures'
-import { navigateInApp, SEED_TRIP } from './spec-flow-helpers'
+import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-helpers'
 
 /**
  * Phân quyền giả lập ở FE (LM-084, D-41): mỗi vai trò mở đúng màn chính, nav chỉ có mục được phép, route không có quyền là 403
- * có lối về, quản lý xem chuyến và phương án chỉ đọc.
+ * có lối về, quản lý xem chuyến và phương án chỉ đọc. FE-0-01, FE-0-03: tám vai trò của PRD v2 (cùng hai vai trò Review 1 còn tạm),
+ * tài khoản của hai công ty, quản trị hệ thống không còn quyền vận hành.
  */
+
+/** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
+const HOMES: readonly (readonly [email: string, path: string, heading: string])[] = [
+  // Nền tảng: quản lý nền tảng và hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
+  ['quantri@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
+  ['nentang@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
+  ['hotro@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
+  // Long Bình
+  ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
+  ['quanly@loadmaster.vn', '/', 'Bảng điều khiển'],
+  ['dieuphoi@loadmaster.vn', '/chuyen', 'Chuyến hàng'],
+  ['kho@loadmaster.vn', '/kho', 'Chuyến cần xếp'],
+  ['taixe@loadmaster.vn', '/tai-xe', 'Chuyến của tôi'],
+  ['logistics@loadmaster.vn', '/nhan-hang', 'Nhận hàng'],
+  // Phương Nam
+  ['qtcongty@phuongnam.vn', '/nguoi-dung', 'Người dùng'],
+  ['quanly@phuongnam.vn', '/', 'Bảng điều khiển'],
+  ['dieuphoi@phuongnam.vn', '/chuyen', 'Chuyến hàng'],
+  ['taixe@phuongnam.vn', '/tai-xe', 'Chuyến của tôi'],
+  ['viet.lam@phuongnam.vn', '/nhan-hang', 'Nhận hàng'],
+  // Nhà sản xuất của Review 1 (còn tạm tới FE-0-06)
+  ['sanxuat@loadmaster.vn', '/kien-hang', 'Kiện hàng'],
+]
+
+test('every demo account signs in and lands on the home screen of its role (FE-0-03)', async ({ page, browserErrors }) => {
+  await page.goto('/')
+  for (const [email, path, heading] of HOMES) {
+    await signInWith(page, email)
+    await expect.poll(() => new URL(page.url()).pathname, { message: email }).toBe(path)
+    await expect(page.getByRole('heading', { level: 1, name: heading, exact: true }), email).toBeVisible()
+    await signOutInApp(page)
+  }
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('the quick sign-in box groups accounts by platform and company; picking one fills the form (FE-0-03)', async ({ page, browserErrors }) => {
+  await page.goto('/')
+  const roles = (group: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button')
+  // Quản lý nền tảng và hỗ trợ khách hàng chưa có màn riêng nên chưa nằm trong ô chọn nhanh
+  await expect(roles('Nền tảng')).toHaveText([/^Quản trị hệ thống\s*quantri@loadmaster\.vn$/])
+  await expect(roles('Công ty TNHH Vận tải Long Bình')).toHaveText([
+    /^Quản trị công ty\s*qtcongty@loadmaster\.vn$/, /^Quản lý công ty\s*quanly@loadmaster\.vn$/, /^Điều phối viên\s*dieuphoi@loadmaster\.vn$/,
+    /^Nhân viên kho\s*kho@loadmaster\.vn$/, /^Tài xế\s*taixe@loadmaster\.vn$/, /^Công ty logistics\s*logistics@loadmaster\.vn$/,
+  ])
+  await expect(roles('Công ty CP Giao nhận Phương Nam')).toHaveText([
+    /^Quản trị công ty\s*qtcongty@phuongnam\.vn$/, /^Quản lý công ty\s*quanly@phuongnam\.vn$/, /^Điều phối viên\s*dieuphoi@phuongnam\.vn$/,
+    /^Tài xế\s*taixe@phuongnam\.vn$/, /^Công ty logistics\s*viet\.lam@phuongnam\.vn$/,
+  ])
+
+  await roles('Công ty CP Giao nhận Phương Nam').filter({ hasText: 'Điều phối viên' }).click()
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('dieuphoi@phuongnam.vn')
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/chuyen')
+  await expect(page.getByRole('button', { name: 'Tài khoản Kiều Anh Tuấn', exact: true })).toBeVisible()
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('a platform manager has no nav items and is never stranded: logo, 403 and 404 lead back to the profile (FE-0-03)', async ({ page, browserErrors }) => {
+  await page.goto('/')
+  await signInWith(page, 'nentang@loadmaster.vn')
+  await page.waitForURL((url) => url.pathname === '/ho-so')
+  // Logo trước (thanh điều hướng đã dựng), rồi mới khẳng định thanh đó không có khay mục nào
+  await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-so')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toHaveCount(0)
+  // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào)
+  await page.getByRole('button', { name: 'Tài khoản Đinh Quang Huy', exact: true }).click()
+  await expect(page.getByRole('menu')).toContainText('Quản lý nền tảng')
+  await page.keyboard.press('Escape')
+
+  await navigateInApp(page, '/chuyen')
+  await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/ho-so')
+
+  await navigateInApp(page, '/nen-tang/goi')
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy trang', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/ho-so')
+  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ cá nhân', exact: true })).toBeVisible()
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('the system administrator has users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await login('/', 'systemAdmin')
+  await page.waitForURL((url) => url.pathname === '/nguoi-dung')
+  await expect(nav.getByRole('link')).toHaveText(['Người dùng', 'Nhật ký'])
+  for (const route of ['/', '/chuyen', `/chuyen/${SEED_TRIP}/phuong-an`, '/doi-xe', '/kho', '/tai-xe']) {
+    await navigateInApp(page, route)
+    await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true }), route).toBeVisible()
+    // Về màn chính trước khi thử route kế tiếp: màn 403 của route trước không được làm route sau đạt thay
+    await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+    await page.waitForURL((url) => url.pathname === '/nguoi-dung')
+    await expect(page.getByRole('heading', { level: 1, name: 'Người dùng', exact: true }), route).toBeVisible()
+  }
+  expect(browserErrors).toStrictEqual([])
+})
+
 test('each role lands on its own screen and sees only its nav items', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')

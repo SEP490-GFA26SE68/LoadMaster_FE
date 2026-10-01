@@ -1,3 +1,4 @@
+import type { Permission } from '@/features/auth/permissions'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
 import {
@@ -9,6 +10,7 @@ import {
   RUN_FAILURE_CODES,
   type AuditAction,
   type AuditEvent,
+  type AuditTargetType,
 } from '@/lib/mock-db'
 import { ROLES, type Role } from '@/types/user'
 import { actorInitials } from './audit-look'
@@ -30,7 +32,10 @@ export type AuditRow = {
   readonly actorId: string | null
   readonly actor: string
   readonly action: string
-  /** `label` vắng khi kho không còn tên (email lạ khi đăng nhập sai); `href` vắng khi đối tượng không còn trang để mở. */
+  /**
+   * `label` vắng khi kho không còn tên (email lạ khi đăng nhập sai); `href` vắng khi đối tượng không còn trang để mở, hoặc người xem
+   * không có quyền mở trang đó (FE-0-03: quản trị hệ thống và quản trị công ty đọc nhật ký nhưng không xem được chuyến, xe).
+   */
   readonly target: { readonly id: string; readonly label: string | null; readonly href: string | null }
   readonly details: string
 }
@@ -59,22 +64,39 @@ const FIELD_NAMES = [
 
 const REASONS = ['suspended'] as const
 
+/** Quyền mở trang của từng loại đối tượng — cùng nhóm quyền với route của trang đó trong `App.tsx`; `null` khi loại đó không có trang. */
+const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = {
+  trip: 'trips.view',
+  vehicle: 'fleet.view',
+  user: 'users.manage',
+  revision: null,
+  packageType: 'packages.register',
+  package: 'packages.register',
+  shipment: 'shipments.manage',
+  order: 'orders.view',
+  vehicleType: 'fleet.view',
+}
+
+/** `can(permission)` của người xem (`useCan`): đối tượng chỉ thành liên kết khi người xem mở được trang đích. */
+export type CanOpen = (permission: Permission) => boolean
+
 function isOneOf<const Values extends readonly string[]>(values: Values, value: string): value is Values[number] {
   return values.includes(value)
 }
 
 /**
  * Đọc một sự kiện nhật ký (D-43) bằng ngôn ngữ đang chọn: người làm, hành động (`audit.actions.*`), đối tượng (tên hiện tại, liên kết
- * nếu còn trang), chi tiết (tham số đã dịch và format). Hàm thuần: `directory` do `audit-api.ts` đọc từ kho.
+ * nếu còn trang và người xem có quyền mở trang đó), chi tiết (tham số đã dịch và format). Hàm thuần: `directory` do `audit-api.ts`
+ * đọc từ kho, `can` là quyền của người xem.
  */
-export function describeEvent(event: AuditEvent, directory: AuditDirectory, t: TFunction, format: Formatter): AuditRow {
+export function describeEvent(event: AuditEvent, directory: AuditDirectory, t: TFunction, format: Formatter, can: CanOpen): AuditRow {
   return {
     id: event.id,
     at: event.at,
     actorId: event.actorId,
     actor: actorLabel(event, directory, t),
     action: t(`audit.actions.${event.action}`),
-    target: targetOf(event, directory),
+    target: targetOf(event, directory, can),
     details: Object.entries(event.params)
       .map(([key, value]) => t('audit.log.detail', { label: paramLabel(key, t), value: paramValue(event, key, value, t, format) }))
       .join(' · '),
@@ -82,11 +104,11 @@ export function describeEvent(event: AuditEvent, directory: AuditDirectory, t: T
 }
 
 /** Một dòng của bảng `/nhat-ky`: `describeEvent` cộng những gì chỉ bảng cần. Hàm thuần như `describeEvent`. */
-export function describeLogRow(event: AuditEvent, directory: AuditDirectory, t: TFunction, format: Formatter): AuditLogRow {
+export function describeLogRow(event: AuditEvent, directory: AuditDirectory, t: TFunction, format: Formatter, can: CanOpen): AuditLogRow {
   const name = event.actorId === null ? undefined : directory.users.get(event.actorId)
   const role = event.actorId === null ? undefined : directory.roles?.get(event.actorId)
   return {
-    ...describeEvent(event, directory, t, format),
+    ...describeEvent(event, directory, t, format, can),
     actionCode: event.action,
     actorInitials: name === undefined ? null : actorInitials(name),
     actorRole: role === undefined ? null : t(`roles.${role}`),
@@ -98,7 +120,14 @@ function actorLabel({ actorId, action }: AuditEvent, directory: AuditDirectory, 
   return directory.users.get(actorId) ?? t('audit.log.deletedUser', { id: actorId })
 }
 
-function targetOf({ target, params }: AuditEvent, directory: AuditDirectory): AuditRow['target'] {
+/** Đối tượng của sự kiện; liên kết chỉ giữ khi người xem có quyền mở trang đích — không thì tên hiện dạng chữ thường. */
+function targetOf(event: AuditEvent, directory: AuditDirectory, can: CanOpen): AuditRow['target'] {
+  const target = linkedTarget(event, directory)
+  const permission = TARGET_PERMISSION[event.target.type]
+  return target.href !== null && permission !== null && can(permission) ? target : { ...target, href: null }
+}
+
+function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory): AuditRow['target'] {
   const saved = typeof params.name === 'string' ? params.name : typeof params.fullName === 'string' ? params.fullName : null
   const id = target.id
   switch (target.type) {

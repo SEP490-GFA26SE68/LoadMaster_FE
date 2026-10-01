@@ -3,13 +3,19 @@ import type { Role } from '@/types/user'
 
 export { expect } from '@playwright/test'
 
-/** Tài khoản demo công khai theo vai trò (seed kho, `src/lib/mock-db/seed-users.ts`), chung mật khẩu. */
+/**
+ * Tài khoản demo công khai theo vai trò (seed kho, `src/lib/mock-db/seed-users.ts`), chung mật khẩu: tài khoản đầu tiên của vai trò —
+ * tám vai trò của FE-0-01 (nhân sự công ty là của Long Bình) và hai vai trò Review 1 còn tạm.
+ */
 export const DEMO_EMAILS: Readonly<Record<Role, string>> = {
-  dispatcher: 'dieuphoi@loadmaster.vn',
+  systemAdmin: 'quantri@loadmaster.vn',
+  systemManager: 'nentang@loadmaster.vn',
+  systemSupporter: 'hotro@loadmaster.vn',
+  companyAdmin: 'qtcongty@loadmaster.vn',
   manager: 'quanly@loadmaster.vn',
+  dispatcher: 'dieuphoi@loadmaster.vn',
   warehouse: 'kho@loadmaster.vn',
   driver: 'taixe@loadmaster.vn',
-  admin: 'quantri@loadmaster.vn',
   manufacturer: 'sanxuat@loadmaster.vn',
   logistics: 'logistics@loadmaster.vn',
 }
@@ -25,7 +31,9 @@ type ViewerFixtures = {
   /**
    * Mở route cần đăng nhập rồi đăng nhập bằng tài khoản demo của `role` (mặc định điều phối) qua form thật. `RequireAuth`
    * ghi nhớ route kèm query nên app quay lại đúng route. Phiên nằm trong sessionStorage của tab, vì vậy mọi `page.goto`
-   * sau đó trong cùng test vẫn giữ đăng nhập. Kịch bản đi qua màn của nhiều vai trò dùng `admin` (toàn quyền, D-41).
+   * sau đó trong cùng test vẫn giữ đăng nhập. Không còn vai trò toàn quyền (FE-0-01): kịch bản đi qua màn của nhiều vai trò đăng
+   * nhập đúng vai trò của từng bước, đổi người ngay trong app bằng `switchUser` (`spec-flow-helpers.ts`) — tải lại trang là mất kho
+   * in-memory.
    */
   login: (route: string, role?: Role) => Promise<void>
 }

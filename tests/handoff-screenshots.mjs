@@ -14,7 +14,7 @@ const EMAIL = {
   manager: 'quanly@loadmaster.vn',
   warehouse: 'kho@loadmaster.vn',
   driver: 'taixe@loadmaster.vn',
-  admin: 'quantri@loadmaster.vn',
+  systemAdmin: 'quantri@loadmaster.vn',
 }
 /** Giờ trang cố định 16:00 hôm nay (giờ Việt Nam): ảnh chụp lúc nào cũng thấy một ngày làm việc bình thường — seed không phải lùi
  * mốc giờ (`seed-shift.ts`) như khi mở app lúc sáng sớm. */
@@ -73,8 +73,8 @@ const PLAIN = [
   ['fleet', 'dispatcher', DESKTOP, '/doi-xe'],
   ['vehicle-detail', 'dispatcher', DESKTOP, '/doi-xe/VEHICLE-002'],
   ['vehicle-maintenance', 'dispatcher', DESKTOP, '/doi-xe/VEHICLE-008'],
-  ['audit-log', 'admin', DESKTOP, '/nhat-ky'],
-  ['users', 'admin', DESKTOP, '/nguoi-dung'],
+  ['audit-log', 'systemAdmin', DESKTOP, '/nhat-ky'],
+  ['users', 'systemAdmin', DESKTOP, '/nguoi-dung'],
   ['profile', 'dispatcher', DESKTOP, '/ho-so'],
   ['forbidden', 'driver', DESKTOP, '/nguoi-dung'],
   ['warehouse-trips', 'warehouse', TABLET, '/kho'],
@@ -95,7 +95,7 @@ for (const lang of ['vi', 'en']) {
 
   // Ma trận quyền (quản trị), chuông thông báo và tìm nhanh (điều phối), hộp nhập kiện (chuyến đang lập kế hoạch)
   {
-    const { page, close } = await session(lang, DESKTOP, '/nguoi-dung', 'admin')
+    const { page, close } = await session(lang, DESKTOP, '/nguoi-dung', 'systemAdmin')
     await page.getByRole('tab', { name: label(lang, 'Ma trận quyền', 'Permission matrix') }).click()
     await settle(page, 800)
     await shot(page, lang, 'permission-matrix')

@@ -3,8 +3,9 @@ import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
 import { MOCK_DB } from './spec-flow-helpers'
 
 /**
- * Nhật ký hệ thống (LM-091, D-43): điều phối viên huỷ một chuyến, quản trị viên đăng nhập trong cùng trang (kho in-memory) và thấy
- * sự kiện ở đầu nhật ký, lọc theo người làm ra đúng. Không `page.goto` sau khi ghi: tải lại là mất kho.
+ * Nhật ký hệ thống (LM-091, D-43): điều phối viên huỷ một chuyến, quản trị hệ thống đăng nhập trong cùng trang (kho in-memory) và
+ * thấy sự kiện ở đầu nhật ký, lọc theo người làm ra đúng. Không `page.goto` sau khi ghi: tải lại là mất kho. FE-0-01: quản trị hệ
+ * thống không xem được chuyến — tên chuyến trong nhật ký là chữ thường, còn tên người dùng vẫn dẫn tới màn Người dùng.
  */
 
 /**
@@ -52,7 +53,7 @@ test('a trip the dispatcher cancels tops the admin log, and filtering by who did
   }, { db: MOCK_DB })
 
   await signOutFromMenu(page, 'Nguyễn Thanh Tùng')
-  await signIn(page, DEMO_EMAILS.admin, DEMO_PASSWORD)
+  await signIn(page, DEMO_EMAILS.systemAdmin, DEMO_PASSWORD)
   await page.waitForURL(/\/nguoi-dung$/)
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhật ký', exact: true }).click()
   await page.waitForURL(/\/nhat-ky$/)
@@ -76,12 +77,21 @@ test('a trip the dispatcher cancels tops the admin log, and filtering by who did
   expect(new Set(actors)).toStrictEqual(new Set(['Nguyễn Thanh Tùng Điều phối viên']))
   expect(await rowCells(page, 1)).toStrictEqual(cancelled)
 
-  // Nhóm "Chuyến": lần huỷ đứng đầu, bấm đối tượng mở đúng chuyến
+  // Nhóm "Chuyến": lần huỷ đứng đầu. Quản trị hệ thống không xem được chuyến nên tên chuyến không phải liên kết (không dẫn tới 403)
   await page.getByRole('combobox', { name: 'Nhóm hành động', exact: true }).click()
   await page.getByRole('option', { name: 'Chuyến', exact: true }).click()
   await expect(page.locator('tbody tr').first()).toContainText('Huỷ chuyến')
   expect(await rowCells(page, 0)).toStrictEqual(cancelled)
-  await page.locator('tbody tr').first().getByRole('link', { name: 'Tuyến Bình Chánh – Biên Hoà', exact: true }).click()
-  await page.waitForURL(/\/chuyen\/TRIP-012$/)
+  await expect(page.locator('tbody tr').first().getByText('Tuyến Bình Chánh – Biên Hoà', { exact: true })).toBeVisible()
+  await expect(page.locator('tbody').getByRole('link')).toHaveCount(0)
+
+  // Nhóm "Đăng nhập": đối tượng là người dùng — màn quản trị hệ thống mở được — nên vẫn là liên kết, mở danh sách lọc đúng người đó
+  await page.getByRole('combobox', { name: 'Nhóm hành động', exact: true }).click()
+  await page.getByRole('option', { name: 'Đăng nhập', exact: true }).click()
+  await expect(page.locator('tbody tr').first()).toContainText('Đăng xuất')
+  await page.locator('tbody tr').first().getByRole('link', { name: 'Nguyễn Thanh Tùng', exact: true }).click()
+  await page.waitForURL(/\/nguoi-dung\?q=US-0001$/)
+  await expect(page.getByRole('row')).toHaveCount(2)
+  await expect(page.getByRole('row', { name: /Nguyễn Thanh Tùng/ })).toContainText('dieuphoi@loadmaster.vn')
   expect(browserErrors).toStrictEqual([])
 })

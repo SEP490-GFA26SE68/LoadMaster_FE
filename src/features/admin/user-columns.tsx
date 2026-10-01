@@ -3,7 +3,7 @@ import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import { accountGuards } from './account-guards'
-import { LastActive, RoleLabel, UserAvatar, UserStatusBadge } from './user-look'
+import { LastActive, RoleLabel, UserAvatar, UserDepot, UserStatusBadge } from './user-look'
 import { UserRowMenu } from './UserRowMenu'
 import { useUsersTable } from './users-table-context'
 
@@ -59,7 +59,7 @@ function ActionsHeader() {
 const nameCell = (info: Cell<string>) => <NameCell user={info.row.original} />
 const phoneCell = (info: Cell<string>) => <span className="font-mono text-caption text-ink-1">{info.getValue()}</span>
 const roleCell = (info: Cell<string>) => <RoleLabel role={info.row.original.role} />
-const depotCell = (info: Cell<string>) => <span className="line-clamp-2 whitespace-normal text-ink-1">{info.getValue()}</span>
+const depotCell = (info: Cell<string | undefined>) => <UserDepot value={info.getValue()} className="line-clamp-2 whitespace-normal" />
 const lastActiveCell = (info: Cell<string | null>) => <LastActive value={info.getValue()} />
 const statusCell = (info: Cell<User['status']>) => <UserStatusBadge status={info.getValue()} />
 const actionsCell = (info: Cell<unknown>) => <ActionsCell user={info.row.original} />

@@ -1,5 +1,5 @@
 import { attachJson, expect, test } from './fixtures'
-import { addPackage, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, SEED_TRIP } from './spec-flow-helpers'
+import { addPackage, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, SEED_TRIP, switchUser, waitSceneReady } from './spec-flow-helpers'
 import { cameraPreset, closeInspector, openInspector, renderCameraChange, sceneSnapshot, waitCameraSettled } from './viewer-helpers'
 
 /**
@@ -18,8 +18,9 @@ for (const device of ['desktop', 'tablet'] as const) {
     // ghi ở LM-054, không khẳng định ở đây. Màn 3D và màn kho là màn cảm ứng: khẳng định ≥ 56 px (AGENTS mục 5, 10).
     const heights: Record<string, number> = {}
 
+    // Ba vai trò trên cùng một kho (FE-0-03, đổi người trong app): điều phối viên lập xe, chuyến và tối ưu; quản lý công ty duyệt; kho xếp.
     // Xe "Truck 6m" có hốc bánh xe, tạo ở Đội xe
-    await login('/doi-xe', 'admin')
+    await login('/doi-xe', 'dispatcher')
     await page.getByRole('link', { name: 'Thêm xe', exact: true }).click()
     await page.getByRole('textbox', { name: 'Tên xe', exact: true }).fill('Truck 6m')
     // §15 "Tạo xe bằng cm/kg" + "Mọi field hiển thị đơn vị": ô lòng thùng là cm, tải trọng là kg
@@ -91,6 +92,13 @@ for (const device of ['desktop', 'tablet'] as const) {
     await expect(page.getByRole('list', { name: 'Vật cản trong thùng' }))
       .toContainText('Hốc bánh xe OBS-001: Góc tại X 0 cm · Y 0 cm · Z 0 cm, kích thước 100 × 25 × 30 cm')
 
+    // Điều phối viên không duyệt (LM-104): quản lý công ty mở đúng phương án vừa tối ưu
+    const plannerRoute = new URL(page.url()).pathname + new URL(page.url()).search
+    await switchUser(page, 'manager')
+    await navigateInApp(page, plannerRoute)
+    await page.locator('canvas').waitFor()
+    await waitSceneReady(page)
+    await expect(header).toContainText(/Đã xếp\s*8 \/ 8/)
     const approve = page.getByRole('button', { name: 'Duyệt phương án', exact: true })
     if (tablet) {
       heights.approve = await heightOf(approve)
@@ -157,6 +165,7 @@ for (const device of ['desktop', 'tablet'] as const) {
       return { id: revision?.id, first: revision?.result.placements.find((placement) => placement.loadingOrder === 1)?.packageInstanceId, total: revision?.result.placements.length }
     }, { db: MOCK_DB, tripId: 'TRIP-015' })
     expect(page.url()).toContain(`revision=${approved.id}`)
+    await switchUser(page, 'warehouse')
     await navigateInApp(page, '/kho?chuyen=TRIP-015')
     await expect(page.getByText(`Bước 1 / ${approved.total}`)).toBeVisible()
     await expect(page.getByRole('heading', { level: 1, name: approved.first, exact: true })).toBeVisible()
@@ -247,8 +256,8 @@ test('an unavailable optimisation service shows the error dialog and retry', asy
 })
 
 test('editing a package after optimising makes the plan stale and blocks approval', async ({ page, login }) => {
-  // Tối ưu, sửa kiện rồi Duyệt: cần cả quyền điều phối lẫn quyền của quản lý công ty (LM-104) — dùng quản trị
-  await login(`/chuyen/${SEED_TRIP}/toi-uu`, 'admin')
+  // Hai vai trò (LM-104): điều phối viên tối ưu rồi sửa kiện; quản lý công ty mở phương án đó và bị chặn Duyệt
+  await login(`/chuyen/${SEED_TRIP}/toi-uu`, 'dispatcher')
   await optimizeAndOpenPlanner(page)
   const plannerUrl = page.url()
   // §15 "Mock service trả đúng OptimizationResult": revision vừa lưu qua đúng schema contract Spec
@@ -275,6 +284,11 @@ test('editing a package after optimising makes the plan stale and blocks approva
   // Quay lại đúng revision đã xem (history phía client, không tải lại)
   await page.goBack()
   await expect(page).toHaveURL(plannerUrl)
+  await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toBeVisible()
+
+  // Quản lý công ty đăng nhập trong app (tải lại là mất phương án vừa tối ưu) và mở đúng phương án đó
+  await switchUser(page, 'manager')
+  await navigateInApp(page, new URL(plannerUrl).pathname + new URL(plannerUrl).search)
   await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toBeVisible()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Duyệt phương án này?' })

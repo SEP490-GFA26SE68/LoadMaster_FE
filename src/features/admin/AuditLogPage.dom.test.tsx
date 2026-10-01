@@ -3,13 +3,15 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router'
 import { expect, test } from 'vitest'
+import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { getMockDb, vnDate } from '@/lib/mock-db'
+import { signedInAs } from '@/test/signed-in'
 import { AuditLogPage } from './AuditLogPage'
 
 /**
  * Seam: kho dùng chung (seed neo 14/09/2026) → `audit-api.ts` → hook → màn `/nhat-ky` (LM-091). Các test trong file dùng chung một
- * kho; sự kiện test ghi thêm luôn là mới nhất.
+ * kho; sự kiện test ghi thêm luôn là mới nhất. Người xem là quản trị hệ thống demo (FE-0-01): đọc nhật ký, không xem được chuyến.
  */
 const SLOW = { timeout: 5000 }
 
@@ -19,13 +21,16 @@ function SearchProbe() {
 
 function renderLog(url = '/nhat-ky') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  signedInAs('systemAdmin')
   render(
     <QueryClientProvider client={client}>
       <I18nProvider>
-        <MemoryRouter initialEntries={[url]}>
-          <AuditLogPage />
-          <SearchProbe />
-        </MemoryRouter>
+        <AuthProvider>
+          <MemoryRouter initialEntries={[url]}>
+            <AuditLogPage />
+            <SearchProbe />
+          </MemoryRouter>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>,
   )
@@ -47,9 +52,9 @@ async function dataRows() {
   return within(table).getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell').map(cellText))
 }
 
-test('sự kiện vừa ghi đứng đầu: người làm, hành động, đối tượng dẫn tới chuyến, chi tiết đã dịch', async () => {
+test('sự kiện vừa ghi đứng đầu: người làm, hành động, đối tượng, chi tiết đã dịch; chuyến không thành liên kết với người không xem được chuyến', async () => {
   const db = getMockDb()
-  // Điều phối viên huỷ chuyến ngày mai (TRIP-012 đã tối ưu, chưa xếp)
+  // Điều phối viên huỷ chuyến ngày mai (TRIP-012 đã tối ưu, chưa xếp); `renderLog` đặt lại phiên của quản trị hệ thống
   db.restoreSession('US-0001')
   await db.cancelTrip('TRIP-012', 'Khách đổi lịch nhận hàng')
   renderLog()
@@ -61,7 +66,8 @@ test('sự kiện vừa ghi đứng đầu: người làm, hành động, đối
   ])
   const firstRow = within(screen.getByRole('table')).getAllByRole('row')[1]
   expect(within(firstRow!).getAllByRole('cell')[1]).toHaveTextContent(/^TTNguyễn Thanh Tùng/)
-  expect(within(firstRow!).getByRole('link', { name: 'Tuyến Bình Chánh – Biên Hoà' })).toHaveAttribute('href', '/chuyen/TRIP-012')
+  // Quản trị hệ thống không có `trips.view`: tên chuyến là chữ thường, không dẫn tới màn 403
+  expect(within(firstRow!).queryByRole('link')).not.toBeInTheDocument()
   // Mặc định 50 dòng một trang, mới nhất trước
   expect(await dataRows()).toHaveLength(50)
   expect(screen.getByRole('columnheader', { name: 'Thời điểm' })).toHaveAttribute('aria-sort', 'descending')
@@ -80,6 +86,9 @@ test('lọc theo người làm: chỉ còn sự kiện của người đó, bộ
   await waitFor(async () => {
     expect(new Set((await dataRows()).map((row) => row[1]))).toStrictEqual(new Set(['Lê Văn Hải Nhân viên kho']))
   }, SLOW)
+  // Đối tượng là người dùng thì vẫn là liên kết: quản trị hệ thống mở được màn Người dùng (lần đăng nhập 04:40 của seed)
+  const signedIn = within(screen.getByRole('table')).getAllByRole('row').find((row) => within(row).queryByText('Đăng nhập') !== null)
+  expect(within(signedIn!).getByRole('link', { name: 'Lê Văn Hải' })).toHaveAttribute('href', '/nguoi-dung?q=US-0003')
 })
 
 test('tìm theo mã đối tượng và lọc nhóm hành động', async () => {

@@ -50,6 +50,17 @@ test('the 56px account button names the user and opens the profile from a touch-
   expect(await screen.findByRole('status', { name: 'route' })).toHaveTextContent('/ho-so')
 })
 
+/** FE-0-03 (quyết định G13): kho là tuỳ chọn — người dùng nền tảng không có. */
+test('an account without a depot shows the role alone, without a dangling separator', async () => {
+  const user = userEvent.setup()
+  signedInAs('systemAdmin')
+  renderMenu()
+  await user.click(screen.getByRole('button', { name: 'Tài khoản Võ Minh Khoa' }))
+  const menu = await screen.findByRole('menu')
+  expect(within(menu).getByText('Quản trị hệ thống')).toBeInTheDocument()
+  expect(menu).not.toHaveTextContent('·')
+})
+
 test('signing out from the menu ends the session and opens the sign-in screen', async () => {
   const user = userEvent.setup()
   signedInAs('driver')

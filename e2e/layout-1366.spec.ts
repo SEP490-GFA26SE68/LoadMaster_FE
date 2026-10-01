@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { Role } from '@/types/user'
 import { attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
 
 /**
@@ -85,7 +86,7 @@ const SCREENS: readonly Screen[] = [
 for (const size of SIZES) {
   test(`dispatcher screens fit ${size.width} × ${size.height} without cut text or sideways scrolling`, async ({ page, login, browserErrors }, testInfo) => {
     await page.setViewportSize(size)
-    await login('/', 'admin')
+    await login('/', 'dispatcher')
     for (const screen of SCREENS) {
       await page.goto(screen.route)
       await screen.ready(page)
@@ -102,21 +103,29 @@ for (const size of SIZES) {
  * Cuộn bằng bánh xe chuột thật, không bằng `scrollIntoView`: Playwright cuộn được cả vùng `overflow-hidden` bằng code, nên các
  * test khác không thấy khi người dùng không lăn được (khung dọc thiếu `min-h-0`, bảng nhật ký bị co trong cột flex, bảng `sr-only`
  * của biểu đồ kéo cả trang dài ra). Trang không bao giờ tự cuộn: thanh điều hướng luôn ở mép trên.
+ * Mỗi màn mở bằng vai trò dùng nó (FE-0-01: không còn vai trò toàn quyền). Màn chỉ đọc kho seed nên đổi vai trò bằng cách tải lại.
  */
-const WHEEL_SCREENS: readonly Screen[] = [
-  { name: 'dashboard', route: '/', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
-  { name: 'trip-detail', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
-  { name: 'vehicle-detail', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
-  { name: 'fleet', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
-  { name: 'audit', route: '/nhat-ky', ready: async (page) => { await expect(page.getByRole('row')).not.toHaveCount(0) } },
-  { name: 'packages', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /RPK-00/ }).first()).toBeVisible() } },
-  { name: 'labels', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
+const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
+  { name: 'dashboard', role: 'dispatcher', route: '/', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
+  { name: 'trip-detail', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
+  { name: 'vehicle-detail', role: 'dispatcher', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
+  { name: 'fleet', role: 'dispatcher', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
+  { name: 'audit', role: 'systemAdmin', route: '/nhat-ky', ready: async (page) => { await expect(page.getByRole('row')).not.toHaveCount(0) } },
+  { name: 'users', role: 'systemAdmin', route: '/nguoi-dung', ready: async (page) => { await expect(page.getByRole('row', { name: /Nguyễn Thanh Tùng/ })).toBeVisible() } },
+  { name: 'packages', role: 'manufacturer', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /RPK-00/ }).first()).toBeVisible() } },
+  { name: 'labels', role: 'manufacturer', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
 ]
 
 test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page itself stays put', async ({ page, login }) => {
   await page.setViewportSize({ width: 1366, height: 768 })
-  await login('/', 'admin')
+  let signedInAs: Role | undefined
   for (const screen of WHEEL_SCREENS) {
+    if (screen.role !== signedInAs) {
+      // Đổi vai trò: bỏ phiên của tab rồi đăng nhập lại (đăng nhập ở gốc `/` mở màn chính của vai trò, chưa phải màn cần đo)
+      if (signedInAs !== undefined) await page.evaluate(() => sessionStorage.clear())
+      await login('/', screen.role)
+      signedInAs = screen.role
+    }
     await page.goto(screen.route)
     await screen.ready(page)
     // Vùng cuộn của màn là khối ngay sau thanh tiêu đề

@@ -186,8 +186,9 @@ test('no approved plan, a cancelled trip or an unknown trip: say why, with the w
   expect(screen.getByText('Không tìm thấy TRIP-KHONG-CO.')).toBeInTheDocument()
 }, 15_000)
 
-test('an admin continuing a trip resumes at its first package without a result; exit goes to the trip detail', async () => {
-  renderWarehouse('/kho?chuyen=TRIP-011', 'admin')
+test('a warehouse worker continuing a trip a colleague started resumes at its first package without a result; exit goes to the trip list', async () => {
+  // TRIP-011 (seed): Đỗ Thị Hạnh đã ghi 110 / 280 kiện; nhân viên kho demo Lê Văn Hải mở tiếp
+  renderWarehouse('/kho?chuyen=TRIP-011')
   expect(await screen.findByText(/^Bước/, {}, LOAD)).toHaveTextContent('Bước 111 / 280')
-  expect(screen.getByRole('link', { name: 'Thoát phiên xếp hàng' })).toHaveAttribute('href', '/chuyen/TRIP-011')
+  expect(screen.getByRole('link', { name: 'Thoát phiên xếp hàng' })).toHaveAttribute('href', '/kho')
 })

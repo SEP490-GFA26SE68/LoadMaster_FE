@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { signedInAs } from '@/test/signed-in'
-import type { Role } from '@/types/user'
 import { WarehousePage } from './WarehousePage'
 
 /**
@@ -24,10 +23,11 @@ function Elsewhere() {
 
 /**
  * Màn kho qua kho dùng chung (`@/lib/mock-db`) → `warehouse-api.ts` → hook → màn, không giả lập module dữ liệu nào (LM-086).
- * Mỗi lần gọi là một QueryClient mới, như mở lại màn: dữ liệu đọc lại từ kho.
+ * Mỗi lần gọi là một QueryClient mới, như mở lại màn: dữ liệu đọc lại từ kho. Người xem là nhân viên kho demo (US-0003) — chỉ nhân
+ * viên kho mở được màn này (FE-0-01).
  */
-export function renderWarehouse(route: string, role: Role = 'warehouse') {
-  signedInAs(role)
+export function renderWarehouse(route: string) {
+  signedInAs('warehouse')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>

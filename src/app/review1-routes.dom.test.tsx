@@ -30,7 +30,7 @@ test.each<[Role, string, string, string]>([
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
   ['manager', '/duyet', 'Chờ duyệt', '1 phương án chờ duyệt'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
-  ['admin', '/lo-hang/SHP-002', 'Lô hàng SHP-002', '12 kiện trong lô, đã nhận 4'],
+  ['manufacturer', '/lo-hang/SHP-002', 'Lô hàng SHP-002', '12 kiện trong lô, đã nhận 4'],
 ])('%s mở %s', async (role, path, title, summary) => {
   openAt(path, role)
   expect(await screen.findByRole('heading', { level: 1, name: title }, SLOW)).toBeInTheDocument()
@@ -49,6 +49,11 @@ test.each<[Role, string]>([
   ['manufacturer', '/nhan-hang'],
   ['warehouse', '/don-hang'],
   ['dispatcher', '/duyet'],
+  // FE-0-01: quản trị hệ thống không còn quyền vận hành; quyền mới (`packages.view`…) chưa mở route nào của Review 1
+  ['systemAdmin', '/lo-hang/SHP-002'],
+  ['systemAdmin', '/don-hang'],
+  ['companyAdmin', '/duyet'],
+  ['dispatcher', '/kien-hang'],
 ])('%s không mở được %s', async (role, path) => {
   openAt(path, role)
   expect(await screen.findByRole('heading', { name: 'Không có quyền truy cập' }, SLOW)).toBeInTheDocument()

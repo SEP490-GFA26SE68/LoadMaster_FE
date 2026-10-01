@@ -40,7 +40,7 @@ test('the manager gets completed and cancelled trips only', () => {
   expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-1'])
 })
 
-test('the admin gets account events by others and failed sign-ins, not routine sign-ins', () => {
+test('the system administrator gets account events by others and failed sign-ins, not routine sign-ins and no trip events', () => {
   const events = [
     event('EV-6', '2026-09-14T10:00:00.000Z', null, 'auth.signInFailed', 'ai-do@example.vn'),
     event('EV-5', '2026-09-14T09:30:00.000Z', 'US-0003', 'auth.signedIn', 'US-0003'),
@@ -49,14 +49,22 @@ test('the admin gets account events by others and failed sign-ins, not routine s
     event('EV-2', '2026-09-13T08:00:00.000Z', 'US-0009', 'user.profileUpdated', 'US-0009'),
     event('EV-1', '2026-09-13T07:00:00.000Z', 'US-0003', 'trip.cancelled'),
   ]
-  expect(ids(selectNotifications(events, { id: 'US-0005', role: 'admin' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-2'])
+  expect(ids(selectNotifications(events, { id: 'US-0005', role: 'systemAdmin' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-2'])
+  // Quản trị công ty nhận cùng loại sự kiện; EV-3 lần này là việc của người khác (quản trị hệ thống tạo tài khoản)
+  expect(ids(selectNotifications(events, { id: 'US-LB-01', role: 'companyAdmin' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-3', 'EV-2'])
 })
 
-test('warehouse workers and drivers have no bell', () => {
-  const events = [event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled')]
+test('warehouse workers, drivers, the platform manager and customer support have no bell', () => {
+  const events = [
+    event('EV-2', '2026-09-14T10:30:00.000Z', 'US-0005', 'user.created', 'US-0016'),
+    event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled'),
+  ]
   expect([hasNotifications('warehouse'), hasNotifications('driver')]).toStrictEqual([false, false])
-  expect([hasNotifications('dispatcher'), hasNotifications('manager'), hasNotifications('admin')]).toStrictEqual([true, true, true])
+  expect([hasNotifications('systemManager'), hasNotifications('systemSupporter')]).toStrictEqual([false, false])
+  expect([hasNotifications('dispatcher'), hasNotifications('manager'), hasNotifications('systemAdmin'), hasNotifications('companyAdmin')])
+    .toStrictEqual([true, true, true, true])
   expect(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW)).toStrictEqual([])
+  expect(selectNotifications(events, { id: 'US-NT-01', role: 'systemManager' }, NOW)).toStrictEqual([])
 })
 
 test('at most twenty, the newest first', () => {

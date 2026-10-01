@@ -138,8 +138,8 @@ test('the driver delivers a trip: start, unload, a stop with nothing on board, a
 }, 30_000)
 
 test('reopening a trip in delivery resumes at the first stop not completed', async () => {
-  // TRIP-009 (seed): điểm 1 đã xong, điểm 2 dỡ được 25/50 kiện
-  renderDriver('/tai-xe/diem-giao?chuyen=TRIP-009', 'admin')
+  // TRIP-009 (seed): điểm 1 đã xong, điểm 2 dỡ được 25/50 kiện; tài xế của chuyến là Ngô Văn Bảo (US-0006)
+  renderDriver('/tai-xe/diem-giao?chuyen=TRIP-009', 'US-0006')
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' }, LOAD)).toBeInTheDocument()
   expect(screen.getByText('Cần dỡ 50 kiện · Đã dỡ 25 · Sự cố 0')).toBeInTheDocument()
   expect(screen.getByText('Còn 25 kiện chưa dỡ hoặc chưa báo sự cố')).toBeInTheDocument()

@@ -33,7 +33,14 @@ test('a driver opening the users screen gets 403 with a way back to the driver s
   expect(screen.queryByRole('heading', { name: 'Người dùng' })).not.toBeInTheDocument()
 })
 
-test('the admin opens the users screen', () => {
-  renderUsersRoute('admin')
+test.each<Role>(['systemAdmin', 'companyAdmin'])('the %s opens the users screen', (role) => {
+  renderUsersRoute(role)
   expect(screen.getByRole('heading', { name: 'Người dùng' })).toBeInTheDocument()
+})
+
+/** FE-0-03: màn chính tạm của hai vai trò nền tảng chưa có màn riêng là hồ sơ cá nhân — nút về màn chính không dẫn tới 404. */
+test('a platform manager opening the users screen gets 403 with a way back to the profile', () => {
+  renderUsersRoute('systemManager')
+  expect(screen.getByRole('heading', { name: 'Không có quyền truy cập' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Về màn chính' })).toHaveAttribute('href', '/ho-so')
 })
