@@ -54,7 +54,7 @@ export const warehouse = {
   },
   missingRecorded: 'Recorded {id} as missing',
   missingRecordedDescription: 'Moving to the next package.',
-  allRecorded: 'Every package has a result. Press Complete loading to mark the trip as Loaded — awaiting departure.',
+  allRecorded: 'Every package has a result. Press Complete loading to mark the trip as Loaded — ready to depart.',
   complete: 'Complete loading',
   finished: {
     title: 'Trip {tripId} is loaded',

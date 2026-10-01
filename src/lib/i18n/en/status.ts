@@ -13,6 +13,6 @@ export const status = {
     approved: 'Approved',
     stale: 'Stale — optimize again',
     loading: 'Loading {recorded} / {total}',
-    loaded: 'Loaded — awaiting departure',
+    loaded: 'Loaded — ready to depart',
   },
 } satisfies Dictionary<typeof source>
