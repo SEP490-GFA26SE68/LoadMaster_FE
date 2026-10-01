@@ -171,7 +171,7 @@ test('no approved plan, a cancelled trip or an unknown trip: say why, with the w
   const { trip } = await optimizedTwoCartonTrip(db)
   const view = renderWarehouse(`/kho?chuyen=${trip.id}`)
   expect(await screen.findByText('Chưa có phương án đã duyệt', {}, LOAD)).toBeInTheDocument()
-  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Quản lý công ty cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
+  expect(screen.getByText(`Chuyến ${trip.id} chưa có phương án đã duyệt. Điều phối viên cần duyệt phương án trước khi kho xếp.`)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
   view.unmount()
 

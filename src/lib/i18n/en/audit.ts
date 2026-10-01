@@ -7,7 +7,7 @@ export const audit = {
     vehicle: { created: 'Added vehicle', updated: 'Edited vehicle', deleted: 'Deleted vehicle', maintenanceOn: 'Put vehicle in maintenance', maintenanceOff: 'Ended vehicle maintenance' },
     trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip' },
     optimization: { saved: 'Saved optimization result', failed: 'Optimization run returned no result' },
-    revision: { approved: 'Approved plan', edited: 'Saved a manual edit for approval' },
+    revision: { approved: 'Approved plan' },
     loading: { started: 'Started loading', missing: 'Reported package missing at warehouse', completed: 'Finished loading', sealed: 'Recorded seal number' },
     delivery: { started: 'Left for delivery', issue: 'Reported delivery issue', stopCompleted: 'Completed stop', completed: 'Completed trip' },
     user: {

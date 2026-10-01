@@ -82,8 +82,8 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
   const panel = page.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng', exact: true })
   await expect(panel.getByRole('heading', { level: 2, name: 'Nguyễn Thanh Tùng', exact: true })).toBeFocused()
   await expect(panel).toContainText('0901 234 567')
-  // 23 quyền của điều phối viên (FE-0-01): 21 quyền của ma trận mới cộng hai quyền đơn hàng còn tạm
-  await expect(panel.getByRole('listitem')).toHaveCount(23)
+  // 24 quyền của điều phối viên (FE-0-01, FE-0-07): 22 quyền của ma trận mới, gồm duyệt phương án, cộng hai quyền đơn hàng còn tạm
+  await expect(panel.getByRole('listitem')).toHaveCount(24)
   await expect(phoneHeader).toHaveCount(0)
 
   // Panel nằm cạnh bảng, không xuống dưới; không có gì cuộn ngang

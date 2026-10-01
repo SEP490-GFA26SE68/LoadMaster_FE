@@ -55,11 +55,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const approval = useViewerApproval(plan, state)
   // Chỉ dời/xoay kiện là chỉnh sửa cần Duyệt lại; ghim không thuộc phương án gửi Duyệt.
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
-  // Chỉ quản lý công ty duyệt (LM-104); chuyến đã sang pha vận hành thì phương án đã chốt (D-45)
+  // Điều phối viên chỉnh tay và duyệt (`plans.approve`, FE-0-07), quản lý công ty chỉ xem; chuyến đã sang pha vận hành thì phương án
+  // đã chốt với mọi vai trò (D-45)
   const approvedBy = usePlanApprovalQuery(plan.revision?.id).data?.approvedByName
-  // Điều phối viên chỉnh tay rồi "Lưu bản chỉnh" gửi quản lý duyệt (LM-108); quản lý công ty chỉnh và duyệt
-  const access = plannerAccess({ phase, canApprove: can('plans.approve'), canEdit: can('plans.approve') || can('optimization.run'),
-    approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
+  const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
   const perfStore = useMemo(() => createPerfStore(), [])
@@ -112,9 +111,9 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
         <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy}
-          onApprove={() => setApproveOpen(true)} onSave={approval.save} saving={approval.saving} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
+          onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
-      <PlannerNotices model={plan} source={source} lock={access.lock ?? access.notice}
+      <PlannerNotices model={plan} source={source} lock={access.lock}
         rerunTo={can('optimization.run') && (phase ?? 'planning') === 'planning' ? `/chuyen/${tripId}/toi-uu` : undefined} />
       {editor.mode === 'edit' ? <EditorToolbar state={state} editor={editor} onModeChange={handleModeChange} /> :
         <WorkspaceToolbar {...simulation} onEdit={handleEdit} />}

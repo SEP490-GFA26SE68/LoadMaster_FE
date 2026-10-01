@@ -40,11 +40,11 @@ export const optimization = {
     over: 'vượt {value}',
   },
   afterTitle: 'Sau khi chạy',
-  /** Ba bước "Sau khi chạy" (V2.3): bước cuối là quản lý công ty duyệt (LM-104). */
+  /** Ba bước "Sau khi chạy" (V2.3): bước cuối là điều phối viên duyệt trong Planner (FE-0-07). */
   afterSteps: {
     view: 'Xem phương án',
     check: 'Kiểm tra kiện chưa xếp và cảnh báo',
-    approve: 'Quản lý công ty duyệt để kho thực hiện',
+    approve: 'Duyệt để kho thực hiện',
   },
   method: 'Phương pháp',
   methodUnavailable: 'Chưa có trong bản MVP: chỉ phương án mock chạy được.',

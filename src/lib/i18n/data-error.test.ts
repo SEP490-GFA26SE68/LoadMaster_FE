@@ -10,7 +10,6 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   VEHICLE_IN_MAINTENANCE: { vehicleId: 'VEHICLE-008' },
   REVISION_STALE: { revisionId: 'REV-027' },
   REVISION_NOT_COMPLETED: { revisionId: 'REV-003' },
-  NO_EDITS: { revisionId: 'REV-003' },
   PATCH_UNKNOWN_INSTANCE: { packageInstanceId: 'PKG-001-01' },
   TRIP_LOCKED: { tripId: 'TRIP-011', phase: 'loading' },
   TRIP_PHASE_INVALID: { tripId: 'TRIP-009', phase: 'delivering' },

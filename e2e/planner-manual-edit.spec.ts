@@ -3,8 +3,8 @@ import { expect, PLANNER_ROUTE, test } from './fixtures'
 import { R3F_DEPS, type R3FModule } from './viewer-helpers'
 
 /**
- * Chỉnh tay trong Planner (LM-108): điều phối viên kéo / nhích kiện được như Planner trước LM-104, trọng lực làm kiện đang tựa lên kiện
- * bị kéo đi rơi xuống, và "Lưu bản chỉnh" tạo bản mới chưa duyệt chờ quản lý công ty.
+ * Chỉnh tay trong Planner (LM-108; FE-0-07): điều phối viên kéo / nhích kiện, trọng lực làm kiện đang tựa lên kiện bị kéo đi rơi xuống,
+ * và "Duyệt bản chỉnh" duyệt luôn bản đã chỉnh thành revision đã duyệt mới — không còn bước "Lưu bản chỉnh" chờ quản lý công ty.
  * Chồng kiện của chuyến mẫu: `PKG-001-16` nằm sàn (dài 60 cm, cao 50 cm), `PKG-001-05` tựa lên nó ở z = 50; phía cửa còn trống 130 cm.
  */
 const BOTTOM = 'PKG-001-16'
@@ -20,13 +20,12 @@ async function select(page: Page, id: string) {
   await expect(picker).toHaveValue(id)
 }
 
-test('the dispatcher edits by hand: pulling the bottom package out drops the one on top, undo lifts it back, "Save edits" leaves a new unapproved revision', async ({ page, login, browserErrors }) => {
+test('the dispatcher edits by hand: pulling the bottom package out drops the one on top, undo lifts it back, "Approve edits" approves the edited plan', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
   await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
-  // Điều phối viên có lại Chỉnh sửa; bản đã duyệt không có nút chính nào cho tới khi dời kiện
+  // Bản đã duyệt không có nút chính nào cho tới khi dời kiện
   await button(page, 'Chỉnh sửa').click()
-  await expect(button(page, 'Lưu bản chỉnh')).toHaveCount(0)
   await expect(button(page, 'Duyệt bản chỉnh')).toHaveCount(0)
 
   await select(page, TOP)
@@ -48,17 +47,25 @@ test('the dispatcher edits by hand: pulling the bottom package out drops the one
   await button(page, 'Làm lại').click()
   await expect(status(page)).toHaveAttribute('data-z', '0')
 
-  await button(page, 'Lưu bản chỉnh').click()
-  await expect(page).toHaveURL(/revision=REV-\d+/)
-  const saved = new URL(page.url()).searchParams.get('revision')
-  // Bản vừa lưu chưa duyệt: điều phối viên thấy dòng chờ quản lý, và nó là bản mới nhất của chuyến
-  await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toBeVisible()
+  // Đã dời kiện: nút chính là "Duyệt bản chỉnh" — duyệt luôn bản chỉnh tay, không có bước lưu riêng chờ người khác duyệt
+  await expect(button(page, 'Lưu bản chỉnh')).toHaveCount(0)
+  await button(page, 'Duyệt bản chỉnh').click()
+  const dialog = page.getByRole('dialog', { name: 'Duyệt phương án này?' })
+  // Bản duyệt nhận cả kiện vừa nhích lẫn các kiện rơi theo trọng lực: kiện nằm trên nó và hai kiện tựa trên kiện đó (rơi dây chuyền)
+  await expect(dialog).toContainText('Có 4 kiện chỉnh tay sẽ được áp vào bản duyệt.')
+  for (const id of [BOTTOM, TOP]) await expect(dialog, id).toContainText(id)
+  await dialog.getByRole('button', { name: 'Duyệt', exact: true }).click()
+  await expect(page).toHaveURL(/\/phuong-an\?revision=REV-\d+/)
+  const approvedId = new URL(page.url()).searchParams.get('revision')
+  await expect(page.locator('header').first()).toContainText(/Duyệt bởi Nguyễn Thanh Tùng lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/)
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
+  // Kho: bản mới nhất của chuyến là bản đã duyệt mang chỉnh tay, người duyệt là điều phối viên
   const newest = await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
     return (await getMockDb().listRevisions(tripId)).at(-1)
   }, { url: MOCK_DB, tripId: 'TRIP-2026-0914' })
-  expect(newest?.id).toBe(saved)
-  expect([newest?.manuallyEdited, newest?.approvedAt]).toStrictEqual([true, undefined])
+  expect(newest?.id).toBe(approvedId)
+  expect([newest?.manuallyEdited, newest?.approvedAt !== undefined, newest?.approvedBy, newest?.draftPatches?.length]).toStrictEqual([true, true, 'US-0001', 4])
   expect(browserErrors).toStrictEqual([])
 })
 
@@ -81,7 +88,7 @@ function handlePoint(page: Page, axis: 'x' | 'y' | 'z', deltaCm: [number, number
 
 test('grabbing the Z arrow lifts the package straight up only, and dragging it back down snaps it home (LM-108)', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
-  await login(PLANNER_ROUTE, 'manager')
+  await login(PLANNER_ROUTE, 'dispatcher')
   await page.locator('canvas').waitFor()
   await button(page, 'Chỉnh sửa').click()
   // PKG-004-13: nóc ở 200 cm, phía trên trống tới trần 240 cm, không kiện nào tựa lên nó (nâng lên không kéo theo kiện khác)

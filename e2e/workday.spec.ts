@@ -1,11 +1,11 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { addPackage, MOCK_DB, navigateInApp, optimizeAndOpenPlanner } from './spec-flow-helpers'
+import { addPackage, MOCK_DB, optimizeAndOpenPlanner } from './spec-flow-helpers'
 
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
- * lại trang): điều phối tạo chuyến, thêm kiện, tối ưu → quản lý công ty duyệt (LM-104) → kho xếp (báo thiếu 1) → tài xế giao
- * (1 sự cố) → quản lý thấy chuyến hoàn thành trên bảng điều khiển và xuất báo cáo → quản trị đọc đủ chuỗi sự kiện trong nhật ký.
+ * lại trang): điều phối tạo chuyến, thêm kiện, tối ưu, duyệt (FE-0-07) → kho xếp (báo thiếu 1) → tài xế giao (1 sự cố) → quản lý
+ * công ty thấy chuyến hoàn thành trên bảng điều khiển và xuất báo cáo → quản trị đọc đủ chuỗi sự kiện của chuyến trong nhật ký.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -52,23 +52,15 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await page.getByRole('link', { name: 'Chạy tối ưu', exact: true }).click()
   await optimizeAndOpenPlanner(page)
   await expect(page.getByText('MOCK RESULT', { exact: true }).first()).toBeVisible()
-  // LM-104: điều phối không duyệt — phương án chờ quản lý công ty
-  await expect(page.locator('[data-planner-lock="awaitingApproval"]')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
-  const plannerRoute = new URL(page.url()).pathname + new URL(page.url()).search
-  await page.getByRole('link', { name: 'Quay lại chuyến', exact: true }).click()
-  await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
-  await signOut(page, NAMES.dispatcher)
-
-  // Quản lý công ty: duyệt phương án vừa tối ưu
-  await signIn(page, 'manager')
-  await navigateInApp(page, plannerRoute)
+  // FE-0-07: điều phối viên duyệt ngay phương án vừa tối ưu — không có dòng nào bảo chờ người khác duyệt
+  await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
   await page.waitForURL(/\/phuong-an\?revision=REV-/)
   await page.getByRole('link', { name: 'Quay lại chuyến', exact: true }).click()
+  await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
   await expect(page.locator('header').getByText('Đã duyệt', { exact: true })).toBeVisible()
-  await signOut(page, NAMES.manager)
+  await signOut(page, NAMES.dispatcher)
 
   // Kho: xếp 5 kiện, báo thiếu 1, hoàn tất
   await signIn(page, 'warehouse')
@@ -143,7 +135,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   for (const [action, actor] of [
     ['Tạo chuyến', NAMES.dispatcher],
     ['Lưu kết quả tối ưu', NAMES.dispatcher],
-    ['Duyệt phương án', NAMES.manager],
+    ['Duyệt phương án', NAMES.dispatcher],
     ['Bắt đầu xếp hàng', NAMES.warehouse],
     ['Báo thiếu kiện ở kho', NAMES.warehouse],
     ['Xếp xong', NAMES.warehouse],

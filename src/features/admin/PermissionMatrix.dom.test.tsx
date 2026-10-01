@@ -4,8 +4,8 @@ import { I18nProvider } from '@/lib/i18n'
 import { PermissionMatrix } from './PermissionMatrix'
 
 /**
- * Tab "Ma trận quyền" (LM-092, FE-0-01): bảng chỉ đọc dựng từ `ROLE_PERMISSIONS`. Kỳ vọng chép tay từ ma trận của PRD v2 mục 5.2 và ba
- * chỗ còn tạm (quản lý công ty vẫn duyệt, đơn hàng, hai vai trò Review 1), không đọc lại bảng quyền.
+ * Tab "Ma trận quyền" (LM-092, FE-0-01): bảng chỉ đọc dựng từ `ROLE_PERMISSIONS`. Kỳ vọng chép tay từ ma trận của PRD v2 mục 5.2 và hai
+ * chỗ còn tạm (đơn hàng, hai vai trò Review 1), không đọc lại bảng quyền.
  */
 function renderMatrix() {
   render(<I18nProvider><PermissionMatrix /></I18nProvider>)
@@ -52,10 +52,11 @@ test('quản trị hệ thống và quản trị công ty quản lý người d�
   expect(cellsOf(matrix, 'Giao hàng')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, YES, NO, NO])
 })
 
-test('chỉ quản lý công ty xuất báo cáo và (tạm tới FE-0-07) duyệt phương án; điều phối chạy tối ưu', () => {
+test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ưu, chỉnh sửa và duyệt phương án (FE-0-07)', () => {
   const matrix = renderMatrix()
   expect(cellsOf(matrix, 'Xuất báo cáo .xlsx')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO, NO, NO])
-  expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Xem phương án 3D và so sánh')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Xem đơn hàng')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Loại kiện, đăng ký kiện và in nhãn QR')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, NO, YES, NO])

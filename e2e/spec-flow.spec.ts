@@ -18,7 +18,7 @@ for (const device of ['desktop', 'tablet'] as const) {
     // ghi ở LM-054, không khẳng định ở đây. Màn 3D và màn kho là màn cảm ứng: khẳng định ≥ 56 px (AGENTS mục 5, 10).
     const heights: Record<string, number> = {}
 
-    // Ba vai trò trên cùng một kho (FE-0-03, đổi người trong app): điều phối viên lập xe, chuyến và tối ưu; quản lý công ty duyệt; kho xếp.
+    // Hai vai trò trên cùng một kho (FE-0-03, đổi người trong app): điều phối viên lập xe, chuyến, tối ưu và duyệt (FE-0-07); kho xếp.
     // Xe "Truck 6m" có hốc bánh xe, tạo ở Đội xe
     await login('/doi-xe', 'dispatcher')
     await page.getByRole('link', { name: 'Thêm xe', exact: true }).click()
@@ -92,13 +92,8 @@ for (const device of ['desktop', 'tablet'] as const) {
     await expect(page.getByRole('list', { name: 'Vật cản trong thùng' }))
       .toContainText('Hốc bánh xe OBS-001: Góc tại X 0 cm · Y 0 cm · Z 0 cm, kích thước 100 × 25 × 30 cm')
 
-    // Điều phối viên không duyệt (LM-104): quản lý công ty mở đúng phương án vừa tối ưu
-    const plannerRoute = new URL(page.url()).pathname + new URL(page.url()).search
-    await switchUser(page, 'manager')
-    await navigateInApp(page, plannerRoute)
-    await page.locator('canvas').waitFor()
+    // Điều phối viên duyệt ngay phương án vừa tối ưu (FE-0-07). Scene dựng xong rồi mới đọc camera và bấm trong khung 3D
     await waitSceneReady(page)
-    await expect(header).toContainText(/Đã xếp\s*8 \/ 8/)
     const approve = page.getByRole('button', { name: 'Duyệt phương án', exact: true })
     if (tablet) {
       heights.approve = await heightOf(approve)
@@ -256,7 +251,7 @@ test('an unavailable optimisation service shows the error dialog and retry', asy
 })
 
 test('editing a package after optimising makes the plan stale and blocks approval', async ({ page, login }) => {
-  // Hai vai trò (LM-104): điều phối viên tối ưu rồi sửa kiện; quản lý công ty mở phương án đó và bị chặn Duyệt
+  // Điều phối viên tối ưu, sửa kiện rồi bị chặn Duyệt trên chính phương án đó (FE-0-07: điều phối viên là người duyệt)
   await login(`/chuyen/${SEED_TRIP}/toi-uu`, 'dispatcher')
   await optimizeAndOpenPlanner(page)
   const plannerUrl = page.url()
@@ -284,11 +279,6 @@ test('editing a package after optimising makes the plan stale and blocks approva
   // Quay lại đúng revision đã xem (history phía client, không tải lại)
   await page.goBack()
   await expect(page).toHaveURL(plannerUrl)
-  await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toBeVisible()
-
-  // Quản lý công ty đăng nhập trong app (tải lại là mất phương án vừa tối ưu) và mở đúng phương án đó
-  await switchUser(page, 'manager')
-  await navigateInApp(page, new URL(plannerUrl).pathname + new URL(plannerUrl).search)
   await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toBeVisible()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Duyệt phương án này?' })

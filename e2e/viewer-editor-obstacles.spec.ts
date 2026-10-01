@@ -13,7 +13,7 @@ const status = (page: Page) => page.locator('[data-editor-status]')
 const position = (page: Page) => status(page).evaluate((el) => [Number(el.dataset.x), Number(el.dataset.y), Number(el.dataset.z)])
 
 test('nudging a floor package into a non load-bearing wheel arch is blocked and leaves no command', async ({ page, login, browserErrors }) => {
-  await login(`${PLANNER_ROUTE}?debug&quality=low`, 'manager')
+  await login(`${PLANNER_ROUTE}?debug&quality=low`)
   await page.locator('canvas').waitFor()
   await waitIdle(page)
   // Kiện sàn nằm sát mép trong của hốc bánh bên trái (hốc: x 420–530, y 0–25, z 0–32): một bước Y− là chồng vào hốc.

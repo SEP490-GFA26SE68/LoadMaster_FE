@@ -11,7 +11,6 @@ export const dataErrors = {
   VEHICLE_IN_MAINTENANCE: 'Xe {vehicleId} đang bảo dưỡng, hãy chọn xe khác.',
   REVISION_STALE: 'Phương án {revisionId} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',
   REVISION_NOT_COMPLETED: 'Phương án {revisionId} chưa hoàn tất nên không duyệt được.',
-  NO_EDITS: 'Chưa dời hay xoay kiện nào trên {revisionId} nên không có bản chỉnh để lưu.',
   PATCH_UNKNOWN_INSTANCE: 'Kiện {packageInstanceId} không có trong phương án.',
   TRIP_LOCKED: 'Chuyến {tripId} đã sang giai đoạn vận hành nên không sửa được.',
   TRIP_PHASE_INVALID: 'Thao tác này không làm được ở trạng thái hiện tại của chuyến {tripId}.',

@@ -3,8 +3,8 @@ import { useT } from '@/lib/i18n'
 const STEPS = ['view', 'check', 'approve'] as const
 
 /**
- * "Sau khi chạy" ở cuối cột phải Thiết lập tối ưu (V2.3): ba bước đánh số, chữ trần trên nền trang (không phải card). Bước cuối là quản lý
- * công ty duyệt (LM-104), không phải điều phối.
+ * "Sau khi chạy" ở cuối cột phải Thiết lập tối ưu (V2.3): ba bước đánh số, chữ trần trên nền trang (không phải card). Bước cuối là duyệt
+ * trong Planner — việc của chính điều phối viên đang chạy tối ưu (FE-0-07).
  */
 export function SetupAfterSteps() {
   const t = useT()

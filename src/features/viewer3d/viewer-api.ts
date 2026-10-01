@@ -34,12 +34,10 @@ export async function fetchPlanApproval(revisionId: string): Promise<PlanApprova
   return { approvedByName: users.find((user) => user.id === approverId)?.fullName ?? null }
 }
 
-/** Duyệt (LM-050, D-31): kho tạo revision approved mới từ revision đang xem và patch của draft; revision nguồn giữ nguyên. */
+/**
+ * Duyệt (LM-050, D-31): kho tạo revision approved mới từ revision đang xem và patch của draft — bản chỉnh tay được duyệt cùng lúc
+ * (FE-0-07); revision nguồn giữ nguyên.
+ */
 export async function approvePlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
   return getMockDb().approveRevision(revisionId, patches)
-}
-
-/** Lưu bản chỉnh tay chưa duyệt (LM-108): bản đã dời / xoay kiện của điều phối viên thành revision mới chờ quản lý công ty duyệt. */
-export async function saveEditedPlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
-  return getMockDb().saveEditedRevision(revisionId, patches)
 }

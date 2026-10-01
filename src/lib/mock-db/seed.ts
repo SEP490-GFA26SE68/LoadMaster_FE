@@ -8,7 +8,7 @@ import { approvedResult } from './revisions'
 import { CARGO, CUSTOMERS } from './seed-directory'
 import { seedDelivery, seedLoading, type SeedEvent } from './seed-progress'
 import { seedTrip } from './seed-trip'
-import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, SEED_MANAGER, TRIP_SPECS, type TripSpec } from './seed-trips'
+import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
 import { SEED_PASSWORD, seedUsers } from './seed-users'
 import { seedVehicles } from './seed-vehicles'
 import { tripChangeParams } from './trip-changes'
@@ -78,10 +78,10 @@ function createSeed(today: string): SeedData {
     if (times.approved === undefined) return undefined
     const approved: Revision = {
       ...optimized, id: nextRevisionId(), result: approvedResult(request, result, []), createdAt: times.approved,
-      draftPatches: [], approvedAt: times.approved, approvedBy: SEED_MANAGER, sourceRevisionId: optimized.id, ordersRecomputed: true,
+      draftPatches: [], approvedAt: times.approved, approvedBy: SEED_DISPATCHER, sourceRevisionId: optimized.id, ordersRecomputed: true,
     }
     revisions.push(approved)
-    events.push({ at: times.approved, actorId: SEED_MANAGER, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })
+    events.push({ at: times.approved, actorId: SEED_DISPATCHER, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })
     return approved
   }
 

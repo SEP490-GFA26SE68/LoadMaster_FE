@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PlacementPatch } from '@/domain/constraints'
-import { approvePlanRevision, fetchPlanApproval, fetchPlanSource, saveEditedPlanRevision } from './viewer-api'
+import { approvePlanRevision, fetchPlanApproval, fetchPlanSource } from './viewer-api'
 
 /** Phương án của chuyến qua TanStack Query; component không gọi `viewer-api.ts` trực tiếp (mục 9). */
 export function usePlanSourceQuery(tripId: string, ref?: string) {
@@ -24,16 +24,7 @@ export function usePlanApprovalQuery(revisionId: string | undefined) {
   })
 }
 
-/** Lưu bản chỉnh (LM-108): xong thì làm mới revision của chuyến. */
-export function useSaveEditedRevisionMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: ({ revisionId, patches }: { revisionId: string; patches: readonly PlacementPatch[] }) => saveEditedPlanRevision(revisionId, patches),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['trips', tripId] }),
-  })
-}
-
-/** Duyệt phương án: xong thì làm mới revision của chuyến (Planner đọc bản approved) và bảng điều khiển. */
+/** Duyệt phương án (kèm bản chỉnh tay nếu có): xong thì làm mới revision của chuyến (Planner đọc bản approved) và bảng điều khiển. */
 export function useApproveRevisionMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({

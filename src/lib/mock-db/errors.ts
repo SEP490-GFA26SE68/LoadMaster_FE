@@ -30,8 +30,6 @@ export type MockDbErrorParams = {
   REVISION_STALE: { revisionId: string }
   /** Duyệt revision có `result.status` khác `COMPLETED`. */
   REVISION_NOT_COMPLETED: { revisionId: string }
-  /** Lưu bản chỉnh mà không có dời / xoay kiện nào (LM-108). */
-  NO_EDITS: { revisionId: string }
   /** Draft chỉnh một kiện không có placement trong revision (mã lạ, hoặc kiện nằm trong `unplacedPackages`). */
   PATCH_UNKNOWN_INSTANCE: { packageInstanceId: string }
   /** Sửa dữ liệu, tối ưu hoặc Duyệt chuyến đã sang pha vận hành (D-45). */

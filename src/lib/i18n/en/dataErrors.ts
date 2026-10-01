@@ -8,7 +8,6 @@ export const dataErrors = {
   VEHICLE_IN_MAINTENANCE: 'Vehicle {vehicleId} is in maintenance. Choose another vehicle.',
   REVISION_STALE: 'Plan {revisionId} is out of date: the vehicle or packages changed after it was optimized.',
   REVISION_NOT_COMPLETED: 'Plan {revisionId} did not complete and cannot be approved.',
-  NO_EDITS: 'No package on {revisionId} was moved or rotated, so there is no edit to save.',
   PATCH_UNKNOWN_INSTANCE: 'Package {packageInstanceId} is not in the plan.',
   TRIP_LOCKED: 'Trip {tripId} is already in operation and cannot be edited.',
   TRIP_PHASE_INVALID: 'This action is not available in the current state of trip {tripId}.',

@@ -18,7 +18,8 @@ test('the Planner opens the approved revision by default, by job, and the exact 
 
 /** "Duyệt bởi <tên>" ở thanh trên Planner: kho ghi người bấm Duyệt vào revision đã duyệt (`approvedBy`). */
 test('the Planner names who approved an approved revision; an unapproved one, or one approved without a session, has no name', async () => {
-  expect(await fetchPlanApproval('REV-002')).toStrictEqual({ approvedByName: 'Trần Thị Mai' })
+  // Seed: điều phối viên demo duyệt mọi phương án (FE-0-07)
+  expect(await fetchPlanApproval('REV-002')).toStrictEqual({ approvedByName: 'Nguyễn Thanh Tùng' })
   expect(await fetchPlanApproval('REV-001')).toStrictEqual({ approvedByName: null })
   // Kho của test chưa đăng nhập: bản duyệt mới không có người duyệt, thanh trên chỉ ghi "Đã duyệt lúc"
   const approved = await approvePlanRevision('REV-001', [])

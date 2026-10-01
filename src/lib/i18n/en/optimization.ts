@@ -42,7 +42,7 @@ export const optimization = {
   afterSteps: {
     view: 'Open the plan',
     check: 'Check unplaced packages and warnings',
-    approve: 'The company manager approves it so the warehouse can load',
+    approve: 'Approve it so the warehouse can load',
   },
   method: 'Method',
   methodUnavailable: 'Not in the MVP: only the mock optimizer runs.',

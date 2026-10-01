@@ -138,39 +138,25 @@ test('approval records the signed-in user as the approver, in the revision and i
   const db = createMockDb()
   const { trip, revision: source } = await optimizedTwoCartonTrip(db)
   expect((await db.approveRevision(source.id, [])).approvedBy).toBeNull()
-  await db.authenticate('quanly@loadmaster.vn', 'loadmaster')
+  await db.authenticate('dieuphoi@loadmaster.vn', 'loadmaster')
   const approved = await db.approveRevision(source.id, [])
-  expect(approved.approvedBy).toBe('US-0002')
+  expect(approved.approvedBy).toBe('US-0001')
   expect((await db.listEvents({ targetId: trip.id }))[0]).toMatchObject({
     action: 'revision.approved',
-    actorId: 'US-0002',
+    actorId: 'US-0001',
     params: { revisionId: approved.id, sourceRevisionId: source.id, edits: 0 },
   })
 })
 
-test('saving a manual edit (LM-108) creates a new unapproved revision and leaves the source revision as it was', async () => {
-  vi.setSystemTime(new Date('2026-09-15T08:30:00.000Z'))
+test('a hand edit reaches the store only as an approved revision: no saved, unapproved edit is left behind (FE-0-07)', async () => {
   const db = createMockDb()
   const { trip, revision: source } = await optimizedTwoCartonTrip(db)
-  vi.setSystemTime(new Date('2026-09-15T10:15:00.000Z'))
-  const edited = await db.saveEditedRevision(source.id, [LIFT_ONTO_PKG_002])
-  expect(await db.getRevision(source.id)).toStrictEqual(source)
-  expect(edited).toMatchObject({
-    tripId: trip.id,
-    createdAt: '2026-09-15T10:15:00.000Z',
-    sourceRevisionId: source.id,
-    draftPatches: [LIFT_ONTO_PKG_002],
-    manuallyEdited: true,
-    ordersRecomputed: true,
-  })
-  expect(edited.approvedAt).toBeUndefined()
-  expect(edited.result.placements).toStrictEqual((await db.approveRevision(source.id, [LIFT_ONTO_PKG_002])).result.placements)
-})
-
-test('the saved edit is the newest revision of the trip, and an edit without any move is refused (LM-108)', async () => {
-  const db = createMockDb()
-  const { trip, revision: source } = await optimizedTwoCartonTrip(db)
-  const edited = await db.saveEditedRevision(source.id, [LIFT_ONTO_PKG_002])
-  expect((await db.listRevisions(trip.id)).at(-1)).toMatchObject({ id: edited.id, manuallyEdited: true })
-  await expect(db.saveEditedRevision(source.id, [])).rejects.toMatchObject({ code: 'NO_EDITS' })
+  const approved = await db.approveRevision(source.id, [LIFT_ONTO_PKG_002])
+  const revisions = await db.listRevisions(trip.id)
+  expect(revisions.map((revision) => [revision.id, revision.approvedAt !== undefined, revision.manuallyEdited])).toStrictEqual([
+    [source.id, false, false],
+    [approved.id, true, true],
+  ])
+  expect('saveEditedRevision' in db).toBe(false)
+  expect((await db.listEvents({ targetId: trip.id })).map((event) => event.action)).toStrictEqual(['revision.approved', 'optimization.saved', 'trip.created'])
 })

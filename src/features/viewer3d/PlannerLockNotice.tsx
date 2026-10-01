@@ -4,7 +4,7 @@ import { useT } from '@/lib/i18n'
 import type { PlannerLock } from './approval/planner-access'
 import { PlannerNoticeBar } from './PlannerNoticeBar'
 
-/** Pha chuyến đã chốt phương án (D-45): thanh khoá tông thông tin; lý do do quyền (chỉ xem, chờ duyệt) tông trung tính. */
+/** Pha chuyến đã chốt phương án (D-45): thanh khoá tông thông tin; lý do do quyền (chỉ xem) tông trung tính. */
 const PHASE_LOCKS: ReadonlySet<PlannerLock> = new Set(['loading', 'loaded', 'delivering', 'completed', 'cancelled'])
 
 /**

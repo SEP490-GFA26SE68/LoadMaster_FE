@@ -6,14 +6,15 @@ import { closeInspector, openInspector } from './viewer-helpers'
 /**
  * Planner đọc revision thật và Duyệt (LM-049, LM-050): chỉ số, Duyệt tạo revision approved mới, kết quả lỗi thời chặn Duyệt.
  * LM-094: bản seed đã duyệt (REV-002) không có nút Duyệt — Duyệt đi từ revision nguồn chưa duyệt `REV-001`.
+ * FE-0-07: điều phối viên là người duyệt; quản lý công ty mở cùng phương án ở chế độ chỉ xem.
  * Kho sửa trong trình duyệt qua đúng module app đang dùng; chuyển route phía client để không mất kho trong bộ nhớ.
  */
 const TRIP_ID = 'TRIP-2026-0914'
 const PLANNER = `/chuyen/${TRIP_ID}/phuong-an`
 const SOURCE_REVISION = `${PLANNER}?revision=REV-001`
 const MOCK_DB = '/src/lib/mock-db/index.ts'
-/** "Duyệt bởi <tên> lúc HH:mm dd/MM" (LM-104): quản lý công ty demo là Trần Thị Mai. */
-const APPROVED_BY_MANAGER = /Duyệt bởi Trần Thị Mai lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
+/** "Duyệt bởi <tên> lúc HH:mm dd/MM": điều phối viên demo (Nguyễn Thanh Tùng) duyệt cả bản seed lẫn bản vừa duyệt trong test. */
+const APPROVED_BY_DISPATCHER = /Duyệt bởi Nguyễn Thanh Tùng lúc\s*\d{2}:\d{2} \d{2}\/\d{2}/
 
 function revisionCount(page: Page) {
   return page.evaluate(async ({ url, tripId }) => {
@@ -23,13 +24,12 @@ function revisionCount(page: Page) {
 }
 
 test('approving the seed source revision creates a new approved revision and reopens it', async ({ page, login, browserErrors }) => {
-  // LM-104: quản lý công ty duyệt
-  await login(PLANNER, 'manager')
+  await login(PLANNER, 'dispatcher')
   await page.locator('canvas').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
-  // LM-104: người duyệt do kho ghi vào revision đã duyệt (`approvedBy`), kể cả bản seed
-  await expect(header).toContainText(APPROVED_BY_MANAGER)
+  // Người duyệt do kho ghi vào revision đã duyệt (`approvedBy`), kể cả bản seed
+  await expect(header).toContainText(APPROVED_BY_DISPATCHER)
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
 
   // Tab Chỉ số: số lấy thẳng từ `result.metrics` của revision seed
@@ -53,13 +53,12 @@ test('approving the seed source revision creates a new approved revision and reo
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
   await page.waitForURL(/\/phuong-an\?revision=REV-(?!001)/)
   expect(await revisionCount(page)).toBe(before + 1)
-  await expect(header).toContainText(APPROVED_BY_MANAGER)
+  await expect(header).toContainText(APPROVED_BY_DISPATCHER)
   expect(browserErrors).toStrictEqual([])
 })
 
-test('changing cargo after optimisation marks the plan stale and blocks approval', async ({ page, login }) => {
-  // Sửa kho trước khi Planner đọc (Query giữ dữ liệu 30 s).
-  // Hai vai trò (LM-104): điều phối viên sửa kiện và được dẫn tới Thiết lập tối ưu; quản lý công ty là người bị chặn Duyệt.
+test('changing cargo after optimisation marks the plan stale and blocks approval; the company manager only reads it', async ({ page, login }) => {
+  // Sửa kho trước khi Planner đọc (Query giữ dữ liệu 30 s)
   await login('/doi-xe', 'dispatcher')
   await page.evaluate(async ({ url, tripId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
@@ -71,16 +70,10 @@ test('changing cargo after optimisation marks the plan stale and blocks approval
 
   const stale = page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })
   await expect(stale).toBeVisible()
-  // V2.3 Planner3DLoiThoi: thanh nói lần sửa nào làm lỗi thời (trường, trước → sau) và ai phải duyệt lại
+  // V2.3 Planner3DLoiThoi: thanh nói lần sửa nào làm lỗi thời (trường, trước → sau) và việc phải làm trước khi kho xếp
   await expect(stale).toContainText(/Sau lần tối ưu \d{2}:\d{2} · \d{2}\/\d{2}: PKG-\S+ .+ · Khối lượng /)
-  await expect(stale).toContainText('Kho chỉ xếp được khi quản lý công ty duyệt lại.')
+  await expect(stale).toContainText('Kho chỉ xếp được khi điều phối viên tối ưu lại và duyệt.')
   await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveAttribute('href', `/chuyen/${TRIP_ID}/toi-uu`)
-
-  // Quản lý công ty đăng nhập ngay trong app (tải lại là mất lần sửa kiện): cùng thanh lỗi thời, không có lối sang Thiết lập tối ưu
-  await switchUser(page, 'manager')
-  await navigateInApp(page, PLANNER)
-  await expect(stale).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveCount(0)
   // Bản đã duyệt không có nút Duyệt (LM-094); revision nguồn chưa duyệt thì có, kèm lý do chặn trong nút và hộp thoại
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
   await navigateInApp(page, SOURCE_REVISION)
@@ -94,4 +87,15 @@ test('changing cargo after optimisation marks the plan stale and blocks approval
   const dialog = page.getByRole('dialog', { name: 'Duyệt phương án này?' })
   await expect(dialog).toContainText('Kết quả lỗi thời — chạy tối ưu lại trước khi duyệt.')
   await expect(dialog.getByRole('button', { name: 'Duyệt', exact: true })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Huỷ', exact: true }).click()
+  await expect(dialog).toBeHidden()
+
+  // Quản lý công ty đăng nhập ngay trong app (tải lại là mất lần sửa kiện): cùng thanh lỗi thời, nhưng chỉ xem — không có lối sang
+  // Thiết lập tối ưu, không có nút Duyệt kể cả ở bản nguồn chưa duyệt
+  await switchUser(page, 'manager')
+  await navigateInApp(page, SOURCE_REVISION)
+  await expect(stale).toBeVisible()
+  await expect(page.locator('[data-planner-lock="readOnly"]')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Tới Thiết lập tối ưu' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toHaveCount(0)
 })

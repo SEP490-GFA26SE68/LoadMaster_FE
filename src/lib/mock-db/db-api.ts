@@ -65,17 +65,12 @@ type CoreMockDb = {
   /** Lưu một kết quả tối ưu thành revision mới, mang `inputVersion` hiện tại của chuyến. Chuyến phải ở pha `planning`. */
   addRevision(input: NewRevision): Promise<Revision>
   /**
-   * Duyệt (D-31, D-32): tạo revision approved **mới** — áp draft `patches`, tính lại thứ tự xếp/dỡ và metrics — revision nguồn giữ
-   * nguyên. Duyệt lại một revision đã duyệt được. Từ chối: `TRIP_LOCKED`, `REVISION_STALE` (chuyến đổi xe/kiện sau khi tối ưu),
-   * `REVISION_NOT_COMPLETED`, `PATCH_UNKNOWN_INSTANCE` (patch cho kiện không có placement); không lưu gì khi từ chối.
+   * Duyệt (D-31, D-32): tạo revision approved **mới** — áp draft `patches` (bản chỉnh tay của Planner, FE-0-07), tính lại thứ tự
+   * xếp/dỡ và metrics — revision nguồn giữ nguyên. Duyệt lại một revision đã duyệt được. Từ chối: `TRIP_LOCKED`, `REVISION_STALE`
+   * (chuyến đổi xe/kiện sau khi tối ưu), `REVISION_NOT_COMPLETED`, `PATCH_UNKNOWN_INSTANCE` (patch cho kiện không có placement);
+   * không lưu gì khi từ chối.
    */
   approveRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
-  /**
-   * Lưu bản chỉnh tay (LM-108): như Duyệt — revision **mới** áp `patches`, tính lại thứ tự và metrics, revision nguồn giữ nguyên — nhưng
-   * **chưa duyệt**: là bản mới nhất của chuyến, chờ quản lý công ty duyệt trong Planner. Điều phối viên dùng khi chỉnh tay mà không có
-   * quyền Duyệt. Từ chối như `approveRevision`, thêm `NO_EDITS` khi không có patch.
-   */
-  saveEditedRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
 
   /** Kho bắt đầu xếp theo bản duyệt mới nhất (không lỗi thời): `planning` → `loading`. */
   startLoading(tripId: string): Promise<Trip>
