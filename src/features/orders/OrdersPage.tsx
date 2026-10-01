@@ -25,7 +25,7 @@ const STATUS_FILTER = 'trang-thai'
 type Editing = { kind: 'create' } | { kind: 'edit'; row: OrderRow }
 
 /**
- * Đơn hàng `/don-hang` (luồng 2, LM-104) — điều phối tạo đơn từ kiện công ty logistics đã quét nhận, rồi gán đơn vào điểm giao của
+ * Đơn hàng `/don-hang` (luồng 2, LM-104) — điều phối tạo đơn từ kiện đã nhận ở kho của công ty, rồi gán đơn vào điểm giao của
  * chuyến đang lập kế hoạch. Bố cục V2: dải trời có nút "Tạo đơn hàng", một thẻ gồm thanh tìm / lọc trạng thái và bảng. Menu cuối dòng:
  * sửa, gán vào chuyến / bỏ gán, huỷ có lý do. Quản lý công ty chỉ xem (không có nút ghi). Tìm và lọc giữ trên URL (D-52).
  */

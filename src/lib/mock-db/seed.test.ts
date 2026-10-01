@@ -153,19 +153,24 @@ test('seeded operations match their trips: warehouse progress, deliveries, issue
   ])
 })
 
-test('twenty-two seeded users cover the ten roles; the history names only real users, newest first', async () => {
+test('twenty seeded users cover the eight roles; the history names only real users, newest first', async () => {
   const db = createMockDb()
   const users = await db.listUsers()
-  expect(users).toHaveLength(22)
+  // FE-0-06: tài khoản nhà sản xuất US-0013 và logistics US-0014 đã bỏ cùng hai vai trò đó; US-0015 ở lại nên mã kế tiếp vẫn là US-0016
+  expect(users).toHaveLength(20)
+  expect(users.map((user) => user.id).filter((id) => /^US-\d+$/.test(id)).toSorted().slice(-3)).toStrictEqual(['US-0011', 'US-0012', 'US-0015'])
   expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set([
-    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver', 'manufacturer', 'logistics',
+    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver',
   ]))
   expect(users.filter((user) => user.status === 'suspended').map((user) => user.id)).toStrictEqual(['US-0008'])
   const events = await db.listEvents()
   const ids = new Set(users.map((user) => user.id))
   expect(events.length).toBeGreaterThan(100)
   expect(events.filter((event) => event.actorId !== null && !ids.has(event.actorId))).toStrictEqual([])
+  expect(events.filter((event) => event.target.type === 'user' && !ids.has(event.target.id))).toStrictEqual([])
   expect(events.map((event) => event.at)).toStrictEqual(events.map((event) => event.at).toSorted().toReversed())
+  // Sáu đợt đăng ký kiện của seed đều do điều phối viên của Long Bình làm
+  expect(events.filter((event) => event.action === 'package.registered').map((event) => event.actorId)).toStrictEqual(Array.from({ length: 6 }, () => 'US-0001'))
 })
 
 test('seeded history keeps the operation order: loading finishes before the delivery starts', async () => {

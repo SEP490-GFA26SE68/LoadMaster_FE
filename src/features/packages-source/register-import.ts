@@ -49,15 +49,14 @@ export function parseRegisterTable(table: readonly (readonly ImportCell[])[], ty
   return rows
 }
 
-/** Dòng hợp lệ → đầu vào của kho; `ownerCompanyId` chỉ khi người đăng ký chọn công ty (quản trị viên). */
-export function toRegisterRows(rows: readonly ParsedRegisterRow[], ownerCompanyId?: string): RegisteredPackageRow[] {
+/** Dòng hợp lệ → đầu vào của kho. */
+export function toRegisterRows(rows: readonly ParsedRegisterRow[]): RegisteredPackageRow[] {
   return rows.flatMap((row) => row.type && row.quantity !== null && row.problems.length === 0
     ? [{
         packageTypeId: row.type.id,
         quantity: row.quantity,
         ...(row.reference === '' ? {} : { reference: row.reference }),
         ...(row.note === '' ? {} : { note: row.note }),
-        ...(ownerCompanyId === undefined ? {} : { ownerCompanyId }),
       }]
     : [])
 }

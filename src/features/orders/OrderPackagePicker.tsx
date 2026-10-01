@@ -5,8 +5,8 @@ import type { OrderPackage } from './orders-api'
 import { groupByType, selectedWeightKg } from './order-list'
 
 /**
- * Ô chọn kiện của form đơn hàng (LM-104): kiện đã nhận ở kho logistics, nhóm theo loại kiện; mỗi nhóm có ô "chọn cả nhóm". Dưới danh
- * sách là tổng kiện và khối lượng đã chọn (theo khối lượng loại kiện). Không có kiện nào thì nói lý do: kiện phải được quét nhận trước.
+ * Ô chọn kiện của form đơn hàng (LM-104): kiện đã nhận ở kho, nhóm theo loại kiện; mỗi nhóm có ô "chọn cả nhóm". Dưới danh sách là
+ * tổng kiện và khối lượng đã chọn (theo khối lượng loại kiện). Không có kiện nào thì nói lý do: chỉ kiện đã nhận ở kho mới vào đơn.
  */
 export function OrderPackagePicker({ packages, value, onChange, error }: {
   packages: readonly OrderPackage[]
@@ -18,7 +18,7 @@ export function OrderPackagePicker({ packages, value, onChange, error }: {
   const format = useFormat()
   const titleId = useId()
   const chosen = new Set(value)
-  const groups = groupByType(packages, t('sourcing.receiving.unknownType'))
+  const groups = groupByType(packages, t('orders.form.unknownType'))
 
   function toggle(ids: readonly string[], on: boolean) {
     const next = new Set(chosen)

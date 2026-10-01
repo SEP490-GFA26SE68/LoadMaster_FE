@@ -1,6 +1,6 @@
-import { PackagePlus } from 'lucide-react'
+import { PackagePlus, Shapes } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { DataTable } from '@/components/DataTable'
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
-import { useAuth } from '@/features/auth/AuthProvider'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { RegisteredPackage } from '@/lib/mock-db'
@@ -19,7 +18,6 @@ import { packageColumns, PackageSelectionContext, type PackageSelection } from '
 import { PackageSelectionBar } from './PackageSelectionBar'
 import {
   filterByTab,
-  isShippable,
   labelsPath,
   orderedSelection,
   PACKAGE_TABS,
@@ -34,15 +32,15 @@ import { RegisterPackagesDialog } from './RegisterPackagesDialog'
 import { usePackageTypesQuery, useRegisteredPackagesQuery } from './usePackagesSourceQuery'
 
 /**
- * Kiện đã đăng ký `/kien-hang` (luồng 1, LM-104) — màn chính của nhà sản xuất. Dải trời có tab trạng thái kèm số (bộ lọc `trang-thai`
- * trên URL); thẻ bảng đè lên dải: tìm bỏ dấu, chọn kiện → in nhãn QR / tạo lô hàng, phân trang. "Đăng ký kiện" (một kiện, theo số
- * lượng, nhập file) là hành động chính; kiện vừa đăng ký được chọn sẵn và toast mở thẳng trang in nhãn.
+ * Kiện đã đăng ký `/kien-hang` (LM-104) — từ FE-0-06 là màn của điều phối viên (`packages.manage`), tạm tới khi có kho kiện theo mô
+ * hình backend. Dải trời có tab trạng thái kèm số (bộ lọc `trang-thai` trên URL) và lối sang danh mục Loại kiện; thẻ bảng đè lên dải:
+ * tìm bỏ dấu, chọn kiện → in nhãn QR, phân trang. "Đăng ký kiện" (một kiện, theo số lượng, nhập file) là hành động chính; kiện vừa
+ * đăng ký được chọn sẵn và toast mở thẳng trang in nhãn.
  */
 export function PackagesPage() {
   const t = useT()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const canRegister = useCan()('packages.register')
+  const canRegister = useCan()('packages.manage')
   const packagesQuery = useRegisteredPackagesQuery()
   const typesQuery = usePackageTypesQuery()
   const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'registeredAt', desc: true } })
@@ -57,7 +55,6 @@ export function PackagesPage() {
   const columns = useMemo(() => packageColumns(t), [t])
 
   const selectedIds = useMemo(() => orderedSelection(all, selected), [all, selected])
-  const shippable = useMemo(() => all.filter((row) => selected.has(row.id) && isShippable(row)).map((row) => row.id), [all, selected])
   const selection = useMemo<PackageSelection>(() => ({
     selected,
     visibleIds: rows.map((row) => row.id),
@@ -98,6 +95,15 @@ export function PackagesPage() {
       {t('sourcing.packages.register')}
     </Button>
   ) : null
+  // Danh mục loại kiện không có mục riêng trên thanh điều hướng: mở từ đây (nút phụ trên dải trời dùng `glass`)
+  const typesLink = (
+    <Button variant="glass" asChild>
+      <Link to="/loai-kien">
+        <Shapes strokeWidth={1.5} />
+        {t('sourcing.packageTypes.title')}
+      </Link>
+    </Button>
+  )
 
   return (
     <Tabs value={tab} onValueChange={(value) => list.setFilter(STATUS_FILTER, slugFromTab(PACKAGE_TABS.find((key) => key === value) ?? 'all'))} className="flex min-w-0 flex-1 flex-col">
@@ -106,7 +112,7 @@ export function PackagesPage() {
         title={t('sourcing.packages.title')}
         meta={packagesQuery.isSuccess ? t('sourcing.packages.count', { count: all.length }) : undefined}
         description={t('pageHero.packages')}
-        actions={hasRows ? registerButton : null}
+        actions={<>{typesLink}{hasRows ? registerButton : null}</>}
       >
         {hasRows ? (
           <TabsList tone="sky" aria-label={t('sourcing.packages.tabs.label')}>
@@ -138,7 +144,7 @@ export function PackagesPage() {
                 searchLabel={t('sourcing.packages.search')}
                 onClear={list.clearAll}
               />
-              {selectedIds.length > 0 ? <PackageSelectionBar selected={selectedIds} shippable={shippable} onClear={() => setSelected(new Set())} /> : null}
+              {selectedIds.length > 0 ? <PackageSelectionBar selected={selectedIds} onClear={() => setSelected(new Set())} /> : null}
               <div className="relative overflow-x-auto">
                 <div className="min-w-250">
                   <PackageSelectionContext value={selection}>
@@ -165,7 +171,7 @@ export function PackagesPage() {
         )}
       </main>
 
-      {registering ? <RegisterPackagesDialog needCompany={user?.role !== 'manufacturer'} onClose={() => setRegistering(false)} onDone={handleRegistered} /> : null}
+      {registering ? <RegisterPackagesDialog onClose={() => setRegistering(false)} onDone={handleRegistered} /> : null}
     </Tabs>
   )
 }

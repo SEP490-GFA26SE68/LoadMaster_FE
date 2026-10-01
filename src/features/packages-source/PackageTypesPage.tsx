@@ -21,13 +21,13 @@ import { useDeletePackageTypeMutation, usePackageTypesQuery, useRegisteredPackag
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
 /**
- * Danh mục loại kiện `/loai-kien` (luồng 1, LM-104): bảng loại kiện (kích thước, khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện của
- * công ty đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp thoại xác nhận — loại còn kiện của công ty
- * thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE` khi kiện thuộc công ty khác).
+ * Danh mục loại kiện `/loai-kien` (LM-104; từ FE-0-06 là màn của điều phối viên, mở từ màn Kiện hàng): bảng loại kiện (kích thước,
+ * khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp
+ * thoại xác nhận — loại còn kiện đăng ký thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE`).
  */
 export function PackageTypesPage() {
   const t = useT()
-  const canEdit = useCan()('packages.register')
+  const canEdit = useCan()('packages.manage')
   const typesQuery = usePackageTypesQuery()
   const packagesQuery = useRegisteredPackagesQuery()
   const save = useSavePackageTypeMutation()
@@ -81,6 +81,7 @@ export function PackageTypesPage() {
         title={t('sourcing.packageTypes.title')}
         meta={typesQuery.isSuccess ? t('sourcing.packageTypes.count', { count: rows.length }) : undefined}
         description={t('pageHero.packageTypes')}
+        back={{ to: '/kien-hang', label: t('sourcing.labels.back') }}
         actions={hasRows ? addButton : null}
       />
       <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
@@ -142,7 +143,7 @@ export function PackageTypesPage() {
           }
         }}
         title={t('sourcing.packageTypes.deleteDialog.title', { name: deleting?.name ?? '' })}
-        // Kiện của công ty khác cũng giữ loại kiện: kho từ chối `PACKAGE_TYPE_IN_USE`, câu lỗi thay mô tả
+        // Kiện vừa được đăng ký ở phiên khác cũng giữ loại kiện: kho từ chối `PACKAGE_TYPE_IN_USE`, câu lỗi thay mô tả
         description={remove.error ? dataErrorMessage(remove.error, t) : t('sourcing.packageTypes.deleteDialog.description')}
         cancelLabel={t('sourcing.packageTypes.deleteDialog.cancel')}
         confirmLabel={t('sourcing.packageTypes.deleteDialog.confirm')}

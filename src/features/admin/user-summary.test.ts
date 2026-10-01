@@ -2,9 +2,9 @@ import { expect, test } from 'vitest'
 import { createMockDb } from '@/lib/mock-db'
 import { userSummary } from './user-summary'
 
-test('đếm tài khoản của seed: 22 tài khoản, 21 đang hoạt động, 1 đã khoá (Bùi Thị Lan)', async () => {
+test('đếm tài khoản của seed: 20 tài khoản, 19 đang hoạt động, 1 đã khoá (Bùi Thị Lan)', async () => {
   const users = await createMockDb().listUsers()
-  expect(userSummary(users)).toStrictEqual({ total: 22, active: 21, suspended: 1 })
+  expect(userSummary(users)).toStrictEqual({ total: 20, active: 19, suspended: 1 })
 })
 
 test('danh sách rỗng đếm ra toàn số 0', () => {

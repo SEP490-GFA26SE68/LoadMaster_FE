@@ -7,11 +7,11 @@ export const orders = {
   count: { one: '{count} đơn hàng', other: '{count} đơn hàng' },
   pendingCount: { one: '{count} đơn chờ gán vào chuyến', other: '{count} đơn chờ gán vào chuyến' },
   empty: 'Chưa có đơn hàng nào.',
-  emptyDescription: 'Tạo đơn từ kiện công ty logistics đã quét nhận, rồi gán đơn vào điểm giao của một chuyến đang lập kế hoạch.',
+  emptyDescription: 'Tạo đơn từ kiện đã nhận ở kho, rồi gán đơn vào điểm giao của một chuyến đang lập kế hoạch.',
   loading: 'Đang tải đơn hàng',
   add: 'Tạo đơn hàng',
   search: 'Tìm theo mã đơn, khách hàng, địa chỉ, chuyến',
-  sourceNote: 'Khối lượng tính từ loại kiện nhà sản xuất đã đăng ký. Đơn đã giao khi chuyến được gán hoàn thành.',
+  sourceNote: 'Khối lượng tính từ loại kiện của từng kiện trong đơn. Đơn đã giao khi chuyến được gán hoàn thành.',
   status: {
     pending: 'Chờ gán chuyến',
     assigned: 'Đã gán chuyến',
@@ -45,7 +45,7 @@ export const orders = {
   form: {
     createTitle: 'Tạo đơn hàng',
     editTitle: 'Sửa đơn {id}',
-    description: 'Đơn gồm kiện công ty logistics đã quét nhận ở kho. Một kiện chỉ nằm trong một đơn.',
+    description: 'Đơn gồm kiện đã nhận ở kho. Một kiện chỉ nằm trong một đơn.',
     customer: 'Khách hàng',
     customerRequired: 'Nhập tên khách hàng.',
     address: 'Địa chỉ giao',
@@ -56,7 +56,9 @@ export const orders = {
     tooLong: 'Tối đa {max} ký tự.',
     packages: 'Kiện hàng',
     packagesRequired: 'Chọn ít nhất một kiện.',
-    noPackages: 'Không còn kiện đã nhận nào chưa vào đơn. Kiện phải được công ty logistics quét nhận trước khi tạo đơn.',
+    noPackages: 'Không còn kiện đã nhận ở kho nào chưa vào đơn. Chỉ kiện ở trạng thái "Đã nhận ở kho" mới đưa vào đơn được.',
+    /** Tên nhóm của kiện có loại không còn trong danh mục. */
+    unknownType: 'Loại kiện không còn trong danh mục',
     selectType: 'Chọn cả nhóm {name}',
     selected: { one: 'Đã chọn {count} kiện · {weight}', other: 'Đã chọn {count} kiện · {weight}' },
     packageMeta: '{dimensions} · {weight}',

@@ -49,10 +49,13 @@ test('the seed has three platform accounts without a company or depot, and the s
   expect(account('hotro@loadmaster.vn')).toStrictEqual({ id: 'US-NT-02', role: 'systemSupporter', companyId: undefined, depot: undefined })
   expect(account('qtcongty@loadmaster.vn')).toStrictEqual({ id: 'US-LB-01', role: 'companyAdmin', companyId: 'LOG-001', depot: 'Trụ sở TP. Hồ Chí Minh' })
   expect(users.filter((user) => user.companyId === undefined).map((user) => user.role)).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
-  // Long Bình: 11 nhân viên có từ trước, tài khoản logistics của Review 1 và quản trị công ty mới
-  expect(users.filter((user) => user.companyId === 'LOG-001')).toHaveLength(13)
+  // Long Bình: 11 nhân viên có từ trước và quản trị công ty; tài khoản nhà sản xuất, logistics của Review 1 đã bỏ (FE-0-06)
+  expect(users.filter((user) => user.companyId === 'LOG-001')).toHaveLength(12)
+  expect(users.map((user) => user.email).filter((email) => email === 'sanxuat@loadmaster.vn' || email === 'logistics@loadmaster.vn')).toStrictEqual([])
+  expect(new Set(users.map((user) => user.companyId))).toStrictEqual(new Set([undefined, 'LOG-001', 'LOG-002']))
+  // Phương Nam đủ năm vai trò công ty: `viet.lam@` thành nhân viên kho
   expect(users.filter((user) => user.companyId === 'LOG-002').map((user) => [user.id, user.email, user.role])).toStrictEqual([
-    ['US-0015', 'viet.lam@phuongnam.vn', 'logistics'],
+    ['US-0015', 'viet.lam@phuongnam.vn', 'warehouse'],
     ['US-PN-01', 'qtcongty@phuongnam.vn', 'companyAdmin'],
     ['US-PN-02', 'quanly@phuongnam.vn', 'manager'],
     ['US-PN-03', 'dieuphoi@phuongnam.vn', 'dispatcher'],

@@ -10,7 +10,6 @@ export type MockDbCollection =
   | 'companies'
   | 'packageTypes'
   | 'registeredPackages'
-  | 'shipments'
   | 'orders'
   | 'vehicleTypes'
 
@@ -74,23 +73,14 @@ export type MockDbErrorParams = {
   PACKAGE_TYPE_IN_USE: { packageTypeId: string; count: number }
   /** Đăng ký theo số lượng ngoài khoảng cho phép. */
   QUANTITY_INVALID: { min: number; max: number }
-  /** Người đăng ký / tạo lô không gắn công ty nhà sản xuất (quản trị viên phải chọn công ty). */
+  /** Đăng ký kiện khi phiên không thuộc công ty nào: chưa đăng nhập, hoặc tài khoản nền tảng (kiện thuộc công ty của người đăng ký). */
   COMPANY_REQUIRED: Record<string, never>
-  /** Công ty được chọn không đúng loại (ví dụ giao lô hàng cho một nhà sản xuất). */
-  COMPANY_KIND_INVALID: { companyId: string }
-  /** Kiện không ở trạng thái cần cho thao tác (đã vào lô khác, chưa nhận, đã có đơn…). */
+  /** Kiện không ở trạng thái cần cho thao tác (chưa nhận ở kho, đã có đơn…). */
   PACKAGE_UNAVAILABLE: { packageId: string; status: string }
-  /** Kiện không thuộc nhà sản xuất của lô hàng. */
-  PACKAGE_NOT_OWNED: { packageId: string }
-  /** Lô hàng hoặc đơn hàng không có kiện nào. */
+  /** Lần đăng ký hoặc đơn hàng không có kiện nào. */
   PACKAGES_REQUIRED: Record<string, never>
-  SHIPMENT_STATUS_INVALID: { shipmentId: string; status: string }
   /** Mã QR không khớp kiện nào. */
   QR_UNKNOWN: { token: string }
-  /** Người quét không thuộc công ty logistics được giao lô hàng. */
-  RECEIVING_FORBIDDEN: { shipmentId: string }
-  /** Kiện đã được quét nhận trước đó. */
-  PACKAGE_ALREADY_RECEIVED: { packageId: string }
   ORDER_STATUS_INVALID: { orderId: string; status: string }
   /** Điểm giao không có trong chuyến. */
   STOP_NOT_FOUND: { tripId: string; stopId: string }

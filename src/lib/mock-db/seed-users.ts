@@ -14,12 +14,13 @@ const LONG_BINH = 'LOG-001'
 const PHUONG_NAM = 'LOG-002'
 
 /**
- * 22 người dùng (D-44, LM-104, FE-0-03): ba tài khoản nền tảng (không công ty, không kho), nhân viên của Long Bình, năm tài khoản
- * của Phương Nam, và nhà sản xuất của Review 1 (còn tạm tới FE-0-06). Mỗi vai trò có một tài khoản demo — tài khoản **đầu tiên** của
- * vai trò trong danh sách; có một nhân viên kho bị khoá và một điều phối viên chưa đăng nhập lần nào. Mã và email cố định.
+ * 20 người dùng (D-44, FE-0-03, FE-0-06): ba tài khoản nền tảng (không công ty, không kho), mười hai nhân viên của Long Bình và năm
+ * tài khoản của Phương Nam — mỗi công ty đủ năm vai trò công ty. Mỗi vai trò có một tài khoản demo — tài khoản **đầu tiên** của vai
+ * trò trong danh sách; có một nhân viên kho bị khoá và một điều phối viên chưa đăng nhập lần nào. Mã và email cố định.
  *
  * Mã của tài khoản thêm ở FE-0-03 (`US-NT-…` nền tảng, `US-LB-…` Long Bình, `US-PN-…` Phương Nam) không theo dạng `US-NNNN`: `nextId`
- * không tính chúng, nên tài khoản tạo mới vẫn là `US-0016` như các test và E2E đang ghi (quyết định G9).
+ * không tính chúng. Tài khoản nhà sản xuất `US-0013` và logistics `US-0014` của Review 1 đã bỏ cùng hai vai trò đó (FE-0-06); `US-0015`
+ * ở lại nên tài khoản tạo mới vẫn là `US-0016` như các test và E2E đang ghi (quyết định G9).
  */
 const USERS: readonly UserSeed[] = [
   { id: 'US-0001', fullName: 'Nguyễn Thanh Tùng', email: 'dieuphoi@loadmaster.vn', phone: '0901 234 567', role: 'dispatcher', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [0, '07:50'] },
@@ -35,11 +36,8 @@ const USERS: readonly UserSeed[] = [
   { id: 'US-0010', fullName: 'Trương Văn Lộc', email: 'loc.truong@loadmaster.vn', phone: '0912 345 670', role: 'driver', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [2, '18:10'] },
   { id: 'US-0011', fullName: 'Đỗ Thị Hạnh', email: 'hanh.do@loadmaster.vn', phone: '0913 456 781', role: 'warehouse', status: 'active', depot: 'Kho Sóng Thần', companyId: LONG_BINH, lastActive: [0, '05:45'] },
   { id: 'US-0012', fullName: 'Lý Minh Châu', email: 'chau.ly@loadmaster.vn', phone: '0914 567 892', role: 'manager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [4, '09:30'] },
-  // Review 1 (LM-104): nhà sản xuất và công ty logistics — tài khoản demo đầu tiên của mỗi vai trò, và một logistics của công ty khác.
-  // `viet.lam@phuongnam.vn` sẽ là nhân viên kho của Phương Nam khi FE-0-06 bỏ hai vai trò này.
-  { id: 'US-0013', fullName: 'Phan Thị Thu Trang', email: 'sanxuat@loadmaster.vn', phone: '0915 234 108', role: 'manufacturer', status: 'active', depot: 'Công ty CP Thực phẩm Minh Phát', companyId: 'MFR-001', lastActive: [0, '08:20'] },
-  { id: 'US-0014', fullName: 'Huỳnh Văn Phước', email: 'logistics@loadmaster.vn', phone: '0916 345 219', role: 'logistics', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [0, '08:03'] },
-  { id: 'US-0015', fullName: 'Lâm Quốc Việt', email: 'viet.lam@phuongnam.vn', phone: '0917 456 320', role: 'logistics', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [3, '15:10'] },
+  // Nhân viên kho của Phương Nam (PRD v2 mục 5.3): trước FE-0-06 là tài khoản logistics của Review 1; giữ mã `US-0015`
+  { id: 'US-0015', fullName: 'Lâm Quốc Việt', email: 'viet.lam@phuongnam.vn', phone: '0917 456 320', role: 'warehouse', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [3, '15:10'] },
   // FE-0-03: hai vai trò nền tảng còn lại, Quản trị công ty của Long Bình, và nhân sự của Phương Nam
   { id: 'US-NT-01', fullName: 'Đinh Quang Huy', email: 'nentang@loadmaster.vn', phone: '0918 204 561', role: 'systemManager', status: 'active', lastActive: [2, '10:15'] },
   { id: 'US-NT-02', fullName: 'Tạ Thị Ngọc Ánh', email: 'hotro@loadmaster.vn', phone: '0919 315 672', role: 'systemSupporter', status: 'active', lastActive: [0, '08:30'] },

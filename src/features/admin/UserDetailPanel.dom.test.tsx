@@ -11,7 +11,7 @@ import { signedInAs } from '@/test/signed-in'
 import { UsersPage } from './UsersPage'
 
 /**
- * Panel chi tiết người dùng (V2) qua màn Người dùng: kho dùng chung (22 người dùng seed) → hook → màn. Người xem là quản trị hệ thống
+ * Panel chi tiết người dùng (V2) qua màn Người dùng: kho dùng chung (20 người dùng seed) → hook → màn. Người xem là quản trị hệ thống
  * demo Võ Minh Khoa (US-0005). Các test trong file dùng chung kho; ghi vào kho chỉ ở kho của Đặng Hoài Nam và khoá/mở lại Ngô Văn Bảo —
  * không test nào khác đọc hai chỗ đó.
  */
@@ -138,7 +138,7 @@ test('panel chi tiết bằng bàn phím: nút ở tên mở, Esc đóng và tr�
   await user.keyboard('{Escape}')
   expect(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Lê Văn Hải' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(23))
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(21))
 
   // Esc ở chỗ khác thì đóng và con trỏ về nút tên
   within(screen.getByRole('complementary')).getByRole('heading', { level: 2 }).focus()

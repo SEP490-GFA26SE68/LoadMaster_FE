@@ -1,17 +1,13 @@
 import type { FragilityLevel, OrientationCode } from '@/domain/models'
 
 /**
- * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, kiện đăng ký, công ty, lô hàng), đơn hàng, lần chạy tối ưu, loại xe và nhãn
- * QR. Đơn vị cm / kg như mọi dữ liệu của kho (D-03).
+ * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, kiện đăng ký, công ty), đơn hàng, lần chạy tối ưu, loại xe và nhãn QR. Đơn vị
+ * cm / kg như mọi dữ liệu của kho (D-03). Lô hàng và luồng nhận hàng giữa hai công ty đã bỏ (FE-0-06, D-63).
  */
 
-export const COMPANY_KINDS = ['manufacturer', 'logistics'] as const
-export type CompanyKind = (typeof COMPANY_KINDS)[number]
-
-/** Công ty ngoài: nhà sản xuất (`MFR-NNN`) đăng ký kiện, công ty logistics (`LOG-NNN`) nhận lô hàng. */
+/** Công ty logistics dùng app (`LOG-NNN`, D-63): chủ của kiện đăng ký và công ty của tài khoản (`User.companyId`). */
 export type Company = {
   id: string
-  kind: CompanyKind
   name: string
   address: string
   phone: string
@@ -40,77 +36,40 @@ export type PackageType = {
 export type PackageTypeInput = Omit<PackageType, 'id' | 'createdAt'>
 
 /**
- * Trạng thái kiện đăng ký. Kho lưu tới `planned`; `loaded` và `delivered` suy từ tiến độ chuyến lúc đọc (kiện đã lên xe / đã dỡ ở
- * điểm giao), không có hàm ghi riêng.
+ * Trạng thái kiện đăng ký. Kho lưu `registered`, `received` (hàng có ở kho, đưa vào đơn được) và `planned`; `loaded` và `delivered`
+ * suy từ tiến độ chuyến lúc đọc (kiện đã lên xe / đã dỡ ở điểm giao), không có hàm ghi riêng. Từ FE-0-06 không còn luồng quét nhận
+ * hàng: kiện mới đăng ký ở `registered`, `received` chỉ do seed ghi — tới khi có mô hình kho kiện (FE-3b-03).
  */
-export const REGISTERED_PACKAGE_STATUSES = ['registered', 'in_shipment', 'received', 'planned', 'loaded', 'delivered'] as const
+export const REGISTERED_PACKAGE_STATUSES = ['registered', 'received', 'planned', 'loaded', 'delivered'] as const
 export type RegisteredPackageStatus = (typeof REGISTERED_PACKAGE_STATUSES)[number]
 
-/** Một kiện vật lý nhà sản xuất đăng ký trước khi có chuyến (`RPK-NNNN` — mã in trên nhãn). */
+/** Một kiện vật lý công ty đăng ký trước khi có chuyến (`RPK-NNNN` — mã in trên nhãn). */
 export type RegisteredPackage = {
   id: string
   packageTypeId: string
-  /** Nhà sản xuất sở hữu kiện. */
+  /** Công ty sở hữu kiện: công ty của người đăng ký (`User.companyId`). */
   ownerCompanyId: string
   /** Mã trên QR: chuỗi ngẫu nhiên không chứa dữ liệu kiện, tra ngược bằng `findPackageByQr`. */
   qrToken: string
   status: RegisteredPackageStatus
-  /** Mã lô / SKU của nhà sản xuất, tuỳ chọn. */
+  /** Mã lô / SKU của bên gửi hàng, tuỳ chọn. */
   reference?: string
   note?: string
   registeredAt: string
   registeredBy: string | null
-  /** Lô hàng đang chứa kiện (kể cả lô nháp). */
-  shipmentId?: string
-  received?: { at: string; by: string | null }
   /** Đơn hàng đang dùng kiện (đơn chưa huỷ). */
   orderId?: string
 }
 
+/** Kiện luôn thuộc công ty của người đăng ký, nên đầu vào không có công ty. */
 export type RegisteredPackageInput = {
   packageTypeId: string
   reference?: string
   note?: string
-  /** Chỉ quản trị viên truyền: nhà sản xuất luôn đăng ký cho công ty của mình. */
-  ownerCompanyId?: string
 }
 
 /** Một dòng đăng ký theo số lượng / nhập file: `quantity` kiện cùng loại. */
 export type RegisteredPackageRow = RegisteredPackageInput & { quantity: number }
-
-export const SHIPMENT_STATUSES = ['draft', 'handed_over', 'partially_received', 'received'] as const
-export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number]
-
-export type ShipmentReceipt = { packageId: string; at: string; by: string | null }
-
-/** Lô hàng (`SHP-NNN`): nhóm kiện đã đăng ký nhà sản xuất giao cho một công ty logistics. */
-export type Shipment = {
-  id: string
-  manufacturerId: string
-  logisticsCompanyId: string
-  packageIds: string[]
-  status: ShipmentStatus
-  note?: string
-  createdAt: string
-  createdBy: string | null
-  handedOverAt?: string
-  handedOverBy?: string | null
-  /** Mỗi kiện đã quét nhận một dòng, theo thứ tự quét. */
-  receipts: ShipmentReceipt[]
-}
-
-export type ShipmentInput = {
-  logisticsCompanyId: string
-  packageIds: string[]
-  note?: string
-  /** Chỉ quản trị viên truyền; nhà sản xuất tạo lô cho công ty của mình. */
-  manufacturerId?: string
-}
-
-export type ShipmentChanges = Partial<Pick<Shipment, 'logisticsCompanyId' | 'packageIds' | 'note'>>
-
-/** Kết quả quét nhận một kiện. */
-export type ReceiptResult = { package: RegisteredPackage; shipment: Shipment }
 
 /** Kho lưu `pending`, `assigned`, `cancelled`; `delivered` suy ra khi chuyến được gán đã hoàn thành. */
 export const ORDER_STATUSES = ['pending', 'assigned', 'delivered', 'cancelled'] as const
@@ -125,7 +84,7 @@ export type OrderAssignment = {
   by: string | null
 }
 
-/** Đơn vận chuyển (`ORD-NNN`) từ kiện đã nhận ở kho logistics. */
+/** Đơn vận chuyển (`ORD-NNN`) từ kiện đã nhận ở kho của công ty. */
 export type TransportOrder = {
   id: string
   customerName: string

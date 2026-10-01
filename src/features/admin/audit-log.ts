@@ -53,8 +53,8 @@ const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
-  'count', 'packageTypeId', 'lastPackageId', 'logisticsCompanyId', 'received', 'customerName', 'tripId', 'objective',
-  'algorithm', 'reasonCode', 'vehicleTypeId', 'sealNumber',
+  'count', 'packageTypeId', 'lastPackageId', 'customerName', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
+  'sealNumber',
 ] as const
 
 const FIELD_NAMES = [
@@ -69,9 +69,8 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   vehicle: 'fleet.view',
   user: 'users.manage',
   revision: null,
-  packageType: 'packages.register',
-  package: 'packages.register',
-  shipment: 'shipments.manage',
+  packageType: 'packages.manage',
+  package: 'packages.manage',
   order: 'orders.view',
   vehicleType: 'fleet.view',
 }
@@ -150,8 +149,6 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
       return { id, label: saved, href: '/loai-kien' }
     case 'package':
       return { id, label: saved, href: `/kien-hang?q=${encodeURIComponent(id)}` }
-    case 'shipment':
-      return { id, label: saved, href: `/lo-hang/${encodeURIComponent(id)}` }
     case 'order':
       return { id, label: typeof params.customerName === 'string' ? params.customerName : saved, href: `/don-hang?q=${encodeURIComponent(id)}` }
     case 'vehicleType':

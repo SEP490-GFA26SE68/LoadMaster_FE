@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { fetchAssignableTrips, fetchOrderablePackages, fetchOrders } from './orders-api'
 import { filterOrderRows, groupByType, matchingStopId, selectedWeightKg } from './order-list'
 
-/** Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed: ORD-001, ORD-002 chờ gán; 4 hộp sữa của SHP-002 đã nhận, chưa vào đơn. */
+/** Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed: ORD-001, ORD-002 chờ gán; 18 kiện đã ở kho, chưa vào đơn — sữa, bánh quy, quạt (FE-0-06). */
 
 test('orders filter by status slug and by an accent-free search over customer, address and code', async () => {
   const rows = await fetchOrders()
@@ -16,11 +16,20 @@ test('orders filter by status slug and by an accent-free search over customer, a
 test('orderable packages group by package type and the chosen weight follows the package type', async () => {
   const packages = await fetchOrderablePackages()
   const groups = groupByType(packages, '?')
+  const ids = (group: (typeof groups)[number]) => group.items.map((item) => item.package.id)
 
-  expect(groups).toHaveLength(1)
-  expect(groups[0]!.items.map((item) => item.package.id)).toStrictEqual(packages.map((item) => item.package.id).toSorted())
-  const weight = groups[0]!.items[0]!.type!.weightKg
-  expect(selectedWeightKg(packages, groups[0]!.items.slice(0, 3).map((item) => item.package.id))).toBeCloseTo(weight * 3, 6)
+  // Ba loại, mỗi loại 6 kiện; kỳ vọng chép từ seed: sữa RPK-0023…0028, bánh quy RPK-0029…0034, quạt RPK-0043…0048
+  expect(packages).toHaveLength(18)
+  expect(groups.map((group) => [group.name, group.items.length]).toSorted()).toStrictEqual([
+    ['Kiện quạt điện', 6], ['Thùng bánh quy', 6], ['Thùng sữa hộp 48 hộp', 6],
+  ])
+  const milk = groups.find((group) => group.name === 'Thùng sữa hộp 48 hộp')!
+  expect(ids(milk)).toStrictEqual(['RPK-0023', 'RPK-0024', 'RPK-0025', 'RPK-0026', 'RPK-0027', 'RPK-0028'])
+  expect(groups.flatMap(ids).toSorted()).toStrictEqual(packages.map((item) => item.package.id).toSorted())
+  // Thùng sữa 52 kg: ba thùng 156 kg, cả nhóm 312 kg; thêm một kiện quạt 9 kg
+  expect(selectedWeightKg(packages, ids(milk).slice(0, 3))).toBe(156)
+  expect(selectedWeightKg(packages, ids(milk))).toBe(312)
+  expect(selectedWeightKg(packages, [...ids(milk), 'RPK-0043'])).toBe(321)
   expect(selectedWeightKg(packages, [])).toBe(0)
 })
 

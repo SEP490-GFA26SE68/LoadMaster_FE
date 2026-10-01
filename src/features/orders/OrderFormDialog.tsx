@@ -35,7 +35,7 @@ type OrderValues = z.infer<ReturnType<typeof orderSchema>>
 
 /**
  * Tạo / sửa đơn hàng (LM-104). Trái: khách hàng, địa chỉ giao, người nhận, điện thoại, ghi chú; phải: chọn kiện đã nhận ở kho
- * logistics (sửa đơn thì kiện của chính đơn vẫn nằm trong danh sách). Kho từ chối (kiện vừa bị đơn khác lấy, đơn đã gán) thì câu lỗi hiện
+ * (sửa đơn thì kiện của chính đơn vẫn nằm trong danh sách). Kho từ chối (kiện vừa bị đơn khác lấy, đơn đã gán) thì câu lỗi hiện
  * trong hộp thoại, không đóng. Thân form gắn theo lúc mở nên mỗi lần mở là giá trị của đơn đang sửa.
  */
 export function OrderFormDialog({ open, onOpenChange, order }: {

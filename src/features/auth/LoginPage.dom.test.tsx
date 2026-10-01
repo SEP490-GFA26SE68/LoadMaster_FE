@@ -57,6 +57,8 @@ test.each([
   ['nentang@loadmaster.vn', '/ho-so'],
   ['hotro@loadmaster.vn', '/ho-so'],
   ['dieuphoi@phuongnam.vn', '/chuyen'],
+  // FE-0-06: `viet.lam@` là nhân viên kho của Phương Nam (trước là tài khoản logistics mở `/nhan-hang`)
+  ['viet.lam@phuongnam.vn', '/kho'],
 ])('%s opening the app root lands on %s', async (email, home) => {
   renderLogin('/')
   await signInAs(email)
@@ -69,21 +71,22 @@ test('the quick sign-in box groups the demo accounts by platform and company; pi
   renderLogin()
   const rows = (group: string) => within(screen.getByRole('group', { name: group })).getAllByRole('button').map((button) => button.textContent)
 
-  // Tên nhóm là dòng đầu của nhóm (cũng là tên truy cập của nhóm): nền tảng, hai công ty logistics, rồi nhà sản xuất của Review 1
+  // Tên nhóm là dòng đầu của nhóm (cũng là tên truy cập của nhóm): nền tảng và hai công ty logistics — không còn nhóm nhà sản xuất (FE-0-06)
   expect(screen.getAllByRole('group').map((group) => group.firstElementChild?.textContent))
-    .toStrictEqual(['Nền tảng', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam', 'Công ty CP Thực phẩm Minh Phát'])
+    .toStrictEqual(['Nền tảng', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam'])
   // Quản lý nền tảng và hỗ trợ khách hàng chưa có màn riêng (Sprint 8) nên chưa có trong ô chọn nhanh
   expect(rows('Nền tảng')).toStrictEqual(['Quản trị hệ thốngquantri@loadmaster.vn'])
   expect(rows('Công ty TNHH Vận tải Long Bình')).toStrictEqual([
     'Quản trị công tyqtcongty@loadmaster.vn', 'Quản lý công tyquanly@loadmaster.vn', 'Điều phối viêndieuphoi@loadmaster.vn',
-    'Nhân viên khokho@loadmaster.vn', 'Tài xếtaixe@loadmaster.vn', 'Công ty logisticslogistics@loadmaster.vn',
+    'Nhân viên khokho@loadmaster.vn', 'Tài xếtaixe@loadmaster.vn',
   ])
+  // Phương Nam đủ năm vai trò công ty
   expect(rows('Công ty CP Giao nhận Phương Nam')).toStrictEqual([
     'Quản trị công tyqtcongty@phuongnam.vn', 'Quản lý công tyquanly@phuongnam.vn', 'Điều phối viêndieuphoi@phuongnam.vn',
-    'Tài xếtaixe@phuongnam.vn', 'Công ty logisticsviet.lam@phuongnam.vn',
+    'Nhân viên khoviet.lam@phuongnam.vn', 'Tài xếtaixe@phuongnam.vn',
   ])
-  // Nhà sản xuất của Review 1 còn tạm tới FE-0-06
-  expect(rows('Công ty CP Thực phẩm Minh Phát')).toStrictEqual(['Nhà sản xuấtsanxuat@loadmaster.vn'])
+  // Không dòng nào còn mang nhãn vai trò đã bỏ
+  expect(screen.queryByText(/Nhà sản xuất|logistics/i)).not.toBeInTheDocument()
 
   await user.click(within(screen.getByRole('group', { name: 'Công ty CP Giao nhận Phương Nam' })).getByRole('button', { name: /Quản lý công ty/ }))
   expect(screen.getByLabelText('Email')).toHaveValue('quanly@phuongnam.vn')

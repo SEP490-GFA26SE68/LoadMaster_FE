@@ -11,7 +11,7 @@ import {
 } from '@/lib/mock-db'
 
 /**
- * Lớp dữ liệu đơn hàng (luồng 2 Review 1, LM-104): đơn từ kiện đã nhận ở kho logistics, gán vào điểm giao của chuyến đang lập kế
+ * Lớp dữ liệu đơn hàng (luồng 2 Review 1, LM-104): đơn từ kiện đã nhận ở kho của công ty, gán vào điểm giao của chuyến đang lập kế
  * hoạch. Gán đơn thêm dòng kiện vào chuyến nên chuyến và revision cũng đổi (lỗi thời, D-31).
  */
 
@@ -63,7 +63,7 @@ export async function fetchOrder(id: string): Promise<OrderRow> {
   return toRow(order, context)
 }
 
-/** Kiện chọn được cho đơn mới: đã nhận ở kho logistics, chưa thuộc đơn nào. */
+/** Kiện chọn được cho đơn mới: đã nhận ở kho (`received`), chưa thuộc đơn nào. */
 export async function fetchOrderablePackages(): Promise<OrderPackage[]> {
   const context = await orderContext()
   return [...context.packageById.values()]

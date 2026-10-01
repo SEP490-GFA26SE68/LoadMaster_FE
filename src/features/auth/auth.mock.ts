@@ -25,13 +25,8 @@ function hintsOf(companyId: string | undefined): DemoHint[] {
     .toSorted((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role))
 }
 
-/**
- * Nền tảng trước, rồi các công ty logistics (khách hàng của app), cuối cùng là công ty khác — nhà sản xuất của Review 1, còn tạm tới
- * FE-0-06. Công ty không có tài khoản dùng thử thì không thành nhóm.
- */
+/** Nền tảng trước, rồi các công ty logistics theo thứ tự của seed. Công ty không có tài khoản dùng thử thì không thành nhóm. */
 export const DEMO_GROUPS: readonly DemoGroup[] = [
   { id: 'platform', company: null, hints: hintsOf(undefined) },
-  ...SEED_COMPANIES
-    .toSorted((a, b) => Number(a.kind !== 'logistics') - Number(b.kind !== 'logistics'))
-    .map((company) => ({ id: company.id, company: company.name, hints: hintsOf(company.id) })),
+  ...SEED_COMPANIES.map((company) => ({ id: company.id, company: company.name, hints: hintsOf(company.id) })),
 ].filter((group) => group.hints.length > 0)

@@ -1,19 +1,23 @@
 import { expect, test } from 'vitest'
 import { createMockDb, tripLabels, type MockDb } from '@/lib/mock-db'
 
-/** Luồng 2 Review 1 (LM-104): đơn hàng từ kiện đã nhận, gán vào điểm giao của chuyến, kiểm tra "Sẵn sàng tối ưu". */
+/** Luồng 2 Review 1 (LM-104): đơn hàng từ kiện đã nhận ở kho, gán vào điểm giao của chuyến, kiểm tra "Sẵn sàng tối ưu". */
 
 const received = async (db: MockDb) => (await db.listRegisteredPackages()).filter((pkg) => pkg.status === 'received' && pkg.orderId === undefined)
 
 test('an order takes received packages that no other order holds; edits and cancels only while pending', async () => {
   const db = createMockDb()
-  expect((await received(db)).map((pkg) => pkg.id)).toStrictEqual(['RPK-0023', 'RPK-0024', 'RPK-0025', 'RPK-0026'])
+  // FE-0-06: seed ghi thẳng trạng thái — 6 thùng sữa, 6 thùng bánh quy và 6 kiện quạt đã ở kho, chưa vào đơn nào
+  expect((await received(db)).map((pkg) => pkg.id)).toStrictEqual([
+    'RPK-0023', 'RPK-0024', 'RPK-0025', 'RPK-0026', 'RPK-0027', 'RPK-0028', 'RPK-0029', 'RPK-0030', 'RPK-0031', 'RPK-0032', 'RPK-0033', 'RPK-0034',
+    'RPK-0043', 'RPK-0044', 'RPK-0045', 'RPK-0046', 'RPK-0047', 'RPK-0048',
+  ])
   const order = await db.createOrder({ customerName: ' Nhà hàng Hương Việt ', deliveryAddress: '203 Lê Văn Sỹ, P. 13, Q.3', phone: '', packageIds: ['RPK-0023', 'RPK-0024'] })
   expect(order).toMatchObject({ id: 'ORD-003', customerName: 'Nhà hàng Hương Việt', status: 'pending', packageIds: ['RPK-0023', 'RPK-0024'] })
   expect(order).not.toHaveProperty('phone')
   expect((await db.getRegisteredPackage('RPK-0023')).orderId).toBe('ORD-003')
-  // Kiện chưa nhận (còn trong lô), kiện đã thuộc đơn khác
-  await expect(db.createOrder({ customerName: 'A', deliveryAddress: 'B', packageIds: ['RPK-0030'] })).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE' })
+  // Kiện mới đăng ký, hàng chưa về kho (thùng dầu ăn RPK-0035); kiện đã thuộc đơn khác
+  await expect(db.createOrder({ customerName: 'A', deliveryAddress: 'B', packageIds: ['RPK-0035'] })).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE', params: { packageId: 'RPK-0035', status: 'registered' } })
   await expect(db.createOrder({ customerName: 'A', deliveryAddress: 'B', packageIds: ['RPK-0001'] })).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE' })
   await expect(db.createOrder({ customerName: 'A', deliveryAddress: 'B', packageIds: [] })).rejects.toMatchObject({ code: 'PACKAGES_REQUIRED' })
 
@@ -23,7 +27,7 @@ test('an order takes received packages that no other order holds; edits and canc
   await expect(db.cancelOrder('ORD-003', '  ')).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
   const cancelled = await db.cancelOrder('ORD-003', 'Khách đổi ngày nhận')
   expect(cancelled).toMatchObject({ status: 'cancelled', cancellation: { reason: 'Khách đổi ngày nhận' } })
-  expect(await received(db)).toHaveLength(4)
+  expect(await received(db)).toHaveLength(18)
   await expect(db.updateOrder('ORD-003', { note: 'x' })).rejects.toMatchObject({ code: 'ORDER_STATUS_INVALID' })
 })
 
