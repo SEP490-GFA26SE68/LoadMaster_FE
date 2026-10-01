@@ -110,10 +110,11 @@ const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
   { name: 'trip-detail', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
   { name: 'vehicle-detail', role: 'dispatcher', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
   { name: 'fleet', role: 'dispatcher', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
+  // FE-0-06: hai màn kiện là của điều phối viên
+  { name: 'packages', role: 'dispatcher', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /RPK-00/ }).first()).toBeVisible() } },
+  { name: 'labels', role: 'dispatcher', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
   { name: 'audit', role: 'systemAdmin', route: '/nhat-ky', ready: async (page) => { await expect(page.getByRole('row')).not.toHaveCount(0) } },
   { name: 'users', role: 'systemAdmin', route: '/nguoi-dung', ready: async (page) => { await expect(page.getByRole('row', { name: /Nguyễn Thanh Tùng/ })).toBeVisible() } },
-  { name: 'packages', role: 'manufacturer', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /RPK-00/ }).first()).toBeVisible() } },
-  { name: 'labels', role: 'manufacturer', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
 ]
 
 test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page itself stays put', async ({ page, login }) => {
