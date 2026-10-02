@@ -190,7 +190,7 @@ test('a flagged package cannot go into a requirement or a trip until the dispatc
   expect((await db.flagPackage('PK-0013', 'DAMAGED')).flags).toStrictEqual(['DAMAGED'])
   const held = await db.getDeliveryRequirement('REQ-006')
   expect(requirementStatus(held, await Promise.all(held.packageIds.map((id) => db.getPackage(id))))).toBe('PARTIAL')
-  await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0013', flag: 'DAMAGED' } })
+  await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014')).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0013', flag: 'DAMAGED' } })
   expect((await db.getTrip('TRIP-014')).packages.map((pkg) => pkg.id)).toStrictEqual(['PKG-001', 'PKG-002', 'PKG-003'])
 
   // Nhân viên kho không gỡ được cờ; điều phối viên gỡ, nhật ký ghi người gỡ
@@ -201,7 +201,7 @@ test('a flagged package cannot go into a requirement or a trip until the dispatc
   expect((await db.clearPackageFlag('PK-0013', 'DAMAGED')).flags).toStrictEqual([])
   const [event] = await db.listEvents()
   expect(event).toMatchObject({ action: 'package.flagCleared', actorId: 'US-0001', target: { type: 'package', id: 'PK-0013' }, params: { flag: 'DAMAGED' } })
-  expect((await db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')).requirement.status).toBe('ASSIGNED')
+  expect((await db.assignDeliveryRequirement('REQ-006', 'TRIP-014')).requirement.status).toBe('ASSIGNED')
 
   // Cờ chỉ gắn trên kiện còn ở kho kiện
   await expect(db.flagPackage('PK-0013', 'NOT_FOUND')).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE', params: { packageId: 'PK-0013', status: 'ASSIGNED' } })
@@ -217,12 +217,11 @@ test('a flagged package cannot go into a requirement or a trip until the dispatc
 
 test('a package follows its trip by written transitions: assigned, staged, loaded or flagged missing, in transit, delivered or returned', async () => {
   const db = createMockDb()
-  // Chuyến mới một điểm giao, chưa có kiện: yêu cầu REQ-006 (10 thùng mì PK-0013…0022) thành dòng PKG-001, instance PKG-001-01…10
+  // Chuyến mới chưa có điểm giao và kiện: yêu cầu REQ-006 (10 thùng mì PK-0013…0022) sinh điểm 1 và dòng PKG-001, instance PKG-001-01…10
   const created = await db.createTrip({
-    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
-    stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
+    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [], stops: [],
   })
-  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id, 'STOP-01')
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id)
   const request: OptimizationRequest = {
     vehicle: await db.getVehicle(trip.vehicleId),
     packages: trip.packages,
@@ -282,10 +281,9 @@ test('a package follows its trip by written transitions: assigned, staged, loade
 test('a requirement whose packages were all delivered reads as delivered', async () => {
   const db = createMockDb()
   const created = await db.createTrip({
-    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
-    stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
+    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [], stops: [],
   })
-  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id, 'STOP-01')
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id)
   const request: OptimizationRequest = {
     vehicle: await db.getVehicle(trip.vehicleId),
     packages: trip.packages,
@@ -307,8 +305,9 @@ test('a requirement whose packages were all delivered reads as delivered', async
 
 test('cancelling a trip before departure sends its packages back to the pool, still held by their requirement', async () => {
   const db = createMockDb()
-  await db.assignDeliveryRequirement('REQ-005', 'TRIP-014', 'STOP-01')
-  expect(await db.getPackage('PK-0001')).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', stopId: 'STOP-01' })
+  await db.assignDeliveryRequirement('REQ-005', 'TRIP-014')
+  // REQ-005 giao tới Co.opmart Bình Dương — chưa là điểm nào của TRIP-014: điểm 3 tự sinh
+  expect(await db.getPackage('PK-0001')).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', stopId: 'STOP-03' })
   await db.cancelTrip('TRIP-014', 'Khách dời lịch nhận')
   const released = await db.getPackage('PK-0001')
   expect(released).toMatchObject({ status: 'IMPORTED', requirementId: 'REQ-005' })

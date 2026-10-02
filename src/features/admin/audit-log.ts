@@ -61,7 +61,7 @@ const PARAM_KEYS = [
 ] as const
 
 const FIELD_NAMES = [
-  'name', 'vehicleId', 'stops', 'packages', 'scheduledDate', 'driverId', 'fullName', 'email', 'phone', 'role', 'depot',
+  'name', 'vehicleId', 'stops', 'packages', 'scheduledDate', 'departureAt', 'departureDepot', 'driverId', 'fullName', 'email', 'phone', 'role', 'depot',
   // Yêu cầu giao (FE-4b-01)
   'destinationName', 'address', 'lat', 'lng', 'deadline', 'priority', 'note', 'packageIds',
 ] as const

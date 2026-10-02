@@ -3,7 +3,7 @@ import { found, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { missingIds, plannedStops } from './operations'
-import { ownTripLinks } from './db-trip-packages'
+import { tripLinks } from './db-trip-lines'
 import { normalizeQrToken } from './qr-token'
 import { labelByToken, tripLabels } from './review1-status'
 import type { TripLabel } from './source-types'
@@ -23,10 +23,10 @@ function assertPhase(trip: Trip, phase: Trip['phase']) {
  * (D-64); mã QR chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
  */
 export function scanMethods(ctx: DbContext): ScanMethods {
-  const { trips, revisions, requirements, packages, vehicles, maintenance } = ctx.state
+  const { trips, revisions, packages, vehicles, maintenance } = ctx.state
 
   function labelsOf(trip: Trip): TripLabel[] {
-    return tripLabels(trip, requirements.values(), packages, ownTripLinks(ctx, trip.id))
+    return tripLabels(trip, tripLinks(ctx, trip.id), packages)
   }
 
   /** Nhãn khớp mã quét trong chuyến; không có thì `PACKAGE_NOT_IN_TRIP`. */

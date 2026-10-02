@@ -38,6 +38,8 @@ export type MockDbErrorParams = {
   TRIP_LOCKED: { tripId: string; phase: TripPhase }
   /** Thao tác vận hành không hợp lệ ở pha hiện tại, ví dụ bắt đầu giao khi kho chưa xếp xong. */
   TRIP_PHASE_INVALID: { tripId: string; phase: TripPhase }
+  /** Chuyến sai dữ liệu ở trường `field`: giờ xuất phát không đọc được, kho xuất phát thiếu tên hoặc toạ độ ngoài khoảng, điểm giao thiếu tên. */
+  TRIP_INVALID: { tripId: string; field: string }
   /** Kho bắt đầu xếp khi chuyến chưa có bản duyệt. */
   NO_APPROVED_REVISION: { tripId: string }
   /** Kiện không có trong phương án kho đang làm theo, hoặc không thuộc điểm giao đó. */

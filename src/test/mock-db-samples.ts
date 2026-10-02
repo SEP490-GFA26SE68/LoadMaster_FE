@@ -66,7 +66,12 @@ export function twoCartonRequest(): OptimizationRequest {
 
 /** Bản ghi chuyến đủ trường cho test hàm thuần (không qua kho): pha lập kế hoạch, chưa gán tài xế. */
 export function tripRecord(id: string, trip: NewTrip = twoCartonTrip(), inputVersion = 1): Trip {
-  return { ...trip, id, companyId: 'LOG-001', inputVersion, driverId: trip.driverId ?? null, phase: 'planning', createdAt: '2026-09-13T08:00:00.000Z' }
+  return {
+    ...trip, id, companyId: 'LOG-001', inputVersion, driverId: trip.driverId ?? null, phase: 'planning', createdAt: '2026-09-13T08:00:00.000Z',
+    // Như kho ghi khi nơi tạo chỉ đưa ngày chạy: 08:00 giờ Việt Nam, kho của Long Bình
+    departureAt: trip.departureAt ?? `${trip.scheduledDate}T01:00:00.000Z`,
+    depot: trip.depot ?? { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 },
+  }
 }
 
 /** Tạo `twoCartonTrip` trong `db` rồi lưu `twoCartonRequest` và `result` (mặc định `twoCartonResult`) thành revision. */

@@ -38,8 +38,9 @@ export type DbState = {
   /** Kho kiện (FE-3b-01). */
   packages: Map<string, Package>
   /**
-   * Chuyến → kiện kho kiện của từng dòng kiện **thêm ngay trong chuyến** (FE-3b-07), kiện thứ i là instance thứ i của dòng. Lưu ngoài
-   * `Trip` vì `Trip.packages` giữ đúng `CargoPackage` của Spec (D-04); kiện vào chuyến qua yêu cầu giao nối ở `requirement.assignment`.
+   * Chuyến → kiện kho kiện của từng dòng kiện, kiện thứ i là instance thứ i của dòng: dòng thêm ngay trong chuyến (FE-3b-07), dòng
+   * sinh từ yêu cầu giao (`requirementId`, FE-4b-04) và kiện đưa thẳng từ kho kiện (FE-4b-05). Lưu ngoài `Trip` vì `Trip.packages`
+   * giữ đúng `CargoPackage` của Spec (D-04).
    */
   tripPackageLinks: Map<string, TripPackageLink[]>
   /** Yêu cầu giao (FE-4b-01). */

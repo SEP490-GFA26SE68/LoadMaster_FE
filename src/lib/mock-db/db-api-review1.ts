@@ -83,21 +83,24 @@ export type Review1Db = {
   createDeliveryRequirement(input: RequirementInput): Promise<DeliveryRequirement>
   /**
    * Sửa yêu cầu. Còn `PENDING`: mọi trường. Đã vào chuyến: chỉ hạn và ưu tiên, trường khác đổi là `REQUIREMENT_NOT_PENDING`; đổi ưu
-   * tiên thì dòng kiện của yêu cầu trong chuyến còn lập kế hoạch đổi theo (phương án lỗi thời). Đã giao xong:
+   * tiên thì dòng kiện của yêu cầu trong chuyến còn lập kế hoạch đổi theo (phương án lỗi thời); hạn và ưu tiên của điểm giao chứa yêu
+   * cầu tính lại (D-73). Đã giao xong:
    * `REQUIREMENT_STATUS_INVALID`. Hạn chỉ kiểm "ở tương lai" khi đổi. Không trường nào đổi thì không ghi gì.
    */
   updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement>
   /** Xoá yêu cầu còn `PENDING` (khác: `REQUIREMENT_NOT_PENDING`); kiện của nó lại chọn được cho yêu cầu khác. */
   deleteDeliveryRequirement(id: string): Promise<void>
   /**
-   * *(tạm, tới FE-4b-04)* Đưa yêu cầu `PENDING` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi nhóm kiện giống nhau thành
-   * một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu — D-93) ở điểm
-   * đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ:
-   * `PACKAGE_FLAGGED`.
+   * Đưa yêu cầu `PENDING` vào chuyến ở pha lập kế hoạch (FE-4b-04, D-73). **Điểm giao tự sinh**: yêu cầu cùng địa chỉ (đã chuẩn hoá) và
+   * cùng toạ độ với một điểm đang có thì vào điểm đó, không thì thêm một điểm mới cuối tuyến (tên là tên điểm đến). Mỗi nhóm kiện giống
+   * nhau thành một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu —
+   * D-93) ở điểm đó; hạn của điểm = hạn sớm nhất, ưu tiên = cao nhất của các yêu cầu ở điểm; chuyến tăng `inputVersion` (revision cũ
+   * lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ: `PACKAGE_FLAGGED`.
    */
-  assignDeliveryRequirement(requirementId: string, tripId: string, stopId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
+  assignDeliveryRequirement(requirementId: string, tripId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
   /**
-   * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`.
+   * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`; điểm
+   * giao tự sinh không còn dòng kiện nào tự mất (kiện ở các điểm sau đánh số lại), hạn và ưu tiên của các điểm còn lại tính lại.
    * Chuyến đã sang vận hành: `TRIP_LOCKED`; yêu cầu chưa vào chuyến hoặc đang giao: `REQUIREMENT_STATUS_INVALID`.
    */
   unassignDeliveryRequirement(requirementId: string): Promise<DeliveryRequirement>

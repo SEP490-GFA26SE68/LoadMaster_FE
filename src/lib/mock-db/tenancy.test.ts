@@ -257,8 +257,8 @@ const PROBES = {
   assignDeliveryRequirement: {
     scope: 'operational',
     forbidden: {
-      'yêu cầu của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(other.requirements[0]!, own.draftTrip, 'STOP-01'),
-      'chuyến của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(own.requirements[0]!, other.draftTrip, 'STOP-01'),
+      'yêu cầu của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(other.requirements[0]!, own.draftTrip),
+      'chuyến của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(own.requirements[0]!, other.draftTrip),
     },
   },
   unassignDeliveryRequirement: { scope: 'operational', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.unassignDeliveryRequirement(other.requirements[0]!) } },

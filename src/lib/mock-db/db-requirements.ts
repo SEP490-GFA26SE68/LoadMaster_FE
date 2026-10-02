@@ -1,6 +1,6 @@
 import { found, nextId, optionalText, put, sameData, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
-import { requirementTripMethods, syncRequirementPriority } from './db-requirement-trips'
+import { requirementTripMethods, syncRequirementOnTrip } from './db-requirement-trips'
 import { MockDbError } from './errors'
 import type { Package } from './package-model'
 import {
@@ -137,7 +137,7 @@ export function requirementMethods(ctx: DbContext): RequirementMethods {
         const { lat: _lat, lng: _lng, note: _note, ...kept } = current
         const next = put(requirements, { ...kept, ...fields, packageIds })
         linkPackages(id, current.packageIds, packageIds)
-        if (changed.includes('priority')) syncRequirementPriority(ctx, next)
+        if (changed.includes('priority') || changed.includes('deadline')) syncRequirementOnTrip(ctx, next, changed.includes('priority'))
         ctx.log('requirement.updated', { type: 'requirement', id }, { destinationName: next.destinationName, fields: changed.join(',') })
         return next
       }),

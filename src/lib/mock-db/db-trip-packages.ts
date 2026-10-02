@@ -1,6 +1,7 @@
 import type { CargoPackage } from '@/domain/models'
 import { nextId, put, sameData, type DbContext } from './db-context'
 import { movePackage } from './db-packages'
+import { setTripLinks, tripLinks } from './db-trip-lines'
 import type { Package } from './package-model'
 import type { TripPackageLink } from './review1-status'
 import type { Trip } from './types'
@@ -14,8 +15,10 @@ import type { Trip } from './types'
  * - giảm số lượng: các kiện cuối dòng về `IMPORTED`, rời chuyến và điểm giao; xoá dòng: mọi kiện của dòng về `IMPORTED`;
  * - sửa kích thước, khối lượng, loại hàng hay điểm giao của dòng: kiện của dòng đổi theo, mã QR giữ nguyên.
  *
- * Dòng của yêu cầu giao đã có kiện kho kiện của yêu cầu nên bỏ qua — trừ khi bị sửa số lượng (mất liên kết với yêu cầu), lúc đó dòng được cấp kiện
- * riêng như dòng nhập tay. Không ghi sự kiện nhật ký riêng: `trip.created` / `trip.updated` đã nói việc đổi kiện của chuyến.
+ * Kiện **có từ trước ở kho kiện** — kiện của yêu cầu giao, kiện đưa thẳng vào chuyến (`fromPool`, FE-4b-05) — giữ nguyên mã, kích
+ * thước và điểm đến của chính nó; sửa dòng chỉ đổi điểm giao (`stopId`) của kiện. Dòng của yêu cầu giao đã có kiện kho kiện của yêu cầu
+ * nên không cấp kiện mới — trừ khi bị sửa số lượng (mất liên kết với yêu cầu), lúc đó dòng được cấp kiện riêng như dòng nhập tay.
+ * Không ghi sự kiện nhật ký riêng: `trip.created` / `trip.updated` đã nói việc đổi kiện của chuyến.
  */
 
 type LineFields = Pick<Package, 'packageCode' | 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg' | 'handlingClass' | 'destination' | 'stopId'>
@@ -36,20 +39,9 @@ function lineFields(trip: Trip, line: CargoPackage, index: number): LineFields {
   }
 }
 
-/** Dòng kiện đang nối đủ với một yêu cầu giao: kiện kho kiện của yêu cầu là kiện của dòng. */
-function requirementLines(ctx: DbContext, trip: Trip): Set<string> {
-  const quantityOf = new Map(trip.packages.map((line) => [line.id, line.quantity]))
-  const linked = new Set<string>()
-  for (const requirement of ctx.state.requirements.values()) {
-    if (requirement.tripId !== trip.id || !requirement.assignment) continue
-    for (const line of requirement.assignment.lines) if (quantityOf.get(line.lineId) === line.packageIds.length) linked.add(line.lineId)
-  }
-  return linked
-}
-
 /** `newId`: seed cấp mã riêng cho kiện của chuyến seed; mặc định mã `PK-NNNN` kế tiếp của kho. */
 export function syncTripPool(ctx: DbContext, trip: Trip, options: { newId?: () => string } = {}): void {
-  const { packages, tripPackageLinks } = ctx.state
+  const { packages } = ctx.state
   const at = ctx.nowIso()
   const actorId = ctx.state.session.userId
   let taken: Set<string> | undefined
@@ -84,29 +76,42 @@ export function syncTripPool(ctx: DbContext, trip: Trip, options: { newId?: () =
     if (!sameData(next, pkg)) put(packages, next)
   }
 
-  const before = tripPackageLinks.get(trip.id) ?? []
-  const viaRequirement = requirementLines(ctx, trip)
+  /** Kiện có từ trước ở kho kiện giữ dữ liệu của chính nó: chỉ điểm giao đi theo dòng. */
+  function moveToStop(packageId: string, stopId: string | undefined) {
+    const pkg = packages.get(packageId)
+    if (pkg?.tripId !== trip.id || pkg.status !== 'ASSIGNED' || pkg.stopId === stopId) return
+    const { stopId: _stop, ...rest } = pkg
+    put(packages, stopId === undefined ? rest : { ...rest, stopId })
+  }
+
+  const links = tripLinks(ctx, trip.id)
+  const ofRequirements = links.filter((link) => link.requirementId !== undefined)
+  const before = links.filter((link) => link.requirementId === undefined)
+  /** Dòng kiện đang nối đủ với một yêu cầu giao: kiện kho kiện của yêu cầu là kiện của dòng. */
+  const viaRequirement = new Map(ofRequirements.map((link) => [link.lineId, link.packageIds]))
   const next: TripPackageLink[] = []
   for (const line of trip.packages) {
-    if (viaRequirement.has(line.id)) continue
-    const existing = before.find((link) => link.lineId === line.id)?.packageIds ?? []
+    const held = viaRequirement.get(line.id)
+    const stopId = trip.stops[line.deliveryStop - 1]?.id
+    if (held?.length === line.quantity) {
+      for (const packageId of held) moveToStop(packageId, stopId)
+      continue
+    }
+    const own = before.find((link) => link.lineId === line.id)
+    const existing = own?.packageIds ?? []
+    const fromPool = own?.fromPool === true
     existing.slice(line.quantity).forEach(release)
     const packageIds = Array.from({ length: line.quantity }, (_, index) => {
       const fields = lineFields(trip, line, index)
       const packageId = existing[index]
       if (packageId === undefined) return create(fields)
-      update(packageId, fields)
+      if (fromPool) moveToStop(packageId, stopId)
+      else update(packageId, fields)
       return packageId
     })
-    next.push({ lineId: line.id, packageIds })
+    next.push({ lineId: line.id, packageIds, ...(fromPool ? { fromPool: true } : {}) })
   }
   const kept = new Set(next.map((link) => link.lineId))
   for (const link of before) if (!kept.has(link.lineId)) link.packageIds.forEach(release)
-  if (next.length > 0) tripPackageLinks.set(trip.id, next)
-  else tripPackageLinks.delete(trip.id)
-}
-
-/** Kiện kho kiện của các dòng thêm ngay trong chuyến `tripId`. */
-export function ownTripLinks(ctx: DbContext, tripId: string): readonly TripPackageLink[] {
-  return ctx.state.tripPackageLinks.get(tripId) ?? []
+  setTripLinks(ctx, trip.id, [...ofRequirements, ...next])
 }

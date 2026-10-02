@@ -133,6 +133,8 @@ export const audit = {
       stops: 'Điểm giao',
       packages: 'Kiện hàng',
       scheduledDate: 'Ngày chạy',
+      departureAt: 'Giờ xuất phát',
+      departureDepot: 'Kho xuất phát',
       driverId: 'Tài xế',
       fullName: 'Họ tên',
       email: 'Email',

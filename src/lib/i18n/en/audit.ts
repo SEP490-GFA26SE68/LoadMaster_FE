@@ -114,6 +114,8 @@ export const audit = {
       stops: 'Delivery stops',
       packages: 'Packages',
       scheduledDate: 'Scheduled date',
+      departureAt: 'Departure time',
+      departureDepot: 'Departure depot',
       driverId: 'Driver',
       fullName: 'Full name',
       email: 'Email',
