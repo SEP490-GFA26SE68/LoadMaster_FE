@@ -36,3 +36,14 @@ export { validatePackages } from './validate-packages'
 export { validateRequest } from './validate-request'
 export { validateVehicle } from './validate-vehicle'
 export { READINESS_CODES, tripReadiness, type ReadinessCheck, type ReadinessCode, type ReadinessInput, type ReadinessStatus, type TripReadiness } from './trip-readiness'
+export {
+  addedConflicts,
+  OVERRIDE_REASON_MAX_LENGTH,
+  segregation,
+  SEGREGATION_WARNING_CODES,
+  type Segregation,
+  type SegregationConflict,
+  type SegregationGroup,
+  type SegregationWarning,
+  type SegregationWarningCode,
+} from './segregation'
