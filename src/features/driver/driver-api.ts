@@ -1,3 +1,9 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   chưa có ở BE: fetchMyTrips, fetchDriverTrip, reportDeliveryIssue, fetchDriverTripLabels
+ *   chưa có ở BE (Q-11): startDelivery, recordUnload, completeStop, confirmUnloadByQr
+ */
+
 import { getMockDb, MockDbError, type DeliveryIssueInput, type MockDb, type Revision, type ScanResult, type Trip, type TripLabel } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { driverPlan, isVisibleTo, myTrips, type MyTrips } from './my-trips'
@@ -14,6 +20,7 @@ function sessionUser(db: MockDb): User {
   return user
 }
 
+// chưa có ở BE
 export async function fetchMyTrips(): Promise<MyTrips> {
   const db = getMockDb()
   const viewer = sessionUser(db)
@@ -26,6 +33,7 @@ export async function fetchMyTrips(): Promise<MyTrips> {
 /** Chuyến và phương án tài xế làm theo (bản kho đã xếp, chưa xếp thì bản duyệt mới nhất); `plan` là `null` khi chưa có bản duyệt. */
 export type DriverTrip = { readonly trip: Trip; readonly plan: Revision | null }
 
+// chưa có ở BE
 export async function fetchDriverTrip(tripId: string): Promise<DriverTrip> {
   const db = getMockDb()
   const viewer = sessionUser(db)
@@ -35,21 +43,25 @@ export async function fetchDriverTrip(tripId: string): Promise<DriverTrip> {
 }
 
 /** Xe rời kho: `loaded` → `delivering` (D-45). */
+// chưa có ở BE (Q-11)
 export function startDelivery(tripId: string): Promise<Trip> {
   return getMockDb().startDelivery(tripId)
 }
 
 export type UnloadInput = { readonly stopNumber: number; readonly packageInstanceId: string; readonly unloaded: boolean }
 
+// chưa có ở BE (Q-11)
 export function recordUnload(tripId: string, { stopNumber, packageInstanceId, unloaded }: UnloadInput): Promise<Trip> {
   return getMockDb().recordUnload(tripId, stopNumber, packageInstanceId, unloaded)
 }
 
+// chưa có ở BE
 export function reportDeliveryIssue(tripId: string, issue: DeliveryIssueInput): Promise<Trip> {
   return getMockDb().reportDeliveryIssue(tripId, issue)
 }
 
 /** Hoàn tất điểm giao; điểm cuối chuyển chuyến sang `completed`. */
+// chưa có ở BE (Q-11)
 export function completeStop(tripId: string, stopNumber: number): Promise<Trip> {
   return getMockDb().completeStop(tripId, stopNumber)
 }
@@ -57,6 +69,7 @@ export function completeStop(tripId: string, stopNumber: number): Promise<Trip> 
 // Review 1 (LM-104): quét QR khi dỡ
 
 /** Nhãn QR các kiện của chuyến (danh sách chọn tay khi không quét được); chuyến của tài xế khác trả `NOT_FOUND`. */
+// chưa có ở BE
 export async function fetchDriverTripLabels(tripId: string): Promise<TripLabel[]> {
   const db = getMockDb()
   const viewer = sessionUser(db)
@@ -65,6 +78,7 @@ export async function fetchDriverTripLabels(tripId: string): Promise<TripLabel[]
 }
 
 /** Quét QR kiện ở điểm giao hiện tại: ghi "đã dỡ". Kiện của điểm khác: `QR_WRONG_STOP` (kèm số điểm của kiện). */
+// chưa có ở BE (Q-11)
 export function confirmUnloadByQr(tripId: string, stopNumber: number, token: string): Promise<ScanResult<Trip>> {
   return getMockDb().confirmUnloadByQr(tripId, stopNumber, token)
 }

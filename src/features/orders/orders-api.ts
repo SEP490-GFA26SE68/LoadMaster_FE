@@ -1,3 +1,17 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   fetchOrders   → GET /api/delivery-requirements
+ *   fetchOrder    → GET /api/delivery-requirements/{id}
+ *   createOrder   → POST /api/delivery-requirements
+ *   updateOrder   → PATCH /api/delivery-requirements/{id}
+ *   cancelOrder   → DELETE /api/delivery-requirements/{id}
+ *   assignOrder   → POST /api/trips/{id}/packages
+ *   unassignOrder → DELETE /api/trips/{id}/packages/{packageId}
+ *   chưa có ở BE: fetchOrderablePackages, fetchAssignableTrips
+ *   tên sẽ đổi khi nối BE: Order → DeliveryRequirement (fetchDeliveryRequirements, createDeliveryRequirement…), cancelOrder →
+ *   deleteDeliveryRequirement, assignOrder / unassignOrder → addTripPackages / removeTripPackage
+ */
+
 import { roundKg } from '@/domain/geometry'
 import {
   getMockDb,
@@ -53,17 +67,20 @@ function toRow(order: TransportOrder, context: Awaited<ReturnType<typeof orderCo
   }
 }
 
+// GET /api/delivery-requirements
 export async function fetchOrders(): Promise<OrderRow[]> {
   const [orders, context] = await Promise.all([getMockDb().listOrders(), orderContext()])
   return orders.map((order) => toRow(order, context))
 }
 
+// GET /api/delivery-requirements/{id}
 export async function fetchOrder(id: string): Promise<OrderRow> {
   const [order, context] = await Promise.all([getMockDb().getOrder(id), orderContext()])
   return toRow(order, context)
 }
 
 /** Kiện chọn được cho đơn mới: đã nhận ở kho (`received`), chưa thuộc đơn nào. */
+// chưa có ở BE
 export async function fetchOrderablePackages(): Promise<OrderPackage[]> {
   const context = await orderContext()
   return [...context.packageById.values()]
@@ -74,6 +91,7 @@ export async function fetchOrderablePackages(): Promise<OrderPackage[]> {
 /** Chuyến nhận được đơn: đang lập kế hoạch (kho chưa xếp), kèm điểm giao để chọn. */
 export type AssignableTrip = Pick<Trip, 'id' | 'name' | 'scheduledDate' | 'vehicleId'> & { readonly stops: readonly DeliveryStop[] }
 
+// chưa có ở BE
 export async function fetchAssignableTrips(): Promise<AssignableTrip[]> {
   const trips = await getMockDb().listTrips()
   return trips
@@ -81,24 +99,29 @@ export async function fetchAssignableTrips(): Promise<AssignableTrip[]> {
     .map(({ id, name, scheduledDate, vehicleId, stops }) => ({ id, name, scheduledDate, vehicleId, stops }))
 }
 
+// POST /api/delivery-requirements
 export function createOrder(input: OrderInput): Promise<TransportOrder> {
   return getMockDb().createOrder(input)
 }
 
+// PATCH /api/delivery-requirements/{id}
 export function updateOrder(id: string, changes: OrderChanges): Promise<TransportOrder> {
   return getMockDb().updateOrder(id, changes)
 }
 
+// DELETE /api/delivery-requirements/{id}
 export function cancelOrder(id: string, reason: string): Promise<TransportOrder> {
   return getMockDb().cancelOrder(id, reason)
 }
 
 export type AssignOrderInput = { readonly orderId: string; readonly tripId: string; readonly stopId: string }
 
+// POST /api/trips/{id}/packages
 export function assignOrder({ orderId, tripId, stopId }: AssignOrderInput): Promise<{ order: TransportOrder; trip: Trip }> {
   return getMockDb().assignOrder(orderId, tripId, stopId)
 }
 
+// DELETE /api/trips/{id}/packages/{packageId}
 export function unassignOrder(orderId: string): Promise<TransportOrder> {
   return getMockDb().unassignOrder(orderId)
 }

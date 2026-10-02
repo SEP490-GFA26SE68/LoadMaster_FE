@@ -1,3 +1,8 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   chưa có ở BE: fetchNotifications
+ */
+
 import type { AuditDirectory } from '@/features/admin/audit-log'
 import { getMockDb, vnDate, type AuditEvent } from '@/lib/mock-db'
 import { notificationWindowStart, selectNotifications, type NotificationViewer } from './notifications'
@@ -16,6 +21,7 @@ export type NotificationFeed = {
  * Tên chuyến và người dùng lấy cùng phạm vi với nhật ký (`listAuditNames`), không qua `listTrips`: chuông của quản trị hệ thống đọc
  * sự kiện tài khoản mà không cần — và không có — dữ liệu vận hành (FE-0-02).
  */
+// chưa có ở BE
 export async function fetchNotifications(viewer: NotificationViewer, now = new Date()): Promise<NotificationFeed> {
   const db = getMockDb()
   const [events, names] = await Promise.all([db.listEvents({ from: vnDate(notificationWindowStart(now)) }), db.listAuditNames()])

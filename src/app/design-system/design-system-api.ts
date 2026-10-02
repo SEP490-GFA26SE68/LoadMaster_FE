@@ -1,3 +1,7 @@
+/**
+ * Không có endpoint backend tương ứng (FE-0-09): dữ liệu mẫu của hai trang tài liệu, đọc thẳng kho.
+ */
+
 import { expandPackages } from '@/domain/cargo'
 import type { VehicleConfig } from '@/domain/models'
 import { tripProgress, type ProgressStep } from '@/features/trips/trip-progress'
@@ -68,6 +72,7 @@ function sheetTrip(trip: Trip, revisions: readonly Revision[], vehicle: VehicleC
   }
 }
 
+// không có endpoint backend (trang tài liệu)
 export async function fetchSheetSample(): Promise<SheetSample> {
   const db = getMockDb()
   const [trips, vehicles, users] = await Promise.all([db.listTrips(), db.listVehicles(), db.listUsers()])

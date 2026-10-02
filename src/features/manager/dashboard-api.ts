@@ -1,3 +1,8 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   chưa có ở BE: fetchDashboardData
+ */
+
 import { getMockDb, vnDate } from '@/lib/mock-db'
 import type { DashboardData } from './dashboard-summary'
 
@@ -8,6 +13,7 @@ import type { DashboardData } from './dashboard-summary'
  * Đọc một lần mọi chuyến kèm revision, xe, trạng thái xe và người dùng; kỳ được lọc lại trên máy (`summarizeDashboard`) nên đổi
  * kỳ không đọc lại kho. Kho chưa có hàm liệt kê revision toàn hệ thống nên đọc theo từng chuyến; backend thật sẽ trả sẵn tổng hợp.
  */
+// chưa có ở BE
 export async function fetchDashboardData(): Promise<DashboardData> {
   const db = getMockDb()
   const today = vnDate(new Date())

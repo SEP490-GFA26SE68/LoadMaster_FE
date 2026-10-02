@@ -1,3 +1,8 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   chưa có ở BE: login, logout, restoreSession, currentSessionUser
+ */
+
 import { getMockDb, isMockDbError } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 
@@ -19,6 +24,7 @@ export class AuthError extends Error {
   }
 }
 
+// chưa có ở BE
 export async function login(email: string, password: string): Promise<User> {
   try {
     return await getMockDb().authenticate(email, password)
@@ -30,6 +36,7 @@ export async function login(email: string, password: string): Promise<User> {
   }
 }
 
+// chưa có ở BE
 export async function logout(): Promise<void> {
   await getMockDb().signOut()
 }
@@ -38,11 +45,13 @@ export async function logout(): Promise<void> {
  * Phiên có sẵn khi mở trang (như cookie): trả người dùng hiện tại của kho, `null` khi tài khoản không còn hoặc đã bị khoá.
  * Đồng bộ vì chạy lúc khởi tạo `AuthProvider`.
  */
+// chưa có ở BE
 export function restoreSession(userId: string | null): User | null {
   return getMockDb().restoreSession(userId)
 }
 
 /** Người dùng của phiên, đọc lại sau khi sửa hồ sơ. */
+// chưa có ở BE
 export function currentSessionUser(): User | null {
   return getMockDb().sessionUser()
 }

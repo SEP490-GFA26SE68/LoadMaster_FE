@@ -1,3 +1,13 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   createTrip                  → POST /api/trips
+ *   updateTripFrame             → chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
+ *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE); tên sẽ đổi khi nối BE: addTripPackages
+ *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId}
+ *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages, updateTripStops,
+ *   removeTripStop, duplicateTripPackage, fetchTripRevisions
+ */
+
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
 import {
   getMockDb,
@@ -23,6 +33,7 @@ import { duplicatePackage, renumberDeliveryStops, stopRemoval, type StopRemoval 
  */
 
 /** Danh sách chuyến (LM-088): mỗi dòng dựng từ chuyến, xe, tài xế và revision trong kho. */
+// chưa có ở BE
 export async function fetchTrips(): Promise<TripRow[]> {
   const db = getMockDb()
   const [trips, vehicles, users] = await Promise.all([db.listTrips(), db.listVehicles(), db.listUsers()])
@@ -54,6 +65,7 @@ function stopFields({ name, address, phone, contactName }: TripStopInput) {
 }
 
 /** Tạo chuyến: kho cấp mã chuyến; điểm giao nhận mã `STOP-NN` theo thứ tự nhập, chưa có kiện. */
+// POST /api/trips
 export async function createTrip({ name, vehicleId, stops, scheduledDate, driverId = null }: TripFrame): Promise<Trip> {
   return getMockDb().createTrip({
     name, vehicleId, packages: [], driverId,
@@ -73,6 +85,7 @@ export type TripFrameChanges = {
 }
 
 /** Sửa khung chuyến: tên, ngày chạy, tài xế, xe và chữ của điểm giao. Đổi xe làm revision cũ lỗi thời (D-31). */
+// chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
 export async function updateTripFrame(tripId: string, changes: TripFrameChanges): Promise<Trip> {
   const db = getMockDb()
   const { stops: edited, ...frame } = changes
@@ -88,6 +101,7 @@ export type VehicleOption = { readonly vehicle: VehicleConfig; readonly status: 
 /** Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. */
 export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[] }
 
+// chưa có ở BE
 export async function fetchTripFormOptions(): Promise<TripFormOptions> {
   const db = getMockDb()
   const [vehicles, states, users] = await Promise.all([db.listVehicles(), db.listVehicleStates(), db.listUsers()])
@@ -111,6 +125,7 @@ export type TripDetail = {
 }
 
 /** Chuyến kèm xe, tài xế và trạng thái hiển thị — màn chi tiết, form sửa và màn thiết lập tối ưu cùng cần. */
+// chưa có ở BE
 export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)
@@ -142,6 +157,7 @@ export type TripActivity = {
 }
 
 /** Revision, nhật ký và người dùng cho thẻ Tiến trình (LM-088). */
+// chưa có ở BE
 export async function fetchTripActivity(tripId: string): Promise<TripActivity> {
   const db = getMockDb()
   const [revisions, events, users] = await Promise.all([db.listRevisions(tripId), db.listEvents({ targetId: tripId }), db.listUsers()])
@@ -150,15 +166,18 @@ export async function fetchTripActivity(tripId: string): Promise<TripActivity> {
 }
 
 /** Huỷ chuyến trước khi giao (D-45): kho bắt buộc lý do và ghi nhật ký. */
+// chưa có ở BE
 export async function cancelTrip(tripId: string, reason: string): Promise<Trip> {
   return getMockDb().cancelTrip(tripId, reason)
 }
 
+// chưa có ở BE
 export async function fetchPackages(tripId: string): Promise<CargoPackage[]> {
   return (await getMockDb().getTrip(tripId)).packages
 }
 
 /** Đổi thứ tự điểm giao: kiện được đánh số `deliveryStop` lại theo vị trí mới (LM-046). */
+// chưa có ở BE
 export async function updateTripStops(tripId: string, stops: readonly DeliveryStop[]): Promise<Trip> {
   const db = getMockDb()
   const current = await db.getTrip(tripId)
@@ -167,6 +186,7 @@ export async function updateTripStops(tripId: string, stops: readonly DeliverySt
 }
 
 /** Xoá điểm giao; còn kiện thì không ghi gì và trả về số kiện bị ảnh hưởng để UI báo. */
+// chưa có ở BE
 export async function removeTripStop(tripId: string, stopId: string): Promise<StopRemoval> {
   const db = getMockDb()
   const current = await db.getTrip(tripId)
@@ -177,6 +197,7 @@ export async function removeTripStop(tripId: string, stopId: string): Promise<St
 }
 
 /** Thêm kiện mới hoặc thay kiện cùng mã; kiện đổi thì `inputVersion` tăng và revision cũ thành lỗi thời (D-31). */
+// POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE)
 export async function savePackage(tripId: string, pkg: CargoPackage): Promise<Trip> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
@@ -189,12 +210,14 @@ export async function savePackage(tripId: string, pkg: CargoPackage): Promise<Tr
  * Nhập kiện từ file (LM-093, D-49): thêm sau các kiện đang có trong **một** lần ghi — `inputVersion` tăng một lần, kho ghi một sự kiện
  * nhật ký. Dòng lỗi đã bị bỏ ở bước xem trước; nơi gọi chỉ đưa kiện hợp lệ.
  */
+// POST /api/trips/{id}/packages
 export async function importPackages(tripId: string, imported: readonly CargoPackage[]): Promise<Trip> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
   return db.updateTrip(tripId, { packages: [...packages, ...imported] })
 }
 
+// DELETE /api/trips/{id}/packages/{packageId}
 export async function deletePackage(tripId: string, packageId: string): Promise<Trip> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
@@ -202,6 +225,7 @@ export async function deletePackage(tripId: string, packageId: string): Promise<
 }
 
 /** Nhân bản kiện (D-33): mã mới lấy theo mã lớn nhất đang có, bản sao nằm ngay sau bản gốc. */
+// chưa có ở BE
 export async function duplicateTripPackage(tripId: string, packageId: string): Promise<CargoPackage> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
@@ -216,6 +240,7 @@ export async function duplicateTripPackage(tripId: string, packageId: string): P
 export type TripRevisions = { readonly trip: Trip; readonly revisions: Revision[] }
 
 /** Chuyến kèm mọi revision đã lưu, cũ trước — màn So sánh phương án cần `inputVersion` của chuyến để biết bản lỗi thời (LM-051). */
+// chưa có ở BE
 export async function fetchTripRevisions(tripId: string): Promise<TripRevisions> {
   const db = getMockDb()
   const [trip, revisions] = await Promise.all([db.getTrip(tripId), db.listRevisions(tripId)])
