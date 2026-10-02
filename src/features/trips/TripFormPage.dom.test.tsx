@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { expect, test } from 'vitest'
@@ -36,89 +36,108 @@ async function choose(user: ReturnType<typeof userEvent.setup>, combobox: string
   await user.click(await screen.findByRole('option', { name: option }))
 }
 
-test('creating a trip writes run date, driver and stop contacts to the repository, then opens its detail', async () => {
+/** Form tạo chuyến điền kho của công ty khi tải xong (D-76); kho chưa có phiên nên là công ty mặc định Long Bình. */
+async function depotLoaded() {
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Tên kho' })).toHaveValue('Kho Long Bình'), SLOW)
+}
+
+test('creating a trip writes departure time, depot and driver to the repository — without stops — then opens its detail', async () => {
   const { user } = renderForm('/chuyen/moi')
+  await depotLoaded()
+  // Tạo chuyến không nhập điểm giao: điểm tự sinh khi đưa yêu cầu giao vào chuyến (FE-4b-04)
+  expect(screen.queryByRole('textbox', { name: 'Tên điểm giao 1' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Thêm điểm giao' })).toBeNull()
+  expect(screen.getByText('Thêm ở Chi tiết chuyến sau khi tạo: đưa yêu cầu giao vào chuyến thì điểm giao tự sinh.')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
   // Lỗi hiện dưới từng ô và cùng lúc trong thẻ kiểm tra bên phải
-  expect(await screen.findByText('3 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
+  expect(await screen.findByText('2 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Tên chuyến' })).toHaveAccessibleDescription('Nhập tên chuyến')
-  expect(screen.getByRole('textbox', { name: 'Tên điểm giao 1' })).toHaveAccessibleDescription('Nhập tên điểm giao')
   expect(screen.getAllByText('Chọn xe')).toHaveLength(2)
 
   const [vehicle] = await getMockDb().listVehicles()
   await user.type(screen.getByLabelText('Tên chuyến'), 'Tuyến Q.9 – Thủ Đức')
   fireEvent.change(screen.getByLabelText('Ngày chạy'), { target: { value: '2026-09-21' } })
+  // Giờ xuất phát mặc định 08:00; kho xuất phát mặc định là kho của công ty, kèm toạ độ
+  expect(screen.getByLabelText('Giờ xuất phát')).toHaveValue('08:00')
+  fireEvent.change(screen.getByLabelText('Giờ xuất phát'), { target: { value: '06:30' } })
+  const depot = within(screen.getByRole('group', { name: 'Toạ độ kho' }))
+  expect([depot.getByRole('textbox', { name: 'Vĩ độ' }), depot.getByRole('textbox', { name: 'Kinh độ' })].map((input) => (input as HTMLInputElement).value)).toStrictEqual(['10.9294', '106.8747'])
   // Chỉ tài xế đang hoạt động; mặc định "Chưa gán"
   expect(screen.getByRole('combobox', { name: 'Tài xế' })).toHaveTextContent('Chưa gán')
   await choose(user, 'Tài xế', 'Phạm Quốc Dũng')
   await choose(user, 'Xe', vehicle!.name)
-  await user.type(screen.getByLabelText('Tên điểm giao 1'), 'Q.9')
-  await user.type(screen.getByLabelText('Số điện thoại điểm giao 1'), '0901 234 567')
-  await user.type(screen.getByLabelText('Người liên hệ điểm giao 1'), 'Anh Minh')
-  await user.click(screen.getByRole('button', { name: 'Thêm điểm giao' }))
-  await user.type(screen.getByLabelText('Tên điểm giao 2'), 'Thủ Đức')
-  await user.type(screen.getByLabelText('Địa chỉ điểm giao 2'), 'Võ Văn Ngân')
   await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
 
   expect(await screen.findByText('Chi tiết chuyến', {}, SLOW)).toBeInTheDocument()
   const created = (await getMockDb().listTrips()).find((trip) => trip.name === 'Tuyến Q.9 – Thủ Đức')
+  // 06:30 ngày 21/09 giờ Việt Nam
   expect(created).toMatchObject({
-    vehicleId: vehicle!.id, packages: [], scheduledDate: '2026-09-21', driverId: 'US-0004', phase: 'planning',
-    stops: [
-      { id: 'STOP-01', name: 'Q.9', address: '', phone: '0901 234 567', contactName: 'Anh Minh' },
-      { id: 'STOP-02', name: 'Thủ Đức', address: 'Võ Văn Ngân' },
-    ],
+    vehicleId: vehicle!.id, packages: [], stops: [], scheduledDate: '2026-09-21', departureAt: '2026-09-20T23:30:00.000Z', driverId: 'US-0004', phase: 'planning',
+    depot: { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 },
   })
-  // Liên hệ để trống không lưu thành chuỗi rỗng
-  expect(created?.stops[1]).not.toHaveProperty('phone')
 })
 
-test('while creating, the up/down buttons reorder stops; the first cannot move up and the last cannot move down', async () => {
+test('the departure depot can be another place picked from the sample list; without coordinates the form does not save', async () => {
   const { user } = renderForm('/chuyen/moi')
-  await user.type(await screen.findByLabelText('Tên điểm giao 1'), 'Q.9')
-  await user.click(screen.getByRole('button', { name: 'Thêm điểm giao' }))
-  await user.type(screen.getByLabelText('Tên điểm giao 2'), 'Thủ Đức')
-  expect(screen.getByRole('button', { name: 'Đưa điểm giao 1 lên trước' })).toBeDisabled()
-  expect(screen.getByRole('button', { name: 'Đưa điểm giao 2 xuống sau' })).toBeDisabled()
-
-  await user.click(screen.getByRole('button', { name: 'Đưa điểm giao 2 lên trước' }))
-  expect(screen.getByLabelText('Tên điểm giao 1')).toHaveValue('Thủ Đức')
-  expect(screen.getByLabelText('Tên điểm giao 2')).toHaveValue('Q.9')
-  // Tóm tắt bên phải đếm điểm giao theo form đang nhập
-  expect(within(screen.getByRole('region', { name: 'Tóm tắt chuyến' })).getByText('2')).toBeInTheDocument()
-})
-
-test('a phone number with letters is rejected at its field', async () => {
-  const { user } = renderForm('/chuyen/moi')
-  await user.type(await screen.findByLabelText('Số điện thoại điểm giao 1'), 'gọi sau')
+  await depotLoaded()
+  const depot = within(screen.getByRole('group', { name: 'Toạ độ kho' }))
+  await user.click(depot.getByRole('button', { name: 'Bỏ toạ độ' }))
   await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
-  expect(await screen.findByText('4 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
+  expect(await screen.findByText('3 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
+  expect(screen.getAllByText('Chọn toạ độ kho xuất phát')).toHaveLength(2)
+
+  const name = screen.getByRole('textbox', { name: 'Tên kho' })
+  await user.clear(name)
+  await user.type(name, 'Bãi xe Sóng Thần')
+  await user.clear(screen.getByRole('textbox', { name: 'Địa chỉ kho' }))
+  await user.type(depot.getByRole('combobox', { name: 'Tìm địa danh' }), 'song than 1')
+  await user.click(await depot.findByRole('option', { name: /KCN Sóng Thần 1/ }))
+  // Ô địa chỉ đang trống nên được điền theo địa danh
+  expect(screen.getByRole('textbox', { name: 'Địa chỉ kho' })).toHaveValue('KCN Sóng Thần 1, TP. Dĩ An, Bình Dương')
+  expect(screen.queryByText('Chọn toạ độ kho xuất phát')).toBeNull()
+  await user.type(screen.getByLabelText('Tên chuyến'), 'Tuyến từ Sóng Thần')
+  await choose(user, 'Xe', 'Truck 6m')
+  await user.click(screen.getByRole('button', { name: 'Tạo chuyến' }))
+  expect(await screen.findByText('Chi tiết chuyến', {}, SLOW)).toBeInTheDocument()
+  const created = (await getMockDb().listTrips()).find((trip) => trip.name === 'Tuyến từ Sóng Thần')
+  expect(created?.depot).toStrictEqual({ name: 'Bãi xe Sóng Thần', address: 'KCN Sóng Thần 1, TP. Dĩ An, Bình Dương', lat: 10.893, lng: 106.75 })
+})
+
+test('a phone number with letters is rejected at its field of the edit form', async () => {
+  const { user } = renderForm('/chuyen/TRIP-014/sua')
+  const phone = await screen.findByLabelText('Số điện thoại điểm giao 1', {}, SLOW)
+  await user.clear(phone)
+  await user.type(phone, 'gọi sau')
+  await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+  expect(await screen.findByText('1 lỗi cần sửa trước khi lưu')).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Số điện thoại điểm giao 1' })).toHaveAccessibleDescription('Chỉ gồm chữ số, dấu cách và + - . ( )')
 })
 
 test('the check card reads the form live: empty required fields first, an error once a field is left, and a jump to that field', async () => {
   const { user } = renderForm('/chuyen/moi')
   const checks = within(await screen.findByRole('region', { name: 'Kiểm tra trước khi lưu' }))
-  // Form mới mở: ô bắt buộc còn trống chưa tính là lỗi
-  expect(checks.getByRole('status')).toHaveTextContent('Còn 3 ô bắt buộc chưa nhập')
+  await depotLoaded()
+  // Form mới mở: ô bắt buộc còn trống chưa tính là lỗi; điểm giao là việc sau khi lưu
+  expect(checks.getByRole('status')).toHaveTextContent('Còn 2 ô bắt buộc chưa nhập')
+  expect(checks.getByText('Sau khi lưu: đưa yêu cầu giao vào chuyến — điểm giao tự sinh')).toBeInTheDocument()
+  expect(checks.getByText('Kho xuất phát có tên và toạ độ').closest('li')).toHaveTextContent('Kho Long Bình')
 
-  const phone = screen.getByRole('textbox', { name: 'Số điện thoại điểm giao 1' })
-  await user.type(phone, '0918 407 331/332')
+  const depotName = screen.getByRole('textbox', { name: 'Tên kho' })
+  await user.clear(depotName)
   await user.tab()
   // Rời ô là thấy lỗi dưới ô và trong thẻ kiểm tra, chưa cần bấm lưu
-  expect(phone).toHaveAccessibleDescription('Chỉ gồm chữ số, dấu cách và + - . ( )')
+  expect(depotName).toHaveAccessibleDescription('Nhập tên kho xuất phát')
   expect(checks.getByRole('status')).toHaveTextContent('1 lỗi cần sửa trước khi lưu')
-  const stopsRow = checks.getByText('Số điện thoại điểm giao 1').closest('li') as HTMLElement
-  expect(stopsRow).toHaveTextContent('Chỉ gồm chữ số, dấu cách và + - . ( )')
-  await user.click(within(stopsRow).getByRole('button', { name: 'Tới ô cần sửa' }))
-  expect(phone).toHaveFocus()
+  const depotRow = checks.getByText('Tên kho').closest('li') as HTMLElement
+  expect(depotRow).toHaveTextContent('Nhập tên kho xuất phát')
+  await user.click(within(depotRow).getByRole('button', { name: 'Tới ô cần sửa' }))
+  expect(depotName).toHaveFocus()
 
-  await user.clear(phone)
-  await user.type(phone, '0918 407 331')
+  await user.type(depotName, 'Kho Long Bình')
   await user.type(screen.getByRole('textbox', { name: 'Tên chuyến' }), 'Tuyến Thủ Đức')
-  await user.type(screen.getByRole('textbox', { name: 'Tên điểm giao 1' }), 'Thủ Đức')
   await choose(user, 'Xe', 'Truck 6m')
   expect(checks.getByRole('status')).toHaveTextContent('Không có lỗi — có thể lưu.')
+  expect(checks.getByText(/^Đã đặt tên · xuất phát 08:00 /)).toBeInTheDocument()
 })
 
 test('a vehicle under maintenance is listed with the reason but cannot be chosen (D-53)', async () => {
@@ -129,7 +148,7 @@ test('a vehicle under maintenance is listed with the reason but cannot be chosen
   expect(within(listbox).getByRole('option', { name: 'Truck 6m' })).not.toHaveAttribute('aria-disabled')
 })
 
-test('editing renames the trip, edits a stop contact and keeps stop order and ids', async () => {
+test('editing renames the trip, moves the departure time, edits a stop contact and keeps stop order and ids', async () => {
   const [trip] = await getMockDb().listTrips()
   const { user } = renderForm(`/chuyen/${trip!.id}/sua`)
   const name = await screen.findByLabelText('Tên chuyến', {}, SLOW)
@@ -138,6 +157,10 @@ test('editing renames the trip, edits a stop contact and keeps stop order and id
   const contact = screen.getByLabelText('Người liên hệ điểm giao 2')
   await user.clear(contact)
   await user.type(contact, 'Anh Phúc (kho)')
+  // Chuyến chính đi 13:30 ngày neo; kho xuất phát là kho của công ty
+  expect(screen.getByLabelText('Giờ xuất phát')).toHaveValue('13:30')
+  expect(screen.getByRole('textbox', { name: 'Tên kho' })).toHaveValue('Kho Long Bình')
+  fireEvent.change(screen.getByLabelText('Giờ xuất phát'), { target: { value: '14:15' } })
   await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
   expect(await screen.findByText('Chi tiết chuyến', {}, SLOW)).toBeInTheDocument()
   const saved = await getMockDb().getTrip(trip!.id)
@@ -145,13 +168,18 @@ test('editing renames the trip, edits a stop contact and keeps stop order and id
   expect(saved.stops.map((stop) => stop.id)).toStrictEqual(trip!.stops.map((stop) => stop.id))
   expect(saved.stops[1]?.contactName).toBe('Anh Phúc (kho)')
   expect(saved.inputVersion).toBe(trip!.inputVersion)
+  expect([saved.scheduledDate, saved.departureAt, saved.depot]).toStrictEqual([trip!.scheduledDate, `${trip!.scheduledDate}T07:15:00.000Z`, trip!.depot])
+  // Điểm giao giữ nguyên các trường form không sửa (toạ độ của điểm 3 — Bách Hoá Xanh Dĩ An)
+  expect(saved.stops.map(({ contactName: _contact, ...stop }) => stop)).toStrictEqual(trip!.stops.map(({ contactName: _contact, ...stop }) => stop))
 })
 
-test('while the warehouse loads, only name, run date and driver can change (D-45)', async () => {
+test('while the warehouse loads, only name, departure and driver can change (D-45)', async () => {
   const before = await getMockDb().getTrip('TRIP-011')
   const { user } = renderForm('/chuyen/TRIP-011/sua')
-  expect(await screen.findByText(/xe và điểm giao đã khoá/, {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText(/xe, kho xuất phát và điểm giao đã khoá/, {}, SLOW)).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Xe' })).toBeDisabled()
+  expect(screen.getByRole('textbox', { name: 'Tên kho' })).toBeDisabled()
+  expect(screen.queryByRole('combobox', { name: 'Tìm địa danh' })).toBeNull()
   expect(screen.getByLabelText('Tên điểm giao 1')).toBeDisabled()
   await choose(user, 'Tài xế', 'Ngô Văn Bảo')
   await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))

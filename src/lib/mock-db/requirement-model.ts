@@ -1,5 +1,4 @@
 import type { Package } from './package-model'
-import type { TripPackageLink } from './review1-status'
 
 /**
  * Yêu cầu giao (FE-4b-01, D-72, PRD v2 mục 7.3) — thay đơn hàng `ORD` của Review 1: quản lý công ty đặt điểm đến, hạn, ưu tiên và chọn
@@ -18,17 +17,6 @@ export type RequirementStoredStatus = (typeof REQUIREMENT_STORED_STATUSES)[numbe
 export const REQUIREMENT_STATUSES = [...REQUIREMENT_STORED_STATUSES, 'DELIVERED', 'PARTIAL'] as const
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number]
 
-/**
- * Yêu cầu đã vào chuyến *(tạm, tới FE-4b-04 — điểm giao tự sinh)*: điểm giao điều phối viên chọn, và các dòng kiện của chuyến sinh từ
- * kiện của yêu cầu (mỗi nhóm kiện giống nhau một dòng, kiện thứ i là instance thứ i của dòng).
- */
-export type RequirementAssignment = {
-  stopId: string
-  lines: TripPackageLink[]
-  at: string
-  by: string | null
-}
-
 /** Yêu cầu giao (`REQ-NNN`). */
 export type DeliveryRequirement = {
   id: string
@@ -45,9 +33,11 @@ export type DeliveryRequirement = {
   packageIds: string[]
   note?: string
   status: RequirementStoredStatus
-  /** Chuyến đang chở yêu cầu, từ lúc `ASSIGNED`. */
+  /**
+   * Chuyến đang chở yêu cầu, từ lúc `ASSIGNED`. Dòng kiện và điểm giao của yêu cầu trong chuyến đó nằm ở liên kết dòng kiện của chuyến
+   * (`TripPackageLink.requirementId`, FE-4b-04).
+   */
   tripId?: string
-  assignment?: RequirementAssignment
   /** ISO 8601 */
   createdAt: string
   createdBy: string | null

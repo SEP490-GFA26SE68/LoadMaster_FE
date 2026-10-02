@@ -63,7 +63,7 @@ test('the seed has seven pending requirements to real places, made by the compan
     ['REQ-001', 'LOG-001', 'KCN Hoà Khánh', 'LOW', '2026-09-18T10:00:00.000Z', 2, 'US-0002'],
   ])
   expect(new Set(all.map((item) => item.status))).toStrictEqual(new Set(['PENDING']))
-  expect(all.filter((item) => item.tripId !== undefined || item.assignment !== undefined)).toStrictEqual([])
+  expect(all.filter((item) => item.tripId !== undefined)).toStrictEqual([])
   expect(await db.getDeliveryRequirement('REQ-003')).toMatchObject({ address: 'KCN Thăng Long, H. Đông Anh, Hà Nội', lat: 21.1186, lng: 105.7797, packageIds: ['PK-0067', 'PK-0068'] })
   expect((await db.getDeliveryRequirement('REQ-002')).note).toBe('Hàng gốm, giao trong giờ hành chính')
   // Mỗi kiện của yêu cầu ghi mã yêu cầu; không kiện nào thuộc hai yêu cầu
@@ -141,13 +141,20 @@ test('a pending requirement edits every field; deleting it frees its packages, a
   expect(await selectable(db)).toHaveLength(170 + 56)
 })
 
-test('putting a requirement on a stop adds one package line per group of identical packages with the priority of the requirement', async () => {
+test('putting a requirement on a trip merges it into the stop with its address and coordinates, one package line per group of identical packages', async () => {
   const db = open()
   const before = await db.getTrip('TRIP-014')
-  const { requirement, trip } = await db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')
+  // Điểm 2 của TRIP-014 là Kho Bách Hoá Xanh Dĩ An: cùng địa chỉ và toạ độ với REQ-006. Điểm 1 (Điện máy Xanh Tân An) chưa có toạ độ
+  expect(before.stops.map((stop) => [stop.id, stop.lat, stop.lng])).toStrictEqual([['STOP-01', undefined, undefined], ['STOP-02', 10.896, 106.789]])
+  const { requirement, trip } = await db.assignDeliveryRequirement('REQ-006', 'TRIP-014')
   const packageIds = ['PK-0013', 'PK-0014', 'PK-0015', 'PK-0016', 'PK-0017', 'PK-0018', 'PK-0019', 'PK-0020', 'PK-0021', 'PK-0022']
-  expect(requirement).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', assignment: { stopId: 'STOP-02', lines: [{ lineId: 'PKG-004', packageIds }], at: '2026-09-14T05:00:00.000Z' } })
+  expect(requirement).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', packageIds })
+  expect(requirement).not.toHaveProperty('assignment')
   expect(trip.inputVersion).toBe(before.inputVersion + 1)
+  // Không sinh điểm mới: điểm 2 nhận hạn và ưu tiên của yêu cầu, vẫn là điểm thêm tay
+  expect(trip.stops.map((stop) => [stop.id, stop.deadline, stop.priority, stop.generated])).toStrictEqual([
+    ['STOP-01', undefined, undefined, undefined], ['STOP-02', '2026-09-16T04:00:00.000Z', 'HIGH', undefined],
+  ])
   // Yêu cầu ưu tiên Cao: dòng kiện ưu tiên 3, không bắt buộc xếp (D-93)
   expect(trip.packages.at(-1)).toMatchObject({
     id: 'PKG-004', name: 'Thùng mì ăn liền 30 gói', quantity: 10, deliveryStop: 2, groupId: 'REQ-006', lengthCm: 55, weightKg: 3.5, handlingClass: 'STANDARD',
@@ -159,19 +166,64 @@ test('putting a requirement on a stop adds one package line per group of identic
   expect(labels.find((item) => item.packageInstanceId === 'PKG-004-01')).toMatchObject({ poolPackageId: 'PK-0013', qrToken: (await db.getPackage('PK-0013')).qrToken })
   // Kiện nhập tay của chuyến mang kiện kho kiện riêng (FE-3b-07)
   expect(labels.find((item) => item.packageInstanceId === 'PKG-001-01')?.poolPackageId).toMatch(/^PK-T\d{5}$/)
-
-  await expect(db.assignDeliveryRequirement('REQ-005', 'TRIP-014', 'STOP-09')).rejects.toMatchObject({ code: 'STOP_NOT_FOUND' })
-  await expect(db.assignDeliveryRequirement('REQ-005', 'TRIP-011', 'STOP-01')).rejects.toMatchObject({ code: 'TRIP_LOCKED' })
-  await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-01')).rejects.toMatchObject({ code: 'REQUIREMENT_NOT_PENDING', params: { requirementId: 'REQ-006', status: 'ASSIGNED' } })
+  await expect(db.assignDeliveryRequirement('REQ-005', 'TRIP-011')).rejects.toMatchObject({ code: 'TRIP_LOCKED' })
+  await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014')).rejects.toMatchObject({ code: 'REQUIREMENT_NOT_PENDING', params: { requirementId: 'REQ-006', status: 'ASSIGNED' } })
   await expect(db.deleteDeliveryRequirement('REQ-006')).rejects.toMatchObject({ code: 'REQUIREMENT_NOT_PENDING' })
   await expect(db.unassignDeliveryRequirement('REQ-005')).rejects.toMatchObject({ code: 'REQUIREMENT_STATUS_INVALID', params: { requirementId: 'REQ-005', status: 'PENDING' } })
-
   const back = await db.unassignDeliveryRequirement('REQ-006')
-  expect([back.status, back.tripId, back.assignment]).toStrictEqual(['PENDING', undefined, undefined])
-  expect((await db.getTrip('TRIP-014')).packages.map((pkg) => pkg.id)).toStrictEqual(['PKG-001', 'PKG-002', 'PKG-003'])
+  expect([back.status, back.tripId]).toStrictEqual(['PENDING', undefined])
+  const after = await db.getTrip('TRIP-014')
+  expect(after.packages.map((pkg) => pkg.id)).toStrictEqual(['PKG-001', 'PKG-002', 'PKG-003'])
+  // Điểm thêm tay ở lại, không còn hạn
+  expect(after.stops).toStrictEqual(before.stops)
   const back13 = await db.getPackage('PK-0013')
   expect([back13.status, back13.requirementId, back13.tripId, back13.stopId]).toStrictEqual(['IMPORTED', 'REQ-006', undefined, undefined])
-  expect((await db.listEvents()).slice(0, 2).map((event) => [event.action, event.params.tripId])).toStrictEqual([['requirement.unassigned', 'TRIP-014'], ['requirement.assigned', 'TRIP-014']])
+  expect((await db.listEvents()).slice(0, 2).map((event) => [event.action, event.params.tripId, event.params.stopNumber])).toStrictEqual([
+    ['requirement.unassigned', 'TRIP-014', undefined], ['requirement.assigned', 'TRIP-014', 2],
+  ])
+})
+
+test('a requirement to a new place generates a stop at the end; the same address and coordinates share it; an emptied generated stop goes away', async () => {
+  const db = open()
+  db.restoreSession('US-0002')
+  // Hai yêu cầu tới KCN Hoà Khánh: REQ-001 của seed (Thấp, hạn 17:00 ngày 18/09) và một yêu cầu Cao, hạn sớm hơn, địa chỉ viết khác kiểu
+  const second = await db.createDeliveryRequirement({
+    destinationName: 'Xưởng Hoà Khánh', address: 'kcn hoà khánh - q. liên chiểu;  đà nẵng', lat: 16.0747, lng: 108.1506, deadline: '2026-09-17T09:00:00+07:00', priority: 'HIGH',
+    packageIds: ['PK-0023'],
+  })
+  db.restoreSession('US-0001')
+  const first = await db.assignDeliveryRequirement('REQ-001', 'TRIP-014')
+  expect(first.trip.stops).toHaveLength(3)
+  expect(first.trip.stops[2]).toStrictEqual({
+    id: 'STOP-03', name: 'KCN Hoà Khánh', address: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng', lat: 16.0747, lng: 108.1506, generated: true,
+    deadline: '2026-09-18T10:00:00.000Z', priority: 'LOW',
+  })
+  expect(first.trip.packages.filter((line) => line.groupId === 'REQ-001').map((line) => [line.id, line.deliveryStop])).toStrictEqual([['PKG-004', 3], ['PKG-005', 3]])
+  // Cùng địa chỉ (chuẩn hoá) và toạ độ: gộp vào điểm 3 — hạn sớm nhất, ưu tiên cao nhất; tên điểm giữ của yêu cầu đầu tiên
+  const merged = await db.assignDeliveryRequirement(second.id, 'TRIP-014')
+  expect(merged.trip.stops).toHaveLength(3)
+  expect(merged.trip.stops[2]).toMatchObject({ id: 'STOP-03', name: 'KCN Hoà Khánh', deadline: '2026-09-17T02:00:00.000Z', priority: 'HIGH' })
+  expect(await db.getPackage('PK-0023')).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', stopId: 'STOP-03' })
+  // REQ-003 đi KCN Thăng Long: điểm 4
+  const third = await db.assignDeliveryRequirement('REQ-003', 'TRIP-014')
+  expect(third.trip.stops.map((stop) => [stop.id, stop.name, stop.priority])).toStrictEqual([
+    ['STOP-01', 'Điện máy Xanh Tân An', undefined], ['STOP-02', 'Kho Bách Hoá Xanh Dĩ An', undefined], ['STOP-03', 'KCN Hoà Khánh', 'HIGH'], ['STOP-04', 'KCN Thăng Long', 'URGENT'],
+  ])
+  expect((await db.listEvents())[0]).toMatchObject({ action: 'requirement.assigned', params: { destinationName: 'KCN Thăng Long', tripId: 'TRIP-014', stopNumber: 4, count: 2 } })
+
+  // Gỡ yêu cầu Cao: điểm 3 còn REQ-001 nên ở lại, hạn và ưu tiên về của REQ-001
+  await db.unassignDeliveryRequirement(second.id)
+  expect((await db.getTrip('TRIP-014')).stops[2]).toMatchObject({ id: 'STOP-03', deadline: '2026-09-18T10:00:00.000Z', priority: 'LOW' })
+  // Gỡ REQ-001: điểm 3 không còn kiện nào, tự mất; KCN Thăng Long thành điểm 3 và kiện của nó đánh số lại
+  const version = (await db.getTrip('TRIP-014')).inputVersion
+  await db.unassignDeliveryRequirement('REQ-001')
+  const after = await db.getTrip('TRIP-014')
+  expect(after.inputVersion).toBe(version + 1)
+  expect(after.stops.map((stop) => stop.id)).toStrictEqual(['STOP-01', 'STOP-02', 'STOP-04'])
+  expect(after.packages.filter((line) => line.groupId === 'REQ-003').map((line) => line.deliveryStop)).toStrictEqual([3, 3])
+  expect(await db.getPackage('PK-0067')).toMatchObject({ status: 'ASSIGNED', stopId: 'STOP-04' })
+  // Điểm tự sinh kế tiếp không dùng lại mã đang có
+  expect((await db.assignDeliveryRequirement('REQ-004', 'TRIP-014')).trip.stops.at(-1)).toMatchObject({ id: 'STOP-05', name: 'KCN Trà Nóc', generated: true })
 })
 
 test('packages without a package type become one line each, named by the sender code; an urgent requirement makes its lines must-load', async () => {
@@ -182,16 +234,14 @@ test('packages without a package type become one line each, named by the sender 
     destinationName: 'Công ty Gốm Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ', deadline: '2026-09-18T17:00:00+07:00', priority: 'URGENT',
     packageIds: ['PK-0054', 'PK-0023', 'PK-0055', 'PK-0064', 'PK-0024'],
   })
-  const { trip, requirement } = await db.assignDeliveryRequirement(created.id, 'TRIP-014', 'STOP-01')
-  expect(requirement.assignment?.lines).toStrictEqual([
-    { lineId: 'PKG-004', packageIds: ['PK-0054'] }, { lineId: 'PKG-005', packageIds: ['PK-0023', 'PK-0024'] },
-    { lineId: 'PKG-006', packageIds: ['PK-0055'] }, { lineId: 'PKG-007', packageIds: ['PK-0064'] },
-  ])
-  expect(trip.packages.slice(3).map((line) => [line.id, line.name, line.quantity, line.handlingClass, line.stackable, line.maxTopLoadKg, line.weightKg, line.priority, line.mustLoad])).toStrictEqual([
-    ['PKG-004', 'PB-HUE-2609-01', 1, 'FRAGILE', false, 0, 9.5, 4, true],
-    ['PKG-005', 'Thùng sữa hộp 48 hộp', 2, 'STANDARD', true, 160, 52, 4, true],
-    ['PKG-006', 'PB-HUE-2609-02', 1, 'FRAGILE', false, 0, 9.5, 4, true],
-    ['PKG-007', 'TL-HNI-2609-01', 1, 'HIGH_VALUE', true, 21.6, 7.2, 4, true],
+  const { trip } = await db.assignDeliveryRequirement(created.id, 'TRIP-014')
+  // Yêu cầu chưa có toạ độ: điểm sinh ra cũng chưa có
+  expect(trip.stops.at(-1)).toStrictEqual({ id: 'STOP-03', name: 'Công ty Gốm Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ', generated: true, deadline: '2026-09-18T10:00:00.000Z', priority: 'URGENT' })
+  expect(trip.packages.slice(3).map((line) => [line.id, line.name, line.quantity, line.deliveryStop, line.handlingClass, line.stackable, line.maxTopLoadKg, line.weightKg, line.priority, line.mustLoad])).toStrictEqual([
+    ['PKG-004', 'PB-HUE-2609-01', 1, 3, 'FRAGILE', false, 0, 9.5, 4, true],
+    ['PKG-005', 'Thùng sữa hộp 48 hộp', 2, 3, 'STANDARD', true, 160, 52, 4, true],
+    ['PKG-006', 'PB-HUE-2609-02', 1, 3, 'FRAGILE', false, 0, 9.5, 4, true],
+    ['PKG-007', 'TL-HNI-2609-01', 1, 3, 'HIGH_VALUE', true, 21.6, 7.2, 4, true],
   ])
   // Nhãn của từng instance là mã QR của đúng kiện kho kiện
   const labels = await db.listTripLabels('TRIP-014')
@@ -200,9 +250,9 @@ test('packages without a package type become one line each, named by the sender 
   ])
 })
 
-test('once on a trip only the deadline and the priority change; a new priority reaches the lines and makes the plan stale', async () => {
+test('once on a trip only the deadline and the priority change; they reach the stop, and a new priority reaches the lines and makes the plan stale', async () => {
   const db = open()
-  const { trip } = await db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', 'TRIP-014')
   await expect(db.updateDeliveryRequirement('REQ-006', { address: '217 Quốc lộ 1K' })).rejects.toMatchObject({ code: 'REQUIREMENT_NOT_PENDING', params: { requirementId: 'REQ-006', status: 'ASSIGNED' } })
   await expect(db.updateDeliveryRequirement('REQ-006', { packageIds: ['PK-0013'] })).rejects.toMatchObject({ code: 'REQUIREMENT_NOT_PENDING' })
   const edited = await db.updateDeliveryRequirement('REQ-006', { deadline: '2026-09-17T11:00:00+07:00', priority: 'URGENT' })
@@ -210,23 +260,43 @@ test('once on a trip only the deadline and the priority change; a new priority r
   const after = await db.getTrip('TRIP-014')
   expect(after.inputVersion).toBe(trip.inputVersion + 1)
   expect(after.packages.map((line) => [line.id, line.priority, line.mustLoad])).toStrictEqual([['PKG-001', 1, true], ['PKG-002', 1, false], ['PKG-003', 1, true], ['PKG-004', 4, true]])
-  // (PKG-002 là thùng nồi cơm điện, không bắt buộc xếp từ seed.) Chỉ đổi hạn: kiện của chuyến không đổi
+  expect(after.stops[1]).toMatchObject({ id: 'STOP-02', deadline: '2026-09-17T04:00:00.000Z', priority: 'URGENT' })
+  // (PKG-002 là thùng nồi cơm điện, không bắt buộc xếp từ seed.) Chỉ đổi hạn: kiện của chuyến không đổi, hạn của điểm đổi theo
   await db.updateDeliveryRequirement('REQ-006', { deadline: '2026-09-18T11:00:00+07:00' })
-  expect((await db.getTrip('TRIP-014')).inputVersion).toBe(after.inputVersion)
+  const later = await db.getTrip('TRIP-014')
+  expect(later.inputVersion).toBe(after.inputVersion)
+  expect(later.stops[1]).toMatchObject({ deadline: '2026-09-18T04:00:00.000Z', priority: 'URGENT' })
+})
+
+test('the deadline of a stop follows the lines of its requirements when stops are reordered or a line moves to another stop', async () => {
+  const db = open()
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', 'TRIP-014')
+  // Đảo hai điểm (kiện đánh số lại như lớp API làm): Dĩ An thành điểm 1 và vẫn mang hạn của REQ-006
+  const swapped = await db.updateTrip('TRIP-014', {
+    stops: [trip.stops[1]!, trip.stops[0]!],
+    packages: trip.packages.map((line) => ({ ...line, deliveryStop: line.deliveryStop === 1 ? 2 : 1 })),
+  })
+  expect(swapped.stops.map((stop) => [stop.id, stop.deadline, stop.priority])).toStrictEqual([['STOP-02', '2026-09-16T04:00:00.000Z', 'HIGH'], ['STOP-01', undefined, undefined]])
+  // Chuyển dòng kiện của yêu cầu sang điểm kia: hạn, ưu tiên và điểm giao của kiện đi theo dòng
+  const moved = await db.updateTrip('TRIP-014', { packages: swapped.packages.map((line) => (line.groupId === 'REQ-006' ? { ...line, deliveryStop: 2 } : line)) })
+  expect(moved.stops.map((stop) => [stop.id, stop.deadline, stop.priority])).toStrictEqual([['STOP-02', undefined, undefined], ['STOP-01', '2026-09-16T04:00:00.000Z', 'HIGH']])
+  expect(await db.getPackage('PK-0013')).toMatchObject({ status: 'ASSIGNED', stopId: 'STOP-01', packageCode: 'MP-MG30-0911-01', destination: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' })
 })
 
 test('cancelling the trip before it leaves sends its requirements back to pending and their packages to the pool', async () => {
   const db = open()
-  await db.assignDeliveryRequirement('REQ-005', 'TRIP-014', 'STOP-01')
-  await db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')
+  await db.assignDeliveryRequirement('REQ-005', 'TRIP-014')
+  await db.assignDeliveryRequirement('REQ-006', 'TRIP-014')
   await db.cancelTrip('TRIP-014', 'Khách dời lịch nhận hàng')
   const back = await Promise.all(['REQ-005', 'REQ-006'].map((id) => db.getDeliveryRequirement(id)))
-  expect(back.map((item) => [item.status, item.tripId, item.assignment])).toStrictEqual([['PENDING', undefined, undefined], ['PENDING', undefined, undefined]])
+  expect(back.map((item) => [item.status, item.tripId])).toStrictEqual([['PENDING', undefined], ['PENDING', undefined]])
   expect(await db.getPackage('PK-0001')).toMatchObject({ status: 'IMPORTED', requirementId: 'REQ-005' })
   expect((await db.getPackage('PK-0001')).tripId).toBeUndefined()
-  // Yêu cầu đã về "chờ xếp chuyến": đưa sang chuyến khác được ngay
-  const created = await db.createTrip({ name: 'Tuyến thay thế', vehicleId: 'VEHICLE-005', stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }], packages: [], scheduledDate: '2026-09-16' })
-  expect((await db.assignDeliveryRequirement('REQ-006', created.id, 'STOP-01')).requirement).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-015' })
+  // Yêu cầu đã về "chờ xếp chuyến": đưa sang chuyến khác được ngay — chuyến mới chưa có điểm nào, điểm giao tự sinh là điểm 1
+  const created = await db.createTrip({ name: 'Tuyến thay thế', vehicleId: 'VEHICLE-005', stops: [], packages: [], scheduledDate: '2026-09-16' })
+  const moved = await db.assignDeliveryRequirement('REQ-006', created.id)
+  expect(moved.requirement).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-015' })
+  expect(moved.trip.stops.map((stop) => [stop.id, stop.name, stop.generated])).toStrictEqual([['STOP-01', 'Kho Bách Hoá Xanh Dĩ An', true]])
 })
 
 test('trip labels of hand-entered packages are opaque, unique and the same in every store of the same seed', async () => {

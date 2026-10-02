@@ -3,6 +3,7 @@ import type { Package } from './package-model'
 import { cargoFromType, handlingClassOfType } from './package-type-cargo'
 import { seededRandom } from './qr-token'
 import { CARGO, CUSTOMERS, type CargoKey } from './seed-directory'
+import { LONG_BINH_DEPOT, PHUONG_NAM_DEPOT } from './seed-depots'
 import { LONG_BINH_IMPORT, packageSeeder } from './seed-packages'
 import type { SeedEvent } from './seed-progress'
 import type { DeliveryRequirement } from './requirement-model'
@@ -22,17 +23,16 @@ import type { Company, PackageType, VehicleType } from './source-types'
  */
 
 /**
- * Hai công ty logistics dùng app (PRD v2 mục 5.3, D-64), mỗi công ty một kho xuất phát. Toạ độ thật ở mức khu vực, không tới số
- * nhà: KCN Biên Hoà 2 (Biên Hoà, Đồng Nai) và phường Phú Thuận (Quận 7).
+ * Hai công ty logistics dùng app (PRD v2 mục 5.3, D-64), mỗi công ty một kho xuất phát (`seed-depots.ts`).
  */
 export const COMPANIES: readonly Company[] = [
   {
     id: LONG_BINH, name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120',
-    depot: { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 },
+    depot: LONG_BINH_DEPOT,
   },
   {
     id: PHUONG_NAM, name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054',
-    depot: { name: 'Kho Phú Thuận', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Quận 7, TP. Hồ Chí Minh', lat: 10.7308, lng: 106.7353 },
+    depot: PHUONG_NAM_DEPOT,
   },
 ]
 

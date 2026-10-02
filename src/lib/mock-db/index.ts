@@ -1,6 +1,7 @@
 export { getMockDb } from './app-db'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
-export { addDays, SEED_ANCHOR_DATE, vnDate, vnTime } from './clock'
+export { addDays, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
+export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'
 export { createMockDb } from './mock-db'
@@ -18,12 +19,15 @@ export {
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
+export { nextStopId, normalizeAddress, stopKey } from './trip-stops'
 export { isLastActiveAdmin, rolesInScope, userScopeOf, type UserScope } from './user-scope'
 export { COMPANIES as SEED_COMPANIES } from './seed-sourcing'
+export { PLACE_KINDS, SEED_PLACES, type Place, type PlaceKind } from './seed-places'
 export { DEMO_ACCOUNTS, QUICK_LOGIN_ACCOUNTS, SEED_PASSWORD, type DemoAccount } from './seed-users'
 // Review 1 (LM-104)
 export type { Review1Db } from './db-api-review1'
 export { MAX_PACKAGES_PER_CREATE } from './db-packages'
+export type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 export { MAX_SEAL_LENGTH } from './db-scans'
 export { normalizeQrToken } from './qr-token'
 export {
@@ -42,7 +46,7 @@ export {
   type PackageStatus,
 } from './package-model'
 export { cargoFromPackage, handlingClassOfType } from './package-type-cargo'
-export { assignmentInstances, labelByToken, tripLabels } from './review1-status'
+export { labelByToken, lineInstances, tripLabels, type TripPackageLink } from './review1-status'
 export {
   isRequirementClosed,
   isValidCoordinate,
@@ -53,7 +57,6 @@ export {
   REQUIREMENT_STORED_STATUSES,
   requirementStatus,
   type DeliveryRequirement,
-  type RequirementAssignment,
   type RequirementChanges,
   type RequirementInput,
   type RequirementPriority,

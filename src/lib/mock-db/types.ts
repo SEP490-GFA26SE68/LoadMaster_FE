@@ -1,9 +1,15 @@
 import type { PlacementPatch } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, OptimizationResult } from '@/domain/models'
 import type { User } from '@/types/user'
-import type { RunSettings } from './source-types'
+import type { RequirementPriority } from './requirement-model'
+import type { CompanyDepot, RunSettings } from './source-types'
 
-/** Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`. */
+/**
+ * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
+ *
+ * Từ FE-4b-04 (D-73) điểm giao **tự sinh** khi đưa yêu cầu giao vào chuyến (`generated`), hoặc do điều phối viên **thêm tay** cho kiện
+ * lẻ (không hạn). Hạn và ưu tiên của điểm do kho ghi theo các yêu cầu có kiện ở điểm đó (`withStopDemands`) — không nhập tay.
+ */
 export type DeliveryStop = {
   /** Duy nhất trong chuyến. */
   id: string
@@ -12,6 +18,15 @@ export type DeliveryStop = {
   /** Số điện thoại người nhận, dạng hiển thị (`0901 234 567`); tài xế gọi qua `tel:` (D-46). */
   phone?: string
   contactName?: string
+  /** Toạ độ WGS84, độ thập phân; vắng cả hai khi chưa có (điểm của seed cũ, yêu cầu chưa chọn toạ độ). */
+  lat?: number
+  lng?: number
+  /** Điểm tự sinh từ yêu cầu giao: hết dòng kiện thì kho tự bỏ. Vắng là điểm thêm tay. */
+  generated?: boolean
+  /** Hạn sớm nhất của các yêu cầu ở điểm này, ISO 8601; vắng khi điểm không có yêu cầu nào. */
+  deadline?: string
+  /** Ưu tiên cao nhất của các yêu cầu ở điểm này. */
+  priority?: RequirementPriority
 }
 
 /**
@@ -89,8 +104,12 @@ export type Trip = {
   packages: CargoPackage[]
   /** Phiên bản dữ liệu đầu vào tối ưu (xe + kiện) của chuyến; revision mang số lúc tạo để biết lỗi thời (D-31). */
   inputVersion: number
-  /** Ngày chạy `YYYY-MM-DD` (D-46). */
+  /** Ngày chạy `YYYY-MM-DD` (D-46) — luôn là ngày của `departureAt` theo giờ Việt Nam; kho giữ hai trường khớp nhau. */
   scheduledDate: string
+  /** Giờ xuất phát (ngày + giờ), ISO 8601 (FE-4b-04, D-76). */
+  departureAt: string
+  /** Kho xuất phát: bản chụp lúc lập chuyến, mặc định kho của công ty (D-76). Điểm đầu của tuyến. */
+  depot: CompanyDepot
   /** Người dùng vai trò tài xế; `null` khi chưa gán. */
   driverId: string | null
   phase: TripPhase
@@ -101,14 +120,21 @@ export type Trip = {
   cancellation?: Cancellation
 }
 
-/** Dữ liệu tạo chuyến: kho cấp `id`, `inputVersion`, `phase`, `createdAt`; tiến độ vận hành chỉ do hàm vận hành ghi. */
-export type NewTrip = Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate'> & { driverId?: string | null }
+/**
+ * Dữ liệu tạo chuyến: kho cấp `id`, `inputVersion`, `phase`, `createdAt`; tiến độ vận hành chỉ do hàm vận hành ghi. `departureAt` vắng
+ * thì xe xuất phát `DEFAULT_DEPARTURE_TIME` ngày `scheduledDate`; có thì ngày chạy lấy theo nó. `depot` vắng là kho của công ty.
+ */
+export type NewTrip = Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate'> & {
+  driverId?: string | null
+  departureAt?: string
+  depot?: CompanyDepot
+}
 
 /**
  * Trường sửa được của chuyến; trường vắng giữ nguyên. Trường do kho quản lý (`id`, `inputVersion`, `phase`, tiến độ…) có trong
  * đầu vào cũng bị bỏ.
  */
-export type TripChanges = Partial<Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate' | 'driverId'>>
+export type TripChanges = Partial<Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate' | 'driverId' | 'departureAt' | 'depot'>>
 
 /**
  * Một kết quả tối ưu của chuyến, **bất biến** (D-31): kho không có hàm sửa revision. Duyệt tạo revision mới.

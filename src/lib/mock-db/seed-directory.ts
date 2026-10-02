@@ -4,11 +4,14 @@ import type { DeliveryStop } from './types'
 /**
  * Danh bạ khách nhận hàng và danh mục hàng dùng để dựng 14 chuyến seed của đợt 6 (LM-083). Tên, địa chỉ tiếng Việt thật
  * quanh TP. Hồ Chí Minh, Bình Dương, Đồng Nai, Long An; số điện thoại dạng hiển thị để nút Gọi của tài xế dùng được (D-46).
+ *
+ * Hai khách là điểm đến của yêu cầu giao seed (Co.opmart Bình Dương, Bách Hoá Xanh Dĩ An) có toạ độ — gần đúng ở mức khu vực, trùng
+ * `LONG_BINH_DESTINATIONS` — để yêu cầu đưa vào chuyến gộp vào đúng điểm giao đang có (FE-4b-04, D-73). Các khách còn lại chưa có toạ độ.
  */
 export const CUSTOMERS = {
   thucPhamSaiGon: { name: 'Công ty TNHH Thực phẩm Sài Gòn', address: '12 Nguyễn Văn Linh, Q.7, TP. Hồ Chí Minh', phone: '0283 775 1122', contactName: 'Chị Hương' },
-  coopBinhDuong: { name: 'Siêu thị Co.opmart Bình Dương', address: '30 Đại lộ Bình Dương, Thủ Dầu Một', phone: '0274 382 6655', contactName: 'Anh Phúc' },
-  bhxDiAn: { name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An', phone: '0909 318 204', contactName: 'Anh Toàn' },
+  coopBinhDuong: { name: 'Siêu thị Co.opmart Bình Dương', address: '30 Đại lộ Bình Dương, Thủ Dầu Một', phone: '0274 382 6655', contactName: 'Anh Phúc', lat: 10.979, lng: 106.673 },
+  bhxDiAn: { name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An', phone: '0909 318 204', contactName: 'Anh Toàn', lat: 10.896, lng: 106.789 },
   longChauBienHoa: { name: 'Nhà thuốc Long Châu Biên Hoà', address: '58 Võ Thị Sáu, P. Quyết Thắng, Biên Hoà', phone: '0251 382 7719', contactName: 'Chị Ngân' },
   bhxThuDuc: { name: 'Cửa hàng Bách Hoá Xanh Thủ Đức', address: '96 Võ Văn Ngân, P. Bình Thọ, Thủ Đức', phone: '0938 552 109', contactName: 'Chị Thảo' },
   coopBienHoa: { name: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, P. Tân Tiến, Biên Hoà', phone: '0251 381 4420', contactName: 'Anh Khánh' },

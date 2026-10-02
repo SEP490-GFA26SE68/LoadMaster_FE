@@ -14,6 +14,7 @@ import type {
   VehicleTypeAssignment,
   VehicleTypeInput,
 } from './source-types'
+import type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 import type { Trip } from './types'
 
 /**
@@ -83,25 +84,47 @@ export type Review1Db = {
   createDeliveryRequirement(input: RequirementInput): Promise<DeliveryRequirement>
   /**
    * Sửa yêu cầu. Còn `PENDING`: mọi trường. Đã vào chuyến: chỉ hạn và ưu tiên, trường khác đổi là `REQUIREMENT_NOT_PENDING`; đổi ưu
-   * tiên thì dòng kiện của yêu cầu trong chuyến còn lập kế hoạch đổi theo (phương án lỗi thời). Đã giao xong:
+   * tiên thì dòng kiện của yêu cầu trong chuyến còn lập kế hoạch đổi theo (phương án lỗi thời); hạn và ưu tiên của điểm giao chứa yêu
+   * cầu tính lại (D-73). Đã giao xong:
    * `REQUIREMENT_STATUS_INVALID`. Hạn chỉ kiểm "ở tương lai" khi đổi. Không trường nào đổi thì không ghi gì.
    */
   updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement>
   /** Xoá yêu cầu còn `PENDING` (khác: `REQUIREMENT_NOT_PENDING`); kiện của nó lại chọn được cho yêu cầu khác. */
   deleteDeliveryRequirement(id: string): Promise<void>
   /**
-   * *(tạm, tới FE-4b-04)* Đưa yêu cầu `PENDING` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi nhóm kiện giống nhau thành
-   * một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu — D-93) ở điểm
-   * đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ:
-   * `PACKAGE_FLAGGED`.
+   * Đưa yêu cầu `PENDING` vào chuyến ở pha lập kế hoạch (FE-4b-04, D-73). **Điểm giao tự sinh**: yêu cầu cùng địa chỉ (đã chuẩn hoá) và
+   * cùng toạ độ với một điểm đang có thì vào điểm đó, không thì thêm một điểm mới cuối tuyến (tên là tên điểm đến). Mỗi nhóm kiện giống
+   * nhau thành một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu —
+   * D-93) ở điểm đó; hạn của điểm = hạn sớm nhất, ưu tiên = cao nhất của các yêu cầu ở điểm; chuyến tăng `inputVersion` (revision cũ
+   * lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ: `PACKAGE_FLAGGED`.
    */
-  assignDeliveryRequirement(requirementId: string, tripId: string, stopId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
+  assignDeliveryRequirement(requirementId: string, tripId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
   /**
-   * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`.
+   * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`; điểm
+   * giao tự sinh không còn dòng kiện nào tự mất (kiện ở các điểm sau đánh số lại), hạn và ưu tiên của các điểm còn lại tính lại.
    * Chuyến đã sang vận hành: `TRIP_LOCKED`; yêu cầu chưa vào chuyến hoặc đang giao: `REQUIREMENT_STATUS_INVALID`.
    */
   unassignDeliveryRequirement(requirementId: string): Promise<DeliveryRequirement>
 
+  /**
+   * Kiện kho kiện đang ở trong chuyến, theo thứ tự dòng kiện: kèm dòng, điểm giao và đường kiện vào chuyến (qua yêu cầu giao, đưa
+   * thẳng từ kho kiện, thêm ngay trong chuyến).
+   */
+  listTripPackages(tripId: string): Promise<TripPoolPackage[]>
+  /**
+   * Đưa kiện kho kiện **thẳng** vào chuyến ở pha lập kế hoạch (FE-4b-05, D-68 đường 2), vào điểm giao `target`: một điểm đang có của
+   * chuyến (`STOP_NOT_FOUND` nếu không có), hoặc một điểm tay mới cuối tuyến (thiếu tên, toạ độ sai: `TRIP_INVALID`). Kiện phải
+   * `IMPORTED`, không cờ (`PACKAGE_FLAGGED`), không thuộc yêu cầu giao nào (`PACKAGE_UNAVAILABLE`); không kiện nào: `PACKAGES_REQUIRED`.
+   * Mỗi nhóm kiện giống nhau thành một dòng `CargoPackage` mới ở điểm đó, không có hạn; kiện sang `ASSIGNED`, giữ mã và dữ liệu của
+   * chính nó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31). Chuyến đã sang vận hành: `TRIP_LOCKED`.
+   */
+  addTripPackages(tripId: string, packageIds: readonly string[], target: TripStopTarget): Promise<Trip>
+  /**
+   * Bỏ một kiện kho kiện khỏi chuyến ở pha lập kế hoạch: kiện về `IMPORTED`, dòng kiện của nó bớt một (hết kiện thì bỏ dòng), chuyến
+   * tăng `inputVersion`. Kiện của yêu cầu giao (rời chuyến bằng `unassignDeliveryRequirement`) hoặc kiện không ở chuyến này:
+   * `PACKAGE_UNAVAILABLE`.
+   */
+  removeTripPackage(tripId: string, packageId: string): Promise<Trip>
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>
   /** Ghi một lần chạy không ra kết quả (service từ chối hoặc không phản hồi). */

@@ -25,14 +25,16 @@ const VIEWPORTS: readonly Viewport[] = [
 
 /**
  * Tên riêng trong dữ liệu không dịch (AGENTS mục 6): tên người dùng và tên xe của seed hiện trong ô chọn tài xế/xe — Radix Select
- * dựng sẵn `<option>` ẩn cho form, nên chúng vào `document` ngay khi hai truy vấn về.
+ * dựng sẵn `<option>` ẩn cho form, nên chúng vào `document` ngay khi hai truy vấn về; tên và địa chỉ kho xuất phát của công ty.
  */
 async function seedNames(page: Page): Promise<string[]> {
   const names = await page.evaluate(async (url) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
     const db = getMockDb()
-    const [users, vehicles] = await Promise.all([db.listUsers(), db.listVehicles()])
-    return [...users.map((user) => user.fullName), ...vehicles.map((vehicle) => vehicle.name)]
+    const [users, vehicles, companies] = await Promise.all([db.listUsers(), db.listVehicles(), db.listCompanies()])
+    // Kho xuất phát của chuyến (FE-4b-04) là tên riêng của công ty: hiện ở sơ đồ tuyến của Chi tiết chuyến
+    const depots = companies.flatMap((company) => [company.depot.name, company.depot.address])
+    return [...users.map((user) => user.fullName), ...vehicles.map((vehicle) => vehicle.name), ...depots]
   }, MOCK_DB)
   // Tên dài trước: "Nguyễn Thanh Tùng" phải bị gỡ trước khi thử "Tùng" của người khác
   return [...DATA_NAMES, ...names].sort((a, b) => b.length - a.length)

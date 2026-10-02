@@ -37,6 +37,14 @@ export function packageCountByStop(packages: readonly CargoPackage[]): Map<numbe
   return new Map([...counts].sort(([a], [b]) => a - b))
 }
 
+/** Chữ của một điểm giao nhập ở form: tên, địa chỉ, liên hệ. */
+export type TripStopInput = Pick<DeliveryStop, 'name' | 'address' | 'phone' | 'contactName'>
+
+/** Điểm giao ghi vào kho: số điện thoại và người liên hệ để trống thì bỏ hẳn trường, không lưu chuỗi rỗng. */
+export function stopFields({ name, address, phone, contactName }: TripStopInput) {
+  return { name, address, ...(phone ? { phone } : {}), ...(contactName ? { contactName } : {}) }
+}
+
 export type StopRemoval = {
   /** Chỉ xoá được điểm giao không còn kiện nào. */
   readonly allowed: boolean

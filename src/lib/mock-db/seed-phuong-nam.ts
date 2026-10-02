@@ -4,6 +4,7 @@ import type { Package } from './package-model'
 import { cargoFromType, handlingClassOfType } from './package-type-cargo'
 import { seededRandom } from './qr-token'
 import { packageSeeder } from './seed-packages'
+import { PHUONG_NAM_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
 import { seedPlanner } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
@@ -146,6 +147,7 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
   // Chuyến hôm nay: lập chiều hôm trước, tối ưu rồi duyệt — chờ kho Phú Thuận xếp, tài xế Phương Nam thấy ở "Chuyến của tôi"
   const approved: Trip = {
     id: 'TRIP-PN-001', companyId: PHUONG_NAM, name: 'Tuyến Quận 7 – Nhà Bè', vehicleId: 'VEHICLE-PN-01', scheduledDate: today, driverId: DRIVER,
+    departureAt: vnTime(today, SEED_DEPARTURE_TIME), depot: PHUONG_NAM_DEPOT,
     phase: 'planning', createdAt: on(1, '15:05'), inputVersion: 1,
     stops: stops(['crescent', 'xuongMayNhaBe']),
     packages: lines([[ELECTRONICS, 30, 1], [FABRIC, 12, 2]]),
@@ -155,6 +157,7 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
 
   const draft: Trip = {
     id: 'TRIP-PN-002', companyId: PHUONG_NAM, name: 'Tuyến Quận 4 – Quận 1', vehicleId: 'VEHICLE-PN-02', scheduledDate: addDays(today, 1), driverId: null,
+    departureAt: vnTime(addDays(today, 1), SEED_DEPARTURE_TIME), depot: PHUONG_NAM_DEPOT,
     phase: 'planning', createdAt: on(0, '07:35'), inputVersion: 1,
     stops: stops(['linhKienQ4', 'vaiSoiQ1']),
     packages: lines([[ELECTRONICS, 20, 1], [FABRIC, 8, 2]]),

@@ -25,9 +25,13 @@ const SCROLL_AFTER = 6
  * (LM-046): khi sửa được, kéo ngang (chuột hoặc bàn phím, dnd-kit) để đổi, thả xong là lưu qua mutation và kiện được đánh số lại; điểm
  * cuối được xếp sâu nhất trong thùng. `states` có khi chuyến đang giao / đã hoàn thành: đoạn đường nối thay cho mũi tên.
  */
-export function StopList({ stops, states, departedAt, readOnly = true, onReorder, onRemove, selectedStop = null, onSelectStop }: {
+export function StopList({ stops, states, depotName, departureTime, departedAt, readOnly = true, onReorder, onRemove, selectedStop = null, onSelectStop }: {
   stops: readonly StopRow[]
   states?: readonly StopState[]
+  /** Tên kho xuất phát của chuyến (FE-4b-04). */
+  depotName?: string
+  /** Giờ xuất phát theo kế hoạch `HH:mm` (giờ Việt Nam) — hiện khi xe chưa rời kho. */
+  departureTime?: string
   /** Giờ xe rời kho, khi chuyến đã bắt đầu giao. */
   departedAt?: string
   readOnly?: boolean
@@ -51,7 +55,7 @@ export function StopList({ stops, states, departedAt, readOnly = true, onReorder
     const from = stops.findIndex((stop) => stop.id === active.id)
     const to = stops.findIndex((stop) => stop.id === over.id)
     if (from === -1 || to === -1) return
-    // Bỏ các trường tính từ kiện, giữ nguyên dữ liệu điểm giao (kể cả số điện thoại, người liên hệ — D-46)
+    // Bỏ các trường tính từ kiện, giữ nguyên dữ liệu điểm giao (số điện thoại, người liên hệ — D-46; toạ độ, hạn, ưu tiên — D-73)
     onReorder(arrayMove([...stops], from, to).map(({ number: _number, packageCount: _count, weightKg: _weight, ...stop }) => stop))
     toast.success(t('trips.stops.reordered'))
   }
@@ -67,10 +71,16 @@ export function StopList({ stops, states, departedAt, readOnly = true, onReorder
               </span>
               <span className="flex flex-col gap-1">
                 <span className="font-display text-body leading-7 font-[650] whitespace-nowrap text-ink-strong font-stretch-105%">{t('trips.route.depot')}</span>
+                {depotName ? <span className="-mt-1.5 max-w-48 truncate text-fine text-ink-3" title={depotName}>{depotName}</span> : null}
                 {departedAt ? (
                   <span className="flex items-center gap-1.5 text-small whitespace-nowrap text-ink-2">
                     <Clock aria-hidden className="size-3.5 text-ink-3" strokeWidth={1.75} />
                     {t('trips.route.departed', { time: format.time(departedAt) })}
+                  </span>
+                ) : departureTime ? (
+                  <span className="flex items-center gap-1.5 text-small whitespace-nowrap text-ink-2">
+                    <Clock aria-hidden className="size-3.5 text-ink-3" strokeWidth={1.75} />
+                    <span className="tabular-nums">{t('trips.route.plannedDeparture', { time: departureTime })}</span>
                   </span>
                 ) : null}
               </span>

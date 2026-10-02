@@ -1,19 +1,23 @@
 import { expandPackages } from '@/domain/cargo'
 import type { Package } from './package-model'
 import { normalizeQrToken } from './qr-token'
-import type { DeliveryRequirement } from './requirement-model'
 import type { TripLabel } from './source-types'
 import type { Trip } from './types'
 
 /**
- * Hàm thuần nối kiện kho kiện ↔ kiện của chuyến (LM-104, FE-3b-07). Yêu cầu giao đưa vào điểm giao sinh các dòng kiện `PKG-NNN`
- * (FE-4b-01); kiện thứ i của dòng là instance thứ i (`PKG-NNN-0i`, cùng cách đặt mã của `expandPackages`). Dòng của yêu cầu bị sửa số
- * lượng sau khi vào chuyến thì mất liên kết với yêu cầu — kho cấp kiện kho kiện riêng cho dòng đó như kiện thêm trong chuyến. Trạng
- * thái kiện **không** suy ở đây: kho ghi thật qua `movePackage` (FE-3b-01).
+ * Hàm thuần nối kiện kho kiện ↔ kiện của chuyến (LM-104, FE-3b-07). Yêu cầu giao đưa vào chuyến sinh các dòng kiện `PKG-NNN`
+ * (FE-4b-01, FE-4b-04); kiện thứ i của dòng là instance thứ i (`PKG-NNN-0i`, cùng cách đặt mã của `expandPackages`). Dòng của yêu cầu
+ * bị sửa số lượng sau khi vào chuyến thì mất liên kết với yêu cầu — kho cấp kiện kho kiện riêng cho dòng đó như kiện thêm trong chuyến
+ * (hai liên kết cùng `lineId`: của yêu cầu, lệch số lượng nên bị bỏ qua, và của chuyến). Trạng thái kiện **không** suy ở đây: kho ghi
+ * thật qua `movePackage` (FE-3b-01).
  */
 
-/** Một dòng kiện của chuyến và các kiện kho kiện của nó: kiện thứ i là instance thứ i của dòng. */
-export type TripPackageLink = { lineId: string; packageIds: string[] }
+/**
+ * Một dòng kiện của chuyến và các kiện kho kiện của nó: kiện thứ i là instance thứ i của dòng. `requirementId` có khi dòng sinh từ một
+ * yêu cầu giao (FE-4b-04) — thay `requirement.assignment` tạm của FE-4b-01. `fromPool`: dòng sinh từ kiện kho kiện đưa thẳng vào chuyến
+ * (FE-4b-05) — kiện giữ dữ liệu của chính nó. Vắng cả hai là dòng thêm ngay trong chuyến.
+ */
+export type TripPackageLink = { lineId: string; packageIds: string[]; requirementId?: string; fromPool?: boolean }
 
 /** Kiện kho kiện → mã instance của các dòng `lines` trong chuyến; dòng có số lượng khác số kiện đã nối thì bỏ qua (mất liên kết). */
 export function lineInstances(lines: readonly TripPackageLink[], trip: Pick<Trip, 'packages'>): Map<string, string> {
@@ -27,37 +31,12 @@ export function lineInstances(lines: readonly TripPackageLink[], trip: Pick<Trip
   return instances
 }
 
-type Assigned = Pick<DeliveryRequirement, 'tripId' | 'assignment'>
-
-/** Kiện kho kiện → mã instance trong chuyến của yêu cầu giao. */
-export function assignmentInstances(requirement: Pick<DeliveryRequirement, 'assignment'>, trip: Pick<Trip, 'packages'> | undefined): Map<string, string> {
-  return requirement.assignment && trip ? lineInstances(requirement.assignment.lines, trip) : new Map()
-}
-
 /**
- * Kiện kho kiện → mã instance của **mọi** kiện trong chuyến (FE-3b-07): kiện vào chuyến qua yêu cầu giao (`requirement.assignment`) và
- * kiện thêm ngay trong chuyến (`own`, kho ghi ở `syncTripPool`).
+ * Nhãn QR của mọi instance trong chuyến (FE-3b-07): mã QR là mã của kiện kho kiện — `links` là mọi liên kết của chuyến (kiện của yêu
+ * cầu giao, kiện thêm ngay trong chuyến, kiện đưa thẳng từ kho kiện). Instance chưa có kiện kho kiện (dữ liệu hỏng) không có nhãn.
  */
-export function tripInstances(trip: Pick<Trip, 'id' | 'packages'>, requirements: Iterable<Assigned>, own: readonly TripPackageLink[]): Map<string, string> {
-  const instances = lineInstances(own, trip)
-  for (const requirement of requirements) {
-    if (requirement.tripId !== trip.id) continue
-    for (const [packageId, instanceId] of assignmentInstances(requirement, trip)) instances.set(packageId, instanceId)
-  }
-  return instances
-}
-
-/**
- * Nhãn QR của mọi instance trong chuyến (FE-3b-07): mã QR là mã của kiện kho kiện — kiện nối từ yêu cầu giao hoặc kiện kho tạo lúc thêm
- * kiện trong chuyến (`own`). Instance chưa có kiện kho kiện (dữ liệu hỏng) không có nhãn.
- */
-export function tripLabels(
-  trip: Pick<Trip, 'id' | 'packages'>,
-  requirements: Iterable<Assigned>,
-  pool: ReadonlyMap<string, Pick<Package, 'qrToken'>>,
-  own: readonly TripPackageLink[] = [],
-): TripLabel[] {
-  const poolIdOf = new Map([...tripInstances(trip, requirements, own)].map(([packageId, instanceId]) => [instanceId, packageId]))
+export function tripLabels(trip: Pick<Trip, 'packages'>, links: readonly TripPackageLink[], pool: ReadonlyMap<string, Pick<Package, 'qrToken'>>): TripLabel[] {
+  const poolIdOf = new Map([...lineInstances(links, trip)].map(([packageId, instanceId]) => [instanceId, packageId]))
   const lineById = new Map(trip.packages.map((pkg) => [pkg.id, pkg]))
   const { instances, packageIdByInstanceId } = expandPackages(trip.packages)
   return instances.flatMap(({ packageInstanceId, deliveryStop }) => {

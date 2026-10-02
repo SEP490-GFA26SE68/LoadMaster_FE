@@ -26,6 +26,9 @@ export const DASHBOARD_PERIOD = { from: '2026-09-08', to: '2026-09-14' }
 
 const AT = '2026-09-01T01:00:00.000Z'
 
+/** Kho xuất phát của Long Bình (`seed-depots.ts`). */
+const DEPOT = { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 }
+
 export function cargo(id: string, weightKg: number, quantity: number, deliveryStop = 1): CargoPackage {
   return {
     id, name: id, lengthCm: 50, widthCm: 40, heightCm: 30, weightKg, quantity, allowedOrientations: ['LWH'], keepUpright: true,
@@ -36,7 +39,7 @@ export function cargo(id: string, weightKg: number, quantity: number, deliverySt
 export function trip(id: string, scheduledDate: string, vehicleId: string, packages: CargoPackage[], extra: Partial<Trip> = {}): Trip {
   return {
     id, companyId: 'LOG-001', name: `Tuyến ${id}`, vehicleId, stops: [], packages, inputVersion: 1, scheduledDate, driverId: null, phase: 'planning',
-    createdAt: AT, ...extra,
+    departureAt: `${scheduledDate}T01:00:00.000Z`, depot: DEPOT, createdAt: AT, ...extra,
   }
 }
 

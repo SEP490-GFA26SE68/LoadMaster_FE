@@ -1,9 +1,9 @@
 import type { DbContext } from './db-context'
 import { movePackage } from './db-packages'
-import { ownTripLinks } from './db-trip-packages'
+import { tripLinks } from './db-trip-lines'
 import { missingIds } from './operations'
 import type { Package, PackageStatus } from './package-model'
-import { tripInstances } from './review1-status'
+import { lineInstances } from './review1-status'
 import type { Trip } from './types'
 
 /**
@@ -17,14 +17,14 @@ import type { Trip } from './types'
  * - hoàn tất một điểm giao → kiện đã dỡ `DELIVERED`, kiện của điểm đó không dỡ được (có sự cố) `RETURNED`;
  * - huỷ chuyến trước khi xe chạy → về `IMPORTED` (yêu cầu giao của chuyến về `PENDING`, `db-requirement-trips.ts`).
  *
- * Kiện nối với instance của chuyến qua yêu cầu giao, hoặc là kiện thêm ngay trong chuyến (`tripInstances`, FE-3b-07); dòng của yêu cầu
+ * Kiện nối với instance của chuyến qua yêu cầu giao, hoặc là kiện thêm ngay trong chuyến (`lineInstances`, FE-3b-07); dòng của yêu cầu
  * bị sửa số lượng sau khi vào chuyến thì kiện của yêu cầu mất liên kết và đứng yên ở trạng thái đang có.
  */
 
 type Linked = { pkg: Package; instanceId: string | undefined }
 
 function tripPackages(ctx: DbContext, trip: Trip): Linked[] {
-  const instanceOf = tripInstances(trip, ctx.state.requirements.values(), ownTripLinks(ctx, trip.id))
+  const instanceOf = lineInstances(tripLinks(ctx, trip.id), trip)
   return [...ctx.state.packages.values()].filter((pkg) => pkg.tripId === trip.id).map((pkg) => ({ pkg, instanceId: instanceOf.get(pkg.id) }))
 }
 

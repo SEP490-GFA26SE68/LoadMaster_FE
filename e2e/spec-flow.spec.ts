@@ -1,5 +1,5 @@
 import { attachJson, expect, test } from './fixtures'
-import { addPackage, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, SEED_TRIP, switchUser, waitSceneReady } from './spec-flow-helpers'
+import { addPackage, addStop, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, SEED_TRIP, switchUser, waitSceneReady } from './spec-flow-helpers'
 import { cameraPreset, closeInspector, openInspector, renderCameraChange, sceneSnapshot, waitCameraSettled } from './viewer-helpers'
 
 /**
@@ -45,12 +45,13 @@ for (const device of ['desktop', 'tablet'] as const) {
     await page.getByRole('combobox', { name: 'Xe', exact: true }).click()
     // Seed cũng có một xe tên "Truck 6m"; xe vừa tạo đứng cuối danh sách
     await page.getByRole('option', { name: 'Truck 6m', exact: true }).last().click()
-    await page.getByRole('textbox', { name: 'Tên điểm giao 1', exact: true }).fill('Kho Bình Dương')
     const createTrip = page.getByRole('button', { name: 'Tạo chuyến', exact: true })
     if (tablet) heights.createTrip = await heightOf(createTrip)
     await createTrip.click()
     await page.waitForURL(/\/chuyen\/TRIP-015$/)
     await expect(page.getByText('Đã tạo chuyến TRIP-015')).toBeVisible()
+    // FE-4b-04: chuyến mới chưa có điểm giao; kiện gõ tay cần một điểm giao thêm tay
+    await addStop(page, { name: 'Kho Bình Dương' })
 
     // Kiện PKG-001 × 4, rồi nhân bản
     const panel = await addPackage(page, { name: 'Thùng sơn', lengthCm: 120, widthCm: 100, heightCm: 100, weightKg: 200, quantity: 4 })
@@ -289,7 +290,9 @@ test('editing a package after optimising makes the plan stale and blocks approva
 test('switching to English mid-flow keeps form input and formats numbers the English way', async ({ page, login }) => {
   await login('/chuyen/moi')
   await page.getByRole('textbox', { name: 'Tên chuyến', exact: true }).fill('Tuyến Q.7 – Dĩ An')
-  await page.getByRole('textbox', { name: 'Tên điểm giao 1', exact: true }).fill('Kho Long Bình')
+  // Kho xuất phát mặc định là kho của công ty; đổi tên để thấy ô đang nhập được giữ qua lần đổi ngôn ngữ
+  await expect(page.getByRole('textbox', { name: 'Tên kho', exact: true })).toHaveValue('Kho Long Bình')
+  await page.getByRole('textbox', { name: 'Tên kho', exact: true }).fill('Bãi xe Long Bình 2')
   await page.getByRole('combobox', { name: 'Xe', exact: true }).click()
   await page.getByRole('option', { name: 'Hyundai HD210 · 60C-446.32', exact: true }).click()
   await expect(page.locator('form').getByText('9.500 kg', { exact: true })).toBeVisible()
@@ -300,7 +303,7 @@ test('switching to English mid-flow keeps form input and formats numbers the Eng
   await expect(page.getByRole('heading', { name: 'Create trip', exact: true })).toBeVisible()
   // Dữ liệu đang nhập giữ nguyên, không tải lại trang
   await expect(page.getByRole('textbox', { name: 'Trip name', exact: true })).toHaveValue('Tuyến Q.7 – Dĩ An')
-  await expect(page.getByRole('textbox', { name: 'Stop 1 name', exact: true })).toHaveValue('Kho Long Bình')
+  await expect(page.getByRole('textbox', { name: 'Depot name', exact: true })).toHaveValue('Bãi xe Long Bình 2')
   await expect(page.getByRole('combobox', { name: 'Vehicle', exact: true })).toHaveText('Hyundai HD210 · 60C-446.32')
   // Số theo en-US
   await expect(page.locator('form').getByText('9,500 kg', { exact: true })).toBeVisible()
@@ -309,6 +312,12 @@ test('switching to English mid-flow keeps form input and formats numbers the Eng
 
   await page.getByRole('button', { name: 'Create trip', exact: true }).click()
   await expect(page.getByText('Created trip TRIP-015')).toBeVisible()
+  // Chuyến mới chưa có điểm giao: thêm một điểm tay bằng nhãn tiếng Anh rồi mới thêm kiện
+  await page.getByRole('region', { name: 'Route' }).getByRole('button', { name: 'Add stop', exact: true }).click()
+  const stopDialog = page.getByRole('dialog', { name: 'Add a stop' })
+  await stopDialog.getByRole('textbox', { name: 'Stop name', exact: true }).fill('Kho Long Bình')
+  await stopDialog.getByRole('button', { name: 'Add stop', exact: true }).click()
+  await expect(stopDialog).toBeHidden()
   await addPackageEn(page)
   // Tổng thể tích ở mục Tóm tắt hàng hoá; ô tỷ lệ bên dưới có thêm "1.2 m³ / 40.6 m³"
   await expect(page.getByText('1.2 m³', { exact: true })).toBeVisible()

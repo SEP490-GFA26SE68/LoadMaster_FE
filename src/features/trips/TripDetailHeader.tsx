@@ -6,6 +6,7 @@ import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
+import { vnClock } from '@/lib/mock-db'
 import { plannerPath } from '@/lib/planner-path'
 import { dateOnly } from './trip-dates'
 import { TripActionsMenu } from './TripActionsMenu'
@@ -91,7 +92,7 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
   )
 }
 
-/** "Ngày chạy 24/09/2026 · Hyundai HD210 60C-446.32 · Tài xế Phạm Quốc Dũng" — giá trị chữ trắng, biển số mono. */
+/** "Ngày chạy 24/09/2026, xuất phát 08:00 · Hyundai HD210 60C-446.32 · Tài xế Phạm Quốc Dũng" — giá trị chữ trắng, biển số mono. Giờ theo giờ Việt Nam. */
 function TripMeta({ detail }: { detail: TripDetail }) {
   const t = useT()
   const format = useFormat()
@@ -100,7 +101,10 @@ function TripMeta({ detail }: { detail: TripDetail }) {
   const value = (children: ReactNode) => <b className="font-semibold text-sky-text">{children}</b>
   return (
     <span className="inline-flex min-w-0 items-baseline gap-3">
-      <span>{t('trips.detail.runDate')} {value(format.date(dateOnly(trip.scheduledDate)))}</span>
+      <span>
+        {t('trips.detail.runDate')} {value(format.date(dateOnly(trip.scheduledDate)))}
+        {t('trips.detail.departsAt')} {value(vnClock(new Date(trip.departureAt)))}
+      </span>
       <span aria-hidden>·</span>
       <span>
         {cut === -1 ? vehicle.name : <>{vehicle.name.slice(0, cut)} <span className="font-mono text-caption text-cyan-200">{vehicle.name.slice(cut + 3)}</span></>}

@@ -1,7 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ArrowRight, Check, GripVertical, Trash2 } from 'lucide-react'
+import { ArrowRight, Check, Clock, GripVertical, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { RequirementPriorityTag } from '@/features/requirements/requirement-look'
 import type { Formatter } from '@/lib/format'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
@@ -20,8 +21,9 @@ const iconButton = cn(
 )
 
 /**
- * Một điểm giao trên sơ đồ tuyến (V2.3 `ChiTietChuyen.jpg`): mốc màu định danh kèm số, tên, địa chỉ, số kiện · khối lượng; khi chuyến
- * đang giao thì thêm trạng thái giao. Là một `<li>` kéo được để đổi thứ tự (LM-046, dnd-kit, cả bàn phím) khi chuyến còn sửa được;
+ * Một điểm giao trên sơ đồ tuyến (V2.3 `ChiTietChuyen.jpg`): mốc màu định danh kèm số, tên, địa chỉ, số kiện · khối lượng; điểm có yêu
+ * cầu giao thì thêm hạn sớm nhất và ưu tiên cao nhất của các yêu cầu ở điểm đó (FE-4b-04, D-73); khi chuyến đang giao thì thêm trạng
+ * thái giao. Là một `<li>` kéo được để đổi thứ tự (LM-046, dnd-kit, cả bàn phím) khi chuyến còn sửa được;
  * bấm tên để lọc bảng kiện (nút `aria-pressed`). Dòng `sr-only` đầu tiên đọc đủ điểm theo thứ tự cho trình đọc màn hình.
  *
  * Lệch có chủ ý khỏi mục 5 AGENTS.md: thẻ đang kéo dùng bóng `--e3` — lớp đang nhấc khỏi mặt phẳng.
@@ -55,6 +57,8 @@ export function StopCard({ stop, total, lead, state, readOnly = true, selected =
     >
       <span className="sr-only">
         {t('trips.route.stop', { number: stop.number, total, name: stop.name, packages, weight })}
+        {stop.deadline ? `, ${t('trips.route.deadlineA11y', { time: format.time(stop.deadline), date: format.date(stop.deadline) })}` : null}
+        {stop.priority ? `, ${t('trips.route.priorityA11y', { priority: t(`requirements.priority.${stop.priority}`) })}` : null}
         {state ? `, ${stateLabel(state, t, format)}` : null}
       </span>
       {lead}
@@ -133,6 +137,8 @@ export function StopLeg({ state }: { state: StopState }) {
 }
 
 function StopBody({ stop, packages, weight, state }: { stop: StopRow; packages: string; weight: string; state?: StopState }) {
+  const t = useT()
+  const format = useFormat()
   return (
     <>
       <span
@@ -156,6 +162,13 @@ function StopBody({ stop, packages, weight, state }: { stop: StopRow; packages: 
         <span className={cn('mt-1 text-small tabular-nums', stop.packageCount === 0 ? 'text-ink-3' : 'font-medium text-ink-2')}>
           {packages} · {weight}
         </span>
+        {stop.deadline ? (
+          <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-small text-ink-2">
+            <Clock aria-hidden className="size-3.5 flex-none text-ink-3" strokeWidth={1.75} />
+            <span className="tabular-nums">{t('trips.route.deadline', { time: format.time(stop.deadline), date: format.dayMonth(stop.deadline) })}</span>
+            {stop.priority ? <RequirementPriorityTag priority={stop.priority} /> : null}
+          </span>
+        ) : null}
         {state ? <StateLine state={state} total={stop.packageCount} /> : null}
       </span>
     </>

@@ -1,26 +1,49 @@
-import { nextId, put, sameData, type DbContext } from './db-context'
+import { vnClock, vnDate, vnTime } from './clock'
+import { found, nextId, put, sameData, type DbContext } from './db-context'
 import { releaseTripPackages } from './db-package-progress'
 import { releaseTripRequirements } from './db-requirement-trips'
+import { stopDemandsOf } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
+import { isValidCoordinate } from './requirement-model'
+import type { CompanyDepot } from './source-types'
 import { tripChangeParams } from './trip-changes'
+import { withStopDemands } from './trip-stops'
 import type { MockDb, Trip, TripChanges } from './types'
 
 type TripMethods = Pick<MockDb, 'listTrips' | 'getTrip' | 'createTrip' | 'updateTrip' | 'cancelTrip'>
 
 /** Trường của `TripChanges`, theo thứ tự ghi vào tham số `fields` của sự kiện `trip.updated`. */
-const EDITABLE = ['name', 'scheduledDate', 'driverId', 'vehicleId', 'stops', 'packages'] as const satisfies readonly (keyof TripChanges)[]
+const EDITABLE = ['name', 'scheduledDate', 'departureAt', 'depot', 'driverId', 'vehicleId', 'stops', 'packages'] as const satisfies readonly (keyof TripChanges)[]
 
-/** Pha `loading`/`loaded` vẫn đổi được tên, ngày, tài xế — xe, điểm giao, kiện thì không (D-45). */
-const LOCKED_WHILE_LOADING: ReadonlySet<keyof TripChanges> = new Set(['vehicleId', 'stops', 'packages'])
+/** Pha `loading`/`loaded` vẫn đổi được tên, ngày giờ xuất phát, tài xế — xe, kho đi, điểm giao, kiện thì không (D-45). */
+const LOCKED_WHILE_LOADING: ReadonlySet<keyof TripChanges> = new Set(['vehicleId', 'depot', 'stops', 'packages'])
+
+/** Giờ xuất phát khi nơi tạo chuyến chỉ đưa ngày chạy (giờ Việt Nam). Form chuyến luôn gửi giờ người dùng chọn. */
+export const DEFAULT_DEPARTURE_TIME = '08:00'
+
+/** Giờ xuất phát đã chuẩn hoá thành ISO 8601 (UTC); không đọc được: `TRIP_INVALID`. */
+function departureIso(value: string, tripId: string): string {
+  const at = Date.parse(value)
+  if (Number.isNaN(at)) throw new MockDbError('TRIP_INVALID', { tripId, field: 'departureAt' })
+  return new Date(at).toISOString()
+}
+
+/** Kho xuất phát: tên và địa chỉ bỏ khoảng trắng hai đầu, tên bắt buộc, toạ độ trong khoảng hợp lệ. */
+function depotFields(depot: CompanyDepot, tripId: string): CompanyDepot {
+  const name = depot.name.trim()
+  if (name === '' || !isValidCoordinate(depot.lat, depot.lng)) throw new MockDbError('TRIP_INVALID', { tripId, field: 'depot' })
+  return { name, address: depot.address.trim(), lat: depot.lat, lng: depot.lng }
+}
 
 /**
  * Chuyến của công ty của phiên (D-64). Xe và tài xế của chuyến phải cùng công ty với chuyến: khác công ty là `FORBIDDEN_COMPANY`. Kiện
- * thêm ngay trong chuyến (form, nhập file) tự thành kiện của kho kiện, nguồn `TRIP` (`syncTripPool`, FE-3b-07).
+ * thêm ngay trong chuyến (form, nhập file) tự thành kiện của kho kiện, nguồn `TRIP` (`syncTripPool`, FE-3b-07). Chuyến có giờ xuất
+ * phát và kho xuất phát (FE-4b-04, D-76): ngày chạy luôn là ngày của giờ xuất phát; kho đi mặc định là kho của công ty.
  */
 export function tripMethods(ctx: DbContext): TripMethods {
-  const { trips, maintenance, users } = ctx.state
+  const { trips, maintenance, users, companies } = ctx.state
   const scope = ctx.scope.trips
 
   function assertVehicleUsable(vehicleId: string, companyId: string) {
@@ -38,20 +61,24 @@ export function tripMethods(ctx: DbContext): TripMethods {
   return {
     listTrips: () => ctx.respond(() => scope.list()),
     getTrip: (id) => ctx.respond(() => scope.read(id)),
-    createTrip: ({ name, vehicleId, stops, packages, scheduledDate, driverId = null }) =>
+    createTrip: ({ name, vehicleId, stops, packages, scheduledDate, driverId = null, departureAt, depot }) =>
       ctx.respond(() => {
         const companyId = ctx.scope.newRecordCompany()
         assertVehicleUsable(vehicleId, companyId)
         assertDriver(driverId, companyId)
+        const id = nextId('TRIP', trips.keys())
+        const departure = departureAt === undefined ? vnTime(scheduledDate, DEFAULT_DEPARTURE_TIME) : departureIso(departureAt, id)
         const trip: Trip = {
-          id: nextId('TRIP', trips.keys()),
+          id,
           companyId,
           name,
           vehicleId,
           stops,
           packages,
           inputVersion: 1,
-          scheduledDate,
+          scheduledDate: vnDate(new Date(departure)),
+          departureAt: departure,
+          depot: depot === undefined ? found(companies, 'companies', companyId).depot : depotFields(depot, id),
           driverId,
           phase: 'planning',
           createdAt: ctx.nowIso(),
@@ -65,8 +92,17 @@ export function tripMethods(ctx: DbContext): TripMethods {
       ctx.respond(() => {
         const current = scope.own(id)
         if (changes.vehicleId !== undefined) ctx.scope.vehicles.ref(changes.vehicleId, current.companyId)
+        // Ngày chạy và giờ xuất phát đi cùng nhau: đổi giờ xuất phát thì ngày chạy theo nó; chỉ đổi ngày thì giữ giờ trong ngày
+        const requested: TripChanges = { ...changes }
+        if (changes.departureAt !== undefined) {
+          requested.departureAt = departureIso(changes.departureAt, id)
+          requested.scheduledDate = vnDate(new Date(requested.departureAt))
+        } else if (changes.scheduledDate !== undefined) {
+          requested.departureAt = vnTime(changes.scheduledDate, vnClock(new Date(current.departureAt)))
+        }
+        if (changes.depot !== undefined) requested.depot = depotFields(changes.depot, id)
         // Chỉ nhận các trường sửa được: trường kho quản lý trong một bản sao cũ bị trải vào `changes` không được ghi đè
-        const changed = EDITABLE.filter((field) => changes[field] !== undefined && !sameData(changes[field], current[field]))
+        const changed = EDITABLE.filter((field) => requested[field] !== undefined && !sameData(requested[field], current[field]))
         if (changed.length === 0) return current
         if (current.phase !== 'planning') {
           const lockedNow = current.phase !== 'loading' && current.phase !== 'loaded'
@@ -74,13 +110,20 @@ export function tripMethods(ctx: DbContext): TripMethods {
             throw new MockDbError('TRIP_LOCKED', { tripId: id, phase: current.phase })
           }
         }
-        if (changed.includes('vehicleId')) assertVehicleUsable(changes.vehicleId ?? current.vehicleId, current.companyId)
-        if (changed.includes('driverId')) assertDriver(changes.driverId ?? null, current.companyId)
+        if (changed.includes('vehicleId')) assertVehicleUsable(requested.vehicleId ?? current.vehicleId, current.companyId)
+        if (changed.includes('driverId')) assertDriver(requested.driverId ?? null, current.companyId)
         const next: Trip = { ...current }
-        for (const field of changed) Object.assign(next, { [field]: changes[field] })
+        for (const field of changed) Object.assign(next, { [field]: requested[field] })
         const inputChanged = changed.includes('vehicleId') || changed.includes('packages')
         next.inputVersion = current.inputVersion + (inputChanged ? 1 : 0)
-        ctx.log('trip.updated', { type: 'trip', id }, { fields: changed.join(','), ...tripChangeParams(current, next, changed) })
+        // Điểm giao hoặc dòng kiện đổi (đổi thứ tự, chuyển dòng sang điểm khác): hạn và ưu tiên của từng điểm tính lại (D-73)
+        if (changed.includes('packages') || changed.includes('stops')) next.stops = withStopDemands(next.stops, stopDemandsOf(ctx, next))
+        // Dời ngày chạy mà giữ giờ trong ngày: nhật ký chỉ ghi ngày chạy, như trước khi chuyến có giờ xuất phát
+        const dateOnly = changed.includes('scheduledDate') && vnClock(new Date(next.departureAt)) === vnClock(new Date(current.departureAt))
+        const logged = changed.filter((field) => !(dateOnly && field === 'departureAt'))
+        // Kho xuất phát của chuyến ghi tên trường riêng: `depot` trong nhật ký là kho / chi nhánh của một tài khoản
+        const fields = logged.map((field) => (field === 'depot' ? 'departureDepot' : field)).join(',')
+        ctx.log('trip.updated', { type: 'trip', id }, { fields, ...tripChangeParams(current, next, logged) })
         const stored = put(trips, next)
         // Dòng kiện và điểm giao chỉ đổi được khi chuyến còn lập kế hoạch: kiện kho kiện của chuyến đổi theo (FE-3b-07)
         if (changed.includes('packages') || changed.includes('stops')) syncTripPool(ctx, stored)

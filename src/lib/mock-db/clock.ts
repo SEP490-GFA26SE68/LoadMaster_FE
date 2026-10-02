@@ -12,6 +12,11 @@ export function vnDate(at: Date): string {
   return new Date(at.getTime() + VN_OFFSET_MS).toISOString().slice(0, 10)
 }
 
+/** Giờ `HH:mm` theo giờ Việt Nam của một thời điểm. */
+export function vnClock(at: Date): string {
+  return new Date(at.getTime() + VN_OFFSET_MS).toISOString().slice(11, 16)
+}
+
 /** Ngày `YYYY-MM-DD` cộng `days` (âm là lùi). */
 export function addDays(date: string, days: number): string {
   const [year, month, day] = date.split('-').map(Number)

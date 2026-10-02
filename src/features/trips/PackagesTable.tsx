@@ -28,7 +28,7 @@ const PAGE_SIZE = 50
  */
 const SELECTED_ACCENT = '[&_tbody_tr.bg-primary-bg>td:first-child]:shadow-[inset_3px_0_0_var(--cyan-500)]'
 
-export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, onAdd, onImport, labelsHref, stopFilter, onStopFilterChange }: {
+export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, onAdd, onImport, emptyHint, labelsHref, stopFilter, onStopFilterChange }: {
   packages: readonly CargoPackage[]
   vehicle: VehicleConfig
   stops: readonly StopRow[]
@@ -38,6 +38,8 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
   onAdd?: () => void
   /** Mở hộp thoại nhập kiện từ file (LM-093); vắng như `onAdd`. */
   onImport?: () => void
+  /** Câu thay mô tả của trạng thái rỗng khi chưa thêm kiện được vì lý do sửa được ngay (chuyến chưa có điểm giao, FE-4b-04). */
+  emptyHint?: string
   /** Trang in nhãn QR của mọi kiện trong chuyến (FE-3b-07); vắng khi người xem không có quyền in nhãn. */
   labelsHref?: string
   stopFilter: number | null
@@ -77,7 +79,7 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
       mascot="empty"
       compact
       title={t('trips.packages.emptyTitle')}
-      description={t('trips.packages.emptyDescription')}
+      description={emptyHint ?? t('trips.packages.emptyDescription')}
       action={onAdd || onImport ? (
         <div className="flex flex-wrap justify-center gap-2">
           {onAdd ? <Button variant="secondary" onClick={onAdd}><Plus strokeWidth={1.5} />{t('trips.packages.add')}</Button> : null}

@@ -107,7 +107,7 @@ test('lines of a requirement keep the packages of the requirement; a line whose 
   const db = dispatcher()
   const trip = await db.createTrip({ name: 'Tuyến thử', vehicleId: 'VEHICLE-005', stops: STOPS, scheduledDate: '2026-09-15', packages: [line('PKG-001', 1, 1)] })
   // REQ-006: mười thùng mì PK-0013…0022 thành dòng PKG-002
-  const assigned = await db.assignDeliveryRequirement('REQ-006', trip.id, 'STOP-02')
+  const assigned = await db.assignDeliveryRequirement('REQ-006', trip.id)
   expect((await ofTrip(db, trip.id)).filter((pkg) => pkg.source === 'TRIP').map((pkg) => pkg.id)).toStrictEqual(['PK-0089'])
   expect((await db.listTripLabels(trip.id)).map((label) => label.poolPackageId)).toStrictEqual(['PK-0089', ...assigned.requirement.packageIds])
 

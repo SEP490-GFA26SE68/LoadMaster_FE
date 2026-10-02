@@ -2,7 +2,7 @@ import { beforeAll, expect, test } from 'vitest'
 import { getMockDb } from '@/lib/mock-db'
 import { fetchAssignableTrips, fetchSelectablePackages, listDeliveryRequirements } from './requirements-api'
 import {
-  filterPickerPackages, filterRequirementRows, groupByType, matchingStopId, packageWarnings, sameDestination, selectedWeightKg,
+  filterPickerPackages, filterRequirementRows, groupByType, packageWarnings, sameDestination, selectedWeightKg, stopOfRequirement,
 } from './requirement-list'
 
 /**
@@ -101,6 +101,11 @@ test('the stop named like the destination is suggested when putting a requiremen
   const trips = await fetchAssignableTrips()
   const trip = trips.find((candidate) => candidate.id === 'TRIP-014')!
 
-  expect(matchingStopId('KHO BACH HOA XANH DI AN', trip.stops)).toBe(trip.stops[1]!.id)
-  expect(matchingStopId('Siêu thị Co.opmart Bình Dương', trip.stops)).toBeUndefined()
+  // TRIP-014: điểm 2 là Kho Bách Hoá Xanh Dĩ An (215 Quốc lộ 1K…, 10,896 – 106,789), cùng địa chỉ và toạ độ với REQ-006
+  const place = { address: '215 QUỐC LỘ 1K - P. Đông Hoà,  Dĩ An', lat: 10.896, lng: 106.789 }
+  expect(stopOfRequirement(place, trip.stops)).toStrictEqual({ number: 2, name: 'Kho Bách Hoá Xanh Dĩ An' })
+  // Khác toạ độ, chưa có toạ độ, hoặc địa chỉ khác: chuyến sẽ thêm điểm mới
+  expect(stopOfRequirement({ ...place, lat: 10.9 }, trip.stops)).toBeNull()
+  expect(stopOfRequirement({ address: place.address }, trip.stops)).toBeNull()
+  expect(stopOfRequirement({ address: '30 Đại lộ Bình Dương, Thủ Dầu Một', lat: 10.979, lng: 106.673 }, trip.stops)).toBeNull()
 })

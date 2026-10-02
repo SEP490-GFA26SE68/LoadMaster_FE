@@ -11,6 +11,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
     // Yêu cầu giao bị xoá / gỡ khỏi chuyến (FE-4b-01), lần chạy tối ưu hỏng (LM-104)
     'requirement.deleted', 'requirement.unassigned', 'optimization.failed',
+    // Kiện bị bỏ khỏi chuyến (FE-4b-05), như yêu cầu bị gỡ khỏi chuyến
+    'trip.packageRemoved',
     // FE-3b-01: kiện bị gắn cờ không vào yêu cầu giao hay chuyến được cho tới khi gỡ
     'package.flagged',
   ] as const

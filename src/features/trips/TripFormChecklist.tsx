@@ -53,6 +53,7 @@ export function TripFormChecklist({ form, schema, selected, existing, locked }: 
   const capacity = vehicle ? vehicle.innerLengthCm * vehicle.innerWidthCm * vehicle.innerHeightCm : 0
   const stops = values.stops ?? []
   const lastStop = stops.at(-1)?.name?.trim()
+  const depotName = values.depot?.name?.trim()
 
   const vehicleDetail = !vehicle ? null
     : cargo?.overPayload ? t('trips.create.checklist.vehicleOver', { weight: format.weight(cargo.weightKg), payload: format.weight(vehicle.maxPayloadKg) })
@@ -66,18 +67,29 @@ export function TripFormChecklist({ form, schema, selected, existing, locked }: 
   const rows: { key: string; state: RowState; title: string; detail?: ReactNode; issue?: FormIssue | null }[] = [
     {
       key: 'name', ...issueRow(groups.name), title: t('trips.create.checklist.name'),
-      detail: groups.name.state === 'pass' ? t('trips.create.checklist.namePass', { date: runDate.withDay(values.scheduledDate ?? '') ?? '' }) : undefined,
+      detail: groups.name.state === 'pass'
+        ? t('trips.create.checklist.namePass', { time: values.departureTime ?? '', date: runDate.withDay(values.scheduledDate ?? '') ?? '' })
+        : undefined,
     },
     {
       key: 'vehicle', ...issueRow(groups.vehicle), title: t('trips.create.checklist.vehicle'),
       ...(groups.vehicle.state === 'pass' ? { state: cargo?.overPayload ? 'warn' : 'pass', detail: vehicleDetail } : {}),
     },
     locked
-      ? { key: 'stops', state: 'lock', title: t('trips.create.checklist.stops'), detail: t('trips.create.checklist.stopsLocked') }
+      ? { key: 'depot', state: 'lock', title: t('trips.create.checklist.depot'), detail: t('trips.create.checklist.depotLocked') }
       : {
-        key: 'stops', ...issueRow(groups.stops), title: t('trips.create.checklist.stops'),
-        detail: groups.stops.state === 'pass' && lastStop ? t('trips.create.checklist.stopsPass', { count: stops.length, last: lastStop }) : undefined,
+        key: 'depot', ...issueRow(groups.depot), title: t('trips.create.checklist.depot'),
+        detail: groups.depot.state === 'pass' && depotName ? depotName : undefined,
       },
+    // Tạo chuyến: chưa có điểm giao — điểm tự sinh khi đưa yêu cầu giao vào chuyến (D-73)
+    !existing
+      ? { key: 'stops', state: 'later', title: t('trips.create.checklist.stopsLater') }
+      : locked
+        ? { key: 'stops', state: 'lock', title: t('trips.create.checklist.stops'), detail: t('trips.create.checklist.stopsLocked') }
+        : {
+          key: 'stops', ...issueRow(groups.stops), title: t('trips.create.checklist.stops'),
+          detail: groups.stops.state === 'pass' && lastStop ? t('trips.create.checklist.stopsPass', { count: stops.length, last: lastStop }) : undefined,
+        },
     locked
       ? { key: 'cargo', state: 'lock', title: t('trips.create.checklist.cargo'), detail: t('trips.create.checklist.cargoLocked') }
       : { key: 'cargo', state: 'later', title: t('trips.create.checklist.cargo') },
@@ -138,7 +150,8 @@ function IssueDetail({ issue, state, t, onGo }: { issue: FormIssue; state: RowSt
         {label ? <span className="block font-semibold">{label}</span> : null}
         {issue.message}
       </p>
-      {issue.path !== 'stops' ? (
+      {/* Toạ độ kho là một nhóm hai ô của ô chọn toạ độ, không phải một ô form đưa con trỏ tới được */}
+      {issue.path !== 'stops' && issue.path !== 'depot.coordinates' ? (
         <button
           type="button"
           onClick={() => onGo(issue.path)}
@@ -156,7 +169,11 @@ function IssueDetail({ issue, state, t, onGo }: { issue: FormIssue; state: RowSt
 function issueLabel(path: string, t: TFunction): string | null {
   if (path === 'name') return t('trips.create.name')
   if (path === 'scheduledDate') return t('trips.create.scheduledDate')
+  if (path === 'departureTime') return t('trips.create.departureTime')
   if (path === 'vehicleId') return t('trips.create.vehicle')
+  if (path === 'depot.name') return t('trips.create.depotName')
+  if (path === 'depot.address') return t('trips.create.depotAddress')
+  if (path === 'depot.coordinates') return t('trips.create.depotCoordinates')
   const stop = stopFieldOf(path)
   if (!stop || !Object.hasOwn(STOP_LABEL, stop.field)) return null
   return t(STOP_LABEL[stop.field as keyof typeof STOP_LABEL], { number: stop.number })

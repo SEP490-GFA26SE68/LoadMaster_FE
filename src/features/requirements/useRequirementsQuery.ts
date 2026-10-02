@@ -56,7 +56,7 @@ export function useDeleteRequirementMutation() {
   return useMutation({ mutationFn: (id: string) => deleteDeliveryRequirement(id), onSuccess: () => refreshRequirements(client) })
 }
 
-/** Đưa yêu cầu vào điểm giao: chuyến có thêm dòng kiện, revision cũ lỗi thời — làm mới cả chuyến. */
+/** Đưa yêu cầu vào chuyến: chuyến có thêm dòng kiện (và có thể thêm điểm giao tự sinh), revision cũ lỗi thời — làm mới cả chuyến. */
 export function useAssignRequirementMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: AssignRequirementInput) => assignRequirementToTrip(input), onSuccess: () => refreshRequirements(client, true) })

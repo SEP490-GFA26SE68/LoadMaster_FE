@@ -13,6 +13,7 @@ export const dataErrors = {
   REVISION_NOT_COMPLETED: 'Phương án {revisionId} chưa hoàn tất nên không duyệt được.',
   PATCH_UNKNOWN_INSTANCE: 'Kiện {packageInstanceId} không có trong phương án.',
   TRIP_LOCKED: 'Chuyến {tripId} đã sang giai đoạn vận hành nên không sửa được.',
+  TRIP_INVALID: 'Chuyến chưa hợp lệ: cần giờ xuất phát đọc được, kho xuất phát có tên và toạ độ, điểm giao có tên; toạ độ (nếu có) phải đủ vĩ độ và kinh độ.',
   TRIP_PHASE_INVALID: 'Thao tác này không làm được ở trạng thái hiện tại của chuyến {tripId}.',
   NO_APPROVED_REVISION: 'Chuyến {tripId} chưa có phương án đã duyệt.',
   INSTANCE_NOT_IN_PLAN: 'Kiện {packageInstanceId} không thuộc phương án hoặc điểm giao này.',

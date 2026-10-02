@@ -1,26 +1,25 @@
-import { nextPackageId } from '@/domain/cargo'
-import type { CargoPackage } from '@/domain/models'
 import { found, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { movePackage } from './db-packages'
+import { poolLines, setTripLinks, stopDemandsOf, syncStopDemands, tripLinks } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
 import { MockDbError } from './errors'
-import type { Package } from './package-model'
-import { cargoFromPackage } from './package-type-cargo'
 import { REQUIREMENT_CARGO_PRIORITY, type DeliveryRequirement } from './requirement-model'
+import { pruneGeneratedStops, requirementStop, withStopDemands } from './trip-stops'
 import type { Trip } from './types'
 
 type RequirementTripMethods = Pick<Review1Db, 'assignDeliveryRequirement' | 'unassignDeliveryRequirement'>
 
 /**
- * Yêu cầu giao ↔ chuyến (FE-4b-01, D-91). *(tạm, tới FE-4b-04)* Điều phối viên chọn điểm giao có sẵn của chuyến; điểm giao tự sinh
- * theo địa chỉ và toạ độ của yêu cầu là việc của FE-4b-04. Kiện của yêu cầu thành dòng kiện của chuyến, mang ưu tiên của yêu cầu
- * (`REQUIREMENT_CARGO_PRIORITY`, D-93).
+ * Yêu cầu giao ↔ chuyến (FE-4b-01, FE-4b-04, D-73, D-91). Đưa yêu cầu vào chuyến thì **điểm giao tự sinh** theo địa chỉ và toạ độ của
+ * yêu cầu (`trip-stops.ts`): trùng điểm đang có thì gộp, không thì thêm điểm cuối tuyến. Kiện của yêu cầu thành dòng kiện của chuyến,
+ * mang ưu tiên của yêu cầu (`REQUIREMENT_CARGO_PRIORITY`, D-93). Yêu cầu chỉ ghi `tripId`; dòng kiện nào là của yêu cầu nào nằm ở
+ * `DbState.tripPackageLinks` (`TripPackageLink.requirementId`), điểm giao của yêu cầu là điểm của các dòng đó.
  */
 
-/** Yêu cầu về "chờ xếp chuyến": rời chuyến, bỏ điểm giao và dòng kiện đã sinh. */
+/** Yêu cầu về "chờ xếp chuyến": rời chuyến. */
 function backToPending(ctx: DbContext, requirement: DeliveryRequirement): DeliveryRequirement {
-  const { tripId: _trip, assignment: _assignment, ...rest } = requirement
+  const { tripId: _trip, ...rest } = requirement
   return put(ctx.state.requirements, { ...rest, status: 'PENDING' })
 }
 
@@ -39,86 +38,77 @@ export function departTripRequirements(ctx: DbContext, trip: Trip) {
 }
 
 /**
- * Đổi ưu tiên của yêu cầu đã vào chuyến: dòng kiện của nó trong chuyến còn lập kế hoạch đổi `priority` / `mustLoad` theo (D-93) —
- * kiện của chuyến đổi nên phương án đã tối ưu thành lỗi thời (D-31). Chuyến đã sang vận hành thì không đổi gì.
+ * Yêu cầu đã vào chuyến vừa đổi hạn hoặc ưu tiên:
+ *
+ * - đổi ưu tiên, chuyến còn lập kế hoạch: dòng kiện của yêu cầu đổi `priority` / `mustLoad` theo (D-93) — kiện của chuyến đổi nên
+ *   phương án đã tối ưu thành lỗi thời (D-31);
+ * - hạn và ưu tiên của điểm giao chứa yêu cầu được tính lại (D-73), ở mọi pha chuyến còn chạy — quản lý gia hạn khi có sự cố.
  */
-export function syncRequirementPriority(ctx: DbContext, requirement: DeliveryRequirement) {
+export function syncRequirementOnTrip(ctx: DbContext, requirement: DeliveryRequirement, priorityChanged: boolean) {
   const trip = requirement.tripId === undefined ? undefined : ctx.state.trips.get(requirement.tripId)
-  if (!trip || trip.phase !== 'planning' || !requirement.assignment) return
-  const lineIds = new Set(requirement.assignment.lines.map((line) => line.lineId))
-  const cargo = REQUIREMENT_CARGO_PRIORITY[requirement.priority]
-  const packages = trip.packages.map((line) => (lineIds.has(line.id) ? { ...line, ...cargo } : line))
-  put(ctx.state.trips, { ...trip, packages, inputVersion: trip.inputVersion + 1 })
+  if (!trip || trip.phase === 'cancelled' || trip.phase === 'completed') return
+  let current = trip
+  if (priorityChanged && trip.phase === 'planning') {
+    const lineIds = new Set(tripLinks(ctx, trip.id).filter((link) => link.requirementId === requirement.id).map((link) => link.lineId))
+    const cargo = REQUIREMENT_CARGO_PRIORITY[requirement.priority]
+    const packages = trip.packages.map((line) => (lineIds.has(line.id) ? { ...line, ...cargo } : line))
+    current = put(ctx.state.trips, { ...trip, packages, inputVersion: trip.inputVersion + 1 })
+  }
+  syncStopDemands(ctx, current)
 }
 
 export function requirementTripMethods(ctx: DbContext): RequirementTripMethods {
-  const { requirements, packages, trips, packageTypes } = ctx.state
+  const { requirements, packages, trips } = ctx.state
   const scope = ctx.scope.requirements
 
-  /**
-   * Kiện của yêu cầu thành dòng kiện mới của chuyến, theo thứ tự kiện trong yêu cầu: các kiện cùng loại kiện, cùng kích thước, khối
-   * lượng và loại hàng gộp một dòng; kiện không có loại kiện mỗi kiện một dòng (tên dòng là mã kiện của bên gửi). `groupId` là mã yêu cầu.
-   */
-  function requirementLines(requirement: DeliveryRequirement, trip: Trip, stopNumber: number) {
-    const groups = new Map<string, Package[]>()
-    for (const id of requirement.packageIds) {
-      const pkg = found(packages, 'packages', id)
-      const key = pkg.packageTypeId === undefined
-        ? pkg.id
-        : [pkg.packageTypeId, pkg.lengthCm, pkg.widthCm, pkg.heightCm, pkg.weightKg, pkg.handlingClass].join('|')
-      groups.set(key, [...(groups.get(key) ?? []), pkg])
-    }
-    const ids = trip.packages.map((pkg) => pkg.id)
-    const cargo: CargoPackage[] = []
-    const lines: { lineId: string; packageIds: string[] }[] = []
-    for (const members of groups.values()) {
-      const first = members[0]
-      if (!first) continue
-      const lineId = nextPackageId(ids)
-      ids.push(lineId)
-      const type = first.packageTypeId === undefined ? undefined : found(packageTypes, 'packageTypes', first.packageTypeId)
-      const line = cargoFromPackage(first, type, { id: lineId, quantity: members.length, deliveryStop: stopNumber, groupId: requirement.id })
-      cargo.push({ ...line, ...REQUIREMENT_CARGO_PRIORITY[requirement.priority] })
-      lines.push({ lineId, packageIds: members.map((pkg) => pkg.id) })
-    }
-    return { cargo, lines }
-  }
-
   return {
-    assignDeliveryRequirement: (requirementId, tripId, stopId) =>
+    assignDeliveryRequirement: (requirementId, tripId) =>
       ctx.respond(() => {
         const requirement = scope.own(requirementId)
         if (requirement.status !== 'PENDING') throw new MockDbError('REQUIREMENT_NOT_PENDING', { requirementId, status: requirement.status })
         const trip = ctx.scope.trips.ref(tripId, requirement.companyId)
         if (trip.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId, phase: trip.phase })
-        const stopIndex = trip.stops.findIndex((stop) => stop.id === stopId)
-        if (stopIndex === -1) throw new MockDbError('STOP_NOT_FOUND', { tripId, stopId })
         const members = requirement.packageIds.map((id) => found(packages, 'packages', id))
         for (const pkg of members) {
           const flag = pkg.flags[0]
           if (flag !== undefined) throw new MockDbError('PACKAGE_FLAGGED', { packageId: pkg.id, flag })
         }
-        const { cargo, lines } = requirementLines(requirement, trip, stopIndex + 1)
-        const nextTrip = put(trips, { ...trip, packages: [...trip.packages, ...cargo], inputVersion: trip.inputVersion + 1 })
-        for (const pkg of members) movePackage(ctx, pkg, 'ASSIGNED', { tripId, stopId })
-        const assignment = { stopId, lines, at: ctx.nowIso(), by: ctx.state.session.userId }
+        // Điểm giao của yêu cầu: gộp vào điểm cùng địa chỉ và toạ độ, không có thì sinh điểm mới cuối tuyến (D-73)
+        const placed = requirementStop(trip.stops, requirement)
+        const stop = placed.stops[placed.index]
+        if (!stop) throw new Error(`Chuyến ${tripId} không dựng được điểm giao cho yêu cầu ${requirementId}`)
+        const stopNumber = placed.index + 1
+        const { cargo, links } = poolLines(ctx, members, trip, stopNumber, { groupId: requirementId, ...REQUIREMENT_CARGO_PRIORITY[requirement.priority] })
+        const assigned = put(requirements, { ...requirement, status: 'ASSIGNED', tripId })
+        setTripLinks(ctx, tripId, [...tripLinks(ctx, tripId), ...links.map((link) => ({ ...link, requirementId }))])
+        const lines = [...trip.packages, ...cargo]
+        const stops = withStopDemands(placed.stops, stopDemandsOf(ctx, { id: tripId, packages: lines }))
+        const nextTrip = put(trips, { ...trip, stops, packages: lines, inputVersion: trip.inputVersion + 1 })
+        for (const pkg of members) movePackage(ctx, pkg, 'ASSIGNED', { tripId, stopId: stop.id })
         ctx.log('requirement.assigned', { type: 'requirement', id: requirementId }, {
-          destinationName: requirement.destinationName, tripId, stopNumber: stopIndex + 1, count: requirement.packageIds.length,
+          destinationName: requirement.destinationName, tripId, stopNumber, count: requirement.packageIds.length,
         })
-        return { requirement: put(requirements, { ...requirement, status: 'ASSIGNED', tripId, assignment }), trip: nextTrip }
+        return { requirement: assigned, trip: nextTrip }
       }),
     unassignDeliveryRequirement: (requirementId) =>
       ctx.respond(() => {
         const requirement = scope.own(requirementId)
-        const { tripId, assignment } = requirement
-        if (requirement.status !== 'ASSIGNED' || tripId === undefined || !assignment) {
+        const { tripId } = requirement
+        if (requirement.status !== 'ASSIGNED' || tripId === undefined) {
           throw new MockDbError('REQUIREMENT_STATUS_INVALID', { requirementId, status: requirement.status })
         }
         const trip = found(trips, 'trips', tripId)
         // Gỡ được trước khi kho bắt đầu xếp (D-91)
         if (trip.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId, phase: trip.phase })
-        const lineIds = new Set(assignment.lines.map((line) => line.lineId))
-        const stored = put(trips, { ...trip, packages: trip.packages.filter((pkg) => !lineIds.has(pkg.id)), inputVersion: trip.inputVersion + 1 })
+        const links = tripLinks(ctx, tripId)
+        const lineIds = new Set(links.filter((link) => link.requirementId === requirementId).map((link) => link.lineId))
+        setTripLinks(ctx, tripId, links.filter((link) => link.requirementId !== requirementId))
+        const back = backToPending(ctx, requirement)
+        // Điểm tự sinh không còn dòng kiện nào tự mất, kiện ở các điểm sau đánh số lại (D-73)
+        const pruned = pruneGeneratedStops(trip.stops, trip.packages.filter((pkg) => !lineIds.has(pkg.id)))
+        const packagesLeft = [...pruned.packages]
+        const stops = withStopDemands(pruned.stops, stopDemandsOf(ctx, { id: tripId, packages: packagesLeft }))
+        const stored = put(trips, { ...trip, stops, packages: packagesLeft, inputVersion: trip.inputVersion + 1 })
         // Dòng của yêu cầu đã bị sửa số lượng mang kiện riêng của chuyến: gỡ dòng thì các kiện đó về kho kiện (FE-3b-07)
         syncTripPool(ctx, stored)
         for (const id of requirement.packageIds) {
@@ -126,7 +116,7 @@ export function requirementTripMethods(ctx: DbContext): RequirementTripMethods {
           if (pkg.status !== 'IMPORTED') movePackage(ctx, pkg, 'IMPORTED')
         }
         ctx.log('requirement.unassigned', { type: 'requirement', id: requirementId }, { destinationName: requirement.destinationName, tripId })
-        return backToPending(ctx, requirement)
+        return back
       }),
   }
 }

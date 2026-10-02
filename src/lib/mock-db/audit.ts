@@ -16,6 +16,9 @@ export const AUDIT_ACTIONS = [
   'trip.created',
   'trip.updated',
   'trip.cancelled',
+  // Kiện kho kiện đưa thẳng vào chuyến (FE-4b-05)
+  'trip.packagesAdded',
+  'trip.packageRemoved',
   'optimization.saved',
   'revision.approved',
   'loading.started',

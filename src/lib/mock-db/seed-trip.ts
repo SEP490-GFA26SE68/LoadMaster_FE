@@ -1,5 +1,6 @@
 import type { CargoPackage } from '@/domain/models'
 import { addDays, SEED_ANCHOR_DATE, vnTime } from './clock'
+import { HERO_DEPARTURE_TIME, LONG_BINH_DEPOT } from './seed-depots'
 import { LONG_BINH } from './seed-users'
 import type { Trip } from './types'
 
@@ -35,6 +36,8 @@ export function seedTrip(today: string = SEED_ANCHOR_DATE): Trip {
     name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà',
     vehicleId: 'VEHICLE-002',
     scheduledDate: today,
+    departureAt: vnTime(today, HERO_DEPARTURE_TIME),
+    depot: LONG_BINH_DEPOT,
     driverId: 'US-0004',
     phase: 'planning',
     createdAt: vnTime(addDays(today, -1), '15:20'),

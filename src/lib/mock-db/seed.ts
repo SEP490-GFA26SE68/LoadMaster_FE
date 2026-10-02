@@ -3,6 +3,7 @@ import type { User } from '@/types/user'
 import type { AuditEvent } from './audit'
 import { addDays, vnTime } from './clock'
 import { nextEventId } from './db-context'
+import { LONG_BINH_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
 import { CARGO, CUSTOMERS } from './seed-directory'
 import type { TripPackageLink } from './review1-status'
 import { PHUONG_NAM_DISPATCHER, seedPhuongNam } from './seed-phuong-nam'
@@ -137,7 +138,8 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: SeedPl
     ...CARGO[key], id: `PKG-${String(line + 1).padStart(3, '0')}`, quantity, deliveryStop,
   }))
   let trip: Trip = {
-    id: spec.id, companyId: LONG_BINH, name: spec.name, vehicleId: spec.vehicleId, scheduledDate: day, driverId: spec.driverId, phase: 'planning',
+    id: spec.id, companyId: LONG_BINH, name: spec.name, vehicleId: spec.vehicleId, scheduledDate: day, departureAt: vnTime(day, SEED_DEPARTURE_TIME),
+    depot: LONG_BINH_DEPOT, driverId: spec.driverId, phase: 'planning',
     createdAt: spec.outcome === 'draft' ? vnTime(today, `09:${minute}`) : at(-2, `14:${minute}`), inputVersion: 1,
     stops: spec.stops.map((key, stop) => ({ id: `STOP-${String(stop + 1).padStart(2, '0')}`, ...CUSTOMERS[key] })),
     packages,

@@ -92,12 +92,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.486 test unit + DOM
-pnpm test:e2e      # Playwright: 110 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.535 test unit + DOM
+pnpm test:e2e      # Playwright: 111 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.486/1.486 unit, 110/110 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.535/1.535 unit, 111/111 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

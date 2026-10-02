@@ -42,6 +42,12 @@ export function matchesQuery(fields: string | readonly (string | null | undefine
   return terms.every((term) => text.includes(term))
 }
 
+/** Chữ bắt đầu bằng từ khoá (cùng cách bỏ dấu của `matchesQuery`): xếp gợi ý "khớp từ đầu tên" lên trước (FE-4b-03). Từ khoá rỗng là `false`. */
+export function startsWithQuery(text: string, query: string): boolean {
+  const wanted = normalizeSearchText(query)
+  return wanted !== '' && normalizeSearchText(text).startsWith(wanted)
+}
+
 /** Ô `type="date"` cho gõ năm tới 6 chữ số; năm như vậy so theo chuỗi sẽ sai ("102026" < "2026"). */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
