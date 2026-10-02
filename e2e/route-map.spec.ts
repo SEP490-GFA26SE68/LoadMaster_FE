@@ -54,11 +54,24 @@ test('the route map mounts without a map key: canvas, depot and stop markers, ke
   await region.getByRole('button', { name: 'Phóng to', exact: true }).focus()
   await page.keyboard.press('Enter')
   await expect.poll(() => markerSpread(markers)).toBeGreaterThan(fitted * 1.5)
-  const zoomed = await markerSpread(markers)
+  // Đọc độ giãn sau khi hoạt ảnh phóng đã dừng: lấy mẫu giữa chừng thì phím kế tiếp so với một mốc còn đang lớn dần (máy CI chậm)
+  const settled = async () => {
+    let last = -1
+    await expect.poll(async () => {
+      const now = Math.round(await markerSpread(markers))
+      const same = now === last
+      last = now
+      return same
+    }, { intervals: [300] }).toBe(true)
+    return last
+  }
+  const zoomed = await settled()
   await canvas.focus()
   await page.keyboard.press('+')
   await expect.poll(() => markerSpread(markers)).toBeGreaterThan(zoomed * 1.5)
+  await settled()
   await page.keyboard.press('-')
+  await settled()
   await page.keyboard.press('-')
   await expect.poll(() => markerSpread(markers)).toBeLessThan(zoomed)
   await region.getByRole('button', { name: 'Xem toàn tuyến', exact: true }).click()
