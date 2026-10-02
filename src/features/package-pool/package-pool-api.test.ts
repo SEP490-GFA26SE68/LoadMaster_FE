@@ -3,7 +3,8 @@ import { parseCsv } from '@/features/trips/csv'
 import { createTranslator } from '@/lib/i18n'
 import { getMockDb } from '@/lib/mock-db'
 import {
-  clearPackageFlag, confirmPackageImport, createPackage, downloadPackageImportTemplate, fetchPackageDetail, fetchPackageLabels, fetchPackages, previewPackageImport,
+  clearPackageFlag, confirmPackageImport, createPackage, downloadPackageImportTemplate, fetchPackageDetail, fetchPackageLabels, fetchPackages, lookupPackages,
+  previewPackageImport, reportPackageFound, scanPackage,
 } from './package-pool-api'
 import { importTemplateRows } from './package-pool-import'
 
@@ -88,8 +89,40 @@ test('the CSV template downloads as a file that previews with no error', async (
 
 test('labels carry the type only for packages that have one, and the company of the package', async () => {
   // PK-0001 thùng nước suối gắn loại PT-001; PK-0054 kiện nhập file đi Huế không gắn loại
-  const labels = await fetchPackageLabels(['PK-0054', 'PK-0001', 'PK-9999'])
+  const labels = await fetchPackageLabels({ ids: ['PK-0054', 'PK-0001', 'PK-9999'] })
   expect(labels.map((label) => [label.package.id, label.type?.name, label.owner?.id])).toStrictEqual([
     ['PK-0054', undefined, 'LOG-001'], ['PK-0001', 'Thùng nước suối 24 chai', 'LOG-001'],
   ])
+  // Không chọn kiện nào thì không có nhãn nào: kho kiện có hàng nghìn kiện, không in "tất cả"
+  expect(await fetchPackageLabels({})).toStrictEqual([])
+})
+
+test('the labels of a trip are the pool packages of its instances, in the order of the trip (FE-3b-07)', async () => {
+  // Chuyến nháp TRIP-014: 3 dòng kiện nhập tay, mỗi instance một kiện kho kiện nguồn TRIP
+  const trip = await getMockDb().getTrip('TRIP-014')
+  const labels = await fetchPackageLabels({ tripId: 'TRIP-014' })
+  expect(labels).toHaveLength(trip.packages.reduce((sum, line) => sum + line.quantity, 0))
+  expect(labels.slice(0, 2).map((label) => label.package.packageCode)).toStrictEqual(['PKG-001-01', 'PKG-001-02'])
+  expect(new Set(labels.map((label) => [label.package.source, label.package.tripId].join())) ).toStrictEqual(new Set(['TRIP,TRIP-014']))
+})
+
+test('looking a package up by its QR code or by what was typed returns it with its trip and stop; an unknown code is refused', async () => {
+  const [label] = await fetchPackageLabels({ tripId: 'TRIP-2026-0914' })
+  const token = label?.package.qrToken ?? ''
+  const scanned = await scanPackage(token.toLowerCase())
+  expect(scanned).toMatchObject({ package: { id: label?.package.id, status: 'ASSIGNED' }, trip: { id: 'TRIP-2026-0914' }, stop: { number: 1 } })
+  expect(scanned.stop?.name).toBe((await getMockDb().getTrip('TRIP-2026-0914')).stops[0]?.name)
+  // Kiện còn ở kho kiện: không chuyến, không điểm giao; loại kiện kèm theo khi có
+  expect(await lookupPackages('mp-sh48-0913-01')).toMatchObject([{ package: { id: 'PK-0023' }, type: { id: 'PT-004' }, trip: undefined, stop: undefined }])
+  await expect(scanPackage('LM-0000-0000-0000')).rejects.toMatchObject({ code: 'QR_UNKNOWN' })
+  await expect(lookupPackages('KHONG-CO-MA-NAY')).rejects.toMatchObject({ code: 'QR_UNKNOWN', params: { token: 'KHONG-CO-MA-NAY' } })
+})
+
+test('the warehouse reports a flagged package found: the flag is cleared and the dispatcher gets an event', async () => {
+  // Kiện kho báo thiếu của chuyến TRIP-003 trong seed: về kho kiện kèm cờ "Không tìm thấy"
+  const flagged = (await fetchPackages()).find((pkg) => pkg.source === 'TRIP' && pkg.flags.includes('NOT_FOUND'))
+  getMockDb().restoreSession('US-0003')
+  expect((await reportPackageFound(flagged?.qrToken ?? '')).flags).toStrictEqual([])
+  getMockDb().restoreSession('US-0001')
+  expect((await getMockDb().listEvents())[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { type: 'package', id: flagged?.id } })
 })

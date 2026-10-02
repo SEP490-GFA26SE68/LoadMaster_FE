@@ -1,6 +1,6 @@
 /**
  * Kho kiện của công ty (FE-3b-03, FE-3b-02): loại kiện `/loai-kien`, kho kiện `/kien-hang` (thêm kiện, nhập file, chi tiết kiện),
- * in nhãn `/kien-hang/nhan`. Nhãn trạng thái, cờ và loại hàng của kiện nằm ở nhánh `common` (FE-3b-01, FE-3b-04).
+ * in nhãn `/kien-hang/nhan` (chữ trên nhãn ở nhánh `qr.label`, FE-3b-05). Nhãn trạng thái, cờ và loại hàng của kiện nằm ở nhánh `common` (FE-3b-01, FE-3b-04).
  */
 export const sourcing = {
   /** "50 × 35 × 25 cm · 13 kg" của một loại kiện hoặc một kiện. */
@@ -179,6 +179,7 @@ export const sourcing = {
     emptyReadOnly: 'Điều phối viên thêm kiện hoặc nhập file thì kiện hiện ở đây.',
     add: 'Thêm kiện',
     import: 'Nhập file',
+    lookup: 'Tra cứu kiện',
     added: 'Đã thêm kiện {code} vào kho kiện.',
     search: 'Tìm theo mã kiện, điểm đến, mã QR, đơn hàng, chuyến',
     tabs: { label: 'Lọc theo trạng thái', all: 'Tất cả' },
@@ -221,14 +222,17 @@ export const sourcing = {
     title: 'In nhãn QR',
     print: 'In nhãn',
     back: 'Về kho kiện',
+    backToLookup: 'Về tra cứu kiện',
+    backToTrip: 'Về chuyến {id}',
+    empty: 'Chưa chọn kiện nào để in nhãn.',
     emptyDescription: 'Chọn kiện ở màn Kho kiện rồi bấm "In nhãn QR".',
+    emptyLookup: 'Tra cứu một kiện rồi bấm "In lại nhãn".',
     missing: {
       one: '{count} mã kiện trên đường dẫn không có hoặc không thuộc công ty bạn nên không có nhãn.',
       other: '{count} mã kiện trên đường dẫn không có hoặc không thuộc công ty bạn nên không có nhãn.',
     },
-    hint: 'Khổ A4, hai nhãn mỗi hàng. Khi in, chọn tỷ lệ 100 % để mã QR giữ đúng cỡ.',
+    hint: 'Khổ A4 dọc, bốn nhãn mỗi trang. Khi in, chọn tỷ lệ 100 % để mã QR giữ đúng cỡ.',
     sheet: 'Trang nhãn QR',
-    reference: 'Mã {reference}',
     count: { one: '{count} nhãn có thể in', other: '{count} nhãn có thể in' },
   },
 } as const

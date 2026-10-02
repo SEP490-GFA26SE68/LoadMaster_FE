@@ -12,9 +12,12 @@ import {
   fetchPackages,
   fetchPackageType,
   fetchPackageTypes,
-  findPackageByQr,
+  lookupPackages,
   previewPackageImport,
+  reportPackageFound,
   savePackageType,
+  scanPackage,
+  type LabelSelection,
 } from './package-pool-api'
 import type { PackageImportPreview } from './package-pool-import'
 
@@ -58,9 +61,18 @@ export function usePackageDetailQuery(id: string | null) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'detail', id], queryFn: () => fetchPackageDetail(id ?? ''), enabled: id !== null, staleTime: 0 })
 }
 
-/** Nhãn để in (`/kien-hang/nhan`): `ids` vắng là mọi kiện người đăng nhập thấy. */
-export function usePackageLabelsQuery(ids?: readonly string[]) {
-  return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'labels', ids ?? 'all'], queryFn: () => fetchPackageLabels(ids), staleTime: 0 })
+/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. */
+export function usePackageLabelsQuery(selection: LabelSelection) {
+  return useQuery({
+    queryKey: [...PACKAGE_POOL_KEY, 'labels', selection.tripId ?? null, selection.ids ?? null],
+    queryFn: () => fetchPackageLabels(selection),
+    staleTime: 0,
+  })
+}
+
+/** Tra cứu theo mã đang gõ trên URL (`/tra-cuu-kien?ma=`); `code` rỗng thì không gọi kho. Không khớp: lỗi `QR_UNKNOWN`, không thử lại. */
+export function usePackageLookupQuery(code: string) {
+  return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'lookup', code], queryFn: () => lookupPackages(code), enabled: code !== '', staleTime: 0, retry: false })
 }
 
 /** Tạo kiện đổi kho kiện, loại kiện (đếm kiện đang dùng) và đơn hàng (kiện để chọn). */
@@ -100,6 +112,12 @@ export function useDownloadImportTemplateMutation() {
 }
 
 /** Tra kiện theo mã QR — dạng mutation vì chạy theo cú quét, không phải dữ liệu nền của màn. */
-export function useFindPackageByQrMutation() {
-  return useMutation({ mutationFn: (token: string) => findPackageByQr(token) })
+export function useScanPackageMutation() {
+  return useMutation({ mutationFn: (token: string) => scanPackage(token) })
+}
+
+/** Kho quét thấy lại kiện mang cờ "Không tìm thấy": cờ được gỡ nên kho kiện và kiện để chọn vào đơn đều đổi. */
+export function useReportPackageFoundMutation() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (token: string) => reportPackageFound(token), onSuccess: () => refreshPool(client) })
 }
