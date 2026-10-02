@@ -1,6 +1,5 @@
 import { ChevronLeft, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
-import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { useAuth } from './AuthProvider'
@@ -12,7 +11,7 @@ type ExitTarget = {
    * về màn chính (`exitAction`).
    */
   screenHome: string
-  /** Trang của điều phối viên đã mở màn này, ví dụ chi tiết chuyến. */
+  /** Trang đã mở màn này, ví dụ chi tiết chuyến — chỉ vai trò xem được chuyến quay về đó (`exitAction`). */
   contextual?: string
 }
 
@@ -25,7 +24,7 @@ function useExit({ screenHome, contextual }: ExitTarget) {
     await signOut()
     void navigate('/dang-nhap', { replace: true })
   }
-  return { action, handleSignOut, isContextual: action.kind === 'link' && (action.to === contextual || user?.role === 'dispatcher') }
+  return { action, handleSignOut }
 }
 
 /** Nút thoát cỡ cảm ứng ở thanh trên của màn toàn màn hình. */
@@ -52,28 +51,5 @@ export function ExitIconButton({ label, className, iconClassName, ...target }: E
     <Link to={action.to} aria-label={label} className={classes}>
       <ChevronLeft className={iconClassName} strokeWidth={2} aria-hidden />
     </Link>
-  )
-}
-
-/** Nút hành động cỡ cảm ứng (trạng thái rỗng, xếp xong): cùng quy tắc thoát, chữ nói đúng việc sẽ xảy ra. */
-export function ExitActionButton({ label, variant = 'primary', ...target }: ExitTarget & {
-  /** Chữ khi điều phối viên quay về trang chuyến, ví dụ "Về chi tiết chuyến". */
-  label: string
-  variant?: 'primary' | 'secondary'
-}) {
-  const t = useT()
-  const { action, handleSignOut, isContextual } = useExit(target)
-  if (action.kind === 'signOut') {
-    return (
-      <Button variant={variant} size="touch" onClick={() => void handleSignOut()}>
-        <LogOut strokeWidth={1.5} aria-hidden />
-        {t('nav.signOut')}
-      </Button>
-    )
-  }
-  return (
-    <Button variant={variant} size="touch" asChild>
-      <Link to={action.to}>{isContextual ? label : t('nav.backHome')}</Link>
-    </Button>
   )
 }

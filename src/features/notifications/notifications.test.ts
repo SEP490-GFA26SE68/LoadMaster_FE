@@ -14,8 +14,11 @@ function event(id: string, at: string, actorId: string | null, action: AuditEven
 
 const ids = (events: readonly AuditEvent[]) => events.map((item) => item.id)
 
-test('the dispatcher gets loading, delivery and cancellation events done by others, within seven days', () => {
+test('the dispatcher gets plan approvals, loading, delivery and cancellation events done by others, within seven days', () => {
   const events = [
+    event('EV-12', '2026-09-14T10:30:00.000Z', 'US-PN-03', 'revision.approved'),
+    event('EV-11', '2026-09-14T10:20:00.000Z', 'US-0001', 'revision.approved'),
+    event('EV-10', '2026-09-14T10:10:00.000Z', 'US-PN-03', 'optimization.saved'),
     event('EV-9', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.missing'),
     event('EV-8', '2026-09-14T09:00:00.000Z', 'US-0001', 'trip.cancelled'),
     event('EV-7', '2026-09-14T08:00:00.000Z', 'US-0002', 'trip.cancelled'),
@@ -26,18 +29,20 @@ test('the dispatcher gets loading, delivery and cancellation events done by othe
     event('EV-2', '2026-09-07T11:00:00.000Z', 'US-0003', 'loading.completed'),
     event('EV-1', '2026-09-07T10:59:59.000Z', 'US-0004', 'delivery.completed'),
   ]
-  // EV-8: chính điều phối viên huỷ; EV-5: hoàn tất một điểm giao không phải loại báo; EV-2 đúng mốc 7 ngày còn, EV-1 quá mốc
-  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-9', 'EV-7', 'EV-6', 'EV-4', 'EV-3', 'EV-2'])
+  // EV-12: điều phối viên khác duyệt phương án (FE-0-04); EV-11, EV-8: việc của chính mình; EV-10: lưu kết quả tối ưu và EV-5: hoàn tất
+  // một điểm giao không phải loại báo; EV-2 đúng mốc 7 ngày còn, EV-1 quá mốc
+  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-12', 'EV-9', 'EV-7', 'EV-6', 'EV-4', 'EV-3', 'EV-2'])
 })
 
-test('the manager gets completed and cancelled trips only', () => {
+test('the manager gets completed and cancelled trips and delivery issues; not warehouse progress or plan approvals', () => {
   const events = [
+    event('EV-5', '2026-09-14T10:30:00.000Z', 'US-0001', 'revision.approved'),
     event('EV-4', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.missing'),
     event('EV-3', '2026-09-14T09:00:00.000Z', 'US-0001', 'trip.cancelled'),
     event('EV-2', '2026-09-13T09:00:00.000Z', 'US-0004', 'delivery.issue'),
     event('EV-1', '2026-09-12T09:00:00.000Z', 'US-0004', 'delivery.completed'),
   ]
-  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })
 
 test('the system administrator gets account events by others and failed sign-ins, not routine sign-ins and no trip events', () => {

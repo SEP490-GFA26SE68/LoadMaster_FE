@@ -13,18 +13,23 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
 ]
 
 /**
- * Sự kiện đáng báo cho từng vai trò. Kho và tài xế làm việc trên màn của mình nên không có chuông. Vai trò nền tảng không nhận sự kiện
- * vận hành nào (FE-0-01): quản trị hệ thống chỉ có việc trên tài khoản; quản lý nền tảng và hỗ trợ khách hàng chưa có loại thông báo
- * nào (gói cước, ticket tới Sprint 8). Quản trị công ty nhận cùng loại với quản trị hệ thống, nhưng kho chỉ trả cho họ sự kiện do
- * người của công ty mình làm (FE-0-02); luật theo vai trò là việc của FE-0-08.
+ * Sự kiện đáng báo cho từng vai trò (FE-0-04) — ai cần biết việc gì:
+ * - Điều phối viên: kết quả phương án (đồng nghiệp duyệt), tiến độ kho (thiếu kiện, xếp xong), sự cố giao, chuyến hoàn thành, chuyến
+ *   bị huỷ.
+ * - Quản lý công ty (chỉ đọc, lo hạn giao và báo cáo): chuyến hoàn thành, chuyến bị huỷ, sự cố giao.
+ * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Kho chỉ trả cho quản trị công ty sự kiện do người của công ty mình làm
+ *   (FE-0-02); luật theo vai trò là việc của FE-0-08.
+ * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8); kho và tài xế làm việc trên màn
+ *   của mình. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
+ * Sự kiện của luồng mới (nguy cơ trễ, xác nhận tay chờ duyệt, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
  */
 export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>> = {
   systemAdmin: ACCOUNT_ACTIONS,
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
-  manager: ['delivery.completed', 'trip.cancelled'],
-  dispatcher: ['loading.completed', 'loading.missing', 'delivery.issue', 'delivery.completed', 'trip.cancelled'],
+  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled'],
+  dispatcher: ['revision.approved', 'loading.completed', 'loading.missing', 'delivery.issue', 'delivery.completed', 'trip.cancelled'],
   warehouse: [],
   driver: [],
 }

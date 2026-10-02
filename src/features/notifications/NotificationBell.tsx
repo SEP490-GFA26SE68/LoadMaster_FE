@@ -23,7 +23,8 @@ import { useNotificationsQuery } from './useNotificationsQuery'
  * Chuông thông báo trên thanh điều hướng (LM-098, D-55; V2.3 MenuToanCuc): chấm hổ phách trên icon khi có tin chưa đọc — số nằm trong
  * nhãn đọc của nút và chip cạnh tiêu đề danh sách. Danh sách (nền trắng đặc, không kính) là sự kiện nhật ký liên quan vai trò — mới
  * nhất trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại kho; "Đánh dấu đã đọc" giữ trong phiên. Vai trò
- * không có loại thông báo nào (kho, tài xế) thì không có chuông: không hiện nút không làm gì (D-20).
+ * không có loại thông báo nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) thì không có chuông: không hiện nút không làm gì (D-20).
+ * Nguồn sự kiện của từng vai trò: `NOTIFICATION_ACTIONS`.
  */
 export function NotificationBell() {
   const t = useT()

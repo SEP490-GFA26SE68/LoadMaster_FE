@@ -86,7 +86,10 @@ export function PerfProbe({
     const timer = window.setInterval(() => {
       const current = counters.current
       if (current.renderedFrames === 0) return
-      const idle = isSceneIdle(current.requestedNextFrame, performance.now() - current.lastFrameAt)
+      // `requestedNextFrame` chốt lúc frame cuối ghi xong; frame được xin sau đó (react-spring, con trỏ, effect) chỉ thấy ở đây
+      const state = get()
+      const pendingFrames = state.frameloop === 'always' ? 1 : state.internal.frames
+      const idle = isSceneIdle(current.requestedNextFrame, performance.now() - current.lastFrameAt, pendingFrames)
       if (publishedFrames === current.renderedFrames && publishedIdle === idle) return
       const frameTimeMs = !idle && current.activeIntervals > 0
         ? current.activeElapsedMs / current.activeIntervals
@@ -98,7 +101,7 @@ export function PerfProbe({
         drawCalls: current.drawCalls,
         triangles: current.triangles,
         placementCount,
-        dpr: get().gl.getPixelRatio(),
+        dpr: state.gl.getPixelRatio(),
         qualityTier,
         renderedFrames: current.renderedFrames,
         idle,

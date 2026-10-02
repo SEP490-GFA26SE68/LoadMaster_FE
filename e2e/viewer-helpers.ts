@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
 import type { CameraControls } from '@react-three/drei'
 import type { ComponentRef } from 'react'
 import type { InstancedMesh, Mesh, Vector3Tuple } from 'three'
@@ -11,7 +11,7 @@ import type { InstancedMesh, Mesh, Vector3Tuple } from 'three'
  */
 export const R3F_DEPS = '/node_modules/.vite/deps/@react-three_fiber.js'
 export type R3FModule = Pick<typeof import('@react-three/fiber'), '_roots'>
-type CameraControlsImpl = ComponentRef<typeof CameraControls>
+export type CameraControlsImpl = ComponentRef<typeof CameraControls>
 
 export type ScreenPoint = { x: number; y: number }
 export type SceneSnapshot = {
@@ -67,8 +67,108 @@ export function proxyPoint(page: Page, deltaCm: Vector3Tuple = [0, 0, 0]): Promi
   }, { url: R3F_DEPS, delta: deltaCm })
 }
 
+const CPU_THROTTLE = Number(process.env.E2E_CPU_THROTTLE ?? 0)
+const FRAME_INTERVAL_MS = Number(process.env.E2E_FRAME_INTERVAL_MS ?? 0)
+/** Máy giả lập chậm bao nhiêu lần thì mọi giới hạn chờ nới bấy nhiêu lần; chạy thường là 1. */
+const SLOWDOWN = Math.max(1, CPU_THROTTLE, FRAME_INTERVAL_MS / 16)
+/** Giới hạn cho một lần chờ scene: 30 giây, nới theo mức giả lập máy chậm. */
+export const SCENE_WAIT_MS = 30_000 * SLOWDOWN
+
+/**
+ * Dựng lại máy CI chậm tại chỗ để soát test đo theo thời gian. Mặc định tắt cả hai:
+ * - `E2E_CPU_THROTTLE=20` (hoặc 40) hãm luồng chính của trang qua CDP: React và JS chậm đi;
+ * - `E2E_FRAME_INTERVAL_MS=350` giãn `requestAnimationFrame` ra ít nhất chừng đó ms, như renderer phần mềm 2–4 FPS — CDP không
+ *   hãm tiến trình GPU nên riêng hãm CPU không dựng lại được số frame thấp.
+ * Gọi sau `login()`: riêng việc mở app bản dev dưới hãm 40× đã mất 1–8 phút mỗi test (tuỳ máy đang bận tới đâu) mà không soát
+ * được gì ở màn 3D. Giờ của test và giới hạn chờ nới theo cùng hệ số: thứ được soát là thứ tự và điều kiện chờ, không phải tổng
+ * thời gian.
+ */
+export async function emulateSlowMachine(page: Page, testInfo: TestInfo) {
+  if (SLOWDOWN > 1) {
+    testInfo.setTimeout(testInfo.timeout * SLOWDOWN)
+    page.setDefaultTimeout(SCENE_WAIT_MS)
+  }
+  if (FRAME_INTERVAL_MS > 0) {
+    await page.evaluate((interval) => {
+      // Mỗi callback vẫn chạy trong một animation frame thật của riêng nó (giữ điểm xả microtask giữa các callback, thứ
+      // react-spring dựa vào để xin frame kế); chỉ nhịp frame bị giãn ra. Mã tự cấp đủ lớn để không lẫn với mã của trình duyệt.
+      type Entry = { id: number; callback: FrameRequestCallback; native?: number }
+      const FIRST_ID = 2 ** 30
+      const request = window.requestAnimationFrame.bind(window), cancel = window.cancelAnimationFrame.bind(window)
+      let queue: Entry[] = [], flying: Entry[] = [], nextId = FIRST_ID, scheduled = false, lastFrameAt = -Infinity
+      const flush = () => {
+        scheduled = false
+        lastFrameAt = performance.now()
+        flying = queue
+        queue = []
+        for (const entry of flying) {
+          entry.native = request((time) => { flying = flying.filter((other) => other !== entry); entry.callback(time) })
+        }
+      }
+      window.requestAnimationFrame = (callback) => {
+        const entry: Entry = { id: nextId++, callback }
+        queue.push(entry)
+        if (!scheduled) { scheduled = true; window.setTimeout(flush, Math.max(0, lastFrameAt + interval - performance.now())) }
+        return entry.id
+      }
+      window.cancelAnimationFrame = (id) => {
+        if (id < FIRST_ID) { cancel(id); return }
+        const entry = flying.find((other) => other.id === id)
+        if (entry?.native !== undefined) cancel(entry.native)
+        queue = queue.filter((other) => other.id !== id)
+        flying = flying.filter((other) => other.id !== id)
+      }
+    }, FRAME_INTERVAL_MS)
+  }
+  if (CPU_THROTTLE > 1) {
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE })
+  }
+}
+
 export async function waitIdle(page: Page) {
   await page.waitForFunction(() => document.querySelector<HTMLElement>('[data-viewer-performance]')?.dataset.idle === 'true')
+}
+
+/**
+ * Chờ demand loop dừng thật: canvas đã vẽ ít nhất một frame, R3F không còn nợ frame nào (`internal.frames === 0`) và renderer
+ * không vẽ thêm frame nào suốt `quietMs`. Đọc thẳng R3F như `waitCameraSettled`: overlay lấy mẫu 500 ms một lần nên ngay sau thao
+ * tác nó còn giữ mẫu "nghỉ" cũ, và một nhịp chờ cố định thì máy chậm chưa kịp vẽ xong.
+ *
+ * Hỏi bằng `requestIdleCallback`: lượt hỏi lúc luồng chính rảnh mới được kết luận sau `quietMs`. Khi React còn đang dựng lại
+ * scene (chưa commit nên chưa xin frame nào) thì luồng chính không rảnh, quãng lặng giữa cú bấm và lần commit không bị tính là
+ * nghỉ. Trình duyệt không cho lượt rảnh nào (dưới hãm CPU của CDP có lúc cả phút) thì hỏi theo hẹn giờ và đòi lặng gấp năm lần.
+ * Việc đến sau một timer dài hơn thế thì hàm này không đoán trước được: khi đó chờ hiệu ứng của thao tác hiện ra trong scene
+ * rồi mới gọi.
+ */
+export async function waitDemandIdle(page: Page, quietMs = 1_000) {
+  await page.evaluate(async ({ url, quietMs, timeoutMs }) => {
+    const { _roots } = (await import(url)) as R3FModule
+    await new Promise<void>((resolve, reject) => {
+      let since = performance.now(), quietSince = since, drawn = 0
+      const ask = (deadline: IdleDeadline) => {
+        const now = performance.now(), canvas = document.querySelector('canvas')
+        const s = canvas ? _roots.get(canvas)?.store.getState() : undefined
+        const frame = s?.gl ? s.gl.info.render.frame : 0
+        // Frame đầu vừa ra: tính giờ lại, phần chờ màn dựng xong không ăn vào phần chờ loop dừng
+        if (frame > 0 && drawn === 0) since = now
+        if (!s || frame === 0 || s.internal.frames > 0 || frame !== drawn) quietSince = now
+        drawn = frame
+        if (now - quietSince >= (deadline.didTimeout ? quietMs * 5 : quietMs)) resolve()
+        else if (now - since > timeoutMs) reject(new Error(`${drawn ? 'demand loop did not stop' : 'the 3D canvas drew nothing'} within ${timeoutMs / 1000} s`))
+        else requestIdleCallback(ask, { timeout: 250 })
+      }
+      requestIdleCallback(ask, { timeout: 250 })
+    })
+  }, { url: R3F_DEPS, quietMs, timeoutMs: SCENE_WAIT_MS })
+}
+
+/** Số frame renderer đã vẽ, đọc thẳng từ three.js: không qua overlay nên không trễ theo nhịp lấy mẫu của nó. */
+export function drawnFrames(page: Page): Promise<number> {
+  return page.evaluate(async (url) => {
+    const { _roots } = (await import(url)) as R3FModule
+    return _roots.get(document.querySelector('canvas')!)!.store.getState().gl.info.render.frame
+  }, R3F_DEPS)
 }
 
 /**
@@ -79,7 +179,7 @@ export async function waitIdle(page: Page) {
  * và vị trí, hướng, đích camera không đổi qua ba animation frame liên tiếp.
  */
 export async function waitCameraSettled(page: Page) {
-  await page.evaluate(async (url) => {
+  await page.evaluate(async ({ url, timeoutMs }) => {
     const { _roots } = (await import(url)) as R3FModule
     const store = _roots.get(document.querySelector('canvas')!)!.store
     const started = performance.now()
@@ -92,12 +192,12 @@ export async function waitCameraSettled(page: Page) {
         previous = pose
         ticks++
         if (ticks > 2 && stableTicks >= 3) resolve()
-        else if (performance.now() - started > 30_000) reject(new Error('camera did not settle within 30 s'))
+        else if (performance.now() - started > timeoutMs) reject(new Error(`camera did not settle within ${timeoutMs / 1000} s`))
         else requestAnimationFrame(tick)
       }
       requestAnimationFrame(tick)
     })
-  }, R3F_DEPS)
+  }, { url: R3F_DEPS, timeoutMs: SCENE_WAIT_MS })
 }
 
 /** Tư thế đích camera-controls đang hướng tới: vị trí rồi tâm nhìn. */
@@ -118,7 +218,7 @@ function cameraGoal(page: Page): Promise<number[]> {
 export async function renderCameraChange(page: Page, action: () => Promise<unknown>) {
   const previous = await cameraGoal(page)
   await action()
-  await page.evaluate(async ({ url, previous }) => {
+  await page.evaluate(async ({ url, previous, timeoutMs }) => {
     const { _roots } = (await import(url)) as R3FModule
     const store = _roots.get(document.querySelector('canvas')!)!.store
     const started = performance.now()
@@ -127,12 +227,12 @@ export async function renderCameraChange(page: Page, action: () => Promise<unkno
         const s = store.getState(), controls = s.controls as CameraControlsImpl
         const goal = [...controls.getPosition(s.camera.position.clone(), true).toArray(), ...controls.getTarget(s.camera.position.clone(), true).toArray()]
         if (goal.some((value, i) => value !== previous[i])) resolve()
-        else if (performance.now() - started > 30_000) reject(new Error('camera goal did not change within 30 s'))
+        else if (performance.now() - started > timeoutMs) reject(new Error(`camera goal did not change within ${timeoutMs / 1000} s`))
         else requestAnimationFrame(tick)
       }
       tick()
     })
-  }, { url: R3F_DEPS, previous })
+  }, { url: R3F_DEPS, previous, timeoutMs: SCENE_WAIT_MS })
   await waitCameraSettled(page)
 }
 

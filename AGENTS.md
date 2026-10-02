@@ -63,9 +63,16 @@ kiện, 48 kiện đăng ký, 2 đơn) thuộc Long Bình; Phương Nam có bộ
 nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
 `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
-ô đó tới khi có màn riêng. Mục điều hướng khai `roles` trong `NAV_ITEMS` khi chỉ hiện cho vai trò dùng nó hằng ngày (Đơn hàng của điều phối);
-điều phối viên có mục **Kiện hàng** (`/kien-hang`, FE-0-06) — Loại kiện và In nhãn không có mục riêng, mở từ màn Kiện hàng (nút "Loại kiện" trên
-dải tiêu đề, nút quay lại ở hai màn kia); vai trò chưa có mục nào (quản lý nền tảng, hỗ trợ khách hàng) thì thanh không vẽ khay điều hướng.
+ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
+`NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
+chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Chuyến hàng ·
+Đội xe. Điều phối viên: Chuyến hàng · Kiện hàng · Đơn hàng · Đội xe · Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
+họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
+quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
+đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kiện hàng (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
+màn Đội xe. `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi
+nhóm tìm nhanh của từng vai trò là route có thật mà vai trò mở được; mọi màn có tiêu đề tab và nhánh `titles` không còn tên của màn đã bỏ — bỏ
+một route hay một quyền mà quên các chỗ đó là test đỏ.
 Nhật ký và chuông chỉ biến đối tượng thành liên kết khi người xem có quyền mở trang đích (`describeEvent(…, can)`) —
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
@@ -75,7 +82,7 @@ Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "
 trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
 nhân viên kho và tài xế **ở màn danh sách** thì **đăng xuất** (màn chính của họ), **trong phiên xếp / trong chuyến** thì về danh sách
-(`/kho`, `/tai-xe`, LM-086/087); vai trò khác về màn chính của mình (luật "điều phối viên về trang chuyến" còn trong `exitAction`, nhưng từ FE-0-01 chỉ nhân viên kho và tài xế mở được hai màn này). *(đã điều chỉnh 26/09/2026, V2.3)* Điều hướng là **thanh ngang 60 px trên dải trời** ở đầu trang (`app/NavRail.tsx`): logo
+(`/kho`, `/tai-xe`, LM-086/087); vai trò khác về màn chính của mình. *(đã điều chỉnh 02/10/2026, FE-0-04)* Vai trò xem được chuyến về trang chuyến đã mở màn đó: `exitAction` hỏi quyền `trips.view`, không hỏi tên vai trò — từ FE-0-01 chỉ nhân viên kho và tài xế mở được hai màn này nên chưa ai đi tới nhánh đó. *(đã điều chỉnh 26/09/2026, V2.3)* Điều hướng là **thanh ngang 60 px trên dải trời** ở đầu trang (`app/NavRail.tsx`): logo
 trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ · chuông · tài khoản phải. Mục đang mở nằm dưới kính cyan
 (trong + viền + quầng, `--nav-on`), và kính đó là **chỉ báo trượt theo con trỏ** (`useGlassFollow`, `.glass-follow`): bám mục
 đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục đang mở chỉ có chữ trắng 600, **không** nền
@@ -86,7 +93,14 @@ rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên d�
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
-đo lại ở 1.366 px.
+đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý công ty ở cả hai ngôn ngữ).
+*(đã điều chỉnh 02/10/2026, FE-0-04)* **Tìm nhanh theo vai trò**: quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm
+chuyến, kiện, đơn hàng, xe; điều phối viên thêm kiện đã đăng ký và loại kiện; kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng không có nhóm
+nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
+(`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
+huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao; quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
+vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó;
+chuông **chưa lọc theo công ty** (FE-0-02).
 
 ### MVP theo Build Spec *(bổ sung 15/09/2026)*
 
@@ -980,7 +994,8 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   chưa có là `DRAFT`. Dòng phụ `tripSubStatus`, hiện bằng `TripSubStatusTag`: dưới `PLANNED` là `awaitingApproval` · `approved` · `stale`
   (theo revision hiển thị: bản duyệt mới nhất, không có thì bản mới nhất), dưới `LOADING` là `loading` đã ghi / tổng · `loaded`. Lọc/nhóm
   theo trạng thái; logic kho, tài xế và số "cần bạn xử lý" theo pha hoặc dòng phụ. Tab danh sách chuyến: Tất cả · Nháp · Đã lập kế hoạch
-  (thêm số hổ phách: chờ duyệt + lỗi thời) · Đang xếp hàng · Đang vận chuyển · Đã giao · Đã huỷ; `trang-thai` trên URL là slug không dấu
+  (thêm số hổ phách: chờ duyệt + lỗi thời; *(đã điều chỉnh 02/10/2026, FE-0-04)* chữ và số "cần bạn xử lý" — ở dòng số dưới tiêu đề và trên
+  tab — chỉ hiện với người có `plans.approve`, quản lý công ty chỉ thấy các số thường) · Đang xếp hàng · Đang vận chuyển · Đã giao · Đã huỷ; `trang-thai` trên URL là slug không dấu
   (`nhap`, `da-lap-ke-hoach`, `dang-xep-hang`, `dang-van-chuyen`, `da-giao`, `da-huy`), giá trị cũ (`da_duyet`, `hoan_thanh`, `sap-chay`,
   `dang_giao`…) đọc sang slug mới (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện,
   tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành
@@ -1037,6 +1052,10 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   - Cửa sổ lấy mẫu animation tính từ lúc animation **hiện ra**, không từ lúc bấm: máy chậm tiêu hết cửa sổ cho quãng bấm → React
     render → spring chạy.
   - Root R3F lấy theo canvas **đang có mặt** và chờ nó xuất hiện (`_roots.get(canvas)`), vì canvas có thể vừa được dựng lại.
+  - Chờ scene nghỉ bằng `waitDemandIdle` (đọc thẳng R3F lúc luồng chính rảnh: không còn frame được xin, renderer không vẽ thêm), không
+    theo `data-idle` của overlay — overlay lấy mẫu 500 ms một lần nên còn giữ mẫu cũ. Lấy mẫu animation tới khi nó **chạy xong**, không
+    theo cửa sổ thời gian: react-spring tiến tối đa 64 ms mỗi frame, hình dỡ 260 ms cần 5 frame. CDP không hãm tiến trình GPU: dựng lại
+    2–4 FPS bằng `E2E_FRAME_INTERVAL_MS`, hãm CPU bằng `E2E_CPU_THROTTLE` (`emulateSlowMachine` ở `e2e/viewer-helpers.ts`).
 - *(bổ sung 23/09/2026)* Playwright **cuộn được cả vùng `overflow-hidden` bằng code** (`scrollIntoView` trước mỗi thao tác), nên màn
   người dùng không lăn được vẫn xanh. Kiểm cuộn bằng `page.mouse.wheel` (`layout-1366.spec.ts`, test "mouse wheel"); thêm màn cuộn
   dài mới thì thêm vào danh sách của test đó.

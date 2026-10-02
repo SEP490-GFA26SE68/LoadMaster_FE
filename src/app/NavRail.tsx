@@ -1,17 +1,4 @@
-import {
-  Box,
-  ClipboardList,
-  LayoutDashboard,
-  LogOut,
-  Package,
-  ScrollText,
-  Tablet,
-  Truck,
-  UserRound,
-  Users,
-  Warehouse,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { LogOut, UserRound } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { LanguageMenu } from '@/components/LanguageMenu'
@@ -25,42 +12,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { ROLE_HOME } from '@/features/auth/landing'
-import type { Permission } from '@/features/auth/permissions'
-import { useCan } from '@/features/auth/useCan'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { QuickSearch } from '@/features/search/QuickSearch'
-import { useT, type MessageKey } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { initialsOf, type Role } from '@/types/user'
+import { initialsOf } from '@/types/user'
+import { logoPath, navItemsFor } from './nav-items'
 import { useGlassFollow } from './useGlassFollow'
-
-type NavItem = {
-  to: string
-  labelKey: MessageKey
-  icon: LucideIcon
-  /** Mục chỉ hiện khi người đăng nhập có quyền mở màn đích (D-41). */
-  permission: Permission
-  /**
-   * Chỉ hiện cho các vai trò này (thêm vào điều kiện quyền): mục chỉ hiện cho vai trò dùng nó hằng ngày; vai trò khác có quyền (quản
-   * lý công ty xem đơn hàng) vẫn mở được màn bằng đường dẫn.
-   */
-  roles?: readonly Role[]
-}
-
-/** Thứ tự và nhãn lấy từ thanh điều hướng trong bản design. */
-const NAV_ITEMS = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
-  { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
-  // Điều phối: đơn hàng (LM-104) và kiện đăng ký — từ FE-0-06 là màn của điều phối; Loại kiện và In nhãn mở từ màn Kiện hàng
-  { to: '/don-hang', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view', roles: ['dispatcher'] },
-  { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.manage' },
-  { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
-  { to: '/tai-xe', labelKey: 'nav.driver', icon: Box, permission: 'driver.operate' },
-  { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
-  { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
-  { to: '/nhat-ky', labelKey: 'nav.audit', icon: ScrollText, permission: 'audit.view' },
-] as const satisfies readonly NavItem[]
 
 /** Ảnh đại diện chữ tắt tròn, gradient cyan (V2.3 `.avatar`) — chỉ ở thanh điều hướng và menu tài khoản (AGENTS mục 5). */
 function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
@@ -82,14 +40,15 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
  * (`.glass-nav`), tìm nhanh · ngôn ngữ · chuông · tài khoản phải. Nền cyan kính là **chỉ báo trượt theo con trỏ**
  * (`useGlassFollow`, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Mục đang mở chỉ có chữ trắng
  * 600 và icon `--cyan-200`, không nền riêng — hai lớp nền sẽ chồng nhau. Dưới 1.340px mục chỉ còn icon, tên nằm ở `aria-label`.
+ * Mục và thứ tự theo vai trò khai ở `nav-items.ts` (FE-0-04).
  */
 export function NavRail() {
   const t = useT()
   const { user, signOut } = useAuth()
-  const can = useCan()
   const navigate = useNavigate()
   const { navRef, followRef } = useGlassFollow<HTMLElement>()
-  const items = NAV_ITEMS.filter((item: NavItem) => can(item.permission) && (item.roles === undefined || (user !== null && item.roles.includes(user.role))))
+  // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
+  const items = user ? navItemsFor(user.role) : []
 
   async function handleSignOut() {
     await signOut()
@@ -99,7 +58,7 @@ export function NavRail() {
   return (
     <header className="sky flex h-15 flex-none items-center gap-5 px-4 xl:gap-6 xl:px-shell">
       <Link
-        to={can('dashboard.view') || !user ? '/' : ROLE_HOME[user.role]}
+        to={logoPath(user?.role)}
         aria-label={t('nav.home')}
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >

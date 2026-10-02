@@ -152,3 +152,18 @@ test('the system administrator: empty at first, then account events by others an
     { text: ['Đăng nhập không thành công', 'ai-do@example.vn'], href: null },
   ])
 })
+
+/** FE-0-04: điều phối viên duyệt phương án (FE-0-07) — bản đồng nghiệp duyệt là "kết quả phương án" điều phối viên khác cần biết. */
+test('a plan approved by a colleague reaches the dispatcher bell and opens the trip', async () => {
+  const user = userEvent.setup()
+  const dispatcher = renderBell('dispatcher')
+  // Hoàng Đức Anh (US-0009), điều phối viên cùng công ty, duyệt bản REV-001 của chuyến chính
+  await actAs('US-0009', dispatcher.id, () => getMockDb().approveRevision('REV-001', []))
+  await user.click(screen.getByRole('button', { name: /^Thông báo/ }))
+  await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Duyệt phương án'), SLOW)
+  const [newest] = notificationRows()
+  expect({ text: newest?.text, unread: newest?.unread, href: newest?.href }).toStrictEqual({
+    text: ['Duyệt phương án', 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà · TRIP-2026-0914'], unread: true, href: '/chuyen/TRIP-2026-0914',
+  })
+  expect(part(menuItems()[0] ?? document.body, 'meta')).toMatch(/^Hoàng Đức Anh · /)
+})
