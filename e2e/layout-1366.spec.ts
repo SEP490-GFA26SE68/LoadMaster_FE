@@ -74,6 +74,14 @@ const SCREENS: readonly Screen[] = [
     },
   },
   {
+    // FE-3b-06: thẻ kiện của Tra cứu kiện — mã và điểm đến xuống dòng, không cắt
+    name: 'lookup',
+    route: '/tra-cuu-kien?ma=PK-0054',
+    ready: async (page) => {
+      await expect(page.getByRole('region', { name: 'Kiện PB-HUE-2609-01', exact: true })).toBeVisible()
+    },
+  },
+  {
     name: 'dashboard',
     route: '/',
     ready: async (page) => {
@@ -112,7 +120,7 @@ const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
   { name: 'fleet', role: 'dispatcher', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
   // FE-0-06: hai màn kiện là của điều phối viên
   { name: 'packages', role: 'dispatcher', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /PK-00/ }).first()).toBeVisible() } },
-  { name: 'labels', role: 'dispatcher', route: '/kien-hang/nhan', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
+  { name: 'labels', role: 'dispatcher', route: '/kien-hang/nhan?kien=PK-0001,PK-0054,PK-0063,PK-0078', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
   { name: 'audit', role: 'systemAdmin', route: '/nhat-ky', ready: async (page) => { await expect(page.getByRole('row')).not.toHaveCount(0) } },
   { name: 'users', role: 'systemAdmin', route: '/nguoi-dung', ready: async (page) => { await expect(page.getByRole('row', { name: /Nguyễn Thanh Tùng/ })).toBeVisible() } },
 ]

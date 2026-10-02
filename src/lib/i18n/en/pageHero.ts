@@ -14,6 +14,7 @@ export const pageHero = {
   packageTypes: 'Size, weight and stacking templates set on pool packages.',
   packages: 'Your company packages: add one by one or import a file, print QR labels, follow status until delivery.',
   labels: 'QR labels of pool packages, printed to stick on each package.',
+  lookup: 'Scan or type a code to see the status and trip of a package, and reprint its label.',
   orders: 'Transport orders built from packages received at the warehouse, assigned to trip stops.',
   vehicleTypes: 'Cargo dimensions and payload by vehicle type.',
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',

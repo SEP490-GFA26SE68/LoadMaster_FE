@@ -38,6 +38,7 @@ export function importProblemMessage(problem: ImportProblem, t: TFunction, forma
     case 'BOOLEAN_INVALID':
     case 'ORIENTATION_INVALID':
     case 'FRAGILITY_INVALID':
+    case 'HANDLING_CLASS_INVALID':
       return t(`trips.import.errors.${problem.code}`, { column: columnTitle(problem.field, t), value: problem.value })
     case 'SCHEMA': {
       const message = schemaMessage(problem.issue, t)

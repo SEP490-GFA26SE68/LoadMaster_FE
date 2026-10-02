@@ -30,6 +30,7 @@ import { readiness } from './vi/readiness'
 import { vehicleTypes } from './vi/vehicleTypes'
 import { tripReport } from './vi/tripReport'
 import { runs } from './vi/runs'
+import { lookup } from './vi/lookup'
 import { map } from './vi/map'
 
 /**
@@ -74,5 +75,6 @@ export const vi = {
   vehicleTypes,
   tripReport,
   runs,
+  lookup,
   map,
 } as const

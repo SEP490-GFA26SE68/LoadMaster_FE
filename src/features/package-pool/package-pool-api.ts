@@ -1,13 +1,14 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   fetchPackageDetail            → GET /api/packages/{id}
- *   findPackageByQr               → GET /api/packages/scan/{qrToken}
+ *   scanPackage                   → GET /api/packages/scan/{qrToken}
  *   previewPackageImport          → POST /api/packages/import/preview
  *   confirmPackageImport          → POST /api/packages/import/confirm
  *   downloadPackageImportTemplate → GET /api/packages/import/template
  *   fetchPackageLabels            → POST /api/packages/export/labels
- *   chưa có ở BE: fetchPackageTypes, fetchPackageType, savePackageType, deletePackageType, fetchPackages, createPackage, clearPackageFlag
- *   tên sẽ đổi khi nối BE: findPackageByQr → scanPackage, fetchPackageLabels → exportPackageLabels
+ *   chưa có ở BE: fetchPackageTypes, fetchPackageType, savePackageType, deletePackageType, fetchPackages, createPackage, clearPackageFlag,
+ *   lookupPackages (tra theo mã của bên gửi), reportPackageFound (kho quét thấy lại kiện mang cờ)
+ *   tên sẽ đổi khi nối BE: fetchPackageLabels → exportPackageLabels
  */
 
 import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-import-template'
@@ -66,10 +67,53 @@ export async function fetchPackageDetail(id: string): Promise<PackageDetail> {
   }
 }
 
-/** Tra kiện theo mã QR (quét hoặc gõ tay); không có: `QR_UNKNOWN`. */
+/** Một kiện của màn Tra cứu kiện (FE-3b-06): kiện, loại kiện, và chuyến + điểm giao đang giữ kiện (nếu có). */
+export type PackageLookup = {
+  readonly package: Package
+  readonly type: PackageType | undefined
+  readonly trip: { readonly id: string; readonly name: string } | undefined
+  readonly stop: { readonly number: number; readonly name: string } | undefined
+}
+
+async function withPlace(packages: readonly Package[]): Promise<PackageLookup[]> {
+  const db = getMockDb()
+  const tripIds = [...new Set(packages.flatMap((pkg) => pkg.tripId ?? []))]
+  const [types, trips] = await Promise.all([db.listPackageTypes(), Promise.all(tripIds.map((id) => db.getTrip(id)))])
+  const tripById = new Map(trips.map((trip) => [trip.id, trip]))
+  return packages.map((pkg) => {
+    const trip = pkg.tripId === undefined ? undefined : tripById.get(pkg.tripId)
+    const stopIndex = trip?.stops.findIndex((stop) => stop.id === pkg.stopId) ?? -1
+    const stop = trip?.stops[stopIndex]
+    return {
+      package: pkg,
+      type: types.find((type) => type.id === pkg.packageTypeId),
+      trip: trip ? { id: trip.id, name: trip.name } : undefined,
+      stop: stop ? { number: stopIndex + 1, name: stop.name } : undefined,
+    }
+  })
+}
+
+/** Tra kiện theo mã QR vừa quét; không có, hoặc là kiện của công ty khác: `QR_UNKNOWN`. */
 // GET /api/packages/scan/{qrToken}
-export function findPackageByQr(token: string): Promise<Package> {
-  return getMockDb().findPackageByQr(token)
+export async function scanPackage(token: string): Promise<PackageLookup> {
+  const [found] = await withPlace([await getMockDb().findPackageByQr(token)])
+  if (!found) throw new MockDbError('QR_UNKNOWN', { token })
+  return found
+}
+
+/**
+ * Tra kiện theo mã người dùng gõ: mã QR, mã của bên gửi hoặc mã của kho. Mã của bên gửi trùng nhau thì trả mọi kiện khớp, mới nhất
+ * trước; không khớp kiện nào của công ty: `QR_UNKNOWN`.
+ */
+// chưa có ở BE (GET /api/packages/scan/{qrToken} chỉ nhận mã QR)
+export async function lookupPackages(code: string): Promise<PackageLookup[]> {
+  return withPlace(await getMockDb().lookupPackages(code))
+}
+
+/** Nhân viên kho quét thấy lại kiện mang cờ "Không tìm thấy" (D-92): gỡ cờ, kho ghi sự kiện để điều phối viên được báo. */
+// chưa có ở BE
+export function reportPackageFound(token: string): Promise<Package> {
+  return getMockDb().reportPackageFound(token)
 }
 
 /** Thêm một kiện vào kho kiện: `IMPORTED`, nguồn `MANUAL`, mã QR cấp ngay. Dữ liệu sai: `PACKAGE_INVALID`. */
@@ -126,15 +170,23 @@ export function downloadPackageImportTemplate(format: 'xlsx' | 'csv', rows: read
 /** Một nhãn để in: kiện, loại kiện (nếu kiện gắn loại) và công ty của kiện. */
 export type PackageLabel = { readonly package: Package; readonly type: PackageType | undefined; readonly owner: Company | undefined }
 
-/** Nhãn của các kiện `ids` theo đúng thứ tự (bỏ mã không có trong kho); `ids` vắng là mọi kiện kho trả về. */
+/** Kiện cần nhãn: các kiện `ids` theo đúng thứ tự, hoặc mọi kiện kho kiện của chuyến `tripId` theo thứ tự kiện trong chuyến. */
+export type LabelSelection = { readonly ids?: readonly string[]; readonly tripId?: string }
+
+/**
+ * Nhãn của các kiện được chọn (bỏ mã không có trong kho hay của công ty khác). In lại giữ nguyên mã QR của kiện (D-71). Không chọn gì
+ * thì không có nhãn nào — kho kiện có hàng nghìn kiện, không in "tất cả".
+ */
 // POST /api/packages/export/labels
-export async function fetchPackageLabels(ids?: readonly string[]): Promise<PackageLabel[]> {
+export async function fetchPackageLabels({ ids, tripId }: LabelSelection): Promise<PackageLabel[]> {
   const db = getMockDb()
+  const wanted = tripId === undefined ? (ids ?? []) : (await db.listTripLabels(tripId)).map((label) => label.poolPackageId)
+  if (wanted.length === 0) return []
   const [packages, types, companies] = await Promise.all([db.listPackages(), db.listPackageTypes(), db.listCompanies()])
   const typeById = new Map(types.map((type) => [type.id, type]))
   const companyById = new Map(companies.map((company) => [company.id, company]))
   const byId = new Map(packages.map((pkg) => [pkg.id, pkg]))
-  const picked = ids === undefined ? packages : ids.flatMap((id) => byId.get(id) ?? [])
+  const picked = wanted.flatMap((id) => byId.get(id) ?? [])
   return picked.map((pkg) => ({
     package: pkg,
     type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId),

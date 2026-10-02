@@ -36,7 +36,7 @@ function eventText(entry: PackageHistoryLine, t: TFunction): string {
 /**
  * Panel chi tiết kiện (FE-3b-03), cột phải của bảng kho kiện: mã QR (kèm mã chữ), thông tin kiện, đơn và chuyến đang giữ kiện, cờ và
  * lịch sử. Lịch sử là `Package.history` kho ghi ở từng lần tạo, chuyển trạng thái, gắn và gỡ cờ — không suy ở màn. Điều phối viên
- * (`packages.manage`) có nút In nhãn và Gỡ cờ; quản lý công ty chỉ đọc. Nền đặc, viền 1 px — bề mặt đọc lâu, không dùng kính.
+ * có nút In nhãn (`labels.print`) và Gỡ cờ (`packages.manage`); quản lý công ty chỉ đọc. Nền đặc, viền 1 px — bề mặt đọc lâu, không dùng kính.
  * Mở hoặc đổi kiện thì con trỏ về tiêu đề panel.
  */
 export function PackageDetailPanel({ id, packageId, onClose }: {
@@ -48,6 +48,7 @@ export function PackageDetailPanel({ id, packageId, onClose }: {
   const format = useFormat()
   const can = useCan()
   const canManage = can('packages.manage')
+  const canPrint = can('labels.print')
   const titleId = useId()
   const titleRef = useRef<HTMLHeadingElement>(null)
   const query = usePackageDetailQuery(packageId)
@@ -98,7 +99,7 @@ export function PackageDetailPanel({ id, packageId, onClose }: {
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto p-4">
           <div className="flex flex-col items-center gap-3">
             <QrCode token={pkg.qrToken} size={148} showToken />
-            {canManage ? (
+            {canPrint ? (
               <Button variant="secondary" size="sm" asChild>
                 <Link to={labelsPath([pkg.id])}><Printer strokeWidth={1.5} />{t('sourcing.detail.printLabel')}</Link>
               </Button>

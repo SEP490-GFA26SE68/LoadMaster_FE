@@ -3,6 +3,7 @@ import type { CargoPackage } from '@/domain/models'
 import { found, nextId, optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { movePackage } from './db-packages'
+import { syncTripPool } from './db-trip-packages'
 import { MockDbError } from './errors'
 import type { Package } from './package-model'
 import { cargoFromPackage } from './package-type-cargo'
@@ -166,7 +167,8 @@ export function orderMethods(ctx: DbContext): OrderMethods {
         if (trip && trip.phase !== 'planning' && trip.phase !== 'cancelled') throw new MockDbError('TRIP_LOCKED', { tripId: trip.id, phase: trip.phase })
         if (trip && assignment && trip.phase === 'planning') {
           const lineIds = new Set(assignment.lines.map((line) => line.lineId))
-          put(trips, { ...trip, packages: trip.packages.filter((pkg) => !lineIds.has(pkg.id)), inputVersion: trip.inputVersion + 1 })
+          // Dòng của đơn đã bị sửa số lượng mang kiện riêng của chuyến: gỡ dòng thì các kiện đó về kho kiện (FE-3b-07)
+          syncTripPool(ctx, put(trips, { ...trip, packages: trip.packages.filter((pkg) => !lineIds.has(pkg.id)), inputVersion: trip.inputVersion + 1 }))
         }
         // Chuyến đã huỷ thì kiện đã về kho kiện lúc huỷ (`releaseTripPackages`)
         for (const id of order.packageIds) {

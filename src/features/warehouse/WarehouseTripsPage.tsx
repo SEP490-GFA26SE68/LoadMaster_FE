@@ -1,3 +1,5 @@
+import { ScanLine } from 'lucide-react'
+import { Link } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { EmptyState } from '@/components/EmptyState'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
@@ -5,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { useWarehouseTripsQuery } from './useWarehouseQueries'
 import { WarehouseTripCard } from './WarehouseTripCard'
@@ -12,10 +15,11 @@ import { WarehouseTripCard } from './WarehouseTripCard'
 /**
  * Màn chính của nhân viên kho (LM-086, D-46): chuyến đã duyệt chờ xếp, đang xếp, và chuyến có bản duyệt lỗi thời (không bắt đầu được).
  * Máy tính bảng: thẻ cỡ cảm ứng, nút 56px, chữ ≥ 16px (mục 10). Nút thoát ở đây là đăng xuất với nhân viên kho;
- * nút tài khoản mở hồ sơ cá nhân hoặc đăng xuất (LM-096).
+ * nút tài khoản mở hồ sơ cá nhân hoặc đăng xuất (LM-096). Nút "Tra cứu kiện" mở `/tra-cuu-kien` (FE-3b-06).
  */
 export function WarehouseTripsPage() {
   const t = useT()
+  const can = useCan()
   return (
     <div className="flex h-dvh flex-col bg-bg text-body-lg">
       <header className="flex h-18 flex-none items-center gap-3 border-b border-border pr-6 pl-3">
@@ -23,6 +27,15 @@ export function WarehouseTripsPage() {
         {/* Logo ở màn chính của kho (LM-105); phiên xếp giữ thanh gọn cho một thao tác mỗi màn */}
         <LogoMark className="size-8" />
         <h1 className="min-w-0 flex-1 truncate text-h1 font-semibold">{t('warehouse.list.title')}</h1>
+        {/* Tra cứu kiện (FE-3b-06): nút phụ 56 px; màn hẹp chỉ còn icon, tên ở `aria-label` */}
+        {can('packages.lookup') ? (
+          <Button asChild variant="secondary" size="touch" className="flex-none max-sm:w-14 max-sm:px-0">
+            <Link to="/tra-cuu-kien" aria-label={t('warehouse.list.lookup')}>
+              <ScanLine strokeWidth={1.5} />
+              <span className="max-sm:hidden">{t('warehouse.list.lookup')}</span>
+            </Link>
+          </Button>
+        ) : null}
         <LanguageSwitch size="touch" className="flex-none" />
         <AccountMenu />
       </header>

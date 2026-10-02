@@ -31,6 +31,7 @@ export const titles = {
   packageTypes: 'Loại kiện',
   packages: 'Kho kiện',
   labels: 'In nhãn QR',
+  lookup: 'Tra cứu kiện',
   orders: 'Đơn hàng',
   vehicleTypes: 'Loại xe',
   tripReport: 'Báo cáo chuyến {id}',

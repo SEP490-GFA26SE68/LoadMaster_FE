@@ -310,6 +310,7 @@ export const trips = {
       mustLoad: 'Must load',
       groupId: 'Group',
       notes: 'Notes',
+      handlingClass: 'Handling class',
     },
     sample: {
       first: 'Bottled water, 24-bottle carton',
@@ -329,6 +330,7 @@ export const trips = {
       BOOLEAN_INVALID: '{column}: "{value}" is not yes/no.',
       ORIENTATION_INVALID: '{column}: "{value}" is not an orientation code (LWH, LHW, WLH, WHL, HLW, HWL).',
       FRAGILITY_INVALID: '{column}: "{value}" is not a fragility level (NONE, LOW, MEDIUM, HIGH).',
+      HANDLING_CLASS_INVALID: '{column}: "{value}" is not a handling class (STANDARD, FRAGILE, REFRIGERATED, HAZARDOUS, HIGH_VALUE).',
       SCHEMA: '{column}: {message}',
       DUPLICATE_IN_FILE: 'Package ID {id} repeats row {row} of the file.',
       DUPLICATE_EXISTING: 'Package ID {id} is already in the trip.',
@@ -399,6 +401,8 @@ export const trips = {
     maxStackCount: 'Max stack count',
     minSupportRatio: 'Minimum base support ratio',
     deliveryStop: 'Delivery stop',
+    handlingClass: 'Handling class',
+    handlingClassHint: 'Printed on the QR label of the package in the pool.',
     priority: 'Priority',
     mustLoad: 'Must be loaded',
     notes: 'Notes',
@@ -419,7 +423,7 @@ export const trips = {
     duplicated: 'Created copy {id}',
     deleted: 'Deleted package {id}',
     deleteTitle: 'Delete package {id}?',
-    deleteDescription: 'The package is removed from the trip. An optimized plan becomes outdated.',
+    deleteDescription: 'The package is removed from the trip; its packages in the pool go back to Imported. An optimized plan becomes outdated.',
     cancel: 'Cancel',
     // Messages for `cargoPackageSchema` issue codes shown under each package form field (LM-054)
     errors: {
@@ -441,6 +445,7 @@ export const trips = {
     title: 'Packages',
     lineCount: { one: '{count} package line', other: '{count} package lines' },
     add: 'Add package',
+    printLabels: 'Print QR labels',
     columns: {
       package: 'Package',
       weight: 'Weight',

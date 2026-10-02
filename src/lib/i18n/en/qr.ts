@@ -3,6 +3,15 @@ import type { qr as source } from '../vi/qr'
 
 export const qr = {
   imageLabel: 'QR code {token}',
+  label: {
+    poolId: 'Pool ID',
+    senderCode: 'Sender code',
+    handlingClass: 'Handling class',
+    dimensions: 'Dimensions',
+    weight: 'Weight',
+    destination: 'Destination',
+    fragile: 'Fragile',
+  },
   scan: {
     camera: {
       starting: 'Opening the camera…',

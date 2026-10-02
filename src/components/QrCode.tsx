@@ -16,8 +16,8 @@ export function QrCode({
   className,
 }: {
   token: string
-  /** Cạnh của hình, px. */
-  size?: number
+  /** Cạnh của hình: số là px; chuỗi là độ dài CSS (`'9em'`) để hình co theo cỡ chữ của khung chứa — nhãn in tính bằng mm (FE-3b-05). */
+  size?: number | string
   /** Tên truy cập; mặc định "Mã QR <token>". */
   label?: string
   showToken?: boolean

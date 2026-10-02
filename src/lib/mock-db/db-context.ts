@@ -11,6 +11,7 @@ import type {
   TransportOrder,
   VehicleType,
 } from './source-types'
+import type { TripPackageLink } from './review1-status'
 import { createTenancy, type Tenancy } from './tenancy'
 import type { Revision, Trip } from './types'
 
@@ -36,6 +37,11 @@ export type DbState = {
   packageTypes: Map<string, PackageType>
   /** Kho kiện (FE-3b-01). */
   packages: Map<string, Package>
+  /**
+   * Chuyến → kiện kho kiện của từng dòng kiện **thêm ngay trong chuyến** (FE-3b-07), kiện thứ i là instance thứ i của dòng. Lưu ngoài
+   * `Trip` vì `Trip.packages` giữ đúng `CargoPackage` của Spec (D-04); kiện vào chuyến qua đơn hàng nối ở `order.assignment`.
+   */
+  tripPackageLinks: Map<string, TripPackageLink[]>
   orders: Map<string, TransportOrder>
   runs: Map<string, OptimizationRun>
   vehicleTypes: Map<string, VehicleType>
@@ -57,8 +63,13 @@ export type DbContext = {
    * luật đó không áp được: lần đăng nhập sai bằng email không có trong kho không thuộc công ty nào.
    */
   log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>, companyId?: string | null): void
-  /** Mã QR mới cho kiện của kho kiện, không trùng mã đã cấp (LM-104). */
-  newQrToken(): string
+  /**
+   * Mã QR mới cho kiện của kho kiện, không trùng mã đã cấp (LM-104). Tạo nhiều kiện một lượt thì truyền `taken` (`qrTokensInUse`) để
+   * không quét lại cả kho cho từng mã; mã mới được thêm vào đó.
+   */
+  newQrToken(taken?: Set<string>): string
+  /** Mọi mã QR đã cấp. */
+  qrTokensInUse(): Set<string>
   /** Phạm vi theo công ty của phiên (D-64): mọi đọc/ghi của `db-*.ts` đi qua đây, không đọc thẳng bảng của `state`. */
   scope: Tenancy
 }
@@ -66,13 +77,16 @@ export type DbContext = {
 export function createDbContext(state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random): DbContext {
   const nowIso = () => now().toISOString()
   const scope = createTenancy(state)
+  const qrTokensInUse = () => new Set([...state.packages.values()].map((pkg) => pkg.qrToken))
   return {
     state,
     nowIso,
     scope,
-    newQrToken: () => {
-      const taken = new Set([...state.packages.values()].map((pkg) => pkg.qrToken))
-      return randomQrToken(random, (token) => taken.has(token))
+    qrTokensInUse,
+    newQrToken: (taken = qrTokensInUse()) => {
+      const token = randomQrToken(random, (candidate) => taken.has(candidate))
+      taken.add(token)
+      return token
     },
     async respond(operation) {
       if (latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, latencyMs))

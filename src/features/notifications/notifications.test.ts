@@ -16,6 +16,7 @@ const ids = (events: readonly AuditEvent[]) => events.map((item) => item.id)
 
 test('the dispatcher gets plan approvals, loading, delivery and cancellation events done by others, within seven days', () => {
   const events = [
+    event('EV-13', '2026-09-14T10:40:00.000Z', 'US-0003', 'package.found', 'PK-0063'),
     event('EV-12', '2026-09-14T10:30:00.000Z', 'US-PN-03', 'revision.approved'),
     event('EV-11', '2026-09-14T10:20:00.000Z', 'US-0001', 'revision.approved'),
     event('EV-10', '2026-09-14T10:10:00.000Z', 'US-PN-03', 'optimization.saved'),
@@ -29,9 +30,11 @@ test('the dispatcher gets plan approvals, loading, delivery and cancellation eve
     event('EV-2', '2026-09-07T11:00:00.000Z', 'US-0003', 'loading.completed'),
     event('EV-1', '2026-09-07T10:59:59.000Z', 'US-0004', 'delivery.completed'),
   ]
-  // EV-12: điều phối viên khác duyệt phương án (FE-0-04); EV-11, EV-8: việc của chính mình; EV-10: lưu kết quả tối ưu và EV-5: hoàn tất
+  // EV-13: kho quét thấy lại kiện mang cờ "Không tìm thấy" (FE-3b-06, D-92); EV-12: điều phối viên khác duyệt phương án (FE-0-04); EV-11, EV-8: việc của chính mình; EV-10: lưu kết quả tối ưu và EV-5: hoàn tất
   // một điểm giao không phải loại báo; EV-2 đúng mốc 7 ngày còn, EV-1 quá mốc
-  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-12', 'EV-9', 'EV-7', 'EV-6', 'EV-4', 'EV-3', 'EV-2'])
+  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-13', 'EV-12', 'EV-9', 'EV-7', 'EV-6', 'EV-4', 'EV-3', 'EV-2'])
+  // Quản lý công ty không nhận việc của kho kiện
+  expect(ids(selectNotifications(events.slice(0, 1), { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual([])
 })
 
 test('the manager gets completed and cancelled trips and delivery issues; not warehouse progress or plan approvals', () => {

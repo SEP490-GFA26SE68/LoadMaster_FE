@@ -1,4 +1,4 @@
-import { FileUp, PackagePlus, Shapes } from 'lucide-react'
+import { FileUp, PackagePlus, ScanLine, Shapes } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -15,7 +15,7 @@ import type { Package } from '@/lib/mock-db'
 import { PackageFormDialog } from './PackageFormDialog'
 import { PackageImportDialog } from './PackageImportDialog'
 import {
-  filterByTab, filterPackages, filtersFromUrl, labelsPath, PACKAGE_FILTERS, PACKAGE_TABS, packageRows, searchPackages, slugFromTab, STATUS_FILTER, tabCounts,
+  filterByTab, filterPackages, filtersFromUrl, labelsPath, LOOKUP_PATH, PACKAGE_FILTERS, PACKAGE_TABS, packageRows, searchPackages, slugFromTab, STATUS_FILTER, tabCounts,
   tabFromSlug,
 } from './packages-list'
 import { PackagesTable } from './PackagesTable'
@@ -24,13 +24,14 @@ import { usePackagesQuery, usePackageTypesQuery } from './usePackagePoolQuery'
 /**
  * Kho kiện `/kien-hang` (FE-3b-03, D-68) — kiện của công ty, mở theo `packages.view`: điều phối viên quản lý, quản lý công ty chỉ xem
  * (không nút ghi, không chọn kiện in nhãn). Dải trời có tab trạng thái kèm số (`trang-thai` trên URL); thẻ bảng đè lên dải: tìm bỏ
- * dấu, lọc loại hàng / cờ / đã-chưa vào đơn hay chuyến, panel chi tiết. "Thêm kiện" là hành động chính; "Nhập file" và lối sang danh
- * mục Loại kiện là nút phụ trên dải. Kiện vừa thêm mở ngay chi tiết (đã có mã QR); kiện vừa nhập được chọn sẵn để in nhãn.
+ * dấu, lọc loại hàng / cờ / đã-chưa vào đơn hay chuyến, panel chi tiết. "Thêm kiện" là hành động chính; "Nhập file", lối sang danh
+ * mục Loại kiện và sang Tra cứu kiện (`packages.lookup`, FE-3b-06) là nút phụ trên dải. Kiện vừa thêm mở ngay chi tiết (đã có mã QR); kiện vừa nhập được chọn sẵn để in nhãn.
  */
 export function PackagesPage() {
   const t = useT()
   const navigate = useNavigate()
-  const canManage = useCan()('packages.manage')
+  const can = useCan()
+  const canManage = can('packages.manage')
   const packagesQuery = usePackagesQuery()
   const typesQuery = usePackageTypesQuery()
   const list = useListUrlState({ filters: PACKAGE_FILTERS })
@@ -73,6 +74,15 @@ export function PackagesPage() {
     </Button>
   ) : null
   // Nút phụ trên dải trời dùng `glass`. Danh mục loại kiện không có mục riêng trên thanh điều hướng: mở từ đây
+  // Tra cứu kiện (FE-3b-06) cũng mở từ đây: điều phối viên không có mục riêng trên thanh điều hướng
+  const lookupLink = can('packages.lookup') ? (
+    <Button variant="glass" asChild>
+      <Link to={LOOKUP_PATH}>
+        <ScanLine strokeWidth={1.5} />
+        {t('sourcing.packages.lookup')}
+      </Link>
+    </Button>
+  ) : null
   const secondary = canManage ? (
     <>
       <Button variant="glass" asChild>
@@ -95,7 +105,7 @@ export function PackagesPage() {
         title={t('sourcing.packages.title')}
         meta={packagesQuery.isSuccess ? t('sourcing.packages.count', { count: all.length }) : undefined}
         description={t('pageHero.packages')}
-        actions={<>{secondary}{hasRows ? addButton : null}</>}
+        actions={<>{lookupLink}{secondary}{hasRows ? addButton : null}</>}
       >
         {hasRows ? (
           <TabsList tone="sky" aria-label={t('sourcing.packages.tabs.label')}>

@@ -1,14 +1,15 @@
 import { checkDoorClearance, validatePackages, type ConstraintIssue } from '@/domain/constraints'
-import { ORIENTATION_CODES, roundCm, roundKg, UPRIGHT_ORIENTATIONS, type OrientationCode } from '@/domain/geometry'
-import { cargoPackageSchema, type CargoPackage, type FragilityLevel, type ModelIssueCode, type VehicleConfig } from '@/domain/models'
+import { cargoPackageSchema, type CargoPackage, type FragilityLevel, type HandlingClass, type ModelIssueCode, type VehicleConfig } from '@/domain/models'
 import { normalizeSearchText } from '@/lib/list-filter'
 import { cellText, isBlankRow, parseDecimal, parseFlag, parseOrientations, parseRatio, type ImportCell } from './import-cells'
 import { IMPORT_FIELDS, normalizeHeader, REQUIRED_FIELDS, type ImportField } from './package-import-columns'
+import { withImportDefaults, type ImportValue, type ImportValues } from './package-import-defaults'
 
 /**
  * Xem trước file nhập kiện (LM-093, D-49): hàm thuần, nhận bảng ô đã đọc từ `.csv`/`.xlsx`, trả từng dòng kèm lỗi dạng **mã** — UI
  * dịch (`package-import-messages.ts`). Mỗi dòng qua `cargoPackageSchema` rồi kiểm tra domain (`validatePackages`, cửa xe); mã kiện
  * trùng trong file hoặc với kiện có sẵn, điểm giao không có trong chuyến là lỗi dòng. Dòng lỗi bị bỏ khi nhập, dòng hợp lệ giữ thứ tự file.
+ * Cột tuỳ chọn `handlingClass` (FE-3b-07): loại hàng của kiện, vắng hoặc ô trống là `STANDARD` (`package-import-defaults.ts`).
  */
 
 export type ImportTable = readonly (readonly ImportCell[])[]
@@ -18,7 +19,11 @@ export const MAX_IMPORT_ROWS = 2000
 
 export type ImportProblem =
   | { readonly code: 'CELL_REQUIRED'; readonly field: ImportField }
-  | { readonly code: 'NUMBER_INVALID' | 'BOOLEAN_INVALID' | 'ORIENTATION_INVALID' | 'FRAGILITY_INVALID'; readonly field: ImportField; readonly value: string }
+  | {
+      readonly code: 'NUMBER_INVALID' | 'BOOLEAN_INVALID' | 'ORIENTATION_INVALID' | 'FRAGILITY_INVALID' | 'HANDLING_CLASS_INVALID'
+      readonly field: ImportField
+      readonly value: string
+    }
   /** Mã lỗi của `cargoPackageSchema`; `field` là `null` khi lỗi không thuộc cột nào. */
   | { readonly code: 'SCHEMA'; readonly field: ImportField | null; readonly issue: ModelIssueCode }
   | { readonly code: 'DUPLICATE_IN_FILE'; readonly id: string; readonly firstRow: number }
@@ -65,6 +70,8 @@ export type ImportContext = {
   readonly headers: ReadonlyMap<string, ImportField>
   /** Mức dễ vỡ đã bỏ dấu → mã, gồm chính mã (`NONE`…) và nhãn vi/en. */
   readonly fragility: ReadonlyMap<string, FragilityLevel>
+  /** Loại hàng đã bỏ dấu → mã, gồm chính mã (`STANDARD`…) và nhãn vi/en (FE-3b-07). */
+  readonly handling: ReadonlyMap<string, HandlingClass>
 }
 
 export function previewImport(table: ImportTable, context: ImportContext): ImportPreview {
@@ -94,7 +101,7 @@ export function previewImport(table: ImportTable, context: ImportContext): Impor
   const existingIds = new Set(context.existing.map((pkg) => pkg.id))
   const firstRowById = new Map<string, number>()
   const rows = data.map(({ cells, row }): ImportRow => {
-    const read = readRow(cells, columns, context.fragility)
+    const read = readRow(cells, columns, context)
     const problems = [...read.problems]
     if (read.id !== '') {
       const first = firstRowById.get(read.id)
@@ -147,13 +154,12 @@ function withConstraintIssues(rows: readonly ImportRow[], context: ImportContext
   })
 }
 
-type Value = string | number | boolean | OrientationCode[] | FragilityLevel
-type Values = Partial<Record<ImportField, Value>>
-
 /** Một dòng → kiện: đọc từng ô theo kiểu của cột, ô tuỳ chọn trống lấy mặc định, rồi qua `cargoPackageSchema`. */
-function readRow(cells: readonly ImportCell[], columns: ReadonlyMap<ImportField, number>, fragility: ImportContext['fragility']) {
+type ValueAliases = Pick<ImportContext, 'fragility' | 'handling'>
+
+function readRow(cells: readonly ImportCell[], columns: ReadonlyMap<ImportField, number>, aliases: ValueAliases) {
   const problems: ImportProblem[] = []
-  const values: Values = {}
+  const values: ImportValues = {}
   for (const field of IMPORT_FIELDS) {
     const index = columns.get(field)
     if (index === undefined) continue
@@ -163,7 +169,7 @@ function readRow(cells: readonly ImportCell[], columns: ReadonlyMap<ImportField,
       if (REQUIRED_FIELDS.includes(field)) problems.push({ code: 'CELL_REQUIRED', field })
       continue
     }
-    const value = readCell(field, cell, text, fragility)
+    const value = readCell(field, cell, text, aliases)
     if (typeof value === 'object' && 'problem' in value) problems.push(value.problem)
     else values[field] = value
   }
@@ -171,7 +177,7 @@ function readRow(cells: readonly ImportCell[], columns: ReadonlyMap<ImportField,
   const name = typeof values.name === 'string' ? values.name : ''
   if (problems.length > 0) return { id, name, pkg: null, problems }
 
-  const parsed = cargoPackageSchema.safeParse(withDefaults(values))
+  const parsed = cargoPackageSchema.safeParse(withImportDefaults(values))
   if (parsed.success) return { id, name, pkg: parsed.data, problems }
   return {
     id,
@@ -190,7 +196,7 @@ const NUMBER_FIELDS: ReadonlySet<ImportField> = new Set([
 ])
 const FLAG_FIELDS: ReadonlySet<ImportField> = new Set(['keepUpright', 'stackable', 'mustLoad'])
 
-function readCell(field: ImportField, cell: ImportCell, text: string, fragility: ImportContext['fragility']): Value | { problem: ImportProblem } {
+function readCell(field: ImportField, cell: ImportCell, text: string, { fragility, handling }: ValueAliases): ImportValue | { problem: ImportProblem } {
   const shown = text.length > 40 ? `${text.slice(0, 40)}…` : text
   if (NUMBER_FIELDS.has(field) || field === 'minSupportRatio') {
     const value = typeof cell === 'number' ? cell : field === 'minSupportRatio' ? parseRatio(text) : parseDecimal(text)
@@ -207,56 +213,8 @@ function readCell(field: ImportField, cell: ImportCell, text: string, fragility:
   if (field === 'fragilityLevel') {
     return fragility.get(normalizeSearchText(text)) ?? { problem: { code: 'FRAGILITY_INVALID', field, value: shown } }
   }
+  if (field === 'handlingClass') {
+    return handling.get(normalizeSearchText(text)) ?? { problem: { code: 'HANDLING_CLASS_INVALID', field, value: shown } }
+  }
   return text
-}
-
-/**
- * Cột tuỳ chọn vắng hoặc ô trống: như kiện mới của form (LM-045) — sáu hướng (chỉ hai hướng đứng khi giữ thẳng đứng), không dễ vỡ,
- * cho xếp chồng, tải trên 0 kg, đỡ đáy 0,8, ưu tiên 0. Kích thước về bội 0,1 cm, khối lượng 0,01 kg tại biên nhập liệu (D-03).
- */
-function withDefaults(values: Values): Record<string, unknown> {
-  const number = (field: ImportField): number | undefined => {
-    const value = values[field]
-    return typeof value === 'number' ? value : undefined
-  }
-  const text = (field: ImportField): string | undefined => {
-    const value = values[field]
-    return typeof value === 'string' ? value : undefined
-  }
-  const flag = (field: ImportField, fallback: boolean): boolean => {
-    const value = values[field]
-    return typeof value === 'boolean' ? value : fallback
-  }
-  const cm = (field: ImportField) => {
-    const value = number(field)
-    return value === undefined ? undefined : roundCm(value)
-  }
-  const keepUpright = flag('keepUpright', false)
-  const weightKg = number('weightKg')
-  const maxStackCount = number('maxStackCount')
-  const groupId = text('groupId')
-  const notes = text('notes')
-  return {
-    id: text('id'),
-    name: text('name'),
-    lengthCm: cm('lengthCm'),
-    widthCm: cm('widthCm'),
-    heightCm: cm('heightCm'),
-    weightKg: weightKg === undefined ? undefined : roundKg(weightKg),
-    quantity: number('quantity'),
-    allowedOrientations: Array.isArray(values.allowedOrientations)
-      ? values.allowedOrientations
-      : [...(keepUpright ? UPRIGHT_ORIENTATIONS : ORIENTATION_CODES)],
-    keepUpright,
-    fragilityLevel: values.fragilityLevel ?? 'NONE',
-    stackable: flag('stackable', true),
-    maxTopLoadKg: roundKg(number('maxTopLoadKg') ?? 0),
-    ...(maxStackCount === undefined ? {} : { maxStackCount }),
-    minSupportRatio: number('minSupportRatio') ?? 0.8,
-    deliveryStop: number('deliveryStop'),
-    priority: number('priority') ?? 0,
-    mustLoad: flag('mustLoad', false),
-    ...(groupId ? { groupId } : {}),
-    ...(notes ? { notes } : {}),
-  }
 }

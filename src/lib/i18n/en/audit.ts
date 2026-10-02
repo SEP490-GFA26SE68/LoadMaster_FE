@@ -15,7 +15,7 @@ export const audit = {
       passwordReset: 'Reset password', passwordChanged: 'Changed password', profileUpdated: 'Edited own profile',
     },
     packageType: { created: 'Added package type', updated: 'Edited package type', deleted: 'Deleted package type' },
-    package: { created: 'Added packages to the pool', importConfirmed: 'Imported a file into the package pool', updated: 'Edited package', statusChanged: 'Changed package status', flagged: 'Flagged package', flagCleared: 'Cleared package flag' },
+    package: { created: 'Added packages to the pool', importConfirmed: 'Imported a file into the package pool', updated: 'Edited package', statusChanged: 'Changed package status', flagged: 'Flagged package', flagCleared: 'Cleared package flag', found: 'Warehouse found the package again' },
     order: { created: 'Created order', updated: 'Edited order', cancelled: 'Cancelled order', assigned: 'Assigned order to stop', unassigned: 'Unassigned order' },
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
   },

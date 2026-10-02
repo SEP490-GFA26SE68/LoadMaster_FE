@@ -119,7 +119,20 @@ export function orderedSelection(rows: readonly PackageRow[], selected: Readonly
   return rows.filter((row) => selected.has(row.id)).map((row) => row.id).toReversed()
 }
 
-/** Đường dẫn trang in nhãn của các kiện `ids` (theo thứ tự). */
-export function labelsPath(ids: readonly string[]): string {
-  return `/kien-hang/nhan?kien=${ids.join(',')}`
+export const LABELS_PATH = '/kien-hang/nhan'
+export const LOOKUP_PATH = '/tra-cuu-kien'
+
+/** Đường dẫn trang in nhãn của các kiện `ids` (theo thứ tự). `fromLookup`: nút quay lại của trang nhãn về màn Tra cứu kiện. */
+export function labelsPath(ids: readonly string[], fromLookup = false): string {
+  return `${LABELS_PATH}?kien=${ids.join(',')}${fromLookup ? '&tu=tra-cuu' : ''}`
+}
+
+/** Trang in nhãn của mọi kiện kho kiện đang thuộc chuyến `tripId` (FE-3b-07). */
+export function tripLabelsPath(tripId: string): string {
+  return `${LABELS_PATH}?chuyen=${encodeURIComponent(tripId)}`
+}
+
+/** Màn Tra cứu kiện mở sẵn mã `code` (mã QR, mã của bên gửi hoặc mã của kho). */
+export function lookupPath(code?: string): string {
+  return code === undefined ? LOOKUP_PATH : `${LOOKUP_PATH}?ma=${encodeURIComponent(code)}`
 }

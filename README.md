@@ -65,7 +65,10 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   của công ty mình và đọc nhật ký của công ty mình. Kho mock đã giữ kiện theo mô hình kho kiện của backend (kích thước, loại hàng, điểm đến
   riêng từng kiện; trạng thái ghi theo mốc của chuyến; cờ "Không tìm thấy" / "Hư hỏng"). Màn Kho kiện: điều phối viên thêm kiện, nhập file
   `.csv` / `.xlsx` theo cột của backend (xem trước, có dòng lỗi thì không lưu dòng nào), xem chi tiết kiện kèm mã QR và lịch sử, gỡ cờ; quản lý
-  công ty chỉ xem. Mẫu nhãn mới, màn tra cứu kiện, màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  công ty chỉ xem. Nhãn QR in bằng trình duyệt, bốn nhãn mỗi trang A4 (mã QR, mã của bên gửi, loại hàng, số đo, điểm đến, dòng "Hàng dễ
+  vỡ"). Màn Tra cứu kiện cho điều phối viên và nhân viên kho: quét hoặc gõ mã để xem kiện, in lại nhãn; kho quét thấy kiện mang cờ "Không
+  tìm thấy" thì cờ được gỡ và điều phối viên được báo. Kiện thêm ngay trong chuyến tự thành kiện của kho kiện có mã QR. Màn của quản lý
+  nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -87,12 +90,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.391 test unit + DOM
-pnpm test:e2e      # Playwright: 106 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.462 test unit + DOM
+pnpm test:e2e      # Playwright: 110 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (02/10/2026, nhánh `developer`): lint, build, 1.335/1.335 unit, 105/105 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.462/1.462 unit, 110/110 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

@@ -27,11 +27,13 @@ test('orderable packages group by package type, untyped ones by handling class, 
   const ids = (group: (typeof groups)[number]) => group.items.map((item) => item.package.id)
 
   // Kỳ vọng chép từ seed: sữa PK-0023…0028, bánh quy PK-0029…0034, dầu ăn PK-0035…0042, quạt PK-0043…0048; kiện nhập file PK-0049…0088
-  // theo loại hàng, không tính hai kiện mang cờ (PK-0063 hàng thường, PK-0078 hàng nguy hiểm)
-  expect(packages).toHaveLength(64)
+  // theo loại hàng, không tính hai kiện mang cờ (PK-0063 hàng thường, PK-0078 hàng nguy hiểm); cộng 170 kiện hàng thường của chuyến đã
+  // huỷ TRIP-004 đã về kho kiện (FE-3b-07)
+  expect(packages).toHaveLength(64 + 170)
   expect(groups.map((group) => [group.name, group.items.length])).toStrictEqual([
-    ['Thùng sữa hộp 48 hộp', 6], ['Thùng bánh quy', 6], ['Thùng dầu ăn 12 chai', 8], ['Kiện quạt điện', 6],
-    ['Hàng STANDARD', 19], ['Hàng FRAGILE', 5], ['Hàng HIGH_VALUE', 5], ['Hàng REFRIGERATED', 5], ['Hàng HAZARDOUS', 4],
+    // Nhóm theo thứ tự kho: kiện của chuyến seed đứng trước kiện có từ trước
+    ['Hàng STANDARD', 170 + 19], ['Thùng sữa hộp 48 hộp', 6], ['Thùng bánh quy', 6], ['Thùng dầu ăn 12 chai', 8], ['Kiện quạt điện', 6],
+    ['Hàng FRAGILE', 5], ['Hàng HIGH_VALUE', 5], ['Hàng REFRIGERATED', 5], ['Hàng HAZARDOUS', 4],
   ])
   expect(packages.filter((item) => item.package.flags.length > 0 || item.package.orderId !== undefined)).toStrictEqual([])
   const milk = groups.find((group) => group.name === 'Thùng sữa hộp 48 hộp')!

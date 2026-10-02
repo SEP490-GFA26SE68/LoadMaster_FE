@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { createMockDb, isSelectablePackage, tripLabels, type MockDb } from '@/lib/mock-db'
+import { createMockDb, isSelectablePackage, type MockDb } from '@/lib/mock-db'
 
 /** Luồng 2 Review 1 (LM-104): đơn hàng từ kiện còn ở kho kiện, gán vào điểm giao của chuyến, kiểm tra "Sẵn sàng tối ưu". */
 
@@ -9,8 +9,11 @@ test('an order takes IMPORTED packages without a flag that no other order holds;
   const db = createMockDb()
   // Điều phối viên Long Bình lập đơn từ kiện của Long Bình (FE-0-02); `restoreSession` không ghi nhật ký
   db.restoreSession('US-0001')
-  // 66 kiện chưa vào đơn nào (PK-0023…0088) trừ hai kiện mang cờ PK-0063, PK-0078
-  const free = (await selectable(db)).map((pkg) => pkg.id)
+  // 66 kiện chưa vào đơn nào (PK-0023…0088) trừ hai kiện mang cờ PK-0063, PK-0078; cùng 170 kiện của chuyến đã huỷ TRIP-004 đã về kho
+  // kiện (nguồn `TRIP`, FE-3b-07)
+  const all = await selectable(db)
+  expect(all.filter((pkg) => pkg.source === 'TRIP')).toHaveLength(170)
+  const free = all.filter((pkg) => pkg.source !== 'TRIP').map((pkg) => pkg.id)
   expect(free).toHaveLength(64)
   expect([free[0], free.at(-1), free.includes('PK-0022'), free.includes('PK-0063'), free.includes('PK-0078')]).toStrictEqual(['PK-0023', 'PK-0088', false, false, false])
   const order = await db.createOrder({ customerName: ' Nhà hàng Hương Việt ', deliveryAddress: '203 Lê Văn Sỹ, P. 13, Q.3', phone: '', packageIds: ['PK-0023', 'PK-0024'] })
@@ -30,7 +33,7 @@ test('an order takes IMPORTED packages without a flag that no other order holds;
   const cancelled = await db.cancelOrder('ORD-003', 'Khách đổi ngày nhận')
   expect(cancelled).toMatchObject({ status: 'cancelled', cancellation: { reason: 'Khách đổi ngày nhận' } })
   // Đơn huỷ trả cả hai kiện về; PK-0035 đã gán chuyến nên không còn chọn được
-  expect(await selectable(db)).toHaveLength(63)
+  expect(await selectable(db)).toHaveLength(170 + 63)
   await expect(db.updateOrder('ORD-003', { note: 'x' })).rejects.toMatchObject({ code: 'ORDER_STATUS_INVALID' })
 })
 
@@ -46,7 +49,8 @@ test('assigning an order to a stop adds one package line per group of identical 
   const labels = await db.listTripLabels('TRIP-014')
   const label = labels.find((item) => item.packageInstanceId === 'PKG-004-01')
   expect(label).toMatchObject({ poolPackageId: 'PK-0013', qrToken: (await db.getPackage('PK-0013')).qrToken })
-  expect(labels.find((item) => item.packageInstanceId === 'PKG-001-01')?.poolPackageId).toBeUndefined()
+  // Kiện nhập tay của chuyến mang kiện kho kiện riêng (FE-3b-07)
+  expect(labels.find((item) => item.packageInstanceId === 'PKG-001-01')?.poolPackageId).toMatch(/^PK-T\d{5}$/)
 
   await expect(db.assignOrder('ORD-001', 'TRIP-014', 'STOP-09')).rejects.toMatchObject({ code: 'STOP_NOT_FOUND' })
   await expect(db.assignOrder('ORD-001', 'TRIP-011', 'STOP-01')).rejects.toMatchObject({ code: 'TRIP_LOCKED' })
@@ -80,19 +84,17 @@ test('packages without a package type become one line each, named by the sender 
   ])
   // Nhãn của từng instance là mã QR của đúng kiện kho kiện
   const labels = await db.listTripLabels('TRIP-014')
-  expect(labels.filter((label) => label.poolPackageId !== undefined).map((label) => [label.packageInstanceId, label.poolPackageId])).toStrictEqual([
+  expect(labels.filter((label) => label.packageId >= 'PKG-004').map((label) => [label.packageInstanceId, label.poolPackageId])).toStrictEqual([
     ['PKG-004-01', 'PK-0054'], ['PKG-005-01', 'PK-0023'], ['PKG-005-02', 'PK-0024'], ['PKG-006-01', 'PK-0055'], ['PKG-007-01', 'PK-0064'],
   ])
 })
 
-test('trip labels of hand-entered packages are deterministic, opaque and unique', async () => {
-  const db = createMockDb()
-  const trip = await db.getTrip('TRIP-2026-0914')
-  const labels = tripLabels(trip, [], new Map())
+test('trip labels of hand-entered packages are opaque, unique and the same in every store of the same seed', async () => {
+  const labels = await createMockDb().listTripLabels('TRIP-2026-0914')
   expect(labels).toHaveLength(132)
   expect(new Set(labels.map((label) => label.qrToken)).size).toBe(132)
   expect(labels.every((label) => !label.qrToken.includes('PKG'))).toBe(true)
-  expect(await db.listTripLabels('TRIP-2026-0914')).toStrictEqual(labels)
+  expect(await createMockDb().listTripLabels('TRIP-2026-0914')).toStrictEqual(labels)
 })
 
 test('readiness: the draft trip is ready; a trip without packages or over payload is not', async () => {

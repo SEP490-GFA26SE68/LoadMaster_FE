@@ -9,7 +9,7 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { Trip } from '@/lib/mock-db'
 import { downloadBlob } from './download-file'
 import { previewImport, type ImportTable } from './package-import'
-import { importFragilityAliases, importHeaderAliases } from './package-import-columns'
+import { importFragilityAliases, importHandlingAliases, importHeaderAliases } from './package-import-columns'
 import { importFileProblemMessage } from './package-import-messages'
 import { csvTemplateBlob, importTemplateRows, xlsxTemplateBlob } from './package-import-template'
 import { PackageDialogClose } from './PackageDialogClose'
@@ -52,6 +52,7 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
         vehicle,
         headers: importHeaderAliases(),
         fragility: importFragilityAliases(),
+        handling: importHandlingAliases(),
       })
     : null), [table, trip.packages, trip.stops.length, vehicle])
   const ready = preview?.kind === 'ready' ? preview : null

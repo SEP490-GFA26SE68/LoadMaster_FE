@@ -29,6 +29,7 @@ export const titles = {
   packageTypes: 'Package types',
   packages: 'Package pool',
   labels: 'Print QR labels',
+  lookup: 'Package lookup',
   orders: 'Orders',
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',

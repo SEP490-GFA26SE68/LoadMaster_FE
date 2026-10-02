@@ -54,11 +54,14 @@ type CoreMockDb = {
   /** Theo thứ tự tạo: chuyến seed trước. */
   listTrips(): Promise<Trip[]>
   getTrip(id: string): Promise<Trip>
-  /** Kho cấp mã `TRIP-NNN` kế tiếp, pha `planning`, `inputVersion` 1. Xe phải tồn tại, không bảo dưỡng; tài xế (nếu có) hợp lệ. */
+  /**
+   * Kho cấp mã `TRIP-NNN` kế tiếp, pha `planning`, `inputVersion` 1. Xe phải tồn tại, không bảo dưỡng; tài xế (nếu có) hợp lệ. Mỗi kiện
+   * của các dòng kiện tự thành một kiện kho kiện nguồn `TRIP`, `ASSIGNED`, có mã QR (FE-3b-07).
+   */
   createTrip(input: NewTrip): Promise<Trip>
   /**
    * Xe mới (nếu đổi) phải tồn tại, không bảo dưỡng. Pha `loading`/`loaded` chỉ còn sửa tên, ngày, tài xế; pha sau đó không sửa gì
-   * (`TRIP_LOCKED`).
+   * (`TRIP_LOCKED`). Đổi dòng kiện hay điểm giao thì kiện kho kiện của chuyến đổi theo: thêm kiện mới, kiện bị bỏ về `IMPORTED` (FE-3b-07).
    */
   updateTrip(id: string, changes: TripChanges): Promise<Trip>
   /** Huỷ trước khi giao (`planning`, `loading`, `loaded`); lý do bắt buộc (D-45). */

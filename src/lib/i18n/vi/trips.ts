@@ -340,6 +340,7 @@ export const trips = {
       mustLoad: 'Bắt buộc xếp',
       groupId: 'Nhóm',
       notes: 'Ghi chú',
+      handlingClass: 'Loại hàng',
     },
     /** Hai dòng ví dụ của file mẫu. */
     sample: {
@@ -361,6 +362,7 @@ export const trips = {
       BOOLEAN_INVALID: '{column}: "{value}" không phải có/không.',
       ORIENTATION_INVALID: '{column}: "{value}" không phải mã hướng đặt (LWH, LHW, WLH, WHL, HLW, HWL).',
       FRAGILITY_INVALID: '{column}: "{value}" không phải mức dễ vỡ (NONE, LOW, MEDIUM, HIGH).',
+      HANDLING_CLASS_INVALID: '{column}: "{value}" không phải loại hàng (STANDARD, FRAGILE, REFRIGERATED, HAZARDOUS, HIGH_VALUE).',
       SCHEMA: '{column}: {message}',
       DUPLICATE_IN_FILE: 'Mã kiện {id} trùng với dòng {row} của file.',
       DUPLICATE_EXISTING: 'Mã kiện {id} đã có trong chuyến.',
@@ -435,6 +437,8 @@ export const trips = {
     maxStackCount: 'Số tầng tối đa',
     minSupportRatio: 'Tỷ lệ đỡ đáy tối thiểu',
     deliveryStop: 'Điểm giao',
+    handlingClass: 'Loại hàng',
+    handlingClassHint: 'In trên nhãn QR của kiện trong kho kiện.',
     priority: 'Độ ưu tiên',
     mustLoad: 'Bắt buộc phải xếp',
     notes: 'Ghi chú',
@@ -457,7 +461,7 @@ export const trips = {
     duplicated: 'Đã tạo bản sao {id}',
     deleted: 'Đã xoá kiện {id}',
     deleteTitle: 'Xoá kiện {id}?',
-    deleteDescription: 'Kiện bị xoá khỏi chuyến. Phương án đã tối ưu sẽ thành lỗi thời.',
+    deleteDescription: 'Kiện bị xoá khỏi chuyến; các kiện của nó trong kho kiện về trạng thái Đã nhập. Phương án đã tối ưu sẽ thành lỗi thời.',
     cancel: 'Huỷ',
     // Câu cho mã lỗi của `cargoPackageSchema` hiện dưới từng ô của form kiện (LM-054)
     errors: {
@@ -479,6 +483,7 @@ export const trips = {
     title: 'Kiện hàng',
     lineCount: { one: '{count} dòng kiện', other: '{count} dòng kiện' },
     add: 'Thêm kiện',
+    printLabels: 'In nhãn QR',
     columns: {
       /** V2: một ô hai dòng — tên kiện / mã · D × R × C. */
       package: 'Kiện hàng',

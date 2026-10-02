@@ -16,6 +16,7 @@ export const pageHero = {
   packageTypes: 'Khuôn kích thước, khối lượng và cách xếp gắn cho kiện của kho kiện.',
   packages: 'Kiện của công ty: thêm lẻ hoặc nhập file, in nhãn QR, theo dõi trạng thái tới khi giao.',
   labels: 'Nhãn QR của kiện trong kho kiện, in để dán lên từng kiện.',
+  lookup: 'Quét hoặc gõ mã để xem kiện đang ở trạng thái nào, thuộc chuyến nào và in lại nhãn.',
   orders: 'Đơn vận chuyển từ kiện đã nhận ở kho, gán vào điểm giao của chuyến.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',

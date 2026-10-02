@@ -66,6 +66,21 @@ test('saving a valid package hands the edited values back', async () => {
   expect(onSave.mock.calls[0]?.[0]).toMatchObject({ id: 'PKG-001', name: 'Thùng carton B' })
 })
 
+test('the handling class shows Standard for a package that never declared one, and is only written when chosen (FE-3b-07)', async () => {
+  const { onSave, user } = renderPanel()
+  expect(screen.getByRole('combobox', { name: 'Loại hàng' })).toHaveTextContent('Thường')
+  await user.click(screen.getByRole('button', { name: 'Lưu kiện' }))
+  await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+  // Lưu mà không đụng tới loại hàng: kiện giữ nguyên, phương án không lỗi thời vì một trường tự thêm
+  expect(onSave.mock.calls[0]?.[0]).toStrictEqual(PACKAGE)
+
+  await user.click(screen.getByRole('combobox', { name: 'Loại hàng' }))
+  await user.click(await screen.findByRole('option', { name: 'Dễ vỡ' }))
+  await user.click(screen.getByRole('button', { name: 'Lưu kiện' }))
+  await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2))
+  expect(onSave.mock.calls[1]?.[0]).toStrictEqual({ ...PACKAGE, handlingClass: 'FRAGILE' })
+})
+
 test('an invalid package is not saved and field errors read as sentences, not schema codes (LM-054)', async () => {
   const { onSave, user } = renderPanel()
   await user.click(screen.getByRole('checkbox', { name: 'LWH' }))

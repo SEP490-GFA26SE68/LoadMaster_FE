@@ -1,6 +1,18 @@
-/** Mã QR của kiện (LM-104): `components/QrCode.tsx` và hộp thoại quét `components/QrScanDialog.tsx`. */
+/**
+ * Mã QR của kiện (LM-104): `components/QrCode.tsx`, hộp thoại quét `components/QrScanDialog.tsx` và chữ trên nhãn in của kiện
+ * (`label`, FE-3b-05 — `package-pool/PackageLabel.tsx`).
+ */
 export const qr = {
   imageLabel: 'Mã QR {token}',
+  label: {
+    poolId: 'Mã kho kiện',
+    senderCode: 'Mã bên gửi',
+    handlingClass: 'Loại hàng',
+    dimensions: 'Kích thước',
+    weight: 'Khối lượng',
+    destination: 'Điểm đến',
+    fragile: 'Hàng dễ vỡ',
+  },
   scan: {
     camera: {
       starting: 'Đang mở camera…',

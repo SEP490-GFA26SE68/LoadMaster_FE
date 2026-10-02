@@ -40,6 +40,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     companies: new Map(seed.companies.map((company) => [company.id, company])),
     packageTypes: new Map(seed.packageTypes.map((type) => [type.id, type])),
     packages: new Map(seed.packages.map((pkg) => [pkg.id, pkg])),
+    tripPackageLinks: new Map(seed.tripPackageLinks),
     orders: new Map(seed.orders.map((order) => [order.id, order])),
     runs: new Map(seed.runs.map((run) => [run.id, run])),
     vehicleTypes: new Map(seed.vehicleTypes.map((type) => [type.id, type])),

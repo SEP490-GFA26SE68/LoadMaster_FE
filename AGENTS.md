@@ -56,10 +56,12 @@ của quản lý (từ chối, yêu cầu tối ưu lại, đề xuất đổi x
 xem) giữ tới FE-4b-02. *(đã điều chỉnh 02/10/2026, FE-0-06)* Ba quyền `packages.register`, `shipments.manage`, `receiving.operate` đã bỏ cùng
 hai vai trò của Review 1; `/lo-hang`, `/lo-hang/:shipmentId`, `/nhan-hang` không còn — đường dẫn cũ là màn 404. *(đã điều chỉnh 03/10/2026,
 FE-3b-03)* **Kho kiện** `/kien-hang` mở theo `packages.view` (điều phối viên quản lý, quản lý công ty chỉ đọc: không nút ghi, không chọn kiện in
-nhãn, không gỡ cờ); nút ghi của màn đó, `/kien-hang/nhan` và `/loai-kien` theo `packages.manage` của điều phối viên. 19 quyền mới của
+nhãn, không gỡ cờ); nút ghi của màn đó và `/loai-kien` theo `packages.manage` của điều phối viên. *(đã điều chỉnh 03/10/2026, FE-3b-05,
+FE-3b-06)* In nhãn `/kien-hang/nhan` theo `labels.print` và Tra cứu kiện `/tra-cuu-kien` theo `packages.lookup` — điều phối viên và nhân
+viên kho. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
-nhãn; trừ `packages.view` và `packages.manage`, chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup` và `labels.print`, chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
@@ -74,7 +76,7 @@ mỗi công ty đủ năm vai trò công ty — `viet.lam@phuongnam.vn` (`US-001
 ba vai trò nền tảng bị mọi hàm dữ liệu vận hành từ chối (`COMPANY_REQUIRED`), chỉ đọc người dùng, nhật ký và danh sách công ty. Mỗi công ty có
 kho xuất phát kèm toạ độ (`Company.depot`: Kho Long Bình ở KCN Biên Hoà 2; Kho Phú Thuận ở Quận 7). Seed có từ trước (8 xe, 15 chuyến, 8 loại
 kiện, 88 kiện kho kiện, 2 đơn) thuộc Long Bình; Phương Nam có bộ nhỏ riêng ở `seed-phuong-nam.ts` — 2 xe, 1 loại xe, 2 loại kiện, 10 kiện, 1
-đơn, 2 chuyến (`TRIP-PN-001` đã duyệt, gán `taixe@phuongnam.vn`; `TRIP-PN-002` nháp) — mã mang `PN` (`TRIP-PN-…`, `VEHICLE-PN-…`, `REV-PN-…`)
+đơn, 2 chuyến; kiện nhập tay của các chuyến seed cũng là kiện kho kiện (FE-3b-07, mục 9) (`TRIP-PN-001` đã duyệt, gán `taixe@phuongnam.vn`; `TRIP-PN-002` nháp) — mã mang `PN` (`TRIP-PN-…`, `VEHICLE-PN-…`, `REV-PN-…`)
 nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
 `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
@@ -85,7 +87,8 @@ FE-3b-03) · Chuyến hàng · Đội xe. Điều phối viên: Chuyến hàng �
 họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
-màn Đội xe. `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi
+màn Đội xe. *(đã điều chỉnh 03/10/2026, FE-3b-06)* Tra cứu kiện cũng không có mục riêng: điều phối viên mở bằng nút "Tra cứu kiện" trên dải
+tiêu đề của Kho kiện, nhân viên kho bằng nút 56 px ở thanh màn chính `/kho`. `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi
 nhóm tìm nhanh của từng vai trò là route có thật mà vai trò mở được; mọi màn có tiêu đề tab và nhánh `titles` không còn tên của màn đã bỏ — bỏ
 một route hay một quyền mà quên các chỗ đó là test đỏ.
 Nhật ký và chuông chỉ biến đối tượng thành liên kết khi người xem có quyền mở trang đích (`describeEvent(…, can)`) —
@@ -234,7 +237,7 @@ src/
     fleet/              đội xe
     admin/              người dùng
     package-pool/       *(đã điều chỉnh 03/10/2026, FE-3b-03)* kho kiện `/kien-hang` (danh sách, thêm kiện, nhập file, chi tiết kiện), loại kiện,
-                        nhãn QR — thay `packages-source/` của LM-104
+                        nhãn QR `/kien-hang/nhan` (FE-3b-05), tra cứu kiện `/tra-cuu-kien` (FE-3b-06) — thay `packages-source/` của LM-104
     orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
@@ -243,7 +246,8 @@ src/
                         bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
                         *(đã điều chỉnh 03/10/2026, FE-3b-01)* kho kiện theo mô hình backend (`package-model.ts`: kiểu `Package`,
                         bảng chuyển trạng thái; `db-packages.ts`; `db-package-progress.ts` ghi trạng thái theo mốc của chuyến;
-                        `seed-packages.ts`) thay kiện đăng ký `RPK`;
+                        `seed-packages.ts`) thay kiện đăng ký `RPK`; kiện thêm trong chuyến tự vào kho kiện (`db-trip-packages.ts`,
+                        `seed-trip-pool.ts`, FE-3b-07);
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, đơn hàng, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
@@ -498,7 +502,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   `--line-strong`, focus viền `--cyan-500` + quầng `--focus-ring` (thay vòng outline), lỗi viền đỏ + `--error-ring` + icon.
   *(bổ sung 27/09/2026, LM-103)* Dấu `*` bắt buộc là `aria-hidden`, ô có `aria-required`: tên truy cập giữ đúng chữ nhãn ("Tên xe", không
   "Tên xe *") — test đọc nhãn bằng `exact: true`.
-- **Tab**: `TabsList tone="light"` gạch chân `--cyan-500` trên nền trắng; `TabCount` Archivo, `tone="warn"` nền hổ phách.
+- **Tab**: `TabsList tone="light"` gạch chân `--cyan-500` trên nền trắng; `TabCount` Archivo, `tone="warn"` nền hổ phách; số của
+  `TabCount` viết theo ngôn ngữ đang chọn ("2.714" · "2,714").
   *(đã điều chỉnh 27/09/2026)* `tone="sky"` là **nhóm tab kính** trong dải trời: khay `--sky-glass` viền bo 12, tab 36 px bo 10, tab mở là
   kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề và cách card đè dải 16 px, số 0 mờ đi. Bản mẫu V2.3 vẽ tab gạch
   chân trên dải — vạch nằm sát mép card nên nhìn như đường kẻ thừa; người dùng yêu cầu làm lại.
@@ -1014,9 +1019,23 @@ thước và khối lượng **của chính kiện**, `handlingClass`, `destinat
 `IMPORTED` kèm cờ `NOT_FOUND`; xuất phát → `IN_TRANSIT`; hoàn tất điểm giao → kiện đã dỡ `DELIVERED`, kiện của điểm đó không dỡ được
 `RETURNED`; huỷ chuyến hoặc bỏ gán đơn → `IMPORTED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào đơn
 hay chuyến được (`PACKAGE_FLAGGED`, `isSelectablePackage`); `clearPackageFlag` chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`) và ghi nhật
-ký. Mã QR cấp một lần lúc tạo, `updatePackage` không đổi nó. Đơn `delivered` vẫn **suy lúc đọc** từ chuyến đã hoàn thành
+ký; nhân viên kho gỡ cờ `NOT_FOUND` bằng `reportPackageFound` khi tìm thấy lại kiện (FE-3b-06). Mã QR cấp một lần lúc tạo, `updatePackage` không đổi nó. Đơn `delivered` vẫn **suy lúc đọc** từ chuyến đã hoàn thành
 (`review1-status.ts`). Seed: Long Bình 88 kiện đều `IMPORTED` — 48 kiện thêm tay theo loại kiện (kiện `RPK` cũ, kích thước của loại kiện,
 22 kiện đầu thuộc hai đơn chờ gán) và 40 kiện nhập file không gắn loại kiện, tám điểm đến thật, hai kiện mang cờ; Phương Nam 10 kiện.
+*(đã điều chỉnh 03/10/2026, FE-3b-07, D-68)* **Kiện thêm ngay trong chuyến tự vào kho kiện**: sau mỗi lần ghi dòng kiện hay điểm giao của
+chuyến (`createTrip`, `updateTrip`, bỏ gán đơn), `syncTripPool` (`db-trip-packages.ts`) giữ cho mỗi instance của dòng (`quantity`) một bản
+ghi `Package` nguồn `TRIP`, `ASSIGNED`, kèm chuyến và điểm giao, mã QR thật cấp ngay; `packageCode` là mã instance (`PKG-001-07`), điểm đến
+là địa chỉ điểm giao, loại hàng lấy `handlingClass` của dòng (vắng là `STANDARD`). Tăng số lượng tạo thêm kiện; giảm số lượng hoặc xoá dòng
+trả kiện về `IMPORTED` (rời chuyến và điểm giao); sửa kích thước, loại hàng hay điểm giao của dòng thì kiện đổi theo, mã QR giữ nguyên.
+Không ghi sự kiện nhật ký riêng — `trip.created` / `trip.updated` đã nói. Liên kết instance ↔ kiện nằm ở `DbState.tripPackageLinks` (ngoài
+`Trip`, kiện thứ i là instance thứ i của dòng); dòng của đơn hàng dùng kiện của đơn (`order.assignment`), dòng của đơn bị sửa số lượng thì
+được cấp kiện riêng. **Mã băm theo chuyến + kiện (`hashedQrToken`) đã bỏ**: nhãn của chuyến (`tripLabels`), quét khi xếp / dỡ, in nhãn và tra
+cứu đều dùng mã QR của kiện kho kiện; tiến độ chuyến ghi trạng thái cho cả kiện nguồn `TRIP` (`tripInstances`). Seed: kiện của 15 chuyến
+Long Bình và 2 chuyến Phương Nam dựng bằng cách chạy lại các mốc của chuyến qua chính hàm của kho (`seed-trip-pool.ts`) — 2.863 + 70 kiện,
+mã `PK-T…` / `PK-PN-T…` (`nextId` không tính: mã kế tiếp vẫn `PK-0089`), đứng **trước** kiện có từ trước nên bảng kho kiện vẫn mở đầu bằng
+`PK-0088`; kho kiện Long Bình có 2.951 kiện. Mẫu nhập kiện trong chuyến thêm cột cuối tuỳ chọn `handlingClass` (mã hoặc nhãn vi / en, lỗi
+`HANDLING_CLASS_INVALID`), form kiện có ô "Loại hàng" — chỉ ghi vào kiện khi người dùng chọn, để lưu lại một kiện cũ không làm phương án lỗi
+thời; bảng kiện của chuyến có nút "In nhãn QR" (`labels.print`) mở `/kien-hang/nhan?chuyen=<mã>`.
 *(đã điều chỉnh 03/10/2026, FE-3b-04)* **Loại hàng** `HandlingClass` (`STANDARD | FRAGILE | REFRIGERATED | HAZARDOUS | HIGH_VALUE`) khai ở
 `domain/models/package.ts`; `CargoPackage` mang thêm `handlingClass?` — trường đầu tiên ngoài type Spec (D-04 "không thêm trường" đã bị
 thay), khai tường minh trong `spec-contract.test.ts`. `cargoFromPackage(pkg, packageType?)` dựng dòng kiện Spec từ kiện kho kiện: có loại
@@ -1037,8 +1056,24 @@ kèm số dòng của file (tiêu đề là dòng 1): `PACKAGE_CODE_REQUIRED`, `
 `DESTINATION_REQUIRED`, `DUPLICATE_PACKAGE_CODE`, `PACKAGE_TYPE_NOT_FOUND`; cảnh báo `PACKAGE_CODE_EXISTS` không chặn. Còn một dòng lỗi thì nút
 Xác nhận vô hiệu và `confirmPackageImport` từ chối `PACKAGE_IMPORT_INVALID`; xác nhận gọi `createPackages(rows, 'IMPORT')` một lần, nhật ký
 `package.importConfirmed` (thêm lẻ là `package.created`). Tìm nhanh: nhóm `pool` theo `packages.view`.
+*(đã điều chỉnh 03/10/2026, FE-3b-05, D-71)* **Nhãn in** (`PackageLabel`, khổ ở `label-sheet.ts`): in bằng trình duyệt, A4 dọc lề 10 mm, **bốn
+nhãn mỗi trang** (2 × 2, khe 4 mm), mỗi nhãn 93 × 134 mm — khổ PDF của backend chưa chốt. Nhãn có mã QR kèm mã chữ, mã của bên gửi, loại
+hàng, kích thước (cm), khối lượng (kg), điểm đến, mã của kho kiện, logo `mono`, tên loại kiện (nếu có) và công ty; kiện `FRAGILE` thêm khung
+"Hàng dễ vỡ". Không nền màu (in đen trắng), chữ dài xuống dòng chứ không cắt. Mọi cỡ trong nhãn là `em` của cỡ chữ gốc — bản in gốc 4 mm, bản
+xem trên màn gốc 16 px — nên hai bản một bố cục. Trang nhãn đọc kiện từ URL: `?kien=<mã,…>` hoặc `?chuyen=<mã chuyến>`; không chọn gì thì
+không có nhãn nào (không còn "in tất cả"). In lại giữ nguyên mã QR. Nút quay lại về nơi bấm in (`labelsBackTarget`): chuyến, Tra cứu kiện
+(`&tu=tra-cuu`), không thì Kho kiện; người không mở được đích đó về Tra cứu kiện.
+*(đã điều chỉnh 03/10/2026, FE-3b-06, D-63, D-92)* **Tra cứu kiện** `/tra-cuu-kien` (`PackageLookupPage`, hàm thuần `package-lookup.ts`): quét
+bằng `QrScanDialog` (`scanPackage` → `GET /api/packages/scan/{qrToken}`) hoặc gõ mã QR / mã của bên gửi / mã của kho (`lookupPackages`, khớp
+đúng cả mã, không phân biệt hoa thường). Mã đang tra nằm trên URL (`?ma=`, kiện đã chọn `&kien=`). Một kiện: thẻ kiện (mã, kích thước, khối
+lượng, loại hàng, điểm đến, trạng thái, cờ, chuyến và điểm giao); nhiều kiện trùng mã của bên gửi: danh sách để chọn; không khớp, hoặc là
+kiện của công ty khác: "Không tìm thấy" (`QR_UNKNOWN`), không lộ dữ liệu. Hành động theo vai trò (`lookupActions`): "In lại nhãn"
+(`labels.print`); điều phối viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến; nhân viên kho **quét** thấy kiện mang cờ "Không tìm thấy" thì cờ được
+gỡ ngay, **gõ mã** thì thẻ có nút "Đã tìm thấy kiện này" — cả hai gọi `reportPackageFound` (chỉ vai trò kho, chỉ cờ `NOT_FOUND`), kho ghi sự
+kiện `package.found` và điều phối viên thấy ở chuông. "Quét mã QR" là nút chính của màn. Màn nằm trong khung ứng dụng; nhân viên kho
+(`warehouse.operate`) được nút, ô nhập 56 px, chữ từ 16 px và nút "Về màn kho" trên dải trời.
 Mã QR là chuỗi
-ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
+ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện, cấp cho mọi kiện kho kiện — kể cả kiện thêm trong chuyến.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
 
 ### Dữ liệu dùng chung và tối ưu *(bổ sung 15/09/2026, D-06, D-30, D-31)*

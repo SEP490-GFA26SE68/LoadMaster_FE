@@ -49,7 +49,8 @@ const LONG_BINH: Company = {
   typedVehicles: range('VEHICLE-', 1, 7, 3),
   vehicleTypes: range('VT-', 1, 7, 3),
   packageTypes: range('PT-', 1, 8, 3),
-  packages: range('PK-', 1, 88, 4),
+  // 2.863 kiện của 15 chuyến seed (nguồn `TRIP`, FE-3b-07) đứng trước 88 kiện có từ trước
+  packages: [...range('PK-T', 1, 2863, 5), ...range('PK-', 1, 88, 4)],
   orders: ['ORD-002', 'ORD-001'],
   trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
   trip: 'TRIP-2026-0914',
@@ -68,7 +69,7 @@ const PHUONG_NAM: Company = {
   typedVehicles: ['VEHICLE-PN-01'],
   vehicleTypes: ['VT-PN-01'],
   packageTypes: ['PT-PN-01', 'PT-PN-02'],
-  packages: range('PK-PN-', 1, 10, 4),
+  packages: [...range('PK-PN-T', 1, 70, 4), ...range('PK-PN-', 1, 10, 4)],
   orders: ['ORD-PN-001'],
   trips: ['TRIP-PN-001', 'TRIP-PN-002'],
   trip: 'TRIP-PN-001',
@@ -209,6 +210,8 @@ const PROBES = {
   listPackages: { scope: 'operational', list: { call: ({ db }) => db.listPackages(), ids: idsOf, own: (c) => c.packages } },
   getPackage: { scope: 'operational', hidden: ({ db, other }) => db.getPackage(other.packages[0]!) },
   findPackageByQr: { scope: 'operational', hidden: ({ db, foreign }) => db.findPackageByQr(foreign.qrToken), hiddenCode: 'QR_UNKNOWN' },
+  lookupPackages: { scope: 'operational', hidden: ({ db, other }) => db.lookupPackages(other.freePackage), hiddenCode: 'QR_UNKNOWN' },
+  reportPackageFound: { scope: 'operational', hidden: ({ db, foreign }) => db.reportPackageFound(foreign.qrToken), hiddenCode: 'QR_UNKNOWN' },
   createPackage: {
     scope: 'operational',
     creates: ({ db, own }) => db.createPackage({ ...PACKAGE, packageTypeId: own.packageTypes[0]! }),

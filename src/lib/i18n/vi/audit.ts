@@ -18,7 +18,7 @@ export const audit = {
       passwordReset: 'Đặt lại mật khẩu', passwordChanged: 'Đổi mật khẩu', profileUpdated: 'Sửa hồ sơ cá nhân',
     },
     packageType: { created: 'Thêm loại kiện', updated: 'Sửa loại kiện', deleted: 'Xoá loại kiện' },
-    package: { created: 'Thêm kiện vào kho kiện', importConfirmed: 'Nhập file vào kho kiện', updated: 'Sửa kiện', statusChanged: 'Chuyển trạng thái kiện', flagged: 'Gắn cờ kiện', flagCleared: 'Gỡ cờ kiện' },
+    package: { created: 'Thêm kiện vào kho kiện', importConfirmed: 'Nhập file vào kho kiện', updated: 'Sửa kiện', statusChanged: 'Chuyển trạng thái kiện', flagged: 'Gắn cờ kiện', flagCleared: 'Gỡ cờ kiện', found: 'Kho tìm thấy lại kiện' },
     order: { created: 'Tạo đơn hàng', updated: 'Sửa đơn hàng', cancelled: 'Huỷ đơn hàng', assigned: 'Gán đơn vào điểm giao', unassigned: 'Bỏ gán đơn' },
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
   } satisfies AuditActionLabels,

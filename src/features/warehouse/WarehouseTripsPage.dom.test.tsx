@@ -41,6 +41,9 @@ test('in-progress trip first with Continue (110/280), then the approved trip, th
   expect(container.querySelectorAll('a.text-on-primary, button.text-on-primary')).toHaveLength(1)
   expect(loading.getByRole('link', { name: 'Tiếp tục (110/280)' })).toHaveClass('text-on-primary')
   expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeInTheDocument()
+  // FE-3b-06: Tra cứu kiện mở từ màn chính của kho, nút phụ 56 px
+  expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveAttribute('href', '/tra-cuu-kien')
+  expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveClass('h-14')
   // LM-096: nút tài khoản 56px mở hồ sơ cá nhân
   expect(screen.getByRole('button', { name: 'Tài khoản Lê Văn Hải' })).toHaveClass('size-14')
 })

@@ -75,6 +75,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'package.statusChanged': 'blue',
   'package.flagged': 'amber',
   'package.flagCleared': 'slate',
+  'package.found': 'green',
   'order.created': 'blue',
   'order.updated': 'blue',
   'order.cancelled': 'amber',

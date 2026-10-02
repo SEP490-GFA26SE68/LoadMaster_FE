@@ -4,10 +4,12 @@ import type { AuditEvent } from './audit'
 import { addDays, vnTime } from './clock'
 import { nextEventId } from './db-context'
 import { CARGO, CUSTOMERS } from './seed-directory'
-import { seedPhuongNam } from './seed-phuong-nam'
+import type { TripPackageLink } from './review1-status'
+import { PHUONG_NAM_DISPATCHER, seedPhuongNam } from './seed-phuong-nam'
 import { seedPlanner, type SeedPlanner } from './seed-plan'
 import { seedDelivery, seedLoading, type SeedEvent } from './seed-progress'
 import { seedTrip } from './seed-trip'
+import { seedTripPool } from './seed-trip-pool'
 import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
 import { LONG_BINH, PHUONG_NAM, SEED_PASSWORD, seedUsers } from './seed-users'
 import { seedVehicles } from './seed-vehicles'
@@ -30,6 +32,8 @@ export type SeedData = {
   events: AuditEvent[]
   /** Lần chạy tối ưu (LM-104): mỗi revision tối ưu một lần chạy xong, cộng một lần hỏng của chuyến chính. */
   runs: OptimizationRun[]
+  /** Chuyến → kiện kho kiện của từng dòng kiện nhập tay (FE-3b-07). */
+  tripPackageLinks: [string, TripPackageLink[]][]
 } & SourcingSeed
 
 const cache = new Map<string, SeedData>()
@@ -82,6 +86,16 @@ function createSeed(today: string): SeedData {
   const phuongNam = seedPhuongNam(today, new Set(sourcing.packages.map((pkg) => pkg.qrToken)))
   events.push(...phuongNam.events)
 
+  // Kiện của mọi chuyến seed đều nhập tay: mỗi instance là một kiện kho kiện nguồn `TRIP`, trạng thái theo tiến độ chuyến (FE-3b-07).
+  // Đứng trước kiện có từ trước trong kho: bảng kho kiện (mới nhất trước) vẫn mở đầu bằng PK-0088
+  const sourced = [...sourcing.packages, ...phuongNam.packages]
+  const tripPool = seedTripPool({
+    trips: [...trips, ...phuongNam.trips],
+    existing: sourced,
+    plannerOf: (trip) => (trip.companyId === PHUONG_NAM ? PHUONG_NAM_DISPATCHER : SEED_DISPATCHER),
+    idOf: (companyId, order) => (companyId === PHUONG_NAM ? `PK-PN-T${String(order).padStart(4, '0')}` : `PK-T${String(order).padStart(5, '0')}`),
+  })
+
   // Công ty của sự kiện theo cùng luật với `ctx.log` (`auditEventCompany`): sự kiện về một tài khoản thuộc công ty của tài khoản đó,
   // sự kiện khác thuộc công ty của người làm — tài khoản nền tảng không thuộc công ty nào
   const userById = new Map(users.map((user) => [user.id, user]))
@@ -100,7 +114,8 @@ function createSeed(today: string): SeedData {
     runs: [...runs, ...phuongNam.runs],
     companies: sourcing.companies,
     packageTypes: [...sourcing.packageTypes, ...phuongNam.packageTypes],
-    packages: [...sourcing.packages, ...phuongNam.packages],
+    packages: [...tripPool.packages, ...sourced],
+    tripPackageLinks: tripPool.tripPackageLinks,
     orders: [...sourcing.orders, ...phuongNam.orders],
     vehicleTypes: [...sourcing.vehicleTypes, ...phuongNam.vehicleTypes],
     vehicleTypeOf: [...sourcing.vehicleTypeOf, ...phuongNam.vehicleTypeOf],
