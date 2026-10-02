@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner } from './spec-flow-helpers'
+import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute } from './spec-flow-helpers'
 
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
@@ -46,7 +46,11 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await page.getByRole('button', { name: 'Tạo chuyến', exact: true }).click()
   await page.waitForURL(new RegExp(`/chuyen/${TRIP}$`))
   // FE-4b-04: điểm giao thêm ở Chi tiết chuyến, không nhập lúc tạo
-  await addStop(page, { name: 'Siêu thị Co.opmart Biên Hoà', phone: '0251 381 4420' })
+  await addStop(page, { name: 'Siêu thị Co.opmart Biên Hoà', phone: '0251 381 4420', place: 'kcn amata' })
+  // FE-4b-09: tối ưu tuyến trước, chuyến Nháp thành Đã lập kế hoạch; phương án xếp hàng là dòng phụ
+  await expect(page.locator('header').getByText('Nháp', { exact: true })).toBeVisible()
+  await optimizeRoute(page)
+  await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
   await addPackage(page, { name: 'Thùng nước suối 24 chai', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, quantity: 6 })
   await expect(page.getByRole('row', { name: /Thùng nước suối 24 chai PKG-\d+ · 50 × 35 × 25 cm 13 kg 6\b/ })).toBeVisible()
 
@@ -130,7 +134,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   const store = await page.evaluate(async ({ db, tripId }) => {
     const { getMockDb, tripStatus } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
-    return { status: tripStatus(trip, await getMockDb().listRevisions(tripId)), issues: trip.delivery?.issues.map((item) => item.kind) }
+    return { status: tripStatus(trip), issues: trip.delivery?.issues.map((item) => item.kind) }
   }, { db: MOCK_DB, tripId: TRIP })
   expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
   await signOut(page, NAMES.manager)

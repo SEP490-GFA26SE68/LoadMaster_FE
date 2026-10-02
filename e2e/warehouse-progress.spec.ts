@@ -54,7 +54,7 @@ test('tablet: pick the main trip, record two loaded and one missing, leave and r
     const { getMockDb, missingIds, tripStatus, tripSubStatus } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
     const revisions = await getMockDb().listRevisions(tripId)
-    return { status: tripStatus(trip, revisions), sub: tripSubStatus(trip, revisions), missing: [...missingIds(trip)] }
+    return { status: tripStatus(trip), sub: tripSubStatus(trip, revisions), missing: [...missingIds(trip)] }
   }, { db: MOCK_DB, tripId: SEED_TRIP })
   expect(store).toStrictEqual({ status: 'LOADING', sub: { kind: 'loading', recorded: 3, total: 132 }, missing: [third] })
   expect(browserErrors).toStrictEqual([])
