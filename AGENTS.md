@@ -981,7 +981,9 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
 - E2E: `pnpm test:e2e` (Playwright, `e2e/*.spec.ts`, project `desktop`/`tablet`/`phone` theo tag
   `@tablet`/`@phone`). Tự bật Vite ở `127.0.0.1:5175`; cổng đang do checkout khác giữ thì đặt
   `E2E_PORT`. Trước khi so tư thế camera phải chờ camera đã vẽ xong (`waitCameraSettled`) —
-  overlay debug có thể báo nghỉ sớm. CI: `.github/workflows/ci.yml` (LM-006).
+  overlay debug có thể báo nghỉ sớm. CI: `.github/workflows/ci.yml` (LM-006). *(bổ sung 02/10/2026)* CI chia E2E thành **3 phần chạy
+  song song** trên ba máy (`--shard=n/3`, chia theo file spec, mỗi máy vẫn một worker) — một lượt E2E một máy mất hơn 30 phút. Ở máy dev
+  chỉ chạy các spec bị thay đổi đụng tới (`pnpm test:e2e e2e/<tên>.spec.ts`); bộ đủ để CI chạy.
 - *(bổ sung 20/09/2026, LM-101)* **Máy CI chậm hơn máy dev nhiều** — mọi thứ đo bằng thời gian phải chịu được điều đó:
   - Không bấm nút đóng của toast: sonner chỉ dừng đếm giờ khi con trỏ nằm **trên** toast, nên trên máy chậm toast đã tự tắt trước
     khi bấm và lệnh chờ tới hết giờ. Chờ `[data-sonner-toast]` về 0 thay vì bấm.
