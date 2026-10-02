@@ -10,7 +10,7 @@ export const nav = {
   fleet: 'Fleet',
   users: 'Users',
   audit: 'Log',
-  packages: 'Packages',
+  packages: 'Package pool',
   orders: 'Orders',
   account: 'Account {name}',
   signOut: 'Sign out',

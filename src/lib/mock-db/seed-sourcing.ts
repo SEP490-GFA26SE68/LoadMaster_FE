@@ -91,7 +91,9 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
   const imported = seeder.add(LONG_BINH_IMPORT, 'IMPORT', on(1, '16:20'))
   for (const pkg of imported) {
     const flag = pkg.flags[0]
-    if (flag !== undefined) events.push({ at: on(1, '17:05'), actorId: SEED_DISPATCHER, action: 'package.flagged', target: { type: 'package', id: pkg.id }, params: { flag } })
+    if (flag === undefined) continue
+    events.push({ at: on(1, '17:05'), actorId: SEED_DISPATCHER, action: 'package.flagged', target: { type: 'package', id: pkg.id }, params: { flag } })
+    pkg.history.push({ at: on(1, '17:05'), actorId: SEED_DISPATCHER, kind: 'flagged', flag })
   }
 
   const order = function (id: string, customer: { name: string; address: string; phone: string; contactName: string }, packages: Package[], at: string): TransportOrder {

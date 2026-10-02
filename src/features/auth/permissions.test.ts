@@ -77,9 +77,9 @@ test('users and the audit log belong to the system administrator and the company
   }
 })
 
-test('registering packages, package types and QR labels belong to the dispatcher alone, through packages.manage (FE-0-06)', () => {
+test('writing to the package pool, package types and QR labels belong to the dispatcher alone, through packages.manage (FE-0-06)', () => {
   expect(ROLES.filter((role) => can(role, 'packages.manage'))).toStrictEqual(['dispatcher'])
-  // Quản lý công ty xem kho kiện (màn tới sau), không mở được màn đăng ký kiện của điều phối
+  // Quản lý công ty xem kho kiện chỉ đọc (`packages.view`, FE-3b-03); ghi vào kho kiện là của điều phối viên
   expect(can('manager', 'packages.view')).toBe(true)
   expect(can('manager', 'packages.manage')).toBe(false)
 })

@@ -3,23 +3,23 @@ import { matchesQuery, normalizeSearchText } from '@/lib/list-filter'
 import type { Role } from '@/types/user'
 
 /**
- * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng; thêm cho Review 1 (LM-104): đơn hàng, kiện đã đăng ký, loại kiện
- * (hai nhóm sau là của điều phối viên từ FE-0-06; nhóm lô hàng và lô đang đến đã bỏ cùng hai màn đó). Hàm thuần: `search-api.ts` đọc
+ * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng; thêm cho Review 1 (LM-104): đơn hàng, kho kiện, loại kiện (kho kiện
+ * theo `packages.view` — điều phối viên và quản lý công ty, FE-3b-03; loại kiện của điều phối viên). Hàm thuần: `search-api.ts` đọc
  * kho, màn gọi `searchSources` mỗi lần gõ. Tìm không phân biệt dấu và hoa thường, mọi từ phải có (`matchesQuery` của danh sách, LM-085).
  */
-export const SEARCH_GROUPS = ['trips', 'packages', 'orders', 'registered', 'packageTypes', 'vehicles', 'users'] as const
+export const SEARCH_GROUPS = ['trips', 'packages', 'orders', 'pool', 'packageTypes', 'vehicles', 'users'] as const
 export type SearchGroup = (typeof SEARCH_GROUPS)[number]
 
 /**
  * Quyền để thấy một nhóm — trùng quyền mở màn đích (`role-routes.dom.test.tsx` kiểm với bảng route thật). Kiện mở trong chi tiết chuyến
  * nên theo quyền xem chuyến. Theo tám vai trò (FE-0-04): quản trị hệ thống và quản trị công ty tìm người dùng; quản lý công ty tìm
- * chuyến, kiện, đơn hàng, xe; điều phối viên thêm kiện đã đăng ký và loại kiện; bốn vai trò còn lại không có nhóm nào.
+ * chuyến, kiện, đơn hàng, kho kiện, xe; điều phối viên thêm loại kiện; bốn vai trò còn lại không có nhóm nào.
  */
 export const GROUP_PERMISSION: Readonly<Record<SearchGroup, Permission>> = {
   trips: 'trips.view',
   packages: 'trips.view',
   orders: 'orders.view',
-  registered: 'packages.manage',
+  pool: 'packages.view',
   packageTypes: 'packages.manage',
   vehicles: 'fleet.view',
   users: 'users.manage',
@@ -44,8 +44,8 @@ export type SearchSources = {
   readonly vehicles: readonly { readonly id: string; readonly name: string }[]
   readonly users: readonly { readonly id: string; readonly fullName: string; readonly email: string; readonly role: Role }[]
   readonly orders: readonly { readonly id: string; readonly customerName: string; readonly deliveryAddress: string }[]
-  /** Kiện đã đăng ký: mã, mã lô / SKU, mã QR, tên loại. */
-  readonly registered: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
+  /** Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). */
+  readonly pool: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
   readonly packageTypes: readonly { readonly id: string; readonly name: string }[]
 }
 
@@ -57,7 +57,7 @@ export type SearchResult =
   | (ResultBase & { readonly group: 'vehicles'; readonly name: string })
   | (ResultBase & { readonly group: 'users'; readonly name: string; readonly email: string; readonly role: Role })
   | (ResultBase & { readonly group: 'orders'; readonly name: string; readonly detail: string })
-  | (ResultBase & { readonly group: 'registered'; readonly name: string; readonly reference?: string })
+  | (ResultBase & { readonly group: 'pool'; readonly name: string; readonly reference?: string })
   | (ResultBase & { readonly group: 'packageTypes'; readonly name: string })
 
 export type SearchResultGroup = { readonly group: SearchGroup; readonly results: readonly SearchResult[] }
@@ -71,7 +71,7 @@ const path = (value: string) => encodeURIComponent(value)
  * - Kiện: mã kiện gốc → chi tiết chuyến mở đúng kiện (`?kien=`, LM-047).
  * - Xe: mã, tên (tên xe gồm biển số) → chi tiết xe.
  * - Người dùng: họ tên, email, mã → danh sách người dùng lọc đúng mã.
- * - Đơn hàng: mã, khách, địa chỉ → danh sách đơn lọc đúng mã. Kiện đã đăng ký: mã, mã lô / SKU, mã QR, tên loại → danh sách kiện lọc
+ * - Đơn hàng: mã, khách, địa chỉ → danh sách đơn lọc đúng mã. Kho kiện: mã, mã của bên gửi, mã QR, tên loại hoặc điểm đến → kho kiện lọc
  *   đúng mã. Loại kiện: mã, tên → danh sách loại lọc đúng mã.
  */
 export function searchSources(sources: SearchSources, query: string, groups: readonly SearchGroup[]): SearchResultGroup[] {
@@ -108,11 +108,11 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
           group: 'orders', key: `order:${order.id}`, href: `/don-hang?q=${path(order.id)}`,
           id: order.id, name: order.customerName, detail: order.deliveryAddress,
         })),
-    registered: () =>
-      sources.registered
+    pool: () =>
+      sources.pool
         .filter((pkg) => matchesQuery([pkg.id, pkg.reference ?? '', pkg.qrToken, pkg.typeName], query))
         .map((pkg) => ({
-          group: 'registered', key: `registered:${pkg.id}`, href: `/kien-hang?q=${path(pkg.id)}`,
+          group: 'pool', key: `pool:${pkg.id}`, href: `/kien-hang?q=${path(pkg.id)}`,
           id: pkg.id, name: pkg.typeName, reference: pkg.reference,
         })),
     packageTypes: () =>

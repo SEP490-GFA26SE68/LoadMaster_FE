@@ -29,7 +29,7 @@ export const titles = {
   forbidden: 'Không có quyền truy cập',
   // Review 1 (LM-104)
   packageTypes: 'Loại kiện',
-  packages: 'Kiện hàng',
+  packages: 'Kho kiện',
   labels: 'In nhãn QR',
   orders: 'Đơn hàng',
   vehicleTypes: 'Loại xe',

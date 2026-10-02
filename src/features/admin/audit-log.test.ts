@@ -122,30 +122,35 @@ test('đối tượng chỉ là liên kết khi người xem có quyền mở tr
     .toStrictEqual({ id: 'VEHICLE-008', label: 'Hyundai Mighty EX8 · 50H-118.29', href: null })
   expect(target(event('user.locked', { type: 'user', id: 'US-0010' })))
     .toStrictEqual({ id: 'US-0010', label: 'Trương Văn Lộc', href: '/nguoi-dung?q=US-0010' })
-  // Đơn hàng, kiện đăng ký, loại kiện, loại xe theo quyền của màn đó
+  // Đơn hàng, kiện của kho kiện, loại kiện, loại xe theo quyền của màn đó
   expect(target(event('order.created', { type: 'order', id: 'ORD-001' }, { customerName: 'Co.opmart Bình Dương', count: 12 })).href).toBeNull()
-  expect(target(event('package.registered', { type: 'package', id: 'PK-0001' }, { count: 12 })).href).toBeNull()
+  expect(target(event('package.created', { type: 'package', id: 'PK-0001' }, { count: 12 })).href).toBeNull()
   expect(target(event('packageType.created', { type: 'packageType', id: 'PT-001' }, { name: 'Thùng nước suối 24 chai' })).href).toBeNull()
   expect(target(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }, { name: 'Xe tải 5 tấn thùng 6 m' })).href).toBeNull()
 
-  // Điều phối viên: mở được chuyến, xe, đơn hàng và — từ FE-0-06 — kiện đăng ký, loại kiện (`packages.manage`); không mở được người dùng
-  const dispatcherCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.manage'].includes(permission)
+  // Điều phối viên: mở được chuyến, xe, đơn hàng, kho kiện (`packages.view`) và loại kiện (`packages.manage`); không mở được người dùng
+  const dispatcherCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.view', 'packages.manage'].includes(permission)
   const forDispatcher = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, dispatcherCan).target.href
   expect(forDispatcher(event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }))).toBe('/chuyen/TRIP-004')
   expect(forDispatcher(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }))).toBe('/doi-xe/loai-xe')
   expect(forDispatcher(event('order.created', { type: 'order', id: 'ORD-001' }))).toBe('/don-hang?q=ORD-001')
-  expect(forDispatcher(event('package.registered', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
+  expect(forDispatcher(event('package.created', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
   expect(forDispatcher(event('packageType.created', { type: 'packageType', id: 'PT-001' }))).toBe('/loai-kien')
   expect(forDispatcher(event('user.locked', { type: 'user', id: 'US-0010' }))).toBeNull()
-  // Quản lý công ty xem kho kiện (`packages.view`) nhưng không mở được màn đăng ký kiện
+  // Quản lý công ty xem kho kiện (`packages.view`, FE-3b-03) nên mở được kiện; danh mục loại kiện vẫn là của điều phối viên
   const managerCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.view'].includes(permission)
-  expect(describeEvent(event('package.registered', { type: 'package', id: 'PK-0001' }), DIRECTORY, vi.t, vi.format, managerCan).target.href).toBeNull()
+  const forManager = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, managerCan).target.href
+  expect(forManager(event('package.importConfirmed', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
+  expect(forManager(event('packageType.created', { type: 'packageType', id: 'PT-001' }))).toBeNull()
 })
 
-test('một đợt đăng ký kiện: số kiện, loại kiện và kiện cuối của đợt', () => {
-  const registered = event('package.registered', { type: 'package', id: 'PK-0001' }, { count: 12, packageTypeId: 'PT-001', lastPackageId: 'PK-0012' })
-  expect(describe(registered)).toMatchObject({ action: 'Đăng ký kiện', details: 'Số kiện: 12 · Loại kiện: PT-001 · Đến kiện: PK-0012' })
+test('một đợt thêm kiện vào kho kiện: số kiện, loại kiện và kiện cuối của đợt', () => {
+  const registered = event('package.created', { type: 'package', id: 'PK-0001' }, { count: 12, packageTypeId: 'PT-001', lastPackageId: 'PK-0012' })
+  expect(describe(registered)).toMatchObject({ action: 'Thêm kiện vào kho kiện', details: 'Số kiện: 12 · Loại kiện: PT-001 · Đến kiện: PK-0012' })
   expect(describe(registered, en).details).toBe('Packages: 12 · Package type: PT-001 · Through package: PK-0012')
+  const imported = event('package.importConfirmed', { type: 'package', id: 'PK-0049' }, { count: 40, lastPackageId: 'PK-0088' })
+  expect(describe(imported)).toMatchObject({ action: 'Nhập file vào kho kiện', details: 'Số kiện: 40 · Đến kiện: PK-0088' })
+  expect(describe(imported, en).action).toBe('Imported a file into the package pool')
   // Kho kiện (FE-3b-01): trạng thái và cờ là mã của kho, nhật ký dịch qua nhánh `common`
   const moved = event('package.statusChanged', { type: 'package', id: 'PK-0049' }, { before: 'IN_TRANSIT', after: 'RETURNED' })
   expect(describe(moved)).toMatchObject({ action: 'Chuyển trạng thái kiện', details: 'Trước: Đang vận chuyển · Sau: Hoàn trả' })

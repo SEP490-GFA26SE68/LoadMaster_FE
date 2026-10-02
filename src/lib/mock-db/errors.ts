@@ -123,6 +123,19 @@ export type MockDbErrorParams = {
   PACKAGE_FLAG_NOT_SET: { packageId: string; flag: PackageFlag }
   /** Thao tác chỉ một vai trò khác được làm (gỡ cờ kiện là việc của điều phối viên). */
   ROLE_NOT_ALLOWED: { role: Role }
+
+  // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
+  /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */
+  UNSUPPORTED_FILE_TYPE: Record<string, never>
+  /** File không có dòng dữ liệu nào. */
+  EMPTY_FILE: Record<string, never>
+  FILE_TOO_LARGE: { maxMb: number }
+  /** File có `rows` dòng dữ liệu, quá `max`. */
+  BATCH_TOO_LARGE: { max: number; rows: number }
+  /** Dòng tiêu đề thiếu cột bắt buộc `columns` (tên cột của backend). */
+  IMPORT_COLUMNS_MISSING: { columns: string[] }
+  /** Xác nhận nhập khi bản xem trước còn `errors` dòng lỗi: không dòng nào được ghi (D-68). */
+  PACKAGE_IMPORT_INVALID: { errors: number }
 }
 
 export type MockDbErrorCode = keyof MockDbErrorParams

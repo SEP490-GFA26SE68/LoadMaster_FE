@@ -8,8 +8,8 @@ export const nav = {
   fleet: 'Đội xe',
   users: 'Người dùng',
   audit: 'Nhật ký',
-  // Kiện đăng ký (LM-104; từ FE-0-06 là màn của điều phối viên) và đơn hàng (điều phối viên; quản lý công ty chỉ đọc)
-  packages: 'Kiện hàng',
+  // Kho kiện (FE-3b-03) và đơn hàng: điều phối viên quản lý, quản lý công ty chỉ đọc
+  packages: 'Kho kiện',
   orders: 'Đơn hàng',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',

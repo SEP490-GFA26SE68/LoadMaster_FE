@@ -56,6 +56,13 @@ export const dataErrors = {
   PACKAGE_FLAGGED: 'Kiện {packageId} đang mang cờ nên chưa đưa vào đơn hay chuyến được. Gỡ cờ trước.',
   PACKAGE_FLAG_NOT_SET: 'Kiện {packageId} không mang cờ này.',
   ROLE_NOT_ALLOWED: 'Vai trò của bạn không làm được thao tác này.',
+  // Nhập file vào kho kiện (FE-3b-02)
+  UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
+  EMPTY_FILE: 'File không có dòng dữ liệu nào.',
+  FILE_TOO_LARGE: 'File lớn hơn {maxMb} MB nên không nhập được.',
+  BATCH_TOO_LARGE: 'File có {rows} dòng, mỗi lần chỉ nhập tối đa {max} dòng.',
+  IMPORT_COLUMNS_MISSING: 'Dòng tiêu đề thiếu cột: {columns}. Tải file mẫu để xem đủ cột.',
+  PACKAGE_IMPORT_INVALID: 'File còn {errors} dòng lỗi nên chưa nhập được dòng nào.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */
   UNKNOWN: 'Có lỗi xảy ra. Thử lại sau.',
 } as const satisfies Record<MockDbErrorCode | 'UNKNOWN', string>

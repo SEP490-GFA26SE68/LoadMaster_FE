@@ -13,7 +13,7 @@ export const search = {
     vehicles: 'vehicles (name, plate)',
     users: 'users (name, email)',
     orders: 'orders (code, customer, address)',
-    registered: 'registered packages (code, batch, QR code, type)',
+    pool: 'package pool (code, QR code, package type, destination)',
     packageTypes: 'package types (code, name)',
   },
   groups: {
@@ -22,7 +22,7 @@ export const search = {
     vehicles: 'Vehicles',
     users: 'Users',
     orders: 'Orders',
-    registered: 'Registered packages',
+    pool: 'Package pool',
     packageTypes: 'Package types',
   },
   results: 'Quick search results',

@@ -16,7 +16,7 @@ function isShortcut(event: KeyboardEvent): boolean {
 
 /**
  * Tìm nhanh (LM-099, D-55): nút "Tìm nhanh" trên nav rail và phím Ctrl+K / ⌘K ở mọi màn có nav rail mở hộp thoại tìm chuyến, kiện,
- * xe, người dùng, đơn hàng, kiện đã đăng ký, loại kiện — chỉ nhóm người đăng nhập được xem (`searchGroupsFor`). Không nhóm nào (kho, tài
+ * xe, người dùng, đơn hàng, kho kiện, loại kiện — chỉ nhóm người đăng nhập được xem (`searchGroupsFor`). Không nhóm nào (kho, tài
  * xế, quản lý nền tảng, hỗ trợ khách hàng) thì không có nút và không bắt phím: không mở hộp thoại luôn rỗng (FE-0-04). Mở bằng phím tắt
  * thì đóng xong con trỏ về chỗ cũ; mở bằng nút thì về nút.
  */

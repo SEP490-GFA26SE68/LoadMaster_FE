@@ -109,13 +109,27 @@ test('the company manager lands on the dashboard and sees its own nav items, ord
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
   // Đơn hàng với quản lý công ty là màn chỉ đọc: không nút tạo đơn
   await nav.getByRole('link', { name: 'Đơn hàng', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/don-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('row', { name: /ORD-/ }).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tạo đơn hàng', exact: true })).toHaveCount(0)
+  // Kho kiện với quản lý công ty là màn chỉ đọc (FE-3b-03): không thêm kiện, không nhập file, không chọn kiện in nhãn, không gỡ cờ
+  await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/kien-hang')
+  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
+  for (const name of ['Thêm kiện', 'Nhập file']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Loại kiện', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('checkbox')).toHaveCount(0)
+  await page.getByRole('combobox', { name: 'Cờ', exact: true }).click()
+  await page.getByRole('option', { name: 'Hư hỏng', exact: true }).click()
+  await page.getByRole('button', { name: 'AM-BHA-2609-05', exact: true }).click()
+  const packagePanel = page.getByRole('complementary', { name: 'Chi tiết kiện AM-BHA-2609-05' })
+  await expect(packagePanel.getByRole('img', { name: /^Mã QR LM-/ })).toBeVisible()
+  await expect(packagePanel.getByRole('button', { name: /Gỡ cờ/ })).toHaveCount(0)
+  await expect(packagePanel.getByRole('link', { name: 'In nhãn QR', exact: true })).toHaveCount(0)
   // Danh sách chuyến: quản lý không duyệt phương án nên không có "cần bạn xử lý"
   await nav.getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/chuyen')
@@ -129,12 +143,12 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
-  await nav.getByRole('link', { name: 'Kiện hàng', exact: true }).click()
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
+  await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
-  await expect(page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true })).toBeVisible()
   // Điều phối viên thấy cả 88 kiện của kho kiện Long Bình
-  await expect(page.getByText('88 kiện đã đăng ký', { exact: true })).toBeVisible()
+  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
 
   // Lô hàng và nhận hàng: đường dẫn cũ là màn 404 (không phải 403), có lối về màn chính
   for (const route of ['/lo-hang', '/lo-hang/SHP-002', '/nhan-hang']) {

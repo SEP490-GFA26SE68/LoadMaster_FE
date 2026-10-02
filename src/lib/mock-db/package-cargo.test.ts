@@ -7,7 +7,7 @@ import { cargoFromPackage, type Package, type PackageType } from '@/lib/mock-db'
 const pkg = (handlingClass: HandlingClass, extra: Partial<Package> = {}): Package => ({
   id: 'PK-0100', companyId: 'LOG-001', packageCode: 'DN-0100', qrToken: 'LM-0000-0000-0001', lengthCm: 60, widthCm: 40, heightCm: 35,
   weightKg: 12.5, handlingClass, destination: 'Đà Nẵng', status: 'IMPORTED', flags: [], source: 'IMPORT', createdAt: '2026-09-14T01:00:00.000Z',
-  createdBy: 'US-0001', ...extra,
+  createdBy: 'US-0001', history: [], ...extra,
 })
 
 const fan: PackageType = {

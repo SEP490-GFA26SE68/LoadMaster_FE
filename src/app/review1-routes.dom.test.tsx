@@ -23,8 +23,9 @@ beforeEach(() => {
 })
 
 test.each<[Role, string, string, string]>([
-  // FE-0-06: ba màn kiện là của điều phối viên (`packages.manage`); điều phối thấy cả 88 kiện của kho kiện Long Bình
-  ['dispatcher', '/kien-hang', 'Kiện hàng', '88 kiện đã đăng ký'],
+  // FE-3b-03: kho kiện theo `packages.view` — điều phối viên và quản lý công ty đều thấy 88 kiện của Long Bình; loại kiện, in nhãn của điều phối
+  ['dispatcher', '/kien-hang', 'Kho kiện', '88 kiện trong kho kiện'],
+  ['manager', '/kien-hang', 'Kho kiện', '88 kiện trong kho kiện'],
   ['dispatcher', '/loai-kien', 'Loại kiện', '8 loại kiện trong danh mục'],
   ['dispatcher', '/kien-hang/nhan?kien=PK-0001,PK-0002', 'In nhãn QR', '2 nhãn có thể in'],
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
@@ -47,9 +48,10 @@ test.each<[Role, string]>([
   // FE-0-01: quản trị hệ thống không còn quyền vận hành
   ['systemAdmin', '/don-hang'],
   ['systemAdmin', '/kien-hang'],
-  // FE-0-06: `packages.view` của quản lý công ty và `labels.print` của kho chưa mở màn nào; ba màn kiện theo `packages.manage`
-  ['manager', '/kien-hang'],
+  // Loại kiện và in nhãn theo `packages.manage`: quản lý công ty chỉ xem kho kiện; `labels.print` của kho chưa mở màn nào
   ['manager', '/loai-kien'],
+  ['manager', '/kien-hang/nhan'],
+  ['warehouse', '/kien-hang'],
   ['warehouse', '/kien-hang/nhan'],
   ['companyAdmin', '/loai-kien'],
 ])('%s không mở được %s', async (role, path) => {

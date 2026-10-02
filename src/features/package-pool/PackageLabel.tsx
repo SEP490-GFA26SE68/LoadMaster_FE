@@ -2,7 +2,7 @@ import { LogoMark } from '@/components/brand/LogoMark'
 import { QrCode } from '@/components/QrCode'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { PackageLabel as PackageLabelData } from './packages-source-api'
+import type { PackageLabel as PackageLabelData } from './package-pool-api'
 
 /**
  * Một nhãn QR để dán lên kiện (LM-104): mã QR (in mã chữ bên dưới để gõ tay khi không quét được), mã kiện lớn, loại kiện (kiện không
@@ -32,7 +32,7 @@ export function PackageLabel({ label, print = false }: { label: PackageLabelData
         </div>
         <span className="line-clamp-2 text-small leading-4.5 font-medium">{type?.name ?? t(`common.handlingClasses.${pkg.handlingClass}`)}</span>
         <span className="font-mono text-caption text-ink-2 tabular-nums">
-          {t('sourcing.register.typeSummary', {
+          {t('sourcing.measure', {
             dimensions: format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm),
             weight: format.weight(pkg.weightKg),
           })}

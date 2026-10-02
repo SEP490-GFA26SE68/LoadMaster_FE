@@ -52,13 +52,14 @@ export function packageSeeder(options: {
           lengthCm: batch.lengthCm, widthCm: batch.widthCm, heightCm: batch.heightCm, weightKg: batch.weightKg, handlingClass: batch.handlingClass,
           destination: batch.destination, ...(batch.packageTypeId === undefined ? {} : { packageTypeId: batch.packageTypeId }),
           status: 'IMPORTED', flags: flagged && batch.lastFlag ? [batch.lastFlag] : [], source, createdAt: at, createdBy: actorId,
+          history: [{ at, actorId, kind: 'created', source }],
         }
         packages.push(pkg)
         return pkg
       }))
       const types = [...new Set(batches.flatMap((batch) => batch.packageTypeId ?? []))]
       events.push({
-        at, actorId, action: 'package.registered', target: { type: 'package', id: created[0]?.id ?? '' },
+        at, actorId, action: source === 'IMPORT' ? 'package.importConfirmed' : 'package.created', target: { type: 'package', id: created[0]?.id ?? '' },
         params: { count: created.length, ...(types.length > 0 ? { packageTypeId: types.join(',') } : {}), lastPackageId: created.at(-1)?.id ?? '' },
       })
       return created

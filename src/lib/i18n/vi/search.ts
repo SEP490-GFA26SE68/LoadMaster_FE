@@ -12,7 +12,7 @@ export const search = {
     vehicles: 'xe (tên, biển số)',
     users: 'người dùng (tên, email)',
     orders: 'đơn hàng (mã, khách, địa chỉ)',
-    registered: 'kiện đã đăng ký (mã, mã lô, mã QR, loại)',
+    pool: 'kho kiện (mã, mã QR, loại kiện, điểm đến)',
     packageTypes: 'loại kiện (mã, tên)',
   },
   groups: {
@@ -21,7 +21,7 @@ export const search = {
     vehicles: 'Xe',
     users: 'Người dùng',
     orders: 'Đơn hàng',
-    registered: 'Kiện đã đăng ký',
+    pool: 'Kho kiện',
     packageTypes: 'Loại kiện',
   },
   results: 'Kết quả tìm nhanh',

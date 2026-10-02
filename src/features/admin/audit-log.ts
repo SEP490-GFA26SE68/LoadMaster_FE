@@ -72,7 +72,7 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   user: 'users.manage',
   revision: null,
   packageType: 'packages.manage',
-  package: 'packages.manage',
+  package: 'packages.view',
   order: 'orders.view',
   vehicleType: 'fleet.view',
 }

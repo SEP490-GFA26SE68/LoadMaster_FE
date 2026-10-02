@@ -15,7 +15,7 @@ import {
 
 /**
  * Hook Query của đơn hàng (LM-104). Trạng thái đơn đổi theo chuyến (đã giao khi chuyến hoàn thành) nên đọc lại mỗi lần mở màn.
- * Ghi đơn làm mới đơn, kiện đăng ký (kiện trống để chọn) và — khi gán / bỏ gán — chuyến, revision, bảng điều khiển.
+ * Ghi đơn làm mới đơn, kho kiện (kiện trống để chọn) và — khi gán / bỏ gán — chuyến, revision, bảng điều khiển.
  */
 
 export function useOrdersQuery() {
@@ -35,7 +35,7 @@ export function useAssignableTripsQuery() {
 }
 
 function refreshOrders(client: QueryClient, tripsToo = false) {
-  const keys = [['orders'], ['registered-packages'], ...(tripsToo ? [['trips'], ['dashboard'], ['warehouse']] : [])]
+  const keys = [['orders'], ['package-pool'], ...(tripsToo ? [['trips'], ['dashboard'], ['warehouse']] : [])]
   return Promise.all(keys.map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 

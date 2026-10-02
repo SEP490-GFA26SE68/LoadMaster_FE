@@ -53,7 +53,7 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 ## Trạng thái
 
-- Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu: điều phối đăng ký kiện, in nhãn QR, tạo đơn từ kiện đã ở kho, lập
+- Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu: điều phối thêm kiện hoặc nhập file vào kho kiện, in nhãn QR, tạo đơn từ kiện của kho kiện, lập
   chuyến, gán đơn, chạy tối ưu, chỉnh tay và duyệt → kho quét QR xếp, tài xế quét QR dỡ → báo cáo chuyến. Quản trị hệ thống và quản trị
   công ty quản lý tài khoản và đọc nhật ký. Giao diện theo bản thiết kế V2.3 "Cyan kính".
 - Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đúng tám vai trò và hai công ty logistics; quản trị hệ thống
@@ -63,8 +63,9 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   đơn, người dùng hay nhật ký của nhau, và tài khoản nền tảng không đọc được dữ liệu vận hành. Người dùng và nhật ký chia hai phạm vi: quản
   trị hệ thống thấy mọi công ty, tạo tài khoản nền tảng, khoá / mở khoá / đặt lại mật khẩu mọi người; quản trị công ty tạo, sửa, khoá người
   của công ty mình và đọc nhật ký của công ty mình. Kho mock đã giữ kiện theo mô hình kho kiện của backend (kích thước, loại hàng, điểm đến
-  riêng từng kiện; trạng thái ghi theo mốc của chuyến; cờ "Không tìm thấy" / "Hư hỏng"). Màn Kho kiện mới, nhập file theo mẫu backend, màn
-  của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  riêng từng kiện; trạng thái ghi theo mốc của chuyến; cờ "Không tìm thấy" / "Hư hỏng"). Màn Kho kiện: điều phối viên thêm kiện, nhập file
+  `.csv` / `.xlsx` theo cột của backend (xem trước, có dòng lỗi thì không lưu dòng nào), xem chi tiết kiện kèm mã QR và lịch sử, gỡ cờ; quản lý
+  công ty chỉ xem. Mẫu nhãn mới, màn tra cứu kiện, màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -86,8 +87,8 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.335 test unit + DOM
-pnpm test:e2e      # Playwright: 105 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.391 test unit + DOM
+pnpm test:e2e      # Playwright: 106 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 

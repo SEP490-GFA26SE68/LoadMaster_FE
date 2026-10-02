@@ -51,8 +51,8 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
  * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển']],
-  ['manager', ['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe']],
+  ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển']],
+  ['manager', ['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
@@ -116,10 +116,10 @@ test.each<[Role, string]>([
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', href)
 })
 
-/** FE-0-06: mục Kiện hàng của điều phối viên mở `/kien-hang` và vẫn là mục đang mở ở trang in nhãn; màn kho, tài xế không có mục này. */
-test('mục Kiện hàng của điều phối viên mở /kien-hang và sáng ở cả trang in nhãn', () => {
+/** Mục Kho kiện (FE-3b-03) mở `/kien-hang` và vẫn là mục đang mở ở trang in nhãn; màn kho, tài xế không có mục này. */
+test('mục Kho kiện của điều phối viên mở /kien-hang và sáng ở cả trang in nhãn', () => {
   renderRail('dispatcher', '/kien-hang/nhan')
-  const packages = screen.getByRole('link', { name: 'Kiện hàng' })
+  const packages = screen.getByRole('link', { name: 'Kho kiện' })
   expect(packages).toHaveAttribute('href', '/kien-hang')
   expect(packages).toHaveAttribute('aria-current', 'page')
   expect(screen.queryByRole('link', { name: 'Lô hàng' })).not.toBeInTheDocument()

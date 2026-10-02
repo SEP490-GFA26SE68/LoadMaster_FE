@@ -27,7 +27,7 @@ export const titles = {
   error: 'Something went wrong',
   forbidden: 'Access denied',
   packageTypes: 'Package types',
-  packages: 'Packages',
+  packages: 'Package pool',
   labels: 'Print QR labels',
   orders: 'Orders',
   vehicleTypes: 'Vehicle types',

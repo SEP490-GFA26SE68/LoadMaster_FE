@@ -14,13 +14,13 @@ import type { SearchGroup, SearchSources } from './quick-search'
 export async function fetchSearchSources(groups: readonly SearchGroup[]): Promise<SearchSources> {
   const db = getMockDb()
   const wants = (group: SearchGroup) => groups.includes(group)
-  const sourcing = wants('registered') || wants('packageTypes')
-  const [trips, vehicles, users, orders, registered, packageTypes] = await Promise.all([
+  const sourcing = wants('pool') || wants('packageTypes')
+  const [trips, vehicles, users, orders, pool, packageTypes] = await Promise.all([
     wants('trips') || wants('packages') ? db.listTrips() : [],
     wants('vehicles') ? db.listVehicles() : [],
     wants('users') ? db.listUsers() : [],
     wants('orders') ? db.listOrders() : [],
-    wants('registered') ? db.listPackages() : [],
+    wants('pool') ? db.listPackages() : [],
     sourcing ? db.listPackageTypes() : [],
   ])
   const typeName = new Map(packageTypes.map((type) => [type.id, type.name]))
@@ -34,7 +34,7 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     vehicles: vehicles.map(({ id, name }) => ({ id, name })),
     users: users.map(({ id, fullName, email, role }) => ({ id, fullName, email, role })),
     orders: orders.map(({ id, customerName, deliveryAddress }) => ({ id, customerName, deliveryAddress })),
-    registered: registered.map((pkg) => ({
+    pool: pool.map((pkg) => ({
       id: pkg.id,
       ...(pkg.packageCode === pkg.id ? {} : { reference: pkg.packageCode }),
       qrToken: pkg.qrToken,
