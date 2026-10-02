@@ -1,4 +1,5 @@
 import type { TripReadiness } from '@/domain/constraints'
+import type { Package, PackageChanges, PackageFlag, PackageInput, PackageSource, PackageStatus } from './package-model'
 import type {
   Company,
   OptimizationRun,
@@ -6,9 +7,6 @@ import type {
   OrderInput,
   PackageType,
   PackageTypeInput,
-  RegisteredPackage,
-  RegisteredPackageInput,
-  RegisteredPackageRow,
   RunFailureCode,
   RunSettings,
   ScanResult,
@@ -34,39 +32,49 @@ export type Review1Db = {
   /** Dữ liệu kiểm bằng `cargoPackageSchema`: sai thì `PACKAGE_TYPE_INVALID` kèm mã issue. */
   createPackageType(input: PackageTypeInput): Promise<PackageType>
   updatePackageType(id: string, input: PackageTypeInput): Promise<PackageType>
-  /** Còn kiện đăng ký dùng: `PACKAGE_TYPE_IN_USE`. */
+  /** Còn kiện của kho kiện dùng: `PACKAGE_TYPE_IN_USE`. */
   deletePackageType(id: string): Promise<void>
 
-  /** Mọi kiện đăng ký, theo thứ tự đăng ký. Trạng thái `loaded` / `delivered` suy từ tiến độ chuyến. */
-  listRegisteredPackages(): Promise<RegisteredPackage[]>
-  getRegisteredPackage(id: string): Promise<RegisteredPackage>
+  /** Mọi kiện của kho kiện, theo thứ tự tạo. Trạng thái là trạng thái kho đã ghi (FE-3b-01), không suy lúc đọc. */
+  listPackages(): Promise<Package[]>
+  getPackage(id: string): Promise<Package>
   /** Tra kiện theo mã QR (đã chuẩn hoá); không có, hoặc là kiện của công ty khác, thì `QR_UNKNOWN`. */
-  findPackageByQr(token: string): Promise<RegisteredPackage>
+  findPackageByQr(token: string): Promise<Package>
   /**
-   * Đăng ký một kiện cho **công ty của người đang đăng nhập** (`User.companyId`), trạng thái `registered`; loại kiện phải của công
-   * ty đó. Tài khoản nền tảng: `COMPANY_REQUIRED`.
+   * Thêm một kiện (`source` `MANUAL`) cho **công ty của người đang đăng nhập** (`User.companyId`): trạng thái `IMPORTED`, không cờ, mã QR
+   * cấp ngay; loại kiện (nếu có) phải của công ty đó. Dữ liệu sai: `PACKAGE_INVALID`. Tài khoản nền tảng: `COMPANY_REQUIRED`.
    */
-  registerPackage(input: RegisteredPackageInput): Promise<RegisteredPackage>
-  /** `quantity` kiện cùng loại (1…500), một sự kiện nhật ký. */
-  registerPackages(input: RegisteredPackageInput, quantity: number): Promise<RegisteredPackage[]>
-  /** Nhiều dòng (nhập file): kiểm hết trước, lỗi một dòng thì không ghi gì. */
-  registerPackageRows(rows: readonly RegisteredPackageRow[]): Promise<RegisteredPackage[]>
+  createPackage(input: PackageInput): Promise<Package>
+  /** Nhiều kiện một lần (1…1.000), một sự kiện nhật ký: kiểm hết trước, lỗi một dòng thì không ghi gì. `source` mặc định `MANUAL`. */
+  createPackages(rows: readonly PackageInput[], source?: PackageSource): Promise<Package[]>
+  /** Sửa kiện còn ở kho kiện (`IMPORTED`); mã QR giữ nguyên. Kiện đã vào chuyến: `PACKAGE_UNAVAILABLE`. */
+  updatePackage(id: string, changes: PackageChanges): Promise<Package>
+  /**
+   * Chuyển trạng thái theo bảng `PACKAGE_TRANSITIONS` (D-70); sai bảng: `INVALID_PACKAGE_STATUS_TRANSITION`. Các mốc của chuyến (gán
+   * đơn, bắt đầu xếp, xếp xong, xuất phát, hoàn tất điểm, huỷ) tự chuyển kiện của chuyến qua cùng luật này.
+   */
+  updatePackageStatus(id: string, status: PackageStatus): Promise<Package>
+  /** Gắn cờ cho kiện `IMPORTED` (D-92); kiện ở trạng thái khác: `PACKAGE_UNAVAILABLE`. Đã có cờ đó thì không đổi gì. */
+  flagPackage(id: string, flag: PackageFlag): Promise<Package>
+  /** Gỡ cờ — chỉ điều phối viên (`ROLE_NOT_ALLOWED`), ghi nhật ký. Kiện không có cờ đó: `PACKAGE_FLAG_NOT_SET`. */
+  clearPackageFlag(id: string, flag: PackageFlag): Promise<Package>
 
   /** Mới nhất trước; `delivered` suy từ chuyến đã hoàn thành. */
   listOrders(): Promise<TransportOrder[]>
   getOrder(id: string): Promise<TransportOrder>
-  /** Kiện phải `received` (đã ở kho) và chưa thuộc đơn khác. */
+  /** Kiện phải `IMPORTED`, không cờ (`PACKAGE_FLAGGED`) và chưa thuộc đơn khác. */
   createOrder(input: OrderInput): Promise<TransportOrder>
   /** Chỉ đơn `pending`. */
   updateOrder(id: string, changes: OrderChanges): Promise<TransportOrder>
   /** Chỉ đơn `pending`; lý do bắt buộc; kiện trả về tự do. */
   cancelOrder(id: string, reason: string): Promise<TransportOrder>
   /**
-   * Gán đơn `pending` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi loại kiện thành một dòng `CargoPackage` mới (mã
-   * `PKG-NNN`, `groupId` = mã đơn) ở điểm đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); kiện sang `planned`.
+   * Gán đơn `pending` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi nhóm kiện giống nhau thành một dòng `CargoPackage` mới
+   * (mã `PKG-NNN`, `groupId` = mã đơn) ở điểm đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); kiện sang `ASSIGNED` kèm
+   * chuyến và điểm giao. Đơn có kiện đang mang cờ: `PACKAGE_FLAGGED`.
    */
   assignOrder(orderId: string, tripId: string, stopId: string): Promise<{ order: TransportOrder; trip: Trip }>
-  /** Bỏ gán: gỡ các dòng kiện của đơn khỏi chuyến (chuyến còn lập kế hoạch) và trả đơn về `pending`. */
+  /** Bỏ gán: gỡ các dòng kiện của đơn khỏi chuyến (chuyến còn lập kế hoạch), trả đơn về `pending` và kiện về `IMPORTED`. */
   unassignOrder(orderId: string): Promise<TransportOrder>
 
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */

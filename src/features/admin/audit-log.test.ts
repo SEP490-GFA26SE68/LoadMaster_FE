@@ -124,7 +124,7 @@ test('đối tượng chỉ là liên kết khi người xem có quyền mở tr
     .toStrictEqual({ id: 'US-0010', label: 'Trương Văn Lộc', href: '/nguoi-dung?q=US-0010' })
   // Đơn hàng, kiện đăng ký, loại kiện, loại xe theo quyền của màn đó
   expect(target(event('order.created', { type: 'order', id: 'ORD-001' }, { customerName: 'Co.opmart Bình Dương', count: 12 })).href).toBeNull()
-  expect(target(event('package.registered', { type: 'package', id: 'RPK-0001' }, { count: 12 })).href).toBeNull()
+  expect(target(event('package.registered', { type: 'package', id: 'PK-0001' }, { count: 12 })).href).toBeNull()
   expect(target(event('packageType.created', { type: 'packageType', id: 'PT-001' }, { name: 'Thùng nước suối 24 chai' })).href).toBeNull()
   expect(target(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }, { name: 'Xe tải 5 tấn thùng 6 m' })).href).toBeNull()
 
@@ -134,16 +134,23 @@ test('đối tượng chỉ là liên kết khi người xem có quyền mở tr
   expect(forDispatcher(event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }))).toBe('/chuyen/TRIP-004')
   expect(forDispatcher(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }))).toBe('/doi-xe/loai-xe')
   expect(forDispatcher(event('order.created', { type: 'order', id: 'ORD-001' }))).toBe('/don-hang?q=ORD-001')
-  expect(forDispatcher(event('package.registered', { type: 'package', id: 'RPK-0001' }))).toBe('/kien-hang?q=RPK-0001')
+  expect(forDispatcher(event('package.registered', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
   expect(forDispatcher(event('packageType.created', { type: 'packageType', id: 'PT-001' }))).toBe('/loai-kien')
   expect(forDispatcher(event('user.locked', { type: 'user', id: 'US-0010' }))).toBeNull()
   // Quản lý công ty xem kho kiện (`packages.view`) nhưng không mở được màn đăng ký kiện
   const managerCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.view'].includes(permission)
-  expect(describeEvent(event('package.registered', { type: 'package', id: 'RPK-0001' }), DIRECTORY, vi.t, vi.format, managerCan).target.href).toBeNull()
+  expect(describeEvent(event('package.registered', { type: 'package', id: 'PK-0001' }), DIRECTORY, vi.t, vi.format, managerCan).target.href).toBeNull()
 })
 
 test('một đợt đăng ký kiện: số kiện, loại kiện và kiện cuối của đợt', () => {
-  const registered = event('package.registered', { type: 'package', id: 'RPK-0001' }, { count: 12, packageTypeId: 'PT-001', lastPackageId: 'RPK-0012' })
-  expect(describe(registered)).toMatchObject({ action: 'Đăng ký kiện', details: 'Số kiện: 12 · Loại kiện: PT-001 · Đến kiện: RPK-0012' })
-  expect(describe(registered, en).details).toBe('Packages: 12 · Package type: PT-001 · Through package: RPK-0012')
+  const registered = event('package.registered', { type: 'package', id: 'PK-0001' }, { count: 12, packageTypeId: 'PT-001', lastPackageId: 'PK-0012' })
+  expect(describe(registered)).toMatchObject({ action: 'Đăng ký kiện', details: 'Số kiện: 12 · Loại kiện: PT-001 · Đến kiện: PK-0012' })
+  expect(describe(registered, en).details).toBe('Packages: 12 · Package type: PT-001 · Through package: PK-0012')
+  // Kho kiện (FE-3b-01): trạng thái và cờ là mã của kho, nhật ký dịch qua nhánh `common`
+  const moved = event('package.statusChanged', { type: 'package', id: 'PK-0049' }, { before: 'IN_TRANSIT', after: 'RETURNED' })
+  expect(describe(moved)).toMatchObject({ action: 'Chuyển trạng thái kiện', details: 'Trước: Đang vận chuyển · Sau: Hoàn trả' })
+  expect(describe(moved, en).details).toBe('Before: In transit · After: Returned')
+  const cleared = event('package.flagCleared', { type: 'package', id: 'PK-0063' }, { flag: 'NOT_FOUND' })
+  expect(describe(cleared)).toMatchObject({ action: 'Gỡ cờ kiện', details: 'Cờ: Không tìm thấy' })
+  expect(describe(cleared, en)).toMatchObject({ action: 'Cleared package flag', details: 'Flag: Not found' })
 })

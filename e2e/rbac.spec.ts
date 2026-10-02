@@ -133,8 +133,8 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   await nav.getByRole('link', { name: 'Kiện hàng', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true })).toBeVisible()
-  // Điều phối viên thấy cả 48 kiện của seed (trước là 42 kiện của riêng một nhà sản xuất)
-  await expect(page.getByText('48 kiện đã đăng ký', { exact: true })).toBeVisible()
+  // Điều phối viên thấy cả 88 kiện của kho kiện Long Bình
+  await expect(page.getByText('88 kiện đã đăng ký', { exact: true })).toBeVisible()
 
   // Lô hàng và nhận hàng: đường dẫn cũ là màn 404 (không phải 403), có lối về màn chính
   for (const route of ['/lo-hang', '/lo-hang/SHP-002', '/nhan-hang']) {

@@ -72,7 +72,7 @@ mỗi công ty đủ năm vai trò công ty — `viet.lam@phuongnam.vn` (`US-001
 "Lớp dữ liệu"): người của một công ty chỉ thấy xe, loại xe, loại kiện, kiện, đơn, chuyến, phương án, người dùng và nhật ký của công ty mình;
 ba vai trò nền tảng bị mọi hàm dữ liệu vận hành từ chối (`COMPANY_REQUIRED`), chỉ đọc người dùng, nhật ký và danh sách công ty. Mỗi công ty có
 kho xuất phát kèm toạ độ (`Company.depot`: Kho Long Bình ở KCN Biên Hoà 2; Kho Phú Thuận ở Quận 7). Seed có từ trước (8 xe, 15 chuyến, 8 loại
-kiện, 48 kiện đăng ký, 2 đơn) thuộc Long Bình; Phương Nam có bộ nhỏ riêng ở `seed-phuong-nam.ts` — 2 xe, 1 loại xe, 2 loại kiện, 10 kiện, 1
+kiện, 88 kiện kho kiện, 2 đơn) thuộc Long Bình; Phương Nam có bộ nhỏ riêng ở `seed-phuong-nam.ts` — 2 xe, 1 loại xe, 2 loại kiện, 10 kiện, 1
 đơn, 2 chuyến (`TRIP-PN-001` đã duyệt, gán `taixe@phuongnam.vn`; `TRIP-PN-002` nháp) — mã mang `PN` (`TRIP-PN-…`, `VEHICLE-PN-…`, `REV-PN-…`)
 nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
 `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
@@ -225,14 +225,17 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
-    packages-source/    loại kiện, kiện đăng ký, nhãn QR (LM-104) — màn của điều phối viên từ FE-0-06
+    packages-source/    loại kiện, kiện hàng, nhãn QR (LM-104) — màn của điều phối viên từ FE-0-06; đọc kho kiện từ FE-3b-01
     orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
                         bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
-                        Review 1 (LM-104): công ty logistics, loại kiện, kiện đăng ký + mã QR, đơn hàng, lần chạy tối ưu
+                        *(đã điều chỉnh 03/10/2026, FE-3b-01)* kho kiện theo mô hình backend (`package-model.ts`: kiểu `Package`,
+                        bảng chuyển trạng thái; `db-packages.ts`; `db-package-progress.ts` ghi trạng thái theo mốc của chuyến;
+                        `seed-packages.ts`) thay kiện đăng ký `RPK`;
+                        Review 1 (LM-104): công ty logistics, loại kiện, mã QR, đơn hàng, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
                         (`db-shipments.ts`) đã bỏ ở FE-0-06; cách ly theo công ty của phiên (`tenancy.ts`, mọi `db-*.ts` đi
@@ -964,7 +967,7 @@ mọi `db-*.ts` đọc/ghi qua `ctx.scope`), ba phạm vi:
   dữ liệu của một công ty thì đặt phiên: `db.restoreSession(mã người dùng)` (không ghi nhật ký) hoặc `signedInAs`.
 
 Bản ghi mang công ty: `Trip.companyId`, `PackageType.companyId`, `VehicleType.companyId`, `TransportOrder.companyId`,
-`RegisteredPackage.ownerCompanyId`, `AuditEvent.companyId` (công ty của phiên đã ghi; `null` khi là tài khoản nền tảng; lần đăng nhập sai ghi
+`Package.companyId`, `AuditEvent.companyId` (công ty của phiên đã ghi; `null` khi là tài khoản nền tảng; lần đăng nhập sai ghi
 công ty của tài khoản bị thử). Xe lưu công ty cạnh `VehicleConfig` trong kho (`vehicleCompany`, D-04); revision và lần chạy tối ưu thuộc công
 ty của chuyến, không lưu riêng. Thêm hàm công khai vào kho thì khai nó ở bảng `PROBES` của `tenancy.test.ts` — thiếu là test đỏ.
 
@@ -976,7 +979,8 @@ dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuy
 nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không cần
 mang người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không
 hiện cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
-(`['notifications', id, vai trò]`); khoá `['registered-packages', …]` còn mang mã người dùng từ LM-104, màn mới không làm theo.
+(`['notifications', id, vai trò]`); khoá `['registered-packages', …]` (kiện của kho kiện — giữ tên cũ tới màn Kho kiện mới) còn mang mã
+người dùng từ LM-104, màn mới không làm theo.
 *(đã điều chỉnh 02/10/2026, FE-0-06)* `shipments-api.ts`, `receiving-api.ts` và khoá `['shipments', …]`, `['receiving', …]` đã bỏ cùng hai
 feature đó.
 Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở
@@ -984,10 +988,28 @@ Planner** `['plan-approval', revisionId]` (`viewer-api.ts` → `usePlanApprovalQ
 trên revision mới và mất toast lẫn điều hướng; revision bất biến nên khoá này không cần làm mới — `review-api.ts` và khoá `['review', …]` đã bỏ
 cùng hàng đợi duyệt) và **nhãn QR** của kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ
 tải lại nhãn).
-Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng.
-*(đã điều chỉnh 02/10/2026, FE-0-06)* Kiện đăng ký còn năm trạng thái `registered`, `received`, `planned`, `loaded`, `delivered` (`in_shipment`
-đã bỏ cùng lô hàng). Không còn luồng quét nhận nên `received` — hàng có ở kho, đưa vào đơn được — chỉ do **seed ghi thẳng** (40 trong 48 kiện
-của Long Bình, 6 trong 10 kiện của Phương Nam); kiện mới đăng ký ở `registered` và chưa vào đơn được cho tới khi có kho kiện theo mô hình backend (FE-3b-03).
+*(đã điều chỉnh 03/10/2026, FE-3b-01)* **Kho kiện theo mô hình backend** thay kiện đăng ký `RPK` của Review 1. Kiện là `Package`
+(`PK-NNNN`, Phương Nam `PK-PN-NNNN`): `companyId`, `packageCode` (mã của bên gửi; nơi tạo không đưa thì bằng mã của kho), `qrToken`, kích
+thước và khối lượng **của chính kiện**, `handlingClass`, `destination`, `packageTypeId?`, `status`, `flags`, `source`
+(`IMPORT | MANUAL | TRIP | PICKUP`), `requirementId?` (kho chưa ghi), `tripId?`, `stopId?`, người và thời điểm tạo; `orderId?` là trường
+**tạm** tới khi đơn hàng thành yêu cầu giao. Trạng thái **ghi thật**, không suy lúc đọc — chỉ `movePackage` (`db-packages.ts`) đổi
+`status`, theo bảng `PACKAGE_TRANSITIONS`: `IMPORTED → ASSIGNED → STAGED → LOADED → IN_TRANSIT → DELIVERED | RETURNED`; `ASSIGNED`,
+`STAGED`, `LOADED` được về `IMPORTED` (rời chuyến); sai bảng là `INVALID_PACKAGE_STATUS_TRANSITION`. Kiện của chuyến đổi trạng thái ở
+**mốc chốt** của chuyến (`db-package-progress.ts`), không theo từng lần bấm vì bước xếp và ô đánh dấu dỡ còn sửa lại được: gán đơn →
+`ASSIGNED` kèm chuyến và điểm giao; kho bắt đầu xếp → `STAGED` *(tạm tới khi có bước Soạn hàng)*; xếp xong → `LOADED`, kiện báo thiếu về
+`IMPORTED` kèm cờ `NOT_FOUND`; xuất phát → `IN_TRANSIT`; hoàn tất điểm giao → kiện đã dỡ `DELIVERED`, kiện của điểm đó không dỡ được
+`RETURNED`; huỷ chuyến hoặc bỏ gán đơn → `IMPORTED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào đơn
+hay chuyến được (`PACKAGE_FLAGGED`, `isSelectablePackage`); `clearPackageFlag` chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`) và ghi nhật
+ký. Mã QR cấp một lần lúc tạo, `updatePackage` không đổi nó. Đơn `delivered` vẫn **suy lúc đọc** từ chuyến đã hoàn thành
+(`review1-status.ts`). Seed: Long Bình 88 kiện đều `IMPORTED` — 48 kiện thêm tay theo loại kiện (kiện `RPK` cũ, kích thước của loại kiện,
+22 kiện đầu thuộc hai đơn chờ gán) và 40 kiện nhập file không gắn loại kiện, tám điểm đến thật, hai kiện mang cờ; Phương Nam 10 kiện.
+*(đã điều chỉnh 03/10/2026, FE-3b-04)* **Loại hàng** `HandlingClass` (`STANDARD | FRAGILE | REFRIGERATED | HAZARDOUS | HIGH_VALUE`) khai ở
+`domain/models/package.ts`; `CargoPackage` mang thêm `handlingClass?` — trường đầu tiên ngoài type Spec (D-04 "không thêm trường" đã bị
+thay), khai tường minh trong `spec-contract.test.ts`. `cargoFromPackage(pkg, packageType?)` dựng dòng kiện Spec từ kiện kho kiện: có loại
+kiện thì lấy hướng đặt, xếp chồng, tải trên của loại; không có thì mặc định theo loại hàng (`FRAGILE` không cho đè lên, loại khác chịu ba
+lần khối lượng của nó). Nhãn loại hàng, trạng thái và cờ kiện khai một lần ở nhánh `common` (`handlingClasses`, `packageStatuses`,
+`packageFlags`); chip loại hàng là `components/HandlingClassChip` — tint theo nghĩa (thường slate, bốn loại cần chú ý amber), nhận ra bằng
+icon và chữ. Màn `/kien-hang` và hộp thoại "Đăng ký kiện" theo loại kiện còn dùng tạm trên mô hình mới (thêm ô Điểm đến) tới màn Kho kiện mới.
 Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.

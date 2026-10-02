@@ -14,6 +14,17 @@ export const common = {
   on: 'On',
   off: 'Off',
   deliveryIssueKinds: { damaged: 'Damaged', missing: 'Missing', refused: 'Refused by customer', other: 'Other' },
+  handlingClasses: { STANDARD: 'Standard', FRAGILE: 'Fragile', REFRIGERATED: 'Refrigerated', HAZARDOUS: 'Hazardous', HIGH_VALUE: 'High value' },
+  packageStatuses: {
+    IMPORTED: 'Imported',
+    ASSIGNED: 'Assigned to trip',
+    STAGED: 'Staged',
+    LOADED: 'Loaded',
+    IN_TRANSIT: 'In transit',
+    DELIVERED: 'Delivered',
+    RETURNED: 'Returned',
+  },
+  packageFlags: { NOT_FOUND: 'Not found', DAMAGED: 'Damaged' },
   table: {
     rowsPerPage: 'Rows per page',
     range: '{from}–{to} of {total}',

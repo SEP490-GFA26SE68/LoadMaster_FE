@@ -21,10 +21,15 @@ test('a type is found by its code in any case, or by its exact name without acce
 })
 
 test('rows after the header are read by column position, blank rows are skipped and lines match the spreadsheet', () => {
-  const rows = parseRegisterTable(parseCsv('Mã loại kiện,Số lượng,Mã lô / SKU,Ghi chú\r\nPT-001,10,MP-NS24,\r\n,,,\r\nPT-002,4,,giao sớm\r\n'), TYPES, 500)
-  expect(rows.map((row) => [row.line, row.type?.id, row.quantity, row.reference, row.note, row.problems])).toStrictEqual([
-    [2, 'PT-001', 10, 'MP-NS24', '', []],
-    [4, 'PT-002', 4, '', 'giao sớm', []],
+  const rows = parseRegisterTable(parseCsv('Mã loại kiện,Số lượng,Mã lô / SKU\r\nPT-001,10,MP-NS24\r\n,,\r\nPT-002,4,\r\n'), TYPES, 500)
+  expect(rows.map((row) => [row.line, row.type?.id, row.quantity, row.reference, row.problems])).toStrictEqual([
+    [2, 'PT-001', 10, 'MP-NS24', []],
+    [4, 'PT-002', 4, '', []],
+  ])
+  // Điểm đến của hộp thoại đi vào mọi dòng; mã lô trống thì không có trường `reference`
+  expect(toRegisterRows(rows, 'KCN Amata, TP. Biên Hoà, Đồng Nai')).toStrictEqual([
+    { packageTypeId: 'PT-001', quantity: 10, destination: 'KCN Amata, TP. Biên Hoà, Đồng Nai', reference: 'MP-NS24' },
+    { packageTypeId: 'PT-002', quantity: 4, destination: 'KCN Amata, TP. Biên Hoà, Đồng Nai' },
   ])
 })
 
@@ -37,7 +42,7 @@ test('every problem of a row is reported as a code, and invalid rows never reach
     [{ code: 'quantityInvalid' }],
     [],
   ])
-  expect(toRegisterRows(rows)).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 500 }])
+  expect(toRegisterRows(rows, 'Đà Nẵng')).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 500, destination: 'Đà Nẵng' }])
 })
 
 test('an empty file has no rows', () => {
@@ -46,7 +51,7 @@ test('an empty file has no rows', () => {
 })
 
 test('the CSV template uses real package types from the catalog, so importing it unchanged registers valid packages', () => {
-  const csv = registerTemplateCsv(['Mã loại kiện', 'Số lượng', 'Mã lô / SKU', 'Ghi chú'], TYPES)
+  const csv = registerTemplateCsv(['Mã loại kiện', 'Số lượng', 'Mã lô / SKU'], TYPES)
   const rows = parseRegisterTable(parseCsv(csv), TYPES, 500)
-  expect(toRegisterRows(rows)).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 10 }, { packageTypeId: 'PT-002', quantity: 4 }])
+  expect(toRegisterRows(rows, 'Huế')).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 10, destination: 'Huế' }, { packageTypeId: 'PT-002', quantity: 4, destination: 'Huế' }])
 })

@@ -2,8 +2,10 @@ import { nextPackageId } from '@/domain/cargo'
 import type { CargoPackage } from '@/domain/models'
 import { found, nextId, optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
+import { movePackage } from './db-packages'
 import { MockDbError } from './errors'
-import { cargoFromType } from './package-type-cargo'
+import type { Package } from './package-model'
+import { cargoFromPackage } from './package-type-cargo'
 import { effectiveOrderStatus } from './review1-status'
 import type { OrderChanges, OrderInput, TransportOrder } from './source-types'
 import type { Trip } from './types'
@@ -29,10 +31,19 @@ function orderText(input: OrderChanges, current?: TransportOrder) {
   }
 }
 
-/** Đơn vận chuyển và gán vào điểm giao (luồng 2, LM-104). Đơn, kiện của đơn và chuyến nhận đơn cùng một công ty (D-64). */
+/**
+ * Đơn vận chuyển và gán vào điểm giao (luồng 2, LM-104). Đơn, kiện của đơn và chuyến nhận đơn cùng một công ty (D-64). Gán đơn đưa kiện
+ * sang `ASSIGNED` kèm chuyến và điểm giao; bỏ gán trả kiện về `IMPORTED` (FE-3b-01).
+ */
 export function orderMethods(ctx: DbContext): OrderMethods {
-  const { orders, registeredPackages, trips, packageTypes } = ctx.state
+  const { orders, packages, trips, packageTypes } = ctx.state
   const scope = ctx.scope.orders
+
+  /** Kiện có cờ không vào đơn hay chuyến được cho tới khi gỡ cờ (D-92). */
+  function assertNoFlag(pkg: Package) {
+    const flag = pkg.flags[0]
+    if (flag !== undefined) throw new MockDbError('PACKAGE_FLAGGED', { packageId: pkg.id, flag })
+  }
 
   function withStatus(order: TransportOrder): TransportOrder {
     const trip = order.assignment ? trips.get(order.assignment.tripId) : undefined
@@ -40,45 +51,55 @@ export function orderMethods(ctx: DbContext): OrderMethods {
     return status === order.status ? order : { ...order, status }
   }
 
-  /** Kiện của đơn `orderId` (công ty `companyId`): cùng công ty với đơn, đã ở kho (`received`), chưa thuộc đơn khác. */
+  /** Kiện của đơn `orderId` (công ty `companyId`): cùng công ty với đơn, còn ở kho kiện (`IMPORTED`), không cờ, chưa thuộc đơn khác. */
   function assertPackages(packageIds: readonly string[], orderId: string, companyId: string) {
     if (packageIds.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
     for (const id of packageIds) {
-      const pkg = ctx.scope.registeredPackages.ref(id, companyId)
+      const pkg = ctx.scope.packages.ref(id, companyId)
+      assertNoFlag(pkg)
       const taken = pkg.orderId !== undefined && pkg.orderId !== orderId
-      if (pkg.status !== 'received' || taken) throw new MockDbError('PACKAGE_UNAVAILABLE', { packageId: id, status: pkg.status })
+      if (pkg.status !== 'IMPORTED' || taken) throw new MockDbError('PACKAGE_UNAVAILABLE', { packageId: id, status: pkg.status })
     }
   }
 
-  function linkPackages(orderId: string, before: readonly string[], after: readonly string[], status?: 'received' | 'planned') {
+  function linkPackages(orderId: string, before: readonly string[], after: readonly string[]) {
     for (const id of before) {
-      const pkg = registeredPackages.get(id)
+      const pkg = packages.get(id)
       if (pkg && !after.includes(id)) {
         const { orderId: _dropped, ...rest } = pkg
-        put(registeredPackages, rest)
+        put(packages, rest)
       }
     }
     for (const id of after) {
-      const pkg = registeredPackages.get(id)
-      if (pkg) put(registeredPackages, { ...pkg, orderId, ...(status ? { status } : {}) })
+      const pkg = packages.get(id)
+      if (pkg) put(packages, { ...pkg, orderId })
     }
   }
 
-  /** Mỗi loại kiện của đơn thành một dòng kiện mới của chuyến, theo thứ tự kiện trong đơn. */
+  /**
+   * Kiện của đơn thành dòng kiện mới của chuyến, theo thứ tự kiện trong đơn: các kiện cùng loại kiện, cùng kích thước, khối lượng và
+   * loại hàng gộp một dòng; kiện không có loại kiện mỗi kiện một dòng (tên dòng là mã kiện của bên gửi).
+   */
   function orderLines(order: TransportOrder, trip: Trip, stopNumber: number) {
-    const groups = new Map<string, string[]>()
+    const groups = new Map<string, Package[]>()
     for (const id of order.packageIds) {
-      const typeId = found(registeredPackages, 'registeredPackages', id).packageTypeId
-      groups.set(typeId, [...(groups.get(typeId) ?? []), id])
+      const pkg = found(packages, 'packages', id)
+      const key = pkg.packageTypeId === undefined
+        ? pkg.id
+        : [pkg.packageTypeId, pkg.lengthCm, pkg.widthCm, pkg.heightCm, pkg.weightKg, pkg.handlingClass].join('|')
+      groups.set(key, [...(groups.get(key) ?? []), pkg])
     }
     const ids = trip.packages.map((pkg) => pkg.id)
     const cargo: CargoPackage[] = []
     const lines: { lineId: string; packageIds: string[] }[] = []
-    for (const [typeId, packageIds] of groups) {
+    for (const members of groups.values()) {
+      const first = members[0]
+      if (!first) continue
       const lineId = nextPackageId(ids)
       ids.push(lineId)
-      cargo.push(cargoFromType(found(packageTypes, 'packageTypes', typeId), { id: lineId, quantity: packageIds.length, deliveryStop: stopNumber, groupId: order.id }))
-      lines.push({ lineId, packageIds })
+      const type = first.packageTypeId === undefined ? undefined : found(packageTypes, 'packageTypes', first.packageTypeId)
+      cargo.push(cargoFromPackage(first, type, { id: lineId, quantity: members.length, deliveryStop: stopNumber, groupId: order.id }))
+      lines.push({ lineId, packageIds: members.map((pkg) => pkg.id) })
     }
     return { cargo, lines }
   }
@@ -127,9 +148,11 @@ export function orderMethods(ctx: DbContext): OrderMethods {
         if (trip.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId, phase: trip.phase })
         const stopIndex = trip.stops.findIndex((stop) => stop.id === stopId)
         if (stopIndex === -1) throw new MockDbError('STOP_NOT_FOUND', { tripId, stopId })
+        const members = order.packageIds.map((id) => found(packages, 'packages', id))
+        members.forEach(assertNoFlag)
         const { cargo, lines } = orderLines(order, trip, stopIndex + 1)
         const nextTrip = put(trips, { ...trip, packages: [...trip.packages, ...cargo], inputVersion: trip.inputVersion + 1 })
-        linkPackages(orderId, [], order.packageIds, 'planned')
+        for (const pkg of members) movePackage(ctx, pkg, 'ASSIGNED', { tripId, stopId })
         const assignment = { tripId, stopId, lines, at: ctx.nowIso(), by: ctx.state.session.userId }
         ctx.log('order.assigned', { type: 'order', id: orderId }, { tripId, stopNumber: stopIndex + 1, count: order.packageIds.length })
         return { order: put(orders, { ...order, status: 'assigned', assignment }), trip: nextTrip }
@@ -145,7 +168,11 @@ export function orderMethods(ctx: DbContext): OrderMethods {
           const lineIds = new Set(assignment.lines.map((line) => line.lineId))
           put(trips, { ...trip, packages: trip.packages.filter((pkg) => !lineIds.has(pkg.id)), inputVersion: trip.inputVersion + 1 })
         }
-        linkPackages(orderId, [], order.packageIds, 'received')
+        // Chuyến đã huỷ thì kiện đã về kho kiện lúc huỷ (`releaseTripPackages`)
+        for (const id of order.packageIds) {
+          const pkg = found(packages, 'packages', id)
+          if (pkg.status !== 'IMPORTED') movePackage(ctx, pkg, 'IMPORTED')
+        }
         const { assignment: _dropped, ...rest } = order
         ctx.log('order.unassigned', { type: 'order', id: orderId }, { tripId: assignment?.tripId ?? '' })
         return put(orders, { ...rest, status: 'pending' })

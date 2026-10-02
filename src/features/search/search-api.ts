@@ -20,7 +20,7 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     wants('vehicles') ? db.listVehicles() : [],
     wants('users') ? db.listUsers() : [],
     wants('orders') ? db.listOrders() : [],
-    wants('registered') ? db.listRegisteredPackages() : [],
+    wants('registered') ? db.listPackages() : [],
     sourcing ? db.listPackageTypes() : [],
   ])
   const typeName = new Map(packageTypes.map((type) => [type.id, type.name]))
@@ -36,9 +36,10 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     orders: orders.map(({ id, customerName, deliveryAddress }) => ({ id, customerName, deliveryAddress })),
     registered: registered.map((pkg) => ({
       id: pkg.id,
-      reference: pkg.reference,
+      ...(pkg.packageCode === pkg.id ? {} : { reference: pkg.packageCode }),
       qrToken: pkg.qrToken,
-      typeName: typeName.get(pkg.packageTypeId) ?? pkg.packageTypeId,
+      // Kiện không gắn loại kiện thì dòng phụ là điểm đến
+      typeName: (pkg.packageTypeId === undefined ? undefined : typeName.get(pkg.packageTypeId)) ?? pkg.destination,
     })),
     packageTypes: packageTypes.map(({ id, name }) => ({ id, name })),
   }

@@ -15,6 +15,20 @@ export const common = {
   off: 'Tắt',
   /** Loại sự cố giao (`DeliveryIssueKind`, D-47): một nguồn cho báo sự cố của tài xế, tiến trình chuyến và nhật ký (LM-100). */
   deliveryIssueKinds: { damaged: 'Hàng hỏng', missing: 'Thiếu hàng', refused: 'Khách từ chối', other: 'Khác' },
+  /** Loại hàng của kiện (`HandlingClass`, D-69, FE-3b-04): một nguồn cho kho kiện, nhãn, đơn hàng và nhật ký. */
+  handlingClasses: { STANDARD: 'Thường', FRAGILE: 'Dễ vỡ', REFRIGERATED: 'Hàng lạnh', HAZARDOUS: 'Nguy hiểm', HIGH_VALUE: 'Giá trị cao' },
+  /** Trạng thái kiện của kho kiện (`PackageStatus`, D-70, FE-3b-01), key trùng mã của kho. */
+  packageStatuses: {
+    IMPORTED: 'Đã nhập',
+    ASSIGNED: 'Đã gán chuyến',
+    STAGED: 'Đã soạn',
+    LOADED: 'Đã xếp',
+    IN_TRANSIT: 'Đang vận chuyển',
+    DELIVERED: 'Đã giao',
+    RETURNED: 'Hoàn trả',
+  },
+  /** Cờ kiện (`PackageFlag`, D-92). */
+  packageFlags: { NOT_FOUND: 'Không tìm thấy', DAMAGED: 'Hư hỏng' },
   /** `DataTable` (LM-085): chân bảng phân trang và trạng thái không có kết quả khớp bộ lọc. */
   table: {
     rowsPerPage: 'Số dòng mỗi trang',

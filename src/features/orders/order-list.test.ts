@@ -4,8 +4,8 @@ import { fetchAssignableTrips, fetchOrderablePackages, fetchOrders } from './ord
 import { filterOrderRows, groupByType, matchingStopId, selectedWeightKg } from './order-list'
 
 /**
- * Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed của Long Bình: ORD-001, ORD-002 chờ gán; 18 kiện đã ở kho, chưa vào đơn — sữa,
- * bánh quy, quạt (FE-0-06). Kho đọc dưới phiên của điều phối viên Long Bình như ở màn thật: đơn và kiện của Phương Nam không lọt vào
+ * Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed của Long Bình: ORD-001, ORD-002 chờ gán; 64 kiện kho kiện chọn được — 26 kiện gắn
+ * loại kiện (sữa, bánh quy, dầu ăn, quạt) và 38 kiện nhập file không gắn loại, trừ hai kiện mang cờ (FE-3b-01). Kho đọc dưới phiên của điều phối viên Long Bình như ở màn thật: đơn và kiện của Phương Nam không lọt vào
  * (FE-0-02).
  */
 beforeAll(() => {
@@ -21,23 +21,27 @@ test('orders filter by status slug and by an accent-free search over customer, a
   expect(filterOrderRows(rows, 'ord-001', 'khong-co').map((row) => row.order.id)).toStrictEqual(['ORD-001'])
 })
 
-test('orderable packages group by package type and the chosen weight follows the package type', async () => {
+test('orderable packages group by package type, untyped ones by handling class, and the chosen weight is the weight of each package', async () => {
   const packages = await fetchOrderablePackages()
-  const groups = groupByType(packages, '?')
+  const groups = groupByType(packages, (handlingClass) => `Hàng ${handlingClass}`)
   const ids = (group: (typeof groups)[number]) => group.items.map((item) => item.package.id)
 
-  // Ba loại, mỗi loại 6 kiện; kỳ vọng chép từ seed: sữa RPK-0023…0028, bánh quy RPK-0029…0034, quạt RPK-0043…0048
-  expect(packages).toHaveLength(18)
-  expect(groups.map((group) => [group.name, group.items.length]).toSorted()).toStrictEqual([
-    ['Kiện quạt điện', 6], ['Thùng bánh quy', 6], ['Thùng sữa hộp 48 hộp', 6],
+  // Kỳ vọng chép từ seed: sữa PK-0023…0028, bánh quy PK-0029…0034, dầu ăn PK-0035…0042, quạt PK-0043…0048; kiện nhập file PK-0049…0088
+  // theo loại hàng, không tính hai kiện mang cờ (PK-0063 hàng thường, PK-0078 hàng nguy hiểm)
+  expect(packages).toHaveLength(64)
+  expect(groups.map((group) => [group.name, group.items.length])).toStrictEqual([
+    ['Thùng sữa hộp 48 hộp', 6], ['Thùng bánh quy', 6], ['Thùng dầu ăn 12 chai', 8], ['Kiện quạt điện', 6],
+    ['Hàng STANDARD', 19], ['Hàng FRAGILE', 5], ['Hàng HIGH_VALUE', 5], ['Hàng REFRIGERATED', 5], ['Hàng HAZARDOUS', 4],
   ])
+  expect(packages.filter((item) => item.package.flags.length > 0 || item.package.orderId !== undefined)).toStrictEqual([])
   const milk = groups.find((group) => group.name === 'Thùng sữa hộp 48 hộp')!
-  expect(ids(milk)).toStrictEqual(['RPK-0023', 'RPK-0024', 'RPK-0025', 'RPK-0026', 'RPK-0027', 'RPK-0028'])
+  expect(ids(milk)).toStrictEqual(['PK-0023', 'PK-0024', 'PK-0025', 'PK-0026', 'PK-0027', 'PK-0028'])
   expect(groups.flatMap(ids).toSorted()).toStrictEqual(packages.map((item) => item.package.id).toSorted())
-  // Thùng sữa 52 kg: ba thùng 156 kg, cả nhóm 312 kg; thêm một kiện quạt 9 kg
+  // Thùng sữa 52 kg: ba thùng 156 kg, cả nhóm 312 kg; thêm một kiện quạt 9 kg; kiện dễ vỡ đi Huế 9,5 kg không gắn loại kiện
   expect(selectedWeightKg(packages, ids(milk).slice(0, 3))).toBe(156)
   expect(selectedWeightKg(packages, ids(milk))).toBe(312)
-  expect(selectedWeightKg(packages, [...ids(milk), 'RPK-0043'])).toBe(321)
+  expect(selectedWeightKg(packages, [...ids(milk), 'PK-0043'])).toBe(321)
+  expect(selectedWeightKg(packages, ['PK-0054', 'PK-0055'])).toBe(19)
   expect(selectedWeightKg(packages, [])).toBe(0)
 })
 

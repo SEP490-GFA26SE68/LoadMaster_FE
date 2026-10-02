@@ -1,8 +1,8 @@
 import type { FragilityLevel, OrientationCode } from '@/domain/models'
 
 /**
- * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, kiện đăng ký, công ty), đơn hàng, lần chạy tối ưu, loại xe và nhãn QR. Đơn vị
- * cm / kg như mọi dữ liệu của kho (D-03). Lô hàng và luồng nhận hàng giữa hai công ty đã bỏ (FE-0-06, D-63).
+ * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, công ty), đơn hàng, lần chạy tối ưu, loại xe và nhãn QR. Đơn vị cm / kg như
+ * mọi dữ liệu của kho (D-03). Lô hàng và luồng nhận hàng giữa hai công ty đã bỏ (FE-0-06, D-63); kiện của kho kiện ở `package-model.ts`.
  */
 
 /** Kho xuất phát của công ty: nơi xe nhận hàng và rời đi. Toạ độ WGS84, độ thập phân. */
@@ -15,7 +15,7 @@ export type CompanyDepot = {
 
 /**
  * Công ty logistics dùng app (`LOG-NNN`, D-63, D-64): công ty của tài khoản (`User.companyId`) và chủ của mọi dữ liệu vận hành — xe,
- * loại xe, loại kiện, kiện đăng ký, đơn hàng, chuyến (kèm revision, lần chạy tối ưu) và sự kiện nhật ký.
+ * loại xe, loại kiện, kiện của kho kiện, đơn hàng, chuyến (kèm revision, lần chạy tối ưu) và sự kiện nhật ký.
  */
 export type Company = {
   id: string
@@ -25,7 +25,7 @@ export type Company = {
   depot: CompanyDepot
 }
 
-/** Loại kiện (`PT-NNN`): khuôn để đăng ký kiện, cùng trường xếp hàng với `CargoPackage` (kiện đăng ký theo loại này). */
+/** Loại kiện (`PT-NNN`): cùng trường xếp hàng với `CargoPackage`; kiện gắn loại này lấy hướng đặt, xếp chồng, tải trên của nó. */
 export type PackageType = {
   id: string
   /** Công ty có loại kiện này trong danh mục (D-64). */
@@ -49,47 +49,11 @@ export type PackageType = {
 
 export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt'>
 
-/**
- * Trạng thái kiện đăng ký. Kho lưu `registered`, `received` (hàng có ở kho, đưa vào đơn được) và `planned`; `loaded` và `delivered`
- * suy từ tiến độ chuyến lúc đọc (kiện đã lên xe / đã dỡ ở điểm giao), không có hàm ghi riêng. Từ FE-0-06 không còn luồng quét nhận
- * hàng: kiện mới đăng ký ở `registered`, `received` chỉ do seed ghi — tới khi có mô hình kho kiện (FE-3b-03).
- */
-export const REGISTERED_PACKAGE_STATUSES = ['registered', 'received', 'planned', 'loaded', 'delivered'] as const
-export type RegisteredPackageStatus = (typeof REGISTERED_PACKAGE_STATUSES)[number]
-
-/** Một kiện vật lý công ty đăng ký trước khi có chuyến (`RPK-NNNN` — mã in trên nhãn). */
-export type RegisteredPackage = {
-  id: string
-  packageTypeId: string
-  /** Công ty sở hữu kiện: công ty của người đăng ký (`User.companyId`). */
-  ownerCompanyId: string
-  /** Mã trên QR: chuỗi ngẫu nhiên không chứa dữ liệu kiện, tra ngược bằng `findPackageByQr`. */
-  qrToken: string
-  status: RegisteredPackageStatus
-  /** Mã lô / SKU của bên gửi hàng, tuỳ chọn. */
-  reference?: string
-  note?: string
-  registeredAt: string
-  registeredBy: string | null
-  /** Đơn hàng đang dùng kiện (đơn chưa huỷ). */
-  orderId?: string
-}
-
-/** Kiện luôn thuộc công ty của người đăng ký, nên đầu vào không có công ty. */
-export type RegisteredPackageInput = {
-  packageTypeId: string
-  reference?: string
-  note?: string
-}
-
-/** Một dòng đăng ký theo số lượng / nhập file: `quantity` kiện cùng loại. */
-export type RegisteredPackageRow = RegisteredPackageInput & { quantity: number }
-
 /** Kho lưu `pending`, `assigned`, `cancelled`; `delivered` suy ra khi chuyến được gán đã hoàn thành. */
 export const ORDER_STATUSES = ['pending', 'assigned', 'delivered', 'cancelled'] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-/** Gán đơn vào điểm giao: mỗi loại kiện của đơn thành một dòng kiện của chuyến, giữ danh sách kiện đăng ký theo dòng. */
+/** Gán đơn vào điểm giao: mỗi nhóm kiện giống nhau của đơn thành một dòng kiện của chuyến, giữ danh sách kiện kho kiện theo dòng. */
 export type OrderAssignment = {
   tripId: string
   stopId: string
@@ -98,7 +62,7 @@ export type OrderAssignment = {
   by: string | null
 }
 
-/** Đơn vận chuyển (`ORD-NNN`) từ kiện đã nhận ở kho của công ty. */
+/** Đơn vận chuyển (`ORD-NNN`) từ kiện `IMPORTED` của kho kiện. */
 export type TransportOrder = {
   id: string
   /** Công ty lập đơn — cũng là công ty của mọi kiện trong đơn (D-64). */
@@ -169,7 +133,7 @@ export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt
 /** Xe gắn loại xe — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
 export type VehicleTypeAssignment = { vehicleId: string; vehicleTypeId: string }
 
-/** Nhãn QR của một kiện trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện đăng ký, kiện nhập tay dùng mã sinh riêng. */
+/** Nhãn QR của một kiện trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện kho kiện, kiện nhập tay dùng mã sinh riêng. */
 export type TripLabel = {
   packageInstanceId: string
   /** Dòng kiện của chuyến (`PKG-NNN`). */
@@ -177,7 +141,8 @@ export type TripLabel = {
   name: string
   deliveryStop: number
   qrToken: string
-  registeredPackageId?: string
+  /** Kiện kho kiện (`PK-NNNN`) của instance này, khi kiện vào chuyến qua đơn hàng. */
+  poolPackageId?: string
 }
 
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */

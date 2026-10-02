@@ -33,7 +33,7 @@ function assertValid(input: PackageTypeInput) {
 
 /** Công ty và danh mục loại kiện (luồng 1, LM-104). Mỗi công ty một danh mục loại kiện riêng (D-64). */
 export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
-  const { packageTypes, registeredPackages } = ctx.state
+  const { packageTypes, packages } = ctx.state
   const scope = ctx.scope.packageTypes
   return {
     listCompanies: () => ctx.respond(() => ctx.scope.companies.list()),
@@ -60,7 +60,7 @@ export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
     deletePackageType: (id) =>
       ctx.respond(() => {
         const current = scope.own(id)
-        const count = [...registeredPackages.values()].filter((pkg) => pkg.packageTypeId === id).length
+        const count = [...packages.values()].filter((pkg) => pkg.packageTypeId === id).length
         if (count > 0) throw new MockDbError('PACKAGE_TYPE_IN_USE', { packageTypeId: id, count })
         packageTypes.delete(id)
         ctx.log('packageType.deleted', { type: 'packageType', id }, { name: current.name })

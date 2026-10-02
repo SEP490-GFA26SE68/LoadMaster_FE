@@ -18,7 +18,7 @@ const SOURCES: SearchSources = {
     { id: 'US-0003', fullName: 'Lê Văn Hải', email: 'kho@loadmaster.vn', role: 'warehouse' },
   ],
   orders: [{ id: 'ORD-001', customerName: 'Co.opmart Gò Vấp', deliveryAddress: '12 Quang Trung, Gò Vấp' }],
-  registered: [{ id: 'RPK-0001', reference: 'MP-DA12-0914', qrToken: 'LM-ZB4R-3W83-412N', typeName: 'Thùng dầu ăn 12 chai' }],
+  registered: [{ id: 'PK-0001', reference: 'MP-DA12-0914', qrToken: 'LM-ZB4R-3W83-412N', typeName: 'Thùng dầu ăn 12 chai' }],
   packageTypes: [{ id: 'PT-001', name: 'Thùng dầu ăn 12 chai' }],
 }
 
@@ -62,11 +62,11 @@ test('only the permitted groups, in their order; groups without a result are lef
 
 test('Review 1 groups: registered packages, package types and orders (LM-104); shipments are no longer searched (FE-0-06)', () => {
   expect(hrefs(searchSources(SOURCES, 'dau an', SEARCH_GROUPS))).toStrictEqual([
-    ['registered', ['/kien-hang?q=RPK-0001']],
+    ['registered', ['/kien-hang?q=PK-0001']],
     ['packageTypes', ['/loai-kien?q=PT-001']],
   ])
-  expect(hrefs(searchSources(SOURCES, 'mp-da12', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=RPK-0001']]])
-  expect(hrefs(searchSources(SOURCES, 'zb4r', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=RPK-0001']]])
+  expect(hrefs(searchSources(SOURCES, 'mp-da12', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=PK-0001']]])
+  expect(hrefs(searchSources(SOURCES, 'zb4r', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=PK-0001']]])
   expect(hrefs(searchSources(SOURCES, 'go vap', SEARCH_GROUPS))).toStrictEqual([['orders', ['/don-hang?q=ORD-001']]])
   expect(SEARCH_GROUPS).toStrictEqual(['trips', 'packages', 'orders', 'registered', 'packageTypes', 'vehicles', 'users'])
   expect(hrefs(searchSources(SOURCES, 'shp-002', SEARCH_GROUPS))).toStrictEqual([])

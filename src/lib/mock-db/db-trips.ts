@@ -1,4 +1,5 @@
 import { nextId, put, sameData, type DbContext } from './db-context'
+import { releaseTripPackages } from './db-package-progress'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
 import { tripChangeParams } from './trip-changes'
@@ -84,6 +85,7 @@ export function tripMethods(ctx: DbContext): TripMethods {
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
         const cancellation = { at: ctx.nowIso(), by: ctx.state.session.userId, reason: trimmed, fromPhase: current.phase }
         ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed })
+        releaseTripPackages(ctx, current)
         return put(trips, { ...current, phase: 'cancelled', cancellation })
       }),
   }

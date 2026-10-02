@@ -10,7 +10,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { PackageLabel } from './PackageLabel'
 import { usePackageLabelsQuery } from './usePackagesSourceQuery'
 
-/** `?kien=RPK-0001,RPK-0002`: in đúng các kiện đó; vắng là mọi kiện người đăng nhập thấy. */
+/** `?kien=PK-0001,PK-0002`: in đúng các kiện đó; vắng là mọi kiện người đăng nhập thấy. */
 function pickedIds(search: URLSearchParams): string[] | undefined {
   const raw = search.get('kien')
   return raw ? raw.split(',').map((id) => id.trim()).filter(Boolean) : undefined

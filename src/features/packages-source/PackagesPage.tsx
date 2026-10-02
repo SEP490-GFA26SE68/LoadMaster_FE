@@ -13,7 +13,7 @@ import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { RegisteredPackage } from '@/lib/mock-db'
+import type { Package } from '@/lib/mock-db'
 import { packageColumns, PackageSelectionContext, type PackageSelection } from './package-columns'
 import { PackageSelectionBar } from './PackageSelectionBar'
 import {
@@ -29,11 +29,11 @@ import {
   tabFromSlug,
 } from './packages-list'
 import { RegisterPackagesDialog } from './RegisterPackagesDialog'
-import { usePackageTypesQuery, useRegisteredPackagesQuery } from './usePackagesSourceQuery'
+import { usePackagesQuery, usePackageTypesQuery } from './usePackagesSourceQuery'
 
 /**
- * Kiện đã đăng ký `/kien-hang` (LM-104) — từ FE-0-06 là màn của điều phối viên (`packages.manage`), tạm tới khi có kho kiện theo mô
- * hình backend. Dải trời có tab trạng thái kèm số (bộ lọc `trang-thai` trên URL) và lối sang danh mục Loại kiện; thẻ bảng đè lên dải:
+ * Kiện hàng `/kien-hang` (LM-104) — từ FE-0-06 là màn của điều phối viên (`packages.manage`). Dữ liệu đã là kho kiện theo mô hình
+ * backend (FE-3b-01); màn này giữ tạm tới màn Kho kiện mới. Dải trời có tab trạng thái kèm số (bộ lọc `trang-thai` trên URL) và lối sang danh mục Loại kiện; thẻ bảng đè lên dải:
  * tìm bỏ dấu, chọn kiện → in nhãn QR, phân trang. "Đăng ký kiện" (một kiện, theo số lượng, nhập file) là hành động chính; kiện vừa
  * đăng ký được chọn sẵn và toast mở thẳng trang in nhãn.
  */
@@ -41,9 +41,9 @@ export function PackagesPage() {
   const t = useT()
   const navigate = useNavigate()
   const canRegister = useCan()('packages.manage')
-  const packagesQuery = useRegisteredPackagesQuery()
+  const packagesQuery = usePackagesQuery()
   const typesQuery = usePackageTypesQuery()
-  const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'registeredAt', desc: true } })
+  const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'createdAt', desc: true } })
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
   const [registering, setRegistering] = useState(false)
 
@@ -79,7 +79,7 @@ export function PackagesPage() {
   const hasRows = all.length > 0
   const overlap = pending || (!error && hasRows)
 
-  function handleRegistered(created: RegisteredPackage[]) {
+  function handleRegistered(created: Package[]) {
     setRegistering(false)
     const ids = created.map((pkg) => pkg.id)
     setSelected(new Set(ids))
@@ -118,7 +118,7 @@ export function PackagesPage() {
           <TabsList tone="sky" aria-label={t('sourcing.packages.tabs.label')}>
             {PACKAGE_TABS.map((key) => (
               <TabsTrigger key={key} value={key}>
-                {key === 'all' ? t('sourcing.packages.tabs.all') : t(`sourcing.packages.status.${key}`)}
+                {key === 'all' ? t('sourcing.packages.tabs.all') : t(`common.packageStatuses.${key}`)}
                 <TabCount>{counts[key]}</TabCount>
               </TabsTrigger>
             ))}

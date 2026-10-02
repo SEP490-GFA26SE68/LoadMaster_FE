@@ -1,16 +1,18 @@
 import type { VehicleConfig } from '@/domain/models'
 import { addDays, vnTime } from './clock'
-import { cargoFromType } from './package-type-cargo'
-import { randomQrToken, seededRandom } from './qr-token'
+import type { Package } from './package-model'
+import { cargoFromType, handlingClassOfType } from './package-type-cargo'
+import { seededRandom } from './qr-token'
+import { packageSeeder } from './seed-packages'
 import { seedPlanner } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
-import type { OptimizationRun, PackageType, RegisteredPackage, TransportOrder, VehicleType } from './source-types'
+import type { OptimizationRun, PackageType, TransportOrder, VehicleType } from './source-types'
 import type { DeliveryStop, Revision, Trip } from './types'
 
 /**
  * Bộ dữ liệu nhỏ của Công ty CP Giao nhận Phương Nam (`LOG-002`, D-64, FE-0-02), đủ để thấy hai công ty không nhìn thấy dữ liệu của
- * nhau: 2 xe, 1 loại xe, 2 loại kiện, 10 kiện đăng ký, 1 đơn chờ gán và 2 chuyến — một chuyến hôm nay đã duyệt phương án, gán tài xế
+ * nhau: 2 xe, 1 loại xe, 2 loại kiện, 10 kiện kho kiện, 1 đơn chờ gán và 2 chuyến — một chuyến hôm nay đã duyệt phương án, gán tài xế
  * `taixe@phuongnam.vn`, chờ kho Phú Thuận xếp; một chuyến nháp ngày mai.
  *
  * Mã mang `PN` (`TRIP-PN-001`, `VEHICLE-PN-01`, `REV-PN-001`…): `nextId` chỉ tính mã dạng `PREFIX-NNN`, nên mã kế tiếp của kho vẫn
@@ -28,7 +30,7 @@ export type PhuongNamSeed = {
   runs: OptimizationRun[]
   events: SeedEvent[]
   packageTypes: PackageType[]
-  registeredPackages: RegisteredPackage[]
+  packages: Package[]
   orders: TransportOrder[]
   vehicleTypes: VehicleType[]
   vehicleTypeOf: [string, string][]
@@ -113,24 +115,19 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
 
   const random = seededRandom(20_260_915)
   const tokens = new Set(taken)
-  const registeredPackages: RegisteredPackage[] = []
-  function register(type: TypeSeed, count: number, status: 'registered' | 'received', at: string, reference: string): RegisteredPackage[] {
-    const start = registeredPackages.length
-    const batch = Array.from({ length: count }, (_, index): RegisteredPackage => {
-      const qrToken = randomQrToken(random, (token) => tokens.has(token))
-      tokens.add(qrToken)
-      return {
-        id: `RPK-PN-${String(start + index + 1).padStart(4, '0')}`, packageTypeId: type.id, ownerCompanyId: PHUONG_NAM, qrToken,
-        status, reference, registeredAt: at, registeredBy: DISPATCHER,
-      }
-    })
-    registeredPackages.push(...batch)
-    events.push({ at, actorId: DISPATCHER, action: 'package.registered', target: { type: 'package', id: batch[0]?.id ?? '' }, params: { count, packageTypeId: type.id, lastPackageId: batch.at(-1)?.id ?? '' } })
-    return batch
+  const seeder = packageSeeder({
+    companyId: PHUONG_NAM, actorId: DISPATCHER, random, tokens, events,
+    idOf: (order) => `PK-PN-${String(order).padStart(4, '0')}`,
+  })
+  function register(type: TypeSeed, count: number, at: string, reference: string, destination: string): Package[] {
+    return seeder.add([{
+      codePrefix: reference, count, destination, lengthCm: type.lengthCm, widthCm: type.widthCm, heightCm: type.heightCm, weightKg: type.weightKg,
+      handlingClass: handlingClassOfType(type), packageTypeId: type.id,
+    }], 'MANUAL', at)
   }
-  // RPK-PN-0001…0006 linh kiện đã ở kho; RPK-PN-0007…0010 vải cuộn đăng ký sáng ngày neo, hàng chưa về
-  const electronics = register(ELECTRONICS, 6, 'received', on(2, '09:30'), 'PN-LK-0912')
-  register(FABRIC, 4, 'registered', on(0, '07:25'), 'PN-VC-0914')
+  // PK-PN-0001…0006 linh kiện (4 kiện đầu thuộc đơn chờ gán); PK-PN-0007…0010 vải cuộn thêm sáng ngày neo. Mọi kiện ở `IMPORTED`
+  const electronics = register(ELECTRONICS, 6, on(2, '09:30'), 'PN-LK-0912', CUSTOMERS.linhKienQ4.address)
+  register(FABRIC, 4, on(0, '07:25'), 'PN-VC-0914', CUSTOMERS.vaiSoiQ1.address)
 
   // Đơn chờ gán giao tới Khánh Hội — điểm 1 của chuyến nháp TRIP-PN-002, gán thẳng được
   const ordered = electronics.slice(0, 4)
@@ -166,7 +163,7 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
   ]
 
   return {
-    vehicles, trips: [approved, draft], revisions, runs, events, packageTypes, registeredPackages, orders, vehicleTypes,
+    vehicles, trips: [approved, draft], revisions, runs, events, packageTypes, packages: seeder.packages, orders, vehicleTypes,
     vehicleTypeOf: [['VEHICLE-PN-01', 'VT-PN-01']],
   }
 }

@@ -56,9 +56,10 @@ export const orders = {
     tooLong: 'Tối đa {max} ký tự.',
     packages: 'Kiện hàng',
     packagesRequired: 'Chọn ít nhất một kiện.',
-    noPackages: 'Không còn kiện đã nhận ở kho nào chưa vào đơn. Chỉ kiện ở trạng thái "Đã nhận ở kho" mới đưa vào đơn được.',
+    noPackages: 'Không còn kiện nào ở kho kiện chưa vào đơn. Chỉ kiện ở trạng thái "Đã nhập", không mang cờ, mới đưa vào đơn được.',
     /** Tên nhóm của kiện có loại không còn trong danh mục. */
-    unknownType: 'Loại kiện không còn trong danh mục',
+    /** Nhóm kiện không gắn loại kiện, theo loại hàng. */
+    classGroup: 'Hàng {name}',
     selectType: 'Chọn cả nhóm {name}',
     selected: { one: 'Đã chọn {count} kiện · {weight}', other: 'Đã chọn {count} kiện · {weight}' },
     packageMeta: '{dimensions} · {weight}',

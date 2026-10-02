@@ -23,10 +23,10 @@ beforeEach(() => {
 })
 
 test.each<[Role, string, string, string]>([
-  // FE-0-06: ba màn kiện là của điều phối viên (`packages.manage`); điều phối thấy cả 48 kiện của seed
-  ['dispatcher', '/kien-hang', 'Kiện hàng', '48 kiện đã đăng ký'],
+  // FE-0-06: ba màn kiện là của điều phối viên (`packages.manage`); điều phối thấy cả 88 kiện của kho kiện Long Bình
+  ['dispatcher', '/kien-hang', 'Kiện hàng', '88 kiện đã đăng ký'],
   ['dispatcher', '/loai-kien', 'Loại kiện', '8 loại kiện trong danh mục'],
-  ['dispatcher', '/kien-hang/nhan?kien=RPK-0001,RPK-0002', 'In nhãn QR', '2 nhãn có thể in'],
+  ['dispatcher', '/kien-hang/nhan?kien=PK-0001,PK-0002', 'In nhãn QR', '2 nhãn có thể in'],
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
 ])('%s mở %s', async (role, path, title, summary) => {

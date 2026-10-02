@@ -16,7 +16,7 @@ import type { PackageTypeInput } from '@/lib/mock-db'
 import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
-import { useDeletePackageTypeMutation, usePackageTypesQuery, useRegisteredPackagesQuery, useSavePackageTypeMutation } from './usePackagesSourceQuery'
+import { useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagesSourceQuery'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
@@ -29,7 +29,7 @@ export function PackageTypesPage() {
   const t = useT()
   const canEdit = useCan()('packages.manage')
   const typesQuery = usePackageTypesQuery()
-  const packagesQuery = useRegisteredPackagesQuery()
+  const packagesQuery = usePackagesQuery()
   const save = useSavePackageTypeMutation()
   const remove = useDeletePackageTypeMutation()
   const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
@@ -38,7 +38,9 @@ export function PackageTypesPage() {
 
   const rows = useMemo<PackageTypeRow[]>(() => {
     const usage = new Map<string, number>()
-    for (const pkg of packagesQuery.data ?? []) usage.set(pkg.packageTypeId, (usage.get(pkg.packageTypeId) ?? 0) + 1)
+    for (const pkg of packagesQuery.data ?? []) {
+      if (pkg.packageTypeId !== undefined) usage.set(pkg.packageTypeId, (usage.get(pkg.packageTypeId) ?? 0) + 1)
+    }
     return (typesQuery.data ?? []).map((type) => ({ ...type, usage: usage.get(type.id) ?? 0 }))
   }, [typesQuery.data, packagesQuery.data])
   const visible = useMemo(() => rows.filter((row) => matchesQuery([row.name, row.id], list.query)), [rows, list.query])

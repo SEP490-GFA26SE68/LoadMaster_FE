@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import type { VehicleConfig } from '@/domain/models'
-import { createMockDb, type MockDb, type PackageTypeInput, type Revision, type VehicleTypeInput } from '@/lib/mock-db'
+import { createMockDb, type MockDb, type PackageInput, type PackageTypeInput, type Revision, type VehicleTypeInput } from '@/lib/mock-db'
 
 /**
  * Cách ly dữ liệu theo công ty ở tầng kho (D-64, FE-0-02): đăng nhập là người của một công ty thì **không hàm công khai nào** của kho
@@ -49,13 +49,13 @@ const LONG_BINH: Company = {
   typedVehicles: range('VEHICLE-', 1, 7, 3),
   vehicleTypes: range('VT-', 1, 7, 3),
   packageTypes: range('PT-', 1, 8, 3),
-  packages: range('RPK-', 1, 48, 4),
+  packages: range('PK-', 1, 88, 4),
   orders: ['ORD-002', 'ORD-001'],
   trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
   trip: 'TRIP-2026-0914',
   revision: 'REV-002',
   draftTrip: 'TRIP-014',
-  freePackage: 'RPK-0023',
+  freePackage: 'PK-0023',
 }
 
 const PHUONG_NAM: Company = {
@@ -68,13 +68,13 @@ const PHUONG_NAM: Company = {
   typedVehicles: ['VEHICLE-PN-01'],
   vehicleTypes: ['VT-PN-01'],
   packageTypes: ['PT-PN-01', 'PT-PN-02'],
-  packages: range('RPK-PN-', 1, 10, 4),
+  packages: range('PK-PN-', 1, 10, 4),
   orders: ['ORD-PN-001'],
   trips: ['TRIP-PN-001', 'TRIP-PN-002'],
   trip: 'TRIP-PN-001',
   revision: 'REV-PN-002',
   draftTrip: 'TRIP-PN-002',
-  freePackage: 'RPK-PN-0005',
+  freePackage: 'PK-PN-0005',
 }
 
 const PLATFORM_USERS = ['US-0005', 'US-NT-01', 'US-NT-02']
@@ -108,6 +108,7 @@ const TYPE: PackageTypeInput = {
   allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 6, maxTopLoadKg: 45,
 }
 const VEHICLE_TYPE: VehicleTypeInput = { name: 'Xe tải 1,9 tấn thùng 3,6 m', cargoLengthCm: 360, cargoWidthCm: 170, cargoHeightCm: 170, payloadKg: 1900 }
+const PACKAGE: PackageInput = { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 18, handlingClass: 'STANDARD', destination: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng' }
 const STOP = { id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }
 const newTrip = (vehicleId: string, driverId: string | null = null) => ({ name: 'Tuyến thử cách ly', vehicleId, driverId, scheduledDate: '2026-09-15', packages: [], stops: [STOP] })
 const newUser = (companyId?: string) => ({ fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình', ...(companyId ? { companyId } : {}) })
@@ -205,27 +206,32 @@ const PROBES = {
   updatePackageType: { scope: 'operational', forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.updatePackageType(other.packageTypes[0]!, TYPE) } },
   deletePackageType: { scope: 'operational', forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.deletePackageType(other.packageTypes[1]!) } },
 
-  listRegisteredPackages: { scope: 'operational', list: { call: ({ db }) => db.listRegisteredPackages(), ids: idsOf, own: (c) => c.packages } },
-  getRegisteredPackage: { scope: 'operational', hidden: ({ db, other }) => db.getRegisteredPackage(other.packages[0]!) },
+  listPackages: { scope: 'operational', list: { call: ({ db }) => db.listPackages(), ids: idsOf, own: (c) => c.packages } },
+  getPackage: { scope: 'operational', hidden: ({ db, other }) => db.getPackage(other.packages[0]!) },
   findPackageByQr: { scope: 'operational', hidden: ({ db, foreign }) => db.findPackageByQr(foreign.qrToken), hiddenCode: 'QR_UNKNOWN' },
-  registerPackage: {
+  createPackage: {
     scope: 'operational',
-    creates: ({ db, own }) => db.registerPackage({ packageTypeId: own.packageTypes[0]! }),
-    forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.registerPackage({ packageTypeId: other.packageTypes[0]! }) },
+    creates: ({ db, own }) => db.createPackage({ ...PACKAGE, packageTypeId: own.packageTypes[0]! }),
+    forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.createPackage({ ...PACKAGE, packageTypeId: other.packageTypes[0]! }) },
   },
-  registerPackages: {
+  createPackages: {
     scope: 'operational',
-    creates: ({ db, own }) => db.registerPackages({ packageTypeId: own.packageTypes[0]! }, 2),
-    forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.registerPackages({ packageTypeId: other.packageTypes[0]! }, 2) },
-  },
-  registerPackageRows: {
-    scope: 'operational',
-    creates: ({ db, own }) => db.registerPackageRows([{ packageTypeId: own.packageTypes[1]!, quantity: 2 }]),
+    creates: ({ db, own }) => db.createPackages([PACKAGE, { ...PACKAGE, packageTypeId: own.packageTypes[1]! }], 'IMPORT'),
     forbidden: {
       'một dòng dùng loại kiện của công ty kia': ({ db, own, other }) =>
-        db.registerPackageRows([{ packageTypeId: own.packageTypes[0]!, quantity: 1 }, { packageTypeId: other.packageTypes[0]!, quantity: 1 }]),
+        db.createPackages([{ ...PACKAGE, packageTypeId: own.packageTypes[0]! }, { ...PACKAGE, packageTypeId: other.packageTypes[0]! }]),
     },
   },
+  updatePackage: {
+    scope: 'operational',
+    forbidden: {
+      'kiện của công ty kia': ({ db, other }) => db.updatePackage(other.freePackage, { destination: 'KCN Phú Bài, Huế' }),
+      'loại kiện của công ty kia': ({ db, own, other }) => db.updatePackage(own.freePackage, { packageTypeId: other.packageTypes[0]! }),
+    },
+  },
+  updatePackageStatus: { scope: 'operational', forbidden: { 'kiện của công ty kia': ({ db, other }) => db.updatePackageStatus(other.freePackage, 'ASSIGNED') } },
+  flagPackage: { scope: 'operational', forbidden: { 'kiện của công ty kia': ({ db, other }) => db.flagPackage(other.freePackage, 'DAMAGED') } },
+  clearPackageFlag: { scope: 'operational', forbidden: { 'kiện của công ty kia': ({ db, other }) => db.clearPackageFlag(other.freePackage, 'DAMAGED') } },
 
   listOrders: { scope: 'operational', list: { call: ({ db }) => db.listOrders(), ids: idsOf, own: (c) => c.orders } },
   getOrder: { scope: 'operational', hidden: ({ db, other }) => db.getOrder(other.orders[0]!) },
@@ -279,7 +285,7 @@ async function open(own: Company, other: Company, sessionUserId = own.viewer): P
   const foreign = {
     vehicle: await db.getVehicle(other.vehicles[0]!),
     revision: await db.getRevision(other.revision),
-    qrToken: (await db.getRegisteredPackage(other.packages[0]!)).qrToken,
+    qrToken: (await db.getPackage(other.packages[0]!)).qrToken,
   }
   db.restoreSession(sessionUserId)
   return { db, own, other, foreign }
@@ -295,7 +301,7 @@ async function wholeStore(db: MockDb) {
     revisions: await Promise.all(trips.map((trip) => db.listRevisions(trip.id))),
     runs: await Promise.all(trips.map((trip) => db.listOptimizationRuns(trip.id))),
     users: await db.listUsers(), events: await db.listEvents(), packageTypes: await db.listPackageTypes(),
-    packages: await db.listRegisteredPackages(), orders: await db.listOrders(), vehicleTypes: await db.listVehicleTypes(),
+    packages: await db.listPackages(), orders: await db.listOrders(), vehicleTypes: await db.listVehicleTypes(),
     assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
   }
   db.restoreSession(session)
@@ -405,8 +411,8 @@ test('without a session the store does not filter, and what it creates belongs t
   expect((await db.getTrip(PHUONG_NAM.trip)).companyId).toBe('LOG-002')
   const trip = await db.createTrip(newTrip('VEHICLE-001', 'US-0004'))
   const type = await db.createPackageType(TYPE)
-  const [pkg] = await db.registerPackages({ packageTypeId: type.id }, 1)
-  expect([trip.companyId, type.companyId, pkg?.ownerCompanyId, (await db.createUser(newUser())).user.companyId]).toStrictEqual(['LOG-001', 'LOG-001', 'LOG-001', 'LOG-001'])
+  const pkg = await db.createPackage({ ...PACKAGE, packageTypeId: type.id })
+  expect([trip.companyId, type.companyId, pkg.companyId, (await db.createUser(newUser())).user.companyId]).toStrictEqual(['LOG-001', 'LOG-001', 'LOG-001', 'LOG-001'])
   expect((await db.listEvents())[0]).toMatchObject({ action: 'user.created', actorId: null, companyId: 'LOG-001' })
   // Luật của dữ liệu vẫn giữ khi không có phiên: chuyến của Long Bình không dùng xe của Phương Nam
   await expect(db.createTrip(newTrip('VEHICLE-PN-01'))).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY', params: { collection: 'vehicles', id: 'VEHICLE-PN-01' } })

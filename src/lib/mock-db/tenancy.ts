@@ -113,7 +113,7 @@ export function createTenancy(state: DbState) {
     vehicles: scoped(state, state.vehicles, 'vehicles', (vehicle) => state.vehicleCompany.get(vehicle.id)),
     vehicleTypes: scoped(state, state.vehicleTypes, 'vehicleTypes', (type) => type.companyId),
     packageTypes: scoped(state, state.packageTypes, 'packageTypes', (type) => type.companyId),
-    registeredPackages: scoped(state, state.registeredPackages, 'registeredPackages', (pkg) => pkg.ownerCompanyId),
+    packages: scoped(state, state.packages, 'packages', (pkg) => pkg.companyId),
     orders: scoped(state, state.orders, 'orders', (order) => order.companyId),
     trips: scoped(state, state.trips, 'trips', (trip) => trip.companyId),
     /** Revision thuộc công ty của chuyến. */
