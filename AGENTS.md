@@ -54,9 +54,13 @@ DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dù
 (Long Bình), năm tài khoản `@phuongnam.vn` thuộc `LOG-002`; ba tài khoản nền tảng không có công ty và không có kho (`User.depot` tuỳ chọn; kho
 bỏ cả hai khi vai trò là nền tảng). *(đã điều chỉnh 02/10/2026, FE-0-06)* Seed chỉ còn hai công ty logistics (`MFR-…` đã bỏ) và 20 tài khoản:
 mỗi công ty đủ năm vai trò công ty — `viet.lam@phuongnam.vn` (`US-0015`) là nhân viên kho của Phương Nam; `sanxuat@`, `logistics@` (`US-0013`,
-`US-0014`) đã bỏ cùng vai trò của chúng. Kho **chưa lọc dữ liệu theo công ty** (lớp lọc theo vai trò nhà sản xuất / logistics của LM-104 đã bỏ) —
-cách ly theo công ty là FE-0-02; riêng kiện đăng ký mới thuộc **công ty của người đăng ký** (`RegisteredPackage.ownerCompanyId` lấy từ
-`User.companyId` của phiên; phiên không thuộc công ty nào thì kho từ chối `COMPANY_REQUIRED`). Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
+`US-0014`) đã bỏ cùng vai trò của chúng. *(đã điều chỉnh 02/10/2026, FE-0-02, D-64)* Kho **lọc dữ liệu theo công ty của phiên** (mục 9
+"Lớp dữ liệu"): người của một công ty chỉ thấy xe, loại xe, loại kiện, kiện, đơn, chuyến, phương án, người dùng và nhật ký của công ty mình;
+ba vai trò nền tảng bị mọi hàm dữ liệu vận hành từ chối (`COMPANY_REQUIRED`), chỉ đọc người dùng, nhật ký và danh sách công ty. Mỗi công ty có
+kho xuất phát kèm toạ độ (`Company.depot`: Kho Long Bình ở KCN Biên Hoà 2; Kho Phú Thuận ở Quận 7). Seed có từ trước (8 xe, 15 chuyến, 8 loại
+kiện, 48 kiện đăng ký, 2 đơn) thuộc Long Bình; Phương Nam có bộ nhỏ riêng ở `seed-phuong-nam.ts` — 2 xe, 1 loại xe, 2 loại kiện, 10 kiện, 1
+đơn, 2 chuyến (`TRIP-PN-001` đã duyệt, gán `taixe@phuongnam.vn`; `TRIP-PN-002` nháp) — mã mang `PN` (`TRIP-PN-…`, `VEHICLE-PN-…`, `REV-PN-…`)
+nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
 `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
 ô đó tới khi có màn riêng. Mục điều hướng khai `roles` trong `NAV_ITEMS` khi chỉ hiện cho vai trò dùng nó hằng ngày (Đơn hàng của điều phối);
@@ -202,7 +206,9 @@ src/
                         Review 1 (LM-104): công ty logistics, loại kiện, kiện đăng ký + mã QR, đơn hàng, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
-                        (`db-shipments.ts`) đã bỏ ở FE-0-06
+                        (`db-shipments.ts`) đã bỏ ở FE-0-06; cách ly theo công ty của phiên (`tenancy.ts`, mọi `db-*.ts` đi
+                        qua `ctx.scope`; `tenancy.test.ts` liệt kê mọi hàm công khai) và seed của Phương Nam
+                        (`seed-phuong-nam.ts`) — FE-0-02
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -906,12 +912,35 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 `useUsersQuery` + mutation), Nhật ký (`audit-api.ts`), kho và tài xế (LM-086/087) đều đọc/ghi kho mock qua Query. Trạng thái xe đọc
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.
 
+*(bổ sung 02/10/2026, FE-0-02, D-64)* **Lọc theo công ty nằm ở tầng kho**, như backend lọc mọi truy vấn theo `company_id`: component, hook
+và `-api.ts` **không tự lọc theo công ty** và không cần biết công ty của người xem. Kho xét phiên của chính nó (`lib/mock-db/tenancy.ts`;
+mọi `db-*.ts` đọc/ghi qua `ctx.scope`), ba phạm vi:
+
+- **Phiên của một công ty** (`User.companyId`): hàm liệt kê chỉ trả bản ghi của công ty đó; đọc theo mã bản ghi của công ty khác là
+  `NOT_FOUND` như bản ghi không tồn tại (tra mã QR: `QR_UNKNOWN`); ghi vào bản ghi của công ty khác, hoặc tham chiếu tới nó — gán xe, tài
+  xế, loại kiện, kiện, chuyến của công ty khác — là `FORBIDDEN_COMPANY`.
+- **Phiên nền tảng** (ba vai trò không thuộc công ty nào): mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED`. Người dùng, nhật ký và danh
+  sách công ty không phải dữ liệu vận hành: nền tảng đọc hết, người của công ty chỉ đọc của công ty mình (luật theo vai trò là FE-0-08). Màn
+  cần tên chuyến, xe để đọc nhật ký hay thông báo gọi `listAuditNames` — theo phạm vi nhật ký, không đòi quyền vận hành — không gọi
+  `listTrips` / `listVehicles`.
+- **Không có phiên** (test logic kho bằng `createMockDb()`, dựng seed, hai trang tài liệu `/kieu-dang`, `/thanh-phan` ngoài `RequireAuth`):
+  **không lọc**; bản ghi tạo ra thuộc công ty mặc định `LOG-001`. Luật "bản ghi chỉ tham chiếu bản ghi cùng công ty" vẫn giữ. Test cần đúng
+  dữ liệu của một công ty thì đặt phiên: `db.restoreSession(mã người dùng)` (không ghi nhật ký) hoặc `signedInAs`.
+
+Bản ghi mang công ty: `Trip.companyId`, `PackageType.companyId`, `VehicleType.companyId`, `TransportOrder.companyId`,
+`RegisteredPackage.ownerCompanyId`, `AuditEvent.companyId` (công ty của phiên đã ghi; `null` khi là tài khoản nền tảng; lần đăng nhập sai ghi
+công ty của tài khoản bị thử). Xe lưu công ty cạnh `VehicleConfig` trong kho (`vehicleCompany`, D-04); revision và lần chạy tối ưu thuộc công
+ty của chuyến, không lưu riêng. Thêm hàm công khai vào kho thì khai nó ở bảng `PROBES` của `tenancy.test.ts` — thiếu là test đỏ.
+
 *(bổ sung 27/09/2026, LM-104)* Dữ liệu các luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `orders-api.ts`,
 `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
 `['registered-packages', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
 dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy)
-nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu theo công ty có mã người dùng trong khoá.
+nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không mang
+người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không hiện
+cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
+(`['notifications', id, vai trò]`).
 *(đã điều chỉnh 02/10/2026, FE-0-06)* `shipments-api.ts`, `receiving-api.ts` và khoá `['shipments', …]`, `['receiving', …]` đã bỏ cùng hai
 feature đó.
 Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở
@@ -922,7 +951,7 @@ tải lại nhãn).
 Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng.
 *(đã điều chỉnh 02/10/2026, FE-0-06)* Kiện đăng ký còn năm trạng thái `registered`, `received`, `planned`, `loaded`, `delivered` (`in_shipment`
 đã bỏ cùng lô hàng). Không còn luồng quét nhận nên `received` — hàng có ở kho, đưa vào đơn được — chỉ do **seed ghi thẳng** (40 trong 48 kiện
-seed, tất cả thuộc `LOG-001`); kiện mới đăng ký ở `registered` và chưa vào đơn được cho tới khi có kho kiện theo mô hình backend (FE-3b-03).
+của Long Bình, 6 trong 10 kiện của Phương Nam); kiện mới đăng ký ở `registered` và chưa vào đơn được cho tới khi có kho kiện theo mô hình backend (FE-3b-03).
 Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
@@ -957,11 +986,13 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành
   của kho (`startLoading`…`completeStop`). Bảo dưỡng xe lưu ngoài `VehicleConfig` (`listVehicleStates`, D-04).
 - Người dùng và mật khẩu nằm trong kho; kho giữ **phiên** như cookie server (`authenticate`, `restoreSession`) và mọi hàm ghi thêm
-  một sự kiện nhật ký `{ action, actorId, target, params }` — không lưu câu chữ, UI dịch nhánh `audit`. Lỗi của kho (`MockDbError`)
+  một sự kiện nhật ký `{ action, actorId, companyId, target, params }` — không lưu câu chữ, UI dịch nhánh `audit`. Lỗi của kho (`MockDbError`)
   hiện cho người dùng qua `dataErrorMessage(error, t)` (nhánh `dataErrors`, key trùng mã).
 - Seed neo theo ngày (D-44): `getMockDb()` neo hôm nay giờ Việt Nam, dưới Vitest và `createMockDb()` mặc định neo `SEED_ANCHOR_DATE`
   (14/09/2026) để test tất định. Chuyến chính `TRIP-2026-0914` luôn đứng đầu `listTrips` và giữ `REV-001`/`REV-002`; test so số
-  của seed (tổng kiện, số xe…) phải cập nhật khi đổi `seed-trips.ts`. Dựng seed ≈ 0,3 s một lần mỗi ngày neo.
+  của seed (tổng kiện, số xe…) phải cập nhật khi đổi `seed-trips.ts`. *(đã điều chỉnh 02/10/2026, FE-0-02)* Dữ liệu của Phương Nam
+  (`seed-phuong-nam.ts`) nối **sau** dữ liệu của Long Bình và mang mã `…-PN-…`: thứ tự, mã và mã kế tiếp (`TRIP-015`, `VEHICLE-009`,
+  `REV-028`…) của Long Bình không đổi; test đọc kho không phiên thấy cả hai công ty. Dựng seed ≈ 0,3 s một lần mỗi ngày neo.
   Mở app sớm hơn việc "hôm nay" muộn nhất của seed thì mọi mốc giờ seed lùi cùng một khoảng (`seed-shift.ts`): lịch sử không có sự kiện
   ở tương lai, sự kiện mới luôn nằm trên sự kiện seed; ngày chạy không đổi.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa

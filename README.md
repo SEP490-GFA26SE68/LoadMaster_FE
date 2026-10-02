@@ -59,8 +59,9 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 - Đang chuyển sang 8 vai trò của backend v2: ma trận quyền và tài khoản mẫu đã có đúng tám vai trò và hai công ty logistics; quản trị hệ thống
   không còn quyền vận hành; điều phối viên là người duyệt phương án, quản lý công ty chỉ xem (không còn hàng đợi duyệt). Khách hàng của app là
   công ty logistics: hai vai trò Nhà sản xuất, Logistics của Review 1 cùng lô hàng và luồng quét nhận hàng giữa hai bên đã bỏ; kiện đăng ký
-  thuộc công ty của người đăng ký. Màn của quản lý nền tảng và hỗ trợ khách hàng, cách ly dữ liệu theo công ty và kho kiện theo mô hình
-  backend làm ở các bước sau.
+  thuộc công ty của người đăng ký. Dữ liệu cách ly theo công ty ngay ở kho: người của Long Bình và Phương Nam không thấy chuyến, xe, kiện,
+  đơn, người dùng hay nhật ký của nhau, và tài khoản nền tảng không đọc được dữ liệu vận hành. Màn của quản lý nền tảng và hỗ trợ khách
+  hàng, và kho kiện theo mô hình backend làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
