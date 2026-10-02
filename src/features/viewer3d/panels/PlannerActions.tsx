@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip'
 import { useFormat, useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { PlannerAccess } from '../approval/planner-access'
 
 /**
@@ -48,8 +49,17 @@ function ApprovedAt({ at, by }: { at: string; by: string | null }) {
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
         {/* Nhãn rộng tới 208 px (điện thoại 160 px): đủ cho họ tên ba chữ như "Nguyễn Thanh Tùng" mà hàng gộp vẫn vừa 1.366 px
-            (`layout-1366`); tên dài hơn bị cắt bằng dấu ba chấm, tên đầy đủ ở `title` */}
-        <span className="max-w-40 truncate text-caption leading-4 text-glass-dark-muted md:max-w-52 xl:text-note xl:leading-3.5" title={by ?? undefined}>
+            (`layout-1366`); tên dài hơn bị cắt bằng dấu ba chấm, tên đầy đủ ở `title`. Từ 1.536 tới dưới 1.760 px nút So sánh có chữ
+            nên hàng hết chỗ cho họ tên: chỉ hiện "Đã duyệt lúc", tên người duyệt ở `title` */}
+        {by ? (
+          <span className="hidden text-note leading-3.5 text-glass-dark-muted 2xl:max-[1759px]:block" title={by}>
+            {t('viewer.plan.approvedAt')}
+          </span>
+        ) : null}
+        <span
+          className={cn('max-w-40 truncate text-caption leading-4 text-glass-dark-muted md:max-w-52 xl:text-note xl:leading-3.5', by && '2xl:max-[1759px]:hidden')}
+          title={by ?? undefined}
+        >
           {by ? t('viewer.plan.approvedBy', { name: by }) : t('viewer.plan.approvedAt')}
         </span>
         <span className="font-display text-body leading-5 font-semibold whitespace-nowrap text-sky-text tabular-nums xl:leading-4">
@@ -61,8 +71,8 @@ function ApprovedAt({ at, by }: { at: string; by: string | null }) {
 }
 
 /**
- * Chỉ icon dưới 1.760 px; tên đầy đủ ở tooltip và tên truy cập. Trước FE-0-07 chữ hiện từ 1.536 px, nhưng nhãn "Duyệt bởi <tên> lúc"
- * mang họ tên điều phối viên lấy mất chỗ của khối tiêu đề: nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số.
+ * Chỉ icon dưới 1.536 px để hàng gộp vừa 1.366 px; tên đầy đủ ở tooltip và tên truy cập. Từ 1.536 px nút có chữ (người dùng yêu cầu,
+ * 03/10/2026) — nhãn người duyệt nhường chỗ ở khoảng 1.536–1.759 px (`ApprovedAt`).
  */
 function CompareLink({ tripId }: { tripId: string }) {
   const t = useT()
@@ -70,14 +80,14 @@ function CompareLink({ tripId }: { tripId: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="glass" className="hidden h-9.5 px-2.5 xl:flex min-[1760px]:px-3.5" asChild>
+        <Button variant="glass" className="hidden h-9.5 px-2.5 xl:flex 2xl:px-3.5" asChild>
           <Link to={`/chuyen/${tripId}/so-sanh`} aria-label={label}>
             <Columns2 strokeWidth={1.5} />
-            <span className="hidden min-[1760px]:inline">{label}</span>
+            <span className="hidden 2xl:inline">{label}</span>
           </Link>
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="min-[1760px]:hidden">{label}</TooltipContent>
+      <TooltipContent side="bottom" className="2xl:hidden">{label}</TooltipContent>
     </Tooltip>
   )
 }
