@@ -25,12 +25,12 @@ test('a wrong password and an unknown email give the same error; a locked accoun
   expect(db.sessionUser()).toBeNull()
 })
 
-test('an account created by the admin signs in with its temporary password; the email must be free', async () => {
+test('an account created by the company admin joins that company and signs in with its temporary password; the email must be free', async () => {
   const db = newDb()
-  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await db.authenticate('qtcongty@loadmaster.vn', 'loadmaster')
   const input = { fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình' }
   const { user, temporaryPassword } = await db.createUser(input)
-  expect(user).toStrictEqual({ ...input, id: 'US-0016', status: 'active', lastActiveAt: null })
+  expect(user).toStrictEqual({ ...input, companyId: 'LOG-001', id: 'US-0016', status: 'active', lastActiveAt: null })
   expect(temporaryPassword).toMatch(/^[A-Za-z2-9]{10}$/)
   await expect(db.createUser({ ...input, email: 'YEN.PHAN@loadmaster.vn' })).rejects.toMatchObject({ code: 'EMAIL_TAKEN' })
   await db.signOut()
@@ -66,7 +66,7 @@ test('the seed has three platform accounts without a company or depot, and the s
   expect((await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')).id).toBe('US-PN-03')
 })
 
-test('a platform account has no depot or company: both are dropped on creation and when a role becomes a platform role (FE-0-03)', async () => {
+test('a platform account has no depot or company: both are dropped on creation and ignored when it is edited (FE-0-03)', async () => {
   const db = newDb()
   await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
   const { user } = await db.createUser({ fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926 971 238', role: 'systemSupporter', depot: 'Kho Long Bình', companyId: 'LOG-001' })
@@ -80,10 +80,9 @@ test('a platform account has no depot or company: both are dropped on creation a
   expect((await db.listEvents())[0]).toMatchObject({ action: 'user.updated', params: { fields: 'phone' } })
   expect(await db.getUser('US-NT-01')).not.toHaveProperty('depot')
 
-  // Điều phối viên của Long Bình thành hỗ trợ khách hàng: rời kho và công ty; đổi lại thì kho phải nhập lại
-  const moved = await db.updateUser('US-0009', { role: 'systemSupporter' })
+  // Vai trò đổi được trong ba vai trò nền tảng; tài khoản vẫn không có kho hay công ty
+  const moved = await db.updateUser('US-NT-01', { role: 'systemSupporter', depot: 'Kho Sóng Thần' })
   expect([moved.role, 'depot' in moved, 'companyId' in moved]).toStrictEqual(['systemSupporter', false, false])
-  expect((await db.updateUser('US-0009', { role: 'dispatcher', depot: 'Kho Sóng Thần' })).depot).toBe('Kho Sóng Thần')
 })
 
 test('resetting a password invalidates the old one; changing it needs the current password and 8 characters', async () => {
@@ -102,19 +101,144 @@ test('resetting a password invalidates the old one; changing it needs the curren
   await expect(db.changePassword('mat-khau-moi', 'khac-nua-roi')).rejects.toMatchObject({ code: 'NOT_SIGNED_IN' })
 })
 
-test('nobody locks, deletes or demotes themselves or the last active admin; a driver with open trips stays', async () => {
+test('nobody locks, deletes or demotes themselves; a driver with open trips stays', async () => {
   const db = newDb()
   await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
   await expect(db.setUserStatus('US-0005', 'suspended')).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
   await expect(db.deleteUser('US-0005')).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
-  await expect(db.updateUser('US-0005', { role: 'manager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
+  await expect(db.updateUser('US-0005', { role: 'systemManager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
+  await db.authenticate('qtcongty@loadmaster.vn', 'loadmaster')
+  await expect(db.setUserStatus('US-LB-01', 'suspended')).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
+  await expect(db.updateUser('US-LB-01', { role: 'manager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
   await expect(db.deleteUser('US-0004')).rejects.toMatchObject({ code: 'USER_IN_USE', params: { tripIds: ['TRIP-2026-0914', 'TRIP-010'] } })
   expect((await db.setUserStatus('US-0006', 'suspended')).status).toBe('suspended')
   await db.deleteUser('US-0009')
   await expect(db.getUser('US-0009')).rejects.toMatchObject({ code: 'NOT_FOUND', params: { collection: 'users' } })
+})
+
+/** FE-0-08 (D-65): phạm vi quản lý người dùng theo vai trò của phiên, kho kiểm như server. Mã và tên lấy từ `seed-users.ts`. */
+const PLATFORM_USER = { fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926 971 238', role: 'systemSupporter' as const }
+const COMPANY_USER = { fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình' }
+
+test('the system admin creates platform accounts only, and does not edit or delete company staff (FE-0-08)', async () => {
+  const db = newDb()
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  const before = { users: (await db.listUsers()).length, events: (await db.listEvents()).length }
+
+  // Vai trò công ty: từ chối dù có gửi kèm công ty hay không — không còn tài khoản vai trò công ty mà thiếu công ty
+  await expect(db.createUser(COMPANY_USER)).rejects.toMatchObject({ code: 'ROLE_OUT_OF_SCOPE', params: { role: 'driver' } })
+  await expect(db.createUser({ ...COMPANY_USER, role: 'companyAdmin', companyId: 'LOG-001' })).rejects.toMatchObject({ code: 'ROLE_OUT_OF_SCOPE', params: { role: 'companyAdmin' } })
+  // Nhân sự công ty do quản trị công ty đó quản lý: không sửa, không xoá
+  await expect(db.updateUser('US-0009', { phone: '0909 000 111' })).rejects.toMatchObject({ code: 'USER_MANAGED_BY_COMPANY', params: { userId: 'US-0009' } })
+  await expect(db.updateUser('US-0009', { role: 'systemSupporter' })).rejects.toMatchObject({ code: 'USER_MANAGED_BY_COMPANY' })
+  await expect(db.deleteUser('US-0009')).rejects.toMatchObject({ code: 'USER_MANAGED_BY_COMPANY', params: { userId: 'US-0009' } })
+  // Tài khoản nền tảng không thành tài khoản công ty
+  await expect(db.updateUser('US-NT-01', { role: 'dispatcher', depot: 'Kho Sóng Thần' })).rejects.toMatchObject({ code: 'ROLE_OUT_OF_SCOPE', params: { role: 'dispatcher' } })
+  expect({ users: (await db.listUsers()).length, events: (await db.listEvents()).length }).toStrictEqual(before)
+
+  // Khoá, mở khoá, đặt lại mật khẩu: mọi người, ở công ty nào cũng được
+  expect((await db.setUserStatus('US-PN-04', 'suspended')).status).toBe('suspended')
+  expect((await db.setUserStatus('US-PN-04', 'active')).status).toBe('active')
+  expect((await db.resetPassword('US-0009')).temporaryPassword).toMatch(/^[A-Za-z2-9]{10}$/)
+  // Tài khoản nền tảng: tạo, sửa, xoá
+  const { user } = await db.createUser(PLATFORM_USER)
+  expect((await db.updateUser(user.id, { role: 'systemManager', phone: '0926 971 000' })).role).toBe('systemManager')
+  await db.deleteUser(user.id)
+  await expect(db.getUser(user.id)).rejects.toMatchObject({ code: 'NOT_FOUND' })
+})
+
+test('a company admin manages the company roles of the own company only (FE-0-08)', async () => {
+  const db = newDb()
+  await db.authenticate('qtcongty@loadmaster.vn', 'loadmaster')
+  // Không tạo và không nâng ai lên vai trò nền tảng: người đó sẽ rời công ty
+  await expect(db.createUser({ ...PLATFORM_USER, depot: '' })).rejects.toMatchObject({ code: 'ROLE_OUT_OF_SCOPE', params: { role: 'systemSupporter' } })
+  await expect(db.updateUser('US-0009', { role: 'systemAdmin' })).rejects.toMatchObject({ code: 'ROLE_OUT_OF_SCOPE', params: { role: 'systemAdmin' } })
+  expect((await db.getUser('US-0009')).role).toBe('dispatcher')
+  // Tài khoản nền tảng và người của công ty khác: đọc không thấy, ghi bị từ chối
+  for (const id of ['US-0005', 'US-PN-02']) {
+    await expect(db.getUser(id), id).rejects.toMatchObject({ code: 'NOT_FOUND', params: { collection: 'users', id } })
+    await expect(db.setUserStatus(id, 'suspended'), id).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY', params: { collection: 'users', id } })
+    await expect(db.resetPassword(id), id).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY' })
+    await expect(db.updateUser(id, { phone: '0900 000 000' }), id).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY' })
+    await expect(db.deleteUser(id), id).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY' })
+  }
+  expect((await db.listUsers()).map((user) => user.companyId)).toStrictEqual(Array.from({ length: 12 }, () => 'LOG-001'))
+
+  // Năm vai trò công ty, kể cả một quản trị công ty nữa: tạo, sửa, khoá, đặt lại mật khẩu, xoá
+  const created = await db.createUser({ ...COMPANY_USER, role: 'companyAdmin' })
+  expect([created.user.id, created.user.role, created.user.companyId]).toStrictEqual(['US-0016', 'companyAdmin', 'LOG-001'])
+  expect((await db.updateUser('US-0009', { role: 'manager', depot: 'Trụ sở TP. Hồ Chí Minh' })).role).toBe('manager')
+  expect((await db.setUserStatus('US-0009', 'suspended')).status).toBe('suspended')
+  expect((await db.resetPassword('US-0009')).user.id).toBe('US-0009')
+  await db.deleteUser('US-0009')
+  expect((await db.listUsers()).map((user) => user.id)).not.toContain('US-0009')
+})
+
+test('each company keeps one active company admin and the platform one active system admin (FE-0-08)', async () => {
+  const db = newDb()
+  // Mỗi công ty seed chỉ có một quản trị công ty: quản trị hệ thống không khoá được — quản trị công ty của công ty kia không tính
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await expect(db.setUserStatus('US-LB-01', 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.setUserStatus('US-PN-01', 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+
+  // Có quản trị công ty thứ hai thì người thứ nhất khoá được; người còn lại thành người cuối cùng
+  await db.authenticate('qtcongty@loadmaster.vn', 'loadmaster')
+  const { user: second, temporaryPassword } = await db.createUser({ ...COMPANY_USER, role: 'companyAdmin' })
+  await db.authenticate(second.email, temporaryPassword)
+  expect((await db.setUserStatus('US-LB-01', 'suspended')).status).toBe('suspended')
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await expect(db.setUserStatus(second.id, 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  // Không có phiên (test logic kho) luật vẫn giữ: không khoá, không hạ vai trò, không xoá người cuối cùng
   await db.signOut()
-  // without a session the only admin still cannot be locked out
+  await expect(db.setUserStatus(second.id, 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.updateUser(second.id, { role: 'manager' })).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.deleteUser(second.id)).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  // Quản trị công ty đã khoá không phải "đang hoạt động cuối cùng": xoá được
+  await db.deleteUser('US-LB-01')
+
+  // Nền tảng: quản trị hệ thống duy nhất; hai quản trị công ty đang hoạt động không thay được
   await expect(db.setUserStatus('US-0005', 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.updateUser('US-0005', { role: 'systemManager' })).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.deleteUser('US-0005')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  const other = await db.createUser({ ...PLATFORM_USER, role: 'systemAdmin' })
+  await db.authenticate(other.user.email, other.temporaryPassword)
+  expect((await db.setUserStatus('US-0005', 'suspended')).status).toBe('suspended')
+})
+
+test('an event about an account belongs to the company of that account, whoever did it (FE-0-08)', async () => {
+  const db = newDb()
+  // Seed: bốn việc quản trị hệ thống làm trên tài khoản của Long Bình (mới nhất trước) thuộc Long Bình
+  const seeded = (await db.listEvents({ actorId: 'US-0005' })).map((event) => [event.action, event.target.id, event.companyId])
+  expect(seeded).toStrictEqual([
+    ['user.created', 'US-0012', 'LOG-001'], ['user.locked', 'US-0008', 'LOG-001'], ['user.created', 'US-0011', 'LOG-001'], ['user.created', 'US-0010', 'LOG-001'],
+  ])
+
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await db.setUserStatus('US-0009', 'suspended')
+  await db.resetPassword('US-PN-04')
+  const { user } = await db.createUser(PLATFORM_USER)
+  expect((await db.listEvents()).slice(0, 4).map((event) => [event.action, event.target.id, event.companyId])).toStrictEqual([
+    ['user.created', user.id, null], ['user.passwordReset', 'US-PN-04', 'LOG-002'], ['user.locked', 'US-0009', 'LOG-001'], ['auth.signedIn', 'US-0005', null],
+  ])
+  // Lọc theo công ty; `null` là sự kiện của nền tảng
+  expect(new Set((await db.listEvents({ company: 'LOG-002' })).map((event) => event.companyId))).toStrictEqual(new Set(['LOG-002']))
+  expect((await db.listEvents({ company: null })).map((event) => [event.action, event.companyId])).toStrictEqual([['user.created', null], ['auth.signedIn', null]])
+
+  // Quản trị công ty của Long Bình đọc được việc quản trị hệ thống làm trên người của mình — cả bốn sự kiện seed — và tên người làm
+  db.restoreSession('US-LB-01')
+  expect((await db.listEvents({ actorId: 'US-0005' })).map((event) => [event.action, event.target.id])).toStrictEqual([
+    ['user.locked', 'US-0009'], ['user.created', 'US-0012'], ['user.locked', 'US-0008'], ['user.created', 'US-0011'], ['user.created', 'US-0010'],
+  ])
+  expect((await db.listAuditNames()).users.filter((item) => item.id === 'US-0005')).toStrictEqual([{ id: 'US-0005', fullName: 'Võ Minh Khoa', role: 'systemAdmin' }])
+  expect((await db.listUsers()).map((item) => item.id)).not.toContain('US-0005')
+  db.restoreSession('US-PN-01')
+  expect((await db.listEvents({ actorId: 'US-0005' })).map((event) => [event.action, event.target.id])).toStrictEqual([['user.passwordReset', 'US-PN-04']])
+
+  // Xoá tài khoản: sự kiện vẫn thuộc công ty của tài khoản vừa xoá (không có phiên thì không rơi về công ty mặc định)
+  db.restoreSession(null)
+  await db.deleteUser('US-PN-02')
+  expect((await db.listEvents())[0]).toMatchObject({ action: 'user.deleted', target: { id: 'US-PN-02' }, actorId: null, companyId: 'LOG-002' })
 })
 
 test('a stored session is restored only for an active account and does not write the history', async () => {

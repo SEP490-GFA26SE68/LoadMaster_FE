@@ -1,7 +1,8 @@
-import { isPlatformRole, type User } from '@/types/user'
+import { isPlatformRole, type Role, type User } from '@/types/user'
 import { nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import type { MockDb, UserChanges } from './types'
+import { isLastActiveAdmin, userScopeOf, type UserScope } from './user-scope'
 
 type UserMethods = Pick<
   MockDb,
@@ -23,8 +24,8 @@ function temporaryPassword(): string {
 const USER_FIELDS = ['fullName', 'email', 'phone', 'role', 'depot'] as const satisfies readonly (keyof UserChanges)[]
 
 /**
- * Người dùng nền tảng không thuộc kho hay công ty nào (FE-0-03): tài khoản tạo với vai trò nền tảng, hoặc đổi sang vai trò nền tảng,
- * thì bỏ cả `depot` lẫn `companyId` trước khi ghi — dù nơi gọi có gửi.
+ * Người dùng nền tảng không thuộc kho hay công ty nào (FE-0-03): tài khoản vai trò nền tảng bỏ cả `depot` lẫn `companyId` trước khi
+ * ghi — dù nơi gọi có gửi.
  */
 function withoutCompanyForPlatform(user: User): User {
   if (!isPlatformRole(user.role)) return user
@@ -34,12 +35,37 @@ function withoutCompanyForPlatform(user: User): User {
 
 /**
  * Người dùng và phiên. Người dùng không phải dữ liệu vận hành (D-64): phiên của một công ty chỉ thấy và sửa người của công ty mình
- * (người của công ty khác, kể cả tài khoản nền tảng: đọc `NOT_FOUND`, ghi `FORBIDDEN_COMPANY`); phiên nền tảng thấy hết. Luật theo
- * vai trò (ai tạo được vai trò nào, quản trị công ty cuối cùng) là việc của FE-0-08.
+ * (người của công ty khác, kể cả tài khoản nền tảng: đọc `NOT_FOUND`, ghi `FORBIDDEN_COMPANY`); phiên nền tảng thấy hết.
+ *
+ * Phạm vi quản lý theo vai trò của phiên (D-65, FE-0-08, `user-scope.ts`) — kho kiểm như server, màn chỉ làm mờ trước:
+ * - Tạo: phiên nền tảng chỉ tạo vai trò nền tảng, phiên công ty chỉ tạo vai trò công ty cho công ty mình (`ROLE_OUT_OF_SCOPE`).
+ * - Sửa, xoá: phiên nền tảng không sửa, không xoá nhân sự công ty (`USER_MANAGED_BY_COMPANY`); đổi vai trò không vượt giữa hai nhóm
+ *   vai trò (`ROLE_OUT_OF_SCOPE`), kể cả khi kho không có phiên.
+ * - Khoá, mở khoá, đặt lại mật khẩu: mọi tài khoản phiên thấy.
+ * - Không ai tự khoá, tự xoá, tự đổi vai trò; mỗi phạm vi giữ một người quản trị đang hoạt động (`LAST_ADMIN`).
+ * Kho không có phiên (test logic kho) chỉ giữ luật của dữ liệu, không giữ luật "ai được làm".
  */
 export function userMethods(ctx: DbContext): UserMethods {
   const { users, passwords, trips, session } = ctx.state
   const scope = ctx.scope.users
+
+  /** Phạm vi quản lý của phiên; `null` khi kho không có phiên. */
+  function managerScope(): UserScope | null {
+    const manager = session.userId === null ? undefined : users.get(session.userId)
+    return manager ? userScopeOf(manager.role) : null
+  }
+
+  /** Vai trò sắp gán phải thuộc phạm vi của phiên, và (khi sửa) cùng nhóm với vai trò hiện tại `from`. */
+  function assertRoleInScope(role: Role, from?: Role) {
+    const manager = managerScope()
+    const crosses = from !== undefined && userScopeOf(from) !== userScopeOf(role)
+    if (crosses || (manager !== null && userScopeOf(role) !== manager)) throw new MockDbError('ROLE_OUT_OF_SCOPE', { role })
+  }
+
+  /** Sửa và xoá nhân sự công ty là việc của quản trị công ty đó, không phải của phiên nền tảng. */
+  function assertManages(user: User) {
+    if (managerScope() === 'platform' && userScopeOf(user.role) === 'company') throw new MockDbError('USER_MANAGED_BY_COMPANY', { userId: user.id })
+  }
 
   const byEmail = (email: string) => {
     const normalised = email.trim().toLowerCase()
@@ -55,11 +81,9 @@ export function userMethods(ctx: DbContext): UserMethods {
     if (session.userId === id) throw new MockDbError('SELF_CHANGE_FORBIDDEN', {})
   }
 
-  /** Không để hệ thống mất quản trị hệ thống đang hoạt động cuối cùng. Luật theo từng công ty cho quản trị công ty: FE-0-08. */
+  /** Không để nền tảng mất quản trị hệ thống, hay một công ty mất quản trị công ty, đang hoạt động cuối cùng. */
   function assertNotLastAdmin(user: User) {
-    if (user.role !== 'systemAdmin' || user.status !== 'active') return
-    const activeAdmins = [...users.values()].filter((item) => item.role === 'systemAdmin' && item.status === 'active')
-    if (activeAdmins.length <= 1) throw new MockDbError('LAST_ADMIN', {})
+    if (isLastActiveAdmin(user, users.values())) throw new MockDbError('LAST_ADMIN', {})
   }
 
   /** Tài xế còn được gán cho chuyến chưa kết thúc thì không xoá, không đổi vai trò. */
@@ -112,6 +136,7 @@ export function userMethods(ctx: DbContext): UserMethods {
     getUser: (id) => ctx.respond(() => scope.read(id)),
     createUser: ({ companyId: requested, ...input }) =>
       ctx.respond(() => {
+        assertRoleInScope(input.role)
         const companyId = ctx.scope.newUserCompany(requested)
         assertEmailFree(input.email)
         const user = put(users, withoutCompanyForPlatform({
@@ -125,6 +150,7 @@ export function userMethods(ctx: DbContext): UserMethods {
     updateUser: (id, input) =>
       ctx.respond(() => {
         const current = scope.own(id)
+        assertManages(current)
         // Vai trò sau khi sửa là vai trò nền tảng thì kho gửi kèm không tính là thay đổi (form luôn gửi cả ô kho)
         const changes: UserChanges = isPlatformRole(input.role ?? current.role) ? { ...input, depot: undefined } : input
         const changed = USER_FIELDS.filter((field) => changes[field] !== undefined && changes[field] !== current[field])
@@ -132,6 +158,7 @@ export function userMethods(ctx: DbContext): UserMethods {
         if (changed.includes('email')) assertEmailFree(changes.email ?? '', id)
         if (changed.includes('role')) {
           assertNotSelf(id)
+          assertRoleInScope(changes.role ?? current.role, current.role)
           assertNotLastAdmin(current)
           if (current.role === 'driver') assertNoOpenTrips(current)
         }
@@ -152,12 +179,14 @@ export function userMethods(ctx: DbContext): UserMethods {
     deleteUser: (id) =>
       ctx.respond(() => {
         const current = scope.own(id)
+        assertManages(current)
         assertNotSelf(id)
         assertNotLastAdmin(current)
         assertNoOpenTrips(current)
+        // Ghi nhật ký khi tài khoản còn trong kho: sự kiện thuộc công ty của tài khoản bị xoá
+        ctx.log('user.deleted', { type: 'user', id }, { fullName: current.fullName })
         users.delete(id)
         passwords.delete(id)
-        ctx.log('user.deleted', { type: 'user', id }, { fullName: current.fullName })
       }),
     resetPassword: (id) =>
       ctx.respond(() => {

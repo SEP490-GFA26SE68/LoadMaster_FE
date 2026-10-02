@@ -14,6 +14,9 @@ export function isPlatformRole(role: Role): boolean {
   return PLATFORM_ROLES.some((item) => item === role)
 }
 
+/** Năm vai trò của công ty logistics: tài khoản luôn thuộc đúng một công ty (`User.companyId`) và một kho / chi nhánh. */
+export const COMPANY_ROLES = ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const satisfies readonly Role[]
+
 /** Mã vai trò của backend (D-61): `-api.ts` đổi mã FE sang mã này khi nối API thật. Vai trò nào cũng có mã. */
 export const BACKEND_ROLE_CODES = {
   systemAdmin: 'SYSTEM_ADMIN',

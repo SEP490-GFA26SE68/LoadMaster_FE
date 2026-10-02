@@ -27,6 +27,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   EMAIL_TAKEN: { email: 'yen.phan@loadmaster.vn' },
   SELF_CHANGE_FORBIDDEN: {},
   LAST_ADMIN: {},
+  ROLE_OUT_OF_SCOPE: { role: 'driver' },
+  USER_MANAGED_BY_COMPANY: { userId: 'US-0009' },
   USER_IN_USE: { userId: 'US-0004', tripIds: ['TRIP-2026-0914', 'TRIP-010'] },
   PASSWORD_INCORRECT: {},
   PASSWORD_TOO_SHORT: { min: 8 },

@@ -18,6 +18,7 @@ export {
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
+export { isLastActiveAdmin, rolesInScope, userScopeOf, type UserScope } from './user-scope'
 export { COMPANIES as SEED_COMPANIES } from './seed-sourcing'
 export { DEMO_ACCOUNTS, QUICK_LOGIN_ACCOUNTS, SEED_PASSWORD, type DemoAccount } from './seed-users'
 // Review 1 (LM-104)

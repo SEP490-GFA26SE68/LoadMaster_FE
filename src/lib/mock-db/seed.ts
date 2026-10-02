@@ -11,6 +11,7 @@ import { seedTrip } from './seed-trip'
 import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
 import { LONG_BINH, PHUONG_NAM, SEED_PASSWORD, seedUsers } from './seed-users'
 import { seedVehicles } from './seed-vehicles'
+import { auditEventCompany } from './tenancy'
 import { tripChangeParams } from './trip-changes'
 import { seedSourcing, type SourcingSeed } from './seed-sourcing'
 import type { OptimizationRun } from './source-types'
@@ -81,8 +82,10 @@ function createSeed(today: string): SeedData {
   const phuongNam = seedPhuongNam(today, new Set(sourcing.registeredPackages.map((pkg) => pkg.qrToken)))
   events.push(...phuongNam.events)
 
-  // Sự kiện mang công ty của người làm, như `ctx.log` ghi công ty của phiên: tài khoản nền tảng không thuộc công ty nào
-  const companyOf = new Map(users.map((user) => [user.id, user.companyId ?? null]))
+  // Công ty của sự kiện theo cùng luật với `ctx.log` (`auditEventCompany`): sự kiện về một tài khoản thuộc công ty của tài khoản đó,
+  // sự kiện khác thuộc công ty của người làm — tài khoản nền tảng không thuộc công ty nào
+  const userById = new Map(users.map((user) => [user.id, user]))
+  const actorCompany = (actorId: string | null) => (actorId === null ? null : (userById.get(actorId)?.companyId ?? null))
   return {
     vehicles: [...vehicles, ...phuongNam.vehicles],
     vehicleCompany: [
@@ -105,7 +108,7 @@ function createSeed(today: string): SeedData {
       .toSorted((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
       .map((event, index) => ({
         ...event, id: nextEventId(index), params: event.params ?? {},
-        companyId: event.actorId === null ? null : (companyOf.get(event.actorId) ?? null),
+        companyId: auditEventCompany(userById, event.target, actorCompany(event.actorId)),
       })),
   }
 }
@@ -157,7 +160,10 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: SeedPl
   return { ...trip, delivery, phase: spec.outcome === 'delivering' ? 'delivering' : 'completed' }
 }
 
-/** Sự kiện tài khoản của seed: quản trị tạo 3 tài khoản, khoá một nhân viên kho; vài lần đăng nhập sáng ngày neo. */
+/**
+ * Sự kiện tài khoản của seed: quản trị hệ thống tạo 3 tài khoản và khoá một nhân viên kho của Long Bình — lịch sử có từ trước khi công ty
+ * có quản trị công ty riêng (FE-0-03); sự kiện thuộc Long Bình vì là việc trên tài khoản của Long Bình. Vài lần đăng nhập sáng ngày neo.
+ */
 function accountEvents(today: string, users: readonly User[]): SeedEvent[] {
   const user = (id: string) => ({ type: 'user' as const, id })
   const on = (daysAgo: number, time: string) => vnTime(addDays(today, -daysAgo), time)
