@@ -33,6 +33,7 @@ import { vehicleTypes } from './en/vehicleTypes'
 import { tripReport } from './en/tripReport'
 import { runs } from './en/runs'
 import { lookup } from './en/lookup'
+import { map } from './en/map'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -69,4 +70,5 @@ export const en = {
   tripReport,
   runs,
   lookup,
+  map,
 } satisfies Dictionary<typeof vi>

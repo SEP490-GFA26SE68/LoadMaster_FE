@@ -167,6 +167,8 @@ read-excel-file          — nhập kiện .xlsx: import('read-excel-file/browse
 dnd-kit                  — kéo thả thứ tự điểm giao, ghim kiện
 qrcode-generator         — mã hoá QR (MIT, không phụ thuộc) cho components/QrCode (LM-104); quét QR dùng BarcodeDetector gốc
                            của trình duyệt trong components/QrScanDialog, không thêm thư viện quét
+maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một version; CHỈ import trong src/components/map, tải lười cùng CSS
+                           và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
 motion                   — animation 2D
@@ -187,6 +189,10 @@ vitest 5                 — unit (node) và dom (jsdom), cấu hình ở vitest
 @testing-library/react   — test component qua hành vi người dùng (+ user-event, jest-dom)
 @playwright/test         — E2E trình duyệt thật (thêm ở LM-005)
 ```
+
+*(đã điều chỉnh 03/10/2026, FE-4b-07)* Bản đồ: màn import `RouteMap` từ `@/components/map`, không import `maplibre-gl`. **Không dùng nền
+OpenStreetMap** hay nguồn gạch nào ngoài Goong (D-75: không bảo đảm thể hiện Hoàng Sa, Trường Sa). Khoá map tiles chỉ nằm ở `.env.local`
+(mẫu: `.env.example`; mọi `.env*` khác bị `.gitignore` chặn); dev, CI và test chạy không khoá. Khoá REST của Goong không bao giờ ở FE.
 
 **Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác.
 
@@ -219,6 +225,7 @@ src/
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
                         VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
+  components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -255,6 +262,7 @@ src/
     metrics/            tỷ lệ sử dụng, trọng tâm (LM-021)
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
+    routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker (LM-024 →)
   test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
@@ -901,6 +909,11 @@ nhiều và không kéo Three.js vào chunk. Đang dùng ở: xem trước trong
 đang tải Three.js, hình minh hoạ màn đăng nhập và sơ đồ tuyến ở chi tiết chuyến (`trips/RouteDiagram.tsx`, LM-097).
 
 Chỉ dùng Three.js khi người dùng **cần xoay hoặc bấm vào vật thể**.
+
+*(đã điều chỉnh 03/10/2026, FE-4b-07)* Bản đồ địa lý không còn bị cấm: `components/map/RouteMap` vẽ kho, điểm giao (màu điểm giao kèm
+số), đường tuyến và vị trí xe bằng MapLibre GL. Cùng lối với khung 3D: không có WebGL (jsdom) thì chính `RouteMap` vẽ sơ đồ SVG từ cùng
+dữ liệu và không tải chunk bản đồ; hình luôn `aria-hidden`, nội dung tương đương là danh sách điểm `sr-only`. Mốc là phần tử DOM của React,
+không dùng sprite hay font của style nền. `trips/RouteDiagram.tsx` (danh sách điểm ở chi tiết chuyến) chưa đổi — nối bản đồ là FE-4b-09.
 
 ## 8. Chuyển động
 

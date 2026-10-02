@@ -122,6 +122,14 @@ export const designSystem = {
       meta: 'nhãn luôn nằm trên · viền 3:1',
       notesPlaceholder: 'Ví dụ: gọi trước khi tới điểm giao',
     },
+    /** Thẻ Bản đồ tuyến (FE-4b-07): `components/map/RouteMap` với kho và điểm giao của chuyến mẫu. */
+    routeMap: {
+      title: 'Bản đồ tuyến',
+      meta: 'MapLibre · nền Goong',
+      label: 'Bản đồ tuyến {tripId}',
+      summary: '{count} điểm giao · {km} km · {minutes} phút',
+      note: 'Thứ tự điểm, quãng đường và thời gian do mock tối ưu tuyến tính, đường nối thẳng. Toạ độ điểm giao là vị trí gần đúng. Chưa cấu hình khoá nền Goong thì nền để trống.',
+    },
     /** Thẻ Thương hiệu (LM-105) */
     brand: {
       title: 'Thương hiệu',
