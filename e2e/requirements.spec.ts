@@ -3,7 +3,7 @@ import { switchUser } from './spec-flow-helpers'
 
 /**
  * FE-4b-02 — yêu cầu giao trên kho in-memory của trang (không tải lại trang sau khi ghi; đổi người bằng `switchUser`): quản lý công ty
- * tạo yêu cầu từ kiện của kho kiện → điều phối viên chỉ xem, đưa yêu cầu vào điểm giao của chuyến nháp TRIP-014 → Chi tiết chuyến có
+ * tạo yêu cầu từ kiện của kho kiện → điều phối viên chỉ xem, đưa yêu cầu vào chuyến nháp TRIP-014 (điểm giao tự gộp) → Chi tiết chuyến có
  * yêu cầu và card "Kiểm tra trước khi tối ưu" → kiện sang "Đã gán chuyến" ở Kho kiện. Thay kịch bản đơn hàng của LM-104 (luồng 2).
  *
  * Số kỳ vọng chép tay từ seed (`seed-sourcing.ts`, `seed-directory.ts`, `seed-trips.ts`), không tính lại theo cách app tính:
@@ -86,14 +86,15 @@ test('the manager creates a delivery requirement; the dispatcher only reads it a
   await detail.getByRole('button', { name: 'Đóng', exact: true }).first().click()
   await expect(detail).toBeHidden()
 
-  // Đưa vào chuyến nháp TRIP-014: điểm giao trùng tên điểm đến được chọn sẵn
+  // Đưa vào chuyến nháp TRIP-014 (FE-4b-04): không chọn điểm giao — điểm 1 cùng địa chỉ, cũng chưa có toạ độ, nên yêu cầu gộp vào đó
   await row.getByRole('button', { name: 'Thao tác với yêu cầu REQ-007', exact: true }).click()
   await expect(page.getByRole('menuitem')).toHaveText(['Xem chi tiết', 'Đưa vào chuyến'])
   await page.getByRole('menuitem', { name: 'Đưa vào chuyến', exact: true }).click()
   const assign = page.getByRole('dialog', { name: 'Đưa yêu cầu REQ-007 vào chuyến' })
   await assign.getByRole('combobox', { name: 'Chuyến', exact: true }).click()
   await page.getByRole('option', { name: /^TRIP-014 · Tuyến Tân An – Dĩ An/ }).click()
-  await expect(assign.getByRole('combobox', { name: 'Điểm giao', exact: true })).toHaveText('Điểm 1 · Điện máy Xanh Tân An')
+  await expect(assign.getByRole('combobox', { name: 'Điểm giao', exact: true })).toHaveCount(0)
+  await expect(assign.getByRole('status')).toContainText('Điểm giao: gộp vào điểm 1 · Điện máy Xanh Tân An — cùng địa chỉ và toạ độ.')
   await assign.getByRole('button', { name: 'Đưa vào chuyến', exact: true }).click()
   await expect(assign).toBeHidden()
   await expect(row).toContainText('Đã vào chuyến')
@@ -103,9 +104,12 @@ test('the manager creates a delivery requirement; the dispatcher only reads it a
   // Chi tiết chuyến: yêu cầu trên chuyến, dòng kiện mới ở điểm 1, kiểm tra trước tối ưu vẫn đạt
   await row.getByRole('link', { name: 'Tuyến Tân An – Dĩ An', exact: true }).click()
   await page.waitForURL(/\/chuyen\/TRIP-014$/)
-  const onTrip = page.getByRole('region', { name: 'Yêu cầu giao trên chuyến', exact: true })
+  const onTrip = page.getByRole('region', { name: 'Yêu cầu giao của chuyến', exact: true })
   await expect(onTrip).toContainText('REQ-007')
-  await expect(onTrip).toContainText('Điểm 1 · Điện máy Xanh Tân An · 6 kiện')
+  await expect(onTrip).toContainText('Điểm 1 · Điện máy Xanh Tân An · Hạn 17:00')
+  await expect(onTrip).toContainText('6 kiện')
+  // Không sinh điểm mới: chuyến vẫn hai điểm giao
+  await expect(page.getByRole('region', { name: 'Sơ đồ tuyến' }).getByRole('button', { name: /^Lọc kiện theo điểm/ })).toHaveCount(2)
   await expect(page.getByRole('region', { name: 'Kiện hàng' }).getByRole('row', { name: /Thùng sữa hộp 48 hộp/ })).toBeVisible()
   const readiness = page.getByRole('region', { name: 'Kiểm tra trước khi tối ưu', exact: true })
   await expect(readiness.getByText('Sẵn sàng tối ưu', { exact: true })).toBeVisible()

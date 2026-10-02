@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures'
-import { MOCK_DB } from './spec-flow-helpers'
+import { addStop, MOCK_DB } from './spec-flow-helpers'
 
 /**
  * Vòng đời chuyến ở màn điều phối (LM-088): chuyến có ngày chạy và tài xế, tìm lại bằng bộ lọc của danh sách; huỷ chuyến có lý do,
@@ -22,13 +22,14 @@ test('a trip created with a run date and a driver is found again with the list f
   await page.getByRole('option', { name: 'Trương Văn Lộc', exact: true }).click()
   await page.getByRole('combobox', { name: 'Xe', exact: true }).click()
   await page.getByRole('option', { name: 'Truck 6m', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Tên điểm giao 1', exact: true }).fill('Kho lạnh Tân Uyên')
-  await page.getByRole('textbox', { name: 'Số điện thoại điểm giao 1', exact: true }).fill('0274 365 2288')
+  await page.getByLabel('Giờ xuất phát', { exact: true }).fill('06:30')
   await page.getByRole('button', { name: 'Tạo chuyến', exact: true }).click()
   await page.waitForURL(/\/chuyen\/TRIP-015$/)
+  // FE-4b-04: điểm giao thêm ở Chi tiết chuyến, không nhập lúc tạo
+  await addStop(page, { name: 'Kho lạnh Tân Uyên', phone: '0274 365 2288' })
 
-  // Chi tiết: ngày chạy ở header, tài xế cạnh xe
-  await expect(page.getByText(`Ngày chạy ${runDate.shown}`, { exact: true })).toBeVisible()
+  // Chi tiết: ngày chạy và giờ xuất phát ở header, tài xế cạnh xe
+  await expect(page.getByText(`Ngày chạy ${runDate.shown}, xuất phát 06:30`, { exact: true })).toBeVisible()
   await expect(page.getByText('Trương Văn Lộc', { exact: true })).toBeVisible()
   await expect(page.locator('header').getByText('Nháp', { exact: true })).toBeVisible()
 

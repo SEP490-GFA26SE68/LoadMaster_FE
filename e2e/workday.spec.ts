@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { addPackage, MOCK_DB, optimizeAndOpenPlanner } from './spec-flow-helpers'
+import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner } from './spec-flow-helpers'
 
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
@@ -43,10 +43,10 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await page.getByRole('option', { name: NAMES.driver, exact: true }).click()
   await page.getByRole('combobox', { name: 'Xe', exact: true }).click()
   await page.getByRole('option', { name: 'Truck 6m', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Tên điểm giao 1', exact: true }).fill('Siêu thị Co.opmart Biên Hoà')
-  await page.getByRole('textbox', { name: 'Số điện thoại điểm giao 1', exact: true }).fill('0251 381 4420')
   await page.getByRole('button', { name: 'Tạo chuyến', exact: true }).click()
   await page.waitForURL(new RegExp(`/chuyen/${TRIP}$`))
+  // FE-4b-04: điểm giao thêm ở Chi tiết chuyến, không nhập lúc tạo
+  await addStop(page, { name: 'Siêu thị Co.opmart Biên Hoà', phone: '0251 381 4420' })
   await addPackage(page, { name: 'Thùng nước suối 24 chai', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, quantity: 6 })
   await expect(page.getByRole('row', { name: /Thùng nước suối 24 chai PKG-\d+ · 50 × 35 × 25 cm 13 kg 6\b/ })).toBeVisible()
 

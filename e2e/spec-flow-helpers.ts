@@ -92,6 +92,19 @@ export type PackageInput = {
   quantity?: number
 }
 
+/**
+ * Thêm một điểm giao tay ở Chi tiết chuyến (FE-4b-04): form tạo chuyến không còn nhập điểm giao, kiện gõ tay cần một điểm giao trước.
+ * Chờ hộp thoại đóng — điểm mới đã nằm trong kho.
+ */
+export async function addStop(page: Page, input: { name: string; phone?: string }) {
+  await page.getByRole('region', { name: 'Sơ đồ tuyến' }).getByRole('button', { name: 'Thêm điểm giao', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Thêm điểm giao' })
+  await dialog.getByRole('textbox', { name: 'Tên điểm giao', exact: true }).fill(input.name)
+  if (input.phone !== undefined) await dialog.getByRole('textbox', { name: 'Số điện thoại', exact: true }).fill(input.phone)
+  await dialog.getByRole('button', { name: 'Thêm điểm giao', exact: true }).click()
+  await expect(dialog).toBeHidden()
+}
+
 /** Mở panel "Kiện mới" ở Chi tiết chuyến, điền và lưu. Trả panel để test đọc thêm nếu cần. */
 export async function addPackage(page: Page, input: PackageInput): Promise<Locator> {
   await page.getByRole('button', { name: 'Thêm kiện', exact: true }).first().click()
