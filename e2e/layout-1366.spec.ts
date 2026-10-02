@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import type { Role } from '@/types/user'
-import { attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
+import { attachJson, attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
 
 /**
  * LM-095 (D-54): màn điều phối ở 1.366 × 768 và 1.600 × 1.000 — trang không cuộn ngang, không vùng nào cuộn ngang, không ô
@@ -139,4 +139,84 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
     const pageScroll = await page.evaluate(() => ({ tall: document.documentElement.scrollHeight > innerHeight, y: scrollY, navTop: document.querySelector('header')!.getBoundingClientRect().top }))
     expect.soft(pageScroll, screen.name).toStrictEqual({ tall: false, y: 0, navTop: 0 })
   }
+})
+
+/**
+ * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên 5 mục, quản lý công ty 4 mục), cả hai
+ * ngôn ngữ. Mục còn đủ chữ (dưới 1.340 px mới rút về icon), khay mục không cuộn ngang, không chạm cụm nút bên phải, trang không cuộn
+ * ngang; chỉ báo kính bám mục đang rê và về mục đang mở khi con trỏ rời thanh. Số đo đính kèm báo cáo (`nav-1366`).
+ */
+const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
+  {
+    role: 'dispatcher',
+    labels: { vi: ['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Packages', 'Orders', 'Fleet', 'Dashboard'] },
+  },
+  { role: 'manager', labels: { vi: ['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Orders', 'Trips', 'Fleet'] } },
+]
+
+function measureNav(page: Page) {
+  return page.evaluate(() => {
+    const header = document.querySelector('header')!
+    const nav = header.querySelector('nav')!
+    const links = [...nav.querySelectorAll<HTMLElement>('a')]
+    const actions = header.lastElementChild!.getBoundingClientRect()
+    return {
+      labels: links.map((link) => link.innerText.trim()),
+      cutLabels: links.filter((link) => link.scrollWidth > link.clientWidth + 1).map((link) => link.innerText.trim()),
+      navWidth: Math.round(nav.getBoundingClientRect().width),
+      itemsWidth: Math.round(links.at(-1)!.getBoundingClientRect().right - links[0]!.getBoundingClientRect().left),
+      navOverflow: nav.scrollWidth - nav.clientWidth,
+      gapToActions: Math.round(actions.left - nav.getBoundingClientRect().right),
+      actionsRight: Math.round(actions.right),
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }
+  })
+}
+
+/** Chỉ báo kính đang nằm trên mục nào (theo `left` / `width` hook đặt), `null` khi đang giấu. */
+function glassOn(page: Page) {
+  return page.evaluate(() => {
+    const nav = document.querySelector('header nav')!
+    const follow = nav.querySelector<HTMLElement>('.glass-follow')!
+    if (follow.hidden) return null
+    const link = [...nav.querySelectorAll<HTMLElement>('a')]
+      .find((item) => `${item.offsetLeft}px` === follow.style.left && `${item.offsetWidth}px` === follow.style.width)
+    return link?.getAttribute('aria-label') ?? 'no item'
+  })
+}
+
+test('the nav bar of the roles with the most items fits 1366 px in both languages and the glass indicator follows the pointer (FE-0-04)', async ({ page, login, browserErrors }, testInfo) => {
+  await page.setViewportSize({ width: 1366, height: 768 })
+  const measures: Record<string, Awaited<ReturnType<typeof measureNav>>> = {}
+  for (const [index, { role, labels }] of NAV_AT_1366.entries()) {
+    // Đổi vai trò: bỏ phiên (và ngôn ngữ) của tab rồi đăng nhập lại — màn đăng nhập về tiếng Việt
+    if (index > 0) await page.evaluate(() => sessionStorage.clear())
+    await login('/doi-xe', role)
+    for (const lang of ['vi', 'en'] as const) {
+      if (lang === 'en') await page.goto('/doi-xe?lang=en')
+      const nav = page.getByRole('navigation', { name: lang === 'vi' ? 'Điều hướng chính' : 'Main navigation' })
+      const fleet = lang === 'vi' ? 'Đội xe' : 'Fleet'
+      await expect(nav.getByRole('link', { name: fleet, exact: true })).toHaveAttribute('aria-current', 'page')
+      await page.mouse.move(683, 500)
+      const measure = await measureNav(page)
+      measures[`${role}-${lang}`] = measure
+      const name = `${role} · ${lang}`
+      expect.soft(measure.labels, name).toStrictEqual(labels[lang])
+      expect.soft(measure.cutLabels, `${name}: cut labels`).toStrictEqual([])
+      expect.soft(measure.navOverflow, `${name}: nav tray scrolls sideways`).toBeLessThanOrEqual(0)
+      expect.soft(measure.gapToActions, `${name}: gap between the tray and the actions`).toBeGreaterThanOrEqual(20)
+      expect.soft(measure.actionsRight, `${name}: actions end inside the viewport`).toBeLessThanOrEqual(1366)
+      expect.soft(measure.pageOverflow, `${name}: page scrolls sideways`).toBeLessThanOrEqual(0)
+
+      // Chỉ báo kính: ở mục đang mở, bám mục đang rê, về mục đang mở khi con trỏ rời thanh
+      await expect.poll(() => glassOn(page), { message: `${name}: indicator on the open item` }).toBe(fleet)
+      const [first] = labels[lang]
+      await nav.getByRole('link', { name: first, exact: true }).hover()
+      await expect.poll(() => glassOn(page), { message: `${name}: indicator follows the pointer` }).toBe(first)
+      await page.mouse.move(683, 500)
+      await expect.poll(() => glassOn(page), { message: `${name}: indicator returns to the open item` }).toBe(fleet)
+    }
+  }
+  await attachJson(testInfo, 'nav-1366', measures)
+  expect(browserErrors).toStrictEqual([])
 })

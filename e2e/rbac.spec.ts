@@ -105,11 +105,23 @@ test('the system administrator has users and the audit log only: trips, fleet an
   expect(browserErrors).toStrictEqual([])
 })
 
-test('each role lands on its own screen and sees only its nav items', async ({ page, login, browserErrors }) => {
+test('the company manager lands on the dashboard and sees its own nav items, orders read-only (FE-0-04)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe'])
+  // Đơn hàng với quản lý công ty là màn chỉ đọc: không nút tạo đơn
+  await nav.getByRole('link', { name: 'Đơn hàng', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/don-hang')
+  await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng', exact: true })).toBeVisible()
+  await expect(page.getByRole('row', { name: /ORD-/ }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tạo đơn hàng', exact: true })).toHaveCount(0)
+  // Danh sách chuyến: quản lý không duyệt phương án nên không có "cần bạn xử lý"
+  await nav.getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/chuyen')
+  const hero = page.getByRole('heading', { level: 1, name: 'Chuyến hàng', exact: true }).locator('xpath=ancestor::header[1]')
+  await expect(hero).toContainText('đang vận chuyển')
+  await expect(hero).not.toContainText('cần bạn xử lý')
   expect(browserErrors).toStrictEqual([])
 })
 
@@ -117,7 +129,7 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Kiện hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
   await nav.getByRole('link', { name: 'Kiện hàng', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true })).toBeVisible()

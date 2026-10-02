@@ -70,7 +70,7 @@ test('the dispatcher adds a package type, registers packages and prints their QR
   await labelsHero.getByRole('link', { name: 'Về danh sách kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
   const packagesHero = page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true }).locator('xpath=ancestor::header[1]')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Kiện hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
   await packagesHero.getByRole('link', { name: 'Loại kiện', exact: true }).click()
   await page.waitForURL(/\/loai-kien$/)
   await expect(page.getByRole('button', { name: /^Xoá Thùng nước mắm 12 chai\. Còn 5 kiện dùng loại này/ })).toHaveAttribute('aria-disabled', 'true')
