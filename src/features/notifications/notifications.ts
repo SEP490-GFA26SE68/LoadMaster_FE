@@ -15,7 +15,8 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
 /**
  * Sự kiện đáng báo cho từng vai trò. Kho và tài xế làm việc trên màn của mình nên không có chuông. Vai trò nền tảng không nhận sự kiện
  * vận hành nào (FE-0-01): quản trị hệ thống chỉ có việc trên tài khoản; quản lý nền tảng và hỗ trợ khách hàng chưa có loại thông báo
- * nào (gói cước, ticket tới Sprint 8). Quản trị công ty nhận cùng loại với quản trị hệ thống — phạm vi theo công ty do FE-0-08 thêm.
+ * nào (gói cước, ticket tới Sprint 8). Quản trị công ty nhận cùng loại với quản trị hệ thống, nhưng kho chỉ trả cho họ sự kiện do
+ * người của công ty mình làm (FE-0-02); luật theo vai trò là việc của FE-0-08.
  */
 export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>> = {
   systemAdmin: ACCOUNT_ACTIONS,

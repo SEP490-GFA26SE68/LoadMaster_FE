@@ -937,10 +937,10 @@ ty của chuyến, không lưu riêng. Thêm hàm công khai vào kho thì khai 
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
 `['registered-packages', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
 dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy)
-nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không mang
-người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không hiện
-cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
-(`['notifications', id, vai trò]`).
+nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không cần
+mang người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không
+hiện cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
+(`['notifications', id, vai trò]`); khoá `['registered-packages', …]` còn mang mã người dùng từ LM-104, màn mới không làm theo.
 *(đã điều chỉnh 02/10/2026, FE-0-06)* `shipments-api.ts`, `receiving-api.ts` và khoá `['shipments', …]`, `['receiving', …]` đã bỏ cùng hai
 feature đó.
 Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở

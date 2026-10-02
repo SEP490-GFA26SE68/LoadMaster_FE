@@ -16,7 +16,7 @@ import {
 
 /**
  * Hook Query của nguồn hàng (LM-104) — component không gọi `packages-source-api.ts` trực tiếp (mục 9). Mã người dùng nằm trong khoá
- * của kiện đăng ký: đổi người đăng nhập thì đọc lại (kiện thuộc công ty của người đăng ký; kho lọc theo công ty ở FE-0-02). Trạng thái
+ * của kiện đăng ký: đổi người đăng nhập thì đọc lại (kiện thuộc công ty của người đăng ký; kho lọc theo công ty của phiên, FE-0-02). Trạng thái
  * kiện đổi theo đơn và chuyến ở màn khác nên đọc lại mỗi lần mở màn.
  */
 

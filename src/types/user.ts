@@ -43,8 +43,8 @@ export type User = {
   /** ISO 8601; null khi chưa đăng nhập lần nào */
   lastActiveAt: string | null
   /**
-   * Công ty logistics của tài khoản (`LOG-…`); người dùng nền tảng không có. Kiện đăng ký thuộc công ty của người đăng ký (FE-0-06); kho
-   * chưa lọc dữ liệu theo công ty — cách ly theo công ty là việc của FE-0-02.
+   * Công ty logistics của tài khoản (`LOG-…`); người dùng nền tảng không có. Kho lọc mọi dữ liệu theo công ty này khi người dùng đăng
+   * nhập (D-64, `lib/mock-db/tenancy.ts`), và bản ghi người đó tạo ra thuộc công ty này.
    */
   companyId?: string
 }
