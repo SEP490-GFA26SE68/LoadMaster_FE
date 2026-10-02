@@ -10,8 +10,9 @@ export const sourcing = {
     typeSummary: '{dimensions} · {weight}',
     reference: 'Batch / SKU',
     referencePlaceholder: 'e.g. MP-NS24-0914',
-    referenceHint: 'Optional. Printed on the label to match the goods.',
-    note: 'Note',
+    referenceHint: 'Optional. Printed on the label to match the goods; several packages get a running number.',
+    destination: 'Destination',
+    destinationPlaceholder: 'e.g. Hoa Khanh Industrial Park, Da Nang',
     quantity: 'Quantity',
     quantityHint: 'From 1 to {max} packages of one type at a time.',
     submit: {
@@ -23,12 +24,13 @@ export const sourcing = {
     doneAction: 'Print labels',
     errors: {
       typeRequired: 'Choose a package type.',
+      destinationRequired: 'Enter the destination.',
       quantityRange: 'Quantity must be a whole number from 1 to {max}.',
     },
     file: {
       choose: 'Choose a .csv or .xlsx file',
       change: 'Choose another file',
-      hint: 'One package type per row: package type code, quantity, batch / SKU, note. The first row is the header.',
+      hint: 'One package type per row: package type code, quantity, batch / SKU. The first row is the header.',
       template: 'Download template (.csv)',
       templateFile: 'package-registration-template.csv',
       reading: 'Reading the file…',
@@ -36,7 +38,7 @@ export const sourcing = {
       empty: 'The file has no data rows.',
       summary: { one: '{count} row · {packages} packages', other: '{count} rows · {packages} packages' },
       invalid: { one: '{count} row has errors — fix the file and choose it again.', other: '{count} rows have errors — fix the file and choose it again.' },
-      header: { type: 'Package type code', quantity: 'Quantity', reference: 'Batch / SKU', note: 'Note' },
+      header: { type: 'Package type code', quantity: 'Quantity', reference: 'Batch / SKU' },
       columns: { row: 'Row', type: 'Package type', quantity: 'Quantity', reference: 'Batch / SKU', check: 'Check' },
       ok: 'Valid',
       problems: {
@@ -117,16 +119,9 @@ export const sourcing = {
       clear: 'Clear selection',
       printLabels: 'Print QR labels',
     },
-    sourceNote: 'The "Loaded" and "Delivered" statuses follow the progress of the trip carrying the package.',
+    sourceNote: 'A package changes status at each milestone of the trip carrying it: order assigned, loading started, loading finished, departure, stop completed.',
     count: { one: '{count} registered package', other: '{count} registered packages' },
     empty: 'No packages have been registered yet.',
-    status: {
-      registered: 'Registered',
-      received: 'Received at the warehouse',
-      planned: 'Planned',
-      loaded: 'Loaded',
-      delivered: 'Delivered',
-    },
   },
   labels: {
     title: 'Print QR labels',
@@ -139,8 +134,7 @@ export const sourcing = {
     },
     hint: 'A4 paper, two labels per row. Print at 100 % scale so the QR codes keep their size.',
     sheet: 'QR label sheet',
-    reference: 'Batch {reference}',
-    unknownType: 'Package type {id}',
+    reference: 'Code {reference}',
     count: { one: '{count} label ready to print', other: '{count} labels ready to print' },
   },
 } satisfies Dictionary<typeof source>

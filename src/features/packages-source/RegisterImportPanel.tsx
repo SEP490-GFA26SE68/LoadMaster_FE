@@ -8,7 +8,8 @@ import { Spinner } from '@/components/ui/Spinner'
 import { downloadBlob } from '@/features/trips/download-file'
 import { readImportFile } from '@/features/trips/read-import-file'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
-import { MAX_REGISTER_QUANTITY, type PackageType } from '@/lib/mock-db'
+import type { PackageType } from '@/lib/mock-db'
+import { MAX_REGISTER_QUANTITY } from './register-form'
 import { parseRegisterTable, registerTemplateCsv, type ParsedRegisterRow, type RegisterProblem } from './register-import'
 
 const helper = createColumnHelper<BaseTableFeatures, ParsedRegisterRow>()
@@ -87,7 +88,7 @@ export function RegisterImportPanel({ types, rows, onRowsChange }: {
   }
 
   function handleTemplate() {
-    const header = (['type', 'quantity', 'reference', 'note'] as const).map((key) => t(`sourcing.register.file.header.${key}`))
+    const header = (['type', 'quantity', 'reference'] as const).map((key) => t(`sourcing.register.file.header.${key}`))
     const csv = registerTemplateCsv(header, types)
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), t('sourcing.register.file.templateFile'))
   }

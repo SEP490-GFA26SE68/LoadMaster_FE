@@ -4,7 +4,7 @@ import { createDbContext, type DbState } from './db-context'
 import { operationMethods } from './db-operations'
 import { orderMethods } from './db-orders'
 import { packageTypeMethods } from './db-package-types'
-import { registeredMethods } from './db-registered'
+import { packageMethods } from './db-packages'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
 import { scanMethods } from './db-scans'
@@ -17,7 +17,7 @@ import { buildSeed } from './seed'
 import { shiftSeedTimes } from './seed-shift'
 import type { MockDb, MockDbOptions } from './types'
 
-/** Hạt giống mã QR của kiện đăng ký mới khi nơi gọi không truyền `random`: test tất định. */
+/** Hạt giống mã QR của kiện mới khi nơi gọi không truyền `random`: test tất định. */
 const QR_SEED = 20_260_927
 
 /**
@@ -39,7 +39,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     session: { userId: null },
     companies: new Map(seed.companies.map((company) => [company.id, company])),
     packageTypes: new Map(seed.packageTypes.map((type) => [type.id, type])),
-    registeredPackages: new Map(seed.registeredPackages.map((pkg) => [pkg.id, pkg])),
+    packages: new Map(seed.packages.map((pkg) => [pkg.id, pkg])),
     orders: new Map(seed.orders.map((order) => [order.id, order])),
     runs: new Map(seed.runs.map((run) => [run.id, run])),
     vehicleTypes: new Map(seed.vehicleTypes.map((type) => [type.id, type])),
@@ -55,7 +55,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...userMethods(ctx),
     ...auditMethods(ctx),
     ...packageTypeMethods(ctx),
-    ...registeredMethods(ctx),
+    ...packageMethods(ctx),
     ...orderMethods(ctx),
     ...vehicleTypeMethods(ctx),
     ...scanMethods(ctx),

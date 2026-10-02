@@ -1,5 +1,6 @@
 import { roundKg } from '@/domain/geometry'
 import { matchesQuery, normalizeSearchText } from '@/lib/list-filter'
+import type { HandlingClass } from '@/domain/models'
 import type { DeliveryStop, OrderStatus } from '@/lib/mock-db'
 import type { OrderPackage, OrderRow } from './orders-api'
 
@@ -29,21 +30,27 @@ export function filterOrderRows(rows: readonly OrderRow[], query: string, status
 
 export type PackageGroup = { readonly typeId: string; readonly name: string; readonly items: readonly OrderPackage[] }
 
-/** Kiện chọn được, nhóm theo loại kiện (thứ tự xuất hiện), trong nhóm theo mã. */
-export function groupByType(packages: readonly OrderPackage[], unknownName: string): PackageGroup[] {
+/**
+ * Kiện chọn được, nhóm theo loại kiện (thứ tự xuất hiện), trong nhóm theo mã. Kiện không gắn loại kiện nhóm theo loại hàng; tên nhóm
+ * đó do `classGroupName` đặt (nhãn loại hàng đã dịch).
+ */
+export function groupByType(packages: readonly OrderPackage[], classGroupName: (handlingClass: HandlingClass) => string): PackageGroup[] {
   const groups = new Map<string, OrderPackage[]>()
-  for (const item of packages) groups.set(item.package.packageTypeId, [...(groups.get(item.package.packageTypeId) ?? []), item])
+  for (const item of packages) {
+    const key = item.package.packageTypeId ?? `class:${item.package.handlingClass}`
+    groups.set(key, [...(groups.get(key) ?? []), item])
+  }
   return [...groups].map(([typeId, items]) => ({
     typeId,
-    name: items[0]?.type?.name ?? unknownName,
+    name: items[0]?.type?.name ?? (items[0] ? classGroupName(items[0].package.handlingClass) : typeId),
     items: items.toSorted((a, b) => a.package.id.localeCompare(b.package.id)),
   }))
 }
 
-/** Tổng khối lượng của các kiện đã chọn, theo khối lượng loại kiện. */
+/** Tổng khối lượng của các kiện đã chọn, theo khối lượng của từng kiện. */
 export function selectedWeightKg(packages: readonly OrderPackage[], selectedIds: readonly string[]): number {
   const chosen = new Set(selectedIds)
-  return roundKg(packages.reduce((sum, item) => sum + (chosen.has(item.package.id) ? (item.type?.weightKg ?? 0) : 0), 0))
+  return roundKg(packages.reduce((sum, item) => sum + (chosen.has(item.package.id) ? item.package.weightKg : 0), 0))
 }
 
 /** Điểm giao có tên trùng tên khách hàng (bỏ dấu, không phân biệt hoa thường) — chọn sẵn khi gán đơn. */

@@ -10,7 +10,7 @@ import { fetchSearchSources } from './search-api'
  * chuyến, điều phối viên không kéo danh sách người dùng). Theo dõi lời gọi trên kho dùng chung; hàm kho trả rỗng để phép kiểm không phụ
  * thuộc phiên đăng nhập hay luật lọc theo công ty của kho.
  */
-const READS = ['listTrips', 'listVehicles', 'listUsers', 'listOrders', 'listRegisteredPackages', 'listPackageTypes'] as const
+const READS = ['listTrips', 'listVehicles', 'listUsers', 'listOrders', 'listPackages', 'listPackageTypes'] as const
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -32,7 +32,7 @@ const EXPECTED_READS: Readonly<Record<Role, readonly string[]>> = {
   systemSupporter: [],
   companyAdmin: ['listUsers'],
   manager: ['listTrips', 'listVehicles', 'listOrders'],
-  dispatcher: ['listTrips', 'listVehicles', 'listOrders', 'listRegisteredPackages', 'listPackageTypes'],
+  dispatcher: ['listTrips', 'listVehicles', 'listOrders', 'listPackages', 'listPackageTypes'],
   warehouse: [],
   driver: [],
 }

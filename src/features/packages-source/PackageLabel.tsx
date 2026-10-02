@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils'
 import type { PackageLabel as PackageLabelData } from './packages-source-api'
 
 /**
- * Một nhãn QR để dán lên kiện (LM-104): mã QR (in mã chữ bên dưới để gõ tay khi không quét được), mã kiện lớn, loại kiện, số đo,
- * mã lô / SKU và công ty sở hữu kiện. Cùng một component cho bản xem trên màn và bản in — chỉ khác cỡ (`print`: đơn vị mm của khổ giấy).
+ * Một nhãn QR để dán lên kiện (LM-104): mã QR (in mã chữ bên dưới để gõ tay khi không quét được), mã kiện lớn, loại kiện (kiện không
+ * gắn loại thì loại hàng), số đo của kiện, mã của bên gửi, điểm đến và công ty của kiện. Mẫu nhãn mới là việc của FE-3b-05. Cùng một component cho bản xem trên màn và bản in — chỉ khác cỡ (`print`: đơn vị mm của khổ giấy).
  * Góc phải có logo một màu (LM-105): thương hiệu đi theo thùng hàng tới kho, tới khách; in đen trắng vẫn rõ.
  */
 export function PackageLabel({ label, print = false }: { label: PackageLabelData; print?: boolean }) {
@@ -30,16 +30,15 @@ export function PackageLabel({ label, print = false }: { label: PackageLabelData
             <span className="font-display text-micro leading-none font-bold font-stretch-106%">LoadMaster</span>
           </span>
         </div>
-        <span className="line-clamp-2 text-small leading-4.5 font-medium">{type?.name ?? t('sourcing.labels.unknownType', { id: pkg.packageTypeId })}</span>
-        {type ? (
-          <span className="font-mono text-caption text-ink-2 tabular-nums">
-            {t('sourcing.register.typeSummary', {
-              dimensions: format.dimensions(type.lengthCm, type.widthCm, type.heightCm),
-              weight: format.weight(type.weightKg),
-            })}
-          </span>
-        ) : null}
-        {pkg.reference ? <span className="truncate font-mono text-caption text-ink-2">{t('sourcing.labels.reference', { reference: pkg.reference })}</span> : null}
+        <span className="line-clamp-2 text-small leading-4.5 font-medium">{type?.name ?? t(`common.handlingClasses.${pkg.handlingClass}`)}</span>
+        <span className="font-mono text-caption text-ink-2 tabular-nums">
+          {t('sourcing.register.typeSummary', {
+            dimensions: format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm),
+            weight: format.weight(pkg.weightKg),
+          })}
+        </span>
+        {pkg.packageCode !== pkg.id ? <span className="truncate font-mono text-caption text-ink-2">{t('sourcing.labels.reference', { reference: pkg.packageCode })}</span> : null}
+        <span className="line-clamp-1 text-caption text-ink-2">{pkg.destination}</span>
         {owner ? <span className="line-clamp-2 text-caption leading-4 text-ink-3">{owner.name}</span> : null}
       </div>
     </article>

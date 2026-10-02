@@ -37,7 +37,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   QUANTITY_INVALID: { min: 1, max: 500 },
   COMPANY_REQUIRED: {},
   FORBIDDEN_COMPANY: { collection: 'trips', id: 'TRIP-PN-001' },
-  PACKAGE_UNAVAILABLE: { packageId: 'RPK-0035', status: 'registered' },
+  PACKAGE_UNAVAILABLE: { packageId: 'PK-0035', status: 'ASSIGNED' },
   PACKAGES_REQUIRED: {},
   QR_UNKNOWN: { token: 'LM-0000-0000-0000' },
   ORDER_STATUS_INVALID: { orderId: 'ORD-001', status: 'assigned' },
@@ -48,6 +48,11 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   WRONG_PACKAGE_SCANNED: { expected: 'PKG-001-02', scanned: 'PKG-001-05' },
   QR_WRONG_STOP: { packageInstanceId: 'PKG-002-01', stopNumber: 3 },
   SEAL_INVALID: { max: 32 },
+  PACKAGE_INVALID: { field: 'destination' },
+  INVALID_PACKAGE_STATUS_TRANSITION: { packageId: 'PK-0049', from: 'IMPORTED', to: 'LOADED' },
+  PACKAGE_FLAGGED: { packageId: 'PK-0063', flag: 'NOT_FOUND' },
+  PACKAGE_FLAG_NOT_SET: { packageId: 'PK-0049', flag: 'DAMAGED' },
+  ROLE_NOT_ALLOWED: { role: 'warehouse' },
 }
 
 test('every data error code has a vi and en sentence with every placeholder filled', () => {

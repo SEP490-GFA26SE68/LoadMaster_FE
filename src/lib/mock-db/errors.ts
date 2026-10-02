@@ -1,4 +1,5 @@
 import type { Role } from '@/types/user'
+import type { PackageFlag, PackageStatus } from './package-model'
 import type { TripPhase } from './types'
 
 /** Bộ sưu tập của kho mock. */
@@ -10,7 +11,7 @@ export type MockDbCollection =
   // LM-104
   | 'companies'
   | 'packageTypes'
-  | 'registeredPackages'
+  | 'packages'
   | 'orders'
   | 'vehicleTypes'
 
@@ -80,9 +81,9 @@ export type MockDbErrorParams = {
   // Review 1 (LM-104)
   /** Loại kiện sai dữ liệu: mã issue của model (`package.*`, `D-28`), UI dịch qua nhánh `issues`. */
   PACKAGE_TYPE_INVALID: { codes: string[] }
-  /** Xoá loại kiện còn kiện đăng ký dùng. */
+  /** Xoá loại kiện còn kiện của kho kiện dùng. */
   PACKAGE_TYPE_IN_USE: { packageTypeId: string; count: number }
-  /** Đăng ký theo số lượng ngoài khoảng cho phép. */
+  /** Số kiện của một lần tạo ngoài khoảng cho phép. */
   QUANTITY_INVALID: { min: number; max: number }
   /**
    * Gọi hàm dữ liệu vận hành (xe, loại xe, loại kiện, kiện, đơn, chuyến, phương án, tiến độ, quét) khi phiên không thuộc công ty nào:
@@ -91,9 +92,9 @@ export type MockDbErrorParams = {
   COMPANY_REQUIRED: Record<string, never>
   /** Ghi vào bản ghi `id` của công ty khác, hoặc tham chiếu tới nó (xe, tài xế, loại kiện, kiện… của công ty khác; D-64). */
   FORBIDDEN_COMPANY: { collection: MockDbCollection; id: string }
-  /** Kiện không ở trạng thái cần cho thao tác (chưa nhận ở kho, đã có đơn…). */
+  /** Kiện không ở trạng thái cần cho thao tác (đã vào chuyến, đã có đơn…). */
   PACKAGE_UNAVAILABLE: { packageId: string; status: string }
-  /** Lần đăng ký hoặc đơn hàng không có kiện nào. */
+  /** Lần tạo kiện hoặc đơn hàng không có kiện nào. */
   PACKAGES_REQUIRED: Record<string, never>
   /** Mã QR không khớp kiện nào. */
   QR_UNKNOWN: { token: string }
@@ -110,6 +111,18 @@ export type MockDbErrorParams = {
   QR_WRONG_STOP: { packageInstanceId: string; stopNumber: number }
   /** Số seal trống hoặc dài quá. */
   SEAL_INVALID: { max: number }
+
+  // Kho kiện (FE-3b-01)
+  /** Kiện sai dữ liệu ở trường `field`: kích thước hoặc khối lượng không dương, loại hàng lạ, thiếu điểm đến. */
+  PACKAGE_INVALID: { field: string }
+  /** Chuyển trạng thái kiện ngoài bảng `PACKAGE_TRANSITIONS` (D-70). */
+  INVALID_PACKAGE_STATUS_TRANSITION: { packageId: string; from: PackageStatus; to: PackageStatus }
+  /** Đưa kiện đang có cờ vào đơn hay chuyến (D-92). */
+  PACKAGE_FLAGGED: { packageId: string; flag: PackageFlag }
+  /** Gỡ một cờ kiện không có. */
+  PACKAGE_FLAG_NOT_SET: { packageId: string; flag: PackageFlag }
+  /** Thao tác chỉ một vai trò khác được làm (gỡ cờ kiện là việc của điều phối viên). */
+  ROLE_NOT_ALLOWED: { role: Role }
 }
 
 export type MockDbErrorCode = keyof MockDbErrorParams

@@ -5,8 +5,9 @@ import type { OrderPackage } from './orders-api'
 import { groupByType, selectedWeightKg } from './order-list'
 
 /**
- * Ô chọn kiện của form đơn hàng (LM-104): kiện đã nhận ở kho, nhóm theo loại kiện; mỗi nhóm có ô "chọn cả nhóm". Dưới danh sách là
- * tổng kiện và khối lượng đã chọn (theo khối lượng loại kiện). Không có kiện nào thì nói lý do: chỉ kiện đã nhận ở kho mới vào đơn.
+ * Ô chọn kiện của form đơn hàng (LM-104): kiện còn ở kho kiện, nhóm theo loại kiện (kiện không gắn loại thì theo loại hàng); mỗi nhóm
+ * có ô "chọn cả nhóm". Dưới danh sách là tổng kiện và khối lượng đã chọn. Không có kiện nào thì nói lý do: chỉ kiện đã nhập, không cờ,
+ * chưa thuộc đơn nào mới vào đơn.
  */
 export function OrderPackagePicker({ packages, value, onChange, error }: {
   packages: readonly OrderPackage[]
@@ -18,7 +19,7 @@ export function OrderPackagePicker({ packages, value, onChange, error }: {
   const format = useFormat()
   const titleId = useId()
   const chosen = new Set(value)
-  const groups = groupByType(packages, t('orders.form.unknownType'))
+  const groups = groupByType(packages, (handlingClass) => t('orders.form.classGroup', { name: t(`common.handlingClasses.${handlingClass}`) }))
 
   function toggle(ids: readonly string[], on: boolean) {
     const next = new Set(chosen)
@@ -50,7 +51,7 @@ export function OrderPackagePicker({ packages, value, onChange, error }: {
                   />
                 </div>
                 <ul className="flex flex-col py-1">
-                  {group.items.map(({ package: pkg, type }) => (
+                  {group.items.map(({ package: pkg }) => (
                     <li key={pkg.id} className="px-3 py-1.5 pl-9">
                       <Checkbox
                         checked={chosen.has(pkg.id)}
@@ -58,11 +59,9 @@ export function OrderPackagePicker({ packages, value, onChange, error }: {
                         label={
                           <span className="flex flex-wrap items-baseline gap-x-2">
                             <span className="font-mono text-caption text-ink-strong">{pkg.id}</span>
-                            {type ? (
-                              <span className="text-small text-ink-3">
-                                {t('orders.form.packageMeta', { dimensions: format.dimensions(type.lengthCm, type.widthCm, type.heightCm), weight: format.weight(type.weightKg) })}
-                              </span>
-                            ) : null}
+                            <span className="text-small text-ink-3">
+                              {t('orders.form.packageMeta', { dimensions: format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm), weight: format.weight(pkg.weightKg) })}
+                            </span>
                           </span>
                         }
                       />

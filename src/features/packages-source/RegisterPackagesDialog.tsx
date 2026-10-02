@@ -8,11 +8,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
-import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { MAX_REGISTER_QUANTITY, type RegisteredPackage } from '@/lib/mock-db'
+import type { Package } from '@/lib/mock-db'
 import { TypeMeasure } from './package-look'
-import { EMPTY_REGISTER, registerFormSchema, type RegisterFormValues } from './register-form'
+import { EMPTY_REGISTER, MAX_REGISTER_QUANTITY, registerFormSchema, type RegisterFormValues } from './register-form'
 import { toRegisterRows, type ParsedRegisterRow } from './register-import'
 import { RegisterImportPanel } from './RegisterImportPanel'
 import { usePackageTypesQuery, useRegisterPackagesMutation } from './usePackagesSourceQuery'
@@ -23,11 +22,12 @@ const MODES: readonly Mode[] = ['single', 'quantity', 'file']
 /**
  * "Đăng ký kiện" (LM-104) — ba cách: một kiện, theo số lượng (1…500 kiện cùng loại), nhập file nhiều dòng. Mọi cách đi qua
  * `useRegisterPackagesMutation`; kho kiểm hết trước khi ghi nên lỗi một dòng thì không kiện nào được tạo. Kiện thuộc công ty của người
- * đăng ký (kho lấy từ phiên, FE-0-06) nên không có ô chọn công ty. Xong thì trả kiện vừa tạo cho màn (chọn sẵn để in nhãn).
+ * đăng ký (kho lấy từ phiên, FE-0-06) nên không có ô chọn công ty. Ô Điểm đến dùng chung cho cả ba cách (trường bắt buộc của kiện
+ * kho kiện, FE-3b-01); kích thước, khối lượng lấy từ loại kiện. Xong thì trả kiện vừa tạo cho màn (chọn sẵn để in nhãn).
  */
 export function RegisterPackagesDialog({ onClose, onDone }: {
   onClose: () => void
-  onDone: (created: RegisteredPackage[]) => void
+  onDone: (created: Package[]) => void
 }) {
   const t = useT()
   const typesQuery = usePackageTypesQuery()
@@ -46,15 +46,15 @@ export function RegisterPackagesDialog({ onClose, onDone }: {
   const validFile = fileRows !== null && fileRows.length > 0 && fileRows.every((row) => row.problems.length === 0)
   const fileCount = validFile ? fileRows.reduce((sum, row) => sum + (row.quantity ?? 0), 0) : 0
 
-  function finish(created: RegisteredPackage[]) {
+  function finish(created: Package[]) {
     onDone(created)
   }
 
   function handleValid(values: RegisterFormValues) {
     const input = {
       packageTypeId: values.packageTypeId,
+      destination: values.destination,
       ...(values.reference === '' ? {} : { reference: values.reference }),
-      ...(values.note === '' ? {} : { note: values.note }),
     }
     registerMutation.mutate(
       mode === 'quantity' ? { kind: 'quantity', input, quantity: values.quantity } : { kind: 'single', input },
@@ -62,9 +62,9 @@ export function RegisterPackagesDialog({ onClose, onDone }: {
     )
   }
 
-  function handleFileSubmit() {
-    if (!validFile) return
-    registerMutation.mutate({ kind: 'rows', rows: toRegisterRows(fileRows) }, { onSuccess: finish })
+  async function handleFileSubmit() {
+    if (!validFile || !(await form.trigger('destination'))) return
+    registerMutation.mutate({ kind: 'rows', rows: toRegisterRows(fileRows, form.getValues('destination').trim()) }, { onSuccess: finish })
   }
 
   const many = mode === 'file' ? fileCount : mode === 'quantity' && Number.isInteger(quantity) && quantity > 0 ? quantity : 0
@@ -74,7 +74,7 @@ export function RegisterPackagesDialog({ onClose, onDone }: {
   return (
     <Dialog open onOpenChange={(open) => (open || pending ? undefined : onClose())}>
       <DialogContent className="w-160">
-        <form noValidate onSubmit={mode === 'file' ? (event) => { event.preventDefault(); handleFileSubmit() } : form.handleSubmit(handleValid)}>
+        <form noValidate onSubmit={mode === 'file' ? (event) => { event.preventDefault(); void handleFileSubmit() } : form.handleSubmit(handleValid)}>
           <DialogHeader icon={PackagePlus} title={t('sourcing.register.title')} description={t('sourcing.register.description')} />
           <div className="flex max-h-[64vh] flex-col gap-4 overflow-y-auto px-7 pt-5 pb-6">
             <SegmentedControl
@@ -87,6 +87,14 @@ export function RegisterPackagesDialog({ onClose, onDone }: {
                 registerMutation.reset()
               }}
               options={MODES.map((value) => ({ value, label: t(`sourcing.register.modes.${value}`) }))}
+            />
+
+            <Input
+              label={t('sourcing.register.destination')}
+              placeholder={t('sourcing.register.destinationPlaceholder')}
+              required
+              error={errors.destination?.message}
+              {...register('destination')}
             />
 
             {mode === 'file' ? (
@@ -125,7 +133,6 @@ export function RegisterPackagesDialog({ onClose, onDone }: {
                     {...register('reference')}
                   />
                 </div>
-                <Textarea label={t('sourcing.register.note')} rows={2} {...register('note')} />
               </>
             )}
 

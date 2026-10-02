@@ -1,6 +1,6 @@
 /**
- * Nguồn hàng của điều phối viên (LM-104, FE-0-06): loại kiện `/loai-kien`, kiện đăng ký `/kien-hang`, in nhãn `/kien-hang/nhan`.
- * Trạng thái key trùng mã của kho (`REGISTERED_PACKAGE_STATUSES`). Nhánh lô hàng và nhận hàng đã bỏ cùng hai màn đó.
+ * Nguồn hàng của điều phối viên (LM-104, FE-0-06): loại kiện `/loai-kien`, kiện hàng `/kien-hang`, in nhãn `/kien-hang/nhan`.
+ * Nhãn trạng thái, cờ và loại hàng của kiện nằm ở nhánh `common` (FE-3b-01, FE-3b-04). Nhánh lô hàng và nhận hàng đã bỏ cùng hai màn đó.
  */
 export const sourcing = {
   /** Hộp thoại "Đăng ký kiện" ở `/kien-hang`: một kiện, theo số lượng, nhập file (LM-104, việc C). */
@@ -12,8 +12,9 @@ export const sourcing = {
     typeSummary: '{dimensions} · {weight}',
     reference: 'Mã lô / SKU',
     referencePlaceholder: 'VD: MP-NS24-0914',
-    referenceHint: 'Không bắt buộc. In trên nhãn để đối chiếu với hàng.',
-    note: 'Ghi chú',
+    referenceHint: 'Không bắt buộc. In trên nhãn để đối chiếu với hàng; nhiều kiện thì thêm số thứ tự.',
+    destination: 'Điểm đến',
+    destinationPlaceholder: 'VD: KCN Hoà Khánh, Đà Nẵng',
     quantity: 'Số lượng',
     quantityHint: 'Từ 1 đến {max} kiện cùng loại mỗi lần.',
     submit: {
@@ -25,12 +26,13 @@ export const sourcing = {
     doneAction: 'In nhãn',
     errors: {
       typeRequired: 'Chọn loại kiện.',
+      destinationRequired: 'Nhập điểm đến.',
       quantityRange: 'Số lượng phải là số nguyên từ 1 đến {max}.',
     },
     file: {
       choose: 'Chọn file .csv hoặc .xlsx',
       change: 'Chọn file khác',
-      hint: 'Mỗi dòng một loại kiện: mã loại kiện, số lượng, mã lô / SKU, ghi chú. Dòng đầu là tiêu đề.',
+      hint: 'Mỗi dòng một loại kiện: mã loại kiện, số lượng, mã lô / SKU. Dòng đầu là tiêu đề.',
       template: 'Tải file mẫu (.csv)',
       templateFile: 'mau-dang-ky-kien.csv',
       reading: 'Đang đọc file…',
@@ -38,7 +40,7 @@ export const sourcing = {
       empty: 'File không có dòng dữ liệu nào.',
       summary: { one: '{count} dòng · {packages} kiện', other: '{count} dòng · {packages} kiện' },
       invalid: { one: '{count} dòng có lỗi — sửa file rồi chọn lại.', other: '{count} dòng có lỗi — sửa file rồi chọn lại.' },
-      header: { type: 'Mã loại kiện', quantity: 'Số lượng', reference: 'Mã lô / SKU', note: 'Ghi chú' },
+      header: { type: 'Mã loại kiện', quantity: 'Số lượng', reference: 'Mã lô / SKU' },
       columns: { row: 'Dòng', type: 'Loại kiện', quantity: 'Số lượng', reference: 'Mã lô / SKU', check: 'Kiểm tra' },
       ok: 'Hợp lệ',
       problems: {
@@ -102,7 +104,7 @@ export const sourcing = {
     title: 'Kiện hàng',
     emptyDescription: 'Đăng ký kiện theo loại kiện trong danh mục; mỗi kiện có mã QR riêng để in nhãn.',
     register: 'Đăng ký kiện',
-    search: 'Tìm theo mã kiện, loại kiện, mã lô / SKU, mã QR',
+    search: 'Tìm theo mã kiện, loại kiện, mã lô / SKU, điểm đến, mã QR',
     tabs: { label: 'Lọc theo trạng thái', all: 'Tất cả' },
     columns: {
       select: 'Chọn',
@@ -119,16 +121,9 @@ export const sourcing = {
       clear: 'Bỏ chọn',
       printLabels: 'In nhãn QR',
     },
-    sourceNote: 'Trạng thái "Đã lên xe" và "Đã giao" lấy theo tiến độ của chuyến chở kiện.',
+    sourceNote: 'Trạng thái kiện đổi theo từng mốc của chuyến chở kiện: gán đơn, kho bắt đầu xếp, xếp xong, xe xuất phát, hoàn tất điểm giao.',
     count: { one: '{count} kiện đã đăng ký', other: '{count} kiện đã đăng ký' },
     empty: 'Chưa có kiện nào được đăng ký.',
-    status: {
-      registered: 'Đã đăng ký',
-      received: 'Đã nhận ở kho',
-      planned: 'Đã lên kế hoạch',
-      loaded: 'Đã lên xe',
-      delivered: 'Đã giao',
-    },
   },
   labels: {
     title: 'In nhãn QR',
@@ -141,8 +136,7 @@ export const sourcing = {
     },
     hint: 'Khổ A4, hai nhãn mỗi hàng. Khi in, chọn tỷ lệ 100 % để mã QR giữ đúng cỡ.',
     sheet: 'Trang nhãn QR',
-    reference: 'Lô {reference}',
-    unknownType: 'Loại kiện {id}',
+    reference: 'Mã {reference}',
     count: { one: '{count} nhãn có thể in', other: '{count} nhãn có thể in' },
   },
 } as const

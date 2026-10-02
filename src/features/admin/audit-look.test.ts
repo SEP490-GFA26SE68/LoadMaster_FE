@@ -11,6 +11,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
     // LM-104: đơn bị huỷ / bỏ gán, lần chạy tối ưu hỏng
     'order.cancelled', 'order.unassigned', 'optimization.failed',
+    // FE-3b-01: kiện bị gắn cờ không vào đơn hay chuyến được cho tới khi gỡ
+    'package.flagged',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(

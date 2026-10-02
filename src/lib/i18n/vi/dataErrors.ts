@@ -35,7 +35,7 @@ export const dataErrors = {
   PASSWORD_TOO_SHORT: 'Mật khẩu mới cần ít nhất {min} ký tự.',
   // Review 1 (LM-104)
   PACKAGE_TYPE_INVALID: 'Loại kiện chưa hợp lệ: kiểm tra kích thước, khối lượng, hướng đặt và xếp chồng.',
-  PACKAGE_TYPE_IN_USE: 'Loại kiện {packageTypeId} còn {count} kiện đăng ký nên không xoá được.',
+  PACKAGE_TYPE_IN_USE: 'Loại kiện {packageTypeId} còn {count} kiện dùng nên không xoá được.',
   QUANTITY_INVALID: 'Số lượng phải là số nguyên từ {min} đến {max}.',
   COMPANY_REQUIRED: 'Tài khoản này không thuộc công ty nào nên không xem hay sửa được dữ liệu vận hành.',
   FORBIDDEN_COMPANY: '{id} thuộc công ty khác nên không dùng được.',
@@ -50,6 +50,12 @@ export const dataErrors = {
   WRONG_PACKAGE_SCANNED: 'Đã quét kiện {scanned}, bước này cần kiện {expected}.',
   QR_WRONG_STOP: 'Kiện {packageInstanceId} thuộc điểm giao {stopNumber}.',
   SEAL_INVALID: 'Số seal cần từ 1 đến {max} ký tự.',
+  // Kho kiện (FE-3b-01)
+  PACKAGE_INVALID: 'Kiện chưa hợp lệ: kích thước và khối lượng phải lớn hơn 0, cần loại hàng và điểm đến.',
+  INVALID_PACKAGE_STATUS_TRANSITION: 'Kiện {packageId} không chuyển được sang trạng thái đó từ trạng thái hiện tại.',
+  PACKAGE_FLAGGED: 'Kiện {packageId} đang mang cờ nên chưa đưa vào đơn hay chuyến được. Gỡ cờ trước.',
+  PACKAGE_FLAG_NOT_SET: 'Kiện {packageId} không mang cờ này.',
+  ROLE_NOT_ALLOWED: 'Vai trò của bạn không làm được thao tác này.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */
   UNKNOWN: 'Có lỗi xảy ra. Thử lại sau.',
 } as const satisfies Record<MockDbErrorCode | 'UNKNOWN', string>

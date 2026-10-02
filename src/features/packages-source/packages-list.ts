@@ -1,43 +1,45 @@
 import { matchesQuery } from '@/lib/list-filter'
-import { REGISTERED_PACKAGE_STATUSES, type PackageType, type RegisteredPackage, type RegisteredPackageStatus } from '@/lib/mock-db'
+import { PACKAGE_STATUSES, type Package, type PackageStatus, type PackageType } from '@/lib/mock-db'
 
 /**
- * Danh sách kiện đã đăng ký `/kien-hang` (LM-104): ghép loại kiện, tab trạng thái giữ trên URL (`trang-thai`, slug không dấu), tìm
- * bỏ dấu và chọn kiện để in nhãn. Hàm thuần để test không cần React.
+ * Danh sách kiện của kho kiện `/kien-hang` (LM-104, mô hình kiện FE-3b-01): ghép loại kiện (kiện có thể không gắn loại), tab trạng
+ * thái giữ trên URL (`trang-thai`, slug không dấu), tìm bỏ dấu và chọn kiện để in nhãn. Hàm thuần để test không cần React.
  */
-export type PackageRow = RegisteredPackage & { readonly type: PackageType | undefined }
+export type PackageRow = Package & { readonly type: PackageType | undefined }
 
 export const STATUS_FILTER = 'trang-thai'
 
 /** Slug trên URL của từng trạng thái (D-52: tham số tiếng Việt không dấu). */
-export const PACKAGE_STATUS_SLUGS: Readonly<Record<RegisteredPackageStatus, string>> = {
-  registered: 'da-dang-ky',
-  received: 'da-nhan',
-  planned: 'da-len-ke-hoach',
-  loaded: 'da-len-xe',
-  delivered: 'da-giao',
+export const PACKAGE_STATUS_SLUGS: Readonly<Record<PackageStatus, string>> = {
+  IMPORTED: 'da-nhap',
+  ASSIGNED: 'da-gan-chuyen',
+  STAGED: 'da-soan',
+  LOADED: 'da-xep',
+  IN_TRANSIT: 'dang-van-chuyen',
+  DELIVERED: 'da-giao',
+  RETURNED: 'hoan-tra',
 }
 
-export type PackageTab = 'all' | RegisteredPackageStatus
-export const PACKAGE_TABS: readonly PackageTab[] = ['all', ...REGISTERED_PACKAGE_STATUSES]
+export type PackageTab = 'all' | PackageStatus
+export const PACKAGE_TABS: readonly PackageTab[] = ['all', ...PACKAGE_STATUSES]
 
 export function tabFromSlug(slug: string): PackageTab {
-  return REGISTERED_PACKAGE_STATUSES.find((status) => PACKAGE_STATUS_SLUGS[status] === slug) ?? 'all'
+  return PACKAGE_STATUSES.find((status) => PACKAGE_STATUS_SLUGS[status] === slug) ?? 'all'
 }
 
 export function slugFromTab(tab: PackageTab): string {
   return tab === 'all' ? '' : PACKAGE_STATUS_SLUGS[tab]
 }
 
-export function packageRows(packages: readonly RegisteredPackage[], types: readonly PackageType[]): PackageRow[] {
+export function packageRows(packages: readonly Package[], types: readonly PackageType[]): PackageRow[] {
   const typeById = new Map(types.map((type) => [type.id, type]))
-  return packages.map((pkg) => ({ ...pkg, type: typeById.get(pkg.packageTypeId) }))
+  return packages.map((pkg) => ({ ...pkg, type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId) }))
 }
 
-/** Tìm theo mã kiện, tên / mã loại kiện, mã lô / SKU và mã QR. */
+/** Tìm theo mã kiện, mã của bên gửi, tên / mã loại kiện, điểm đến và mã QR. */
 export function searchPackages(rows: readonly PackageRow[], query: string): PackageRow[] {
   if (query.trim() === '') return [...rows]
-  return rows.filter((row) => matchesQuery([row.id, row.type?.name, row.packageTypeId, row.reference, row.qrToken], query))
+  return rows.filter((row) => matchesQuery([row.id, row.packageCode, row.type?.name, row.packageTypeId, row.destination, row.qrToken], query))
 }
 
 export function filterByTab(rows: readonly PackageRow[], tab: PackageTab): PackageRow[] {

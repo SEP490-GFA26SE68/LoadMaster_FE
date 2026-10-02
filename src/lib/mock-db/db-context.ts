@@ -2,12 +2,12 @@ import type { VehicleConfig } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
+import type { Package } from './package-model'
 import { randomQrToken } from './qr-token'
 import type {
   Company,
   OptimizationRun,
   PackageType,
-  RegisteredPackage,
   TransportOrder,
   VehicleType,
 } from './source-types'
@@ -34,7 +34,8 @@ export type DbState = {
   // Review 1 (LM-104)
   companies: Map<string, Company>
   packageTypes: Map<string, PackageType>
-  registeredPackages: Map<string, RegisteredPackage>
+  /** Kho kiện (FE-3b-01). */
+  packages: Map<string, Package>
   orders: Map<string, TransportOrder>
   runs: Map<string, OptimizationRun>
   vehicleTypes: Map<string, VehicleType>
@@ -56,7 +57,7 @@ export type DbContext = {
    * luật đó không áp được: lần đăng nhập sai bằng email không có trong kho không thuộc công ty nào.
    */
   log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>, companyId?: string | null): void
-  /** Mã QR mới cho kiện đăng ký, không trùng mã đã cấp (LM-104). */
+  /** Mã QR mới cho kiện của kho kiện, không trùng mã đã cấp (LM-104). */
   newQrToken(): string
   /** Phạm vi theo công ty của phiên (D-64): mọi đọc/ghi của `db-*.ts` đi qua đây, không đọc thẳng bảng của `state`. */
   scope: Tenancy
@@ -70,7 +71,7 @@ export function createDbContext(state: DbState, latencyMs: number, now: () => Da
     nowIso,
     scope,
     newQrToken: () => {
-      const taken = new Set([...state.registeredPackages.values()].map((pkg) => pkg.qrToken))
+      const taken = new Set([...state.packages.values()].map((pkg) => pkg.qrToken))
       return randomQrToken(random, (token) => taken.has(token))
     },
     async respond(operation) {

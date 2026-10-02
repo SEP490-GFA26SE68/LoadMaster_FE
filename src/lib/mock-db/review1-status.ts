@@ -1,14 +1,16 @@
 import { expandPackages } from '@/domain/cargo'
+import type { Package } from './package-model'
 import { hashedQrToken, LABEL_SALT, normalizeQrToken } from './qr-token'
-import type { OrderStatus, RegisteredPackage, RegisteredPackageStatus, TransportOrder, TripLabel } from './source-types'
+import type { OrderStatus, TransportOrder, TripLabel } from './source-types'
 import type { Trip } from './types'
 
 /**
- * Hàm thuần nối kiện đăng ký ↔ kiện của chuyến (LM-104). Đơn gán vào điểm giao sinh các dòng kiện `PKG-NNN`; kiện đăng ký thứ i của
- * dòng là instance thứ i (`PKG-NNN-0i`, cùng cách đặt mã của `expandPackages`). Dòng bị sửa số lượng sau khi gán thì mất liên kết.
+ * Hàm thuần nối kiện kho kiện ↔ kiện của chuyến (LM-104). Đơn gán vào điểm giao sinh các dòng kiện `PKG-NNN`; kiện thứ i của dòng là
+ * instance thứ i (`PKG-NNN-0i`, cùng cách đặt mã của `expandPackages`). Dòng bị sửa số lượng sau khi gán thì mất liên kết. Trạng thái
+ * kiện **không** còn suy ở đây: kho ghi thật qua `movePackage` (FE-3b-01); chỉ còn trạng thái `delivered` của đơn là suy lúc đọc.
  */
 
-/** Kiện đăng ký → mã instance trong chuyến của đơn. */
+/** Kiện kho kiện → mã instance trong chuyến của đơn. */
 export function assignmentInstances(order: Pick<TransportOrder, 'assignment'>, trip: Pick<Trip, 'packages'> | undefined): Map<string, string> {
   const instances = new Map<string, string>()
   if (!order.assignment || !trip) return instances
@@ -26,28 +28,14 @@ export function effectiveOrderStatus(order: Pick<TransportOrder, 'status'>, trip
   return order.status === 'assigned' && trip?.phase === 'completed' ? 'delivered' : order.status
 }
 
-/** `planned` → `loaded` khi kho đã xếp instance tương ứng, → `delivered` khi tài xế đã dỡ nó. */
-export function effectivePackageStatus(
-  pkg: Pick<RegisteredPackage, 'id' | 'status'>,
-  order: Pick<TransportOrder, 'assignment'> | undefined,
-  trip: Pick<Trip, 'packages' | 'loading' | 'delivery'> | undefined,
-): RegisteredPackageStatus {
-  if (pkg.status !== 'planned' || !order || !trip) return pkg.status
-  const instance = assignmentInstances(order, trip).get(pkg.id)
-  if (instance === undefined) return pkg.status
-  if (trip.delivery?.stops.some((stop) => stop.unloadedIds.includes(instance))) return 'delivered'
-  if (trip.loading?.steps.some((step) => step.packageInstanceId === instance && step.outcome === 'loaded')) return 'loaded'
-  return pkg.status
-}
-
 /**
- * Nhãn QR của mọi instance trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện đăng ký (nhãn đã in lúc đăng ký kiện); kiện nhập
- * tay dùng mã băm tất định theo chuyến + instance.
+ * Nhãn QR của mọi instance trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện kho kiện (nhãn đã in lúc tạo kiện); kiện nhập tay
+ * dùng mã băm tất định theo chuyến + instance.
  */
 export function tripLabels(
   trip: Pick<Trip, 'id' | 'packages'>,
   orders: Iterable<TransportOrder>,
-  registered: ReadonlyMap<string, Pick<RegisteredPackage, 'qrToken'>>,
+  pool: ReadonlyMap<string, Pick<Package, 'qrToken'>>,
 ): TripLabel[] {
   const linked = new Map<string, string>()
   for (const order of orders) {
@@ -58,15 +46,15 @@ export function tripLabels(
   const { instances, packageIdByInstanceId } = expandPackages(trip.packages)
   return instances.map(({ packageInstanceId, deliveryStop }) => {
     const packageId = packageIdByInstanceId.get(packageInstanceId) ?? ''
-    const registeredPackageId = linked.get(packageInstanceId)
-    const token = registeredPackageId === undefined ? undefined : registered.get(registeredPackageId)?.qrToken
+    const poolPackageId = linked.get(packageInstanceId)
+    const token = poolPackageId === undefined ? undefined : pool.get(poolPackageId)?.qrToken
     return {
       packageInstanceId,
       packageId,
       name: lineById.get(packageId)?.name ?? packageId,
       deliveryStop,
       qrToken: token ?? hashedQrToken(`${trip.id}/${packageInstanceId}`, LABEL_SALT),
-      ...(registeredPackageId === undefined ? {} : { registeredPackageId }),
+      ...(poolPackageId === undefined ? {} : { poolPackageId }),
     }
   })
 }

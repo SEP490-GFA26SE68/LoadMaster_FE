@@ -6,6 +6,8 @@ import {
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
   PACKAGE_CHANGE_FIELDS,
+  PACKAGE_FLAGS,
+  PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
   type AuditAction,
   type AuditEvent,
@@ -54,7 +56,7 @@ const PARAM_KEYS = [
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
   'count', 'packageTypeId', 'lastPackageId', 'customerName', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
-  'sealNumber',
+  'sealNumber', 'packageCode', 'flag',
 ] as const
 
 const FIELD_NAMES = [
@@ -168,6 +170,12 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
     case 'field':
       // Trường của một dòng kiện vừa sửa (V2.3, quyết định 2)
       return isOneOf(PACKAGE_CHANGE_FIELDS, value) ? t(`audit.log.packageFields.${value}`) : value
+    case 'flag':
+      return isOneOf(PACKAGE_FLAGS, value) ? t(`common.packageFlags.${value}`) : value
+    case 'before':
+    case 'after':
+      // Trạng thái kiện là mã của kho; giá trị trước / sau của một dòng kiện vừa sửa là dữ liệu
+      return event.action === 'package.statusChanged' && isOneOf(PACKAGE_STATUSES, value) ? t(`common.packageStatuses.${value}`) : value
     case 'kind':
       return isOneOf(DELIVERY_ISSUE_KINDS, value) ? t(`common.deliveryIssueKinds.${value}`) : value
     case 'role':

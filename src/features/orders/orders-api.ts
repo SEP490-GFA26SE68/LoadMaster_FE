@@ -15,23 +15,28 @@
 import { roundKg } from '@/domain/geometry'
 import {
   getMockDb,
+  isSelectablePackage,
   type DeliveryStop,
   type OrderChanges,
   type OrderInput,
+  type Package,
   type PackageType,
-  type RegisteredPackage,
   type TransportOrder,
   type Trip,
 } from '@/lib/mock-db'
 
 /**
- * Lớp dữ liệu đơn hàng (luồng 2 Review 1, LM-104): đơn từ kiện đã nhận ở kho của công ty, gán vào điểm giao của chuyến đang lập kế
+ * Lớp dữ liệu đơn hàng (luồng 2 Review 1, LM-104): đơn từ kiện `IMPORTED` của kho kiện, gán vào điểm giao của chuyến đang lập kế
  * hoạch. Gán đơn thêm dòng kiện vào chuyến nên chuyến và revision cũng đổi (lỗi thời, D-31).
  */
 
-export type OrderPackage = { readonly package: RegisteredPackage; readonly type: PackageType | undefined }
+export type OrderPackage = { readonly package: Package; readonly type: PackageType | undefined }
 
-/** Một đơn kèm kiện (có loại kiện), tổng khối lượng và chuyến được gán. */
+function withType(pkg: Package, typeById: ReadonlyMap<string, PackageType>): OrderPackage {
+  return { package: pkg, type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId) }
+}
+
+/** Một đơn kèm kiện (kèm loại kiện nếu kiện gắn loại), tổng khối lượng và chuyến được gán. */
 export type OrderRow = {
   readonly order: TransportOrder
   readonly packages: readonly OrderPackage[]
@@ -43,7 +48,7 @@ export type OrderRow = {
 
 async function orderContext() {
   const db = getMockDb()
-  const [packages, types, trips] = await Promise.all([db.listRegisteredPackages(), db.listPackageTypes(), db.listTrips()])
+  const [packages, types, trips] = await Promise.all([db.listPackages(), db.listPackageTypes(), db.listTrips()])
   return {
     packageById: new Map(packages.map((pkg) => [pkg.id, pkg])),
     typeById: new Map(types.map((type) => [type.id, type])),
@@ -54,14 +59,14 @@ async function orderContext() {
 function toRow(order: TransportOrder, context: Awaited<ReturnType<typeof orderContext>>): OrderRow {
   const packages = order.packageIds.flatMap((id) => {
     const pkg = context.packageById.get(id)
-    return pkg ? [{ package: pkg, type: context.typeById.get(pkg.packageTypeId) }] : []
+    return pkg ? [withType(pkg, context.typeById)] : []
   })
   const trip = order.assignment ? context.tripById.get(order.assignment.tripId) : undefined
   const stopIndex = trip && order.assignment ? trip.stops.findIndex((stop) => stop.id === order.assignment?.stopId) : -1
   return {
     order,
     packages,
-    totalKg: roundKg(packages.reduce((sum, item) => sum + (item.type?.weightKg ?? 0), 0)),
+    totalKg: roundKg(packages.reduce((sum, item) => sum + item.package.weightKg, 0)),
     trip: trip ? { id: trip.id, name: trip.name, scheduledDate: trip.scheduledDate } : undefined,
     stopNumber: stopIndex === -1 ? undefined : stopIndex + 1,
   }
@@ -79,13 +84,13 @@ export async function fetchOrder(id: string): Promise<OrderRow> {
   return toRow(order, context)
 }
 
-/** Kiện chọn được cho đơn mới: đã nhận ở kho (`received`), chưa thuộc đơn nào. */
+/** Kiện chọn được cho đơn mới: còn ở kho kiện (`IMPORTED`), không cờ, chưa thuộc đơn nào. */
 // chưa có ở BE
 export async function fetchOrderablePackages(): Promise<OrderPackage[]> {
   const context = await orderContext()
   return [...context.packageById.values()]
-    .filter((pkg) => pkg.status === 'received' && pkg.orderId === undefined)
-    .map((pkg) => ({ package: pkg, type: context.typeById.get(pkg.packageTypeId) }))
+    .filter(isSelectablePackage)
+    .map((pkg) => withType(pkg, context.typeById))
 }
 
 /** Chuyến nhận được đơn: đang lập kế hoạch (kho chưa xếp), kèm điểm giao để chọn. */

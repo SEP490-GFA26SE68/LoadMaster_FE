@@ -1,4 +1,5 @@
 import { found, nextId, put, type DbContext } from './db-context'
+import { departTripPackages, settleLoadedPackages, settleStopPackages, stageTripPackages } from './db-package-progress'
 import { MockDbError } from './errors'
 import { latestApproved, loadingRemaining, missingIds, plannedStops, stopItemIds } from './operations'
 import { isStale } from './revisions'
@@ -54,6 +55,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         if (isStale(approved, trip)) throw new MockDbError('REVISION_STALE', { revisionId: approved.id })
         const loading: LoadingProgress = { revisionId: approved.id, startedAt: ctx.nowIso(), startedBy: ctx.state.session.userId, steps: [] }
         ctx.log('loading.started', { type: 'trip', id: tripId }, { revisionId: approved.id })
+        stageTripPackages(ctx, trip)
         return put(trips, { ...trip, phase: 'loading', loading })
       }),
     recordLoadingStep: (tripId, { packageInstanceId, outcome }) =>
@@ -75,6 +77,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         const loading = loadingOf(trip)
         const missing = missingIds(trip).size
         ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - missing, missing })
+        settleLoadedPackages(ctx, trip)
         return put(trips, { ...trip, phase: 'loaded', loading: { ...loading, completedAt: ctx.nowIso() } })
       }),
     startDelivery: (tripId) =>
@@ -88,6 +91,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
           issues: [],
         }
         ctx.log('delivery.started', { type: 'trip', id: tripId })
+        departTripPackages(ctx, trip)
         return put(trips, { ...trip, phase: 'delivering', delivery })
       }),
     recordUnload: (tripId, stopNumber, packageInstanceId, unloaded) =>
@@ -137,6 +141,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         const at = ctx.nowIso()
         const stops = delivery.stops.map((item) => (item.number === stopNumber ? { ...item, completedAt: at } : item))
         ctx.log('delivery.stopCompleted', { type: 'trip', id: tripId }, { stopNumber })
+        settleStopPackages(ctx, trip, stopNumber)
         const done = stops.every((item) => item.completedAt !== undefined)
         if (!done) return put(trips, { ...trip, delivery: { ...delivery, stops } })
         ctx.log('delivery.completed', { type: 'trip', id: tripId }, { stops: stops.length, issues: delivery.issues.length })

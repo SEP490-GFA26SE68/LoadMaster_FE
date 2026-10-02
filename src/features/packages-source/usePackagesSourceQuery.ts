@@ -3,11 +3,11 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import type { PackageTypeInput } from '@/lib/mock-db'
 import {
   deletePackageType,
+  fetchPackage,
   fetchPackageLabels,
+  fetchPackages,
   fetchPackageType,
   fetchPackageTypes,
-  fetchRegisteredPackage,
-  fetchRegisteredPackages,
   findPackageByQr,
   registerPackages,
   savePackageType,
@@ -16,8 +16,8 @@ import {
 
 /**
  * Hook Query của nguồn hàng (LM-104) — component không gọi `packages-source-api.ts` trực tiếp (mục 9). Mã người dùng nằm trong khoá
- * của kiện đăng ký: đổi người đăng nhập thì đọc lại (kiện thuộc công ty của người đăng ký; kho lọc theo công ty của phiên, FE-0-02). Trạng thái
- * kiện đổi theo đơn và chuyến ở màn khác nên đọc lại mỗi lần mở màn.
+ * của kiện: đổi người đăng nhập thì đọc lại (kiện thuộc công ty của người tạo; kho lọc theo công ty của phiên, FE-0-02). Trạng thái
+ * kiện đổi theo đơn và chuyến ở màn khác nên đọc lại mỗi lần mở màn. Khoá `registered-packages` giữ tên cũ tới màn Kho kiện mới.
  */
 
 export const PACKAGE_TYPES_KEY = ['package-types'] as const
@@ -45,14 +45,14 @@ export function useDeletePackageTypeMutation() {
   return useMutation({ mutationFn: (id: string) => deletePackageType(id), onSuccess: () => client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }) })
 }
 
-export function useRegisteredPackagesQuery() {
+export function usePackagesQuery() {
   const { user } = useAuth()
-  return useQuery({ queryKey: [...REGISTERED_PACKAGES_KEY, 'list', user?.id ?? null], queryFn: fetchRegisteredPackages, staleTime: 0 })
+  return useQuery({ queryKey: [...REGISTERED_PACKAGES_KEY, 'list', user?.id ?? null], queryFn: fetchPackages, staleTime: 0 })
 }
 
-export function useRegisteredPackageQuery(id: string) {
+export function usePackageQuery(id: string) {
   const { user } = useAuth()
-  return useQuery({ queryKey: [...REGISTERED_PACKAGES_KEY, 'one', id, user?.id ?? null], queryFn: () => fetchRegisteredPackage(id), enabled: id !== '', staleTime: 0 })
+  return useQuery({ queryKey: [...REGISTERED_PACKAGES_KEY, 'one', id, user?.id ?? null], queryFn: () => fetchPackage(id), enabled: id !== '', staleTime: 0 })
 }
 
 /** Nhãn để in (`/kien-hang/nhan`): `ids` vắng là mọi kiện người đăng nhập thấy. */
@@ -61,7 +61,7 @@ export function usePackageLabelsQuery(ids?: readonly string[]) {
   return useQuery({ queryKey: [...REGISTERED_PACKAGES_KEY, 'labels', ids ?? 'all', user?.id ?? null], queryFn: () => fetchPackageLabels(ids), staleTime: 0 })
 }
 
-/** Ghi kiện đăng ký đổi danh sách kiện, loại kiện (đếm kiện đang dùng) và đơn hàng (kiện để chọn). */
+/** Tạo kiện đổi danh sách kiện, loại kiện (đếm kiện đang dùng) và đơn hàng (kiện để chọn). */
 function refreshSourcing(client: QueryClient) {
   return Promise.all([REGISTERED_PACKAGES_KEY, PACKAGE_TYPES_KEY, ['orders']].map((queryKey) => client.invalidateQueries({ queryKey })))
 }

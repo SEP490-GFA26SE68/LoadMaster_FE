@@ -1,19 +1,22 @@
 import { addDays, vnTime } from './clock'
-import { cargoFromType } from './package-type-cargo'
-import { randomQrToken, seededRandom } from './qr-token'
+import type { Package } from './package-model'
+import { cargoFromType, handlingClassOfType } from './package-type-cargo'
+import { seededRandom } from './qr-token'
 import { CARGO, CUSTOMERS, type CargoKey } from './seed-directory'
+import { LONG_BINH_IMPORT, packageSeeder } from './seed-packages'
 import type { SeedEvent } from './seed-progress'
 import { SEED_DISPATCHER } from './seed-trips'
 import { LONG_BINH, PHUONG_NAM } from './seed-users'
-import type { Company, PackageType, RegisteredPackage, TransportOrder, VehicleType } from './source-types'
+import type { Company, PackageType, TransportOrder, VehicleType } from './source-types'
 
 /**
  * Seed nguồn hàng (LM-104, FE-0-06): hai công ty logistics, và của **Long Bình**: danh mục loại kiện (lấy từ danh mục hàng của 15
- * chuyến seed), kiện đăng ký kèm mã QR, hai đơn chờ gán và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR
+ * chuyến seed), kho kiện kèm mã QR, hai đơn chờ gán và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR
  * sinh từ bộ số giả ngẫu nhiên có hạt giống cố định: tất định, không chứa dữ liệu kiện. Nguồn hàng của Phương Nam: `seed-phuong-nam.ts`.
  *
- * Không còn nhà sản xuất, lô hàng và luồng quét nhận (D-63), nên seed **ghi thẳng trạng thái kiện**: kiện đã ở kho là `received` (đưa
- * vào đơn được), đợt vừa đăng ký hàng chưa về là `registered`. Mọi kiện ở đây thuộc Long Bình, do điều phối viên của Long Bình đăng ký.
+ * Kho kiện của Long Bình (FE-3b-01): 48 kiện thêm tay theo loại kiện (kiện đăng ký `RPK` của Review 1 chuyển sang, kích thước lấy từ
+ * loại kiện) và 40 kiện nhập file chưa vào đơn hay chuyến nào (`LONG_BINH_IMPORT`). Mọi kiện ở `IMPORTED`, do điều phối viên của Long
+ * Bình tạo.
  */
 
 /**
@@ -40,7 +43,7 @@ const TYPE_KEYS: readonly CargoKey[] = ['nuocSuoi', 'miGoi', 'dauAn', 'suaHop', 
 export type SourcingSeed = {
   companies: Company[]
   packageTypes: PackageType[]
-  registeredPackages: RegisteredPackage[]
+  packages: Package[]
   orders: TransportOrder[]
   vehicleTypes: VehicleType[]
   vehicleTypeOf: [string, string][]
@@ -62,34 +65,36 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
     }
   })
 
-  const registeredPackages: RegisteredPackage[] = []
-  /** Một đợt đăng ký `count` kiện cùng loại ở trạng thái `status`, kèm sự kiện nhật ký như `registerPackages`. */
-  function register(key: CargoKey, count: number, status: 'registered' | 'received', at: string, reference: string): RegisteredPackage[] {
-    const start = registeredPackages.length
-    const batch = Array.from({ length: count }, (_, index): RegisteredPackage => {
-      const qrToken = randomQrToken(random, (token) => tokens.has(token))
-      tokens.add(qrToken)
-      return {
-        id: `RPK-${String(start + index + 1).padStart(4, '0')}`, packageTypeId: typeId(key), ownerCompanyId: SEED_OWNER, qrToken,
-        status, reference, registeredAt: at, registeredBy: SEED_DISPATCHER,
-      }
-    })
-    registeredPackages.push(...batch)
-    events.push({ at, actorId: SEED_DISPATCHER, action: 'package.registered', target: { type: 'package', id: batch[0]?.id ?? '' }, params: { count, packageTypeId: typeId(key), lastPackageId: batch.at(-1)?.id ?? '' } })
-    return batch
+  const seeder = packageSeeder({
+    companyId: SEED_OWNER, actorId: SEED_DISPATCHER, random, tokens, events,
+    idOf: (order) => `PK-${String(order).padStart(4, '0')}`,
+  })
+  /** Một đợt `count` kiện thêm tay theo loại kiện `key`: kích thước, khối lượng của loại kiện; mã của bên gửi theo mã lô `reference`. */
+  function register(key: CargoKey, count: number, at: string, reference: string, destination: string): Package[] {
+    const type = CARGO[key]
+    return seeder.add([{
+      codePrefix: reference, count, destination, lengthCm: type.lengthCm, widthCm: type.widthCm, heightCm: type.heightCm, weightKg: type.weightKg,
+      handlingClass: handlingClassOfType(type), packageTypeId: typeId(key),
+    }], 'MANUAL', at)
   }
 
-  // Mã kiện theo thứ tự gọi: nước suối RPK-0001…0012, mì 0013…0022, sữa 0023…0028, bánh quy 0029…0034, dầu ăn 0035…0042, quạt 0043…0048.
-  // 40 kiện đã ở kho: 22 kiện của hai đơn chờ gán, 18 kiện còn lại đưa vào đơn mới được. 8 thùng dầu ăn đăng ký sáng ngày neo, hàng chưa về
-  // (08:05 — sau lần đăng nhập 07:50 của điều phối viên, trước lần chạy tối ưu 08:20 của chuyến chính).
-  const water = register('nuocSuoi', 12, 'received', on(3, '09:00'), 'MP-NS24-0911')
-  const noodles = register('miGoi', 10, 'received', on(3, '09:10'), 'MP-MG30-0911')
-  register('suaHop', 6, 'received', on(1, '14:30'), 'MP-SH48-0913')
-  register('banhQuy', 6, 'received', on(1, '14:40'), 'MP-BQ-0913')
-  register('dauAn', 8, 'registered', on(0, '08:05'), 'MP-DA12-0914')
-  register('quatDien', 6, 'received', on(2, '10:00'), 'HB-QD16-0912')
+  // Mã kiện theo thứ tự gọi: nước suối PK-0001…0012, mì 0013…0022, sữa 0023…0028, bánh quy 0029…0034, dầu ăn 0035…0042, quạt 0043…0048,
+  // rồi 40 kiện nhập file PK-0049…0088. 22 kiện đầu thuộc hai đơn chờ gán (điểm đến là địa chỉ khách của đơn); còn lại đưa vào đơn mới
+  // được, trừ hai kiện mang cờ. 8 thùng dầu ăn thêm sáng ngày neo (08:05 — sau lần đăng nhập 07:50 của điều phối viên, trước lần chạy
+  // tối ưu 08:20 của chuyến chính).
+  const water = register('nuocSuoi', 12, on(3, '09:00'), 'MP-NS24-0911', CUSTOMERS.coopBinhDuong.address)
+  const noodles = register('miGoi', 10, on(3, '09:10'), 'MP-MG30-0911', CUSTOMERS.bhxDiAn.address)
+  register('suaHop', 6, on(1, '14:30'), 'MP-SH48-0913', 'KCN Sóng Thần 2, TP. Dĩ An, Bình Dương')
+  register('banhQuy', 6, on(1, '14:40'), 'MP-BQ-0913', 'KCN Tân Bình, Q. Tân Phú, TP. Hồ Chí Minh')
+  register('dauAn', 8, on(0, '08:05'), 'MP-DA12-0914', 'KCN Mỹ Xuân A, TX. Phú Mỹ, Bà Rịa – Vũng Tàu')
+  register('quatDien', 6, on(2, '10:00'), 'HB-QD16-0912', 'KCN Long Hậu, H. Cần Giuộc, Long An')
+  const imported = seeder.add(LONG_BINH_IMPORT, 'IMPORT', on(1, '16:20'))
+  for (const pkg of imported) {
+    const flag = pkg.flags[0]
+    if (flag !== undefined) events.push({ at: on(1, '17:05'), actorId: SEED_DISPATCHER, action: 'package.flagged', target: { type: 'package', id: pkg.id }, params: { flag } })
+  }
 
-  const order = function (id: string, customer: { name: string; address: string; phone: string; contactName: string }, packages: RegisteredPackage[], at: string): TransportOrder {
+  const order = function (id: string, customer: { name: string; address: string; phone: string; contactName: string }, packages: Package[], at: string): TransportOrder {
     for (const pkg of packages) pkg.orderId = id
     events.push({ at, actorId: SEED_DISPATCHER, action: 'order.created', target: { type: 'order', id }, params: { customerName: customer.name, count: packages.length } })
     return {
@@ -103,7 +108,7 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
     order('ORD-002', CUSTOMERS.bhxDiAn, noodles, on(0, '08:45')),
   ]
 
-  return { companies: [...COMPANIES], packageTypes, registeredPackages, orders, ...seedVehicleTypes(on(40, '09:00')) }
+  return { companies: [...COMPANIES], packageTypes, packages: seeder.packages, orders, ...seedVehicleTypes(on(40, '09:00')) }
 }
 
 /** Loại xe của đội xe seed; VEHICLE-008 để trống (xe có thể chưa gắn loại). */

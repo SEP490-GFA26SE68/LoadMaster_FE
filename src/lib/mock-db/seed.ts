@@ -79,7 +79,7 @@ function createSeed(today: string): SeedData {
   events.push(...accountEvents(today, users))
   const sourcing = seedSourcing(today, events)
   // Phương Nam nối sau cùng: sự kiện trùng giờ vẫn đứng sau của Long Bình, mã QR không trùng mã đã cấp
-  const phuongNam = seedPhuongNam(today, new Set(sourcing.registeredPackages.map((pkg) => pkg.qrToken)))
+  const phuongNam = seedPhuongNam(today, new Set(sourcing.packages.map((pkg) => pkg.qrToken)))
   events.push(...phuongNam.events)
 
   // Công ty của sự kiện theo cùng luật với `ctx.log` (`auditEventCompany`): sự kiện về một tài khoản thuộc công ty của tài khoản đó,
@@ -100,7 +100,7 @@ function createSeed(today: string): SeedData {
     runs: [...runs, ...phuongNam.runs],
     companies: sourcing.companies,
     packageTypes: [...sourcing.packageTypes, ...phuongNam.packageTypes],
-    registeredPackages: [...sourcing.registeredPackages, ...phuongNam.registeredPackages],
+    packages: [...sourcing.packages, ...phuongNam.packages],
     orders: [...sourcing.orders, ...phuongNam.orders],
     vehicleTypes: [...sourcing.vehicleTypes, ...phuongNam.vehicleTypes],
     vehicleTypeOf: [...sourcing.vehicleTypeOf, ...phuongNam.vehicleTypeOf],

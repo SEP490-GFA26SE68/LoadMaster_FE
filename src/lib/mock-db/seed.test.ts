@@ -142,7 +142,7 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     vehicles: (await db.listVehicles()).map((vehicle) => vehicle.id),
     vehicleTypes: (await db.listVehicleTypeAssignments()),
     packageTypes: (await db.listPackageTypes()).map((type) => [type.id, type.name]),
-    packages: (await db.listRegisteredPackages()).map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
+    packages: (await db.listPackages()).map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
     orders: (await db.listOrders()).map((order) => [order.id, order.status, order.packageIds.length]),
     trips: await Promise.all(trips.map(async (trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip, await db.listRevisions(trip.id))])),
     revisions: revisions.map((revision) => [revision.id, revision.approvedBy, revision.result.metrics.placedCount, revision.result.metrics.unplacedCount]),
@@ -151,12 +151,12 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     vehicles: ['VEHICLE-PN-01', 'VEHICLE-PN-02'],
     vehicleTypes: [{ vehicleId: 'VEHICLE-PN-01', vehicleTypeId: 'VT-PN-01' }],
     packageTypes: [['PT-PN-01', 'Thùng linh kiện điện tử'], ['PT-PN-02', 'Kiện vải cuộn']],
-    // 6 thùng linh kiện đã ở kho (4 thùng đầu thuộc đơn chờ gán), 4 kiện vải cuộn hàng chưa về
+    // 6 thùng linh kiện (4 thùng đầu thuộc đơn chờ gán) và 4 kiện vải cuộn, đều còn ở kho kiện (FE-3b-01)
     packages: [
-      ['RPK-PN-0001', 'received', 'ORD-PN-001'], ['RPK-PN-0002', 'received', 'ORD-PN-001'], ['RPK-PN-0003', 'received', 'ORD-PN-001'],
-      ['RPK-PN-0004', 'received', 'ORD-PN-001'], ['RPK-PN-0005', 'received', undefined], ['RPK-PN-0006', 'received', undefined],
-      ['RPK-PN-0007', 'registered', undefined], ['RPK-PN-0008', 'registered', undefined], ['RPK-PN-0009', 'registered', undefined],
-      ['RPK-PN-0010', 'registered', undefined],
+      ['PK-PN-0001', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0002', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0003', 'IMPORTED', 'ORD-PN-001'],
+      ['PK-PN-0004', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
+      ['PK-PN-0007', 'IMPORTED', undefined], ['PK-PN-0008', 'IMPORTED', undefined], ['PK-PN-0009', 'IMPORTED', undefined],
+      ['PK-PN-0010', 'IMPORTED', undefined],
     ],
     orders: [['ORD-PN-001', 'pending', 4]],
     // Chuyến hôm nay đã duyệt, gán tài xế taixe@phuongnam.vn; chuyến ngày mai còn nháp
@@ -217,10 +217,10 @@ test('twenty seeded users cover the eight roles; the history names only real use
   expect(events.filter((event) => event.actorId !== null && !ids.has(event.actorId))).toStrictEqual([])
   expect(events.filter((event) => event.target.type === 'user' && !ids.has(event.target.id))).toStrictEqual([])
   expect(events.map((event) => event.at)).toStrictEqual(events.map((event) => event.at).toSorted().toReversed())
-  // Mỗi công ty tự đăng ký kiện của mình: sáu đợt của Long Bình do điều phối viên Long Bình làm, hai đợt của Phương Nam do điều
-  // phối viên Phương Nam làm (07:25 ngày neo và hai ngày trước) — mới nhất trước
+  // Mỗi công ty tự tạo kiện của mình: bảy đợt của Long Bình (sáu đợt thêm tay, một lần nhập file 16:20 hôm trước) do điều phối viên
+  // Long Bình làm, hai đợt của Phương Nam do điều phối viên Phương Nam làm (07:25 ngày neo và hai ngày trước) — mới nhất trước
   expect(events.filter((event) => event.action === 'package.registered').map((event) => [event.actorId, event.companyId])).toStrictEqual([
-    ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
+    ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
     ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
   ])
   // Sự kiện về một tài khoản mang công ty của tài khoản đó (FE-0-08), sự kiện khác mang công ty của người làm; việc của tài khoản nền
