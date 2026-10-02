@@ -2,12 +2,15 @@
  * Không có endpoint backend tương ứng (FE-0-09): dữ liệu mẫu của hai trang tài liệu, đọc thẳng kho.
  */
 
+import type { RouteMapPlace, RouteMapStop } from '@/components/map'
 import { expandPackages } from '@/domain/cargo'
 import type { VehicleConfig } from '@/domain/models'
+import { optimizeRoute } from '@/domain/routing'
 import { tripProgress, type ProgressStep } from '@/features/trips/trip-progress'
 import { fetchTripActivity } from '@/features/trips/trips-api'
 import { getMockDb, latestApproved, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
 import type { UserStatus } from '@/types/user'
+import { SAMPLE_DEPARTURE_TIME, SAMPLE_STOP_LOCATIONS } from './route-map.mock'
 
 /**
  * Dữ liệu mẫu của `/kieu-dang` và `/thanh-phan` (V2.3): đọc thẳng kho như `-api.ts` của các màn, để mọi số, tên, mã trên hai trang
@@ -108,5 +111,42 @@ export async function fetchSheetSample(): Promise<SheetSample> {
     drivers: users.filter((user) => user.role === 'driver' && user.status === 'active').map(({ id, fullName }) => ({ id, fullName })),
     dispatcherEmail: users.find((user) => user.role === 'dispatcher')?.email ?? '',
     people: users.slice(0, 3).map(({ id, fullName, status }) => ({ id, fullName, status })),
+  }
+}
+
+export type RouteSample = {
+  readonly tripId: string
+  /** Kho của công ty có chuyến mẫu (seed `Company.depot`). */
+  readonly depot: RouteMapPlace
+  /** Điểm giao của chuyến mẫu theo thứ tự mock tối ưu tuyến xếp; `number` là số điểm giao trong chuyến. */
+  readonly stops: readonly RouteMapStop[]
+  readonly totalKm: number
+  readonly totalMinutes: number
+}
+
+// không có endpoint backend (trang tài liệu)
+export async function fetchRouteSample(): Promise<RouteSample> {
+  const db = getMockDb()
+  const [trips, companies] = await Promise.all([db.listTrips(), db.listCompanies()])
+  const trip = trips[0]
+  const depot = companies.find((company) => company.id === trip?.companyId)?.depot
+  if (!trip || !depot) throw new Error('Kho mẫu không có chuyến hoặc công ty của chuyến mẫu')
+
+  const stops = trip.stops.flatMap((stop, index) => {
+    const location = SAMPLE_STOP_LOCATIONS[stop.id]
+    return location ? [{ id: stop.id, number: index + 1, name: stop.name, ...location }] : []
+  })
+  const route = optimizeRoute({
+    depot,
+    departureTime: `${trip.scheduledDate}T${SAMPLE_DEPARTURE_TIME}`,
+    stops: stops.map((stop) => ({ stopId: stop.id, location: stop })),
+  })
+  const byId = new Map(stops.map((stop) => [stop.id, stop]))
+  return {
+    tripId: trip.id,
+    depot: { name: depot.name, lat: depot.lat, lng: depot.lng },
+    stops: route.orderedStopIds.flatMap((id) => byId.get(id) ?? []),
+    totalKm: route.totalKm,
+    totalMinutes: route.totalMinutes,
   }
 }

@@ -113,6 +113,13 @@ export const designSystem = {
       meta: 'label always on top · 3:1 border',
       notesPlaceholder: 'E.g. call before arriving at the stop',
     },
+    routeMap: {
+      title: 'Route map',
+      meta: 'MapLibre · Goong base map',
+      label: 'Route map of {tripId}',
+      summary: '{count} stops · {km} km · {minutes} min',
+      note: 'Stop order, distance and time come from the mock route optimizer; legs are straight lines. Stop coordinates are approximate. Without a Goong map key the base map stays blank.',
+    },
     brand: {
       title: 'Brand',
       meta: 'LoadMaster logo',

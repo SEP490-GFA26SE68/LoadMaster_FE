@@ -118,3 +118,22 @@ test('/thanh-phan: điều khiển chọn bấm được, còn nút, hộp tho�
     expect(preview.firstElementChild).toHaveAttribute('inert')
   }
 })
+
+test('/thanh-phan: bản đồ tuyến của chuyến mẫu — kho Long Bình rồi bốn điểm giao theo thứ tự mock tối ưu tuyến xếp', async () => {
+  renderPage(<ComponentSheetPage />, '/thanh-phan')
+
+  // jsdom không có WebGL: sơ đồ SVG, danh sách điểm cho trình đọc màn hình vẫn đủ
+  const map = await screen.findByRole('region', { name: 'Bản đồ tuyến TRIP-2026-0914' }, SLOW)
+  expect(map.querySelector('svg[data-route-sketch]')).toBeInTheDocument()
+  // Láng giềng gần nhất từ kho (toạ độ gần đúng ở `route-map.mock.ts`), kiểm bằng máy theo định lý cos cầu: Biên Hoà 5,9 km →
+  // Dĩ An 7,4 km → Thủ Dầu Một 15,0 km → Q.7 25,4 km; × 1,3 = 69,9 km; ÷ 50 km/h + 4 × 15 phút = 144 phút
+  expect(within(map).getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
+    'Kho xuất phát: Kho Long Bình',
+    'Điểm 4: Nhà thuốc Long Châu Biên Hoà',
+    'Điểm 3: Kho Bách Hoá Xanh Dĩ An',
+    'Điểm 2: Siêu thị Co.opmart Bình Dương',
+    'Điểm 1: Công ty TNHH Thực phẩm Sài Gòn',
+  ])
+  // số do mock tính nên đứng cạnh nhãn MOCK RESULT
+  expect(screen.getByText('4 điểm giao · 69,9 km · 144 phút').parentElement).toHaveTextContent('MOCK RESULT')
+})
