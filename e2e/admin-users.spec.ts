@@ -4,7 +4,8 @@ import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
 /**
  * Quản trị người dùng (LM-092, D-42): tài khoản quản trị công ty tạo đăng nhập được bằng mật khẩu tạm hiện một lần và mở đúng màn
  * của vai trò; khoá rồi thì đăng nhập báo khoá. Kho in-memory: đổi người dùng bằng đăng xuất/đăng nhập trong app, không `page.goto`.
- * FE-0-01: màn Người dùng của quản trị hệ thống và quản trị công ty (cùng quyền, chưa chia phạm vi — FE-0-08).
+ * FE-0-08: một màn, hai phạm vi — quản trị công ty tạo, sửa, khoá người của công ty mình (tạo tài xế là việc của họ); quản trị hệ thống
+ * thấy mọi công ty, chỉ tạo tài khoản nền tảng, và với nhân sự công ty chỉ khoá, mở khoá, đặt lại mật khẩu.
  */
 const NEW_DRIVER = { name: 'Mai Văn Phúc', email: 'phuc.mai@loadmaster.vn' }
 /** Quản trị công ty demo của Long Bình (`qtcongty@loadmaster.vn`). */
@@ -66,8 +67,45 @@ test('a driver account the company administrator creates signs in with its one-t
 
   await signOutFromMenu(page, COMPANY_ADMIN)
   await signIn(page, NEW_DRIVER.email, password)
-  await expect(page.getByRole('alert')).toHaveText('Tài khoản đã bị khoá. Liên hệ quản trị hệ thống.')
+  await expect(page.getByRole('alert')).toHaveText('Tài khoản đã bị khoá. Liên hệ quản trị viên của bạn để mở khoá.')
   await expect(page).toHaveURL(/\/dang-nhap$/)
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('the system administrator sees every company, filters by company, locks company staff but cannot edit them or create a driver', async ({ page, login, browserErrors }) => {
+  await login('/nguoi-dung', 'systemAdmin')
+  const table = page.getByRole('table')
+  await expect(table.getByRole('columnheader', { name: 'Công ty', exact: true })).toBeVisible()
+  // 20 tài khoản seed của nền tảng và hai công ty, cộng dòng tiêu đề
+  await expect(page.getByRole('row')).toHaveCount(21)
+
+  await page.getByRole('combobox', { name: 'Công ty', exact: true }).click()
+  await page.getByRole('option', { name: 'Công ty CP Giao nhận Phương Nam', exact: true }).click()
+  await expect(page).toHaveURL(/\/nguoi-dung\?cong-ty=LOG-002$/)
+  await expect(page.getByRole('row')).toHaveCount(6)
+  const driver = page.getByRole('row', { name: /Thái Văn Sơn/ })
+  await expect(driver).toContainText('Công ty CP Giao nhận Phương Nam')
+
+  // Nhân sự công ty: Sửa và Xoá mờ kèm lý do ngay trong menu; Khoá thì quản trị hệ thống làm được
+  const menu = page.getByRole('menu')
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Thao tác cho Thái Văn Sơn', exact: true }).click()
+    await expect(menu).toBeVisible({ timeout: 3_000 })
+  }).toPass({ timeout: 30_000 })
+  for (const name of [/^Sửa thông tin/, /^Xoá tài khoản/]) {
+    await expect(menu.getByRole('menuitem', { name })).toBeDisabled()
+    await expect(menu.getByRole('menuitem', { name })).toContainText('Nhân sự công ty do quản trị công ty đó quản lý')
+  }
+  await menu.getByRole('menuitem', { name: 'Khoá tài khoản', exact: true }).click()
+  await expect(page.getByText('Đã khoá tài khoản Thái Văn Sơn', { exact: true })).toBeVisible()
+  await expect(driver).toContainText('Đã khoá')
+
+  // Thêm người dùng: chỉ ba vai trò nền tảng, không có ô kho — tài xế do quản trị công ty tạo
+  await page.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
+  const form = page.getByRole('dialog', { name: 'Thêm người dùng', exact: true })
+  await expect(form.getByLabel('Kho / chi nhánh', { exact: true })).toHaveCount(0)
+  await form.getByRole('combobox', { name: 'Vai trò', exact: true }).click()
+  await expect(page.getByRole('option')).toHaveText(['Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng'])
   expect(browserErrors).toStrictEqual([])
 })
 

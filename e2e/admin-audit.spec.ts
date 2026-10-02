@@ -5,7 +5,8 @@ import { MOCK_DB } from './spec-flow-helpers'
 /**
  * Nhật ký hệ thống (LM-091, D-43): điều phối viên huỷ một chuyến, quản trị hệ thống đăng nhập trong cùng trang (kho in-memory) và
  * thấy sự kiện ở đầu nhật ký, lọc theo người làm ra đúng. Không `page.goto` sau khi ghi: tải lại là mất kho. FE-0-01: quản trị hệ
- * thống không xem được chuyến — tên chuyến trong nhật ký là chữ thường, còn tên người dùng vẫn dẫn tới màn Người dùng.
+ * thống không xem được chuyến — tên chuyến trong nhật ký là chữ thường, còn tên người dùng vẫn dẫn tới màn Người dùng. FE-0-08: quản
+ * trị hệ thống đọc cả hệ thống và lọc theo công ty; quản trị công ty chỉ đọc nhật ký của công ty mình, không có việc của tài khoản nền tảng.
  */
 
 /**
@@ -42,7 +43,7 @@ function vnToday(): string {
   return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)
 }
 
-test('a trip the dispatcher cancels tops the admin log, and filtering by who did it keeps it', async ({ page, login, browserErrors }) => {
+test('a trip the dispatcher cancels tops the system log and the log of its company, and filtering by who did it keeps it', async ({ page, login, browserErrors }) => {
   // Seed ghi sự kiện của hôm nay tới 16:00 giờ Việt Nam: chạy buổi sáng thì chúng "mới" hơn lần đăng nhập vừa làm. Đặt đồng hồ trang
   // về cuối ngày (vẫn trôi) để thứ tự không phụ thuộc giờ chạy test.
   await page.clock.install({ time: new Date(`${vnToday()}T23:30:00+07:00`) })
@@ -85,6 +86,21 @@ test('a trip the dispatcher cancels tops the admin log, and filtering by who did
   await expect(page.locator('tbody tr').first().getByText('Tuyến Bình Chánh – Biên Hoà', { exact: true })).toBeVisible()
   await expect(page.locator('tbody').getByRole('link')).toHaveCount(0)
 
+  // Lọc theo công ty (FE-0-08): chuyến của Long Bình không nằm trong nhật ký của Phương Nam
+  const company = page.getByRole('combobox', { name: 'Công ty', exact: true })
+  await company.click()
+  await page.getByRole('option', { name: 'Công ty CP Giao nhận Phương Nam', exact: true }).click()
+  await expect(page).toHaveURL(/cong-ty=LOG-002/)
+  await expect(page.locator('tbody tr').first()).not.toContainText('Huỷ chuyến')
+  await expect(page.locator('tbody').getByText('Nguyễn Thanh Tùng')).toHaveCount(0)
+  await company.click()
+  await page.getByRole('option', { name: 'Công ty TNHH Vận tải Long Bình', exact: true }).click()
+  await expect(page).toHaveURL(/cong-ty=LOG-001/)
+  await expect(page.locator('tbody tr').first()).toContainText('Huỷ chuyến')
+  await company.click()
+  await page.getByRole('option', { name: 'Mọi công ty', exact: true }).click()
+  await expect(page).not.toHaveURL(/cong-ty=/)
+
   // Nhóm "Đăng nhập": đối tượng là người dùng — màn quản trị hệ thống mở được — nên vẫn là liên kết, mở danh sách lọc đúng người đó
   await page.getByRole('combobox', { name: 'Nhóm hành động', exact: true }).click()
   await page.getByRole('option', { name: 'Đăng nhập', exact: true }).click()
@@ -93,5 +109,23 @@ test('a trip the dispatcher cancels tops the admin log, and filtering by who did
   await page.waitForURL(/\/nguoi-dung\?q=US-0001$/)
   await expect(page.getByRole('row')).toHaveCount(2)
   await expect(page.getByRole('row', { name: /Nguyễn Thanh Tùng/ })).toContainText('dieuphoi@loadmaster.vn')
+
+  // Quản trị công ty của Long Bình đọc nhật ký của công ty mình: lần mình đăng nhập, điều phối đăng xuất, lần huỷ chuyến. Hai lần quản
+  // trị hệ thống đăng nhập, đăng xuất là việc trên tài khoản nền tảng — không có trong nhật ký của công ty; không có bộ lọc công ty
+  await signOutFromMenu(page, 'Võ Minh Khoa')
+  await signIn(page, DEMO_EMAILS.companyAdmin, DEMO_PASSWORD)
+  await page.waitForURL(/\/nguoi-dung$/)
+  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhật ký', exact: true }).click()
+  await page.waitForURL(/\/nhat-ky$/)
+  await expect(page.locator('tbody tr').first()).toContainText('Dương Thị Kim Oanh')
+  expect(await rowCells(page, 0)).toStrictEqual(['Dương Thị Kim Oanh Quản trị công ty', 'Đăng nhập', 'Dương Thị Kim Oanh US-LB-01', ''])
+  expect(await rowCells(page, 1)).toStrictEqual(['Nguyễn Thanh Tùng Điều phối viên', 'Đăng xuất', 'Nguyễn Thanh Tùng US-0001', ''])
+  expect(await rowCells(page, 2)).toStrictEqual(cancelled)
+  await expect(page.getByRole('combobox', { name: 'Công ty', exact: true })).toHaveCount(0)
+  await page.getByRole('combobox', { name: 'Nhóm hành động', exact: true }).click()
+  await page.getByRole('option', { name: 'Đăng nhập', exact: true }).click()
+  await expect(page).toHaveURL(/nhom=auth/)
+  await expect(page.locator('tbody tr').first()).toContainText('Đăng nhập')
+  expect((await readableTexts(page.locator('tbody tr td:nth-child(2)'))).filter((actor) => actor.startsWith('Võ Minh Khoa'))).toStrictEqual([])
   expect(browserErrors).toStrictEqual([])
 })
