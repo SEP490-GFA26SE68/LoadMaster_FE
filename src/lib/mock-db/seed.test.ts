@@ -5,7 +5,13 @@ import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import { cargoPackageSchema, vehicleConfigSchema } from '@/domain/models'
 import { createMockDb, isStale, tripStatus } from '@/lib/mock-db'
 
-test('a new database starts with the Spec Truck 6m followed by seven Vietnamese trucks, all valid vehicle configs', async () => {
+/**
+ * Kho ở các test này không có phiên, nên không lọc theo công ty (FE-0-02): danh sách gồm dữ liệu của Long Bình rồi tới bộ nhỏ của
+ * Phương Nam. Test nào chỉ nói về dữ liệu của Long Bình thì đặt phiên của điều phối viên Long Bình (`restoreSession`, không ghi nhật ký).
+ */
+const LONG_BINH_DISPATCHER = 'US-0001'
+
+test('a new database starts with the Spec Truck 6m followed by seven Vietnamese trucks of Long Bình and two of Phương Nam, all valid vehicle configs', async () => {
   const vehicles = await createMockDb().listVehicles()
   expect(vehicles.map(({ id, name }) => [id, name])).toStrictEqual([
     ['VEHICLE-001', 'Truck 6m'],
@@ -16,6 +22,8 @@ test('a new database starts with the Spec Truck 6m followed by seven Vietnamese 
     ['VEHICLE-006', 'Thaco Ollin 720 · 61C-339.05'],
     ['VEHICLE-007', 'Isuzu FVR 900 · 51D-622.14'],
     ['VEHICLE-008', 'Hyundai Mighty EX8 · 50H-118.29'],
+    ['VEHICLE-PN-01', 'Isuzu QKR 230 · 51C-907.41'],
+    ['VEHICLE-PN-02', 'Hino XZU730 · 51D-318.62'],
   ])
   expect(vehicles[0]).toStrictEqual(SPEC_TRUCK_6M)
   for (const vehicle of vehicles) expect(vehicleConfigSchema.parse(vehicle)).toStrictEqual(vehicle)
@@ -96,8 +104,9 @@ test('the seeded approved plan passes the approval check: no engine error and no
   })
 })
 
-test('the seed spreads 15 trips over 30 days around the anchor day with every status (D-44, D-45)', async () => {
+test('the seed of Long Bình spreads 15 trips over 30 days around the anchor day with every status (D-44, D-45)', async () => {
   const db = createMockDb({ today: '2026-09-19' })
+  db.restoreSession(LONG_BINH_DISPATCHER)
   const trips = await db.listTrips()
   const statuses = await Promise.all(trips.map(async (trip) => tripStatus(trip, await db.listRevisions(trip.id))))
   const count = (status: string) => statuses.filter((item) => item === status).length
@@ -124,8 +133,47 @@ test('every seeded plan passes the constraint engine and places every package', 
   }
 })
 
-test('every seeded plan was approved by the dispatcher: the approver on the revision and the actor in the audit log (FE-0-07)', async () => {
+test('Phương Nam has a small seed of its own, anchored to the same day, with ids the id generator does not count (FE-0-02)', async () => {
+  const db = createMockDb({ today: '2026-09-19' })
+  await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
+  const trips = await db.listTrips()
+  const revisions = await db.listRevisions('TRIP-PN-001')
+  expect({
+    vehicles: (await db.listVehicles()).map((vehicle) => vehicle.id),
+    vehicleTypes: (await db.listVehicleTypeAssignments()),
+    packageTypes: (await db.listPackageTypes()).map((type) => [type.id, type.name]),
+    packages: (await db.listRegisteredPackages()).map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
+    orders: (await db.listOrders()).map((order) => [order.id, order.status, order.packageIds.length]),
+    trips: await Promise.all(trips.map(async (trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip, await db.listRevisions(trip.id))])),
+    revisions: revisions.map((revision) => [revision.id, revision.approvedBy, revision.result.metrics.placedCount, revision.result.metrics.unplacedCount]),
+    runs: (await db.listOptimizationRuns('TRIP-PN-001')).map((run) => [run.id, run.status, run.by]),
+  }).toStrictEqual({
+    vehicles: ['VEHICLE-PN-01', 'VEHICLE-PN-02'],
+    vehicleTypes: [{ vehicleId: 'VEHICLE-PN-01', vehicleTypeId: 'VT-PN-01' }],
+    packageTypes: [['PT-PN-01', 'Thùng linh kiện điện tử'], ['PT-PN-02', 'Kiện vải cuộn']],
+    // 6 thùng linh kiện đã ở kho (4 thùng đầu thuộc đơn chờ gán), 4 kiện vải cuộn hàng chưa về
+    packages: [
+      ['RPK-PN-0001', 'received', 'ORD-PN-001'], ['RPK-PN-0002', 'received', 'ORD-PN-001'], ['RPK-PN-0003', 'received', 'ORD-PN-001'],
+      ['RPK-PN-0004', 'received', 'ORD-PN-001'], ['RPK-PN-0005', 'received', undefined], ['RPK-PN-0006', 'received', undefined],
+      ['RPK-PN-0007', 'registered', undefined], ['RPK-PN-0008', 'registered', undefined], ['RPK-PN-0009', 'registered', undefined],
+      ['RPK-PN-0010', 'registered', undefined],
+    ],
+    orders: [['ORD-PN-001', 'pending', 4]],
+    // Chuyến hôm nay đã duyệt, gán tài xế taixe@phuongnam.vn; chuyến ngày mai còn nháp
+    trips: [['TRIP-PN-001', '2026-09-19', 'US-PN-04', 'PLANNED'], ['TRIP-PN-002', '2026-09-20', null, 'DRAFT']],
+    // 30 thùng linh kiện + 12 kiện vải cuộn xếp đủ; điều phối viên Phương Nam tối ưu rồi duyệt
+    revisions: [['REV-PN-001', undefined, 42, 0], ['REV-PN-002', 'US-PN-03', 42, 0]],
+    runs: [['RUN-PN-001', 'COMPLETED', 'US-PN-03']],
+  })
+  // Mã kế tiếp của kho không đổi vì mã `…-PN-…` không tính: các test và E2E vẫn ghi TRIP-015, VEHICLE-009, PT-009, VT-008, ORD-003
+  const created = await db.createTrip({ name: 'Tuyến Quận 7', vehicleId: 'VEHICLE-PN-02', scheduledDate: '2026-09-20', packages: [], stops: [] })
+  expect([created.id, (await db.createVehicleType({ name: 'Xe tải 1,9 tấn', cargoLengthCm: 360, cargoWidthCm: 170, cargoHeightCm: 170, payloadKg: 1900 })).id])
+    .toStrictEqual(['TRIP-015', 'VT-008'])
+})
+
+test('every seeded plan of Long Bình was approved by its dispatcher: the approver on the revision and the actor in the audit log (FE-0-07)', async () => {
   const db = createMockDb()
+  db.restoreSession(LONG_BINH_DISPATCHER)
   const revisions = (await Promise.all((await db.listTrips()).map((trip) => db.listRevisions(trip.id)))).flat()
   const approved = revisions.filter((revision) => revision.approvedAt !== undefined)
   // 27 seeded revisions: 14 optimizations (every trip but the draft TRIP-014) and 13 approvals (every optimized trip but TRIP-012)
@@ -169,8 +217,15 @@ test('twenty seeded users cover the eight roles; the history names only real use
   expect(events.filter((event) => event.actorId !== null && !ids.has(event.actorId))).toStrictEqual([])
   expect(events.filter((event) => event.target.type === 'user' && !ids.has(event.target.id))).toStrictEqual([])
   expect(events.map((event) => event.at)).toStrictEqual(events.map((event) => event.at).toSorted().toReversed())
-  // Sáu đợt đăng ký kiện của seed đều do điều phối viên của Long Bình làm
-  expect(events.filter((event) => event.action === 'package.registered').map((event) => event.actorId)).toStrictEqual(Array.from({ length: 6 }, () => 'US-0001'))
+  // Mỗi công ty tự đăng ký kiện của mình: sáu đợt của Long Bình do điều phối viên Long Bình làm, hai đợt của Phương Nam do điều
+  // phối viên Phương Nam làm (07:25 ngày neo và hai ngày trước) — mới nhất trước
+  expect(events.filter((event) => event.action === 'package.registered').map((event) => [event.actorId, event.companyId])).toStrictEqual([
+    ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
+    ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
+  ])
+  // Sự kiện mang công ty của người làm; việc của tài khoản nền tảng không thuộc công ty nào
+  const companyOf = new Map(users.map((user) => [user.id, user.companyId ?? null]))
+  expect(events.filter((event) => event.companyId !== (event.actorId === null ? null : companyOf.get(event.actorId)))).toStrictEqual([])
 })
 
 test('seeded history keeps the operation order: loading finishes before the delivery starts', async () => {

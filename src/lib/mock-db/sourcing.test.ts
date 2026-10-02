@@ -20,7 +20,10 @@ const rpk = (from: number, to: number) => Array.from({ length: to - from + 1 }, 
 
 test('package types: create, edit, reject invalid data by model codes, refuse deleting a type still in use', async () => {
   const db = createMockDb()
-  expect((await db.listPackageTypes()).map((type) => type.id)).toStrictEqual(['PT-001', 'PT-002', 'PT-003', 'PT-004', 'PT-005', 'PT-006', 'PT-007', 'PT-008'])
+  // Kho không có phiên trả danh mục của cả hai công ty (FE-0-02): 8 loại kiện của Long Bình rồi 2 của Phương Nam
+  expect((await db.listPackageTypes()).map((type) => type.id)).toStrictEqual([
+    'PT-001', 'PT-002', 'PT-003', 'PT-004', 'PT-005', 'PT-006', 'PT-007', 'PT-008', 'PT-PN-01', 'PT-PN-02',
+  ])
   const created = await db.createPackageType(carton)
   expect(created).toMatchObject({ id: 'PT-009', name: 'Thùng nước tăng lực 24 lon', weightKg: 8.6 })
   await expect(db.updatePackageType('PT-009', { ...carton, lengthCm: 0 })).rejects.toMatchObject({ code: 'PACKAGE_TYPE_INVALID', params: { codes: ['package.dimension.positive'] } })
@@ -36,6 +39,7 @@ test('package types: create, edit, reject invalid data by model codes, refuse de
 
 test('the seed holds 48 registered packages of Long Bình written directly: 40 in stock, 8 still to arrive, none tied to a shipment (FE-0-06)', async () => {
   const db = createMockDb()
+  db.restoreSession('US-0001')
   const packages = await db.listRegisteredPackages()
   const idsWith = (status: string) => packages.filter((pkg) => pkg.status === status).map((pkg) => pkg.id)
   expect(packages.map((pkg) => pkg.id)).toStrictEqual(rpk(1, 48))
@@ -55,9 +59,16 @@ test('the seed holds 48 registered packages of Long Bình written directly: 40 i
 
 test('only the two logistics companies remain; the store has no shipment or receiving function left (FE-0-06)', async () => {
   const db = createMockDb()
+  // Mỗi công ty một kho xuất phát kèm toạ độ thật (D-64): KCN Biên Hoà 2 và phường Phú Thuận, Quận 7
   expect(await db.listCompanies()).toStrictEqual([
-    { id: 'LOG-001', name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120' },
-    { id: 'LOG-002', name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054' },
+    {
+      id: 'LOG-001', name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120',
+      depot: { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 },
+    },
+    {
+      id: 'LOG-002', name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054',
+      depot: { name: 'Kho Phú Thuận', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Quận 7, TP. Hồ Chí Minh', lat: 10.7308, lng: 106.7353 },
+    },
   ])
   expect(Object.keys(db).filter((name) => /shipment|receiv/i.test(name))).toStrictEqual([])
   expect((await db.listEvents()).filter((event) => /^shipment\./.test(event.action) || (event.target.type as string) === 'shipment')).toStrictEqual([])
@@ -85,9 +96,10 @@ test('a dispatcher registers one, N or many rows of packages for the company of 
   const [event] = await db.listEvents()
   expect(event).toMatchObject({ action: 'package.registered', actorId: 'US-0001', params: { count: 3, packageTypeId: 'PT-002,PT-004' } })
 
-  // Điều phối viên của Phương Nam đăng ký cho công ty của mình
+  // Điều phối viên của Phương Nam đăng ký cho công ty của mình, theo loại kiện của chính Phương Nam (FE-0-02)
   await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
-  expect(await db.registerPackage({ packageTypeId: 'PT-001' })).toMatchObject({ id: 'RPK-0058', ownerCompanyId: 'LOG-002', registeredBy: 'US-PN-03' })
+  expect(await db.registerPackage({ packageTypeId: 'PT-PN-01' })).toMatchObject({ id: 'RPK-0058', ownerCompanyId: 'LOG-002', registeredBy: 'US-PN-03' })
+  await expect(db.registerPackage({ packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY', params: { collection: 'packageTypes', id: 'PT-001' } })
 })
 
 test('registering checks everything first: a bad row or quantity writes nothing', async () => {
@@ -144,10 +156,13 @@ test('a registered package follows the trip of its order at read time: planned, 
   expect((await db.getOrder('ORD-002')).status).toBe('delivered')
 })
 
-test('a package belongs to the company of whoever registers it: no session or a platform account cannot register (FE-0-06)', async () => {
+test('a package belongs to the company of whoever registers it: a platform account cannot register, and reads no package (FE-0-06, FE-0-02)', async () => {
   const db = createMockDb()
-  await expect(db.registerPackage({ packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
   await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await expect(db.registerPackage({ packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
   await expect(db.registerPackages({ packageTypeId: 'PT-001' }, 2)).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
+  await expect(db.listRegisteredPackages()).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
+  // Không kiện nào được ghi: Long Bình vẫn có đúng 48 kiện của seed
+  db.restoreSession('US-0001')
   expect(await db.listRegisteredPackages()).toHaveLength(48)
 })

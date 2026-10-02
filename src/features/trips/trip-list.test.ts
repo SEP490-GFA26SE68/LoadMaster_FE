@@ -13,9 +13,13 @@ async function seed() {
   return { db, trip: trip!, vehicle }
 }
 
-/** Mọi dòng của seed neo 14/09/2026, dựng như `fetchTrips`. */
+/**
+ * Mọi dòng của seed neo 14/09/2026, dựng như `fetchTrips` dưới phiên của điều phối viên Long Bình: kho chỉ trả 15 chuyến của Long
+ * Bình, hai chuyến của Phương Nam không lọt vào (FE-0-02).
+ */
 async function seedRows(): Promise<TripRow[]> {
   const db = createMockDb()
+  db.restoreSession('US-0001')
   const [trips, vehicles, users] = await Promise.all([db.listTrips(), db.listVehicles(), db.listUsers()])
   return Promise.all(trips.map(async (trip) => tripRow(
     trip,

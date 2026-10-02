@@ -35,7 +35,7 @@ export function cargo(id: string, weightKg: number, quantity: number, deliverySt
 
 export function trip(id: string, scheduledDate: string, vehicleId: string, packages: CargoPackage[], extra: Partial<Trip> = {}): Trip {
   return {
-    id, name: `Tuyến ${id}`, vehicleId, stops: [], packages, inputVersion: 1, scheduledDate, driverId: null, phase: 'planning',
+    id, companyId: 'LOG-001', name: `Tuyến ${id}`, vehicleId, stops: [], packages, inputVersion: 1, scheduledDate, driverId: null, phase: 'planning',
     createdAt: AT, ...extra,
   }
 }

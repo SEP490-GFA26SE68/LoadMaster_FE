@@ -3,7 +3,7 @@ import type { PackageType, RegisteredPackage } from '@/lib/mock-db'
 import { filterByTab, labelsPath, orderedSelection, PACKAGE_TABS, packageRows, searchPackages, slugFromTab, tabCounts, tabFromSlug } from './packages-list'
 
 const TYPE: PackageType = {
-  id: 'PT-003', name: 'Thùng dầu ăn 12 chai', lengthCm: 45, widthCm: 32, heightCm: 30, weightKg: 12, fragilityLevel: 'NONE',
+  id: 'PT-003', companyId: 'LOG-001', name: 'Thùng dầu ăn 12 chai', lengthCm: 45, widthCm: 32, heightCm: 30, weightKg: 12, fragilityLevel: 'NONE',
   allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 4, maxTopLoadKg: 50, createdAt: '2026-08-05T02:00:00.000Z',
 }
 

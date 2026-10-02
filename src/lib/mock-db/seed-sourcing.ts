@@ -4,25 +4,35 @@ import { randomQrToken, seededRandom } from './qr-token'
 import { CARGO, CUSTOMERS, type CargoKey } from './seed-directory'
 import type { SeedEvent } from './seed-progress'
 import { SEED_DISPATCHER } from './seed-trips'
+import { LONG_BINH, PHUONG_NAM } from './seed-users'
 import type { Company, PackageType, RegisteredPackage, TransportOrder, VehicleType } from './source-types'
 
 /**
- * Seed nguồn hàng (LM-104, FE-0-06): hai công ty logistics, danh mục loại kiện (lấy từ danh mục hàng của 15 chuyến seed), kiện đăng
- * ký kèm mã QR, hai đơn chờ gán và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR sinh từ bộ số giả ngẫu
- * nhiên có hạt giống cố định: tất định, không chứa dữ liệu kiện.
+ * Seed nguồn hàng (LM-104, FE-0-06): hai công ty logistics, và của **Long Bình**: danh mục loại kiện (lấy từ danh mục hàng của 15
+ * chuyến seed), kiện đăng ký kèm mã QR, hai đơn chờ gán và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR
+ * sinh từ bộ số giả ngẫu nhiên có hạt giống cố định: tất định, không chứa dữ liệu kiện. Nguồn hàng của Phương Nam: `seed-phuong-nam.ts`.
  *
  * Không còn nhà sản xuất, lô hàng và luồng quét nhận (D-63), nên seed **ghi thẳng trạng thái kiện**: kiện đã ở kho là `received` (đưa
- * vào đơn được), đợt vừa đăng ký hàng chưa về là `registered`. Mọi kiện thuộc Long Bình, do điều phối viên của Long Bình đăng ký.
+ * vào đơn được), đợt vừa đăng ký hàng chưa về là `registered`. Mọi kiện ở đây thuộc Long Bình, do điều phối viên của Long Bình đăng ký.
  */
 
-/** Hai công ty logistics dùng app (PRD v2 mục 5.3). */
+/**
+ * Hai công ty logistics dùng app (PRD v2 mục 5.3, D-64), mỗi công ty một kho xuất phát. Toạ độ thật ở mức khu vực, không tới số
+ * nhà: KCN Biên Hoà 2 (Biên Hoà, Đồng Nai) và phường Phú Thuận (Quận 7).
+ */
 export const COMPANIES: readonly Company[] = [
-  { id: 'LOG-001', name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120' },
-  { id: 'LOG-002', name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054' },
+  {
+    id: LONG_BINH, name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120',
+    depot: { name: 'Kho Long Bình', address: '9 Đường 3A, KCN Biên Hoà 2, Biên Hoà, Đồng Nai', lat: 10.9294, lng: 106.8747 },
+  },
+  {
+    id: PHUONG_NAM, name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054',
+    depot: { name: 'Kho Phú Thuận', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Quận 7, TP. Hồ Chí Minh', lat: 10.7308, lng: 106.7353 },
+  },
 ]
 
-/** Công ty của mọi kiện seed — công ty của người đăng ký `SEED_DISPATCHER`. */
-const SEED_OWNER = 'LOG-001'
+/** Công ty của mọi bản ghi ở file này — công ty của người đăng ký `SEED_DISPATCHER`. */
+const SEED_OWNER = LONG_BINH
 
 /** Loại kiện theo danh mục hàng seed: kích thước, khối lượng, hướng đặt và xếp chồng giữ nguyên. */
 const TYPE_KEYS: readonly CargoKey[] = ['nuocSuoi', 'miGoi', 'dauAn', 'suaHop', 'banhQuy', 'quatDien', 'noiComDien', 'nuocGiat']
@@ -46,7 +56,7 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
   const packageTypes: PackageType[] = TYPE_KEYS.map((key) => {
     const cargo = cargoFromType({ ...CARGO[key], allowedOrientations: [...CARGO[key].allowedOrientations] }, { id: typeId(key), quantity: 1, deliveryStop: 1 })
     return {
-      id: typeId(key), name: cargo.name, lengthCm: cargo.lengthCm, widthCm: cargo.widthCm, heightCm: cargo.heightCm, weightKg: cargo.weightKg,
+      id: typeId(key), companyId: SEED_OWNER, name: cargo.name, lengthCm: cargo.lengthCm, widthCm: cargo.widthCm, heightCm: cargo.heightCm, weightKg: cargo.weightKg,
       fragilityLevel: cargo.fragilityLevel, allowedOrientations: cargo.allowedOrientations, keepUpright: cargo.keepUpright, stackable: cargo.stackable,
       maxTopLoadKg: cargo.maxTopLoadKg, ...(cargo.maxStackCount === undefined ? {} : { maxStackCount: cargo.maxStackCount }), createdAt: on(30, '09:00'),
     }
@@ -83,7 +93,7 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
     for (const pkg of packages) pkg.orderId = id
     events.push({ at, actorId: SEED_DISPATCHER, action: 'order.created', target: { type: 'order', id }, params: { customerName: customer.name, count: packages.length } })
     return {
-      id, customerName: customer.name, deliveryAddress: customer.address, contactName: customer.contactName, phone: customer.phone,
+      id, companyId: SEED_OWNER, customerName: customer.name, deliveryAddress: customer.address, contactName: customer.contactName, phone: customer.phone,
       packageIds: packages.map((pkg) => pkg.id), status: 'pending', createdAt: at, createdBy: SEED_DISPATCHER,
     }
   }
@@ -108,7 +118,7 @@ function seedVehicleTypes(createdAt: string): Pick<SourcingSeed, 'vehicleTypes' 
     ['VT-007', 'Xe tải 9 tấn thùng 8,5 m', 850, 240, 250, 9000, 'VEHICLE-007'],
   ]
   return {
-    vehicleTypes: types.map(([id, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg]) => ({ id, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg, createdAt })),
+    vehicleTypes: types.map(([id, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg]) => ({ id, companyId: SEED_OWNER, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg, createdAt })),
     vehicleTypeOf: types.map(([id, , , , , , vehicleId]) => [vehicleId, id]),
   }
 }

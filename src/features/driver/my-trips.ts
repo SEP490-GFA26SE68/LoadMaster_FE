@@ -38,11 +38,11 @@ export type MyTrips = {
 export const RECENT_LIMIT = 5
 
 /**
- * Tài xế chỉ thấy chuyến gán cho mình (D-46). Vai trò khác không bị lọc ở đây: từ FE-0-01 chỉ tài xế có `driver.operate`, nên không
- * vai trò nào khác mở được màn này.
+ * Người xem chỉ thấy chuyến gán cho chính mình (D-46). Luật đóng theo mặc định (FE-0-02): không vai trò nào được thấy hết — chỉ tài xế
+ * có `driver.operate` mở được màn này, và chuyến chưa gán tài xế không hiện với ai ở đây.
  */
-export function isVisibleTo(trip: Pick<Trip, 'driverId'>, viewer: Pick<User, 'id' | 'role'>): boolean {
-  return viewer.role !== 'driver' || trip.driverId === viewer.id
+export function isVisibleTo(trip: Pick<Trip, 'driverId'>, viewer: Pick<User, 'id'>): boolean {
+  return trip.driverId === viewer.id
 }
 
 /** Phương án tài xế làm theo: bản kho đã xếp (chốt lúc bắt đầu xếp); kho chưa bắt đầu thì bản duyệt mới nhất. */
@@ -94,7 +94,7 @@ function byStageThenDate(a: MyTripRow, b: MyTripRow): number {
  * "Chuyến của tôi" (LM-087): chuyến người xem được thấy, chia ba nhóm. Chuyến có phương án chờ duyệt hoặc lỗi thời và chuyến đã
  * huỷ không hiện — tài xế không làm gì được với chúng.
  */
-export function myTrips(entries: readonly TripRevisions[], vehicleNames: ReadonlyMap<string, string>, viewer: Pick<User, 'id' | 'role'>): MyTrips {
+export function myTrips(entries: readonly TripRevisions[], vehicleNames: ReadonlyMap<string, string>, viewer: Pick<User, 'id'>): MyTrips {
   const ready: MyTripRow[] = []
   const preparing: MyTripRow[] = []
   const recent: MyTripRow[] = []

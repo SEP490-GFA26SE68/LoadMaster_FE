@@ -20,7 +20,7 @@ function event(
   params: Record<string, string | number> = {},
   actorId: string | null = 'US-0001',
 ): AuditEvent {
-  return { id: 'EV-000200', at: '2026-09-13T11:05:00.000Z', actorId, action, target, params }
+  return { id: 'EV-000200', at: '2026-09-13T11:05:00.000Z', actorId, companyId: 'LOG-001', action, target, params }
 }
 
 /** Người xem mở được mọi trang đích: liên kết chỉ còn phụ thuộc vào đối tượng có còn trong kho hay không. */

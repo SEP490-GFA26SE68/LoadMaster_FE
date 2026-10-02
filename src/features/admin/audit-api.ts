@@ -20,13 +20,11 @@ export type AuditDirectoryData = {
   readonly vehicles: readonly Pick<VehicleConfig, 'id' | 'name'>[]
 }
 
-/** Tên hiện tại của người dùng (kèm vai trò), chuyến, xe để đọc người làm và đối tượng; cũng là danh sách chọn "Người làm". */
-export async function fetchAuditDirectory(): Promise<AuditDirectoryData> {
-  const db = getMockDb()
-  const [users, trips, vehicles] = await Promise.all([db.listUsers(), db.listTrips(), db.listVehicles()])
-  return {
-    users: users.map(({ id, fullName, role }) => ({ id, fullName, role })),
-    trips: trips.map(({ id, name }) => ({ id, name })),
-    vehicles: vehicles.map(({ id, name }) => ({ id, name })),
-  }
+/**
+ * Tên hiện tại của người dùng (kèm vai trò), chuyến, xe để đọc người làm và đối tượng; cũng là danh sách chọn "Người làm". Kho trả
+ * tên trong phạm vi nhật ký của người xem (`listAuditNames`), không qua `listTrips` / `listVehicles`: quản trị hệ thống đọc nhật ký
+ * nhưng không có dữ liệu vận hành (FE-0-02).
+ */
+export function fetchAuditDirectory(): Promise<AuditDirectoryData> {
+  return getMockDb().listAuditNames()
 }

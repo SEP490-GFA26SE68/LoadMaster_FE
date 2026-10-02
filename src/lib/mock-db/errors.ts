@@ -73,8 +73,13 @@ export type MockDbErrorParams = {
   PACKAGE_TYPE_IN_USE: { packageTypeId: string; count: number }
   /** Đăng ký theo số lượng ngoài khoảng cho phép. */
   QUANTITY_INVALID: { min: number; max: number }
-  /** Đăng ký kiện khi phiên không thuộc công ty nào: chưa đăng nhập, hoặc tài khoản nền tảng (kiện thuộc công ty của người đăng ký). */
+  /**
+   * Gọi hàm dữ liệu vận hành (xe, loại xe, loại kiện, kiện, đơn, chuyến, phương án, tiến độ, quét) khi phiên không thuộc công ty nào:
+   * ba vai trò nền tảng không xem dữ liệu vận hành của công ty (D-64).
+   */
   COMPANY_REQUIRED: Record<string, never>
+  /** Ghi vào bản ghi `id` của công ty khác, hoặc tham chiếu tới nó (xe, tài xế, loại kiện, kiện… của công ty khác; D-64). */
+  FORBIDDEN_COMPANY: { collection: MockDbCollection; id: string }
   /** Kiện không ở trạng thái cần cho thao tác (chưa nhận ở kho, đã có đơn…). */
   PACKAGE_UNAVAILABLE: { packageId: string; status: string }
   /** Lần đăng ký hoặc đơn hàng không có kiện nào. */

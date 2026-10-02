@@ -125,6 +125,13 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await expect(page.getByRole('link', { name: new RegExp(TRIP) }).first()).toBeVisible()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Xuất báo cáo', exact: true }).click()])
   expect(download.suggestedFilename()).toMatch(/^bao-cao-van-hanh_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.xlsx$/)
+  // Đọc kho ngay dưới phiên của quản lý công ty: kho lọc theo công ty của phiên và từ chối tài khoản nền tảng đọc chuyến (FE-0-02)
+  const store = await page.evaluate(async ({ db, tripId }) => {
+    const { getMockDb, tripStatus } = (await import(db)) as typeof import('@/lib/mock-db')
+    const trip = await getMockDb().getTrip(tripId)
+    return { status: tripStatus(trip, await getMockDb().listRevisions(tripId)), issues: trip.delivery?.issues.map((item) => item.kind) }
+  }, { db: MOCK_DB, tripId: TRIP })
+  expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
   await signOut(page, NAMES.manager)
 
   // Quản trị hệ thống: nhật ký có đủ chuỗi việc của chuyến, đúng người làm
@@ -146,12 +153,5 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   ] as const) {
     await expect(log.getByRole('row').filter({ hasText: action }).first(), action).toContainText(actor)
   }
-
-  const store = await page.evaluate(async ({ db, tripId }) => {
-    const { getMockDb, tripStatus } = (await import(db)) as typeof import('@/lib/mock-db')
-    const trip = await getMockDb().getTrip(tripId)
-    return { status: tripStatus(trip, await getMockDb().listRevisions(tripId)), issues: trip.delivery?.issues.map((item) => item.kind) }
-  }, { db: MOCK_DB, tripId: TRIP })
-  expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
   expect(browserErrors).toStrictEqual([])
 })

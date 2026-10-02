@@ -7,6 +7,8 @@ const received = async (db: MockDb) => (await db.listRegisteredPackages()).filte
 
 test('an order takes received packages that no other order holds; edits and cancels only while pending', async () => {
   const db = createMockDb()
+  // Điều phối viên Long Bình lập đơn từ kiện của Long Bình (FE-0-02); `restoreSession` không ghi nhật ký
+  db.restoreSession('US-0001')
   // FE-0-06: seed ghi thẳng trạng thái — 6 thùng sữa, 6 thùng bánh quy và 6 kiện quạt đã ở kho, chưa vào đơn nào
   expect((await received(db)).map((pkg) => pkg.id)).toStrictEqual([
     'RPK-0023', 'RPK-0024', 'RPK-0025', 'RPK-0026', 'RPK-0027', 'RPK-0028', 'RPK-0029', 'RPK-0030', 'RPK-0031', 'RPK-0032', 'RPK-0033', 'RPK-0034',

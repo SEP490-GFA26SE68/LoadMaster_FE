@@ -11,18 +11,19 @@ function assertPlanning(trip: Trip) {
   if (trip.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId: trip.id, phase: trip.phase })
 }
 
+/** Revision thuộc công ty của chuyến (D-64): đọc và ghi theo phạm vi của chuyến đó. */
 export function revisionMethods(ctx: DbContext): RevisionMethods {
   const { trips, revisions } = ctx.state
   return {
     listRevisions: (tripId) =>
       ctx.respond(() => {
-        found(trips, 'trips', tripId)
+        ctx.scope.trips.read(tripId)
         return [...revisions.values()].filter((revision) => revision.tripId === tripId)
       }),
-    getRevision: (id) => ctx.respond(() => found(revisions, 'revisions', id)),
+    getRevision: (id) => ctx.respond(() => ctx.scope.revisions.read(id)),
     addRevision: ({ tripId, request, result, run = DEFAULT_RUN_SETTINGS }) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         const revision = put(revisions, {
           run: { objective: run.objective, algorithm: run.algorithm },
@@ -52,7 +53,7 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
       }),
     approveRevision: (revisionId, patches) =>
       ctx.respond(() => {
-        const source = found(revisions, 'revisions', revisionId)
+        const source = ctx.scope.revisions.own(revisionId)
         const trip = found(trips, 'trips', source.tripId)
         assertPlanning(trip)
         if (isStale(source, trip)) throw new MockDbError('REVISION_STALE', { revisionId })

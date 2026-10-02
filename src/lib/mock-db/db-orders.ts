@@ -29,9 +29,10 @@ function orderText(input: OrderChanges, current?: TransportOrder) {
   }
 }
 
-/** Đơn vận chuyển và gán vào điểm giao (luồng 2, LM-104). */
+/** Đơn vận chuyển và gán vào điểm giao (luồng 2, LM-104). Đơn, kiện của đơn và chuyến nhận đơn cùng một công ty (D-64). */
 export function orderMethods(ctx: DbContext): OrderMethods {
   const { orders, registeredPackages, trips, packageTypes } = ctx.state
+  const scope = ctx.scope.orders
 
   function withStatus(order: TransportOrder): TransportOrder {
     const trip = order.assignment ? trips.get(order.assignment.tripId) : undefined
@@ -39,11 +40,11 @@ export function orderMethods(ctx: DbContext): OrderMethods {
     return status === order.status ? order : { ...order, status }
   }
 
-  /** Kiện của đơn `orderId`: đã ở kho (`received`), chưa thuộc đơn khác. */
-  function assertPackages(packageIds: readonly string[], orderId: string) {
+  /** Kiện của đơn `orderId` (công ty `companyId`): cùng công ty với đơn, đã ở kho (`received`), chưa thuộc đơn khác. */
+  function assertPackages(packageIds: readonly string[], orderId: string, companyId: string) {
     if (packageIds.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
     for (const id of packageIds) {
-      const pkg = found(registeredPackages, 'registeredPackages', id)
+      const pkg = ctx.scope.registeredPackages.ref(id, companyId)
       const taken = pkg.orderId !== undefined && pkg.orderId !== orderId
       if (pkg.status !== 'received' || taken) throw new MockDbError('PACKAGE_UNAVAILABLE', { packageId: id, status: pkg.status })
     }
@@ -83,24 +84,25 @@ export function orderMethods(ctx: DbContext): OrderMethods {
   }
 
   return {
-    listOrders: () => ctx.respond(() => [...orders.values()].map(withStatus).toReversed()),
-    getOrder: (id) => ctx.respond(() => withStatus(found(orders, 'orders', id))),
+    listOrders: () => ctx.respond(() => scope.list().map(withStatus).toReversed()),
+    getOrder: (id) => ctx.respond(() => withStatus(scope.read(id))),
     createOrder: (input: OrderInput) =>
       ctx.respond(() => {
+        const companyId = ctx.scope.newRecordCompany()
         const id = nextId('ORD', orders.keys())
         const packageIds = [...new Set(input.packageIds)]
-        assertPackages(packageIds, id)
-        const order = put(orders, { id, ...orderText(input), packageIds, status: 'pending', createdAt: ctx.nowIso(), createdBy: ctx.state.session.userId })
+        assertPackages(packageIds, id, companyId)
+        const order = put(orders, { id, companyId, ...orderText(input), packageIds, status: 'pending', createdAt: ctx.nowIso(), createdBy: ctx.state.session.userId })
         linkPackages(id, [], packageIds)
         ctx.log('order.created', { type: 'order', id }, { customerName: order.customerName, count: packageIds.length })
         return order
       }),
     updateOrder: (id, changes) =>
       ctx.respond(() => {
-        const current = found(orders, 'orders', id)
+        const current = scope.own(id)
         assertStatus(current, 'pending')
         const packageIds = changes.packageIds === undefined ? current.packageIds : [...new Set(changes.packageIds)]
-        if (changes.packageIds !== undefined) assertPackages(packageIds, id)
+        if (changes.packageIds !== undefined) assertPackages(packageIds, id, current.companyId)
         const { contactName: _c, phone: _p, note: _n, ...rest } = current
         const next: TransportOrder = { ...rest, ...orderText(changes, current), packageIds }
         linkPackages(id, current.packageIds, packageIds)
@@ -109,7 +111,7 @@ export function orderMethods(ctx: DbContext): OrderMethods {
       }),
     cancelOrder: (id, reason) =>
       ctx.respond(() => {
-        const current = found(orders, 'orders', id)
+        const current = scope.own(id)
         assertStatus(current, 'pending')
         const trimmed = reason.trim()
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
@@ -119,9 +121,9 @@ export function orderMethods(ctx: DbContext): OrderMethods {
       }),
     assignOrder: (orderId, tripId, stopId) =>
       ctx.respond(() => {
-        const order = found(orders, 'orders', orderId)
+        const order = scope.own(orderId)
         assertStatus(order, 'pending')
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.ref(tripId, order.companyId)
         if (trip.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId, phase: trip.phase })
         const stopIndex = trip.stops.findIndex((stop) => stop.id === stopId)
         if (stopIndex === -1) throw new MockDbError('STOP_NOT_FOUND', { tripId, stopId })
@@ -134,7 +136,7 @@ export function orderMethods(ctx: DbContext): OrderMethods {
       }),
     unassignOrder: (orderId) =>
       ctx.respond(() => {
-        const order = found(orders, 'orders', orderId)
+        const order = scope.own(orderId)
         assertStatus(order, 'assigned')
         const assignment = order.assignment
         const trip = assignment ? found(trips, 'trips', assignment.tripId) : undefined

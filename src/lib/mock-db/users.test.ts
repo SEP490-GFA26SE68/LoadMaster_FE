@@ -124,6 +124,8 @@ test('a stored session is restored only for an active account and does not write
   expect(db.restoreSession('US-0404')).toBeNull()
   expect(db.restoreSession('US-0002')?.id).toBe('US-0002')
   expect(db.sessionUser()?.id).toBe('US-0002')
+  // Đếm lại khi kho không có phiên: phiên của Long Bình chỉ đọc nhật ký của công ty mình (FE-0-02)
+  db.restoreSession(null)
   expect((await db.listEvents()).length).toBe(before)
 })
 
