@@ -69,7 +69,10 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   vỡ"). Màn Tra cứu kiện cho điều phối viên và nhân viên kho: quét hoặc gõ mã để xem kiện, in lại nhãn; kho quét thấy kiện mang cờ "Không
   tìm thấy" thì cờ được gỡ và điều phối viên được báo. Kiện thêm ngay trong chuyến tự thành kiện của kho kiện có mã QR. Yêu cầu giao thay
   đơn hàng của Review 1: quản lý công ty lập yêu cầu (điểm đến, hạn, ưu tiên, kiện chọn từ kho kiện), điều phối viên xem và đưa yêu cầu
-  vào điểm giao của chuyến; "Đã giao" và "Giao thiếu" lấy từ trạng thái và cờ của kiện. Màn của quản lý
+  vào điểm giao của chuyến; "Đã giao" và "Giao thiếu" lấy từ trạng thái và cờ của kiện. Một chuyến chở một loại hàng: kiện khác loại
+  chỉ vào chuyến khi điều phối viên ghi lý do, thẻ "Phân nhóm hàng" ở chi tiết chuyến nói loại đang khoá, kiện khác loại và cảnh báo xe.
+  Điều phối viên tối ưu tuyến ở chi tiết chuyến (mock, MOCK RESULT): thứ tự điểm, giờ đến dự kiến, mức hạn và bản đồ tuyến; chuyến thành
+  "Đã lập kế hoạch" khi đã tối ưu tuyến và về "Nháp" khi thêm, bớt điểm giao. Màn của quản lý
   nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
@@ -92,12 +95,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.535 test unit + DOM
+pnpm test          # Vitest: 1.577 test unit + DOM
 pnpm test:e2e      # Playwright: 111 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.535/1.535 unit, 111/111 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.577/1.577 unit, 112/112 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 
