@@ -29,7 +29,10 @@ export function TripListPage() {
   const navigate = useNavigate()
   const t = useT()
   const format = useFormat()
-  const canCreate = useCan()('trips.edit')
+  const can = useCan()
+  const canCreate = can('trips.edit')
+  // "Cần bạn xử lý" là việc của người duyệt phương án (điều phối viên, FE-0-07); quản lý công ty chỉ đọc nên chỉ thấy các số thường
+  const canAct = can('plans.approve')
   const query = useTripsQuery()
   const list = useListUrlState({ filters: TRIP_LIST_FILTERS, defaultSort: { id: BY_DATE, desc: true } })
   const columns = useMemo(() => createTripColumns(t, format), [t, format])
@@ -67,7 +70,7 @@ export function TripListPage() {
         overlap={overlap}
         title={t('trips.list.title')}
         description={hasTrips
-          ? <TripListStats total={stats.all} transit={stats.IN_TRANSIT} review={trips.filter(needsAction).length} />
+          ? <TripListStats total={stats.all} transit={stats.IN_TRANSIT} review={canAct ? trips.filter(needsAction).length : undefined} />
           : t('pageHero.trips')}
         actions={hasTrips && canCreate ? (
           <Button variant="primary" asChild>
@@ -80,7 +83,7 @@ export function TripListPage() {
       >
         {query.isError || (query.isSuccess && !hasTrips)
           ? null
-          : <TripListTabs counts={hasTrips ? tabCounts : null} needAction={tabRows.filter(needsAction).length} />}
+          : <TripListTabs counts={hasTrips ? tabCounts : null} needAction={canAct ? tabRows.filter(needsAction).length : undefined} />}
       </PageHero>
 
       <div className={overlap ? 'sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-7' : 'flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6'}>
