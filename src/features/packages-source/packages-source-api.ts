@@ -1,3 +1,13 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   fetchRegisteredPackage → GET /api/packages/{id}
+ *   findPackageByQr        → GET /api/packages/scan/{qrToken}
+ *   registerPackages       → nhập file: POST /api/packages/import/confirm; một kiện, theo số lượng: chưa có ở BE
+ *   fetchPackageLabels     → POST /api/packages/export/labels
+ *   chưa có ở BE: fetchPackageTypes, fetchPackageType, savePackageType, deletePackageType, fetchRegisteredPackages
+ *   tên sẽ đổi khi nối BE: findPackageByQr → scanPackage, registerPackages → confirmPackageImport, fetchPackageLabels → exportPackageLabels
+ */
+
 import {
   getMockDb,
   type Company,
@@ -13,32 +23,39 @@ import {
  * feature biết về kho; nối backend thật chỉ thay thân hàm. Kiện đăng ký thuộc công ty của người đăng ký.
  */
 
+// chưa có ở BE
 export function fetchPackageTypes(): Promise<PackageType[]> {
   return getMockDb().listPackageTypes()
 }
 
+// chưa có ở BE
 export function fetchPackageType(id: string): Promise<PackageType> {
   return getMockDb().getPackageType(id)
 }
 
 /** `id` vắng là loại mới (kho cấp mã `PT-NNN`). Dữ liệu sai: `PACKAGE_TYPE_INVALID` kèm mã issue `package.*`. */
+// chưa có ở BE
 export function savePackageType(input: PackageTypeInput, id?: string): Promise<PackageType> {
   return id === undefined ? getMockDb().createPackageType(input) : getMockDb().updatePackageType(id, input)
 }
 
+// chưa có ở BE
 export function deletePackageType(id: string): Promise<void> {
   return getMockDb().deletePackageType(id)
 }
 
+// chưa có ở BE
 export function fetchRegisteredPackages(): Promise<RegisteredPackage[]> {
   return getMockDb().listRegisteredPackages()
 }
 
+// GET /api/packages/{id}
 export function fetchRegisteredPackage(id: string): Promise<RegisteredPackage> {
   return getMockDb().getRegisteredPackage(id)
 }
 
 /** Tra kiện theo mã QR (quét hoặc gõ tay); không có: `QR_UNKNOWN`. */
+// GET /api/packages/scan/{qrToken}
 export function findPackageByQr(token: string): Promise<RegisteredPackage> {
   return getMockDb().findPackageByQr(token)
 }
@@ -52,6 +69,7 @@ export type RegisterInput =
   | { readonly kind: 'quantity'; readonly input: RegisteredPackageInput; readonly quantity: number }
   | { readonly kind: 'rows'; readonly rows: readonly RegisteredPackageRow[] }
 
+// POST /api/packages/import/confirm (nhập file); một kiện, theo số lượng: chưa có ở BE
 export async function registerPackages(register: RegisterInput): Promise<RegisteredPackage[]> {
   const db = getMockDb()
   switch (register.kind) {
@@ -68,6 +86,7 @@ export async function registerPackages(register: RegisterInput): Promise<Registe
 export type PackageLabel = { readonly package: RegisteredPackage; readonly type: PackageType | undefined; readonly owner: Company | undefined }
 
 /** Nhãn của các kiện `ids` theo đúng thứ tự (bỏ mã không có trong kho); `ids` vắng là mọi kiện kho trả về. */
+// POST /api/packages/export/labels
 export async function fetchPackageLabels(ids?: readonly string[]): Promise<PackageLabel[]> {
   const db = getMockDb()
   const [packages, types, companies] = await Promise.all([db.listRegisteredPackages(), db.listPackageTypes(), db.listCompanies()])

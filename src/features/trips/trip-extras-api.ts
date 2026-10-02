@@ -1,3 +1,11 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   fetchTripReadiness → GET /api/v1/validate/trips/{trip_id}
+ *   fetchTripOrders    → GET /api/delivery-requirements (lọc theo chuyến: chưa có ở BE)
+ *   chưa có ở BE: fetchTripLabels, fetchTripReport
+ *   tên sẽ đổi khi nối BE: fetchTripReadiness → validateTrip, fetchTripOrders → fetchTripDeliveryRequirements
+ */
+
 import type { TripReadiness } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import { getMockDb, isMockDbError, tripReport, type TransportOrder, type Trip, type TripLabel, type TripReport } from '@/lib/mock-db'
@@ -9,17 +17,20 @@ import type { User } from '@/types/user'
  */
 
 /** Kiểm tra "Sẵn sàng tối ưu": mã + tham số, UI dịch nhánh `readiness`. */
+// GET /api/v1/validate/trips/{trip_id}
 export function fetchTripReadiness(tripId: string): Promise<TripReadiness> {
   return getMockDb().getTripReadiness(tripId)
 }
 
 /** Đơn hàng đã gán vào chuyến (dòng kiện có `groupId` = mã đơn). */
+// GET /api/delivery-requirements (lọc theo chuyến: chưa có ở BE)
 export async function fetchTripOrders(tripId: string): Promise<TransportOrder[]> {
   const orders = await getMockDb().listOrders()
   return orders.filter((order) => order.assignment?.tripId === tripId)
 }
 
 /** Nhãn QR của mọi kiện trong chuyến — in nhãn cho kiện nhập tay. */
+// chưa có ở BE
 export function fetchTripLabels(tripId: string): Promise<TripLabel[]> {
   return getMockDb().listTripLabels(tripId)
 }
@@ -32,6 +43,7 @@ export type TripReportData = {
   readonly report: TripReport
 }
 
+// chưa có ở BE
 export async function fetchTripReport(tripId: string): Promise<TripReportData> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)

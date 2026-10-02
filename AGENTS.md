@@ -937,6 +937,12 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 2. Bọc bằng hook Query trong cùng feature (`useTripsQuery`).
 3. Component chỉ gọi hook, không bao giờ gọi `-api.ts` trực tiếp.
 
+*(bổ sung 02/10/2026, FE-0-09)* Tên hàm trong `-api.ts` theo hành động của endpoint ở issue backend. Mỗi hàm export có một dòng comment
+ghi endpoint ngay trên nó (`// POST /api/trips/{id}/optimize-route`), đầu file có bảng hàm → endpoint. Endpoint backend chưa có ghi
+"chưa có ở BE", kèm mã câu hỏi mở (`(Q-07)`) khi PRD v2 có; hàm có sẵn lệch tên ghi "tên sẽ đổi khi nối BE: …" ở đầu file. Comment chỉ
+gồm phương thức + đường dẫn và các nhãn ngắn đó — repo công khai, không chép luật nghiệp vụ hay nội dung tài liệu nội bộ. Nối backend
+chỉ thay thân hàm.
+
 *(đã điều chỉnh 19/09/2026)* Không còn màn nào giữ dữ liệu nghiệp vụ ở `useState`: Đội xe (LM-040), Người dùng (LM-092, `users-api.ts` →
 `useUsersQuery` + mutation), Nhật ký (`audit-api.ts`), kho và tài xế (LM-086/087) đều đọc/ghi kho mock qua Query. Trạng thái xe đọc
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.

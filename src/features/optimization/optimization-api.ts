@@ -1,3 +1,10 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   changeTripVehicle → POST /api/trips/{id}/change-vehicle
+ *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · kết quả: GET /api/v1/optimization/jobs/{id}/plans
+ *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
+ */
+
 import type { OptimizationRequest, OptimizationResult, VehicleConfig } from '@/domain/models'
 import {
   DEFAULT_RUN_SETTINGS,
@@ -32,6 +39,7 @@ export type OptimizationSetup = {
   readonly driverName: string | null
 }
 
+// chưa có ở BE
 export async function fetchOptimizationSetup(tripId: string): Promise<OptimizationSetup> {
   const db = getMockDb()
   const [trip, vehicles, states, revisions, users] = await Promise.all([
@@ -45,6 +53,7 @@ export async function fetchOptimizationSetup(tripId: string): Promise<Optimizati
   }
 }
 
+// POST /api/trips/{id}/change-vehicle
 export async function changeTripVehicle(tripId: string, vehicleId: string): Promise<Trip> {
   return getMockDb().updateTrip(tripId, { vehicleId })
 }
@@ -69,6 +78,7 @@ export type RunOutcome =
  * Chạy tối ưu qua `createOptimizationService` (Web Worker trong trình duyệt, D-30) rồi lưu kết quả thành revision bất biến
  * (D-31). `status: FAILED` không lưu revision. Lỗi service (`OptimizationServiceError`) và huỷ (`AbortError`) ném lên cho UI.
  */
+// POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans
 export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, run = DEFAULT_RUN_SETTINGS }: RunInput): Promise<RunOutcome> {
   const service = createOptimizationService({ simulateFailure })
   const db = getMockDb()
@@ -89,6 +99,7 @@ export async function runOptimization({ tripId, request, simulateFailure, signal
 }
 
 /** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: mục tiêu, thuật toán, kết quả hoặc lý do không ra kết quả. */
+// chưa có ở BE
 export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]> {
   return getMockDb().listOptimizationRuns(tripId)
 }
@@ -97,6 +108,7 @@ export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]
  * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu, mới nhất trước: lần chạy kèm người chạy, thiết lập và số của revision nó tạo, và phương
  * án đó đã duyệt hay còn chờ duyệt.
  */
+// chưa có ở BE
 export async function fetchRunHistory(tripId: string): Promise<RunHistoryRow[]> {
   const db = getMockDb()
   const [trip, runs, revisions, users] = await Promise.all([

@@ -1,3 +1,8 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   chưa có ở BE: fetchSearchSources
+ */
+
 import { getMockDb } from '@/lib/mock-db'
 import type { SearchGroup, SearchSources } from './quick-search'
 
@@ -5,6 +10,7 @@ import type { SearchGroup, SearchSources } from './quick-search'
  * Lớp gọi API của tìm nhanh (LM-099) — nơi duy nhất của hộp thoại biết về kho. Chỉ đọc những gì các nhóm được phép cần: điều phối
  * viên không kéo danh sách người dùng về máy. Nối backend thật thì thay bằng một API tìm kiếm phía server.
  */
+// chưa có ở BE
 export async function fetchSearchSources(groups: readonly SearchGroup[]): Promise<SearchSources> {
   const db = getMockDb()
   const wants = (group: SearchGroup) => groups.includes(group)
