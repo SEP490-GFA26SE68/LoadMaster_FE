@@ -22,7 +22,7 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; xem chuyến và phương án chỉ đọc |
-| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; đăng ký kiện, in nhãn QR, lập chuyến, tối ưu, duyệt phương án |
+| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; quản lý kho kiện (thêm kiện, nhập file, in nhãn QR), lập chuyến, tối ưu, duyệt phương án |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
 
@@ -54,11 +54,12 @@ Planner ở chế độ chỉ xem, một dòng lý do. Không còn hàng đợi 
 của quản lý (từ chối, yêu cầu tối ưu lại, đề xuất đổi xe / tách chuyến). Trước đó LM-104 (27/09/2026) giao duyệt cho quản lý công ty và LM-108
 (28/09/2026) cho điều phối "Lưu bản chỉnh" vào hàng đợi duyệt. **Còn tạm** sau FE-0-01: `orders.view`/`orders.edit` (điều phối; quản lý chỉ
 xem) giữ tới FE-4b-02. *(đã điều chỉnh 02/10/2026, FE-0-06)* Ba quyền `packages.register`, `shipments.manage`, `receiving.operate` đã bỏ cùng
-hai vai trò của Review 1; ba màn kiện `/kien-hang`, `/kien-hang/nhan`, `/loai-kien` **tạm** theo `packages.manage` của điều phối viên tới khi có
-kho kiện theo mô hình backend (FE-3b-03); `/lo-hang`, `/lo-hang/:shipmentId`, `/nhan-hang` không còn — đường dẫn cũ là màn 404. 19 quyền mới của
+hai vai trò của Review 1; `/lo-hang`, `/lo-hang/:shipmentId`, `/nhan-hang` không còn — đường dẫn cũ là màn 404. *(đã điều chỉnh 03/10/2026,
+FE-3b-03)* **Kho kiện** `/kien-hang` mở theo `packages.view` (điều phối viên quản lý, quản lý công ty chỉ đọc: không nút ghi, không chọn kiện in
+nhãn, không gỡ cờ); nút ghi của màn đó, `/kien-hang/nhan` và `/loai-kien` theo `packages.manage` của điều phối viên. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
-nhãn; trừ `packages.manage`, chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+nhãn; trừ `packages.view` và `packages.manage`, chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
@@ -79,11 +80,11 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
 ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
-chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Chuyến hàng ·
-Đội xe. Điều phối viên: Chuyến hàng · Kiện hàng · Đơn hàng · Đội xe · Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
+chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
+FE-3b-03) · Chuyến hàng · Đội xe. Điều phối viên: Chuyến hàng · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
 họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
-đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kiện hàng (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
+đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
 màn Đội xe. `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi
 nhóm tìm nhanh của từng vai trò là route có thật mà vai trò mở được; mọi màn có tiêu đề tab và nhánh `titles` không còn tên của màn đã bỏ — bỏ
 một route hay một quyền mà quên các chỗ đó là test đỏ.
@@ -103,13 +104,13 @@ trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn 
 riêng, nếu không sẽ thành hai lớp chồng nhau. *(26/09/2026)* Bản đầu của đợt 2 bỏ chỉ báo này; người dùng yêu cầu giữ lại.
 Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
 `LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
-rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm đơn hàng, kiện đã đăng ký, loại kiện — từ FE-0-06 hai nhóm sau theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
+rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm đơn hàng, kho kiện, loại kiện — kho kiện theo `packages.view` (FE-3b-03), loại kiện theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
 đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý công ty ở cả hai ngôn ngữ).
 *(đã điều chỉnh 02/10/2026, FE-0-04)* **Tìm nhanh theo vai trò**: quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm
-chuyến, kiện, đơn hàng, xe; điều phối viên thêm kiện đã đăng ký và loại kiện; kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng không có nhóm
+chuyến, kiện, đơn hàng, kho kiện, xe; điều phối viên thêm loại kiện; kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng không có nhóm
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao; quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
@@ -225,7 +226,8 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
-    packages-source/    loại kiện, kiện hàng, nhãn QR (LM-104) — màn của điều phối viên từ FE-0-06; đọc kho kiện từ FE-3b-01
+    package-pool/       *(đã điều chỉnh 03/10/2026, FE-3b-03)* kho kiện `/kien-hang` (danh sách, thêm kiện, nhập file, chi tiết kiện), loại kiện,
+                        nhãn QR — thay `packages-source/` của LM-104
     orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
@@ -971,16 +973,15 @@ Bản ghi mang công ty: `Trip.companyId`, `PackageType.companyId`, `VehicleType
 công ty của tài khoản bị thử). Xe lưu công ty cạnh `VehicleConfig` trong kho (`vehicleCompany`, D-04); revision và lần chạy tối ưu thuộc công
 ty của chuyến, không lưu riêng. Thêm hàm công khai vào kho thì khai nó ở bảng `PROBES` của `tenancy.test.ts` — thiếu là test đỏ.
 
-*(bổ sung 27/09/2026, LM-104)* Dữ liệu các luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `orders-api.ts`,
+*(bổ sung 27/09/2026, LM-104)* Dữ liệu các luồng Review 1 theo cùng đường đi: `package-pool-api.ts`, `orders-api.ts`,
 `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
-`['registered-packages', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
+`['package-pool', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
 dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy)
 nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không cần
 mang người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không
 hiện cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
-(`['notifications', id, vai trò]`); khoá `['registered-packages', …]` (kiện của kho kiện — giữ tên cũ tới màn Kho kiện mới) còn mang mã
-người dùng từ LM-104, màn mới không làm theo.
+(`['notifications', id, vai trò]`).
 *(đã điều chỉnh 02/10/2026, FE-0-06)* `shipments-api.ts`, `receiving-api.ts` và khoá `['shipments', …]`, `['receiving', …]` đã bỏ cùng hai
 feature đó.
 Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở
@@ -1009,7 +1010,20 @@ thay), khai tường minh trong `spec-contract.test.ts`. `cargoFromPackage(pkg, 
 kiện thì lấy hướng đặt, xếp chồng, tải trên của loại; không có thì mặc định theo loại hàng (`FRAGILE` không cho đè lên, loại khác chịu ba
 lần khối lượng của nó). Nhãn loại hàng, trạng thái và cờ kiện khai một lần ở nhánh `common` (`handlingClasses`, `packageStatuses`,
 `packageFlags`); chip loại hàng là `components/HandlingClassChip` — tint theo nghĩa (thường slate, bốn loại cần chú ý amber), nhận ra bằng
-icon và chữ. Màn `/kien-hang` và hộp thoại "Đăng ký kiện" theo loại kiện còn dùng tạm trên mô hình mới (thêm ô Điểm đến) tới màn Kho kiện mới.
+icon và chữ.
+*(đã điều chỉnh 03/10/2026, FE-3b-03, FE-3b-02)* **Màn Kho kiện** (`features/package-pool`): `package-pool-api.ts` → `usePackagePoolQuery.ts`,
+khoá `['package-pool', 'list' | 'detail' | 'labels', …]` và `['package-types']`; tạo kiện, nhập file, gỡ cờ làm mới `['package-pool']`,
+`['package-types']`, `['orders']`. Bảng (`PackagesPage` + `PackagesTable`, hàm thuần `packages-list.ts`): mới nhất trước; tab trạng thái
+`trang-thai` và ba bộ lọc `loai-hang`, `co`, `gan` (đã / chưa vào đơn hay chuyến) là slug trên URL; bấm dòng mở `PackageDetailPanel` (mã QR,
+cờ, lịch sử), panel mở thì bảng bỏ bốn cột đã có trong panel. **Lịch sử kiện** là `Package.history` do kho ghi ở đúng chỗ đổi kiện (tạo,
+`movePackage`, gắn / gỡ cờ) — màn không suy từ nhật ký; `fetchPackageDetail` ghép tên người làm. Đăng ký theo loại kiện / theo số lượng đã bỏ:
+"Thêm kiện" là form một kiện (`package-form.ts`, lỗi là mã). **Nhập file** (`package-pool-import.ts`, hàm thuần trả mã): cột `package_code,
+length, width, height, weight, handling_class, destination` + tuỳ chọn `package_type`, tìm theo tiêu đề vi / en, đơn vị cm / kg; lỗi file là mã
+`dataErrors` (`UNSUPPORTED_FILE_TYPE`, `EMPTY_FILE`, `FILE_TOO_LARGE` 10 MB, `BATCH_TOO_LARGE` 1.000 dòng, `IMPORT_COLUMNS_MISSING`); lỗi dòng
+kèm số dòng của file (tiêu đề là dòng 1): `PACKAGE_CODE_REQUIRED`, `INVALID_DIMENSION`, `INVALID_WEIGHT`, `INVALID_HANDLING_CLASS`,
+`DESTINATION_REQUIRED`, `DUPLICATE_PACKAGE_CODE`, `PACKAGE_TYPE_NOT_FOUND`; cảnh báo `PACKAGE_CODE_EXISTS` không chặn. Còn một dòng lỗi thì nút
+Xác nhận vô hiệu và `confirmPackageImport` từ chối `PACKAGE_IMPORT_INVALID`; xác nhận gọi `createPackages(rows, 'IMPORT')` một lần, nhật ký
+`package.importConfirmed` (thêm lẻ là `package.created`). Tìm nhanh: nhóm `pool` theo `packages.view`.
 Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
