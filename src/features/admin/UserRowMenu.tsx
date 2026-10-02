@@ -89,7 +89,8 @@ function MenuAction({ icon, label, block, danger = false, onSelect }: {
       {icon}
       <span className="flex min-w-0 flex-col">
         <span>{label}</span>
-        {block !== null ? <span className="text-caption text-text-3">{t(`admin.users.blocked.${block}`)}</span> : null}
+        {/* Mục menu không xuống dòng; lý do dài hơn bề rộng menu thì xuống dòng, không bị cắt ở mép phải */}
+        {block !== null ? <span className="text-caption whitespace-normal text-text-3">{t(`admin.users.blocked.${block}`)}</span> : null}
       </span>
     </DropdownMenuItem>
   )
