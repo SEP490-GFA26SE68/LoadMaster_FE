@@ -15,6 +15,8 @@ import type {
   VehicleTypeInput,
 } from './source-types'
 import type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
+import type { TripEta } from './db-trip-route'
+import type { TripSegregation } from './db-trip-segregation'
 import type { Trip } from './types'
 
 /**
@@ -22,6 +24,9 @@ import type { Trip } from './types'
  * ghi thêm một sự kiện nhật ký, và lọc theo công ty của phiên (D-64). Lô hàng và luồng quét nhận giữa nhà sản xuất và công ty
  * logistics đã bỏ (FE-0-06, D-63).
  */
+/** Lý do vượt luật "một chuyến một loại hàng" gửi kèm một lần đưa kiện vào chuyến (D-74). */
+export type SegregationOverride = { overrideReason?: string }
+
 export type Review1Db = {
   /** Các công ty logistics dùng app. Phiên của một công ty chỉ thấy công ty mình; phiên nền tảng thấy hết. */
   listCompanies(): Promise<Company[]>
@@ -96,9 +101,10 @@ export type Review1Db = {
    * cùng toạ độ với một điểm đang có thì vào điểm đó, không thì thêm một điểm mới cuối tuyến (tên là tên điểm đến). Mỗi nhóm kiện giống
    * nhau thành một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu —
    * D-93) ở điểm đó; hạn của điểm = hạn sớm nhất, ưu tiên = cao nhất của các yêu cầu ở điểm; chuyến tăng `inputVersion` (revision cũ
-   * lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ: `PACKAGE_FLAGGED`.
+   * lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ: `PACKAGE_FLAGGED`. Kiện khác loại hàng đang khoá của
+   * chuyến mà chưa có lý do vượt luật: `CARGO_SEGREGATION_CONFLICT` — gọi lại kèm `overrideReason` để vượt (D-74).
    */
-  assignDeliveryRequirement(requirementId: string, tripId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
+  assignDeliveryRequirement(requirementId: string, tripId: string, options?: SegregationOverride): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
   /**
    * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`; điểm
    * giao tự sinh không còn dòng kiện nào tự mất (kiện ở các điểm sau đánh số lại), hạn và ưu tiên của các điểm còn lại tính lại.
@@ -116,15 +122,34 @@ export type Review1Db = {
    * chuyến (`STOP_NOT_FOUND` nếu không có), hoặc một điểm tay mới cuối tuyến (thiếu tên, toạ độ sai: `TRIP_INVALID`). Kiện phải
    * `IMPORTED`, không cờ (`PACKAGE_FLAGGED`), không thuộc yêu cầu giao nào (`PACKAGE_UNAVAILABLE`); không kiện nào: `PACKAGES_REQUIRED`.
    * Mỗi nhóm kiện giống nhau thành một dòng `CargoPackage` mới ở điểm đó, không có hạn; kiện sang `ASSIGNED`, giữ mã và dữ liệu của
-   * chính nó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31). Chuyến đã sang vận hành: `TRIP_LOCKED`.
+   * chính nó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31). Chuyến đã sang vận hành: `TRIP_LOCKED`. Kiện khác loại hàng đang
+   * khoá mà chưa có lý do vượt luật: `CARGO_SEGREGATION_CONFLICT` — gọi lại kèm `overrideReason` để vượt (D-74).
    */
-  addTripPackages(tripId: string, packageIds: readonly string[], target: TripStopTarget): Promise<Trip>
+  addTripPackages(tripId: string, packageIds: readonly string[], target: TripStopTarget, options?: SegregationOverride): Promise<Trip>
   /**
    * Bỏ một kiện kho kiện khỏi chuyến ở pha lập kế hoạch: kiện về `IMPORTED`, dòng kiện của nó bớt một (hết kiện thì bỏ dòng), chuyến
    * tăng `inputVersion`. Kiện của yêu cầu giao (rời chuyến bằng `unassignDeliveryRequirement`) hoặc kiện không ở chuyến này:
    * `PACKAGE_UNAVAILABLE`.
    */
   removeTripPackage(tripId: string, packageId: string): Promise<Trip>
+  /**
+   * Phân nhóm hàng của chuyến (FE-4b-06, D-74): loại hàng đang khoá (loại của kiện đầu tiên), nhóm theo loại, dòng kiện khác loại, cảnh
+   * báo về xe, và lý do vượt luật đã ghi.
+   */
+  getTripSegregation(tripId: string): Promise<TripSegregation>
+  /**
+   * Ghi lý do vượt luật cho chuyến còn lập kế hoạch đang có kiện khác loại (lý do bắt buộc: `REASON_REQUIRED`; quá 500 ký tự:
+   * `OVERRIDE_REASON_TOO_LONG`), ghi nhật ký. Chuyến không có kiện khác loại thì không ghi gì. Chuyến đã sang vận hành: `TRIP_LOCKED`.
+   */
+  overrideTripSegregation(tripId: string, reason: string): Promise<Trip>
+  /**
+   * Tối ưu tuyến của chuyến còn lập kế hoạch (FE-4b-09, D-76; mock, không tốn credit): xếp lại điểm giao theo thứ tự đi, đánh số lại
+   * dòng kiện, ghi `routePlan` (giờ đến dự kiến, mức hạn) — chuyến thành Đã lập kế hoạch. Chưa có điểm giao: `ROUTE_STOPS_REQUIRED`;
+   * còn điểm chưa có toạ độ: `MISSING_STOP_COORDINATES`; chuyến đã sang vận hành: `TRIP_LOCKED`.
+   */
+  optimizeTripRoute(tripId: string): Promise<Trip>
+  /** Giờ đến dự kiến, hạn và mức hạn từng điểm của tuyến đã tối ưu; `null` khi chuyến chưa tối ưu tuyến. */
+  getTripEta(tripId: string): Promise<TripEta | null>
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>
   /** Ghi một lần chạy không ra kết quả (service từ chối hoặc không phản hồi). */

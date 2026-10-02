@@ -9,6 +9,8 @@ import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
 import { scanMethods } from './db-scans'
 import { tripPoolMethods } from './db-trip-pool'
+import { routeMethods } from './db-trip-route'
+import { segregationMethods } from './db-trip-segregation'
 import { tripMethods } from './db-trips'
 import { userMethods } from './db-users'
 import { vehicleTypeMethods } from './db-vehicle-types'
@@ -60,6 +62,8 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...packageMethods(ctx),
     ...requirementMethods(ctx),
     ...tripPoolMethods(ctx),
+    ...segregationMethods(ctx),
+    ...routeMethods(ctx),
     ...vehicleTypeMethods(ctx),
     ...scanMethods(ctx),
   }

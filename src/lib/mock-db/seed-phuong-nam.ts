@@ -5,7 +5,7 @@ import { cargoFromType, handlingClassOfType } from './package-type-cargo'
 import { seededRandom } from './qr-token'
 import { packageSeeder } from './seed-packages'
 import { PHUONG_NAM_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
-import { seedPlanner } from './seed-plan'
+import { seedPlanner, withSeedRoute } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
 import type { DeliveryRequirement } from './requirement-model'
@@ -89,9 +89,13 @@ const FABRIC: TypeSeed = {
   allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 4, maxTopLoadKg: 84,
 }
 
+/**
+ * Hai khách của chuyến đã duyệt có toạ độ mẫu ở mức khu vực (Quận 7, KCN Hiệp Phước — `seed-places.ts`) để chuyến có tuyến đã tối ưu
+ * (FE-4b-09); hai khách của chuyến nháp chưa có toạ độ.
+ */
 const CUSTOMERS = {
-  crescent: { name: 'Crescent Mall – kho nhận hàng', address: '101 Tôn Dật Tiên, P. Tân Phú, Q.7, TP. Hồ Chí Minh', phone: '0283 541 3388', contactName: 'Anh Nhân' },
-  xuongMayNhaBe: { name: 'Xưởng may Hiệp Phước', address: '18 Nguyễn Văn Tạo, X. Hiệp Phước, Nhà Bè', phone: '0283 873 8120', contactName: 'Chị Diệp' },
+  crescent: { name: 'Crescent Mall – kho nhận hàng', address: '101 Tôn Dật Tiên, P. Tân Phú, Q.7, TP. Hồ Chí Minh', phone: '0283 541 3388', contactName: 'Anh Nhân', lat: 10.7287, lng: 106.7189 },
+  xuongMayNhaBe: { name: 'Xưởng may Hiệp Phước', address: '18 Nguyễn Văn Tạo, X. Hiệp Phước, Nhà Bè', phone: '0283 873 8120', contactName: 'Chị Diệp', lat: 10.64, lng: 106.75 },
   linhKienQ4: { name: 'Cửa hàng linh kiện Khánh Hội', address: '264 Khánh Hội, P. 6, Q.4, TP. Hồ Chí Minh', phone: '0938 406 715', contactName: 'Anh Thịnh' },
   vaiSoiQ1: { name: 'Vải sợi Tôn Thất Đạm', address: '36 Tôn Thất Đạm, P. Nguyễn Thái Bình, Q.1, TP. Hồ Chí Minh', phone: '0283 821 4472', contactName: 'Chị Quyên' },
 } satisfies Record<string, Omit<DeliveryStop, 'id'>>
@@ -145,13 +149,13 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
   })
 
   // Chuyến hôm nay: lập chiều hôm trước, tối ưu rồi duyệt — chờ kho Phú Thuận xếp, tài xế Phương Nam thấy ở "Chuyến của tôi"
-  const approved: Trip = {
+  const approved: Trip = withSeedRoute({
     id: 'TRIP-PN-001', companyId: PHUONG_NAM, name: 'Tuyến Quận 7 – Nhà Bè', vehicleId: 'VEHICLE-PN-01', scheduledDate: today, driverId: DRIVER,
     departureAt: vnTime(today, SEED_DEPARTURE_TIME), depot: PHUONG_NAM_DEPOT,
     phase: 'planning', createdAt: on(1, '15:05'), inputVersion: 1,
     stops: stops(['crescent', 'xuongMayNhaBe']),
     packages: lines([[ELECTRONICS, 30, 1], [FABRIC, 12, 2]]),
-  }
+  }, on(1, '15:20'), DISPATCHER)
   events.push({ at: approved.createdAt, actorId: DISPATCHER, action: 'trip.created', target: { type: 'trip', id: approved.id }, params: { name: approved.name } })
   plan(approved, 20_260_951, { optimized: on(1, '15:35'), approved: on(1, '16:05') })
 

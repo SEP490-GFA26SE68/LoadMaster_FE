@@ -34,6 +34,8 @@ test('a new trip turns every instance of its hand-entered lines into an ASSIGNED
   const trip = await db.createTrip({
     name: 'Tuyến Dĩ An – Biên Hoà', vehicleId: 'VEHICLE-005', stops: STOPS, scheduledDate: '2026-09-15',
     packages: [line('PKG-001', 2, 1, { handlingClass: 'FRAGILE' }), line('PKG-002', 1, 2)],
+    // Hai loại hàng trong một chuyến: cần lý do vượt luật phân tách hàng (FE-4b-06)
+    overrideReason: 'Khách gom chung một xe',
   })
   const created = await ofTrip(db, trip.id)
   expect(created.map(brief)).toStrictEqual([
@@ -69,7 +71,7 @@ test('editing the lines of a planning trip keeps the pool in step: more instance
   const tokens = Object.fromEntries((await ofTrip(db, trip.id)).map((pkg) => [pkg.id, pkg.qrToken]))
 
   // Tăng PKG-001 lên 3, giảm PKG-002 còn 1, đổi kích thước PKG-002 và chuyển PKG-001 sang điểm 2
-  await db.updateTrip(trip.id, { packages: [line('PKG-001', 3, 2), line('PKG-002', 1, 2, { lengthCm: 64.5, handlingClass: 'HAZARDOUS' })] })
+  await db.updateTrip(trip.id, { packages: [line('PKG-001', 3, 2), line('PKG-002', 1, 2, { lengthCm: 64.5, handlingClass: 'HAZARDOUS' })], overrideReason: 'Khách gom chung một xe' })
   expect((await ofTrip(db, trip.id)).map(brief)).toStrictEqual([
     ['PK-0089', 'PKG-001-01', 'ASSIGNED', 'STOP-02'], ['PK-0090', 'PKG-001-02', 'ASSIGNED', 'STOP-02'], ['PK-0091', 'PKG-002-01', 'ASSIGNED', 'STOP-02'],
     ['PK-0093', 'PKG-001-03', 'ASSIGNED', 'STOP-02'],

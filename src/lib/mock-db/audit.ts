@@ -19,6 +19,9 @@ export const AUDIT_ACTIONS = [
   // Kiện kho kiện đưa thẳng vào chuyến (FE-4b-05)
   'trip.packagesAdded',
   'trip.packageRemoved',
+  // Vượt luật phân tách hàng (FE-4b-06), tối ưu tuyến (FE-4b-09)
+  'trip.segregationOverridden',
+  'trip.routeOptimized',
   'optimization.saved',
   'revision.approved',
   'loading.started',

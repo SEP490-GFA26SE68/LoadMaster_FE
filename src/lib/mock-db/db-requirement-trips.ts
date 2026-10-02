@@ -3,8 +3,10 @@ import type { Review1Db } from './db-api-review1'
 import { movePackage } from './db-packages'
 import { poolLines, setTripLinks, stopDemandsOf, syncStopDemands, tripLinks } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
+import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
 import { REQUIREMENT_CARGO_PRIORITY, type DeliveryRequirement } from './requirement-model'
+import { withFreshRoute } from './trip-route'
 import { pruneGeneratedStops, requirementStop, withStopDemands } from './trip-stops'
 import type { Trip } from './types'
 
@@ -62,7 +64,7 @@ export function requirementTripMethods(ctx: DbContext): RequirementTripMethods {
   const scope = ctx.scope.requirements
 
   return {
-    assignDeliveryRequirement: (requirementId, tripId) =>
+    assignDeliveryRequirement: (requirementId, tripId, options = {}) =>
       ctx.respond(() => {
         const requirement = scope.own(requirementId)
         if (requirement.status !== 'PENDING') throw new MockDbError('REQUIREMENT_NOT_PENDING', { requirementId, status: requirement.status })
@@ -79,11 +81,16 @@ export function requirementTripMethods(ctx: DbContext): RequirementTripMethods {
         if (!stop) throw new Error(`Chuyến ${tripId} không dựng được điểm giao cho yêu cầu ${requirementId}`)
         const stopNumber = placed.index + 1
         const { cargo, links } = poolLines(ctx, members, trip, stopNumber, { groupId: requirementId, ...REQUIREMENT_CARGO_PRIORITY[requirement.priority] })
+        const lines = [...trip.packages, ...cargo]
+        // Một chuyến một loại hàng (D-74): kiểm trước khi ghi bất cứ gì; lỗi gọi tên kiện bằng mã của bên gửi
+        const codeById = new Map(members.map((pkg) => [pkg.id, pkg.packageCode]))
+        const codesOf = (lineId: string) => links.find((link) => link.lineId === lineId)?.packageIds.map((id) => codeById.get(id) ?? id)
+        const settled = settleSegregation(ctx, trip, { ...trip, packages: lines, inputVersion: trip.inputVersion + 1 }, { overrideReason: options.overrideReason, codesOf })
         const assigned = put(requirements, { ...requirement, status: 'ASSIGNED', tripId })
         setTripLinks(ctx, tripId, [...tripLinks(ctx, tripId), ...links.map((link) => ({ ...link, requirementId }))])
-        const lines = [...trip.packages, ...cargo]
         const stops = withStopDemands(placed.stops, stopDemandsOf(ctx, { id: tripId, packages: lines }))
-        const nextTrip = put(trips, { ...trip, stops, packages: lines, inputVersion: trip.inputVersion + 1 })
+        // Điểm mới sinh sau khi đã tối ưu tuyến: chuyến về Nháp; gộp vào điểm đang có thì tính lại mức hạn (PRD v2 mục 7.1)
+        const nextTrip = put(trips, withFreshRoute({ ...settled, stops }))
         for (const pkg of members) movePackage(ctx, pkg, 'ASSIGNED', { tripId, stopId: stop.id })
         ctx.log('requirement.assigned', { type: 'requirement', id: requirementId }, {
           destinationName: requirement.destinationName, tripId, stopNumber, count: requirement.packageIds.length,
@@ -108,7 +115,8 @@ export function requirementTripMethods(ctx: DbContext): RequirementTripMethods {
         const pruned = pruneGeneratedStops(trip.stops, trip.packages.filter((pkg) => !lineIds.has(pkg.id)))
         const packagesLeft = [...pruned.packages]
         const stops = withStopDemands(pruned.stops, stopDemandsOf(ctx, { id: tripId, packages: packagesLeft }))
-        const stored = put(trips, { ...trip, stops, packages: packagesLeft, inputVersion: trip.inputVersion + 1 })
+        const settled = settleSegregation(ctx, trip, { ...trip, stops, packages: packagesLeft, inputVersion: trip.inputVersion + 1 })
+        const stored = put(trips, withFreshRoute(settled))
         // Dòng của yêu cầu đã bị sửa số lượng mang kiện riêng của chuyến: gỡ dòng thì các kiện đó về kho kiện (FE-3b-07)
         syncTripPool(ctx, stored)
         for (const id of requirement.packageIds) {

@@ -108,10 +108,11 @@ test('the seed of Long Bình spreads 15 trips over 30 days around the anchor day
   const db = createMockDb({ today: '2026-09-19' })
   db.restoreSession(LONG_BINH_DISPATCHER)
   const trips = await db.listTrips()
-  const statuses = await Promise.all(trips.map(async (trip) => tripStatus(trip, await db.listRevisions(trip.id))))
+  const statuses = trips.map((trip) => tripStatus(trip))
   const count = (status: string) => statuses.filter((item) => item === status).length
   expect(trips).toHaveLength(15)
-  // FE-0-05: đã lập kế hoạch gồm chuyến chính (đã duyệt), TRIP-012 (chờ duyệt), TRIP-013 (lỗi thời); đang xếp hàng gồm TRIP-011, TRIP-010
+  // FE-0-05: đã lập kế hoạch gồm chuyến chính (đã duyệt), TRIP-012 (chờ duyệt), TRIP-013 (lỗi thời); đang xếp hàng gồm TRIP-011, TRIP-010.
+  // FE-4b-09: ba chuyến đó đã tối ưu tuyến trong seed; chuyến nháp TRIP-014 thì chưa
   expect({
     DELIVERED: count('DELIVERED'), CANCELLED: count('CANCELLED'), IN_TRANSIT: count('IN_TRANSIT'),
     LOADING: count('LOADING'), PLANNED: count('PLANNED'), DRAFT: count('DRAFT'),
@@ -145,7 +146,7 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     packages: (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.requirementId]),
     tripPackages: (await db.listPackages()).filter((pkg) => pkg.source === 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.tripId].join(' ')),
     requirements: (await db.listDeliveryRequirements()).map((item) => [item.id, item.status, item.packageIds.length, item.deadline]),
-    trips: await Promise.all(trips.map(async (trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip, await db.listRevisions(trip.id))])),
+    trips: trips.map((trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip)]),
     revisions: revisions.map((revision) => [revision.id, revision.approvedBy, revision.result.metrics.placedCount, revision.result.metrics.unplacedCount]),
     runs: (await db.listOptimizationRuns('TRIP-PN-001')).map((run) => [run.id, run.status, run.by]),
   }).toStrictEqual({

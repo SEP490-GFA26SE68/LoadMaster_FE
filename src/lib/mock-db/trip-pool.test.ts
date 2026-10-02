@@ -20,7 +20,8 @@ const TAN_BINH = { name: 'Xưởng bánh kẹo Tân Bình', address: 'KCN Tân B
 test('IMPORTED packages go straight onto a new hand-added stop: one line per group of identical packages, no deadline, pool data kept', async () => {
   const db = dispatcher()
   const before = await db.getTrip('TRIP-014')
-  const trip = await db.addTripPackages('TRIP-014', ['PK-0029', 'PK-0064', 'PK-0030', 'PK-0029'], { newStop: TAN_BINH })
+  // PK-0064 là hàng giá trị cao, chuyến đang chở hàng thường: cần lý do vượt luật phân tách hàng (FE-4b-06)
+  const trip = await db.addTripPackages('TRIP-014', ['PK-0029', 'PK-0064', 'PK-0030', 'PK-0029'], { newStop: TAN_BINH }, { overrideReason: 'Khách gom chung một xe' })
   expect(trip.inputVersion).toBe(before.inputVersion + 1)
   // Điểm tay mới cuối tuyến: không tự sinh, không hạn, không ưu tiên
   expect(trip.stops.at(-1)).toStrictEqual({ id: 'STOP-03', ...TAN_BINH })
@@ -105,7 +106,7 @@ test('a package taken off the trip goes back to IMPORTED; its line shrinks and d
 
 test('editing or moving the line keeps the data of the pool packages; cancelling the trip sends them back to the pool', async () => {
   const db = dispatcher()
-  const added = await db.addTripPackages('TRIP-014', ['PK-0064'], { newStop: TAN_BINH })
+  const added = await db.addTripPackages('TRIP-014', ['PK-0064'], { newStop: TAN_BINH }, { overrideReason: 'Khách gom chung một xe' })
   const before = await db.getPackage('PK-0064')
   // Sửa khối lượng của dòng và chuyển dòng sang điểm 1: kiện kho kiện chỉ đổi điểm giao
   await db.updateTrip('TRIP-014', { packages: added.packages.map((line) => (line.id === 'PKG-004' ? { ...line, weightKg: 9, deliveryStop: 1 } : line)) })
@@ -114,7 +115,8 @@ test('editing or moving the line keeps the data of the pool packages; cancelling
   await db.updateTrip('TRIP-014', { packages: added.packages.filter((line) => line.id !== 'PKG-004') })
   expect((await db.getPackage('PK-0064')).status).toBe('IMPORTED')
 
-  await db.addTripPackages('TRIP-014', ['PK-0064'], { stopId: 'STOP-03' })
+  // Chuyến hết kiện khác loại thì lý do vượt luật cũng được gỡ: đưa lại kiện giá trị cao phải ghi lý do lần nữa (FE-4b-06)
+  await db.addTripPackages('TRIP-014', ['PK-0064'], { stopId: 'STOP-03' }, { overrideReason: 'Khách gom chung một xe' })
   await db.cancelTrip('TRIP-014', 'Khách dời lịch nhận hàng')
   const released = await db.getPackage('PK-0064')
   expect([released.status, released.tripId, released.packageCode]).toStrictEqual(['IMPORTED', undefined, 'TL-HNI-2609-01'])

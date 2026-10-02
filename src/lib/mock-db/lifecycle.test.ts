@@ -31,7 +31,7 @@ test('the warehouse starts loading the latest approved plan, records each packag
   expect([completed?.action, completed?.params, completed?.actorId]).toStrictEqual(['loading.completed', { loaded: 131, missing: 1 }, 'US-0003'])
   expect([missing?.action, missing?.params]).toStrictEqual(['loading.missing', { packageInstanceId: ids[0] }])
   const revisions = await db.listRevisions(loaded.id)
-  expect([tripStatus(loaded, revisions), tripSubStatus(loaded, revisions)]).toStrictEqual(['LOADING', { kind: 'loaded' }])
+  expect([tripStatus(loaded), tripSubStatus(loaded, revisions)]).toStrictEqual(['LOADING', { kind: 'loaded' }])
 })
 
 test('once loading starts, vehicle, stops and packages are locked; name, date and driver can still change (D-45)', async () => {
@@ -112,7 +112,7 @@ test('a trip is cancelled with a reason before it leaves, never after (D-45)', a
   expect([cancelled.phase, cancelled.cancellation]).toStrictEqual([
     'cancelled', { at: '2026-09-14T03:00:00.000Z', by: 'US-0001', reason: 'Khách huỷ đơn', fromPhase: 'planning' },
   ])
-  expect(tripStatus(cancelled, await db.listRevisions(cancelled.id))).toBe('CANCELLED')
+  expect(tripStatus(cancelled)).toBe('CANCELLED')
   await expect(db.updateTrip('TRIP-012', { name: 'Tuyến mới' })).rejects.toMatchObject({ code: 'TRIP_LOCKED', params: { phase: 'cancelled' } })
 })
 
@@ -133,19 +133,18 @@ test('only an active driver can be assigned to a trip', async () => {
   expect((await db.updateTrip('TRIP-012', { driverId: 'US-0006' })).driverId).toBe('US-0006')
 })
 
-test('trip status is one of the six backend statuses (FE-0-05): the phase decides; while planning, a trip with a plan is planned', () => {
-  const plan = [{ id: 'REV-001' }]
-  // Luật tạm tới FE-4b-09: pha lập kế hoạch đã có revision là Đã lập kế hoạch — dù bản đó chờ duyệt, đã duyệt hay lỗi thời
-  expect(tripStatus({ phase: 'planning' }, [])).toBe('DRAFT')
-  expect(tripStatus({ phase: 'planning' }, plan)).toBe('PLANNED')
-  expect(tripStatus({ phase: 'planning' }, [{ id: 'REV-001' }, { id: 'REV-002' }])).toBe('PLANNED')
-  expect(tripStatus({ phase: 'loading' }, plan)).toBe('LOADING')
-  expect(tripStatus({ phase: 'loaded' }, plan)).toBe('LOADING')
-  expect(tripStatus({ phase: 'delivering' }, plan)).toBe('IN_TRANSIT')
-  expect(tripStatus({ phase: 'completed' }, plan)).toBe('DELIVERED')
-  expect(tripStatus({ phase: 'cancelled' }, plan)).toBe('CANCELLED')
-  // Huỷ khi chưa tối ưu vẫn là Đã huỷ, không phải Nháp
-  expect(tripStatus({ phase: 'cancelled' }, [])).toBe('CANCELLED')
+test('trip status is one of the six backend statuses (FE-0-05): the phase decides; while planning, a trip with an optimized route is planned (FE-4b-09)', () => {
+  const routePlan = { stops: [], missedStopIds: [], totalKm: 0, totalMinutes: 0, optimizedAt: '2026-09-14T01:15:00.000Z', optimizedBy: null, isMockResult: true as const }
+  // PRD v2 mục 7.1: chuyến sang Đã lập kế hoạch khi tối ưu tuyến xong — có phương án 3D hay chưa không quyết định trạng thái
+  expect(tripStatus({ phase: 'planning' })).toBe('DRAFT')
+  expect(tripStatus({ phase: 'planning', routePlan })).toBe('PLANNED')
+  expect(tripStatus({ phase: 'loading', routePlan })).toBe('LOADING')
+  expect(tripStatus({ phase: 'loaded', routePlan })).toBe('LOADING')
+  expect(tripStatus({ phase: 'delivering', routePlan })).toBe('IN_TRANSIT')
+  expect(tripStatus({ phase: 'completed', routePlan })).toBe('DELIVERED')
+  expect(tripStatus({ phase: 'cancelled', routePlan })).toBe('CANCELLED')
+  // Huỷ khi chưa tối ưu tuyến vẫn là Đã huỷ, không phải Nháp
+  expect(tripStatus({ phase: 'cancelled' })).toBe('CANCELLED')
 })
 
 test('secondary line under Planned (FE-0-05): awaiting approval, approved, stale — the latest approved plan decides, else the latest plan', () => {

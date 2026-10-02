@@ -205,7 +205,8 @@ test('a requirement to a new place generates a stop at the end; the same address
   expect(merged.trip.stops[2]).toMatchObject({ id: 'STOP-03', name: 'KCN Hoà Khánh', deadline: '2026-09-17T02:00:00.000Z', priority: 'HIGH' })
   expect(await db.getPackage('PK-0023')).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', stopId: 'STOP-03' })
   // REQ-003 đi KCN Thăng Long: điểm 4
-  const third = await db.assignDeliveryRequirement('REQ-003', 'TRIP-014')
+  // Kiện của REQ-003 là hàng giá trị cao, chuyến đang chở hàng thường: cần lý do vượt luật phân tách hàng (FE-4b-06)
+  const third = await db.assignDeliveryRequirement('REQ-003', 'TRIP-014', { overrideReason: 'Khách gom chung một xe' })
   expect(third.trip.stops.map((stop) => [stop.id, stop.name, stop.priority])).toStrictEqual([
     ['STOP-01', 'Điện máy Xanh Tân An', undefined], ['STOP-02', 'Kho Bách Hoá Xanh Dĩ An', undefined], ['STOP-03', 'KCN Hoà Khánh', 'HIGH'], ['STOP-04', 'KCN Thăng Long', 'URGENT'],
   ])
@@ -234,7 +235,8 @@ test('packages without a package type become one line each, named by the sender 
     destinationName: 'Công ty Gốm Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ', deadline: '2026-09-18T17:00:00+07:00', priority: 'URGENT',
     packageIds: ['PK-0054', 'PK-0023', 'PK-0055', 'PK-0064', 'PK-0024'],
   })
-  const { trip } = await db.assignDeliveryRequirement(created.id, 'TRIP-014')
+  // Yêu cầu gồm hàng dễ vỡ và hàng giá trị cao, chuyến đang chở hàng thường: cần lý do vượt luật phân tách hàng (FE-4b-06)
+  const { trip } = await db.assignDeliveryRequirement(created.id, 'TRIP-014', { overrideReason: 'Khách gom chung một xe' })
   // Yêu cầu chưa có toạ độ: điểm sinh ra cũng chưa có
   expect(trip.stops.at(-1)).toStrictEqual({ id: 'STOP-03', name: 'Công ty Gốm Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ', generated: true, deadline: '2026-09-18T10:00:00.000Z', priority: 'URGENT' })
   expect(trip.packages.slice(3).map((line) => [line.id, line.name, line.quantity, line.deliveryStop, line.handlingClass, line.stackable, line.maxTopLoadKg, line.weightKg, line.priority, line.mustLoad])).toStrictEqual([

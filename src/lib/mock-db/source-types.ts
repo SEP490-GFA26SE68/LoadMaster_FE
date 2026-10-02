@@ -1,4 +1,5 @@
 import type { FragilityLevel, OrientationCode } from '@/domain/models'
+import type { DeadlineStatus } from '@/domain/routing'
 
 /**
  * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, công ty), lần chạy tối ưu, loại xe và nhãn QR. Đơn vị cm / kg như
@@ -113,3 +114,32 @@ export type TripLabel = {
 
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */
 export type ScanResult<T> = { trip: T; packageInstanceId: string }
+
+/** Giờ đến dự kiến của một điểm giao trong tuyến đã tối ưu. */
+export type RouteStopEta = {
+  stopId: string
+  /** ISO 8601 (UTC). */
+  eta: string
+  /** Mức hạn (PRD v2 mục 7.3); chỉ có khi điểm có hạn. */
+  deadlineStatus?: DeadlineStatus
+}
+
+/**
+ * Tuyến đã tối ưu của chuyến (FE-4b-09, D-76): thứ tự điểm **là thứ tự `Trip.stops`**, ở đây giữ giờ đến dự kiến và mức hạn của từng
+ * điểm theo đúng thứ tự đó. Có `routePlan` thì chuyến là Đã lập kế hoạch. Kho tính lại (`withFreshRoute`) mỗi khi thứ tự điểm, giờ
+ * xuất phát, kho đi, toạ độ hay hạn của điểm đổi; thêm hoặc bớt điểm thì kho bỏ hẳn `routePlan` — chuyến về Nháp. Kết quả của mock.
+ */
+export type TripRoutePlan = {
+  stops: RouteStopEta[]
+  /** Điểm trễ hạn dự kiến (`MISSED`), theo thứ tự đi. */
+  missedStopIds: string[]
+  /** Quãng đường ước lượng kho → điểm cuối, km (làm tròn 0,1). */
+  totalKm: number
+  /** Từ lúc xuất phát tới khi xong điểm cuối, phút. */
+  totalMinutes: number
+  /** Lần bấm "Tối ưu tuyến" gần nhất, ISO 8601. */
+  optimizedAt: string
+  /** Người bấm; `null` khi không có phiên (seed, test). */
+  optimizedBy: string | null
+  isMockResult: true
+}

@@ -2,7 +2,7 @@ import type { PlacementPatch } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, OptimizationResult } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
-import type { CompanyDepot, RunSettings } from './source-types'
+import type { CompanyDepot, RunSettings, TripRoutePlan } from './source-types'
 
 /**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
@@ -31,8 +31,8 @@ export type DeliveryStop = {
 
 /**
  * Pha vận hành của chuyến (D-45), do kho lưu. `planning` là mọi thứ trước khi kho bắt đầu xếp — trạng thái hiển thị của pha này
- * (Nháp / Đã lập kế hoạch, dòng phụ chờ duyệt · đã duyệt · lỗi thời) suy từ revision (`tripStatus`, `tripSubStatus`). Từ `loading`
- * trở đi xe, điểm giao và kiện bị khoá.
+ * suy lúc đọc: Nháp / Đã lập kế hoạch theo tuyến đã tối ưu (`Trip.routePlan`, FE-4b-09), dòng phụ chờ duyệt · đã duyệt · lỗi thời theo
+ * revision (`tripStatus`, `tripSubStatus`). Từ `loading` trở đi xe, điểm giao và kiện bị khoá.
  */
 export const TRIP_PHASES = ['planning', 'loading', 'loaded', 'delivering', 'completed', 'cancelled'] as const
 export type TripPhase = (typeof TRIP_PHASES)[number]
@@ -118,6 +118,10 @@ export type Trip = {
   loading?: LoadingProgress
   delivery?: DeliveryProgress
   cancellation?: Cancellation
+  /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
+  routePlan?: TripRoutePlan
+  /** Lý do điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06, D-74); kho tự gỡ khi chuyến hết kiện khác loại. */
+  overrideReason?: string
 }
 
 /**
@@ -126,15 +130,18 @@ export type Trip = {
  */
 export type NewTrip = Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate'> & {
   driverId?: string | null
+  /** Lý do vượt luật phân tách hàng khi `packages` gồm nhiều loại hàng (D-74). */
+  overrideReason?: string
   departureAt?: string
   depot?: CompanyDepot
 }
 
 /**
  * Trường sửa được của chuyến; trường vắng giữ nguyên. Trường do kho quản lý (`id`, `inputVersion`, `phase`, tiến độ…) có trong
- * đầu vào cũng bị bỏ.
+ * đầu vào cũng bị bỏ. `overrideReason` chỉ có nghĩa khi `packages` đổi làm phát sinh kiện khác loại hàng (D-74) — không phải một trường
+ * sửa riêng (ghi lý do cho xung đột đang có: `overrideTripSegregation`).
  */
-export type TripChanges = Partial<Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate' | 'driverId' | 'departureAt' | 'depot'>>
+export type TripChanges = Partial<Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'packages' | 'scheduledDate' | 'driverId' | 'departureAt' | 'depot' | 'overrideReason'>>
 
 /**
  * Một kết quả tối ưu của chuyến, **bất biến** (D-31): kho không có hàm sửa revision. Duyệt tạo revision mới.

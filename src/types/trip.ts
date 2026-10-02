@@ -9,7 +9,7 @@ export type TripStatus = (typeof TRIP_STATUSES)[number]
 /**
  * Dòng phụ dưới chip trạng thái (FE-0-05, PRD v2 mục 7.1). Dưới `PLANNED`: phương án đang hiển thị chờ duyệt, đã duyệt, hoặc lỗi thời
  * (cần tối ưu lại). Dưới `LOADING`: kho đang xếp (đã ghi / tổng kiện của phương án kho xếp theo), hoặc đã xếp xong chờ xe xuất phát.
- * Dòng phụ của luồng chưa làm (tối ưu tuyến, soạn hàng, giám sát) thêm ở issue của luồng đó.
+ * Dòng phụ của luồng chưa làm (soạn hàng, giám sát) thêm ở issue của luồng đó.
  */
 export type TripSubStatus =
   | { readonly kind: 'awaitingApproval' }
@@ -17,3 +17,5 @@ export type TripSubStatus =
   | { readonly kind: 'stale' }
   | { readonly kind: 'loading'; readonly recorded: number; readonly total: number }
   | { readonly kind: 'loaded' }
+  /** Tuyến đã tối ưu có `count` điểm tới nơi sau hạn (FE-4b-09) — đứng cạnh dòng phụ của phương án (`tripRouteSubStatus`). */
+  | { readonly kind: 'lateStops'; readonly count: number }

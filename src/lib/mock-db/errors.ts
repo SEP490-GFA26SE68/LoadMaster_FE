@@ -1,3 +1,4 @@
+import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
 import type { PackageFlag, PackageStatus } from './package-model'
 import type { RequirementStoredStatus } from './requirement-model'
@@ -135,6 +136,19 @@ export type MockDbErrorParams = {
   REQUIREMENT_NOT_PENDING: { requirementId: string; status: RequirementStoredStatus }
   /** Gỡ khỏi chuyến một yêu cầu chưa vào chuyến hoặc đã đang giao; sửa yêu cầu đã giao xong. */
   REQUIREMENT_STATUS_INVALID: { requirementId: string; status: RequirementStoredStatus }
+
+  // Phân tách hàng và tối ưu tuyến (FE-4b-06, FE-4b-09)
+  /**
+   * Đưa vào chuyến kiện khác loại hàng đang khoá mà chưa ghi lý do vượt luật (D-74). `packages`: mã của các kiện khác loại (mã của bên
+   * gửi với kiện kho kiện, mã dòng kiện với kiện gõ trong chuyến).
+   */
+  CARGO_SEGREGATION_CONFLICT: { tripId: string; lockedClass: HandlingClass; packages: string[] }
+  /** Lý do vượt luật dài quá `max` ký tự. */
+  OVERRIDE_REASON_TOO_LONG: { max: number }
+  /** Tối ưu tuyến khi chuyến chưa có điểm giao nào. */
+  ROUTE_STOPS_REQUIRED: { tripId: string }
+  /** Tối ưu tuyến khi còn điểm giao chưa có toạ độ: `stopNumbers` là số của các điểm đó (1-based), `stopIds` là mã. */
+  MISSING_STOP_COORDINATES: { tripId: string; stopIds: string[]; stopNumbers: number[] }
 
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */

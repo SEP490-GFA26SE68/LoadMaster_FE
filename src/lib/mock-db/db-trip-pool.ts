@@ -2,9 +2,11 @@ import { found, optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { movePackage } from './db-packages'
 import { poolLines, setTripLinks, stopDemandsOf, tripLinks } from './db-trip-lines'
+import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
 import type { Package } from './package-model'
 import { isValidCoordinate } from './requirement-model'
+import { withFreshRoute } from './trip-route'
 import { nextStopId, pruneGeneratedStops, withStopDemands } from './trip-stops'
 import type { DeliveryStop, Trip } from './types'
 
@@ -78,7 +80,7 @@ export function tripPoolMethods(ctx: DbContext): TripPoolMethods {
           return link.packageIds.map((id) => ({ package: found(ctx.state.packages, 'packages', id), lineId: line.id, deliveryStop: line.deliveryStop, origin }))
         })
       }),
-    addTripPackages: (tripId, packageIds, target) =>
+    addTripPackages: (tripId, packageIds, target, options = {}) =>
       ctx.respond(() => {
         const trip = planningTrip(tripId)
         const ids = [...new Set(packageIds)]
@@ -95,8 +97,14 @@ export function tripPoolMethods(ctx: DbContext): TripPoolMethods {
         const stop = placed.stops[placed.index]
         if (!stop) throw new Error(`Chuyến ${tripId} không dựng được điểm giao cho kiện đưa thẳng vào chuyến`)
         const { cargo, links } = poolLines(ctx, members, trip, placed.index + 1)
+        // Một chuyến một loại hàng (D-74): kiểm trước khi ghi bất cứ gì; lỗi gọi tên kiện bằng mã của bên gửi
+        const codeById = new Map(members.map((pkg) => [pkg.id, pkg.packageCode]))
+        const codesOf = (lineId: string) => links.find((link) => link.lineId === lineId)?.packageIds.map((id) => codeById.get(id) ?? id)
+        const next: Trip = { ...trip, stops: placed.stops, packages: [...trip.packages, ...cargo], inputVersion: trip.inputVersion + 1 }
+        const settled = settleSegregation(ctx, trip, next, { overrideReason: options.overrideReason, codesOf })
         setTripLinks(ctx, tripId, [...tripLinks(ctx, tripId), ...links.map((link) => ({ ...link, fromPool: true }))])
-        const stored = put(trips, { ...trip, stops: placed.stops, packages: [...trip.packages, ...cargo], inputVersion: trip.inputVersion + 1 })
+        // Điểm tay mới thêm sau khi đã tối ưu tuyến: chuyến về Nháp (PRD v2 mục 7.1)
+        const stored = put(trips, withFreshRoute(settled))
         for (const pkg of members) movePackage(ctx, pkg, 'ASSIGNED', { tripId, stopId: stop.id })
         ctx.log('trip.packagesAdded', { type: 'trip', id: tripId }, { count: members.length, stopNumber: placed.index + 1 })
         return stored
@@ -119,7 +127,8 @@ export function tripPoolMethods(ctx: DbContext): TripPoolMethods {
         const pruned = pruneGeneratedStops(trip.stops, lines)
         const packagesLeft = [...pruned.packages]
         const stops = withStopDemands(pruned.stops, stopDemandsOf(ctx, { id: tripId, packages: packagesLeft }))
-        const stored = put(trips, { ...trip, stops, packages: packagesLeft, inputVersion: trip.inputVersion + 1 })
+        const settled = settleSegregation(ctx, trip, { ...trip, stops, packages: packagesLeft, inputVersion: trip.inputVersion + 1 })
+        const stored = put(trips, withFreshRoute(settled))
         movePackage(ctx, pkg, 'IMPORTED')
         ctx.log('trip.packageRemoved', { type: 'trip', id: tripId }, { packageId, packageCode: pkg.packageCode })
         return stored

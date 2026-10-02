@@ -1,9 +1,21 @@
 import type { OptimizationRequest, VehicleConfig } from '@/domain/models'
 import { runMockOptimization } from '@/services/optimization'
 import { approvedResult } from './revisions'
+import { routePlanOf, stopsWithoutCoordinates } from './trip-route'
 import type { SeedEvent } from './seed-progress'
 import { DEFAULT_RUN_SETTINGS, type OptimizationRun } from './source-types'
 import type { Revision, Trip } from './types'
+
+/**
+ * Tuyến đã tối ưu của chuyến seed (FE-4b-09): chuyến đã có phương án thì đã tối ưu tuyến trước đó, nên là Đã lập kế hoạch. Thứ tự
+ * điểm của seed được giữ nguyên — như điều phối viên đã kéo lại thứ tự sau khi tối ưu — vì phương án 3D của seed xếp theo đúng thứ tự
+ * đó; giờ đến dự kiến tính bằng cùng công thức của mock. Chuyến còn điểm chưa có toạ độ thì không có tuyến. Không ghi sự kiện nhật ký:
+ * lịch sử seed giữ nguyên số sự kiện.
+ */
+export function withSeedRoute(trip: Trip, optimizedAt: string, optimizedBy: string): Trip {
+  if (trip.stops.length === 0 || stopsWithoutCoordinates(trip.stops).length > 0) return trip
+  return { ...trip, routePlan: routePlanOf(trip, { optimizedAt, optimizedBy }) }
+}
 
 /** Một lần tối ưu (và Duyệt, nếu có `approved`) của chuyến seed; trả bản đã duyệt. */
 export type SeedPlanner = (trip: Trip, randomSeed: number, times: { optimized: string; approved?: string }) => Revision | undefined
