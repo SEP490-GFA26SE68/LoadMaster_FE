@@ -142,9 +142,9 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     vehicles: (await db.listVehicles()).map((vehicle) => vehicle.id),
     vehicleTypes: (await db.listVehicleTypeAssignments()),
     packageTypes: (await db.listPackageTypes()).map((type) => [type.id, type.name]),
-    packages: (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
+    packages: (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.requirementId]),
     tripPackages: (await db.listPackages()).filter((pkg) => pkg.source === 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.tripId].join(' ')),
-    orders: (await db.listOrders()).map((order) => [order.id, order.status, order.packageIds.length]),
+    requirements: (await db.listDeliveryRequirements()).map((item) => [item.id, item.status, item.packageIds.length, item.deadline]),
     trips: await Promise.all(trips.map(async (trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip, await db.listRevisions(trip.id))])),
     revisions: revisions.map((revision) => [revision.id, revision.approvedBy, revision.result.metrics.placedCount, revision.result.metrics.unplacedCount]),
     runs: (await db.listOptimizationRuns('TRIP-PN-001')).map((run) => [run.id, run.status, run.by]),
@@ -152,10 +152,10 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     vehicles: ['VEHICLE-PN-01', 'VEHICLE-PN-02'],
     vehicleTypes: [{ vehicleId: 'VEHICLE-PN-01', vehicleTypeId: 'VT-PN-01' }],
     packageTypes: [['PT-PN-01', 'Thùng linh kiện điện tử'], ['PT-PN-02', 'Kiện vải cuộn']],
-    // 6 thùng linh kiện (4 thùng đầu thuộc đơn chờ gán) và 4 kiện vải cuộn, đều còn ở kho kiện (FE-3b-01)
+    // 6 thùng linh kiện (4 thùng đầu thuộc yêu cầu giao chờ xếp chuyến) và 4 kiện vải cuộn, đều còn ở kho kiện (FE-3b-01)
     packages: [
-      ['PK-PN-0001', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0002', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0003', 'IMPORTED', 'ORD-PN-001'],
-      ['PK-PN-0004', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
+      ['PK-PN-0001', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0002', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0003', 'IMPORTED', 'REQ-PN-001'],
+      ['PK-PN-0004', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
       ['PK-PN-0007', 'IMPORTED', undefined], ['PK-PN-0008', 'IMPORTED', undefined], ['PK-PN-0009', 'IMPORTED', undefined],
       ['PK-PN-0010', 'IMPORTED', undefined],
     ],
@@ -164,14 +164,15 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
       ...Array.from({ length: 42 }, (_, index) => `PK-PN-T${String(index + 1).padStart(4, '0')} ASSIGNED TRIP-PN-001`),
       ...Array.from({ length: 28 }, (_, index) => `PK-PN-T${String(index + 43).padStart(4, '0')} ASSIGNED TRIP-PN-002`),
     ],
-    orders: [['ORD-PN-001', 'pending', 4]],
+    // Hạn neo theo ngày: 15:00 ngày mai của ngày neo 19/09
+    requirements: [['REQ-PN-001', 'PENDING', 4, '2026-09-20T08:00:00.000Z']],
     // Chuyến hôm nay đã duyệt, gán tài xế taixe@phuongnam.vn; chuyến ngày mai còn nháp
     trips: [['TRIP-PN-001', '2026-09-19', 'US-PN-04', 'PLANNED'], ['TRIP-PN-002', '2026-09-20', null, 'DRAFT']],
     // 30 thùng linh kiện + 12 kiện vải cuộn xếp đủ; điều phối viên Phương Nam tối ưu rồi duyệt
     revisions: [['REV-PN-001', undefined, 42, 0], ['REV-PN-002', 'US-PN-03', 42, 0]],
     runs: [['RUN-PN-001', 'COMPLETED', 'US-PN-03']],
   })
-  // Mã kế tiếp của kho không đổi vì mã `…-PN-…` không tính: các test và E2E vẫn ghi TRIP-015, VEHICLE-009, PT-009, VT-008, ORD-003
+  // Mã kế tiếp của kho không đổi vì mã `…-PN-…` không tính: các test và E2E vẫn ghi TRIP-015, VEHICLE-009, PT-009, VT-008, REQ-007
   const created = await db.createTrip({ name: 'Tuyến Quận 7', vehicleId: 'VEHICLE-PN-02', scheduledDate: '2026-09-20', packages: [], stops: [] })
   expect([created.id, (await db.createVehicleType({ name: 'Xe tải 1,9 tấn', cargoLengthCm: 360, cargoWidthCm: 170, cargoHeightCm: 170, payloadKg: 1900 })).id])
     .toStrictEqual(['TRIP-015', 'VT-008'])

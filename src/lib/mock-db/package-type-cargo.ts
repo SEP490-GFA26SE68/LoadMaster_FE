@@ -8,7 +8,7 @@ const DEFAULT_MIN_SUPPORT_RATIO = 0.8
 
 /**
  * Dòng kiện của chuyến dựng từ loại kiện (LM-104): mọi trường xếp hàng lấy từ loại kiện, phần còn lại mặc định (ưu tiên 1, bắt buộc
- * xếp). `groupId` giữ mã đơn hàng để truy ngược kiện về đơn.
+ * xếp). `groupId` giữ mã yêu cầu giao để truy ngược kiện về yêu cầu.
  */
 export function cargoFromType(
   type: PackageTypeInput,

@@ -33,11 +33,11 @@ test.each<HandlingClass>(['STANDARD', 'REFRIGERATED', 'HAZARDOUS', 'HIGH_VALUE']
 })
 
 test.each<HandlingClass>(['STANDARD', 'FRAGILE', 'REFRIGERATED', 'HAZARDOUS', 'HIGH_VALUE'])('a %s package with a package type takes orientations, stacking and top load from the type, sizes from itself', (handlingClass) => {
-  const cargo = cargoFromPackage(pkg(handlingClass, { packageTypeId: 'PT-006' }), fan, { id: 'PKG-004', quantity: 6, deliveryStop: 2, groupId: 'ORD-003' })
+  const cargo = cargoFromPackage(pkg(handlingClass, { packageTypeId: 'PT-006' }), fan, { id: 'PKG-004', quantity: 6, deliveryStop: 2, groupId: 'REQ-007' })
   expect(cargo).toStrictEqual({
     id: 'PKG-004', name: 'Quạt điện đứng', lengthCm: 60, widthCm: 40, heightCm: 35, weightKg: 12.5, quantity: 6, allowedOrientations: ['LWH'],
     keepUpright: true, fragilityLevel: 'MEDIUM', stackable: true, maxTopLoadKg: 12, maxStackCount: 3, minSupportRatio: 0.8, deliveryStop: 2, priority: 1,
-    mustLoad: true, groupId: 'ORD-003', handlingClass,
+    mustLoad: true, groupId: 'REQ-007', handlingClass,
   })
 })
 

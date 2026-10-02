@@ -105,17 +105,17 @@ test('the system administrator has users and the audit log only: trips, fleet an
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the company manager lands on the dashboard and sees its own nav items, orders read-only (FE-0-04)', async ({ page, login, browserErrors }) => {
+test('the company manager lands on the dashboard and sees its own nav items: requirements to edit, the pool read-only (FE-0-04, FE-4b-02)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
-  // Đơn hàng với quản lý công ty là màn chỉ đọc: không nút tạo đơn
-  await nav.getByRole('link', { name: 'Đơn hàng', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/don-hang')
-  await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng', exact: true })).toBeVisible()
-  await expect(page.getByRole('row', { name: /ORD-/ }).first()).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Tạo đơn hàng', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
+  // Yêu cầu giao là việc của quản lý công ty (D-72): có nút tạo
+  await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
+  await expect(page.getByRole('heading', { level: 1, name: 'Yêu cầu giao', exact: true })).toBeVisible()
+  await expect(page.getByRole('row', { name: /REQ-/ }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true })).toBeVisible()
   // Kho kiện với quản lý công ty là màn chỉ đọc (FE-3b-03): không thêm kiện, không nhập file, không chọn kiện in nhãn, không gỡ cờ
   await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
@@ -143,7 +143,12 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
+  // Yêu cầu giao với điều phối viên là màn chỉ xem (FE-4b-02): không nút tạo
+  await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
+  await expect(page.getByRole('row', { name: /REQ-/ }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true })).toHaveCount(0)
   await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true })).toBeVisible()

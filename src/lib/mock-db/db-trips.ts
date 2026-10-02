@@ -1,5 +1,6 @@
 import { nextId, put, sameData, type DbContext } from './db-context'
 import { releaseTripPackages } from './db-package-progress'
+import { releaseTripRequirements } from './db-requirement-trips'
 import { syncTripPool } from './db-trip-packages'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
@@ -93,7 +94,9 @@ export function tripMethods(ctx: DbContext): TripMethods {
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
         const cancellation = { at: ctx.nowIso(), by: ctx.state.session.userId, reason: trimmed, fromPhase: current.phase }
         ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed })
+        // Huỷ trước khi xe chạy (D-91): kiện về kho kiện, yêu cầu giao về "chờ xếp chuyến"
         releaseTripPackages(ctx, current)
+        releaseTripRequirements(ctx, current)
         return put(trips, { ...current, phase: 'cancelled', cancellation })
       }),
   }

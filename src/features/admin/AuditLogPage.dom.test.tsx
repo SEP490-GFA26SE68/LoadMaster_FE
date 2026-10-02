@@ -156,12 +156,13 @@ test('lọc theo công ty: bảy sự kiện seed của Phương Nam; bộ lọc
   await user.click(screen.getByRole('option', { name: 'Công ty CP Giao nhận Phương Nam' }))
 
   expect(await screen.findByTestId('search')).toHaveTextContent('?cong-ty=LOG-002')
-  // Seed của Phương Nam: 2 đợt thêm kiện, 1 đơn, 2 chuyến, 1 lần tối ưu, 1 lần duyệt — đều do điều phối viên Kiều Anh Tuấn làm
+  // Seed của Phương Nam: 2 đợt thêm kiện, 2 chuyến, 1 lần tối ưu, 1 lần duyệt do điều phối viên Kiều Anh Tuấn làm; 1 yêu cầu giao do
+  // quản lý công ty Mạc Thị Hồng Nhung lập (FE-4b-01)
   await screen.findByText('7 sự kiện', {}, SLOW)
   const rows = await dataRows()
-  expect(new Set(rows.map((row) => row[1]))).toStrictEqual(new Set(['Kiều Anh Tuấn Điều phối viên']))
+  expect(new Set(rows.map((row) => row[1]))).toStrictEqual(new Set(['Kiều Anh Tuấn Điều phối viên', 'Mạc Thị Hồng Nhung Quản lý công ty']))
   expect(rows.map((row) => row[2]).toSorted()).toStrictEqual([
-    'Duyệt phương án', 'Lưu kết quả tối ưu', 'Tạo chuyến', 'Tạo chuyến', 'Tạo đơn hàng', 'Thêm kiện vào kho kiện', 'Thêm kiện vào kho kiện',
+    'Duyệt phương án', 'Lưu kết quả tối ưu', 'Tạo chuyến', 'Tạo chuyến', 'Tạo yêu cầu giao', 'Thêm kiện vào kho kiện', 'Thêm kiện vào kho kiện',
   ].toSorted())
   expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent(new Intl.NumberFormat('vi-VN').format(all.length))
 })

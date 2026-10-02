@@ -46,7 +46,7 @@ export const lookup = {
   },
   reprint: 'Reprint label',
   openInPool: 'Open in Package pool',
-  flagNote: 'A flagged package cannot go into an order or a trip.',
+  flagNote: 'A flagged package cannot go into a delivery requirement or a trip.',
   flagCleared: 'Cleared the {flag} flag of package {code}.',
   found: {
     prompt: 'This package carries the "Not found" flag. If the package is in front of you, confirm to clear the flag.',

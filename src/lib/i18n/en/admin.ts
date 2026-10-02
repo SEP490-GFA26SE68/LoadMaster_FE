@@ -166,7 +166,6 @@ export const admin = {
       pickups: { create: 'Create en-route pickup requests', approve: 'Approve en-route pickup requests' },
       warehouse: { operate: 'Load at the warehouse' },
       driver: { operate: 'Deliver' },
-      orders: { view: 'View orders', edit: 'Create and edit orders, assign them to stops' },
     },
   },
 } satisfies Dictionary<typeof source>

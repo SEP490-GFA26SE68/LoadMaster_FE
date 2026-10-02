@@ -12,19 +12,19 @@ import type { Trip } from './types'
  * được cho tới lúc chốt:
  *
  * - kho bắt đầu xếp → `STAGED` *(tạm, tới khi có bước Soạn hàng quét từng kiện vào khu chờ)*;
- * - kho xếp xong → kiện đã lên xe `LOADED`; kiện báo thiếu về `IMPORTED` kèm cờ `NOT_FOUND` (D-92), vẫn do đơn của nó giữ;
+ * - kho xếp xong → kiện đã lên xe `LOADED`; kiện báo thiếu về `IMPORTED` kèm cờ `NOT_FOUND` (D-92), vẫn do yêu cầu giao của nó giữ;
  * - xe xuất phát → `IN_TRANSIT`;
  * - hoàn tất một điểm giao → kiện đã dỡ `DELIVERED`, kiện của điểm đó không dỡ được (có sự cố) `RETURNED`;
- * - huỷ chuyến trước khi xe chạy → về `IMPORTED`.
+ * - huỷ chuyến trước khi xe chạy → về `IMPORTED` (yêu cầu giao của chuyến về `PENDING`, `db-requirement-trips.ts`).
  *
- * Kiện nối với instance của chuyến qua đơn hàng, hoặc là kiện thêm ngay trong chuyến (`tripInstances`, FE-3b-07); dòng của đơn bị sửa số
- * lượng sau khi gán thì kiện của đơn mất liên kết và đứng yên ở trạng thái đang có.
+ * Kiện nối với instance của chuyến qua yêu cầu giao, hoặc là kiện thêm ngay trong chuyến (`tripInstances`, FE-3b-07); dòng của yêu cầu
+ * bị sửa số lượng sau khi vào chuyến thì kiện của yêu cầu mất liên kết và đứng yên ở trạng thái đang có.
  */
 
 type Linked = { pkg: Package; instanceId: string | undefined }
 
 function tripPackages(ctx: DbContext, trip: Trip): Linked[] {
-  const instanceOf = tripInstances(trip, ctx.state.orders.values(), ownTripLinks(ctx, trip.id))
+  const instanceOf = tripInstances(trip, ctx.state.requirements.values(), ownTripLinks(ctx, trip.id))
   return [...ctx.state.packages.values()].filter((pkg) => pkg.tripId === trip.id).map((pkg) => ({ pkg, instanceId: instanceOf.get(pkg.id) }))
 }
 

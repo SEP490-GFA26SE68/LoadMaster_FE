@@ -54,7 +54,7 @@ test('Ctrl+K opens the search; arrows move and wrap, Enter opens the trip; Esc r
   const input = within(dialog).getByRole('combobox', { name: 'Từ khoá tìm nhanh' })
   expect(input).toHaveFocus()
   // Điều phối viên tìm thêm kho kiện và loại kiện (màn `/kien-hang`, `/loai-kien`)
-  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến), loại kiện (mã, tên) và xe (tên, biển số).')).toBeInTheDocument()
+  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến), loại kiện (mã, tên) và xe (tên, biển số).')).toBeInTheDocument()
 
   // Esc đóng, con trỏ về ô đang gõ trước khi mở
   await user.keyboard('{Escape}')
@@ -186,7 +186,7 @@ test('the company manager finds pool packages (read-only pool, FE-3b-03) but no 
   const user = userEvent.setup()
   renderSearch('manager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
-  expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), đơn hàng (mã, khách, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến) và xe (tên, biển số).')).toBeInTheDocument()
+  expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến) và xe (tên, biển số).')).toBeInTheDocument()
   await user.keyboard('pk-0001')
   const packages = await screen.findByRole('group', { name: 'Kho kiện' }, SLOW)
   await user.click(within(packages).getByRole('option'))

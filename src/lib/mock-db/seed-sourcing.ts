@@ -5,18 +5,20 @@ import { seededRandom } from './qr-token'
 import { CARGO, CUSTOMERS, type CargoKey } from './seed-directory'
 import { LONG_BINH_IMPORT, packageSeeder } from './seed-packages'
 import type { SeedEvent } from './seed-progress'
+import type { DeliveryRequirement } from './requirement-model'
+import { LONG_BINH_DESTINATIONS, seedRequirements } from './seed-requirements'
 import { SEED_DISPATCHER } from './seed-trips'
 import { LONG_BINH, PHUONG_NAM } from './seed-users'
-import type { Company, PackageType, TransportOrder, VehicleType } from './source-types'
+import type { Company, PackageType, VehicleType } from './source-types'
 
 /**
  * Seed nguồn hàng (LM-104, FE-0-06): hai công ty logistics, và của **Long Bình**: danh mục loại kiện (lấy từ danh mục hàng của 15
- * chuyến seed), kho kiện kèm mã QR, hai đơn chờ gán và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR
+ * chuyến seed), kho kiện kèm mã QR, sáu yêu cầu giao chờ xếp chuyến (FE-4b-01) và danh mục loại xe của đội xe. Mốc giờ neo theo ngày `today` (D-44). Mã QR
  * sinh từ bộ số giả ngẫu nhiên có hạt giống cố định: tất định, không chứa dữ liệu kiện. Nguồn hàng của Phương Nam: `seed-phuong-nam.ts`.
  *
  * Kho kiện của Long Bình (FE-3b-01): 48 kiện thêm tay theo loại kiện (kiện đăng ký `RPK` của Review 1 chuyển sang, kích thước lấy từ
- * loại kiện) và 40 kiện nhập file chưa vào đơn hay chuyến nào (`LONG_BINH_IMPORT`). Mọi kiện ở `IMPORTED`, do điều phối viên của Long
- * Bình tạo.
+ * loại kiện) và 40 kiện nhập file chưa vào chuyến nào (`LONG_BINH_IMPORT`). Mọi kiện ở `IMPORTED`, do điều phối viên của Long Bình
+ * tạo; 30 kiện thuộc sáu yêu cầu giao do quản lý công ty lập.
  */
 
 /**
@@ -37,6 +39,9 @@ export const COMPANIES: readonly Company[] = [
 /** Công ty của mọi bản ghi ở file này — công ty của người đăng ký `SEED_DISPATCHER`. */
 const SEED_OWNER = LONG_BINH
 
+/** Quản lý công ty của Long Bình (`quanly@loadmaster.vn`): người lập yêu cầu giao của seed. */
+export const SEED_MANAGER = 'US-0002'
+
 /** Loại kiện theo danh mục hàng seed: kích thước, khối lượng, hướng đặt và xếp chồng giữ nguyên. */
 const TYPE_KEYS: readonly CargoKey[] = ['nuocSuoi', 'miGoi', 'dauAn', 'suaHop', 'banhQuy', 'quatDien', 'noiComDien', 'nuocGiat']
 
@@ -44,7 +49,7 @@ export type SourcingSeed = {
   companies: Company[]
   packageTypes: PackageType[]
   packages: Package[]
-  orders: TransportOrder[]
+  requirements: DeliveryRequirement[]
   vehicleTypes: VehicleType[]
   vehicleTypeOf: [string, string][]
 }
@@ -79,8 +84,9 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
   }
 
   // Mã kiện theo thứ tự gọi: nước suối PK-0001…0012, mì 0013…0022, sữa 0023…0028, bánh quy 0029…0034, dầu ăn 0035…0042, quạt 0043…0048,
-  // rồi 40 kiện nhập file PK-0049…0088. 22 kiện đầu thuộc hai đơn chờ gán (điểm đến là địa chỉ khách của đơn); còn lại đưa vào đơn mới
-  // được, trừ hai kiện mang cờ. 8 thùng dầu ăn thêm sáng ngày neo (08:05 — sau lần đăng nhập 07:50 của điều phối viên, trước lần chạy
+  // rồi 40 kiện nhập file PK-0049…0088. 22 kiện đầu thuộc hai yêu cầu giao lập sáng ngày neo (điểm đến là địa chỉ khách); hai kiện cuối
+  // của bốn đợt nhập đi Đà Nẵng, Huế, Hà Nội, Cần Thơ thuộc bốn yêu cầu lập chiều hôm trước; còn lại đưa vào yêu cầu mới được, trừ hai
+  // kiện mang cờ. 8 thùng dầu ăn thêm sáng ngày neo (08:05 — sau lần đăng nhập 07:50 của điều phối viên, trước lần chạy
   // tối ưu 08:20 của chuyến chính).
   const water = register('nuocSuoi', 12, on(3, '09:00'), 'MP-NS24-0911', CUSTOMERS.coopBinhDuong.address)
   const noodles = register('miGoi', 10, on(3, '09:10'), 'MP-MG30-0911', CUSTOMERS.bhxDiAn.address)
@@ -96,21 +102,24 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
     pkg.history.push({ at: on(1, '17:05'), actorId: SEED_DISPATCHER, kind: 'flagged', flag })
   }
 
-  const order = function (id: string, customer: { name: string; address: string; phone: string; contactName: string }, packages: Package[], at: string): TransportOrder {
-    for (const pkg of packages) pkg.orderId = id
-    events.push({ at, actorId: SEED_DISPATCHER, action: 'order.created', target: { type: 'order', id }, params: { customerName: customer.name, count: packages.length } })
-    return {
-      id, companyId: SEED_OWNER, customerName: customer.name, deliveryAddress: customer.address, contactName: customer.contactName, phone: customer.phone,
-      packageIds: packages.map((pkg) => pkg.id), status: 'pending', createdAt: at, createdBy: SEED_DISPATCHER,
-    }
-  }
-  // ORD-002 giao tới Bách Hoá Xanh Dĩ An — điểm 2 của chuyến nháp TRIP-014, gán thẳng được để demo luồng 2
-  const orders: TransportOrder[] = [
-    order('ORD-001', CUSTOMERS.coopBinhDuong, water, on(0, '08:40')),
-    order('ORD-002', CUSTOMERS.bhxDiAn, noodles, on(0, '08:45')),
-  ]
+  // Hai kiện cuối của đợt nhập đi `destination`
+  const lastTwo = (destination: string) => imported.filter((pkg) => pkg.destination === destination).slice(-2)
+  const { hoaKhanh, phuBai, thangLong, traNoc, coopBinhDuong, bhxDiAn } = LONG_BINH_DESTINATIONS
+  const customer = (key: 'coopBinhDuong' | 'bhxDiAn') => ({ destinationName: CUSTOMERS[key].name, address: CUSTOMERS[key].address })
+  // REQ-006 giao tới Bách Hoá Xanh Dĩ An — điểm 2 của chuyến nháp TRIP-014 (chạy sau ngày neo hai ngày), đưa thẳng vào chuyến được
+  const requirements = seedRequirements({
+    companyId: SEED_OWNER, actorId: SEED_MANAGER, today, events,
+    specs: [
+      { id: 'REQ-001', ...hoaKhanh, due: [4, '17:00'], priority: 'LOW', packages: lastTwo(hoaKhanh.address), createdAt: on(1, '16:40') },
+      { id: 'REQ-002', ...phuBai, due: [3, '17:00'], priority: 'HIGH', packages: lastTwo(phuBai.address), createdAt: on(1, '16:45'), note: 'Hàng gốm, giao trong giờ hành chính' },
+      { id: 'REQ-003', ...thangLong, due: [5, '12:00'], priority: 'URGENT', packages: lastTwo(thangLong.address), createdAt: on(1, '16:50') },
+      { id: 'REQ-004', ...traNoc, due: [3, '10:00'], priority: 'NORMAL', packages: lastTwo(traNoc.address), createdAt: on(1, '16:55') },
+      { id: 'REQ-005', ...customer('coopBinhDuong'), ...coopBinhDuong, due: [2, '16:00'], priority: 'NORMAL', packages: water, createdAt: on(0, '08:40') },
+      { id: 'REQ-006', ...customer('bhxDiAn'), ...bhxDiAn, due: [2, '11:00'], priority: 'HIGH', packages: noodles, createdAt: on(0, '08:45') },
+    ],
+  })
 
-  return { companies: [...COMPANIES], packageTypes, packages: seeder.packages, orders, ...seedVehicleTypes(on(40, '09:00')) }
+  return { companies: [...COMPANIES], packageTypes, packages: seeder.packages, requirements, ...seedVehicleTypes(on(40, '09:00')) }
 }
 
 /** Loại xe của đội xe seed; VEHICLE-008 để trống (xe có thể chưa gắn loại). */

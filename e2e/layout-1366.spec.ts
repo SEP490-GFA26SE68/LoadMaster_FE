@@ -157,11 +157,11 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
 const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
   {
     role: 'dispatcher',
-    labels: { vi: ['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Package pool', 'Orders', 'Fleet', 'Dashboard'] },
+    labels: { vi: ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Package pool', 'Requirements', 'Fleet', 'Dashboard'] },
   },
   {
     role: 'manager',
-    labels: { vi: ['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Orders', 'Package pool', 'Trips', 'Fleet'] },
+    labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Fleet'] },
   },
 ]
 

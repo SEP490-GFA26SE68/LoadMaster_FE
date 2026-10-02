@@ -11,7 +11,7 @@ export const readiness = {
   status: { pass: 'Passed', warn: 'Warning', fail: 'Not passed' },
   fix: {
     editTrip: 'Edit trip',
-    assignOrder: 'Assign order',
+    assignRequirement: 'Put a requirement on the trip',
     reviewPackages: 'Review invalid packages',
   },
   checks: {

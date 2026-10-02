@@ -50,7 +50,7 @@ test('a new trip turns every instance of its hand-entered lines into an ASSIGNED
   })
   // Dòng không khai loại hàng là hàng thường; không kiện nào thuộc đơn hay yêu cầu giao
   expect(created[2]).toMatchObject({ handlingClass: 'STANDARD', destination: '121 Phạm Văn Thuận, Biên Hoà' })
-  expect(created.filter((pkg) => pkg.orderId !== undefined || pkg.requirementId !== undefined)).toStrictEqual([])
+  expect(created.filter((pkg) => pkg.requirementId !== undefined)).toStrictEqual([])
   expect(created.every((pkg) => TOKEN.test(pkg.qrToken))).toBe(true)
 
   // Nhãn của chuyến là mã QR của chính các kiện đó; tra mã ra đúng kiện
@@ -103,22 +103,22 @@ test('reordering the stops moves the packages of each line to the stop the line 
   expect(await db.getPackage('PK-0089')).toMatchObject({ stopId: 'STOP-01', destination: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An', status: 'ASSIGNED' })
 })
 
-test('lines of an order keep the packages of the order; an order line whose quantity was edited gets pool packages of its own', async () => {
+test('lines of a requirement keep the packages of the requirement; a line whose quantity was edited gets pool packages of its own', async () => {
   const db = dispatcher()
   const trip = await db.createTrip({ name: 'Tuyến thử', vehicleId: 'VEHICLE-005', stops: STOPS, scheduledDate: '2026-09-15', packages: [line('PKG-001', 1, 1)] })
-  // ORD-002: mười thùng mì PK-0013…0022 thành dòng PKG-002
-  const assigned = await db.assignOrder('ORD-002', trip.id, 'STOP-02')
+  // REQ-006: mười thùng mì PK-0013…0022 thành dòng PKG-002
+  const assigned = await db.assignDeliveryRequirement('REQ-006', trip.id, 'STOP-02')
   expect((await ofTrip(db, trip.id)).filter((pkg) => pkg.source === 'TRIP').map((pkg) => pkg.id)).toStrictEqual(['PK-0089'])
-  expect((await db.listTripLabels(trip.id)).map((label) => label.poolPackageId)).toStrictEqual(['PK-0089', ...assigned.order.packageIds])
+  expect((await db.listTripLabels(trip.id)).map((label) => label.poolPackageId)).toStrictEqual(['PK-0089', ...assigned.requirement.packageIds])
 
-  // Sửa số lượng dòng của đơn còn 2: dòng mất liên kết với đơn, hai instance được cấp kiện riêng để vẫn có nhãn
+  // Sửa số lượng dòng của yêu cầu còn 2: dòng mất liên kết với yêu cầu, hai instance được cấp kiện riêng để vẫn có nhãn
   const edited = assigned.trip.packages.map((pkg) => (pkg.id === 'PKG-002' ? { ...pkg, quantity: 2 } : pkg))
   await db.updateTrip(trip.id, { packages: edited })
   expect((await db.listTripLabels(trip.id)).map((label) => [label.packageInstanceId, label.poolPackageId])).toStrictEqual([
     ['PKG-001-01', 'PK-0089'], ['PKG-002-01', 'PK-0090'], ['PKG-002-02', 'PK-0091'],
   ])
-  // Bỏ gán đơn gỡ dòng: hai kiện riêng về kho kiện
-  await db.unassignOrder('ORD-002')
+  // Gỡ yêu cầu khỏi chuyến gỡ dòng: hai kiện riêng về kho kiện
+  await db.unassignDeliveryRequirement('REQ-006')
   expect((await Promise.all(['PK-0090', 'PK-0091'].map((id) => db.getPackage(id)))).map((pkg) => [pkg.status, pkg.tripId])).toStrictEqual([['IMPORTED', undefined], ['IMPORTED', undefined]])
 })
 

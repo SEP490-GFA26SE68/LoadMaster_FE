@@ -44,11 +44,12 @@ export const AUDIT_ACTIONS = [
   'package.flagged',
   'package.flagCleared',
   'package.found',
-  'order.created',
-  'order.updated',
-  'order.cancelled',
-  'order.assigned',
-  'order.unassigned',
+  // Yêu cầu giao (FE-4b-01) — thay nhóm `order` của Review 1
+  'requirement.created',
+  'requirement.updated',
+  'requirement.deleted',
+  'requirement.assigned',
+  'requirement.unassigned',
   'optimization.failed',
   'vehicleType.created',
   'vehicleType.updated',
@@ -72,7 +73,7 @@ export type AuditTargetType =
   // LM-104
   | 'packageType'
   | 'package'
-  | 'order'
+  | 'requirement'
   | 'vehicleType'
 
 export type AuditEvent = {

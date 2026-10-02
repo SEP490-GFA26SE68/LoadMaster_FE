@@ -47,12 +47,12 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
 
 /**
  * D-41, FE-0-04: mỗi vai trò có danh sách mục riêng, theo thứ tự của vai trò đó (màn chính đứng đầu), chỉ gồm màn đang có và vai trò
- * mở được. Điều phối viên: Chuyến trước, Bảng điều khiển cuối; quản lý công ty có Đơn hàng (chỉ đọc). Không còn mục Lô hàng, Loại kiện,
+ * mở được. Điều phối viên: Chuyến trước, Bảng điều khiển cuối; cả hai có Yêu cầu giao (quản lý công ty lập, điều phối viên xem — FE-4b-02). Không còn mục Lô hàng, Loại kiện,
  * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển']],
-  ['manager', ['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
+  ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
+  ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],

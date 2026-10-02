@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchTripLabels, fetchTripOrders, fetchTripReadiness, fetchTripReport } from './trip-extras-api'
+import { fetchTripLabels, fetchTripReadiness, fetchTripReport, fetchTripRequirements } from './trip-extras-api'
 
 /**
- * Hook Query cho dữ liệu chuyến của Review 1 (LM-104). Khoá nằm dưới `['trips', tripId]`: mọi ghi của chuyến (kiện, điểm giao, đơn
- * gán, tối ưu) làm mới chúng; tiến độ kho / tài xế ghi ở màn khác nên đọc lại mỗi lần mở.
+ * Hook Query cho dữ liệu chuyến của Review 1 (LM-104). Khoá nằm dưới `['trips', tripId]`: mọi ghi của chuyến (kiện, điểm giao, yêu cầu
+ * giao, tối ưu) làm mới chúng; tiến độ kho / tài xế ghi ở màn khác nên đọc lại mỗi lần mở.
  */
 
 export function useTripReadinessQuery(tripId: string) {
   return useQuery({ queryKey: ['trips', tripId, 'readiness'], queryFn: () => fetchTripReadiness(tripId), enabled: tripId !== '', staleTime: 0 })
 }
 
-export function useTripOrdersQuery(tripId: string) {
-  return useQuery({ queryKey: ['trips', tripId, 'orders'], queryFn: () => fetchTripOrders(tripId), enabled: tripId !== '', staleTime: 0 })
+export function useTripRequirementsQuery(tripId: string) {
+  return useQuery({ queryKey: ['trips', tripId, 'requirements'], queryFn: () => fetchTripRequirements(tripId), enabled: tripId !== '', staleTime: 0 })
 }
 
 export function useTripLabelsQuery(tripId: string) {

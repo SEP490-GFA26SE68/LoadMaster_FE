@@ -55,9 +55,10 @@ test('the warehouse scanning a package flagged "not found" clears the flag, writ
   const log = await db.listEvents()
   expect(log).toHaveLength(events + 1)
   expect(log[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { type: 'package', id: 'PK-0063' }, params: { flag: 'NOT_FOUND', packageCode: 'BV-VIN-2609-05' } })
-  // Kiện lại chọn được vào đơn
-  db.restoreSession('US-0001')
-  expect((await db.createOrder({ customerName: 'Công ty Bắc Vinh', deliveryAddress: 'KCN Bắc Vinh, TP. Vinh', packageIds: ['PK-0063'] })).packageIds).toStrictEqual(['PK-0063'])
+  // Kiện lại chọn được vào yêu cầu giao (hạn xa: đồng hồ của kho ở test này là giờ thật)
+  db.restoreSession('US-0002')
+  const requirement = { destinationName: 'KCN Bắc Vinh', address: 'KCN Bắc Vinh, TP. Vinh, Nghệ An', deadline: '2099-01-01T00:00:00.000Z', priority: 'NORMAL' as const, packageIds: ['PK-0063'] }
+  expect((await db.createDeliveryRequirement(requirement)).packageIds).toStrictEqual(['PK-0063'])
 })
 
 test('only the warehouse reports a package found, and only a package that carries the flag; a damaged flag stays for the dispatcher', async () => {

@@ -14,15 +14,15 @@ export type NavScreen = {
 }
 
 /**
- * Các màn có mục trên thanh điều hướng — chỉ màn **đang có** route (D-20). Màn của sprint sau (Công ty, Gói cước, Hỗ trợ, Yêu cầu
- * giao, Giám sát) thêm một dòng ở đây và mã của nó vào `NAV_ITEMS` của vai trò, trong chính issue làm màn đó.
+ * Các màn có mục trên thanh điều hướng — chỉ màn **đang có** route (D-20). Màn của sprint sau (Công ty, Gói cước, Hỗ trợ,
+ * Giám sát) thêm một dòng ở đây và mã của nó vào `NAV_ITEMS` của vai trò, trong chính issue làm màn đó.
  */
 export const NAV_SCREENS = {
   dashboard: { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   trips: { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
   // Loại kiện và In nhãn mở từ màn Kho kiện, không có mục riêng
   packages: { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.view' },
-  orders: { to: '/don-hang', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view' },
+  requirements: { to: '/yeu-cau-giao', labelKey: 'nav.requirements', icon: ClipboardList, permission: 'requirements.view' },
   // Loại xe mở từ màn Đội xe
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
@@ -38,7 +38,7 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
  * - Quản lý nền tảng, hỗ trợ khách hàng: chưa có màn nào (Sprint 8) nên chưa có mục nào.
- * - Quản lý công ty xem đơn hàng và kho kiện chỉ đọc (FE-3b-03); mục Đơn hàng đứng ở chỗ Yêu cầu giao sẽ thay nó (FE-4b-02).
+ * - Quản lý công ty lập yêu cầu giao (FE-4b-02) và xem kho kiện chỉ đọc (FE-3b-03); điều phối viên xem yêu cầu giao để đưa vào chuyến.
  * - Nhân viên kho, tài xế làm việc ở màn toàn màn hình; thanh này chỉ hiện với họ ở màn hồ sơ, mục duy nhất đưa về màn của mình.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
@@ -46,8 +46,8 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ['users', 'audit'],
-  manager: ['dashboard', 'orders', 'packages', 'trips', 'fleet'],
-  dispatcher: ['trips', 'packages', 'orders', 'fleet', 'dashboard'],
+  manager: ['dashboard', 'requirements', 'packages', 'trips', 'fleet'],
+  dispatcher: ['trips', 'packages', 'requirements', 'fleet', 'dashboard'],
   warehouse: ['warehouse'],
   driver: ['driver'],
 }

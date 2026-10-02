@@ -8,9 +8,9 @@ export const nav = {
   fleet: 'Đội xe',
   users: 'Người dùng',
   audit: 'Nhật ký',
-  // Kho kiện (FE-3b-03) và đơn hàng: điều phối viên quản lý, quản lý công ty chỉ đọc
+  // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty chỉ đọc. Yêu cầu giao (FE-4b-02): quản lý công ty lập, điều phối viên xem
   packages: 'Kho kiện',
-  orders: 'Đơn hàng',
+  requirements: 'Yêu cầu giao',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

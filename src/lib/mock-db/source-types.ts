@@ -1,7 +1,7 @@
 import type { FragilityLevel, OrientationCode } from '@/domain/models'
 
 /**
- * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, công ty), đơn hàng, lần chạy tối ưu, loại xe và nhãn QR. Đơn vị cm / kg như
+ * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, công ty), lần chạy tối ưu, loại xe và nhãn QR. Đơn vị cm / kg như
  * mọi dữ liệu của kho (D-03). Lô hàng và luồng nhận hàng giữa hai công ty đã bỏ (FE-0-06, D-63); kiện của kho kiện ở `package-model.ts`.
  */
 
@@ -15,7 +15,7 @@ export type CompanyDepot = {
 
 /**
  * Công ty logistics dùng app (`LOG-NNN`, D-63, D-64): công ty của tài khoản (`User.companyId`) và chủ của mọi dữ liệu vận hành — xe,
- * loại xe, loại kiện, kiện của kho kiện, đơn hàng, chuyến (kèm revision, lần chạy tối ưu) và sự kiện nhật ký.
+ * loại xe, loại kiện, kiện của kho kiện, yêu cầu giao, chuyến (kèm revision, lần chạy tối ưu) và sự kiện nhật ký.
  */
 export type Company = {
   id: string
@@ -48,40 +48,6 @@ export type PackageType = {
 }
 
 export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt'>
-
-/** Kho lưu `pending`, `assigned`, `cancelled`; `delivered` suy ra khi chuyến được gán đã hoàn thành. */
-export const ORDER_STATUSES = ['pending', 'assigned', 'delivered', 'cancelled'] as const
-export type OrderStatus = (typeof ORDER_STATUSES)[number]
-
-/** Gán đơn vào điểm giao: mỗi nhóm kiện giống nhau của đơn thành một dòng kiện của chuyến, giữ danh sách kiện kho kiện theo dòng. */
-export type OrderAssignment = {
-  tripId: string
-  stopId: string
-  lines: { lineId: string; packageIds: string[] }[]
-  at: string
-  by: string | null
-}
-
-/** Đơn vận chuyển (`ORD-NNN`) từ kiện `IMPORTED` của kho kiện. */
-export type TransportOrder = {
-  id: string
-  /** Công ty lập đơn — cũng là công ty của mọi kiện trong đơn (D-64). */
-  companyId: string
-  customerName: string
-  deliveryAddress: string
-  contactName?: string
-  phone?: string
-  packageIds: string[]
-  status: OrderStatus
-  note?: string
-  createdAt: string
-  createdBy: string | null
-  assignment?: OrderAssignment
-  cancellation?: { at: string; by: string | null; reason: string }
-}
-
-export type OrderInput = Pick<TransportOrder, 'customerName' | 'deliveryAddress' | 'contactName' | 'phone' | 'packageIds' | 'note'>
-export type OrderChanges = Partial<OrderInput>
 
 export const OPTIMIZATION_OBJECTIVES = ['MAX_VOLUME', 'AXLE_BALANCE'] as const
 export type OptimizationObjective = (typeof OPTIMIZATION_OBJECTIVES)[number]

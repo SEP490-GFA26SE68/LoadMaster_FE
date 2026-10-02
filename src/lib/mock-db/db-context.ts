@@ -3,12 +3,12 @@ import type { User } from '@/types/user'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
 import type { Package } from './package-model'
+import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
 import type {
   Company,
   OptimizationRun,
   PackageType,
-  TransportOrder,
   VehicleType,
 } from './source-types'
 import type { TripPackageLink } from './review1-status'
@@ -39,10 +39,11 @@ export type DbState = {
   packages: Map<string, Package>
   /**
    * Chuyến → kiện kho kiện của từng dòng kiện **thêm ngay trong chuyến** (FE-3b-07), kiện thứ i là instance thứ i của dòng. Lưu ngoài
-   * `Trip` vì `Trip.packages` giữ đúng `CargoPackage` của Spec (D-04); kiện vào chuyến qua đơn hàng nối ở `order.assignment`.
+   * `Trip` vì `Trip.packages` giữ đúng `CargoPackage` của Spec (D-04); kiện vào chuyến qua yêu cầu giao nối ở `requirement.assignment`.
    */
   tripPackageLinks: Map<string, TripPackageLink[]>
-  orders: Map<string, TransportOrder>
+  /** Yêu cầu giao (FE-4b-01). */
+  requirements: Map<string, DeliveryRequirement>
   runs: Map<string, OptimizationRun>
   vehicleTypes: Map<string, VehicleType>
   /** Xe → loại xe; lưu ngoài `VehicleConfig` (D-04). */

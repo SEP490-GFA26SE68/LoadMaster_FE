@@ -17,7 +17,7 @@ const SOURCES: SearchSources = {
     { id: 'US-0011', fullName: 'Đỗ Thị Hạnh', email: 'hanh.do@loadmaster.vn', role: 'warehouse' },
     { id: 'US-0003', fullName: 'Lê Văn Hải', email: 'kho@loadmaster.vn', role: 'warehouse' },
   ],
-  orders: [{ id: 'ORD-001', customerName: 'Co.opmart Gò Vấp', deliveryAddress: '12 Quang Trung, Gò Vấp' }],
+  requirements: [{ id: 'REQ-001', destinationName: 'Co.opmart Gò Vấp', address: '12 Quang Trung, Gò Vấp' }],
   pool: [{ id: 'PK-0001', reference: 'MP-DA12-0914', qrToken: 'LM-ZB4R-3W83-412N', typeName: 'Thùng dầu ăn 12 chai' }],
   packageTypes: [{ id: 'PT-001', name: 'Thùng dầu ăn 12 chai' }],
 }
@@ -60,27 +60,28 @@ test('only the permitted groups, in their order; groups without a result are lef
   expect(searchSources(SOURCES, 'hanh', ['trips', 'packages', 'vehicles'])).toStrictEqual([])
 })
 
-test('Review 1 groups: pool packages, package types and orders (LM-104); shipments are no longer searched (FE-0-06)', () => {
+test('pool packages, package types (LM-104) and delivery requirements (FE-4b-02); shipments and orders are no longer searched', () => {
   expect(hrefs(searchSources(SOURCES, 'dau an', SEARCH_GROUPS))).toStrictEqual([
     ['pool', ['/kien-hang?q=PK-0001']],
     ['packageTypes', ['/loai-kien?q=PT-001']],
   ])
   expect(hrefs(searchSources(SOURCES, 'mp-da12', SEARCH_GROUPS))).toStrictEqual([['pool', ['/kien-hang?q=PK-0001']]])
   expect(hrefs(searchSources(SOURCES, 'zb4r', SEARCH_GROUPS))).toStrictEqual([['pool', ['/kien-hang?q=PK-0001']]])
-  expect(hrefs(searchSources(SOURCES, 'go vap', SEARCH_GROUPS))).toStrictEqual([['orders', ['/don-hang?q=ORD-001']]])
-  expect(SEARCH_GROUPS).toStrictEqual(['trips', 'packages', 'orders', 'pool', 'packageTypes', 'vehicles', 'users'])
+  expect(hrefs(searchSources(SOURCES, 'go vap', SEARCH_GROUPS))).toStrictEqual([['requirements', ['/yeu-cau-giao?q=REQ-001']]])
+  expect(hrefs(searchSources(SOURCES, 'req-001', SEARCH_GROUPS))).toStrictEqual([['requirements', ['/yeu-cau-giao?q=REQ-001']]])
+  expect(SEARCH_GROUPS).toStrictEqual(['trips', 'packages', 'requirements', 'pool', 'packageTypes', 'vehicles', 'users'])
   expect(hrefs(searchSources(SOURCES, 'shp-002', SEARCH_GROUPS))).toStrictEqual([])
 })
 
 test('groups follow permissions: the pool opens with packages.view, package types with packages.manage (FE-3b-03)', () => {
   expect(searchGroupsFor((permission) => permission === 'packages.manage')).toStrictEqual(['packageTypes'])
   expect(searchGroupsFor((permission) => permission === 'packages.view')).toStrictEqual(['pool'])
-  // Quyền của điều phối viên liên quan tới tìm nhanh, theo ma trận: chuyến, đơn hàng, kho kiện, đội xe
-  const dispatcher = new Set(['trips.view', 'orders.view', 'packages.view', 'packages.manage', 'fleet.view'])
-  expect(searchGroupsFor((permission) => dispatcher.has(permission))).toStrictEqual(['trips', 'packages', 'orders', 'pool', 'packageTypes', 'vehicles'])
+  // Quyền của điều phối viên liên quan tới tìm nhanh, theo ma trận: chuyến, yêu cầu giao, kho kiện, đội xe
+  const dispatcher = new Set(['trips.view', 'requirements.view', 'packages.view', 'packages.manage', 'fleet.view'])
+  expect(searchGroupsFor((permission) => dispatcher.has(permission))).toStrictEqual(['trips', 'packages', 'requirements', 'pool', 'packageTypes', 'vehicles'])
   // Quản lý công ty xem kho kiện (chỉ đọc) nên tìm được kiện của kho kiện; loại kiện thì không
-  const manager = new Set(['trips.view', 'orders.view', 'packages.view', 'fleet.view'])
-  expect(searchGroupsFor((permission) => manager.has(permission))).toStrictEqual(['trips', 'packages', 'orders', 'pool', 'vehicles'])
+  const manager = new Set(['trips.view', 'requirements.view', 'packages.view', 'fleet.view'])
+  expect(searchGroupsFor((permission) => manager.has(permission))).toStrictEqual(['trips', 'packages', 'requirements', 'pool', 'vehicles'])
   expect(searchGroupsFor(() => true)).toStrictEqual([...SEARCH_GROUPS])
   expect(searchGroupsFor(() => false)).toStrictEqual([])
 })

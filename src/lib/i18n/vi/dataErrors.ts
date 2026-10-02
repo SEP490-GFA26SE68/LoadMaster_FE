@@ -42,7 +42,6 @@ export const dataErrors = {
   PACKAGE_UNAVAILABLE: 'Kiện {packageId} không dùng được ở bước này.',
   PACKAGES_REQUIRED: 'Cần chọn ít nhất một kiện.',
   QR_UNKNOWN: 'Mã {token} không khớp kiện nào.',
-  ORDER_STATUS_INVALID: 'Đơn hàng {orderId} không còn làm được thao tác này.',
   STOP_NOT_FOUND: 'Chuyến {tripId} không có điểm giao {stopId}.',
   VEHICLE_TYPE_INVALID: 'Loại xe chưa hợp lệ: cần tên, kích thước lòng thùng và tải trọng lớn hơn 0.',
   VEHICLE_TYPE_IN_USE: 'Loại xe {vehicleTypeId} còn gắn với xe {vehicleIds} nên không xoá được.',
@@ -53,9 +52,14 @@ export const dataErrors = {
   // Kho kiện (FE-3b-01)
   PACKAGE_INVALID: 'Kiện chưa hợp lệ: kích thước và khối lượng phải lớn hơn 0, cần loại hàng và điểm đến.',
   INVALID_PACKAGE_STATUS_TRANSITION: 'Kiện {packageId} không chuyển được sang trạng thái đó từ trạng thái hiện tại.',
-  PACKAGE_FLAGGED: 'Kiện {packageId} đang mang cờ nên chưa đưa vào đơn hay chuyến được. Gỡ cờ trước.',
+  PACKAGE_FLAGGED: 'Kiện {packageId} đang mang cờ nên chưa đưa vào yêu cầu giao hay chuyến được. Gỡ cờ trước.',
   PACKAGE_FLAG_NOT_SET: 'Kiện {packageId} không mang cờ này.',
   ROLE_NOT_ALLOWED: 'Vai trò của bạn không làm được thao tác này.',
+  // Yêu cầu giao (FE-4b-01)
+  REQUIREMENT_INVALID: 'Yêu cầu giao chưa hợp lệ: cần tên điểm đến, địa chỉ, hạn giao, ưu tiên; toạ độ (nếu có) phải đủ vĩ độ và kinh độ.',
+  REQUIREMENT_DEADLINE_PAST: 'Hạn giao phải ở tương lai.',
+  REQUIREMENT_NOT_PENDING: 'Yêu cầu {requirementId} không còn chờ xếp chuyến nên không làm được thao tác này.',
+  REQUIREMENT_STATUS_INVALID: 'Yêu cầu {requirementId} không làm được thao tác này ở trạng thái hiện tại.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

@@ -42,29 +42,40 @@ export {
   type PackageStatus,
 } from './package-model'
 export { cargoFromPackage, handlingClassOfType } from './package-type-cargo'
-export { assignmentInstances, effectiveOrderStatus, labelByToken, tripLabels } from './review1-status'
+export { assignmentInstances, labelByToken, tripLabels } from './review1-status'
+export {
+  isRequirementClosed,
+  isValidCoordinate,
+  REQUIREMENT_CARGO_PRIORITY,
+  REQUIREMENT_FIELDS_AFTER_PENDING,
+  REQUIREMENT_PRIORITIES,
+  REQUIREMENT_STATUSES,
+  REQUIREMENT_STORED_STATUSES,
+  requirementStatus,
+  type DeliveryRequirement,
+  type RequirementAssignment,
+  type RequirementChanges,
+  type RequirementInput,
+  type RequirementPriority,
+  type RequirementStatus,
+  type RequirementStoredStatus,
+} from './requirement-model'
 export { tripReport, type TripReport, type TripReportStop } from './trip-report'
 export {
   DEFAULT_RUN_SETTINGS,
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
-  ORDER_STATUSES,
   RUN_FAILURE_CODES,
   type Company,
   type CompanyDepot,
   type OptimizationAlgorithm,
   type OptimizationObjective,
   type OptimizationRun,
-  type OrderAssignment,
-  type OrderChanges,
-  type OrderInput,
-  type OrderStatus,
   type PackageType,
   type PackageTypeInput,
   type RunFailureCode,
   type RunSettings,
   type ScanResult,
-  type TransportOrder,
   type TripLabel,
   type VehicleType,
   type VehicleTypeAssignment,

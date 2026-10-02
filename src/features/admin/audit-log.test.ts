@@ -122,23 +122,24 @@ test('đối tượng chỉ là liên kết khi người xem có quyền mở tr
     .toStrictEqual({ id: 'VEHICLE-008', label: 'Hyundai Mighty EX8 · 50H-118.29', href: null })
   expect(target(event('user.locked', { type: 'user', id: 'US-0010' })))
     .toStrictEqual({ id: 'US-0010', label: 'Trương Văn Lộc', href: '/nguoi-dung?q=US-0010' })
-  // Đơn hàng, kiện của kho kiện, loại kiện, loại xe theo quyền của màn đó
-  expect(target(event('order.created', { type: 'order', id: 'ORD-001' }, { customerName: 'Co.opmart Bình Dương', count: 12 })).href).toBeNull()
+  // Yêu cầu giao, kiện của kho kiện, loại kiện, loại xe theo quyền của màn đó; tên điểm đến đọc từ tham số của sự kiện
+  expect(target(event('requirement.created', { type: 'requirement', id: 'REQ-005' }, { destinationName: 'Siêu thị Co.opmart Bình Dương', count: 12, priority: 'NORMAL' })))
+    .toStrictEqual({ id: 'REQ-005', label: 'Siêu thị Co.opmart Bình Dương', href: null })
   expect(target(event('package.created', { type: 'package', id: 'PK-0001' }, { count: 12 })).href).toBeNull()
   expect(target(event('packageType.created', { type: 'packageType', id: 'PT-001' }, { name: 'Thùng nước suối 24 chai' })).href).toBeNull()
   expect(target(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }, { name: 'Xe tải 5 tấn thùng 6 m' })).href).toBeNull()
 
-  // Điều phối viên: mở được chuyến, xe, đơn hàng, kho kiện (`packages.view`) và loại kiện (`packages.manage`); không mở được người dùng
-  const dispatcherCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.view', 'packages.manage'].includes(permission)
+  // Điều phối viên: mở được chuyến, xe, yêu cầu giao, kho kiện (`packages.view`) và loại kiện (`packages.manage`); không mở được người dùng
+  const dispatcherCan = (permission: string) => ['trips.view', 'fleet.view', 'requirements.view', 'packages.view', 'packages.manage'].includes(permission)
   const forDispatcher = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, dispatcherCan).target.href
   expect(forDispatcher(event('trip.cancelled', { type: 'trip', id: 'TRIP-004' }))).toBe('/chuyen/TRIP-004')
   expect(forDispatcher(event('vehicleType.created', { type: 'vehicleType', id: 'VT-001' }))).toBe('/doi-xe/loai-xe')
-  expect(forDispatcher(event('order.created', { type: 'order', id: 'ORD-001' }))).toBe('/don-hang?q=ORD-001')
+  expect(forDispatcher(event('requirement.created', { type: 'requirement', id: 'REQ-005' }))).toBe('/yeu-cau-giao?q=REQ-005')
   expect(forDispatcher(event('package.created', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
   expect(forDispatcher(event('packageType.created', { type: 'packageType', id: 'PT-001' }))).toBe('/loai-kien')
   expect(forDispatcher(event('user.locked', { type: 'user', id: 'US-0010' }))).toBeNull()
   // Quản lý công ty xem kho kiện (`packages.view`, FE-3b-03) nên mở được kiện; danh mục loại kiện vẫn là của điều phối viên
-  const managerCan = (permission: string) => ['trips.view', 'fleet.view', 'orders.view', 'packages.view'].includes(permission)
+  const managerCan = (permission: string) => ['trips.view', 'fleet.view', 'requirements.view', 'packages.view'].includes(permission)
   const forManager = (value: AuditEvent) => describeEvent(value, DIRECTORY, vi.t, vi.format, managerCan).target.href
   expect(forManager(event('package.importConfirmed', { type: 'package', id: 'PK-0001' }))).toBe('/kien-hang?q=PK-0001')
   expect(forManager(event('packageType.created', { type: 'packageType', id: 'PT-001' }))).toBeNull()

@@ -19,7 +19,7 @@ export const audit = {
     },
     packageType: { created: 'Thêm loại kiện', updated: 'Sửa loại kiện', deleted: 'Xoá loại kiện' },
     package: { created: 'Thêm kiện vào kho kiện', importConfirmed: 'Nhập file vào kho kiện', updated: 'Sửa kiện', statusChanged: 'Chuyển trạng thái kiện', flagged: 'Gắn cờ kiện', flagCleared: 'Gỡ cờ kiện', found: 'Kho tìm thấy lại kiện' },
-    order: { created: 'Tạo đơn hàng', updated: 'Sửa đơn hàng', cancelled: 'Huỷ đơn hàng', assigned: 'Gán đơn vào điểm giao', unassigned: 'Bỏ gán đơn' },
+    requirement: { created: 'Tạo yêu cầu giao', updated: 'Sửa yêu cầu giao', deleted: 'Xoá yêu cầu giao', assigned: 'Đưa yêu cầu giao vào chuyến', unassigned: 'Gỡ yêu cầu giao khỏi chuyến' },
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
   } satisfies AuditActionLabels,
   groups: {
@@ -33,7 +33,7 @@ export const audit = {
     user: 'Người dùng',
     packageType: 'Loại kiện',
     package: 'Kho kiện',
-    order: 'Đơn hàng',
+    requirement: 'Yêu cầu giao',
     vehicleType: 'Loại xe',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
@@ -117,7 +117,8 @@ export const audit = {
       // Kho kiện (FE-3b-01)
       packageCode: 'Mã kiện',
       flag: 'Cờ',
-      customerName: 'Khách hàng',
+      destinationName: 'Điểm đến',
+      priority: 'Ưu tiên',
       tripId: 'Chuyến',
       objective: 'Mục tiêu',
       algorithm: 'Thuật toán',
@@ -125,7 +126,7 @@ export const audit = {
       vehicleTypeId: 'Loại xe',
       sealNumber: 'Số seal',
     },
-    /** Giá trị của tham số `fields`: tên trường chuyến hoặc tài khoản đã sửa. */
+    /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {
       name: 'Tên chuyến',
       vehicleId: 'Xe',
@@ -138,6 +139,15 @@ export const audit = {
       phone: 'Số điện thoại',
       role: 'Vai trò',
       depot: 'Kho / chi nhánh',
+      // Yêu cầu giao (FE-4b-01)
+      destinationName: 'Tên điểm đến',
+      address: 'Địa chỉ',
+      lat: 'Vĩ độ',
+      lng: 'Kinh độ',
+      deadline: 'Hạn giao',
+      priority: 'Ưu tiên',
+      note: 'Ghi chú',
+      packageIds: 'Kiện',
     },
     /** Mã lý do đăng nhập không thành công. */
     reasons: { suspended: 'Tài khoản đã bị khoá' },

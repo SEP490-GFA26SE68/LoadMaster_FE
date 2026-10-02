@@ -45,10 +45,10 @@ function checkSentence(check: ReadinessCheck, t: TFunction, format: Formatter): 
 /**
  * "Kiểm tra trước khi tối ưu" (luồng 2, LM-104) — card đầu cột phải của Chi tiết chuyến khi chuyến còn lập kế hoạch. Mỗi mục của
  * `getTripReadiness` một dòng (đạt / cảnh báo / chưa đạt, câu ở nhánh `readiness`); chip tổng "Sẵn sàng tối ưu". Mục chưa đạt có lối
- * sửa ngay tại chỗ theo quyền: sửa chuyến (xe, điểm giao, tải), gán đơn hàng (chưa có kiện, điểm giao trống), xem kiện lỗi ở Thiết
+ * sửa ngay tại chỗ theo quyền: sửa chuyến (xe, điểm giao, tải), đưa yêu cầu giao vào chuyến (chưa có kiện, điểm giao trống), xem kiện lỗi ở Thiết
  * lập tối ưu. Kiểm tra chỉ là tổng; xếp được hay không vẫn do tối ưu quyết định.
  */
-export function TripReadinessCard({ tripId, onAssignOrder }: { tripId: string; onAssignOrder?: () => void }) {
+export function TripReadinessCard({ tripId, onAssignRequirement }: { tripId: string; onAssignRequirement?: () => void }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
@@ -61,7 +61,7 @@ export function TripReadinessCard({ tripId, onAssignOrder }: { tripId: string; o
     const editTrip = can('trips.edit') ? (
       <Button variant="secondary" size="sm" asChild><Link to={`/chuyen/${tripId}/sua`}>{t('readiness.fix.editTrip')}</Link></Button>
     ) : null
-    const assign = onAssignOrder ? <Button variant="secondary" size="sm" onClick={onAssignOrder}>{t('readiness.fix.assignOrder')}</Button> : null
+    const assign = onAssignRequirement ? <Button variant="secondary" size="sm" onClick={onAssignRequirement}>{t('readiness.fix.assignRequirement')}</Button> : null
     if (check.status === 'pass') return null
     switch (check.code) {
       case 'PACKAGES_PRESENT':

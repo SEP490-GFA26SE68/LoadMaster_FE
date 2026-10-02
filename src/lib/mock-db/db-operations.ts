@@ -1,5 +1,6 @@
 import { found, nextId, put, type DbContext } from './db-context'
 import { departTripPackages, settleLoadedPackages, settleStopPackages, stageTripPackages } from './db-package-progress'
+import { departTripRequirements } from './db-requirement-trips'
 import { MockDbError } from './errors'
 import { latestApproved, loadingRemaining, missingIds, plannedStops, stopItemIds } from './operations'
 import { isStale } from './revisions'
@@ -92,6 +93,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         }
         ctx.log('delivery.started', { type: 'trip', id: tripId })
         departTripPackages(ctx, trip)
+        departTripRequirements(ctx, trip)
         return put(trips, { ...trip, phase: 'delivering', delivery })
       }),
     recordUnload: (tripId, stopNumber, packageInstanceId, unloaded) =>

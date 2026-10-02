@@ -2,9 +2,9 @@ import { SEED_ANCHOR_DATE } from './clock'
 import { auditMethods } from './db-audit'
 import { createDbContext, type DbState } from './db-context'
 import { operationMethods } from './db-operations'
-import { orderMethods } from './db-orders'
 import { packageTypeMethods } from './db-package-types'
 import { packageMethods } from './db-packages'
+import { requirementMethods } from './db-requirements'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
 import { scanMethods } from './db-scans'
@@ -41,7 +41,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     packageTypes: new Map(seed.packageTypes.map((type) => [type.id, type])),
     packages: new Map(seed.packages.map((pkg) => [pkg.id, pkg])),
     tripPackageLinks: new Map(seed.tripPackageLinks),
-    orders: new Map(seed.orders.map((order) => [order.id, order])),
+    requirements: new Map(seed.requirements.map((requirement) => [requirement.id, requirement])),
     runs: new Map(seed.runs.map((run) => [run.id, run])),
     vehicleTypes: new Map(seed.vehicleTypes.map((type) => [type.id, type])),
     vehicleTypeOf: new Map(seed.vehicleTypeOf),
@@ -57,7 +57,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...auditMethods(ctx),
     ...packageTypeMethods(ctx),
     ...packageMethods(ctx),
-    ...orderMethods(ctx),
+    ...requirementMethods(ctx),
     ...vehicleTypeMethods(ctx),
     ...scanMethods(ctx),
   }

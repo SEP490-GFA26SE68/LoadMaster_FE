@@ -25,9 +25,9 @@ const { packageTypeId: _typed, ...UNTYPED } = pkg('PK-0005', 'IMPORTED', {
 
 const ROWS = packageRows([
   pkg('PK-0001', 'IMPORTED'),
-  pkg('PK-0002', 'IMPORTED', { packageCode: 'HB-QD16-0912-01', orderId: 'ORD-001' }),
-  pkg('PK-0003', 'ASSIGNED', { packageCode: 'MP-DA12-0914-01', orderId: 'ORD-002', tripId: 'TRIP-014', stopId: 'STOP-01' }),
-  pkg('PK-0004', 'DELIVERED', { orderId: 'ORD-001', tripId: 'TRIP-009', handlingClass: 'HAZARDOUS' }),
+  pkg('PK-0002', 'IMPORTED', { packageCode: 'HB-QD16-0912-01', requirementId: 'REQ-001' }),
+  pkg('PK-0003', 'ASSIGNED', { packageCode: 'MP-DA12-0914-01', requirementId: 'REQ-002', tripId: 'TRIP-014', stopId: 'STOP-01' }),
+  pkg('PK-0004', 'DELIVERED', { requirementId: 'REQ-001', tripId: 'TRIP-009', handlingClass: 'HAZARDOUS' }),
   UNTYPED,
 ], [TYPE])
 
@@ -38,19 +38,19 @@ test('rows come newest first, and a package without a package type gets no type 
   expect(ROWS.map((row) => row.type?.id)).toStrictEqual([undefined, 'PT-003', 'PT-003', 'PT-003', 'PT-003'])
 })
 
-test('search ignores accents and looks at sender code, pool id, destination, QR code, type, order and trip', () => {
+test('search ignores accents and looks at sender code, pool id, destination, QR code, type, requirement and trip', () => {
   expect(searchPackages(ROWS, 'dau an')).toHaveLength(4)
   expect(ids(searchPackages(ROWS, 'mp-da12'))).toStrictEqual(['PK-0003'])
   expect(searchPackages(ROWS, 'pt-003')).toHaveLength(4)
   expect(ids(searchPackages(ROWS, 'bbbb-0002'))).toStrictEqual(['PK-0002'])
   expect(ids(searchPackages(ROWS, 'phu bai'))).toStrictEqual(['PK-0005'])
   expect(ids(searchPackages(ROWS, 'huong thuy hue'))).toStrictEqual(['PK-0005'])
-  expect(ids(searchPackages(ROWS, 'ord-001'))).toStrictEqual(['PK-0004', 'PK-0002'])
+  expect(ids(searchPackages(ROWS, 'req-001'))).toStrictEqual(['PK-0004', 'PK-0002'])
   expect(ids(searchPackages(ROWS, 'trip-014'))).toStrictEqual(['PK-0003'])
   expect(searchPackages(ROWS, '  ')).toHaveLength(5)
 })
 
-test('filters by handling class, by flag (one flag, or no flag at all) and by being in an order or a trip', () => {
+test('filters by handling class, by flag (one flag, or no flag at all) and by being in a requirement or a trip', () => {
   expect(ids(filterPackages(ROWS, { handlingClass: 'FRAGILE' }))).toStrictEqual(['PK-0005'])
   expect(ids(filterPackages(ROWS, { flag: 'NOT_FOUND' }))).toStrictEqual(['PK-0005'])
   expect(filterPackages(ROWS, { flag: 'DAMAGED' })).toStrictEqual([])
@@ -59,7 +59,7 @@ test('filters by handling class, by flag (one flag, or no flag at all) and by be
   expect(ids(filterPackages(ROWS, { link: 'linked' }))).toStrictEqual(['PK-0004', 'PK-0003', 'PK-0002'])
   expect(ids(filterPackages(ROWS, { link: 'linked', handlingClass: 'HAZARDOUS', flag: 'none' }))).toStrictEqual(['PK-0004'])
   expect(filterPackages(ROWS, {})).toHaveLength(5)
-  // Yêu cầu giao thay đơn hàng sau này: kiện có `requirementId` cũng là "đã vào"
+  // Kiện chỉ thuộc yêu cầu giao, chưa vào chuyến, cũng là "đã vào"
   expect(isLinked({ requirementId: 'REQ-001' })).toBe(true)
   expect(isLinked({})).toBe(false)
 })

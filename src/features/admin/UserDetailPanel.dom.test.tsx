@@ -93,8 +93,8 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   await waitFor(() => expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
     'US-0001', '0901 234 567', 'Công ty TNHH Vận tải Long Bình', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
   ]), SLOW)
-  // 24 quyền của điều phối viên theo thứ tự dòng của ma trận (FE-0-01, FE-0-07): 22 quyền của PRD v2, gồm chỉnh sửa và duyệt phương
-  // án, cộng hai quyền đơn hàng còn tạm
+  // 22 quyền của điều phối viên theo thứ tự dòng của ma trận PRD v2 (FE-0-01, FE-0-07), gồm chỉnh sửa và duyệt phương án; hai quyền
+  // đơn hàng tạm đã bỏ (FE-4b-01)
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
   expect(chips.map((chip) => chip.textContent)).toStrictEqual([
     'Gửi yêu cầu hỗ trợ', 'Xem bảng điều khiển', 'Xem yêu cầu giao', 'Xem kho kiện', 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện',
@@ -102,7 +102,6 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
     'Chỉnh sửa và duyệt phương án', 'Duyệt kiện xác nhận tay', 'Xem phương án 3D và so sánh', 'Xem giám sát chuyến đang chạy', 'Xem đội xe',
     'Thêm, sửa, xoá xe và bảo dưỡng', 'Thêm, sửa, xoá loại xe', 'Báo sự cố chuyến', 'Xử lý sự cố chuyến',
     'Tạo yêu cầu nhận hàng dọc đường', 'Duyệt yêu cầu nhận hàng dọc đường',
-    'Xem đơn hàng', 'Tạo, sửa đơn hàng và gán vào điểm giao',
   ])
   // Panel mở: cột Điện thoại và cột Công ty nhường chỗ — cả hai đã nằm trong panel
   expect(columnHeaders()).toStrictEqual(['Người dùng', 'Vai trò', 'Kho / chi nhánh', 'Hoạt động gần nhất', 'Trạng thái', 'Thao tác'])
@@ -114,9 +113,9 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng' })).toBeInTheDocument()
 
   await user.click(within(await rowOf('Trần Thị Mai')).getByText('quanly@loadmaster.vn'))
-  // Quản lý công ty: 11 quyền của PRD v2, cộng xem đơn hàng còn tạm (FE-0-01); không còn duyệt phương án (FE-0-07)
+  // Quản lý công ty: 11 quyền của PRD v2; không còn duyệt phương án (FE-0-07)
   const next = screen.getByRole('complementary', { name: 'Chi tiết tài khoản Trần Thị Mai' })
-  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(12)
+  expect(within(within(next).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')).toHaveLength(11)
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(within(next).getByRole('button', { name: 'Đóng chi tiết tài khoản' }))

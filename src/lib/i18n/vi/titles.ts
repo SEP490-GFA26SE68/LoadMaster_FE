@@ -32,7 +32,7 @@ export const titles = {
   packages: 'Kho kiện',
   labels: 'In nhãn QR',
   lookup: 'Tra cứu kiện',
-  orders: 'Đơn hàng',
+  requirements: 'Yêu cầu giao',
   vehicleTypes: 'Loại xe',
   tripReport: 'Báo cáo chuyến {id}',
 } as const

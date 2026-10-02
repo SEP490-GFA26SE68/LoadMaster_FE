@@ -34,7 +34,7 @@ function sessionScope(state: DbState): SessionScope {
   return { kind: 'noCompany', platform: user !== undefined && isPlatformRole(user.role) }
 }
 
-/** Công ty lọc **dữ liệu vận hành** (xe, loại xe, loại kiện, kiện, đơn, chuyến, revision, lần chạy, tiến độ, quét). */
+/** Công ty lọc **dữ liệu vận hành** (xe, loại xe, loại kiện, kiện, yêu cầu giao, chuyến, revision, lần chạy, tiến độ, quét). */
 function operationalFilter(state: DbState): CompanyFilter {
   const scope = sessionScope(state)
   if (scope.kind === 'noCompany') throw new MockDbError('COMPANY_REQUIRED', {})
@@ -114,7 +114,7 @@ export function createTenancy(state: DbState) {
     vehicleTypes: scoped(state, state.vehicleTypes, 'vehicleTypes', (type) => type.companyId),
     packageTypes: scoped(state, state.packageTypes, 'packageTypes', (type) => type.companyId),
     packages: scoped(state, state.packages, 'packages', (pkg) => pkg.companyId),
-    orders: scoped(state, state.orders, 'orders', (order) => order.companyId),
+    requirements: scoped(state, state.requirements, 'requirements', (requirement) => requirement.companyId),
     trips: scoped(state, state.trips, 'trips', (trip) => trip.companyId),
     /** Revision thuộc công ty của chuyến. */
     revisions: scoped(state, state.revisions, 'revisions', (revision) => tripCompany(revision.tripId)),

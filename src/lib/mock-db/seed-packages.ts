@@ -68,7 +68,7 @@ export function packageSeeder(options: {
 }
 
 /**
- * 40 kiện Long Bình nhập từ một file, chưa vào đơn hay chuyến nào — để demo lập chuyến từ kho kiện. Tám điểm đến là khu công nghiệp
+ * 40 kiện Long Bình nhập từ một file, chưa vào chuyến nào (tám kiện thuộc bốn yêu cầu giao của seed, FE-4b-01) — để demo lập chuyến từ kho kiện. Tám điểm đến là khu công nghiệp
  * thật; đủ năm loại hàng; không kiện nào gắn loại kiện (ràng buộc xếp mặc định theo loại hàng). Hai kiện mang cờ để demo gỡ cờ.
  */
 export const LONG_BINH_IMPORT: readonly PackageBatch[] = [

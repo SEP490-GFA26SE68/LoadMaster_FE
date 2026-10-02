@@ -15,10 +15,10 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 
 | Vai trò | Thiết bị | Luồng chính |
 |---|---|---|
-| Điều phối | Desktop | Đăng ký kiện và in nhãn QR, tạo đơn hàng, tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
+| Điều phối | Desktop | Đăng ký kiện và in nhãn QR, đưa yêu cầu giao vào chuyến, tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
-| Quản lý công ty | Desktop | Bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
+| Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
 | Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
@@ -60,14 +60,16 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   không còn quyền vận hành; điều phối viên là người duyệt phương án, quản lý công ty chỉ xem (không còn hàng đợi duyệt). Khách hàng của app là
   công ty logistics: hai vai trò Nhà sản xuất, Logistics của Review 1 cùng lô hàng và luồng quét nhận hàng giữa hai bên đã bỏ; kiện
   thuộc công ty của người tạo. Dữ liệu cách ly theo công ty ngay ở kho: người của Long Bình và Phương Nam không thấy chuyến, xe, kiện,
-  đơn, người dùng hay nhật ký của nhau, và tài khoản nền tảng không đọc được dữ liệu vận hành. Người dùng và nhật ký chia hai phạm vi: quản
+  yêu cầu giao, người dùng hay nhật ký của nhau, và tài khoản nền tảng không đọc được dữ liệu vận hành. Người dùng và nhật ký chia hai phạm vi: quản
   trị hệ thống thấy mọi công ty, tạo tài khoản nền tảng, khoá / mở khoá / đặt lại mật khẩu mọi người; quản trị công ty tạo, sửa, khoá người
   của công ty mình và đọc nhật ký của công ty mình. Kho mock đã giữ kiện theo mô hình kho kiện của backend (kích thước, loại hàng, điểm đến
   riêng từng kiện; trạng thái ghi theo mốc của chuyến; cờ "Không tìm thấy" / "Hư hỏng"). Màn Kho kiện: điều phối viên thêm kiện, nhập file
   `.csv` / `.xlsx` theo cột của backend (xem trước, có dòng lỗi thì không lưu dòng nào), xem chi tiết kiện kèm mã QR và lịch sử, gỡ cờ; quản lý
   công ty chỉ xem. Nhãn QR in bằng trình duyệt, bốn nhãn mỗi trang A4 (mã QR, mã của bên gửi, loại hàng, số đo, điểm đến, dòng "Hàng dễ
   vỡ"). Màn Tra cứu kiện cho điều phối viên và nhân viên kho: quét hoặc gõ mã để xem kiện, in lại nhãn; kho quét thấy kiện mang cờ "Không
-  tìm thấy" thì cờ được gỡ và điều phối viên được báo. Kiện thêm ngay trong chuyến tự thành kiện của kho kiện có mã QR. Màn của quản lý
+  tìm thấy" thì cờ được gỡ và điều phối viên được báo. Kiện thêm ngay trong chuyến tự thành kiện của kho kiện có mã QR. Yêu cầu giao thay
+  đơn hàng của Review 1: quản lý công ty lập yêu cầu (điểm đến, hạn, ưu tiên, kiện chọn từ kho kiện), điều phối viên xem và đưa yêu cầu
+  vào điểm giao của chuyến; "Đã giao" và "Giao thiếu" lấy từ trạng thái và cờ của kiện. Màn của quản lý
   nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
@@ -90,12 +92,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.462 test unit + DOM
+pnpm test          # Vitest: 1.486 test unit + DOM
 pnpm test:e2e      # Playwright: 110 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.462/1.462 unit, 110/110 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.486/1.486 unit, 110/110 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

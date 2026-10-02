@@ -27,7 +27,7 @@ import { titles } from './en/titles'
 import { pageHero } from './en/pageHero'
 import { qr } from './en/qr'
 import { sourcing } from './en/sourcing'
-import { orders } from './en/orders'
+import { requirements } from './en/requirements'
 import { readiness } from './en/readiness'
 import { vehicleTypes } from './en/vehicleTypes'
 import { tripReport } from './en/tripReport'
@@ -64,7 +64,7 @@ export const en = {
   pageHero,
   qr,
   sourcing,
-  orders,
+  requirements,
   readiness,
   vehicleTypes,
   tripReport,

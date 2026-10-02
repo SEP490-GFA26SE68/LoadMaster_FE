@@ -1,5 +1,6 @@
 import type { Role } from '@/types/user'
 import type { PackageFlag, PackageStatus } from './package-model'
+import type { RequirementStoredStatus } from './requirement-model'
 import type { TripPhase } from './types'
 
 /** Bộ sưu tập của kho mock. */
@@ -12,7 +13,7 @@ export type MockDbCollection =
   | 'companies'
   | 'packageTypes'
   | 'packages'
-  | 'orders'
+  | 'requirements'
   | 'vehicleTypes'
 
 /**
@@ -86,19 +87,18 @@ export type MockDbErrorParams = {
   /** Số kiện của một lần tạo ngoài khoảng cho phép. */
   QUANTITY_INVALID: { min: number; max: number }
   /**
-   * Gọi hàm dữ liệu vận hành (xe, loại xe, loại kiện, kiện, đơn, chuyến, phương án, tiến độ, quét) khi phiên không thuộc công ty nào:
+   * Gọi hàm dữ liệu vận hành (xe, loại xe, loại kiện, kiện, yêu cầu giao, chuyến, phương án, tiến độ, quét) khi phiên không thuộc công ty nào:
    * ba vai trò nền tảng không xem dữ liệu vận hành của công ty (D-64).
    */
   COMPANY_REQUIRED: Record<string, never>
   /** Ghi vào bản ghi `id` của công ty khác, hoặc tham chiếu tới nó (xe, tài xế, loại kiện, kiện… của công ty khác; D-64). */
   FORBIDDEN_COMPANY: { collection: MockDbCollection; id: string }
-  /** Kiện không ở trạng thái cần cho thao tác (đã vào chuyến, đã có đơn…). */
+  /** Kiện không ở trạng thái cần cho thao tác (đã vào chuyến, đã thuộc yêu cầu giao khác…). */
   PACKAGE_UNAVAILABLE: { packageId: string; status: string }
-  /** Lần tạo kiện hoặc đơn hàng không có kiện nào. */
+  /** Lần tạo kiện hoặc yêu cầu giao không có kiện nào. */
   PACKAGES_REQUIRED: Record<string, never>
   /** Mã QR không khớp kiện nào. */
   QR_UNKNOWN: { token: string }
-  ORDER_STATUS_INVALID: { orderId: string; status: string }
   /** Điểm giao không có trong chuyến. */
   STOP_NOT_FOUND: { tripId: string; stopId: string }
   VEHICLE_TYPE_INVALID: { field: string }
@@ -117,12 +117,22 @@ export type MockDbErrorParams = {
   PACKAGE_INVALID: { field: string }
   /** Chuyển trạng thái kiện ngoài bảng `PACKAGE_TRANSITIONS` (D-70). */
   INVALID_PACKAGE_STATUS_TRANSITION: { packageId: string; from: PackageStatus; to: PackageStatus }
-  /** Đưa kiện đang có cờ vào đơn hay chuyến (D-92). */
+  /** Đưa kiện đang có cờ vào yêu cầu giao hay chuyến (D-92). */
   PACKAGE_FLAGGED: { packageId: string; flag: PackageFlag }
   /** Gỡ một cờ kiện không có. */
   PACKAGE_FLAG_NOT_SET: { packageId: string; flag: PackageFlag }
   /** Thao tác chỉ một vai trò khác được làm (gỡ cờ kiện là việc của điều phối viên). */
   ROLE_NOT_ALLOWED: { role: Role }
+
+  // Yêu cầu giao (FE-4b-01)
+  /** Yêu cầu giao sai dữ liệu ở trường `field`: thiếu tên điểm đến hoặc địa chỉ, ưu tiên lạ, hạn không đọc được, toạ độ ngoài khoảng. */
+  REQUIREMENT_INVALID: { field: string }
+  /** Hạn giao không ở tương lai theo đồng hồ của kho. */
+  REQUIREMENT_DEADLINE_PAST: { deadline: string }
+  /** Xoá, đổi điểm đến / kiện, hoặc đưa vào chuyến một yêu cầu không còn chờ xếp chuyến. */
+  REQUIREMENT_NOT_PENDING: { requirementId: string; status: RequirementStoredStatus }
+  /** Gỡ khỏi chuyến một yêu cầu chưa vào chuyến hoặc đã đang giao; sửa yêu cầu đã giao xong. */
+  REQUIREMENT_STATUS_INVALID: { requirementId: string; status: RequirementStoredStatus }
 
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */

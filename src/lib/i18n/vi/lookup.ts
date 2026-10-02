@@ -47,7 +47,7 @@ export const lookup = {
   },
   reprint: 'In lại nhãn',
   openInPool: 'Mở trong Kho kiện',
-  flagNote: 'Kiện mang cờ chưa đưa vào đơn hay chuyến được.',
+  flagNote: 'Kiện mang cờ chưa đưa vào yêu cầu giao hay chuyến được.',
   flagCleared: 'Đã gỡ cờ {flag} của kiện {code}.',
   found: {
     prompt: 'Kiện này đang mang cờ "Không tìm thấy". Nếu kiện đang ở trước mặt bạn, xác nhận để gỡ cờ.',

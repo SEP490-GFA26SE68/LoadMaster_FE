@@ -25,7 +25,7 @@ import { titles } from './vi/titles'
 import { pageHero } from './vi/pageHero'
 import { qr } from './vi/qr'
 import { sourcing } from './vi/sourcing'
-import { orders } from './vi/orders'
+import { requirements } from './vi/requirements'
 import { readiness } from './vi/readiness'
 import { vehicleTypes } from './vi/vehicleTypes'
 import { tripReport } from './vi/tripReport'
@@ -70,7 +70,7 @@ export const vi = {
   pageHero,
   qr,
   sourcing,
-  orders,
+  requirements,
   readiness,
   vehicleTypes,
   tripReport,

@@ -15,11 +15,11 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
   const db = getMockDb()
   const wants = (group: SearchGroup) => groups.includes(group)
   const sourcing = wants('pool') || wants('packageTypes')
-  const [trips, vehicles, users, orders, pool, packageTypes] = await Promise.all([
+  const [trips, vehicles, users, requirements, pool, packageTypes] = await Promise.all([
     wants('trips') || wants('packages') ? db.listTrips() : [],
     wants('vehicles') ? db.listVehicles() : [],
     wants('users') ? db.listUsers() : [],
-    wants('orders') ? db.listOrders() : [],
+    wants('requirements') ? db.listDeliveryRequirements() : [],
     wants('pool') ? db.listPackages() : [],
     sourcing ? db.listPackageTypes() : [],
   ])
@@ -33,7 +33,7 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     })),
     vehicles: vehicles.map(({ id, name }) => ({ id, name })),
     users: users.map(({ id, fullName, email, role }) => ({ id, fullName, email, role })),
-    orders: orders.map(({ id, customerName, deliveryAddress }) => ({ id, customerName, deliveryAddress })),
+    requirements: requirements.map(({ id, destinationName, address }) => ({ id, destinationName, address })),
     pool: pool.map((pkg) => ({
       id: pkg.id,
       ...(pkg.packageCode === pkg.id ? {} : { reference: pkg.packageCode }),

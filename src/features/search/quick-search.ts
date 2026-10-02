@@ -3,22 +3,22 @@ import { matchesQuery, normalizeSearchText } from '@/lib/list-filter'
 import type { Role } from '@/types/user'
 
 /**
- * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng; thêm cho Review 1 (LM-104): đơn hàng, kho kiện, loại kiện (kho kiện
+ * Tìm nhanh Ctrl+K (LM-099, D-55): chuyến, kiện, xe, người dùng; thêm cho Review 1 (LM-104): kho kiện, loại kiện, và yêu cầu giao thay đơn hàng (FE-4b-02; kho kiện
  * theo `packages.view` — điều phối viên và quản lý công ty, FE-3b-03; loại kiện của điều phối viên). Hàm thuần: `search-api.ts` đọc
  * kho, màn gọi `searchSources` mỗi lần gõ. Tìm không phân biệt dấu và hoa thường, mọi từ phải có (`matchesQuery` của danh sách, LM-085).
  */
-export const SEARCH_GROUPS = ['trips', 'packages', 'orders', 'pool', 'packageTypes', 'vehicles', 'users'] as const
+export const SEARCH_GROUPS = ['trips', 'packages', 'requirements', 'pool', 'packageTypes', 'vehicles', 'users'] as const
 export type SearchGroup = (typeof SEARCH_GROUPS)[number]
 
 /**
  * Quyền để thấy một nhóm — trùng quyền mở màn đích (`role-routes.dom.test.tsx` kiểm với bảng route thật). Kiện mở trong chi tiết chuyến
  * nên theo quyền xem chuyến. Theo tám vai trò (FE-0-04): quản trị hệ thống và quản trị công ty tìm người dùng; quản lý công ty tìm
- * chuyến, kiện, đơn hàng, kho kiện, xe; điều phối viên thêm loại kiện; bốn vai trò còn lại không có nhóm nào.
+ * chuyến, kiện, yêu cầu giao, kho kiện, xe; điều phối viên thêm loại kiện; bốn vai trò còn lại không có nhóm nào.
  */
 export const GROUP_PERMISSION: Readonly<Record<SearchGroup, Permission>> = {
   trips: 'trips.view',
   packages: 'trips.view',
-  orders: 'orders.view',
+  requirements: 'requirements.view',
   pool: 'packages.view',
   packageTypes: 'packages.manage',
   vehicles: 'fleet.view',
@@ -43,7 +43,7 @@ export type SearchSources = {
   }[]
   readonly vehicles: readonly { readonly id: string; readonly name: string }[]
   readonly users: readonly { readonly id: string; readonly fullName: string; readonly email: string; readonly role: Role }[]
-  readonly orders: readonly { readonly id: string; readonly customerName: string; readonly deliveryAddress: string }[]
+  readonly requirements: readonly { readonly id: string; readonly destinationName: string; readonly address: string }[]
   /** Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). */
   readonly pool: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
   readonly packageTypes: readonly { readonly id: string; readonly name: string }[]
@@ -56,7 +56,7 @@ export type SearchResult =
   | (ResultBase & { readonly group: 'packages'; readonly tripId: string; readonly tripName: string })
   | (ResultBase & { readonly group: 'vehicles'; readonly name: string })
   | (ResultBase & { readonly group: 'users'; readonly name: string; readonly email: string; readonly role: Role })
-  | (ResultBase & { readonly group: 'orders'; readonly name: string; readonly detail: string })
+  | (ResultBase & { readonly group: 'requirements'; readonly name: string; readonly detail: string })
   | (ResultBase & { readonly group: 'pool'; readonly name: string; readonly reference?: string })
   | (ResultBase & { readonly group: 'packageTypes'; readonly name: string })
 
@@ -71,7 +71,7 @@ const path = (value: string) => encodeURIComponent(value)
  * - Kiện: mã kiện gốc → chi tiết chuyến mở đúng kiện (`?kien=`, LM-047).
  * - Xe: mã, tên (tên xe gồm biển số) → chi tiết xe.
  * - Người dùng: họ tên, email, mã → danh sách người dùng lọc đúng mã.
- * - Đơn hàng: mã, khách, địa chỉ → danh sách đơn lọc đúng mã. Kho kiện: mã, mã của bên gửi, mã QR, tên loại hoặc điểm đến → kho kiện lọc
+ * - Yêu cầu giao: mã, điểm đến, địa chỉ → danh sách yêu cầu lọc đúng mã. Kho kiện: mã, mã của bên gửi, mã QR, tên loại hoặc điểm đến → kho kiện lọc
  *   đúng mã. Loại kiện: mã, tên → danh sách loại lọc đúng mã.
  */
 export function searchSources(sources: SearchSources, query: string, groups: readonly SearchGroup[]): SearchResultGroup[] {
@@ -101,12 +101,12 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
           group: 'users', key: `user:${user.id}`, href: `/nguoi-dung?q=${path(user.id)}`,
           id: user.id, name: user.fullName, email: user.email, role: user.role,
         })),
-    orders: () =>
-      sources.orders
-        .filter((order) => matchesQuery([order.id, order.customerName, order.deliveryAddress], query))
-        .map((order) => ({
-          group: 'orders', key: `order:${order.id}`, href: `/don-hang?q=${path(order.id)}`,
-          id: order.id, name: order.customerName, detail: order.deliveryAddress,
+    requirements: () =>
+      sources.requirements
+        .filter((requirement) => matchesQuery([requirement.id, requirement.destinationName, requirement.address], query))
+        .map((requirement) => ({
+          group: 'requirements', key: `requirement:${requirement.id}`, href: `/yeu-cau-giao?q=${path(requirement.id)}`,
+          id: requirement.id, name: requirement.destinationName, detail: requirement.address,
         })),
     pool: () =>
       sources.pool
