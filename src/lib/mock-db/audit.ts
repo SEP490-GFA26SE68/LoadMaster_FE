@@ -43,6 +43,7 @@ export const AUDIT_ACTIONS = [
   'package.statusChanged',
   'package.flagged',
   'package.flagCleared',
+  'package.found',
   'order.created',
   'order.updated',
   'order.cancelled',

@@ -1,5 +1,6 @@
 import { nextId, put, sameData, type DbContext } from './db-context'
 import { releaseTripPackages } from './db-package-progress'
+import { syncTripPool } from './db-trip-packages'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
 import { tripChangeParams } from './trip-changes'
@@ -13,7 +14,10 @@ const EDITABLE = ['name', 'scheduledDate', 'driverId', 'vehicleId', 'stops', 'pa
 /** Pha `loading`/`loaded` vẫn đổi được tên, ngày, tài xế — xe, điểm giao, kiện thì không (D-45). */
 const LOCKED_WHILE_LOADING: ReadonlySet<keyof TripChanges> = new Set(['vehicleId', 'stops', 'packages'])
 
-/** Chuyến của công ty của phiên (D-64). Xe và tài xế của chuyến phải cùng công ty với chuyến: khác công ty là `FORBIDDEN_COMPANY`. */
+/**
+ * Chuyến của công ty của phiên (D-64). Xe và tài xế của chuyến phải cùng công ty với chuyến: khác công ty là `FORBIDDEN_COMPANY`. Kiện
+ * thêm ngay trong chuyến (form, nhập file) tự thành kiện của kho kiện, nguồn `TRIP` (`syncTripPool`, FE-3b-07).
+ */
 export function tripMethods(ctx: DbContext): TripMethods {
   const { trips, maintenance, users } = ctx.state
   const scope = ctx.scope.trips
@@ -52,6 +56,7 @@ export function tripMethods(ctx: DbContext): TripMethods {
           createdAt: ctx.nowIso(),
         }
         const created = put(trips, trip)
+        syncTripPool(ctx, created)
         ctx.log('trip.created', { type: 'trip', id: created.id }, { name })
         return created
       }),
@@ -75,7 +80,10 @@ export function tripMethods(ctx: DbContext): TripMethods {
         const inputChanged = changed.includes('vehicleId') || changed.includes('packages')
         next.inputVersion = current.inputVersion + (inputChanged ? 1 : 0)
         ctx.log('trip.updated', { type: 'trip', id }, { fields: changed.join(','), ...tripChangeParams(current, next, changed) })
-        return put(trips, next)
+        const stored = put(trips, next)
+        // Dòng kiện và điểm giao chỉ đổi được khi chuyến còn lập kế hoạch: kiện kho kiện của chuyến đổi theo (FE-3b-07)
+        if (changed.includes('packages') || changed.includes('stops')) syncTripPool(ctx, stored)
+        return stored
       }),
     cancelTrip: (id, reason) =>
       ctx.respond(() => {

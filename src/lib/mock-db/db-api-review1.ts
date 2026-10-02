@@ -41,6 +41,12 @@ export type Review1Db = {
   /** Tra kiện theo mã QR (đã chuẩn hoá); không có, hoặc là kiện của công ty khác, thì `QR_UNKNOWN`. */
   findPackageByQr(token: string): Promise<Package>
   /**
+   * Tra kiện theo mã người dùng gõ (FE-3b-06): mã QR (đã chuẩn hoá), mã của bên gửi hoặc mã của kho, không phân biệt hoa thường — khớp
+   * đúng cả mã. Mã của bên gửi trùng nhau thì trả mọi kiện khớp, mới nhất trước. Không khớp, hoặc chỉ khớp kiện của công ty khác:
+   * `QR_UNKNOWN`.
+   */
+  lookupPackages(code: string): Promise<Package[]>
+  /**
    * Thêm một kiện (`source` `MANUAL`) cho **công ty của người đang đăng nhập** (`User.companyId`): trạng thái `IMPORTED`, không cờ, mã QR
    * cấp ngay; loại kiện (nếu có) phải của công ty đó. Dữ liệu sai: `PACKAGE_INVALID`. Tài khoản nền tảng: `COMPANY_REQUIRED`.
    */
@@ -58,6 +64,12 @@ export type Review1Db = {
   flagPackage(id: string, flag: PackageFlag): Promise<Package>
   /** Gỡ cờ — chỉ điều phối viên (`ROLE_NOT_ALLOWED`), ghi nhật ký. Kiện không có cờ đó: `PACKAGE_FLAG_NOT_SET`. */
   clearPackageFlag(id: string, flag: PackageFlag): Promise<Package>
+  /**
+   * Nhân viên kho quét thấy lại kiện đang mang cờ "Không tìm thấy" (D-92): gỡ cờ đó, ghi lịch sử kiện và sự kiện `package.found` — điều
+   * phối viên được báo qua chuông. Vai trò khác: `ROLE_NOT_ALLOWED`; mã không khớp kiện nào của công ty: `QR_UNKNOWN`; kiện không mang
+   * cờ đó: `PACKAGE_FLAG_NOT_SET`.
+   */
+  reportPackageFound(token: string): Promise<Package>
 
   /** Mới nhất trước; `delivered` suy từ chuyến đã hoàn thành. */
   listOrders(): Promise<TransportOrder[]>

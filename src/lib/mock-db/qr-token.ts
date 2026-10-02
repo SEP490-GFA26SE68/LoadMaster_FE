@@ -40,29 +40,3 @@ export function randomQrToken(random: () => number, taken: (token: string) => bo
     if (!taken(token)) return token
   }
 }
-
-/**
- * Mã tất định cho kiện chưa có nhãn đăng ký (kiện nhập tay vào chuyến): băm `input` (chuyến + kiện) với `salt` của kho. Không đảo ngược
- * được ra dữ liệu; cùng kiện luôn cùng mã nên in lại nhãn không đổi.
- */
-export function hashedQrToken(input: string, salt: string): string {
-  const random = seededRandom(cyrb32(`${salt}:${input}`))
-  return randomQrToken(random)
-}
-
-/** Băm chuỗi 32 bit (cyrb53 rút gọn). */
-function cyrb32(text: string): number {
-  let h1 = 0xdeadbeef
-  let h2 = 0x41c6ce57
-  for (let index = 0; index < text.length; index++) {
-    const code = text.charCodeAt(index)
-    h1 = Math.imul(h1 ^ code, 2_654_435_761)
-    h2 = Math.imul(h2 ^ code, 1_597_334_677)
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2_246_822_507) ^ Math.imul(h2 ^ (h2 >>> 13), 3_266_489_909)
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2_246_822_507) ^ Math.imul(h1 ^ (h1 >>> 13), 3_266_489_909)
-  return (h1 ^ h2) >>> 0
-}
-
-/** Muối của kho cho `hashedQrToken`. Cố định: nhãn in hôm nay vẫn quét được sau khi tải lại trang. */
-export const LABEL_SALT = 'loadmaster-label-v1'

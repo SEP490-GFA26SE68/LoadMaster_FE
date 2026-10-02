@@ -142,7 +142,8 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     vehicles: (await db.listVehicles()).map((vehicle) => vehicle.id),
     vehicleTypes: (await db.listVehicleTypeAssignments()),
     packageTypes: (await db.listPackageTypes()).map((type) => [type.id, type.name]),
-    packages: (await db.listPackages()).map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
+    packages: (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.orderId]),
+    tripPackages: (await db.listPackages()).filter((pkg) => pkg.source === 'TRIP').map((pkg) => [pkg.id, pkg.status, pkg.tripId].join(' ')),
     orders: (await db.listOrders()).map((order) => [order.id, order.status, order.packageIds.length]),
     trips: await Promise.all(trips.map(async (trip) => [trip.id, trip.scheduledDate, trip.driverId, tripStatus(trip, await db.listRevisions(trip.id))])),
     revisions: revisions.map((revision) => [revision.id, revision.approvedBy, revision.result.metrics.placedCount, revision.result.metrics.unplacedCount]),
@@ -157,6 +158,11 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
       ['PK-PN-0004', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
       ['PK-PN-0007', 'IMPORTED', undefined], ['PK-PN-0008', 'IMPORTED', undefined], ['PK-PN-0009', 'IMPORTED', undefined],
       ['PK-PN-0010', 'IMPORTED', undefined],
+    ],
+    // 42 kiện của chuyến đã duyệt và 28 kiện của chuyến nháp: kiện nhập tay trong chuyến là kiện kho kiện đã gán chuyến (FE-3b-07)
+    tripPackages: [
+      ...Array.from({ length: 42 }, (_, index) => `PK-PN-T${String(index + 1).padStart(4, '0')} ASSIGNED TRIP-PN-001`),
+      ...Array.from({ length: 28 }, (_, index) => `PK-PN-T${String(index + 43).padStart(4, '0')} ASSIGNED TRIP-PN-002`),
     ],
     orders: [['ORD-PN-001', 'pending', 4]],
     // Chuyến hôm nay đã duyệt, gán tài xế taixe@phuongnam.vn; chuyến ngày mai còn nháp

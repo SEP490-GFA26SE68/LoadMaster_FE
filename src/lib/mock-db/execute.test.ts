@@ -1,6 +1,5 @@
 import { expect, test } from 'vitest'
 import { createMockDb, normalizeQrToken, tripReport, type MockDb } from '@/lib/mock-db'
-import { hashedQrToken, LABEL_SALT } from '@/lib/mock-db/qr-token'
 
 /** Luồng 5 Review 1 (LM-104): quét QR khi xếp và dỡ, số seal, báo cáo chuyến, và loại xe. */
 
@@ -14,11 +13,14 @@ async function nextLoadingInstance(db: MockDb, tripId: string) {
 const tokenOf = async (db: MockDb, tripId: string, instanceId: string) =>
   (await db.listTripLabels(tripId)).find((label) => label.packageInstanceId === instanceId)?.qrToken ?? ''
 
-test('qr tokens: normalized form, opaque hashed labels', () => {
+test('qr tokens: normalized form; every label of a trip is the token of a pool package', async () => {
   expect(normalizeQrToken(' lm-7k3f 9xq2-m4td ')).toBe('LM-7K3F-9XQ2-M4TD')
   expect(normalizeQrToken('7k3f9xq2m4td')).toBe('LM-7K3F-9XQ2-M4TD')
-  expect(hashedQrToken('TRIP-011/PKG-001-01', LABEL_SALT)).toBe(hashedQrToken('TRIP-011/PKG-001-01', LABEL_SALT))
-  expect(hashedQrToken('TRIP-011/PKG-001-01', LABEL_SALT)).not.toBe(hashedQrToken('TRIP-011/PKG-001-02', LABEL_SALT))
+  // Kiện nhập tay trong chuyến không còn mã băm theo chuyến + kiện (FE-3b-07): mã trên nhãn tra ngược ra đúng kiện kho kiện
+  const db = createMockDb()
+  const [label] = await db.listTripLabels('TRIP-011')
+  expect(label?.packageInstanceId).toBe('PKG-001-01')
+  expect(await db.findPackageByQr(label?.qrToken ?? '')).toMatchObject({ id: label?.poolPackageId, source: 'TRIP', tripId: 'TRIP-011', packageCode: 'PKG-001-01' })
 })
 
 test('the warehouse confirms the current step by scanning its label; another package of the trip is refused', async () => {

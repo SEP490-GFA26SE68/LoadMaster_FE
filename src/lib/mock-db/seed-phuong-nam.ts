@@ -20,7 +20,8 @@ import type { DeliveryStop, Revision, Trip } from './types'
  * muộn nhất của seed vẫn là của Long Bình (`seed-shift.ts` neo theo nó).
  */
 
-const DISPATCHER = 'US-PN-03'
+export const PHUONG_NAM_DISPATCHER = 'US-PN-03'
+const DISPATCHER = PHUONG_NAM_DISPATCHER
 const DRIVER = 'US-PN-04'
 
 export type PhuongNamSeed = {

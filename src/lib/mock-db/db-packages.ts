@@ -1,5 +1,6 @@
 import { gt, roundCm, roundKg } from '@/domain/geometry'
 import { HANDLING_CLASSES } from '@/domain/models'
+import type { Role } from '@/types/user'
 import { nextId, optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
@@ -8,8 +9,8 @@ import { normalizeQrToken } from './qr-token'
 
 type PackageMethods = Pick<
   Review1Db,
-  | 'listPackages' | 'getPackage' | 'findPackageByQr' | 'createPackage' | 'createPackages' | 'updatePackage' | 'updatePackageStatus'
-  | 'flagPackage' | 'clearPackageFlag'
+  | 'listPackages' | 'getPackage' | 'findPackageByQr' | 'lookupPackages' | 'createPackage' | 'createPackages' | 'updatePackage'
+  | 'updatePackageStatus' | 'flagPackage' | 'clearPackageFlag' | 'reportPackageFound'
 >
 
 /** Giới hạn một lần tạo (một file nhập). */
@@ -59,8 +60,9 @@ export function movePackage(ctx: DbContext, pkg: Package, to: PackageStatus, pat
 }
 
 /**
- * Kho kiện (FE-3b-01): tạo một / nhiều kiện, sửa, chuyển trạng thái, gắn và gỡ cờ. Kiện thuộc công ty của người tạo và chỉ công ty đó
- * đọc được, kể cả khi tra bằng mã QR (D-64); loại kiện của kiện phải cùng công ty. Mã QR cấp một lần lúc tạo.
+ * Kho kiện (FE-3b-01): tạo một / nhiều kiện, sửa, chuyển trạng thái, gắn và gỡ cờ, tra cứu theo mã (FE-3b-06). Kiện thuộc công ty của
+ * người tạo và chỉ công ty đó đọc được, kể cả khi tra bằng mã QR hay mã của bên gửi (D-64); loại kiện của kiện phải cùng công ty. Mã QR
+ * cấp một lần lúc tạo.
  */
 export function packageMethods(ctx: DbContext): PackageMethods {
   const { state } = ctx
@@ -98,22 +100,38 @@ export function packageMethods(ctx: DbContext): PackageMethods {
 
   const mark = (kind: 'flagged' | 'flagCleared', flag: PackageFlag): PackageHistoryEntry => ({ at: ctx.nowIso(), actorId: state.session.userId, kind, flag })
 
-  /** Gỡ cờ là việc của điều phối viên (D-92); kho không có phiên (test logic kho) thì không xét vai trò. */
-  function assertDispatcher() {
+  /**
+   * Gỡ cờ là việc của điều phối viên; nhân viên kho chỉ gỡ cờ "Không tìm thấy" bằng cách quét thấy lại kiện (D-92). Kho không có phiên
+   * (test logic kho) thì không xét vai trò.
+   */
+  function assertRole(role: Role) {
     const user = state.session.userId === null ? undefined : state.users.get(state.session.userId)
-    if (user !== undefined && user.role !== 'dispatcher') throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
+    if (user !== undefined && user.role !== role) throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
+  }
+
+  /** Kiện của công ty khớp mã QR; mã của kiện công ty khác cũng là "không khớp kiện nào": không lộ là mã đó có thật. */
+  function byQr(token: string): Package {
+    const wanted = normalizeQrToken(token)
+    const pkg = scope.list().find((item) => item.qrToken === wanted)
+    if (!pkg) throw new MockDbError('QR_UNKNOWN', { token: wanted })
+    return pkg
+  }
+
+  function clearFlag(current: Package, flag: PackageFlag): Package {
+    return put(packages, { ...current, flags: current.flags.filter((item) => item !== flag), history: [...current.history, mark('flagCleared', flag)] })
   }
 
   return {
     listPackages: () => ctx.respond(() => scope.list()),
     getPackage: (id) => ctx.respond(() => scope.read(id)),
-    findPackageByQr: (token) =>
+    findPackageByQr: (token) => ctx.respond(() => byQr(token)),
+    lookupPackages: (code) =>
       ctx.respond(() => {
-        const wanted = normalizeQrToken(token)
-        // Mã của kiện công ty khác cũng là "không khớp kiện nào": không lộ là mã đó có thật
-        const pkg = scope.list().find((item) => item.qrToken === wanted)
-        if (!pkg) throw new MockDbError('QR_UNKNOWN', { token: wanted })
-        return pkg
+        const token = normalizeQrToken(code)
+        const text = code.trim().toLowerCase()
+        const found = text === '' ? [] : scope.list().filter((pkg) => pkg.qrToken === token || pkg.packageCode.toLowerCase() === text || pkg.id.toLowerCase() === text)
+        if (found.length === 0) throw new MockDbError('QR_UNKNOWN', { token })
+        return found.toReversed()
       }),
     createPackage: (input) => ctx.respond(() => create([input], 'MANUAL')[0] as Package),
     createPackages: (rows, source = 'MANUAL') => ctx.respond(() => create(rows, source)),
@@ -148,10 +166,18 @@ export function packageMethods(ctx: DbContext): PackageMethods {
     clearPackageFlag: (id, flag: PackageFlag) =>
       ctx.respond(() => {
         const current = scope.own(id)
-        assertDispatcher()
+        assertRole('dispatcher')
         if (!current.flags.includes(flag)) throw new MockDbError('PACKAGE_FLAG_NOT_SET', { packageId: id, flag })
         ctx.log('package.flagCleared', { type: 'package', id }, { flag })
-        return put(packages, { ...current, flags: current.flags.filter((item) => item !== flag), history: [...current.history, mark('flagCleared', flag)] })
+        return clearFlag(current, flag)
+      }),
+    reportPackageFound: (token) =>
+      ctx.respond(() => {
+        const current = byQr(token)
+        assertRole('warehouse')
+        if (!current.flags.includes('NOT_FOUND')) throw new MockDbError('PACKAGE_FLAG_NOT_SET', { packageId: current.id, flag: 'NOT_FOUND' })
+        ctx.log('package.found', { type: 'package', id: current.id }, { flag: 'NOT_FOUND', packageCode: current.packageCode })
+        return clearFlag(current, 'NOT_FOUND')
       }),
   }
 }

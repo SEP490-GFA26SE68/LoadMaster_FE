@@ -15,6 +15,9 @@ const pk = (from: number, to: number) => Array.from({ length: to - from + 1 }, (
 
 const crate: PackageInput = { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 18, handlingClass: 'STANDARD', destination: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng' }
 
+/** Kiện có từ trước trong kho kiện; kiện của các chuyến seed (nguồn `TRIP`, FE-3b-07) kiểm ở `trip-packages.test.ts`. */
+const sourced = async (db: MockDb) => (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP')
+
 function dispatcher(): MockDb {
   const db = createMockDb()
   db.restoreSession('US-0001')
@@ -23,7 +26,7 @@ function dispatcher(): MockDb {
 
 test('the seed pool of Long Bình: 48 packages converted from registered packages with the sizes of their type, 40 imported ones, all IMPORTED', async () => {
   const db = dispatcher()
-  const packages = await db.listPackages()
+  const packages = await sourced(db)
   expect(packages.map((pkg) => pkg.id)).toStrictEqual(pk(1, 88))
   expect(new Set(packages.map((pkg) => pkg.status))).toStrictEqual(new Set(['IMPORTED']))
   expect(new Set(packages.map((pkg) => pkg.companyId))).toStrictEqual(new Set(['LOG-001']))
@@ -58,7 +61,7 @@ test('the seed pool of Long Bình: 48 packages converted from registered package
 test('Phương Nam keeps its small pool: 10 packages, all IMPORTED, four held by its pending order', async () => {
   const db = createMockDb()
   db.restoreSession('US-PN-03')
-  const packages = await db.listPackages()
+  const packages = await sourced(db)
   expect(packages.map((pkg) => [pkg.id, pkg.status, pkg.orderId])).toStrictEqual([
     ['PK-PN-0001', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0002', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0003', 'IMPORTED', 'ORD-PN-001'],
     ['PK-PN-0004', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
@@ -93,8 +96,9 @@ test('creating packages: IMPORTED, no flag, a QR token issued at once; one bad r
   expect(event).toMatchObject({ action: 'package.importConfirmed', actorId: 'US-0001', target: { type: 'package', id: 'PK-0090' }, params: { count: 3, packageTypeId: 'PT-006', lastPackageId: 'PK-0092' } })
   // Thêm lẻ là sự kiện khác với nhập file
   expect((await db.listEvents())[1]).toMatchObject({ action: 'package.created', target: { type: 'package', id: 'PK-0089' }, params: { count: 1 } })
+  // 2.863 kiện của các chuyến seed + 88 kiện có từ trước + 4 kiện vừa tạo: không mã nào trùng
   const tokens = (await db.listPackages()).map((pkg) => pkg.qrToken)
-  expect(new Set(tokens).size).toBe(92)
+  expect(new Set(tokens).size).toBe(2863 + 92)
 
   const events = (await db.listEvents()).length
   const bad: [Partial<PackageInput>, string][] = [
@@ -107,7 +111,7 @@ test('creating packages: IMPORTED, no flag, a QR token issued at once; one bad r
   await expect(db.createPackages([crate, { ...crate, packageTypeId: 'PT-404' }])).rejects.toMatchObject({ code: 'NOT_FOUND' })
   await expect(db.createPackages([])).rejects.toMatchObject({ code: 'PACKAGES_REQUIRED' })
   await expect(db.createPackages(Array.from({ length: 1001 }, () => crate))).rejects.toMatchObject({ code: 'QUANTITY_INVALID', params: { min: 1, max: 1000 } })
-  expect(await db.listPackages()).toHaveLength(92)
+  expect(await sourced(db)).toHaveLength(92)
   expect(await db.listEvents()).toHaveLength(events)
 })
 
@@ -280,5 +284,5 @@ test('a platform account creates and reads no package; each dispatcher creates f
   expect(await db.createPackage({ ...crate, packageTypeId: 'PT-PN-01' })).toMatchObject({ id: 'PK-0089', companyId: 'LOG-002', createdBy: 'US-PN-03' })
   await expect(db.createPackage({ ...crate, packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY', params: { collection: 'packageTypes', id: 'PT-001' } })
   db.restoreSession('US-0001')
-  expect(await db.listPackages()).toHaveLength(88)
+  expect(await sourced(db)).toHaveLength(88)
 })

@@ -3,6 +3,7 @@ import { found, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { missingIds, plannedStops } from './operations'
+import { ownTripLinks } from './db-trip-packages'
 import { normalizeQrToken } from './qr-token'
 import { labelByToken, tripLabels } from './review1-status'
 import type { TripLabel } from './source-types'
@@ -25,7 +26,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
   const { trips, revisions, orders, packages, vehicles, maintenance } = ctx.state
 
   function labelsOf(trip: Trip): TripLabel[] {
-    return tripLabels(trip, orders.values(), packages)
+    return tripLabels(trip, orders.values(), packages, ownTripLinks(ctx, trip.id))
   }
 
   /** Nhãn khớp mã quét trong chuyến; không có thì `PACKAGE_NOT_IN_TRIP`. */

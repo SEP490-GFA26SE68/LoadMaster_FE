@@ -133,7 +133,7 @@ export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt
 /** Xe gắn loại xe — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
 export type VehicleTypeAssignment = { vehicleId: string; vehicleTypeId: string }
 
-/** Nhãn QR của một kiện trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện kho kiện, kiện nhập tay dùng mã sinh riêng. */
+/** Nhãn QR của một kiện trong chuyến: mã QR của kiện kho kiện ứng với instance đó (FE-3b-07). */
 export type TripLabel = {
   packageInstanceId: string
   /** Dòng kiện của chuyến (`PKG-NNN`). */
@@ -141,8 +141,8 @@ export type TripLabel = {
   name: string
   deliveryStop: number
   qrToken: string
-  /** Kiện kho kiện (`PK-NNNN`) của instance này, khi kiện vào chuyến qua đơn hàng. */
-  poolPackageId?: string
+  /** Kiện kho kiện (`PK-NNNN`) của instance này. */
+  poolPackageId: string
 }
 
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */
