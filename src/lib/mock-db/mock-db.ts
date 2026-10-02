@@ -20,12 +20,16 @@ import type { MockDb, MockDbOptions } from './types'
 /** Hạt giống mã QR của kiện đăng ký mới khi nơi gọi không truyền `random`: test tất định. */
 const QR_SEED = 20_260_927
 
-/** Tạo một kho mới đã nạp seed neo theo `today` (D-44). Mỗi kho giữ dữ liệu và phiên riêng. */
+/**
+ * Tạo một kho mới đã nạp seed neo theo `today` (D-44). Mỗi kho giữ dữ liệu và phiên riêng. Kho mới chưa có phiên: không lọc theo công
+ * ty cho tới khi `authenticate` / `restoreSession` đặt phiên (`tenancy.ts`).
+ */
 export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = () => new Date(), random }: MockDbOptions = {}): MockDb {
   // Mở app trước giờ của các việc "hôm nay" trong seed thì lùi mốc giờ seed, không để lịch sử có sự kiện ở tương lai
   const seed = shiftSeedTimes(buildSeed(today), now())
   const state: DbState = {
     vehicles: new Map(seed.vehicles.map((vehicle) => [vehicle.id, vehicle])),
+    vehicleCompany: new Map(seed.vehicleCompany),
     maintenance: new Map(seed.maintenance),
     trips: new Map(seed.trips.map((trip) => [trip.id, trip])),
     revisions: new Map(seed.revisions.map((revision) => [revision.id, revision])),

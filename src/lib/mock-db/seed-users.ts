@@ -10,8 +10,8 @@ type UserSeed = Omit<User, 'lastActiveAt'> & {
 }
 
 /** Hai công ty logistics của seed (`seed-sourcing.ts`, PRD v2 mục 5.3): Vận tải Long Bình và Giao nhận Phương Nam. */
-const LONG_BINH = 'LOG-001'
-const PHUONG_NAM = 'LOG-002'
+export const LONG_BINH = 'LOG-001'
+export const PHUONG_NAM = 'LOG-002'
 
 /**
  * 20 người dùng (D-44, FE-0-03, FE-0-06): ba tài khoản nền tảng (không công ty, không kho), mười hai nhân viên của Long Bình và năm

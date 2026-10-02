@@ -1,0 +1,432 @@
+import { beforeAll, describe, expect, test } from 'vitest'
+import type { VehicleConfig } from '@/domain/models'
+import { createMockDb, type MockDb, type PackageTypeInput, type Revision, type VehicleTypeInput } from '@/lib/mock-db'
+
+/**
+ * Cách ly dữ liệu theo công ty ở tầng kho (D-64, FE-0-02): đăng nhập là người của một công ty thì **không hàm công khai nào** của kho
+ * trả về hay sửa bản ghi của công ty kia; phiên nền tảng bị mọi hàm dữ liệu vận hành từ chối.
+ *
+ * Bảng `PROBES` phải có **mọi** hàm công khai của kho: thêm hàm vào kho mà không khai ở đây thì test đầu tiên đỏ (và `tsc -b` báo
+ * thiếu khoá), nên hàm mới không lọt khỏi luật công ty. Mã bản ghi của từng công ty chép tay từ `seed-*.ts`, không lấy qua bộ lọc
+ * của kho.
+ */
+
+type Company = {
+  id: string
+  /** Điều phối viên của công ty: phiên dùng để gọi kho. */
+  viewer: string
+  driver: string
+  users: string[]
+  vehicles: string[]
+  /** Xe đã gắn loại xe. */
+  typedVehicles: string[]
+  vehicleTypes: string[]
+  packageTypes: string[]
+  packages: string[]
+  /** Mới nhất trước, như `listOrders`. */
+  orders: string[]
+  trips: string[]
+  /** Chuyến đang lập kế hoạch đã có bản duyệt `revision`, và một chuyến nháp có điểm giao `STOP-01`. */
+  trip: string
+  revision: string
+  draftTrip: string
+  /** Kiện đã ở kho, chưa thuộc đơn nào. */
+  freePackage: string
+}
+
+const range = (prefix: string, from: number, to: number, digits: number) =>
+  Array.from({ length: to - from + 1 }, (_, index) => `${prefix}${String(from + index).padStart(digits, '0')}`)
+
+const LONG_BINH: Company = {
+  id: 'LOG-001',
+  viewer: 'US-0001',
+  driver: 'US-0004',
+  users: ['US-0001', 'US-0002', 'US-0003', 'US-0004', 'US-0006', 'US-0007', 'US-0008', 'US-0009', 'US-0010', 'US-0011', 'US-0012', 'US-LB-01'],
+  vehicles: range('VEHICLE-', 1, 8, 3),
+  typedVehicles: range('VEHICLE-', 1, 7, 3),
+  vehicleTypes: range('VT-', 1, 7, 3),
+  packageTypes: range('PT-', 1, 8, 3),
+  packages: range('RPK-', 1, 48, 4),
+  orders: ['ORD-002', 'ORD-001'],
+  trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
+  trip: 'TRIP-2026-0914',
+  revision: 'REV-002',
+  draftTrip: 'TRIP-014',
+  freePackage: 'RPK-0023',
+}
+
+const PHUONG_NAM: Company = {
+  id: 'LOG-002',
+  viewer: 'US-PN-03',
+  driver: 'US-PN-04',
+  users: ['US-0015', 'US-PN-01', 'US-PN-02', 'US-PN-03', 'US-PN-04'],
+  vehicles: ['VEHICLE-PN-01', 'VEHICLE-PN-02'],
+  typedVehicles: ['VEHICLE-PN-01'],
+  vehicleTypes: ['VT-PN-01'],
+  packageTypes: ['PT-PN-01', 'PT-PN-02'],
+  packages: range('RPK-PN-', 1, 10, 4),
+  orders: ['ORD-PN-001'],
+  trips: ['TRIP-PN-001', 'TRIP-PN-002'],
+  trip: 'TRIP-PN-001',
+  revision: 'REV-PN-002',
+  draftTrip: 'TRIP-PN-002',
+  freePackage: 'RPK-PN-0005',
+}
+
+const PLATFORM_USERS = ['US-0005', 'US-NT-01', 'US-NT-02']
+const SYSTEM_ADMIN = 'US-0005'
+const NOW = new Date('2026-09-14T05:00:00.000Z')
+
+/** Bản ghi của công ty kia đọc sẵn khi kho chưa có phiên (không lọc): đầu vào cho các lệnh ghi cần cả object. */
+type Foreign = { vehicle: VehicleConfig; revision: Revision; qrToken: string }
+type Ctx = { db: MockDb; own: Company; other: Company; foreign: Foreign }
+type Call = (ctx: Ctx) => Promise<unknown>
+
+type Probe =
+  /** Phiên và tài khoản của chính người gọi: không nhận mã bản ghi nào của công ty. */
+  | { scope: 'session' }
+  | {
+      /** `operational`: phiên nền tảng bị từ chối. `directory` (người dùng, nhật ký, công ty): phiên nền tảng thấy hết. */
+      scope: 'operational' | 'directory'
+      /** Hàm liệt kê: trả đúng các mã của công ty mình. */
+      list?: { call: Call; ids: (result: never) => string[]; own: (company: Company) => string[]; all?: string[] }
+      /** Đọc bản ghi của công ty kia: `NOT_FOUND` (tra mã QR: `QR_UNKNOWN`). */
+      hidden?: Call
+      hiddenCode?: 'QR_UNKNOWN'
+      /** Ghi vào, hoặc tham chiếu tới, bản ghi của công ty kia: `FORBIDDEN_COMPANY`. */
+      forbidden?: Record<string, Call>
+      /** Tạo bản ghi mới: thuộc công ty mình, công ty kia không thấy. */
+      creates?: Call
+    }
+
+const TYPE: PackageTypeInput = {
+  name: 'Thùng nước tăng lực 24 lon', lengthCm: 40, widthCm: 27, heightCm: 13, weightKg: 8.6, fragilityLevel: 'NONE',
+  allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 6, maxTopLoadKg: 45,
+}
+const VEHICLE_TYPE: VehicleTypeInput = { name: 'Xe tải 1,9 tấn thùng 3,6 m', cargoLengthCm: 360, cargoWidthCm: 170, cargoHeightCm: 170, payloadKg: 1900 }
+const STOP = { id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }
+const newTrip = (vehicleId: string, driverId: string | null = null) => ({ name: 'Tuyến thử cách ly', vehicleId, driverId, scheduledDate: '2026-09-15', packages: [], stops: [STOP] })
+const newUser = (companyId?: string) => ({ fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình', ...(companyId ? { companyId } : {}) })
+const order = (packageIds: string[]) => ({ customerName: 'Siêu thị Co.opmart Biên Hoà', deliveryAddress: '121 Phạm Văn Thuận, Biên Hoà', packageIds })
+const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id)
+const vehicleIdsOf = (rows: { vehicleId: string }[]) => rows.map((row) => row.vehicleId)
+
+/** Mọi hàm ghi tiến độ của chuyến: gọi trên chuyến của công ty kia. */
+const onForeignTrip = (call: (db: MockDb, tripId: string, foreign: Foreign) => Promise<unknown>): Probe => ({
+  scope: 'operational',
+  forbidden: { 'chuyến của công ty kia': ({ db, other, foreign }) => call(db, other.trip, foreign) },
+})
+
+const PROBES = {
+  listVehicles: { scope: 'operational', list: { call: ({ db }) => db.listVehicles(), ids: idsOf, own: (c) => c.vehicles } },
+  getVehicle: { scope: 'operational', hidden: ({ db, other }) => db.getVehicle(other.vehicles[0]!) },
+  createVehicle: { scope: 'operational', creates: ({ db, foreign: { vehicle: { id: _id, ...vehicle } } }) => db.createVehicle({ ...vehicle, name: 'Xe mới' }) },
+  updateVehicle: { scope: 'operational', forbidden: { 'xe của công ty kia': ({ db, foreign }) => db.updateVehicle({ ...foreign.vehicle, name: 'Đổi tên' }) } },
+  deleteVehicle: { scope: 'operational', forbidden: { 'xe của công ty kia': ({ db, other }) => db.deleteVehicle(other.vehicles[1]!) } },
+  listVehicleStates: { scope: 'operational', list: { call: ({ db }) => db.listVehicleStates(), ids: vehicleIdsOf, own: (c) => c.vehicles } },
+  setVehicleMaintenance: { scope: 'operational', forbidden: { 'xe của công ty kia': ({ db, other }) => db.setVehicleMaintenance(other.vehicles[0]!, 'Thay lốp') } },
+
+  listTrips: { scope: 'operational', list: { call: ({ db }) => db.listTrips(), ids: idsOf, own: (c) => c.trips } },
+  getTrip: { scope: 'operational', hidden: ({ db, other }) => db.getTrip(other.trip) },
+  createTrip: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.createTrip(newTrip(own.vehicles[0]!, own.driver)),
+    forbidden: {
+      'xe của công ty kia': ({ db, other }) => db.createTrip(newTrip(other.vehicles[0]!)),
+      'tài xế của công ty kia': ({ db, own, other }) => db.createTrip(newTrip(own.vehicles[0]!, other.driver)),
+    },
+  },
+  updateTrip: {
+    scope: 'operational',
+    forbidden: {
+      'chuyến của công ty kia': ({ db, other }) => db.updateTrip(other.draftTrip, { name: 'Đổi tên' }),
+      'xe của công ty kia': ({ db, own, other }) => db.updateTrip(own.draftTrip, { vehicleId: other.vehicles[0]! }),
+      'tài xế của công ty kia': ({ db, own, other }) => db.updateTrip(own.draftTrip, { driverId: other.driver }),
+    },
+  },
+  cancelTrip: onForeignTrip((db, tripId) => db.cancelTrip(tripId, 'Khách hoãn')),
+
+  listRevisions: { scope: 'operational', hidden: ({ db, other }) => db.listRevisions(other.trip) },
+  getRevision: { scope: 'operational', hidden: ({ db, other }) => db.getRevision(other.revision) },
+  addRevision: onForeignTrip((db, tripId, { revision }) => db.addRevision({ tripId, request: revision.request, result: revision.result })),
+  approveRevision: { scope: 'operational', forbidden: { 'phương án của công ty kia': ({ db, other }) => db.approveRevision(other.revision, []) } },
+  listOptimizationRuns: { scope: 'operational', hidden: ({ db, other }) => db.listOptimizationRuns(other.trip) },
+  recordFailedRun: onForeignTrip((db, tripId) => db.recordFailedRun(tripId, { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF', failureCode: 'SERVICE_UNAVAILABLE' })),
+
+  startLoading: onForeignTrip((db, tripId) => db.startLoading(tripId)),
+  recordLoadingStep: onForeignTrip((db, tripId) => db.recordLoadingStep(tripId, { packageInstanceId: 'PKG-001-01', outcome: 'loaded' })),
+  completeLoading: onForeignTrip((db, tripId) => db.completeLoading(tripId)),
+  startDelivery: onForeignTrip((db, tripId) => db.startDelivery(tripId)),
+  recordUnload: onForeignTrip((db, tripId) => db.recordUnload(tripId, 1, 'PKG-001-01', true)),
+  reportDeliveryIssue: onForeignTrip((db, tripId) => db.reportDeliveryIssue(tripId, { stopNumber: 1, kind: 'damaged', note: 'Móp góc' })),
+  completeStop: onForeignTrip((db, tripId) => db.completeStop(tripId, 1)),
+  listTripLabels: { scope: 'operational', hidden: ({ db, other }) => db.listTripLabels(other.trip) },
+  getTripReadiness: { scope: 'operational', hidden: ({ db, other }) => db.getTripReadiness(other.trip) },
+  confirmLoadingByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmLoadingByQr(tripId, qrToken)),
+  recordSeal: onForeignTrip((db, tripId) => db.recordSeal(tripId, 'SEAL-0914')),
+  confirmUnloadByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmUnloadByQr(tripId, 1, qrToken)),
+
+  authenticate: { scope: 'session' },
+  signOut: { scope: 'session' },
+  restoreSession: { scope: 'session' },
+  sessionUser: { scope: 'session' },
+  changePassword: { scope: 'session' },
+  updateProfile: { scope: 'session' },
+  listUsers: { scope: 'directory', list: { call: ({ db }) => db.listUsers(), ids: idsOf, own: (c) => c.users, all: [...LONG_BINH.users, ...PHUONG_NAM.users, ...PLATFORM_USERS] } },
+  getUser: { scope: 'directory', hidden: ({ db, other }) => db.getUser(other.driver) },
+  createUser: {
+    scope: 'directory',
+    creates: ({ db }) => db.createUser(newUser()),
+    forbidden: { 'tài khoản cho công ty kia': ({ db, other }) => db.createUser(newUser(other.id)) },
+  },
+  updateUser: { scope: 'directory', forbidden: { 'người của công ty kia': ({ db, other }) => db.updateUser(other.driver, { phone: '0900 000 000' }) } },
+  setUserStatus: { scope: 'directory', forbidden: { 'người của công ty kia': ({ db, other }) => db.setUserStatus(other.driver, 'suspended') } },
+  deleteUser: { scope: 'directory', forbidden: { 'người của công ty kia': ({ db, other }) => db.deleteUser(other.users[0]!) } },
+  resetPassword: { scope: 'directory', forbidden: { 'người của công ty kia': ({ db, other }) => db.resetPassword(other.driver) } },
+  // Số sự kiện kiểm riêng ở test "nhật ký" bên dưới: ở đây chỉ so công ty của người làm
+  listEvents: { scope: 'directory' },
+  listAuditNames: {
+    scope: 'directory',
+    list: {
+      call: ({ db }) => db.listAuditNames(),
+      ids: ({ users, trips, vehicles }: { users: { id: string }[]; trips: { id: string }[]; vehicles: { id: string }[] }) => [...idsOf(users), ...idsOf(trips), ...idsOf(vehicles)],
+      own: (c) => [...c.users, ...c.trips, ...c.vehicles],
+    },
+  },
+  listCompanies: { scope: 'directory', list: { call: ({ db }) => db.listCompanies(), ids: idsOf, own: (c) => [c.id], all: ['LOG-001', 'LOG-002'] } },
+
+  listPackageTypes: { scope: 'operational', list: { call: ({ db }) => db.listPackageTypes(), ids: idsOf, own: (c) => c.packageTypes } },
+  getPackageType: { scope: 'operational', hidden: ({ db, other }) => db.getPackageType(other.packageTypes[0]!) },
+  createPackageType: { scope: 'operational', creates: ({ db }) => db.createPackageType(TYPE) },
+  updatePackageType: { scope: 'operational', forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.updatePackageType(other.packageTypes[0]!, TYPE) } },
+  deletePackageType: { scope: 'operational', forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.deletePackageType(other.packageTypes[1]!) } },
+
+  listRegisteredPackages: { scope: 'operational', list: { call: ({ db }) => db.listRegisteredPackages(), ids: idsOf, own: (c) => c.packages } },
+  getRegisteredPackage: { scope: 'operational', hidden: ({ db, other }) => db.getRegisteredPackage(other.packages[0]!) },
+  findPackageByQr: { scope: 'operational', hidden: ({ db, foreign }) => db.findPackageByQr(foreign.qrToken), hiddenCode: 'QR_UNKNOWN' },
+  registerPackage: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.registerPackage({ packageTypeId: own.packageTypes[0]! }),
+    forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.registerPackage({ packageTypeId: other.packageTypes[0]! }) },
+  },
+  registerPackages: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.registerPackages({ packageTypeId: own.packageTypes[0]! }, 2),
+    forbidden: { 'loại kiện của công ty kia': ({ db, other }) => db.registerPackages({ packageTypeId: other.packageTypes[0]! }, 2) },
+  },
+  registerPackageRows: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.registerPackageRows([{ packageTypeId: own.packageTypes[1]!, quantity: 2 }]),
+    forbidden: {
+      'một dòng dùng loại kiện của công ty kia': ({ db, own, other }) =>
+        db.registerPackageRows([{ packageTypeId: own.packageTypes[0]!, quantity: 1 }, { packageTypeId: other.packageTypes[0]!, quantity: 1 }]),
+    },
+  },
+
+  listOrders: { scope: 'operational', list: { call: ({ db }) => db.listOrders(), ids: idsOf, own: (c) => c.orders } },
+  getOrder: { scope: 'operational', hidden: ({ db, other }) => db.getOrder(other.orders[0]!) },
+  createOrder: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.createOrder(order([own.freePackage])),
+    forbidden: { 'kiện của công ty kia': ({ db, other }) => db.createOrder(order([other.freePackage])) },
+  },
+  updateOrder: {
+    scope: 'operational',
+    forbidden: {
+      'đơn của công ty kia': ({ db, other }) => db.updateOrder(other.orders[0]!, { note: 'Giao giờ hành chính' }),
+      'kiện của công ty kia': ({ db, own, other }) => db.updateOrder(own.orders[0]!, { packageIds: [other.freePackage] }),
+    },
+  },
+  cancelOrder: { scope: 'operational', forbidden: { 'đơn của công ty kia': ({ db, other }) => db.cancelOrder(other.orders[0]!, 'Khách đổi ý') } },
+  assignOrder: {
+    scope: 'operational',
+    forbidden: {
+      'đơn của công ty kia': ({ db, own, other }) => db.assignOrder(other.orders[0]!, own.draftTrip, 'STOP-01'),
+      'chuyến của công ty kia': ({ db, own, other }) => db.assignOrder(own.orders[0]!, other.draftTrip, 'STOP-01'),
+    },
+  },
+  unassignOrder: { scope: 'operational', forbidden: { 'đơn của công ty kia': ({ db, other }) => db.unassignOrder(other.orders[0]!) } },
+
+  listVehicleTypes: { scope: 'operational', list: { call: ({ db }) => db.listVehicleTypes(), ids: idsOf, own: (c) => c.vehicleTypes } },
+  getVehicleType: { scope: 'operational', hidden: ({ db, other }) => db.getVehicleType(other.vehicleTypes[0]!) },
+  createVehicleType: { scope: 'operational', creates: ({ db }) => db.createVehicleType(VEHICLE_TYPE) },
+  updateVehicleType: { scope: 'operational', forbidden: { 'loại xe của công ty kia': ({ db, other }) => db.updateVehicleType(other.vehicleTypes[0]!, VEHICLE_TYPE) } },
+  deleteVehicleType: { scope: 'operational', forbidden: { 'loại xe của công ty kia': ({ db, other }) => db.deleteVehicleType(other.vehicleTypes[0]!) } },
+  listVehicleTypeAssignments: { scope: 'operational', list: { call: ({ db }) => db.listVehicleTypeAssignments(), ids: vehicleIdsOf, own: (c) => c.typedVehicles } },
+  setVehicleType: {
+    scope: 'operational',
+    forbidden: {
+      'xe của công ty kia': ({ db, own, other }) => db.setVehicleType(other.vehicles[0]!, own.vehicleTypes[0]!),
+      'loại xe của công ty kia': ({ db, own, other }) => db.setVehicleType(own.vehicles[0]!, other.vehicleTypes[0]!),
+    },
+  },
+} satisfies Record<keyof MockDb, Probe>
+
+const probes = Object.entries(PROBES) as [keyof MockDb, Probe][]
+const scoped = probes.flatMap(([name, probe]) => (probe.scope === 'session' ? [] : [{ name, probe }]))
+const lists = scoped.flatMap(({ name, probe }) => (probe.list ? [{ name, scope: probe.scope, list: probe.list }] : []))
+const hidden = scoped.flatMap(({ name, probe }) => (probe.hidden ? [{ name, call: probe.hidden, code: probe.hiddenCode ?? 'NOT_FOUND' }] : []))
+const forbidden = scoped.flatMap(({ name, probe }) => Object.entries(probe.forbidden ?? {}).map(([what, call]) => ({ name, what, call })))
+const creates = scoped.flatMap(({ name, probe }) => (probe.creates ? [{ name, call: probe.creates }] : []))
+
+/** Kho mới, đọc sẵn bản ghi của `other` rồi đặt phiên của `sessionUserId` — `restoreSession` không ghi nhật ký, không đổi dữ liệu. */
+async function open(own: Company, other: Company, sessionUserId = own.viewer): Promise<Ctx> {
+  const db = createMockDb({ now: () => NOW })
+  const foreign = {
+    vehicle: await db.getVehicle(other.vehicles[0]!),
+    revision: await db.getRevision(other.revision),
+    qrToken: (await db.getRegisteredPackage(other.packages[0]!)).qrToken,
+  }
+  db.restoreSession(sessionUserId)
+  return { db, own, other, foreign }
+}
+
+/** Toàn bộ kho, đọc khi không có phiên (không lọc): hai ảnh bằng nhau thì không bản ghi nào của công ty nào bị đổi. */
+async function wholeStore(db: MockDb) {
+  const session = db.sessionUser()?.id ?? null
+  db.restoreSession(null)
+  const trips = await db.listTrips()
+  const snapshot = {
+    vehicles: await db.listVehicles(), states: await db.listVehicleStates(), trips,
+    revisions: await Promise.all(trips.map((trip) => db.listRevisions(trip.id))),
+    runs: await Promise.all(trips.map((trip) => db.listOptimizationRuns(trip.id))),
+    users: await db.listUsers(), events: await db.listEvents(), packageTypes: await db.listPackageTypes(),
+    packages: await db.listRegisteredPackages(), orders: await db.listOrders(), vehicleTypes: await db.listVehicleTypes(),
+    assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
+  }
+  db.restoreSession(session)
+  return snapshot
+}
+
+test('every public function of the store is classified in PROBES, and every classified one probes something', () => {
+  expect(Object.keys(createMockDb()).toSorted()).toStrictEqual(Object.keys(PROBES).toSorted())
+  const unprobed = scoped.filter(({ name, probe }) => name !== 'listEvents' && !probe.list && !probe.hidden && !probe.forbidden && !probe.creates)
+  expect(unprobed.map(({ name }) => name)).toStrictEqual([])
+})
+
+describe.each([
+  { own: LONG_BINH, other: PHUONG_NAM },
+  { own: PHUONG_NAM, other: LONG_BINH },
+])('signed in at $own.id, against the records of $other.id', ({ own, other }) => {
+  let ctx: Ctx
+  let before: Awaited<ReturnType<typeof wholeStore>>
+  beforeAll(async () => {
+    ctx = await open(own, other)
+    before = await wholeStore(ctx.db)
+  })
+
+  test.each(lists)('$name returns exactly the records of the company', async ({ list }) => {
+    expect(list.ids((await list.call(ctx)) as never)).toStrictEqual(list.own(own))
+  })
+
+  test.each(hidden)('$name does not find a record of the other company', async ({ call, code }) => {
+    await expect(call(ctx)).rejects.toMatchObject({ code })
+  })
+
+  test.each(forbidden)('$name refuses: $what', async ({ call }) => {
+    await expect(call(ctx)).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY' })
+  })
+
+  test('the audit log holds only what people of the company did', async () => {
+    const events = await ctx.db.listEvents()
+    // Đếm độc lập với bộ lọc của kho: sự kiện seed mà người làm là người của công ty (mã người dùng chép tay ở trên)
+    const expected = before.events.filter((event) => event.actorId !== null && own.users.includes(event.actorId))
+    expect(events.map((event) => event.id)).toStrictEqual(expected.map((event) => event.id))
+    expect(events.length).toBeGreaterThan(5)
+    expect(events.filter((event) => other.trips.includes(event.target.id) || other.users.includes(event.target.id))).toStrictEqual([])
+  })
+
+  test('after all of the above nothing in the store has changed: no record written, no event logged', async () => {
+    expect(await wholeStore(ctx.db)).toStrictEqual(before)
+  })
+
+  test('records created in the session belong to the company: the other company still sees exactly its seed', async () => {
+    const created = await open(own, other)
+    for (const { call } of creates) await call(created)
+    // Người của công ty mình thấy bản ghi mới…
+    const mine = { trips: await created.db.listTrips(), vehicles: await created.db.listVehicles(), users: await created.db.listUsers(), orders: await created.db.listOrders() }
+    expect([mine.trips.length, mine.vehicles.length, mine.users.length, mine.orders.length])
+      .toStrictEqual([own.trips.length + 1, own.vehicles.length + 1, own.users.length + 1, own.orders.length + 1])
+    expect(new Set([...mine.trips, ...mine.users, ...mine.orders].map((record) => record.companyId))).toStrictEqual(new Set([own.id]))
+    // …còn công ty kia thấy đúng seed của mình ở mọi hàm liệt kê
+    created.db.restoreSession(other.viewer)
+    for (const { name, list } of lists) expect(list.ids((await list.call(created)) as never), name).toStrictEqual(list.own(other))
+  })
+})
+
+describe('signed in as a platform account (system admin)', () => {
+  let ctx: Ctx
+  let before: Awaited<ReturnType<typeof wholeStore>>
+  beforeAll(async () => {
+    ctx = await open(LONG_BINH, PHUONG_NAM, SYSTEM_ADMIN)
+    before = await wholeStore(ctx.db)
+  })
+
+  const operational = scoped.filter(({ probe }) => probe.scope === 'operational').flatMap(({ name, probe }) => [
+    ...(probe.list ? [{ name, what: 'liệt kê', call: probe.list.call }] : []),
+    ...(probe.hidden ? [{ name, what: 'đọc', call: probe.hidden }] : []),
+    ...(probe.creates ? [{ name, what: 'tạo', call: probe.creates }] : []),
+    ...Object.entries(probe.forbidden ?? {}).map(([what, call]) => ({ name, what, call })),
+  ])
+
+  test.each(operational)('$name is refused ($what): operational data needs a company', async ({ call }) => {
+    await expect(call(ctx)).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
+  })
+
+  test('users, companies and the audit log are not operational data: the platform reads all of them', async () => {
+    for (const { name, list } of lists.filter((item) => item.scope === 'directory' && item.list.all)) {
+      expect(list.ids((await list.call(ctx)) as never).toSorted(), name).toStrictEqual(list.all?.toSorted())
+    }
+    expect((await ctx.db.listEvents()).map((event) => event.id)).toStrictEqual(before.events.map((event) => event.id))
+    const names = await ctx.db.listAuditNames()
+    expect(names.trips.map((trip) => trip.id)).toStrictEqual([...LONG_BINH.trips, ...PHUONG_NAM.trips])
+    expect(names.vehicles.map((vehicle) => vehicle.id)).toStrictEqual([...LONG_BINH.vehicles, ...PHUONG_NAM.vehicles])
+    expect((await ctx.db.getUser(PHUONG_NAM.driver)).companyId).toBe('LOG-002')
+  })
+
+  test('the refused calls changed nothing', async () => {
+    expect(await wholeStore(ctx.db)).toStrictEqual(before)
+  })
+})
+
+test('without a session the store does not filter, and what it creates belongs to the default company LOG-001', async () => {
+  const db = createMockDb({ now: () => NOW })
+  expect((await db.listTrips()).map((trip) => trip.id)).toStrictEqual([...LONG_BINH.trips, ...PHUONG_NAM.trips])
+  expect((await db.getTrip(PHUONG_NAM.trip)).companyId).toBe('LOG-002')
+  const trip = await db.createTrip(newTrip('VEHICLE-001', 'US-0004'))
+  const type = await db.createPackageType(TYPE)
+  const [pkg] = await db.registerPackages({ packageTypeId: type.id }, 1)
+  expect([trip.companyId, type.companyId, pkg?.ownerCompanyId, (await db.createUser(newUser())).user.companyId]).toStrictEqual(['LOG-001', 'LOG-001', 'LOG-001', 'LOG-001'])
+  expect((await db.listEvents())[0]).toMatchObject({ action: 'user.created', actorId: null, companyId: 'LOG-001' })
+  // Luật của dữ liệu vẫn giữ khi không có phiên: chuyến của Long Bình không dùng xe của Phương Nam
+  await expect(db.createTrip(newTrip('VEHICLE-PN-01'))).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY', params: { collection: 'vehicles', id: 'VEHICLE-PN-01' } })
+  // Phương Nam thấy đúng seed của mình: không bản ghi nào vừa tạo lọt sang
+  await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
+  expect((await db.listTrips()).map((item) => item.id)).toStrictEqual(PHUONG_NAM.trips)
+  expect((await db.listPackageTypes()).map((item) => item.id)).toStrictEqual(PHUONG_NAM.packageTypes)
+})
+
+test('audit events carry the company of the session; a platform account writes events of no company', async () => {
+  const db = createMockDb({ now: () => NOW })
+  await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
+  await db.setVehicleMaintenance('VEHICLE-PN-02', 'Thay lốp')
+  expect((await db.listEvents()).slice(0, 2).map((event) => [event.action, event.actorId, event.companyId])).toStrictEqual([
+    ['vehicle.maintenanceOn', 'US-PN-03', 'LOG-002'],
+    ['auth.signedIn', 'US-PN-03', 'LOG-002'],
+  ])
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await db.setUserStatus('US-0009', 'suspended')
+  await expect(db.authenticate('taixe@phuongnam.vn', 'sai-mat-khau')).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' })
+  db.restoreSession(SYSTEM_ADMIN)
+  expect((await db.listEvents()).slice(0, 3).map((event) => [event.action, event.actorId, event.companyId])).toStrictEqual([
+    // lần đăng nhập sai ghi công ty của tài khoản bị thử, để quản trị công ty đó thấy
+    ['auth.signInFailed', SYSTEM_ADMIN, 'LOG-002'],
+    ['user.locked', SYSTEM_ADMIN, null],
+    ['auth.signedIn', SYSTEM_ADMIN, null],
+  ])
+  // Long Bình không thấy việc của Phương Nam, cũng không thấy việc của tài khoản nền tảng
+  db.restoreSession('US-LB-01')
+  const seenByLongBinh = await db.listEvents()
+  expect(new Set(seenByLongBinh.map((event) => event.companyId))).toStrictEqual(new Set(['LOG-001']))
+  expect(seenByLongBinh.filter((event) => event.actorId === SYSTEM_ADMIN || event.actorId === 'US-PN-03')).toStrictEqual([])
+})

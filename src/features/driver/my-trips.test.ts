@@ -55,6 +55,16 @@ test('another driver sees none of the demo driver trips', async () => {
   ])
 })
 
+test('the Phương Nam driver sees the one approved trip of their company, waiting at the Phú Thuận depot (FE-0-02)', async () => {
+  const groups = await tripsFor('US-PN-04')
+  expect(groups.ready).toStrictEqual([])
+  // TRIP-PN-001: 30 thùng linh kiện + 12 kiện vải cuộn, 2 điểm, đã duyệt chờ kho xếp
+  expect(groups.preparing.map((row) => [row.id, row.status, row.sub, row.stopCount, row.packageCount, row.vehicleName])).toStrictEqual([
+    ['TRIP-PN-001', 'PLANNED', { kind: 'approved' }, 2, 42, 'Isuzu QKR 230 · 51C-907.41'],
+  ])
+  expect(groups.recent).toStrictEqual([])
+})
+
 test('visibility fails closed: only the driver a trip is assigned to sees it — no role sees every trip, an unassigned trip shows to nobody', async () => {
   expect(isVisibleTo({ driverId: 'US-0004' }, { id: 'US-0004' })).toBe(true)
   expect(isVisibleTo({ driverId: 'US-0006' }, { id: 'US-0004' })).toBe(false)

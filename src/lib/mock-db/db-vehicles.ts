@@ -1,4 +1,4 @@
-import { found, nextId, put, sameData, type DbContext } from './db-context'
+import { nextId, put, sameData, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { isActivePhase } from './operations'
 import type { MockDb, Trip, VehicleState } from './types'
@@ -14,8 +14,10 @@ export function activeTripOf(trips: Iterable<Trip>, vehicleId: string): Trip | u
   return undefined
 }
 
+/** Xe của công ty của phiên (D-64): công ty lưu cạnh xe ở `vehicleCompany`; chuyến dùng xe luôn cùng công ty với xe. */
 export function vehicleMethods(ctx: DbContext): VehicleMethods {
-  const { vehicles, trips, maintenance } = ctx.state
+  const { vehicles, trips, maintenance, vehicleCompany } = ctx.state
+  const scope = ctx.scope.vehicles
 
   function stateOf(vehicleId: string): VehicleState {
     const inMaintenance = maintenance.get(vehicleId)
@@ -30,17 +32,19 @@ export function vehicleMethods(ctx: DbContext): VehicleMethods {
   }
 
   return {
-    listVehicles: () => ctx.respond(() => [...vehicles.values()]),
-    getVehicle: (id) => ctx.respond(() => found(vehicles, 'vehicles', id)),
+    listVehicles: () => ctx.respond(() => scope.list()),
+    getVehicle: (id) => ctx.respond(() => scope.read(id)),
     createVehicle: (input) =>
       ctx.respond(() => {
+        const companyId = ctx.scope.newRecordCompany()
         const created = put(vehicles, { ...input, id: nextId('VEHICLE', vehicles.keys()) })
+        vehicleCompany.set(created.id, companyId)
         ctx.log('vehicle.created', { type: 'vehicle', id: created.id }, { name: created.name })
         return created
       }),
     updateVehicle: (vehicle) =>
       ctx.respond(() => {
-        const current = found(vehicles, 'vehicles', vehicle.id)
+        const current = scope.own(vehicle.id)
         if (sameData(vehicle, current)) return current
         assertNotRunning(vehicle.id)
         // Xe là một phần đầu vào tối ưu của mọi chuyến đang lập kế hoạch với nó
@@ -52,17 +56,18 @@ export function vehicleMethods(ctx: DbContext): VehicleMethods {
       }),
     deleteVehicle: (id) =>
       ctx.respond(() => {
-        const vehicle = found(vehicles, 'vehicles', id)
+        const vehicle = scope.own(id)
         const tripIds = [...trips.values()].filter((trip) => trip.vehicleId === id).map((trip) => trip.id)
         if (tripIds.length > 0) throw new MockDbError('VEHICLE_IN_USE', { vehicleId: id, tripIds })
         vehicles.delete(id)
+        vehicleCompany.delete(id)
         maintenance.delete(id)
         ctx.log('vehicle.deleted', { type: 'vehicle', id }, { name: vehicle.name })
       }),
-    listVehicleStates: () => ctx.respond(() => [...vehicles.keys()].map(stateOf)),
+    listVehicleStates: () => ctx.respond(() => scope.list().map((vehicle) => stateOf(vehicle.id))),
     setVehicleMaintenance: (id, note) =>
       ctx.respond(() => {
-        found(vehicles, 'vehicles', id)
+        scope.own(id)
         if (note === null) {
           if (maintenance.delete(id)) ctx.log('vehicle.maintenanceOff', { type: 'vehicle', id })
           return stateOf(id)

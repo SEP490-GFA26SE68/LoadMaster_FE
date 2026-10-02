@@ -1,4 +1,4 @@
-import { found, nextId, optionalText, put, sessionUserOf, type DbContext, type DbState } from './db-context'
+import { nextId, optionalText, put, type DbContext, type DbState } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { normalizeQrToken } from './qr-token'
@@ -21,16 +21,6 @@ function withEffectiveStatus(state: DbState, pkg: RegisteredPackage): Registered
   return status === pkg.status ? pkg : { ...pkg, status }
 }
 
-/**
- * Công ty nhận kiện đăng ký mới: công ty của người đang đăng nhập (FE-0-06, D-63 — khách hàng của app là công ty logistics, không còn
- * nhà sản xuất đăng ký hộ). Phiên không thuộc công ty nào (chưa đăng nhập, tài khoản nền tảng) thì không đăng ký được.
- */
-function sessionCompany(state: DbState): string {
-  const companyId = sessionUserOf(state)?.companyId
-  if (companyId === undefined) throw new MockDbError('COMPANY_REQUIRED', {})
-  return companyId
-}
-
 function assertQuantity(quantity: number) {
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_REGISTER_QUANTITY) {
     throw new MockDbError('QUANTITY_INVALID', { min: 1, max: MAX_REGISTER_QUANTITY })
@@ -38,12 +28,14 @@ function assertQuantity(quantity: number) {
 }
 
 /**
- * Kiện đăng ký (LM-104): tạo một / theo số lượng / nhiều dòng; mỗi kiện một mã QR ngẫu nhiên. Hàm đọc trả mọi kiện — lọc theo công ty
- * của phiên là việc của FE-0-02.
+ * Kiện đăng ký (LM-104): tạo một / theo số lượng / nhiều dòng; mỗi kiện một mã QR ngẫu nhiên. Kiện thuộc công ty của người đăng ký
+ * (FE-0-06, D-63 — khách hàng của app là công ty logistics) và chỉ công ty đó đọc được, kể cả khi tra bằng mã QR (D-64); loại kiện
+ * của kiện phải cùng công ty.
  */
 export function registeredMethods(ctx: DbContext): RegisteredMethods {
   const { state } = ctx
-  const { registeredPackages, packageTypes } = state
+  const { registeredPackages } = state
+  const scope = ctx.scope.registeredPackages
 
   /** Ghi `quantity` kiện của một dòng; nơi gọi đã kiểm dòng. */
   function create(input: RegisteredPackageInput, owner: string, quantity: number): RegisteredPackage[] {
@@ -64,11 +56,11 @@ export function registeredMethods(ctx: DbContext): RegisteredMethods {
   }
 
   function register(rows: readonly RegisteredPackageRow[]): RegisteredPackage[] {
-    const owner = sessionCompany(state)
+    const owner = ctx.scope.newRecordCompany()
     if (rows.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
     // Kiểm hết trước khi ghi: một dòng sai thì không dòng nào được ghi
     for (const row of rows) {
-      found(packageTypes, 'packageTypes', row.packageTypeId)
+      ctx.scope.packageTypes.ref(row.packageTypeId, owner)
       assertQuantity(row.quantity)
     }
     const created = rows.flatMap((row) => create(row, owner, row.quantity))
@@ -82,12 +74,13 @@ export function registeredMethods(ctx: DbContext): RegisteredMethods {
   }
 
   return {
-    listRegisteredPackages: () => ctx.respond(() => [...registeredPackages.values()].map((pkg) => withEffectiveStatus(state, pkg))),
-    getRegisteredPackage: (id) => ctx.respond(() => withEffectiveStatus(state, found(registeredPackages, 'registeredPackages', id))),
+    listRegisteredPackages: () => ctx.respond(() => scope.list().map((pkg) => withEffectiveStatus(state, pkg))),
+    getRegisteredPackage: (id) => ctx.respond(() => withEffectiveStatus(state, scope.read(id))),
     findPackageByQr: (token) =>
       ctx.respond(() => {
         const wanted = normalizeQrToken(token)
-        const pkg = [...registeredPackages.values()].find((item) => item.qrToken === wanted)
+        // Mã của kiện công ty khác cũng là "không khớp kiện nào": không lộ là mã đó có thật
+        const pkg = scope.list().find((item) => item.qrToken === wanted)
         if (!pkg) throw new MockDbError('QR_UNKNOWN', { token: wanted })
         return withEffectiveStatus(state, pkg)
       }),

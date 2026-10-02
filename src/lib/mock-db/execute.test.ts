@@ -76,7 +76,8 @@ test('trip report of a completed trip counts what the warehouse and the driver r
 
 test('vehicle types: CRUD, validation, cannot delete a type set on a vehicle, vehicles may have no type', async () => {
   const db = createMockDb()
-  expect(await db.listVehicleTypes()).toHaveLength(7)
+  // Kho không có phiên trả danh mục của cả hai công ty: 7 loại xe của Long Bình và 1 của Phương Nam (FE-0-02)
+  expect((await db.listVehicleTypes()).map((type) => type.id)).toStrictEqual(['VT-001', 'VT-002', 'VT-003', 'VT-004', 'VT-005', 'VT-006', 'VT-007', 'VT-PN-01'])
   expect((await db.listVehicleTypeAssignments()).find((item) => item.vehicleId === 'VEHICLE-008')).toBeUndefined()
   const created = await db.createVehicleType({ name: ' Xe tải 2,5 tấn thùng 4,3 m ', cargoLengthCm: 430, cargoWidthCm: 180, cargoHeightCm: 180, payloadKg: 2500 })
   expect(created).toMatchObject({ id: 'VT-008', name: 'Xe tải 2,5 tấn thùng 4,3 m' })

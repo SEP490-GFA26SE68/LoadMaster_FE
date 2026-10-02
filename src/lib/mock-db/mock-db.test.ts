@@ -43,6 +43,9 @@ test('a created vehicle gets the next vehicle id and keeps its own copy of the i
   const expected = { ...ollinTruck(PALLET_JACK_ZONE), id: 'VEHICLE-009' }
   expect(created).toStrictEqual(expected)
   expect(await db.getVehicle('VEHICLE-009')).toStrictEqual(expected)
+  // Xe mới đứng sau mọi xe seed (xe của Phương Nam mang mã `VEHICLE-PN-…`, `nextId` không tính) và thuộc công ty mặc định LOG-001
+  expect((await db.listVehicles()).map(({ id }) => id).slice(-3)).toStrictEqual(['VEHICLE-PN-01', 'VEHICLE-PN-02', 'VEHICLE-009'])
+  db.restoreSession('US-0001')
   expect((await db.listVehicles()).map(({ id }) => id).slice(-2)).toStrictEqual(['VEHICLE-008', 'VEHICLE-009'])
 })
 

@@ -22,11 +22,11 @@ import type { Trip } from './types'
 
 /**
  * Phần kho của các luồng Review 1 (LM-104). Cùng quy ước với `MockDb`: bất đồng bộ, trả bản sao, từ chối bằng `MockDbError`, mỗi hàm
- * ghi thêm một sự kiện nhật ký. Lô hàng và luồng quét nhận giữa nhà sản xuất và công ty logistics đã bỏ (FE-0-06, D-63); hàm đọc
- * chưa lọc theo công ty của phiên — đó là việc của FE-0-02.
+ * ghi thêm một sự kiện nhật ký, và lọc theo công ty của phiên (D-64). Lô hàng và luồng quét nhận giữa nhà sản xuất và công ty
+ * logistics đã bỏ (FE-0-06, D-63).
  */
 export type Review1Db = {
-  /** Các công ty logistics dùng app. */
+  /** Các công ty logistics dùng app. Phiên của một công ty chỉ thấy công ty mình; phiên nền tảng thấy hết. */
   listCompanies(): Promise<Company[]>
 
   listPackageTypes(): Promise<PackageType[]>
@@ -40,11 +40,11 @@ export type Review1Db = {
   /** Mọi kiện đăng ký, theo thứ tự đăng ký. Trạng thái `loaded` / `delivered` suy từ tiến độ chuyến. */
   listRegisteredPackages(): Promise<RegisteredPackage[]>
   getRegisteredPackage(id: string): Promise<RegisteredPackage>
-  /** Tra kiện theo mã QR (đã chuẩn hoá); không có thì `QR_UNKNOWN`. */
+  /** Tra kiện theo mã QR (đã chuẩn hoá); không có, hoặc là kiện của công ty khác, thì `QR_UNKNOWN`. */
   findPackageByQr(token: string): Promise<RegisteredPackage>
   /**
-   * Đăng ký một kiện cho **công ty của người đang đăng nhập** (`User.companyId`), trạng thái `registered`. Phiên không thuộc công ty
-   * nào (chưa đăng nhập, tài khoản nền tảng): `COMPANY_REQUIRED`.
+   * Đăng ký một kiện cho **công ty của người đang đăng nhập** (`User.companyId`), trạng thái `registered`; loại kiện phải của công
+   * ty đó. Tài khoản nền tảng: `COMPANY_REQUIRED`.
    */
   registerPackage(input: RegisteredPackageInput): Promise<RegisteredPackage>
   /** `quantity` kiện cùng loại (1…500), một sự kiện nhật ký. */

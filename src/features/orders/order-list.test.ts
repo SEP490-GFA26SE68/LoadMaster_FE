@@ -1,8 +1,16 @@
-import { expect, test } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
+import { getMockDb } from '@/lib/mock-db'
 import { fetchAssignableTrips, fetchOrderablePackages, fetchOrders } from './orders-api'
 import { filterOrderRows, groupByType, matchingStopId, selectedWeightKg } from './order-list'
 
-/** Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed: ORD-001, ORD-002 chờ gán; 18 kiện đã ở kho, chưa vào đơn — sữa, bánh quy, quạt (FE-0-06). */
+/**
+ * Màn Đơn hàng (LM-104) tính trên dữ liệu kho seed của Long Bình: ORD-001, ORD-002 chờ gán; 18 kiện đã ở kho, chưa vào đơn — sữa,
+ * bánh quy, quạt (FE-0-06). Kho đọc dưới phiên của điều phối viên Long Bình như ở màn thật: đơn và kiện của Phương Nam không lọt vào
+ * (FE-0-02).
+ */
+beforeAll(() => {
+  getMockDb().restoreSession('US-0001')
+})
 
 test('orders filter by status slug and by an accent-free search over customer, address and code', async () => {
   const rows = await fetchOrders()

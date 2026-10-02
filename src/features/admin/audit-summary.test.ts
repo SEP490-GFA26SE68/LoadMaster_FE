@@ -4,7 +4,7 @@ import { summarizeAuditLog } from './audit-summary'
 
 /** Ba ô số liệu của `/nhat-ky` (V2): tổng sự kiện, số sự kiện của ngày gần nhất có ghi nhận (giờ Việt Nam), lần ghi gần nhất. */
 function event(id: string, at: string, action: AuditAction = 'auth.signedIn'): AuditEvent {
-  return { id, at, actorId: 'US-0001', action, target: { type: 'user', id: 'US-0001' }, params: {} }
+  return { id, at, actorId: 'US-0001', companyId: 'LOG-001', action, target: { type: 'user', id: 'US-0001' }, params: {} }
 }
 
 test('nhật ký rỗng: không có ngày gần nhất, không có lần ghi gần nhất', () => {
@@ -27,9 +27,12 @@ test('ngày gần nhất tính theo giờ Việt Nam, không phụ thuộc thứ
 })
 
 test('seed neo 14/09/2026: đếm trên toàn bộ nhật ký của kho', async () => {
-  const events = await createMockDb().listEvents()
-  const summary = summarizeAuditLog(events)
-  // Đếm bằng máy trên seed, độc lập với hàm: 124 sự kiện (115 + 9 của nguồn hàng: 6 đợt đăng ký kiện, 2 đơn hàng, 1 lần chạy tối ưu
-  // hỏng — 32 sự kiện lô hàng và quét nhận đã bỏ ở FE-0-06), 23 sự kiện ngày 14/09, lần cuối 11:40 giờ Việt Nam
-  expect(summary).toStrictEqual({ total: 124, latestDay: { date: '2026-09-14', count: 23 }, latestAt: '2026-09-14T04:40:00.000Z' })
+  const db = createMockDb()
+  // Đếm bằng máy trên seed, độc lập với hàm. Kho không có phiên trả cả nhật ký: 131 sự kiện — 124 có từ trước (115 + 9 của nguồn
+  // hàng: 6 đợt đăng ký kiện, 2 đơn hàng, 1 lần chạy tối ưu hỏng) và 7 của Phương Nam (2 đợt đăng ký kiện, 1 đơn, 2 chuyến, 1 lần tối
+  // ưu, 1 lần duyệt; FE-0-02). Ngày 14/09 có 26 sự kiện (23 + 3 của Phương Nam), lần cuối 11:40 giờ Việt Nam.
+  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 131, latestDay: { date: '2026-09-14', count: 26 }, latestAt: '2026-09-14T04:40:00.000Z' })
+  // Quản trị công ty Long Bình chỉ đọc việc người Long Bình làm: 124 trừ 4 việc của quản trị hệ thống (tạo 3 tài khoản, khoá 1)
+  db.restoreSession('US-LB-01')
+  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 120, latestDay: { date: '2026-09-14', count: 23 }, latestAt: '2026-09-14T04:40:00.000Z' })
 })

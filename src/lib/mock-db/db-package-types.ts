@@ -1,4 +1,4 @@
-import { found, nextId, put, type DbContext } from './db-context'
+import { nextId, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { packageTypeIssues } from './package-type-cargo'
@@ -31,33 +31,35 @@ function assertValid(input: PackageTypeInput) {
   if (codes.length > 0) throw new MockDbError('PACKAGE_TYPE_INVALID', { codes })
 }
 
-/** Công ty và danh mục loại kiện (luồng 1, LM-104). */
+/** Công ty và danh mục loại kiện (luồng 1, LM-104). Mỗi công ty một danh mục loại kiện riêng (D-64). */
 export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
-  const { companies, packageTypes, registeredPackages } = ctx.state
+  const { packageTypes, registeredPackages } = ctx.state
+  const scope = ctx.scope.packageTypes
   return {
-    listCompanies: () => ctx.respond(() => [...companies.values()]),
-    listPackageTypes: () => ctx.respond(() => [...packageTypes.values()]),
-    getPackageType: (id) => ctx.respond(() => found(packageTypes, 'packageTypes', id)),
+    listCompanies: () => ctx.respond(() => ctx.scope.companies.list()),
+    listPackageTypes: () => ctx.respond(() => scope.list()),
+    getPackageType: (id) => ctx.respond(() => scope.read(id)),
     createPackageType: (input) =>
       ctx.respond(() => {
+        const companyId = ctx.scope.newRecordCompany()
         const fields = typeFields(input)
         assertValid(fields)
-        const created = put(packageTypes, { ...fields, id: nextId('PT', packageTypes.keys()), createdAt: ctx.nowIso() })
+        const created = put(packageTypes, { ...fields, id: nextId('PT', packageTypes.keys()), companyId, createdAt: ctx.nowIso() })
         ctx.log('packageType.created', { type: 'packageType', id: created.id }, { name: created.name })
         return created
       }),
     updatePackageType: (id, input) =>
       ctx.respond(() => {
-        const current = found(packageTypes, 'packageTypes', id)
+        const current = scope.own(id)
         const fields = typeFields(input)
         assertValid(fields)
-        const next: PackageType = { ...fields, id, createdAt: current.createdAt }
+        const next: PackageType = { ...fields, id, companyId: current.companyId, createdAt: current.createdAt }
         ctx.log('packageType.updated', { type: 'packageType', id }, { name: next.name })
         return put(packageTypes, next)
       }),
     deletePackageType: (id) =>
       ctx.respond(() => {
-        const current = found(packageTypes, 'packageTypes', id)
+        const current = scope.own(id)
         const count = [...registeredPackages.values()].filter((pkg) => pkg.packageTypeId === id).length
         if (count > 0) throw new MockDbError('PACKAGE_TYPE_IN_USE', { packageTypeId: id, count })
         packageTypes.delete(id)

@@ -4,12 +4,14 @@ import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db
 
 test('a created trip gets the next trip id, starts planning at input version 1 and is stamped with the time it was created', async () => {
   const db = createMockDb({ now: () => new Date('2026-09-15T02:00:00.000Z') })
+  // no session: the new trip belongs to the default company LOG-001 (FE-0-02)
   expect(await db.createTrip(twoCartonTrip())).toStrictEqual({
-    ...twoCartonTrip(), id: 'TRIP-015', inputVersion: 1, driverId: null, phase: 'planning', createdAt: '2026-09-15T02:00:00.000Z',
+    ...twoCartonTrip(), id: 'TRIP-015', companyId: 'LOG-001', inputVersion: 1, driverId: null, phase: 'planning', createdAt: '2026-09-15T02:00:00.000Z',
   })
   const ids = (await db.listTrips()).map(({ id }) => id)
-  // the sample trip comes first, then the 14 seeded trips in creation order
-  expect([ids[0], ids.at(-1), ids.length]).toStrictEqual(['TRIP-2026-0914', 'TRIP-015', 16])
+  // the sample trip comes first, then the 14 seeded trips of Long Bình in creation order, the 2 of Phương Nam (`TRIP-PN-…` ids that
+  // `nextId` does not count), and the new one
+  expect([ids[0], ids.at(-1), ids.length]).toStrictEqual(['TRIP-2026-0914', 'TRIP-015', 18])
 })
 
 test('an update changes only the fields it gives and never the id or the input version', async () => {

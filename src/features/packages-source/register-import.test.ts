@@ -5,11 +5,11 @@ import { findType, parseRegisterTable, registerTemplateCsv, toRegisterRows } fro
 
 const TYPES: PackageType[] = [
   {
-    id: 'PT-001', name: 'Thùng nước suối 24 chai', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, fragilityLevel: 'NONE',
+    id: 'PT-001', companyId: 'LOG-001', name: 'Thùng nước suối 24 chai', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, fragilityLevel: 'NONE',
     allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 5, maxTopLoadKg: 60, createdAt: '2026-08-05T02:00:00.000Z',
   },
   {
-    id: 'PT-002', name: 'Thùng mì ăn liền 30 gói', lengthCm: 55, widthCm: 40, heightCm: 30, weightKg: 3.5, fragilityLevel: 'LOW',
+    id: 'PT-002', companyId: 'LOG-001', name: 'Thùng mì ăn liền 30 gói', lengthCm: 55, widthCm: 40, heightCm: 30, weightKg: 3.5, fragilityLevel: 'LOW',
     allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 5, maxTopLoadKg: 20, createdAt: '2026-08-05T02:00:00.000Z',
   },
 ]

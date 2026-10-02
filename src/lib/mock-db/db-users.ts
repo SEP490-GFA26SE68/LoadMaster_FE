@@ -1,5 +1,5 @@
 import { isPlatformRole, type User } from '@/types/user'
-import { found, nextId, put, type DbContext } from './db-context'
+import { nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import type { MockDb, UserChanges } from './types'
 
@@ -32,8 +32,14 @@ function withoutCompanyForPlatform(user: User): User {
   return rest
 }
 
+/**
+ * Người dùng và phiên. Người dùng không phải dữ liệu vận hành (D-64): phiên của một công ty chỉ thấy và sửa người của công ty mình
+ * (người của công ty khác, kể cả tài khoản nền tảng: đọc `NOT_FOUND`, ghi `FORBIDDEN_COMPANY`); phiên nền tảng thấy hết. Luật theo
+ * vai trò (ai tạo được vai trò nào, quản trị công ty cuối cùng) là việc của FE-0-08.
+ */
 export function userMethods(ctx: DbContext): UserMethods {
   const { users, passwords, trips, session } = ctx.state
+  const scope = ctx.scope.users
 
   const byEmail = (email: string) => {
     const normalised = email.trim().toLowerCase()
@@ -74,12 +80,14 @@ export function userMethods(ctx: DbContext): UserMethods {
     authenticate: (email, password) =>
       ctx.respond(() => {
         const user = byEmail(email)
+        // Lần đăng nhập sai không do phiên nào làm: sự kiện thuộc công ty của tài khoản bị thử, để quản trị công ty đó đọc được
+        const company = user?.companyId ?? null
         if (!user || passwords.get(user.id) !== password) {
-          ctx.log('auth.signInFailed', { type: 'user', id: user?.id ?? email.trim().toLowerCase() }, { email: email.trim() })
+          ctx.log('auth.signInFailed', { type: 'user', id: user?.id ?? email.trim().toLowerCase() }, { email: email.trim() }, company)
           throw new MockDbError('INVALID_CREDENTIALS', {})
         }
         if (user.status === 'suspended') {
-          ctx.log('auth.signInFailed', { type: 'user', id: user.id }, { email: user.email, reason: 'suspended' })
+          ctx.log('auth.signInFailed', { type: 'user', id: user.id }, { email: user.email, reason: 'suspended' }, company)
           throw new MockDbError('ACCOUNT_SUSPENDED', {})
         }
         session.userId = user.id
@@ -100,12 +108,15 @@ export function userMethods(ctx: DbContext): UserMethods {
       const user = session.userId === null ? undefined : users.get(session.userId)
       return user ? structuredClone(user) : null
     },
-    listUsers: () => ctx.respond(() => [...users.values()]),
-    getUser: (id) => ctx.respond(() => found(users, 'users', id)),
-    createUser: (input) =>
+    listUsers: () => ctx.respond(() => scope.list()),
+    getUser: (id) => ctx.respond(() => scope.read(id)),
+    createUser: ({ companyId: requested, ...input }) =>
       ctx.respond(() => {
+        const companyId = ctx.scope.newUserCompany(requested)
         assertEmailFree(input.email)
-        const user = put(users, withoutCompanyForPlatform({ ...input, email: input.email.trim(), id: nextId('US', users.keys(), 4), status: 'active', lastActiveAt: null }))
+        const user = put(users, withoutCompanyForPlatform({
+          ...input, ...(companyId === undefined ? {} : { companyId }), email: input.email.trim(), id: nextId('US', users.keys(), 4), status: 'active', lastActiveAt: null,
+        }))
         const password = temporaryPassword()
         passwords.set(user.id, password)
         ctx.log('user.created', { type: 'user', id: user.id }, { fullName: user.fullName, role: user.role })
@@ -113,7 +124,7 @@ export function userMethods(ctx: DbContext): UserMethods {
       }),
     updateUser: (id, input) =>
       ctx.respond(() => {
-        const current = found(users, 'users', id)
+        const current = scope.own(id)
         // Vai trò sau khi sửa là vai trò nền tảng thì kho gửi kèm không tính là thay đổi (form luôn gửi cả ô kho)
         const changes: UserChanges = isPlatformRole(input.role ?? current.role) ? { ...input, depot: undefined } : input
         const changed = USER_FIELDS.filter((field) => changes[field] !== undefined && changes[field] !== current[field])
@@ -131,7 +142,7 @@ export function userMethods(ctx: DbContext): UserMethods {
       }),
     setUserStatus: (id, status) =>
       ctx.respond(() => {
-        const current = found(users, 'users', id)
+        const current = scope.own(id)
         if (current.status === status) return current
         assertNotSelf(id)
         if (status === 'suspended') assertNotLastAdmin(current)
@@ -140,7 +151,7 @@ export function userMethods(ctx: DbContext): UserMethods {
       }),
     deleteUser: (id) =>
       ctx.respond(() => {
-        const current = found(users, 'users', id)
+        const current = scope.own(id)
         assertNotSelf(id)
         assertNotLastAdmin(current)
         assertNoOpenTrips(current)
@@ -150,7 +161,7 @@ export function userMethods(ctx: DbContext): UserMethods {
       }),
     resetPassword: (id) =>
       ctx.respond(() => {
-        const user = found(users, 'users', id)
+        const user = scope.own(id)
         const password = temporaryPassword()
         passwords.set(id, password)
         ctx.log('user.passwordReset', { type: 'user', id })

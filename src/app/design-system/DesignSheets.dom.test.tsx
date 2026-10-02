@@ -12,6 +12,10 @@ import { StyleSheetPage } from './StyleSheetPage'
  * Hai trang tài liệu V2.3 đọc kho thật (`@/lib/mock-db`, seed neo 14/09/2026) qua hook của chính các màn — không giả lập module nào.
  * Số kỳ vọng lấy từ nguồn độc lập với code: bản mẫu `design/v2.3/screens/web/ThanhPhan.jpg` in "7 / 12" chuyến hoàn thành, 15 chuyến,
  * 2 chuyến cần xử lý; tên chuyến đầu kho lấy từ `seed-trips.ts`.
+ *
+ * Hai trang nằm ngoài `RequireAuth` và test không đăng nhập: kho không có phiên thì không lọc theo công ty (FE-0-02), nên ngoài 15
+ * chuyến của Long Bình như bản mẫu còn hai chuyến của Phương Nam (`seed-phuong-nam.ts`: TRIP-PN-001 chạy 14/09 đã duyệt, TRIP-PN-002
+ * nháp chạy 15/09) — 17 chuyến, 4 chuyến đã lập kế hoạch, 13 chuyến trong kỳ 30 ngày.
  */
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -77,24 +81,25 @@ test('/thanh-phan: bảng, tab và ô số liệu đếm chuyến thật của k
 
   expect(screen.getByRole('heading', { level: 1, name: 'Thành phần' })).toBeInTheDocument()
 
-  // Bảng: 15 chuyến của kho trên một trang 25 dòng
-  expect(await screen.findByText('1–15 / 15', {}, SLOW)).toBeInTheDocument()
+  // Bảng: 17 chuyến của kho (15 của Long Bình, 2 của Phương Nam) trên một trang 25 dòng
+  expect(await screen.findByText('1–17 / 17', {}, SLOW)).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Bảng' })).getByText('TRIP-2026-0914 · 4 điểm giao')).toBeInTheDocument()
 
-  // Tab trên dải trời: tab "Đã lập kế hoạch" có 3 chuyến, số hổ phách đếm 2 chuyến chờ duyệt hoặc lỗi thời
+  // Tab trên dải trời: tab "Đã lập kế hoạch" có 4 chuyến (3 của Long Bình và TRIP-PN-001), số hổ phách đếm 2 chuyến chờ duyệt hoặc
+  // lỗi thời — chuyến của Phương Nam đã duyệt nên không cần xử lý
   const groups = screen.getByRole('tablist', { name: 'Trạng thái chuyến' })
-  expect(within(groups).getByRole('tab', { name: /^Tất cả\s*15$/ })).toHaveAttribute('aria-selected', 'true')
-  expect(within(groups).getByRole('tab', { name: /^Đã lập kế hoạch\s*3\s*2 cần bạn xử lý$/ })).toBeInTheDocument()
+  expect(within(groups).getByRole('tab', { name: /^Tất cả\s*17$/ })).toHaveAttribute('aria-selected', 'true')
+  expect(within(groups).getByRole('tab', { name: /^Đã lập kế hoạch\s*4\s*2 cần bạn xử lý$/ })).toBeInTheDocument()
   expect(within(groups).getByRole('tab', { name: /^Đã giao\s*7$/ })).toBeInTheDocument()
 
-  // Ô số liệu kính: kỳ 30 ngày mặc định như Bảng điều khiển
+  // Ô số liệu kính: kỳ 30 ngày mặc định như Bảng điều khiển — 12 chuyến của Long Bình và TRIP-PN-001 chạy trong kỳ
   const completed = await screen.findByRole('group', { name: 'Chuyến hoàn thành' }, SLOW)
   expect(within(completed).getByText('7')).toBeInTheDocument()
-  expect(within(completed).getByText('/ 12 chuyến')).toBeInTheDocument()
+  expect(within(completed).getByText('/ 13 chuyến')).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: '7 ngày' }))
   expect(screen.getByRole('button', { name: '7 ngày' })).toHaveAttribute('aria-pressed', 'true')
-  expect(within(screen.getByRole('group', { name: 'Chuyến hoàn thành' })).queryByText('/ 12 chuyến')).not.toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Chuyến hoàn thành' })).queryByText('/ 13 chuyến')).not.toBeInTheDocument()
 })
 
 test('/thanh-phan: điều khiển chọn bấm được, còn nút, hộp thoại, toast, menu chỉ là bản xem trước inert', async () => {

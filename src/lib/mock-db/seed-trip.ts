@@ -1,5 +1,6 @@
 import type { CargoPackage } from '@/domain/models'
 import { addDays, SEED_ANCHOR_DATE, vnTime } from './clock'
+import { LONG_BINH } from './seed-users'
 import type { Trip } from './types'
 
 type CargoLine = Pick<
@@ -30,6 +31,7 @@ function cargo(line: CargoLine): CargoPackage {
 export function seedTrip(today: string = SEED_ANCHOR_DATE): Trip {
   return {
     id: 'TRIP-2026-0914',
+    companyId: LONG_BINH,
     name: 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà',
     vehicleId: 'VEHICLE-002',
     scheduledDate: today,

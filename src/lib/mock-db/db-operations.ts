@@ -31,6 +31,7 @@ function currentStop(trip: Trip, stopNumber: number): StopProgress {
   return current
 }
 
+/** Tiến độ xếp ở kho và giao hàng: mọi hàm ghi vào một chuyến của công ty của phiên (D-64). */
 export function operationMethods(ctx: DbContext): OperationMethods {
   const { trips, revisions } = ctx.state
 
@@ -46,7 +47,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
   return {
     startLoading: (tripId) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'planning')
         const approved = latestApproved([...revisions.values()].filter((revision) => revision.tripId === tripId))
         if (!approved) throw new MockDbError('NO_APPROVED_REVISION', { tripId })
@@ -57,7 +58,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     recordLoadingStep: (tripId, { packageInstanceId, outcome }) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loading')
         if (!plannedStops(planOf(trip)).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId })
         const loading = loadingOf(trip)
@@ -67,7 +68,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     completeLoading: (tripId) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loading')
         const remaining = loadingRemaining(trip, planOf(trip))
         if (remaining > 0) throw new MockDbError('LOADING_INCOMPLETE', { tripId, remaining })
@@ -78,7 +79,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     startDelivery: (tripId) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loaded')
         const delivery: DeliveryProgress = {
           startedAt: ctx.nowIso(),
@@ -91,7 +92,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     recordUnload: (tripId, stopNumber, packageInstanceId, unloaded) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         currentStop(trip, stopNumber)
         if (plannedStops(planOf(trip)).get(packageInstanceId) !== stopNumber) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId })
@@ -107,7 +108,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     reportDeliveryIssue: (tripId, { stopNumber, packageInstanceId, kind, note }) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         currentStop(trip, stopNumber)
         if (packageInstanceId !== undefined) {
@@ -126,7 +127,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
       }),
     completeStop: (tripId, stopNumber) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         const stop = currentStop(trip, stopNumber)
         const delivery = deliveryOf(trip)

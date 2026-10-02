@@ -81,6 +81,8 @@ export type Cancellation = {
 
 export type Trip = {
   id: string
+  /** Công ty của chuyến (D-64): xe, tài xế và đơn gán vào chuyến phải cùng công ty; revision và lần chạy tối ưu thuộc công ty này. */
+  companyId: string
   name: string
   vehicleId: string
   stops: DeliveryStop[]
@@ -110,7 +112,7 @@ export type TripChanges = Partial<Pick<Trip, 'name' | 'vehicleId' | 'stops' | 'p
 
 /**
  * Một kết quả tối ưu của chuyến, **bất biến** (D-31): kho không có hàm sửa revision. Duyệt tạo revision mới.
- * `request` là ảnh chụp xe + kiện đã gửi tối ưu, không đổi theo dữ liệu chuyến về sau.
+ * `request` là ảnh chụp xe + kiện đã gửi tối ưu, không đổi theo dữ liệu chuyến về sau. Thuộc công ty của chuyến `tripId` (D-64).
  */
 export type Revision = {
   /** `REV-NNN`, duy nhất trong kho. Khác `jobId`: revision đã duyệt dùng chung `jobId` với revision nguồn. */

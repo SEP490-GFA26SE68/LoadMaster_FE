@@ -11,11 +11,14 @@ import type {
   TransportOrder,
   VehicleType,
 } from './source-types'
+import { createTenancy, type Tenancy } from './tenancy'
 import type { Revision, Trip } from './types'
 
 /** Toàn bộ dữ liệu của một kho. Chỉ các module `db-*.ts` đọc/ghi; bên ngoài đi qua `MockDb`. */
 export type DbState = {
   vehicles: Map<string, VehicleConfig>
+  /** Xe → công ty của xe (D-64) — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). Xe nào cũng có một dòng. */
+  vehicleCompany: Map<string, string>
   /** Xe đang bảo dưỡng (D-53) — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
   maintenance: Map<string, { note: string; since: string }>
   trips: Map<string, Trip>
@@ -47,17 +50,24 @@ export type DbContext = {
    * trong kho; lỗi của `operation` thành promise bị từ chối.
    */
   respond<T>(operation: () => T): Promise<T>
-  /** Thêm một sự kiện nhật ký, người làm là phiên hiện tại. */
-  log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>): void
+  /**
+   * Thêm một sự kiện nhật ký: người làm là phiên hiện tại, công ty là công ty của phiên (`tenancy.eventCompany`). `companyId` chỉ
+   * truyền khi sự kiện không do phiên nào làm — lần đăng nhập sai ghi công ty của tài khoản bị thử.
+   */
+  log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>, companyId?: string | null): void
   /** Mã QR mới cho kiện đăng ký, không trùng mã đã cấp (LM-104). */
   newQrToken(): string
+  /** Phạm vi theo công ty của phiên (D-64): mọi đọc/ghi của `db-*.ts` đi qua đây, không đọc thẳng bảng của `state`. */
+  scope: Tenancy
 }
 
 export function createDbContext(state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random): DbContext {
   const nowIso = () => now().toISOString()
+  const scope = createTenancy(state)
   return {
     state,
     nowIso,
+    scope,
     newQrToken: () => {
       const taken = new Set([...state.registeredPackages.values()].map((pkg) => pkg.qrToken))
       return randomQrToken(random, (token) => taken.has(token))
@@ -66,11 +76,12 @@ export function createDbContext(state: DbState, latencyMs: number, now: () => Da
       if (latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, latencyMs))
       return structuredClone(operation())
     },
-    log(action, target, params = {}) {
+    log(action, target, params = {}, companyId = scope.eventCompany()) {
       state.events.push({
         id: nextEventId(state.events.length),
         at: nowIso(),
         actorId: state.session.userId,
+        companyId,
         action,
         target,
         params,
@@ -83,16 +94,14 @@ export function nextEventId(count: number): string {
   return `EV-${String(count + 1).padStart(6, '0')}`
 }
 
-/** Bản ghi `id`, hoặc lỗi `NOT_FOUND`. */
+/**
+ * Bản ghi `id`, hoặc lỗi `NOT_FOUND` — **không xét công ty**: chỉ dùng cho bản ghi đã nằm trong phạm vi của phiên (chuyến của một
+ * revision vừa qua `scope`, phương án kho đang xếp theo…). Đầu vào của nơi gọi đi qua `ctx.scope`.
+ */
 export function found<T>(table: ReadonlyMap<string, T>, collection: MockDbCollection, id: string): T {
   const record = table.get(id)
   if (record === undefined) throw new MockDbError('NOT_FOUND', { collection, id })
   return record
-}
-
-/** Người của phiên hiện tại; `undefined` khi chưa đăng nhập (test logic kho không đăng nhập). */
-export function sessionUserOf(state: DbState): User | undefined {
-  return state.session.userId === null ? undefined : state.users.get(state.session.userId)
 }
 
 /** Chuỗi đã bỏ khoảng trắng hai đầu; rỗng thì bỏ hẳn trường (không lưu chuỗi rỗng). */

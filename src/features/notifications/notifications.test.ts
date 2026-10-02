@@ -9,7 +9,7 @@ const DISPATCHER = { id: 'US-0001', role: 'dispatcher' } as const
 
 function event(id: string, at: string, actorId: string | null, action: AuditEvent['action'], targetId = 'TRIP-001'): AuditEvent {
   const type = action.startsWith('user.') || action.startsWith('auth.') ? 'user' : 'trip'
-  return { id, at, actorId, action, target: { type, id: targetId }, params: {} }
+  return { id, at, actorId, companyId: 'LOG-001', action, target: { type, id: targetId }, params: {} }
 }
 
 const ids = (events: readonly AuditEvent[]) => events.map((item) => item.id)

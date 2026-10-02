@@ -17,7 +17,10 @@ function assertPhase(trip: Trip, phase: Trip['phase']) {
   if (trip.phase !== phase) throw new MockDbError('TRIP_PHASE_INVALID', { tripId: trip.id, phase: trip.phase })
 }
 
-/** Nhãn QR, "Sẵn sàng tối ưu", quét QR khi xếp / dỡ và seal (luồng 2 + 5, LM-104). */
+/**
+ * Nhãn QR, "Sẵn sàng tối ưu", quét QR khi xếp / dỡ và seal (luồng 2 + 5, LM-104). Mọi hàm nhận một chuyến của công ty của phiên
+ * (D-64); mã QR chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
+ */
 export function scanMethods(ctx: DbContext): ScanMethods {
   const { trips, revisions, orders, registeredPackages, vehicles, maintenance } = ctx.state
 
@@ -37,10 +40,10 @@ export function scanMethods(ctx: DbContext): ScanMethods {
   }
 
   return {
-    listTripLabels: (tripId) => ctx.respond(() => labelsOf(found(trips, 'trips', tripId))),
+    listTripLabels: (tripId) => ctx.respond(() => labelsOf(ctx.scope.trips.read(tripId))),
     getTripReadiness: (tripId) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.read(tripId)
         return tripReadiness({
           vehicle: vehicles.get(trip.vehicleId),
           vehicleInMaintenance: maintenance.has(trip.vehicleId),
@@ -50,7 +53,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
       }),
     confirmLoadingByQr: (tripId, token) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loading')
         const loading = trip.loading
         const plan = planOf(trip)
@@ -67,7 +70,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
       }),
     recordSeal: (tripId, sealNumber) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loaded')
         const number = sealNumber.trim()
         if (number === '' || number.length > MAX_SEAL_LENGTH) throw new MockDbError('SEAL_INVALID', { max: MAX_SEAL_LENGTH })
@@ -78,7 +81,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
       }),
     confirmUnloadByQr: (tripId, stopNumber, token) =>
       ctx.respond(() => {
-        const trip = found(trips, 'trips', tripId)
+        const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         const delivery = trip.delivery
         const current = delivery?.stops.find((stop) => stop.completedAt === undefined)

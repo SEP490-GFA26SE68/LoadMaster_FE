@@ -1,7 +1,7 @@
 import type { PlacementPatch } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import type { User, UserStatus } from '@/types/user'
-import type { AuditEvent } from './audit'
+import type { AuditEvent, AuditNames } from './audit'
 import type { Review1Db } from './db-api-review1'
 import type {
   AuditFilter,
@@ -28,6 +28,11 @@ export type DeliveryIssueInput = Pick<DeliveryIssue, 'stopNumber' | 'kind' | 'no
 /**
  * Kho dữ liệu in-memory thay backend (D-06). Mọi hàm bất đồng bộ như gọi mạng thật, trả bản sao, và từ chối bằng
  * `MockDbError` (mã `NOT_FOUND` khi không có bản ghi). Mỗi hàm ghi thêm một sự kiện nhật ký với người làm là phiên hiện tại (D-43).
+ *
+ * **Lọc theo công ty của phiên** (D-64, `tenancy.ts`), áp cho mọi hàm dưới đây trừ nhóm đăng nhập / hồ sơ của chính mình: phiên của
+ * một công ty chỉ liệt kê bản ghi của công ty đó, đọc theo mã bản ghi của công ty khác là `NOT_FOUND`, ghi vào hoặc tham chiếu tới nó
+ * là `FORBIDDEN_COMPANY`; phiên nền tảng bị mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED` (người dùng, nhật ký, công ty thì
+ * đọc hết); kho không có phiên thì không lọc. Thêm hàm công khai thì khai nó ở `tenancy.test.ts`.
  */
 export type MockDb = CoreMockDb & Review1Db
 
@@ -104,6 +109,11 @@ type CoreMockDb = {
   /** Người đang đăng nhập sửa họ tên, số điện thoại. */
   updateProfile(changes: ProfileChanges): Promise<User>
 
-  /** Nhật ký, mới nhất trước. */
+  /** Nhật ký, mới nhất trước. Phiên của một công ty chỉ đọc sự kiện của công ty mình; phiên nền tảng đọc hết. */
   listEvents(filter?: AuditFilter): Promise<AuditEvent[]>
+  /**
+   * Tên của người dùng, chuyến và xe trong phạm vi nhật ký của phiên — để màn nhật ký và chuông đọc người làm, đối tượng của sự kiện.
+   * Không đòi quyền dữ liệu vận hành: vai trò nền tảng đọc nhật ký nhưng `listTrips`, `listVehicles` từ chối họ.
+   */
+  listAuditNames(): Promise<AuditNames>
 }

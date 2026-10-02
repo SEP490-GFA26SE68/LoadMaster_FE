@@ -12,8 +12,23 @@ async function vehicleNames(db: MockDb) {
   return new Map((await db.listVehicles()).map((vehicle) => [vehicle.id, vehicle.name]))
 }
 
-test('seed on 14/09: loading first, then approved waiting, then the stale approved trip; nothing awaiting approval, already loaded or finished', async () => {
+/** Kho seed đọc dưới phiên của một nhân viên kho, như ở màn `/kho`: kho chỉ trả chuyến của công ty người đó (FE-0-02). */
+function warehouseDb(userId: 'US-0003' | 'US-0015') {
   const db = createMockDb()
+  db.restoreSession(userId)
+  return db
+}
+
+test('the Phương Nam warehouse sees only the approved trip of its own company (FE-0-02)', async () => {
+  const db = warehouseDb('US-0015')
+  // seed-phuong-nam.ts: TRIP-PN-001 = 30 thùng linh kiện + 12 kiện vải cuộn đã duyệt, chờ xếp; TRIP-PN-002 là nháp nên không hiện
+  expect(warehouseTripRows(await entries(db), await vehicleNames(db))).toStrictEqual([
+    { id: 'TRIP-PN-001', name: 'Tuyến Quận 7 – Nhà Bè', scheduledDate: '2026-09-14', vehicleName: 'Isuzu QKR 230 · 51C-907.41', status: 'PLANNED', sub: { kind: 'approved' }, stage: 'waiting', total: 42, recorded: 0, missing: 0 },
+  ])
+})
+
+test('seed on 14/09: loading first, then approved waiting, then the stale approved trip; nothing awaiting approval, already loaded or finished', async () => {
+  const db = warehouseDb('US-0003')
   const rows = warehouseTripRows(await entries(db), await vehicleNames(db))
   // seed-trips.ts: TRIP-011 = 80 + 60 + 80 + 60 kiện, kho đã ghi 110 bước; TRIP-013 duyệt 80 + 60 + 60 kiện rồi mới sửa số lượng.
   // TRIP-012 (đã lập kế hoạch, chờ duyệt), TRIP-010 (xếp xong) và TRIP-014 (nháp) không hiện.
@@ -25,7 +40,7 @@ test('seed on 14/09: loading first, then approved waiting, then the stale approv
 })
 
 test('a started trip counts loaded and missing packages; the list leaves it once loading is complete', async () => {
-  const db = createMockDb()
+  const db = warehouseDb('US-0003')
   await db.startLoading('TRIP-2026-0914')
   const plan = await db.getRevision('REV-002')
   const [first, second] = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).map((p) => p.packageInstanceId)

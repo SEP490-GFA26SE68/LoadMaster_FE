@@ -34,6 +34,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_TYPE_IN_USE: { packageTypeId: 'PT-001', count: 12 },
   QUANTITY_INVALID: { min: 1, max: 500 },
   COMPANY_REQUIRED: {},
+  FORBIDDEN_COMPANY: { collection: 'trips', id: 'TRIP-PN-001' },
   PACKAGE_UNAVAILABLE: { packageId: 'RPK-0035', status: 'registered' },
   PACKAGES_REQUIRED: {},
   QR_UNKNOWN: { token: 'LM-0000-0000-0000' },
@@ -66,8 +67,14 @@ test('lists are joined and numbers kept; an error that is not a data error gets 
   expect(dataErrorMessage(new TypeError('boom'), t)).toBe('Có lỗi xảy ra. Thử lại sau.')
 })
 
-test('registering without a company is explained without naming a manufacturer; the shipment and receiving codes are gone (FE-0-06)', () => {
-  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('vi'))).toBe('Tài khoản này không thuộc công ty nào nên không đăng ký kiện được.')
-  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('en'))).toBe('This account does not belong to a company, so it cannot register packages.')
+test('an account without a company is told why it gets no operational data; the shipment and receiving codes are gone (FE-0-06, FE-0-02)', () => {
+  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('vi'))).toBe('Tài khoản này không thuộc công ty nào nên không xem hay sửa được dữ liệu vận hành.')
+  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('en'))).toBe('This account does not belong to a company, so it cannot view or change operational data.')
   expect(Object.keys(SAMPLES).filter((code) => /SHIPMENT|RECEIV|COMPANY_KIND|NOT_OWNED/.test(code))).toStrictEqual([])
+})
+
+test('a record of another company is named by its id, never by the company it belongs to (FE-0-02)', () => {
+  const error = new MockDbError('FORBIDDEN_COMPANY', SAMPLES.FORBIDDEN_COMPANY)
+  expect(dataErrorMessage(error, createTranslator('vi'))).toBe('TRIP-PN-001 thuộc công ty khác nên không dùng được.')
+  expect(dataErrorMessage(error, createTranslator('en'))).toBe('TRIP-PN-001 belongs to another company and cannot be used.')
 })

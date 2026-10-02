@@ -66,7 +66,7 @@ export function twoCartonRequest(): OptimizationRequest {
 
 /** Bản ghi chuyến đủ trường cho test hàm thuần (không qua kho): pha lập kế hoạch, chưa gán tài xế. */
 export function tripRecord(id: string, trip: NewTrip = twoCartonTrip(), inputVersion = 1): Trip {
-  return { ...trip, id, inputVersion, driverId: trip.driverId ?? null, phase: 'planning', createdAt: '2026-09-13T08:00:00.000Z' }
+  return { ...trip, id, companyId: 'LOG-001', inputVersion, driverId: trip.driverId ?? null, phase: 'planning', createdAt: '2026-09-13T08:00:00.000Z' }
 }
 
 /** Tạo `twoCartonTrip` trong `db` rồi lưu `twoCartonRequest` và `result` (mặc định `twoCartonResult`) thành revision. */

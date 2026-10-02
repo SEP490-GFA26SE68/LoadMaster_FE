@@ -1,5 +1,5 @@
 export { getMockDb } from './app-db'
-export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditTargetType } from './audit'
+export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
 export { addDays, SEED_ANCHOR_DATE, vnDate, vnTime } from './clock'
 export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'
@@ -35,6 +35,7 @@ export {
   REGISTERED_PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
   type Company,
+  type CompanyDepot,
   type OptimizationAlgorithm,
   type OptimizationObjective,
   type OptimizationRun,
