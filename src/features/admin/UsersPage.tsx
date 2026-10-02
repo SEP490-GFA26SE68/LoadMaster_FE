@@ -7,18 +7,23 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
+import { userScopeOf } from '@/lib/mock-db'
 import { accountGuards } from './account-guards'
 import { PermissionMatrix } from './PermissionMatrix'
 import { TemporaryPasswordDialog } from './TemporaryPasswordDialog'
 import { UserFormDialog } from './UserFormDialog'
 import { UsersTable } from './UsersTable'
 import { useUserActions } from './useUserActions'
-import { useUsersQuery } from './useUsersQuery'
+import { useCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
 
 /**
  * Quản trị người dùng (LM-092, D-41, D-42): danh sách đọc từ kho qua `useUsersQuery` (tìm, lọc, sắp xếp, phân trang trên URL), menu
  * thao tác mỗi dòng, mật khẩu tạm hiện một lần, và tab "Ma trận quyền" chỉ đọc. Hành động chính duy nhất: thêm người dùng.
  * Bố cục V2: tab Tài khoản có ba ô số liệu trên một thẻ gồm thanh tìm/lọc và bảng; mỗi tab tự cuộn dưới thanh tab.
+ *
+ * Một màn, hai phạm vi theo vai trò của người đăng nhập (D-65, FE-0-08) — kho trả danh sách và từ chối thao tác ngoài phạm vi, màn chỉ
+ * làm mờ trước kèm lý do (`accountGuards`). Quản trị hệ thống: mọi tài khoản, cột và bộ lọc công ty; tạo, sửa, xoá tài khoản nền tảng;
+ * khoá, mở khoá, đặt lại mật khẩu mọi người. Quản trị công ty: người của công ty mình, với năm vai trò công ty.
  */
 export function UsersPage() {
   const t = useT()
@@ -26,6 +31,9 @@ export function UsersPage() {
   const query = useUsersQuery()
   const actions = useUserActions()
   const users = query.data ?? []
+  // Chưa biết người xem (màn luôn nằm sau `RequireAuth`) thì theo phạm vi hẹp hơn
+  const scope = currentUser ? userScopeOf(currentUser.role) : 'company'
+  const companies = useCompanyNamesQuery(scope === 'platform')
   const { dialog } = actions
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
 
@@ -61,7 +69,7 @@ export function UsersPage() {
               action={<Button variant="secondary" onClick={() => void query.refetch()}>{t('admin.users.retry')}</Button>}
             />
           ) : (
-            <UsersTable users={users} currentUserId={currentUser?.id ?? null} onAction={actions.handleAction} />
+            <UsersTable users={users} viewer={currentUser} companies={companies.data} onAction={actions.handleAction} />
           )}
         </TabsContent>
         <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
@@ -71,8 +79,9 @@ export function UsersPage() {
       {dialog?.kind === 'create' || dialog?.kind === 'edit' ? (
         <UserFormDialog
           key={editing?.id ?? 'new'}
+          scope={scope}
           user={editing}
-          roleBlock={editing ? accountGuards(editing, currentUser?.id ?? null, users).role : null}
+          roleBlock={editing ? accountGuards(editing, currentUser, users).role : null}
           onClose={actions.close}
           onSubmit={(values) => (editing ? actions.submitEdit(editing, values) : actions.submitCreate(values))}
         />

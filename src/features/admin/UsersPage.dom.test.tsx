@@ -11,8 +11,9 @@ import { signedInAs } from '@/test/signed-in'
 import { UsersPage } from './UsersPage'
 
 /**
- * Seam: kho dùng chung (20 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là quản trị hệ thống demo Võ Minh Khoa
- * (US-0005). Các test trong file dùng chung kho nên mỗi test thao tác trên người dùng khác nhau.
+ * Seam: kho dùng chung (20 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là **quản trị hệ thống** demo Võ Minh
+ * Khoa (US-0005): thấy mọi tài khoản của nền tảng và hai công ty (FE-0-08); phạm vi của quản trị công ty ở
+ * `UsersPage.company.dom.test.tsx`. Các test trong file dùng chung kho nên mỗi test thao tác trên người dùng khác nhau.
  */
 const SLOW = { timeout: 5000 }
 
@@ -41,6 +42,11 @@ async function rowOf(name: string) {
   return row
 }
 
+/** Ô đầu của từng hàng dữ liệu: chữ viết tắt, tên, email. */
+function firstCells() {
+  return within(screen.getByRole('table')).getAllByRole('row').slice(1).map((row) => row.querySelector('td')?.textContent)
+}
+
 /** Thay chữ trong ô bằng một lần dán: nhanh hơn gõ từng phím khi cả bộ chạy song song. */
 async function fill(user: UserEvent, field: HTMLElement, text: string) {
   await user.clear(field)
@@ -53,17 +59,44 @@ async function openMenu(user: UserEvent, name: string) {
   return screen.findByRole('menu')
 }
 
-test('danh sách từ kho: sắp theo tên, tìm, lọc vai trò và trạng thái trên URL', async () => {
+test('danh sách từ kho: mọi tài khoản, sắp theo tên, lọc vai trò trên URL; cột Công ty nói công ty của từng người', async () => {
   renderUsers('/nguoi-dung?vai-tro=driver')
   await screen.findByRole('table', {}, SLOW)
   // Năm tài xế của seed (bốn của Long Bình, một của Phương Nam), theo thứ tự chữ cái tiếng Việt (ô đầu: chữ viết tắt, tên, email)
-  const names = within(screen.getByRole('table')).getAllByRole('row').slice(1).map((row) => row.querySelector('td')?.textContent)
-  expect(names).toStrictEqual([
+  expect(firstCells()).toStrictEqual([
     'HNĐặng Hoài Nam nam.dang@loadmaster.vn', 'VBNgô Văn Bảo bao.ngo@loadmaster.vn', 'QDPhạm Quốc Dũng taixe@loadmaster.vn',
     'VSThái Văn Sơn taixe@phuongnam.vn', 'VLTrương Văn Lộc loc.truong@loadmaster.vn',
   ])
   expect(screen.getByText('20 tài khoản')).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Vai trò' })).toHaveTextContent('Tài xế')
+  expect(within(screen.getByRole('table')).getAllByRole('columnheader').map((cell) => cell.textContent))
+    .toStrictEqual(['Người dùng', 'Điện thoại', 'Vai trò', 'Công ty', 'Kho / chi nhánh', 'Hoạt động gần nhất', 'Trạng thái', 'Thao tác'])
+  // Tên công ty về từ kho sau danh sách
+  expect(await within(await rowOf('Thái Văn Sơn')).findByText('Công ty CP Giao nhận Phương Nam', {}, SLOW)).toBeInTheDocument()
+  expect(within(await rowOf('Ngô Văn Bảo')).getByText('Công ty TNHH Vận tải Long Bình')).toBeInTheDocument()
+})
+
+test('lọc theo công ty trên URL và bằng ô chọn; "Nền tảng" là ba tài khoản không thuộc công ty nào', async () => {
+  const user = userEvent.setup()
+  renderUsers('/nguoi-dung?cong-ty=LOG-002')
+  await screen.findByRole('table', {}, SLOW)
+  expect(firstCells()).toStrictEqual([
+    'MTChâu Minh Trí qtcongty@phuongnam.vn', 'ATKiều Anh Tuấn dieuphoi@phuongnam.vn', 'QVLâm Quốc Việt viet.lam@phuongnam.vn',
+    'HNMạc Thị Hồng Nhung quanly@phuongnam.vn', 'VSThái Văn Sơn taixe@phuongnam.vn',
+  ])
+  const company = screen.getByRole('combobox', { name: 'Công ty' })
+  await waitFor(() => expect(company).toHaveTextContent('Công ty CP Giao nhận Phương Nam'), SLOW)
+
+  await user.click(company)
+  expect((await screen.findAllByRole('option')).map((option) => option.textContent))
+    .toStrictEqual(['Mọi công ty', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam', 'Nền tảng'])
+  await user.click(screen.getByRole('option', { name: 'Nền tảng' }))
+  await waitFor(() => expect(firstCells()).toStrictEqual([
+    'QHĐinh Quang Huy nentang@loadmaster.vn', 'NÁTạ Thị Ngọc Ánh hotro@loadmaster.vn', 'MKVõ Minh Khoa quantri@loadmaster.vn',
+  ]))
+  // Ô Công ty của tài khoản nền tảng nói rõ là tài khoản nền tảng, không để trống
+  const cells = within(await rowOf('Đinh Quang Huy')).getAllByRole('cell').map((cell) => cell.textContent)
+  expect(cells.slice(2, 5)).toStrictEqual(['Quản lý nền tảng', 'Nền tảng', 'Không thuộc kho nào'])
 })
 
 test('tìm theo số điện thoại không dấu cách và lọc tài khoản đã khoá', async () => {
@@ -118,34 +151,6 @@ test('ô trạng thái lọc danh sách cùng bộ lọc với ô chọn; bấm 
   expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Mọi trạng thái')
 })
 
-test('tạo tài khoản: hộp thoại hiện mật khẩu tạm một lần, sao chép được, và đăng nhập được bằng nó', async () => {
-  const user = userEvent.setup()
-  renderUsers()
-  await screen.findByRole('table', {}, SLOW)
-  await user.click(screen.getByRole('button', { name: 'Thêm người dùng' }))
-  const form = await screen.findByRole('dialog', { name: 'Thêm người dùng' })
-  await fill(user, within(form).getByLabelText('Họ và tên'), 'Mai Văn Phúc')
-  await fill(user, within(form).getByLabelText('Số điện thoại'), '0915111222')
-  await fill(user, within(form).getByLabelText('Email'), 'phuc.mai@loadmaster.vn')
-  await fill(user, within(form).getByLabelText('Kho / chi nhánh'), 'Kho Long Bình')
-  await user.click(within(form).getByRole('combobox', { name: 'Vai trò' }))
-  await user.click(await screen.findByRole('option', { name: 'Tài xế' }))
-  await user.click(within(form).getByRole('button', { name: 'Thêm người dùng' }))
-
-  const result = await screen.findByRole('dialog', { name: 'Đã tạo tài khoản Mai Văn Phúc' }, SLOW)
-  const password = within(result).getByLabelText('Mật khẩu tạm')
-  expect(password).toHaveAttribute('readonly')
-  const value = (password as HTMLInputElement).value
-  expect(value).toMatch(/^[A-Za-z2-9]{10}$/)
-  await user.click(within(result).getByRole('button', { name: 'Sao chép' }))
-  expect(await navigator.clipboard.readText()).toBe(value)
-  await user.click(within(result).getByRole('button', { name: 'Xong' }))
-
-  expect(within(await rowOf('Mai Văn Phúc')).getByText('0915 111 222')).toBeInTheDocument()
-  // Đăng nhập được bằng mật khẩu tạm (kho giữ phiên; test sau dựng lại phiên quản trị)
-  await expect(getMockDb().authenticate('phuc.mai@loadmaster.vn', value)).resolves.toMatchObject({ role: 'driver' })
-})
-
 test('tài khoản đang đăng nhập: không khoá, không xoá được, lý do ngay trong menu', async () => {
   const user = userEvent.setup()
   renderUsers()
@@ -154,12 +159,21 @@ test('tài khoản đang đăng nhập: không khoá, không xoá được, lý 
   expect(lock).toHaveAttribute('aria-disabled', 'true')
   expect(lock).toHaveTextContent('Không áp dụng cho tài khoản bạn đang đăng nhập')
   expect(within(menu).getByRole('menuitem', { name: /^Xoá tài khoản/ })).toHaveAttribute('aria-disabled', 'true')
+  expect(within(menu).getByRole('menuitem', { name: 'Sửa thông tin' })).not.toHaveAttribute('aria-disabled')
 })
 
-test('khoá rồi mở khoá tài khoản', async () => {
+test('nhân sự công ty: sửa và xoá mờ kèm lý do; khoá rồi mở khoá thì quản trị hệ thống làm được', async () => {
   const user = userEvent.setup()
   renderUsers()
-  await user.click(within(await openMenu(user, 'Hoàng Đức Anh')).getByRole('menuitem', { name: 'Khoá tài khoản' }))
+  const menu = await openMenu(user, 'Hoàng Đức Anh')
+  for (const name of [/^Sửa thông tin/, /^Xoá tài khoản/]) {
+    const item = within(menu).getByRole('menuitem', { name })
+    expect(item).toHaveAttribute('aria-disabled', 'true')
+    expect(item).toHaveTextContent('Nhân sự công ty do quản trị công ty đó quản lý')
+  }
+  expect(within(menu).getByRole('menuitem', { name: 'Đặt lại mật khẩu' })).not.toHaveAttribute('aria-disabled')
+
+  await user.click(within(menu).getByRole('menuitem', { name: 'Khoá tài khoản' }))
   expect(await screen.findByText('Đã khoá tài khoản Hoàng Đức Anh', {}, SLOW)).toBeInTheDocument()
   await waitFor(async () => expect(within(await rowOf('Hoàng Đức Anh')).getByText('Đã khoá')).toBeInTheDocument(), SLOW)
 
@@ -167,7 +181,50 @@ test('khoá rồi mở khoá tài khoản', async () => {
   await waitFor(async () => expect(within(await rowOf('Hoàng Đức Anh')).getByText('Đang hoạt động')).toBeInTheDocument(), SLOW)
 })
 
-test('đặt lại mật khẩu: xác nhận rồi hiện mật khẩu tạm mới', async () => {
+test('quản trị công ty duy nhất của một công ty: không khoá được, lý do ngay trong menu', async () => {
+  const user = userEvent.setup()
+  renderUsers()
+  // Long Bình chỉ có một quản trị công ty (Dương Thị Kim Oanh); quản trị công ty của Phương Nam không thay được
+  const lock = within(await openMenu(user, 'Dương Thị Kim Oanh')).getByRole('menuitem', { name: /^Khoá tài khoản/ })
+  expect(lock).toHaveAttribute('aria-disabled', 'true')
+  expect(lock).toHaveTextContent('Công ty cần ít nhất một quản trị công ty đang hoạt động')
+  await user.keyboard('{Escape}')
+  // Nhân viên khác của công ty thì khoá được
+  expect(within(await openMenu(user, 'Trần Thị Mai')).getByRole('menuitem', { name: 'Khoá tài khoản' })).not.toHaveAttribute('aria-disabled')
+})
+
+test('tạo tài khoản: chỉ vai trò nền tảng, không có ô kho; mật khẩu tạm hiện một lần và đăng nhập được bằng nó', async () => {
+  const user = userEvent.setup()
+  renderUsers()
+  await screen.findByRole('table', {}, SLOW)
+  await user.click(screen.getByRole('button', { name: 'Thêm người dùng' }))
+  const form = await screen.findByRole('dialog', { name: 'Thêm người dùng' })
+  expect(within(form).queryByLabelText('Kho / chi nhánh')).toBeNull()
+  await fill(user, within(form).getByLabelText('Họ và tên'), 'Vương Thị Bích Ngọc')
+  await fill(user, within(form).getByLabelText('Số điện thoại'), '0926971238')
+  await fill(user, within(form).getByLabelText('Email'), 'ngoc.vuong@loadmaster.vn')
+  await user.click(within(form).getByRole('combobox', { name: 'Vai trò' }))
+  expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toStrictEqual(['Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng'])
+  await user.click(screen.getByRole('option', { name: 'Quản lý nền tảng' }))
+  await user.click(within(form).getByRole('button', { name: 'Thêm người dùng' }))
+
+  const result = await screen.findByRole('dialog', { name: 'Đã tạo tài khoản Vương Thị Bích Ngọc' }, SLOW)
+  const password = within(result).getByLabelText('Mật khẩu tạm')
+  expect(password).toHaveAttribute('readonly')
+  const value = (password as HTMLInputElement).value
+  expect(value).toMatch(/^[A-Za-z2-9]{10}$/)
+  await user.click(within(result).getByRole('button', { name: 'Sao chép' }))
+  expect(await navigator.clipboard.readText()).toBe(value)
+  await user.click(within(result).getByRole('button', { name: 'Xong' }))
+
+  const cells = within(await rowOf('Vương Thị Bích Ngọc')).getAllByRole('cell').map((cell) => cell.textContent)
+  expect(cells.slice(1, 5)).toStrictEqual(['0926 971 238', 'Quản lý nền tảng', 'Nền tảng', 'Không thuộc kho nào'])
+  // Đăng nhập được bằng mật khẩu tạm (kho giữ phiên; test sau dựng lại phiên quản trị): tài khoản nền tảng, không công ty, không kho
+  const created = await getMockDb().authenticate('ngoc.vuong@loadmaster.vn', value)
+  expect([created.role, 'companyId' in created, 'depot' in created]).toStrictEqual(['systemManager', false, false])
+})
+
+test('đặt lại mật khẩu cho nhân sự công ty: xác nhận rồi hiện mật khẩu tạm mới', async () => {
   const user = userEvent.setup()
   renderUsers()
   await user.click(within(await openMenu(user, 'Đỗ Thị Hạnh')).getByRole('menuitem', { name: 'Đặt lại mật khẩu' }))
@@ -182,38 +239,25 @@ test('đặt lại mật khẩu: xác nhận rồi hiện mật khẩu tạm m�
   await expect(getMockDb().authenticate('hanh.do@loadmaster.vn', value)).resolves.toMatchObject({ id: 'US-0011' })
 })
 
-test('xoá: có xác nhận; tài xế còn chuyến thì kho từ chối và báo lý do', async () => {
+test('sửa tài khoản nền tảng: vai trò chỉ trong ba vai trò nền tảng; email trùng thì báo trong hộp thoại, dữ liệu đang nhập giữ nguyên', async () => {
   const user = userEvent.setup()
   renderUsers()
-  await user.click(within(await openMenu(user, 'Lý Minh Châu')).getByRole('menuitem', { name: 'Xoá tài khoản' }))
-  const confirm = await screen.findByRole('dialog', { name: 'Xoá tài khoản Lý Minh Châu?' })
-  await user.click(within(confirm).getByRole('button', { name: 'Xoá tài khoản' }))
-  expect(await screen.findByText('Đã xoá tài khoản Lý Minh Châu', {}, SLOW)).toBeInTheDocument()
-  await waitFor(() => expect(screen.queryByText('Lý Minh Châu')).not.toBeInTheDocument(), SLOW)
-
-  // Phạm Quốc Dũng lái chuyến chính (chưa kết thúc)
-  await user.click(within(await openMenu(user, 'Phạm Quốc Dũng')).getByRole('menuitem', { name: 'Xoá tài khoản' }))
-  await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Xoá tài khoản' }))
-  expect(await screen.findByText(/^Tài xế này đang được gán cho chuyến .*TRIP-2026-0914/, {}, SLOW)).toBeInTheDocument()
-  expect(await rowOf('Phạm Quốc Dũng')).toBeInTheDocument()
-})
-
-test('sửa: lưu thay đổi; email trùng thì báo trong hộp thoại, dữ liệu đang nhập giữ nguyên', async () => {
-  const user = userEvent.setup()
-  renderUsers()
-  await user.click(within(await openMenu(user, 'Trương Văn Lộc')).getByRole('menuitem', { name: 'Sửa thông tin' }))
+  await user.click(within(await openMenu(user, 'Tạ Thị Ngọc Ánh')).getByRole('menuitem', { name: 'Sửa thông tin' }))
   const form = await screen.findByRole('dialog', { name: 'Sửa người dùng' })
+  expect(within(form).queryByLabelText('Kho / chi nhánh')).toBeNull()
   const email = within(form).getByLabelText('Email')
   await fill(user, email, 'kho@loadmaster.vn')
   await user.click(within(form).getByRole('button', { name: 'Lưu thay đổi' }))
   expect(await within(form).findByRole('alert', {}, SLOW)).toHaveTextContent('Email kho@loadmaster.vn đã có người dùng.')
   expect(email).toHaveValue('kho@loadmaster.vn')
 
-  await fill(user, email, 'loc.truong@loadmaster.vn')
-  await fill(user, within(form).getByLabelText('Kho / chi nhánh'), 'Kho Sóng Thần')
+  await fill(user, email, 'hotro@loadmaster.vn')
+  await user.click(within(form).getByRole('combobox', { name: 'Vai trò' }))
+  expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toStrictEqual(['Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng'])
+  await user.click(screen.getByRole('option', { name: 'Quản trị hệ thống' }))
   await user.click(within(form).getByRole('button', { name: 'Lưu thay đổi' }))
-  expect(await screen.findByText('Đã cập nhật Trương Văn Lộc', {}, SLOW)).toBeInTheDocument()
-  await waitFor(async () => expect(within(await rowOf('Trương Văn Lộc')).getByText('Kho Sóng Thần')).toBeInTheDocument(), SLOW)
+  expect(await screen.findByText('Đã cập nhật Tạ Thị Ngọc Ánh', {}, SLOW)).toBeInTheDocument()
+  await waitFor(async () => expect(within(await rowOf('Tạ Thị Ngọc Ánh')).getByText('Quản trị hệ thống')).toBeInTheDocument(), SLOW)
 })
 
 test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSIONS (chi tiết ở PermissionMatrix.dom.test)', async () => {

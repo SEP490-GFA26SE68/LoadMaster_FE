@@ -3,7 +3,7 @@ import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import { accountGuards } from './account-guards'
-import { LastActive, RoleLabel, UserAvatar, UserDepot, UserStatusBadge } from './user-look'
+import { LastActive, RoleLabel, UserAvatar, UserCompany, UserDepot, UserStatusBadge } from './user-look'
 import { UserRowMenu } from './UserRowMenu'
 import { useUsersTable } from './users-table-context'
 
@@ -47,8 +47,14 @@ function NameCell({ user }: { user: User }) {
 }
 
 function ActionsCell({ user }: { user: User }) {
-  const { users, currentUserId, onAction } = useUsersTable()
-  return <UserRowMenu user={user} guards={accountGuards(user, currentUserId, users)} onAction={onAction} />
+  const { users, viewer, onAction } = useUsersTable()
+  return <UserRowMenu user={user} guards={accountGuards(user, viewer, users)} onAction={onAction} />
+}
+
+function CompanyCell({ user }: { user: User }) {
+  const { companies } = useUsersTable()
+  const name = user.companyId === undefined ? undefined : companies.get(user.companyId)
+  return <UserCompany companyId={user.companyId} name={name} className="line-clamp-2 whitespace-normal" />
 }
 
 function ActionsHeader() {
@@ -59,6 +65,7 @@ function ActionsHeader() {
 const nameCell = (info: Cell<string>) => <NameCell user={info.row.original} />
 const phoneCell = (info: Cell<string>) => <span className="font-mono text-caption text-ink-1">{info.getValue()}</span>
 const roleCell = (info: Cell<string>) => <RoleLabel role={info.row.original.role} />
+const companyCell = (info: Cell<string | undefined>) => <CompanyCell user={info.row.original} />
 const depotCell = (info: Cell<string | undefined>) => <UserDepot value={info.getValue()} className="line-clamp-2 whitespace-normal" />
 const lastActiveCell = (info: Cell<string | null>) => <LastActive value={info.getValue()} />
 const statusCell = (info: Cell<User['status']>) => <UserStatusBadge status={info.getValue()} />
@@ -70,9 +77,11 @@ const actionsCell = (info: Cell<unknown>) => <ActionsCell user={info.row.origina
  * Cột cuối là menu thao tác, chặn trước thao tác kho sẽ từ chối (`accountGuards`).
  * Panel chi tiết (V2): bấm dòng để mở; tên là nút bật/tắt cho bàn phím (`aria-pressed`). Panel đang mở thì bỏ cột Điện thoại —
  * số điện thoại đã nằm trong panel — và cột kho hẹp lại, để bảng đủ chỗ cho tên và email ở 1.366 px.
- * Chỉ dựng lại khi đổi ngôn ngữ hoặc panel đóng/mở; hàm ô giữ nguyên nên các ô còn lại không bị gắn lại.
+ * Cột Công ty (FE-0-08) chỉ có khi người xem là quản trị hệ thống (`showCompany`), đứng sau Vai trò; panel mở thì cũng nhường chỗ —
+ * công ty đã nằm trong panel. Tên công ty đọc qua context (về sau từ kho) nên cột không sắp xếp; lọc theo công ty ở thanh lọc.
+ * Chỉ dựng lại khi đổi ngôn ngữ, đổi tập cột hoặc panel đóng/mở; hàm ô giữ nguyên nên các ô còn lại không bị gắn lại.
  */
-export function userColumns(t: TFunction, { panelOpen }: { panelOpen: boolean }) {
+export function userColumns(t: TFunction, { panelOpen, showCompany }: { panelOpen: boolean; showCompany: boolean }) {
   return helper.columns([
     helper.accessor('fullName', { header: t('admin.users.columns.user'), enableSorting: true, cell: nameCell }),
     ...(panelOpen ? [] : [helper.accessor('phone', {
@@ -87,6 +96,11 @@ export function userColumns(t: TFunction, { panelOpen }: { panelOpen: boolean })
       meta: { width: '172px' } satisfies ColumnMeta,
       cell: roleCell,
     }),
+    ...(showCompany && !panelOpen ? [helper.accessor('companyId', {
+      header: t('admin.users.columns.company'),
+      meta: { width: '168px' } satisfies ColumnMeta,
+      cell: companyCell,
+    })] : []),
     helper.accessor('depot', {
       header: t('admin.users.columns.depot'),
       enableSorting: true,

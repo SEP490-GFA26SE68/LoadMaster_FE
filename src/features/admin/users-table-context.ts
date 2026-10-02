@@ -12,7 +12,10 @@ import type { UserAction } from './UserRowMenu'
  */
 export type UsersTableContextValue = {
   readonly users: readonly User[]
-  readonly currentUserId: string | null
+  /** Người đang đăng nhập: luật chặn thao tác theo phạm vi của người đó (`accountGuards`). */
+  readonly viewer: User | null
+  /** Tên công ty theo mã, cho cột Công ty của quản trị hệ thống; rỗng khi cột không hiện hoặc kho chưa trả lời. */
+  readonly companies: ReadonlyMap<string, string>
   readonly onAction: (action: UserAction, user: User) => void
   readonly selectedId: string | null
   readonly onSelect: (user: User) => void

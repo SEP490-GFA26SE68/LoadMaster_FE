@@ -12,8 +12,8 @@ import { UsersPage } from './UsersPage'
 
 /**
  * Panel chi tiết người dùng (V2) qua màn Người dùng: kho dùng chung (20 người dùng seed) → hook → màn. Người xem là quản trị hệ thống
- * demo Võ Minh Khoa (US-0005). Các test trong file dùng chung kho; ghi vào kho chỉ ở kho của Đặng Hoài Nam và khoá/mở lại Ngô Văn Bảo —
- * không test nào khác đọc hai chỗ đó.
+ * demo Võ Minh Khoa (US-0005): thấy mọi tài khoản, panel có thêm dòng Công ty (FE-0-08). Các test trong file dùng chung kho; ghi vào kho
+ * chỉ ở kho của Đặng Hoài Nam và khoá/mở lại Ngô Văn Bảo — không test nào khác đọc hai chỗ đó.
  */
 const SLOW = { timeout: 5000 }
 
@@ -55,7 +55,11 @@ test('danh sách về lại từ kho không gắn lại ô: menu thao tác đang
   const menu = await openMenu(user, 'Ngô Văn Bảo')
   const lock = within(menu).getByRole('menuitem', { name: 'Khoá tài khoản' })
 
-  await getMockDb().updateUser('US-0007', { depot: 'Kho Bình Dương' })
+  // Quản trị công ty của Long Bình sửa một nhân viên ở máy khác (quản trị hệ thống không sửa nhân sự công ty), rồi trả phiên cho người xem
+  const db = getMockDb()
+  db.restoreSession('US-LB-01')
+  await db.updateUser('US-0007', { depot: 'Kho Bình Dương' })
+  db.restoreSession('US-0005')
   await client.invalidateQueries({ queryKey: ['users'] })
   // Menu Radix là modal: phần còn lại bị aria-hidden nên tìm theo chữ, không theo vai trò
   expect(await screen.findByText('Kho Bình Dương', {}, SLOW)).toBeInTheDocument()
@@ -73,7 +77,7 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   const user = userEvent.setup()
   renderUsers()
   await screen.findByRole('table', {}, SLOW)
-  expect(columnHeaders()).toContain('Điện thoại')
+  expect(columnHeaders()).toStrictEqual(expect.arrayContaining(['Điện thoại', 'Công ty']))
   expect(screen.queryByRole('complementary')).toBeNull()
 
   // Bấm vào ô kho của dòng (không phải nút tên) cũng mở panel
@@ -84,10 +88,11 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   expect(within(panel).getByText('Điều phối viên')).toBeInTheDocument()
   expect(within(panel).getByText('Đang hoạt động')).toBeInTheDocument()
   const info = within(within(panel).getByRole('region', { name: 'Thông tin cá nhân' }))
-  expect(info.getAllByRole('term').map((term) => term.textContent)).toStrictEqual(['Mã tài khoản', 'Điện thoại', 'Kho / chi nhánh', 'Hoạt động gần nhất'])
-  expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
-    'US-0001', '0901 234 567', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
-  ])
+  expect(info.getAllByRole('term').map((term) => term.textContent)).toStrictEqual(['Mã tài khoản', 'Điện thoại', 'Công ty', 'Kho / chi nhánh', 'Hoạt động gần nhất'])
+  // Tên công ty về từ kho sau danh sách người dùng
+  await waitFor(() => expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
+    'US-0001', '0901 234 567', 'Công ty TNHH Vận tải Long Bình', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
+  ]), SLOW)
   // 24 quyền của điều phối viên theo thứ tự dòng của ma trận (FE-0-01, FE-0-07): 22 quyền của PRD v2, gồm chỉnh sửa và duyệt phương
   // án, cộng hai quyền đơn hàng còn tạm
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
@@ -99,7 +104,8 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
     'Tạo yêu cầu nhận hàng dọc đường', 'Duyệt yêu cầu nhận hàng dọc đường',
     'Xem đơn hàng', 'Tạo, sửa đơn hàng và gán vào điểm giao',
   ])
-  expect(columnHeaders()).not.toContain('Điện thoại')
+  // Panel mở: cột Điện thoại và cột Công ty nhường chỗ — cả hai đã nằm trong panel
+  expect(columnHeaders()).toStrictEqual(['Người dùng', 'Vai trò', 'Kho / chi nhánh', 'Hoạt động gần nhất', 'Trạng thái', 'Thao tác'])
   expect(within(await rowOf('Nguyễn Thanh Tùng')).getByRole('button', { name: 'Nguyễn Thanh Tùng' })).toHaveAttribute('aria-pressed', 'true')
 
   // Menu thao tác của dòng khác không đổi panel
@@ -115,7 +121,7 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
 
   await user.click(within(next).getByRole('button', { name: 'Đóng chi tiết tài khoản' }))
   expect(screen.queryByRole('complementary')).toBeNull()
-  expect(columnHeaders()).toContain('Điện thoại')
+  expect(columnHeaders()).toStrictEqual(expect.arrayContaining(['Điện thoại', 'Công ty']))
   expect(within(await rowOf('Trần Thị Mai')).getByRole('button', { name: 'Trần Thị Mai' })).toHaveFocus()
 })
 
@@ -147,7 +153,7 @@ test('panel chi tiết bằng bàn phím: nút ở tên mở, Esc đóng và tr�
   expect(within(await rowOf('Lê Văn Hải')).getByRole('button', { name: 'Lê Văn Hải' })).toHaveFocus()
 })
 
-test('thao tác từ panel: cùng luật chặn với menu, khoá rồi mở khoá cập nhật ngay trong panel', async () => {
+test('thao tác từ panel: cùng luật chặn với menu; nhân sự công ty chỉ khoá, mở khoá, đặt lại mật khẩu được', async () => {
   const user = userEvent.setup()
   renderUsers()
   // Chính mình: khoá và xoá bị chặn, lý do nằm ngay dưới nút
@@ -158,8 +164,9 @@ test('thao tác từ panel: cùng luật chặn với menu, khoá rồi mở kho
   expect(own.getByRole('button', { name: 'Xoá tài khoản' })).toBeDisabled()
   expect(own.getByRole('button', { name: 'Sửa thông tin' })).toBeEnabled()
   expect(own.getAllByText('Không áp dụng cho tài khoản bạn đang đăng nhập')).toHaveLength(1)
-  // Quản trị hệ thống là người của nền tảng (FE-0-01, FE-0-03): không thuộc kho nào, ba quyền và không quyền vận hành nào
-  expect(within(own.getByRole('region', { name: 'Thông tin cá nhân' })).getAllByRole('definition')[2]).toHaveTextContent('Không thuộc kho nào')
+  // Quản trị hệ thống là người của nền tảng (FE-0-01, FE-0-03): không thuộc công ty hay kho nào, ba quyền và không quyền vận hành nào
+  expect(within(own.getByRole('region', { name: 'Thông tin cá nhân' })).getAllByRole('definition').slice(2, 4).map((value) => value.textContent))
+    .toStrictEqual(['Nền tảng', 'Không thuộc kho nào'])
   expect(within(own.getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem').map((chip) => chip.textContent))
     .toStrictEqual(['Tạo và quản lý công ty khách hàng', 'Quản lý người dùng', 'Xem nhật ký hệ thống'])
 
@@ -170,11 +177,20 @@ test('thao tác từ panel: cùng luật chặn với menu, khoá rồi mở kho
   await waitFor(() => expect(panel.getByText('Đã khoá')).toBeInTheDocument(), SLOW)
   await user.click(panel.getByRole('button', { name: 'Mở khoá tài khoản' }))
   await waitFor(() => expect(panel.getByText('Đang hoạt động')).toBeInTheDocument(), SLOW)
+  // Sửa và xoá nhân sự công ty là việc của quản trị công ty đó (FE-0-08): hai nút mờ, chung một dòng lý do
+  for (const name of ['Sửa thông tin', 'Xoá tài khoản']) {
+    expect(panel.getByRole('button', { name })).toBeDisabled()
+    expect(panel.getByRole('button', { name })).toHaveAccessibleDescription('Nhân sự công ty do quản trị công ty đó quản lý')
+  }
+  expect(panel.getAllByText('Nhân sự công ty do quản trị công ty đó quản lý')).toHaveLength(1)
+  expect(panel.getByRole('button', { name: 'Đặt lại mật khẩu' })).toBeEnabled()
 
-  // Sửa mở đúng hộp thoại của menu
-  await user.click(panel.getByRole('button', { name: 'Sửa thông tin' }))
+  // Tài khoản nền tảng: Sửa mở đúng hộp thoại của menu
+  await user.click(within(await rowOf('Đinh Quang Huy')).getByRole('button', { name: 'Đinh Quang Huy' }))
+  const platform = within(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Đinh Quang Huy' }))
+  await user.click(platform.getByRole('button', { name: 'Sửa thông tin' }))
   const form = await screen.findByRole('dialog', { name: 'Sửa người dùng' })
-  expect(within(form).getByLabelText('Email')).toHaveValue('bao.ngo@loadmaster.vn')
+  expect(within(form).getByLabelText('Email')).toHaveValue('nentang@loadmaster.vn')
   await user.click(within(form).getByRole('button', { name: 'Huỷ' }))
 })
 

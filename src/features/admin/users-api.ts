@@ -1,14 +1,20 @@
-import { getMockDb, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
+import { getMockDb, type Company, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
 import type { User, UserStatus } from '@/types/user'
 
 /**
  * Lớp gọi API của màn Người dùng (LM-092, D-42) — nơi duy nhất trong màn biết về kho. Kho kiểm luật (email trùng, tự khoá/xoá mình,
- * quản trị viên cuối, tài xế còn chuyến) và từ chối bằng `MockDbError`; màn hiện lỗi qua `dataErrorMessage`. Mọi hàm ghi thêm một
- * sự kiện nhật ký. Nối backend thật chỉ thay thân hàm.
+ * người quản trị cuối cùng, tài xế còn chuyến, phạm vi theo vai trò — FE-0-08) và từ chối bằng `MockDbError`; màn hiện lỗi qua
+ * `dataErrorMessage`. Mọi hàm ghi thêm một sự kiện nhật ký. Nối backend thật chỉ thay thân hàm.
  */
 
+/** Người dùng trong phạm vi của người đang đăng nhập: quản trị hệ thống nhận mọi tài khoản, quản trị công ty chỉ người của công ty mình. */
 export function fetchUsers(): Promise<User[]> {
   return getMockDb().listUsers()
+}
+
+/** Công ty trong phạm vi của người đang đăng nhập — tên công ty cho cột và bộ lọc công ty của quản trị hệ thống (màn Người dùng, Nhật ký). */
+export function fetchCompanies(): Promise<Company[]> {
+  return getMockDb().listCompanies()
 }
 
 /** Kho cấp mã, trạng thái hoạt động và mật khẩu tạm — mật khẩu chỉ có trong kết quả này. */
