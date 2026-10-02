@@ -13,7 +13,8 @@ export const auth = {
     emailInvalid: 'Email không đúng định dạng',
     passwordRequired: 'Nhập mật khẩu',
     invalidCredentials: 'Email hoặc mật khẩu không đúng',
-    accountSuspended: 'Tài khoản đã bị khoá. Liên hệ quản trị hệ thống.',
+    /** Một câu cho cả hai loại tài khoản (FE-0-08): nhân sự công ty do quản trị công ty mở khoá, tài khoản nền tảng do quản trị hệ thống. */
+    accountSuspended: 'Tài khoản đã bị khoá. Liên hệ quản trị viên của bạn để mở khoá.',
     serverUnreachable: 'Không kết nối được máy chủ. Thử lại sau.',
   },
   showcase: {

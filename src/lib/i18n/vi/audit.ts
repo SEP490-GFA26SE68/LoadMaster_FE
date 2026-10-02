@@ -52,6 +52,10 @@ export const audit = {
     allActors: 'Mọi người',
     group: 'Nhóm hành động',
     allGroups: 'Mọi nhóm',
+    /** Bộ lọc công ty, chỉ quản trị hệ thống có (FE-0-08); `platform` là sự kiện không thuộc công ty nào. */
+    company: 'Công ty',
+    allCompanies: 'Mọi công ty',
+    platform: 'Nền tảng',
     /** Nhãn cạnh tiêu đề: màn không có thao tác ghi nào. */
     readOnly: 'Chỉ đọc',
     /**

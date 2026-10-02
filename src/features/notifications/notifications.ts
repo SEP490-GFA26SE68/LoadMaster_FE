@@ -17,8 +17,9 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  * - Điều phối viên: kết quả phương án (đồng nghiệp duyệt), tiến độ kho (thiếu kiện, xếp xong), sự cố giao, chuyến hoàn thành, chuyến
  *   bị huỷ.
  * - Quản lý công ty (chỉ đọc, lo hạn giao và báo cáo): chuyến hoàn thành, chuyến bị huỷ, sự cố giao.
- * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Kho chỉ trả cho quản trị công ty sự kiện do người của công ty mình làm
- *   (FE-0-02); luật theo vai trò là việc của FE-0-08.
+ * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Phạm vi do kho lọc, không lọc ở đây (FE-0-08): quản trị hệ thống nhận sự
+ *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
+ *   trên người của công ty (khoá, đặt lại mật khẩu) — không nhận gì về tài khoản nền tảng hay của công ty khác.
  * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8); kho và tài xế làm việc trên màn
  *   của mình. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
  * Sự kiện của luồng mới (nguy cơ trễ, xác nhận tay chờ duyệt, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.

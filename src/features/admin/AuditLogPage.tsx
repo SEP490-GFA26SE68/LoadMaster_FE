@@ -7,19 +7,24 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { compareText } from '@/lib/list-filter'
-import { AUDIT_GROUPS, type AuditGroup } from '@/lib/mock-db'
+import { AUDIT_GROUPS, userScopeOf, type AuditGroup } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import type { AuditLogFilter } from './audit-api'
 import { auditColumns } from './audit-columns'
 import { describeLogRow, type AuditDirectory } from './audit-log'
 import { AuditSummary } from './AuditSummary'
 import { useAuditDirectoryQuery, useAuditEventsQuery, useAuditSummaryQuery } from './useAuditLogQuery'
+import { useCompanyNamesQuery } from './useUsersQuery'
 
 /** Bộ lọc trên URL (D-52): khoảng ngày, người làm, nhóm hành động; ô tìm (`q`) là mã đối tượng. */
 const FILTERS = ['tu', 'den', 'nguoi-lam', 'nhom'] as const
+/** Quản trị hệ thống lọc thêm theo công ty của sự kiện (FE-0-08): mã công ty, hoặc `nen-tang` cho sự kiện không thuộc công ty nào. */
+const PLATFORM_FILTERS = [...FILTERS, 'cong-ty'] as const
+const PLATFORM_EVENTS = 'nen-tang'
 
 /** Nhật ký dày: mặc định 50 dòng một trang (`so-dong` vắng là 50; người dùng vẫn chọn 25/100 ở chân bảng). */
 const AUDIT_PAGE_SIZE = 50
@@ -35,13 +40,23 @@ function isAuditGroup(value: string): value is AuditGroup {
  * mọi thao tác ghi của kho, mới nhất trước, lọc theo kỳ, người làm, nhóm hành động và mã đối tượng, phân trang. Màn chỉ đọc nên
  * không có nút primary. Quản trị hệ thống và quản trị công ty (FE-0-03) không xem được chuyến, xe: đối tượng chỉ là liên kết khi người
  * xem có quyền mở trang đích.
+ *
+ * Phạm vi theo vai trò (D-65, FE-0-08), do kho lọc: quản trị hệ thống đọc nhật ký toàn hệ thống và có bộ lọc công ty; quản trị công ty
+ * chỉ đọc sự kiện của công ty mình — việc người của công ty làm và việc quản trị hệ thống làm trên tài khoản của công ty.
  */
 export function AuditLogPage() {
   const t = useT()
   const format = useFormat()
   const can = useCan()
-  const list = useListUrlState({ filters: FILTERS, defaultSort: { id: 'at', desc: true }, defaultPageSize: AUDIT_PAGE_SIZE })
+  const { user } = useAuth()
+  const platform = user !== null && userScopeOf(user.role) === 'platform'
+  const list = useListUrlState<(typeof PLATFORM_FILTERS)[number]>({
+    filters: platform ? PLATFORM_FILTERS : FILTERS,
+    defaultSort: { id: 'at', desc: true },
+    defaultPageSize: AUDIT_PAGE_SIZE,
+  })
   const { tu: from, den: to, 'nguoi-lam': actorId, nhom: group } = list.filters
+  const company = platform ? list.filters['cong-ty'] : ''
   const targetId = list.query.trim()
 
   const filter = useMemo<AuditLogFilter>(() => ({
@@ -50,10 +65,12 @@ export function AuditLogPage() {
     ...(actorId ? { actorId } : {}),
     ...(targetId ? { targetId } : {}),
     ...(isAuditGroup(group) ? { group } : {}),
-  }), [from, to, actorId, targetId, group])
+    ...(company ? { company: company === PLATFORM_EVENTS ? null : company } : {}),
+  }), [from, to, actorId, targetId, group, company])
   const events = useAuditEventsQuery(filter)
   const summary = useAuditSummaryQuery()
   const directoryQuery = useAuditDirectoryQuery()
+  const companies = useCompanyNamesQuery(platform)
 
   const directory = useMemo<AuditDirectory | undefined>(() => directoryQuery.data && {
     users: new Map(directoryQuery.data.users.map((user) => [user.id, user.fullName])),
@@ -70,6 +87,10 @@ export function AuditLogPage() {
     .map((user) => ({ value: user.id, label: user.fullName }))
     .toSorted((a, b) => compareText(a.label, b.label)), [directoryQuery.data])
   const groupOptions = AUDIT_GROUPS.map((value) => ({ value, label: t(`audit.groups.${value}`) }))
+  const companyOptions = [
+    ...(companies.data ?? []).map(({ id, name }) => ({ value: id, label: name })),
+    { value: PLATFORM_EVENTS, label: t('audit.log.platform') },
+  ]
 
   // Ô "ngày gần nhất" lọc đúng một ngày: hai đầu khoảng ngày cùng là ngày đó
   const latestDate = summary.data?.latestDay?.date
@@ -130,6 +151,10 @@ export function AuditLogPage() {
                   { kind: 'select', name: 'nguoi-lam', label: t('audit.log.actor'), options: actorOptions, allLabel: t('audit.log.allActors') },
                   { kind: 'select', name: 'nhom', label: t('audit.log.group'), options: groupOptions, allLabel: t('audit.log.allGroups') },
                   { kind: 'dateRange', label: t('audit.log.dateRange'), from: 'tu', to: 'den', secondary: true },
+                  ...(platform ? [{
+                    kind: 'select' as const, name: 'cong-ty' as const, label: t('audit.log.company'), options: companyOptions,
+                    allLabel: t('audit.log.allCompanies'), secondary: true,
+                  }] : []),
                 ]}
                 values={list.filters}
                 onValueChange={list.setFilter}

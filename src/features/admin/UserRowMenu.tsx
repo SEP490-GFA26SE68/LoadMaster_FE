@@ -21,7 +21,8 @@ function stopPropagation(event: { stopPropagation: () => void }) {
 
 /**
  * Menu thao tác ở cuối mỗi dòng người dùng (LM-092): Sửa, Khoá/Mở khoá, Đặt lại mật khẩu, Xoá. Thao tác kho sẽ từ chối (tự khoá/xoá
- * mình, quản trị viên cuối) hiện mờ, không bấm được, kèm lý do ngay dưới — không để người dùng bấm rồi mới báo lỗi.
+ * mình, người quản trị cuối cùng, quản trị hệ thống sửa/xoá nhân sự công ty — FE-0-08) hiện mờ, không bấm được, kèm lý do ngay dưới —
+ * không để người dùng bấm rồi mới báo lỗi.
  */
 export function UserRowMenu({ user, guards, onAction }: {
   user: User
@@ -41,10 +42,12 @@ export function UserRowMenu({ user, guards, onAction }: {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72" onClick={stopPropagation}>
-        <DropdownMenuItem onSelect={() => onAction('edit', user)}>
-          <Pencil strokeWidth={1.5} aria-hidden />
-          {t('admin.users.menu.edit')}
-        </DropdownMenuItem>
+        <MenuAction
+          icon={<Pencil strokeWidth={1.5} aria-hidden />}
+          label={t('admin.users.menu.edit')}
+          block={guards.edit}
+          onSelect={() => onAction('edit', user)}
+        />
         <MenuAction
           icon={suspended ? <LockOpen strokeWidth={1.5} aria-hidden /> : <Lock strokeWidth={1.5} aria-hidden />}
           label={suspended ? t('admin.users.menu.unlock') : t('admin.users.menu.lock')}
@@ -86,7 +89,8 @@ function MenuAction({ icon, label, block, danger = false, onSelect }: {
       {icon}
       <span className="flex min-w-0 flex-col">
         <span>{label}</span>
-        {block !== null ? <span className="text-caption text-text-3">{t(`admin.users.blocked.${block}`)}</span> : null}
+        {/* Mục menu không xuống dòng; lý do dài hơn bề rộng menu thì xuống dòng, không bị cắt ở mép phải */}
+        {block !== null ? <span className="text-caption whitespace-normal text-text-3">{t(`admin.users.blocked.${block}`)}</span> : null}
       </span>
     </DropdownMenuItem>
   )

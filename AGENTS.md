@@ -33,7 +33,21 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 PRD v2 mục 5.2 (`REVIEW1_EXTRA` đã gộp vào; đọc quyền qua `can`/`permissionsOf`), thứ tự của `PERMISSIONS` là thứ tự dòng của Ma trận quyền.
 Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ thống (trước là `admin` toàn quyền) chỉ còn `companies.manage`, `users.manage`,
 `audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`. Quản trị công ty có `users.manage`, `audit.view`,
-`billing.manage`, `support.create` — mở cùng màn `/nguoi-dung`, `/nhat-ky` với quản trị hệ thống, **chưa chia phạm vi** (FE-0-08).
+`billing.manage`, `support.create`. *(đã điều chỉnh 02/10/2026, FE-0-08, D-65)* Hai vai trò quản trị mở cùng màn `/nguoi-dung`, `/nhat-ky`;
+**phạm vi theo vai trò, kho kiểm như server** (`lib/mock-db/user-scope.ts`, `db-users.ts`), màn chỉ làm mờ trước kèm lý do
+(`admin/account-guards.ts`, dùng cùng hàm `isLastActiveAdmin`, `userScopeOf` với kho). Quản trị hệ thống: thấy mọi tài khoản (cột Công ty,
+bộ lọc `cong-ty` — mã công ty hoặc `nen-tang`); **tạo, sửa, xoá** tài khoản nền tảng (form chỉ mời ba vai trò nền tảng, không có ô kho);
+với nhân sự công ty chỉ **khoá, mở khoá, đặt lại mật khẩu** — sửa, xoá là `USER_MANAGED_BY_COMPANY`. Quản trị công ty: chỉ người của công
+ty mình (kho không trả tài khoản nền tảng hay người công ty khác: đọc `NOT_FOUND`, ghi `FORBIDDEN_COMPANY`); tạo, sửa, khoá, đặt lại mật
+khẩu, xoá với năm vai trò công ty; tài khoản mới nhận công ty của người tạo. Tạo hoặc đổi sang vai trò ngoài phạm vi là `ROLE_OUT_OF_SCOPE`
+— không tài khoản nào đổi giữa nhóm vai trò nền tảng và nhóm vai trò công ty, nên vai trò công ty luôn có công ty. Không ai tự khoá, xoá,
+đổi vai trò mình (`SELF_CHANGE_FORBIDDEN`); `LAST_ADMIN` **theo phạm vi**: nền tảng giữ một quản trị hệ thống đang hoạt động, mỗi công ty
+giữ một quản trị công ty đang hoạt động (quản trị công ty của công ty khác không tính). Kho **không kiểm quyền** (`users.manage`) — đó vẫn
+là việc của route; kho chỉ xét phiên thuộc phạm vi nào. Nhật ký: quản trị hệ thống đọc cả hệ thống, lọc theo công ty (`cong-ty`); quản trị
+công ty đọc sự kiện của công ty mình. **Sự kiện về một tài khoản thuộc công ty của tài khoản đó**, ai làm cũng vậy (`auditEventCompany` —
+một luật cho seed và `ctx.log`; ghi nhật ký trước khi xoá tài khoản): quản trị hệ thống khoá một nhân viên thì quản trị công ty của người
+đó đọc được, kèm tên người làm (`listAuditNames` trả thêm người làm ngoài công ty); việc trên tài khoản nền tảng không thuộc công ty nào.
+Màn công ty (`companies.manage`) chưa có; tạo công ty kèm quản trị công ty đầu tiên là việc của màn đó.
 *(đã điều chỉnh 02/10/2026, FE-0-07, D-80)* **Điều phối viên duyệt phương án**: `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều
 phối — lập chuyến, chạy tối ưu, chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty (`manager`) chỉ đọc + xuất báo cáo: mở
 Planner ở chế độ chỉ xem, một dòng lý do. Không còn hàng đợi `/duyet` (đường dẫn cũ là màn 404), quyền `plans.review` và các quyết định trả lại
@@ -99,8 +113,9 @@ chuyến, kiện, đơn hàng, xe; điều phối viên thêm kiện đã đăng
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao; quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
-vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó;
-chuông **chưa lọc theo công ty** (FE-0-02).
+vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
+*(đã điều chỉnh 02/10/2026, FE-0-08)* Chuông không tự lọc theo công ty — kho lọc: quản trị công ty chỉ nhận sự kiện tài khoản của công ty
+mình (kể cả việc quản trị hệ thống làm trên người của công ty), không nhận gì về tài khoản nền tảng hay công ty khác.
 
 ### MVP theo Build Spec *(bổ sung 15/09/2026)*
 
@@ -439,7 +454,7 @@ trong `src/`; muốn dùng class từ nơi khác thì thêm `@source` tường m
   nút phụ **trên nền tối** (dải trời, khung 3D) và cỡ `sm` 32 px / `lg` 48 px. Nút phụ trên dải trời dùng `glass`, không dùng nút trắng.
 - Nút chỉ có icon: 36×36 desktop, 48×48 di động.
 - Nút dùng `asChild` bọc `<Link>` thì **không kèm spinner** — Radix `Slot` chỉ nhận đúng một phần tử con.
-- *(bổ sung 19/09/2026, LM-092)* Hành động bị chặn vì luật (tự khoá mình, quản trị viên cuối…) hiện mờ kèm lý do ngay tại chỗ, không để
+- *(bổ sung 19/09/2026, LM-092)* Hành động bị chặn vì luật (tự khoá mình, người quản trị cuối cùng, ngoài phạm vi của vai trò…) hiện mờ kèm lý do ngay tại chỗ, không để
   bấm rồi mới báo lỗi; luật cần dữ liệu khác thì để kho trả mã và hiện bằng `dataErrorMessage`.
 - Lớp nổi mở từ trong hộp thoại (Select) phải cao hơn lớp phủ Dialog (`z-300`): `SelectContent` dùng `z-400`.
 - *(LM-090)* Biểu đồ 2D dùng token qua `var()`: một chuỗi một màu `--primary`, không chú giải; tám màu điểm giao chỉ cho điểm giao;
@@ -934,7 +949,8 @@ mọi `db-*.ts` đọc/ghi qua `ctx.scope`), ba phạm vi:
   `NOT_FOUND` như bản ghi không tồn tại (tra mã QR: `QR_UNKNOWN`); ghi vào bản ghi của công ty khác, hoặc tham chiếu tới nó — gán xe, tài
   xế, loại kiện, kiện, chuyến của công ty khác — là `FORBIDDEN_COMPANY`.
 - **Phiên nền tảng** (ba vai trò không thuộc công ty nào): mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED`. Người dùng, nhật ký và danh
-  sách công ty không phải dữ liệu vận hành: nền tảng đọc hết, người của công ty chỉ đọc của công ty mình (luật theo vai trò là FE-0-08). Màn
+  sách công ty không phải dữ liệu vận hành: nền tảng đọc hết, người của công ty chỉ đọc của công ty mình (ai tạo, sửa, khoá được ai: mục 1,
+  FE-0-08). Màn
   cần tên chuyến, xe để đọc nhật ký hay thông báo gọi `listAuditNames` — theo phạm vi nhật ký, không đòi quyền vận hành — không gọi
   `listTrips` / `listVehicles`.
 - **Không có phiên** (test logic kho bằng `createMockDb()`, dựng seed, hai trang tài liệu `/kieu-dang`, `/thanh-phan` ngoài `RequireAuth`):

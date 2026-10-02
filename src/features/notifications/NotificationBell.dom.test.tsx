@@ -153,6 +153,38 @@ test('the system administrator: empty at first, then account events by others an
   ])
 })
 
+/**
+ * FE-0-08: quản trị công ty nhận sự kiện tài khoản **của công ty mình** — kể cả việc quản trị hệ thống làm trên người của công ty — và
+ * không nhận gì về tài khoản của công ty khác hay của nền tảng. Kho lọc theo công ty của sự kiện; chuông không tự lọc.
+ */
+test('the company administrator gets the account events of the own company only, whoever did them', async () => {
+  const user = userEvent.setup()
+  const admin = renderBell('companyAdmin')
+  // Quản trị hệ thống khoá một tài xế của Long Bình và đặt lại mật khẩu cho một tài xế của Phương Nam
+  await actAs('US-0005', admin.id, async () => {
+    await getMockDb().setUserStatus('US-0010', 'suspended')
+    await getMockDb().resetPassword('US-PN-04')
+  })
+  // Ai đó gõ sai mật khẩu ở một tài khoản của Long Bình, một của Phương Nam, và ở một email không có trong kho
+  await actAs(null, admin.id, async () => {
+    for (const email of ['bao.ngo@loadmaster.vn', 'taixe@phuongnam.vn', 'khong-co@example.vn']) {
+      await getMockDb().authenticate(email, 'sai-mat-khau').catch(() => null)
+    }
+  })
+
+  await user.click(await screen.findByRole('button', { name: /^Thông báo/ }, SLOW))
+  await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Đăng nhập không thành công'), SLOW)
+  const rows = notificationRows()
+  expect(rows.slice(0, 2).map(({ text, href }) => ({ text, href }))).toStrictEqual([
+    { text: ['Đăng nhập không thành công', 'Ngô Văn Bảo · US-0006'], href: '/nguoi-dung?q=US-0006' },
+    { text: ['Khoá tài khoản', 'Trương Văn Lộc · US-0010'], href: '/nguoi-dung?q=US-0010' },
+  ])
+  // Người làm là quản trị hệ thống — tài khoản ngoài công ty — vẫn đọc được tên
+  expect(part(menuItems()[1] ?? document.body, 'meta')).toMatch(/^Võ Minh Khoa/)
+  // Không dòng nào về tài khoản của Phương Nam hay email lạ
+  expect(rows.filter((row) => /Thái Văn Sơn|US-PN-|example\.vn/.test(row.text.join(' ')))).toStrictEqual([])
+})
+
 /** FE-0-04: điều phối viên duyệt phương án (FE-0-07) — bản đồng nghiệp duyệt là "kết quả phương án" điều phối viên khác cần biết. */
 test('a plan approved by a colleague reaches the dispatcher bell and opens the trip', async () => {
   const user = userEvent.setup()

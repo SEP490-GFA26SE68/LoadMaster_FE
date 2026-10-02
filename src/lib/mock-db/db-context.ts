@@ -51,8 +51,9 @@ export type DbContext = {
    */
   respond<T>(operation: () => T): Promise<T>
   /**
-   * Thêm một sự kiện nhật ký: người làm là phiên hiện tại, công ty là công ty của phiên (`tenancy.eventCompany`). `companyId` chỉ
-   * truyền khi sự kiện không do phiên nào làm — lần đăng nhập sai ghi công ty của tài khoản bị thử.
+   * Thêm một sự kiện nhật ký: người làm là phiên hiện tại; công ty theo `tenancy.eventCompany` — sự kiện về một tài khoản thuộc công ty
+   * của tài khoản đó, sự kiện khác thuộc công ty của phiên. Gọi **trước khi xoá** tài khoản là đối tượng. `companyId` chỉ truyền khi
+   * luật đó không áp được: lần đăng nhập sai bằng email không có trong kho không thuộc công ty nào.
    */
   log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>, companyId?: string | null): void
   /** Mã QR mới cho kiện đăng ký, không trùng mã đã cấp (LM-104). */
@@ -76,7 +77,7 @@ export function createDbContext(state: DbState, latencyMs: number, now: () => Da
       if (latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, latencyMs))
       return structuredClone(operation())
     },
-    log(action, target, params = {}, companyId = scope.eventCompany()) {
+    log(action, target, params = {}, companyId = scope.eventCompany(target)) {
       state.events.push({
         id: nextEventId(state.events.length),
         at: nowIso(),

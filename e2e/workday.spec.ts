@@ -5,7 +5,8 @@ import { addPackage, MOCK_DB, optimizeAndOpenPlanner } from './spec-flow-helpers
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
  * lại trang): điều phối tạo chuyến, thêm kiện, tối ưu, duyệt (FE-0-07) → kho xếp (báo thiếu 1) → tài xế giao (1 sự cố) → quản lý
- * công ty thấy chuyến hoàn thành trên bảng điều khiển và xuất báo cáo → quản trị đọc đủ chuỗi sự kiện của chuyến trong nhật ký.
+ * công ty thấy chuyến hoàn thành trên bảng điều khiển và xuất báo cáo → quản trị công ty đọc đủ chuỗi sự kiện của chuyến trong nhật ký
+ * của công ty mình (FE-0-08).
  */
 test.use({ collectConsoleErrors: true })
 
@@ -134,8 +135,8 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
   await signOut(page, NAMES.manager)
 
-  // Quản trị hệ thống: nhật ký có đủ chuỗi việc của chuyến, đúng người làm
-  await signIn(page, 'systemAdmin')
+  // Quản trị công ty: nhật ký của công ty có đủ chuỗi việc của chuyến, đúng người làm
+  await signIn(page, 'companyAdmin')
   await page.getByRole('link', { name: 'Nhật ký', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Tìm theo mã chuyến, xe, người dùng', exact: true }).fill(TRIP)
   const log = page.locator('tbody')

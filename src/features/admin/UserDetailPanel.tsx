@@ -5,7 +5,7 @@ import { useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import type { AccountGuards } from './account-guards'
 import { UserDetailActions } from './UserDetailActions'
-import { LastActive, RoleLabel, UserAvatar, UserDepot, UserStatusBadge } from './user-look'
+import { LastActive, RoleLabel, UserAvatar, UserCompany, UserDepot, UserStatusBadge } from './user-look'
 import type { UserAction } from './UserRowMenu'
 
 /**
@@ -14,10 +14,12 @@ import type { UserAction } from './UserRowMenu'
  * Nền đặc, viền 1 px, không bóng — inspector là bề mặt đọc lâu, không dùng kính (AGENTS mục 5).
  * Mở hoặc đổi người thì con trỏ về tiêu đề panel (trình đọc màn hình đọc tên; dưới 1.280 px panel nằm dưới bảng nên cũng cuộn tới).
  */
-export function UserDetailPanel({ id, user, guards, onAction, onClose }: {
+export function UserDetailPanel({ id, user, guards, company, onAction, onClose }: {
   id: string
   user: User
   guards: AccountGuards
+  /** Công ty của người dùng — chỉ truyền khi người xem là quản trị hệ thống (FE-0-08); `name` vắng khi kho chưa trả tên. */
+  company?: { readonly id: string | undefined; readonly name: string | undefined }
   onAction: (action: UserAction, user: User) => void
   onClose: () => void
 }) {
@@ -64,6 +66,9 @@ export function UserDetailPanel({ id, user, guards, onAction, onClose }: {
           <dl className="flex flex-col gap-3">
             <Field label={t('admin.users.detail.id')}><span className="font-mono text-caption text-ink-1">{user.id}</span></Field>
             <Field label={t('admin.users.columns.phone')}><span className="font-mono text-caption text-ink-1">{user.phone}</span></Field>
+            {company ? (
+              <Field label={t('admin.users.columns.company')}><UserCompany companyId={company.id} name={company.name} /></Field>
+            ) : null}
             <Field label={t('admin.users.columns.depot')}><UserDepot value={user.depot} /></Field>
             <Field label={t('admin.users.columns.lastActive')}><LastActive value={user.lastActiveAt} /></Field>
           </dl>

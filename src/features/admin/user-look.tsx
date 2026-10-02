@@ -66,6 +66,19 @@ export function UserDepot({ value, className }: { value: string | undefined; cla
   )
 }
 
+/**
+ * Công ty của người dùng, chỉ quản trị hệ thống thấy (FE-0-08); tài khoản nền tảng không thuộc công ty nào thì nói rõ bằng chữ nhạt.
+ * `name` vắng khi kho chưa trả tên công ty: hiện tạm mã công ty, không để ô trống.
+ */
+export function UserCompany({ companyId, name, className }: { companyId: string | undefined; name: string | undefined; className?: string }) {
+  const t = useT()
+  return companyId === undefined ? (
+    <span className={cn('text-caption text-ink-3', className)}>{t('admin.users.platformAccount')}</span>
+  ) : (
+    <span className={cn('text-ink-1', className)}>{name ?? companyId}</span>
+  )
+}
+
 export function UserStatusBadge({ status }: { status: UserStatus }) {
   const t = useT()
   const badge = STATUS_BADGE[status]

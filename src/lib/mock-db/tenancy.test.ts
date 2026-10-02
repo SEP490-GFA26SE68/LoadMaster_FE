@@ -17,6 +17,8 @@ type Company = {
   viewer: string
   driver: string
   users: string[]
+  /** Tài khoản nền tảng đã làm việc trên tài khoản của công ty trong seed: nhật ký của công ty đọc được tên họ (FE-0-08). */
+  platformActors: string[]
   vehicles: string[]
   /** Xe đã gắn loại xe. */
   typedVehicles: string[]
@@ -42,6 +44,7 @@ const LONG_BINH: Company = {
   viewer: 'US-0001',
   driver: 'US-0004',
   users: ['US-0001', 'US-0002', 'US-0003', 'US-0004', 'US-0006', 'US-0007', 'US-0008', 'US-0009', 'US-0010', 'US-0011', 'US-0012', 'US-LB-01'],
+  platformActors: ['US-0005'],
   vehicles: range('VEHICLE-', 1, 8, 3),
   typedVehicles: range('VEHICLE-', 1, 7, 3),
   vehicleTypes: range('VT-', 1, 7, 3),
@@ -60,6 +63,7 @@ const PHUONG_NAM: Company = {
   viewer: 'US-PN-03',
   driver: 'US-PN-04',
   users: ['US-0015', 'US-PN-01', 'US-PN-02', 'US-PN-03', 'US-PN-04'],
+  platformActors: [],
   vehicles: ['VEHICLE-PN-01', 'VEHICLE-PN-02'],
   typedVehicles: ['VEHICLE-PN-01'],
   vehicleTypes: ['VT-PN-01'],
@@ -190,7 +194,7 @@ const PROBES = {
     list: {
       call: ({ db }) => db.listAuditNames(),
       ids: ({ users, trips, vehicles }: { users: { id: string }[]; trips: { id: string }[]; vehicles: { id: string }[] }) => [...idsOf(users), ...idsOf(trips), ...idsOf(vehicles)],
-      own: (c) => [...c.users, ...c.trips, ...c.vehicles],
+      own: (c) => [...c.users, ...c.platformActors, ...c.trips, ...c.vehicles],
     },
   },
   listCompanies: { scope: 'directory', list: { call: ({ db }) => db.listCompanies(), ids: idsOf, own: (c) => [c.id], all: ['LOG-001', 'LOG-002'] } },
@@ -327,13 +331,19 @@ describe.each([
     await expect(call(ctx)).rejects.toMatchObject({ code: 'FORBIDDEN_COMPANY' })
   })
 
-  test('the audit log holds only what people of the company did', async () => {
+  test('the audit log holds what people of the company did, and what anyone did to an account of the company', async () => {
     const events = await ctx.db.listEvents()
-    // Đếm độc lập với bộ lọc của kho: sự kiện seed mà người làm là người của công ty (mã người dùng chép tay ở trên)
-    const expected = before.events.filter((event) => event.actorId !== null && own.users.includes(event.actorId))
+    // Đếm độc lập với bộ lọc của kho (mã người dùng chép tay ở trên): sự kiện seed mà người làm là người của công ty, hoặc đối tượng
+    // là tài khoản của công ty — việc quản trị hệ thống làm trên tài khoản đó (FE-0-08)
+    const expected = before.events.filter((event) =>
+      (event.actorId !== null && own.users.includes(event.actorId)) || (event.target.type === 'user' && own.users.includes(event.target.id)))
     expect(events.map((event) => event.id)).toStrictEqual(expected.map((event) => event.id))
     expect(events.length).toBeGreaterThan(5)
     expect(events.filter((event) => other.trips.includes(event.target.id) || other.users.includes(event.target.id))).toStrictEqual([])
+    // Người làm ngoài công ty chỉ có thể là tài khoản nền tảng, và chỉ ở sự kiện về tài khoản của công ty
+    const outsiders = events.filter((event) => event.actorId !== null && !own.users.includes(event.actorId))
+    expect([...new Set(outsiders.map((event) => event.actorId))]).toStrictEqual(own.platformActors)
+    expect(outsiders.length).toBe(own.id === 'LOG-001' ? 4 : 0)
   })
 
   test('after all of the above nothing in the store has changed: no record written, no event logged', async () => {
@@ -406,7 +416,7 @@ test('without a session the store does not filter, and what it creates belongs t
   expect((await db.listPackageTypes()).map((item) => item.id)).toStrictEqual(PHUONG_NAM.packageTypes)
 })
 
-test('audit events carry the company of the session; a platform account writes events of no company', async () => {
+test('audit events carry the company of the session, events about an account the company of that account', async () => {
   const db = createMockDb({ now: () => NOW })
   await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
   await db.setVehicleMaintenance('VEHICLE-PN-02', 'Thay lốp')
@@ -421,12 +431,17 @@ test('audit events carry the company of the session; a platform account writes e
   expect((await db.listEvents()).slice(0, 3).map((event) => [event.action, event.actorId, event.companyId])).toStrictEqual([
     // lần đăng nhập sai ghi công ty của tài khoản bị thử, để quản trị công ty đó thấy
     ['auth.signInFailed', SYSTEM_ADMIN, 'LOG-002'],
-    ['user.locked', SYSTEM_ADMIN, null],
+    // khoá một điều phối viên của Long Bình: sự kiện thuộc Long Bình dù người làm là tài khoản nền tảng (FE-0-08)
+    ['user.locked', SYSTEM_ADMIN, 'LOG-001'],
+    // việc trên tài khoản nền tảng không thuộc công ty nào
     ['auth.signedIn', SYSTEM_ADMIN, null],
   ])
-  // Long Bình không thấy việc của Phương Nam, cũng không thấy việc của tài khoản nền tảng
+  // Long Bình không thấy việc của Phương Nam; của tài khoản nền tảng chỉ thấy việc làm trên tài khoản của Long Bình
   db.restoreSession('US-LB-01')
   const seenByLongBinh = await db.listEvents()
   expect(new Set(seenByLongBinh.map((event) => event.companyId))).toStrictEqual(new Set(['LOG-001']))
-  expect(seenByLongBinh.filter((event) => event.actorId === SYSTEM_ADMIN || event.actorId === 'US-PN-03')).toStrictEqual([])
+  expect(seenByLongBinh.filter((event) => event.actorId === 'US-PN-03')).toStrictEqual([])
+  expect(seenByLongBinh[0]).toMatchObject({ action: 'user.locked', actorId: SYSTEM_ADMIN, target: { type: 'user', id: 'US-0009' } })
+  expect(seenByLongBinh.filter((event) => event.actorId === SYSTEM_ADMIN && event.target.type !== 'user')).toStrictEqual([])
+  expect(seenByLongBinh.filter((event) => event.action === 'auth.signInFailed' || event.target.id === SYSTEM_ADMIN)).toStrictEqual([])
 })

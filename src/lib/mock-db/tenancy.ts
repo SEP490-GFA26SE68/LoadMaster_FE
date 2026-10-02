@@ -1,4 +1,5 @@
-import { isPlatformRole } from '@/types/user'
+import { isPlatformRole, type User } from '@/types/user'
+import type { AuditTargetType } from './audit'
 import type { DbState } from './db-context'
 import { MockDbError, type MockDbCollection } from './errors'
 
@@ -124,10 +125,23 @@ export function createTenancy(state: DbState) {
       const filter = directoryFilter(state)
       return state.events.filter((event) => filter === null || event.companyId === filter)
     },
-    /** Tên chuyến và xe trong phạm vi **nhật ký** của phiên: không đòi quyền dữ liệu vận hành (màn nhật ký của vai trò nền tảng). */
+    /**
+     * Người dùng, chuyến và xe trong phạm vi **nhật ký** của phiên: không đòi quyền dữ liệu vận hành (màn nhật ký của vai trò nền tảng).
+     * Người dùng gồm người phiên được thấy, rồi người làm của những sự kiện phiên đọc được mà nằm ngoài số đó — quản trị hệ thống đã
+     * khoá hay đặt lại mật khẩu cho người của công ty (FE-0-08): quản trị công ty đọc được tên người làm, dù không quản lý tài khoản ấy.
+     */
     auditTargets: () => {
       const filter = directoryFilter(state)
+      const users = [...state.users.values()].filter((user) => filter === null || user.companyId === filter)
+      const known = new Set(users.map((user) => user.id))
+      for (const event of state.events) {
+        if (event.actorId === null || known.has(event.actorId) || (filter !== null && event.companyId !== filter)) continue
+        known.add(event.actorId)
+        const actor = state.users.get(event.actorId)
+        if (actor) users.push(actor)
+      }
       return {
+        users,
         trips: [...state.trips.values()].filter((trip) => filter === null || trip.companyId === filter),
         vehicles: [...state.vehicles.values()].filter((vehicle) => filter === null || state.vehicleCompany.get(vehicle.id) === filter),
       }
@@ -135,9 +149,9 @@ export function createTenancy(state: DbState) {
     /** Công ty của bản ghi vận hành sắp tạo: công ty của phiên; không có phiên thì `DEFAULT_COMPANY_ID`. */
     newRecordCompany: (): string => operationalFilter(state) ?? DEFAULT_COMPANY_ID,
     /**
-     * Công ty của tài khoản sắp tạo. Phiên của một công ty chỉ tạo người cho công ty mình (`requested` khác là `FORBIDDEN_COMPANY`);
-     * phiên nền tảng giữ đúng `requested`; không có phiên thì `requested`, vắng là `DEFAULT_COMPANY_ID`. Luật theo vai trò (ai tạo được
-     * vai trò nào, cho công ty nào) là việc của FE-0-08.
+     * Công ty của tài khoản **vai trò công ty** sắp tạo. Phiên của một công ty chỉ tạo người cho công ty mình (`requested` khác là
+     * `FORBIDDEN_COMPANY`); không có phiên thì `requested`, vắng là `DEFAULT_COMPANY_ID`. Phiên nền tảng không tạo vai trò công ty
+     * (`db-users.ts` từ chối trước khi tới đây, FE-0-08) nên kết quả `undefined` của nó chỉ đi cùng tài khoản nền tảng.
      */
     newUserCompany: (requested: string | undefined): string | undefined => {
       const filter = directoryFilter(state)
@@ -145,11 +159,31 @@ export function createTenancy(state: DbState) {
       if (requested !== undefined && requested !== filter) throw new MockDbError('FORBIDDEN_COMPANY', { collection: 'companies', id: requested })
       return filter
     },
-    /** Công ty ghi vào sự kiện nhật ký: công ty của phiên; tài khoản nền tảng `null`; không có phiên thì `DEFAULT_COMPANY_ID`. */
-    eventCompany: (): string | null => {
+    /**
+     * Công ty ghi vào sự kiện nhật ký về `target` (`auditEventCompany`); công ty của người làm là công ty của phiên — tài khoản nền
+     * tảng `null`, không có phiên thì `DEFAULT_COMPANY_ID`.
+     */
+    eventCompany: (target: AuditTarget): string | null => {
       const scope = sessionScope(state)
-      if (scope.kind === 'none') return DEFAULT_COMPANY_ID
-      return scope.kind === 'company' ? scope.companyId : null
+      const actorCompany = scope.kind === 'none' ? DEFAULT_COMPANY_ID : scope.kind === 'company' ? scope.companyId : null
+      return auditEventCompany(state.users, target, actorCompany)
     },
   }
+}
+
+type AuditTarget = { readonly type: AuditTargetType; readonly id: string }
+
+/**
+ * Công ty của một sự kiện nhật ký (D-64, FE-0-08) — một luật cho sự kiện seed lẫn sự kiện ghi mới. Sự kiện **về một tài khoản** thuộc
+ * công ty của tài khoản đó, ai làm cũng vậy: quản trị hệ thống khoá một nhân viên thì quản trị công ty của người đó đọc được; việc trên
+ * tài khoản nền tảng không thuộc công ty nào (`null`). Sự kiện khác, hoặc tài khoản không (còn) trong kho, thuộc công ty của người làm
+ * `actorCompany`.
+ */
+export function auditEventCompany(
+  users: ReadonlyMap<string, Pick<User, 'companyId'>>,
+  target: AuditTarget,
+  actorCompany: string | null,
+): string | null {
+  const account = target.type === 'user' ? users.get(target.id) : undefined
+  return account === undefined ? actorCompany : (account.companyId ?? null)
 }

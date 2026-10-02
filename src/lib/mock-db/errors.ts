@@ -1,3 +1,4 @@
+import type { Role } from '@/types/user'
 import type { TripPhase } from './types'
 
 /** Bộ sưu tập của kho mock. */
@@ -59,8 +60,18 @@ export type MockDbErrorParams = {
   EMAIL_TAKEN: { email: string }
   /** Tự khoá, tự xoá hoặc tự đổi vai trò của chính mình. */
   SELF_CHANGE_FORBIDDEN: Record<string, never>
-  /** Khoá, xoá hoặc hạ vai trò quản trị viên đang hoạt động cuối cùng. */
+  /**
+   * Khoá, xoá hoặc hạ vai trò người quản trị đang hoạt động cuối cùng của phạm vi mình (FE-0-08): quản trị hệ thống cuối cùng của nền
+   * tảng, hoặc quản trị công ty cuối cùng của một công ty.
+   */
   LAST_ADMIN: Record<string, never>
+  /**
+   * Tạo tài khoản với vai trò `role`, hoặc đổi một tài khoản sang vai trò đó, ngoài phạm vi (D-65, FE-0-08): quản trị hệ thống chỉ tạo
+   * tài khoản nền tảng, quản trị công ty chỉ tạo vai trò công ty, và không tài khoản nào đổi giữa hai nhóm vai trò.
+   */
+  ROLE_OUT_OF_SCOPE: { role: Role }
+  /** Phiên nền tảng sửa hoặc xoá nhân sự của một công ty: việc của quản trị công ty đó; nền tảng chỉ khoá, mở khoá, đặt lại mật khẩu. */
+  USER_MANAGED_BY_COMPANY: { userId: string }
   /** Xoá tài xế còn được gán cho chuyến chưa kết thúc. */
   USER_IN_USE: { userId: string; tripIds: string[] }
   PASSWORD_INCORRECT: Record<string, never>

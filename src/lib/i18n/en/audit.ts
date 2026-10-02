@@ -48,6 +48,9 @@ export const audit = {
     allActors: 'Everyone',
     group: 'Action group',
     allGroups: 'All groups',
+    company: 'Company',
+    allCompanies: 'All companies',
+    platform: 'Platform',
     readOnly: 'Read-only',
     summary: {
       region: 'Log summary',

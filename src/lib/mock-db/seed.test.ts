@@ -223,9 +223,16 @@ test('twenty seeded users cover the eight roles; the history names only real use
     ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
     ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
   ])
-  // Sự kiện mang công ty của người làm; việc của tài khoản nền tảng không thuộc công ty nào
+  // Sự kiện về một tài khoản mang công ty của tài khoản đó (FE-0-08), sự kiện khác mang công ty của người làm; việc của tài khoản nền
+  // tảng trên chính tài khoản nền tảng không thuộc công ty nào
   const companyOf = new Map(users.map((user) => [user.id, user.companyId ?? null]))
-  expect(events.filter((event) => event.companyId !== (event.actorId === null ? null : companyOf.get(event.actorId)))).toStrictEqual([])
+  const expectedCompany = ({ target, actorId }: (typeof events)[number]) =>
+    target.type === 'user' ? companyOf.get(target.id) : actorId === null ? null : companyOf.get(actorId)
+  expect(events.filter((event) => event.companyId !== expectedCompany(event))).toStrictEqual([])
+  // Bốn việc quản trị hệ thống làm trên tài khoản của Long Bình (tạo ba tài khoản, khoá một) là sự kiện của Long Bình
+  expect(events.filter((event) => event.actorId === 'US-0005').map((event) => [event.action, event.target.id, event.companyId])).toStrictEqual([
+    ['user.created', 'US-0012', 'LOG-001'], ['user.locked', 'US-0008', 'LOG-001'], ['user.created', 'US-0011', 'LOG-001'], ['user.created', 'US-0010', 'LOG-001'],
+  ])
 })
 
 test('seeded history keeps the operation order: loading finishes before the delivery starts', async () => {

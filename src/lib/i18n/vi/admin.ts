@@ -1,6 +1,7 @@
 /**
  * Quản trị người dùng (LM-071, LM-092): danh sách có tìm/lọc, menu thao tác mỗi dòng, hộp thoại thêm/sửa, mật khẩu tạm, xác nhận
- * xoá, và tab "Ma trận quyền" chỉ đọc. Tên vai trò ở nhánh `roles`.
+ * xoá, và tab "Ma trận quyền" chỉ đọc. Tên vai trò ở nhánh `roles`. FE-0-08: quản trị hệ thống thấy mọi tài khoản (cột và bộ lọc
+ * công ty), quản trị công ty chỉ thấy người của công ty mình.
  */
 export const admin = {
   users: {
@@ -9,6 +10,8 @@ export const admin = {
     neverSignedIn: 'Chưa đăng nhập',
     /** Người dùng nền tảng không thuộc kho nào (FE-0-03): chữ thay cho ô kho ở bảng và panel chi tiết. */
     noDepot: 'Không thuộc kho nào',
+    /** Tài khoản nền tảng không thuộc công ty nào: chữ thay cho tên công ty ở bảng, panel chi tiết và lựa chọn của bộ lọc công ty. */
+    platformAccount: 'Nền tảng',
     loading: 'Đang tải danh sách người dùng…',
     errorTitle: 'Không tải được danh sách người dùng',
     errorDescription: 'Kho dữ liệu không trả lời. Thử lại sau giây lát.',
@@ -26,7 +29,11 @@ export const admin = {
       },
     },
     search: 'Tìm theo tên, email, số điện thoại, mã',
-    filters: { role: 'Vai trò', allRoles: 'Mọi vai trò', status: 'Trạng thái', allStatuses: 'Mọi trạng thái' },
+    filters: {
+      role: 'Vai trò', allRoles: 'Mọi vai trò', status: 'Trạng thái', allStatuses: 'Mọi trạng thái',
+      /** Chỉ quản trị hệ thống có bộ lọc này. */
+      company: 'Công ty', allCompanies: 'Mọi công ty',
+    },
     updated: 'Đã cập nhật {name}',
     locked: 'Đã khoá tài khoản {name}',
     unlocked: 'Đã mở khoá tài khoản {name}',
@@ -35,6 +42,7 @@ export const admin = {
       user: 'Người dùng',
       phone: 'Điện thoại',
       role: 'Vai trò',
+      company: 'Công ty',
       depot: 'Kho / chi nhánh',
       lastActive: 'Hoạt động gần nhất',
       status: 'Trạng thái',
@@ -77,16 +85,21 @@ export const admin = {
       permissionsNote: 'Quyền đi theo vai trò {role}, cùng cấu hình với tab Ma trận quyền. Đây là nhãn, không phải nút bấm.',
       actions: 'Thao tác',
     },
-    /** Lý do một thao tác bị chặn trước khi gửi kho (`account-guards.ts`). */
+    /** Lý do một thao tác bị chặn trước khi gửi kho (`account-guards.ts`), hiện ngay dưới thao tác bị làm mờ. */
     blocked: {
       self: 'Không áp dụng cho tài khoản bạn đang đăng nhập',
-      lastAdmin: 'Hệ thống cần ít nhất một quản trị viên đang hoạt động',
+      lastSystemAdmin: 'Nền tảng cần ít nhất một quản trị hệ thống đang hoạt động',
+      lastCompanyAdmin: 'Công ty cần ít nhất một quản trị công ty đang hoạt động',
+      companyManaged: 'Nhân sự công ty do quản trị công ty đó quản lý',
     },
     form: {
       createTitle: 'Thêm người dùng',
       editTitle: 'Sửa người dùng',
       createDescription: 'Hệ thống cấp mật khẩu tạm và chỉ hiện một lần sau khi tạo.',
+      /** Quản trị hệ thống tạo tài khoản nền tảng; quản trị công ty tạo người cho công ty mình (FE-0-08). */
+      createDescriptionPlatform: 'Tài khoản nền tảng, không thuộc công ty nào. Hệ thống cấp mật khẩu tạm và chỉ hiện một lần sau khi tạo.',
       editDescription: 'Sửa thông tin liên hệ, kho và vai trò của tài khoản.',
+      editDescriptionPlatform: 'Sửa thông tin liên hệ và vai trò của tài khoản nền tảng.',
       fullName: 'Họ và tên',
       fullNamePlaceholder: 'Nguyễn Thanh Tùng',
       phone: 'Số điện thoại',
@@ -94,8 +107,6 @@ export const admin = {
       emailPlaceholder: 'ten@loadmaster.vn',
       depot: 'Kho / chi nhánh',
       depotPlaceholder: 'Kho Long Bình',
-      /** Gợi ý dưới ô kho khi vai trò đang chọn là vai trò nền tảng: ô bị khoá, không lưu kho. */
-      depotNotApplicable: 'Vai trò nền tảng không thuộc kho nào',
       role: 'Vai trò',
       device: 'Thiết bị chính: {device}',
       cancel: 'Huỷ',

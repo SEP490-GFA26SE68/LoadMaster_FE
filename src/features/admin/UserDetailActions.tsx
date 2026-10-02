@@ -18,7 +18,8 @@ type ActionItem = {
 /**
  * Nút thao tác trong panel chi tiết: cùng bốn thao tác, cùng luật chặn (`accountGuards`, `toggleLockBlock`) và cùng đường xử lý
  * (`onAction` → `useUserActions`) với menu ở cuối dòng. Màn đã có nút chính "Thêm người dùng" nên ở đây chỉ nút phụ; xoá là nút
- * ghost chữ đỏ như mục xoá của menu. Nút bị chặn mờ đi, lý do nằm ngay dưới và nối vào nút bằng `aria-describedby`.
+ * ghost chữ đỏ như mục xoá của menu. Nút bị chặn mờ đi, lý do nằm ngay dưới và nối vào nút bằng `aria-describedby`. Quản trị hệ thống
+ * xem nhân sự công ty (FE-0-08): Sửa và Xoá mờ, còn Khoá / Mở khoá và Đặt lại mật khẩu.
  */
 export function UserDetailActions({ user, guards, onAction }: {
   user: User
@@ -29,7 +30,7 @@ export function UserDetailActions({ user, guards, onAction }: {
   const reasonId = useId()
   const suspended = user.status === 'suspended'
   const items: ActionItem[] = [
-    { action: 'edit', icon: Pencil, label: t('admin.users.menu.edit'), block: null },
+    { action: 'edit', icon: Pencil, label: t('admin.users.menu.edit'), block: guards.edit },
     {
       action: 'toggleLock',
       icon: suspended ? LockOpen : Lock,
@@ -39,7 +40,7 @@ export function UserDetailActions({ user, guards, onAction }: {
     { action: 'resetPassword', icon: KeyRound, label: t('admin.users.menu.resetPassword'), block: null },
     { action: 'delete', icon: Trash2, label: t('admin.users.menu.delete'), block: guards.remove, danger: true },
   ]
-  // Hai lý do chặn (khoá, xoá) luôn trùng nhau khi cùng có — hiện mỗi lý do một lần
+  // Nhiều nút thường chung một lý do (chính mình; nhân sự công ty) — hiện mỗi lý do một lần, mỗi nút trỏ tới lý do của nó
   const reasons = [...new Set(items.flatMap((item) => (item.block === null ? [] : [item.block])))]
 
   return (

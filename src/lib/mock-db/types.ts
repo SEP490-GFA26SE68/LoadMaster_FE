@@ -172,6 +172,8 @@ export type AuditFilter = {
   to?: string
   actorId?: string
   targetId?: string
+  /** Công ty của sự kiện (`AuditEvent.companyId`); `null` là sự kiện của nền tảng, không thuộc công ty nào. */
+  company?: string | null
 }
 
 export type MockDbOptions = {

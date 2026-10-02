@@ -1,14 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { NewUser, UserChanges } from '@/lib/mock-db'
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Company, NewUser, UserChanges } from '@/lib/mock-db'
 import type { UserStatus } from '@/types/user'
-import { createUser, deleteUser, fetchUsers, resetPassword, setUserStatus, updateUser } from './users-api'
+import { createUser, deleteUser, fetchCompanies, fetchUsers, resetPassword, setUserStatus, updateUser } from './users-api'
 
 /**
  * Người dùng qua TanStack Query (mục 9, LM-092) — thay `useState` + `users.mock.ts` cũ. Mọi ghi làm mới danh sách người dùng và
- * nhật ký (mỗi thao tác thêm một sự kiện).
+ * nhật ký (mỗi thao tác thêm một sự kiện). Danh sách theo phạm vi của người đăng nhập; `AuthProvider` xoá cache khi đổi người.
  */
 export function useUsersQuery() {
   return useQuery({ queryKey: ['users'], queryFn: fetchUsers, staleTime: 0 })
+}
+
+/**
+ * Tên công ty theo mã, cho cột và bộ lọc công ty (FE-0-08). Chỉ đọc kho khi `enabled` — quản trị công ty không có cột hay bộ lọc đó.
+ * Chưa có màn nào sửa công ty nên không cần làm mới.
+ */
+export function useCompanyNamesQuery(enabled: boolean) {
+  return useQuery({ queryKey: ['companies'], queryFn: enabled ? fetchCompanies : skipToken, select: companyNames, staleTime: Infinity })
+}
+
+export type CompanyName = { readonly id: string; readonly name: string }
+
+function companyNames(companies: readonly Company[]): CompanyName[] {
+  return companies.map(({ id, name }) => ({ id, name }))
 }
 
 function useInvalidateUsers() {

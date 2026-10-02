@@ -143,6 +143,40 @@ test('ba ô tóm tắt đếm cả nhật ký dù đang lọc; ô ngày gần nh
   expect(screen.getByTestId('search')).toHaveTextContent(/^\?nhom=trip$/)
 })
 
+/** FE-0-08: quản trị hệ thống đọc nhật ký toàn hệ thống và lọc theo công ty của sự kiện. */
+test('lọc theo công ty: bảy sự kiện seed của Phương Nam; bộ lọc nằm trên URL và ô tóm tắt vẫn đếm cả nhật ký', async () => {
+  const user = userEvent.setup()
+  const all = await getMockDb().listEvents()
+  renderLog()
+  await dataRows()
+
+  await user.click(screen.getByRole('combobox', { name: 'Công ty' }))
+  expect((await screen.findAllByRole('option')).map((option) => option.textContent))
+    .toStrictEqual(['Mọi công ty', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam', 'Nền tảng'])
+  await user.click(screen.getByRole('option', { name: 'Công ty CP Giao nhận Phương Nam' }))
+
+  expect(await screen.findByTestId('search')).toHaveTextContent('?cong-ty=LOG-002')
+  // Seed của Phương Nam: 2 đợt đăng ký kiện, 1 đơn, 2 chuyến, 1 lần tối ưu, 1 lần duyệt — đều do điều phối viên Kiều Anh Tuấn làm
+  await screen.findByText('7 sự kiện', {}, SLOW)
+  const rows = await dataRows()
+  expect(new Set(rows.map((row) => row[1]))).toStrictEqual(new Set(['Kiều Anh Tuấn Điều phối viên']))
+  expect(rows.map((row) => row[2]).toSorted()).toStrictEqual([
+    'Duyệt phương án', 'Lưu kết quả tối ưu', 'Tạo chuyến', 'Tạo chuyến', 'Tạo đơn hàng', 'Đăng ký kiện', 'Đăng ký kiện',
+  ].toSorted())
+  expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent(new Intl.NumberFormat('vi-VN').format(all.length))
+})
+
+test('lọc "Nền tảng": chỉ sự kiện không thuộc công ty nào — việc trên tài khoản nền tảng', async () => {
+  // Quản lý nền tảng đăng nhập ở máy khác: sự kiện về một tài khoản nền tảng; `renderLog` đặt lại phiên của quản trị hệ thống
+  await getMockDb().authenticate('nentang@loadmaster.vn', 'loadmaster')
+  renderLog('/nhat-ky?cong-ty=nen-tang')
+  const rows = await dataRows()
+  expect(rows[0]?.slice(1)).toStrictEqual(['Đinh Quang Huy Quản lý nền tảng', 'Đăng nhập', 'Đinh Quang Huy US-NT-01', ''])
+  // Không sự kiện nào của nhân sự công ty: người làm chỉ có tài khoản nền tảng
+  expect(rows.filter((row) => !/Quản trị hệ thống|Quản lý nền tảng|Hỗ trợ khách hàng/.test(row[1] ?? ''))).toStrictEqual([])
+  await waitFor(() => expect(screen.getByRole('combobox', { name: 'Công ty' })).toHaveTextContent('Nền tảng'), SLOW)
+})
+
 test('không có sự kiện khớp: bảng nói rõ và có nút xoá lọc', async () => {
   const user = userEvent.setup()
   renderLog('/nhat-ky?q=KHONG-CO')
