@@ -3,7 +3,7 @@ import { HANDLING_CLASSES } from '@/domain/models'
 import { nextId, optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
-import { canTransitionPackage, type Package, type PackageChanges, type PackageFlag, type PackageInput, type PackageSource, type PackageStatus } from './package-model'
+import { canTransitionPackage, type Package, type PackageChanges, type PackageFlag, type PackageHistoryEntry, type PackageInput, type PackageSource, type PackageStatus } from './package-model'
 import { normalizeQrToken } from './qr-token'
 
 type PackageMethods = Pick<
@@ -37,11 +37,20 @@ function packageFields(input: PackageInput): Omit<PackageInput, 'packageCode' | 
 
 /**
  * Chuyển trạng thái một kiện theo bảng `PACKAGE_TRANSITIONS` — nơi **duy nhất** trong kho đổi `status`. Sai bảng:
- * `INVALID_PACKAGE_STATUS_TRANSITION`. `patch` ghi cùng lúc (chuyến, điểm giao, cờ); về `IMPORTED` thì kiện rời chuyến.
+ * `INVALID_PACKAGE_STATUS_TRANSITION`. `patch` ghi cùng lúc (chuyến, điểm giao, cờ); về `IMPORTED` thì kiện rời chuyến. Mỗi lần chuyển
+ * thêm một mốc vào `history` (kèm chuyến lúc đó); cờ mới trong `patch` thêm mốc `flagged`.
  */
 export function movePackage(ctx: DbContext, pkg: Package, to: PackageStatus, patch: Partial<Package> = {}): Package {
   if (!canTransitionPackage(pkg.status, to)) throw new MockDbError('INVALID_PACKAGE_STATUS_TRANSITION', { packageId: pkg.id, from: pkg.status, to })
-  const next: Package = { ...pkg, ...patch, status: to }
+  const at = ctx.nowIso()
+  const actorId = ctx.state.session.userId
+  const tripId = patch.tripId ?? pkg.tripId
+  const history: PackageHistoryEntry[] = [
+    ...pkg.history,
+    { at, actorId, kind: 'status', from: pkg.status, to, ...(tripId === undefined ? {} : { tripId }) },
+    ...(patch.flags ?? []).filter((flag) => !pkg.flags.includes(flag)).map((flag): PackageHistoryEntry => ({ at, actorId, kind: 'flagged', flag })),
+  ]
+  const next: Package = { ...pkg, ...patch, status: to, history }
   if (to === 'IMPORTED') {
     delete next.tripId
     delete next.stopId
@@ -74,16 +83,20 @@ export function packageMethods(ctx: DbContext): PackageMethods {
         id, companyId, packageCode: packageCode ?? id, qrToken: ctx.newQrToken(), ...fields,
         ...(packageTypeId === undefined ? {} : { packageTypeId }),
         status: 'IMPORTED', flags: [], source, createdAt: at, createdBy: state.session.userId,
+        history: [{ at, actorId: state.session.userId, kind: 'created', source }],
       })
     })
     const types = [...new Set(checked.flatMap((row) => row.packageTypeId ?? []))]
-    ctx.log('package.registered', { type: 'package', id: created[0]?.id ?? '' }, {
+    // Nhập file là một sự kiện riêng (`PACKAGE_IMPORT_CONFIRMED` của backend); thêm lẻ, thêm trong chuyến là `package.created`
+    ctx.log(source === 'IMPORT' ? 'package.importConfirmed' : 'package.created', { type: 'package', id: created[0]?.id ?? '' }, {
       count: created.length,
       ...(types.length > 0 ? { packageTypeId: types.join(',') } : {}),
       ...(created.length > 1 ? { lastPackageId: created.at(-1)?.id ?? '' } : {}),
     })
     return created
   }
+
+  const mark = (kind: 'flagged' | 'flagCleared', flag: PackageFlag): PackageHistoryEntry => ({ at: ctx.nowIso(), actorId: state.session.userId, kind, flag })
 
   /** Gỡ cờ là việc của điều phối viên (D-92); kho không có phiên (test logic kho) thì không xét vai trò. */
   function assertDispatcher() {
@@ -130,7 +143,7 @@ export function packageMethods(ctx: DbContext): PackageMethods {
         if (current.status !== 'IMPORTED') throw new MockDbError('PACKAGE_UNAVAILABLE', { packageId: id, status: current.status })
         if (current.flags.includes(flag)) return current
         ctx.log('package.flagged', { type: 'package', id }, { flag })
-        return put(packages, { ...current, flags: [...current.flags, flag] })
+        return put(packages, { ...current, flags: [...current.flags, flag], history: [...current.history, mark('flagged', flag)] })
       }),
     clearPackageFlag: (id, flag: PackageFlag) =>
       ctx.respond(() => {
@@ -138,7 +151,7 @@ export function packageMethods(ctx: DbContext): PackageMethods {
         assertDispatcher()
         if (!current.flags.includes(flag)) throw new MockDbError('PACKAGE_FLAG_NOT_SET', { packageId: id, flag })
         ctx.log('package.flagCleared', { type: 'package', id }, { flag })
-        return put(packages, { ...current, flags: current.flags.filter((item) => item !== flag) })
+        return put(packages, { ...current, flags: current.flags.filter((item) => item !== flag), history: [...current.history, mark('flagCleared', flag)] })
       }),
   }
 }

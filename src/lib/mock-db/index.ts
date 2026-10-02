@@ -36,6 +36,7 @@ export {
   type Package,
   type PackageChanges,
   type PackageFlag,
+  type PackageHistoryEntry,
   type PackageInput,
   type PackageSource,
   type PackageStatus,

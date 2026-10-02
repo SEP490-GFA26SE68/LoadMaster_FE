@@ -219,7 +219,7 @@ test('twenty seeded users cover the eight roles; the history names only real use
   expect(events.map((event) => event.at)).toStrictEqual(events.map((event) => event.at).toSorted().toReversed())
   // Mỗi công ty tự tạo kiện của mình: bảy đợt của Long Bình (sáu đợt thêm tay, một lần nhập file 16:20 hôm trước) do điều phối viên
   // Long Bình làm, hai đợt của Phương Nam do điều phối viên Phương Nam làm (07:25 ngày neo và hai ngày trước) — mới nhất trước
-  expect(events.filter((event) => event.action === 'package.registered').map((event) => [event.actorId, event.companyId])).toStrictEqual([
+  expect(events.filter((event) => event.action === 'package.created' || event.action === 'package.importConfirmed').map((event) => [event.actorId, event.companyId])).toStrictEqual([
     ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
     ['US-0001', 'LOG-001'], ['US-PN-03', 'LOG-002'], ['US-0001', 'LOG-001'], ['US-0001', 'LOG-001'],
   ])

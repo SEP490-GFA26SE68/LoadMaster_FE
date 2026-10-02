@@ -51,5 +51,11 @@ export const dataErrors = {
   PACKAGE_FLAGGED: 'Package {packageId} carries a flag, so it cannot go into an order or a trip yet. Clear the flag first.',
   PACKAGE_FLAG_NOT_SET: 'Package {packageId} does not carry this flag.',
   ROLE_NOT_ALLOWED: 'Your role cannot do this.',
+  UNSUPPORTED_FILE_TYPE: 'This file cannot be read. Only .csv or .xlsx files are accepted.',
+  EMPTY_FILE: 'The file has no data rows.',
+  FILE_TOO_LARGE: 'The file is larger than {maxMb} MB and cannot be imported.',
+  BATCH_TOO_LARGE: 'The file has {rows} rows; one import takes at most {max} rows.',
+  IMPORT_COLUMNS_MISSING: 'The header row is missing columns: {columns}. Download the template to see every column.',
+  PACKAGE_IMPORT_INVALID: 'The file still has {errors} rows with errors, so no row can be imported.',
   UNKNOWN: 'Something went wrong. Try again later.',
 } satisfies Dictionary<typeof source>

@@ -16,6 +16,17 @@ export type PackageFlag = (typeof PACKAGE_FLAGS)[number]
 export const PACKAGE_SOURCES = ['IMPORT', 'MANUAL', 'TRIP', 'PICKUP'] as const
 export type PackageSource = (typeof PACKAGE_SOURCES)[number]
 
+/**
+ * Một mốc trong lịch sử của kiện (FE-3b-03): kho ghi ở đúng nơi đổi kiện — tạo, chuyển trạng thái (`movePackage`), gắn và gỡ cờ — nên
+ * màn chi tiết không suy lịch sử từ nhật ký. `actorId` `null` khi kho chạy không có phiên.
+ */
+export type PackageHistoryEntry = { at: string; actorId: string | null } & (
+  | { kind: 'created'; source: PackageSource }
+  | { kind: 'status'; from: PackageStatus; to: PackageStatus; tripId?: string }
+  | { kind: 'flagged'; flag: PackageFlag }
+  | { kind: 'flagCleared'; flag: PackageFlag }
+)
+
 export type Package = {
   /** Mã của kho (`PK-NNNN`). */
   id: string
@@ -46,6 +57,8 @@ export type Package = {
   /** ISO 8601 */
   createdAt: string
   createdBy: string | null
+  /** Lịch sử của kiện, cũ trước; mốc đầu luôn là `created`. */
+  history: PackageHistoryEntry[]
 }
 
 /** Đầu vào tạo kiện. Công ty, mã QR, trạng thái do kho đặt. */

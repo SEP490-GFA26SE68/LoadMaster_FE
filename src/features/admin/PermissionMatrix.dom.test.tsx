@@ -60,7 +60,7 @@ test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ư
   expect(cellsOf(matrix, 'Xem phương án 3D và so sánh')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
   expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
   expect(cellsOf(matrix, 'Xem đơn hàng')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
-  // FE-0-06: đăng ký kiện, loại kiện và in nhãn theo quyền quản lý kho kiện của điều phối viên
+  // FE-0-06: ghi vào kho kiện, loại kiện và in nhãn theo quyền quản lý kho kiện của điều phối viên
   expect(cellsOf(matrix, 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
   expect(cellsOf(matrix, 'Xem kho kiện')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
 })

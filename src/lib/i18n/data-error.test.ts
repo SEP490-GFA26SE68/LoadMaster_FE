@@ -53,6 +53,12 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_FLAGGED: { packageId: 'PK-0063', flag: 'NOT_FOUND' },
   PACKAGE_FLAG_NOT_SET: { packageId: 'PK-0049', flag: 'DAMAGED' },
   ROLE_NOT_ALLOWED: { role: 'warehouse' },
+  UNSUPPORTED_FILE_TYPE: {},
+  EMPTY_FILE: {},
+  FILE_TOO_LARGE: { maxMb: 10 },
+  BATCH_TOO_LARGE: { max: 1000, rows: 1204 },
+  IMPORT_COLUMNS_MISSING: { columns: ['weight', 'destination'] },
+  PACKAGE_IMPORT_INVALID: { errors: 3 },
 }
 
 test('every data error code has a vi and en sentence with every placeholder filled', () => {
@@ -78,6 +84,15 @@ test('an account without a company is told why it gets no operational data; the 
   expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('vi'))).toBe('Tài khoản này không thuộc công ty nào nên không xem hay sửa được dữ liệu vận hành.')
   expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('en'))).toBe('This account does not belong to a company, so it cannot view or change operational data.')
   expect(Object.keys(SAMPLES).filter((code) => /SHIPMENT|RECEIV|COMPANY_KIND|NOT_OWNED/.test(code))).toStrictEqual([])
+})
+
+test('file errors of the package import say the limit that was broken (FE-3b-02)', () => {
+  const t = createTranslator('vi')
+  expect(dataErrorMessage(new MockDbError('BATCH_TOO_LARGE', SAMPLES.BATCH_TOO_LARGE), t)).toBe('File có 1.204 dòng, mỗi lần chỉ nhập tối đa 1.000 dòng.')
+  expect(dataErrorMessage(new MockDbError('FILE_TOO_LARGE', SAMPLES.FILE_TOO_LARGE), t)).toBe('File lớn hơn 10 MB nên không nhập được.')
+  expect(dataErrorMessage(new MockDbError('IMPORT_COLUMNS_MISSING', SAMPLES.IMPORT_COLUMNS_MISSING), createTranslator('en'))).toBe(
+    'The header row is missing columns: weight, destination. Download the template to see every column.',
+  )
 })
 
 test('a record of another company is named by its id, never by the company it belongs to (FE-0-02)', () => {

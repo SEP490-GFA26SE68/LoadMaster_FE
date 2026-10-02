@@ -38,6 +38,7 @@ test('the seed pool of Long Bình: 48 packages converted from registered package
     id: 'PK-0001', companyId: 'LOG-001', packageCode: 'MP-NS24-0911-01', qrToken: packages[0]?.qrToken, lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13,
     handlingClass: 'STANDARD', destination: '30 Đại lộ Bình Dương, Thủ Dầu Một', packageTypeId: 'PT-001', status: 'IMPORTED', flags: [], source: 'MANUAL',
     orderId: 'ORD-001', createdAt: '2026-09-11T02:00:00.000Z', createdBy: 'US-0001',
+    history: [{ at: '2026-09-11T02:00:00.000Z', actorId: 'US-0001', kind: 'created', source: 'MANUAL' }],
   })
   // Hai đơn chờ gán giữ 22 kiện đầu
   expect(packages.filter((pkg) => pkg.orderId !== undefined).map((pkg) => pkg.id)).toStrictEqual(pk(1, 22))
@@ -76,6 +77,7 @@ test('creating packages: IMPORTED, no flag, a QR token issued at once; one bad r
     id: 'PK-0089', companyId: 'LOG-001', packageCode: 'DN-7781', qrToken: one.qrToken, lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 18,
     handlingClass: 'STANDARD', destination: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng', status: 'IMPORTED', flags: [], source: 'MANUAL',
     createdAt: one.createdAt, createdBy: 'US-0001',
+    history: [{ at: one.createdAt, actorId: 'US-0001', kind: 'created', source: 'MANUAL' }],
   })
   expect(one.qrToken).toMatch(TOKEN)
   expect(one.qrToken).not.toContain('PK')
@@ -88,7 +90,9 @@ test('creating packages: IMPORTED, no flag, a QR token issued at once; one bad r
     ['PK-0090', 'PK-0090', 'IMPORT', undefined], ['PK-0091', 'PK-0091', 'IMPORT', 'PT-006'], ['PK-0092', 'DN-7784', 'IMPORT', undefined],
   ])
   const [event] = await db.listEvents()
-  expect(event).toMatchObject({ action: 'package.registered', actorId: 'US-0001', target: { type: 'package', id: 'PK-0090' }, params: { count: 3, packageTypeId: 'PT-006', lastPackageId: 'PK-0092' } })
+  expect(event).toMatchObject({ action: 'package.importConfirmed', actorId: 'US-0001', target: { type: 'package', id: 'PK-0090' }, params: { count: 3, packageTypeId: 'PT-006', lastPackageId: 'PK-0092' } })
+  // Thêm lẻ là sự kiện khác với nhập file
+  expect((await db.listEvents())[1]).toMatchObject({ action: 'package.created', target: { type: 'package', id: 'PK-0089' }, params: { count: 1 } })
   const tokens = (await db.listPackages()).map((pkg) => pkg.qrToken)
   expect(new Set(tokens).size).toBe(92)
 
@@ -188,7 +192,13 @@ test('a flagged package cannot go into an order or a trip until the dispatcher c
 
   // Cờ chỉ gắn trên kiện còn ở kho kiện
   await expect(db.flagPackage('PK-0013', 'NOT_FOUND')).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE', params: { packageId: 'PK-0013', status: 'ASSIGNED' } })
-  expect((await db.clearPackageFlag('PK-0063', 'NOT_FOUND')).flags).toStrictEqual([])
+  const cleared = await db.clearPackageFlag('PK-0063', 'NOT_FOUND')
+  expect(cleared.flags).toStrictEqual([])
+  // Lịch sử: nhập file hôm trước 16:20, gắn cờ 17:05 (seed), điều phối viên gỡ cờ bây giờ
+  expect(cleared.history.map((entry) => [entry.kind, entry.actorId, 'flag' in entry ? entry.flag : undefined])).toStrictEqual([
+    ['created', 'US-0001', undefined], ['flagged', 'US-0001', 'NOT_FOUND'], ['flagCleared', 'US-0001', 'NOT_FOUND'],
+  ])
+  expect(cleared.history.slice(0, 2).map((entry) => entry.at)).toStrictEqual(['2026-09-13T09:20:00.000Z', '2026-09-13T10:05:00.000Z'])
   expect((await db.updateOrder(created.id, { packageIds: ['PK-0062', 'PK-0063'] })).packageIds).toStrictEqual(['PK-0062', 'PK-0063'])
 })
 
@@ -234,6 +244,18 @@ test('a package follows its trip by written transitions: assigned, staged, loade
   expect(await statuses()).toStrictEqual([...all('IN_TRANSIT', 21), ['PK-0022', 'IMPORTED']])
   await db.completeStop(trip.id, 1)
   expect(await statuses()).toStrictEqual([...all('DELIVERED', 20), ['PK-0021', 'RETURNED'], ['PK-0022', 'IMPORTED']])
+
+  // Lịch sử của kiện do kho ghi ở từng mốc (FE-3b-03): tạo → gán chuyến → soạn → xếp → vận chuyển → giao; kiện thiếu về kho kiện kèm cờ
+  const steps = async (id: string) => (await db.getPackage(id)).history.map((entry) =>
+    entry.kind === 'status' ? `${entry.from}>${entry.to}@${entry.tripId}` : entry.kind === 'created' ? `created:${entry.source}` : `${entry.kind}:${entry.flag}`)
+  expect(await steps('PK-0013')).toStrictEqual([
+    'created:MANUAL', `IMPORTED>ASSIGNED@${trip.id}`, `ASSIGNED>STAGED@${trip.id}`, `STAGED>LOADED@${trip.id}`, `LOADED>IN_TRANSIT@${trip.id}`,
+    `IN_TRANSIT>DELIVERED@${trip.id}`,
+  ])
+  expect((await steps('PK-0021')).at(-1)).toBe(`IN_TRANSIT>RETURNED@${trip.id}`)
+  expect((await steps('PK-0022')).slice(-2)).toStrictEqual([`STAGED>IMPORTED@${trip.id}`, 'flagged:NOT_FOUND'])
+  const history = (await db.getPackage('PK-0013')).history
+  expect(history.map((entry) => entry.at)).toStrictEqual(history.map((entry) => entry.at).toSorted())
   expect((await db.getOrder('ORD-002')).status).toBe('delivered')
 })
 
