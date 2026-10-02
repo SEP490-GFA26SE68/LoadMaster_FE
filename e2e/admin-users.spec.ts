@@ -120,8 +120,8 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
   const panel = page.getByRole('complementary', { name: 'Chi tiết tài khoản Nguyễn Thanh Tùng', exact: true })
   await expect(panel.getByRole('heading', { level: 2, name: 'Nguyễn Thanh Tùng', exact: true })).toBeFocused()
   await expect(panel).toContainText('0901 234 567')
-  // 24 quyền của điều phối viên (FE-0-01, FE-0-07): 22 quyền của ma trận mới, gồm duyệt phương án, cộng hai quyền đơn hàng còn tạm
-  await expect(panel.getByRole('listitem')).toHaveCount(24)
+  // 22 quyền của điều phối viên theo ma trận PRD v2 (FE-0-01, FE-0-07), gồm duyệt phương án; hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
+  await expect(panel.getByRole('listitem')).toHaveCount(22)
   await expect(phoneHeader).toHaveCount(0)
 
   // Panel nằm cạnh bảng, không xuống dưới; không có gì cuộn ngang
@@ -146,7 +146,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
 })
 
 /**
- * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 35 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
+ * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 33 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
  * xuống tối đa hai dòng và không tràn sang cột bên, nhãn quyền không bị cắt ở dòng cuối. Kiểm cả bản tiếng Anh (tên vai trò dài hơn).
  */
 for (const lang of ['vi', 'en'] as const) {
@@ -157,7 +157,7 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(9)
-    await expect(matrix.getByRole('row')).toHaveCount(36)
+    await expect(matrix.getByRole('row')).toHaveCount(34)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!
