@@ -1,5 +1,7 @@
 import { expect, test } from 'vitest'
+import type { OptimizationRequest } from '@/domain/models'
 import { createMockDb, type PackageTypeInput } from '@/lib/mock-db'
+import { runMockOptimization } from '@/services/optimization'
 
 /**
  * Nguồn hàng của công ty logistics (LM-104, FE-0-06): loại kiện, kiện đăng ký + mã QR. Kiện thuộc công ty của người đăng ký; không còn
@@ -99,6 +101,47 @@ test('registering checks everything first: a bad row or quantity writes nothing'
   await expect(db.registerPackageRows([])).rejects.toMatchObject({ code: 'PACKAGES_REQUIRED' })
   expect(await db.listRegisteredPackages()).toHaveLength(before)
   expect(await db.listEvents()).toHaveLength(events)
+})
+
+test('a registered package follows the trip of its order at read time: planned, then loaded, then delivered (LM-104)', async () => {
+  const db = createMockDb()
+  // Chuyến mới một điểm giao, chưa có kiện: đơn ORD-002 (10 thùng mì RPK-0013…0022) thành dòng PKG-001, instance PKG-001-01…10
+  const created = await db.createTrip({
+    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
+    stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
+  })
+  const { trip } = await db.assignOrder('ORD-002', created.id, 'STOP-01')
+  const request: OptimizationRequest = {
+    vehicle: await db.getVehicle(trip.vehicleId),
+    packages: trip.packages,
+    settings: { method: 'MOCK', timeLimitSeconds: 30, randomSeed: 20_260_915, enforceLifo: true, prioritizeLowCenterOfGravity: false },
+  }
+  const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
+  await db.approveRevision(revision.id, [])
+  const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
+  const statuses = async () => (await db.listRegisteredPackages()).filter((pkg) => pkg.orderId === 'ORD-002').map((pkg) => [pkg.id, pkg.status])
+  const all = (status: string, from = 13) => rpk(from, 22).map((id) => [id, status])
+  expect(await statuses()).toStrictEqual(all('planned'))
+
+  // Kho xếp kiện đầu: chỉ kiện đó "đã lên xe" — ở danh sách, khi đọc một kiện và khi tra bằng mã QR
+  await db.startLoading(trip.id)
+  await db.recordLoadingStep(trip.id, { packageInstanceId: 'PKG-001-01', outcome: 'loaded' })
+  expect(await statuses()).toStrictEqual([['RPK-0013', 'loaded'], ...all('planned', 14)])
+  const first = await db.getRegisteredPackage('RPK-0013')
+  expect([first.status, (await db.findPackageByQr(first.qrToken)).status]).toStrictEqual(['loaded', 'loaded'])
+
+  // Tài xế dỡ kiện đầu ở điểm giao: kiện đó "đã giao", chín kiện còn lại vẫn "đã lên xe"
+  for (const id of instances.slice(1)) await db.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
+  await db.completeLoading(trip.id)
+  await db.startDelivery(trip.id)
+  await db.recordUnload(trip.id, 1, 'PKG-001-01', true)
+  expect(await statuses()).toStrictEqual([['RPK-0013', 'delivered'], ...all('loaded', 14)])
+
+  // Dỡ hết và hoàn tất điểm: chuyến hoàn thành nên đơn cũng "đã giao"
+  for (const id of instances.slice(1)) await db.recordUnload(trip.id, 1, id, true)
+  await db.completeStop(trip.id, 1)
+  expect(await statuses()).toStrictEqual(all('delivered'))
+  expect((await db.getOrder('ORD-002')).status).toBe('delivered')
 })
 
 test('a package belongs to the company of whoever registers it: no session or a platform account cannot register (FE-0-06)', async () => {
