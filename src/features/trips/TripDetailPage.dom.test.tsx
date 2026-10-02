@@ -53,6 +53,8 @@ test('a trip being loaded is locked: the banner says why, edit actions are gone,
   // Hành động chính còn lại: mở phương án đã duyệt trong 3D
   expect(screen.getByRole('link', { name: 'Xem phương án 3D' })).toHaveAttribute('href', expect.stringContaining('/chuyen/TRIP-011/phuong-an?revision='))
   expect(primaryActions(container)).toHaveLength(1)
+  // FE-3b-07: kiện của chuyến là kiện kho kiện — điều phối viên in nhãn của cả chuyến, kể cả khi chuyến đã khoá
+  expect(screen.getByRole('link', { name: 'In nhãn QR' })).toHaveAttribute('href', '/kien-hang/nhan?chuyen=TRIP-011')
 
   // Banner: phần khung chuyến vẫn sửa được, dẫn tới form sửa
   expect(screen.getByText('Vẫn sửa được tên, ngày chạy và tài xế.', { exact: false })).toBeInTheDocument()

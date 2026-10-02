@@ -5,7 +5,7 @@ import { IMPORT_FIELDS, type ImportField } from './package-import-columns'
 
 /**
  * File mẫu nhập kiện (LM-093): dòng tiêu đề theo ngôn ngữ đang chọn + hai dòng ví dụ dựng cho đúng chuyến đang mở — mã kiện kế tiếp
- * của chuyến, điểm giao có thật — nên nhập nguyên file mẫu cũng ra hai kiện hợp lệ. CSV dựng bằng Blob; `.xlsx` dựng bằng
+ * của chuyến, điểm giao có thật — nên nhập nguyên file mẫu cũng ra hai kiện hợp lệ. Cột cuối `handlingClass` (FE-3b-07) ghi mã loại hàng. CSV dựng bằng Blob; `.xlsx` dựng bằng
  * `write-excel-file`, chỉ tải thư viện khi bấm tải mẫu.
  */
 
@@ -20,13 +20,13 @@ export function importTemplateRows(t: TFunction, existing: readonly CargoPackage
     {
       id: firstId, name: t('trips.import.sample.first'), lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, quantity: 10,
       deliveryStop: 1, allowedOrientations: 'LWH|WLH', keepUpright: yes, fragilityLevel: 'NONE', stackable: yes, maxTopLoadKg: 60,
-      maxStackCount: 5, minSupportRatio: 0.8, priority: 0, mustLoad: no, groupId: '', notes: '',
+      maxStackCount: 5, minSupportRatio: 0.8, priority: 0, mustLoad: no, groupId: '', notes: '', handlingClass: 'STANDARD',
     },
     {
       id: secondId, name: t('trips.import.sample.second'), lengthCm: 70, widthCm: 45, heightCm: 15, weightKg: 25, quantity: 4,
       deliveryStop: Math.min(2, Math.max(1, stopCount)), allowedOrientations: 'LWH|LHW|WLH|WHL|HLW|HWL', keepUpright: no,
       fragilityLevel: 'LOW', stackable: yes, maxTopLoadKg: 150, maxStackCount: 6, minSupportRatio: 0.8, priority: 1, mustLoad: yes,
-      groupId: '', notes: t('trips.import.sample.note'),
+      groupId: '', notes: t('trips.import.sample.note'), handlingClass: 'FRAGILE',
     },
   ]
   return [

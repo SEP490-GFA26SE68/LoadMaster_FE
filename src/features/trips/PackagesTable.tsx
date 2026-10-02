@@ -1,5 +1,6 @@
-import { FileUp, Plus } from 'lucide-react'
+import { FileUp, Plus, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
@@ -17,7 +18,7 @@ import type { StopRow } from './trip-summary'
  * Bảng kiện của chuyến (LM-044, V2.3 `ChiTietChuyenKien`): card gồm đầu card (tiêu đề, số dòng, Thêm kiện, Nhập từ file), thanh lọc
  * (tìm mã/tên, điểm giao, chip "Chỉ hàng dễ vỡ" và "Chỉ kiện có lỗi"), bảng và chân bảng. Lọc điểm giao do trang giữ để danh sách
  * điểm giao lọc cùng một chỗ. Phân trang 50 dòng thay vì ảo hoá: giữ số node DOM nhỏ ở 500 kiện mà không thêm
- * `@tanstack/react-virtual` (AGENTS mục 2). "Nhập từ file" (LM-093) chỉ hiện khi được sửa chuyến — nút hoạt động thật (Spec 9.3, D-20).
+ * `@tanstack/react-virtual` (AGENTS mục 2). "In nhãn QR" (FE-3b-07) mở trang nhãn của các kiện kho kiện của chuyến. "Nhập từ file" (LM-093) chỉ hiện khi được sửa chuyến — nút hoạt động thật (Spec 9.3, D-20).
  */
 const PAGE_SIZE = 50
 
@@ -27,7 +28,7 @@ const PAGE_SIZE = 50
  */
 const SELECTED_ACCENT = '[&_tbody_tr.bg-primary-bg>td:first-child]:shadow-[inset_3px_0_0_var(--cyan-500)]'
 
-export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, onAdd, onImport, stopFilter, onStopFilterChange }: {
+export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, onAdd, onImport, labelsHref, stopFilter, onStopFilterChange }: {
   packages: readonly CargoPackage[]
   vehicle: VehicleConfig
   stops: readonly StopRow[]
@@ -37,6 +38,8 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
   onAdd?: () => void
   /** Mở hộp thoại nhập kiện từ file (LM-093); vắng như `onAdd`. */
   onImport?: () => void
+  /** Trang in nhãn QR của mọi kiện trong chuyến (FE-3b-07); vắng khi người xem không có quyền in nhãn. */
+  labelsHref?: string
   stopFilter: number | null
   onStopFilterChange: (stop: number | null) => void
 }) {
@@ -92,8 +95,9 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
       <CardHeader>
         <CardTitle as="h2" id="packages-title">{t('trips.packages.title')}</CardTitle>
         <CardMeta>{t('trips.packages.lineCount', { count: packages.length })}</CardMeta>
-        {onAdd || onImport ? (
+        {onAdd || onImport || labelsHref ? (
           <CardActions>
+            {labelsHref ? <Button variant="secondary" size="sm" asChild><Link to={labelsHref}><Printer strokeWidth={1.75} />{t('trips.packages.printLabels')}</Link></Button> : null}
             {onAdd ? <Button variant="secondary" size="sm" onClick={onAdd}><Plus strokeWidth={1.75} />{t('trips.packages.add')}</Button> : null}
             {onImport ? <Button variant="secondary" size="sm" onClick={onImport}><FileUp strokeWidth={1.75} />{t('trips.import.open')}</Button> : null}
           </CardActions>

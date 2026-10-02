@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { OrderAssignDialog } from '@/features/orders/OrderAssignDialog'
+import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -139,6 +140,7 @@ export function TripDetailPage() {
                 onSelect={(pkg) => setEditing(editing?.id === pkg.id ? null : pkg)}
                 onAdd={editable ? () => setEditing(emptyPackage(trip.packages, stops[0]?.number ?? 1)) : undefined}
                 onImport={editable ? () => setImporting(true) : undefined}
+                labelsHref={can('labels.print') ? tripLabelsPath(tripId) : undefined}
                 stopFilter={stopFilter}
                 onStopFilterChange={setStopFilter}
               />

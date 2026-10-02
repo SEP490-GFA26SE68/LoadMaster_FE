@@ -1,4 +1,4 @@
-import type { FragilityLevel } from '@/domain/models'
+import { HANDLING_CLASSES, type FragilityLevel, type HandlingClass } from '@/domain/models'
 import { createTranslator, LOCALES } from '@/lib/i18n'
 import { normalizeSearchText } from '@/lib/list-filter'
 
@@ -27,6 +27,8 @@ export const IMPORT_FIELDS = [
   'mustLoad',
   'groupId',
   'notes',
+  // FE-3b-07 (D-68): loại hàng của kiện kho kiện tạo từ dòng này; đứng cuối để file theo mẫu cũ (19 cột) vẫn nhập được
+  'handlingClass',
 ] as const
 
 export type ImportField = (typeof IMPORT_FIELDS)[number]
@@ -41,6 +43,7 @@ export function normalizeHeader(title: string): string {
 
 let headerAliases: ReadonlyMap<string, ImportField> | undefined
 let fragilityAliases: ReadonlyMap<string, FragilityLevel> | undefined
+let handlingAliases: ReadonlyMap<string, HandlingClass> | undefined
 
 /** Tiêu đề cột đã chuẩn hoá → trường: tên trường, tiêu đề vi và en. Hai trường trùng một tiêu đề là lỗi lập trình, báo ngay. */
 export function importHeaderAliases(): ReadonlyMap<string, ImportField> {
@@ -73,5 +76,18 @@ export function importFragilityAliases(): ReadonlyMap<string, FragilityLevel> {
     for (const level of FRAGILITY_LEVELS) aliases.set(normalizeSearchText(t(`trips.form.fragilityLevels.${level}`)), level)
   }
   fragilityAliases = aliases
+  return aliases
+}
+
+/** Loại hàng đã bỏ dấu → mã: chính mã (`FRAGILE`…) và nhãn vi/en của chip loại hàng ("Dễ vỡ", "Fragile"). */
+export function importHandlingAliases(): ReadonlyMap<string, HandlingClass> {
+  if (handlingAliases) return handlingAliases
+  const aliases = new Map<string, HandlingClass>()
+  for (const handlingClass of HANDLING_CLASSES) aliases.set(normalizeSearchText(handlingClass), handlingClass)
+  for (const locale of LOCALES) {
+    const t = createTranslator(locale)
+    for (const handlingClass of HANDLING_CLASSES) aliases.set(normalizeSearchText(t(`common.handlingClasses.${handlingClass}`)), handlingClass)
+  }
+  handlingAliases = aliases
   return aliases
 }

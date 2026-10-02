@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { ORIENTATION_CODES, isUpright } from '@/domain/geometry'
 import type { CargoPackage } from '@/domain/models'
 import { useT } from '@/lib/i18n'
+import { PackageClassSelect } from './PackageClassSelect'
 import { packageFieldError } from './package-form-errors'
 import { PackageStopSelect } from './PackageStopSelect'
 import type { StopRow } from './trip-summary'
@@ -26,7 +27,7 @@ function required(label: string): ReactNode {
 
 /**
  * Các trường của form kiện (LM-045, V2.3 `ChiTietChuyenKienDayDu`): tên; D/R/C; khối lượng, số lượng; hướng đặt; giữ thẳng đứng; mức
- * dễ vỡ dạng nhóm nút; xếp chồng và hai giới hạn; tỷ lệ đỡ đáy; điểm giao có mốc màu; độ ưu tiên, bắt buộc xếp; ghi chú. Quy tắc tự
+ * dễ vỡ dạng nhóm nút; xếp chồng và hai giới hạn; tỷ lệ đỡ đáy; điểm giao có mốc màu; loại hàng (FE-3b-07); độ ưu tiên, bắt buộc xếp; ghi chú. Quy tắc tự
  * đồng bộ D-25 nằm ở `PackageFormPanel`. Giá trị đọc bằng `useWatch`.
  */
 export function PackageFormFields({ form, stops, onKeepUprightChange, onStackableChange }: {
@@ -140,6 +141,8 @@ export function PackageFormFields({ form, stops, onKeepUprightChange, onStackabl
       {numeric('minSupportRatio', t('trips.form.minSupportRatio'), '', '0.05', { hint: t('trips.form.minSupportRatioHint') })}
 
       <PackageStopSelect control={control} stops={stops} label={t('trips.form.deliveryStop')} />
+
+      <PackageClassSelect control={control} label={t('trips.form.handlingClass')} hint={t('trips.form.handlingClassHint')} />
 
       <div className="grid grid-cols-2 items-end gap-2.5">
         {numeric('priority', t('trips.form.priority'), '', '1')}

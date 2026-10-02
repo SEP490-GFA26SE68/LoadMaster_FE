@@ -5,7 +5,7 @@ import { createFormatter } from '@/lib/format'
 import { createTranslator } from '@/lib/i18n'
 import { parseCsv } from './csv'
 import { previewImport, type ImportPreview, type ImportTable, type ReadyPreview } from './package-import'
-import { importFragilityAliases, importHeaderAliases } from './package-import-columns'
+import { importFragilityAliases, importHandlingAliases, importHeaderAliases } from './package-import-columns'
 import { importFileProblemMessage, importProblemMessage } from './package-import-messages'
 import { csvTemplateBlob, importTemplateRows, toCsv, xlsxTemplateBlob } from './package-import-template'
 import { readImportFile } from './read-import-file'
@@ -26,6 +26,7 @@ const viFormat = createFormatter('vi-VN')
 function preview(table: ImportTable, existing: readonly CargoPackage[] = [EXISTING]): ImportPreview {
   return previewImport(table, {
     existing, stopCount: 2, vehicle: SPEC_TRUCK_6M, headers: importHeaderAliases(), fragility: importFragilityAliases(),
+    handling: importHandlingAliases(),
   })
 }
 
@@ -49,14 +50,33 @@ test('a Vietnamese Excel CSV — BOM, ";", decimal commas, a blank line — read
     {
       id: 'PKG-101', name: 'Bao gạo 25 kg', lengthCm: 70, widthCm: 45, heightCm: 15.6, weightKg: 25.13, quantity: 4, deliveryStop: 2,
       allowedOrientations: ['LWH', 'LHW', 'WLH', 'WHL', 'HLW', 'HWL'], keepUpright: false, fragilityLevel: 'NONE', stackable: true,
-      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false,
+      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
     },
     {
       id: 'PKG-102', name: 'Thùng nước suối', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, quantity: 10, deliveryStop: 1,
       allowedOrientations: ['LWH', 'WLH'], keepUpright: true, fragilityLevel: 'NONE', stackable: true,
-      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false,
+      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
     },
   ])
+})
+
+test('the optional handling class column: the code or its label in either language; blank is STANDARD, anything else is a row error', () => {
+  const result = ready(preview([
+    [...HEADER, 'Loại hàng'],
+    ['PKG-601', 'Bình gốm', 40, 30, 25, 6, 1, 1, 'LWH', 'có', 'FRAGILE'],
+    ['PKG-602', 'Kem que', 40, 30, 25, 6, 1, 1, 'LWH', 'có', 'hang lanh'],
+    ['PKG-603', 'Đồng hồ', 40, 30, 25, 6, 1, 1, 'LWH', 'có', 'High value'],
+    ['PKG-604', 'Thùng giấy', 40, 30, 25, 6, 1, 1, 'LWH', 'có', ''],
+    ['PKG-605', 'Thùng lạ', 40, 30, 25, 6, 1, 1, 'LWH', 'có', 'Dễ cháy'],
+  ]))
+  expect(result.valid.map((pkg) => [pkg.id, pkg.handlingClass])).toStrictEqual([
+    ['PKG-601', 'FRAGILE'], ['PKG-602', 'REFRIGERATED'], ['PKG-603', 'HIGH_VALUE'], ['PKG-604', 'STANDARD'],
+  ])
+  expect(messages(result, 6)).toStrictEqual(['Loại hàng: "Dễ cháy" không phải loại hàng (STANDARD, FRAGILE, REFRIGERATED, HAZARDOUS, HIGH_VALUE).'])
+  // Tên trường và tiêu đề tiếng Anh cũng là cột đó
+  for (const title of ['handlingClass', 'Handling class']) {
+    expect(ready(preview([[...HEADER, title], ['PKG-606', 'Pin', 40, 30, 25, 6, 1, 1, 'LWH', 'có', 'HAZARDOUS']])).valid[0]?.handlingClass).toBe('HAZARDOUS')
+  }
 })
 
 test('English titles and field names are accepted in one header; unknown columns are listed and skipped', () => {
@@ -129,8 +149,12 @@ test('the template of either language, for this trip, imports as two valid packa
     const result = ready(preview(parseCsv(toCsv(rows))))
     expect(result.valid.map((pkg) => pkg.id)).toStrictEqual(['PKG-002', 'PKG-003'])
     expect(result.invalidCount).toBe(0)
+    // Cột cuối của file mẫu là loại hàng (FE-3b-07)
+    expect(result.valid.map((pkg) => pkg.handlingClass)).toStrictEqual(['STANDARD', 'FRAGILE'])
+    expect(rows[0]).toHaveLength(20)
   }
   const rows = importTemplateRows(vi, [EXISTING], 2)
+  expect(rows[0]?.at(-1)).toBe('Loại hàng')
   // BOM UTF-8 (EF BB BF) đầu file để Excel đọc đúng chữ có dấu; `Blob.text()` tự bỏ BOM nên so byte
   const bytes = new Uint8Array(await csvTemplateBlob(rows).arrayBuffer())
   expect([...bytes.slice(0, 3)]).toStrictEqual([0xef, 0xbb, 0xbf])
