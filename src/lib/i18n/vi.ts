@@ -30,6 +30,7 @@ import { readiness } from './vi/readiness'
 import { vehicleTypes } from './vi/vehicleTypes'
 import { tripReport } from './vi/tripReport'
 import { runs } from './vi/runs'
+import { lookup } from './vi/lookup'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -73,4 +74,5 @@ export const vi = {
   vehicleTypes,
   tripReport,
   runs,
+  lookup,
 } as const

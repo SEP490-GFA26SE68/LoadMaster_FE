@@ -18,6 +18,7 @@ export const warehouse = {
   ordersRecomputed: 'Loading order recalculated at approval',
   list: {
     title: 'Trips to load',
+    lookup: 'Package lookup',
     date: 'Run date',
     vehicle: 'Vehicle',
     packages: 'Packages',

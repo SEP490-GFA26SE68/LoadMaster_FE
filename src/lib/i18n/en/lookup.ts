@@ -1,0 +1,56 @@
+import type { Dictionary } from '../types'
+import type { lookup as source } from '../vi/lookup'
+
+export const lookup = {
+  title: 'Package lookup',
+  backToWarehouse: 'Back to warehouse',
+  scan: 'Scan QR code',
+  scanTitle: 'Scan the QR code of a package',
+  scanDescription: 'Hold the label on the package in the frame, or type the code printed under the QR image.',
+  codeLabel: 'QR code or sender package code',
+  codePlaceholder: 'E.g. LM-7K3F-9XQ2-M4TD or HK-DNG-2609-01',
+  codeHint: 'Type the whole code as printed on the label; case does not matter.',
+  codeRequired: 'Enter a code before looking it up.',
+  submit: 'Look up',
+  loading: 'Looking up',
+  idle: {
+    title: 'Scan or type a code to see a package',
+    description: 'The QR code and the sender code are both printed on the label of the package.',
+  },
+  notFound: {
+    title: 'Not found',
+    description: 'No package of your company carries the code {code}. Check the code printed on the label.',
+  },
+  many: {
+    title: { one: '{count} package carries the code {code}', other: '{count} packages carry the code {code}' },
+    hint: 'Pick the right package by destination and trip.',
+    choose: 'View package {id}',
+    back: 'Back to the packages sharing this code',
+  },
+  result: 'Package {code}',
+  fields: {
+    poolId: 'Pool ID',
+    senderCode: 'Sender code',
+    qrToken: 'QR code',
+    dimensions: 'Dimensions (L × W × H)',
+    weight: 'Weight',
+    handlingClass: 'Handling class',
+    destination: 'Destination',
+    status: 'Status',
+    flags: 'Flags',
+    noFlags: 'No flag',
+    trip: 'Trip',
+    stop: 'Delivery stop',
+    stopValue: 'Stop {number} · {name}',
+    notInTrip: 'Not in any trip',
+  },
+  reprint: 'Reprint label',
+  openInPool: 'Open in Package pool',
+  flagNote: 'A flagged package cannot go into an order or a trip.',
+  flagCleared: 'Cleared the {flag} flag of package {code}.',
+  found: {
+    prompt: 'This package carries the "Not found" flag. If the package is in front of you, confirm to clear the flag.',
+    confirm: 'I found this package',
+    done: 'Cleared the "Not found" flag of package {code}. The dispatcher sees this in the notification bell.',
+  },
+} satisfies Dictionary<typeof source>

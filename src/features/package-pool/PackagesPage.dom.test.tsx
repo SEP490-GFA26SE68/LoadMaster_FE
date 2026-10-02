@@ -12,9 +12,10 @@ import type { Role } from '@/types/user'
 import { PackagesPage } from './PackagesPage'
 
 /**
- * Kho kiện `/kien-hang` (FE-3b-03, FE-3b-02) trên kho mock thật, seed neo 14/09/2026: Long Bình có 88 kiện `PK-0001…0088` đều "Đã
- * nhập"; 40 kiện cuối nhập từ file (5 kiện mỗi điểm đến), `PK-0063` mang cờ "Không tìm thấy", `PK-0078` "Hư hỏng"; 22 kiện đầu thuộc hai
- * đơn chờ gán. Các test dùng chung kho và chạy theo thứ tự: test gỡ cờ, thêm kiện, nhập file ghi vào kho — số đếm ghi ngay ở từng test.
+ * Kho kiện `/kien-hang` (FE-3b-03, FE-3b-02) trên kho mock thật, seed neo 14/09/2026: Long Bình có 2.951 kiện — 88 kiện `PK-0001…0088`
+ * đều "Đã nhập" đứng đầu bảng (40 kiện cuối nhập từ file, 5 kiện mỗi điểm đến; `PK-0063` mang cờ "Không tìm thấy", `PK-0078` "Hư hỏng";
+ * 22 kiện đầu thuộc hai đơn chờ gán), rồi 2.863 kiện nhập tay của 15 chuyến seed (`PK-T…`, FE-3b-07): 2.692 kiện còn thuộc chuyến,
+ * `PK-T00739` kho báo thiếu nên mang cờ "Không tìm thấy". Các test dùng chung kho và chạy theo thứ tự: test gỡ cờ, thêm kiện, nhập file ghi vào kho — số đếm ghi ngay ở từng test.
  */
 const SLOW = { timeout: 5000 }
 
@@ -47,17 +48,19 @@ function renderPool(role: Role, path = '/kien-hang') {
 }
 
 const bodyRows = () => within(screen.getAllByRole('rowgroup')[1]!).getAllByRole('row')
-const poolIds = () => bodyRows().map((row) => /PK-\d{4}/.exec(row.textContent ?? '')?.[0])
+const poolIds = () => bodyRows().map((row) => /PK-(?:T\d{5}|\d{4})/.exec(row.textContent ?? '')?.[0])
 const headers = () => within(screen.getByRole('table')).getAllByRole('columnheader').map((cell) => cell.textContent)
 const csvFile = (lines: readonly string[]) =>
   new File([['package_code,length,width,height,weight,handling_class,destination,package_type', ...lines].join('\r\n')], 'kien.csv', { type: 'text/csv' })
 
 test('the dispatcher sees the pool newest first with every column; search ignores accents and the filters live on the URL', async () => {
   const user = renderPool('dispatcher')
-  expect(await screen.findByText('88 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   // Cột đầu là ô chọn (không chữ), rồi chín cột dữ liệu
   expect(headers().slice(1)).toStrictEqual(['Mã kiện', 'Kích thước (D × R × C)', 'Khối lượng', 'Loại hàng', 'Điểm đến', 'Trạng thái', 'Cờ', 'Đơn hàng', 'Chuyến'])
   expect(screen.getByRole('checkbox', { name: 'Chọn mọi kiện khớp bộ lọc' })).toBeInTheDocument()
+  // FE-3b-06: điều phối viên mở Tra cứu kiện từ đây
+  expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveAttribute('href', '/tra-cuu-kien')
   expect(poolIds().slice(0, 3)).toStrictEqual(['PK-0088', 'PK-0087', 'PK-0086'])
   const newest = screen.getByRole('row', { name: /PK-0088/ })
   for (const text of ['PT-QNH-2609-05', '70 × 50 × 45 cm', '26 kg', 'Thường', 'KCN Phú Tài, TP. Quy Nhơn, Bình Định', 'Đã nhập']) expect(newest).toHaveTextContent(text)
@@ -71,29 +74,35 @@ test('the dispatcher sees the pool newest first with every column; search ignore
   // Lọc cờ, loại hàng, đã vào đơn: giá trị là slug không dấu trên URL
   await user.click(screen.getByRole('combobox', { name: 'Cờ' }))
   await user.click(await screen.findByRole('option', { name: 'Không tìm thấy' }))
-  await waitFor(() => expect(poolIds()).toStrictEqual(['PK-0063']), SLOW)
+  // PK-0063 của file nhập, và kiện kho báo thiếu của chuyến TRIP-003
+  await waitFor(() => expect(poolIds()).toStrictEqual(['PK-0063', 'PK-T00739']), SLOW)
   expect(screen.getByTestId('url')).toHaveTextContent('/kien-hang?co=khong-tim-thay')
   expect(within(screen.getByRole('row', { name: /PK-0063/ })).getByText('Không tìm thấy')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
   await user.click(screen.getByRole('combobox', { name: 'Đơn / chuyến' }))
   await user.click(await screen.findByRole('option', { name: 'Đã vào đơn hoặc chuyến' }))
-  await waitFor(() => expect(screen.getByRole('tab', { name: /^Tất cả/ })).toHaveTextContent(/^Tất cả\s*22$/), SLOW)
+  // 22 kiện của hai đơn chờ gán và 2.692 kiện đang thuộc chuyến; tab trạng thái đếm theo bộ lọc
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Tất cả/ })).toHaveTextContent(/^Tất cả\s*2\.714$/), SLOW)
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent?.replace(/\s+/g, ' '))).toStrictEqual([
+    'Tất cả2.714', 'Đã nhập22', 'Đã gán chuyến548', 'Đã soạn280', 'Đã xếp210', 'Đang vận chuyển120', 'Đã giao1.533', 'Hoàn trả1',
+  ])
   expect(screen.getByTestId('url')).toHaveTextContent('/kien-hang?gan=da-vao')
   expect(within(screen.getByRole('row', { name: /PK-0022/ })).getByRole('link', { name: 'ORD-002' })).toHaveAttribute('href', '/don-hang?q=ORD-002')
 })
 
 test('filters read from the URL: handling class and "not in an order or a trip"', async () => {
   renderPool('dispatcher', '/kien-hang?loai-hang=hang-lanh&gan=chua')
-  await screen.findByText('88 kiện trong kho kiện', {}, SLOW)
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   expect(poolIds()).toStrictEqual(['PK-0073', 'PK-0072', 'PK-0071', 'PK-0070', 'PK-0069'])
   expect(screen.getByRole('combobox', { name: 'Loại hàng' })).toHaveTextContent('Hàng lạnh')
 })
 
 test('the company manager reads the pool but gets no write button, no selection and no flag action', async () => {
   const user = renderPool('manager')
-  expect(await screen.findByText('88 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   for (const name of ['Thêm kiện', 'Nhập file']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Loại kiện' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Tra cứu kiện' })).not.toBeInTheDocument()
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   expect(headers()[0]).toBe('Mã kiện')
 
@@ -110,7 +119,7 @@ test('the company manager reads the pool but gets no write button, no selection 
 
 test('the detail panel shows the QR code and the history the store kept; the dispatcher clears a flag and the history grows', async () => {
   const user = renderPool('dispatcher', '/kien-hang?co=khong-tim-thay')
-  await screen.findByText('88 kiện trong kho kiện', {}, SLOW)
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   // Bấm dòng mở panel; panel mở thì bảng nhường bốn cột đã có trong panel
   await user.click(screen.getByRole('row', { name: /PK-0063/ }))
   const panel = within(await screen.findByRole('complementary', { name: 'Chi tiết kiện BV-VIN-2609-05' }, SLOW))
@@ -141,7 +150,7 @@ test('the detail panel shows the QR code and the history the store kept; the dis
 
 test('adding one package: the form names what is missing, then the package lands on top with its QR code shown at once', async () => {
   const user = renderPool('dispatcher')
-  await screen.findByText('88 kiện trong kho kiện', {}, SLOW)
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   await user.click(screen.getByRole('button', { name: 'Thêm kiện' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Thêm kiện' }))
   await user.click(dialog.getByRole('button', { name: 'Thêm kiện' }))
@@ -163,7 +172,7 @@ test('adding one package: the form names what is missing, then the package lands
   await user.click(dialog.getByRole('button', { name: 'Thêm kiện' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), SLOW)
-  expect(await screen.findByText('89 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText('2.952 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   expect(await screen.findByText('Đã thêm kiện HK-DNG-2609-06 vào kho kiện.', {}, SLOW)).toBeInTheDocument()
   // Chi tiết kiện vừa thêm mở ngay, đã có mã QR; kiện đứng đầu bảng
   const panel = within(await screen.findByRole('complementary', { name: 'Chi tiết kiện HK-DNG-2609-06' }, SLOW))
@@ -177,7 +186,7 @@ test('adding one package: the form names what is missing, then the package lands
 
 test('importing a file: an error row disables Confirm and creates nothing; a clean file is imported in one go and selected for labels', async () => {
   const user = renderPool('dispatcher')
-  await screen.findByText('89 kiện trong kho kiện', {}, SLOW)
+  await screen.findByText('2.952 kiện trong kho kiện', {}, SLOW)
   await user.click(screen.getByRole('button', { name: 'Nhập file' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Nhập file vào kho kiện' }))
   expect(dialog.getByRole('button', { name: 'Xác nhận nhập' })).toBeDisabled()
@@ -189,7 +198,7 @@ test('importing a file: an error row disables Confirm and creates nothing; a cle
   expect(dialog.getByRole('row', { name: /^3/ })).toHaveTextContent('Chiều cao phải là số lớn hơn 0')
   expect(dialog.getByRole('row', { name: /^4/ })).toHaveTextContent('Trùng mã kiện với dòng 2')
   expect(dialog.getByRole('button', { name: 'Xác nhận nhập' })).toBeDisabled()
-  expect(await getMockDb().listPackages()).toHaveLength(89)
+  expect(await getMockDb().listPackages()).toHaveLength(2952)
 
   // File sạch, một dòng trùng mã đã có trong kho kiện: cảnh báo, vẫn nhập được
   await user.upload(dialog.getByLabelText('File kiện (.csv, .xlsx)'), csvFile(['DN-0001,60,40,40,18,STANDARD,"KCN Hoà Khánh, Đà Nẵng",', 'HK-DNG-2609-01,50,40,30,"9,5",FRAGILE,Huế,']))
@@ -198,7 +207,7 @@ test('importing a file: an error row disables Confirm and creates nothing; a cle
   await user.click(dialog.getByRole('button', { name: 'Xác nhận nhập 2 kiện' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), SLOW)
-  expect(await screen.findByText('91 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText('2.954 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   expect(await screen.findByText('Đã nhập 2 kiện vào kho kiện.', {}, SLOW)).toBeInTheDocument()
   expect(poolIds().slice(0, 2)).toStrictEqual(['PK-0091', 'PK-0090'])
   const selection = within(screen.getByRole('region', { name: 'Đã chọn 2 kiện' }))

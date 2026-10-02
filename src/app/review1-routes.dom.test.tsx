@@ -23,11 +23,16 @@ beforeEach(() => {
 })
 
 test.each<[Role, string, string, string]>([
-  // FE-3b-03: kho kiện theo `packages.view` — điều phối viên và quản lý công ty đều thấy 88 kiện của Long Bình; loại kiện, in nhãn của điều phối
-  ['dispatcher', '/kien-hang', 'Kho kiện', '88 kiện trong kho kiện'],
-  ['manager', '/kien-hang', 'Kho kiện', '88 kiện trong kho kiện'],
+  // FE-3b-03: kho kiện theo `packages.view` — điều phối viên và quản lý công ty đều thấy 2.951 kiện của Long Bình (88 kiện có từ trước
+  // và 2.863 kiện của các chuyến seed, FE-3b-07); loại kiện của điều phối viên
+  ['dispatcher', '/kien-hang', 'Kho kiện', '2.951 kiện trong kho kiện'],
+  ['manager', '/kien-hang', 'Kho kiện', '2.951 kiện trong kho kiện'],
   ['dispatcher', '/loai-kien', 'Loại kiện', '8 loại kiện trong danh mục'],
+  // FE-3b-05, FE-3b-06: in nhãn theo `labels.print`, tra cứu kiện theo `packages.lookup` — điều phối viên và nhân viên kho
   ['dispatcher', '/kien-hang/nhan?kien=PK-0001,PK-0002', 'In nhãn QR', '2 nhãn có thể in'],
+  ['warehouse', '/kien-hang/nhan?kien=PK-0001', 'In nhãn QR', '1 nhãn có thể in'],
+  ['dispatcher', '/tra-cuu-kien', 'Tra cứu kiện', 'Quét hoặc nhập mã để xem kiện'],
+  ['warehouse', '/tra-cuu-kien', 'Tra cứu kiện', 'Quét hoặc nhập mã để xem kiện'],
   ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
 ])('%s mở %s', async (role, path, title, summary) => {
@@ -48,11 +53,15 @@ test.each<[Role, string]>([
   // FE-0-01: quản trị hệ thống không còn quyền vận hành
   ['systemAdmin', '/don-hang'],
   ['systemAdmin', '/kien-hang'],
-  // Loại kiện và in nhãn theo `packages.manage`: quản lý công ty chỉ xem kho kiện; `labels.print` của kho chưa mở màn nào
+  // Loại kiện theo `packages.manage`, in nhãn theo `labels.print`, tra cứu theo `packages.lookup`: quản lý công ty chỉ xem kho kiện;
+  // nhân viên kho in nhãn và tra cứu nhưng không mở kho kiện; tài xế không có quyền nào trong đó
   ['manager', '/loai-kien'],
   ['manager', '/kien-hang/nhan'],
+  ['manager', '/tra-cuu-kien'],
   ['warehouse', '/kien-hang'],
-  ['warehouse', '/kien-hang/nhan'],
+  ['warehouse', '/loai-kien'],
+  ['driver', '/tra-cuu-kien'],
+  ['driver', '/kien-hang/nhan'],
   ['companyAdmin', '/loai-kien'],
 ])('%s không mở được %s', async (role, path) => {
   openAt(path, role)

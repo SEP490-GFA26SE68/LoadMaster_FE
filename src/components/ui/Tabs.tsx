@@ -1,5 +1,6 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import type { ComponentProps } from 'react'
+import { useFormat } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /**
@@ -60,9 +61,10 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
 
 /**
  * Số đếm cạnh nhãn tab — pill Archivo 12/600. `warn`: việc cần người dùng xử lý (nền hổ phách). Số 0 mờ đi để tab rỗng lùi lại
- * (vẫn đọc được: độ mờ chỉ trên nền pill, chữ giữ màu).
+ * (vẫn đọc được: độ mờ chỉ trên nền pill, chữ giữ màu). Số viết theo ngôn ngữ đang chọn ("2.714" · "2,714") — kho kiện đếm tới hàng nghìn.
  */
 export function TabCount({ tone = 'neutral', children }: { tone?: 'neutral' | 'warn' | 'danger'; children: number }) {
+  const format = useFormat()
   const warn = tone !== 'neutral'
   return (
     <span
@@ -78,7 +80,7 @@ export function TabCount({ tone = 'neutral', children }: { tone?: 'neutral' | 'w
             ),
       )}
     >
-      {children}
+      {format.integer(children)}
     </span>
   )
 }

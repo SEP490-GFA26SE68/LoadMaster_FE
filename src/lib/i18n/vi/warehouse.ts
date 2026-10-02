@@ -20,6 +20,7 @@ export const warehouse = {
   /** Danh sách chuyến `/kho` (D-46). */
   list: {
     title: 'Chuyến cần xếp',
+    lookup: 'Tra cứu kiện',
     date: 'Ngày chạy',
     vehicle: 'Xe',
     packages: 'Số kiện',
