@@ -1,12 +1,13 @@
 import { expect, test } from './fixtures'
 
 /**
- * LM-104 luồng 2 — đơn hàng trên kho in-memory của trang (không tải lại trang sau khi ghi): điều phối viên tạo đơn từ kiện đã ở kho,
- * gán đơn vào điểm giao của chuyến nháp TRIP-014 → Chi tiết chuyến có đơn và card "Kiểm tra trước khi tối ưu". FE-0-06 bỏ nửa đầu của
- * kịch bản (công ty logistics quét QR nhận kiện của lô hàng): không còn luồng nhận hàng, kiện "Đã nhận ở kho" do seed ghi thẳng.
+ * LM-104 luồng 2 — đơn hàng trên kho in-memory của trang (không tải lại trang sau khi ghi): điều phối viên tạo đơn từ kiện của kho
+ * kiện, gán đơn vào điểm giao của chuyến nháp TRIP-014 → Chi tiết chuyến có đơn và card "Kiểm tra trước khi tối ưu". Kiện vào đơn
+ * được khi còn "Đã nhập", không mang cờ, chưa thuộc đơn nào; gán đơn ghi kiện sang "Đã gán chuyến" (FE-3b-01).
  *
  * Số kỳ vọng chép tay từ seed (`seed-sourcing.ts`, `seed-directory.ts`, `seed-trips.ts`), không tính lại theo cách app tính:
- * - 18 kiện đã ở kho chưa vào đơn nào: 6 thùng sữa hộp (RPK-0023…0028), 6 thùng bánh quy, 6 kiện quạt điện;
+ * - 64 kiện chọn được: 6 thùng sữa hộp (PK-0023…0028), 6 thùng bánh quy, 8 thùng dầu ăn, 6 kiện quạt điện và 38 kiện nhập file
+ *   không gắn loại kiện, nhóm theo loại hàng (40 kiện trừ PK-0063 và PK-0078 đang mang cờ);
  * - thùng sữa hộp 48 hộp nặng 52 kg → 6 thùng 312 kg;
  * - TRIP-014 có 40 kiện quạt + 40 nồi cơm điện + 60 thùng nước suối = 140 kiện, thêm 6 thùng sữa là 146.
  */
@@ -19,16 +20,19 @@ test('the dispatcher builds an order from packages in stock and assigns it onto 
   await page.waitForURL(/\/don-hang$/)
   await expect(page.getByText('2 đơn chờ gán vào chuyến', { exact: true })).toBeVisible()
 
-  // Tạo đơn từ 6 thùng sữa đã ở kho; ô chọn kiện nhóm theo loại, chỉ gồm kiện "Đã nhận ở kho" chưa vào đơn
+  // Tạo đơn từ 6 thùng sữa; ô chọn kiện nhóm theo loại kiện (bốn nhóm), kiện không gắn loại theo loại hàng (năm nhóm)
   await page.getByRole('button', { name: 'Tạo đơn hàng', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Tạo đơn hàng' })
   await form.getByRole('textbox', { name: 'Khách hàng', exact: true }).fill('Điện máy Xanh Tân An')
   await form.getByRole('textbox', { name: 'Địa chỉ giao', exact: true }).fill('88 Hùng Vương, P. 2, Tân An, Long An')
-  await expect(form.getByRole('checkbox', { name: /^Chọn cả nhóm / })).toHaveCount(3)
+  await expect(form.getByRole('checkbox', { name: /^Chọn cả nhóm / })).toHaveCount(9)
   await expect(form.getByRole('checkbox', { name: 'Chọn cả nhóm Thùng bánh quy (6)', exact: true })).toBeVisible()
   await expect(form.getByRole('checkbox', { name: 'Chọn cả nhóm Kiện quạt điện (6)', exact: true })).toBeVisible()
-  // Thùng dầu ăn mới đăng ký (RPK-0035…), hàng chưa về kho: không có trong ô chọn
-  await expect(form.getByText('RPK-0035', { exact: true })).toHaveCount(0)
+  await expect(form.getByRole('checkbox', { name: 'Chọn cả nhóm Hàng Dễ vỡ (5)', exact: true })).toBeVisible()
+  // Kiện mang cờ không có trong ô chọn: nhóm hàng nguy hiểm còn 4 kiện, không có PK-0078
+  await expect(form.getByRole('checkbox', { name: 'Chọn cả nhóm Hàng Nguy hiểm (4)', exact: true })).toBeVisible()
+  await expect(form.getByText('PK-0077', { exact: true })).toHaveCount(1)
+  await expect(form.getByText('PK-0078', { exact: true })).toHaveCount(0)
   await form.getByRole('checkbox', { name: 'Chọn cả nhóm Thùng sữa hộp 48 hộp (6)', exact: true }).click()
   await expect(form.getByRole('status')).toHaveText('Đã chọn 6 kiện · 312 kg')
   await form.getByRole('button', { name: 'Tạo đơn', exact: true }).click()
@@ -59,11 +63,11 @@ test('the dispatcher builds an order from packages in stock and assigns it onto 
   await expect(readiness.getByText('Sẵn sàng tối ưu', { exact: true })).toBeVisible()
   await expect(readiness.getByText('146 kiện', { exact: true })).toBeVisible()
 
-  // Kiện của đơn đã gán sang "Đã lên kế hoạch" ở màn Kiện hàng của điều phối viên
+  // Kiện của đơn đã gán sang "Đã gán chuyến" ở màn Kiện hàng của điều phối viên
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Kiện hàng', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
-  await page.getByRole('tab', { name: /^Đã lên kế hoạch/ }).click()
-  await expect(page.getByRole('row', { name: /RPK-00/ })).toHaveCount(6)
-  await expect(page.getByRole('row', { name: /RPK-0023/ })).toContainText('Đã lên kế hoạch')
+  await page.getByRole('tab', { name: /^Đã gán chuyến/ }).click()
+  await expect(page.getByRole('row', { name: /PK-00/ })).toHaveCount(6)
+  await expect(page.getByRole('row', { name: /PK-0023/ })).toContainText('Đã gán chuyến')
   expect(browserErrors).toStrictEqual([])
 })
