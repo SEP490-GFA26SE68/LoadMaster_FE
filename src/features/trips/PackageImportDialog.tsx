@@ -15,6 +15,8 @@ import { csvTemplateBlob, importTemplateRows, xlsxTemplateBlob } from './package
 import { PackageDialogClose } from './PackageDialogClose'
 import { PackageImportPreview } from './PackageImportPreview'
 import { readImportFile } from './read-import-file'
+import { SegregationOverrideDialog } from './SegregationOverrideDialog'
+import { useSegregationGuard } from './useSegregationQuery'
 import { useImportPackagesMutation } from './useTripsQuery'
 
 type FileState =
@@ -44,6 +46,8 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
   const readToken = useRef(0)
   const [file, setFile] = useState<FileState>({ status: 'idle' })
   const importMutation = useImportPackagesMutation(trip.id)
+  // Dòng nhập khác loại hàng của chuyến (FE-4b-06, D-74): hộp vượt luật hỏi lý do rồi nhập lại kèm lý do
+  const guard = useSegregationGuard()
   const table = file.status === 'read' ? file.table : null
   const preview = useMemo(() => (table
     ? previewImport(table, {
@@ -97,12 +101,13 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
     if (!ready || ready.valid.length === 0) return
     const count = ready.valid.length
     const skipped = ready.invalidCount
-    importMutation.mutate(ready.valid, {
-      onSuccess: () => {
-        toast.success(t('trips.import.done', { count }), skipped > 0 ? { description: t('trips.import.skipped', { count: skipped }) } : undefined)
-        handleOpenChange(false)
-      },
+    const packages = ready.valid
+    const submit = (overrideReason?: string) => importMutation.mutateAsync({ packages, overrideReason }).then(() => {
+      toast.success(t('trips.import.done', { count }), skipped > 0 ? { description: t('trips.import.skipped', { count: skipped }) } : undefined)
+      handleOpenChange(false)
     })
+    // Lỗi khác vẫn hiện trong hộp thoại (`importMutation.error`)
+    submit().catch((error: unknown) => { guard.intercept(error, submit) })
   }
 
   return (
@@ -156,7 +161,7 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
             </p>
           ) : null}
           {ready ? <PackageImportPreview preview={ready} /> : null}
-          {importMutation.isError ? (
+          {importMutation.isError && guard.pending === null ? (
             <p role="alert" className="text-fine text-danger">{dataErrorMessage(importMutation.error, t)}</p>
           ) : null}
         </div>
@@ -178,6 +183,7 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
             </Button>
           </div>
         </DialogFooter>
+        <SegregationOverrideDialog pending={guard.pending} onClose={guard.close} />
       </DialogContent>
     </Dialog>
   )

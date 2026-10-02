@@ -14,6 +14,8 @@ import { RequirementPackagePicker } from '@/features/requirements/RequirementPac
 import { useSelectablePackagesQuery } from '@/features/requirements/useRequirementsQuery'
 import { dataErrorMessage, useT, type TFunction } from '@/lib/i18n'
 import type { Trip, TripStopTarget } from '@/lib/mock-db'
+import { SegregationOverrideDialog } from './SegregationOverrideDialog'
+import { useSegregationGuard } from './useSegregationQuery'
 import { useAddTripPackagesMutation } from './useTripPoolQuery'
 
 /** Giá trị "tạo điểm giao mới" của ô chọn điểm giao. */
@@ -50,7 +52,8 @@ function targetOf(values: PickerValues): TripStopTarget {
  * "Thêm kiện từ kho kiện" ở Chi tiết chuyến (FE-4b-05, D-68 đường 2): điều phối viên chọn kiện Đã nhập — không cờ, chưa thuộc yêu cầu
  * giao nào (cùng ô chọn kiện của form yêu cầu giao) — rồi gán vào một **điểm giao tay** đang có của chuyến hoặc tạo điểm tay mới (tên,
  * địa chỉ, toạ độ qua ô chọn toạ độ). Kiện đi đường này không có hạn giao; điểm tự sinh của yêu cầu giao không nằm trong ô chọn. Kho
- * từ chối (kiện vừa bị yêu cầu khác lấy, chuyến vừa sang vận hành) thì câu lỗi hiện trong hộp thoại.
+ * từ chối (kiện vừa bị yêu cầu khác lấy, chuyến vừa sang vận hành) thì câu lỗi hiện trong hộp thoại. Kiện khác loại hàng của chuyến
+ * (FE-4b-06, D-74): hộp vượt luật hỏi lý do rồi đưa kiện vào chuyến kèm lý do.
  */
 export function PoolPackagePicker({ open, onOpenChange, trip }: { open: boolean; onOpenChange: (open: boolean) => void; trip: Trip }) {
   return (
@@ -66,6 +69,7 @@ function PickerForm({ trip, onClose }: { trip: Trip; onClose: () => void }) {
   const t = useT()
   const selectable = useSelectablePackagesQuery()
   const add = useAddTripPackagesMutation(trip.id)
+  const guard = useSegregationGuard()
   const schema = useMemo(() => pickerSchema(t), [t])
   const manualStops = trip.stops.map((stop, index) => ({ stop, number: index + 1 })).filter(({ stop }) => stop.generated !== true)
   const stopOptions: SelectOption[] = [
@@ -80,16 +84,17 @@ function PickerForm({ trip, onClose }: { trip: Trip; onClose: () => void }) {
   const errors = form.formState.errors.newStop
 
   function handleSubmit(values: PickerValues) {
-    add.mutate({ packageIds: values.packageIds, target: targetOf(values) }, {
-      onSuccess: (saved) => {
-        const number = values.stop === NEW_STOP ? saved.stops.length : saved.stops.findIndex((item) => item.id === values.stop) + 1
-        toast.success(t('trips.pool.picker.done', { count: values.packageIds.length, number }))
-        onClose()
-      },
+    const submit = (overrideReason?: string) => add.mutateAsync({ packageIds: values.packageIds, target: targetOf(values), overrideReason }).then((saved) => {
+      const number = values.stop === NEW_STOP ? saved.stops.length : saved.stops.findIndex((item) => item.id === values.stop) + 1
+      toast.success(t('trips.pool.picker.done', { count: values.packageIds.length, number }))
+      onClose()
     })
+    // Lỗi khác vẫn hiện trong hộp thoại (`add.error`); kiện khác loại hàng thì mở hộp vượt luật
+    submit().catch((error: unknown) => { guard.intercept(error, submit) })
   }
 
   return (
+    <>
     <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
       <DialogHeader icon={PackagePlus} title={t('trips.pool.picker.title')} description={t('trips.pool.picker.description')} />
       <div className="grid gap-5 px-7 py-5 md:grid-cols-2">
@@ -128,12 +133,14 @@ function PickerForm({ trip, onClose }: { trip: Trip; onClose: () => void }) {
             )}
           />
         )}
-        {add.isError ? <p role="alert" className="text-caption text-danger md:col-span-2">{dataErrorMessage(add.error, t)}</p> : null}
+        {add.isError && guard.pending === null ? <p role="alert" className="text-caption text-danger md:col-span-2">{dataErrorMessage(add.error, t)}</p> : null}
       </div>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>{t('trips.pool.picker.cancel')}</Button>
         <Button type="submit" loading={add.isPending}>{t('trips.pool.picker.submit')}</Button>
       </DialogFooter>
     </form>
+    <SegregationOverrideDialog pending={guard.pending} onClose={guard.close} />
+    </>
   )
 }

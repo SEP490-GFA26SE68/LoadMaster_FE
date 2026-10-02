@@ -29,12 +29,15 @@ function stopStates(stops: readonly StopRow[], delivery: DeliveryProgress, progr
  * một mốc màu định danh luôn kèm số, tên, địa chỉ, số kiện và khối lượng. `delivery` chỉ truyền khi chuyến đang giao hoặc đã hoàn
  * thành: card có đầu "Sơ đồ tuyến" gập được với số tổng hợp (điểm đã giao, kiện đã dỡ, sự cố, giờ xuất phát / khoảng thời gian), mỗi
  * điểm có trạng thái giao và đoạn đường nối. Không địa lý, không thư viện bản đồ. `onAddStop` có khi chuyến còn sửa được: chân card
- * nói điểm giao đến từ đâu (tự sinh từ yêu cầu giao, D-73) và có nút thêm điểm giao tay (FE-4b-04).
+ * nói điểm giao đến từ đâu (tự sinh từ yêu cầu giao, D-73) và có nút thêm điểm giao tay (FE-4b-04). FE-4b-09: `planBar` là thanh tối
+ * ưu tuyến ở đầu card (chỉ khi xe chưa rời kho), `map` là bản đồ tuyến dưới hàng điểm giao — card này không tự đọc kho.
  */
-export function RouteDiagram({ stops, delivery, onAddStop, ...list }: {
+export function RouteDiagram({ stops, delivery, onAddStop, planBar, map, ...list }: {
   stops: readonly StopRow[]
   delivery?: DeliveryProgress
   onAddStop?: () => void
+  planBar?: ReactNode
+  map?: ReactNode
 } & Omit<StopListProps, 'stops' | 'states' | 'departedAt'>) {
   const t = useT()
   const titleId = useId()
@@ -42,7 +45,9 @@ export function RouteDiagram({ stops, delivery, onAddStop, ...list }: {
     return (
       <Card>
         <section aria-label={t('trips.route.title')}>
+          {planBar}
           <StopList stops={stops} {...list} />
+          {map ? <div className="px-3 pb-3">{map}</div> : null}
           {onAddStop ? (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft px-4.5 py-2.5">
               <p className="min-w-0 flex-1 basis-80 text-small text-ink-3">{t(stops.length === 0 ? 'trips.stops.sourceEmpty' : 'trips.stops.source')}</p>
@@ -70,6 +75,7 @@ export function RouteDiagram({ stops, delivery, onAddStop, ...list }: {
           <RouteSummary progress={progress} />
         </summary>
         <StopList stops={stops} states={stopStates(stops, delivery, progress)} departedAt={delivery.startedAt} {...list} />
+        {map ? <div className="px-3 pb-3">{map}</div> : null}
       </details>
     </Card>
   )

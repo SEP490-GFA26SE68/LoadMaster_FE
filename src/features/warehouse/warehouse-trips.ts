@@ -72,7 +72,7 @@ export function warehouseTripRows(entries: readonly TripRevisions[], vehicleName
       name: trip.name,
       scheduledDate: trip.scheduledDate,
       vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
-      status: tripStatus(trip, revisions),
+      status: tripStatus(trip),
       sub: tripSubStatus(trip, revisions),
       stage,
       total: plannedStops(plan).size,

@@ -127,12 +127,13 @@ export async function fetchAssignableTrips(): Promise<AssignableTrip[]> {
     .map(({ id, name, scheduledDate, vehicleId, stops }) => ({ id, name, scheduledDate, vehicleId, stops }))
 }
 
-export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string }
+/** `overrideReason`: lý do vượt luật "một chuyến một loại hàng" khi yêu cầu mang kiện khác loại hàng của chuyến (FE-4b-06, D-74). */
+export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string; readonly overrideReason?: string }
 
 /** Đưa cả yêu cầu vào chuyến: điểm giao tự sinh theo địa chỉ và toạ độ của yêu cầu, trùng điểm đang có thì gộp (FE-4b-04, D-73). */
 // chưa có ở BE (BE có POST /api/trips/{id}/packages theo từng kiện)
-export function assignRequirementToTrip({ requirementId, tripId }: AssignRequirementInput): Promise<{ requirement: DeliveryRequirement; trip: Trip }> {
-  return getMockDb().assignDeliveryRequirement(requirementId, tripId)
+export function assignRequirementToTrip({ requirementId, tripId, overrideReason }: AssignRequirementInput): Promise<{ requirement: DeliveryRequirement; trip: Trip }> {
+  return getMockDb().assignDeliveryRequirement(requirementId, tripId, overrideReason === undefined ? {} : { overrideReason })
 }
 
 // chưa có ở BE

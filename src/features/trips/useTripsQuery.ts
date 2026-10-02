@@ -127,7 +127,7 @@ export function useRemoveStopMutation(tripId: string) {
 export function useSavePackageMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (pkg: CargoPackage) => savePackage(tripId, pkg),
+    mutationFn: ({ pkg, overrideReason }: { pkg: CargoPackage; overrideReason?: string }) => savePackage(tripId, pkg, overrideReason),
     onSuccess: () => invalidateTrip(client, tripId),
   })
 }
@@ -136,7 +136,7 @@ export function useSavePackageMutation(tripId: string) {
 export function useImportPackagesMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (packages: readonly CargoPackage[]) => importPackages(tripId, packages),
+    mutationFn: ({ packages, overrideReason }: { packages: readonly CargoPackage[]; overrideReason?: string }) => importPackages(tripId, packages, overrideReason),
     onSuccess: () => invalidateTrip(client, tripId),
   })
 }

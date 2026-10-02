@@ -8,8 +8,9 @@ import { getMockDb, type Package, type Trip, type TripStopTarget } from '@/lib/m
 
 /**
  * Kiện kho kiện đưa **thẳng** vào chuyến (FE-4b-05, D-68 đường 2): điều phối viên chọn kiện Đã nhập chưa thuộc yêu cầu giao nào, gán
- * vào một điểm giao tay — không có hạn. Tách khỏi `trips-api.ts` để file đó không quá 250 dòng (AGENTS mục 11). Backend nhận thêm
- * `override` / `overrideReason` của luật phân tách hàng ở cùng endpoint — việc của FE-4b-06.
+ * vào một điểm giao tay — không có hạn. Tách khỏi `trips-api.ts` để file đó không quá 250 dòng (AGENTS mục 11). Kiện khác loại hàng
+ * của chuyến bị từ chối `CARGO_SEGREGATION_CONFLICT`; gọi lại kèm `overrideReason` để vượt (FE-4b-06, D-74 — backend nhận `override` /
+ * `overrideReason` ở cùng endpoint).
  */
 
 /** Một kiện kho kiện đã đưa thẳng vào chuyến, kèm dòng kiện và số điểm giao của nó. */
@@ -22,12 +23,12 @@ export async function fetchTripPoolPackages(tripId: string): Promise<TripPoolRow
   return rows.filter((row) => row.origin === 'POOL').map((row) => ({ package: row.package, lineId: row.lineId, deliveryStop: row.deliveryStop }))
 }
 
-export type AddTripPackagesInput = { readonly packageIds: readonly string[]; readonly target: TripStopTarget }
+export type AddTripPackagesInput = { readonly packageIds: readonly string[]; readonly target: TripStopTarget; readonly overrideReason?: string }
 
 /** Đưa kiện Đã nhập vào điểm giao `target` của chuyến: điểm đang có, hoặc điểm tay mới cuối tuyến. Kiện sang "Đã gán chuyến". */
 // POST /api/trips/{id}/packages
-export function addTripPackages(tripId: string, { packageIds, target }: AddTripPackagesInput): Promise<Trip> {
-  return getMockDb().addTripPackages(tripId, packageIds, target)
+export function addTripPackages(tripId: string, { packageIds, target, overrideReason }: AddTripPackagesInput): Promise<Trip> {
+  return getMockDb().addTripPackages(tripId, packageIds, target, overrideReason === undefined ? {} : { overrideReason })
 }
 
 /** Bỏ một kiện khỏi chuyến: kiện về "Đã nhập" ở kho kiện. */

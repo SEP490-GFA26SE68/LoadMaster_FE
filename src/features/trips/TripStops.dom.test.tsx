@@ -42,8 +42,8 @@ async function renderTrip(name: string) {
 }
 
 const route = () => screen.getByRole('region', { name: 'Sơ đồ tuyến' })
-/** Tên các điểm giao trên sơ đồ tuyến, theo thứ tự — bỏ mục kho xuất phát đầu danh sách. */
-const stopNames = () => within(within(route()).getByRole('list')).getAllByRole('listitem').slice(1).map((item) => item.querySelector('.line-clamp-2')?.textContent)
+/** Tên các điểm giao trên sơ đồ tuyến, theo thứ tự — bỏ mục kho xuất phát đầu danh sách. Card còn danh sách điểm của bản đồ tuyến (FE-4b-09). */
+const stopNames = () => within(within(route()).getByRole('list', { name: /^Kho xuất phát rồi/ })).getAllByRole('listitem').slice(1).map((item) => item.querySelector('.line-clamp-2')?.textContent)
 
 async function assign(user: ReturnType<typeof userEvent.setup>, tripName: string, option: RegExp) {
   await user.click(within(screen.getByRole('region', { name: 'Yêu cầu giao của chuyến' })).getByRole('button', { name: 'Đưa yêu cầu vào chuyến' }))
@@ -99,7 +99,7 @@ test('requirements put on the trip generate its stops; the same place shares one
   })
   db.restoreSession('US-0001')
   await screen.findByRole('region', { name: 'Sơ đồ tuyến' }, SLOW)
-  const stopItems = () => within(within(route()).getByRole('list')).getAllByRole('listitem').slice(1)
+  const stopItems = () => within(within(route()).getByRole('list', { name: /^Kho xuất phát rồi/ })).getAllByRole('listitem').slice(1)
 
   const first = await assign(user, trip.name, /^REQ-001 · KCN Hoà Khánh/)
   expect(first.getByRole('status')).toHaveTextContent('Điểm giao: chuyến có thêm điểm 1 · KCN Hoà Khánh ở cuối tuyến.')
@@ -120,6 +120,11 @@ test('requirements put on the trip generate its stops; the same place shares one
   const third = await assign(user, trip.name, /^REQ-003 · KCN Thăng Long/)
   expect(third.getByRole('status')).toHaveTextContent('Điểm giao: chuyến có thêm điểm 2 · KCN Thăng Long ở cuối tuyến.')
   await user.click(third.getByRole('button', { name: 'Đưa vào chuyến' }))
+  // Kiện của REQ-003 là hàng giá trị cao, chuyến đang chở hàng thường: hộp vượt luật hỏi lý do (FE-4b-06)
+  const override = within(await screen.findByRole('dialog', { name: 'Chở chung kiện khác loại hàng' }, SLOW))
+  expect(override.getByText('TL-HNI-2609-04 và TL-HNI-2609-05')).toBeInTheDocument()
+  await user.type(override.getByRole('textbox', { name: 'Lý do chở chung' }), 'Khách gom chung một xe')
+  await user.click(override.getByRole('button', { name: 'Lưu lý do' }))
   await waitFor(() => expect(stopNames()).toStrictEqual(['KCN Hoà Khánh', 'KCN Thăng Long']), SLOW)
   expect(stopItems()[1]).toHaveTextContent('Hạn 12:00 19/09')
   expect(within(stopItems()[1]!).getByText('Khẩn')).toBeInTheDocument()

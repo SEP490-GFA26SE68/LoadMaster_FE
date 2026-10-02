@@ -1,6 +1,7 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   createTrip                  → POST /api/trips
+ *   savePackage, importPackages nhận thêm `overrideReason` của luật phân tách hàng (cùng endpoint: `override`, `overrideReason`)
  *   updateTripFrame             → chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
  *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE) — dòng kiện gõ / nhập ngay trong chuyến
  *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId} — bỏ cả một dòng kiện
@@ -15,6 +16,7 @@ import {
   getMockDb,
   isMockDbError,
   latestApproved,
+  tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
   vnDate,
@@ -129,6 +131,8 @@ export type TripDetail = {
   readonly status: TripStatus
   /** Dòng phụ dưới chip: tiến độ kho hoặc phương án lỗi thời (LM-104). */
   readonly sub: TripSubStatus | null
+  /** Dòng phụ về tuyến (FE-4b-09): tuyến đã tối ưu có điểm trễ hạn dự kiến. */
+  readonly routeSub: TripSubStatus | null
   /** Revision Planner mở mặc định (bản đã duyệt mới nhất, không có thì bản mới nhất); `null` khi chưa tối ưu. */
   readonly plan: { readonly jobId: string; readonly revisionId: string } | null
 }
@@ -146,8 +150,9 @@ export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
   const shown = latestApproved(revisions) ?? revisions.at(-1)
   return {
     trip, vehicle, driver,
-    status: tripStatus(trip, revisions),
+    status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
+    routeSub: tripRouteSubStatus(trip),
     plan: shown ? { jobId: shown.jobId, revisionId: shown.id } : null,
   }
 }
@@ -187,12 +192,12 @@ export async function fetchPackages(tripId: string): Promise<CargoPackage[]> {
 
 /** Thêm kiện mới hoặc thay kiện cùng mã; kiện đổi thì `inputVersion` tăng và revision cũ thành lỗi thời (D-31). */
 // POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE)
-export async function savePackage(tripId: string, pkg: CargoPackage): Promise<Trip> {
+export async function savePackage(tripId: string, pkg: CargoPackage, overrideReason?: string): Promise<Trip> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
   const index = packages.findIndex((item) => item.id === pkg.id)
   const next = index === -1 ? [...packages, pkg] : packages.with(index, pkg)
-  return db.updateTrip(tripId, { packages: next })
+  return db.updateTrip(tripId, { packages: next, ...(overrideReason === undefined ? {} : { overrideReason }) })
 }
 
 /**
@@ -200,10 +205,10 @@ export async function savePackage(tripId: string, pkg: CargoPackage): Promise<Tr
  * nhật ký. Dòng lỗi đã bị bỏ ở bước xem trước; nơi gọi chỉ đưa kiện hợp lệ.
  */
 // POST /api/trips/{id}/packages
-export async function importPackages(tripId: string, imported: readonly CargoPackage[]): Promise<Trip> {
+export async function importPackages(tripId: string, imported: readonly CargoPackage[], overrideReason?: string): Promise<Trip> {
   const db = getMockDb()
   const { packages } = await db.getTrip(tripId)
-  return db.updateTrip(tripId, { packages: [...packages, ...imported] })
+  return db.updateTrip(tripId, { packages: [...packages, ...imported], ...(overrideReason === undefined ? {} : { overrideReason }) })
 }
 
 // DELETE /api/trips/{id}/packages/{packageId}

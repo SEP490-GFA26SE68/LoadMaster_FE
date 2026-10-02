@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
+import { RouteMap } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { RequirementAssignDialog } from '@/features/requirements/RequirementAssignDialog'
 import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import { vnClock } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { PackageFormPanel } from './PackageFormPanel'
@@ -16,6 +17,9 @@ import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { PoolPackagePicker } from './PoolPackagePicker'
 import { RouteDiagram } from './RouteDiagram'
+import { RoutePlanBar } from './RoutePlanBar'
+import { SegregationCard } from './SegregationCard'
+import { SegregationOverrideDialog } from './SegregationOverrideDialog'
 import { StopFormDialog } from './StopFormDialog'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
 import { TripDetailHeader } from './TripDetailHeader'
@@ -23,6 +27,8 @@ import { TripDetailSide } from './TripDetailSide'
 import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
 import { TripReadinessCard } from './TripReadinessCard'
+import { useTripEtaQuery } from './useRouteQuery'
+import { useSegregationGuard } from './useSegregationQuery'
 import {
   useDeletePackageMutation,
   useDuplicatePackageMutation,
@@ -42,6 +48,9 @@ import {
  * dưới bảng kiện là "Yêu cầu giao của chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`). FE-4b-04: điểm giao tự sinh khi đưa
  * yêu cầu vào chuyến; chân card sơ đồ tuyến có "Thêm điểm giao" cho điểm tay. Chuyến chưa có điểm giao nào thì chưa thêm kiện tay được
  * — kiện phải thuộc một điểm giao. FE-4b-05: dưới thẻ yêu cầu giao là "Kiện đưa thẳng từ kho kiện" (thêm / bỏ kiện Đã nhập).
+ * FE-4b-09: đầu card sơ đồ tuyến có "Tối ưu tuyến" (quyền `routes.optimize`), mỗi điểm có giờ đến dự kiến và mức hạn, dưới là bản đồ
+ * tuyến (`RouteMap`); kéo đổi thứ tự điểm thì giờ đến tính lại. FE-4b-06: cột phải có thẻ "Phân nhóm hàng"; lưu một kiện khác loại
+ * hàng của chuyến thì hộp vượt luật hỏi lý do.
  */
 export function TripDetailPage() {
   const { tripId = '' } = useParams()
@@ -53,6 +62,8 @@ export function TripDetailPage() {
   const savePackage = useSavePackageMutation(tripId)
   const deletePackage = useDeletePackageMutation(tripId)
   const duplicatePackage = useDuplicatePackageMutation(tripId)
+  const etaQuery = useTripEtaQuery(tripId)
+  const segregationGuard = useSegregationGuard()
   const [searchParams, setSearchParams] = useSearchParams()
   const [draft, setDraft] = useState<CargoPackage | null>(null)
   const [importing, setImporting] = useState(false)
@@ -72,6 +83,10 @@ export function TripDetailPage() {
   const stops = useMemo<StopRow[]>(() => (trip ? stopRows(trip.stops, trip.packages) : []), [trip])
   const summary = useMemo(() => (trip && vehicle ? cargoSummary(trip.packages, vehicle) : null), [trip, vehicle])
   const delivered = trip?.phase === 'delivering' || trip?.phase === 'completed'
+  const planning = trip?.phase === 'planning'
+  // Giờ đến dự kiến của tuyến đã tối ưu, theo mã điểm; khi xe đã rời kho thì sơ đồ hiện tiến độ giao thật thay cho dự kiến
+  const etas = useMemo(() => new Map((delivered ? [] : etaQuery.data?.stops ?? []).map((stop) => [stop.stopId, stop])), [etaQuery.data, delivered])
+  const mapStops = stops.flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }]))
   // `?kien=<mã>` mở panel của kiện đó — liên kết từ validation summary của Thiết lập tối ưu (LM-047).
   const linkedId = searchParams.get('kien')
   const editing = draft ?? trip?.packages.find((pkg) => pkg.id === linkedId) ?? null
@@ -89,12 +104,14 @@ export function TripDetailPage() {
     })
   }
 
+  /** Lưu kiện; kiện khác loại hàng của chuyến (D-74) thì kho từ chối và hộp vượt luật hỏi lý do rồi lưu lại kèm lý do. */
   function handleSave(pkg: CargoPackage, keepOpen: boolean) {
-    savePackage.mutate(pkg, {
-      onSuccess: () => {
-        toast.success(t('trips.form.saved', { id: pkg.id }))
-        setEditing(keepOpen ? emptyPackage(trip?.packages ?? [], pkg.deliveryStop) : null)
-      },
+    const save = (overrideReason?: string) => savePackage.mutateAsync({ pkg, overrideReason }).then(() => {
+      toast.success(t('trips.form.saved', { id: pkg.id }))
+      setEditing(keepOpen ? emptyPackage(trip?.packages ?? [], pkg.deliveryStop) : null)
+    })
+    save().catch((error: unknown) => {
+      if (!segregationGuard.intercept(error, save)) toast.error(dataErrorMessage(error, t))
     })
   }
 
@@ -133,6 +150,12 @@ export function TripDetailPage() {
                 delivery={delivered ? trip.delivery : undefined}
                 depotName={trip.depot.name}
                 departureTime={vnClock(new Date(trip.departureAt))}
+                etas={etas}
+                flagMissingCoordinates={planning}
+                planBar={<RoutePlanBar tripId={tripId} eta={etaQuery.data} stopCount={stops.length} canOptimize={can('routes.optimize') && planning} />}
+                map={mapStops.length > 0 ? (
+                  <RouteMap label={t('trips.routePlan.map', { id: tripId })} className="h-64" depot={{ name: trip.depot.name, lat: trip.depot.lat, lng: trip.depot.lng }} stops={mapStops} />
+                ) : undefined}
                 onAddStop={editable ? () => setAddingStop(true) : undefined}
                 readOnly={!editable}
                 onReorder={(next) => stopsMutation.mutate(next)}
@@ -164,6 +187,7 @@ export function TripDetailPage() {
               {canAssign ? <RequirementAssignDialog open={assigning} onOpenChange={setAssigning} tripId={tripId} /> : null}
               {editable ? <StopFormDialog open={addingStop} onOpenChange={setAddingStop} tripId={tripId} /> : null}
               {editable ? <PoolPackagePicker open={pickingPool} onOpenChange={setPickingPool} trip={trip} /> : null}
+              <SegregationOverrideDialog pending={segregationGuard.pending} onClose={segregationGuard.close} />
             </div>
 
             {editing ? (
@@ -188,6 +212,7 @@ export function TripDetailPage() {
               // Chuyến còn lập kế hoạch: "Kiểm tra trước khi tối ưu" đứng đầu cột phải (LM-104)
               <div className="flex min-w-0 flex-col gap-4 xl:[grid-area:side]">
                 {trip.phase === 'planning' ? <TripReadinessCard tripId={tripId} onAssignRequirement={openAssign} /> : null}
+                <SegregationCard tripId={tripId} packages={trip.packages} editable={editable} />
                 <TripDetailSide trip={trip} vehicle={vehicle} driver={query.data?.driver ?? null} summary={summary} editable={editable} />
               </div>
             )}
