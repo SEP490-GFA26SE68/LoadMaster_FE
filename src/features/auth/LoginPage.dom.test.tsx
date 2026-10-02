@@ -130,6 +130,17 @@ test('signing out and in as another role lands on that role screen, not on the p
   expect(await screen.findByText('Đang ở /kho', {}, { timeout: 3000 })).toBeInTheDocument()
 }, 15_000)
 
+/**
+ * FE-0-08: nhân sự công ty do quản trị công ty của họ khoá và mở khoá, tài khoản nền tảng do quản trị hệ thống — câu báo khoá không chỉ
+ * người dùng tới sai người. Bùi Thị Lan (`lan.bui@`, nhân viên kho của Long Bình) là tài khoản bị khoá của seed.
+ */
+test('a locked account is told to contact its own administrator, not the system administrator', async () => {
+  renderLogin('/')
+  await signInAs('lan.bui@loadmaster.vn')
+  expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toHaveTextContent(/^Tài khoản đã bị khoá\. Liên hệ quản trị viên của bạn để mở khoá\.$/)
+  expect(screen.queryByText(/Đang ở/)).not.toBeInTheDocument()
+})
+
 test('a deep link opened before signing in is kept for any role', async () => {
   renderLogin('/chuyen/TRIP-2026-0914/phuong-an?revision=REV-002')
   await signInAs('kho@loadmaster.vn')

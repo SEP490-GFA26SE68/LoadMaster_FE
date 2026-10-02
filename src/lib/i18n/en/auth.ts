@@ -14,7 +14,7 @@ export const auth = {
     emailInvalid: 'Enter a valid email address',
     passwordRequired: 'Enter your password',
     invalidCredentials: 'Incorrect email or password',
-    accountSuspended: 'This account is locked. Contact your system administrator.',
+    accountSuspended: 'This account is locked. Contact your administrator to unlock it.',
     serverUnreachable: 'Cannot reach the server. Try again later.',
   },
   showcase: {
