@@ -2,6 +2,7 @@ import { expectTypeOf, test } from 'vitest'
 import type {
   CargoPackage,
   FragilityLevel,
+  HandlingClass,
   OptimizationRequest,
   OptimizationResult,
   OrientationCode,
@@ -152,15 +153,27 @@ declare namespace Spec {
   }
 }
 
-test('the model types are exactly the Spec §6 contract: same fields, same optionality, nothing extra (D-04)', () => {
+/**
+ * Trường theo backend v2 nằm ngoài Spec (FE-3b-04, D-69): D-04 "không thêm trường" đã bị thay, mỗi trường thêm khai tường minh ở đây —
+ * thêm trường vào model mà không ghi vào đây thì build đỏ.
+ */
+interface FeCargoPackage extends Spec.CargoPackage {
+  handlingClass?: HandlingClass;
+}
+interface FeOptimizationRequest extends Omit<Spec.OptimizationRequest, 'packages'> {
+  packages: FeCargoPackage[];
+}
+
+test('the model types are the Spec §6 contract plus the declared backend fields: same optionality, nothing else extra', () => {
   expectTypeOf<OrientationCode>().toEqualTypeOf<Spec.OrientationCode>()
   expectTypeOf<FragilityLevel>().toEqualTypeOf<Spec.FragilityLevel>()
   expectTypeOf<VehicleConfig>().toEqualTypeOf<Spec.VehicleConfig>()
   expectTypeOf<VehicleObstacle>().toEqualTypeOf<Spec.VehicleObstacle>()
   expectTypeOf<VehicleAxle>().toEqualTypeOf<Spec.VehicleAxle>()
-  expectTypeOf<CargoPackage>().toEqualTypeOf<Spec.CargoPackage>()
+  expectTypeOf<HandlingClass>().toEqualTypeOf<'STANDARD' | 'FRAGILE' | 'REFRIGERATED' | 'HAZARDOUS' | 'HIGH_VALUE'>()
+  expectTypeOf<CargoPackage>().toEqualTypeOf<FeCargoPackage>()
   expectTypeOf<PackagePlacement>().toEqualTypeOf<Spec.PackagePlacement>()
   expectTypeOf<UnplacedPackage>().toEqualTypeOf<Spec.UnplacedPackage>()
-  expectTypeOf<OptimizationRequest>().toEqualTypeOf<Spec.OptimizationRequest>()
+  expectTypeOf<OptimizationRequest>().toEqualTypeOf<FeOptimizationRequest>()
   expectTypeOf<OptimizationResult>().toEqualTypeOf<Spec.OptimizationResult>()
 })
