@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
 import { labelsPath } from './packages-list'
 
-/** Dải thao tác trên kiện đang chọn (LM-104), nằm giữa thanh tìm và bảng: số đã chọn, bỏ chọn, in nhãn QR. */
+/** Dải thao tác trên kiện đang chọn của kho kiện (LM-104), nằm giữa thanh tìm và bảng: số đã chọn, bỏ chọn, in nhãn QR. Chỉ điều phối viên có. */
 export function PackageSelectionBar({ selected, onClear }: {
   selected: readonly string[]
   onClear: () => void

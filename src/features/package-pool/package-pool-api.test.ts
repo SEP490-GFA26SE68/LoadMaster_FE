@@ -1,41 +1,89 @@
 import { beforeAll, expect, test } from 'vitest'
+import { parseCsv } from '@/features/trips/csv'
+import { createTranslator } from '@/lib/i18n'
 import { getMockDb } from '@/lib/mock-db'
-import { fetchPackageLabels, fetchPackages, registerPackages } from './packages-source-api'
+import {
+  clearPackageFlag, confirmPackageImport, createPackage, downloadPackageImportTemplate, fetchPackageDetail, fetchPackageLabels, fetchPackages, previewPackageImport,
+} from './package-pool-api'
+import { importTemplateRows } from './package-pool-import'
 
 /**
- * Hộp thoại "Đăng ký kiện" theo loại kiện trên kho kiện mới (FE-3b-01): mỗi dòng đăng ký thành các kiện mang kích thước, khối lượng
- * của loại kiện và điểm đến của hộp thoại. Kho dùng chung của file, phiên điều phối viên Long Bình; seed có PK-0001…0088.
+ * Lớp dữ liệu của kho kiện (FE-3b-03, FE-3b-02) trên kho dùng chung của file, phiên điều phối viên Long Bình; seed có PK-0001…0088.
+ * Test chạy theo thứ tự và mỗi test ghi rõ mã kiện nó tạo.
  */
 beforeAll(() => {
   getMockDb().restoreSession('US-0001')
 })
 
-test('registering by quantity creates pool packages sized by the type, with numbered sender codes and one destination', async () => {
-  // Thùng dầu ăn PT-003: 45 × 32 × 30 cm, 12 kg
-  const created = await registerPackages({ kind: 'quantity', input: { packageTypeId: 'PT-003', destination: 'KCN Amata, TP. Biên Hoà, Đồng Nai', reference: 'MP-DA12-0915' }, quantity: 3 })
-  expect(created.map((pkg) => [pkg.id, pkg.packageCode])).toStrictEqual([
-    ['PK-0089', 'MP-DA12-0915-01'], ['PK-0090', 'MP-DA12-0915-02'], ['PK-0091', 'MP-DA12-0915-03'],
-  ])
-  expect(created[0]).toMatchObject({
-    lengthCm: 45, widthCm: 32, heightCm: 30, weightKg: 12, handlingClass: 'STANDARD', destination: 'KCN Amata, TP. Biên Hoà, Đồng Nai', packageTypeId: 'PT-003',
-    status: 'IMPORTED', flags: [], source: 'MANUAL', companyId: 'LOG-001',
-  })
+const HEADER = 'package_code,length,width,height,weight,handling_class,destination,package_type'
+const csvFile = (lines: readonly string[], name = 'kien.csv') => new File([[HEADER, ...lines].join('\r\n')], name, { type: 'text/csv' })
 
-  // Một kiện giữ nguyên mã lô; không có mã lô thì mã kiện là mã của kho
-  const [single] = await registerPackages({ kind: 'single', input: { packageTypeId: 'PT-001', destination: 'Huế', reference: 'MP-NS24-0915' } })
-  const [plain] = await registerPackages({ kind: 'single', input: { packageTypeId: 'PT-001', destination: 'Huế' } })
-  expect([single?.packageCode, plain?.id, plain?.packageCode]).toStrictEqual(['MP-NS24-0915', 'PK-0093', 'PK-0093'])
+test('adding one package gives it a QR code at once; its detail carries the type and a history kept by the store', async () => {
+  const created = await createPackage({ packageCode: 'HK-DNG-2609-06', lengthCm: 60, widthCm: 25, heightCm: 60, weightKg: 6, handlingClass: 'FRAGILE', destination: 'KCN Hoà Khánh, Đà Nẵng', packageTypeId: 'PT-006' })
+  expect(created).toMatchObject({ id: 'PK-0089', status: 'IMPORTED', source: 'MANUAL', flags: [], companyId: 'LOG-001' })
+  expect(created.qrToken).toMatch(/^LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/)
+  const detail = await fetchPackageDetail('PK-0089')
+  expect(detail.type?.name).toBe('Kiện quạt điện')
+  expect(detail.history).toStrictEqual([{ at: created.createdAt, actorId: 'US-0001', actorName: 'Nguyễn Thanh Tùng', kind: 'created', source: 'MANUAL' }])
 })
 
-test('file rows are one import: a bad row writes nothing', async () => {
+test('clearing a flag is written to the history of the package, newest first, with who did it', async () => {
+  // PK-0063 mang cờ "Không tìm thấy" từ seed (nhập file 16:20, gắn cờ 17:05 hôm trước ngày neo)
+  expect((await clearPackageFlag('PK-0063', 'NOT_FOUND')).flags).toStrictEqual([])
+  const { history } = await fetchPackageDetail('PK-0063')
+  expect(history.map((entry) => [entry.kind, entry.actorName, 'flag' in entry ? entry.flag : undefined])).toStrictEqual([
+    ['flagCleared', 'Nguyễn Thanh Tùng', 'NOT_FOUND'], ['flagged', 'Nguyễn Thanh Tùng', 'NOT_FOUND'], ['created', 'Nguyễn Thanh Tùng', undefined],
+  ])
+  await expect(clearPackageFlag('PK-0063', 'NOT_FOUND')).rejects.toMatchObject({ code: 'PACKAGE_FLAG_NOT_SET' })
+})
+
+test('a file with an error row: the preview names the row, confirming is refused and nothing is created', async () => {
   const before = (await fetchPackages()).length
-  const rows = [{ packageTypeId: 'PT-002', quantity: 2, destination: 'Đà Nẵng' }, { packageTypeId: 'PT-004', quantity: 1, destination: 'Đà Nẵng', reference: 'SH-01' }]
-  await expect(registerPackages({ kind: 'rows', rows: [...rows, { packageTypeId: 'PT-404', quantity: 1, destination: 'Đà Nẵng' }] })).rejects.toMatchObject({ code: 'NOT_FOUND' })
-  await expect(registerPackages({ kind: 'rows', rows: [...rows, { packageTypeId: 'PT-001', quantity: 501, destination: 'Đà Nẵng' }] })).rejects.toMatchObject({ code: 'QUANTITY_INVALID', params: { min: 1, max: 500 } })
-  await expect(registerPackages({ kind: 'rows', rows: [{ packageTypeId: 'PT-001', quantity: 1, destination: '  ' }] })).rejects.toMatchObject({ code: 'PACKAGE_INVALID', params: { field: 'destination' } })
+  const events = (await getMockDb().listEvents()).length
+  const preview = await previewPackageImport(csvFile(['DN-0001,60,40,40,18,STANDARD,"KCN Hoà Khánh, Đà Nẵng",', 'DN-0002,60,40,0,18,STANDARD,Huế,', 'DN-0003,60,40,40,18,STANDARD,Huế,']))
+  expect([preview.total, preview.valid, preview.errorRows]).toStrictEqual([3, 2, 1])
+  expect(preview.rows[1]).toMatchObject({ line: 3, errors: [{ code: 'INVALID_DIMENSION', field: 'height' }] })
+  await expect(confirmPackageImport(preview)).rejects.toMatchObject({ code: 'PACKAGE_IMPORT_INVALID', params: { errors: 1 } })
   expect(await fetchPackages()).toHaveLength(before)
-  const created = await registerPackages({ kind: 'rows', rows })
-  expect(created.map((pkg) => [pkg.packageTypeId, pkg.source, pkg.packageCode === pkg.id])).toStrictEqual([['PT-002', 'IMPORT', true], ['PT-002', 'IMPORT', true], ['PT-004', 'IMPORT', false]])
+  expect(await getMockDb().listEvents()).toHaveLength(events)
+})
+
+test('confirming a valid file creates every package in one write: IMPORTED, source IMPORT, a QR code each, one audit event', async () => {
+  const events = (await getMockDb().listEvents()).length
+  // HK-DNG-2609-01 đã có trong kho kiện (PK-0049): chỉ là cảnh báo, vẫn nhập
+  const preview = await previewPackageImport(csvFile(['DN-0001,60,40,40,18,STANDARD,"KCN Hoà Khánh, Đà Nẵng",', 'hk-dng-2609-01,50,40,30,"9,5",Dễ vỡ,Huế,PT-006']))
+  expect([preview.total, preview.valid, preview.errorRows, preview.warningRows]).toStrictEqual([2, 2, 0, 1])
+  expect(preview.rows[1]?.warnings).toStrictEqual([{ code: 'PACKAGE_CODE_EXISTS', packageId: 'PK-0049' }])
+  const created = await confirmPackageImport(preview)
+  expect(created.map((pkg) => [pkg.id, pkg.packageCode, pkg.status, pkg.source, pkg.handlingClass, pkg.packageTypeId])).toStrictEqual([
+    ['PK-0090', 'DN-0001', 'IMPORTED', 'IMPORT', 'STANDARD', undefined], ['PK-0091', 'hk-dng-2609-01', 'IMPORTED', 'IMPORT', 'FRAGILE', 'PT-006'],
+  ])
+  expect(new Set(created.map((pkg) => pkg.qrToken)).size).toBe(2)
+  const log = await getMockDb().listEvents()
+  expect(log).toHaveLength(events + 1)
+  expect(log[0]).toMatchObject({ action: 'package.importConfirmed', actorId: 'US-0001', target: { type: 'package', id: 'PK-0090' }, params: { count: 2, lastPackageId: 'PK-0091' } })
+})
+
+test('file errors are refused with the backend codes before any row is read', async () => {
+  await expect(previewPackageImport(new File(['x'], 'kien.pdf'))).rejects.toMatchObject({ code: 'UNSUPPORTED_FILE_TYPE' })
+  await expect(previewPackageImport(new File(['không phải file excel'], 'kien.xlsx'))).rejects.toMatchObject({ code: 'UNSUPPORTED_FILE_TYPE' })
+  await expect(previewPackageImport(new File([''], 'kien.csv'))).rejects.toMatchObject({ code: 'EMPTY_FILE' })
+  await expect(previewPackageImport(csvFile([]))).rejects.toMatchObject({ code: 'EMPTY_FILE' })
+  await expect(previewPackageImport(new File(['package_code,length\r\nDN-1,60'], 'kien.csv'))).rejects.toMatchObject({
+    code: 'IMPORT_COLUMNS_MISSING', params: { columns: ['width', 'height', 'weight', 'handling_class', 'destination'] },
+  })
+  const big = { name: 'kien.csv', size: 10 * 1024 * 1024 + 1 } as File
+  await expect(previewPackageImport(big)).rejects.toMatchObject({ code: 'FILE_TOO_LARGE', params: { maxMb: 10 } })
+  const rows = Array.from({ length: 1001 }, (_, index) => `DN-${index},60,40,40,18,STANDARD,Huế,`)
+  await expect(previewPackageImport(csvFile(rows))).rejects.toMatchObject({ code: 'BATCH_TOO_LARGE', params: { max: 1000, rows: 1001 } })
+})
+
+test('the CSV template downloads as a file that previews with no error', async () => {
+  const blob = await downloadPackageImportTemplate('csv', importTemplateRows(createTranslator('vi')), 'Kho kiện')
+  const text = await blob.text()
+  expect(parseCsv(text)[0]).toStrictEqual(['Mã kiện', 'Dài (cm)', 'Rộng (cm)', 'Cao (cm)', 'Khối lượng (kg)', 'Loại hàng', 'Điểm đến', 'Loại kiện'])
+  const preview = await previewPackageImport(new File([text], 'mau.csv'))
+  expect([preview.total, preview.valid, preview.errorRows, preview.warningRows]).toStrictEqual([2, 2, 0, 0])
 })
 
 test('labels carry the type only for packages that have one, and the company of the package', async () => {

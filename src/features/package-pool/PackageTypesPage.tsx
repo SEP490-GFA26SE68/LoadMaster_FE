@@ -16,14 +16,14 @@ import type { PackageTypeInput } from '@/lib/mock-db'
 import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
-import { useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagesSourceQuery'
+import { useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
 /**
- * Danh mục loại kiện `/loai-kien` (LM-104; từ FE-0-06 là màn của điều phối viên, mở từ màn Kiện hàng): bảng loại kiện (kích thước,
- * khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp
- * thoại xác nhận — loại còn kiện đăng ký thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE`).
+ * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện): bảng loại kiện (kích thước, khối lượng, dễ vỡ,
+ * hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp thoại xác nhận —
+ * loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE`).
  */
 export function PackageTypesPage() {
   const t = useT()
@@ -145,7 +145,7 @@ export function PackageTypesPage() {
           }
         }}
         title={t('sourcing.packageTypes.deleteDialog.title', { name: deleting?.name ?? '' })}
-        // Kiện vừa được đăng ký ở phiên khác cũng giữ loại kiện: kho từ chối `PACKAGE_TYPE_IN_USE`, câu lỗi thay mô tả
+        // Kiện vừa được thêm ở phiên khác cũng giữ loại kiện: kho từ chối `PACKAGE_TYPE_IN_USE`, câu lỗi thay mô tả
         description={remove.error ? dataErrorMessage(remove.error, t) : t('sourcing.packageTypes.deleteDialog.description')}
         cancelLabel={t('sourcing.packageTypes.deleteDialog.cancel')}
         confirmLabel={t('sourcing.packageTypes.deleteDialog.confirm')}

@@ -12,7 +12,7 @@ const GROUP_ICONS: Readonly<Record<SearchGroup, LucideIcon>> = {
   vehicles: Warehouse,
   users: UserRound,
   orders: ClipboardList,
-  registered: Package,
+  pool: Package,
   packageTypes: Shapes,
 }
 
@@ -122,7 +122,7 @@ function titleOf(result: SearchResult, mark: (text: string) => ReactNode): React
     case 'packageTypes':
       return mark(result.name)
     case 'packages':
-    case 'registered':
+    case 'pool':
       return <span className="font-mono text-body font-medium">{mark(result.id)}</span>
     case 'vehicles': {
       // Tên xe gồm biển số ("Isuzu NQR 550 · 51C-284.19"): biển số là mã, chữ mono
@@ -146,7 +146,7 @@ function detailOf(result: SearchResult, mark: (text: string) => ReactNode, t: TF
       return <span className={CODE}>{mark(result.id)}</span>
     case 'orders':
       return <><span className={CODE}>{mark(result.id)}</span> · {mark(result.detail)}</>
-    case 'registered':
+    case 'pool':
       return <>{mark(result.name)}{result.reference ? <> · <span className={CODE}>{mark(result.reference)}</span></> : null}</>
     case 'packages':
       return <><span className={CODE}>{result.tripId}</span> · {result.tripName}</>

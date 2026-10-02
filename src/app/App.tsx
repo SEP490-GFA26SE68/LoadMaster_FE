@@ -30,10 +30,10 @@ const VehicleDetailPage = lazy(() => import('@/features/fleet/VehicleDetailPage'
 const UsersPage = lazy(() => import('@/features/admin/UsersPage').then((m) => ({ default: m.UsersPage })))
 const AuditLogPage = lazy(() => import('@/features/admin/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-// Review 1 (LM-104): kiện đăng ký, đơn hàng, loại xe, báo cáo chuyến. Lô hàng và nhận hàng đã bỏ (FE-0-06): đường dẫn cũ là màn 404.
-const PackageTypesPage = lazy(() => import('@/features/packages-source/PackageTypesPage').then((m) => ({ default: m.PackageTypesPage })))
-const PackagesPage = lazy(() => import('@/features/packages-source/PackagesPage').then((m) => ({ default: m.PackagesPage })))
-const PackageLabelsPage = lazy(() => import('@/features/packages-source/PackageLabelsPage').then((m) => ({ default: m.PackageLabelsPage })))
+// Review 1 (LM-104): kho kiện (FE-3b-03), đơn hàng, loại xe, báo cáo chuyến. Lô hàng và nhận hàng đã bỏ (FE-0-06): đường dẫn cũ là màn 404.
+const PackageTypesPage = lazy(() => import('@/features/package-pool/PackageTypesPage').then((m) => ({ default: m.PackageTypesPage })))
+const PackagesPage = lazy(() => import('@/features/package-pool/PackagesPage').then((m) => ({ default: m.PackagesPage })))
+const PackageLabelsPage = lazy(() => import('@/features/package-pool/PackageLabelsPage').then((m) => ({ default: m.PackageLabelsPage })))
 const OrdersPage = lazy(() => import('@/features/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
@@ -121,10 +121,10 @@ export const routes: RouteObject[] = [
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
-                  // Ba màn kiện của Review 1 (LM-104) tạm theo `packages.manage` của điều phối viên tới khi có kho kiện (FE-0-06 → FE-3b-03)
+                  // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty xem (`packages.view`); loại kiện và in nhãn là của điều phối viên
+                  guarded('packages.view', [{ path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) }]),
                   guarded('packages.manage', [
                     { path: '/loai-kien', element: <PackageTypesPage />, handle: titled((t) => t('titles.packageTypes')) },
-                    { path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) },
                     { path: '/kien-hang/nhan', element: <PackageLabelsPage />, handle: titled((t) => t('titles.labels')) },
                   ]),
                   // Đơn hàng, loại xe, báo cáo chuyến (LM-104)

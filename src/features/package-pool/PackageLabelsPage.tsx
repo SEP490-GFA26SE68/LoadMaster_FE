@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { PackageLabel } from './PackageLabel'
-import { usePackageLabelsQuery } from './usePackagesSourceQuery'
+import { usePackageLabelsQuery } from './usePackagePoolQuery'
 
 /** `?kien=PK-0001,PK-0002`: in đúng các kiện đó; vắng là mọi kiện người đăng nhập thấy. */
 function pickedIds(search: URLSearchParams): string[] | undefined {

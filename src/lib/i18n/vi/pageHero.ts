@@ -13,9 +13,9 @@ export const pageHero = {
   audit: 'Sự kiện ghi lại từ các thao tác có ghi dữ liệu.',
   profile: 'Thông tin cá nhân và mật khẩu đăng nhập.',
   // Review 1 (LM-104)
-  packageTypes: 'Khuôn kích thước, khối lượng và cách xếp để đăng ký kiện.',
-  packages: 'Kiện của công ty đã đăng ký, mã QR và trạng thái tới khi giao.',
-  labels: 'Nhãn QR của kiện đã đăng ký, in để dán lên từng kiện.',
+  packageTypes: 'Khuôn kích thước, khối lượng và cách xếp gắn cho kiện của kho kiện.',
+  packages: 'Kiện của công ty: thêm lẻ hoặc nhập file, in nhãn QR, theo dõi trạng thái tới khi giao.',
+  labels: 'Nhãn QR của kiện trong kho kiện, in để dán lên từng kiện.',
   orders: 'Đơn vận chuyển từ kiện đã nhận ở kho, gán vào điểm giao của chuyến.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',

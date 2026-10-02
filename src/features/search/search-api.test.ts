@@ -31,7 +31,8 @@ const EXPECTED_READS: Readonly<Record<Role, readonly string[]>> = {
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ['listUsers'],
-  manager: ['listTrips', 'listVehicles', 'listOrders'],
+  // Quản lý công ty xem kho kiện (FE-3b-03): đọc kiện và tên loại kiện của kiện
+  manager: ['listTrips', 'listVehicles', 'listOrders', 'listPackages', 'listPackageTypes'],
   dispatcher: ['listTrips', 'listVehicles', 'listOrders', 'listPackages', 'listPackageTypes'],
   warehouse: [],
   driver: [],

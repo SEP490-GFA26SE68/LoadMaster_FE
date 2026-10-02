@@ -80,7 +80,7 @@ test.each(ROLES)('%s: every quick-search group opens a screen the role may open'
     vehicles: [{ id: 'X-1', name: 'x' }],
     users: [{ id: 'X-1', fullName: 'x', email: 'x', role: 'driver' }],
     orders: [{ id: 'X-1', customerName: 'x', deliveryAddress: 'x' }],
-    registered: [{ id: 'X-1', qrToken: 'x', typeName: 'x' }],
+    pool: [{ id: 'X-1', qrToken: 'x', typeName: 'x' }],
     packageTypes: [{ id: 'X-1', name: 'x' }],
   }
   const groups = searchGroupsFor((permission) => can(role, permission))
