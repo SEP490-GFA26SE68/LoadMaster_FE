@@ -6,7 +6,7 @@ import type { PackageLabel as PackageLabelData } from './packages-source-api'
 
 /**
  * Một nhãn QR để dán lên kiện (LM-104): mã QR (in mã chữ bên dưới để gõ tay khi không quét được), mã kiện lớn, loại kiện, số đo,
- * mã lô / SKU và nhà sản xuất. Cùng một component cho bản xem trên màn và bản in — chỉ khác cỡ (`print`: đơn vị mm của khổ giấy).
+ * mã lô / SKU và công ty sở hữu kiện. Cùng một component cho bản xem trên màn và bản in — chỉ khác cỡ (`print`: đơn vị mm của khổ giấy).
  * Góc phải có logo một màu (LM-105): thương hiệu đi theo thùng hàng tới kho, tới khách; in đen trắng vẫn rõ.
  */
 export function PackageLabel({ label, print = false }: { label: PackageLabelData; print?: boolean }) {

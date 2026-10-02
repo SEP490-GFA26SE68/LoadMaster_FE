@@ -3,7 +3,7 @@ import { REGISTERED_PACKAGE_STATUSES, type PackageType, type RegisteredPackage, 
 
 /**
  * Danh sách kiện đã đăng ký `/kien-hang` (LM-104): ghép loại kiện, tab trạng thái giữ trên URL (`trang-thai`, slug không dấu), tìm
- * bỏ dấu và chọn kiện để in nhãn / tạo lô. Hàm thuần để test không cần React.
+ * bỏ dấu và chọn kiện để in nhãn. Hàm thuần để test không cần React.
  */
 export type PackageRow = RegisteredPackage & { readonly type: PackageType | undefined }
 
@@ -12,7 +12,6 @@ export const STATUS_FILTER = 'trang-thai'
 /** Slug trên URL của từng trạng thái (D-52: tham số tiếng Việt không dấu). */
 export const PACKAGE_STATUS_SLUGS: Readonly<Record<RegisteredPackageStatus, string>> = {
   registered: 'da-dang-ky',
-  in_shipment: 'dang-giao-logistics',
   received: 'da-nhan',
   planned: 'da-len-ke-hoach',
   loaded: 'da-len-xe',
@@ -35,10 +34,10 @@ export function packageRows(packages: readonly RegisteredPackage[], types: reado
   return packages.map((pkg) => ({ ...pkg, type: typeById.get(pkg.packageTypeId) }))
 }
 
-/** Tìm theo mã kiện, tên / mã loại kiện, mã lô / SKU, mã lô hàng và mã QR. */
+/** Tìm theo mã kiện, tên / mã loại kiện, mã lô / SKU và mã QR. */
 export function searchPackages(rows: readonly PackageRow[], query: string): PackageRow[] {
   if (query.trim() === '') return [...rows]
-  return rows.filter((row) => matchesQuery([row.id, row.type?.name, row.packageTypeId, row.reference, row.shipmentId, row.qrToken], query))
+  return rows.filter((row) => matchesQuery([row.id, row.type?.name, row.packageTypeId, row.reference, row.qrToken], query))
 }
 
 export function filterByTab(rows: readonly PackageRow[], tab: PackageTab): PackageRow[] {
@@ -55,11 +54,6 @@ export function tabCounts(rows: readonly PackageRow[]): Record<PackageTab, numbe
   return counts
 }
 
-/** Kiện đưa vào lô mới được: đã đăng ký và chưa ở lô nào — cùng điều kiện với kho (`PACKAGE_UNAVAILABLE`). */
-export function isShippable(pkg: RegisteredPackage): boolean {
-  return pkg.status === 'registered' && pkg.shipmentId === undefined
-}
-
 /** Mã đã chọn theo đúng thứ tự danh sách (URL nhãn in theo thứ tự này), bỏ mã không còn trong kho. */
 export function orderedSelection(rows: readonly PackageRow[], selected: ReadonlySet<string>): string[] {
   return rows.filter((row) => selected.has(row.id)).map((row) => row.id)
@@ -68,9 +62,4 @@ export function orderedSelection(rows: readonly PackageRow[], selected: Readonly
 /** Đường dẫn trang in nhãn của các kiện `ids` (theo thứ tự). */
 export function labelsPath(ids: readonly string[]): string {
   return `/kien-hang/nhan?kien=${ids.join(',')}`
-}
-
-/** Mở màn Lô hàng với hộp thoại tạo lô, chọn sẵn các kiện `ids`. */
-export function createShipmentPath(ids: readonly string[]): string {
-  return `/lo-hang?tao=1&kien=${ids.join(',')}`
 }

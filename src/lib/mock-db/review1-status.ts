@@ -41,8 +41,8 @@ export function effectivePackageStatus(
 }
 
 /**
- * Nhãn QR của mọi instance trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện đăng ký (nhãn nhà sản xuất đã in); kiện nhập tay
- * dùng mã băm tất định theo chuyến + instance.
+ * Nhãn QR của mọi instance trong chuyến: kiện nối từ đơn hàng dùng mã QR của kiện đăng ký (nhãn đã in lúc đăng ký kiện); kiện nhập
+ * tay dùng mã băm tất định theo chuyến + instance.
  */
 export function tripLabels(
   trip: Pick<Trip, 'id' | 'packages'>,

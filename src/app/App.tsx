@@ -30,13 +30,10 @@ const VehicleDetailPage = lazy(() => import('@/features/fleet/VehicleDetailPage'
 const UsersPage = lazy(() => import('@/features/admin/UsersPage').then((m) => ({ default: m.UsersPage })))
 const AuditLogPage = lazy(() => import('@/features/admin/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-// Review 1 (LM-104): 5 luồng Register → Plan → Optimize → Approve → Execute
+// Review 1 (LM-104): kiện đăng ký, đơn hàng, loại xe, báo cáo chuyến. Lô hàng và nhận hàng đã bỏ (FE-0-06): đường dẫn cũ là màn 404.
 const PackageTypesPage = lazy(() => import('@/features/packages-source/PackageTypesPage').then((m) => ({ default: m.PackageTypesPage })))
 const PackagesPage = lazy(() => import('@/features/packages-source/PackagesPage').then((m) => ({ default: m.PackagesPage })))
 const PackageLabelsPage = lazy(() => import('@/features/packages-source/PackageLabelsPage').then((m) => ({ default: m.PackageLabelsPage })))
-const ShipmentsPage = lazy(() => import('@/features/shipments/ShipmentsPage').then((m) => ({ default: m.ShipmentsPage })))
-const ShipmentDetailPage = lazy(() => import('@/features/shipments/ShipmentDetailPage').then((m) => ({ default: m.ShipmentDetailPage })))
-const ReceivingPage = lazy(() => import('@/features/receiving/ReceivingPage').then((m) => ({ default: m.ReceivingPage })))
 const OrdersPage = lazy(() => import('@/features/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
@@ -124,17 +121,13 @@ export const routes: RouteObject[] = [
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
-                  // Review 1 (LM-104): nguồn hàng của nhà sản xuất, nhận hàng của logistics, đơn hàng, loại xe, báo cáo chuyến
-                  guarded('packages.register', [
+                  // Ba màn kiện của Review 1 (LM-104) tạm theo `packages.manage` của điều phối viên tới khi có kho kiện (FE-0-06 → FE-3b-03)
+                  guarded('packages.manage', [
                     { path: '/loai-kien', element: <PackageTypesPage />, handle: titled((t) => t('titles.packageTypes')) },
                     { path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) },
                     { path: '/kien-hang/nhan', element: <PackageLabelsPage />, handle: titled((t) => t('titles.labels')) },
                   ]),
-                  guarded('shipments.manage', [
-                    { path: '/lo-hang', element: <ShipmentsPage />, handle: titled((t) => t('titles.shipments')) },
-                    { path: '/lo-hang/:shipmentId', element: <ShipmentDetailPage />, handle: titled((t, s) => t('titles.shipment', idParam(s, 'shipmentId'))) },
-                  ]),
-                  guarded('receiving.operate', [{ path: '/nhan-hang', element: <ReceivingPage />, handle: titled((t) => t('titles.receiving')) }]),
+                  // Đơn hàng, loại xe, báo cáo chuyến (LM-104)
                   guarded('orders.view', [{ path: '/don-hang', element: <OrdersPage />, handle: titled((t) => t('titles.orders')) }]),
                   guarded('fleet.view', [{ path: '/doi-xe/loai-xe', element: <VehicleTypesPage />, handle: titled((t) => t('titles.vehicleTypes')) }]),
                   guarded('trips.view', [

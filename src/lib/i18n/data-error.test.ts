@@ -34,14 +34,9 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_TYPE_IN_USE: { packageTypeId: 'PT-001', count: 12 },
   QUANTITY_INVALID: { min: 1, max: 500 },
   COMPANY_REQUIRED: {},
-  COMPANY_KIND_INVALID: { companyId: 'MFR-001' },
-  PACKAGE_UNAVAILABLE: { packageId: 'RPK-0001', status: 'received' },
-  PACKAGE_NOT_OWNED: { packageId: 'RPK-0043' },
+  PACKAGE_UNAVAILABLE: { packageId: 'RPK-0035', status: 'registered' },
   PACKAGES_REQUIRED: {},
-  SHIPMENT_STATUS_INVALID: { shipmentId: 'SHP-001', status: 'received' },
   QR_UNKNOWN: { token: 'LM-0000-0000-0000' },
-  RECEIVING_FORBIDDEN: { shipmentId: 'SHP-003' },
-  PACKAGE_ALREADY_RECEIVED: { packageId: 'RPK-0001' },
   ORDER_STATUS_INVALID: { orderId: 'ORD-001', status: 'assigned' },
   STOP_NOT_FOUND: { tripId: 'TRIP-014', stopId: 'STOP-09' },
   VEHICLE_TYPE_INVALID: { field: 'payloadKg' },
@@ -69,4 +64,10 @@ test('lists are joined and numbers kept; an error that is not a data error gets 
     'Xe VEHICLE-002 còn gắn với chuyến TRIP-001, TRIP-002 nên không xoá được.',
   )
   expect(dataErrorMessage(new TypeError('boom'), t)).toBe('Có lỗi xảy ra. Thử lại sau.')
+})
+
+test('registering without a company is explained without naming a manufacturer; the shipment and receiving codes are gone (FE-0-06)', () => {
+  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('vi'))).toBe('Tài khoản này không thuộc công ty nào nên không đăng ký kiện được.')
+  expect(dataErrorMessage(new MockDbError('COMPANY_REQUIRED', {}), createTranslator('en'))).toBe('This account does not belong to a company, so it cannot register packages.')
+  expect(Object.keys(SAMPLES).filter((code) => /SHIPMENT|RECEIV|COMPANY_KIND|NOT_OWNED/.test(code))).toStrictEqual([])
 })

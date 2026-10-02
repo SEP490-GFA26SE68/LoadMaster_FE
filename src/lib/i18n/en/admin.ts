@@ -50,8 +50,6 @@ export const admin = {
       dispatcher: 'Computer',
       warehouse: 'Warehouse tablet',
       driver: 'Phone',
-      manufacturer: 'Computer',
-      logistics: 'Phone or tablet at the warehouse',
     },
     menu: {
       open: 'Actions for {name}',
@@ -145,7 +143,6 @@ export const admin = {
         view: 'View the package pool',
         manage: 'Import files, add packages, package types, clear package flags',
         lookup: 'Look up packages by QR code',
-        register: 'Package types, package registration and QR labels',
       },
       labels: { print: 'Print QR labels' },
       trips: { view: 'View trips', edit: 'Create, edit, cancel trips' },
@@ -162,8 +159,6 @@ export const admin = {
       warehouse: { operate: 'Load at the warehouse' },
       driver: { operate: 'Deliver' },
       orders: { view: 'View orders', edit: 'Create and edit orders, assign them to stops' },
-      shipments: { manage: 'Create and hand over shipments' },
-      receiving: { operate: 'Scan QR codes to receive goods' },
     },
   },
 } satisfies Dictionary<typeof source>

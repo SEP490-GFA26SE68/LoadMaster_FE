@@ -6,16 +6,12 @@ import type {
   OrderInput,
   PackageType,
   PackageTypeInput,
-  ReceiptResult,
   RegisteredPackage,
   RegisteredPackageInput,
   RegisteredPackageRow,
   RunFailureCode,
   RunSettings,
   ScanResult,
-  Shipment,
-  ShipmentChanges,
-  ShipmentInput,
   TransportOrder,
   TripLabel,
   VehicleType,
@@ -25,12 +21,13 @@ import type {
 import type { Trip } from './types'
 
 /**
- * Phần kho của 5 luồng Review 1 (LM-104). Cùng quy ước với `MockDb`: bất đồng bộ, trả bản sao, từ chối bằng `MockDbError`, mỗi hàm
- * ghi thêm một sự kiện nhật ký. Hàm đọc lọc theo người đang đăng nhập như server sẽ làm (nhà sản xuất chỉ thấy của công ty mình…).
+ * Phần kho của các luồng Review 1 (LM-104). Cùng quy ước với `MockDb`: bất đồng bộ, trả bản sao, từ chối bằng `MockDbError`, mỗi hàm
+ * ghi thêm một sự kiện nhật ký. Lô hàng và luồng quét nhận giữa nhà sản xuất và công ty logistics đã bỏ (FE-0-06, D-63); hàm đọc
+ * chưa lọc theo công ty của phiên — đó là việc của FE-0-02.
  */
 export type Review1Db = {
-  /** Mọi công ty, `kind` lọc nhà sản xuất / logistics. */
-  listCompanies(kind?: Company['kind']): Promise<Company[]>
+  /** Các công ty logistics dùng app. */
+  listCompanies(): Promise<Company[]>
 
   listPackageTypes(): Promise<PackageType[]>
   getPackageType(id: string): Promise<PackageType>
@@ -40,41 +37,25 @@ export type Review1Db = {
   /** Còn kiện đăng ký dùng: `PACKAGE_TYPE_IN_USE`. */
   deletePackageType(id: string): Promise<void>
 
-  /**
-   * Kiện đăng ký người đang đăng nhập được thấy: nhà sản xuất — của công ty mình; logistics — kiện trong lô giao cho công ty mình;
-   * vai trò khác — tất cả. Trạng thái `loaded` / `delivered` suy từ tiến độ chuyến.
-   */
+  /** Mọi kiện đăng ký, theo thứ tự đăng ký. Trạng thái `loaded` / `delivered` suy từ tiến độ chuyến. */
   listRegisteredPackages(): Promise<RegisteredPackage[]>
   getRegisteredPackage(id: string): Promise<RegisteredPackage>
   /** Tra kiện theo mã QR (đã chuẩn hoá); không có thì `QR_UNKNOWN`. */
   findPackageByQr(token: string): Promise<RegisteredPackage>
+  /**
+   * Đăng ký một kiện cho **công ty của người đang đăng nhập** (`User.companyId`), trạng thái `registered`. Phiên không thuộc công ty
+   * nào (chưa đăng nhập, tài khoản nền tảng): `COMPANY_REQUIRED`.
+   */
   registerPackage(input: RegisteredPackageInput): Promise<RegisteredPackage>
   /** `quantity` kiện cùng loại (1…500), một sự kiện nhật ký. */
   registerPackages(input: RegisteredPackageInput, quantity: number): Promise<RegisteredPackage[]>
   /** Nhiều dòng (nhập file): kiểm hết trước, lỗi một dòng thì không ghi gì. */
   registerPackageRows(rows: readonly RegisteredPackageRow[]): Promise<RegisteredPackage[]>
 
-  /** Nhà sản xuất: lô của công ty mình; logistics: lô đã bàn giao cho công ty mình; vai trò khác: tất cả. Mới nhất trước. */
-  listShipments(): Promise<Shipment[]>
-  getShipment(id: string): Promise<Shipment>
-  /** Lô nháp. Kiện phải `registered`, thuộc nhà sản xuất của lô, chưa ở lô khác. */
-  createShipment(input: ShipmentInput): Promise<Shipment>
-  /** Chỉ lô nháp. */
-  updateShipment(id: string, changes: ShipmentChanges): Promise<Shipment>
-  /** Chỉ lô nháp; kiện được trả về tự do. */
-  deleteShipment(id: string): Promise<void>
-  /** Nháp → đã bàn giao; kiện sang `in_shipment`. */
-  handOverShipment(id: string): Promise<Shipment>
-  /**
-   * Logistics quét QR nhận một kiện: kiện phải trong lô đã bàn giao cho **công ty của người quét**, chưa nhận. Vai trò khác bị từ chối
-   * `RECEIVING_FORBIDDEN` — quản trị hệ thống không còn nhận thay (FE-0-01). Nhận đủ thì lô `received`, chưa đủ `partially_received`.
-   */
-  receivePackageByQr(token: string): Promise<ReceiptResult>
-
   /** Mới nhất trước; `delivered` suy từ chuyến đã hoàn thành. */
   listOrders(): Promise<TransportOrder[]>
   getOrder(id: string): Promise<TransportOrder>
-  /** Kiện phải `received` và chưa thuộc đơn khác. */
+  /** Kiện phải `received` (đã ở kho) và chưa thuộc đơn khác. */
   createOrder(input: OrderInput): Promise<TransportOrder>
   /** Chỉ đơn `pending`. */
   updateOrder(id: string, changes: OrderChanges): Promise<TransportOrder>

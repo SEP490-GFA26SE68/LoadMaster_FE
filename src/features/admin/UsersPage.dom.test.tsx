@@ -11,7 +11,7 @@ import { signedInAs } from '@/test/signed-in'
 import { UsersPage } from './UsersPage'
 
 /**
- * Seam: kho dùng chung (22 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là quản trị hệ thống demo Võ Minh Khoa
+ * Seam: kho dùng chung (20 người dùng seed) → `users-api.ts` → hook → màn (LM-092). Người xem là quản trị hệ thống demo Võ Minh Khoa
  * (US-0005). Các test trong file dùng chung kho nên mỗi test thao tác trên người dùng khác nhau.
  */
 const SLOW = { timeout: 5000 }
@@ -62,7 +62,7 @@ test('danh sách từ kho: sắp theo tên, tìm, lọc vai trò và trạng th�
     'HNĐặng Hoài Nam nam.dang@loadmaster.vn', 'VBNgô Văn Bảo bao.ngo@loadmaster.vn', 'QDPhạm Quốc Dũng taixe@loadmaster.vn',
     'VSThái Văn Sơn taixe@phuongnam.vn', 'VLTrương Văn Lộc loc.truong@loadmaster.vn',
   ])
-  expect(screen.getByText('22 tài khoản')).toBeInTheDocument()
+  expect(screen.getByText('20 tài khoản')).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Vai trò' })).toHaveTextContent('Tài xế')
 })
 
@@ -83,12 +83,12 @@ function tile(label: string) {
 }
 
 test('ô số liệu đếm trên cả danh sách, không theo ô tìm; ô tổng chỉ hiển thị', async () => {
-  // Seed: 22 tài khoản, chỉ Bùi Thị Lan đã khoá. Ô tìm đang lọc còn một dòng, ô số liệu không đổi.
+  // Seed: 20 tài khoản, chỉ Bùi Thị Lan đã khoá. Ô tìm đang lọc còn một dòng, ô số liệu không đổi.
   renderUsers('/nguoi-dung?q=khoa')
   await rowOf('Võ Minh Khoa')
-  expect(tile('Tổng tài khoản').getByText('22')).toBeInTheDocument()
+  expect(tile('Tổng tài khoản').getByText('20')).toBeInTheDocument()
   expect(tile('Tổng tài khoản').getByText('Mọi vai trò, kể cả tài khoản đã khoá')).toBeInTheDocument()
-  expect(tile('Đang hoạt động').getByText('21')).toBeInTheDocument()
+  expect(tile('Đang hoạt động').getByText('19')).toBeInTheDocument()
   expect(tile('Đã khoá').getByText('1')).toBeInTheDocument()
   expect(tile('Tổng tài khoản').queryByRole('button')).toBeNull()
 })
@@ -109,11 +109,12 @@ test('ô trạng thái lọc danh sách cùng bộ lọc với ô chọn; bấm 
   // Chuyển thẳng sang ô khác bằng bàn phím
   tile('Đang hoạt động').getByRole('button').focus()
   await user.keyboard('{Enter}')
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(22))
+  // 19 tài khoản đang hoạt động và dòng tiêu đề
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(20))
   expect(suspended).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(tile('Đang hoạt động').getByRole('button'))
-  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(23))
+  await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(21))
   expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Mọi trạng thái')
 })
 
@@ -220,7 +221,7 @@ test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSION
   renderUsers()
   await user.click(screen.getByRole('tab', { name: 'Ma trận quyền' }))
   const matrix = await screen.findByRole('table')
-  // Một dòng tiêu đề và 38 quyền; cột đầu là tên quyền, mười cột còn lại là vai trò
-  expect(within(matrix).getAllByRole('row')).toHaveLength(39)
-  expect(within(matrix).getAllByRole('columnheader')).toHaveLength(11)
+  // Một dòng tiêu đề và 35 quyền; cột đầu là tên quyền, tám cột còn lại là vai trò (FE-0-06)
+  expect(within(matrix).getAllByRole('row')).toHaveLength(36)
+  expect(within(matrix).getAllByRole('columnheader')).toHaveLength(9)
 })

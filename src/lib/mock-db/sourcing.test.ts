@@ -1,7 +1,12 @@
 import { expect, test } from 'vitest'
+import type { OptimizationRequest } from '@/domain/models'
 import { createMockDb, type PackageTypeInput } from '@/lib/mock-db'
+import { runMockOptimization } from '@/services/optimization'
 
-/** Luồng 1 Review 1 (LM-104): loại kiện, kiện đăng ký + mã QR, lô hàng, logistics quét nhận. */
+/**
+ * Nguồn hàng của công ty logistics (LM-104, FE-0-06): loại kiện, kiện đăng ký + mã QR. Kiện thuộc công ty của người đăng ký; không còn
+ * nhà sản xuất, lô hàng hay luồng quét nhận. Số của seed chép tay từ `seed-sourcing.ts`, không tính lại theo cách kho tính.
+ */
 
 const TOKEN = /^LM-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/
 
@@ -9,6 +14,9 @@ const carton: PackageTypeInput = {
   name: 'Thùng nước tăng lực 24 lon', lengthCm: 40, widthCm: 27, heightCm: 13, weightKg: 8.6, fragilityLevel: 'NONE',
   allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 6, maxTopLoadKg: 45,
 }
+
+/** Mã `RPK-NNNN` từ `from` tới `to`. */
+const rpk = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, index) => `RPK-${String(from + index).padStart(4, '0')}`)
 
 test('package types: create, edit, reject invalid data by model codes, refuse deleting a type still in use', async () => {
   const db = createMockDb()
@@ -26,11 +34,43 @@ test('package types: create, edit, reject invalid data by model codes, refuse de
   expect(actions).toStrictEqual(['packageType.deleted', 'packageType.updated', 'packageType.created'])
 })
 
-test('a manufacturer registers one, N or many rows of packages for its own company, each with its own opaque QR token', async () => {
+test('the seed holds 48 registered packages of Long Bình written directly: 40 in stock, 8 still to arrive, none tied to a shipment (FE-0-06)', async () => {
   const db = createMockDb()
-  await db.authenticate('sanxuat@loadmaster.vn', 'loadmaster')
-  const one = await db.registerPackage({ packageTypeId: 'PT-003', reference: ' MP-DA12-0915 ', ownerCompanyId: 'MFR-002' })
-  expect(one).toMatchObject({ id: 'RPK-0049', ownerCompanyId: 'MFR-001', status: 'registered', reference: 'MP-DA12-0915', registeredBy: 'US-0013' })
+  const packages = await db.listRegisteredPackages()
+  const idsWith = (status: string) => packages.filter((pkg) => pkg.status === status).map((pkg) => pkg.id)
+  expect(packages.map((pkg) => pkg.id)).toStrictEqual(rpk(1, 48))
+  // 12 nước suối + 10 mì + 6 sữa + 6 bánh quy + 6 quạt đã ở kho; 8 thùng dầu ăn đăng ký sáng ngày neo, hàng chưa về
+  expect(idsWith('received')).toStrictEqual([...rpk(1, 34), ...rpk(43, 48)])
+  expect(idsWith('registered')).toStrictEqual(rpk(35, 42))
+  expect(new Set(packages.map((pkg) => pkg.status))).toStrictEqual(new Set(['received', 'registered']))
+  // Hai đơn chờ gán giữ 22 kiện; 18 kiện còn lại ở kho đưa vào đơn mới được
+  expect(packages.filter((pkg) => pkg.orderId !== undefined).map((pkg) => pkg.id)).toStrictEqual(rpk(1, 22))
+  expect(packages.filter((pkg) => pkg.status === 'received' && pkg.orderId === undefined).map((pkg) => pkg.id)).toStrictEqual([...rpk(23, 34), ...rpk(43, 48)])
+  // Mọi kiện thuộc Long Bình, do điều phối viên của Long Bình đăng ký; không kiện nào còn dấu của lô hàng hay lần quét nhận
+  expect(new Set(packages.map((pkg) => pkg.ownerCompanyId))).toStrictEqual(new Set(['LOG-001']))
+  expect(new Set(packages.map((pkg) => pkg.registeredBy))).toStrictEqual(new Set(['US-0001']))
+  expect(packages.filter((pkg) => 'shipmentId' in pkg || 'received' in pkg)).toStrictEqual([])
+  expect(new Set(packages.map((pkg) => pkg.qrToken)).size).toBe(48)
+})
+
+test('only the two logistics companies remain; the store has no shipment or receiving function left (FE-0-06)', async () => {
+  const db = createMockDb()
+  expect(await db.listCompanies()).toStrictEqual([
+    { id: 'LOG-001', name: 'Công ty TNHH Vận tải Long Bình', address: 'Kho Long Bình, 9 Đường 3A, KCN Biên Hoà 2, Đồng Nai', phone: '0251 383 6120' },
+    { id: 'LOG-002', name: 'Công ty CP Giao nhận Phương Nam', address: '102 Nguyễn Văn Quỳ, P. Phú Thuận, Q.7, TP. Hồ Chí Minh', phone: '0283 773 9054' },
+  ])
+  expect(Object.keys(db).filter((name) => /shipment|receiv/i.test(name))).toStrictEqual([])
+  expect((await db.listEvents()).filter((event) => /^shipment\./.test(event.action) || (event.target.type as string) === 'shipment')).toStrictEqual([])
+})
+
+test('a dispatcher registers one, N or many rows of packages for the company of the session, each with its own opaque QR token', async () => {
+  const db = createMockDb()
+  await db.authenticate('dieuphoi@loadmaster.vn', 'loadmaster')
+  const one = await db.registerPackage({ packageTypeId: 'PT-003', reference: ' MP-DA12-0915 ' })
+  expect(one).toStrictEqual({
+    id: 'RPK-0049', packageTypeId: 'PT-003', ownerCompanyId: 'LOG-001', qrToken: one.qrToken, status: 'registered', reference: 'MP-DA12-0915',
+    registeredAt: one.registeredAt, registeredBy: 'US-0001',
+  })
   expect(one.qrToken).toMatch(TOKEN)
   expect(one.qrToken).not.toContain('RPK')
   const many = await db.registerPackages({ packageTypeId: 'PT-001' }, 5)
@@ -40,83 +80,74 @@ test('a manufacturer registers one, N or many rows of packages for its own compa
   const tokens = (await db.listRegisteredPackages()).map((pkg) => pkg.qrToken)
   expect(new Set(tokens).size).toBe(tokens.length)
   expect(await db.findPackageByQr(one.qrToken.toLowerCase().replaceAll('-', ' '))).toMatchObject({ id: 'RPK-0049' })
+  await expect(db.findPackageByQr('LM-0000-0000-0000')).rejects.toMatchObject({ code: 'QR_UNKNOWN', params: { token: 'LM-0000-0000-0000' } })
   // Một đợt ghi một sự kiện
   const [event] = await db.listEvents()
-  expect(event).toMatchObject({ action: 'package.registered', actorId: 'US-0013', params: { count: 3, packageTypeId: 'PT-002,PT-004' } })
+  expect(event).toMatchObject({ action: 'package.registered', actorId: 'US-0001', params: { count: 3, packageTypeId: 'PT-002,PT-004' } })
+
+  // Điều phối viên của Phương Nam đăng ký cho công ty của mình
+  await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
+  expect(await db.registerPackage({ packageTypeId: 'PT-001' })).toMatchObject({ id: 'RPK-0058', ownerCompanyId: 'LOG-002', registeredBy: 'US-PN-03' })
 })
 
 test('registering checks everything first: a bad row or quantity writes nothing', async () => {
   const db = createMockDb()
+  await db.authenticate('dieuphoi@loadmaster.vn', 'loadmaster')
   const before = (await db.listRegisteredPackages()).length
-  await expect(db.registerPackages({ packageTypeId: 'PT-001', ownerCompanyId: 'MFR-001' }, 0)).rejects.toMatchObject({ code: 'QUANTITY_INVALID', params: { min: 1, max: 500 } })
-  await expect(db.registerPackageRows([
-    { packageTypeId: 'PT-001', quantity: 3, ownerCompanyId: 'MFR-001' },
-    { packageTypeId: 'PT-404', quantity: 1, ownerCompanyId: 'MFR-001' },
-  ])).rejects.toMatchObject({ code: 'NOT_FOUND' })
-  // Không có phiên nhà sản xuất thì phải chỉ rõ công ty, và công ty phải là nhà sản xuất
-  await expect(db.registerPackage({ packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
-  await expect(db.registerPackage({ packageTypeId: 'PT-001', ownerCompanyId: 'LOG-001' })).rejects.toMatchObject({ code: 'COMPANY_KIND_INVALID' })
+  const events = (await db.listEvents()).length
+  await expect(db.registerPackages({ packageTypeId: 'PT-001' }, 0)).rejects.toMatchObject({ code: 'QUANTITY_INVALID', params: { min: 1, max: 500 } })
+  await expect(db.registerPackages({ packageTypeId: 'PT-001' }, 501)).rejects.toMatchObject({ code: 'QUANTITY_INVALID' })
+  await expect(db.registerPackageRows([{ packageTypeId: 'PT-001', quantity: 3 }, { packageTypeId: 'PT-404', quantity: 1 }])).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  await expect(db.registerPackageRows([])).rejects.toMatchObject({ code: 'PACKAGES_REQUIRED' })
   expect(await db.listRegisteredPackages()).toHaveLength(before)
+  expect(await db.listEvents()).toHaveLength(events)
 })
 
-test('each company only sees its own packages and shipments', async () => {
+test('a registered package follows the trip of its order at read time: planned, then loaded, then delivered (LM-104)', async () => {
   const db = createMockDb()
+  // Chuyến mới một điểm giao, chưa có kiện: đơn ORD-002 (10 thùng mì RPK-0013…0022) thành dòng PKG-001, instance PKG-001-01…10
+  const created = await db.createTrip({
+    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
+    stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
+  })
+  const { trip } = await db.assignOrder('ORD-002', created.id, 'STOP-01')
+  const request: OptimizationRequest = {
+    vehicle: await db.getVehicle(trip.vehicleId),
+    packages: trip.packages,
+    settings: { method: 'MOCK', timeLimitSeconds: 30, randomSeed: 20_260_915, enforceLifo: true, prioritizeLowCenterOfGravity: false },
+  }
+  const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
+  await db.approveRevision(revision.id, [])
+  const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
+  const statuses = async () => (await db.listRegisteredPackages()).filter((pkg) => pkg.orderId === 'ORD-002').map((pkg) => [pkg.id, pkg.status])
+  const all = (status: string, from = 13) => rpk(from, 22).map((id) => [id, status])
+  expect(await statuses()).toStrictEqual(all('planned'))
+
+  // Kho xếp kiện đầu: chỉ kiện đó "đã lên xe" — ở danh sách, khi đọc một kiện và khi tra bằng mã QR
+  await db.startLoading(trip.id)
+  await db.recordLoadingStep(trip.id, { packageInstanceId: 'PKG-001-01', outcome: 'loaded' })
+  expect(await statuses()).toStrictEqual([['RPK-0013', 'loaded'], ...all('planned', 14)])
+  const first = await db.getRegisteredPackage('RPK-0013')
+  expect([first.status, (await db.findPackageByQr(first.qrToken)).status]).toStrictEqual(['loaded', 'loaded'])
+
+  // Tài xế dỡ kiện đầu ở điểm giao: kiện đó "đã giao", chín kiện còn lại vẫn "đã lên xe"
+  for (const id of instances.slice(1)) await db.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
+  await db.completeLoading(trip.id)
+  await db.startDelivery(trip.id)
+  await db.recordUnload(trip.id, 1, 'PKG-001-01', true)
+  expect(await statuses()).toStrictEqual([['RPK-0013', 'delivered'], ...all('loaded', 14)])
+
+  // Dỡ hết và hoàn tất điểm: chuyến hoàn thành nên đơn cũng "đã giao"
+  for (const id of instances.slice(1)) await db.recordUnload(trip.id, 1, id, true)
+  await db.completeStop(trip.id, 1)
+  expect(await statuses()).toStrictEqual(all('delivered'))
+  expect((await db.getOrder('ORD-002')).status).toBe('delivered')
+})
+
+test('a package belongs to the company of whoever registers it: no session or a platform account cannot register (FE-0-06)', async () => {
+  const db = createMockDb()
+  await expect(db.registerPackage({ packageTypeId: 'PT-001' })).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
+  await db.authenticate('quantri@loadmaster.vn', 'loadmaster')
+  await expect(db.registerPackages({ packageTypeId: 'PT-001' }, 2)).rejects.toMatchObject({ code: 'COMPANY_REQUIRED' })
   expect(await db.listRegisteredPackages()).toHaveLength(48)
-  await db.authenticate('sanxuat@loadmaster.vn', 'loadmaster')
-  expect((await db.listRegisteredPackages()).every((pkg) => pkg.ownerCompanyId === 'MFR-001')).toBe(true)
-  expect((await db.listShipments()).map((shipment) => shipment.id)).toStrictEqual(['SHP-002', 'SHP-001'])
-  await expect(db.getRegisteredPackage('RPK-0043')).rejects.toMatchObject({ code: 'NOT_FOUND' })
-  await db.authenticate('logistics@loadmaster.vn', 'loadmaster')
-  expect((await db.listShipments()).map((shipment) => shipment.id)).toStrictEqual(['SHP-002', 'SHP-001'])
-  expect(await db.listRegisteredPackages()).toHaveLength(34)
-})
-
-test('a draft shipment takes free registered packages of its manufacturer, can be edited or deleted, then is handed over', async () => {
-  const db = createMockDb()
-  await db.authenticate('sanxuat@loadmaster.vn', 'loadmaster')
-  const draft = await db.createShipment({ logisticsCompanyId: 'LOG-001', packageIds: ['RPK-0035', 'RPK-0036', 'RPK-0036'] })
-  expect(draft).toMatchObject({ id: 'SHP-004', manufacturerId: 'MFR-001', status: 'draft', packageIds: ['RPK-0035', 'RPK-0036'] })
-  expect((await db.getRegisteredPackage('RPK-0035')).shipmentId).toBe('SHP-004')
-  // Kiện đã nhận, kiện của công ty khác, lô cho nhà sản xuất: đều bị từ chối
-  await expect(db.createShipment({ logisticsCompanyId: 'LOG-001', packageIds: ['RPK-0001'] })).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE' })
-  await expect(db.createShipment({ logisticsCompanyId: 'LOG-001', packageIds: ['RPK-0043'] })).rejects.toMatchObject({ code: 'PACKAGE_NOT_OWNED' })
-  await expect(db.createShipment({ logisticsCompanyId: 'MFR-002', packageIds: ['RPK-0037'] })).rejects.toMatchObject({ code: 'COMPANY_KIND_INVALID' })
-  await expect(db.createShipment({ logisticsCompanyId: 'LOG-001', packageIds: ['RPK-0035'] })).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE' })
-
-  const edited = await db.updateShipment('SHP-004', { packageIds: ['RPK-0036', 'RPK-0037'], note: 'Giao trước 10 giờ' })
-  expect(edited).toMatchObject({ packageIds: ['RPK-0036', 'RPK-0037'], note: 'Giao trước 10 giờ' })
-  expect((await db.getRegisteredPackage('RPK-0035')).shipmentId).toBeUndefined()
-  const handed = await db.handOverShipment('SHP-004')
-  expect(handed).toMatchObject({ status: 'handed_over', handedOverBy: 'US-0013' })
-  expect((await db.getRegisteredPackage('RPK-0037')).status).toBe('in_shipment')
-  await expect(db.updateShipment('SHP-004', { note: '' })).rejects.toMatchObject({ code: 'SHIPMENT_STATUS_INVALID' })
-  await expect(db.deleteShipment('SHP-004')).rejects.toMatchObject({ code: 'SHIPMENT_STATUS_INVALID' })
-
-  const other = await db.createShipment({ logisticsCompanyId: 'LOG-002', packageIds: ['RPK-0038'] })
-  await db.deleteShipment(other.id)
-  expect((await db.getRegisteredPackage('RPK-0038')).shipmentId).toBeUndefined()
-})
-
-test('only the assigned logistics company scans packages in; the shipment turns received once every package is in', async () => {
-  const db = createMockDb()
-  const pending = (await db.getShipment('SHP-002')).packageIds.slice(4)
-  const tokenOf = async (id: string) => (await db.getRegisteredPackage(id)).qrToken
-  const fanToken = await tokenOf('RPK-0043')
-  const tokens = await Promise.all(pending.map(tokenOf))
-
-  await db.authenticate('viet.lam@phuongnam.vn', 'loadmaster')
-  await expect(db.receivePackageByQr(tokens[0] ?? '')).rejects.toMatchObject({ code: 'RECEIVING_FORBIDDEN', params: { shipmentId: 'SHP-002' } })
-
-  await db.authenticate('logistics@loadmaster.vn', 'loadmaster')
-  await expect(db.receivePackageByQr(fanToken)).rejects.toMatchObject({ code: 'RECEIVING_FORBIDDEN', params: { shipmentId: 'SHP-003' } })
-  await expect(db.receivePackageByQr('LM-0000-0000-0000')).rejects.toMatchObject({ code: 'QR_UNKNOWN' })
-  const first = await db.receivePackageByQr(` ${(tokens[0] ?? '').toLowerCase()} `)
-  expect(first.package).toMatchObject({ id: 'RPK-0027', status: 'received', received: { by: 'US-0014' } })
-  expect(first.shipment).toMatchObject({ status: 'partially_received' })
-  await expect(db.receivePackageByQr(tokens[0] ?? '')).rejects.toMatchObject({ code: 'PACKAGE_ALREADY_RECEIVED' })
-  for (const token of tokens.slice(1)) await db.receivePackageByQr(token)
-  const done = await db.getShipment('SHP-002')
-  expect(done.status).toBe('received')
-  expect(done.receipts).toHaveLength(12)
-  expect((await db.listEvents())[0]).toMatchObject({ action: 'shipment.packageReceived', actorId: 'US-0014', params: { received: 12, count: 12 } })
 })

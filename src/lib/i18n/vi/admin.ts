@@ -54,8 +54,6 @@ export const admin = {
       dispatcher: 'Máy tính',
       warehouse: 'Máy tính bảng tại kho',
       driver: 'Điện thoại',
-      manufacturer: 'Máy tính',
-      logistics: 'Điện thoại hoặc máy tính bảng tại kho',
     },
     /** Menu thao tác ở cuối mỗi dòng. */
     menu: {
@@ -161,7 +159,6 @@ export const admin = {
         view: 'Xem kho kiện',
         manage: 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện',
         lookup: 'Tra cứu kiện bằng mã QR',
-        register: 'Loại kiện, đăng ký kiện và in nhãn QR',
       },
       labels: { print: 'In nhãn QR' },
       trips: { view: 'Xem chuyến hàng', edit: 'Tạo, sửa, huỷ chuyến' },
@@ -178,8 +175,6 @@ export const admin = {
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
       orders: { view: 'Xem đơn hàng', edit: 'Tạo, sửa đơn hàng và gán vào điểm giao' },
-      shipments: { manage: 'Tạo và bàn giao lô hàng' },
-      receiving: { operate: 'Quét QR nhận hàng' },
     },
   },
 } as const

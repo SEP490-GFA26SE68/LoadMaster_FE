@@ -9,13 +9,9 @@ import {
 } from '@/lib/mock-db'
 
 /**
- * Lớp dữ liệu của nguồn hàng phía nhà sản xuất (luồng 1 Review 1, LM-104): công ty, loại kiện, kiện đăng ký, nhãn QR. Nơi duy nhất
- * trong feature biết về kho; nối backend thật chỉ thay thân hàm. Kho lọc theo người đang đăng nhập (nhà sản xuất chỉ thấy của mình).
+ * Lớp dữ liệu của nguồn hàng (LM-104; từ FE-0-06 là màn của điều phối viên): loại kiện, kiện đăng ký, nhãn QR. Nơi duy nhất trong
+ * feature biết về kho; nối backend thật chỉ thay thân hàm. Kiện đăng ký thuộc công ty của người đăng ký.
  */
-
-export function fetchCompanies(kind?: Company['kind']): Promise<Company[]> {
-  return getMockDb().listCompanies(kind)
-}
 
 export function fetchPackageTypes(): Promise<PackageType[]> {
   return getMockDb().listPackageTypes()
@@ -68,10 +64,10 @@ export async function registerPackages(register: RegisterInput): Promise<Registe
   }
 }
 
-/** Một nhãn để in: kiện, loại kiện và nhà sản xuất. */
+/** Một nhãn để in: kiện, loại kiện và công ty sở hữu kiện. */
 export type PackageLabel = { readonly package: RegisteredPackage; readonly type: PackageType | undefined; readonly owner: Company | undefined }
 
-/** Nhãn của các kiện `ids` theo đúng thứ tự (bỏ mã không thấy); `ids` vắng là mọi kiện người đăng nhập thấy. */
+/** Nhãn của các kiện `ids` theo đúng thứ tự (bỏ mã không có trong kho); `ids` vắng là mọi kiện kho trả về. */
 export async function fetchPackageLabels(ids?: readonly string[]): Promise<PackageLabel[]> {
   const db = getMockDb()
   const [packages, types, companies] = await Promise.all([db.listRegisteredPackages(), db.listPackageTypes(), db.listCompanies()])

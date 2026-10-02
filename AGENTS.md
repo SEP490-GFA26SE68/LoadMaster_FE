@@ -11,7 +11,8 @@ dấu *(đã điều chỉnh)* là chỗ hướng đi ban đầu đã đổi và
 LoadMaster là hệ thống lập kế hoạch và tối ưu chất xếp hàng hóa 3D cho doanh nghiệp vận tải vừa và nhỏ tại Việt Nam. Đây là repo frontend.
 
 Giao diện **tiếng Việt**. Một codebase responsive phục vụ **8 vai trò** của backend v2 *(đã điều chỉnh 01/10/2026, FE-0-01, FE-0-03)* — ba
-vai trò nền tảng, năm vai trò của công ty logistics — cùng hai vai trò của Review 1 (LM-104) **còn tạm tới FE-0-06**. Mã FE là nội bộ; mã
+vai trò nền tảng, năm vai trò của công ty logistics. *(đã điều chỉnh 02/10/2026, FE-0-06, D-63)* Khách hàng của app là **công ty
+logistics**: hai vai trò Nhà sản xuất, Logistics của Review 1 (LM-104) đã bỏ, `ROLES` là đúng tám vai trò này. Mã FE là nội bộ; mã
 backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi nối API:
 
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
@@ -21,11 +22,9 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; xem chuyến và phương án chỉ đọc |
-| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập chuyến, tối ưu, duyệt phương án |
+| Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; đăng ký kiện, in nhãn QR, lập chuyến, tối ưu, duyệt phương án |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
-| Nhà sản xuất (`manufacturer`, tạm) | Desktop | Loại kiện, đăng ký kiện, in nhãn QR, bàn giao lô hàng |
-| Logistics (`logistics`, tạm) | Tablet / điện thoại tại kho | Quét QR nhận từng kiện của lô hàng |
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
@@ -40,24 +39,30 @@ phối — lập chuyến, chạy tối ưu, chỉnh tay, rồi "Duyệt phươn
 Planner ở chế độ chỉ xem, một dòng lý do. Không còn hàng đợi `/duyet` (đường dẫn cũ là màn 404), quyền `plans.review` và các quyết định trả lại
 của quản lý (từ chối, yêu cầu tối ưu lại, đề xuất đổi xe / tách chuyến). Trước đó LM-104 (27/09/2026) giao duyệt cho quản lý công ty và LM-108
 (28/09/2026) cho điều phối "Lưu bản chỉnh" vào hàng đợi duyệt. **Còn tạm** sau FE-0-01: `orders.view`/`orders.edit` (điều phối; quản lý chỉ
-xem) giữ tới FE-4b-02; `packages.register`, `shipments.manage` (nhà sản xuất), `receiving.operate` (logistics) bỏ ở FE-0-06. 19 quyền mới của PRD
-v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
+xem) giữ tới FE-4b-02. *(đã điều chỉnh 02/10/2026, FE-0-06)* Ba quyền `packages.register`, `shipments.manage`, `receiving.operate` đã bỏ cùng
+hai vai trò của Review 1; ba màn kiện `/kien-hang`, `/kien-hang/nhan`, `/loai-kien` **tạm** theo `packages.manage` của điều phối viên tới khi có
+kho kiện theo mô hình backend (FE-3b-03); `/lo-hang`, `/lo-hang/:shipmentId`, `/nhan-hang` không còn — đường dẫn cũ là màn 404. 19 quyền mới của
+PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
-nhãn nhưng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue làm màn nào thì nối quyền
-của màn đó, route đang có giữ nhóm quyền cũ.
+nhãn; trừ `packages.manage`, chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
 E2E đăng nhập bằng `login(route, role)`; *(đã điều chỉnh 01/10/2026, FE-0-03)* không còn vai trò toàn quyền nên kịch bản đi qua nhiều vai trò
 **đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser` (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho), và test
 DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`. Tài khoản công ty gắn `User.companyId`: nhân viên seed thuộc `LOG-001`
-(Long Bình), năm tài khoản `@phuongnam.vn` thuộc `LOG-002`, nhà sản xuất `MFR-…`; ba tài khoản nền tảng không có công ty và không có kho
-(`User.depot` tuỳ chọn; kho bỏ cả hai khi vai trò là nền tảng). Kho **mới chỉ** lọc dữ liệu theo công ty cho nhà sản xuất và logistics (nhà sản
-xuất chỉ thấy kiện, lô của mình; logistics chỉ nhận lô giao cho công ty mình) — cách ly theo công ty cho các vai trò còn lại là FE-0-02. Tài khoản
-seed thêm ở FE-0-03 mang mã ngoài dạng `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên.
-Ô đăng nhập nhanh (`DemoAccounts`) chia nhóm "Nền tảng" rồi từng công ty (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong ô đó tới
-khi có màn riêng. Nhà sản xuất và logistics dùng khung ứng dụng (thanh ngang), màn chính `/kien-hang` và `/nhan-hang`. Mục điều hướng Review 1
-khai `roles` trong `NAV_ITEMS` để chỉ hiện cho vai trò dùng hằng ngày; vai trò chưa có mục nào (quản lý nền tảng, hỗ trợ khách hàng) thì thanh
-không vẽ khay điều hướng. Nhật ký và chuông chỉ biến đối tượng thành liên kết khi người xem có quyền mở trang đích (`describeEvent(…, can)`) —
+(Long Bình), năm tài khoản `@phuongnam.vn` thuộc `LOG-002`; ba tài khoản nền tảng không có công ty và không có kho (`User.depot` tuỳ chọn; kho
+bỏ cả hai khi vai trò là nền tảng). *(đã điều chỉnh 02/10/2026, FE-0-06)* Seed chỉ còn hai công ty logistics (`MFR-…` đã bỏ) và 20 tài khoản:
+mỗi công ty đủ năm vai trò công ty — `viet.lam@phuongnam.vn` (`US-0015`) là nhân viên kho của Phương Nam; `sanxuat@`, `logistics@` (`US-0013`,
+`US-0014`) đã bỏ cùng vai trò của chúng. Kho **chưa lọc dữ liệu theo công ty** (lớp lọc theo vai trò nhà sản xuất / logistics của LM-104 đã bỏ) —
+cách ly theo công ty là FE-0-02; riêng kiện đăng ký mới thuộc **công ty của người đăng ký** (`RegisteredPackage.ownerCompanyId` lấy từ
+`User.companyId` của phiên; phiên không thuộc công ty nào thì kho từ chối `COMPANY_REQUIRED`). Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
+`US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
+Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
+ô đó tới khi có màn riêng. Mục điều hướng khai `roles` trong `NAV_ITEMS` khi chỉ hiện cho vai trò dùng nó hằng ngày (Đơn hàng của điều phối);
+điều phối viên có mục **Kiện hàng** (`/kien-hang`, FE-0-06) — Loại kiện và In nhãn không có mục riêng, mở từ màn Kiện hàng (nút "Loại kiện" trên
+dải tiêu đề, nút quay lại ở hai màn kia); vai trò chưa có mục nào (quản lý nền tảng, hỗ trợ khách hàng) thì thanh không vẽ khay điều hướng.
+Nhật ký và chuông chỉ biến đối tượng thành liên kết khi người xem có quyền mở trang đích (`describeEvent(…, can)`) —
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
@@ -73,7 +78,7 @@ trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn 
 riêng, nếu không sẽ thành hai lớp chồng nhau. *(26/09/2026)* Bản đầu của đợt 2 bỏ chỉ báo này; người dùng yêu cầu giữ lại.
 Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
 `LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
-rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm đơn hàng, kiện đã đăng ký, loại kiện, lô hàng, lô đang đến nên nhà sản xuất và logistics cũng có; màn toàn màn hình không
+rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm đơn hàng, kiện đã đăng ký, loại kiện — từ FE-0-06 hai nhóm sau theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
@@ -187,18 +192,17 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
-    packages-source/    loại kiện, kiện đăng ký, nhãn QR — nhà sản xuất (LM-104)
-    shipments/          lô hàng giao công ty logistics (LM-104)
-    receiving/          logistics quét QR nhận hàng (LM-104)
+    packages-source/    loại kiện, kiện đăng ký, nhãn QR (LM-104) — màn của điều phối viên từ FE-0-06
     orders/             đơn hàng, gán đơn vào điểm giao (LM-104)
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
                         bảo dưỡng xe (LM-081); người dùng, phiên, nhật ký (LM-082); seed 15 chuyến neo theo ngày (LM-083);
-                        Review 1 (LM-104): công ty, loại kiện, kiện đăng ký + mã QR, lô hàng + nhận hàng, đơn hàng, lần chạy
-                        tối ưu (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
-                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`
+                        Review 1 (LM-104): công ty logistics, loại kiện, kiện đăng ký + mã QR, đơn hàng, lần chạy tối ưu
+                        (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
+                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
+                        (`db-shipments.ts`) đã bỏ ở FE-0-06
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -527,7 +531,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
   mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
   · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong)
-  · `warehouseWaiting` kho / logistics chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
   `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
@@ -902,18 +906,24 @@ có backend nên chưa có request nào. Đường đi chuẩn khi làm màn m�
 `useUsersQuery` + mutation), Nhật ký (`audit-api.ts`), kho và tài xế (LM-086/087) đều đọc/ghi kho mock qua Query. Trạng thái xe đọc
 `useVehicleStatesQuery` (`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác); ghi bảo dưỡng vô hiệu hoá `['vehicles']`.
 
-*(bổ sung 27/09/2026, LM-104)* Dữ liệu 5 luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `shipments-api.ts`,
-`receiving-api.ts`, `orders-api.ts`, `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
+*(bổ sung 27/09/2026, LM-104)* Dữ liệu các luồng Review 1 theo cùng đường đi: `packages-source-api.ts`, `orders-api.ts`,
+`vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
-`['registered-packages', …]`, `['shipments', …]`, `['receiving', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
+`['registered-packages', …]`, `['orders', …]`, `['vehicle-types', …]` (không đặt
 dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, đơn đã gán, báo cáo, lần chạy)
-nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu lọc theo công ty có mã người dùng trong khoá.
+nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. Dữ liệu theo công ty có mã người dùng trong khoá.
+*(đã điều chỉnh 02/10/2026, FE-0-06)* `shipments-api.ts`, `receiving-api.ts` và khoá `['shipments', …]`, `['receiving', …]` đã bỏ cùng hai
+feature đó.
 Hai ngoại lệ, vì mutation chờ mọi truy vấn khớp khoá bị vô hiệu làm mới xong: *(đã điều chỉnh 02/10/2026, FE-0-07)* **người đã duyệt ở
 Planner** `['plan-approval', revisionId]` (`viewer-api.ts` → `usePlanApprovalQuery`; dưới khoá chuyến thì bấm Duyệt chờ nó, Planner dựng lại
 trên revision mới và mất toast lẫn điều hướng; revision bất biến nên khoá này không cần làm mới — `review-api.ts` và khoá `['review', …]` đã bỏ
 cùng hàng đợi duyệt) và **nhãn QR** của kho / tài xế `['warehouse-labels', id]`, `['driver', 'labels', id]` (mỗi lần ghi bước xếp, dỡ phải chờ
 tải lại nhãn).
-Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng. Mã QR là chuỗi
+Trạng thái kiện đăng ký `loaded`/`delivered` và đơn `delivered` **suy lúc đọc** từ tiến độ chuyến, không có hàm ghi riêng.
+*(đã điều chỉnh 02/10/2026, FE-0-06)* Kiện đăng ký còn năm trạng thái `registered`, `received`, `planned`, `loaded`, `delivered` (`in_shipment`
+đã bỏ cùng lô hàng). Không còn luồng quét nhận nên `received` — hàng có ở kho, đưa vào đơn được — chỉ do **seed ghi thẳng** (40 trong 48 kiện
+seed, tất cả thuộc `LOG-001`); kiện mới đăng ký ở `registered` và chưa vào đơn được cho tới khi có kho kiện theo mô hình backend (FE-3b-03).
+Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện; kiện nhập tay vào chuyến có mã băm tất định theo chuyến + kiện.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
 

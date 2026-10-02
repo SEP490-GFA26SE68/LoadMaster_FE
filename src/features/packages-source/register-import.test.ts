@@ -37,7 +37,7 @@ test('every problem of a row is reported as a code, and invalid rows never reach
     [{ code: 'quantityInvalid' }],
     [],
   ])
-  expect(toRegisterRows(rows, 'MFR-002')).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 500, ownerCompanyId: 'MFR-002' }])
+  expect(toRegisterRows(rows)).toStrictEqual([{ packageTypeId: 'PT-001', quantity: 500 }])
 })
 
 test('an empty file has no rows', () => {

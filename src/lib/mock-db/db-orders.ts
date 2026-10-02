@@ -39,7 +39,7 @@ export function orderMethods(ctx: DbContext): OrderMethods {
     return status === order.status ? order : { ...order, status }
   }
 
-  /** Kiện của đơn `orderId`: đã nhận ở kho logistics, chưa thuộc đơn khác. */
+  /** Kiện của đơn `orderId`: đã ở kho (`received`), chưa thuộc đơn khác. */
   function assertPackages(packageIds: readonly string[], orderId: string) {
     if (packageIds.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
     for (const id of packageIds) {

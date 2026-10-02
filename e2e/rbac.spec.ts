@@ -3,8 +3,9 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 
 /**
  * Phân quyền giả lập ở FE (LM-084, D-41): mỗi vai trò mở đúng màn chính, nav chỉ có mục được phép, route không có quyền là 403
- * có lối về, quản lý xem chuyến và phương án chỉ đọc. FE-0-01, FE-0-03: tám vai trò của PRD v2 (cùng hai vai trò Review 1 còn tạm),
- * tài khoản của hai công ty, quản trị hệ thống không còn quyền vận hành. FE-0-07: điều phối viên duyệt phương án, hàng đợi `/duyet` đã bỏ.
+ * có lối về, quản lý xem chuyến và phương án chỉ đọc. FE-0-01, FE-0-03: tám vai trò của PRD v2, tài khoản của hai công ty, quản trị hệ
+ * thống không còn quyền vận hành. FE-0-07: điều phối viên duyệt phương án, hàng đợi `/duyet` đã bỏ. FE-0-06: không còn nhà sản xuất,
+ * logistics, lô hàng và nhận hàng; ba màn kiện là của điều phối viên.
  */
 
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
@@ -19,15 +20,12 @@ const HOMES: readonly (readonly [email: string, path: string, heading: string])[
   ['dieuphoi@loadmaster.vn', '/chuyen', 'Chuyến hàng'],
   ['kho@loadmaster.vn', '/kho', 'Chuyến cần xếp'],
   ['taixe@loadmaster.vn', '/tai-xe', 'Chuyến của tôi'],
-  ['logistics@loadmaster.vn', '/nhan-hang', 'Nhận hàng'],
-  // Phương Nam
+  // Phương Nam: đủ năm vai trò công ty — `viet.lam@` là nhân viên kho (FE-0-06)
   ['qtcongty@phuongnam.vn', '/nguoi-dung', 'Người dùng'],
   ['quanly@phuongnam.vn', '/', 'Bảng điều khiển'],
   ['dieuphoi@phuongnam.vn', '/chuyen', 'Chuyến hàng'],
+  ['viet.lam@phuongnam.vn', '/kho', 'Chuyến cần xếp'],
   ['taixe@phuongnam.vn', '/tai-xe', 'Chuyến của tôi'],
-  ['viet.lam@phuongnam.vn', '/nhan-hang', 'Nhận hàng'],
-  // Nhà sản xuất của Review 1 (còn tạm tới FE-0-06)
-  ['sanxuat@loadmaster.vn', '/kien-hang', 'Kiện hàng'],
 ]
 
 test('every demo account signs in and lands on the home screen of its role (FE-0-03)', async ({ page, browserErrors }) => {
@@ -48,12 +46,15 @@ test('the quick sign-in box groups accounts by platform and company; picking one
   await expect(roles('Nền tảng')).toHaveText([/^Quản trị hệ thống\s*quantri@loadmaster\.vn$/])
   await expect(roles('Công ty TNHH Vận tải Long Bình')).toHaveText([
     /^Quản trị công ty\s*qtcongty@loadmaster\.vn$/, /^Quản lý công ty\s*quanly@loadmaster\.vn$/, /^Điều phối viên\s*dieuphoi@loadmaster\.vn$/,
-    /^Nhân viên kho\s*kho@loadmaster\.vn$/, /^Tài xế\s*taixe@loadmaster\.vn$/, /^Công ty logistics\s*logistics@loadmaster\.vn$/,
+    /^Nhân viên kho\s*kho@loadmaster\.vn$/, /^Tài xế\s*taixe@loadmaster\.vn$/,
   ])
   await expect(roles('Công ty CP Giao nhận Phương Nam')).toHaveText([
     /^Quản trị công ty\s*qtcongty@phuongnam\.vn$/, /^Quản lý công ty\s*quanly@phuongnam\.vn$/, /^Điều phối viên\s*dieuphoi@phuongnam\.vn$/,
-    /^Tài xế\s*taixe@phuongnam\.vn$/, /^Công ty logistics\s*viet\.lam@phuongnam\.vn$/,
+    /^Nhân viên kho\s*viet\.lam@phuongnam\.vn$/, /^Tài xế\s*taixe@phuongnam\.vn$/,
   ])
+  // Ba nhóm: nền tảng và hai công ty logistics — không còn nhóm của nhà sản xuất, không dòng nào mang nhãn vai trò đã bỏ (FE-0-06)
+  await expect(page.getByRole('group')).toHaveCount(3)
+  await expect(page.getByText(/Nhà sản xuất|logistics/i)).toHaveCount(0)
 
   await roles('Công ty CP Giao nhận Phương Nam').filter({ hasText: 'Điều phối viên' }).click()
   await expect(page.getByLabel('Email', { exact: true })).toHaveValue('dieuphoi@phuongnam.vn')
@@ -112,22 +113,36 @@ test('each role lands on its own screen and sees only its nav items', async ({ p
   expect(browserErrors).toStrictEqual([])
 })
 
-test('manufacturer and logistics land on their Review 1 screens inside the app shell (LM-104)', async ({ page, login, browserErrors }) => {
+test('the dispatcher owns the package screens; the shipment and receiving routes are gone for everyone (FE-0-06)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
-  await login('/', 'manufacturer')
+  await login('/', 'dispatcher')
+  await page.waitForURL((url) => url.pathname === '/chuyen')
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Kiện hàng', 'Đội xe'])
+  await nav.getByRole('link', { name: 'Kiện hàng', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true })).toBeVisible()
-  await expect(nav.getByRole('link')).toHaveText(['Kiện hàng', 'Lô hàng', 'Loại kiện'])
-  await expect(page.getByText('42 kiện đã đăng ký', { exact: true })).toBeVisible()
+  // Điều phối viên thấy cả 48 kiện của seed (trước là 42 kiện của riêng một nhà sản xuất)
+  await expect(page.getByText('48 kiện đã đăng ký', { exact: true })).toBeVisible()
+
+  // Lô hàng và nhận hàng: đường dẫn cũ là màn 404 (không phải 403), có lối về màn chính
+  for (const route of ['/lo-hang', '/lo-hang/SHP-002', '/nhan-hang']) {
+    await navigateInApp(page, route)
+    await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true }), route).toBeVisible()
+    await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
+    await page.waitForURL((url) => url.pathname === '/chuyen')
+    await expect(page.getByRole('heading', { level: 1, name: 'Chuyến hàng', exact: true }), route).toBeVisible()
+  }
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a logistics user opening the manufacturer screen gets 403 with a way back to receiving', async ({ page, login, browserErrors }) => {
-  await login('/kien-hang', 'logistics')
+test('a warehouse worker of the second company opening the package screens gets 403 with a way back to the warehouse (FE-0-06)', async ({ page, browserErrors }) => {
+  await page.goto('/kien-hang')
+  await signInWith(page, 'viet.lam@phuongnam.vn')
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/nhan-hang')
-  await expect(page.getByText('8 kiện đang chờ quét nhận', { exact: true })).toBeVisible()
+  await page.waitForURL((url) => url.pathname === '/kho')
+  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến cần xếp', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tài khoản Lâm Quốc Việt', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 

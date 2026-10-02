@@ -14,37 +14,21 @@ type RegisteredMethods = Pick<
 export const MAX_REGISTER_QUANTITY = 500
 
 /** Trạng thái hiện của kiện: `loaded` / `delivered` suy từ chuyến của đơn (LM-104). */
-export function withEffectiveStatus(state: DbState, pkg: RegisteredPackage): RegisteredPackage {
+function withEffectiveStatus(state: DbState, pkg: RegisteredPackage): RegisteredPackage {
   const order = pkg.orderId === undefined ? undefined : state.orders.get(pkg.orderId)
   const trip = order?.assignment ? state.trips.get(order.assignment.tripId) : undefined
   const status = effectivePackageStatus(pkg, order, trip)
   return status === pkg.status ? pkg : { ...pkg, status }
 }
 
-/** Kiện người đang đăng nhập được thấy — như server lọc theo công ty. Không có phiên (test logic kho) thì thấy hết. */
-export function visibleToSession(state: DbState, pkg: RegisteredPackage): boolean {
-  const user = sessionUserOf(state)
-  if (user?.role === 'manufacturer') return pkg.ownerCompanyId === user.companyId
-  if (user?.role === 'logistics') {
-    const shipment = pkg.shipmentId === undefined ? undefined : state.shipments.get(pkg.shipmentId)
-    return shipment !== undefined && shipment.status !== 'draft' && shipment.logisticsCompanyId === user.companyId
-  }
-  return true
-}
-
 /**
- * Nhà sản xuất của thao tác: nhà sản xuất đăng nhập luôn làm cho công ty mình; người khác (quản trị viên, test không phiên) phải chỉ
- * rõ công ty, và công ty đó phải là nhà sản xuất.
+ * Công ty nhận kiện đăng ký mới: công ty của người đang đăng nhập (FE-0-06, D-63 — khách hàng của app là công ty logistics, không còn
+ * nhà sản xuất đăng ký hộ). Phiên không thuộc công ty nào (chưa đăng nhập, tài khoản nền tảng) thì không đăng ký được.
  */
-export function manufacturerFor(state: DbState, requested: string | undefined): string {
-  const user = sessionUserOf(state)
-  if (user?.role === 'manufacturer') {
-    if (user.companyId === undefined) throw new MockDbError('COMPANY_REQUIRED', {})
-    return user.companyId
-  }
-  if (requested === undefined) throw new MockDbError('COMPANY_REQUIRED', {})
-  if (found(state.companies, 'companies', requested).kind !== 'manufacturer') throw new MockDbError('COMPANY_KIND_INVALID', { companyId: requested })
-  return requested
+function sessionCompany(state: DbState): string {
+  const companyId = sessionUserOf(state)?.companyId
+  if (companyId === undefined) throw new MockDbError('COMPANY_REQUIRED', {})
+  return companyId
 }
 
 function assertQuantity(quantity: number) {
@@ -53,7 +37,10 @@ function assertQuantity(quantity: number) {
   }
 }
 
-/** Kiện đăng ký (luồng 1, LM-104): tạo một / theo số lượng / nhiều dòng; mỗi kiện một mã QR ngẫu nhiên. */
+/**
+ * Kiện đăng ký (LM-104): tạo một / theo số lượng / nhiều dòng; mỗi kiện một mã QR ngẫu nhiên. Hàm đọc trả mọi kiện — lọc theo công ty
+ * của phiên là việc của FE-0-02.
+ */
 export function registeredMethods(ctx: DbContext): RegisteredMethods {
   const { state } = ctx
   const { registeredPackages, packageTypes } = state
@@ -77,14 +64,14 @@ export function registeredMethods(ctx: DbContext): RegisteredMethods {
   }
 
   function register(rows: readonly RegisteredPackageRow[]): RegisteredPackage[] {
+    const owner = sessionCompany(state)
     if (rows.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
     // Kiểm hết trước khi ghi: một dòng sai thì không dòng nào được ghi
-    const checked = rows.map((row) => {
+    for (const row of rows) {
       found(packageTypes, 'packageTypes', row.packageTypeId)
       assertQuantity(row.quantity)
-      return { row, owner: manufacturerFor(state, row.ownerCompanyId) }
-    })
-    const created = checked.flatMap(({ row, owner }) => create(row, owner, row.quantity))
+    }
+    const created = rows.flatMap((row) => create(row, owner, row.quantity))
     const types = [...new Set(rows.map((row) => row.packageTypeId))]
     ctx.log('package.registered', { type: 'package', id: created[0]?.id ?? '' }, {
       count: created.length,
@@ -95,19 +82,13 @@ export function registeredMethods(ctx: DbContext): RegisteredMethods {
   }
 
   return {
-    listRegisteredPackages: () =>
-      ctx.respond(() => [...registeredPackages.values()].filter((pkg) => visibleToSession(state, pkg)).map((pkg) => withEffectiveStatus(state, pkg))),
-    getRegisteredPackage: (id) =>
-      ctx.respond(() => {
-        const pkg = found(registeredPackages, 'registeredPackages', id)
-        if (!visibleToSession(state, pkg)) throw new MockDbError('NOT_FOUND', { collection: 'registeredPackages', id })
-        return withEffectiveStatus(state, pkg)
-      }),
+    listRegisteredPackages: () => ctx.respond(() => [...registeredPackages.values()].map((pkg) => withEffectiveStatus(state, pkg))),
+    getRegisteredPackage: (id) => ctx.respond(() => withEffectiveStatus(state, found(registeredPackages, 'registeredPackages', id))),
     findPackageByQr: (token) =>
       ctx.respond(() => {
         const wanted = normalizeQrToken(token)
         const pkg = [...registeredPackages.values()].find((item) => item.qrToken === wanted)
-        if (!pkg || !visibleToSession(state, pkg)) throw new MockDbError('QR_UNKNOWN', { token: wanted })
+        if (!pkg) throw new MockDbError('QR_UNKNOWN', { token: wanted })
         return withEffectiveStatus(state, pkg)
       }),
     registerPackage: (input) => ctx.respond(() => register([{ ...input, quantity: 1 }])[0] as RegisteredPackage),

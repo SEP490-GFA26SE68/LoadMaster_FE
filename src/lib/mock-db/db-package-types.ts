@@ -35,7 +35,7 @@ function assertValid(input: PackageTypeInput) {
 export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
   const { companies, packageTypes, registeredPackages } = ctx.state
   return {
-    listCompanies: (kind) => ctx.respond(() => [...companies.values()].filter((company) => kind === undefined || company.kind === kind)),
+    listCompanies: () => ctx.respond(() => [...companies.values()]),
     listPackageTypes: () => ctx.respond(() => [...packageTypes.values()]),
     getPackageType: (id) => ctx.respond(() => found(packageTypes, 'packageTypes', id)),
     createPackageType: (input) =>

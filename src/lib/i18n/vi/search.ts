@@ -13,9 +13,7 @@ export const search = {
     users: 'người dùng (tên, email)',
     orders: 'đơn hàng (mã, khách, địa chỉ)',
     registered: 'kiện đã đăng ký (mã, mã lô, mã QR, loại)',
-    shipments: 'lô hàng (mã, công ty logistics)',
     packageTypes: 'loại kiện (mã, tên)',
-    incoming: 'lô đang đến (mã, nhà sản xuất)',
   },
   groups: {
     trips: 'Chuyến',
@@ -24,9 +22,7 @@ export const search = {
     users: 'Người dùng',
     orders: 'Đơn hàng',
     registered: 'Kiện đã đăng ký',
-    shipments: 'Lô hàng',
     packageTypes: 'Loại kiện',
-    incoming: 'Lô đang đến',
   },
   results: 'Kết quả tìm nhanh',
   /** Số kết quả ở hàng ô nhập (V2.3); trình đọc màn hình cũng nghe nó mỗi lần kết quả đổi. */

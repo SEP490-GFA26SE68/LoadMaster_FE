@@ -19,7 +19,6 @@ const SOURCES: SearchSources = {
   ],
   orders: [{ id: 'ORD-001', customerName: 'Co.opmart Gò Vấp', deliveryAddress: '12 Quang Trung, Gò Vấp' }],
   registered: [{ id: 'RPK-0001', reference: 'MP-DA12-0914', qrToken: 'LM-ZB4R-3W83-412N', typeName: 'Thùng dầu ăn 12 chai' }],
-  shipments: [{ id: 'SHP-002', manufacturer: 'Thực phẩm Minh Phát', logistics: 'Vận tải Tân Cảng' }],
   packageTypes: [{ id: 'PT-001', name: 'Thùng dầu ăn 12 chai' }],
 }
 
@@ -61,7 +60,7 @@ test('only the permitted groups, in their order; groups without a result are lef
   expect(searchSources(SOURCES, 'hanh', ['trips', 'packages', 'vehicles'])).toStrictEqual([])
 })
 
-test('Review 1 groups: registered packages, package types, orders, shipments and incoming shipments (LM-104)', () => {
+test('Review 1 groups: registered packages, package types and orders (LM-104); shipments are no longer searched (FE-0-06)', () => {
   expect(hrefs(searchSources(SOURCES, 'dau an', SEARCH_GROUPS))).toStrictEqual([
     ['registered', ['/kien-hang?q=RPK-0001']],
     ['packageTypes', ['/loai-kien?q=PT-001']],
@@ -69,16 +68,19 @@ test('Review 1 groups: registered packages, package types, orders, shipments and
   expect(hrefs(searchSources(SOURCES, 'mp-da12', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=RPK-0001']]])
   expect(hrefs(searchSources(SOURCES, 'zb4r', SEARCH_GROUPS))).toStrictEqual([['registered', ['/kien-hang?q=RPK-0001']]])
   expect(hrefs(searchSources(SOURCES, 'go vap', SEARCH_GROUPS))).toStrictEqual([['orders', ['/don-hang?q=ORD-001']]])
-  // Nhà sản xuất tìm lô theo công ty logistics nhận, logistics tìm lô theo nhà sản xuất gửi
-  expect(hrefs(searchSources(SOURCES, 'tan cang', SEARCH_GROUPS))).toStrictEqual([['shipments', ['/lo-hang/SHP-002']]])
-  expect(hrefs(searchSources(SOURCES, 'minh phat', SEARCH_GROUPS))).toStrictEqual([['incoming', ['/nhan-hang']]])
+  expect(SEARCH_GROUPS).toStrictEqual(['trips', 'packages', 'orders', 'registered', 'packageTypes', 'vehicles', 'users'])
+  expect(hrefs(searchSources(SOURCES, 'shp-002', SEARCH_GROUPS))).toStrictEqual([])
 })
 
-test('groups follow permissions; with both shipments and incoming shipments only shipments stay', () => {
-  const manufacturer = new Set(['packages.register', 'shipments.manage'])
-  expect(searchGroupsFor((permission) => manufacturer.has(permission))).toStrictEqual(['registered', 'shipments', 'packageTypes'])
-  expect(searchGroupsFor((permission) => permission === 'receiving.operate')).toStrictEqual(['incoming'])
-  expect(searchGroupsFor(() => true)).not.toContain('incoming')
+test('groups follow permissions: registered packages and package types open with packages.manage (FE-0-06)', () => {
+  expect(searchGroupsFor((permission) => permission === 'packages.manage')).toStrictEqual(['registered', 'packageTypes'])
+  // Quyền của điều phối viên liên quan tới tìm nhanh, theo ma trận: chuyến, đơn hàng, kho kiện, đội xe
+  const dispatcher = new Set(['trips.view', 'orders.view', 'packages.manage', 'fleet.view'])
+  expect(searchGroupsFor((permission) => dispatcher.has(permission))).toStrictEqual(['trips', 'packages', 'orders', 'registered', 'packageTypes', 'vehicles'])
+  // Quản lý công ty xem kho kiện nhưng không có màn kiện đăng ký để mở
+  const manager = new Set(['trips.view', 'orders.view', 'packages.view', 'fleet.view'])
+  expect(searchGroupsFor((permission) => manager.has(permission))).toStrictEqual(['trips', 'packages', 'orders', 'vehicles'])
+  expect(searchGroupsFor(() => true)).toStrictEqual([...SEARCH_GROUPS])
   expect(searchGroupsFor(() => false)).toStrictEqual([])
 })
 

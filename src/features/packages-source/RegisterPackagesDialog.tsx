@@ -15,38 +15,34 @@ import { TypeMeasure } from './package-look'
 import { EMPTY_REGISTER, registerFormSchema, type RegisterFormValues } from './register-form'
 import { toRegisterRows, type ParsedRegisterRow } from './register-import'
 import { RegisterImportPanel } from './RegisterImportPanel'
-import { useCompaniesQuery, usePackageTypesQuery, useRegisterPackagesMutation } from './usePackagesSourceQuery'
+import { usePackageTypesQuery, useRegisterPackagesMutation } from './usePackagesSourceQuery'
 
 type Mode = 'single' | 'quantity' | 'file'
 const MODES: readonly Mode[] = ['single', 'quantity', 'file']
 
 /**
- * "Đăng ký kiện" (luồng 1, LM-104) — ba cách: một kiện, theo số lượng (1…500 kiện cùng loại), nhập file nhiều dòng. Mọi cách đi qua
- * `useRegisterPackagesMutation`; kho kiểm hết trước khi ghi nên lỗi một dòng thì không kiện nào được tạo. `needCompany`: người đăng ký
- * không phải nhà sản xuất (quản trị viên) phải chọn công ty. Xong thì trả kiện vừa tạo cho màn (chọn sẵn để in nhãn).
+ * "Đăng ký kiện" (LM-104) — ba cách: một kiện, theo số lượng (1…500 kiện cùng loại), nhập file nhiều dòng. Mọi cách đi qua
+ * `useRegisterPackagesMutation`; kho kiểm hết trước khi ghi nên lỗi một dòng thì không kiện nào được tạo. Kiện thuộc công ty của người
+ * đăng ký (kho lấy từ phiên, FE-0-06) nên không có ô chọn công ty. Xong thì trả kiện vừa tạo cho màn (chọn sẵn để in nhãn).
  */
-export function RegisterPackagesDialog({ needCompany, onClose, onDone }: {
-  needCompany: boolean
+export function RegisterPackagesDialog({ onClose, onDone }: {
   onClose: () => void
   onDone: (created: RegisteredPackage[]) => void
 }) {
   const t = useT()
   const typesQuery = usePackageTypesQuery()
-  const companiesQuery = useCompaniesQuery('manufacturer')
   const registerMutation = useRegisterPackagesMutation()
   const [mode, setMode] = useState<Mode>('single')
   const [fileRows, setFileRows] = useState<ParsedRegisterRow[] | null>(null)
-  const schema = useMemo(() => registerFormSchema(needCompany, t), [needCompany, t])
+  const schema = useMemo(() => registerFormSchema(t), [t])
   const form = useForm<RegisterFormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY_REGISTER })
   const { control, register, formState: { errors } } = form
   const typeId = useWatch({ control, name: 'packageTypeId' })
   const quantity = useWatch({ control, name: 'quantity' })
-  const companyId = useWatch({ control, name: 'ownerCompanyId' })
 
   const types = typesQuery.data ?? []
   const chosen = types.find((type) => type.id === typeId)
   const pending = registerMutation.isPending
-  const owner = needCompany && companyId !== '' ? { ownerCompanyId: companyId } : {}
   const validFile = fileRows !== null && fileRows.length > 0 && fileRows.every((row) => row.problems.length === 0)
   const fileCount = validFile ? fileRows.reduce((sum, row) => sum + (row.quantity ?? 0), 0) : 0
 
@@ -59,7 +55,6 @@ export function RegisterPackagesDialog({ needCompany, onClose, onDone }: {
       packageTypeId: values.packageTypeId,
       ...(values.reference === '' ? {} : { reference: values.reference }),
       ...(values.note === '' ? {} : { note: values.note }),
-      ...owner,
     }
     registerMutation.mutate(
       mode === 'quantity' ? { kind: 'quantity', input, quantity: values.quantity } : { kind: 'single', input },
@@ -69,11 +64,7 @@ export function RegisterPackagesDialog({ needCompany, onClose, onDone }: {
 
   function handleFileSubmit() {
     if (!validFile) return
-    if (needCompany && companyId === '') {
-      form.setError('ownerCompanyId', { message: t('sourcing.register.errors.companyRequired') })
-      return
-    }
-    registerMutation.mutate({ kind: 'rows', rows: toRegisterRows(fileRows, owner.ownerCompanyId) }, { onSuccess: finish })
+    registerMutation.mutate({ kind: 'rows', rows: toRegisterRows(fileRows) }, { onSuccess: finish })
   }
 
   const many = mode === 'file' ? fileCount : mode === 'quantity' && Number.isInteger(quantity) && quantity > 0 ? quantity : 0
@@ -97,15 +88,6 @@ export function RegisterPackagesDialog({ needCompany, onClose, onDone }: {
               }}
               options={MODES.map((value) => ({ value, label: t(`sourcing.register.modes.${value}`) }))}
             />
-
-            {needCompany ? (
-              <SelectField
-                control={control}
-                name="ownerCompanyId"
-                label={t('sourcing.register.company')}
-                options={(companiesQuery.data ?? []).map((company) => ({ value: company.id, label: company.name }))}
-              />
-            ) : null}
 
             {mode === 'file' ? (
               <RegisterImportPanel types={types} rows={fileRows} onRowsChange={setFileRows} />

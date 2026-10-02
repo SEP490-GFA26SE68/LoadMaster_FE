@@ -8,7 +8,6 @@ import { registeredMethods } from './db-registered'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
 import { scanMethods } from './db-scans'
-import { shipmentMethods } from './db-shipments'
 import { tripMethods } from './db-trips'
 import { userMethods } from './db-users'
 import { vehicleTypeMethods } from './db-vehicle-types'
@@ -37,7 +36,6 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     companies: new Map(seed.companies.map((company) => [company.id, company])),
     packageTypes: new Map(seed.packageTypes.map((type) => [type.id, type])),
     registeredPackages: new Map(seed.registeredPackages.map((pkg) => [pkg.id, pkg])),
-    shipments: new Map(seed.shipments.map((shipment) => [shipment.id, shipment])),
     orders: new Map(seed.orders.map((order) => [order.id, order])),
     runs: new Map(seed.runs.map((run) => [run.id, run])),
     vehicleTypes: new Map(seed.vehicleTypes.map((type) => [type.id, type])),
@@ -54,7 +52,6 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...auditMethods(ctx),
     ...packageTypeMethods(ctx),
     ...registeredMethods(ctx),
-    ...shipmentMethods(ctx),
     ...orderMethods(ctx),
     ...vehicleTypeMethods(ctx),
     ...scanMethods(ctx),

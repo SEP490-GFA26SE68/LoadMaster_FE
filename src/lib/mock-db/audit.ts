@@ -36,11 +36,6 @@ export const AUDIT_ACTIONS = [
   'packageType.updated',
   'packageType.deleted',
   'package.registered',
-  'shipment.created',
-  'shipment.updated',
-  'shipment.deleted',
-  'shipment.handedOver',
-  'shipment.packageReceived',
   'order.created',
   'order.updated',
   'order.cancelled',
@@ -69,7 +64,6 @@ export type AuditTargetType =
   // LM-104
   | 'packageType'
   | 'package'
-  | 'shipment'
   | 'order'
   | 'vehicleType'
 

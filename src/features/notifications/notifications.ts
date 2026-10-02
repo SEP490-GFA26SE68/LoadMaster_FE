@@ -26,9 +26,6 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
   dispatcher: ['loading.completed', 'loading.missing', 'delivery.issue', 'delivery.completed', 'trip.cancelled'],
   warehouse: [],
   driver: [],
-  // LM-104: chuông chưa lọc theo công ty (nhà sản xuất / logistics khác nhau thấy chung sự kiện), nên tạm không có
-  manufacturer: [],
-  logistics: [],
 }
 
 /** Chỉ sự kiện trong chừng ấy ngày gần nhất, tối đa chừng ấy dòng. */

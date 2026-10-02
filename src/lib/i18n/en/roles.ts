@@ -10,6 +10,4 @@ export const roles = {
   dispatcher: 'Dispatcher',
   warehouse: 'Warehouse staff',
   driver: 'Driver',
-  manufacturer: 'Manufacturer',
-  logistics: 'Logistics company',
 } satisfies Dictionary<typeof source>

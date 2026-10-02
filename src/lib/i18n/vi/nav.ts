@@ -8,11 +8,8 @@ export const nav = {
   fleet: 'Đội xe',
   users: 'Người dùng',
   audit: 'Nhật ký',
-  // Review 1 (LM-104): nhà sản xuất, logistics, điều phối (đơn hàng)
-  packageTypes: 'Loại kiện',
+  // Điều phối: kiện đăng ký (LM-104; từ FE-0-06 là màn của điều phối) và đơn hàng
   packages: 'Kiện hàng',
-  shipments: 'Lô hàng',
-  receiving: 'Nhận hàng',
   orders: 'Đơn hàng',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',

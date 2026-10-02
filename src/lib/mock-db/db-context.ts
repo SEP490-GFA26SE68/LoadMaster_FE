@@ -8,7 +8,6 @@ import type {
   OptimizationRun,
   PackageType,
   RegisteredPackage,
-  Shipment,
   TransportOrder,
   VehicleType,
 } from './source-types'
@@ -33,7 +32,6 @@ export type DbState = {
   companies: Map<string, Company>
   packageTypes: Map<string, PackageType>
   registeredPackages: Map<string, RegisteredPackage>
-  shipments: Map<string, Shipment>
   orders: Map<string, TransportOrder>
   runs: Map<string, OptimizationRun>
   vehicleTypes: Map<string, VehicleType>

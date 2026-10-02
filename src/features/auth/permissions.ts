@@ -40,22 +40,20 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
-  // Tạm, không có trong ma trận PRD v2: đơn hàng (giữ tới FE-4b-02, quyết định G3), nguồn hàng của nhà sản xuất và nhận hàng của
-  // logistics (bỏ ở FE-0-06).
+  // Tạm, không có trong ma trận PRD v2: đơn hàng (giữ tới FE-4b-02, quyết định G3).
   'orders.view',
   'orders.edit',
-  'packages.register',
-  'shipments.manage',
-  'receiving.operate',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
 
 /**
  * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2, trừ
- * hai chỗ còn tạm:
- * - `orders.view` / `orders.edit` giữ nguyên tới khi Yêu cầu giao thay Đơn hàng (FE-4b-02).
- * - `manufacturer`, `logistics` và ba quyền của họ còn tới FE-0-06.
+ * một chỗ còn tạm: `orders.view` / `orders.edit` giữ nguyên tới khi Yêu cầu giao thay Đơn hàng (FE-4b-02).
+ *
+ * `packages.manage` của Điều phối viên tạm mở ba màn kiện có từ Review 1 — `/kien-hang`, `/kien-hang/nhan`, `/loai-kien` — tới khi kho
+ * kiện theo mô hình backend thay chúng (FE-3b-03). Vai trò nhà sản xuất, logistics và ba quyền `packages.register`, `shipments.manage`,
+ * `receiving.operate` đã bỏ (FE-0-06, D-63).
  *
  * `plans.approve` — chỉnh tay và duyệt phương án trong Planner — là của Điều phối viên (FE-0-07, D-80); Quản lý công ty xem phương án
  * chỉ đọc.
@@ -82,8 +80,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
-  manufacturer: ['packages.register', 'shipments.manage'],
-  logistics: ['receiving.operate'],
 }
 
 /** Quyền của vai trò, theo thứ tự của `PERMISSIONS`. Mọi nơi đọc quyền đi qua đây hoặc `can`. */

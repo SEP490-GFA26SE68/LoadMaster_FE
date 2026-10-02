@@ -29,6 +29,7 @@ test('ngày gần nhất tính theo giờ Việt Nam, không phụ thuộc thứ
 test('seed neo 14/09/2026: đếm trên toàn bộ nhật ký của kho', async () => {
   const events = await createMockDb().listEvents()
   const summary = summarizeAuditLog(events)
-  // Đếm bằng máy trên seed, độc lập với hàm: 156 sự kiện (115 + 41 của nguồn hàng, LM-104), 28 sự kiện ngày 14/09, lần cuối 11:40 giờ Việt Nam
-  expect(summary).toStrictEqual({ total: 156, latestDay: { date: '2026-09-14', count: 28 }, latestAt: '2026-09-14T04:40:00.000Z' })
+  // Đếm bằng máy trên seed, độc lập với hàm: 124 sự kiện (115 + 9 của nguồn hàng: 6 đợt đăng ký kiện, 2 đơn hàng, 1 lần chạy tối ưu
+  // hỏng — 32 sự kiện lô hàng và quét nhận đã bỏ ở FE-0-06), 23 sự kiện ngày 14/09, lần cuối 11:40 giờ Việt Nam
+  expect(summary).toStrictEqual({ total: 124, latestDay: { date: '2026-09-14', count: 23 }, latestAt: '2026-09-14T04:40:00.000Z' })
 })
