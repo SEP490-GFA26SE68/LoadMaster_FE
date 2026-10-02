@@ -192,7 +192,8 @@ function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
             {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}</Badge> : null}
           </span>
         ) : null}
-        {missingCoordinates ? <span className="mt-1 flex"><Badge shape="tag" tone="warning" outlined>{t('trips.routePlan.missingCoordinates')}</Badge></span> : null}
+        {/* Chữ thường xuống dòng được — thẻ điểm hẹp khi chuyến nhiều điểm */}
+        {missingCoordinates ? <span className="mt-1 text-small font-semibold text-amber-700">{t('trips.routePlan.missingCoordinates')}</span> : null}
         {state ? <StateLine state={state} total={stop.packageCount} /> : null}
       </span>
     </>
