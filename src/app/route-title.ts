@@ -23,7 +23,8 @@ export function documentTitle(name: string | null): string {
   return name ? `${name} · ${APP_NAME}` : APP_NAME
 }
 
-function routeHandle(handle: unknown): RouteHandle {
+/** `handle` của một route đọc theo kiểu `RouteHandle`; route không khai `handle` thì rỗng. */
+export function routeHandle(handle: unknown): RouteHandle {
   return typeof handle === 'object' && handle !== null ? handle : {}
 }
 
