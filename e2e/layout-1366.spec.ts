@@ -142,16 +142,19 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
 })
 
 /**
- * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên 5 mục, quản lý công ty 4 mục), cả hai
+ * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên và quản lý công ty, mỗi vai trò 5 mục), cả hai
  * ngôn ngữ. Mục còn đủ chữ (dưới 1.340 px mới rút về icon), khay mục không cuộn ngang, không chạm cụm nút bên phải, trang không cuộn
  * ngang; chỉ báo kính bám mục đang rê và về mục đang mở khi con trỏ rời thanh. Số đo đính kèm báo cáo (`nav-1366`).
  */
 const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
   {
     role: 'dispatcher',
-    labels: { vi: ['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Packages', 'Orders', 'Fleet', 'Dashboard'] },
+    labels: { vi: ['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Package pool', 'Orders', 'Fleet', 'Dashboard'] },
   },
-  { role: 'manager', labels: { vi: ['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Orders', 'Trips', 'Fleet'] } },
+  {
+    role: 'manager',
+    labels: { vi: ['Bảng điều khiển', 'Đơn hàng', 'Kho kiện', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Orders', 'Package pool', 'Trips', 'Fleet'] },
+  },
 ]
 
 function measureNav(page: Page) {

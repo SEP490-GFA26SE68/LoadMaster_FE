@@ -1,12 +1,14 @@
 import { expect, test } from './fixtures'
 
 /**
- * Đăng ký kiện và in nhãn QR (LM-104). Từ FE-0-06 đây là việc của điều phối viên (`packages.manage`): thêm loại kiện → đăng ký kiện
- * theo số lượng → trang in nhãn có mã QR. Phần tạo lô hàng và bàn giao cho công ty logistics đã bỏ cùng hai màn đó. Kho nằm trong bộ
- * nhớ trang nên mọi bước đi bằng liên kết trong app, không tải lại trang.
- * Seed neo 14/09/2026: 8 loại kiện (`PT-001…008`), kho kiện Long Bình 88 kiện (`PK-0001…0088`, FE-3b-01) — đều "Đã nhập".
+ * Kho kiện `/kien-hang` của điều phối viên (FE-3b-03, FE-3b-02): thêm loại kiện → thêm một kiện gắn loại đó (mã QR có ngay) → in nhãn;
+ * nhập file `.csv` có xem trước; tải file mẫu. Kho nằm trong bộ nhớ trang nên mọi bước đi bằng liên kết trong app, không tải lại trang.
+ * Seed neo 14/09/2026: 8 loại kiện (`PT-001…008`), kho kiện Long Bình 88 kiện (`PK-0001…0088`) — đều "Đã nhập".
  */
-test('the dispatcher adds a package type, registers packages and prints their QR labels', async ({ page, login, browserErrors }) => {
+const HEADER = 'package_code,length,width,height,weight,handling_class,destination,package_type'
+const csv = (lines: readonly string[]) => ({ name: 'kien.csv', mimeType: 'text/csv', buffer: Buffer.from([HEADER, ...lines].join('\r\n'), 'utf8') })
+
+test('the dispatcher adds a package type, adds a package that gets its QR code at once and prints its label', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/loai-kien', 'dispatcher')
   await expect(page.getByRole('heading', { level: 1, name: 'Loại kiện', exact: true })).toBeVisible()
@@ -24,67 +26,113 @@ test('the dispatcher adds a package type, registers packages and prints their QR
   await expect(page.getByRole('cell', { name: 'Thùng nước mắm 12 chai PT-009' })).toBeVisible()
   await expect(page.getByText('9 loại kiện trong danh mục', { exact: true })).toBeVisible()
 
-  // 2. Màn Kiện hàng từ thanh điều hướng của điều phối viên: cả 88 kiện của kho kiện, tab theo bảy trạng thái của backend
-  await nav.getByRole('link', { name: 'Kiện hàng', exact: true }).click()
+  // 2. Kho kiện từ thanh điều hướng: cả 88 kiện, tab theo bảy trạng thái của backend, kiện mới nhất đứng đầu
+  await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
-  await expect(page.getByText('88 kiện đã đăng ký', { exact: true })).toBeVisible()
+  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
   await expect(page.getByRole('tab')).toHaveText([
     /^Tất cả\s*88$/, /^Đã nhập\s*88$/, /^Đã gán chuyến\s*0$/, /^Đã soạn\s*0$/, /^Đã xếp\s*0$/, /^Đang vận chuyển\s*0$/, /^Đã giao\s*0$/, /^Hoàn trả\s*0$/,
   ])
+  await expect(page.getByRole('row', { name: /PK-00/ }).first()).toContainText('PK-0088')
 
-  // Đăng ký 5 kiện theo số lượng: không có ô chọn công ty — kiện thuộc công ty của người đăng ký; điểm đến là trường bắt buộc của kiện
-  await page.getByRole('button', { name: 'Đăng ký kiện', exact: true }).click()
-  const registerDialog = page.getByRole('dialog', { name: 'Đăng ký kiện' })
-  await registerDialog.getByRole('button', { name: 'Theo số lượng', exact: true }).click()
-  await expect(registerDialog.getByRole('combobox')).toHaveCount(1)
-  await registerDialog.getByRole('combobox', { name: 'Loại kiện', exact: true }).click()
+  // 3. Thêm một kiện: không có cách thêm theo loại kiện / theo số lượng; thiếu trường thì form nói rõ
+  await page.getByRole('button', { name: 'Thêm kiện', exact: true }).click()
+  const addDialog = page.getByRole('dialog', { name: 'Thêm kiện' })
+  await expect(addDialog.getByRole('button', { name: 'Theo số lượng', exact: true })).toHaveCount(0)
+  await expect(addDialog.getByRole('spinbutton', { name: 'Số lượng', exact: true })).toHaveCount(0)
+  await addDialog.getByRole('button', { name: 'Thêm kiện', exact: true }).click()
+  await expect(addDialog.getByText('Nhập điểm đến.', { exact: true })).toBeVisible()
+  await addDialog.getByRole('textbox', { name: 'Mã kiện của bên gửi', exact: true }).fill('NM-DNG-0914-01')
+  await addDialog.getByRole('spinbutton', { name: 'Dài', exact: true }).fill('40')
+  await addDialog.getByRole('spinbutton', { name: 'Rộng', exact: true }).fill('30')
+  await addDialog.getByRole('spinbutton', { name: 'Cao', exact: true }).fill('28')
+  await addDialog.getByRole('spinbutton', { name: 'Khối lượng', exact: true }).fill('15')
+  await addDialog.getByRole('combobox', { name: 'Loại hàng', exact: true }).click()
+  await page.getByRole('option', { name: 'Dễ vỡ', exact: true }).click()
+  await addDialog.getByRole('textbox', { name: 'Điểm đến', exact: true }).fill('KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng')
+  await addDialog.getByRole('combobox', { name: 'Loại kiện', exact: true }).click()
   await page.getByRole('option', { name: 'Thùng nước mắm 12 chai · PT-009', exact: true }).click()
-  await registerDialog.getByRole('spinbutton', { name: 'Số lượng', exact: true }).fill('5')
-  await registerDialog.getByRole('textbox', { name: 'Mã lô / SKU', exact: true }).fill('MP-NM12-0914')
-  // Thiếu điểm đến thì không đăng ký được
-  await registerDialog.getByRole('button', { name: 'Đăng ký 5 kiện', exact: true }).click()
-  await expect(registerDialog.getByText('Nhập điểm đến.', { exact: true })).toBeVisible()
-  await registerDialog.getByRole('textbox', { name: 'Điểm đến', exact: true }).fill('KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng')
-  await registerDialog.getByRole('button', { name: 'Đăng ký 5 kiện', exact: true }).click()
-  await expect(registerDialog).toBeHidden()
-  await expect(page.getByText('93 kiện đã đăng ký', { exact: true })).toBeVisible()
-  await expect(page.getByRole('tab', { name: /^Đã nhập/ })).toHaveText(/^Đã nhập\s*93$/)
-  // Kiện vừa đăng ký được chọn sẵn để in nhãn; dải thao tác chỉ còn bỏ chọn và in nhãn
-  const selection = page.getByRole('region', { name: 'Đã chọn 5 kiện' })
-  await expect(selection).toBeVisible()
-  await expect(selection.getByRole('button', { name: 'Tạo lô hàng', exact: true })).toHaveCount(0)
-  await expect(selection.getByRole('link', { name: 'Tạo lô hàng', exact: true })).toHaveCount(0)
-  for (const id of ['PK-0089', 'PK-0093']) {
-    await expect(page.getByRole('checkbox', { name: `Chọn kiện ${id}`, exact: true })).toBeChecked()
-  }
-  await expect(page.getByRole('row', { name: /PK-0093/ })).toContainText('Đã nhập')
-  await expect(page.getByRole('row', { name: /PK-0093/ })).toContainText('MP-NM12-0914-05')
+  await addDialog.getByRole('button', { name: 'Thêm kiện', exact: true }).click()
+  await expect(addDialog).toBeHidden()
+  await expect(page.getByText('89 kiện trong kho kiện', { exact: true })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /^Đã nhập/ })).toHaveText(/^Đã nhập\s*89$/)
 
-  // 3. Trang in nhãn: đúng 5 nhãn, mỗi nhãn một mã QR, kèm tên công ty của điều phối viên
-  await selection.getByRole('link', { name: 'In nhãn QR', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/kien-hang/nhan' && url.searchParams.get('kien') === 'PK-0089,PK-0090,PK-0091,PK-0092,PK-0093')
-  await expect(page.getByText('5 nhãn có thể in', { exact: true })).toBeVisible()
+  // Chi tiết kiện vừa thêm mở ngay: mã QR đã có, lịch sử một mốc; kiện đứng đầu bảng
+  const panel = page.getByRole('complementary', { name: 'Chi tiết kiện NM-DNG-0914-01' })
+  await expect(panel.getByRole('img', { name: /^Mã QR LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/ })).toBeVisible()
+  await expect(panel).toContainText('Thùng nước mắm 12 chai · PT-009')
+  await expect(panel.getByRole('list', { name: 'Lịch sử' }).getByRole('listitem')).toHaveText([/^Vào kho kiện: Thêm lẻ.*Nguyễn Thanh Tùng$/])
+  const row = page.getByRole('row', { name: /PK-0089/ })
+  await expect(row).toContainText('NM-DNG-0914-01')
+  await expect(row).toContainText('Đã nhập')
+  await expect(row).toContainText('Dễ vỡ')
+
+  // 4. In nhãn từ panel: đúng một nhãn, kèm mã của bên gửi, điểm đến, tên công ty của điều phối viên
+  await panel.getByRole('link', { name: 'In nhãn QR', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/kien-hang/nhan' && url.searchParams.get('kien') === 'PK-0089')
+  await expect(page.getByText('1 nhãn có thể in', { exact: true })).toBeVisible()
   const sheet = page.getByRole('region', { name: 'Trang nhãn QR' })
-  await expect(sheet.getByRole('img', { name: /^Mã QR LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/ })).toHaveCount(5)
-  await expect(sheet.getByRole('article', { name: 'PK-0089', exact: true })).toContainText('Mã MP-NM12-0914-01')
-  await expect(sheet.getByRole('article', { name: 'PK-0089', exact: true })).toContainText('KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng')
-  await expect(sheet.getByRole('article', { name: 'PK-0089', exact: true })).toContainText('Công ty TNHH Vận tải Long Bình')
+  const label = sheet.getByRole('article', { name: 'PK-0089', exact: true })
+  await expect(label.getByRole('img', { name: /^Mã QR LM-/ })).toBeVisible()
+  await expect(label).toContainText('Mã NM-DNG-0914-01')
+  await expect(label).toContainText('KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng')
+  await expect(label).toContainText('Công ty TNHH Vận tải Long Bình')
   const labelsHero = page.getByRole('heading', { level: 1, name: 'In nhãn QR', exact: true }).locator('xpath=ancestor::header[1]')
   await expect(labelsHero.getByRole('button', { name: 'In nhãn', exact: true })).toBeEnabled()
-  // Mục Kiện hàng vẫn là mục đang mở ở trang in nhãn
-  await expect(nav.getByRole('link', { name: 'Kiện hàng', exact: true })).toHaveAttribute('aria-current', 'page')
+  // Mục Kho kiện vẫn là mục đang mở ở trang in nhãn
+  await expect(nav.getByRole('link', { name: 'Kho kiện', exact: true })).toHaveAttribute('aria-current', 'page')
 
-  // 4. Về danh sách kiện, rồi sang Loại kiện bằng nút trên dải tiêu đề và quay lại — thanh điều hướng không có mục Loại kiện
-  await labelsHero.getByRole('link', { name: 'Về danh sách kiện', exact: true }).click()
+  // 5. Về kho kiện, rồi sang Loại kiện bằng nút trên dải tiêu đề và quay lại — thanh điều hướng không có mục Loại kiện
+  await labelsHero.getByRole('link', { name: 'Về kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
-  const packagesHero = page.getByRole('heading', { level: 1, name: 'Kiện hàng', exact: true }).locator('xpath=ancestor::header[1]')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
-  await packagesHero.getByRole('link', { name: 'Loại kiện', exact: true }).click()
+  const poolHero = page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true }).locator('xpath=ancestor::header[1]')
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển'])
+  await poolHero.getByRole('link', { name: 'Loại kiện', exact: true }).click()
   await page.waitForURL(/\/loai-kien$/)
-  await expect(page.getByRole('button', { name: /^Xoá Thùng nước mắm 12 chai\. Còn 5 kiện dùng loại này/ })).toHaveAttribute('aria-disabled', 'true')
-  await page.getByRole('heading', { level: 1, name: 'Loại kiện', exact: true }).locator('xpath=ancestor::header[1]').getByRole('link', { name: 'Về danh sách kiện', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Xoá Thùng nước mắm 12 chai\. Còn 1 kiện dùng loại này/ })).toHaveAttribute('aria-disabled', 'true')
+  await page.getByRole('heading', { level: 1, name: 'Loại kiện', exact: true }).locator('xpath=ancestor::header[1]').getByRole('link', { name: 'Về kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
-  await expect(page.getByText('93 kiện đã đăng ký', { exact: true })).toBeVisible()
+  await expect(page.getByText('89 kiện trong kho kiện', { exact: true })).toBeVisible()
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('importing a file: an error row blocks the whole file, a clean file is imported in one go; both templates download', async ({ page, login, browserErrors }) => {
+  await login('/kien-hang', 'dispatcher')
+  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Nhập file', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Nhập file vào kho kiện' })
+  const confirm = dialog.getByRole('button', { name: /^Xác nhận nhập/ })
+  await expect(confirm).toBeDisabled()
+
+  // File mẫu: hai định dạng, tải ngay tại hộp thoại
+  for (const format of ['xlsx', 'csv'] as const) {
+    const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('button', { name: `Tải mẫu .${format}`, exact: true }).click()])
+    expect(download.suggestedFilename()).toBe(`mau-nhap-kho-kien.${format}`)
+  }
+
+  // Dòng 3 có chiều cao 0: cả file bị chặn, không kiện nào được tạo
+  const file = dialog.getByLabel('File kiện (.csv, .xlsx)')
+  await file.setInputFiles(csv(['DN-0001,60,40,40,18,STANDARD,"KCN Hoà Khánh, Đà Nẵng",', 'DN-0002,60,40,0,18,STANDARD,Huế,', 'DN-0003,50,40,30,"9,5",Dễ vỡ,Huế,']))
+  await expect(dialog.getByText('1 dòng có lỗi nên chưa nhập được dòng nào. Sửa file rồi chọn lại.', { exact: true })).toBeVisible()
+  await expect(dialog.getByRole('group', { name: 'Kết quả kiểm tra file' }).getByRole('definition')).toHaveText(['3', '2', '1', '0'])
+  await expect(dialog.getByRole('row', { name: /^3 / })).toContainText('Chiều cao phải là số lớn hơn 0')
+  await expect(confirm).toBeDisabled()
+
+  // File đã sửa; một mã đã có trong kho kiện chỉ là cảnh báo
+  await file.setInputFiles(csv(['DN-0001,60,40,40,18,STANDARD,"KCN Hoà Khánh, Đà Nẵng",', 'DN-0002,60,40,35,18,STANDARD,Huế,', 'HK-DNG-2609-01,50,40,30,"9,5",Dễ vỡ,Huế,']))
+  await expect(dialog.getByText('1 dòng có cảnh báo; vẫn nhập được.', { exact: true })).toBeVisible()
+  await expect(dialog.getByRole('row', { name: /^4 / })).toContainText('Mã kiện đã có trong kho kiện (PK-0049)')
+  await dialog.getByRole('button', { name: 'Xác nhận nhập 3 kiện', exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText('91 kiện trong kho kiện', { exact: true })).toBeVisible()
+  await expect(page.getByRole('row', { name: /PK-0091/ })).toContainText('HK-DNG-2609-01')
+  await expect(page.getByRole('row', { name: /PK-0091/ })).toContainText('Dễ vỡ')
+
+  // Kiện vừa nhập được chọn sẵn: in nhãn cho cả ba
+  const selection = page.getByRole('region', { name: 'Đã chọn 3 kiện' })
+  await selection.getByRole('link', { name: 'In nhãn QR', exact: true }).click()
+  await page.waitForURL((url) => url.pathname === '/kien-hang/nhan' && url.searchParams.get('kien') === 'PK-0089,PK-0090,PK-0091')
+  await expect(page.getByRole('region', { name: 'Trang nhãn QR' }).getByRole('img', { name: /^Mã QR LM-/ })).toHaveCount(3)
   expect(browserErrors).toStrictEqual([])
 })
 

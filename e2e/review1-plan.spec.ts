@@ -63,11 +63,12 @@ test('the dispatcher builds an order from packages in stock and assigns it onto 
   await expect(readiness.getByText('Sẵn sàng tối ưu', { exact: true })).toBeVisible()
   await expect(readiness.getByText('146 kiện', { exact: true })).toBeVisible()
 
-  // Kiện của đơn đã gán sang "Đã gán chuyến" ở màn Kiện hàng của điều phối viên
-  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Kiện hàng', exact: true }).click()
+  // Kiện của đơn đã gán sang "Đã gán chuyến" ở màn Kho kiện của điều phối viên, kèm đơn và chuyến đang giữ kiện
+  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
   await page.getByRole('tab', { name: /^Đã gán chuyến/ }).click()
   await expect(page.getByRole('row', { name: /PK-00/ })).toHaveCount(6)
   await expect(page.getByRole('row', { name: /PK-0023/ })).toContainText('Đã gán chuyến')
+  await expect(page.getByRole('row', { name: /PK-0023/ }).getByRole('link', { name: 'TRIP-014', exact: true })).toHaveAttribute('href', '/chuyen/TRIP-014')
   expect(browserErrors).toStrictEqual([])
 })
