@@ -6,13 +6,14 @@ import { expect, test } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { signedInAs } from '@/test/signed-in'
+import type { Role } from '@/types/user'
 import { TripListPage } from './TripListPage'
 
 const SLOW = { timeout: 4000 }
 
 /** Seam: kho dùng chung (seed neo 14/09/2026) → `trips-api.ts` → hook → danh sách, trạng thái lọc trên URL (D-52). */
-function renderList(url = '/chuyen') {
-  signedInAs('dispatcher')
+function renderList(url = '/chuyen', role: Role = 'dispatcher') {
+  signedInAs(role)
   const router = createMemoryRouter(
     [
       { path: '/chuyen', element: <TripListPage /> },
@@ -156,6 +157,18 @@ test('the stats line counts the whole store; tabs are the six statuses, filter o
 
   await user.click(tab(/^Tất cả/))
   expect(router.state.location.search).toBe('?tai-xe=US-0004')
+})
+
+/** FE-0-04: quản lý công ty chỉ đọc từ FE-0-07 — phương án chờ duyệt không chờ họ, nên không có chữ và số "cần bạn xử lý". */
+test('the company manager, who cannot approve plans, sees the plain counts without "needs you"', async () => {
+  renderList('/chuyen', 'manager')
+  await screen.findByRole('row', { name: /TRIP-014/ }, SLOW)
+  const header = screen.getByRole('heading', { name: 'Chuyến hàng' }).closest('header')
+  expect(header).toHaveTextContent('15 chuyến·1 đang vận chuyển')
+  expect(header).not.toHaveTextContent('cần bạn xử lý')
+  // Tab Đã lập kế hoạch chỉ còn số của tab: không số hổ phách
+  expect(screen.getByRole('tab', { name: /^Đã lập kế hoạch/ })).toHaveAccessibleName(/^Đã lập kế hoạch\s*3$/)
+  expect(screen.queryByRole('link', { name: 'Tạo chuyến' })).not.toBeInTheDocument()
 })
 
 test('search ignores diacritics and covers the driver name', async () => {

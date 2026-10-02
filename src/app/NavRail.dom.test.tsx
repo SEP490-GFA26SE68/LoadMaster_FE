@@ -46,17 +46,18 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
 })
 
 /**
- * D-41: mỗi vai trò chỉ thấy mục nav của màn mình được mở. FE-0-01: quản trị hệ thống và quản trị công ty chỉ còn người dùng, nhật ký.
- * FE-0-06: mục Kiện hàng là của điều phối viên; không còn mục Lô hàng, Loại kiện, Nhận hàng.
+ * D-41, FE-0-04: mỗi vai trò có danh sách mục riêng, theo thứ tự của vai trò đó (màn chính đứng đầu), chỉ gồm màn đang có và vai trò
+ * mở được. Điều phối viên: Chuyến trước, Bảng điều khiển cuối; quản lý công ty có Đơn hàng (chỉ đọc). Không còn mục Lô hàng, Loại kiện,
+ * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Bảng điều khiển', 'Chuyến hàng', 'Đơn hàng', 'Kiện hàng', 'Đội xe']],
-  ['manager', ['Bảng điều khiển', 'Chuyến hàng', 'Đội xe']],
+  ['dispatcher', ['Chuyến hàng', 'Kiện hàng', 'Đơn hàng', 'Đội xe', 'Bảng điều khiển']],
+  ['manager', ['Bảng điều khiển', 'Đơn hàng', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
   ['companyAdmin', ['Người dùng', 'Nhật ký']],
-])('nav rail của %s chỉ có mục được phép', (role, items) => {
+])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
   expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
@@ -100,12 +101,16 @@ test.each<[Role, boolean]>([
   expect(screen.queryByRole('button', { name: 'Tìm nhanh' }) !== null).toBe(shown)
 })
 
-/** LM-104: vai trò không có bảng điều khiển về màn chính của mình khi bấm logo, không rơi vào màn 403. */
+/** LM-104, FE-0-04: logo mở bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không rơi vào màn 403 hay 404. */
 test.each<[Role, string]>([
-  ['dispatcher', '/'],
-  ['manager', '/'],
   ['systemAdmin', '/nguoi-dung'],
+  ['systemManager', '/ho-so'],
+  ['systemSupporter', '/ho-so'],
   ['companyAdmin', '/nguoi-dung'],
+  ['manager', '/'],
+  ['dispatcher', '/'],
+  ['warehouse', '/kho'],
+  ['driver', '/tai-xe'],
 ])('logo của %s mở %s', (role, href) => {
   renderRail(role)
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', href)

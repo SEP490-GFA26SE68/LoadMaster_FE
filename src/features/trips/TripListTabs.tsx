@@ -4,9 +4,10 @@ import { TRIP_LIST_TABS, type TripListTab } from './trip-list'
 
 /**
  * Dòng số dưới tiêu đề (`ChuyenHang.jpg` `.page-head .sub`): tổng chuyến · đang vận chuyển · cần bạn xử lý, đếm trên cả kho (không theo bộ
- * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số hổ phách trên tab "Đã lập kế hoạch".
+ * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số hổ phách trên tab "Đã lập kế hoạch". `review` vắng thì không có phần
+ * "cần bạn xử lý": người xem không duyệt được phương án (quản lý công ty chỉ đọc, FE-0-04) nên việc đó không chờ họ.
  */
-export function TripListStats({ total, transit, review }: { total: number; transit: number; review: number }) {
+export function TripListStats({ total, transit, review }: { total: number; transit: number; review?: number }) {
   const t = useT()
   const format = useFormat()
   const number = 'font-semibold text-sky-text tabular-nums'
@@ -15,8 +16,12 @@ export function TripListStats({ total, transit, review }: { total: number; trans
       <span><b className={number}>{format.integer(total)}</b> {t('trips.list.stats.total', { count: total })}</span>
       <span aria-hidden>·</span>
       <span><b className={number}>{format.integer(transit)}</b> {t('trips.list.stats.transit')}</span>
-      <span aria-hidden>·</span>
-      <span><b className="font-semibold text-amber-500 tabular-nums">{format.integer(review)}</b> {t('trips.list.stats.review')}</span>
+      {review === undefined ? null : (
+        <>
+          <span aria-hidden>·</span>
+          <span><b className="font-semibold text-amber-500 tabular-nums">{format.integer(review)}</b> {t('trips.list.stats.review')}</span>
+        </>
+      )}
     </span>
   )
 }
@@ -24,9 +29,10 @@ export function TripListStats({ total, transit, review }: { total: number; trans
 /**
  * Tab trên dải trời (FE-0-05): Tất cả rồi sáu trạng thái của chuyến, mỗi tab là một giá trị của bộ lọc `trang-thai`
  * (`TRIP_LIST_TABS`); số trên tab đếm chuyến của tab theo tìm và các bộ lọc khác. Tab "Đã lập kế hoạch" có thêm số hổ phách: chuyến
- * cần người dùng xử lý (phương án chờ duyệt hoặc lỗi thời) — chỉ hiện khi có. Phải nằm trong `Tabs` của màn.
+ * cần người dùng xử lý (phương án chờ duyệt hoặc lỗi thời) — chỉ hiện khi có, và chỉ với người duyệt được phương án (`needAction`
+ * vắng thì tab chỉ còn số của nó). Phải nằm trong `Tabs` của màn.
  */
-export function TripListTabs({ counts, needAction }: { counts: Record<TripListTab, number> | null; needAction: number }) {
+export function TripListTabs({ counts, needAction = 0 }: { counts: Record<TripListTab, number> | null; needAction?: number }) {
   const t = useT()
   return (
     <TabsList tone="sky" aria-label={t('trips.list.tabs.label')}>
