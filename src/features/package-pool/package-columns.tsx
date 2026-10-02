@@ -23,7 +23,7 @@ export type PackageTableState = {
   readonly openId: string | null
   readonly onOpen: (id: string) => void
   readonly panelId: string
-  readonly canOpenOrders: boolean
+  readonly canOpenRequirements: boolean
   readonly canOpenTrips: boolean
 }
 
@@ -98,13 +98,12 @@ function FlagsCell({ row }: { row: PackageRow }) {
   return <span className="flex flex-wrap items-center gap-1">{row.flags.map((flag) => <PackageFlagTag key={flag} flag={flag} />)}</span>
 }
 
-/** *(tạm)* Đơn hàng Review 1 giữ kiện; yêu cầu giao (`requirementId`) thay nó khi có màn yêu cầu giao. */
-function OrderCell({ row }: { row: PackageRow }) {
-  const { canOpenOrders } = useTableState()
-  if (row.requirementId !== undefined) return <span className={CODE}>{row.requirementId}</span>
-  if (row.orderId === undefined) return <None />
-  if (!canOpenOrders) return <span className={CODE}>{row.orderId}</span>
-  return <Link to={`/don-hang?q=${encodeURIComponent(row.orderId)}`} onClick={(event) => event.stopPropagation()} className={LINK}>{row.orderId}</Link>
+/** Yêu cầu giao đang giữ kiện (FE-4b-01); liên kết mở danh sách yêu cầu lọc đúng mã. */
+function RequirementCell({ row }: { row: PackageRow }) {
+  const { canOpenRequirements } = useTableState()
+  if (row.requirementId === undefined) return <None />
+  if (!canOpenRequirements) return <span className={CODE}>{row.requirementId}</span>
+  return <Link to={`/yeu-cau-giao?q=${encodeURIComponent(row.requirementId)}`} onClick={(event) => event.stopPropagation()} className={LINK}>{row.requirementId}</Link>
 }
 
 function TripCell({ row }: { row: PackageRow }) {
@@ -123,16 +122,16 @@ const classCell = (info: Cell<PackageRow['handlingClass']>) => <HandlingClassChi
 const destinationCell = (info: Cell<string>) => <span className="line-clamp-2 whitespace-normal text-ink-1">{info.getValue()}</span>
 const statusCell = (info: Cell<PackageRow['status']>) => <PackageStatusBadge status={info.getValue()} />
 const flagsCell = (info: Cell<unknown>) => <FlagsCell row={info.row.original} />
-const orderCell = (info: Cell<unknown>) => <OrderCell row={info.row.original} />
+const requirementCell = (info: Cell<unknown>) => <RequirementCell row={info.row.original} />
 const tripCell = (info: Cell<unknown>) => <TripCell row={info.row.original} />
 
 /**
  * Cột bảng kho kiện (FE-3b-03): chọn (chỉ người in được nhãn) · mã kiện của bên gửi (+ mã của kho) · kích thước · khối lượng · loại
- * hàng · điểm đến · trạng thái · cờ · đơn hàng · chuyến. Panel chi tiết đang mở thì bỏ bốn cột đã có trong panel (kích thước, khối
- * lượng, đơn hàng, chuyến) để bảng còn đủ chỗ cho mã kiện và điểm đến ở 1.366 px.
+ * hàng · điểm đến · trạng thái · cờ · yêu cầu giao · chuyến. Panel chi tiết đang mở thì bỏ bốn cột đã có trong panel (kích thước, khối
+ * lượng, yêu cầu giao, chuyến) để bảng còn đủ chỗ cho mã kiện và điểm đến ở 1.366 px.
  */
 export function packageColumns(t: TFunction, { selectable, panelOpen }: { selectable: boolean; panelOpen: boolean }) {
-  const label = (key: 'code' | 'dimensions' | 'weight' | 'handlingClass' | 'destination' | 'status' | 'flags' | 'order' | 'trip') => t(`sourcing.packages.columns.${key}`)
+  const label = (key: 'code' | 'dimensions' | 'weight' | 'handlingClass' | 'destination' | 'status' | 'flags' | 'requirement' | 'trip') => t(`sourcing.packages.columns.${key}`)
   return helper.columns([
     ...(selectable ? [helper.display({ id: 'select', header: selectHeader, meta: { width: '48px' } satisfies ColumnMeta, cell: selectCell })] : []),
     helper.accessor('packageCode', { id: 'code', header: label('code'), enableSorting: true, meta: { width: '178px' } satisfies ColumnMeta, cell: codeCell }),
@@ -145,7 +144,7 @@ export function packageColumns(t: TFunction, { selectable, panelOpen }: { select
     helper.accessor('status', { header: label('status'), meta: { width: '156px' } satisfies ColumnMeta, cell: statusCell }),
     helper.display({ id: 'flags', header: label('flags'), meta: { width: '124px' } satisfies ColumnMeta, cell: flagsCell }),
     ...(panelOpen ? [] : [
-      helper.display({ id: 'order', header: label('order'), meta: { width: '92px' } satisfies ColumnMeta, cell: orderCell }),
+      helper.display({ id: 'requirement', header: label('requirement'), meta: { width: '104px' } satisfies ColumnMeta, cell: requirementCell }),
       helper.display({ id: 'trip', header: label('trip'), meta: { width: '128px' } satisfies ColumnMeta, cell: tripCell }),
     ]),
   ])

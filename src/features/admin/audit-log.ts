@@ -7,6 +7,7 @@ import {
   OPTIMIZATION_OBJECTIVES,
   PACKAGE_CHANGE_FIELDS,
   PACKAGE_FLAGS,
+  REQUIREMENT_PRIORITIES,
   PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
   type AuditAction,
@@ -55,12 +56,14 @@ const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
-  'count', 'packageTypeId', 'lastPackageId', 'customerName', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
+  'count', 'packageTypeId', 'lastPackageId', 'destinationName', 'priority', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
   'sealNumber', 'packageCode', 'flag',
 ] as const
 
 const FIELD_NAMES = [
   'name', 'vehicleId', 'stops', 'packages', 'scheduledDate', 'driverId', 'fullName', 'email', 'phone', 'role', 'depot',
+  // Yêu cầu giao (FE-4b-01)
+  'destinationName', 'address', 'lat', 'lng', 'deadline', 'priority', 'note', 'packageIds',
 ] as const
 
 const REASONS = ['suspended'] as const
@@ -73,7 +76,7 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   revision: null,
   packageType: 'packages.manage',
   package: 'packages.view',
-  order: 'orders.view',
+  requirement: 'requirements.view',
   vehicleType: 'fleet.view',
 }
 
@@ -151,8 +154,9 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
       return { id, label: saved, href: '/loai-kien' }
     case 'package':
       return { id, label: saved, href: `/kien-hang?q=${encodeURIComponent(id)}` }
-    case 'order':
-      return { id, label: typeof params.customerName === 'string' ? params.customerName : saved, href: `/don-hang?q=${encodeURIComponent(id)}` }
+    case 'requirement':
+      // Yêu cầu đã xoá vẫn đọc được tên điểm đến từ tham số của sự kiện; liên kết mở danh sách lọc đúng mã (rỗng nếu đã xoá)
+      return { id, label: typeof params.destinationName === 'string' ? params.destinationName : saved, href: `/yeu-cau-giao?q=${encodeURIComponent(id)}` }
     case 'vehicleType':
       return { id, label: saved, href: '/doi-xe/loai-xe' }
   }
@@ -172,6 +176,8 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return isOneOf(PACKAGE_CHANGE_FIELDS, value) ? t(`audit.log.packageFields.${value}`) : value
     case 'flag':
       return isOneOf(PACKAGE_FLAGS, value) ? t(`common.packageFlags.${value}`) : value
+    case 'priority':
+      return isOneOf(REQUIREMENT_PRIORITIES, value) ? t(`requirements.priority.${value}`) : value
     case 'before':
     case 'after':
       // Trạng thái kiện là mã của kho; giá trị trước / sau của một dòng kiện vừa sửa là dữ liệu

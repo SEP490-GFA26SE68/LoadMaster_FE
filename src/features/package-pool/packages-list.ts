@@ -41,8 +41,7 @@ export const FLAG_CHOICES: readonly FlagChoice[] = [...PACKAGE_FLAGS, NO_FLAG]
 export const FLAG_SLUGS: Readonly<Record<FlagChoice, string>> = { NOT_FOUND: 'khong-tim-thay', DAMAGED: 'hu-hong', none: 'khong-co' }
 
 /**
- * Đã / chưa vào đơn hay chuyến. *(tạm)* "Đơn" là đơn hàng Review 1 (`orderId`) tới khi có yêu cầu giao (`requirementId`) — bộ lọc xét
- * cả hai trường nên không phải đổi khi yêu cầu giao thay đơn.
+ * Đã / chưa vào yêu cầu giao (`requirementId`, FE-4b-01) hay chuyến.
  */
 export const LINK_CHOICES = ['free', 'linked'] as const
 export type LinkChoice = (typeof LINK_CHOICES)[number]
@@ -80,16 +79,16 @@ export function packageRows(packages: readonly Package[], types: readonly Packag
   return packages.map((pkg) => ({ ...pkg, type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId) })).toReversed()
 }
 
-/** Kiện đã thuộc một đơn / yêu cầu giao hoặc một chuyến. */
-export function isLinked(pkg: Pick<Package, 'orderId' | 'requirementId' | 'tripId'>): boolean {
-  return pkg.orderId !== undefined || pkg.requirementId !== undefined || pkg.tripId !== undefined
+/** Kiện đã thuộc một yêu cầu giao hoặc một chuyến. */
+export function isLinked(pkg: Pick<Package, 'requirementId' | 'tripId'>): boolean {
+  return pkg.requirementId !== undefined || pkg.tripId !== undefined
 }
 
-/** Tìm theo mã của bên gửi, mã kiện của kho, điểm đến, mã QR, tên / mã loại kiện, mã đơn và mã chuyến. */
+/** Tìm theo mã của bên gửi, mã kiện của kho, điểm đến, mã QR, tên / mã loại kiện, mã yêu cầu giao và mã chuyến. */
 export function searchPackages(rows: readonly PackageRow[], query: string): PackageRow[] {
   if (query.trim() === '') return [...rows]
   return rows.filter((row) =>
-    matchesQuery([row.packageCode, row.id, row.destination, row.qrToken, row.type?.name, row.packageTypeId, row.orderId, row.requirementId, row.tripId], query))
+    matchesQuery([row.packageCode, row.id, row.destination, row.qrToken, row.type?.name, row.packageTypeId, row.requirementId, row.tripId], query))
 }
 
 export function filterPackages(rows: readonly PackageRow[], filters: PackageFilters): PackageRow[] {

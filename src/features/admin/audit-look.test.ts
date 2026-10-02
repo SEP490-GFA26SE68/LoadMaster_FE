@@ -9,9 +9,9 @@ const toneOf = (actions: readonly AuditAction[]) => actions.map((action) => audi
 test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện, huỷ, đăng nhập sai, khoá tài khoản, bảo dưỡng, lần chạy tối ưu hỏng', () => {
   const attention = [
     'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
-    // LM-104: đơn bị huỷ / bỏ gán, lần chạy tối ưu hỏng
-    'order.cancelled', 'order.unassigned', 'optimization.failed',
-    // FE-3b-01: kiện bị gắn cờ không vào đơn hay chuyến được cho tới khi gỡ
+    // Yêu cầu giao bị xoá / gỡ khỏi chuyến (FE-4b-01), lần chạy tối ưu hỏng (LM-104)
+    'requirement.deleted', 'requirement.unassigned', 'optimization.failed',
+    // FE-3b-01: kiện bị gắn cờ không vào yêu cầu giao hay chuyến được cho tới khi gỡ
     'package.flagged',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))

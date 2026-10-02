@@ -23,7 +23,7 @@ export function PackageStatusBadge({ status, className }: { status: PackageStatu
   return <Badge tone={spec.tone} dot={spec.dot} className={className}>{t(`common.packageStatuses.${status}`)}</Badge>
 }
 
-/** Cờ của kiện (D-92): nhãn hổ phách có viền — kiện mang cờ cần điều phối viên xử lý trước khi vào đơn hay chuyến. */
+/** Cờ của kiện (D-92): nhãn hổ phách có viền — kiện mang cờ cần điều phối viên xử lý trước khi vào yêu cầu giao hay chuyến. */
 export function PackageFlagTag({ flag, className }: { flag: PackageFlag; className?: string }) {
   const t = useT()
   return <Badge shape="tag" tone="warning" outlined className={className}>{t(`common.packageFlags.${flag}`)}</Badge>

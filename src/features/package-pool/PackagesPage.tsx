@@ -24,7 +24,7 @@ import { usePackagesQuery, usePackageTypesQuery } from './usePackagePoolQuery'
 /**
  * Kho kiện `/kien-hang` (FE-3b-03, D-68) — kiện của công ty, mở theo `packages.view`: điều phối viên quản lý, quản lý công ty chỉ xem
  * (không nút ghi, không chọn kiện in nhãn). Dải trời có tab trạng thái kèm số (`trang-thai` trên URL); thẻ bảng đè lên dải: tìm bỏ
- * dấu, lọc loại hàng / cờ / đã-chưa vào đơn hay chuyến, panel chi tiết. "Thêm kiện" là hành động chính; "Nhập file", lối sang danh
+ * dấu, lọc loại hàng / cờ / đã-chưa vào yêu cầu giao hay chuyến, panel chi tiết. "Thêm kiện" là hành động chính; "Nhập file", lối sang danh
  * mục Loại kiện và sang Tra cứu kiện (`packages.lookup`, FE-3b-06) là nút phụ trên dải. Kiện vừa thêm mở ngay chi tiết (đã có mã QR); kiện vừa nhập được chọn sẵn để in nhãn.
  */
 export function PackagesPage() {

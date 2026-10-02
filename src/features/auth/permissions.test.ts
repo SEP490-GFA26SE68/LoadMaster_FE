@@ -3,8 +3,8 @@ import { BACKEND_ROLE_CODES, isPlatformRole, PLATFORM_ROLES, ROLES, type Role } 
 import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } from './permissions'
 
 /**
- * Ma trận quyền (FE-0-01, FE-0-07, FE-0-06): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2 — cộng một chỗ còn tạm
- * (đơn hàng) — không tính lại từ bảng trong code.
+ * Ma trận quyền (FE-0-01, FE-0-07, FE-0-06, FE-4b-01): tập quyền kỳ vọng của từng vai trò chép tay từ PRD v2 mục 5.2, không tính lại
+ * từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
@@ -13,13 +13,13 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate', 'orders.view',
+    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
   ],
   dispatcher: [
     'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
     'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
     'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
-    'pickups.approve', 'orders.view', 'orders.edit',
+    'pickups.approve',
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
@@ -44,12 +44,12 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
   })
 })
 
-test('one table: 35 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  // 33 quyền của ma trận PRD v2 và hai quyền đơn hàng còn tạm; ba quyền của nhà sản xuất và logistics đã bỏ (FE-0-06)
-  expect(PERMISSIONS).toHaveLength(35)
-  expect(new Set(PERMISSIONS).size).toBe(35)
-  expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.)/.test(permission))).toStrictEqual([])
-  expect(PERMISSIONS.slice(-2)).toStrictEqual(['orders.view', 'orders.edit'])
+test('one table: 33 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  // 33 quyền của ma trận PRD v2; ba quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
+  expect(PERMISSIONS).toHaveLength(33)
+  expect(new Set(PERMISSIONS).size).toBe(33)
+  expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
+  expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
   for (const role of ROLES) {
     // Cùng thứ tự với cột của Ma trận quyền và chip "Công việc được phép"; không có bảng phụ nào cộng thêm quyền
@@ -61,8 +61,8 @@ test('one table: 35 permissions, each granted to at least one role; a role lists
 
 test('the three platform roles have no operational permission: no packages, trips, plans, fleet, warehouse or driver work', () => {
   const operational = PERMISSIONS.filter((permission) =>
-    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver|orders)\./.test(permission))
-  expect(operational).toHaveLength(28)
+    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver)\./.test(permission))
+  expect(operational).toHaveLength(26)
   expect(PLATFORM_ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
   for (const role of PLATFORM_ROLES) {
     expect(isPlatformRole(role), role).toBe(true)
@@ -90,5 +90,7 @@ test('the dispatcher edits and approves plans, the company manager only reads th
   expect(can('manager', 'plans.view')).toBe(true)
   expect(can('manager', 'optimization.run')).toBe(false)
   expect(can('manager', 'trips.edit')).toBe(false)
-  expect(can('manager', 'orders.edit')).toBe(false)
+  // Yêu cầu giao: quản lý công ty tạo và sửa, điều phối viên chỉ xem (D-72)
+  expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['manager', 'dispatcher'])
+  expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['manager'])
 })

@@ -30,12 +30,12 @@ const VehicleDetailPage = lazy(() => import('@/features/fleet/VehicleDetailPage'
 const UsersPage = lazy(() => import('@/features/admin/UsersPage').then((m) => ({ default: m.UsersPage })))
 const AuditLogPage = lazy(() => import('@/features/admin/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-// Review 1 (LM-104): kho kiện (FE-3b-03), đơn hàng, loại xe, báo cáo chuyến. Lô hàng và nhận hàng đã bỏ (FE-0-06): đường dẫn cũ là màn 404.
+// Review 1 (LM-104): kho kiện (FE-3b-03), loại xe, báo cáo chuyến; yêu cầu giao thay đơn hàng (FE-4b-02). Lô hàng và nhận hàng đã bỏ (FE-0-06): đường dẫn cũ là màn 404.
 const PackageTypesPage = lazy(() => import('@/features/package-pool/PackageTypesPage').then((m) => ({ default: m.PackageTypesPage })))
 const PackagesPage = lazy(() => import('@/features/package-pool/PackagesPage').then((m) => ({ default: m.PackagesPage })))
 const PackageLabelsPage = lazy(() => import('@/features/package-pool/PackageLabelsPage').then((m) => ({ default: m.PackageLabelsPage })))
 const PackageLookupPage = lazy(() => import('@/features/package-pool/PackageLookupPage').then((m) => ({ default: m.PackageLookupPage })))
-const OrdersPage = lazy(() => import('@/features/orders/OrdersPage').then((m) => ({ default: m.OrdersPage })))
+const RequirementsPage = lazy(() => import('@/features/requirements/RequirementsPage').then((m) => ({ default: m.RequirementsPage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
@@ -130,8 +130,13 @@ export const routes: RouteObject[] = [
                   // In nhãn (FE-3b-05) và Tra cứu kiện (FE-3b-06): điều phối viên và nhân viên kho — kho mở từ màn chính `/kho`
                   guarded('labels.print', [{ path: '/kien-hang/nhan', element: <PackageLabelsPage />, handle: titled((t) => t('titles.labels')) }]),
                   guarded('packages.lookup', [{ path: '/tra-cuu-kien', element: <PackageLookupPage />, handle: titled((t) => t('titles.lookup')) }]),
-                  // Đơn hàng, loại xe, báo cáo chuyến (LM-104)
-                  guarded('orders.view', [{ path: '/don-hang', element: <OrdersPage />, handle: titled((t) => t('titles.orders')) }]),
+                  // Yêu cầu giao (FE-4b-02, D-72): quản lý công ty tạo và sửa, điều phối viên xem và đưa vào chuyến. Đường dẫn cũ của màn Đơn
+                  // hàng chuyển hướng sang đây (PRD v2 mục 9)
+                  guarded('requirements.view', [
+                    { path: '/yeu-cau-giao', element: <RequirementsPage />, handle: titled((t) => t('titles.requirements')) },
+                    { path: '/don-hang', element: <Navigate to="/yeu-cau-giao" replace />, handle: titled((t) => t('titles.requirements')) },
+                  ]),
+                  // Loại xe, báo cáo chuyến (LM-104)
                   guarded('fleet.view', [{ path: '/doi-xe/loai-xe', element: <VehicleTypesPage />, handle: titled((t) => t('titles.vehicleTypes')) }]),
                   guarded('trips.view', [
                     { path: '/chuyen/:tripId/bao-cao', element: <TripReportPage />, handle: titled((t, s) => t('titles.tripReport', idParam(s, 'tripId'))) },

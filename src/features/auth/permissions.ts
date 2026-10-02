@@ -3,7 +3,7 @@ import type { Role } from '@/types/user'
 /**
  * Quyền của FE giả lập (D-41): chặn route, ẩn mục nav và ẩn nút ghi. Backend thật phải kiểm lại ở server — đây chỉ là lớp giao diện.
  * Một hằng số dùng chung cho route, nav, nút và màn "Ma trận quyền" (LM-092). Thứ tự là thứ tự dòng của ma trận, theo PRD v2 mục 5.2
- * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (yêu cầu giao, kho kiện, tối ưu tuyến, giám
+ * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (tối ưu tuyến, giám
  * sát, sự cố, nhận hàng dọc đường, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
  */
 export const PERMISSIONS = [
@@ -40,16 +40,16 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
-  // Tạm, không có trong ma trận PRD v2: đơn hàng (giữ tới FE-4b-02, quyết định G3).
-  'orders.view',
-  'orders.edit',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
 
 /**
- * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2, trừ
- * một chỗ còn tạm: `orders.view` / `orders.edit` giữ nguyên tới khi Yêu cầu giao thay Đơn hàng (FE-4b-02).
+ * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2: hai
+ * quyền tạm `orders.view` / `orders.edit` của Review 1 đã bỏ khi Yêu cầu giao thay Đơn hàng (FE-4b-01).
+ *
+ * Yêu cầu giao `/yeu-cau-giao` mở theo `requirements.view` (Quản lý công ty và Điều phối viên); tạo, sửa, xoá theo `requirements.edit`
+ * của Quản lý công ty; đưa yêu cầu vào chuyến là sửa chuyến — `trips.edit` của Điều phối viên (FE-4b-02).
  *
  * Kho kiện `/kien-hang` mở theo `packages.view` (Điều phối viên và Quản lý công ty, FE-3b-03); nút ghi của màn đó và `/loai-kien` theo
  * `packages.manage` của Điều phối viên. In nhãn `/kien-hang/nhan` theo `labels.print`, Tra cứu kiện `/tra-cuu-kien` theo
@@ -70,14 +70,12 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
-    'orders.view',
   ],
   dispatcher: [
     'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
     'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
     'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
     'pickups.approve',
-    'orders.view', 'orders.edit',
   ],
   warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],

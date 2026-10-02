@@ -28,14 +28,15 @@ test('ngày gần nhất tính theo giờ Việt Nam, không phụ thuộc thứ
 
 test('seed neo 14/09/2026: đếm trên toàn bộ nhật ký của kho', async () => {
   const db = createMockDb()
-  // Đếm bằng máy trên seed, độc lập với hàm. Kho không có phiên trả cả nhật ký: 134 sự kiện — 127 của Long Bình (115 + 12 của nguồn
-  // hàng: 6 đợt đăng ký kiện, 1 lần nhập 40 kiện và 2 lần gắn cờ ngày 13/09 (FE-3b-01), 2 đơn hàng, 1 lần chạy tối ưu hỏng) và 7 của Phương Nam (2 đợt đăng ký kiện, 1 đơn, 2 chuyến, 1 lần tối
-  // ưu, 1 lần duyệt; FE-0-02). Ngày 14/09 có 26 sự kiện (23 + 3 của Phương Nam), lần cuối 11:40 giờ Việt Nam.
-  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 134, latestDay: { date: '2026-09-14', count: 26 }, latestAt: '2026-09-14T04:40:00.000Z' })
-  // Quản trị công ty Long Bình đọc 127 sự kiện của Long Bình: 123 việc người Long Bình làm và 4 việc quản trị hệ thống làm trên tài
+  // Đếm bằng máy trên seed, độc lập với hàm. Kho không có phiên trả cả nhật ký: 138 sự kiện — 131 của Long Bình (115 + 16 của nguồn
+  // hàng: 6 đợt đăng ký kiện, 1 lần nhập 40 kiện và 2 lần gắn cờ ngày 13/09 (FE-3b-01), 6 yêu cầu giao — 4 lập ngày 13/09, 2 lập ngày
+  // 14/09 (FE-4b-01), 1 lần chạy tối ưu hỏng) và 7 của Phương Nam (2 đợt đăng ký kiện, 1 yêu cầu giao, 2 chuyến, 1 lần tối ưu, 1 lần
+  // duyệt; FE-0-02). Ngày 14/09 có 26 sự kiện (23 + 3 của Phương Nam), lần cuối 11:40 giờ Việt Nam.
+  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 138, latestDay: { date: '2026-09-14', count: 26 }, latestAt: '2026-09-14T04:40:00.000Z' })
+  // Quản trị công ty Long Bình đọc 131 sự kiện của Long Bình: 127 việc người Long Bình làm và 4 việc quản trị hệ thống làm trên tài
   // khoản của Long Bình (tạo 3 tài khoản, khoá 1 — FE-0-08); 7 sự kiện của Phương Nam thì không
   db.restoreSession('US-LB-01')
-  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 127, latestDay: { date: '2026-09-14', count: 23 }, latestAt: '2026-09-14T04:40:00.000Z' })
+  expect(summarizeAuditLog(await db.listEvents())).toStrictEqual({ total: 131, latestDay: { date: '2026-09-14', count: 23 }, latestAt: '2026-09-14T04:40:00.000Z' })
   db.restoreSession('US-PN-01')
   expect((await db.listEvents()).length).toBe(7)
 })

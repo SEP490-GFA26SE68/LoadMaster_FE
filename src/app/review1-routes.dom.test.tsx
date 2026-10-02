@@ -33,7 +33,10 @@ test.each<[Role, string, string, string]>([
   ['warehouse', '/kien-hang/nhan?kien=PK-0001', 'In nhãn QR', '1 nhãn có thể in'],
   ['dispatcher', '/tra-cuu-kien', 'Tra cứu kiện', 'Quét hoặc nhập mã để xem kiện'],
   ['warehouse', '/tra-cuu-kien', 'Tra cứu kiện', 'Quét hoặc nhập mã để xem kiện'],
-  ['dispatcher', '/don-hang', 'Đơn hàng', '2 đơn chờ gán vào chuyến'],
+  // FE-4b-02: yêu cầu giao theo `requirements.view` — quản lý công ty và điều phối viên; đường dẫn cũ của màn Đơn hàng chuyển hướng sang đây
+  ['manager', '/yeu-cau-giao', 'Yêu cầu giao', '6 yêu cầu chờ xếp chuyến'],
+  ['dispatcher', '/yeu-cau-giao', 'Yêu cầu giao', '6 yêu cầu chờ xếp chuyến'],
+  ['dispatcher', '/don-hang', 'Yêu cầu giao', '6 yêu cầu chờ xếp chuyến'],
   ['dispatcher', '/doi-xe/loai-xe', 'Loại xe', '7 loại xe, gắn cho 7 xe'],
 ])('%s mở %s', async (role, path, title, summary) => {
   openAt(path, role)
@@ -49,9 +52,10 @@ test('the trip report summarizes a completed trip from its recorded progress', a
 })
 
 test.each<[Role, string]>([
+  ['warehouse', '/yeu-cau-giao'],
   ['warehouse', '/don-hang'],
   // FE-0-01: quản trị hệ thống không còn quyền vận hành
-  ['systemAdmin', '/don-hang'],
+  ['systemAdmin', '/yeu-cau-giao'],
   ['systemAdmin', '/kien-hang'],
   // Loại kiện theo `packages.manage`, in nhãn theo `labels.print`, tra cứu theo `packages.lookup`: quản lý công ty chỉ xem kho kiện;
   // nhân viên kho in nhãn và tra cứu nhưng không mở kho kiện; tài xế không có quyền nào trong đó

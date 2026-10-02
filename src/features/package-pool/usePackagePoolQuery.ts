@@ -75,9 +75,9 @@ export function usePackageLookupQuery(code: string) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'lookup', code], queryFn: () => lookupPackages(code), enabled: code !== '', staleTime: 0, retry: false })
 }
 
-/** Tạo kiện đổi kho kiện, loại kiện (đếm kiện đang dùng) và đơn hàng (kiện để chọn). */
+/** Tạo kiện đổi kho kiện, loại kiện (đếm kiện đang dùng) và yêu cầu giao (kiện để chọn). */
 function refreshPool(client: QueryClient) {
-  return Promise.all([PACKAGE_POOL_KEY, PACKAGE_TYPES_KEY, ['orders']].map((queryKey) => client.invalidateQueries({ queryKey })))
+  return Promise.all([PACKAGE_POOL_KEY, PACKAGE_TYPES_KEY, ['requirements']].map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 
 /** Thêm một kiện; trả kiện vừa tạo (đã có mã QR) để màn mở chi tiết. */
@@ -86,7 +86,7 @@ export function useCreatePackageMutation() {
   return useMutation({ mutationFn: (input: PackageInput) => createPackage(input), onSuccess: () => refreshPool(client) })
 }
 
-/** Gỡ cờ: kiện lại chọn được vào đơn, nên làm mới cả đơn hàng. */
+/** Gỡ cờ: kiện lại chọn được vào yêu cầu giao, nên làm mới cả yêu cầu giao. */
 export function useClearPackageFlagMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: ({ id, flag }: { id: string; flag: PackageFlag }) => clearPackageFlag(id, flag), onSuccess: () => refreshPool(client) })
@@ -116,7 +116,7 @@ export function useScanPackageMutation() {
   return useMutation({ mutationFn: (token: string) => scanPackage(token) })
 }
 
-/** Kho quét thấy lại kiện mang cờ "Không tìm thấy": cờ được gỡ nên kho kiện và kiện để chọn vào đơn đều đổi. */
+/** Kho quét thấy lại kiện mang cờ "Không tìm thấy": cờ được gỡ nên kho kiện và kiện để chọn vào yêu cầu giao đều đổi. */
 export function useReportPackageFoundMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (token: string) => reportPackageFound(token), onSuccess: () => refreshPool(client) })

@@ -34,7 +34,7 @@ function eventText(entry: PackageHistoryLine, t: TFunction): string {
 }
 
 /**
- * Panel chi tiết kiện (FE-3b-03), cột phải của bảng kho kiện: mã QR (kèm mã chữ), thông tin kiện, đơn và chuyến đang giữ kiện, cờ và
+ * Panel chi tiết kiện (FE-3b-03), cột phải của bảng kho kiện: mã QR (kèm mã chữ), thông tin kiện, yêu cầu giao và chuyến đang giữ kiện, cờ và
  * lịch sử. Lịch sử là `Package.history` kho ghi ở từng lần tạo, chuyển trạng thái, gắn và gỡ cờ — không suy ở màn. Điều phối viên
  * có nút In nhãn (`labels.print`) và Gỡ cờ (`packages.manage`); quản lý công ty chỉ đọc. Nền đặc, viền 1 px — bề mặt đọc lâu, không dùng kính.
  * Mở hoặc đổi kiện thì con trỏ về tiêu đề panel.
@@ -116,12 +116,12 @@ export function PackageDetailPanel({ id, packageId, onClose }: {
               <Field label={t('sourcing.detail.destination')} wide>{pkg.destination}</Field>
               <Field label={t('sourcing.detail.packageType')} wide>{detail.type ? `${detail.type.name} · ${detail.type.id}` : t('sourcing.detail.packageTypeNone')}</Field>
               <Field label={t('sourcing.detail.source')}>{t(`sourcing.detail.sources.${pkg.source}`)}</Field>
-              {pkg.orderId === undefined && pkg.requirementId === undefined && pkg.tripId === undefined ? (
+              {pkg.requirementId === undefined && pkg.tripId === undefined ? (
                 <Field label={t('sourcing.packages.filters.link')}>{t('sourcing.detail.notLinked')}</Field>
               ) : null}
-              {pkg.orderId !== undefined ? (
-                <Field label={t('sourcing.detail.order')}>
-                  {can('orders.view') ? <Link to={`/don-hang?q=${encodeURIComponent(pkg.orderId)}`} className={LINK}>{pkg.orderId}</Link> : <span className="font-mono text-caption">{pkg.orderId}</span>}
+              {pkg.requirementId !== undefined ? (
+                <Field label={t('sourcing.detail.requirement')}>
+                  {can('requirements.view') ? <Link to={`/yeu-cau-giao?q=${encodeURIComponent(pkg.requirementId)}`} className={LINK}>{pkg.requirementId}</Link> : <span className="font-mono text-caption">{pkg.requirementId}</span>}
                 </Field>
               ) : null}
               {pkg.tripId !== undefined ? (

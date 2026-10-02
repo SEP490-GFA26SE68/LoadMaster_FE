@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { OrderAssignDialog } from '@/features/orders/OrderAssignDialog'
+import { RequirementAssignDialog } from '@/features/requirements/RequirementAssignDialog'
 import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
 import { useT } from '@/lib/i18n'
@@ -17,7 +17,7 @@ import { RouteDiagram } from './RouteDiagram'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
 import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
-import { TripOrdersCard } from './TripOrdersCard'
+import { TripRequirementsCard } from './TripRequirementsCard'
 import { TripReadinessCard } from './TripReadinessCard'
 import {
   useDeletePackageMutation,
@@ -35,7 +35,7 @@ import {
  * (`ChiTietChuyenKien.jpg`).
  * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
  * xếp, banner nói lý do và mọi thao tác sửa ẩn đi. LM-104: chuyến còn lập kế hoạch có card "Kiểm tra trước khi tối ưu" đầu cột phải;
- * dưới bảng kiện là "Đơn hàng trên chuyến" (gán / bỏ gán đơn khi có quyền `orders.edit`).
+ * dưới bảng kiện là "Yêu cầu giao trên chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`, FE-4b-01).
  */
 export function TripDetailPage() {
   const { tripId = '' } = useParams()
@@ -58,8 +58,8 @@ export function TripDetailPage() {
   const vehicle = query.data?.vehicle
   // Quản lý xem chuyến chỉ đọc (D-41); từ lúc kho bắt đầu xếp, xe, điểm giao và kiện bị khoá (D-45)
   const editable = can('trips.edit') && trip?.phase === 'planning'
-  // Luồng 2 (LM-104): gán đơn hàng vào điểm giao khi chuyến còn lập kế hoạch và có quyền ghi đơn
-  const canAssign = can('orders.edit') && trip?.phase === 'planning'
+  // Đưa yêu cầu giao vào điểm giao khi chuyến còn lập kế hoạch và người xem sửa được chuyến (điều phối viên)
+  const canAssign = can('trips.edit') && trip?.phase === 'planning'
   const openAssign = canAssign ? () => setAssigning(true) : undefined
   const stops = useMemo<StopRow[]>(() => (trip ? stopRows(trip.stops, trip.packages) : []), [trip])
   const summary = useMemo(() => (trip && vehicle ? cargoSummary(trip.packages, vehicle) : null), [trip, vehicle])
@@ -144,10 +144,10 @@ export function TripDetailPage() {
                 stopFilter={stopFilter}
                 onStopFilterChange={setStopFilter}
               />
-              {/* Đơn hàng trên chuyến (LM-104): ngay dưới bảng kiện — mỗi đơn gán vào là các dòng kiện của bảng này */}
-              <TripOrdersCard trip={trip} onAssign={openAssign} />
+              {/* Yêu cầu giao trên chuyến: ngay dưới bảng kiện — mỗi yêu cầu đưa vào là các dòng kiện của bảng này */}
+              <TripRequirementsCard trip={trip} onAssign={openAssign} />
               {editable ? <PackageImportDialog trip={trip} vehicle={vehicle} open={importing} onOpenChange={setImporting} /> : null}
-              {canAssign ? <OrderAssignDialog open={assigning} onOpenChange={setAssigning} tripId={tripId} /> : null}
+              {canAssign ? <RequirementAssignDialog open={assigning} onOpenChange={setAssigning} tripId={tripId} /> : null}
             </div>
 
             {editing ? (
@@ -171,7 +171,7 @@ export function TripDetailPage() {
             ) : (
               // Chuyến còn lập kế hoạch: "Kiểm tra trước khi tối ưu" đứng đầu cột phải (LM-104)
               <div className="flex min-w-0 flex-col gap-4 xl:[grid-area:side]">
-                {trip.phase === 'planning' ? <TripReadinessCard tripId={tripId} onAssignOrder={openAssign} /> : null}
+                {trip.phase === 'planning' ? <TripReadinessCard tripId={tripId} onAssignRequirement={openAssign} /> : null}
                 <TripDetailSide trip={trip} vehicle={vehicle} driver={query.data?.driver ?? null} summary={summary} editable={editable} />
               </div>
             )}

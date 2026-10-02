@@ -11,7 +11,7 @@ const GROUP_ICONS: Readonly<Record<SearchGroup, LucideIcon>> = {
   packages: Package,
   vehicles: Warehouse,
   users: UserRound,
-  orders: ClipboardList,
+  requirements: ClipboardList,
   pool: Package,
   packageTypes: Shapes,
 }
@@ -118,7 +118,7 @@ function titleOf(result: SearchResult, mark: (text: string) => ReactNode): React
   switch (result.group) {
     case 'trips':
     case 'users':
-    case 'orders':
+    case 'requirements':
     case 'packageTypes':
       return mark(result.name)
     case 'packages':
@@ -144,7 +144,7 @@ function detailOf(result: SearchResult, mark: (text: string) => ReactNode, t: TF
     case 'vehicles':
     case 'packageTypes':
       return <span className={CODE}>{mark(result.id)}</span>
-    case 'orders':
+    case 'requirements':
       return <><span className={CODE}>{mark(result.id)}</span> · {mark(result.detail)}</>
     case 'pool':
       return <>{mark(result.name)}{result.reference ? <> · <span className={CODE}>{mark(result.reference)}</span></> : null}</>

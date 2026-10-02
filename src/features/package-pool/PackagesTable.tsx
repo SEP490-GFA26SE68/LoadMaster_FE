@@ -15,7 +15,7 @@ import {
 } from './packages-list'
 
 /**
- * Thẻ bảng của kho kiện (FE-3b-03): thanh tìm và ba bộ lọc (loại hàng, cờ, đã / chưa vào đơn hay chuyến) là đầu thẻ, dải thao tác
+ * Thẻ bảng của kho kiện (FE-3b-03): thanh tìm và ba bộ lọc (loại hàng, cờ, đã / chưa vào yêu cầu giao hay chuyến) là đầu thẻ, dải thao tác
  * trên kiện đang chọn, bảng phân trang; bấm dòng (hoặc nút mã kiện) mở panel chi tiết ở cột phải, Esc đóng và trả con trỏ về mã kiện.
  * Chọn kiện để in nhãn chỉ có với người in được nhãn (`packages.manage`).
  */
@@ -71,7 +71,7 @@ export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedCha
       openId: open,
       onOpen: toggleOpen,
       panelId,
-      canOpenOrders: can('orders.view'),
+      canOpenRequirements: can('requirements.view'),
       canOpenTrips: can('trips.view'),
     }
   }, [selected, rows, onSelectedChange, open, toggleOpen, panelId, can])
