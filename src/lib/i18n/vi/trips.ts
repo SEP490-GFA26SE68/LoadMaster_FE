@@ -455,6 +455,28 @@ export const trips = {
       done: 'Đã thêm điểm {number}: {name}.',
     },
   },
+  /** Kiện kho kiện đưa thẳng vào chuyến (FE-4b-05, D-68 đường 2): thẻ ở Chi tiết chuyến và hộp thoại chọn kiện. */
+  pool: {
+    title: 'Kiện đưa thẳng từ kho kiện',
+    empty: 'Chưa có kiện nào đưa thẳng từ kho kiện vào chuyến này.',
+    add: 'Thêm kiện từ kho kiện',
+    remove: 'Bỏ kiện {id} khỏi chuyến',
+    removed: 'Đã bỏ kiện {id} khỏi chuyến; kiện về kho kiện.',
+    note: 'Kiện đưa thẳng vào chuyến không thuộc yêu cầu giao nào nên không có hạn giao. Bỏ kiện khỏi chuyến thì kiện về trạng thái Đã nhập.',
+    picker: {
+      title: 'Thêm kiện từ kho kiện',
+      description: 'Chọn kiện Đã nhập chưa thuộc yêu cầu giao nào và gán vào một điểm giao tay. Mỗi nhóm kiện giống nhau thành một dòng kiện của chuyến; phương án đã tối ưu sẽ lỗi thời.',
+      stop: 'Điểm giao',
+      stopHint: 'Điểm giao thêm tay của chuyến. Điểm của yêu cầu giao không nằm ở đây.',
+      stopOption: 'Điểm {number} · {name}',
+      newStop: 'Tạo điểm giao mới',
+      packagesRequired: 'Chọn ít nhất một kiện.',
+      stopRequired: 'Chọn điểm giao.',
+      cancel: 'Huỷ',
+      submit: 'Đưa vào chuyến',
+      done: { one: 'Đã đưa {count} kiện vào chuyến, điểm {number}.', other: 'Đã đưa {count} kiện vào chuyến, điểm {number}.' },
+    },
+  },
   form: {
     titleNew: 'Kiện mới',
     title: 'Kiện {id}',

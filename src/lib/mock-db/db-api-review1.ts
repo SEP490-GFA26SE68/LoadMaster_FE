@@ -14,6 +14,7 @@ import type {
   VehicleTypeAssignment,
   VehicleTypeInput,
 } from './source-types'
+import type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 import type { Trip } from './types'
 
 /**
@@ -105,6 +106,25 @@ export type Review1Db = {
    */
   unassignDeliveryRequirement(requirementId: string): Promise<DeliveryRequirement>
 
+  /**
+   * Kiện kho kiện đang ở trong chuyến, theo thứ tự dòng kiện: kèm dòng, điểm giao và đường kiện vào chuyến (qua yêu cầu giao, đưa
+   * thẳng từ kho kiện, thêm ngay trong chuyến).
+   */
+  listTripPackages(tripId: string): Promise<TripPoolPackage[]>
+  /**
+   * Đưa kiện kho kiện **thẳng** vào chuyến ở pha lập kế hoạch (FE-4b-05, D-68 đường 2), vào điểm giao `target`: một điểm đang có của
+   * chuyến (`STOP_NOT_FOUND` nếu không có), hoặc một điểm tay mới cuối tuyến (thiếu tên, toạ độ sai: `TRIP_INVALID`). Kiện phải
+   * `IMPORTED`, không cờ (`PACKAGE_FLAGGED`), không thuộc yêu cầu giao nào (`PACKAGE_UNAVAILABLE`); không kiện nào: `PACKAGES_REQUIRED`.
+   * Mỗi nhóm kiện giống nhau thành một dòng `CargoPackage` mới ở điểm đó, không có hạn; kiện sang `ASSIGNED`, giữ mã và dữ liệu của
+   * chính nó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31). Chuyến đã sang vận hành: `TRIP_LOCKED`.
+   */
+  addTripPackages(tripId: string, packageIds: readonly string[], target: TripStopTarget): Promise<Trip>
+  /**
+   * Bỏ một kiện kho kiện khỏi chuyến ở pha lập kế hoạch: kiện về `IMPORTED`, dòng kiện của nó bớt một (hết kiện thì bỏ dòng), chuyến
+   * tăng `inputVersion`. Kiện của yêu cầu giao (rời chuyến bằng `unassignDeliveryRequirement`) hoặc kiện không ở chuyến này:
+   * `PACKAGE_UNAVAILABLE`.
+   */
+  removeTripPackage(tripId: string, packageId: string): Promise<Trip>
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>
   /** Ghi một lần chạy không ra kết quả (service từ chối hoặc không phản hồi). */

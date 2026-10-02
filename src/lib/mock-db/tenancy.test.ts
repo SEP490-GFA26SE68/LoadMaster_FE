@@ -262,6 +262,21 @@ const PROBES = {
     },
   },
   unassignDeliveryRequirement: { scope: 'operational', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.unassignDeliveryRequirement(other.requirements[0]!) } },
+  listTripPackages: { scope: 'operational', hidden: ({ db, other }) => db.listTripPackages(other.trip) },
+  addTripPackages: {
+    scope: 'operational',
+    forbidden: {
+      'chuyến của công ty kia': ({ db, own, other }) => db.addTripPackages(other.draftTrip, [own.freePackage], { stopId: 'STOP-01' }),
+      'kiện của công ty kia': ({ db, own, other }) => db.addTripPackages(own.draftTrip, [other.freePackage], { stopId: 'STOP-01' }),
+    },
+  },
+  removeTripPackage: {
+    scope: 'operational',
+    forbidden: {
+      'chuyến của công ty kia': ({ db, own, other }) => db.removeTripPackage(other.draftTrip, own.freePackage),
+      'kiện của công ty kia': ({ db, own, other }) => db.removeTripPackage(own.draftTrip, other.freePackage),
+    },
+  },
 
   listVehicleTypes: { scope: 'operational', list: { call: ({ db }) => db.listVehicleTypes(), ids: idsOf, own: (c) => c.vehicleTypes } },
   getVehicleType: { scope: 'operational', hidden: ({ db, other }) => db.getVehicleType(other.vehicleTypes[0]!) },

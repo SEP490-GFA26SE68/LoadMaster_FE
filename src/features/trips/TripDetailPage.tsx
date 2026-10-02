@@ -14,11 +14,13 @@ import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
+import { PoolPackagePicker } from './PoolPackagePicker'
 import { RouteDiagram } from './RouteDiagram'
 import { StopFormDialog } from './StopFormDialog'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
 import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
+import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
 import { TripReadinessCard } from './TripReadinessCard'
 import {
@@ -39,7 +41,7 @@ import {
  * xếp, banner nói lý do và mọi thao tác sửa ẩn đi. LM-104: chuyến còn lập kế hoạch có card "Kiểm tra trước khi tối ưu" đầu cột phải;
  * dưới bảng kiện là "Yêu cầu giao của chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`). FE-4b-04: điểm giao tự sinh khi đưa
  * yêu cầu vào chuyến; chân card sơ đồ tuyến có "Thêm điểm giao" cho điểm tay. Chuyến chưa có điểm giao nào thì chưa thêm kiện tay được
- * — kiện phải thuộc một điểm giao.
+ * — kiện phải thuộc một điểm giao. FE-4b-05: dưới thẻ yêu cầu giao là "Kiện đưa thẳng từ kho kiện" (thêm / bỏ kiện Đã nhập).
  */
 export function TripDetailPage() {
   const { tripId = '' } = useParams()
@@ -56,6 +58,7 @@ export function TripDetailPage() {
   const [importing, setImporting] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [addingStop, setAddingStop] = useState(false)
+  const [pickingPool, setPickingPool] = useState(false)
   // Điểm giao đang lọc bảng kiện: điểm trên sơ đồ tuyến và ô chọn trên bảng dùng chung
   const [stopFilter, setStopFilter] = useState<number | null>(null)
 
@@ -156,9 +159,11 @@ export function TripDetailPage() {
               />
               {/* Yêu cầu giao của chuyến: ngay dưới bảng kiện — mỗi yêu cầu đưa vào là các dòng kiện của bảng này */}
               <TripRequirementsCard trip={trip} onAssign={openAssign} />
+              <TripPoolPackagesCard trip={trip} onAdd={editable ? () => setPickingPool(true) : undefined} />
               {editable ? <PackageImportDialog trip={trip} vehicle={vehicle} open={importing} onOpenChange={setImporting} /> : null}
               {canAssign ? <RequirementAssignDialog open={assigning} onOpenChange={setAssigning} tripId={tripId} /> : null}
               {editable ? <StopFormDialog open={addingStop} onOpenChange={setAddingStop} tripId={tripId} /> : null}
+              {editable ? <PoolPackagePicker open={pickingPool} onOpenChange={setPickingPool} trip={trip} /> : null}
             </div>
 
             {editing ? (

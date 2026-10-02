@@ -2,8 +2,9 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   createTrip                  → POST /api/trips
  *   updateTripFrame             → chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
- *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE); tên sẽ đổi khi nối BE: addTripPackages
- *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId}
+ *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE) — dòng kiện gõ / nhập ngay trong chuyến
+ *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId} — bỏ cả một dòng kiện
+ *   Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage — cùng hai endpoint trên, theo từng kiện): `trip-pool-api.ts`.
  *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages,
  *   duplicateTripPackage, fetchTripRevisions
  * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.

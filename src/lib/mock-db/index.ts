@@ -27,6 +27,7 @@ export { DEMO_ACCOUNTS, QUICK_LOGIN_ACCOUNTS, SEED_PASSWORD, type DemoAccount } 
 // Review 1 (LM-104)
 export type { Review1Db } from './db-api-review1'
 export { MAX_PACKAGES_PER_CREATE } from './db-packages'
+export type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 export { MAX_SEAL_LENGTH } from './db-scans'
 export { normalizeQrToken } from './qr-token'
 export {
