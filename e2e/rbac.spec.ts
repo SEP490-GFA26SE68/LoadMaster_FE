@@ -119,7 +119,7 @@ test('the company manager lands on the dashboard and sees its own nav items, ord
   // Kho kiện với quản lý công ty là màn chỉ đọc (FE-3b-03): không thêm kiện, không nhập file, không chọn kiện in nhãn, không gỡ cờ
   await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
-  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
+  await expect(page.getByText('2.951 kiện trong kho kiện', { exact: true })).toBeVisible()
   for (const name of ['Thêm kiện', 'Nhập file']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Loại kiện', exact: true })).toHaveCount(0)
   await expect(page.getByRole('checkbox')).toHaveCount(0)
@@ -147,8 +147,8 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true })).toBeVisible()
-  // Điều phối viên thấy cả 88 kiện của kho kiện Long Bình
-  await expect(page.getByText('88 kiện trong kho kiện', { exact: true })).toBeVisible()
+  // Điều phối viên thấy cả 2.951 kiện của kho kiện Long Bình: 88 kiện có từ trước và 2.863 kiện của các chuyến seed (FE-3b-07)
+  await expect(page.getByText('2.951 kiện trong kho kiện', { exact: true })).toBeVisible()
 
   // Lô hàng và nhận hàng: đường dẫn cũ là màn 404 (không phải 403), có lối về màn chính
   for (const route of ['/lo-hang', '/lo-hang/SHP-002', '/nhan-hang']) {
