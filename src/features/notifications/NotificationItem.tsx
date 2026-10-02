@@ -19,8 +19,8 @@ const TILE: Record<KpiTone, string> = {
 
 /**
  * Sự kiện vận hành mà chuông báo cho điều phối và quản lý có icon riêng, rõ hơn icon nhóm của nhật ký (MenuToanCuc V2.3). "Xếp xong"
- * tông xanh lam: "đã xếp xong" là việc đang chạy, như chip trạng thái. Sự kiện khác (tài khoản của quản trị viên) theo icon và tint của
- * bảng nhật ký.
+ * tông xanh lam: "đã xếp xong" là việc đang chạy, như chip trạng thái. Sự kiện khác (duyệt phương án, tài khoản của quản trị viên) theo
+ * icon và tint của bảng nhật ký.
  */
 const OPERATION_LOOK: Partial<Record<AuditAction, { icon: LucideIcon; tone: KpiTone }>> = {
   'loading.completed': { icon: PackageCheck, tone: 'azure' },
