@@ -12,3 +12,10 @@ test('a stopped loop is idle only after the quiet gap', () => {
   expect(isSceneIdle(false, 250)).toBe(true)
   expect(isSceneIdle(false, 900)).toBe(true)
 })
+
+test('a frame requested after the last one keeps the scene busy until it is drawn', () => {
+  // Máy yếu: frame cuối không tự xin frame tiếp, nhưng ngay sau đó react-spring (hoặc con trỏ) xin thêm một frame và 400 ms sau
+  // frame ấy vẫn chưa vẽ xong
+  expect(isSceneIdle(false, 400, 1)).toBe(false)
+  expect(isSceneIdle(false, 400, 0)).toBe(true)
+})

@@ -1006,6 +1006,10 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   - Cửa sổ lấy mẫu animation tính từ lúc animation **hiện ra**, không từ lúc bấm: máy chậm tiêu hết cửa sổ cho quãng bấm → React
     render → spring chạy.
   - Root R3F lấy theo canvas **đang có mặt** và chờ nó xuất hiện (`_roots.get(canvas)`), vì canvas có thể vừa được dựng lại.
+  - Chờ scene nghỉ bằng `waitDemandIdle` (đọc thẳng R3F lúc luồng chính rảnh: không còn frame được xin, renderer không vẽ thêm), không
+    theo `data-idle` của overlay — overlay lấy mẫu 500 ms một lần nên còn giữ mẫu cũ. Lấy mẫu animation tới khi nó **chạy xong**, không
+    theo cửa sổ thời gian: react-spring tiến tối đa 64 ms mỗi frame, hình dỡ 260 ms cần 5 frame. CDP không hãm tiến trình GPU: dựng lại
+    2–4 FPS bằng `E2E_FRAME_INTERVAL_MS`, hãm CPU bằng `E2E_CPU_THROTTLE` (`emulateSlowMachine` ở `e2e/viewer-helpers.ts`).
 - *(bổ sung 23/09/2026)* Playwright **cuộn được cả vùng `overflow-hidden` bằng code** (`scrollIntoView` trước mỗi thao tác), nên màn
   người dùng không lăn được vẫn xanh. Kiểm cuộn bằng `page.mouse.wheel` (`layout-1366.spec.ts`, test "mouse wheel"); thêm màn cuộn
   dài mới thì thêm vào danh sách của test đó.

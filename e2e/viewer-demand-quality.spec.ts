@@ -1,7 +1,9 @@
+import type { Page } from '@playwright/test'
 import { attachJson, expect, PLANNER_ROUTE, test } from './fixtures'
-import { metrics, waitIdle, type ViewerMetrics } from './viewer-helpers'
+import { drawnFrames, emulateSlowMachine, metrics, waitDemandIdle, waitIdle, type ViewerMetrics } from './viewer-helpers'
 
 type QualityTier = 'low' | 'balanced' | 'high'
+type SampleRecorder = { __viewerSamples?: ViewerMetrics[] }
 const EXPECTED_DPR: Record<QualityTier, string> = { low: '0.5', balanced: '1.5', high: '2' }
 /** Tuỳ chọn khi đo tay (`VIEWER_INITIAL_QUALITY=low`), mặc định balanced như bản `.mjs`. */
 const INITIAL_TIER = (process.env.VIEWER_INITIAL_QUALITY ?? 'balanced') as QualityTier
@@ -9,11 +11,28 @@ const INITIAL_TIER = (process.env.VIEWER_INITIAL_QUALITY ?? 'balanced') as Quali
 // Renderer mặc định: không ép SwiftShader, quan sát đúng thứ Chromium cung cấp; DPR thiết bị 2.
 test.use({ deviceScaleFactor: 2, launchOptions: { args: [] } })
 
+/**
+ * Ghi lại mọi mẫu overlay công bố kể từ lúc gọi. Đọc overlay từng lúc từ Node thì hụt mẫu: trên máy chậm lệnh đọc chỉ chen vào
+ * được khi scene đã đứng yên, đúng lúc overlay đã báo nghỉ và bỏ trống FPS.
+ */
+async function recordPublishedSamples(page: Page) {
+  await page.locator('[data-viewer-performance]').evaluate((overlay) => {
+    const samples: ViewerMetrics[] = []
+    Object.assign(window, { __viewerSamples: samples } satisfies SampleRecorder)
+    new MutationObserver(() => samples.push({ ...(overlay as HTMLElement).dataset } as ViewerMetrics)).observe(overlay, { attributes: true })
+  })
+}
+
+const publishedSamples = (page: Page) => page.evaluate(() => (window as SampleRecorder).__viewerSamples ?? [])
+
 test('demand rendering publishes FPS while moving, idles afterwards and switches DPR per tier', async ({ page, login, browserErrors }, testInfo) => {
   const report: { initialTier: QualityTier; samples: ViewerMetrics[]; tiers: ViewerMetrics[]; environment?: unknown } = {
     initialTier: INITIAL_TIER, samples: [], tiers: [],
   }
-  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=${INITIAL_TIER}`, 'manager')
+  await login(`${PLANNER_ROUTE}?debug&packages=1000&quality=${INITIAL_TIER}`, 'dispatcher')
+  await emulateSlowMachine(page, testInfo)
+  // Scene phải yên hẳn trước khi ghi mẫu: FPS ghi được sau đây chỉ có thể đến từ lần kéo camera, không phải từ animation lúc mở màn
+  await waitDemandIdle(page)
   await waitIdle(page)
   expect((await metrics(page)).dpr).toBe(EXPECTED_DPR[INITIAL_TIER])
   report.environment = await page.locator('canvas').evaluate((canvas) => {
@@ -29,19 +48,22 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
   expect(bounds).toBeTruthy()
   const cx = bounds!.x + bounds!.width / 2
   const cy = bounds!.y + bounds!.height / 2
+  await recordPublishedSamples(page)
   await page.mouse.move(cx, cy)
   await page.mouse.down()
   for (let index = 0; index < 24; index++) {
     await page.mouse.move(cx + Math.sin(index / 5) * 120, cy + Math.cos(index / 5) * 60, { steps: 2 })
     await page.waitForTimeout(90)
-    report.samples.push(await metrics(page))
   }
   await page.mouse.up()
+  // Nhả chuột rồi camera còn trượt thêm: chờ demand loop dừng thật (đọc thẳng R3F) rồi mới đọc mẫu và kiểm nghỉ
+  await waitDemandIdle(page)
+  report.samples = await publishedSamples(page)
   expect(report.samples.some((sample) => Number(sample.fps) > 0 && Number(sample.frameTimeMs) > 0), 'active camera must publish FPS and frame time').toBeTruthy()
   await waitIdle(page)
-  const settledFrames = (await metrics(page)).renderedFrames
+  const settledFrames = await drawnFrames(page)
   await page.waitForTimeout(1200)
-  expect((await metrics(page)).renderedFrames, 'camera must settle back to demand idle').toBe(settledFrames)
+  expect(await drawnFrames(page), 'camera must settle back to demand idle').toBe(settledFrames)
 
   for (const [tier, expectedDpr] of [['low', '0.5'], ['high', '2'], ['balanced', '1.5']] as const) {
     await page.evaluate((quality) => {
