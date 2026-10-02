@@ -1,3 +1,4 @@
+import { QueryClientContext } from '@tanstack/react-query'
 import { createContext, use, useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { User } from '@/types/user'
 import * as authApi from './auth-api'
@@ -51,19 +52,28 @@ function writeStoredUser(user: User | null) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(restoreUser)
+  // Vắng khi cây không có `QueryClientProvider` (vài test chỉ dựng phiên): khi đó không có cache nào để xoá
+  const queryClient = use(QueryClientContext)
 
+  /**
+   * Đổi người là xoá cache Query (FE-0-02): khoá truy vấn không mang người dùng hay công ty (`['trips']`, `['vehicles']`…), nên dữ
+   * liệu kho đã lọc cho người trước sẽ hiện nguyên cho người đăng nhập sau trong cùng tab nếu để lại. Xoá cả lúc đăng xuất lẫn
+   * lúc đăng nhập: truy vấn chạy giữa hai lần đó đọc kho khi không có phiên — kho không lọc.
+   */
   const signIn = useCallback(async (email: string, password: string) => {
     const signedIn = await authApi.login(email, password)
+    queryClient?.clear()
     writeStoredUser(signedIn)
     setUser(signedIn)
     return signedIn
-  }, [])
+  }, [queryClient])
 
   const signOut = useCallback(async () => {
     await authApi.logout()
     writeStoredUser(null)
     setUser(null)
-  }, [])
+    queryClient?.clear()
+  }, [queryClient])
 
   const refreshUser = useCallback(() => {
     const current = authApi.currentSessionUser()
