@@ -229,7 +229,9 @@ src/
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
                         VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
-  components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl
+  components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl;
+                        *(bổ sung 03/10/2026, FE-4b-03)* CoordinatePicker (ô chọn toạ độ: tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ
+                        bấm chọn khi có khoá map tiles), `places-api.ts` (tìm địa chỉ — chưa có ở BE, Q-20)
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -256,6 +258,8 @@ src/
                         *(đã điều chỉnh 03/10/2026, FE-4b-01)* yêu cầu giao thay đơn hàng (`requirement-model.ts`: kiểu
                         `DeliveryRequirement`, trạng thái suy, bảng ưu tiên D-93; `db-requirements.ts`; `db-requirement-trips.ts`
                         đưa vào / gỡ khỏi chuyến và theo mốc của chuyến; `seed-requirements.ts`) — `db-orders.ts` đã xoá;
+                        *(bổ sung 03/10/2026, FE-4b-03 → FE-4b-05)* địa danh mẫu `seed-places.ts`; điểm giao tự sinh `trip-stops.ts`
+                        (thuần) + `db-trip-lines.ts`; kiện kho kiện đưa thẳng vào chuyến `db-trip-pool.ts`; kho xuất phát `seed-depots.ts`;
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
@@ -1031,8 +1035,9 @@ ký; nhân viên kho gỡ cờ `NOT_FOUND` bằng `reportPackageFound` khi tìm 
 30 kiện thuộc sáu yêu cầu giao của seed, FE-4b-01) và 40 kiện nhập file không gắn loại kiện, tám điểm đến thật, hai kiện mang cờ; Phương Nam 10 kiện.
 *(đã điều chỉnh 03/10/2026, FE-4b-01, D-72, D-91 → D-93)* **Yêu cầu giao** thay đơn hàng `ORD` của Review 1. `DeliveryRequirement`
 (`REQ-NNN`, Phương Nam `REQ-PN-NNN`; `requirement-model.ts`): `companyId`, `destinationName`, `address`, `lat?` / `lng?` (có cả hai hoặc
-không có), `deadline` (ISO), `priority` (`LOW | NORMAL | HIGH | URGENT`), `packageIds`, `note?`, `status`, `tripId?`, `assignment?` (điểm
-giao và các dòng kiện đã sinh — *tạm tới FE-4b-04*), người và thời điểm lập. Kho **ghi** ba trạng thái của backend: `PENDING` → `ASSIGNED`
+không có), `deadline` (ISO), `priority` (`LOW | NORMAL | HIGH | URGENT`), `packageIds`, `note?`, `status`, `tripId?`, người và thời điểm
+lập *(đã điều chỉnh 03/10/2026, FE-4b-04: `assignment` tạm đã bỏ — dòng kiện của yêu cầu nằm ở `DbState.tripPackageLinks` với
+`requirementId`, điểm giao của yêu cầu là điểm của các dòng đó)*. Kho **ghi** ba trạng thái của backend: `PENDING` → `ASSIGNED`
 (đưa vào chuyến) → `IN_TRIP` (xe xuất phát); gỡ khỏi chuyến hoặc huỷ chuyến trước khi xe chạy đưa yêu cầu về `PENDING` (D-91). "Đã giao"
 (`DELIVERED`) và "Giao thiếu" (`PARTIAL`) **suy lúc đọc** bằng `requirementStatus(requirement, kiện)`: có kiện mang cờ hoặc hoàn trả là giao
 thiếu (D-92); đang giao mà mọi kiện đã giao là đã giao. Luật của kho (`db-requirements.ts`, `db-requirement-trips.ts`): kiện phải `IMPORTED`,
@@ -1054,18 +1059,46 @@ chuyến) → `useRequirementsQuery.ts`, khoá `['requirements', 'list' | 'one' 
 luật thuần ở `requirement-form.ts`, schema zod chỉ gắn câu lỗi vào ô): hạn nhập bằng ô ngày + ô giờ theo giờ của máy; ô chọn kiện có ô lọc
 theo điểm đến ghi trong file; hai **cảnh báo không chặn lưu** — kiện khác loại hàng, điểm đến trong file khác điểm đến của yêu cầu
 (`packageWarnings`); yêu cầu đã vào chuyến thì chỉ ô hạn và ưu tiên còn sửa. Ô theo dõi giá trị đang gõ (`useWatch`) đặt trong component
-con để thân form và ô chọn kiện hàng trăm dòng không vẽ lại theo từng phím. Toạ độ **chưa nhập ở form** (ô chọn toạ độ: FE-4b-03); đổi địa
-chỉ khi sửa thì bỏ toạ độ đang có. Điều phối viên chỉ xem và "Đưa vào chuyến" (`RequirementAssignDialog`: chuyến Nháp / Đã lập kế hoạch
-+ điểm giao có sẵn, *tạm tới FE-4b-04*); Chi tiết chuyến có thẻ `TripRequirementsCard`.
+con để thân form và ô chọn kiện hàng trăm dòng không vẽ lại theo từng phím. *(đã điều chỉnh 03/10/2026, FE-4b-03)* Toạ độ là **ô riêng
+của form** (`CoordinatePicker`): để trống cả hai ô là bỏ toạ độ; đổi địa chỉ không còn tự bỏ toạ độ. *(đã điều chỉnh 03/10/2026,
+FE-4b-04)* Điều phối viên chỉ xem và "Đưa vào chuyến" (`RequirementAssignDialog`: chỉ chọn chuyến Nháp / Đã lập kế hoạch — **không chọn
+điểm giao**, hộp thoại nói trước yêu cầu gộp vào điểm nào hay chuyến thêm điểm mới, `stopOfRequirement`); Chi tiết chuyến có thẻ "Yêu cầu
+giao của chuyến" (`TripRequirementsCard`: theo thứ tự điểm giao, kèm hạn và ưu tiên).
+*(bổ sung 03/10/2026, FE-4b-03, D-72)* **Ô chọn toạ độ** `CoordinatePicker` (`@/components/map`) dùng chung cho yêu cầu giao, điểm giao
+thêm tay, kho xuất phát: giá trị là **chữ** của hai ô vĩ độ / kinh độ (`CoordinateText`), đổi thành số bằng `parseCoordinates` (thuần, trả
+mã lỗi theo ô; nhận dấu chấm lẫn dấu phẩy); form giữ một trường `{ lat, lng }` qua `Controller` và chặn lưu bằng cùng hàm đó, câu lỗi của
+từng ô do ô chọn toạ độ tự hiện (sau khi con trỏ rời nhóm ô, hoặc `showErrors` khi form đã bấm lưu). Ba lối nhập: danh sách **địa danh
+mẫu** (`SEED_PLACES` ở `seed-places.ts` — 70 tỉnh, quận, khu công nghiệp, **toạ độ gần đúng ở mức khu vực**; tìm bỏ dấu `searchPlaces`,
+combobox + listbox), gõ tay, và bấm lên bản đồ (`CoordinatePickerMap`, chunk lười) **chỉ khi có `VITE_GOONG_MAPTILES_KEY` và WebGL** —
+không có khoá thì chỉ danh sách. Tìm địa chỉ đi qua `places-api.ts` (`searchAddress`, "chưa có ở BE", Q-20): trình duyệt không gọi Goong.
+*(bổ sung 03/10/2026, FE-4b-04, D-73, D-76)* **Lập chuyến**: `Trip` có `departureAt` (ISO) và `depot` (`CompanyDepot`, mặc định kho của
+công ty); `scheduledDate` luôn là ngày của `departureAt` theo giờ Việt Nam — đổi giờ xuất phát thì ngày chạy theo, chỉ đổi ngày thì giữ giờ
+trong ngày; hai trường không làm phương án lỗi thời; kho đang xếp còn đổi giờ, không đổi kho đi (`TRIP_INVALID` khi giờ không đọc được
+hoặc kho thiếu tên / toạ độ). Form chuyến nhập ngày + giờ theo giờ Việt Nam (`departureAtOf`) và **không nhập điểm giao khi tạo**; form
+sửa chỉ đổi chữ của điểm đang có (điểm tự sinh khoá tên và địa chỉ). **Điểm giao tự sinh** (`trip-stops.ts`, thuần): đưa yêu cầu vào chuyến
+(`assignDeliveryRequirement(requirementId, tripId)`) gộp vào điểm có cùng khoá `stopKey` — địa chỉ chuẩn hoá (chữ thường, bỏ dấu câu, gộp
+khoảng trắng, **giữ dấu tiếng Việt**) + toạ độ tới 5 chữ số lẻ; chưa có toạ độ là một giá trị riêng — không có thì sinh điểm `generated`
+cuối tuyến (mã `STOP-NN` kế tiếp). `DeliveryStop` thêm `lat?` / `lng?`, `generated?`, `deadline?`, `priority?`: hạn = hạn sớm nhất, ưu
+tiên = cao nhất của các yêu cầu có dòng kiện ở điểm, kho ghi lại (`withStopDemands`) mỗi khi yêu cầu vào / rời chuyến, đổi hạn hay ưu
+tiên, hoặc dòng kiện / thứ tự điểm đổi. Gỡ yêu cầu hoặc bỏ kiện: điểm `generated` không còn dòng kiện nào tự mất, kiện ở các điểm sau
+đánh số lại; điểm thêm tay (Chi tiết chuyến → "Thêm điểm giao", `StopFormDialog`, `trip-stops-api.ts`) ở lại và không có hạn. Chuyến chưa
+có điểm giao thì chưa gõ / nhập kiện tay được. **Còn tạm tới FE-4b-09**: thêm, bớt điểm chưa đưa chuyến về Nháp (trạng thái `PLANNED` vẫn
+suy từ revision); hai khách seed là điểm đến của yêu cầu giao (Co.opmart Bình Dương, Bách Hoá Xanh Dĩ An) có toạ độ, các điểm seed khác chưa.
+*(bổ sung 03/10/2026, FE-4b-05, D-68 đường 2)* **Kiện Đã nhập đưa thẳng vào chuyến**: `addTripPackages(tripId, packageIds, target)` (điểm
+đang có hoặc điểm tay mới), `removeTripPackage`, `listTripPackages` (kèm đường vào chuyến `REQUIREMENT | POOL | TRIP`) ở `db-trip-pool.ts`;
+kiện phải `IMPORTED`, không cờ, không thuộc yêu cầu nào; sang `ASSIGNED`, không có hạn; bỏ khỏi chuyến về `IMPORTED`. Liên kết dòng mang
+`fromPool`: sửa dòng chỉ đổi `stopId` của kiện, không ghi đè mã, kích thước, điểm đến. Lớp API `trips/trip-pool-api.ts` → `useTripPoolQuery.ts`
+(khoá `['trips', tripId, 'pool-packages']`); Chi tiết chuyến có thẻ "Kiện đưa thẳng từ kho kiện" và hộp thoại `PoolPackagePicker` (ô chọn
+điểm chỉ liệt kê điểm tay). Nhật ký: `trip.packagesAdded`, `trip.packageRemoved`. Kiểm phân tách hàng khi thêm kiện là FE-4b-06.
 *(đã điều chỉnh 03/10/2026, FE-3b-07, D-68)* **Kiện thêm ngay trong chuyến tự vào kho kiện**: sau mỗi lần ghi dòng kiện hay điểm giao của
 chuyến (`createTrip`, `updateTrip`, gỡ yêu cầu giao khỏi chuyến), `syncTripPool` (`db-trip-packages.ts`) giữ cho mỗi instance của dòng (`quantity`) một bản
 ghi `Package` nguồn `TRIP`, `ASSIGNED`, kèm chuyến và điểm giao, mã QR thật cấp ngay; `packageCode` là mã instance (`PKG-001-07`), điểm đến
 là địa chỉ điểm giao, loại hàng lấy `handlingClass` của dòng (vắng là `STANDARD`). Tăng số lượng tạo thêm kiện; giảm số lượng hoặc xoá dòng
 trả kiện về `IMPORTED` (rời chuyến và điểm giao); sửa kích thước, loại hàng hay điểm giao của dòng thì kiện đổi theo, mã QR giữ nguyên.
 Không ghi sự kiện nhật ký riêng — `trip.created` / `trip.updated` đã nói. Liên kết instance ↔ kiện nằm ở `DbState.tripPackageLinks` (ngoài
-`Trip`, kiện thứ i là instance thứ i của dòng); dòng của yêu cầu giao dùng kiện của yêu cầu (`requirement.assignment`), dòng của yêu cầu bị sửa số lượng thì
+`Trip`, kiện thứ i là instance thứ i của dòng); dòng của yêu cầu giao dùng kiện của yêu cầu (liên kết mang `requirementId` — *đã điều chỉnh 03/10/2026, FE-4b-04*), dòng của yêu cầu bị sửa số lượng thì
 được cấp kiện riêng. **Mã băm theo chuyến + kiện (`hashedQrToken`) đã bỏ**: nhãn của chuyến (`tripLabels`), quét khi xếp / dỡ, in nhãn và tra
-cứu đều dùng mã QR của kiện kho kiện; tiến độ chuyến ghi trạng thái cho cả kiện nguồn `TRIP` (`tripInstances`). Seed: kiện của 15 chuyến
+cứu đều dùng mã QR của kiện kho kiện; tiến độ chuyến ghi trạng thái cho cả kiện nguồn `TRIP` (`lineInstances`). Seed: kiện của 15 chuyến
 Long Bình và 2 chuyến Phương Nam dựng bằng cách chạy lại các mốc của chuyến qua chính hàm của kho (`seed-trip-pool.ts`) — 2.863 + 70 kiện,
 mã `PK-T…` / `PK-PN-T…` (`nextId` không tính: mã kế tiếp vẫn `PK-0089`), đứng **trước** kiện có từ trước nên bảng kho kiện vẫn mở đầu bằng
 `PK-0088`; kho kiện Long Bình có 2.951 kiện. Mẫu nhập kiện trong chuyến thêm cột cuối tuỳ chọn `handlingClass` (mã hoặc nhãn vi / en, lỗi
