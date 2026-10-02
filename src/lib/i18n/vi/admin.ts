@@ -185,7 +185,6 @@ export const admin = {
       pickups: { create: 'Tạo yêu cầu nhận hàng dọc đường', approve: 'Duyệt yêu cầu nhận hàng dọc đường' },
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
-      orders: { view: 'Xem đơn hàng', edit: 'Tạo, sửa đơn hàng và gán vào điểm giao' },
     },
   },
 } as const

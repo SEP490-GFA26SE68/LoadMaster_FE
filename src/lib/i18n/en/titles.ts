@@ -30,7 +30,7 @@ export const titles = {
   packages: 'Package pool',
   labels: 'Print QR labels',
   lookup: 'Package lookup',
-  orders: 'Orders',
+  requirements: 'Delivery requirements',
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
 } satisfies Dictionary<typeof source>

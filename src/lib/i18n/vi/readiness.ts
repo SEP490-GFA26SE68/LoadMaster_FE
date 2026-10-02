@@ -13,7 +13,7 @@ export const readiness = {
   status: { pass: 'Đạt', warn: 'Cảnh báo', fail: 'Chưa đạt' },
   fix: {
     editTrip: 'Sửa chuyến',
-    assignOrder: 'Gán đơn hàng',
+    assignRequirement: 'Đưa yêu cầu vào chuyến',
     reviewPackages: 'Xem kiện lỗi',
   },
   checks: {

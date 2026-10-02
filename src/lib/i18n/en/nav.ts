@@ -11,7 +11,7 @@ export const nav = {
   users: 'Users',
   audit: 'Log',
   packages: 'Package pool',
-  orders: 'Orders',
+  requirements: 'Requirements',
   account: 'Account {name}',
   signOut: 'Sign out',
   profile: 'My profile',
