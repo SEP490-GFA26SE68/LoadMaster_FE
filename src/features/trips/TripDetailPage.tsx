@@ -8,12 +8,14 @@ import { RequirementAssignDialog } from '@/features/requirements/RequirementAssi
 import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
 import { useT } from '@/lib/i18n'
+import { vnClock } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { RouteDiagram } from './RouteDiagram'
+import { StopFormDialog } from './StopFormDialog'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
 import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
@@ -35,7 +37,9 @@ import {
  * (`ChiTietChuyenKien.jpg`).
  * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
  * xếp, banner nói lý do và mọi thao tác sửa ẩn đi. LM-104: chuyến còn lập kế hoạch có card "Kiểm tra trước khi tối ưu" đầu cột phải;
- * dưới bảng kiện là "Yêu cầu giao trên chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`, FE-4b-01).
+ * dưới bảng kiện là "Yêu cầu giao của chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`). FE-4b-04: điểm giao tự sinh khi đưa
+ * yêu cầu vào chuyến; chân card sơ đồ tuyến có "Thêm điểm giao" cho điểm tay. Chuyến chưa có điểm giao nào thì chưa thêm kiện tay được
+ * — kiện phải thuộc một điểm giao.
  */
 export function TripDetailPage() {
   const { tripId = '' } = useParams()
@@ -51,6 +55,7 @@ export function TripDetailPage() {
   const [draft, setDraft] = useState<CargoPackage | null>(null)
   const [importing, setImporting] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [addingStop, setAddingStop] = useState(false)
   // Điểm giao đang lọc bảng kiện: điểm trên sơ đồ tuyến và ô chọn trên bảng dùng chung
   const [stopFilter, setStopFilter] = useState<number | null>(null)
 
@@ -58,7 +63,7 @@ export function TripDetailPage() {
   const vehicle = query.data?.vehicle
   // Quản lý xem chuyến chỉ đọc (D-41); từ lúc kho bắt đầu xếp, xe, điểm giao và kiện bị khoá (D-45)
   const editable = can('trips.edit') && trip?.phase === 'planning'
-  // Đưa yêu cầu giao vào điểm giao khi chuyến còn lập kế hoạch và người xem sửa được chuyến (điều phối viên)
+  // Đưa yêu cầu giao vào chuyến khi chuyến còn lập kế hoạch và người xem sửa được chuyến (điều phối viên)
   const canAssign = can('trips.edit') && trip?.phase === 'planning'
   const openAssign = canAssign ? () => setAssigning(true) : undefined
   const stops = useMemo<StopRow[]>(() => (trip ? stopRows(trip.stops, trip.packages) : []), [trip])
@@ -123,6 +128,9 @@ export function TripDetailPage() {
               <RouteDiagram
                 stops={stops}
                 delivery={delivered ? trip.delivery : undefined}
+                depotName={trip.depot.name}
+                departureTime={vnClock(new Date(trip.departureAt))}
+                onAddStop={editable ? () => setAddingStop(true) : undefined}
                 readOnly={!editable}
                 onReorder={(next) => stopsMutation.mutate(next)}
                 onRemove={handleRemoveStop}
@@ -138,16 +146,19 @@ export function TripDetailPage() {
                 stops={stops}
                 selectedId={editing?.id ?? null}
                 onSelect={(pkg) => setEditing(editing?.id === pkg.id ? null : pkg)}
-                onAdd={editable ? () => setEditing(emptyPackage(trip.packages, stops[0]?.number ?? 1)) : undefined}
-                onImport={editable ? () => setImporting(true) : undefined}
+                // Kiện phải thuộc một điểm giao: chuyến chưa có điểm nào thì thêm điểm giao (hoặc đưa yêu cầu vào chuyến) trước
+                onAdd={editable && stops.length > 0 ? () => setEditing(emptyPackage(trip.packages, stops[0]?.number ?? 1)) : undefined}
+                onImport={editable && stops.length > 0 ? () => setImporting(true) : undefined}
+                emptyHint={editable && stops.length === 0 ? t('trips.packages.emptyNoStops') : undefined}
                 labelsHref={can('labels.print') ? tripLabelsPath(tripId) : undefined}
                 stopFilter={stopFilter}
                 onStopFilterChange={setStopFilter}
               />
-              {/* Yêu cầu giao trên chuyến: ngay dưới bảng kiện — mỗi yêu cầu đưa vào là các dòng kiện của bảng này */}
+              {/* Yêu cầu giao của chuyến: ngay dưới bảng kiện — mỗi yêu cầu đưa vào là các dòng kiện của bảng này */}
               <TripRequirementsCard trip={trip} onAssign={openAssign} />
               {editable ? <PackageImportDialog trip={trip} vehicle={vehicle} open={importing} onOpenChange={setImporting} /> : null}
               {canAssign ? <RequirementAssignDialog open={assigning} onOpenChange={setAssigning} tripId={tripId} /> : null}
+              {editable ? <StopFormDialog open={addingStop} onOpenChange={setAddingStop} tripId={tripId} /> : null}
             </div>
 
             {editing ? (

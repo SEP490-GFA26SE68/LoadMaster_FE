@@ -19,8 +19,8 @@ const VEHICLE_STATUS: Record<VehicleStatus, { tone: BadgeTone; dot: BadgeDot }> 
 }
 
 /**
- * Mục 1 của form chuyến (V2.3 TaoChuyen.jpg, SuaChuyenKhoa.jpg): tên + ngày chạy một hàng, xe + tài xế một hàng (8/4 cột), rồi ô
- * thông số xe đang chọn. Ngày chạy có gợi ý thứ và "hôm nay / ngày mai". Kho đã bắt đầu xếp thì ô xe khoá kèm lý do; ô thông số
+ * Mục 1 của form chuyến (V2.3 TaoChuyen.jpg, SuaChuyenKhoa.jpg; FE-4b-04): tên + ngày chạy + giờ xuất phát một hàng (6/3/3 cột), xe +
+ * tài xế một hàng (8/4 cột), rồi ô thông số xe đang chọn. Ngày và giờ theo giờ Việt Nam. Ngày chạy có gợi ý thứ và "hôm nay / ngày mai". Kho đã bắt đầu xếp thì ô xe khoá kèm lý do; ô thông số
  * chuyển xám, không còn chip trạng thái. Ô nhập mang `aria-label` bằng đúng chữ nhãn để dấu * không lọt vào tên truy cập.
  */
 export function TripFormInfoSection({ form, vehicles, drivers, selected, locked }: {
@@ -46,7 +46,7 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
   return (
     <TripFormSection number={1} title={t('trips.create.infoTitle')} description={t('trips.create.infoHint')}>
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-12">
-        <div className="md:col-span-8">
+        <div className="md:col-span-6">
           <Input
             label={<>{t('trips.create.name')}<FieldMark kind="required" /></>}
             aria-label={t('trips.create.name')}
@@ -56,7 +56,7 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
             {...form.register('name')}
           />
         </div>
-        <div className="md:col-span-4">
+        <div className="md:col-span-3">
           <Input
             type="date"
             label={<>{t('trips.create.scheduledDate')}<FieldMark kind="required" /></>}
@@ -65,6 +65,16 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
             hint={runDate.hint(scheduledDate)}
             error={errors.scheduledDate?.message}
             {...form.register('scheduledDate')}
+          />
+        </div>
+        <div className="md:col-span-3">
+          <Input
+            type="time"
+            label={<>{t('trips.create.departureTime')}<FieldMark kind="required" /></>}
+            aria-label={t('trips.create.departureTime')}
+            aria-required
+            error={errors.departureTime?.message}
+            {...form.register('departureTime')}
           />
         </div>
         <fieldset disabled={locked} className="m-0 min-w-0 border-0 p-0 md:col-span-8">

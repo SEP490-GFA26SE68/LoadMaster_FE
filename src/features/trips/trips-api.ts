@@ -4,8 +4,9 @@
  *   updateTripFrame             → chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
  *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE); tên sẽ đổi khi nối BE: addTripPackages
  *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId}
- *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages, updateTripStops,
- *   removeTripStop, duplicateTripPackage, fetchTripRevisions
+ *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages,
+ *   duplicateTripPackage, fetchTripRevisions
+ * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
  */
 
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
@@ -17,7 +18,7 @@ import {
   tripSubStatus,
   vnDate,
   type AuditEvent,
-  type DeliveryStop,
+  type CompanyDepot,
   type Revision,
   type Trip,
   type VehicleStatus,
@@ -25,7 +26,7 @@ import {
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { tripRow, type TripRow } from './trip-list'
-import { duplicatePackage, renumberDeliveryStops, stopRemoval, type StopRemoval } from './trip-packages'
+import { duplicatePackage, stopFields, type TripStopInput } from './trip-packages'
 
 /**
  * Lớp gọi API cho chuyến hàng và kiện (LM-043, LM-088). Chi tiết chuyến, điểm giao và kiện đọc/ghi qua mock repository
@@ -48,67 +49,74 @@ export async function fetchTrips(): Promise<TripRow[]> {
   ))
 }
 
-export type TripStopInput = Pick<DeliveryStop, 'name' | 'address' | 'phone' | 'contactName'>
-
 export type TripFrame = {
   readonly name: string
   readonly vehicleId: string
-  readonly stops: readonly TripStopInput[]
-  /** Ngày chạy `YYYY-MM-DD`; vắng thì hôm nay (giờ Việt Nam). */
-  readonly scheduledDate?: string
+  /** Giờ xuất phát, ISO 8601; ngày chạy của chuyến là ngày của nó theo giờ Việt Nam. */
+  readonly departureAt: string
+  /** Kho xuất phát; vắng thì kho của công ty. */
+  readonly depot?: CompanyDepot
   readonly driverId?: string | null
 }
 
-/** Điểm giao ghi vào kho: số điện thoại và người liên hệ để trống thì bỏ hẳn trường, không lưu chuỗi rỗng. */
-function stopFields({ name, address, phone, contactName }: TripStopInput) {
-  return { name, address, ...(phone ? { phone } : {}), ...(contactName ? { contactName } : {}) }
-}
-
-/** Tạo chuyến: kho cấp mã chuyến; điểm giao nhận mã `STOP-NN` theo thứ tự nhập, chưa có kiện. */
+/**
+ * Tạo chuyến (FE-4b-04): kho cấp mã chuyến. Chuyến mới chưa có điểm giao và kiện — điểm giao tự sinh khi đưa yêu cầu giao vào chuyến,
+ * hoặc thêm tay ở Chi tiết chuyến (D-73).
+ */
 // POST /api/trips
-export async function createTrip({ name, vehicleId, stops, scheduledDate, driverId = null }: TripFrame): Promise<Trip> {
-  return getMockDb().createTrip({
-    name, vehicleId, packages: [], driverId,
-    scheduledDate: scheduledDate ?? vnDate(new Date()),
-    stops: stops.map((stop, index) => ({ id: `STOP-${String(index + 1).padStart(2, '0')}`, ...stopFields(stop) })),
-  })
+export async function createTrip({ name, vehicleId, departureAt, depot, driverId = null }: TripFrame): Promise<Trip> {
+  return getMockDb().createTrip({ name, vehicleId, packages: [], stops: [], driverId, departureAt, depot, scheduledDate: vnDate(new Date(departureAt)) })
 }
 
 export type TripFrameChanges = {
   readonly name: string
-  readonly scheduledDate: string
+  readonly departureAt: string
   readonly driverId: string | null
   /** Vắng khi chuyến đã khoá xe (kho đã bắt đầu xếp, D-45). */
   readonly vehicleId?: string
+  /** Vắng khi chuyến đã khoá. */
+  readonly depot?: CompanyDepot
   /** Sửa chữ của điểm giao hiện có theo thứ tự; mã và thứ tự giữ nguyên. Vắng khi chuyến đã khoá. */
   readonly stops?: readonly TripStopInput[]
 }
 
-/** Sửa khung chuyến: tên, ngày chạy, tài xế, xe và chữ của điểm giao. Đổi xe làm revision cũ lỗi thời (D-31). */
+/**
+ * Sửa khung chuyến: tên, giờ xuất phát, tài xế, xe, kho xuất phát và chữ của điểm giao (toạ độ, hạn, ưu tiên và nguồn của điểm giữ
+ * nguyên). Đổi xe làm revision cũ lỗi thời (D-31).
+ */
 // chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
 export async function updateTripFrame(tripId: string, changes: TripFrameChanges): Promise<Trip> {
   const db = getMockDb()
   const { stops: edited, ...frame } = changes
   const current = edited ? await db.getTrip(tripId) : undefined
   const stops = current && edited
-    ? current.stops.map((stop, index) => ({ id: stop.id, ...stopFields(edited[index] ?? stop) }))
+    ? current.stops.map((stop, index) => {
+      const { phone: _phone, contactName: _contactName, ...kept } = stop
+      return { ...kept, ...stopFields(edited[index] ?? stop) }
+    })
     : undefined
   return db.updateTrip(tripId, { ...frame, ...(stops ? { stops } : {}) })
 }
 
 export type VehicleOption = { readonly vehicle: VehicleConfig; readonly status: VehicleStatus }
 
-/** Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. */
-export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[] }
+/**
+ * Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. `depot`:
+ * kho của công ty của người đang đăng nhập — kho xuất phát mặc định của chuyến mới (D-76).
+ */
+export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[]; readonly depot: CompanyDepot | null }
 
 // chưa có ở BE
 export async function fetchTripFormOptions(): Promise<TripFormOptions> {
   const db = getMockDb()
-  const [vehicles, states, users] = await Promise.all([db.listVehicles(), db.listVehicleStates(), db.listUsers()])
+  const [vehicles, states, users, companies] = await Promise.all([db.listVehicles(), db.listVehicleStates(), db.listUsers(), db.listCompanies()])
   const statusById = new Map(states.map((state) => [state.vehicleId, state.status]))
+  // Phiên của một công ty chỉ thấy công ty mình; kho chưa có phiên (test) thì lấy công ty đầu tiên, như công ty mặc định của kho
+  const company = companies.find((item) => item.id === db.sessionUser()?.companyId) ?? companies[0]
   return {
     vehicles: vehicles.map((vehicle) => ({ vehicle, status: statusById.get(vehicle.id) ?? 'available' })),
     drivers: users.filter((user) => user.role === 'driver'),
+    depot: company?.depot ?? null,
   }
 }
 
@@ -174,26 +182,6 @@ export async function cancelTrip(tripId: string, reason: string): Promise<Trip> 
 // chưa có ở BE
 export async function fetchPackages(tripId: string): Promise<CargoPackage[]> {
   return (await getMockDb().getTrip(tripId)).packages
-}
-
-/** Đổi thứ tự điểm giao: kiện được đánh số `deliveryStop` lại theo vị trí mới (LM-046). */
-// chưa có ở BE
-export async function updateTripStops(tripId: string, stops: readonly DeliveryStop[]): Promise<Trip> {
-  const db = getMockDb()
-  const current = await db.getTrip(tripId)
-  const packages = renumberDeliveryStops(current.packages, current.stops, stops)
-  return db.updateTrip(tripId, { stops: [...stops], packages: [...packages] })
-}
-
-/** Xoá điểm giao; còn kiện thì không ghi gì và trả về số kiện bị ảnh hưởng để UI báo. */
-// chưa có ở BE
-export async function removeTripStop(tripId: string, stopId: string): Promise<StopRemoval> {
-  const db = getMockDb()
-  const current = await db.getTrip(tripId)
-  const removal = stopRemoval(current.packages, current.stops, stopId)
-  if (!removal.allowed) return removal
-  await db.updateTrip(tripId, { stops: [...removal.stops], packages: [...removal.packages] })
-  return removal
 }
 
 /** Thêm kiện mới hoặc thay kiện cùng mã; kiện đổi thì `inputVersion` tăng và revision cũ thành lỗi thời (D-31). */

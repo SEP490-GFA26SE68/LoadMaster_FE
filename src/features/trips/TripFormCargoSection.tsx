@@ -5,9 +5,9 @@ import type { Trip } from '@/lib/mock-db'
 import { SectionNumber, TripFormSection } from './TripFormSection'
 
 /**
- * Mục 3 "Hàng hoá" của form chuyến (V2.3). Tạo mới: dải chú thích cuối card — kiện thêm ở Chi tiết chuyến sau khi tạo. Sửa: số dòng
- * kiện và số kiện của chuyến đã lưu, liên kết tới danh sách kiện; kho đang xếp thì thêm tiến độ xếp theo phương án đã duyệt và nhãn
- * "Đã khoá".
+ * Mục cuối "Hàng hoá" của form chuyến (V2.3; FE-4b-04). Tạo mới (mục 3): dải chú thích cuối card — điểm giao và kiện thêm ở Chi tiết
+ * chuyến sau khi tạo: đưa yêu cầu giao vào chuyến thì điểm giao tự sinh. Sửa (mục 4): số dòng kiện và số kiện của chuyến đã lưu, liên
+ * kết tới danh sách kiện; kho đang xếp thì thêm tiến độ xếp theo phương án đã duyệt và nhãn "Đã khoá".
  */
 export function TripFormCargoSection({ existing, locked }: { existing: Trip | undefined; locked: boolean }) {
   const t = useT()
@@ -17,7 +17,7 @@ export function TripFormCargoSection({ existing, locked }: { existing: Trip | un
       <div className="flex items-center gap-3 border-t border-line-soft bg-n-25 px-7 py-4 text-lede text-ink-2 max-sm:px-4">
         <SectionNumber number={3} muted />
         <p>
-          <span className="mr-1.5 font-semibold text-ink-strong">{t('trips.create.cargoTitle')}</span>
+          <span className="mr-1.5 font-semibold text-ink-strong">{t('trips.create.cargoLaterTitle')}</span>
           {t('trips.create.cargoLater')}
         </p>
       </div>
@@ -27,7 +27,7 @@ export function TripFormCargoSection({ existing, locked }: { existing: Trip | un
   const loading = existing.loading
   const loaded = loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
   return (
-    <TripFormSection number={3} title={t('trips.create.cargoTitle')} locked={locked}>
+    <TripFormSection number={4} title={t('trips.create.cargoTitle')} locked={locked}>
       <div className="flex flex-wrap items-center gap-4 rounded-[12px] border border-border px-4.5 py-3.5">
         <div className="min-w-0">
           <p className="text-body font-semibold text-ink-strong">

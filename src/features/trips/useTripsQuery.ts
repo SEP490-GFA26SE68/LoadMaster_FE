@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { CargoPackage } from '@/domain/models'
 import type { DeliveryStop } from '@/lib/mock-db'
+import { addTripStop, removeTripStop, updateTripStops, type ManualStopInput } from './trip-stops-api'
 import {
   cancelTrip,
   createTrip,
@@ -13,10 +14,8 @@ import {
   fetchTripRevisions,
   fetchTrips,
   importPackages,
-  removeTripStop,
   savePackage,
   updateTripFrame,
-  updateTripStops,
   type TripFrame,
   type TripFrameChanges,
 } from './trips-api'
@@ -104,6 +103,15 @@ export function useTripStopsMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (stops: readonly DeliveryStop[]) => updateTripStops(tripId, stops),
+    onSuccess: () => invalidateTrip(client, tripId),
+  })
+}
+
+/** Thêm điểm giao tay cuối tuyến (FE-4b-04). */
+export function useAddStopMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (stop: ManualStopInput) => addTripStop(tripId, stop),
     onSuccess: () => invalidateTrip(client, tripId),
   })
 }

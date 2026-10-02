@@ -3,7 +3,7 @@ import type { z } from 'zod'
 /** Một lỗi của form đang nhập: đường dẫn trường kiểu react-hook-form (`stops.1.phone`) và câu lỗi đã dịch của schema. */
 export type FormIssue = { readonly path: string; readonly message: string }
 
-export type CheckGroup = 'name' | 'vehicle' | 'stops'
+export type CheckGroup = 'name' | 'vehicle' | 'depot' | 'stops'
 
 /**
  * Trạng thái một dòng của thẻ "Kiểm tra trước khi lưu" (V2.3 TaoChuyen.jpg):
@@ -32,9 +32,10 @@ export function formIssues(schema: z.ZodType, values: unknown): FormIssue[] {
   return result.error.issues.map((issue) => ({ path: issue.path.map(String).join('.'), message: issue.message }))
 }
 
-/** Nhóm của một trường: tên và ngày chạy chung một dòng, xe một dòng, mọi ô của điểm giao một dòng. */
+/** Nhóm của một trường: tên, ngày và giờ xuất phát chung một dòng, xe một dòng, kho xuất phát một dòng, mọi ô của điểm giao một dòng. */
 export function groupOf(path: string): CheckGroup {
   if (path === 'vehicleId' || path === 'driverId') return 'vehicle'
+  if (path === 'depot' || path.startsWith('depot.')) return 'depot'
   if (path === 'stops' || path.startsWith('stops.')) return 'stops'
   return 'name'
 }
@@ -44,6 +45,7 @@ export function formChecks(issues: readonly FormIssue[], seen: (path: string) =>
   const groups: Record<CheckGroup, GroupCheck> = {
     name: { state: 'pass', issue: null },
     vehicle: { state: 'pass', issue: null },
+    depot: { state: 'pass', issue: null },
     stops: { state: 'pass', issue: null },
   }
   let failCount = 0

@@ -6,7 +6,7 @@
  *   updateDeliveryRequirement  → PATCH /api/delivery-requirements/{id}
  *   deleteDeliveryRequirement  → DELETE /api/delivery-requirements/{id}
  *   chưa có ở BE: fetchSelectablePackages, fetchAssignableTrips, assignRequirementToTrip, unassignRequirementFromTrip (đưa cả yêu
- *   cầu vào chuyến — BE có POST /api/trips/{id}/packages theo từng kiện; FE-4b-04 chốt)
+ *   cầu vào chuyến — BE có POST /api/trips/{id}/packages theo từng kiện; điểm giao tự sinh ở kho mock, FE-4b-04)
  */
 
 import { roundKg } from '@/domain/geometry'
@@ -26,8 +26,9 @@ import {
 } from '@/lib/mock-db'
 
 /**
- * Lớp dữ liệu yêu cầu giao (FE-4b-02, D-72): quản lý công ty lập yêu cầu từ kiện `IMPORTED` của kho kiện; điều phối viên đưa vào điểm
- * giao của chuyến đang lập kế hoạch. Đưa vào chuyến thêm dòng kiện vào chuyến nên chuyến và revision cũng đổi (lỗi thời, D-31).
+ * Lớp dữ liệu yêu cầu giao (FE-4b-02, D-72): quản lý công ty lập yêu cầu từ kiện `IMPORTED` của kho kiện; điều phối viên đưa vào
+ * chuyến đang lập kế hoạch — điểm giao tự sinh (FE-4b-04, D-73). Đưa vào chuyến thêm dòng kiện vào chuyến nên chuyến và revision
+ * cũng đổi (lỗi thời, D-31).
  */
 
 export type RequirementPackage = { readonly package: Package; readonly type: PackageType | undefined }
@@ -66,7 +67,9 @@ async function requirementContext() {
 function toRow(requirement: DeliveryRequirement, context: Awaited<ReturnType<typeof requirementContext>>): RequirementRow {
   const members = requirement.packageIds.flatMap((id) => context.packageById.get(id) ?? [])
   const trip = requirement.tripId === undefined ? undefined : context.tripById.get(requirement.tripId)
-  const stopIndex = trip && requirement.assignment ? trip.stops.findIndex((stop) => stop.id === requirement.assignment?.stopId) : -1
+  // Điểm giao của yêu cầu là điểm của kiện của nó (kho ghi `stopId` vào kiện lúc đưa vào chuyến, và dời theo dòng kiện)
+  const stopId = members.find((pkg) => pkg.tripId === requirement.tripId)?.stopId
+  const stopIndex = trip && stopId !== undefined ? trip.stops.findIndex((stop) => stop.id === stopId) : -1
   return {
     requirement,
     status: requirementStatus(requirement, members),
@@ -113,7 +116,7 @@ export async function fetchSelectablePackages(): Promise<RequirementPackage[]> {
   return [...context.packageById.values()].filter(isSelectablePackage).map((pkg) => withType(pkg, context.typeById)).toReversed()
 }
 
-/** Chuyến nhận được yêu cầu: đang lập kế hoạch (Nháp / Đã lập kế hoạch, kho chưa xếp), kèm điểm giao để chọn. */
+/** Chuyến nhận được yêu cầu: đang lập kế hoạch (Nháp / Đã lập kế hoạch, kho chưa xếp), kèm điểm giao để nói trước yêu cầu sẽ gộp vào điểm nào. */
 export type AssignableTrip = Pick<Trip, 'id' | 'name' | 'scheduledDate' | 'vehicleId'> & { readonly stops: readonly DeliveryStop[] }
 
 // chưa có ở BE
@@ -124,11 +127,12 @@ export async function fetchAssignableTrips(): Promise<AssignableTrip[]> {
     .map(({ id, name, scheduledDate, vehicleId, stops }) => ({ id, name, scheduledDate, vehicleId, stops }))
 }
 
-export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string; readonly stopId: string }
+export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string }
 
-// chưa có ở BE
-export function assignRequirementToTrip({ requirementId, tripId, stopId }: AssignRequirementInput): Promise<{ requirement: DeliveryRequirement; trip: Trip }> {
-  return getMockDb().assignDeliveryRequirement(requirementId, tripId, stopId)
+/** Đưa cả yêu cầu vào chuyến: điểm giao tự sinh theo địa chỉ và toạ độ của yêu cầu, trùng điểm đang có thì gộp (FE-4b-04, D-73). */
+// chưa có ở BE (BE có POST /api/trips/{id}/packages theo từng kiện)
+export function assignRequirementToTrip({ requirementId, tripId }: AssignRequirementInput): Promise<{ requirement: DeliveryRequirement; trip: Trip }> {
+  return getMockDb().assignDeliveryRequirement(requirementId, tripId)
 }
 
 // chưa có ở BE

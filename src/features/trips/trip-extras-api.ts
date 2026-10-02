@@ -22,18 +22,27 @@ export function fetchTripReadiness(tripId: string): Promise<TripReadiness> {
   return getMockDb().getTripReadiness(tripId)
 }
 
-/** Một yêu cầu giao của chuyến kèm trạng thái hiển thị (kho ghi, cộng "Đã giao" / "Giao thiếu" suy từ kiện). */
-export type TripRequirement = { readonly requirement: DeliveryRequirement; readonly status: RequirementStatus }
+/**
+ * Một yêu cầu giao của chuyến kèm trạng thái hiển thị (kho ghi, cộng "Đã giao" / "Giao thiếu" suy từ kiện) và số điểm giao (1-based)
+ * của nó — điểm của kiện của yêu cầu; vắng khi kiện đã rời chuyến hoặc điểm không còn.
+ */
+export type TripRequirement = { readonly requirement: DeliveryRequirement; readonly status: RequirementStatus; readonly stopNumber: number | undefined }
 
-/** Yêu cầu giao đã vào chuyến (dòng kiện có `groupId` = mã yêu cầu). */
+/** Yêu cầu giao đã vào chuyến, theo thứ tự điểm giao rồi hạn giao (yêu cầu chưa rõ điểm đứng cuối). */
 // GET /api/delivery-requirements (lọc theo chuyến: chưa có ở BE)
 export async function fetchTripRequirements(tripId: string): Promise<TripRequirement[]> {
   const db = getMockDb()
-  const [requirements, packages] = await Promise.all([db.listDeliveryRequirements(), db.listPackages()])
+  const [requirements, packages, trip] = await Promise.all([db.listDeliveryRequirements(), db.listPackages(), db.getTrip(tripId)])
   const packageById = new Map(packages.map((pkg) => [pkg.id, pkg]))
+  const numberOfStop = new Map(trip.stops.map((stop, index) => [stop.id, index + 1]))
   return requirements
     .filter((requirement) => requirement.tripId === tripId)
-    .map((requirement) => ({ requirement, status: requirementStatus(requirement, requirement.packageIds.flatMap((id) => packageById.get(id) ?? [])) }))
+    .map((requirement) => {
+      const members = requirement.packageIds.flatMap((id) => packageById.get(id) ?? [])
+      const stopId = members.find((pkg) => pkg.tripId === tripId)?.stopId
+      return { requirement, status: requirementStatus(requirement, members), stopNumber: stopId === undefined ? undefined : numberOfStop.get(stopId) }
+    })
+    .toSorted((a, b) => (a.stopNumber ?? Infinity) - (b.stopNumber ?? Infinity) || Date.parse(a.requirement.deadline) - Date.parse(b.requirement.deadline))
 }
 
 /** Nhãn QR của mọi kiện trong chuyến — in nhãn cho kiện nhập tay. */

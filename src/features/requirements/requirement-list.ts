@@ -1,12 +1,13 @@
 import { roundKg } from '@/domain/geometry'
 import type { HandlingClass } from '@/domain/models'
 import { isWithinDateRange, matchesQuery, normalizeSearchText } from '@/lib/list-filter'
-import { REQUIREMENT_PRIORITIES, REQUIREMENT_STATUSES, vnDate, type DeliveryStop, type RequirementPriority, type RequirementStatus } from '@/lib/mock-db'
+import { REQUIREMENT_PRIORITIES, REQUIREMENT_STATUSES, stopKey, vnDate, type DeliveryRequirement, type DeliveryStop, type RequirementPriority, type RequirementStatus } from '@/lib/mock-db'
 import type { RequirementPackage, RequirementRow } from './requirements-api'
 
 /**
  * Phép tính thuần của màn Yêu cầu giao (FE-4b-02): lọc danh sách, nhóm kiện cho ô chọn kiện, hai cảnh báo của form (kiện khác loại
- * hàng, điểm đến ghi trong file khác điểm đến của yêu cầu) và gợi ý điểm giao khi đưa vào chuyến. Trả mã và dữ liệu, component dịch.
+ * hàng, điểm đến ghi trong file khác điểm đến của yêu cầu) và điểm giao yêu cầu sẽ gộp vào khi đưa vào chuyến. Trả mã và dữ liệu,
+ * component dịch.
  */
 
 /** Tên tham số lọc trên URL, tiếng Việt không dấu (D-52). */
@@ -111,8 +112,16 @@ export function packageWarnings(packages: readonly RequirementPackage[], selecte
   }
 }
 
-/** Điểm giao có tên trùng tên điểm đến của yêu cầu (bỏ dấu, không kể hoa thường) — chọn sẵn khi đưa vào chuyến. */
-export function matchingStopId(destinationName: string, stops: readonly DeliveryStop[]): string | undefined {
-  const wanted = normalizeSearchText(destinationName)
-  return stops.find((stop) => normalizeSearchText(stop.name) === wanted)?.id
+/**
+ * Điểm giao của chuyến mà yêu cầu sẽ gộp vào (FE-4b-04, D-73): điểm cùng địa chỉ (đã chuẩn hoá) và cùng toạ độ — đúng khoá gộp của kho
+ * (`stopKey`). `null`: chuyến chưa có điểm nào như vậy, kho sẽ sinh điểm mới cuối tuyến.
+ */
+export function stopOfRequirement(
+  requirement: Pick<DeliveryRequirement, 'address' | 'lat' | 'lng'>,
+  stops: readonly DeliveryStop[],
+): { readonly number: number; readonly name: string } | null {
+  const key = stopKey(requirement)
+  const index = stops.findIndex((stop) => stopKey(stop) === key)
+  const stop = stops[index]
+  return stop ? { number: index + 1, name: stop.name } : null
 }

@@ -1,5 +1,6 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
 import { useId, type ComponentProps, type ReactNode } from 'react'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import type { DeliveryProgress } from '@/lib/mock-db'
 import { useFormat, useT } from '@/lib/i18n'
@@ -27,9 +28,14 @@ function stopStates(stops: readonly StopRow[], delivery: DeliveryProgress, progr
  * Sơ đồ tuyến ở Chi tiết chuyến (LM-097, D-50; V2.3): card đè lên đáy dải trời, kho xuất phát → các điểm theo thứ tự giao, mỗi điểm
  * một mốc màu định danh luôn kèm số, tên, địa chỉ, số kiện và khối lượng. `delivery` chỉ truyền khi chuyến đang giao hoặc đã hoàn
  * thành: card có đầu "Sơ đồ tuyến" gập được với số tổng hợp (điểm đã giao, kiện đã dỡ, sự cố, giờ xuất phát / khoảng thời gian), mỗi
- * điểm có trạng thái giao và đoạn đường nối. Không địa lý, không thư viện bản đồ.
+ * điểm có trạng thái giao và đoạn đường nối. Không địa lý, không thư viện bản đồ. `onAddStop` có khi chuyến còn sửa được: chân card
+ * nói điểm giao đến từ đâu (tự sinh từ yêu cầu giao, D-73) và có nút thêm điểm giao tay (FE-4b-04).
  */
-export function RouteDiagram({ stops, delivery, ...list }: { stops: readonly StopRow[]; delivery?: DeliveryProgress } & Omit<StopListProps, 'stops' | 'states' | 'departedAt'>) {
+export function RouteDiagram({ stops, delivery, onAddStop, ...list }: {
+  stops: readonly StopRow[]
+  delivery?: DeliveryProgress
+  onAddStop?: () => void
+} & Omit<StopListProps, 'stops' | 'states' | 'departedAt'>) {
   const t = useT()
   const titleId = useId()
   if (!delivery) {
@@ -37,6 +43,15 @@ export function RouteDiagram({ stops, delivery, ...list }: { stops: readonly Sto
       <Card>
         <section aria-label={t('trips.route.title')}>
           <StopList stops={stops} {...list} />
+          {onAddStop ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line-soft px-4.5 py-2.5">
+              <p className="min-w-0 flex-1 basis-80 text-small text-ink-3">{t(stops.length === 0 ? 'trips.stops.sourceEmpty' : 'trips.stops.source')}</p>
+              <Button variant="secondary" size="sm" onClick={onAddStop}>
+                <Plus strokeWidth={1.75} />
+                {t('trips.stops.add.open')}
+              </Button>
+            </div>
+          ) : null}
         </section>
       </Card>
     )

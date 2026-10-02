@@ -37,7 +37,7 @@ function renderDetail(tripId: string, role: Role) {
   return userEvent.setup()
 }
 
-test('a draft trip without packages is not ready; putting a requirement on its stop makes it ready and lists the requirement', async () => {
+test('a draft trip without packages is not ready; putting a requirement on it adds its stop, makes it ready and lists the requirement', async () => {
   const trip = await getMockDb().createTrip({ ...twoCartonTrip(), packages: [] })
   const user = renderDetail(trip.id, 'dispatcher')
 
@@ -46,19 +46,22 @@ test('a draft trip without packages is not ready; putting a requirement on its s
   expect(card.getByText('Chưa có kiện nào')).toBeInTheDocument()
   expect(card.getByText('3 điểm giao chưa có kiện')).toBeInTheDocument()
   expect(card.getByText('1 mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.')).toBeInTheDocument()
-  expect(within(screen.getByRole('region', { name: 'Yêu cầu giao trên chuyến' })).getByText('Chưa có yêu cầu giao nào trên chuyến này.')).toBeInTheDocument()
+  expect(within(screen.getByRole('region', { name: 'Yêu cầu giao của chuyến' })).getByText('Chưa có yêu cầu giao nào trên chuyến này.')).toBeInTheDocument()
 
-  // Lối sửa ngay tại chỗ: đưa yêu cầu giao vào chuyến — chọn yêu cầu chờ, điểm giao trùng tên điểm đến được chọn sẵn
+  // Lối sửa ngay tại chỗ: đưa yêu cầu giao vào chuyến — chỉ chọn yêu cầu chờ; điểm giao tự sinh. Điểm 2 của chuyến mẫu cùng địa chỉ
+  // nhưng chưa có toạ độ nên không gộp: chuyến có thêm điểm 4
   await user.click(card.getAllByRole('button', { name: 'Đưa yêu cầu vào chuyến' })[0]!)
   const dialog = within(await screen.findByRole('dialog', { name: `Đưa yêu cầu giao vào ${trip.name}` }, SLOW))
   await user.click(await dialog.findByRole('combobox', { name: 'Yêu cầu giao' }, SLOW))
   await user.click(await screen.findByRole('option', { name: /^REQ-006 · Kho Bách Hoá Xanh Dĩ An/ }))
-  expect(dialog.getByRole('combobox', { name: 'Điểm giao' })).toHaveTextContent('Điểm 2 · Kho Bách Hoá Xanh Dĩ An')
+  expect(dialog.getByRole('status')).toHaveTextContent('Điểm giao: chuyến có thêm điểm 4 · Kho Bách Hoá Xanh Dĩ An ở cuối tuyến.')
   await user.click(dialog.getByRole('button', { name: 'Đưa vào chuyến' }))
 
   expect(await card.findByText('Sẵn sàng tối ưu', {}, SLOW)).toBeInTheDocument()
   expect(card.getByText('10 kiện')).toBeInTheDocument()
-  expect(within(await screen.findByRole('region', { name: 'Yêu cầu giao trên chuyến' }, SLOW)).getByText('REQ-006')).toBeInTheDocument()
+  const requirements = within(await screen.findByRole('region', { name: 'Yêu cầu giao của chuyến' }, SLOW))
+  expect(await requirements.findByText('REQ-006', {}, SLOW)).toBeInTheDocument()
+  expect(requirements.getByText(/^Điểm 4 · Kho Bách Hoá Xanh Dĩ An · /)).toHaveTextContent('Điểm 4 · Kho Bách Hoá Xanh Dĩ An · Hạn 11:00 16/09/2026 · 10 kiện')
 })
 
 test('the manager sees the check without ways to change the trip', async () => {
@@ -69,5 +72,5 @@ test('the manager sees the check without ways to change the trip', async () => {
   expect(await card.findByText('Chưa sẵn sàng tối ưu', {}, SLOW)).toBeInTheDocument()
   expect(card.queryByRole('button')).toBeNull()
   expect(card.queryByRole('link')).toBeNull()
-  expect(screen.queryByRole('region', { name: 'Yêu cầu giao trên chuyến' })).toBeNull()
+  expect(screen.queryByRole('region', { name: 'Yêu cầu giao của chuyến' })).toBeNull()
 })

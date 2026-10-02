@@ -1,6 +1,6 @@
 /**
  * Yêu cầu giao `/yeu-cau-giao` (FE-4b-02, D-72): danh sách, form tạo / sửa, chi tiết, xoá, đưa vào chuyến; nhánh `trip` cho card "Yêu
- * cầu giao trên chuyến" ở Chi tiết chuyến. `status` key trùng `REQUIREMENT_STATUSES`, `priority` trùng `REQUIREMENT_PRIORITIES` của kho.
+ * cầu giao của chuyến" ở Chi tiết chuyến (FE-4b-04). `status` key trùng `REQUIREMENT_STATUSES`, `priority` trùng `REQUIREMENT_PRIORITIES` của kho.
  */
 export const requirements = {
   title: 'Yêu cầu giao',
@@ -141,28 +141,30 @@ export const requirements = {
     title: 'Đưa yêu cầu vào chuyến',
     titleFor: 'Đưa yêu cầu {id} vào chuyến',
     titleTrip: 'Đưa yêu cầu giao vào {trip}',
-    description: 'Mỗi nhóm kiện giống nhau của yêu cầu thành một dòng kiện của chuyến ở điểm giao đã chọn. Phương án đã tối ưu của chuyến sẽ lỗi thời.',
+    description: 'Điểm giao tự sinh theo địa chỉ và toạ độ của yêu cầu; trùng điểm đang có thì gộp. Mỗi nhóm kiện giống nhau thành một dòng kiện của chuyến. Phương án đã tối ưu của chuyến sẽ lỗi thời.',
     requirement: 'Yêu cầu giao',
     trip: 'Chuyến',
-    stop: 'Điểm giao',
     requirementRequired: 'Chọn yêu cầu giao.',
     tripRequired: 'Chọn chuyến.',
-    stopRequired: 'Chọn điểm giao.',
+    /** Nói trước điểm giao kho sẽ dùng (FE-4b-04, D-73). */
+    stopMerged: 'Điểm giao: gộp vào điểm {number} · {name} — cùng địa chỉ và toạ độ.',
+    stopCreated: 'Điểm giao: chuyến có thêm điểm {number} · {name} ở cuối tuyến.',
+    noCoordinates: 'Yêu cầu chưa có toạ độ: chỉ gộp với điểm cùng địa chỉ cũng chưa có toạ độ.',
     noTrips: 'Không có chuyến nào ở trạng thái Nháp hoặc Đã lập kế hoạch để nhận yêu cầu.',
     noRequirements: 'Không có yêu cầu nào đang chờ xếp chuyến.',
-    noStops: 'Chuyến này chưa có điểm giao. Thêm điểm giao ở màn sửa chuyến trước.',
     tripOption: '{id} · {name} · {date}',
     requirementOption: '{id} · {destination} · {count} kiện',
-    stopOption: 'Điểm {number} · {name}',
-    matchHint: 'Đã chọn sẵn điểm giao trùng tên điểm đến.',
     submit: 'Đưa vào chuyến',
     cancel: 'Huỷ',
     done: 'Đã đưa yêu cầu {id} vào {trip}, điểm {number}.',
     unassigned: 'Đã gỡ yêu cầu {id} khỏi chuyến.',
   },
   trip: {
-    title: 'Yêu cầu giao trên chuyến',
+    title: 'Yêu cầu giao của chuyến',
     empty: 'Chưa có yêu cầu giao nào trên chuyến này.',
+    stop: 'Điểm {number} · {name}',
+    deadline: 'Hạn {time} {date}',
+    note: 'Điểm giao tự sinh theo địa chỉ và toạ độ của yêu cầu; yêu cầu cùng điểm gộp chung, hạn của điểm là hạn sớm nhất. Gỡ yêu cầu cuối cùng của một điểm tự sinh thì điểm đó tự mất.',
     assign: 'Đưa yêu cầu vào chuyến',
     unassign: 'Gỡ yêu cầu {id}',
     list: 'Tất cả yêu cầu giao',

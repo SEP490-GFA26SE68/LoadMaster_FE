@@ -67,7 +67,8 @@ export function TripReadinessCard({ tripId, onAssignRequirement }: { tripId: str
       case 'PACKAGES_PRESENT':
         return assign
       case 'STOPS_VALID':
-        return check.status === 'warn' ? assign : editTrip
+        // Điểm giao tự sinh từ yêu cầu giao (D-73): chuyến chưa có điểm nào, hoặc còn điểm trống, thì đưa yêu cầu vào chuyến
+        return check.status === 'warn' || check.params.stops === 0 ? assign : editTrip
       case 'PACKAGES_VALID':
         return can('optimization.run') ? (
           <Button variant="secondary" size="sm" asChild><Link to={`/chuyen/${tripId}/toi-uu`}>{t('readiness.fix.reviewPackages')}</Link></Button>

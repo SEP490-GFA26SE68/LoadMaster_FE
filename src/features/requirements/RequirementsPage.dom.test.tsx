@@ -192,7 +192,7 @@ test('the manager edits a pending requirement and deletes it; its packages go ba
   expect((await getMockDb().getPackage('PK-0054')).requirementId).toBeUndefined()
 })
 
-test('the dispatcher only reads and puts a requirement on a planning trip; the stop named like the destination is preselected', async () => {
+test('the dispatcher only reads and puts a requirement on a planning trip; the dialog says which stop it will share or add', async () => {
   const user = renderPage('dispatcher')
   await screen.findByText('6 yêu cầu chờ xếp chuyến', {}, SLOW)
   expect(screen.queryByRole('button', { name: 'Tạo yêu cầu giao' })).toBeNull()
@@ -203,8 +203,15 @@ test('the dispatcher only reads and puts a requirement on a planning trip; the s
   const dialog = within(await screen.findByRole('dialog', { name: 'Đưa yêu cầu REQ-006 vào chuyến' }))
   await user.click(await dialog.findByRole('combobox', { name: 'Chuyến' }, SLOW))
   await user.click(await screen.findByRole('option', { name: /^TRIP-014 · Tuyến Tân An – Dĩ An/ }))
-  expect(dialog.getByRole('combobox', { name: 'Điểm giao' })).toHaveTextContent('Điểm 2 · Kho Bách Hoá Xanh Dĩ An')
-  expect(dialog.getByText('Đã chọn sẵn điểm giao trùng tên điểm đến.')).toBeInTheDocument()
+  // Không chọn điểm giao (FE-4b-04): điểm 2 của TRIP-014 cùng địa chỉ và toạ độ với yêu cầu nên yêu cầu gộp vào đó
+  expect(dialog.queryByRole('combobox', { name: 'Điểm giao' })).toBeNull()
+  expect(dialog.getByRole('status')).toHaveTextContent('Điểm giao: gộp vào điểm 2 · Kho Bách Hoá Xanh Dĩ An — cùng địa chỉ và toạ độ.')
+  // Chuyến khác chưa có điểm nào như vậy: chuyến đó sẽ có thêm điểm cuối tuyến
+  await user.click(dialog.getByRole('combobox', { name: 'Chuyến' }))
+  await user.click(await screen.findByRole('option', { name: /^TRIP-012 · Tuyến Bình Chánh – Biên Hoà/ }))
+  expect(dialog.getByRole('status')).toHaveTextContent('Điểm giao: chuyến có thêm điểm 3 · Kho Bách Hoá Xanh Dĩ An ở cuối tuyến.')
+  await user.click(dialog.getByRole('combobox', { name: 'Chuyến' }))
+  await user.click(await screen.findByRole('option', { name: /^TRIP-014 · Tuyến Tân An – Dĩ An/ }))
   await user.click(dialog.getByRole('button', { name: 'Đưa vào chuyến' }))
 
   expect(await screen.findByText('Đã đưa yêu cầu REQ-006 vào Tuyến Tân An – Dĩ An, điểm 2.', {}, SLOW)).toBeInTheDocument()
