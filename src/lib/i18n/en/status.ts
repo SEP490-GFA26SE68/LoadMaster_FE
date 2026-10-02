@@ -14,5 +14,6 @@ export const status = {
     stale: 'Stale — optimize again',
     loading: 'Loading {recorded} / {total}',
     loaded: 'Loaded — ready to depart',
+    lateStops: 'Stops expected late',
   },
 } satisfies Dictionary<typeof source>

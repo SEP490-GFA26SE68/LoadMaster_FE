@@ -61,6 +61,11 @@ export const dataErrors = {
   REQUIREMENT_DEADLINE_PAST: 'Hạn giao phải ở tương lai.',
   REQUIREMENT_NOT_PENDING: 'Yêu cầu {requirementId} không còn chờ xếp chuyến nên không làm được thao tác này.',
   REQUIREMENT_STATUS_INVALID: 'Yêu cầu {requirementId} không làm được thao tác này ở trạng thái hiện tại.',
+  // Phân tách hàng và tối ưu tuyến (FE-4b-06, FE-4b-09)
+  CARGO_SEGREGATION_CONFLICT: 'Một chuyến chỉ chở một loại hàng. Kiện khác loại hàng của chuyến {tripId}: {packages}. Ghi lý do nếu vẫn cần chở chung.',
+  OVERRIDE_REASON_TOO_LONG: 'Lý do dài tối đa {max} ký tự.',
+  ROUTE_STOPS_REQUIRED: 'Chuyến {tripId} chưa có điểm giao nên chưa tối ưu tuyến được.',
+  MISSING_STOP_COORDINATES: 'Điểm giao số {stopNumbers} chưa có toạ độ nên chưa tối ưu tuyến được.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

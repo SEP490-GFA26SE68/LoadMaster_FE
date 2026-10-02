@@ -1,5 +1,6 @@
 import type { Permission } from '@/features/auth/permissions'
 import type { Formatter } from '@/lib/format'
+import { HANDLING_CLASSES } from '@/domain/models'
 import type { TFunction } from '@/lib/i18n'
 import {
   DELIVERY_ISSUE_KINDS,
@@ -58,6 +59,8 @@ const PARAM_KEYS = [
   // LM-104
   'count', 'packageTypeId', 'lastPackageId', 'destinationName', 'priority', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
   'sealNumber', 'packageCode', 'flag',
+  // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
+  'handlingClass', 'conflictCount', 'totalKm', 'totalMinutes', 'lateStops',
 ] as const
 
 const FIELD_NAMES = [
@@ -167,7 +170,8 @@ function paramLabel(key: string, t: TFunction): string {
 }
 
 function paramValue(event: AuditEvent, key: string, value: string | number, t: TFunction, format: Formatter): string {
-  if (typeof value === 'number') return format.integer(value)
+  // Quãng đường của tuyến giữ số lẻ; số khác là số đếm
+  if (typeof value === 'number') return key === 'totalKm' ? format.decimal(value) : format.integer(value)
   switch (key) {
     case 'fields':
       return format.list(value.split(',').map((field) => (isOneOf(FIELD_NAMES, field) ? t(`audit.log.fieldNames.${field}`) : field)))
@@ -176,6 +180,8 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return isOneOf(PACKAGE_CHANGE_FIELDS, value) ? t(`audit.log.packageFields.${value}`) : value
     case 'flag':
       return isOneOf(PACKAGE_FLAGS, value) ? t(`common.packageFlags.${value}`) : value
+    case 'handlingClass':
+      return isOneOf(HANDLING_CLASSES, value) ? t(`common.handlingClasses.${value}`) : value
     case 'priority':
       return isOneOf(REQUIREMENT_PRIORITIES, value) ? t(`requirements.priority.${value}`) : value
     case 'before':

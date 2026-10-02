@@ -1,6 +1,6 @@
 /**
  * Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2 Review 1, LM-104) — card ở cột phải Chi tiết chuyến: key `checks` trùng
- * `READINESS_CODES` của `@/domain/constraints`. Mỗi mã có nhãn, câu khi đạt và khi chưa đạt; riêng điểm giao có thêm câu cảnh báo. Số
+ * `READINESS_CODES` của `@/domain/constraints`. Mỗi mã có nhãn, câu khi đạt và khi chưa đạt; điểm giao và loại hàng có thêm câu cảnh báo. Số
  * truyền vào đã format theo ngôn ngữ.
  */
 export const readiness = {
@@ -25,6 +25,12 @@ export const readiness = {
       pass: '{stops} điểm giao, kiện đều gán đúng điểm',
       warn: '{empty} điểm giao chưa có kiện',
       fail: 'Chưa có điểm giao, hoặc {outside} dòng kiện gán điểm giao không có',
+    },
+    CARGO_SEGREGATED: {
+      label: 'Loại hàng',
+      pass: 'Mọi kiện cùng một loại hàng',
+      warn: '{packages} kiện khác loại hàng, đã ghi lý do chở chung',
+      fail: '{packages} kiện khác loại hàng của chuyến, chưa ghi lý do chở chung',
     },
     WEIGHT_WITHIN_PAYLOAD: { label: 'Khối lượng', pass: '{total} / {payload}', fail: '{total} vượt tải trọng {payload}' },
     VOLUME_WITHIN_CARGO: { label: 'Thể tích', pass: '{total} / {cargo}', fail: '{total} vượt thể tích thùng {cargo}' },

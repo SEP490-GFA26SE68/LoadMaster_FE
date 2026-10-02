@@ -51,6 +51,8 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.cancelled': 'amber',
   'trip.packagesAdded': 'blue',
   'trip.packageRemoved': 'amber',
+  'trip.segregationOverridden': 'amber',
+  'trip.routeOptimized': 'azure',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
   'loading.started': 'blue',
