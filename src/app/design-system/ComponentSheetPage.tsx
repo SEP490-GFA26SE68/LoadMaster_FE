@@ -14,6 +14,7 @@ import { KpiCard } from './components/KpiCard'
 import { LabelsCard } from './components/LabelsCard'
 import { MenuCard } from './components/MenuCard'
 import { MetersCard } from './components/MetersCard'
+import { RouteMapCard } from './components/RouteMapCard'
 import { TabsCard } from './components/TabsCard'
 import { ToastCard } from './components/ToastCard'
 import { TripTableCard } from './components/TripTableCard'
@@ -58,6 +59,7 @@ export function ComponentSheetPage() {
             <KpiCard period={period} />
             <ToastCard />
             <FormSectionCard />
+            <RouteMapCard />
           </div>
           <div className={column}>
             <DialogCard sample={sample} />
