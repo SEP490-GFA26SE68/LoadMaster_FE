@@ -63,7 +63,7 @@ export const requirements = {
     lockedNote: 'The requirement is on a trip: only the deadline and the priority can still change.',
     destinationName: 'Destination name',
     address: 'Address',
-    coordinatesReset: 'Changing the address drops the current coordinates ({coordinates}).',
+    coordinates: 'Destination coordinates',
     deadlineDate: 'Deadline',
     deadlineTime: 'Time',
     priority: 'Priority',
@@ -86,6 +86,7 @@ export const requirements = {
       deadlinePast: 'The deadline must be in the future.',
       priorityRequired: 'Choose a priority.',
       packagesRequired: 'Choose at least one package.',
+      coordinatesInvalid: 'The coordinates are not valid.',
     },
     warnings: {
       title: 'Worth a second look, saving still works',

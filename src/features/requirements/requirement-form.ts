@@ -1,8 +1,10 @@
+import { coordinateText, parseCoordinates, type CoordinateText } from '@/components/map'
 import { REQUIREMENT_FIELDS_AFTER_PENDING, REQUIREMENT_PRIORITIES, type DeliveryRequirement, type RequirementChanges, type RequirementInput, type RequirementPriority } from '@/lib/mock-db'
 
 /**
  * Phép tính thuần của form yêu cầu giao (FE-4b-02): giá trị ban đầu, kiểm tra trả **mã** lỗi theo ô (component dịch), và đầu vào gửi
- * xuống kho. Hạn nhập bằng hai ô ngày + giờ theo giờ của máy — cùng múi giờ với chỗ hiện hạn (`format.date` / `format.time`).
+ * xuống kho. Hạn nhập bằng hai ô ngày + giờ theo giờ của máy — cùng múi giờ với chỗ hiện hạn (`format.date` / `format.time`). Toạ độ
+ * là chữ của hai ô vĩ độ / kinh độ của ô chọn toạ độ (FE-4b-03); để trống cả hai là yêu cầu chưa có toạ độ.
  */
 
 export const MAX_NAME = 120
@@ -19,9 +21,10 @@ export type RequirementFormValues = {
   priority: RequirementPriority
   packageIds: string[]
   note: string
+  coordinates: CoordinateText
 }
 
-export type RequirementFieldError = 'required' | 'tooLong' | 'deadlineInvalid' | 'deadlinePast' | 'packagesRequired'
+export type RequirementFieldError = 'required' | 'tooLong' | 'deadlineInvalid' | 'deadlinePast' | 'packagesRequired' | 'coordinatesInvalid'
 export type RequirementFormErrors = Partial<Record<keyof RequirementFormValues, RequirementFieldError>>
 
 const pad = (value: number) => String(value).padStart(2, '0')
@@ -50,7 +53,7 @@ export const DEFAULT_DEADLINE_TIME = '17:00'
 
 export function initialValues(requirement?: DeliveryRequirement): RequirementFormValues {
   if (!requirement) {
-    return { destinationName: '', address: '', deadlineDate: '', deadlineTime: DEFAULT_DEADLINE_TIME, priority: 'NORMAL', packageIds: [], note: '' }
+    return { destinationName: '', address: '', deadlineDate: '', deadlineTime: DEFAULT_DEADLINE_TIME, priority: 'NORMAL', packageIds: [], note: '', coordinates: coordinateText(undefined, undefined) }
   }
   return {
     destinationName: requirement.destinationName,
@@ -59,6 +62,7 @@ export function initialValues(requirement?: DeliveryRequirement): RequirementFor
     priority: requirement.priority,
     packageIds: [...requirement.packageIds],
     note: requirement.note ?? '',
+    coordinates: coordinateText(requirement.lat, requirement.lng),
   }
 }
 
@@ -86,11 +90,14 @@ export function validateRequirement(values: RequirementFormValues, now: Date, or
     if (iso === null) errors.deadlineDate = 'deadlineInvalid'
     else if (iso !== original?.deadline && Date.parse(iso) <= now.getTime()) errors.deadlineDate = 'deadlinePast'
   }
+  // Câu lỗi của từng ô vĩ độ / kinh độ do ô chọn toạ độ tự hiện; ở đây chỉ chặn lưu
+  if (parseCoordinates(values.coordinates.lat, values.coordinates.lng).kind === 'error') errors.coordinates = 'coordinatesInvalid'
   return errors
 }
 
-/** Đầu vào tạo yêu cầu. Gọi sau khi `validateRequirement` không còn lỗi. Toạ độ chưa nhập ở form này (ô chọn toạ độ: FE-4b-03). */
+/** Đầu vào tạo yêu cầu. Gọi sau khi `validateRequirement` không còn lỗi. Hai ô toạ độ để trống thì không gửi toạ độ. */
 export function toInput(values: RequirementFormValues): RequirementInput {
+  const point = parseCoordinates(values.coordinates.lat, values.coordinates.lng)
   return {
     destinationName: values.destinationName.trim(),
     address: values.address.trim(),
@@ -98,19 +105,20 @@ export function toInput(values: RequirementFormValues): RequirementInput {
     priority: values.priority,
     packageIds: values.packageIds,
     note: values.note.trim(),
+    ...(point.kind === 'ok' ? { lat: point.lat, lng: point.lng } : {}),
   }
 }
 
 /**
- * Thay đổi gửi khi sửa. Yêu cầu còn chờ xếp chuyến: mọi trường; đổi địa chỉ thì bỏ toạ độ đang có (toạ độ của địa chỉ cũ). Yêu cầu đã
- * vào chuyến: chỉ hạn và ưu tiên (mục 7.3).
+ * Thay đổi gửi khi sửa. Yêu cầu còn chờ xếp chuyến: mọi trường; hai ô toạ độ để trống là bỏ toạ độ đang có (`null`). Yêu cầu đã vào
+ * chuyến: chỉ hạn và ưu tiên (mục 7.3).
  */
 export function toChanges(values: RequirementFormValues, current: DeliveryRequirement): RequirementChanges {
   const input = toInput(values)
   if (current.status !== 'PENDING') {
     return Object.fromEntries(REQUIREMENT_FIELDS_AFTER_PENDING.map((field) => [field, input[field]]))
   }
-  return input.address === current.address ? input : { ...input, lat: null, lng: null }
+  return { ...input, lat: input.lat ?? null, lng: input.lng ?? null }
 }
 
 /** Ô còn sửa được ở trạng thái `status` của yêu cầu đang sửa; tạo mới (vắng) thì mọi ô. */

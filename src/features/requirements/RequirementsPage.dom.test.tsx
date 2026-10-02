@@ -124,7 +124,17 @@ test('the manager creates a requirement: errors sit at the fields, warnings do n
   expect(dialog.getByRole('textbox', { name: 'Tên điểm đến' })).toHaveAccessibleDescription('Nhập tên điểm đến.')
 
   await user.type(dialog.getByRole('textbox', { name: 'Tên điểm đến' }), 'KCN Phú Bài')
-  await user.type(dialog.getByRole('textbox', { name: 'Địa chỉ' }), 'KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế')
+  // Chọn địa danh mẫu (FE-4b-03): hai ô toạ độ nhận toạ độ của địa danh; ô địa chỉ đang trống nên được điền theo địa danh
+  const coordinates = within(dialog.getByRole('group', { name: 'Toạ độ điểm đến' }))
+  await user.type(coordinates.getByRole('combobox', { name: 'Tìm địa danh' }), 'phu bai')
+  await user.click(await coordinates.findByRole('option', { name: /KCN Phú Bài/ }))
+  expect(dialog.getByRole('textbox', { name: 'Địa chỉ' })).toHaveValue('KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế')
+  expect(dialog.queryByText('Nhập địa chỉ.')).toBeNull()
+  expect([coordinates.getByRole('textbox', { name: 'Vĩ độ' }), coordinates.getByRole('textbox', { name: 'Kinh độ' })].map((input) => (input as HTMLInputElement).value)).toStrictEqual(['16.4022', '107.696'])
+  // Toạ độ gõ dở: lỗi tại ô, form không lưu
+  await user.clear(coordinates.getByRole('textbox', { name: 'Kinh độ' }))
+  expect(coordinates.getByText('Nhập cả kinh độ')).toBeInTheDocument()
+  await user.type(coordinates.getByRole('textbox', { name: 'Kinh độ' }), '107.696')
   // Hạn đã qua: lỗi tại ô ngày
   fireEvent.change(dialog.getByLabelText(/^Hạn giao/), { target: { value: '2020-01-01' } })
   await user.click(dialog.getByRole('button', { name: 'Tạo yêu cầu' }))
@@ -133,7 +143,7 @@ test('the manager creates a requirement: errors sit at the fields, warnings do n
   expect(dialog.getByLabelText(/^Giờ/)).toHaveValue('17:00')
 
   await user.click(dialog.getByRole('checkbox', { name: 'Chọn cả nhóm Hàng Dễ vỡ (3)' }))
-  expect(dialog.getByRole('status')).toHaveTextContent('Đã chọn 3 kiện · 28,5 kg')
+  expect(dialog.getByText('Đã chọn 3 kiện · 28,5 kg')).toBeInTheDocument()
   expect(dialog.queryByText('Cần xem lại, vẫn lưu được')).toBeNull()
   // Thêm một kiện giá trị cao đi KCN Thăng Long: hai cảnh báo, vẫn lưu được
   await user.clear(filter)
@@ -149,6 +159,7 @@ test('the manager creates a requirement: errors sit at the fields, warnings do n
   const row = within(rowOf('REQ-007'))
   for (const text of ['KCN Phú Bài', '31/12/2099', '17:00', 'Bình thường', '4 kiện', '35,7 kg', 'Chờ xếp chuyến']) expect(row.getByText(text)).toBeInTheDocument()
   expect(await getMockDb().getPackage('PK-0064')).toMatchObject({ requirementId: 'REQ-007', status: 'IMPORTED' })
+  expect(await getMockDb().getDeliveryRequirement('REQ-007')).toMatchObject({ address: 'KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế', lat: 16.4022, lng: 107.696 })
 })
 
 test('the manager edits a pending requirement and deletes it; its packages go back to the pool', async () => {

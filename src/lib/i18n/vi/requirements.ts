@@ -64,7 +64,7 @@ export const requirements = {
     lockedNote: 'Yêu cầu đã vào chuyến: chỉ còn sửa được hạn giao và ưu tiên.',
     destinationName: 'Tên điểm đến',
     address: 'Địa chỉ',
-    coordinatesReset: 'Đổi địa chỉ thì toạ độ đang có ({coordinates}) sẽ bị bỏ.',
+    coordinates: 'Toạ độ điểm đến',
     deadlineDate: 'Hạn giao',
     deadlineTime: 'Giờ',
     priority: 'Ưu tiên',
@@ -88,6 +88,7 @@ export const requirements = {
       deadlinePast: 'Hạn giao phải ở tương lai.',
       priorityRequired: 'Chọn ưu tiên.',
       packagesRequired: 'Chọn ít nhất một kiện.',
+      coordinatesInvalid: 'Toạ độ chưa hợp lệ.',
     },
     warnings: {
       title: 'Cần xem lại, vẫn lưu được',

@@ -16,4 +16,23 @@ export const map = {
     command: 'Giữ ⌘ rồi lăn chuột để phóng to bản đồ',
     touch: 'Dùng hai ngón tay để dời bản đồ',
   },
+  /** Ô chọn toạ độ (FE-4b-03): `components/map/CoordinatePicker.tsx` — tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ bấm chọn. */
+  picker: {
+    search: 'Tìm địa danh',
+    searchPlaceholder: 'Gõ tên tỉnh, quận hoặc khu công nghiệp',
+    results: 'Địa danh khớp',
+    noResults: 'Không có địa danh mẫu nào khớp "{query}". Gõ toạ độ vào hai ô bên dưới.',
+    kind: { PROVINCE: 'Tỉnh / thành', DISTRICT: 'Quận / huyện', INDUSTRIAL_PARK: 'Khu công nghiệp' },
+    lat: 'Vĩ độ',
+    lng: 'Kinh độ',
+    clear: 'Bỏ toạ độ',
+    picked: 'Đã lấy toạ độ của {name}.',
+    hint: 'Chọn từ danh sách địa danh mẫu (toạ độ gần đúng ở mức khu vực) hoặc gõ vĩ độ, kinh độ.',
+    hintMap: 'Chọn từ danh sách địa danh mẫu, bấm lên bản đồ, hoặc gõ vĩ độ, kinh độ.',
+    map: 'Bản đồ chọn toạ độ',
+    errors: {
+      incomplete: { lat: 'Nhập cả vĩ độ', lng: 'Nhập cả kinh độ' },
+      invalid: { lat: 'Vĩ độ là số từ −90 đến 90', lng: 'Kinh độ là số từ −180 đến 180' },
+    },
+  },
 } as const

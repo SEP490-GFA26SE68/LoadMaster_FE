@@ -19,7 +19,7 @@ const REQ_002: DeliveryRequirement = {
 
 const VALID: RequirementFormValues = {
   destinationName: ' Nhà hàng Hương Việt ', address: '203 Lê Văn Sỹ, P. 13, Q.3', deadlineDate: '2026-09-16', deadlineTime: '17:00', priority: 'NORMAL',
-  packageIds: ['PK-0023'], note: ' ',
+  packageIds: ['PK-0023'], note: ' ', coordinates: { lat: '', lng: '' },
 }
 
 test('the deadline is entered as a local date and time and stored as an instant', () => {
@@ -32,10 +32,10 @@ test('the deadline is entered as a local date and time and stored as an instant'
 })
 
 test('a new form starts empty with a 17:00 deadline time; an edit form starts from the requirement', () => {
-  expect(initialValues()).toStrictEqual({ destinationName: '', address: '', deadlineDate: '', deadlineTime: '17:00', priority: 'NORMAL', packageIds: [], note: '' })
+  expect(initialValues()).toStrictEqual({ destinationName: '', address: '', deadlineDate: '', deadlineTime: '17:00', priority: 'NORMAL', packageIds: [], note: '', coordinates: { lat: '', lng: '' } })
   expect(initialValues(REQ_002)).toStrictEqual({
     destinationName: 'KCN Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế', deadlineDate: '2026-09-17', deadlineTime: '17:00', priority: 'HIGH',
-    packageIds: ['PK-0057', 'PK-0058'], note: 'Hàng gốm, giao trong giờ hành chính',
+    packageIds: ['PK-0057', 'PK-0058'], note: 'Hàng gốm, giao trong giờ hành chính', coordinates: { lat: '16.4022', lng: '107.696' },
   })
 })
 
@@ -56,18 +56,25 @@ test('validation returns one code per field; the deadline must lie in the future
   const later = new Date('2026-09-20T00:00:00.000Z')
   expect(validateRequirement(initialValues(REQ_002), later, REQ_002)).toStrictEqual({})
   expect(validateRequirement({ ...initialValues(REQ_002), deadlineTime: '18:00' }, later, REQ_002)).toStrictEqual({ deadlineDate: 'deadlinePast' })
+  // Toạ độ: đủ hai ô và trong khoảng, hoặc để trống cả hai
+  expect(validateRequirement({ ...VALID, coordinates: { lat: '10,7872', lng: '106.6817' } }, NOW)).toStrictEqual({})
+  expect(validateRequirement({ ...VALID, coordinates: { lat: '10.7872', lng: '' } }, NOW)).toStrictEqual({ coordinates: 'coordinatesInvalid' })
+  expect(validateRequirement({ ...VALID, coordinates: { lat: '91', lng: '106.6817' } }, NOW)).toStrictEqual({ coordinates: 'coordinatesInvalid' })
 })
 
-test('the input sent to the store is trimmed; while pending every field goes, and a new address drops the coordinates', () => {
+test('the input sent to the store is trimmed; while pending every field goes, and emptied coordinates are dropped', () => {
   expect(toInput(VALID)).toStrictEqual({
     destinationName: 'Nhà hàng Hương Việt', address: '203 Lê Văn Sỹ, P. 13, Q.3', deadline: '2026-09-16T10:00:00.000Z', priority: 'NORMAL', packageIds: ['PK-0023'], note: '',
   })
+  expect(toInput({ ...VALID, coordinates: { lat: '10,7872', lng: '106.6817' } })).toMatchObject({ lat: 10.7872, lng: 106.6817 })
   const same = toChanges(initialValues(REQ_002), REQ_002)
   expect(same).toStrictEqual({
     destinationName: 'KCN Phú Bài', address: 'KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế', deadline: '2026-09-17T10:00:00.000Z', priority: 'HIGH',
-    packageIds: ['PK-0057', 'PK-0058'], note: 'Hàng gốm, giao trong giờ hành chính',
+    packageIds: ['PK-0057', 'PK-0058'], note: 'Hàng gốm, giao trong giờ hành chính', lat: 16.4022, lng: 107.696,
   })
-  expect(toChanges({ ...initialValues(REQ_002), address: 'Lô B2, KCN Phú Bài' }, REQ_002)).toMatchObject({ address: 'Lô B2, KCN Phú Bài', lat: null, lng: null })
+  // Đổi địa chỉ không còn tự bỏ toạ độ: toạ độ là ô riêng của form, bỏ trống mới là bỏ
+  expect(toChanges({ ...initialValues(REQ_002), address: 'Lô B2, KCN Phú Bài' }, REQ_002)).toMatchObject({ address: 'Lô B2, KCN Phú Bài', lat: 16.4022, lng: 107.696 })
+  expect(toChanges({ ...initialValues(REQ_002), coordinates: { lat: '', lng: '' } }, REQ_002)).toMatchObject({ lat: null, lng: null })
 })
 
 test('once on a trip only the deadline and the priority are editable and sent', () => {

@@ -5,6 +5,7 @@ import { Controller, useForm, useWatch, type Control } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Banner } from '@/components/Banner'
+import { CoordinatePicker, placeAddress } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
@@ -28,7 +29,7 @@ const MAX_OF: Partial<Record<keyof RequirementFormValues, number>> = { destinati
 /** Câu lỗi của một ô: mã của `validateRequirement` → chữ. */
 function errorText(field: keyof RequirementFormValues, code: RequirementFieldError, t: TFunction): string {
   if (code === 'tooLong') return t('requirements.form.errors.tooLong', { max: MAX_OF[field] ?? MAX_NOTE })
-  if (code === 'deadlineInvalid' || code === 'deadlinePast' || code === 'packagesRequired') return t(`requirements.form.errors.${code}`)
+  if (code === 'deadlineInvalid' || code === 'deadlinePast' || code === 'packagesRequired' || code === 'coordinatesInvalid') return t(`requirements.form.errors.${code}`)
   if (field === 'destinationName') return t('requirements.form.errors.destinationRequired')
   if (field === 'address') return t('requirements.form.errors.addressRequired')
   if (field === 'deadlineDate') return t('requirements.form.errors.deadlineDateRequired')
@@ -52,6 +53,7 @@ function requirementSchema(t: TFunction, original?: DeliveryRequirement) {
     .object({
       destinationName: z.string(), address: z.string(), deadlineDate: z.string(), deadlineTime: z.string(),
       priority: z.enum(REQUIREMENT_PRIORITIES), packageIds: z.array(z.string()), note: z.string(),
+      coordinates: z.object({ lat: z.string(), lng: z.string() }),
     })
     .superRefine((values, ctx) => {
       const errors = validateRequirement(values, new Date(), original)
@@ -63,11 +65,12 @@ function requirementSchema(t: TFunction, original?: DeliveryRequirement) {
 }
 
 /**
- * Tạo / sửa yêu cầu giao (FE-4b-02) — của quản lý công ty. Trái: tên điểm đến, địa chỉ, hạn (ngày + giờ), ưu tiên, ghi chú; phải: chọn
+ * Tạo / sửa yêu cầu giao (FE-4b-02) — của quản lý công ty. Trái: tên điểm đến, địa chỉ, toạ độ, hạn (ngày + giờ), ưu tiên, ghi chú; phải: chọn
  * kiện từ kho kiện (sửa thì kiện của chính yêu cầu vẫn nằm trong danh sách). Lỗi hiện tại ô. Hai cảnh báo không chặn lưu: kiện khác
  * loại hàng, điểm đến ghi trong file khác điểm đến của yêu cầu. Yêu cầu đã vào chuyến chỉ còn sửa hạn và ưu tiên: ô khác khoá, kèm một
- * dòng lý do. Kho từ chối (kiện vừa bị yêu cầu khác lấy…) thì câu lỗi hiện trong hộp thoại, không đóng. Toạ độ chưa nhập ở đây (ô
- * chọn toạ độ: FE-4b-03). Thân form gắn theo lúc mở nên mỗi lần mở là giá trị của yêu cầu đang sửa.
+ * dòng lý do. Kho từ chối (kiện vừa bị yêu cầu khác lấy…) thì câu lỗi hiện trong hộp thoại, không đóng. Toạ độ nhập bằng ô chọn toạ
+ * độ dùng chung (FE-4b-03): chọn một địa danh mẫu khi ô địa chỉ còn trống thì địa chỉ được điền theo địa danh. Thân form gắn theo lúc
+ * mở nên mỗi lần mở là giá trị của yêu cầu đang sửa.
  */
 export function RequirementFormDialog({ open, onOpenChange, row }: {
   open: boolean
@@ -101,7 +104,6 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
   )
   const { errors } = form.formState
   const editable = (field: Parameters<typeof isFieldEditable>[0]) => isFieldEditable(field, current?.status)
-  const coordinates = current?.lat === undefined || current.lng === undefined ? null : `${current.lat.toFixed(4)}, ${current.lng.toFixed(4)}`
 
   function handleSubmit(values: RequirementFormValues) {
     const done = (saved: DeliveryRequirement) => {
@@ -123,10 +125,23 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
         {locked ? <Banner tone="info" className="md:col-span-2">{t('requirements.form.lockedNote')}</Banner> : null}
         <div className="flex flex-col gap-3.5">
           <Input label={t('requirements.form.destinationName')} required readOnly={!editable('destinationName')} error={errors.destinationName?.message} {...form.register('destinationName')} />
-          <div className="flex flex-col gap-1.5">
-            <Input label={t('requirements.form.address')} required readOnly={!editable('address')} error={errors.address?.message} {...form.register('address')} />
-            {coordinates !== null && !locked ? <CoordinatesNote control={form.control} address={current?.address ?? ''} coordinates={coordinates} /> : null}
-          </div>
+          <Input label={t('requirements.form.address')} required readOnly={!editable('address')} error={errors.address?.message} {...form.register('address')} />
+          <Controller
+            control={form.control}
+            name="coordinates"
+            render={({ field }) => (
+              <CoordinatePicker
+                label={t('requirements.form.coordinates')}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={locked}
+                showErrors={form.formState.isSubmitted}
+                onPlacePicked={(place) => {
+                  if (form.getValues('address').trim() === '') form.setValue('address', placeAddress(place), { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
+                }}
+              />
+            )}
+          />
           <div className="grid items-start gap-3.5 sm:grid-cols-[minmax(0,1fr)_132px]">
             <Input type="date" label={t('requirements.form.deadlineDate')} required error={errors.deadlineDate?.message} {...form.register('deadlineDate')} />
             <Input type="time" label={t('requirements.form.deadlineTime')} required error={errors.deadlineTime?.message} {...form.register('deadlineTime')} />
@@ -182,11 +197,4 @@ function FormWarnings({ control, packages }: { control: Control<RequirementFormV
       </ul>
     </Banner>
   )
-}
-
-/** Gợi ý dưới ô địa chỉ khi đang sửa: đổi địa chỉ thì toạ độ đang có (của địa chỉ cũ) sẽ bị bỏ. */
-function CoordinatesNote({ control, address, coordinates }: { control: Control<RequirementFormValues>; address: string; coordinates: string }) {
-  const t = useT()
-  const typed = useWatch({ control, name: 'address' })
-  return typed.trim() === address ? null : <p role="note" className="text-fine text-warning">{t('requirements.form.coordinatesReset', { coordinates })}</p>
 }
