@@ -8,7 +8,7 @@ import type { HandlingClass } from '@/domain/models'
 export const PACKAGE_STATUSES = ['IMPORTED', 'ASSIGNED', 'STAGED', 'LOADED', 'IN_TRANSIT', 'DELIVERED', 'RETURNED'] as const
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number]
 
-/** Cờ gắn trên kiện `IMPORTED`: còn cờ thì không chọn được vào đơn hay chuyến (D-92). */
+/** Cờ gắn trên kiện `IMPORTED`: còn cờ thì không chọn được vào yêu cầu giao hay chuyến (D-92). */
 export const PACKAGE_FLAGS = ['NOT_FOUND', 'DAMAGED'] as const
 export type PackageFlag = (typeof PACKAGE_FLAGS)[number]
 
@@ -47,13 +47,11 @@ export type Package = {
   status: PackageStatus
   flags: PackageFlag[]
   source: PackageSource
-  /** Yêu cầu giao chứa kiện — kho mock chưa ghi, tới khi có yêu cầu giao. */
+  /** Yêu cầu giao đang giữ kiện (FE-4b-01): một kiện chỉ thuộc một yêu cầu; xoá yêu cầu hoặc bỏ kiện khỏi yêu cầu thì gỡ. */
   requirementId?: string
   /** Chuyến và điểm giao của kiện từ lúc `ASSIGNED`. */
   tripId?: string
   stopId?: string
-  /** *(tạm)* Đơn hàng Review 1 đang giữ kiện (đơn chưa huỷ); bỏ khi đơn hàng thành yêu cầu giao (`requirementId`). */
-  orderId?: string
   /** ISO 8601 */
   createdAt: string
   createdBy: string | null
@@ -88,7 +86,7 @@ export function canTransitionPackage(from: PackageStatus, to: PackageStatus): bo
   return PACKAGE_TRANSITIONS[from].includes(to)
 }
 
-/** Chọn được vào đơn hay chuyến: còn ở kho kiện (`IMPORTED`), không cờ, chưa đơn nào giữ. */
-export function isSelectablePackage(pkg: Pick<Package, 'status' | 'flags' | 'orderId'>): boolean {
-  return pkg.status === 'IMPORTED' && pkg.flags.length === 0 && pkg.orderId === undefined
+/** Chọn được vào yêu cầu giao hay chuyến: còn ở kho kiện (`IMPORTED`), không cờ, chưa yêu cầu nào giữ. */
+export function isSelectablePackage(pkg: Pick<Package, 'status' | 'flags' | 'requirementId'>): boolean {
+  return pkg.status === 'IMPORTED' && pkg.flags.length === 0 && pkg.requirementId === undefined
 }

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import type { OptimizationRequest } from '@/domain/models'
-import { canTransitionPackage, createMockDb, PACKAGE_STATUSES, type MockDb, type PackageInput, type PackageStatus } from '@/lib/mock-db'
+import { canTransitionPackage, createMockDb, isRequirementClosed, PACKAGE_STATUSES, requirementStatus, type MockDb, type PackageInput, type PackageStatus } from '@/lib/mock-db'
 import { runMockOptimization } from '@/services/optimization'
 
 /**
@@ -18,8 +18,11 @@ const crate: PackageInput = { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg:
 /** Kiện có từ trước trong kho kiện; kiện của các chuyến seed (nguồn `TRIP`, FE-3b-07) kiểm ở `trip-packages.test.ts`. */
 const sourced = async (db: MockDb) => (await db.listPackages()).filter((pkg) => pkg.source !== 'TRIP')
 
+/** 12:00 ngày neo, giờ Việt Nam: đồng hồ của kho cho các test tạo yêu cầu giao (hạn phải ở tương lai). */
+const NOW = new Date('2026-09-14T05:00:00.000Z')
+
 function dispatcher(): MockDb {
-  const db = createMockDb()
+  const db = createMockDb({ now: () => NOW })
   db.restoreSession('US-0001')
   return db
 }
@@ -40,16 +43,18 @@ test('the seed pool of Long Bình: 48 packages converted from registered package
   expect(packages[0]).toStrictEqual({
     id: 'PK-0001', companyId: 'LOG-001', packageCode: 'MP-NS24-0911-01', qrToken: packages[0]?.qrToken, lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13,
     handlingClass: 'STANDARD', destination: '30 Đại lộ Bình Dương, Thủ Dầu Một', packageTypeId: 'PT-001', status: 'IMPORTED', flags: [], source: 'MANUAL',
-    orderId: 'ORD-001', createdAt: '2026-09-11T02:00:00.000Z', createdBy: 'US-0001',
+    requirementId: 'REQ-005', createdAt: '2026-09-11T02:00:00.000Z', createdBy: 'US-0001',
     history: [{ at: '2026-09-11T02:00:00.000Z', actorId: 'US-0001', kind: 'created', source: 'MANUAL' }],
   })
-  // Hai đơn chờ gán giữ 22 kiện đầu
-  expect(packages.filter((pkg) => pkg.orderId !== undefined).map((pkg) => pkg.id)).toStrictEqual(pk(1, 22))
+  // Hai yêu cầu giao lập sáng ngày neo giữ 22 kiện đầu; bốn yêu cầu lập hôm trước mỗi yêu cầu giữ hai kiện cuối của một đợt nhập (FE-4b-01)
+  expect(packages.filter((pkg) => pkg.requirementId !== undefined).map((pkg) => pkg.id)).toStrictEqual([
+    ...pk(1, 22), 'PK-0052', 'PK-0053', 'PK-0057', 'PK-0058', 'PK-0067', 'PK-0068', 'PK-0072', 'PK-0073',
+  ])
 
-  // 40 kiện nhập file: không gắn loại kiện, tám điểm đến mỗi nơi 5 kiện, đủ năm loại hàng, chưa vào đơn hay chuyến nào
+  // 40 kiện nhập file: không gắn loại kiện, tám điểm đến mỗi nơi 5 kiện, đủ năm loại hàng, chưa vào chuyến nào
   const imported = packages.filter((pkg) => pkg.source === 'IMPORT')
   expect(imported.map((pkg) => pkg.id)).toStrictEqual(pk(49, 88))
-  expect(imported.filter((pkg) => pkg.packageTypeId !== undefined || pkg.orderId !== undefined || pkg.tripId !== undefined)).toStrictEqual([])
+  expect(imported.filter((pkg) => pkg.packageTypeId !== undefined || pkg.tripId !== undefined)).toStrictEqual([])
   expect(imported[0]).toMatchObject({ packageCode: 'HK-DNG-2609-01', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 18, handlingClass: 'STANDARD', destination: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng' })
   const count = (values: string[]) => Object.fromEntries([...new Set(values)].map((value) => [value, values.filter((item) => item === value).length]))
   expect(count(imported.map((pkg) => pkg.handlingClass))).toStrictEqual({ STANDARD: 20, FRAGILE: 5, HIGH_VALUE: 5, REFRIGERATED: 5, HAZARDOUS: 5 })
@@ -58,13 +63,13 @@ test('the seed pool of Long Bình: 48 packages converted from registered package
   expect(packages.filter((pkg) => pkg.flags.length > 0).map((pkg) => [pkg.id, pkg.flags])).toStrictEqual([['PK-0063', ['NOT_FOUND']], ['PK-0078', ['DAMAGED']]])
 })
 
-test('Phương Nam keeps its small pool: 10 packages, all IMPORTED, four held by its pending order', async () => {
+test('Phương Nam keeps its small pool: 10 packages, all IMPORTED, four held by its pending requirement', async () => {
   const db = createMockDb()
   db.restoreSession('US-PN-03')
   const packages = await sourced(db)
-  expect(packages.map((pkg) => [pkg.id, pkg.status, pkg.orderId])).toStrictEqual([
-    ['PK-PN-0001', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0002', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0003', 'IMPORTED', 'ORD-PN-001'],
-    ['PK-PN-0004', 'IMPORTED', 'ORD-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
+  expect(packages.map((pkg) => [pkg.id, pkg.status, pkg.requirementId])).toStrictEqual([
+    ['PK-PN-0001', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0002', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0003', 'IMPORTED', 'REQ-PN-001'],
+    ['PK-PN-0004', 'IMPORTED', 'REQ-PN-001'], ['PK-PN-0005', 'IMPORTED', undefined], ['PK-PN-0006', 'IMPORTED', undefined],
     ['PK-PN-0007', 'IMPORTED', undefined], ['PK-PN-0008', 'IMPORTED', undefined], ['PK-PN-0009', 'IMPORTED', undefined],
     ['PK-PN-0010', 'IMPORTED', undefined],
   ])
@@ -170,18 +175,22 @@ test('the store moves a package only along the table and rejects anything else w
   await expect(db.updatePackageStatus('PK-0051', 'DELIVERED')).rejects.toMatchObject({ params: { from: 'RETURNED', to: 'DELIVERED' } })
 })
 
-test('a flagged package cannot go into an order or a trip until the dispatcher clears the flag, and clearing is logged', async () => {
+test('a flagged package cannot go into a requirement or a trip until the dispatcher clears the flag, and clearing is logged', async () => {
   const db = dispatcher()
-  const order = (packageIds: string[]) => ({ customerName: 'Nhà hàng Hương Việt', deliveryAddress: '203 Lê Văn Sỹ, P. 13, Q.3', packageIds })
+  const requirement = (packageIds: string[]) => ({
+    destinationName: 'Nhà hàng Hương Việt', address: '203 Lê Văn Sỹ, P. 13, Q.3', deadline: '2026-09-16T10:00:00.000Z', priority: 'NORMAL' as const, packageIds,
+  })
   // PK-0063 mang cờ "Không tìm thấy" từ seed
-  await expect(db.createOrder(order(['PK-0062', 'PK-0063']))).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0063', flag: 'NOT_FOUND' } })
-  const created = await db.createOrder(order(['PK-0062']))
-  await expect(db.updateOrder(created.id, { packageIds: ['PK-0062', 'PK-0078'] })).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0078', flag: 'DAMAGED' } })
+  await expect(db.createDeliveryRequirement(requirement(['PK-0062', 'PK-0063']))).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0063', flag: 'NOT_FOUND' } })
+  const created = await db.createDeliveryRequirement(requirement(['PK-0062']))
+  await expect(db.updateDeliveryRequirement(created.id, { packageIds: ['PK-0062', 'PK-0078'] })).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0078', flag: 'DAMAGED' } })
 
-  // Kiện đã nằm trong đơn chờ gán bị gắn cờ: đơn không gán vào chuyến được
+  // Kiện đã nằm trong yêu cầu chờ xếp chuyến bị gắn cờ: yêu cầu thành "giao thiếu" và không vào chuyến được (D-92)
   expect((await db.flagPackage('PK-0013', 'DAMAGED')).flags).toStrictEqual(['DAMAGED'])
   expect((await db.flagPackage('PK-0013', 'DAMAGED')).flags).toStrictEqual(['DAMAGED'])
-  await expect(db.assignOrder('ORD-002', 'TRIP-014', 'STOP-02')).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0013', flag: 'DAMAGED' } })
+  const held = await db.getDeliveryRequirement('REQ-006')
+  expect(requirementStatus(held, await Promise.all(held.packageIds.map((id) => db.getPackage(id))))).toBe('PARTIAL')
+  await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0013', flag: 'DAMAGED' } })
   expect((await db.getTrip('TRIP-014')).packages.map((pkg) => pkg.id)).toStrictEqual(['PKG-001', 'PKG-002', 'PKG-003'])
 
   // Nhân viên kho không gỡ được cờ; điều phối viên gỡ, nhật ký ghi người gỡ
@@ -192,7 +201,7 @@ test('a flagged package cannot go into an order or a trip until the dispatcher c
   expect((await db.clearPackageFlag('PK-0013', 'DAMAGED')).flags).toStrictEqual([])
   const [event] = await db.listEvents()
   expect(event).toMatchObject({ action: 'package.flagCleared', actorId: 'US-0001', target: { type: 'package', id: 'PK-0013' }, params: { flag: 'DAMAGED' } })
-  expect((await db.assignOrder('ORD-002', 'TRIP-014', 'STOP-02')).order.status).toBe('assigned')
+  expect((await db.assignDeliveryRequirement('REQ-006', 'TRIP-014', 'STOP-02')).requirement.status).toBe('ASSIGNED')
 
   // Cờ chỉ gắn trên kiện còn ở kho kiện
   await expect(db.flagPackage('PK-0013', 'NOT_FOUND')).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE', params: { packageId: 'PK-0013', status: 'ASSIGNED' } })
@@ -203,17 +212,17 @@ test('a flagged package cannot go into an order or a trip until the dispatcher c
     ['created', 'US-0001', undefined], ['flagged', 'US-0001', 'NOT_FOUND'], ['flagCleared', 'US-0001', 'NOT_FOUND'],
   ])
   expect(cleared.history.slice(0, 2).map((entry) => entry.at)).toStrictEqual(['2026-09-13T09:20:00.000Z', '2026-09-13T10:05:00.000Z'])
-  expect((await db.updateOrder(created.id, { packageIds: ['PK-0062', 'PK-0063'] })).packageIds).toStrictEqual(['PK-0062', 'PK-0063'])
+  expect((await db.updateDeliveryRequirement(created.id, { packageIds: ['PK-0062', 'PK-0063'] })).packageIds).toStrictEqual(['PK-0062', 'PK-0063'])
 })
 
 test('a package follows its trip by written transitions: assigned, staged, loaded or flagged missing, in transit, delivered or returned', async () => {
   const db = createMockDb()
-  // Chuyến mới một điểm giao, chưa có kiện: đơn ORD-002 (10 thùng mì PK-0013…0022) thành dòng PKG-001, instance PKG-001-01…10
+  // Chuyến mới một điểm giao, chưa có kiện: yêu cầu REQ-006 (10 thùng mì PK-0013…0022) thành dòng PKG-001, instance PKG-001-01…10
   const created = await db.createTrip({
     name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
     stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
   })
-  const { trip } = await db.assignOrder('ORD-002', created.id, 'STOP-01')
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id, 'STOP-01')
   const request: OptimizationRequest = {
     vehicle: await db.getVehicle(trip.vehicleId),
     packages: trip.packages,
@@ -222,7 +231,7 @@ test('a package follows its trip by written transitions: assigned, staged, loade
   const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
   await db.approveRevision(revision.id, [])
   const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
-  const statuses = async () => (await db.listPackages()).filter((pkg) => pkg.orderId === 'ORD-002').map((pkg) => [pkg.id, pkg.status])
+  const statuses = async () => (await db.listPackages()).filter((pkg) => pkg.requirementId === 'REQ-006').map((pkg) => [pkg.id, pkg.status])
   const all = (status: string, to = 22) => pk(13, to).map((id) => [id, status])
   expect(await statuses()).toStrictEqual(all('ASSIGNED'))
   expect(await db.getPackage('PK-0013')).toMatchObject({ tripId: trip.id, stopId: 'STOP-01' })
@@ -240,7 +249,10 @@ test('a package follows its trip by written transitions: assigned, staged, loade
   expect(missing).not.toHaveProperty('tripId')
   expect(missing).not.toHaveProperty('stopId')
 
+  // Yêu cầu theo chuyến: đã vào chuyến cho tới lúc xe xuất phát, rồi đang giao
+  expect((await db.getDeliveryRequirement('REQ-006')).status).toBe('ASSIGNED')
   await db.startDelivery(trip.id)
+  expect((await db.getDeliveryRequirement('REQ-006')).status).toBe('IN_TRIP')
   expect(await statuses()).toStrictEqual([...all('IN_TRANSIT', 21), ['PK-0022', 'IMPORTED']])
   // Tài xế dỡ tám kiện, khách từ chối kiện thứ chín; hoàn tất điểm mới chốt
   for (const id of instances.slice(0, 8)) await db.recordUnload(trip.id, 1, id, true)
@@ -260,18 +272,49 @@ test('a package follows its trip by written transitions: assigned, staged, loade
   expect((await steps('PK-0022')).slice(-2)).toStrictEqual([`STAGED>IMPORTED@${trip.id}`, 'flagged:NOT_FOUND'])
   const history = (await db.getPackage('PK-0013')).history
   expect(history.map((entry) => entry.at)).toStrictEqual(history.map((entry) => entry.at).toSorted())
-  expect((await db.getOrder('ORD-002')).status).toBe('delivered')
+  // Yêu cầu đã giao xong nhưng thiếu: một kiện hoàn trả, một kiện không tìm thấy lúc xếp — hạn và ưu tiên không sửa được nữa
+  const done = await db.getDeliveryRequirement('REQ-006')
+  const members = await Promise.all(done.packageIds.map((id) => db.getPackage(id)))
+  expect([done.status, requirementStatus(done, members), isRequirementClosed(done, members)]).toStrictEqual(['IN_TRIP', 'PARTIAL', true])
+  await expect(db.updateDeliveryRequirement('REQ-006', { priority: 'URGENT' })).rejects.toMatchObject({ code: 'REQUIREMENT_STATUS_INVALID', params: { requirementId: 'REQ-006', status: 'IN_TRIP' } })
 })
 
-test('cancelling a trip before departure sends its packages back to the pool; unassigning the order then keeps them IMPORTED', async () => {
+test('a requirement whose packages were all delivered reads as delivered', async () => {
   const db = createMockDb()
-  await db.assignOrder('ORD-001', 'TRIP-014', 'STOP-01')
+  const created = await db.createTrip({
+    name: 'Tuyến Dĩ An', vehicleId: 'VEHICLE-005', scheduledDate: '2026-09-15', packages: [],
+    stops: [{ id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }],
+  })
+  const { trip } = await db.assignDeliveryRequirement('REQ-006', created.id, 'STOP-01')
+  const request: OptimizationRequest = {
+    vehicle: await db.getVehicle(trip.vehicleId),
+    packages: trip.packages,
+    settings: { method: 'MOCK', timeLimitSeconds: 30, randomSeed: 20_260_915, enforceLifo: true, prioritizeLowCenterOfGravity: false },
+  }
+  const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
+  await db.approveRevision(revision.id, [])
+  const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
+  await db.startLoading(trip.id)
+  for (const id of instances) await db.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
+  await db.completeLoading(trip.id)
+  await db.startDelivery(trip.id)
+  for (const id of instances) await db.recordUnload(trip.id, 1, id, true)
+  await db.completeStop(trip.id, 1)
+  const done = await db.getDeliveryRequirement('REQ-006')
+  const members = await Promise.all(done.packageIds.map((id) => db.getPackage(id)))
+  expect([done.status, requirementStatus(done, members), isRequirementClosed(done, members)]).toStrictEqual(['IN_TRIP', 'DELIVERED', true])
+})
+
+test('cancelling a trip before departure sends its packages back to the pool, still held by their requirement', async () => {
+  const db = createMockDb()
+  await db.assignDeliveryRequirement('REQ-005', 'TRIP-014', 'STOP-01')
   expect(await db.getPackage('PK-0001')).toMatchObject({ status: 'ASSIGNED', tripId: 'TRIP-014', stopId: 'STOP-01' })
   await db.cancelTrip('TRIP-014', 'Khách dời lịch nhận')
   const released = await db.getPackage('PK-0001')
-  expect(released).toMatchObject({ status: 'IMPORTED', orderId: 'ORD-001' })
+  expect(released).toMatchObject({ status: 'IMPORTED', requirementId: 'REQ-005' })
   expect(released).not.toHaveProperty('tripId')
-  expect((await db.unassignOrder('ORD-001')).status).toBe('pending')
+  // Yêu cầu đã về "chờ xếp chuyến" cùng lúc huỷ chuyến (D-91): không còn gì để gỡ
+  await expect(db.unassignDeliveryRequirement('REQ-005')).rejects.toMatchObject({ code: 'REQUIREMENT_STATUS_INVALID', params: { status: 'PENDING' } })
   expect((await db.getPackage('PK-0012')).status).toBe('IMPORTED')
 })
 

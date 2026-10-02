@@ -23,10 +23,10 @@ function assertPhase(trip: Trip, phase: Trip['phase']) {
  * (D-64); mã QR chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
  */
 export function scanMethods(ctx: DbContext): ScanMethods {
-  const { trips, revisions, orders, packages, vehicles, maintenance } = ctx.state
+  const { trips, revisions, requirements, packages, vehicles, maintenance } = ctx.state
 
   function labelsOf(trip: Trip): TripLabel[] {
-    return tripLabels(trip, orders.values(), packages, ownTripLinks(ctx, trip.id))
+    return tripLabels(trip, requirements.values(), packages, ownTripLinks(ctx, trip.id))
   }
 
   /** Nhãn khớp mã quét trong chuyến; không có thì `PACKAGE_NOT_IN_TRIP`. */

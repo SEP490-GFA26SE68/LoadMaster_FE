@@ -116,7 +116,7 @@ function createSeed(today: string): SeedData {
     packageTypes: [...sourcing.packageTypes, ...phuongNam.packageTypes],
     packages: [...tripPool.packages, ...sourced],
     tripPackageLinks: tripPool.tripPackageLinks,
-    orders: [...sourcing.orders, ...phuongNam.orders],
+    requirements: [...sourcing.requirements, ...phuongNam.requirements],
     vehicleTypes: [...sourcing.vehicleTypes, ...phuongNam.vehicleTypes],
     vehicleTypeOf: [...sourcing.vehicleTypeOf, ...phuongNam.vehicleTypeOf],
     events: events

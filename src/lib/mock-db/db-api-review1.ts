@@ -1,16 +1,14 @@
 import type { TripReadiness } from '@/domain/constraints'
 import type { Package, PackageChanges, PackageFlag, PackageInput, PackageSource, PackageStatus } from './package-model'
+import type { DeliveryRequirement, RequirementChanges, RequirementInput } from './requirement-model'
 import type {
   Company,
   OptimizationRun,
-  OrderChanges,
-  OrderInput,
   PackageType,
   PackageTypeInput,
   RunFailureCode,
   RunSettings,
   ScanResult,
-  TransportOrder,
   TripLabel,
   VehicleType,
   VehicleTypeAssignment,
@@ -56,8 +54,8 @@ export type Review1Db = {
   /** Sửa kiện còn ở kho kiện (`IMPORTED`); mã QR giữ nguyên. Kiện đã vào chuyến: `PACKAGE_UNAVAILABLE`. */
   updatePackage(id: string, changes: PackageChanges): Promise<Package>
   /**
-   * Chuyển trạng thái theo bảng `PACKAGE_TRANSITIONS` (D-70); sai bảng: `INVALID_PACKAGE_STATUS_TRANSITION`. Các mốc của chuyến (gán
-   * đơn, bắt đầu xếp, xếp xong, xuất phát, hoàn tất điểm, huỷ) tự chuyển kiện của chuyến qua cùng luật này.
+   * Chuyển trạng thái theo bảng `PACKAGE_TRANSITIONS` (D-70); sai bảng: `INVALID_PACKAGE_STATUS_TRANSITION`. Các mốc của chuyến (đưa
+   * yêu cầu giao vào chuyến, bắt đầu xếp, xếp xong, xuất phát, hoàn tất điểm, huỷ) tự chuyển kiện của chuyến qua cùng luật này.
    */
   updatePackageStatus(id: string, status: PackageStatus): Promise<Package>
   /** Gắn cờ cho kiện `IMPORTED` (D-92); kiện ở trạng thái khác: `PACKAGE_UNAVAILABLE`. Đã có cờ đó thì không đổi gì. */
@@ -71,23 +69,38 @@ export type Review1Db = {
    */
   reportPackageFound(token: string): Promise<Package>
 
-  /** Mới nhất trước; `delivered` suy từ chuyến đã hoàn thành. */
-  listOrders(): Promise<TransportOrder[]>
-  getOrder(id: string): Promise<TransportOrder>
-  /** Kiện phải `IMPORTED`, không cờ (`PACKAGE_FLAGGED`) và chưa thuộc đơn khác. */
-  createOrder(input: OrderInput): Promise<TransportOrder>
-  /** Chỉ đơn `pending`. */
-  updateOrder(id: string, changes: OrderChanges): Promise<TransportOrder>
-  /** Chỉ đơn `pending`; lý do bắt buộc; kiện trả về tự do. */
-  cancelOrder(id: string, reason: string): Promise<TransportOrder>
   /**
-   * Gán đơn `pending` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi nhóm kiện giống nhau thành một dòng `CargoPackage` mới
-   * (mã `PKG-NNN`, `groupId` = mã đơn) ở điểm đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); kiện sang `ASSIGNED` kèm
-   * chuyến và điểm giao. Đơn có kiện đang mang cờ: `PACKAGE_FLAGGED`.
+   * Yêu cầu giao của công ty (FE-4b-01), mới nhất trước. `status` là trạng thái kho ghi (`PENDING` / `ASSIGNED` / `IN_TRIP`); "Đã giao"
+   * và "Giao thiếu" suy từ kiện bằng `requirementStatus`.
    */
-  assignOrder(orderId: string, tripId: string, stopId: string): Promise<{ order: TransportOrder; trip: Trip }>
-  /** Bỏ gán: gỡ các dòng kiện của đơn khỏi chuyến (chuyến còn lập kế hoạch), trả đơn về `pending` và kiện về `IMPORTED`. */
-  unassignOrder(orderId: string): Promise<TransportOrder>
+  listDeliveryRequirements(): Promise<DeliveryRequirement[]>
+  getDeliveryRequirement(id: string): Promise<DeliveryRequirement>
+  /**
+   * Tạo yêu cầu `PENDING` (`REQ-NNN`). Kiện phải `IMPORTED`, không cờ (`PACKAGE_FLAGGED`) và chưa thuộc yêu cầu khác
+   * (`PACKAGE_UNAVAILABLE`); không kiện nào: `PACKAGES_REQUIRED`. Hạn phải ở tương lai theo đồng hồ của kho
+   * (`REQUIREMENT_DEADLINE_PAST`); trường sai: `REQUIREMENT_INVALID`.
+   */
+  createDeliveryRequirement(input: RequirementInput): Promise<DeliveryRequirement>
+  /**
+   * Sửa yêu cầu. Còn `PENDING`: mọi trường. Đã vào chuyến: chỉ hạn và ưu tiên, trường khác đổi là `REQUIREMENT_NOT_PENDING`; đổi ưu
+   * tiên thì dòng kiện của yêu cầu trong chuyến còn lập kế hoạch đổi theo (phương án lỗi thời). Đã giao xong:
+   * `REQUIREMENT_STATUS_INVALID`. Hạn chỉ kiểm "ở tương lai" khi đổi. Không trường nào đổi thì không ghi gì.
+   */
+  updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement>
+  /** Xoá yêu cầu còn `PENDING` (khác: `REQUIREMENT_NOT_PENDING`); kiện của nó lại chọn được cho yêu cầu khác. */
+  deleteDeliveryRequirement(id: string): Promise<void>
+  /**
+   * *(tạm, tới FE-4b-04)* Đưa yêu cầu `PENDING` vào điểm giao `stopId` của chuyến ở pha lập kế hoạch: mỗi nhóm kiện giống nhau thành
+   * một dòng `CargoPackage` mới (mã `PKG-NNN`, `groupId` = mã yêu cầu, `priority` / `mustLoad` theo ưu tiên của yêu cầu — D-93) ở điểm
+   * đó; chuyến tăng `inputVersion` (revision cũ lỗi thời, D-31); yêu cầu và kiện sang `ASSIGNED`. Yêu cầu có kiện đang mang cờ:
+   * `PACKAGE_FLAGGED`.
+   */
+  assignDeliveryRequirement(requirementId: string, tripId: string, stopId: string): Promise<{ requirement: DeliveryRequirement; trip: Trip }>
+  /**
+   * Gỡ yêu cầu `ASSIGNED` khỏi chuyến còn lập kế hoạch (D-91): gỡ các dòng kiện của nó, yêu cầu về `PENDING`, kiện về `IMPORTED`.
+   * Chuyến đã sang vận hành: `TRIP_LOCKED`; yêu cầu chưa vào chuyến hoặc đang giao: `REQUIREMENT_STATUS_INVALID`.
+   */
+  unassignDeliveryRequirement(requirementId: string): Promise<DeliveryRequirement>
 
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>

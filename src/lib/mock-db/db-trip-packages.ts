@@ -14,7 +14,7 @@ import type { Trip } from './types'
  * - giảm số lượng: các kiện cuối dòng về `IMPORTED`, rời chuyến và điểm giao; xoá dòng: mọi kiện của dòng về `IMPORTED`;
  * - sửa kích thước, khối lượng, loại hàng hay điểm giao của dòng: kiện của dòng đổi theo, mã QR giữ nguyên.
  *
- * Dòng của đơn hàng đã có kiện kho kiện của đơn nên bỏ qua — trừ khi bị sửa số lượng (mất liên kết với đơn), lúc đó dòng được cấp kiện
+ * Dòng của yêu cầu giao đã có kiện kho kiện của yêu cầu nên bỏ qua — trừ khi bị sửa số lượng (mất liên kết với yêu cầu), lúc đó dòng được cấp kiện
  * riêng như dòng nhập tay. Không ghi sự kiện nhật ký riêng: `trip.created` / `trip.updated` đã nói việc đổi kiện của chuyến.
  */
 
@@ -36,13 +36,13 @@ function lineFields(trip: Trip, line: CargoPackage, index: number): LineFields {
   }
 }
 
-/** Dòng kiện đang nối đủ với một đơn hàng: kiện kho kiện của đơn là kiện của dòng. */
-function orderLines(ctx: DbContext, trip: Trip): Set<string> {
+/** Dòng kiện đang nối đủ với một yêu cầu giao: kiện kho kiện của yêu cầu là kiện của dòng. */
+function requirementLines(ctx: DbContext, trip: Trip): Set<string> {
   const quantityOf = new Map(trip.packages.map((line) => [line.id, line.quantity]))
   const linked = new Set<string>()
-  for (const order of ctx.state.orders.values()) {
-    if (order.assignment?.tripId !== trip.id) continue
-    for (const line of order.assignment.lines) if (quantityOf.get(line.lineId) === line.packageIds.length) linked.add(line.lineId)
+  for (const requirement of ctx.state.requirements.values()) {
+    if (requirement.tripId !== trip.id || !requirement.assignment) continue
+    for (const line of requirement.assignment.lines) if (quantityOf.get(line.lineId) === line.packageIds.length) linked.add(line.lineId)
   }
   return linked
 }
@@ -85,10 +85,10 @@ export function syncTripPool(ctx: DbContext, trip: Trip, options: { newId?: () =
   }
 
   const before = tripPackageLinks.get(trip.id) ?? []
-  const viaOrder = orderLines(ctx, trip)
+  const viaRequirement = requirementLines(ctx, trip)
   const next: TripPackageLink[] = []
   for (const line of trip.packages) {
-    if (viaOrder.has(line.id)) continue
+    if (viaRequirement.has(line.id)) continue
     const existing = before.find((link) => link.lineId === line.id)?.packageIds ?? []
     existing.slice(line.quantity).forEach(release)
     const packageIds = Array.from({ length: line.quantity }, (_, index) => {

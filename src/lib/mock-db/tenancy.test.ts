@@ -25,14 +25,14 @@ type Company = {
   vehicleTypes: string[]
   packageTypes: string[]
   packages: string[]
-  /** Mới nhất trước, như `listOrders`. */
-  orders: string[]
+  /** Mới nhất trước, như `listDeliveryRequirements`. */
+  requirements: string[]
   trips: string[]
   /** Chuyến đang lập kế hoạch đã có bản duyệt `revision`, và một chuyến nháp có điểm giao `STOP-01`. */
   trip: string
   revision: string
   draftTrip: string
-  /** Kiện đã ở kho, chưa thuộc đơn nào. */
+  /** Kiện đã ở kho, chưa thuộc yêu cầu giao nào. */
   freePackage: string
 }
 
@@ -51,7 +51,7 @@ const LONG_BINH: Company = {
   packageTypes: range('PT-', 1, 8, 3),
   // 2.863 kiện của 15 chuyến seed (nguồn `TRIP`, FE-3b-07) đứng trước 88 kiện có từ trước
   packages: [...range('PK-T', 1, 2863, 5), ...range('PK-', 1, 88, 4)],
-  orders: ['ORD-002', 'ORD-001'],
+  requirements: ['REQ-006', 'REQ-005', 'REQ-004', 'REQ-003', 'REQ-002', 'REQ-001'],
   trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
   trip: 'TRIP-2026-0914',
   revision: 'REV-002',
@@ -70,7 +70,7 @@ const PHUONG_NAM: Company = {
   vehicleTypes: ['VT-PN-01'],
   packageTypes: ['PT-PN-01', 'PT-PN-02'],
   packages: [...range('PK-PN-T', 1, 70, 4), ...range('PK-PN-', 1, 10, 4)],
-  orders: ['ORD-PN-001'],
+  requirements: ['REQ-PN-001'],
   trips: ['TRIP-PN-001', 'TRIP-PN-002'],
   trip: 'TRIP-PN-001',
   revision: 'REV-PN-002',
@@ -113,7 +113,10 @@ const PACKAGE: PackageInput = { lengthCm: 60, widthCm: 40, heightCm: 40, weightK
 const STOP = { id: 'STOP-01', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An' }
 const newTrip = (vehicleId: string, driverId: string | null = null) => ({ name: 'Tuyến thử cách ly', vehicleId, driverId, scheduledDate: '2026-09-15', packages: [], stops: [STOP] })
 const newUser = (companyId?: string) => ({ fullName: 'Phan Thị Yến', email: 'yen.phan@loadmaster.vn', phone: '0915 678 903', role: 'driver' as const, depot: 'Kho Long Bình', ...(companyId ? { companyId } : {}) })
-const order = (packageIds: string[]) => ({ customerName: 'Siêu thị Co.opmart Biên Hoà', deliveryAddress: '121 Phạm Văn Thuận, Biên Hoà', packageIds })
+/** Hạn sau `NOW` hai ngày. */
+const requirement = (packageIds: string[]) => ({
+  destinationName: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, Biên Hoà', deadline: '2026-09-16T10:00:00.000Z', priority: 'NORMAL' as const, packageIds,
+})
 const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id)
 const vehicleIdsOf = (rows: { vehicleId: string }[]) => rows.map((row) => row.vehicleId)
 
@@ -236,29 +239,29 @@ const PROBES = {
   flagPackage: { scope: 'operational', forbidden: { 'kiện của công ty kia': ({ db, other }) => db.flagPackage(other.freePackage, 'DAMAGED') } },
   clearPackageFlag: { scope: 'operational', forbidden: { 'kiện của công ty kia': ({ db, other }) => db.clearPackageFlag(other.freePackage, 'DAMAGED') } },
 
-  listOrders: { scope: 'operational', list: { call: ({ db }) => db.listOrders(), ids: idsOf, own: (c) => c.orders } },
-  getOrder: { scope: 'operational', hidden: ({ db, other }) => db.getOrder(other.orders[0]!) },
-  createOrder: {
+  listDeliveryRequirements: { scope: 'operational', list: { call: ({ db }) => db.listDeliveryRequirements(), ids: idsOf, own: (c) => c.requirements } },
+  getDeliveryRequirement: { scope: 'operational', hidden: ({ db, other }) => db.getDeliveryRequirement(other.requirements[0]!) },
+  createDeliveryRequirement: {
     scope: 'operational',
-    creates: ({ db, own }) => db.createOrder(order([own.freePackage])),
-    forbidden: { 'kiện của công ty kia': ({ db, other }) => db.createOrder(order([other.freePackage])) },
+    creates: ({ db, own }) => db.createDeliveryRequirement(requirement([own.freePackage])),
+    forbidden: { 'kiện của công ty kia': ({ db, other }) => db.createDeliveryRequirement(requirement([other.freePackage])) },
   },
-  updateOrder: {
-    scope: 'operational',
-    forbidden: {
-      'đơn của công ty kia': ({ db, other }) => db.updateOrder(other.orders[0]!, { note: 'Giao giờ hành chính' }),
-      'kiện của công ty kia': ({ db, own, other }) => db.updateOrder(own.orders[0]!, { packageIds: [other.freePackage] }),
-    },
-  },
-  cancelOrder: { scope: 'operational', forbidden: { 'đơn của công ty kia': ({ db, other }) => db.cancelOrder(other.orders[0]!, 'Khách đổi ý') } },
-  assignOrder: {
+  updateDeliveryRequirement: {
     scope: 'operational',
     forbidden: {
-      'đơn của công ty kia': ({ db, own, other }) => db.assignOrder(other.orders[0]!, own.draftTrip, 'STOP-01'),
-      'chuyến của công ty kia': ({ db, own, other }) => db.assignOrder(own.orders[0]!, other.draftTrip, 'STOP-01'),
+      'yêu cầu của công ty kia': ({ db, other }) => db.updateDeliveryRequirement(other.requirements[0]!, { note: 'Giao giờ hành chính' }),
+      'kiện của công ty kia': ({ db, own, other }) => db.updateDeliveryRequirement(own.requirements[0]!, { packageIds: [other.freePackage] }),
     },
   },
-  unassignOrder: { scope: 'operational', forbidden: { 'đơn của công ty kia': ({ db, other }) => db.unassignOrder(other.orders[0]!) } },
+  deleteDeliveryRequirement: { scope: 'operational', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.deleteDeliveryRequirement(other.requirements[0]!) } },
+  assignDeliveryRequirement: {
+    scope: 'operational',
+    forbidden: {
+      'yêu cầu của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(other.requirements[0]!, own.draftTrip, 'STOP-01'),
+      'chuyến của công ty kia': ({ db, own, other }) => db.assignDeliveryRequirement(own.requirements[0]!, other.draftTrip, 'STOP-01'),
+    },
+  },
+  unassignDeliveryRequirement: { scope: 'operational', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.unassignDeliveryRequirement(other.requirements[0]!) } },
 
   listVehicleTypes: { scope: 'operational', list: { call: ({ db }) => db.listVehicleTypes(), ids: idsOf, own: (c) => c.vehicleTypes } },
   getVehicleType: { scope: 'operational', hidden: ({ db, other }) => db.getVehicleType(other.vehicleTypes[0]!) },
@@ -304,7 +307,7 @@ async function wholeStore(db: MockDb) {
     revisions: await Promise.all(trips.map((trip) => db.listRevisions(trip.id))),
     runs: await Promise.all(trips.map((trip) => db.listOptimizationRuns(trip.id))),
     users: await db.listUsers(), events: await db.listEvents(), packageTypes: await db.listPackageTypes(),
-    packages: await db.listPackages(), orders: await db.listOrders(), vehicleTypes: await db.listVehicleTypes(),
+    packages: await db.listPackages(), requirements: await db.listDeliveryRequirements(), vehicleTypes: await db.listVehicleTypes(),
     assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
   }
   db.restoreSession(session)
@@ -363,10 +366,10 @@ describe.each([
     const created = await open(own, other)
     for (const { call } of creates) await call(created)
     // Người của công ty mình thấy bản ghi mới…
-    const mine = { trips: await created.db.listTrips(), vehicles: await created.db.listVehicles(), users: await created.db.listUsers(), orders: await created.db.listOrders() }
-    expect([mine.trips.length, mine.vehicles.length, mine.users.length, mine.orders.length])
-      .toStrictEqual([own.trips.length + 1, own.vehicles.length + 1, own.users.length + 1, own.orders.length + 1])
-    expect(new Set([...mine.trips, ...mine.users, ...mine.orders].map((record) => record.companyId))).toStrictEqual(new Set([own.id]))
+    const mine = { trips: await created.db.listTrips(), vehicles: await created.db.listVehicles(), users: await created.db.listUsers(), requirements: await created.db.listDeliveryRequirements() }
+    expect([mine.trips.length, mine.vehicles.length, mine.users.length, mine.requirements.length])
+      .toStrictEqual([own.trips.length + 1, own.vehicles.length + 1, own.users.length + 1, own.requirements.length + 1])
+    expect(new Set([...mine.trips, ...mine.users, ...mine.requirements].map((record) => record.companyId))).toStrictEqual(new Set([own.id]))
     // …còn công ty kia thấy đúng seed của mình ở mọi hàm liệt kê
     created.db.restoreSession(other.viewer)
     for (const { name, list } of lists) expect(list.ids((await list.call(created)) as never), name).toStrictEqual(list.own(other))

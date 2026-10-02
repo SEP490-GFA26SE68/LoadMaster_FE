@@ -7,12 +7,14 @@ import { packageSeeder } from './seed-packages'
 import { seedPlanner } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
-import type { OptimizationRun, PackageType, TransportOrder, VehicleType } from './source-types'
+import type { DeliveryRequirement } from './requirement-model'
+import { seedRequirements } from './seed-requirements'
+import type { OptimizationRun, PackageType, VehicleType } from './source-types'
 import type { DeliveryStop, Revision, Trip } from './types'
 
 /**
  * Bộ dữ liệu nhỏ của Công ty CP Giao nhận Phương Nam (`LOG-002`, D-64, FE-0-02), đủ để thấy hai công ty không nhìn thấy dữ liệu của
- * nhau: 2 xe, 1 loại xe, 2 loại kiện, 10 kiện kho kiện, 1 đơn chờ gán và 2 chuyến — một chuyến hôm nay đã duyệt phương án, gán tài xế
+ * nhau: 2 xe, 1 loại xe, 2 loại kiện, 10 kiện kho kiện, 1 yêu cầu giao chờ xếp chuyến và 2 chuyến — một chuyến hôm nay đã duyệt phương án, gán tài xế
  * `taixe@phuongnam.vn`, chờ kho Phú Thuận xếp; một chuyến nháp ngày mai.
  *
  * Mã mang `PN` (`TRIP-PN-001`, `VEHICLE-PN-01`, `REV-PN-001`…): `nextId` chỉ tính mã dạng `PREFIX-NNN`, nên mã kế tiếp của kho vẫn
@@ -23,6 +25,8 @@ import type { DeliveryStop, Revision, Trip } from './types'
 export const PHUONG_NAM_DISPATCHER = 'US-PN-03'
 const DISPATCHER = PHUONG_NAM_DISPATCHER
 const DRIVER = 'US-PN-04'
+/** Quản lý công ty của Phương Nam: người lập yêu cầu giao. */
+const MANAGER = 'US-PN-02'
 
 export type PhuongNamSeed = {
   vehicles: VehicleConfig[]
@@ -32,7 +36,7 @@ export type PhuongNamSeed = {
   events: SeedEvent[]
   packageTypes: PackageType[]
   packages: Package[]
-  orders: TransportOrder[]
+  requirements: DeliveryRequirement[]
   vehicleTypes: VehicleType[]
   vehicleTypeOf: [string, string][]
 }
@@ -126,20 +130,18 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
       handlingClass: handlingClassOfType(type), packageTypeId: type.id,
     }], 'MANUAL', at)
   }
-  // PK-PN-0001…0006 linh kiện (4 kiện đầu thuộc đơn chờ gán); PK-PN-0007…0010 vải cuộn thêm sáng ngày neo. Mọi kiện ở `IMPORTED`
+  // PK-PN-0001…0006 linh kiện (4 kiện đầu thuộc yêu cầu giao chờ xếp chuyến); PK-PN-0007…0010 vải cuộn thêm sáng ngày neo. Mọi kiện ở `IMPORTED`
   const electronics = register(ELECTRONICS, 6, on(2, '09:30'), 'PN-LK-0912', CUSTOMERS.linhKienQ4.address)
   register(FABRIC, 4, on(0, '07:25'), 'PN-VC-0914', CUSTOMERS.vaiSoiQ1.address)
 
-  // Đơn chờ gán giao tới Khánh Hội — điểm 1 của chuyến nháp TRIP-PN-002, gán thẳng được
-  const ordered = electronics.slice(0, 4)
-  for (const pkg of ordered) pkg.orderId = 'ORD-PN-001'
-  const orderAt = on(0, '07:40')
-  const orders: TransportOrder[] = [{
-    id: 'ORD-PN-001', companyId: PHUONG_NAM, customerName: CUSTOMERS.linhKienQ4.name, deliveryAddress: CUSTOMERS.linhKienQ4.address,
-    contactName: CUSTOMERS.linhKienQ4.contactName, phone: CUSTOMERS.linhKienQ4.phone, packageIds: ordered.map((pkg) => pkg.id),
-    status: 'pending', createdAt: orderAt, createdBy: DISPATCHER,
-  }]
-  events.push({ at: orderAt, actorId: DISPATCHER, action: 'order.created', target: { type: 'order', id: 'ORD-PN-001' }, params: { customerName: CUSTOMERS.linhKienQ4.name, count: ordered.length } })
+  // Yêu cầu giao tới Khánh Hội (Quận 4) — điểm 1 của chuyến nháp TRIP-PN-002 chạy ngày mai, đưa thẳng vào chuyến được
+  const requirements = seedRequirements({
+    companyId: PHUONG_NAM, actorId: MANAGER, today, events,
+    specs: [{
+      id: 'REQ-PN-001', destinationName: CUSTOMERS.linhKienQ4.name, address: CUSTOMERS.linhKienQ4.address, lat: 10.7598, lng: 106.7047,
+      due: [1, '15:00'], priority: 'NORMAL', packages: electronics.slice(0, 4), createdAt: on(0, '07:40'),
+    }],
+  })
 
   // Chuyến hôm nay: lập chiều hôm trước, tối ưu rồi duyệt — chờ kho Phú Thuận xếp, tài xế Phương Nam thấy ở "Chuyến của tôi"
   const approved: Trip = {
@@ -164,7 +166,7 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
   ]
 
   return {
-    vehicles, trips: [approved, draft], revisions, runs, events, packageTypes, packages: seeder.packages, orders, vehicleTypes,
+    vehicles, trips: [approved, draft], revisions, runs, events, packageTypes, packages: seeder.packages, requirements, vehicleTypes,
     vehicleTypeOf: [['VEHICLE-PN-01', 'VT-PN-01']],
   }
 }
