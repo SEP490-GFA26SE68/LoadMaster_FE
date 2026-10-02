@@ -10,7 +10,11 @@ import type { Role } from '@/types/user'
 export const SEARCH_GROUPS = ['trips', 'packages', 'orders', 'registered', 'packageTypes', 'vehicles', 'users'] as const
 export type SearchGroup = (typeof SEARCH_GROUPS)[number]
 
-/** Quyền để thấy một nhóm — trùng quyền mở màn đích. Kiện mở trong chi tiết chuyến nên theo quyền xem chuyến. */
+/**
+ * Quyền để thấy một nhóm — trùng quyền mở màn đích (`role-routes.dom.test.tsx` kiểm với bảng route thật). Kiện mở trong chi tiết chuyến
+ * nên theo quyền xem chuyến. Theo tám vai trò (FE-0-04): quản trị hệ thống và quản trị công ty tìm người dùng; quản lý công ty tìm
+ * chuyến, kiện, đơn hàng, xe; điều phối viên thêm kiện đã đăng ký và loại kiện; bốn vai trò còn lại không có nhóm nào.
+ */
 export const GROUP_PERMISSION: Readonly<Record<SearchGroup, Permission>> = {
   trips: 'trips.view',
   packages: 'trips.view',
