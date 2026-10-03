@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { RouteMap } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
@@ -9,7 +8,6 @@ import { RequirementAssignDialog } from '@/features/requirements/RequirementAssi
 import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { vnClock } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
@@ -17,8 +15,6 @@ import { ManualConfirmCard } from './ManualConfirmCard'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { PoolPackagePicker } from './PoolPackagePicker'
-import { RouteDiagram } from './RouteDiagram'
-import { RoutePlanBar } from './RoutePlanBar'
 import { SegregationCard } from './SegregationCard'
 import { SegregationOverrideDialog } from './SegregationOverrideDialog'
 import { StopFormDialog } from './StopFormDialog'
@@ -27,6 +23,7 @@ import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
 import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
+import { TripRouteCard } from './TripRouteCard'
 import { TripReadinessCard } from './TripReadinessCard'
 import { useTripEtaQuery } from './useRouteQuery'
 import { useSegregationGuard } from './useSegregationQuery'
@@ -53,6 +50,8 @@ import {
  * tuyến (`RouteMap`); kéo đổi thứ tự điểm thì giờ đến tính lại. FE-4b-06: cột phải có thẻ "Phân nhóm hàng"; lưu một kiện khác loại
  * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-04: chuyến đang xếp / đang giao còn xác nhận tay chờ duyệt thì thẻ "Xác nhận tay
  * chờ duyệt" đứng đầu cột chính.
+ * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
+ * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
  */
 export function TripDetailPage() {
   const { tripId = '' } = useParams()
@@ -84,11 +83,6 @@ export function TripDetailPage() {
   const openAssign = canAssign ? () => setAssigning(true) : undefined
   const stops = useMemo<StopRow[]>(() => (trip ? stopRows(trip.stops, trip.packages) : []), [trip])
   const summary = useMemo(() => (trip && vehicle ? cargoSummary(trip.packages, vehicle) : null), [trip, vehicle])
-  const delivered = trip?.phase === 'delivering' || trip?.phase === 'completed'
-  const planning = trip?.phase === 'planning'
-  // Giờ đến dự kiến của tuyến đã tối ưu, theo mã điểm; khi xe đã rời kho thì sơ đồ hiện tiến độ giao thật thay cho dự kiến
-  const etas = useMemo(() => new Map((delivered ? [] : etaQuery.data?.stops ?? []).map((stop) => [stop.stopId, stop])), [etaQuery.data, delivered])
-  const mapStops = stops.flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }]))
   // `?kien=<mã>` mở panel của kiện đó — liên kết từ validation summary của Thiết lập tối ưu (LM-047).
   const linkedId = searchParams.get('kien')
   const editing = draft ?? trip?.packages.find((pkg) => pkg.id === linkedId) ?? null
@@ -146,20 +140,14 @@ export function TripDetailPage() {
             ? 'xl:grid-cols-[minmax(0,1fr)_452px] xl:[grid-template-areas:"route_side"_"main_side"]'
             : 'xl:grid-cols-[minmax(0,1fr)_360px] xl:[grid-template-areas:"route_route"_"main_side"]')}>
             <div className="min-w-0 xl:[grid-area:route]">
-              {/* Trạng thái giao chỉ khi chuyến đang giao hoặc đã hoàn thành (LM-097) */}
-              <RouteDiagram
+              <TripRouteCard
+                tripId={tripId}
+                trip={trip}
+                eta={etaQuery.data}
+                vehicleName={vehicle.name}
                 stops={stops}
-                delivery={delivered ? trip.delivery : undefined}
-                depotName={trip.depot.name}
-                departureTime={vnClock(new Date(trip.departureAt))}
-                etas={etas}
-                flagMissingCoordinates={planning}
-                planBar={<RoutePlanBar tripId={tripId} eta={etaQuery.data} stopCount={stops.length} canOptimize={can('routes.optimize') && planning} />}
-                map={mapStops.length > 0 ? (
-                  <RouteMap label={t('trips.routePlan.map', { id: tripId })} className="h-64" depot={{ name: trip.depot.name, lat: trip.depot.lat, lng: trip.depot.lng }} stops={mapStops} />
-                ) : undefined}
-                onAddStop={editable ? () => setAddingStop(true) : undefined}
-                readOnly={!editable}
+                editable={editable}
+                onAddStop={() => setAddingStop(true)}
                 onReorder={(next) => stopsMutation.mutate(next)}
                 onRemove={handleRemoveStop}
                 selectedStop={stopFilter}

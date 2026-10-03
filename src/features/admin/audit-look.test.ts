@@ -19,6 +19,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'package.flagged',
     // FE-6-04: xác nhận tay chờ điều phối viên duyệt, và xác nhận tay bị từ chối (kiện phải kiểm lại)
     'manualConfirm.requested', 'manualConfirm.rejected',
+    // FE-6-09: mức hạn của một điểm xấu đi theo vị trí xe — điều phối viên cần xem
+    'delivery.etaRisk',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(

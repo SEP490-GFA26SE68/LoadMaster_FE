@@ -78,6 +78,8 @@ export const dataErrors = {
   PACKAGE_CODE_AMBIGUOUS: 'Mã {code} trùng {count} kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.',
   MANUAL_CONFIRM_PENDING: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.',
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này không còn chờ duyệt.',
+  // Vị trí xe (FE-6-08)
+  LOCATION_INVALID: 'Vị trí xe gửi lên chưa hợp lệ: cần vĩ độ, kinh độ trong khoảng cho phép, tốc độ không âm và hướng từ 0 đến 359 độ.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

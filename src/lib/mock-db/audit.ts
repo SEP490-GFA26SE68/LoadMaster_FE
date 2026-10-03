@@ -33,6 +33,8 @@ export const AUDIT_ACTIONS = [
   'delivery.issue',
   'delivery.stopCompleted',
   'delivery.completed',
+  // Mức hạn của một điểm xấu đi theo vị trí xe (FE-6-09, sự kiện `ETA_RISK` của backend) — hệ thống ghi, không có người làm
+  'delivery.etaRisk',
   'user.created',
   'user.updated',
   'user.locked',

@@ -71,6 +71,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_CODE_AMBIGUOUS: { tripId: 'TRIP-011', code: 'KH-778', count: 2 },
   MANUAL_CONFIRM_PENDING: { tripId: 'TRIP-011', count: 2 },
   MANUAL_CONFIRM_NOT_PENDING: { tripId: 'TRIP-011', confirmationId: 'VF-003' },
+  LOCATION_INVALID: { field: 'coordinates' },
   UNSUPPORTED_FILE_TYPE: {},
   EMPTY_FILE: {},
   FILE_TOO_LARGE: { maxMb: 10 },

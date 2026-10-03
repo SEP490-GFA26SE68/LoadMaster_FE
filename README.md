@@ -92,6 +92,10 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   phải kiểm lại kiện. Màn chính của kho và tài xế chia chuyến theo trạng thái (kho: đang xếp, chờ soạn, xếp xong, chờ tối ưu lại; tài
   xế: đang vận chuyển, xếp xong, kho đang xếp — chỉ xem, đã giao gần đây). Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các
   bước sau.
+  Xe mẫu khai hai trục với số ước lượng theo cỡ xe (chưa đối chiếu thông số nhà sản xuất) để bản demo có tải trục. Chuyến Đang vận
+  chuyển có vị trí xe **mô phỏng** trên bản đồ tuyến ở chi tiết chuyến và giờ đến các điểm chưa giao tính lại từ vị trí (MOCK RESULT);
+  điểm giao chuyển sang sát hạn hoặc trễ hạn dự kiến thì điều phối viên nhận thông báo ở chuông và toast. Mở trang kèm `?toc-do=<n>`
+  để đồng hồ của kho chạy nhanh n lần khi demo. Màn giám sát, màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -113,12 +117,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.773 test unit + DOM
-pnpm test:e2e      # Playwright: 121 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.838 test unit + DOM
+pnpm test:e2e      # Playwright: 123 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.773/1.773 unit, 121/121 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.838/1.838 unit, 123/123 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

@@ -176,6 +176,9 @@ export type MockDbErrorParams = {
   MANUAL_CONFIRM_PENDING: { tripId: string; count: number }
   /** Duyệt hoặc từ chối một xác nhận tay không còn chờ: đã có quyết định, đã bị thay bằng lần đối chiếu khác, hoặc không có. */
   MANUAL_CONFIRM_NOT_PENDING: { tripId: string; confirmationId: string }
+  // Vị trí xe (FE-6-08)
+  /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
+  LOCATION_INVALID: { field: string }
 
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */

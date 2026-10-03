@@ -28,6 +28,8 @@ type Company = {
   /** Mới nhất trước, như `listDeliveryRequirements`. */
   requirements: string[]
   trips: string[]
+  /** Chuyến Đang vận chuyển: các chuyến có vị trí xe để giám sát (FE-6-08). */
+  inTransit: string[]
   /** Chuyến đang lập kế hoạch đã có bản duyệt `revision`, và một chuyến nháp có điểm giao `STOP-01`. */
   trip: string
   revision: string
@@ -53,6 +55,7 @@ const LONG_BINH: Company = {
   packages: [...range('PK-T', 1, 2863, 5), ...range('PK-', 1, 88, 4)],
   requirements: ['REQ-006', 'REQ-005', 'REQ-004', 'REQ-003', 'REQ-002', 'REQ-001'],
   trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
+  inTransit: ['TRIP-009'],
   trip: 'TRIP-2026-0914',
   revision: 'REV-002',
   draftTrip: 'TRIP-014',
@@ -72,6 +75,7 @@ const PHUONG_NAM: Company = {
   packages: [...range('PK-PN-T', 1, 70, 4), ...range('PK-PN-', 1, 10, 4)],
   requirements: ['REQ-PN-001'],
   trips: ['TRIP-PN-001', 'TRIP-PN-002'],
+  inTransit: [],
   trip: 'TRIP-PN-001',
   revision: 'REV-PN-002',
   draftTrip: 'TRIP-PN-002',
@@ -187,6 +191,11 @@ const PROBES = {
   confirmUnloadManually: onForeignTrip((db, tripId) => db.confirmUnloadManually(tripId, 1, { packageInstanceId: 'PKG-001-01', reason: 'QR_UNREADABLE' })),
   approveManualConfirmation: onForeignTrip((db, tripId) => db.approveManualConfirmation(tripId, 'VF-001')),
   rejectManualConfirmation: onForeignTrip((db, tripId) => db.rejectManualConfirmation(tripId, 'VF-001', 'Sai kiện')),
+  postDriverLocation: onForeignTrip((db, tripId) => db.postDriverLocation(tripId, { lat: 10.9294, lng: 106.8747 })),
+  getLatestLocation: { scope: 'operational', hidden: ({ db, other }) => db.getLatestLocation(other.trip) },
+  getLocationHistory: { scope: 'operational', hidden: ({ db, other }) => db.getLocationHistory(other.trip) },
+  getTripMonitoring: { scope: 'operational', hidden: ({ db, other }) => db.getTripMonitoring(other.trip) },
+  listTripMonitoring: { scope: 'operational', list: { call: ({ db }) => db.listTripMonitoring(), ids: (rows: { tripId: string }[]) => rows.map((row) => row.tripId), own: (c) => c.inTransit } },
 
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },

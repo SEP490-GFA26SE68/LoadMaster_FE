@@ -1,6 +1,6 @@
 export { getMockDb } from './app-db'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
-export { addDays, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
+export { addDays, CLOCK_SPEED_PARAM, clockSpeedFrom, MAX_CLOCK_SPEED, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
 export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'
@@ -92,6 +92,17 @@ export {
   type VerifyContext,
   type VerifyMethod,
 } from './verify-model'
+export {
+  LOCATION_SOURCES,
+  MAX_LOCATION_POINTS,
+  type DriverLocationInput,
+  type EtaRiskAlert,
+  type EtaRiskStatus,
+  type LocationPoint,
+  type LocationSource,
+  type TripLiveStop,
+  type TripMonitoring,
+} from './tracking-model'
 export {
   DEFAULT_RUN_ALGORITHM,
   DEFAULT_RUN_SETTINGS,

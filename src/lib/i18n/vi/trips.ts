@@ -537,6 +537,9 @@ export const trips = {
     done: { one: 'Đã tối ưu tuyến {count} điểm giao.', other: 'Đã tối ưu tuyến {count} điểm giao.' },
     eta: 'Dự kiến đến {time} {date}',
     etaA11y: 'dự kiến đến {time} {date}',
+    /** Chuyến đang chạy (FE-6-09): xe đã tới điểm này — giờ đến thay cho giờ đến dự kiến. */
+    arrived: 'Xe đến lúc {time} {date}',
+    arrivedA11y: 'xe đến lúc {time} {date}',
     missingCoordinates: 'Chưa có toạ độ',
     map: 'Bản đồ tuyến {id}',
   },

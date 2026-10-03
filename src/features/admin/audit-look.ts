@@ -65,6 +65,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'delivery.issue': 'amber',
   'delivery.stopCompleted': 'green',
   'delivery.completed': 'green',
+  'delivery.etaRisk': 'amber',
   'user.created': 'slate',
   'user.updated': 'slate',
   'user.locked': 'amber',
