@@ -5,7 +5,7 @@ import { expandPackages } from '@/domain/cargo'
 import type { DeliveryIssueKind, Trip } from '@/lib/mock-db'
 import { useFormat, useT } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
-import { missingPackages } from './trip-progress'
+import { damagedPackages } from './trip-progress'
 import { useTripActivityQuery } from './useTripsQuery'
 
 const KIND_ICON: Record<DeliveryIssueKind, LucideIcon> = { damaged: PackageX, missing: PackageMinus, refused: Undo2, other: CircleAlert }
@@ -19,7 +19,7 @@ export function TripDetailIssues({ trip }: { trip: Trip }) {
   const format = useFormat()
   const activity = useTripActivityQuery(trip.id)
   const users = activity.data?.users
-  const missing = useMemo(() => missingPackages(trip), [trip])
+  const damaged = useMemo(() => damagedPackages(trip), [trip])
   const nameOfPackage = useMemo(() => {
     const { packageIdByInstanceId } = expandPackages(trip.packages)
     const names = new Map(trip.packages.map((pkg) => [pkg.id, pkg.name]))
@@ -27,13 +27,13 @@ export function TripDetailIssues({ trip }: { trip: Trip }) {
   }, [trip.packages])
   const nameOf = (id: string | null) => (id ? users?.find((user) => user.id === id)?.fullName ?? id : null)
   const issues = trip.delivery?.issues ?? []
-  if (missing.length === 0 && issues.length === 0) return null
+  if (damaged.length === 0 && issues.length === 0) return null
 
   return (
     <>
-      {missing.length > 0 ? (
-        <Section title={t('trips.detail.missingTitle', { count: missing.length })}>
-          {missing.map((item) => (
+      {damaged.length > 0 ? (
+        <Section title={t('trips.detail.damagedTitle', { count: damaged.length })}>
+          {damaged.map((item) => (
             <Item key={item.packageInstanceId} icon={PackageMinus} title={<span className="font-mono text-caption">{item.packageInstanceId}</span>} stop={item.deliveryStop}>
               <span className="text-ink-2">{item.name}</span>
               <span className="text-fine text-ink-3 tabular-nums">{t('trips.detail.at', { time: format.time(item.at), date: format.date(item.at) })}</span>

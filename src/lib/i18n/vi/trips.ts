@@ -268,14 +268,17 @@ export const trips = {
     /** Cột phải. */
     ofTotal: '{used} / {total}',
     issuesTitle: { one: '{count} sự cố giao hàng', other: '{count} sự cố giao hàng' },
-    missingTitle: { one: '{count} kiện thiếu ở kho', other: '{count} kiện thiếu ở kho' },
+    damagedTitle: { one: '{count} kiện hỏng, bỏ lại kho', other: '{count} kiện hỏng, bỏ lại kho' },
     wholeStop: 'Cả điểm giao',
     at: '{time} {date}',
   },
   /** Hộp thoại huỷ chuyến (D-45): lý do bắt buộc, ghi nhật ký. */
   cancel: {
     title: 'Huỷ chuyến {id}?',
-    description: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Lý do được ghi vào nhật ký.',
+    description: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện của chuyến về kho kiện, yêu cầu giao về Chờ xếp chuyến. Lý do được ghi vào nhật ký.',
+    /** Huỷ lúc Đang xếp hàng (FE-6-07, D-91): kho được báo để dỡ phần đã xếp. */
+    loadingNote: { one: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.', other: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.' },
+    stagingNote: 'Kho đang soạn hàng của chuyến này: kho được báo chuyến đã huỷ.',
     reason: 'Lý do huỷ',
     reasonPlaceholder: 'Ví dụ: khách hoãn nhận hàng',
     reasonRequired: 'Nhập lý do huỷ chuyến',
@@ -305,7 +308,7 @@ export const trips = {
     staleA11y: 'phương án lỗi thời',
     note: { next: 'Tiếp theo', waitApproval: 'Chờ duyệt lại' },
     loadingCount: 'Đã xếp {loaded} / {total} kiện',
-    missingCount: { one: 'thiếu {count} kiện', other: 'thiếu {count} kiện' },
+    damagedCount: { one: 'bỏ lại {count} kiện hỏng', other: 'bỏ lại {count} kiện hỏng' },
     deliveryCount: 'Đã giao {done} / {total} điểm',
     at: '{time} {date}',
   },
@@ -544,6 +547,28 @@ export const trips = {
     map: 'Bản đồ tuyến {id}',
   },
   /** Thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến (FE-6-04, D-83): điều phối viên duyệt hoặc từ chối mức 3 của đối chiếu kiện. */
+  /** Thẻ "Kiện kho báo thiếu" ở Chi tiết chuyến (FE-6-02, D-82): điều phối viên quyết tìm tiếp hoặc bỏ kiện khỏi chuyến. */
+  shortages: {
+    title: 'Kiện kho báo thiếu',
+    count: { one: '{count} chờ quyết', other: '{count} chờ quyết' },
+    description: 'Kho không tìm thấy các kiện này khi soạn hàng. Chọn Tìm tiếp để kho tìm lại, hoặc bỏ kiện khỏi chuyến rồi tối ưu lại và duyệt lại.',
+    reportedBy: '{name} báo lúc {time} {date}',
+    unknownReporter: 'Không rõ người báo',
+    keep: 'Tìm tiếp',
+    keepLabel: 'Tìm tiếp kiện {id}',
+    drop: 'Bỏ kiện khỏi chuyến',
+    dropLabel: 'Bỏ kiện {id} khỏi chuyến',
+    kept: 'Kho tìm tiếp kiện {id}',
+    dropped: 'Đã bỏ kiện {id} khỏi chuyến',
+    droppedDescription: 'Chuyến về Đã lập kế hoạch, phương án lỗi thời: tối ưu lại và duyệt lại để kho làm tiếp.',
+    readOnly: 'Chỉ điều phối viên quyết được kiện kho báo thiếu.',
+    dropDialog: {
+      title: 'Bỏ kiện {id} khỏi chuyến?',
+      description: 'Kiện về kho kiện kèm cờ Không tìm thấy; yêu cầu giao của nó thành giao thiếu. Chuyến quay về Đã lập kế hoạch và phương án lỗi thời: phải tối ưu lại và duyệt lại. Kiện kho đã soạn giữ nguyên.',
+      confirm: 'Bỏ kiện',
+      cancel: 'Quay lại',
+    },
+  },
   manualConfirms: {
     title: 'Xác nhận tay chờ duyệt',
     count: { one: '{count} chờ duyệt', other: '{count} chờ duyệt' },

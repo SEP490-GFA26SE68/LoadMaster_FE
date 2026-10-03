@@ -40,7 +40,7 @@ export const tripReport = {
     sealValue: '{number} · recorded at {time}',
     noSeal: 'No seal number recorded',
     planned: 'Packages in the plan',
-    missing: 'Missing at the warehouse',
+    damaged: 'Damaged, left at the warehouse',
     loadedByQr: 'Loaded by QR scan',
     weight: 'Weight delivered',
     weightValue: '{delivered} / {planned}',

@@ -119,8 +119,10 @@ test('looking a package up by its QR code or by what was typed returns it with i
 })
 
 test('the warehouse reports a flagged package found: the flag is cleared and the dispatcher gets an event', async () => {
-  // Kiện kho báo thiếu của chuyến TRIP-003 trong seed: về kho kiện kèm cờ "Không tìm thấy"
-  const flagged = (await fetchPackages()).find((pkg) => pkg.source === 'TRIP' && pkg.flags.includes('NOT_FOUND'))
+  // Kiện nhập file PK-0040 vừa bị gắn cờ "Không tìm thấy" (như kiện bị bỏ khỏi chuyến vì kho không tìm thấy lúc soạn, D-92)
+  await getMockDb().flagPackage('PK-0040', 'NOT_FOUND')
+  const flagged = (await fetchPackages()).find((pkg) => pkg.id === 'PK-0040')
+  expect(flagged?.flags).toStrictEqual(['NOT_FOUND'])
   getMockDb().restoreSession('US-0003')
   expect((await reportPackageFound(flagged?.qrToken ?? '')).flags).toStrictEqual([])
   getMockDb().restoreSession('US-0001')

@@ -15,7 +15,7 @@ import { PackagesPage } from './PackagesPage'
  * Kho kiện `/kien-hang` (FE-3b-03, FE-3b-02) trên kho mock thật, seed neo 14/09/2026: Long Bình có 2.951 kiện — 88 kiện `PK-0001…0088`
  * đều "Đã nhập" đứng đầu bảng (40 kiện cuối nhập từ file, 5 kiện mỗi điểm đến; `PK-0063` mang cờ "Không tìm thấy", `PK-0078` "Hư hỏng";
  * 30 kiện thuộc sáu yêu cầu giao chờ xếp chuyến — 22 kiện đầu và hai kiện cuối của bốn đợt nhập), rồi 2.863 kiện nhập tay của 15 chuyến seed (`PK-T…`, FE-3b-07): 2.692 kiện còn thuộc chuyến,
- * `PK-T00739` kho báo thiếu nên mang cờ "Không tìm thấy". Các test dùng chung kho và chạy theo thứ tự: test gỡ cờ, thêm kiện, nhập file ghi vào kho — số đếm ghi ngay ở từng test.
+ * `PK-T00730` hỏng lúc xếp ở chuyến TRIP-003 nên về kho kiện kèm cờ "Hư hỏng". Các test dùng chung kho và chạy theo thứ tự: test gỡ cờ, thêm kiện, nhập file ghi vào kho — số đếm ghi ngay ở từng test.
  */
 const SLOW = { timeout: 5000 }
 
@@ -74,8 +74,8 @@ test('the dispatcher sees the pool newest first with every column; search ignore
   // Lọc cờ, loại hàng, đã vào yêu cầu giao: giá trị là slug không dấu trên URL
   await user.click(screen.getByRole('combobox', { name: 'Cờ' }))
   await user.click(await screen.findByRole('option', { name: 'Không tìm thấy' }))
-  // PK-0063 của file nhập, và kiện kho báo thiếu của chuyến TRIP-003
-  await waitFor(() => expect(poolIds()).toStrictEqual(['PK-0063', 'PK-T00739']), SLOW)
+  // Chỉ PK-0063 của file nhập; kiện hỏng lúc xếp của chuyến TRIP-003 mang cờ khác
+  await waitFor(() => expect(poolIds()).toStrictEqual(['PK-0063']), SLOW)
   expect(screen.getByTestId('url')).toHaveTextContent('/kien-hang?co=khong-tim-thay')
   expect(within(screen.getByRole('row', { name: /PK-0063/ })).getByText('Không tìm thấy')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))

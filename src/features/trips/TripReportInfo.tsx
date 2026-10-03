@@ -38,7 +38,7 @@ export function TripReportInfo({ data }: { data: TripReportData }) {
             : t('tripReport.info.noSeal')}
         </Fact>
         <Fact label={t('tripReport.info.planned')} mono>{format.integer(packages.planned)}</Fact>
-        <Fact label={t('tripReport.info.missing')} mono>{format.integer(packages.missing)}</Fact>
+        <Fact label={t('tripReport.info.damaged')} mono>{format.integer(packages.damaged)}</Fact>
         <Fact label={t('tripReport.info.loadedByQr')} mono>{format.integer(packages.loadedByQr)}</Fact>
         <Fact label={t('tripReport.info.weight')} mono>
           {t('tripReport.info.weightValue', { delivered: format.weight(weight.deliveredKg), planned: format.weight(weight.plannedKg) })}

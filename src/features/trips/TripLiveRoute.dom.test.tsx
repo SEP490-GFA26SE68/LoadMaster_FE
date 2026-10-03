@@ -52,11 +52,11 @@ test.each(['dispatcher', 'manager'] as const)('a trip in transit shows the %s wh
   expect(container.querySelector('[data-marker="vehicle"]')).not.toBeNull()
   expect(map.getByText('Vị trí xe: Thaco Ollin 720 · 61C-339.05 (Mô phỏng)')).toBeInTheDocument()
 
-  // Điểm 1 đã giao: không còn giờ đến. Điểm 2: xe đã tới. Điểm 3: tính từ vị trí xe
+  // Điểm 1 đã giao: không còn giờ đến. Điểm 2: giờ tài xế bấm "Đã đến" trong seed (FE-6-06). Điểm 3: tính từ vị trí xe
   const [first, second, third] = stopItems()
   expect(first).toHaveTextContent('Đã giao 07:35')
   expect(first).not.toHaveTextContent('Dự kiến đến')
-  expect(second).toHaveTextContent('Xe đến lúc 07:39 14/09')
+  expect(second).toHaveTextContent('Xe đến lúc 08:20 14/09')
   expect(third).toHaveTextContent('Dự kiến đến 12:22 14/09')
 })
 

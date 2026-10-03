@@ -144,6 +144,6 @@ function loadingCount(step: ProgressStep, t: TFunction, format: Formatter): stri
   if (!loading) return ''
   return [
     t('trips.progress.loadingCount', { loaded: format.integer(loading.loaded), total: format.integer(loading.total) }),
-    ...(loading.missing > 0 ? [t('trips.progress.missingCount', { count: loading.missing })] : []),
+    ...(loading.damaged > 0 ? [t('trips.progress.damagedCount', { count: loading.damaged })] : []),
   ].join(' · ')
 }

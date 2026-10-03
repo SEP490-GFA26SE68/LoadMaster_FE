@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { createMockDb, latestApproved } from '@/lib/mock-db'
-import { missingPackages, tripProgress, type ProgressStep } from './trip-progress'
+import { damagedPackages, tripProgress, type ProgressStep } from './trip-progress'
 
 /** Seam: tiến trình dựng từ chuyến, revision và nhật ký của kho seed neo 14/09/2026 (D-44). */
 async function progressOf(tripId: string) {
@@ -33,27 +33,27 @@ test('while the warehouse loads, loading is the current step with packages loade
   expect(step(steps, 'loading')).toMatchObject({
     at: trip.loading?.startedAt,
     actorId: 'US-0011',
-    loading: { loaded: 110, missing: 0, total: plan.result.placements.length },
+    loading: { loaded: 110, damaged: 0, total: plan.result.placements.length },
   })
 })
 
-test('a completed trip with a package missing at the warehouse: every step done, the missing package counted and listed', async () => {
+test('a completed trip with a damaged package left at the warehouse: every step done, the damaged package counted and listed', async () => {
   const { trip, steps } = await progressOf('TRIP-003')
   expect(states(steps)).toStrictEqual([
     'created:done', 'optimized:done', 'approved:done', 'loading:done', 'loaded:done', 'delivering:done', 'completed:done',
   ])
   const loading = step(steps, 'loading')?.loading
-  expect(loading?.missing).toBe(1)
-  expect((loading?.loaded ?? 0) + (loading?.missing ?? 0)).toBe(loading?.total)
+  expect(loading?.damaged).toBe(1)
+  expect((loading?.loaded ?? 0) + (loading?.damaged ?? 0)).toBe(loading?.total)
   expect(step(steps, 'delivering')?.delivery).toStrictEqual({ done: 3, total: 3 })
   expect(step(steps, 'completed')).toMatchObject({ at: trip.delivery?.completedAt, actorId: 'US-0007' })
 
-  const missingStep = trip.loading?.steps.find((item) => item.outcome === 'missing')
-  const [missing, ...rest] = missingPackages(trip)
+  const damagedStep = trip.loading?.steps.find((item) => item.outcome === 'damaged')
+  const [damaged, ...rest] = damagedPackages(trip)
   expect(rest).toHaveLength(0)
-  expect(missing).toMatchObject({ packageInstanceId: missingStep?.packageInstanceId, at: missingStep?.at })
-  expect(trip.packages.map((pkg) => pkg.name)).toContain(missing?.name)
-  expect(missing?.deliveryStop).toBeGreaterThanOrEqual(1)
+  // seed-trips.ts: kiện ở bước xếp 16 của TRIP-003 là PKG-003-03, giao điểm 3
+  expect(damaged).toMatchObject({ packageInstanceId: 'PKG-003-03', deliveryStop: 3, at: damagedStep?.at })
+  expect(trip.packages.map((pkg) => pkg.name)).toContain(damaged?.name)
 })
 
 test('out for delivery: delivering is current with the stops done so far', async () => {
