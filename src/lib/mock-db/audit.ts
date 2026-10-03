@@ -27,9 +27,15 @@ export const AUDIT_ACTIONS = [
   'optimization.saved',
   'revision.approved',
   'loading.started',
-  'loading.missing',
+  // Soạn hàng: kho báo thiếu, điều phối viên quyết; kiện hỏng lúc xếp (FE-6-02, FE-6-05)
+  'loading.shortageReported',
+  'loading.shortageKept',
+  'loading.shortageDropped',
+  'loading.damaged',
   'loading.completed',
   'delivery.started',
+  // Tài xế bấm "Đã đến" ở một điểm giao (FE-6-06)
+  'delivery.arrived',
   'delivery.issue',
   'delivery.stopCompleted',
   'delivery.completed',

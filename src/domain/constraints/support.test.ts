@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SPEC_CARTON_A_PLACEMENT, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
-import { createPlacementLayout, supportIssues, supportRatio } from '@/domain/constraints'
+import { createPlacementLayout, restingOnIds, supportIssues, supportRatio } from '@/domain/constraints'
 import type { PackagePlacement, VehicleConfig, VehicleObstacle } from '@/domain/models'
 import { SPEC_13_PKG_008_LOW_SUPPORT } from '@/test/spec-13'
 
@@ -71,4 +71,20 @@ test('a package supported on exactly its required 80% gets no warning, even when
   const overhanging = placed('PKG-014', [120, 0, 45], [62, 60, 40])
   const layout = createPlacementLayout(SPEC_TRUCK_6M, [support, overhanging])
   expect(supportIssues(overhanging, 0.8, layout)).toStrictEqual([])
+})
+
+test('restingOnIds lists the packages standing on a package: touching its top with a real overlap, not edge to edge, not two layers up', () => {
+  const plan = [
+    placed('PKG-001-01', [120, 0, 0], [120, 60, 45]),
+    // so với PKG-001-01 (x 120..240, mặt trên z 45): phủ nửa mặt trên; chỉ chạm cạnh x = 240 (trong dung sai 0,2 cm theo phương đứng);
+    // cách hai lớp, nằm trên PKG-002-01; cùng độ cao nhưng ở chỗ khác
+    placed('PKG-002-01', [180, 0, 45], [120, 60, 45]),
+    placed('PKG-003-01', [240, 0, 45.2], [60, 60, 45]),
+    placed('PKG-004-01', [180, 0, 90], [60, 60, 45]),
+    placed('PKG-005-01', [400, 100, 45], [60, 60, 45]),
+  ]
+  expect(restingOnIds(plan, 'PKG-001-01')).toStrictEqual(['PKG-002-01'])
+  expect(restingOnIds(plan, 'PKG-002-01')).toStrictEqual(['PKG-004-01'])
+  expect(restingOnIds(plan, 'PKG-004-01')).toStrictEqual([])
+  expect(restingOnIds(plan, 'PKG-404-01')).toStrictEqual([])
 })

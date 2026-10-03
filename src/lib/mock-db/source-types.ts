@@ -160,6 +160,9 @@ export type TripLabel = {
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */
 export type ScanResult<T> = { trip: T; packageInstanceId: string }
 
+/** Kết quả soạn một kiện (FE-6-02): `alreadyStaged` — kiện đã soạn từ trước, lần này kho không ghi gì. */
+export type StagingScanResult<T> = ScanResult<T> & { alreadyStaged: boolean }
+
 /** Giờ đến dự kiến của một điểm giao trong tuyến đã tối ưu. */
 export type RouteStopEta = {
   stopId: string

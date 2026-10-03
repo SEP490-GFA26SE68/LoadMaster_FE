@@ -71,3 +71,16 @@ export function supportIssues(
 ): ConstraintIssue<'SUPPORT_BELOW_MIN'>[] {
   return belowMinSupport(placement, supportRatio(placement, layout), minSupportRatio)
 }
+
+/**
+ * Các kiện đang tựa lên kiện `packageInstanceId` trong một phương án (FE-6-05): đáy chạm mặt trên của nó và hai đáy giao nhau thật.
+ * Kho dùng để quyết kiện hỏng lúc xếp bỏ ra được ngay, hay phải xếp lại theo phương án mới. Kiện không có trong phương án: rỗng.
+ */
+export function restingOnIds(placements: readonly PackagePlacement[], packageInstanceId: string): string[] {
+  const target = placements.find((placement) => placement.packageInstanceId === packageInstanceId)
+  if (!target) return []
+  const lower = placementToBox(target)
+  return placements
+    .filter((placement) => placement.packageInstanceId !== packageInstanceId && restsOn(placementToBox(placement), lower))
+    .map((placement) => placement.packageInstanceId)
+}

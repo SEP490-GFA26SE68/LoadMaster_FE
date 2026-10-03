@@ -16,7 +16,10 @@ export function isLockedPhase(phase: TripPhase): boolean {
   return phase !== 'planning'
 }
 
-/** Huỷ được trước khi xe rời kho (D-45). */
+/**
+ * Huỷ được trước khi xe rời kho (D-91): Nháp, Đã lập kế hoạch, Đang xếp hàng. Huỷ chuyến Đang vận chuyển cần sự cố cấp chuyến đang mở
+ * (FE-6-11) — chưa có, nên kho từ chối `INVALID_TRIP_STATUS_TRANSITION`.
+ */
 export function isCancellablePhase(phase: TripPhase): boolean {
   return phase === 'planning' || phase === 'loading' || phase === 'loaded'
 }
@@ -47,7 +50,8 @@ export function tripStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): TripStatus 
 
 /**
  * Dòng phụ dưới chip trạng thái (FE-0-05), mọi màn hiện giống nhau. Không có thì `null`.
- * - Đang xếp hàng: kho đang xếp (kiện đã có kết quả / kiện của phương án kho xếp theo — bản ghi lúc bắt đầu xếp), hoặc đã xếp xong.
+ * - Đang xếp hàng (FE-6-02, FE-6-05): còn kiện kho báo thiếu chờ điều phối viên quyết; không thì đang soạn (kiện đã soạn / kiện của
+ *   phương án kho làm theo — bản ghi lúc bắt đầu), soạn đủ thì đang xếp (kiện đã có kết quả / tổng), hoặc đã xếp xong.
  * - Đã lập kế hoạch: theo revision hiển thị (bản duyệt mới nhất, không có thì bản mới nhất) — lỗi thời khi xe/kiện đổi sau lần tối
  *   ưu (D-31; bản duyệt lỗi thời hết hiệu lực, kho không xếp theo nó), đã duyệt, còn lại là chờ duyệt.
  */
@@ -59,7 +63,12 @@ export function tripSubStatus(
   if (trip.phase === 'loading') {
     const startedWith = trip.loading?.revisionId
     const plan = revisions.find((revision) => revision.id === startedWith) ?? latestApproved(revisions)
-    return { kind: 'loading', recorded: trip.loading?.steps.length ?? 0, total: plan ? plannedStops(plan).size : 0 }
+    const total = plan ? plannedStops(plan).size : 0
+    const shortages = trip.loading?.shortages?.length ?? 0
+    if (shortages > 0) return { kind: 'shortage', count: shortages }
+    const staged = trip.loading?.stagedIds.length ?? 0
+    if (staged < total) return { kind: 'staging', recorded: staged, total }
+    return { kind: 'loading', recorded: trip.loading?.steps.length ?? 0, total }
   }
   if (trip.phase !== 'planning') return null
   const shown = latestApproved(revisions) ?? revisions.at(-1)
@@ -78,13 +87,14 @@ export function tripRouteSubStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): Tri
 }
 
 /**
- * Dòng phụ "Chờ duyệt xác nhận tay (n)" (FE-6-04, PRD v2 mục 7.1): chuyến đang xếp còn xác nhận tay của bước xếp chờ điều phối viên
- * duyệt, hoặc chuyến đang giao còn xác nhận tay của bước dỡ. Đứng cạnh dòng phụ tiến độ, không thay nó. Không còn gì chờ, hoặc chuyến ở
+ * Dòng phụ "Chờ duyệt xác nhận tay (n)" (FE-6-04, PRD v2 mục 7.1): chuyến đang xếp còn xác nhận tay của bước soạn hoặc bước xếp chờ điều
+ * phối viên duyệt, hoặc chuyến đang giao còn xác nhận tay của bước dỡ. Đứng cạnh dòng phụ tiến độ, không thay nó. Không còn gì chờ, hoặc chuyến ở
  * pha khác (đã huỷ giữa chừng), thì `null`.
  */
 export function tripManualSubStatus(trip: Pick<Trip, 'phase' | 'verifications'>): TripSubStatus | null {
-  const context = trip.phase === 'loading' ? 'LOADING' : trip.phase === 'delivering' ? 'UNLOADING' : null
-  const count = context === null ? 0 : pendingManualConfirms(trip, context).length
+  const count = trip.phase === 'loading'
+    ? pendingManualConfirms(trip, 'STAGING').length + pendingManualConfirms(trip, 'LOADING').length
+    : trip.phase === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING').length : 0
   return count > 0 ? { kind: 'manualPending', count } : null
 }
 
@@ -99,9 +109,15 @@ export function plannedStops(revision: Pick<Revision, 'request' | 'result'>): Ma
   return planned
 }
 
-/** Kiện kho báo thiếu (không có trên xe). */
-export function missingIds(trip: Pick<Trip, 'loading'>): Set<string> {
-  return new Set(trip.loading?.steps.filter((step) => step.outcome === 'missing').map((step) => step.packageInstanceId))
+/** Kiện của phương án không lên xe: hỏng lúc xếp nên bị bỏ lại kho (FE-6-05). */
+export function leftOutIds(trip: Pick<Trip, 'loading'>): Set<string> {
+  return new Set(trip.loading?.steps.filter((step) => step.outcome === 'damaged').map((step) => step.packageInstanceId))
+}
+
+/** Kiện của phương án chưa soạn vào khu chờ, theo thứ tự của phương án (FE-6-02). Còn kiện như vậy thì chuyến ở bước soạn. */
+export function stagingRemaining(trip: Pick<Trip, 'loading'>, revision: Pick<Revision, 'request' | 'result'>): string[] {
+  const staged = new Set(trip.loading?.stagedIds)
+  return [...plannedStops(revision).keys()].filter((id) => !staged.has(id))
 }
 
 /** Số kiện của phương án chưa có kết quả xếp ở kho. */
@@ -110,8 +126,8 @@ export function loadingRemaining(trip: Pick<Trip, 'loading'>, revision: Pick<Rev
   return [...plannedStops(revision).keys()].filter((id) => !recorded.has(id)).length
 }
 
-/** Kiện phải dỡ ở điểm `stopNumber`: kiện đã xếp của phương án thuộc điểm đó, trừ kiện kho báo thiếu. */
+/** Kiện phải dỡ ở điểm `stopNumber`: kiện đã xếp của phương án thuộc điểm đó, trừ kiện hỏng bị bỏ lại kho. */
 export function stopItemIds(trip: Pick<Trip, 'loading'>, revision: Pick<Revision, 'request' | 'result'>, stopNumber: number): string[] {
-  const missing = missingIds(trip)
-  return [...plannedStops(revision)].filter(([id, stop]) => stop === stopNumber && !missing.has(id)).map(([id]) => id)
+  const leftOut = leftOutIds(trip)
+  return [...plannedStops(revision)].filter(([id, stop]) => stop === stopNumber && !leftOut.has(id)).map(([id]) => id)
 }

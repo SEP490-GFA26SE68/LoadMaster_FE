@@ -3,6 +3,7 @@ import type { OptimizationRequest } from '@/domain/models'
 import { createMockDb, MAX_LOCATION_POINTS, type MockDb, type Trip } from '@/lib/mock-db'
 import { simulatedSnapshot, simulationOf } from '@/lib/mock-db/trip-tracking'
 import { runMockOptimization } from '@/services/optimization'
+import { loadAll, stageAll, unloadStop } from '@/test/trip-flow'
 
 /**
  * Vị trí xe mô phỏng và ETA trực tiếp ở tầng kho (FE-6-08, FE-6-09). Thời gian chạy từng chặng tính tay bằng **định lý cos cầu**
@@ -22,15 +23,9 @@ function wallClock(start: string) {
 const MINUTE = 60_000
 const plus = (iso: string, ms: number) => new Date(Date.parse(iso) + ms).toISOString()
 
-/** Dỡ hết kiện của điểm `stop` rồi hoàn tất điểm. */
+/** Tài xế bấm "Đã đến" ở điểm `stop`, dỡ hết kiện của điểm bằng quét, rồi hoàn tất điểm (FE-6-06). */
 async function deliverStop(db: MockDb, tripId: string, stop: number) {
-  const trip = await db.getTrip(tripId)
-  const revision = await db.getRevision(trip.loading?.revisionId ?? '')
-  const stopOf = (id: string) => revision.request.packages.find((pkg) => id.startsWith(`${pkg.id}-`))?.deliveryStop
-  const missing = new Set(trip.loading?.steps.filter((step) => step.outcome === 'missing').map((step) => step.packageInstanceId))
-  for (const { packageInstanceId: id } of revision.result.placements) {
-    if (stopOf(id) === stop && !missing.has(id)) await db.recordUnload(tripId, stop, id, true)
-  }
+  await unloadStop(db, tripId, stop)
   return db.completeStop(tripId, stop)
 }
 
@@ -62,11 +57,12 @@ describe('the seeded trip in transit stands where its delivery progress puts it 
 
   test('its monitoring: arrived at stop 2, stop 3 estimated from now because the vehicle has stood for more than 15 minutes', async () => {
     const db = createMockDb({ now: () => new Date(NOW) })
+    // Giờ đến điểm 2 là giờ tài xế bấm "Đã đến" trong seed (01:20:30), không phải giờ xe mô phỏng tới nơi
     expect(await db.getTripMonitoring('TRIP-009')).toStrictEqual({
       tripId: 'TRIP-009',
       location: { ...STANDING, recordedAt: NOW },
       stops: [
-        { stopId: 'STOP-02', number: 2, eta: '2026-09-14T00:39:06.077Z', arrived: true },
+        { stopId: 'STOP-02', number: 2, eta: '2026-09-14T01:20:30.000Z', arrived: true },
         { stopId: 'STOP-03', number: 3, eta: '2026-09-14T05:22:33.659Z' },
       ],
       alerts: [],
@@ -189,7 +185,9 @@ async function departedTrip(deadline: string, departAt: string) {
   const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
   const approved = await db.approveRevision(revision.id, [], { force: true })
   await db.startLoading(trip.id)
-  for (const { packageInstanceId } of approved.result.placements) await db.recordLoadingStep(trip.id, { packageInstanceId, outcome: 'loaded' })
+  expect(approved.result.placements.length).toBe(10)
+  await stageAll(db, trip.id)
+  await loadAll(db, trip.id)
   await db.completeLoading(trip.id)
   wall.set(departAt)
   await db.startDelivery(trip.id)

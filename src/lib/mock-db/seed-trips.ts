@@ -17,8 +17,8 @@ export type TripSpec = {
   /** Dòng kiện: loại hàng, số lượng, số điểm giao. Mã kiện `PKG-001`… theo thứ tự dòng. */
   lines: readonly (readonly [CargoKey, number, number])[]
   outcome: TripOutcome
-  /** Kho báo thiếu kiện ở bước xếp thứ n (1-based). */
-  missingAtStep?: number
+  /** Kiện ở bước xếp thứ n (1-based) hỏng, bị bỏ lại kho (FE-6-05): trong phương án không kiện nào tựa lên nó. */
+  damagedAtStep?: number
   /** Sự cố giao: `first`/`last` là kiện dỡ đầu/cuối của điểm đó. */
   issues?: readonly { stop: number; pick: 'first' | 'last'; kind: DeliveryIssueKind; note: string }[]
   cancelReason?: string
@@ -31,8 +31,8 @@ export type TripSpec = {
 }
 
 /**
- * 14 chuyến quanh chuyến chính `TRIP-2026-0914` (D-44), trải 27 ngày trước tới 2 ngày sau ngày neo: 7 hoàn thành (có kiện thiếu
- * ở kho, hàng hỏng, khách từ chối), 1 huỷ, 1 đang giao, 1 đã xếp xong (tài xế demo), 1 đang xếp, 1 đã tối ưu, 1 cần xem lại, 1 nháp.
+ * 14 chuyến quanh chuyến chính `TRIP-2026-0914` (D-44), trải 27 ngày trước tới 2 ngày sau ngày neo: 7 hoàn thành (có kiện hỏng
+ * bị bỏ lại kho, hàng hỏng lúc giao, khách từ chối), 1 huỷ, 1 đang giao, 1 đã xếp xong (tài xế demo), 1 đang xếp, 1 đã tối ưu, 1 cần xem lại, 1 nháp.
  * Hôm nay: VEHICLE-003, 006, 007 đang chạy; VEHICLE-008 bảo dưỡng.
  */
 export const TRIP_SPECS: readonly TripSpec[] = [
@@ -52,7 +52,8 @@ export const TRIP_SPECS: readonly TripSpec[] = [
     id: 'TRIP-003', name: 'Tuyến Thủ Dầu Một – Quận 1 – Tân Bình', day: -20, vehicleId: 'VEHICLE-005', driverId: 'US-0007', warehouseId: 'US-0011',
     stops: ['phuongNamTdm', 'mamNonHoaSen', 'haiHaTanBinh'],
     lines: [['sachGiaoKhoa', 60, 1], ['vanPhongPham', 45, 2], ['banhQuy', 40, 3]],
-    outcome: 'completed', missingAtStep: 7,
+    // Bước 16 là thùng ở lớp trên cùng của điểm 3: bỏ ra thì không kiện nào mất chỗ đỡ
+    outcome: 'completed', damagedAtStep: 16,
   },
   {
     id: 'TRIP-004', name: 'Tuyến Tân An – Biên Hoà', day: -17, vehicleId: 'VEHICLE-006', driverId: 'US-0010', warehouseId: 'US-0003',

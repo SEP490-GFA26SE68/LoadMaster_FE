@@ -267,11 +267,14 @@ test('every seeded plan of Long Bình was approved by its dispatcher: the approv
 test('seeded operations match their trips: warehouse progress, deliveries, issues and one vehicle in maintenance', async () => {
   const db = createMockDb()
   const trips = new Map((await db.listTrips()).map((trip) => [trip.id, trip]))
-  expect(trips.get('TRIP-003')?.loading?.steps.filter((step) => step.outcome === 'missing')).toHaveLength(1)
+  expect(trips.get('TRIP-003')?.loading?.steps.filter((step) => step.outcome === 'damaged').map((step) => step.packageInstanceId)).toStrictEqual(['PKG-003-03'])
   expect(trips.get('TRIP-005')?.delivery?.issues.map((issue) => issue.kind)).toStrictEqual(['damaged'])
   expect(trips.get('TRIP-007')?.delivery?.issues.map((issue) => issue.kind)).toStrictEqual(['refused'])
   expect(trips.get('TRIP-009')?.delivery?.stops.map((stop) => stop.completedAt !== undefined)).toStrictEqual([true, false, false])
-  expect(trips.get('TRIP-011')?.loading?.steps).toHaveLength(110)
+  // Mọi chuyến đã bắt đầu ở kho đều soạn đủ; TRIP-011 đã xếp 110 / 280 kiện
+  expect([trips.get('TRIP-011')?.loading?.stagedIds.length, trips.get('TRIP-011')?.loading?.steps.length]).toStrictEqual([280, 110])
+  // Tài xế đã đến điểm đang giao của TRIP-009; điểm sau chưa tới
+  expect(trips.get('TRIP-009')?.delivery?.stops.map((stop) => stop.arrivedAt !== undefined)).toStrictEqual([true, true, false])
   expect(trips.get('TRIP-004')?.cancellation?.reason).not.toBe('')
   const states = await db.listVehicleStates()
   expect(states.filter((state) => state.status === 'maintenance').map((state) => state.vehicleId)).toStrictEqual(['VEHICLE-008'])

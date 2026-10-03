@@ -1,6 +1,7 @@
 import { optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
-import { assertPhase, assertUnloadable, currentStopProgress, expectedLoadingInstance, labelsOf, loadingPlan, verificationBy } from './db-scans'
+import { movePackage } from './db-packages'
+import { arrivedStopProgress, assertPhase, assertStaged, assertUnloadable, expectedLoadingInstance, labelsOf, loadingPlan, verificationBy } from './db-scans'
 import { MockDbError } from './errors'
 import { plannedStops } from './operations'
 import type { Trip } from './types'
@@ -15,17 +16,18 @@ import {
 
 type ManualConfirmMethods = Pick<
   Review1Db,
-  'confirmLoadingManually' | 'confirmUnloadManually' | 'approveManualConfirmation' | 'rejectManualConfirmation'
+  'confirmStagingManually' | 'confirmLoadingManually' | 'confirmUnloadManually' | 'approveManualConfirmation' | 'rejectManualConfirmation'
 >
 
 /**
  * Xác nhận tay (mức 3 của đối chiếu kiện, FE-6-03) và việc duyệt của điều phối viên (FE-6-04, D-83). Kho hoặc tài xế chọn kiện kèm lý
- * do khi nhãn không đọc được: kiện được ghi như đã xếp / đã dỡ để làm tiếp, kèm một xác nhận tay `MANUAL_PENDING`. Còn xác nhận tay chờ
+ * do khi nhãn không đọc được: kiện được ghi như đã soạn / đã xếp / đã dỡ để làm tiếp, kèm một xác nhận tay `MANUAL_PENDING`. Kiện soạn
+ * bằng xác nhận tay chỉ sang `STAGED` khi được duyệt (FE-6-02). Còn xác nhận tay chờ
  * thì `completeLoading` và `completeStop` từ chối (`db-operations.ts`). Điều phối viên duyệt — kiện giữ kết quả — hoặc từ chối kèm lý
  * do — kết quả của kiện bị gỡ, kho / tài xế phải kiểm lại.
  */
 export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
-  const { trips, users } = ctx.state
+  const { trips, users, packages } = ctx.state
 
   /** Lý do và ghi chú của xác nhận tay; "Khác" phải có ghi chú. */
   function manualOf({ reason, note }: ManualConfirmInput): ManualConfirm {
@@ -55,7 +57,7 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
   function pending(trip: Trip, confirmationId: string): PackageVerification & { manual: ManualConfirm } {
     const entry = trip.verifications?.find((item) => item.id === confirmationId)
     if (entry?.manual?.status !== 'MANUAL_PENDING') throw new MockDbError('MANUAL_CONFIRM_NOT_PENDING', { tripId: trip.id, confirmationId })
-    assertPhase(trip, entry.context === 'LOADING' ? 'loading' : 'delivering')
+    assertPhase(trip, entry.context === 'UNLOADING' ? 'delivering' : 'loading')
     return { ...entry, manual: entry.manual }
   }
 
@@ -64,10 +66,16 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
     return (trip.verifications ?? []).map((item) => (item.id === entry.id ? { ...item, manual } : item))
   }
 
-  /** Chuyến sau khi gỡ kết quả của kiện bị từ chối: bước xếp của nó, hoặc dấu đã dỡ ở điểm giao của nó. */
+  /**
+   * Chuyến sau khi gỡ kết quả của kiện bị từ chối: bước xếp của nó, hoặc dấu đã dỡ ở điểm giao của nó. Xác nhận tay lúc soạn bị từ chối
+   * thì kiện rời danh sách đã soạn — chuyến quay lại bước soạn cho kiện đó — và mất luôn kết quả xếp nếu đã có.
+   */
   function withoutResult(trip: Trip, { context, stopNumber, packageInstanceId }: PackageVerification): Trip {
-    if (context === 'LOADING') {
-      return trip.loading ? { ...trip, loading: { ...trip.loading, steps: trip.loading.steps.filter((step) => step.packageInstanceId !== packageInstanceId) } } : trip
+    if (context !== 'UNLOADING') {
+      if (!trip.loading) return trip
+      const steps = trip.loading.steps.filter((step) => step.packageInstanceId !== packageInstanceId)
+      const stagedIds = context === 'STAGING' ? trip.loading.stagedIds.filter((id) => id !== packageInstanceId) : trip.loading.stagedIds
+      return { ...trip, loading: { ...trip.loading, stagedIds, steps } }
     }
     if (!trip.delivery) return trip
     const stops = trip.delivery.stops.map((stop) => stop.number !== stopNumber ? stop : {
@@ -82,6 +90,21 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
   const requestedBy = (entry: PackageVerification): Record<string, string> => (entry.by === null ? {} : { requestedBy: entry.by })
 
   return {
+    confirmStagingManually: (tripId, input) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertPhase(trip, 'loading')
+        const loading = trip.loading
+        const id = input.packageInstanceId
+        if (!loading || !plannedStops(loadingPlan(ctx, trip)).has(id)) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId: id })
+        if (loading.stagedIds.includes(id)) throw new MockDbError('PACKAGE_ALREADY_STAGED', { tripId, packageInstanceId: id })
+        const entry = verificationBy(ctx, { context: 'STAGING', packageInstanceId: id, method: 'MANUAL', manual: manualOf(input) })
+        logRequested(tripId, entry)
+        // Kiện vừa được thấy: báo thiếu của nó (nếu có) không còn gì để điều phối viên quyết
+        const shortages = loading.shortages?.filter((item) => item.packageInstanceId !== id)
+        const next = { ...loading, stagedIds: [...loading.stagedIds, id], ...(shortages === undefined ? {} : { shortages }) }
+        return { trip: put(trips, { ...trip, loading: next, verifications: withVerification(trip.verifications, entry) }), packageInstanceId: id }
+      }),
     confirmLoadingManually: (tripId, input) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
@@ -90,6 +113,7 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
         const plan = loadingPlan(ctx, trip)
         const id = input.packageInstanceId
         if (!plannedStops(plan).has(id)) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId: id })
+        assertStaged(trip, plan)
         const expected = expectedLoadingInstance(trip, plan)
         if (!loading || expected !== id) throw new MockDbError('WRONG_PACKAGE_SCANNED', { expected: expected ?? '', scanned: id })
         const entry = verificationBy(ctx, { context: 'LOADING', packageInstanceId: id, method: 'MANUAL', manual: manualOf(input) })
@@ -102,7 +126,7 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         const delivery = trip.delivery
-        currentStopProgress(trip, stopNumber)
+        arrivedStopProgress(trip, stopNumber)
         if (!delivery) throw new Error(`Chuyến ${tripId} đang giao nhưng không có tiến độ giao`)
         const id = input.packageInstanceId
         const token = labelsOf(ctx, trip).find((label) => label.packageInstanceId === id)?.qrToken ?? id
@@ -123,6 +147,12 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
         assertDispatcher()
         const entry = pending(trip, confirmationId)
         ctx.log('manualConfirm.approved', { type: 'trip', id: tripId }, { packageInstanceId: entry.packageInstanceId, ...requestedBy(entry) })
+        // Soạn bằng xác nhận tay: kiện chỉ thành "đã soạn" khi điều phối viên duyệt (FE-6-02)
+        if (entry.context === 'STAGING') {
+          const poolId = labelsOf(ctx, trip).find((label) => label.packageInstanceId === entry.packageInstanceId)?.poolPackageId
+          const pkg = poolId === undefined ? undefined : packages.get(poolId)
+          if (pkg?.status === 'ASSIGNED') movePackage(ctx, pkg, 'STAGED')
+        }
         return put(trips, { ...trip, verifications: decide(trip, entry, { status: 'MANUAL_APPROVED' }) })
       }),
     rejectManualConfirmation: (tripId, confirmationId, reason) =>

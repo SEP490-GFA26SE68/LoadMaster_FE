@@ -10,9 +10,10 @@ export {
   isCancellablePhase,
   isLockedPhase,
   latestApproved,
+  leftOutIds,
   loadingRemaining,
-  missingIds,
   plannedStops,
+  stagingRemaining,
   stopItemIds,
   tripManualSubStatus,
   tripRouteSubStatus,
@@ -35,6 +36,7 @@ export type { TripEta, TripEtaStop } from './db-trip-route'
 export type { TripSegregation } from './db-trip-segregation'
 export { stopsWithoutCoordinates } from './trip-route'
 export { MAX_SEAL_LENGTH } from './db-scans'
+export { SHORTAGE_DECISIONS, type ShortageDecision } from './db-staging'
 export { normalizeQrToken } from './qr-token'
 export {
   canTransitionPackage,
@@ -122,6 +124,7 @@ export {
   type RunPlan,
   type RunSettings,
   type ScanResult,
+  type StagingScanResult,
   type TripLabel,
   type TripRoutePlan,
   type VehicleType,
@@ -130,6 +133,7 @@ export {
 } from './source-types'
 export {
   DELIVERY_ISSUE_KINDS,
+  REPLAN_REASONS,
   TRIP_PHASES,
   type ApproveOptions,
   type AuditFilter,
@@ -141,7 +145,6 @@ export {
   type DeliveryStop,
   type LoadingOutcome,
   type LoadingProgress,
-  type LoadingStepInput,
   type MockDb,
   type MockDbOptions,
   type NewOptimizationRun,
@@ -149,8 +152,10 @@ export {
   type NewTrip,
   type NewUser,
   type ProfileChanges,
+  type ReplanReason,
   type Revision,
   type SavedOptimizationRun,
+  type StagingShortage,
   type StopProgress,
   type TemporaryPassword,
   type Trip,

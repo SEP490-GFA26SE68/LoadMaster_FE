@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import type { OptimizationRequest } from '@/domain/models'
 import { canTransitionPackage, createMockDb, isRequirementClosed, PACKAGE_STATUSES, requirementStatus, type MockDb, type PackageInput, type PackageStatus } from '@/lib/mock-db'
 import { runMockOptimization } from '@/services/optimization'
+import { loadAll, stageAll, unloadStop } from '@/test/trip-flow'
 
 /**
  * Kho kiện theo mô hình backend (FE-3b-01, D-68, D-70, D-92): trường của kiện, mã QR cấp một lần, trạng thái ghi thật theo bảng chuyển,
@@ -215,7 +216,7 @@ test('a flagged package cannot go into a requirement or a trip until the dispatc
   expect((await db.updateDeliveryRequirement(created.id, { packageIds: ['PK-0062', 'PK-0063'] })).packageIds).toStrictEqual(['PK-0062', 'PK-0063'])
 })
 
-test('a package follows its trip by written transitions: assigned, staged, loaded or flagged missing, in transit, delivered or returned', async () => {
+test('a package follows its trip by written transitions: assigned, staged, loaded or flagged damaged, in transit, delivered or returned', async () => {
   const db = createMockDb()
   // Chuyến mới chưa có điểm giao và kiện: yêu cầu REQ-006 (10 thùng mì PK-0013…0022) sinh điểm 1 và dòng PKG-001, instance PKG-001-01…10
   const created = await db.createTrip({
@@ -229,38 +230,42 @@ test('a package follows its trip by written transitions: assigned, staged, loade
   }
   const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
   await db.approveRevision(revision.id, [])
-  const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
   const statuses = async () => (await db.listPackages()).filter((pkg) => pkg.requirementId === 'REQ-006').map((pkg) => [pkg.id, pkg.status])
   const all = (status: string, to = 22) => pk(13, to).map((id) => [id, status])
   expect(await statuses()).toStrictEqual(all('ASSIGNED'))
   expect(await db.getPackage('PK-0013')).toMatchObject({ tripId: trip.id, stopId: 'STOP-01' })
 
+  // Bắt đầu chưa đổi gì: kiện sang "đã soạn" khi kho đối chiếu từng kiện vào khu chờ (FE-6-02)
   await db.startLoading(trip.id)
+  expect(await statuses()).toStrictEqual(all('ASSIGNED'))
+  await stageAll(db, trip.id)
   expect(await statuses()).toStrictEqual(all('STAGED'))
-  // Từng bước xếp còn sửa lại được nên chưa đổi trạng thái; kho xếp xong mới chốt: chín kiện đã xếp, kiện thứ mười báo thiếu
-  for (const id of instances.slice(0, 9)) await db.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
-  await db.recordLoadingStep(trip.id, { packageInstanceId: 'PKG-001-10', outcome: 'missing' })
+  // Kết quả xếp còn bị gỡ khi xác nhận tay bị từ chối nên "đã xếp" chỉ chốt lúc xếp xong: chín kiện đã xếp; kiện cuối theo thứ tự xếp
+  // (PKG-001-10, không kiện nào tựa lên) hỏng — về kho kiện kèm cờ ngay lúc báo
+  await loadAll(db, trip.id, 'PKG-001-10')
   expect(await statuses()).toStrictEqual(all('STAGED'))
+  await db.reportDamagedPackage(trip.id, 'PKG-001-10')
+  expect(await statuses()).toStrictEqual([...all('STAGED', 21), ['PK-0022', 'IMPORTED']])
   await db.completeLoading(trip.id)
   expect(await statuses()).toStrictEqual([...all('LOADED', 21), ['PK-0022', 'IMPORTED']])
-  const missing = await db.getPackage('PK-0022')
-  expect(missing.flags).toStrictEqual(['NOT_FOUND'])
-  expect(missing).not.toHaveProperty('tripId')
-  expect(missing).not.toHaveProperty('stopId')
+  const damaged = await db.getPackage('PK-0022')
+  expect(damaged.flags).toStrictEqual(['DAMAGED'])
+  expect(damaged).not.toHaveProperty('tripId')
+  expect(damaged).not.toHaveProperty('stopId')
 
   // Yêu cầu theo chuyến: đã vào chuyến cho tới lúc xe xuất phát, rồi đang giao
   expect((await db.getDeliveryRequirement('REQ-006')).status).toBe('ASSIGNED')
   await db.startDelivery(trip.id)
   expect((await db.getDeliveryRequirement('REQ-006')).status).toBe('IN_TRIP')
   expect(await statuses()).toStrictEqual([...all('IN_TRANSIT', 21), ['PK-0022', 'IMPORTED']])
-  // Tài xế dỡ tám kiện, khách từ chối kiện thứ chín; hoàn tất điểm mới chốt
-  for (const id of instances.slice(0, 8)) await db.recordUnload(trip.id, 1, id, true)
+  // Tài xế đến điểm, dỡ tám kiện, khách từ chối kiện thứ chín; hoàn tất điểm mới chốt
+  await unloadStop(db, trip.id, 1, ['PKG-001-09'])
   await db.reportDeliveryIssue(trip.id, { stopNumber: 1, packageInstanceId: 'PKG-001-09', kind: 'refused', note: '' })
   expect(await statuses()).toStrictEqual([...all('IN_TRANSIT', 21), ['PK-0022', 'IMPORTED']])
   await db.completeStop(trip.id, 1)
   expect(await statuses()).toStrictEqual([...all('DELIVERED', 20), ['PK-0021', 'RETURNED'], ['PK-0022', 'IMPORTED']])
 
-  // Lịch sử của kiện do kho ghi ở từng mốc (FE-3b-03): tạo → gán chuyến → soạn → xếp → vận chuyển → giao; kiện thiếu về kho kiện kèm cờ
+  // Lịch sử của kiện do kho ghi ở từng mốc (FE-3b-03): tạo → gán chuyến → soạn → xếp → vận chuyển → giao; kiện hỏng về kho kiện kèm cờ
   const steps = async (id: string) => (await db.getPackage(id)).history.map((entry) =>
     entry.kind === 'status' ? `${entry.from}>${entry.to}@${entry.tripId}` : entry.kind === 'created' ? `created:${entry.source}` : `${entry.kind}:${entry.flag}`)
   expect(await steps('PK-0013')).toStrictEqual([
@@ -268,10 +273,10 @@ test('a package follows its trip by written transitions: assigned, staged, loade
     `IN_TRANSIT>DELIVERED@${trip.id}`,
   ])
   expect((await steps('PK-0021')).at(-1)).toBe(`IN_TRANSIT>RETURNED@${trip.id}`)
-  expect((await steps('PK-0022')).slice(-2)).toStrictEqual([`STAGED>IMPORTED@${trip.id}`, 'flagged:NOT_FOUND'])
+  expect((await steps('PK-0022')).slice(-2)).toStrictEqual([`STAGED>IMPORTED@${trip.id}`, 'flagged:DAMAGED'])
   const history = (await db.getPackage('PK-0013')).history
   expect(history.map((entry) => entry.at)).toStrictEqual(history.map((entry) => entry.at).toSorted())
-  // Yêu cầu đã giao xong nhưng thiếu: một kiện hoàn trả, một kiện không tìm thấy lúc xếp — hạn và ưu tiên không sửa được nữa
+  // Yêu cầu đã giao xong nhưng thiếu: một kiện hoàn trả, một kiện hỏng lúc xếp — hạn và ưu tiên không sửa được nữa
   const done = await db.getDeliveryRequirement('REQ-006')
   const members = await Promise.all(done.packageIds.map((id) => db.getPackage(id)))
   expect([done.status, requirementStatus(done, members), isRequirementClosed(done, members)]).toStrictEqual(['IN_TRIP', 'PARTIAL', true])
@@ -291,12 +296,12 @@ test('a requirement whose packages were all delivered reads as delivered', async
   }
   const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
   await db.approveRevision(revision.id, [])
-  const instances = Array.from({ length: 10 }, (_, index) => `PKG-001-${String(index + 1).padStart(2, '0')}`)
   await db.startLoading(trip.id)
-  for (const id of instances) await db.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
+  await stageAll(db, trip.id)
+  await loadAll(db, trip.id)
   await db.completeLoading(trip.id)
   await db.startDelivery(trip.id)
-  for (const id of instances) await db.recordUnload(trip.id, 1, id, true)
+  await unloadStop(db, trip.id, 1)
   await db.completeStop(trip.id, 1)
   const done = await db.getDeliveryRequirement('REQ-006')
   const members = await Promise.all(done.packageIds.map((id) => db.getPackage(id)))

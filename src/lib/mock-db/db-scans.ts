@@ -2,7 +2,7 @@ import { tripReadiness } from '@/domain/constraints'
 import { found, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
-import { missingIds, plannedStops } from './operations'
+import { leftOutIds, plannedStops, stagingRemaining } from './operations'
 import { tripLinks } from './db-trip-lines'
 import { normalizeQrToken } from './qr-token'
 import { tripLabels } from './review1-status'
@@ -35,10 +35,23 @@ export function expectedLoadingInstance(trip: Trip, plan: Revision): string | un
   return plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).find((p) => !recorded.has(p.packageInstanceId))?.packageInstanceId
 }
 
+/** Bước xếp chỉ mở khi mọi kiện của phương án đã soạn (FE-6-02, D-82); còn kiện chưa soạn: `STAGING_INCOMPLETE`. */
+export function assertStaged(trip: Trip, plan: Revision) {
+  const remaining = stagingRemaining(trip, plan).length
+  if (remaining > 0) throw new MockDbError('STAGING_INCOMPLETE', { tripId: trip.id, remaining })
+}
+
 /** Điểm đang giao là `stopNumber` (điểm chưa hoàn tất đầu tiên); điểm khác: `STOP_NOT_CURRENT`. */
 export function currentStopProgress(trip: Trip, stopNumber: number): StopProgress {
   const current = trip.delivery?.stops.find((stop) => stop.completedAt === undefined)
   if (current?.number !== stopNumber) throw new MockDbError('STOP_NOT_CURRENT', { tripId: trip.id, stopNumber })
+  return current
+}
+
+/** Điểm đang giao mà tài xế đã bấm "Đã đến" (FE-6-06, D-84): chưa đến thì chưa dỡ, chưa hoàn tất điểm được — `STOP_NOT_ARRIVED`. */
+export function arrivedStopProgress(trip: Trip, stopNumber: number): StopProgress {
+  const current = currentStopProgress(trip, stopNumber)
+  if (current.arrivedAt === undefined) throw new MockDbError('STOP_NOT_ARRIVED', { tripId: trip.id, stopNumber })
   return current
 }
 
@@ -47,12 +60,23 @@ export function assertUnloadable(trip: Trip, plan: Revision, stopNumber: number,
   const plannedStop = plannedStops(plan).get(packageInstanceId)
   if (plannedStop === undefined) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token })
   if (plannedStop !== stopNumber) throw new MockDbError('QR_WRONG_STOP', { packageInstanceId, stopNumber: plannedStop })
-  if (missingIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId: trip.id, packageInstanceId })
+  if (leftOutIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId: trip.id, packageInstanceId })
 }
 
 /** Một lần đối chiếu mới của phiên hiện tại, chưa có mã. */
 export function verificationBy(ctx: DbContext, entry: Omit<PackageVerification, 'id' | 'at' | 'by'>): Omit<PackageVerification, 'id'> {
   return { ...entry, at: ctx.nowIso(), by: ctx.state.session.userId }
+}
+
+/**
+ * Nhãn khớp mã quét (`QR`) hoặc mã gõ (`CODE`, D-83) trong chuyến. Mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`; không khớp
+ * kiện nào: `PACKAGE_NOT_IN_TRIP`.
+ */
+export function scannedLabel(ctx: DbContext, trip: Trip, code: string, method: LabelVerifyMethod): TripLabel {
+  const match = resolveVerifyCode(labelsOf(ctx, trip), code, method)
+  if (match.kind === 'ambiguous') throw new MockDbError('PACKAGE_CODE_AMBIGUOUS', { tripId: trip.id, code: code.trim(), count: match.count })
+  if (match.kind === 'unknown') throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(code) })
+  return match.label
 }
 
 /**
@@ -62,17 +86,6 @@ export function verificationBy(ctx: DbContext, entry: Omit<PackageVerification, 
  */
 export function scanMethods(ctx: DbContext): ScanMethods {
   const { trips, vehicles, maintenance } = ctx.state
-
-  /**
-   * Nhãn khớp mã quét (`QR`) hoặc mã gõ (`CODE`, D-83) trong chuyến. Mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`; không
-   * khớp kiện nào: `PACKAGE_NOT_IN_TRIP`.
-   */
-  function scanned(trip: Trip, code: string, method: LabelVerifyMethod): TripLabel {
-    const match = resolveVerifyCode(labelsOf(ctx, trip), code, method)
-    if (match.kind === 'ambiguous') throw new MockDbError('PACKAGE_CODE_AMBIGUOUS', { tripId: trip.id, code: code.trim(), count: match.count })
-    if (match.kind === 'unknown') throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(code) })
-    return match.label
-  }
 
   return {
     listTripLabels: (tripId) => ctx.respond(() => labelsOf(ctx, ctx.scope.trips.read(tripId))),
@@ -94,9 +107,10 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         assertPhase(trip, 'loading')
         const loading = trip.loading
         const plan = loadingPlan(ctx, trip)
-        const label = scanned(trip, code, method)
+        const label = scannedLabel(ctx, trip, code, method)
         const id = label.packageInstanceId
         if (!plannedStops(plan).has(id)) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
+        assertStaged(trip, plan)
         const expected = expectedLoadingInstance(trip, plan)
         if (!loading || expected !== id) throw new MockDbError('WRONG_PACKAGE_SCANNED', { expected: expected ?? '', scanned: id })
         const steps = [...loading.steps, { packageInstanceId: id, outcome: 'loaded' as const, at: ctx.nowIso(), via: 'qr' as const }]
@@ -119,9 +133,9 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         const delivery = trip.delivery
-        currentStopProgress(trip, stopNumber)
+        arrivedStopProgress(trip, stopNumber)
         if (!delivery) throw new Error(`Chuyến ${tripId} đang giao nhưng không có tiến độ giao`)
-        const label = scanned(trip, code, method)
+        const label = scannedLabel(ctx, trip, code, method)
         const id = label.packageInstanceId
         assertUnloadable(trip, loadingPlan(ctx, trip), stopNumber, id, label.qrToken)
         const stops = delivery.stops.map((stop) => stop.number !== stopNumber ? stop : {

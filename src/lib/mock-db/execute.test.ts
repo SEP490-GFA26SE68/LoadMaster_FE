@@ -51,14 +51,16 @@ test('the driver confirms unloading at the current stop by scanning; a package o
   const trip = await db.getTrip('TRIP-009')
   const plan = await db.getRevision(trip.loading?.revisionId ?? '')
   const byStop = (stop: number) => plan.result.placements.map((p) => p.packageInstanceId).filter((id) => trip.packages.find((pkg) => id.startsWith(`${pkg.id}-`))?.deliveryStop === stop)
-  const [atStop2] = byStop(2)
+  // Seed: tài xế đã đến điểm 2 và dỡ nửa số kiện bằng quét; lấy một kiện của điểm 2 chưa dỡ
+  const seeded = trip.delivery?.stops[1]
+  expect([seeded?.arrivedAt !== undefined, seeded?.unloadedIds.length, seeded?.qrConfirmedIds?.length]).toStrictEqual([true, 25, 25])
+  const atStop2 = byStop(2).find((id) => !seeded?.unloadedIds.includes(id))
   const [atStop3] = byStop(3)
   await expect(db.confirmUnloadByQr('TRIP-009', 2, await tokenOf(db, 'TRIP-009', atStop3 ?? ''))).rejects.toMatchObject({ code: 'QR_WRONG_STOP', params: { stopNumber: 3 } })
   await expect(db.confirmUnloadByQr('TRIP-009', 3, await tokenOf(db, 'TRIP-009', atStop3 ?? ''))).rejects.toMatchObject({ code: 'STOP_NOT_CURRENT' })
   const result = await db.confirmUnloadByQr('TRIP-009', 2, await tokenOf(db, 'TRIP-009', atStop2 ?? ''))
   const stop = result.trip.delivery?.stops.find((item) => item.number === 2)
-  expect(stop?.unloadedIds).toContain(atStop2)
-  expect(stop?.qrConfirmedIds).toStrictEqual([atStop2])
+  expect([stop?.unloadedIds.length, stop?.unloadedIds.at(-1), stop?.qrConfirmedIds?.at(-1)]).toStrictEqual([26, atStop2, atStop2])
 })
 
 test('trip report of a completed trip counts what the warehouse and the driver recorded', async () => {
@@ -66,7 +68,7 @@ test('trip report of a completed trip counts what the warehouse and the driver r
   const trip = await db.getTrip('TRIP-003')
   const report = tripReport(trip, await db.getRevision(trip.loading?.revisionId ?? ''))
   expect(report.completed).toBe(true)
-  expect(report.packages).toMatchObject({ planned: 145, loaded: 144, missing: 1, delivered: 144, withIssue: 0 })
+  expect(report.packages).toMatchObject({ planned: 145, loaded: 144, damaged: 1, loadedByQr: 144, delivered: 144, withIssue: 0 })
   expect(report.stops.map((stop) => stop.planned)).toStrictEqual([60, 45, 39])
   expect(report.stops.every((stop) => stop.completedAt !== null)).toBe(true)
   expect(report.durations.loadingMs).toBeGreaterThan(0)

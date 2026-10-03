@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import type { CargoPackage } from '@/domain/models'
 import { createMockDb, type MockDb, type Package } from '@/lib/mock-db'
+import { loadAll, stageAll } from '@/test/trip-flow'
 
 /**
  * Kiện thêm ngay trong chuyến tự vào kho kiện (FE-3b-07, D-68): mỗi instance một bản ghi `ASSIGNED` nguồn `TRIP` có mã QR thật; xoá
@@ -124,9 +125,9 @@ test('lines of a requirement keep the packages of the requirement; a line whose 
   expect((await Promise.all(['PK-0090', 'PK-0091'].map((id) => db.getPackage(id)))).map((pkg) => [pkg.status, pkg.tripId])).toStrictEqual([['IMPORTED', undefined], ['IMPORTED', undefined]])
 })
 
-test('the pool packages of a hand-entered trip follow it through loading and delivery; a missing one returns flagged', async () => {
+test('the pool packages of a hand-entered trip follow it through staging, loading and delivery; a damaged one returns flagged', async () => {
   const db = dispatcher()
-  // Chuyến chính đã duyệt, 132 kiện nhập tay: kho xếp, báo thiếu một kiện, tài xế giao điểm 1
+  // Chuyến chính đã duyệt, 132 kiện nhập tay: kho soạn, xếp, bỏ lại một kiện hỏng, tài xế xuất phát
   const tripId = 'TRIP-2026-0914'
   const labels = await db.listTripLabels(tripId)
   expect(labels).toHaveLength(132)
@@ -138,23 +139,27 @@ test('the pool packages of a hand-entered trip follow it through loading and del
   const started = await db.startLoading(tripId)
   const plan = await db.getRevision(started.loading?.revisionId ?? '')
   const order = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).map((p) => p.packageInstanceId)
-  const [first, second, ...rest] = order
-  expect(await statusOf(first ?? '')).toBe('STAGED')
-  // Quét nhãn của kiện kho kiện xác nhận bước xếp
-  await db.confirmLoadingByQr(tripId, labels.find((label) => label.packageInstanceId === first)?.qrToken ?? '')
-  await db.recordLoadingStep(tripId, { packageInstanceId: second ?? '', outcome: 'missing' })
-  for (const id of rest) await db.recordLoadingStep(tripId, { packageInstanceId: id, outcome: 'loaded' })
+  const first = order[0] ?? ''
+  const last = order.at(-1) ?? ''
+  expect(await statusOf(first)).toBe('ASSIGNED')
+  // Quét nhãn của kiện kho kiện: soạn vào khu chờ, rồi xác nhận từng bước xếp
+  await db.confirmStagingByQr(tripId, labels.find((label) => label.packageInstanceId === first)?.qrToken ?? '')
+  expect(await statusOf(first)).toBe('STAGED')
+  await stageAll(db, tripId)
+  await loadAll(db, tripId, last)
+  // Kiện cuối theo thứ tự xếp hỏng: không kiện nào tựa lên nó nên bỏ lại kho, xếp xong luôn
+  await db.reportDamagedPackage(tripId, last)
   await db.completeLoading(tripId)
-  expect(await statusOf(first ?? '')).toBe('LOADED')
-  const missing = await db.getPackage(poolIdOf.get(second ?? '') ?? '')
-  expect(missing).toMatchObject({ status: 'IMPORTED', flags: ['NOT_FOUND'], source: 'TRIP' })
-  expect(missing).not.toHaveProperty('tripId')
-  // Nhãn của chuyến vẫn đủ 132 kiện: kiện thiếu giữ mã của nó
+  expect(await statusOf(first)).toBe('LOADED')
+  const damaged = await db.getPackage(poolIdOf.get(last) ?? '')
+  expect(damaged).toMatchObject({ status: 'IMPORTED', flags: ['DAMAGED'], source: 'TRIP' })
+  expect(damaged).not.toHaveProperty('tripId')
+  // Nhãn của chuyến vẫn đủ 132 kiện: kiện hỏng giữ mã của nó
   expect(await db.listTripLabels(tripId)).toStrictEqual(labels)
 
   db.restoreSession('US-0004')
   await db.startDelivery(tripId)
-  expect(await statusOf(first ?? '')).toBe('IN_TRANSIT')
+  expect(await statusOf(first)).toBe('IN_TRANSIT')
 })
 
 test('seed trips: every hand-entered instance has a pool package whose status follows the progress of its trip', async () => {
@@ -178,10 +183,10 @@ test('seed trips: every hand-entered instance has a pool package whose status fo
   // Khách từ chối một kiện ở TRIP-007: hoàn trả; hàng móp vẫn nhận ở TRIP-005: đã giao
   expect(statusesOf('TRIP-007')).toStrictEqual(['DELIVERED', 'RETURNED'])
   expect(statusesOf('TRIP-005')).toStrictEqual(['DELIVERED'])
-  // Chuyến đã huỷ trả hết kiện về kho kiện; kiện kho báo thiếu của TRIP-003 mang cờ
+  // Chuyến đã huỷ trả hết kiện về kho kiện; kiện hỏng lúc xếp của TRIP-003 mang cờ
   expect(statusesOf('TRIP-004')).toStrictEqual([])
   expect(packages.filter((pkg) => pkg.history.some((entry) => entry.kind === 'status' && entry.tripId === 'TRIP-004' && entry.to === 'IMPORTED'))).toHaveLength(170)
-  const flagged = packages.filter((pkg) => pkg.flags.includes('NOT_FOUND'))
+  const flagged = packages.filter((pkg) => pkg.flags.includes('DAMAGED'))
   expect(flagged.map((pkg) => [pkg.status, pkg.tripId, pkg.history.at(-1)?.kind])).toStrictEqual([['IMPORTED', undefined, 'flagged']])
   expect(flagged[0]?.history.find((entry) => entry.kind === 'status' && entry.to === 'IMPORTED')).toMatchObject({ tripId: 'TRIP-003' })
   // Mã kế tiếp của kho không đổi
