@@ -42,7 +42,7 @@ export function planTripDelta(
 }
 
 export type WarehouseProgress = {
-  /** Kiện kho đã xếp (không tính kiện báo thiếu). */
+  /** Kiện kho đã xếp (không tính kiện hỏng bị bỏ lại kho). */
   readonly loaded: number
   /** Kiện của bản duyệt kho đang xếp theo. */
   readonly total: number
@@ -58,10 +58,10 @@ export function warehouseProgress(
 ): WarehouseProgress | null {
   const { loading } = trip
   if (!loading) return null
-  const missing = loading.steps.filter((step) => step.outcome === 'missing').length
+  const damaged = loading.steps.filter((step) => step.outcome === 'damaged').length
   const plan = revisions.find((revision) => revision.id === loading.revisionId)
   return {
-    loaded: loading.steps.length - missing,
+    loaded: loading.steps.length - damaged,
     total: plan ? plan.result.placements.length : loading.steps.length,
     startedAt: loading.startedAt,
     startedBy: loading.startedBy,

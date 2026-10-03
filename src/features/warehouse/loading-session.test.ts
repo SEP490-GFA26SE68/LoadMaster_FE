@@ -1,14 +1,15 @@
 import { expect, test } from 'vitest'
 import type { LoadingOutcome, TripPhase } from '@/lib/mock-db'
 import { sceneBox } from '@/test/scene'
-import { loadingProgress, warehouseSession } from './loading-session'
+import { twoCartonRequest, twoCartonResult } from '@/test/mock-db-samples'
+import { loadingProgress, loadingStep, stagingProgress, warehouseSession } from './loading-session'
 
 const approved = (id: string, inputVersion = 1) => ({ id, inputVersion, approvedAt: '2026-09-14T02:00:00.000Z' })
 const optimized = (id: string, inputVersion = 1) => ({ id, inputVersion })
 const trip = (phase: TripPhase, inputVersion = 1, revisionId?: string) => ({
   phase,
   inputVersion,
-  ...(revisionId ? { loading: { revisionId, startedAt: '2026-09-14T04:45:00.000Z', startedBy: null, steps: [] } } : {}),
+  ...(revisionId ? { loading: { revisionId, startedAt: '2026-09-14T04:45:00.000Z', startedBy: null, stagedIds: [], steps: [] } } : {}),
 })
 
 test('a planned trip starts on the latest approved plan; a newer optimisation that is not approved is ignored', () => {
@@ -38,20 +39,35 @@ const steps = (...recorded: [string, LoadingOutcome][]) => ({
 })
 
 test('nothing recorded: the first package in loading order is current, the second is next', () => {
-  expect(loadingProgress(placements, undefined)).toMatchObject({ current: { id: 'PKG-A' }, next: { id: 'PKG-B' }, total: 4, recorded: 0, loaded: 0, missing: [] })
+  expect(loadingProgress(placements, undefined)).toMatchObject({ current: { id: 'PKG-A' }, next: { id: 'PKG-B' }, total: 4, recorded: 0, loaded: 0, damaged: [] })
 })
 
-test('reopening resumes at the first package without a result; loaded and missing both count as recorded', () => {
-  const progress = loadingProgress(placements, steps(['PKG-A', 'loaded'], ['PKG-B', 'missing']))
+test('reopening resumes at the first package without a result; loaded and damaged both count as recorded', () => {
+  const progress = loadingProgress(placements, steps(['PKG-A', 'loaded'], ['PKG-B', 'damaged']))
   expect(progress).toMatchObject({ current: { id: 'PKG-C' }, next: { id: 'PKG-D' }, total: 4, recorded: 2, loaded: 1 })
-  expect(progress.missing.map((p) => p.id)).toStrictEqual(['PKG-B'])
+  expect(progress.damaged.map((p) => p.id)).toStrictEqual(['PKG-B'])
   // Ghi lệch thứ tự (kiện 2 trước kiện 1): vẫn quay về kiện 1, kiện kế tiếp bỏ qua kiện đã ghi
   expect(loadingProgress(placements, steps(['PKG-B', 'loaded']))).toMatchObject({ current: { id: 'PKG-A' }, next: { id: 'PKG-C' } })
   expect(loadingProgress(placements, steps(['PKG-A', 'loaded'], ['PKG-B', 'loaded'], ['PKG-C', 'loaded']))).toMatchObject({ current: { id: 'PKG-D' }, next: undefined })
 })
 
-test('every package recorded: no current package; missing ones listed in loading order', () => {
-  const progress = loadingProgress(placements, steps(['PKG-D', 'missing'], ['PKG-A', 'loaded'], ['PKG-C', 'loaded'], ['PKG-B', 'missing']))
+test('every package recorded: no current package; damaged ones listed in loading order', () => {
+  const progress = loadingProgress(placements, steps(['PKG-D', 'damaged'], ['PKG-A', 'loaded'], ['PKG-C', 'loaded'], ['PKG-B', 'damaged']))
   expect(progress).toMatchObject({ current: undefined, next: undefined, total: 4, recorded: 4, loaded: 2 })
-  expect(progress.missing.map((p) => p.id)).toStrictEqual(['PKG-B', 'PKG-D'])
+  expect(progress.damaged.map((p) => p.id)).toStrictEqual(['PKG-B', 'PKG-D'])
+})
+
+test('staging (FE-6-02): packages not staged are listed in loading order whatever order they were staged in; reported shortages are flagged', () => {
+  expect(stagingProgress(placements, undefined)).toMatchObject({ total: 4, staged: 0 })
+  const progress = stagingProgress(placements, { stagedIds: ['PKG-D', 'PKG-A'], shortages: [{ packageInstanceId: 'PKG-C', at: '2026-09-14T05:00:00.000Z', by: 'US-0003' }] })
+  expect([progress.total, progress.staged, progress.pending.map((p) => p.id), [...progress.shortageIds]]).toStrictEqual([4, 2, ['PKG-B', 'PKG-C'], ['PKG-C']])
+})
+
+test('the step of a trip at the warehouse: staging while a planned package is not staged, loading once every one is', () => {
+  // twoCartonResult: PKG-001-01 và PKG-002-01
+  const plan = { request: twoCartonRequest(), result: twoCartonResult() }
+  const at = (stagedIds: string[]) => ({ loading: { revisionId: 'REV-001', startedAt: '2026-09-14T04:45:00.000Z', startedBy: null, stagedIds, steps: [] } })
+  expect(loadingStep(at([]), plan)).toBe('staging')
+  expect(loadingStep(at(['PKG-002-01']), plan)).toBe('staging')
+  expect(loadingStep(at(['PKG-002-01', 'PKG-001-01']), plan)).toBe('loading')
 })

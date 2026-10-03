@@ -1,6 +1,6 @@
 import { eq, gt, isUpright, lt, roundCm, type OrientationCode } from '@/domain/geometry'
 import type { VehicleConfig, VehicleObstacle } from '@/domain/models'
-import type { ScenePlacement } from '@/features/viewer3d/scene-input'
+import type { ScenePlacement, SceneZone } from '@/features/viewer3d/scene-input'
 
 /**
  * Số liệu hướng dẫn cho công nhân kho, suy ra từ placement cm của revision đã duyệt (LM-060).
@@ -60,6 +60,22 @@ export function measureStep(
     rightCm: roundCm(vehicle.innerWidthCm - p.position.y - p.widthCm),
     floorCm: p.position.z,
   }
+}
+
+/** Chỗ của một vùng trong thùng: sát cửa sau, giữa thùng, sát vách trước; `whole` khi phương án chỉ có một vùng. */
+export type ZonePlace = 'door' | 'middle' | 'front' | 'whole'
+
+/**
+ * Vùng theo điểm giao mà kiện đang nằm (FE-6-05): tên điểm giao của vùng và chỗ của vùng trong thùng — vùng có mốc X lớn nhất sát cửa,
+ * vùng bắt đầu từ vách trong (X nhỏ nhất) sát vách trước. Phương án không chia vùng, hoặc kiện không thuộc vùng nào: `undefined`.
+ */
+export function zonePlace(zones: readonly Pick<SceneZone, 'id' | 'name' | 'startXCm'>[], zoneId: string | undefined): { name: string; place: ZonePlace } | undefined {
+  const fromDoor = zones.toSorted((a, b) => b.startXCm - a.startXCm)
+  const index = fromDoor.findIndex((zone) => zone.id === zoneId)
+  const zone = fromDoor[index]
+  if (!zone) return undefined
+  const place = fromDoor.length === 1 ? 'whole' : index === 0 ? 'door' : index === fromDoor.length - 1 ? 'front' : 'middle'
+  return { name: zone.name, place }
 }
 
 export type NearbyObstacle = { obstacle: VehicleObstacle; gapCm: number }

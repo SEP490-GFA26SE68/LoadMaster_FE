@@ -4,15 +4,16 @@ import { useT } from '@/lib/i18n'
 import { pendingManualConfirms, rejectedConfirms, type Trip } from '@/lib/mock-db'
 
 /**
- * Dải thông báo về xác nhận tay của phiên xếp (FE-6-04, D-83): kiện bị điều phối viên từ chối — kho đã gỡ kết quả xếp của nó nên bước
- * hiện tại quay về đúng kiện đó, kèm lý do để kiểm lại — và số xác nhận tay còn chờ duyệt (chưa xong xếp được khi còn chờ). Chữ 16 px
- * như phần còn lại của màn tablet (mục 10).
+ * Dải thông báo về xác nhận tay của phiên ở kho, cả bước soạn lẫn bước xếp (FE-6-04, D-83): kiện bị điều phối viên từ chối — kho đã gỡ
+ * kết quả của nó nên chuyến quay về đúng kiện đó, kèm lý do để kiểm lại — và số xác nhận tay còn chờ duyệt (chưa xong xếp được khi còn
+ * chờ). Chữ 16 px như phần còn lại của màn tablet (mục 10).
  */
 export function ConfirmNotices({ trip }: { trip: Trip }) {
   const t = useT()
   const recorded = useMemo(() => new Set(trip.loading?.steps.map((step) => step.packageInstanceId)), [trip.loading])
-  const rejected = rejectedConfirms(trip, 'LOADING', recorded)
-  const pending = pendingManualConfirms(trip, 'LOADING').length
+  const staged = useMemo(() => new Set(trip.loading?.stagedIds), [trip.loading])
+  const rejected = [...rejectedConfirms(trip, 'STAGING', staged), ...rejectedConfirms(trip, 'LOADING', recorded)]
+  const pending = pendingManualConfirms(trip, 'STAGING').length + pendingManualConfirms(trip, 'LOADING').length
   if (rejected.length === 0 && pending === 0) return null
   return (
     <div className="flex flex-none flex-col gap-2 px-3 pt-3">

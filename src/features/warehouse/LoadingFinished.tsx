@@ -11,7 +11,7 @@ import { useSessionModel } from './useSessionModel'
 import { loadingSessionPath } from './warehouse-trips'
 
 /**
- * Màn "Xếp xong" (LM-086): số kiện đã xếp trên tổng, danh sách kiện kho báo thiếu, nút về danh sách chuyến. Mọi số đọc từ tiến độ
+ * Màn "Xếp xong — chờ xuất phát" (LM-086, FE-6-05): số kiện đã xếp trên tổng, danh sách kiện hỏng bị bỏ lại kho, nút về danh sách chuyến. Mọi số đọc từ tiến độ
  * trong kho (D-47). Mở lại chuyến đã xếp xong (kể cả khi xe đã đi giao) cũng ra màn này. Review 1 (LM-104): số kiện xác nhận bằng quét
  * QR và ô niêm phong thùng (số seal, không bắt buộc).
  */
@@ -40,11 +40,11 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
             {t('warehouse.finished.loaded', { loaded: format.integer(progress.loaded), total: format.integer(progress.total) })}
           </p>
           {trip.phase === 'loaded' ? <p className="m-0 text-text-2">{t('warehouse.finished.description')}</p> : null}
-          {progress.missing.length > 0 ? (
-            <section aria-labelledby="kien-thieu" className="flex w-full flex-col gap-2">
-              <h2 id="kien-thieu" className="text-h2 font-semibold">{t('warehouse.finished.missingTitle', { count: progress.missing.length })}</h2>
+          {progress.damaged.length > 0 ? (
+            <section aria-labelledby="kien-hong" className="flex w-full flex-col gap-2">
+              <h2 id="kien-hong" className="text-h2 font-semibold">{t('warehouse.finished.damagedTitle', { count: progress.damaged.length })}</h2>
               <ul className="m-0 flex list-none flex-col overflow-hidden rounded-md border border-border p-0">
-                {progress.missing.map((placement) => (
+                {progress.damaged.map((placement) => (
                   <li key={placement.id} className="flex flex-wrap items-baseline gap-x-3 border-b border-border px-4 py-3 last:border-b-0">
                     <span className="font-mono font-semibold">{placement.id}</span>
                     <span className="text-text-2">{placement.name} · {t('common.stop', { number: placement.stop })}</span>
@@ -53,7 +53,7 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
               </ul>
             </section>
           ) : (
-            <p className="m-0 text-text-2">{t('warehouse.finished.noMissing')}</p>
+            <p className="m-0 text-text-2">{t('warehouse.finished.noDamaged')}</p>
           )}
           {loadedByQr > 0 ? <p className="m-0 text-text-2">{t('warehouse.scan.recordedByQr', { count: loadedByQr })}</p> : null}
           <SealCard trip={trip} />

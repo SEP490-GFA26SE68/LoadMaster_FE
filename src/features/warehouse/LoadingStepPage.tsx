@@ -5,14 +5,17 @@ import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { LoadingFinished } from './LoadingFinished'
 import { LoadingSessionView } from './LoadingSessionView'
-import { warehouseSession } from './loading-session'
+import { loadingStep, warehouseSession } from './loading-session'
+import { StagingStepPage } from './StagingStepPage'
 import { useStartLoadingMutation, useWarehouseTripQuery } from './useWarehouseQueries'
 import { WarehouseEmpty } from './WarehouseEmpty'
 
 /**
- * Phiên xếp chuyến `/kho?chuyen=<mã>` (LM-086). Theo pha và revision của chuyến trong kho: vào lần đầu là bắt đầu xếp theo bản duyệt
- * mới nhất; đang xếp thì tiếp tục ở kiện chưa ghi đầu tiên; đã xếp xong thì ra màn Xếp xong. Bản duyệt lỗi thời không bắt đầu được —
- * chờ điều phối viên tối ưu lại và duyệt (D-31); chưa có bản duyệt hoặc chuyến đã huỷ thì nói rõ, có lối về danh sách.
+ * Phiên của chuyến ở kho `/kho?chuyen=<mã>` (LM-086). Theo pha và revision của chuyến trong kho: vào lần đầu là bắt đầu theo bản duyệt
+ * mới nhất; còn kiện chưa soạn thì là bước Soạn hàng (FE-6-02), soạn đủ thì bước Xếp tiếp tục ở kiện chưa ghi đầu tiên; đã xếp xong
+ * thì ra màn Xếp xong. Bản duyệt lỗi thời không bắt đầu được — chờ điều phối viên tối ưu lại và duyệt (D-31); chuyến vừa từ Đang xếp
+ * hàng quay về (bỏ kiện thiếu, kiện hỏng có kiện tựa lên) nói rõ lý do và việc kho cần làm. Chưa có bản duyệt hoặc chuyến đã huỷ thì
+ * nói rõ, có lối về danh sách; huỷ lúc đang xếp thì nhắc dỡ phần đã xếp (FE-6-07).
  */
 export function LoadingStepPage({ tripId }: { tripId: string }) {
   const t = useT()
@@ -27,21 +30,30 @@ export function LoadingStepPage({ tripId }: { tripId: string }) {
   switch (session.kind) {
     case 'no-plan':
       return <WarehouseEmpty tripId={tripId} title={t('warehouse.emptyTitle')} description={t('warehouse.emptyTripDescription', { tripId })} />
-    case 'cancelled':
+    case 'cancelled': {
+      const loaded = trip.loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
+      const cancelled = t('warehouse.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })
       return (
         <WarehouseEmpty
           tripId={tripId}
           mascot="error"
           title={t('warehouse.cancelledTitle')}
-          description={t('warehouse.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })}
+          description={loaded > 0 ? `${cancelled} ${t('warehouse.cancelledUnload', { count: loaded })}` : cancelled}
         />
       )
-    case 'stale':
-      return <WarehouseEmpty tripId={tripId} title={t('warehouse.staleTitle')} description={t('warehouse.staleDescription', { tripId })} />
+    }
+    case 'stale': {
+      const { replan } = trip
+      if (!replan) return <WarehouseEmpty tripId={tripId} title={t('warehouse.staleTitle')} description={t('warehouse.staleDescription', { tripId })} />
+      const reason = t(`warehouse.replan.${replan.reason}`, { tripId })
+      return <WarehouseEmpty tripId={tripId} title={t('warehouse.replan.title')} description={replan.unload ? `${reason} ${t('warehouse.replan.unload')}` : reason} />
+    }
     case 'start':
       return <StartingSession tripId={tripId} />
     case 'loading':
-      return <LoadingSessionView trip={trip} plan={session.plan} />
+      return loadingStep(trip, session.plan) === 'staging'
+        ? <StagingStepPage trip={trip} plan={session.plan} />
+        : <LoadingSessionView trip={trip} plan={session.plan} />
     case 'finished':
       return <LoadingFinished trip={trip} plan={session.plan} />
   }
