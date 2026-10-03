@@ -149,8 +149,8 @@ test('the template of either language, for this trip, imports as two valid packa
     const result = ready(preview(parseCsv(toCsv(rows))))
     expect(result.valid.map((pkg) => pkg.id)).toStrictEqual(['PKG-002', 'PKG-003'])
     expect(result.invalidCount).toBe(0)
-    // Cột cuối của file mẫu là loại hàng (FE-3b-07)
-    expect(result.valid.map((pkg) => pkg.handlingClass)).toStrictEqual(['STANDARD', 'FRAGILE'])
+    // Cột cuối của file mẫu là loại hàng (FE-3b-07); hai dòng mẫu cùng loại để nhập mẫu không vướng phân tách hàng (FE-4b-06)
+    expect(result.valid.map((pkg) => pkg.handlingClass)).toStrictEqual(['STANDARD', 'STANDARD'])
     expect(rows[0]).toHaveLength(20)
   }
   const rows = importTemplateRows(vi, [EXISTING], 2)
