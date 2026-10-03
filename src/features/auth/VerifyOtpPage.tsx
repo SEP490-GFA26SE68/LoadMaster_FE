@@ -60,8 +60,7 @@ export function VerifyOtpPage() {
   const maskedEmail = useMemo(() => {
     if (!email) return ''
 
-    const [name, domain] =
-      email.split('@')
+    const [name = '', domain] = email.split('@')
 
     if (!domain) return email
 
@@ -82,6 +81,8 @@ export function VerifyOtpPage() {
     )
   }
 
+  const verifiedEmail = email
+
   async function handleSubmit() {
     setServerError(null)
 
@@ -97,7 +98,7 @@ export function VerifyOtpPage() {
     try {
       const resetToken =
         await verifyPasswordResetOtp(
-          email,
+          verifiedEmail,
           otp,
         )
 
@@ -130,7 +131,7 @@ export function VerifyOtpPage() {
     setResending(true)
 
     try {
-      await requestPasswordReset(email)
+      await requestPasswordReset(verifiedEmail)
 
       setOtp('')
       setSecondsLeft(
