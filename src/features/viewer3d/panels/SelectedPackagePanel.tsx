@@ -6,7 +6,7 @@ import type { ConstraintIssue } from '@/domain/constraints'
 import { effectiveOrientations, type OrientationRules } from '@/domain/geometry'
 import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { SceneStop, ScenePlacement } from '@/features/viewer3d/scene-input'
+import type { SceneStop, ScenePlacement, SceneZone } from '@/features/viewer3d/scene-input'
 import { findAbove, findBelow, layerOf } from './placement-relations'
 import { DARK_SUBCARD, GlassChip, GlassValue, MUTED, StopMark } from './scene-ui'
 
@@ -17,6 +17,8 @@ export type SelectedPackageProps = {
   orientationRules?: OrientationRules
   totalSteps: number
   stops: readonly SceneStop[]
+  /** Vùng theo điểm giao của phương án (FE-5b-07); rỗng hoặc vắng thì thẻ không có ô Vùng. */
+  zones?: readonly SceneZone[]
   tripId: string
   /** Lỗi/cảnh báo ràng buộc của phương án; thẻ lọc theo kiện đang chọn (LM-049) */
   issues?: readonly ConstraintIssue[]
@@ -31,8 +33,8 @@ export type SelectedPackageProps = {
 
 /**
  * Thẻ kiện đang chọn trên kính tối (V2.3 `.insp`): mã, tên, điểm giao, rồi các ô số — kích thước, khối lượng, kiện gốc, thứ tự
- * xếp/dỡ, hướng xoay, tỷ lệ đỡ đáy (%), vị trí — và lỗi ràng buộc của riêng kiện. Dùng hai nơi: nổi bên phải khung 3D từ 1.280 px
- * và trong tab Kiện của hộp thông tin.
+ * xếp/dỡ, hướng xoay, tỷ lệ đỡ đáy (%), vùng điểm giao kiện đang nằm (kèm câu báo khi nằm ngoài vùng của điểm mình, FE-5b-07), vị
+ * trí — và lỗi ràng buộc của riêng kiện. Dùng hai nơi: nổi bên phải khung 3D từ 1.280 px và trong tab Kiện của hộp thông tin.
  */
 export function SelectedPackagePanel({ placement, onClose, onPick, className, ...props }: SelectedPackageProps) {
   const t = useT()
@@ -48,12 +50,13 @@ export function SelectedPackagePanel({ placement, onClose, onPick, className, ..
   )
 }
 
-function PackageDetails({ placement, placements, orientationRules, totalSteps, stops, tripId, issues = [], onClose, onPick, onEdit, onFocus }:
+function PackageDetails({ placement, placements, orientationRules, totalSteps, stops, zones = [], tripId, issues = [], onClose, onPick, onEdit, onFocus }:
   Omit<SelectedPackageProps, 'placement' | 'className'> & { placement: ScenePlacement }) {
   const format = useFormat()
   const t = useT()
   const cm = format.lengthValue
   const stopName = stops.find((s) => s.number === placement.stop)?.name ?? ''
+  const zone = zones.find(({ id }) => id === placement.zoneId)
   const layer = layerOf(placement, placements)
   const below = findBelow(placement, placements)
   const above = findAbove(placement, placements)
@@ -107,6 +110,17 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
           <Cell label={t('viewer.plan.detail.supportRatio')}>
             <GlassValue value={format.percent(placement.supportRatio * 100)} />
           </Cell>
+          {zone ? (
+            <Cell label={t('viewer.selected.zone')} wide>
+              <span className="flex flex-wrap items-center gap-2 text-body-lg font-semibold text-sky-text xl:text-body">
+                <StopMark stop={zone.stopId} decorative />{t('viewer.zones.zoneOf', { number: zone.stopId })}
+                {placement.outOfZone ? <GlassChip tone="warn" size="tag"><AlertCircle strokeWidth={1.5} aria-hidden />{t('viewer.zones.outOfZone')}</GlassChip> : null}
+              </span>
+              <span className={cn('mt-1 block text-body xl:text-caption', placement.outOfZone ? 'text-amber-200' : MUTED)}>
+                {placement.outOfZone ? t('viewer.zones.outOfZoneOf', { stop: placement.stop }) : zone.name}
+              </span>
+            </Cell>
+          ) : null}
           <Cell label={t('viewer.selected.position')} wide>
             <GlassValue value={`${cm(placement.position.x)} · ${cm(placement.position.y)} · ${cm(placement.position.z)}`} unit="cm" mono />
             <span className={cn('mt-1 block text-body xl:text-caption', MUTED)}>

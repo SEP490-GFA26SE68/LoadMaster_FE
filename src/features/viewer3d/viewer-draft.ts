@@ -1,6 +1,6 @@
 import type { OrientationCode } from '@/domain/geometry'
 import type { ScenePlacement, PositionCm } from '@/features/viewer3d/scene-input'
-import { orientedSize, type ViewerSceneModel } from '@/features/viewer3d/scene-input'
+import { orientedSize, zoneFields, type ViewerSceneModel } from '@/features/viewer3d/scene-input'
 
 export type PlacementPatch = {
   readonly position?: PositionCm
@@ -59,7 +59,10 @@ export function patchPlacement(
   return Object.freeze({ patches })
 }
 
-/** Immutable snapshot + draft keyed by id = effective dimensions/positions. */
+/**
+ * Immutable snapshot + draft keyed by id = effective dimensions/positions. Kiện đã dời hoặc xoay được xét lại vùng điểm giao theo vị
+ * trí mới (FE-5b-07), nên dấu "ngoài vùng" và số lần dỡ-xếp lại đi theo bản đang chỉnh tay.
+ */
 export function resolveEffectiveScene(model: ViewerSceneModel, draft: ViewerDraft): EffectiveViewerScene {
   const placementById = new Map<string, ScenePlacement>()
   const placements = model.placements.map((source) => {
@@ -70,12 +73,16 @@ export function resolveEffectiveScene(model: ViewerSceneModel, draft: ViewerDraf
       return source
     }
     const orientation = patch.orientation ?? source.orientation
-    const placement = Object.freeze({
-      ...source,
-      ...orientedSize(baseDimensions, orientation),
+    const size = orientedSize(baseDimensions, orientation)
+    const position = patch.position ?? source.position
+    const { zoneId: _sourceZone, ...rest } = source
+    const placement: ScenePlacement = Object.freeze({
+      ...rest,
+      ...size,
       orientation,
-      position: patch.position ?? source.position,
+      position,
       pinned: patch.pinned ?? source.pinned,
+      ...zoneFields(model.zones, { position, lengthCm: size.lengthCm, stop: source.stop }),
     })
     placementById.set(source.id, placement)
     return placement

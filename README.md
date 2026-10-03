@@ -75,7 +75,9 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   "Đã lập kế hoạch" khi đã tối ưu tuyến và về "Nháp" khi thêm, bớt điểm giao. Loại xe khai giới hạn tải trục trước / sau và độ lệch
   trọng tâm tối đa (mặc định 15 %), xe lấy giới hạn của loại đang gắn; Planner ước lượng tải trục trước / sau bằng mô hình đòn bẩy
   (MOCK RESULT) cho xe đã khai trục, vượt giới hạn thì không duyệt được, và cảnh báo khi trọng tâm hàng lệch ngang hoặc lệch dọc quá
-  ngưỡng của loại xe. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  ngưỡng của loại xe. Mock xếp hàng theo vùng điểm giao: thùng chia theo tỷ lệ thể tích hàng của từng điểm, điểm giao cuối nằm sâu
+  nhất; Planner vẽ dải vùng trên sàn thùng kèm tên điểm và tỷ lệ, đánh dấu kiện nằm ngoài vùng của điểm mình, đếm số lần dỡ-xếp lại
+  và hiện mức hạn của từng điểm giao trong hộp Chi tiết. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -97,12 +99,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.632 test unit + DOM
-pnpm test:e2e      # Playwright: 112 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.663 test unit + DOM
+pnpm test:e2e      # Playwright: 115 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.632/1.632 unit, 112/112 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.663/1.663 unit, 115/115 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

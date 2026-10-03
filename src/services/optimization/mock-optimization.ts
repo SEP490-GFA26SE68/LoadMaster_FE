@@ -3,6 +3,7 @@ import { annotatePlacements, createPlacementLayout, createStackGraph, recomputeO
 import { gt, roundKg } from '@/domain/geometry'
 import { computeMetrics } from '@/domain/metrics'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, UnplacedPackage } from '@/domain/models'
+import { stopVolumes, stopZones, zonePlacements } from '@/domain/zones'
 import { preflight } from './mock-preflight'
 import type { OptimizationProgress } from './OptimizationService'
 import { packShelves } from './shelf-packer'
@@ -74,6 +75,10 @@ function overPayload(
  * Mock optimization thuần (Spec mục 11, LM-024) — chạy được trong worker và trong test, cùng request + seed cho cùng kết quả.
  * Kiểm request (`preflight`), xếp kệ (`packShelves`), rồi dùng domain cho phần còn lại: thứ tự xếp/dỡ (LM-022),
  * `supportRatio`/`constraintWarnings` (engine LM-023), metrics (LM-021). Luôn `isMockResult: true`, `method: 'MOCK'`.
+ *
+ * Vùng theo điểm giao (FE-5b-02, D-79): thùng chia theo tỷ lệ thể tích của các kiện **còn xếp được** (đã qua kiểm request và dành
+ * tải) của từng điểm. Khi `enforceLifo`, kiện xếp theo vùng, điểm cuối trước; không bật thì xếp theo thứ tự chọn như trước. Cả hai
+ * trường hợp kết quả đều mang `stopZones`, `stopZoneId` của từng placement và `metrics.rehandlingCount`.
  */
 export function runMockOptimization(request: OptimizationRequest, { clock = () => performance.now(), onProgress }: MockRunOptions = {}): OptimizationResult {
   const startedAt = clock()
@@ -97,31 +102,37 @@ export function runMockOptimization(request: OptimizationRequest, { clock = () =
 
   const { vehicle, packages, settings } = request
   const chosen = selectionOrder(checked.instances, seed)
+  const reasons = overPayload(chosen, checked.reasons, vehicle.maxPayloadKg)
+  const zones = stopZones(vehicle, stopVolumes(chosen.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId))))
   const packed = packShelves({
     vehicle,
     instances: settings.enforceLifo ? lifoOrder(chosen) : chosen,
-    reasons: overPayload(chosen, checked.reasons, vehicle.maxPayloadKg),
+    reasons,
     lowCenterOfGravity: settings.prioritizeLowCenterOfGravity,
+    zones: settings.enforceLifo ? zones : undefined,
     onProgress,
   })
   const instances = new Map(checked.instances.map((instance) => [instance.packageInstanceId, instance]))
+  const deliveryStops = new Map(checked.instances.map((instance) => [instance.packageInstanceId, instance.deliveryStop]))
   const graph = createStackGraph(createPlacementLayout(vehicle, packed.placements), instances)
-  const { orders } = recomputeOrders(graph, new Map(checked.instances.map((instance) => [instance.packageInstanceId, instance.deliveryStop])))
+  const { orders } = recomputeOrders(graph, deliveryStops)
   const ordered = packed.placements.map((placement): PackagePlacement => ({ ...placement, ...orders.get(placement.packageInstanceId) }))
-  const placements = annotatePlacements({ vehicle, packages, placements: ordered, settings })
+  const zoned = zonePlacements(zones, annotatePlacements({ vehicle, packages, placements: ordered, settings }), deliveryStops)
   return {
     jobId,
     status: 'COMPLETED',
     method: 'MOCK',
     isMockResult: true,
-    placements,
+    placements: zoned.placements,
     unplacedPackages: packed.unplaced,
+    stopZones: zones,
     metrics: computeMetrics({
       vehicle,
-      placements,
+      placements: zoned.placements,
       weightByInstanceId: weights,
       unplacedCount: packed.unplaced.length,
       runtimeMs: clock() - startedAt,
+      rehandlingCount: zoned.rehandlingCount,
     }),
   }
 }

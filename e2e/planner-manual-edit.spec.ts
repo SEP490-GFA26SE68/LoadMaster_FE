@@ -5,10 +5,11 @@ import { R3F_DEPS, type R3FModule } from './viewer-helpers'
 /**
  * Chỉnh tay trong Planner (LM-108; FE-0-07): điều phối viên kéo / nhích kiện, trọng lực làm kiện đang tựa lên kiện bị kéo đi rơi xuống,
  * và "Duyệt bản chỉnh" duyệt luôn bản đã chỉnh thành revision đã duyệt mới — không còn bước "Lưu bản chỉnh" chờ quản lý công ty.
- * Chồng kiện của chuyến mẫu: `PKG-001-16` nằm sàn (dài 60 cm, cao 50 cm), `PKG-001-05` tựa lên nó ở z = 50; phía cửa còn trống 130 cm.
+ * Chồng kiện của chuyến mẫu, trong vùng điểm giao 1 sát cửa (FE-5b-02): `PKG-001-01` nằm sàn (dài 60 cm, cao 50 cm), `PKG-001-15` tựa lên
+ * nó ở z = 50, trên nữa là hai kiện; phía cửa còn trống 117,6 cm.
  */
-const BOTTOM = 'PKG-001-16'
-const TOP = 'PKG-001-05'
+const BOTTOM = 'PKG-001-01'
+const TOP = 'PKG-001-15'
 const MOCK_DB = '/src/lib/mock-db/index.ts'
 
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true })

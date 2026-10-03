@@ -10,9 +10,17 @@ import { readToken } from '@/lib/tokens'
 import type { CargoAppearance, SceneSemantics } from '../operations/scene-semantics'
 
 const color = new Color()
-type ColorSlot = Pick<ScenePlacement, 'id' | 'stop' | 'packageId' | 'weightKg'> & { tone?: CargoAppearance['tone'] }
+type ColorSlot = Pick<ScenePlacement, 'id' | 'stop' | 'packageId' | 'weightKg'> & { tone?: CargoAppearance['tone']; marked: boolean }
 
-export function useCargoColors(meshes: CargoMeshes, layout: InstanceLayout, mode: ColorMode, context: ColorContext, outlineColor: string, showHull: boolean, semantics?: SceneSemantics) {
+/**
+ * Màu từng instance; chỉ ghi lại slot đã đổi. Vỏ viền: kiện chắn lối dỡ `--warning`, kiện nằm ngoài vùng điểm giao (`markZones`,
+ * FE-5b-07) trắng `--bg` — màu duy nhất tách khỏi cả tám màu điểm giao (hổ phách lẫn vào cam của điểm 1 và vàng của điểm 4) —, còn
+ * lại màu viền chung.
+ */
+export function useCargoColors(
+  meshes: CargoMeshes, layout: InstanceLayout, mode: ColorMode, context: ColorContext, outlineColor: string, showHull: boolean,
+  semantics?: SceneSemantics, markZones = false,
+) {
   const invalidate = useThree((state) => state.invalidate)
   const cache = useRef<{ slots: ColorSlot[]; mode?: ColorMode; context?: ColorContext; mesh?: InstancedMesh; hull?: InstancedMesh | null }>({ slots: [] })
   useLayoutEffect(() => {
@@ -27,19 +35,20 @@ export function useCargoColors(meshes: CargoMeshes, layout: InstanceLayout, mode
       const p = layout.placementById.get(id)!
       const old = previous.slots[index]
       const tone = semantics?.appearanceById.get(id)?.tone
-      if (reset || old?.id !== id || old.stop !== p.stop || old.packageId !== p.packageId || old.weightKg !== p.weightKg || old.tone !== tone) {
+      const marked = markZones && p.outOfZone
+      if (reset || old?.id !== id || old.stop !== p.stop || old.packageId !== p.packageId || old.weightKg !== p.weightKg || old.tone !== tone || old.marked !== marked) {
         const hex = placementColor(p, mode, context)
         color.set(tone === 'current' ? readToken('--highlight') : hex)
         if (tone === 'muted') color.multiplyScalar(0.68)
         opaque.setColorAt(index, color)
         dim.setColorAt(index, color.set(dimColor(hex)))
-        hull?.setColorAt(index, color.set(tone === 'blocker' ? readToken('--warning') : outlineColor))
+        hull?.setColorAt(index, color.set(tone === 'blocker' ? readToken('--warning') : marked ? readToken('--bg') : outlineColor))
         opaque.instanceColor?.addUpdateRange(index * 3, 3)
         dim.instanceColor?.addUpdateRange(index * 3, 3)
         hull?.instanceColor?.addUpdateRange(index * 3, 3)
         changed = true
       }
-      return { id, stop: p.stop, packageId: p.packageId, weightKg: p.weightKg, tone }
+      return { id, stop: p.stop, packageId: p.packageId, weightKg: p.weightKg, tone, marked }
     })
     if (changed) {
       for (const mesh of [opaque, dim, hull]) {
@@ -52,5 +61,5 @@ export function useCargoColors(meshes: CargoMeshes, layout: InstanceLayout, mode
       invalidate()
     }
     cache.current = { slots, mode, context, mesh: opaque, hull }
-  }, [meshes, layout, mode, context, outlineColor, showHull, semantics, invalidate])
+  }, [meshes, layout, mode, context, outlineColor, showHull, semantics, markZones, invalidate])
 }

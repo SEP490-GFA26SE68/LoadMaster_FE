@@ -2,11 +2,12 @@ import { Canvas } from '@react-three/fiber'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { CameraPreset, ColorMode } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
-import type { ViewerSceneModel } from '@/features/viewer3d/scene-input'
+import type { SceneZone, ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import type { VehicleConfig } from '@/domain/models'
 import type { ExperienceMode,PerformanceFlags } from '../usePerformanceFlags'
 import type { SceneSemantics } from '../operations/scene-semantics'
-import { CargoMassMarker, RearDoorCue, InteriorStopMap } from '../operations/OperationsCues'
+import { CargoMassMarker, RearDoorCue } from '../operations/OperationsCues'
+import { ZoneStrips } from '../operations/ZoneStrips'
 import { UnloadMotion, type UnloadMotionStep } from '../operations/UnloadMotion'
 import { ExtractionCorridor } from '../operations/ExtractionCorridor'
 import { createColorContext } from '../colors'
@@ -43,7 +44,11 @@ export type SceneCanvasProps = {
   decoration?: boolean
   xraySelection?: boolean
   showMass?: boolean
-  showDistribution?: boolean
+  /**
+   * Vùng theo điểm giao của phương án (FE-5b-07). Có và không rỗng thì vẽ dải vùng trên sàn (một draw call, mọi tier) và viền
+   * trắng dày quanh kiện nằm ngoài vùng của điểm mình; Planner bật / tắt ở hộp Hiển thị. Kho và tài xế không truyền.
+   */
+  zones?: readonly SceneZone[]
   unloadMotion?: UnloadMotionStep
   onPerfSample?: (sample: PerfSample) => void
   /** Bấm vật cản để xem thông tin; Planner tắt ở chế độ chỉnh sửa để vật cản không nhận raycast (LM-033). */
@@ -63,7 +68,7 @@ export type SceneCanvasProps = {
 export function SceneCanvas({
   experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
-  animateLoading = true, decoration = true, xraySelection, showMass, showDistribution, unloadMotion, onPerfSample, obstaclePicking = true,
+  animateLoading = true, decoration = true, xraySelection, showMass, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, highlightedObstacleId, onObstacleSelect, children,
 }: SceneCanvasProps) {
   const materials = useMemo(() => sceneMaterials(), [])
@@ -103,12 +108,13 @@ export function SceneCanvas({
       <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
         step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
         reducedMotion={flags.reducedMotion} animationQuality={animateLoading ? flags.animationQuality : 'none'} hiddenId={hiddenId}
-        semantics={semantics} warningSignal={warningSignal} xraySelection={xraySelection} surfaceDetail={flags.decoration} />
+        semantics={semantics} warningSignal={warningSignal} xraySelection={xraySelection} surfaceDetail={flags.decoration}
+        zoneMarks={Boolean(zones?.length)} />
       <ObstacleInstances obstacles={model.vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
         highlightedId={highlightedObstacleId ?? null} />
       {obstacle ? <ObstacleCallout key={obstacle.id} obstacle={obstacle} /> : null}
       <RearDoorCue vehicle={model.vehicle} />
-      {showDistribution ? <InteriorStopMap placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} /> : null}
+      {zones?.length ? <ZoneStrips zones={zones} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} /> : null}
       {showMass ? <CargoMassMarker placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} /> : null}
       {inspected ? <ExtractionCorridor key={`${inspected.id}:${warningSignal}`} target={inspected} vehicle={model.vehicle} blockers={semantics?.blockers ?? []} reducedMotion={flags.reducedMotion} /> : null}
       {unloadMotion ? <UnloadMotion motion={unloadMotion} remaining={semantics?.massPlacements ?? placements}

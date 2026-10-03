@@ -14,6 +14,7 @@ export const common = {
   on: 'On',
   off: 'Off',
   deliveryIssueKinds: { damaged: 'Damaged', missing: 'Missing', refused: 'Refused by customer', other: 'Other' },
+  deadlineStatuses: { OK: 'On time', AT_RISK: 'Tight', MISSED: 'Expected late' },
   handlingClasses: { STANDARD: 'Standard', FRAGILE: 'Fragile', REFRIGERATED: 'Refrigerated', HAZARDOUS: 'Hazardous', HIGH_VALUE: 'High value' },
   packageStatuses: {
     IMPORTED: 'Imported',

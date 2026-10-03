@@ -50,7 +50,7 @@ function FloatingColumn({ state, operations, tripId, issues, onEdit, onFocus, on
     <MassCard state={state} operations={operations} />
     {operations.kind === 'loading' ? (
       <SelectedPackagePanel className={cn('pointer-events-auto', GLASS_PANEL)} placement={selected} placements={state.placements}
-        totalSteps={state.totalSteps} stops={state.sceneModel.stops} tripId={tripId} issues={issues}
+        totalSteps={state.totalSteps} stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues}
         orientationRules={selected ? state.sceneModel.orientationRulesById.get(selected.id) : undefined}
         onPick={() => onTab('package')} onEdit={onEdit} onFocus={onFocus} />
     ) : (
@@ -94,16 +94,18 @@ function InspectorDialog({ state, operations, tripId, colorContext, issues, onEd
             </label>
             <SelectedPackagePanel placement={state.selected} placements={state.placements} totalSteps={state.totalSteps}
               orientationRules={state.selected ? state.sceneModel.orientationRulesById.get(state.selected.id) : undefined}
-              stops={state.sceneModel.stops} tripId={tripId} issues={issues} onClose={() => state.select(null)}
+              stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues} onClose={() => state.select(null)}
               onEdit={onEdit ? () => { onClose(); onEdit() } : undefined} onFocus={() => { onClose(); onFocus() }} />
           </> : null}
           {tab === 'display' ? <div className="flex flex-col gap-3 p-4 text-body-lg xl:text-body">
             <h2 className="font-display font-[650] text-sky-text">{t('viewer.inspector.layers')}</h2>
             <Button variant="glass" aria-pressed={operations.showMass} onClick={() => operations.setShowMass(!operations.showMass)} className={cn('h-14 xl:h-9', GLASS_PRESSED)}>
               {t(operations.showMass ? 'viewer.inspector.hideMass' : 'viewer.inspector.showMass')}</Button>
-            <Button variant="glass" aria-pressed={operations.showDistribution} onClick={() => operations.setShowDistribution(!operations.showDistribution)} className={cn('h-14 xl:h-9', GLASS_PRESSED)}>
-              {t(operations.showDistribution ? 'viewer.inspector.hideDistribution' : 'viewer.inspector.showDistribution')}</Button>
-            <p className={MUTED}>{t('viewer.inspector.stopMapHint')}</p>
+            {state.sceneModel.zones.length > 0 ? <>
+              <Button variant="glass" aria-pressed={operations.showZones} onClick={() => operations.setShowZones(!operations.showZones)} className={cn('h-14 xl:h-9', GLASS_PRESSED)}>
+                {t(operations.showZones ? 'viewer.inspector.hideZones' : 'viewer.inspector.showZones')}</Button>
+              <p className={MUTED}>{t('viewer.inspector.zonesHint')}</p>
+            </> : null}
             <GlassSegmented ariaLabel={t('viewer.inspector.colorMode')} options={COLOR_MODES.map((mode) => ({ value: mode, label: t(`viewer.colorModes.${mode}`) }))}
               value={state.colorMode} onChange={state.setColorMode} className="flex-col" itemClassName="xl:min-h-9" />
             <StopLegend stops={[...state.sceneModel.stops]} colorMode={state.colorMode} colorContext={colorContext} />

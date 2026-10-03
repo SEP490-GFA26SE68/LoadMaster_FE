@@ -32,12 +32,15 @@ type Props = {
   xraySelection?: boolean
   surfaceDetail?: boolean
   warningSignal?: number
+  /** Viền trắng dày quanh kiện nằm ngoài vùng của điểm giao mình (FE-5b-07); giữ cả ở tier `low`, nhường chỗ khi đang xem kiện chắn lối dỡ. */
+  zoneMarks?: boolean
 }
 
-/** Three cargo draws at most: solid, ghost, inverted hull. One selected outline. */
+/** Three cargo draws at most: solid, ghost, inverted hull (general outlines, unload blockers and out-of-zone marks share it). One selected outline. */
 export function CargoInstances({
   placements, colorMode, colorContext, sliceCm, step, selectedId, onSelect, onFocus,
   outlines, outlineColor, reducedMotion, animationQuality = 'full', hiddenId, semantics, xraySelection = false, surfaceDetail = false, warningSignal = 0,
+  zoneMarks = false,
 }: Props) {
   const opaque = useRef<InstancedMesh>(null)
   const dim = useRef<InstancedMesh>(null)
@@ -65,10 +68,12 @@ export function CargoInstances({
   const next = layout.placementById.get(semantics?.nextId ?? '')
   const hover = layout.placementById.get(hoverId ?? '')
   const visible = (p: ScenePlacement | undefined) => p && p.id !== hiddenId && (!semantics || semantics.appearanceById.get(p.id)?.visibility !== 'hidden')
-  const showHull = outlines || Boolean(semantics?.blockers.length)
+  // Đang xem kiện chắn lối dỡ thì viền cảnh báo chỉ nói về kiện chắn
+  const markZones = zoneMarks && !semantics?.inspectionId
+  const showHull = outlines || Boolean(semantics?.blockers.length) || (markZones && placements.some((p) => p.outOfZone))
 
-  useCargoMatrices({ meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics })
-  useCargoColors(meshes, layout, colorMode, colorContext, outlineColor, showHull, semantics)
+  useCargoMatrices({ meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones })
+  useCargoColors(meshes, layout, colorMode, colorContext, outlineColor, showHull, semantics, markZones)
 
   useEffect(() => () => {
     geometry.dispose()

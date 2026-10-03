@@ -507,7 +507,6 @@ export const trips = {
     done: { one: 'Đã tối ưu tuyến {count} điểm giao.', other: 'Đã tối ưu tuyến {count} điểm giao.' },
     eta: 'Dự kiến đến {time} {date}',
     etaA11y: 'dự kiến đến {time} {date}',
-    deadlineStatus: { OK: 'Kịp hạn', AT_RISK: 'Sát hạn', MISSED: 'Trễ hạn dự kiến' },
     missingCoordinates: 'Chưa có toạ độ',
     map: 'Bản đồ tuyến {id}',
   },

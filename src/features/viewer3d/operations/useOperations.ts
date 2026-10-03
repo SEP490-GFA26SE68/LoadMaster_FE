@@ -7,7 +7,8 @@ export function useOperations(state: LoadPlanViewerState) {
   const [kind, setKindState] = useState<'loading' | 'unloading'>('loading')
   const [loadingFocus, setLoadingFocus] = useState<number | null>(null)
   const [showMass, setShowMass] = useState(false)
-  const [showDistribution, setShowDistribution] = useState(false)
+  // Dải vùng điểm giao là cue nghiệp vụ: mở Planner là thấy, tắt được ở hộp Hiển thị (FE-5b-07)
+  const [showZones, setShowZones] = useState(true)
   const [inspectBlockers, setInspectBlockers] = useState(false)
   const [follow, setFollow] = useState<'off' | 'on' | 'paused'>('off')
   const unload = useUnloadPlayback(state.placements, state.speed)
@@ -45,7 +46,7 @@ export function useOperations(state: LoadPlanViewerState) {
   const stepForward = kind === 'loading' ? state.stepForward : unload.advance
   const stepBackward = kind === 'loading' ? state.stepBackward : () => unload.setCursor(unload.cursor - 1)
   const goToStart = () => { stop(); if (kind === 'loading') state.goToStart(); else unload.setCursor(0) }
-  return { kind, setKind, focusStop, setFocusStop, showMass, setShowMass, showDistribution, setShowDistribution,
+  return { kind, setKind, focusStop, setFocusStop, showMass, setShowMass, showZones, setShowZones,
     follow, setFollow, pauseFollow: () => setFollow((f) => f === 'on' ? 'paused' : f),
     inspectBlockers, setInspectBlockers, semantics, current, next, unload, stop,
     playing: kind === 'loading' ? state.playing : unload.playing, togglePlaying, stepForward, stepBackward, goToStart }
