@@ -7,9 +7,13 @@ import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import { loadingSessionPath, type WarehouseTripRow } from './warehouse-trips'
 
+const SUB_TOUCH = 'h-8 px-3 text-body-lg'
+
 /**
- * Một chuyến ở danh sách kho: mã chuyến, tuyến, ngày chạy, xe, số kiện, tiến độ và một nút 56px "Bắt đầu xếp" / "Tiếp tục (x/y)".
- * Bản duyệt lỗi thời thì thay nút bằng cảnh báo — kho không xếp theo phương án đã lệch dữ liệu (D-31).
+ * Một chuyến ở danh sách kho: mã chuyến, trạng thái và dòng phụ, tuyến, ngày chạy, xe, số kiện, tiến độ và một nút 56px theo nhóm
+ * (FE-6-01): "Bắt đầu xếp" (chờ soạn), "Tiếp tục (x/y)" (đang xếp), "Xem chuyến đã xếp" (xếp xong — còn ghi được số seal). Bản duyệt
+ * lỗi thời thì thay nút bằng cảnh báo — kho không xếp theo phương án đã lệch dữ liệu (D-31). Chuyến có xác nhận tay bị điều phối viên
+ * từ chối nói rõ còn kiện phải kiểm lại (FE-6-04).
  */
 export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; primary: boolean }) {
   const t = useT()
@@ -20,10 +24,11 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
   return (
     <li className="flex flex-col gap-3 rounded-md border border-border bg-bg p-4">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <h2 className="font-mono text-[22px] leading-7 font-semibold">{row.id}</h2>
+        <h3 className="font-mono text-[22px] leading-7 font-semibold">{row.id}</h3>
         <span className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
-          <TripSubStatusTag sub={row.sub} className="h-8 px-3 text-body-lg" />
+          <StatusBadge status={row.status} className={SUB_TOUCH} />
+          <TripSubStatusTag sub={row.sub} className={SUB_TOUCH} />
+          <TripSubStatusTag sub={row.manualSub} className={SUB_TOUCH} />
         </span>
       </div>
       <p className="text-pretty">{row.name}</p>
@@ -48,21 +53,34 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
           <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       ) : null}
+      {row.stage === 'loaded' ? (
+        <p className="m-0 text-text-2">{row.seal === undefined ? t('warehouse.list.noSeal') : t('warehouse.list.seal', { number: row.seal })}</p>
+      ) : null}
+      {row.recheck > 0 ? <Warning tone="danger">{t('warehouse.list.recheck', { count: row.recheck })}</Warning> : null}
       {row.stage === 'stale' ? (
-        <p className="m-0 flex items-start gap-3 rounded-md border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
-          <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
-          {t('warehouse.list.stale')}
-        </p>
+        <Warning tone="warning">{t('warehouse.list.stale')}</Warning>
       ) : (
         <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className="self-start">
           <Link to={loadingSessionPath(row.id)}>
             {row.stage === 'loading'
               ? t('warehouse.list.resume', { done: format.integer(row.recorded), total: format.integer(row.total) })
-              : t('warehouse.list.start')}
+              : row.stage === 'loaded' ? t('warehouse.list.openLoaded') : t('warehouse.list.start')}
           </Link>
         </Button>
       )}
     </li>
+  )
+}
+
+function Warning({ tone, children }: { tone: 'warning' | 'danger'; children: ReactNode }) {
+  const box = tone === 'danger'
+    ? 'border-badge-danger-border bg-badge-danger-bg text-badge-danger-fg'
+    : 'border-badge-warning-border bg-badge-warning-bg text-badge-warning-fg'
+  return (
+    <p className={`m-0 flex items-start gap-3 rounded-md border px-4 py-3 font-medium ${box}`}>
+      <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
+      {children}
+    </p>
   )
 }
 

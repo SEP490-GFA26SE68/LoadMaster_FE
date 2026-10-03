@@ -29,12 +29,12 @@ import { warehouseTripRows, type WarehouseTripRow } from './warehouse-trips'
  * Kho chỉ xếp theo revision **đã duyệt** (D-31); tiến độ xếp và kiện thiếu ghi vào kho (D-47).
  */
 
-/** Danh sách chuyến của kho (D-46): chỉ chuyến chưa qua pha xếp mới có thể cần kho. */
+/** Danh sách chuyến của kho (D-46, FE-6-01): chuyến Đã lập kế hoạch và Đang xếp hàng — kể cả xếp xong chờ xe xuất phát. */
 // chưa có ở BE
 export async function fetchWarehouseTrips(): Promise<WarehouseTripRow[]> {
   const db = getMockDb()
   const [trips, vehicles] = await Promise.all([db.listTrips(), db.listVehicles()])
-  const candidates = trips.filter((trip) => trip.phase === 'planning' || trip.phase === 'loading')
+  const candidates = trips.filter((trip) => trip.phase === 'planning' || trip.phase === 'loading' || trip.phase === 'loaded')
   const entries = await Promise.all(candidates.map(async (trip) => ({ trip, revisions: await db.listRevisions(trip.id) })))
   return warehouseTripRows(entries, new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name])))
 }

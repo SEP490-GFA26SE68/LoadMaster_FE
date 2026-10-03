@@ -27,8 +27,22 @@ export const warehouse = {
     progress: 'Tiến độ',
     missing: { one: 'thiếu {count}', other: 'thiếu {count}' },
     progressLabel: 'Tiến độ xếp chuyến {tripId}',
+    /** Nhóm theo trạng thái và dòng phụ của chuyến (FE-6-01). */
+    groups: {
+      loading: 'Đang xếp hàng',
+      waiting: 'Chờ soạn',
+      loaded: 'Xếp xong — chờ xuất phát',
+      stale: 'Chờ điều phối tối ưu lại',
+    },
     start: 'Bắt đầu xếp',
     resume: 'Tiếp tục ({done}/{total})',
+    openLoaded: 'Xem chuyến đã xếp',
+    seal: 'Số seal {number}',
+    noSeal: 'Chưa ghi số seal.',
+    recheck: {
+      one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+      other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+    },
     stale: 'Phương án đã duyệt lỗi thời: xe hoặc kiện đã đổi. Chờ điều phối viên tối ưu lại và duyệt rồi mới xếp.',
     emptyTitle: 'Không có chuyến cần xếp',
     emptyDescription: 'Chuyến có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu xếp.',

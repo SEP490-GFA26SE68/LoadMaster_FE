@@ -36,7 +36,8 @@ export async function fetchMyTrips(): Promise<MyTrips> {
   const db = getMockDb()
   const viewer = sessionUser(db)
   const [trips, vehicles] = await Promise.all([db.listTrips(), db.listVehicles()])
-  const visible = trips.filter((trip) => isVisibleTo(trip, viewer))
+  // Chuyến còn lập kế hoạch và chuyến đã huỷ không hiện ở "Chuyến của tôi" (FE-6-01): không cần đọc revision của chúng
+  const visible = trips.filter((trip) => isVisibleTo(trip, viewer) && trip.phase !== 'planning' && trip.phase !== 'cancelled')
   const entries = await Promise.all(visible.map(async (trip) => ({ trip, revisions: await db.listRevisions(trip.id) })))
   return myTrips(entries, new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name])), viewer)
 }

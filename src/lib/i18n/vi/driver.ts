@@ -16,17 +16,25 @@ export const driver = {
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
     title: 'Chuyến của tôi',
-    ready: 'Sẵn sàng giao',
-    noReady: 'Chưa có chuyến nào sẵn sàng giao.',
-    preparing: 'Kho đang chuẩn bị',
-    recent: 'Đã hoàn thành gần đây',
+    /** Nhóm theo trạng thái và dòng phụ của chuyến (FE-6-01). */
+    groups: {
+      inTransit: 'Đang vận chuyển',
+      loaded: 'Xếp xong — chờ xuất phát',
+      preparing: 'Kho đang soạn / xếp',
+      recent: 'Đã giao gần đây',
+    },
+    noReady: 'Chưa có chuyến nào xếp xong hoặc đang vận chuyển.',
     open: 'Mở chuyến',
+    preview: 'Xem trước',
     resume: 'Tiếp tục giao',
     viewSummary: 'Xem tổng kết',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
     atStop: 'Đang giao điểm {number} / {total}',
-    waitingApproved: 'Kho chưa bắt đầu xếp — chưa giao được.',
-    waitingLoading: 'Kho đang xếp — chưa giao được.',
+    waitingLoading: 'Kho đang xếp — chưa xuất phát được, chỉ xem trước.',
+    recheck: {
+      one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+      other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+    },
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
     emptyTitle: 'Chưa có chuyến nào',
