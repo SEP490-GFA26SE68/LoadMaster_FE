@@ -162,13 +162,23 @@ function laneSpecs(zones: readonly StopZone[], starts: readonly number[], innerL
   })
 }
 
-/** Chiều dài thùng mà hàng của từng vùng cần khi xếp riêng, không giới hạn, từ đầu vùng của nó (đo trên thùng trống). */
-function neededDepths({ vehicle, instances, reasons, lowCenterOfGravity }: PackInput, zones: readonly StopZone[]): number[] {
-  const groups = byStop(instances.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId)))
+/** Các kiện còn xếp được (chưa có lý do biết trước), gom theo điểm giao. */
+function packable({ instances, reasons }: PackInput): Map<number, PackageInstance[]> {
+  return byStop(instances.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId)))
+}
+
+/**
+ * Chiều dài thùng mà hàng của từng vùng cần khi xếp riêng từ đầu vùng của nó (đo trên thùng trống), không quá chiều dài thùng — một
+ * điểm giao không dùng được nhiều hơn cả thùng.
+ */
+function neededDepths(input: PackInput, zones: readonly StopZone[]): number[] {
+  const { vehicle, lowCenterOfGravity } = input
+  const groups = packable(input)
   return zones.map((zone) => {
     const shelves = createShelves(vehicle, lowCenterOfGravity)
     const lane = shelves.lane(zone.startXCm)
-    for (const instance of groups.get(zone.stopId) ?? []) shelves.attempt(lane, Number.POSITIVE_INFINITY, instance, doorOrientations(vehicle, instance))
+    const limitXCm = zone.startXCm + vehicle.innerLengthCm
+    for (const instance of groups.get(zone.stopId) ?? []) shelves.attempt(lane, limitXCm, instance, doorOrientations(vehicle, instance))
     return lane.wall.xCm + lane.wall.depthCm - zone.startXCm
   })
 }
@@ -193,20 +203,36 @@ function pulledBackStarts(zones: readonly StopZone[], depths: readonly number[],
   return starts.map(roundCm)
 }
 
+/** Thể tích các kiện còn xếp được lớn hơn cả lòng thùng: không cách xếp nào đưa hết lên xe. */
+function exceedsVehicleVolume(input: PackInput): boolean {
+  const { innerLengthCm, innerWidthCm, innerHeightCm } = input.vehicle
+  let volumeCm3 = 0
+  for (const group of packable(input).values()) for (const { lengthCm, widthCm, heightCm } of group) volumeCm3 += lengthCm * widthCm * heightCm
+  return gt(volumeCm3, innerLengthCm * innerWidthCm * innerHeightCm)
+}
+
 /**
  * Xếp kệ tất định cho mock (cơ chế vách / cột / chồng ở `createShelves`), không vượt tải trọng xe.
  *
  * Xếp theo vùng (FE-5b-02, D-79): mỗi vùng là một dải riêng bắt đầu ở mép sâu của vùng, xếp từ vùng sâu nhất (điểm giao cuối) ra
  * cửa (`packLanes`). Vùng chia theo thể tích nên có điểm giao cần nhiều sàn hơn vùng của nó; khi lượt đầu còn kiện ở lại vì hết chỗ,
- * mock đo chiều dài từng điểm cần rồi xếp lại với các dải lùi về phía vách trong vừa đủ (`pulledBackStarts`) và lấy lượt xếp được
- * nhiều kiện hơn. Kiện nằm ngoài vùng của điểm mình được đếm là dỡ-xếp lại ở `zonePlacements`.
+ * mock thử lại trên thùng trống và lấy lượt xếp được nhiều kiện nhất (hoà thì giữ lượt bám vùng hơn):
+ * 1. đo chiều dài từng điểm cần rồi lùi các dải về phía vách trong vừa đủ (`neededDepths`, `pulledBackStarts`) — bỏ qua khi thể tích
+ *    hàng đã lớn hơn lòng thùng, vì khi đó lùi dải cũng không xếp hết được;
+ * 2. vẫn còn kiện ở lại thì xếp một dải liền suốt thùng theo thứ tự `instances` như khi chưa có vùng — nên mock không bao giờ xếp
+ *    được ít kiện hơn trước khi có vùng.
+ * Kiện nằm ngoài vùng của điểm mình được đếm là dỡ-xếp lại ở `zonePlacements`. Chỉ lượt đầu báo tiến độ.
  */
 export function packShelves(input: PackInput): Packed {
   const { zones = [], vehicle } = input
   if (zones.length === 0) return packWhole(input).result()
-  const inZones = packLanes(input, laneSpecs(zones, zones.map(({ startXCm }) => startXCm), vehicle.innerLengthCm, true), input.onProgress)
-  if (!inZones.outOfSpace()) return inZones.result()
-  const starts = pulledBackStarts(zones, neededDepths(input, zones), vehicle.innerLengthCm)
-  const pulledBack = packLanes(input, laneSpecs(zones, starts, vehicle.innerLengthCm, false))
-  return (pulledBack.shelves.placements.length > inZones.shelves.placements.length ? pulledBack : inZones).result()
+  const runs = [packLanes(input, laneSpecs(zones, zones.map(({ startXCm }) => startXCm), vehicle.innerLengthCm, true), input.onProgress)]
+  if (runs[0]?.outOfSpace()) {
+    if (!exceedsVehicleVolume(input)) {
+      runs.push(packLanes(input, laneSpecs(zones, pulledBackStarts(zones, neededDepths(input, zones), vehicle.innerLengthCm), vehicle.innerLengthCm, false)))
+    }
+    if (runs.at(-1)?.outOfSpace()) runs.push(packWhole({ ...input, onProgress: undefined }))
+  }
+  // `reduce` giữ lượt đứng trước khi hoà
+  return runs.reduce((best, run) => (run.shelves.placements.length > best.shelves.placements.length ? run : best)).result()
 }

@@ -189,6 +189,26 @@ describe('packing by delivery-stop zone (FE-5b-02)', () => {
     })
   })
 
+  test('more cargo than the box holds: the mock packs one continuous lane instead, so it never loads fewer than wall-by-wall packing', () => {
+    // 2.000 thùng 40 × 30 × 25 cm cho 5 điểm giao (400 thùng mỗi điểm) trên Truck 6m: 15 vách sâu 40 cm, mỗi vách 8 cột × 10 tầng;
+    // ba vách đầu mất một cột vì hốc bánh xe (x 0..120, y 0..30) → 3 × 70 + 12 × 80 = 1.170 thùng. Xếp đúng vùng thì mỗi điểm chỉ
+    // được 118 cm (hai vách, 160 thùng trừ hốc bánh xe) và vài thùng xếp nhờ: ít hơn.
+    const packages = Array.from({ length: 5 }, (_, index): CargoPackage => ({
+      ...SPEC_CARTON_A, id: `PKG-00${index + 1}`, lengthCm: 40, widthCm: 30, heightCm: 25, weightKg: 0.5, quantity: 400, maxTopLoadKg: 60,
+      maxStackCount: 10, deliveryStop: index + 1, mustLoad: false,
+    }))
+    const request = { ...SPEC_REQUEST, packages }
+    const result = run(request)
+    const { issues } = createConstraintEngine({ ...request, placements: result.placements }).evaluateAll()
+    expect({
+      placed: result.metrics.placedCount,
+      unplaced: result.metrics.unplacedCount,
+      reasons: [...new Set(result.unplacedPackages.map(({ reasonCode }) => reasonCode))],
+      zones: result.stopZones?.length,
+      blocking: issues.filter(({ severity }) => severity !== 'warning'),
+    }).toStrictEqual({ placed: 1170, unplaced: 830, reasons: ['NO_SPACE'], zones: 5, blocking: [] })
+  })
+
   test('a failed request has no zones and no rehandling count', () => {
     const result = run({ ...SPEC_REQUEST, packages: [{ ...SPEC_CARTON_A, quantity: 0 }] })
     expect([result.stopZones, result.metrics.rehandlingCount]).toStrictEqual([undefined, undefined])

@@ -7,13 +7,19 @@ import { obstacleToBox, type PackagePlacement, type UnplacedPackage, type Vehicl
 /** Vì sao một kiện không lên xe: mã lý do, kèm ràng buộc đã chặn khi lý do là `CONSTRAINT_VIOLATED`. */
 export type Rejection = Pick<UnplacedPackage, 'reasonCode' | 'violatedConstraints'>
 export type Orientation = { readonly code: OrientationCode; readonly dims: PlacedDimensions }
+/** Lần tìm chỗ không ra chỗ của một dạng kiện trong một dải, với giới hạn `limitXCm`. */
+type Miss = { readonly limitXCm: number; readonly stackingRejected: boolean }
 type StackedBox = { readonly instance: PackageInstance; readonly box: Box; loadAboveKg: number }
 type Stack = { readonly xCm: number; readonly yCm: number; readonly boxes: StackedBox[] }
 type Wall = { readonly xCm: number; depthCm: number; nextYCm: number; readonly stacks: Stack[] }
 type Spot = { readonly box: Box; readonly code: OrientationCode; readonly stack?: Stack }
 
-/** Một dải xếp dọc thùng, bắt đầu ở `startXCm`: giữ vách đang xếp. Vách đã qua không quay lại. */
-export type Lane = { wall: Wall }
+/**
+ * Một dải xếp dọc thùng, bắt đầu ở `startXCm`: giữ vách đang xếp. Vách đã qua không quay lại. `misses` nhớ dạng kiện đã thử mà dải
+ * không còn chỗ: chỗ trống trong dải chỉ ít đi, nên kiện cùng dạng tới sau không cần dò lại cho tới khi dải nhận thêm kiện (đỉnh cột
+ * mới là chỗ chồng mới).
+ */
+export type Lane = { wall: Wall; readonly misses: Map<string, Miss> }
 /** Kết quả một lần tìm chỗ: đã xếp, bị ràng buộc chặn hẳn (`rejection`), hoặc không có chỗ trong dải. */
 export type Outcome = { readonly placed: boolean; readonly rejection?: Rejection; readonly stackingRejected: boolean }
 
@@ -127,11 +133,17 @@ export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolea
   return {
     placements,
     usedKg: () => usedKg,
-    lane: (startXCm: number): Lane => ({ wall: wallAt(startXCm) }),
+    lane: (startXCm: number): Lane => ({ wall: wallAt(startXCm), misses: new Map() }),
     /** Tìm chỗ trong vách đang xếp của dải, không có thì ở một vách mới ngay sau nó; kiện không được vượt `limitXCm`. */
     attempt(lane: Lane, limitXCm: number, instance: PackageInstance, orientations: readonly Orientation[]): Outcome {
+      // Mọi thứ quyết định một kiện có chỗ hay không ngoài trạng thái của dải: kích thước theo từng hướng, khối lượng, số tầng tối đa.
+      // Chỉ dựng khoá khi dải đã có lần hụt — lượt xếp vừa hết thì không tốn gì.
+      const shape = () => `${instance.lengthCm}|${instance.widthCm}|${instance.heightCm}|${instance.weightKg}|${instance.maxStackCount}|${orientations.map(({ code }) => code).join()}`
+      const miss = lane.misses.size > 0 ? lane.misses.get(shape()) : undefined
+      if (miss !== undefined && !gt(limitXCm, miss.limitXCm)) return { placed: false, stackingRejected: miss.stackingRejected }
       let stackingRejected = false
-      for (const wall of [lane.wall, wallAt(lane.wall.xCm + lane.wall.depthCm)]) {
+      for (let turn = 0; turn < 2; turn += 1) {
+        const wall = turn === 0 ? lane.wall : wallAt(lane.wall.xCm + lane.wall.depthCm)
         const onTop = topSpot(wall, limitXCm, instance, orientations)
         stackingRejected ||= onTop.stackingRejected
         const spot = lowCenterOfGravity ? (floorSpot(wall, limitXCm, orientations) ?? onTop.spot) : (onTop.spot ?? floorSpot(wall, limitXCm, orientations))
@@ -139,12 +151,14 @@ export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolea
           const overload = axleOverload(instance, spot.box)
           if (overload.length > 0) return { placed: false, rejection: { reasonCode: 'CONSTRAINT_VIOLATED', violatedConstraints: overload }, stackingRejected }
           lane.wall = wall
+          lane.misses.clear()
           place(wall, instance, spot)
           return { placed: true, stackingRejected }
         }
         // Vách đang xếp còn trống mà vẫn không vừa thì vách mới cũng không vừa
         if (lane.wall.stacks.length === 0) break
       }
+      lane.misses.set(shape(), { limitXCm, stackingRejected })
       return { placed: false, stackingRejected }
     },
   }
