@@ -46,15 +46,34 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ['users', 'audit'],
-  manager: ['dashboard', 'requirements', 'packages', 'trips', 'fleet'],
-  dispatcher: ['trips', 'packages', 'requirements', 'fleet', 'dashboard'],
+
+  companyManager: [
+    'dashboard',
+    'requirements',
+    'packages',
+    'trips',
+    'fleet',
+  ],
+
+  dispatcher: [
+    'trips',
+    'packages',
+    'requirements',
+    'fleet',
+    'dashboard',
+  ],
+
   warehouse: ['warehouse'],
   driver: ['driver'],
 }
 
 /** Mục điều hướng `role` thấy: danh sách của vai trò, bỏ mục vai trò không có quyền mở. */
 export function navItemsFor(role: Role): readonly NavScreen[] {
-  return NAV_ITEMS[role].map((id): NavScreen => NAV_SCREENS[id]).filter((screen) => can(role, screen.permission))
+  const ids = NAV_ITEMS[role] ?? []
+
+  return ids
+    .map((id): NavScreen => NAV_SCREENS[id])
+    .filter((screen) => can(role, screen.permission))
 }
 
 /** Đích của logo: bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không bao giờ là màn 403. */
