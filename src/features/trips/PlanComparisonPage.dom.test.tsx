@@ -44,6 +44,15 @@ function byFullText(text: string, { prefix = false } = {}) {
   return (_: string, element: Element | null) => matches(element) && !Array.from(element?.children ?? []).some(matches)
 }
 
+/** Bản đã duyệt của chuyến seed và bản nguồn của nó — phương án C của lần chạy ba ứng viên (FE-5b-05). */
+async function seedPair() {
+  const revisions = await getMockDb().listRevisions(SEED_TRIP)
+  const approved = revisions.find((revision) => revision.approvedAt !== undefined)
+  const source = revisions.find((revision) => revision.id === approved?.sourceRevisionId)
+  if (!source || !approved) throw new Error('Seed phải có revision nguồn và revision đã duyệt')
+  return { source, approved }
+}
+
 /** Nút hoặc link mang lớp nền primary của `Button` — màn chỉ được có đúng một (AGENTS.md mục 5). */
 function primaryActions(container: HTMLElement) {
   return container.querySelectorAll('a.text-on-primary, button.text-on-primary')
@@ -58,8 +67,7 @@ function columnTexts(revisionId: string): string[] {
 }
 
 test('ma trận revision của chuyến seed: số khớp result.metrics, bản duyệt và bản nguồn tách bạch, một nút primary', async () => {
-  const [source, approved] = await getMockDb().listRevisions(SEED_TRIP)
-  if (!source || !approved) throw new Error('Seed phải có revision nguồn và revision đã duyệt')
+  const { source, approved } = await seedPair()
   const container = renderComparison(SEED_TRIP)
 
   await screen.findByRole('radio', { name: approved.id })
@@ -72,7 +80,11 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
   expect(await within(hero).findByText('Đã lập kế hoạch')).toBeInTheDocument()
   expect(within(hero).getByText('Đã duyệt')).toBeInTheDocument()
   expect(within(hero).getByText(trip.name)).toBeInTheDocument()
-  expect(within(hero).getByText('2 phương án đã lưu')).toBeInTheDocument()
+  // Ba phương án ứng viên của lần chạy seed và bản duyệt dựng từ phương án C: mỗi bản một cột, mang nhãn ứng viên
+  expect(within(hero).getByText('4 phương án đã lưu')).toBeInTheDocument()
+  expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label'))).toStrictEqual(['REV-001-A', 'REV-001-B', source.id, approved.id])
+  expect(columnTexts('REV-001-A')[0]).toContain('Phương án A')
+  expect(columnTexts(source.id)[0]).toContain('Phương án C')
   const sourceColumn = columnTexts(source.id)
   const approvedColumn = columnTexts(approved.id)
 
@@ -94,7 +106,7 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
   expect(approvedColumn[0]).toContain('Đã duyệt')
   expect(approvedColumn[0]).toContain('Mới nhất')
   expect(approvedColumn[0]).toContain(`Duyệt từ ${source.id}`)
-  const sourceHeader = within(screen.getByRole('columnheader', { name: new RegExp(`^${source.id}`) }))
+  const sourceHeader = within(screen.getByRole('columnheader', { name: new RegExp(`^${source.id} `) }))
   expect(sourceHeader.queryByText('Đã duyệt', { exact: true })).not.toBeInTheDocument()
   expect(sourceHeader.queryByText('Mới nhất')).not.toBeInTheDocument()
   expect(sourceColumn[0]).toContain(`Đã duyệt thành ${approved.id}`)
@@ -120,8 +132,7 @@ test('ma trận revision của chuyến seed: số khớp result.metrics, bản 
 })
 
 test('"Chỉ hiện khác biệt" ẩn dòng mà mọi bản cùng giá trị', async () => {
-  const [source, approved] = await getMockDb().listRevisions(SEED_TRIP)
-  if (!source || !approved) throw new Error('Seed phải có revision nguồn và revision đã duyệt')
+  const { source, approved } = await seedPair()
   renderComparison(SEED_TRIP)
   await screen.findByRole('radio', { name: approved.id })
   const table = screen.getByRole('table')

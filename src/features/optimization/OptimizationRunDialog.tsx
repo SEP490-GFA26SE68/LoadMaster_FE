@@ -89,7 +89,7 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
                     {PLAN_LABELS[objective]}
                   </span>
                   <span className="min-w-0 flex-1 text-ink-strong">
-                    <span className="sr-only">{t('optimization.candidateLabel', { label: PLAN_LABELS[objective] })} — </span>
+                    <span className="sr-only">{t('optimization.candidateLabel', { label: PLAN_LABELS[objective] })}: </span>
                     {t(`runs.objectives.${objective}`)}
                   </span>
                   <span className="flex-none text-ink-3 tabular-nums">

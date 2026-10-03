@@ -56,9 +56,9 @@ test('the setup no longer asks for an objective or an algorithm: it lists the th
   renderSetup()
   const plans = within(await screen.findByRole('list', { name: 'Ba phương án mỗi lần chạy' }))
   expect(plans.getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
-    'APhương án A — Tối đa thể tíchDồn hàng sát vách trong, dùng ít chiều dài thùng nhất.',
-    'BPhương án B — Cân bằng tải trụcĐặt khối hàng sao cho hai nhóm trục cùng mức tải.',
-    'CPhương án C — Ít dỡ-xếp lạiXếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
+    'APhương án A: Tối đa thể tíchDồn hàng sát vách trong, dùng ít chiều dài thùng nhất.',
+    'BPhương án B: Cân bằng tải trụcĐặt khối hàng sao cho hai nhóm trục cùng mức tải.',
+    'CPhương án C: Ít dỡ-xếp lạiXếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
   ])
   expect(screen.queryByRole('radio')).toBeNull()
   expect(document.querySelector('[data-run-algorithm]')).toHaveTextContent('EP + DBLF (mock)')

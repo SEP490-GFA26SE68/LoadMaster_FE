@@ -50,7 +50,7 @@ export function SetupCandidateList() {
             {PLAN_LABELS[objective]}
           </span>
           <span className="text-body font-semibold text-ink-strong">
-            <span className="sr-only">{t('optimization.candidateLabel', { label: PLAN_LABELS[objective] })} — </span>
+            <span className="sr-only">{t('optimization.candidateLabel', { label: PLAN_LABELS[objective] })}: </span>
             {t(`runs.objectives.${objective}`)}
           </span>
           <span className="ml-auto text-right text-fine text-ink-3">{t(`optimization.objectiveHints.${objective}`)}</span>
