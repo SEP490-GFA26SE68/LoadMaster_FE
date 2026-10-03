@@ -58,7 +58,11 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
   // Điều phối viên chỉnh tay và duyệt (`plans.approve`, FE-0-07), quản lý công ty chỉ xem; chuyến đã sang pha vận hành thì phương án
   // đã chốt với mọi vai trò (D-45)
-  const approvedBy = usePlanApprovalQuery(plan.revision?.id).data?.approvedByName
+  const planInfo = usePlanApprovalQuery(plan.revision?.id).data
+  const approvedBy = planInfo?.approvedByName
+  // Phương án ứng viên của một lần chạy (FE-5b-06): nhãn A · B · C ở tiêu đề, nút So sánh mở đúng ba phương án của lần chạy đó. Bản đã
+  // chỉnh tay không còn nguyên là phương án ứng viên: nhãn "Đã chỉnh tay" nói thay, không kèm chữ cái (hai nhãn không vừa 1.536 px)
+  const candidate = planInfo?.candidate ?? null
   const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
@@ -113,9 +117,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         totalCount={totalPackages}
         isMockResult={plan.isMockResult}
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
+        candidateLabel={plan.revision?.manuallyEdited ? undefined : candidate?.label}
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
-        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy}
+        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy} compareRunId={candidate?.runId}
           onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
       <PlannerNotices model={plan} source={source} lock={access.lock}

@@ -13,7 +13,7 @@ import type { PlannerAccess } from '../approval/planner-access'
  * Duyệt nằm trong tooltip và mô tả của nút, không chen chữ đỏ vào thanh (U-5); hộp thoại Duyệt liệt kê đủ.
  * `approvedBy` đổi nhãn thành "Duyệt bởi … lúc" khi kho biết người duyệt (LM-104).
  */
-export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdit, approvedBy = null }: {
+export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdit, approvedBy = null, compareRunId }: {
   tripId: string
   access: PlannerAccess
   blockedReason: string | null
@@ -21,6 +21,8 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdi
   /** Vắng khi Planner khoá hoặc đang ở chế độ Chỉnh sửa. */
   onEdit?: () => void
   approvedBy?: string | null
+  /** Lần chạy có nhiều phương án ứng viên mà revision đang xem thuộc về: nút So sánh mở ba phương án của lần chạy đó. */
+  compareRunId?: string | undefined
 }) {
   const t = useT()
   return (
@@ -32,7 +34,7 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdi
           {t('viewer.toolbar.edit')}
         </Button>
       ) : null}
-      <CompareLink tripId={tripId} />
+      <CompareLink tripId={tripId} runId={compareRunId} />
       {access.approve ? <ApproveButton draft={access.approve === 'draft'} blockedReason={blockedReason} onClick={onApprove} /> : null}
     </div>
   )
@@ -72,16 +74,18 @@ function ApprovedAt({ at, by }: { at: string; by: string | null }) {
 
 /**
  * Chỉ icon dưới 1.536 px để hàng gộp vừa 1.366 px; tên đầy đủ ở tooltip và tên truy cập. Từ 1.536 px nút có chữ (người dùng yêu cầu,
- * 03/10/2026) — nhãn người duyệt nhường chỗ ở khoảng 1.536–1.759 px (`ApprovedAt`).
+ * 03/10/2026) — nhãn người duyệt nhường chỗ ở khoảng 1.536–1.759 px (`ApprovedAt`). Có `runId` (revision là phương án ứng viên của
+ * một lần chạy) thì mở màn so sánh ba phương án của lần chạy đó; không thì mở ma trận mọi revision như trước.
  */
-function CompareLink({ tripId }: { tripId: string }) {
+function CompareLink({ tripId, runId }: { tripId: string; runId: string | undefined }) {
   const t = useT()
   const label = t('viewer.plan.compare')
+  const to = runId === undefined ? `/chuyen/${tripId}/so-sanh` : `/chuyen/${tripId}/so-sanh?lan-chay=${encodeURIComponent(runId)}`
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button variant="glass" className="hidden h-9.5 px-2.5 xl:flex 2xl:px-3.5" asChild>
-          <Link to={`/chuyen/${tripId}/so-sanh`} aria-label={label}>
+          <Link to={to} aria-label={label}>
             <Columns2 strokeWidth={1.5} />
             <span className="hidden 2xl:inline">{label}</span>
           </Link>

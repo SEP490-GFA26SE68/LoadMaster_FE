@@ -54,6 +54,23 @@ test('when the store knows who approved, the label names them; an account that o
   expect(screen.queryByRole('button', { name: /^Duyệt/ })).toBeNull()
 })
 
+test('a candidate of an optimisation run opens the comparison of that run; any other revision opens the matrix of all revisions', () => {
+  const access = plannerAccess({ canApprove: true, approvedAt: null, hasEdits: false })
+  const view = render(
+    <I18nProvider>
+      <TooltipProvider>
+        <MemoryRouter>
+          <PlannerActions tripId="TRIP-2026-0914" access={access} blockedReason={null} onApprove={vi.fn()} compareRunId="RUN-002" />
+        </MemoryRouter>
+      </TooltipProvider>
+    </I18nProvider>,
+  )
+  expect(screen.getByRole('link', { name: 'So sánh phương án' })).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002')
+  view.unmount()
+  renderActions(access)
+  expect(screen.getByRole('link', { name: 'So sánh phương án' })).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/so-sanh')
+})
+
 test('an unapproved plan read by an account without the approve permission has no Approve button either', () => {
   renderActions(plannerAccess({ canApprove: false, approvedAt: null, hasEdits: false }))
   expect(screen.queryByRole('button', { name: /^Duyệt/ })).toBeNull()

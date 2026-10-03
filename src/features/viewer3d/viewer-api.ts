@@ -7,6 +7,7 @@
  */
 
 import type { PlacementPatch } from '@/domain/constraints'
+import { PLAN_LABELS, type PlanLabel } from '@/domain/models'
 import { getMockDb, type ApproveOptions, type Revision, type Trip } from '@/lib/mock-db'
 
 export type PlanSource = { readonly trip: Trip; readonly revision: Revision }
@@ -33,15 +34,29 @@ export async function fetchPlanSource(tripId: string, ref?: string): Promise<{ t
 export type PlanApproval = {
   /** Họ tên người bấm Duyệt; `null` khi revision chưa duyệt, hoặc kho không biết người duyệt (duyệt khi không có phiên, tài khoản đã xoá). */
   readonly approvedByName: string | null
+  /**
+   * Revision là một phương án ứng viên (hoặc bản duyệt dựng từ nó) của lần chạy có nhiều phương án (FE-5b-05): mã lần chạy và nhãn
+   * A · B · C theo mục tiêu. `null` khi lần chạy chỉ có một phương án, hoặc revision không thuộc lần chạy nào.
+   */
+  readonly candidate: { readonly runId: string; readonly label: PlanLabel } | null
 }
 
-/** Ai đã duyệt revision: kho ghi người bấm Duyệt vào revision đã duyệt (`approvedBy`), tên lấy từ danh sách người dùng. */
+/**
+ * Ai đã duyệt revision — kho ghi người bấm Duyệt vào revision đã duyệt (`approvedBy`), tên lấy từ danh sách người dùng — và revision
+ * là phương án ứng viên nào của lần chạy nào.
+ */
 // chưa có ở BE
 export async function fetchPlanApproval(revisionId: string): Promise<PlanApproval> {
   const db = getMockDb()
   const [revision, users] = await Promise.all([db.getRevision(revisionId), db.listUsers()])
   const approverId = revision.approvedAt === undefined ? null : (revision.approvedBy ?? null)
-  return { approvedByName: users.find((user) => user.id === approverId)?.fullName ?? null }
+  const run = revision.runId === undefined ? undefined : (await db.listOptimizationRuns(revision.tripId)).find((item) => item.id === revision.runId)
+  const objective = revision.run?.objective
+  const isCandidate = run !== undefined && objective !== undefined && (run.plans?.length ?? 0) > 1 && run.plans?.some((plan) => plan.objective === objective)
+  return {
+    approvedByName: users.find((user) => user.id === approverId)?.fullName ?? null,
+    candidate: isCandidate ? { runId: run.id, label: PLAN_LABELS[objective] } : null,
+  }
 }
 
 /**
