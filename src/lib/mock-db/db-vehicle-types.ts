@@ -1,8 +1,10 @@
 import { gt } from '@/domain/geometry'
+import { DEFAULT_MAX_COG_OFFSET_RATIO, MAX_COG_OFFSET_RATIO_CEILING } from '@/domain/models'
 import { nextId, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import type { VehicleType, VehicleTypeInput } from './source-types'
+import { limitsOfType, sameLimits, type VehicleLimits } from './vehicle-limits'
 
 type VehicleTypeMethods = Pick<
   Review1Db,
@@ -11,24 +13,59 @@ type VehicleTypeMethods = Pick<
 >
 
 const POSITIVE_FIELDS = ['cargoLengthCm', 'cargoWidthCm', 'cargoHeightCm', 'payloadKg'] as const
+const AXLE_LIMIT_FIELDS = ['frontAxleLimitKg', 'rearAxleLimitKg'] as const
 
-/** Tên không trống, kích thước và tải trọng dương; chỉ giữ trường của loại xe. */
-function typeFields(input: VehicleTypeInput): VehicleTypeInput {
+type TypeFields = Omit<VehicleType, 'id' | 'companyId' | 'createdAt'>
+
+function isPositive(value: number): boolean {
+  return Number.isFinite(value) && gt(value, 0)
+}
+
+/**
+ * Tên không trống, kích thước và tải trọng dương; giới hạn trục để trống hoặc dương; độ lệch trọng tâm trong (0, 0,5], vắng thì mặc
+ * định 0,15 (D-79). Chỉ giữ trường của loại xe.
+ */
+function typeFields(input: VehicleTypeInput): TypeFields {
   const name = input.name.trim()
   if (name === '') throw new MockDbError('VEHICLE_TYPE_INVALID', { field: 'name' })
   for (const field of POSITIVE_FIELDS) {
-    if (!Number.isFinite(input[field]) || !gt(input[field], 0)) throw new MockDbError('VEHICLE_TYPE_INVALID', { field })
+    if (!isPositive(input[field])) throw new MockDbError('VEHICLE_TYPE_INVALID', { field })
   }
-  return { name, cargoLengthCm: input.cargoLengthCm, cargoWidthCm: input.cargoWidthCm, cargoHeightCm: input.cargoHeightCm, payloadKg: input.payloadKg }
+  const limits: Pick<TypeFields, 'frontAxleLimitKg' | 'rearAxleLimitKg'> = {}
+  for (const field of AXLE_LIMIT_FIELDS) {
+    const value = input[field]
+    if (value === undefined) continue
+    if (!isPositive(value)) throw new MockDbError('VEHICLE_TYPE_INVALID', { field })
+    limits[field] = value
+  }
+  const maxCogOffsetRatio = input.maxCogOffsetRatio ?? DEFAULT_MAX_COG_OFFSET_RATIO
+  if (!isPositive(maxCogOffsetRatio) || gt(maxCogOffsetRatio, MAX_COG_OFFSET_RATIO_CEILING)) {
+    throw new MockDbError('VEHICLE_TYPE_INVALID', { field: 'maxCogOffsetRatio' })
+  }
+  return {
+    name, cargoLengthCm: input.cargoLengthCm, cargoWidthCm: input.cargoWidthCm, cargoHeightCm: input.cargoHeightCm, payloadKg: input.payloadKg,
+    ...limits, maxCogOffsetRatio,
+  }
 }
 
 /**
  * Danh mục loại xe (`/api/vehicle-types` của backend) và gắn loại cho xe (LM-104). Mỗi công ty một danh mục riêng; xe chỉ gắn loại
- * xe của công ty mình (D-64).
+ * xe của công ty mình (D-64). Xe lấy giới hạn tải trục và độ lệch trọng tâm từ loại đang gắn (FE-5b-01): đổi giới hạn của loại, hoặc
+ * gắn / gỡ loại làm giới hạn hiệu lực của xe đổi, thì phương án của các chuyến đang lập kế hoạch với xe đó lỗi thời — như khi sửa xe.
  */
 export function vehicleTypeMethods(ctx: DbContext): VehicleTypeMethods {
-  const { vehicleTypes, vehicleTypeOf, vehicleCompany } = ctx.state
+  const { vehicleTypes, vehicleTypeOf, vehicleCompany, trips } = ctx.state
   const scope = ctx.scope.vehicleTypes
+
+  /** Giới hạn của xe là đầu vào tối ưu: đổi thì chuyến đang lập kế hoạch với xe đó phải tối ưu lại. */
+  function limitsChanged(vehicleIds: readonly string[], before: VehicleLimits, after: VehicleLimits): void {
+    if (sameLimits(before, after)) return
+    const affected = new Set(vehicleIds)
+    for (const trip of trips.values()) {
+      if (affected.has(trip.vehicleId) && trip.phase === 'planning') put(trips, { ...trip, inputVersion: trip.inputVersion + 1 })
+    }
+  }
+
   return {
     listVehicleTypes: () => ctx.respond(() => scope.list()),
     getVehicleType: (id) => ctx.respond(() => scope.read(id)),
@@ -43,6 +80,8 @@ export function vehicleTypeMethods(ctx: DbContext): VehicleTypeMethods {
       ctx.respond(() => {
         const current = scope.own(id)
         const next: VehicleType = { ...typeFields(input), id, companyId: current.companyId, createdAt: current.createdAt }
+        const vehicleIds = [...vehicleTypeOf].filter(([, typeId]) => typeId === id).map(([vehicleId]) => vehicleId)
+        limitsChanged(vehicleIds, limitsOfType(current), limitsOfType(next))
         ctx.log('vehicleType.updated', { type: 'vehicleType', id }, { name: next.name })
         return put(vehicleTypes, next)
       }),
@@ -62,11 +101,13 @@ export function vehicleTypeMethods(ctx: DbContext): VehicleTypeMethods {
     setVehicleType: (vehicleId, vehicleTypeId) =>
       ctx.respond(() => {
         ctx.scope.vehicles.own(vehicleId)
+        const before = limitsOfType(vehicleTypes.get(vehicleTypeOf.get(vehicleId) ?? ''))
         if (vehicleTypeId === null) vehicleTypeOf.delete(vehicleId)
         else {
           scope.ref(vehicleTypeId, vehicleCompany.get(vehicleId))
           vehicleTypeOf.set(vehicleId, vehicleTypeId)
         }
+        limitsChanged([vehicleId], before, limitsOfType(vehicleTypes.get(vehicleTypeId ?? '')))
         ctx.log('vehicleType.assigned', { type: 'vehicle', id: vehicleId }, { vehicleTypeId: vehicleTypeId ?? '' })
         return vehicleTypeId === null ? null : { vehicleId, vehicleTypeId }
       }),

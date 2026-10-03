@@ -40,7 +40,7 @@ export const dataErrors = {
   PACKAGES_REQUIRED: 'Pick at least one package.',
   QR_UNKNOWN: 'Code {token} does not match any package.',
   STOP_NOT_FOUND: 'Trip {tripId} has no stop {stopId}.',
-  VEHICLE_TYPE_INVALID: 'The vehicle type is not valid: it needs a name, cargo dimensions and a payload above 0.',
+  VEHICLE_TYPE_INVALID: 'The vehicle type is not valid: it needs a name, cargo dimensions and a payload above 0; axle limits, when given, above 0; a center of gravity offset above 0 and at most 50%.',
   VEHICLE_TYPE_IN_USE: 'Vehicle type {vehicleTypeId} is still set on vehicles {vehicleIds}, so it cannot be deleted.',
   PACKAGE_NOT_IN_TRIP: 'Code {token} is not part of trip {tripId}.',
   WRONG_PACKAGE_SCANNED: 'Scanned package {scanned}; this step needs package {expected}.',

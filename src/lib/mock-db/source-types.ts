@@ -26,8 +26,20 @@ export type Company = {
   depot: CompanyDepot
 }
 
+/**
+ * Ba trường ràng buộc của loại kiện theo backend (FE-5b-01, D-79): tải xếp chồng tối đa, có cho xoay kiện không, có dễ vỡ không. Là
+ * hình chiếu thô của các trường Spec đã có (`maxTopLoadKg`, `allowedOrientations`, `fragilityLevel`); ánh xạ hai chiều ở
+ * `package-type-limits.ts`, kho ghi lại mỗi lần lưu loại kiện.
+ */
+export type PackageTypeLimits = {
+  /** Khối lượng tối đa xếp chồng lên trên, kg; 0 là không cho xếp chồng. */
+  maxStackWeightKg: number
+  rotationAllowed: boolean
+  fragile: boolean
+}
+
 /** Loại kiện (`PT-NNN`): cùng trường xếp hàng với `CargoPackage`; kiện gắn loại này lấy hướng đặt, xếp chồng, tải trên của nó. */
-export type PackageType = {
+export type PackageType = PackageTypeLimits & {
   id: string
   /** Công ty có loại kiện này trong danh mục (D-64). */
   companyId: string
@@ -48,7 +60,8 @@ export type PackageType = {
   createdAt: string
 }
 
-export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt'>
+/** Đầu vào của kho: các trường Spec; ba trường của backend do kho suy ra (`backendLimitsOf`). */
+export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt' | keyof PackageTypeLimits>
 
 export const OPTIMIZATION_OBJECTIVES = ['MAX_VOLUME', 'AXLE_BALANCE'] as const
 export type OptimizationObjective = (typeof OPTIMIZATION_OBJECTIVES)[number]
@@ -82,7 +95,10 @@ export type OptimizationRun = RunSettings & {
 export const RUN_FAILURE_CODES = ['REQUEST_REJECTED', 'SERVICE_UNAVAILABLE'] as const
 export type RunFailureCode = (typeof RUN_FAILURE_CODES)[number]
 
-/** Loại xe (`VT-NNN`, backend có CRUD `/api/vehicle-types`): kích thước lòng thùng và tải trọng danh nghĩa. */
+/**
+ * Loại xe (`VT-NNN`, backend có CRUD `/api/vehicle-types`): kích thước lòng thùng, tải trọng danh nghĩa và ba giới hạn xếp hàng của
+ * backend (FE-5b-01). Xe gắn loại nào thì lấy giới hạn của loại đó (`vehicle-limits.ts`).
+ */
 export type VehicleType = {
   id: string
   /** Công ty có loại xe này trong danh mục (D-64). */
@@ -92,12 +108,19 @@ export type VehicleType = {
   cargoWidthCm: number
   cargoHeightCm: number
   payloadKg: number
+  /** Giới hạn tải nhóm trục trước, kg (D-78); vắng là loại xe chưa khai — xe dùng `maxLoadKg` của trục đầu. */
+  frontAxleLimitKg?: number
+  /** Giới hạn tải nhóm trục sau, kg (D-78); vắng là loại xe chưa khai — xe dùng tổng `maxLoadKg` của các trục còn lại. */
+  rearAxleLimitKg?: number
+  /** Độ lệch trọng tâm hàng tối đa so với giữa thùng, tỷ lệ chiều dài / chiều rộng lòng thùng, trong (0, 0,5] (D-79). */
+  maxCogOffsetRatio: number
   createdAt: string
 }
 
-export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt'>
+/** `maxCogOffsetRatio` vắng thì kho đặt mặc định `DEFAULT_MAX_COG_OFFSET_RATIO`. */
+export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt' | 'maxCogOffsetRatio'> & { maxCogOffsetRatio?: number }
 
-/** Xe gắn loại xe — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
+/** Xe gắn loại xe — lưu ngoài `VehicleConfig`; giới hạn của loại được ghép vào xe lúc đọc (`withTypeLimits`). */
 export type VehicleTypeAssignment = { vehicleId: string; vehicleTypeId: string }
 
 /** Nhãn QR của một kiện trong chuyến: mã QR của kiện kho kiện ứng với instance đó (FE-3b-07). */

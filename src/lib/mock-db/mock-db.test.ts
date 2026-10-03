@@ -80,8 +80,11 @@ test('a call settles only after the configured latency', async () => {
   await listing
 })
 
+/** Truck 6m as the store returns it: with the limits of its vehicle type VT-001 (no axle limits, the default 15% offset). */
+const TRUCK_6M_WITH_TYPE_LIMITS = { ...SPEC_TRUCK_6M, maxCogOffsetRatio: 0.15 }
+
 test('a record is read by its id', async () => {
-  expect(await createMockDb().getVehicle('VEHICLE-001')).toStrictEqual(SPEC_TRUCK_6M)
+  expect(await createMockDb().getVehicle('VEHICLE-001')).toStrictEqual(TRUCK_6M_WITH_TYPE_LIMITS)
 })
 
 test('a vehicle that a trip still uses cannot be deleted', async () => {
@@ -99,7 +102,7 @@ test('changing what a read returns does not change the stored record', async () 
   vehicle.maxPayloadKg = 1
   const [listed] = await db.listVehicles()
   listed?.obstacles.splice(0)
-  expect(await db.getVehicle('VEHICLE-001')).toStrictEqual(SPEC_TRUCK_6M)
+  expect(await db.getVehicle('VEHICLE-001')).toStrictEqual(TRUCK_6M_WITH_TYPE_LIMITS)
 })
 
 test('reading a record that does not exist rejects with a NOT_FOUND error naming the collection and the id', async () => {

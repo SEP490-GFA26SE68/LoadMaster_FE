@@ -25,7 +25,8 @@ test('a new database starts with the Spec Truck 6m followed by seven Vietnamese 
     ['VEHICLE-PN-01', 'Isuzu QKR 230 · 51C-907.41'],
     ['VEHICLE-PN-02', 'Hino XZU730 · 51D-318.62'],
   ])
-  expect(vehicles[0]).toStrictEqual(SPEC_TRUCK_6M)
+  // Truck 6m gắn loại VT-001: kho trả xe kèm giới hạn của loại (FE-5b-01)
+  expect(vehicles[0]).toStrictEqual({ ...SPEC_TRUCK_6M, maxCogOffsetRatio: 0.15 })
   for (const vehicle of vehicles) expect(vehicleConfigSchema.parse(vehicle)).toStrictEqual(vehicle)
 })
 
