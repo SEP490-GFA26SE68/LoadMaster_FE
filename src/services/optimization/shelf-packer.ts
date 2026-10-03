@@ -86,10 +86,10 @@ function createRun({ vehicle, instances, reasons, lowCenterOfGravity }: PackInpu
 }
 type Run = ReturnType<typeof createRun>
 
-/** Một dải suốt chiều dài thùng, kiện theo đúng thứ tự `instances`. */
-function packWhole(input: PackInput): Run {
+/** Một dải liền từ `startXCm` tới cửa, kiện theo đúng thứ tự `instances`. */
+function packWhole(input: PackInput, startXCm = 0): Run {
   const run = createRun(input, input.onProgress)
-  const lane = run.shelves.lane(0)
+  const lane = run.shelves.lane(startXCm)
   for (const instance of input.instances) {
     const prepared = run.prepare(instance)
     if ('rejection' in prepared) {
@@ -209,6 +209,11 @@ function exceedsVehicleVolume(input: PackInput): boolean {
   let volumeCm3 = 0
   for (const group of packable(input).values()) for (const { lengthCm, widthCm, heightCm } of group) volumeCm3 += lengthCm * widthCm * heightCm
   return gt(volumeCm3, innerLengthCm * innerWidthCm * innerHeightCm)
+}
+
+/** Xếp một dải liền bắt đầu ở `startXCm` (mặc định sát vách trong), không chia vùng — lượt dồn sát của các phương án ứng viên. */
+export function packWholeLane(input: PackInput, startXCm = 0): Packed {
+  return packWhole(input, startXCm).result()
 }
 
 /**
