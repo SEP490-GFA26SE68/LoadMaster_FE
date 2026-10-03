@@ -181,9 +181,24 @@ type SpecMetrics = Spec.OptimizationResult['metrics']
 interface FeMetrics extends SpecMetrics {
   frontAxleLoadKg?: number;
   rearAxleLoadKg?: number;
+  /** FE-5b-02: số kiện nằm ngoài vùng của điểm giao mình. */
+  rehandlingCount?: number;
 }
-interface FeOptimizationResult extends Omit<Spec.OptimizationResult, 'unplacedPackages' | 'metrics'> {
+/** FE-5b-02: vùng theo điểm giao mà kiện đang nằm. */
+interface FePackagePlacement extends Spec.PackagePlacement {
+  stopZoneId?: string;
+}
+/** FE-5b-02: một vùng theo điểm giao trên trục X của thùng; `stopId` là số điểm giao (`deliveryStop`). */
+interface FeStopZone {
+  id: string;
+  stopId: number;
+  startXCm: number;
+  endXCm: number;
+}
+interface FeOptimizationResult extends Omit<Spec.OptimizationResult, 'placements' | 'unplacedPackages' | 'metrics'> {
+  placements: FePackagePlacement[];
   unplacedPackages: FeUnplacedPackage[];
+  stopZones?: FeStopZone[];
   metrics: FeMetrics;
 }
 
@@ -195,7 +210,7 @@ test('the model types are the Spec §6 contract plus the declared backend fields
   expectTypeOf<VehicleAxle>().toEqualTypeOf<Spec.VehicleAxle>()
   expectTypeOf<HandlingClass>().toEqualTypeOf<'STANDARD' | 'FRAGILE' | 'REFRIGERATED' | 'HAZARDOUS' | 'HIGH_VALUE'>()
   expectTypeOf<CargoPackage>().toEqualTypeOf<FeCargoPackage>()
-  expectTypeOf<PackagePlacement>().toEqualTypeOf<Spec.PackagePlacement>()
+  expectTypeOf<PackagePlacement>().toEqualTypeOf<FePackagePlacement>()
   expectTypeOf<UnplacedPackage>().toEqualTypeOf<FeUnplacedPackage>()
   expectTypeOf<OptimizationRequest>().toEqualTypeOf<FeOptimizationRequest>()
   expectTypeOf<OptimizationResult>().toEqualTypeOf<FeOptimizationResult>()

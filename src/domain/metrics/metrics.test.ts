@@ -43,6 +43,10 @@ test('the centre of gravity leans towards the heavier package', () => {
   expect(centerOfGravityCm).toStrictEqual({ x: 150, y: 60, z: 22.5 })
 })
 
+test('the rehandling count is the one the caller counted against the stop zones, and is absent for a plan without zones', () => {
+  expect([metricsOf({ rehandlingCount: 3 }).rehandlingCount, metricsOf({ rehandlingCount: 0 }).rehandlingCount, 'rehandlingCount' in metricsOf({})]).toStrictEqual([3, 0, false])
+})
+
 test('an empty load has no centre of gravity rather than NaN coordinates', () => {
   expect(metricsOf({})).not.toHaveProperty('centerOfGravityCm')
 })
