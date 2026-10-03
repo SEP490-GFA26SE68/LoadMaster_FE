@@ -79,7 +79,7 @@ test('stops arriving after their deadline need a confirmation before approval; s
   const close: Stop = { stopId: 'STOP-02', deadlineStatus: 'AT_RISK' }
   const late: Stop = { stopId: 'STOP-03', deadlineStatus: 'MISSED' }
   const noDeadline: Stop = { stopId: 'STOP-04' }
-  expect(deadlineReview([onTime, close, late, noDeadline])).toStrictEqual({ missed: [late], atRisk: [close], needsConfirmation: true })
-  expect(deadlineReview([onTime, close, noDeadline])).toStrictEqual({ missed: [], atRisk: [close], needsConfirmation: false })
-  expect(deadlineReview([])).toStrictEqual({ missed: [], atRisk: [], needsConfirmation: false })
+  expect(deadlineReview([onTime, close, late, noDeadline])).toStrictEqual({ missed: [late], atRisk: [close], onTime: [onTime], needsConfirmation: true })
+  expect(deadlineReview([onTime, close, noDeadline])).toStrictEqual({ missed: [], atRisk: [close], onTime: [onTime], needsConfirmation: false })
+  expect(deadlineReview([])).toStrictEqual({ missed: [], atRisk: [], onTime: [], needsConfirmation: false })
 })

@@ -40,11 +40,17 @@ export const viewer = {
     loadErrorTitle: 'Không tải được phương án',
     loadErrorDescription: 'Không tìm thấy chuyến {tripId}.',
     toSetup: 'Tới Thiết lập tối ưu',
-    blocked: {
-      one: 'Chưa duyệt được: {count} lỗi cần xử lý.',
-      other: 'Chưa duyệt được: {count} lỗi cần xử lý.',
+    /** Lý do chặn Duyệt ở tooltip và mô tả của nút (FE-5b-08, D-80): các lý do theo từng loại, nối bằng `format.list`. */
+    blockedReason: 'Chưa duyệt được: {reasons}.',
+    blockedBy: {
+      stale: 'kết quả lỗi thời',
+      mustLoad: { one: '{count} dòng kiện bắt buộc chưa xếp đủ', other: '{count} dòng kiện bắt buộc chưa xếp đủ' },
+      axle: 'tải trục vượt giới hạn',
+      errors: { one: '{count} lỗi ràng buộc', other: '{count} lỗi ràng buộc' },
     },
     blockedStale: 'Chưa duyệt được: kết quả lỗi thời.',
+    /** Nút phụ "Đổi xe" ở góc dưới phải khung 3D của Planner (FE-5b-08), cạnh "Chi tiết / Hiển thị". */
+    changeVehicle: 'Đổi xe',
     metricsTab: 'Chỉ số',
     metrics: {
       title: 'Chỉ số phương án',
@@ -83,6 +89,21 @@ export const viewer = {
       noManual: 'Không có chỉnh tay.',
       ordersRecomputed: 'Thứ tự xếp và dỡ sẽ được tính lại khi duyệt.',
       stale: 'Kết quả lỗi thời — chạy tối ưu lại trước khi duyệt.',
+      /**
+       * Mức hạn của các điểm giao theo tuyến đã tối ưu (FE-5b-08, D-80): điểm sát hạn chỉ hiện; điểm trễ hạn dự kiến phải xác nhận
+       * ở bước `late` rồi mới duyệt.
+       */
+      deadlinesOk: 'Mọi điểm giao có hạn đều kịp hạn.',
+      atRisk: { one: '{count} điểm giao sát hạn (không chặn duyệt).', other: '{count} điểm giao sát hạn (không chặn duyệt).' },
+      missed: { one: '{count} điểm giao trễ hạn dự kiến — cần xác nhận khi duyệt.', other: '{count} điểm giao trễ hạn dự kiến — cần xác nhận khi duyệt.' },
+      stopTimes: 'Dự kiến đến {etaTime} {etaDate} · hạn {deadlineTime} {deadlineDate}',
+      late: {
+        title: 'Duyệt dù có điểm trễ hạn?',
+        description: 'Theo tuyến đã tối ưu, xe tới các điểm giao dưới đây sau hạn. Duyệt thì kho và tài xế làm theo phương án này.',
+        list: 'Điểm giao trễ hạn dự kiến',
+        back: 'Quay lại',
+        confirm: 'Vẫn duyệt',
+      },
       cancel: 'Huỷ',
       confirm: 'Duyệt',
       done: 'Đã duyệt phương án.',

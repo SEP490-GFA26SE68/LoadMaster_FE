@@ -1,12 +1,13 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   fetchPlanSource     → theo jobId: GET /api/v1/optimization/jobs/{id}/plans; theo chuyến, theo mã revision: chưa có ở BE
- *   approvePlanRevision → POST /api/load-plans/{id}/approve (FastAPI đang có: POST /api/v1/load-plans/{id}/approve)
+ *   approveLoadPlan     → POST /api/load-plans/{id}/approve (`force`; FastAPI đang có: POST /api/v1/load-plans/{id}/approve)
  *   chưa có ở BE: fetchPlanApproval
+ * Đổi xe của chuyến từ Planner (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trips/trip-vehicle-api.ts`.
  */
 
 import type { PlacementPatch } from '@/domain/constraints'
-import { getMockDb, type Revision, type Trip } from '@/lib/mock-db'
+import { getMockDb, type ApproveOptions, type Revision, type Trip } from '@/lib/mock-db'
 
 export type PlanSource = { readonly trip: Trip; readonly revision: Revision }
 
@@ -45,9 +46,10 @@ export async function fetchPlanApproval(revisionId: string): Promise<PlanApprova
 
 /**
  * Duyệt (LM-050, D-31): kho tạo revision approved mới từ revision đang xem và patch của draft — bản chỉnh tay được duyệt cùng lúc
- * (FE-0-07); revision nguồn giữ nguyên.
+ * (FE-0-07); revision nguồn giữ nguyên. `force` (FE-5b-08, D-80): người duyệt đã xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến —
+ * thiếu nó kho từ chối `LATE_STOPS_UNCONFIRMED`; lý do chặn (`APPROVAL_BLOCKED`, `REVISION_STALE`) thì `force` không gỡ được.
  */
-// POST /api/load-plans/{id}/approve (FastAPI đang có: POST /api/v1/load-plans/{id}/approve)
-export async function approvePlanRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision> {
-  return getMockDb().approveRevision(revisionId, patches)
+// POST /api/load-plans/{id}/approve (`force`; FastAPI đang có: POST /api/v1/load-plans/{id}/approve)
+export async function approveLoadPlan(revisionId: string, patches: readonly PlacementPatch[], options: ApproveOptions = {}): Promise<Revision> {
+  return getMockDb().approveRevision(revisionId, patches, options)
 }

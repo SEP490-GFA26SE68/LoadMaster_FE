@@ -58,6 +58,8 @@ export type DeadlineReview<Stop> = {
   readonly missed: Stop[]
   /** Điểm sát hạn (`AT_RISK`): chỉ để hiện, không hỏi thêm. */
   readonly atRisk: Stop[]
+  /** Điểm có hạn và kịp hạn (`OK`). */
+  readonly onTime: Stop[]
   /** Có điểm trễ hạn: Duyệt cần người duyệt xác nhận (`force`). */
   readonly needsConfirmation: boolean
 }
@@ -67,6 +69,7 @@ export type DeadlineReview<Stop> = {
  * tin. Điểm không có hạn, hoặc chuyến chưa tối ưu tuyến (không điểm nào có mức hạn), không tính.
  */
 export function deadlineReview<Stop extends { readonly deadlineStatus?: DeadlineStatus }>(stops: readonly Stop[]): DeadlineReview<Stop> {
-  const missed = stops.filter(({ deadlineStatus }) => deadlineStatus === 'MISSED')
-  return { missed, atRisk: stops.filter(({ deadlineStatus }) => deadlineStatus === 'AT_RISK'), needsConfirmation: missed.length > 0 }
+  const withStatus = (status: DeadlineStatus) => stops.filter(({ deadlineStatus }) => deadlineStatus === status)
+  const missed = withStatus('MISSED')
+  return { missed, atRisk: withStatus('AT_RISK'), onTime: withStatus('OK'), needsConfirmation: missed.length > 0 }
 }
