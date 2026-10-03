@@ -63,7 +63,7 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
       actions={
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2.5">
-            {trip && can('trips.edit') ? <TripActionsMenu trip={trip} /> : null}
+            {trip ? <TripActionsMenu trip={trip} canEdit={can('trips.edit')} /> : null}
             {run}
             {plan ? (
               <Button variant="primary" asChild>
