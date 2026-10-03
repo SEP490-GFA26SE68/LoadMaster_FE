@@ -262,7 +262,8 @@ src/
                         *(bổ sung 03/10/2026, FE-4b-03 → FE-4b-05)* địa danh mẫu `seed-places.ts`; điểm giao tự sinh `trip-stops.ts`
                         (thuần) + `db-trip-lines.ts`; kiện kho kiện đưa thẳng vào chuyến `db-trip-pool.ts`; kho xuất phát `seed-depots.ts`;
                         *(bổ sung 04/10/2026, FE-5b-08)* đổi xe của chuyến Đã lập kế hoạch `db-trip-vehicle.ts`; luật duyệt kho tự kiểm
-                        ở `db-revisions.ts` + `revisions.ts` (`approvalIssues`);
+                        ở `db-revisions.ts` + `revisions.ts` (`approvalIssues`); *(bổ sung 04/10/2026, FE-5b-05)* lần chạy lưu ba
+                        phương án ứng viên `saveOptimizationRun` (`db-revisions.ts`), seed dựng ba phương án mỗi chuyến `seed-plan.ts`;
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
@@ -272,10 +273,11 @@ src/
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
-    models/             type contract Spec + zod schema (LM-010)
+    models/             type contract Spec + zod schema (LM-010); ba mục tiêu của phương án ứng viên `plan-objective.ts` (FE-5b-05)
     constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06); luật duyệt
                         `approval.ts` và xe có chở được hàng của chuyến không `vehicle-fit.ts` (FE-5b-08)
-    metrics/            tỷ lệ sử dụng, trọng tâm (LM-021); tải trục trước / sau theo mô hình đòn bẩy `axle-load.ts` (FE-5b-03)
+    metrics/            tỷ lệ sử dụng, trọng tâm (LM-021); tải trục trước / sau theo mô hình đòn bẩy `axle-load.ts` (FE-5b-03); độ lệch
+                        tải giữa hai nhóm trục và điểm cân tải `axle-balance.ts` (FE-5b-05)
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
@@ -284,7 +286,8 @@ src/
                         `zonePlacements`)
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker (LM-024 →); mock xếp kệ theo vùng điểm giao
-                        (`shelf-packer.ts` chia dải, `shelf-walls.ts` vách / cột / chồng — FE-5b-02)
+                        (`shelf-packer.ts` chia dải, `shelf-walls.ts` vách / cột / chồng — FE-5b-02); ba phương án ứng viên một job
+                        (`mock-candidates.ts`, `candidate-layouts.ts` dựng và chọn cách xếp, `mock-plan.ts` phần dùng chung — FE-5b-05)
   test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
 tests/                  unit test cũ của viewer3d (Vitest)
 e2e/                    Playwright (LM-005)
@@ -808,6 +811,21 @@ Tên trường dữ liệu trong code vẫn giữ đúng hợp đồng với bac
 giao diện làm lớp dịch. Ngoại lệ: màn **So sánh phương án** được dùng từ vựng thuật
 toán (tên phương pháp, random seed, LIFO) vì ở đó người đọc đang so sánh thuật toán. *(LM-051)* Màn này
 chỉ hiện thiết lập và metrics có trong revision đã lưu; không đặt nhãn thuật toán nào chưa thật sự chạy.
+*(đã điều chỉnh 04/10/2026, FE-5b-05, FE-5b-06, D-77)* Người dùng **không chọn mục tiêu hay thuật toán** nữa: một lần chạy ra ba phương án
+ứng viên A · B · C theo ba mục tiêu (tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — tên ở `runs.objectives`, là ngôn ngữ của điều
+phối viên, dùng được ở màn vận hành). **Tên thuật toán đã chạy** chỉ hiện ở ba chỗ: dòng chỉ đọc trong "Thiết lập nâng cao" và bảng lần
+chạy của Thiết lập tối ưu, và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty nên nhãn luôn
+kèm chữ **"(mock)"** — `runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; hạng thuật toán theo gói nối ở FE-8-05. Màn So sánh theo lần chạy
+(`/chuyen/:tripId/so-sanh?lan-chay=<mã lần chạy>`): thẻ đầu nói lần chạy (người chạy, thuật toán, seed, LIFO, trọng tâm thấp, giới hạn thời
+gian) và **mức hạn các điểm giao một lần** — ba phương án cùng một tuyến; dưới đó ba thẻ cạnh nhau, mỗi thẻ: mục tiêu, MOCK RESULT, mã
+revision, ảnh thu nhỏ SVG, thể tích, tải trọng, tải trục trước / sau so giới hạn, chênh mức tải hai trục (điểm phần trăm), trọng tâm hàng,
+số kiện dỡ-xếp lại, kiện chưa xếp, thời gian chạy. **Giá trị tốt nhất đánh dấu trung tính**: in đậm kèm nhãn xám "Tốt nhất" (`Badge`
+`shape="tag"` tông mặc định) — không tô xanh lá / đỏ cho tốt / xấu; chỉ số mà các phương án bằng nhau, hoặc có phương án không có số (xe
+chưa khai trục), thì không đánh dấu; hoà thì đánh dấu mọi phương án hoà (`bestCandidates` ở `trips/candidate-comparison.ts`; thời gian chạy
+và trọng tâm không có "tốt nhất"). Màn **không có nút primary**: mỗi thẻ một nút phụ "Mở trong Planner", duyệt ở Planner; thẻ của phương án
+đã duyệt mang nhãn cyan "Đã duyệt" và liên kết tới bản đã duyệt. Không có `lan-chay` thì vẫn là ma trận revision của D-37 (một nút primary
+mở bản đang chọn), cột của bản do lần chạy ba phương án tạo ra mang thêm nhãn "Phương án A / B / C". Ma trận cũ còn dùng dấu tích xanh lá
+cho "tốt nhất" — chưa đổi.
 
 ### Nút chưa hoạt động *(đã điều chỉnh 15/09/2026, D-20)*
 
@@ -845,8 +863,10 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
   (chưa khai, chỉ một trục, các trục trùng vị trí) thì **không có số nào**: ô Tải trục nói vì sao chưa tính, metrics của kết quả không
   có `frontAxleLoadKg` / `rearAxleLoadKg`, và không có kiểm `AXLE_OVERLOAD`. Trục minh hoạ mà khung gầm 3D vẽ khi xe không khai trục
-  **không** được đưa vào phép tính. Seed không đặt số trục mới: chưa xe mẫu nào khai `axles`, nên loại xe seed chưa có giới hạn trục
-  (`axleLimitsFromAxles`) và phương án seed hiện lý do "xe này chưa khai báo trục".
+  **không** được đưa vào phép tính. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed **khai hai trục** (trừ "Truck 6m" của Spec):
+  vị trí, tải rỗng và tải tối đa của từng trục là **số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất** — chủ sản phẩm đã
+  duyệt cách làm này để bản demo có tải trục; ghi rõ ở `seed-vehicles.ts` (`twoAxles`) và mục 9. Số tải trục trên màn vẫn truy được về
+  các trục đó và vẫn mang MOCK RESULT; thay số thật ở trang xe là đủ, không sửa code.
 
 ## 7. Quy tắc riêng cho 3D
 
@@ -896,7 +916,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò.
 - *(đã điều chỉnh, LM-036)* Loading lấy `placement.step` (= `loadingOrder`); unloading lấy `unloadingOrder` của kết quả qua `unloadSequence` (`operations/unloading.ts`), nhãn "Thứ tự dỡ" không kèm "gợi ý"; revision `ordersRecomputed` hiện thêm câu "tính lại ở FE". Màn tài xế (LM-061) dùng `unloadingOrder` của revision đã duyệt cho cả danh sách kiện của điểm giao lẫn mô phỏng, không có chữ "gợi ý". Nhánh thứ tự suy ra (stop tăng, cao trước, gần cửa trước, nhãn "gợi ý") chỉ còn làm dự phòng khi kết quả thiếu `unloadingOrder`; hiện không màn nào dùng tới. Stop-order consistency không chứng minh unload accessibility.
 - Blocker là `lifoIssues` của domain qua `createLifoIndex`: chỉ kiện giao **muộn hơn** nằm hẳn sau mặt sau; kiện đã dỡ/đang ẩn gỡ khỏi lưới (`grid.remove`), tua lùi thì thêm lại; kiện chắn sắp theo x trước khi callout. `LIFO_BLOCKED` dừng mô phỏng và giữ target; `LIFO_PARTIAL` chỉ đánh dấu. Duyệt đếm hai mã này, không khẳng định dỡ được thực tế. Không tính người, xe nâng, clearance hay xoay lúc dỡ. Riêng hình ảnh dỡ (`UnloadMotion`) dùng `corridor` — mọi kiện còn lại trên hành lang thẳng, bất kể điểm giao — để không trượt xuyên kiện. Fixture benchmark có đúng một cặp kiện đổi điểm giao tạo ca `LIFO_BLOCKED` cho browser suite; seed đã duyệt không có ca LIFO.
-- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục**: `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính.
+- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục**: `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed nay khai hai trục (số ước lượng, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính, và phương án seed hiện tải trục thay cho câu "xe này chưa khai báo trục" (chỉ "Truck 6m" của Spec còn câu đó). Phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
 - Chi tiết xe gộp geometry theo vật liệu; mọi bánh (bánh đôi cầu sau) dùng một InstancedMesh, một draw. *(bổ sung 17/09/2026)* Khung gầm chi tiết (`scene/truck-chassis.ts`: khung sườn chữ C, dầm ngang, trục, vi sai, nhíp, giảm chấn, các-đăng, bình nhiên liệu/hơi, ắc quy, ống xả, lốp dự phòng, chắn bùn, gầm thùng) gộp vào cùng hình học màu theo đỉnh của `vehicle-details` — không thêm draw call. Camera xoay được xuống dưới gầm (`maxPolarAngle` gần π) và có góc nhìn "Gầm xe" (`gam-xe`, tâm nhìn hạ xuống khung sườn); đèn yếu từ dưới giữ khung gầm không đen. Màn kho không có góc gầm xe. Cargo dùng atlas trung tính chung cho carton/pallet/crate qua thuộc tính instance, không phải nhãn hướng đặt. Low tắt chi tiết phụ; không tắt cues nghiệp vụ. Khi gặp `LIFO_BLOCKED`, playback dỡ tạm dừng và giữ target. Kiện còn vật trên hành lang thẳng (người dùng bỏ qua bước, hoặc bị che một phần) mờ tại chỗ; không dịch chuyển xuyên kiện khác. Reduced motion không dịch chuyển lớn; hoàn tất phải trở lại idle.
 - Timeline dùng ô cao bằng nhau, 8–64 bins theo chiều rộng, slider giữ toàn bộ bước.
 - *(đã điều chỉnh 04/10/2026, FE-5b-07, D-79)* **Dải vùng điểm giao thay bản đồ điểm giao.** Planner vẽ các vùng của phương án (`result.stopZones` → `ViewerSceneModel.zones`, theo thứ tự giao, vùng đầu sát cửa) thành dải trên sàn thùng theo màu điểm giao: `operations/ZoneStrips.tsx`, hình học thuần ở `operations/stop-map.ts` (`zoneStrips`: mỗi vùng một hình chữ nhật từ `startXCm` tới `endXCm`, lùi 2 cm khỏi hai vách, cao 0,4 cm trên sàn; khoảng đệm để trống; nằm hoàn toàn trong mép sàn, depth test bình thường, không đặt dải trên thân, gầm hay bên ngoài xe). Mọi vùng nằm trong **một** mesh tô màu theo đỉnh: **đúng một draw call dù phương án có 1 hay 8 điểm giao** (`e2e/viewer-zones.spec.ts` đo bằng `?debug&packages=1000&stops=1|4|8`: tier balanced 25 / 25 / 25 draw call, tier low 17 / 18 / 18 — fixture một điểm không có kiện ngoài vùng nên tier low không dựng vỏ viền; tắt dải vùng bớt đúng một). Mỗi vùng có một nhãn DOM neo ở mép sàn: số điểm kèm màu, tên điểm, tỷ lệ thể tích hàng của điểm đó (%) — màu luôn đi kèm số và tên. Nhãn không đè nhau và không đè nhãn "Cửa sau": mỗi khung hình được vẽ, `ZoneStrips` chiếu điểm neo ra màn rồi đẩy nhãn bị chạm xuống dưới nhãn đã đặt, ghi thẳng vào DOM và chỉ ghi khi đổi; số nhãn bằng số điểm giao, không theo số kiện. Dải vùng **bật sẵn** khi mở Planner (cue nghiệp vụ: tier `low` vẫn vẽ), tắt / bật ở hộp Hiển thị ("Ẩn / Hiện dải vùng điểm giao", `operations.showZones`); phương án không chia vùng thì không có nút đó. Kho và tài xế không truyền `zones` cho `SceneCanvas` nên không có dải. Bản đồ phân bố theo thể tích thực (`stopDistribution`, `InteriorStopMap`) đã bỏ.
@@ -946,7 +966,7 @@ Các mục "Foundation engine", "Manual editor", "Operations" phía trên đã c
   Ngân sách: constraint engine 1.000 kiện p95 ≤ 50 ms, một lần thả p95 ≤ 8 ms (D-29).
 - Timeline dùng `loadingOrder` / `unloadingOrder` của kết quả; LIFO lấy từ domain — che kín
   100% mặt sau là vi phạm, che một phần là cảnh báo (LM-036, D-26).
-- *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục: mock tính bằng mô hình đòn bẩy, vượt giới hạn chặn Duyệt (D-78) — thay nhãn "Sẽ có sau" của LM-037 / Spec 7.10; xem mục "Operations".
+- *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục: mock tính bằng mô hình đòn bẩy, vượt giới hạn chặn Duyệt (D-78) — thay nhãn "Sẽ có sau" của LM-037 / Spec 7.10; xem mục "Operations". *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed khai trục ước lượng nên phương án seed có số tải trục.
 - Mock optimization chạy trong Web Worker, không chặn main thread (LM-025, D-30).
 
 Khi làm một issue trong nhóm này, sửa luật tương ứng ở các mục phía trên cùng lúc với code.
@@ -1047,7 +1067,7 @@ ty của chuyến, không lưu riêng. Thêm hàm công khai vào kho thì khai 
 `requirements-api.ts` (thay `orders-api.ts`), `vehicle-types-api.ts` (mỗi cái một file hook `use*Query.ts` cùng thư mục); phần thêm cho
 chuyến nằm ở file riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá Query: `['package-types']`,
 `['package-pool', …]`, `['requirements', …]` (thay `['orders', …]`), `['vehicle-types', …]` (không đặt
-dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, yêu cầu giao đã vào chuyến `['trips', tripId, 'requirements']`, báo cáo, lần chạy)
+dưới `['vehicles', id]` để khỏi va mã xe); dữ liệu gắn một chuyến (sẵn sàng tối ưu, yêu cầu giao đã vào chuyến `['trips', tripId, 'requirements']`, báo cáo, lần chạy, so sánh ba phương án của một lần chạy `['trips', tripId, 'run-comparison', runId]` — `trips/plan-compare-api.ts` → `usePlanCompareQuery.ts`, FE-5b-06)
 nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng. *(đã điều chỉnh 02/10/2026, FE-0-02)* Khoá truy vấn **không cần
 mang người dùng hay công ty**: `AuthProvider` xoá cả cache Query lúc đăng xuất và lúc đăng nhập, nên dữ liệu kho đã lọc cho người trước không
 hiện cho người sau trong cùng tab (`AuthProvider.dom.test.tsx`). Chỉ thêm người xem vào khoá khi kết quả tính theo người xem ngay ở client
@@ -1084,7 +1104,7 @@ thiếu (D-92); đang giao mà mọi kiện đã giao là đã giao. Luật củ
 không cờ, chưa thuộc yêu cầu khác (kiện ghi `requirementId`); hạn phải ở tương lai theo đồng hồ của kho, chỉ kiểm khi tạo hoặc khi đổi hạn
 (`REQUIREMENT_DEADLINE_PAST`); còn `PENDING` thì sửa mọi trường, đã vào chuyến chỉ sửa hạn và ưu tiên (`REQUIREMENT_NOT_PENDING`), đã giao
 xong thì không sửa (`REQUIREMENT_STATUS_INVALID`); xoá chỉ khi `PENDING`. Ưu tiên → `priority` / `mustLoad` của dòng kiện khi vào chuyến chỉ
-nằm ở **một bảng** `REQUIREMENT_CARGO_PRIORITY` (D-93 — đề xuất, chờ nhóm xác nhận: Khẩn 4 và bắt buộc xếp, Cao 3, Bình thường 2, Thấp 1);
+nằm ở **một bảng** `REQUIREMENT_CARGO_PRIORITY` (D-93 — *đã điều chỉnh 04/10/2026, FE-5b-05:* người dùng đã xác nhận, không còn là đề xuất: Khẩn 4 và bắt buộc xếp, Cao 3, Bình thường 2, Thấp 1);
 đổi ưu tiên của yêu cầu đã vào chuyến còn lập kế hoạch thì dòng kiện đổi theo và phương án lỗi thời. Nhật ký: nhóm `requirement`
 (`created`, `updated`, `deleted`, `assigned`, `unassigned`), đối tượng `requirement`. Seed (`seed-requirements.ts`): Long Bình sáu yêu cầu
 `PENDING` do quản lý công ty lập — bốn yêu cầu tới KCN Hoà Khánh, Phú Bài, Thăng Long, Trà Nóc (hai kiện cuối của mỗi đợt nhập) và hai yêu
@@ -1249,11 +1269,43 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   lùi về phía vách trong vừa đủ (đo chiều dài từng điểm cần trên thùng trống), và cuối cùng là một dải liền như khi chưa có vùng;
   lấy lượt xếp được nhiều kiện nhất, hoà thì lượt bám vùng hơn — **mock không bao giờ xếp ít kiện hơn trước khi có vùng**. Không bật
   `enforceLifo` thì xếp theo thứ tự chọn như trước, vùng chỉ dùng để đo. Duyệt (`approvedResult`) ghi lại `stopZoneId` và đếm lại
-  `rehandlingCount` theo các vùng của lần tối ưu, không chia lại vùng. Seed: 15 chuyến đều xếp đủ kiện như trước; chuyến chính
-  `TRIP-2026-0914` không có kiện ngoài vùng; sáu chuyến có — `TRIP-005` 56 kiện, `TRIP-008` 40, `TRIP-011` 10, `TRIP-013` 10,
-  `TRIP-010` 8, `TRIP-009` 4 — vì ở đó có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó.
+  `rehandlingCount` theo các vùng của lần tối ưu, không chia lại vùng. Seed: 15 chuyến đều xếp đủ kiện như trước; bản đang hiện của
+  chuyến chính `TRIP-2026-0914` không có kiện ngoài vùng; sáu chuyến có — `TRIP-005` 42 kiện, `TRIP-008` 40, `TRIP-011` 10, `TRIP-010` 8,
+  `TRIP-009` 4, `TRIP-013` 4 — vì ở đó có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó *(đã điều chỉnh 04/10/2026,
+  FE-5b-05: số của phương án ít dỡ-xếp lại — bản seed duyệt; ở `TRIP-005` và `TRIP-013` nó chọn một dải liền có ít kiện ngoài vùng hơn
+  cách xếp theo vùng, trước là 56 và 10)*.
 - Kết quả là **revision bất biến** theo `jobId`. Duyệt tạo revision approved mới; sửa xe/kiện sau
   khi tối ưu làm revision lỗi thời và chặn Duyệt. Kho và tài xế chỉ đọc revision đã duyệt.
+- *(bổ sung 04/10/2026, FE-5b-05, D-77)* **Ba phương án ứng viên mỗi lần chạy.** `OptimizationService.optimizeCandidates(request)` (ngoài
+  Spec; `optimize(request)` của Spec giữ nguyên, một kết quả) chạy **một job** ra ba kết quả theo `PLAN_OBJECTIVES` của domain — `MAX_VOLUME`
+  (A), `AXLE_BALANCE` (B), `MIN_REHANDLING` (C); nhãn suy từ mục tiêu (`PLAN_LABELS`), không lưu riêng. Mock thuần `runMockCandidates` (tất
+  định theo request + seed; `jobId` của từng kết quả là mã job kèm nhãn, `MOCK-…-A`) dựng vài **cách xếp** trên cùng request
+  (`candidate-layouts.ts`): *dồn sát* — một dải liền từ vách trong, không chừa vùng; *lùi về phía cửa* — dải liền đó bắt đầu cách vách trong
+  một đoạn, tìm nhị phân trên lưới 5 cm điểm hàng thôi nặng đầu (hai nhóm trục cùng mức dùng — `balancedCenterXCm`; xe không đủ dữ liệu
+  trục thì trọng tâm hàng về giữa thùng), chỉ thử khi lượt dồn sát nặng đầu và không thiếu chỗ; *theo vùng điểm giao* — `packShelves` của
+  FE-5b-02. Rồi mỗi mục tiêu lấy cách tốt nhất **theo chỉ số của chính nó**: A cách xếp được nhiều thể tích nhất (hoà: nhiều kiện hơn,
+  rồi cách dồn về vách trong hơn); B, trong các cách xếp được nhiều kiện nhất, cách lệch mức dùng giữa hai nhóm trục ít nhất
+  (`axleImbalance`); C, trong các cách xếp được nhiều kiện nhất, cách ít kiện nằm ngoài vùng điểm giao nhất (hoà: cách theo vùng). **Không
+  mục tiêu nào đổi kiện lấy chỉ số**, và **mock không sửa số cho khác đi**: hai mục tiêu chọn trùng một cách xếp thì hai phương án giống
+  hệt nhau (hàng kín sàn, xe đã nặng đuôi, hàng vượt tải) và màn so sánh hiện đúng như vậy. Kiện đặt chỗ theo điểm giao khi `enforceLifo`,
+  không bật thì theo thứ tự chọn; lượt theo vùng luôn theo điểm giao; cả ba không có `LIFO_BLOCKED` khi `enforceLifo` (test thuộc tính 300
+  request, kèm "mỗi mục tiêu tốt nhất ở chỉ số của mình"). `runtimeMs` của từng phương án là thời gian kiểm request + lượt xếp của mục
+  tiêu đó + phần domain tính cho nó. Ba phương án chạy trong **một worker** (`start-candidates`): tiến trình báo theo từng mục tiêu
+  (`CandidateProgress`), huỷ hay hết giờ là bỏ cả ba, kho không lưu gì. Đo ở máy dev: 132 kiện 7 ms → 18 ms, 1.000 kiện 42 ms → 130 ms
+  (một kết quả → ba phương án); cổng bench 1.000 instance ≤ 1 s áp cho cả job.
+- *(bổ sung 04/10/2026, FE-5b-05)* **Lần chạy và revision của nó.** `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương
+  án một revision bất biến mang `runId` và `run: { objective, algorithm }` (bản duyệt giữ của bản nguồn), theo thứ tự A · B · C — bản mới
+  nhất chưa duyệt của chuyến là phương án C — cùng **một** lần chạy `OptimizationRun { algorithm, jobId, plans[] }` và **một** sự kiện
+  `optimization.saved { runId, revisionId: 'REV-028, REV-029, REV-030' }`. Chỉ khi chuyến **Đã lập kế hoạch**: còn Nháp là
+  `ROUTE_NOT_PLANNED`, đã sang pha vận hành là `TRIP_LOCKED`; `trip-readiness` thêm `ROUTE_PLANNED`, và Thiết lập tối ưu có nhóm kiểm tra
+  "Tuyến" (lý do nằm trên nút Tối ưu, kèm lối về Chi tiết chuyến). `addRevision` giữ lối ghi **một** kết quả dựng tay (test, dữ liệu mẫu) —
+  một lần chạy một phương án, không kiểm chuyến đã lập kế hoạch. Mục tiêu không còn là lựa chọn của lần chạy; thuật toán kho ghi là
+  `EP_DBLF` (`OPTIMIZATION_ALGORITHMS` chỉ còn một mã tới FE-8-05), lần chạy hỏng chỉ mang thuật toán và mã lý do. Lớp API
+  `runOptimization` (`optimization-api.ts`) trả `{ run, revisions }`; chạy xong màn mở `/chuyen/:id/so-sanh?lan-chay=<runId>`. Hộp thoại
+  đang chạy có một dòng tiến trình cho mỗi phương án; "Kết quả một phần" chỉ báo khi **không phương án nào** xếp hết, kèm số kiện chưa xếp
+  của phương án xếp được nhiều nhất. Bảng lần chạy (`RunHistoryCard`): mỗi lần chạy ba dòng phương án (mở Planner), liên kết "So sánh", và
+  cột Duyệt nói phương án nào đã duyệt; lần chạy "chờ duyệt" là lần chạy chứa revision mới nhất chưa duyệt, không lỗi thời. Thẻ Tiến trình
+  của Chi tiết chuyến tìm người chạy tối ưu theo `runId` của sự kiện.
 - *(đã điều chỉnh 04/10/2026, FE-5b-08, D-80)* **Kho tự kiểm luật duyệt** — không tin giao diện. `approveRevision(revisionId, patches,
   { force })` áp draft (`approvedResult`) rồi chạy constraint engine trên **chính bản sẽ duyệt** (`approvalIssues` ở `revisions.ts` →
   `approvalBlockers` của domain): còn lỗi ràng buộc, `AXLE_OVERLOAD` hoặc `MUST_LOAD_UNPLACED` là `APPROVAL_BLOCKED { revisionId, count,
@@ -1297,7 +1349,7 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   chuyến **về Nháp**; đổi thứ tự điểm (kéo thả), giờ xuất phát, kho đi, hạn của điểm thì giờ đến và mức hạn tính lại, trạng thái không đổi.
   `getTripEta` đọc tuyến (`null` khi chưa tối ưu). Seed: mọi chuyến đã có phương án (và chuyến huỷ có đủ toạ độ) có `routePlan` theo đúng
   thứ tự điểm của seed, không ghi sự kiện; hai chuyến nháp và chuyến huỷ `TRIP-004` (điểm Tân An chưa có toạ độ) thì không — số chuyến theo
-  trạng thái của seed giữ nguyên. Kho chưa đòi chuyến Đã lập kế hoạch trước khi tối ưu xếp hàng hay bắt đầu xếp (luồng F3, Sprint 5b).
+  trạng thái của seed giữ nguyên. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Tối ưu xếp hàng đòi chuyến Đã lập kế hoạch (`saveOptimizationRun` → `ROUTE_NOT_PLANNED`); bắt đầu xếp ở kho thì kho chưa đòi.
   Lớp API `trips/route-api.ts` (`optimizeTripRoute`, `getTripEta`) → `useRouteQuery.ts` (khoá `['trips', tripId, 'eta']`); Chi tiết chuyến:
   `RoutePlanBar` đầu card sơ đồ tuyến (nút phụ "Tối ưu tuyến" theo `routes.optimize`, MOCK RESULT, km · thời gian, số điểm trễ; câu nói giờ
   đến là ước lượng theo đường nối thẳng), mỗi điểm có "Dự kiến đến" và mức hạn (Kịp hạn xanh lá · Sát hạn hổ phách · Trễ hạn dự kiến đỏ,
@@ -1320,6 +1372,16 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   của seed (tổng kiện, số xe…) phải cập nhật khi đổi `seed-trips.ts`. *(đã điều chỉnh 02/10/2026, FE-0-02)* Dữ liệu của Phương Nam
   (`seed-phuong-nam.ts`) nối **sau** dữ liệu của Long Bình và mang mã `…-PN-…`: thứ tự, mã và mã kế tiếp (`TRIP-015`, `VEHICLE-009`,
   `REV-028`…) của Long Bình không đổi; test đọc kho không phiên thấy cả hai công ty. Dựng seed ≈ 0,3 s một lần mỗi ngày neo.
+  *(đã điều chỉnh 04/10/2026, FE-5b-05)* Mỗi chuyến seed đã tối ưu có **một lần chạy ba phương án** (`seed-plan.ts` chạy
+  `runMockCandidates`): phương án ít dỡ-xếp lại (C) — bản điều phối viên seed duyệt — giữ **mã số** (`REV-001`), hai phương án kia mang mã
+  của nó kèm nhãn (`REV-001-A`, `REV-001-B`; Phương Nam `REV-PN-001-A`…), dạng mà `nextId` không tính. Thứ tự ghi là A, B, C rồi bản
+  duyệt, nên `listRevisions` của chuyến chính là `REV-001-A`, `REV-001-B`, `REV-001`, `REV-002`; kho có 55 revision của Long Bình (27 mang
+  mã số) và mã kế tiếp vẫn là `REV-028`, `RUN-016`. Lần chạy hỏng `RUN-001` của chuyến chính chỉ còn thuật toán và lý do. **Trục của xe
+  mẫu là số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất** (`twoAxles` ở `seed-vehicles.ts`; bảy xe Long Bình và hai xe
+  Phương Nam, "Truck 6m" của Spec không khai): trục trước ở −100 cm, trục sau giữa hốc bánh; phần hai trục còn nhận được lớn hơn tải trọng
+  xe khai và xe chở đủ tải dàn đều thùng không vượt trục nào; loại xe seed lấy giới hạn trục từ đó (`axleLimitsFromAxles`). Dựng seed
+  chậm hơn trước: đo dưới Vitest ở máy dev khoảng 0,45 s → 0,75 s (lượt đầu 0,9 s) — phần chạy mock của 15 lần chạy tăng từ khoảng 130 ms
+  lên khoảng 400 ms, chủ yếu vì phần domain tính (thứ tự xếp / dỡ, ràng buộc, chỉ số) chạy cho ba kết quả thay vì một.
   Mở app sớm hơn việc "hôm nay" muộn nhất của seed thì mọi mốc giờ seed lùi cùng một khoảng (`seed-shift.ts`): lịch sử không có sự kiện
   ở tương lai, sự kiện mới luôn nằm trên sự kiện seed; ngày chạy không đổi.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
