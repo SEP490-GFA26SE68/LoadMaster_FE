@@ -145,9 +145,9 @@ test('cancelling while loading releases packages the same way and tells the ware
   expect((await db.cancelTrip('TRIP-010', 'Khách huỷ đơn')).cancellation?.fromPhase).toBe('loaded')
 })
 
-test('a trip in transit, delivered or already cancelled cannot be cancelled: INVALID_TRIP_STATUS_TRANSITION (D-91)', async () => {
+test('a trip in transit with no open incident, delivered or already cancelled cannot be cancelled: INVALID_TRIP_STATUS_TRANSITION (D-91)', async () => {
   const db = await signedInDb('dieuphoi@loadmaster.vn')
-  // Huỷ chuyến Đang vận chuyển cần sự cố cấp chuyến đang mở (FE-6-11) — chưa có nên luôn bị từ chối
+  // Huỷ chuyến Đang vận chuyển cần sự cố cấp chuyến đang mở (FE-6-11) — nhánh được phép ở `exceptions.test.ts`
   await expect(db.cancelTrip('TRIP-009', 'Xe hỏng')).rejects.toMatchObject({ code: 'INVALID_TRIP_STATUS_TRANSITION', params: { tripId: 'TRIP-009', from: 'IN_TRANSIT', to: 'CANCELLED' } })
   await expect(db.cancelTrip('TRIP-001', 'Nhầm chuyến')).rejects.toMatchObject({ code: 'INVALID_TRIP_STATUS_TRANSITION', params: { from: 'DELIVERED', to: 'CANCELLED' } })
   await expect(db.cancelTrip('TRIP-004', 'Huỷ lần nữa')).rejects.toMatchObject({ code: 'INVALID_TRIP_STATUS_TRANSITION', params: { from: 'CANCELLED', to: 'CANCELLED' } })

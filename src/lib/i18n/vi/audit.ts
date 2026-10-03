@@ -106,6 +106,8 @@ export const audit = {
       unplaced: 'Không xếp được',
       edits: 'Kiện chỉnh tay',
       loaded: 'Đã lên xe',
+      /** Huỷ chuyến Đang vận chuyển (FE-6-07): số kiện chưa giao thành Hoàn trả. */
+      returned: 'Hoàn trả',
       damaged: 'Hỏng, bỏ lại kho',
       /** Kiện hỏng lúc xếp có kiện tựa lên trong phương án: chuyến về Đã lập kế hoạch (FE-6-05). */
       supporting: 'Kiện tựa lên trong phương án',

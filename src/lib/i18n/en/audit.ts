@@ -91,6 +91,7 @@ export const audit = {
       unplaced: 'Not placed',
       edits: 'Packages edited by hand',
       loaded: 'Loaded',
+      returned: 'Returned',
       damaged: 'Damaged, left at warehouse',
       supporting: 'Packages resting on it in the plan',
       requirementId: 'Delivery requirement',

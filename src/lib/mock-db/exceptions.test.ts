@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { loadTrip } from '@/test/trip-flow'
 import type { OptimizationRequest } from '@/domain/models'
-import { createMockDb, type MockDb } from '@/lib/mock-db'
+import { canCancelTrip, createMockDb, requirementStatus, undeliveredCount, type MockDb } from '@/lib/mock-db'
 import { runMockOptimization } from '@/services/optimization'
 
 /**
@@ -258,5 +258,55 @@ describe('the company manager contacts the customer and enters a new deadline fo
     // điều phối viên xử lý tiếp: sự cố giữ nguyên phần gia hạn
     db.restoreSession(DISPATCHER)
     expect(await db.resolveTripException(tripId, 'EXC-001')).toMatchObject({ status: 'RESOLVED', renegotiation: { deadline: NEW_DEADLINE } })
+  })
+})
+
+describe('cancelling a trip in transit needs a trip incident that is still open (FE-6-07, D-91)', () => {
+  const BREAKDOWN = { type: 'VEHICLE_BREAKDOWN' as const, description: 'Xe hỏng hộp số ở Dĩ An', delayMinutes: 120 }
+
+  test('no incident, or only handled ones: refused; with one open the undelivered packages are returned and the requirement reads partial', async () => {
+    const { db, wall, tripId } = await departedTrip(DEADLINE, DEPART)
+    wall.set('2026-09-16T01:05:00.000Z')
+    const refused = { code: 'INVALID_TRIP_STATUS_TRANSITION', params: { tripId, from: 'IN_TRANSIT', to: 'CANCELLED' } }
+    await expect(db.cancelTrip(tripId, 'Xe hỏng')).rejects.toMatchObject(refused)
+    await db.reportTripException(tripId, BREAKDOWN)
+    await db.resolveTripException(tripId, 'EXC-001')
+    await expect(db.cancelTrip(tripId, 'Xe hỏng')).rejects.toMatchObject(refused)
+
+    await db.reportTripException(tripId, BREAKDOWN)
+    await expect(db.cancelTrip(tripId, '  ')).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
+    wall.set('2026-09-16T01:10:00.000Z')
+    const cancelled = await db.cancelTrip(tripId, ' Xe hỏng hộp số, không giao tiếp được ')
+    expect([cancelled.phase, cancelled.cancellation]).toStrictEqual([
+      'cancelled', { at: '2026-09-16T01:10:00.000Z', by: DISPATCHER, reason: 'Xe hỏng hộp số, không giao tiếp được', fromPhase: 'delivering' },
+    ])
+    // REQ-006 có 10 thùng mì, chưa kiện nào giao: cả 10 thành Hoàn trả và ở lại chuyến; yêu cầu vẫn của chuyến, đọc là Giao thiếu
+    const requirement = await db.getDeliveryRequirement('REQ-006')
+    const packages = await Promise.all(requirement.packageIds.map((id) => db.getPackage(id)))
+    expect([packages.length, [...new Set(packages.map((pkg) => pkg.status))], [...new Set(packages.map((pkg) => pkg.tripId))]]).toStrictEqual([10, ['RETURNED'], [tripId]])
+    expect([requirement.status, requirement.tripId, requirementStatus(requirement, packages)]).toStrictEqual(['IN_TRIP', tripId, 'PARTIAL'])
+    expect((await actionsOf(db, tripId, 'trip.cancelled')).map(({ actorId, params }) => ({ actorId, params }))).toStrictEqual([{
+      actorId: DISPATCHER, params: { reason: 'Xe hỏng hộp số, không giao tiếp được', returned: 10 },
+    }])
+    // xe mô phỏng dừng ở lúc huỷ; sự cố chưa xử lý ở lại như đã ghi
+    wall.set('2026-09-16T02:00:00.000Z')
+    expect((await db.getLocationHistory(tripId)).at(-1)?.recordedAt).toBe('2026-09-16T01:10:00.000Z')
+    expect((await db.listTripExceptions(tripId)).map((exception) => exception.status)).toStrictEqual(['RESOLVED', 'OPEN'])
+    await expect(db.cancelTrip(tripId, 'Huỷ lần nữa')).rejects.toMatchObject({ code: 'INVALID_TRIP_STATUS_TRANSITION', params: { from: 'CANCELLED', to: 'CANCELLED' } })
+  })
+
+  test('packages of a completed stop stay delivered; packages unloaded at a stop not yet completed are returned with the rest', async () => {
+    const db = createMockDb({ now: () => new Date('2026-09-14T05:00:00.000Z') })
+    db.restoreSession(DISPATCHER)
+    // TRIP-009: điểm 1 (40 kiện) đã hoàn tất, điểm 2 (50 kiện) dỡ dở 25 kiện, điểm 3 (70 kiện) chưa tới
+    const before = await db.getTrip('TRIP-009')
+    expect([undeliveredCount(before), canCancelTrip(before.phase, [])]).toStrictEqual([120, false])
+    await db.reportTripException('TRIP-009', BREAKDOWN)
+    expect(canCancelTrip(before.phase, await db.listTripExceptions('TRIP-009'))).toBe(true)
+    await db.cancelTrip('TRIP-009', 'Xe hỏng, chờ cứu hộ')
+    const statuses = (await db.listPackages()).filter((pkg) => pkg.tripId === 'TRIP-009').map((pkg) => pkg.status)
+    expect([statuses.filter((status) => status === 'DELIVERED').length, statuses.filter((status) => status === 'RETURNED').length, statuses.length]).toStrictEqual([40, 120, 160])
+    expect((await db.listEvents({ targetId: 'TRIP-009' }))[0]).toMatchObject({ action: 'trip.cancelled', params: { reason: 'Xe hỏng, chờ cứu hộ', returned: 120 } })
+    expect((await db.listVehicleStates()).find((state) => state.vehicleId === 'VEHICLE-006')?.status).toBe('available')
   })
 })

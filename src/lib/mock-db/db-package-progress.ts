@@ -15,7 +15,8 @@ import type { Trip } from './types'
  * - xe xuất phát → `IN_TRANSIT`;
  * - hoàn tất một điểm giao → kiện đã dỡ `DELIVERED`, kiện của điểm đó ở lại xe (khách từ chối, sự cố khác) `RETURNED` — cũng ở mốc
  *   chốt, cùng lý do;
- * - huỷ chuyến trước khi xe chạy → về `IMPORTED` (yêu cầu giao của chuyến về `PENDING`, `db-requirement-trips.ts`).
+ * - huỷ chuyến trước khi xe chạy → về `IMPORTED` (yêu cầu giao của chuyến về `PENDING`, `db-requirement-trips.ts`);
+ * - huỷ chuyến Đang vận chuyển → kiện chưa giao `RETURNED`, yêu cầu giao của chúng đọc là giao thiếu (D-91, D-92).
  *
  * Kiện nối với instance của chuyến qua yêu cầu giao, hoặc là kiện thêm ngay trong chuyến (`lineInstances`, FE-3b-07); dòng của yêu cầu
  * bị sửa số lượng sau khi vào chuyến thì kiện của yêu cầu mất liên kết và đứng yên ở trạng thái đang có.
@@ -67,6 +68,16 @@ export function settleStopPackages(ctx: DbContext, trip: Trip, stopNumber: numbe
     if (pkg.status !== 'IN_TRANSIT' || pkg.stopId !== stopId || instanceId === undefined) continue
     movePackage(ctx, pkg, unloaded.has(instanceId) ? 'DELIVERED' : 'RETURNED')
   }
+}
+
+/**
+ * Huỷ chuyến Đang vận chuyển (FE-6-07, D-91): kiện chưa giao — còn `IN_TRANSIT`, kể cả kiện đã dỡ ở điểm chưa hoàn tất — thành
+ * `RETURNED` và ở lại chuyến. Trả số kiện vừa hoàn trả.
+ */
+export function returnUndeliveredPackages(ctx: DbContext, trip: Trip): number {
+  const undelivered = tripPackages(ctx, trip).filter(({ pkg }) => pkg.status === 'IN_TRANSIT')
+  for (const { pkg } of undelivered) movePackage(ctx, pkg, 'RETURNED')
+  return undelivered.length
 }
 
 /** Huỷ chuyến trước khi xe chạy: kiện rời chuyến, về kho kiện. */

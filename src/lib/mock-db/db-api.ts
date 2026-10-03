@@ -70,8 +70,10 @@ type CoreMockDb = {
   updateTrip(id: string, changes: TripChanges): Promise<Trip>
   /**
    * Huỷ chuyến kèm lý do bắt buộc (`REASON_REQUIRED`), ghi nhật ký (FE-6-07, D-91). Từ Nháp, Đã lập kế hoạch, Đang xếp hàng: kiện của
-   * chuyến về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp thì sự kiện mang số kiện đã lên xe để kho dỡ ra. Trạng thái khác
-   * (Đang vận chuyển — cần sự cố cấp chuyến đang mở, FE-6-11 —, Đã giao, Đã huỷ): `INVALID_TRIP_STATUS_TRANSITION`.
+   * chuyến về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp thì sự kiện mang số kiện đã lên xe để kho dỡ ra. Từ Đang vận
+   * chuyển: chỉ khi chuyến có sự cố cấp chuyến chưa xử lý (FE-6-11) — kiện chưa giao thành `RETURNED` và ở lại chuyến, yêu cầu giao
+   * của chúng đọc là giao thiếu, sự kiện mang số kiện hoàn trả. Trạng thái khác (Đang vận chuyển không có sự cố đang mở, Đã giao, Đã
+   * huỷ): `INVALID_TRIP_STATUS_TRANSITION`.
    */
   cancelTrip(id: string, reason: string): Promise<Trip>
 

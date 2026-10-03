@@ -6,6 +6,7 @@ export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'
 export { createMockDb } from './mock-db'
 export {
+  canCancelTrip,
   isActivePhase,
   isCancellablePhase,
   isLockedPhase,
@@ -19,6 +20,7 @@ export {
   tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
+  undeliveredCount,
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'

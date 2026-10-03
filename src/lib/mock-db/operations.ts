@@ -1,5 +1,6 @@
 import { expandPackages } from '@/domain/cargo'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
+import { isActiveException, type TripException } from './exception-model'
 import { isStale } from './revisions'
 import type { Revision, Trip, TripPhase } from './types'
 import { pendingManualConfirms } from './verify-model'
@@ -17,11 +18,25 @@ export function isLockedPhase(phase: TripPhase): boolean {
 }
 
 /**
- * Huỷ được trước khi xe rời kho (D-91): Nháp, Đã lập kế hoạch, Đang xếp hàng. Huỷ chuyến Đang vận chuyển cần sự cố cấp chuyến đang mở
- * (FE-6-11) — chưa có, nên kho từ chối `INVALID_TRIP_STATUS_TRANSITION`.
+ * Huỷ được trước khi xe rời kho (D-91): Nháp, Đã lập kế hoạch, Đang xếp hàng. Chuyến Đang vận chuyển còn tuỳ sự cố (`canCancelTrip`).
  */
 export function isCancellablePhase(phase: TripPhase): boolean {
   return phase === 'planning' || phase === 'loading' || phase === 'loaded'
+}
+
+/**
+ * Chuyến huỷ được (FE-6-07, D-91): trước khi xe rời kho, hoặc Đang vận chuyển mà có sự cố cấp chuyến chưa xử lý (`exceptions` của
+ * chuyến, FE-6-11). Đã giao, Đã huỷ thì không.
+ */
+export function canCancelTrip(phase: TripPhase, exceptions: readonly Pick<TripException, 'status'>[]): boolean {
+  return isCancellablePhase(phase) || (phase === 'delivering' && exceptions.some(isActiveException))
+}
+
+/** Kiện đã lên xe mà chưa giao: huỷ chuyến Đang vận chuyển thì chúng thành Hoàn trả. Kiện đã dỡ ở điểm chưa hoàn tất vẫn là chưa giao. */
+export function undeliveredCount(trip: Pick<Trip, 'loading' | 'delivery'>): number {
+  const loaded = trip.loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
+  const delivered = trip.delivery?.stops.reduce((sum, stop) => sum + (stop.completedAt === undefined ? 0 : stop.unloadedIds.length), 0) ?? 0
+  return loaded - delivered
 }
 
 /** Bản đã duyệt mới nhất; `revisions` theo thứ tự kho trả (cũ trước). */
