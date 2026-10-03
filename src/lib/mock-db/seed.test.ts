@@ -135,6 +135,22 @@ test('every seeded plan passes the constraint engine and places every package', 
   }
 })
 
+test('every seeded plan has one zone per delivery stop; the sample trip keeps every package in its zone, six trips have rehandling (FE-5b-02)', async () => {
+  const db = createMockDb()
+  const rehandling: Record<string, number | undefined> = {}
+  for (const trip of await db.listTrips()) {
+    const revisions = await db.listRevisions(trip.id)
+    for (const { result } of revisions) {
+      expect(result.stopZones?.map(({ stopId }) => stopId), trip.id).toStrictEqual(trip.stops.map((_, index) => index + 1))
+      expect(result.placements.filter(({ stopZoneId }) => stopZoneId === undefined), trip.id).toStrictEqual([])
+    }
+    const count = revisions.at(-1)?.result.metrics.rehandlingCount
+    if (count !== 0 && revisions.length > 0) rehandling[trip.id] = count
+  }
+  // Số lấy từ lần chạy mock của seed: ở sáu chuyến này có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó
+  expect(rehandling).toStrictEqual({ 'TRIP-005': 56, 'TRIP-008': 40, 'TRIP-009': 4, 'TRIP-010': 8, 'TRIP-011': 10, 'TRIP-013': 10 })
+})
+
 test('Phương Nam has a small seed of its own, anchored to the same day, with ids the id generator does not count (FE-0-02)', async () => {
   const db = createMockDb({ today: '2026-09-19' })
   await db.authenticate('dieuphoi@phuongnam.vn', 'loadmaster')
