@@ -111,7 +111,8 @@ export function ZoneStrips({ zones, vehicle, reducedMotion }: { zones: readonly 
           <span aria-hidden className="grid size-5.5 flex-none place-items-center rounded-sm font-display text-note leading-none font-semibold"
             style={{ background: stopColor(strip.stop), color: stopForeground(strip.stop) }}>{format.integer(strip.stop)}</span>
           <span className="sr-only">{t('viewer.zones.zoneOf', { number: strip.stop })}</span>
-          <span className="max-w-36 truncate">{zone?.name}</span>
+          {/* Tên điểm giao dài xuống tối đa hai dòng, không cắt bằng dấu ba chấm (`layout-1366`) */}
+          <span className="line-clamp-2 max-w-40 whitespace-normal">{zone?.name}</span>
           <span className="font-display font-semibold tabular-nums text-sky-text">{format.percent(zone?.sharePercent ?? 0)}</span>
         </span>
       </Html>
