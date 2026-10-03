@@ -50,6 +50,7 @@ export function scanMethods(ctx: DbContext): ScanMethods {
           vehicleInMaintenance: maintenance.has(trip.vehicleId),
           packages: trip.packages,
           stopCount: trip.stops.length,
+          routePlanned: trip.routePlan !== undefined,
           ...(trip.overrideReason === undefined ? {} : { overrideReason: trip.overrideReason }),
         })
       }),

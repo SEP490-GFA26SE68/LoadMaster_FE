@@ -136,13 +136,35 @@ export async function addPackage(page: Page, input: PackageInput): Promise<Locat
   return panel
 }
 
-/** Bấm Tối ưu ở Thiết lập tối ưu và chờ Planner mở revision mới cùng canvas. */
-export async function optimizeAndOpenPlanner(page: Page) {
+/** Bấm Tối ưu ở Thiết lập tối ưu và chờ màn So sánh của lần chạy mới mở ra với đủ ba thẻ phương án A · B · C (FE-5b-05, FE-5b-06). */
+export async function optimizeAndCompare(page: Page) {
   const optimize = page.getByRole('button', { name: 'Tối ưu', exact: true })
   await expect(optimize).toBeEnabled()
   await optimize.click()
-  await page.waitForURL(/\/phuong-an\?revision=MOCK-/, { timeout: 60_000 })
+  await page.waitForURL(/\/so-sanh\?lan-chay=RUN-\d+$/, { timeout: 60_000 })
+  await expect(page.locator('[data-candidate]')).toHaveCount(3)
+}
+
+/**
+ * Bấm Tối ưu, rồi từ màn So sánh mở một phương án ứng viên trong Planner và chờ canvas. Mặc định phương án C (ít dỡ-xếp lại — xếp theo
+ * vùng điểm giao, cách xếp của mock trước khi có ba phương án).
+ */
+export async function optimizeAndOpenPlanner(page: Page, label: 'A' | 'B' | 'C' = 'C') {
+  await optimizeAndCompare(page)
+  await page.getByRole('link', { name: `Mở phương án ${label} trong Planner`, exact: true }).click()
+  await page.waitForURL(/\/phuong-an\?revision=REV-\d+$/, { timeout: 60_000 })
   await page.locator('canvas').waitFor()
+}
+
+/**
+ * Chờ Planner mở revision **khác** `source` — bản đã duyệt mới sau khi bấm Duyệt. Phương án ứng viên mở từ màn So sánh đã mang mã
+ * `REV-…` trên URL (FE-5b-06), nên chờ theo dạng mã không đủ: phải chờ mã đổi.
+ */
+export async function waitForOtherRevision(page: Page, source: string | null) {
+  await page.waitForURL((url) => {
+    const revision = url.searchParams.get('revision')
+    return url.pathname.endsWith('/phuong-an') && revision !== null && revision.startsWith('REV-') && revision !== source
+  })
 }
 
 /**

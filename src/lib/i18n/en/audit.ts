@@ -103,6 +103,7 @@ export const audit = {
       priority: 'Priority',
       tripId: 'Trip',
       objective: 'Objective',
+      runId: 'Run',
       algorithm: 'Algorithm',
       reasonCode: 'Reason',
       vehicleTypeId: 'Vehicle type',

@@ -9,6 +9,7 @@ import { PHUONG_NAM_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
 import { seedPlanner, withSeedRoute } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
+import { twoAxles } from './seed-vehicles'
 import type { DeliveryRequirement } from './requirement-model'
 import { seedRequirements } from './seed-requirements'
 import type { OptimizationRun, PackageType, PackageTypeInput, VehicleType } from './source-types'
@@ -60,6 +61,8 @@ const VEHICLES: readonly VehicleConfig[] = [
       { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 250, yCm: 0, zCm: 0, lengthCm: 70, widthCm: 18, heightCm: 22, loadBearing: false },
       { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 250, yCm: 168, zCm: 0, lengthCm: 70, widthCm: 18, heightCm: 22, loadBearing: false },
     ],
+    // Số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất (như đội xe Long Bình)
+    axles: twoAxles(285, [1500, 2200], [1100, 3300]),
   },
   {
     id: 'VEHICLE-PN-02',
@@ -76,6 +79,7 @@ const VEHICLES: readonly VehicleConfig[] = [
       { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 330, yCm: 0, zCm: 0, lengthCm: 90, widthCm: 20, heightCm: 26, loadBearing: false },
       { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 330, yCm: 185, zCm: 0, lengthCm: 90, widthCm: 20, heightCm: 26, loadBearing: false },
     ],
+    axles: twoAxles(375, [2100, 3100], [1600, 6000]),
   },
 ]
 

@@ -1,8 +1,8 @@
 import type { PlacementPatch } from '@/domain/constraints'
-import type { CargoPackage, OptimizationRequest, OptimizationResult } from '@/domain/models'
+import type { CargoPackage, OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
-import type { CompanyDepot, RunSettings, TripRoutePlan } from './source-types'
+import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings, TripRoutePlan } from './source-types'
 
 /**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
@@ -170,6 +170,8 @@ export type Revision = {
   ordersRecomputed: boolean
   /** Mục tiêu và thuật toán của lần chạy tạo revision (LM-104); revision đã duyệt giữ của revision nguồn. */
   run?: RunSettings
+  /** Lần chạy đã tạo revision (`RUN-NNN`, FE-5b-05): ba phương án ứng viên của một lần chạy cùng mã này; revision đã duyệt giữ của revision nguồn. */
+  runId?: string
   /** Chỉ ở revision đã duyệt: người bấm Duyệt (`null` khi không có phiên — test logic kho). */
   approvedBy?: string | null
 }
@@ -179,6 +181,21 @@ export type Revision = {
  * thuật toán mặc định (`DEFAULT_RUN_SETTINGS`).
  */
 export type NewRevision = Pick<Revision, 'tripId' | 'request' | 'result'> & { run?: RunSettings }
+
+/**
+ * Ba phương án ứng viên của một job tối ưu cần lưu (FE-5b-05, D-77): cùng `request`, mỗi phương án một mục tiêu và một kết quả.
+ * `jobId` là mã job của service; `algorithm` vắng thì kho ghi `DEFAULT_RUN_ALGORITHM`.
+ */
+export type NewOptimizationRun = {
+  tripId: string
+  request: OptimizationRequest
+  jobId: string
+  plans: readonly { objective: PlanObjective; result: OptimizationResult }[]
+  algorithm?: OptimizationAlgorithm
+}
+
+/** Lần chạy đã lưu và các revision nó tạo, theo thứ tự của `plans`. */
+export type SavedOptimizationRun = { run: OptimizationRun; revisions: Revision[] }
 
 /** Trạng thái xe (D-53): suy từ chuyến đang chạy, riêng bảo dưỡng đặt tay. */
 export type VehicleStatus = 'available' | 'in_use' | 'maintenance'

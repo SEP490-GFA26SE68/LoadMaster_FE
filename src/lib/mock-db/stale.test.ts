@@ -11,7 +11,7 @@ test('a result is added as a revision stamped with the input version of the trip
   const db = createMockDb()
   const { trip, revision } = await optimizedTwoCartonTrip(db)
   expect(revision).toStrictEqual({
-    // the seed already holds REV-001 … REV-027 for its 14 optimized trips
+    // the seed already holds REV-001 … REV-027 as numbered ids of its 14 optimized trips (the other candidates carry a letter suffix)
     id: 'REV-028',
     jobId: 'MOCK-JOB-001',
     tripId: trip.id,
@@ -21,8 +21,9 @@ test('a result is added as a revision stamped with the input version of the trip
     createdAt: '2026-09-15T08:30:00.000Z',
     manuallyEdited: false,
     ordersRecomputed: false,
-    // LM-104: nơi gọi không chọn thì kho ghi mục tiêu và thuật toán mặc định
+    // LM-104: nơi gọi không chọn thì kho ghi mục tiêu và thuật toán mặc định; kết quả lưu lẻ là một lần chạy một phương án
     run: { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF' },
+    runId: 'RUN-016',
   })
   expect(await db.listRevisions(trip.id)).toStrictEqual([revision])
   expect(await db.getRevision(revision.id)).toStrictEqual(revision)

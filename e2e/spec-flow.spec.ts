@@ -1,5 +1,7 @@
 import { attachJson, expect, test } from './fixtures'
-import { addPackage, addStop, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, SEED_TRIP, switchUser, waitSceneReady } from './spec-flow-helpers'
+import {
+  addPackage, addStop, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, optimizeRoute, SEED_TRIP, switchUser, waitForOtherRevision, waitSceneReady,
+} from './spec-flow-helpers'
 import { cameraPreset, closeInspector, openInspector, renderCameraChange, sceneSnapshot, waitCameraSettled } from './viewer-helpers'
 
 /**
@@ -50,8 +52,10 @@ for (const device of ['desktop', 'tablet'] as const) {
     await createTrip.click()
     await page.waitForURL(/\/chuyen\/TRIP-015$/)
     await expect(page.getByText('Đã tạo chuyến TRIP-015')).toBeVisible()
-    // FE-4b-04: chuyến mới chưa có điểm giao; kiện gõ tay cần một điểm giao thêm tay
-    await addStop(page, { name: 'Kho Bình Dương' })
+    // FE-4b-04: chuyến mới chưa có điểm giao; kiện gõ tay cần một điểm giao thêm tay. FE-5b-05: xếp 3D theo tuyến nên điểm có toạ độ
+    // và chuyến tối ưu tuyến trước (Nháp → Đã lập kế hoạch)
+    await addStop(page, { name: 'Kho Bình Dương', place: 'kcn amata' })
+    await optimizeRoute(page)
 
     // Kiện PKG-001 × 4, rồi nhân bản
     const panel = await addPackage(page, { name: 'Thùng sơn', lengthCm: 120, widthCm: 100, heightCm: 100, weightKg: 200, quantity: 4 })
@@ -80,6 +84,7 @@ for (const device of ['desktop', 'tablet'] as const) {
     const optimize = page.getByRole('button', { name: 'Tối ưu', exact: true })
     if (tablet) heights.optimize = await heightOf(optimize)
     await optimizeAndOpenPlanner(page)
+    const sourceRevision = new URL(page.url()).searchParams.get('revision')
 
     const header = page.locator('header').first()
     // §15 "Mock result có nhãn rõ ràng"
@@ -154,7 +159,7 @@ for (const device of ['desktop', 'tablet'] as const) {
     await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
 
     // Mở màn kho phía client (LM-060): bước 1 là kiện `loadingOrder = 1` của revision vừa duyệt, đọc thẳng từ kho của trang.
-    await page.waitForURL(/\/phuong-an\?revision=REV-/)
+    await waitForOtherRevision(page, sourceRevision)
     const approved = await page.evaluate(async ({ db, tripId }) => {
       const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
       const revision = (await getMockDb().listRevisions(tripId)).findLast((item) => item.approvedAt !== undefined)
@@ -260,8 +265,8 @@ test('editing a package after optimising makes the plan stale and blocks approva
   const parsed = await page.evaluate(async ({ db, models, tripId }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const { optimizationResultSchema } = (await import(models)) as typeof import('@/domain/models')
-    const jobId = new URL(location.href).searchParams.get('revision')
-    const revision = (await getMockDb().listRevisions(tripId)).find((item) => item.jobId === jobId)
+    const revisionId = new URL(location.href).searchParams.get('revision')
+    const revision = (await getMockDb().listRevisions(tripId)).find((item) => item.id === revisionId)
     const result = optimizationResultSchema.safeParse(revision?.result)
     return { success: result.success, isMockResult: revision?.result.isMockResult, status: revision?.result.status }
   }, { db: MOCK_DB, models: '/src/domain/models/index.ts', tripId: SEED_TRIP })

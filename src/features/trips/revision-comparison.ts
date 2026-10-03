@@ -1,4 +1,4 @@
-import type { OptimizationRequest } from '@/domain/models'
+import { PLAN_LABELS, type OptimizationRequest, type PlanLabel } from '@/domain/models'
 import { isStale, type Revision, type Trip } from '@/lib/mock-db'
 
 /**
@@ -30,11 +30,17 @@ export type RevisionCardModel = {
   sourceRevisionId?: string
   /** Revision đã duyệt dựng từ revision này, cũ trước. Bản duyệt dùng chung `jobId` nên cần mã riêng để phân biệt. */
   approvedAs: string[]
+  /**
+   * Nhãn ứng viên A · B · C (FE-5b-05): revision do một lần chạy ba phương án tạo ra, hoặc bản duyệt dựng từ nó. Vắng với kết quả lưu
+   * lẻ — lần chạy chỉ có một phương án.
+   */
+  candidate?: PlanLabel
 }
 
 /** Thẻ theo thứ tự tạo, cũ trước — cùng thứ tự `listRevisions`, để đọc từ trái sang phải như dòng thời gian. */
 export function revisionCards(trip: Pick<Trip, 'inputVersion'>, revisions: readonly Revision[]): RevisionCardModel[] {
   const lastId = revisions.at(-1)?.id
+  const plansOf = (runId: string) => revisions.filter((item) => item.runId === runId && item.approvedAt === undefined).length
   return revisions.map((revision) => {
     const { settings } = revision.request
     const { metrics } = revision.result
@@ -59,6 +65,7 @@ export function revisionCards(trip: Pick<Trip, 'inputVersion'>, revisions: reado
       stale: isStale(revision, trip),
       sourceRevisionId: revision.sourceRevisionId,
       approvedAs: revisions.filter((item) => item.sourceRevisionId === revision.id).map((item) => item.id),
+      ...(revision.run && revision.runId !== undefined && plansOf(revision.runId) > 1 ? { candidate: PLAN_LABELS[revision.run.objective] } : {}),
     }
   })
 }

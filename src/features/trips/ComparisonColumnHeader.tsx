@@ -3,7 +3,8 @@ import { useFormat, useT } from '@/lib/i18n'
 import type { RevisionCardModel } from './revision-comparison'
 
 /**
- * Nhãn của một bản lưu (V2.3 `SoSanhPhuongAn.jpg`): MOCK RESULT, trạng thái (đã duyệt xanh lá, mới nhất cyan, lỗi thời hổ phách) rồi
+ * Nhãn của một bản lưu (V2.3 `SoSanhPhuongAn.jpg`): MOCK RESULT, nhãn ứng viên A · B · C của bản do lần chạy ba phương án tạo ra
+ * (FE-5b-05), trạng thái (đã duyệt xanh lá, mới nhất cyan, lỗi thời hổ phách) rồi
  * quan hệ duyệt xám ("Duyệt từ REV-001", "Đã duyệt thành REV-002"). Dùng ở đầu cột ma trận và thẻ "Phương án đã lưu".
  */
 export function RevisionTags({ card }: { card: RevisionCardModel }) {
@@ -11,6 +12,7 @@ export function RevisionTags({ card }: { card: RevisionCardModel }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       {card.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
+      {card.candidate ? <Badge shape="tag">{t('trips.compare.candidateTag', { label: card.candidate })}</Badge> : null}
       {card.approved ? <Badge shape="tag" tone="success">{t('trips.compare.status.approved')}</Badge> : null}
       {card.latest ? <Badge shape="tag" tone="cyan">{t('trips.compare.status.latest')}</Badge> : null}
       {card.stale ? <Badge shape="tag" tone="warning" outlined>{t('trips.compare.status.stale')}</Badge> : null}

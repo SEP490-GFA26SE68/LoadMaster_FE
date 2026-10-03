@@ -1,7 +1,8 @@
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
-import type { OptimizationService, OptimizeOptions } from './OptimizationService'
+import type { CandidateRun } from './mock-candidates'
+import type { CandidateOptions, OptimizationService, OptimizeOptions } from './OptimizationService'
 import { OptimizationServiceError } from './service-errors'
-import type { OptimizationWorker } from './worker-protocol'
+import type { OptimizationWorker, WorkerRequest, WorkerResponse } from './worker-protocol'
 
 export type WorkerServiceOptions = {
   readonly createWorker?: () => OptimizationWorker
@@ -17,7 +18,8 @@ function browserWorker(): OptimizationWorker {
 
 /**
  * `OptimizationService` chạy mock trong Web Worker (D-30): main thread không bị chặn, tiến trình qua `onProgress`.
- * Mỗi lần gọi một worker riêng, luôn `terminate` khi xong, lỗi, huỷ hoặc hết giờ.
+ * Mỗi lần gọi một worker riêng, luôn `terminate` khi xong, lỗi, huỷ hoặc hết giờ. Ba phương án ứng viên chạy trong **một** job của
+ * một worker (FE-5b-05): huỷ là huỷ cả ba.
  * - `signal` huỷ → reject với lý do của signal.
  * - Quá `settings.timeLimitSeconds` → reject `TIME_LIMIT_EXCEEDED`. Mock tính một mạch nên không có "kết quả tốt nhất hiện có" để trả.
  */
@@ -33,7 +35,22 @@ export class WorkerOptimizationService implements OptimizationService {
   }
 
   optimize(request: OptimizationRequest, { signal, onProgress }: OptimizeOptions = {}): Promise<OptimizationResult> {
-    return new Promise<OptimizationResult>((resolve, reject) => {
+    return this.#run({ type: 'start', request }, signal, (data) => {
+      if (data.type === 'progress') onProgress?.(data.progress)
+      return data.type === 'result' ? { value: data.result } : undefined
+    })
+  }
+
+  optimizeCandidates(request: OptimizationRequest, { signal, onProgress }: CandidateOptions = {}): Promise<CandidateRun> {
+    return this.#run({ type: 'start-candidates', request }, signal, (data) => {
+      if (data.type === 'candidate-progress') onProgress?.(data.progress)
+      return data.type === 'candidates' ? { value: data.run } : undefined
+    })
+  }
+
+  /** Một job trong một worker; `read` nhận từng message của worker và trả `{ value }` khi đó là kết quả của job. */
+  #run<T>(message: WorkerRequest, signal: AbortSignal | undefined, read: (data: WorkerResponse) => { value: T } | undefined): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       if (signal?.aborted) {
         reject(signal.reason)
         return
@@ -53,18 +70,20 @@ export class WorkerOptimizationService implements OptimizationService {
       const onAbort = () => finish(() => reject(signal?.reason))
       signal?.addEventListener('abort', onAbort, { once: true })
       timers.push(
-        setTimeout(() => finish(() => reject(new OptimizationServiceError('TIME_LIMIT_EXCEEDED'))), request.settings.timeLimitSeconds * 1000),
+        setTimeout(() => finish(() => reject(new OptimizationServiceError('TIME_LIMIT_EXCEEDED'))), message.request.settings.timeLimitSeconds * 1000),
       )
       worker.onmessage = ({ data }) => {
-        if (data.type === 'progress') onProgress?.(data.progress)
-        else if (data.type === 'error') finish(() => reject(new OptimizationServiceError('MOCK_FAILED', data.message)))
-        else {
-          const waitMs = Math.max(0, this.#minimumLatencyMs - (this.#clock() - startedAt))
-          timers.push(setTimeout(() => finish(() => resolve(data.result)), waitMs))
+        if (data.type === 'error') {
+          finish(() => reject(new OptimizationServiceError('MOCK_FAILED', data.message)))
+          return
         }
+        const done = read(data)
+        if (done === undefined) return
+        const waitMs = Math.max(0, this.#minimumLatencyMs - (this.#clock() - startedAt))
+        timers.push(setTimeout(() => finish(() => resolve(done.value)), waitMs))
       }
       worker.onerror = () => finish(() => reject(new OptimizationServiceError('WORKER_CRASHED')))
-      worker.postMessage({ type: 'start', request })
+      worker.postMessage(message)
     })
   }
 }

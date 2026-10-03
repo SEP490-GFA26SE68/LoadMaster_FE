@@ -57,7 +57,7 @@ const PARAM_KEYS = [
   'name', 'fullName', 'role', 'email', 'fields', 'reason', 'note', 'revisionId', 'sourceRevisionId', 'placed', 'unplaced', 'edits',
   'loaded', 'missing', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
-  'count', 'packageTypeId', 'lastPackageId', 'destinationName', 'priority', 'tripId', 'objective', 'algorithm', 'reasonCode', 'vehicleTypeId',
+  'count', 'packageTypeId', 'lastPackageId', 'destinationName', 'priority', 'tripId', 'objective', 'runId', 'algorithm', 'reasonCode', 'vehicleTypeId',
   'sealNumber', 'packageCode', 'flag',
   // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
   'handlingClass', 'conflictCount', 'totalKm', 'totalMinutes', 'lateStops',

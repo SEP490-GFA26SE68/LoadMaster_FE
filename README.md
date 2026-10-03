@@ -81,7 +81,12 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   buộc hoặc vượt tải trục — nút Duyệt nói đúng loại lý do và kho tự từ chối; tuyến có điểm trễ hạn dự kiến thì phải xác nhận rồi mới
   duyệt, điểm sát hạn chỉ hiện trong hộp duyệt. Chuyến Đã lập kế hoạch đổi xe bằng hộp thoại "Đổi xe" (chi tiết chuyến và Planner):
   chỉ chọn được xe sẵn sàng và chở được hàng (kích thước, thể tích, tải trọng, trục), xe khác bị khoá kèm lý do; đổi xe làm phương án
-  hiện tại lỗi thời. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  hiện tại lỗi thời. Mỗi lần chạy tối ưu ra ba phương án A · B · C theo ba mục tiêu — tối đa thể tích, cân bằng tải trục, ít dỡ-xếp
+  lại — trong một job; không còn ô chọn mục tiêu hay thuật toán, và chỉ chạy khi chuyến Đã lập kế hoạch. Chạy xong mở màn so sánh của
+  lần chạy: mức hạn các điểm giao một lần phía trên, ba thẻ cạnh nhau (thể tích, tải trọng, tải trục so giới hạn, trọng tâm, dỡ-xếp
+  lại, kiện chưa xếp, thời gian chạy, ảnh thu nhỏ), giá trị tốt nhất đánh dấu trung tính, mỗi thẻ mở phương án trong Planner để duyệt.
+  Xe mẫu khai hai trục với số ước lượng theo cỡ xe (chưa đối chiếu thông số nhà sản xuất) để bản demo có tải trục. Màn của quản lý nền
+  tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -103,12 +108,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.697 test unit + DOM
-pnpm test:e2e      # Playwright: 118 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.737 test unit + DOM
+pnpm test:e2e      # Playwright: 120 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.697/1.697 unit, 118/118 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.737/1.737 unit, 120/120 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

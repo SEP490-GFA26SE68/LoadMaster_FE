@@ -1,4 +1,4 @@
-import type { FragilityLevel, OrientationCode } from '@/domain/models'
+import { PLAN_OBJECTIVES, type FragilityLevel, type OrientationCode, type PlanObjective } from '@/domain/models'
 import type { DeadlineStatus } from '@/domain/routing'
 
 /**
@@ -63,31 +63,51 @@ export type PackageType = PackageTypeLimits & {
 /** Đầu vào của kho: các trường Spec; ba trường của backend do kho suy ra (`backendLimitsOf`). */
 export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt' | keyof PackageTypeLimits>
 
-export const OPTIMIZATION_OBJECTIVES = ['MAX_VOLUME', 'AXLE_BALANCE'] as const
-export type OptimizationObjective = (typeof OPTIMIZATION_OBJECTIVES)[number]
+/** Mục tiêu của một phương án ứng viên (FE-5b-05, D-77): mỗi lần chạy ra đủ ba mục tiêu — `PLAN_OBJECTIVES` của domain. */
+export const OPTIMIZATION_OBJECTIVES = PLAN_OBJECTIVES
+export type OptimizationObjective = PlanObjective
 
-export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF', 'GENETIC_ALGORITHM'] as const
+/**
+ * Thuật toán đã chạy của một lần chạy. Hiện chỉ có một: mock xếp kệ chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty; thuật
+ * toán theo hạng gói (D-77) nối ở FE-8-05. Người dùng không chọn thuật toán.
+ */
+export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF'] as const
 export type OptimizationAlgorithm = (typeof OPTIMIZATION_ALGORITHMS)[number]
 
-/** Mục tiêu và thuật toán người dùng chọn cho một lần chạy. Mock tối ưu bỏ qua, kho vẫn lưu để hiện lịch sử. */
+/** Thuật toán kho ghi cho lần chạy khi nơi gọi không nói. */
+export const DEFAULT_RUN_ALGORITHM: OptimizationAlgorithm = 'EP_DBLF'
+
+/** Mục tiêu và thuật toán của lần chạy đã tạo một revision; nhãn A · B · C suy từ mục tiêu (`PLAN_LABELS`). */
 export type RunSettings = { objective: OptimizationObjective; algorithm: OptimizationAlgorithm }
 
-/** Mặc định khi nơi gọi không chọn (màn thiết lập cũ). */
-export const DEFAULT_RUN_SETTINGS: RunSettings = { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF' }
+/** Mặc định khi nơi gọi lưu một kết quả lẻ mà không nói mục tiêu (`addRevision`). */
+export const DEFAULT_RUN_SETTINGS: RunSettings = { objective: 'MAX_VOLUME', algorithm: DEFAULT_RUN_ALGORITHM }
 
-/** Một lần chạy tối ưu của chuyến (`RUN-NNN`), kể cả lần hỏng không có revision. Thuộc công ty của chuyến `tripId` (D-64). */
-export type OptimizationRun = RunSettings & {
+/** Một phương án ứng viên của lần chạy: revision đã lưu và vài số của kết quả. */
+export type RunPlan = {
+  objective: OptimizationObjective
+  revisionId: string
+  jobId: string
+  placedCount: number
+  unplacedCount: number
+  volumeUtilizationPercent: number
+}
+
+/**
+ * Một lần chạy tối ưu của chuyến (`RUN-NNN`), kể cả lần hỏng không có revision. Thuộc công ty của chuyến `tripId` (D-64). Lần chạy
+ * xong mang các phương án ứng viên nó tạo (`plans`, theo thứ tự A · B · C) — ba phương án của một job (FE-5b-05), hoặc một khi kết quả
+ * được lưu lẻ bằng `addRevision`.
+ */
+export type OptimizationRun = {
   id: string
   tripId: string
+  algorithm: OptimizationAlgorithm
   status: 'COMPLETED' | 'FAILED'
   at: string
   by: string | null
-  /** Lần chạy xong: revision đã lưu và vài số của kết quả. */
-  revisionId?: string
+  /** Lần chạy xong: mã job của service và các phương án đã lưu. */
   jobId?: string
-  placedCount?: number
-  unplacedCount?: number
-  volumeUtilizationPercent?: number
+  plans?: RunPlan[]
   /** Lần chạy hỏng: mã lý do (`REQUEST_REJECTED`, `SERVICE_UNAVAILABLE`), UI dịch. */
   failureCode?: string
 }

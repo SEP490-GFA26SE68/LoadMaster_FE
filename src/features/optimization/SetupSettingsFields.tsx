@@ -2,12 +2,11 @@ import { ChevronDown } from 'lucide-react'
 import { useId, useState } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { Switch } from '@/components/ui/Switch'
 import { fieldLabelClass } from '@/components/ui/field-styles'
+import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
 import { useT } from '@/lib/i18n'
-import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
-import { cn } from '@/lib/utils'
+import { DEFAULT_RUN_ALGORITHM } from '@/lib/mock-db'
 import type { SetupValues } from './optimization-request'
 
 type Form = { form: UseFormReturn<SetupValues> }
@@ -38,17 +37,39 @@ export function SetupRequirementFields({ form }: Form) {
 }
 
 /**
- * Phần "Thiết lập nâng cao" gập trong `<details>` (V2.3: ô mũi tên 28 px, tiêu đề Archivo, ghi chú): mục tiêu và thuật toán của lần chạy
- * (luồng 3 Review 1, LM-104 — kho lưu vào lịch sử lần chạy; mock tối ưu bỏ qua nên câu ghi chú nói rõ kết quả vẫn là MOCK RESULT) dựng
- * thành danh sách chọn có viền như ô "Phương pháp" của bản mẫu, rồi thời gian giới hạn và random seed. Có lỗi ở hai ô số thì phần này tự
- * mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt. Giữ `<details>`/`<summary>` (E2E mở phần này qua `summary`).
+ * Ba phương án mỗi lần chạy (FE-5b-05, D-77) — thay ô chọn mục tiêu của LM-104: người dùng không chọn mục tiêu nữa, một lần chạy tạo
+ * đủ ba. Danh sách chỉ đọc cùng khung viền với nhóm chọn cũ: ô nhãn A · B · C, tên mục tiêu, câu giải thích dồn phải.
+ */
+export function SetupCandidateList() {
+  const t = useT()
+  return (
+    <ul aria-label={t('optimization.candidatesTitle')} className="m-0 flex list-none flex-col overflow-hidden rounded-md border border-border p-0">
+      {PLAN_OBJECTIVES.map((objective) => (
+        <li key={objective} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft px-3.5 py-2 first:border-t-0">
+          <span aria-hidden className="grid size-5.5 flex-none place-items-center rounded-[7px] bg-n-100 font-display text-caption font-bold text-ink-2">
+            {PLAN_LABELS[objective]}
+          </span>
+          <span className="text-body font-semibold text-ink-strong">
+            <span className="sr-only">{t('optimization.candidateLabel', { label: PLAN_LABELS[objective] })}: </span>
+            {t(`runs.objectives.${objective}`)}
+          </span>
+          <span className="ml-auto text-right text-fine text-ink-3">{t(`optimization.objectiveHints.${objective}`)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * Phần "Thiết lập nâng cao" gập trong `<details>` (V2.3: ô mũi tên 28 px, tiêu đề Archivo, ghi chú): tên thuật toán của lần chạy — chỉ
+ * đọc, không chọn tay (FE-5b-05; hạng thuật toán theo gói nối ở FE-8-05), kèm câu nói rõ kết quả là MOCK RESULT — rồi thời gian giới hạn
+ * và random seed. Có lỗi ở hai ô số thì phần này tự mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt. Giữ `<details>`/`<summary>` (E2E mở
+ * phần này qua `summary`).
  */
 export function SetupAdvancedFields({ form }: Form) {
   const t = useT()
   const [open, setOpen] = useState(false)
-  const { control, register, setValue, formState: { errors } } = form
-  const objective = useWatch({ control, name: 'objective' })
-  const algorithm = useWatch({ control, name: 'algorithm' })
+  const { register, formState: { errors } } = form
   const hasError = errors.timeLimitSeconds !== undefined || errors.randomSeed !== undefined
 
   return (
@@ -61,19 +82,13 @@ export function SetupAdvancedFields({ form }: Form) {
         <span className="text-small text-ink-3 max-md:hidden">{t('optimization.advancedHint')}</span>
       </summary>
       <div className="mt-4.5 ml-10 flex flex-col gap-5 max-sm:ml-0">
-        <ChoiceList legend={t('runs.objective')} value={objective}
-          options={OPTIMIZATION_OBJECTIVES.map((code) => ({ value: code, label: t(`runs.objectives.${code}`), hint: t(`optimization.objectiveHints.${code}`) }))}
-          onChange={(value) => {
-            const code = OPTIMIZATION_OBJECTIVES.find((item) => item === value)
-            if (code) setValue('objective', code, { shouldDirty: true })
-          }} />
-        <ChoiceList legend={t('runs.algorithm')} value={algorithm}
-          options={OPTIMIZATION_ALGORITHMS.map((code) => ({ value: code, label: t(`runs.algorithms.${code}`), hint: t(`optimization.algorithmHints.${code}`) }))}
-          onChange={(value) => {
-            const code = OPTIMIZATION_ALGORITHMS.find((item) => item === value)
-            if (code) setValue('algorithm', code, { shouldDirty: true })
-          }} />
-        <p className="-mt-2 text-fine text-ink-3">{t('optimization.runChoiceNote')}</p>
+        <dl className="m-0 flex flex-col gap-1.5">
+          <dt className={fieldLabelClass}>{t('runs.algorithm')}</dt>
+          <dd data-run-algorithm className="m-0 flex min-h-11 items-center rounded-md border border-border bg-n-25 px-3.5 text-body font-semibold text-ink-strong">
+            {t(`runs.algorithms.${DEFAULT_RUN_ALGORITHM}`)}
+          </dd>
+          <dd className="m-0 text-fine text-ink-3">{t('optimization.algorithmNote')}</dd>
+        </dl>
 
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-4 max-md:col-span-6">
@@ -89,28 +104,3 @@ export function SetupAdvancedFields({ form }: Form) {
     </details>
   )
 }
-
-type Choice = { value: string; label: string; hint: string }
-
-/**
- * Nhóm chọn một (V2.3 `.methods`): khung viền bo 12, mỗi lựa chọn một hàng 44 px, hàng đang chọn nền `--cyan-50`, câu giải thích
- * dồn phải (đậm cyan khi chọn). Radio vẫn là Radix `RadioGroup` nên phím mũi tên và tên truy cập ("Cân bằng tải trục") giữ nguyên.
- */
-function ChoiceList({ legend, value, options, onChange }: { legend: string; value: string; options: Choice[]; onChange: (value: string) => void }) {
-  return (
-    <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-      <legend className={cn('mb-2 p-0', fieldLabelClass)}>{legend}</legend>
-      <RadioGroup aria-label={legend} value={value} onValueChange={onChange}
-        className="gap-0 overflow-hidden rounded-md border border-border">
-        {options.map((option) => (
-          <div key={option.value} data-state={option.value === value ? 'on' : 'off'}
-            className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft px-3.5 py-2 first:border-t-0 data-[state=on]:bg-cyan-50">
-            <RadioGroupItem value={option.value} label={option.label} />
-            <span className={cn('ml-auto text-right text-fine', option.value === value ? 'font-semibold text-cyan-800' : 'text-ink-3')}>{option.hint}</span>
-          </div>
-        ))}
-      </RadioGroup>
-    </fieldset>
-  )
-}
-

@@ -62,6 +62,7 @@ export const dataErrors = {
   APPROVAL_BLOCKED: 'Plan {revisionId} still has {count} errors to fix, so it cannot be approved yet.',
   LATE_STOPS_UNCONFIRMED: 'Stop {stopNumbers} is expected to miss its deadline: confirm before approving.',
   TRIP_NOT_PLANNED: 'Trip {tripId} is not Planned yet, so its vehicle cannot be changed here.',
+  ROUTE_NOT_PLANNED: 'Trip {tripId} has no optimized route yet, so the load cannot be optimized. Optimize the route first.',
   VEHICLE_UNCHANGED: 'The trip already uses vehicle {vehicleId}.',
   VEHICLE_BUSY: 'Vehicle {vehicleId} is running trip {tripId}. Choose a ready vehicle.',
   VEHICLE_UNFIT: 'Vehicle {vehicleId} cannot take the cargo of this trip.',

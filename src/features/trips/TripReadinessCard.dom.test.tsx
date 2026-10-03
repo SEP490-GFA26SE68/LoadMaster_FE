@@ -37,7 +37,7 @@ function renderDetail(tripId: string, role: Role) {
   return userEvent.setup()
 }
 
-test('a draft trip without packages is not ready; putting a requirement on it adds its stop, makes it ready and lists the requirement', async () => {
+test('a draft trip without packages is not ready; putting a requirement on it adds its stop and its packages, and only the route is left to optimize', async () => {
   const trip = await getMockDb().createTrip({ ...twoCartonTrip(), packages: [] })
   const user = renderDetail(trip.id, 'dispatcher')
 
@@ -45,7 +45,9 @@ test('a draft trip without packages is not ready; putting a requirement on it ad
   expect(await card.findByText('Chưa sẵn sàng tối ưu', {}, SLOW)).toBeInTheDocument()
   expect(card.getByText('Chưa có kiện nào')).toBeInTheDocument()
   expect(card.getByText('3 điểm giao chưa có kiện')).toBeInTheDocument()
-  expect(card.getByText('1 mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.')).toBeInTheDocument()
+  // Chuyến còn Nháp: chưa có kiện và chưa tối ưu tuyến (FE-5b-05)
+  expect(card.getByText('Chưa tối ưu tuyến. Bấm "Tối ưu tuyến" ở sơ đồ tuyến để chốt thứ tự điểm giao')).toBeInTheDocument()
+  expect(card.getByText('2 mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.')).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Yêu cầu giao của chuyến' })).getByText('Chưa có yêu cầu giao nào trên chuyến này.')).toBeInTheDocument()
 
   // Lối sửa ngay tại chỗ: đưa yêu cầu giao vào chuyến — chỉ chọn yêu cầu chờ; điểm giao tự sinh. Điểm 2 của chuyến mẫu cùng địa chỉ
@@ -57,8 +59,10 @@ test('a draft trip without packages is not ready; putting a requirement on it ad
   expect(dialog.getByRole('status')).toHaveTextContent('Điểm giao: chuyến có thêm điểm 4 · Kho Bách Hoá Xanh Dĩ An ở cuối tuyến.')
   await user.click(dialog.getByRole('button', { name: 'Đưa vào chuyến' }))
 
-  expect(await card.findByText('Sẵn sàng tối ưu', {}, SLOW)).toBeInTheDocument()
-  expect(card.getByText('10 kiện')).toBeInTheDocument()
+  // Đã có kiện; còn lại đúng một mục chặn — tuyến chưa tối ưu (điểm của chuyến mẫu chưa có toạ độ nên chưa tối ưu tuyến ở đây được)
+  expect(await card.findByText('10 kiện', {}, SLOW)).toBeInTheDocument()
+  expect(card.getByText('1 mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.')).toBeInTheDocument()
+  expect(card.getByText('Chưa sẵn sàng tối ưu')).toBeInTheDocument()
   const requirements = within(await screen.findByRole('region', { name: 'Yêu cầu giao của chuyến' }, SLOW))
   expect(await requirements.findByText('REQ-006', {}, SLOW)).toBeInTheDocument()
   expect(requirements.getByText(/^Điểm 4 · Kho Bách Hoá Xanh Dĩ An · /)).toHaveTextContent('Điểm 4 · Kho Bách Hoá Xanh Dĩ An · Hạn 11:00 16/09/2026 · 10 kiện')

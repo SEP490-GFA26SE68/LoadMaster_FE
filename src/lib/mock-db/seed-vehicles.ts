@@ -1,10 +1,26 @@
 import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
-import type { VehicleConfig } from '@/domain/models'
+import type { VehicleAxle, VehicleConfig } from '@/domain/models'
+
+/** Trục trước nằm dưới cabin, 100 cm trước vách đầu thùng — đúng chỗ khung gầm 3D vẽ cầu dẫn hướng (`CAB_X` của `truck-layout.ts`). */
+const FRONT_AXLE_X_CM = -100
+
+/**
+ * Hai trục của xe tải 4×2 mẫu (FE-5b-05): trục sau đặt giữa hốc bánh của thùng (xe không có hốc bánh: hai phần ba chiều dài thùng).
+ * Tải rỗng và tải tối đa là **số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất**: phần hai trục còn nhận được (tải tối đa −
+ * tải rỗng) lớn hơn tải trọng xe khai, và xe chở đủ tải dàn đều thùng không vượt trục nào.
+ */
+export function twoAxles(rearXCm: number, [frontEmptyKg, frontMaxKg]: [number, number], [rearEmptyKg, rearMaxKg]: [number, number]): VehicleAxle[] {
+  return [
+    { id: 'AXLE-01', name: 'Trục trước', positionXCm: FRONT_AXLE_X_CM, emptyLoadKg: frontEmptyKg, maxLoadKg: frontMaxKg },
+    { id: 'AXLE-02', name: 'Trục sau', positionXCm: rearXCm, emptyLoadKg: rearEmptyKg, maxLoadKg: rearMaxKg },
+  ]
+}
 
 /**
  * Đội xe mẫu (cm, kg): xe "Truck 6m" của Spec mục 12 giữ nguyên, rồi bảy xe tải thật đang chạy ở kho Long Bình và Sóng Thần
  * (VEHICLE-008 đang bảo dưỡng trong seed, LM-083).
  * Biển số ghép vào `name` vì `VehicleConfig` không có trường biển số (D-04). Thứ tự và mã cố định: seed tất định.
+ * Bảy xe thật khai hai trục (`twoAxles` — số ước lượng) nên phương án của chúng có tải trục; "Truck 6m" của Spec không khai trục.
  */
 export function seedVehicles(): VehicleConfig[] {
   return [
@@ -25,6 +41,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 420, yCm: 0, zCm: 0, lengthCm: 110, widthCm: 25, heightCm: 32, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 420, yCm: 210, zCm: 0, lengthCm: 110, widthCm: 25, heightCm: 32, loadBearing: false },
       ],
+      axles: twoAxles(475, [3400, 6500], [2300, 10_000]),
     },
     {
       id: 'VEHICLE-003',
@@ -42,6 +59,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 330, yCm: 0, zCm: 0, lengthCm: 95, widthCm: 25, heightCm: 30, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 330, yCm: 185, zCm: 0, lengthCm: 95, widthCm: 25, heightCm: 30, loadBearing: false },
       ],
+      axles: twoAxles(377.5, [2300, 3600], [1700, 6600]),
     },
     {
       id: 'VEHICLE-004',
@@ -59,6 +77,7 @@ export function seedVehicles(): VehicleConfig[] {
       obstacles: [
         { id: 'OBS-001', type: 'COOLING_UNIT', xCm: 0, yCm: 0, zCm: 165, lengthCm: 25, widthCm: 210, heightCm: 35, loadBearing: false },
       ],
+      axles: twoAxles(400, [2700, 4000], [2000, 7400]),
     },
     // Bốn xe thêm ở đợt 6 (D-44) để đội xe có đủ trạng thái sẵn sàng / đang chạy / bảo dưỡng
     {
@@ -76,6 +95,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 300, yCm: 0, zCm: 0, lengthCm: 85, widthCm: 20, heightCm: 25, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 300, yCm: 180, zCm: 0, lengthCm: 85, widthCm: 20, heightCm: 25, loadBearing: false },
       ],
+      axles: twoAxles(342.5, [1900, 2800], [1500, 5200]),
     },
     {
       id: 'VEHICLE-006',
@@ -92,6 +112,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 350, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 25, heightCm: 30, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 350, yCm: 190, zCm: 0, lengthCm: 100, widthCm: 25, heightCm: 30, loadBearing: false },
       ],
+      axles: twoAxles(400, [2400, 4200], [1900, 8000]),
     },
     {
       id: 'VEHICLE-007',
@@ -108,6 +129,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 520, yCm: 0, zCm: 0, lengthCm: 120, widthCm: 25, heightCm: 32, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 520, yCm: 215, zCm: 0, lengthCm: 120, widthCm: 25, heightCm: 32, loadBearing: false },
       ],
+      axles: twoAxles(580, [3300, 7100], [2700, 10_000]),
     },
     {
       id: 'VEHICLE-008',
@@ -124,6 +146,7 @@ export function seedVehicles(): VehicleConfig[] {
         { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 370, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 25, heightCm: 30, loadBearing: false },
         { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 370, yCm: 195, zCm: 0, lengthCm: 100, widthCm: 25, heightCm: 30, loadBearing: false },
       ],
+      axles: twoAxles(420, [2300, 4000], [1800, 7800]),
     },
   ]
 }

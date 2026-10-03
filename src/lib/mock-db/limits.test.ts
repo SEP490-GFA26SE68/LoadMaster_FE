@@ -42,12 +42,21 @@ test('seed axle limits come from the sample vehicle axles: first axle in front, 
   expect(axleLimitsFromAxles({ axles: AXLES.map((axle) => ({ ...axle, maxLoadKg: 0 })) })).toStrictEqual({})
 })
 
-test('no sample vehicle declares axles, so every seeded vehicle type has the default 15% offset and no axle limit', async () => {
+test('every seeded vehicle type has the default 15% offset and takes its axle limits from the axles of its sample vehicle', async () => {
   const db = createMockDb()
-  expect((await db.listVehicles()).filter((vehicle) => vehicle.axles !== undefined)).toStrictEqual([])
   const types = await db.listVehicleTypes()
   expect(types.map((type) => type.maxCogOffsetRatio)).toStrictEqual(types.map(() => 0.15))
-  expect(types.filter((type) => type.frontAxleLimitKg !== undefined || type.rearAxleLimitKg !== undefined)).toStrictEqual([])
+  // VT-001 là loại của "Truck 6m" của Spec — xe mẫu duy nhất không khai trục
+  expect(types.map((type) => [type.id, type.frontAxleLimitKg, type.rearAxleLimitKg])).toStrictEqual([
+    ['VT-001', undefined, undefined],
+    ['VT-002', 6500, 10_000],
+    ['VT-003', 3600, 6600],
+    ['VT-004', 4000, 7400],
+    ['VT-005', 2800, 5200],
+    ['VT-006', 4200, 8000],
+    ['VT-007', 7100, 10_000],
+    ['VT-PN-01', 2200, 3300],
+  ])
 })
 
 test('the store hands vehicles out with the limits of their type and keeps none on the vehicle record', async () => {
@@ -93,8 +102,9 @@ test('changing the limits a vehicle gets from its type makes the plans of its pl
 test('moving a vehicle to a type with other limits makes its plans stale; a type with the same limits does not', async () => {
   const db = createMockDb()
   const { trip, revision } = await optimizedTwoCartonTrip(db)
-  // VT-002 cũng 15 %, chưa khai giới hạn trục: giới hạn hiệu lực của xe không đổi
-  await db.setVehicleType('VEHICLE-001', 'VT-002')
+  // Loại mới cũng 15 %, chưa khai giới hạn trục như VT-001 của xe: giới hạn hiệu lực của xe không đổi
+  const alike = await db.createVehicleType({ ...NEW_TYPE, name: 'Xe tải 5 tấn thùng 6 m, bản 2' })
+  await db.setVehicleType('VEHICLE-001', alike.id)
   expect(isStale(revision, await db.getTrip(trip.id))).toBe(false)
   // Gỡ loại: xe về mặc định 15 % của domain, vẫn không đổi
   await db.setVehicleType('VEHICLE-001', null)

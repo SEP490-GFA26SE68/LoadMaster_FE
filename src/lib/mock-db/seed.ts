@@ -17,7 +17,7 @@ import { seedVehicles } from './seed-vehicles'
 import { auditEventCompany } from './tenancy'
 import { tripChangeParams } from './trip-changes'
 import { seedSourcing, type SourcingSeed } from './seed-sourcing'
-import type { OptimizationRun } from './source-types'
+import { DEFAULT_RUN_ALGORITHM, type OptimizationRun } from './source-types'
 import type { Revision, Trip } from './types'
 
 export type SeedData = {
@@ -31,7 +31,7 @@ export type SeedData = {
   trips: Trip[]
   revisions: Revision[]
   events: AuditEvent[]
-  /** Lần chạy tối ưu (LM-104): mỗi revision tối ưu một lần chạy xong, cộng một lần hỏng của chuyến chính. */
+  /** Lần chạy tối ưu (LM-104): mỗi chuyến đã tối ưu một lần chạy xong (ba phương án ứng viên), cộng một lần hỏng của chuyến chính. */
   runs: OptimizationRun[]
   /** Chuyến → kiện kho kiện của từng dòng kiện nhập tay (FE-3b-07). */
   tripPackageLinks: [string, TripPackageLink[]][]
@@ -66,14 +66,15 @@ function createSeed(today: string): SeedData {
     revisionId: (order) => `REV-${String(order).padStart(3, '0')}`,
   })
 
-  // Chuyến chính: REV-001 tối ưu 08:30, REV-002 duyệt 09:00 ngày neo — giữ đúng mã và thời điểm của seed trước đợt 6
+  // Chuyến chính: ba phương án ứng viên tối ưu 08:30 (REV-001 là bản ít dỡ-xếp lại), REV-002 duyệt 09:00 ngày neo — giữ đúng mã và
+  // thời điểm của seed trước đợt 6
   // Tuyến tối ưu 08:15, trước lần chạy tối ưu xếp hàng đầu tiên
   const hero = withSeedRoute(seedTrip(today), vnTime(today, '08:15'), SEED_DISPATCHER)
   events.push({ at: hero.createdAt, actorId: SEED_DISPATCHER, action: 'trip.created', target: { type: 'trip', id: hero.id }, params: { name: hero.name } })
-  // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu chọn cân bằng tải trục + GA, service không phản hồi; lần sau ra REV-001
+  // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu service không phản hồi; lần sau ra ba phương án ứng viên, REV-001 là bản được duyệt
   const failedAt = vnTime(today, '08:20')
-  runs.push({ id: runId(runs.length + 1), tripId: hero.id, objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', status: 'FAILED', at: failedAt, by: SEED_DISPATCHER, failureCode: 'SERVICE_UNAVAILABLE' })
-  events.push({ at: failedAt, actorId: SEED_DISPATCHER, action: 'optimization.failed', target: { type: 'trip', id: hero.id }, params: { objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', reasonCode: 'SERVICE_UNAVAILABLE' } })
+  runs.push({ id: runId(runs.length + 1), tripId: hero.id, algorithm: DEFAULT_RUN_ALGORITHM, status: 'FAILED', at: failedAt, by: SEED_DISPATCHER, failureCode: 'SERVICE_UNAVAILABLE' })
+  events.push({ at: failedAt, actorId: SEED_DISPATCHER, action: 'optimization.failed', target: { type: 'trip', id: hero.id }, params: { algorithm: DEFAULT_RUN_ALGORITHM, reasonCode: 'SERVICE_UNAVAILABLE' } })
   plan(hero, 20_260_914, { optimized: vnTime(today, '08:30'), approved: vnTime(today, '09:00') })
   const trips = [hero, ...TRIP_SPECS.map((spec, index) => seedTripFrom(spec, index, today, plan, events))]
 

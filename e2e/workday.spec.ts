@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute } from './spec-flow-helpers'
+import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute, waitForOtherRevision } from './spec-flow-helpers'
 
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
@@ -56,12 +56,13 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
 
   await page.getByRole('link', { name: 'Chạy tối ưu', exact: true }).click()
   await optimizeAndOpenPlanner(page)
+  const sourceRevision = new URL(page.url()).searchParams.get('revision')
   await expect(page.getByText('MOCK RESULT', { exact: true }).first()).toBeVisible()
   // FE-0-07: điều phối viên duyệt ngay phương án vừa tối ưu — không có dòng nào bảo chờ người khác duyệt
   await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
-  await page.waitForURL(/\/phuong-an\?revision=REV-/)
+  await waitForOtherRevision(page, sourceRevision)
   await page.getByRole('link', { name: 'Quay lại chuyến', exact: true }).click()
   await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
   await expect(page.locator('header').getByText('Đã duyệt', { exact: true })).toBeVisible()

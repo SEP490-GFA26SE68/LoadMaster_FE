@@ -64,6 +64,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   APPROVAL_BLOCKED: { revisionId: 'REV-025', count: 2, codes: ['AXLE_OVERLOAD', 'MUST_LOAD_UNPLACED'] },
   LATE_STOPS_UNCONFIRMED: { tripId: 'TRIP-012', stopIds: ['STOP-02', 'STOP-03'], stopNumbers: [2, 3] },
   TRIP_NOT_PLANNED: { tripId: 'TRIP-014' },
+  ROUTE_NOT_PLANNED: { tripId: 'TRIP-014' },
   VEHICLE_UNCHANGED: { vehicleId: 'VEHICLE-002' },
   VEHICLE_BUSY: { vehicleId: 'VEHICLE-007', tripId: 'TRIP-011' },
   VEHICLE_UNFIT: { vehicleId: 'VEHICLE-001', reasons: ['CARGO_WEIGHT_EXCEEDED'] },

@@ -55,8 +55,8 @@ export function SetupContextPanels({ tripId, setup, locked = false, payloadError
             <dt className="text-small text-ink-3">{stat.label}</dt>
             <dd className="m-0 flex min-w-0 items-baseline font-display text-[28px] leading-none font-bold tracking-[-0.4px] text-ink-strong tabular-nums font-stretch-108%">
               {stat.value}
-              {/* Khoảng trắng thật thay cho lề: tên truy cập đọc "192 / 7 dòng", không dính "192/" */}
-              {stat.unit ? <>{' '}<span className="ml-1 truncate font-sans text-body font-normal tracking-normal text-ink-3 font-stretch-100%" title={stat.unit}>{stat.unit}</span></> : null}
+              {/* Khoảng trắng thật thay cho lề: tên truy cập đọc "192 / 7 dòng", không dính "192/". Chữ dài (điểm đầu → điểm cuối) xuống dòng, không cắt */}
+              {stat.unit ? <>{' '}<span className="ml-1 min-w-0 font-sans text-body leading-5 font-normal tracking-normal text-ink-3 font-stretch-100%">{stat.unit}</span></> : null}
             </dd>
           </div>
         ))}

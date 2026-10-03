@@ -48,10 +48,20 @@ test('thẻ lấy thiết lập và metrics của revision; bản duyệt và b�
   })
   expect(second).toMatchObject({ randomSeed: 7, enforceLifo: false, placedCount: 1, unplacedCount: 1, latest: false, approvedAs: [] })
   expect(approved).toMatchObject({ jobId: 'MOCK-JOB-001', approved: true, latest: true, sourceRevisionId: first.id })
+  // kết quả lưu lẻ không phải ứng viên của lần chạy ba phương án
+  expect([first.candidate, second.candidate, approved.candidate]).toStrictEqual([undefined, undefined, undefined])
   expect(approved.id).not.toBe(first.id)
   expect(defaultRevisionId([first, second, approved])).toBe(approved.id)
   expect(defaultRevisionId([first, second])).toBe(second.id)
   expect(defaultRevisionId([])).toBeUndefined()
+})
+
+test('bản của lần chạy ba phương án mang nhãn A · B · C; bản duyệt giữ nhãn của bản nguồn (FE-5b-05)', async () => {
+  const db = createMockDb()
+  const cards = revisionCards(await db.getTrip('TRIP-2026-0914'), await db.listRevisions('TRIP-2026-0914'))
+  expect(cards.map((card) => [card.id, card.candidate, card.approved])).toStrictEqual([
+    ['REV-001-A', 'A', false], ['REV-001-B', 'B', false], ['REV-001', 'C', false], ['REV-002', 'C', true],
+  ])
 })
 
 test('sửa kiện sau khi tối ưu: mọi thẻ lỗi thời', async () => {
