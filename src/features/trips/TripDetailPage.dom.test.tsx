@@ -49,6 +49,7 @@ test('a trip being loaded is locked: the banner says why, edit actions are gone,
   expect(screen.queryByRole('button', { name: 'Thêm kiện' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Nhập từ file' })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Đổi xe' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Đổi xe' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Kéo để đổi thứ tự/ })).not.toBeInTheDocument()
   // Hành động chính còn lại: mở phương án đã duyệt trong 3D
   expect(screen.getByRole('link', { name: 'Xem phương án 3D' })).toHaveAttribute('href', expect.stringContaining('/chuyen/TRIP-011/phuong-an?revision='))

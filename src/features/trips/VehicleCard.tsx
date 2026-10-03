@@ -1,24 +1,32 @@
-import { useId } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
+import { ChangeVehicleDialog } from './ChangeVehicleDialog'
+
+const CHANGE_ACTION = 'cursor-pointer rounded-sm text-small font-semibold text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
 /**
  * Mục "Phương tiện" ở cột phải Chi tiết chuyến (LM-088; V2.3 `ChiTietChuyen*.jpg`): danh sách khoá — giá trị gồm xe kèm biển số,
- * tài xế kèm số điện thoại, lòng thùng, cửa, số vật cản. "Đổi xe" chỉ khi chuyến còn sửa được.
+ * tài xế kèm số điện thoại, lòng thùng, cửa, số vật cản. "Đổi xe" chỉ khi chuyến còn sửa được: chuyến Nháp mở form sửa chuyến, chuyến
+ * Đã lập kế hoạch mở hộp thoại Đổi xe (FE-5b-08, D-80).
  */
-export function VehicleCard({ vehicle, tripId, driverId = null, driver = null, canChange = true }: {
+export function VehicleCard({ vehicle, tripId, driverId = null, driver = null, canChange = true, planned = false }: {
   vehicle: VehicleConfig
   tripId: string
   driverId?: string | null
   /** Tài khoản của `driverId`; `null` khi chưa gán hoặc tài khoản không còn trong kho (khi đó hiện mã). */
   driver?: Pick<User, 'fullName' | 'phone'> | null
   canChange?: boolean
+  /** Chuyến Đã lập kế hoạch: "Đổi xe" mở hộp thoại có kiểm xe thay vì form sửa chuyến (FE-5b-08). */
+  planned?: boolean
 }) {
   const t = useT()
   const format = useFormat()
   const titleId = useId()
+  const [changeOpen, setChangeOpen] = useState(false)
+  const changeRef = useRef<HTMLButtonElement>(null)
   const cut = vehicle.name.lastIndexOf(' · ')
   const driverText = driverId === null
     ? t('trips.vehicleCard.unassigned')
@@ -38,12 +46,13 @@ export function VehicleCard({ vehicle, tripId, driverId = null, driver = null, c
     <section className="flex flex-col gap-2.5" aria-labelledby={titleId}>
       <div className="flex items-center justify-between gap-3">
         <h3 id={titleId} className="font-display text-body-lg leading-5 font-[650] text-ink-strong font-stretch-106%">{t('trips.vehicle')}</h3>
-        {canChange ? (
-          <Link to={`/chuyen/${tripId}/sua`} className="rounded-sm text-small font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-            {t('trips.changeVehicle')}
-          </Link>
-        ) : null}
+        {!canChange ? null : planned ? (
+          <button ref={changeRef} type="button" className={CHANGE_ACTION} onClick={() => setChangeOpen(true)}>{t('trips.changeVehicle')}</button>
+        ) : (
+          <Link to={`/chuyen/${tripId}/sua`} className={CHANGE_ACTION}>{t('trips.changeVehicle')}</Link>
+        )}
       </div>
+      {canChange && planned ? <ChangeVehicleDialog tripId={tripId} open={changeOpen} onOpenChange={setChangeOpen} returnFocusTo={changeRef} /> : null}
       <dl className="m-0 flex flex-col gap-2 text-body">
         {rows.map((row) => (
           <div key={row.label} className="flex items-baseline justify-between gap-3">

@@ -1,5 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
-import type { Trip } from '@/lib/mock-db'
+import { tripStatus, type Trip } from '@/lib/mock-db'
 import { useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
 import { CargoSummaryCard } from './CargoSummaryCard'
@@ -33,7 +33,7 @@ export function TripDetailSide({ trip, vehicle, driver, summary, editable }: {
         </section>
       )}
       <div className="px-4.5 py-4">
-        <VehicleCard vehicle={vehicle} tripId={trip.id} driverId={trip.driverId} driver={driver} canChange={editable} />
+        <VehicleCard vehicle={vehicle} tripId={trip.id} driverId={trip.driverId} driver={driver} canChange={editable} planned={tripStatus(trip) === 'PLANNED'} />
       </div>
     </aside>
   )
