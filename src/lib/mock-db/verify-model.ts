@@ -13,8 +13,8 @@ export type VerifyMethod = (typeof VERIFY_METHODS)[number]
 /** Đối chiếu bằng nhãn — kiểm như quét, không cần duyệt. */
 export type LabelVerifyMethod = Exclude<VerifyMethod, 'MANUAL'>
 
-/** Bước của chuyến mà kiện được đối chiếu. Soạn hàng và nhận dọc đường thêm ở issue của hai luồng đó. */
-export const VERIFY_CONTEXTS = ['LOADING', 'UNLOADING'] as const
+/** Bước của chuyến mà kiện được đối chiếu: soạn hàng (FE-6-02), xếp, dỡ. Nhận dọc đường thêm ở issue của luồng đó. */
+export const VERIFY_CONTEXTS = ['STAGING', 'LOADING', 'UNLOADING'] as const
 export type VerifyContext = (typeof VERIFY_CONTEXTS)[number]
 
 /** Lý do xác nhận tay; `OTHER` bắt buộc ghi chú. */

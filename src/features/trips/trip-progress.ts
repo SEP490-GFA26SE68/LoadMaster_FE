@@ -20,7 +20,7 @@ export type ProgressStep = {
   /** Người làm; `null` khi kho không ghi người (seed, không có phiên). */
   readonly actorId?: string | null
   /** Bước xếp hàng: kiện đã xếp, kiện kho báo thiếu, tổng kiện của phương án kho làm theo. */
-  readonly loading?: { readonly loaded: number; readonly missing: number; readonly total: number }
+  readonly loading?: { readonly loaded: number; readonly damaged: number; readonly total: number }
   /** Bước giao hàng: số điểm đã hoàn tất trên tổng số điểm. */
   readonly delivery?: { readonly done: number; readonly total: number }
   /** Bước huỷ: lý do người huỷ nhập. */
@@ -99,30 +99,30 @@ export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[],
 
 function loadingCounts(loading: NonNullable<Trip['loading']>, revisions: readonly Revision[]) {
   const plan = revisions.find((revision) => revision.id === loading.revisionId)
-  const missing = loading.steps.filter((step) => step.outcome === 'missing').length
+  const damaged = loading.steps.filter((step) => step.outcome === 'damaged').length
   return {
-    loaded: loading.steps.length - missing,
-    missing,
+    loaded: loading.steps.length - damaged,
+    damaged,
     total: plan ? plannedStops(plan).size : loading.steps.length,
   }
 }
 
-/** Một kiện kho báo thiếu (D-47): không có trên xe. */
-export type MissingPackage = {
+/** Một kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05, D-92): không có trên xe. */
+export type DamagedPackage = {
   readonly packageInstanceId: string
   readonly name: string
   readonly deliveryStop: number
-  /** ISO 8601, lúc kho báo thiếu. */
+  /** ISO 8601, lúc kho báo hỏng. */
   readonly at: string
 }
 
-/** Kiện kho báo thiếu, theo thứ tự kho ghi. Tên và điểm giao lấy từ kiện gốc của chuyến (kiện đã khoá từ lúc kho bắt đầu xếp). */
-export function missingPackages(trip: Pick<Trip, 'loading' | 'packages'>): MissingPackage[] {
+/** Kiện hỏng bị bỏ lại kho, theo thứ tự kho ghi. Tên và điểm giao lấy từ kiện gốc của chuyến (kiện đã khoá từ lúc kho bắt đầu xếp). */
+export function damagedPackages(trip: Pick<Trip, 'loading' | 'packages'>): DamagedPackage[] {
   const { instances, packageIdByInstanceId } = expandPackages(trip.packages)
   const stopByInstance = new Map(instances.map((instance) => [instance.packageInstanceId, instance.deliveryStop]))
   const nameById = new Map(trip.packages.map((pkg) => [pkg.id, pkg.name]))
   return (trip.loading?.steps ?? [])
-    .filter((step) => step.outcome === 'missing')
+    .filter((step) => step.outcome === 'damaged')
     .map(({ packageInstanceId, at }) => ({
       packageInstanceId,
       name: nameById.get(packageIdByInstanceId.get(packageInstanceId) ?? '') ?? '',

@@ -1,11 +1,12 @@
 import {
   latestApproved,
-  missingIds,
+  leftOutIds,
   plannedStops,
   rejectedConfirms,
   tripManualSubStatus,
   tripStatus,
   tripSubStatus,
+  type ReplanReason,
   type Revision,
   type Trip,
 } from '@/lib/mock-db'
@@ -13,10 +14,11 @@ import type { TripStatus, TripSubStatus } from '@/types/trip'
 
 /**
  * Nhóm của chuyến ở danh sách kho (FE-6-01, PRD v2 mục 8.5), theo trạng thái của backend và dòng phụ:
- * - `loading`: Đang xếp hàng, kho đang xếp (tiến độ x / y) — làm tiếp cho xong;
+ * - `loading`: Đang xếp hàng, kho đang soạn hoặc đang xếp (tiến độ x / y) — làm tiếp cho xong;
  * - `waiting`: Đã lập kế hoạch, phương án đã duyệt còn hiệu lực — "Chờ soạn";
  * - `loaded`: Đang xếp hàng, dòng phụ "Xếp xong — chờ xuất phát" — còn ghi được số seal tới khi tài xế xuất phát;
- * - `stale`: Đã lập kế hoạch, bản duyệt lỗi thời — "Chờ điều phối tối ưu lại", kho không bắt đầu được.
+ * - `stale`: Đã lập kế hoạch, bản duyệt lỗi thời — "Chờ điều phối tối ưu lại", kho không bắt đầu được; gồm cả chuyến vừa từ Đang xếp
+ *   hàng quay về vì bỏ kiện thiếu hoặc kiện hỏng (FE-6-02, FE-6-05).
  * Thứ tự ở đây là thứ tự nhóm trên màn.
  */
 export const WAREHOUSE_STAGES = ['loading', 'waiting', 'loaded', 'stale'] as const
@@ -38,11 +40,18 @@ export type WarehouseTripRow = {
   /** Dòng phụ thứ hai: còn xác nhận tay chờ điều phối viên duyệt (FE-6-04). */
   readonly manualSub: TripSubStatus | null
   readonly stage: WarehouseStage
+  /** Bước của chuyến đang ở kho: còn kiện chưa soạn là `staging`, soạn đủ là `loading`. Chỉ có nghĩa ở nhóm `loading`. */
+  readonly step: 'staging' | 'loading'
   /** Kiện của phương án kho xếp theo. */
   readonly total: number
-  /** Kiện đã có kết quả ở kho: đã xếp hoặc báo thiếu. */
+  /** Kiện đã xong ở bước hiện tại: đã soạn (bước soạn), hoặc đã có kết quả xếp — đã xếp hay hỏng bị bỏ lại (bước xếp). */
   readonly recorded: number
-  readonly missing: number
+  /** Kiện hỏng lúc xếp, bị bỏ lại kho. */
+  readonly damaged: number
+  /** Kiện kho báo thiếu lúc soạn, chờ điều phối viên quyết. */
+  readonly shortages: number
+  /** Chuyến vừa từ Đang xếp hàng quay về Đã lập kế hoạch: lý do, và có phải dỡ kiện đã xếp ra không. */
+  readonly replan: { readonly reason: ReplanReason; readonly unload: boolean } | undefined
   /** Xác nhận tay bị điều phối viên từ chối mà kiện chưa được kiểm lại (FE-6-04). */
   readonly recheck: number
   /** Số seal đã ghi khi xếp xong; chưa ghi thì `undefined`. */
@@ -89,7 +98,10 @@ export function warehouseTripRows(entries: readonly TripRevisions[], vehicleName
     const stage = warehouseStage(trip, revisions)
     const plan = warehousePlan(trip, revisions)
     if (!plan || !stage) continue
+    const total = plannedStops(plan).size
+    const staged = new Set(trip.loading?.stagedIds)
     const recorded = new Set(trip.loading?.steps.map((step) => step.packageInstanceId))
+    const step = staged.size < total ? 'staging' : 'loading'
     rows.push({
       id: trip.id,
       name: trip.name,
@@ -99,10 +111,13 @@ export function warehouseTripRows(entries: readonly TripRevisions[], vehicleName
       sub: tripSubStatus(trip, revisions),
       manualSub: tripManualSubStatus(trip),
       stage,
-      total: plannedStops(plan).size,
-      recorded: recorded.size,
-      missing: missingIds(trip).size,
-      recheck: stage === 'loading' ? rejectedConfirms(trip, 'LOADING', recorded).length : 0,
+      step,
+      total,
+      recorded: step === 'staging' ? staged.size : recorded.size,
+      damaged: leftOutIds(trip).size,
+      shortages: trip.loading?.shortages?.length ?? 0,
+      replan: trip.replan === undefined ? undefined : { reason: trip.replan.reason, unload: trip.replan.unload },
+      recheck: stage === 'loading' ? rejectedConfirms(trip, 'STAGING', staged).length + rejectedConfirms(trip, 'LOADING', recorded).length : 0,
       seal: trip.loading?.seal?.number,
     })
   }

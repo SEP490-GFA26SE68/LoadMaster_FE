@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
 import { ManualConfirmCard } from './ManualConfirmCard'
+import { MissingPackagesCard } from './MissingPackagesCard'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { PoolPackagePicker } from './PoolPackagePicker'
@@ -157,6 +158,7 @@ export function TripDetailPage() {
 
             <div className="flex min-w-0 flex-col gap-3 xl:[grid-area:main]">
               {/* Việc chờ điều phối viên đứng trước bảng kiện: còn dòng ở đây thì kho / tài xế chưa đi tiếp được (FE-6-04) */}
+              <MissingPackagesCard tripId={tripId} />
               <ManualConfirmCard tripId={tripId} />
               <PackagesTable
                 packages={trip.packages}

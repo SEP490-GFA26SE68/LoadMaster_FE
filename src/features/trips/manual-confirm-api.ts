@@ -3,7 +3,7 @@
  *   chưa có ở BE (Q-11): fetchManualConfirmations, approveManualConfirmation, rejectManualConfirmation
  */
 
-import { getMockDb, pendingManualConfirms, type ManualConfirmReason, type Trip, type VerifyContext } from '@/lib/mock-db'
+import { getMockDb, pendingManualConfirms, type ManualConfirmReason, type PackageVerification, type Trip, type VerifyContext } from '@/lib/mock-db'
 
 /**
  * Lớp dữ liệu của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến (FE-6-04, D-83) — nơi duy nhất của thẻ biết về kho. Xác nhận tay là
@@ -27,15 +27,15 @@ export type ManualConfirmRow = {
 }
 
 /**
- * Xác nhận tay còn chờ duyệt của chuyến, theo thứ tự gửi. Chỉ của bước chuyến đang ở: bước xếp khi chuyến đang xếp, bước dỡ khi đang
- * giao — chuyến ở pha khác (đã huỷ giữa chừng) không còn gì để duyệt. Tên người gửi lấy cùng phạm vi với nhật ký (`listAuditNames`).
+ * Xác nhận tay còn chờ duyệt của chuyến, theo thứ tự gửi. Chỉ của bước chuyến đang ở: bước soạn và bước xếp khi chuyến đang ở kho, bước
+ * dỡ khi đang giao — chuyến ở pha khác (đã huỷ giữa chừng) không còn gì để duyệt. Tên người gửi lấy cùng phạm vi với nhật ký (`listAuditNames`).
  */
 // chưa có ở BE (Q-11)
 export async function fetchManualConfirmations(tripId: string): Promise<ManualConfirmRow[]> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)
-  const context: VerifyContext | null = trip.phase === 'loading' ? 'LOADING' : trip.phase === 'delivering' ? 'UNLOADING' : null
-  const pending = context === null ? [] : pendingManualConfirms(trip, context)
+  const contexts: readonly VerifyContext[] = trip.phase === 'loading' ? ['STAGING', 'LOADING'] : trip.phase === 'delivering' ? ['UNLOADING'] : []
+  const pending: PackageVerification[] = pendingManualConfirms(trip).filter((entry) => contexts.includes(entry.context))
   if (pending.length === 0) return []
   const [labels, names] = await Promise.all([db.listTripLabels(tripId), db.listAuditNames()])
   const packageNames = new Map(labels.map((label) => [label.packageInstanceId, label.name]))

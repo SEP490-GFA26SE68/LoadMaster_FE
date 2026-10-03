@@ -1,6 +1,6 @@
 import { expandPackages } from '@/domain/cargo'
 import { roundKg } from '@/domain/geometry'
-import { missingIds, plannedStops } from './operations'
+import { leftOutIds, plannedStops } from './operations'
 import type { DeliveryIssue, Revision, Trip } from './types'
 
 /** Một điểm giao trong báo cáo chuyến. */
@@ -8,10 +8,10 @@ export type TripReportStop = {
   number: number
   name: string
   address: string
-  /** Kiện của phương án thuộc điểm này (trừ kiện kho báo thiếu). */
+  /** Kiện của phương án thuộc điểm này (trừ kiện hỏng bị bỏ lại kho). */
   planned: number
   unloaded: number
-  /** Kiện dỡ được xác nhận bằng quét QR. */
+  /** Kiện dỡ đối chiếu bằng nhãn (quét hoặc gõ mã). */
   qrConfirmed: number
   issues: number
   completedAt: string | null
@@ -29,8 +29,8 @@ export type TripReport = {
     /** Kiện có trong phương án (đã xếp được). */
     planned: number
     loaded: number
-    /** Kho báo thiếu. */
-    missing: number
+    /** Kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05). */
+    damaged: number
     loadedByQr: number
     delivered: number
     withIssue: number
@@ -55,7 +55,7 @@ function between(from: string | undefined, to: string | undefined): number | nul
 export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'> | undefined): TripReport {
   const planned = plan ? plannedStops(plan) : new Map<string, number>()
   const weightById = new Map(plan ? expandPackages(plan.request.packages).instances.map((i) => [i.packageInstanceId, i.weightKg]) : [])
-  const missing = missingIds(trip)
+  const leftOut = leftOutIds(trip)
   const delivery = trip.delivery
   const issues = delivery?.issues ?? []
   const unloaded = new Set(delivery?.stops.flatMap((stop) => stop.unloadedIds))
@@ -68,7 +68,7 @@ export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'
       number,
       name: stop.name,
       address: stop.address,
-      planned: [...planned].filter(([id, stopNumber]) => stopNumber === number && !missing.has(id)).length,
+      planned: [...planned].filter(([id, stopNumber]) => stopNumber === number && !leftOut.has(id)).length,
       unloaded: progress?.unloadedIds.length ?? 0,
       qrConfirmed: progress?.qrConfirmedIds?.length ?? 0,
       issues: issues.filter((issue) => issue.stopNumber === number).length,
@@ -84,7 +84,7 @@ export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'
     packages: {
       planned: planned.size,
       loaded: steps.filter((step) => step.outcome === 'loaded').length,
-      missing: missing.size,
+      damaged: leftOut.size,
       loadedByQr: steps.filter((step) => step.outcome === 'loaded' && step.via === 'qr').length,
       delivered: unloaded.size,
       withIssue: new Set(issues.flatMap((issue) => (issue.packageInstanceId === undefined ? [] : [issue.packageInstanceId]))).size,

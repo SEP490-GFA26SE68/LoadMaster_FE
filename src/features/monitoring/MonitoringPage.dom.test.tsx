@@ -61,7 +61,7 @@ test('the dispatcher watches the trip in transit, reports an incident, takes ano
   const row = tripRow()
   expect(row).toHaveTextContent('TRIP-009')
   expect(row).toHaveTextContent('Thaco Ollin 720 · 61C-339.05 · Tài xế Ngô Văn Bảo')
-  expect(row).toHaveTextContent(/Đang ở điểm 2 · .+ · Đã đến 07:39/)
+  expect(row).toHaveTextContent(/Đang ở điểm 2 · .+ · Đã đến 08:20/)
   expect(row).toHaveTextContent('Không có hạn')
   expect(row).not.toHaveTextContent('sự cố')
 
@@ -76,7 +76,7 @@ test('the dispatcher watches the trip in transit, reports an incident, takes ano
   const etaRows = within(panel().getByRole('table', { name: 'Giờ đến từng điểm' })).getAllByRole('row').slice(1)
   expect(etaRows.map((item) => item.textContent)).toStrictEqual([
     expect.stringMatching(/Đã giao xong lúc 07:35Không có hạn$/),
-    expect.stringMatching(/Đã đến lúc 07:39Không có hạn$/),
+    expect.stringMatching(/Đã đến lúc 08:20Không có hạn$/),
     expect.stringMatching(/12:22 14\/09Không có hạn$/),
   ])
   expect(await panel().findByText('670 điểm vị trí', undefined, SLOW)).toBeInTheDocument()
@@ -147,7 +147,7 @@ test('the dispatcher watches the trip in transit, reports an incident, takes ano
   expect(escalated.getByRole('heading', { name: 'Tắc đường' })).toBeInTheDocument()
   expect(escalated.getByRole('link', { name: 'Chuyến TRIP-009' })).toHaveAttribute('href', '/chuyen/TRIP-009')
   // chuyến không có điểm nào có hạn: dòng nói điểm xe đang đứng
-  expect(escalated.getByText(/^Điểm 2 · /).closest('li')).toHaveTextContent(/Đã đến 07:39 14\/09Không có hạn$/)
+  expect(escalated.getByText(/^Điểm 2 · /).closest('li')).toHaveTextContent(/Đã đến 08:20 14\/09Không có hạn$/)
   // Chuyến seed không chở yêu cầu giao nào: hộp nói rõ không có gì để gia hạn
   await user.click(escalated.getByRole('button', { name: 'Nhập hạn mới' }))
   const renegotiate = within(await screen.findByRole('dialog', { name: 'Liên hệ khách và nhập hạn mới' }))

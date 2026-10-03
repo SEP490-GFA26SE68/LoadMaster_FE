@@ -12,8 +12,8 @@ import type { Role } from '@/types/user'
 import { PackageLookupPage } from './PackageLookupPage'
 
 /**
- * Tra cứu kiện `/tra-cuu-kien` (FE-3b-06) trên kho mock thật, seed neo 14/09/2026: `PK-0063` (`BV-VIN-2609-05`) và kiện kho báo thiếu
- * của chuyến TRIP-003 `PK-T00739` mang cờ "Không tìm thấy"; `PK-PN-0005` là kiện của Phương Nam. Các test dùng chung kho và chạy theo
+ * Tra cứu kiện `/tra-cuu-kien` (FE-3b-06) trên kho mock thật, seed neo 14/09/2026: `PK-0063` (`BV-VIN-2609-05`) mang cờ "Không tìm
+ * thấy"; test quét gắn cờ đó cho `PK-0040` trước khi quét; `PK-PN-0005` là kiện của Phương Nam. Các test dùng chung kho và chạy theo
  * thứ tự: hai test cuối (nhân viên kho) gỡ cờ.
  */
 const SLOW = { timeout: 5000 }
@@ -147,8 +147,10 @@ test('the warehouse works on touch targets; typing the code of a flagged package
 })
 
 test('the warehouse scanning a flagged package clears the flag at once; a code that is no package is explained in the dialog', async () => {
-  const flagged = await getMockDb().getPackage('PK-T00739')
-  expect(flagged.flags).toStrictEqual(['NOT_FOUND'])
+  // Một kiện kho kiện vừa bị gắn cờ "Không tìm thấy" — như kiện bị bỏ khỏi chuyến vì kho không tìm thấy lúc soạn (D-92)
+  getMockDb().restoreSession('US-0001')
+  const flagged = await getMockDb().flagPackage('PK-0040', 'NOT_FOUND')
+  expect([flagged.flags, flagged.packageCode]).toStrictEqual([['NOT_FOUND'], 'MP-DA12-0914-06'])
   const { user } = renderLookup('warehouse')
   await screen.findByText('Quét hoặc nhập mã để xem kiện')
   await user.click(screen.getByRole('button', { name: 'Quét mã QR' }))
@@ -161,11 +163,11 @@ test('the warehouse scanning a flagged package clears the flag at once; a code t
   await user.clear(dialog.getByRole('textbox', { name: 'Nhập mã' }))
   await user.type(dialog.getByRole('textbox', { name: 'Nhập mã' }), flagged.qrToken.toLowerCase())
   await user.click(dialog.getByRole('button', { name: 'Xác nhận mã' }))
-  const card = await screen.findByRole('region', { name: 'Kiện PKG-003-12' }, SLOW)
+  const card = await screen.findByRole('region', { name: 'Kiện MP-DA12-0914-06' }, SLOW)
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), SLOW)
   expect(screen.getByTestId('url')).toHaveTextContent(`/tra-cuu-kien?ma=${flagged.qrToken}`)
-  expect(within(card).getByText('Đã gỡ cờ "Không tìm thấy" của kiện PKG-003-12. Điều phối viên thấy việc này ở chuông thông báo.')).toBeInTheDocument()
+  expect(within(card).getByText('Đã gỡ cờ "Không tìm thấy" của kiện MP-DA12-0914-06. Điều phối viên thấy việc này ở chuông thông báo.')).toBeInTheDocument()
   await waitFor(() => expect(facts(card)['Cờ']).toBe('Không có cờ'), SLOW)
-  expect((await getMockDb().getPackage('PK-T00739')).flags).toStrictEqual([])
-  expect((await getMockDb().listEvents())[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { id: 'PK-T00739' } })
+  expect((await getMockDb().getPackage('PK-0040')).flags).toStrictEqual([])
+  expect((await getMockDb().listEvents())[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { id: 'PK-0040' } })
 })

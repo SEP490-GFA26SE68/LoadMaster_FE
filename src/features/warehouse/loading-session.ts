@@ -1,12 +1,12 @@
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
-import { isStale, type LoadingProgress, type Revision, type Trip } from '@/lib/mock-db'
+import { isStale, stagingRemaining, type LoadingProgress, type Revision, type Trip } from '@/lib/mock-db'
 import { warehousePlan } from './warehouse-trips'
 
 /**
  * Việc màn kho làm với chuyến `/kho?chuyen=` (LM-086), suy từ pha và revision của chuyến (D-45):
- * - `start`: đã duyệt, chưa xếp — vào màn là bắt đầu xếp theo bản duyệt mới nhất;
+ * - `start`: đã duyệt, chưa bắt đầu — vào màn là bắt đầu theo bản duyệt mới nhất, bước Soạn hàng;
  * - `stale`: bản duyệt mới nhất lỗi thời — không bắt đầu, chờ điều phối viên tối ưu lại và duyệt;
- * - `loading`: đang xếp theo bản đã chốt lúc bắt đầu; `finished`: kho đã xếp xong (kể cả khi xe đã đi giao);
+ * - `loading`: đang soạn rồi xếp theo bản đã chốt lúc bắt đầu (`loadingStep`); `finished`: kho đã xếp xong (kể cả khi xe đã đi giao);
  * - `no-plan`: chưa có bản duyệt; `cancelled`: chuyến đã huỷ.
  */
 export type WarehouseSession<R> =
@@ -31,17 +31,46 @@ export function warehouseSession<R extends Pick<Revision, 'id' | 'approvedAt' | 
   }
 }
 
+/**
+ * Bước của chuyến đang ở kho (FE-6-02, D-82): còn kiện của phương án chưa soạn vào khu chờ thì là Soạn hàng; soạn đủ mới sang Xếp.
+ * Xác nhận tay lúc soạn bị điều phối viên từ chối đưa chuyến quay lại bước soạn cho kiện đó.
+ */
+export function loadingStep(trip: Pick<Trip, 'loading'>, plan: Pick<Revision, 'request' | 'result'>): 'staging' | 'loading' {
+  return stagingRemaining(trip, plan).length > 0 ? 'staging' : 'loading'
+}
+
+export type StagingProgressView = {
+  readonly total: number
+  readonly staged: number
+  /** Kiện chưa soạn, theo thứ tự xếp của phương án — soạn thì không cần theo thứ tự. */
+  readonly pending: readonly ScenePlacement[]
+  /** Kiện kho đã báo thiếu, chờ điều phối viên quyết. */
+  readonly shortageIds: ReadonlySet<string>
+}
+
+/** Tiến độ soạn đọc từ kho: kiện của phương án đối chiếu với danh sách đã soạn và báo thiếu đang mở. */
+export function stagingProgress(placements: readonly ScenePlacement[], loading: Pick<LoadingProgress, 'stagedIds' | 'shortages'> | undefined): StagingProgressView {
+  const staged = new Set(loading?.stagedIds)
+  const pending = placements.filter((placement) => !staged.has(placement.id)).toSorted((a, b) => a.step - b.step)
+  return {
+    total: placements.length,
+    staged: placements.length - pending.length,
+    pending,
+    shortageIds: new Set(loading?.shortages?.map((item) => item.packageInstanceId)),
+  }
+}
+
 export type LoadingProgressView = {
   /** Kiện chưa có kết quả đầu tiên theo `loadingOrder`: mở lại màn thì tiếp tục ở đây (D-47). `undefined` khi đã ghi đủ. */
   readonly current: ScenePlacement | undefined
   /** Kiện chưa có kết quả kế tiếp sau `current`; `undefined` khi `current` là kiện cuối cần ghi. */
   readonly next: ScenePlacement | undefined
   readonly total: number
-  /** Kiện đã có kết quả: đã xếp hoặc báo thiếu. */
+  /** Kiện đã có kết quả: đã xếp, hoặc hỏng nên bị bỏ lại kho. */
   readonly recorded: number
   readonly loaded: number
-  /** Kiện kho báo thiếu, theo thứ tự xếp. */
-  readonly missing: readonly ScenePlacement[]
+  /** Kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05), theo thứ tự xếp. */
+  readonly damaged: readonly ScenePlacement[]
   /** Kiện chưa có kết quả theo thứ tự xếp, bắt đầu từ `current`. */
   readonly pending: readonly ScenePlacement[]
 }
@@ -53,7 +82,7 @@ export function loadingProgress(
 ): LoadingProgressView {
   const outcome = new Map(loading?.steps.map((step) => [step.packageInstanceId, step.outcome]))
   const sequence = placements.toSorted((a, b) => a.step - b.step)
-  const missing = sequence.filter((p) => outcome.get(p.id) === 'missing')
+  const damaged = sequence.filter((p) => outcome.get(p.id) === 'damaged')
   const recorded = sequence.filter((p) => outcome.has(p.id)).length
   const pending = sequence.filter((p) => !outcome.has(p.id))
   const [current, next] = pending
@@ -62,8 +91,8 @@ export function loadingProgress(
     next,
     total: sequence.length,
     recorded,
-    loaded: recorded - missing.length,
-    missing,
+    loaded: recorded - damaged.length,
+    damaged,
     pending,
   }
 }

@@ -73,7 +73,7 @@ export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase' | 'r
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-      <CancelTripDialog tripId={trip.id} open={cancelOpen} onOpenChange={setCancelOpen} returnFocusTo={triggerRef} />
+      <CancelTripDialog trip={trip} open={cancelOpen} onOpenChange={setCancelOpen} returnFocusTo={triggerRef} />
       <ChangeVehicleDialog tripId={trip.id} open={vehicleOpen} onOpenChange={setVehicleOpen} returnFocusTo={triggerRef} />
     </>
   )

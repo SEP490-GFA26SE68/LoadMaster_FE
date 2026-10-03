@@ -8,6 +8,7 @@ import { I18nProvider } from '@/lib/i18n'
 import { getMockDb } from '@/lib/mock-db'
 import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
 import { signedInAs } from '@/test/signed-in'
+import { loadAll, stageAll } from '@/test/trip-flow'
 import type { Role } from '@/types/user'
 import { ManualConfirmCard } from './ManualConfirmCard'
 
@@ -19,8 +20,11 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: v
  */
 const SLOW = { timeout: 8000 }
 
-/** Chuyến hai thùng đã duyệt, kho đã bắt đầu xếp; `delivering` thì kho đã xếp xong và tài xế đã xuất phát. */
-async function twoCartons(stage: 'loading' | 'delivering') {
+/**
+ * Chuyến hai thùng đã duyệt: `staging` — kho vừa bắt đầu, chưa soạn kiện nào; `loading` — kho đã soạn đủ, đang xếp; `delivering` — kho
+ * đã xếp xong, tài xế đã xuất phát và đã đến điểm 1.
+ */
+async function twoCartons(stage: 'staging' | 'loading' | 'delivering') {
   const db = getMockDb()
   db.restoreSession('US-0001')
   const { id } = await db.createTrip({ ...twoCartonTrip(), driverId: 'US-0004' })
@@ -28,11 +32,13 @@ async function twoCartons(stage: 'loading' | 'delivering') {
   await db.approveRevision(revision.id, [])
   db.restoreSession('US-0003')
   await db.startLoading(id)
+  if (stage !== 'staging') await stageAll(db, id)
   if (stage === 'delivering') {
-    for (const packageInstanceId of ['PKG-001-01', 'PKG-002-01']) await db.recordLoadingStep(id, { packageInstanceId, outcome: 'loaded' })
+    await loadAll(db, id)
     await db.completeLoading(id)
     db.restoreSession('US-0004')
     await db.startDelivery(id)
+    await db.arriveAtStop(id, 1)
   }
   return { db, id }
 }
@@ -79,7 +85,7 @@ test('the dispatcher sees the package, who sent it, why and when; rejecting need
   const dialog = within(await screen.findByRole('dialog', { name: 'Từ chối xác nhận tay PKG-001-01?' }))
   await user.click(dialog.getByRole('button', { name: 'Từ chối xác nhận' }))
   expect(await dialog.findByText('Ghi lý do từ chối.')).toBeInTheDocument()
-  expect((await db.getTrip(id)).verifications?.[0]?.manual?.status).toBe('MANUAL_PENDING')
+  expect((await db.getTrip(id)).verifications?.at(-1)?.manual?.status).toBe('MANUAL_PENDING')
 
   await user.type(dialog.getByRole('textbox', { name: 'Lý do từ chối' }), 'Ảnh chụp cho thấy sai kiện')
   await user.click(dialog.getByRole('button', { name: 'Từ chối xác nhận' }))
@@ -87,7 +93,7 @@ test('the dispatcher sees the package, who sent it, why and when; rejecting need
   // Lượt ghi chỉ xong sau khi mọi truy vấn bị vô hiệu đọc lại: thẻ biến mất trước, toast tới sau
   await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Đã từ chối xác nhận tay PKG-001-01'), SLOW)
   const stored = await db.getTrip(id)
-  expect(stored.verifications?.[0]?.manual).toMatchObject({ status: 'MANUAL_REJECTED', rejectReason: 'Ảnh chụp cho thấy sai kiện', decidedBy: 'US-0001' })
+  expect(stored.verifications?.at(-1)?.manual).toMatchObject({ status: 'MANUAL_REJECTED', rejectReason: 'Ảnh chụp cho thấy sai kiện', decidedBy: 'US-0001' })
   expect(stored.loading?.steps).toStrictEqual([])
 }, 30_000)
 
@@ -106,8 +112,23 @@ test('approving keeps the package as verified; a confirmation sent at a stop nam
   await waitFor(() => expect(screen.queryByRole('region', { name: 'Xác nhận tay chờ duyệt' })).not.toBeInTheDocument(), SLOW)
   await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Đã duyệt xác nhận tay PKG-002-01'), SLOW)
   const stored = await db.getTrip(id)
-  expect(stored.verifications?.[0]?.manual).toMatchObject({ status: 'MANUAL_APPROVED', decidedBy: 'US-0001' })
+  expect(stored.verifications?.at(-1)?.manual).toMatchObject({ status: 'MANUAL_APPROVED', decidedBy: 'US-0001' })
   expect(stored.delivery?.stops[0]?.unloadedIds).toStrictEqual(['PKG-002-01'])
+}, 30_000)
+
+test('a manual confirmation sent while staging names that step; approved, the package becomes staged (FE-6-02)', async () => {
+  const { db, id } = await twoCartons('staging')
+  await db.confirmStagingManually(id, { packageInstanceId: 'PKG-002-01', reason: 'LABEL_DAMAGED' })
+  const poolId = (await db.listTripLabels(id)).find((label) => label.packageInstanceId === 'PKG-002-01')?.poolPackageId ?? ''
+  expect((await db.getPackage(poolId)).status).toBe('ASSIGNED')
+  const user = renderCard(id)
+
+  const [row] = await screen.findAllByRole('listitem', {}, SLOW)
+  expect(row).toHaveTextContent('PKG-002-01')
+  expect(row).toHaveTextContent('Soạn hàng')
+  await user.click(card().getByRole('button', { name: 'Duyệt xác nhận tay PKG-002-01' }))
+  await waitFor(() => expect(screen.queryByRole('region', { name: 'Xác nhận tay chờ duyệt' })).not.toBeInTheDocument(), SLOW)
+  expect((await db.getPackage(poolId)).status).toBe('STAGED')
 }, 30_000)
 
 test('the company manager reads the list but cannot decide: no buttons, one line saying who can', async () => {

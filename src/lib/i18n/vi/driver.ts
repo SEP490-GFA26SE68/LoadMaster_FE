@@ -1,6 +1,6 @@
 /**
- * Màn tài xế (LM-061, LM-087): "Chuyến của tôi", giao từng điểm theo revision đã duyệt — dỡ hàng, gọi người nhận, báo sự cố, tổng
- * kết chuyến — và khung 3D "Xem vị trí hàng".
+ * Màn tài xế (LM-061, LM-087, FE-6-06): "Chuyến của tôi", giao từng điểm theo revision đã duyệt — xuất phát, đã đến, dỡ hàng có đối
+ * chiếu, gọi người nhận, báo sự cố, hoàn trả, tổng kết chuyến — và khung 3D "Xem vị trí hàng".
  */
 export const driver = {
   loading: 'Đang tải chuyến',
@@ -30,7 +30,7 @@ export const driver = {
     viewSummary: 'Xem tổng kết',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
     atStop: 'Đang giao điểm {number} / {total}',
-    waitingLoading: 'Kho đang xếp — chưa xuất phát được, chỉ xem trước.',
+    waitingLoading: 'Kho đang soạn / xếp — chưa xuất phát được, chỉ xem trước.',
     recheck: {
       one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
       other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
@@ -41,14 +41,19 @@ export const driver = {
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
   },
   notice: {
-    preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa bắt đầu giao được.',
-    ready: 'Kho đã xếp xong. Bấm Bắt đầu giao khi xe rời kho.',
-    missing: {
-      one: 'Kho báo thiếu {count} kiện của điểm này: không có trên xe, không cần dỡ.',
-      other: 'Kho báo thiếu {count} kiện của điểm này: không có trên xe, không cần dỡ.',
+    preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.',
+    ready: 'Kho đã xếp xong. Bấm Xuất phát khi xe rời kho.',
+    /** Đang vận chuyển (FE-6-06): chưa bấm "Đã đến" ở điểm đang giao, và giờ đã đến. */
+    enRoute: 'Đang tới điểm {number}. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.',
+    arrived: 'Đã đến điểm {number} lúc {time}.',
+    leftOut: {
+      one: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
+      other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
     },
   },
-  start: 'Bắt đầu giao',
+  start: 'Xuất phát',
+  arrive: 'Đã đến điểm {number}',
+  arrived: 'Đã ghi giờ đến điểm {number}',
   stopTitle: 'Điểm {number} / {total}',
   directions: 'Chỉ đường tới {name}',
   call: 'Gọi {name}',
@@ -66,10 +71,9 @@ export const driver = {
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',
-    markDone: 'Đánh dấu đã dỡ {id}',
-    unmarkDone: 'Bỏ đánh dấu đã dỡ {id}',
     done: 'Đã dỡ',
     issue: 'Sự cố: {kind}',
+    returned: 'Hoàn trả — kiện ở lại xe',
     area: { front: 'Sát vách trước', middle: 'Giữa xe', door: 'Gần cửa' },
     layer: { floor: 'sàn', lower: 'lớp dưới', upper: 'lớp trên' },
   },
@@ -103,7 +107,7 @@ export const driver = {
   issue: {
     report: 'Báo sự cố',
     title: 'Báo sự cố tại điểm {number}',
-    description: 'Ghi sự cố cho một kiện của điểm giao này. Sự cố đã ghi không xoá được.',
+    description: 'Ghi sự cố cho một kiện của điểm giao này. Sự cố đã ghi không xoá được. Khách từ chối thì kiện ở lại xe và thành Hoàn trả.',
     package: 'Kiện',
     kind: 'Loại sự cố',
     note: 'Ghi chú',
@@ -111,6 +115,8 @@ export const driver = {
     submit: 'Ghi sự cố',
     cancel: 'Quay lại',
     recorded: 'Đã ghi sự cố cho {id}',
+    refusedRecorded: 'Khách từ chối {id}',
+    refusedRecordedDescription: 'Kiện ở lại xe và thành Hoàn trả khi hoàn tất điểm giao.',
     errors: {
       packageRequired: 'Chọn kiện gặp sự cố.',
       kindRequired: 'Chọn loại sự cố.',

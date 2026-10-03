@@ -4,8 +4,8 @@ import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
 
 /**
- * Hộp xác nhận "Kiện này không có ở kho" (LM-086): ghi thiếu là ghi thật vào kho — kiện không lên xe, tài xế không phải dỡ (D-47) —
- * nên hỏi lại trước. Nút 56px, chữ 16px cho tablet (mục 10).
+ * Hộp xác nhận "Báo thiếu" ở bước soạn hàng (FE-6-02, D-82): báo thiếu là ghi thật vào kho — điều phối viên được báo và sẽ quyết tìm
+ * tiếp hay bỏ kiện khỏi chuyến — nên hỏi lại trước. Nút 56px, chữ 16px cho tablet (mục 10).
  */
 export function MissingPackageDialog({ placement, onOpenChange, onConfirm, pending }: {
   /** Kiện đang hỏi; `null` là hộp đóng. */

@@ -20,7 +20,7 @@ test('the dispatcher gets plan approvals, loading, delivery and cancellation eve
     event('EV-12', '2026-09-14T10:30:00.000Z', 'US-PN-03', 'revision.approved'),
     event('EV-11', '2026-09-14T10:20:00.000Z', 'US-0001', 'revision.approved'),
     event('EV-10', '2026-09-14T10:10:00.000Z', 'US-PN-03', 'optimization.saved'),
-    event('EV-9', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.missing'),
+    event('EV-9', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.shortageReported'),
     event('EV-8', '2026-09-14T09:00:00.000Z', 'US-0001', 'trip.cancelled'),
     event('EV-7', '2026-09-14T08:00:00.000Z', 'US-0002', 'trip.cancelled'),
     event('EV-6', '2026-09-13T08:00:00.000Z', 'US-0004', 'delivery.issue'),
@@ -40,7 +40,7 @@ test('the dispatcher gets plan approvals, loading, delivery and cancellation eve
 test('the manager gets completed and cancelled trips and delivery issues; not warehouse progress or plan approvals', () => {
   const events = [
     event('EV-5', '2026-09-14T10:30:00.000Z', 'US-0001', 'revision.approved'),
-    event('EV-4', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.missing'),
+    event('EV-4', '2026-09-14T10:00:00.000Z', 'US-0003', 'loading.shortageReported'),
     event('EV-3', '2026-09-14T09:00:00.000Z', 'US-0001', 'trip.cancelled'),
     event('EV-2', '2026-09-13T09:00:00.000Z', 'US-0004', 'delivery.issue'),
     event('EV-1', '2026-09-12T09:00:00.000Z', 'US-0004', 'delivery.completed'),
@@ -109,4 +109,32 @@ test('at most twenty, the newest first', () => {
   expect(NOTIFICATION_LIMIT).toBe(20)
   expect(selected).toHaveLength(20)
   expect([selected[0]?.id, selected[19]?.id]).toStrictEqual(['EV-25', 'EV-6'])
+})
+
+test('shortages and damaged packages reach who must act (FE-6-02, FE-6-05): the dispatcher always, the manager only for a requirement, the warehouse reporter for the decision', () => {
+  const withParams = (id: string, actorId: string, action: AuditEvent['action'], params: AuditEvent['params']): AuditEvent =>
+    ({ ...event(id, '2026-09-14T10:00:00.000Z', actorId, action, 'TRIP-011'), params })
+  const events = [
+    withParams('EV-6', 'US-0001', 'loading.shortageDropped', { packageInstanceId: 'PKG-001-02', requirementId: 'REQ-001', requestedBy: 'US-0003' }),
+    withParams('EV-5', 'US-0001', 'loading.shortageDropped', { packageInstanceId: 'PKG-002-01', requestedBy: 'US-0011' }),
+    withParams('EV-4', 'US-0001', 'loading.shortageKept', { packageInstanceId: 'PKG-001-03', requestedBy: 'US-0003' }),
+    withParams('EV-3', 'US-0003', 'loading.damaged', { packageInstanceId: 'PKG-001-04', requirementId: 'REQ-001' }),
+    withParams('EV-2', 'US-0003', 'loading.damaged', { packageInstanceId: 'PKG-002-02' }),
+    withParams('EV-1', 'US-0003', 'loading.shortageReported', { packageInstanceId: 'PKG-001-02' }),
+  ]
+  // Điều phối viên khác (US-PN-03 ở đây chỉ là một mã người dùng): kho báo thiếu và kiện hỏng; quyết định của đồng nghiệp thì không báo
+  expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
+  // Quản lý công ty: chỉ kiện của một yêu cầu giao — yêu cầu đó thành giao thiếu
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-6', 'EV-3'])
+  // Nhân viên kho: quyết định cho kiện chính mình báo thiếu
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-6', 'EV-4'])
+  expect(ids(selectNotifications(events, { id: 'US-0011', role: 'warehouse' }, NOW))).toStrictEqual(['EV-5'])
+})
+
+test('the warehouse is told about a trip cancelled while it was loading — to unload — not about other cancellations (FE-6-07)', () => {
+  const cancelled = (id: string, params: AuditEvent['params']): AuditEvent => ({ ...event(id, '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled'), params })
+  const events = [cancelled('EV-3', { reason: 'Xe hỏng', loaded: 110 }), cancelled('EV-2', { reason: 'Xe hỏng', loaded: 0 }), cancelled('EV-1', { reason: 'Khách huỷ' })]
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-3', 'EV-2'])
+  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual([])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })

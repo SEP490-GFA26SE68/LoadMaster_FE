@@ -11,8 +11,11 @@ export const audit = {
     trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến', rerouted: 'Chọn tuyến thay thế' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
-    loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },
-    delivery: { started: 'Xuất phát giao hàng', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến', etaRisk: 'Nguy cơ trễ hạn giao' },
+    loading: {
+      started: 'Bắt đầu soạn hàng', shortageReported: 'Kho báo thiếu kiện khi soạn hàng', shortageKept: 'Điều phối chọn tìm tiếp kiện thiếu',
+      shortageDropped: 'Bỏ kiện thiếu khỏi chuyến', damaged: 'Kho báo kiện hỏng khi xếp', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong',
+    },
+    delivery: { started: 'Xuất phát giao hàng', arrived: 'Tài xế đã đến điểm giao', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến', etaRisk: 'Nguy cơ trễ hạn giao' },
     user: {
       created: 'Tạo tài khoản', updated: 'Sửa tài khoản', locked: 'Khoá tài khoản', unlocked: 'Mở khoá tài khoản', deleted: 'Xoá tài khoản',
       passwordReset: 'Đặt lại mật khẩu', passwordChanged: 'Đổi mật khẩu', profileUpdated: 'Sửa hồ sơ cá nhân',
@@ -103,7 +106,10 @@ export const audit = {
       unplaced: 'Không xếp được',
       edits: 'Kiện chỉnh tay',
       loaded: 'Đã lên xe',
-      missing: 'Thiếu ở kho',
+      damaged: 'Hỏng, bỏ lại kho',
+      /** Kiện hỏng lúc xếp có kiện tựa lên trong phương án: chuyến về Đã lập kế hoạch (FE-6-05). */
+      supporting: 'Kiện tựa lên trong phương án',
+      requirementId: 'Yêu cầu giao',
       packageInstanceId: 'Kiện',
       stopNumber: 'Điểm giao',
       kind: 'Loại sự cố',
@@ -150,7 +156,6 @@ export const audit = {
       delayMinutes: 'Dự kiến chậm (phút)',
       escalation: 'Lý do chuyển',
       route: 'Tuyến',
-      requirementId: 'Yêu cầu giao',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },

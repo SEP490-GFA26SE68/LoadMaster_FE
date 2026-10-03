@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
+import { stageInStore, typeVerifyCode } from './operations-helpers'
 import { MOCK_DB, navigateInApp, switchUser } from './spec-flow-helpers'
 
 /**
@@ -11,17 +12,20 @@ test.use({ collectConsoleErrors: true })
 
 const SAMPLES = '/src/test/mock-db-samples.ts'
 
-/** Chuyến hai thùng (`PKG-001-01` xếp trước, `PKG-002-01` xếp sau) đã duyệt, chờ kho. */
-async function approvedTwoCartonTrip(page: Page) {
-  return page.evaluate(async ({ db, samples }) => {
+/** Chuyến hai thùng (`PKG-001-01` xếp trước, `PKG-002-01` xếp sau) đã duyệt; kho đã bắt đầu và soạn đủ, đang ở bước Xếp. */
+async function stagedTwoCartonTrip(page: Page) {
+  const tripId = await page.evaluate(async ({ db, samples }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const sample = (await import(samples)) as typeof import('@/test/mock-db-samples')
     const store = getMockDb()
     const trip = await store.createTrip({ ...sample.twoCartonTrip(), driverId: 'US-0004' })
     const revision = await store.addRevision({ tripId: trip.id, request: sample.twoCartonRequest(), result: sample.twoCartonResult() })
     await store.approveRevision(revision.id, [])
+    await store.startLoading(trip.id)
     return trip.id
   }, { db: MOCK_DB, samples: SAMPLES })
+  await stageInStore(page, tripId)
+  return tripId
 }
 
 async function confirmManually(page: Page, step: number, reason: string) {
@@ -42,7 +46,7 @@ test('one tab: a manual confirmation blocks finishing; the dispatcher rejects it
   test.slow()
   await login('/kho', 'warehouse')
   await expect(page.getByRole('heading', { level: 1, name: 'Chuyến cần xếp', exact: true })).toBeVisible()
-  const tripId = await approvedTwoCartonTrip(page)
+  const tripId = await stagedTwoCartonTrip(page)
   const heading = (id: string) => page.getByRole('heading', { level: 1, name: id, exact: true })
   const complete = page.getByRole('button', { name: 'Hoàn tất xếp hàng', exact: true })
 
@@ -58,8 +62,9 @@ test('one tab: a manual confirmation blocks finishing; the dispatcher rejects it
   await expect(heading('PKG-002-01')).toBeVisible()
   await expect(page.getByText('Còn 1 xác nhận tay chờ điều phối viên duyệt.', { exact: true })).toBeVisible()
 
-  // Kiện cuối có kết quả, nhưng còn xác nhận tay chờ duyệt: không hoàn tất được, lý do tại chỗ
-  await page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true }).click()
+  // Kiện cuối đối chiếu bằng mã của bên gửi: có kết quả, nhưng còn xác nhận tay chờ duyệt — không hoàn tất được, lý do tại chỗ
+  await page.getByRole('button', { name: 'Đối chiếu kiện', exact: true }).click()
+  await typeVerifyCode(page.getByRole('dialog', { name: 'Đối chiếu kiện bước 2' }), 'pkg-002-01')
   await expect(complete).toBeDisabled()
   await expect(page.getByText('Mọi kiện đã có kết quả, nhưng còn 1 xác nhận tay chờ điều phối viên duyệt nên chưa hoàn tất xếp hàng được.', { exact: true })).toBeVisible()
   // Kho tự chặn dù giao diện bị bỏ qua
@@ -118,7 +123,7 @@ test('one tab: a manual confirmation blocks finishing; the dispatcher rejects it
 
   // Kho hoàn tất xếp
   await switchUser(page, 'warehouse')
-  await tripCard.getByRole('link', { name: 'Tiếp tục (2/2)', exact: true }).click()
+  await tripCard.getByRole('link', { name: 'Tiếp tục xếp (2/2)', exact: true }).click()
   await expect(complete).toBeEnabled()
   await complete.click()
   await expect(page.getByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${tripId}` })).toBeVisible()
@@ -126,11 +131,16 @@ test('one tab: a manual confirmation blocks finishing; the dispatcher rejects it
   const store = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(id)
-    return { phase: trip.phase, verified: trip.verifications?.map((entry) => [entry.packageInstanceId, entry.method, entry.manual?.status, entry.by, entry.manual?.decidedBy]) }
+    return { phase: trip.phase, verified: trip.verifications?.map((entry) => [entry.packageInstanceId, entry.method, entry.manual?.status ?? null, entry.by, entry.manual?.decidedBy ?? null]) }
   }, { db: MOCK_DB, id: tripId })
   expect(store).toStrictEqual({
     phase: 'loaded',
-    verified: [['PKG-001-01', 'MANUAL', 'MANUAL_REJECTED', 'US-0003', 'US-0001'], ['PKG-001-01', 'MANUAL', 'MANUAL_APPROVED', 'US-0003', 'US-0001']],
+    // Hai lần soạn bằng mã QR, xác nhận tay bị từ chối, kiện thứ hai gõ mã, rồi xác nhận tay được duyệt
+    verified: [
+      ['PKG-001-01', 'QR', null, 'US-0003', null], ['PKG-002-01', 'QR', null, 'US-0003', null],
+      ['PKG-001-01', 'MANUAL', 'MANUAL_REJECTED', 'US-0003', 'US-0001'], ['PKG-002-01', 'CODE', null, 'US-0003', null],
+      ['PKG-001-01', 'MANUAL', 'MANUAL_APPROVED', 'US-0003', 'US-0001'],
+    ],
   })
   expect(browserErrors).toStrictEqual([])
 })

@@ -74,12 +74,13 @@ export function revision(id: string, of: Trip, volumeUtilizationPercent: number,
   }
 }
 
-/** Kho đã xếp theo `approved`: kiện trong `missing` báo thiếu, còn lại đã xếp. */
-function loaded(of: Trip, approved: Revision, missing: readonly string[] = []): Trip {
-  const steps = expandPackages(of.packages).instances.map(({ packageInstanceId }) => ({
-    packageInstanceId, outcome: missing.includes(packageInstanceId) ? ('missing' as const) : ('loaded' as const), at: AT,
+/** Kho đã soạn và xếp theo `approved`: kiện trong `damaged` hỏng, bị bỏ lại kho; còn lại đã xếp. */
+function loaded(of: Trip, approved: Revision, damaged: readonly string[] = []): Trip {
+  const ids = expandPackages(of.packages).instances.map(({ packageInstanceId }) => packageInstanceId)
+  const steps = ids.map((packageInstanceId) => ({
+    packageInstanceId, outcome: damaged.includes(packageInstanceId) ? ('damaged' as const) : ('loaded' as const), at: AT,
   }))
-  return { ...of, phase: 'loaded', loading: { revisionId: approved.id, startedAt: AT, startedBy: null, completedAt: AT, steps } }
+  return { ...of, phase: 'loaded', loading: { revisionId: approved.id, startedAt: AT, startedBy: null, completedAt: AT, stagedIds: ids, steps } }
 }
 
 function issue(stopNumber: number, kind: DeliveryIssue['kind'], packageInstanceId?: string): DeliveryIssue {

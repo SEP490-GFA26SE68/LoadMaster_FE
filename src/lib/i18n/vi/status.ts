@@ -14,6 +14,9 @@ export const status = {
     awaitingApproval: 'Chờ duyệt',
     approved: 'Đã duyệt',
     stale: 'Lỗi thời — cần tối ưu lại',
+    /** Đang xếp hàng (FE-6-02): kho đang soạn hàng vào khu chờ; còn kiện kho báo thiếu chờ điều phối viên quyết. */
+    staging: 'Đang soạn {recorded} / {total}',
+    shortage: 'Thiếu kiện — chờ điều phối',
     loading: 'Đang xếp {recorded} / {total}',
     loaded: 'Xếp xong — chờ xuất phát',
     lateStops: 'Có điểm trễ hạn dự kiến',

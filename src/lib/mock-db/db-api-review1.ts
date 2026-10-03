@@ -9,6 +9,7 @@ import type {
   PackageTypeInput,
   RunFailureCode,
   ScanResult,
+  StagingScanResult,
   TripLabel,
   VehicleType,
   VehicleTypeAssignment,
@@ -16,6 +17,7 @@ import type {
 } from './source-types'
 import type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 import type { TripEta } from './db-trip-route'
+import type { ShortageDecision } from './db-staging'
 import type { TripSegregation } from './db-trip-segregation'
 import type { Trip } from './types'
 import type { LabelVerifyMethod, ManualConfirmInput } from './verify-model'
@@ -171,15 +173,46 @@ export type Review1Db = {
   /** Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2). */
   getTripReadiness(tripId: string): Promise<TripReadiness>
   /**
+   * Kho soạn một kiện của chuyến đang xếp vào khu chờ bằng nhãn, không cần thứ tự (FE-6-02, D-82): kiện sang `STAGED`, ghi một lần đối
+   * chiếu; `method` như `confirmLoadingByQr`. Kiện đã soạn: không ghi gì, trả `alreadyStaged`. Mã không thuộc chuyến:
+   * `PACKAGE_NOT_IN_TRIP`. Kiện đang bị báo thiếu được thấy lại thì báo thiếu của nó tự đóng.
+   */
+  confirmStagingByQr(tripId: string, code: string, method?: LabelVerifyMethod): Promise<StagingScanResult<Trip>>
+  /**
+   * Soạn một kiện bằng xác nhận tay (mức 3) khi nhãn không đọc được: ghi "đã soạn" để kho làm tiếp, kèm một xác nhận tay chờ điều phối
+   * viên duyệt — kiện chỉ sang `STAGED` khi được duyệt. Kiện đã soạn: `PACKAGE_ALREADY_STAGED`.
+   */
+  confirmStagingManually(tripId: string, input: ManualConfirmInput): Promise<ScanResult<Trip>>
+  /**
+   * Kho báo một kiện chưa soạn là không tìm thấy (D-82): chuyến mang dòng phụ "Thiếu kiện — chờ điều phối", điều phối viên được báo.
+   * Báo lại kiện đang báo thiếu thì không ghi thêm. Kiện đã soạn: `PACKAGE_ALREADY_STAGED`.
+   */
+  reportStagingShortage(tripId: string, packageInstanceId: string): Promise<Trip>
+  /**
+   * Điều phối viên quyết một kiện đang bị báo thiếu (vai trò khác: `ROLE_NOT_ALLOWED`; không có báo thiếu đang chờ: `SHORTAGE_NOT_OPEN`).
+   * `KEEP_SEARCHING`: đóng báo thiếu, kho tìm tiếp. `DROP`: bỏ kiện khỏi chuyến — kiện về `IMPORTED` kèm cờ `NOT_FOUND` (yêu cầu giao
+   * của nó đọc ra "giao thiếu"), chuyến về Đã lập kế hoạch với phương án lỗi thời; kiện đã soạn giữ `STAGED`.
+   */
+  resolveStagingShortage(tripId: string, packageInstanceId: string, decision: ShortageDecision): Promise<Trip>
+  /**
+   * Kho báo kiện của bước xếp hiện tại bị hỏng (FE-6-05, D-92): kiện về `IMPORTED` kèm cờ `DAMAGED`. Trong phương án không kiện nào tựa
+   * lên nó thì kho xếp tiếp, kiện không lên xe; có kiện tựa lên thì chuyến về Đã lập kế hoạch với phương án lỗi thời — kho dỡ ra, xếp
+   * lại theo phương án mới. Chưa soạn đủ: `STAGING_INCOMPLETE`; không phải kiện của bước hiện tại: `WRONG_PACKAGE_SCANNED`.
+   */
+  reportDamagedPackage(tripId: string, packageInstanceId: string): Promise<Trip>
+  /**
    * Kho đối chiếu kiện của bước hiện tại (kiện chưa ghi đầu tiên theo thứ tự xếp) bằng nhãn: ghi "đã xếp" và một lần đối chiếu (cách,
    * người, thời điểm — FE-6-03). `method` `QR` (mặc định) là quét, chỉ khớp mã QR; `CODE` là gõ mã — mã QR in dưới hình, hoặc mã của
-   * bên gửi khi mã đó duy nhất trong chuyến (trùng: `PACKAGE_CODE_AMBIGUOUS`). Kiện khác của chuyến: `WRONG_PACKAGE_SCANNED`; mã không
-   * thuộc chuyến: `PACKAGE_NOT_IN_TRIP`.
+   * bên gửi khi mã đó duy nhất trong chuyến (trùng: `PACKAGE_CODE_AMBIGUOUS`). Kiện khác của chuyến (sai kiện, sai thứ tự):
+   * `WRONG_PACKAGE_SCANNED`; mã không thuộc chuyến: `PACKAGE_NOT_IN_TRIP`; chưa soạn đủ: `STAGING_INCOMPLETE`.
    */
   confirmLoadingByQr(tripId: string, code: string, method?: LabelVerifyMethod): Promise<ScanResult<Trip>>
   /** Ghi số seal khi đã xếp xong (`loaded`), trước khi xe chạy. */
   recordSeal(tripId: string, sealNumber: string): Promise<Trip>
-  /** Tài xế đối chiếu kiện ở điểm giao hiện tại bằng nhãn (`method` như `confirmLoadingByQr`): ghi "đã dỡ". Kiện của điểm khác: `QR_WRONG_STOP`. */
+  /**
+   * Tài xế đối chiếu kiện ở điểm giao hiện tại bằng nhãn (`method` như `confirmLoadingByQr`): ghi "đã dỡ". Chưa bấm "Đã đến":
+   * `STOP_NOT_ARRIVED`; kiện của điểm khác: `QR_WRONG_STOP`.
+   */
   confirmUnloadByQr(tripId: string, stopNumber: number, code: string, method?: LabelVerifyMethod): Promise<ScanResult<Trip>>
   /**
    * Xác nhận tay kiện của bước xếp hiện tại (mức 3, D-83) khi nhãn không đọc được: ghi "đã xếp" để kho làm tiếp, kèm một xác nhận tay

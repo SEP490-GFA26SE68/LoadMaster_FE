@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { loadTrip } from '@/test/trip-flow'
 import type { OptimizationRequest } from '@/domain/models'
 import { createMockDb, type MockDb } from '@/lib/mock-db'
 import { runMockOptimization } from '@/services/optimization'
@@ -39,10 +40,9 @@ async function departedTrip(deadline: string, departAt: string) {
     settings: { method: 'MOCK', timeLimitSeconds: 30, randomSeed: 20_260_916, enforceLifo: true, prioritizeLowCenterOfGravity: false },
   }
   const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request, { clock: () => 0 }) })
-  const approved = await db.approveRevision(revision.id, [], { force: true })
-  await db.startLoading(trip.id)
-  for (const { packageInstanceId } of approved.result.placements) await db.recordLoadingStep(trip.id, { packageInstanceId, outcome: 'loaded' })
-  await db.completeLoading(trip.id)
+  await db.approveRevision(revision.id, [], { force: true })
+  // Soạn đủ rồi xếp đủ theo thứ tự xếp (FE-6-02, FE-6-05)
+  await loadTrip(db, trip.id)
   wall.set(departAt)
   await db.startDelivery(trip.id)
   return { db, wall, tripId: trip.id }

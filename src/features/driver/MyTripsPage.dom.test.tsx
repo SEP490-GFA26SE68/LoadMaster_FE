@@ -55,7 +55,7 @@ test('the driver of a trip in transit continues it at its current stop; another 
   const preparing = within(await screen.findByRole('region', { name: 'Kho đang soạn / xếp' }, LOAD))
   expect(preparing.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011'])
   expect(card(preparing, 'TRIP-011').getByText('Đang xếp 110 / 280')).toBeInTheDocument()
-  expect(card(preparing, 'TRIP-011').getByText('Kho đang xếp — chưa xuất phát được, chỉ xem trước.')).toBeInTheDocument()
+  expect(card(preparing, 'TRIP-011').getByText('Kho đang soạn / xếp — chưa xuất phát được, chỉ xem trước.')).toBeInTheDocument()
   // Chỉ xem: nút phụ mở màn điểm giao ở chế độ xem trước; chưa có chuyến nào để làm nên không có nút chính
   const preview = card(preparing, 'TRIP-011').getByRole('link', { name: 'Xem trước' })
   expect(preview).toHaveAttribute('href', '/tai-xe/diem-giao?chuyen=TRIP-011')
@@ -70,5 +70,5 @@ test('opening a ready trip goes to its first stop, waiting for the driver to sta
   const ready = within(await screen.findByRole('region', { name: 'Xếp xong — chờ xuất phát' }, LOAD))
   await userEvent.click(card(ready, 'TRIP-010').getByRole('link', { name: 'Mở chuyến' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 1 / 3' }, LOAD)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Bắt đầu giao' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Xuất phát' })).toBeInTheDocument()
 }, 15_000)

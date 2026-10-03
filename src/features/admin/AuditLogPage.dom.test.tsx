@@ -106,13 +106,15 @@ test('nhóm hành động "Chuyến" kết hợp mã đối tượng', async () 
   expect(screen.getByRole('combobox', { name: 'Nhóm hành động' })).toHaveTextContent('Chuyến')
 })
 
-test('khoảng ngày tính theo giờ Việt Nam: ngày chạy của TRIP-001 (18/08) có 7 sự kiện xếp và giao', async () => {
+test('khoảng ngày tính theo giờ Việt Nam: ngày chạy của TRIP-001 (18/08) có 10 sự kiện soạn, xếp và giao', async () => {
   renderLog('/nhat-ky?tu=2026-08-18&den=2026-08-18')
-  // Seed: xếp từ 05:30, 30 giây mỗi kiện × 230 kiện → xếp xong 07:25:30; xuất phát 20 phút sau; điểm 1–3 xong 08:55, 10:05, 11:15
-  await screen.findByText('7 sự kiện', {}, SLOW)
+  // Seed: soạn 230 kiện (5 giây mỗi kiện) rồi xếp từ 05:30, 30 giây mỗi kiện → xếp xong 07:25:30; xuất phát 20 phút sau; điểm 1–3 xong
+  // 08:55, 10:05, 11:15, tài xế bấm "Đã đến" 25 phút trước mỗi lần hoàn tất (FE-6-06)
+  await screen.findByText('10 sự kiện', {}, SLOW)
   const rows = await dataRows()
   expect(rows.map((row) => row[2])).toStrictEqual([
-    'Hoàn thành chuyến', 'Hoàn tất điểm giao', 'Hoàn tất điểm giao', 'Hoàn tất điểm giao', 'Xuất phát giao hàng', 'Xếp xong', 'Bắt đầu xếp hàng',
+    'Hoàn thành chuyến', 'Hoàn tất điểm giao', 'Tài xế đã đến điểm giao', 'Hoàn tất điểm giao', 'Tài xế đã đến điểm giao', 'Hoàn tất điểm giao',
+    'Tài xế đã đến điểm giao', 'Xuất phát giao hàng', 'Xếp xong', 'Bắt đầu soạn hàng',
   ])
   expect(rows.every((row) => row[3]?.endsWith('TRIP-001'))).toBe(true)
 })

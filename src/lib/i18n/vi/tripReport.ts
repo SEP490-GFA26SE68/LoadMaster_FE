@@ -38,7 +38,7 @@ export const tripReport = {
     sealValue: '{number} · ghi lúc {time}',
     noSeal: 'Không ghi số seal',
     planned: 'Kiện trong phương án',
-    missing: 'Kho báo thiếu',
+    damaged: 'Hỏng, bỏ lại kho',
     loadedByQr: 'Xếp bằng quét QR',
     weight: 'Khối lượng đã giao',
     weightValue: '{delivered} / {planned}',

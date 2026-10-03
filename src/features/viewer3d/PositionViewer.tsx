@@ -13,13 +13,13 @@ import { createPerfStore, DebugOverlay } from './DebugOverlay'
 /**
  * Warehouse uses the same scene/units/instances as Planner, without editor UI.
  * `model` là scene cm của revision đã duyệt (`adaptResult`, LM-060); bước theo `loadingOrder`.
- * `missingIds`: kiện kho đã báo thiếu (LM-100) — không có trên xe dù đã qua bước của nó, nên vẽ như kiện đã gỡ (ẩn theo ID, không
+ * `leftOutIds`: kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05) — không có trên xe dù đã qua bước của nó, nên vẽ như kiện đã gỡ (ẩn theo ID, không
  * tính trọng tâm), cùng cách khung 3D của tài xế bỏ kiện thiếu; không thêm mesh hay draw call.
  */
-export function PositionViewer({ model, current, missingIds }: {
+export function PositionViewer({ model, current, leftOutIds }: {
   model: ViewerSceneModel
   current: Pick<ScenePlacement, 'id' | 'step' | 'stop'>
-  missingIds?: ReadonlySet<string>
+  leftOutIds?: ReadonlySet<string>
 }) {
   const t = useT()
   const [preset, setPreset] = useState<CameraPreset>('goc-cheo')
@@ -28,8 +28,8 @@ export function PositionViewer({ model, current, missingIds }: {
   const flags = usePerformanceFlags(debugQualityTier(search), 'warehouse')
   const perf = useMemo(() => createPerfStore(), [])
   const semantics = useMemo(() => deriveSceneSemantics(model.placements, {
-    kind: 'loading', step: current.step, isolateId: isolate ? current.id : null, unloadedIds: missingIds,
-  }), [model, current.id, current.step, isolate, missingIds])
+    kind: 'loading', step: current.step, isolateId: isolate ? current.id : null, unloadedIds: leftOutIds,
+  }), [model, current.id, current.step, isolate, leftOutIds])
   const next = model.placements.find((p) => p.id === semantics.nextId)
   return <div className="relative h-full min-h-80 overflow-hidden rounded-md bg-canvas-1">
     <SceneCanvas experience="warehouse" model={model} placements={model.placements} flags={flags} preset={preset}

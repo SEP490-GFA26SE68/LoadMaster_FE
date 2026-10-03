@@ -14,13 +14,13 @@ test('a stop added or removed after the optimization shows up with zero on the o
     .toStrictEqual([{ number: 3, plan: 0, trip: 2 }])
 })
 
-test('warehouse progress counts loaded steps without missing packages, out of the plan the warehouse locked', () => {
+test('warehouse progress counts loaded steps without damaged packages left out, out of the plan the warehouse locked', () => {
   const trip = {
     loading: {
-      revisionId: 'REV-024', startedAt: '2026-09-24T04:45:00.000Z', startedBy: 'US-0011',
+      revisionId: 'REV-024', startedAt: '2026-09-24T04:45:00.000Z', startedBy: 'US-0011', stagedIds: ['a', 'b', 'c'],
       steps: [
         { packageInstanceId: 'a', outcome: 'loaded' as const, at: '2026-09-24T05:00:00.000Z' },
-        { packageInstanceId: 'b', outcome: 'missing' as const, at: '2026-09-24T05:01:00.000Z' },
+        { packageInstanceId: 'b', outcome: 'damaged' as const, at: '2026-09-24T05:01:00.000Z' },
         { packageInstanceId: 'c', outcome: 'loaded' as const, at: '2026-09-24T05:02:00.000Z' },
       ],
     },

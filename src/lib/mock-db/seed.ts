@@ -174,11 +174,10 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: SeedPl
     return { ...trip, phase: 'cancelled', cancellation: { at: cancelledAt, by: SEED_DISPATCHER, reason: spec.cancelReason ?? '', fromPhase: 'planning' } }
   }
 
-  trip = { ...trip, loading: seedLoading(spec, today, approved, events) }
+  trip = { ...trip, ...seedLoading(spec, today, approved, events) }
   if (spec.outcome === 'loading') return { ...trip, phase: 'loading' }
   if (spec.outcome === 'loaded') return { ...trip, phase: 'loaded' }
-  const delivery = seedDelivery(spec, trip, approved, events)
-  return { ...trip, delivery, phase: spec.outcome === 'delivering' ? 'delivering' : 'completed' }
+  return { ...trip, ...seedDelivery(spec, trip, approved, events), phase: spec.outcome === 'delivering' ? 'delivering' : 'completed' }
 }
 
 /**
@@ -198,8 +197,9 @@ function accountEvents(today: string, users: readonly User[]): SeedEvent[] {
     created('US-0011', 19, '14:40'),
     { at: on(17, '11:30'), actorId: SEED_ADMIN, action: 'user.locked', target: user('US-0008') },
     created('US-0012', 12, '09:00'),
-    { at: on(0, '04:40'), actorId: 'US-0003', action: 'auth.signedIn', target: user('US-0003') },
-    { at: on(0, '04:42'), actorId: 'US-0011', action: 'auth.signedIn', target: user('US-0011') },
+    // Kho đăng nhập trước khi bắt đầu soạn hàng của các chuyến hôm nay (soạn xong mới xếp từ 04:45)
+    { at: on(0, '04:10'), actorId: 'US-0003', action: 'auth.signedIn', target: user('US-0003') },
+    { at: on(0, '04:12'), actorId: 'US-0011', action: 'auth.signedIn', target: user('US-0011') },
     { at: on(0, '06:25'), actorId: 'US-0006', action: 'auth.signedIn', target: user('US-0006') },
     { at: on(0, '07:50'), actorId: 'US-0001', action: 'auth.signedIn', target: user('US-0001') },
     { at: on(0, '08:10'), actorId: 'US-0002', action: 'auth.signedIn', target: user('US-0002') },

@@ -26,7 +26,7 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
   const loading = cardOf('TRIP-011')
   expect(loading.getByText('Đang xếp hàng')).toBeInTheDocument()
   expect(loading.getByText('Đang xếp 110 / 280')).toBeInTheDocument()
-  expect(loading.getByRole('link', { name: 'Tiếp tục (110/280)' })).toHaveAttribute('href', '/kho?chuyen=TRIP-011')
+  expect(loading.getByRole('link', { name: 'Tiếp tục xếp (110/280)' })).toHaveAttribute('href', '/kho?chuyen=TRIP-011')
   expect(loading.getByRole('progressbar', { name: 'Tiến độ xếp chuyến TRIP-011' })).toHaveAttribute('aria-valuenow', '39')
 
   const approved = cardOf('TRIP-2026-0914')
@@ -36,7 +36,7 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
   expect(approved.getByText('Hyundai HD210 · 60C-446.32')).toBeInTheDocument()
   expect(approved.getByText('132')).toBeInTheDocument()
   expect(approved.getByText('0/132')).toBeInTheDocument()
-  expect(approved.getByRole('link', { name: 'Bắt đầu xếp' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')
+  expect(approved.getByRole('link', { name: 'Bắt đầu soạn hàng' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')
 
   // Xếp xong chờ tài xế xuất phát: kho còn mở lại được để ghi số seal
   const loaded = cardOf('TRIP-010')
@@ -54,7 +54,7 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
 
   // Một nút primary: chuyến đang xếp dở
   expect(container.querySelectorAll('a.text-on-primary, button.text-on-primary')).toHaveLength(1)
-  expect(loading.getByRole('link', { name: 'Tiếp tục (110/280)' })).toHaveClass('text-on-primary')
+  expect(loading.getByRole('link', { name: 'Tiếp tục xếp (110/280)' })).toHaveClass('text-on-primary')
   expect(screen.getByRole('button', { name: 'Đăng xuất' })).toBeInTheDocument()
   // FE-3b-06: Tra cứu kiện mở từ màn chính của kho, nút phụ 56 px
   expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveAttribute('href', '/tra-cuu-kien')
@@ -65,27 +65,40 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
   expect(screen.getByRole('button', { name: 'Tài khoản Lê Văn Hải' })).toHaveClass('size-14')
 })
 
-test('missing packages recorded at the warehouse show next to the progress', async () => {
+test('a trip being staged shows its staging progress and a reported shortage; dropped by the dispatcher, it waits to be optimized again (FE-6-02)', async () => {
   const db = getMockDb()
   await db.startLoading('TRIP-2026-0914')
   const plan = await db.getRevision('REV-002')
-  const [first] = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder)
-  await db.recordLoadingStep('TRIP-2026-0914', { packageInstanceId: first?.packageInstanceId ?? '', outcome: 'missing' })
+  const [first, second] = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).map((placement) => placement.packageInstanceId)
+  const labels = await db.listTripLabels('TRIP-2026-0914')
+  await db.confirmStagingByQr('TRIP-2026-0914', labels.find((label) => label.packageInstanceId === second)?.qrToken ?? '')
+  await db.reportStagingShortage('TRIP-2026-0914', first ?? '')
 
-  renderWarehouse('/kho')
+  const view = renderWarehouse('/kho')
   await screen.findByRole('list', { name: 'Đang xếp hàng' }, LOAD)
   expect(tripsIn('Đang xếp hàng')).toStrictEqual(['TRIP-011', 'TRIP-2026-0914'])
   const card = cardOf('TRIP-2026-0914')
   expect(card.getByText('1/132')).toBeInTheDocument()
-  expect(card.getByText('· thiếu 1')).toBeInTheDocument()
-  expect(card.getByRole('link', { name: 'Tiếp tục (1/132)' })).toBeInTheDocument()
-}, 15_000)
+  expect(card.getByText('Thiếu kiện — chờ điều phối')).toBeInTheDocument()
+  expect(card.getByRole('link', { name: 'Tiếp tục soạn (1/132)' })).toBeInTheDocument()
+  view.unmount()
+
+  db.restoreSession('US-0001')
+  await db.resolveStagingShortage('TRIP-2026-0914', first ?? '', 'DROP')
+  renderWarehouse('/kho')
+  await screen.findByRole('list', { name: 'Chờ điều phối tối ưu lại' }, LOAD)
+  expect(tripsIn('Chờ điều phối tối ưu lại')).toStrictEqual(['TRIP-2026-0914', 'TRIP-013'])
+  const waiting = cardOf('TRIP-2026-0914')
+  expect(waiting.getByText('Lỗi thời — cần tối ưu lại')).toBeInTheDocument()
+  expect(waiting.getByText(/^Điều phối viên đã bỏ kiện thiếu khỏi chuyến TRIP-2026-0914\. Kiện đã soạn giữ nguyên ở khu chờ/)).toBeInTheDocument()
+  expect(waiting.queryByRole('link')).not.toBeInTheDocument()
+}, 20_000)
 
 test('nothing left to load: a real empty state, no made-up trips', async () => {
   const db = getMockDb()
   for (const tripId of ['TRIP-2026-0914', 'TRIP-010', 'TRIP-011', 'TRIP-013']) await db.cancelTrip(tripId, 'Khách hoãn nhận hàng')
   renderWarehouse('/kho')
   expect(await screen.findByText('Không có chuyến cần xếp', {}, LOAD)).toBeInTheDocument()
-  expect(screen.getByText('Chuyến có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu xếp.')).toBeInTheDocument()
+  expect(screen.getByText('Chuyến có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu soạn hàng.')).toBeInTheDocument()
   expect(screen.queryByRole('list')).not.toBeInTheDocument()
 }, 15_000)

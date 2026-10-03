@@ -1,5 +1,5 @@
 import { createDbContext, type DbState } from './db-context'
-import { departTripPackages, releaseTripPackages, settleLoadedPackages, settleStopPackages, stageTripPackages } from './db-package-progress'
+import { departTripPackages, dropDamagedInstance, releaseTripPackages, settleLoadedPackages, settleStopPackages, stageInstances } from './db-package-progress'
 import { syncTripPool } from './db-trip-packages'
 import type { Package } from './package-model'
 import { seededRandom } from './qr-token'
@@ -8,8 +8,8 @@ import type { Trip } from './types'
 
 /**
  * Kiện kho kiện của các chuyến seed (FE-3b-07): kiện của chuyến seed đều nhập tay, nên mỗi instance là một kiện nguồn `TRIP`. Không
- * dựng tay trạng thái: chạy lại đúng các mốc của chuyến bằng chính hàm của kho (`syncTripPool` lúc lập chuyến, rồi huỷ / bắt đầu xếp /
- * xếp xong / xuất phát / hoàn tất từng điểm) với đồng hồ và người làm của từng mốc — trạng thái, cờ và lịch sử kiện khớp tiến độ chuyến.
+ * dựng tay trạng thái: chạy lại đúng các mốc của chuyến bằng chính hàm của kho (`syncTripPool` lúc lập chuyến, rồi huỷ / soạn hàng /
+ * bỏ kiện hỏng / xếp xong / xuất phát / hoàn tất từng điểm) với đồng hồ và người làm của từng mốc — trạng thái, cờ và lịch sử kiện khớp tiến độ chuyến.
  *
  * Mã kiện do `idOf` cấp, **không** theo dạng `PK-NNNN`: `nextId` không tính, mã kế tiếp của kho vẫn là `PK-0089`. Mã QR lấy từ bộ số
  * có hạt giống riêng, không trùng mã của `existing` — mã QR của kiện seed có từ trước không đổi.
@@ -61,7 +61,12 @@ export function seedTripPool(options: {
     }
     if (loading) {
       at(loading.startedAt, loading.startedBy)
-      stageTripPackages(ctx, trip)
+      stageInstances(ctx, trip, new Set(loading.stagedIds))
+      for (const step of loading.steps) {
+        if (step.outcome !== 'damaged') continue
+        at(step.at, loading.startedBy)
+        dropDamagedInstance(ctx, trip, step.packageInstanceId)
+      }
       if (loading.completedAt !== undefined) {
         at(loading.completedAt, loading.startedBy)
         settleLoadedPackages(ctx, trip)

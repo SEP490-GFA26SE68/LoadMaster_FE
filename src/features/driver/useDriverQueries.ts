@@ -1,19 +1,16 @@
-import { useIsMutating, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/AuthProvider'
 import type { DeliveryIssueInput, ManualConfirmInput } from '@/lib/mock-db'
-import { withUnload } from './delivery-progress'
 import {
+  arriveAtStop,
   completeStop,
   confirmUnloadByQr,
   confirmUnloadManually,
   fetchDriverTripLabels,
   fetchDriverTrip,
   fetchMyTrips,
-  recordUnload,
   reportDeliveryIssue,
   startDelivery,
-  type DriverTrip,
-  type UnloadInput,
   type UnloadVerifyInput,
 } from './driver-api'
 
@@ -45,6 +42,12 @@ export function useStartDeliveryMutation(tripId: string) {
   return useMutation({ mutationFn: () => startDelivery(tripId), onSettled: () => refreshAfterWrite(client) })
 }
 
+/** Tài xế bấm "Đã đến" ở điểm `stopNumber` (FE-6-06). */
+export function useArriveMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (stopNumber: number) => arriveAtStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client) })
+}
+
 export function useReportIssueMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
@@ -56,29 +59,6 @@ export function useReportIssueMutation(tripId: string) {
 export function useCompleteStopMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: (stopNumber: number) => completeStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client) })
-}
-
-function unloadKey(tripId: string) {
-  return ['driver', 'unload', tripId] as const
-}
-
-/**
- * Đánh dấu / bỏ đánh dấu kiện đã dỡ, cập nhật lạc quan: dấu hiện ngay khi bấm, tài xế bấm liên tiếp nhiều kiện không phải chờ kho.
- * Chỉ lượt ghi cuối cùng còn chạy mới đọc lại kho — đọc lại giữa chừng sẽ xoá dấu của các lượt chưa ghi xong. Lượt ghi lỗi thì lần
- * đọc lại đó trả về đúng dữ liệu trong kho.
- */
-export function useRecordUnloadMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationKey: unloadKey(tripId),
-    mutationFn: (input: UnloadInput) => recordUnload(tripId, input),
-    onMutate: async ({ stopNumber, packageInstanceId, unloaded }) => {
-      await client.cancelQueries({ queryKey: tripKey(tripId) })
-      client.setQueryData<DriverTrip>(tripKey(tripId), (data) =>
-        data && { ...data, trip: withUnload(data.trip, stopNumber, packageInstanceId, unloaded) })
-    },
-    onSettled: () => (client.isMutating({ mutationKey: unloadKey(tripId) }) === 1 ? refreshAfterWrite(client) : undefined),
-  })
 }
 
 // Review 1 (LM-104): quét QR khi dỡ
@@ -102,9 +82,4 @@ export function useConfirmUnloadManuallyMutation(tripId: string) {
     mutationFn: ({ stopNumber, input }: { stopNumber: number; input: ManualConfirmInput }) => confirmUnloadManually(tripId, stopNumber, input),
     onSettled: () => refreshAfterWrite(client),
   })
-}
-
-/** Còn lượt đánh dấu dỡ chưa ghi xong: chưa hoàn tất điểm được, kẻo kho hoàn tất trước khi nhận hết kiện đã dỡ. */
-export function useUnloadPending(tripId: string): boolean {
-  return useIsMutating({ mutationKey: unloadKey(tripId) }) > 0
 }

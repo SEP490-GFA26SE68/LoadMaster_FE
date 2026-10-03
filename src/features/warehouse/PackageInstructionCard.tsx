@@ -1,16 +1,16 @@
 import { ArrowRight, ArrowUp, Package, TriangleAlert } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import type { VehicleConfig } from '@/domain/models'
-import type { ScenePlacement, SceneStop } from '@/features/viewer3d/scene-input'
+import type { ScenePlacement, SceneStop, SceneZone } from '@/features/viewer3d/scene-input'
 import { useFormat, useT } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
 import { cn } from '@/lib/utils'
-import { measureStep, nearestObstacle, stepNote } from './describe-step'
+import { measureStep, nearestObstacle, stepNote, zonePlace } from './describe-step'
 import { OrientationFigure } from './OrientationFigure'
 
 /**
- * Thẻ hướng dẫn xếp một kiện: mã kiện cỡ lớn, điểm giao, ba ô thông tin, khoảng cách cm theo locale, vật cản gần nhất,
- * ghi chú và hình minh hoạ hướng đặt. Chữ tối thiểu 16px trên tablet (mục 10).
+ * Thẻ hướng dẫn xếp một kiện: mã kiện cỡ lớn, điểm giao, vùng của kiện trong thùng ("Vùng <điểm giao> — sát cửa", FE-6-05; phương án
+ * không chia vùng thì không có dòng này), ba ô thông tin, khoảng cách cm theo locale, vật cản gần nhất, ghi chú và hình minh hoạ hướng đặt. Chữ tối thiểu 16px trên tablet (mục 10).
  * Lệch có chủ ý: nhãn "Kiện cần xếp" trong design viết hoa — mục 5 cấm.
  */
 export function PackageInstructionCard({
@@ -18,15 +18,19 @@ export function PackageInstructionCard({
   placements,
   vehicle,
   stops,
+  zones = [],
 }: {
   placement: ScenePlacement
   placements: readonly ScenePlacement[]
   vehicle: VehicleConfig
   stops: readonly SceneStop[]
+  /** Vùng theo điểm giao của phương án (`ViewerSceneModel.zones`). */
+  zones?: readonly SceneZone[]
 }) {
   const t = useT()
   const format = useFormat()
   const stopName = stops.find((s) => s.number === placement.stop)?.name ?? ''
+  const zone = zonePlace(zones, placement.zoneId)
   const note = stepNote(placement, placements)
   const measured = measureStep(placement, placements, vehicle)
   const obstacle = nearestObstacle(placement, vehicle.obstacles)
@@ -45,6 +49,11 @@ export function PackageInstructionCard({
           <span className="text-body-lg font-medium text-text-3">{t('warehouse.card.title')}</span>
           <h1 className="font-mono text-[40px] leading-12 font-semibold tracking-[-0.02em]">{placement.id}</h1>
           <span className="text-body-lg text-text-2">{placement.name}</span>
+          {zone ? (
+            <span data-part="zone" className="text-body-lg font-medium text-text">
+              {t('warehouse.card.zone', { name: zone.name, place: t(`warehouse.card.zonePlace.${zone.place}`) })}
+            </span>
+          ) : null}
         </div>
         <span
           className="inline-flex min-h-9 items-center gap-2 rounded-md px-3 text-body-lg font-semibold"

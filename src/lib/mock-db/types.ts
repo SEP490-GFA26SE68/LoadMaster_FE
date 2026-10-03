@@ -38,9 +38,17 @@ export type DeliveryStop = {
 export const TRIP_PHASES = ['planning', 'loading', 'loaded', 'delivering', 'completed', 'cancelled'] as const
 export type TripPhase = (typeof TRIP_PHASES)[number]
 
-export type LoadingOutcome = 'loaded' | 'missing'
+/** Kết quả của một kiện ở bước xếp: đã lên xe, hoặc hỏng nên bị bỏ lại kho (FE-6-05, D-92). Kiện thiếu xử lý ở bước soạn (FE-6-02). */
+export type LoadingOutcome = 'loaded' | 'damaged'
 
-/** Tiến độ xếp ở kho (D-47): làm theo bản đã duyệt mới nhất lúc bắt đầu. */
+/** Kho báo một kiện không tìm thấy lúc soạn hàng (FE-6-02, D-82): chờ điều phối viên quyết "tìm tiếp" hoặc "bỏ kiện khỏi chuyến". */
+export type StagingShortage = { packageInstanceId: string; at: string; by: string | null }
+
+/** Lý do chuyến đang xếp quay về Đã lập kế hoạch (PRD v2 mục 7.1): bỏ kiện thiếu lúc soạn, hoặc kiện hỏng có kiện tựa lên. */
+export const REPLAN_REASONS = ['SHORTAGE', 'DAMAGED'] as const
+export type ReplanReason = (typeof REPLAN_REASONS)[number]
+
+/** Tiến độ soạn và xếp ở kho (D-47, D-82): làm theo bản đã duyệt mới nhất lúc bắt đầu. */
 export type LoadingProgress = {
   revisionId: string
   /** ISO 8601 */
@@ -48,6 +56,13 @@ export type LoadingProgress = {
   /** Người bấm bắt đầu; `null` khi không có phiên (seed, test). */
   startedBy: string | null
   completedAt?: string
+  /**
+   * Kiện đã soạn vào khu chờ (FE-6-02), theo thứ tự ghi, không theo thứ tự xếp. Đủ mọi kiện của phương án thì sang bước xếp. Cách,
+   * người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications`.
+   */
+  stagedIds: string[]
+  /** Kiện kho báo thiếu lúc soạn, còn chờ điều phối viên quyết; vắng là không có. */
+  shortages?: StagingShortage[]
   /**
    * Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. `via: 'qr'`: kiện đã đối chiếu bằng nhãn (quét hoặc gõ mã);
    * cách, người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications` (FE-6-03).
@@ -78,7 +93,7 @@ export type StopProgress = {
   unloadedIds: string[]
   /** Kiện dỡ đã đối chiếu bằng nhãn — quét hoặc gõ mã (tập con của `unloadedIds`, LM-104); cách đối chiếu ở `Trip.verifications`. */
   qrConfirmedIds?: string[]
-  /** Tài xế bấm "Đã đến", ISO 8601: từ lúc đó xe mô phỏng đứng ở điểm này (FE-6-08). Kho chưa có hàm ghi trường này. */
+  /** Tài xế bấm "Đã đến" (`arriveAtStop`, FE-6-06), ISO 8601: từ lúc đó dỡ được hàng, và xe mô phỏng đứng ở điểm này (FE-6-08). */
   arrivedAt?: string
   completedAt?: string
 }
@@ -129,6 +144,11 @@ export type Trip = {
    */
   verifications?: PackageVerification[]
   cancellation?: Cancellation
+  /**
+   * Chuyến vừa từ Đang xếp hàng quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do và thời điểm, để kho biết đang chờ điều phối viên tối
+   * ưu lại. `unload`: đã có kiện lên xe, kho phải dỡ ra xếp lại theo phương án mới. Kho gỡ khi bắt đầu xếp lại.
+   */
+  replan?: { reason: ReplanReason; at: string; unload: boolean }
   /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
   routePlan?: TripRoutePlan
   /** Lý do điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06, D-74); kho tự gỡ khi chuyến hết kiện khác loại. */
@@ -253,4 +273,4 @@ export type MockDbOptions = {
   random?: () => number
 }
 
-export type { ApproveOptions, DeliveryIssueInput, LoadingStepInput, MockDb, TemporaryPassword } from './db-api'
+export type { ApproveOptions, DeliveryIssueInput, MockDb, TemporaryPassword } from './db-api'

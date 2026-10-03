@@ -17,7 +17,7 @@ const OPTIMIZER = '/src/services/optimization/index.ts'
  * duyệt, đã xếp xong và vừa xuất phát. Hạn của yêu cầu đặt sau giờ đến dự kiến 40 phút: lúc xuất phát điểm giao còn kịp hạn.
  */
 async function requirementTripInTransit(page: Page): Promise<string> {
-  return page.evaluate(async ({ url, optimizer }) => {
+  return page.evaluate(async ({ url, optimizer, flow }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
     const { runMockOptimization } = (await import(optimizer)) as typeof import('@/services/optimization')
     const db = getMockDb()
@@ -32,16 +32,15 @@ async function requirementTripInTransit(page: Page): Promise<string> {
       settings: { method: 'MOCK' as const, timeLimitSeconds: 30, randomSeed: 20_261_004, enforceLifo: true, prioritizeLowCenterOfGravity: false },
     }
     const revision = await db.addRevision({ tripId: trip.id, request, result: runMockOptimization(request) })
-    const approved = await db.approveRevision(revision.id, [], { force: true })
-    await db.startLoading(trip.id)
-    for (const { packageInstanceId } of approved.result.placements) await db.recordLoadingStep(trip.id, { packageInstanceId, outcome: 'loaded' })
-    await db.completeLoading(trip.id)
+    await db.approveRevision(revision.id, [], { force: true })
+    // Soạn đủ rồi xếp đủ theo thứ tự xếp (FE-6-02, FE-6-05), sau đó xe xuất phát
+    await ((await import(flow)) as typeof import('@/test/trip-flow')).loadTrip(db, trip.id)
     await db.startDelivery(trip.id)
     const [stop] = (await db.getTripMonitoring(trip.id)).stops
     if (!stop) throw new Error('the trip has no live stop')
     await db.updateDeliveryRequirement('REQ-004', { deadline: new Date(Date.parse(stop.eta) + 40 * 60_000).toISOString() })
     return trip.id
-  }, { url: MOCK_DB, optimizer: OPTIMIZER })
+  }, { url: MOCK_DB, optimizer: OPTIMIZER, flow: '/src/test/trip-flow.ts' })
 }
 
 /** Ngày `YYYY-MM-DD` theo giờ của trình duyệt, cách hôm nay `days` ngày — ô ngày của form nhập theo giờ của máy. */

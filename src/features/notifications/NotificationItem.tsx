@@ -24,7 +24,9 @@ const TILE: Record<KpiTone, string> = {
  */
 const OPERATION_LOOK: Partial<Record<AuditAction, { icon: LucideIcon; tone: KpiTone }>> = {
   'loading.completed': { icon: PackageCheck, tone: 'azure' },
-  'loading.missing': { icon: PackageX, tone: 'amber' },
+  'loading.shortageReported': { icon: PackageX, tone: 'amber' },
+  'loading.shortageDropped': { icon: PackageX, tone: 'amber' },
+  'loading.damaged': { icon: PackageX, tone: 'amber' },
   'delivery.issue': { icon: TriangleAlert, tone: 'amber' },
   'delivery.etaRisk': { icon: Timer, tone: 'amber' },
   'delivery.completed': { icon: Flag, tone: 'green' },

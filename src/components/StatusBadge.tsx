@@ -42,6 +42,9 @@ const SUB_STATUS: Record<TripSubStatus['kind'], { tone: BadgeTone; dot?: BadgeDo
   awaitingApproval: { tone: 'warning', dot: 'ring' },
   approved: { tone: 'cyan' },
   stale: { tone: 'warning', outlined: true },
+  // Đang soạn hàng (FE-6-02): việc đang chạy như đang xếp; kho báo thiếu kiện là việc chờ điều phối viên, như lỗi thời
+  staging: { tone: 'azure' },
+  shortage: { tone: 'warning', outlined: true },
   loading: { tone: 'azure' },
   loaded: { tone: 'azure' },
   // Điểm trễ hạn dự kiến của tuyến đã tối ưu (FE-4b-09): việc chờ điều phối viên, như lỗi thời

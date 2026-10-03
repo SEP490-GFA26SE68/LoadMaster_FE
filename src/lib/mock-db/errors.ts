@@ -48,9 +48,9 @@ export type MockDbErrorParams = {
   NO_APPROVED_REVISION: { tripId: string }
   /** Kiện không có trong phương án kho đang làm theo, hoặc không thuộc điểm giao đó. */
   INSTANCE_NOT_IN_PLAN: { tripId: string; packageInstanceId: string }
-  /** Kiện đã báo thiếu ở kho nên không có trên xe. */
+  /** Kiện hỏng lúc xếp đã bị bỏ lại kho nên không có trên xe. */
   INSTANCE_NOT_LOADED: { tripId: string; packageInstanceId: string }
-  /** Hoàn tất xếp khi còn kiện chưa có kết quả. */
+  /** Hoàn tất xếp khi còn `remaining` kiện chưa soạn hoặc chưa có kết quả xếp. */
   LOADING_INCOMPLETE: { tripId: string; remaining: number }
   /** Hoàn tất điểm giao khi còn kiện chưa dỡ và chưa báo sự cố. */
   STOP_INCOMPLETE: { tripId: string; stopNumber: number; remaining: number }
@@ -179,6 +179,17 @@ export type MockDbErrorParams = {
   MANUAL_CONFIRM_PENDING: { tripId: string; count: number }
   /** Duyệt hoặc từ chối một xác nhận tay không còn chờ: đã có quyết định, đã bị thay bằng lần đối chiếu khác, hoặc không có. */
   MANUAL_CONFIRM_NOT_PENDING: { tripId: string; confirmationId: string }
+  // Soạn hàng, xếp có đối chiếu, tài xế đến điểm, huỷ chuyến (FE-6-02, FE-6-05, FE-6-06, FE-6-07)
+  /** Đối chiếu kiện ở bước xếp, hoặc báo kiện hỏng, khi còn `remaining` kiện chưa soạn (D-82). */
+  STAGING_INCOMPLETE: { tripId: string; remaining: number }
+  /** Báo thiếu một kiện đã soạn. */
+  PACKAGE_ALREADY_STAGED: { tripId: string; packageInstanceId: string }
+  /** Điều phối viên quyết một kiện không có báo thiếu nào đang chờ. */
+  SHORTAGE_NOT_OPEN: { tripId: string; packageInstanceId: string }
+  /** Dỡ hàng, báo sự cố theo kiện hoặc hoàn tất điểm giao khi tài xế chưa bấm "Đã đến" ở điểm đó (D-84). */
+  STOP_NOT_ARRIVED: { tripId: string; stopNumber: number }
+  /** Chuyển trạng thái chuyến không được phép (D-91): huỷ chuyến đang vận chuyển, đã giao hoặc đã huỷ. `from`, `to` là trạng thái của backend. */
+  INVALID_TRIP_STATUS_TRANSITION: { tripId: string; from: string; to: string }
   // Vị trí xe (FE-6-08)
   /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
   LOCATION_INVALID: { field: string }

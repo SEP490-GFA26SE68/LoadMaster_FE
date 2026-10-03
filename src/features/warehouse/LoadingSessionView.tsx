@@ -1,15 +1,16 @@
-import { Check, PackageX, ScanLine } from 'lucide-react'
+import { PackageX, ScanLine } from 'lucide-react'
 import { lazy, Suspense, useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { PackageVerify } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import { restingOnIds } from '@/domain/constraints'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { pendingManualConfirms, type Revision, type Trip } from '@/lib/mock-db'
 import { ConfirmedOverlay } from './ConfirmedOverlay'
 import { ConfirmNotices } from './ConfirmNotices'
-import { MissingPackageDialog } from './MissingPackageDialog'
+import { DamagedPackageDialog } from './DamagedPackageDialog'
 import { PackageInstructionCard } from './PackageInstructionCard'
 import { PlanNotices } from './PlanNotices'
 import { StepHeader } from './StepHeader'
@@ -24,31 +25,31 @@ const PositionViewer = lazy(() =>
 )
 
 /**
- * Phiên xếp đang chạy (LM-060, LM-086) — một thao tác mỗi màn: xác nhận đã xếp kiện hiện tại. Toàn màn, không nav rail, vùng chạm
- * ≥ 56px, chữ ≥ 16px (mục 10). Bước đi theo `loadingOrder` của bản duyệt đã chốt lúc bắt đầu; tiến độ và kiện thiếu ghi vào kho.
+ * Bước Xếp (LM-060, LM-086, FE-6-05) — một thao tác mỗi màn: đối chiếu kiện của bước hiện tại. Toàn màn, không nav rail, vùng chạm
+ * ≥ 56px, chữ ≥ 16px (mục 10). Bước đi theo `loadingOrder` của bản duyệt đã chốt lúc bắt đầu; tiến độ ghi vào kho.
  *
- * Lệch có chủ ý khỏi design: nút xác nhận trong design màu xanh lá và viết hoa toàn bộ; mục 5 chỉ định nghĩa nút chính nền
- * `--primary` và cấm viết hoa, nên ở đây là nút primary "Xác nhận đã xếp".
- *
- * Review 1 (LM-104): nút phụ "Đối chiếu kiện" cạnh nút xác nhận mở hộp đối chiếu ba mức (`PackageVerify`, FE-6-03): quét hoặc gõ
- * đúng mã kiện của bước là xác nhận luôn, sai kiện thì hộp nói rõ kiện vừa đưa và kiện cần xếp; nhãn không đọc được thì xác nhận tay
- * kèm lý do, chờ điều phối viên duyệt. Còn xác nhận tay chờ duyệt thì chưa hoàn tất xếp được (FE-6-04) — màn nói lý do tại chỗ; xác
- * nhận tay bị từ chối đưa bước hiện tại về đúng kiện đó. Nút "Xác nhận đã xếp" không đối chiếu còn tới FE-6-05.
+ * Mỗi kiện **phải đối chiếu** (D-83): nút chính "Đối chiếu kiện" mở hộp đối chiếu ba mức (`PackageVerify`) — quét hoặc gõ đúng mã kiện
+ * của bước là ghi "đã xếp"; sai kiện hoặc sai thứ tự thì hộp nói rõ kiện vừa đưa và kiện cần xếp, không ghi gì; nhãn không đọc được thì
+ * xác nhận tay kèm lý do, chờ điều phối viên duyệt. Không có nút "Xác nhận đã xếp" không đối chiếu, không báo thiếu ở bước này — kiện
+ * thiếu đã xử lý ở bước soạn. Nút phụ "Kiện hỏng" bỏ kiện của bước lại kho (`DamagedPackageDialog`). Còn xác nhận tay chờ duyệt thì
+ * chưa hoàn tất xếp được (FE-6-04) — màn nói lý do tại chỗ; xác nhận tay bị từ chối đưa bước hiện tại về đúng kiện đó.
  */
 export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
   const model = useSessionModel(trip, plan)
   const session = useLoadingSession(trip.id, model.placements, trip.loading)
   const scan = useLoadingScan({ tripId: trip.id, pending: session.pending, onConfirmed: session.celebrate })
-  const [missingTarget, setMissingTarget] = useState<ScenePlacement | null>(null)
+  const [damagedTarget, setDamagedTarget] = useState<ScenePlacement | null>(null)
   const current = session.current
   const busy = session.busy || scan.pending
-  const pendingConfirms = pendingManualConfirms(trip, 'LOADING').length
-  // Kiện báo thiếu không lên xe: khung 3D không vẽ chúng như đã xếp
-  const missingIds = useMemo(() => new Set(session.missing.map((placement) => placement.id)), [session.missing])
+  const pendingConfirms = pendingManualConfirms(trip, 'STAGING').length + pendingManualConfirms(trip, 'LOADING').length
+  // Kiện hỏng bị bỏ lại kho không lên xe: khung 3D không vẽ chúng như đã xếp
+  const leftOutIds = useMemo(() => new Set(session.damaged.map((placement) => placement.id)), [session.damaged])
+  // Kiện tựa lên kiện đang hỏi trong phương án (trừ kiện cũng đã bị bỏ): hộp nói trước hệ quả của việc báo hỏng
+  const resting = damagedTarget === null ? 0 : restingOnIds(plan.result.placements, damagedTarget.id).filter((id) => !leftOutIds.has(id)).length
 
-  async function handleMissing(id: string) {
-    if (await session.reportMissing(id)) setMissingTarget(null)
+  async function handleDamaged(id: string) {
+    if (await session.reportDamaged(id)) setDamagedTarget(null)
   }
 
   return (
@@ -60,7 +61,7 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
       <div className="relative grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
         {current ? (
           <>
-            <PackageInstructionCard placement={current} placements={model.placements} vehicle={model.vehicle} stops={model.stops} />
+            <PackageInstructionCard placement={current} placements={model.placements} vehicle={model.vehicle} stops={model.stops} zones={model.zones} />
             {/* Khung giữ chỗ nằm đúng ô của khung 3D để lúc tải xong bố cục không nhảy */}
             <div className="order-first min-h-96 lg:order-last lg:min-h-0">
               <Suspense
@@ -70,7 +71,7 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
                   </div>
                 }
               >
-                <PositionViewer model={model} current={current} missingIds={missingIds} />
+                <PositionViewer model={model} current={current} leftOutIds={leftOutIds} />
               </Suspense>
             </div>
           </>
@@ -88,37 +89,24 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
       </div>
 
       {current ? (
-        <div className="flex flex-none flex-col gap-2 px-3 pb-3">
-          <div className="flex gap-2">
-            <Button variant="secondary" size="touch" className="flex-none gap-2.5 [&_svg]:size-6" disabled={busy} onClick={() => scan.setOpen(true)}>
-              <ScanLine strokeWidth={2} />
-              {t('warehouse.scan.open')}
-            </Button>
-            <Button variant="primary" className="h-14 min-w-0 flex-1 gap-3 text-body-lg [&_svg]:size-6" onClick={session.confirm} disabled={busy}>
-              <Check strokeWidth={2.5} />
-              {t('warehouse.confirm')}
-            </Button>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button
-              variant="ghost"
-              size="touch"
-              className="font-medium text-text-2 hover:text-text"
-              disabled={busy}
-              onClick={() => setMissingTarget(current)}
-            >
-              <PackageX className="size-4.5" strokeWidth={2} />
-              {t('warehouse.missing')}
-            </Button>
-          </div>
+        <div className="flex flex-none flex-wrap gap-2 px-3 pb-3">
+          <Button variant="secondary" size="touch" className="flex-none" disabled={busy} onClick={() => setDamagedTarget(current)}>
+            <PackageX strokeWidth={2} />
+            {t('warehouse.damaged.open')}
+          </Button>
+          <Button variant="primary" className="h-14 min-w-0 flex-1 basis-64 gap-3 text-body-lg [&_svg]:size-6" disabled={busy} onClick={() => scan.setOpen(true)}>
+            <ScanLine strokeWidth={2} />
+            {t('warehouse.scan.open')}
+          </Button>
         </div>
       ) : null}
 
-      <MissingPackageDialog
-        placement={missingTarget}
-        onOpenChange={(open) => { if (!open) setMissingTarget(null) }}
-        onConfirm={(id) => void handleMissing(id)}
-        pending={session.recording}
+      <DamagedPackageDialog
+        placement={damagedTarget}
+        resting={resting}
+        onOpenChange={(open) => { if (!open) setDamagedTarget(null) }}
+        onConfirm={(id) => void handleDamaged(id)}
+        pending={session.reporting}
       />
 
       {current ? (
