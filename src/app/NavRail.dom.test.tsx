@@ -51,8 +51,8 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
  * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
-  ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
+  ['dispatcher', ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
+  ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],

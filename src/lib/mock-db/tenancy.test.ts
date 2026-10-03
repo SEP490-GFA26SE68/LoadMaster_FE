@@ -200,6 +200,14 @@ const PROBES = {
   getLocationHistory: { scope: 'operational', hidden: ({ db, other }) => db.getLocationHistory(other.trip) },
   getTripMonitoring: { scope: 'operational', hidden: ({ db, other }) => db.getTripMonitoring(other.trip) },
   listTripMonitoring: { scope: 'operational', list: { call: ({ db }) => db.listTripMonitoring(), ids: (rows: { tripId: string }[]) => rows.map((row) => row.tripId), own: (c) => c.inTransit } },
+  // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12): seed không có sự cố nào
+  reportTripException: onForeignTrip((db, tripId) => db.reportTripException(tripId, { type: 'TRAFFIC', description: 'Kẹt xe ở ngã tư Vũng Tàu', delayMinutes: 20 })),
+  listTripExceptions: { scope: 'operational', hidden: ({ db, other }) => db.listTripExceptions(other.trip) },
+  escalateTripException: onForeignTrip((db, tripId) => db.escalateTripException(tripId, 'EXC-001')),
+  resolveTripException: onForeignTrip((db, tripId) => db.resolveTripException(tripId, 'EXC-001')),
+  requestReroute: onForeignTrip((db, tripId) => db.requestReroute(tripId)),
+  confirmReroute: onForeignTrip((db, tripId) => db.confirmReroute(tripId, 0)),
+  renegotiateDeadline: onForeignTrip((db, tripId) => db.renegotiateDeadline(tripId, 'EXC-001', { requirementId: 'REQ-001', deadline: '2026-09-16T10:00:00.000Z', contactNote: 'Đã gọi khách' })),
 
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },

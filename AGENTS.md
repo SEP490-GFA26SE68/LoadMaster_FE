@@ -66,10 +66,12 @@ viên kho. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
-`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*) và `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 04/10/2026, FE-6-04*), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
-nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02) và
-`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*) và `monitoring.view` (vị trí xe và giờ đến tính từ vị trí ở card sơ đồ tuyến của chuyến Đang vận chuyển — điều phối viên, quản lý công ty, *bổ sung 04/10/2026, FE-6-08*; màn `/giam-sat` chưa có), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 04/10/2026, FE-6-04*) và — *(đã điều chỉnh
+04/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
+quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
+`exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
+công ty), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
@@ -91,7 +93,8 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
 chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
-FE-3b-03) · Chuyến hàng · Đội xe. Điều phối viên: Chuyến hàng · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
+FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
+(*đã điều chỉnh 04/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
 họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
@@ -136,7 +139,12 @@ vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ 
 *(đã điều chỉnh 04/10/2026, FE-6-09)* Điều phối viên nhận thêm **nguy cơ trễ hạn giao** (`delivery.etaRisk` — sự kiện của hệ thống, không có
 người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
 chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau lần đọc đầu thành toast (sát hạn: cảnh báo; trễ hạn dự kiến: lỗi) và chuông đọc lại ngay,
-cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty chưa nhận loại này (chờ sự cố chuyển lên, FE-6-11).
+cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty không nhận loại này.
+*(đã điều chỉnh 04/10/2026, FE-6-11, FE-6-12)* **Sự cố cấp chuyến ở chuông**: điều phối viên — tài xế báo sự cố (`exception.reported`), kho
+tự chuyển sự cố cho quản lý sau 30 phút (`exception.escalated`, sự kiện của hệ thống), quản lý đã liên hệ khách và nhập hạn mới
+(`exception.deadlineRenegotiated`, để xử lý tiếp); quản lý công ty — sự cố chuyển lên mình (`exception.escalated`). `EtaRiskWatcher` chạy cho
+cả hai vai trò (kho chỉ tự chuyển sự cố khi có người đọc giám sát) và hiện toast cảnh báo khi một sự cố vừa chuyển lên — trừ sự cố chính người
+đó vừa chuyển.
 *(đã điều chỉnh 02/10/2026, FE-0-08)* Chuông không tự lọc theo công ty — kho lọc: quản trị công ty chỉ nhận sự kiện tài khoản của công ty
 mình (kể cả việc quản trị hệ thống làm trên người của công ty), không nhận gì về tài khoản nền tảng hay công ty khác.
 
@@ -251,7 +259,11 @@ src/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
     monitoring/         *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển: `monitoring-api.ts`,
-                        `useTrackingQuery.ts`, `LiveLocationBar` (dòng vị trí kèm nhãn "Mô phỏng"), `EtaRiskWatcher` (toast nguy cơ trễ hạn)
+                        `useTrackingQuery.ts`, `LiveLocationBar` (dòng vị trí kèm nhãn "Mô phỏng"), `EtaRiskWatcher` (toast nguy cơ trễ hạn);
+                        *(đã điều chỉnh 04/10/2026, FE-6-10 → FE-6-12)* màn Giám sát `/giam-sat` (`MonitoringPage` → `MonitoringBoard`:
+                        bản đồ, danh sách, chi tiết chuyến; hàm thuần `monitoring-view.ts`), kênh sự kiện `monitoring-events.ts`
+                        (`subscribeTrip`), sự cố cấp chuyến (`exceptions-api.ts`, `ReportExceptionDialog`, `RerouteDialog`,
+                        `TripExceptionList`, `TripExceptionButton` cho màn tài xế), tab của quản lý (`EscalationTab`, `RenegotiateDialog`)
     optimization/       chạy job, theo dõi tiến trình
     viewer3d/           toàn bộ code Three.js, tách biệt hoàn toàn
     warehouse/          luồng xếp hàng ở kho
@@ -300,7 +312,8 @@ src/
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
                         gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09); *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* xe mô phỏng dọc tuyến
-                        `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`
+                        `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`;
+                        *(bổ sung 04/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
   services/
@@ -1476,6 +1489,34 @@ dù giao diện bị bỏ qua:
   Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không
   `setInterval` riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo
   nhịp đó. E2E có giá trị đang chạy chờ tới trạng thái dừng (xe tới điểm), không chờ theo giờ (`e2e/live-tracking.spec.ts`).
+- *(đã điều chỉnh 04/10/2026, FE-6-10)* **Màn Giám sát `/giam-sat`** (`monitoring.view`): `fetchMonitoringBoard` (`['trips',
+  'monitoring-board']`) đọc phần ít đổi — chuyến Đang vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp
+  của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải
+  tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó
+  (`setLngLat`), không dựng lại mốc kho và điểm giao. Bản đồ vẽ xe của **mọi** chuyến đang chạy (`RouteMap` `others`, mốc kèm nhãn "mã chuyến ·
+  nguồn vị trí"), còn tuyến, kho và điểm giao là của chuyến đang chọn; danh sách cạnh nó là bản thay thế bản đồ cho trình đọc màn hình. Tab,
+  chuyến đang chọn và hai công tắc lọc nằm trên URL (`tab=su-co-can-xu-ly`, `chuyen`, `nguy-co-tre`, `co-su-co`). `subscribeTrip`
+  (`monitoring-api.ts` → `monitoring-events.ts`) là kênh sự kiện **trong bộ nhớ** thay WebSocket của backend: sự kiện (`LocationUpdate`,
+  `EtaUpdate`, `EtaRiskAlert`, `ExceptionUpdate`, `TripCompleted`) phát khi một lần đọc giám sát trả về điều gì mới; lịch sử vị trí của chuyến
+  đang chọn làm mới theo kênh đó (`useTripChannel`), không có hẹn giờ riêng. `TripMonitoring` mang thêm `exceptions` và `reroute`.
+- *(đã điều chỉnh 04/10/2026, FE-6-11, FE-6-12, D-87)* **Sự cố cấp chuyến** (`exception-model.ts`, `db-exceptions.ts`,
+  `DbState.exceptions`; khác sự cố giao của từng kiện): `TripException` (`EXC-NNN`) — loại (`TRAFFIC`, `ACCIDENT`, `ROAD_CONSTRUCTION`,
+  `VEHICLE_BREAKDOWN`, `OTHER`; nhãn ở `common.tripExceptionTypes`), mô tả, số phút dự kiến chậm (0 → 480), trạng thái `OPEN` →
+  `ESCALATED` → `RESOLVED`. Kho **xét vai trò của phiên** cho các lệnh ghi (không có phiên thì không xét; sai là `ROLE_NOT_ALLOWED`, xét sau
+  công ty): `reportTripException` — điều phối viên hoặc tài xế của chính chuyến, chuyến phải Đang vận chuyển; `escalateTripException`,
+  `resolveTripException`, `requestReroute`, `confirmReroute` — điều phối viên; `renegotiateDeadline` — quản lý công ty. Mỗi sự cố thêm một
+  khoảng giữ xe mô phỏng (`TripIncidents.holds` → tham số `delays` của `simulatedSnapshot`): xe đứng thêm **đúng số phút chậm**, ETA tự dời
+  theo vị trí — không cộng lần hai. Sự cố `OPEN` quá 30 phút theo đồng hồ của kho thì kho tự chuyển quản lý ở lần đọc kế tiếp
+  (`advanceTracking`, sự kiện hệ thống `exception.escalated`, ghi đúng mốc 30 phút). **Tuyến thay thế** (`@/domain/routing`
+  `rerouteOptions`, mock — hằng số ở `REROUTE_CONSTANTS`, chờ nghiệp vụ xác nhận): 2–3 đường tới **điểm kế tiếp** từ vị trí xe (đường tránh
+  +15 %, vành đai +30 %, cao tốc +50 % ở 70 km/h khi chặng còn từ 15 km), mang MOCK RESULT; chọn một thì khoảng giữ đang chạy bị cắt và xe
+  đứng thêm phần đường vòng chậm hơn đường nối thẳng (`delaysAfterReroute`), nhật ký `trip.rerouted`. **Thứ tự điểm giao không bao giờ đổi
+  khi xe đang chạy** và đường vẽ vẫn nối thẳng. **Gia hạn**: trên sự cố `ESCALATED`, quản lý ghi đã liên hệ khách (bắt buộc) và nhập hạn mới
+  cho một yêu cầu giao của chuyến — phải sau giờ của kho (`REQUIREMENT_DEADLINE_PAST`); hạn của điểm giao và mức hạn tính lại ngay
+  (`refreshLiveEta`), sự cố giữ `ESCALATED` tới khi điều phối viên đánh dấu đã xử lý. Mã lỗi mới: `EXCEPTION_INVALID`,
+  `EXCEPTION_STATUS_INVALID`, `REROUTE_UNAVAILABLE`; nhật ký nhóm `exception` (`reported`, `escalated`, `resolved`, `deadlineRenegotiated`).
+  Lệnh ghi của màn làm mới `['trips']`, `['notifications']`, `['requirements']`, `['dashboard']`. E2E `e2e/monitoring.spec.ts` đi cả luồng
+  trên một tab với `?toc-do=60`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

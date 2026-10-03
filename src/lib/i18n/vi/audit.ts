@@ -8,7 +8,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Đăng nhập', signedOut: 'Đăng xuất', signInFailed: 'Đăng nhập không thành công' },
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
-    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến' },
+    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến', rerouted: 'Chọn tuyến thay thế' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
     loading: {
@@ -25,6 +25,7 @@ export const audit = {
     requirement: { created: 'Tạo yêu cầu giao', updated: 'Sửa yêu cầu giao', deleted: 'Xoá yêu cầu giao', assigned: 'Đưa yêu cầu giao vào chuyến', unassigned: 'Gỡ yêu cầu giao khỏi chuyến' },
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
     manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
+    exception: { reported: 'Báo sự cố chuyến', escalated: 'Chuyển sự cố cho quản lý', resolved: 'Đánh dấu sự cố đã xử lý', deadlineRenegotiated: 'Liên hệ khách, nhập hạn mới' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -40,6 +41,7 @@ export const audit = {
     requirement: 'Yêu cầu giao',
     vehicleType: 'Loại xe',
     manualConfirm: 'Xác nhận tay',
+    exception: 'Sự cố chuyến',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -148,7 +150,15 @@ export const audit = {
       deadlineStatus: 'Mức hạn',
       eta: 'Dự kiến đến',
       deadline: 'Hạn giao',
+      // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
+      exceptionId: 'Sự cố',
+      exceptionType: 'Loại sự cố',
+      delayMinutes: 'Dự kiến chậm (phút)',
+      escalation: 'Lý do chuyển',
+      route: 'Tuyến',
     },
+    /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
+    escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {
       name: 'Tên chuyến',

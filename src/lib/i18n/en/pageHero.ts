@@ -16,6 +16,7 @@ export const pageHero = {
   labels: 'QR labels of pool packages, printed to stick on each package.',
   lookup: 'Scan or type a code to see the status and trip of a package, and reprint its label.',
   requirements: 'What has to be delivered: packages from the pool to one destination before a deadline, waiting for the dispatcher to put them on a trip.',
+  monitoring: 'Vehicles in transit on the map, expected arrival against the delivery deadline, and incidents on the road.',
   vehicleTypes: 'Cargo dimensions and payload by vehicle type.',
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
 } satisfies Dictionary<typeof source>

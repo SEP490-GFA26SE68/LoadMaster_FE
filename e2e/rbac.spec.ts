@@ -109,7 +109,7 @@ test('the company manager lands on the dashboard and sees its own nav items: req
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
   // Yêu cầu giao là việc của quản lý công ty (D-72): có nút tạo
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
@@ -143,7 +143,7 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
   // Yêu cầu giao với điều phối viên là màn chỉ xem (FE-4b-02): không nút tạo
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')

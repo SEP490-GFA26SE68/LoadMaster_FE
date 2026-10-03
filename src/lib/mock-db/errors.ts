@@ -1,5 +1,6 @@
 import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
+import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
 import type { RequirementStoredStatus } from './requirement-model'
 import type { TripPhase } from './types'
@@ -16,6 +17,8 @@ export type MockDbCollection =
   | 'packages'
   | 'requirements'
   | 'vehicleTypes'
+  // FE-6-11
+  | 'exceptions'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -190,6 +193,14 @@ export type MockDbErrorParams = {
   // Vị trí xe (FE-6-08)
   /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
   LOCATION_INVALID: { field: string }
+
+  // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
+  /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */
+  EXCEPTION_INVALID: { field: string }
+  /** Thao tác trên sự cố không ở trạng thái cần: chuyển quản lý một sự cố không còn mở, xử lý lại sự cố đã xử lý, gia hạn trên sự cố chưa chuyển lên. */
+  EXCEPTION_STATUS_INVALID: { exceptionId: string; status: TripExceptionStatus }
+  /** Tìm tuyến khác khi xe chưa có vị trí hoặc không còn điểm nào chưa tới; xác nhận một lựa chọn không có trong lần tìm gần nhất. */
+  REROUTE_UNAVAILABLE: { tripId: string }
 
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */

@@ -15,6 +15,8 @@ export const common = {
   off: 'Tắt',
   /** Loại sự cố giao (`DeliveryIssueKind`, D-47): một nguồn cho báo sự cố của tài xế, tiến trình chuyến và nhật ký (LM-100). */
   deliveryIssueKinds: { damaged: 'Hàng hỏng', missing: 'Thiếu hàng', refused: 'Khách từ chối', other: 'Khác' },
+  /** Loại sự cố cấp chuyến (`TripExceptionType`, D-87, FE-6-11): một nguồn cho hộp báo sự cố, màn Giám sát và nhật ký. */
+  tripExceptionTypes: { TRAFFIC: 'Tắc đường', ACCIDENT: 'Tai nạn', ROAD_CONSTRUCTION: 'Công trình trên đường', VEHICLE_BREAKDOWN: 'Hỏng xe', OTHER: 'Khác' },
   /** Mức hạn của điểm giao theo giờ đến dự kiến (`DeadlineStatus`, FE-4b-09): chi tiết chuyến và hộp Chi tiết của Planner (FE-5b-07). */
   deadlineStatuses: { OK: 'Kịp hạn', AT_RISK: 'Sát hạn', MISSED: 'Trễ hạn dự kiến' },
   /** Loại hàng của kiện (`HandlingClass`, D-69, FE-3b-04): một nguồn cho kho kiện, nhãn, yêu cầu giao và nhật ký. */

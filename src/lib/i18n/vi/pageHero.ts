@@ -18,6 +18,7 @@ export const pageHero = {
   labels: 'Nhãn QR của kiện trong kho kiện, in để dán lên từng kiện.',
   lookup: 'Quét hoặc gõ mã để xem kiện đang ở trạng thái nào, thuộc chuyến nào và in lại nhãn.',
   requirements: 'Việc cần giao: kiện từ kho kiện tới một điểm đến trước hạn, chờ điều phối viên đưa vào chuyến.',
+  monitoring: 'Xe đang vận chuyển trên bản đồ, giờ đến dự kiến so với hạn giao và sự cố trên đường.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
 } as const

@@ -23,6 +23,8 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
  *   trên người của công ty (khoá, đặt lại mật khẩu) — không nhận gì về tài khoản nền tảng hay của công ty khác.
  * - Điều phối viên còn được báo khi kho hoặc tài xế gửi một **xác nhận tay** chờ duyệt (FE-6-04, D-83).
+ * - Sự cố cấp chuyến (FE-6-11, FE-6-12): điều phối viên được báo khi tài xế báo sự cố, khi kho tự chuyển sự cố cho quản lý sau 30
+ *   phút, và khi quản lý đã liên hệ khách, nhập hạn mới (để xử lý tiếp); quản lý công ty được báo khi sự cố chuyển lên mình.
  * - Nhân viên kho, tài xế: xác nhận tay **của chính mình** bị điều phối viên từ chối (`PERSONAL_ACTIONS`), để biết kiện nào phải kiểm
  *   lại. Nhân viên kho còn được báo quyết định của điều phối viên với kiện **mình báo thiếu** (tìm tiếp, hoặc bỏ kiện — chuyến chờ tối
  *   ưu lại), và chuyến bị huỷ **lúc đang xếp** để dỡ phần đã xếp (FE-6-07, D-91).
@@ -35,10 +37,11 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
-  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged'],
+  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated'],
   dispatcher: [
     'revision.approved', 'loading.completed', 'loading.shortageReported', 'loading.damaged', 'package.found', 'delivery.issue', 'delivery.etaRisk',
-    'delivery.completed', 'trip.cancelled', 'manualConfirm.requested',
+    'delivery.completed', 'trip.cancelled', 'manualConfirm.requested', 'exception.reported', 'exception.escalated',
+    'exception.deadlineRenegotiated',
   ],
   warehouse: ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped', 'trip.cancelled'],
   driver: ['manualConfirm.rejected'],

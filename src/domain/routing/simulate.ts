@@ -58,11 +58,23 @@ type Pause = { readonly start: number; readonly end: number }
 /** Khoảng dừng của các sự cố, theo thứ tự thời gian; khoảng sau bắt đầu khi khoảng trước hết. */
 function pausesOf(delays: readonly SimulationDelay[]): Pause[] {
   const pauses: Pause[] = []
-  for (const delay of delays.map((item) => ({ at: parseTime(item.at), ms: item.minutes * 60_000 })).filter((item) => item.ms > 0).toSorted((a, b) => a.at - b.at)) {
+  for (const delay of delays.map((item) => ({ at: parseTime(item.at), ms: Math.round(item.minutes * 60_000) })).filter((item) => item.ms > 0).toSorted((a, b) => a.at - b.at)) {
     const start = Math.max(delay.at, pauses.at(-1)?.end ?? -Infinity)
     pauses.push({ start, end: start + delay.ms })
   }
   return pauses
+}
+
+/**
+ * Các khoảng dừng sau khi điều phối chọn tuyến khác lúc `at` (FE-6-11): khoảng đã qua giữ nguyên, khoảng đang giữ xe bị cắt tại `at`,
+ * khoảng chưa tới thì bỏ; rồi xe đứng thêm `extraMs` — phần đường vòng chậm hơn đường nối thẳng. Vị trí xe trước `at` không đổi.
+ */
+export function delaysAfterReroute(delays: readonly SimulationDelay[], at: string, extraMs: number): SimulationDelay[] {
+  const atMs = parseTime(at)
+  const kept = pausesOf(delays)
+    .filter((pause) => pause.start < atMs)
+    .map((pause) => ({ at: new Date(pause.start).toISOString(), minutes: (Math.min(pause.end, atMs) - pause.start) / 60_000 }))
+  return extraMs > 0 ? [...kept, { at, minutes: extraMs / 60_000 }] : kept
 }
 
 /** Thời gian xe không bị sự cố giữ lại trong khoảng `from` → `to`, ms. */

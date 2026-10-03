@@ -14,7 +14,9 @@ export {
   type RouteStopResult,
 } from './eta'
 export { EARTH_RADIUS_KM, haversineKm, type GeoPoint } from './haversine'
+export { REROUTE_CONSTANTS, REROUTE_ROUTES, rerouteOptions, type RerouteOption, type RerouteRoute } from './reroute'
 export {
+  delaysAfterReroute,
   POSITION_INTERVAL_MS,
   positionTimes,
   SIMULATION_CONSTANTS,

@@ -66,6 +66,7 @@ describe('the seeded trip in transit stands where its delivery progress puts it 
         { stopId: 'STOP-03', number: 3, eta: '2026-09-14T05:22:33.659Z' },
       ],
       alerts: [],
+      exceptions: [],
       refreshMs: 30_000,
       isMockResult: true,
     })
@@ -76,7 +77,7 @@ describe('the seeded trip in transit stands where its delivery progress puts it 
     const db = createMockDb({ now: () => new Date(NOW) })
     expect(await db.getLatestLocation('TRIP-2026-0914')).toBeNull()
     expect(await db.getLocationHistory('TRIP-2026-0914')).toStrictEqual([])
-    expect(await db.getTripMonitoring('TRIP-2026-0914')).toStrictEqual({ tripId: 'TRIP-2026-0914', location: null, stops: [], alerts: [], refreshMs: null, isMockResult: true })
+    expect(await db.getTripMonitoring('TRIP-2026-0914')).toStrictEqual({ tripId: 'TRIP-2026-0914', location: null, stops: [], alerts: [], exceptions: [], refreshMs: null, isMockResult: true })
 
     const done = await db.getTrip('TRIP-001')
     const history = await db.getLocationHistory('TRIP-001')
