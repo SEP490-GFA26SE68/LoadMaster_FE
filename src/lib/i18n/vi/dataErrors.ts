@@ -17,8 +17,8 @@ export const dataErrors = {
   TRIP_PHASE_INVALID: 'Thao tác này không làm được ở trạng thái hiện tại của chuyến {tripId}.',
   NO_APPROVED_REVISION: 'Chuyến {tripId} chưa có phương án đã duyệt.',
   INSTANCE_NOT_IN_PLAN: 'Kiện {packageInstanceId} không thuộc phương án hoặc điểm giao này.',
-  INSTANCE_NOT_LOADED: 'Kiện {packageInstanceId} đã báo thiếu ở kho, không có trên xe.',
-  LOADING_INCOMPLETE: 'Còn {remaining} kiện chưa có kết quả xếp.',
+  INSTANCE_NOT_LOADED: 'Kiện {packageInstanceId} hỏng lúc xếp nên đã bỏ lại kho, không có trên xe.',
+  LOADING_INCOMPLETE: 'Còn {remaining} kiện chưa soạn hoặc chưa xếp.',
   STOP_INCOMPLETE: 'Điểm {stopNumber} còn {remaining} kiện chưa dỡ hoặc chưa báo sự cố.',
   STOP_NOT_CURRENT: 'Điểm {stopNumber} chưa phải điểm giao hiện tại.',
   REASON_REQUIRED: 'Cần ghi lý do.',
@@ -78,6 +78,12 @@ export const dataErrors = {
   PACKAGE_CODE_AMBIGUOUS: 'Mã {code} trùng {count} kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.',
   MANUAL_CONFIRM_PENDING: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.',
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này không còn chờ duyệt.',
+  // Soạn hàng, xếp có đối chiếu, tài xế đến điểm, huỷ chuyến (FE-6-02, FE-6-05, FE-6-06, FE-6-07)
+  STAGING_INCOMPLETE: 'Còn {remaining} kiện chưa soạn. Soạn đủ hàng vào khu chờ rồi mới xếp.',
+  PACKAGE_ALREADY_STAGED: 'Kiện {packageInstanceId} đã soạn rồi.',
+  SHORTAGE_NOT_OPEN: 'Kiện {packageInstanceId} không còn báo thiếu nào chờ quyết.',
+  STOP_NOT_ARRIVED: 'Bấm "Đã đến" ở điểm {stopNumber} trước khi dỡ hàng, báo sự cố theo kiện hoặc hoàn tất điểm.',
+  INVALID_TRIP_STATUS_TRANSITION: 'Chuyến {tripId} không huỷ được ở trạng thái hiện tại. Chỉ huỷ được chuyến Nháp, Đã lập kế hoạch hoặc Đang xếp hàng; chuyến Đang vận chuyển cần có sự cố cấp chuyến đang mở.',
   // Vị trí xe (FE-6-08)
   LOCATION_INVALID: 'Vị trí xe gửi lên chưa hợp lệ: cần vĩ độ, kinh độ trong khoảng cho phép, tốc độ không âm và hướng từ 0 đến 359 độ.',
   // Nhập file vào kho kiện (FE-3b-02)

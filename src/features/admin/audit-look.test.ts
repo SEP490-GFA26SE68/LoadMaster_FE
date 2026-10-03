@@ -8,7 +8,7 @@ const toneOf = (actions: readonly AuditAction[]) => actions.map((action) => audi
 
 test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện, huỷ, đăng nhập sai, khoá tài khoản, bảo dưỡng, lần chạy tối ưu hỏng', () => {
   const attention = [
-    'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
+    'delivery.issue', 'loading.shortageReported', 'loading.shortageDropped', 'loading.damaged', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
     // Yêu cầu giao bị xoá / gỡ khỏi chuyến (FE-4b-01), lần chạy tối ưu hỏng (LM-104)
     'requirement.deleted', 'requirement.unassigned', 'optimization.failed',
     // Kiện bị bỏ khỏi chuyến (FE-4b-05), như yêu cầu bị gỡ khỏi chuyến

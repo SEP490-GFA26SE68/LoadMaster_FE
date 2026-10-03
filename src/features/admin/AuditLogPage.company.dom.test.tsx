@@ -9,8 +9,8 @@ import { signedInAs } from '@/test/signed-in'
 import { AuditLogPage } from './AuditLogPage'
 
 /**
- * Nhật ký trong phạm vi **công ty** (FE-0-08): người xem là quản trị công ty demo của Long Bình (US-LB-01). Seed neo 14/09/2026 có 138
- * sự kiện: 131 của Long Bình (127 việc người Long Bình làm, 4 việc quản trị hệ thống làm trên tài khoản của Long Bình) và 7 của Phương
+ * Nhật ký trong phạm vi **công ty** (FE-0-08): người xem là quản trị công ty demo của Long Bình (US-LB-01). Seed neo 14/09/2026 có 163
+ * sự kiện: 156 của Long Bình (152 việc người Long Bình làm, 4 việc quản trị hệ thống làm trên tài khoản của Long Bình) và 7 của Phương
  * Nam. Không test nào trong file ghi vào kho. Phạm vi của quản trị hệ thống ở `AuditLogPage.dom.test.tsx`.
  */
 const SLOW = { timeout: 5000 }
@@ -43,11 +43,11 @@ async function dataRows() {
   return within(table).getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell').map(cellText))
 }
 
-test('chỉ sự kiện của công ty mình: 131 trên 138, không có bộ lọc công ty, không tìm ra chuyến của công ty khác', async () => {
+test('chỉ sự kiện của công ty mình: 156 trên 163, không có bộ lọc công ty, không tìm ra chuyến của công ty khác', async () => {
   renderLog()
   await dataRows()
-  expect(screen.getByText('131 sự kiện')).toBeInTheDocument()
-  expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent('131Sự kiện trong nhật ký')
+  expect(screen.getByText('156 sự kiện')).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent('156Sự kiện trong nhật ký')
   expect(screen.queryByRole('combobox', { name: 'Công ty' })).toBeNull()
   // Người làm chọn được: người của Long Bình và quản trị hệ thống đã làm việc trên tài khoản của Long Bình — không ai của Phương Nam
   const user = userEvent.setup()
@@ -61,7 +61,7 @@ test('chỉ sự kiện của công ty mình: 131 trên 138, không có bộ l�
 test('chuyến của công ty khác không có trong nhật ký; tham số công ty trên URL không mở rộng phạm vi', async () => {
   renderLog('/nhat-ky?q=TRIP-PN-001&cong-ty=LOG-002')
   expect(await screen.findByText('Không có sự kiện khớp bộ lọc.', {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent('131')
+  expect(screen.getByRole('group', { name: 'Sự kiện trong nhật ký' })).toHaveTextContent('156')
 })
 
 test('việc quản trị hệ thống làm trên tài khoản của công ty: đọc được, kèm tên người làm và liên kết tới người dùng', async () => {

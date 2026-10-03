@@ -93,10 +93,10 @@ test('the dispatcher sees what others did in the last seven days; opening one ma
   ])
   // Dòng thứ ba: người làm và chi tiết đúng như nhật ký ghi
   expect(menuItems().map((item) => part(item, 'meta'))).toStrictEqual([
-    'Lê Văn Hải · Đã lên xe: 210 · Thiếu ở kho: 0',
-    'Lê Văn Hải · Đã lên xe: 160 · Thiếu ở kho: 0',
+    'Lê Văn Hải · Đã lên xe: 210 · Hỏng, bỏ lại kho: 0',
+    'Lê Văn Hải · Đã lên xe: 160 · Hỏng, bỏ lại kho: 0',
     'Đặng Hoài Nam · Số điểm giao: 4 · Sự cố: 0',
-    'Đỗ Thị Hạnh · Đã lên xe: 400 · Thiếu ở kho: 0',
+    'Đỗ Thị Hạnh · Đã lên xe: 400 · Hỏng, bỏ lại kho: 0',
   ])
   expect(within(screen.getByRole('menu')).getByText('4 chưa đọc')).toBeInTheDocument()
   expect(screen.getByText('Sự kiện 7 ngày gần nhất, không gồm việc bạn làm.')).toBeInTheDocument()
