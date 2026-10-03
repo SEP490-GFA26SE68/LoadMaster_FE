@@ -1,3 +1,4 @@
+export { axleImbalance, balancedCenterXCm } from './axle-balance'
 export {
   AXLE_LOAD_UNAVAILABLE_REASONS,
   axleLoads,
