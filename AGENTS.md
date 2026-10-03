@@ -66,7 +66,7 @@ viên kho. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02) và
-`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*) và `monitoring.view` (vị trí xe và giờ đến tính từ vị trí ở card sơ đồ tuyến của chuyến Đang vận chuyển — điều phối viên, quản lý công ty, *bổ sung 04/10/2026, FE-6-08*; màn `/giam-sat` chưa có), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
@@ -123,6 +123,10 @@ nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi h
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao; quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
 vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
+*(đã điều chỉnh 04/10/2026, FE-6-09)* Điều phối viên nhận thêm **nguy cơ trễ hạn giao** (`delivery.etaRisk` — sự kiện của hệ thống, không có
+người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
+chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau lần đọc đầu thành toast (sát hạn: cảnh báo; trễ hạn dự kiến: lỗi) và chuông đọc lại ngay,
+cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty chưa nhận loại này (chờ sự cố chuyển lên, FE-6-11).
 *(đã điều chỉnh 02/10/2026, FE-0-08)* Chuông không tự lọc theo công ty — kho lọc: quản trị công ty chỉ nhận sự kiện tài khoản của công ty
 mình (kể cả việc quản trị hệ thống làm trên người của công ty), không nhận gì về tài khoản nền tảng hay công ty khác.
 
@@ -236,6 +240,8 @@ src/
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
+    monitoring/         *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển: `monitoring-api.ts`,
+                        `useTrackingQuery.ts`, `LiveLocationBar` (dòng vị trí kèm nhãn "Mô phỏng"), `EtaRiskWatcher` (toast nguy cơ trễ hạn)
     optimization/       chạy job, theo dõi tiến trình
     viewer3d/           toàn bộ code Three.js, tách biệt hoàn toàn
     warehouse/          luồng xếp hàng ở kho
@@ -281,7 +287,8 @@ src/
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
-                        gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09)
+                        gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09); *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* xe mô phỏng dọc tuyến
+                        `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
   services/
@@ -1384,6 +1391,30 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   lên khoảng 400 ms, chủ yếu vì phần domain tính (thứ tự xếp / dỡ, ràng buộc, chỉ số) chạy cho ba kết quả thay vì một.
   Mở app sớm hơn việc "hôm nay" muộn nhất của seed thì mọi mốc giờ seed lùi cùng một khoảng (`seed-shift.ts`): lịch sử không có sự kiện
   ở tương lai, sự kiện mới luôn nằm trên sự kiện seed; ngày chạy không đổi.
+- *(đã điều chỉnh 04/10/2026, FE-6-08, D-85)* **Đồng hồ của kho là đồng hồ mô phỏng** (`clock.ts`: `createSimClock`): mọi mốc giờ kho ghi
+  (`ctx.nowIso`) và vị trí xe đọc cùng một đồng hồ. Nó bắt đầu **đúng giờ máy** lúc tạo kho — seed neo và `seed-shift.ts` không đổi, không
+  mốc nào nhảy — rồi chạy nhanh `speed` lần; `getMockDb()` đọc `?toc-do=<n>` (`clockSpeedFrom`, tối đa 3.600) **một lần lúc tải trang**, đổi
+  route trong app không đổi tốc độ. Ở tốc độ 1 (không có tham số, mọi test, cả Vitest) đồng hồ trả thẳng giờ của `now` được tiêm: test giả
+  `Date` hay tiêm `now` thấy đúng giờ mình đặt; test tua nhanh truyền `createMockDb({ now, speed })`. `setSpeed` đổi tốc độ mà giờ không nhảy
+  (chỗ cho "Dùng GPS thật", FE-6-13). Khi tua nhanh, giờ của kho đi trước giờ máy: chỗ nào ở giao diện so mốc của kho với `new Date()`
+  ("hôm nay" của bảng điều khiển, chuông) sẽ lệch — chỉ là chế độ demo.
+- *(đã điều chỉnh 04/10/2026, FE-6-08, FE-6-09)* **Vị trí xe và ETA trực tiếp** (`db-tracking.ts`, hàm thuần `trip-tracking.ts`, kiểu ở
+  `tracking-model.ts`; `postDriverLocation`, `getLatestLocation`, `getLocationHistory`, `getTripMonitoring`, `listTripMonitoring`). Kho
+  **không chạy hẹn giờ nào**: mỗi lần được đọc, nó ghi bù các điểm vị trí mô phỏng từ điểm đã ghi tới giờ của kho — một điểm mỗi 30 giây
+  mô phỏng kể từ lúc tài xế xuất phát, mỗi điểm tính **như lúc đó** nên kết quả không phụ thuộc lúc nào có người đọc; lịch sử giữ 2.000
+  điểm gần nhất mỗi chuyến (`DbState.tracking`, seed để trống — chuyến seed đang chạy đứng theo tiến độ giao của nó ở giờ hiện tại). Xe
+  mô phỏng (`@/domain/routing` `simulateVehicle`): mỗi chặng nối thẳng mất đúng thời gian của công thức D-76 (xe chạy 50 km/h trên quãng
+  đường × 1,3), sự cố làm xe đứng thêm đúng số phút chậm (tham số `delays`, FE-6-11 truyền vào), "Đã đến" (`StopProgress.arrivedAt` — FE-6-06
+  ghi) đặt xe tại điểm, và xe **chờ ở điểm chưa hoàn tất** tới khi tài xế hoàn tất điểm (tuyến đưa vào mô phỏng cắt tại điểm đó; 15 phút
+  dừng mỗi điểm chỉ còn trong lịch thuần và trong ETA). Sau mỗi điểm vị trí, `liveEta` tính lại giờ đến các điểm chưa xong **từ vị trí** —
+  không cộng phút chậm lần hai; mức hạn của một điểm **xấu đi** (kịp → sát → trễ) thì kho ghi một sự kiện hệ thống `delivery.etaRisk`
+  (`ctx.logSystem`: người làm `null`, công ty của chuyến), một lần cho mỗi lần chuyển; mức khởi đầu là mức của `routePlan`, tốt lên thì
+  không báo. Điểm GPS thật (`postDriverLocation`, nguồn `GPS`) tính ETA cùng cách và giữ xe mô phỏng không ghi trong 90 giây kể từ điểm
+  GPS cuối. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc lại theo
+  `refreshMs` kho trả (thời gian thật tới điểm kế tiếp, ít nhất 1 giây; `null` khi chuyến không còn chạy) bằng `refetchInterval` của
+  Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không
+  `setInterval` riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo
+  nhịp đó. E2E có giá trị đang chạy chờ tới trạng thái dừng (xe tới điểm), không chờ theo giờ (`e2e/live-tracking.spec.ts`).
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).
