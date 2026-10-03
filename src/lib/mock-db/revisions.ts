@@ -2,6 +2,7 @@ import { expandPackages } from '@/domain/cargo'
 import { annotatePlacements, applyPose, createPlacementLayout, createStackGraph, recomputeOrders, type PlacementPatch } from '@/domain/constraints'
 import { computeMetrics } from '@/domain/metrics'
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
+import { zonePlacements } from '@/domain/zones'
 import { MockDbError } from './errors'
 import type { Revision, Trip } from './types'
 
@@ -16,7 +17,9 @@ export function isStale(revision: Pick<Revision, 'inputVersion'>, trip: Pick<Tri
  * 2. tính lại `loadingOrder`/`unloadingOrder` bằng `recomputeOrders` trên đồ thị đỡ của placement đã áp draft, thuộc tính xếp chồng và
  *    điểm giao lấy từ instance;
  * 3. tính lại `supportRatio` và `constraintWarnings` của từng placement bằng constraint engine (`annotatePlacements`, LM-023);
- * 4. tính lại `metrics` bằng `computeMetrics`.
+ * 4. ghi lại `stopZoneId` của từng placement và đếm lại số lần dỡ-xếp lại theo các vùng của lần tối ưu (`result.stopZones` — Duyệt
+ *    không chia lại vùng, FE-5b-02); kết quả không chia vùng thì giữ nguyên;
+ * 5. tính lại `metrics` bằng `computeMetrics`.
  *
  * Các trường khác giữ nguyên, gồm `isMockResult`.
  */
@@ -42,12 +45,14 @@ export function approvedResult(
   const graph = createStackGraph(createPlacementLayout(request.vehicle, patched), instanceById)
   const deliveryStops = new Map(instances.map(({ packageInstanceId, deliveryStop }) => [packageInstanceId, deliveryStop]))
   const { orders } = recomputeOrders(graph, deliveryStops)
-  const placements = annotatePlacements({
+  const annotated = annotatePlacements({
     vehicle: request.vehicle,
     packages: request.packages,
     placements: patched.map((placement) => ({ ...placement, ...orders.get(placement.packageInstanceId) })),
     settings: request.settings,
   })
+  const zoned = result.stopZones === undefined ? undefined : zonePlacements(result.stopZones, annotated, deliveryStops)
+  const placements = zoned?.placements ?? annotated
   const metrics = computeMetrics({
     vehicle: request.vehicle,
     placements,
@@ -55,6 +60,7 @@ export function approvedResult(
     unplacedCount: result.unplacedPackages.length,
     // Thời gian chạy là của lần tối ưu, Duyệt không chạy lại service
     runtimeMs: result.metrics.runtimeMs,
+    rehandlingCount: zoned?.rehandlingCount,
   })
   return { ...result, placements, metrics }
 }

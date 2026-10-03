@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { expandPackages } from '@/domain/cargo'
 import { createConstraintEngine, type ConstraintCode } from '@/domain/constraints'
 import { SPEC_CARTON_A, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
-import { gt, ORIENTATION_CODES, UPRIGHT_ORIENTATIONS } from '@/domain/geometry'
+import { gt, ORIENTATION_CODES, roundCm, UPRIGHT_ORIENTATIONS } from '@/domain/geometry'
 import {
   optimizationRequestSchema,
   optimizationResultSchema,
@@ -74,6 +74,7 @@ test('500 deterministic random requests: every placement valid, every instance a
   const random = seededRandom(24_092_026)
   let completed = 0
   let placed = 0
+  let rehandled = 0
   for (let index = 0; index < 500; index += 1) {
     const request = randomRequest(random, index)
     expect(optimizationRequestSchema.safeParse(request).success).toBe(true)
@@ -91,9 +92,18 @@ test('500 deterministic random requests: every placement valid, every instance a
     const { issues } = createConstraintEngine({ ...request, placements: result.placements }).evaluateAll()
     expect(issues.filter(({ code }) => INVALID_PLACEMENT.has(code))).toStrictEqual([])
     expect(gt(result.metrics.usedPayloadKg, request.vehicle.maxPayloadKg)).toBe(false)
+    // zones (FE-5b-02): they and their 10 cm buffers cover the box exactly, every placement sits in one, and the count is the
+    // number of placements sitting in the zone of another stop; packing by zone never puts cargo behind a later stop
+    const zones = result.stopZones ?? []
+    const stopOf = new Map(expandPackages(request.packages).instances.map(({ packageInstanceId, deliveryStop }) => [packageInstanceId, deliveryStop]))
+    const zoneStop = new Map(zones.map(({ id, stopId }) => [id, stopId]))
+    if (zones.length > 0) expect(roundCm(zones.reduce((sum, { startXCm, endXCm }) => sum + endXCm - startXCm, 0) + (zones.length - 1) * 10)).toBe(request.vehicle.innerLengthCm)
+    expect(result.placements.filter(({ stopZoneId }) => stopZoneId === undefined || !zoneStop.has(stopZoneId))).toStrictEqual([])
+    expect(result.metrics.rehandlingCount).toBe(result.placements.filter(({ packageInstanceId, stopZoneId }) => zoneStop.get(stopZoneId ?? '') !== stopOf.get(packageInstanceId)).length)
+    if (request.settings.enforceLifo) expect(issues.filter(({ code }) => code === 'LIFO_BLOCKED')).toStrictEqual([])
+    rehandled += result.metrics.rehandlingCount ?? 0
     completed += 1
     placed += result.placements.length
   }
   // most requests must really run and place cargo, or "nothing invalid" proves little
-  expect({ mostCompleted: completed > 400, enoughPlaced: placed > 5000 }).toStrictEqual({ mostCompleted: true, enoughPlaced: true })
-}, 120_000)
+  expect({ mostCompleted: completed > 400, enoughPlaced: placed > 5000, someRehandled: rehandled > 0 }).toStrictEqual({ mostCompleted: true, enoughPlaced: true, someRehandled: true })}, 120_000)

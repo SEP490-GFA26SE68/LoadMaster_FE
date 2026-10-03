@@ -1,29 +1,18 @@
 import type { PackageInstance } from '@/domain/cargo'
-import {
-  createSpatialGrid,
-  effectiveOrientations,
-  gt,
-  orientDimensions,
-  overlaps,
-  roundCm,
-  roundKg,
-  type Box,
-  type OrientationCode,
-  type PlacedDimensions,
-} from '@/domain/geometry'
-import type { ConstraintIssue } from '@/domain/constraints'
-import { axleLoadsOf, checkAxleLoads } from '@/domain/metrics'
-import { obstacleToBox, type PackagePlacement, type UnplacedPackage, type VehicleConfig } from '@/domain/models'
+import { effectiveOrientations, gt, lt, orientDimensions, roundCm } from '@/domain/geometry'
+import type { PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
+import type { StopZone } from '@/domain/zones'
 import type { OptimizationProgress } from './OptimizationService'
+import { createShelves, type Lane, type Orientation, type Rejection } from './shelf-walls'
 
 type ReasonCode = UnplacedPackage['reasonCode']
-/** Vì sao một kiện không lên xe: mã lý do, kèm ràng buộc đã chặn khi lý do là `CONSTRAINT_VIOLATED`. */
-type Rejection = Pick<UnplacedPackage, 'reasonCode' | 'violatedConstraints'>
-type StackedBox = { readonly instance: PackageInstance; readonly box: Box; loadAboveKg: number }
-type Stack = { readonly xCm: number; readonly yCm: number; readonly boxes: StackedBox[] }
-type Wall = { readonly xCm: number; depthCm: number; nextYCm: number; readonly stacks: Stack[] }
-type Orientation = { readonly code: OrientationCode; readonly dims: PlacedDimensions }
-type Spot = { readonly box: Box; readonly code: OrientationCode; readonly stack?: Stack }
+/**
+ * Dải của một vùng: bắt đầu ở `startXCm`; kiện của chính vùng không vượt `endXCm`; kiện của điểm kế bên xếp nhờ vào đuôi dải được tới
+ * `tailXCm` (đầu dải kế phía cửa).
+ */
+type LaneSpec = { readonly stopId: number; readonly startXCm: number; readonly endXCm: number; readonly tailXCm: number }
+type ZoneLane = Lane & LaneSpec & { carried: boolean }
+type Pending = { readonly instance: PackageInstance; readonly orientations: readonly Orientation[]; readonly stackingRejected: boolean }
 
 export type PackInput = {
   readonly vehicle: VehicleConfig
@@ -32,144 +21,192 @@ export type PackInput = {
   readonly reasons: ReadonlyMap<string, ReasonCode>
   /** `settings.prioritizeLowCenterOfGravity`: mở cột mới trên sàn trước khi xếp chồng. */
   readonly lowCenterOfGravity: boolean
+  /**
+   * Vùng theo điểm giao (`stopZones`, theo thứ tự giao — FE-5b-02). Có thì xếp theo vùng, điểm cuối trước; vắng hoặc rỗng thì xếp
+   * một dải suốt chiều dài thùng theo đúng thứ tự `instances`.
+   */
+  readonly zones?: readonly StopZone[]
   readonly onProgress?: (progress: OptimizationProgress) => void
 }
 
 export type Packed = { readonly placements: PackagePlacement[]; readonly unplaced: UnplacedPackage[] }
 
-function boxOf(xCm: number, yCm: number, zCm: number, dims: PlacedDimensions): Box {
-  return { xCm, yCm, zCm, lengthCm: dims.placedLengthCm, widthCm: dims.placedWidthCm, heightCm: dims.placedHeightCm }
+function noSpace(stackingRejected: boolean): Rejection {
+  return { reasonCode: stackingRejected ? 'STACKING_VIOLATION' : 'NO_SPACE' }
+}
+
+/** Các hướng đặt của kiện đưa được qua cửa. */
+function doorOrientations(vehicle: VehicleConfig, instance: PackageInstance): Orientation[] {
+  return effectiveOrientations(instance)
+    .map((code) => ({ code, dims: orientDimensions(instance, code) }))
+    .filter(({ dims }) => !gt(dims.placedWidthCm + vehicle.clearanceCm, vehicle.doorWidthCm) && !gt(dims.placedHeightCm + vehicle.clearanceCm, vehicle.doorHeightCm))
+}
+
+function byStop(instances: readonly PackageInstance[]): Map<number, PackageInstance[]> {
+  const groups = new Map<number, PackageInstance[]>()
+  for (const instance of instances) {
+    const group = groups.get(instance.deliveryStop)
+    if (group === undefined) groups.set(instance.deliveryStop, [instance])
+    else group.push(instance)
+  }
+  return groups
+}
+
+/** Một lượt xếp trên thùng trống: ghi lý do của kiện ở lại, báo tiến độ nếu có `onProgress`. */
+function createRun({ vehicle, instances, reasons, lowCenterOfGravity }: PackInput, onProgress?: PackInput['onProgress']) {
+  const shelves = createShelves(vehicle, lowCenterOfGravity)
+  const rejections = new Map<string, Rejection>()
+  let settled = 0
+  return {
+    shelves,
+    /** Lý do biết trước (kiểm request, vượt tải), hoặc các hướng đặt qua được cửa. */
+    prepare(instance: PackageInstance): { rejection: Rejection } | { orientations: Orientation[] } {
+      const known = reasons.get(instance.packageInstanceId)
+      if (known !== undefined) return { rejection: { reasonCode: known } }
+      if (gt(shelves.usedKg() + instance.weightKg, vehicle.maxPayloadKg)) return { rejection: { reasonCode: 'OVER_PAYLOAD' } }
+      return { orientations: doorOrientations(vehicle, instance) }
+    },
+    /** Chốt một kiện: đã xếp (không có `rejection`) hoặc ở lại với lý do. */
+    settle(instance: PackageInstance, rejection?: Rejection): void {
+      if (rejection !== undefined) rejections.set(instance.packageInstanceId, rejection)
+      settled += 1
+      if (settled % 25 === 0 || settled === instances.length) onProgress?.({ placed: settled, total: instances.length })
+    },
+    /** Còn kiện ở lại vì hết chỗ (không phải vì lý do biết trước hay ràng buộc). */
+    outOfSpace: () => [...rejections.values()].some(({ reasonCode }) => reasonCode === 'NO_SPACE' || reasonCode === 'STACKING_VIOLATION'),
+    /** `unplaced` giữ thứ tự của `instances`. */
+    result(): Packed {
+      const unplaced = instances.flatMap((instance): UnplacedPackage[] => {
+        const rejection = rejections.get(instance.packageInstanceId)
+        return rejection === undefined ? [] : [{ packageInstanceId: instance.packageInstanceId, message: rejection.reasonCode, ...rejection }]
+      })
+      return { placements: shelves.placements, unplaced }
+    },
+  }
+}
+type Run = ReturnType<typeof createRun>
+
+/** Một dải suốt chiều dài thùng, kiện theo đúng thứ tự `instances`. */
+function packWhole(input: PackInput): Run {
+  const run = createRun(input, input.onProgress)
+  const lane = run.shelves.lane(0)
+  for (const instance of input.instances) {
+    const prepared = run.prepare(instance)
+    if ('rejection' in prepared) {
+      run.settle(instance, prepared.rejection)
+      continue
+    }
+    const outcome = run.shelves.attempt(lane, input.vehicle.innerLengthCm, instance, prepared.orientations)
+    run.settle(instance, outcome.placed ? undefined : (outcome.rejection ?? noSpace(outcome.stackingRejected)))
+  }
+  return run
 }
 
 /**
- * Xếp kệ tất định cho mock (Spec mục 11: "shelf/row packing đơn giản"), không phải bộ tối ưu: vách theo X từ vách trong ra cửa,
- * trong vách các cột theo Y, trong cột chồng theo Z. Kiện chỉ chồng lên kiện đỉnh cột khi đáy nằm gọn trong đáy kiện đó
- * (tỷ lệ đỡ 1, tải dồn đúng một cột), và phải đúng `stackable`, `maxTopLoadKg`, `maxStackCount` của cả cột. Không đè vật cản
- * (cột trên sàn nhảy qua vật cản theo Y), không vượt biên, không vượt tải trọng xe. Vách đã qua không quay lại.
- *
- * Xe khai trục (FE-5b-03, FE-5b-04): kiện mà đặt vào chỗ tìm được sẽ làm tải nhóm trục trước hoặc sau vượt giới hạn thì không lên xe,
- * lý do `CONSTRAINT_VIOLATED` kèm issue `AXLE_OVERLOAD` của lần thử đó — kiện nhẹ hơn phía sau vẫn được xếp tiếp. Xe không khai trục
- * không có kiểm này.
+ * Xếp theo dải, từ dải sâu nhất ra cửa (`specs` theo thứ tự giao: dải đầu sát cửa). Kiện không vừa dải của mình được xếp chỗ khác mà
+ * vẫn giữ thứ tự dỡ — không bao giờ nằm sau lưng hàng giao muộn hơn:
+ * 1. nhờ vào phần đuôi còn trống của dải sâu hơn liền kề (kể cả khoảng đệm), khi dải của mình chưa nhận kiện tràn nào;
+ * 2. không được thì tràn sang đầu dải kế phía cửa, xếp trước hàng của dải đó; ở đó cũng không vừa (hoặc đã là dải sát cửa) thì ở
+ *    lại với lý do `NO_SPACE` / `STACKING_VIOLATION`.
  */
-export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, onProgress }: PackInput): Packed {
-  const grid = createSpatialGrid([])
-  const obstacles = vehicle.obstacles.map(obstacleToBox)
-  const placements: PackagePlacement[] = []
-  const unplaced: UnplacedPackage[] = []
-  let wall: Wall = { xCm: 0, depthCm: 0, nextYCm: 0, stacks: [] }
-  let usedKg = 0
-  /** Tổng (khối lượng × hoành độ tâm hộp) của kiện đã xếp, kg·cm — trọng tâm hàng theo X cho mô hình tải trục. */
-  let momentKgCm = 0
-
-  const inside = (box: Box) =>
-    !gt(box.xCm + box.lengthCm, vehicle.innerLengthCm) &&
-    !gt(box.yCm + box.widthCm, vehicle.innerWidthCm) &&
-    !gt(box.zCm + box.heightCm, vehicle.innerHeightCm)
-  const free = (box: Box) => inside(box) && !obstacles.some((obstacle) => overlaps(obstacle, box)) && grid.queryAabb(box).length === 0
-
-  function floorSpot(orientations: readonly Orientation[]): Spot | undefined {
-    for (const { code, dims } of orientations) {
-      let yCm = wall.nextYCm
-      for (;;) {
-        const box = boxOf(wall.xCm, yCm, 0, dims)
-        if (!inside(box)) break
-        const blocking = obstacles.filter((obstacle) => overlaps(obstacle, box))
-        if (blocking.length === 0) {
-          if (grid.queryAabb(box).length === 0) return { box, code }
-          break
-        }
-        yCm = Math.max(...blocking.map((obstacle) => obstacle.yCm + obstacle.widthCm))
+function packLanes(input: PackInput, specs: readonly LaneSpec[], onProgress?: PackInput['onProgress']): Run {
+  const run = createRun(input, onProgress)
+  const lanes = specs.map((spec): ZoneLane => ({ ...run.shelves.lane(spec.startXCm), ...spec, carried: false }))
+  const groups = byStop(input.instances)
+  let overflow: Pending[] = []
+  for (let index = lanes.length - 1; index >= 0; index -= 1) {
+    const lane = lanes[index] as ZoneLane
+    const deeper = lanes[index + 1]
+    const incoming = overflow
+    overflow = []
+    for (const { instance, orientations, stackingRejected } of incoming) {
+      const outcome = run.shelves.attempt(lane, lane.endXCm, instance, orientations)
+      lane.carried ||= outcome.placed
+      run.settle(instance, outcome.placed ? undefined : (outcome.rejection ?? noSpace(stackingRejected || outcome.stackingRejected)))
+    }
+    for (const instance of groups.get(lane.stopId) ?? []) {
+      const prepared = run.prepare(instance)
+      if ('rejection' in prepared) {
+        run.settle(instance, prepared.rejection)
+        continue
       }
-    }
-    return undefined
-  }
-
-  function topSpot(instance: PackageInstance, orientations: readonly Orientation[]): { spot?: Spot; stackingRejected: boolean } {
-    let stackingRejected = false
-    for (const stack of wall.stacks) {
-      const top = stack.boxes.at(-1)
-      if (top === undefined) continue
-      const layers = stack.boxes.length + 1
-      const breaksRules =
-        !top.instance.stackable ||
-        stack.boxes.some(({ loadAboveKg, instance: below }) => gt(loadAboveKg + instance.weightKg, below.maxTopLoadKg)) ||
-        [...stack.boxes.map((stacked) => stacked.instance), instance].some(({ maxStackCount }) => maxStackCount !== undefined && layers > maxStackCount)
-      for (const { code, dims } of orientations) {
-        if (gt(dims.placedLengthCm, top.box.lengthCm) || gt(dims.placedWidthCm, top.box.widthCm)) continue
-        const box = boxOf(stack.xCm, stack.yCm, top.box.zCm + top.box.heightCm, dims)
-        if (!free(box)) continue
-        if (breaksRules) stackingRejected = true
-        else return { spot: { box, code, stack }, stackingRejected }
+      let outcome = run.shelves.attempt(lane, lane.endXCm, instance, prepared.orientations)
+      let stackingRejected = outcome.stackingRejected
+      if (!outcome.placed && outcome.rejection === undefined && deeper !== undefined && !lane.carried) {
+        outcome = run.shelves.attempt(deeper, deeper.tailXCm, instance, prepared.orientations)
+        stackingRejected ||= outcome.stackingRejected
       }
+      if (outcome.placed || outcome.rejection !== undefined) run.settle(instance, outcome.rejection)
+      else if (index > 0) overflow.push({ instance, orientations: prepared.orientations, stackingRejected })
+      else run.settle(instance, noSpace(stackingRejected))
     }
-    return { stackingRejected }
+    groups.delete(lane.stopId)
   }
-
-  function place(instance: PackageInstance, { box, code, stack }: Spot): void {
-    grid.update(instance.packageInstanceId, box)
-    usedKg = roundKg(usedKg + instance.weightKg)
-    momentKgCm += instance.weightKg * (box.xCm + box.lengthCm / 2)
-    wall.depthCm = Math.max(wall.depthCm, box.lengthCm)
-    if (stack) {
-      for (const below of stack.boxes) below.loadAboveKg += instance.weightKg
-      stack.boxes.push({ instance, box, loadAboveKg: 0 })
-    } else {
-      wall.stacks.push({ xCm: box.xCm, yCm: box.yCm, boxes: [{ instance, box, loadAboveKg: 0 }] })
-      wall.nextYCm = box.yCm + box.widthCm
-    }
-    placements.push({
-      packageInstanceId: instance.packageInstanceId,
-      orientation: code,
-      xCm: roundCm(box.xCm),
-      yCm: roundCm(box.yCm),
-      zCm: roundCm(box.zCm),
-      placedLengthCm: box.lengthCm,
-      placedWidthCm: box.widthCm,
-      placedHeightCm: box.heightCm,
-      loadingOrder: placements.length + 1,
-      unloadingOrder: 0,
-      supportRatio: 1,
-      constraintWarnings: [],
-    })
+  // Điểm giao không có vùng: nơi gọi chỉ chia vùng cho điểm còn kiện xếp được, nên ở đây chỉ còn kiện đã có lý do
+  for (const instance of [...groups.values()].flat()) {
+    const prepared = run.prepare(instance)
+    run.settle(instance, 'rejection' in prepared ? prepared.rejection : noSpace(false))
   }
+  return run
+}
 
-  /** `AXLE_OVERLOAD` nếu đặt thêm `instance` vào `box`; rỗng khi xe không khai trục hoặc vẫn trong giới hạn. */
-  function axleOverload(instance: PackageInstance, box: Box): ConstraintIssue<'AXLE_OVERLOAD'>[] {
-    if (!vehicle.axles?.length) return []
-    const totalKg = usedKg + instance.weightKg
-    if (!gt(totalKg, 0)) return []
-    const centerXCm = (momentKgCm + instance.weightKg * (box.xCm + box.lengthCm / 2)) / totalKg
-    return checkAxleLoads(axleLoadsOf(vehicle, { totalKg, centerXCm }))
-  }
-
-  function rejectionFor(instance: PackageInstance): Rejection | undefined {
-    const known = reasons.get(instance.packageInstanceId)
-    if (known !== undefined) return { reasonCode: known }
-    if (gt(usedKg + instance.weightKg, vehicle.maxPayloadKg)) return { reasonCode: 'OVER_PAYLOAD' }
-    const orientations = effectiveOrientations(instance)
-      .map((code) => ({ code, dims: orientDimensions(instance, code) }))
-      .filter(({ dims }) => !gt(dims.placedWidthCm + vehicle.clearanceCm, vehicle.doorWidthCm) && !gt(dims.placedHeightCm + vehicle.clearanceCm, vehicle.doorHeightCm))
-    let stackingRejected = false
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const onTop = topSpot(instance, orientations)
-      stackingRejected ||= onTop.stackingRejected
-      const spot = lowCenterOfGravity ? (floorSpot(orientations) ?? onTop.spot) : (onTop.spot ?? floorSpot(orientations))
-      if (spot) {
-        const overload = axleOverload(instance, spot.box)
-        if (overload.length > 0) return { reasonCode: 'CONSTRAINT_VIOLATED', violatedConstraints: overload }
-        place(instance, spot)
-        return undefined
-      }
-      if (wall.stacks.length === 0) break
-      wall = { xCm: wall.xCm + wall.depthCm, depthCm: 0, nextYCm: 0, stacks: [] }
-    }
-    return { reasonCode: stackingRejected ? 'STACKING_VIOLATION' : 'NO_SPACE' }
-  }
-
-  instances.forEach((instance, index) => {
-    const rejection = rejectionFor(instance)
-    if (rejection !== undefined) unplaced.push({ packageInstanceId: instance.packageInstanceId, message: rejection.reasonCode, ...rejection })
-    if ((index + 1) % 25 === 0 || index + 1 === instances.length) onProgress?.({ placed: index + 1, total: instances.length })
+/**
+ * Dải của từng vùng khi dải i bắt đầu ở `starts[i]`. `withinZone`: hàng của vùng dừng ở mép vùng (lượt xếp theo đúng vùng); không thì
+ * được xếp tới đầu dải kế phía cửa (lượt đã lùi dải — chỗ của từng dải đã chia theo chiều dài nó cần).
+ */
+function laneSpecs(zones: readonly StopZone[], starts: readonly number[], innerLengthCm: number, withinZone: boolean): LaneSpec[] {
+  return zones.map((zone, index) => {
+    // Dải dồn sát có thể bị đẩy quá cửa khi hàng không vừa thùng: không dải nào được vượt chiều dài thùng
+    const tailXCm = index === 0 ? innerLengthCm : Math.min(innerLengthCm, starts[index - 1] as number)
+    return { stopId: zone.stopId, startXCm: starts[index] as number, endXCm: withinZone ? zone.endXCm : tailXCm, tailXCm }
   })
-  return { placements, unplaced }
+}
+
+/** Chiều dài thùng mà hàng của từng vùng cần khi xếp riêng, không giới hạn, từ đầu vùng của nó (đo trên thùng trống). */
+function neededDepths({ vehicle, instances, reasons, lowCenterOfGravity }: PackInput, zones: readonly StopZone[]): number[] {
+  const groups = byStop(instances.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId)))
+  return zones.map((zone) => {
+    const shelves = createShelves(vehicle, lowCenterOfGravity)
+    const lane = shelves.lane(zone.startXCm)
+    for (const instance of groups.get(zone.stopId) ?? []) shelves.attempt(lane, Number.POSITIVE_INFINITY, instance, doorOrientations(vehicle, instance))
+    return lane.wall.xCm + lane.wall.depthCm - zone.startXCm
+  })
+}
+
+/**
+ * Điểm bắt đầu của từng dải khi có vùng không đủ chỗ cho hàng của mình: tính từ cửa vào, dải nào cần dài hơn vùng thì lùi đầu dải về
+ * phía vách trong đúng phần thiếu, dải sâu hơn nhường chỗ theo. Lùi quá vách trong thì dồn sát từ vách trong ra.
+ */
+function pulledBackStarts(zones: readonly StopZone[], depths: readonly number[], innerLengthCm: number): number[] {
+  const starts: number[] = []
+  let nextStartXCm = innerLengthCm
+  zones.forEach((zone, index) => {
+    nextStartXCm = Math.min(zone.startXCm, Math.min(zone.endXCm, nextStartXCm) - (depths[index] as number))
+    starts.push(nextStartXCm)
+  })
+  if (lt(nextStartXCm, 0)) {
+    starts[starts.length - 1] = 0
+    for (let index = starts.length - 2; index >= 0; index -= 1) {
+      starts[index] = Math.max(starts[index] as number, (starts[index + 1] as number) + (depths[index + 1] as number))
+    }
+  }
+  return starts.map(roundCm)
+}
+
+/**
+ * Xếp kệ tất định cho mock (cơ chế vách / cột / chồng ở `createShelves`), không vượt tải trọng xe.
+ *
+ * Xếp theo vùng (FE-5b-02, D-79): mỗi vùng là một dải riêng bắt đầu ở mép sâu của vùng, xếp từ vùng sâu nhất (điểm giao cuối) ra
+ * cửa (`packLanes`). Vùng chia theo thể tích nên có điểm giao cần nhiều sàn hơn vùng của nó; khi lượt đầu còn kiện ở lại vì hết chỗ,
+ * mock đo chiều dài từng điểm cần rồi xếp lại với các dải lùi về phía vách trong vừa đủ (`pulledBackStarts`) và lấy lượt xếp được
+ * nhiều kiện hơn. Kiện nằm ngoài vùng của điểm mình được đếm là dỡ-xếp lại ở `zonePlacements`.
+ */
+export function packShelves(input: PackInput): Packed {
+  const { zones = [], vehicle } = input
+  if (zones.length === 0) return packWhole(input).result()
+  const inZones = packLanes(input, laneSpecs(zones, zones.map(({ startXCm }) => startXCm), vehicle.innerLengthCm, true), input.onProgress)
+  if (!inZones.outOfSpace()) return inZones.result()
+  const starts = pulledBackStarts(zones, neededDepths(input, zones), vehicle.innerLengthCm)
+  const pulledBack = packLanes(input, laneSpecs(zones, starts, vehicle.innerLengthCm, false))
+  return (pulledBack.shelves.placements.length > inZones.shelves.placements.length ? pulledBack : inZones).result()
 }
