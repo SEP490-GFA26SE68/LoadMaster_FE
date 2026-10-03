@@ -191,6 +191,8 @@ test('the company manager reads trips and plans without any write action; the ap
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)
+  // Chuyến Đã lập kế hoạch: "Đổi xe" là nút mở hộp thoại (FE-5b-08); chuyến nháp là liên kết tới form sửa
+  await expect(page.getByRole('button', { name: 'Đổi xe', exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Đổi xe', exact: true })).toHaveCount(0)
 
   // Planner chỉ xem, cả bản đã duyệt lẫn bản chưa duyệt REV-001: không Chỉnh sửa, không Duyệt, một dòng lý do
