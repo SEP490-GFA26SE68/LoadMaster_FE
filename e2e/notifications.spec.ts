@@ -15,9 +15,9 @@ async function signIn(page: Page, email: string, password: string) {
 
 test('a package the warehouse reports missing reaches the dispatcher bell and opens the trip', async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
-  await expect(page.getByRole('list', { name: 'Chuyến cần xếp', exact: true })).toBeVisible()
-  // Không có chuông ở màn kho: nhân viên kho không có loại thông báo nào
-  await expect(page.getByRole('button', { name: /^Thông báo/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến cần xếp', exact: true })).toBeVisible()
+  // Chuông ở màn kho chỉ báo xác nhận tay của mình bị từ chối (FE-6-04): chưa có gì
+  await expect(page.getByRole('button', { name: 'Thông báo', exact: true })).toBeVisible()
   await page.evaluate(async ({ db, tripId }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const store = getMockDb()

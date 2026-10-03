@@ -101,7 +101,7 @@ test('the token read on a printed label looks the same package up; the A4 sheet 
 
 test('the warehouse scans a package flagged "not found": the flag is cleared and the dispatcher is told; a foreign code is simply not found', async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
-  await expect(page.getByRole('list', { name: 'Chuyến cần xếp', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến cần xếp', exact: true })).toBeVisible()
   const flagged = await storePackage(page, 'PK-0063')
   expect(flagged.flags).toStrictEqual(['NOT_FOUND'])
   // Mã QR của một kiện Phương Nam, đọc khi kho chưa lọc theo phiên rồi trả lại phiên của nhân viên kho

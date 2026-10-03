@@ -11,7 +11,7 @@ const TRIP = 'TRIP-010'
 
 test('phone: the demo driver delivers every stop, reports one issue and sees the trip summary', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
   await login('/tai-xe', 'driver')
-  const card = page.getByRole('region', { name: 'Sẵn sàng giao' }).getByRole('listitem')
+  const card = page.getByRole('region', { name: 'Xếp xong — chờ xuất phát' }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: TRIP, exact: true }) })
   const open = card.getByRole('link', { name: 'Mở chuyến', exact: true })
   expect(await heightOf(open)).toBeGreaterThanOrEqual(56)
@@ -90,6 +90,6 @@ test('phone: the demo driver delivers every stop, reports one issue and sees the
 
   // Về danh sách: chuyến nằm ở nhóm đã hoàn thành
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).last().tap()
-  await expect(page.getByRole('region', { name: 'Đã hoàn thành gần đây' }).getByRole('heading', { name: TRIP, exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Đã giao gần đây' }).getByRole('heading', { name: TRIP, exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })

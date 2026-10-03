@@ -132,6 +132,6 @@ test('a trip without an approved plan shows the empty state with a way out', asy
   await expect(page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })).toHaveCount(0)
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kho' && url.search === '')
-  await expect(page.getByRole('list', { name: 'Chuyến cần xếp' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến cần xếp', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
