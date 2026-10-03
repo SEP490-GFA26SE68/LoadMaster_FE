@@ -585,7 +585,12 @@ bằng dấu ba chấm (`layout-1366`). *(bổ sung 02/10/2026, FE-0-07)* Nhãn 
 (điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và *(đã điều chỉnh 03/10/2026)* từ 1.536 tới dưới
 1.760 px — nơi nút So sánh phương án có chữ theo yêu cầu người dùng (chỉ icon dưới 1.536 px) — nhãn chỉ hiện "Đã duyệt lúc", tên người
 duyệt ở `title`; không làm vậy thì nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
-thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. *(bổ sung 04/10/2026, FE-5b-08)* Vì thế nút "Đổi xe" **không**
+thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. *(bổ sung 04/10/2026, FE-5b-06)* Revision là phương án ứng viên
+(hoặc bản duyệt dựng từ nó) của một lần chạy nhiều phương án thì khối tiêu đề có nhãn **một chữ cái** A · B · C cạnh MOCK RESULT (tên đầy
+đủ "Phương án C" ở `title` và cho trình đọc màn hình — nhãn có chữ không vừa 1.366 px), và nút So sánh mở
+`/chuyen/:id/so-sanh?lan-chay=<mã lần chạy>`; revision khác vẫn mở ma trận mọi revision (`fetchPlanApproval` trả `candidate`). Bản đã
+chỉnh tay không kèm chữ cái — nhãn "Đã chỉnh tay" nói thay, hai nhãn cùng lúc không vừa 1.536 px — nhưng nút So sánh vẫn mở lần chạy đó.
+*(bổ sung 04/10/2026, FE-5b-08)* Vì thế nút "Đổi xe" **không**
 nằm trên hàng này mà ở góc dưới phải khung 3D (mục 7 "Operations"). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
 luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
 (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
@@ -1124,7 +1129,7 @@ tạo. Trạng thái **ghi thật**, không suy lúc đọc — chỉ `movePacka
 `ASSIGNED` kèm chuyến và điểm giao; *(đã điều chỉnh 04/10/2026, FE-6-02, FE-6-05)* kho **soạn** một kiện → `STAGED` ngay lúc đối chiếu bằng nhãn (soạn bằng xác nhận tay: khi điều
 phối viên duyệt); kiện bị bỏ lúc soạn (thiếu) hoặc lúc xếp (hỏng) về `IMPORTED` kèm cờ `NOT_FOUND` / `DAMAGED` ngay lúc đó; xếp xong → `LOADED`
 (mốc chốt, vì kết quả xếp còn bị gỡ khi xác nhận tay bị từ chối); xuất phát → `IN_TRANSIT`; hoàn tất điểm giao → kiện đã dỡ `DELIVERED`, kiện ở lại xe
-(khách từ chối, sự cố khác) `RETURNED`; huỷ chuyến hoặc gỡ yêu cầu giao khỏi chuyến → `IMPORTED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào yêu cầu giao
+(khách từ chối, sự cố khác) `RETURNED`; huỷ chuyến trước khi xe chạy hoặc gỡ yêu cầu giao khỏi chuyến → `IMPORTED`; *(đã điều chỉnh 04/10/2026, FE-6-07)* huỷ chuyến Đang vận chuyển → kiện chưa giao `RETURNED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào yêu cầu giao
 hay chuyến được (`PACKAGE_FLAGGED`, `isSelectablePackage`); `clearPackageFlag` chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`) và ghi nhật
 ký; nhân viên kho gỡ cờ `NOT_FOUND` bằng `reportPackageFound` khi tìm thấy lại kiện (FE-3b-06). Mã QR cấp một lần lúc tạo, `updatePackage` không đổi nó. Seed: Long Bình 88 kiện đều `IMPORTED` — 48 kiện thêm tay theo loại kiện (kiện `RPK` cũ, kích thước của loại kiện,
 30 kiện thuộc sáu yêu cầu giao của seed, FE-4b-01) và 40 kiện nhập file không gắn loại kiện, tám điểm đến thật, hai kiện mang cờ; Phương Nam 10 kiện.
@@ -1315,9 +1320,22 @@ dù giao diện bị bỏ qua:
 - **Tài xế**: "Xuất phát" (`startDelivery`, chỉ khi xếp xong) → mỗi điểm "Đã đến" (`arriveAtStop` ghi `StopProgress.arrivedAt`) rồi mới
   dỡ, báo sự cố theo kiện và hoàn tất điểm (`STOP_NOT_ARRIVED`); dỡ chỉ qua hộp đối chiếu; "Khách từ chối" bỏ dấu đã dỡ của kiện — kiện
   ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao.
-- **Huỷ chuyến** (`cancelTrip`): chỉ từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc
-  đang xếp thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Huỷ
-  chuyến Đang vận chuyển (kiện chưa giao thành `RETURNED`) cần sự cố cấp chuyến đang mở — **chưa làm, chờ FE-6-11**.
+- **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc
+  đang xếp thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. *(đã điều chỉnh 04/10/2026, FE-6-07)* Chuyến **Đang vận
+  chuyển** huỷ được **chỉ khi có sự cố cấp chuyến chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng
+  hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã dỡ ở điểm chưa hoàn tất) thành `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ
+  `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn
+  trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại như đã ghi. Trạng thái khác (Đang vận chuyển không có sự cố đang mở, Đã
+  giao, Đã huỷ): `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận chuyển; hộp
+  thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
+- *(bổ sung 04/10/2026, FE-6-14)* **Báo cáo chuyến** (`tripReport(trip, plan, { exceptions, reroutes })`, thuần): mỗi điểm giao có giờ
+  đến dự kiến của tuyến (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo
+  giờ đến thật, chưa đến thì mức hạn của tuyến — và số kiện hoàn trả; thêm số kiện đã soạn, bảng cách đối chiếu theo bước (lần đối
+  chiếu mới nhất của từng kiện), xác nhận tay kèm người gửi và người duyệt, sự cố cấp chuyến (chuyển quản lý, gia hạn, xử lý), tuyến đã
+  đổi (`listTripReroutes`, MOCK RESULT), lý do chở chung khác loại hàng. Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất
+  tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Menu thao tác hiện mục "Báo cáo chuyến" cho **mọi người xem được chuyến** (quản
+  lý công ty mở từ đây) khi chuyến đã giao hoặc bị huỷ lúc đang vận chuyển; sửa, đổi xe, huỷ vẫn theo `trips.edit`. Bản in: chữ dài
+  xuống dòng (`print:line-clamp-none`), không cắt.
 - Seed: mọi chuyến đã ở kho đều soạn đủ và mọi kiện đều đối chiếu bằng quét; kiện "thiếu" của `TRIP-003` nay là kiện hỏng ở bước 16
   (`PK-T00730`, cờ `DAMAGED`); điểm đã tới có `arrivedAt`. Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts`
   (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua `e2e/operations-helpers.ts`.
@@ -1484,7 +1502,13 @@ dù giao diện bị bỏ qua:
   không cộng phút chậm lần hai; mức hạn của một điểm **xấu đi** (kịp → sát → trễ) thì kho ghi một sự kiện hệ thống `delivery.etaRisk`
   (`ctx.logSystem`: người làm `null`, công ty của chuyến), một lần cho mỗi lần chuyển; mức khởi đầu là mức của `routePlan`, tốt lên thì
   không báo. Điểm GPS thật (`postDriverLocation`, nguồn `GPS`) tính ETA cùng cách và giữ xe mô phỏng không ghi trong 90 giây kể từ điểm
-  GPS cuối. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc lại theo
+  GPS cuối. *(bổ sung 04/10/2026, FE-6-13, D-95)* **"Dùng GPS thật"** là công tắc trên màn điểm giao của tài xế khi chuyến Đang vận
+  chuyển (`driver/DriverGpsToggle` + `useDeviceLocation`): `navigator.geolocation.watchPosition`, điểm đầu gửi ngay rồi vị trí mới nhất
+  mỗi 30 giây qua `postDriverLocation`; `setDriverGps(tripId, bật)` của kho cho đồng hồ mô phỏng chạy theo giờ thật khi bật (giờ không
+  nhảy) và, khi tắt, cho xe mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Tài xế tắt, trình duyệt từ chối quyền,
+  mất tín hiệu, kho từ chối điểm, hoặc rời màn chuyến: thôi theo dõi, về mô phỏng, màn nói lý do; thiết bị không có định vị thì công tắc
+  mờ kèm lý do. Màn nói rõ khi chưa có máy chủ vị trí chỉ hiện trong trình duyệt này. Test giả `navigator.geolocation`
+  (`DriverGpsToggle.dom.test.tsx`); E2E dùng `context.setGeolocation`. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc lại theo
   `refreshMs` kho trả (thời gian thật tới điểm kế tiếp, ít nhất 1 giây; `null` khi chuyến không còn chạy) bằng `refetchInterval` của
   Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không
   `setInterval` riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo
