@@ -31,7 +31,7 @@ export {
   type StackGraph,
   type StackingProfile,
 } from './stack-load'
-export { supportIssues, supportRatio } from './support'
+export { DEFAULT_MIN_SUPPORT_RATIO, supportIssues, supportRatio } from './support'
 export { validatePackages } from './validate-packages'
 export { validateRequest } from './validate-request'
 export { validateVehicle } from './validate-vehicle'

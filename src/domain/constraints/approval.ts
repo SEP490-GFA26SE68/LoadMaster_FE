@@ -19,8 +19,9 @@ export type ApprovalBlockers = {
 }
 
 /**
- * Lý do không được Duyệt (D-24, D-31): còn issue `error`/`blockApproval`, còn kiện `mustLoad` có instance chưa xếp
- * (một `MUST_LOAD_UNPLACED` cho mỗi kiện gốc), hoặc revision lỗi thời. Cảnh báo không chặn.
+ * Lý do không được Duyệt (D-24, D-31): còn issue `error`/`blockApproval` — kể cả `AXLE_OVERLOAD` khi tải nhóm trục vượt giới hạn
+ * (D-78) —, còn kiện `mustLoad` có instance chưa xếp (một `MUST_LOAD_UNPLACED` cho mỗi kiện gốc), hoặc revision lỗi thời. Cảnh báo
+ * (trọng tâm lệch, tỷ lệ đỡ thấp…) không chặn.
  */
 export function approvalBlockers({ issues, packages, unplacedPackages, stale }: ApprovalInput): ApprovalBlockers {
   const { packageIdByInstanceId } = expandPackages(packages)

@@ -51,6 +51,8 @@ export {
   type PackageStatus,
 } from './package-model'
 export { cargoFromPackage, handlingClassOfType } from './package-type-cargo'
+export { backendLimitsOf, orientationsFor, specFieldsOf, type PackageTypeStacking } from './package-type-limits'
+export { axleLimitsFromAxles, limitsOfType, sameLimits, withoutLimits, withTypeLimits, type VehicleLimits } from './vehicle-limits'
 export { labelByToken, lineInstances, tripLabels, type TripPackageLink } from './review1-status'
 export {
   isRequirementClosed,
@@ -81,6 +83,7 @@ export {
   type OptimizationRun,
   type PackageType,
   type PackageTypeInput,
+  type PackageTypeLimits,
   type RunFailureCode,
   type RouteStopEta,
   type RunSettings,

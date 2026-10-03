@@ -184,3 +184,39 @@ describe('requests the mock cannot run at all fail as a mock result', () => {
     ])
   })
 })
+
+describe('a vehicle that declares axles', () => {
+  // Trục trước dưới cabin (x −120, rỗng 2.000 kg), hai trục sau ở 400 và 520 → nhóm sau tại 460, rỗng 1.800 kg; hai nhóm cách nhau 580 cm.
+  const axles = [
+    { id: 'AXLE-01', name: 'Trục trước', positionXCm: -120, emptyLoadKg: 2000, maxLoadKg: 3000 },
+    { id: 'AXLE-02', name: 'Trục sau 1', positionXCm: 400, emptyLoadKg: 900, maxLoadKg: 4500 },
+    { id: 'AXLE-03', name: 'Trục sau 2', positionXCm: 520, emptyLoadKg: 900, maxLoadKg: 4500 },
+  ]
+
+  test('gets front and rear axle loads in the metrics', () => {
+    // Bốn Carton A 30 kg đều ở x 0..120 (tâm 60): 120 kg cách trục trước 180 cm → sau 120 × 180 / 580 = 37,24; trước 82,76.
+    const { metrics, unplacedPackages } = run({ ...SPEC_REQUEST, vehicle: { ...SPEC_TRUCK_6M, axles } })
+    expect([unplacedPackages, metrics.frontAxleLoadKg, metrics.rearAxleLoadKg]).toStrictEqual([[], 2082.76, 1837.24])
+  })
+
+  test('leaves out the packages that would overload an axle group, each with the AXLE_OVERLOAD it would cause', () => {
+    // Mỗi thùng dồn 30 × 400 / 580 = 20,69 kg lên trục trước: hai thùng 2.041,38 kg, thùng thứ ba 2.062,07 kg > 2.050 kg.
+    const result = run({ ...SPEC_REQUEST, vehicle: { ...SPEC_TRUCK_6M, axles, frontAxleLimitKg: 2050 } })
+    const overload = { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'front', loadKg: 2062.07, limitKg: 2050, overKg: 12.07 } }
+    // Bốn thùng giống nhau: thùng nào lên xe trước do seed phá hoà quyết định, nên chỉ so số thùng và lý do
+    expect({
+      placed: result.placements.length,
+      unplaced: result.unplacedPackages.map(({ packageInstanceId: _id, ...reason }) => reason),
+      loads: [result.metrics.frontAxleLoadKg, result.metrics.rearAxleLoadKg],
+    }).toStrictEqual({
+      placed: 2,
+      unplaced: [
+        { reasonCode: 'CONSTRAINT_VIOLATED', message: 'CONSTRAINT_VIOLATED', violatedConstraints: [overload] },
+        { reasonCode: 'CONSTRAINT_VIOLATED', message: 'CONSTRAINT_VIOLATED', violatedConstraints: [overload] },
+      ],
+      loads: [2041.38, 1818.62],
+    })
+    const { issues } = createConstraintEngine({ ...SPEC_REQUEST, vehicle: { ...SPEC_TRUCK_6M, axles, frontAxleLimitKg: 2050 }, placements: result.placements }).evaluateAll()
+    expect(issues.filter(({ severity }) => severity === 'error')).toStrictEqual([])
+  })
+})

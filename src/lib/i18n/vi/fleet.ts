@@ -101,7 +101,7 @@ export const fleet = {
     add: 'Thêm trục',
     remove: 'Xoá trục dòng {row}',
     empty: 'Chưa khai báo trục nào.',
-    comingLater: 'Chưa dùng trong tính toán',
+    usage: 'Dùng để ước lượng tải trục trước và sau của phương án. Vị trí X tính từ vách đầu thùng, số âm là nằm dưới cabin; trục có X nhỏ nhất là trục trước.',
     name: 'Tên trục',
     nameRequired: 'Nhập tên trục',
     position: 'Vị trí X',

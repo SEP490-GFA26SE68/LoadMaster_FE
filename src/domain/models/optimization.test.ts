@@ -63,3 +63,35 @@ test('a partial MOCK result with the Spec placement and a package that misses th
   }
   expect(optimizationResultSchema.parse(result)).toStrictEqual(result)
 })
+
+test('a package left out for a constraint parses unchanged with the issues that stopped it; axle loads are optional metrics', () => {
+  const overload = { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 6240.5, limitKg: 6000, overKg: 240.5 } }
+  const result = {
+    jobId: 'MOCK-42',
+    status: 'COMPLETED',
+    method: 'MOCK',
+    isMockResult: true,
+    placements: [SPEC_CARTON_A_PLACEMENT],
+    unplacedPackages: [{ packageInstanceId: 'PKG-002-01', reasonCode: 'CONSTRAINT_VIOLATED', message: 'CONSTRAINT_VIOLATED', violatedConstraints: [overload] }],
+    metrics: {
+      totalVehicleVolumeCm3: 36_000_000, usedVolumeCm3: 324_000, volumeUtilizationPercent: 0.9, maxPayloadKg: 5000, usedPayloadKg: 30,
+      payloadUtilizationPercent: 0.6, placedCount: 1, unplacedCount: 1, centerOfGravityCm: { x: 180, y: 30, z: 22.5 },
+      frontAxleLoadKg: 2015.52, rearAxleLoadKg: 1814.48, runtimeMs: 8,
+    },
+  }
+  expect(optimizationResultSchema.parse(result)).toStrictEqual(result)
+})
+
+test('violated constraints that are not a list of issues are rejected with a registered code', () => {
+  const unplaced = (violatedConstraints: unknown) => ({ packageInstanceId: 'PKG-002-01', reasonCode: 'CONSTRAINT_VIOLATED', message: '', violatedConstraints })
+  const issuesOf = (violatedConstraints: unknown) => {
+    const { error } = optimizationResultSchema.safeParse({ unplacedPackages: [unplaced(violatedConstraints)] })
+    return (error?.issues ?? []).filter(({ path }) => path.at(-1) === 'violatedConstraints').map(({ message, path }) => ({ code: message, path }))
+  }
+  const path = ['unplacedPackages', 0, 'violatedConstraints']
+  expect([issuesOf('AXLE_OVERLOAD'), issuesOf(['AXLE_OVERLOAD']), issuesOf([{ code: 'AXLE_OVERLOAD' }])]).toStrictEqual([
+    [{ code: 'common.array.invalid', path }],
+    [{ code: 'common.array.invalid', path }],
+    [{ code: 'common.array.invalid', path }],
+  ])
+})

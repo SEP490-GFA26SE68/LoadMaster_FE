@@ -56,6 +56,8 @@ export const viewer = {
       payloadUtilization: 'Tỷ lệ tải trọng',
       placedCount: 'Kiện đã xếp',
       unplacedCount: 'Kiện chưa xếp',
+      frontAxleLoad: 'Tải trục trước',
+      rearAxleLoad: 'Tải trục sau',
       centerOfGravity: 'Trọng tâm (X, Y, Z)',
       runtime: 'Thời gian chạy',
       runtimeValue: '{ms} ms',
@@ -119,11 +121,19 @@ export const viewer = {
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
     readOnly: 'Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.',
   },
+  /** Tải trục trước / sau của phương án (FE-5b-03): số của mô hình đòn bẩy so với giới hạn, hoặc lý do chưa tính được. */
   axles: {
     title: 'Tải trục',
-    comingLater: 'Sẽ có sau',
-    pending: 'Chờ backend tính tải trục; không hiển thị số ước lượng.',
-    axle: '{name} · cách vách trước {position} · tối đa {maxLoad}',
+    groups: { front: 'Trục trước', rear: 'Trục sau' },
+    loadOfLimit: '{load} / {limit}',
+    loadNoLimit: '{load} · chưa khai giới hạn',
+    over: 'Vượt {over}',
+    model: 'Ước lượng theo đòn bẩy từ tải rỗng của trục và trọng tâm của các kiện đang xếp.',
+    unavailable: {
+      NO_AXLES: 'Chưa tính được: xe này chưa khai báo trục. Khai vị trí, tải rỗng và tải tối đa của trục ở trang xe.',
+      SINGLE_AXLE: 'Chưa tính được: xe mới khai một trục, cần ít nhất một trục trước và một trục sau.',
+      AXLES_COINCIDE: 'Chưa tính được: các trục của xe đang khai cùng một vị trí.',
+    },
   },
   orientation: {
     allowed: 'Hướng được phép: {codes}',
@@ -491,6 +501,7 @@ export const viewer = {
     NO_ALLOWED_ORIENTATION: 'Không có hướng đặt được phép vừa thùng',
     STACKING_VIOLATION: 'Vi phạm luật xếp chồng',
     LIFO_VIOLATION: 'Vi phạm thứ tự dỡ theo điểm giao',
+    CONSTRAINT_VIOLATED: 'Xếp kiện này sẽ vi phạm ràng buộc',
     UNKNOWN: 'Chưa xếp được, không rõ lý do',
   },
 } as const

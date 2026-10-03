@@ -44,7 +44,7 @@ export const dataErrors = {
   PACKAGES_REQUIRED: 'Cần chọn ít nhất một kiện.',
   QR_UNKNOWN: 'Mã {token} không khớp kiện nào.',
   STOP_NOT_FOUND: 'Chuyến {tripId} không có điểm giao {stopId}.',
-  VEHICLE_TYPE_INVALID: 'Loại xe chưa hợp lệ: cần tên, kích thước lòng thùng và tải trọng lớn hơn 0.',
+  VEHICLE_TYPE_INVALID: 'Loại xe chưa hợp lệ: cần tên, kích thước lòng thùng và tải trọng lớn hơn 0; giới hạn trục nếu có phải lớn hơn 0; lệch trọng tâm lớn hơn 0 và không quá 50 %.',
   VEHICLE_TYPE_IN_USE: 'Loại xe {vehicleTypeId} còn gắn với xe {vehicleIds} nên không xoá được.',
   PACKAGE_NOT_IN_TRIP: 'Mã {token} không thuộc chuyến {tripId}.',
   WRONG_PACKAGE_SCANNED: 'Đã quét kiện {scanned}, bước này cần kiện {expected}.',

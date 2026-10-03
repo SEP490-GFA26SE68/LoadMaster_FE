@@ -51,6 +51,8 @@ export const viewer = {
       payloadUtilization: 'Payload utilization',
       placedCount: 'Packages placed',
       unplacedCount: 'Packages not placed',
+      frontAxleLoad: 'Front axle load',
+      rearAxleLoad: 'Rear axle load',
       centerOfGravity: 'Center of gravity (X, Y, Z)',
       runtime: 'Runtime',
       runtimeValue: '{ms} ms',
@@ -110,9 +112,16 @@ export const viewer = {
   },
   axles: {
     title: 'Axle load',
-    comingLater: 'Coming later',
-    pending: 'Waiting for the backend to compute axle loads; no estimated figures are shown.',
-    axle: '{name} · {position} from the front wall · max {maxLoad}',
+    groups: { front: 'Front axle', rear: 'Rear axles' },
+    loadOfLimit: '{load} / {limit}',
+    loadNoLimit: '{load} · no limit set',
+    over: 'Over by {over}',
+    model: 'Lever estimate from the empty axle loads and the center of gravity of the packages on board.',
+    unavailable: {
+      NO_AXLES: 'Not computed: this vehicle has no axles declared. Enter axle positions, empty loads and maximum loads on the vehicle page.',
+      SINGLE_AXLE: 'Not computed: the vehicle declares one axle; a front and a rear axle are needed.',
+      AXLES_COINCIDE: 'Not computed: the axles of this vehicle are declared at the same position.',
+    },
   },
   orientation: {
     allowed: 'Allowed orientations: {codes}',
@@ -464,6 +473,7 @@ export const viewer = {
     NO_ALLOWED_ORIENTATION: 'No allowed orientation fits the cargo space',
     STACKING_VIOLATION: 'Breaks a stacking rule',
     LIFO_VIOLATION: 'Breaks the delivery unloading order',
+    CONSTRAINT_VIOLATED: 'Loading this package would break a constraint',
     UNKNOWN: 'Not placed, reason unknown',
   },
 } satisfies Dictionary<typeof source>

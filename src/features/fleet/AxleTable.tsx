@@ -1,7 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useFieldArray, useFormState, useWatch, type Control, type UseFormRegister } from 'react-hook-form'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useT } from '@/lib/i18n'
@@ -15,9 +14,8 @@ const KG_COLUMNS = [
 ] as const
 
 /**
- * Bảng trục xe, tuỳ chọn (Spec 7.10, LM-037): chỉ khai báo cấu hình để sau này backend tính tải trục.
- * Nhãn "Chưa dùng trong tính toán" nói rõ dữ liệu này chưa ảnh hưởng kết quả tối ưu — không phải nút giả (D-20),
- * vì bảng vẫn lưu được.
+ * Bảng trục xe, tuỳ chọn (Spec 7.10): vị trí, tải rỗng và tải tối đa của từng trục là đầu vào của mô hình tải trục (FE-5b-03, D-78).
+ * Một dòng chữ nói dữ liệu này dùng vào đâu và trục nào được coi là trục trước.
  */
 export function AxleTable({
   control,
@@ -33,7 +31,7 @@ export function AxleTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <Badge tone="neutral" className="self-start">{t('fleet.axles.comingLater')}</Badge>
+      <p className="text-small text-ink-3">{t('fleet.axles.usage')}</p>
 
       {fields.length === 0 ? (
         <p className="text-body text-text-3">{t('fleet.axles.empty')}</p>

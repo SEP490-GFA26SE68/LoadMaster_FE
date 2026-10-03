@@ -1,14 +1,12 @@
+import { DEFAULT_MIN_SUPPORT_RATIO } from '@/domain/constraints'
 import { roundKg } from '@/domain/geometry'
 import { cargoPackageSchema, type CargoPackage, type HandlingClass } from '@/domain/models'
 import type { Package } from './package-model'
 import type { PackageTypeInput } from './source-types'
 
-/** Tỷ lệ đỡ tối thiểu của kiện — loại kiện không khai trường này, dùng như hàng tạp hoá của seed. */
-const DEFAULT_MIN_SUPPORT_RATIO = 0.8
-
 /**
  * Dòng kiện của chuyến dựng từ loại kiện (LM-104): mọi trường xếp hàng lấy từ loại kiện, phần còn lại mặc định (ưu tiên 1, bắt buộc
- * xếp). `groupId` giữ mã yêu cầu giao để truy ngược kiện về yêu cầu.
+ * xếp, diện tích tựa tối thiểu 70 % — loại kiện không khai trường này, D-79). `groupId` giữ mã yêu cầu giao để truy ngược kiện về yêu cầu.
  */
 export function cargoFromType(
   type: PackageTypeInput,

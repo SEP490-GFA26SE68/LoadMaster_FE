@@ -49,3 +49,12 @@ test('a stale revision cannot be approved even without any issue', () => {
     stale: true,
   })
 })
+
+test('an axle overload is an error and blocks approval (D-78)', () => {
+  const rearOverload: ConstraintIssue = { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 6240.5, limitKg: 6000, overKg: 240.5 } }
+  expect(approvalBlockers({ issues: [LEANING, rearOverload], packages: [SPEC_CARTON_A], unplacedPackages: [], stale: false })).toStrictEqual({
+    canApprove: false,
+    issues: [rearOverload],
+    stale: false,
+  })
+})

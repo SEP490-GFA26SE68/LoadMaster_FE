@@ -73,3 +73,23 @@ test('draft moves become repository patches and are checked: moving B onto A blo
   expect(approval.blockers.canApprove).toBe(false)
   expect(approval.blockers.issues.map(({ code }) => code)).toContain('OVERLAP')
 })
+
+test('a manual move that overloads an axle group blocks approval with AXLE_OVERLOAD (D-78)', () => {
+  // Trục trước ở x −120 (rỗng 2.000 kg), trục sau ở 460 (rỗng 1.800 kg), cách nhau 580 cm; loại xe giới hạn trục sau 1.808 kg.
+  // A và B (10 kg mỗi kiện) ở x 0..100 và 100..200: trọng tâm 100 → trục sau 1.800 + 20 × 220 / 580 = 1.807,59 kg, còn trong giới hạn.
+  const plan = model()
+  const axles = [
+    { id: 'AXLE-01', name: 'Trục trước', positionXCm: -120, emptyLoadKg: 2000, maxLoadKg: 3000 },
+    { id: 'AXLE-02', name: 'Trục sau', positionXCm: 460, emptyLoadKg: 1800, maxLoadKg: 9000 },
+  ]
+  const limited = { ...plan, engineInput: { ...plan.engineInput!, vehicle: { ...VEHICLE, axles, rearAxleLimitKg: 1808 } } }
+  expect(planApproval(limited, limited.placements, createViewerDraft())!.blockers.issues).toStrictEqual([])
+
+  // Dời B ra x 600..700: trọng tâm (50 + 650) / 2 = 350 → trục sau 1.800 + 20 × 470 / 580 = 1.816,21 kg.
+  const draft = patchPlacement(limited, createViewerDraft(), 'B-01', { position: { x: 600, y: 0, z: 0 } })
+  const approval = planApproval(limited, resolveEffectiveScene(limited, draft).placements, draft)!
+  expect([approval.blockers.canApprove, approval.blockers.issues]).toStrictEqual([
+    false,
+    [{ code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 1816.21, limitKg: 1808, overKg: 8.21 } }],
+  ])
+})

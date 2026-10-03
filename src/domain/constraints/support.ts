@@ -4,6 +4,12 @@ import { restsOn, touchesTop } from './contact'
 import type { ConstraintIssue } from './issues'
 import type { PlacementLayout } from './layout'
 
+/**
+ * Tỷ lệ diện tích đáy phải được đỡ khi kiện không tự khai (D-79, theo backend): mặc định của dòng kiện dựng từ loại kiện / kiện kho
+ * kiện, của form kiện và của file nhập thiếu cột này.
+ */
+export const DEFAULT_MIN_SUPPORT_RATIO = 0.7
+
 /** Đáy hộp trên mặt sàn: u = X, v = Y. */
 function footprint(box: Box): Rect {
   return { u1: box.xCm, u2: box.xCm + box.lengthCm, v1: box.yCm, v2: box.yCm + box.widthCm }

@@ -12,13 +12,14 @@ const pkg = (handlingClass: HandlingClass, extra: Partial<Package> = {}): Packag
 
 const fan: PackageType = {
   id: 'PT-006', companyId: 'LOG-001', name: 'Quạt điện đứng', lengthCm: 45, widthCm: 45, heightCm: 20, weightKg: 6, fragilityLevel: 'MEDIUM',
-  allowedOrientations: ['LWH'], keepUpright: true, stackable: true, maxStackCount: 3, maxTopLoadKg: 12, createdAt: '2026-08-15T02:00:00.000Z',
+  allowedOrientations: ['LWH'], keepUpright: true, stackable: true, maxStackCount: 3, maxTopLoadKg: 12, maxStackWeightKg: 12, rotationAllowed: false,
+  fragile: false, createdAt: '2026-08-15T02:00:00.000Z',
 }
 
 test('a fragile package without a package type lets nothing rest on it', () => {
   expect(cargoFromPackage(pkg('FRAGILE'))).toStrictEqual({
     id: 'PK-0100', name: 'DN-0100', lengthCm: 60, widthCm: 40, heightCm: 35, weightKg: 12.5, quantity: 1, allowedOrientations: ['LWH', 'WLH'],
-    keepUpright: true, fragilityLevel: 'HIGH', stackable: false, maxTopLoadKg: 0, minSupportRatio: 0.8, deliveryStop: 1, priority: 1, mustLoad: true,
+    keepUpright: true, fragilityLevel: 'HIGH', stackable: false, maxTopLoadKg: 0, minSupportRatio: 0.7, deliveryStop: 1, priority: 1, mustLoad: true,
     handlingClass: 'FRAGILE',
   })
 })
@@ -27,7 +28,7 @@ test.each<HandlingClass>(['STANDARD', 'REFRIGERATED', 'HAZARDOUS', 'HIGH_VALUE']
   // Mặc định chịu ba kiện như nó: 12,5 kg × 3
   expect(cargoFromPackage(pkg(handlingClass))).toStrictEqual({
     id: 'PK-0100', name: 'DN-0100', lengthCm: 60, widthCm: 40, heightCm: 35, weightKg: 12.5, quantity: 1, allowedOrientations: ['LWH', 'WLH'],
-    keepUpright: true, fragilityLevel: 'NONE', stackable: true, maxTopLoadKg: 37.5, minSupportRatio: 0.8, deliveryStop: 1, priority: 1, mustLoad: true,
+    keepUpright: true, fragilityLevel: 'NONE', stackable: true, maxTopLoadKg: 37.5, minSupportRatio: 0.7, deliveryStop: 1, priority: 1, mustLoad: true,
     handlingClass,
   })
 })
@@ -36,7 +37,7 @@ test.each<HandlingClass>(['STANDARD', 'FRAGILE', 'REFRIGERATED', 'HAZARDOUS', 'H
   const cargo = cargoFromPackage(pkg(handlingClass, { packageTypeId: 'PT-006' }), fan, { id: 'PKG-004', quantity: 6, deliveryStop: 2, groupId: 'REQ-007' })
   expect(cargo).toStrictEqual({
     id: 'PKG-004', name: 'Quạt điện đứng', lengthCm: 60, widthCm: 40, heightCm: 35, weightKg: 12.5, quantity: 6, allowedOrientations: ['LWH'],
-    keepUpright: true, fragilityLevel: 'MEDIUM', stackable: true, maxTopLoadKg: 12, maxStackCount: 3, minSupportRatio: 0.8, deliveryStop: 2, priority: 1,
+    keepUpright: true, fragilityLevel: 'MEDIUM', stackable: true, maxTopLoadKg: 12, maxStackCount: 3, minSupportRatio: 0.7, deliveryStop: 2, priority: 1,
     mustLoad: true, groupId: 'REQ-007', handlingClass,
   })
 })

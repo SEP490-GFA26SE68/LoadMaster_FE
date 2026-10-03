@@ -40,7 +40,15 @@ export const issues = {
   LIFO_BLOCKED: '{id} is fully blocked by packages delivered later.',
   LIFO_PARTIAL: '{id} is {coverage} blocked by packages delivered later.',
   COG_LATERAL: 'Cargo center of gravity is {offsetCm} off the centerline, beyond the {limitCm} limit.',
+  COG_LONGITUDINAL: {
+    front: 'Cargo center of gravity is {offsetCm} towards the front wall from mid-length, beyond the {limitCm} limit.',
+    rear: 'Cargo center of gravity is {offsetCm} towards the door from mid-length, beyond the {limitCm} limit.',
+  },
   COG_HIGH: 'Cargo center of gravity is {heightCm} above the floor, beyond the {limitCm} limit.',
+  AXLE_OVERLOAD: {
+    front: 'Front axle load {loadKg} exceeds the {limitKg} limit by {overKg}.',
+    rear: 'Rear axle load {loadKg} exceeds the {limitKg} limit by {overKg}.',
+  },
   MUST_LOAD_UNPLACED: 'Must-load package {packageId} was not placed.',
   LOADING_ORDER_INFEASIBLE: '{id} is loaded before the packages supporting it: {related}.',
   DUPLICATE_INSTANCE_ID: 'ID {id} is used by {occurrences} package lines: {related}.',

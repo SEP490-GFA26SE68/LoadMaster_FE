@@ -24,7 +24,7 @@ const poseOf = ({ position, orientation }: ScenePlacement): PlacementPose =>
 
 /**
  * Constraint engine của domain (LM-023) cho editor: dựng một lần cho mỗi snapshot, sau đó chỉ dời cục bộ. Issue của kiện là issue
- * có kiện làm chủ thể hoặc nằm trong `relatedIds`; issue toàn phương án không dính kiện (trọng tâm) không chặn thao tác.
+ * có kiện làm chủ thể hoặc nằm trong `relatedIds`; issue toàn phương án không dính kiện (trọng tâm, tải trục) không chặn thao tác.
  * Scene không có đầu vào engine thì trả `null`; kho và tài xế không có editor.
  */
 export function createEditorEngine(model: ViewerSceneModel): EditorEngine | null {

@@ -12,7 +12,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Switch } from '@/components/ui/Switch'
 import { isUpright, ORIENTATION_CODES } from '@/domain/geometry'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { PackageType, PackageTypeInput } from '@/lib/mock-db'
+import { orientationsFor, type PackageType, type PackageTypeInput } from '@/lib/mock-db'
 import {
   EMPTY_PACKAGE_TYPE,
   packageTypeFieldError,
@@ -30,6 +30,8 @@ type NumberField = 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg' | 'maxTopLoa
 /**
  * Thêm / sửa loại kiện (LM-104): tên; D × R × C; khối lượng; hướng đặt; giữ thẳng đứng; mức dễ vỡ; xếp chồng và hai giới hạn. Cùng
  * trường và cùng quy tắc D-25 với form kiện của chuyến (bật giữ thẳng đứng bỏ hướng nằm nghiêng; tắt xếp chồng khoá tải phía trên).
+ * Ba trường của backend (FE-5b-01) là hình chiếu của các ô này: "Cho phép xoay kiện" (`rotationAllowed`) bật khi còn hơn một hướng đặt
+ * và tắt nó đưa hướng đặt về riêng `LWH`; `fragile` là mức dễ vỡ Cao; `maxStackWeightKg` là ô tải phía trên — kho ghi cả ba khi lưu.
  * Nơi gọi chỉ gắn hộp thoại khi mở (kèm `key`), nên mỗi lần mở là form mới; kho từ chối thì câu lỗi hiện trong hộp thoại.
  */
 export function PackageTypeFormDialog({ type, onClose, onSubmit }: {
@@ -105,6 +107,12 @@ export function PackageTypeFormDialog({ type, onClose, onSubmit }: {
               {numeric('weightKg', t('trips.form.weight'), 'kg', '0.01', { required: true })}
             </div>
 
+            <Switch
+              label={t('sourcing.packageTypes.form.rotationAllowed')}
+              checked={allowed.length > 1}
+              onCheckedChange={(checked) => setValue('allowedOrientations', orientationsFor(checked, keepUpright), { shouldValidate: true, shouldDirty: true })}
+            />
+
             <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
               <legend className="mb-2 p-0 text-small font-semibold text-ink-2">{legend(t('trips.form.orientations'))}</legend>
               <div className="grid grid-cols-6 gap-x-3 gap-y-2.5 max-sm:grid-cols-3">
@@ -124,7 +132,7 @@ export function PackageTypeFormDialog({ type, onClose, onSubmit }: {
               </div>
               <FieldMessage
                 error={packageTypeFieldError(errors.allowedOrientations?.message, t)}
-                hint={keepUpright ? t('trips.form.uprightHint') : undefined}
+                hint={allowed.length === 1 && allowed[0] === 'LWH' ? t('sourcing.packageTypes.form.rotationOffHint') : keepUpright ? t('trips.form.uprightHint') : undefined}
               />
             </fieldset>
 

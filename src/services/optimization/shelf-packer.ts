@@ -11,10 +11,14 @@ import {
   type OrientationCode,
   type PlacedDimensions,
 } from '@/domain/geometry'
+import type { ConstraintIssue } from '@/domain/constraints'
+import { axleLoadsOf, checkAxleLoads } from '@/domain/metrics'
 import { obstacleToBox, type PackagePlacement, type UnplacedPackage, type VehicleConfig } from '@/domain/models'
 import type { OptimizationProgress } from './OptimizationService'
 
 type ReasonCode = UnplacedPackage['reasonCode']
+/** Vì sao một kiện không lên xe: mã lý do, kèm ràng buộc đã chặn khi lý do là `CONSTRAINT_VIOLATED`. */
+type Rejection = Pick<UnplacedPackage, 'reasonCode' | 'violatedConstraints'>
 type StackedBox = { readonly instance: PackageInstance; readonly box: Box; loadAboveKg: number }
 type Stack = { readonly xCm: number; readonly yCm: number; readonly boxes: StackedBox[] }
 type Wall = { readonly xCm: number; depthCm: number; nextYCm: number; readonly stacks: Stack[] }
@@ -42,6 +46,10 @@ function boxOf(xCm: number, yCm: number, zCm: number, dims: PlacedDimensions): B
  * trong vách các cột theo Y, trong cột chồng theo Z. Kiện chỉ chồng lên kiện đỉnh cột khi đáy nằm gọn trong đáy kiện đó
  * (tỷ lệ đỡ 1, tải dồn đúng một cột), và phải đúng `stackable`, `maxTopLoadKg`, `maxStackCount` của cả cột. Không đè vật cản
  * (cột trên sàn nhảy qua vật cản theo Y), không vượt biên, không vượt tải trọng xe. Vách đã qua không quay lại.
+ *
+ * Xe khai trục (FE-5b-03, FE-5b-04): kiện mà đặt vào chỗ tìm được sẽ làm tải nhóm trục trước hoặc sau vượt giới hạn thì không lên xe,
+ * lý do `CONSTRAINT_VIOLATED` kèm issue `AXLE_OVERLOAD` của lần thử đó — kiện nhẹ hơn phía sau vẫn được xếp tiếp. Xe không khai trục
+ * không có kiểm này.
  */
 export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, onProgress }: PackInput): Packed {
   const grid = createSpatialGrid([])
@@ -50,6 +58,8 @@ export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, o
   const unplaced: UnplacedPackage[] = []
   let wall: Wall = { xCm: 0, depthCm: 0, nextYCm: 0, stacks: [] }
   let usedKg = 0
+  /** Tổng (khối lượng × hoành độ tâm hộp) của kiện đã xếp, kg·cm — trọng tâm hàng theo X cho mô hình tải trục. */
+  let momentKgCm = 0
 
   const inside = (box: Box) =>
     !gt(box.xCm + box.lengthCm, vehicle.innerLengthCm) &&
@@ -98,6 +108,7 @@ export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, o
   function place(instance: PackageInstance, { box, code, stack }: Spot): void {
     grid.update(instance.packageInstanceId, box)
     usedKg = roundKg(usedKg + instance.weightKg)
+    momentKgCm += instance.weightKg * (box.xCm + box.lengthCm / 2)
     wall.depthCm = Math.max(wall.depthCm, box.lengthCm)
     if (stack) {
       for (const below of stack.boxes) below.loadAboveKg += instance.weightKg
@@ -122,10 +133,19 @@ export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, o
     })
   }
 
-  function reasonFor(instance: PackageInstance): ReasonCode | undefined {
+  /** `AXLE_OVERLOAD` nếu đặt thêm `instance` vào `box`; rỗng khi xe không khai trục hoặc vẫn trong giới hạn. */
+  function axleOverload(instance: PackageInstance, box: Box): ConstraintIssue<'AXLE_OVERLOAD'>[] {
+    if (!vehicle.axles?.length) return []
+    const totalKg = usedKg + instance.weightKg
+    if (!gt(totalKg, 0)) return []
+    const centerXCm = (momentKgCm + instance.weightKg * (box.xCm + box.lengthCm / 2)) / totalKg
+    return checkAxleLoads(axleLoadsOf(vehicle, { totalKg, centerXCm }))
+  }
+
+  function rejectionFor(instance: PackageInstance): Rejection | undefined {
     const known = reasons.get(instance.packageInstanceId)
-    if (known !== undefined) return known
-    if (gt(usedKg + instance.weightKg, vehicle.maxPayloadKg)) return 'OVER_PAYLOAD'
+    if (known !== undefined) return { reasonCode: known }
+    if (gt(usedKg + instance.weightKg, vehicle.maxPayloadKg)) return { reasonCode: 'OVER_PAYLOAD' }
     const orientations = effectiveOrientations(instance)
       .map((code) => ({ code, dims: orientDimensions(instance, code) }))
       .filter(({ dims }) => !gt(dims.placedWidthCm + vehicle.clearanceCm, vehicle.doorWidthCm) && !gt(dims.placedHeightCm + vehicle.clearanceCm, vehicle.doorHeightCm))
@@ -135,18 +155,20 @@ export function packShelves({ vehicle, instances, reasons, lowCenterOfGravity, o
       stackingRejected ||= onTop.stackingRejected
       const spot = lowCenterOfGravity ? (floorSpot(orientations) ?? onTop.spot) : (onTop.spot ?? floorSpot(orientations))
       if (spot) {
+        const overload = axleOverload(instance, spot.box)
+        if (overload.length > 0) return { reasonCode: 'CONSTRAINT_VIOLATED', violatedConstraints: overload }
         place(instance, spot)
         return undefined
       }
       if (wall.stacks.length === 0) break
       wall = { xCm: wall.xCm + wall.depthCm, depthCm: 0, nextYCm: 0, stacks: [] }
     }
-    return stackingRejected ? 'STACKING_VIOLATION' : 'NO_SPACE'
+    return { reasonCode: stackingRejected ? 'STACKING_VIOLATION' : 'NO_SPACE' }
   }
 
   instances.forEach((instance, index) => {
-    const reasonCode = reasonFor(instance)
-    if (reasonCode !== undefined) unplaced.push({ packageInstanceId: instance.packageInstanceId, reasonCode, message: reasonCode })
+    const rejection = rejectionFor(instance)
+    if (rejection !== undefined) unplaced.push({ packageInstanceId: instance.packageInstanceId, message: rejection.reasonCode, ...rejection })
     if ((index + 1) % 25 === 0 || index + 1 === instances.length) onProgress?.({ placed: index + 1, total: instances.length })
   })
   return { placements, unplaced }

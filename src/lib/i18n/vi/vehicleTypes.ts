@@ -1,4 +1,7 @@
-/** Loại xe `/doi-xe/loai-xe` (Review 1, LM-104): danh mục kích thước lòng thùng và tải trọng, xe gắn loại tuỳ chọn. */
+/**
+ * Loại xe `/doi-xe/loai-xe` (Review 1, LM-104): danh mục kích thước lòng thùng và tải trọng, xe gắn loại tuỳ chọn; giới hạn tải trục và
+ * độ lệch trọng tâm của loại (FE-5b-01).
+ */
 export const vehicleTypes = {
   title: 'Loại xe',
   count: { one: '{count} loại xe, gắn cho {assigned} xe', other: '{count} loại xe, gắn cho {assigned} xe' },
@@ -11,10 +14,16 @@ export const vehicleTypes = {
     name: 'Loại xe',
     cargo: 'Lòng thùng D × R × C',
     payload: 'Tải trọng',
+    limits: 'Giới hạn xếp hàng',
     vehicles: 'Xe đang dùng',
     actions: 'Thao tác',
   },
   noVehicles: 'Chưa gắn xe nào',
+  limits: {
+    axles: 'Trục trước {front} · trục sau {rear}',
+    noAxleLimit: 'chưa khai',
+    cogOffset: 'Trọng tâm lệch tối đa {percent}',
+  },
   actions: 'Thao tác với {name}',
   edit: 'Sửa',
   delete: 'Xoá',
@@ -22,13 +31,18 @@ export const vehicleTypes = {
   form: {
     createTitle: 'Thêm loại xe',
     editTitle: 'Sửa loại xe {id}',
-    description: 'Kích thước lòng thùng tính bằng cm, tải trọng bằng kg.',
+    description: 'Kích thước lòng thùng tính bằng cm, tải trọng và giới hạn trục bằng kg.',
     name: 'Tên loại xe',
     namePlaceholder: 'Xe tải 5 tấn thùng kín',
     length: 'Dài lòng thùng',
     width: 'Rộng lòng thùng',
     height: 'Cao lòng thùng',
     payload: 'Tải trọng',
+    frontAxleLimit: 'Giới hạn trục trước',
+    rearAxleLimit: 'Giới hạn trục sau',
+    axleLimitHint: 'Giới hạn trục để trống nếu chưa có số: xe sẽ dùng tải tối đa khai ở từng trục của nó.',
+    maxCogOffset: 'Lệch trọng tâm tối đa',
+    maxCogOffsetHint: 'Phần chiều dài và chiều rộng thùng mà trọng tâm hàng được lệch khỏi giữa thùng trước khi có cảnh báo.',
     cancel: 'Huỷ',
     create: 'Thêm loại xe',
     save: 'Lưu thay đổi',
@@ -36,6 +50,7 @@ export const vehicleTypes = {
       nameRequired: 'Nhập tên loại xe.',
       nameTooLong: 'Tên tối đa {max} ký tự.',
       positive: 'Nhập số lớn hơn 0.',
+      cogRange: 'Nhập số lớn hơn 0 và không quá {max}.',
     },
   },
   created: 'Đã thêm loại xe {name}',
@@ -49,7 +64,7 @@ export const vehicleTypes = {
   deleted: 'Đã xoá loại xe {name}',
   assign: {
     title: 'Gắn loại cho xe',
-    description: 'Mỗi xe gắn tối đa một loại. Gắn loại không đổi kích thước khai trong cấu hình xe.',
+    description: 'Mỗi xe gắn tối đa một loại. Gắn loại không đổi kích thước khai trong cấu hình xe; xe lấy giới hạn trục và độ lệch trọng tâm của loại.',
     vehicle: 'Xe',
     type: 'Loại xe',
     none: 'Chưa gắn loại',

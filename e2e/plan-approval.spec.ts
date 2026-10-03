@@ -36,6 +36,11 @@ test('approving the seed source revision creates a new approved revision and reo
   const inspector = await openInspector(page, 'metrics')
   await expect(inspector).toContainText('Chỉ số phương án')
   await expect(inspector).toContainText('Kiện đã xếp132')
+  // FE-5b-03: xe của chuyến seed chưa khai trục nên không có số tải trục nào — ô Tải trục nói vì sao chưa tính
+  const operations = await openInspector(page, 'operations')
+  const axleLoad = operations.getByRole('region', { name: 'Tải trục', exact: true })
+  await expect(axleLoad).toContainText('Chưa tính được: xe này chưa khai báo trục.')
+  await expect(axleLoad).not.toContainText('kg')
   await closeInspector(page)
 
   await navigateInApp(page, SOURCE_REVISION)

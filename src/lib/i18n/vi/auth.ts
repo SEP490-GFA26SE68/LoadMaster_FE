@@ -21,7 +21,7 @@ export const auth = {
     tagline: 'Mỗi chuyến xe chở được nhiều hơn, và dỡ hàng đúng thứ tự.',
     fillRate: 'Tăng tỷ lệ lấp đầy xe, giảm số chuyến phải chạy',
     reverseOrder: 'Xếp ngược thứ tự giao — tới điểm nào lấy hàng điểm đó',
-    // Không quảng cáo tải trục: tính năng đó đang "Sẽ có sau" (AGENTS mục 6, LM-100)
+    // Không quảng cáo tải trục: số tải trục là ước lượng của mock (MOCK RESULT), chưa phải tính năng để giới thiệu (AGENTS mục 6)
     sharedPlan: 'Kho xếp và tài xế dỡ theo cùng một phương án 3D đã duyệt',
     artworkLabel: 'Mô phỏng thùng xe được xếp hàng theo thứ tự dỡ',
   },

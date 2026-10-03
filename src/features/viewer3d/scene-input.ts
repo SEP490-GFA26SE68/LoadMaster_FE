@@ -1,5 +1,5 @@
 import { expandPackages } from '@/domain/cargo'
-import type { ConstraintEngineInput } from '@/domain/constraints'
+import type { ConstraintEngineInput, ConstraintIssue } from '@/domain/constraints'
 import {
   orientDimensions,
   type OrientationCode,
@@ -59,6 +59,8 @@ export type SceneUnplaced = {
   readonly reasonCode?: UnplacedPackage['reasonCode']
   /** `message` của contract — mock ghi lại mã lý do; service thật có thể ghi câu riêng. */
   readonly message?: string
+  /** Lý do `CONSTRAINT_VIOLATED`: các ràng buộc đã chặn kiện (FE-5b-04), UI dịch bằng `formatIssue`. */
+  readonly violatedConstraints?: readonly ConstraintIssue[]
 }
 
 export type SceneStop = { readonly number: number; readonly name: string; readonly packageCount: number }
@@ -167,6 +169,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       weightKg: instance.weightKg,
       reasonCode: item.reasonCode,
       message: item.message,
+      ...(item.violatedConstraints === undefined ? {} : { violatedConstraints: Object.freeze([...item.violatedConstraints]) }),
     })
   })
   return Object.freeze({

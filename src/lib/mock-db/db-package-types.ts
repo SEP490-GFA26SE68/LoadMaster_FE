@@ -2,6 +2,7 @@ import { nextId, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { packageTypeIssues } from './package-type-cargo'
+import { backendLimitsOf } from './package-type-limits'
 import type { PackageType, PackageTypeInput } from './source-types'
 
 type PackageTypeMethods = Pick<
@@ -31,7 +32,10 @@ function assertValid(input: PackageTypeInput) {
   if (codes.length > 0) throw new MockDbError('PACKAGE_TYPE_INVALID', { codes })
 }
 
-/** Công ty và danh mục loại kiện (luồng 1, LM-104). Mỗi công ty một danh mục loại kiện riêng (D-64). */
+/**
+ * Công ty và danh mục loại kiện (luồng 1, LM-104). Mỗi công ty một danh mục loại kiện riêng (D-64). Ba trường của backend
+ * (`maxStackWeightKg`, `rotationAllowed`, `fragile`, FE-5b-01) kho suy từ các trường Spec mỗi lần lưu — một nguồn, không lệch nhau.
+ */
 export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
   const { packageTypes, packages } = ctx.state
   const scope = ctx.scope.packageTypes
@@ -44,7 +48,7 @@ export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
         const companyId = ctx.scope.newRecordCompany()
         const fields = typeFields(input)
         assertValid(fields)
-        const created = put(packageTypes, { ...fields, id: nextId('PT', packageTypes.keys()), companyId, createdAt: ctx.nowIso() })
+        const created = put(packageTypes, { ...fields, ...backendLimitsOf(fields), id: nextId('PT', packageTypes.keys()), companyId, createdAt: ctx.nowIso() })
         ctx.log('packageType.created', { type: 'packageType', id: created.id }, { name: created.name })
         return created
       }),
@@ -53,7 +57,7 @@ export function packageTypeMethods(ctx: DbContext): PackageTypeMethods {
         const current = scope.own(id)
         const fields = typeFields(input)
         assertValid(fields)
-        const next: PackageType = { ...fields, id, companyId: current.companyId, createdAt: current.createdAt }
+        const next: PackageType = { ...fields, ...backendLimitsOf(fields), id, companyId: current.companyId, createdAt: current.createdAt }
         ctx.log('packageType.updated', { type: 'packageType', id }, { name: next.name })
         return put(packageTypes, next)
       }),
