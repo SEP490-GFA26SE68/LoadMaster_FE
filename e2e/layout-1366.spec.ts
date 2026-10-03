@@ -66,6 +66,25 @@ const SCREENS: readonly Screen[] = [
     },
   },
   {
+    // FE-5b-05: danh sách ba phương án, nhóm kiểm tra Tuyến và bảng lần chạy có ba dòng phương án mỗi lần chạy
+    name: 'optimization-setup',
+    route: '/chuyen/TRIP-2026-0914/toi-uu',
+    ready: async (page) => {
+      await expect(page.getByRole('list', { name: 'Ba phương án mỗi lần chạy', exact: true })).toBeVisible()
+      await expect(page.locator('[data-run-history]').getByRole('row')).toHaveCount(3)
+    },
+  },
+  {
+    // FE-5b-06: ba thẻ phương án cạnh nhau — số đo và tên điểm giao xuống dòng, không cắt
+    name: 'plan-candidates',
+    route: '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002',
+    ready: async (page) => {
+      await expect(page.locator('[data-candidate]')).toHaveCount(3)
+      await expect(page.locator('[data-stop-deadline]')).toHaveCount(4)
+      await expect(page.locator('header:has(h1)')).toContainText('Lần chạy RUN-002 · 3 phương án ứng viên')
+    },
+  },
+  {
     name: 'planner',
     route: PLANNER_ROUTE,
     ready: async (page) => {
@@ -117,6 +136,14 @@ const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
   { name: 'dashboard', role: 'dispatcher', route: '/', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
   { name: 'trip-detail', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
   { name: 'vehicle-detail', role: 'dispatcher', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
+  // FE-5b-06: màn so sánh ba phương án dài hơn một màn hình. Chờ cả dòng dữ liệu của dải trời: nó về sau các thẻ và làm vùng cuộn thấp đi
+  {
+    name: 'plan-candidates', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002',
+    ready: async (page) => {
+      await expect(page.locator('[data-candidate]')).toHaveCount(3)
+      await expect(page.locator('header:has(h1)')).toContainText('Lần chạy RUN-002 · 3 phương án ứng viên')
+    },
+  },
   { name: 'fleet', role: 'dispatcher', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
   // FE-0-06: hai màn kiện là của điều phối viên
   { name: 'packages', role: 'dispatcher', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /PK-00/ }).first()).toBeVisible() } },

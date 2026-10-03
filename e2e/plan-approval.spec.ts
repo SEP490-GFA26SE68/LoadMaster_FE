@@ -39,11 +39,14 @@ test('approving the seed source revision creates a new approved revision and reo
   const inspector = await openInspector(page, 'metrics')
   await expect(inspector).toContainText('Chỉ số phương án')
   await expect(inspector).toContainText('Kiện đã xếp132')
-  // FE-5b-03: xe của chuyến seed chưa khai trục nên không có số tải trục nào — ô Tải trục nói vì sao chưa tính
+  // FE-5b-03, FE-5b-05: xe của chuyến seed khai hai trục (số ước lượng của seed) nên ô Tải trục có số của hai nhóm trục so giới hạn,
+  // mang MOCK RESULT — Hyundai HD210 rỗng 3.400 + 2.300 kg, hàng 5.844 kg
   const operations = await openInspector(page, 'operations')
   const axleLoad = operations.getByRole('region', { name: 'Tải trục', exact: true })
-  await expect(axleLoad).toContainText('Chưa tính được: xe này chưa khai báo trục.')
-  await expect(axleLoad).not.toContainText('kg')
+  await expect(axleLoad).toContainText('MOCK RESULT')
+  await expect(axleLoad).toContainText('4.663,27 kg / 6.500 kg')
+  await expect(axleLoad).toContainText('6.880,73 kg / 10.000 kg')
+  await expect(axleLoad).not.toContainText('Vượt')
   await closeInspector(page)
 
   await navigateInApp(page, SOURCE_REVISION)
