@@ -50,12 +50,12 @@ test('a Vietnamese Excel CSV — BOM, ";", decimal commas, a blank line — read
     {
       id: 'PKG-101', name: 'Bao gạo 25 kg', lengthCm: 70, widthCm: 45, heightCm: 15.6, weightKg: 25.13, quantity: 4, deliveryStop: 2,
       allowedOrientations: ['LWH', 'LHW', 'WLH', 'WHL', 'HLW', 'HWL'], keepUpright: false, fragilityLevel: 'NONE', stackable: true,
-      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
+      maxTopLoadKg: 0, minSupportRatio: 0.7, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
     },
     {
       id: 'PKG-102', name: 'Thùng nước suối', lengthCm: 50, widthCm: 35, heightCm: 25, weightKg: 13, quantity: 10, deliveryStop: 1,
       allowedOrientations: ['LWH', 'WLH'], keepUpright: true, fragilityLevel: 'NONE', stackable: true,
-      maxTopLoadKg: 0, minSupportRatio: 0.8, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
+      maxTopLoadKg: 0, minSupportRatio: 0.7, priority: 0, mustLoad: false, handlingClass: 'STANDARD',
     },
   ])
 })
