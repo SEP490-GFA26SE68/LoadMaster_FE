@@ -4,7 +4,7 @@ import { addStop, MOCK_DB, navigateInApp, switchUser } from './spec-flow-helpers
 /**
  * Vòng đời chuyến ở màn điều phối (LM-088): chuyến có ngày chạy và tài xế, tìm lại bằng bộ lọc của danh sách; huỷ chuyến có lý do,
  * trạng thái "Đã huỷ" và sự kiện nhật ký; huỷ theo D-91 (FE-6-07) — kiện về kho kiện, huỷ lúc đang xếp thì kho được báo dỡ phần đã xếp,
- * chuyến đang vận chuyển không huỷ được. Kho nằm trong bộ nhớ trang: đi bằng thao tác UI, không tải lại trang sau khi ghi.
+ * chuyến đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý (kiện chưa giao thành Hoàn trả, quản lý được báo). Kho nằm trong bộ nhớ trang: đi bằng thao tác UI, không tải lại trang sau khi ghi.
  */
 
 /** Một ngày chạy cách hôm nay một năm: seed neo theo hôm nay (D-44) nên không chuyến seed nào rơi vào ngày đó. */
@@ -100,7 +100,7 @@ test('cancelling a trip needs a reason, shows "Đã huỷ" and writes the cancel
   expect(browserErrors).toStrictEqual([])
 })
 
-test('one tab: cancelling a trip the warehouse is loading tells the warehouse to unload it; a trip in transit cannot be cancelled (FE-6-07)', async ({ page, login, browserErrors }) => {
+test('one tab: cancelling a trip the warehouse is loading tells the warehouse to unload it; a trip in transit is cancelled only with an open incident, its undelivered packages returned and the manager told (FE-6-07)', async ({ page, login, browserErrors }) => {
   // TRIP-011 (seed): kho đã soạn đủ 280 kiện và xếp 110 kiện lên xe
   await login('/chuyen/TRIP-011')
   await page.getByRole('button', { name: 'Thao tác', exact: true }).click()
@@ -116,18 +116,53 @@ test('one tab: cancelling a trip the warehouse is loading tells the warehouse to
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const [event] = await getMockDb().listEvents({ targetId: 'TRIP-011' })
     const statuses = [...new Set((await getMockDb().listTripPackages('TRIP-011')).map((item) => item.package.status))]
-    // Chuyến đang vận chuyển TRIP-009: kho từ chối — huỷ lúc đang chạy cần sự cố cấp chuyến đang mở
+    // Chuyến đang vận chuyển TRIP-009 chưa có sự cố nào: kho từ chối — huỷ lúc đang chạy cần sự cố cấp chuyến chưa xử lý
     const inTransit = await getMockDb().cancelTrip('TRIP-009', 'Xe hỏng').then(() => 'cancelled', (error: { code?: string }) => error.code)
     return { action: event?.action, params: event?.params, statuses, inTransit }
   }, MOCK_DB)
   expect(store).toStrictEqual({
     action: 'trip.cancelled', params: { reason: 'Xe hỏng máy lạnh', loaded: 110 }, statuses: ['IMPORTED'], inTransit: 'INVALID_TRIP_STATUS_TRANSITION',
   })
-  // Chi tiết chuyến đang vận chuyển không có menu thao tác nào để huỷ
+  // Chuyến đang vận chuyển chưa có sự cố cấp chuyến nào: hộp thoại nói vì sao chưa huỷ được, nút huỷ mờ
   await navigateInApp(page, '/chuyen/TRIP-009')
   await expect(page.locator('header').getByText('Đang vận chuyển', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Thao tác', exact: true })).toHaveCount(0)
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 15_000 })
+  const openCancel = async () => {
+    await page.getByRole('button', { name: 'Thao tác', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Huỷ chuyến', exact: true }).click()
+  }
+  await openCancel()
+  const inTransit = page.getByRole('dialog', { name: 'Huỷ chuyến TRIP-009?' })
+  await expect(inTransit).toContainText('Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý.')
+  await expect(inTransit.getByRole('button', { name: 'Huỷ chuyến', exact: true })).toBeDisabled()
+  await inTransit.getByRole('button', { name: 'Không huỷ', exact: true }).click()
+  await expect(inTransit).toHaveCount(0)
+
+  // Có sự cố cấp chuyến chưa xử lý (điều phối viên báo, ghi thẳng vào kho của trang) thì huỷ được: điểm 1 đã giao 40 kiện, 120 kiện
+  // còn lại thành Hoàn trả và ở lại chuyến
+  await page.evaluate(async (db) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    await getMockDb().reportTripException('TRIP-009', { type: 'VEHICLE_BREAKDOWN', description: 'Xe hỏng hộp số ở Thủ Dầu Một', delayMinutes: 120 })
+  }, MOCK_DB)
+  await openCancel()
+  await expect(inTransit).toContainText('Xe đang trên đường: 120 kiện chưa giao sẽ thành Hoàn trả.')
+  await inTransit.getByLabel('Lý do huỷ', { exact: true }).fill('Xe hỏng hộp số, chờ cứu hộ')
+  await inTransit.getByRole('button', { name: 'Huỷ chuyến', exact: true }).click()
+  await expect(inTransit).toHaveCount(0)
+  await expect(page.locator('header').getByText('Đã huỷ', { exact: true })).toBeVisible()
+  const returned = await page.evaluate(async (db) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    const statuses = (await getMockDb().listPackages()).filter((pkg) => pkg.tripId === 'TRIP-009').map((pkg) => pkg.status)
+    return { delivered: statuses.filter((status) => status === 'DELIVERED').length, returned: statuses.filter((status) => status === 'RETURNED').length }
+  }, MOCK_DB)
+  expect(returned).toStrictEqual({ delivered: 40, returned: 120 })
+  // Chuyến bị huỷ lúc đang vận chuyển có báo cáo chuyến: lúc huỷ, lý do và sự cố cấp chuyến
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Thao tác', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Báo cáo chuyến', exact: true }).click()
+  await page.waitForURL('**/chuyen/TRIP-009/bao-cao')
+  await expect(page.getByText(/^Chuyến bị huỷ lúc đang vận chuyển, .+ Lý do: Xe hỏng hộp số, chờ cứu hộ$/)).toBeVisible()
+  await expect(page.getByText('Xe hỏng hộp số ở Thủ Dầu Một', { exact: true })).toBeVisible()
 
   // Kho được báo dỡ phần đã xếp: chuông ở màn kho, rồi màn của chuyến
   await switchUser(page, 'warehouse')
@@ -139,5 +174,12 @@ test('one tab: cancelling a trip the warehouse is loading tells the warehouse to
   await cancelled.click()
   await page.waitForURL((url) => url.pathname === '/kho' && url.searchParams.get('chuyen') === 'TRIP-011')
   await expect(page.getByText('Chuyến TRIP-011 đã huỷ: Xe hỏng máy lạnh Dỡ 110 kiện đã xếp khỏi xe.', { exact: true })).toBeVisible()
+
+  // Quản lý công ty được báo chuyến bị huỷ lúc đang vận chuyển, kèm số kiện hoàn trả
+  await switchUser(page, 'manager')
+  await page.getByRole('button', { name: /^Thông báo, \d+ chưa đọc$/ }).click()
+  const inTransitCancelled = page.getByRole('menu').getByRole('menuitem').filter({ hasText: 'TRIP-009' }).filter({ hasText: 'Huỷ chuyến' })
+  await expect(inTransitCancelled).toHaveCount(1)
+  await expect(inTransitCancelled).toContainText('Hoàn trả: 120')
   expect(browserErrors).toStrictEqual([])
 })
