@@ -127,7 +127,7 @@ pnpm test:e2e      # Playwright: 128 test trên desktop / tablet / phone (CI chi
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (04/10/2026, nhánh `developer`): lint, build, 1.929/1.929 unit, 128/128 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.929/1.929 unit, 128/128 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 
