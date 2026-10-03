@@ -272,7 +272,7 @@ src/
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
     models/             type contract Spec + zod schema (LM-010)
     constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06)
-    metrics/            tỷ lệ sử dụng, trọng tâm (LM-021)
+    metrics/            tỷ lệ sử dụng, trọng tâm (LM-021); tải trục trước / sau theo mô hình đòn bẩy `axle-load.ts` (FE-5b-03)
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
@@ -807,8 +807,9 @@ chờ gì. Spec cấm "nút giả" (mục 9.3: Import CSV chỉ hiện khi hoạ
 
 - **Không hiển thị** nút hay mục menu chưa có chức năng. Không để nút bấm vào mà im lặng,
   không dùng toast báo "đang chờ", không báo thành công giả.
-- Ngoại lệ duy nhất: nơi Spec yêu cầu giữ vị trí cho tính năng sau (tải trục) hiển thị nhãn
-  **"Sẽ có sau" / "Coming later"** dạng chữ, không bấm được.
+- Ngoại lệ duy nhất: nơi Spec yêu cầu giữ vị trí cho tính năng sau hiển thị nhãn
+  **"Sẽ có sau" / "Coming later"** dạng chữ, không bấm được. *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục — chỗ duy nhất từng dùng
+  nhãn này — nay có số của mock (mục "Không bịa số"); hiện không màn nào còn nhãn "Sẽ có sau".
 - Toast chỉ nói việc **thật sự đã xảy ra** trên màn: không hứa "sẽ đồng bộ", "điều phối viên sẽ thấy"
   khi không có nơi lưu. *(LM-053)* Đã gỡ nút Cài đặt ở thanh điều hướng, "Ghi nhận sai lệch" ở kho, thanh tab
   đáy của tài xế (ba tab không có màn); "Kiện này không có ở kho" giữ vì nó thật sự bỏ qua bước.
@@ -830,6 +831,13 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   ghi chú nói số đến từ đâu.
 - Trang tài liệu `/thanh-phan` được dùng số mẫu để trình bày component, nhưng lấy từ dữ liệu seed
   thật (132 kiện của chuyến mẫu), không phải số nghĩ ra.
+- *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục** là số tính được, không còn "Sẽ có sau": mô hình đòn bẩy thuần
+  `axleLoadsOf` (`domain/metrics/axle-load.ts`) trên dữ liệu trục **người dùng khai ở trang xe** (`axles[]`: vị trí, tải rỗng, tải tối
+  đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
+  (chưa khai, chỉ một trục, các trục trùng vị trí) thì **không có số nào**: ô Tải trục nói vì sao chưa tính, metrics của kết quả không
+  có `frontAxleLoadKg` / `rearAxleLoadKg`, và không có kiểm `AXLE_OVERLOAD`. Trục minh hoạ mà khung gầm 3D vẽ khi xe không khai trục
+  **không** được đưa vào phép tính. Seed không đặt số trục mới: chưa xe mẫu nào khai `axles`, nên loại xe seed chưa có giới hạn trục
+  (`axleLimitsFromAxles`) và phương án seed hiện lý do "xe này chưa khai báo trục".
 
 ## 7. Quy tắc riêng cho 3D
 
@@ -862,7 +870,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Planner có chế độ Xem/Chỉnh sửa. Chỉ kiện đang chọn dùng một proxy mesh; instance tương ứng được ẩn theo ID. Lưới sàn và chỉ dẫn trục có số draw call cố định.
 - Kéo dùng pointer capture, ref và cập nhật Three imperative; chỉ commit một lệnh khi thả hợp lệ. Trong gesture tạm ngưng camera và raycast instances, khôi phục khi thả/hủy/unmount. Không đưa pointer position qua React mỗi frame.
 - Snapping dùng cm trong `viewer3d/editor`: lưới 5 cm, ngưỡng hút 2 cm, hút cả mặt vật cản chịu tải (không hút vật cản không chịu tải), so qua `eq/lt/gt`, vị trí commit qua `roundCm`. Nút nudge đi đúng 1/5/10 cm (mặc định 1); snapping dùng khi kéo hoặc bấm Căn vị trí. Xoay chỉ vòng qua `effectiveOrientations` của kiện (6 mã Spec), không xoay quaternion tự do.
-- *(đã điều chỉnh, LM-035)* Tính hợp lệ khi kéo/thả/xoay/nudge/căn/khôi phục do constraint engine của domain quyết định (`editor/editor-engine.ts`, dựng một lần mỗi snapshot, `sync` theo placement hiệu lực trước mỗi lần kiểm nên undo/redo/reset không lệch): issue `error` dính tới kiện (chủ thể hoặc `relatedIds`) chặn commit, `warning` vẫn commit; câu qua `formatIssue`. Issue toàn phương án (trọng tâm) không chặn thao tác. Đo Node: snap + sync + kiểm ở 1.000 kiện p95 ≈ 2,7 ms.
+- *(đã điều chỉnh, LM-035)* Tính hợp lệ khi kéo/thả/xoay/nudge/căn/khôi phục do constraint engine của domain quyết định (`editor/editor-engine.ts`, dựng một lần mỗi snapshot, `sync` theo placement hiệu lực trước mỗi lần kiểm nên undo/redo/reset không lệch): issue `error` dính tới kiện (chủ thể hoặc `relatedIds`) chặn commit, `warning` vẫn commit; câu qua `formatIssue`. Issue toàn phương án (trọng tâm, và tải trục `AXLE_OVERLOAD` — FE-5b-03) không chặn thao tác; `AXLE_OVERLOAD` chặn ở bước Duyệt. Đo Node: snap + sync + kiểm ở 1.000 kiện p95 ≈ 2,7 ms.
 - Lịch sử giữ patch trước/sau theo ID, tối đa 200 lệnh, không snapshot placements mỗi lần di chuột. Ghim khóa move/rotate cho đến khi bỏ ghim. Reset mọi chỉnh sửa cần dialog; reset riêng bị chặn nếu vị trí gốc đang bị kiện khác chiếm.
 - Không tạo placement từ UnplacedPackage, không lưu draft qua phiên/trang và không coi kiểm tra frontend là kết quả tối ưu authoritative.
 - *(bổ sung 28/09/2026, LM-108)* **Tay kéo theo trục**: ba mũi tên X/Y/Z trên kiện đang chọn (`EditorAxisHandles`, số mesh cố định, vùng nắm
@@ -879,7 +887,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò.
 - *(đã điều chỉnh, LM-036)* Loading lấy `placement.step` (= `loadingOrder`); unloading lấy `unloadingOrder` của kết quả qua `unloadSequence` (`operations/unloading.ts`), nhãn "Thứ tự dỡ" không kèm "gợi ý"; revision `ordersRecomputed` hiện thêm câu "tính lại ở FE". Màn tài xế (LM-061) dùng `unloadingOrder` của revision đã duyệt cho cả danh sách kiện của điểm giao lẫn mô phỏng, không có chữ "gợi ý". Nhánh thứ tự suy ra (stop tăng, cao trước, gần cửa trước, nhãn "gợi ý") chỉ còn làm dự phòng khi kết quả thiếu `unloadingOrder`; hiện không màn nào dùng tới. Stop-order consistency không chứng minh unload accessibility.
 - Blocker là `lifoIssues` của domain qua `createLifoIndex`: chỉ kiện giao **muộn hơn** nằm hẳn sau mặt sau; kiện đã dỡ/đang ẩn gỡ khỏi lưới (`grid.remove`), tua lùi thì thêm lại; kiện chắn sắp theo x trước khi callout. `LIFO_BLOCKED` dừng mô phỏng và giữ target; `LIFO_PARTIAL` chỉ đánh dấu. Duyệt đếm hai mã này, không khẳng định dỡ được thực tế. Không tính người, xe nâng, clearance hay xoay lúc dỡ. Riêng hình ảnh dỡ (`UnloadMotion`) dùng `corridor` — mọi kiện còn lại trên hành lang thẳng, bất kể điểm giao — để không trượt xuyên kiện. Fixture benchmark có đúng một cặp kiện đổi điểm giao tạo ca `LIFO_BLOCKED` cho browser suite; seed đã duyệt không có ca LIFO.
-- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh, LM-037)* Tải trục không hiện số nào: panel giữ chỗ với nhãn "Sẽ có sau" và chỉ liệt kê cấu hình `vehicle.axles` nếu có (Spec 7.10); Duyệt không kiểm tải trục. Cabin, bánh và khung gầm là mô hình minh họa, không phải axle geometry. *(bổ sung 17/09/2026)* Vị trí trục lấy `vehicle.axles[].positionXCm` khi xe có khai báo (`scene/truck-layout.ts`: trục đầu là cầu dẫn hướng bánh đơn, các trục sau bánh đôi), không có thì dùng vị trí minh hoạ; vẫn không tính tải trục.
+- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục**: `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính.
 - Chi tiết xe gộp geometry theo vật liệu; mọi bánh (bánh đôi cầu sau) dùng một InstancedMesh, một draw. *(bổ sung 17/09/2026)* Khung gầm chi tiết (`scene/truck-chassis.ts`: khung sườn chữ C, dầm ngang, trục, vi sai, nhíp, giảm chấn, các-đăng, bình nhiên liệu/hơi, ắc quy, ống xả, lốp dự phòng, chắn bùn, gầm thùng) gộp vào cùng hình học màu theo đỉnh của `vehicle-details` — không thêm draw call. Camera xoay được xuống dưới gầm (`maxPolarAngle` gần π) và có góc nhìn "Gầm xe" (`gam-xe`, tâm nhìn hạ xuống khung sườn); đèn yếu từ dưới giữ khung gầm không đen. Màn kho không có góc gầm xe. Cargo dùng atlas trung tính chung cho carton/pallet/crate qua thuộc tính instance, không phải nhãn hướng đặt. Low tắt chi tiết phụ; không tắt cues nghiệp vụ. Khi gặp `LIFO_BLOCKED`, playback dỡ tạm dừng và giữ target. Kiện còn vật trên hành lang thẳng (người dùng bỏ qua bước, hoặc bị che một phần) mờ tại chỗ; không dịch chuyển xuyên kiện khác. Reduced motion không dịch chuyển lớn; hoàn tất phải trở lại idle.
 - Timeline dùng ô cao bằng nhau, 8–64 bins theo chiều rộng, slider giữ toàn bộ bước. Bản đồ điểm giao mặc định tắt; geometry nằm hoàn toàn trong mép sàn thùng (helper `operations/stop-map.ts`), depth test bình thường. Tính từ phân bố thể tích thực, giữ nhiều màu khi stop xen kẽ. Không đặt ribbon trên thân/gầm hoặc bên ngoài xe. Màu phải có số/tên điểm trong panel hoặc nhãn.
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
@@ -912,7 +920,7 @@ Các mục "Foundation engine", "Manual editor", "Operations" phía trên đã c
   Ngân sách: constraint engine 1.000 kiện p95 ≤ 50 ms, một lần thả p95 ≤ 8 ms (D-29).
 - Timeline dùng `loadingOrder` / `unloadingOrder` của kết quả; LIFO lấy từ domain — che kín
   100% mặt sau là vi phạm, che một phần là cảnh báo (LM-036, D-26).
-- Tải trục không hiện số khi backend chưa trả dữ liệu tin cậy: nhãn "Sẽ có sau" (LM-037, Spec 7.10).
+- *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục: mock tính bằng mô hình đòn bẩy, vượt giới hạn chặn Duyệt (D-78) — thay nhãn "Sẽ có sau" của LM-037 / Spec 7.10; xem mục "Operations".
 - Mock optimization chạy trong Web Worker, không chặn main thread (LM-025, D-30).
 
 Khi làm một issue trong nhóm này, sửa luật tương ứng ở các mục phía trên cùng lúc với code.
@@ -1136,6 +1144,24 @@ kiện thì lấy hướng đặt, xếp chồng, tải trên của loại; khô
 lần khối lượng của nó). Nhãn loại hàng, trạng thái và cờ kiện khai một lần ở nhánh `common` (`handlingClasses`, `packageStatuses`,
 `packageFlags`); chip loại hàng là `components/HandlingClassChip` — tint theo nghĩa (thường slate, bốn loại cần chú ý amber), nhận ra bằng
 icon và chữ.
+*(bổ sung 04/10/2026, FE-5b-01, D-78, D-79)* **Giới hạn theo loại xe và loại kiện.** Loại xe (`VehicleType`) thêm `frontAxleLimitKg?`,
+`rearAxleLimitKg?` (để trống là chưa khai) và `maxCogOffsetRatio` (mặc định 0,15, trong (0, 0,5]; form `/doi-xe/loai-xe` nhập bằng %,
+`vehicle-type-form.ts`). `VehicleConfig` có ba trường cùng tên, **ngoài type Spec** (khai ở `spec-contract.test.ts`): kho lưu xe không
+kèm giới hạn và **ghép giới hạn của loại xe đang gắn lúc đọc** (`listVehicles`, `getVehicle` → `withTypeLimits`, `vehicle-limits.ts`),
+nên request tối ưu và revision chụp đúng giới hạn lúc chạy; xe chưa gắn loại không có trường nào — tải trục so với
+`axles[].maxLoadKg`, trọng tâm dùng `DEFAULT_MAX_COG_OFFSET_RATIO`. Sửa giới hạn của loại, hoặc gắn / gỡ loại làm **giới hạn hiệu lực**
+của xe đổi (`sameLimits`), làm phương án của chuyến đang lập kế hoạch với xe đó lỗi thời, như khi sửa xe. Loại kiện (`PackageType`)
+thêm `maxStackWeightKg`, `rotationAllowed`, `fragile` — hình chiếu của `maxTopLoadKg` / `stackable`, `allowedOrientations`,
+`fragilityLevel`, kho ghi lại mỗi lần lưu (`backendLimitsOf`); chiều backend → Spec là `specFieldsOf` (`package-type-limits.ts`). Form
+loại kiện có công tắc "Cho phép xoay kiện": bật khi còn hơn một hướng đặt, tắt đưa hướng đặt về riêng `LWH`.
+*(bổ sung 04/10/2026, FE-5b-04, D-79)* **Ngưỡng ràng buộc.** Trọng tâm hàng (`checkCenterOfGravity`): lệch ngang `COG_LATERAL` và lệch
+dọc `COG_LONGITUDINAL` (kèm phía bị dồn về) khi vượt `maxCogOffsetRatio` × chiều rộng / chiều dài lòng thùng; `COG_HIGH` giữ ngưỡng nửa
+chiều cao (`COG_HEIGHT_RATIO`); cả ba là cảnh báo, không chặn Duyệt — hằng số 10 % của D-36 đã bỏ. Diện tích tựa tối thiểu mặc định
+**0,7** ở một chỗ (`DEFAULT_MIN_SUPPORT_RATIO` của `domain/constraints`): dòng kiện dựng từ loại kiện / kiện kho kiện, kiện mới của form
+và file nhập thiếu cột; kiện seed giữ số đã khai. Lý do chưa xếp thêm `CONSTRAINT_VIOLATED` kèm `violatedConstraints` (issue đủ mã +
+tham số, dịch bằng `formatIssue` ở danh sách "Kiện chưa xếp"); mock dùng nó khi đặt kiện vào chỗ tìm được sẽ làm một nhóm trục vượt
+giới hạn (`AXLE_OVERLOAD`) — xe không khai trục không có kiểm này. Thêm mã ràng buộc vẫn theo lối cũ: `CONSTRAINT_CODES`, `issues`
+vi / en, một mẫu trong `issue-message.test.ts`.
 *(đã điều chỉnh 03/10/2026, FE-3b-03, FE-3b-02)* **Màn Kho kiện** (`features/package-pool`): `package-pool-api.ts` → `usePackagePoolQuery.ts`,
 khoá `['package-pool', 'list' | 'detail' | 'labels', …]` và `['package-types']`; tạo kiện, nhập file, gỡ cờ làm mới `['package-pool']`,
 `['package-types']`, `['requirements']`. Bảng (`PackagesPage` + `PackagesTable`, hàm thuần `packages-list.ts`): mới nhất trước; tab trạng thái
