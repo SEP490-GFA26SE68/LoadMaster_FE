@@ -74,6 +74,10 @@ export const dataErrors = {
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
   VEHICLE_BUSY: 'Xe {vehicleId} đang chạy chuyến {tripId}, hãy chọn xe sẵn sàng.',
   VEHICLE_UNFIT: 'Xe {vehicleId} không chở được hàng của chuyến này.',
+  // Đối chiếu kiện ba mức và duyệt xác nhận tay (FE-6-03, FE-6-04)
+  PACKAGE_CODE_AMBIGUOUS: 'Mã {code} trùng {count} kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.',
+  MANUAL_CONFIRM_PENDING: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.',
+  MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này không còn chờ duyệt.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

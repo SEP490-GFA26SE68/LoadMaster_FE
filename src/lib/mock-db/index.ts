@@ -14,6 +14,7 @@ export {
   missingIds,
   plannedStops,
   stopItemIds,
+  tripManualSubStatus,
   tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
@@ -71,6 +72,26 @@ export {
   type RequirementStoredStatus,
 } from './requirement-model'
 export { tripReport, type TripReport, type TripReportStop } from './trip-report'
+export {
+  latestVerifications,
+  MANUAL_CONFIRM_REASONS,
+  MANUAL_CONFIRM_STATUSES,
+  MAX_MANUAL_NOTE_LENGTH,
+  pendingManualConfirms,
+  rejectedConfirms,
+  resolveVerifyCode,
+  VERIFY_CONTEXTS,
+  VERIFY_METHODS,
+  type CodeMatch,
+  type LabelVerifyMethod,
+  type ManualConfirm,
+  type ManualConfirmInput,
+  type ManualConfirmReason,
+  type ManualConfirmStatus,
+  type PackageVerification,
+  type VerifyContext,
+  type VerifyMethod,
+} from './verify-model'
 export {
   DEFAULT_RUN_ALGORITHM,
   DEFAULT_RUN_SETTINGS,

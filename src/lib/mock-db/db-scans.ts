@@ -5,43 +5,77 @@ import { MockDbError } from './errors'
 import { missingIds, plannedStops } from './operations'
 import { tripLinks } from './db-trip-lines'
 import { normalizeQrToken } from './qr-token'
-import { labelByToken, tripLabels } from './review1-status'
+import { tripLabels } from './review1-status'
 import type { TripLabel } from './source-types'
-import type { Trip } from './types'
+import type { Revision, StopProgress, Trip } from './types'
+import { resolveVerifyCode, withVerification, type LabelVerifyMethod, type PackageVerification } from './verify-model'
 
 type ScanMethods = Pick<Review1Db, 'listTripLabels' | 'getTripReadiness' | 'confirmLoadingByQr' | 'recordSeal' | 'confirmUnloadByQr'>
 
 /** Số seal dài tối đa (ký tự). */
 export const MAX_SEAL_LENGTH = 32
 
-function assertPhase(trip: Trip, phase: Trip['phase']) {
+export function assertPhase(trip: Trip, phase: Trip['phase']) {
   if (trip.phase !== phase) throw new MockDbError('TRIP_PHASE_INVALID', { tripId: trip.id, phase: trip.phase })
 }
 
+/** Nhãn QR của mọi kiện trong chuyến: mã QR và mã của bên gửi của kiện kho kiện ứng với từng instance. */
+export function labelsOf(ctx: DbContext, trip: Trip): TripLabel[] {
+  return tripLabels(trip, tripLinks(ctx, trip.id), ctx.state.packages)
+}
+
+/** Phương án kho đang xếp theo (bản duyệt chốt lúc bắt đầu xếp). */
+export function loadingPlan(ctx: DbContext, trip: Trip): Revision {
+  return found(ctx.state.revisions, 'revisions', trip.loading?.revisionId ?? '')
+}
+
+/** Kiện của bước xếp hiện tại: kiện chưa có kết quả đầu tiên theo thứ tự xếp — cùng cách màn kho chọn kiện (`loadingProgress`). */
+export function expectedLoadingInstance(trip: Trip, plan: Revision): string | undefined {
+  const recorded = new Set(trip.loading?.steps.map((step) => step.packageInstanceId))
+  return plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).find((p) => !recorded.has(p.packageInstanceId))?.packageInstanceId
+}
+
+/** Điểm đang giao là `stopNumber` (điểm chưa hoàn tất đầu tiên); điểm khác: `STOP_NOT_CURRENT`. */
+export function currentStopProgress(trip: Trip, stopNumber: number): StopProgress {
+  const current = trip.delivery?.stops.find((stop) => stop.completedAt === undefined)
+  if (current?.number !== stopNumber) throw new MockDbError('STOP_NOT_CURRENT', { tripId: trip.id, stopNumber })
+  return current
+}
+
+/** Kiện `packageInstanceId` dỡ được ở điểm `stopNumber`: thuộc phương án, đúng điểm, và có trên xe. */
+export function assertUnloadable(trip: Trip, plan: Revision, stopNumber: number, packageInstanceId: string, token: string) {
+  const plannedStop = plannedStops(plan).get(packageInstanceId)
+  if (plannedStop === undefined) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token })
+  if (plannedStop !== stopNumber) throw new MockDbError('QR_WRONG_STOP', { packageInstanceId, stopNumber: plannedStop })
+  if (missingIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId: trip.id, packageInstanceId })
+}
+
+/** Một lần đối chiếu mới của phiên hiện tại, chưa có mã. */
+export function verificationBy(ctx: DbContext, entry: Omit<PackageVerification, 'id' | 'at' | 'by'>): Omit<PackageVerification, 'id'> {
+  return { ...entry, at: ctx.nowIso(), by: ctx.state.session.userId }
+}
+
 /**
- * Nhãn QR, "Sẵn sàng tối ưu", quét QR khi xếp / dỡ và seal (luồng 2 + 5, LM-104). Mọi hàm nhận một chuyến của công ty của phiên
- * (D-64); mã QR chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
+ * Nhãn QR, "Sẵn sàng tối ưu", đối chiếu kiện bằng nhãn khi xếp / dỡ và seal (luồng 2 + 5, LM-104; FE-6-03). Mọi hàm nhận một chuyến
+ * của công ty của phiên (D-64); mã chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
+ * Mỗi lần đối chiếu ghi cách, người, thời điểm vào `Trip.verifications`.
  */
 export function scanMethods(ctx: DbContext): ScanMethods {
-  const { trips, revisions, packages, vehicles, maintenance } = ctx.state
+  const { trips, vehicles, maintenance } = ctx.state
 
-  function labelsOf(trip: Trip): TripLabel[] {
-    return tripLabels(trip, tripLinks(ctx, trip.id), packages)
-  }
-
-  /** Nhãn khớp mã quét trong chuyến; không có thì `PACKAGE_NOT_IN_TRIP`. */
-  function scanned(trip: Trip, token: string): TripLabel {
-    const label = labelByToken(labelsOf(trip), token)
-    if (!label) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(token) })
-    return label
-  }
-
-  function planOf(trip: Trip) {
-    return found(revisions, 'revisions', trip.loading?.revisionId ?? '')
+  /**
+   * Nhãn khớp mã quét (`QR`) hoặc mã gõ (`CODE`, D-83) trong chuyến. Mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`; không
+   * khớp kiện nào: `PACKAGE_NOT_IN_TRIP`.
+   */
+  function scanned(trip: Trip, code: string, method: LabelVerifyMethod): TripLabel {
+    const match = resolveVerifyCode(labelsOf(ctx, trip), code, method)
+    if (match.kind === 'ambiguous') throw new MockDbError('PACKAGE_CODE_AMBIGUOUS', { tripId: trip.id, code: code.trim(), count: match.count })
+    if (match.kind === 'unknown') throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token: normalizeQrToken(code) })
+    return match.label
   }
 
   return {
-    listTripLabels: (tripId) => ctx.respond(() => labelsOf(ctx.scope.trips.read(tripId))),
+    listTripLabels: (tripId) => ctx.respond(() => labelsOf(ctx, ctx.scope.trips.read(tripId))),
     getTripReadiness: (tripId) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.read(tripId)
@@ -54,22 +88,20 @@ export function scanMethods(ctx: DbContext): ScanMethods {
           ...(trip.overrideReason === undefined ? {} : { overrideReason: trip.overrideReason }),
         })
       }),
-    confirmLoadingByQr: (tripId, token) =>
+    confirmLoadingByQr: (tripId, code, method = 'QR') =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'loading')
         const loading = trip.loading
-        const plan = planOf(trip)
-        const label = scanned(trip, token)
-        if (!plannedStops(plan).has(label.packageInstanceId)) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
-        // Bước hiện tại: kiện chưa có kết quả đầu tiên theo thứ tự xếp — cùng cách màn kho chọn kiện (`loadingProgress`)
-        const recorded = new Set(loading?.steps.map((step) => step.packageInstanceId))
-        const expected = plan.result.placements.toSorted((a, b) => a.loadingOrder - b.loadingOrder).find((p) => !recorded.has(p.packageInstanceId))
-        if (!loading || expected?.packageInstanceId !== label.packageInstanceId) {
-          throw new MockDbError('WRONG_PACKAGE_SCANNED', { expected: expected?.packageInstanceId ?? '', scanned: label.packageInstanceId })
-        }
-        const steps = [...loading.steps, { packageInstanceId: label.packageInstanceId, outcome: 'loaded' as const, at: ctx.nowIso(), via: 'qr' as const }]
-        return { trip: put(trips, { ...trip, loading: { ...loading, steps } }), packageInstanceId: label.packageInstanceId }
+        const plan = loadingPlan(ctx, trip)
+        const label = scanned(trip, code, method)
+        const id = label.packageInstanceId
+        if (!plannedStops(plan).has(id)) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
+        const expected = expectedLoadingInstance(trip, plan)
+        if (!loading || expected !== id) throw new MockDbError('WRONG_PACKAGE_SCANNED', { expected: expected ?? '', scanned: id })
+        const steps = [...loading.steps, { packageInstanceId: id, outcome: 'loaded' as const, at: ctx.nowIso(), via: 'qr' as const }]
+        const verifications = withVerification(trip.verifications, verificationBy(ctx, { context: 'LOADING', packageInstanceId: id, method }))
+        return { trip: put(trips, { ...trip, loading: { ...loading, steps }, verifications }), packageInstanceId: id }
       }),
     recordSeal: (tripId, sealNumber) =>
       ctx.respond(() => {
@@ -82,25 +114,23 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         ctx.log('loading.sealed', { type: 'trip', id: tripId }, { sealNumber: number })
         return put(trips, { ...trip, loading: { ...loading, seal: { number, at: ctx.nowIso(), by: ctx.state.session.userId } } })
       }),
-    confirmUnloadByQr: (tripId, stopNumber, token) =>
+    confirmUnloadByQr: (tripId, stopNumber, code, method = 'QR') =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
         assertPhase(trip, 'delivering')
         const delivery = trip.delivery
-        const current = delivery?.stops.find((stop) => stop.completedAt === undefined)
-        if (!delivery || current?.number !== stopNumber) throw new MockDbError('STOP_NOT_CURRENT', { tripId, stopNumber })
-        const label = scanned(trip, token)
-        const plannedStop = plannedStops(planOf(trip)).get(label.packageInstanceId)
-        if (plannedStop === undefined) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId, token: label.qrToken })
-        if (plannedStop !== stopNumber) throw new MockDbError('QR_WRONG_STOP', { packageInstanceId: label.packageInstanceId, stopNumber: plannedStop })
-        if (missingIds(trip).has(label.packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId, packageInstanceId: label.packageInstanceId })
+        currentStopProgress(trip, stopNumber)
+        if (!delivery) throw new Error(`Chuyến ${tripId} đang giao nhưng không có tiến độ giao`)
+        const label = scanned(trip, code, method)
         const id = label.packageInstanceId
+        assertUnloadable(trip, loadingPlan(ctx, trip), stopNumber, id, label.qrToken)
         const stops = delivery.stops.map((stop) => stop.number !== stopNumber ? stop : {
           ...stop,
           unloadedIds: [...stop.unloadedIds.filter((item) => item !== id), id],
           qrConfirmedIds: [...(stop.qrConfirmedIds ?? []).filter((item) => item !== id), id],
         })
-        return { trip: put(trips, { ...trip, delivery: { ...delivery, stops } }), packageInstanceId: id }
+        const verifications = withVerification(trip.verifications, verificationBy(ctx, { context: 'UNLOADING', stopNumber, packageInstanceId: id, method }))
+        return { trip: put(trips, { ...trip, delivery: { ...delivery, stops }, verifications }), packageInstanceId: id }
       }),
   }
 }

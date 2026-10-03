@@ -183,6 +183,10 @@ const PROBES = {
   confirmLoadingByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmLoadingByQr(tripId, qrToken)),
   recordSeal: onForeignTrip((db, tripId) => db.recordSeal(tripId, 'SEAL-0914')),
   confirmUnloadByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmUnloadByQr(tripId, 1, qrToken)),
+  confirmLoadingManually: onForeignTrip((db, tripId) => db.confirmLoadingManually(tripId, { packageInstanceId: 'PKG-001-01', reason: 'LABEL_DAMAGED' })),
+  confirmUnloadManually: onForeignTrip((db, tripId) => db.confirmUnloadManually(tripId, 1, { packageInstanceId: 'PKG-001-01', reason: 'QR_UNREADABLE' })),
+  approveManualConfirmation: onForeignTrip((db, tripId) => db.approveManualConfirmation(tripId, 'VF-001')),
+  rejectManualConfirmation: onForeignTrip((db, tripId) => db.rejectManualConfirmation(tripId, 'VF-001', 'Sai kiện')),
 
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },

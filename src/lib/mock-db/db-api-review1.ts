@@ -18,6 +18,7 @@ import type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 import type { TripEta } from './db-trip-route'
 import type { TripSegregation } from './db-trip-segregation'
 import type { Trip } from './types'
+import type { LabelVerifyMethod, ManualConfirmInput } from './verify-model'
 
 /**
  * Phần kho của các luồng Review 1 (LM-104). Cùng quy ước với `MockDb`: bất đồng bộ, trả bản sao, từ chối bằng `MockDbError`, mỗi hàm
@@ -169,10 +170,33 @@ export type Review1Db = {
   listTripLabels(tripId: string): Promise<TripLabel[]>
   /** Kiểm tra "Sẵn sàng tối ưu" của chuyến (luồng 2). */
   getTripReadiness(tripId: string): Promise<TripReadiness>
-  /** Kho quét QR kiện của bước hiện tại (kiện chưa ghi đầu tiên theo thứ tự xếp): ghi "đã xếp". Kiện khác: `WRONG_PACKAGE_SCANNED`. */
-  confirmLoadingByQr(tripId: string, token: string): Promise<ScanResult<Trip>>
+  /**
+   * Kho đối chiếu kiện của bước hiện tại (kiện chưa ghi đầu tiên theo thứ tự xếp) bằng nhãn: ghi "đã xếp" và một lần đối chiếu (cách,
+   * người, thời điểm — FE-6-03). `method` `QR` (mặc định) là quét, chỉ khớp mã QR; `CODE` là gõ mã — mã QR in dưới hình, hoặc mã của
+   * bên gửi khi mã đó duy nhất trong chuyến (trùng: `PACKAGE_CODE_AMBIGUOUS`). Kiện khác của chuyến: `WRONG_PACKAGE_SCANNED`; mã không
+   * thuộc chuyến: `PACKAGE_NOT_IN_TRIP`.
+   */
+  confirmLoadingByQr(tripId: string, code: string, method?: LabelVerifyMethod): Promise<ScanResult<Trip>>
   /** Ghi số seal khi đã xếp xong (`loaded`), trước khi xe chạy. */
   recordSeal(tripId: string, sealNumber: string): Promise<Trip>
-  /** Tài xế quét QR kiện ở điểm giao hiện tại: ghi "đã dỡ". Kiện của điểm khác: `QR_WRONG_STOP`. */
-  confirmUnloadByQr(tripId: string, stopNumber: number, token: string): Promise<ScanResult<Trip>>
+  /** Tài xế đối chiếu kiện ở điểm giao hiện tại bằng nhãn (`method` như `confirmLoadingByQr`): ghi "đã dỡ". Kiện của điểm khác: `QR_WRONG_STOP`. */
+  confirmUnloadByQr(tripId: string, stopNumber: number, code: string, method?: LabelVerifyMethod): Promise<ScanResult<Trip>>
+  /**
+   * Xác nhận tay kiện của bước xếp hiện tại (mức 3, D-83) khi nhãn không đọc được: ghi "đã xếp" để kho làm tiếp, kèm một xác nhận tay
+   * `MANUAL_PENDING` chờ điều phối viên duyệt — còn chờ thì `completeLoading` từ chối `MANUAL_CONFIRM_PENDING`. Lý do "Khác" không có
+   * ghi chú: `REASON_REQUIRED`; kiện không phải của bước hiện tại: `WRONG_PACKAGE_SCANNED`.
+   */
+  confirmLoadingManually(tripId: string, input: ManualConfirmInput): Promise<ScanResult<Trip>>
+  /** Xác nhận tay một kiện ở điểm giao hiện tại: ghi "đã dỡ" kèm xác nhận tay chờ duyệt — còn chờ thì `completeStop` của điểm đó từ chối. */
+  confirmUnloadManually(tripId: string, stopNumber: number, input: ManualConfirmInput): Promise<ScanResult<Trip>>
+  /**
+   * Điều phối viên duyệt một xác nhận tay còn chờ (FE-6-04): kiện giữ kết quả như đã đối chiếu. Vai trò khác: `ROLE_NOT_ALLOWED`; xác
+   * nhận không còn chờ: `MANUAL_CONFIRM_NOT_PENDING`.
+   */
+  approveManualConfirmation(tripId: string, confirmationId: string): Promise<Trip>
+  /**
+   * Điều phối viên từ chối một xác nhận tay còn chờ, lý do bắt buộc (`REASON_REQUIRED`): kết quả xếp / dỡ của kiện bị gỡ để kho hoặc
+   * tài xế kiểm lại; người gửi được báo qua chuông.
+   */
+  rejectManualConfirmation(tripId: string, confirmationId: string, reason: string): Promise<Trip>
 }

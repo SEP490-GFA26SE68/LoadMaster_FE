@@ -18,6 +18,7 @@ export const audit = {
     package: { created: 'Added packages to the pool', importConfirmed: 'Imported a file into the package pool', updated: 'Edited package', statusChanged: 'Changed package status', flagged: 'Flagged package', flagCleared: 'Cleared package flag', found: 'Warehouse found the package again' },
     requirement: { created: 'Created delivery requirement', updated: 'Edited delivery requirement', deleted: 'Deleted delivery requirement', assigned: 'Put delivery requirement on a trip', unassigned: 'Removed delivery requirement from its trip' },
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
+    manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
   },
   groups: {
     auth: 'Sign-in',
@@ -32,6 +33,7 @@ export const audit = {
     package: 'Package pool',
     requirement: 'Delivery requirements',
     vehicleType: 'Vehicle types',
+    manualConfirm: 'Manual confirmations',
   },
   log: {
     title: 'System log',
@@ -113,6 +115,9 @@ export const audit = {
       totalKm: 'Distance (km)',
       totalMinutes: 'Duration (min)',
       lateStops: 'Stops expected late',
+      verifyContext: 'Step',
+      manualReason: 'Manual confirmation reason',
+      requestedBy: 'Sent by',
     },
     fieldNames: {
       name: 'Trip name',

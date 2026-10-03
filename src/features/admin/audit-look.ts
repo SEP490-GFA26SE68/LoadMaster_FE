@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Container,
+  Hand,
   KeyRound,
   MapPin,
   Package,
@@ -30,6 +31,7 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   package: QrCode,
   requirement: ClipboardList,
   vehicleType: Container,
+  manualConfirm: Hand,
 }
 
 /**
@@ -92,6 +94,9 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'vehicleType.deleted': 'slate',
   'vehicleType.assigned': 'blue',
   'loading.sealed': 'green',
+  'manualConfirm.requested': 'amber',
+  'manualConfirm.approved': 'green',
+  'manualConfirm.rejected': 'amber',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

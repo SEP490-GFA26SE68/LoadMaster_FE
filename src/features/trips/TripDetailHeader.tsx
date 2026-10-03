@@ -56,7 +56,7 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
         <span className="flex items-center gap-2">
           <StatusBadge status={detail.status} />
           <TripSubStatusTag sub={detail.sub} />
-          <TripSubStatusTag sub={detail.routeSub} />
+          <TripSubStatusTag sub={detail.extraSub} />
         </span>
       ) : undefined}
       description={detail ? <TripMeta detail={detail} /> : undefined}

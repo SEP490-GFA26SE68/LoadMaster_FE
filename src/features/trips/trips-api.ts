@@ -17,6 +17,7 @@ import {
   getMockDb,
   isMockDbError,
   latestApproved,
+  tripManualSubStatus,
   tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
@@ -132,8 +133,8 @@ export type TripDetail = {
   readonly status: TripStatus
   /** Dòng phụ dưới chip: tiến độ kho hoặc phương án lỗi thời (LM-104). */
   readonly sub: TripSubStatus | null
-  /** Dòng phụ về tuyến (FE-4b-09): tuyến đã tối ưu có điểm trễ hạn dự kiến. */
-  readonly routeSub: TripSubStatus | null
+  /** Dòng phụ thứ hai: tuyến đã tối ưu có điểm trễ hạn dự kiến (FE-4b-09), hoặc còn xác nhận tay chờ duyệt (FE-6-04). */
+  readonly extraSub: TripSubStatus | null
   /** Revision Planner mở mặc định (bản đã duyệt mới nhất, không có thì bản mới nhất); `null` khi chưa tối ưu. */
   readonly plan: { readonly jobId: string; readonly revisionId: string } | null
 }
@@ -153,7 +154,7 @@ export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
     trip, vehicle, driver,
     status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
-    routeSub: tripRouteSubStatus(trip),
+    extraSub: tripRouteSubStatus(trip) ?? tripManualSubStatus(trip),
     plan: shown ? { jobId: shown.jobId, revisionId: shown.id } : null,
   }
 }

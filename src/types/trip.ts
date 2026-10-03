@@ -19,3 +19,8 @@ export type TripSubStatus =
   | { readonly kind: 'loaded' }
   /** Tuyến đã tối ưu có `count` điểm tới nơi sau hạn (FE-4b-09) — đứng cạnh dòng phụ của phương án (`tripRouteSubStatus`). */
   | { readonly kind: 'lateStops'; readonly count: number }
+  /**
+   * Chuyến đang xếp hoặc đang giao còn `count` xác nhận tay chờ điều phối viên duyệt (FE-6-04, D-83) — đứng cạnh dòng phụ tiến độ
+   * (`tripManualSubStatus`).
+   */
+  | { readonly kind: 'manualPending'; readonly count: number }

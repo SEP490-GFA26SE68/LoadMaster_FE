@@ -21,6 +21,7 @@ export const audit = {
     package: { created: 'Thêm kiện vào kho kiện', importConfirmed: 'Nhập file vào kho kiện', updated: 'Sửa kiện', statusChanged: 'Chuyển trạng thái kiện', flagged: 'Gắn cờ kiện', flagCleared: 'Gỡ cờ kiện', found: 'Kho tìm thấy lại kiện' },
     requirement: { created: 'Tạo yêu cầu giao', updated: 'Sửa yêu cầu giao', deleted: 'Xoá yêu cầu giao', assigned: 'Đưa yêu cầu giao vào chuyến', unassigned: 'Gỡ yêu cầu giao khỏi chuyến' },
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
+    manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -35,6 +36,7 @@ export const audit = {
     package: 'Kho kiện',
     requirement: 'Yêu cầu giao',
     vehicleType: 'Loại xe',
+    manualConfirm: 'Xác nhận tay',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -132,6 +134,10 @@ export const audit = {
       totalKm: 'Quãng đường (km)',
       totalMinutes: 'Thời gian (phút)',
       lateStops: 'Điểm trễ hạn dự kiến',
+      // Xác nhận tay (FE-6-03, FE-6-04)
+      verifyContext: 'Bước',
+      manualReason: 'Lý do xác nhận tay',
+      requestedBy: 'Người gửi',
     },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {

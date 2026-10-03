@@ -31,6 +31,10 @@ export const common = {
   },
   /** Cờ kiện (`PackageFlag`, D-92). */
   packageFlags: { NOT_FOUND: 'Không tìm thấy', DAMAGED: 'Hư hỏng' },
+  /** Đối chiếu kiện ba mức (FE-6-03, D-83): cách đối chiếu, bước của chuyến và lý do xác nhận tay — hộp đối chiếu, thẻ duyệt và nhật ký. */
+  verifyMethods: { QR: 'Quét QR', CODE: 'Gõ mã', MANUAL: 'Xác nhận tay' },
+  verifyContexts: { LOADING: 'Xếp hàng', UNLOADING: 'Dỡ hàng' },
+  manualConfirmReasons: { LABEL_DAMAGED: 'Nhãn rách / mất', QR_UNREADABLE: 'QR không đọc được', OTHER: 'Khác' },
   /** `DataTable` (LM-085): chân bảng phân trang và trạng thái không có kết quả khớp bộ lọc. */
   table: {
     rowsPerPage: 'Số dòng mỗi trang',

@@ -17,5 +17,7 @@ export const status = {
     loading: 'Đang xếp {recorded} / {total}',
     loaded: 'Xếp xong — chờ xuất phát',
     lateStops: 'Có điểm trễ hạn dự kiến',
+    /** Đang xếp hàng / Đang vận chuyển: còn xác nhận tay chờ điều phối viên duyệt (FE-6-04). */
+    manualPending: 'Chờ duyệt xác nhận tay ({count})',
   },
 } as const

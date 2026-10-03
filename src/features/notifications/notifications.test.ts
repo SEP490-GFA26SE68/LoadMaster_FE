@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import type { AuditEvent } from '@/lib/mock-db'
-import { hasNotifications, NOTIFICATION_LIMIT, selectNotifications } from './notifications'
+import { hasNotifications, NOTIFICATION_LIMIT, operationHref, selectNotifications } from './notifications'
 
 /** Lọc sự kiện nhật ký thành thông báo theo vai trò (LM-098). Sự kiện dựng tay, mới nhất trước như kho trả. */
 
@@ -62,17 +62,44 @@ test('the system administrator gets account events by others and failed sign-ins
   expect(ids(selectNotifications(events, { id: 'US-LB-01', role: 'companyAdmin' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-3', 'EV-2'])
 })
 
-test('warehouse workers, drivers, the platform manager and customer support have no bell', () => {
+test('the platform manager and customer support have no bell; the warehouse and the driver get no trip or account events', () => {
   const events = [
     event('EV-2', '2026-09-14T10:30:00.000Z', 'US-0005', 'user.created', 'US-0016'),
     event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled'),
   ]
-  expect([hasNotifications('warehouse'), hasNotifications('driver')]).toStrictEqual([false, false])
   expect([hasNotifications('systemManager'), hasNotifications('systemSupporter')]).toStrictEqual([false, false])
   expect([hasNotifications('dispatcher'), hasNotifications('manager'), hasNotifications('systemAdmin'), hasNotifications('companyAdmin')])
     .toStrictEqual([true, true, true, true])
   expect(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW)).toStrictEqual([])
+  expect(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW)).toStrictEqual([])
   expect(selectNotifications(events, { id: 'US-NT-01', role: 'systemManager' }, NOW)).toStrictEqual([])
+})
+
+test('manual confirmations (FE-6-04): a new one reaches the dispatcher; a rejected one reaches only the person who sent it', () => {
+  const sentBy = (id: string, at: string, requestedBy: string): AuditEvent =>
+    ({ ...event(id, at, 'US-0001', 'manualConfirm.rejected'), params: { packageInstanceId: 'PKG-001-01', reason: 'Sai kiện', requestedBy } })
+  const events = [
+    sentBy('EV-5', '2026-09-14T10:40:00.000Z', 'US-0004'),
+    sentBy('EV-4', '2026-09-14T10:30:00.000Z', 'US-0010'),
+    sentBy('EV-3', '2026-09-14T10:20:00.000Z', 'US-0003'),
+    { ...event('EV-2', '2026-09-14T10:10:00.000Z', 'US-0001', 'manualConfirm.approved'), params: { packageInstanceId: 'PKG-002-01', requestedBy: 'US-0003' } },
+    event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0003', 'manualConfirm.requested'),
+  ]
+  expect([hasNotifications('warehouse'), hasNotifications('driver')]).toStrictEqual([true, true])
+  // Nhân viên kho US-0003 chỉ nhận lần từ chối xác nhận của chính mình — không nhận của đồng nghiệp US-0010, của tài xế, hay lần duyệt
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-3'])
+  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-5'])
+  // Điều phối viên khác nhận xác nhận tay mới gửi; quyết định duyệt / từ chối không phải loại báo cho điều phối
+  expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual([])
+})
+
+test('a trip notification opens the screen of the warehouse or the driver; other roles follow the audit log link', () => {
+  const trip = event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'manualConfirm.rejected', 'TRIP-2026-0914')
+  expect(operationHref(trip, 'warehouse')).toBe('/kho?chuyen=TRIP-2026-0914')
+  expect(operationHref(trip, 'driver')).toBe('/tai-xe/diem-giao?chuyen=TRIP-2026-0914')
+  expect(operationHref(trip, 'dispatcher')).toBeNull()
+  expect(operationHref(event('EV-2', '2026-09-14T10:00:00.000Z', 'US-0005', 'user.locked', 'US-0003'), 'warehouse')).toBeNull()
 })
 
 test('at most twenty, the newest first', () => {

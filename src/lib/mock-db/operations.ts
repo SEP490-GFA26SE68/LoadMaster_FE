@@ -2,6 +2,7 @@ import { expandPackages } from '@/domain/cargo'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { isStale } from './revisions'
 import type { Revision, Trip, TripPhase } from './types'
+import { pendingManualConfirms } from './verify-model'
 
 /** Pha xe đang bận (D-53): kho đang xếp, đã xếp xong chờ chạy, đang giao. */
 const ACTIVE_PHASES: readonly TripPhase[] = ['loading', 'loaded', 'delivering']
@@ -74,6 +75,17 @@ export function tripSubStatus(
 export function tripRouteSubStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): TripSubStatus | null {
   const late = trip.phase === 'planning' ? (trip.routePlan?.missedStopIds.length ?? 0) : 0
   return late > 0 ? { kind: 'lateStops', count: late } : null
+}
+
+/**
+ * Dòng phụ "Chờ duyệt xác nhận tay (n)" (FE-6-04, PRD v2 mục 7.1): chuyến đang xếp còn xác nhận tay của bước xếp chờ điều phối viên
+ * duyệt, hoặc chuyến đang giao còn xác nhận tay của bước dỡ. Đứng cạnh dòng phụ tiến độ, không thay nó. Không còn gì chờ, hoặc chuyến ở
+ * pha khác (đã huỷ giữa chừng), thì `null`.
+ */
+export function tripManualSubStatus(trip: Pick<Trip, 'phase' | 'verifications'>): TripSubStatus | null {
+  const context = trip.phase === 'loading' ? 'LOADING' : trip.phase === 'delivering' ? 'UNLOADING' : null
+  const count = context === null ? 0 : pendingManualConfirms(trip, context).length
+  return count > 0 ? { kind: 'manualPending', count } : null
 }
 
 /** Kiện đã xếp trong phương án: mã instance → số điểm giao. */

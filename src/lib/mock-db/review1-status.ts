@@ -35,16 +35,17 @@ export function lineInstances(lines: readonly TripPackageLink[], trip: Pick<Trip
  * Nhãn QR của mọi instance trong chuyến (FE-3b-07): mã QR là mã của kiện kho kiện — `links` là mọi liên kết của chuyến (kiện của yêu
  * cầu giao, kiện thêm ngay trong chuyến, kiện đưa thẳng từ kho kiện). Instance chưa có kiện kho kiện (dữ liệu hỏng) không có nhãn.
  */
-export function tripLabels(trip: Pick<Trip, 'packages'>, links: readonly TripPackageLink[], pool: ReadonlyMap<string, Pick<Package, 'qrToken'>>): TripLabel[] {
+export function tripLabels(trip: Pick<Trip, 'packages'>, links: readonly TripPackageLink[], pool: ReadonlyMap<string, Pick<Package, 'qrToken' | 'packageCode'>>): TripLabel[] {
   const poolIdOf = new Map([...lineInstances(links, trip)].map(([packageId, instanceId]) => [instanceId, packageId]))
   const lineById = new Map(trip.packages.map((pkg) => [pkg.id, pkg]))
   const { instances, packageIdByInstanceId } = expandPackages(trip.packages)
   return instances.flatMap(({ packageInstanceId, deliveryStop }) => {
     const poolPackageId = poolIdOf.get(packageInstanceId)
-    const qrToken = poolPackageId === undefined ? undefined : pool.get(poolPackageId)?.qrToken
-    if (poolPackageId === undefined || qrToken === undefined) return []
+    const poolPackage = poolPackageId === undefined ? undefined : pool.get(poolPackageId)
+    if (poolPackageId === undefined || poolPackage === undefined) return []
     const packageId = packageIdByInstanceId.get(packageInstanceId) ?? ''
-    return [{ packageInstanceId, packageId, name: lineById.get(packageId)?.name ?? packageId, deliveryStop, qrToken, poolPackageId }]
+    const { qrToken, packageCode } = poolPackage
+    return [{ packageInstanceId, packageId, name: lineById.get(packageId)?.name ?? packageId, deliveryStop, qrToken, poolPackageId, packageCode }]
   })
 }
 
