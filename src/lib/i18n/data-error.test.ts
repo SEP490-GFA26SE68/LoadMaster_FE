@@ -68,6 +68,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   VEHICLE_UNCHANGED: { vehicleId: 'VEHICLE-002' },
   VEHICLE_BUSY: { vehicleId: 'VEHICLE-007', tripId: 'TRIP-011' },
   VEHICLE_UNFIT: { vehicleId: 'VEHICLE-001', reasons: ['CARGO_WEIGHT_EXCEEDED'] },
+  LOCATION_INVALID: { field: 'coordinates' },
   UNSUPPORTED_FILE_TYPE: {},
   EMPTY_FILE: {},
   FILE_TOO_LARGE: { maxMb: 10 },

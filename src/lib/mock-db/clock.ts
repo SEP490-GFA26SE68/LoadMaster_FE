@@ -27,3 +27,51 @@ export function addDays(date: string, days: number): string {
 export function vnTime(date: string, time: string): string {
   return new Date(Date.parse(`${date}T${time}:00+07:00`)).toISOString()
 }
+
+/** Tham số URL của đồng hồ mô phỏng (D-85): `?toc-do=60` là một giây thật bằng một phút của kho. */
+export const CLOCK_SPEED_PARAM = 'toc-do'
+
+/** Tua nhanh nhất một giờ mỗi giây: nhanh hơn thì một lần làm mới đã bỏ qua cả chuyến. */
+export const MAX_CLOCK_SPEED = 3600
+
+/**
+ * Tốc độ đồng hồ đọc từ `location.search`: `?toc-do=<n>` tua nhanh n lần (tối đa `MAX_CLOCK_SPEED`); không có tham số, hoặc giá trị
+ * không phải số lớn hơn 1, thì theo giờ thật.
+ */
+export function clockSpeedFrom(search: string): number {
+  const speed = Number(new URLSearchParams(search).get(CLOCK_SPEED_PARAM) ?? '')
+  return Number.isFinite(speed) && speed > 1 ? Math.min(speed, MAX_CLOCK_SPEED) : 1
+}
+
+/** Đồng hồ mô phỏng của kho (FE-6-08): mọi mốc giờ kho ghi và vị trí xe mô phỏng đọc cùng một đồng hồ này. */
+export type SimClock = {
+  now(): Date
+  speed(): number
+  /** Đổi tốc độ từ bây giờ: giờ của kho đi tiếp từ chỗ đang đứng, không nhảy — mốc giờ đã ghi không bao giờ nằm sau mốc ghi sau đó. */
+  setSpeed(speed: number): void
+}
+
+/**
+ * Đồng hồ chạy nhanh `speed` lần so với đồng hồ máy `wall`, bắt đầu **đúng giờ máy** lúc tạo: tạo kho không làm mốc giờ nào nhảy, seed
+ * không có sự kiện ở tương lai. Ở tốc độ 1 (mặc định, và mọi test) đồng hồ trả thẳng giờ của `wall` — test tiêm `now` hay giả `Date`
+ * thấy đúng giờ mình đặt.
+ */
+export function createSimClock(wall: () => Date, speed = 1): SimClock {
+  let factor = speed
+  // Mốc neo: giờ máy và giờ kho tại lần đổi tốc độ gần nhất. Chưa neo thì giờ kho là giờ máy.
+  let anchor: { wall: number; sim: number } | null = null
+  const simMs = (wallMs: number) => (anchor === null ? wallMs : anchor.sim + Math.round((wallMs - anchor.wall) * factor))
+  if (speed !== 1) {
+    const startMs = wall().getTime()
+    anchor = { wall: startMs, sim: startMs }
+  }
+  return {
+    now: () => (anchor === null ? wall() : new Date(simMs(wall().getTime()))),
+    speed: () => factor,
+    setSpeed(next) {
+      const wallMs = wall().getTime()
+      anchor = { wall: wallMs, sim: simMs(wallMs) }
+      factor = next
+    },
+  }
+}

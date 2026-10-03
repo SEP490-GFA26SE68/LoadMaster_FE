@@ -169,6 +169,10 @@ export type MockDbErrorParams = {
   /** Xe không chở được hàng của chuyến; `reasons`: mã lỗi của `vehicleFit` (kích thước, thể tích, tải trọng, trục). */
   VEHICLE_UNFIT: { vehicleId: string; reasons: string[] }
 
+  // Vị trí xe (FE-6-08)
+  /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
+  LOCATION_INVALID: { field: string }
+
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */
   UNSUPPORTED_FILE_TYPE: Record<string, never>

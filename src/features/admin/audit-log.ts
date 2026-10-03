@@ -1,6 +1,7 @@
 import type { Permission } from '@/features/auth/permissions'
 import type { Formatter } from '@/lib/format'
 import { HANDLING_CLASSES } from '@/domain/models'
+import type { DeadlineStatus } from '@/domain/routing'
 import type { TFunction } from '@/lib/i18n'
 import {
   DELIVERY_ISSUE_KINDS,
@@ -61,6 +62,8 @@ const PARAM_KEYS = [
   'sealNumber', 'packageCode', 'flag',
   // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
   'handlingClass', 'conflictCount', 'totalKm', 'totalMinutes', 'lateStops',
+  // Nguy cơ trễ hạn theo vị trí xe (FE-6-09)
+  'deadlineStatus', 'eta', 'deadline',
 ] as const
 
 const FIELD_NAMES = [
@@ -70,6 +73,8 @@ const FIELD_NAMES = [
 ] as const
 
 const REASONS = ['suspended'] as const
+
+const DEADLINE_STATUSES = ['OK', 'AT_RISK', 'MISSED'] as const satisfies readonly DeadlineStatus[]
 
 /** Quyền mở trang của từng loại đối tượng — cùng nhóm quyền với route của trang đó trong `App.tsx`; `null` khi loại đó không có trang. */
 const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = {
@@ -190,6 +195,12 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return event.action === 'package.statusChanged' && isOneOf(PACKAGE_STATUSES, value) ? t(`common.packageStatuses.${value}`) : value
     case 'kind':
       return isOneOf(DELIVERY_ISSUE_KINDS, value) ? t(`common.deliveryIssueKinds.${value}`) : value
+    case 'deadlineStatus':
+      return isOneOf(DEADLINE_STATUSES, value) ? t(`common.deadlineStatuses.${value}`) : value
+    case 'eta':
+    case 'deadline':
+      // Mốc giờ kho ghi dạng ISO: hiện theo ngôn ngữ đang chọn
+      return t('audit.log.dateTime', { time: format.time(value), date: format.dayMonth(value) })
     case 'role':
       return isOneOf(ROLES, value) ? t(`roles.${value}`) : value
     // LM-104: mã của kho dịch qua nhánh của màn

@@ -32,6 +32,7 @@ import { tripReport } from './vi/tripReport'
 import { runs } from './vi/runs'
 import { lookup } from './vi/lookup'
 import { map } from './vi/map'
+import { monitoring } from './vi/monitoring'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -77,4 +78,5 @@ export const vi = {
   runs,
   lookup,
   map,
+  monitoring,
 } as const

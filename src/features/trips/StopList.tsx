@@ -11,10 +11,10 @@ import { restrictToHorizontalAxis, restrictToParentElement } from '@dnd-kit/modi
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Clock, Warehouse } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DeliveryStop, RouteStopEta } from '@/lib/mock-db'
+import type { DeliveryStop } from '@/lib/mock-db'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { StopArrow, StopCard, StopLeg, type StopState } from './StopCard'
+import { StopArrow, StopCard, StopLeg, type StopEta, type StopState } from './StopCard'
 import type { StopRow } from './trip-summary'
 
 /** Quá 6 điểm giao thì mỗi điểm rộng cố định và khung cuộn ngang; từ 6 trở xuống thì chia đều chiều rộng. */
@@ -29,8 +29,8 @@ const SCROLL_AFTER = 6
 export function StopList({ stops, states, etas, flagMissingCoordinates = false, depotName, departureTime, departedAt, readOnly = true, onReorder, onRemove, selectedStop = null, onSelectStop }: {
   stops: readonly StopRow[]
   states?: readonly StopState[]
-  /** Giờ đến dự kiến và mức hạn của tuyến đã tối ưu, theo mã điểm (FE-4b-09). */
-  etas?: ReadonlyMap<string, RouteStopEta>
+  /** Giờ đến và mức hạn theo mã điểm: của tuyến đã tối ưu (FE-4b-09), hoặc tính từ vị trí xe khi chuyến đang chạy (FE-6-09). */
+  etas?: ReadonlyMap<string, StopEta>
   /** Chuyến còn lập kế hoạch: gắn nhãn cho điểm chưa có toạ độ. */
   flagMissingCoordinates?: boolean
   /** Tên kho xuất phát của chuyến (FE-4b-04). */

@@ -12,7 +12,7 @@ export const audit = {
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
     loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },
-    delivery: { started: 'Xuất phát giao hàng', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến' },
+    delivery: { started: 'Xuất phát giao hàng', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến', etaRisk: 'Nguy cơ trễ hạn giao' },
     user: {
       created: 'Tạo tài khoản', updated: 'Sửa tài khoản', locked: 'Khoá tài khoản', unlocked: 'Mở khoá tài khoản', deleted: 'Xoá tài khoản',
       passwordReset: 'Đặt lại mật khẩu', passwordChanged: 'Đổi mật khẩu', profileUpdated: 'Sửa hồ sơ cá nhân',
@@ -132,6 +132,10 @@ export const audit = {
       totalKm: 'Quãng đường (km)',
       totalMinutes: 'Thời gian (phút)',
       lateStops: 'Điểm trễ hạn dự kiến',
+      // Nguy cơ trễ hạn theo vị trí xe (FE-6-09)
+      deadlineStatus: 'Mức hạn',
+      eta: 'Dự kiến đến',
+      deadline: 'Hạn giao',
     },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {

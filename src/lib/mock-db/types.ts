@@ -74,6 +74,8 @@ export type StopProgress = {
   unloadedIds: string[]
   /** Kiện dỡ được xác nhận bằng quét QR (tập con của `unloadedIds`, LM-104). */
   qrConfirmedIds?: string[]
+  /** Tài xế bấm "Đã đến", ISO 8601: từ lúc đó xe mô phỏng đứng ở điểm này (FE-6-08). Kho chưa có hàm ghi trường này. */
+  arrivedAt?: string
   completedAt?: string
 }
 
@@ -234,8 +236,10 @@ export type MockDbOptions = {
    * Mặc định `SEED_ANCHOR_DATE` để test tất định; app truyền ngày hôm nay theo giờ Việt Nam.
    */
   today?: string
-  /** Đồng hồ cho dữ liệu ghi mới (thời điểm tạo, sự kiện). Mặc định giờ máy. */
+  /** Đồng hồ máy: đồng hồ của kho (thời điểm tạo, sự kiện, vị trí xe) chạy theo nó. Mặc định giờ máy; test tiêm đồng hồ ở đây. */
   now?: () => Date
+  /** Đồng hồ của kho chạy nhanh gấp mấy lần `now` (`?toc-do=<n>`, FE-6-08). Mặc định 1: đúng giờ của `now`. */
+  speed?: number
   /** Nguồn ngẫu nhiên [0, 1) cho mã QR của kiện đăng ký mới (LM-104). Mặc định bộ có hạt giống cố định (tất định); app truyền `Math.random`. */
   random?: () => number
 }

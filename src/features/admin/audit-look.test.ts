@@ -17,6 +17,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'trip.segregationOverridden',
     // FE-3b-01: kiện bị gắn cờ không vào yêu cầu giao hay chuyến được cho tới khi gỡ
     'package.flagged',
+    // FE-6-09: mức hạn của một điểm xấu đi theo vị trí xe — điều phối viên cần xem
+    'delivery.etaRisk',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(
