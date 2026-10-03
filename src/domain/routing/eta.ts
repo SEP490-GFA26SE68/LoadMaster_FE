@@ -121,3 +121,44 @@ export function routeEta(input: RouteInput, orderedStopIds: readonly string[]): 
     totalMinutes: Math.round((clockMs - departureMs) / MS_PER_MINUTE),
   }
 }
+
+/** Điểm chưa hoàn tất của chuyến đang chạy. `arrivedAt` chỉ có nghĩa ở điểm đầu danh sách: xe đang đứng ở đó từ lúc ấy (ISO 8601). */
+export type LiveEtaStop = RouteStopInput & { readonly arrivedAt?: string }
+
+export type LiveEtaInput = {
+  /** Vị trí xe — mô phỏng hay GPS thật đều chỉ tính từ đây. */
+  readonly position: GeoPoint
+  /** Thời điểm của vị trí, ISO 8601. */
+  readonly at: string
+  /** Các điểm chưa hoàn tất, theo thứ tự đi. */
+  readonly stops: readonly LiveEtaStop[]
+}
+
+export type LiveStopEta = RouteStopResult & {
+  /** Xe đã tới điểm: `eta` là giờ đến. */
+  readonly arrived?: true
+}
+
+/**
+ * ETA trực tiếp của các điểm chưa hoàn tất (FE-6-09, PRD v2 mục 8.6) — cùng công thức D-76, tính **từ vị trí xe**: điểm kế tiếp =
+ * thời điểm của vị trí + thời gian chạy từ vị trí tới điểm; mỗi điểm sau cộng 15 phút dừng và thời gian chạy chặng đó. Xe đang đứng ở
+ * điểm đầu thì giờ đến của điểm đó là giờ đến thật, và xe rời điểm sau 15 phút kể từ lúc đến — đã đứng quá 15 phút thì tính từ bây giờ.
+ * **Không** có tham số phút chậm của sự cố: sự cố làm xe đứng lại, ETA tự dời theo vị trí.
+ */
+export function liveEta({ position, at, stops }: LiveEtaInput): LiveStopEta[] {
+  const nowMs = parseTime(at)
+  let from = position
+  let leaveMs = nowMs
+  return stops.map((stop, index) => {
+    const arrivedMs = index === 0 && stop.arrivedAt !== undefined ? parseTime(stop.arrivedAt) : undefined
+    const etaMs = arrivedMs ?? leaveMs + travelMs(from, stop.location)
+    leaveMs = arrivedMs === undefined ? etaMs + SERVICE_MS : Math.max(arrivedMs + SERVICE_MS, nowMs)
+    from = stop.location
+    return {
+      stopId: stop.stopId,
+      eta: new Date(etaMs).toISOString(),
+      ...(stop.deadline === undefined ? {} : { deadlineStatus: deadlineStatusAt(etaMs, parseTime(stop.deadline)) }),
+      ...(arrivedMs === undefined ? {} : { arrived: true as const }),
+    }
+  })
+}
