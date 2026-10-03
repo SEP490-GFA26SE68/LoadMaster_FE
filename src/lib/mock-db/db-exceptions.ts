@@ -94,12 +94,6 @@ export function exceptionMethods(ctx: DbContext): ExceptionsDb {
         advanceTracking(ctx, trip)
         return exceptions.get(tripId)?.exceptions ?? []
       }),
-    listExceptions: () =>
-      ctx.respond(() =>
-        ctx.scope.trips.list().filter((trip) => trip.phase === 'delivering').flatMap((trip) => {
-          advanceTracking(ctx, trip)
-          return exceptions.get(trip.id)?.exceptions ?? []
-        }).toSorted((a, b) => Date.parse(a.reportedAt) - Date.parse(b.reportedAt))),
     escalateTripException: (tripId, exceptionId) =>
       ctx.respond(() => {
         inTransit(tripId, 'dispatcher')

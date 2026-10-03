@@ -103,7 +103,7 @@ describe('reporting a trip incident holds the simulated vehicle for exactly the 
     db.restoreSession('US-0006')
     expect(await db.reportTripException('TRIP-009', { type: 'VEHICLE_BREAKDOWN', description: 'Nổ lốp sau', delayMinutes: 0 })).toMatchObject({ id: 'EXC-001', tripId: 'TRIP-009', reportedBy: 'US-0006', stopNumber: 2 })
     expect(await db.listTripExceptions(tripId)).toStrictEqual([])
-    expect((await db.listExceptions()).map((item) => item.id)).toStrictEqual(['EXC-001'])
+    expect((await db.listTripMonitoring()).map((item) => [item.tripId, item.exceptions.map((exception) => exception.id)])).toStrictEqual([['TRIP-009', ['EXC-001']], [tripId, []]])
   })
 })
 
@@ -125,7 +125,7 @@ describe('an incident nobody handles for 30 minutes of the simulated clock goes 
       reportedAt: T, reportedBy: null, escalation: { reason: 'TIMEOUT', at: plus(T, 30 * MINUTE), by: null },
     }])
     wall.advance(5000)
-    await db.listExceptions()
+    await db.listTripExceptions('TRIP-010')
     await db.listTripMonitoring()
     expect((await actionsOf(db, 'TRIP-010', 'exception.escalated')).map(({ actorId, companyId, at, params }) => ({ actorId, companyId, at, params }))).toStrictEqual([{
       actorId: null, companyId: 'LOG-001', at: plus(T, 30 * MINUTE), params: { exceptionId: 'EXC-001', exceptionType: 'TRAFFIC', escalation: 'TIMEOUT' },

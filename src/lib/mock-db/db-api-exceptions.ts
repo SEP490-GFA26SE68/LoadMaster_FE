@@ -14,8 +14,6 @@ export type ExceptionsDb = {
   reportTripException(tripId: string, input: TripExceptionInput): Promise<TripException>
   /** Sự cố của một chuyến, cũ trước. Sự cố chưa xử lý quá 30 phút theo đồng hồ của kho được chuyển quản lý ở lần đọc này. */
   listTripExceptions(tripId: string): Promise<TripException[]>
-  /** Sự cố của mọi chuyến Đang vận chuyển của công ty, cũ trước. */
-  listExceptions(): Promise<TripException[]>
   /** Điều phối viên: "Không có tuyến khả thi — chuyển quản lý". Sự cố không còn `OPEN`: `EXCEPTION_STATUS_INVALID`. */
   escalateTripException(tripId: string, exceptionId: string): Promise<TripException>
   /** Điều phối viên: "Đã xử lý", kèm ghi chú tuỳ chọn. Sự cố đã xử lý rồi: `EXCEPTION_STATUS_INVALID`. */

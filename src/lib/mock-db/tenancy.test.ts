@@ -199,7 +199,6 @@ const PROBES = {
   // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12): seed không có sự cố nào
   reportTripException: onForeignTrip((db, tripId) => db.reportTripException(tripId, { type: 'TRAFFIC', description: 'Kẹt xe ở ngã tư Vũng Tàu', delayMinutes: 20 })),
   listTripExceptions: { scope: 'operational', hidden: ({ db, other }) => db.listTripExceptions(other.trip) },
-  listExceptions: { scope: 'operational', list: { call: ({ db }) => db.listExceptions(), ids: idsOf, own: () => [] } },
   escalateTripException: onForeignTrip((db, tripId) => db.escalateTripException(tripId, 'EXC-001')),
   resolveTripException: onForeignTrip((db, tripId) => db.resolveTripException(tripId, 'EXC-001')),
   requestReroute: onForeignTrip((db, tripId) => db.requestReroute(tripId)),
