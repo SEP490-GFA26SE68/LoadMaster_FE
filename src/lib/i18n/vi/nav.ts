@@ -11,6 +11,8 @@ export const nav = {
   // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty chỉ đọc. Yêu cầu giao (FE-4b-02): quản lý công ty lập, điều phối viên xem
   packages: 'Kho kiện',
   requirements: 'Yêu cầu giao',
+  // Giám sát chuyến đang vận chuyển (FE-6-10): điều phối viên và quản lý công ty
+  monitoring: 'Giám sát',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

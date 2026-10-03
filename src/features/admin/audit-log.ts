@@ -1,10 +1,11 @@
 import type { Permission } from '@/features/auth/permissions'
 import type { Formatter } from '@/lib/format'
 import { HANDLING_CLASSES } from '@/domain/models'
-import type { DeadlineStatus } from '@/domain/routing'
+import { REROUTE_ROUTES, type DeadlineStatus } from '@/domain/routing'
 import type { TFunction } from '@/lib/i18n'
 import {
   DELIVERY_ISSUE_KINDS,
+  EXCEPTION_ESCALATIONS,
   MANUAL_CONFIRM_REASONS,
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
@@ -13,6 +14,7 @@ import {
   REQUIREMENT_PRIORITIES,
   PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
+  TRIP_EXCEPTION_TYPES,
   VERIFY_CONTEXTS,
   type AuditAction,
   type AuditEvent,
@@ -68,6 +70,8 @@ const PARAM_KEYS = [
   'verifyContext', 'manualReason', 'requestedBy',
   // Nguy cơ trễ hạn theo vị trí xe (FE-6-09)
   'deadlineStatus', 'eta', 'deadline',
+  // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
+  'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
 ] as const
 
 const FIELD_NAMES = [
@@ -219,6 +223,13 @@ function paramValue(event: AuditEvent, key: string, value: string | number, dire
       return isOneOf(VERIFY_CONTEXTS, value) ? t(`common.verifyContexts.${value}`) : value
     case 'manualReason':
       return isOneOf(MANUAL_CONFIRM_REASONS, value) ? t(`common.manualConfirmReasons.${value}`) : value
+    // Sự cố cấp chuyến (FE-6-11): loại, lý do chuyển quản lý và tuyến thay thế là mã của kho
+    case 'exceptionType':
+      return isOneOf(TRIP_EXCEPTION_TYPES, value) ? t(`common.tripExceptionTypes.${value}`) : value
+    case 'escalation':
+      return isOneOf(EXCEPTION_ESCALATIONS, value) ? t(`audit.log.escalations.${value}`) : value
+    case 'route':
+      return isOneOf(REROUTE_ROUTES, value) ? t(`monitoring.reroute.routes.${value}`) : value
     case 'requestedBy':
       return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })
     case 'reason':

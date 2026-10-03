@@ -35,6 +35,7 @@ const PackageTypesPage = lazy(() => import('@/features/package-pool/PackageTypes
 const PackagesPage = lazy(() => import('@/features/package-pool/PackagesPage').then((m) => ({ default: m.PackagesPage })))
 const PackageLabelsPage = lazy(() => import('@/features/package-pool/PackageLabelsPage').then((m) => ({ default: m.PackageLabelsPage })))
 const PackageLookupPage = lazy(() => import('@/features/package-pool/PackageLookupPage').then((m) => ({ default: m.PackageLookupPage })))
+const MonitoringPage = lazy(() => import('@/features/monitoring/MonitoringPage').then((m) => ({ default: m.MonitoringPage })))
 const RequirementsPage = lazy(() => import('@/features/requirements/RequirementsPage').then((m) => ({ default: m.RequirementsPage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
@@ -136,6 +137,8 @@ export const routes: RouteObject[] = [
                     { path: '/yeu-cau-giao', element: <RequirementsPage />, handle: titled((t) => t('titles.requirements')) },
                     { path: '/don-hang', element: <Navigate to="/yeu-cau-giao" replace />, handle: titled((t) => t('titles.requirements')) },
                   ]),
+                  // Giám sát chuyến Đang vận chuyển (FE-6-10, D-86): điều phối viên và quản lý công ty
+                  guarded('monitoring.view', [{ path: '/giam-sat', element: <MonitoringPage />, handle: titled((t) => t('titles.monitoring')) }]),
                   // Loại xe, báo cáo chuyến (LM-104)
                   guarded('fleet.view', [{ path: '/doi-xe/loai-xe', element: <VehicleTypesPage />, handle: titled((t) => t('titles.vehicleTypes')) }]),
                   guarded('trips.view', [

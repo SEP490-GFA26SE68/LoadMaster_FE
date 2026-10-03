@@ -22,6 +22,8 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
  *   trên người của công ty (khoá, đặt lại mật khẩu) — không nhận gì về tài khoản nền tảng hay của công ty khác.
  * - Điều phối viên còn được báo khi kho hoặc tài xế gửi một **xác nhận tay** chờ duyệt (FE-6-04, D-83).
+ * - Sự cố cấp chuyến (FE-6-11, FE-6-12): điều phối viên được báo khi tài xế báo sự cố, khi kho tự chuyển sự cố cho quản lý sau 30
+ *   phút, và khi quản lý đã liên hệ khách, nhập hạn mới (để xử lý tiếp); quản lý công ty được báo khi sự cố chuyển lên mình.
  * - Nhân viên kho, tài xế: chỉ một loại — xác nhận tay **của chính mình** bị điều phối viên từ chối (`PERSONAL_ACTIONS`), để biết
  *   kiện nào phải kiểm lại.
  * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8). Vai trò không có nguồn nào thì
@@ -33,10 +35,10 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
-  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled'],
+  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'exception.escalated'],
   dispatcher: [
     'revision.approved', 'loading.completed', 'loading.missing', 'package.found', 'delivery.issue', 'delivery.etaRisk', 'delivery.completed',
-    'trip.cancelled', 'manualConfirm.requested',
+    'trip.cancelled', 'manualConfirm.requested', 'exception.reported', 'exception.escalated', 'exception.deadlineRenegotiated',
   ],
   warehouse: ['manualConfirm.rejected'],
   driver: ['manualConfirm.rejected'],

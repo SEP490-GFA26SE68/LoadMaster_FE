@@ -16,6 +16,7 @@ export function RouteMapSketch({ data }: { data: RouteMapData }) {
   const stops = project(data.stops)
   const [depot] = data.depot ? project([data.depot]) : []
   const [vehicle] = data.vehicle ? project([data.vehicle]) : []
+  const others = project(data.others ?? [])
   const at = (point: SketchPoint) => `translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})`
 
   return (
@@ -61,12 +62,33 @@ export function RouteMapSketch({ data }: { data: RouteMapData }) {
           </g>
         )
       })}
+      {(data.others ?? []).map((other, index) => {
+        const point = others[index]
+        if (!point) return null
+        return (
+          <g key={other.id} data-marker="other-vehicle" transform={at(point)}>
+            <circle r={RADIUS - 2} fill="var(--bg)" stroke="var(--n-500)" strokeWidth={2} />
+            <circle r={3.5} fill="var(--n-500)" />
+            {other.tag ? <VehicleTag text={other.tag} offset={RADIUS + 10} /> : null}
+          </g>
+        )
+      })}
       {vehicle ? (
         <g data-marker="vehicle" transform={at(vehicle)}>
           <circle r={RADIUS + 1} fill="var(--bg)" stroke="var(--primary)" strokeWidth={2} />
           <circle r={4.5} fill="var(--primary)" />
+          {data.vehicle?.tag ? <VehicleTag text={data.vehicle.tag} offset={RADIUS + 13} /> : null}
         </g>
       ) : null}
     </svg>
+  )
+}
+
+/** Nhãn ngắn dưới mốc xe (mã chuyến, nguồn vị trí), viền nền để đọc được khi đè lên đường tuyến. */
+function VehicleTag({ text, offset }: { text: string; offset: number }) {
+  return (
+    <text y={offset} textAnchor="middle" fill="var(--ink-1)" stroke="var(--bg)" strokeWidth={3} paintOrder="stroke" className="text-micro font-medium">
+      {text}
+    </text>
   )
 }

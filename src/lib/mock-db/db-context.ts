@@ -2,6 +2,7 @@ import type { VehicleConfig } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
+import type { TripIncidents } from './exception-model'
 import type { Package } from './package-model'
 import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
@@ -52,6 +53,8 @@ export type DbState = {
   vehicleTypeOf: Map<string, string>
   /** Chuyến → lịch sử vị trí xe và mức hạn đã tính (FE-6-08, FE-6-09); kho ghi dần khi có người đọc, seed để trống. */
   tracking: Map<string, TripTracking>
+  /** Chuyến → sự cố cấp chuyến, các khoảng xe mô phỏng bị giữ lại và tuyến thay thế (FE-6-11); seed để trống. */
+  exceptions: Map<string, TripIncidents>
 }
 
 export type DbContext = {

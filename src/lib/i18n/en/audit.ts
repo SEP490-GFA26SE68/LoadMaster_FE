@@ -5,7 +5,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Signed in', signedOut: 'Signed out', signInFailed: 'Sign-in failed' },
     vehicle: { created: 'Added vehicle', updated: 'Edited vehicle', deleted: 'Deleted vehicle', maintenanceOn: 'Put vehicle in maintenance', maintenanceOff: 'Ended vehicle maintenance' },
-    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip', segregationOverridden: 'Allowed mixed handling classes', routeOptimized: 'Optimized the route', vehicleChanged: 'Changed the trip vehicle' },
+    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip', segregationOverridden: 'Allowed mixed handling classes', routeOptimized: 'Optimized the route', vehicleChanged: 'Changed the trip vehicle', rerouted: 'Chose an alternative route' },
     optimization: { saved: 'Saved optimization result', failed: 'Optimization run returned no result' },
     revision: { approved: 'Approved plan' },
     loading: { started: 'Started loading', missing: 'Reported package missing at warehouse', completed: 'Finished loading', sealed: 'Recorded seal number' },
@@ -19,6 +19,7 @@ export const audit = {
     requirement: { created: 'Created delivery requirement', updated: 'Edited delivery requirement', deleted: 'Deleted delivery requirement', assigned: 'Put delivery requirement on a trip', unassigned: 'Removed delivery requirement from its trip' },
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
     manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
+    exception: { reported: 'Reported a trip incident', escalated: 'Sent the incident to the manager', resolved: 'Marked the incident as handled', deadlineRenegotiated: 'Contacted the customer, entered a new deadline' },
   },
   groups: {
     auth: 'Sign-in',
@@ -34,6 +35,7 @@ export const audit = {
     requirement: 'Delivery requirements',
     vehicleType: 'Vehicle types',
     manualConfirm: 'Manual confirmations',
+    exception: 'Trip incidents',
   },
   log: {
     title: 'System log',
@@ -121,7 +123,14 @@ export const audit = {
       deadlineStatus: 'Deadline status',
       eta: 'Expected arrival',
       deadline: 'Deadline',
+      exceptionId: 'Incident',
+      exceptionType: 'Incident type',
+      delayMinutes: 'Expected delay (min)',
+      escalation: 'Reason sent up',
+      route: 'Route',
+      requirementId: 'Delivery requirement',
     },
+    escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {
       name: 'Trip name',
       vehicleId: 'Vehicle',

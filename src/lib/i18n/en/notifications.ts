@@ -20,4 +20,5 @@ export const notifications = {
     detail: 'Expected arrival {eta} · deadline {deadline}',
     moment: '{time} {date}',
   },
+  exceptionEscalated: 'Trip {tripId}: incident ({type}) sent to the manager',
 } satisfies Dictionary<typeof source>

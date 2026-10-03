@@ -1,6 +1,7 @@
 /**
- * Giám sát chuyến Đang vận chuyển (FE-6-08, FE-6-09): vị trí xe và giờ đến tính từ vị trí. Hiện ở card sơ đồ tuyến của Chi tiết chuyến
- * (`features/monitoring/LiveLocationBar.tsx`); màn Giám sát thêm phần của nó vào nhánh này.
+ * Giám sát chuyến Đang vận chuyển: vị trí xe và giờ đến tính từ vị trí (FE-6-08, FE-6-09 — card sơ đồ tuyến của Chi tiết chuyến,
+ * `features/monitoring/LiveLocationBar.tsx`), màn Giám sát `/giam-sat` (FE-6-10), sự cố cấp chuyến và tuyến thay thế (FE-6-11), tab
+ * "Sự cố cần xử lý" và gia hạn của quản lý công ty (FE-6-12). Nhãn loại sự cố nằm ở `common.tripExceptionTypes`.
  */
 export const monitoring = {
   location: {
@@ -12,5 +13,162 @@ export const monitoring = {
     moving: 'Lúc {time} · đang chạy {speed} km/h',
     standing: 'Lúc {time} · đang dừng',
     basis: 'Giờ đến của các điểm chưa giao tính lại từ vị trí xe sau mỗi điểm vị trí, theo đường nối thẳng giữa các điểm.',
+  },
+  title: 'Giám sát',
+  /** Dòng số dưới tiêu đề: đếm chuyến Đang vận chuyển của kho. */
+  count: { one: '{count} chuyến đang vận chuyển', other: '{count} chuyến đang vận chuyển' },
+  loading: 'Đang tải giám sát…',
+  /** Giờ kèm ngày của một mốc. */
+  moment: '{time} {date}',
+  tabs: { label: 'Phần của màn Giám sát', trips: 'Chuyến đang chạy', escalations: 'Sự cố cần xử lý' },
+  empty: {
+    title: 'Chưa có chuyến nào đang vận chuyển',
+    description: 'Chuyến hiện ở đây từ lúc tài xế bấm xuất phát tới khi giao xong điểm cuối.',
+  },
+  map: {
+    title: 'Bản đồ xe đang chạy',
+    label: 'Bản đồ các xe đang vận chuyển',
+    /** Nhãn ngắn dưới mốc xe: mã chuyến và nguồn vị trí. */
+    tag: '{trip} · {source}',
+    /** Tên mốc xe của một chuyến cho trình đọc màn hình. */
+    vehicle: 'chuyến {trip}, {name} ({source})',
+    note: 'Tuyến và điểm giao là của chuyến đang chọn; xe của chuyến khác chỉ hiện vị trí.',
+    noPosition: 'Chuyến {id} còn điểm giao chưa có toạ độ nên chưa có vị trí xe.',
+  },
+  list: {
+    title: 'Chuyến đang vận chuyển',
+    filters: { label: 'Lọc chuyến', late: 'Có nguy cơ trễ', incidents: 'Có sự cố' },
+    noMatch: 'Không có chuyến khớp bộ lọc.',
+    clear: 'Bỏ lọc',
+    driver: 'Tài xế {name}',
+    noDriver: 'Chưa gán tài xế',
+    nextStop: 'Điểm tiếp: điểm {number} · {name}',
+    atStop: 'Đang ở điểm {number} · {name}',
+    noStop: 'Chưa có giờ đến: xe chưa có vị trí',
+    eta: 'Dự kiến đến {time}',
+    arrived: 'Đã đến {time}',
+    noDeadline: 'Không có hạn',
+    incidents: { one: '{count} sự cố', other: '{count} sự cố' },
+  },
+  panel: {
+    label: 'Giám sát chuyến {id}',
+    openTrip: 'Mở chuyến',
+    stops: {
+      title: 'Giờ đến từng điểm',
+      columns: { stop: 'Điểm giao', eta: 'Giờ đến dự kiến', deadline: 'Hạn giao', status: 'Mức hạn' },
+      arrived: 'Đã đến lúc {time}',
+      completed: 'Đã giao xong lúc {time}',
+      noDeadline: 'Không có hạn',
+      noEta: 'Chưa có',
+    },
+    history: {
+      title: 'Lịch sử vị trí',
+      count: { one: '{count} điểm vị trí', other: '{count} điểm vị trí' },
+      latest: 'Các điểm gần nhất, mới nhất trước.',
+      columns: { time: 'Giờ', position: 'Vĩ độ, kinh độ', speed: 'Tốc độ', source: 'Nguồn' },
+      speed: '{speed} km/h',
+      empty: 'Chưa có điểm vị trí nào.',
+    },
+  },
+  exceptions: {
+    title: 'Sự cố của chuyến',
+    report: 'Báo sự cố',
+    none: 'Chuyến chưa có sự cố nào.',
+    statuses: { OPEN: 'Chưa xử lý', ESCALATED: 'Đã chuyển quản lý', RESOLVED: 'Đã xử lý' },
+    delay: { one: 'Dự kiến chậm {count} phút', other: 'Dự kiến chậm {count} phút' },
+    reported: 'Báo lúc {time} bởi {name}',
+    atStop: 'Xe đang tới điểm {number}',
+    /** Người làm không còn trong kho, hoặc sự kiện của hệ thống. */
+    unknownUser: 'tài khoản đã xoá',
+    escalations: {
+      NO_ROUTE: 'Chuyển quản lý lúc {time}: không có tuyến khả thi',
+      TIMEOUT: 'Tự chuyển quản lý lúc {time}: quá {minutes} phút chưa xử lý',
+    },
+    contacted: 'Quản lý đã liên hệ khách lúc {time}: {note}',
+    newDeadline: 'Hạn mới của {requirementId}: {deadline} (trước là {previous})',
+    resolved: 'Đã xử lý lúc {time} bởi {name}',
+    actions: { reroute: 'Tìm tuyến khác', escalate: 'Không có tuyến khả thi — chuyển quản lý', resolve: 'Đã xử lý' },
+    done: {
+      reported: 'Đã báo sự cố {id}',
+      escalated: 'Đã chuyển sự cố {id} cho quản lý công ty',
+      resolved: 'Đã đánh dấu sự cố {id} là đã xử lý',
+    },
+    readOnly: 'Điều phối viên xử lý sự cố của chuyến; bạn chỉ xem.',
+  },
+  /** Hộp "Báo sự cố" — điều phối viên ở màn Giám sát, tài xế ở màn điểm giao. */
+  reportDialog: {
+    /** Nút mở hộp ở màn tài xế: khác "Báo sự cố" của từng kiện. */
+    driverOpen: 'Sự cố trên đường',
+    title: 'Báo sự cố chuyến {id}',
+    description: 'Xe mô phỏng dừng thêm đúng số phút dự kiến chậm; giờ đến các điểm tính lại theo vị trí xe.',
+    type: 'Loại sự cố',
+    typePlaceholder: 'Chọn loại sự cố',
+    details: 'Mô tả',
+    detailsHint: 'Chuyện gì xảy ra, ở đâu.',
+    delay: 'Số phút dự kiến chậm',
+    delayHint: 'Số nguyên từ 0 đến {max}.',
+    minutes: 'phút',
+    errors: {
+      typeRequired: 'Chọn loại sự cố.',
+      detailsRequired: 'Nhập mô tả sự cố.',
+      detailsTooLong: 'Mô tả tối đa {max} ký tự.',
+      delayInvalid: 'Nhập số phút nguyên từ 0 đến {max}.',
+    },
+    cancel: 'Huỷ',
+    submit: 'Báo sự cố',
+  },
+  /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */
+  reroute: {
+    title: 'Tìm tuyến khác cho chuyến {id}',
+    description: 'Đường khác tới điểm {number} · {name}, tính từ vị trí xe lúc {time}.',
+    note: 'Thứ tự điểm giao không đổi. Bản đồ vẫn vẽ đường nối thẳng; các tuyến chỉ khác nhau ở quãng đường và thời gian.',
+    loading: 'Đang tìm tuyến…',
+    options: 'Tuyến thay thế',
+    routes: { BYPASS: 'Đường tránh gần', RING_ROAD: 'Đường vành đai', HIGHWAY: 'Cao tốc' },
+    measure: '{km} km · {minutes} phút',
+    eta: 'Đến điểm {number} lúc {time}',
+    close: 'Đóng',
+    confirm: 'Chọn tuyến này',
+    done: 'Chuyến {id} đi {route}',
+    current: 'Tuyến đã chọn lúc {time}: {route} · {km} km · {minutes} phút tới điểm {number}',
+  },
+  /** Tab "Sự cố cần xử lý" của quản lý công ty: sự cố đã chuyển lên. */
+  escalations: {
+    label: 'Sự cố cần xử lý',
+    empty: {
+      title: 'Không có sự cố nào cần xử lý',
+      description: 'Sự cố điều phối viên chuyển lên, hoặc quá {minutes} phút chưa xử lý, hiện ở đây.',
+    },
+    trip: 'Chuyến {id}',
+    stop: 'Điểm {number} · {name}',
+    noStop: 'Chuyến không còn điểm nào chưa giao',
+    eta: 'Dự kiến đến {time}',
+    deadline: 'Hạn giao {time}',
+    renegotiate: 'Nhập hạn mới',
+    waiting: 'Đã nhập hạn mới — chờ điều phối viên xử lý tiếp.',
+  },
+  /** Hộp "Liên hệ khách và nhập hạn mới" của quản lý công ty. */
+  renegotiate: {
+    title: 'Liên hệ khách và nhập hạn mới',
+    description: 'Sự cố {id} của chuyến {tripId}. Hạn mới phải sau giờ hiện tại của đồng hồ; hạn của điểm giao và mức hạn tính lại ngay.',
+    requirement: 'Yêu cầu giao',
+    requirementPlaceholder: 'Chọn yêu cầu giao',
+    requirementOption: '{id} · {destination} · điểm {number}',
+    current: 'Hạn hiện tại: {deadline}',
+    currentEta: 'Hạn hiện tại: {deadline} · dự kiến đến: {eta}',
+    contactNote: 'Đã liên hệ khách',
+    contactHint: 'Ai nhận tin, thoả thuận thế nào.',
+    date: 'Ngày của hạn mới',
+    time: 'Giờ của hạn mới',
+    errors: {
+      requirementRequired: 'Chọn yêu cầu giao cần gia hạn.',
+      noteRequired: 'Ghi lại việc đã liên hệ khách.',
+      noteTooLong: 'Ghi chú tối đa {max} ký tự.',
+      deadlineInvalid: 'Nhập ngày và giờ của hạn mới.',
+    },
+    noRequirements: 'Chuyến này không có yêu cầu giao nào đang giao để gia hạn.',
+    cancel: 'Huỷ',
+    submit: 'Lưu hạn mới',
+    done: 'Đã nhập hạn mới cho {requirementId}',
   },
 } as const

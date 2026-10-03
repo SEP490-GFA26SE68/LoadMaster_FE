@@ -24,6 +24,8 @@ export const AUDIT_ACTIONS = [
   'trip.routeOptimized',
   // Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08)
   'trip.vehicleChanged',
+  // Điều phối viên chọn tuyến thay thế khi có sự cố (FE-6-11, sự kiện `TRIP_REROUTED` của backend)
+  'trip.rerouted',
   'optimization.saved',
   'revision.approved',
   'loading.started',
@@ -70,6 +72,11 @@ export const AUDIT_ACTIONS = [
   'manualConfirm.requested',
   'manualConfirm.approved',
   'manualConfirm.rejected',
+  // Sự cố cấp chuyến (FE-6-11) và gia hạn của quản lý công ty (FE-6-12); `escalated` do hệ thống ghi khi quá 30 phút chưa xử lý
+  'exception.reported',
+  'exception.escalated',
+  'exception.resolved',
+  'exception.deadlineRenegotiated',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

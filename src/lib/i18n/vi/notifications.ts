@@ -30,4 +30,6 @@ export const notifications = {
     /** Giờ kèm ngày của một mốc trong câu `detail`. */
     moment: '{time} {date}',
   },
+  /** Toast khi một sự cố cấp chuyến được chuyển lên quản lý công ty (FE-6-11) — người nhận thông báo đó ở chuông thấy. */
+  exceptionEscalated: 'Chuyến {tripId}: sự cố {type} đã chuyển quản lý',
 } as const

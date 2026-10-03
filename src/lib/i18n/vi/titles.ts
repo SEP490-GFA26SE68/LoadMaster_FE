@@ -33,6 +33,8 @@ export const titles = {
   labels: 'In nhãn QR',
   lookup: 'Tra cứu kiện',
   requirements: 'Yêu cầu giao',
+  // FE-6-10
+  monitoring: 'Giám sát',
   vehicleTypes: 'Loại xe',
   tripReport: 'Báo cáo chuyến {id}',
 } as const

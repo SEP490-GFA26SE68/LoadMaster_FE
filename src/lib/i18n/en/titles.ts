@@ -31,6 +31,7 @@ export const titles = {
   labels: 'Print QR labels',
   lookup: 'Package lookup',
   requirements: 'Delivery requirements',
+  monitoring: 'Monitoring',
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
 } satisfies Dictionary<typeof source>
