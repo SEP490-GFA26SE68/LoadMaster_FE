@@ -20,7 +20,7 @@ test('a valid account is normalised: text trimmed, phone stored in its display f
 })
 
 test('the company form takes the five company roles, and each needs a depot; a blank one is reported at the depot field', () => {
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+  for (const role of ['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(errorsOf('company', { ...VALID, role }), role).toStrictEqual([])
     expect(errorsOf('company', { ...VALID, role, depot: '   ' }), role).toStrictEqual(['depot: admin.users.errors.depotRequired'])
   }
@@ -36,7 +36,7 @@ test('a role outside the scope of the form is refused at the role field', () => 
   for (const role of ['systemAdmin', 'systemManager', 'systemSupporter'] as const) {
     expect(errorsOf('company', { ...VALID, role }), role).toStrictEqual(['role: admin.users.errors.roleRequired'])
   }
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+  for (const role of ['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(errorsOf('platform', { ...VALID, role }), role).toStrictEqual(['role: admin.users.errors.roleRequired'])
   }
 })

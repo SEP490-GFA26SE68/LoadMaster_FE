@@ -74,7 +74,7 @@ test.each<Role>(['systemManager', 'systemSupporter'])('nav rail của %s không 
 /** LM-098: chuông chỉ có ở vai trò có loại thông báo; kho và tài xế không có nút không làm gì (D-20). */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
-  ['manager', true],
+  ['companyManager', true],
   ['systemAdmin', true],
   ['companyAdmin', true],
   ['warehouse', false],
@@ -89,7 +89,7 @@ test.each<[Role, boolean]>([
 /** LM-099: nút Tìm nhanh chỉ có khi vai trò được xem ít nhất một nhóm (chuyến, xe, người dùng). */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
-  ['manager', true],
+  ['companyManager', true],
   ['systemAdmin', true],
   ['companyAdmin', true],
   ['warehouse', false],
@@ -107,7 +107,7 @@ test.each<[Role, string]>([
   ['systemManager', '/ho-so'],
   ['systemSupporter', '/ho-so'],
   ['companyAdmin', '/nguoi-dung'],
-  ['manager', '/'],
+  ['companyManager', '/'],
   ['dispatcher', '/'],
   ['warehouse', '/kho'],
   ['driver', '/tai-xe'],
@@ -129,7 +129,7 @@ test('mục Kho kiện của điều phối viên mở /kien-hang và sáng ở 
 /** LM-096: menu tài khoản mở hồ sơ cá nhân trước mục đăng xuất. */
 test('menu tài khoản có mục Hồ sơ cá nhân mở /ho-so', async () => {
   const user = userEvent.setup()
-  renderRail('manager')
+  renderRail('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tài khoản Trần Thị Mai' }))
   const items = await screen.findAllByRole('menuitem')
   expect(items.map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Đăng xuất'])
