@@ -8,11 +8,11 @@ import { useFormat, useT } from '@/lib/i18n'
 /**
  * Thanh trên của Planner (LM-049, LM-094; V2.3 LM-107). Kính tối cao 56 px — bản mỏng dành riêng cho màn 3D (AGENTS mục 5), từ `xl`
  * nổi cách mép 14 px và bo góc như `Planner3D.jpg`. Từ 1.366 px đây là **hàng điều khiển duy nhất** (D-51): quay lại, tên tuyến +
- * mã chuyến · revision và nhãn của kết quả (MOCK RESULT, Đã chỉnh tay, Lỗi thời, LIFO tắt), chỉ số, điều khiển mô phỏng (`controls`),
+ * mã chuyến · revision và nhãn của kết quả (phương án ứng viên A · B · C, MOCK RESULT, Đã chỉnh tay, Lỗi thời, LIFO tắt), chỉ số, điều khiển mô phỏng (`controls`),
  * rồi trạng thái duyệt và hành động (`children`); hẹp hơn thì điều khiển mô phỏng xuống thanh công cụ riêng. Số lấy thẳng từ
  * `result.metrics` của revision; thời gian chạy nằm ở tab Chỉ số của hộp thông tin để hàng này vừa 1.366 px.
  */
-export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, totalCount, isMockResult, manuallyEdited, stale = false, lifoOff = false, controls, children }: {
+export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, totalCount, isMockResult, manuallyEdited, candidateLabel, stale = false, lifoOff = false, controls, children }: {
   tripId: string
   /** Tên tuyến của chuyến; vắng (fixture benchmark) thì tiêu đề là mã chuyến. */
   title?: string
@@ -25,6 +25,8 @@ export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, 
   isMockResult: boolean
   /** Revision đang xem đã mang chỉnh tay (khi đã có chỉnh sửa mới, nút "Duyệt bản chỉnh" nói thay). */
   manuallyEdited: boolean
+  /** Revision là phương án ứng viên A · B · C của một lần chạy có nhiều phương án (FE-5b-06); vắng thì không có nhãn. */
+  candidateLabel?: string | undefined
   /** Xe hoặc kiện đổi sau lần tối ưu này (thanh thông báo bên dưới nói chi tiết). */
   stale?: boolean
   /** Lần chạy tắt "Bắt buộc thứ tự dỡ theo điểm giao" (`request.settings.enforceLifo`). */
@@ -65,6 +67,13 @@ export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, 
             <span className="hidden font-mono text-caption leading-4 whitespace-nowrap text-cyan-200 md:inline">
               {title ? <><span className="hidden min-[1680px]:inline">{codes}</span><span className="min-[1680px]:hidden">{revisionId ?? tripId}</span></> : codes}
             </span>
+            {/* Nhãn phương án ứng viên chỉ là một chữ cái để hàng vẫn vừa 1.366 px; tên đầy đủ ở `title` và cho trình đọc màn hình */}
+            {candidateLabel ? (
+              <Badge shape="tag" outlined className="border-cyan-300/45 bg-cyan-400/15 px-1.5 text-cyan-200" title={t('optimization.candidateLabel', { label: candidateLabel })} data-candidate-label>
+                <span className="sr-only">{t('optimization.candidateLabel', { label: candidateLabel })}</span>
+                <span aria-hidden>{candidateLabel}</span>
+              </Badge>
+            ) : null}
             {isMockResult ? <Badge shape="tag" tone="mock" className="border-amber-500/45 text-amber-500">MOCK RESULT</Badge> : null}
             {manuallyEdited ? <Badge shape="tag" tone="azure" className="hidden bg-azure-500/20 text-azure-200 2xl:inline-flex">{t('viewer.plan.manuallyEdited')}</Badge> : null}
             {stale ? <Badge shape="tag" outlined className="hidden border-amber-500/40 bg-amber-500/15 text-amber-200 2xl:inline-flex">{t('viewer.plan.staleTag')}</Badge> : null}

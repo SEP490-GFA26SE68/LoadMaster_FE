@@ -58,7 +58,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     tracking: new Map(),
     exceptions: new Map(),
   }
-  const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed)
+  const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
   return {
     ...vehicleMethods(ctx),
     ...tripMethods(ctx),

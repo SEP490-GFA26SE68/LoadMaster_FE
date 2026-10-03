@@ -10,6 +10,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import { leftOutIds, type Revision, type Trip } from '@/lib/mock-db'
 import { DeliveryItemRow } from './DeliveryItemRow'
 import { deliveryView, type DeliveryView } from './delivery-progress'
+import { DriverGpsToggle } from './DriverGpsToggle'
 import { DriverNotice } from './DriverNotice'
 import { stopDeliveries } from './driver-plan'
 import { DriverStopHeader } from './DriverStopHeader'
@@ -23,7 +24,8 @@ const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoView
 /**
  * Màn tài xế tại điểm giao (LM-061, LM-087, FE-6-06) — điện thoại, một tay, ngoài trời. Vùng chạm 56px, chữ 16px, một hành động chính
  * ở chân màn theo bước của luồng giao nhiều điểm (D-84): "Xuất phát" khi kho đã xếp xong; đang vận chuyển thì "Đã đến điểm n" — ghi giờ
- * đến thật — rồi mới tới "Hoàn tất điểm giao". Kho chưa xếp xong thì chỉ xem trước điểm 1.
+ * đến thật — rồi mới tới "Hoàn tất điểm giao". Kho chưa xếp xong thì chỉ xem trước điểm 1. Đang vận chuyển có công tắc "Dùng GPS thật"
+ * dưới dải thông báo (`DriverGpsToggle`, FE-6-13).
  * Kiện, thứ tự dỡ lấy từ phương án kho đã xếp; kiện đã dỡ, sự cố và điểm đã hoàn tất đọc/ghi trong kho (D-47) — mở lại là đúng điểm.
  *
  * Lệch có chủ ý khỏi design: nút chỉ đường trong design màu primary — mỗi màn chỉ một nút primary (mục 5) nên đổi sang secondary;
@@ -64,6 +66,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
       <div className="flex h-dvh flex-col bg-bg text-body-lg">
         <DriverStopHeader stop={view.stop} stops={stops} completedStops={view.completedStops} />
         <StopNotices view={view} stale={model.revision?.stale ?? false} />
+        {view.mode === 'delivering' ? <DriverGpsToggle tripId={trip.id} /> : null}
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-4 pt-3 pb-4">
           <StopContactCard stop={view.stop} />

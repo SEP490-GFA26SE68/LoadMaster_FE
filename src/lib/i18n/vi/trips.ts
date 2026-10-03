@@ -279,6 +279,10 @@ export const trips = {
     /** Huỷ lúc Đang xếp hàng (FE-6-07, D-91): kho được báo để dỡ phần đã xếp. */
     loadingNote: { one: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.', other: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.' },
     stagingNote: 'Kho đang soạn hàng của chuyến này: kho được báo chuyến đã huỷ.',
+    /** Huỷ lúc Đang vận chuyển (FE-6-07, D-91): chỉ khi chuyến có sự cố cấp chuyến chưa xử lý; kiện chưa giao thành Hoàn trả. */
+    inTransitDescription: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện chưa giao thành Hoàn trả, yêu cầu giao của chúng thành Giao thiếu; quản lý công ty được báo. Lý do được ghi vào nhật ký.',
+    inTransitNote: { one: 'Xe đang trên đường: {count} kiện chưa giao sẽ thành Hoàn trả.', other: 'Xe đang trên đường: {count} kiện chưa giao sẽ thành Hoàn trả.' },
+    inTransitBlocked: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
     reason: 'Lý do huỷ',
     reasonPlaceholder: 'Ví dụ: khách hoãn nhận hàng',
     reasonRequired: 'Nhập lý do huỷ chuyến',

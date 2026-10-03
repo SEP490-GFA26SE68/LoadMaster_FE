@@ -1,12 +1,13 @@
 import { vnClock, vnDate, vnTime } from './clock'
 import { found, nextId, put, sameData, type DbContext } from './db-context'
-import { releaseTripPackages } from './db-package-progress'
+import { releaseTripPackages, returnUndeliveredPackages } from './db-package-progress'
 import { releaseTripRequirements } from './db-requirement-trips'
+import { advanceTracking } from './db-tracking'
 import { stopDemandsOf } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
 import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
-import { isCancellablePhase, tripStatus } from './operations'
+import { canCancelTrip, tripStatus } from './operations'
 import { isValidCoordinate } from './requirement-model'
 import type { CompanyDepot } from './source-types'
 import { tripChangeParams } from './trip-changes'
@@ -139,19 +140,26 @@ export function tripMethods(ctx: DbContext): TripMethods {
     cancelTrip: (id, reason) =>
       ctx.respond(() => {
         const current = scope.own(id)
-        // Huỷ chuyến Đang vận chuyển cần sự cố cấp chuyến đang mở (FE-6-11) — chưa có; Đã giao, Đã huỷ thì không huỷ được (D-91)
-        if (!isCancellablePhase(current.phase)) {
+        // Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý (FE-6-11); Đã giao, Đã huỷ thì không huỷ được (D-91)
+        if (!canCancelTrip(current.phase, ctx.state.exceptions.get(id)?.exceptions ?? [])) {
           throw new MockDbError('INVALID_TRIP_STATUS_TRANSITION', { tripId: id, from: tripStatus(current), to: 'CANCELLED' })
         }
         const trimmed = reason.trim()
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
+        if (current.phase === 'delivering') {
+          // Vị trí xe ghi bù tới lúc huỷ; kiện chưa giao thành Hoàn trả và ở lại chuyến — yêu cầu giao của chúng đọc là giao thiếu
+          advanceTracking(ctx, current)
+          const returned = returnUndeliveredPackages(ctx, current)
+          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, returned })
+        } else {
+          // Huỷ lúc Đang xếp hàng: `loaded` là số kiện đã lên xe — kho được báo dỡ phần đã xếp
+          const loaded = current.loading?.steps.filter((step) => step.outcome === 'loaded').length
+          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, ...(loaded === undefined ? {} : { loaded }) })
+          // Huỷ trước khi xe chạy (D-91): kiện về kho kiện, yêu cầu giao về "chờ xếp chuyến"
+          releaseTripPackages(ctx, current)
+          releaseTripRequirements(ctx, current)
+        }
         const cancellation = { at: ctx.nowIso(), by: ctx.state.session.userId, reason: trimmed, fromPhase: current.phase }
-        // Huỷ lúc Đang xếp hàng: `loaded` là số kiện đã lên xe — kho được báo dỡ phần đã xếp
-        const loaded = current.loading?.steps.filter((step) => step.outcome === 'loaded').length
-        ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, ...(loaded === undefined ? {} : { loaded }) })
-        // Huỷ trước khi xe chạy (D-91): kiện về kho kiện, yêu cầu giao về "chờ xếp chuyến"
-        releaseTripPackages(ctx, current)
-        releaseTripRequirements(ctx, current)
         return put(trips, { ...current, phase: 'cancelled', cancellation })
       }),
   }

@@ -51,6 +51,21 @@ export const driver = {
       other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
     },
   },
+  /** Công tắc "Dùng GPS thật" khi chuyến Đang vận chuyển (FE-6-13, D-85, D-95). */
+  gps: {
+    title: 'Vị trí xe',
+    toggle: 'Dùng GPS thật',
+    localOnly: 'Chưa có máy chủ: vị trí từ điện thoại chỉ hiện trong trình duyệt này.',
+    requesting: 'Đang chờ quyền vị trí và tín hiệu GPS…',
+    sent: 'Đã gửi vị trí lúc {time}. Gửi lại mỗi 30 giây.',
+    stopped: {
+      user: 'Đã tắt GPS thật: vị trí xe về mô phỏng.',
+      denied: 'Trình duyệt không cho dùng vị trí: vị trí xe về mô phỏng. Cấp quyền vị trí cho trang rồi bật lại.',
+      lost: 'Mất tín hiệu GPS: vị trí xe về mô phỏng. Bật lại khi có tín hiệu.',
+      unsupported: 'Thiết bị này không có định vị: vị trí xe là mô phỏng.',
+      error: 'Không gửi được vị trí: vị trí xe về mô phỏng. {message}',
+    },
+  },
   start: 'Xuất phát',
   arrive: 'Đã đến điểm {number}',
   arrived: 'Đã ghi giờ đến điểm {number}',

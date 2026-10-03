@@ -13,22 +13,23 @@ const FRAME_EDITABLE: readonly TripPhase[] = ['planning', 'loading', 'loaded']
 
 /**
  * Menu thao tác phụ ở header Chi tiết chuyến (LM-088): sửa thông tin chuyến, đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80), huỷ
- * chuyến, mở báo cáo của chuyến đã hoàn thành (LM-104).
- * Chỉ hiện với người được sửa chuyến; mục nào
- * pha hiện tại không cho làm thì không hiện (không nút giả, D-20). Hộp thoại luôn gắn ở đây để còn sống tới khi làm xong,
- * kể cả khi menu vừa ẩn vì chuyến đã sang "Đã huỷ".
+ * chuyến, mở báo cáo của chuyến đã hoàn thành hoặc bị huỷ lúc đang vận chuyển (LM-104, FE-6-14).
+ * Sửa, đổi xe, huỷ chỉ hiện với người được sửa chuyến (`canEdit`); báo cáo hiện với mọi người xem được chuyến — quản lý công ty mở báo
+ * cáo từ đây. Mục nào pha hiện tại không cho làm thì không hiện (không nút giả, D-20). Chuyến Đang vận chuyển có mục huỷ: hộp thoại
+ * nói huỷ được hay chưa (cần sự cố cấp chuyến chưa xử lý, FE-6-07). Hộp thoại luôn gắn ở đây để còn sống tới khi làm xong, kể cả khi
+ * menu vừa ẩn vì chuyến đã sang "Đã huỷ".
  */
-export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase' | 'routePlan'> }) {
+export function TripActionsMenu({ trip, canEdit }: { trip: Pick<Trip, 'id' | 'phase' | 'routePlan' | 'loading' | 'delivery' | 'cancellation'>; canEdit: boolean }) {
   const t = useT()
   const [cancelOpen, setCancelOpen] = useState(false)
   const [vehicleOpen, setVehicleOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const canEditFrame = FRAME_EDITABLE.includes(trip.phase)
-  const canCancel = isCancellablePhase(trip.phase)
+  const canEditFrame = canEdit && FRAME_EDITABLE.includes(trip.phase)
+  const canCancel = canEdit && (isCancellablePhase(trip.phase) || trip.phase === 'delivering')
   // Chuyến Nháp đổi xe ở form sửa chuyến; đã lập kế hoạch thì đổi qua hộp thoại có kiểm xe (kho từ chối `TRIP_NOT_PLANNED` nếu khác)
-  const canChangeVehicle = tripStatus(trip) === 'PLANNED'
-  // Review 1 (LM-104): chuyến đã hoàn thành có báo cáo chuyến
-  const canReport = trip.phase === 'completed'
+  const canChangeVehicle = canEdit && tripStatus(trip) === 'PLANNED'
+  // Chuyến đã hoàn thành, hoặc bị huỷ lúc đang vận chuyển (có kiện hoàn trả), có báo cáo chuyến
+  const canReport = trip.phase === 'completed' || trip.cancellation?.fromPhase === 'delivering'
 
   return (
     <>

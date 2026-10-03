@@ -67,8 +67,8 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 04/10/2026, FE-6-04*) và — *(đã điều chỉnh
-04/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*) và — *(đã điều chỉnh
+03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
 công ty), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
@@ -94,7 +94,7 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
 chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
-(*đã điều chỉnh 04/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
+(*đã điều chỉnh 03/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
 họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
@@ -128,19 +128,19 @@ chuyến, kiện, yêu cầu giao, kho kiện, xe; điều phối viên thêm lo
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao, và kiện **của một yêu cầu giao** bị bỏ khỏi chuyến vì thiếu hoặc hỏng (yêu cầu thành giao thiếu, D-92);
-*(đã điều chỉnh 04/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
+*(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
 vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
-*(đã điều chỉnh 04/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
+*(đã điều chỉnh 03/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
 xế có chuông với đúng một loại: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo tham số `requestedBy` —
 `PERSONAL_ACTIONS`); chuông của họ là nút 56 px ở thanh màn chính `/kho`, `/tai-xe` (`NotificationBell variant="touch"`, chữ 16 px), và
 thông báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến. Ở `/tai-xe` dưới 480 px
 tiêu đề xuống hàng riêng để hàng trên đủ chỗ cho bốn điều khiển 56 px.
 vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
-*(đã điều chỉnh 04/10/2026, FE-6-09)* Điều phối viên nhận thêm **nguy cơ trễ hạn giao** (`delivery.etaRisk` — sự kiện của hệ thống, không có
+*(đã điều chỉnh 03/10/2026, FE-6-09)* Điều phối viên nhận thêm **nguy cơ trễ hạn giao** (`delivery.etaRisk` — sự kiện của hệ thống, không có
 người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
 chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau lần đọc đầu thành toast (sát hạn: cảnh báo; trễ hạn dự kiến: lỗi) và chuông đọc lại ngay,
 cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty không nhận loại này.
-*(đã điều chỉnh 04/10/2026, FE-6-11, FE-6-12)* **Sự cố cấp chuyến ở chuông**: điều phối viên — tài xế báo sự cố (`exception.reported`), kho
+*(đã điều chỉnh 03/10/2026, FE-6-11, FE-6-12)* **Sự cố cấp chuyến ở chuông**: điều phối viên — tài xế báo sự cố (`exception.reported`), kho
 tự chuyển sự cố cho quản lý sau 30 phút (`exception.escalated`, sự kiện của hệ thống), quản lý đã liên hệ khách và nhập hạn mới
 (`exception.deadlineRenegotiated`, để xử lý tiếp); quản lý công ty — sự cố chuyển lên mình (`exception.escalated`). `EtaRiskWatcher` chạy cho
 cả hai vai trò (kho chỉ tự chuyển sự cố khi có người đọc giám sát) và hiện toast cảnh báo khi một sự cố vừa chuyển lên — trừ sự cố chính người
@@ -258,9 +258,9 @@ src/
   features/
     auth/               đăng nhập, phiên, RequireAuth
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
-    monitoring/         *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển: `monitoring-api.ts`,
+    monitoring/         *(bổ sung 03/10/2026, FE-6-08, FE-6-09)* vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển: `monitoring-api.ts`,
                         `useTrackingQuery.ts`, `LiveLocationBar` (dòng vị trí kèm nhãn "Mô phỏng"), `EtaRiskWatcher` (toast nguy cơ trễ hạn);
-                        *(đã điều chỉnh 04/10/2026, FE-6-10 → FE-6-12)* màn Giám sát `/giam-sat` (`MonitoringPage` → `MonitoringBoard`:
+                        *(đã điều chỉnh 03/10/2026, FE-6-10 → FE-6-12)* màn Giám sát `/giam-sat` (`MonitoringPage` → `MonitoringBoard`:
                         bản đồ, danh sách, chi tiết chuyến; hàm thuần `monitoring-view.ts`), kênh sự kiện `monitoring-events.ts`
                         (`subscribeTrip`), sự cố cấp chuyến (`exceptions-api.ts`, `ReportExceptionDialog`, `RerouteDialog`,
                         `TripExceptionList`, `TripExceptionButton` cho màn tài xế), tab của quản lý (`EscalationTab`, `RenegotiateDialog`)
@@ -289,12 +289,12 @@ src/
                         đưa vào / gỡ khỏi chuyến và theo mốc của chuyến; `seed-requirements.ts`) — `db-orders.ts` đã xoá;
                         *(bổ sung 03/10/2026, FE-4b-03 → FE-4b-05)* địa danh mẫu `seed-places.ts`; điểm giao tự sinh `trip-stops.ts`
                         (thuần) + `db-trip-lines.ts`; kiện kho kiện đưa thẳng vào chuyến `db-trip-pool.ts`; kho xuất phát `seed-depots.ts`;
-                        *(bổ sung 04/10/2026, FE-5b-08)* đổi xe của chuyến Đã lập kế hoạch `db-trip-vehicle.ts`; luật duyệt kho tự kiểm
-                        ở `db-revisions.ts` + `revisions.ts` (`approvalIssues`); *(bổ sung 04/10/2026, FE-5b-05)* lần chạy lưu ba
+                        *(bổ sung 03/10/2026, FE-5b-08)* đổi xe của chuyến Đã lập kế hoạch `db-trip-vehicle.ts`; luật duyệt kho tự kiểm
+                        ở `db-revisions.ts` + `revisions.ts` (`approvalIssues`); *(bổ sung 03/10/2026, FE-5b-05)* lần chạy lưu ba
                         phương án ứng viên `saveOptimizationRun` (`db-revisions.ts`), seed dựng ba phương án mỗi chuyến `seed-plan.ts`;
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
-                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; *(bổ sung 04/10/2026, FE-6-03,
+                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; *(bổ sung 03/10/2026, FE-6-03,
                         FE-6-04)* đối chiếu kiện ba mức và duyệt xác nhận tay (`verify-model.ts` kiểu + luật thuần,
                         `db-scans.ts`, `db-manual-confirm.ts`); lô hàng và nhận hàng
                         (`db-shipments.ts`) đã bỏ ở FE-0-06; cách ly theo công ty của phiên (`tenancy.ts`, mọi `db-*.ts` đi
@@ -311,9 +311,9 @@ src/
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
-                        gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09); *(bổ sung 04/10/2026, FE-6-08, FE-6-09)* xe mô phỏng dọc tuyến
+                        gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09); *(bổ sung 03/10/2026, FE-6-08, FE-6-09)* xe mô phỏng dọc tuyến
                         `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`;
-                        *(bổ sung 04/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
+                        *(bổ sung 03/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
   services/
@@ -550,10 +550,10 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
   **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`) — màu "cần bạn" (hổ phách) nằm ở dòng phụ: dưới Đã lập kế hoạch là
   "Chờ duyệt" hổ phách chấm vòng rỗng, "Đã duyệt" cyan, "Lỗi thời — cần tối ưu lại" hổ phách có viền; dưới Đang xếp hàng là "Đang xếp
-  110 / 280" và "Xếp xong — chờ xuất phát" xanh lam — *(đã điều chỉnh 04/10/2026, FE-6-02)* trước đó là "Đang soạn x / y" xanh lam, và
+  110 / 280" và "Xếp xong — chờ xuất phát" xanh lam — *(đã điều chỉnh 03/10/2026, FE-6-02)* trước đó là "Đang soạn x / y" xanh lam, và
   "Thiếu kiện — chờ điều phối" hổ phách có viền khi kho còn báo thiếu chờ quyết. *(bổ sung 03/10/2026, FE-4b-09)* Tuyến đã tối ưu có điểm tới nơi sau hạn thì
   thêm một dòng phụ thứ hai "Có điểm trễ hạn dự kiến" hổ phách có viền, **đứng cạnh** dòng phụ của phương án (danh sách chuyến, đầu Chi
-  tiết chuyến — `tripRouteSubStatus`), không thay nó. *(bổ sung 04/10/2026, FE-6-04)* Chuyến đang xếp hoặc đang giao còn xác nhận tay
+  tiết chuyến — `tripRouteSubStatus`), không thay nó. *(bổ sung 03/10/2026, FE-6-04)* Chuyến đang xếp hoặc đang giao còn xác nhận tay
   chờ duyệt có dòng phụ thứ hai "Chờ duyệt xác nhận tay (n)" hổ phách chấm vòng rỗng (`tripManualSubStatus`), cùng chỗ đó. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
   (27/09/2026) dùng nháp · đã tối ưu · đã duyệt · đang vận chuyển · hoàn thành · đã huỷ, dòng phụ chỉ có lỗi thời và tiến độ kho.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
@@ -585,7 +585,12 @@ bằng dấu ba chấm (`layout-1366`). *(bổ sung 02/10/2026, FE-0-07)* Nhãn 
 (điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và *(đã điều chỉnh 03/10/2026)* từ 1.536 tới dưới
 1.760 px — nơi nút So sánh phương án có chữ theo yêu cầu người dùng (chỉ icon dưới 1.536 px) — nhãn chỉ hiện "Đã duyệt lúc", tên người
 duyệt ở `title`; không làm vậy thì nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
-thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. *(bổ sung 04/10/2026, FE-5b-08)* Vì thế nút "Đổi xe" **không**
+thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. *(bổ sung 03/10/2026, FE-5b-06)* Revision là phương án ứng viên
+(hoặc bản duyệt dựng từ nó) của một lần chạy nhiều phương án thì khối tiêu đề có nhãn **một chữ cái** A · B · C cạnh MOCK RESULT (tên đầy
+đủ "Phương án C" ở `title` và cho trình đọc màn hình — nhãn có chữ không vừa 1.366 px), và nút So sánh mở
+`/chuyen/:id/so-sanh?lan-chay=<mã lần chạy>`; revision khác vẫn mở ma trận mọi revision (`fetchPlanApproval` trả `candidate`). Bản đã
+chỉnh tay không kèm chữ cái — nhãn "Đã chỉnh tay" nói thay, hai nhãn cùng lúc không vừa 1.536 px — nhưng nút So sánh vẫn mở lần chạy đó.
+*(bổ sung 03/10/2026, FE-5b-08)* Vì thế nút "Đổi xe" **không**
 nằm trên hàng này mà ở góc dưới phải khung 3D (mục 7 "Operations"). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
 luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
 (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
@@ -845,7 +850,7 @@ Tên trường dữ liệu trong code vẫn giữ đúng hợp đồng với bac
 giao diện làm lớp dịch. Ngoại lệ: màn **So sánh phương án** được dùng từ vựng thuật
 toán (tên phương pháp, random seed, LIFO) vì ở đó người đọc đang so sánh thuật toán. *(LM-051)* Màn này
 chỉ hiện thiết lập và metrics có trong revision đã lưu; không đặt nhãn thuật toán nào chưa thật sự chạy.
-*(đã điều chỉnh 04/10/2026, FE-5b-05, FE-5b-06, D-77)* Người dùng **không chọn mục tiêu hay thuật toán** nữa: một lần chạy ra ba phương án
+*(đã điều chỉnh 03/10/2026, FE-5b-05, FE-5b-06, D-77)* Người dùng **không chọn mục tiêu hay thuật toán** nữa: một lần chạy ra ba phương án
 ứng viên A · B · C theo ba mục tiêu (tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — tên ở `runs.objectives`, là ngôn ngữ của điều
 phối viên, dùng được ở màn vận hành). **Tên thuật toán đã chạy** chỉ hiện ở ba chỗ: dòng chỉ đọc trong "Thiết lập nâng cao" và bảng lần
 chạy của Thiết lập tối ưu, và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty nên nhãn luôn
@@ -869,7 +874,7 @@ chờ gì. Spec cấm "nút giả" (mục 9.3: Import CSV chỉ hiện khi hoạ
 - **Không hiển thị** nút hay mục menu chưa có chức năng. Không để nút bấm vào mà im lặng,
   không dùng toast báo "đang chờ", không báo thành công giả.
 - Ngoại lệ duy nhất: nơi Spec yêu cầu giữ vị trí cho tính năng sau hiển thị nhãn
-  **"Sẽ có sau" / "Coming later"** dạng chữ, không bấm được. *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục — chỗ duy nhất từng dùng
+  **"Sẽ có sau" / "Coming later"** dạng chữ, không bấm được. *(đã điều chỉnh 03/10/2026, FE-5b-03)* Tải trục — chỗ duy nhất từng dùng
   nhãn này — nay có số của mock (mục "Không bịa số"); hiện không màn nào còn nhãn "Sẽ có sau".
 - Toast chỉ nói việc **thật sự đã xảy ra** trên màn: không hứa "sẽ đồng bộ", "điều phối viên sẽ thấy"
   khi không có nơi lưu. *(LM-053)* Đã gỡ nút Cài đặt ở thanh điều hướng, "Ghi nhận sai lệch" ở kho, thanh tab
@@ -892,12 +897,12 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   ghi chú nói số đến từ đâu.
 - Trang tài liệu `/thanh-phan` được dùng số mẫu để trình bày component, nhưng lấy từ dữ liệu seed
   thật (132 kiện của chuyến mẫu), không phải số nghĩ ra.
-- *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục** là số tính được, không còn "Sẽ có sau": mô hình đòn bẩy thuần
+- *(đã điều chỉnh 03/10/2026, FE-5b-03, D-78)* **Tải trục** là số tính được, không còn "Sẽ có sau": mô hình đòn bẩy thuần
   `axleLoadsOf` (`domain/metrics/axle-load.ts`) trên dữ liệu trục **người dùng khai ở trang xe** (`axles[]`: vị trí, tải rỗng, tải tối
   đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
   (chưa khai, chỉ một trục, các trục trùng vị trí) thì **không có số nào**: ô Tải trục nói vì sao chưa tính, metrics của kết quả không
   có `frontAxleLoadKg` / `rearAxleLoadKg`, và không có kiểm `AXLE_OVERLOAD`. Trục minh hoạ mà khung gầm 3D vẽ khi xe không khai trục
-  **không** được đưa vào phép tính. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed **khai hai trục** (trừ "Truck 6m" của Spec):
+  **không** được đưa vào phép tính. *(đã điều chỉnh 03/10/2026, FE-5b-05)* Xe mẫu của seed **khai hai trục** (trừ "Truck 6m" của Spec):
   vị trí, tải rỗng và tải tối đa của từng trục là **số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất** — chủ sản phẩm đã
   duyệt cách làm này để bản demo có tải trục; ghi rõ ở `seed-vehicles.ts` (`twoAxles`) và mục 9. Số tải trục trên màn vẫn truy được về
   các trục đó và vẫn mang MOCK RESULT; thay số thật ở trang xe là đủ, không sửa code.
@@ -907,24 +912,24 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 ### Three.js
 
 - Toàn bộ code Three.js nằm trong `src/features/viewer3d`. Không import `three` ở nơi khác. Màn khác cần 3D thì import component từ `viewer3d` (ví dụ `PositionViewer` cho màn kho).
-- Kiện hàng render bằng **InstancedMesh** với `setColorAt`, không tạo mesh riêng từng kiện. Tối đa 3 InstancedMesh cargo: solid, ghost và vỏ viền. Tier low tắt viền chung nhưng giữ viền cảnh báo khi có blocker. *(bổ sung 04/10/2026, FE-5b-07)* Vỏ viền dùng chung cho ba việc: viền tối chung (tắt ở tier low), viền `--warning` của kiện chắn lối dỡ, và viền **trắng dày** (`ZONE_MARK_PADDING`) của kiện nằm ngoài vùng điểm giao — hai loại sau giữ ở mọi tier; không thêm mesh nào cho dấu ngoài vùng. Mapping `instanceId ↔ placementId` nằm trong `scene/instance-layout.ts`, không lấy index của danh sách UI để picking. Editor và animation dỡ mỗi loại dùng tối đa một proxy tạm; bánh xe dùng instancing riêng, không nhân theo cargo count.
+- Kiện hàng render bằng **InstancedMesh** với `setColorAt`, không tạo mesh riêng từng kiện. Tối đa 3 InstancedMesh cargo: solid, ghost và vỏ viền. Tier low tắt viền chung nhưng giữ viền cảnh báo khi có blocker. *(bổ sung 03/10/2026, FE-5b-07)* Vỏ viền dùng chung cho ba việc: viền tối chung (tắt ở tier low), viền `--warning` của kiện chắn lối dỡ, và viền **trắng dày** (`ZONE_MARK_PADDING`) của kiện nằm ngoài vùng điểm giao — hai loại sau giữ ở mọi tier; không thêm mesh nào cho dấu ngoài vùng. Mapping `instanceId ↔ placementId` nằm trong `scene/instance-layout.ts`, không lấy index của danh sách UI để picking. Editor và animation dỡ mỗi loại dùng tối đa một proxy tạm; bánh xe dùng instancing riêng, không nhân theo cargo count.
 - *(bổ sung, LM-033)* Vật cản `vehicle.obstacles` vẽ trong `scene/ObstacleInstances.tsx`: đúng 2 draw call dù 1 hay 20 vật cản (một InstancedMesh thân màu `--obstacle`/`--obstacle-bearing` theo `loadBearing` + một `LineSegments` gộp cạnh), 0 vật cản không vẽ gì, không đổ bóng. `RESERVED_ZONE` có vạch nhìn xuyên bằng thuộc tính instance + `discard` trong shader, không thêm vật liệu trong suốt. Bấm vật cản ở chế độ Xem mở `ObstacleCallout`; chế độ Chỉnh sửa tắt raycast vật cản. `SceneCanvas` kèm danh sách `sr-only` mô tả vật cản; chú giải vật cản nằm dưới chú giải điểm giao. Đo bằng `?debug&packages=N&obstacles=0|1|20` (`benchmark-obstacles.mock.ts`).
 - Nền Canvas luôn tối, kể cả khi phần còn lại của app sáng.
 - Target chức năng/performance là 1.000 placements với draw calls dưới 100, số mesh/nhãn không tăng tuyến tính theo cargo. Đã kiểm tra selection, editor, playback và các vai trò trên Chromium; mục tiêu thiết bị thật: desktop hướng tới 60 FPS, tablet 45–60 FPS, phone khoảng ≥30 FPS bằng quality adaptation. Số đo SwiftShader không phải cam kết FPS trên thiết bị thật. Thêm `?debug` để đo trước khi thêm hiệu ứng.
 - Mọi hiệu ứng nâng cao (post-processing, shadow, AO) phải có cờ tắt được trong `usePerformanceFlags`. Ba tier `high / balanced / low` điều khiển DPR, bóng, viền chung, trang trí, bề mặt cargo và animation; viền kiện đang chọn luôn được giữ. Runtime bỏ qua idle, hạ tier sau 3 mẫu chậm (>28 ms), nâng sau 8 mẫu nhanh (<18 ms), cooldown 12 giây. Debug quality override khóa tier để đo lặp lại.
 - Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng `motion`.
-- Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. *(bổ sung 04/10/2026, FE-5b-07)* Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
+- Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. *(bổ sung 03/10/2026, FE-5b-07)* Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
 - Canvas phải có `touch-action: none` (đã đặt toàn cục trong `index.css`). Thiếu nó thì trên máy tính bảng kéo ngón tay sẽ cuộn trang thay vì xoay mô hình — lỗi chỉ lộ khi chạm tay, dùng chuột không thấy.
 - Ba lưu ý về camera: `fitToBox` của camera-controls **xoay camera** về nhìn thẳng mặt gần nhất nên làm mất góc chéo — dùng phép chiếu các góc bao theo preset và tỉ lệ khung; bounding sphere theo chiều dài làm góc cửa sau trên phone quá nhỏ. Resize panel giữ góc người dùng đang xoay. Vách thùng dùng mặt đơn pháp tuyến hướng vào trong để vách gần camera tự biến mất. `PCFSoftShadowMap` đã bị gỡ khỏi three r186, dùng `shadows="percentage"`.
 
 ### Foundation engine *(bổ sung)*
 
-- *(đã điều chỉnh, LM-030)* Planner đọc revision của chuyến qua `viewer-api.ts` → `usePlanSourceQuery` → `adaptResult → ViewerSceneModel` (cm, snapshot bất biến): revision đã duyệt mới nhất, hoặc `?revision=<jobId>`. `ScenePlacement` ghép `PackagePlacement` với kiện gốc (`packageId`, tên, điểm giao, `fragilityLevel`); `step = loadingOrder`. *(đã điều chỉnh 19/09/2026, LM-086)* `/kho` là danh sách chuyến đã duyệt chờ xếp / đang xếp — *(đã điều chỉnh 04/10/2026, FE-6-01)* chia **nhóm theo trạng thái và dòng phụ** (`WAREHOUSE_STAGES`): Đang xếp hàng (tiến độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (còn ghi được số seal tới khi tài xế xuất phát) · Chờ điều phối tối ưu lại (bản duyệt lỗi thời, không có nút); nút chính của màn là chuyến đang xếp dở, không thì chuyến chờ soạn sớm nhất; `/kho?chuyen=<mã>` là phiên của chuyến ở kho theo bản duyệt chốt lúc `startLoading` — *(đã điều chỉnh 04/10/2026, FE-6-02, FE-6-05)* bước Soạn hàng rồi bước Xếp, tiến độ ghi vào kho qua các hàm đối chiếu (mục 9), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho `PositionViewer`; kho không còn fixture benchmark; kiện hỏng bị bỏ lại kho (`leftOutIds`) vẽ như kiện đã gỡ (`unloadedIds` của
-`deriveSceneSemantics`), như khung 3D tài xế. *(LM-087)* Tài xế: `/tai-xe` "Chuyến của tôi" (chỉ chuyến có `driverId` là mình; từ FE-0-01 chỉ tài xế có `driver.operate`, không vai trò nào khác mở màn này) — *(đã điều chỉnh 04/10/2026, FE-6-01)* nhóm theo trạng thái (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện; `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` → `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Kết hợp `ViewerDraft` theo ID để sinh effective placements; chỉ commit `{ position?, orientation?, pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
+- *(đã điều chỉnh, LM-030)* Planner đọc revision của chuyến qua `viewer-api.ts` → `usePlanSourceQuery` → `adaptResult → ViewerSceneModel` (cm, snapshot bất biến): revision đã duyệt mới nhất, hoặc `?revision=<jobId>`. `ScenePlacement` ghép `PackagePlacement` với kiện gốc (`packageId`, tên, điểm giao, `fragilityLevel`); `step = loadingOrder`. *(đã điều chỉnh 19/09/2026, LM-086)* `/kho` là danh sách chuyến đã duyệt chờ xếp / đang xếp — *(đã điều chỉnh 03/10/2026, FE-6-01)* chia **nhóm theo trạng thái và dòng phụ** (`WAREHOUSE_STAGES`): Đang xếp hàng (tiến độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (còn ghi được số seal tới khi tài xế xuất phát) · Chờ điều phối tối ưu lại (bản duyệt lỗi thời, không có nút); nút chính của màn là chuyến đang xếp dở, không thì chuyến chờ soạn sớm nhất; `/kho?chuyen=<mã>` là phiên của chuyến ở kho theo bản duyệt chốt lúc `startLoading` — *(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-05)* bước Soạn hàng rồi bước Xếp, tiến độ ghi vào kho qua các hàm đối chiếu (mục 9), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho `PositionViewer`; kho không còn fixture benchmark; kiện hỏng bị bỏ lại kho (`leftOutIds`) vẽ như kiện đã gỡ (`unloadedIds` của
+`deriveSceneSemantics`), như khung 3D tài xế. *(LM-087)* Tài xế: `/tai-xe` "Chuyến của tôi" (chỉ chuyến có `driverId` là mình; từ FE-0-01 chỉ tài xế có `driver.operate`, không vai trò nào khác mở màn này) — *(đã điều chỉnh 03/10/2026, FE-6-01)* nhóm theo trạng thái (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện; `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` → `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Kết hợp `ViewerDraft` theo ID để sinh effective placements; chỉ commit `{ position?, orientation?, pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
 - Kích thước placement **đã áp orientation**. Xoay luôn áp mã đích lên kích thước danh nghĩa `baseDimensionsById` (lấy từ `CargoPackage`), không đảo ngược kích thước đã xoay (`orientedSize` trong `scene-input.ts`). Xoay giữ nguyên góc vị trí của kiện.
 - Cả ba vai trò dùng chung `SceneCanvas` với `frameloop="demand"`. CameraControls tự invalidate khi chuyển động; mọi thay đổi buffer imperative phải gọi invalidate. Spring chỉ ghi ma trận/proxy kiện đang chạy, không đưa state từng frame qua React.
 - `frustumCulled={false}` không loại bỏ nhu cầu bounds của **raycast**. Cargo dùng sphere bao toàn bộ effective geometry và quãng animation, cập nhật khi geometry đổi. Không tính lại `computeBoundingSphere()` trong animation/step/slice path; cập nhật màu không ghi lại ma trận.
-- Dữ liệu đo riêng trong `features/viewer3d/benchmark.mock.ts` (`createBenchmarkInput`: request + result đúng contract Spec, cm; tài xế dùng `createBenchmarkInput`): `?debug&packages=132|300|500|1000`, có thể thêm `&quality=high|balanced|low`. *(bổ sung 04/10/2026, FE-5b-07)* Thêm `&stops=1|4|8` thì fixture có chừng đó điểm giao **và có vùng theo điểm giao** (`stopZones`, `stopZoneId`, `rehandlingCount`) để đo dải vùng; không có `stops` thì fixture như cũ — 4 điểm, không vùng — nên các phép đo có từ trước vẫn đo đúng thứ chúng đo. Không đổi mock nghiệp vụ và không kích hoạt benchmark khi thiếu `debug`. Đây là fixture renderer có khe hở, không phải phương án đã xác nhận ổn định chất xếp.
+- Dữ liệu đo riêng trong `features/viewer3d/benchmark.mock.ts` (`createBenchmarkInput`: request + result đúng contract Spec, cm; tài xế dùng `createBenchmarkInput`): `?debug&packages=132|300|500|1000`, có thể thêm `&quality=high|balanced|low`. *(bổ sung 03/10/2026, FE-5b-07)* Thêm `&stops=1|4|8` thì fixture có chừng đó điểm giao **và có vùng theo điểm giao** (`stopZones`, `stopZoneId`, `rehandlingCount`) để đo dải vùng; không có `stops` thì fixture như cũ — 4 điểm, không vùng — nên các phép đo có từ trước vẫn đo đúng thứ chúng đo. Không đổi mock nghiệp vụ và không kích hoạt benchmark khi thiếu `debug`. Đây là fixture renderer có khe hở, không phải phương án đã xác nhận ổn định chất xếp.
 - Debug chỉ quan sát: FPS khi scene chuyển động, draw calls, tam giác, số kiện, DPR và tier. Khi nghỉ hiển thị trạng thái nghỉ; không tự invalidate để đo FPS. *(đã điều chỉnh 20/09/2026, LM-101)* "Nghỉ" là **demand loop đã dừng** — frame cuối không xin frame tiếp — rồi lặng 250 ms (`scene/perf-idle.ts`), không phải "lâu rồi chưa vẽ": máy yếu vẽ 2–3 FPS thì frame nào cũng cách nhau hơn 250 ms, lấy khoảng lặng làm chuẩn sẽ báo nghỉ giữa lúc scene đang chạy, giấu mất FPS và làm `quality-policy` (bỏ qua mẫu nghỉ) không bao giờ hạ tier trên đúng máy cần hạ. Chưa nâng mục tiêu FPS trên thiết bị thật chỉ dựa vào số đo Chromium phần mềm.
 - Low tier dùng DPR 0,5 và vật liệu cargo Lambert sau phép đo kéo camera 1.000 kiện trên SwiftShader; giữ nguyên picking và nhãn HTML. Balanced/high giữ Standard. Phần 3D mềm hơn là trade-off có chủ ý để ưu tiên tương tác. Không suy diễn kết quả này thành cam kết FPS trên mọi thiết bị hoặc mọi tier.
 
@@ -950,12 +955,12 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò.
 - *(đã điều chỉnh, LM-036)* Loading lấy `placement.step` (= `loadingOrder`); unloading lấy `unloadingOrder` của kết quả qua `unloadSequence` (`operations/unloading.ts`), nhãn "Thứ tự dỡ" không kèm "gợi ý"; revision `ordersRecomputed` hiện thêm câu "tính lại ở FE". Màn tài xế (LM-061) dùng `unloadingOrder` của revision đã duyệt cho cả danh sách kiện của điểm giao lẫn mô phỏng, không có chữ "gợi ý". Nhánh thứ tự suy ra (stop tăng, cao trước, gần cửa trước, nhãn "gợi ý") chỉ còn làm dự phòng khi kết quả thiếu `unloadingOrder`; hiện không màn nào dùng tới. Stop-order consistency không chứng minh unload accessibility.
 - Blocker là `lifoIssues` của domain qua `createLifoIndex`: chỉ kiện giao **muộn hơn** nằm hẳn sau mặt sau; kiện đã dỡ/đang ẩn gỡ khỏi lưới (`grid.remove`), tua lùi thì thêm lại; kiện chắn sắp theo x trước khi callout. `LIFO_BLOCKED` dừng mô phỏng và giữ target; `LIFO_PARTIAL` chỉ đánh dấu. Duyệt đếm hai mã này, không khẳng định dỡ được thực tế. Không tính người, xe nâng, clearance hay xoay lúc dỡ. Riêng hình ảnh dỡ (`UnloadMotion`) dùng `corridor` — mọi kiện còn lại trên hành lang thẳng, bất kể điểm giao — để không trượt xuyên kiện. Fixture benchmark có đúng một cặp kiện đổi điểm giao tạo ca `LIFO_BLOCKED` cho browser suite; seed đã duyệt không có ca LIFO.
-- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh 04/10/2026, FE-5b-03, D-78)* **Tải trục**: `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed nay khai hai trục (số ước lượng, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính, và phương án seed hiện tải trục thay cho câu "xe này chưa khai báo trục" (chỉ "Truck 6m" của Spec còn câu đó). Phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
+- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. *(đã điều chỉnh 03/10/2026, FE-5b-03, D-78)* **Tải trục**: `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. *(đã điều chỉnh 03/10/2026, FE-5b-05)* Xe mẫu của seed nay khai hai trục (số ước lượng, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính, và phương án seed hiện tải trục thay cho câu "xe này chưa khai báo trục" (chỉ "Truck 6m" của Spec còn câu đó). Phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
 - Chi tiết xe gộp geometry theo vật liệu; mọi bánh (bánh đôi cầu sau) dùng một InstancedMesh, một draw. *(bổ sung 17/09/2026)* Khung gầm chi tiết (`scene/truck-chassis.ts`: khung sườn chữ C, dầm ngang, trục, vi sai, nhíp, giảm chấn, các-đăng, bình nhiên liệu/hơi, ắc quy, ống xả, lốp dự phòng, chắn bùn, gầm thùng) gộp vào cùng hình học màu theo đỉnh của `vehicle-details` — không thêm draw call. Camera xoay được xuống dưới gầm (`maxPolarAngle` gần π) và có góc nhìn "Gầm xe" (`gam-xe`, tâm nhìn hạ xuống khung sườn); đèn yếu từ dưới giữ khung gầm không đen. Màn kho không có góc gầm xe. Cargo dùng atlas trung tính chung cho carton/pallet/crate qua thuộc tính instance, không phải nhãn hướng đặt. Low tắt chi tiết phụ; không tắt cues nghiệp vụ. Khi gặp `LIFO_BLOCKED`, playback dỡ tạm dừng và giữ target. Kiện còn vật trên hành lang thẳng (người dùng bỏ qua bước, hoặc bị che một phần) mờ tại chỗ; không dịch chuyển xuyên kiện khác. Reduced motion không dịch chuyển lớn; hoàn tất phải trở lại idle.
 - Timeline dùng ô cao bằng nhau, 8–64 bins theo chiều rộng, slider giữ toàn bộ bước.
-- *(đã điều chỉnh 04/10/2026, FE-5b-07, D-79)* **Dải vùng điểm giao thay bản đồ điểm giao.** Planner vẽ các vùng của phương án (`result.stopZones` → `ViewerSceneModel.zones`, theo thứ tự giao, vùng đầu sát cửa) thành dải trên sàn thùng theo màu điểm giao: `operations/ZoneStrips.tsx`, hình học thuần ở `operations/stop-map.ts` (`zoneStrips`: mỗi vùng một hình chữ nhật từ `startXCm` tới `endXCm`, lùi 2 cm khỏi hai vách, cao 0,4 cm trên sàn; khoảng đệm để trống; nằm hoàn toàn trong mép sàn, depth test bình thường, không đặt dải trên thân, gầm hay bên ngoài xe). Mọi vùng nằm trong **một** mesh tô màu theo đỉnh: **đúng một draw call dù phương án có 1 hay 8 điểm giao** (`e2e/viewer-zones.spec.ts` đo bằng `?debug&packages=1000&stops=1|4|8`: tier balanced 25 / 25 / 25 draw call, tier low 17 / 18 / 18 — fixture một điểm không có kiện ngoài vùng nên tier low không dựng vỏ viền; tắt dải vùng bớt đúng một). Mỗi vùng có một nhãn DOM neo ở mép sàn: số điểm kèm màu, tên điểm, tỷ lệ thể tích hàng của điểm đó (%) — màu luôn đi kèm số và tên. Nhãn không đè nhau và không đè nhãn "Cửa sau": mỗi khung hình được vẽ, `ZoneStrips` chiếu điểm neo ra màn rồi đẩy nhãn bị chạm xuống dưới nhãn đã đặt, ghi thẳng vào DOM và chỉ ghi khi đổi; số nhãn bằng số điểm giao, không theo số kiện. Dải vùng **bật sẵn** khi mở Planner (cue nghiệp vụ: tier `low` vẫn vẽ), tắt / bật ở hộp Hiển thị ("Ẩn / Hiện dải vùng điểm giao", `operations.showZones`); phương án không chia vùng thì không có nút đó. Kho và tài xế không truyền `zones` cho `SceneCanvas` nên không có dải. Bản đồ phân bố theo thể tích thực (`stopDistribution`, `InteriorStopMap`) đã bỏ.
-- *(bổ sung 04/10/2026, FE-5b-07)* **Vùng của kiện và kiện nằm ngoài vùng.** `ScenePlacement` mang `zoneId` (vùng chứa tâm kiện theo X) và `outOfZone` (vùng đó không phải vùng của điểm giao mình), tính bằng `locateInZones` của domain ở `adaptResult` và tính lại cho kiện đang dời / xoay ở `resolveEffectiveScene` — nên dấu ngoài vùng và số lần dỡ-xếp lại đi theo bản đang chỉnh tay; vùng thì giữ nguyên của lần tối ưu. Kiện nằm ngoài vùng có ba dấu: viền trắng dày trong 3D (vỏ viền của cargo — xem "Three.js"; tắt cùng dải vùng, và nhường viền cho kiện chắn khi đang xem kiện chắn lối dỡ), nhãn "Ngoài vùng" ở dòng của kiện trong tab Danh sách (kèm ô lọc "Chỉ kiện nằm ngoài vùng" khi phương án có kiện như vậy), và ở thẻ kiện đang chọn: ô "Vùng điểm giao" ghi vùng kiện đang nằm, nhãn "Ngoài vùng" và câu "Nằm ngoài vùng của điểm N — tính một lần dỡ-xếp lại". Trắng chứ không hổ phách: hổ phách lẫn vào cam của điểm 1 và vàng của điểm 4.
-- *(đã điều chỉnh 04/10/2026, FE-5b-07)* **Hộp Chi tiết** (tab Vận hành của hộp thông tin) hiện ba chỉ số của phương án đang xem, đều là DOM, không thêm draw call: `AxleLoadPanel` (tải trục trước / sau so giới hạn), `RehandlingPanel` (số kiện `outOfZone` của bản đang xem kể cả đang chỉnh tay, MOCK RESULT; phương án không chia vùng thì chỉ một câu lý do, không có số) và `DeadlinePanel` (từng điểm giao: giờ đến dự kiến và mức hạn theo `Trip.routePlan` của chuyến — `adaptResult` đưa vào `SceneStop.eta` / `deadlineStatus`; điểm không có hạn ghi "Không có hạn"; chuyến chưa tối ưu tuyến thì chỉ một câu) — hai panel sau ở `overlays/PlanIndicators.tsx`. Tab Chỉ số thêm dòng "Số lần dỡ-xếp lại" lấy từ `metrics.rehandlingCount` của kết quả. Thanh trên của Planner không thêm gì (vẫn đo ở 1.366 px).
+- *(đã điều chỉnh 03/10/2026, FE-5b-07, D-79)* **Dải vùng điểm giao thay bản đồ điểm giao.** Planner vẽ các vùng của phương án (`result.stopZones` → `ViewerSceneModel.zones`, theo thứ tự giao, vùng đầu sát cửa) thành dải trên sàn thùng theo màu điểm giao: `operations/ZoneStrips.tsx`, hình học thuần ở `operations/stop-map.ts` (`zoneStrips`: mỗi vùng một hình chữ nhật từ `startXCm` tới `endXCm`, lùi 2 cm khỏi hai vách, cao 0,4 cm trên sàn; khoảng đệm để trống; nằm hoàn toàn trong mép sàn, depth test bình thường, không đặt dải trên thân, gầm hay bên ngoài xe). Mọi vùng nằm trong **một** mesh tô màu theo đỉnh: **đúng một draw call dù phương án có 1 hay 8 điểm giao** (`e2e/viewer-zones.spec.ts` đo bằng `?debug&packages=1000&stops=1|4|8`: tier balanced 25 / 25 / 25 draw call, tier low 17 / 18 / 18 — fixture một điểm không có kiện ngoài vùng nên tier low không dựng vỏ viền; tắt dải vùng bớt đúng một). Mỗi vùng có một nhãn DOM neo ở mép sàn: số điểm kèm màu, tên điểm, tỷ lệ thể tích hàng của điểm đó (%) — màu luôn đi kèm số và tên. Nhãn không đè nhau và không đè nhãn "Cửa sau": mỗi khung hình được vẽ, `ZoneStrips` chiếu điểm neo ra màn rồi đẩy nhãn bị chạm xuống dưới nhãn đã đặt, ghi thẳng vào DOM và chỉ ghi khi đổi; số nhãn bằng số điểm giao, không theo số kiện. Dải vùng **bật sẵn** khi mở Planner (cue nghiệp vụ: tier `low` vẫn vẽ), tắt / bật ở hộp Hiển thị ("Ẩn / Hiện dải vùng điểm giao", `operations.showZones`); phương án không chia vùng thì không có nút đó. Kho và tài xế không truyền `zones` cho `SceneCanvas` nên không có dải. Bản đồ phân bố theo thể tích thực (`stopDistribution`, `InteriorStopMap`) đã bỏ.
+- *(bổ sung 03/10/2026, FE-5b-07)* **Vùng của kiện và kiện nằm ngoài vùng.** `ScenePlacement` mang `zoneId` (vùng chứa tâm kiện theo X) và `outOfZone` (vùng đó không phải vùng của điểm giao mình), tính bằng `locateInZones` của domain ở `adaptResult` và tính lại cho kiện đang dời / xoay ở `resolveEffectiveScene` — nên dấu ngoài vùng và số lần dỡ-xếp lại đi theo bản đang chỉnh tay; vùng thì giữ nguyên của lần tối ưu. Kiện nằm ngoài vùng có ba dấu: viền trắng dày trong 3D (vỏ viền của cargo — xem "Three.js"; tắt cùng dải vùng, và nhường viền cho kiện chắn khi đang xem kiện chắn lối dỡ), nhãn "Ngoài vùng" ở dòng của kiện trong tab Danh sách (kèm ô lọc "Chỉ kiện nằm ngoài vùng" khi phương án có kiện như vậy), và ở thẻ kiện đang chọn: ô "Vùng điểm giao" ghi vùng kiện đang nằm, nhãn "Ngoài vùng" và câu "Nằm ngoài vùng của điểm N — tính một lần dỡ-xếp lại". Trắng chứ không hổ phách: hổ phách lẫn vào cam của điểm 1 và vàng của điểm 4.
+- *(đã điều chỉnh 03/10/2026, FE-5b-07)* **Hộp Chi tiết** (tab Vận hành của hộp thông tin) hiện ba chỉ số của phương án đang xem, đều là DOM, không thêm draw call: `AxleLoadPanel` (tải trục trước / sau so giới hạn), `RehandlingPanel` (số kiện `outOfZone` của bản đang xem kể cả đang chỉnh tay, MOCK RESULT; phương án không chia vùng thì chỉ một câu lý do, không có số) và `DeadlinePanel` (từng điểm giao: giờ đến dự kiến và mức hạn theo `Trip.routePlan` của chuyến — `adaptResult` đưa vào `SceneStop.eta` / `deadlineStatus`; điểm không có hạn ghi "Không có hạn"; chuyến chưa tối ưu tuyến thì chỉ một câu) — hai panel sau ở `overlays/PlanIndicators.tsx`. Tab Chỉ số thêm dòng "Số lần dỡ-xếp lại" lấy từ `metrics.rehandlingCount` của kết quả. Thanh trên của Planner không thêm gì (vẫn đo ở 1.366 px).
 - *(bổ sung 19/09/2026, LM-094)* Bản đã duyệt chưa có dời/xoay: không có nút Duyệt, hiện "Đã duyệt lúc HH:mm dd/MM"; có thì "Duyệt bản chỉnh".
   Lý do chặn Duyệt ở tooltip + `aria-describedby` của nút, không in ở thanh. Pha chuyến khác `planning` hoặc thiếu `plans.approve`: không
   Chỉnh sửa, không Duyệt, một dòng lý do (`viewer.lock`). Hộp thông tin chỉ mở từ nút "Chi tiết / Hiển thị" ở góc khung 3D và thẻ kiện.
@@ -967,7 +972,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   Đã bỏ: quản lý công ty duyệt và khoá `awaitingApproval` "Chờ quản lý công ty duyệt" (LM-104, 27/09/2026), hàng đợi `/duyet` cùng các quyết
   định trả lại, "Lưu bản chỉnh" / `saveEditedRevision` tạo revision chưa duyệt (LM-108, 28/09/2026). Dòng phụ `awaitingApproval` của **chuyến**
   ("Chờ duyệt", mục 9) là thứ khác và vẫn còn.
-- *(đã điều chỉnh 04/10/2026, FE-5b-08, D-80)* **Luật duyệt.** Chặn Duyệt: phương án lỗi thời, dòng kiện bắt buộc chưa xếp đủ
+- *(đã điều chỉnh 03/10/2026, FE-5b-08, D-80)* **Luật duyệt.** Chặn Duyệt: phương án lỗi thời, dòng kiện bắt buộc chưa xếp đủ
   (`MUST_LOAD_UNPLACED`), vượt tải trục (`AXLE_OVERLOAD`), lỗi ràng buộc khác. Tooltip + `aria-describedby` của nút nói **đúng loại lý
   do** — "Chưa duyệt được: 1 dòng kiện bắt buộc chưa xếp đủ và tải trục vượt giới hạn." — ghép từ `blockerSummary` của domain bằng
   `format.list` (`useViewerApproval`); hộp thoại liệt kê từng lý do. **Mức hạn** lấy từ tuyến đã tối ưu của chuyến (`SceneStop.eta`,
@@ -976,7 +981,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   liệt kê điểm, giờ đến dự kiến, hạn, kèm MOCK RESULT vì giờ đến là của mock tối ưu tuyến) — "Vẫn duyệt" mới gửi Duyệt kèm `force`,
   "Quay lại" về bước xem xét; mỗi lần mở hộp thoại bắt đầu lại từ bước xem xét. Chuyến chưa tối ưu tuyến thì hộp duyệt không nói gì về
   hạn. Kho kiểm lại tất cả (mục 9): giao diện bị bỏ qua thì Duyệt vẫn bị từ chối; kho từ chối thì toast kèm câu của kho.
-- *(bổ sung 04/10/2026, FE-5b-08, D-80)* **Đổi xe ở Planner.** Nút phụ "Đổi xe" nằm ở **góc dưới phải khung 3D** cạnh "Chi tiết / Hiển
+- *(bổ sung 03/10/2026, FE-5b-08, D-80)* **Đổi xe ở Planner.** Nút phụ "Đổi xe" nằm ở **góc dưới phải khung 3D** cạnh "Chi tiết / Hiển
   thị" (`SceneHud`, từ 768 px; dưới 1.280 px chỉ icon), **không** nằm trên thanh trên: ở 1.536–1.760 px hàng điều khiển không còn chỗ
   cho thêm một nút (đo: thêm 46 px thì tên tuyến tràn 5 px ở 1.760 px). Chỉ hiện ở chế độ Xem, khi chuyến Đã lập kế hoạch và người xem
   có `trips.edit`. Mở cùng hộp thoại `trips/ChangeVehicleDialog` với Chi tiết chuyến (mục 9); đổi xong phương án đang xem thành lỗi
@@ -1000,7 +1005,7 @@ Các mục "Foundation engine", "Manual editor", "Operations" phía trên đã c
   Ngân sách: constraint engine 1.000 kiện p95 ≤ 50 ms, một lần thả p95 ≤ 8 ms (D-29).
 - Timeline dùng `loadingOrder` / `unloadingOrder` của kết quả; LIFO lấy từ domain — che kín
   100% mặt sau là vi phạm, che một phần là cảnh báo (LM-036, D-26).
-- *(đã điều chỉnh 04/10/2026, FE-5b-03)* Tải trục: mock tính bằng mô hình đòn bẩy, vượt giới hạn chặn Duyệt (D-78) — thay nhãn "Sẽ có sau" của LM-037 / Spec 7.10; xem mục "Operations". *(đã điều chỉnh 04/10/2026, FE-5b-05)* Xe mẫu của seed khai trục ước lượng nên phương án seed có số tải trục.
+- *(đã điều chỉnh 03/10/2026, FE-5b-03)* Tải trục: mock tính bằng mô hình đòn bẩy, vượt giới hạn chặn Duyệt (D-78) — thay nhãn "Sẽ có sau" của LM-037 / Spec 7.10; xem mục "Operations". *(đã điều chỉnh 03/10/2026, FE-5b-05)* Xe mẫu của seed khai trục ước lượng nên phương án seed có số tải trục.
 - Mock optimization chạy trong Web Worker, không chặn main thread (LM-025, D-30).
 
 Khi làm một issue trong nhóm này, sửa luật tương ứng ở các mục phía trên cùng lúc với code.
@@ -1121,10 +1126,10 @@ tạo. Trạng thái **ghi thật**, không suy lúc đọc — chỉ `movePacka
 `status`, theo bảng `PACKAGE_TRANSITIONS`: `IMPORTED → ASSIGNED → STAGED → LOADED → IN_TRANSIT → DELIVERED | RETURNED`; `ASSIGNED`,
 `STAGED`, `LOADED` được về `IMPORTED` (rời chuyến); sai bảng là `INVALID_PACKAGE_STATUS_TRANSITION`. Kiện của chuyến đổi trạng thái ở
 **mốc chốt** của chuyến (`db-package-progress.ts`): đưa yêu cầu giao vào chuyến →
-`ASSIGNED` kèm chuyến và điểm giao; *(đã điều chỉnh 04/10/2026, FE-6-02, FE-6-05)* kho **soạn** một kiện → `STAGED` ngay lúc đối chiếu bằng nhãn (soạn bằng xác nhận tay: khi điều
+`ASSIGNED` kèm chuyến và điểm giao; *(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-05)* kho **soạn** một kiện → `STAGED` ngay lúc đối chiếu bằng nhãn (soạn bằng xác nhận tay: khi điều
 phối viên duyệt); kiện bị bỏ lúc soạn (thiếu) hoặc lúc xếp (hỏng) về `IMPORTED` kèm cờ `NOT_FOUND` / `DAMAGED` ngay lúc đó; xếp xong → `LOADED`
 (mốc chốt, vì kết quả xếp còn bị gỡ khi xác nhận tay bị từ chối); xuất phát → `IN_TRANSIT`; hoàn tất điểm giao → kiện đã dỡ `DELIVERED`, kiện ở lại xe
-(khách từ chối, sự cố khác) `RETURNED`; huỷ chuyến hoặc gỡ yêu cầu giao khỏi chuyến → `IMPORTED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào yêu cầu giao
+(khách từ chối, sự cố khác) `RETURNED`; huỷ chuyến trước khi xe chạy hoặc gỡ yêu cầu giao khỏi chuyến → `IMPORTED`; *(đã điều chỉnh 03/10/2026, FE-6-07)* huỷ chuyến Đang vận chuyển → kiện chưa giao `RETURNED`. Cờ `NOT_FOUND` / `DAMAGED` chỉ gắn trên kiện `IMPORTED`; kiện mang cờ không vào yêu cầu giao
 hay chuyến được (`PACKAGE_FLAGGED`, `isSelectablePackage`); `clearPackageFlag` chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`) và ghi nhật
 ký; nhân viên kho gỡ cờ `NOT_FOUND` bằng `reportPackageFound` khi tìm thấy lại kiện (FE-3b-06). Mã QR cấp một lần lúc tạo, `updatePackage` không đổi nó. Seed: Long Bình 88 kiện đều `IMPORTED` — 48 kiện thêm tay theo loại kiện (kiện `RPK` cũ, kích thước của loại kiện,
 30 kiện thuộc sáu yêu cầu giao của seed, FE-4b-01) và 40 kiện nhập file không gắn loại kiện, tám điểm đến thật, hai kiện mang cờ; Phương Nam 10 kiện.
@@ -1139,7 +1144,7 @@ thiếu (D-92); đang giao mà mọi kiện đã giao là đã giao. Luật củ
 không cờ, chưa thuộc yêu cầu khác (kiện ghi `requirementId`); hạn phải ở tương lai theo đồng hồ của kho, chỉ kiểm khi tạo hoặc khi đổi hạn
 (`REQUIREMENT_DEADLINE_PAST`); còn `PENDING` thì sửa mọi trường, đã vào chuyến chỉ sửa hạn và ưu tiên (`REQUIREMENT_NOT_PENDING`), đã giao
 xong thì không sửa (`REQUIREMENT_STATUS_INVALID`); xoá chỉ khi `PENDING`. Ưu tiên → `priority` / `mustLoad` của dòng kiện khi vào chuyến chỉ
-nằm ở **một bảng** `REQUIREMENT_CARGO_PRIORITY` (D-93 — *đã điều chỉnh 04/10/2026, FE-5b-05:* người dùng đã xác nhận, không còn là đề xuất: Khẩn 4 và bắt buộc xếp, Cao 3, Bình thường 2, Thấp 1);
+nằm ở **một bảng** `REQUIREMENT_CARGO_PRIORITY` (D-93 — *đã điều chỉnh 03/10/2026, FE-5b-05:* người dùng đã xác nhận, không còn là đề xuất: Khẩn 4 và bắt buộc xếp, Cao 3, Bình thường 2, Thấp 1);
 đổi ưu tiên của yêu cầu đã vào chuyến còn lập kế hoạch thì dòng kiện đổi theo và phương án lỗi thời. Nhật ký: nhóm `requirement`
 (`created`, `updated`, `deleted`, `assigned`, `unassigned`), đối tượng `requirement`. Seed (`seed-requirements.ts`): Long Bình sáu yêu cầu
 `PENDING` do quản lý công ty lập — bốn yêu cầu tới KCN Hoà Khánh, Phú Bài, Thăng Long, Trà Nóc (hai kiện cuối của mỗi đợt nhập) và hai yêu
@@ -1225,7 +1230,7 @@ kiện thì lấy hướng đặt, xếp chồng, tải trên của loại; khô
 lần khối lượng của nó). Nhãn loại hàng, trạng thái và cờ kiện khai một lần ở nhánh `common` (`handlingClasses`, `packageStatuses`,
 `packageFlags`); chip loại hàng là `components/HandlingClassChip` — tint theo nghĩa (thường slate, bốn loại cần chú ý amber), nhận ra bằng
 icon và chữ.
-*(bổ sung 04/10/2026, FE-5b-01, D-78, D-79)* **Giới hạn theo loại xe và loại kiện.** Loại xe (`VehicleType`) thêm `frontAxleLimitKg?`,
+*(bổ sung 03/10/2026, FE-5b-01, D-78, D-79)* **Giới hạn theo loại xe và loại kiện.** Loại xe (`VehicleType`) thêm `frontAxleLimitKg?`,
 `rearAxleLimitKg?` (để trống là chưa khai) và `maxCogOffsetRatio` (mặc định 0,15, trong (0, 0,5]; form `/doi-xe/loai-xe` nhập bằng %,
 `vehicle-type-form.ts`). `VehicleConfig` có ba trường cùng tên, **ngoài type Spec** (khai ở `spec-contract.test.ts`): kho lưu xe không
 kèm giới hạn và **ghép giới hạn của loại xe đang gắn lúc đọc** (`listVehicles`, `getVehicle` → `withTypeLimits`, `vehicle-limits.ts`),
@@ -1235,7 +1240,7 @@ của xe đổi (`sameLimits`), làm phương án của chuyến đang lập k�
 thêm `maxStackWeightKg`, `rotationAllowed`, `fragile` — hình chiếu của `maxTopLoadKg` / `stackable`, `allowedOrientations`,
 `fragilityLevel`, kho ghi lại mỗi lần lưu (`backendLimitsOf`); chiều backend → Spec là `specFieldsOf` (`package-type-limits.ts`). Form
 loại kiện có công tắc "Cho phép xoay kiện": bật khi còn hơn một hướng đặt, tắt đưa hướng đặt về riêng `LWH`.
-*(bổ sung 04/10/2026, FE-5b-04, D-79)* **Ngưỡng ràng buộc.** Trọng tâm hàng (`checkCenterOfGravity`): lệch ngang `COG_LATERAL` và lệch
+*(bổ sung 03/10/2026, FE-5b-04, D-79)* **Ngưỡng ràng buộc.** Trọng tâm hàng (`checkCenterOfGravity`): lệch ngang `COG_LATERAL` và lệch
 dọc `COG_LONGITUDINAL` (kèm phía bị dồn về) khi vượt `maxCogOffsetRatio` × chiều rộng / chiều dài lòng thùng; `COG_HIGH` giữ ngưỡng nửa
 chiều cao (`COG_HEIGHT_RATIO`); cả ba là cảnh báo, không chặn Duyệt — hằng số 10 % của D-36 đã bỏ. Diện tích tựa tối thiểu mặc định
 **0,7** ở một chỗ (`DEFAULT_MIN_SUPPORT_RATIO` của `domain/constraints`): dòng kiện dựng từ loại kiện / kiện kho kiện, kiện mới của form
@@ -1275,7 +1280,7 @@ kiện `package.found` và điều phối viên thấy ở chuông. "Quét mã Q
 Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện, cấp cho mọi kiện kho kiện — kể cả kiện thêm trong chuyến.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
-*(bổ sung 04/10/2026, FE-6-03, FE-6-04, D-83)* **Đối chiếu kiện ba mức** — một hộp `components/PackageVerify` dùng chung cho kho và tài
+*(bổ sung 03/10/2026, FE-6-03, FE-6-04, D-83)* **Đối chiếu kiện ba mức** — một hộp `components/PackageVerify` dùng chung cho kho và tài
 xế (soạn hàng, nhận dọc đường nối sau): (1) quét QR (`QrCamera` của `QrScanDialog`); (2) gõ mã — mã QR in dưới hình, hoặc **mã của bên
 gửi khi nó duy nhất trong chuyến** (trùng: `PACKAGE_CODE_AMBIGUOUS`; luật thuần `resolveVerifyCode`); (3) xác nhận tay — chọn kiện + lý do
 (`MANUAL_CONFIRM_REASONS`: nhãn rách / mất, QR không đọc được, khác kèm ghi chú bắt buộc), kho in lại được nhãn của kiện (`loadingLabelPath`,
@@ -1293,9 +1298,9 @@ kết quả xếp / dỡ của kiện bị gỡ nên bước hiện tại của 
 chiếu (bước xếp ghi tay, bỏ đánh dấu đã dỡ). Thẻ "Xác nhận tay chờ duyệt" đứng đầu cột chính của Chi tiết chuyến
 (`trips/ManualConfirmCard`, `manual-confirm-api.ts` → `useManualConfirmQuery.ts`, khoá `['trips', tripId, 'manual-confirms']`): kiện, bước,
 người gửi, lý do, thời điểm; người chỉ xem thấy danh sách không có nút. Nhật ký: nhóm `manualConfirm` (`requested`, `approved`, `rejected`),
-đối tượng là chuyến. *(đã điều chỉnh 04/10/2026, FE-6-05, FE-6-06)* Không còn lối ghi không đối chiếu: nút "Xác nhận đã xếp" của kho, ô đánh
+đối tượng là chuyến. *(đã điều chỉnh 03/10/2026, FE-6-05, FE-6-06)* Không còn lối ghi không đối chiếu: nút "Xác nhận đã xếp" của kho, ô đánh
 dấu dỡ của tài xế và hai hàm `recordLoadingStep`, `recordUnload` của kho đã bỏ. Bước đối chiếu có thêm `STAGING` (soạn hàng).
-*(bổ sung 04/10/2026, FE-6-02, FE-6-05, FE-6-06, FE-6-07, D-82, D-84, D-91, D-92)* **Soạn → xếp → giao, và chuyển ngược**. Kho giữ luồng
+*(bổ sung 03/10/2026, FE-6-02, FE-6-05, FE-6-06, FE-6-07, D-82, D-84, D-91, D-92)* **Soạn → xếp → giao, và chuyển ngược**. Kho giữ luồng
 dù giao diện bị bỏ qua:
 - **Soạn hàng** (`db-staging.ts`, `StagingStepPage`): `startLoading` đưa chuyến sang Đang xếp hàng ở bước soạn (`loading.stagedIds`); kho
   đối chiếu từng kiện vào khu chờ, không cần thứ tự (`confirmStagingByQr` — quét lại kiện đã soạn trả `alreadyStaged`, không ghi;
@@ -1315,9 +1320,22 @@ dù giao diện bị bỏ qua:
 - **Tài xế**: "Xuất phát" (`startDelivery`, chỉ khi xếp xong) → mỗi điểm "Đã đến" (`arriveAtStop` ghi `StopProgress.arrivedAt`) rồi mới
   dỡ, báo sự cố theo kiện và hoàn tất điểm (`STOP_NOT_ARRIVED`); dỡ chỉ qua hộp đối chiếu; "Khách từ chối" bỏ dấu đã dỡ của kiện — kiện
   ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao.
-- **Huỷ chuyến** (`cancelTrip`): chỉ từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc
-  đang xếp thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Huỷ
-  chuyến Đang vận chuyển (kiện chưa giao thành `RETURNED`) cần sự cố cấp chuyến đang mở — **chưa làm, chờ FE-6-11**.
+- **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc
+  đang xếp thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. *(đã điều chỉnh 03/10/2026, FE-6-07)* Chuyến **Đang vận
+  chuyển** huỷ được **chỉ khi có sự cố cấp chuyến chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng
+  hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã dỡ ở điểm chưa hoàn tất) thành `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ
+  `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn
+  trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại như đã ghi. Trạng thái khác (Đang vận chuyển không có sự cố đang mở, Đã
+  giao, Đã huỷ): `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận chuyển; hộp
+  thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
+- *(bổ sung 03/10/2026, FE-6-14)* **Báo cáo chuyến** (`tripReport(trip, plan, { exceptions, reroutes })`, thuần): mỗi điểm giao có giờ
+  đến dự kiến của tuyến (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo
+  giờ đến thật, chưa đến thì mức hạn của tuyến — và số kiện hoàn trả; thêm số kiện đã soạn, bảng cách đối chiếu theo bước (lần đối
+  chiếu mới nhất của từng kiện), xác nhận tay kèm người gửi và người duyệt, sự cố cấp chuyến (chuyển quản lý, gia hạn, xử lý), tuyến đã
+  đổi (`listTripReroutes`, MOCK RESULT), lý do chở chung khác loại hàng. Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất
+  tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Menu thao tác hiện mục "Báo cáo chuyến" cho **mọi người xem được chuyến** (quản
+  lý công ty mở từ đây) khi chuyến đã giao hoặc bị huỷ lúc đang vận chuyển; sửa, đổi xe, huỷ vẫn theo `trips.edit`. Bản in: chữ dài
+  xuống dòng (`print:line-clamp-none`), không cắt.
 - Seed: mọi chuyến đã ở kho đều soạn đủ và mọi kiện đều đối chiếu bằng quét; kiện "thiếu" của `TRIP-003` nay là kiện hỏng ở bước 16
   (`PK-T00730`, cờ `DAMAGED`); điểm đã tới có `arrivedAt`. Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts`
   (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua `e2e/operations-helpers.ts`.
@@ -1334,7 +1352,7 @@ dù giao diện bị bỏ qua:
   Mock thuần là `runMockOptimization` (tất định theo request + `randomSeed`, `runtimeMs` qua `clock` tiêm vào);
   `FAILED` chỉ khi request sai schema hoặc có lỗi toàn cục — contract không có `warnings`, nên UI chạy `validateRequest`
   trước khi gọi. `message` của kiện chưa xếp là `reasonCode`, UI dịch mã (LM-024).
-- *(bổ sung 04/10/2026, FE-5b-02, D-79)* **Vùng theo điểm giao và số lần dỡ-xếp lại.** Hàm thuần `stopZones(vehicle, stops)`
+- *(bổ sung 03/10/2026, FE-5b-02, D-79)* **Vùng theo điểm giao và số lần dỡ-xếp lại.** Hàm thuần `stopZones(vehicle, stops)`
   (`@/domain/zones`): chiều dài vùng i = (L − (n − 1) × 10 cm) × tỷ lệ thể tích hàng của điểm i, giữa hai vùng liền nhau có đệm
   10 cm; `stops` theo thứ tự giao — điểm đầu sát cửa (X lớn), điểm cuối sâu nhất (X = 0). Mốc tính cộng dồn từ vách trong, làm tròn
   0,1 cm, mốc cuối đặt đúng L: tổng vùng + đệm luôn bằng L. `stopId` của vùng là **số điểm giao** (`CargoPackage.deliveryStop`) vì
@@ -1352,12 +1370,12 @@ dù giao diện bị bỏ qua:
   `enforceLifo` thì xếp theo thứ tự chọn như trước, vùng chỉ dùng để đo. Duyệt (`approvedResult`) ghi lại `stopZoneId` và đếm lại
   `rehandlingCount` theo các vùng của lần tối ưu, không chia lại vùng. Seed: 15 chuyến đều xếp đủ kiện như trước; bản đang hiện của
   chuyến chính `TRIP-2026-0914` không có kiện ngoài vùng; sáu chuyến có — `TRIP-005` 42 kiện, `TRIP-008` 40, `TRIP-011` 10, `TRIP-010` 8,
-  `TRIP-009` 4, `TRIP-013` 4 — vì ở đó có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó *(đã điều chỉnh 04/10/2026,
+  `TRIP-009` 4, `TRIP-013` 4 — vì ở đó có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó *(đã điều chỉnh 03/10/2026,
   FE-5b-05: số của phương án ít dỡ-xếp lại — bản seed duyệt; ở `TRIP-005` và `TRIP-013` nó chọn một dải liền có ít kiện ngoài vùng hơn
   cách xếp theo vùng, trước là 56 và 10)*.
 - Kết quả là **revision bất biến** theo `jobId`. Duyệt tạo revision approved mới; sửa xe/kiện sau
   khi tối ưu làm revision lỗi thời và chặn Duyệt. Kho và tài xế chỉ đọc revision đã duyệt.
-- *(bổ sung 04/10/2026, FE-5b-05, D-77)* **Ba phương án ứng viên mỗi lần chạy.** `OptimizationService.optimizeCandidates(request)` (ngoài
+- *(bổ sung 03/10/2026, FE-5b-05, D-77)* **Ba phương án ứng viên mỗi lần chạy.** `OptimizationService.optimizeCandidates(request)` (ngoài
   Spec; `optimize(request)` của Spec giữ nguyên, một kết quả) chạy **một job** ra ba kết quả theo `PLAN_OBJECTIVES` của domain — `MAX_VOLUME`
   (A), `AXLE_BALANCE` (B), `MIN_REHANDLING` (C); nhãn suy từ mục tiêu (`PLAN_LABELS`), không lưu riêng. Mock thuần `runMockCandidates` (tất
   định theo request + seed; `jobId` của từng kết quả là mã job kèm nhãn, `MOCK-…-A`) dựng vài **cách xếp** trên cùng request
@@ -1374,7 +1392,7 @@ dù giao diện bị bỏ qua:
   tiêu đó + phần domain tính cho nó. Ba phương án chạy trong **một worker** (`start-candidates`): tiến trình báo theo từng mục tiêu
   (`CandidateProgress`), huỷ hay hết giờ là bỏ cả ba, kho không lưu gì. Đo ở máy dev: 132 kiện 7 ms → 18 ms, 1.000 kiện 42 ms → 130 ms
   (một kết quả → ba phương án); cổng bench 1.000 instance ≤ 1 s áp cho cả job.
-- *(bổ sung 04/10/2026, FE-5b-05)* **Lần chạy và revision của nó.** `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương
+- *(bổ sung 03/10/2026, FE-5b-05)* **Lần chạy và revision của nó.** `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương
   án một revision bất biến mang `runId` và `run: { objective, algorithm }` (bản duyệt giữ của bản nguồn), theo thứ tự A · B · C — bản mới
   nhất chưa duyệt của chuyến là phương án C — cùng **một** lần chạy `OptimizationRun { algorithm, jobId, plans[] }` và **một** sự kiện
   `optimization.saved { runId, revisionId: 'REV-028, REV-029, REV-030' }`. Chỉ khi chuyến **Đã lập kế hoạch**: còn Nháp là
@@ -1387,14 +1405,14 @@ dù giao diện bị bỏ qua:
   của phương án xếp được nhiều nhất. Bảng lần chạy (`RunHistoryCard`): mỗi lần chạy ba dòng phương án (mở Planner), liên kết "So sánh", và
   cột Duyệt nói phương án nào đã duyệt; lần chạy "chờ duyệt" là lần chạy chứa revision mới nhất chưa duyệt, không lỗi thời. Thẻ Tiến trình
   của Chi tiết chuyến tìm người chạy tối ưu theo `runId` của sự kiện.
-- *(đã điều chỉnh 04/10/2026, FE-5b-08, D-80)* **Kho tự kiểm luật duyệt** — không tin giao diện. `approveRevision(revisionId, patches,
+- *(đã điều chỉnh 03/10/2026, FE-5b-08, D-80)* **Kho tự kiểm luật duyệt** — không tin giao diện. `approveRevision(revisionId, patches,
   { force })` áp draft (`approvedResult`) rồi chạy constraint engine trên **chính bản sẽ duyệt** (`approvalIssues` ở `revisions.ts` →
   `approvalBlockers` của domain): còn lỗi ràng buộc, `AXLE_OVERLOAD` hoặc `MUST_LOAD_UNPLACED` là `APPROVAL_BLOCKED { revisionId, count,
   codes }`; lỗi thời vẫn là `REVISION_STALE`. Qua được các lý do chặn, tuyến của chuyến (`Trip.routePlan`) có điểm `MISSED` mà không có
   `force` là `LATE_STOPS_UNCONFIRMED { tripId, stopIds, stopNumbers }`. **`force` chỉ là lời xác nhận cho điểm trễ hạn**: không gỡ được
   lý do chặn nào; có `force` thì sự kiện `revision.approved` ghi thêm `lateStops` (số điểm trễ hạn đã xác nhận). Điểm `AT_RISK` không
   đòi gì. Không lưu gì khi từ chối. Lớp API: `approveLoadPlan(revisionId, patches, { force })` ở `viewer3d/viewer-api.ts`.
-- *(bổ sung 04/10/2026, FE-5b-08, D-80)* **Đổi xe của chuyến Đã lập kế hoạch.** Hàm thuần `vehicleFit(xe, dòng kiện)`
+- *(bổ sung 03/10/2026, FE-5b-08, D-80)* **Đổi xe của chuyến Đã lập kế hoạch.** Hàm thuần `vehicleFit(xe, dòng kiện)`
   (`domain/constraints/vehicle-fit.ts`) trả mã + tham số, chỉ kiểm **điều kiện cần** trên tổng hàng (không xếp thử): `CARGO_TOO_LARGE`
   (dòng kiện không có hướng đặt nào vừa lọt cửa kèm clearance vừa nằm trong lòng thùng), `CARGO_VOLUME_EXCEEDED`,
   `CARGO_WEIGHT_EXCEEDED`, `AXLE_CAPACITY_EXCEEDED` (tổng hàng nặng hơn phần hai nhóm trục còn nhận được: giới hạn − tải rỗng; xe chưa
@@ -1430,7 +1448,7 @@ dù giao diện bị bỏ qua:
   chuyến **về Nháp**; đổi thứ tự điểm (kéo thả), giờ xuất phát, kho đi, hạn của điểm thì giờ đến và mức hạn tính lại, trạng thái không đổi.
   `getTripEta` đọc tuyến (`null` khi chưa tối ưu). Seed: mọi chuyến đã có phương án (và chuyến huỷ có đủ toạ độ) có `routePlan` theo đúng
   thứ tự điểm của seed, không ghi sự kiện; hai chuyến nháp và chuyến huỷ `TRIP-004` (điểm Tân An chưa có toạ độ) thì không — số chuyến theo
-  trạng thái của seed giữ nguyên. *(đã điều chỉnh 04/10/2026, FE-5b-05)* Tối ưu xếp hàng đòi chuyến Đã lập kế hoạch (`saveOptimizationRun` → `ROUTE_NOT_PLANNED`); bắt đầu xếp ở kho thì kho chưa đòi.
+  trạng thái của seed giữ nguyên. *(đã điều chỉnh 03/10/2026, FE-5b-05)* Tối ưu xếp hàng đòi chuyến Đã lập kế hoạch (`saveOptimizationRun` → `ROUTE_NOT_PLANNED`); bắt đầu xếp ở kho thì kho chưa đòi.
   Lớp API `trips/route-api.ts` (`optimizeTripRoute`, `getTripEta`) → `useRouteQuery.ts` (khoá `['trips', tripId, 'eta']`); Chi tiết chuyến:
   `RoutePlanBar` đầu card sơ đồ tuyến (nút phụ "Tối ưu tuyến" theo `routes.optimize`, MOCK RESULT, km · thời gian, số điểm trễ; câu nói giờ
   đến là ước lượng theo đường nối thẳng), mỗi điểm có "Dự kiến đến" và mức hạn (Kịp hạn xanh lá · Sát hạn hổ phách · Trễ hạn dự kiến đỏ,
@@ -1453,7 +1471,7 @@ dù giao diện bị bỏ qua:
   của seed (tổng kiện, số xe…) phải cập nhật khi đổi `seed-trips.ts`. *(đã điều chỉnh 02/10/2026, FE-0-02)* Dữ liệu của Phương Nam
   (`seed-phuong-nam.ts`) nối **sau** dữ liệu của Long Bình và mang mã `…-PN-…`: thứ tự, mã và mã kế tiếp (`TRIP-015`, `VEHICLE-009`,
   `REV-028`…) của Long Bình không đổi; test đọc kho không phiên thấy cả hai công ty. Dựng seed ≈ 0,3 s một lần mỗi ngày neo.
-  *(đã điều chỉnh 04/10/2026, FE-5b-05)* Mỗi chuyến seed đã tối ưu có **một lần chạy ba phương án** (`seed-plan.ts` chạy
+  *(đã điều chỉnh 03/10/2026, FE-5b-05)* Mỗi chuyến seed đã tối ưu có **một lần chạy ba phương án** (`seed-plan.ts` chạy
   `runMockCandidates`): phương án ít dỡ-xếp lại (C) — bản điều phối viên seed duyệt — giữ **mã số** (`REV-001`), hai phương án kia mang mã
   của nó kèm nhãn (`REV-001-A`, `REV-001-B`; Phương Nam `REV-PN-001-A`…), dạng mà `nextId` không tính. Thứ tự ghi là A, B, C rồi bản
   duyệt, nên `listRevisions` của chuyến chính là `REV-001-A`, `REV-001-B`, `REV-001`, `REV-002`; kho có 55 revision của Long Bình (27 mang
@@ -1465,14 +1483,14 @@ dù giao diện bị bỏ qua:
   lên khoảng 400 ms, chủ yếu vì phần domain tính (thứ tự xếp / dỡ, ràng buộc, chỉ số) chạy cho ba kết quả thay vì một.
   Mở app sớm hơn việc "hôm nay" muộn nhất của seed thì mọi mốc giờ seed lùi cùng một khoảng (`seed-shift.ts`): lịch sử không có sự kiện
   ở tương lai, sự kiện mới luôn nằm trên sự kiện seed; ngày chạy không đổi.
-- *(đã điều chỉnh 04/10/2026, FE-6-08, D-85)* **Đồng hồ của kho là đồng hồ mô phỏng** (`clock.ts`: `createSimClock`): mọi mốc giờ kho ghi
+- *(đã điều chỉnh 03/10/2026, FE-6-08, D-85)* **Đồng hồ của kho là đồng hồ mô phỏng** (`clock.ts`: `createSimClock`): mọi mốc giờ kho ghi
   (`ctx.nowIso`) và vị trí xe đọc cùng một đồng hồ. Nó bắt đầu **đúng giờ máy** lúc tạo kho — seed neo và `seed-shift.ts` không đổi, không
   mốc nào nhảy — rồi chạy nhanh `speed` lần; `getMockDb()` đọc `?toc-do=<n>` (`clockSpeedFrom`, tối đa 3.600) **một lần lúc tải trang**, đổi
   route trong app không đổi tốc độ. Ở tốc độ 1 (không có tham số, mọi test, cả Vitest) đồng hồ trả thẳng giờ của `now` được tiêm: test giả
   `Date` hay tiêm `now` thấy đúng giờ mình đặt; test tua nhanh truyền `createMockDb({ now, speed })`. `setSpeed` đổi tốc độ mà giờ không nhảy
   (chỗ cho "Dùng GPS thật", FE-6-13). Khi tua nhanh, giờ của kho đi trước giờ máy: chỗ nào ở giao diện so mốc của kho với `new Date()`
   ("hôm nay" của bảng điều khiển, chuông) sẽ lệch — chỉ là chế độ demo.
-- *(đã điều chỉnh 04/10/2026, FE-6-08, FE-6-09)* **Vị trí xe và ETA trực tiếp** (`db-tracking.ts`, hàm thuần `trip-tracking.ts`, kiểu ở
+- *(đã điều chỉnh 03/10/2026, FE-6-08, FE-6-09)* **Vị trí xe và ETA trực tiếp** (`db-tracking.ts`, hàm thuần `trip-tracking.ts`, kiểu ở
   `tracking-model.ts`; `postDriverLocation`, `getLatestLocation`, `getLocationHistory`, `getTripMonitoring`, `listTripMonitoring`). Kho
   **không chạy hẹn giờ nào**: mỗi lần được đọc, nó ghi bù các điểm vị trí mô phỏng từ điểm đã ghi tới giờ của kho — một điểm mỗi 30 giây
   mô phỏng kể từ lúc tài xế xuất phát, mỗi điểm tính **như lúc đó** nên kết quả không phụ thuộc lúc nào có người đọc; lịch sử giữ 2.000
@@ -1484,12 +1502,18 @@ dù giao diện bị bỏ qua:
   không cộng phút chậm lần hai; mức hạn của một điểm **xấu đi** (kịp → sát → trễ) thì kho ghi một sự kiện hệ thống `delivery.etaRisk`
   (`ctx.logSystem`: người làm `null`, công ty của chuyến), một lần cho mỗi lần chuyển; mức khởi đầu là mức của `routePlan`, tốt lên thì
   không báo. Điểm GPS thật (`postDriverLocation`, nguồn `GPS`) tính ETA cùng cách và giữ xe mô phỏng không ghi trong 90 giây kể từ điểm
-  GPS cuối. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc lại theo
+  GPS cuối. *(bổ sung 03/10/2026, FE-6-13, D-95)* **"Dùng GPS thật"** là công tắc trên màn điểm giao của tài xế khi chuyến Đang vận
+  chuyển (`driver/DriverGpsToggle` + `useDeviceLocation`): `navigator.geolocation.watchPosition`, điểm đầu gửi ngay rồi vị trí mới nhất
+  mỗi 30 giây qua `postDriverLocation`; `setDriverGps(tripId, bật)` của kho cho đồng hồ mô phỏng chạy theo giờ thật khi bật (giờ không
+  nhảy) và, khi tắt, cho xe mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Tài xế tắt, trình duyệt từ chối quyền,
+  mất tín hiệu, kho từ chối điểm, hoặc rời màn chuyến: thôi theo dõi, về mô phỏng, màn nói lý do; thiết bị không có định vị thì công tắc
+  mờ kèm lý do. Màn nói rõ khi chưa có máy chủ vị trí chỉ hiện trong trình duyệt này. Test giả `navigator.geolocation`
+  (`DriverGpsToggle.dom.test.tsx`); E2E dùng `context.setGeolocation`. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc lại theo
   `refreshMs` kho trả (thời gian thật tới điểm kế tiếp, ít nhất 1 giây; `null` khi chuyến không còn chạy) bằng `refetchInterval` của
   Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không
   `setInterval` riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo
   nhịp đó. E2E có giá trị đang chạy chờ tới trạng thái dừng (xe tới điểm), không chờ theo giờ (`e2e/live-tracking.spec.ts`).
-- *(đã điều chỉnh 04/10/2026, FE-6-10)* **Màn Giám sát `/giam-sat`** (`monitoring.view`): `fetchMonitoringBoard` (`['trips',
+- *(đã điều chỉnh 03/10/2026, FE-6-10)* **Màn Giám sát `/giam-sat`** (`monitoring.view`): `fetchMonitoringBoard` (`['trips',
   'monitoring-board']`) đọc phần ít đổi — chuyến Đang vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp
   của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải
   tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó
@@ -1499,7 +1523,7 @@ dù giao diện bị bỏ qua:
   (`monitoring-api.ts` → `monitoring-events.ts`) là kênh sự kiện **trong bộ nhớ** thay WebSocket của backend: sự kiện (`LocationUpdate`,
   `EtaUpdate`, `EtaRiskAlert`, `ExceptionUpdate`, `TripCompleted`) phát khi một lần đọc giám sát trả về điều gì mới; lịch sử vị trí của chuyến
   đang chọn làm mới theo kênh đó (`useTripChannel`), không có hẹn giờ riêng. `TripMonitoring` mang thêm `exceptions` và `reroute`.
-- *(đã điều chỉnh 04/10/2026, FE-6-11, FE-6-12, D-87)* **Sự cố cấp chuyến** (`exception-model.ts`, `db-exceptions.ts`,
+- *(đã điều chỉnh 03/10/2026, FE-6-11, FE-6-12, D-87)* **Sự cố cấp chuyến** (`exception-model.ts`, `db-exceptions.ts`,
   `DbState.exceptions`; khác sự cố giao của từng kiện): `TripException` (`EXC-NNN`) — loại (`TRAFFIC`, `ACCIDENT`, `ROAD_CONSTRUCTION`,
   `VEHICLE_BREAKDOWN`, `OTHER`; nhãn ở `common.tripExceptionTypes`), mô tả, số phút dự kiến chậm (0 → 480), trạng thái `OPEN` →
   `ESCALATED` → `RESOLVED`. Kho **xét vai trò của phiên** cho các lệnh ghi (không có phiên thì không xét; sai là `ROLE_NOT_ALLOWED`, xét sau
