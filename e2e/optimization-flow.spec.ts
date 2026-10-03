@@ -132,6 +132,7 @@ test('cargo over the payload gives a partial result notice, and every candidate 
   await optimize(page).click()
   await expect(page.getByText(/Kết quả một phần: \d+ kiện chưa xếp\./)).toBeVisible({ timeout: 30_000 })
   await page.waitForURL(/\/so-sanh\?lan-chay=RUN-016$/)
+  await expect(page.locator('[data-candidate]')).toHaveCount(3)
   const unplaced = await page.locator('[data-candidate] [data-metric="unplaced"] dd').allInnerTexts()
   expect(unplaced).toHaveLength(3)
   for (const text of unplaced) expect(Number(/^(\d+) kiện/.exec(text)?.[1]), text).toBeGreaterThan(0)
