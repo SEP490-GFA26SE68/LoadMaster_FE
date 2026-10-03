@@ -8,6 +8,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import { plannerPath } from '@/lib/planner-path'
 import { cn } from '@/lib/utils'
 import type { AxleGauge, CandidateCardModel, CandidateMetric } from './candidate-comparison'
+import { Highlight } from './ComparisonRows'
 import { PlanThumbnail } from './PlanThumbnail'
 
 const MONO = 'font-mono tabular-nums'
@@ -48,7 +49,9 @@ export function CandidateCard({ tripId, card, best }: {
   const format = useFormat()
   const isBest = (metric: CandidateMetric) => best[metric]?.has(card.id) ?? false
   const objective = t(`runs.objectives.${card.objective}`)
-  const packages = (value: number) => t('trips.compare.packages', { value: format.integer(value) })
+  /** Câu có số đếm: chỉ phần số là mono ("43 kiện"), chữ đi kèm giữ font giao diện — như ma trận so sánh revision. */
+  const counted = (text: string, number: string) => <Highlight text={text} parts={[number]} className={MONO} />
+  const packages = (value: number) => counted(t('trips.compare.packages', { value: format.integer(value) }), format.integer(value))
   const approvedId = card.approvedAs.at(-1)
   const { axles, centerOfGravityCm: cog } = card
   const gauge = ({ loadKg, limitKg, percent }: AxleGauge) => ({
@@ -65,7 +68,8 @@ export function CandidateCard({ tripId, card, best }: {
           <span aria-hidden className="grid size-9 flex-none place-items-center rounded-md bg-n-100 font-display text-h2 leading-none font-bold text-ink-strong">{card.label}</span>
           <div className="flex min-w-0 flex-col gap-0.5">
             <h2 className="font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{objective}</h2>
-            <p className="text-small text-ink-3">{t(`optimization.objectiveHints.${card.objective}`)}</p>
+            {/* Giữ chỗ hai dòng để ảnh và các dòng chỉ số của ba thẻ thẳng hàng nhau */}
+            <p className="min-h-9 text-small text-ink-3">{t(`optimization.objectiveHints.${card.objective}`)}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -95,7 +99,7 @@ export function CandidateCard({ tripId, card, best }: {
             </Metric>
             {axles.gapPercent === undefined ? null : (
               <Metric name="axleGap" label={t('trips.compare.candidates.metrics.axleGap')} best={isBest('axleGap')}>
-                <span className={MONO}>{t('trips.compare.candidates.gapValue', { value: format.decimal(axles.gapPercent) })}</span>
+                {counted(t('trips.compare.candidates.gapValue', { value: format.decimal(axles.gapPercent) }), format.decimal(axles.gapPercent))}
               </Metric>
             )}
           </>
@@ -105,16 +109,16 @@ export function CandidateCard({ tripId, card, best }: {
             <Metric name="rearAxle" label={t('trips.compare.candidates.metrics.rearAxle')} note={unavailable}>{t('trips.compare.candidates.notComputed')}</Metric>
           </>
         )}
-        <Metric name="centerOfGravity" label={t('trips.compare.candidates.metrics.centerOfGravity')}>
+        <Metric name="centerOfGravity" label={t('trips.compare.candidates.metrics.centerOfGravity')} note={cog ? t('trips.compare.candidates.cogAxes') : undefined}>
           {cog ? (
             <span className={MONO}>{t('trips.compare.candidates.cog', { x: format.decimal(cog.x), y: format.decimal(cog.y), z: format.decimal(cog.z) })}</span>
           ) : t('trips.compare.candidates.noCog')}
         </Metric>
         <Metric name="rehandling" label={t('trips.compare.candidates.metrics.rehandling')} best={isBest('rehandling')}>
-          {card.rehandlingCount === undefined ? t('trips.compare.candidates.noZones') : <span className={MONO}>{packages(card.rehandlingCount)}</span>}
+          {card.rehandlingCount === undefined ? t('trips.compare.candidates.noZones') : packages(card.rehandlingCount)}
         </Metric>
         <Metric name="unplaced" label={t('trips.compare.candidates.metrics.unplaced')} best={isBest('unplaced')}>
-          <span className={MONO}>{packages(card.unplacedCount)}</span>
+          {packages(card.unplacedCount)}
         </Metric>
         <Metric name="runtime" label={t('trips.compare.candidates.metrics.runtime')}>
           <span className={MONO}>{t('trips.compare.milliseconds', { value: format.integer(card.runtimeMs) })}</span>

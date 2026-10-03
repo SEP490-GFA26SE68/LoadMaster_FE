@@ -779,7 +779,9 @@ export const trips = {
       gapValue: '{value} điểm %',
       notComputed: 'Chưa tính được',
       axleUnavailable: { NO_AXLES: 'Xe chưa khai báo trục', SINGLE_AXLE: 'Xe mới khai một trục', AXLES_COINCIDE: 'Các trục của xe trùng vị trí' },
-      cog: 'dọc {x} · ngang {y} · cao {z} cm',
+      /** Toạ độ trọng tâm hàng theo trục dọc thùng (từ vách trong), ngang (từ vách trái) và cao (từ sàn). */
+      cog: '{x} · {y} · {z} cm',
+      cogAxes: 'dọc · ngang · cao',
       noCog: 'Chưa xếp kiện nào',
       noZones: 'Không chia vùng',
       open: 'Mở trong Planner',

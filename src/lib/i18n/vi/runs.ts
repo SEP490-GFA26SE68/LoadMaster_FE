@@ -30,8 +30,7 @@ export const runs = {
   columns: {
     at: 'Thời điểm',
     runner: 'Người chạy',
-    choice: 'Thuật toán',
-    limits: 'Giới hạn · seed',
+    choice: 'Thiết lập',
     status: 'Kết quả',
     plan: 'Phương án A · B · C',
     approval: 'Duyệt',
@@ -47,9 +46,9 @@ export const runs = {
   seed: 'seed {seed}',
   /** Lần chạy hỏng không có revision nên kho không có thiết lập hay số của nó. */
   noValue: '—',
-  /** Một dòng của ô "Phương án": nhãn + mã là liên kết mở Planner, rồi tỷ lệ thể tích và số kiện chưa xếp. */
-  planAllPlaced: '{volume} · xếp đủ',
-  planUnplaced: { one: '{volume} · {count} chưa xếp', other: '{volume} · {count} chưa xếp' },
+  /** Một dòng của ô "Phương án": nhãn + mã là liên kết mở Planner, rồi xếp đủ hay còn bao nhiêu kiện chưa xếp. */
+  planAllPlaced: 'xếp đủ',
+  planUnplaced: { one: '{count} chưa xếp', other: '{count} chưa xếp' },
   openPlan: 'Mở phương án {revision} trong Planner',
   compare: 'So sánh',
   openCompare: 'So sánh các phương án của lần chạy {run}',

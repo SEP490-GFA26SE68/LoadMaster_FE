@@ -43,7 +43,8 @@ test('the run history lists every run newest first, the failed one with its reas
     ['B · REV-001-B', `/chuyen/${TRIP_ID}/phuong-an?revision=REV-001-B`],
     ['C · REV-001', `/chuyen/${TRIP_ID}/phuong-an?revision=REV-001`],
   ])
-  expect(rows[1]).toHaveTextContent('40,8% · xếp đủ')
+  expect(rows[1]).toHaveTextContent('30 s · seed 20260914')
+  expect(rows[1]).toHaveTextContent('xếp đủ')
   expect(rows[1]).toHaveTextContent('Đã duyệt')
   expect(rows[1]).toHaveTextContent('Phương án C')
   expect(run.getByRole('link', { name: 'So sánh các phương án của lần chạy RUN-002' })).toHaveAttribute('href', `/chuyen/${TRIP_ID}/so-sanh?lan-chay=RUN-002`)

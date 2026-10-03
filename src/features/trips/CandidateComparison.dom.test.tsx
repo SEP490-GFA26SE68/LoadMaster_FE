@@ -70,7 +70,7 @@ test('the run of the seed trip: deadlines once on top, then cards A, B, C with t
     expect(metric(card, 'Tải trọng')).toStrictEqual({ value: '61,5%', best: false })
     expect(metric(card, 'Kiện chưa xếp')).toStrictEqual({ value: '0 kiện', best: false })
     expect(metric(card, 'Thời gian chạy').value).toBe('0 ms')
-    expect(metric(card, 'Trọng tâm hàng').value).toMatch(/^dọc [\d,]+ · ngang [\d,]+ · cao [\d,]+ cm$/)
+    expect(metric(card, 'Trọng tâm hàng').value).toMatch(/^[\d,]+ · [\d,]+ · [\d,]+ cmdọc · ngang · cao$/)
   }
   expect([metric(a, 'Tải trục trước').value, metric(a, 'Tải trục sau').value]).toStrictEqual(['5.326,12 kg / 6.500 kg81,9% giới hạn', '6.217,88 kg / 10.000 kg62,2% giới hạn'])
   expect([metric(b, 'Tải trục trước').value, metric(b, 'Tải trục sau').value]).toStrictEqual(['4.574,61 kg / 6.500 kg70,4% giới hạn', '6.969,39 kg / 10.000 kg69,7% giới hạn'])

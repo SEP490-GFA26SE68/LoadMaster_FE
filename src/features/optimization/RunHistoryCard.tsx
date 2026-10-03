@@ -42,25 +42,23 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
     }),
     helper.accessor('runnerName', {
       header: t('runs.columns.runner'),
-      meta: { width: '13%' } satisfies ColumnMeta,
-      cell: (info) => <span className="line-clamp-2 whitespace-normal text-ink-1">{info.getValue() ?? t('runs.noValue')}</span>,
+      meta: { width: '15%' } satisfies ColumnMeta,
+      cell: (info) => <span className="whitespace-normal text-ink-1">{info.getValue() ?? t('runs.noValue')}</span>,
     }),
     helper.accessor('algorithm', {
       header: t('runs.columns.choice'),
-      meta: { width: '15%' } satisfies ColumnMeta,
-      cell: (info) => <span className="line-clamp-2 whitespace-normal text-ink-1">{t(`runs.algorithms.${info.getValue()}`)}</span>,
-    }),
-    helper.accessor('timeLimitSeconds', {
-      header: t('runs.columns.limits'),
-      meta: { width: '116px' } satisfies ColumnMeta,
+      meta: { width: '18%' } satisfies ColumnMeta,
       cell: (info) => {
-        const seconds = info.getValue()
-        const seed = info.row.original.randomSeed
+        const { timeLimitSeconds: seconds, randomSeed: seed } = info.row.original
         // Seed là mã để chạy lại đúng kết quả, không phải số lượng: in nguyên, không nhóm hàng nghìn
-        return seconds === null ? none : (
-          <span className={`${two} ${mono} text-ink-2`}>
-            <span>{t('runs.limitSeconds', { seconds: format.integer(seconds) })}</span>
-            <span>{t('runs.seed', { seed: seed === null ? t('runs.noValue') : String(seed) })}</span>
+        return (
+          <span className={two}>
+            <span className="text-ink-1">{t(`runs.algorithms.${info.getValue()}`)}</span>
+            {seconds === null ? null : (
+              <span className={`${mono} text-ink-3`}>
+                {t('runs.limitSeconds', { seconds: format.integer(seconds) })} · {t('runs.seed', { seed: seed === null ? t('runs.noValue') : String(seed) })}
+              </span>
+            )}
           </span>
         )
       },
@@ -90,23 +88,18 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
     }),
     helper.accessor('plans', {
       header: t('runs.columns.plan'),
-      meta: { width: '27%' } satisfies ColumnMeta,
       cell: (info) => {
         const plans = info.getValue()
         if (plans.length === 0) return none
         return (
           <span className={two}>
             {plans.map((plan) => (
-              <span key={plan.revisionId} className="flex items-baseline gap-2 text-caption">
+              <span key={plan.revisionId} className="flex flex-wrap items-baseline gap-x-2 text-caption">
                 <Link to={plannerPath({ tripId, jobId: plan.jobId, revisionId: plan.revisionId })} aria-label={t('runs.openPlan', { revision: plan.revisionId })}
                   className={`${planLink} flex-none font-mono`}>
                   {plan.label} · {plan.revisionId}
                 </Link>
-                <span className="text-ink-2">
-                  {plan.unplacedCount > 0
-                    ? t('runs.planUnplaced', { volume: format.percent(plan.volumeUtilizationPercent), count: plan.unplacedCount })
-                    : t('runs.planAllPlaced', { volume: format.percent(plan.volumeUtilizationPercent) })}
-                </span>
+                <span className="whitespace-nowrap text-ink-2">{plan.unplacedCount > 0 ? t('runs.planUnplaced', { count: plan.unplacedCount }) : t('runs.planAllPlaced')}</span>
               </span>
             ))}
           </span>
@@ -115,7 +108,7 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
     }),
     helper.accessor('approval', {
       header: t('runs.columns.approval'),
-      meta: { width: '132px' } satisfies ColumnMeta,
+      meta: { width: '124px' } satisfies ColumnMeta,
       cell: (info) => {
         const approval = info.getValue()
         if (approval === null) return none
@@ -133,9 +126,10 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
 
 /**
  * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu (luồng 3 Review 1, LM-104): mọi lần chạy của chuyến, mới nhất trước — lúc chạy, người
- * chạy, thuật toán đã chạy, giới hạn thời gian + seed, kết quả (lần hỏng kèm lý do; lần xong có liên kết "So sánh" mở màn so sánh của lần
- * chạy đó), ba phương án ứng viên A · B · C (FE-5b-05 — mỗi dòng mở phương án đó trong Planner, kèm tỷ lệ thể tích và số kiện chưa xếp),
- * và lần chạy đã có phương án được duyệt (kèm nhãn phương án) hay còn chờ duyệt.
+ * chạy, thiết lập (thuật toán đã chạy, giới hạn thời gian · seed), kết quả (lần hỏng kèm lý do; lần xong có liên kết "So sánh" mở màn so
+ * sánh của lần chạy đó), ba phương án ứng viên A · B · C (FE-5b-05 — mỗi dòng mở phương án đó trong Planner, kèm xếp đủ hay còn bao
+ * nhiêu kiện chưa xếp; các chỉ số khác nằm ở màn so sánh), và lần chạy đã có phương án được duyệt (kèm nhãn phương án) hay còn chờ
+ * duyệt. Bảng vừa cột trái của màn ở 1.366 px: tên người chạy xuống dòng, không cắt.
  */
 export function RunHistoryCard({ tripId }: { tripId: string }) {
   const t = useT()
