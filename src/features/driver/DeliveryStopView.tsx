@@ -4,6 +4,7 @@ import { PackageVerify } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
+import { TripExceptionButton } from '@/features/monitoring/TripExceptionButton'
 import { adaptResult } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
 import { missingIds, type Revision, type Trip } from '@/lib/mock-db'
@@ -96,6 +97,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
                 {t('driver.issue.report')}
               </Button>
             ) : null}
+            {view.mode === 'delivering' ? <TripExceptionButton tripId={trip.id} /> : null}
           </div>
 
           {view.items.length > 0 ? (
