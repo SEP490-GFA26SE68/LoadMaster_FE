@@ -196,6 +196,7 @@ const PROBES = {
   approveManualConfirmation: onForeignTrip((db, tripId) => db.approveManualConfirmation(tripId, 'VF-001')),
   rejectManualConfirmation: onForeignTrip((db, tripId) => db.rejectManualConfirmation(tripId, 'VF-001', 'Sai kiện')),
   postDriverLocation: onForeignTrip((db, tripId) => db.postDriverLocation(tripId, { lat: 10.9294, lng: 106.8747 })),
+  setDriverGps: onForeignTrip((db, tripId) => db.setDriverGps(tripId, true)),
   getLatestLocation: { scope: 'operational', hidden: ({ db, other }) => db.getLatestLocation(other.trip) },
   getLocationHistory: { scope: 'operational', hidden: ({ db, other }) => db.getLocationHistory(other.trip) },
   getTripMonitoring: { scope: 'operational', hidden: ({ db, other }) => db.getTripMonitoring(other.trip) },

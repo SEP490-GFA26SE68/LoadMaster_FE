@@ -62,6 +62,8 @@ export type DbContext = {
   nowIso(): string
   /** Đồng hồ của kho chạy nhanh gấp mấy lần giờ thật (`?toc-do`, FE-6-08): để đổi một khoảng giờ của kho ra thời gian chờ thật. */
   clockSpeed(): number
+  /** Đổi tốc độ đồng hồ của kho từ bây giờ, giờ không nhảy (FE-6-13: nhận GPS thật thì đồng hồ chạy theo giờ thật). */
+  setClockSpeed(speed: number): void
   /**
    * Một lượt gọi như qua mạng: chờ độ trễ rồi mới đọc/ghi. Kết quả luôn là bản sao, nên nơi gọi không sửa được dữ liệu
    * trong kho; lỗi của `operation` thành promise bị từ chối.
@@ -91,6 +93,7 @@ export type DbContext = {
 
 export function createDbContext(
   state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random, clockSpeed: () => number = () => 1,
+  setClockSpeed: (speed: number) => void = () => {},
 ): DbContext {
   const nowIso = () => now().toISOString()
   const scope = createTenancy(state)
@@ -99,6 +102,7 @@ export function createDbContext(
     state,
     nowIso,
     clockSpeed,
+    setClockSpeed,
     scope,
     qrTokensInUse,
     newQrToken: (taken = qrTokensInUse()) => {

@@ -136,7 +136,25 @@ export function trackingMethods(ctx: DbContext): TrackingDb {
     }
   }
 
+  // Chuyến đang nhận GPS thật (FE-6-13): còn chuyến nào thì đồng hồ của kho chạy theo giờ thật, hết thì về tốc độ lúc tạo kho
+  const gpsTrips = new Set<string>()
+  const configuredSpeed = ctx.clockSpeed()
+
   return {
+    setDriverGps: (tripId, enabled) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        if (enabled) {
+          if (trip.phase !== 'delivering') throw new MockDbError('TRIP_PHASE_INVALID', { tripId, phase: trip.phase })
+          gpsTrips.add(tripId)
+        } else if (gpsTrips.delete(tripId)) {
+          // Ghi bù tới giờ hiện tại khi còn chờ GPS, rồi bỏ mốc chờ: xe mô phỏng ghi tiếp từ nhịp kế
+          const state = advanceTracking(ctx, trip)
+          if (state) state.gpsUntilMs = -Infinity
+        }
+        ctx.setClockSpeed(gpsTrips.size > 0 ? 1 : configuredSpeed)
+        return enabled
+      }),
     postDriverLocation: (tripId, input) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)

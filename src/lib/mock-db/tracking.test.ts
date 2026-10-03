@@ -331,3 +331,29 @@ describe('what the driver recorded, read as of a moment (trip-tracking)', () => 
     expect(simulatedSnapshot({ ...trip, stops: [{ id: 'STOP-01', name: 'Điện máy Xanh Tân An', address: 'Tân An' }] }, T)).toBeNull()
   })
 })
+
+describe('the driver turns real GPS on and off (FE-6-13)', () => {
+  test('while it is on the store clock runs at real time without jumping; turned off, the fast clock and the simulated vehicle resume at once', async () => {
+    const wall = wallClock('2026-09-14T05:00:00.000Z')
+    const db = createMockDb({ now: wall.now, speed: 60 })
+    await expect(db.setDriverGps('TRIP-2026-0914', true)).rejects.toMatchObject({ code: 'TRIP_PHASE_INVALID', params: { phase: 'planning' } })
+    // 10 giây thật ở tốc độ 60 là 10 phút của kho: 05:10:00
+    wall.advance(10_000)
+    expect(await db.setDriverGps('TRIP-009', true)).toBe(true)
+    // bật rồi: 30 giây thật là 30 giây của kho
+    wall.advance(30_000)
+    const here = { lat: 10.98, lng: 106.66, speedKmh: 36, heading: 90 }
+    expect(await db.postDriverLocation('TRIP-009', here)).toStrictEqual({ ...here, recordedAt: '2026-09-14T05:10:30.000Z', source: 'GPS' })
+    expect((await db.getTripMonitoring('TRIP-009')).refreshMs).toBe(30_000)
+
+    // 05:11:00 — tắt: đồng hồ lại nhanh 60 lần, xe mô phỏng ghi tiếp từ nhịp kế (05:11:30), không chờ hết 90 giây
+    wall.advance(30_000)
+    expect(await db.setDriverGps('TRIP-009', false)).toBe(false)
+    wall.advance(1_000)
+    const history = await db.getLocationHistory('TRIP-009')
+    expect(history.slice(-3).map((point) => [point.recordedAt.slice(11, 19), point.source])).toStrictEqual([
+      ['05:10:30', 'GPS'], ['05:11:30', 'SIMULATED'], ['05:12:00', 'SIMULATED'],
+    ])
+    expect((await db.getTripMonitoring('TRIP-009')).refreshMs).toBe(1000)
+  })
+})

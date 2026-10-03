@@ -11,6 +11,13 @@ export type TrackingDb = {
    * ghi tiếp. Chuyến không ở pha đang giao: `TRIP_PHASE_INVALID`; toạ độ, tốc độ hoặc hướng sai: `LOCATION_INVALID`.
    */
   postDriverLocation(tripId: string, input: DriverLocationInput): Promise<LocationPoint>
+  /**
+   * Tài xế bật / tắt "Dùng GPS thật" cho chuyến (FE-6-13, D-85). Bật (chỉ chuyến đang giao, pha khác: `TRIP_PHASE_INVALID`): đồng hồ
+   * của kho chạy theo giờ thật từ lúc này — giờ không nhảy — để điểm GPS và giờ đến tính từ nó đúng nhịp thật. Tắt (bấm tắt, bị từ
+   * chối quyền, mất tín hiệu, rời màn chuyến): xe mô phỏng ghi tiếp ngay từ nhịp kế, không chờ 90 giây; không còn chuyến nào bật thì
+   * đồng hồ về tốc độ lúc tạo kho (`?toc-do`). Trả `enabled`.
+   */
+  setDriverGps(tripId: string, enabled: boolean): Promise<boolean>
   /** Vị trí mới nhất của xe; `null` khi xe chưa xuất phát, hoặc tuyến còn điểm chưa có toạ độ và chưa có điểm GPS nào. */
   getLatestLocation(tripId: string): Promise<LocationPoint | null>
   /** Lịch sử vị trí của chuyến, cũ trước, tối đa 2.000 điểm gần nhất. Chuyến đã giao xong giữ lịch sử tới lúc hoàn thành. */

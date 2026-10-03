@@ -6,7 +6,7 @@
  *   getTripMonitoring    → GET /api/trips/{id}/monitoring
  *   fetchMonitoringBoard → GET /api/dispatcher/dashboard
  *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
- *   chưa có ở BE: listTripMonitoring (kênh cập nhật của BE là WebSocket, Q-08)
+ *   chưa có ở BE: listTripMonitoring (kênh cập nhật của BE là WebSocket, Q-08), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
 import { getMockDb, type DriverLocationInput, type LocationPoint, type TripMonitoring } from '@/lib/mock-db'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
@@ -20,6 +20,15 @@ import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './mo
 // POST /api/driver/location
 export function postDriverLocation(tripId: string, location: DriverLocationInput): Promise<LocationPoint> {
   return getMockDb().postDriverLocation(tripId, location)
+}
+
+/**
+ * Tài xế bật / tắt "Dùng GPS thật" (FE-6-13): bật thì đồng hồ mô phỏng của tab chạy theo giờ thật, tắt thì xe mô phỏng ghi tiếp. Chỉ
+ * có nghĩa khi chưa có máy chủ — backend nhận thẳng điểm GPS, không có đồng hồ mô phỏng.
+ */
+// chưa có ở BE
+export function setDriverGps(tripId: string, enabled: boolean): Promise<boolean> {
+  return getMockDb().setDriverGps(tripId, enabled)
 }
 
 /** Vị trí mới nhất của xe; `null` khi xe chưa xuất phát hoặc chưa có vị trí. */
