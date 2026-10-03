@@ -5,11 +5,23 @@
  *   confirmLoadingByQr → POST /api/warehouse/placements/{id}/confirm
  *   completeLoading    → POST /api/trips/{id}/complete-loading
  *   chưa có ở BE: fetchWarehouseTrips, fetchWarehouseTrip, fetchTripLabels
- *   chưa có ở BE (Q-11): recordSeal
+ *   chưa có ở BE (Q-11): recordSeal, confirmLoadingManually
  *   tên sẽ đổi khi nối BE: recordLoadingStep, confirmLoadingByQr → confirmPlacement, reportPlacementDeviation
  */
 
-import { getMockDb, loadingRemaining, type LoadingStepInput, type Revision, type ScanResult, type Trip, type TripLabel } from '@/lib/mock-db'
+import {
+  getMockDb,
+  loadingRemaining,
+  pendingManualConfirms,
+  type LabelVerifyMethod,
+  type LoadingStepInput,
+  type ManualConfirmInput,
+  type MockDb,
+  type Revision,
+  type ScanResult,
+  type Trip,
+  type TripLabel,
+} from '@/lib/mock-db'
 import { warehouseTripRows, type WarehouseTripRow } from './warehouse-trips'
 
 /**
@@ -43,13 +55,21 @@ export function startLoading(tripId: string): Promise<Trip> {
   return getMockDb().startLoading(tripId)
 }
 
-/** Ghi một kiện đã xếp hoặc thiếu ở kho. Kiện cuối cùng có kết quả thì hoàn tất luôn: `loading` → `loaded`. */
+/**
+ * Chuyến sau khi ghi một kiện: kiện cuối cùng có kết quả thì hoàn tất xếp luôn (`loading` → `loaded`) — trừ khi còn xác nhận tay chờ
+ * điều phối viên duyệt (FE-6-04): kho từ chối xong xếp, nên chuyến ở lại "đang xếp" và màn nói lý do.
+ */
+async function finishWhenReady(db: MockDb, trip: Trip): Promise<Trip> {
+  const plan = await db.getRevision(trip.loading?.revisionId ?? '')
+  const ready = loadingRemaining(trip, plan) === 0 && pendingManualConfirms(trip, 'LOADING').length === 0
+  return ready ? db.completeLoading(trip.id) : trip
+}
+
+/** Ghi một kiện đã xếp hoặc thiếu ở kho. Kiện cuối cùng có kết quả thì hoàn tất luôn (`finishWhenReady`). */
 // POST /api/warehouse/placements/{id}/confirm (đã xếp) · POST /api/warehouse/placements/{id}/deviation (thiếu)
 export async function recordLoadingStep(tripId: string, step: LoadingStepInput): Promise<Trip> {
   const db = getMockDb()
-  const trip = await db.recordLoadingStep(tripId, step)
-  const plan = await db.getRevision(trip.loading?.revisionId ?? '')
-  return loadingRemaining(trip, plan) === 0 ? db.completeLoading(tripId) : trip
+  return finishWhenReady(db, await db.recordLoadingStep(tripId, step))
 }
 
 /** Hoàn tất xếp khi mọi kiện đã có kết quả — dùng lại khi lần hoàn tất tự động ở bước cuối không thành. */
@@ -60,22 +80,34 @@ export function completeLoading(tripId: string): Promise<Trip> {
 
 // Review 1 (LM-104): quét QR khi xếp, số seal khi xếp xong, nhãn QR của chuyến
 
-/** Nhãn QR mọi kiện của chuyến: hộp thoại quét dùng làm danh sách chọn tay khi không quét được. */
+/** Nhãn QR mọi kiện của chuyến: tên kiện cho câu báo sai kiện, và kiện kho kiện để in lại nhãn ở mức xác nhận tay. */
 // chưa có ở BE
 export function fetchTripLabels(tripId: string): Promise<TripLabel[]> {
   return getMockDb().listTripLabels(tripId)
 }
 
+/** Mã đối chiếu bằng nhãn (FE-6-03): quét (`QR`) hoặc gõ (`CODE` — mã QR in dưới hình, hoặc mã của bên gửi duy nhất trong chuyến). */
+export type VerifyCodeInput = { readonly method: LabelVerifyMethod; readonly code: string }
+
 /**
- * Quét QR kiện của bước hiện tại: kho ghi "đã xếp" (`via: 'qr'`). Kiện khác của chuyến: `WRONG_PACKAGE_SCANNED` (kèm mã kiện cần xếp).
- * Kiện cuối cùng thì hoàn tất xếp luôn, như `recordLoadingStep`.
+ * Đối chiếu kiện của bước hiện tại bằng nhãn — mức 1 và 2: kho ghi "đã xếp" (`via: 'qr'`) và cách đối chiếu. Kiện khác của chuyến:
+ * `WRONG_PACKAGE_SCANNED` (kèm mã kiện cần xếp); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Kiện cuối cùng thì hoàn
+ * tất xếp luôn, như `recordLoadingStep`.
  */
 // POST /api/warehouse/placements/{id}/confirm
-export async function confirmLoadingByQr(tripId: string, token: string): Promise<ScanResult<Trip>> {
+export async function confirmLoadingByQr(tripId: string, { method, code }: VerifyCodeInput): Promise<ScanResult<Trip>> {
   const db = getMockDb()
-  const result = await db.confirmLoadingByQr(tripId, token)
-  const plan = await db.getRevision(result.trip.loading?.revisionId ?? '')
-  return loadingRemaining(result.trip, plan) === 0 ? { ...result, trip: await db.completeLoading(tripId) } : result
+  const result = await db.confirmLoadingByQr(tripId, code, method)
+  return { ...result, trip: await finishWhenReady(db, result.trip) }
+}
+
+/**
+ * Xác nhận tay kiện của bước hiện tại — mức 3 (D-83): ghi "đã xếp" kèm xác nhận tay chờ điều phối viên duyệt. Không tự hoàn tất xếp:
+ * còn xác nhận tay chờ thì kho từ chối xong xếp.
+ */
+// chưa có ở BE (Q-11)
+export function confirmLoadingManually(tripId: string, input: ManualConfirmInput): Promise<ScanResult<Trip>> {
+  return getMockDb().confirmLoadingManually(tripId, input)
 }
 
 /** Ghi số seal niêm phong khi đã xếp xong (`loaded`), trước khi xe chạy. */

@@ -126,6 +126,14 @@ export function labelsPath(ids: readonly string[], fromLookup = false): string {
   return `${LABELS_PATH}?kien=${ids.join(',')}${fromLookup ? '&tu=tra-cuu' : ''}`
 }
 
+/**
+ * Trang in lại nhãn một kiện từ phiên xếp của chuyến `tripId` (mức xác nhận tay của đối chiếu kiện, FE-6-03): nút quay lại của trang
+ * nhãn về đúng phiên xếp đó.
+ */
+export function loadingLabelPath(packageId: string, tripId: string): string {
+  return `${LABELS_PATH}?kien=${encodeURIComponent(packageId)}&tu=kho&phien=${encodeURIComponent(tripId)}`
+}
+
 /** Trang in nhãn của mọi kiện kho kiện đang thuộc chuyến `tripId` (FE-3b-07). */
 export function tripLabelsPath(tripId: string): string {
   return `${LABELS_PATH}?chuyen=${encodeURIComponent(tripId)}`

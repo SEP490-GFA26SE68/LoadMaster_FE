@@ -1,4 +1,4 @@
-import { missingIds, type DeliveryIssue, type Trip, type TripPhase } from '@/lib/mock-db'
+import { latestVerifications, missingIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type Trip, type TripPhase } from '@/lib/mock-db'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 
 /**
@@ -17,6 +17,11 @@ export type ItemProgress = {
   readonly unloaded: boolean
   /** Sự cố mới nhất tài xế báo cho kiện này ở điểm này. */
   readonly issue: DeliveryIssue | undefined
+  /**
+   * Lần đối chiếu mới nhất của kiện khi dỡ (FE-6-03): cách đối chiếu của kiện đã dỡ; kiện chưa dỡ mà lần mới nhất là xác nhận tay bị
+   * từ chối thì phải kiểm lại (FE-6-04). Kiện đánh dấu tay không qua đối chiếu thì `undefined`.
+   */
+  readonly verification: PackageVerification | undefined
 }
 
 export type DeliveryView = {
@@ -31,6 +36,8 @@ export type DeliveryView = {
   readonly issueCount: number
   /** Kiện chưa dỡ và chưa có sự cố: còn kiện như vậy thì chưa hoàn tất được điểm (D-47). */
   readonly remaining: number
+  /** Xác nhận tay của điểm này còn chờ điều phối viên duyệt: còn chờ thì chưa hoàn tất được điểm (FE-6-04). */
+  readonly pendingConfirms: number
   /** Số các điểm đã hoàn tất. */
   readonly completedStops: ReadonlySet<number>
 }
@@ -39,7 +46,7 @@ export type DeliveryView = {
  * Tiến độ ở điểm giao hiện tại, đọc từ kho: kiện đã dỡ và sự cố của điểm. Mở lại màn là về đúng điểm chưa hoàn tất đầu tiên.
  * Chuyến không có điểm giao nào thì `undefined`.
  */
-export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery'>, stops: readonly StopDelivery[]): DeliveryView | undefined {
+export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery' | 'verifications'>, stops: readonly StopDelivery[]): DeliveryView | undefined {
   const mode = deliveryMode(trip.phase)
   const progress = trip.delivery
   const currentNumber = mode === 'delivering' ? progress?.stops.find((item) => item.completedAt === undefined)?.number : 1
@@ -48,13 +55,20 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery'>,
   const missing = missingIds(trip)
   const unloadedIds = new Set(progress?.stops.find((item) => item.number === stop.number)?.unloadedIds)
   const stopIssues = progress?.issues.filter((issue) => issue.stopNumber === stop.number) ?? []
+  const verified = latestVerifications(trip, 'UNLOADING')
   const items = stop.items
     .filter((item) => !missing.has(item.id))
-    .map((item): ItemProgress => ({
-      item,
-      unloaded: unloadedIds.has(item.id),
-      issue: stopIssues.findLast((issue) => issue.packageInstanceId === item.id),
-    }))
+    .map((item): ItemProgress => {
+      const unloaded = unloadedIds.has(item.id)
+      const verification = verified.get(item.id)
+      return {
+        item,
+        unloaded,
+        issue: stopIssues.findLast((issue) => issue.packageInstanceId === item.id),
+        // Kiện bỏ đánh dấu rồi đánh dấu lại bằng tay không còn mang cách đối chiếu cũ; lần bị từ chối thì giữ để nói lý do kiểm lại
+        verification: unloaded !== (verification?.manual?.status === 'MANUAL_REJECTED') ? verification : undefined,
+      }
+    })
   return {
     mode,
     stop,
@@ -63,6 +77,7 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery'>,
     unloadedCount: items.filter((item) => item.unloaded).length,
     issueCount: items.filter((item) => item.issue !== undefined).length,
     remaining: items.filter((item) => !item.unloaded && item.issue === undefined).length,
+    pendingConfirms: mode === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING', stop.number).length : 0,
     completedStops: new Set(progress?.stops.filter((item) => item.completedAt !== undefined).map((item) => item.number)),
   }
 }

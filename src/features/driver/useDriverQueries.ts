@@ -1,10 +1,11 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/AuthProvider'
-import type { DeliveryIssueInput } from '@/lib/mock-db'
+import type { DeliveryIssueInput, ManualConfirmInput } from '@/lib/mock-db'
 import { withUnload } from './delivery-progress'
 import {
   completeStop,
   confirmUnloadByQr,
+  confirmUnloadManually,
   fetchDriverTripLabels,
   fetchDriverTrip,
   fetchMyTrips,
@@ -13,6 +14,7 @@ import {
   startDelivery,
   type DriverTrip,
   type UnloadInput,
+  type UnloadVerifyInput,
 } from './driver-api'
 
 /**
@@ -87,11 +89,17 @@ export function useDriverTripLabelsQuery(tripId: string) {
   return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
 }
 
-/** Quét QR xác nhận dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */
+/** Đối chiếu bằng nhãn (quét hoặc gõ mã) để ghi dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */
 export function useConfirmUnloadByQrMutation(tripId: string) {
   const client = useQueryClient()
+  return useMutation({ mutationFn: (input: UnloadVerifyInput) => confirmUnloadByQr(tripId, input), onSettled: () => refreshAfterWrite(client) })
+}
+
+/** Xác nhận tay một kiện ở điểm hiện tại (mức 3, FE-6-03): ghi "đã dỡ" kèm xác nhận tay chờ điều phối viên duyệt. */
+export function useConfirmUnloadManuallyMutation(tripId: string) {
+  const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ stopNumber, token }: { stopNumber: number; token: string }) => confirmUnloadByQr(tripId, stopNumber, token),
+    mutationFn: ({ stopNumber, input }: { stopNumber: number; input: ManualConfirmInput }) => confirmUnloadManually(tripId, stopNumber, input),
     onSettled: () => refreshAfterWrite(client),
   })
 }

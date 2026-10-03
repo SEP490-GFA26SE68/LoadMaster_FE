@@ -115,7 +115,7 @@ test('two-carton trip: cm measures of step 1, then missing, then the last confir
   expect((await db.getTrip(trip.id)).phase).toBe('loaded')
 }, 20_000)
 
-test('QR scan (LM-104): a wrong package is explained and not recorded; the right ones load; the seal is recorded when finished', async () => {
+test('verification by label (LM-104, FE-6-03): a wrong package is explained and not recorded; the right ones load; the seal is recorded when finished', async () => {
   const { db, trip } = await approvedTwoCartonTrip()
   const token = Object.fromEntries((await db.listTripLabels(trip.id)).map((label) => [label.packageInstanceId, label.qrToken]))
   renderWarehouse(`/kho?chuyen=${trip.id}`)
@@ -123,17 +123,17 @@ test('QR scan (LM-104): a wrong package is explained and not recorded; the right
 
   async function scan(value: string) {
     const dialog = screen.getByRole('dialog')
-    const input = within(dialog).getByRole('textbox', { name: 'Nhập mã' })
+    const input = within(dialog).getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
     await userEvent.clear(input)
     await userEvent.type(input, value)
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận mã' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Đối chiếu mã' }))
   }
 
-  await userEvent.click(screen.getByRole('button', { name: 'Quét QR kiện' }))
-  expect(screen.getByRole('dialog', { name: 'Quét QR kiện bước 1' })).toHaveTextContent('Bước này cần kiện PKG-001-01 · Carton A')
+  await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện' }))
+  expect(screen.getByRole('dialog', { name: 'Đối chiếu kiện bước 1' })).toHaveTextContent('Bước này cần kiện PKG-001-01 · Carton A')
   await scan(token['PKG-002-01'] ?? '')
   expect(await within(screen.getByRole('dialog')).findByRole('alert', {}, LOAD)).toHaveTextContent(
-    'Sai kiện: vừa quét PKG-002-01 (Carton A), bước này cần PKG-001-01 (Carton A). Chưa ghi gì — để kiện này sang bên và quét đúng kiện.',
+    'Sai kiện: vừa đưa PKG-002-01 (Carton A), bước này cần PKG-001-01 (Carton A). Chưa ghi gì — để kiện này sang bên và đối chiếu đúng kiện.',
   )
   expect((await db.getTrip(trip.id)).loading?.steps).toStrictEqual([])
 
@@ -142,9 +142,10 @@ test('QR scan (LM-104): a wrong package is explained and not recorded; the right
   expect(await screen.findByRole('heading', { level: 1, name: 'PKG-002-01' }, NEXT)).toBeInTheDocument()
 
   // Lớp phủ "Đã xếp" giữ các nút tới khi hết 1,2 giây
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Quét QR kiện' })).toBeEnabled(), NEXT)
-  await userEvent.click(screen.getByRole('button', { name: 'Quét QR kiện' }))
-  await scan(token['PKG-002-01'] ?? '')
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Đối chiếu kiện' })).toBeEnabled(), NEXT)
+  await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện' }))
+  // Kiện thêm trong chuyến mang mã của bên gửi bằng mã instance, duy nhất trong chuyến: gõ mã đó cũng đối chiếu được
+  await scan('pkg-002-01')
   expect(await screen.findByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${trip.id}` }, NEXT)).toBeInTheDocument()
   expect(screen.getByText('Đã xác nhận bằng quét QR 2 kiện')).toBeInTheDocument()
   // Chưa ghi seal: nút ghi seal là nút chính, lối về danh sách là nút phụ
@@ -155,7 +156,68 @@ test('QR scan (LM-104): a wrong package is explained and not recorded; the right
   expect(await screen.findByText(/^Số seal SEAL-0915 · ghi lúc/, {}, LOAD)).toBeInTheDocument()
   const stored = await db.getTrip(trip.id)
   expect([stored.phase, stored.loading?.seal?.number, stored.loading?.steps.map((step) => step.via)]).toStrictEqual(['loaded', 'SEAL-0915', ['qr', 'qr']])
+  // Mỗi lần đối chiếu ghi cách, người, thời điểm: cả hai kiện gõ mã, do nhân viên kho demo làm
+  expect(stored.verifications?.map((entry) => [entry.packageInstanceId, entry.method, entry.by])).toStrictEqual([
+    ['PKG-001-01', 'CODE', 'US-0003'], ['PKG-002-01', 'CODE', 'US-0003'],
+  ])
 }, 20_000)
+
+test('manual confirmation (FE-6-03, FE-6-04): recorded with a reason, loading cannot finish until the dispatcher decides; a rejection brings the package back', async () => {
+  const { db, trip } = await approvedTwoCartonTrip()
+  const [label] = await db.listTripLabels(trip.id)
+  const view = renderWarehouse(`/kho?chuyen=${trip.id}`)
+  await screen.findByRole('heading', { level: 1, name: 'PKG-001-01' }, LOAD)
+
+  // Mức 3: kiện của bước hiện tại được chọn sẵn; kho in lại được nhãn của nó và quay về đúng phiên xếp
+  await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện' }))
+  const dialog = within(screen.getByRole('dialog', { name: 'Đối chiếu kiện bước 1' }))
+  await userEvent.click(dialog.getByRole('tab', { name: 'Xác nhận tay' }))
+  expect(dialog.getByRole('radio', { name: /PKG-001-01/ })).toBeChecked()
+  expect(await dialog.findByRole('link', { name: 'In lại nhãn PKG-001-01' }, LOAD)).toHaveAttribute('href', `/kien-hang/nhan?kien=${label?.poolPackageId}&tu=kho&phien=${trip.id}`)
+  await userEvent.click(dialog.getByRole('radio', { name: 'Nhãn rách / mất' }))
+  await userEvent.click(dialog.getByRole('button', { name: 'Gửi xác nhận tay' }))
+  expect(await screen.findByRole('heading', { level: 1, name: 'PKG-002-01' }, NEXT)).toBeInTheDocument()
+  expect(toast.warning).toHaveBeenCalledWith('Đã ghi xác nhận tay PKG-001-01', { description: 'Chờ điều phối viên duyệt trước khi xong xếp.' })
+  expect(screen.getByText('Còn 1 xác nhận tay chờ điều phối viên duyệt.')).toHaveAttribute('role', 'status')
+
+  // Kiện cuối có kết quả, nhưng còn xác nhận tay chờ duyệt: không tự hoàn tất, nút mờ kèm lý do tại chỗ
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Xác nhận đã xếp' })).toBeEnabled(), NEXT)
+  await userEvent.click(screen.getByRole('button', { name: 'Xác nhận đã xếp' }))
+  expect(screen.getByText('Chờ điều phối viên duyệt xác nhận tay rồi mới hoàn tất xếp hàng.')).toBeInTheDocument()
+  const complete = await screen.findByRole('button', { name: 'Hoàn tất xếp hàng' }, NEXT)
+  expect(complete).toBeDisabled()
+  expect(complete).toHaveAccessibleDescription('Mọi kiện đã có kết quả, nhưng còn 1 xác nhận tay chờ điều phối viên duyệt nên chưa hoàn tất xếp hàng được.')
+  expect((await db.getTrip(trip.id)).phase).toBe('loading')
+  view.unmount()
+
+  // Điều phối viên từ chối: kiện quay về bước hiện tại, kèm lý do
+  db.restoreSession('US-0001')
+  await db.rejectManualConfirmation(trip.id, 'VF-001', 'Ảnh chụp cho thấy sai kiện')
+  const rejected = renderWarehouse(`/kho?chuyen=${trip.id}`)
+  expect(await screen.findByRole('heading', { level: 1, name: 'PKG-001-01' }, LOAD)).toBeInTheDocument()
+  const notice = screen.getByRole('alert')
+  expect(notice).toHaveTextContent('Điều phối viên từ chối xác nhận tay kiện PKG-001-01. Kiểm lại kiện này rồi đối chiếu lại.')
+  expect(notice).toHaveTextContent('Lý do: Ảnh chụp cho thấy sai kiện')
+
+  // Gửi lại, lần này được duyệt: kho hoàn tất xếp được
+  await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện' }))
+  const again = within(screen.getByRole('dialog'))
+  await userEvent.click(again.getByRole('tab', { name: 'Xác nhận tay' }))
+  await userEvent.click(again.getByRole('radio', { name: 'QR không đọc được' }))
+  await userEvent.click(again.getByRole('button', { name: 'Gửi xác nhận tay' }))
+  expect(await screen.findByRole('button', { name: 'Hoàn tất xếp hàng' }, NEXT)).toBeDisabled()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  rejected.unmount()
+  db.restoreSession('US-0001')
+  await db.approveManualConfirmation(trip.id, 'VF-002')
+
+  renderWarehouse(`/kho?chuyen=${trip.id}`)
+  const ready = await screen.findByRole('button', { name: 'Hoàn tất xếp hàng' }, LOAD)
+  expect(ready).toBeEnabled()
+  await userEvent.click(ready)
+  expect(await screen.findByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${trip.id}` }, NEXT)).toBeInTheDocument()
+  expect((await db.getTrip(trip.id)).phase).toBe('loaded')
+}, 40_000)
 
 test('a stale approved plan does not start: the worker waits for the dispatcher to approve again', async () => {
   renderWarehouse('/kho?chuyen=TRIP-013')

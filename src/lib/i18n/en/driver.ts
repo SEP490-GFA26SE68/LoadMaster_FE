@@ -64,14 +64,27 @@ export const driver = {
     layer: { floor: 'floor', lower: 'lower layer', upper: 'upper layer' },
   },
   scan: {
-    open: 'Scan to unload',
-    title: 'Scan to unload at stop {number}',
-    description: 'Scan the QR label of each package as it leaves the vehicle. Stop {number}: {done} / {total} packages unloaded.',
+    open: 'Verify unloading',
+    title: 'Verify unloading at stop {number}',
+    description: 'Scan the QR label of each package as it leaves the vehicle, or type the code printed on the label. Stop {number}: {done} / {total} packages unloaded.',
     lastUnloaded: 'Just unloaded {id} · {name}.',
-    optionDescription: '{name} · Unload #{order}',
     wrongStop: 'Package {id} ({name}) belongs to stop {stop} · {stopName}, not this one. Nothing was recorded — keep it on the vehicle.',
     unloaded: '{id} unloaded',
-    viaQr: 'Unloaded · QR scan',
+    manualRecorded: 'Manual confirmation recorded for {id}',
+    manualRecordedDescription: 'It waits for the dispatcher before the stop can be completed.',
+    via: {
+      QR: 'Unloaded · QR scan',
+      CODE: 'Unloaded · typed code',
+      MANUAL_PENDING: 'Unloaded · manual confirmation, awaiting approval',
+      MANUAL_APPROVED: 'Unloaded · manual confirmation approved',
+    },
+  },
+  confirms: {
+    blocked: {
+      one: '{count} manual confirmation of this stop is waiting for the dispatcher — the stop cannot be completed yet.',
+      other: '{count} manual confirmations of this stop are waiting for the dispatcher — the stop cannot be completed yet.',
+    },
+    rejected: 'The dispatcher rejected the manual confirmation; check this package again. Reason: {reason}',
   },
   issue: {
     report: 'Report an issue',

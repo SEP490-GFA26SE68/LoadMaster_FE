@@ -65,12 +65,23 @@ export const warehouse = {
     description: 'Close the cargo door and hand over to the driver.',
   },
   scan: {
-    open: 'Scan package QR',
-    title: 'Scan the QR for step {step}',
-    description: 'Scan the QR label on the package in your hands. This step needs package {id} · {name}.',
-    optionDescription: '{name} · Stop {stop}',
-    wrongPackage: 'Wrong package: you scanned {scanned} ({scannedName}), this step needs {expected} ({expectedName}). Nothing was recorded — set this package aside and scan the right one.',
+    open: 'Verify package',
+    title: 'Verify the package for step {step}',
+    description: 'Scan the QR label on the package in your hands, or type the code printed on the label. This step needs package {id} · {name}.',
+    wrongPackage: 'Wrong package: you gave {scanned} ({scannedName}), this step needs {expected} ({expectedName}). Nothing was recorded — set this package aside and verify the right one.',
+    manualRecorded: 'Manual confirmation recorded for {id}',
+    manualRecordedDescription: 'It waits for the dispatcher before loading can finish.',
     recordedByQr: { one: '{count} package confirmed by QR scan', other: '{count} packages confirmed by QR scan' },
+  },
+  confirms: {
+    pending: { one: '{count} manual confirmation is waiting for the dispatcher.', other: '{count} manual confirmations are waiting for the dispatcher.' },
+    blocked: {
+      one: 'Every package has a result, but {count} manual confirmation is still waiting for the dispatcher, so loading cannot finish yet.',
+      other: 'Every package has a result, but {count} manual confirmations are still waiting for the dispatcher, so loading cannot finish yet.',
+    },
+    overlayWaiting: 'Loading finishes once the dispatcher approves the manual confirmations.',
+    rejected: 'The dispatcher rejected the manual confirmation of package {id}. Check this package again, then verify it.',
+    rejectReason: 'Reason: {reason}',
   },
   seal: {
     title: 'Seal the cargo door',

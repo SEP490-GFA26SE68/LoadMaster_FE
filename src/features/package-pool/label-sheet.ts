@@ -45,13 +45,20 @@ export type LabelsBack =
   | { readonly kind: 'pool'; readonly to: string }
   | { readonly kind: 'trip'; readonly to: string; readonly tripId: string }
   | { readonly kind: 'lookup'; readonly to: string }
+  | { readonly kind: 'loading'; readonly to: string; readonly tripId: string }
 
 /**
  * Đích của nút quay lại: nơi người dùng bấm in — chuyến (`?chuyen=`), Tra cứu kiện (`&tu=tra-cuu`, mở lại đúng kiện khi in một kiện),
- * không thì Kho kiện. Người không mở được đích đó (nhân viên kho không có Kho kiện, Chi tiết chuyến) về Tra cứu kiện.
+ * phiên xếp của kho (`&tu=kho&phien=<mã chuyến>`: in lại nhãn giữa lúc đối chiếu, FE-6-03), không thì Kho kiện. Người không mở được
+ * đích đó (nhân viên kho không có Kho kiện, Chi tiết chuyến) về Tra cứu kiện.
  */
-export function labelsBackTarget(search: URLSearchParams, can: (permission: 'packages.view' | 'trips.view') => boolean): LabelsBack {
+export function labelsBackTarget(
+  search: URLSearchParams,
+  can: (permission: 'packages.view' | 'trips.view' | 'warehouse.operate') => boolean,
+): LabelsBack {
   const selection = labelSelection(search)
+  const session = search.get('tu') === 'kho' ? search.get('phien')?.trim() : undefined
+  if (session && can('warehouse.operate')) return { kind: 'loading', to: `/kho?chuyen=${encodeURIComponent(session)}`, tripId: session }
   if (selection.tripId !== undefined && can('trips.view')) return { kind: 'trip', to: `/chuyen/${encodeURIComponent(selection.tripId)}`, tripId: selection.tripId }
   if (search.get('tu') === 'tra-cuu') return { kind: 'lookup', to: lookupPath(selection.ids?.length === 1 ? selection.ids[0] : undefined) }
   return can('packages.view') && selection.tripId === undefined ? { kind: 'pool', to: '/kien-hang' } : { kind: 'lookup', to: lookupPath() }

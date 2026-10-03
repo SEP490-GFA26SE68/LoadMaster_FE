@@ -66,14 +66,27 @@ export const warehouse = {
     noMissing: 'Không có kiện thiếu.',
     description: 'Đóng cửa thùng và bàn giao cho tài xế.',
   },
-  /** Quét QR khi xếp (luồng 5 Review 1, LM-104): chỉ kiện của bước hiện tại được ghi. */
+  /** Đối chiếu kiện khi xếp (LM-104; ba mức từ FE-6-03): chỉ kiện của bước hiện tại được ghi. */
   scan: {
-    open: 'Quét QR kiện',
-    title: 'Quét QR kiện bước {step}',
-    description: 'Quét nhãn QR trên kiện đang cầm. Bước này cần kiện {id} · {name}.',
-    optionDescription: '{name} · Điểm {stop}',
-    wrongPackage: 'Sai kiện: vừa quét {scanned} ({scannedName}), bước này cần {expected} ({expectedName}). Chưa ghi gì — để kiện này sang bên và quét đúng kiện.',
+    open: 'Đối chiếu kiện',
+    title: 'Đối chiếu kiện bước {step}',
+    description: 'Quét nhãn QR trên kiện đang cầm, hoặc gõ mã in trên nhãn. Bước này cần kiện {id} · {name}.',
+    wrongPackage: 'Sai kiện: vừa đưa {scanned} ({scannedName}), bước này cần {expected} ({expectedName}). Chưa ghi gì — để kiện này sang bên và đối chiếu đúng kiện.',
+    manualRecorded: 'Đã ghi xác nhận tay {id}',
+    manualRecordedDescription: 'Chờ điều phối viên duyệt trước khi xong xếp.',
     recordedByQr: { one: 'Đã xác nhận bằng quét QR {count} kiện', other: 'Đã xác nhận bằng quét QR {count} kiện' },
+  },
+  /** Xác nhận tay của phiên xếp (FE-6-04): còn chờ điều phối viên duyệt thì chưa xong xếp; bị từ chối thì kiểm lại kiện đó. */
+  confirms: {
+    pending: { one: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.', other: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.' },
+    blocked: {
+      one: 'Mọi kiện đã có kết quả, nhưng còn {count} xác nhận tay chờ điều phối viên duyệt nên chưa hoàn tất xếp hàng được.',
+      other: 'Mọi kiện đã có kết quả, nhưng còn {count} xác nhận tay chờ điều phối viên duyệt nên chưa hoàn tất xếp hàng được.',
+    },
+    /** Lớp phủ "Đã xếp" của kiện cuối khi còn xác nhận tay chờ duyệt: chuyến chưa hoàn tất xếp. */
+    overlayWaiting: 'Chờ điều phối viên duyệt xác nhận tay rồi mới hoàn tất xếp hàng.',
+    rejected: 'Điều phối viên từ chối xác nhận tay kiện {id}. Kiểm lại kiện này rồi đối chiếu lại.',
+    rejectReason: 'Lý do: {reason}',
   },
   /** Số seal niêm phong thùng khi xếp xong (luồng 5 Review 1, LM-104): không bắt buộc, có thì ghi vào chuyến. */
   seal: {
