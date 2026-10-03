@@ -9,7 +9,7 @@ export const audit = {
     optimization: { saved: 'Saved optimization result', failed: 'Optimization run returned no result' },
     revision: { approved: 'Approved plan' },
     loading: { started: 'Started loading', missing: 'Reported package missing at warehouse', completed: 'Finished loading', sealed: 'Recorded seal number' },
-    delivery: { started: 'Left for delivery', issue: 'Reported delivery issue', stopCompleted: 'Completed stop', completed: 'Completed trip' },
+    delivery: { started: 'Left for delivery', issue: 'Reported delivery issue', stopCompleted: 'Completed stop', completed: 'Completed trip', etaRisk: 'Delivery at risk of being late' },
     user: {
       created: 'Created account', updated: 'Edited account', locked: 'Locked account', unlocked: 'Unlocked account', deleted: 'Deleted account',
       passwordReset: 'Reset password', passwordChanged: 'Changed password', profileUpdated: 'Edited own profile',
@@ -113,6 +113,9 @@ export const audit = {
       totalKm: 'Distance (km)',
       totalMinutes: 'Duration (min)',
       lateStops: 'Stops expected late',
+      deadlineStatus: 'Deadline status',
+      eta: 'Expected arrival',
+      deadline: 'Deadline',
     },
     fieldNames: {
       name: 'Trip name',

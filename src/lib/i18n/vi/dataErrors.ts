@@ -74,6 +74,8 @@ export const dataErrors = {
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
   VEHICLE_BUSY: 'Xe {vehicleId} đang chạy chuyến {tripId}, hãy chọn xe sẵn sàng.',
   VEHICLE_UNFIT: 'Xe {vehicleId} không chở được hàng của chuyến này.',
+  // Vị trí xe (FE-6-08)
+  LOCATION_INVALID: 'Vị trí xe gửi lên chưa hợp lệ: cần vĩ độ, kinh độ trong khoảng cho phép, tốc độ không âm và hướng từ 0 đến 359 độ.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

@@ -66,6 +66,7 @@ export const dataErrors = {
   VEHICLE_UNCHANGED: 'The trip already uses vehicle {vehicleId}.',
   VEHICLE_BUSY: 'Vehicle {vehicleId} is running trip {tripId}. Choose a ready vehicle.',
   VEHICLE_UNFIT: 'Vehicle {vehicleId} cannot take the cargo of this trip.',
+  LOCATION_INVALID: 'The vehicle position is not valid: it needs a latitude and longitude within range, a speed that is not negative and a heading from 0 to 359 degrees.',
   UNSUPPORTED_FILE_TYPE: 'This file cannot be read. Only .csv or .xlsx files are accepted.',
   EMPTY_FILE: 'The file has no data rows.',
   FILE_TOO_LARGE: 'The file is larger than {maxMb} MB and cannot be imported.',
