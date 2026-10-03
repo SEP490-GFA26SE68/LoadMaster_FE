@@ -12,6 +12,7 @@ export const nav = {
   audit: 'Log',
   packages: 'Package pool',
   requirements: 'Requirements',
+  monitoring: 'Monitoring',
   account: 'Account {name}',
   signOut: 'Sign out',
   profile: 'My profile',
