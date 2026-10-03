@@ -100,7 +100,7 @@ export const fleet = {
     add: 'Add axle',
     remove: 'Delete axle on row {row}',
     empty: 'No axle declared.',
-    comingLater: 'Not used in the calculation yet',
+    usage: 'Used to estimate the front and rear axle loads of a plan. Position X is measured from the front wall of the cargo space, negative under the cab; the axle with the smallest X is the front axle.',
     name: 'Axle name',
     nameRequired: 'Enter the axle name',
     position: 'Position X',

@@ -33,11 +33,11 @@ test('an issue comes back from the contract as its code alone: ratio 0.62 and re
 
 test('strings outside the catalogue come back as explicit unknown entries, in place, instead of failing', () => {
   // a sentence from a backend that does not send codes, a code this frontend does not know yet, an Object property name
-  const fromBackend = ['OVERLAP', 'Support ratio is below the required minimum', 'AXLE_OVERLOAD', 'constructor']
+  const fromBackend = ['OVERLAP', 'Support ratio is below the required minimum', 'TILT_ANGLE_EXCEEDED', 'constructor']
   expect(fromContractWarnings(fromBackend)).toStrictEqual([
     { kind: 'known', code: 'OVERLAP' },
     { kind: 'unknown', raw: 'Support ratio is below the required minimum' },
-    { kind: 'unknown', raw: 'AXLE_OVERLOAD' },
+    { kind: 'unknown', raw: 'TILT_ANGLE_EXCEEDED' },
     { kind: 'unknown', raw: 'constructor' },
   ])
 })

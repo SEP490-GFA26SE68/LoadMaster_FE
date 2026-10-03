@@ -42,7 +42,15 @@ export const issues = {
   LIFO_BLOCKED: '{id} bị kiện giao sau che kín lối dỡ.',
   LIFO_PARTIAL: '{id} bị kiện giao sau che {coverage} lối dỡ.',
   COG_LATERAL: 'Trọng tâm hàng lệch {offsetCm} khỏi đường giữa thùng, vượt ngưỡng {limitCm}.',
+  COG_LONGITUDINAL: {
+    front: 'Trọng tâm hàng dồn về đầu thùng {offsetCm} so với giữa thùng, vượt ngưỡng {limitCm}.',
+    rear: 'Trọng tâm hàng dồn về cửa thùng {offsetCm} so với giữa thùng, vượt ngưỡng {limitCm}.',
+  },
   COG_HIGH: 'Trọng tâm hàng cao {heightCm} so với sàn, vượt ngưỡng {limitCm}.',
+  AXLE_OVERLOAD: {
+    front: 'Tải trục trước {loadKg} vượt giới hạn {limitKg} (quá {overKg}).',
+    rear: 'Tải trục sau {loadKg} vượt giới hạn {limitKg} (quá {overKg}).',
+  },
   MUST_LOAD_UNPLACED: 'Kiện bắt buộc {packageId} chưa được xếp lên xe.',
   LOADING_ORDER_INFEASIBLE: '{id} được xếp trước kiện đỡ nó: {related}.',
   DUPLICATE_INSTANCE_ID: 'Mã {id} bị trùng ở {occurrences} dòng kiện: {related}.',

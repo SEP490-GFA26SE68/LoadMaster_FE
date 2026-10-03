@@ -29,13 +29,15 @@ export const MODEL_ISSUE_CODES = [
   'vehicle.floorPressureLimitKgPerCm2.nonNegative', // floorPressureLimitKgPerCm2 < 0
   'vehicle.door.exceedsInner', // doorWidthCm > innerWidthCm hoặc doorHeightCm > innerHeightCm
   'vehicle.obstacle.outsideInterior', // vật cản vượt ra ngoài lòng thùng (path: obstacles[i])
+  'vehicle.axleLimitKg.positive', // frontAxleLimitKg / rearAxleLimitKg ≤ 0
+  'vehicle.maxCogOffsetRatio.range', // maxCogOffsetRatio ngoài (0, 0,5]
 
   // VehicleObstacle (path bắt đầu bằng obstacles[i])
   'obstacle.dimension.positive', // lengthCm / widthCm / heightCm ≤ 0
   'obstacle.maxTopLoadKg.nonNegative', // maxTopLoadKg < 0
   'obstacle.maxTopLoadKg.notLoadBearing', // loadBearing = false nhưng maxTopLoadKg > 0
 
-  // VehicleAxle (path bắt đầu bằng axles[i]); chưa dùng trong tính toán (Spec 7.10)
+  // VehicleAxle (path bắt đầu bằng axles[i]); đầu vào của mô hình tải trục (FE-5b-03)
   'axle.emptyLoadKg.nonNegative', // emptyLoadKg < 0
   'axle.maxLoadKg.nonNegative', // maxLoadKg < 0
 

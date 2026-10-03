@@ -25,7 +25,11 @@ export type TruckLayout = {
  * Bố cục khung gầm **minh hoạ** (không phải hình học trục có thẩm quyền, AGENTS mục 7): trục lấy `vehicle.axles`
  * (`positionXCm` tính từ vách trước, âm là nằm dưới cabin) khi xe có khai báo; không có thì cầu trước dưới cabin và
  * cầu sau đôi như bản vẽ cũ. Trục đầu tiên theo x là cầu dẫn hướng bánh đơn, các trục sau là cầu chủ động bánh đôi.
- * Không tính tải trục.
+ *
+ * `positionXCm` cùng hệ toạ độ với thùng (FE-5b-03): `toScene(positionXCm)` đặt thẳng lên trục x của nhóm xe, chính là trục X của
+ * placement (`xCm`, vách trước = 0, cửa sau ở `innerLengthCm`) — không cộng thêm độ dời nào. Mô hình tải trục của domain
+ * (`axleLoadsOf`) vì vậy dùng `positionXCm` và hoành độ trọng tâm hàng trên cùng một trục, và cũng coi trục có x nhỏ nhất là trục trước.
+ * Hàm này chỉ vẽ, không tính tải trục; trục mặc định khi xe không khai báo là hình minh hoạ và **không** đưa vào phép tính.
  */
 export function truckLayout(length: number, width: number, axles?: readonly VehicleAxle[]): TruckLayout {
   const positions = axles?.length

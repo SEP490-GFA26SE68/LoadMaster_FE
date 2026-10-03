@@ -23,7 +23,9 @@ export const CONSTRAINT_CODES = [
   'LIFO_BLOCKED',
   'LIFO_PARTIAL',
   'COG_LATERAL',
+  'COG_LONGITUDINAL',
   'COG_HIGH',
+  'AXLE_OVERLOAD',
   'MUST_LOAD_UNPLACED',
   'LOADING_ORDER_INFEASIBLE',
   'DUPLICATE_INSTANCE_ID',
@@ -71,10 +73,14 @@ export type ConstraintParams = {
   LIFO_BLOCKED: { coverage: number }
   /** D-26: mặt sau bị che một phần, 0 < `coverage` < 1 — cảnh báo. */
   LIFO_PARTIAL: { coverage: number }
-  /** D-36: trọng tâm lệch ngang khỏi giữa thùng quá ngưỡng. */
+  /** D-79: trọng tâm hàng lệch ngang khỏi giữa thùng quá `maxCogOffsetRatio` × chiều rộng thùng. */
   COG_LATERAL: { offsetCm: number; limitCm: number }
-  /** D-36: trọng tâm cao quá ngưỡng. */
+  /** D-79: trọng tâm hàng lệch dọc khỏi giữa thùng quá `maxCogOffsetRatio` × chiều dài thùng; `toward` là phía bị lệch về. */
+  COG_LONGITUDINAL: { offsetCm: number; limitCm: number; toward: 'front' | 'rear' }
+  /** Trọng tâm hàng cao quá nửa chiều cao thùng — giữ từ D-36, loại xe không khai ngưỡng này. */
   COG_HIGH: { heightCm: number; limitCm: number }
+  /** D-78: tải của nhóm trục trước / sau (mô hình đòn bẩy) vượt giới hạn — lỗi, chặn Duyệt. */
+  AXLE_OVERLOAD: { group: 'front' | 'rear'; loadKg: number; limitKg: number; overKg: number }
   /** D-24: kiện `mustLoad` nằm trong `unplacedPackages` — chặn Duyệt. */
   MUST_LOAD_UNPLACED: { packageId: string }
   /** D-32: kiện được xếp trước kiện đỡ nó; `relatedIds`: các kiện đỡ bị xếp sau. */

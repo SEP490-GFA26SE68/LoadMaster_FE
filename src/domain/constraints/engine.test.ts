@@ -3,7 +3,7 @@ import { annotatePlacements, applyPose, createConstraintEngine } from '@/domain/
 import { SPEC_CARTON_A, SPEC_CARTON_A_PLACEMENT, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import type { CargoPackage, PackagePlacement } from '@/domain/models'
 
-test('the Spec §12 sample placement has no error, stands fully supported, carries nothing, and only leans sideways', () => {
+test('the Spec §12 sample placement has no error, stands fully supported, carries nothing, and only sits off-centre', () => {
   const engine = createConstraintEngine({
     vehicle: SPEC_TRUCK_6M,
     packages: [SPEC_CARTON_A],
@@ -17,8 +17,12 @@ test('the Spec §12 sample placement has no error, stands fully supported, carri
     supportRatio: supportRatioById.get('PKG-001-01'),
     loadKg: loadById.get('PKG-001-01'),
   }).toStrictEqual({
-    // one carton at y 0..60 puts the centre of gravity at y = 30, 90 cm off the 120 cm centre line (limit 24 cm)
-    issues: [{ code: 'COG_LATERAL', severity: 'warning', params: { offsetCm: 90, limitCm: 24 } }],
+    // one carton at x 120..240, y 0..60 puts the centre of gravity at (180, 30): 90 cm off the 120 cm centre line (limit 15% of 240 =
+    // 36 cm) and 120 cm ahead of the 300 cm mid-length (limit 15% of 600 = 90 cm)
+    issues: [
+      { code: 'COG_LATERAL', severity: 'warning', params: { offsetCm: 90, limitCm: 36 } },
+      { code: 'COG_LONGITUDINAL', severity: 'warning', params: { offsetCm: 120, limitCm: 90, toward: 'front' } },
+    ],
     ownIssues: [],
     supportRatio: 1,
     loadKg: 0,

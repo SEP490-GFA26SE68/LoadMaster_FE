@@ -43,7 +43,7 @@ export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelPr
     {operations.inspectBlockers ? <BlockerPanel tone="dark" target={state.placements.find((p) => p.id === operations.semantics.inspectionId)}
       lifo={operations.semantics.lifo} onSelect={onSelect} onEdit={onEdit} /> : null}
     {operations.kind === 'unloading' ? <p className={MUTED}>{t('viewer.operations.blockers.corridor')}</p> : null}
-    <AxleLoadPanel axles={state.sceneModel.vehicle.axles} />
+    <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={state.placements} />
   </div>
 }
 

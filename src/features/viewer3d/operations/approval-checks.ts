@@ -13,7 +13,7 @@ export function operationApprovalChecks(placements: readonly ScenePlacement[], e
   if (blocked) checks.push({ tone: 'warning', text: t('viewer.operations.approval.lifoBlocked', { count: blocked }) })
   if (partial) checks.push({ tone: 'warning', text: t('viewer.operations.approval.lifoPartial', { count: partial }) })
   if (!blocked && !partial) checks.push({ tone: 'warning', text: t('viewer.operations.approval.lifoClear') })
-  // Spec 7.10: không có số tải trục khi backend chưa tính (LM-037), nên Duyệt không kiểm tải trục.
+  // Tải trục (D-78) không kiểm ở đây: vượt giới hạn là issue `AXLE_OVERLOAD` của constraint engine và chặn Duyệt qua `approvalBlockers`.
   if (edited) checks.push({ tone: 'warning', text: t('viewer.operations.manualEdits') })
   return checks
 }
