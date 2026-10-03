@@ -1,4 +1,5 @@
 import { attachJson, expect, test } from './fixtures'
+import { stageInStore } from './operations-helpers'
 import {
   addPackage, addStop, heightOf, MOCK_DB, navigateInApp, optimizeAndOpenPlanner, optimizeRoute, SEED_TRIP, switchUser, waitForOtherRevision, waitSceneReady,
 } from './spec-flow-helpers'
@@ -167,12 +168,19 @@ for (const device of ['desktop', 'tablet'] as const) {
     }, { db: MOCK_DB, tripId: 'TRIP-015' })
     expect(page.url()).toContain(`revision=${approved.id}`)
     await switchUser(page, 'warehouse')
+    // Vào chuyến là bắt đầu ở bước Soạn hàng (FE-6-02); soạn đủ — ở đây ghi thẳng vào kho của trang — mới tới bước Xếp
+    await navigateInApp(page, '/kho?chuyen=TRIP-015')
+    await expect(page.getByRole('heading', { level: 1, name: `Kiện chưa soạn (${approved.total})`, exact: true })).toBeVisible()
+    await stageInStore(page, 'TRIP-015')
+    await navigateInApp(page, '/kho')
     await navigateInApp(page, '/kho?chuyen=TRIP-015')
     await expect(page.getByText(`Bước 1 / ${approved.total}`)).toBeVisible()
     await expect(page.getByRole('heading', { level: 1, name: approved.first, exact: true })).toBeVisible()
     await expect(page.getByText('MOCK RESULT', { exact: true })).toBeVisible()
-    const confirmLoaded = page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })
+    // Nút chính của bước xếp là đối chiếu kiện: không còn nút xác nhận không đối chiếu (FE-6-05)
+    const confirmLoaded = page.getByRole('button', { name: 'Đối chiếu kiện', exact: true })
     await expect(confirmLoaded).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })).toHaveCount(0)
     if (tablet) {
       heights.confirmLoaded = await heightOf(confirmLoaded)
       expect(heights.confirmLoaded, 'warehouse primary button is a 56 px touch target').toBeGreaterThanOrEqual(56)

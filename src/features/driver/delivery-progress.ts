@@ -41,6 +41,11 @@ export type DeliveryView = {
   readonly issueCount: number
   /** Kiện chưa dỡ và chưa có sự cố: còn kiện như vậy thì chưa hoàn tất được điểm (D-47). */
   readonly remaining: number
+  /**
+   * Kiện còn đối chiếu để dỡ được: chưa dỡ và khách không từ chối. Kiện đã báo sự cố khác (móp, thiếu phụ kiện…) mà khách vẫn nhận thì
+   * vẫn dỡ bằng đối chiếu như thường.
+   */
+  readonly verifiable: number
   /** Xác nhận tay của điểm này còn chờ điều phối viên duyệt: còn chờ thì chưa hoàn tất được điểm (FE-6-04). */
   readonly pendingConfirms: number
   /** Số các điểm đã hoàn tất. */
@@ -86,6 +91,7 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery' |
     unloadedCount: items.filter((item) => item.unloaded).length,
     issueCount: items.filter((item) => item.issue !== undefined).length,
     remaining: items.filter((item) => !item.unloaded && item.issue === undefined).length,
+    verifiable: items.filter((item) => !item.unloaded && !item.returned).length,
     pendingConfirms: mode === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING', stop.number).length : 0,
     completedStops: new Set(progress?.stops.filter((item) => item.completedAt !== undefined).map((item) => item.number)),
   }

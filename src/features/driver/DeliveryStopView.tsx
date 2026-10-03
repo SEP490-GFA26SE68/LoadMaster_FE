@@ -85,7 +85,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
           </div>
 
           <div className="flex flex-none flex-wrap gap-2 *:grow">
-            {arrived && view.remaining > 0 ? (
+            {arrived && view.verifiable > 0 ? (
               <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
                 <ScanLine strokeWidth={2} />
                 {t('driver.scan.open')}

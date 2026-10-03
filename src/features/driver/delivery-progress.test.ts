@@ -60,7 +60,8 @@ test('delivering: the first stop not completed is current; an issue counts as ha
   // Giờ đến là của điểm đang giao; điểm chưa bấm "Đã đến" thì chưa có
   expect(view?.arrivedAt).toBe('2026-09-14T02:40:00.000Z')
   expect(deliveryView(trip('delivering', delivery()), stops)?.arrivedAt).toBeUndefined()
-  expect([view?.unloadedCount, view?.issueCount, view?.remaining]).toStrictEqual([1, 1, 0])
+  // PKG-002-01 khách từ chối nên không còn gì để đối chiếu dỡ
+  expect([view?.unloadedCount, view?.issueCount, view?.remaining, view?.verifiable]).toStrictEqual([1, 1, 0, 0])
   expect([...(view?.completedStops ?? [])]).toStrictEqual([1])
 })
 
@@ -84,7 +85,7 @@ test('each item carries how it was verified; pending manual confirmations of the
   expect(view?.items.map((entry) => [entry.item.id, entry.unloaded, entry.verification?.id])).toStrictEqual([
     ['PKG-001-01', true, 'VF-001'], ['PKG-001-02', true, 'VF-002'], ['PKG-001-03', false, 'VF-003'],
   ])
-  expect([view?.pendingConfirms, view?.remaining]).toStrictEqual([1, 1])
+  expect([view?.pendingConfirms, view?.remaining, view?.verifiable]).toStrictEqual([1, 1, 1])
   // Kiện khách từ chối sau khi đã dỡ (kho bỏ dấu đã dỡ) không còn mang cách đối chiếu cũ
   const refused = delivery({ stops: [{ number: 1, unloadedIds: ['PKG-001-02'] }, { number: 2, unloadedIds: [] }, { number: 3, unloadedIds: [] }], issues: [issue(1, 'PKG-001-01', 'refused')] })
   expect(deliveryView({ ...trip('delivering', refused), verifications }, stops)?.items.map((entry) => [entry.returned, entry.verification?.id])).toStrictEqual([

@@ -1,11 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
+import { loadTripInStore, stageInStore } from './operations-helpers'
 import { heightOf, MOCK_DB, navigateInApp } from './spec-flow-helpers'
 
 /**
- * LM-104, luồng 5 (Execute): kho đối chiếu kiện khi xếp bằng mã trên nhãn (đúng kiện thì sang bước sau, sai kiện thì nói rõ và không
- * ghi; hộp đối chiếu ba mức từ FE-6-03 — máy chạy test không có BarcodeDetector nên đi mức gõ mã), xếp xong ghi số seal; tài xế đối
- * chiếu khi dỡ (kiện của điểm khác được giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
+ * LM-104, luồng 5 (Execute; FE-6-05, FE-6-06): kho đã soạn đủ thì xếp theo thứ tự, mỗi kiện phải đối chiếu bằng mã trên nhãn (đúng
+ * kiện thì sang bước sau, sai kiện hoặc sai thứ tự thì nói rõ và không ghi; hộp đối chiếu ba mức từ FE-6-03 — máy chạy test không có
+ * BarcodeDetector nên đi mức gõ mã), xếp xong ghi số seal; tài xế xuất phát, bấm Đã đến rồi đối chiếu khi dỡ (kiện của điểm khác được
+ * giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
  * xoá bị chặn khi còn xe, xoá). Kho dữ liệu nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang giữa chừng.
  */
 test.use({ collectConsoleErrors: true })
@@ -13,38 +15,40 @@ test.use({ collectConsoleErrors: true })
 const SAMPLES = '/src/test/mock-db-samples.ts'
 
 /**
- * Chuyến hai thùng (`PKG-001-01` điểm 3 xếp trước, `PKG-002-01` điểm 1 xếp sau) đã duyệt; `loaded` thì kho đã xếp xong. Trả mã chuyến
- * và mã QR của từng kiện.
+ * Chuyến hai thùng (`PKG-001-01` điểm 3 xếp trước, `PKG-002-01` điểm 1 xếp sau) đã duyệt: `staged` — kho đã bắt đầu và soạn đủ, đang ở
+ * bước Xếp; `loaded` — kho đã xếp xong. Trả mã chuyến và mã QR của từng kiện.
  */
-async function twoCartonTrip(page: Page, stage: 'approved' | 'loaded') {
-  return page.evaluate(async ({ db, samples, stage }) => {
+async function twoCartonTrip(page: Page, stage: 'staged' | 'loaded') {
+  const created = await page.evaluate(async ({ db, samples, stage }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const sample = (await import(samples)) as typeof import('@/test/mock-db-samples')
     const store = getMockDb()
     const trip = await store.createTrip({ ...sample.twoCartonTrip(), driverId: 'US-0004' })
     const revision = await store.addRevision({ tripId: trip.id, request: sample.twoCartonRequest(), result: sample.twoCartonResult() })
     await store.approveRevision(revision.id, [])
-    if (stage === 'loaded') {
-      await store.startLoading(trip.id)
-      for (const id of ['PKG-001-01', 'PKG-002-01']) await store.recordLoadingStep(trip.id, { packageInstanceId: id, outcome: 'loaded' })
-      await store.completeLoading(trip.id)
-    }
+    if (stage === 'staged') await store.startLoading(trip.id)
     const labels = await store.listTripLabels(trip.id)
     return { tripId: trip.id, token: Object.fromEntries(labels.map((label) => [label.packageInstanceId, label.qrToken])) }
   }, { db: MOCK_DB, samples: SAMPLES, stage })
+  if (stage === 'staged') await stageInStore(page, created.tripId)
+  else await loadTripInStore(page, created.tripId)
+  return created
 }
 
-test('tablet: the warehouse verifies a wrong package (explained, not recorded), the right ones by sender code and QR code, and records the seal', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
+test('tablet: at the Loading step every package must be verified — a wrong package is explained and not recorded, the right ones load by sender code and QR code — then the seal is recorded', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
   await expect(page.getByRole('heading', { name: 'Chuyến cần xếp' })).toBeVisible()
-  const { tripId, token } = await twoCartonTrip(page, 'approved')
+  const { tripId, token } = await twoCartonTrip(page, 'staged')
   await navigateInApp(page, `/kho?chuyen=${tripId}`)
 
   const heading = (id: string) => page.getByRole('heading', { level: 1, name: id, exact: true })
   await expect(heading('PKG-001-01')).toBeVisible()
   const scan = page.getByRole('button', { name: 'Đối chiếu kiện', exact: true })
   expect(await heightOf(scan)).toBeGreaterThanOrEqual(56)
-  await expect(page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })).toBeVisible()
+  // Không còn nút xác nhận không đối chiếu, không báo thiếu ở bước xếp; "Kiện hỏng" là nút phụ 56 px (FE-6-05)
+  await expect(page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /thiếu|không có ở kho/i })).toHaveCount(0)
+  expect(await heightOf(page.getByRole('button', { name: 'Kiện hỏng', exact: true }))).toBeGreaterThanOrEqual(56)
 
   // Gõ mã QR của kiện xếp sau: kho từ chối, hộp nêu kiện vừa đưa và kiện bước này cần
   await scan.tap()
@@ -57,7 +61,7 @@ test('tablet: the warehouse verifies a wrong package (explained, not recorded), 
   for (const control of [dialog.getByRole('tab', { name: 'Xác nhận tay', exact: true }), code, submit]) expect(await heightOf(control)).toBeGreaterThanOrEqual(56)
   await code.fill(token['PKG-002-01'] ?? '')
   await submit.tap()
-  await expect(dialog.getByRole('alert')).toContainText('Sai kiện: vừa đưa PKG-002-01')
+  await expect(dialog.getByRole('alert')).toContainText('Sai kiện hoặc sai thứ tự: vừa đưa PKG-002-01')
   await expect(dialog.getByRole('alert')).toContainText('bước này cần PKG-001-01')
   const afterWrong = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
@@ -79,7 +83,8 @@ test('tablet: the warehouse verifies a wrong package (explained, not recorded), 
   await last.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }).fill((token['PKG-002-01'] ?? '').toLowerCase())
   await last.getByRole('button', { name: 'Đối chiếu mã', exact: true }).tap()
   await expect(page.getByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${tripId}` })).toBeVisible()
-  await expect(page.getByText('Đã xác nhận bằng quét QR 2 kiện', { exact: true })).toBeVisible()
+  await expect(page.getByText('Xếp xong — chờ xuất phát. Đóng cửa thùng và bàn giao cho tài xế.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Đã đối chiếu bằng nhãn 2 kiện', { exact: true })).toBeVisible()
 
   // Niêm phong: số seal không bắt buộc, ghi thì hiện trên màn xếp xong
   const seal = page.getByRole('textbox', { name: 'Số seal' })
@@ -97,25 +102,33 @@ test('tablet: the warehouse verifies a wrong package (explained, not recorded), 
       verified: trip.verifications?.map((entry) => `${entry.packageInstanceId}:${entry.method}:${entry.by}`),
     }
   }, { db: MOCK_DB, id: tripId })
-  // Mỗi lần đối chiếu ghi cách và người làm (FE-6-03): cả hai kiện gõ mã, do nhân viên kho demo
+  // Mỗi lần đối chiếu ghi cách và người làm (FE-6-03): hai lần soạn bằng mã QR, hai lần xếp gõ mã, do nhân viên kho demo
   expect(store).toStrictEqual({
-    phase: 'loaded', seal: 'SEAL-240927', via: ['PKG-001-01:qr', 'PKG-002-01:qr'], verified: ['PKG-001-01:CODE:US-0003', 'PKG-002-01:CODE:US-0003'],
+    phase: 'loaded', seal: 'SEAL-240927', via: ['PKG-001-01:qr', 'PKG-002-01:qr'],
+    verified: ['PKG-001-01:QR:US-0003', 'PKG-002-01:QR:US-0003', 'PKG-001-01:CODE:US-0003', 'PKG-002-01:CODE:US-0003'],
   })
   expect(browserErrors).toStrictEqual([])
 })
 
-test('phone: the driver verifies a package of another stop (explained) and unloads the right one by its typed code', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
+test('phone: the driver departs, taps Arrived, verifies a package of another stop (explained) and unloads the right one by its typed code', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
   await login('/tai-xe', 'driver')
   await expect(page.getByRole('heading', { level: 1, name: 'Chuyến của tôi' })).toBeVisible()
   const { tripId, token } = await twoCartonTrip(page, 'loaded')
   await navigateInApp(page, `/tai-xe/diem-giao?chuyen=${tripId}`)
 
   await expect(page.getByRole('heading', { level: 1, name: 'Điểm 1 / 3', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).tap()
+  await page.getByRole('button', { name: 'Xuất phát', exact: true }).tap()
+  // Chưa bấm "Đã đến" thì chưa có lối dỡ hàng (FE-6-06)
+  const arrive = page.getByRole('button', { name: 'Đã đến điểm 1', exact: true })
+  await expect(arrive).toBeVisible()
+  expect(await heightOf(arrive)).toBeGreaterThanOrEqual(56)
   const scan = page.getByRole('button', { name: 'Đối chiếu kiện dỡ', exact: true })
+  await expect(scan).toHaveCount(0)
+  await arrive.tap()
+  await expect(page.getByText(/^Đã đến điểm 1 lúc \d\d:\d\d\.$/)).toBeVisible()
   expect(await heightOf(scan)).toBeGreaterThanOrEqual(56)
-  // Đánh dấu tay vẫn còn
-  await expect(page.getByRole('button', { name: 'Đánh dấu đã dỡ PKG-002-01', exact: true })).toBeVisible()
+  // Dòng kiện không có nút đánh dấu tay: dỡ chỉ qua đối chiếu
+  await expect(page.getByRole('list', { name: 'Cửa hàng Bách Hoá Xanh Thủ Đức' }).getByRole('button')).toHaveCount(0)
 
   await scan.tap()
   const dialog = page.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' })
@@ -139,9 +152,9 @@ test('phone: the driver verifies a package of another stop (explained) and unloa
 
   const stops = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
-    return (await getMockDb().getTrip(id)).delivery?.stops.map((stop) => [stop.number, stop.unloadedIds, stop.qrConfirmedIds ?? []])
+    return (await getMockDb().getTrip(id)).delivery?.stops.map((stop) => [stop.number, stop.unloadedIds, stop.qrConfirmedIds ?? [], stop.arrivedAt !== undefined])
   }, { db: MOCK_DB, id: tripId })
-  expect(stops).toStrictEqual([[1, ['PKG-002-01'], ['PKG-002-01']], [2, [], []], [3, [], []]])
+  expect(stops).toStrictEqual([[1, ['PKG-002-01'], ['PKG-002-01'], true], [2, [], [], false], [3, [], [], false]])
   expect(browserErrors).toStrictEqual([])
 })
 
@@ -157,7 +170,7 @@ test('the trip report of TRIP-007 shows the recorded totals, opens from the acti
     const store = getMockDb()
     const trip = await store.getTrip('TRIP-007')
     const report = tripReport(trip, await store.getRevision(trip.loading?.revisionId ?? ''))
-    return { delivered: report.packages.delivered, loaded: report.packages.planned - report.packages.missing, planned: report.packages.planned, issues: report.issues.length, stops: report.stops.length }
+    return { delivered: report.packages.delivered, loaded: report.packages.planned - report.packages.damaged, planned: report.packages.planned, issues: report.issues.length, stops: report.stops.length }
   }, { db: MOCK_DB })
   expect(expected.issues).toBe(1)
   await expect(page.getByRole('group', { name: 'Điểm giao đã xong' })).toContainText(`${expected.stops} / ${expected.stops}`)

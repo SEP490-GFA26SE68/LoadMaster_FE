@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './fixtures'
+import { unloadStopInStore } from './operations-helpers'
 import { MOCK_DB, navigateInApp, overflowingText } from './spec-flow-helpers'
 
 /**
@@ -20,18 +21,12 @@ async function centerOf(marker: Locator) {
 
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
 
-/** Tài xế dỡ hết kiện của điểm `stop` rồi hoàn tất điểm. */
+/** Tài xế bấm "Đã đến" ở điểm `stop`, dỡ hết kiện của điểm bằng đối chiếu rồi hoàn tất điểm (FE-6-06). */
 async function driverCompletesStop(page: Page, stop: number) {
+  await unloadStopInStore(page, TRIP, stop)
   await page.evaluate(async ({ url, tripId, stopNumber }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
-    const db = getMockDb()
-    const trip = await db.getTrip(tripId)
-    const plan = await db.getRevision(trip.loading?.revisionId ?? '')
-    const prefixes = plan.request.packages.filter((pkg) => pkg.deliveryStop === stopNumber).map((pkg) => `${pkg.id}-`)
-    for (const { packageInstanceId } of plan.result.placements) {
-      if (prefixes.some((prefix) => packageInstanceId.startsWith(prefix))) await db.recordUnload(tripId, stopNumber, packageInstanceId, true)
-    }
-    await db.completeStop(tripId, stopNumber)
+    await getMockDb().completeStop(tripId, stopNumber)
   }, { url: MOCK_DB, tripId: TRIP, stopNumber: stop })
 }
 
