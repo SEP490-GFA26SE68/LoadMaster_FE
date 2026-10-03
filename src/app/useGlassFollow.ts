@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 /**
  * Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (V2, vật liệu kính cyan của V2.3 ở `.glass-follow`). Một thanh một chỉ báo:
  * bám mục đang hover hoặc đang focus, trả về mục đang mở khi con trỏ rời thanh hoặc
- * focus đi ra ngoài, neo lại khi thanh đổi kích thước.
+ * focus đi ra ngoài, neo lại khi thanh hoặc một mục đổi kích thước.
  *
  * Chỉ nghe `pointerenter` và `focus` — không nghe `pointermove`, không vòng lặp frame.
  * Chuyển động chỉ bật sau khi đã đặt đúng chỗ ở frame đầu (`data-follow="ready"`), nếu
@@ -49,6 +49,9 @@ export function useGlassFollow<T extends HTMLElement>() {
     nav.addEventListener('focusout', onFocusOut)
     const observer = new ResizeObserver(toActive)
     observer.observe(nav)
+    // Mục đổi bề rộng mà thanh không đổi (font tải xong, đổi ngôn ngữ khi thanh đang `flex-1`): quan sát cả từng mục, không thì chỉ
+    // báo đứng lệch khỏi mục đang mở cho tới lần rê chuột kế tiếp
+    for (const link of links) observer.observe(link)
 
     toActive()
     const frame = requestAnimationFrame(() => {
