@@ -32,6 +32,11 @@ export const readiness = {
       warn: '{packages} kiện khác loại hàng, đã ghi lý do chở chung',
       fail: '{packages} kiện khác loại hàng của chuyến, chưa ghi lý do chở chung',
     },
+    ROUTE_PLANNED: {
+      label: 'Tuyến',
+      pass: 'Đã tối ưu tuyến: thứ tự {stops} điểm giao đã chốt',
+      fail: 'Chưa tối ưu tuyến. Bấm "Tối ưu tuyến" ở sơ đồ tuyến để chốt thứ tự điểm giao',
+    },
     WEIGHT_WITHIN_PAYLOAD: { label: 'Khối lượng', pass: '{total} / {payload}', fail: '{total} vượt tải trọng {payload}' },
     VOLUME_WITHIN_CARGO: { label: 'Thể tích', pass: '{total} / {cargo}', fail: '{total} vượt thể tích thùng {cargo}' },
   },
