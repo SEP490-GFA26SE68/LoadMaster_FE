@@ -35,10 +35,43 @@ test('the run history lists every run newest first, the failed one with its reas
   const rows = await history.findAllByRole('row')
   expect(rows).toHaveLength(3)
   expect(rows[1]).toHaveTextContent('RUN-002')
+  expect(rows[1]).toHaveTextContent('EP + DBLF (mock)')
+  // Lần chạy ra ba phương án ứng viên (FE-5b-05): mỗi phương án một liên kết mở Planner, kèm tỷ lệ thể tích; bản được duyệt là C
+  const run = within(rows[1] as HTMLElement)
+  expect(run.getAllByRole('link', { name: /^Mở phương án / }).map((link) => [link.textContent, link.getAttribute('href')])).toStrictEqual([
+    ['A · REV-001-A', `/chuyen/${TRIP_ID}/phuong-an?revision=REV-001-A`],
+    ['B · REV-001-B', `/chuyen/${TRIP_ID}/phuong-an?revision=REV-001-B`],
+    ['C · REV-001', `/chuyen/${TRIP_ID}/phuong-an?revision=REV-001`],
+  ])
+  expect(rows[1]).toHaveTextContent('40,8% · xếp đủ')
   expect(rows[1]).toHaveTextContent('Đã duyệt')
-  expect(within(rows[1] as HTMLElement).getByRole('link', { name: 'Mở phương án REV-001 trong Planner' })).toBeInTheDocument()
-  expect(rows[2]).toHaveTextContent('Cân bằng tải trục')
+  expect(rows[1]).toHaveTextContent('Phương án C')
+  expect(run.getByRole('link', { name: 'So sánh các phương án của lần chạy RUN-002' })).toHaveAttribute('href', `/chuyen/${TRIP_ID}/so-sanh?lan-chay=RUN-002`)
+  expect(rows[2]).toHaveTextContent('EP + DBLF (mock)')
   expect(rows[2]).toHaveTextContent('Dịch vụ tối ưu không phản hồi')
+  expect(within(rows[2] as HTMLElement).queryByRole('link')).toBeNull()
+})
+
+test('the setup no longer asks for an objective or an algorithm: it lists the three plans of a run and names the method that runs (FE-5b-05)', async () => {
+  renderSetup()
+  const plans = within(await screen.findByRole('list', { name: 'Ba phương án mỗi lần chạy' }))
+  expect(plans.getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
+    'APhương án A — Tối đa thể tíchDồn hàng sát vách trong, dùng ít chiều dài thùng nhất.',
+    'BPhương án B — Cân bằng tải trụcĐặt khối hàng sao cho hai nhóm trục cùng mức tải.',
+    'CPhương án C — Ít dỡ-xếp lạiXếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
+  ])
+  expect(screen.queryByRole('radio')).toBeNull()
+  expect(document.querySelector('[data-run-algorithm]')).toHaveTextContent('EP + DBLF (mock)')
+})
+
+test('a draft trip cannot be optimized: the route check fails, links back to the trip, and the reason sits on the button (FE-5b-05)', async () => {
+  renderSetup(undefined, 'TRIP-014')
+  const summary = within(await screen.findByRole('region', { name: 'Kiểm tra trước khi tối ưu' }))
+  expect(await summary.findByText('Chuyến còn Nháp. Tối ưu tuyến ở Chi tiết chuyến để chốt thứ tự điểm giao trước khi xếp hàng.')).toBeInTheDocument()
+  expect(summary.getByRole('link', { name: 'Tới Chi tiết chuyến' })).toHaveAttribute('href', '/chuyen/TRIP-014')
+  expect(summary.getByRole('alert')).toHaveTextContent('Còn lỗi: sửa các mục đánh dấu đỏ để tối ưu.')
+  expect(screen.getByRole('button', { name: 'Tối ưu' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Tối ưu' })).toHaveAccessibleDescription('Chưa chạy được: 1 lỗi cần sửa ở Tuyến.')
 })
 
 test('a package with no usable orientation disables Optimize and the summary links to exactly that package', async () => {

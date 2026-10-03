@@ -10,26 +10,28 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { validateRequest } from '@/domain/constraints'
 import { TripFormSection } from '@/features/trips/TripFormSection'
-import { formatIssue, useFormat, useT } from '@/lib/i18n'
-import { OPTIMIZATION_ALGORITHMS, OPTIMIZATION_OBJECTIVES } from '@/lib/mock-db'
+import { dataErrorMessage, formatIssue, useFormat, useT } from '@/lib/i18n'
+import { MockDbError } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
 import { OptimizationSetupHero } from './OptimizationSetupHero'
-import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, splitSetup, type SetupValues } from './optimization-request'
+import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, type SetupValues } from './optimization-request'
 import { RequestIssueList } from './RequestIssueList'
 import { RunHistoryCard } from './RunHistoryCard'
 import { buildSetupChecklist } from './setup-checklist'
 import { SetupAfterSteps } from './SetupAfterSteps'
 import { SetupContextPanels } from './SetupContextPanels'
 import { SetupLimitsPanel } from './SetupLimitsPanel'
-import { SetupAdvancedFields, SetupRequirementFields } from './SetupSettingsFields'
+import { SetupAdvancedFields, SetupCandidateList, SetupRequirementFields } from './SetupSettingsFields'
 import { useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
 /**
  * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
  * và nút primary duy nhất "Tối ưu" (khoá khi còn lỗi, lý do ngay trên nút). Cột trái một thẻ ba mục đánh số rồi bảng "Lần chạy tối ưu"
- * (LM-104); cột phải 416 px: "Hai giới hạn", danh sách kiểm tra trực tiếp, "Sau khi chạy". Chạy xong mở Planner với revision mới.
+ * (LM-104); cột phải 416 px: "Hai giới hạn", danh sách kiểm tra trực tiếp, "Sau khi chạy". Mỗi lần chạy ra ba phương án ứng viên
+ * (FE-5b-05, D-77): màn không còn ô chọn mục tiêu và thuật toán, chỉ chạy khi chuyến đã tối ưu tuyến, và chạy xong mở màn So sánh của
+ * lần chạy đó (`?lan-chay=`).
  * Chuyến đã sang pha vận hành (D-45, LM-088): banner nói lý do, không đổi xe, nút Tối ưu tắt — kho cũng từ chối `TRIP_LOCKED`.
  */
 export function OptimizationSetupPage() {
@@ -49,8 +51,6 @@ export function OptimizationSetupPage() {
     randomSeed: z.number({ error: t('optimization.seedInteger') }).int(t('optimization.seedInteger')).min(0, t('optimization.seedInteger')).optional(),
     enforceLifo: z.boolean(),
     prioritizeLowCenterOfGravity: z.boolean(),
-    objective: z.enum(OPTIMIZATION_OBJECTIVES),
-    algorithm: z.enum(OPTIMIZATION_ALGORITHMS),
   }), [t])
   const form = useForm<SetupValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_SETUP, mode: 'onChange' })
   const watched = useWatch({ control: form.control })
@@ -61,9 +61,10 @@ export function OptimizationSetupPage() {
 
   const setup = query.data
   const locked = setup !== undefined && setup.trip.phase !== 'planning'
-  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, splitSetup(values).settings) : null
+  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, values) : null
   const summary = request && setup ? groupRequestIssues(validateRequest(request), { tripId, vehicleId: setup.vehicle.id }) : null
-  const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary) : null
+  // Xếp 3D theo tuyến: chuyến phải đã tối ưu tuyến (Đã lập kế hoạch) — kho cũng từ chối `ROUTE_NOT_PLANNED`
+  const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary, setup.trip.routePlan !== undefined) : null
   const formErrors = (errors.timeLimitSeconds ? 1 : 0) + (errors.randomSeed ? 1 : 0)
   const blockedReason = !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
     ? t('optimization.blockedHint', {
@@ -78,9 +79,8 @@ export function OptimizationSetupPage() {
   function start(submitted: SetupValues) {
     if (!setup) return
     setFailure(null)
-    const { settings, run: choice } = splitSetup(submitted)
-    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, settings)
-    run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi', run: choice }, {
+    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, submitted)
+    run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
       onSuccess: (outcome) => {
         if (outcome.kind === 'failed') {
           setFailure({
@@ -92,14 +92,19 @@ export function OptimizationSetupPage() {
           })
           return
         }
-        const unplaced = outcome.revision.result.unplacedPackages.length
+        // Kết quả một phần: không phương án nào xếp hết — báo số kiện chưa xếp của phương án xếp được nhiều nhất
+        const unplaced = Math.min(...outcome.revisions.map((revision) => revision.result.unplacedPackages.length))
         if (unplaced > 0) toast.warning(t('optimization.partial', { count: unplaced }))
         else toast.success(t('optimization.done'))
-        void navigate(`/chuyen/${tripId}/phuong-an?revision=${outcome.revision.jobId}`)
+        void navigate(`/chuyen/${tripId}/so-sanh?lan-chay=${encodeURIComponent(outcome.run.id)}`)
       },
       onError: (error) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
           toast.info(t('optimization.running.cancelled'))
+          return
+        }
+        if (error instanceof MockDbError) {
+          toast.error(dataErrorMessage(error, t))
           return
         }
         setFailure({ kind: 'service', code: error instanceof OptimizationServiceError ? error.code : 'MOCK_FAILED' })
@@ -114,7 +119,7 @@ export function OptimizationSetupPage() {
       <OptimizationSetupHero
         tripId={tripId}
         setup={setup}
-        disabled={locked || !summary?.canRun || run.isPending || !isValid}
+        disabled={locked || !checklist?.canRun || run.isPending || !isValid}
         blockedReason={run.isPending ? null : blockedReason}
         onRun={() => void handleRun()}
       >
@@ -138,16 +143,19 @@ export function OptimizationSetupPage() {
               <TripFormSection number={2} title={t('optimization.requirementsTitle')} description={t('optimization.requirementsHint')}>
                 <SetupRequirementFields form={form} />
               </TripFormSection>
+              <TripFormSection number={3} title={t('optimization.candidatesTitle')} description={t('optimization.candidatesHint')}>
+                <SetupCandidateList />
+              </TripFormSection>
               <section className="border-t border-line-soft px-7 pt-5.5 pb-6.5 max-sm:px-4">
                 <SetupAdvancedFields form={form} />
               </section>
             </Card>
-            {/* Lịch sử lần chạy (LM-104): mục tiêu, thuật toán, kết quả và phương án đã duyệt hay còn chờ duyệt */}
+            {/* Lịch sử lần chạy (LM-104): thuật toán, ba phương án của từng lần chạy và lần chạy đã duyệt hay còn chờ duyệt */}
             <RunHistoryCard tripId={tripId} />
           </div>
           <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-0">
             <SetupLimitsPanel setup={setup} />
-            <RequestIssueList tripId={tripId} setup={setup} checklist={checklist} canRun={summary.canRun} locked={locked} />
+            <RequestIssueList tripId={tripId} setup={setup} checklist={checklist} canRun={checklist.canRun} locked={locked} />
             <SetupAfterSteps />
           </aside>
         </div>

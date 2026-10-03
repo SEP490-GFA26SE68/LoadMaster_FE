@@ -16,17 +16,18 @@ export const optimization = {
   lifoHint: 'Kiện của điểm giao đến trước nằm gần cửa hơn để lấy ra trước.',
   lowCenterHint: 'Tâm khối lượng của hàng đã xếp, không phải của cả xe.',
   advancedTitle: 'Thiết lập nâng cao',
-  advancedHint: 'Mục tiêu, thuật toán, thời gian giới hạn và random seed.',
-  /** Một dòng giải thích dưới từng mục tiêu / thuật toán (LM-104); tên nằm ở nhánh `runs`. */
+  advancedHint: 'Thuật toán, thời gian giới hạn và random seed.',
+  /** Ba phương án ứng viên mỗi lần chạy (FE-5b-05, D-77): một dòng giải thích cho từng mục tiêu; tên nằm ở nhánh `runs`. */
+  candidatesTitle: 'Ba phương án mỗi lần chạy',
+  candidatesHint: 'Một lần chạy tạo đủ ba phương án để so sánh rồi chọn một bản duyệt.',
+  candidateLabel: 'Phương án {label}',
   objectiveHints: {
-    MAX_VOLUME: 'Xếp được nhiều hàng nhất trong lòng thùng.',
-    AXLE_BALANCE: 'Phân khối lượng đều lên các trục xe.',
+    MAX_VOLUME: 'Dồn hàng sát vách trong, dùng ít chiều dài thùng nhất.',
+    AXLE_BALANCE: 'Đặt khối hàng sao cho hai nhóm trục cùng mức tải.',
+    MIN_REHANDLING: 'Xếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
   },
-  algorithmHints: {
-    EP_DBLF: 'Đặt từng kiện vào điểm trống sâu – thấp – trái nhất; chạy nhanh.',
-    GENETIC_ALGORITHM: 'Thử nhiều thứ tự xếp, giữ phương án tốt nhất; chạy lâu hơn.',
-  },
-  runChoiceNote: 'Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT. Mục tiêu và thuật toán được lưu cùng lần chạy.',
+  /** Thuật toán không chọn tay: mock chạy cùng một thuật toán cho cả ba phương án. */
+  algorithmNote: 'Cả ba phương án chạy cùng thuật toán này. Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT.',
   history: {
     description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
   },
@@ -42,7 +43,7 @@ export const optimization = {
   afterTitle: 'Sau khi chạy',
   /** Ba bước "Sau khi chạy" (V2.3): bước cuối là điều phối viên duyệt trong Planner (FE-0-07). */
   afterSteps: {
-    view: 'Xem phương án',
+    view: 'So sánh ba phương án, mở một bản trong Planner',
     check: 'Kiểm tra kiện chưa xếp và cảnh báo',
     approve: 'Duyệt để kho thực hiện',
   },
@@ -66,7 +67,7 @@ export const optimization = {
   seedInteger: 'Nhập số nguyên không âm.',
   summaryTitle: 'Kiểm tra trước khi tối ưu',
   summaryClear: 'Không có lỗi — có thể tối ưu.',
-  groups: { vehicle: 'Xe', packages: 'Kiện', payload: 'Tải trọng' },
+  groups: { route: 'Tuyến', vehicle: 'Xe', packages: 'Kiện', payload: 'Tải trọng' },
   blocked: 'Còn lỗi: sửa các mục đánh dấu đỏ để tối ưu.',
   /** Lý do nút Tối ưu tắt, ngay trên nút ở dải trời (V2.3 `ThietLapToiUuLoi.jpg`); `places` là tên các nhóm có lỗi. */
   blockedHint: {
@@ -76,6 +77,11 @@ export const optimization = {
   /** Danh sách kiểm tra trực tiếp (V2.3, LM-106): mục đạt kèm số của chuyến, mục lỗi kèm nhãn Lỗi / Cảnh báo. */
   check: {
     warnings: 'Có cảnh báo — vẫn tối ưu được.',
+    /** Xếp 3D theo tuyến (FE-5b-05): chỉ chạy khi chuyến Đã lập kế hoạch. */
+    route: 'Chuyến đã tối ưu tuyến',
+    routeDetail: { one: '{count} điểm giao theo thứ tự đã chốt', other: '{count} điểm giao theo thứ tự đã chốt' },
+    routeMissing: 'Chuyến còn Nháp. Tối ưu tuyến ở Chi tiết chuyến để chốt thứ tự điểm giao trước khi xếp hàng.',
+    routeFix: 'Tới Chi tiết chuyến',
     vehicle: 'Lòng thùng, cửa và vật cản hợp lệ',
     vehicleDetail: '{vehicle} · cửa {door} không lớn hơn lòng thùng',
     dimensions: 'Kích thước và hướng đặt hợp lệ',
@@ -96,14 +102,17 @@ export const optimization = {
   },
   running: {
     title: 'Đang tối ưu phương án xếp hàng',
-    progress: 'Đã xét {placed} / {total} kiện',
+    progress: 'Đã xong {done} / {count} phương án',
+    /** Tiến trình của từng phương án: số kiện đã xét trong lượt xếp của mục tiêu đó. */
+    planProgress: 'Đã xét {placed} / {total} kiện',
+    planWaiting: 'Chờ',
     elapsed: 'Đã chạy {seconds} giây',
     cancel: 'Huỷ',
-    note: 'Huỷ thì không tạo phương án mới.',
+    note: 'Huỷ thì không tạo phương án nào.',
     limit: 'Thời gian giới hạn {seconds} giây',
     trip: 'Chuyến',
     choice: 'Thiết lập',
-    choiceValue: '{objective} · {algorithm} · random seed {seed}',
+    choiceValue: '{algorithm} · random seed {seed}',
     requirements: 'Yêu cầu',
     requirementsValue: 'LIFO {lifo} · trọng tâm thấp {lowCenter}',
     on: 'bật',
@@ -126,5 +135,5 @@ export const optimization = {
     one: 'Kết quả một phần: {count} kiện chưa xếp.',
     other: 'Kết quả một phần: {count} kiện chưa xếp.',
   },
-  done: 'Đã tối ưu xong; đang mở phương án.',
+  done: 'Đã tối ưu xong ba phương án; đang mở màn so sánh.',
 } as const
