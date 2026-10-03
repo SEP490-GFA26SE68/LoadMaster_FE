@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { approvalBlockers, type ConstraintIssue } from '@/domain/constraints'
+import { approvalBlockers, blockerSummary, deadlineReview, type ConstraintIssue } from '@/domain/constraints'
 import { SPEC_CARTON_A } from '@/domain/fixtures/spec-samples'
 import type { CargoPackage, UnplacedPackage } from '@/domain/models'
 
@@ -57,4 +57,29 @@ test('an axle overload is an error and blocks approval (D-78)', () => {
     issues: [rearOverload],
     stale: false,
   })
+})
+
+test('the blocker summary counts each kind of reason apart: stale, must-load left behind, axle overload, other constraint errors (FE-5b-08)', () => {
+  const rearOverload: ConstraintIssue = { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 6240.5, limitKg: 6000, overKg: 240.5 } }
+  const blockers = approvalBlockers({
+    issues: [LEANING, OVERLAP, rearOverload, OVERLAP],
+    packages: [SPEC_CARTON_A, { ...OPTIONAL, mustLoad: true }],
+    unplacedPackages: unplaced('PKG-001-02', 'PKG-002-01'),
+    stale: true,
+  })
+  expect(blockerSummary(blockers)).toStrictEqual({ stale: true, mustLoadUnplaced: 2, axleOverload: 1, constraintErrors: 2 })
+  expect(blockerSummary(approvalBlockers({ issues: [LEANING], packages: [SPEC_CARTON_A], unplacedPackages: [], stale: false }))).toStrictEqual({
+    stale: false, mustLoadUnplaced: 0, axleOverload: 0, constraintErrors: 0,
+  })
+})
+
+test('stops arriving after their deadline need a confirmation before approval; stops close to the deadline are only listed (D-80)', () => {
+  type Stop = { stopId: string; deadlineStatus?: 'OK' | 'AT_RISK' | 'MISSED' }
+  const onTime: Stop = { stopId: 'STOP-01', deadlineStatus: 'OK' }
+  const close: Stop = { stopId: 'STOP-02', deadlineStatus: 'AT_RISK' }
+  const late: Stop = { stopId: 'STOP-03', deadlineStatus: 'MISSED' }
+  const noDeadline: Stop = { stopId: 'STOP-04' }
+  expect(deadlineReview([onTime, close, late, noDeadline])).toStrictEqual({ missed: [late], atRisk: [close], needsConfirmation: true })
+  expect(deadlineReview([onTime, close, noDeadline])).toStrictEqual({ missed: [], atRisk: [close], needsConfirmation: false })
+  expect(deadlineReview([])).toStrictEqual({ missed: [], atRisk: [], needsConfirmation: false })
 })
