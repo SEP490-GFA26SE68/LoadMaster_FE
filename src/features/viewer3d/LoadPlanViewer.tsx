@@ -20,7 +20,7 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
     colorMode={state.colorMode} sliceCm={editing ? state.sceneModel.vehicle.innerLengthCm : state.sliceCm}
     step={editing ? state.totalSteps : state.step} semantics={editing ? undefined : operations.semantics}
     hiddenId={editing ? state.selectedId : null} obstaclePicking={!editing} animateLoading={!editing && operations.kind === 'loading' && operations.focusStop === null}
-    showMass={operations.showMass} showDistribution={operations.showDistribution} onPerfSample={onPerfSample}
+    showMass={operations.showMass} zones={operations.showZones ? state.sceneModel.zones : undefined} onPerfSample={onPerfSample}
     unloadMotion={!editing && operations.kind === 'unloading' ? { cursor: operations.unload.cursor,
       placement: operations.unload.ordered[operations.unload.cursor - 1], durationMs: 520 / state.speed } : undefined}>
     {editing ? <EditorFloorGrid vehicle={state.sceneModel.vehicle} /> : null}

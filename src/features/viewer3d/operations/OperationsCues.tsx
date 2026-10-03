@@ -1,15 +1,11 @@
 import { Html } from '@react-three/drei'
-import { Color, DoubleSide } from 'three'
+import { DoubleSide } from 'three'
 import { useMemo } from 'react'
-import { animated, useSpring } from '@react-spring/three'
-import { useThree } from '@react-three/fiber'
 import { useT } from '@/lib/i18n'
 import { readToken } from '@/lib/tokens'
-import { stopColor } from '@/lib/stops'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { VehicleConfig } from '@/domain/models'
 import { cargoCenterOfMass } from './operations-model'
-import { interiorStopMap } from './stop-map'
 import { SCENE_SCALE } from '../scene/units'
 import { SceneCallout } from '../scene/SceneCallout'
 import { SceneTag } from '../scene/SceneTag'
@@ -28,31 +24,9 @@ export function RearDoorCue({ vehicle }: { vehicle: VehicleConfig }) {
       <lineBasicMaterial color={readToken('--bg')} />
     </lineSegments>
     <Html position={[x + 0.7, 0.05, z]} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-      <span className="block w-max -translate-x-1/2"><SceneTag title={t('viewer.cues.rearDoor')} className="max-w-44 whitespace-normal sm:max-w-none sm:whitespace-nowrap" /></span>
+      <span data-rear-door-cue className="block w-max -translate-x-1/2"><SceneTag title={t('viewer.cues.rearDoor')} className="max-w-44 whitespace-normal sm:max-w-none sm:whitespace-nowrap" /></span>
     </Html>
   </group>
-}
-
-/** One colored mesh, even when stop placements are interleaved in every bin. */
-export function InteriorStopMap({ placements, vehicle, reducedMotion }: { placements: readonly ScenePlacement[]; vehicle: VehicleConfig; reducedMotion: boolean }) {
-  const invalidate = useThree((s) => s.invalidate)
-  const spring = useSpring({ from: { opacity: 0 }, opacity: 0.65, config: { duration: reducedMotion ? 100 : 160 }, onChange: () => invalidate() })
-  const buffers = useMemo(() => {
-    const vertices: number[] = [], colors: number[] = [], color = new Color()
-    for (const part of interiorStopMap(placements, vehicle)) {
-        vertices.push(...part.vertices.map((value) => value * SCENE_SCALE))
-        color.set(stopColor(part.stop))
-        for (let i = 0; i < 6; i++) colors.push(color.r, color.g, color.b)
-    }
-    return { positions: new Float32Array(vertices), colors: new Float32Array(colors) }
-  }, [placements, vehicle])
-  return <mesh name="stop-distribution" raycast={() => null}>
-    <bufferGeometry>
-      <bufferAttribute attach="attributes-position" args={[buffers.positions, 3]} />
-      <bufferAttribute attach="attributes-color" args={[buffers.colors, 3]} />
-    </bufferGeometry>
-    <animated.meshBasicMaterial vertexColors side={DoubleSide} transparent opacity={spring.opacity} depthWrite={false} />
-  </mesh>
 }
 
 export function CargoMassMarker({ placements, vehicle }: { placements: readonly ScenePlacement[]; vehicle: VehicleConfig }) {

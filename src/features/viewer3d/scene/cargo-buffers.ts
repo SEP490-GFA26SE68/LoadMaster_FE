@@ -3,6 +3,8 @@ import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { boxCenter, boxSize, SCENE_SCALE } from './units'
 
 export const HULL_PADDING = 0.012
+/** Vỏ viền của kiện nằm ngoài vùng điểm giao (FE-5b-07): dày gấp ba viền chung để còn đọc được ở tier `low` (DPR 0,5). */
+export const ZONE_MARK_PADDING = 0.036
 export const DROP_HEIGHT = 0.22
 const dummy = new Object3D()
 const corner = new Vector3()

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import { AxleLoadPanel } from '../overlays/AxleLoadPanel'
+import { DeadlinePanel, RehandlingPanel } from '../overlays/PlanIndicators'
 import { DARK_FIELD, DARK_SUBCARD, GLASS_PANEL, GLASS_PRESSED, MUTED } from '../panels/scene-ui'
 import { cargoCenterOfMass, stopOrderConsistent } from './operations-model'
 import { BlockerPanel } from './BlockerPanel'
@@ -17,7 +18,10 @@ type PanelProps = {
   onEdit?: (p: ScenePlacement) => void
 }
 
-/** Tab "Vận hành" của hộp thông tin: điểm giao đang mô phỏng, thứ tự xếp/dỡ, kiện chắn lối dỡ, tải trục. */
+/**
+ * Tab "Vận hành" của hộp thông tin: điểm giao đang mô phỏng, thứ tự xếp/dỡ, kiện chắn lối dỡ, rồi ba chỉ số của phương án đang xem
+ * (FE-5b-07): tải trục trước / sau so giới hạn, số lần dỡ-xếp lại, mức hạn của từng điểm giao.
+ */
 export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelProps) {
   const t = useT()
   const { focusStop } = operations
@@ -44,6 +48,8 @@ export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelPr
       lifo={operations.semantics.lifo} onSelect={onSelect} onEdit={onEdit} /> : null}
     {operations.kind === 'unloading' ? <p className={MUTED}>{t('viewer.operations.blockers.corridor')}</p> : null}
     <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={state.placements} />
+    <RehandlingPanel zones={state.sceneModel.zones} placements={state.placements} isMockResult={state.sceneModel.isMockResult} />
+    <DeadlinePanel stops={state.sceneModel.stops} />
   </div>
 }
 

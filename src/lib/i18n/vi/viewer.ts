@@ -58,6 +58,7 @@ export const viewer = {
       unplacedCount: 'Kiện chưa xếp',
       frontAxleLoad: 'Tải trục trước',
       rearAxleLoad: 'Tải trục sau',
+      rehandlingCount: 'Số lần dỡ-xếp lại',
       centerOfGravity: 'Trọng tâm (X, Y, Z)',
       runtime: 'Thời gian chạy',
       runtimeValue: '{ms} ms',
@@ -134,6 +135,29 @@ export const viewer = {
       SINGLE_AXLE: 'Chưa tính được: xe mới khai một trục, cần ít nhất một trục trước và một trục sau.',
       AXLES_COINCIDE: 'Chưa tính được: các trục của xe đang khai cùng một vị trí.',
     },
+  },
+  /** Vùng theo điểm giao của phương án (FE-5b-07): dải vùng trên sàn, vùng của kiện, dấu kiện nằm ngoài vùng. */
+  zones: {
+    zoneOf: 'Vùng điểm {number}',
+    outOfZone: 'Ngoài vùng',
+    outOfZoneOf: 'Nằm ngoài vùng của điểm {stop} — tính một lần dỡ-xếp lại.',
+    onlyOutOfZone: 'Chỉ kiện nằm ngoài vùng',
+  },
+  /** Số lần dỡ-xếp lại ở hộp Chi tiết: kiện nằm ngoài vùng của điểm giao mình, tính trên bản đang xem (kể cả đang chỉnh tay). */
+  rehandling: {
+    title: 'Dỡ-xếp lại',
+    count: { one: '{count} kiện nằm ngoài vùng của điểm giao mình', other: '{count} kiện nằm ngoài vùng của điểm giao mình' },
+    none: 'Không kiện nào nằm ngoài vùng của điểm giao mình.',
+    hint: 'Thùng chia vùng theo tỷ lệ thể tích hàng của từng điểm giao. Kiện có tâm nằm trong vùng của điểm khác phải dỡ ra rồi xếp lại dọc đường; trong mô hình các kiện đó có viền trắng dày.',
+    noZones: 'Phương án này không chia vùng theo điểm giao nên không tính được số lần dỡ-xếp lại.',
+  },
+  /** Mức hạn của từng điểm giao theo tuyến đã tối ưu của chuyến, ở hộp Chi tiết. */
+  deadlines: {
+    title: 'Mức hạn',
+    eta: 'Dự kiến đến {time} {date}',
+    noDeadline: 'Không có hạn',
+    noRoute: 'Chuyến chưa tối ưu tuyến nên chưa có giờ đến dự kiến.',
+    stop: 'Điểm {number} · {name}',
   },
   orientation: {
     allowed: 'Hướng được phép: {codes}',
@@ -264,9 +288,9 @@ export const viewer = {
     layers: 'Lớp hiển thị',
     showMass: 'Hiện tâm khối lượng hàng',
     hideMass: 'Ẩn tâm khối lượng hàng',
-    showDistribution: 'Hiện phân bố điểm giao',
-    hideDistribution: 'Ẩn phân bố điểm giao',
-    stopMapHint: 'Bản đồ điểm giao nằm trên mép trong sàn; hàng có thể che bản đồ.',
+    showZones: 'Hiện dải vùng điểm giao',
+    hideZones: 'Ẩn dải vùng điểm giao',
+    zonesHint: 'Dải vùng nằm trên sàn thùng theo màu điểm giao, kèm tên điểm và tỷ lệ thể tích; hàng có thể che dải. Kiện nằm ngoài vùng của điểm mình có viền trắng dày.',
     colorMode: 'Chế độ tô màu',
     shortcuts: 'Space: phát/dừng · ←/→: từng bước · Esc: thoát tập trung. Kéo mô hình để xoay, chụm hai ngón để phóng to.',
   },
@@ -321,6 +345,7 @@ export const viewer = {
     above: 'phía trên: {id} ({weight})',
     pinned: 'Đã ghim vị trí',
     notPinned: 'Chưa ghim',
+    zone: 'Vùng điểm giao',
   },
   packageList: {
     label: 'Danh sách kiện',

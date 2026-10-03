@@ -464,7 +464,6 @@ export const trips = {
     done: { one: 'Route optimized for {count} stop.', other: 'Route optimized for {count} stops.' },
     eta: 'Expected {time} {date}',
     etaA11y: 'expected at {time} {date}',
-    deadlineStatus: { OK: 'On time', AT_RISK: 'Tight', MISSED: 'Expected late' },
     missingCoordinates: 'No coordinates',
     map: 'Route map of {id}',
   },

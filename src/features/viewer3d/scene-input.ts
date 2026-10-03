@@ -7,7 +7,9 @@ import {
   type PackageDimensions,
 } from '@/domain/geometry'
 import type { FragilityLevel, OptimizationResult, UnplacedPackage, VehicleConfig } from '@/domain/models'
-import { isStale, type DeliveryStop, type Revision } from '@/lib/mock-db'
+import type { DeadlineStatus } from '@/domain/routing'
+import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
+import { isStale, type DeliveryStop, type Revision, type RouteStopEta } from '@/lib/mock-db'
 import type { Packaging } from './viewer-types'
 
 /**
@@ -44,6 +46,16 @@ export type ScenePlacement = {
   /** Tỷ lệ đỡ đáy và mã cảnh báo do engine tính trên kết quả (Spec 7.6, LM-049); fixture không qua engine: 1 và rỗng. */
   readonly supportRatio: number
   readonly constraintWarnings: readonly string[]
+  /** Vùng theo điểm giao mà kiện đang nằm (vùng chứa tâm kiện theo X, FE-5b-07); vắng khi phương án không chia vùng. */
+  readonly zoneId?: string
+  /** Kiện nằm ngoài vùng của điểm giao mình — một lần dỡ-xếp lại. */
+  readonly outOfZone: boolean
+}
+
+/** Vùng nào, và có nằm ngoài vùng của điểm mình không, cho một kiện ở vị trí hiện tại (kể cả vị trí đang chỉnh tay). */
+export function zoneFields(zones: readonly StopZone[], placement: Pick<ScenePlacement, 'position' | 'lengthCm' | 'stop'>): Pick<ScenePlacement, 'zoneId' | 'outOfZone'> {
+  const { zoneId, rehandled } = locateInZones(zones, { xCm: placement.position.x, lengthCm: placement.lengthCm }, placement.stop)
+  return { ...(zoneId === undefined ? {} : { zoneId }), outOfZone: rehandled }
 }
 
 export type SceneUnplaced = {
@@ -63,7 +75,19 @@ export type SceneUnplaced = {
   readonly violatedConstraints?: readonly ConstraintIssue[]
 }
 
-export type SceneStop = { readonly number: number; readonly name: string; readonly packageCount: number }
+export type SceneStop = {
+  readonly number: number
+  readonly name: string
+  readonly packageCount: number
+  /** Hạn giao của điểm (ISO 8601); vắng khi điểm không có yêu cầu giao nào. */
+  readonly deadline?: string
+  /** Giờ đến dự kiến và mức hạn theo tuyến đã tối ưu của chuyến (FE-4b-09); vắng khi chuyến chưa tối ưu tuyến. */
+  readonly eta?: string
+  readonly deadlineStatus?: DeadlineStatus
+}
+
+/** Vùng theo điểm giao của phương án (FE-5b-02) kèm tên điểm và tỷ lệ thể tích hàng của điểm đó, %. `stopId` là số điểm giao. */
+export type SceneZone = StopZone & { readonly name: string; readonly sharePercent: number }
 
 /** Snapshot bất biến của một phương án cho engine; không nắm quyền sửa dữ liệu nguồn. */
 export type ViewerSceneModel = {
@@ -72,6 +96,8 @@ export type ViewerSceneModel = {
   /** Tỷ lệ lấp đầy thể tích, % */
   readonly fillRate: number
   readonly stops: readonly SceneStop[]
+  /** Theo thứ tự giao: vùng đầu sát cửa. Rỗng khi phương án không chia vùng. */
+  readonly zones: readonly SceneZone[]
   readonly placements: readonly ScenePlacement[]
   readonly unplaced: readonly SceneUnplaced[]
   readonly placementById: ReadonlyMap<string, ScenePlacement>
@@ -116,7 +142,13 @@ function indexById<T extends { readonly id: string }>(items: readonly T[]): Map<
 
 /** Revision của mock repository (LM-026) → scene cm. Kích thước, luật xoay, tên và điểm giao lấy từ kiện gốc của request. */
 export type ResultSceneSource = {
-  readonly trip: { readonly id: string; readonly stops: readonly Pick<DeliveryStop, 'name'>[]; readonly inputVersion?: number }
+  readonly trip: {
+    readonly id: string
+    readonly stops: readonly (Pick<DeliveryStop, 'name'> & Partial<Pick<DeliveryStop, 'id' | 'deadline'>>)[]
+    readonly inputVersion?: number
+    /** Tuyến đã tối ưu của chuyến: giờ đến dự kiến và mức hạn từng điểm, cho hộp Chi tiết của Planner. */
+    readonly routePlan?: { readonly stops: readonly RouteStopEta[] }
+  }
   readonly revision: Pick<Revision, 'request' | 'result' | 'ordersRecomputed'> & Partial<Pick<Revision, 'id' | 'jobId' | 'inputVersion' | 'approvedAt' | 'manuallyEdited'>>
 }
 
@@ -130,9 +162,17 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
     if (instance === undefined) throw new Error(`Placement ${id} không thuộc kiện nào của request`)
     return instance
   }
+  const stopZones = result.stopZones ?? []
+  const zones = stopZones.map((zone): SceneZone => Object.freeze({
+    ...zone,
+    name: trip.stops[zone.stopId - 1]?.name ?? '',
+    sharePercent: zoneSharePercent(stopZones, zone),
+  }))
+  const etaByStopId = new Map(trip.routePlan?.stops.map((stop) => [stop.stopId, stop]))
   const placements = result.placements.map((placement): ScenePlacement => {
     const instance = instanceOf(placement.packageInstanceId)
     const packageId = packageIdByInstanceId.get(placement.packageInstanceId) ?? ''
+    const position = Object.freeze({ x: placement.xCm, y: placement.yCm, z: placement.zCm })
     return Object.freeze({
       id: placement.packageInstanceId,
       packageId,
@@ -142,7 +182,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       widthCm: placement.placedWidthCm,
       heightCm: placement.placedHeightCm,
       weightKg: instance.weightKg,
-      position: Object.freeze({ x: placement.xCm, y: placement.yCm, z: placement.zCm }),
+      position,
       step: placement.loadingOrder,
       unloadingOrder: placement.unloadingOrder,
       orientation: placement.orientation,
@@ -153,6 +193,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       pinned: false,
       supportRatio: placement.supportRatio,
       constraintWarnings: Object.freeze([...placement.constraintWarnings]),
+      ...zoneFields(stopZones, { position, lengthCm: placement.placedLengthCm, stop: instance.deliveryStop }),
     })
   })
   const unplaced = result.unplacedPackages.map((item): SceneUnplaced => {
@@ -176,11 +217,18 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
     tripId: trip.id,
     vehicle: Object.freeze({ ...request.vehicle, obstacles: request.vehicle.obstacles.map((obstacle) => Object.freeze({ ...obstacle })) }),
     fillRate: result.metrics.volumeUtilizationPercent,
-    stops: Object.freeze(trip.stops.map((stop, index) => Object.freeze({
-      number: index + 1,
-      name: stop.name,
-      packageCount: instances.filter(({ deliveryStop }) => deliveryStop === index + 1).length,
-    }))),
+    stops: Object.freeze(trip.stops.map((stop, index): SceneStop => {
+      const eta = stop.id === undefined ? undefined : etaByStopId.get(stop.id)
+      return Object.freeze({
+        number: index + 1,
+        name: stop.name,
+        packageCount: instances.filter(({ deliveryStop }) => deliveryStop === index + 1).length,
+        ...(stop.deadline === undefined ? {} : { deadline: stop.deadline }),
+        ...(eta === undefined ? {} : { eta: eta.eta }),
+        ...(eta?.deadlineStatus === undefined ? {} : { deadlineStatus: eta.deadlineStatus }),
+      })
+    })),
+    zones: Object.freeze(zones),
     placements: Object.freeze(placements),
     unplaced: Object.freeze(unplaced),
     placementById: indexById(placements),

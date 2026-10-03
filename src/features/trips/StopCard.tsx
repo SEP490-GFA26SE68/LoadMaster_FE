@@ -71,7 +71,7 @@ export function StopCard({ stop, total, lead, state, eta, missingCoordinates = f
         {stop.deadline ? `, ${t('trips.route.deadlineA11y', { time: format.time(stop.deadline), date: format.date(stop.deadline) })}` : null}
         {stop.priority ? `, ${t('trips.route.priorityA11y', { priority: t(`requirements.priority.${stop.priority}`) })}` : null}
         {eta ? `, ${t('trips.routePlan.etaA11y', { time: format.time(eta.eta), date: format.date(eta.eta) })}` : null}
-        {eta?.deadlineStatus ? `, ${t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}` : null}
+        {eta?.deadlineStatus ? `, ${t(`common.deadlineStatuses.${eta.deadlineStatus}`)}` : null}
         {missingCoordinates ? `, ${t('trips.routePlan.missingCoordinates')}` : null}
         {state ? `, ${stateLabel(state, t, format)}` : null}
       </span>
@@ -189,7 +189,7 @@ function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
           <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-small text-ink-2">
             <Navigation aria-hidden className="size-3.5 flex-none text-ink-3" strokeWidth={1.75} />
             <span className="tabular-nums">{t('trips.routePlan.eta', { time: format.time(eta.eta), date: format.dayMonth(eta.eta) })}</span>
-            {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}</Badge> : null}
+            {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`common.deadlineStatuses.${eta.deadlineStatus}`)}</Badge> : null}
           </span>
         ) : null}
         {/* Chữ thường xuống dòng được — thẻ điểm hẹp khi chuyến nhiều điểm */}
