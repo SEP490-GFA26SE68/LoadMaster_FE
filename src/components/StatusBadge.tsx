@@ -46,6 +46,8 @@ const SUB_STATUS: Record<TripSubStatus['kind'], { tone: BadgeTone; dot?: BadgeDo
   loaded: { tone: 'azure' },
   // Điểm trễ hạn dự kiến của tuyến đã tối ưu (FE-4b-09): việc chờ điều phối viên, như lỗi thời
   lateStops: { tone: 'warning', outlined: true },
+  // Xác nhận tay chờ điều phối viên duyệt (FE-6-04): chờ người kế tiếp, như chờ duyệt phương án
+  manualPending: { tone: 'warning', dot: 'ring' },
 }
 
 /** Dòng phụ cạnh chip trạng thái, cùng một kiểu ở mọi màn (nhãn 20 px; `className` đè cỡ cho màn cảm ứng). `null` thì không vẽ gì. */

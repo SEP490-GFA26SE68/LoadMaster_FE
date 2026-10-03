@@ -226,6 +226,8 @@ export const sourcing = {
     back: 'Về kho kiện',
     backToLookup: 'Về tra cứu kiện',
     backToTrip: 'Về chuyến {id}',
+    /** In lại nhãn giữa lúc đối chiếu ở phiên xếp của kho (FE-6-03). */
+    backToLoading: 'Về phiên xếp {id}',
     empty: 'Chưa chọn kiện nào để in nhãn.',
     emptyDescription: 'Chọn kiện ở màn Kho kiện rồi bấm "In nhãn QR".',
     emptyLookup: 'Tra cứu một kiện rồi bấm "In lại nhãn".',

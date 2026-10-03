@@ -1,6 +1,7 @@
 import { createSimClock, SEED_ANCHOR_DATE } from './clock'
 import { auditMethods } from './db-audit'
 import { createDbContext, type DbState } from './db-context'
+import { manualConfirmMethods } from './db-manual-confirm'
 import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
@@ -72,6 +73,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...routeMethods(ctx),
     ...vehicleTypeMethods(ctx),
     ...scanMethods(ctx),
+    ...manualConfirmMethods(ctx),
     ...trackingMethods(ctx),
   }
 }

@@ -66,6 +66,10 @@ export const AUDIT_ACTIONS = [
   'vehicleType.deleted',
   'vehicleType.assigned',
   'loading.sealed',
+  // Xác nhận tay của đối chiếu kiện và việc duyệt của điều phối viên (FE-6-03, FE-6-04)
+  'manualConfirm.requested',
+  'manualConfirm.approved',
+  'manualConfirm.rejected',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

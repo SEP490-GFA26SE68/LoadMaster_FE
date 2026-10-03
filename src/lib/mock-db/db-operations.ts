@@ -5,6 +5,7 @@ import { MockDbError } from './errors'
 import { latestApproved, loadingRemaining, missingIds, plannedStops, stopItemIds } from './operations'
 import { isStale } from './revisions'
 import type { DeliveryProgress, LoadingProgress, MockDb, Revision, StopProgress, Trip, TripPhase } from './types'
+import { pendingManualConfirms, withoutPendingConfirm, type VerifyContext } from './verify-model'
 
 type OperationMethods = Pick<
   MockDb,
@@ -31,6 +32,20 @@ function currentStop(trip: Trip, stopNumber: number): StopProgress {
   const current = deliveryOf(trip).stops.find((stop) => stop.completedAt === undefined)
   if (current?.number !== stopNumber) throw new MockDbError('STOP_NOT_CURRENT', { tripId: trip.id, stopNumber })
   return current
+}
+
+/** Còn xác nhận tay chờ điều phối viên duyệt thì chưa xong xếp, chưa hoàn tất điểm giao được (FE-6-04, D-83). */
+function assertNoPendingConfirm(trip: Trip, context: VerifyContext, stopNumber?: number) {
+  const count = pendingManualConfirms(trip, context, stopNumber).length
+  if (count > 0) throw new MockDbError('MANUAL_CONFIRM_PENDING', { tripId: trip.id, count })
+}
+
+/**
+ * Chuyến sau khi kiện được ghi lại không qua đối chiếu (bước xếp ghi tay, bỏ đánh dấu đã dỡ): xác nhận tay còn chờ của kiện đó không
+ * còn gì để duyệt nên bị bỏ.
+ */
+function withoutPending(trip: Trip, context: VerifyContext, packageInstanceId: string): Trip {
+  return trip.verifications === undefined ? trip : { ...trip, verifications: withoutPendingConfirm(trip.verifications, context, packageInstanceId) }
 }
 
 /** Tiến độ xếp ở kho và giao hàng: mọi hàm ghi vào một chuyến của công ty của phiên (D-64). */
@@ -67,7 +82,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         const loading = loadingOf(trip)
         const steps = [...loading.steps.filter((step) => step.packageInstanceId !== packageInstanceId), { packageInstanceId, outcome, at: ctx.nowIso() }]
         if (outcome === 'missing') ctx.log('loading.missing', { type: 'trip', id: tripId }, { packageInstanceId })
-        return put(trips, { ...trip, loading: { ...loading, steps } })
+        return put(trips, { ...withoutPending(trip, 'LOADING', packageInstanceId), loading: { ...loading, steps } })
       }),
     completeLoading: (tripId) =>
       ctx.respond(() => {
@@ -75,6 +90,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         assertPhase(trip, 'loading')
         const remaining = loadingRemaining(trip, planOf(trip))
         if (remaining > 0) throw new MockDbError('LOADING_INCOMPLETE', { tripId, remaining })
+        assertNoPendingConfirm(trip, 'LOADING')
         const loading = loadingOf(trip)
         const missing = missingIds(trip).size
         ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - missing, missing })
@@ -103,7 +119,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         currentStop(trip, stopNumber)
         if (plannedStops(planOf(trip)).get(packageInstanceId) !== stopNumber) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId })
         if (missingIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId, packageInstanceId })
-        return withDelivery(trip, (delivery) => ({
+        return withDelivery(unloaded ? trip : withoutPending(trip, 'UNLOADING', packageInstanceId), (delivery) => ({
           ...delivery,
           stops: delivery.stops.map((stop) => {
             if (stop.number !== stopNumber) return stop
@@ -140,6 +156,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         const withIssue = new Set(delivery.issues.filter((issue) => issue.stopNumber === stopNumber).map((issue) => issue.packageInstanceId))
         const remaining = stopItemIds(trip, planOf(trip), stopNumber).filter((id) => !stop.unloadedIds.includes(id) && !withIssue.has(id)).length
         if (remaining > 0) throw new MockDbError('STOP_INCOMPLETE', { tripId, stopNumber, remaining })
+        assertNoPendingConfirm(trip, 'UNLOADING', stopNumber)
         const at = ctx.nowIso()
         const stops = delivery.stops.map((item) => (item.number === stopNumber ? { ...item, completedAt: at } : item))
         ctx.log('delivery.stopCompleted', { type: 'trip', id: tripId }, { stopNumber })

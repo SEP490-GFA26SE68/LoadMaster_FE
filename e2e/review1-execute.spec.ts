@@ -3,8 +3,9 @@ import { expect, test } from './fixtures'
 import { heightOf, MOCK_DB, navigateInApp } from './spec-flow-helpers'
 
 /**
- * LM-104, luồng 5 (Execute): kho quét QR khi xếp (đúng kiện thì sang bước sau, sai kiện thì nói rõ và không ghi), xếp xong ghi số seal;
- * tài xế quét QR khi dỡ (kiện của điểm khác được giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
+ * LM-104, luồng 5 (Execute): kho đối chiếu kiện khi xếp bằng mã trên nhãn (đúng kiện thì sang bước sau, sai kiện thì nói rõ và không
+ * ghi; hộp đối chiếu ba mức từ FE-6-03 — máy chạy test không có BarcodeDetector nên đi mức gõ mã), xếp xong ghi số seal; tài xế đối
+ * chiếu khi dỡ (kiện của điểm khác được giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
  * xoá bị chặn khi còn xe, xoá). Kho dữ liệu nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang giữa chừng.
  */
 test.use({ collectConsoleErrors: true })
@@ -33,7 +34,7 @@ async function twoCartonTrip(page: Page, stage: 'approved' | 'loaded') {
   }, { db: MOCK_DB, samples: SAMPLES, stage })
 }
 
-test('tablet: the warehouse scans a wrong package (explained, not recorded), the right ones, and records the seal', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
+test('tablet: the warehouse verifies a wrong package (explained, not recorded), the right ones by sender code and QR code, and records the seal', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
   await expect(page.getByRole('heading', { name: 'Chuyến cần xếp' })).toBeVisible()
   const { tripId, token } = await twoCartonTrip(page, 'approved')
@@ -41,17 +42,22 @@ test('tablet: the warehouse scans a wrong package (explained, not recorded), the
 
   const heading = (id: string) => page.getByRole('heading', { level: 1, name: id, exact: true })
   await expect(heading('PKG-001-01')).toBeVisible()
-  const scan = page.getByRole('button', { name: 'Quét QR kiện', exact: true })
+  const scan = page.getByRole('button', { name: 'Đối chiếu kiện', exact: true })
   expect(await heightOf(scan)).toBeGreaterThanOrEqual(56)
   await expect(page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true })).toBeVisible()
 
-  // Quét nhãn của kiện xếp sau: kho từ chối, hộp thoại nêu kiện vừa quét và kiện bước này cần
+  // Gõ mã QR của kiện xếp sau: kho từ chối, hộp nêu kiện vừa đưa và kiện bước này cần
   await scan.tap()
-  const dialog = page.getByRole('dialog', { name: 'Quét QR kiện bước 1' })
+  const dialog = page.getByRole('dialog', { name: 'Đối chiếu kiện bước 1' })
   await expect(dialog).toContainText('Bước này cần kiện PKG-001-01')
-  await dialog.getByRole('textbox', { name: 'Nhập mã' }).fill(token['PKG-002-01'] ?? '')
-  await dialog.getByRole('button', { name: 'Xác nhận mã', exact: true }).tap()
-  await expect(dialog.getByRole('alert')).toContainText('Sai kiện: vừa quét PKG-002-01')
+  await expect(dialog.getByRole('tab')).toHaveText(['Quét QR', 'Gõ mã', 'Xác nhận tay'])
+  await dialog.getByRole('tab', { name: 'Gõ mã', exact: true }).tap()
+  const code = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
+  const submit = dialog.getByRole('button', { name: 'Đối chiếu mã', exact: true })
+  for (const control of [dialog.getByRole('tab', { name: 'Xác nhận tay', exact: true }), code, submit]) expect(await heightOf(control)).toBeGreaterThanOrEqual(56)
+  await code.fill(token['PKG-002-01'] ?? '')
+  await submit.tap()
+  await expect(dialog.getByRole('alert')).toContainText('Sai kiện: vừa đưa PKG-002-01')
   await expect(dialog.getByRole('alert')).toContainText('bước này cần PKG-001-01')
   const afterWrong = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
@@ -59,17 +65,19 @@ test('tablet: the warehouse scans a wrong package (explained, not recorded), the
   }, { db: MOCK_DB, id: tripId })
   expect(afterWrong).toBe(0)
 
-  // Chọn đúng kiện trong danh sách (nhãn rách): xác nhận như nút "Xác nhận đã xếp"
-  await dialog.getByRole('button', { name: /^PKG-001-01/ }).tap()
+  // Gõ mã của bên gửi của đúng kiện (duy nhất trong chuyến): kiểm như quét
+  await code.fill('pkg-001-01')
+  await submit.tap()
   await expect(dialog).toBeHidden()
   await expect(page.getByText('Đã xếp PKG-001-01', { exact: true })).toBeVisible()
   await expect(heading('PKG-002-01')).toBeVisible()
 
-  // Kiện cuối quét bằng mã in dưới hình QR: kho tự hoàn tất xếp
+  // Kiện cuối gõ mã in dưới hình QR: kho tự hoàn tất xếp
   await scan.tap()
-  const last = page.getByRole('dialog', { name: 'Quét QR kiện bước 2' })
-  await last.getByRole('textbox', { name: 'Nhập mã' }).fill((token['PKG-002-01'] ?? '').toLowerCase())
-  await last.getByRole('button', { name: 'Xác nhận mã', exact: true }).tap()
+  const last = page.getByRole('dialog', { name: 'Đối chiếu kiện bước 2' })
+  await last.getByRole('tab', { name: 'Gõ mã', exact: true }).tap()
+  await last.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }).fill((token['PKG-002-01'] ?? '').toLowerCase())
+  await last.getByRole('button', { name: 'Đối chiếu mã', exact: true }).tap()
   await expect(page.getByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${tripId}` })).toBeVisible()
   await expect(page.getByText('Đã xác nhận bằng quét QR 2 kiện', { exact: true })).toBeVisible()
 
@@ -84,13 +92,19 @@ test('tablet: the warehouse scans a wrong package (explained, not recorded), the
   const store = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(id)
-    return { phase: trip.phase, seal: trip.loading?.seal?.number, via: trip.loading?.steps.map((step) => `${step.packageInstanceId}:${step.via}`) }
+    return {
+      phase: trip.phase, seal: trip.loading?.seal?.number, via: trip.loading?.steps.map((step) => `${step.packageInstanceId}:${step.via}`),
+      verified: trip.verifications?.map((entry) => `${entry.packageInstanceId}:${entry.method}:${entry.by}`),
+    }
   }, { db: MOCK_DB, id: tripId })
-  expect(store).toStrictEqual({ phase: 'loaded', seal: 'SEAL-240927', via: ['PKG-001-01:qr', 'PKG-002-01:qr'] })
+  // Mỗi lần đối chiếu ghi cách và người làm (FE-6-03): cả hai kiện gõ mã, do nhân viên kho demo
+  expect(store).toStrictEqual({
+    phase: 'loaded', seal: 'SEAL-240927', via: ['PKG-001-01:qr', 'PKG-002-01:qr'], verified: ['PKG-001-01:CODE:US-0003', 'PKG-002-01:CODE:US-0003'],
+  })
   expect(browserErrors).toStrictEqual([])
 })
 
-test('phone: the driver scans a package of another stop (explained) and unloads the right one by QR', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
+test('phone: the driver verifies a package of another stop (explained) and unloads the right one by its typed code', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
   await login('/tai-xe', 'driver')
   await expect(page.getByRole('heading', { level: 1, name: 'Chuyến của tôi' })).toBeVisible()
   const { tripId, token } = await twoCartonTrip(page, 'loaded')
@@ -98,15 +112,17 @@ test('phone: the driver scans a package of another stop (explained) and unloads 
 
   await expect(page.getByRole('heading', { level: 1, name: 'Điểm 1 / 3', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).tap()
-  const scan = page.getByRole('button', { name: 'Quét QR dỡ', exact: true })
+  const scan = page.getByRole('button', { name: 'Đối chiếu kiện dỡ', exact: true })
   expect(await heightOf(scan)).toBeGreaterThanOrEqual(56)
   // Đánh dấu tay vẫn còn
   await expect(page.getByRole('button', { name: 'Đánh dấu đã dỡ PKG-002-01', exact: true })).toBeVisible()
 
   await scan.tap()
-  const dialog = page.getByRole('dialog', { name: 'Quét QR dỡ tại điểm 1' })
+  const dialog = page.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' })
   await expect(dialog).toContainText('Điểm 1: đã dỡ 0 / 1 kiện.')
-  const input = dialog.getByRole('textbox', { name: 'Nhập mã' })
+  await dialog.getByRole('tab', { name: 'Gõ mã', exact: true }).tap()
+  const input = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
+  expect(await heightOf(input)).toBeGreaterThanOrEqual(56)
   await input.fill(token['PKG-001-01'] ?? '')
   await input.press('Enter')
   await expect(dialog.getByRole('alert')).toContainText('Kiện PKG-001-01')
@@ -118,7 +134,7 @@ test('phone: the driver scans a package of another stop (explained) and unloads 
   await expect(dialog).toBeHidden()
   const row = page.locator('li[data-package-id="PKG-002-01"]')
   await expect(row).toHaveAttribute('data-state', 'unloaded')
-  await expect(row).toContainText('Đã dỡ · quét QR')
+  await expect(row).toContainText('Đã dỡ · gõ mã')
   await expect(page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true })).toBeEnabled()
 
   const stops = await page.evaluate(async ({ db, id }) => {

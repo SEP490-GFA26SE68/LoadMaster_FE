@@ -1,12 +1,21 @@
 import { Check, CircleCheck, Package, TriangleAlert } from 'lucide-react'
-import { useFormat, useT } from '@/lib/i18n'
+import { useFormat, useT, type TFunction } from '@/lib/i18n'
+import type { PackageVerification } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import type { DeliveryItem } from './driver-plan'
 
+/** Dòng "Đã dỡ" kèm cách đối chiếu (FE-6-03): quét QR, gõ mã, xác nhận tay chờ duyệt / đã duyệt; đánh dấu tay thì chỉ "Đã dỡ". */
+function doneLabel(verification: PackageVerification | undefined, t: TFunction): string {
+  if (!verification) return t('driver.item.done')
+  if (verification.method !== 'MANUAL') return t(`driver.scan.via.${verification.method}`)
+  return verification.manual?.status === 'MANUAL_APPROVED' ? t('driver.scan.via.MANUAL_APPROVED') : t('driver.scan.via.MANUAL_PENDING')
+}
+
 /**
  * Một dòng kiện hàng cần dỡ, cao tối thiểu 80px, nút tròn 56px bên phải để bấm được khi đeo găng. Thứ tự dỡ là `unloadingOrder`
- * của phương án đã duyệt. Trạng thái không chỉ nằm ở viền (U-7): kiện đã dỡ có nền xanh nhạt và dòng "Đã dỡ" kèm dấu kiểm, kiện có
- * sự cố có nền vàng nhạt và dòng nêu loại sự cố.
+ * của phương án đã duyệt. Trạng thái không chỉ nằm ở viền (U-7): kiện đã dỡ có nền xanh nhạt và dòng "Đã dỡ" kèm dấu kiểm và cách đối
+ * chiếu, kiện có sự cố có nền vàng nhạt và dòng nêu loại sự cố. Kiện có xác nhận tay bị điều phối viên từ chối (FE-6-04) quay về chưa
+ * dỡ kèm lý do, để tài xế kiểm lại.
  */
 export function DeliveryItemRow({
   item,
@@ -14,12 +23,12 @@ export function DeliveryItemRow({
   onToggle,
   issueLabel,
   readOnly = false,
-  viaQr = false,
+  verification,
 }: {
   item: DeliveryItem
   done: boolean
-  /** Kiện dỡ được xác nhận bằng quét QR (LM-104): dòng "Đã dỡ" ghi thêm "quét QR". */
-  viaQr?: boolean
+  /** Lần đối chiếu mới nhất của kiện khi dỡ (`ItemProgress.verification`). */
+  verification?: PackageVerification
   onToggle: (id: string) => void
   /** Loại sự cố đã báo cho kiện, đã dịch. */
   issueLabel?: string
@@ -29,6 +38,7 @@ export function DeliveryItemRow({
   const t = useT()
   const format = useFormat()
   const where = t('driver.item.where', { area: t(`driver.item.area.${item.area}`), layer: t(`driver.item.layer.${item.layer}`) })
+  const rejected = !done && verification?.manual?.status === 'MANUAL_REJECTED' ? verification.manual : undefined
 
   return (
     <li
@@ -54,7 +64,13 @@ export function DeliveryItemRow({
         {done ? (
           <span className="inline-flex items-center gap-1.5 text-body-lg leading-5.5 font-medium text-badge-success-fg">
             <CircleCheck className="size-4 flex-none" strokeWidth={2} aria-hidden />
-            {viaQr ? t('driver.scan.viaQr') : t('driver.item.done')}
+            {doneLabel(verification, t)}
+          </span>
+        ) : null}
+        {rejected ? (
+          <span role="alert" className="inline-flex items-start gap-1.5 text-body-lg leading-5.5 font-medium text-danger">
+            <TriangleAlert className="mt-0.5 size-4 flex-none" strokeWidth={2} aria-hidden />
+            {t('driver.confirms.rejected', { reason: rejected.rejectReason ?? '' })}
           </span>
         ) : null}
         {issueLabel ? (

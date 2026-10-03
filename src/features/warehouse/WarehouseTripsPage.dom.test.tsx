@@ -6,14 +6,21 @@ import { LOAD, renderWarehouse } from './warehouse-test-utils'
 /** Danh sách chuyến của kho (LM-086) trên seed neo 14/09. Test theo thứ tự: bài cuối sửa kho. */
 
 function cardOf(tripId: string) {
-  const heading = screen.getByRole('heading', { level: 2, name: tripId })
+  const heading = screen.getByRole('heading', { level: 3, name: tripId })
   return within(heading.closest('li') as HTMLElement)
 }
 
-test('in-progress trip first with Continue (110/280), then the approved trip, then the stale one without a start; one primary; exit signs out', async () => {
+const tripsIn = (group: string) => within(screen.getByRole('list', { name: group })).getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+
+test('trips grouped by status (FE-6-01): loading with Continue (110/280), waiting to be staged, loaded, and the stale one without a start; one primary; exit signs out', async () => {
   const { container } = renderWarehouse('/kho')
-  const list = await screen.findByRole('list', { name: 'Chuyến cần xếp' }, LOAD)
-  expect(within(list).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['TRIP-011', 'TRIP-2026-0914', 'TRIP-013'])
+  await screen.findByRole('list', { name: 'Đang xếp hàng' }, LOAD)
+  expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual([
+    'Đang xếp hàng', 'Chờ soạn', 'Xếp xong — chờ xuất phát', 'Chờ điều phối tối ưu lại',
+  ])
+  expect(['Đang xếp hàng', 'Chờ soạn', 'Xếp xong — chờ xuất phát', 'Chờ điều phối tối ưu lại'].map(tripsIn)).toStrictEqual([
+    ['TRIP-011'], ['TRIP-2026-0914'], ['TRIP-010'], ['TRIP-013'],
+  ])
 
   // Chip trạng thái và dòng phụ như mọi màn (FE-0-05)
   const loading = cardOf('TRIP-011')
@@ -31,6 +38,14 @@ test('in-progress trip first with Continue (110/280), then the approved trip, th
   expect(approved.getByText('0/132')).toBeInTheDocument()
   expect(approved.getByRole('link', { name: 'Bắt đầu xếp' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')
 
+  // Xếp xong chờ tài xế xuất phát: kho còn mở lại được để ghi số seal
+  const loaded = cardOf('TRIP-010')
+  expect(loaded.getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
+  expect(loaded.getByText('210/210')).toBeInTheDocument()
+  expect(loaded.getByText('Chưa ghi số seal.')).toBeInTheDocument()
+  expect(loaded.getByRole('link', { name: 'Xem chuyến đã xếp' })).toHaveAttribute('href', '/kho?chuyen=TRIP-010')
+  expect(loaded.getByRole('link', { name: 'Xem chuyến đã xếp' })).toHaveClass('h-14')
+
   const stale = cardOf('TRIP-013')
   expect(stale.getByText('Đã lập kế hoạch')).toBeInTheDocument()
   expect(stale.getByText('Lỗi thời — cần tối ưu lại')).toBeInTheDocument()
@@ -44,6 +59,8 @@ test('in-progress trip first with Continue (110/280), then the approved trip, th
   // FE-3b-06: Tra cứu kiện mở từ màn chính của kho, nút phụ 56 px
   expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveAttribute('href', '/tra-cuu-kien')
   expect(screen.getByRole('link', { name: 'Tra cứu kiện' })).toHaveClass('h-14')
+  // FE-6-04: chuông 56px — xác nhận tay của mình bị điều phối viên từ chối
+  expect(await screen.findByRole('button', { name: 'Thông báo' }, LOAD)).toHaveClass('size-14')
   // LM-096: nút tài khoản 56px mở hồ sơ cá nhân
   expect(screen.getByRole('button', { name: 'Tài khoản Lê Văn Hải' })).toHaveClass('size-14')
 })
@@ -56,7 +73,8 @@ test('missing packages recorded at the warehouse show next to the progress', asy
   await db.recordLoadingStep('TRIP-2026-0914', { packageInstanceId: first?.packageInstanceId ?? '', outcome: 'missing' })
 
   renderWarehouse('/kho')
-  await screen.findByRole('list', { name: 'Chuyến cần xếp' }, LOAD)
+  await screen.findByRole('list', { name: 'Đang xếp hàng' }, LOAD)
+  expect(tripsIn('Đang xếp hàng')).toStrictEqual(['TRIP-011', 'TRIP-2026-0914'])
   const card = cardOf('TRIP-2026-0914')
   expect(card.getByText('1/132')).toBeInTheDocument()
   expect(card.getByText('· thiếu 1')).toBeInTheDocument()
@@ -65,9 +83,9 @@ test('missing packages recorded at the warehouse show next to the progress', asy
 
 test('nothing left to load: a real empty state, no made-up trips', async () => {
   const db = getMockDb()
-  for (const tripId of ['TRIP-2026-0914', 'TRIP-011', 'TRIP-013']) await db.cancelTrip(tripId, 'Khách hoãn nhận hàng')
+  for (const tripId of ['TRIP-2026-0914', 'TRIP-010', 'TRIP-011', 'TRIP-013']) await db.cancelTrip(tripId, 'Khách hoãn nhận hàng')
   renderWarehouse('/kho')
   expect(await screen.findByText('Không có chuyến cần xếp', {}, LOAD)).toBeInTheDocument()
   expect(screen.getByText('Chuyến có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu xếp.')).toBeInTheDocument()
-  expect(screen.queryByRole('list', { name: 'Chuyến cần xếp' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('list')).not.toBeInTheDocument()
 }, 15_000)

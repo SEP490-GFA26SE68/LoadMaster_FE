@@ -9,9 +9,9 @@ test.use({ collectConsoleErrors: true })
 
 test('tablet: pick the main trip, record two loaded and one missing, leave and resume at the right step', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
-  const card = page.getByRole('list', { name: 'Chuyến cần xếp', exact: true })
-    .getByRole('listitem')
-    .filter({ has: page.getByRole('heading', { name: SEED_TRIP, exact: true }) })
+  // Thẻ của chuyến đổi nhóm theo trạng thái (FE-6-01): "Chờ soạn" lúc đầu, "Đang xếp hàng" khi kho đã bắt đầu
+  const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: SEED_TRIP, exact: true }) })
+  await expect(page.getByRole('list', { name: 'Chờ soạn', exact: true }).getByRole('heading', { name: SEED_TRIP, exact: true })).toBeVisible()
   const start = card.getByRole('link', { name: 'Bắt đầu xếp', exact: true })
   expect(await heightOf(start)).toBeGreaterThanOrEqual(56)
 
@@ -42,6 +42,7 @@ test('tablet: pick the main trip, record two loaded and one missing, leave and r
   // Rời phiên bằng nút thoát — nhân viên kho về danh sách chuyến, không đăng xuất — rồi vào lại
   await page.getByRole('link', { name: 'Thoát phiên xếp hàng', exact: true }).tap()
   await page.waitForURL((url) => url.pathname === '/kho' && url.search === '')
+  await expect(page.getByRole('list', { name: 'Đang xếp hàng', exact: true }).getByRole('heading', { name: SEED_TRIP, exact: true })).toBeVisible()
   await expect(card.getByText('Đang xếp hàng', { exact: true })).toBeVisible()
   await expect(card.getByText('Đang xếp 3 / 132', { exact: true })).toBeVisible()
   await expect(card.getByText('· thiếu 1', { exact: true })).toBeVisible()

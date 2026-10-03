@@ -1,4 +1,14 @@
-import { latestApproved, missingIds, plannedStops, tripStatus, tripSubStatus, type Revision, type Trip } from '@/lib/mock-db'
+import {
+  latestApproved,
+  missingIds,
+  plannedStops,
+  rejectedConfirms,
+  tripManualSubStatus,
+  tripStatus,
+  tripSubStatus,
+  type Revision,
+  type Trip,
+} from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 
@@ -13,8 +23,10 @@ export type MyTripRow = {
   /** Tên xe (có biển số); xe không còn trong kho thì là mã xe. */
   readonly vehicleName: string
   readonly status: TripStatus
-  /** Dòng phụ dưới chip (FE-0-05): phương án đã duyệt, kho đang xếp hoặc đã xếp xong. */
+  /** Dòng phụ dưới chip (FE-0-05): kho đang xếp hoặc đã xếp xong. */
   readonly sub: TripSubStatus | null
+  /** Dòng phụ thứ hai: còn xác nhận tay chờ điều phối viên duyệt (FE-6-04). */
+  readonly manualSub: TripSubStatus | null
   readonly stopCount: number
   /** Kiện của phương án trừ kiện kho báo thiếu — số kiện trên xe (hoặc sẽ lên xe). */
   readonly packageCount: number
@@ -23,18 +35,23 @@ export type MyTripRow = {
   /** Đã giao: thời điểm giao xong (ISO 8601). */
   readonly completedAt: string | undefined
   readonly issueCount: number
+  /** Đang vận chuyển: xác nhận tay bị điều phối viên từ chối mà kiện chưa được kiểm lại (FE-6-04). */
+  readonly recheck: number
 }
 
-export type MyTrips = {
-  /** Đang vận chuyển, hoặc kho đã xếp xong — tài xế mở được. */
-  readonly ready: readonly MyTripRow[]
-  /** Phương án đã duyệt, kho chưa xếp xong — hiện để tài xế biết, chưa mở được. */
-  readonly preparing: readonly MyTripRow[]
-  /** Đã giao gần đây, mới nhất trước. */
-  readonly recent: readonly MyTripRow[]
-}
+/**
+ * Nhóm của "Chuyến của tôi" (FE-6-01, PRD v2 mục 8.5), theo trạng thái của backend và dòng phụ; thứ tự ở đây là thứ tự trên màn:
+ * - `inTransit`: Đang vận chuyển — giao tiếp;
+ * - `loaded`: Đang xếp hàng, dòng phụ "Xếp xong — chờ xuất phát" — mở chuyến để xuất phát;
+ * - `preparing`: Đang xếp hàng, kho đang soạn / xếp — chỉ xem;
+ * - `recent`: Đã giao, `RECENT_LIMIT` chuyến gần nhất.
+ */
+export const MY_TRIP_GROUPS = ['inTransit', 'loaded', 'preparing', 'recent'] as const
+export type MyTripGroup = (typeof MY_TRIP_GROUPS)[number]
 
-/** Số chuyến hoàn thành gần đây hiện ở danh sách. */
+export type MyTrips = Readonly<Record<MyTripGroup, readonly MyTripRow[]>>
+
+/** Số chuyến đã giao gần đây hiện ở danh sách. */
 export const RECENT_LIMIT = 5
 
 /**
@@ -51,25 +68,20 @@ export function driverPlan<R extends Pick<Revision, 'id' | 'approvedAt'>>(trip: 
   return loadedWith === undefined ? latestApproved(revisions) : revisions.find((revision) => revision.id === loadedWith)
 }
 
-/** Chuyến tài xế mở được: đang vận chuyển, hoặc kho đã xếp xong. */
-export function isReadyToDrive(row: Pick<MyTripRow, 'status' | 'sub'>): boolean {
-  return row.status === 'IN_TRANSIT' || row.sub?.kind === 'loaded'
-}
-
-/** Chuyến kho đang chuẩn bị: phương án đã duyệt (còn hiệu lực) chờ kho xếp, hoặc kho đang xếp — tài xế thấy nhưng chưa mở được. */
-export function isPreparing(row: Pick<MyTripRow, 'sub'>): boolean {
-  return row.sub?.kind === 'approved' || row.sub?.kind === 'loading'
-}
-
-/** Thứ tự trong nhóm (đang làm trước): đang vận chuyển, đã xếp xong, kho đang xếp, chờ kho xếp. */
-function stage(row: Pick<MyTripRow, 'status' | 'sub'>): number {
-  if (row.status === 'IN_TRANSIT') return 0
-  if (row.sub?.kind === 'loaded') return 1
-  return row.sub?.kind === 'loading' ? 2 : 3
+/**
+ * Nhóm của một chuyến, hoặc `null` khi chuyến không hiện ở "Chuyến của tôi": chuyến Nháp, Đã lập kế hoạch (kho chưa bắt đầu — tài xế
+ * chưa có gì để làm) và Đã huỷ.
+ */
+export function myTripGroup(row: Pick<MyTripRow, 'status' | 'sub'>): MyTripGroup | null {
+  if (row.status === 'IN_TRANSIT') return 'inTransit'
+  if (row.status === 'DELIVERED') return 'recent'
+  if (row.status !== 'LOADING') return null
+  return row.sub?.kind === 'loaded' ? 'loaded' : 'preparing'
 }
 
 function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicleNames: ReadonlyMap<string, string>): MyTripRow {
   const total = plannedStops(plan).size
+  const unloaded = new Set(trip.delivery?.stops.flatMap((stop) => stop.unloadedIds))
   return {
     id: trip.id,
     name: trip.name,
@@ -77,39 +89,39 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
     vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
     status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
+    manualSub: tripManualSubStatus(trip),
     stopCount: trip.stops.length,
     packageCount: total - missingIds(trip).size,
     currentStop: trip.delivery?.stops.find((stop) => stop.completedAt === undefined)?.number,
     completedAt: trip.delivery?.completedAt,
     issueCount: trip.delivery?.issues.length ?? 0,
+    recheck: trip.phase === 'delivering' ? rejectedConfirms(trip, 'UNLOADING', unloaded).length : 0,
   }
 }
 
-/** Theo giai đoạn (đang làm trước), rồi ngày chạy sớm trước, rồi mã chuyến. */
-function byStageThenDate(a: MyTripRow, b: MyTripRow): number {
-  return stage(a) - stage(b) || a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id)
+/** Ngày chạy sớm trước, rồi mã chuyến. */
+function byDate(a: MyTripRow, b: MyTripRow): number {
+  return a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id)
 }
 
 /**
- * "Chuyến của tôi" (LM-087): chuyến người xem được thấy, chia ba nhóm. Chuyến có phương án chờ duyệt hoặc lỗi thời và chuyến đã
- * huỷ không hiện — tài xế không làm gì được với chúng.
+ * "Chuyến của tôi" (LM-087; nhóm theo trạng thái từ FE-6-01): chuyến người xem được thấy, chia theo `MY_TRIP_GROUPS`. Chuyến đã giao
+ * mới nhất trước, tối đa `RECENT_LIMIT`.
  */
 export function myTrips(entries: readonly TripRevisions[], vehicleNames: ReadonlyMap<string, string>, viewer: Pick<User, 'id'>): MyTrips {
-  const ready: MyTripRow[] = []
-  const preparing: MyTripRow[] = []
-  const recent: MyTripRow[] = []
+  const groups: Record<MyTripGroup, MyTripRow[]> = { inTransit: [], loaded: [], preparing: [], recent: [] }
   for (const { trip, revisions } of entries) {
     if (!isVisibleTo(trip, viewer)) continue
     const plan = driverPlan(trip, revisions)
     if (!plan) continue
     const item = row(trip, plan, revisions, vehicleNames)
-    if (isReadyToDrive(item)) ready.push(item)
-    else if (isPreparing(item)) preparing.push(item)
-    else if (item.status === 'DELIVERED') recent.push(item)
+    const group = myTripGroup(item)
+    if (group) groups[group].push(item)
   }
   return {
-    ready: ready.toSorted(byStageThenDate),
-    preparing: preparing.toSorted(byStageThenDate),
-    recent: recent.toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT),
+    inTransit: groups.inTransit.toSorted(byDate),
+    loaded: groups.loaded.toSorted(byDate),
+    preparing: groups.preparing.toSorted(byDate),
+    recent: groups.recent.toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT),
   }
 }

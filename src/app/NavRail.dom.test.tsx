@@ -71,14 +71,17 @@ test.each<Role>(['systemManager', 'systemSupporter'])('nav rail của %s không 
   expect(screen.getByRole('button', { name: /^Tài khoản / })).toBeInTheDocument()
 })
 
-/** LM-098: chuông chỉ có ở vai trò có loại thông báo; kho và tài xế không có nút không làm gì (D-20). */
+/**
+ * LM-098: chuông chỉ có ở vai trò có loại thông báo — không hiện nút không làm gì (D-20). FE-6-04: kho và tài xế có chuông (xác nhận tay
+ * của chính mình bị điều phối viên từ chối).
+ */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
   ['manager', true],
   ['systemAdmin', true],
   ['companyAdmin', true],
-  ['warehouse', false],
-  ['driver', false],
+  ['warehouse', true],
+  ['driver', true],
   ['systemManager', false],
   ['systemSupporter', false],
 ])('chuông thông báo của %s: %s', (role, shown) => {

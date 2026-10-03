@@ -169,6 +169,13 @@ export type MockDbErrorParams = {
   /** Xe không chở được hàng của chuyến; `reasons`: mã lỗi của `vehicleFit` (kích thước, thể tích, tải trọng, trục). */
   VEHICLE_UNFIT: { vehicleId: string; reasons: string[] }
 
+  // Đối chiếu kiện ba mức và duyệt xác nhận tay (FE-6-03, FE-6-04, D-83)
+  /** Mã của bên gửi vừa gõ trùng `count` kiện của chuyến: không biết là kiện nào, phải gõ mã QR in dưới hình. */
+  PACKAGE_CODE_AMBIGUOUS: { tripId: string; code: string; count: number }
+  /** Xong xếp hoặc hoàn tất điểm giao khi còn `count` xác nhận tay chờ điều phối viên duyệt. */
+  MANUAL_CONFIRM_PENDING: { tripId: string; count: number }
+  /** Duyệt hoặc từ chối một xác nhận tay không còn chờ: đã có quyết định, đã bị thay bằng lần đối chiếu khác, hoặc không có. */
+  MANUAL_CONFIRM_NOT_PENDING: { tripId: string; confirmationId: string }
   // Vị trí xe (FE-6-08)
   /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
   LOCATION_INVALID: { field: string }

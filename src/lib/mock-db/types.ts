@@ -3,6 +3,7 @@ import type { CargoPackage, OptimizationRequest, OptimizationResult, PlanObjecti
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
 import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings, TripRoutePlan } from './source-types'
+import type { PackageVerification } from './verify-model'
 
 /**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
@@ -47,7 +48,10 @@ export type LoadingProgress = {
   /** Người bấm bắt đầu; `null` khi không có phiên (seed, test). */
   startedBy: string | null
   completedAt?: string
-  /** Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. */
+  /**
+   * Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. `via: 'qr'`: kiện đã đối chiếu bằng nhãn (quét hoặc gõ mã);
+   * cách, người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications` (FE-6-03).
+   */
   steps: { packageInstanceId: string; outcome: LoadingOutcome; at: string; via?: 'qr' }[]
   /** Số seal niêm phong thùng, ghi khi xếp xong (LM-104). */
   seal?: { number: string; at: string; by: string | null }
@@ -72,7 +76,7 @@ export type StopProgress = {
   /** Số điểm giao, khớp vị trí trong `Trip.stops` + 1. */
   number: number
   unloadedIds: string[]
-  /** Kiện dỡ được xác nhận bằng quét QR (tập con của `unloadedIds`, LM-104). */
+  /** Kiện dỡ đã đối chiếu bằng nhãn — quét hoặc gõ mã (tập con của `unloadedIds`, LM-104); cách đối chiếu ở `Trip.verifications`. */
   qrConfirmedIds?: string[]
   /** Tài xế bấm "Đã đến", ISO 8601: từ lúc đó xe mô phỏng đứng ở điểm này (FE-6-08). Kho chưa có hàm ghi trường này. */
   arrivedAt?: string
@@ -119,6 +123,11 @@ export type Trip = {
   createdAt: string
   loading?: LoadingProgress
   delivery?: DeliveryProgress
+  /**
+   * Các lần đối chiếu kiện của chuyến, theo thứ tự ghi (FE-6-03, D-83): quét, gõ mã, xác nhận tay kèm trạng thái duyệt (FE-6-04).
+   * Chỉ hàm đối chiếu và duyệt của kho ghi.
+   */
+  verifications?: PackageVerification[]
   cancellation?: Cancellation
   /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
   routePlan?: TripRoutePlan

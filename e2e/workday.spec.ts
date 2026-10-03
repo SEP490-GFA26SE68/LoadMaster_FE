@@ -71,7 +71,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   // Kho: xếp 5 kiện, báo thiếu 1, hoàn tất
   await signIn(page, 'warehouse')
   await page.waitForURL(/\/kho$/)
-  const card = page.getByRole('list', { name: 'Chuyến cần xếp', exact: true }).getByRole('listitem')
+  const card = page.getByRole('list', { name: 'Chờ soạn', exact: true }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: TRIP, exact: true }) })
   await card.getByRole('link', { name: 'Bắt đầu xếp', exact: true }).click()
   await expect(page.getByText('Bước 1 / 6', { exact: true })).toBeVisible()
@@ -93,7 +93,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   // Tài xế: bắt đầu giao, dỡ 5 kiện có trên xe, báo một kiện hỏng, hoàn tất → tổng kết
   await signIn(page, 'driver')
   await page.waitForURL(/\/tai-xe$/)
-  await page.getByRole('region', { name: 'Sẵn sàng giao' }).getByRole('listitem')
+  await page.getByRole('region', { name: 'Xếp xong — chờ xuất phát' }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: TRIP, exact: true }) })
     .getByRole('link', { name: 'Mở chuyến', exact: true }).click()
   await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).click()

@@ -31,4 +31,9 @@ test('the back button of the label page returns to where the labels were asked f
   // Nhân viên kho không mở được Kho kiện hay Chi tiết chuyến: luôn về Tra cứu kiện
   expect(labelsBackTarget(new URLSearchParams('kien=PK-0001,PK-0002'), warehouse)).toStrictEqual({ kind: 'lookup', to: '/tra-cuu-kien' })
   expect(labelsBackTarget(new URLSearchParams('chuyen=TRIP-014'), warehouse)).toStrictEqual({ kind: 'lookup', to: '/tra-cuu-kien' })
+  // In lại nhãn giữa lúc đối chiếu ở phiên xếp (FE-6-03): nhân viên kho về đúng phiên; người không vận hành kho thì không
+  const session = new URLSearchParams('kien=PK-T00012&tu=kho&phien=TRIP-011')
+  expect(labelsBackTarget(session, warehouse)).toStrictEqual({ kind: 'loading', to: '/kho?chuyen=TRIP-011', tripId: 'TRIP-011' })
+  const dispatcher = (permission: string) => permission !== 'warehouse.operate'
+  expect(labelsBackTarget(session, dispatcher)).toStrictEqual({ kind: 'pool', to: '/kien-hang' })
 })

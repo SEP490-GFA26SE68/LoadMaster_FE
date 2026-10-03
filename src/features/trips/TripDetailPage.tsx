@@ -11,6 +11,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
+import { ManualConfirmCard } from './ManualConfirmCard'
 import { emptyPackage } from './package-defaults'
 import { PackagesTable } from './PackagesTable'
 import { PoolPackagePicker } from './PoolPackagePicker'
@@ -47,6 +48,8 @@ import {
  * — kiện phải thuộc một điểm giao. FE-4b-05: dưới thẻ yêu cầu giao là "Kiện đưa thẳng từ kho kiện" (thêm / bỏ kiện Đã nhập).
  * FE-4b-09: đầu card sơ đồ tuyến có "Tối ưu tuyến" (quyền `routes.optimize`), mỗi điểm có giờ đến dự kiến và mức hạn, dưới là bản đồ
  * tuyến (`RouteMap`); kéo đổi thứ tự điểm thì giờ đến tính lại. FE-4b-06: cột phải có thẻ "Phân nhóm hàng"; lưu một kiện khác loại
+ * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-04: chuyến đang xếp / đang giao còn xác nhận tay chờ duyệt thì thẻ "Xác nhận tay
+ * chờ duyệt" đứng đầu cột chính.
  * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
  * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
  */
@@ -153,6 +156,8 @@ export function TripDetailPage() {
             </div>
 
             <div className="flex min-w-0 flex-col gap-3 xl:[grid-area:main]">
+              {/* Việc chờ điều phối viên đứng trước bảng kiện: còn dòng ở đây thì kho / tài xế chưa đi tiếp được (FE-6-04) */}
+              <ManualConfirmCard tripId={tripId} />
               <PackagesTable
                 packages={trip.packages}
                 vehicle={vehicle}

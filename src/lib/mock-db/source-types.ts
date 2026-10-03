@@ -153,6 +153,8 @@ export type TripLabel = {
   qrToken: string
   /** Kiện kho kiện (`PK-NNNN`) của instance này. */
   poolPackageId: string
+  /** Mã của bên gửi (`Package.packageCode`): gõ mã này đối chiếu được kiện khi nó duy nhất trong chuyến (FE-6-03, D-83). */
+  packageCode: string
 }
 
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */

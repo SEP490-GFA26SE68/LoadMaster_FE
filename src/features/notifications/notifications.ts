@@ -21,9 +21,12 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Phạm vi do kho lọc, không lọc ở đây (FE-0-08): quản trị hệ thống nhận sự
  *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
  *   trên người của công ty (khoá, đặt lại mật khẩu) — không nhận gì về tài khoản nền tảng hay của công ty khác.
- * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8); kho và tài xế làm việc trên màn
- *   của mình. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
- * Sự kiện của luồng mới (nguy cơ trễ, xác nhận tay chờ duyệt, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
+ * - Điều phối viên còn được báo khi kho hoặc tài xế gửi một **xác nhận tay** chờ duyệt (FE-6-04, D-83).
+ * - Nhân viên kho, tài xế: chỉ một loại — xác nhận tay **của chính mình** bị điều phối viên từ chối (`PERSONAL_ACTIONS`), để biết
+ *   kiện nào phải kiểm lại.
+ * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8). Vai trò không có nguồn nào thì
+ *   không có chuông (`hasNotifications`).
+ * Sự kiện của luồng mới (nguy cơ trễ, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
  */
 export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>> = {
   systemAdmin: ACCOUNT_ACTIONS,
@@ -31,10 +34,19 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
   manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled'],
-  dispatcher: ['revision.approved', 'loading.completed', 'loading.missing', 'package.found', 'delivery.issue', 'delivery.etaRisk', 'delivery.completed', 'trip.cancelled'],
-  warehouse: [],
-  driver: [],
+  dispatcher: [
+    'revision.approved', 'loading.completed', 'loading.missing', 'package.found', 'delivery.issue', 'delivery.etaRisk', 'delivery.completed',
+    'trip.cancelled', 'manualConfirm.requested',
+  ],
+  warehouse: ['manualConfirm.rejected'],
+  driver: ['manualConfirm.rejected'],
 }
+
+/**
+ * Sự kiện chỉ báo cho **người gửi** việc bị quyết định (tham số `requestedBy` của sự kiện), không báo cho cả vai trò: xác nhận tay bị
+ * từ chối là việc của đúng người đã gửi nó.
+ */
+const PERSONAL_ACTIONS: readonly AuditAction[] = ['manualConfirm.rejected']
 
 /** Chỉ sự kiện trong chừng ấy ngày gần nhất, tối đa chừng ấy dòng. */
 export const NOTIFICATION_WINDOW_DAYS = 7
@@ -62,5 +74,17 @@ export function selectNotifications(events: readonly AuditEvent[], viewer: Notif
   const since = notificationWindowStart(now).getTime()
   return events
     .filter((event) => actions.includes(event.action) && event.actorId !== viewer.id && Date.parse(event.at) >= since)
+    .filter((event) => !PERSONAL_ACTIONS.includes(event.action) || event.params.requestedBy === viewer.id)
     .slice(0, NOTIFICATION_LIMIT)
+}
+
+/**
+ * Nơi kho và tài xế mở chuyến của một thông báo: họ không mở được Chi tiết chuyến (`trips.view`), nên thông báo về một chuyến dẫn về
+ * màn của chính vai trò đó. Vai trò khác, hoặc đối tượng không phải chuyến: `null` — liên kết theo quyền của nhật ký (`describeEvent`).
+ */
+export function operationHref(event: Pick<AuditEvent, 'target'>, role: Role): string | null {
+  if (event.target.type !== 'trip') return null
+  const tripId = encodeURIComponent(event.target.id)
+  if (role === 'warehouse') return `/kho?chuyen=${tripId}`
+  return role === 'driver' ? `/tai-xe/diem-giao?chuyen=${tripId}` : null
 }

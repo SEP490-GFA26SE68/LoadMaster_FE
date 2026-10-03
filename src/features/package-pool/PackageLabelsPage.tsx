@@ -44,7 +44,9 @@ export function PackageLabelsPage() {
   const query = usePackageLabelsQuery(selection)
   const labels = query.data ?? []
   const missing = selection.ids === undefined || !query.isSuccess ? 0 : selection.ids.length - labels.length
-  const backLabel = back.kind === 'trip' ? t('sourcing.labels.backToTrip', { id: back.tripId }) : back.kind === 'lookup' ? t('sourcing.labels.backToLookup') : t('sourcing.labels.back')
+  const backLabel = back.kind === 'trip' ? t('sourcing.labels.backToTrip', { id: back.tripId })
+    : back.kind === 'loading' ? t('sourcing.labels.backToLoading', { id: back.tripId })
+    : back.kind === 'lookup' ? t('sourcing.labels.backToLookup') : t('sourcing.labels.back')
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">

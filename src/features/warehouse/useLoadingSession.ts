@@ -9,7 +9,7 @@ import { useRecordLoadingStepMutation } from './useWarehouseQueries'
 /** Thời gian tối thiểu hiện lớp phủ "Đã xếp" trước khi sang kiện kế tiếp. */
 const CONFIRMED_OVERLAY_MS = 1200
 
-type Overlay = { readonly id: string; readonly nextStep: number | undefined }
+type Overlay = { readonly id: string; readonly nextStep: number | undefined; readonly manual: boolean }
 
 /**
  * Phiên xếp hàng tại kho (LM-086): kiện hiện tại là kiện chưa có kết quả đầu tiên theo `loadingOrder`, đọc từ tiến độ trong kho — mở
@@ -34,9 +34,12 @@ export function useLoadingSession(tripId: string, placements: readonly ScenePlac
     toast.error(dataErrorMessage(error, t))
   }
 
-  /** Hiện lớp phủ "Đã xếp `id`" tối thiểu 1,2 giây — dùng chung cho nút xác nhận và quét QR đúng kiện. */
-  function celebrate(id: string, nextStep: number | undefined) {
-    setOverlay({ id, nextStep })
+  /**
+   * Hiện lớp phủ "Đã xếp `id`" tối thiểu 1,2 giây — dùng chung cho nút xác nhận và hộp đối chiếu kiện. `manual`: kiện vừa ghi bằng xác
+   * nhận tay, còn chờ điều phối viên duyệt.
+   */
+  function celebrate(id: string, nextStep: number | undefined, manual = false) {
+    setOverlay({ id, nextStep, manual })
     setHolding(true)
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {

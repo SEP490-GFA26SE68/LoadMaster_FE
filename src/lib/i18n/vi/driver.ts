@@ -16,17 +16,25 @@ export const driver = {
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
     title: 'Chuyến của tôi',
-    ready: 'Sẵn sàng giao',
-    noReady: 'Chưa có chuyến nào sẵn sàng giao.',
-    preparing: 'Kho đang chuẩn bị',
-    recent: 'Đã hoàn thành gần đây',
+    /** Nhóm theo trạng thái và dòng phụ của chuyến (FE-6-01). */
+    groups: {
+      inTransit: 'Đang vận chuyển',
+      loaded: 'Xếp xong — chờ xuất phát',
+      preparing: 'Kho đang soạn / xếp',
+      recent: 'Đã giao gần đây',
+    },
+    noReady: 'Chưa có chuyến nào xếp xong hoặc đang vận chuyển.',
     open: 'Mở chuyến',
+    preview: 'Xem trước',
     resume: 'Tiếp tục giao',
     viewSummary: 'Xem tổng kết',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
     atStop: 'Đang giao điểm {number} / {total}',
-    waitingApproved: 'Kho chưa bắt đầu xếp — chưa giao được.',
-    waitingLoading: 'Kho đang xếp — chưa giao được.',
+    waitingLoading: 'Kho đang xếp — chưa xuất phát được, chỉ xem trước.',
+    recheck: {
+      one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+      other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+    },
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
     emptyTitle: 'Chưa có chuyến nào',
@@ -65,16 +73,31 @@ export const driver = {
     area: { front: 'Sát vách trước', middle: 'Giữa xe', door: 'Gần cửa' },
     layer: { floor: 'sàn', lower: 'lớp dưới', upper: 'lớp trên' },
   },
-  /** Quét QR khi dỡ (luồng 5 Review 1, LM-104): chỉ kiện của điểm đang giao được ghi "đã dỡ". */
+  /** Đối chiếu kiện khi dỡ (LM-104; ba mức từ FE-6-03): chỉ kiện của điểm đang giao được ghi "đã dỡ". */
   scan: {
-    open: 'Quét QR dỡ',
-    title: 'Quét QR dỡ tại điểm {number}',
-    description: 'Quét nhãn QR của từng kiện khi đưa xuống xe. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    open: 'Đối chiếu kiện dỡ',
+    title: 'Đối chiếu kiện dỡ tại điểm {number}',
+    description: 'Quét nhãn QR của từng kiện khi đưa xuống xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã dỡ {done} / {total} kiện.',
     lastUnloaded: 'Vừa dỡ {id} · {name}.',
-    optionDescription: '{name} · Dỡ thứ {order}',
     wrongStop: 'Kiện {id} ({name}) thuộc điểm {stop} · {stopName}, không phải điểm này. Chưa ghi gì — để kiện lại trên xe.',
     unloaded: 'Đã dỡ {id}',
-    viaQr: 'Đã dỡ · quét QR',
+    manualRecorded: 'Đã ghi xác nhận tay {id}',
+    manualRecordedDescription: 'Chờ điều phối viên duyệt trước khi hoàn tất điểm giao.',
+    /** Dòng "Đã dỡ" của một kiện kèm cách đối chiếu. */
+    via: {
+      QR: 'Đã dỡ · quét QR',
+      CODE: 'Đã dỡ · gõ mã',
+      MANUAL_PENDING: 'Đã dỡ · xác nhận tay, chờ duyệt',
+      MANUAL_APPROVED: 'Đã dỡ · xác nhận tay đã duyệt',
+    },
+  },
+  /** Xác nhận tay ở điểm giao (FE-6-04): còn chờ điều phối viên duyệt thì chưa hoàn tất điểm; bị từ chối thì kiểm lại kiện đó. */
+  confirms: {
+    blocked: {
+      one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.',
+      other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.',
+    },
+    rejected: 'Điều phối viên từ chối xác nhận tay, kiểm lại kiện này. Lý do: {reason}',
   },
   /** Hộp "Báo sự cố" cho một kiện (D-47): loại + ghi chú, "Khác" bắt buộc ghi chú. */
   issue: {

@@ -5,6 +5,7 @@ import type { DeadlineStatus } from '@/domain/routing'
 import type { TFunction } from '@/lib/i18n'
 import {
   DELIVERY_ISSUE_KINDS,
+  MANUAL_CONFIRM_REASONS,
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
   PACKAGE_CHANGE_FIELDS,
@@ -12,6 +13,7 @@ import {
   REQUIREMENT_PRIORITIES,
   PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
+  VERIFY_CONTEXTS,
   type AuditAction,
   type AuditEvent,
   type AuditTargetType,
@@ -62,6 +64,8 @@ const PARAM_KEYS = [
   'sealNumber', 'packageCode', 'flag',
   // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
   'handlingClass', 'conflictCount', 'totalKm', 'totalMinutes', 'lateStops',
+  // Xác nhận tay (FE-6-03, FE-6-04)
+  'verifyContext', 'manualReason', 'requestedBy',
   // Nguy cơ trễ hạn theo vị trí xe (FE-6-09)
   'deadlineStatus', 'eta', 'deadline',
 ] as const
@@ -109,7 +113,7 @@ export function describeEvent(event: AuditEvent, directory: AuditDirectory, t: T
     action: t(`audit.actions.${event.action}`),
     target: targetOf(event, directory, can),
     details: Object.entries(event.params)
-      .map(([key, value]) => t('audit.log.detail', { label: paramLabel(key, t), value: paramValue(event, key, value, t, format) }))
+      .map(([key, value]) => t('audit.log.detail', { label: paramLabel(key, t), value: paramValue(event, key, value, directory, t, format) }))
       .join(' · '),
   }
 }
@@ -174,7 +178,7 @@ function paramLabel(key: string, t: TFunction): string {
   return isOneOf(PARAM_KEYS, key) ? t(`audit.log.params.${key}`) : key
 }
 
-function paramValue(event: AuditEvent, key: string, value: string | number, t: TFunction, format: Formatter): string {
+function paramValue(event: AuditEvent, key: string, value: string | number, directory: AuditDirectory, t: TFunction, format: Formatter): string {
   // Quãng đường của tuyến giữ số lẻ; số khác là số đếm
   if (typeof value === 'number') return key === 'totalKm' ? format.decimal(value) : format.integer(value)
   switch (key) {
@@ -210,6 +214,13 @@ function paramValue(event: AuditEvent, key: string, value: string | number, t: T
       return isOneOf(OPTIMIZATION_ALGORITHMS, value) ? t(`runs.algorithms.${value}`) : value
     case 'reasonCode':
       return isOneOf(RUN_FAILURE_CODES, value) ? t(`runs.failures.${value}`) : value
+    // Xác nhận tay (FE-6-03, FE-6-04): bước và lý do là mã của kho; người gửi là mã người dùng
+    case 'verifyContext':
+      return isOneOf(VERIFY_CONTEXTS, value) ? t(`common.verifyContexts.${value}`) : value
+    case 'manualReason':
+      return isOneOf(MANUAL_CONFIRM_REASONS, value) ? t(`common.manualConfirmReasons.${value}`) : value
+    case 'requestedBy':
+      return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho
       return event.action === 'auth.signInFailed' && isOneOf(REASONS, value) ? t(`audit.log.reasons.${value}`) : value

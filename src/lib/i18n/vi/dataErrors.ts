@@ -74,6 +74,10 @@ export const dataErrors = {
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
   VEHICLE_BUSY: 'Xe {vehicleId} đang chạy chuyến {tripId}, hãy chọn xe sẵn sàng.',
   VEHICLE_UNFIT: 'Xe {vehicleId} không chở được hàng của chuyến này.',
+  // Đối chiếu kiện ba mức và duyệt xác nhận tay (FE-6-03, FE-6-04)
+  PACKAGE_CODE_AMBIGUOUS: 'Mã {code} trùng {count} kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.',
+  MANUAL_CONFIRM_PENDING: 'Còn {count} xác nhận tay chờ điều phối viên duyệt.',
+  MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này không còn chờ duyệt.',
   // Vị trí xe (FE-6-08)
   LOCATION_INVALID: 'Vị trí xe gửi lên chưa hợp lệ: cần vĩ độ, kinh độ trong khoảng cho phép, tốc độ không âm và hướng từ 0 đến 359 độ.',
   // Nhập file vào kho kiện (FE-3b-02)

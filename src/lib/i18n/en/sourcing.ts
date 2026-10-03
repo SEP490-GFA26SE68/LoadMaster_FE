@@ -219,6 +219,7 @@ export const sourcing = {
     back: 'Back to the package pool',
     backToLookup: 'Back to package lookup',
     backToTrip: 'Back to trip {id}',
+    backToLoading: 'Back to loading {id}',
     empty: 'No package selected for labels yet.',
     emptyDescription: 'Select packages on the Package pool screen, then choose "Print QR labels".',
     emptyLookup: 'Look up a package, then choose "Reprint label".',

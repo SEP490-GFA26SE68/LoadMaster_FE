@@ -137,6 +137,69 @@ test('the driver delivers a trip: start, unload, a stop with nothing on board, a
   ])
 }, 30_000)
 
+test('verification at a stop (FE-6-03, FE-6-04): a package of another stop is explained; a manual confirmation blocks the stop until the dispatcher decides; a typed code unloads', async () => {
+  const tripId = await loadedTwoCartonTrip()
+  const db = getMockDb()
+  const first = renderDriver(`/tai-xe/diem-giao?chuyen=${tripId}`)
+  await screen.findByRole('heading', { level: 1, name: 'Điểm 1 / 3' }, LOAD)
+  await userEvent.click(screen.getByRole('button', { name: 'Bắt đầu giao' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Đối chiếu kiện dỡ' }, WRITE))
+  const dialog = within(screen.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' }))
+  expect(screen.getByRole('dialog')).toHaveAccessibleDescription(/Điểm 1: đã dỡ 0 \/ 1 kiện\.$/)
+
+  // Mức 2: gõ mã của bên gửi của kiện điểm 3 — nói kiện thuộc điểm nào, không ghi
+  await userEvent.type(dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }), 'PKG-001-01')
+  await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
+  expect(await dialog.findByRole('alert', {}, WRITE)).toHaveTextContent(
+    'Kiện PKG-001-01 (Carton A) thuộc điểm 3 · Siêu thị Co.opmart Biên Hoà, không phải điểm này. Chưa ghi gì — để kiện lại trên xe.',
+  )
+  expect((await db.getTrip(tripId)).delivery?.stops[0]?.unloadedIds).toStrictEqual([])
+
+  // Mức 3: kiện duy nhất chờ dỡ của điểm được chọn sẵn; tài xế không có nút in lại nhãn
+  await userEvent.click(dialog.getByRole('tab', { name: 'Xác nhận tay' }))
+  expect(dialog.getByRole('radio', { name: /PKG-002-01/ })).toBeChecked()
+  expect(dialog.queryByRole('link', { name: /^In lại nhãn/ })).not.toBeInTheDocument()
+  await userEvent.click(dialog.getByRole('radio', { name: 'QR không đọc được' }))
+  await userEvent.click(dialog.getByRole('button', { name: 'Gửi xác nhận tay' }))
+  // Hết kiện chờ dỡ của điểm: hộp tự đóng
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), WRITE)
+  expect(toast.warning).toHaveBeenCalledWith('Đã ghi xác nhận tay PKG-002-01', { description: 'Chờ điều phối viên duyệt trước khi hoàn tất điểm giao.' })
+  const row = () => first.container.querySelector('li[data-package-id="PKG-002-01"]') as HTMLElement
+  await waitFor(() => expect(row()).toHaveAttribute('data-state', 'unloaded'), WRITE)
+  expect(within(row()).getByText('Đã dỡ · xác nhận tay, chờ duyệt')).toBeInTheDocument()
+
+  // Còn xác nhận tay chờ duyệt: chưa hoàn tất điểm được, lý do ngay trên nút
+  const complete = screen.getByRole('button', { name: 'Hoàn tất điểm giao' })
+  expect(complete).toBeDisabled()
+  expect(complete).toHaveAccessibleDescription('Còn 1 xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.')
+  first.unmount()
+
+  // Điều phối viên từ chối: kiện quay về chưa dỡ, kèm lý do để kiểm lại
+  db.restoreSession('US-0001')
+  await db.rejectManualConfirmation(tripId, 'VF-001', 'Gọi khách đếm lại số kiện')
+  const { container } = renderDriver(`/tai-xe/diem-giao?chuyen=${tripId}`)
+  await screen.findByRole('heading', { level: 1, name: 'Điểm 1 / 3' }, LOAD)
+  const rejected = container.querySelector('li[data-package-id="PKG-002-01"]') as HTMLElement
+  expect(rejected).toHaveAttribute('data-state', 'pending')
+  expect(within(rejected).getByRole('alert')).toHaveTextContent('Điều phối viên từ chối xác nhận tay, kiểm lại kiện này. Lý do: Gọi khách đếm lại số kiện')
+  expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).not.toHaveAccessibleDescription()
+
+  // Gõ mã của bên gửi (duy nhất trong chuyến): kiểm như quét, không cần duyệt
+  await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' }))
+  const again = within(screen.getByRole('dialog'))
+  await userEvent.type(again.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }), 'pkg-002-01')
+  await userEvent.click(again.getByRole('button', { name: 'Đối chiếu mã' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), WRITE)
+  expect(toast.success).toHaveBeenCalledWith('Đã dỡ PKG-002-01')
+  await waitFor(() => expect(container.querySelector('li[data-package-id="PKG-002-01"]')).toHaveAttribute('data-state', 'unloaded'), WRITE)
+  expect(within(container.querySelector('li[data-package-id="PKG-002-01"]') as HTMLElement).getByText('Đã dỡ · gõ mã')).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeEnabled(), WRITE)
+  expect((await db.getTrip(tripId)).verifications?.map((entry) => [entry.method, entry.manual?.status, entry.by])).toStrictEqual([
+    ['MANUAL', 'MANUAL_REJECTED', 'US-0004'], ['CODE', undefined, 'US-0004'],
+  ])
+}, 40_000)
+
 test('reopening a trip in delivery resumes at the first stop not completed', async () => {
   // TRIP-009 (seed): điểm 1 đã xong, điểm 2 dỡ được 25/50 kiện; tài xế của chuyến là Ngô Văn Bảo (US-0006)
   renderDriver('/tai-xe/diem-giao?chuyen=TRIP-009', 'US-0006')

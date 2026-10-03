@@ -543,6 +543,34 @@ export const trips = {
     missingCoordinates: 'Chưa có toạ độ',
     map: 'Bản đồ tuyến {id}',
   },
+  /** Thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến (FE-6-04, D-83): điều phối viên duyệt hoặc từ chối mức 3 của đối chiếu kiện. */
+  manualConfirms: {
+    title: 'Xác nhận tay chờ duyệt',
+    count: { one: '{count} chờ duyệt', other: '{count} chờ duyệt' },
+    description: 'Kho hoặc tài xế xác nhận kiện bằng tay vì nhãn không đọc được. Còn dòng chờ duyệt thì kho chưa xong xếp, tài xế chưa hoàn tất điểm giao được.',
+    /** Bước của chuyến kèm điểm giao: "Dỡ hàng · điểm 2". */
+    atStop: '{step} · điểm {stop}',
+    sentBy: '{name} gửi lúc {time} {date}',
+    unknownSender: 'Không rõ người gửi',
+    reason: 'Lý do: {reason}',
+    approve: 'Duyệt',
+    approveLabel: 'Duyệt xác nhận tay {id}',
+    reject: 'Từ chối',
+    rejectLabel: 'Từ chối xác nhận tay {id}',
+    approved: 'Đã duyệt xác nhận tay {id}',
+    rejected: 'Đã từ chối xác nhận tay {id}',
+    readOnly: 'Chỉ điều phối viên duyệt hoặc từ chối được xác nhận tay.',
+    rejectDialog: {
+      title: 'Từ chối xác nhận tay {id}?',
+      description: 'Kết quả của kiện này bị gỡ: người gửi phải kiểm lại kiện rồi đối chiếu lại, và được báo kèm lý do bạn ghi.',
+      reason: 'Lý do từ chối',
+      reasonHint: 'Người gửi đọc lý do này để biết cần kiểm lại gì.',
+      reasonRequired: 'Ghi lý do từ chối.',
+      reasonTooLong: 'Lý do tối đa {max} ký tự.',
+      confirm: 'Từ chối xác nhận',
+      cancel: 'Quay lại',
+    },
+  },
   /** Kiện kho kiện đưa thẳng vào chuyến (FE-4b-05, D-68 đường 2): thẻ ở Chi tiết chuyến và hộp thoại chọn kiện. */
   pool: {
     title: 'Kiện đưa thẳng từ kho kiện',

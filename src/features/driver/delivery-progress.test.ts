@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import type { DeliveryIssue, DeliveryProgress, LoadingProgress, TripPhase } from '@/lib/mock-db'
+import type { DeliveryIssue, DeliveryProgress, LoadingProgress, PackageVerification, TripPhase } from '@/lib/mock-db'
 import { deliveryMode, deliverySummary, deliveryView, withUnload } from './delivery-progress'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 
@@ -60,6 +60,26 @@ test('a stop without packages on the vehicle is current with nothing to unload',
   const progress = delivery({ stops: [{ number: 1, unloadedIds: [], completedAt: 'x' }, { number: 2, unloadedIds: [], completedAt: 'y' }, { number: 3, unloadedIds: [] }] })
   const view = deliveryView(trip('delivering', progress), stops)
   expect([view?.stop.number, view?.items.length, view?.remaining]).toStrictEqual([3, 0, 0])
+})
+
+test('each item carries how it was verified; pending manual confirmations of the current stop are counted, a rejected one flags its package', () => {
+  const at = '2026-09-14T02:00:00.000Z'
+  const verifications: PackageVerification[] = [
+    { id: 'VF-001', context: 'UNLOADING', stopNumber: 1, packageInstanceId: 'PKG-001-01', method: 'QR', at, by: 'US-0004' },
+    { id: 'VF-002', context: 'UNLOADING', stopNumber: 1, packageInstanceId: 'PKG-001-02', method: 'MANUAL', at, by: 'US-0004', manual: { status: 'MANUAL_PENDING', reason: 'LABEL_DAMAGED' } },
+    { id: 'VF-003', context: 'UNLOADING', stopNumber: 1, packageInstanceId: 'PKG-001-03', method: 'MANUAL', at, by: 'US-0004', manual: { status: 'MANUAL_REJECTED', reason: 'OTHER', note: 'Mờ', rejectReason: 'Đếm lại' } },
+    // Xác nhận tay của bước xếp không tính vào điểm giao
+    { id: 'VF-004', context: 'LOADING', packageInstanceId: 'PKG-002-01', method: 'MANUAL', at, by: 'US-0003', manual: { status: 'MANUAL_PENDING', reason: 'QR_UNREADABLE' } },
+  ]
+  const progress = delivery({ stops: [{ number: 1, unloadedIds: ['PKG-001-01', 'PKG-001-02'] }, { number: 2, unloadedIds: [] }, { number: 3, unloadedIds: [] }] })
+  const view = deliveryView({ ...trip('delivering', progress), verifications }, stops)
+  expect(view?.items.map((entry) => [entry.item.id, entry.unloaded, entry.verification?.id])).toStrictEqual([
+    ['PKG-001-01', true, 'VF-001'], ['PKG-001-02', true, 'VF-002'], ['PKG-001-03', false, 'VF-003'],
+  ])
+  expect([view?.pendingConfirms, view?.remaining]).toStrictEqual([1, 1])
+  // Kiện bị từ chối được đánh dấu tay lại: không còn mang lần bị từ chối; kiện bỏ đánh dấu không mang cách đối chiếu cũ
+  const remarked = delivery({ stops: [{ number: 1, unloadedIds: ['PKG-001-03'] }, { number: 2, unloadedIds: [] }, { number: 3, unloadedIds: [] }] })
+  expect(deliveryView({ ...trip('delivering', remarked), verifications }, stops)?.items.map((entry) => entry.verification?.id)).toStrictEqual([undefined, undefined, undefined])
 })
 
 test('marking and unmarking a package only touches that stop; a trip not delivering is returned as is', () => {

@@ -65,6 +65,9 @@ FE-3b-06)* In nhãn `/kien-hang/nhan` theo `labels.print` và Tra cứu kiện `
 viên kho. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
+nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
+`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*) và `manualConfirm.approve` (nút
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 04/10/2026, FE-6-04*), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02) và
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*) và `monitoring.view` (vị trí xe và giờ đến tính từ vị trí ở card sơ đồ tuyến của chuyến Đang vận chuyển — điều phối viên, quản lý công ty, *bổ sung 04/10/2026, FE-6-08*; màn `/giam-sat` chưa có), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
@@ -122,6 +125,12 @@ chuyến, kiện, yêu cầu giao, kho kiện, xe; điều phối viên thêm lo
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao; quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
+vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
+*(đã điều chỉnh 04/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
+xế có chuông với đúng một loại: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo tham số `requestedBy` —
+`PERSONAL_ACTIONS`); chuông của họ là nút 56 px ở thanh màn chính `/kho`, `/tai-xe` (`NotificationBell variant="touch"`, chữ 16 px), và
+thông báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến. Ở `/tai-xe` dưới 480 px
+tiêu đề xuống hàng riêng để hàng trên đủ chỗ cho bốn điều khiển 56 px.
 vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
 *(đã điều chỉnh 04/10/2026, FE-6-09)* Điều phối viên nhận thêm **nguy cơ trễ hạn giao** (`delivery.etaRisk` — sự kiện của hệ thống, không có
 người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
@@ -232,7 +241,7 @@ src/
   components/ui/        primitive tự viết trên Radix
   components/brand/     logo LoadMaster: LogoMark (biểu tượng SVG), Logo (bộ ghép + khẩu hiệu) — LM-105
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
-                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104),
+                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104), PackageVerify (đối chiếu kiện ba mức, FE-6-03),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
   components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl;
                         *(bổ sung 03/10/2026, FE-4b-03)* CoordinatePicker (ô chọn toạ độ: tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ
@@ -272,7 +281,9 @@ src/
                         phương án ứng viên `saveOptimizationRun` (`db-revisions.ts`), seed dựng ba phương án mỗi chuyến `seed-plan.ts`;
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
-                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
+                        hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; *(bổ sung 04/10/2026, FE-6-03,
+                        FE-6-04)* đối chiếu kiện ba mức và duyệt xác nhận tay (`verify-model.ts` kiểu + luật thuần,
+                        `db-scans.ts`, `db-manual-confirm.ts`); lô hàng và nhận hàng
                         (`db-shipments.ts`) đã bỏ ở FE-0-06; cách ly theo công ty của phiên (`tenancy.ts`, mọi `db-*.ts` đi
                         qua `ctx.scope`; `tenancy.test.ts` liệt kê mọi hàm công khai) và seed của Phương Nam
                         (`seed-phuong-nam.ts`) — FE-0-02
@@ -527,7 +538,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   "Chờ duyệt" hổ phách chấm vòng rỗng, "Đã duyệt" cyan, "Lỗi thời — cần tối ưu lại" hổ phách có viền; dưới Đang xếp hàng là "Đang xếp
   110 / 280" và "Xếp xong — chờ xuất phát" xanh lam. *(bổ sung 03/10/2026, FE-4b-09)* Tuyến đã tối ưu có điểm tới nơi sau hạn thì
   thêm một dòng phụ thứ hai "Có điểm trễ hạn dự kiến" hổ phách có viền, **đứng cạnh** dòng phụ của phương án (danh sách chuyến, đầu Chi
-  tiết chuyến — `tripRouteSubStatus`), không thay nó. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
+  tiết chuyến — `tripRouteSubStatus`), không thay nó. *(bổ sung 04/10/2026, FE-6-04)* Chuyến đang xếp hoặc đang giao còn xác nhận tay
+  chờ duyệt có dòng phụ thứ hai "Chờ duyệt xác nhận tay (n)" hổ phách chấm vòng rỗng (`tripManualSubStatus`), cùng chỗ đó. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
   (27/09/2026) dùng nháp · đã tối ưu · đã duyệt · đang vận chuyển · hoàn thành · đã huỷ, dòng phụ chỉ có lỗi thời và tiến độ kho.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
@@ -892,8 +904,8 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 
 ### Foundation engine *(bổ sung)*
 
-- *(đã điều chỉnh, LM-030)* Planner đọc revision của chuyến qua `viewer-api.ts` → `usePlanSourceQuery` → `adaptResult → ViewerSceneModel` (cm, snapshot bất biến): revision đã duyệt mới nhất, hoặc `?revision=<jobId>`. `ScenePlacement` ghép `PackagePlacement` với kiện gốc (`packageId`, tên, điểm giao, `fragilityLevel`); `step = loadingOrder`. *(đã điều chỉnh 19/09/2026, LM-086)* `/kho` là danh sách chuyến đã duyệt chờ xếp / đang xếp; `/kho?chuyen=<mã>` là phiên xếp theo bản duyệt chốt lúc `startLoading`, tiến độ và kiện thiếu ghi vào kho (`recordLoadingStep`), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho `PositionViewer`; kho không còn fixture benchmark; kiện báo thiếu (`missingIds`) vẽ như kiện đã gỡ (`unloadedIds` của
-`deriveSceneSemantics`), như khung 3D tài xế. *(LM-087)* Tài xế: `/tai-xe` "Chuyến của tôi" (chỉ chuyến có `driverId` là mình; từ FE-0-01 chỉ tài xế có `driver.operate`, không vai trò nào khác mở màn này); `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` → `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện kho báo thiếu không nằm trong danh sách dỡ và mô phỏng; dỡ, sự cố, hoàn tất điểm ghi vào kho. Kết hợp `ViewerDraft` theo ID để sinh effective placements; chỉ commit `{ position?, orientation?, pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
+- *(đã điều chỉnh, LM-030)* Planner đọc revision của chuyến qua `viewer-api.ts` → `usePlanSourceQuery` → `adaptResult → ViewerSceneModel` (cm, snapshot bất biến): revision đã duyệt mới nhất, hoặc `?revision=<jobId>`. `ScenePlacement` ghép `PackagePlacement` với kiện gốc (`packageId`, tên, điểm giao, `fragilityLevel`); `step = loadingOrder`. *(đã điều chỉnh 19/09/2026, LM-086)* `/kho` là danh sách chuyến đã duyệt chờ xếp / đang xếp — *(đã điều chỉnh 04/10/2026, FE-6-01)* chia **nhóm theo trạng thái và dòng phụ** (`WAREHOUSE_STAGES`): Đang xếp hàng (tiến độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (còn ghi được số seal tới khi tài xế xuất phát) · Chờ điều phối tối ưu lại (bản duyệt lỗi thời, không có nút); nút chính của màn là chuyến đang xếp dở, không thì chuyến chờ soạn sớm nhất; `/kho?chuyen=<mã>` là phiên xếp theo bản duyệt chốt lúc `startLoading`, tiến độ và kiện thiếu ghi vào kho (`recordLoadingStep`), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho `PositionViewer`; kho không còn fixture benchmark; kiện báo thiếu (`missingIds`) vẽ như kiện đã gỡ (`unloadedIds` của
+`deriveSceneSemantics`), như khung 3D tài xế. *(LM-087)* Tài xế: `/tai-xe` "Chuyến của tôi" (chỉ chuyến có `driverId` là mình; từ FE-0-01 chỉ tài xế có `driver.operate`, không vai trò nào khác mở màn này) — *(đã điều chỉnh 04/10/2026, FE-6-01)* nhóm theo trạng thái (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện; `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` → `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện kho báo thiếu không nằm trong danh sách dỡ và mô phỏng; dỡ, sự cố, hoàn tất điểm ghi vào kho. Kết hợp `ViewerDraft` theo ID để sinh effective placements; chỉ commit `{ position?, orientation?, pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
 - Kích thước placement **đã áp orientation**. Xoay luôn áp mã đích lên kích thước danh nghĩa `baseDimensionsById` (lấy từ `CargoPackage`), không đảo ngược kích thước đã xoay (`orientedSize` trong `scene-input.ts`). Xoay giữ nguyên góc vị trí của kiện.
 - Cả ba vai trò dùng chung `SceneCanvas` với `frameloop="demand"`. CameraControls tự invalidate khi chuyển động; mọi thay đổi buffer imperative phải gọi invalidate. Spring chỉ ghi ma trận/proxy kiện đang chạy, không đưa state từng frame qua React.
 - `frustumCulled={false}` không loại bỏ nhu cầu bounds của **raycast**. Cargo dùng sphere bao toàn bộ effective geometry và quãng animation, cập nhật khi geometry đổi. Không tính lại `computeBoundingSphere()` trong animation/step/slice path; cập nhật màu không ghi lại ma trận.
@@ -1247,6 +1259,26 @@ kiện `package.found` và điều phối viên thấy ở chuông. "Quét mã Q
 Mã QR là chuỗi
 ngẫu nhiên `LM-XXXX-XXXX-XXXX` (Crockford base32) không chứa dữ liệu kiện, cấp cho mọi kiện kho kiện — kể cả kiện thêm trong chuyến.
 Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định); app dùng `Math.random`.
+*(bổ sung 04/10/2026, FE-6-03, FE-6-04, D-83)* **Đối chiếu kiện ba mức** — một hộp `components/PackageVerify` dùng chung cho kho và tài
+xế (soạn hàng, nhận dọc đường nối sau): (1) quét QR (`QrCamera` của `QrScanDialog`); (2) gõ mã — mã QR in dưới hình, hoặc **mã của bên
+gửi khi nó duy nhất trong chuyến** (trùng: `PACKAGE_CODE_AMBIGUOUS`; luật thuần `resolveVerifyCode`); (3) xác nhận tay — chọn kiện + lý do
+(`MANUAL_CONFIRM_REASONS`: nhãn rách / mất, QR không đọc được, khác kèm ghi chú bắt buộc), kho in lại được nhãn của kiện (`loadingLabelPath`,
+mã QR giữ nguyên, nút quay lại về đúng phiên xếp). Hộp không biết kiện nào đúng: nơi gọi gửi mã / kiện cho kho và trả kết quả về (`result`
+là vùng `status` / `alert`); nút 56 px, chữ 16 px. `QrScanDialog` chỉ còn quét + gõ mã cho Tra cứu kiện — danh sách chọn tay không lý do
+đã bỏ. Kho ghi **mỗi lần đối chiếu** vào `Trip.verifications` (`PackageVerification`: bước `LOADING` / `UNLOADING`, cách `QR` / `CODE` /
+`MANUAL`, người, thời điểm; mã `VF-NNN` trong chuyến); `steps[].via: 'qr'` và `qrConfirmedIds` vẫn nghĩa là "đã đối chiếu bằng nhãn" (quét
+hoặc gõ). Hàm của kho: `confirmLoadingByQr` / `confirmUnloadByQr` nhận thêm `method`; `confirmLoadingManually` / `confirmUnloadManually` ghi
+kiện như đã xếp / đã dỡ để làm tiếp, kèm xác nhận tay `MANUAL_PENDING`. **Kho tự chặn** (giao diện bị bỏ qua cũng không qua):
+`completeLoading` và `completeStop` từ chối `MANUAL_CONFIRM_PENDING` khi còn xác nhận tay chờ của bước xếp / của điểm đó — lớp `-api.ts` của
+kho không tự hoàn tất xếp khi còn chờ, màn hiện nút mờ kèm lý do. Điều phối viên (`manualConfirm.approve`; kho kiểm vai trò:
+`ROLE_NOT_ALLOWED`) duyệt — `approveManualConfirmation`, kiện giữ kết quả — hoặc từ chối kèm lý do bắt buộc — `rejectManualConfirmation`,
+kết quả xếp / dỡ của kiện bị gỡ nên bước hiện tại của kho quay về đúng kiện đó và dòng kiện của tài xế về "chưa dỡ" kèm lý do
+(`rejectedConfirms`). Xác nhận tay còn chờ bị thay khi kiện được đối chiếu lại bằng nhãn, và bị bỏ khi kiện được ghi lại không qua đối
+chiếu (bước xếp ghi tay, bỏ đánh dấu đã dỡ). Thẻ "Xác nhận tay chờ duyệt" đứng đầu cột chính của Chi tiết chuyến
+(`trips/ManualConfirmCard`, `manual-confirm-api.ts` → `useManualConfirmQuery.ts`, khoá `['trips', tripId, 'manual-confirms']`): kiện, bước,
+người gửi, lý do, thời điểm; người chỉ xem thấy danh sách không có nút. Nhật ký: nhóm `manualConfirm` (`requested`, `approved`, `rejected`),
+đối tượng là chuyến. **Còn tạm tới FE-6-05 / FE-6-06**: nút "Xác nhận đã xếp" của kho và ô đánh dấu dỡ của tài xế vẫn ghi kiện không qua
+đối chiếu.
 
 ### Dữ liệu dùng chung và tối ưu *(bổ sung 15/09/2026, D-06, D-30, D-31)*
 

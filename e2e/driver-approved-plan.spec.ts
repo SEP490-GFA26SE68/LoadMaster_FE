@@ -67,7 +67,7 @@ test('phone: the driver screens run in English and switching language mid-delive
   await login('/tai-xe', 'driver')
   await page.goto('/tai-xe?lang=en')
   await expect(page.getByRole('heading', { level: 1, name: 'My trips', exact: true })).toBeVisible()
-  const open = page.getByRole('region', { name: 'Ready to deliver' }).getByRole('link', { name: 'Open trip', exact: true })
+  const open = page.getByRole('region', { name: 'Loaded — waiting to depart' }).getByRole('link', { name: 'Open trip', exact: true })
   expect(await heightOf(open)).toBeGreaterThanOrEqual(56)
   expect(await overflowingText(page)).toStrictEqual([])
   await attachScreenshot(page, testInfo, 'driver-list-en-phone')
