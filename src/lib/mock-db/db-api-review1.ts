@@ -3,11 +3,11 @@ import type { Package, PackageChanges, PackageFlag, PackageInput, PackageSource,
 import type { DeliveryRequirement, RequirementChanges, RequirementInput } from './requirement-model'
 import type {
   Company,
+  OptimizationAlgorithm,
   OptimizationRun,
   PackageType,
   PackageTypeInput,
   RunFailureCode,
-  RunSettings,
   ScanResult,
   TripLabel,
   VehicleType,
@@ -153,7 +153,7 @@ export type Review1Db = {
   /** Lịch sử lần chạy tối ưu của chuyến, cũ trước. */
   listOptimizationRuns(tripId: string): Promise<OptimizationRun[]>
   /** Ghi một lần chạy không ra kết quả (service từ chối hoặc không phản hồi). */
-  recordFailedRun(tripId: string, run: RunSettings & { failureCode: RunFailureCode }): Promise<OptimizationRun>
+  recordFailedRun(tripId: string, run: { failureCode: RunFailureCode; algorithm?: OptimizationAlgorithm }): Promise<OptimizationRun>
 
   listVehicleTypes(): Promise<VehicleType[]>
   getVehicleType(id: string): Promise<VehicleType>

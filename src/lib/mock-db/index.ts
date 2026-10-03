@@ -72,6 +72,7 @@ export {
 } from './requirement-model'
 export { tripReport, type TripReport, type TripReportStop } from './trip-report'
 export {
+  DEFAULT_RUN_ALGORITHM,
   DEFAULT_RUN_SETTINGS,
   OPTIMIZATION_ALGORITHMS,
   OPTIMIZATION_OBJECTIVES,
@@ -86,6 +87,7 @@ export {
   type PackageTypeLimits,
   type RunFailureCode,
   type RouteStopEta,
+  type RunPlan,
   type RunSettings,
   type ScanResult,
   type TripLabel,
@@ -110,11 +112,13 @@ export {
   type LoadingStepInput,
   type MockDb,
   type MockDbOptions,
+  type NewOptimizationRun,
   type NewRevision,
   type NewTrip,
   type NewUser,
   type ProfileChanges,
   type Revision,
+  type SavedOptimizationRun,
   type StopProgress,
   type TemporaryPassword,
   type Trip,

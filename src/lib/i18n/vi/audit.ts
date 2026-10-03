@@ -121,6 +121,7 @@ export const audit = {
       priority: 'Ưu tiên',
       tripId: 'Chuyến',
       objective: 'Mục tiêu',
+      runId: 'Lần chạy',
       algorithm: 'Thuật toán',
       reasonCode: 'Lý do',
       vehicleTypeId: 'Loại xe',

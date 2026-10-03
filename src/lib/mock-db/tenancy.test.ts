@@ -165,9 +165,11 @@ const PROBES = {
   listRevisions: { scope: 'operational', hidden: ({ db, other }) => db.listRevisions(other.trip) },
   getRevision: { scope: 'operational', hidden: ({ db, other }) => db.getRevision(other.revision) },
   addRevision: onForeignTrip((db, tripId, { revision }) => db.addRevision({ tripId, request: revision.request, result: revision.result })),
+  saveOptimizationRun: onForeignTrip((db, tripId, { revision }) =>
+    db.saveOptimizationRun({ tripId, request: revision.request, jobId: revision.jobId, plans: [{ objective: 'MAX_VOLUME', result: revision.result }] })),
   approveRevision: { scope: 'operational', forbidden: { 'phương án của công ty kia': ({ db, other }) => db.approveRevision(other.revision, []) } },
   listOptimizationRuns: { scope: 'operational', hidden: ({ db, other }) => db.listOptimizationRuns(other.trip) },
-  recordFailedRun: onForeignTrip((db, tripId) => db.recordFailedRun(tripId, { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF', failureCode: 'SERVICE_UNAVAILABLE' })),
+  recordFailedRun: onForeignTrip((db, tripId) => db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE' })),
 
   startLoading: onForeignTrip((db, tripId) => db.startLoading(tripId)),
   recordLoadingStep: onForeignTrip((db, tripId) => db.recordLoadingStep(tripId, { packageInstanceId: 'PKG-001-01', outcome: 'loaded' })),

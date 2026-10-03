@@ -7,11 +7,13 @@ import type {
   AuditFilter,
   DeliveryIssue,
   LoadingOutcome,
+  NewOptimizationRun,
   NewRevision,
   NewTrip,
   NewUser,
   ProfileChanges,
   Revision,
+  SavedOptimizationRun,
   Trip,
   TripChanges,
   UserChanges,
@@ -73,8 +75,17 @@ type CoreMockDb = {
   /** Revision của chuyến theo thứ tự tạo, cũ trước. */
   listRevisions(tripId: string): Promise<Revision[]>
   getRevision(id: string): Promise<Revision>
-  /** Lưu một kết quả tối ưu thành revision mới, mang `inputVersion` hiện tại của chuyến. Chuyến phải ở pha `planning`. */
+  /**
+   * Lưu **một** kết quả tối ưu có sẵn thành revision mới, mang `inputVersion` hiện tại của chuyến, kèm một lần chạy một phương án.
+   * Chuyến phải ở pha `planning`. Lối ghi kết quả dựng tay; lần chạy của app đi qua `saveOptimizationRun`.
+   */
   addRevision(input: NewRevision): Promise<Revision>
+  /**
+   * Lưu ba phương án ứng viên của một job tối ưu (FE-5b-05, D-77): mỗi phương án một revision bất biến, cùng một lần chạy
+   * (`Revision.runId`), theo thứ tự của `plans`; ghi một sự kiện `optimization.saved`. Chỉ khi chuyến **Đã lập kế hoạch** — còn Nháp
+   * (chưa tối ưu tuyến): `ROUTE_NOT_PLANNED`; đã sang pha vận hành: `TRIP_LOCKED`. Không lưu gì khi từ chối.
+   */
+  saveOptimizationRun(input: NewOptimizationRun): Promise<SavedOptimizationRun>
   /**
    * Duyệt (D-31, D-32): tạo revision approved **mới** — áp draft `patches` (bản chỉnh tay của Planner, FE-0-07), tính lại thứ tự
    * xếp/dỡ và metrics — revision nguồn giữ nguyên. Duyệt lại một revision đã duyệt được. Từ chối: `TRIP_LOCKED`, `REVISION_STALE`

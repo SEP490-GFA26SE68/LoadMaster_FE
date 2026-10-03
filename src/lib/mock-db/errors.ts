@@ -160,6 +160,8 @@ export type MockDbErrorParams = {
   LATE_STOPS_UNCONFIRMED: { tripId: string; stopIds: string[]; stopNumbers: number[] }
   /** Đổi xe khi chuyến chưa Đã lập kế hoạch (còn Nháp: chưa tối ưu tuyến). */
   TRIP_NOT_PLANNED: { tripId: string }
+  /** Chạy tối ưu xếp hàng khi chuyến chưa Đã lập kế hoạch (FE-5b-05): phải tối ưu tuyến trước. */
+  ROUTE_NOT_PLANNED: { tripId: string }
   /** Đổi sang chính xe chuyến đang dùng. */
   VEHICLE_UNCHANGED: { vehicleId: string }
   /** Xe đang chạy chuyến `tripId` (đang xếp, đã xếp xong, đang giao) nên chưa sẵn sàng cho chuyến khác. */

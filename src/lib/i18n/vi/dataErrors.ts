@@ -70,6 +70,7 @@ export const dataErrors = {
   APPROVAL_BLOCKED: 'Phương án {revisionId} còn {count} lỗi phải xử lý nên chưa duyệt được.',
   LATE_STOPS_UNCONFIRMED: 'Điểm giao số {stopNumbers} trễ hạn dự kiến: cần xác nhận trước khi duyệt.',
   TRIP_NOT_PLANNED: 'Chuyến {tripId} chưa ở trạng thái Đã lập kế hoạch nên chưa đổi xe ở đây được.',
+  ROUTE_NOT_PLANNED: 'Chuyến {tripId} chưa tối ưu tuyến nên chưa chạy tối ưu xếp hàng được. Tối ưu tuyến trước.',
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
   VEHICLE_BUSY: 'Xe {vehicleId} đang chạy chuyến {tripId}, hãy chọn xe sẵn sàng.',
   VEHICLE_UNFIT: 'Xe {vehicleId} không chở được hàng của chuyến này.',

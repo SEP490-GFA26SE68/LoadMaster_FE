@@ -16,12 +16,23 @@ function renderPanel(vehicle: VehicleConfig, placements: readonly ScenePlacement
   return within(screen.getByRole('region', { name: 'Tải trục' }))
 }
 
-test('the seed plan runs on a vehicle without axles: no figure, only the reason it is not computed', async () => {
+test('a vehicle without axles: no figure, only the reason it is not computed', async () => {
   const scene = await seedScene()
-  const panel = renderPanel(scene.vehicle, scene.placements)
+  const panel = renderPanel({ ...scene.vehicle, axles: undefined }, scene.placements)
   expect(panel.getByText('Chưa tính được: xe này chưa khai báo trục. Khai vị trí, tải rỗng và tải tối đa của trục ở trang xe.')).toBeInTheDocument()
   expect(panel.queryByText('MOCK RESULT')).not.toBeInTheDocument()
   expect(panel.queryByText(/kg/)).not.toBeInTheDocument()
+})
+
+test('the seed plan runs on a truck with two estimated axles: both groups inside their limits', async () => {
+  const scene = await seedScene()
+  const panel = renderPanel(scene.vehicle, scene.placements)
+  expect(panel.getByText('MOCK RESULT')).toBeInTheDocument()
+  const row = (label: string) => within(panel.getByText(label).closest('div')!)
+  // Hyundai HD210 rỗng 3.400 + 2.300 kg, hàng 5.844 kg: trước 4.663,27 kg, sau 6.880,73 kg
+  expect(row('Trục trước').getByText('4.663,27 kg / 6.500 kg')).toBeInTheDocument()
+  expect(row('Trục sau').getByText('6.880,73 kg / 10.000 kg')).toBeInTheDocument()
+  expect(panel.queryByText(/Vượt/)).not.toBeInTheDocument()
 })
 
 test('a vehicle with axles shows the front and rear loads against their limits, marked MOCK RESULT, and says by how much one is over', async () => {

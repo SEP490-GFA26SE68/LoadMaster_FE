@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import { expandPackages } from '@/domain/cargo'
 import { approvalBlockers, createConstraintEngine } from '@/domain/constraints'
 import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
+import { axleLoads, axleLoadsOf, checkAxleLoads } from '@/domain/metrics'
 import { cargoPackageSchema, vehicleConfigSchema } from '@/domain/models'
 import { createMockDb, isStale, tripStatus } from '@/lib/mock-db'
 
@@ -65,9 +66,11 @@ test('the sample trip carries 132 valid package instances to four real stops on 
 test('the sample trip is already optimized by the mock service and approved without edits, so warehouse and driver have data', async () => {
   const db = createMockDb()
   const trip = await db.getTrip('TRIP-2026-0914')
-  const [optimized, approved, ...more] = await db.listRevisions(trip.id)
+  // one run, three candidates (FE-5b-05): the least-rehandling plan keeps the numbered id and is the one approved
+  const [volume, balance, optimized, approved, ...more] = await db.listRevisions(trip.id)
   const seededRequest = optimized?.request
   expect({
+    others: [volume, balance].map((revision) => revision && [revision.id, revision.run?.objective, revision.runId, revision.approvedAt]),
     more,
     optimized: optimized && { id: optimized.id, status: optimized.result.status, mock: optimized.result.isMockResult, stale: isStale(optimized, trip) },
     approved: approved && {
@@ -83,6 +86,7 @@ test('the sample trip is already optimized by the mock service and approved with
     request: seededRequest && { vehicle: seededRequest.vehicle.id, packages: seededRequest.packages === undefined ? 0 : seededRequest.packages.length },
     accountedFor: (optimized?.result.placements.length ?? 0) + (optimized?.result.unplacedPackages.length ?? 0),
   }).toStrictEqual({
+    others: [['REV-001-A', 'MAX_VOLUME', 'RUN-002', undefined], ['REV-001-B', 'AXLE_BALANCE', 'RUN-002', undefined]],
     more: [],
     optimized: { id: 'REV-001', status: 'COMPLETED', mock: true, stale: false },
     approved: { id: 'REV-002', sourceRevisionId: 'REV-001', approvedAt: '2026-09-14T02:00:00.000Z', manuallyEdited: false, ordersRecomputed: true, stale: false },
@@ -90,11 +94,58 @@ test('the sample trip is already optimized by the mock service and approved with
     request: { vehicle: 'VEHICLE-002', packages: trip.packages.length },
     accountedFor: 132,
   })
+  expect([optimized?.run, optimized?.runId, approved?.run, approved?.runId]).toStrictEqual([
+    { objective: 'MIN_REHANDLING', algorithm: 'EP_DBLF' }, 'RUN-002', { objective: 'MIN_REHANDLING', algorithm: 'EP_DBLF' }, 'RUN-002',
+  ])
   expect(await createMockDb().listRevisions(trip.id)).toStrictEqual(await db.listRevisions(trip.id))
 })
 
+test('the three candidates of the sample trip load the same 132 packages three different ways (FE-5b-05)', async () => {
+  const candidates = (await createMockDb().listRevisions('TRIP-2026-0914')).filter((revision) => revision.approvedAt === undefined)
+  // Hyundai HD210: trục trước giới hạn 6.500 kg, trục sau 10.000 kg (số ước lượng của seed)
+  expect(candidates.map(({ run, result: { metrics } }) => [
+    run?.objective, metrics.placedCount, metrics.frontAxleLoadKg, metrics.rearAxleLoadKg, metrics.rehandlingCount,
+  ])).toStrictEqual([
+    // xe rỗng 3.400 + 2.300 kg, hàng 5.844 kg: mỗi dòng cộng lại đúng 11.544 kg
+    ['MAX_VOLUME', 132, 5326.12, 6217.88, 43], // 81,9 % · 62,2 %: dồn sát vách trong, nặng đầu
+    ['AXLE_BALANCE', 132, 4574.61, 6969.39, 18], // 70,4 % · 69,7 %
+    ['MIN_REHANDLING', 132, 4663.27, 6880.73, 0], // 71,7 % · 68,8 %
+  ])
+  expect(new Set(candidates.map(({ result }) => result.metrics.usedVolumeCm3)).size).toBe(1)
+  expect(new Set(candidates.map(({ result }) => JSON.stringify(result.placements))).size).toBe(3)
+})
+
+test('seven sample trucks declare two estimated axles that carry the full payload spread over the box; the Spec truck declares none', async () => {
+  const vehicles = await createMockDb().listVehicles()
+  expect(vehicles.filter((vehicle) => vehicle.axles === undefined).map((vehicle) => vehicle.id)).toStrictEqual(['VEHICLE-001'])
+  expect(vehicles.flatMap((vehicle) => (vehicle.axles ?? []).map((axle) => [vehicle.id, axle.positionXCm, axle.emptyLoadKg, axle.maxLoadKg]))).toStrictEqual([
+    ['VEHICLE-002', -100, 3400, 6500], ['VEHICLE-002', 475, 2300, 10_000],
+    ['VEHICLE-003', -100, 2300, 3600], ['VEHICLE-003', 377.5, 1700, 6600],
+    ['VEHICLE-004', -100, 2700, 4000], ['VEHICLE-004', 400, 2000, 7400],
+    ['VEHICLE-005', -100, 1900, 2800], ['VEHICLE-005', 342.5, 1500, 5200],
+    ['VEHICLE-006', -100, 2400, 4200], ['VEHICLE-006', 400, 1900, 8000],
+    ['VEHICLE-007', -100, 3300, 7100], ['VEHICLE-007', 580, 2700, 10_000],
+    ['VEHICLE-008', -100, 2300, 4000], ['VEHICLE-008', 420, 1800, 7800],
+    ['VEHICLE-PN-01', -100, 1500, 2200], ['VEHICLE-PN-01', 285, 1100, 3300],
+    ['VEHICLE-PN-02', -100, 2100, 3100], ['VEHICLE-PN-02', 375, 1600, 6000],
+  ])
+  for (const vehicle of vehicles.filter(({ axles }) => axles !== undefined)) {
+    const full = axleLoadsOf(vehicle, { totalKg: vehicle.maxPayloadKg, centerXCm: vehicle.innerLengthCm / 2 })
+    expect(checkAxleLoads(full), vehicle.id).toStrictEqual([])
+  }
+})
+
+test('no seeded plan overloads an axle group, so every seeded approved plan stays approvable', async () => {
+  const db = createMockDb()
+  for (const trip of await db.listTrips()) {
+    for (const { id, request, result } of await db.listRevisions(trip.id)) {
+      expect(checkAxleLoads(axleLoads(request.vehicle, result.placements, request.packages)), id).toStrictEqual([])
+    }
+  }
+})
+
 test('the seeded approved plan passes the approval check: no engine error and no must-load package left behind', async () => {
-  const [, approved] = await createMockDb().listRevisions('TRIP-2026-0914')
+  const approved = (await createMockDb().listRevisions('TRIP-2026-0914')).find((revision) => revision.approvedAt !== undefined)
   if (approved === undefined) throw new Error('the sample trip has no approved revision')
   const { request, result } = approved
   const { issues } = createConstraintEngine({ ...request, placements: result.placements }).evaluateAll()
@@ -135,7 +186,7 @@ test('every seeded plan passes the constraint engine and places every package', 
   }
 })
 
-test('every seeded plan has one zone per delivery stop; the sample trip keeps every package in its zone, six trips have rehandling (FE-5b-02)', async () => {
+test('every seeded plan has one zone per delivery stop; the shown plan of the sample trip keeps every package in its zone, six trips have rehandling (FE-5b-02)', async () => {
   const db = createMockDb()
   const rehandling: Record<string, number | undefined> = {}
   for (const trip of await db.listTrips()) {
@@ -147,8 +198,10 @@ test('every seeded plan has one zone per delivery stop; the sample trip keeps ev
     const count = revisions.at(-1)?.result.metrics.rehandlingCount
     if (count !== 0 && revisions.length > 0) rehandling[trip.id] = count
   }
-  // Số lấy từ lần chạy mock của seed: ở sáu chuyến này có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó
-  expect(rehandling).toStrictEqual({ 'TRIP-005': 56, 'TRIP-008': 40, 'TRIP-009': 4, 'TRIP-010': 8, 'TRIP-011': 10, 'TRIP-013': 10 })
+  // Số của bản đang hiện (bản duyệt, hay phương án ít dỡ-xếp lại của chuyến chưa duyệt), lấy từ lần chạy mock của seed: ở sáu chuyến này
+  // có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó. TRIP-005 và TRIP-013: phương án C chọn một dải liền có ít kiện ngoài
+  // vùng hơn cách xếp theo vùng (56 và 10 kiện trước FE-5b-05)
+  expect(rehandling).toStrictEqual({ 'TRIP-005': 42, 'TRIP-008': 40, 'TRIP-009': 4, 'TRIP-010': 8, 'TRIP-011': 10, 'TRIP-013': 4 })
 })
 
 test('Phương Nam has a small seed of its own, anchored to the same day, with ids the id generator does not count (FE-0-02)', async () => {
@@ -186,8 +239,10 @@ test('Phương Nam has a small seed of its own, anchored to the same day, with i
     requirements: [['REQ-PN-001', 'PENDING', 4, '2026-09-20T08:00:00.000Z']],
     // Chuyến hôm nay đã duyệt, gán tài xế taixe@phuongnam.vn; chuyến ngày mai còn nháp
     trips: [['TRIP-PN-001', '2026-09-19', 'US-PN-04', 'PLANNED'], ['TRIP-PN-002', '2026-09-20', null, 'DRAFT']],
-    // 30 thùng linh kiện + 12 kiện vải cuộn xếp đủ; điều phối viên Phương Nam tối ưu rồi duyệt
-    revisions: [['REV-PN-001', undefined, 42, 0], ['REV-PN-002', 'US-PN-03', 42, 0]],
+    // 30 thùng linh kiện + 12 kiện vải cuộn xếp đủ ở cả ba phương án ứng viên; điều phối viên Phương Nam tối ưu rồi duyệt bản mang mã số
+    revisions: [
+      ['REV-PN-001-A', undefined, 42, 0], ['REV-PN-001-B', undefined, 42, 0], ['REV-PN-001', undefined, 42, 0], ['REV-PN-002', 'US-PN-03', 42, 0],
+    ],
     runs: [['RUN-PN-001', 'COMPLETED', 'US-PN-03']],
   })
   // Mã kế tiếp của kho không đổi vì mã `…-PN-…` không tính: các test và E2E vẫn ghi TRIP-015, VEHICLE-009, PT-009, VT-008, REQ-007
@@ -201,8 +256,9 @@ test('every seeded plan of Long Bình was approved by its dispatcher: the approv
   db.restoreSession(LONG_BINH_DISPATCHER)
   const revisions = (await Promise.all((await db.listTrips()).map((trip) => db.listRevisions(trip.id)))).flat()
   const approved = revisions.filter((revision) => revision.approvedAt !== undefined)
-  // 27 seeded revisions: 14 optimizations (every trip but the draft TRIP-014) and 13 approvals (every optimized trip but TRIP-012)
-  expect([revisions.length, approved.length]).toStrictEqual([27, 13])
+  // 55 seeded revisions: 14 optimizations of three candidates each (every trip but the draft TRIP-014) and 13 approvals (every
+  // optimized trip but TRIP-012). Only 27 carry a numbered id — one per run, one per approval — so the next id is still REV-028
+  expect([revisions.length, approved.length, revisions.filter(({ id }) => /^REV-\d+$/.test(id)).length]).toStrictEqual([55, 13, 27])
   expect(new Set(approved.map((revision) => revision.approvedBy))).toStrictEqual(new Set(['US-0001']))
   const approvals = (await db.listEvents()).filter((event) => event.action === 'revision.approved')
   expect(approvals.map((event) => event.actorId)).toStrictEqual(approved.map(() => 'US-0001'))
@@ -283,6 +339,6 @@ test('opened before the seeded day has played out, no seeded time lies in the fu
   const offset = Date.parse(lateEvents[0]!.at) - Date.parse(events[0]!.at)
   expect(events.every((event, index) => Date.parse(lateEvents[index]!.at) - Date.parse(event.at) === offset)).toBe(true)
   expect((await db.getTrip('TRIP-2026-0914')).scheduledDate).toBe('2026-09-19')
-  const [, approved] = await db.listRevisions('TRIP-2026-0914')
+  const approved = (await db.listRevisions('TRIP-2026-0914')).find((revision) => revision.approvedAt !== undefined)
   expect(Date.parse(approved!.approvedAt!)).toBeLessThan(early.getTime())
 })

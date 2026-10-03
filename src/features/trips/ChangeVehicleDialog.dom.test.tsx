@@ -64,7 +64,8 @@ test('a planned trip lists every vehicle with why it can or cannot be chosen, ch
   expect(row(dialog, /Hino FC9J đông lạnh/)).toBe(radios[0])
   expect(row(dialog, /Hyundai HD210/)).toHaveAccessibleDescription('Xe đang dùng cho chuyến này.')
   expect(row(dialog, /Truck 6m/)).toHaveAccessibleDescription('Hàng nặng 5.844 kg, vượt tải trọng 5.000 kg.')
-  expect(row(dialog, /Hino XZU720/)).toHaveAccessibleDescription('Hàng nặng 5.844 kg, vượt tải trọng 3.500 kg.')
+  // Xe mẫu khai hai trục (số ước lượng của seed): Hino XZU720 còn nhận 900 + 3.700 kg trên hai nhóm trục
+  expect(row(dialog, /Hino XZU720/)).toHaveAccessibleDescription('Hàng nặng 5.844 kg, vượt tải trọng 3.500 kg. Hàng nặng 5.844 kg, hai nhóm trục chỉ nhận thêm được 4.600 kg.')
   expect(row(dialog, /Isuzu FVR 900/)).toHaveAccessibleDescription('Đang phục vụ chuyến TRIP-011.')
   expect(row(dialog, /Hyundai Mighty EX8/)).toHaveAccessibleDescription('Đang bảo dưỡng.')
   // Xe vừa bận vừa thiếu tải nói cả hai lý do

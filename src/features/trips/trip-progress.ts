@@ -41,8 +41,10 @@ type ProgressTrip = Pick<Trip, 'phase' | 'createdAt' | 'loading' | 'delivery' | 
  * các bước đã xong rồi tới bước "đã huỷ"; chuyến khác hiện đủ bảy bước, bước chưa tới là `pending`.
  */
 export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[], events: readonly AuditEvent[]): ProgressStep[] {
-  const actorOf = (action: AuditAction, revisionId?: string) =>
-    events.find((event) => event.action === action && (revisionId === undefined || event.params.revisionId === revisionId))?.actorId ?? null
+  const actorOf = (action: AuditAction, matches: (params: AuditEvent['params']) => boolean = () => true) =>
+    events.find((event) => event.action === action && matches(event.params))?.actorId ?? null
+  // Sự kiện tối ưu ghi theo lần chạy (ba phương án ứng viên một sự kiện, FE-5b-05); revision không có lần chạy thì theo mã revision
+  const ranFor = ({ id, runId }: Revision) => (params: AuditEvent['params']) => (runId === undefined ? params.revisionId === id : params.runId === runId)
   const optimized = revisions.findLast((revision) => revision.approvedAt === undefined)
   const approved = latestApproved(revisions)
   const { loading, delivery } = trip
@@ -52,10 +54,10 @@ export function tripProgress(trip: ProgressTrip, revisions: readonly Revision[],
   const steps: ProgressStep[] = [
     { kind: 'created', state: 'done', at: trip.createdAt, actorId: actorOf('trip.created') },
     optimized
-      ? { kind: 'optimized', state: 'done', at: optimized.createdAt, actorId: actorOf('optimization.saved', optimized.id) }
+      ? { kind: 'optimized', state: 'done', at: optimized.createdAt, actorId: actorOf('optimization.saved', ranFor(optimized)) }
       : { kind: 'optimized', state: 'pending' },
     approved?.approvedAt
-      ? { kind: 'approved', state: 'done', at: approved.approvedAt, actorId: actorOf('revision.approved', approved.id), ...(stale ? { stale } : {}) }
+      ? { kind: 'approved', state: 'done', at: approved.approvedAt, actorId: actorOf('revision.approved', (params) => params.revisionId === approved.id), ...(stale ? { stale } : {}) }
       : { kind: 'approved', state: 'pending' },
     loading
       ? {
