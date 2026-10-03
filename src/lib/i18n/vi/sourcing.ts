@@ -165,6 +165,8 @@ export const sourcing = {
       name: 'Tên loại kiện',
       namePlaceholder: 'VD: Thùng nước suối 24 chai',
       stackHint: 'Để trống số tầng là không giới hạn.',
+      rotationAllowed: 'Cho phép xoay kiện',
+      rotationOffHint: 'Không cho xoay: kiện chỉ đặt theo hướng gốc LWH.',
       cancel: 'Huỷ',
       create: 'Thêm loại kiện',
       save: 'Lưu loại kiện',

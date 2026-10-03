@@ -197,16 +197,33 @@ test('vehicle types: add, edit, assign to a vehicle (delete blocked while in use
   await expect(row).toContainText('VT-008')
   await expect(row).toContainText('430 × 180 × 185 cm')
   await expect(row).toContainText('2.500 kg')
+  // FE-5b-01: loại mới chưa khai giới hạn trục, độ lệch trọng tâm mặc định 15 %
+  await expect(row).toContainText('Trục trước chưa khai · trục sau chưa khai')
+  await expect(row).toContainText('Trọng tâm lệch tối đa 15,0%')
   await expect(page.getByText('8 loại xe, gắn cho 7 xe', { exact: true })).toBeVisible()
 
-  // Sửa tải trọng
+  // Sửa tải trọng và giới hạn xếp hàng: số sai báo ngay tại ô của nó
   await row.getByRole('button', { name: 'Thao tác với Xe tải 2,5 tấn thùng 4,3 m' }).click()
   await page.getByRole('menuitem', { name: 'Sửa', exact: true }).click()
   dialog = page.getByRole('dialog', { name: 'Sửa loại xe VT-008' })
   await dialog.getByRole('spinbutton', { name: 'Tải trọng' }).fill('2400')
+  const frontLimit = dialog.getByRole('spinbutton', { name: 'Giới hạn trục trước', exact: true })
+  const cogOffset = dialog.getByRole('spinbutton', { name: 'Lệch trọng tâm tối đa', exact: true })
+  await expect(cogOffset).toHaveValue('15')
+  await frontLimit.fill('0')
+  await cogOffset.fill('60')
+  await dialog.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
+  await expect(frontLimit).toHaveAttribute('aria-invalid', 'true')
+  await expect(dialog.getByText('Nhập số lớn hơn 0.', { exact: true })).toHaveCount(1)
+  await expect(dialog.getByText('Nhập số lớn hơn 0 và không quá 50.', { exact: true })).toBeVisible()
+  await frontLimit.fill('1800')
+  await dialog.getByRole('spinbutton', { name: 'Giới hạn trục sau', exact: true }).fill('3200')
+  await cogOffset.fill('12.5')
   await dialog.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
   await expect(dialog).toBeHidden()
   await expect(row).toContainText('2.400 kg')
+  await expect(row).toContainText('Trục trước 1.800 kg · trục sau 3.200 kg')
+  await expect(row).toContainText('Trọng tâm lệch tối đa 12,5%')
 
   // Gắn cho xe chưa có loại: loại mới có xe đang dùng, không xoá được
   const vehicle = await page.evaluate(async ({ db }) => {
@@ -221,6 +238,12 @@ test('vehicle types: add, edit, assign to a vehicle (delete blocked while in use
   await page.getByRole('option', { name: 'Xe tải 2,5 tấn thùng 4,3 m' }).click()
   await expect(row).toContainText(vehicle.split(' · ')[0] ?? vehicle)
   await expect(page.getByText('8 loại xe, gắn cho 8 xe', { exact: true })).toBeVisible()
+  // Xe lấy giới hạn của loại vừa gắn (FE-5b-01)
+  expect(await page.evaluate(async ({ db, name }) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    const found = (await getMockDb().listVehicles()).find((item) => item.name === name)
+    return [found?.frontAxleLimitKg, found?.rearAxleLimitKg, found?.maxCogOffsetRatio]
+  }, { db: MOCK_DB, name: vehicle })).toStrictEqual([1800, 3200, 0.125])
   await row.getByRole('button', { name: 'Thao tác với Xe tải 2,5 tấn thùng 4,3 m' }).click()
   await expect(page.getByRole('menuitem', { name: /^Xoá/ })).toHaveAttribute('aria-disabled', 'true')
   await page.keyboard.press('Escape')

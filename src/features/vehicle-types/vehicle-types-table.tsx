@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
+import { ratioToPercent } from './vehicle-type-form'
 import type { VehicleAssignmentRow, VehicleTypeRow } from './vehicle-types-api'
 
 /**
@@ -55,6 +56,20 @@ function CargoCell({ row }: { row: VehicleTypeRow }) {
 function PayloadCell({ row }: { row: VehicleTypeRow }) {
   const format = useFormat()
   return <span className={mono}>{format.weight(row.type.payloadKg)}</span>
+}
+
+/** Giới hạn tải trục trước / sau và độ lệch trọng tâm của loại (FE-5b-01); giới hạn trục chưa khai thì nói rõ, không để trống. */
+function LimitsCell({ row }: { row: VehicleTypeRow }) {
+  const t = useT()
+  const format = useFormat()
+  const { frontAxleLimitKg, rearAxleLimitKg, maxCogOffsetRatio } = row.type
+  const limit = (kg: number | undefined) => (kg === undefined ? t('vehicleTypes.limits.noAxleLimit') : format.weight(kg))
+  return (
+    <span className="flex min-w-0 flex-col whitespace-normal text-caption text-ink-1">
+      <span>{t('vehicleTypes.limits.axles', { front: limit(frontAxleLimitKg), rear: limit(rearAxleLimitKg) })}</span>
+      <span className="text-ink-3">{t('vehicleTypes.limits.cogOffset', { percent: format.percent(ratioToPercent(maxCogOffsetRatio)) })}</span>
+    </span>
+  )
 }
 
 function VehiclesCell({ row }: { row: VehicleTypeRow }) {
@@ -107,7 +122,8 @@ export function createTypeColumns(t: TFunction) {
     typeHelper.accessor((row) => row.type.name, { id: 'name', header: t('vehicleTypes.columns.name'), enableSorting: true, cell: (info) => <NameCell row={info.row.original} /> }),
     typeHelper.display({ id: 'cargo', header: t('vehicleTypes.columns.cargo'), meta: { align: 'right', width: '200px' } satisfies ColumnMeta, cell: (info) => <CargoCell row={info.row.original} /> }),
     typeHelper.accessor((row) => row.type.payloadKg, { id: 'payload', header: t('vehicleTypes.columns.payload'), enableSorting: true, meta: { align: 'right', width: '130px' } satisfies ColumnMeta, cell: (info) => <PayloadCell row={info.row.original} /> }),
-    typeHelper.display({ id: 'vehicles', header: t('vehicleTypes.columns.vehicles'), meta: { width: '34%' } satisfies ColumnMeta, cell: (info) => <VehiclesCell row={info.row.original} /> }),
+    typeHelper.display({ id: 'limits', header: t('vehicleTypes.columns.limits'), meta: { width: '250px' } satisfies ColumnMeta, cell: (info) => <LimitsCell row={info.row.original} /> }),
+    typeHelper.display({ id: 'vehicles', header: t('vehicleTypes.columns.vehicles'), meta: { width: '28%' } satisfies ColumnMeta, cell: (info) => <VehiclesCell row={info.row.original} /> }),
     typeHelper.display({ id: 'actions', header: () => <span className="sr-only">{t('vehicleTypes.columns.actions')}</span>, meta: { align: 'right', width: '64px' } satisfies ColumnMeta, cell: (info) => <ActionsCell row={info.row.original} /> }),
   ])
 }

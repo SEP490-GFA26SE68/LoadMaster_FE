@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import {
   deleteVehicleType,
@@ -9,9 +9,17 @@ import {
   setVehicleType,
 } from './vehicle-types-api'
 
-/** Hook Query của loại xe (LM-104). Khoá riêng `['vehicle-types']` — không dưới `['vehicles', id]` để không va mã xe. */
+/**
+ * Hook Query của loại xe (LM-104). Khoá riêng `['vehicle-types']` — không dưới `['vehicles', id]` để không va mã xe. Xe lấy giới hạn
+ * tải trục và độ lệch trọng tâm từ loại đang gắn (FE-5b-01): sửa loại hoặc đổi loại của xe làm xe và phương án của chuyến đổi theo, nên
+ * hai lần ghi đó làm mới cả `['vehicles']` và `['trips']`.
+ */
 
 const KEY = ['vehicle-types'] as const
+
+function refreshLimits(client: QueryClient) {
+  return Promise.all([KEY, ['vehicles'], ['trips']].map((queryKey) => client.invalidateQueries({ queryKey })))
+}
 
 /** `staleTime: 0`: tên xe và danh sách xe đổi ở màn Đội xe, mở màn là đọc lại. */
 export function useVehicleTypesQuery() {
@@ -31,7 +39,7 @@ export function useSaveVehicleTypeMutation() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ input, id }: { input: VehicleTypeInput; id?: string }) => saveVehicleType(input, id),
-    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => refreshLimits(client),
   })
 }
 
@@ -44,6 +52,6 @@ export function useSetVehicleTypeMutation() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ vehicleId, vehicleTypeId }: { vehicleId: string; vehicleTypeId: string | null }) => setVehicleType(vehicleId, vehicleTypeId),
-    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => refreshLimits(client),
   })
 }

@@ -158,6 +158,8 @@ export const sourcing = {
       name: 'Package type name',
       namePlaceholder: 'e.g. Carton of 24 water bottles',
       stackHint: 'Leave the layer count empty for no limit.',
+      rotationAllowed: 'Allow rotating the package',
+      rotationOffHint: 'No rotation: the package is only placed in its base LWH orientation.',
       cancel: 'Cancel',
       create: 'Add package type',
       save: 'Save package type',
