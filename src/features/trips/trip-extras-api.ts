@@ -57,22 +57,27 @@ export type TripReportData = {
   readonly vehicle: VehicleConfig | undefined
   readonly driver: User | undefined
   readonly report: TripReport
+  /** Họ tên theo mã người dùng: người gửi và người duyệt xác nhận tay, người báo và người xử lý sự cố. */
+  readonly userNames: Readonly<Record<string, string>>
 }
 
 // chưa có ở BE
 export async function fetchTripReport(tripId: string): Promise<TripReportData> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)
-  const [plan, vehicles, users] = await Promise.all([
+  const [plan, vehicles, users, exceptions, reroutes] = await Promise.all([
     trip.loading ? db.getRevision(trip.loading.revisionId).catch(notFoundAsUndefined) : undefined,
     db.listVehicles(),
     db.listUsers(),
+    db.listTripExceptions(tripId),
+    db.listTripReroutes(tripId),
   ])
   return {
     trip,
     vehicle: vehicles.find((vehicle) => vehicle.id === trip.vehicleId),
     driver: trip.driverId === null ? undefined : users.find((user) => user.id === trip.driverId),
-    report: tripReport(trip, plan),
+    report: tripReport(trip, plan, { exceptions, reroutes }),
+    userNames: Object.fromEntries(users.map((user) => [user.id, user.fullName])),
   }
 }
 

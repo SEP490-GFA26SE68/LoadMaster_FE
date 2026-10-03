@@ -28,6 +28,8 @@ export type ExceptionsDb = {
    * nối thẳng rồi đi tiếp — ETA tự dời theo vị trí. Chưa tìm tuyến, hoặc không có lựa chọn đó: `REROUTE_UNAVAILABLE`.
    */
   confirmReroute(tripId: string, routeIndex: number): Promise<TripReroute>
+  /** Các tuyến thay thế điều phối viên đã chọn cho chuyến, cũ trước (báo cáo chuyến, FE-6-14). */
+  listTripReroutes(tripId: string): Promise<TripReroute[]>
   /**
    * Quản lý công ty ghi đã liên hệ khách và nhập hạn mới cho một yêu cầu giao của chuyến, trên sự cố đã chuyển lên (trạng thái khác:
    * `EXCEPTION_STATUS_INVALID`). Thiếu ghi chú: `REASON_REQUIRED`; yêu cầu không thuộc chuyến: `EXCEPTION_INVALID`; hạn không ở tương

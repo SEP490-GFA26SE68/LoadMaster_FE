@@ -75,7 +75,7 @@ export {
   type RequirementStatus,
   type RequirementStoredStatus,
 } from './requirement-model'
-export { tripReport, type TripReport, type TripReportStop } from './trip-report'
+export { tripReport, type TripReport, type TripReportIncidents, type TripReportManualConfirm, type TripReportStop } from './trip-report'
 export {
   latestVerifications,
   MANUAL_CONFIRM_REASONS,

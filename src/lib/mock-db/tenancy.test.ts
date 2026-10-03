@@ -208,6 +208,7 @@ const PROBES = {
   resolveTripException: onForeignTrip((db, tripId) => db.resolveTripException(tripId, 'EXC-001')),
   requestReroute: onForeignTrip((db, tripId) => db.requestReroute(tripId)),
   confirmReroute: onForeignTrip((db, tripId) => db.confirmReroute(tripId, 0)),
+  listTripReroutes: { scope: 'operational', hidden: ({ db, other }) => db.listTripReroutes(other.trip) },
   renegotiateDeadline: onForeignTrip((db, tripId) => db.renegotiateDeadline(tripId, 'EXC-001', { requirementId: 'REQ-001', deadline: '2026-09-16T10:00:00.000Z', contactNote: 'Đã gọi khách' })),
 
   authenticate: { scope: 'session' },

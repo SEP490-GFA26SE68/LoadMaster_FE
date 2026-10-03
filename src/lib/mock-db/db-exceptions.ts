@@ -147,6 +147,7 @@ export function exceptionMethods(ctx: DbContext): ExceptionsDb {
         ctx.log('trip.rerouted', { type: 'trip', id: tripId }, { route: option.route, stopNumber: reroute.stopNumber, totalKm: option.distanceKm, totalMinutes: option.durationMinutes })
         return reroute
       }),
+    listTripReroutes: (tripId) => ctx.respond(() => exceptions.get(ctx.scope.trips.read(tripId).id)?.reroutes ?? []),
     renegotiateDeadline: (tripId, exceptionId, input) =>
       ctx.respond(() => {
         const trip = inTransit(tripId, 'manager')
