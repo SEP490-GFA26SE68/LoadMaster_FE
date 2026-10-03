@@ -270,6 +270,10 @@ const PROBES = {
       'kiện của công ty kia': ({ db, own, other }) => db.addTripPackages(own.draftTrip, [other.freePackage], { stopId: 'STOP-01' }),
     },
   },
+  getTripSegregation: { scope: 'operational', hidden: ({ db, other }) => db.getTripSegregation(other.trip) },
+  overrideTripSegregation: onForeignTrip((db, tripId) => db.overrideTripSegregation(tripId, 'Khách gom chung một xe')),
+  optimizeTripRoute: onForeignTrip((db, tripId) => db.optimizeTripRoute(tripId)),
+  getTripEta: { scope: 'operational', hidden: ({ db, other }) => db.getTripEta(other.trip) },
   removeTripPackage: {
     scope: 'operational',
     forbidden: {

@@ -13,6 +13,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'requirement.deleted', 'requirement.unassigned', 'optimization.failed',
     // Kiện bị bỏ khỏi chuyến (FE-4b-05), như yêu cầu bị gỡ khỏi chuyến
     'trip.packageRemoved',
+    // Điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06): việc người quản lý nên xem lại
+    'trip.segregationOverridden',
     // FE-3b-01: kiện bị gắn cờ không vào yêu cầu giao hay chuyến được cho tới khi gỡ
     'package.flagged',
   ] as const
@@ -27,7 +29,7 @@ test('xong hoặc sẵn sàng là xanh lá; vận hành là xanh dương; kết 
     .toStrictEqual(['green', 'green', 'green', 'green', 'green'])
   expect(toneOf(['trip.created', 'trip.updated', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
     .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
-  expect(toneOf(['optimization.saved'])).toStrictEqual(['azure'])
+  expect(toneOf(['optimization.saved', 'trip.routeOptimized'])).toStrictEqual(['azure', 'azure'])
   expect(toneOf(['auth.signedIn', 'auth.signedOut', 'user.created', 'user.passwordReset', 'user.deleted', 'vehicle.deleted']))
     .toStrictEqual(['slate', 'slate', 'slate', 'slate', 'slate', 'slate'])
 })

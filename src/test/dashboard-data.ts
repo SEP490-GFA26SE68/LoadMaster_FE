@@ -36,6 +36,11 @@ export function cargo(id: string, weightKg: number, quantity: number, deliverySt
   }
 }
 
+/** Tuyến đã tối ưu (FE-4b-09): chuyến còn lập kế hoạch mang nó là Đã lập kế hoạch. Chuyến mẫu không có điểm giao nên tuyến rỗng. */
+export const ROUTED: Pick<Trip, 'routePlan'> = {
+  routePlan: { stops: [], missedStopIds: [], totalKm: 0, totalMinutes: 0, optimizedAt: AT, optimizedBy: null, isMockResult: true },
+}
+
 export function trip(id: string, scheduledDate: string, vehicleId: string, packages: CargoPackage[], extra: Partial<Trip> = {}): Trip {
   return {
     id, companyId: 'LOG-001', name: `Tuyến ${id}`, vehicleId, stops: [], packages, inputVersion: 1, scheduledDate, driverId: null, phase: 'planning',
@@ -94,11 +99,11 @@ export function dashboardData(): DashboardData {
   const t2 = trip('TRIP-102', '2026-09-12', 'VEHICLE-A', [cargo('PKG-001', 5, 4, 1), cargo('PKG-002', 15, 2, 2)])
   const r2 = revision('REV-102', t2, 60)
   const t3 = trip('TRIP-103', '2026-09-09', 'VEHICLE-B', [cargo('PKG-001', 100, 1)])
-  const t4 = trip('TRIP-104', '2026-09-14', 'VEHICLE-B', [cargo('PKG-001', 25, 2)])
+  const t4 = trip('TRIP-104', '2026-09-14', 'VEHICLE-B', [cargo('PKG-001', 25, 2)], ROUTED)
   const t5 = trip('TRIP-105', '2026-09-14', 'VEHICLE-C', [cargo('PKG-001', 12, 1)])
   const t6 = trip('TRIP-106', '2026-09-01', 'VEHICLE-C', [cargo('PKG-001', 40, 1)])
   const r6 = revision('REV-106', t6, 70)
-  const t7 = trip('TRIP-107', '2026-09-13', 'VEHICLE-A', [cargo('PKG-001', 30, 1)])
+  const t7 = trip('TRIP-107', '2026-09-13', 'VEHICLE-A', [cargo('PKG-001', 30, 1)], ROUTED)
   const t8 = trip('TRIP-108', '2026-09-11', 'VEHICLE-B', [cargo('PKG-001', 8, 2)])
   const r8 = revision('REV-108', t8, 30)
 

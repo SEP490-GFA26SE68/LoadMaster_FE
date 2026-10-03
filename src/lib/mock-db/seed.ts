@@ -7,7 +7,7 @@ import { LONG_BINH_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
 import { CARGO, CUSTOMERS } from './seed-directory'
 import type { TripPackageLink } from './review1-status'
 import { PHUONG_NAM_DISPATCHER, seedPhuongNam } from './seed-phuong-nam'
-import { seedPlanner, type SeedPlanner } from './seed-plan'
+import { seedPlanner, withSeedRoute, type SeedPlanner } from './seed-plan'
 import { seedDelivery, seedLoading, type SeedEvent } from './seed-progress'
 import { seedTrip } from './seed-trip'
 import { seedTripPool } from './seed-trip-pool'
@@ -67,7 +67,8 @@ function createSeed(today: string): SeedData {
   })
 
   // Chuyến chính: REV-001 tối ưu 08:30, REV-002 duyệt 09:00 ngày neo — giữ đúng mã và thời điểm của seed trước đợt 6
-  const hero = seedTrip(today)
+  // Tuyến tối ưu 08:15, trước lần chạy tối ưu xếp hàng đầu tiên
+  const hero = withSeedRoute(seedTrip(today), vnTime(today, '08:15'), SEED_DISPATCHER)
   events.push({ at: hero.createdAt, actorId: SEED_DISPATCHER, action: 'trip.created', target: { type: 'trip', id: hero.id }, params: { name: hero.name } })
   // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu chọn cân bằng tải trục + GA, service không phản hồi; lần sau ra REV-001
   const failedAt = vnTime(today, '08:20')
@@ -150,6 +151,8 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: SeedPl
 
   // Chuyến ngày mai được lập kế hoạch sáng nay; chuyến khác chiều hôm trước
   const planDay = spec.day > 0 ? today : addDays(day, -1)
+  // Tối ưu tuyến 15 phút trước khi tối ưu xếp hàng: chuyến đã có phương án là Đã lập kế hoạch (FE-4b-09)
+  trip = withSeedRoute(trip, vnTime(planDay, spec.day > 0 ? '10:15' : '15:15'), SEED_DISPATCHER)
   const approved = plan(trip, 20_260_900 + index, {
     optimized: vnTime(planDay, spec.day > 0 ? '10:30' : '15:30'),
     approved: spec.outcome === 'optimized' ? undefined : vnTime(planDay, spec.day > 0 ? '11:00' : '16:00'),

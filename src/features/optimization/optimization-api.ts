@@ -49,7 +49,7 @@ export async function fetchOptimizationSetup(tripId: string): Promise<Optimizati
   const driverName = trip.driverId === null ? null : users.find((user) => user.id === trip.driverId)?.fullName ?? null
   return {
     trip, vehicle: await db.getVehicle(trip.vehicleId), vehicles, vehicleStatus,
-    status: tripStatus(trip, revisions), sub: tripSubStatus(trip, revisions), driverName,
+    status: tripStatus(trip), sub: tripSubStatus(trip, revisions), driverName,
   }
 }
 

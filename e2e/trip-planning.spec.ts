@@ -59,6 +59,8 @@ test('stops are generated and merged from delivery requirements; loose pool pack
   await page.waitForURL(/\/chuyen\/TRIP-015$/)
   const route = page.getByRole('region', { name: 'Sơ đồ tuyến' })
   const stops = route.getByRole('button', { name: /^Lọc kiện theo điểm/ })
+  // Hàng điểm giao của sơ đồ tuyến — card còn danh sách điểm của bản đồ tuyến (FE-4b-09)
+  const stopItems = route.getByRole('list', { name: /^Kho xuất phát rồi/ }).getByRole('listitem')
   await expect(route).toContainText('Kho Long Bình')
   await expect(route).toContainText('Dự kiến xuất phát 05:45')
   await expect(stops).toHaveCount(0)
@@ -75,7 +77,7 @@ test('stops are generated and merged from delivery requirements; loose pool pack
   await assign.getByRole('button', { name: 'Đưa vào chuyến', exact: true }).click()
   await expect(assign).toBeHidden()
   await expect(stops).toHaveText([/KCN Hoà Khánh/])
-  await expect(route.getByRole('listitem').filter({ hasText: 'KCN Hoà Khánh' })).toContainText('Thấp')
+  await expect(stopItems.filter({ hasText: 'KCN Hoà Khánh' })).toContainText('Thấp')
 
   // REQ-007 cùng địa chỉ và toạ độ: gộp vào điểm 1, ưu tiên của điểm lên Cao; chuyến vẫn một điểm giao
   await onTrip.getByRole('button', { name: 'Đưa yêu cầu vào chuyến', exact: true }).click()
@@ -84,7 +86,7 @@ test('stops are generated and merged from delivery requirements; loose pool pack
   await expect(assign.getByRole('status')).toHaveText('Điểm giao: gộp vào điểm 1 · KCN Hoà Khánh — cùng địa chỉ và toạ độ.')
   await assign.getByRole('button', { name: 'Đưa vào chuyến', exact: true }).click()
   await expect(assign).toBeHidden()
-  await expect(route.getByRole('listitem').filter({ hasText: 'KCN Hoà Khánh' })).toContainText('Cao')
+  await expect(stopItems.filter({ hasText: 'KCN Hoà Khánh' })).toContainText('Cao')
   await expect(stops).toHaveCount(1)
   await expect(onTrip.getByRole('listitem')).toHaveCount(2)
 

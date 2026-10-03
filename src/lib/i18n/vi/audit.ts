@@ -8,7 +8,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Đăng nhập', signedOut: 'Đăng xuất', signInFailed: 'Đăng nhập không thành công' },
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
-    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến' },
+    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
     loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },
@@ -125,6 +125,12 @@ export const audit = {
       reasonCode: 'Lý do',
       vehicleTypeId: 'Loại xe',
       sealNumber: 'Số seal',
+      // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
+      handlingClass: 'Loại hàng của chuyến',
+      conflictCount: 'Kiện khác loại',
+      totalKm: 'Quãng đường (km)',
+      totalMinutes: 'Thời gian (phút)',
+      lateStops: 'Điểm trễ hạn dự kiến',
     },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {

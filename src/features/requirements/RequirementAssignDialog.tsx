@@ -10,6 +10,8 @@ import { FieldLabel, FieldMessage } from '@/components/ui/field-styles'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import type { SelectOption } from '@/components/ui/SelectField'
 import { Spinner } from '@/components/ui/Spinner'
+import { SegregationOverrideDialog } from '@/features/trips/SegregationOverrideDialog'
+import { useSegregationGuard } from '@/features/trips/useSegregationQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { stopOfRequirement } from './requirement-list'
 import { useAssignableTripsQuery, useAssignRequirementMutation, useRequirementsQuery } from './useRequirementsQuery'
@@ -21,7 +23,8 @@ type AssignValues = { requirementId: string; tripId: string }
  * Yêu cầu giao (yêu cầu đã biết — chọn chuyến) và từ Chi tiết chuyến (chuyến đã biết — chọn yêu cầu). **Không chọn điểm giao**: điểm
  * giao tự sinh theo địa chỉ và toạ độ của yêu cầu (D-73); khi đã chọn đủ yêu cầu và chuyến, hộp thoại nói trước yêu cầu sẽ gộp vào
  * điểm nào đang có, hay chuyến sẽ thêm một điểm mới cuối tuyến. Kho từ chối (chuyến vừa sang vận hành, yêu cầu vừa vào chuyến khác)
- * thì câu lỗi hiện trong hộp thoại.
+ * thì câu lỗi hiện trong hộp thoại. Yêu cầu mang kiện khác loại hàng của chuyến (FE-4b-06, D-74): hộp vượt luật hỏi lý do rồi đưa vào
+ * chuyến kèm lý do.
  */
 export function RequirementAssignDialog({ open, onOpenChange, requirementId, tripId }: {
   open: boolean
@@ -44,6 +47,7 @@ function AssignForm({ fixedRequirementId, fixedTripId, onClose }: { fixedRequire
   const tripsQuery = useAssignableTripsQuery()
   const requirementsQuery = useRequirementsQuery()
   const assign = useAssignRequirementMutation()
+  const guard = useSegregationGuard()
   const schema = useMemo(() => z.object({
     requirementId: z.string().min(1, t('requirements.assign.requirementRequired')),
     tripId: z.string().min(1, t('requirements.assign.tripRequired')),
@@ -62,13 +66,13 @@ function AssignForm({ fixedRequirementId, fixedTripId, onClose }: { fixedRequire
   const target = requirement && trip ? stopOfRequirement(requirement, trip.stops) : null
 
   function handleSubmit(values: AssignValues) {
-    assign.mutate(values, {
-      onSuccess: ({ requirement: assigned, trip: saved }) => {
-        const number = stopOfRequirement(assigned, saved.stops)?.number ?? saved.stops.length
-        toast.success(t('requirements.assign.done', { id: assigned.id, trip: saved.name, number }))
-        onClose()
-      },
+    const submit = (overrideReason?: string) => assign.mutateAsync({ ...values, overrideReason }).then(({ requirement: assigned, trip: saved }) => {
+      const number = stopOfRequirement(assigned, saved.stops)?.number ?? saved.stops.length
+      toast.success(t('requirements.assign.done', { id: assigned.id, trip: saved.name, number }))
+      onClose()
     })
+    // Lỗi khác vẫn hiện trong hộp thoại (`assign.error`); kiện khác loại hàng thì mở hộp vượt luật
+    submit().catch((error: unknown) => { guard.intercept(error, submit) })
   }
 
   const tripOptions: SelectOption[] = trips.map((item) => ({ value: item.id, label: t('requirements.assign.tripOption', { id: item.id, name: item.name, date: format.date(item.scheduledDate) }) }))
@@ -81,6 +85,7 @@ function AssignForm({ fixedRequirementId, fixedTripId, onClose }: { fixedRequire
   const empty = !loading && (fixedTripId ? pending.length === 0 : trips.length === 0)
 
   return (
+    <>
     <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
       <DialogHeader
         icon={Link2}
@@ -106,13 +111,15 @@ function AssignForm({ fixedRequirementId, fixedTripId, onClose }: { fixedRequire
             ) : null}
           </>
         )}
-        {assign.isError ? <p role="alert" className="text-caption text-danger">{dataErrorMessage(assign.error, t)}</p> : null}
+        {assign.isError && guard.pending === null ? <p role="alert" className="text-caption text-danger">{dataErrorMessage(assign.error, t)}</p> : null}
       </div>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>{t('requirements.assign.cancel')}</Button>
         <Button type="submit" loading={assign.isPending} disabled={loading || empty}>{t('requirements.assign.submit')}</Button>
       </DialogFooter>
     </form>
+    <SegregationOverrideDialog pending={guard.pending} onClose={guard.close} />
+    </>
   )
 }
 

@@ -14,6 +14,7 @@ export {
   missingIds,
   plannedStops,
   stopItemIds,
+  tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
 } from './operations'
@@ -27,7 +28,11 @@ export { DEMO_ACCOUNTS, QUICK_LOGIN_ACCOUNTS, SEED_PASSWORD, type DemoAccount } 
 // Review 1 (LM-104)
 export type { Review1Db } from './db-api-review1'
 export { MAX_PACKAGES_PER_CREATE } from './db-packages'
+export type { SegregationOverride } from './db-api-review1'
 export type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
+export type { TripEta, TripEtaStop } from './db-trip-route'
+export type { TripSegregation } from './db-trip-segregation'
+export { stopsWithoutCoordinates } from './trip-route'
 export { MAX_SEAL_LENGTH } from './db-scans'
 export { normalizeQrToken } from './qr-token'
 export {
@@ -77,9 +82,11 @@ export {
   type PackageType,
   type PackageTypeInput,
   type RunFailureCode,
+  type RouteStopEta,
   type RunSettings,
   type ScanResult,
   type TripLabel,
+  type TripRoutePlan,
   type VehicleType,
   type VehicleTypeAssignment,
   type VehicleTypeInput,

@@ -4,11 +4,13 @@ import { releaseTripPackages } from './db-package-progress'
 import { releaseTripRequirements } from './db-requirement-trips'
 import { stopDemandsOf } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
+import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
 import { isCancellablePhase } from './operations'
 import { isValidCoordinate } from './requirement-model'
 import type { CompanyDepot } from './source-types'
 import { tripChangeParams } from './trip-changes'
+import { withFreshRoute } from './trip-route'
 import { withStopDemands } from './trip-stops'
 import type { MockDb, Trip, TripChanges } from './types'
 
@@ -61,7 +63,7 @@ export function tripMethods(ctx: DbContext): TripMethods {
   return {
     listTrips: () => ctx.respond(() => scope.list()),
     getTrip: (id) => ctx.respond(() => scope.read(id)),
-    createTrip: ({ name, vehicleId, stops, packages, scheduledDate, driverId = null, departureAt, depot }) =>
+    createTrip: ({ name, vehicleId, stops, packages, scheduledDate, driverId = null, departureAt, depot, overrideReason }) =>
       ctx.respond(() => {
         const companyId = ctx.scope.newRecordCompany()
         assertVehicleUsable(vehicleId, companyId)
@@ -83,7 +85,8 @@ export function tripMethods(ctx: DbContext): TripMethods {
           phase: 'planning',
           createdAt: ctx.nowIso(),
         }
-        const created = put(trips, trip)
+        // Chuyến tạo kèm kiện nhiều loại hàng cần lý do vượt luật (D-74)
+        const created = put(trips, settleSegregation(ctx, { id, packages: [] }, trip, { overrideReason }))
         syncTripPool(ctx, created)
         ctx.log('trip.created', { type: 'trip', id: created.id }, { name })
         return created
@@ -112,12 +115,16 @@ export function tripMethods(ctx: DbContext): TripMethods {
         }
         if (changed.includes('vehicleId')) assertVehicleUsable(requested.vehicleId ?? current.vehicleId, current.companyId)
         if (changed.includes('driverId')) assertDriver(requested.driverId ?? null, current.companyId)
-        const next: Trip = { ...current }
+        let next: Trip = { ...current }
         for (const field of changed) Object.assign(next, { [field]: requested[field] })
         const inputChanged = changed.includes('vehicleId') || changed.includes('packages')
         next.inputVersion = current.inputVersion + (inputChanged ? 1 : 0)
         // Điểm giao hoặc dòng kiện đổi (đổi thứ tự, chuyển dòng sang điểm khác): hạn và ưu tiên của từng điểm tính lại (D-73)
         if (changed.includes('packages') || changed.includes('stops')) next.stops = withStopDemands(next.stops, stopDemandsOf(ctx, next))
+        // Dòng kiện đổi: một chuyến một loại hàng (D-74) — kiện khác loại mới cần lý do vượt, hết kiện khác loại thì gỡ lý do
+        if (changed.includes('packages')) next = settleSegregation(ctx, current, next, { overrideReason: changes.overrideReason })
+        // Tuyến đã tối ưu (FE-4b-09): thêm / bớt điểm thì chuyến về Nháp; đổi thứ tự, giờ xuất phát, kho đi thì tính lại giờ đến
+        next = withFreshRoute(next)
         // Dời ngày chạy mà giữ giờ trong ngày: nhật ký chỉ ghi ngày chạy, như trước khi chuyến có giờ xuất phát
         const dateOnly = changed.includes('scheduledDate') && vnClock(new Date(next.departureAt)) === vnClock(new Date(current.departureAt))
         const logged = changed.filter((field) => !(dateOnly && field === 'departureAt'))

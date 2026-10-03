@@ -48,7 +48,7 @@ export function tripFacts({ trip, revisions }: TripWithRevisions): TripFacts {
     scheduledDate: trip.scheduledDate,
     vehicleId: trip.vehicleId,
     driverId: trip.driverId,
-    status: tripStatus(trip, revisions),
+    status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
     cancelled: trip.phase === 'cancelled',
     packageCount: instances.length,

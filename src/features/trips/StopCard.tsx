@@ -1,10 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ArrowRight, Check, Clock, GripVertical, Trash2 } from 'lucide-react'
+import { ArrowRight, Check, Clock, GripVertical, Navigation, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Badge, type BadgeTone } from '@/components/ui/Badge'
+import type { DeadlineStatus } from '@/domain/routing'
 import { RequirementPriorityTag } from '@/features/requirements/requirement-look'
 import type { Formatter } from '@/lib/format'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
+import type { RouteStopEta } from '@/lib/mock-db'
 import { stopColor, stopForeground } from '@/lib/stops'
 import { cn } from '@/lib/utils'
 import type { StopRow } from './trip-summary'
@@ -15,6 +18,9 @@ export type StopState =
   | { kind: 'current'; unloaded: number; issues: number }
   | { kind: 'pending'; issues: number }
 
+/** Mức hạn của điểm theo giờ đến dự kiến (FE-4b-09, PRD v2 mục 7.3): kịp hạn xanh lá, sát hạn hổ phách, trễ hạn dự kiến đỏ — luôn kèm chữ. */
+const DEADLINE_TONE: Readonly<Record<DeadlineStatus, BadgeTone>> = { OK: 'success', AT_RISK: 'warning', MISSED: 'danger' }
+
 const iconButton = cn(
   'grid flex-none place-items-center rounded-sm text-ink-3 transition-colors duration-(--dur-fast) ease-standard',
   'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
@@ -23,17 +29,22 @@ const iconButton = cn(
 /**
  * Một điểm giao trên sơ đồ tuyến (V2.3 `ChiTietChuyen.jpg`): mốc màu định danh kèm số, tên, địa chỉ, số kiện · khối lượng; điểm có yêu
  * cầu giao thì thêm hạn sớm nhất và ưu tiên cao nhất của các yêu cầu ở điểm đó (FE-4b-04, D-73); khi chuyến đang giao thì thêm trạng
- * thái giao. Là một `<li>` kéo được để đổi thứ tự (LM-046, dnd-kit, cả bàn phím) khi chuyến còn sửa được;
+ * thái giao. Tuyến đã tối ưu (FE-4b-09) thì thêm giờ đến dự kiến và mức hạn; điểm chưa có toạ độ mang nhãn "Chưa có toạ độ" khi chuyến
+ * còn lập kế hoạch. Là một `<li>` kéo được để đổi thứ tự (LM-046, dnd-kit, cả bàn phím) khi chuyến còn sửa được;
  * bấm tên để lọc bảng kiện (nút `aria-pressed`). Dòng `sr-only` đầu tiên đọc đủ điểm theo thứ tự cho trình đọc màn hình.
  *
  * Lệch có chủ ý khỏi mục 5 AGENTS.md: thẻ đang kéo dùng bóng `--e3` — lớp đang nhấc khỏi mặt phẳng.
  */
-export function StopCard({ stop, total, lead, state, readOnly = true, selected = false, onSelect, onRemove, wide = false }: {
+export function StopCard({ stop, total, lead, state, eta, missingCoordinates = false, readOnly = true, selected = false, onSelect, onRemove, wide = false }: {
   stop: StopRow
   total: number
   /** Mũi tên hoặc đoạn đường tới điểm này, nằm trong `<li>` để danh sách chỉ có kho và các điểm. */
   lead?: ReactNode
   state?: StopState
+  /** Giờ đến dự kiến và mức hạn của điểm trong tuyến đã tối ưu. */
+  eta?: RouteStopEta
+  /** Điểm chưa có toạ độ nên chưa tối ưu tuyến được. */
+  missingCoordinates?: boolean
   /** Không kéo, không xoá: người chỉ xem hoặc chuyến đã khoá (D-41, D-45). */
   readOnly?: boolean
   selected?: boolean
@@ -47,7 +58,7 @@ export function StopCard({ stop, total, lead, state, readOnly = true, selected =
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id, disabled: readOnly })
   const packages = t('common.packageCount', { count: stop.packageCount })
   const weight = format.weight(stop.weightKg)
-  const body = <StopBody stop={stop} packages={packages} weight={weight} state={state} />
+  const body = <StopBody stop={stop} packages={packages} weight={weight} state={state} eta={eta} missingCoordinates={missingCoordinates} />
 
   return (
     <li
@@ -59,6 +70,9 @@ export function StopCard({ stop, total, lead, state, readOnly = true, selected =
         {t('trips.route.stop', { number: stop.number, total, name: stop.name, packages, weight })}
         {stop.deadline ? `, ${t('trips.route.deadlineA11y', { time: format.time(stop.deadline), date: format.date(stop.deadline) })}` : null}
         {stop.priority ? `, ${t('trips.route.priorityA11y', { priority: t(`requirements.priority.${stop.priority}`) })}` : null}
+        {eta ? `, ${t('trips.routePlan.etaA11y', { time: format.time(eta.eta), date: format.date(eta.eta) })}` : null}
+        {eta?.deadlineStatus ? `, ${t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}` : null}
+        {missingCoordinates ? `, ${t('trips.routePlan.missingCoordinates')}` : null}
         {state ? `, ${stateLabel(state, t, format)}` : null}
       </span>
       {lead}
@@ -136,7 +150,9 @@ export function StopLeg({ state }: { state: StopState }) {
   )
 }
 
-function StopBody({ stop, packages, weight, state }: { stop: StopRow; packages: string; weight: string; state?: StopState }) {
+function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
+  stop: StopRow; packages: string; weight: string; state?: StopState; eta?: RouteStopEta; missingCoordinates: boolean
+}) {
   const t = useT()
   const format = useFormat()
   return (
@@ -169,6 +185,15 @@ function StopBody({ stop, packages, weight, state }: { stop: StopRow; packages: 
             {stop.priority ? <RequirementPriorityTag priority={stop.priority} /> : null}
           </span>
         ) : null}
+        {eta ? (
+          <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-small text-ink-2">
+            <Navigation aria-hidden className="size-3.5 flex-none text-ink-3" strokeWidth={1.75} />
+            <span className="tabular-nums">{t('trips.routePlan.eta', { time: format.time(eta.eta), date: format.dayMonth(eta.eta) })}</span>
+            {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}</Badge> : null}
+          </span>
+        ) : null}
+        {/* Chữ thường xuống dòng được — thẻ điểm hẹp khi chuyến nhiều điểm */}
+        {missingCoordinates ? <span className="mt-1 text-small font-semibold text-amber-700">{t('trips.routePlan.missingCoordinates')}</span> : null}
         {state ? <StateLine state={state} total={stop.packageCount} /> : null}
       </span>
     </>

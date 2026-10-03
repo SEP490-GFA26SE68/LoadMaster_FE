@@ -4,6 +4,7 @@ import { found, put, sameData, type DbContext } from './db-context'
 import type { Package } from './package-model'
 import { cargoFromPackage } from './package-type-cargo'
 import type { TripPackageLink } from './review1-status'
+import { withFreshRoute } from './trip-route'
 import { withStopDemands, type StopDemand } from './trip-stops'
 import type { Trip } from './types'
 
@@ -61,8 +62,11 @@ export function stopDemandsOf(ctx: DbContext, trip: Pick<Trip, 'id' | 'packages'
   })
 }
 
-/** Ghi lại hạn và ưu tiên của các điểm giao của `trip` theo yêu cầu đang ở từng điểm; không đổi gì thì không ghi. */
+/**
+ * Ghi lại hạn và ưu tiên của các điểm giao của `trip` theo yêu cầu đang ở từng điểm; không đổi gì thì không ghi. Hạn đổi thì mức hạn
+ * của tuyến đã tối ưu tính lại (FE-4b-09).
+ */
 export function syncStopDemands(ctx: DbContext, trip: Trip): Trip {
   const stops = withStopDemands(trip.stops, stopDemandsOf(ctx, trip))
-  return sameData(stops, trip.stops) ? trip : put(ctx.state.trips, { ...trip, stops })
+  return sameData(stops, trip.stops) ? trip : put(ctx.state.trips, withFreshRoute({ ...trip, stops }))
 }

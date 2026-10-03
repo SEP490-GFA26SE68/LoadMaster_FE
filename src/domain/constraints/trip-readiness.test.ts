@@ -16,7 +16,7 @@ test('a trip with a vehicle, valid packages on existing stops and within limits 
   const readiness = tripReadiness({ vehicle: SPEC_TRUCK_6M, vehicleInMaintenance: false, stopCount: 2, packages: [box('PKG-001'), box('PKG-002', { deliveryStop: 2 })] })
   expect(readiness.ready).toBe(true)
   expect(statusOf(readiness)).toStrictEqual({
-    VEHICLE_ASSIGNED: 'pass', PACKAGES_PRESENT: 'pass', PACKAGES_VALID: 'pass', STOPS_VALID: 'pass', WEIGHT_WITHIN_PAYLOAD: 'pass', VOLUME_WITHIN_CARGO: 'pass',
+    VEHICLE_ASSIGNED: 'pass', PACKAGES_PRESENT: 'pass', PACKAGES_VALID: 'pass', STOPS_VALID: 'pass', CARGO_SEGREGATED: 'pass', WEIGHT_WITHIN_PAYLOAD: 'pass', VOLUME_WITHIN_CARGO: 'pass',
   })
   expect(readiness.checks.find((check) => check.code === 'WEIGHT_WITHIN_PAYLOAD')?.params).toStrictEqual({ totalKg: 200, payloadKg: 5000 })
 })
@@ -50,4 +50,14 @@ test('total weight above payload and total volume above the cargo space fail', (
   // Đúng bằng tải trọng vẫn đạt
   const exact = tripReadiness({ vehicle: SPEC_TRUCK_6M, vehicleInMaintenance: false, stopCount: 1, packages: [box('PKG-001', { quantity: 50 })] })
   expect(statusOf(exact).WEIGHT_WITHIN_PAYLOAD).toBe('pass')
+})
+
+test('packages of another handling class block until an override reason is recorded', () => {
+  const packages = [box('PKG-001'), box('PKG-002', { handlingClass: 'FRAGILE', quantity: 3 }), box('PKG-003', { handlingClass: 'HAZARDOUS' })]
+  const blocked = tripReadiness({ vehicle: SPEC_TRUCK_6M, vehicleInMaintenance: false, stopCount: 1, packages })
+  expect(blocked.ready).toBe(false)
+  expect(blocked.checks.find((check) => check.code === 'CARGO_SEGREGATED')).toStrictEqual({ code: 'CARGO_SEGREGATED', status: 'fail', params: { lines: 2, packages: 4 } })
+  const overridden = tripReadiness({ vehicle: SPEC_TRUCK_6M, vehicleInMaintenance: false, stopCount: 1, packages, overrideReason: 'Khách gom chung một xe' })
+  expect(overridden.ready).toBe(true)
+  expect(overridden.checks.find((check) => check.code === 'CARGO_SEGREGATED')).toStrictEqual({ code: 'CARGO_SEGREGATED', status: 'warn', params: { lines: 2, packages: 4 } })
 })

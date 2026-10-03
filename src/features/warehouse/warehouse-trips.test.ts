@@ -74,17 +74,22 @@ test('a stale trip that was never approved has nothing to load and is not listed
   expect(warehouseTripRows([{ trip, revisions: [revision('REV-001', 1, false)] }], new Map())).toStrictEqual([])
 })
 
+/** Tuyến đã tối ưu (FE-4b-09): chuyến còn lập kế hoạch mang nó là Đã lập kế hoạch. */
+const ROUTED: Pick<Trip, 'routePlan'> = {
+  routePlan: { stops: [], missedStopIds: [], totalKm: 0, totalMinutes: 0, optimizedAt: '2026-09-13T08:15:00.000Z', optimizedBy: null, isMockResult: true },
+}
+
 test('a planned trip whose plan still awaits approval is not listed; once approved it waits for the warehouse', () => {
-  const trip = tripRecord('TRIP-A')
+  const trip: Trip = { ...tripRecord('TRIP-A'), ...ROUTED }
   expect(warehouseTripRows([{ trip, revisions: [revision('REV-001', 1, false)] }], new Map())).toStrictEqual([])
   const rows = warehouseTripRows([{ trip, revisions: [revision('REV-001', 1, false), revision('REV-002', 1, true)] }], new Map())
   expect(rows.map((row) => [row.id, row.status, row.sub, row.stage])).toStrictEqual([['TRIP-A', 'PLANNED', { kind: 'approved' }, 'waiting']])
 })
 
 test('same status: earlier run date first, then trip id; an unknown vehicle shows its id', () => {
-  const later = { ...tripRecord('TRIP-A'), scheduledDate: '2026-09-16' }
-  const earlierB = { ...tripRecord('TRIP-C'), scheduledDate: '2026-09-15' }
-  const earlierA = { ...tripRecord('TRIP-B'), scheduledDate: '2026-09-15' }
+  const later = { ...tripRecord('TRIP-A'), ...ROUTED, scheduledDate: '2026-09-16' }
+  const earlierB = { ...tripRecord('TRIP-C'), ...ROUTED, scheduledDate: '2026-09-15' }
+  const earlierA = { ...tripRecord('TRIP-B'), ...ROUTED, scheduledDate: '2026-09-15' }
   const rows = warehouseTripRows(
     [later, earlierB, earlierA].map((trip) => ({ trip, revisions: [revision('REV-001', 1, true)] })),
     new Map(),

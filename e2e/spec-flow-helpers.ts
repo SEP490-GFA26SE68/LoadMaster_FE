@@ -94,15 +94,32 @@ export type PackageInput = {
 
 /**
  * Thêm một điểm giao tay ở Chi tiết chuyến (FE-4b-04): form tạo chuyến không còn nhập điểm giao, kiện gõ tay cần một điểm giao trước.
- * Chờ hộp thoại đóng — điểm mới đã nằm trong kho.
+ * Chờ hộp thoại đóng — điểm mới đã nằm trong kho. `place`: chữ tìm trong danh sách địa danh mẫu, khớp đúng một địa danh — điểm lấy
+ * toạ độ của địa danh đó (cần cho tối ưu tuyến, FE-4b-09); vắng thì điểm chưa có toạ độ.
  */
-export async function addStop(page: Page, input: { name: string; phone?: string }) {
+export async function addStop(page: Page, input: { name: string; phone?: string; place?: string }) {
   await page.getByRole('region', { name: 'Sơ đồ tuyến' }).getByRole('button', { name: 'Thêm điểm giao', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Thêm điểm giao' })
   await dialog.getByRole('textbox', { name: 'Tên điểm giao', exact: true }).fill(input.name)
+  if (input.place !== undefined) {
+    await dialog.getByRole('combobox', { name: 'Tìm địa danh', exact: true }).fill(input.place)
+    await expect(dialog.getByRole('option')).toHaveCount(1)
+    await dialog.getByRole('option').click()
+    await expect(dialog.getByRole('textbox', { name: 'Vĩ độ', exact: true })).not.toHaveValue('')
+  }
   if (input.phone !== undefined) await dialog.getByRole('textbox', { name: 'Số điện thoại', exact: true }).fill(input.phone)
   await dialog.getByRole('button', { name: 'Thêm điểm giao', exact: true }).click()
   await expect(dialog).toBeHidden()
+}
+
+/**
+ * Bấm "Tối ưu tuyến" ở Chi tiết chuyến và chờ kho ghi tuyến (FE-4b-09): chuyến Nháp thành Đã lập kế hoạch. Mọi điểm giao phải có toạ
+ * độ (`addStop` với `place`).
+ */
+export async function optimizeRoute(page: Page) {
+  const route = page.getByRole('region', { name: 'Sơ đồ tuyến' })
+  await route.getByRole('button', { name: /^Tối ưu (lại )?tuyến$/ }).click()
+  await expect(route.getByText('Tuyến đã tối ưu', { exact: true })).toBeVisible()
 }
 
 /** Mở panel "Kiện mới" ở Chi tiết chuyến, điền và lưu. Trả panel để test đọc thêm nếu cần. */

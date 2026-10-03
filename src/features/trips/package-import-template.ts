@@ -5,7 +5,8 @@ import { IMPORT_FIELDS, type ImportField } from './package-import-columns'
 
 /**
  * File mẫu nhập kiện (LM-093): dòng tiêu đề theo ngôn ngữ đang chọn + hai dòng ví dụ dựng cho đúng chuyến đang mở — mã kiện kế tiếp
- * của chuyến, điểm giao có thật — nên nhập nguyên file mẫu cũng ra hai kiện hợp lệ. Cột cuối `handlingClass` (FE-3b-07) ghi mã loại hàng. CSV dựng bằng Blob; `.xlsx` dựng bằng
+ * của chuyến, điểm giao có thật — nên nhập nguyên file mẫu cũng ra hai kiện hợp lệ. Cột cuối `handlingClass` (FE-3b-07) ghi mã loại hàng; hai dòng mẫu cùng một loại hàng vì một chuyến chỉ chở một loại (FE-4b-06) —
+ * mẫu khác loại sẽ bật hộp hỏi lý do chở chung ngay khi nhập nguyên file mẫu. CSV dựng bằng Blob; `.xlsx` dựng bằng
  * `write-excel-file`, chỉ tải thư viện khi bấm tải mẫu.
  */
 
@@ -26,7 +27,7 @@ export function importTemplateRows(t: TFunction, existing: readonly CargoPackage
       id: secondId, name: t('trips.import.sample.second'), lengthCm: 70, widthCm: 45, heightCm: 15, weightKg: 25, quantity: 4,
       deliveryStop: Math.min(2, Math.max(1, stopCount)), allowedOrientations: 'LWH|LHW|WLH|WHL|HLW|HWL', keepUpright: no,
       fragilityLevel: 'LOW', stackable: yes, maxTopLoadKg: 150, maxStackCount: 6, minSupportRatio: 0.8, priority: 1, mustLoad: yes,
-      groupId: '', notes: t('trips.import.sample.note'), handlingClass: 'FRAGILE',
+      groupId: '', notes: t('trips.import.sample.note'), handlingClass: 'STANDARD',
     },
   ]
   return [

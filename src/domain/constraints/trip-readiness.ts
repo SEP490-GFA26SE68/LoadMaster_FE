@@ -1,5 +1,6 @@
 import { gt, roundKg } from '@/domain/geometry'
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
+import { segregation } from './segregation'
 import { validatePackages } from './validate-packages'
 
 /**
@@ -11,13 +12,14 @@ export const READINESS_CODES = [
   'PACKAGES_PRESENT',
   'PACKAGES_VALID',
   'STOPS_VALID',
+  'CARGO_SEGREGATED',
   'WEIGHT_WITHIN_PAYLOAD',
   'VOLUME_WITHIN_CARGO',
 ] as const
 
 export type ReadinessCode = (typeof READINESS_CODES)[number]
 
-/** `warn` không chặn tối ưu (điểm giao chưa có kiện). */
+/** `warn` không chặn tối ưu (điểm giao chưa có kiện; kiện khác loại hàng đã có lý do vượt luật). */
 export type ReadinessStatus = 'pass' | 'warn' | 'fail'
 
 export type ReadinessCheck = { code: ReadinessCode; status: ReadinessStatus; params: Record<string, number> }
@@ -30,14 +32,19 @@ export type ReadinessInput = {
   vehicleInMaintenance: boolean
   packages: readonly CargoPackage[]
   stopCount: number
+  /** Lý do vượt luật phân tách hàng đã ghi cho chuyến (D-74); vắng là chưa vượt. */
+  overrideReason?: string
 }
 
-export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCount }: ReadinessInput): TripReadiness {
+export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCount, overrideReason }: ReadinessInput): TripReadiness {
   const count = packages.reduce((sum, pkg) => sum + pkg.quantity, 0)
   const invalid = new Set(validatePackages(packages).filter((issue) => issue.severity === 'error').map((issue) => issue.packageInstanceId)).size
   const outside = packages.filter((pkg) => pkg.deliveryStop < 1 || pkg.deliveryStop > stopCount).length
   const used = new Set(packages.map((pkg) => pkg.deliveryStop))
   const empty = Array.from({ length: stopCount }, (_, index) => index + 1).filter((stop) => !used.has(stop)).length
+  // Một chuyến một loại hàng (D-74): còn kiện khác loại mà chưa ghi lý do vượt thì chặn; đã ghi lý do thì chỉ cảnh báo
+  const conflicts = segregation(packages, vehicle).conflicts
+  const conflictPackages = conflicts.reduce((sum, conflict) => sum + conflict.count, 0)
   const totalKg = roundKg(packages.reduce((sum, pkg) => sum + pkg.weightKg * pkg.quantity, 0))
   const totalCm3 = packages.reduce((sum, pkg) => sum + pkg.lengthCm * pkg.widthCm * pkg.heightCm * pkg.quantity, 0)
 
@@ -49,6 +56,11 @@ export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCou
       code: 'STOPS_VALID',
       status: stopCount === 0 || outside > 0 ? 'fail' : empty > 0 ? 'warn' : 'pass',
       params: { stops: stopCount, outside, empty },
+    },
+    {
+      code: 'CARGO_SEGREGATED',
+      status: conflicts.length === 0 ? 'pass' : overrideReason === undefined ? 'fail' : 'warn',
+      params: { lines: conflicts.length, packages: conflictPackages },
     },
   ]
   if (vehicle) {

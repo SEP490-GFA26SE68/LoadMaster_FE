@@ -74,22 +74,23 @@ test('the CSV template with one bad row added imports only its valid rows, in on
   expect(after.events).toHaveLength(before.events.length + 1)
   expect(after.events[0]).toStrictEqual({ action: 'trip.updated', params: { fields: 'packages' } })
 
-  // FE-3b-07: 10 thùng nước suối (PKG-004, hàng thường) và 4 bao gạo (PKG-005, mẫu ghi FRAGILE) — mỗi kiện một bản ghi kho kiện đã gán chuyến
+  // FE-3b-07: 10 thùng nước suối (PKG-004, hàng thường) và 4 bao gạo (PKG-005, cùng loại hàng thường) — mỗi kiện một bản ghi kho kiện đã gán chuyến
   const created = await poolPackages(page, ['PKG-004-01', 'PKG-004-10', 'PKG-005-01', 'PKG-005-04'])
   expect(created.map((pkg) => [pkg?.status, pkg?.tripId, pkg?.handlingClass, pkg?.labelled])).toStrictEqual([
-    ['ASSIGNED', TRIP, 'STANDARD', true], ['ASSIGNED', TRIP, 'STANDARD', true], ['ASSIGNED', TRIP, 'FRAGILE', true], ['ASSIGNED', TRIP, 'FRAGILE', true],
+    ['ASSIGNED', TRIP, 'STANDARD', true], ['ASSIGNED', TRIP, 'STANDARD', true], ['ASSIGNED', TRIP, 'STANDARD', true], ['ASSIGNED', TRIP, 'STANDARD', true],
   ])
   const rice = created[2]
   expect(rice?.qrToken).toMatch(/^LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/)
 
-  // Nhãn in được ngay từ chuyến: 140 kiện có sẵn + 14 kiện vừa nhập; nhãn bao gạo mang dòng "Hàng dễ vỡ" và đúng mã QR của kiện
+  // Nhãn in được ngay từ chuyến: 140 kiện có sẵn + 14 kiện vừa nhập; nhãn bao gạo mang đúng mã QR của kiện
   await page.getByRole('region', { name: 'Kiện hàng' }).getByRole('link', { name: 'In nhãn QR', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/kien-hang/nhan' && url.searchParams.get('chuyen') === TRIP)
   await expect(page.getByText('154 nhãn có thể in', { exact: true })).toBeVisible()
   const label = page.getByRole('region', { name: 'Trang nhãn QR' }).getByRole('article', { name: rice?.id ?? '', exact: true })
   await expect(label.getByRole('img', { name: `Mã QR ${rice?.qrToken}`, exact: true })).toBeVisible()
   await expect(label).toContainText('Mã bên gửiPKG-005-01')
-  await expect(label.getByText('Hàng dễ vỡ', { exact: true })).toBeVisible()
+  // Kiện mẫu là hàng thường (FE-4b-06: một chuyến một loại hàng) nên nhãn không có khung "Hàng dễ vỡ" — khung đó kiểm ở test của nhãn
+  await expect(label.getByText('Hàng dễ vỡ', { exact: true })).toHaveCount(0)
 
   // Tra cứu mã trên nhãn ra đúng kiện, kèm chuyến và điểm giao
   await navigateInApp(page, `/tra-cuu-kien?ma=${rice?.qrToken}`)

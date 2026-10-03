@@ -29,17 +29,18 @@ export function latestApproved<R extends Pick<Revision, 'approvedAt'>>(revisions
  * Trạng thái hiển thị của chuyến (D-81, FE-0-05): sáu trạng thái của backend, suy từ pha kho lưu. `loading` và `loaded` là Đang xếp
  * hàng, `delivering` là Đang vận chuyển, `completed` là Đã giao, `cancelled` là Đã huỷ.
  *
- * Pha `planning` theo luật TẠM, bỏ khi FE-4b-09 có tối ưu tuyến (backend chỉ sang `PLANNED` khi tối ưu tuyến xong): chuyến đã có
- * revision là Đã lập kế hoạch, chưa có là Nháp. Phương án chờ duyệt, đã duyệt hay lỗi thời nằm ở dòng phụ (`tripSubStatus`).
+ * Pha `planning` (FE-4b-09, PRD v2 mục 7.1): chuyến **đã tối ưu tuyến** (`routePlan`) là Đã lập kế hoạch, chưa thì Nháp — thêm hoặc
+ * bớt điểm giao sau khi tối ưu làm kho bỏ `routePlan`, chuyến về Nháp. Phương án 3D chờ duyệt, đã duyệt hay lỗi thời nằm ở dòng phụ
+ * (`tripSubStatus`), không quyết định trạng thái.
  */
-export function tripStatus(trip: Pick<Trip, 'phase'>, revisions: readonly Pick<Revision, 'id'>[]): TripStatus {
+export function tripStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): TripStatus {
   switch (trip.phase) {
     case 'cancelled': return 'CANCELLED'
     case 'completed': return 'DELIVERED'
     case 'delivering': return 'IN_TRANSIT'
     case 'loaded':
     case 'loading': return 'LOADING'
-    case 'planning': return revisions.length > 0 ? 'PLANNED' : 'DRAFT'
+    case 'planning': return trip.routePlan ? 'PLANNED' : 'DRAFT'
   }
 }
 
@@ -64,6 +65,15 @@ export function tripSubStatus(
   if (!shown) return null
   if (isStale(shown, trip)) return { kind: 'stale' }
   return { kind: shown.approvedAt === undefined ? 'awaitingApproval' : 'approved' }
+}
+
+/**
+ * Dòng phụ về tuyến (FE-4b-09): chuyến Đã lập kế hoạch có điểm tới nơi sau hạn — "Có điểm trễ hạn dự kiến". Đứng cạnh dòng phụ của
+ * phương án, không thay nó. Không có điểm trễ, hoặc chuyến ở pha khác, thì `null`.
+ */
+export function tripRouteSubStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): TripSubStatus | null {
+  const late = trip.phase === 'planning' ? (trip.routePlan?.missedStopIds.length ?? 0) : 0
+  return late > 0 ? { kind: 'lateStops', count: late } : null
 }
 
 /** Kiện đã xếp trong phương án: mã instance → số điểm giao. */

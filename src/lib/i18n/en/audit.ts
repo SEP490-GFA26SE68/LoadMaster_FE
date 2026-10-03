@@ -5,7 +5,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Signed in', signedOut: 'Signed out', signInFailed: 'Sign-in failed' },
     vehicle: { created: 'Added vehicle', updated: 'Edited vehicle', deleted: 'Deleted vehicle', maintenanceOn: 'Put vehicle in maintenance', maintenanceOff: 'Ended vehicle maintenance' },
-    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip' },
+    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip', segregationOverridden: 'Allowed mixed handling classes', routeOptimized: 'Optimized the route' },
     optimization: { saved: 'Saved optimization result', failed: 'Optimization run returned no result' },
     revision: { approved: 'Approved plan' },
     loading: { started: 'Started loading', missing: 'Reported package missing at warehouse', completed: 'Finished loading', sealed: 'Recorded seal number' },
@@ -107,6 +107,11 @@ export const audit = {
       reasonCode: 'Reason',
       vehicleTypeId: 'Vehicle type',
       sealNumber: 'Seal number',
+      handlingClass: 'Handling class of the trip',
+      conflictCount: 'Packages of another class',
+      totalKm: 'Distance (km)',
+      totalMinutes: 'Duration (min)',
+      lateStops: 'Stops expected late',
     },
     fieldNames: {
       name: 'Trip name',

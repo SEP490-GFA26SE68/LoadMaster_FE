@@ -1,6 +1,7 @@
 import type { CargoPackage } from '@/domain/models'
 import { addDays, SEED_ANCHOR_DATE, vnTime } from './clock'
 import { HERO_DEPARTURE_TIME, LONG_BINH_DEPOT } from './seed-depots'
+import { CUSTOMERS } from './seed-directory'
 import { LONG_BINH } from './seed-users'
 import type { Trip } from './types'
 
@@ -28,6 +29,7 @@ function cargo(line: CargoLine): CargoPackage {
  * Chuyến mẫu TRIP-2026-0914 từ Kho Long Bình: 6 dòng kiện, 132 instance, 5.844 kg, 16,55 m³ trên Hyundai HD210 (41% thể tích,
  * 62% tải). `maxTopLoadKg` mỗi dòng chịu được cả cột `maxStackCount` kiện cùng loại. `groupId` là mã đơn hàng.
  * Là chuyến chính của ngày neo (D-44): chạy ngày `today`, gán tài xế demo, đã duyệt và chờ kho xếp (revision ở `seed-revisions`).
+ * Bốn điểm giao là bốn khách của danh bạ seed (`CUSTOMERS`), kèm toạ độ mẫu ở mức khu vực; tuyến đã tối ưu ghi ở `seed.ts`.
  */
 export function seedTrip(today: string = SEED_ANCHOR_DATE): Trip {
   return {
@@ -42,10 +44,10 @@ export function seedTrip(today: string = SEED_ANCHOR_DATE): Trip {
     phase: 'planning',
     createdAt: vnTime(addDays(today, -1), '15:20'),
     stops: [
-      { id: 'STOP-01', name: 'Công ty TNHH Thực phẩm Sài Gòn', address: '12 Nguyễn Văn Linh, Q.7, TP. Hồ Chí Minh', phone: '0283 775 1122', contactName: 'Chị Hương' },
-      { id: 'STOP-02', name: 'Siêu thị Co.opmart Bình Dương', address: '30 Đại lộ Bình Dương, Thủ Dầu Một', phone: '0274 382 6655', contactName: 'Anh Phúc' },
-      { id: 'STOP-03', name: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, P. Đông Hoà, Dĩ An', phone: '0909 318 204', contactName: 'Anh Toàn' },
-      { id: 'STOP-04', name: 'Nhà thuốc Long Châu Biên Hoà', address: '58 Võ Thị Sáu, P. Quyết Thắng, Biên Hoà', phone: '0251 382 7719', contactName: 'Chị Ngân' },
+      { id: 'STOP-01', ...CUSTOMERS.thucPhamSaiGon },
+      { id: 'STOP-02', ...CUSTOMERS.coopBinhDuong },
+      { id: 'STOP-03', ...CUSTOMERS.bhxDiAn },
+      { id: 'STOP-04', ...CUSTOMERS.longChauBienHoa },
     ],
     packages: [
       cargo({

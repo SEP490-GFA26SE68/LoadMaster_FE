@@ -83,7 +83,18 @@ test('the dispatcher adds IMPORTED packages to a new hand-added stop and sees th
   await user.click(await dialog.findByRole('option', { name: /KCN Tân Bình/ }))
   await user.click(dialog.getByRole('button', { name: 'Đưa vào chuyến' }))
 
+  // PK-0064 (giá trị cao) là kiện đầu tiên nên khoá chuyến; hai thùng bánh quy là hàng thường → hộp vượt luật hỏi lý do (FE-4b-06)
+  const override = within(await screen.findByRole('dialog', { name: 'Chở chung kiện khác loại hàng' }, SLOW))
+  expect(override.getByText('Giá trị cao')).toBeInTheDocument()
+  expect(override.getByText('MP-BQ-0913-02 và MP-BQ-0913-01')).toBeInTheDocument()
+  await user.click(override.getByRole('button', { name: 'Lưu lý do' }))
+  expect(await override.findByText('Cần ghi lý do.')).toBeInTheDocument()
+  expect((await db.getTrip(trip.id)).packages).toStrictEqual([])
+  await user.type(override.getByRole('textbox', { name: 'Lý do chở chung' }), 'Khách gom chung một xe')
+  await user.click(override.getByRole('button', { name: 'Lưu lý do' }))
+
   expect(await screen.findByText('Đã đưa 3 kiện vào chuyến, điểm 1.', {}, SLOW)).toBeInTheDocument()
+  expect((await db.getTrip(trip.id)).overrideReason).toBe('Khách gom chung một xe')
   // Thẻ liệt kê từng kiện theo dòng kiện của chuyến (ô chọn xếp kiện mới nhất trước), kèm điểm giao
   await waitFor(() => expect(listed()).toStrictEqual(['PK-0064', 'PK-0030', 'PK-0029']), SLOW)
   const first = poolCard().getAllByRole('listitem')[0]!

@@ -24,6 +24,12 @@ export const readiness = {
       warn: '{empty} stops have no packages',
       fail: 'No stops yet, or {outside} package lines point to a stop that does not exist',
     },
+    CARGO_SEGREGATED: {
+      label: 'Handling class',
+      pass: 'Every package is of one handling class',
+      warn: '{packages} packages of another handling class, with a reason recorded',
+      fail: '{packages} packages of another handling class, no reason recorded yet',
+    },
     WEIGHT_WITHIN_PAYLOAD: { label: 'Weight', pass: '{total} / {payload}', fail: '{total} exceeds the payload of {payload}' },
     VOLUME_WITHIN_CARGO: { label: 'Volume', pass: '{total} / {cargo}', fail: '{total} exceeds the cargo volume of {cargo}' },
   },

@@ -119,6 +119,7 @@ export function createTripColumns(t: TFunction, format: Formatter) {
         <span className="flex flex-col items-start gap-1">
           <StatusBadge status={info.getValue()} />
           <TripSubStatusTag sub={info.row.original.sub} />
+          <TripSubStatusTag sub={info.row.original.routeSub} />
         </span>
       ),
     }),

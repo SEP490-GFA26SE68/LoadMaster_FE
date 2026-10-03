@@ -1,7 +1,7 @@
 import { expandPackages } from '@/domain/cargo'
 import type { VehicleConfig } from '@/domain/models'
 import { compareText, isWithinDateRange, matchesQuery } from '@/lib/list-filter'
-import { latestApproved, tripStatus, tripSubStatus, type Revision, type Trip, type TripPhase } from '@/lib/mock-db'
+import { latestApproved, tripRouteSubStatus, tripStatus, tripSubStatus, type Revision, type Trip, type TripPhase } from '@/lib/mock-db'
 import { TRIP_STATUSES, type TripStatus, type TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 
@@ -27,12 +27,14 @@ export type TripRow = {
   readonly status: TripStatus
   /** Dòng phụ dưới chip (FE-0-05): phương án chờ duyệt / đã duyệt / lỗi thời, hoặc tiến độ kho. */
   readonly sub: TripSubStatus | null
+  /** Dòng phụ về tuyến (FE-4b-09): tuyến đã tối ưu có điểm trễ hạn dự kiến. Đứng cạnh `sub`. */
+  readonly routeSub: TripSubStatus | null
   readonly phase: TripPhase
 }
 
 /**
- * `revisions` theo thứ tự kho trả (cũ trước). Trạng thái và dòng phụ là `tripStatus`, `tripSubStatus` của kho (D-81): suy từ pha
- * vận hành và revision. Lấp đầy lấy từ revision Planner mở mặc định: bản đã duyệt mới nhất, không có thì bản mới nhất.
+ * `revisions` theo thứ tự kho trả (cũ trước). Trạng thái và dòng phụ là `tripStatus`, `tripSubStatus` của kho (D-81): trạng thái suy từ
+ * pha vận hành và tuyến đã tối ưu (FE-4b-09), dòng phụ từ revision. Lấp đầy lấy từ revision Planner mở mặc định: bản đã duyệt mới nhất, không có thì bản mới nhất.
  */
 export function tripRow(
   trip: Trip,
@@ -53,8 +55,9 @@ export function tripRow(
     packageCount: expandPackages(trip.packages).instances.length,
     stopCount: trip.stops.length,
     volumePercent: shown ? shown.result.metrics.volumeUtilizationPercent : null,
-    status: tripStatus(trip, revisions),
+    status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
+    routeSub: tripRouteSubStatus(trip),
     phase: trip.phase,
   }
 }

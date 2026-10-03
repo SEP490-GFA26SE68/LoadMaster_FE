@@ -75,7 +75,7 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
     name: trip.name,
     scheduledDate: trip.scheduledDate,
     vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
-    status: tripStatus(trip, revisions),
+    status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
     stopCount: trip.stops.length,
     packageCount: total - missingIds(trip).size,

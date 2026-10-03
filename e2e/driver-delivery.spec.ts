@@ -82,7 +82,7 @@ test('phone: the demo driver delivers every stop, reports one issue and sees the
     const { getMockDb, tripStatus } = (await import(url)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
     return {
-      status: tripStatus(trip, await getMockDb().listRevisions(tripId)),
+      status: tripStatus(trip),
       issues: trip.delivery?.issues.map((issue) => [issue.kind, issue.packageInstanceId, issue.stopNumber, issue.reportedBy]),
     }
   }, { url: MOCK_DB, tripId: TRIP })

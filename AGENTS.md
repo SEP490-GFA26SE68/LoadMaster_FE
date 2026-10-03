@@ -65,7 +65,8 @@ FE-3b-06)* In nhãn `/kien-hang/nhan` theo `labels.print` và Tra cứu kiện `
 viên kho. 19 quyền mới của
 PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `routes.optimize`, `manualConfirm.approve`, `monitoring.view`,
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
-nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print` và `requirements.view` / `requirements.edit` (FE-4b-02), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
+nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02) và
+`routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), chúng **chưa gắn route, mục nav hay nút nào** — chỉ hiện ở Ma trận quyền và chip quyền của panel người dùng; issue
 làm màn nào thì nối quyền của màn đó, route đang có giữ nhóm quyền cũ.
 Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính;
 thanh điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền;
@@ -270,11 +271,12 @@ src/
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
     models/             type contract Spec + zod schema (LM-010)
-    constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →)
+    constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06)
     metrics/            tỷ lệ sử dụng, trọng tâm (LM-021)
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
-    routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`
+    routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
+                        gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09)
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker (LM-024 →)
   test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
@@ -507,7 +509,9 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
   **dòng phụ** `TripSubStatusTag` cạnh/dưới chip (`shape="tag"`) — màu "cần bạn" (hổ phách) nằm ở dòng phụ: dưới Đã lập kế hoạch là
   "Chờ duyệt" hổ phách chấm vòng rỗng, "Đã duyệt" cyan, "Lỗi thời — cần tối ưu lại" hổ phách có viền; dưới Đang xếp hàng là "Đang xếp
-  110 / 280" và "Xếp xong — chờ xuất phát" xanh lam. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
+  110 / 280" và "Xếp xong — chờ xuất phát" xanh lam. *(bổ sung 03/10/2026, FE-4b-09)* Tuyến đã tối ưu có điểm tới nơi sau hạn thì
+  thêm một dòng phụ thứ hai "Có điểm trễ hạn dự kiến" hổ phách có viền, **đứng cạnh** dòng phụ của phương án (danh sách chuyến, đầu Chi
+  tiết chuyến — `tripRouteSubStatus`), không thay nó. Màn cảm ứng (kho, tài xế) phóng nhãn phụ lên 16 px cùng chip. Bản LM-104
   (27/09/2026) dùng nháp · đã tối ưu · đã duyệt · đang vận chuyển · hoàn thành · đã huỷ, dòng phụ chỉ có lỗi thời và tiến độ kho.
 - **Card**: `Card`/`CardHeader`/`CardTitle` (Archivo 650 16/22)/`CardMeta`/`CardActions`; bo 14, `--card-shadow`.
 - **Ô nhập** (`components/ui/field-styles.tsx`, dùng chung cho Input, Textarea, Select, SelectField): nhãn `small` 600 `--ink-2`, viền
@@ -925,7 +929,9 @@ Chỉ dùng Three.js khi người dùng **cần xoay hoặc bấm vào vật th�
 *(đã điều chỉnh 03/10/2026, FE-4b-07)* Bản đồ địa lý không còn bị cấm: `components/map/RouteMap` vẽ kho, điểm giao (màu điểm giao kèm
 số), đường tuyến và vị trí xe bằng MapLibre GL. Cùng lối với khung 3D: không có WebGL (jsdom) thì chính `RouteMap` vẽ sơ đồ SVG từ cùng
 dữ liệu và không tải chunk bản đồ; hình luôn `aria-hidden`, nội dung tương đương là danh sách điểm `sr-only`. Mốc là phần tử DOM của React,
-không dùng sprite hay font của style nền. `trips/RouteDiagram.tsx` (danh sách điểm ở chi tiết chuyến) chưa đổi — nối bản đồ là FE-4b-09.
+không dùng sprite hay font của style nền. *(đã điều chỉnh 03/10/2026, FE-4b-09)* Chi tiết chuyến giữ hàng điểm giao của
+`trips/RouteDiagram.tsx` (kéo đổi thứ tự, lọc bảng kiện) và đặt `RouteMap` cao 256 px ngay dưới hàng đó, trong cùng card: kho rồi các điểm
+**có toạ độ** theo thứ tự đi; điểm chưa có toạ độ không có trên bản đồ.
 
 ## 8. Chuyển động
 
@@ -1082,14 +1088,33 @@ cuối tuyến (mã `STOP-NN` kế tiếp). `DeliveryStop` thêm `lat?` / `lng?`
 tiên = cao nhất của các yêu cầu có dòng kiện ở điểm, kho ghi lại (`withStopDemands`) mỗi khi yêu cầu vào / rời chuyến, đổi hạn hay ưu
 tiên, hoặc dòng kiện / thứ tự điểm đổi. Gỡ yêu cầu hoặc bỏ kiện: điểm `generated` không còn dòng kiện nào tự mất, kiện ở các điểm sau
 đánh số lại; điểm thêm tay (Chi tiết chuyến → "Thêm điểm giao", `StopFormDialog`, `trip-stops-api.ts`) ở lại và không có hạn. Chuyến chưa
-có điểm giao thì chưa gõ / nhập kiện tay được. **Còn tạm tới FE-4b-09**: thêm, bớt điểm chưa đưa chuyến về Nháp (trạng thái `PLANNED` vẫn
-suy từ revision); hai khách seed là điểm đến của yêu cầu giao (Co.opmart Bình Dương, Bách Hoá Xanh Dĩ An) có toạ độ, các điểm seed khác chưa.
+có điểm giao thì chưa gõ / nhập kiện tay được. *(đã điều chỉnh 03/10/2026, FE-4b-09)* Thêm, bớt điểm sau khi đã tối ưu tuyến đưa
+chuyến về Nháp (mục "Dữ liệu dùng chung và tối ưu"). Khách của danh bạ seed (`seed-directory.ts`) có **toạ độ mẫu gần đúng ở mức khu vực**
+lấy theo địa danh mẫu — trừ Điện máy Xanh Tân An, để chuyến nháp `TRIP-014` giữ một điểm chưa có toạ độ; hai khách của chuyến nháp Phương Nam
+cũng chưa có.
 *(bổ sung 03/10/2026, FE-4b-05, D-68 đường 2)* **Kiện Đã nhập đưa thẳng vào chuyến**: `addTripPackages(tripId, packageIds, target)` (điểm
 đang có hoặc điểm tay mới), `removeTripPackage`, `listTripPackages` (kèm đường vào chuyến `REQUIREMENT | POOL | TRIP`) ở `db-trip-pool.ts`;
 kiện phải `IMPORTED`, không cờ, không thuộc yêu cầu nào; sang `ASSIGNED`, không có hạn; bỏ khỏi chuyến về `IMPORTED`. Liên kết dòng mang
 `fromPool`: sửa dòng chỉ đổi `stopId` của kiện, không ghi đè mã, kích thước, điểm đến. Lớp API `trips/trip-pool-api.ts` → `useTripPoolQuery.ts`
 (khoá `['trips', tripId, 'pool-packages']`); Chi tiết chuyến có thẻ "Kiện đưa thẳng từ kho kiện" và hộp thoại `PoolPackagePicker` (ô chọn
-điểm chỉ liệt kê điểm tay). Nhật ký: `trip.packagesAdded`, `trip.packageRemoved`. Kiểm phân tách hàng khi thêm kiện là FE-4b-06.
+điểm chỉ liệt kê điểm tay). Nhật ký: `trip.packagesAdded`, `trip.packageRemoved`. Kiện khác loại hàng của chuyến theo luật phân tách hàng
+bên dưới (FE-4b-06).
+*(bổ sung 03/10/2026, FE-4b-06, D-74)* **Phân tách hàng — một chuyến một loại hàng.** Luật thuần ở `domain/constraints/segregation.ts`:
+`segregation(dòng kiện, xe)` trả loại đang khoá (loại của dòng kiện đầu tiên; dòng không ghi loại là `STANDARD`; chuyến rỗng là `null` — khoá
+tự tính lại), nhóm theo loại, xung đột (mọi dòng khác loại đang khoá) và cảnh báo xe `HAZARDOUS_VEHICLE_REQUIRED` (có hàng nguy hiểm) ·
+`REFRIGERATION_MISSING` (có hàng lạnh mà xe không có vật cản `COOLING_UNIT` — đề xuất D-74, chờ nhóm xác nhận); `addedConflicts` so trước /
+sau. Kho kiểm **ở mọi lối kiện vào chuyến** qua một hàm `settleSegregation` (`db-trip-segregation.ts`), gọi trước khi ghi: đưa yêu cầu giao
+vào chuyến, đưa kiện kho kiện thẳng vào chuyến, gõ / nhập / sửa / nhân bản dòng kiện (`updateTrip`), tạo chuyến có sẵn kiện. Có xung đột
+**mới** mà chuyến chưa có lý do và nơi gọi không đưa lý do: `CARGO_SEGREGATION_CONFLICT { tripId, lockedClass, packages }` (mã của bên gửi
+với kiện kho kiện, mã dòng với kiện gõ tay), không ghi gì. Nơi gọi đưa `overrideReason` (bắt buộc — `REASON_REQUIRED`; tối đa 500 ký tự —
+`OVERRIDE_REASON_TOO_LONG`): kho lưu `Trip.overrideReason` và ghi `trip.segregationOverridden` (lý do, loại đang khoá, số kiện khác loại);
+chuyến đã có lý do thì kiện khác loại thêm sau đi tiếp; chuyến hết kiện khác loại thì kho gỡ lý do. `getTripSegregation` đọc,
+`overrideTripSegregation` ghi / sửa lý do cho xung đột đang có (chỉ khi còn lập kế hoạch). Kiểm tra sẵn sàng tối ưu có mục `CARGO_SEGREGATED`:
+xung đột chưa có lý do là chưa đạt, đã có lý do là cảnh báo. Lớp API `trips/segregation-api.ts` → `useSegregationQuery.ts` (khoá
+`['trips', tripId, 'segregation']`); `assignRequirementToTrip`, `addTripPackages`, `savePackage`, `importPackages` nhận thêm `overrideReason`.
+UI: thẻ "Phân nhóm hàng" (`SegregationCard`, cột phải Chi tiết chuyến, mọi pha) và hộp vượt luật `SegregationOverrideDialog` dùng chung qua
+`useSegregationGuard`: lần ghi bị từ chối vì xung đột mở hộp thoại, lưu lý do là gọi lại đúng lần ghi đó kèm lý do — mở từ một hộp thoại có
+`<form>` thì đặt **ngoài** form đó.
 *(đã điều chỉnh 03/10/2026, FE-3b-07, D-68)* **Kiện thêm ngay trong chuyến tự vào kho kiện**: sau mỗi lần ghi dòng kiện hay điểm giao của
 chuyến (`createTrip`, `updateTrip`, gỡ yêu cầu giao khỏi chuyến), `syncTripPool` (`db-trip-packages.ts`) giữ cho mỗi instance của dòng (`quantity`) một bản
 ghi `Package` nguồn `TRIP`, `ASSIGNED`, kèm chuyến và điểm giao, mã QR thật cấp ngay; `packageCode` là mã instance (`PKG-001-07`), điểm đến
@@ -1164,9 +1189,25 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
 - *(bổ sung 19/09/2026, LM-081 → LM-083)* Kho lưu **pha** chuyến `planning → loading → loaded → delivering → completed` (+ `cancelled`);
   trạng thái hiển thị lấy qua `tripStatus(trip, revisions)` (pha `planning` vẫn suy từ revision). *(đã điều chỉnh 02/10/2026, FE-0-05,
   D-81)* `TripStatus` là 6 trạng thái của backend: `DRAFT`, `PLANNED`, `LOADING` (pha `loading`/`loaded`), `IN_TRANSIT` (`delivering`),
-  `DELIVERED` (`completed`), `CANCELLED`. Luật **tạm** tới khi có tối ưu tuyến (FE-4b-09): pha `planning` đã có revision là `PLANNED`,
-  chưa có là `DRAFT`. Dòng phụ `tripSubStatus`, hiện bằng `TripSubStatusTag`: dưới `PLANNED` là `awaitingApproval` · `approved` · `stale`
-  (theo revision hiển thị: bản duyệt mới nhất, không có thì bản mới nhất), dưới `LOADING` là `loading` đã ghi / tổng · `loaded`. Lọc/nhóm
+  `DELIVERED` (`completed`), `CANCELLED`. *(đã điều chỉnh 03/10/2026, FE-4b-09, PRD v2 mục 7.1)* Pha `planning`: chuyến **đã tối ưu
+  tuyến** (`Trip.routePlan`) là `PLANNED`, chưa là `DRAFT` — `tripStatus(trip)` không còn đọc revision (luật tạm "có revision là
+  `PLANNED`" của FE-0-05 đã bỏ). `optimizeTripRoute` (`db-trip-route.ts`, mock `@/domain/routing`, không tốn credit) cần ít nhất một điểm
+  (`ROUTE_STOPS_REQUIRED`) và mọi điểm có toạ độ (`MISSING_STOP_COORDINATES { stopIds, stopNumbers }` — chỉ đúng điểm thiếu), xếp lại
+  `Trip.stops` theo thứ tự đi và đánh số lại `deliveryStop` của dòng kiện (thứ tự đổi thì `inputVersion` tăng — phương án 3D lỗi thời),
+  ghi `routePlan` (giờ đến dự kiến và mức hạn từng điểm theo đúng thứ tự `Trip.stops`, điểm trễ, km, phút, người và giờ bấm,
+  `isMockResult`) và nhật ký `trip.routeOptimized`. Sau đó mọi lần ghi chuyến đi qua `withFreshRoute` (`trip-route.ts`, thuần): **thêm hoặc
+  bớt điểm** (kể cả điểm tự sinh khi đưa yêu cầu vào chuyến, điểm tay của kiện kho kiện) hoặc một điểm mất toạ độ thì kho bỏ `routePlan` —
+  chuyến **về Nháp**; đổi thứ tự điểm (kéo thả), giờ xuất phát, kho đi, hạn của điểm thì giờ đến và mức hạn tính lại, trạng thái không đổi.
+  `getTripEta` đọc tuyến (`null` khi chưa tối ưu). Seed: mọi chuyến đã có phương án (và chuyến huỷ có đủ toạ độ) có `routePlan` theo đúng
+  thứ tự điểm của seed, không ghi sự kiện; hai chuyến nháp và chuyến huỷ `TRIP-004` (điểm Tân An chưa có toạ độ) thì không — số chuyến theo
+  trạng thái của seed giữ nguyên. Kho chưa đòi chuyến Đã lập kế hoạch trước khi tối ưu xếp hàng hay bắt đầu xếp (luồng F3, Sprint 5b).
+  Lớp API `trips/route-api.ts` (`optimizeTripRoute`, `getTripEta`) → `useRouteQuery.ts` (khoá `['trips', tripId, 'eta']`); Chi tiết chuyến:
+  `RoutePlanBar` đầu card sơ đồ tuyến (nút phụ "Tối ưu tuyến" theo `routes.optimize`, MOCK RESULT, km · thời gian, số điểm trễ; câu nói giờ
+  đến là ước lượng theo đường nối thẳng), mỗi điểm có "Dự kiến đến" và mức hạn (Kịp hạn xanh lá · Sát hạn hổ phách · Trễ hạn dự kiến đỏ,
+  luôn kèm chữ), điểm chưa có toạ độ mang nhãn "Chưa có toạ độ", bản đồ `RouteMap` dưới hàng điểm. Dòng phụ `tripSubStatus`, hiện bằng
+  `TripSubStatusTag`: dưới `PLANNED` (và dưới `DRAFT` của chuyến đã có phương án mà chưa / không còn tuyến) là `awaitingApproval` ·
+  `approved` · `stale` (theo revision hiển thị: bản duyệt mới nhất, không có thì bản mới nhất), dưới `LOADING` là `loading` đã ghi / tổng ·
+  `loaded`; `tripRouteSubStatus` thêm `lateStops` khi tuyến có điểm trễ hạn dự kiến. Lọc/nhóm
   theo trạng thái; logic kho, tài xế và số "cần bạn xử lý" theo pha hoặc dòng phụ. Tab danh sách chuyến: Tất cả · Nháp · Đã lập kế hoạch
   (thêm số hổ phách: chờ duyệt + lỗi thời; *(đã điều chỉnh 02/10/2026, FE-0-04)* chữ và số "cần bạn xử lý" — ở dòng số dưới tiêu đề và trên
   tab — chỉ hiện với người có `plans.approve`, quản lý công ty chỉ thấy các số thường) · Đang xếp hàng · Đang vận chuyển · Đã giao · Đã huỷ; `trang-thai` trên URL là slug không dấu

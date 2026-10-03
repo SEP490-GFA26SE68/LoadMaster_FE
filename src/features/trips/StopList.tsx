@@ -11,7 +11,7 @@ import { restrictToHorizontalAxis, restrictToParentElement } from '@dnd-kit/modi
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Clock, Warehouse } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DeliveryStop } from '@/lib/mock-db'
+import type { DeliveryStop, RouteStopEta } from '@/lib/mock-db'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { StopArrow, StopCard, StopLeg, type StopState } from './StopCard'
@@ -23,11 +23,16 @@ const SCROLL_AFTER = 6
 /**
  * Hàng điểm giao của sơ đồ tuyến (V2.3): kho xuất phát rồi các điểm theo thứ tự giao. Thứ tự là nguồn chuẩn của `deliveryStop`
  * (LM-046): khi sửa được, kéo ngang (chuột hoặc bàn phím, dnd-kit) để đổi, thả xong là lưu qua mutation và kiện được đánh số lại; điểm
- * cuối được xếp sâu nhất trong thùng. `states` có khi chuyến đang giao / đã hoàn thành: đoạn đường nối thay cho mũi tên.
+ * cuối được xếp sâu nhất trong thùng. Tuyến đã tối ưu (FE-4b-09) thì mỗi điểm thêm giờ đến dự kiến và mức hạn; kéo đổi thứ tự thì kho
+ * tính lại giờ đến. `states` có khi chuyến đang giao / đã hoàn thành: đoạn đường nối thay cho mũi tên.
  */
-export function StopList({ stops, states, depotName, departureTime, departedAt, readOnly = true, onReorder, onRemove, selectedStop = null, onSelectStop }: {
+export function StopList({ stops, states, etas, flagMissingCoordinates = false, depotName, departureTime, departedAt, readOnly = true, onReorder, onRemove, selectedStop = null, onSelectStop }: {
   stops: readonly StopRow[]
   states?: readonly StopState[]
+  /** Giờ đến dự kiến và mức hạn của tuyến đã tối ưu, theo mã điểm (FE-4b-09). */
+  etas?: ReadonlyMap<string, RouteStopEta>
+  /** Chuyến còn lập kế hoạch: gắn nhãn cho điểm chưa có toạ độ. */
+  flagMissingCoordinates?: boolean
   /** Tên kho xuất phát của chuyến (FE-4b-04). */
   depotName?: string
   /** Giờ xuất phát theo kế hoạch `HH:mm` (giờ Việt Nam) — hiện khi xe chưa rời kho. */
@@ -94,6 +99,8 @@ export function StopList({ stops, states, depotName, departureTime, departedAt, 
                   total={stops.length}
                   wide={wide}
                   state={state}
+                  eta={etas?.get(stop.id)}
+                  missingCoordinates={flagMissingCoordinates && (stop.lat === undefined || stop.lng === undefined)}
                   lead={state ? <StopLeg state={state} /> : index > 0 ? <StopArrow /> : <span aria-hidden className="w-2 flex-none" />}
                   readOnly={readOnly}
                   selected={selectedStop === stop.number}
