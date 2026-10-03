@@ -15,7 +15,8 @@ import { DepotMarker, StopMarker, VehicleMarker } from './RouteMapMarker'
 setWorkerUrl(workerUrl)
 
 const ROUTE = 'route-line'
-const FIT = { padding: 48, maxZoom: 14, animate: false } as const
+/** Lề canh khung nhìn: hai bên và phía dưới rộng hơn để nhãn dưới mốc xe (mã chuyến, nguồn vị trí) không bị mép bản đồ cắt. */
+const FIT = { padding: { top: 48, bottom: 64, left: 80, right: 80 }, maxZoom: 14, animate: false } as const
 /** Tâm lúc dựng, trước khi canh theo dữ liệu: giữa vùng TP. Hồ Chí Minh – Đồng Nai – Bình Dương. */
 const FALLBACK_CENTER: [number, number] = [106.8, 10.9]
 

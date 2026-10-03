@@ -1,5 +1,5 @@
 import { ExternalLink, TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Link } from 'react-router'
 import { VehicleName } from '@/components/VehicleName'
 import { StopMarker } from '@/components/map'
@@ -23,9 +23,10 @@ import { useMoment } from './useMoment'
 /**
  * Chi tiết giám sát của chuyến đang chọn (FE-6-10, FE-6-11): giờ đến dự kiến của từng điểm so với hạn, sự cố của chuyến, lịch sử vị
  * trí và các xác nhận tay chờ duyệt (thẻ của Chi tiết chuyến, dùng lại). Người có `exceptions.report` (điều phối viên) có nút chính của
- * màn — "Báo sự cố". Thành phần nghe kênh cập nhật của chuyến (`useTripChannel`) để lịch sử vị trí theo kịp xe.
+ * màn — "Báo sự cố". Thành phần nghe kênh cập nhật của chuyến (`useTripChannel`) để lịch sử vị trí theo kịp xe. `memo`: lần đọc giám sát
+ * mới chỉ vẽ lại phần này khi chính chuyến đang chọn có điều gì đổi.
  */
-export function MonitoringTripPanel({ trip, live, userNames }: { trip: MonitoringTrip; live: TripMonitoring | undefined; userNames: Readonly<Record<string, string>> }) {
+export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, live, userNames }: { trip: MonitoringTrip; live: TripMonitoring | undefined; userNames: Readonly<Record<string, string>> }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
@@ -130,4 +131,4 @@ export function MonitoringTripPanel({ trip, live, userNames }: { trip: Monitorin
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>
   )
-}
+})

@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Banner } from '@/components/Banner'
 import { EmptyState } from '@/components/EmptyState'
@@ -61,6 +63,7 @@ export function MonitoringPage() {
         ) : null}
       </PageHero>
 
+      {board.isSuccess ? <BoardSync shown={trips.map((trip) => trip.tripId).join(',')} /> : null}
       <div className={hasTrips ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
         {board.isPending ? (
           <div role="status" aria-label={t('monitoring.loading')} className="flex justify-center py-16"><Spinner /></div>
@@ -87,6 +90,19 @@ export function MonitoringPage() {
       </div>
     </Tabs>
   )
+}
+
+/**
+ * Giữ bảng giám sát khớp với kho: chuyến vừa xuất phát hoặc vừa giao xong làm danh sách đang chạy của kho khác bảng đang hiện, khi đó
+ * đọc lại bảng — một lần cho mỗi lần lệch. Không vẽ gì; đứng riêng để màn chưa có chuyến nào vẫn thấy chuyến đầu tiên xuất phát.
+ */
+function BoardSync({ shown }: { shown: string }) {
+  const client = useQueryClient()
+  const running = useFleetMonitoringQuery(true).data?.map((live) => live.tripId).join(',')
+  useEffect(() => {
+    if (running !== undefined && running !== shown) void client.invalidateQueries({ queryKey: ['trips', 'monitoring-board'] })
+  }, [client, running, shown])
+  return null
 }
 
 /** Số sự cố đã chuyển lên mà quản lý công ty chưa nhập hạn mới, trên tab của họ: đọc giám sát ở đây để chỉ con số này vẽ lại theo nhịp của kho. */
