@@ -186,6 +186,36 @@ export const trips = {
   },
   vehicle: 'Phương tiện',
   changeVehicle: 'Đổi xe',
+  /**
+   * Hộp thoại Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80), mở từ Chi tiết chuyến và Planner. `reasons` trùng mã lỗi của
+   * `vehicleFit`; cảnh báo loại hàng dùng câu của `segregation.warnings`.
+   */
+  vehicleChange: {
+    title: 'Đổi xe của chuyến {id}',
+    description: 'Chỉ chọn được xe sẵn sàng và chở được hàng của chuyến. Đổi xe làm phương án xếp hàng hiện tại lỗi thời: phải tối ưu lại rồi duyệt.',
+    cargo: 'Hàng của chuyến: {count} kiện · {weight} · {volume}',
+    loading: 'Đang đọc đội xe',
+    loadError: 'Không tải được danh sách xe.',
+    vehicles: 'Chọn xe',
+    spec: 'Lòng thùng {dimensions} · Tải {payload}',
+    current: 'Xe đang dùng cho chuyến này.',
+    busy: 'Đang phục vụ chuyến {tripId}.',
+    maintenance: 'Đang bảo dưỡng.',
+    noneSelectable: 'Không có xe nào khác vừa sẵn sàng vừa chở được hàng của chuyến.',
+    reasons: {
+      CARGO_TOO_LARGE: {
+        one: '{count} dòng kiện không lọt cửa hoặc lòng thùng: {packages}.',
+        other: '{count} dòng kiện không lọt cửa hoặc lòng thùng: {packages}.',
+      },
+      CARGO_VOLUME_EXCEEDED: 'Hàng {total} lớn hơn thể tích thùng {cargo}.',
+      CARGO_WEIGHT_EXCEEDED: 'Hàng nặng {total}, vượt tải trọng {max}.',
+      AXLE_CAPACITY_EXCEEDED: 'Hàng nặng {total}, hai nhóm trục chỉ nhận thêm được {capacity}.',
+    },
+    morePackages: '{list} và {more} dòng khác',
+    cancel: 'Huỷ',
+    submit: 'Đổi xe',
+    done: 'Đã đổi xe của chuyến {id}. Phương án xếp hàng hiện tại đã lỗi thời.',
+  },
   /** Mục Phương tiện ở cột phải Chi tiết chuyến: xe và tài xế đi cùng (LM-088, V2.3). */
   vehicleCard: {
     vehicle: 'Xe',

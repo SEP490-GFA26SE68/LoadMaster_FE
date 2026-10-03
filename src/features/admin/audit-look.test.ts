@@ -27,8 +27,9 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
 test('xong hoặc sẵn sàng là xanh lá; vận hành là xanh dương; kết quả tối ưu là xanh lam; tài khoản và phiên là xám', () => {
   expect(toneOf(['loading.completed', 'delivery.stopCompleted', 'delivery.completed', 'revision.approved', 'vehicle.maintenanceOff']))
     .toStrictEqual(['green', 'green', 'green', 'green', 'green'])
-  expect(toneOf(['trip.created', 'trip.updated', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
-    .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
+  // Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08) là một lần sửa chuyến
+  expect(toneOf(['trip.created', 'trip.updated', 'trip.vehicleChanged', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
+    .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
   expect(toneOf(['optimization.saved', 'trip.routeOptimized'])).toStrictEqual(['azure', 'azure'])
   expect(toneOf(['auth.signedIn', 'auth.signedOut', 'user.created', 'user.passwordReset', 'user.deleted', 'vehicle.deleted']))
     .toStrictEqual(['slate', 'slate', 'slate', 'slate', 'slate', 'slate'])

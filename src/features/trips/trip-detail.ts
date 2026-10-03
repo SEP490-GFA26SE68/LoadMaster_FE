@@ -34,6 +34,9 @@ export type StaleReason = {
 /** Sửa những trường này làm tăng `inputVersion` và làm bản duyệt lỗi thời (D-31). */
 const INPUT_FIELDS = new Set(['vehicleId', 'packages'])
 
+/** Sự kiện đổi đầu vào tối ưu của chuyến: sửa chuyến, và đổi xe của chuyến Đã lập kế hoạch (FE-5b-08) — cả hai ghi `fields`. */
+const INPUT_ACTIONS: ReadonlySet<AuditEvent['action']> = new Set(['trip.updated', 'trip.vehicleChanged'])
+
 /**
  * Vì sao phương án của chuyến lỗi thời: bản duyệt mới nhất lỗi thời trong pha lập kế hoạch, kèm lần sửa xe/kiện mới nhất sau lúc duyệt.
  * `events` là nhật ký của chuyến, mới nhất trước (`listEvents`). Không lỗi thời thì `null`.
@@ -47,7 +50,7 @@ export function staleReason(
   if (trip.phase !== 'planning' || approved?.approvedAt === undefined || !isStale(approved, trip)) return null
   const since = approved.approvedAt
   const event = events.find(
-    (item) => item.action === 'trip.updated' && item.at >= since && fieldsOf(item).some((field) => INPUT_FIELDS.has(field)),
+    (item) => INPUT_ACTIONS.has(item.action) && item.at >= since && fieldsOf(item).some((field) => INPUT_FIELDS.has(field)),
   )
   return { revisionId: approved.id, edit: event ? editOf(event) : null }
 }

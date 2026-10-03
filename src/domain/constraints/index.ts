@@ -1,4 +1,12 @@
-export { approvalBlockers, type ApprovalBlockers, type ApprovalInput } from './approval'
+export {
+  approvalBlockers,
+  blockerSummary,
+  deadlineReview,
+  type ApprovalBlockers,
+  type ApprovalInput,
+  type BlockerSummary,
+  type DeadlineReview,
+} from './approval'
 export { boundaryIssues } from './boundary'
 export { fromContractWarnings, toContractWarnings, type ContractWarning } from './contract-warnings'
 export { checkDoorClearance } from './door'
@@ -35,6 +43,7 @@ export { DEFAULT_MIN_SUPPORT_RATIO, supportIssues, supportRatio } from './suppor
 export { validatePackages } from './validate-packages'
 export { validateRequest } from './validate-request'
 export { validateVehicle } from './validate-vehicle'
+export { VEHICLE_FIT_ERROR_CODES, vehicleFit, type VehicleFit, type VehicleFitErrorCode, type VehicleFitIssue } from './vehicle-fit'
 export { READINESS_CODES, tripReadiness, type ReadinessCheck, type ReadinessCode, type ReadinessInput, type ReadinessStatus, type TripReadiness } from './trip-readiness'
 export {
   addedConflicts,

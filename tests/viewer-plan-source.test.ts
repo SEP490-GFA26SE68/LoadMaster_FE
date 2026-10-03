@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { approvePlanRevision, fetchPlanApproval, fetchPlanSource } from '@/features/viewer3d/viewer-api'
+import { approveLoadPlan, fetchPlanApproval, fetchPlanSource } from '@/features/viewer3d/viewer-api'
 
 const TRIP_ID = 'TRIP-2026-0914'
 
@@ -22,7 +22,7 @@ test('the Planner names who approved an approved revision; an unapproved one, or
   expect(await fetchPlanApproval('REV-002')).toStrictEqual({ approvedByName: 'Nguyễn Thanh Tùng' })
   expect(await fetchPlanApproval('REV-001')).toStrictEqual({ approvedByName: null })
   // Kho của test chưa đăng nhập: bản duyệt mới không có người duyệt, thanh trên chỉ ghi "Đã duyệt lúc"
-  const approved = await approvePlanRevision('REV-001', [])
+  const approved = await approveLoadPlan('REV-001', [])
   expect(approved.approvedAt).toBeDefined()
   expect(await fetchPlanApproval(approved.id)).toStrictEqual({ approvedByName: null })
 })

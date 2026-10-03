@@ -261,6 +261,8 @@ src/
                         đưa vào / gỡ khỏi chuyến và theo mốc của chuyến; `seed-requirements.ts`) — `db-orders.ts` đã xoá;
                         *(bổ sung 03/10/2026, FE-4b-03 → FE-4b-05)* địa danh mẫu `seed-places.ts`; điểm giao tự sinh `trip-stops.ts`
                         (thuần) + `db-trip-lines.ts`; kiện kho kiện đưa thẳng vào chuyến `db-trip-pool.ts`; kho xuất phát `seed-depots.ts`;
+                        *(bổ sung 04/10/2026, FE-5b-08)* đổi xe của chuyến Đã lập kế hoạch `db-trip-vehicle.ts`; luật duyệt kho tự kiểm
+                        ở `db-revisions.ts` + `revisions.ts` (`approvalIssues`);
                         Review 1 (LM-104): công ty logistics, loại kiện, mã QR, lần chạy tối ưu
                         (`db-runs.ts`), loại xe, nhãn QR / quét khi xếp và dỡ, seal (`db-*.ts`, kiểu ở `source-types.ts`,
                         hàm của kho ở `db-api-review1.ts`), báo cáo chuyến thuần `trip-report.ts`; lô hàng và nhận hàng
@@ -271,7 +273,8 @@ src/
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
     models/             type contract Spec + zod schema (LM-010)
-    constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06)
+    constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06); luật duyệt
+                        `approval.ts` và xe có chở được hàng của chuyến không `vehicle-fit.ts` (FE-5b-08)
     metrics/            tỷ lệ sử dụng, trọng tâm (LM-021); tải trục trước / sau theo mô hình đòn bẩy `axle-load.ts` (FE-5b-03)
     fixtures/           dữ liệu mẫu Spec mục 12
     cargo/              mở rộng quantity thành instance, trùng ID, mã kiện mới (LM-013)
@@ -542,9 +545,11 @@ Planner dùng `PlannerSelect` (Select Radix); ô chọn kiện (tới 1.000 dòn
 *(đã điều chỉnh 28/09/2026, V2.3, LM-107)* Trang Planner nền tối `--canvas-1`; thanh trên là kính tối (`.glass-dark`) nổi cách mép 14 px
 từ 1.280 px, vẫn cao 56 px. Tiêu đề là tên tuyến **chỉ từ 1.680 px**; hẹp hơn là mã chuyến và dòng dưới chỉ còn mã revision — không cắt chữ
 bằng dấu ba chấm (`layout-1366`). *(bổ sung 02/10/2026, FE-0-07)* Nhãn "Duyệt bởi <tên> lúc" mang họ tên người duyệt: rộng tới 208 px
-(điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và nút So sánh phương án **chỉ icon dưới 1.760 px** — để chữ
-từ 1.536 px như trước thì khối tiêu đề hết chỗ, nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
-thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
+(điện thoại 160 px; tên dài hơn cắt bằng dấu ba chấm, tên đầy đủ ở `title`), và *(đã điều chỉnh 03/10/2026)* từ 1.536 tới dưới
+1.760 px — nơi nút So sánh phương án có chữ theo yêu cầu người dùng (chỉ icon dưới 1.536 px) — nhãn chỉ hiện "Đã duyệt lúc", tên người
+duyệt ở `title`; không làm vậy thì nhãn "Đã chỉnh tay" (1.536 px) và tên tuyến (1.680 px) đè lên chỉ số. `planner-compact` đo
+thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở 1.536 px. *(bổ sung 04/10/2026, FE-5b-08)* Vì thế nút "Đổi xe" **không**
+nằm trên hàng này mà ở góc dưới phải khung 3D (mục 7 "Operations"). Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong
 luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu
 (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng
 bằng DOM/SVG, nền đặc 85 % thay `backdrop-filter` vì chúng di chuyển mỗi khung hình. Nút nhấn giữ (Xếp/Dỡ, Theo bước) là nền cyan mờ +
@@ -908,6 +913,20 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   Đã bỏ: quản lý công ty duyệt và khoá `awaitingApproval` "Chờ quản lý công ty duyệt" (LM-104, 27/09/2026), hàng đợi `/duyet` cùng các quyết
   định trả lại, "Lưu bản chỉnh" / `saveEditedRevision` tạo revision chưa duyệt (LM-108, 28/09/2026). Dòng phụ `awaitingApproval` của **chuyến**
   ("Chờ duyệt", mục 9) là thứ khác và vẫn còn.
+- *(đã điều chỉnh 04/10/2026, FE-5b-08, D-80)* **Luật duyệt.** Chặn Duyệt: phương án lỗi thời, dòng kiện bắt buộc chưa xếp đủ
+  (`MUST_LOAD_UNPLACED`), vượt tải trục (`AXLE_OVERLOAD`), lỗi ràng buộc khác. Tooltip + `aria-describedby` của nút nói **đúng loại lý
+  do** — "Chưa duyệt được: 1 dòng kiện bắt buộc chưa xếp đủ và tải trục vượt giới hạn." — ghép từ `blockerSummary` của domain bằng
+  `format.list` (`useViewerApproval`); hộp thoại liệt kê từng lý do. **Mức hạn** lấy từ tuyến đã tối ưu của chuyến (`SceneStop.eta`,
+  `deadline`, `deadlineStatus` → `deadlineReview`): điểm **sát hạn** chỉ hiện trong hộp duyệt kèm giờ đến dự kiến và hạn, không hỏi thêm;
+  có điểm **trễ hạn dự kiến** thì bấm Duyệt mở **bước xác nhận** ngay trong hộp thoại (`LateStopsConfirm`: "Duyệt dù có điểm trễ hạn?",
+  liệt kê điểm, giờ đến dự kiến, hạn, kèm MOCK RESULT vì giờ đến là của mock tối ưu tuyến) — "Vẫn duyệt" mới gửi Duyệt kèm `force`,
+  "Quay lại" về bước xem xét; mỗi lần mở hộp thoại bắt đầu lại từ bước xem xét. Chuyến chưa tối ưu tuyến thì hộp duyệt không nói gì về
+  hạn. Kho kiểm lại tất cả (mục 9): giao diện bị bỏ qua thì Duyệt vẫn bị từ chối; kho từ chối thì toast kèm câu của kho.
+- *(bổ sung 04/10/2026, FE-5b-08, D-80)* **Đổi xe ở Planner.** Nút phụ "Đổi xe" nằm ở **góc dưới phải khung 3D** cạnh "Chi tiết / Hiển
+  thị" (`SceneHud`, từ 768 px; dưới 1.280 px chỉ icon), **không** nằm trên thanh trên: ở 1.536–1.760 px hàng điều khiển không còn chỗ
+  cho thêm một nút (đo: thêm 46 px thì tên tuyến tràn 5 px ở 1.760 px). Chỉ hiện ở chế độ Xem, khi chuyến Đã lập kế hoạch và người xem
+  có `trips.edit`. Mở cùng hộp thoại `trips/ChangeVehicleDialog` với Chi tiết chuyến (mục 9); đổi xong phương án đang xem thành lỗi
+  thời ngay và thanh lỗi thời ghi "đã sửa Xe (giờ · ngày · người)". Đổi xe không bao giờ là nút chính.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - *(bổ sung, LM-042)* Xem trước 3D ở form xe: `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
@@ -1235,6 +1254,32 @@ Dưới Vitest mã QR mới sinh từ bộ số có hạt giống (tất định
   `TRIP-010` 8, `TRIP-009` 4 — vì ở đó có điểm giao cần nhiều sàn hơn vùng chia theo thể tích của nó.
 - Kết quả là **revision bất biến** theo `jobId`. Duyệt tạo revision approved mới; sửa xe/kiện sau
   khi tối ưu làm revision lỗi thời và chặn Duyệt. Kho và tài xế chỉ đọc revision đã duyệt.
+- *(đã điều chỉnh 04/10/2026, FE-5b-08, D-80)* **Kho tự kiểm luật duyệt** — không tin giao diện. `approveRevision(revisionId, patches,
+  { force })` áp draft (`approvedResult`) rồi chạy constraint engine trên **chính bản sẽ duyệt** (`approvalIssues` ở `revisions.ts` →
+  `approvalBlockers` của domain): còn lỗi ràng buộc, `AXLE_OVERLOAD` hoặc `MUST_LOAD_UNPLACED` là `APPROVAL_BLOCKED { revisionId, count,
+  codes }`; lỗi thời vẫn là `REVISION_STALE`. Qua được các lý do chặn, tuyến của chuyến (`Trip.routePlan`) có điểm `MISSED` mà không có
+  `force` là `LATE_STOPS_UNCONFIRMED { tripId, stopIds, stopNumbers }`. **`force` chỉ là lời xác nhận cho điểm trễ hạn**: không gỡ được
+  lý do chặn nào; có `force` thì sự kiện `revision.approved` ghi thêm `lateStops` (số điểm trễ hạn đã xác nhận). Điểm `AT_RISK` không
+  đòi gì. Không lưu gì khi từ chối. Lớp API: `approveLoadPlan(revisionId, patches, { force })` ở `viewer3d/viewer-api.ts`.
+- *(bổ sung 04/10/2026, FE-5b-08, D-80)* **Đổi xe của chuyến Đã lập kế hoạch.** Hàm thuần `vehicleFit(xe, dòng kiện)`
+  (`domain/constraints/vehicle-fit.ts`) trả mã + tham số, chỉ kiểm **điều kiện cần** trên tổng hàng (không xếp thử): `CARGO_TOO_LARGE`
+  (dòng kiện không có hướng đặt nào vừa lọt cửa kèm clearance vừa nằm trong lòng thùng), `CARGO_VOLUME_EXCEEDED`,
+  `CARGO_WEIGHT_EXCEEDED`, `AXLE_CAPACITY_EXCEEDED` (tổng hàng nặng hơn phần hai nhóm trục còn nhận được: giới hạn − tải rỗng; xe chưa
+  khai trục hoặc một nhóm chưa có giới hạn thì không kiểm) là **lỗi**; loại hàng là **cảnh báo** của luật phân tách hàng
+  (`REFRIGERATION_MISSING`, `HAZARDOUS_VEHICLE_REQUIRED` — hiện ở dòng xe, không khoá xe, như D-74). Kho: `changeTripVehicle(tripId,
+  vehicleId)` (`db-trip-vehicle.ts`) từ chối theo thứ tự — chuyến đã sang pha vận hành `TRIP_LOCKED`, còn Nháp `TRIP_NOT_PLANNED`, xe
+  của công ty khác `FORBIDDEN_COMPANY`, trùng xe đang dùng `VEHICLE_UNCHANGED`, đang bảo dưỡng `VEHICLE_IN_MAINTENANCE`, đang chạy
+  chuyến khác `VEHICLE_BUSY { vehicleId, tripId }`, có lỗi `vehicleFit` (trên xe đã ghép giới hạn của loại xe) `VEHICLE_UNFIT
+  { vehicleId, reasons }`. Đổi xong `inputVersion` tăng — **mọi phương án của chuyến lỗi thời**, bản đã duyệt cũng phải tối ưu lại rồi
+  duyệt; điểm giao không đổi nên `routePlan` và trạng thái Đã lập kế hoạch giữ nguyên. Nhật ký `trip.vehicleChanged { fields: 'vehicleId',
+  before, after }` — mang `fields` như `trip.updated` để thanh lỗi thời (`staleReason`) đọc được lần đổi xe. Lớp API
+  `trips/trip-vehicle-api.ts` (`changeTripVehicle`, `fetchVehicleChoices` — mọi xe kèm trạng thái và `vehicleFit`) →
+  `useTripVehicleQuery.ts`, khoá `['trips', tripId, 'vehicle-choices']` (`staleTime: 0`); đổi xe làm mới `['trips', tripId]`,
+  `['trips', 'list']`, `['dashboard']`, `['warehouse']`. UI: `ChangeVehicleDialog` theo `trips.edit` — mở từ mục "Phương tiện" và menu
+  "Thao tác" của Chi tiết chuyến, và từ góc khung 3D của Planner (mục 7); mọi xe của công ty hiện kèm chip trạng thái, xe chọn được
+  đứng trước, xe không chọn được **mờ kèm lý do ngay tại dòng** (xe đang dùng, đang phục vụ chuyến nào, bảo dưỡng, từng lỗi `vehicleFit`
+  — nối vào ô chọn bằng `aria-describedby`); hộp thoại nói trước việc phương án sẽ lỗi thời. Chuyến **Nháp** vẫn đổi xe ở form sửa
+  chuyến ("Đổi xe" của mục Phương tiện là liên kết tới form) — `updateTrip({ vehicleId })` chưa kiểm `vehicleFit`.
 - *(LM-088)* Chi tiết chuyến chỉ cho sửa khi `can('trips.edit') && phase === 'planning'`; form sửa chuyến mở ở `planning`, `loading`,
   `loaded` (hai pha sau khoá xe và điểm giao). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ
   mục `DropdownMenu` dùng `modal={false}` cho menu để focus về đúng hộp thoại.
@@ -1371,7 +1416,6 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Chữ 11px và 13px rải rác | Ép về 11px (micro) hoặc 12/14px | Giữ thang chữ ở mục 4 |
 | Màn kho không có nút thoát | Thêm nút quay lại 56px | Mục 10: màn toàn màn hình phải có lối ra |
 | Ô vị trí 3D ở màn kho là ảnh tĩnh | Three.js xoay được | Công nhân cần nhìn quanh kiện để đặt đúng |
-| Planner 1.536 px: nút "So sánh phương án" có chữ | Chỉ icon dưới 1.760 px, chữ ở tooltip | Nhãn "Duyệt bởi <tên> lúc" dài hơn "Đã duyệt lúc" của bản mẫu; để chữ thì tiêu đề đè lên chỉ số (FE-0-07) |
 
 ## 12. Tối ưu token và context *(bổ sung)*
 

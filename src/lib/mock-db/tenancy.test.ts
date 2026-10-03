@@ -154,6 +154,13 @@ const PROBES = {
     },
   },
   cancelTrip: onForeignTrip((db, tripId) => db.cancelTrip(tripId, 'Khách hoãn')),
+  changeTripVehicle: {
+    scope: 'operational',
+    forbidden: {
+      'chuyến của công ty kia': ({ db, own, other }) => db.changeTripVehicle(other.trip, own.vehicles[0]!),
+      'xe của công ty kia': ({ db, own, other }) => db.changeTripVehicle(own.trip, other.vehicles[0]!),
+    },
+  },
 
   listRevisions: { scope: 'operational', hidden: ({ db, other }) => db.listRevisions(other.trip) },
   getRevision: { scope: 'operational', hidden: ({ db, other }) => db.getRevision(other.revision) },
