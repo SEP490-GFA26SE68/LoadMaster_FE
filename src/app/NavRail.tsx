@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { EtaRiskWatcher } from '@/features/monitoring/EtaRiskWatcher'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { QuickSearch } from '@/features/search/QuickSearch'
 import { useT } from '@/lib/i18n'
@@ -106,6 +107,7 @@ export function NavRail() {
         <QuickSearch />
         <LanguageMenu />
         <NotificationBell />
+        <EtaRiskWatcher />
 
         {user ? (
           <DropdownMenu>

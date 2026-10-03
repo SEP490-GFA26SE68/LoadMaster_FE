@@ -34,6 +34,7 @@ import { tripReport } from './en/tripReport'
 import { runs } from './en/runs'
 import { lookup } from './en/lookup'
 import { map } from './en/map'
+import { monitoring } from './en/monitoring'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -71,4 +72,5 @@ export const en = {
   runs,
   lookup,
   map,
+  monitoring,
 } satisfies Dictionary<typeof vi>

@@ -14,4 +14,10 @@ export const notifications = {
   empty: 'No notifications in the last {days} days.',
   scope: 'Events from the last {days} days, not including your own actions.',
   dateTime: '{time} · {date}',
+  etaRisk: {
+    AT_RISK: 'Trip {tripId}: stop {stop} is close to its deadline',
+    MISSED: 'Trip {tripId}: stop {stop} is expected to miss its deadline',
+    detail: 'Expected arrival {eta} · deadline {deadline}',
+    moment: '{time} {date}',
+  },
 } satisfies Dictionary<typeof source>

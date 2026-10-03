@@ -15,7 +15,8 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
 /**
  * Sự kiện đáng báo cho từng vai trò (FE-0-04) — ai cần biết việc gì:
  * - Điều phối viên: kết quả phương án (đồng nghiệp duyệt), tiến độ kho (thiếu kiện, xếp xong), kho quét thấy lại kiện mang cờ "Không
- *   tìm thấy" (FE-3b-06, D-92), sự cố giao, chuyến hoàn thành, chuyến bị huỷ.
+ *   tìm thấy" (FE-3b-06, D-92), sự cố giao, nguy cơ trễ hạn giao theo vị trí xe (FE-6-09 — sự kiện của hệ thống, kèm toast:
+ *   `EtaRiskWatcher`), chuyến hoàn thành, chuyến bị huỷ.
  * - Quản lý công ty (chỉ đọc, lo hạn giao và báo cáo): chuyến hoàn thành, chuyến bị huỷ, sự cố giao.
  * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Phạm vi do kho lọc, không lọc ở đây (FE-0-08): quản trị hệ thống nhận sự
  *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
@@ -30,7 +31,7 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
   manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled'],
-  dispatcher: ['revision.approved', 'loading.completed', 'loading.missing', 'package.found', 'delivery.issue', 'delivery.completed', 'trip.cancelled'],
+  dispatcher: ['revision.approved', 'loading.completed', 'loading.missing', 'package.found', 'delivery.issue', 'delivery.etaRisk', 'delivery.completed', 'trip.cancelled'],
   warehouse: [],
   driver: [],
 }
