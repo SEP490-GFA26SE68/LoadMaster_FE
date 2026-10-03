@@ -12,6 +12,7 @@ import {
   Shapes,
   Truck,
   UserRound,
+  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react'
 import type { KpiTone } from '@/components/KpiTile'
@@ -32,6 +33,7 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   requirement: ClipboardList,
   vehicleType: Container,
   manualConfirm: Hand,
+  exception: TriangleAlert,
 }
 
 /**
@@ -56,6 +58,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.segregationOverridden': 'amber',
   'trip.routeOptimized': 'azure',
   'trip.vehicleChanged': 'blue',
+  'trip.rerouted': 'azure',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
   'loading.started': 'blue',
@@ -98,6 +101,10 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'manualConfirm.requested': 'amber',
   'manualConfirm.approved': 'green',
   'manualConfirm.rejected': 'amber',
+  'exception.reported': 'amber',
+  'exception.escalated': 'amber',
+  'exception.resolved': 'green',
+  'exception.deadlineRenegotiated': 'blue',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

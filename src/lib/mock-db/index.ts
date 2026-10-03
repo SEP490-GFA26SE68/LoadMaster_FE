@@ -93,6 +93,25 @@ export {
   type VerifyMethod,
 } from './verify-model'
 export {
+  ESCALATE_AFTER_MINUTES,
+  EXCEPTION_ESCALATIONS,
+  isActiveException,
+  MAX_EXCEPTION_DELAY_MINUTES,
+  MAX_EXCEPTION_NOTE_LENGTH,
+  TRIP_EXCEPTION_STATUSES,
+  TRIP_EXCEPTION_TYPES,
+  type DeadlineRenegotiation,
+  type DeadlineRenegotiationInput,
+  type ExceptionEscalation,
+  type RerouteChoice,
+  type RerouteProposal,
+  type TripException,
+  type TripExceptionInput,
+  type TripExceptionStatus,
+  type TripExceptionType,
+  type TripReroute,
+} from './exception-model'
+export {
   LOCATION_SOURCES,
   MAX_LOCATION_POINTS,
   type DriverLocationInput,

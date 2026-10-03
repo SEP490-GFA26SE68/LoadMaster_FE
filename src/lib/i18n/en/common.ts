@@ -14,6 +14,7 @@ export const common = {
   on: 'On',
   off: 'Off',
   deliveryIssueKinds: { damaged: 'Damaged', missing: 'Missing', refused: 'Refused by customer', other: 'Other' },
+  tripExceptionTypes: { TRAFFIC: 'Traffic jam', ACCIDENT: 'Accident', ROAD_CONSTRUCTION: 'Road works', VEHICLE_BREAKDOWN: 'Vehicle breakdown', OTHER: 'Other' },
   deadlineStatuses: { OK: 'On time', AT_RISK: 'Tight', MISSED: 'Expected late' },
   handlingClasses: { STANDARD: 'Standard', FRAGILE: 'Fragile', REFRIGERATED: 'Refrigerated', HAZARDOUS: 'Hazardous', HIGH_VALUE: 'High value' },
   packageStatuses: {

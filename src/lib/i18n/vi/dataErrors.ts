@@ -80,6 +80,10 @@ export const dataErrors = {
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này không còn chờ duyệt.',
   // Vị trí xe (FE-6-08)
   LOCATION_INVALID: 'Vị trí xe gửi lên chưa hợp lệ: cần vĩ độ, kinh độ trong khoảng cho phép, tốc độ không âm và hướng từ 0 đến 359 độ.',
+  // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
+  EXCEPTION_INVALID: 'Sự cố chưa hợp lệ: cần loại sự cố, mô tả, số phút chậm trong khoảng cho phép; gia hạn cần một yêu cầu giao của chuyến và hạn đọc được.',
+  EXCEPTION_STATUS_INVALID: 'Sự cố {exceptionId} không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
+  REROUTE_UNAVAILABLE: 'Chưa tìm được tuyến khác cho chuyến {tripId}: xe chưa có vị trí, hoặc không còn điểm giao nào xe chưa tới.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

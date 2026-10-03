@@ -21,7 +21,7 @@ const alert = (eventId: string, status: EtaRiskAlert['status'], stopNumber: numb
   eventId, status, stopNumber, at: '2026-09-14T08:10:00.000Z', tripId: 'TRIP-015', stopId: `STOP-0${stopNumber}`,
   eta: '2026-09-14T08:40:00.000Z', deadline: '2026-09-14T09:00:00.000Z',
 })
-const monitoring = (alerts: EtaRiskAlert[]): TripMonitoring[] => [{ tripId: 'TRIP-015', location: null, stops: [], alerts, refreshMs: null, isMockResult: true }]
+const monitoring = (alerts: EtaRiskAlert[]): TripMonitoring[] => [{ tripId: 'TRIP-015', location: null, stops: [], alerts, exceptions: [], refreshMs: null, isMockResult: true }]
 
 beforeEach(() => {
   fleet.mockReset()

@@ -1,4 +1,5 @@
 import type { DeadlineStatus, LiveStopEta, VehicleFix } from '@/domain/routing'
+import type { TripException, TripReroute } from './exception-model'
 
 /**
  * Vị trí xe và ETA trực tiếp của chuyến đang vận chuyển (FE-6-08, FE-6-09, D-85). Khi chưa có backend mọi thứ ở đây nằm trong kho của
@@ -46,6 +47,10 @@ export type TripMonitoring = {
   stops: TripLiveStop[]
   /** Cũ trước. */
   alerts: EtaRiskAlert[]
+  /** Sự cố cấp chuyến (FE-6-11), cũ trước — kể cả sự cố đã xử lý. */
+  exceptions: TripException[]
+  /** Tuyến thay thế điều phối viên chọn gần nhất, nếu có. */
+  reroute?: TripReroute
   /** Số ms **thật** tới điểm vị trí kế tiếp (ít nhất 1 giây); `null` khi chuyến không còn chạy — màn không cần làm mới nữa. */
   refreshMs: number | null
   /** Vị trí mô phỏng và ETA đều là kết quả mock (công thức D-76). */
