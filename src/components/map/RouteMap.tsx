@@ -19,14 +19,14 @@ type RouteMapProps = RouteMapData & {
 /**
  * Bản đồ tuyến dùng chung (FE-4b-07, D-75): kho xuất phát, điểm giao theo thứ tự đi (màu điểm giao kèm số), đường tuyến (nối thẳng,
  * hoặc `path` khi backend trả polyline) và vị trí xe. MapLibre GL tải lười trên nền Goong; không có khoá thì nền trống, lớp dữ liệu
- * vẫn vẽ. Không có WebGL thì là sơ đồ SVG cùng dữ liệu. Hình luôn `aria-hidden`: nội dung tương đương là danh sách điểm `sr-only`.
+ * vẫn vẽ. `others` là xe của các chuyến khác (màn Giám sát): chỉ vị trí. Không có WebGL thì là sơ đồ SVG cùng dữ liệu. Hình luôn `aria-hidden`: nội dung tương đương là danh sách điểm `sr-only`.
  */
-export function RouteMap({ label, className, depot, stops, vehicle, path }: RouteMapProps) {
+export function RouteMap({ label, className, depot, stops, vehicle, others, path }: RouteMapProps) {
   const t = useT()
   const { locale } = useLocale()
   const [unavailable, setUnavailable] = useState(false)
   // Màn gọi thường dựng mảng mới mỗi lần render: giữ nguyên tham chiếu khi nội dung không đổi để mốc không bị gỡ rồi gắn lại.
-  const json = JSON.stringify({ depot, stops, vehicle, path })
+  const json = JSON.stringify({ depot, stops, vehicle, others, path })
   const data = useMemo(() => JSON.parse(json) as RouteMapData, [json])
   const sketch = <RouteMapSketch data={data} />
 
@@ -45,6 +45,9 @@ export function RouteMap({ label, className, depot, stops, vehicle, path }: Rout
           <li key={stop.id}>{t('map.stop', { number: stop.number, name: stop.name })}</li>
         ))}
         {data.vehicle ? <li>{t('map.vehicle', { name: data.vehicle.name })}</li> : null}
+        {data.others?.map((other) => (
+          <li key={other.id}>{t('map.vehicle', { name: other.name })}</li>
+        ))}
       </ol>
     </div>
   )

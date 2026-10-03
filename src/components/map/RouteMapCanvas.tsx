@@ -3,13 +3,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 // Worker của MapLibre đóng gói cùng app (không CDN): Vite dựng nó thành file riêng và trả URL.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { Maximize2, Minus, Plus } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import type { GeoPoint } from '@/domain/routing'
 import { useT } from '@/lib/i18n'
 import { baseStyle, emptyStyle, goongMapTilesKey } from './map-style'
-import { routeExtent, routeLine, type RouteMapData } from './route-map-model'
+import { routeExtent, routeLine, routePins, staticExtent, type RouteMapData, type RouteMapPin } from './route-map-model'
 import { DepotMarker, StopMarker, VehicleMarker } from './RouteMapMarker'
 
 setWorkerUrl(workerUrl)
@@ -19,7 +19,11 @@ const FIT = { padding: 48, maxZoom: 14, animate: false } as const
 /** Tâm lúc dựng, trước khi canh theo dữ liệu: giữa vùng TP. Hồ Chí Minh – Đồng Nai – Bình Dương. */
 const FALLBACK_CENTER: [number, number] = [106.8, 10.9]
 
-type Pin = { key: string; point: GeoPoint; kind: 'depot' | 'stop' | 'vehicle'; number?: number; element: HTMLElement }
+/** Mốc đang gắn trên bản đồ: phần tử DOM là đích portal của React, `Marker` giữ nó đúng toạ độ. */
+type Mounted = { pin: RouteMapPin; element: HTMLElement; marker: Marker }
+
+/** Nội dung mốc không đổi (cùng loại, số, nhãn): chỉ cần dời chỗ. */
+const sameLook = (a: RouteMapPin, b: RouteMapPin) => a.kind === b.kind && a.number === b.number && a.tag === b.tag
 
 const lngLat = (point: GeoPoint): [number, number] => [point.lng, point.lat]
 const token = (element: Element, name: string) => getComputedStyle(element).getPropertyValue(name).trim()
@@ -44,6 +48,8 @@ function fit(map: MapLibreMap, extent: readonly GeoPoint[]) {
 /**
  * Bản đồ MapLibre của `RouteMap` (FE-4b-07) — file duy nhất chạy `maplibre-gl`, chỉ tải khi có WebGL. Đường tuyến là một lớp
  * GeoJSON; mốc là phần tử DOM do React vẽ qua portal (token và màu điểm giao của app, không dùng sprite hay font của style nền).
+ * Mốc giữ theo khoá (FE-6-10): xe chạy chỉ dời mốc của nó (`setLngLat`), mốc kho và điểm giao không bị gỡ rồi gắn lại, React không
+ * vẽ lại portal nào.
  * Không xoay, không nghiêng: bắc luôn ở trên. Lăn chuột chỉ phóng to khi giữ Ctrl / ⌘ để trang vẫn cuộn được qua bản đồ.
  */
 export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMapData; onUnavailable: () => void }) {
@@ -54,20 +60,11 @@ export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMap
   const styleReadyRef = useRef(false)
   const dataRef = useRef(data)
 
-  const pins = useMemo<Pin[]>(() => {
-    const pin = (key: string, point: GeoPoint, kind: Pin['kind'], number?: number): Pin => {
-      const element = document.createElement('div')
-      element.setAttribute('aria-hidden', 'true')
-      return { key, point, kind, number, element }
-    }
-    return [
-      ...(data.depot ? [pin('depot', data.depot, 'depot')] : []),
-      ...data.stops.map((stop) => pin(`stop:${stop.id}`, stop, 'stop', stop.number)),
-      ...(data.vehicle ? [pin('vehicle', data.vehicle, 'vehicle')] : []),
-    ]
-  }, [data])
+  const mountedRef = useRef(new Map<string, Mounted>())
+  /** Mốc React đang vẽ; chỉ đổi khi có mốc thêm, bớt hoặc đổi nội dung — không đổi khi mốc dời chỗ. */
+  const [portals, setPortals] = useState<readonly Mounted[]>([])
   /** Khung nhìn chỉ canh lại khi kho, điểm giao hoặc đường tuyến đổi — xe chạy (F6) không giật khung nhìn của người đang xem. */
-  const extentKey = JSON.stringify(routeExtent({ ...data, vehicle: undefined }).map(lngLat))
+  const extentKey = JSON.stringify(staticExtent(data).map(lngLat))
 
   useEffect(() => {
     const container = containerRef.current
@@ -113,10 +110,12 @@ export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMap
     const resize = new ResizeObserver(() => map.resize())
     resize.observe(container)
 
+    const mounted = mountedRef.current
     return () => {
       resize.disconnect()
       styleReadyRef.current = false
       mapRef.current = null
+      mounted.clear()
       map.remove()
     }
     // Bản đồ dựng một lần; `RouteMap` gắn `key` theo ngôn ngữ nên đổi ngôn ngữ là dựng lại với chuỗi mới.
@@ -129,12 +128,34 @@ export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMap
     const container = containerRef.current
     if (!map || !container) return
     if (styleReadyRef.current) drawLine(map, routeLine(data), token(container, '--primary'))
-    const markers = pins.map((pin) => new Marker({ element: pin.element }).setLngLat(lngLat(pin.point)).addTo(map))
-    return () => markers.forEach((marker) => marker.remove())
-  }, [data, pins])
+    const mounted = mountedRef.current
+    const pins = routePins(data)
+    const wanted = new Set(pins.map((pin) => pin.key))
+    let changed = false
+    for (const [key, item] of mounted) {
+      if (wanted.has(key)) continue
+      item.marker.remove()
+      mounted.delete(key)
+      changed = true
+    }
+    for (const pin of pins) {
+      const current = mounted.get(pin.key)
+      if (current) {
+        current.marker.setLngLat(lngLat(pin.point))
+        if (sameLook(current.pin, pin)) continue
+        mounted.set(pin.key, { ...current, pin })
+      } else {
+        const element = document.createElement('div')
+        element.setAttribute('aria-hidden', 'true')
+        mounted.set(pin.key, { pin, element, marker: new Marker({ element }).setLngLat(lngLat(pin.point)).addTo(map) })
+      }
+      changed = true
+    }
+    if (changed) setPortals([...mounted.values()])
+  }, [data])
 
   useEffect(() => {
-    if (mapRef.current) fit(mapRef.current, routeExtent({ ...dataRef.current, vehicle: undefined }))
+    if (mapRef.current) fit(mapRef.current, staticExtent(dataRef.current))
   }, [extentKey])
 
   // Khung ngoài của `RouteMap` đã mang tên bản đồ; canvas (MapLibre tự đặt role="region") chỉ nói nó là phần điều khiển được.
@@ -169,10 +190,10 @@ export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMap
           </Button>
         ))}
       </div>
-      {pins.map((pin) =>
+      {portals.map(({ pin, element }) =>
         createPortal(
-          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker />,
-          pin.element,
+          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker tag={pin.tag} muted={pin.kind === 'other'} />,
+          element,
           pin.key,
         ),
       )}
