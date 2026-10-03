@@ -8,7 +8,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Đăng nhập', signedOut: 'Đăng xuất', signInFailed: 'Đăng nhập không thành công' },
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
-    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến' },
+    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
     loading: { started: 'Bắt đầu xếp hàng', missing: 'Báo thiếu kiện ở kho', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong' },

@@ -1,6 +1,7 @@
+import { deadlineReview } from '@/domain/constraints'
 import { found, nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
-import { approvedResult, isStale } from './revisions'
+import { approvalIssues, approvedResult, isStale } from './revisions'
 import { DEFAULT_RUN_SETTINGS } from './source-types'
 import type { MockDb, Trip } from './types'
 
@@ -51,18 +52,30 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         })
         return revision
       }),
-    approveRevision: (revisionId, patches) =>
+    approveRevision: (revisionId, patches, { force = false } = {}) =>
       ctx.respond(() => {
         const source = ctx.scope.revisions.own(revisionId)
         const trip = found(trips, 'trips', source.tripId)
         assertPlanning(trip)
         if (isStale(source, trip)) throw new MockDbError('REVISION_STALE', { revisionId })
         if (source.result.status !== 'COMPLETED') throw new MockDbError('REVISION_NOT_COMPLETED', { revisionId })
+        const result = approvedResult(source.request, source.result, patches)
+        // Kho kiểm lại lý do chặn trên chính bản sẽ duyệt (D-80): `force` không gỡ được lý do nào ở đây
+        const blocking = approvalIssues(source.request, result)
+        if (blocking.length > 0) {
+          throw new MockDbError('APPROVAL_BLOCKED', { revisionId, count: blocking.length, codes: [...new Set(blocking.map(({ code }) => code))] })
+        }
+        // Điểm trễ hạn dự kiến không chặn, nhưng người duyệt phải xác nhận (`force`); điểm sát hạn không hỏi
+        const late = deadlineReview(trip.routePlan?.stops ?? []).missed.map(({ stopId }) => stopId)
+        if (late.length > 0 && !force) {
+          const stopNumbers = late.map((stopId) => trip.stops.findIndex((stop) => stop.id === stopId) + 1)
+          throw new MockDbError('LATE_STOPS_UNCONFIRMED', { tripId: trip.id, stopIds: late, stopNumbers })
+        }
         const approvedAt = ctx.nowIso()
         const approved = put(revisions, {
           ...source,
           id: nextId('REV', revisions.keys()),
-          result: approvedResult(source.request, source.result, patches),
+          result,
           createdAt: approvedAt,
           draftPatches: [...patches],
           approvedAt,
@@ -76,6 +89,8 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
           revisionId: approved.id,
           sourceRevisionId: source.id,
           edits: patches.length,
+          // Chỉ ghi khi người duyệt đã xác nhận duyệt dù có điểm trễ hạn dự kiến
+          ...(late.length > 0 ? { lateStops: late.length } : {}),
         })
         return approved
       }),

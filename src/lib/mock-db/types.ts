@@ -223,4 +223,4 @@ export type MockDbOptions = {
   random?: () => number
 }
 
-export type { DeliveryIssueInput, LoadingStepInput, MockDb, TemporaryPassword } from './db-api'
+export type { ApproveOptions, DeliveryIssueInput, LoadingStepInput, MockDb, TemporaryPassword } from './db-api'

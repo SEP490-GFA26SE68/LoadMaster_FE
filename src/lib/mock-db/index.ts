@@ -97,6 +97,7 @@ export {
 export {
   DELIVERY_ISSUE_KINDS,
   TRIP_PHASES,
+  type ApproveOptions,
   type AuditFilter,
   type Cancellation,
   type DeliveryIssue,

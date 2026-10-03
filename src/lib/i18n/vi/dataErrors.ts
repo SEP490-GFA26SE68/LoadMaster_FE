@@ -66,6 +66,13 @@ export const dataErrors = {
   OVERRIDE_REASON_TOO_LONG: 'Lý do dài tối đa {max} ký tự.',
   ROUTE_STOPS_REQUIRED: 'Chuyến {tripId} chưa có điểm giao nên chưa tối ưu tuyến được.',
   MISSING_STOP_COORDINATES: 'Điểm giao số {stopNumbers} chưa có toạ độ nên chưa tối ưu tuyến được.',
+  // Luật duyệt và đổi xe (FE-5b-08)
+  APPROVAL_BLOCKED: 'Phương án {revisionId} còn {count} lỗi phải xử lý nên chưa duyệt được.',
+  LATE_STOPS_UNCONFIRMED: 'Điểm giao số {stopNumbers} trễ hạn dự kiến: cần xác nhận trước khi duyệt.',
+  TRIP_NOT_PLANNED: 'Chuyến {tripId} chưa ở trạng thái Đã lập kế hoạch nên chưa đổi xe ở đây được.',
+  VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
+  VEHICLE_BUSY: 'Xe {vehicleId} đang chạy chuyến {tripId}, hãy chọn xe sẵn sàng.',
+  VEHICLE_UNFIT: 'Xe {vehicleId} không chở được hàng của chuyến này.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

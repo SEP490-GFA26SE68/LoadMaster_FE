@@ -22,6 +22,8 @@ export const AUDIT_ACTIONS = [
   // Vượt luật phân tách hàng (FE-4b-06), tối ưu tuyến (FE-4b-09)
   'trip.segregationOverridden',
   'trip.routeOptimized',
+  // Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08)
+  'trip.vehicleChanged',
   'optimization.saved',
   'revision.approved',
   'loading.started',

@@ -25,6 +25,9 @@ export type LoadingStepInput = { packageInstanceId: string; outcome: LoadingOutc
 
 export type DeliveryIssueInput = Pick<DeliveryIssue, 'stopNumber' | 'kind' | 'note'> & { packageInstanceId?: string }
 
+/** `force`: người duyệt đã xem và xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến (`POST /api/load-plans/{id}/approve`). */
+export type ApproveOptions = { force?: boolean }
+
 /**
  * Kho dữ liệu in-memory thay backend (D-06). Mọi hàm bất đồng bộ như gọi mạng thật, trả bản sao, và từ chối bằng
  * `MockDbError` (mã `NOT_FOUND` khi không có bản ghi). Mỗi hàm ghi thêm một sự kiện nhật ký với người làm là phiên hiện tại (D-43).
@@ -76,9 +79,18 @@ type CoreMockDb = {
    * Duyệt (D-31, D-32): tạo revision approved **mới** — áp draft `patches` (bản chỉnh tay của Planner, FE-0-07), tính lại thứ tự
    * xếp/dỡ và metrics — revision nguồn giữ nguyên. Duyệt lại một revision đã duyệt được. Từ chối: `TRIP_LOCKED`, `REVISION_STALE`
    * (chuyến đổi xe/kiện sau khi tối ưu), `REVISION_NOT_COMPLETED`, `PATCH_UNKNOWN_INSTANCE` (patch cho kiện không có placement);
-   * không lưu gì khi từ chối.
+   * không lưu gì khi từ chối. Luật duyệt (FE-5b-08, D-80), kho tự kiểm trên bản sẽ duyệt: còn lỗi ràng buộc, vượt tải trục hoặc kiện
+   * bắt buộc chưa xếp là `APPROVAL_BLOCKED`; tuyến của chuyến có điểm trễ hạn dự kiến mà không có `force` là `LATE_STOPS_UNCONFIRMED`.
+   * `force` chỉ là lời xác nhận cho điểm trễ hạn — không gỡ được lý do chặn nào.
    */
-  approveRevision(revisionId: string, patches: readonly PlacementPatch[]): Promise<Revision>
+  approveRevision(revisionId: string, patches: readonly PlacementPatch[], options?: ApproveOptions): Promise<Revision>
+  /**
+   * Đổi xe của chuyến **Đã lập kế hoạch** (FE-5b-08, D-80). Xe mới phải sẵn sàng (`VEHICLE_IN_MAINTENANCE`, `VEHICLE_BUSY`), khác xe
+   * đang dùng (`VEHICLE_UNCHANGED`) và chở được hàng của chuyến theo `vehicleFit` — kích thước, thể tích, tải trọng, trục
+   * (`VEHICLE_UNFIT`); cảnh báo loại hàng không chặn. Chuyến còn Nháp: `TRIP_NOT_PLANNED`; đã sang pha vận hành: `TRIP_LOCKED`. Đổi
+   * xong mọi phương án của chuyến lỗi thời, tuyến giữ nguyên; ghi `trip.vehicleChanged`.
+   */
+  changeTripVehicle(tripId: string, vehicleId: string): Promise<Trip>
 
   /** Kho bắt đầu xếp theo bản duyệt mới nhất (không lỗi thời): `planning` → `loading`. */
   startLoading(tripId: string): Promise<Trip>

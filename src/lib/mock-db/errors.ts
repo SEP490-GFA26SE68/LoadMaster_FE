@@ -150,6 +150,23 @@ export type MockDbErrorParams = {
   /** Tối ưu tuyến khi còn điểm giao chưa có toạ độ: `stopNumbers` là số của các điểm đó (1-based), `stopIds` là mã. */
   MISSING_STOP_COORDINATES: { tripId: string; stopIds: string[]; stopNumbers: number[] }
 
+  // Luật duyệt và đổi xe (FE-5b-08, D-80)
+  /**
+   * Duyệt phương án còn lý do chặn: lỗi ràng buộc, vượt tải trục, kiện bắt buộc chưa xếp. `count` là số lý do, `codes` là mã của
+   * chúng (không lặp, theo thứ tự gặp).
+   */
+  APPROVAL_BLOCKED: { revisionId: string; count: number; codes: string[] }
+  /** Duyệt khi tuyến của chuyến có điểm trễ hạn dự kiến mà người duyệt chưa xác nhận (`force`). `stopNumbers`: số điểm, 1-based. */
+  LATE_STOPS_UNCONFIRMED: { tripId: string; stopIds: string[]; stopNumbers: number[] }
+  /** Đổi xe khi chuyến chưa Đã lập kế hoạch (còn Nháp: chưa tối ưu tuyến). */
+  TRIP_NOT_PLANNED: { tripId: string }
+  /** Đổi sang chính xe chuyến đang dùng. */
+  VEHICLE_UNCHANGED: { vehicleId: string }
+  /** Xe đang chạy chuyến `tripId` (đang xếp, đã xếp xong, đang giao) nên chưa sẵn sàng cho chuyến khác. */
+  VEHICLE_BUSY: { vehicleId: string; tripId: string }
+  /** Xe không chở được hàng của chuyến; `reasons`: mã lỗi của `vehicleFit` (kích thước, thể tích, tải trọng, trục). */
+  VEHICLE_UNFIT: { vehicleId: string; reasons: string[] }
+
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */
   UNSUPPORTED_FILE_TYPE: Record<string, never>

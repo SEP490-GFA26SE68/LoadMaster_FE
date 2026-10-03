@@ -1,5 +1,15 @@
 import { expandPackages } from '@/domain/cargo'
-import { annotatePlacements, applyPose, createPlacementLayout, createStackGraph, recomputeOrders, type PlacementPatch } from '@/domain/constraints'
+import {
+  annotatePlacements,
+  applyPose,
+  approvalBlockers,
+  createConstraintEngine,
+  createPlacementLayout,
+  createStackGraph,
+  recomputeOrders,
+  type ConstraintIssue,
+  type PlacementPatch,
+} from '@/domain/constraints'
 import { computeMetrics } from '@/domain/metrics'
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
 import { zonePlacements } from '@/domain/zones'
@@ -63,4 +73,16 @@ export function approvedResult(
     rehandlingCount: zoned?.rehandlingCount,
   })
   return { ...result, placements, metrics }
+}
+
+/**
+ * Lý do chặn Duyệt của một kết quả (D-80), kho tự kiểm lại chứ không tin giao diện: constraint engine chạy trên chính placement sẽ
+ * được duyệt (`result` đã áp draft) rồi `approvalBlockers` của domain — lỗi ràng buộc, vượt tải trục, kiện bắt buộc chưa xếp. Lỗi
+ * thời kiểm riêng (`isStale`).
+ */
+export function approvalIssues(request: OptimizationRequest, result: OptimizationResult): readonly ConstraintIssue[] {
+  const { issues } = createConstraintEngine({
+    vehicle: request.vehicle, packages: request.packages, placements: result.placements, settings: request.settings,
+  }).evaluateAll()
+  return approvalBlockers({ issues, packages: request.packages, unplacedPackages: result.unplacedPackages, stale: false }).issues
 }
