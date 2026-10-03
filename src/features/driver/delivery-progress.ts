@@ -1,9 +1,10 @@
-import { latestVerifications, missingIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type Trip, type TripPhase } from '@/lib/mock-db'
+import { latestVerifications, leftOutIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type Trip, type TripPhase } from '@/lib/mock-db'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 
 /**
- * Màn điểm giao làm gì theo pha chuyến (D-45): `preview` — kho chưa xếp xong, chỉ xem; `ready` — kho đã xếp xong, chờ tài xế bắt đầu
- * giao; `delivering` — đang giao, ghi dỡ hàng và sự cố vào kho (D-47).
+ * Màn điểm giao làm gì theo pha chuyến (D-45, D-84): `preview` — kho chưa xếp xong, chỉ xem; `ready` — kho đã xếp xong, chờ tài xế bấm
+ * Xuất phát; `delivering` — đang vận chuyển: tới từng điểm thì bấm "Đã đến" rồi mới dỡ hàng, báo sự cố theo kiện và hoàn tất điểm
+ * (`DeliveryView.arrivedAt`, FE-6-06).
  */
 export type DeliveryMode = 'preview' | 'ready' | 'delivering'
 
@@ -17,9 +18,11 @@ export type ItemProgress = {
   readonly unloaded: boolean
   /** Sự cố mới nhất tài xế báo cho kiện này ở điểm này. */
   readonly issue: DeliveryIssue | undefined
+  /** Khách từ chối nhận kiện này (sự cố mới nhất là "khách từ chối"): kiện ở lại xe, hoàn tất điểm thì thành Hoàn trả (D-84). */
+  readonly returned: boolean
   /**
    * Lần đối chiếu mới nhất của kiện khi dỡ (FE-6-03): cách đối chiếu của kiện đã dỡ; kiện chưa dỡ mà lần mới nhất là xác nhận tay bị
-   * từ chối thì phải kiểm lại (FE-6-04). Kiện đánh dấu tay không qua đối chiếu thì `undefined`.
+   * từ chối thì phải kiểm lại (FE-6-04).
    */
   readonly verification: PackageVerification | undefined
 }
@@ -28,10 +31,12 @@ export type DeliveryView = {
   readonly mode: DeliveryMode
   /** Điểm đang giao: điểm chưa hoàn tất đầu tiên; chưa giao thì điểm 1. */
   readonly stop: StopDelivery
-  /** Kiện phải dỡ ở điểm này theo thứ tự dỡ: kiện của phương án trừ kiện kho báo thiếu (không có trên xe). */
+  /** Giờ tài xế bấm "Đã đến" ở điểm này (ISO 8601); chưa bấm thì `undefined` — chưa dỡ, chưa hoàn tất điểm được. */
+  readonly arrivedAt: string | undefined
+  /** Kiện phải dỡ ở điểm này theo thứ tự dỡ: kiện của phương án trừ kiện hỏng bị bỏ lại kho (không có trên xe). */
   readonly items: readonly ItemProgress[]
-  /** Kiện của điểm này kho báo thiếu. */
-  readonly missingAtWarehouse: readonly string[]
+  /** Kiện của điểm này hỏng lúc xếp, bị bỏ lại kho. */
+  readonly leftAtWarehouse: readonly string[]
   readonly unloadedCount: number
   readonly issueCount: number
   /** Kiện chưa dỡ và chưa có sự cố: còn kiện như vậy thì chưa hoàn tất được điểm (D-47). */
@@ -52,45 +57,38 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery' |
   const currentNumber = mode === 'delivering' ? progress?.stops.find((item) => item.completedAt === undefined)?.number : 1
   const stop = stops.find((item) => item.number === currentNumber)
   if (!stop) return undefined
-  const missing = missingIds(trip)
-  const unloadedIds = new Set(progress?.stops.find((item) => item.number === stop.number)?.unloadedIds)
+  const leftOut = leftOutIds(trip)
+  const stopProgress = progress?.stops.find((item) => item.number === stop.number)
+  const unloadedIds = new Set(stopProgress?.unloadedIds)
   const stopIssues = progress?.issues.filter((issue) => issue.stopNumber === stop.number) ?? []
   const verified = latestVerifications(trip, 'UNLOADING')
   const items = stop.items
-    .filter((item) => !missing.has(item.id))
+    .filter((item) => !leftOut.has(item.id))
     .map((item): ItemProgress => {
       const unloaded = unloadedIds.has(item.id)
       const verification = verified.get(item.id)
+      const issue = stopIssues.findLast((entry) => entry.packageInstanceId === item.id)
       return {
         item,
         unloaded,
-        issue: stopIssues.findLast((issue) => issue.packageInstanceId === item.id),
-        // Kiện bỏ đánh dấu rồi đánh dấu lại bằng tay không còn mang cách đối chiếu cũ; lần bị từ chối thì giữ để nói lý do kiểm lại
+        issue,
+        returned: !unloaded && issue?.kind === 'refused',
+        // Kiện bị khách từ chối sau khi dỡ không còn mang cách đối chiếu cũ; lần xác nhận tay bị từ chối thì giữ để nói lý do kiểm lại
         verification: unloaded !== (verification?.manual?.status === 'MANUAL_REJECTED') ? verification : undefined,
       }
     })
   return {
     mode,
     stop,
+    arrivedAt: mode === 'delivering' ? stopProgress?.arrivedAt : undefined,
     items,
-    missingAtWarehouse: stop.items.filter((item) => missing.has(item.id)).map((item) => item.id),
+    leftAtWarehouse: stop.items.filter((item) => leftOut.has(item.id)).map((item) => item.id),
     unloadedCount: items.filter((item) => item.unloaded).length,
     issueCount: items.filter((item) => item.issue !== undefined).length,
     remaining: items.filter((item) => !item.unloaded && item.issue === undefined).length,
     pendingConfirms: mode === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING', stop.number).length : 0,
     completedStops: new Set(progress?.stops.filter((item) => item.completedAt !== undefined).map((item) => item.number)),
   }
-}
-
-/** Chuyến sau khi đánh dấu (hoặc bỏ đánh dấu) kiện đã dỡ ở một điểm — dùng cho cập nhật lạc quan trước khi kho trả lời. */
-export function withUnload<T extends Pick<Trip, 'delivery'>>(trip: T, stopNumber: number, packageInstanceId: string, unloaded: boolean): T {
-  if (!trip.delivery) return trip
-  const stops = trip.delivery.stops.map((stop) => {
-    if (stop.number !== stopNumber) return stop
-    const others = stop.unloadedIds.filter((id) => id !== packageInstanceId)
-    return { ...stop, unloadedIds: unloaded ? [...others, packageInstanceId] : others }
-  })
-  return { ...trip, delivery: { ...trip.delivery, stops } }
 }
 
 export type DeliverySummary = {

@@ -1,6 +1,6 @@
 import {
   latestApproved,
-  missingIds,
+  leftOutIds,
   plannedStops,
   rejectedConfirms,
   tripManualSubStatus,
@@ -28,7 +28,7 @@ export type MyTripRow = {
   /** Dòng phụ thứ hai: còn xác nhận tay chờ điều phối viên duyệt (FE-6-04). */
   readonly manualSub: TripSubStatus | null
   readonly stopCount: number
-  /** Kiện của phương án trừ kiện kho báo thiếu — số kiện trên xe (hoặc sẽ lên xe). */
+  /** Kiện của phương án trừ kiện hỏng bị bỏ lại kho — số kiện trên xe (hoặc sẽ lên xe). */
   readonly packageCount: number
   /** Đang vận chuyển: điểm chưa hoàn tất đầu tiên. */
   readonly currentStop: number | undefined
@@ -91,7 +91,7 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
     sub: tripSubStatus(trip, revisions),
     manualSub: tripManualSubStatus(trip),
     stopCount: trip.stops.length,
-    packageCount: total - missingIds(trip).size,
+    packageCount: total - leftOutIds(trip).size,
     currentStop: trip.delivery?.stops.find((stop) => stop.completedAt === undefined)?.number,
     completedAt: trip.delivery?.completedAt,
     issueCount: trip.delivery?.issues.length ?? 0,

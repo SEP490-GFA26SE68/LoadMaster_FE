@@ -2,24 +2,17 @@ import { toast } from 'sonner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { DeliveryView } from './delivery-progress'
 import type { IssueFormValues } from './issue-form.schema'
-import {
-  useCompleteStopMutation,
-  useRecordUnloadMutation,
-  useReportIssueMutation,
-  useStartDeliveryMutation,
-  useUnloadPending,
-} from './useDriverQueries'
+import { useArriveMutation, useCompleteStopMutation, useReportIssueMutation, useStartDeliveryMutation } from './useDriverQueries'
 
 /**
- * Thao tác của tài xế ở điểm giao (LM-087), ghi thẳng vào kho (D-47): bắt đầu giao, đánh dấu / bỏ đánh dấu kiện đã dỡ, báo sự cố,
- * hoàn tất điểm. Toast chỉ nói việc kho đã ghi; ghi lỗi thì nói lỗi của kho. Dùng promise (không dùng callback theo lượt `mutate`)
- * cho việc cần báo sau khi màn đã đổi, ví dụ hoàn tất điểm cuối mở màn tổng kết.
+ * Thao tác của tài xế ở điểm giao (LM-087, FE-6-06), ghi thẳng vào kho (D-47): xuất phát, "Đã đến", báo sự cố, hoàn tất điểm — dỡ hàng
+ * đi qua hộp đối chiếu (`useUnloadScan`). Toast chỉ nói việc kho đã ghi; ghi lỗi thì nói lỗi của kho. Dùng promise (không dùng callback
+ * theo lượt `mutate`) cho việc cần báo sau khi màn đã đổi, ví dụ hoàn tất điểm cuối mở màn tổng kết.
  */
 export function useDeliveryStop(tripId: string, view: DeliveryView | undefined, stopCount: number) {
   const t = useT()
   const start = useStartDeliveryMutation(tripId)
-  const unload = useRecordUnloadMutation(tripId)
-  const unloadPending = useUnloadPending(tripId)
+  const arrival = useArriveMutation(tripId)
   const report = useReportIssueMutation(tripId)
   const complete = useCompleteStopMutation(tripId)
 
@@ -27,15 +20,15 @@ export function useDeliveryStop(tripId: string, view: DeliveryView | undefined, 
     toast.error(dataErrorMessage(error, t))
   }
 
-  function toggle(id: string) {
-    if (view?.mode !== 'delivering') return
-    const entry = view.items.find(({ item }) => item.id === id)
-    if (!entry) return
-    unload.mutate({ stopNumber: view.stop.number, packageInstanceId: id, unloaded: !entry.unloaded }, { onError: showError })
-  }
-
   function startDelivery() {
     void start.mutateAsync().catch(showError)
+  }
+
+  /** Ghi giờ đến điểm đang giao: từ lúc này mới dỡ hàng được. */
+  function arrive() {
+    if (view?.mode !== 'delivering') return
+    const number = view.stop.number
+    void arrival.mutateAsync(number).then(() => toast.success(t('driver.arrived', { number })), showError)
   }
 
   /** `true` khi kho đã ghi sự cố. */
@@ -43,7 +36,8 @@ export function useDeliveryStop(tripId: string, view: DeliveryView | undefined, 
     if (!view) return false
     try {
       await report.mutateAsync({ stopNumber: view.stop.number, packageInstanceId, kind, note })
-      toast.success(t('driver.issue.recorded', { id: packageInstanceId }))
+      if (kind === 'refused') toast.warning(t('driver.issue.refusedRecorded', { id: packageInstanceId }), { description: t('driver.issue.refusedRecordedDescription') })
+      else toast.success(t('driver.issue.recorded', { id: packageInstanceId }))
       return true
     } catch (error) {
       showError(error)
@@ -63,10 +57,10 @@ export function useDeliveryStop(tripId: string, view: DeliveryView | undefined, 
   }
 
   return {
-    toggle,
-    unloadPending,
     startDelivery,
     starting: start.isPending,
+    arrive,
+    arriving: arrival.isPending,
     reportIssue,
     reporting: report.isPending,
     completeStop,

@@ -52,7 +52,7 @@ test('another driver sees none of the demo driver trips', async () => {
   ])
 })
 
-test('the Phương Nam driver sees their trip once the Phú Thuận warehouse starts loading it, never a Long Bình trip (FE-0-02)', async () => {
+test('the Phương Nam driver sees their trip once the Phú Thuận warehouse starts staging it, never a Long Bình trip (FE-0-02)', async () => {
   // TRIP-PN-001 (30 thùng linh kiện + 12 kiện vải cuộn, 2 điểm) đã duyệt nhưng kho chưa bắt đầu: chưa hiện
   expect(await tripsFor('US-PN-04')).toStrictEqual({ inTransit: [], loaded: [], preparing: [], recent: [] })
   const db = createMockDb()
@@ -62,7 +62,7 @@ test('the Phương Nam driver sees their trip once the Phú Thuận warehouse st
   const entries: TripRevisions[] = await Promise.all((await db.listTrips()).map(async (trip) => ({ trip, revisions: await db.listRevisions(trip.id) })))
   const groups = myTrips(entries, new Map((await db.listVehicles()).map((vehicle) => [vehicle.id, vehicle.name])), { id: 'US-PN-04' })
   expect(groups.preparing.map((row) => [row.id, row.status, row.sub, row.stopCount, row.packageCount, row.vehicleName])).toStrictEqual([
-    ['TRIP-PN-001', 'LOADING', { kind: 'loading', recorded: 0, total: 42 }, 2, 42, 'Isuzu QKR 230 · 51C-907.41'],
+    ['TRIP-PN-001', 'LOADING', { kind: 'staging', recorded: 0, total: 42 }, 2, 42, 'Isuzu QKR 230 · 51C-907.41'],
   ])
 })
 
