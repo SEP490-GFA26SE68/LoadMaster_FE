@@ -5,7 +5,7 @@ import { userFormSchema, type UserFormInput } from './user-form.schema'
  * Form người dùng (LM-092): schema trả key từ điển làm message. FE-0-08: form theo phạm vi của người quản trị — quản trị công ty chỉ có
  * vai trò công ty và kho bắt buộc; quản trị hệ thống chỉ có vai trò nền tảng và không có kho.
  */
-const VALID: UserFormInput = { fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926971238', role: 'dispatcher', depot: 'Kho Long Bình' }
+const VALID: UserFormInput = { fullName: 'Vương Thị Bích Ngọc', email: 'ngoc.vuong@loadmaster.vn', phone: '0926971238', role: 'dispatcher', depot: 'Kho Long Bình', companyId: '1' }
 
 /** Lỗi của schema dạng `ô: key`. */
 function errorsOf(scope: 'platform' | 'company', input: UserFormInput) {
@@ -42,7 +42,7 @@ test('a role outside the scope of the form is refused at the role field', () => 
 })
 
 test('every broken field is reported together, the depot included', () => {
-  expect(errorsOf('company', { fullName: '', email: 'khong-phai-email', phone: '12345', role: 'driver', depot: '' })).toStrictEqual([
+  expect(errorsOf('company', { fullName: '', email: 'khong-phai-email', phone: '12345', role: 'driver', depot: '' , companyId:'1'})).toStrictEqual([
     'fullName: admin.users.errors.fullNameRequired',
     'email: admin.users.errors.emailInvalid',
     'phone: admin.users.errors.phoneInvalid',

@@ -245,14 +245,14 @@ describe('the company manager contacts the customer and enters a new deadline fo
     const exception = await db.renegotiateDeadline(tripId, 'EXC-001', input)
     expect(exception).toMatchObject({
       status: 'ESCALATED',
-      renegotiation: { requirementId: 'REQ-006', previousDeadline: DEADLINE, deadline: NEW_DEADLINE, contactNote: NOTE, at: '2026-09-16T01:22:00.000Z', by: MANAGER },
+      renegotiation: { requirementId: 'REQ-006', previousDeadline: DEADLINE, deadline: NEW_DEADLINE, contactNote: NOTE, at: '2026-09-16T01:22:00.000Z', by: COMPANYMANAGER },
     })
     expect((await db.getDeliveryRequirement('REQ-006')).deadline).toBe(NEW_DEADLINE)
     expect((await db.getTrip(tripId)).stops[0]?.deadline).toBe(NEW_DEADLINE)
     // cùng thời điểm, chưa có điểm vị trí mới: mức hạn đã theo hạn mới
     expect((await db.getTripMonitoring(tripId)).stops[0]).toMatchObject({ deadline: NEW_DEADLINE, deadlineStatus: 'OK' })
     expect((await actionsOf(db, tripId, 'exception.deadlineRenegotiated')).map(({ actorId, params }) => ({ actorId, params }))).toStrictEqual([{
-      actorId: MANAGER, params: { exceptionId: 'EXC-001', requirementId: 'REQ-006', deadline: NEW_DEADLINE, note: NOTE },
+      actorId: COMPANYMANAGER, params: { exceptionId: 'EXC-001', requirementId: 'REQ-006', deadline: NEW_DEADLINE, note: NOTE },
     }])
 
     // điều phối viên xử lý tiếp: sự cố giữ nguyên phần gia hạn

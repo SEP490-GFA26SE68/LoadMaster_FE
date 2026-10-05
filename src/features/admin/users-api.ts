@@ -1,5 +1,4 @@
 import type {
-  Company,
   NewUser,
   TemporaryPassword,
   UserChanges,

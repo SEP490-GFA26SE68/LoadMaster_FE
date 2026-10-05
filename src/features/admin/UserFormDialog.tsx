@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { rolesInScope, type UserScope } from '@/lib/mock-db'
+import type { UserScope } from '@/lib/mock-db'
 import type { Role, User } from '@/types/user'
 import type { AccountBlock } from './account-guards'
 import {

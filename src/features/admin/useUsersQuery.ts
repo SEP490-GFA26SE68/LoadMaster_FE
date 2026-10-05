@@ -25,9 +25,7 @@ export function useCompanyNamesQuery(enabled: boolean) {
 
 export type CompanyName = { readonly id: string; readonly name: string }
 
-function companyNames(companies: readonly Company[]): CompanyName[] {
-  return companies.map(({ id, name }) => ({ id, name }))
-}
+
 
 function useInvalidateUsers() {
   const client = useQueryClient()
