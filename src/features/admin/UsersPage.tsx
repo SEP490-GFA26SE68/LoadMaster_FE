@@ -58,32 +58,48 @@ export function UsersPage() {
         </TabsList>
       </PageHero>
 
-        <TabsContent value="accounts" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
-          {query.isPending ? (
-            <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
-          ) : query.isError ? (
-            <EmptyState
-              mascot="error"
-              title={t('admin.users.errorTitle')}
-              description={t('admin.users.errorDescription')}
-              action={<Button variant="secondary" onClick={() => void query.refetch()}>{t('admin.users.retry')}</Button>}
-            />
-          ) : (
-            <UsersTable users={users} viewer={currentUser} companies={companies.data} onAction={actions.handleAction} />
-          )}
-        </TabsContent>
-        <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
-          <PermissionMatrix />
-        </TabsContent>
+      <TabsContent value="accounts" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        {query.isPending ? (
+          <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
+        ) : query.isError ? (
+          <EmptyState
+            mascot="error"
+            title={t('admin.users.errorTitle')}
+            description={t('admin.users.errorDescription')}
+            action={<Button variant="secondary" onClick={() => void query.refetch()}>{t('admin.users.retry')}</Button>}
+          />
+        ) : (
+          <UsersTable users={users} viewer={currentUser} companies={companies.data} onAction={actions.handleAction} />
+        )}
+      </TabsContent>
+      <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        <PermissionMatrix />
+      </TabsContent>
 
       {dialog?.kind === 'create' || dialog?.kind === 'edit' ? (
         <UserFormDialog
           key={editing?.id ?? 'new'}
           scope={scope}
           user={editing}
-          roleBlock={editing ? accountGuards(editing, currentUser, users).role : null}
+          companies={companies.data ?? []}
+          roleBlock={
+            editing
+              ? accountGuards(
+                editing,
+                currentUser,
+                users,
+              ).role
+              : null
+          }
           onClose={actions.close}
-          onSubmit={(values) => (editing ? actions.submitEdit(editing, values) : actions.submitCreate(values))}
+          onSubmit={(values) =>
+            editing
+              ? actions.submitEdit(
+                editing,
+                values,
+              )
+              : actions.submitCreate(values)
+          }
         />
       ) : null}
       <TemporaryPasswordDialog

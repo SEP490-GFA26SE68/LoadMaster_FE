@@ -16,7 +16,11 @@ export function useUsersQuery() {
  * Chưa có màn nào sửa công ty nên không cần làm mới.
  */
 export function useCompanyNamesQuery(enabled: boolean) {
-  return useQuery({ queryKey: ['companies'], queryFn: enabled ? fetchCompanies : skipToken, select: companyNames, staleTime: Infinity })
+  return useQuery({
+    queryKey: ['companies'],
+    queryFn: enabled ? fetchCompanies : skipToken,
+    staleTime: Infinity,
+  })
 }
 
 export type CompanyName = { readonly id: string; readonly name: string }

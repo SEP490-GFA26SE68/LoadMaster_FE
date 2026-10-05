@@ -35,20 +35,6 @@ export async function logout(): Promise<void> {
   })
 }
 
-export async function getCurrentUser(): Promise<User> {
-  const response = await apiFetch('/api/users/me')
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to load current user: ${response.status}`,
-    )
-  }
-
-  const body =
-    (await response.json()) as UserProfileApiResponse
-
-  return mapUser(body.data)
-}
 
 export function getAccessToken(): string | undefined {
   return keycloak.token
@@ -68,17 +54,26 @@ type UserProfileApiResponse = {
     fullName: string
     phoneNumber: string | null
     companyId: number | null
-    status: 'ACTIVE' | 'SUSPENDED'
     userRoleType:
-    | 'SYSTEM_ADMIN'
-    | 'SYSTEM_MANAGER'
-    | 'SYSTEM_SUPPORTER'
-    | 'ADMIN'
-    | 'MANAGER'
-    | 'DISPATCHER'
-    | 'WAREHOUSE_WORKER'
-    | 'DRIVER'
+      | 'SYSTEM_ADMIN'
+      | 'SYSTEM_MANAGER'
+      | 'SYSTEM_SUPPORTER'
+      | 'ADMIN'
+      | 'MANAGER'
+      | 'DISPATCHER'
+      | 'WAREHOUSE_WORKER'
+      | 'DRIVER'
+    status: 'ACTIVE' | 'LOCKED'
   }
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const body =
+    await apiFetch<UserProfileApiResponse>(
+      '/api/users/me',
+    )
+
+  return mapUser(body.data)
 }
 
 type VerifyOtpResponse = {

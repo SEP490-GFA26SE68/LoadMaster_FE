@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
+import type { CompanyOption } from './users-api'
 import {
   Dialog,
   DialogClose,
@@ -27,7 +28,14 @@ import {
 const DEFAULT_ROLE: Record<UserScope, Role> = { platform: 'systemSupporter', company: 'dispatcher' }
 
 function emptyValues(scope: UserScope): UserFormInput {
-  return { fullName: '', email: '', phone: '', role: DEFAULT_ROLE[scope], depot: '' }
+  return {
+    fullName: '',
+    email: '',
+    phone: '',
+    role: DEFAULT_ROLE[scope],
+    depot: '',
+    companyId: '',
+  }
 }
 
 function toFormValues(user: User): UserFormInput {
@@ -37,8 +45,11 @@ function toFormValues(user: User): UserFormInput {
     phone: user.phone,
     role: user.role,
     depot: user.depot ?? '',
+    companyId: user.companyId ?? '',
   }
 }
+
+
 
 /**
  * Thêm hoặc sửa người dùng. Truyền `user` để sửa, bỏ trống để thêm mới. Nơi gọi chỉ gắn hộp thoại khi mở (kèm `key` theo người
@@ -52,12 +63,14 @@ function toFormValues(user: User): UserFormInput {
 export function UserFormDialog({
   scope,
   user,
+  companies = [],
   roleBlock = null,
   onClose,
   onSubmit,
 }: {
   scope: UserScope
   user?: User
+  companies?: CompanyOption[]
   roleBlock?: AccountBlock | null
   onClose: () => void
   onSubmit: (values: UserFormValues) => Promise<void>
@@ -76,8 +89,24 @@ export function UserFormDialog({
 
   const errors = form.formState.errors
   const role = useWatch({ control: form.control, name: 'role' })
-  const roleOptions = rolesInScope(scope).map((value) => ({ value, label: t(`roles.${value}`) }))
+  const allowedRoles: Role[] = platform
+    ? [
+      'systemAdmin',
+      'systemManager',
+      'systemSupporter',
+      'companyAdmin',
+    ]
+    : [
+      'companyManager',
+      'dispatcher',
+      'warehouse',
+      'driver',
+    ]
 
+  const roleOptions = allowedRoles.map((value) => ({
+    value,
+    label: t(`roles.${value}`),
+  }))
   async function handleValid(values: UserFormValues) {
     setServerError(null)
     try {
@@ -86,6 +115,14 @@ export function UserFormDialog({
       setServerError(error)
     }
   }
+
+  const companyOptions = companies.map((company) => ({
+    value: company.id,
+    label: company.name,
+  }))
+
+  const needsCompany =
+    platform && role === 'companyAdmin'
 
   return (
     <Dialog open onOpenChange={(open) => (open || form.formState.isSubmitting ? undefined : onClose())}>
@@ -130,6 +167,16 @@ export function UserFormDialog({
                   hint={t('admin.users.form.device', { device: t(`admin.users.devices.${role}`) })}
                 />
               )}
+              {needsCompany ? (
+                <div className="col-span-2">
+                  <SelectField
+                    control={form.control}
+                    name="companyId"
+                    label={t('admin.users.form.company')}
+                    options={companyOptions}
+                  />
+                </div>
+              ) : null}
             </div>
 
             {serverError ? (

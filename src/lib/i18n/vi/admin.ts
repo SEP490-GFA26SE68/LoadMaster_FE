@@ -108,6 +108,7 @@ export const admin = {
       depot: 'Kho / chi nhánh',
       depotPlaceholder: 'Kho Long Bình',
       role: 'Vai trò',
+      company: 'Công ty',
       device: 'Thiết bị chính: {device}',
       cancel: 'Huỷ',
       save: 'Lưu thay đổi',
@@ -122,6 +123,7 @@ export const admin = {
       phoneInvalid: 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0',
       roleRequired: 'Chọn vai trò',
       depotRequired: 'Nhập kho hoặc chi nhánh',
+      companyRequired: 'Vui lòng chọn công ty'
     },
     /** Hộp thoại hiện mật khẩu tạm một lần (tạo tài khoản, đặt lại mật khẩu — D-42). */
     password: {

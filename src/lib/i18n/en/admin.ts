@@ -94,6 +94,7 @@ export const admin = {
       depot: 'Warehouse / branch',
       depotPlaceholder: 'Kho Long Bình',
       role: 'Role',
+      company: 'Công ty',
       device: 'Main device: {device}',
       cancel: 'Cancel',
       save: 'Save changes',
@@ -108,6 +109,7 @@ export const admin = {
       phoneInvalid: 'Phone number must be 10 digits starting with 0',
       roleRequired: 'Choose a role',
       depotRequired: 'Enter a warehouse or branch',
+      companyRequired: 'Please select a company'
     },
     password: {
       createdTitle: 'Account created for {name}',

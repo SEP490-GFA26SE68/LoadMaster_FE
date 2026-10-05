@@ -79,6 +79,7 @@ export type User = {
   lastActiveAt: string | null
 
   companyId?: string
+  companyName?: string
 }
 
 export function initialsOf(fullName: string): string {
