@@ -19,7 +19,12 @@ function Screen() {
       <output aria-label="user">{user?.email ?? 'signed out'}</output>
       <ul aria-label="trips">{trips.data?.map((trip) => <li key={trip.id}>{trip.id}</li>)}</ul>
       <button type="button" onClick={() => void signOut()}>sign out</button>
-      <button type="button" onClick={() => void signIn('dieuphoi@phuongnam.vn', 'loadmaster')}>sign in at Phuong Nam</button>
+      <button
+        type="button"
+        onClick={() => void signIn()}
+      >
+        sign in at Phuong Nam
+      </button>
     </>
   )
 }

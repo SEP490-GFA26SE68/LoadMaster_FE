@@ -22,8 +22,8 @@ test('a dispatcher returns to the trip the screen was opened from, or to the tri
 
 /** FE-0-04: luật hỏi quyền `trips.view`, không hỏi tên vai trò — quản lý công ty cũng xem được chuyến. */
 test('a company manager, who can open trips, also returns to the trip the screen was opened from, or to the dashboard', () => {
-  expect(exitAction('manager', '/kho', '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/chuyen/TRIP-2026-0914' })
-  expect(exitAction('manager', '/kho')).toStrictEqual({ kind: 'link', to: '/' })
+  expect(exitAction('companyManager', '/kho', '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/chuyen/TRIP-2026-0914' })
+  expect(exitAction('companyManager', '/kho')).toStrictEqual({ kind: 'link', to: '/' })
 })
 
 test('roles that cannot open trips return to their own screen', () => {

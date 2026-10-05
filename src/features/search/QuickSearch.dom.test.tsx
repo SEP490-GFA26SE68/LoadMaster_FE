@@ -184,7 +184,7 @@ test('the dispatcher searches the package pool and package types; shipments are 
 
 test('the company manager finds pool packages (read-only pool, FE-3b-03) but no package types', async () => {
   const user = userEvent.setup()
-  renderSearch('manager')
+  renderSearch('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến) và xe (tên, biển số).')).toBeInTheDocument()
   await user.keyboard('pk-0001')

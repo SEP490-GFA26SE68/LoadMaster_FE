@@ -205,7 +205,7 @@ const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', r
     labels: { vi: ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Monitoring', 'Package pool', 'Requirements', 'Fleet', 'Dashboard'] },
   },
   {
-    role: 'manager',
+    role: 'companyManager',
     labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Monitoring', 'Fleet'] },
   },
 ]

@@ -51,7 +51,7 @@ export const admin = {
       systemManager: 'Computer',
       systemSupporter: 'Computer',
       companyAdmin: 'Computer',
-      manager: 'Computer / tablet',
+      companyManager: 'Computer / tablet',
       dispatcher: 'Computer',
       warehouse: 'Warehouse tablet',
       driver: 'Phone',

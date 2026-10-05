@@ -84,7 +84,7 @@ test('the manager sees the requirements by nearest deadline, with filters on the
 })
 
 test('the deadline range and the status filter read from the URL', async () => {
-  renderPage('manager', '/yeu-cau-giao?han-tu=2026-09-17&han-den=2026-09-17&trang-thai=cho-xep-chuyen')
+  renderPage('companyManager', '/yeu-cau-giao?han-tu=2026-09-17&han-den=2026-09-17&trang-thai=cho-xep-chuyen')
   await waitFor(() => expect(rowIds()).toStrictEqual(['REQ-004', 'REQ-002']), SLOW)
   expect(screen.getByRole('combobox', { name: 'Trạng thái' })).toHaveTextContent('Chờ xếp chuyến')
 })

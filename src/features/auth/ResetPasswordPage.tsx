@@ -62,10 +62,13 @@ export function ResetPasswordPage() {
     )
   }
 
-  async function onSubmit(
-    values: FormValues,
-  ) {
+  async function onSubmit(values: FormValues) {
     setServerError(null)
+
+    if (!resetToken) {
+      setServerError('Token đặt lại mật khẩu không hợp lệ')
+      return
+    }
 
     try {
       await resetPassword(
@@ -73,12 +76,9 @@ export function ResetPasswordPage() {
         values.newPassword,
       )
 
-      navigate(
-        '/dat-lai-mat-khau/thanh-cong',
-        {
-          replace: true,
-        },
-      )
+      navigate('/dat-lai-mat-khau/thanh-cong', {
+        replace: true,
+      })
     } catch (error) {
       setServerError(
         error instanceof Error

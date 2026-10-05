@@ -58,7 +58,7 @@ export const admin = {
       systemManager: 'Máy tính',
       systemSupporter: 'Máy tính',
       companyAdmin: 'Máy tính',
-      manager: 'Máy tính / máy tính bảng',
+      companyManager: 'Máy tính / máy tính bảng',
       dispatcher: 'Máy tính',
       warehouse: 'Máy tính bảng tại kho',
       driver: 'Điện thoại',
