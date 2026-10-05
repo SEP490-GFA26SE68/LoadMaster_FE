@@ -150,7 +150,7 @@ test('1.366 px: an incident on a trip in transit goes from the dispatcher to the
   await expect(incident.getByRole('button', { name: 'Không có tuyến khả thi — chuyển quản lý', exact: true })).toHaveCount(0)
 
   // Quản lý công ty: chuông báo, tab "Sự cố cần xử lý", liên hệ khách và nhập hạn mới
-  await switchUser(page, 'manager')
+  await switchUser(page, 'companyManager')
   await page.getByRole('button', { name: /^Thông báo, \d+ chưa đọc$/ }).click()
   await expect(page.getByRole('menu').getByRole('menuitem').filter({ hasText: 'Chuyển sự cố cho quản lý' })).toHaveCount(1)
   await page.keyboard.press('Escape')

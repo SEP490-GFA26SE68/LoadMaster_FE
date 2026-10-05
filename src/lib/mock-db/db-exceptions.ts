@@ -150,7 +150,7 @@ export function exceptionMethods(ctx: DbContext): ExceptionsDb {
     listTripReroutes: (tripId) => ctx.respond(() => exceptions.get(ctx.scope.trips.read(tripId).id)?.reroutes ?? []),
     renegotiateDeadline: (tripId, exceptionId, input) =>
       ctx.respond(() => {
-        const trip = inTransit(tripId, 'manager')
+        const trip = inTransit(tripId, 'companyManager')
         const exception = exceptionOf(tripId, exceptionId)
         if (exception.status !== 'ESCALATED') throw new MockDbError('EXCEPTION_STATUS_INVALID', { exceptionId, status: exception.status })
         const contactNote = input.contactNote.trim().slice(0, MAX_EXCEPTION_NOTE_LENGTH)

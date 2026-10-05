@@ -55,7 +55,7 @@ async function openMenu(user: UserEvent, id: string) {
 }
 
 test('the manager sees the requirements by nearest deadline, with filters on the URL and the create button', async () => {
-  const user = renderPage('manager')
+  const user = renderPage('companyManager')
   expect(await screen.findByText('6 yêu cầu chờ xếp chuyến', {}, SLOW)).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: 'Yêu cầu giao' })).toBeInTheDocument()
   expect(within(screen.getByRole('table')).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
@@ -107,7 +107,7 @@ test('the detail shows the destination, coordinates, deadline, who made it and e
 })
 
 test('the manager creates a requirement: errors sit at the fields, warnings do not block saving', async () => {
-  const user = renderPage('manager')
+  const user = renderPage('companyManager')
   await user.click(await screen.findByRole('button', { name: 'Tạo yêu cầu giao' }, SLOW))
   const dialog = within(await screen.findByRole('dialog', { name: 'Tạo yêu cầu giao' }))
   // Lọc ô chọn kiện theo điểm đến ghi trong file: ba kiện dễ vỡ đi Phú Bài còn tự do (hai kiện kia thuộc REQ-002)
@@ -163,7 +163,7 @@ test('the manager creates a requirement: errors sit at the fields, warnings do n
 })
 
 test('the manager edits a pending requirement and deletes it; its packages go back to the pool', async () => {
-  const user = renderPage('manager')
+  const user = renderPage('companyManager')
   await screen.findByText('7 yêu cầu chờ xếp chuyến', {}, SLOW)
   await user.click((await openMenu(user, 'REQ-007')).getByRole('menuitem', { name: 'Sửa yêu cầu' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Sửa yêu cầu REQ-007' }))
@@ -225,7 +225,7 @@ test('the dispatcher only reads and puts a requirement on a planning trip; the d
 })
 
 test('once on a trip the manager changes only the deadline and the priority; deleting is blocked with the reason', async () => {
-  const user = renderPage('manager')
+  const user = renderPage('companyManager')
   await screen.findByText('5 yêu cầu chờ xếp chuyến', {}, SLOW)
   const menu = await openMenu(user, 'REQ-006')
   const remove = menu.getByRole('menuitem', { name: /^Xoá yêu cầu/ })

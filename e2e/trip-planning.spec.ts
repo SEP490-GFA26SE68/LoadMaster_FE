@@ -20,7 +20,7 @@ test('stops are generated and merged from delivery requirements; loose pool pack
   test.setTimeout(3 * 60_000)
 
   // Quản lý công ty: yêu cầu mới tới KCN Hoà Khánh, toạ độ lấy từ danh sách địa danh mẫu (FE-4b-03)
-  await login('/yeu-cau-giao', 'manager')
+  await login('/yeu-cau-giao', 'companyManager')
   await page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Tạo yêu cầu giao' })
   await form.getByRole('textbox', { name: 'Tên điểm đến', exact: true }).fill('Xưởng Hoà Khánh')

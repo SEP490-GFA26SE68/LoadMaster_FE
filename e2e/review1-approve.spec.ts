@@ -59,7 +59,7 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
   await expect(newestRun(page)).not.toContainText('Chờ duyệt')
 
   // Quản lý công ty: cùng phương án, chỉ xem — không Chỉnh sửa, không Duyệt, một dòng lý do; bản nguồn chưa duyệt cũng vậy
-  await switchUser(page, 'manager')
+  await switchUser(page, 'companyManager')
   for (const route of [approvedRoute, `/chuyen/${TRIP}/phuong-an?revision=${sourceRevision}`]) {
     await navigateInApp(page, route)
     await page.locator('canvas').waitFor()

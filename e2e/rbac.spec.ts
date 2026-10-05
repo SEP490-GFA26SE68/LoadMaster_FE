@@ -107,7 +107,7 @@ test('the system administrator has users and the audit log only: trips, fleet an
 
 test('the company manager lands on the dashboard and sees its own nav items: requirements to edit, the pool read-only (FE-0-04, FE-4b-02)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
-  await login('/', 'manager')
+  await login('/', 'companyManager')
   await page.waitForURL((url) => url.pathname === '/')
   await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
   // Yêu cầu giao là việc của quản lý công ty (D-72): có nút tạo
@@ -187,7 +187,7 @@ test('a driver opening the admin screen gets 403 with a way back', { tag: '@phon
 })
 
 test('the company manager reads trips and plans without any write action; the approval queue is gone (FE-0-07)', async ({ page, login, browserErrors }) => {
-  await login(`/chuyen/${SEED_TRIP}`, 'manager')
+  await login(`/chuyen/${SEED_TRIP}`, 'companyManager')
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)

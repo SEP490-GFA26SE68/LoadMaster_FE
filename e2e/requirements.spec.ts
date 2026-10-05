@@ -20,7 +20,7 @@ const dueDate = () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString
 
 test('the manager creates a delivery requirement; the dispatcher only reads it and puts it on a stop of a planning trip', async ({ page, login, browserErrors }) => {
   // Đường dẫn cũ của màn Đơn hàng chuyển hướng sang màn mới (đọc trước khi ghi gì vào kho)
-  await login('/don-hang', 'manager')
+  await login('/don-hang', 'companyManager')
   await page.waitForURL(/\/yeu-cau-giao$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Yêu cầu giao', exact: true })).toBeVisible()
   await expect(page).toHaveTitle('Yêu cầu giao · LoadMaster')

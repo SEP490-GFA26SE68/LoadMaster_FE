@@ -107,7 +107,7 @@ test('a package code opens its trip on that package; a trip is found by a stop n
 
 test('only permitted groups: the manager does not find users and is told so', async () => {
   const user = userEvent.setup()
-  renderSearch('manager')
+  renderSearch('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   await user.keyboard('hanh.do')
   expect(await screen.findByText('Không tìm thấy kết quả cho “hanh.do”.', {}, SLOW)).toBeInTheDocument()

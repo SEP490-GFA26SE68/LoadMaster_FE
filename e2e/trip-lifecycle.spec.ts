@@ -176,7 +176,7 @@ test('one tab: cancelling a trip the warehouse is loading tells the warehouse to
   await expect(page.getByText('Chuyến TRIP-011 đã huỷ: Xe hỏng máy lạnh Dỡ 110 kiện đã xếp khỏi xe.', { exact: true })).toBeVisible()
 
   // Quản lý công ty được báo chuyến bị huỷ lúc đang vận chuyển, kèm số kiện hoàn trả
-  await switchUser(page, 'manager')
+  await switchUser(page, 'companyManager')
   await page.getByRole('button', { name: /^Thông báo, \d+ chưa đọc$/ }).click()
   const inTransitCancelled = page.getByRole('menu').getByRole('menuitem').filter({ hasText: 'TRIP-009' }).filter({ hasText: 'Huỷ chuyến' })
   await expect(inTransitCancelled).toHaveCount(1)

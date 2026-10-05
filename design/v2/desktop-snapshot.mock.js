@@ -426,7 +426,7 @@ export const snapshot = {
       "fullName": "Lý Minh Châu",
       "email": "chau.ly@loadmaster.vn",
       "phone": "0914 567 892",
-      "role": "manager",
+      "role": "companyManager",
       "status": "active",
       "depot": "Trụ sở TP. Hồ Chí Minh",
       "lastActiveAt": "2026-09-18T02:30:00.000Z"
