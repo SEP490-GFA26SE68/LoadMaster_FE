@@ -1,5 +1,5 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Company, NewUser, UserChanges } from '@/lib/mock-db'
+import type { NewUser, UserChanges } from '@/lib/mock-db'
 import type { UserStatus } from '@/types/user'
 import { createUser, deleteUser, fetchCompanies, fetchUsers, resetPassword, setUserStatus, updateUser } from './users-api'
 
