@@ -14,6 +14,8 @@ export const common = {
   on: 'On',
   off: 'Off',
   deliveryIssueKinds: { damaged: 'Damaged', missing: 'Missing', refused: 'Refused by customer', other: 'Other' },
+  tripExceptionTypes: { TRAFFIC: 'Traffic jam', ACCIDENT: 'Accident', ROAD_CONSTRUCTION: 'Road works', VEHICLE_BREAKDOWN: 'Vehicle breakdown', OTHER: 'Other' },
+  deadlineStatuses: { OK: 'On time', AT_RISK: 'Tight', MISSED: 'Expected late' },
   handlingClasses: { STANDARD: 'Standard', FRAGILE: 'Fragile', REFRIGERATED: 'Refrigerated', HAZARDOUS: 'Hazardous', HIGH_VALUE: 'High value' },
   packageStatuses: {
     IMPORTED: 'Imported',
@@ -25,6 +27,9 @@ export const common = {
     RETURNED: 'Returned',
   },
   packageFlags: { NOT_FOUND: 'Not found', DAMAGED: 'Damaged' },
+  verifyMethods: { QR: 'QR scan', CODE: 'Typed code', MANUAL: 'By hand' },
+  verifyContexts: { STAGING: 'Staging', LOADING: 'Loading', UNLOADING: 'Unloading' },
+  manualConfirmReasons: { LABEL_DAMAGED: 'Label torn / missing', QR_UNREADABLE: 'QR unreadable', OTHER: 'Other' },
   table: {
     rowsPerPage: 'Rows per page',
     range: '{from}–{to} of {total}',

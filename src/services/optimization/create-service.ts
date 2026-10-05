@@ -1,6 +1,7 @@
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
+import type { CandidateRun } from './mock-candidates'
 import { MockOptimizationService } from './MockOptimizationService'
-import type { OptimizationService, OptimizeOptions } from './OptimizationService'
+import type { OptimizationService } from './OptimizationService'
 import { OptimizationServiceError } from './service-errors'
 import { WorkerOptimizationService } from './WorkerOptimizationService'
 
@@ -15,7 +16,15 @@ export class UnavailableOptimizationService implements OptimizationService {
     this.#minimumLatencyMs = minimumLatencyMs
   }
 
-  optimize(_request: OptimizationRequest, { signal }: OptimizeOptions = {}): Promise<OptimizationResult> {
+  optimize(_request: OptimizationRequest, { signal }: { readonly signal?: AbortSignal } = {}): Promise<OptimizationResult> {
+    return this.#fail(signal)
+  }
+
+  optimizeCandidates(_request: OptimizationRequest, { signal }: { readonly signal?: AbortSignal } = {}): Promise<CandidateRun> {
+    return this.#fail(signal)
+  }
+
+  #fail(signal: AbortSignal | undefined): Promise<never> {
     return new Promise((_resolve, reject) => {
       const timer = setTimeout(() => reject(new OptimizationServiceError('SERVICE_UNAVAILABLE')), this.#minimumLatencyMs)
       signal?.addEventListener(

@@ -109,3 +109,15 @@ test('axle loads must not be negative, each reported inside that axle row', () =
     { code: 'axle.maxLoadKg.nonNegative', path: ['axles', 0, 'maxLoadKg'] },
   ])
 })
+
+test('the limits a vehicle takes from its type parse unchanged; axle limits must be above 0 and the offset ratio within (0, 0.5]', () => {
+  const limited = { ...SPEC_TRUCK_6M, frontAxleLimitKg: 3000, rearAxleLimitKg: 9000, maxCogOffsetRatio: 0.15 }
+  expect(vehicleConfigSchema.parse(limited)).toStrictEqual(limited)
+  expect(vehicleConfigSchema.parse({ ...SPEC_TRUCK_6M, maxCogOffsetRatio: 0.5 }).maxCogOffsetRatio).toBe(0.5)
+  expect(issuesWith({ frontAxleLimitKg: 0, rearAxleLimitKg: -1, maxCogOffsetRatio: 0 })).toStrictEqual([
+    { code: 'vehicle.axleLimitKg.positive', path: ['frontAxleLimitKg'] },
+    { code: 'vehicle.axleLimitKg.positive', path: ['rearAxleLimitKg'] },
+    { code: 'vehicle.maxCogOffsetRatio.range', path: ['maxCogOffsetRatio'] },
+  ])
+  expect(issuesWith({ maxCogOffsetRatio: 0.51 })).toStrictEqual([{ code: 'vehicle.maxCogOffsetRatio.range', path: ['maxCogOffsetRatio'] }])
+})

@@ -1,14 +1,16 @@
-import { ArrowRight, ScanLine, TriangleAlert } from 'lucide-react'
-import { lazy, Suspense, useMemo, useState } from 'react'
-import { QrScanDialog } from '@/components/QrScanDialog'
+import { ArrowRight, MapPinCheck, ScanLine, TriangleAlert } from 'lucide-react'
+import { lazy, Suspense, useId, useMemo, useState } from 'react'
+import { PackageVerify } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
+import { TripExceptionButton } from '@/features/monitoring/TripExceptionButton'
 import { adaptResult } from '@/features/viewer3d/scene-input'
-import { useT } from '@/lib/i18n'
-import { missingIds, type Revision, type Trip } from '@/lib/mock-db'
+import { useFormat, useT } from '@/lib/i18n'
+import { leftOutIds, type Revision, type Trip } from '@/lib/mock-db'
 import { DeliveryItemRow } from './DeliveryItemRow'
 import { deliveryView, type DeliveryView } from './delivery-progress'
+import { DriverGpsToggle } from './DriverGpsToggle'
 import { DriverNotice } from './DriverNotice'
 import { stopDeliveries } from './driver-plan'
 import { DriverStopHeader } from './DriverStopHeader'
@@ -20,15 +22,19 @@ import { useUnloadScan } from './useUnloadScan'
 const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoViewer').then((m) => ({ default: m.DriverCargoViewer })))
 
 /**
- * Màn tài xế tại điểm giao (LM-061, LM-087) — điện thoại, một tay, ngoài trời. Vùng chạm 56px, chữ 16px, một hành động chính ở chân
- * màn: "Bắt đầu giao" khi kho đã xếp xong, "Hoàn tất điểm giao" khi đang giao. Kho chưa xếp xong thì chỉ xem trước điểm 1.
+ * Màn tài xế tại điểm giao (LM-061, LM-087, FE-6-06) — điện thoại, một tay, ngoài trời. Vùng chạm 56px, chữ 16px, một hành động chính
+ * ở chân màn theo bước của luồng giao nhiều điểm (D-84): "Xuất phát" khi kho đã xếp xong; đang vận chuyển thì "Đã đến điểm n" — ghi giờ
+ * đến thật — rồi mới tới "Hoàn tất điểm giao". Kho chưa xếp xong thì chỉ xem trước điểm 1. Đang vận chuyển có công tắc "Dùng GPS thật"
+ * dưới dải thông báo (`DriverGpsToggle`, FE-6-13).
  * Kiện, thứ tự dỡ lấy từ phương án kho đã xếp; kiện đã dỡ, sự cố và điểm đã hoàn tất đọc/ghi trong kho (D-47) — mở lại là đúng điểm.
  *
  * Lệch có chủ ý khỏi design: nút chỉ đường trong design màu primary — mỗi màn chỉ một nút primary (mục 5) nên đổi sang secondary;
  * nhãn nút chính viết hoa trong design — mục 5 cấm; bỏ thanh tab đáy vì các tab khác chưa có màn (LM-053, D-20).
  *
- * Review 1 (LM-104): khi đang giao có nút phụ "Quét QR dỡ" — quét nhãn từng kiện của điểm này để ghi đã dỡ; kiện của điểm khác được
- * giải thích và không ghi. Đánh dấu tay từng dòng vẫn giữ; dòng dỡ bằng quét QR ghi rõ "quét QR".
+ * Đã đến điểm thì nút phụ "Đối chiếu kiện dỡ" mở hộp đối chiếu ba mức (`PackageVerify`, FE-6-03) — cách duy nhất ghi một kiện "đã dỡ":
+ * quét hoặc gõ mã từng kiện của điểm này; kiện của điểm khác được giải thích và không ghi; nhãn không đọc được thì xác nhận tay kèm lý
+ * do, chờ điều phối viên duyệt. Còn xác nhận tay của điểm chờ duyệt thì chưa hoàn tất điểm được (FE-6-04) — lý do nằm ngay trên nút.
+ * Mỗi dòng đã dỡ ghi cách đối chiếu; kiện khách từ chối ở lại xe và thành Hoàn trả. Dòng kiện không có nút đánh dấu tay.
  */
 export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
@@ -41,16 +47,17 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
   const scan = useUnloadScan(trip.id, view, stops)
   const [cargoOpen, setCargoOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
-  // Kiện không còn trên xe với khung 3D: đã dỡ ở mọi điểm, và kiện kho báo thiếu (chưa từng lên xe)
+  const blockedId = useId()
+  // Kiện không còn trên xe với khung 3D: đã dỡ ở mọi điểm, và kiện hỏng bị bỏ lại kho (chưa từng lên xe)
   const { delivery, loading } = trip
   const offVehicle = useMemo(
-    () => new Set([...(delivery?.stops.flatMap((stop) => stop.unloadedIds) ?? []), ...missingIds({ loading })]),
+    () => new Set([...(delivery?.stops.flatMap((stop) => stop.unloadedIds) ?? []), ...leftOutIds({ loading })]),
     [delivery, loading],
   )
   // Chuyến không có điểm giao nào: vẫn giữ lối về danh sách (mục 10)
   if (!view) return <DriverNotice title={t('driver.noItems')} description="" />
 
-  const qrIds = new Set(delivery?.stops.find((stop) => stop.number === view.stop.number)?.qrConfirmedIds)
+  const arrived = view.arrivedAt !== undefined
   const handled = view.items.length - view.remaining
   const percent = view.items.length === 0 ? 100 : Math.round((handled / view.items.length) * 100)
 
@@ -59,6 +66,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
       <div className="flex h-dvh flex-col bg-bg text-body-lg">
         <DriverStopHeader stop={view.stop} stops={stops} completedStops={view.completedStops} />
         <StopNotices view={view} stale={model.revision?.stale ?? false} />
+        {view.mode === 'delivering' ? <DriverGpsToggle tripId={trip.id} /> : null}
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-4 pt-3 pb-4">
           <StopContactCard stop={view.stop} />
@@ -81,32 +89,32 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
           </div>
 
           <div className="flex flex-none flex-wrap gap-2 *:grow">
-            {view.mode === 'delivering' && view.remaining > 0 ? (
+            {arrived && view.verifiable > 0 ? (
               <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
                 <ScanLine strokeWidth={2} />
                 {t('driver.scan.open')}
               </Button>
             ) : null}
             <DialogTrigger asChild><Button variant="secondary" size="touch">{t('driver.viewCargo')}</Button></DialogTrigger>
-            {view.mode === 'delivering' && view.items.length > 0 ? (
+            {arrived && view.items.length > 0 ? (
               <Button variant="secondary" size="touch" onClick={() => setIssueOpen(true)}>
                 <TriangleAlert strokeWidth={2} />
                 {t('driver.issue.report')}
               </Button>
             ) : null}
+            {view.mode === 'delivering' ? <TripExceptionButton tripId={trip.id} /> : null}
           </div>
 
           {view.items.length > 0 ? (
             <ul aria-label={view.stop.name} className="m-0 flex flex-none list-none flex-col overflow-hidden rounded-md border border-border bg-bg p-0">
-              {view.items.map(({ item, unloaded, issue }) => (
+              {view.items.map(({ item, unloaded, issue, returned, verification }) => (
                 <DeliveryItemRow
                   key={item.id}
                   item={item}
                   done={unloaded}
-                  viaQr={qrIds.has(item.id)}
+                  verification={verification}
                   issueLabel={issue ? t(`common.deliveryIssueKinds.${issue.kind}`) : undefined}
-                  readOnly={view.mode !== 'delivering'}
-                  onToggle={actions.toggle}
+                  returned={returned}
                 />
               ))}
             </ul>
@@ -114,7 +122,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
             <p className="m-0 flex-none rounded-md border border-border bg-surface p-4 text-text-2">{t('driver.noItems')}</p>
           )}
 
-          {view.mode === 'delivering' ? (
+          {arrived ? (
             <span className="flex-none py-1 text-center text-text-3">
               {view.remaining > 0 ? t('driver.remaining', { count: view.remaining }) : t('driver.allHandled')}
             </span>
@@ -127,17 +135,31 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
               <Button variant="primary" block className="h-15 text-[18px]" loading={actions.starting} onClick={actions.startDelivery}>
                 {t('driver.start')}
               </Button>
-            ) : (
-              <Button
-                variant="primary"
-                block
-                className="h-15 gap-2.5 text-[18px] [&_svg]:size-5.5"
-                disabled={view.remaining > 0 || actions.unloadPending || actions.completing}
-                onClick={actions.completeStop}
-              >
-                {t('driver.complete')}
-                <ArrowRight strokeWidth={2.5} />
+            ) : !arrived ? (
+              <Button variant="primary" block className="h-15 gap-2.5 text-[18px] [&_svg]:size-5.5" loading={actions.arriving} onClick={actions.arrive}>
+                <MapPinCheck strokeWidth={2.5} />
+                {t('driver.arrive', { number: view.stop.number })}
               </Button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {/* Xác nhận tay của điểm còn chờ duyệt (FE-6-04): kho chặn hoàn tất điểm — nút mờ, lý do ngay tại chỗ */}
+                {view.pendingConfirms > 0 ? (
+                  <p id={blockedId} role="status" className="m-0 rounded-md border border-badge-warning-border bg-badge-warning-bg px-3 py-2 font-medium text-badge-warning-fg">
+                    {t('driver.confirms.blocked', { count: view.pendingConfirms })}
+                  </p>
+                ) : null}
+                <Button
+                  variant="primary"
+                  block
+                  className="h-15 gap-2.5 text-[18px] [&_svg]:size-5.5"
+                  disabled={view.remaining > 0 || view.pendingConfirms > 0 || scan.pending || actions.completing}
+                  aria-describedby={view.pendingConfirms > 0 ? blockedId : undefined}
+                  onClick={actions.completeStop}
+                >
+                  {t('driver.complete')}
+                  <ArrowRight strokeWidth={2.5} />
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -167,18 +189,16 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
         }}
       />
 
-      {view.mode === 'delivering' ? (
-        <QrScanDialog
+      {arrived ? (
+        <PackageVerify
           open={scan.open}
           onOpenChange={scan.setOpen}
           title={t('driver.scan.title', { number: view.stop.number })}
-          description={[
-            t('driver.scan.description', { number: view.stop.number, done: view.unloadedCount, total: view.items.length }),
-            scan.last ? t('driver.scan.lastUnloaded', { id: scan.last, name: scan.lastName ?? '' }) : '',
-          ].join(' ').trim()}
-          onScan={scan.handleScan}
-          options={scan.options}
-          error={scan.error}
+          description={t('driver.scan.description', { number: view.stop.number, done: view.unloadedCount, total: view.items.length })}
+          onVerify={scan.handleVerify}
+          candidates={scan.candidates}
+          onManual={scan.handleManual}
+          result={scan.result}
           pending={scan.pending}
         />
       ) : null}
@@ -186,10 +206,14 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
   )
 }
 
-/** Dải thông báo dưới thanh trên: bản duyệt lỗi thời, kho chưa xếp xong (chỉ xem), kho đã xếp xong (chờ bắt đầu), kiện kho báo thiếu. */
+/**
+ * Dải thông báo dưới thanh trên: bản duyệt lỗi thời, kho chưa xếp xong (chỉ xem), kho đã xếp xong (chờ xuất phát), đang tới điểm (chưa
+ * bấm "Đã đến") hoặc giờ đã đến, và kiện của điểm này hỏng lúc xếp nên bị bỏ lại kho.
+ */
 function StopNotices({ view, stale }: { view: DeliveryView; stale: boolean }) {
   const t = useT()
-  const missing = view.missingAtWarehouse.length
+  const format = useFormat()
+  const leftOut = view.leftAtWarehouse.length
   return (
     <>
       {stale ? (
@@ -197,14 +221,16 @@ function StopNotices({ view, stale }: { view: DeliveryView; stale: boolean }) {
           {t('driver.stale')}
         </div>
       ) : null}
-      {view.mode === 'delivering' ? null : (
-        <p role="status" className="m-0 flex-none border-b border-badge-info-border bg-badge-info-bg px-4 py-2 text-badge-info-fg">
-          {t(view.mode === 'preview' ? 'driver.notice.preview' : 'driver.notice.ready')}
-        </p>
-      )}
-      {missing > 0 ? (
+      <p role="status" className="m-0 flex-none border-b border-badge-info-border bg-badge-info-bg px-4 py-2 text-badge-info-fg">
+        {view.mode !== 'delivering'
+          ? t(view.mode === 'preview' ? 'driver.notice.preview' : 'driver.notice.ready')
+          : view.arrivedAt === undefined
+            ? t('driver.notice.enRoute', { number: view.stop.number })
+            : t('driver.notice.arrived', { number: view.stop.number, time: format.time(view.arrivedAt) })}
+      </p>
+      {leftOut > 0 ? (
         <p className="m-0 flex-none border-b border-badge-warning-border bg-badge-warning-bg px-4 py-2 text-badge-warning-fg">
-          {t('driver.notice.missing', { count: missing })}
+          {t('driver.notice.leftOut', { count: leftOut })}
         </p>
       ) : null}
     </>

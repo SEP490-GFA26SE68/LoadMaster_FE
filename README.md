@@ -72,8 +72,35 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   vào điểm giao của chuyến; "Đã giao" và "Giao thiếu" lấy từ trạng thái và cờ của kiện. Một chuyến chở một loại hàng: kiện khác loại
   chỉ vào chuyến khi điều phối viên ghi lý do, thẻ "Phân nhóm hàng" ở chi tiết chuyến nói loại đang khoá, kiện khác loại và cảnh báo xe.
   Điều phối viên tối ưu tuyến ở chi tiết chuyến (mock, MOCK RESULT): thứ tự điểm, giờ đến dự kiến, mức hạn và bản đồ tuyến; chuyến thành
-  "Đã lập kế hoạch" khi đã tối ưu tuyến và về "Nháp" khi thêm, bớt điểm giao. Màn của quản lý
-  nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  "Đã lập kế hoạch" khi đã tối ưu tuyến và về "Nháp" khi thêm, bớt điểm giao. Loại xe khai giới hạn tải trục trước / sau và độ lệch
+  trọng tâm tối đa (mặc định 15 %), xe lấy giới hạn của loại đang gắn; Planner ước lượng tải trục trước / sau bằng mô hình đòn bẩy
+  (MOCK RESULT) cho xe đã khai trục, vượt giới hạn thì không duyệt được, và cảnh báo khi trọng tâm hàng lệch ngang hoặc lệch dọc quá
+  ngưỡng của loại xe. Mock xếp hàng theo vùng điểm giao: thùng chia theo tỷ lệ thể tích hàng của từng điểm, điểm giao cuối nằm sâu
+  nhất; Planner vẽ dải vùng trên sàn thùng kèm tên điểm và tỷ lệ, đánh dấu kiện nằm ngoài vùng của điểm mình, đếm số lần dỡ-xếp lại
+  và hiện mức hạn của từng điểm giao trong hộp Chi tiết. Duyệt bị chặn khi phương án lỗi thời, còn kiện bắt buộc chưa xếp, lỗi ràng
+  buộc hoặc vượt tải trục — nút Duyệt nói đúng loại lý do và kho tự từ chối; tuyến có điểm trễ hạn dự kiến thì phải xác nhận rồi mới
+  duyệt, điểm sát hạn chỉ hiện trong hộp duyệt. Chuyến Đã lập kế hoạch đổi xe bằng hộp thoại "Đổi xe" (chi tiết chuyến và Planner):
+  chỉ chọn được xe sẵn sàng và chở được hàng (kích thước, thể tích, tải trọng, trục), xe khác bị khoá kèm lý do; đổi xe làm phương án
+  hiện tại lỗi thời. Mỗi lần chạy tối ưu ra ba phương án A · B · C theo ba mục tiêu — tối đa thể tích, cân bằng tải trục, ít dỡ-xếp
+  lại — trong một job; không còn ô chọn mục tiêu hay thuật toán, và chỉ chạy khi chuyến Đã lập kế hoạch. Chạy xong mở màn so sánh của
+  lần chạy: mức hạn các điểm giao một lần phía trên, ba thẻ cạnh nhau (thể tích, tải trọng, tải trục so giới hạn, trọng tâm, dỡ-xếp
+  lại, kiện chưa xếp, thời gian chạy, ảnh thu nhỏ), giá trị tốt nhất đánh dấu trung tính, mỗi thẻ mở phương án trong Planner để duyệt.
+  Xe mẫu khai hai trục với số ước lượng theo cỡ xe (chưa đối chiếu thông số nhà sản xuất) để bản demo có tải trục. Kho và tài xế đối
+  chiếu kiện theo ba mức trong một hộp dùng chung: quét QR, gõ mã (mã QR hoặc mã của bên gửi khi nó duy nhất trong chuyến), hoặc xác
+  nhận tay kèm lý do khi nhãn không đọc được — mỗi lần đối chiếu ghi cách, người, thời điểm. Xác nhận tay chờ điều phối viên duyệt ở Chi
+  tiết chuyến (có chuông); còn chờ thì kho chưa xong xếp, tài xế chưa hoàn tất điểm giao được; bị từ chối thì người gửi được báo và
+  phải kiểm lại kiện. Màn chính của kho và tài xế chia chuyến theo trạng thái (kho: đang xếp, chờ soạn, xếp xong, chờ tối ưu lại; tài
+  xế: đang vận chuyển, xếp xong, kho đang xếp — chỉ xem, đã giao gần đây). Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các
+  bước sau.
+  Xe mẫu khai hai trục với số ước lượng theo cỡ xe (chưa đối chiếu thông số nhà sản xuất) để bản demo có tải trục. Chuyến Đang vận
+  chuyển có vị trí xe **mô phỏng** trên bản đồ tuyến ở chi tiết chuyến và giờ đến các điểm chưa giao tính lại từ vị trí (MOCK RESULT);
+  điểm giao chuyển sang sát hạn hoặc trễ hạn dự kiến thì điều phối viên nhận thông báo ở chuông và toast. Mở trang kèm `?toc-do=<n>`
+  để đồng hồ của kho chạy nhanh n lần khi demo. Màn Giám sát (`/giam-sat`) cho điều phối viên và quản lý công ty: bản đồ các xe đang
+  chạy, danh sách chuyến kèm điểm tiếp, giờ đến dự kiến, mức hạn và sự cố, chi tiết từng chuyến (giờ đến từng điểm so hạn, lịch sử vị
+  trí, xác nhận tay chờ duyệt). Tài xế và điều phối viên báo sự cố trên đường kèm số phút dự kiến chậm — xe mô phỏng đứng thêm đúng số
+  phút đó; điều phối viên tìm tuyến khác (mock, MOCK RESULT; chỉ đổi đường, không đổi thứ tự điểm), đánh dấu đã xử lý hoặc chuyển quản
+  lý, và sự cố quá 30 phút chưa xử lý tự chuyển lên. Quản lý công ty ghi đã liên hệ khách và nhập hạn mới ở tab "Sự cố cần xử lý";
+  mức hạn tính lại ngay và điều phối viên được báo. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -95,12 +122,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.577 test unit + DOM
-pnpm test:e2e      # Playwright: 112 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 1.929 test unit + DOM
+pnpm test:e2e      # Playwright: 128 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.577/1.577 unit, 112/112 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.929/1.929 unit, 128/128 E2E — xanh trên CI (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

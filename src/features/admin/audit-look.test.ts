@@ -8,7 +8,7 @@ const toneOf = (actions: readonly AuditAction[]) => actions.map((action) => audi
 
 test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện, huỷ, đăng nhập sai, khoá tài khoản, bảo dưỡng, lần chạy tối ưu hỏng', () => {
   const attention = [
-    'delivery.issue', 'loading.missing', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
+    'delivery.issue', 'loading.shortageReported', 'loading.shortageDropped', 'loading.damaged', 'trip.cancelled', 'auth.signInFailed', 'user.locked', 'vehicle.maintenanceOn',
     // Yêu cầu giao bị xoá / gỡ khỏi chuyến (FE-4b-01), lần chạy tối ưu hỏng (LM-104)
     'requirement.deleted', 'requirement.unassigned', 'optimization.failed',
     // Kiện bị bỏ khỏi chuyến (FE-4b-05), như yêu cầu bị gỡ khỏi chuyến
@@ -17,6 +17,12 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'trip.segregationOverridden',
     // FE-3b-01: kiện bị gắn cờ không vào yêu cầu giao hay chuyến được cho tới khi gỡ
     'package.flagged',
+    // FE-6-04: xác nhận tay chờ điều phối viên duyệt, và xác nhận tay bị từ chối (kiện phải kiểm lại)
+    'manualConfirm.requested', 'manualConfirm.rejected',
+    // FE-6-09: mức hạn của một điểm xấu đi theo vị trí xe — điều phối viên cần xem
+    'delivery.etaRisk',
+    // FE-6-11: sự cố cấp chuyến vừa báo, và sự cố chuyển lên quản lý công ty
+    'exception.reported', 'exception.escalated',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(
@@ -27,9 +33,11 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
 test('xong hoặc sẵn sàng là xanh lá; vận hành là xanh dương; kết quả tối ưu là xanh lam; tài khoản và phiên là xám', () => {
   expect(toneOf(['loading.completed', 'delivery.stopCompleted', 'delivery.completed', 'revision.approved', 'vehicle.maintenanceOff']))
     .toStrictEqual(['green', 'green', 'green', 'green', 'green'])
-  expect(toneOf(['trip.created', 'trip.updated', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
-    .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
-  expect(toneOf(['optimization.saved', 'trip.routeOptimized'])).toStrictEqual(['azure', 'azure'])
+  // Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08) là một lần sửa chuyến
+  expect(toneOf(['trip.created', 'trip.updated', 'trip.vehicleChanged', 'loading.started', 'delivery.started', 'vehicle.created', 'vehicle.updated']))
+    .toStrictEqual(['blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'])
+  // Tuyến thay thế khi có sự cố (FE-6-11) là kết quả mock như tối ưu tuyến
+  expect(toneOf(['optimization.saved', 'trip.routeOptimized', 'trip.rerouted'])).toStrictEqual(['azure', 'azure', 'azure'])
   expect(toneOf(['auth.signedIn', 'auth.signedOut', 'user.created', 'user.passwordReset', 'user.deleted', 'vehicle.deleted']))
     .toStrictEqual(['slate', 'slate', 'slate', 'slate', 'slate', 'slate'])
 })

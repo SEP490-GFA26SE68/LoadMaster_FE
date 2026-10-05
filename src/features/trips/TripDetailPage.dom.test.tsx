@@ -49,6 +49,7 @@ test('a trip being loaded is locked: the banner says why, edit actions are gone,
   expect(screen.queryByRole('button', { name: 'Thêm kiện' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Nhập từ file' })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Đổi xe' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Đổi xe' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Kéo để đổi thứ tự/ })).not.toBeInTheDocument()
   // Hành động chính còn lại: mở phương án đã duyệt trong 3D
   expect(screen.getByRole('link', { name: 'Xem phương án 3D' })).toHaveAttribute('href', expect.stringContaining('/chuyen/TRIP-011/phuong-an?revision='))
@@ -140,13 +141,12 @@ test('a completed trip lists its delivery issues with kind, stop and note, and i
   expect(screen.getByRole('menuitem', { name: 'Báo cáo chuyến' })).toHaveAttribute('href', '/chuyen/TRIP-005/bao-cao')
 })
 
-test('a package the warehouse reported missing is listed with its stop', async () => {
+test('a damaged package the warehouse left out while loading is listed with its stop', async () => {
   renderDetail('TRIP-003')
-  expect(await screen.findByText('1 kiện thiếu ở kho', {}, SLOW)).toBeInTheDocument()
-  const trip = await getMockDb().getTrip('TRIP-003')
-  const missing = trip.loading?.steps.find((step) => step.outcome === 'missing')
-  expect(screen.getByText(missing!.packageInstanceId)).toBeInTheDocument()
-  expect(await screen.findByText(/thiếu 1 kiện/)).toBeInTheDocument()
+  expect(await screen.findByText('1 kiện hỏng, bỏ lại kho', {}, SLOW)).toBeInTheDocument()
+  // seed-trips.ts: kiện ở bước xếp 16 của TRIP-003
+  expect(screen.getByText('PKG-003-03')).toBeInTheDocument()
+  expect(await screen.findByText(/bỏ lại 1 kiện hỏng/)).toBeInTheDocument()
 })
 
 test('the manager reads a trip without the actions menu, with one primary action to view the plan', async () => {

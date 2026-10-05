@@ -17,22 +17,6 @@ export function cargoCenterOfMass(placements: readonly ScenePlacement[]): { posi
   return weightKg ? { position: { x: x / weightKg, y: y / weightKg, z: z / weightKg }, weightKg } : null
 }
 
-export type DistributionBin = { fromCm: number; toCm: number; portions: { stop: number; ratio: number }[] }
-/** Volume in each longitudinal bin. Interleaved stops remain mixed instead of invented blocks. */
-export function stopDistribution(placements: readonly ScenePlacement[], lengthCm: number, count = 24): DistributionBin[] {
-  if (lengthCm <= 0 || count <= 0) return []
-  return Array.from({ length: count }, (_, i) => {
-    const fromCm = i * lengthCm / count, toCm = (i + 1) * lengthCm / count
-    const volumes = new Map<number, number>()
-    for (const p of placements) {
-      const overlap = Math.max(0, Math.min(toCm, p.position.x + p.lengthCm) - Math.max(fromCm, p.position.x))
-      if (overlap) volumes.set(p.stop, (volumes.get(p.stop) ?? 0) + overlap * p.widthCm * p.heightCm)
-    }
-    const sum = [...volumes.values()].reduce((a, b) => a + b, 0)
-    return { fromCm, toCm, portions: [...volumes].sort(([a], [b]) => a - b).map(([stop, volume]) => ({ stop, ratio: volume / sum })) }
-  })
-}
-
 export function timelineBins(ordered: readonly ScenePlacement[], maxBins = 80) {
   const width = Math.max(1, Math.ceil(ordered.length / maxBins))
   const bins = []

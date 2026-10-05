@@ -7,7 +7,8 @@ import {
 
 const TYPE: PackageType = {
   id: 'PT-003', companyId: 'LOG-001', name: 'Thùng dầu ăn 12 chai', lengthCm: 45, widthCm: 32, heightCm: 30, weightKg: 12, fragilityLevel: 'NONE',
-  allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 4, maxTopLoadKg: 50, createdAt: '2026-08-05T02:00:00.000Z',
+  allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: true, maxStackCount: 4, maxTopLoadKg: 50, maxStackWeightKg: 50, rotationAllowed: true,
+  fragile: false, createdAt: '2026-08-05T02:00:00.000Z',
 }
 
 function pkg(id: string, status: Package['status'], extra: Partial<Package> = {}): Package {

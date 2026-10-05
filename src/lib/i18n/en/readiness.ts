@@ -30,6 +30,11 @@ export const readiness = {
       warn: '{packages} packages of another handling class, with a reason recorded',
       fail: '{packages} packages of another handling class, no reason recorded yet',
     },
+    ROUTE_PLANNED: {
+      label: 'Route',
+      pass: 'Route optimized: the order of {stops} stops is fixed',
+      fail: 'Route not optimized yet. Press "Optimize route" on the route diagram to fix the stop order',
+    },
     WEIGHT_WITHIN_PAYLOAD: { label: 'Weight', pass: '{total} / {payload}', fail: '{total} exceeds the payload of {payload}' },
     VOLUME_WITHIN_CARGO: { label: 'Volume', pass: '{total} / {cargo}', fail: '{total} exceeds the cargo volume of {cargo}' },
   },

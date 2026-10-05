@@ -28,7 +28,9 @@ test('planner defaults to the scene; follow step, stop focus, unloading advisory
   await login(`${PLANNER_ROUTE}?debug&quality=balanced`); await settle(page)
   expect(await page.getByRole('dialog').count()).toBe(0)
   expect((await page.locator('canvas').boundingBox())!.width).toBeGreaterThanOrEqual(1580)
-  expect(await hasSceneObject(page, 'stop-distribution')).toBe(false)
+  // Dải vùng điểm giao là cue nghiệp vụ: có sẵn khi mở Planner (FE-5b-07); tâm khối lượng thì chỉ khi bật
+  expect(await hasSceneObject(page, 'stop-zone-strips')).toBe(true)
+  expect(await hasSceneObject(page, 'cargo-center-of-mass')).toBe(false)
   await shot('01-planner-default')
   const seedOrders = await page.evaluate(async ({ scene, operations }) => {
     const plan = await ((await import(scene)) as typeof import('@/test/scene')).seedScene()

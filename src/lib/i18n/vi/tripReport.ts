@@ -3,6 +3,9 @@ export const tripReport = {
   title: 'Báo cáo chuyến',
   summary: '{delivered} / {planned} kiện đã giao · {issues} sự cố',
   notCompleted: 'Chuyến chưa hoàn thành, báo cáo đầy đủ khi giao xong điểm cuối.',
+  /** Chuyến bị huỷ lúc đang vận chuyển (FE-6-07): kiện chưa giao thành Hoàn trả. */
+  cancelledInTransit: 'Chuyến bị huỷ lúc đang vận chuyển, {time} · {date}. Lý do: {reason}',
+  cancelled: 'Chuyến đã huỷ lúc {time} · {date}. Lý do: {reason}',
   loading: 'Đang tải báo cáo chuyến',
   back: 'Về chi tiết chuyến',
   retry: 'Thử lại',
@@ -38,8 +41,12 @@ export const tripReport = {
     sealValue: '{number} · ghi lúc {time}',
     noSeal: 'Không ghi số seal',
     planned: 'Kiện trong phương án',
-    missing: 'Kho báo thiếu',
+    staged: 'Đã soạn vào khu chờ',
+    damaged: 'Hỏng, bỏ lại kho',
     loadedByQr: 'Xếp bằng quét QR',
+    returned: 'Hoàn trả',
+    /** Lý do điều phối viên cho chở chung kiện khác loại hàng (D-74). */
+    override: 'Lý do chở chung khác loại hàng',
     weight: 'Khối lượng đã giao',
     weightValue: '{delivered} / {planned}',
     loadingStarted: 'Bắt đầu xếp',
@@ -53,13 +60,46 @@ export const tripReport = {
     stop: 'Điểm giao',
     planned: 'Kế hoạch',
     unloaded: 'Đã dỡ',
-    qr: 'Quét QR',
+    returned: 'Hoàn trả',
     issues: 'Sự cố',
+    plannedEta: 'Dự kiến đến',
+    arrivedAt: 'Đến thật',
+    deadline: 'Hạn giao',
     completedAt: 'Hoàn tất',
     notCompleted: 'Chưa xong',
+    notArrived: 'Chưa đến',
+    /** Chuyến chưa tối ưu tuyến: không có giờ đến dự kiến. */
+    noEta: 'Chưa có',
+    noDeadline: 'Không có hạn',
+    /** Giờ đến thật so với hạn giao của điểm. */
+    onTime: 'Đến kịp hạn',
+    late: 'Đến trễ hạn',
+  },
+  /** Số kiện theo cách đối chiếu có hiệu lực ở từng bước (FE-6-03). */
+  verify: {
+    title: 'Đối chiếu kiện',
+    step: 'Bước',
+    note: 'Mỗi kiện tính theo lần đối chiếu mới nhất của nó ở từng bước.',
+  },
+  /** Xác nhận tay của chuyến và quyết định của điều phối viên (FE-6-04). */
+  manual: {
+    title: 'Xác nhận tay',
+    none: 'Chuyến không có xác nhận tay.',
+    statuses: { MANUAL_PENDING: 'Chờ duyệt', MANUAL_APPROVED: 'Đã duyệt', MANUAL_REJECTED: 'Bị từ chối' },
+    step: '{context} · điểm {number}',
+    requested: 'Gửi lúc {time} bởi {name} · {reason}',
+    decided: 'Duyệt lúc {time} bởi {name}',
+    rejected: 'Từ chối lúc {time} bởi {name}: {reason}',
+    unknownUser: 'tài khoản đã xoá',
+  },
+  /** Sự cố cấp chuyến, tuyến đã đổi (FE-6-11, FE-6-12). */
+  incidents: {
+    title: 'Sự cố cấp chuyến',
+    none: 'Chuyến không có sự cố cấp chuyến.',
+    reroutes: 'Tuyến đã đổi',
   },
   issues: {
-    title: 'Sự cố',
+    title: 'Sự cố giao hàng',
     kind: 'Loại',
     package: 'Kiện',
     stop: 'Điểm',

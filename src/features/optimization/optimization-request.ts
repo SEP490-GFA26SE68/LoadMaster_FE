@@ -1,10 +1,9 @@
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, VehicleConfig } from '@/domain/models'
-import { DEFAULT_RUN_SETTINGS, type RunSettings } from '@/lib/mock-db'
 
 /**
- * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT); thuật toán người
- * dùng chọn đi riêng trong `RunSettings` (LM-104), nên màn không còn hiện ô "Phương pháp" khoá.
+ * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT). Mục tiêu và thuật
+ * toán không còn là lựa chọn của người dùng (FE-5b-05, D-77): mỗi lần chạy ra ba phương án theo ba mục tiêu, thuật toán do kho ghi.
  */
 export type OptimizationSettings = OptimizationRequest['settings']
 
@@ -18,18 +17,10 @@ export const DEFAULT_SETTINGS: OptimizationSettings = {
   prioritizeLowCenterOfGravity: true,
 }
 
-/**
- * Giá trị form của màn thiết lập: thiết lập Spec gửi service cộng mục tiêu và thuật toán của lần chạy (luồng 3 Review 1, LM-104).
- * Mục tiêu và thuật toán không thuộc contract `OptimizationRequest` — kho lưu chúng vào lịch sử lần chạy, mock tối ưu bỏ qua.
- */
-export type SetupValues = OptimizationSettings & RunSettings
+/** Giá trị form của màn thiết lập: đúng thiết lập Spec gửi service. */
+export type SetupValues = OptimizationSettings
 
-export const DEFAULT_SETUP: SetupValues = { ...DEFAULT_SETTINGS, ...DEFAULT_RUN_SETTINGS }
-
-/** Tách giá trị form thành thiết lập của request và lựa chọn của lần chạy. */
-export function splitSetup({ objective, algorithm, ...settings }: SetupValues): { settings: OptimizationSettings; run: RunSettings } {
-  return { settings, run: { objective, algorithm } }
-}
+export const DEFAULT_SETUP: SetupValues = DEFAULT_SETTINGS
 
 /** Request gửi service: xe đang chọn, kiện của chuyến (đã có `deliveryStop` theo thứ tự điểm giao, LM-046) và thiết lập. */
 export function buildOptimizationRequest(
@@ -40,6 +31,7 @@ export function buildOptimizationRequest(
   return { vehicle, packages: [...trip.packages], settings }
 }
 
+/** Nhóm của `validateRequest`; danh sách kiểm tra của màn có thêm nhóm `route` (chuyến đã tối ưu tuyến) ở `setup-checklist.ts`. */
 export type IssueGroup = 'vehicle' | 'packages' | 'payload'
 
 /** Một dòng của validation summary: issue và nơi sửa nó. */

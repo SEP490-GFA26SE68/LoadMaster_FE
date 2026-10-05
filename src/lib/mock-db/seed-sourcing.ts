@@ -1,6 +1,8 @@
+import { DEFAULT_MAX_COG_OFFSET_RATIO } from '@/domain/models'
 import { addDays, vnTime } from './clock'
 import type { Package } from './package-model'
 import { cargoFromType, handlingClassOfType } from './package-type-cargo'
+import { backendLimitsOf } from './package-type-limits'
 import { seededRandom } from './qr-token'
 import { CARGO, CUSTOMERS, type CargoKey } from './seed-directory'
 import { LONG_BINH_DEPOT, PHUONG_NAM_DEPOT } from './seed-depots'
@@ -10,7 +12,9 @@ import type { DeliveryRequirement } from './requirement-model'
 import { LONG_BINH_DESTINATIONS, seedRequirements } from './seed-requirements'
 import { SEED_DISPATCHER } from './seed-trips'
 import { LONG_BINH, PHUONG_NAM } from './seed-users'
+import { seedVehicles } from './seed-vehicles'
 import type { Company, PackageType, VehicleType } from './source-types'
+import { axleLimitsFromAxles } from './vehicle-limits'
 
 /**
  * Seed nguồn hàng (LM-104, FE-0-06): hai công ty logistics, và của **Long Bình**: danh mục loại kiện (lấy từ danh mục hàng của 15
@@ -66,7 +70,8 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
     return {
       id: typeId(key), companyId: SEED_OWNER, name: cargo.name, lengthCm: cargo.lengthCm, widthCm: cargo.widthCm, heightCm: cargo.heightCm, weightKg: cargo.weightKg,
       fragilityLevel: cargo.fragilityLevel, allowedOrientations: cargo.allowedOrientations, keepUpright: cargo.keepUpright, stackable: cargo.stackable,
-      maxTopLoadKg: cargo.maxTopLoadKg, ...(cargo.maxStackCount === undefined ? {} : { maxStackCount: cargo.maxStackCount }), createdAt: on(30, '09:00'),
+      maxTopLoadKg: cargo.maxTopLoadKg, ...(cargo.maxStackCount === undefined ? {} : { maxStackCount: cargo.maxStackCount }), ...backendLimitsOf(cargo),
+      createdAt: on(30, '09:00'),
     }
   })
 
@@ -122,8 +127,12 @@ export function seedSourcing(today: string, events: SeedEvent[]): SourcingSeed {
   return { companies: [...COMPANIES], packageTypes, packages: seeder.packages, requirements, ...seedVehicleTypes(on(40, '09:00')) }
 }
 
-/** Loại xe của đội xe seed; VEHICLE-008 để trống (xe có thể chưa gắn loại). */
+/**
+ * Loại xe của đội xe seed; VEHICLE-008 để trống (xe có thể chưa gắn loại). Giới hạn tải trục lấy từ `axles` của xe mẫu gắn loại đó
+ * (FE-5b-01, không đặt số mới) — xe mẫu chưa khai trục thì loại xe chưa có giới hạn trục; độ lệch trọng tâm là mặc định 0,15 (D-79).
+ */
 function seedVehicleTypes(createdAt: string): Pick<SourcingSeed, 'vehicleTypes' | 'vehicleTypeOf'> {
+  const sample = new Map(seedVehicles().map((vehicle) => [vehicle.id, vehicle]))
   const types: [string, string, number, number, number, number, string][] = [
     ['VT-001', 'Xe tải 5 tấn thùng 6 m', 600, 240, 250, 5000, 'VEHICLE-001'],
     ['VT-002', 'Xe tải 9,5 tấn thùng 7,2 m', 720, 235, 240, 9500, 'VEHICLE-002'],
@@ -134,7 +143,10 @@ function seedVehicleTypes(createdAt: string): Pick<SourcingSeed, 'vehicleTypes' 
     ['VT-007', 'Xe tải 9 tấn thùng 8,5 m', 850, 240, 250, 9000, 'VEHICLE-007'],
   ]
   return {
-    vehicleTypes: types.map(([id, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg]) => ({ id, companyId: SEED_OWNER, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg, createdAt })),
+    vehicleTypes: types.map(([id, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg, vehicleId]) => ({
+      id, companyId: SEED_OWNER, name, cargoLengthCm, cargoWidthCm, cargoHeightCm, payloadKg,
+      ...axleLimitsFromAxles(sample.get(vehicleId) ?? {}), maxCogOffsetRatio: DEFAULT_MAX_COG_OFFSET_RATIO, createdAt,
+    })),
     vehicleTypeOf: types.map(([id, , , , , , vehicleId]) => [vehicleId, id]),
   }
 }

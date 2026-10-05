@@ -92,6 +92,17 @@ export function formatIssue(issue: ConstraintIssue, t: TFunction, format: Format
         offsetCm: format.length(issue.params.offsetCm),
         limitCm: format.length(issue.params.limitCm),
       })
+    case 'COG_LONGITUDINAL':
+      return t(`issues.COG_LONGITUDINAL.${issue.params.toward}`, {
+        offsetCm: format.length(issue.params.offsetCm),
+        limitCm: format.length(issue.params.limitCm),
+      })
+    case 'AXLE_OVERLOAD':
+      return t(`issues.AXLE_OVERLOAD.${issue.params.group}`, {
+        loadKg: format.weight(issue.params.loadKg),
+        limitKg: format.weight(issue.params.limitKg),
+        overKg: format.weight(issue.params.overKg),
+      })
     case 'COG_HIGH':
       return t('issues.COG_HIGH', {
         heightCm: format.length(issue.params.heightCm),

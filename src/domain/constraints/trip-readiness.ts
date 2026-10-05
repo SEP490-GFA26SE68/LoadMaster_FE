@@ -13,6 +13,7 @@ export const READINESS_CODES = [
   'PACKAGES_VALID',
   'STOPS_VALID',
   'CARGO_SEGREGATED',
+  'ROUTE_PLANNED',
   'WEIGHT_WITHIN_PAYLOAD',
   'VOLUME_WITHIN_CARGO',
 ] as const
@@ -34,9 +35,14 @@ export type ReadinessInput = {
   stopCount: number
   /** Lý do vượt luật phân tách hàng đã ghi cho chuyến (D-74); vắng là chưa vượt. */
   overrideReason?: string
+  /**
+   * Chuyến đã tối ưu tuyến — Đã lập kế hoạch (FE-5b-05, PRD v2 mục 8.3): xếp 3D theo tuyến nên thứ tự điểm giao phải chốt trước. Chưa
+   * thì chặn tối ưu.
+   */
+  routePlanned: boolean
 }
 
-export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCount, overrideReason }: ReadinessInput): TripReadiness {
+export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCount, overrideReason, routePlanned }: ReadinessInput): TripReadiness {
   const count = packages.reduce((sum, pkg) => sum + pkg.quantity, 0)
   const invalid = new Set(validatePackages(packages).filter((issue) => issue.severity === 'error').map((issue) => issue.packageInstanceId)).size
   const outside = packages.filter((pkg) => pkg.deliveryStop < 1 || pkg.deliveryStop > stopCount).length
@@ -62,6 +68,7 @@ export function tripReadiness({ vehicle, vehicleInMaintenance, packages, stopCou
       status: conflicts.length === 0 ? 'pass' : overrideReason === undefined ? 'fail' : 'warn',
       params: { lines: conflicts.length, packages: conflictPackages },
     },
+    { code: 'ROUTE_PLANNED', status: routePlanned ? 'pass' : 'fail', params: { stops: stopCount } },
   ]
   if (vehicle) {
     const cargoCm3 = vehicle.innerLengthCm * vehicle.innerWidthCm * vehicle.innerHeightCm

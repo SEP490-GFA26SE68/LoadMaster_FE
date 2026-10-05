@@ -2,28 +2,23 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Container } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
-import { roundCm, roundKg } from '@/domain/geometry'
-import { useT, type MessageKey } from '@/lib/i18n'
+import { useFormat, useT } from '@/lib/i18n'
 import type { VehicleType, VehicleTypeInput } from '@/lib/mock-db'
-
-const NAME_MAX = 80
-const POSITIVE: MessageKey = 'vehicleTypes.form.errors.positive'
-const positive = z.number({ error: POSITIVE }).gt(0, { error: POSITIVE })
-
-/** Message là key từ điển: đổi ngôn ngữ thì lỗi đổi theo. Kích thước cm, tải trọng kg (D-03), làm tròn tại biên khi lưu. */
-const typeSchema = z.object({
-  name: z.string().trim().min(1, 'vehicleTypes.form.errors.nameRequired').max(NAME_MAX, 'vehicleTypes.form.errors.nameTooLong'),
-  cargoLengthCm: positive,
-  cargoWidthCm: positive,
-  cargoHeightCm: positive,
-  payloadKg: positive,
-})
-
-type TypeValues = z.infer<typeof typeSchema>
+import {
+  COG_RANGE,
+  EMPTY_VEHICLE_TYPE,
+  MAX_COG_OFFSET_PERCENT,
+  NAME_MAX,
+  POSITIVE,
+  toVehicleTypeForm,
+  toVehicleTypeInput,
+  vehicleTypeFormSchema,
+  type VehicleTypeFormInput,
+  type VehicleTypeFormValues,
+} from './vehicle-type-form'
 
 const NUMERIC = { type: 'number', numeric: true, inputMode: 'decimal', step: 'any' } as const
 const DIMENSIONS = [
@@ -31,10 +26,15 @@ const DIMENSIONS = [
   ['cargoWidthCm', 'vehicleTypes.form.width'],
   ['cargoHeightCm', 'vehicleTypes.form.height'],
 ] as const
+const AXLE_LIMITS = [
+  ['frontAxleLimitKg', 'vehicleTypes.form.frontAxleLimit'],
+  ['rearAxleLimitKg', 'vehicleTypes.form.rearAxleLimit'],
+] as const
 
 /**
- * Thêm / sửa loại xe (LM-104): tên, dài × rộng × cao lòng thùng (cm), tải trọng (kg). `type` vắng là thêm mới. Kho kiểm lại và trả
- * `VEHICLE_TYPE_INVALID` nếu sai; màn hiện lỗi đó qua toast.
+ * Thêm / sửa loại xe (LM-104, FE-5b-01): tên, dài × rộng × cao lòng thùng (cm), tải trọng (kg), giới hạn tải trục trước / sau (kg, để
+ * trống nếu chưa khai) và độ lệch trọng tâm tối đa (%). `type` vắng là thêm mới. Lỗi hiện tại ô; kho kiểm lại và trả
+ * `VEHICLE_TYPE_INVALID` nếu sai, màn hiện lỗi đó qua toast.
  */
 export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit }: {
   open: boolean
@@ -44,40 +44,29 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
   onSubmit: (input: VehicleTypeInput) => void
 }) {
   const t = useT()
-  const form = useForm<TypeValues>({ resolver: zodResolver(typeSchema) })
+  const format = useFormat()
+  const form = useForm<VehicleTypeFormInput, unknown, VehicleTypeFormValues>({ resolver: zodResolver(vehicleTypeFormSchema) })
   const { reset, formState: { errors } } = form
 
   useEffect(() => {
     if (!open) return
-    reset(type
-      ? { name: type.name, cargoLengthCm: type.cargoLengthCm, cargoWidthCm: type.cargoWidthCm, cargoHeightCm: type.cargoHeightCm, payloadKg: type.payloadKg }
-      : { name: '', cargoLengthCm: Number.NaN, cargoWidthCm: Number.NaN, cargoHeightCm: Number.NaN, payloadKg: Number.NaN })
+    reset(type ? toVehicleTypeForm(type) : EMPTY_VEHICLE_TYPE)
   }, [open, type, reset])
 
   const nameError = errors.name?.message === 'vehicleTypes.form.errors.nameTooLong'
     ? t('vehicleTypes.form.errors.nameTooLong', { max: NAME_MAX })
     : errors.name ? t('vehicleTypes.form.errors.nameRequired') : undefined
 
-  function handleSubmit(values: TypeValues) {
-    onSubmit({
-      name: values.name,
-      cargoLengthCm: roundCm(values.cargoLengthCm),
-      cargoWidthCm: roundCm(values.cargoWidthCm),
-      cargoHeightCm: roundCm(values.cargoHeightCm),
-      payloadKg: roundKg(values.payloadKg),
-    })
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-140">
-        <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
+        <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(toVehicleTypeInput(values)))}>
           <DialogHeader
             icon={Container}
             title={type ? t('vehicleTypes.form.editTitle', { id: type.id }) : t('vehicleTypes.form.createTitle')}
             description={t('vehicleTypes.form.description')}
           />
-          <div className="flex flex-col gap-4 px-7 py-5">
+          <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
             <Input label={t('vehicleTypes.form.name')} placeholder={t('vehicleTypes.form.namePlaceholder')} required error={nameError} {...form.register('name')} />
             <div className="grid grid-cols-3 gap-3">
               {DIMENSIONS.map(([field, label]) => (
@@ -101,7 +90,29 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
                 {...NUMERIC}
                 {...form.register('payloadKg', { valueAsNumber: true })}
               />
+              {AXLE_LIMITS.map(([field, label]) => (
+                <Input
+                  key={field}
+                  label={t(label)}
+                  suffix="kg"
+                  error={errors[field] ? t(POSITIVE) : undefined}
+                  {...NUMERIC}
+                  {...form.register(field, { valueAsNumber: true })}
+                />
+              ))}
             </div>
+            <p className="-mt-2 text-fine text-ink-3">{t('vehicleTypes.form.axleLimitHint')}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <Input
+                label={t('vehicleTypes.form.maxCogOffset')}
+                suffix="%"
+                required
+                error={errors.maxCogOffsetPercent ? t(COG_RANGE, { max: format.integer(MAX_COG_OFFSET_PERCENT) }) : undefined}
+                {...NUMERIC}
+                {...form.register('maxCogOffsetPercent', { valueAsNumber: true })}
+              />
+            </div>
+            <p className="-mt-2 text-fine text-ink-3">{t('vehicleTypes.form.maxCogOffsetHint')}</p>
           </div>
           <DialogFooter>
             <DialogClose asChild>

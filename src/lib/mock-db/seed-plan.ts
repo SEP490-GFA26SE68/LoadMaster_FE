@@ -1,9 +1,9 @@
-import type { OptimizationRequest, VehicleConfig } from '@/domain/models'
-import { runMockOptimization } from '@/services/optimization'
+import { PLAN_LABELS, type OptimizationRequest, type VehicleConfig } from '@/domain/models'
+import { runMockCandidates } from '@/services/optimization'
 import { approvedResult } from './revisions'
 import { routePlanOf, stopsWithoutCoordinates } from './trip-route'
 import type { SeedEvent } from './seed-progress'
-import { DEFAULT_RUN_SETTINGS, type OptimizationRun } from './source-types'
+import { DEFAULT_RUN_ALGORITHM, type OptimizationRun } from './source-types'
 import type { Revision, Trip } from './types'
 
 /**
@@ -33,12 +33,21 @@ export type SeedPlanBook = {
   events: SeedEvent[]
 }
 
+/** Mục tiêu của phương án mà điều phối viên seed duyệt: ít dỡ-xếp lại (C) — kho và tài xế dỡ theo vùng điểm giao. */
+const SEED_APPROVED_OBJECTIVE = 'MIN_REHANDLING'
+
 /**
  * Lập phương án cho chuyến seed của một công ty: chạy mock optimization với seed ngẫu nhiên cố định (`runtimeMs` = 0 vì không đo lần
- * chạy lúc nạp kho), ghi revision, lần chạy và sự kiện như `addRevision` / `approveRevision`.
+ * chạy lúc nạp kho), ghi revision, lần chạy và sự kiện như `saveOptimizationRun` / `approveRevision`.
+ *
+ * Một lần chạy ra ba phương án ứng viên (FE-5b-05). Phương án ít dỡ-xếp lại (C) — bản được duyệt — giữ **mã số** của seed trước đó
+ * (`REV-001`); hai phương án còn lại mang mã của nó kèm nhãn (`REV-001-A`, `REV-001-B`), dạng mà `nextId` không tính: mã số, thứ tự và mã
+ * kế tiếp của kho giữ nguyên. Thứ tự ghi là A, B, C nên bản mới nhất chưa duyệt của chuyến vẫn là bản mang mã số.
  */
 export function seedPlanner({ vehicles, actorId, revisionId, runId, revisions, runs, events }: SeedPlanBook): SeedPlanner {
   const vehicleById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]))
+  /** Số revision mang mã số đã cấp: mỗi lần chạy một mã, mỗi lần duyệt một mã. */
+  let numbered = 0
   return (trip, randomSeed, times) => {
     const vehicle = vehicleById.get(trip.vehicleId)
     if (vehicle === undefined) throw new Error(`Seed thiếu xe ${trip.vehicleId} của chuyến ${trip.id}`)
@@ -47,26 +56,33 @@ export function seedPlanner({ vehicles, actorId, revisionId, runId, revisions, r
       packages: trip.packages,
       settings: { method: 'MOCK', timeLimitSeconds: 30, randomSeed, enforceLifo: true, prioritizeLowCenterOfGravity: false },
     }
-    const result = runMockOptimization(request, { clock: () => 0 })
-    const optimized: Revision = {
-      id: revisionId(revisions.length + 1), jobId: result.jobId, tripId: trip.id, request, result, inputVersion: trip.inputVersion,
-      createdAt: times.optimized, manuallyEdited: false, ordersRecomputed: false, run: { ...DEFAULT_RUN_SETTINGS },
-    }
-    revisions.push(optimized)
+    const job = runMockCandidates(request, { clock: () => 0 })
+    const run = runId(runs.length + 1)
+    const baseId = revisionId((numbered += 1))
+    const candidates = job.plans.map(({ objective, result }): Revision => ({
+      id: objective === SEED_APPROVED_OBJECTIVE ? baseId : `${baseId}-${PLAN_LABELS[objective]}`,
+      jobId: result.jobId, tripId: trip.id, request, result, inputVersion: trip.inputVersion, createdAt: times.optimized,
+      manuallyEdited: false, ordersRecomputed: false, run: { objective, algorithm: DEFAULT_RUN_ALGORITHM }, runId: run,
+    }))
+    revisions.push(...candidates)
     runs.push({
-      id: runId(runs.length + 1), tripId: trip.id, ...DEFAULT_RUN_SETTINGS, status: 'COMPLETED', at: times.optimized, by: actorId,
-      revisionId: optimized.id, jobId: optimized.jobId, placedCount: result.metrics.placedCount, unplacedCount: result.metrics.unplacedCount,
-      volumeUtilizationPercent: result.metrics.volumeUtilizationPercent,
+      id: run, tripId: trip.id, algorithm: DEFAULT_RUN_ALGORITHM, status: 'COMPLETED', at: times.optimized, by: actorId, jobId: job.jobId,
+      plans: candidates.map(({ id, jobId, result, run: settings }) => ({
+        objective: settings?.objective ?? SEED_APPROVED_OBJECTIVE, revisionId: id, jobId, placedCount: result.metrics.placedCount,
+        unplacedCount: result.metrics.unplacedCount, volumeUtilizationPercent: result.metrics.volumeUtilizationPercent,
+      })),
     })
     const target = { type: 'trip' as const, id: trip.id }
-    events.push({ at: times.optimized, actorId, action: 'optimization.saved', target, params: { revisionId: optimized.id, placed: result.metrics.placedCount, unplaced: result.metrics.unplacedCount } })
+    events.push({ at: times.optimized, actorId, action: 'optimization.saved', target, params: { runId: run, revisionId: candidates.map(({ id }) => id).join(', ') } })
     if (times.approved === undefined) return undefined
+    const source = candidates.find(({ id }) => id === baseId)
+    if (source === undefined) throw new Error(`Seed thiếu phương án ${SEED_APPROVED_OBJECTIVE} của chuyến ${trip.id}`)
     const approved: Revision = {
-      ...optimized, id: revisionId(revisions.length + 1), result: approvedResult(request, result, []), createdAt: times.approved,
-      draftPatches: [], approvedAt: times.approved, approvedBy: actorId, sourceRevisionId: optimized.id, ordersRecomputed: true,
+      ...source, id: revisionId((numbered += 1)), result: approvedResult(request, source.result, []), createdAt: times.approved,
+      draftPatches: [], approvedAt: times.approved, approvedBy: actorId, sourceRevisionId: source.id, ordersRecomputed: true,
     }
     revisions.push(approved)
-    events.push({ at: times.approved, actorId, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: optimized.id, edits: 0 } })
+    events.push({ at: times.approved, actorId, action: 'revision.approved', target, params: { revisionId: approved.id, sourceRevisionId: source.id, edits: 0 } })
     return approved
   }
 }

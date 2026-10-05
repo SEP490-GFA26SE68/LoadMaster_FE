@@ -17,7 +17,7 @@ import { seedVehicles } from './seed-vehicles'
 import { auditEventCompany } from './tenancy'
 import { tripChangeParams } from './trip-changes'
 import { seedSourcing, type SourcingSeed } from './seed-sourcing'
-import type { OptimizationRun } from './source-types'
+import { DEFAULT_RUN_ALGORITHM, type OptimizationRun } from './source-types'
 import type { Revision, Trip } from './types'
 
 export type SeedData = {
@@ -31,7 +31,7 @@ export type SeedData = {
   trips: Trip[]
   revisions: Revision[]
   events: AuditEvent[]
-  /** Lần chạy tối ưu (LM-104): mỗi revision tối ưu một lần chạy xong, cộng một lần hỏng của chuyến chính. */
+  /** Lần chạy tối ưu (LM-104): mỗi chuyến đã tối ưu một lần chạy xong (ba phương án ứng viên), cộng một lần hỏng của chuyến chính. */
   runs: OptimizationRun[]
   /** Chuyến → kiện kho kiện của từng dòng kiện nhập tay (FE-3b-07). */
   tripPackageLinks: [string, TripPackageLink[]][]
@@ -66,14 +66,15 @@ function createSeed(today: string): SeedData {
     revisionId: (order) => `REV-${String(order).padStart(3, '0')}`,
   })
 
-  // Chuyến chính: REV-001 tối ưu 08:30, REV-002 duyệt 09:00 ngày neo — giữ đúng mã và thời điểm của seed trước đợt 6
+  // Chuyến chính: ba phương án ứng viên tối ưu 08:30 (REV-001 là bản ít dỡ-xếp lại), REV-002 duyệt 09:00 ngày neo — giữ đúng mã và
+  // thời điểm của seed trước đợt 6
   // Tuyến tối ưu 08:15, trước lần chạy tối ưu xếp hàng đầu tiên
   const hero = withSeedRoute(seedTrip(today), vnTime(today, '08:15'), SEED_DISPATCHER)
   events.push({ at: hero.createdAt, actorId: SEED_DISPATCHER, action: 'trip.created', target: { type: 'trip', id: hero.id }, params: { name: hero.name } })
-  // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu chọn cân bằng tải trục + GA, service không phản hồi; lần sau ra REV-001
+  // Lịch sử lần chạy của chuyến chính (LM-104): lần đầu service không phản hồi; lần sau ra ba phương án ứng viên, REV-001 là bản được duyệt
   const failedAt = vnTime(today, '08:20')
-  runs.push({ id: runId(runs.length + 1), tripId: hero.id, objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', status: 'FAILED', at: failedAt, by: SEED_DISPATCHER, failureCode: 'SERVICE_UNAVAILABLE' })
-  events.push({ at: failedAt, actorId: SEED_DISPATCHER, action: 'optimization.failed', target: { type: 'trip', id: hero.id }, params: { objective: 'AXLE_BALANCE', algorithm: 'GENETIC_ALGORITHM', reasonCode: 'SERVICE_UNAVAILABLE' } })
+  runs.push({ id: runId(runs.length + 1), tripId: hero.id, algorithm: DEFAULT_RUN_ALGORITHM, status: 'FAILED', at: failedAt, by: SEED_DISPATCHER, failureCode: 'SERVICE_UNAVAILABLE' })
+  events.push({ at: failedAt, actorId: SEED_DISPATCHER, action: 'optimization.failed', target: { type: 'trip', id: hero.id }, params: { algorithm: DEFAULT_RUN_ALGORITHM, reasonCode: 'SERVICE_UNAVAILABLE' } })
   plan(hero, 20_260_914, { optimized: vnTime(today, '08:30'), approved: vnTime(today, '09:00') })
   const trips = [hero, ...TRIP_SPECS.map((spec, index) => seedTripFrom(spec, index, today, plan, events))]
 
@@ -173,11 +174,10 @@ function seedTripFrom(spec: TripSpec, index: number, today: string, plan: SeedPl
     return { ...trip, phase: 'cancelled', cancellation: { at: cancelledAt, by: SEED_DISPATCHER, reason: spec.cancelReason ?? '', fromPhase: 'planning' } }
   }
 
-  trip = { ...trip, loading: seedLoading(spec, today, approved, events) }
+  trip = { ...trip, ...seedLoading(spec, today, approved, events) }
   if (spec.outcome === 'loading') return { ...trip, phase: 'loading' }
   if (spec.outcome === 'loaded') return { ...trip, phase: 'loaded' }
-  const delivery = seedDelivery(spec, trip, approved, events)
-  return { ...trip, delivery, phase: spec.outcome === 'delivering' ? 'delivering' : 'completed' }
+  return { ...trip, ...seedDelivery(spec, trip, approved, events), phase: spec.outcome === 'delivering' ? 'delivering' : 'completed' }
 }
 
 /**
@@ -197,8 +197,9 @@ function accountEvents(today: string, users: readonly User[]): SeedEvent[] {
     created('US-0011', 19, '14:40'),
     { at: on(17, '11:30'), actorId: SEED_ADMIN, action: 'user.locked', target: user('US-0008') },
     created('US-0012', 12, '09:00'),
-    { at: on(0, '04:40'), actorId: 'US-0003', action: 'auth.signedIn', target: user('US-0003') },
-    { at: on(0, '04:42'), actorId: 'US-0011', action: 'auth.signedIn', target: user('US-0011') },
+    // Kho đăng nhập trước khi bắt đầu soạn hàng của các chuyến hôm nay (soạn xong mới xếp từ 04:45)
+    { at: on(0, '04:10'), actorId: 'US-0003', action: 'auth.signedIn', target: user('US-0003') },
+    { at: on(0, '04:12'), actorId: 'US-0011', action: 'auth.signedIn', target: user('US-0011') },
     { at: on(0, '06:25'), actorId: 'US-0006', action: 'auth.signedIn', target: user('US-0006') },
     { at: on(0, '07:50'), actorId: 'US-0001', action: 'auth.signedIn', target: user('US-0001') },
     { at: on(0, '08:10'), actorId: 'US-0002', action: 'auth.signedIn', target: user('US-0002') },

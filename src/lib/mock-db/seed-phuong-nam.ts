@@ -1,17 +1,20 @@
-import type { VehicleConfig } from '@/domain/models'
+import { DEFAULT_MAX_COG_OFFSET_RATIO, type VehicleConfig } from '@/domain/models'
 import { addDays, vnTime } from './clock'
 import type { Package } from './package-model'
 import { cargoFromType, handlingClassOfType } from './package-type-cargo'
+import { backendLimitsOf } from './package-type-limits'
 import { seededRandom } from './qr-token'
 import { packageSeeder } from './seed-packages'
 import { PHUONG_NAM_DEPOT, SEED_DEPARTURE_TIME } from './seed-depots'
 import { seedPlanner, withSeedRoute } from './seed-plan'
 import type { SeedEvent } from './seed-progress'
 import { PHUONG_NAM } from './seed-users'
+import { twoAxles } from './seed-vehicles'
 import type { DeliveryRequirement } from './requirement-model'
 import { seedRequirements } from './seed-requirements'
-import type { OptimizationRun, PackageType, VehicleType } from './source-types'
+import type { OptimizationRun, PackageType, PackageTypeInput, VehicleType } from './source-types'
 import type { DeliveryStop, Revision, Trip } from './types'
+import { axleLimitsFromAxles } from './vehicle-limits'
 
 /**
  * Bộ dữ liệu nhỏ của Công ty CP Giao nhận Phương Nam (`LOG-002`, D-64, FE-0-02), đủ để thấy hai công ty không nhìn thấy dữ liệu của
@@ -58,6 +61,8 @@ const VEHICLES: readonly VehicleConfig[] = [
       { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 250, yCm: 0, zCm: 0, lengthCm: 70, widthCm: 18, heightCm: 22, loadBearing: false },
       { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 250, yCm: 168, zCm: 0, lengthCm: 70, widthCm: 18, heightCm: 22, loadBearing: false },
     ],
+    // Số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất (như đội xe Long Bình)
+    axles: twoAxles(285, [1500, 2200], [1100, 3300]),
   },
   {
     id: 'VEHICLE-PN-02',
@@ -74,10 +79,11 @@ const VEHICLES: readonly VehicleConfig[] = [
       { id: 'OBS-001', type: 'WHEEL_ARCH', xCm: 330, yCm: 0, zCm: 0, lengthCm: 90, widthCm: 20, heightCm: 26, loadBearing: false },
       { id: 'OBS-002', type: 'WHEEL_ARCH', xCm: 330, yCm: 185, zCm: 0, lengthCm: 90, widthCm: 20, heightCm: 26, loadBearing: false },
     ],
+    axles: twoAxles(375, [2100, 3100], [1600, 6000]),
   },
 ]
 
-type TypeSeed = Omit<PackageType, 'companyId' | 'createdAt'>
+type TypeSeed = PackageTypeInput & { id: string }
 
 /** Hàng của Phương Nam: linh kiện điện tử và vải cuộn — khác hẳn hàng tạp hoá của Long Bình, dễ nhận ra khi kiểm cách ly. */
 const ELECTRONICS: TypeSeed = {
@@ -121,7 +127,9 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
     runId: (order) => `RUN-PN-${String(order).padStart(3, '0')}`,
   })
 
-  const packageTypes: PackageType[] = [ELECTRONICS, FABRIC].map((type) => ({ ...type, allowedOrientations: [...type.allowedOrientations], companyId: PHUONG_NAM, createdAt: on(21, '10:00') }))
+  const packageTypes: PackageType[] = [ELECTRONICS, FABRIC].map((type) => ({
+    ...type, allowedOrientations: [...type.allowedOrientations], ...backendLimitsOf(type), companyId: PHUONG_NAM, createdAt: on(21, '10:00'),
+  }))
 
   const random = seededRandom(20_260_915)
   const tokens = new Set(taken)
@@ -169,7 +177,12 @@ export function seedPhuongNam(today: string, taken: ReadonlySet<string>): Phuong
   events.push({ at: draft.createdAt, actorId: DISPATCHER, action: 'trip.created', target: { type: 'trip', id: draft.id }, params: { name: draft.name } })
 
   const vehicleTypes: VehicleType[] = [
-    { id: 'VT-PN-01', companyId: PHUONG_NAM, name: 'Xe tải 2,3 tấn thùng 4,3 m', cargoLengthCm: 430, cargoWidthCm: 186, cargoHeightCm: 187, payloadKg: 2300, createdAt: on(21, '09:30') },
+    // Giới hạn trục lấy từ `axles` của xe mẫu gắn loại này (VEHICLE-PN-01), như loại xe của Long Bình
+    {
+      id: 'VT-PN-01', companyId: PHUONG_NAM, name: 'Xe tải 2,3 tấn thùng 4,3 m', cargoLengthCm: 430, cargoWidthCm: 186, cargoHeightCm: 187, payloadKg: 2300,
+      ...axleLimitsFromAxles(vehicles.find((vehicle) => vehicle.id === 'VEHICLE-PN-01') ?? {}), maxCogOffsetRatio: DEFAULT_MAX_COG_OFFSET_RATIO,
+      createdAt: on(21, '09:30'),
+    },
   ]
 
   return {

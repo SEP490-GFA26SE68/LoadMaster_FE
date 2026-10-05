@@ -9,7 +9,7 @@ async function settleScene(page: Page) {
 }
 
 /**
- * i18n đợt 1 (LM-070): đi Chi tiết chuyến, Thiết lập tối ưu và Planner bằng `?lang=en`, khẳng định không còn chữ có dấu tiếng Việt
+ * i18n đợt 1 (LM-070): đi Chi tiết chuyến, Thiết lập tối ưu, So sánh ba phương án (FE-5b-06) và Planner bằng `?lang=en`, khẳng định không còn chữ có dấu tiếng Việt
  * trong chữ hiển thị, aria-label, title, placeholder và option. Dữ liệu chuyến tạo trong trang bằng tên tiếng Anh (kho in-memory:
  * không tải lại trang sau khi ghi). Chữ được phép giữ: tên ngôn ngữ trong nút chuyển và tên người dùng demo (dữ liệu).
  * Kèm kiểm tràn chữ: nút, tab, tiêu đề không bị cắt ngoài chủ ý (`text-overflow: ellipsis` hoặc vùng cuộn được coi là chủ ý).
@@ -80,7 +80,7 @@ async function check(page: Page, testInfo: TestInfo, name: string, allowed: stri
   expect(layout.clipped, `${name}: clipped labels`).toStrictEqual([])
 }
 
-/** Chuyến tiếng Anh dựng từ kiện của chuyến mẫu, cùng xe. */
+/** Chuyến tiếng Anh dựng từ kiện của chuyến mẫu, cùng xe; điểm giao có toạ độ và tuyến đã tối ưu để chạy tối ưu xếp hàng được (FE-5b-05). */
 async function createEnglishTrip(page: Page): Promise<string> {
   return page.evaluate(async ({ url, seedId }) => {
     const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
@@ -91,13 +91,14 @@ async function createEnglishTrip(page: Page): Promise<string> {
       vehicleId: seed.vehicleId,
       scheduledDate: seed.scheduledDate,
       stops: [
-        { id: 'STOP-01', name: 'North Market', address: '12 River Road' },
-        { id: 'STOP-02', name: 'Harbor Foods', address: '30 Harbor Avenue' },
-        { id: 'STOP-03', name: 'Green Pharmacy', address: '215 Hill Street' },
-        { id: 'STOP-04', name: 'East Depot', address: '58 Station Lane' },
+        { id: 'STOP-01', name: 'North Market', address: '12 River Road', lat: 10.74, lng: 106.7 },
+        { id: 'STOP-02', name: 'Harbor Foods', address: '30 Harbor Avenue', lat: 10.8, lng: 106.71 },
+        { id: 'STOP-03', name: 'Green Pharmacy', address: '215 Hill Street', lat: 10.85, lng: 106.75 },
+        { id: 'STOP-04', name: 'East Depot', address: '58 Station Lane', lat: 10.9, lng: 106.8 },
       ],
       packages: seed.packages.map((pkg, index) => ({ ...pkg, name: `Carton line ${index + 1}`, notes: pkg.notes ? 'Fragile goods' : undefined })),
     })
+    await db.optimizeTripRoute(trip.id)
     return trip.id
   }, { url: MOCK_DB, seedId: SEED_TRIP })
 }
@@ -138,7 +139,13 @@ for (const viewport of VIEWPORTS) {
     const optimize = page.getByRole('button', { name: 'Optimize', exact: true })
     await expect(optimize).toBeEnabled()
     await optimize.click()
-    await page.waitForURL(/\/phuong-an\?revision=MOCK-/, { timeout: 60_000 })
+    // Chạy xong mở màn so sánh ba phương án của lần chạy; từ đó mở phương án C trong Planner
+    await page.waitForURL(/\/so-sanh\?lan-chay=RUN-\d+$/, { timeout: 60_000 })
+    await expect(page.locator('[data-candidate]')).toHaveCount(3)
+    await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 15_000 })
+    await check(page, testInfo, `${viewport.name}-plan-candidates`, allowed, { layout: !phone })
+    await page.getByRole('link', { name: 'Open plan C in the Planner', exact: true }).click()
+    await page.waitForURL(/\/phuong-an\?revision=REV-\d+$/, { timeout: 60_000 })
     await page.locator('canvas').waitFor()
     await settleScene(page)
     await expect(page.locator('header').first()).toContainText('MOCK RESULT')

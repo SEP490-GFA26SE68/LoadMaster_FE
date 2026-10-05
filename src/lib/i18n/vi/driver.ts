@@ -1,6 +1,6 @@
 /**
- * Màn tài xế (LM-061, LM-087): "Chuyến của tôi", giao từng điểm theo revision đã duyệt — dỡ hàng, gọi người nhận, báo sự cố, tổng
- * kết chuyến — và khung 3D "Xem vị trí hàng".
+ * Màn tài xế (LM-061, LM-087, FE-6-06): "Chuyến của tôi", giao từng điểm theo revision đã duyệt — xuất phát, đã đến, dỡ hàng có đối
+ * chiếu, gọi người nhận, báo sự cố, hoàn trả, tổng kết chuyến — và khung 3D "Xem vị trí hàng".
  */
 export const driver = {
   loading: 'Đang tải chuyến',
@@ -16,31 +16,59 @@ export const driver = {
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
     title: 'Chuyến của tôi',
-    ready: 'Sẵn sàng giao',
-    noReady: 'Chưa có chuyến nào sẵn sàng giao.',
-    preparing: 'Kho đang chuẩn bị',
-    recent: 'Đã hoàn thành gần đây',
+    /** Nhóm theo trạng thái và dòng phụ của chuyến (FE-6-01). */
+    groups: {
+      inTransit: 'Đang vận chuyển',
+      loaded: 'Xếp xong — chờ xuất phát',
+      preparing: 'Kho đang soạn / xếp',
+      recent: 'Đã giao gần đây',
+    },
+    noReady: 'Chưa có chuyến nào xếp xong hoặc đang vận chuyển.',
     open: 'Mở chuyến',
+    preview: 'Xem trước',
     resume: 'Tiếp tục giao',
     viewSummary: 'Xem tổng kết',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
     atStop: 'Đang giao điểm {number} / {total}',
-    waitingApproved: 'Kho chưa bắt đầu xếp — chưa giao được.',
-    waitingLoading: 'Kho đang xếp — chưa giao được.',
+    waitingLoading: 'Kho đang soạn / xếp — chưa xuất phát được, chỉ xem trước.',
+    recheck: {
+      one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+      other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
+    },
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
   },
   notice: {
-    preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa bắt đầu giao được.',
-    ready: 'Kho đã xếp xong. Bấm Bắt đầu giao khi xe rời kho.',
-    missing: {
-      one: 'Kho báo thiếu {count} kiện của điểm này: không có trên xe, không cần dỡ.',
-      other: 'Kho báo thiếu {count} kiện của điểm này: không có trên xe, không cần dỡ.',
+    preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.',
+    ready: 'Kho đã xếp xong. Bấm Xuất phát khi xe rời kho.',
+    /** Đang vận chuyển (FE-6-06): chưa bấm "Đã đến" ở điểm đang giao, và giờ đã đến. */
+    enRoute: 'Đang tới điểm {number}. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.',
+    arrived: 'Đã đến điểm {number} lúc {time}.',
+    leftOut: {
+      one: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
+      other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
     },
   },
-  start: 'Bắt đầu giao',
+  /** Công tắc "Dùng GPS thật" khi chuyến Đang vận chuyển (FE-6-13, D-85, D-95). */
+  gps: {
+    title: 'Vị trí xe',
+    toggle: 'Dùng GPS thật',
+    localOnly: 'Chưa có máy chủ: vị trí từ điện thoại chỉ hiện trong trình duyệt này.',
+    requesting: 'Đang chờ quyền vị trí và tín hiệu GPS…',
+    sent: 'Đã gửi vị trí lúc {time}. Gửi lại mỗi 30 giây.',
+    stopped: {
+      user: 'Đã tắt GPS thật: vị trí xe về mô phỏng.',
+      denied: 'Trình duyệt không cho dùng vị trí: vị trí xe về mô phỏng. Cấp quyền vị trí cho trang rồi bật lại.',
+      lost: 'Mất tín hiệu GPS: vị trí xe về mô phỏng. Bật lại khi có tín hiệu.',
+      unsupported: 'Thiết bị này không có định vị: vị trí xe là mô phỏng.',
+      error: 'Không gửi được vị trí: vị trí xe về mô phỏng. {message}',
+    },
+  },
+  start: 'Xuất phát',
+  arrive: 'Đã đến điểm {number}',
+  arrived: 'Đã ghi giờ đến điểm {number}',
   stopTitle: 'Điểm {number} / {total}',
   directions: 'Chỉ đường tới {name}',
   call: 'Gọi {name}',
@@ -58,29 +86,43 @@ export const driver = {
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',
-    markDone: 'Đánh dấu đã dỡ {id}',
-    unmarkDone: 'Bỏ đánh dấu đã dỡ {id}',
     done: 'Đã dỡ',
     issue: 'Sự cố: {kind}',
+    returned: 'Hoàn trả — kiện ở lại xe',
     area: { front: 'Sát vách trước', middle: 'Giữa xe', door: 'Gần cửa' },
     layer: { floor: 'sàn', lower: 'lớp dưới', upper: 'lớp trên' },
   },
-  /** Quét QR khi dỡ (luồng 5 Review 1, LM-104): chỉ kiện của điểm đang giao được ghi "đã dỡ". */
+  /** Đối chiếu kiện khi dỡ (LM-104; ba mức từ FE-6-03): chỉ kiện của điểm đang giao được ghi "đã dỡ". */
   scan: {
-    open: 'Quét QR dỡ',
-    title: 'Quét QR dỡ tại điểm {number}',
-    description: 'Quét nhãn QR của từng kiện khi đưa xuống xe. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    open: 'Đối chiếu kiện dỡ',
+    title: 'Đối chiếu kiện dỡ tại điểm {number}',
+    description: 'Quét nhãn QR của từng kiện khi đưa xuống xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã dỡ {done} / {total} kiện.',
     lastUnloaded: 'Vừa dỡ {id} · {name}.',
-    optionDescription: '{name} · Dỡ thứ {order}',
     wrongStop: 'Kiện {id} ({name}) thuộc điểm {stop} · {stopName}, không phải điểm này. Chưa ghi gì — để kiện lại trên xe.',
     unloaded: 'Đã dỡ {id}',
-    viaQr: 'Đã dỡ · quét QR',
+    manualRecorded: 'Đã ghi xác nhận tay {id}',
+    manualRecordedDescription: 'Chờ điều phối viên duyệt trước khi hoàn tất điểm giao.',
+    /** Dòng "Đã dỡ" của một kiện kèm cách đối chiếu. */
+    via: {
+      QR: 'Đã dỡ · quét QR',
+      CODE: 'Đã dỡ · gõ mã',
+      MANUAL_PENDING: 'Đã dỡ · xác nhận tay, chờ duyệt',
+      MANUAL_APPROVED: 'Đã dỡ · xác nhận tay đã duyệt',
+    },
+  },
+  /** Xác nhận tay ở điểm giao (FE-6-04): còn chờ điều phối viên duyệt thì chưa hoàn tất điểm; bị từ chối thì kiểm lại kiện đó. */
+  confirms: {
+    blocked: {
+      one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.',
+      other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.',
+    },
+    rejected: 'Điều phối viên từ chối xác nhận tay, kiểm lại kiện này. Lý do: {reason}',
   },
   /** Hộp "Báo sự cố" cho một kiện (D-47): loại + ghi chú, "Khác" bắt buộc ghi chú. */
   issue: {
     report: 'Báo sự cố',
     title: 'Báo sự cố tại điểm {number}',
-    description: 'Ghi sự cố cho một kiện của điểm giao này. Sự cố đã ghi không xoá được.',
+    description: 'Ghi sự cố cho một kiện của điểm giao này. Sự cố đã ghi không xoá được. Khách từ chối thì kiện ở lại xe và thành Hoàn trả.',
     package: 'Kiện',
     kind: 'Loại sự cố',
     note: 'Ghi chú',
@@ -88,6 +130,8 @@ export const driver = {
     submit: 'Ghi sự cố',
     cancel: 'Quay lại',
     recorded: 'Đã ghi sự cố cho {id}',
+    refusedRecorded: 'Khách từ chối {id}',
+    refusedRecordedDescription: 'Kiện ở lại xe và thành Hoàn trả khi hoàn tất điểm giao.',
     errors: {
       packageRequired: 'Chọn kiện gặp sự cố.',
       kindRequired: 'Chọn loại sự cố.',

@@ -4,19 +4,24 @@ import { useFormat, useT } from '@/lib/i18n'
 import { loadingSessionPath } from './warehouse-trips'
 
 /**
- * Thanh trên cùng: lối thoát, bước hiện tại, thanh tiến độ, nút chuyển ngôn ngữ, mã chuyến.
+ * Thanh trên cùng: lối thoát, bước hiện tại, thanh tiến độ, nút chuyển ngôn ngữ, mã chuyến. Dùng chung cho bước Soạn hàng (`label`
+ * "Đã soạn", FE-6-02) và bước Xếp.
  *
  * Bản design không có nút thoát vì vẽ màn kiosk chạy suốt ca; thực tế nhân viên vẫn cần rời phiên khi chọn nhầm chuyến hoặc xếp
  * xong, nên thêm nút quay lại cỡ cảm ứng 56px (mục 10). Nút chuyển ngôn ngữ cũng 56px (LM-071); đổi ngôn ngữ không remount phiên
  * nên bước đang xếp giữ nguyên. Nút thoát theo vai trò (`exitAction`): nhân viên kho về danh sách chuyến (LM-086) — từ FE-0-01 chỉ
  * nhân viên kho mở được màn này. Thanh tiến độ tính theo số kiện đã có kết quả trong kho, không theo số bước.
  */
-export function StepHeader({ step, totalSteps, recorded, tripId }: {
+export function StepHeader({ step, totalSteps, recorded, tripId, label, progressLabel }: {
   step: number
   totalSteps: number
-  /** Kiện đã có kết quả (đã xếp hoặc thiếu). */
+  /** Kiện đã xong ở bước này: đã soạn, hoặc đã có kết quả xếp (đã xếp, hay hỏng bị bỏ lại). */
   recorded: number
   tripId: string
+  /** Chữ trước số; mặc định "Bước". */
+  label?: string
+  /** Tên của thanh tiến độ; mặc định "Tiến độ xếp hàng". */
+  progressLabel?: string
 }) {
   const t = useT()
   const format = useFormat()
@@ -29,7 +34,7 @@ export function StepHeader({ step, totalSteps, recorded, tripId }: {
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-4">
           <span className="text-h2 leading-6 font-semibold">
-            {t('warehouse.header.step')} <span className="font-mono">{format.integer(Math.min(step, totalSteps))}</span>{' '}
+            {label ?? t('warehouse.header.step')} <span className="font-mono">{format.integer(Math.min(step, totalSteps))}</span>{' '}
             <span className="font-normal text-text-3">/ {format.integer(totalSteps)}</span>
           </span>
           <span className="font-mono text-body-lg font-medium text-text-2">{format.integer(percent)}%</span>
@@ -39,7 +44,7 @@ export function StepHeader({ step, totalSteps, recorded, tripId }: {
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={t('warehouse.header.progress')}
+          aria-label={progressLabel ?? t('warehouse.header.progress')}
           className="h-2.5 overflow-hidden rounded-full border border-border bg-surface"
         >
           <div

@@ -42,10 +42,15 @@ const SUB_STATUS: Record<TripSubStatus['kind'], { tone: BadgeTone; dot?: BadgeDo
   awaitingApproval: { tone: 'warning', dot: 'ring' },
   approved: { tone: 'cyan' },
   stale: { tone: 'warning', outlined: true },
+  // Đang soạn hàng (FE-6-02): việc đang chạy như đang xếp; kho báo thiếu kiện là việc chờ điều phối viên, như lỗi thời
+  staging: { tone: 'azure' },
+  shortage: { tone: 'warning', outlined: true },
   loading: { tone: 'azure' },
   loaded: { tone: 'azure' },
   // Điểm trễ hạn dự kiến của tuyến đã tối ưu (FE-4b-09): việc chờ điều phối viên, như lỗi thời
   lateStops: { tone: 'warning', outlined: true },
+  // Xác nhận tay chờ điều phối viên duyệt (FE-6-04): chờ người kế tiếp, như chờ duyệt phương án
+  manualPending: { tone: 'warning', dot: 'ring' },
 }
 
 /** Dòng phụ cạnh chip trạng thái, cùng một kiểu ở mọi màn (nhãn 20 px; `className` đè cỡ cho màn cảm ứng). `null` thì không vẽ gì. */

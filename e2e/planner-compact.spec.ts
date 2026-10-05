@@ -80,8 +80,13 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await expect(header(page)).toContainText(APPROVED_AT)
   await expect(button(page, 'Duyệt phương án')).toHaveCount(0)
   await expect(button(page, 'Duyệt bản chỉnh')).toHaveCount(0)
+  // Bản đã duyệt của seed dựng từ phương án C của lần chạy RUN-002 (FE-5b-06): nhãn một chữ cái ở tiêu đề, nút So sánh mở đúng ba
+  // phương án của lần chạy đó — hàng vẫn một dòng ở mọi bề rộng đo bên dưới
+  await expect(header(page).locator('[data-candidate-label]')).toHaveText('Phương án CC')
+  await expect(header(page).getByRole('link', { name: 'So sánh phương án', exact: true })).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002')
   await expectOneRow(page, 1366)
   await attachScreenshot(page, testInfo, 'planner-approved-1366')
+  await expectOneRow(page, 1536)
   await expectOneRow(page, 1600)
   // 1.680 px: tiêu đề đổi sang tên tuyến; nhãn "Duyệt bởi <tên> lúc" không được lấy chỗ của nó (FE-0-07)
   await expectOneRow(page, 1680)
@@ -107,6 +112,9 @@ test('an approved plan shows when it was approved; one edited package turns it i
   await page.waitForURL(/\/phuong-an\?revision=REV-/)
   // Bản vừa duyệt mang chỉnh tay: nhãn "Đã chỉnh tay" cùng "Đã duyệt lúc …", vẫn một hàng ở 1.366 px
   await expect(header(page)).toContainText('Đã chỉnh tay')
+  // Bản chỉnh tay không còn nguyên là phương án C: không kèm chữ cái, nút So sánh vẫn mở lần chạy của nó
+  await expect(header(page).locator('[data-candidate-label]')).toHaveCount(0)
+  await expect(header(page).getByRole('link', { name: 'So sánh phương án', exact: true })).toHaveAttribute('href', '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002')
   await expect(header(page)).toContainText(APPROVED_AT)
   await expect(approveEdits).toHaveCount(0)
   await expectOneRow(page, 1366)

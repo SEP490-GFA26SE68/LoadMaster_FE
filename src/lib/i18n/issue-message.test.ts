@@ -96,7 +96,9 @@ const SAMPLE_ISSUES: { readonly [C in ConstraintCode]: ConstraintIssue<C> } = {
   LIFO_BLOCKED: { code: 'LIFO_BLOCKED', severity: 'error', packageInstanceId: 'PKG-001-01', params: { coverage: 1 } },
   LIFO_PARTIAL: { code: 'LIFO_PARTIAL', severity: 'warning', packageInstanceId: 'PKG-001-02', params: { coverage: 0.4 } },
   COG_LATERAL: { code: 'COG_LATERAL', severity: 'warning', params: { offsetCm: 26.4, limitCm: 24 } },
+  COG_LONGITUDINAL: { code: 'COG_LONGITUDINAL', severity: 'warning', params: { offsetCm: 112.5, limitCm: 90, toward: 'front' } },
   COG_HIGH: { code: 'COG_HIGH', severity: 'warning', params: { heightCm: 137.5, limitCm: 125 } },
+  AXLE_OVERLOAD: { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 6240.5, limitKg: 6000, overKg: 240.5 } },
   MUST_LOAD_UNPLACED: { code: 'MUST_LOAD_UNPLACED', severity: 'blockApproval', params: { packageId: 'PKG-003' } },
   LOADING_ORDER_INFEASIBLE: {
     code: 'LOADING_ORDER_INFEASIBLE',
@@ -156,6 +158,8 @@ describe.each(LOCALES)('every constraint code has a finished sentence in %s', (l
         params: { entity: 'obstacle', obstacleId: 'OBS-001' },
       },
       { code: 'DOOR_EXCEEDS_INNER', severity: 'error', field: 'doorWidthCm', params: { axis: 'y', doorCm: 250, innerCm: 240 } },
+      { code: 'COG_LONGITUDINAL', severity: 'warning', params: { offsetCm: 95, limitCm: 90, toward: 'rear' } },
+      { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'front', loadKg: 3120, limitKg: 3000, overKg: 120 } },
     ]
     expect(variants.map((issue) => messageOf(issue, locale))).toMatchSnapshot()
   })

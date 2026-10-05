@@ -1,5 +1,5 @@
 import { expandPackages } from '@/domain/cargo'
-import { checkCenterOfGravity, computeMetrics } from '@/domain/metrics'
+import { axleLoadsOf, cargoMass, checkAxleLoads, checkCenterOfGravity } from '@/domain/metrics'
 import {
   obstacleToBox,
   type CargoPackage,
@@ -24,7 +24,7 @@ export type ConstraintEngineInput = {
 
 /** Ảnh chụp kết quả kiểm: không đổi khi engine đổi về sau. */
 export type EngineEvaluation = {
-  /** Theo thứ tự: issue từng kiện theo thứ tự placement, rồi xếp chồng, thứ tự xếp, trọng tâm. */
+  /** Theo thứ tự: issue từng kiện theo thứ tự placement, rồi xếp chồng, thứ tự xếp, trọng tâm, tải trục. */
   readonly issues: readonly ConstraintIssue[]
   /** Issue mà kiện là chủ thể hoặc nằm trong `relatedIds`. */
   readonly byInstanceId: ReadonlyMap<string, readonly ConstraintIssue[]>
@@ -71,7 +71,7 @@ export function annotatePlacements(input: ConstraintEngineInput): PackagePlaceme
 /**
  * Constraint engine của Spec mục 7 cho một phương án (D-29): dựng lưới, đồ thị đỡ và issue từng kiện một lần; khi dời một
  * kiện chỉ tính lại kiện đó, các kiện chồng lấn / tựa lên / có nó trong hành lang dỡ ở vị trí cũ và mới, cột đỡ của nó.
- * Xếp chồng, thứ tự xếp và trọng tâm tính lại toàn bộ mỗi lần kiểm (O(N), rẻ).
+ * Xếp chồng, thứ tự xếp, trọng tâm và tải trục (D-78) tính lại toàn bộ mỗi lần kiểm (O(N), rẻ).
  *
  * Request phải hợp lệ trước (`validateRequest`): trùng mã instance hoặc placement không thuộc kiện nào → `throw`.
  */
@@ -112,12 +112,13 @@ export function createConstraintEngine({ vehicle, packages, placements, settings
 
   function evaluate(): EngineEvaluation {
     const current = [...layout.placements.values()]
-    const { centerOfGravityCm } = computeMetrics({ vehicle, placements: current, weightByInstanceId: weights, unplacedCount: 0, runtimeMs: 0 })
+    const mass = cargoMass(current, ({ packageInstanceId }) => weights.get(packageInstanceId) ?? 0)
     const issues = [
       ...current.flatMap(({ packageInstanceId }) => local.get(packageInstanceId) ?? []),
       ...stackIssues(ctx.graph),
       ...loadingOrderIssues(ctx.graph),
-      ...(centerOfGravityCm ? checkCenterOfGravity(vehicle, centerOfGravityCm) : []),
+      ...(mass.center ? checkCenterOfGravity(vehicle, mass.center) : []),
+      ...checkAxleLoads(axleLoadsOf(vehicle, { totalKg: mass.totalKg, centerXCm: mass.center?.x })),
     ]
     return {
       issues,

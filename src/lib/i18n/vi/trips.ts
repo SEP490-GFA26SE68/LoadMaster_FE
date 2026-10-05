@@ -186,6 +186,36 @@ export const trips = {
   },
   vehicle: 'Phương tiện',
   changeVehicle: 'Đổi xe',
+  /**
+   * Hộp thoại Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80), mở từ Chi tiết chuyến và Planner. `reasons` trùng mã lỗi của
+   * `vehicleFit`; cảnh báo loại hàng dùng câu của `segregation.warnings`.
+   */
+  vehicleChange: {
+    title: 'Đổi xe của chuyến {id}',
+    description: 'Chỉ chọn được xe sẵn sàng và chở được hàng của chuyến. Đổi xe làm phương án xếp hàng hiện tại lỗi thời: phải tối ưu lại rồi duyệt.',
+    cargo: 'Hàng của chuyến: {count} kiện · {weight} · {volume}',
+    loading: 'Đang đọc đội xe',
+    loadError: 'Không tải được danh sách xe.',
+    vehicles: 'Chọn xe',
+    spec: 'Lòng thùng {dimensions} · Tải {payload}',
+    current: 'Xe đang dùng cho chuyến này.',
+    busy: 'Đang phục vụ chuyến {tripId}.',
+    maintenance: 'Đang bảo dưỡng.',
+    noneSelectable: 'Không có xe nào khác vừa sẵn sàng vừa chở được hàng của chuyến.',
+    reasons: {
+      CARGO_TOO_LARGE: {
+        one: '{count} dòng kiện không lọt cửa hoặc lòng thùng: {packages}.',
+        other: '{count} dòng kiện không lọt cửa hoặc lòng thùng: {packages}.',
+      },
+      CARGO_VOLUME_EXCEEDED: 'Hàng {total} lớn hơn thể tích thùng {cargo}.',
+      CARGO_WEIGHT_EXCEEDED: 'Hàng nặng {total}, vượt tải trọng {max}.',
+      AXLE_CAPACITY_EXCEEDED: 'Hàng nặng {total}, hai nhóm trục chỉ nhận thêm được {capacity}.',
+    },
+    morePackages: '{list} và {more} dòng khác',
+    cancel: 'Huỷ',
+    submit: 'Đổi xe',
+    done: 'Đã đổi xe của chuyến {id}. Phương án xếp hàng hiện tại đã lỗi thời.',
+  },
   /** Mục Phương tiện ở cột phải Chi tiết chuyến: xe và tài xế đi cùng (LM-088, V2.3). */
   vehicleCard: {
     vehicle: 'Xe',
@@ -238,14 +268,21 @@ export const trips = {
     /** Cột phải. */
     ofTotal: '{used} / {total}',
     issuesTitle: { one: '{count} sự cố giao hàng', other: '{count} sự cố giao hàng' },
-    missingTitle: { one: '{count} kiện thiếu ở kho', other: '{count} kiện thiếu ở kho' },
+    damagedTitle: { one: '{count} kiện hỏng, bỏ lại kho', other: '{count} kiện hỏng, bỏ lại kho' },
     wholeStop: 'Cả điểm giao',
     at: '{time} {date}',
   },
   /** Hộp thoại huỷ chuyến (D-45): lý do bắt buộc, ghi nhật ký. */
   cancel: {
     title: 'Huỷ chuyến {id}?',
-    description: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Lý do được ghi vào nhật ký.',
+    description: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện của chuyến về kho kiện, yêu cầu giao về Chờ xếp chuyến. Lý do được ghi vào nhật ký.',
+    /** Huỷ lúc Đang xếp hàng (FE-6-07, D-91): kho được báo để dỡ phần đã xếp. */
+    loadingNote: { one: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.', other: 'Kho đã xếp {count} kiện lên xe: kho được báo để dỡ ra.' },
+    stagingNote: 'Kho đang soạn hàng của chuyến này: kho được báo chuyến đã huỷ.',
+    /** Huỷ lúc Đang vận chuyển (FE-6-07, D-91): chỉ khi chuyến có sự cố cấp chuyến chưa xử lý; kiện chưa giao thành Hoàn trả. */
+    inTransitDescription: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện chưa giao thành Hoàn trả, yêu cầu giao của chúng thành Giao thiếu; quản lý công ty được báo. Lý do được ghi vào nhật ký.',
+    inTransitNote: { one: 'Xe đang trên đường: {count} kiện chưa giao sẽ thành Hoàn trả.', other: 'Xe đang trên đường: {count} kiện chưa giao sẽ thành Hoàn trả.' },
+    inTransitBlocked: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
     reason: 'Lý do huỷ',
     reasonPlaceholder: 'Ví dụ: khách hoãn nhận hàng',
     reasonRequired: 'Nhập lý do huỷ chuyến',
@@ -275,7 +312,7 @@ export const trips = {
     staleA11y: 'phương án lỗi thời',
     note: { next: 'Tiếp theo', waitApproval: 'Chờ duyệt lại' },
     loadingCount: 'Đã xếp {loaded} / {total} kiện',
-    missingCount: { one: 'thiếu {count} kiện', other: 'thiếu {count} kiện' },
+    damagedCount: { one: 'bỏ lại {count} kiện hỏng', other: 'bỏ lại {count} kiện hỏng' },
     deliveryCount: 'Đã giao {done} / {total} điểm',
     at: '{time} {date}',
   },
@@ -507,9 +544,61 @@ export const trips = {
     done: { one: 'Đã tối ưu tuyến {count} điểm giao.', other: 'Đã tối ưu tuyến {count} điểm giao.' },
     eta: 'Dự kiến đến {time} {date}',
     etaA11y: 'dự kiến đến {time} {date}',
-    deadlineStatus: { OK: 'Kịp hạn', AT_RISK: 'Sát hạn', MISSED: 'Trễ hạn dự kiến' },
+    /** Chuyến đang chạy (FE-6-09): xe đã tới điểm này — giờ đến thay cho giờ đến dự kiến. */
+    arrived: 'Xe đến lúc {time} {date}',
+    arrivedA11y: 'xe đến lúc {time} {date}',
     missingCoordinates: 'Chưa có toạ độ',
     map: 'Bản đồ tuyến {id}',
+  },
+  /** Thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến (FE-6-04, D-83): điều phối viên duyệt hoặc từ chối mức 3 của đối chiếu kiện. */
+  /** Thẻ "Kiện kho báo thiếu" ở Chi tiết chuyến (FE-6-02, D-82): điều phối viên quyết tìm tiếp hoặc bỏ kiện khỏi chuyến. */
+  shortages: {
+    title: 'Kiện kho báo thiếu',
+    count: { one: '{count} chờ quyết', other: '{count} chờ quyết' },
+    description: 'Kho không tìm thấy các kiện này khi soạn hàng. Chọn Tìm tiếp để kho tìm lại, hoặc bỏ kiện khỏi chuyến rồi tối ưu lại và duyệt lại.',
+    reportedBy: '{name} báo lúc {time} {date}',
+    unknownReporter: 'Không rõ người báo',
+    keep: 'Tìm tiếp',
+    keepLabel: 'Tìm tiếp kiện {id}',
+    drop: 'Bỏ kiện khỏi chuyến',
+    dropLabel: 'Bỏ kiện {id} khỏi chuyến',
+    kept: 'Kho tìm tiếp kiện {id}',
+    dropped: 'Đã bỏ kiện {id} khỏi chuyến',
+    droppedDescription: 'Chuyến về Đã lập kế hoạch, phương án lỗi thời: tối ưu lại và duyệt lại để kho làm tiếp.',
+    readOnly: 'Chỉ điều phối viên quyết được kiện kho báo thiếu.',
+    dropDialog: {
+      title: 'Bỏ kiện {id} khỏi chuyến?',
+      description: 'Kiện về kho kiện kèm cờ Không tìm thấy; yêu cầu giao của nó thành giao thiếu. Chuyến quay về Đã lập kế hoạch và phương án lỗi thời: phải tối ưu lại và duyệt lại. Kiện kho đã soạn giữ nguyên.',
+      confirm: 'Bỏ kiện',
+      cancel: 'Quay lại',
+    },
+  },
+  manualConfirms: {
+    title: 'Xác nhận tay chờ duyệt',
+    count: { one: '{count} chờ duyệt', other: '{count} chờ duyệt' },
+    description: 'Kho hoặc tài xế xác nhận kiện bằng tay vì nhãn không đọc được. Còn dòng chờ duyệt thì kho chưa xong xếp, tài xế chưa hoàn tất điểm giao được.',
+    /** Bước của chuyến kèm điểm giao: "Dỡ hàng · điểm 2". */
+    atStop: '{step} · điểm {stop}',
+    sentBy: '{name} gửi lúc {time} {date}',
+    unknownSender: 'Không rõ người gửi',
+    reason: 'Lý do: {reason}',
+    approve: 'Duyệt',
+    approveLabel: 'Duyệt xác nhận tay {id}',
+    reject: 'Từ chối',
+    rejectLabel: 'Từ chối xác nhận tay {id}',
+    approved: 'Đã duyệt xác nhận tay {id}',
+    rejected: 'Đã từ chối xác nhận tay {id}',
+    readOnly: 'Chỉ điều phối viên duyệt hoặc từ chối được xác nhận tay.',
+    rejectDialog: {
+      title: 'Từ chối xác nhận tay {id}?',
+      description: 'Kết quả của kiện này bị gỡ: người gửi phải kiểm lại kiện rồi đối chiếu lại, và được báo kèm lý do bạn ghi.',
+      reason: 'Lý do từ chối',
+      reasonHint: 'Người gửi đọc lý do này để biết cần kiểm lại gì.',
+      reasonRequired: 'Ghi lý do từ chối.',
+      reasonTooLong: 'Lý do tối đa {max} ký tự.',
+      confirm: 'Từ chối xác nhận',
+      cancel: 'Quay lại',
+    },
   },
   /** Kiện kho kiện đưa thẳng vào chuyến (FE-4b-05, D-68 đường 2): thẻ ở Chi tiết chuyến và hộp thoại chọn kiện. */
   pool: {
@@ -712,5 +801,58 @@ export const trips = {
     openOnly: 'Mở phương án đã có',
     /** Trạng thái rỗng có một bản (V2.3): mục liệt kê bản đã lưu dưới lời mời chạy thêm. */
     savedTitle: 'Phương án đã lưu',
+    /** Nhãn ứng viên của một bản lưu trong ma trận: bản do lần chạy ba phương án tạo ra (FE-5b-05). */
+    candidateTag: 'Phương án {label}',
+    /** So sánh ba phương án ứng viên của một lần chạy (FE-5b-06, D-77): `?lan-chay=<mã lần chạy>`. */
+    candidates: {
+      subtitle: { one: 'Lần chạy {run} · {count} phương án ứng viên', other: 'Lần chạy {run} · {count} phương án ứng viên' },
+      runTitle: 'Lần chạy {run}',
+      runLine: '{time} {date} · {runner}',
+      runLineNoRunner: '{time} {date}',
+      /** Thiết lập chung của ba phương án; tên thuật toán là từ vựng thuật toán — chỉ màn so sánh và thiết lập nâng cao dùng. */
+      settings: '{algorithm} · random seed {seed} · LIFO {lifo} · trọng tâm thấp {lowCenter} · giới hạn {seconds} giây',
+      bestHint: 'Giá trị tốt nhất giữa các phương án in đậm kèm nhãn "Tốt nhất". Chỉ số mà các phương án bằng nhau thì không đánh dấu.',
+      deadlinesTitle: 'Mức hạn các điểm giao',
+      deadlinesHint: 'Các phương án cùng một tuyến nên cùng giờ đến dự kiến và mức hạn.',
+      stop: 'Điểm {number} · {name}',
+      eta: 'Dự kiến đến {time} {date}',
+      deadline: 'Hạn {time} {date}',
+      noDeadline: 'Không có hạn',
+      noRoute: 'Chuyến chưa tối ưu tuyến nên chưa có giờ đến dự kiến.',
+      /** Tên truy cập của thẻ; trên thẻ nhãn A · B · C là ô chữ lớn, tiêu đề là tên mục tiêu. */
+      card: 'Phương án {label} — {objective}',
+      metrics: {
+        volume: 'Thể tích',
+        payload: 'Tải trọng',
+        frontAxle: 'Tải trục trước',
+        rearAxle: 'Tải trục sau',
+        axleGap: 'Chênh mức tải hai trục',
+        centerOfGravity: 'Trọng tâm hàng',
+        rehandling: 'Dỡ-xếp lại',
+        unplaced: 'Kiện chưa xếp',
+        runtime: 'Thời gian chạy',
+      },
+      axleValue: '{load} / {limit}',
+      axlePercent: '{percent} giới hạn',
+      axleNoLimit: 'Chưa khai giới hạn',
+      /** Chênh lệch giữa hai tỷ lệ phần trăm: điểm phần trăm. */
+      gapValue: '{value} điểm %',
+      notComputed: 'Chưa tính được',
+      axleUnavailable: { NO_AXLES: 'Xe chưa khai báo trục', SINGLE_AXLE: 'Xe mới khai một trục', AXLES_COINCIDE: 'Các trục của xe trùng vị trí' },
+      /** Toạ độ trọng tâm hàng theo trục dọc thùng (từ vách trong), ngang (từ vách trái) và cao (từ sàn). */
+      cog: '{x} · {y} · {z} cm',
+      cogAxes: 'dọc · ngang · cao',
+      noCog: 'Chưa xếp kiện nào',
+      noZones: 'Không chia vùng',
+      open: 'Mở trong Planner',
+      openLabel: 'Mở phương án {label} trong Planner',
+      approved: 'Đã duyệt',
+      openApproved: 'Mở bản đã duyệt {id}',
+      stale: 'Kết quả đã lỗi thời: chuyến đã đổi xe, kiện hoặc thứ tự điểm giao sau lần chạy này. Chạy tối ưu lại trước khi duyệt.',
+      runAgain: 'Chạy tối ưu lại',
+      allRevisions: 'Mọi phương án đã lưu',
+      notFoundTitle: 'Không tìm thấy lần chạy',
+      notFoundDescription: 'Chuyến này không có lần chạy {run}, hoặc lần chạy đó không ra phương án nào.',
+    },
   },
 } as const

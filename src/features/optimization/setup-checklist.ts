@@ -11,7 +11,12 @@ export type CheckState = 'pass' | 'fail' | 'warn'
 
 export type CheckItem = { readonly state: CheckState; readonly issues: readonly IssueLink[] }
 
+/** Nhóm của danh sách kiểm tra: `route` là điều kiện của chuyến, ba nhóm còn lại là issue của request. */
+export type CheckGroup = 'route' | IssueGroup
+
 export type SetupChecklist = {
+  /** Chuyến đã tối ưu tuyến (Đã lập kế hoạch): xếp 3D theo thứ tự điểm giao của tuyến (FE-5b-05). Chưa thì chặn tối ưu. */
+  readonly route: { readonly state: 'pass' | 'fail' }
   /** Lòng thùng, cửa và vật cản của xe. */
   readonly vehicle: CheckItem
   /** Kích thước, hướng đặt, mã kiện không trùng: mọi issue nhóm Kiện trừ qua cửa. */
@@ -22,9 +27,11 @@ export type SetupChecklist = {
   readonly optional: { readonly instances: number; readonly lines: readonly CargoPackage[] } | null
   /** Tổng khối lượng và riêng kiện bắt buộc so với tải trọng xe (Spec 7.3). */
   readonly payload: CheckItem & { readonly totalKg: number; readonly mustLoadKg: number; readonly maxPayloadKg: number }
-  /** Số issue `error` của đầu vào và nhóm chứa chúng, theo thứ tự Xe → Kiện → Tải trọng — lý do nút Tối ưu tắt. */
+  /** Số lỗi chặn tối ưu và nhóm chứa chúng, theo thứ tự Tuyến → Xe → Kiện → Tải trọng — lý do nút Tối ưu tắt. */
   readonly errorCount: number
-  readonly errorGroups: readonly IssueGroup[]
+  readonly errorGroups: readonly CheckGroup[]
+  /** Không còn lỗi nào chặn: request hợp lệ và chuyến đã tối ưu tuyến. */
+  readonly canRun: boolean
 }
 
 const GROUPS: readonly IssueGroup[] = ['vehicle', 'packages', 'payload']
@@ -41,12 +48,17 @@ export function buildSetupChecklist(
   packages: readonly CargoPackage[],
   vehicle: Pick<VehicleConfig, 'maxPayloadKg'>,
   summary: RequestIssueSummary,
+  routePlanned: boolean,
 ): SetupChecklist {
   const { groups } = summary
   const optionalLines = packages.filter((pkg) => !pkg.mustLoad)
   const largest = packages.reduce<CargoPackage | undefined>((best, pkg) => (best && volumeOf(best) >= volumeOf(pkg) ? best : pkg), undefined)
-  const errorGroups = GROUPS.filter((group) => groups[group].some(({ issue }) => issue.severity === 'error'))
+  const errorGroups: CheckGroup[] = [
+    ...(routePlanned ? [] : ['route' as const]),
+    ...GROUPS.filter((group) => groups[group].some(({ issue }) => issue.severity === 'error')),
+  ]
   return {
+    route: { state: routePlanned ? 'pass' : 'fail' },
     vehicle: item(groups.vehicle),
     dimensions: {
       ...item(groups.packages.filter(({ issue }) => issue.code !== 'DOOR_TOO_SMALL')),
@@ -63,7 +75,8 @@ export function buildSetupChecklist(
       mustLoadKg: weightOf(packages.filter((pkg) => pkg.mustLoad)),
       maxPayloadKg: vehicle.maxPayloadKg,
     },
-    errorCount: GROUPS.reduce((sum, group) => sum + groups[group].filter(({ issue }) => issue.severity === 'error').length, 0),
+    errorCount: (routePlanned ? 0 : 1) + GROUPS.reduce((sum, group) => sum + groups[group].filter(({ issue }) => issue.severity === 'error').length, 0),
     errorGroups,
+    canRun: summary.canRun && routePlanned,
   }
 }

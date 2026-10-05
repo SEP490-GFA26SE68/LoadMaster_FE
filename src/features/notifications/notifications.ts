@@ -14,15 +14,23 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
 
 /**
  * Sự kiện đáng báo cho từng vai trò (FE-0-04) — ai cần biết việc gì:
- * - Điều phối viên: kết quả phương án (đồng nghiệp duyệt), tiến độ kho (thiếu kiện, xếp xong), kho quét thấy lại kiện mang cờ "Không
- *   tìm thấy" (FE-3b-06, D-92), sự cố giao, chuyến hoàn thành, chuyến bị huỷ.
- * - Quản lý công ty (chỉ đọc, lo hạn giao và báo cáo): chuyến hoàn thành, chuyến bị huỷ, sự cố giao.
+ * - Điều phối viên: kết quả phương án (đồng nghiệp duyệt), tiến độ kho (kho báo thiếu kiện lúc soạn — chờ điều phối viên quyết, kiện
+ *   hỏng lúc xếp, xếp xong — FE-6-02, FE-6-05), kho quét thấy lại kiện mang cờ "Không tìm thấy" (FE-3b-06, D-92), sự cố giao, nguy cơ
+ *   trễ hạn giao theo vị trí xe (FE-6-09 — sự kiện của hệ thống, kèm toast: `EtaRiskWatcher`), chuyến hoàn thành, chuyến bị huỷ.
+ * - Quản lý công ty (chỉ đọc, lo hạn giao và báo cáo): chuyến hoàn thành, chuyến bị huỷ, sự cố giao; và kiện **của một yêu cầu giao**
+ *   bị bỏ khỏi chuyến vì thiếu hoặc hỏng — yêu cầu đó thành "giao thiếu" (D-92).
  * - Quản trị hệ thống, quản trị công ty: việc trên tài khoản. Phạm vi do kho lọc, không lọc ở đây (FE-0-08): quản trị hệ thống nhận sự
  *   kiện tài khoản của toàn hệ thống; quản trị công ty chỉ nhận sự kiện về tài khoản của công ty mình — kể cả việc quản trị hệ thống làm
  *   trên người của công ty (khoá, đặt lại mật khẩu) — không nhận gì về tài khoản nền tảng hay của công ty khác.
- * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8); kho và tài xế làm việc trên màn
- *   của mình. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
- * Sự kiện của luồng mới (nguy cơ trễ, xác nhận tay chờ duyệt, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
+ * - Điều phối viên còn được báo khi kho hoặc tài xế gửi một **xác nhận tay** chờ duyệt (FE-6-04, D-83).
+ * - Sự cố cấp chuyến (FE-6-11, FE-6-12): điều phối viên được báo khi tài xế báo sự cố, khi kho tự chuyển sự cố cho quản lý sau 30
+ *   phút, và khi quản lý đã liên hệ khách, nhập hạn mới (để xử lý tiếp); quản lý công ty được báo khi sự cố chuyển lên mình.
+ * - Nhân viên kho, tài xế: xác nhận tay **của chính mình** bị điều phối viên từ chối (`PERSONAL_ACTIONS`), để biết kiện nào phải kiểm
+ *   lại. Nhân viên kho còn được báo quyết định của điều phối viên với kiện **mình báo thiếu** (tìm tiếp, hoặc bỏ kiện — chuyến chờ tối
+ *   ưu lại), và chuyến bị huỷ **lúc đang xếp** để dỡ phần đã xếp (FE-6-07, D-91).
+ * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8). Vai trò không có nguồn nào thì
+ *   không có chuông (`hasNotifications`).
+ * Sự kiện của luồng mới (nguy cơ trễ, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
  */
 export const NOTIFICATION_ACTIONS: Readonly<
   Record<Role, readonly AuditAction[]>
@@ -31,25 +39,34 @@ export const NOTIFICATION_ACTIONS: Readonly<
   systemManager: [],
   systemSupporter: [],
   companyAdmin: ACCOUNT_ACTIONS,
-
-  companyManager: [
-    'delivery.completed',
-    'delivery.issue',
-    'trip.cancelled',
-  ],
-
+  companyManager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated'],
   dispatcher: [
-    'revision.approved',
-    'loading.completed',
-    'loading.missing',
-    'package.found',
-    'delivery.issue',
-    'delivery.completed',
-    'trip.cancelled',
+    'revision.approved', 'loading.completed', 'loading.shortageReported', 'loading.damaged', 'package.found', 'delivery.issue', 'delivery.etaRisk',
+    'delivery.completed', 'trip.cancelled', 'manualConfirm.requested', 'exception.reported', 'exception.escalated',
+    'exception.deadlineRenegotiated',
   ],
+  warehouse: ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped', 'trip.cancelled'],
+  driver: ['manualConfirm.rejected'],
+}
 
-  warehouse: [],
-  driver: [],
+/**
+ * Sự kiện chỉ báo cho **người gửi** việc bị quyết định (tham số `requestedBy` của sự kiện), không báo cho cả vai trò kho / tài xế: xác
+ * nhận tay bị từ chối, báo thiếu được quyết là việc của đúng người đã gửi nó.
+ */
+const PERSONAL_ACTIONS: readonly AuditAction[] = ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped']
+
+/** Sự kiện có đáng báo cho `viewer` không, ngoài việc đúng loại của vai trò: luật theo người gửi và theo tham số của sự kiện. */
+function concerns(event: AuditEvent, viewer: NotificationViewer): boolean {
+  if (viewer.role === 'warehouse' || viewer.role === 'driver') {
+    if (PERSONAL_ACTIONS.includes(event.action)) return event.params.requestedBy === viewer.id
+    // Kho chỉ cần biết chuyến bị huỷ lúc đang xếp (sự kiện mang số kiện đã lên xe): dỡ phần đã xếp
+    return event.action !== 'trip.cancelled' || event.params.loaded !== undefined
+  }
+  // Quản lý công ty lo yêu cầu giao: kiện bị bỏ chỉ đáng báo khi nó thuộc một yêu cầu
+  if (viewer.role === 'companyManager' && (event.action === 'loading.shortageDropped' || event.action === 'loading.damaged')) {
+    return event.params.requirementId !== undefined
+  }
+  return true
 }
 /** Chỉ sự kiện trong chừng ấy ngày gần nhất, tối đa chừng ấy dòng. */
 export const NOTIFICATION_WINDOW_DAYS = 7
@@ -89,5 +106,18 @@ export function selectNotifications(
         event.actorId !== viewer.id &&
         Date.parse(event.at) >= since,
     )
+    .filter((event) => actions.includes(event.action) && event.actorId !== viewer.id && Date.parse(event.at) >= since)
+    .filter((event) => concerns(event, viewer))
     .slice(0, NOTIFICATION_LIMIT)
+}
+
+/**
+ * Nơi kho và tài xế mở chuyến của một thông báo: họ không mở được Chi tiết chuyến (`trips.view`), nên thông báo về một chuyến dẫn về
+ * màn của chính vai trò đó. Vai trò khác, hoặc đối tượng không phải chuyến: `null` — liên kết theo quyền của nhật ký (`describeEvent`).
+ */
+export function operationHref(event: Pick<AuditEvent, 'target'>, role: Role): string | null {
+  if (event.target.type !== 'trip') return null
+  const tripId = encodeURIComponent(event.target.id)
+  if (role === 'warehouse') return `/kho?chuyen=${tripId}`
+  return role === 'driver' ? `/tai-xe/diem-giao?chuyen=${tripId}` : null
 }

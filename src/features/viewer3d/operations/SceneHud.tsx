@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Undo2 } from 'lucide-react'
+import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Truck, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -16,11 +16,14 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * Bối cảnh ở mép khung 3D (V2.3 `.legend`): điểm giao theo thứ tự dỡ với số kiện, bước đang mô phỏng, theo bước / xem toàn xe /
  * quay lại kiện cần dỡ và lối dỡ bị che kín. Thông tin không gian nằm trên chính kiện (nhãn neo). Thẻ kiện đang chọn và panel
  * dỡ hàng nổi bên phải nằm ở `SceneInspector` (cần lỗi ràng buộc của phương án). Dưới 1.280 px bỏ danh sách điểm giao và dùng
- * thanh kiện gọn ở góc dưới trái.
+ * thanh kiện gọn ở góc dưới trái. Góc dưới phải: "Đổi xe" (FE-5b-08, D-80 — nút phụ, từ 768 px; thanh trên của Planner không còn chỗ
+ * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị".
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
+  /** Mở hộp thoại Đổi xe; vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
+  onChangeVehicle?: () => void
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const stops = state.sceneModel.stops
@@ -88,9 +91,16 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
         <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.focus')} disabled={!state.selected} onClick={() => onFocus()}><Focus strokeWidth={1.5} /></Button>
         {onEdit ? <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.edit')} disabled={!state.selected} onClick={onEdit}><Pencil strokeWidth={1.5} /></Button> : null}
       </div>
-      <Button variant="glass" className="pointer-events-auto ml-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.hud.detailsLabel')} onClick={() => onInspect('operations')}>
-        <Settings2 strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.hud.detailsLabel')}</span>
-      </Button>
+      <div className="ml-auto flex shrink-0 items-end gap-2">
+        {onChangeVehicle ? (
+          <Button variant="glass" className="pointer-events-auto hidden size-14 shrink-0 p-0 glass-dark md:flex xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.plan.changeVehicle')} onClick={onChangeVehicle}>
+            <Truck strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.plan.changeVehicle')}</span>
+          </Button>
+        ) : null}
+        <Button variant="glass" className="pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.hud.detailsLabel')} onClick={() => onInspect('operations')}>
+          <Settings2 strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.hud.detailsLabel')}</span>
+        </Button>
+      </div>
     </div>
   </div>
 }

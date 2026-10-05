@@ -1,13 +1,15 @@
-import { AlertCircle, Check, CircleCheck, Pencil, Play, RefreshCw, TriangleAlert, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { AlertCircle, Check, CircleCheck, Clock, Pencil, Play, RefreshCw, TriangleAlert, X } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
-import type { ConstraintIssue } from '@/domain/constraints'
+import type { ConstraintIssue, DeadlineReview } from '@/domain/constraints'
 import type { OptimizationResult } from '@/domain/models'
 import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { DeadlineStopList, LateStopsConfirm } from './approval/ApproveDeadlines'
 import type { PlanApproval } from './approval/plan-approval'
+import type { SceneStop } from './scene-input'
 
 /** Dòng kiểm vận hành (thứ tự điểm giao, LIFO — LM-036): chỉ hỗ trợ xem xét, không phải lý do chặn. */
 export type ApprovalCheck = {
@@ -21,38 +23,59 @@ const LISTED_WARNINGS = 3
 const LISTED_PATCHES = 8
 const LIFO_CODES: ReadonlySet<string> = new Set(['LIFO_BLOCKED', 'LIFO_PARTIAL'])
 
-/**
- * Xác nhận Duyệt (LM-050; V2.3 `Planner3DDuyet`, `Planner3DTatLIFO`): số chính của phương án, lý do chặn (`approvalBlockers` của
- * domain) hoặc "Không có lỗi chặn duyệt", cảnh báo còn lại kèm câu của từng cảnh báo — lần chạy tắt LIFO thì nói cảnh báo đến từ kiểm
- * tra LIFO — các dòng kiểm vận hành, kiện chỉnh tay (mã từng kiện) và việc thứ tự xếp/dỡ sẽ được tính lại. Còn lý do chặn thì nút Duyệt
- * khoá. Có cảnh báo LIFO thì chân hộp thoại có lối "Xem mô phỏng dỡ hàng".
- */
-export function ApprovePlanDialog({ open, onOpenChange, metrics, canSubmit, approval, checks, pending, onConfirm, isMockResult = false, lifoOff = false, onShowUnloading }: {
+type ApprovePlanDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   metrics: OptimizationResult['metrics']
   /** Fixture benchmark không có revision trong kho: xem được kiểm tra nhưng không gửi Duyệt. */
   canSubmit: boolean
   approval: PlanApproval
+  /** Mức hạn của các điểm giao theo tuyến đã tối ưu của chuyến (D-80); chuyến chưa tối ưu tuyến thì cả hai danh sách rỗng. */
+  deadlines: DeadlineReview<SceneStop>
   checks: readonly ApprovalCheck[]
   pending: boolean
-  onConfirm: () => void
+  /** `force`: người duyệt đã xác nhận duyệt dù có điểm trễ hạn dự kiến. */
+  onConfirm: (force: boolean) => void
   /** Spec: kết quả mock mang nhãn MOCK RESULT (không dịch). */
   isMockResult?: boolean
   /** Lần chạy tắt "Bắt buộc thứ tự dỡ theo điểm giao (LIFO)" — cảnh báo LIFO là hệ quả của thiết lập đó. */
   lifoOff?: boolean
   /** Đóng hộp thoại và mở mô phỏng dỡ hàng. */
   onShowUnloading?: () => void
-}) {
+}
+
+/**
+ * Xác nhận Duyệt (LM-050; V2.3 `Planner3DDuyet`, `Planner3DTatLIFO`): số chính của phương án, lý do chặn (`approvalBlockers` của
+ * domain) hoặc "Không có lỗi chặn duyệt", cảnh báo còn lại kèm câu của từng cảnh báo — lần chạy tắt LIFO thì nói cảnh báo đến từ kiểm
+ * tra LIFO — các dòng kiểm vận hành, kiện chỉnh tay (mã từng kiện) và việc thứ tự xếp/dỡ sẽ được tính lại. Còn lý do chặn thì nút Duyệt
+ * khoá. Có cảnh báo LIFO thì chân hộp thoại có lối "Xem mô phỏng dỡ hàng".
+ *
+ * Mức hạn (FE-5b-08, D-80): điểm sát hạn hiện kèm giờ đến dự kiến và hạn, không hỏi thêm; có điểm trễ hạn dự kiến thì bấm Duyệt mở
+ * bước xác nhận (`LateStopsConfirm`) liệt kê các điểm đó — "Vẫn duyệt" mới gửi Duyệt kèm `force`. Bước đang ở là state của thân hộp
+ * thoại, nên mỗi lần mở lại bắt đầu từ bước xem xét.
+ */
+export function ApprovePlanDialog({ open, onOpenChange, ...review }: ApprovePlanDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-145"><ApproveSteps {...review} /></DialogContent>
+    </Dialog>
+  )
+}
+
+function ApproveSteps({ metrics, canSubmit, approval, deadlines, checks, pending, onConfirm, isMockResult = false, lifoOff = false, onShowUnloading }: Omit<ApprovePlanDialogProps, 'open' | 'onOpenChange'>) {
   const t = useT()
   const format = useFormat()
+  const [step, setStep] = useState<'review' | 'late'>('review')
   const { blockers, warnings, patches } = approval
   const blocked = blockers.stale || blockers.issues.length > 0
   const lifoCount = warnings.filter((issue) => LIFO_CODES.has(issue.code)).length
+  if (step === 'late') {
+    return <LateStopsConfirm stops={deadlines.missed} pending={pending} onBack={() => setStep('review')} onConfirm={() => onConfirm(true)} />
+  }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-145">
-        <DialogHeader icon={blocked ? AlertCircle : CircleCheck} tone={blocked ? 'danger' : 'success'}
+    <>
+        <DialogHeader icon={blocked ? AlertCircle : deadlines.needsConfirmation ? Clock : CircleCheck}
+          tone={blocked ? 'danger' : deadlines.needsConfirmation ? 'warning' : 'success'}
           title={t('viewer.plan.dialog.title')} description={t('viewer.plan.dialog.description')}>
           <DialogClose asChild>
             <Button variant="ghost" size="icon" aria-label={t('viewer.plan.dialog.close')} className="-mt-1 -mr-2 text-n-600">
@@ -96,6 +119,22 @@ export function ApprovePlanDialog({ open, onOpenChange, metrics, canSubmit, appr
               <Row tone="success" icon={<Check className="size-4" strokeWidth={2.5} aria-hidden />}>{t('viewer.plan.dialog.noWarnings')}</Row>
             )}
 
+            {deadlines.missed.length > 0 ? (
+              <Row tone="danger" icon={<Clock className="size-4" strokeWidth={2} aria-hidden />}>
+                <b className="font-semibold text-red-700">{t('viewer.plan.dialog.missed', { count: deadlines.missed.length })}</b>
+                <DeadlineStopList stops={deadlines.missed} className="mt-1.5" />
+              </Row>
+            ) : null}
+            {deadlines.atRisk.length > 0 ? (
+              <Row tone="warning" icon={<Clock className="size-4" strokeWidth={2} aria-hidden />}>
+                {t('viewer.plan.dialog.atRisk', { count: deadlines.atRisk.length })}
+                <DeadlineStopList stops={deadlines.atRisk} className="mt-1.5" />
+              </Row>
+            ) : null}
+            {deadlines.onTime.length > 0 && deadlines.missed.length + deadlines.atRisk.length === 0 ? (
+              <Row tone="success" icon={<Check className="size-4" strokeWidth={2.5} aria-hidden />}>{t('viewer.plan.dialog.deadlinesOk')}</Row>
+            ) : null}
+
             {checks.map((check) => (
               <Row key={check.text} tone={check.tone} icon={check.tone === 'success'
                 ? <Check className="size-4" strokeWidth={2.5} aria-hidden />
@@ -133,12 +172,12 @@ export function ApprovePlanDialog({ open, onOpenChange, metrics, canSubmit, appr
             </span>
           ) : null}
           <DialogClose asChild><Button variant="secondary">{t('viewer.plan.dialog.cancel')}</Button></DialogClose>
-          <Button variant="primary" disabled={!canSubmit || !blockers.canApprove || pending} loading={pending} onClick={onConfirm}>
+          <Button variant="primary" disabled={!canSubmit || !blockers.canApprove || pending} loading={pending}
+            onClick={() => (deadlines.needsConfirmation ? setStep('late') : onConfirm(false))}>
             <Check strokeWidth={1.5} />{t('viewer.plan.dialog.confirm')}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
 }
 

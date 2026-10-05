@@ -11,7 +11,8 @@ import {
 
 const TYPE: PackageType = {
   id: 'PT-006', companyId: 'LOG-001', name: 'Thùng quạt điện', lengthCm: 60, widthCm: 25, heightCm: 60, weightKg: 6, fragilityLevel: 'HIGH',
-  allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: false, maxTopLoadKg: 0, createdAt: '2026-08-05T02:00:00.000Z',
+  allowedOrientations: ['LWH', 'WLH'], keepUpright: true, stackable: false, maxTopLoadKg: 0, maxStackWeightKg: 0, rotationAllowed: true, fragile: true,
+  createdAt: '2026-08-05T02:00:00.000Z',
 }
 
 const CONTEXT: ImportContext = { packageTypes: [TYPE], existing: [{ id: 'PK-0049', packageCode: 'HK-DNG-2609-01' }] }

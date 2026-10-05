@@ -5,10 +5,10 @@ import type { CargoPackage } from '@/domain/models'
 import { buildOptimizationRequest, DEFAULT_SETTINGS, groupRequestIssues } from './optimization-request'
 import { buildSetupChecklist } from './setup-checklist'
 
-function checklist(packages: CargoPackage[]) {
+function checklist(packages: CargoPackage[], routePlanned = true) {
   const request = buildOptimizationRequest({ packages }, SPEC_TRUCK_6M, DEFAULT_SETTINGS)
   const summary = groupRequestIssues(validateRequest(request), { tripId: 'TRIP-TEST', vehicleId: SPEC_TRUCK_6M.id })
-  return buildSetupChecklist(packages, SPEC_TRUCK_6M, summary)
+  return buildSetupChecklist(packages, SPEC_TRUCK_6M, summary, routePlanned)
 }
 
 test('a clean trip passes every check and reports the numbers each check read', () => {
@@ -20,7 +20,15 @@ test('a clean trip passes every check and reports the numbers each check read', 
   expect(list.optional).toStrictEqual({ instances: 10, lines: [small] })
   // 4 × 30 kg + 10 × 5 kg; riêng kiện bắt buộc là 120 kg
   expect(list.payload).toMatchObject({ totalKg: 170, mustLoadKg: 120, maxPayloadKg: 5000 })
-  expect([list.errorCount, list.errorGroups]).toStrictEqual([0, []])
+  expect([list.errorCount, list.errorGroups, list.canRun, list.route.state]).toStrictEqual([0, [], true, 'pass'])
+})
+
+test('a trip whose route is not optimized yet cannot run: one error in the Route group, counted before the request errors (FE-5b-05)', () => {
+  const draft = checklist([SPEC_CARTON_A], false)
+  expect([draft.route.state, draft.errorCount, draft.errorGroups, draft.canRun]).toStrictEqual(['fail', 1, ['route'], false])
+  const wardrobe: CargoPackage = { ...SPEC_CARTON_A, id: 'PKG-003', lengthCm: 300, widthCm: 300, heightCm: 300, quantity: 1 }
+  const both = checklist([SPEC_CARTON_A, wardrobe], false)
+  expect([both.errorCount, both.errorGroups, both.canRun]).toStrictEqual([2, ['route', 'packages'], false])
 })
 
 test('a package too big for the door fails only the door check, and counts as one error in the Packages group', () => {

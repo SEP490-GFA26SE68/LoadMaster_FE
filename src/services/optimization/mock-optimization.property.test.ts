@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { expandPackages } from '@/domain/cargo'
 import { createConstraintEngine, type ConstraintCode } from '@/domain/constraints'
 import { SPEC_CARTON_A, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
-import { gt, ORIENTATION_CODES, UPRIGHT_ORIENTATIONS } from '@/domain/geometry'
+import { gt, ORIENTATION_CODES, roundCm, UPRIGHT_ORIENTATIONS } from '@/domain/geometry'
 import {
   optimizationRequestSchema,
   optimizationResultSchema,
@@ -10,7 +10,8 @@ import {
   type OptimizationRequest,
   type VehicleObstacle,
 } from '@/domain/models'
-import { runMockOptimization } from '@/services/optimization'
+import { axleImbalance, axleLoads } from '@/domain/metrics'
+import { runMockCandidates, runMockOptimization } from '@/services/optimization'
 import { seededRandom } from '@/test/placements'
 
 /** Codes that would mean a placement the mock returned is invalid, not merely a warning about the plan. */
@@ -74,6 +75,7 @@ test('500 deterministic random requests: every placement valid, every instance a
   const random = seededRandom(24_092_026)
   let completed = 0
   let placed = 0
+  let rehandled = 0
   for (let index = 0; index < 500; index += 1) {
     const request = randomRequest(random, index)
     expect(optimizationRequestSchema.safeParse(request).success).toBe(true)
@@ -91,9 +93,63 @@ test('500 deterministic random requests: every placement valid, every instance a
     const { issues } = createConstraintEngine({ ...request, placements: result.placements }).evaluateAll()
     expect(issues.filter(({ code }) => INVALID_PLACEMENT.has(code))).toStrictEqual([])
     expect(gt(result.metrics.usedPayloadKg, request.vehicle.maxPayloadKg)).toBe(false)
+    // zones (FE-5b-02): they and their 10 cm buffers cover the box exactly, every placement sits in one, and the count is the
+    // number of placements sitting in the zone of another stop; packing by zone never puts cargo behind a later stop
+    const zones = result.stopZones ?? []
+    const stopOf = new Map(expandPackages(request.packages).instances.map(({ packageInstanceId, deliveryStop }) => [packageInstanceId, deliveryStop]))
+    const zoneStop = new Map(zones.map(({ id, stopId }) => [id, stopId]))
+    if (zones.length > 0) expect(roundCm(zones.reduce((sum, { startXCm, endXCm }) => sum + endXCm - startXCm, 0) + (zones.length - 1) * 10)).toBe(request.vehicle.innerLengthCm)
+    expect(result.placements.filter(({ stopZoneId }) => stopZoneId === undefined || !zoneStop.has(stopZoneId))).toStrictEqual([])
+    expect(result.metrics.rehandlingCount).toBe(result.placements.filter(({ packageInstanceId, stopZoneId }) => zoneStop.get(stopZoneId ?? '') !== stopOf.get(packageInstanceId)).length)
+    if (request.settings.enforceLifo) expect(issues.filter(({ code }) => code === 'LIFO_BLOCKED')).toStrictEqual([])
+    rehandled += result.metrics.rehandlingCount ?? 0
     completed += 1
     placed += result.placements.length
   }
   // most requests must really run and place cargo, or "nothing invalid" proves little
-  expect({ mostCompleted: completed > 400, enoughPlaced: placed > 5000 }).toStrictEqual({ mostCompleted: true, enoughPlaced: true })
+  expect({ mostCompleted: completed > 400, enoughPlaced: placed > 5000, someRehandled: rehandled > 0 }).toStrictEqual({ mostCompleted: true, enoughPlaced: true, someRehandled: true })}, 120_000)
+
+test('300 deterministic random requests, three candidate plans each: every plan valid, and each objective is the best of the three at its own metric', () => {
+  const random = seededRandom(4_102_026)
+  let completed = 0
+  let distinct = 0
+  for (let index = 0; index < 300; index += 1) {
+    const base = randomRequest(random, index)
+    // two in three vehicles declare a steer axle under the cab and a rear axle two thirds down the box, with room for the payload
+    const { maxPayloadKg } = base.vehicle
+    const axles = random() < 0.67
+      ? [
+          { id: 'AXLE-01', name: 'Trục trước', positionXCm: -100, emptyLoadKg: 1500, maxLoadKg: 1500 + maxPayloadKg * 0.6 },
+          { id: 'AXLE-02', name: 'Trục sau', positionXCm: 400, emptyLoadKg: 1200, maxLoadKg: 1200 + maxPayloadKg },
+        ]
+      : undefined
+    const request: OptimizationRequest = { ...base, vehicle: { ...base.vehicle, axles } }
+    const { plans } = runMockCandidates(request, { clock: () => 0 })
+    expect(plans.map(({ objective }) => objective)).toStrictEqual(['MAX_VOLUME', 'AXLE_BALANCE', 'MIN_REHANDLING'])
+    if (index % 50 === 0) expect(runMockCandidates(request, { clock: () => 0 }).plans).toStrictEqual(plans)
+    const instances = expandPackages(request.packages).instances.length
+    for (const { result } of plans) {
+      expect(optimizationResultSchema.safeParse(result).success).toBe(true)
+      expect(result.placements.length + result.unplacedPackages.length).toBe(instances)
+      if (result.status === 'FAILED') continue
+      const { issues } = createConstraintEngine({ ...request, placements: result.placements }).evaluateAll()
+      expect(issues.filter(({ code }) => INVALID_PLACEMENT.has(code) || code === 'AXLE_OVERLOAD')).toStrictEqual([])
+      if (request.settings.enforceLifo) expect(issues.filter(({ code }) => code === 'LIFO_BLOCKED')).toStrictEqual([])
+    }
+    const [a, b, c] = plans.map(({ result }) => result)
+    if (a === undefined || b === undefined || c === undefined || a.status === 'FAILED') continue
+    completed += 1
+    if (new Set(plans.map(({ result }) => JSON.stringify(result.placements))).size === 3) distinct += 1
+    // no objective trades loaded packages for its metric: A loads the most volume, B and C load as many packages as the best layout
+    expect(Math.max(b.metrics.usedVolumeCm3, c.metrics.usedVolumeCm3) <= a.metrics.usedVolumeCm3 + 1e-6).toBe(true)
+    expect([b.metrics.placedCount, c.metrics.placedCount]).toStrictEqual([c.metrics.placedCount, b.metrics.placedCount])
+    expect(a.metrics.placedCount <= b.metrics.placedCount).toBe(true)
+    if (a.metrics.placedCount !== b.metrics.placedCount) continue
+    const imbalance = (result: typeof a) => axleImbalance(axleLoads(request.vehicle, result.placements, request.packages))
+    const [ia, ib, ic] = [imbalance(a), imbalance(b), imbalance(c)]
+    if (ia !== undefined && ib !== undefined && ic !== undefined) expect(ib <= Math.min(ia, ic) + 1e-6).toBe(true)
+    expect((c.metrics.rehandlingCount ?? 0) <= Math.min(a.metrics.rehandlingCount ?? 0, b.metrics.rehandlingCount ?? 0)).toBe(true)
+  }
+  // most requests must run, and a fair share must give three different layouts, or the comparison proves little
+  expect({ mostCompleted: completed > 240, manyDistinct: distinct > 60 }).toStrictEqual({ mostCompleted: true, manyDistinct: true })
 }, 120_000)

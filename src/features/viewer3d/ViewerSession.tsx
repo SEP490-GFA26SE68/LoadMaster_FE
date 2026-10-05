@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
+import { ChangeVehicleDialog } from '@/features/trips/ChangeVehicleDialog'
 import { useT } from '@/lib/i18n'
-import type { TripPhase } from '@/lib/mock-db'
+import { tripStatus, type TripPhase } from '@/lib/mock-db'
 import { ApprovePlanDialog } from './ApprovePlanDialog'
 import { plannerAccess } from './approval/planner-access'
 import { useViewerApproval } from './approval/useViewerApproval'
@@ -57,12 +58,20 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const hasEdits = (approval.approval?.patches.length ?? 0) > 0
   // Điều phối viên chỉnh tay và duyệt (`plans.approve`, FE-0-07), quản lý công ty chỉ xem; chuyến đã sang pha vận hành thì phương án
   // đã chốt với mọi vai trò (D-45)
-  const approvedBy = usePlanApprovalQuery(plan.revision?.id).data?.approvedByName
+  const planInfo = usePlanApprovalQuery(plan.revision?.id).data
+  const approvedBy = planInfo?.approvedByName
+  // Phương án ứng viên của một lần chạy (FE-5b-06): nhãn A · B · C ở tiêu đề, nút So sánh mở đúng ba phương án của lần chạy đó. Bản đã
+  // chỉnh tay không còn nguyên là phương án ứng viên: nhãn "Đã chỉnh tay" nói thay, không kèm chữ cái (hai nhãn không vừa 1.536 px)
+  const candidate = planInfo?.candidate ?? null
   const access = plannerAccess({ phase, canApprove: can('plans.approve'), approvedAt: plan.revision?.approvedAt ?? null, hasEdits })
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
   const perfStore = useMemo(() => createPerfStore(), [])
   const [approveOpen, setApproveOpen] = useState(false)
+  // Đổi xe (FE-5b-08, D-80): chuyến Đã lập kế hoạch, người sửa được chuyến; nút nằm ở góc khung 3D (thanh trên không còn chỗ), đổi
+  // xong phương án đang xem thành lỗi thời
+  const canChangeVehicle = source !== undefined && can('trips.edit') && tripStatus(source.trip) === 'PLANNED'
+  const [vehicleOpen, setVehicleOpen] = useState(false)
   const [inspectorTab, setInspectorTab] = useState<InspectorTab | null>(null)
   const { followPlacement } = editor
   const { follow, current: currentOperation } = operations
@@ -108,9 +117,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         totalCount={totalPackages}
         isMockResult={plan.isMockResult}
         manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
+        candidateLabel={plan.revision?.manuallyEdited ? undefined : candidate?.label}
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
-        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy}
+        <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy} compareRunId={candidate?.runId}
           onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
       <PlannerNotices model={plan} source={source} lock={access.lock}
@@ -124,6 +134,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
           </Suspense>
 
           {editor.mode === 'view' ? <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
+            onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined}
             onResetFocus={editor.focus ? () => { operations.setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} /> : null}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
@@ -161,14 +172,16 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
           metrics={plan.metrics}
           canSubmit={approval.canSubmit}
           approval={approval.approval}
+          deadlines={approval.deadlines}
           checks={approvalChecks}
           pending={approval.pending}
-          onConfirm={() => approval.confirm(() => setApproveOpen(false))}
+          onConfirm={(force) => approval.confirm(() => setApproveOpen(false), { force })}
           isMockResult={plan.isMockResult}
           lifoOff={plan.engineInput?.settings.enforceLifo === false}
           onShowUnloading={handleShowUnloading}
         />
       ) : null}
+      {canChangeVehicle ? <ChangeVehicleDialog tripId={tripId} open={vehicleOpen} onOpenChange={setVehicleOpen} /> : null}
     </div>
   )
 }

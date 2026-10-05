@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { attachScreenshot, expect, test } from './fixtures'
+import { typeVerifyCode } from './operations-helpers'
 import { heightOf, MOCK_DB, navigateInApp, overflowingText, SEED_TRIP, switchUser } from './spec-flow-helpers'
 
 /**
@@ -67,7 +68,7 @@ test('phone: the driver screens run in English and switching language mid-delive
   await login('/tai-xe', 'driver')
   await page.goto('/tai-xe?lang=en')
   await expect(page.getByRole('heading', { level: 1, name: 'My trips', exact: true })).toBeVisible()
-  const open = page.getByRole('region', { name: 'Ready to deliver' }).getByRole('link', { name: 'Open trip', exact: true })
+  const open = page.getByRole('region', { name: 'Loaded — waiting to depart' }).getByRole('link', { name: 'Open trip', exact: true })
   expect(await heightOf(open)).toBeGreaterThanOrEqual(56)
   expect(await overflowingText(page)).toStrictEqual([])
   await attachScreenshot(page, testInfo, 'driver-list-en-phone')
@@ -83,16 +84,27 @@ test('phone: the driver screens run in English and switching language mid-delive
   expect(await overflowingText(page)).toStrictEqual([])
   await attachScreenshot(page, testInfo, 'driver-en-phone')
 
-  await page.getByRole('button', { name: 'Start delivery', exact: true }).tap()
+  // FE-6-06: xuất phát, bấm "Đã đến" rồi mới dỡ — dỡ bằng hộp đối chiếu (gõ mã của bên gửi), không có nút đánh dấu tay
+  await page.getByRole('button', { name: 'Depart', exact: true }).tap()
+  const arrive = page.getByRole('button', { name: 'Arrived at stop 1', exact: true })
+  expect(await heightOf(arrive)).toBeGreaterThanOrEqual(56)
+  expect(await overflowingText(page)).toStrictEqual([])
+  await arrive.tap()
   const first = await planUnloadOrder(page, 'TRIP-010', 1)
-  await page.getByRole('button', { name: `Mark ${first.ids[0]} as unloaded`, exact: true }).tap()
+  await page.getByRole('button', { name: 'Verify unloading', exact: true }).tap()
+  const verify = page.getByRole('dialog', { name: 'Verify unloading at stop 1' })
+  await typeVerifyCode(verify, first.ids[0] ?? '', 'QR code or sender code')
+  await expect(verify.getByText(new RegExp(`^Just unloaded ${first.ids[0]} · `))).toBeVisible()
+  expect(await overflowingText(page)).toStrictEqual([])
+  await verify.getByRole('button', { name: 'Close', exact: true }).tap()
   await expect(page.getByRole('button', { name: 'Report an issue', exact: true })).toBeVisible()
   expect(await overflowingText(page)).toStrictEqual([])
   await attachScreenshot(page, testInfo, 'driver-en-phone-delivering')
 
   await vietnamese.tap()
   await expect(page.getByRole('heading', { name: 'Điểm 1 / 3', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: `Bỏ đánh dấu đã dỡ ${first.ids[0]}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator(`li[data-package-id="${first.ids[0]}"]`)).toHaveAttribute('data-state', 'unloaded')
+  await expect(page.locator(`li[data-package-id="${first.ids[0]}"]`)).toContainText('Đã dỡ · gõ mã')
   await english.tap()
   await expect(page.getByRole('heading', { name: 'Stop 1 / 3', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])

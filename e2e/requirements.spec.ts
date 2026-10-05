@@ -101,7 +101,7 @@ test('the manager creates a delivery requirement; the dispatcher only reads it a
   await expect(row).toContainText('TRIP-014 · Điểm 1')
   await expect(page.getByText('6 yêu cầu chờ xếp chuyến', { exact: true })).toBeVisible()
 
-  // Chi tiết chuyến: yêu cầu trên chuyến, dòng kiện mới ở điểm 1, kiểm tra trước tối ưu vẫn đạt
+  // Chi tiết chuyến: yêu cầu trên chuyến, dòng kiện mới ở điểm 1; kiểm tra trước tối ưu chỉ còn chờ tối ưu tuyến (chuyến nháp, FE-5b-05)
   await row.getByRole('link', { name: 'Tuyến Tân An – Dĩ An', exact: true }).click()
   await page.waitForURL(/\/chuyen\/TRIP-014$/)
   const onTrip = page.getByRole('region', { name: 'Yêu cầu giao của chuyến', exact: true })
@@ -112,8 +112,10 @@ test('the manager creates a delivery requirement; the dispatcher only reads it a
   await expect(page.getByRole('region', { name: 'Sơ đồ tuyến' }).getByRole('button', { name: /^Lọc kiện theo điểm/ })).toHaveCount(2)
   await expect(page.getByRole('region', { name: 'Kiện hàng' }).getByRole('row', { name: /Thùng sữa hộp 48 hộp/ })).toBeVisible()
   const readiness = page.getByRole('region', { name: 'Kiểm tra trước khi tối ưu', exact: true })
-  await expect(readiness.getByText('Sẵn sàng tối ưu', { exact: true })).toBeVisible()
   await expect(readiness.getByText('146 kiện', { exact: true })).toBeVisible()
+  await expect(readiness.getByText('Chưa sẵn sàng tối ưu', { exact: true })).toBeVisible()
+  await expect(readiness.getByText('Chưa tối ưu tuyến. Bấm "Tối ưu tuyến" ở sơ đồ tuyến để chốt thứ tự điểm giao', { exact: true })).toBeVisible()
+  await expect(readiness.getByText('1 mục đang chặn tối ưu. Sửa xong rồi chạy tối ưu.', { exact: true })).toBeVisible()
 
   // Kiện của yêu cầu sang "Đã gán chuyến" ở màn Kho kiện của điều phối viên, kèm yêu cầu và chuyến đang giữ kiện
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Kho kiện', exact: true }).click()

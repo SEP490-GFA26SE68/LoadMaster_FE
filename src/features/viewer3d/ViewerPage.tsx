@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
-import { benchmarkCountFromSearch, createBenchmarkInput, type BenchmarkCount } from './benchmark.mock'
+import { benchmarkCountFromSearch, benchmarkStopCountFromSearch, createBenchmarkInput, type BenchmarkCount, type BenchmarkStopCount } from './benchmark.mock'
 import { benchmarkObstacleCountFromSearch, withBenchmarkObstacles, type BenchmarkObstacleCount } from './benchmark-obstacles.mock'
 import { adaptResult } from './scene-input'
 import { usePlanSourceQuery } from './usePlanSourceQuery'
@@ -19,15 +19,16 @@ export function ViewerPage() {
   const [searchParams] = useSearchParams()
   const count = benchmarkCountFromSearch(searchParams.toString())
   const obstacles = benchmarkObstacleCountFromSearch(searchParams.toString()) ?? 0
-  return count ? <BenchmarkSession count={count} obstacles={obstacles} /> : <ResultSession />
+  const stops = benchmarkStopCountFromSearch(searchParams.toString())
+  return count ? <BenchmarkSession count={count} obstacles={obstacles} stops={stops} /> : <ResultSession />
 }
 
-/** `?debug&packages=N[&obstacles=0|1|20]`: fixture renderer, không đọc kho. */
-function BenchmarkSession({ count, obstacles }: { count: BenchmarkCount; obstacles: BenchmarkObstacleCount }) {
+/** `?debug&packages=N[&obstacles=0|1|20][&stops=1|4|8]`: fixture renderer, không đọc kho; `stops` thêm vùng theo điểm giao (FE-5b-07). */
+function BenchmarkSession({ count, obstacles, stops }: { count: BenchmarkCount; obstacles: BenchmarkObstacleCount; stops?: BenchmarkStopCount }) {
   const model = useMemo(() => {
-    const input = withBenchmarkObstacles(createBenchmarkInput(count), obstacles)
+    const input = withBenchmarkObstacles(createBenchmarkInput(count, stops), obstacles)
     return adaptResult({ trip: input.trip, revision: input })
-  }, [count, obstacles])
+  }, [count, obstacles, stops])
   return <ViewerSession key={`${model.tripId}:${obstacles}`} model={model} />
 }
 

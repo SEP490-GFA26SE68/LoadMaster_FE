@@ -1,4 +1,4 @@
-import type { FragilityLevel, OrientationCode } from '@/domain/models'
+import { PLAN_OBJECTIVES, type FragilityLevel, type OrientationCode, type PlanObjective } from '@/domain/models'
 import type { DeadlineStatus } from '@/domain/routing'
 
 /**
@@ -26,8 +26,20 @@ export type Company = {
   depot: CompanyDepot
 }
 
+/**
+ * Ba trường ràng buộc của loại kiện theo backend (FE-5b-01, D-79): tải xếp chồng tối đa, có cho xoay kiện không, có dễ vỡ không. Là
+ * hình chiếu thô của các trường Spec đã có (`maxTopLoadKg`, `allowedOrientations`, `fragilityLevel`); ánh xạ hai chiều ở
+ * `package-type-limits.ts`, kho ghi lại mỗi lần lưu loại kiện.
+ */
+export type PackageTypeLimits = {
+  /** Khối lượng tối đa xếp chồng lên trên, kg; 0 là không cho xếp chồng. */
+  maxStackWeightKg: number
+  rotationAllowed: boolean
+  fragile: boolean
+}
+
 /** Loại kiện (`PT-NNN`): cùng trường xếp hàng với `CargoPackage`; kiện gắn loại này lấy hướng đặt, xếp chồng, tải trên của nó. */
-export type PackageType = {
+export type PackageType = PackageTypeLimits & {
   id: string
   /** Công ty có loại kiện này trong danh mục (D-64). */
   companyId: string
@@ -48,33 +60,54 @@ export type PackageType = {
   createdAt: string
 }
 
-export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt'>
+/** Đầu vào của kho: các trường Spec; ba trường của backend do kho suy ra (`backendLimitsOf`). */
+export type PackageTypeInput = Omit<PackageType, 'id' | 'companyId' | 'createdAt' | keyof PackageTypeLimits>
 
-export const OPTIMIZATION_OBJECTIVES = ['MAX_VOLUME', 'AXLE_BALANCE'] as const
-export type OptimizationObjective = (typeof OPTIMIZATION_OBJECTIVES)[number]
+/** Mục tiêu của một phương án ứng viên (FE-5b-05, D-77): mỗi lần chạy ra đủ ba mục tiêu — `PLAN_OBJECTIVES` của domain. */
+export const OPTIMIZATION_OBJECTIVES = PLAN_OBJECTIVES
+export type OptimizationObjective = PlanObjective
 
-export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF', 'GENETIC_ALGORITHM'] as const
+/**
+ * Thuật toán đã chạy của một lần chạy. Hiện chỉ có một: mock xếp kệ chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty; thuật
+ * toán theo hạng gói (D-77) nối ở FE-8-05. Người dùng không chọn thuật toán.
+ */
+export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF'] as const
 export type OptimizationAlgorithm = (typeof OPTIMIZATION_ALGORITHMS)[number]
 
-/** Mục tiêu và thuật toán người dùng chọn cho một lần chạy. Mock tối ưu bỏ qua, kho vẫn lưu để hiện lịch sử. */
+/** Thuật toán kho ghi cho lần chạy khi nơi gọi không nói. */
+export const DEFAULT_RUN_ALGORITHM: OptimizationAlgorithm = 'EP_DBLF'
+
+/** Mục tiêu và thuật toán của lần chạy đã tạo một revision; nhãn A · B · C suy từ mục tiêu (`PLAN_LABELS`). */
 export type RunSettings = { objective: OptimizationObjective; algorithm: OptimizationAlgorithm }
 
-/** Mặc định khi nơi gọi không chọn (màn thiết lập cũ). */
-export const DEFAULT_RUN_SETTINGS: RunSettings = { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF' }
+/** Mặc định khi nơi gọi lưu một kết quả lẻ mà không nói mục tiêu (`addRevision`). */
+export const DEFAULT_RUN_SETTINGS: RunSettings = { objective: 'MAX_VOLUME', algorithm: DEFAULT_RUN_ALGORITHM }
 
-/** Một lần chạy tối ưu của chuyến (`RUN-NNN`), kể cả lần hỏng không có revision. Thuộc công ty của chuyến `tripId` (D-64). */
-export type OptimizationRun = RunSettings & {
+/** Một phương án ứng viên của lần chạy: revision đã lưu và vài số của kết quả. */
+export type RunPlan = {
+  objective: OptimizationObjective
+  revisionId: string
+  jobId: string
+  placedCount: number
+  unplacedCount: number
+  volumeUtilizationPercent: number
+}
+
+/**
+ * Một lần chạy tối ưu của chuyến (`RUN-NNN`), kể cả lần hỏng không có revision. Thuộc công ty của chuyến `tripId` (D-64). Lần chạy
+ * xong mang các phương án ứng viên nó tạo (`plans`, theo thứ tự A · B · C) — ba phương án của một job (FE-5b-05), hoặc một khi kết quả
+ * được lưu lẻ bằng `addRevision`.
+ */
+export type OptimizationRun = {
   id: string
   tripId: string
+  algorithm: OptimizationAlgorithm
   status: 'COMPLETED' | 'FAILED'
   at: string
   by: string | null
-  /** Lần chạy xong: revision đã lưu và vài số của kết quả. */
-  revisionId?: string
+  /** Lần chạy xong: mã job của service và các phương án đã lưu. */
   jobId?: string
-  placedCount?: number
-  unplacedCount?: number
-  volumeUtilizationPercent?: number
+  plans?: RunPlan[]
   /** Lần chạy hỏng: mã lý do (`REQUEST_REJECTED`, `SERVICE_UNAVAILABLE`), UI dịch. */
   failureCode?: string
 }
@@ -82,7 +115,10 @@ export type OptimizationRun = RunSettings & {
 export const RUN_FAILURE_CODES = ['REQUEST_REJECTED', 'SERVICE_UNAVAILABLE'] as const
 export type RunFailureCode = (typeof RUN_FAILURE_CODES)[number]
 
-/** Loại xe (`VT-NNN`, backend có CRUD `/api/vehicle-types`): kích thước lòng thùng và tải trọng danh nghĩa. */
+/**
+ * Loại xe (`VT-NNN`, backend có CRUD `/api/vehicle-types`): kích thước lòng thùng, tải trọng danh nghĩa và ba giới hạn xếp hàng của
+ * backend (FE-5b-01). Xe gắn loại nào thì lấy giới hạn của loại đó (`vehicle-limits.ts`).
+ */
 export type VehicleType = {
   id: string
   /** Công ty có loại xe này trong danh mục (D-64). */
@@ -92,12 +128,19 @@ export type VehicleType = {
   cargoWidthCm: number
   cargoHeightCm: number
   payloadKg: number
+  /** Giới hạn tải nhóm trục trước, kg (D-78); vắng là loại xe chưa khai — xe dùng `maxLoadKg` của trục đầu. */
+  frontAxleLimitKg?: number
+  /** Giới hạn tải nhóm trục sau, kg (D-78); vắng là loại xe chưa khai — xe dùng tổng `maxLoadKg` của các trục còn lại. */
+  rearAxleLimitKg?: number
+  /** Độ lệch trọng tâm hàng tối đa so với giữa thùng, tỷ lệ chiều dài / chiều rộng lòng thùng, trong (0, 0,5] (D-79). */
+  maxCogOffsetRatio: number
   createdAt: string
 }
 
-export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt'>
+/** `maxCogOffsetRatio` vắng thì kho đặt mặc định `DEFAULT_MAX_COG_OFFSET_RATIO`. */
+export type VehicleTypeInput = Omit<VehicleType, 'id' | 'companyId' | 'createdAt' | 'maxCogOffsetRatio'> & { maxCogOffsetRatio?: number }
 
-/** Xe gắn loại xe — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
+/** Xe gắn loại xe — lưu ngoài `VehicleConfig`; giới hạn của loại được ghép vào xe lúc đọc (`withTypeLimits`). */
 export type VehicleTypeAssignment = { vehicleId: string; vehicleTypeId: string }
 
 /** Nhãn QR của một kiện trong chuyến: mã QR của kiện kho kiện ứng với instance đó (FE-3b-07). */
@@ -110,10 +153,15 @@ export type TripLabel = {
   qrToken: string
   /** Kiện kho kiện (`PK-NNNN`) của instance này. */
   poolPackageId: string
+  /** Mã của bên gửi (`Package.packageCode`): gõ mã này đối chiếu được kiện khi nó duy nhất trong chuyến (FE-6-03, D-83). */
+  packageCode: string
 }
 
 /** Quét QR xác nhận một kiện (xếp hoặc dỡ). */
 export type ScanResult<T> = { trip: T; packageInstanceId: string }
+
+/** Kết quả soạn một kiện (FE-6-02): `alreadyStaged` — kiện đã soạn từ trước, lần này kho không ghi gì. */
+export type StagingScanResult<T> = ScanResult<T> & { alreadyStaged: boolean }
 
 /** Giờ đến dự kiến của một điểm giao trong tuyến đã tối ưu. */
 export type RouteStopEta = {

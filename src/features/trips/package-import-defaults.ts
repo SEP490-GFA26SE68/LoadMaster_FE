@@ -1,3 +1,4 @@
+import { DEFAULT_MIN_SUPPORT_RATIO } from '@/domain/constraints'
 import { ORIENTATION_CODES, roundCm, roundKg, UPRIGHT_ORIENTATIONS, type OrientationCode } from '@/domain/geometry'
 import type { FragilityLevel, HandlingClass } from '@/domain/models'
 import type { ImportField } from './package-import-columns'
@@ -8,7 +9,7 @@ export type ImportValues = Partial<Record<ImportField, ImportValue>>
 
 /**
  * Cột tuỳ chọn vắng hoặc ô trống: như kiện mới của form (LM-045) — sáu hướng (chỉ hai hướng đứng khi giữ thẳng đứng), không dễ vỡ,
- * cho xếp chồng, tải trên 0 kg, đỡ đáy 0,8, ưu tiên 0, loại hàng `STANDARD` (FE-3b-07, D-68). Kích thước về bội 0,1 cm, khối lượng
+ * cho xếp chồng, tải trên 0 kg, đỡ đáy 0,7 (D-79), ưu tiên 0, loại hàng `STANDARD` (FE-3b-07, D-68). Kích thước về bội 0,1 cm, khối lượng
  * 0,01 kg tại biên nhập liệu (D-03).
  */
 export function withImportDefaults(values: ImportValues): Record<string, unknown> {
@@ -49,7 +50,7 @@ export function withImportDefaults(values: ImportValues): Record<string, unknown
     stackable: flag('stackable', true),
     maxTopLoadKg: roundKg(number('maxTopLoadKg') ?? 0),
     ...(maxStackCount === undefined ? {} : { maxStackCount }),
-    minSupportRatio: number('minSupportRatio') ?? 0.8,
+    minSupportRatio: number('minSupportRatio') ?? DEFAULT_MIN_SUPPORT_RATIO,
     deliveryStop: number('deliveryStop'),
     priority: number('priority') ?? 0,
     mustLoad: flag('mustLoad', false),

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { cargoCenterOfMass, stopDistribution, stopOrderConsistent, timelineBins } from '@/features/viewer3d/operations/operations-model'
+import { cargoCenterOfMass, stopOrderConsistent, timelineBins } from '@/features/viewer3d/operations/operations-model'
 import { countLifoIssues, createLifoIndex } from '@/features/viewer3d/operations/unloading'
 import { deriveSceneSemantics } from '@/features/viewer3d/operations/scene-semantics'
 import { placementMeasurements } from '@/features/viewer3d/operations/placement-measurements'
@@ -36,13 +36,6 @@ test('cargo mass uses oriented box centers weighted by cargo mass, including emp
   expect(cargoCenterOfMass([a, b])).toStrictEqual({ position: { x: 23.75, y: 12.5, z: 12.5 }, weightKg: 40 })
   expect(cargoCenterOfMass([])).toBe(null)
   expect(cargoCenterOfMass([{ ...a, weightKg: 0 }, { ...b, weightKg: NaN }])).toBe(null)
-})
-
-test('stop distribution keeps mixed stops and clips exact volume into bins', () => {
-  const bins = stopDistribution([box('a', 0), box('b', 0, 10, 0, { stop: 2 })], 20, 2)
-  expect(bins[0]!.portions).toStrictEqual([{ stop: 1, ratio: 0.5 }, { stop: 2, ratio: 0.5 }])
-  expect(bins[1]!.portions).toStrictEqual([])
-  expect(stopDistribution([], 0).length).toBe(0)
 })
 
 test('loading semantic states, focus and isolation preserve placement identity and source geometry', () => {

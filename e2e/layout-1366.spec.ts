@@ -66,6 +66,25 @@ const SCREENS: readonly Screen[] = [
     },
   },
   {
+    // FE-5b-05: danh sách ba phương án, nhóm kiểm tra Tuyến và bảng lần chạy có ba dòng phương án mỗi lần chạy
+    name: 'optimization-setup',
+    route: '/chuyen/TRIP-2026-0914/toi-uu',
+    ready: async (page) => {
+      await expect(page.getByRole('list', { name: 'Ba phương án mỗi lần chạy', exact: true })).toBeVisible()
+      await expect(page.locator('[data-run-history]').getByRole('row')).toHaveCount(3)
+    },
+  },
+  {
+    // FE-5b-06: ba thẻ phương án cạnh nhau — số đo và tên điểm giao xuống dòng, không cắt
+    name: 'plan-candidates',
+    route: '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002',
+    ready: async (page) => {
+      await expect(page.locator('[data-candidate]')).toHaveCount(3)
+      await expect(page.locator('[data-stop-deadline]')).toHaveCount(4)
+      await expect(page.locator('header:has(h1)')).toContainText('Lần chạy RUN-002 · 3 phương án ứng viên')
+    },
+  },
+  {
     name: 'planner',
     route: PLANNER_ROUTE,
     ready: async (page) => {
@@ -79,6 +98,15 @@ const SCREENS: readonly Screen[] = [
     route: '/tra-cuu-kien?ma=PK-0054',
     ready: async (page) => {
       await expect(page.getByRole('region', { name: 'Kiện PB-HUE-2609-01', exact: true })).toBeVisible()
+    },
+  },
+  {
+    // FE-6-10: bản đồ, danh sách và chi tiết của chuyến seed đang vận chuyển
+    name: 'monitoring',
+    route: '/giam-sat',
+    ready: async (page) => {
+      await expect(page.getByRole('region', { name: 'Giám sát chuyến TRIP-009', exact: true }).getByText(/^[\d.]+ điểm vị trí$/)).toBeVisible()
+      await expect(page.getByRole('region', { name: 'Bản đồ các xe đang vận chuyển', exact: true }).locator('.maplibregl-marker')).not.toHaveCount(0)
     },
   },
   {
@@ -117,7 +145,24 @@ const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
   { name: 'dashboard', role: 'dispatcher', route: '/', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
   { name: 'trip-detail', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
   { name: 'vehicle-detail', role: 'dispatcher', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
+  // FE-5b-06: màn so sánh ba phương án dài hơn một màn hình. Chờ cả dòng dữ liệu của dải trời: nó về sau các thẻ và làm vùng cuộn thấp đi
+  {
+    name: 'plan-candidates', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914/so-sanh?lan-chay=RUN-002',
+    ready: async (page) => {
+      await expect(page.locator('[data-candidate]')).toHaveCount(3)
+      await expect(page.locator('header:has(h1)')).toContainText('Lần chạy RUN-002 · 3 phương án ứng viên')
+    },
+  },
   { name: 'fleet', role: 'dispatcher', route: '/doi-xe', ready: async (page) => { await expect(page.getByRole('row', { name: /VEHICLE-008/ })).toBeVisible() } },
+  // FE-6-10: màn Giám sát dài hơn một màn hình; bánh xe chuột lăn qua bản đồ vẫn cuộn màn. Chờ bản đồ dựng xong: lăn chuột đúng lúc
+  // sơ đồ chờ bị thay bằng bản đồ thì trình duyệt bỏ dở lần cuộn (phần tử dưới con trỏ vừa bị gỡ)
+  {
+    name: 'monitoring', role: 'dispatcher', route: '/giam-sat',
+    ready: async (page) => {
+      await expect(page.getByRole('region', { name: 'Giám sát chuyến TRIP-009', exact: true }).getByText(/^[\d.]+ điểm vị trí$/)).toBeVisible()
+      await expect(page.getByRole('region', { name: 'Bản đồ các xe đang vận chuyển', exact: true }).locator('.maplibregl-marker')).not.toHaveCount(0)
+    },
+  },
   // FE-0-06: hai màn kiện là của điều phối viên
   { name: 'packages', role: 'dispatcher', route: '/kien-hang', ready: async (page) => { await expect(page.getByRole('row', { name: /PK-00/ }).first()).toBeVisible() } },
   { name: 'labels', role: 'dispatcher', route: '/kien-hang/nhan?kien=PK-0001,PK-0054,PK-0063,PK-0078', ready: async (page) => { await expect(page.getByRole('img', { name: /^Mã QR LM-/ }).first()).toBeVisible() } },
@@ -150,18 +195,18 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
 })
 
 /**
- * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên và quản lý công ty, mỗi vai trò 5 mục), cả hai
+ * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên và quản lý công ty, mỗi vai trò 6 mục từ FE-6-10), cả hai
  * ngôn ngữ. Mục còn đủ chữ (dưới 1.340 px mới rút về icon), khay mục không cuộn ngang, không chạm cụm nút bên phải, trang không cuộn
  * ngang; chỉ báo kính bám mục đang rê và về mục đang mở khi con trỏ rời thanh. Số đo đính kèm báo cáo (`nav-1366`).
  */
 const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
   {
     role: 'dispatcher',
-    labels: { vi: ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Package pool', 'Requirements', 'Fleet', 'Dashboard'] },
+    labels: { vi: ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'], en: ['Trips', 'Monitoring', 'Package pool', 'Requirements', 'Fleet', 'Dashboard'] },
   },
   {
     role: 'manager',
-    labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Fleet'] },
+    labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Monitoring', 'Fleet'] },
   },
 ]
 

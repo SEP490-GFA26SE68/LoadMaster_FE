@@ -1,34 +1,40 @@
-import { CircleX, Ellipsis, FileText, Pencil } from 'lucide-react'
+import { CircleX, Ellipsis, FileText, Pencil, Truck } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
-import { isCancellablePhase, type Trip, type TripPhase } from '@/lib/mock-db'
+import { isCancellablePhase, tripStatus, type Trip, type TripPhase } from '@/lib/mock-db'
 import { useT } from '@/lib/i18n'
 import { CancelTripDialog } from './CancelTripDialog'
+import { ChangeVehicleDialog } from './ChangeVehicleDialog'
 
 /** Kho còn cho sửa tên, ngày chạy, tài xế ở các pha này (D-45); xe, điểm giao, kiện chỉ sửa được ở `planning`. */
 const FRAME_EDITABLE: readonly TripPhase[] = ['planning', 'loading', 'loaded']
 
 /**
- * Menu thao tác phụ ở header Chi tiết chuyến (LM-088): sửa thông tin chuyến, huỷ chuyến, mở báo cáo của chuyến đã hoàn thành (LM-104).
- * Chỉ hiện với người được sửa chuyến; mục nào
- * pha hiện tại không cho làm thì không hiện (không nút giả, D-20). Hộp thoại huỷ luôn gắn ở đây để còn sống tới khi huỷ xong,
- * kể cả khi menu vừa ẩn vì chuyến đã sang "Đã huỷ".
+ * Menu thao tác phụ ở header Chi tiết chuyến (LM-088): sửa thông tin chuyến, đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80), huỷ
+ * chuyến, mở báo cáo của chuyến đã hoàn thành hoặc bị huỷ lúc đang vận chuyển (LM-104, FE-6-14).
+ * Sửa, đổi xe, huỷ chỉ hiện với người được sửa chuyến (`canEdit`); báo cáo hiện với mọi người xem được chuyến — quản lý công ty mở báo
+ * cáo từ đây. Mục nào pha hiện tại không cho làm thì không hiện (không nút giả, D-20). Chuyến Đang vận chuyển có mục huỷ: hộp thoại
+ * nói huỷ được hay chưa (cần sự cố cấp chuyến chưa xử lý, FE-6-07). Hộp thoại luôn gắn ở đây để còn sống tới khi làm xong, kể cả khi
+ * menu vừa ẩn vì chuyến đã sang "Đã huỷ".
  */
-export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase'> }) {
+export function TripActionsMenu({ trip, canEdit }: { trip: Pick<Trip, 'id' | 'phase' | 'routePlan' | 'loading' | 'delivery' | 'cancellation'>; canEdit: boolean }) {
   const t = useT()
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [vehicleOpen, setVehicleOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const canEditFrame = FRAME_EDITABLE.includes(trip.phase)
-  const canCancel = isCancellablePhase(trip.phase)
-  // Review 1 (LM-104): chuyến đã hoàn thành có báo cáo chuyến
-  const canReport = trip.phase === 'completed'
+  const canEditFrame = canEdit && FRAME_EDITABLE.includes(trip.phase)
+  const canCancel = canEdit && (isCancellablePhase(trip.phase) || trip.phase === 'delivering')
+  // Chuyến Nháp đổi xe ở form sửa chuyến; đã lập kế hoạch thì đổi qua hộp thoại có kiểm xe (kho từ chối `TRIP_NOT_PLANNED` nếu khác)
+  const canChangeVehicle = canEdit && tripStatus(trip) === 'PLANNED'
+  // Chuyến đã hoàn thành, hoặc bị huỷ lúc đang vận chuyển (có kiện hoàn trả), có báo cáo chuyến
+  const canReport = trip.phase === 'completed' || trip.cancellation?.fromPhase === 'delivering'
 
   return (
     <>
       {canEditFrame || canCancel || canReport ? (
-        // Không modal: hộp thoại huỷ mở ngay từ một mục menu, menu modal sẽ để lại `pointer-events: none` trên body
+        // Không modal: hộp thoại mở ngay từ một mục menu, menu modal sẽ để lại `pointer-events: none` trên body
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             {/* V2.3: nút kính chỉ có icon trên dải trời; tên truy cập giữ "Thao tác" */}
@@ -43,6 +49,12 @@ export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase'> }) 
                   <Pencil strokeWidth={1.5} />
                   {t('trips.detail.edit')}
                 </Link>
+              </DropdownMenuItem>
+            ) : null}
+            {canChangeVehicle ? (
+              <DropdownMenuItem onSelect={() => setVehicleOpen(true)}>
+                <Truck strokeWidth={1.5} />
+                {t('trips.changeVehicle')}
               </DropdownMenuItem>
             ) : null}
             {canReport ? (
@@ -62,7 +74,8 @@ export function TripActionsMenu({ trip }: { trip: Pick<Trip, 'id' | 'phase'> }) 
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-      <CancelTripDialog tripId={trip.id} open={cancelOpen} onOpenChange={setCancelOpen} returnFocusTo={triggerRef} />
+      <CancelTripDialog trip={trip} open={cancelOpen} onOpenChange={setCancelOpen} returnFocusTo={triggerRef} />
+      <ChangeVehicleDialog tripId={trip.id} open={vehicleOpen} onOpenChange={setVehicleOpen} returnFocusTo={triggerRef} />
     </>
   )
 }

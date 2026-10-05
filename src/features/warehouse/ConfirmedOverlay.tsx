@@ -3,15 +3,19 @@ import { useFormat, useT } from '@/lib/i18n'
 
 /**
  * Lớp phủ xác nhận sau khi bấm "Xác nhận đã xếp": vòng tròn xanh lớn, mã kiện vừa xếp và bước kế tiếp — kiện cuối thì báo đang
- * hoàn tất xếp hàng. Hiện tối thiểu ~1,2 giây và tới khi kho ghi xong. Là lớp nổi nên vòng tròn được phép có bóng (mục 5).
+ * hoàn tất xếp hàng, hoặc nói còn chờ điều phối viên duyệt xác nhận tay (FE-6-04: kho chưa cho xong xếp). Hiện tối thiểu ~1,2 giây và
+ * tới khi kho ghi xong. Là lớp nổi nên vòng tròn được phép có bóng (mục 5).
  */
 export function ConfirmedOverlay({
   confirmedId,
   nextStep,
+  awaitingApproval = false,
 }: {
   confirmedId: string
   /** Bước kế tiếp; vắng khi vừa xếp kiện cuối. */
   nextStep?: number
+  /** Còn xác nhận tay chờ duyệt: kiện cuối có kết quả nhưng chuyến chưa hoàn tất xếp được. */
+  awaitingApproval?: boolean
 }) {
   const t = useT()
   const format = useFormat()
@@ -28,7 +32,9 @@ export function ConfirmedOverlay({
         {t('warehouse.confirmed', { id: confirmedId })}
       </span>
       <span className="text-[18px] leading-6 text-text-2">
-        {nextStep === undefined ? t('warehouse.finishing') : t('warehouse.nextStep', { step: format.integer(nextStep) })}
+        {nextStep !== undefined
+          ? t('warehouse.nextStep', { step: format.integer(nextStep) })
+          : awaitingApproval ? t('warehouse.confirms.overlayWaiting') : t('warehouse.finishing')}
       </span>
     </div>
   )

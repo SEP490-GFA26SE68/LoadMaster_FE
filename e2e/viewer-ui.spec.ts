@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
 import { attachJson, attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
+import { stageInStore, typeVerifyCode } from './operations-helpers'
+import { MOCK_DB, navigateInApp } from './spec-flow-helpers'
 import { cameraPreset, closeInspector, metrics, openInspector, SOURCE_MODULES, waitIdle, type ViewerMetrics } from './viewer-helpers'
 
 const selectedPanel = (page: Page) => page.getByRole('complementary', { name: 'Kiện đang chọn' })
@@ -117,25 +119,33 @@ test('benchmark fixture requires debug; warehouse camera, next step and driver 2
   expect(await page.locator('[data-viewer-performance]').count()).toBe(0)
   expect(await page.locator('header').innerText()).toMatch(/132/)
 
-  // Tải trang là kho mới: vào phiên chuyến seed là bắt đầu xếp ở bước 1 (LM-086)
+  // Tải trang là kho mới: kho bắt đầu chuyến seed và soạn đủ (FE-6-02, ghi thẳng vào kho của trang), vào phiên là bước Xếp 1 (LM-086)
   await page.evaluate(() => sessionStorage.clear())
-  await login('/kho?chuyen=TRIP-2026-0914', 'warehouse')
+  await login('/kho', 'warehouse')
+  await page.evaluate(async ({ db, tripId }) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    await getMockDb().startLoading(tripId)
+  }, { db: MOCK_DB, tripId: 'TRIP-2026-0914' })
+  await stageInStore(page, 'TRIP-2026-0914')
+  await navigateInApp(page, '/kho?chuyen=TRIP-2026-0914')
   await page.locator('canvas').waitFor()
   await page.getByRole('combobox', { name: 'Góc nhìn thùng xe', exact: true }).selectOption('cua-sau')
   await page.waitForTimeout(1000)
   await attachScreenshot(page, testInfo, 'warehouse')
-  // Kho đọc revision đã duyệt của chuyến seed (LM-060): sau xác nhận là kiện `loadingOrder = 2`
-  const second = await page.evaluate(async (url) => {
+  // Kho đọc revision đã duyệt của chuyến seed (LM-060): đối chiếu kiện bước 1 bằng mã của nó, sau đó là kiện `loadingOrder = 2`
+  const [first, second] = await page.evaluate(async (url) => {
     const { seedScene } = (await import(url)) as typeof import('@/test/scene')
-    return (await seedScene()).placements.find((placement) => placement.step === 2)!.id
+    const placements = (await seedScene()).placements
+    return [1, 2].map((step) => placements.find((placement) => placement.step === step)!.id)
   }, SOURCE_MODULES.scene)
-  await page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true }).click()
+  await page.getByRole('button', { name: 'Đối chiếu kiện', exact: true }).click()
+  await typeVerifyCode(page.getByRole('dialog', { name: 'Đối chiếu kiện bước 1' }), first ?? '')
   await expect(page.getByRole('heading', { level: 1, name: second, exact: true })).toBeVisible()
 
   // Chuyến đã xếp xong của tài xế demo (LM-087, tài xế chỉ thấy chuyến của mình): màn điểm giao 2D, chưa tải Three.js
   await page.evaluate(() => sessionStorage.clear())
   await login('/tai-xe/diem-giao?chuyen=TRIP-010', 'driver')
-  await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Xuất phát', exact: true }).waitFor()
   expect(await page.locator('canvas').count()).toBe(0)
   expect(browserErrors).toStrictEqual([])
 })

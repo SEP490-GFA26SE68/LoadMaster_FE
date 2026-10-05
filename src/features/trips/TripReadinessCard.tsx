@@ -33,6 +33,8 @@ function checkSentence(check: ReadinessCheck, t: TFunction, format: Formatter): 
       return check.status === 'warn' ? t('readiness.checks.STOPS_VALID.warn', { empty: n('empty') }) : t('readiness.checks.STOPS_VALID.fail', { outside: n('outside') })
     case 'CARGO_SEGREGATED':
       return check.status === 'pass' ? t('readiness.checks.CARGO_SEGREGATED.pass') : t(`readiness.checks.CARGO_SEGREGATED.${check.status}`, { packages: n('packages') })
+    case 'ROUTE_PLANNED':
+      return check.status === 'pass' ? t('readiness.checks.ROUTE_PLANNED.pass', { stops: n('stops') }) : t('readiness.checks.ROUTE_PLANNED.fail')
     case 'WEIGHT_WITHIN_PAYLOAD': {
       const values = { total: format.weight(p.totalKg ?? 0), payload: format.weight(p.payloadKg ?? 0) }
       return t(`readiness.checks.WEIGHT_WITHIN_PAYLOAD.${check.status === 'fail' ? 'fail' : 'pass'}`, values)
@@ -48,7 +50,8 @@ function checkSentence(check: ReadinessCheck, t: TFunction, format: Formatter): 
  * "Kiểm tra trước khi tối ưu" (luồng 2, LM-104) — card đầu cột phải của Chi tiết chuyến khi chuyến còn lập kế hoạch. Mỗi mục của
  * `getTripReadiness` một dòng (đạt / cảnh báo / chưa đạt, câu ở nhánh `readiness`); chip tổng "Sẵn sàng tối ưu". Mục chưa đạt có lối
  * sửa ngay tại chỗ theo quyền: sửa chuyến (xe, điểm giao, tải), đưa yêu cầu giao vào chuyến (chưa có kiện, điểm giao trống), xem kiện lỗi ở Thiết
- * lập tối ưu; kiện khác loại hàng chưa có lý do chở chung thì ghi lý do ở thẻ "Phân nhóm hàng" ngay dưới (FE-4b-06). Kiểm tra chỉ là
+ * lập tối ưu; kiện khác loại hàng chưa có lý do chở chung thì ghi lý do ở thẻ "Phân nhóm hàng" ngay dưới (FE-4b-06); chuyến chưa tối
+ * ưu tuyến thì bấm "Tối ưu tuyến" ở card sơ đồ tuyến (FE-5b-05). Kiểm tra chỉ là
  * tổng; xếp được hay không vẫn do tối ưu quyết định.
  */
 export function TripReadinessCard({ tripId, onAssignRequirement }: { tripId: string; onAssignRequirement?: () => void }) {
@@ -74,6 +77,9 @@ export function TripReadinessCard({ tripId, onAssignRequirement }: { tripId: str
         return check.status === 'warn' || check.params.stops === 0 ? assign : editTrip
       case 'CARGO_SEGREGATED':
         // Lý do chở chung ghi ở thẻ "Phân nhóm hàng" ngay dưới thẻ này
+        return null
+      case 'ROUTE_PLANNED':
+        // Nút "Tối ưu tuyến" nằm ở đầu card sơ đồ tuyến của cùng màn (FE-4b-09)
         return null
       case 'PACKAGES_VALID':
         return can('optimization.run') ? (

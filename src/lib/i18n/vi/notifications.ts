@@ -19,4 +19,17 @@ export const notifications = {
   scope: 'Sự kiện {days} ngày gần nhất, không gồm việc bạn làm.',
   /** Giờ kèm ngày khi thông báo không phải của hôm nay. */
   dateTime: '{time} · {date}',
+  /**
+   * Toast khi mức hạn của một điểm giao xấu đi theo vị trí xe (FE-6-09) — chỉ người nhận thông báo này ở chuông (điều phối viên) thấy.
+   * Key trùng mức hạn của kho.
+   */
+  etaRisk: {
+    AT_RISK: 'Chuyến {tripId}: điểm {stop} sát hạn giao',
+    MISSED: 'Chuyến {tripId}: điểm {stop} dự kiến trễ hạn giao',
+    detail: 'Dự kiến đến {eta} · hạn giao {deadline}',
+    /** Giờ kèm ngày của một mốc trong câu `detail`. */
+    moment: '{time} {date}',
+  },
+  /** Toast khi một sự cố cấp chuyến được chuyển lên quản lý công ty (FE-6-11) — người nhận thông báo đó ở chuông thấy. */
+  exceptionEscalated: 'Chuyến {tripId}: sự cố {type} đã chuyển quản lý',
 } as const

@@ -8,10 +8,10 @@ export const runs = {
   objectives: {
     MAX_VOLUME: 'Maximize volume',
     AXLE_BALANCE: 'Balance axle load',
+    MIN_REHANDLING: 'Least rehandling',
   },
   algorithms: {
-    EP_DBLF: 'EP + DBLF',
-    GENETIC_ALGORITHM: 'Genetic (GA)',
+    EP_DBLF: 'EP + DBLF (mock)',
   },
   status: {
     COMPLETED: 'Has a result',
@@ -26,21 +26,22 @@ export const runs = {
   columns: {
     at: 'Time',
     runner: 'Run by',
-    choice: 'Objective · algorithm',
-    limits: 'Limit · seed',
+    choice: 'Settings',
     status: 'Result',
-    plan: 'Plan',
+    plan: 'Plans A · B · C',
     approval: 'Approval',
   },
   approval: {
     approved: 'Approved',
     pending: 'Awaiting approval',
   },
+  approvedPlans: 'Plan {labels}',
   limitSeconds: '{seconds} s',
   seed: 'seed {seed}',
   noValue: '—',
-  planMetrics: 'Volume {volume} · payload {payload}',
-  unplaced: { one: '{count} package not placed', other: '{count} packages not placed' },
-  allPlaced: 'All {count} packages placed',
+  planAllPlaced: 'all placed',
+  planUnplaced: { one: '{count} not placed', other: '{count} not placed' },
   openPlan: 'Open plan {revision} in the Planner',
+  compare: 'Compare',
+  openCompare: 'Compare the plans of run {run}',
 } satisfies Dictionary<typeof source>

@@ -1,14 +1,19 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
-import type { LoadingStepInput } from '@/lib/mock-db'
+import type { ManualConfirmInput } from '@/lib/mock-db'
 import {
   completeLoading,
   confirmLoadingByQr,
+  confirmLoadingManually,
+  confirmStagingByQr,
+  confirmStagingManually,
   fetchTripLabels,
   fetchWarehouseTrip,
   fetchWarehouseTrips,
-  recordLoadingStep,
   recordSeal,
+  reportDamagedPackage,
+  reportStagingShortage,
   startLoading,
+  type VerifyCodeInput,
 } from './warehouse-api'
 
 /**
@@ -39,9 +44,32 @@ export function useStartLoadingMutation(tripId: string) {
   return useMutation({ mutationFn: () => startLoading(tripId), onSettled: () => refreshAfterWrite(client) })
 }
 
-export function useRecordLoadingStepMutation(tripId: string) {
+// Soạn hàng (FE-6-02)
+
+/** Soạn một kiện bằng nhãn (quét hoặc gõ mã). Lỗi của kho hiện trong hộp đối chiếu. */
+export function useConfirmStagingByQrMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (step: LoadingStepInput) => recordLoadingStep(tripId, step), onSettled: () => refreshAfterWrite(client) })
+  return useMutation({ mutationFn: (input: VerifyCodeInput) => confirmStagingByQr(tripId, input), onSettled: () => refreshAfterWrite(client) })
+}
+
+export function useConfirmStagingManuallyMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (input: ManualConfirmInput) => confirmStagingManually(tripId, input), onSettled: () => refreshAfterWrite(client) })
+}
+
+/** Báo thiếu một kiện chưa soạn; chuông của điều phối viên đọc từ nhật ký nên làm mới luôn khoá thông báo. */
+export function useReportShortageMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (packageInstanceId: string) => reportStagingShortage(tripId, packageInstanceId), onSettled: () => refreshAfterWrite(client) })
+}
+
+/** Báo kiện của bước xếp hiện tại bị hỏng (FE-6-05); kiện về kho kiện kèm cờ nên làm mới cả kho kiện. */
+export function useReportDamagedMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (packageInstanceId: string) => reportDamagedPackage(tripId, packageInstanceId),
+    onSettled: () => Promise.all([refreshAfterWrite(client), client.invalidateQueries({ queryKey: ['package-pool'] })]),
+  })
 }
 
 export function useCompleteLoadingMutation(tripId: string) {
@@ -51,16 +79,22 @@ export function useCompleteLoadingMutation(tripId: string) {
 
 // Review 1 (LM-104)
 
-/** Nhãn QR của chuyến — danh sách chọn tay trong hộp thoại quét. Nhãn đổi khi dòng kiện đổi, không đổi trong phiên xếp. */
+/** Nhãn QR của chuyến — tên kiện và kiện kho kiện của từng instance cho hộp đối chiếu. Nhãn đổi khi dòng kiện đổi, không đổi trong phiên xếp. */
 export function useTripLabelsQuery(tripId: string) {
   // Ngoài khoá `['warehouse']`: nhãn không đổi trong phiên xếp (chuyến đã khoá), mỗi bước ghi không phải đọc lại
   return useQuery({ queryKey: ['warehouse-labels', tripId], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
 }
 
-/** Quét QR xác nhận kiện của bước hiện tại; trả mã instance vừa ghi. Lỗi `WRONG_PACKAGE_SCANNED` / `PACKAGE_NOT_IN_TRIP` hiện qua `dataErrorMessage`. */
+/** Đối chiếu kiện của bước hiện tại bằng nhãn (quét hoặc gõ mã); trả mã instance vừa ghi. Lỗi của kho hiện trong hộp đối chiếu. */
 export function useConfirmLoadingByQrMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (token: string) => confirmLoadingByQr(tripId, token), onSettled: () => refreshAfterWrite(client) })
+  return useMutation({ mutationFn: (input: VerifyCodeInput) => confirmLoadingByQr(tripId, input), onSettled: () => refreshAfterWrite(client) })
+}
+
+/** Xác nhận tay kiện của bước hiện tại (mức 3, FE-6-03): kho ghi "đã xếp" kèm xác nhận tay chờ điều phối viên duyệt. */
+export function useConfirmLoadingManuallyMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (input: ManualConfirmInput) => confirmLoadingManually(tripId, input), onSettled: () => refreshAfterWrite(client) })
 }
 
 export function useRecordSealMutation(tripId: string) {

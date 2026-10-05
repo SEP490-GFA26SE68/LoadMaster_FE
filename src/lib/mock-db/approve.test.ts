@@ -84,6 +84,21 @@ test('approving without a draft keeps every result value and the mock flag as th
   expect(approved).toMatchObject({ draftPatches: [], manuallyEdited: false, ordersRecomputed: true })
 })
 
+test('approval re-reads the stop zone of every package and recounts rehandling against the zones of the optimisation run', async () => {
+  const db = createMockDb()
+  // Stop 3 owns x 0–330, stop 1 owns x 340–600. PKG-001-01 (stop 3) is centred at x 180; PKG-002-01 (stop 1) at x 300, in the zone of stop 3
+  const stopZones = [{ id: 'ZONE-1', stopId: 1, startXCm: 340, endXCm: 600 }, { id: 'ZONE-3', stopId: 3, startXCm: 0, endXCm: 330 }]
+  const { revision: source } = await optimizedTwoCartonTrip(db, { ...twoCartonResult(), stopZones })
+  const read = ({ result }: typeof source) => [result.placements.map(({ stopZoneId }) => stopZoneId), result.metrics.rehandlingCount, result.stopZones]
+  const asOptimized = await db.approveRevision(source.id, [])
+  // moved to x 400–520, centred at 460: inside the zone of its own stop
+  const moved = await db.approveRevision(source.id, [{ packageInstanceId: 'PKG-002-01', xCm: 400, yCm: 0, zCm: 0, orientation: 'LWH' }])
+  expect([read(asOptimized), read(moved)]).toStrictEqual([
+    [['ZONE-3', 'ZONE-3'], 1, stopZones],
+    [['ZONE-3', 'ZONE-1'], 0, stopZones],
+  ])
+})
+
 test('approving an approved revision again without a new draft gives the same result and still counts as manually edited', async () => {
   const db = createMockDb()
   const { revision: source } = await optimizedTwoCartonTrip(db)

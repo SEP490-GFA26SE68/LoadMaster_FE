@@ -2,7 +2,7 @@ import type { z } from 'zod'
 import { gt, vehicleBoundaryExcess, type Box, type VehicleInterior } from '@/domain/geometry'
 import { obstacleToBox } from './box-adapters'
 import { finiteNumber, flag, listOf, nonNegative, objectOf, oneOf, positive, text } from './fields'
-import { report } from './issue-codes'
+import { report, rule } from './issue-codes'
 
 const vehicleObstacleSchema = objectOf({
   id: text(),
@@ -33,6 +33,18 @@ const vehicleAxleSchema = objectOf({
 
 const dimensionCm = positive('vehicle.dimension.positive')
 
+/**
+ * Độ lệch trọng tâm hàng tối đa so với giữa thùng, tính bằng tỷ lệ chiều dài (dọc) và chiều rộng (ngang) lòng thùng (D-79). Xe không
+ * khai — không gắn loại xe — dùng mặc định này. Trọng tâm không thể lệch quá nửa thùng nên tỷ lệ nằm trong (0, 0,5].
+ */
+export const DEFAULT_MAX_COG_OFFSET_RATIO = 0.15
+export const MAX_COG_OFFSET_RATIO_CEILING = 0.5
+
+const cogOffsetRatio = finiteNumber().refine(
+  (value) => gt(value, 0) && !gt(value, MAX_COG_OFFSET_RATIO_CEILING),
+  rule('vehicle.maxCogOffsetRatio.range'),
+)
+
 export const vehicleConfigSchema = objectOf({
   id: text(),
   name: text(),
@@ -48,6 +60,11 @@ export const vehicleConfigSchema = objectOf({
   floorPressureLimitKgPerCm2: nonNegative('vehicle.floorPressureLimitKgPerCm2.nonNegative').optional(),
   obstacles: listOf(vehicleObstacleSchema),
   axles: listOf(vehicleAxleSchema).optional(),
+  // Giới hạn theo loại xe của backend v2 (FE-5b-01, D-78, D-79) — ngoài type Spec. Kho điền từ loại xe đang gắn khi đọc xe; xe không
+  // gắn loại thì vắng: tải trục so với `axles[].maxLoadKg`, trọng tâm dùng `DEFAULT_MAX_COG_OFFSET_RATIO`.
+  frontAxleLimitKg: positive('vehicle.axleLimitKg.positive').optional(),
+  rearAxleLimitKg: positive('vehicle.axleLimitKg.positive').optional(),
+  maxCogOffsetRatio: cogOffsetRatio.optional(),
 }).superRefine((vehicle, ctx) => {
   // Spec 9.2: cửa sau không lớn hơn mặt cắt trong thùng
   if (gt(vehicle.doorWidthCm, vehicle.innerWidthCm)) report(ctx, 'vehicle.door.exceedsInner', ['doorWidthCm'])

@@ -12,8 +12,11 @@ export const status = {
     awaitingApproval: 'Awaiting approval',
     approved: 'Approved',
     stale: 'Stale — optimize again',
+    staging: 'Staging {recorded} / {total}',
+    shortage: 'Package missing — dispatcher to decide',
     loading: 'Loading {recorded} / {total}',
     loaded: 'Loaded — ready to depart',
+    manualPending: 'Manual confirmations to approve ({count})',
     lateStops: 'Stops expected late',
   },
 } satisfies Dictionary<typeof source>

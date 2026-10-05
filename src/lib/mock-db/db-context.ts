@@ -2,6 +2,7 @@ import type { VehicleConfig } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
+import type { TripIncidents } from './exception-model'
 import type { Package } from './package-model'
 import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
@@ -13,6 +14,7 @@ import type {
 } from './source-types'
 import type { TripPackageLink } from './review1-status'
 import { createTenancy, type Tenancy } from './tenancy'
+import type { TripTracking } from './tracking-model'
 import type { Revision, Trip } from './types'
 
 /** Toàn bộ dữ liệu của một kho. Chỉ các module `db-*.ts` đọc/ghi; bên ngoài đi qua `MockDb`. */
@@ -49,11 +51,19 @@ export type DbState = {
   vehicleTypes: Map<string, VehicleType>
   /** Xe → loại xe; lưu ngoài `VehicleConfig` (D-04). */
   vehicleTypeOf: Map<string, string>
+  /** Chuyến → lịch sử vị trí xe và mức hạn đã tính (FE-6-08, FE-6-09); kho ghi dần khi có người đọc, seed để trống. */
+  tracking: Map<string, TripTracking>
+  /** Chuyến → sự cố cấp chuyến, các khoảng xe mô phỏng bị giữ lại và tuyến thay thế (FE-6-11); seed để trống. */
+  exceptions: Map<string, TripIncidents>
 }
 
 export type DbContext = {
   state: DbState
   nowIso(): string
+  /** Đồng hồ của kho chạy nhanh gấp mấy lần giờ thật (`?toc-do`, FE-6-08): để đổi một khoảng giờ của kho ra thời gian chờ thật. */
+  clockSpeed(): number
+  /** Đổi tốc độ đồng hồ của kho từ bây giờ, giờ không nhảy (FE-6-13: nhận GPS thật thì đồng hồ chạy theo giờ thật). */
+  setClockSpeed(speed: number): void
   /**
    * Một lượt gọi như qua mạng: chờ độ trễ rồi mới đọc/ghi. Kết quả luôn là bản sao, nên nơi gọi không sửa được dữ liệu
    * trong kho; lỗi của `operation` thành promise bị từ chối.
@@ -66,6 +76,11 @@ export type DbContext = {
    */
   log(action: AuditAction, target: { type: AuditTargetType; id: string }, params?: Record<string, string | number>, companyId?: string | null): void
   /**
+   * Sự kiện do **hệ thống** ghi (nguy cơ trễ hạn theo vị trí xe, FE-6-09): không có người làm — ai đang đăng nhập lúc kho tính ra cũng
+   * không phải người làm — và thuộc công ty `companyId` của đối tượng. Trả sự kiện vừa ghi.
+   */
+  logSystem(action: AuditAction, target: { type: AuditTargetType; id: string }, params: Record<string, string | number>, companyId: string): AuditEvent
+  /**
    * Mã QR mới cho kiện của kho kiện, không trùng mã đã cấp (LM-104). Tạo nhiều kiện một lượt thì truyền `taken` (`qrTokensInUse`) để
    * không quét lại cả kho cho từng mã; mã mới được thêm vào đó.
    */
@@ -76,13 +91,18 @@ export type DbContext = {
   scope: Tenancy
 }
 
-export function createDbContext(state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random): DbContext {
+export function createDbContext(
+  state: DbState, latencyMs: number, now: () => Date, random: () => number = Math.random, clockSpeed: () => number = () => 1,
+  setClockSpeed: (speed: number) => void = () => {},
+): DbContext {
   const nowIso = () => now().toISOString()
   const scope = createTenancy(state)
   const qrTokensInUse = () => new Set([...state.packages.values()].map((pkg) => pkg.qrToken))
   return {
     state,
     nowIso,
+    clockSpeed,
+    setClockSpeed,
     scope,
     qrTokensInUse,
     newQrToken: (taken = qrTokensInUse()) => {
@@ -104,6 +124,11 @@ export function createDbContext(state: DbState, latencyMs: number, now: () => Da
         target,
         params,
       })
+    },
+    logSystem(action, target, params, companyId) {
+      const event: AuditEvent = { id: nextEventId(state.events.length), at: nowIso(), actorId: null, companyId, action, target, params }
+      state.events.push(event)
+      return event
     },
   }
 }

@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
 import { attachJson, attachScreenshot, expect, PLANNER_ROUTE, test } from './fixtures'
+import { loadInStore, stageInStore, typeVerifyCode } from './operations-helpers'
+import { MOCK_DB, navigateInApp } from './spec-flow-helpers'
 import {
   cameraPreset, closeInspector, focusStop, hasSceneObject, instancePoint, metrics, openInspector, sceneSnapshot, selectedPlacementId,
   settle as settleFor, SOURCE_MODULES, visibleCargo, waitCameraSettled, type ViewerMetrics,
@@ -121,30 +123,50 @@ test('camera orbit keeps draw calls and cargo instances bounded; balanced/high a
   expect(browserErrors).toStrictEqual([])
 })
 
-test('warehouse isolates the current package and advances after confirmation', async ({ page, login, browserErrors }, testInfo) => {
-  // Phiên kho của chuyến seed (LM-060, LM-086) bắt đầu ở bước 1 của bản đã duyệt: kiện hiện tại đậm, kiện kế tiếp mờ.
-  await login('/kho?chuyen=TRIP-2026-0914&debug&quality=low', 'warehouse'); await settle(page)
+test('warehouse isolates the current package and advances after verification', async ({ page, login, browserErrors }, testInfo) => {
+  // Kho bắt đầu chuyến seed và soạn đủ (FE-6-02, ghi thẳng vào kho của trang): bước Xếp (LM-060, LM-086) bắt đầu ở bước 1 của bản đã
+  // duyệt — kiện hiện tại đậm, kiện kế tiếp mờ. Không tải lại trang sau khi ghi: mở phiên bằng đổi route phía client.
+  const SESSION = '/kho?chuyen=TRIP-2026-0914&debug&quality=low'
+  await login('/kho', 'warehouse')
+  await page.evaluate(async ({ db, tripId }) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    await getMockDb().startLoading(tripId)
+  }, { db: MOCK_DB, tripId: 'TRIP-2026-0914' })
+  await stageInStore(page, 'TRIP-2026-0914')
+  await navigateInApp(page, SESSION); await page.locator('canvas').waitFor(); await settle(page)
   expect(await page.locator('[data-experience="warehouse"]').count()).toBe(1)
   expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 1, 'cargo-dim': 1 })
   await page.getByRole('combobox', { name: 'Góc nhìn thùng xe', exact: true }).selectOption('cua-sau')
   await button(page, 'Chỉ kiện này').click(); await settle(page)
   expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 1, 'cargo-dim': 0 })
   await button(page, 'Hiện xung quanh').click()
-  const second = await page.evaluate(async (url) => {
+  const [first, second] = await page.evaluate(async (url) => {
     const { seedScene } = (await import(url)) as typeof import('@/test/scene')
-    return (await seedScene()).placements.find((placement) => placement.step === 2)!.id
+    const placements = (await seedScene()).placements
+    return [1, 2].map((step) => placements.find((placement) => placement.step === step)!.id)
   }, SOURCE_MODULES.scene)
-  await button(page, 'Xác nhận đã xếp').click()
+  // Mỗi kiện phải đối chiếu (FE-6-05): gõ mã của kiện bước 1 — kiện thêm trong chuyến mang mã của bên gửi bằng mã instance
+  await button(page, 'Đối chiếu kiện').click()
+  await typeVerifyCode(page.getByRole('dialog', { name: 'Đối chiếu kiện bước 1' }), first ?? '')
   await expect(page.getByRole('heading', { level: 1, name: second, exact: true })).toBeVisible()
   await settle(page)
   expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 2, 'cargo-dim': 1 })
 
-  // LM-100: kiện báo thiếu không lên xe — sang bước 3, khung 3D chỉ còn kiện bước 1 và kiện hiện tại, không vẽ kiện thiếu như đã xếp
-  await button(page, 'Kiện này không có ở kho').click()
-  await page.getByRole('dialog', { name: `Ghi thiếu ${second}?` }).getByRole('button', { name: 'Ghi thiếu', exact: true }).click()
-  await expect(page.getByText('Bước 3 / 132', { exact: true })).toBeVisible()
+  // FE-6-05: kiện hỏng bị bỏ lại kho không lên xe. Bước 9 (PKG-006-12) là kiện đầu tiên của phương án seed không có kiện nào tựa lên:
+  // kho xếp tới trước nó (ghi thẳng vào kho của trang), báo hỏng, sang bước 10 — khung 3D có 8 kiện đã xếp và kiện hiện tại, không vẽ
+  // kiện hỏng như đã xếp
+  await loadInStore(page, 'TRIP-2026-0914', 'PKG-006-12')
+  await navigateInApp(page, '/kho')
+  await navigateInApp(page, SESSION)
+  await expect(page.getByRole('heading', { level: 1, name: 'PKG-006-12', exact: true })).toBeVisible()
+  await page.locator('canvas').waitFor(); await settle(page)
+  await button(page, 'Kiện hỏng').click()
+  const damaged = page.getByRole('dialog', { name: 'Ghi PKG-006-12 là kiện hỏng?' })
+  await expect(damaged).toContainText('Trong phương án không kiện nào tựa lên nó')
+  await damaged.getByRole('button', { name: 'Ghi kiện hỏng', exact: true }).click()
+  await expect(page.getByText('Bước 10 / 132', { exact: true })).toBeVisible()
   await settle(page)
-  expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 2, 'cargo-dim': 1 })
+  expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 9, 'cargo-dim': 1 })
   await attachJson(testInfo, 'report', { scene: await sceneSnapshot(page), metrics: await metrics(page) })
   await attachScreenshot(page, testInfo, 'warehouse')
   expect(browserErrors).toStrictEqual([])
@@ -175,7 +197,7 @@ test.describe('touch', () => {
     await attachScreenshot(page, testInfo, `driver-${viewport.width}`)
     await button(page, 'Đóng 3D').tap()
     expect(await page.locator('canvas').count()).toBe(0)
-    await button(page, 'Bắt đầu giao').waitFor()
+    await button(page, 'Xuất phát').waitFor()
 
     // Tài xế không mở được Planner (403 từ LM-084): đăng xuất rồi vào lại bằng tài khoản điều phối
     await page.evaluate(() => sessionStorage.clear())

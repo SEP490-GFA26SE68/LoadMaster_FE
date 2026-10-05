@@ -2,13 +2,14 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   createTrip                  → POST /api/trips
  *   savePackage, importPackages nhận thêm `overrideReason` của luật phân tách hàng (cùng endpoint: `override`, `overrideReason`)
- *   updateTripFrame             → chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
+ *   updateTripFrame             → chưa có ở BE
  *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE) — dòng kiện gõ / nhập ngay trong chuyến
  *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId} — bỏ cả một dòng kiện
  *   Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage — cùng hai endpoint trên, theo từng kiện): `trip-pool-api.ts`.
  *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages,
  *   duplicateTripPackage, fetchTripRevisions
  * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
+ * Đổi xe của chuyến Đã lập kế hoạch (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trip-vehicle-api.ts`.
  */
 
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
@@ -16,6 +17,7 @@ import {
   getMockDb,
   isMockDbError,
   latestApproved,
+  tripManualSubStatus,
   tripRouteSubStatus,
   tripStatus,
   tripSubStatus,
@@ -87,7 +89,7 @@ export type TripFrameChanges = {
  * Sửa khung chuyến: tên, giờ xuất phát, tài xế, xe, kho xuất phát và chữ của điểm giao (toạ độ, hạn, ưu tiên và nguồn của điểm giữ
  * nguyên). Đổi xe làm revision cũ lỗi thời (D-31).
  */
-// chưa có ở BE; riêng đổi xe: POST /api/trips/{id}/change-vehicle
+// chưa có ở BE
 export async function updateTripFrame(tripId: string, changes: TripFrameChanges): Promise<Trip> {
   const db = getMockDb()
   const { stops: edited, ...frame } = changes
@@ -131,8 +133,8 @@ export type TripDetail = {
   readonly status: TripStatus
   /** Dòng phụ dưới chip: tiến độ kho hoặc phương án lỗi thời (LM-104). */
   readonly sub: TripSubStatus | null
-  /** Dòng phụ về tuyến (FE-4b-09): tuyến đã tối ưu có điểm trễ hạn dự kiến. */
-  readonly routeSub: TripSubStatus | null
+  /** Dòng phụ thứ hai: tuyến đã tối ưu có điểm trễ hạn dự kiến (FE-4b-09), hoặc còn xác nhận tay chờ duyệt (FE-6-04). */
+  readonly extraSub: TripSubStatus | null
   /** Revision Planner mở mặc định (bản đã duyệt mới nhất, không có thì bản mới nhất); `null` khi chưa tối ưu. */
   readonly plan: { readonly jobId: string; readonly revisionId: string } | null
 }
@@ -152,7 +154,7 @@ export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
     trip, vehicle, driver,
     status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
-    routeSub: tripRouteSubStatus(trip),
+    extraSub: tripRouteSubStatus(trip) ?? tripManualSubStatus(trip),
     plan: shown ? { jobId: shown.jobId, revisionId: shown.id } : null,
   }
 }

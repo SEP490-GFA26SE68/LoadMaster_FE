@@ -53,7 +53,7 @@ export type RequirementInput = Pick<DeliveryRequirement, 'destinationName' | 'ad
 export type RequirementChanges = Partial<Omit<RequirementInput, 'lat' | 'lng'>> & { lat?: number | null; lng?: number | null }
 
 /**
- * Ưu tiên của yêu cầu → `priority` / `mustLoad` của dòng kiện khi tối ưu 3D (D-93 — **đề xuất, chờ nhóm xác nhận**): Khẩn 4, Cao 3,
+ * Ưu tiên của yêu cầu → `priority` / `mustLoad` của dòng kiện khi tối ưu 3D (D-93, người dùng xác nhận 03/10/2026): Khẩn 4, Cao 3,
  * Bình thường 2, Thấp 1; chỉ kiện của yêu cầu Khẩn bắt buộc xếp. Nơi duy nhất giữ bảng này.
  */
 export const REQUIREMENT_CARGO_PRIORITY: Readonly<Record<RequirementPriority, { readonly priority: number; readonly mustLoad: boolean }>> = {

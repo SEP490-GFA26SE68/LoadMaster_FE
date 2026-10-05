@@ -14,7 +14,8 @@ import { describeLogRow } from '@/features/admin/audit-log'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
-import { hasNotifications, NOTIFICATION_WINDOW_DAYS } from './notifications'
+import { cn } from '@/lib/utils'
+import { hasNotifications, NOTIFICATION_WINDOW_DAYS, operationHref } from './notifications'
 import { NotificationItem } from './NotificationItem'
 import { markNotificationsRead, useReadNotifications } from './read-state'
 import { useNotificationsQuery } from './useNotificationsQuery'
@@ -23,10 +24,14 @@ import { useNotificationsQuery } from './useNotificationsQuery'
  * Chuông thông báo trên thanh điều hướng (LM-098, D-55; V2.3 MenuToanCuc): chấm hổ phách trên icon khi có tin chưa đọc — số nằm trong
  * nhãn đọc của nút và chip cạnh tiêu đề danh sách. Danh sách (nền trắng đặc, không kính) là sự kiện nhật ký liên quan vai trò — mới
  * nhất trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại kho; "Đánh dấu đã đọc" giữ trong phiên. Vai trò
- * không có loại thông báo nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) thì không có chuông: không hiện nút không làm gì (D-20).
+ * không có loại thông báo nào (quản lý nền tảng, hỗ trợ khách hàng) thì không có chuông: không hiện nút không làm gì (D-20).
  * Nguồn sự kiện của từng vai trò: `NOTIFICATION_ACTIONS`.
+ *
+ * `variant="touch"` (FE-6-04): chuông ở thanh màn chính của kho và tài xế — hai màn không có thanh điều hướng. Nút 56 px trên nền sáng,
+ * chữ trong danh sách 16 px (mục 10). Kho và tài xế chỉ nhận một loại: xác nhận tay của chính mình bị từ chối; bấm vào mở chuyến đó ở
+ * màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến.
  */
-export function NotificationBell() {
+export function NotificationBell({ variant = 'rail', className }: { variant?: 'rail' | 'touch'; className?: string }) {
   const t = useT()
   const format = useFormat()
   const { user } = useAuth()
@@ -34,10 +39,16 @@ export function NotificationBell() {
   const query = useNotificationsQuery()
   const read = useReadNotifications(user?.id ?? '')
   const feed = query.data
+  const role = user?.role
   const rows = useMemo(
-    () => (feed ? feed.events.map((event) => describeLogRow(event, feed.directory, t, format, can)) : []),
-    [feed, t, format, can],
+    () => (feed ? feed.events.map((event) => {
+      const row = describeLogRow(event, feed.directory, t, format, can)
+      const href = row.target.href ?? (role ? operationHref(event, role) : null)
+      return href === row.target.href ? row : { ...row, target: { ...row.target, href } }
+    }) : []),
+    [feed, t, format, can, role],
   )
+  const touch = variant === 'touch'
   if (!user || !hasNotifications(user.role)) return null
 
   const userId = user.id
@@ -53,23 +64,43 @@ export function NotificationBell() {
 
   return (
     <DropdownMenu onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <NavRailButton
-          icon={Bell}
-          label={t('notifications.label')}
-          aria-label={unreadCount > 0 ? t('notifications.labelUnread', { count: unreadCount }) : undefined}
-          badge={
-            unreadCount > 0 ? (
-              <span
-                aria-hidden
-                data-unread-dot
-                className="absolute top-1.75 right-2 size-1.75 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--sky-end)]"
-              />
-            ) : null
-          }
-        />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="bottom" align="end" className="flex w-102 max-w-[calc(100vw-32px)] flex-col p-0">
+      {touch ? (
+        <DropdownMenuTrigger
+          aria-label={unreadCount > 0 ? t('notifications.labelUnread', { count: unreadCount }) : t('notifications.label')}
+          className={cn(
+            'relative grid size-14 flex-none place-items-center rounded-md text-text-2 outline-none transition-colors duration-(--dur-fast) ease-standard',
+            'hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary data-[state=open]:bg-surface',
+            className,
+          )}
+        >
+          <Bell className="size-6" strokeWidth={1.5} aria-hidden />
+          {unreadCount > 0 ? <span aria-hidden data-unread-dot className="absolute top-3 right-3 size-2.5 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--bg)]" /> : null}
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger asChild>
+          <NavRailButton
+            icon={Bell}
+            label={t('notifications.label')}
+            aria-label={unreadCount > 0 ? t('notifications.labelUnread', { count: unreadCount }) : undefined}
+            className={className}
+            badge={
+              unreadCount > 0 ? (
+                <span
+                  aria-hidden
+                  data-unread-dot
+                  className="absolute top-1.75 right-2 size-1.75 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--sky-end)]"
+                />
+              ) : null
+            }
+          />
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent
+        side="bottom"
+        align="end"
+        // Màn cảm ứng: mọi chữ của danh sách lên 16 px, mục cao tối thiểu 56 px
+        className={cn('flex w-102 max-w-[calc(100vw-32px)] flex-col p-0', touch && '[&_[role=menuitem]]:min-h-14 [&_p]:text-body-lg! [&_span]:text-body-lg! [&_time]:text-body-lg!')}
+      >
         <div className="flex min-h-13 items-center gap-2.5 border-b border-line-soft py-2 pr-2.5 pl-4.5">
           <DropdownMenuLabel className="p-0 font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">
             {t('notifications.title')}

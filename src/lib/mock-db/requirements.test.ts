@@ -309,10 +309,12 @@ test('trip labels of hand-entered packages are opaque, unique and the same in ev
   expect(await createMockDb().listTripLabels('TRIP-2026-0914')).toStrictEqual(labels)
 })
 
-test('readiness: the draft trip is ready; a trip without packages or over payload is not', async () => {
+test('readiness: a planned trip is ready; the draft only waits for its route; a trip without packages is not ready', async () => {
   const db = createMockDb()
-  const ready = await db.getTripReadiness('TRIP-014')
-  expect(ready.ready).toBe(true)
+  expect((await db.getTripReadiness('TRIP-012')).ready).toBe(true)
+  // TRIP-014 là chuyến nháp của seed: mọi mục đạt trừ "đã tối ưu tuyến" (FE-5b-05)
+  const draft = await db.getTripReadiness('TRIP-014')
+  expect([draft.ready, draft.checks.filter((check) => check.status === 'fail').map((check) => check.code)]).toStrictEqual([false, ['ROUTE_PLANNED']])
   const created = await db.createTrip({ name: 'Tuyến thử', vehicleId: 'VEHICLE-005', stops: [{ id: 'STOP-01', name: 'Kho A', address: 'Q.1' }], packages: [], scheduledDate: '2026-09-15' })
   const empty = await db.getTripReadiness(created.id)
   expect(empty.ready).toBe(false)

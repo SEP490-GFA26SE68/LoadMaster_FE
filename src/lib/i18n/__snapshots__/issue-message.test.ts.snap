@@ -11,13 +11,17 @@ exports[`every constraint code has a finished sentence in en > codes whose sente
   "Inner width must be greater than 0 cm.",
   "Length of obstacle OBS-001 must be greater than 0 cm.",
   "Door width 250 cm cannot exceed vehicle inner width 240 cm.",
+  "Cargo center of gravity is 95 cm towards the door from mid-length, beyond the 90 cm limit.",
+  "Front axle load 3,120 kg exceeds the 3,000 kg limit by 120 kg.",
 ]
 `;
 
 exports[`every constraint code has a finished sentence in en > the sentences read as reviewed 1`] = `
 {
+  "AXLE_OVERLOAD": "Rear axle load 6,240.5 kg exceeds the 6,000 kg limit by 240.5 kg.",
   "COG_HIGH": "Cargo center of gravity is 137.5 cm above the floor, beyond the 125 cm limit.",
   "COG_LATERAL": "Cargo center of gravity is 26.4 cm off the centerline, beyond the 24 cm limit.",
+  "COG_LONGITUDINAL": "Cargo center of gravity is 112.5 cm towards the front wall from mid-length, beyond the 90 cm limit.",
   "DIMENSION_NOT_POSITIVE": "Height of package PKG-002 must be greater than 0 cm.",
   "DOOR_EXCEEDS_INNER": "Door height 255.5 cm cannot exceed vehicle inner height 250 cm.",
   "DOOR_TOO_SMALL": "Package PKG-003 cannot pass through the 220 × 230 cm door.",
@@ -53,13 +57,17 @@ exports[`every constraint code has a finished sentence in vi > codes whose sente
   "Chiều rộng lòng thùng phải lớn hơn 0 cm.",
   "Chiều dài của vật cản OBS-001 phải lớn hơn 0 cm.",
   "Chiều rộng cửa 250 cm không được lớn hơn chiều rộng lòng thùng 240 cm.",
+  "Trọng tâm hàng dồn về cửa thùng 95 cm so với giữa thùng, vượt ngưỡng 90 cm.",
+  "Tải trục trước 3.120 kg vượt giới hạn 3.000 kg (quá 120 kg).",
 ]
 `;
 
 exports[`every constraint code has a finished sentence in vi > the sentences read as reviewed 1`] = `
 {
+  "AXLE_OVERLOAD": "Tải trục sau 6.240,5 kg vượt giới hạn 6.000 kg (quá 240,5 kg).",
   "COG_HIGH": "Trọng tâm hàng cao 137,5 cm so với sàn, vượt ngưỡng 125 cm.",
   "COG_LATERAL": "Trọng tâm hàng lệch 26,4 cm khỏi đường giữa thùng, vượt ngưỡng 24 cm.",
+  "COG_LONGITUDINAL": "Trọng tâm hàng dồn về đầu thùng 112,5 cm so với giữa thùng, vượt ngưỡng 90 cm.",
   "DIMENSION_NOT_POSITIVE": "Chiều cao của kiện PKG-002 phải lớn hơn 0 cm.",
   "DOOR_EXCEEDS_INNER": "Chiều cao cửa 255,5 cm không được lớn hơn chiều cao lòng thùng 250 cm.",
   "DOOR_TOO_SMALL": "Kiện PKG-003 không lọt qua cửa 220 × 230 cm.",

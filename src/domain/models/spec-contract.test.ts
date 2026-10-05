@@ -1,4 +1,5 @@
 import { expectTypeOf, test } from 'vitest'
+import type { ConstraintIssue } from '@/domain/constraints'
 import type {
   CargoPackage,
   FragilityLevel,
@@ -160,20 +161,57 @@ declare namespace Spec {
 interface FeCargoPackage extends Spec.CargoPackage {
   handlingClass?: HandlingClass;
 }
-interface FeOptimizationRequest extends Omit<Spec.OptimizationRequest, 'packages'> {
+/** FE-5b-01: giới hạn theo loại xe (D-78, D-79), kho điền khi đọc xe. */
+interface FeVehicleConfig extends Spec.VehicleConfig {
+  frontAxleLimitKg?: number;
+  rearAxleLimitKg?: number;
+  maxCogOffsetRatio?: number;
+}
+interface FeOptimizationRequest extends Omit<Spec.OptimizationRequest, 'packages' | 'vehicle'> {
+  vehicle: FeVehicleConfig;
   packages: FeCargoPackage[];
+}
+/** FE-5b-04: lý do `CONSTRAINT_VIOLATED` kèm các ràng buộc đã chặn kiện. */
+interface FeUnplacedPackage extends Omit<Spec.UnplacedPackage, 'reasonCode'> {
+  reasonCode: Spec.UnplacedPackage['reasonCode'] | 'CONSTRAINT_VIOLATED';
+  violatedConstraints?: ConstraintIssue[];
+}
+/** FE-5b-03: tải trục trước / sau của kết quả, chỉ có khi tính được. */
+type SpecMetrics = Spec.OptimizationResult['metrics']
+interface FeMetrics extends SpecMetrics {
+  frontAxleLoadKg?: number;
+  rearAxleLoadKg?: number;
+  /** FE-5b-02: số kiện nằm ngoài vùng của điểm giao mình. */
+  rehandlingCount?: number;
+}
+/** FE-5b-02: vùng theo điểm giao mà kiện đang nằm. */
+interface FePackagePlacement extends Spec.PackagePlacement {
+  stopZoneId?: string;
+}
+/** FE-5b-02: một vùng theo điểm giao trên trục X của thùng; `stopId` là số điểm giao (`deliveryStop`). */
+interface FeStopZone {
+  id: string;
+  stopId: number;
+  startXCm: number;
+  endXCm: number;
+}
+interface FeOptimizationResult extends Omit<Spec.OptimizationResult, 'placements' | 'unplacedPackages' | 'metrics'> {
+  placements: FePackagePlacement[];
+  unplacedPackages: FeUnplacedPackage[];
+  stopZones?: FeStopZone[];
+  metrics: FeMetrics;
 }
 
 test('the model types are the Spec §6 contract plus the declared backend fields: same optionality, nothing else extra', () => {
   expectTypeOf<OrientationCode>().toEqualTypeOf<Spec.OrientationCode>()
   expectTypeOf<FragilityLevel>().toEqualTypeOf<Spec.FragilityLevel>()
-  expectTypeOf<VehicleConfig>().toEqualTypeOf<Spec.VehicleConfig>()
+  expectTypeOf<VehicleConfig>().toEqualTypeOf<FeVehicleConfig>()
   expectTypeOf<VehicleObstacle>().toEqualTypeOf<Spec.VehicleObstacle>()
   expectTypeOf<VehicleAxle>().toEqualTypeOf<Spec.VehicleAxle>()
   expectTypeOf<HandlingClass>().toEqualTypeOf<'STANDARD' | 'FRAGILE' | 'REFRIGERATED' | 'HAZARDOUS' | 'HIGH_VALUE'>()
   expectTypeOf<CargoPackage>().toEqualTypeOf<FeCargoPackage>()
-  expectTypeOf<PackagePlacement>().toEqualTypeOf<Spec.PackagePlacement>()
-  expectTypeOf<UnplacedPackage>().toEqualTypeOf<Spec.UnplacedPackage>()
+  expectTypeOf<PackagePlacement>().toEqualTypeOf<FePackagePlacement>()
+  expectTypeOf<UnplacedPackage>().toEqualTypeOf<FeUnplacedPackage>()
   expectTypeOf<OptimizationRequest>().toEqualTypeOf<FeOptimizationRequest>()
-  expectTypeOf<OptimizationResult>().toEqualTypeOf<Spec.OptimizationResult>()
+  expectTypeOf<OptimizationResult>().toEqualTypeOf<FeOptimizationResult>()
 })

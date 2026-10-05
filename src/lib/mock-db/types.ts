@@ -1,8 +1,9 @@
 import type { PlacementPatch } from '@/domain/constraints'
-import type { CargoPackage, OptimizationRequest, OptimizationResult } from '@/domain/models'
+import type { CargoPackage, OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
-import type { CompanyDepot, RunSettings, TripRoutePlan } from './source-types'
+import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings, TripRoutePlan } from './source-types'
+import type { PackageVerification } from './verify-model'
 
 /**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
@@ -37,9 +38,17 @@ export type DeliveryStop = {
 export const TRIP_PHASES = ['planning', 'loading', 'loaded', 'delivering', 'completed', 'cancelled'] as const
 export type TripPhase = (typeof TRIP_PHASES)[number]
 
-export type LoadingOutcome = 'loaded' | 'missing'
+/** Kết quả của một kiện ở bước xếp: đã lên xe, hoặc hỏng nên bị bỏ lại kho (FE-6-05, D-92). Kiện thiếu xử lý ở bước soạn (FE-6-02). */
+export type LoadingOutcome = 'loaded' | 'damaged'
 
-/** Tiến độ xếp ở kho (D-47): làm theo bản đã duyệt mới nhất lúc bắt đầu. */
+/** Kho báo một kiện không tìm thấy lúc soạn hàng (FE-6-02, D-82): chờ điều phối viên quyết "tìm tiếp" hoặc "bỏ kiện khỏi chuyến". */
+export type StagingShortage = { packageInstanceId: string; at: string; by: string | null }
+
+/** Lý do chuyến đang xếp quay về Đã lập kế hoạch (PRD v2 mục 7.1): bỏ kiện thiếu lúc soạn, hoặc kiện hỏng có kiện tựa lên. */
+export const REPLAN_REASONS = ['SHORTAGE', 'DAMAGED'] as const
+export type ReplanReason = (typeof REPLAN_REASONS)[number]
+
+/** Tiến độ soạn và xếp ở kho (D-47, D-82): làm theo bản đã duyệt mới nhất lúc bắt đầu. */
 export type LoadingProgress = {
   revisionId: string
   /** ISO 8601 */
@@ -47,7 +56,17 @@ export type LoadingProgress = {
   /** Người bấm bắt đầu; `null` khi không có phiên (seed, test). */
   startedBy: string | null
   completedAt?: string
-  /** Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. */
+  /**
+   * Kiện đã soạn vào khu chờ (FE-6-02), theo thứ tự ghi, không theo thứ tự xếp. Đủ mọi kiện của phương án thì sang bước xếp. Cách,
+   * người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications`.
+   */
+  stagedIds: string[]
+  /** Kiện kho báo thiếu lúc soạn, còn chờ điều phối viên quyết; vắng là không có. */
+  shortages?: StagingShortage[]
+  /**
+   * Mỗi kiện một dòng, theo thứ tự ghi. Kiện chưa có dòng là chưa xử lý. `via: 'qr'`: kiện đã đối chiếu bằng nhãn (quét hoặc gõ mã);
+   * cách, người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications` (FE-6-03).
+   */
   steps: { packageInstanceId: string; outcome: LoadingOutcome; at: string; via?: 'qr' }[]
   /** Số seal niêm phong thùng, ghi khi xếp xong (LM-104). */
   seal?: { number: string; at: string; by: string | null }
@@ -72,8 +91,10 @@ export type StopProgress = {
   /** Số điểm giao, khớp vị trí trong `Trip.stops` + 1. */
   number: number
   unloadedIds: string[]
-  /** Kiện dỡ được xác nhận bằng quét QR (tập con của `unloadedIds`, LM-104). */
+  /** Kiện dỡ đã đối chiếu bằng nhãn — quét hoặc gõ mã (tập con của `unloadedIds`, LM-104); cách đối chiếu ở `Trip.verifications`. */
   qrConfirmedIds?: string[]
+  /** Tài xế bấm "Đã đến" (`arriveAtStop`, FE-6-06), ISO 8601: từ lúc đó dỡ được hàng, và xe mô phỏng đứng ở điểm này (FE-6-08). */
+  arrivedAt?: string
   completedAt?: string
 }
 
@@ -117,7 +138,17 @@ export type Trip = {
   createdAt: string
   loading?: LoadingProgress
   delivery?: DeliveryProgress
+  /**
+   * Các lần đối chiếu kiện của chuyến, theo thứ tự ghi (FE-6-03, D-83): quét, gõ mã, xác nhận tay kèm trạng thái duyệt (FE-6-04).
+   * Chỉ hàm đối chiếu và duyệt của kho ghi.
+   */
+  verifications?: PackageVerification[]
   cancellation?: Cancellation
+  /**
+   * Chuyến vừa từ Đang xếp hàng quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do và thời điểm, để kho biết đang chờ điều phối viên tối
+   * ưu lại. `unload`: đã có kiện lên xe, kho phải dỡ ra xếp lại theo phương án mới. Kho gỡ khi bắt đầu xếp lại.
+   */
+  replan?: { reason: ReplanReason; at: string; unload: boolean }
   /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
   routePlan?: TripRoutePlan
   /** Lý do điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06, D-74); kho tự gỡ khi chuyến hết kiện khác loại. */
@@ -170,6 +201,8 @@ export type Revision = {
   ordersRecomputed: boolean
   /** Mục tiêu và thuật toán của lần chạy tạo revision (LM-104); revision đã duyệt giữ của revision nguồn. */
   run?: RunSettings
+  /** Lần chạy đã tạo revision (`RUN-NNN`, FE-5b-05): ba phương án ứng viên của một lần chạy cùng mã này; revision đã duyệt giữ của revision nguồn. */
+  runId?: string
   /** Chỉ ở revision đã duyệt: người bấm Duyệt (`null` khi không có phiên — test logic kho). */
   approvedBy?: string | null
 }
@@ -179,6 +212,21 @@ export type Revision = {
  * thuật toán mặc định (`DEFAULT_RUN_SETTINGS`).
  */
 export type NewRevision = Pick<Revision, 'tripId' | 'request' | 'result'> & { run?: RunSettings }
+
+/**
+ * Ba phương án ứng viên của một job tối ưu cần lưu (FE-5b-05, D-77): cùng `request`, mỗi phương án một mục tiêu và một kết quả.
+ * `jobId` là mã job của service; `algorithm` vắng thì kho ghi `DEFAULT_RUN_ALGORITHM`.
+ */
+export type NewOptimizationRun = {
+  tripId: string
+  request: OptimizationRequest
+  jobId: string
+  plans: readonly { objective: PlanObjective; result: OptimizationResult }[]
+  algorithm?: OptimizationAlgorithm
+}
+
+/** Lần chạy đã lưu và các revision nó tạo, theo thứ tự của `plans`. */
+export type SavedOptimizationRun = { run: OptimizationRun; revisions: Revision[] }
 
 /** Trạng thái xe (D-53): suy từ chuyến đang chạy, riêng bảo dưỡng đặt tay. */
 export type VehicleStatus = 'available' | 'in_use' | 'maintenance'
@@ -217,10 +265,12 @@ export type MockDbOptions = {
    * Mặc định `SEED_ANCHOR_DATE` để test tất định; app truyền ngày hôm nay theo giờ Việt Nam.
    */
   today?: string
-  /** Đồng hồ cho dữ liệu ghi mới (thời điểm tạo, sự kiện). Mặc định giờ máy. */
+  /** Đồng hồ máy: đồng hồ của kho (thời điểm tạo, sự kiện, vị trí xe) chạy theo nó. Mặc định giờ máy; test tiêm đồng hồ ở đây. */
   now?: () => Date
+  /** Đồng hồ của kho chạy nhanh gấp mấy lần `now` (`?toc-do=<n>`, FE-6-08). Mặc định 1: đúng giờ của `now`. */
+  speed?: number
   /** Nguồn ngẫu nhiên [0, 1) cho mã QR của kiện đăng ký mới (LM-104). Mặc định bộ có hạt giống cố định (tất định); app truyền `Math.random`. */
   random?: () => number
 }
 
-export type { DeliveryIssueInput, LoadingStepInput, MockDb, TemporaryPassword } from './db-api'
+export type { ApproveOptions, DeliveryIssueInput, MockDb, TemporaryPassword } from './db-api'

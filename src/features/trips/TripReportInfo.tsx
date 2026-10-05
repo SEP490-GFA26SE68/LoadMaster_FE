@@ -5,8 +5,9 @@ import { useFormat, useT } from '@/lib/i18n'
 import type { TripReportData } from './trip-extras-api'
 
 /**
- * Thông tin chuyến trong báo cáo (LM-104): tuyến, ngày, xe, tài xế, số seal kho ghi khi xếp xong, số kiện theo phương án / thiếu / xếp
- * bằng QR, khối lượng đã giao và bốn mốc giờ. Mốc chưa ghi thì "Chưa có".
+ * Thông tin chuyến trong báo cáo (LM-104, FE-6-14): tuyến, ngày, xe, tài xế, số seal kho ghi khi xếp xong, lý do chở chung khác loại
+ * hàng (nếu chuyến vượt luật phân tách), số kiện theo phương án / đã soạn / hỏng / xếp bằng QR / hoàn trả, khối lượng đã giao và bốn
+ * mốc giờ. Mốc chưa ghi thì "Chưa có".
  */
 export function TripReportInfo({ data }: { data: TripReportData }) {
   const t = useT()
@@ -37,9 +38,12 @@ export function TripReportInfo({ data }: { data: TripReportData }) {
             ? <span className="font-mono">{t('tripReport.info.sealValue', { number: seal.number, time: format.time(seal.at) })}</span>
             : t('tripReport.info.noSeal')}
         </Fact>
+        {report.overrideReason === null ? null : <Fact label={t('tripReport.info.override')}>{report.overrideReason}</Fact>}
         <Fact label={t('tripReport.info.planned')} mono>{format.integer(packages.planned)}</Fact>
-        <Fact label={t('tripReport.info.missing')} mono>{format.integer(packages.missing)}</Fact>
+        <Fact label={t('tripReport.info.staged')} mono>{format.integer(packages.staged)}</Fact>
+        <Fact label={t('tripReport.info.damaged')} mono>{format.integer(packages.damaged)}</Fact>
         <Fact label={t('tripReport.info.loadedByQr')} mono>{format.integer(packages.loadedByQr)}</Fact>
+        <Fact label={t('tripReport.info.returned')} mono>{format.integer(packages.returned)}</Fact>
         <Fact label={t('tripReport.info.weight')} mono>
           {t('tripReport.info.weightValue', { delivered: format.weight(weight.deliveredKg), planned: format.weight(weight.plannedKg) })}
         </Fact>

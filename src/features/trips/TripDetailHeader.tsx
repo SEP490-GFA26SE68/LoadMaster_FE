@@ -56,14 +56,14 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
         <span className="flex items-center gap-2">
           <StatusBadge status={detail.status} />
           <TripSubStatusTag sub={detail.sub} />
-          <TripSubStatusTag sub={detail.routeSub} />
+          <TripSubStatusTag sub={detail.extraSub} />
         </span>
       ) : undefined}
       description={detail ? <TripMeta detail={detail} /> : undefined}
       actions={
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2.5">
-            {trip && can('trips.edit') ? <TripActionsMenu trip={trip} /> : null}
+            {trip ? <TripActionsMenu trip={trip} canEdit={can('trips.edit')} /> : null}
             {run}
             {plan ? (
               <Button variant="primary" asChild>

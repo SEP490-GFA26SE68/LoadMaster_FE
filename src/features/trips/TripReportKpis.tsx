@@ -26,7 +26,7 @@ export function TripReportKpis({ report }: { report: TripReport }) {
         icon={PackageCheck}
         tone="green"
         label={t('tripReport.kpi.delivered')}
-        value={`${format.integer(packages.delivered)} / ${format.integer(packages.planned - packages.missing)}`}
+        value={`${format.integer(packages.delivered)} / ${format.integer(packages.planned - packages.damaged)}`}
         note={t('tripReport.kpi.deliveredNote')}
       />
       <KpiTile

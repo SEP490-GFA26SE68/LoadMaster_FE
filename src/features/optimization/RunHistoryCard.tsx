@@ -15,6 +15,7 @@ import { useRunHistoryQuery } from './useOptimizationRuns'
 const helper = createColumnHelper<BaseTableFeatures, RunHistoryRow>()
 const mono = 'font-mono text-caption tabular-nums'
 const two = 'flex min-w-0 flex-col gap-0.5 whitespace-normal'
+const planLink = 'self-start rounded-sm font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
 /** Chip duyệt theo ngữ pháp chấm của V2.3, cùng màu với dòng phụ của chuyến: cyan đặc = đã duyệt, hổ phách vòng rỗng = chờ duyệt. */
 const APPROVAL_LOOK: Record<RunApproval, { tone: BadgeTone; dot: BadgeDot }> = {
@@ -41,30 +42,23 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
     }),
     helper.accessor('runnerName', {
       header: t('runs.columns.runner'),
-      meta: { width: '14%' } satisfies ColumnMeta,
-      cell: (info) => <span className="line-clamp-2 whitespace-normal text-ink-1">{info.getValue() ?? t('runs.noValue')}</span>,
+      meta: { width: '15%' } satisfies ColumnMeta,
+      cell: (info) => <span className="whitespace-normal text-ink-1">{info.getValue() ?? t('runs.noValue')}</span>,
     }),
-    helper.accessor('objective', {
+    helper.accessor('algorithm', {
       header: t('runs.columns.choice'),
-      meta: { width: '20%' } satisfies ColumnMeta,
-      cell: (info) => (
-        <span className={two}>
-          <span className="text-ink-1">{t(`runs.objectives.${info.getValue()}`)}</span>
-          <span className="text-caption text-ink-3">{t(`runs.algorithms.${info.row.original.algorithm}`)}</span>
-        </span>
-      ),
-    }),
-    helper.accessor('timeLimitSeconds', {
-      header: t('runs.columns.limits'),
-      meta: { width: '132px' } satisfies ColumnMeta,
+      meta: { width: '18%' } satisfies ColumnMeta,
       cell: (info) => {
-        const seconds = info.getValue()
-        const seed = info.row.original.randomSeed
+        const { timeLimitSeconds: seconds, randomSeed: seed } = info.row.original
         // Seed là mã để chạy lại đúng kết quả, không phải số lượng: in nguyên, không nhóm hàng nghìn
-        return seconds === null ? none : (
-          <span className={`${two} ${mono} text-ink-2`}>
-            <span>{t('runs.limitSeconds', { seconds: format.integer(seconds) })}</span>
-            <span>{t('runs.seed', { seed: seed === null ? t('runs.noValue') : String(seed) })}</span>
+        return (
+          <span className={two}>
+            <span className="text-ink-1">{t(`runs.algorithms.${info.getValue()}`)}</span>
+            {seconds === null ? null : (
+              <span className={`${mono} text-ink-3`}>
+                {t('runs.limitSeconds', { seconds: format.integer(seconds) })} · {t('runs.seed', { seed: seed === null ? t('runs.noValue') : String(seed) })}
+              </span>
+            )}
           </span>
         )
       },
@@ -73,7 +67,7 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
       header: t('runs.columns.status'),
       meta: { width: '17%' } satisfies ColumnMeta,
       cell: (info) => {
-        const { failureCode } = info.row.original
+        const { failureCode, id, plans } = info.row.original
         const known = failureCode === undefined ? undefined : knownFailure(failureCode)
         return (
           <span className={`${two} items-start`}>
@@ -83,44 +77,48 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
                 {known ? t(`runs.failures.${known}`) : failureCode}
               </span>
             ) : null}
+            {plans.length > 1 ? (
+              <Link to={`/chuyen/${tripId}/so-sanh?lan-chay=${encodeURIComponent(id)}`} aria-label={t('runs.openCompare', { run: id })} className={`${planLink} text-caption`}>
+                {t('runs.compare')}
+              </Link>
+            ) : null}
           </span>
         )
       },
     }),
-    helper.accessor('revisionId', {
+    helper.accessor('plans', {
       header: t('runs.columns.plan'),
-      meta: { width: '19%' } satisfies ColumnMeta,
       cell: (info) => {
-        const row = info.row.original
-        const revisionId = info.getValue()
-        if (revisionId === undefined || row.jobId === undefined) return none
-        const total = (row.placedCount ?? 0) + (row.unplacedCount ?? 0)
+        const plans = info.getValue()
+        if (plans.length === 0) return none
         return (
           <span className={two}>
-            <Link to={plannerPath({ tripId, jobId: row.jobId, revisionId })} aria-label={t('runs.openPlan', { revision: revisionId })}
-              className="self-start rounded-sm font-mono text-caption font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-              {revisionId}
-            </Link>
-            <span className="text-caption text-ink-2">
-              {t('runs.planMetrics', {
-                volume: format.percent(row.volumeUtilizationPercent ?? 0),
-                payload: row.payloadUtilizationPercent === null ? t('runs.noValue') : format.percent(row.payloadUtilizationPercent),
-              })}
-            </span>
-            <span className="text-caption text-ink-3">
-              {row.unplacedCount ? t('runs.unplaced', { count: row.unplacedCount }) : t('runs.allPlaced', { count: format.integer(total) })}
-            </span>
+            {plans.map((plan) => (
+              <span key={plan.revisionId} className="flex flex-wrap items-baseline gap-x-2 text-caption">
+                <Link to={plannerPath({ tripId, jobId: plan.jobId, revisionId: plan.revisionId })} aria-label={t('runs.openPlan', { revision: plan.revisionId })}
+                  className={`${planLink} flex-none font-mono`}>
+                  {plan.label} · {plan.revisionId}
+                </Link>
+                <span className="whitespace-nowrap text-ink-2">{plan.unplacedCount > 0 ? t('runs.planUnplaced', { count: plan.unplacedCount }) : t('runs.planAllPlaced')}</span>
+              </span>
+            ))}
           </span>
         )
       },
     }),
     helper.accessor('approval', {
       header: t('runs.columns.approval'),
-      meta: { width: '148px' } satisfies ColumnMeta,
+      meta: { width: '124px' } satisfies ColumnMeta,
       cell: (info) => {
         const approval = info.getValue()
         if (approval === null) return none
-        return <Badge tone={APPROVAL_LOOK[approval].tone} dot={APPROVAL_LOOK[approval].dot}>{t(`runs.approval.${approval}`)}</Badge>
+        const approved = info.row.original.plans.filter((plan) => plan.approved).map((plan) => plan.label)
+        return (
+          <span className={`${two} items-start`}>
+            <Badge tone={APPROVAL_LOOK[approval].tone} dot={APPROVAL_LOOK[approval].dot}>{t(`runs.approval.${approval}`)}</Badge>
+            {approved.length > 0 ? <span className="text-caption text-ink-2">{t('runs.approvedPlans', { labels: format.list(approved) })}</span> : null}
+          </span>
+        )
       },
     }),
   ])
@@ -128,8 +126,10 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
 
 /**
  * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu (luồng 3 Review 1, LM-104): mọi lần chạy của chuyến, mới nhất trước — lúc chạy, người
- * chạy, mục tiêu + thuật toán, giới hạn thời gian + seed, kết quả (lần hỏng kèm lý do), phương án tạo ra (mở Planner) và phương án đó
- * đã duyệt hay còn chờ duyệt.
+ * chạy, thiết lập (thuật toán đã chạy, giới hạn thời gian · seed), kết quả (lần hỏng kèm lý do; lần xong có liên kết "So sánh" mở màn so
+ * sánh của lần chạy đó), ba phương án ứng viên A · B · C (FE-5b-05 — mỗi dòng mở phương án đó trong Planner, kèm xếp đủ hay còn bao
+ * nhiêu kiện chưa xếp; các chỉ số khác nằm ở màn so sánh), và lần chạy đã có phương án được duyệt (kèm nhãn phương án) hay còn chờ
+ * duyệt. Bảng vừa cột trái của màn ở 1.366 px: tên người chạy xuống dòng, không cắt.
  */
 export function RunHistoryCard({ tripId }: { tripId: string }) {
   const t = useT()

@@ -109,7 +109,7 @@ test('the company manager lands on the dashboard and sees its own nav items: req
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'manager')
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
   // Yêu cầu giao là việc của quản lý công ty (D-72): có nút tạo
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
@@ -143,7 +143,7 @@ test('the dispatcher owns the package screens; the shipment and receiving routes
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
   // Yêu cầu giao với điều phối viên là màn chỉ xem (FE-4b-02): không nút tạo
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
@@ -191,6 +191,8 @@ test('the company manager reads trips and plans without any write action; the ap
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)
+  // Chuyến Đã lập kế hoạch: "Đổi xe" là nút mở hộp thoại (FE-5b-08); chuyến nháp là liên kết tới form sửa
+  await expect(page.getByRole('button', { name: 'Đổi xe', exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Đổi xe', exact: true })).toHaveCount(0)
 
   // Planner chỉ xem, cả bản đã duyệt lẫn bản chưa duyệt REV-001: không Chỉnh sửa, không Duyệt, một dòng lý do

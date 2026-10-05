@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Container,
+  Hand,
   KeyRound,
   MapPin,
   Package,
@@ -11,6 +12,7 @@ import {
   Shapes,
   Truck,
   UserRound,
+  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react'
 import type { KpiTone } from '@/components/KpiTile'
@@ -30,6 +32,8 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   package: QrCode,
   requirement: ClipboardList,
   vehicleType: Container,
+  manualConfirm: Hand,
+  exception: TriangleAlert,
 }
 
 /**
@@ -53,15 +57,22 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.packageRemoved': 'amber',
   'trip.segregationOverridden': 'amber',
   'trip.routeOptimized': 'azure',
+  'trip.vehicleChanged': 'blue',
+  'trip.rerouted': 'azure',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
   'loading.started': 'blue',
-  'loading.missing': 'amber',
+  'loading.shortageReported': 'amber',
+  'loading.shortageKept': 'blue',
+  'loading.shortageDropped': 'amber',
+  'loading.damaged': 'amber',
   'loading.completed': 'green',
   'delivery.started': 'blue',
+  'delivery.arrived': 'blue',
   'delivery.issue': 'amber',
   'delivery.stopCompleted': 'green',
   'delivery.completed': 'green',
+  'delivery.etaRisk': 'amber',
   'user.created': 'slate',
   'user.updated': 'slate',
   'user.locked': 'amber',
@@ -91,6 +102,13 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'vehicleType.deleted': 'slate',
   'vehicleType.assigned': 'blue',
   'loading.sealed': 'green',
+  'manualConfirm.requested': 'amber',
+  'manualConfirm.approved': 'green',
+  'manualConfirm.rejected': 'amber',
+  'exception.reported': 'amber',
+  'exception.escalated': 'amber',
+  'exception.resolved': 'green',
+  'exception.deadlineRenegotiated': 'blue',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
-import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute } from './spec-flow-helpers'
+import { loadingOrderOf, typeVerifyCode } from './operations-helpers'
+import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute, waitForOtherRevision } from './spec-flow-helpers'
 
 /**
  * LM-101 — một ngày làm việc của 5 vai trò trên cùng một kho in-memory (đổi người bằng đăng xuất/đăng nhập trong app, không tải
- * lại trang): điều phối tạo chuyến, thêm kiện, tối ưu, duyệt (FE-0-07) → kho xếp (báo thiếu 1) → tài xế giao (1 sự cố) → quản lý
+ * lại trang): điều phối tạo chuyến, thêm kiện, tối ưu, duyệt (FE-0-07) → kho soạn rồi xếp có đối chiếu (bỏ lại 1 kiện hỏng, FE-6-02,
+ * FE-6-05) → tài xế xuất phát, đến điểm, dỡ có đối chiếu (1 sự cố, FE-6-06) → quản lý
  * công ty thấy chuyến hoàn thành trên bảng điều khiển và xuất báo cáo → quản trị công ty đọc đủ chuỗi sự kiện của chuyến trong nhật ký
  * của công ty mình (FE-0-08).
  */
@@ -56,47 +58,61 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
 
   await page.getByRole('link', { name: 'Chạy tối ưu', exact: true }).click()
   await optimizeAndOpenPlanner(page)
+  const sourceRevision = new URL(page.url()).searchParams.get('revision')
   await expect(page.getByText('MOCK RESULT', { exact: true }).first()).toBeVisible()
   // FE-0-07: điều phối viên duyệt ngay phương án vừa tối ưu — không có dòng nào bảo chờ người khác duyệt
   await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
-  await page.waitForURL(/\/phuong-an\?revision=REV-/)
+  await waitForOtherRevision(page, sourceRevision)
   await page.getByRole('link', { name: 'Quay lại chuyến', exact: true }).click()
   await expect(page.locator('header').getByText('Đã lập kế hoạch', { exact: true })).toBeVisible()
   await expect(page.locator('header').getByText('Đã duyệt', { exact: true })).toBeVisible()
   await signOut(page, NAMES.dispatcher)
 
-  // Kho: xếp 5 kiện, báo thiếu 1, hoàn tất
+  // Kho: soạn đủ 6 kiện (không cần thứ tự), xếp 5 kiện theo thứ tự xếp — mỗi kiện đối chiếu bằng mã —, kiện cuối hỏng bị bỏ lại
   await signIn(page, 'warehouse')
   await page.waitForURL(/\/kho$/)
-  const card = page.getByRole('list', { name: 'Chuyến cần xếp', exact: true }).getByRole('listitem')
+  const card = page.getByRole('list', { name: 'Chờ soạn', exact: true }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: TRIP, exact: true }) })
-  await card.getByRole('link', { name: 'Bắt đầu xếp', exact: true }).click()
-  await expect(page.getByText('Bước 1 / 6', { exact: true })).toBeVisible()
-  for (let step = 1; step <= 6; step += 1) {
-    if (step === 3) {
-      await page.getByRole('button', { name: 'Kiện này không có ở kho', exact: true }).click()
-      await page.getByRole('dialog').getByRole('button', { name: 'Ghi thiếu', exact: true }).click()
-    } else {
-      await page.getByRole('button', { name: 'Xác nhận đã xếp', exact: true }).click()
-    }
-    if (step < 6) await expect(page.getByText(`Bước ${step + 1} / 6`, { exact: true })).toBeVisible()
+  await card.getByRole('link', { name: 'Bắt đầu soạn hàng', exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Kiện chưa soạn (6)', exact: true })).toBeVisible()
+  const order = await loadingOrderOf(page, TRIP)
+  expect(order).toHaveLength(6)
+  await page.getByRole('button', { name: 'Đối chiếu kiện', exact: true }).click()
+  const staging = page.getByRole('dialog', { name: 'Đối chiếu kiện vào khu chờ' })
+  for (const [index, id] of order.toReversed().entries()) {
+    await typeVerifyCode(staging, id)
+    // Hộp ở lại để soạn kiện kế tiếp, tự đóng khi soạn xong kiện cuối
+    if (index < 5) await expect(staging.getByText(new RegExp(`^Đã soạn ${id} · `))).toBeVisible()
   }
+  await expect(staging).toBeHidden()
+  await expect(page.getByText('Bước 1 / 6', { exact: true })).toBeVisible()
+  for (let step = 1; step <= 5; step += 1) {
+    await page.getByRole('button', { name: 'Đối chiếu kiện', exact: true }).click()
+    await typeVerifyCode(page.getByRole('dialog', { name: `Đối chiếu kiện bước ${step}` }), order[step - 1] ?? '')
+    await expect(page.getByText(`Bước ${step + 1} / 6`, { exact: true })).toBeVisible()
+  }
+  // Kiện xếp cuối cùng không có kiện nào tựa lên trong phương án: bỏ lại kho, xếp xong
+  await page.getByRole('button', { name: 'Kiện hỏng', exact: true }).click()
+  const damaged = page.getByRole('dialog', { name: `Ghi ${order[5]} là kiện hỏng?` })
+  await expect(damaged).toContainText('Trong phương án không kiện nào tựa lên nó')
+  await damaged.getByRole('button', { name: 'Ghi kiện hỏng', exact: true }).click()
   // Kiện cuối có kết quả thì màn tự hoàn tất xếp (nút "Hoàn tất xếp hàng" chỉ hiện khi mở lại một phiên đã ghi đủ)
   await expect(page.getByText(`Đã xếp xong chuyến ${TRIP}`, { exact: true })).toBeVisible()
   await expect(page.getByText('Đã xếp 5 / 6 kiện', { exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).click()
   await signOut(page, NAMES.warehouse)
 
-  // Tài xế: bắt đầu giao, dỡ 5 kiện có trên xe, báo một kiện hỏng, hoàn tất → tổng kết
+  // Tài xế: xuất phát, đến điểm, báo một kiện hỏng, dỡ 5 kiện có trên xe bằng đối chiếu, hoàn tất → tổng kết
   await signIn(page, 'driver')
   await page.waitForURL(/\/tai-xe$/)
-  await page.getByRole('region', { name: 'Sẵn sàng giao' }).getByRole('listitem')
+  await page.getByRole('region', { name: 'Xếp xong — chờ xuất phát' }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: TRIP, exact: true }) })
     .getByRole('link', { name: 'Mở chuyến', exact: true }).click()
-  await page.getByRole('button', { name: 'Bắt đầu giao', exact: true }).click()
-  // Kiện có trên xe của điểm 1: kiện của phương án kho đã xếp, trừ kiện kho báo thiếu
+  await page.getByRole('button', { name: 'Xuất phát', exact: true }).click()
+  await page.getByRole('button', { name: 'Đã đến điểm 1', exact: true }).click()
+  // Kiện có trên xe của điểm 1: kiện của phương án kho đã xếp, trừ kiện hỏng bị bỏ lại kho
   const onTruck = await page.evaluate(async ({ db, tripId }) => {
     const { getMockDb, stopItemIds } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(tripId)
@@ -109,12 +125,14 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await issue.getByRole('textbox', { name: 'Ghi chú', exact: true }).fill('Móp một góc, khách vẫn nhận')
   await issue.getByRole('button', { name: 'Ghi sự cố', exact: true }).click()
   await expect(issue).toBeHidden()
+  // Kiện móp khách vẫn nhận: vẫn dỡ bằng đối chiếu như các kiện khác
+  await page.getByRole('button', { name: 'Đối chiếu kiện dỡ', exact: true }).click()
+  const unloading = page.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' })
   for (const id of onTruck) {
-    const mark = page.getByRole('button', { name: `Đánh dấu đã dỡ ${id}`, exact: true })
-    if ((await mark.count()) === 0) continue
-    await mark.click()
-    await expect(page.getByRole('button', { name: `Bỏ đánh dấu đã dỡ ${id}`, exact: true })).toBeVisible()
+    await typeVerifyCode(unloading, id)
+    await expect(page.locator(`li[data-package-id="${id}"]`)).toHaveAttribute('data-state', 'unloaded')
   }
+  await expect(unloading).toBeHidden()
   await expect(page.getByText('Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Tổng kết chuyến', exact: true })).toBeVisible()
@@ -148,10 +166,11 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
     ['Tạo chuyến', NAMES.dispatcher],
     ['Lưu kết quả tối ưu', NAMES.dispatcher],
     ['Duyệt phương án', NAMES.dispatcher],
-    ['Bắt đầu xếp hàng', NAMES.warehouse],
-    ['Báo thiếu kiện ở kho', NAMES.warehouse],
+    ['Bắt đầu soạn hàng', NAMES.warehouse],
+    ['Kho báo kiện hỏng khi xếp', NAMES.warehouse],
     ['Xếp xong', NAMES.warehouse],
     ['Xuất phát giao hàng', NAMES.driver],
+    ['Tài xế đã đến điểm giao', NAMES.driver],
     ['Báo sự cố giao hàng', NAMES.driver],
     ['Hoàn tất điểm giao', NAMES.driver],
     ['Hoàn thành chuyến', NAMES.driver],

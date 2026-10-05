@@ -12,6 +12,9 @@ import { stopColor, stopForeground } from '@/lib/stops'
 import { cn } from '@/lib/utils'
 import type { StopRow } from './trip-summary'
 
+/** Giờ đến của một điểm trên sơ đồ tuyến; `arrived` khi xe đã đứng ở điểm (FE-6-09). */
+export type StopEta = RouteStopEta & { readonly arrived?: boolean }
+
 /** Trạng thái giao của một điểm khi chuyến đang giao / đã hoàn thành (LM-097). */
 export type StopState =
   | { kind: 'done'; at: string; issues: number }
@@ -41,8 +44,8 @@ export function StopCard({ stop, total, lead, state, eta, missingCoordinates = f
   /** Mũi tên hoặc đoạn đường tới điểm này, nằm trong `<li>` để danh sách chỉ có kho và các điểm. */
   lead?: ReactNode
   state?: StopState
-  /** Giờ đến dự kiến và mức hạn của điểm trong tuyến đã tối ưu. */
-  eta?: RouteStopEta
+  /** Giờ đến dự kiến và mức hạn của điểm: của tuyến đã tối ưu, hoặc tính từ vị trí xe khi chuyến đang chạy (`arrived`: xe đã tới). */
+  eta?: StopEta
   /** Điểm chưa có toạ độ nên chưa tối ưu tuyến được. */
   missingCoordinates?: boolean
   /** Không kéo, không xoá: người chỉ xem hoặc chuyến đã khoá (D-41, D-45). */
@@ -70,8 +73,8 @@ export function StopCard({ stop, total, lead, state, eta, missingCoordinates = f
         {t('trips.route.stop', { number: stop.number, total, name: stop.name, packages, weight })}
         {stop.deadline ? `, ${t('trips.route.deadlineA11y', { time: format.time(stop.deadline), date: format.date(stop.deadline) })}` : null}
         {stop.priority ? `, ${t('trips.route.priorityA11y', { priority: t(`requirements.priority.${stop.priority}`) })}` : null}
-        {eta ? `, ${t('trips.routePlan.etaA11y', { time: format.time(eta.eta), date: format.date(eta.eta) })}` : null}
-        {eta?.deadlineStatus ? `, ${t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}` : null}
+        {eta ? `, ${t(eta.arrived ? 'trips.routePlan.arrivedA11y' : 'trips.routePlan.etaA11y', { time: format.time(eta.eta), date: format.date(eta.eta) })}` : null}
+        {eta?.deadlineStatus ? `, ${t(`common.deadlineStatuses.${eta.deadlineStatus}`)}` : null}
         {missingCoordinates ? `, ${t('trips.routePlan.missingCoordinates')}` : null}
         {state ? `, ${stateLabel(state, t, format)}` : null}
       </span>
@@ -151,7 +154,7 @@ export function StopLeg({ state }: { state: StopState }) {
 }
 
 function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
-  stop: StopRow; packages: string; weight: string; state?: StopState; eta?: RouteStopEta; missingCoordinates: boolean
+  stop: StopRow; packages: string; weight: string; state?: StopState; eta?: StopEta; missingCoordinates: boolean
 }) {
   const t = useT()
   const format = useFormat()
@@ -188,8 +191,8 @@ function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
         {eta ? (
           <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-small text-ink-2">
             <Navigation aria-hidden className="size-3.5 flex-none text-ink-3" strokeWidth={1.75} />
-            <span className="tabular-nums">{t('trips.routePlan.eta', { time: format.time(eta.eta), date: format.dayMonth(eta.eta) })}</span>
-            {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`trips.routePlan.deadlineStatus.${eta.deadlineStatus}`)}</Badge> : null}
+            <span className="tabular-nums">{t(eta.arrived ? 'trips.routePlan.arrived' : 'trips.routePlan.eta', { time: format.time(eta.eta), date: format.dayMonth(eta.eta) })}</span>
+            {eta.deadlineStatus ? <Badge shape="tag" tone={DEADLINE_TONE[eta.deadlineStatus]}>{t(`common.deadlineStatuses.${eta.deadlineStatus}`)}</Badge> : null}
           </span>
         ) : null}
         {/* Chữ thường xuống dòng được — thẻ điểm hẹp khi chuyến nhiều điểm */}

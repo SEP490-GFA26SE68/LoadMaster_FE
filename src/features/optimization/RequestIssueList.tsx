@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Info, Package, Repeat2, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info, Package, Repeat2, Route, TriangleAlert, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -20,8 +20,8 @@ const ROW: Record<RowState, { icon: LucideIcon; tone: string }> = {
 
 /**
  * Thẻ "Kiểm tra trước khi tối ưu" (V2.3 `ThietLapToiUu.jpg`, `ThietLapToiUuLoi.jpg`; LM-047): dải kết luận (không lỗi / còn cảnh báo /
- * còn lỗi), rồi từng điều kiện theo nhóm Xe · Kiện · Tải trọng — mục đạt kèm số của chuyến, mục lỗi liệt kê từng issue với nhãn Lỗi /
- * Cảnh báo. Issue của xe và của kiện là liên kết tới nơi sửa (trang xe, panel kiện `?kien=`); mục tải trọng có "Đổi xe" (đưa con trỏ về
+ * còn lỗi), rồi từng điều kiện theo nhóm Tuyến · Xe · Kiện · Tải trọng — mục đạt kèm số của chuyến, mục lỗi liệt kê từng issue với nhãn
+ * Lỗi / Cảnh báo. Nhóm Tuyến (FE-5b-05): chuyến phải đã tối ưu tuyến; chưa thì có lối về Chi tiết chuyến. Issue của xe và của kiện là liên kết tới nơi sửa (trang xe, panel kiện `?kien=`); mục tải trọng có "Đổi xe" (đưa con trỏ về
  * ô chọn xe) và "Sửa kiện".
  */
 export function RequestIssueList({ tripId, setup, checklist, canRun, locked = false }: {
@@ -50,7 +50,24 @@ export function RequestIssueList({ tripId, setup, checklist, canRun, locked = fa
         <Strip tone="success" icon={CheckCircle2}>{t('optimization.summaryClear')}</Strip>
       )}
 
-      <Group label={t('optimization.groups.vehicle')} divided={false}>
+      <Group label={t('optimization.groups.route')} divided={false}>
+        <Line state={checklist.route.state} title={t('optimization.check.route')}>
+          {checklist.route.state === 'pass' ? (
+            <Detail>{t('optimization.check.routeDetail', { count: setup.trip.stops.length })}</Detail>
+          ) : (
+            <>
+              <span className="mt-1 flex flex-col text-small leading-4.75">
+                <span className="font-semibold text-red-700">{t('optimization.check.error')}</span>
+                <span className="text-red-700">{t('optimization.check.routeMissing')}</span>
+              </span>
+              <Link to={`/chuyen/${tripId}`} className={cn(SETUP_LINK, 'mt-2 text-small')}>
+                <Route aria-hidden className="size-3.5" strokeWidth={1.75} />{t('optimization.check.routeFix')}
+              </Link>
+            </>
+          )}
+        </Line>
+      </Group>
+      <Group label={t('optimization.groups.vehicle')}>
         <Row item={checklist.vehicle} title={t('optimization.check.vehicle')}
           detail={t('optimization.check.vehicleDetail', { vehicle: vehicle.name, door: format.widthByHeight(vehicle.doorWidthCm, vehicle.doorHeightCm) })} />
       </Group>

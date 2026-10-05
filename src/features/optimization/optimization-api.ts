@@ -1,24 +1,22 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   changeTripVehicle → POST /api/trips/{id}/change-vehicle
- *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · kết quả: GET /api/v1/optimization/jobs/{id}/plans
+ *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07)
  *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
  */
 
 import type { OptimizationRequest, OptimizationResult, VehicleConfig } from '@/domain/models'
 import {
-  DEFAULT_RUN_SETTINGS,
   getMockDb,
   type OptimizationRun,
   type Revision,
-  type RunSettings,
   type Trip,
   tripStatus,
   tripSubStatus,
   type VehicleStatus,
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
-import { createOptimizationService, OptimizationServiceError, type OptimizationProgress } from '@/services/optimization'
+import { createOptimizationService, OptimizationServiceError, type CandidateProgress, type CandidateRun } from '@/services/optimization'
 import { buildRunHistory, type RunHistoryRow } from './run-history'
 
 /**
@@ -64,49 +62,53 @@ export type RunInput = {
   /** `?mo-phong=loi` (D-12): service giả lập không phản hồi. */
   readonly simulateFailure: boolean
   readonly signal?: AbortSignal
-  readonly onProgress?: (progress: OptimizationProgress) => void
-  /** Mục tiêu và thuật toán người dùng chọn (LM-104); vắng thì mặc định. Mock bỏ qua, kho lưu vào lịch sử lần chạy. */
-  readonly run?: RunSettings
+  /** Tiến trình của từng phương án ứng viên. */
+  readonly onProgress?: (progress: CandidateProgress) => void
 }
 
-/** `revision` khi service trả kết quả chạy xong (kể cả kết quả một phần); `failed` khi request bị service từ chối. */
+/**
+ * `saved`: service trả đủ ba phương án (kể cả phương án một phần) và kho đã lưu lần chạy cùng ba revision; `failed` khi request bị
+ * service từ chối.
+ */
 export type RunOutcome =
-  | { readonly kind: 'saved'; readonly revision: Revision }
+  | { readonly kind: 'saved'; readonly run: OptimizationRun; readonly revisions: readonly Revision[] }
   | { readonly kind: 'failed'; readonly result: OptimizationResult }
 
 /**
- * Chạy tối ưu qua `createOptimizationService` (Web Worker trong trình duyệt, D-30) rồi lưu kết quả thành revision bất biến
- * (D-31). `status: FAILED` không lưu revision. Lỗi service (`OptimizationServiceError`) và huỷ (`AbortError`) ném lên cho UI.
+ * Chạy tối ưu qua `createOptimizationService` (Web Worker trong trình duyệt, D-30): một job ra ba phương án ứng viên theo ba mục tiêu
+ * (FE-5b-05, D-77), kho lưu mỗi phương án thành một revision bất biến (D-31) của cùng một lần chạy. `status: FAILED` không lưu revision.
+ * Lỗi service (`OptimizationServiceError`), huỷ (`AbortError` — không phương án nào được lưu) và lỗi của kho (`MockDbError`, ví dụ chuyến
+ * chưa tối ưu tuyến) ném lên cho UI.
  */
-// POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans
-export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, run = DEFAULT_RUN_SETTINGS }: RunInput): Promise<RunOutcome> {
+// POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
+export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress }: RunInput): Promise<RunOutcome> {
   const service = createOptimizationService({ simulateFailure })
   const db = getMockDb()
-  let result: OptimizationResult
+  let job: CandidateRun
   try {
-    result = await service.optimize(request, { signal, onProgress })
+    job = await service.optimizeCandidates(request, { signal, onProgress })
   } catch (error) {
     // Lịch sử lần chạy (LM-104): service không phản hồi vẫn là một lần chạy; người dùng huỷ thì không
-    if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { ...run, failureCode: 'SERVICE_UNAVAILABLE' })
+    if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE' })
     throw error
   }
-  if (result.status === 'FAILED') {
-    await db.recordFailedRun(tripId, { ...run, failureCode: 'REQUEST_REJECTED' })
-    return { kind: 'failed', result }
+  const failed = job.plans.find(({ result }) => result.status === 'FAILED')
+  if (failed) {
+    await db.recordFailedRun(tripId, { failureCode: 'REQUEST_REJECTED' })
+    return { kind: 'failed', result: failed.result }
   }
-  const revision = await db.addRevision({ tripId, request, result, run })
-  return { kind: 'saved', revision }
+  return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans })) }
 }
 
-/** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: mục tiêu, thuật toán, kết quả hoặc lý do không ra kết quả. */
+/** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: thuật toán, các phương án ứng viên hoặc lý do không ra kết quả. */
 // chưa có ở BE
 export function fetchOptimizationRuns(tripId: string): Promise<OptimizationRun[]> {
   return getMockDb().listOptimizationRuns(tripId)
 }
 
 /**
- * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu, mới nhất trước: lần chạy kèm người chạy, thiết lập và số của revision nó tạo, và phương
- * án đó đã duyệt hay còn chờ duyệt.
+ * Bảng "Lần chạy tối ưu" của Thiết lập tối ưu, mới nhất trước: lần chạy kèm người chạy, thiết lập, ba phương án ứng viên nó tạo, và
+ * lần chạy đó đã có phương án được duyệt hay còn chờ duyệt.
  */
 // chưa có ở BE
 export async function fetchRunHistory(tripId: string): Promise<RunHistoryRow[]> {

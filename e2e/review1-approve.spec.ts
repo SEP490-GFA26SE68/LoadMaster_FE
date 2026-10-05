@@ -3,9 +3,10 @@ import { attachScreenshot, expect, test } from './fixtures'
 import { navigateInApp, optimizeAndOpenPlanner, switchUser } from './spec-flow-helpers'
 
 /**
- * Luồng tối ưu → duyệt (LM-104; FE-0-07, D-80) trên cùng một kho in-memory, đổi người ngay trong app: điều phối viên chạy tối ưu với mục
- * tiêu + thuật toán, thấy lần chạy "Chờ duyệt" trong lịch sử, rồi **tự duyệt** phương án trong Planner — Planner ghi "Duyệt bởi … lúc
- * …", lần chạy thành "Đã duyệt". Quản lý công ty mở cùng phương án ở chế độ chỉ xem; hàng đợi `/duyet` không còn.
+ * Luồng tối ưu → so sánh → duyệt (LM-104; FE-0-07, D-80; FE-5b-05, FE-5b-06) trên cùng một kho in-memory, đổi người ngay trong app:
+ * điều phối viên chạy tối ưu — một lần chạy ra ba phương án, không chọn mục tiêu hay thuật toán — thấy lần chạy "Chờ duyệt" trong lịch
+ * sử, mở một phương án từ đó rồi **tự duyệt** trong Planner — Planner ghi "Duyệt bởi … lúc …", lần chạy thành "Đã duyệt" kèm nhãn
+ * phương án. Quản lý công ty mở cùng phương án ở chế độ chỉ xem; hàng đợi `/duyet` không còn.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -18,23 +19,23 @@ const button = (page: Page, name: string) => page.getByRole('button', { name, ex
 /** Dòng mới nhất của bảng "Lần chạy tối ưu" (dòng 0 là tiêu đề). */
 const newestRun = (page: Page) => page.locator('[data-run-history]').getByRole('row').nth(1)
 
-test('the dispatcher optimizes with an objective and algorithm, then approves the plan; the company manager reads it and has no approval queue', async ({ page, login, browserErrors }, testInfo) => {
+test('the dispatcher optimizes into three plans, approves one of them; the company manager reads it and has no approval queue', async ({ page, login, browserErrors }, testInfo) => {
   test.setTimeout(4 * 60_000)
 
-  // Điều phối: chọn mục tiêu + thuật toán trong thiết lập nâng cao, chạy tối ưu
+  // Điều phối: không còn ô chọn mục tiêu hay thuật toán — thiết lập nâng cao chỉ nói tên thuật toán sẽ chạy
   await login(SETUP, 'dispatcher')
   await page.locator('summary').filter({ hasText: 'Thiết lập nâng cao' }).click()
-  await page.getByRole('radio', { name: 'Cân bằng tải trục', exact: true }).click()
-  await page.getByRole('radio', { name: 'Di truyền (GA)', exact: true }).click()
-  await optimizeAndOpenPlanner(page)
+  await expect(page.getByRole('radio')).toHaveCount(0)
+  await expect(page.locator('[data-run-algorithm]')).toHaveText('EP + DBLF (mock)')
+  await optimizeAndOpenPlanner(page, 'B')
   // Phương án mới chưa duyệt: điều phối viên có nút Duyệt, không có dòng nào bảo chờ người khác
   await expect(button(page, 'Duyệt phương án')).toBeVisible()
   await expect(page.locator('[data-planner-lock]')).toHaveCount(0)
 
-  // Lịch sử lần chạy: lần mới nhất đứng đầu, mang đúng lựa chọn và đang chờ duyệt; lần ra bản đã duyệt của seed vẫn "Đã duyệt"
+  // Lịch sử lần chạy: lần mới nhất đứng đầu với ba phương án A · B · C, đang chờ duyệt; lần ra bản đã duyệt của seed vẫn "Đã duyệt"
   await navigateInApp(page, SETUP)
-  await expect(newestRun(page)).toContainText('Cân bằng tải trục')
-  await expect(newestRun(page)).toContainText('Di truyền (GA)')
+  await expect(newestRun(page)).toContainText('EP + DBLF (mock)')
+  await expect(newestRun(page).getByRole('link', { name: /^Mở phương án REV-\d+ trong Planner$/ })).toHaveText([/^A · REV-\d+$/, /^B · REV-\d+$/, /^C · REV-\d+$/])
   await expect(newestRun(page)).toContainText(DISPATCHER)
   await expect(newestRun(page)).toContainText('Có kết quả')
   await expect(newestRun(page)).toContainText('Chờ duyệt')
@@ -42,8 +43,8 @@ test('the dispatcher optimizes with an objective and algorithm, then approves th
   await expect(page.locator('[data-run-history]').getByRole('row').nth(2)).toContainText('Đã duyệt')
   await attachScreenshot(page, testInfo, 'luong-3-lich-su-lan-chay')
 
-  // Điều phối viên tự duyệt phương án vừa tối ưu: mở đúng bản đó từ lịch sử lần chạy, Duyệt tạo revision đã duyệt mới và mở nó
-  await newestRun(page).getByRole('link', { name: /^Mở phương án REV-\d+ trong Planner$/ }).click()
+  // Điều phối viên tự duyệt phương án B vừa tối ưu: mở đúng bản đó từ lịch sử lần chạy, Duyệt tạo revision đã duyệt mới và mở nó
+  await newestRun(page).getByRole('link', { name: /^Mở phương án REV-\d+ trong Planner$/ }).nth(1).click()
   await page.locator('canvas').waitFor()
   const sourceRevision = new URL(page.url()).searchParams.get('revision')
   expect(sourceRevision).toMatch(/^REV-\d+$/)
@@ -54,6 +55,7 @@ test('the dispatcher optimizes with an objective and algorithm, then approves th
   const approvedRoute = new URL(page.url()).pathname + new URL(page.url()).search
   await navigateInApp(page, SETUP)
   await expect(newestRun(page)).toContainText('Đã duyệt')
+  await expect(newestRun(page)).toContainText('Phương án B')
   await expect(newestRun(page)).not.toContainText('Chờ duyệt')
 
   // Quản lý công ty: cùng phương án, chỉ xem — không Chỉnh sửa, không Duyệt, một dòng lý do; bản nguồn chưa duyệt cũng vậy
@@ -69,7 +71,7 @@ test('the dispatcher optimizes with an objective and algorithm, then approves th
 
   // Hàng đợi duyệt đã bỏ: không còn mục điều hướng, đường dẫn cũ là màn 404
   await navigateInApp(page, '/')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe'])
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])

@@ -3,7 +3,7 @@ import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
-import { useFormat, useT } from '@/lib/i18n'
+import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { ScenePlacement, SceneStop, SceneUnplaced } from '@/features/viewer3d/scene-input'
 import { describeWhere } from './placement-relations'
@@ -59,6 +59,12 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
                     {format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}
                   </span>
                   <span className="text-caption text-amber-200">{t(`viewer.unplacedReasons.${item.reasonCode ?? 'UNKNOWN'}`)}</span>
+                  {/* `CONSTRAINT_VIOLATED` (FE-5b-04): ràng buộc nào chặn, bằng chính câu của ràng buộc đó */}
+                  {item.violatedConstraints?.length ? (
+                    <ul className={cn('m-0 flex list-none flex-col gap-0.5 p-0 text-caption', MUTED)}>
+                      {item.violatedConstraints.map((issue, index) => <li key={`${issue.code}-${index}`}>{formatIssue(issue, t, format)}</li>)}
+                    </ul>
+                  ) : null}
                   {/* `message` của service thật có thể khác mã lý do; mock ghi lại đúng mã nên không lặp */}
                   {item.message && item.message !== item.reasonCode ? <span className={cn('text-caption', MUTED)}>{item.message}</span> : null}
                 </div>

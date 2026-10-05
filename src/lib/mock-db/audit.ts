@@ -22,15 +22,27 @@ export const AUDIT_ACTIONS = [
   // Vượt luật phân tách hàng (FE-4b-06), tối ưu tuyến (FE-4b-09)
   'trip.segregationOverridden',
   'trip.routeOptimized',
+  // Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08)
+  'trip.vehicleChanged',
+  // Điều phối viên chọn tuyến thay thế khi có sự cố (FE-6-11, sự kiện `TRIP_REROUTED` của backend)
+  'trip.rerouted',
   'optimization.saved',
   'revision.approved',
   'loading.started',
-  'loading.missing',
+  // Soạn hàng: kho báo thiếu, điều phối viên quyết; kiện hỏng lúc xếp (FE-6-02, FE-6-05)
+  'loading.shortageReported',
+  'loading.shortageKept',
+  'loading.shortageDropped',
+  'loading.damaged',
   'loading.completed',
   'delivery.started',
+  // Tài xế bấm "Đã đến" ở một điểm giao (FE-6-06)
+  'delivery.arrived',
   'delivery.issue',
   'delivery.stopCompleted',
   'delivery.completed',
+  // Mức hạn của một điểm xấu đi theo vị trí xe (FE-6-09, sự kiện `ETA_RISK` của backend) — hệ thống ghi, không có người làm
+  'delivery.etaRisk',
   'user.created',
   'user.updated',
   'user.locked',
@@ -62,6 +74,15 @@ export const AUDIT_ACTIONS = [
   'vehicleType.deleted',
   'vehicleType.assigned',
   'loading.sealed',
+  // Xác nhận tay của đối chiếu kiện và việc duyệt của điều phối viên (FE-6-03, FE-6-04)
+  'manualConfirm.requested',
+  'manualConfirm.approved',
+  'manualConfirm.rejected',
+  // Sự cố cấp chuyến (FE-6-11) và gia hạn của quản lý công ty (FE-6-12); `escalated` do hệ thống ghi khi quá 30 phút chưa xử lý
+  'exception.reported',
+  'exception.escalated',
+  'exception.resolved',
+  'exception.deadlineRenegotiated',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

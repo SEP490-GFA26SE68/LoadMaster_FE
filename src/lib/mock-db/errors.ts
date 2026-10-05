@@ -1,5 +1,6 @@
 import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
+import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
 import type { RequirementStoredStatus } from './requirement-model'
 import type { TripPhase } from './types'
@@ -16,6 +17,8 @@ export type MockDbCollection =
   | 'packages'
   | 'requirements'
   | 'vehicleTypes'
+  // FE-6-11
+  | 'exceptions'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -45,9 +48,9 @@ export type MockDbErrorParams = {
   NO_APPROVED_REVISION: { tripId: string }
   /** Kiện không có trong phương án kho đang làm theo, hoặc không thuộc điểm giao đó. */
   INSTANCE_NOT_IN_PLAN: { tripId: string; packageInstanceId: string }
-  /** Kiện đã báo thiếu ở kho nên không có trên xe. */
+  /** Kiện hỏng lúc xếp đã bị bỏ lại kho nên không có trên xe. */
   INSTANCE_NOT_LOADED: { tripId: string; packageInstanceId: string }
-  /** Hoàn tất xếp khi còn kiện chưa có kết quả. */
+  /** Hoàn tất xếp khi còn `remaining` kiện chưa soạn hoặc chưa có kết quả xếp. */
   LOADING_INCOMPLETE: { tripId: string; remaining: number }
   /** Hoàn tất điểm giao khi còn kiện chưa dỡ và chưa báo sự cố. */
   STOP_INCOMPLETE: { tripId: string; stopNumber: number; remaining: number }
@@ -149,6 +152,55 @@ export type MockDbErrorParams = {
   ROUTE_STOPS_REQUIRED: { tripId: string }
   /** Tối ưu tuyến khi còn điểm giao chưa có toạ độ: `stopNumbers` là số của các điểm đó (1-based), `stopIds` là mã. */
   MISSING_STOP_COORDINATES: { tripId: string; stopIds: string[]; stopNumbers: number[] }
+
+  // Luật duyệt và đổi xe (FE-5b-08, D-80)
+  /**
+   * Duyệt phương án còn lý do chặn: lỗi ràng buộc, vượt tải trục, kiện bắt buộc chưa xếp. `count` là số lý do, `codes` là mã của
+   * chúng (không lặp, theo thứ tự gặp).
+   */
+  APPROVAL_BLOCKED: { revisionId: string; count: number; codes: string[] }
+  /** Duyệt khi tuyến của chuyến có điểm trễ hạn dự kiến mà người duyệt chưa xác nhận (`force`). `stopNumbers`: số điểm, 1-based. */
+  LATE_STOPS_UNCONFIRMED: { tripId: string; stopIds: string[]; stopNumbers: number[] }
+  /** Đổi xe khi chuyến chưa Đã lập kế hoạch (còn Nháp: chưa tối ưu tuyến). */
+  TRIP_NOT_PLANNED: { tripId: string }
+  /** Chạy tối ưu xếp hàng khi chuyến chưa Đã lập kế hoạch (FE-5b-05): phải tối ưu tuyến trước. */
+  ROUTE_NOT_PLANNED: { tripId: string }
+  /** Đổi sang chính xe chuyến đang dùng. */
+  VEHICLE_UNCHANGED: { vehicleId: string }
+  /** Xe đang chạy chuyến `tripId` (đang xếp, đã xếp xong, đang giao) nên chưa sẵn sàng cho chuyến khác. */
+  VEHICLE_BUSY: { vehicleId: string; tripId: string }
+  /** Xe không chở được hàng của chuyến; `reasons`: mã lỗi của `vehicleFit` (kích thước, thể tích, tải trọng, trục). */
+  VEHICLE_UNFIT: { vehicleId: string; reasons: string[] }
+
+  // Đối chiếu kiện ba mức và duyệt xác nhận tay (FE-6-03, FE-6-04, D-83)
+  /** Mã của bên gửi vừa gõ trùng `count` kiện của chuyến: không biết là kiện nào, phải gõ mã QR in dưới hình. */
+  PACKAGE_CODE_AMBIGUOUS: { tripId: string; code: string; count: number }
+  /** Xong xếp hoặc hoàn tất điểm giao khi còn `count` xác nhận tay chờ điều phối viên duyệt. */
+  MANUAL_CONFIRM_PENDING: { tripId: string; count: number }
+  /** Duyệt hoặc từ chối một xác nhận tay không còn chờ: đã có quyết định, đã bị thay bằng lần đối chiếu khác, hoặc không có. */
+  MANUAL_CONFIRM_NOT_PENDING: { tripId: string; confirmationId: string }
+  // Soạn hàng, xếp có đối chiếu, tài xế đến điểm, huỷ chuyến (FE-6-02, FE-6-05, FE-6-06, FE-6-07)
+  /** Đối chiếu kiện ở bước xếp, hoặc báo kiện hỏng, khi còn `remaining` kiện chưa soạn (D-82). */
+  STAGING_INCOMPLETE: { tripId: string; remaining: number }
+  /** Báo thiếu một kiện đã soạn. */
+  PACKAGE_ALREADY_STAGED: { tripId: string; packageInstanceId: string }
+  /** Điều phối viên quyết một kiện không có báo thiếu nào đang chờ. */
+  SHORTAGE_NOT_OPEN: { tripId: string; packageInstanceId: string }
+  /** Dỡ hàng, báo sự cố theo kiện hoặc hoàn tất điểm giao khi tài xế chưa bấm "Đã đến" ở điểm đó (D-84). */
+  STOP_NOT_ARRIVED: { tripId: string; stopNumber: number }
+  /** Chuyển trạng thái chuyến không được phép (D-91): huỷ chuyến đang vận chuyển, đã giao hoặc đã huỷ. `from`, `to` là trạng thái của backend. */
+  INVALID_TRIP_STATUS_TRANSITION: { tripId: string; from: string; to: string }
+  // Vị trí xe (FE-6-08)
+  /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
+  LOCATION_INVALID: { field: string }
+
+  // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
+  /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */
+  EXCEPTION_INVALID: { field: string }
+  /** Thao tác trên sự cố không ở trạng thái cần: chuyển quản lý một sự cố không còn mở, xử lý lại sự cố đã xử lý, gia hạn trên sự cố chưa chuyển lên. */
+  EXCEPTION_STATUS_INVALID: { exceptionId: string; status: TripExceptionStatus }
+  /** Tìm tuyến khác khi xe chưa có vị trí hoặc không còn điểm nào chưa tới; xác nhận một lựa chọn không có trong lần tìm gần nhất. */
+  REROUTE_UNAVAILABLE: { tripId: string }
 
   // Nhập file vào kho kiện (FE-3b-02) — mã theo backend; lớp `-api.ts` của kho kiện từ chối bằng các mã này
   /** File không phải `.csv` / `.xlsx`, hoặc không đọc được. */

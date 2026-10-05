@@ -1,7 +1,9 @@
+import type { VehicleConfig } from '@/domain/models'
 import { nextId, put, sameData, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { isActivePhase } from './operations'
 import type { MockDb, Trip, VehicleState } from './types'
+import { withoutLimits, withTypeLimits } from './vehicle-limits'
 
 type VehicleMethods = Pick<
   MockDb,
@@ -14,10 +16,15 @@ export function activeTripOf(trips: Iterable<Trip>, vehicleId: string): Trip | u
   return undefined
 }
 
-/** Xe của công ty của phiên (D-64): công ty lưu cạnh xe ở `vehicleCompany`; chuyến dùng xe luôn cùng công ty với xe. */
+/**
+ * Xe của công ty của phiên (D-64): công ty lưu cạnh xe ở `vehicleCompany`; chuyến dùng xe luôn cùng công ty với xe. Kho lưu xe **không
+ * kèm giới hạn**; xe trả ra mang giới hạn tải trục và độ lệch trọng tâm của loại xe đang gắn (FE-5b-01, `withTypeLimits`) — nhờ đó
+ * request tối ưu và phương án chụp lại đúng giới hạn lúc chạy.
+ */
 export function vehicleMethods(ctx: DbContext): VehicleMethods {
-  const { vehicles, trips, maintenance, vehicleCompany } = ctx.state
+  const { vehicles, trips, maintenance, vehicleCompany, vehicleTypes, vehicleTypeOf } = ctx.state
   const scope = ctx.scope.vehicles
+  const resolved = (vehicle: VehicleConfig) => withTypeLimits(vehicle, vehicleTypes.get(vehicleTypeOf.get(vehicle.id) ?? ''))
 
   function stateOf(vehicleId: string): VehicleState {
     const inMaintenance = maintenance.get(vehicleId)
@@ -32,27 +39,28 @@ export function vehicleMethods(ctx: DbContext): VehicleMethods {
   }
 
   return {
-    listVehicles: () => ctx.respond(() => scope.list()),
-    getVehicle: (id) => ctx.respond(() => scope.read(id)),
+    listVehicles: () => ctx.respond(() => scope.list().map(resolved)),
+    getVehicle: (id) => ctx.respond(() => resolved(scope.read(id))),
     createVehicle: (input) =>
       ctx.respond(() => {
         const companyId = ctx.scope.newRecordCompany()
-        const created = put(vehicles, { ...input, id: nextId('VEHICLE', vehicles.keys()) })
+        const created = put(vehicles, withoutLimits({ ...input, id: nextId('VEHICLE', vehicles.keys()) }))
         vehicleCompany.set(created.id, companyId)
         ctx.log('vehicle.created', { type: 'vehicle', id: created.id }, { name: created.name })
         return created
       }),
-    updateVehicle: (vehicle) =>
+    updateVehicle: (input) =>
       ctx.respond(() => {
+        const vehicle = withoutLimits(input)
         const current = scope.own(vehicle.id)
-        if (sameData(vehicle, current)) return current
+        if (sameData(vehicle, current)) return resolved(current)
         assertNotRunning(vehicle.id)
         // Xe là một phần đầu vào tối ưu của mọi chuyến đang lập kế hoạch với nó
         for (const trip of trips.values()) {
           if (trip.vehicleId === vehicle.id && trip.phase === 'planning') put(trips, { ...trip, inputVersion: trip.inputVersion + 1 })
         }
         ctx.log('vehicle.updated', { type: 'vehicle', id: vehicle.id }, { name: vehicle.name })
-        return put(vehicles, vehicle)
+        return resolved(put(vehicles, vehicle))
       }),
     deleteVehicle: (id) =>
       ctx.respond(() => {

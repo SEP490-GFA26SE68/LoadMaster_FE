@@ -28,6 +28,8 @@ type Company = {
   /** Mới nhất trước, như `listDeliveryRequirements`. */
   requirements: string[]
   trips: string[]
+  /** Chuyến Đang vận chuyển: các chuyến có vị trí xe để giám sát (FE-6-08). */
+  inTransit: string[]
   /** Chuyến đang lập kế hoạch đã có bản duyệt `revision`, và một chuyến nháp có điểm giao `STOP-01`. */
   trip: string
   revision: string
@@ -53,6 +55,7 @@ const LONG_BINH: Company = {
   packages: [...range('PK-T', 1, 2863, 5), ...range('PK-', 1, 88, 4)],
   requirements: ['REQ-006', 'REQ-005', 'REQ-004', 'REQ-003', 'REQ-002', 'REQ-001'],
   trips: ['TRIP-2026-0914', ...range('TRIP-', 1, 14, 3)],
+  inTransit: ['TRIP-009'],
   trip: 'TRIP-2026-0914',
   revision: 'REV-002',
   draftTrip: 'TRIP-014',
@@ -72,6 +75,7 @@ const PHUONG_NAM: Company = {
   packages: [...range('PK-PN-T', 1, 70, 4), ...range('PK-PN-', 1, 10, 4)],
   requirements: ['REQ-PN-001'],
   trips: ['TRIP-PN-001', 'TRIP-PN-002'],
+  inTransit: [],
   trip: 'TRIP-PN-001',
   revision: 'REV-PN-002',
   draftTrip: 'TRIP-PN-002',
@@ -154,26 +158,58 @@ const PROBES = {
     },
   },
   cancelTrip: onForeignTrip((db, tripId) => db.cancelTrip(tripId, 'Khách hoãn')),
+  changeTripVehicle: {
+    scope: 'operational',
+    forbidden: {
+      'chuyến của công ty kia': ({ db, own, other }) => db.changeTripVehicle(other.trip, own.vehicles[0]!),
+      'xe của công ty kia': ({ db, own, other }) => db.changeTripVehicle(own.trip, other.vehicles[0]!),
+    },
+  },
 
   listRevisions: { scope: 'operational', hidden: ({ db, other }) => db.listRevisions(other.trip) },
   getRevision: { scope: 'operational', hidden: ({ db, other }) => db.getRevision(other.revision) },
   addRevision: onForeignTrip((db, tripId, { revision }) => db.addRevision({ tripId, request: revision.request, result: revision.result })),
+  saveOptimizationRun: onForeignTrip((db, tripId, { revision }) =>
+    db.saveOptimizationRun({ tripId, request: revision.request, jobId: revision.jobId, plans: [{ objective: 'MAX_VOLUME', result: revision.result }] })),
   approveRevision: { scope: 'operational', forbidden: { 'phương án của công ty kia': ({ db, other }) => db.approveRevision(other.revision, []) } },
   listOptimizationRuns: { scope: 'operational', hidden: ({ db, other }) => db.listOptimizationRuns(other.trip) },
-  recordFailedRun: onForeignTrip((db, tripId) => db.recordFailedRun(tripId, { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF', failureCode: 'SERVICE_UNAVAILABLE' })),
+  recordFailedRun: onForeignTrip((db, tripId) => db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE' })),
 
   startLoading: onForeignTrip((db, tripId) => db.startLoading(tripId)),
-  recordLoadingStep: onForeignTrip((db, tripId) => db.recordLoadingStep(tripId, { packageInstanceId: 'PKG-001-01', outcome: 'loaded' })),
   completeLoading: onForeignTrip((db, tripId) => db.completeLoading(tripId)),
   startDelivery: onForeignTrip((db, tripId) => db.startDelivery(tripId)),
-  recordUnload: onForeignTrip((db, tripId) => db.recordUnload(tripId, 1, 'PKG-001-01', true)),
+  arriveAtStop: onForeignTrip((db, tripId) => db.arriveAtStop(tripId, 1)),
   reportDeliveryIssue: onForeignTrip((db, tripId) => db.reportDeliveryIssue(tripId, { stopNumber: 1, kind: 'damaged', note: 'Móp góc' })),
   completeStop: onForeignTrip((db, tripId) => db.completeStop(tripId, 1)),
   listTripLabels: { scope: 'operational', hidden: ({ db, other }) => db.listTripLabels(other.trip) },
   getTripReadiness: { scope: 'operational', hidden: ({ db, other }) => db.getTripReadiness(other.trip) },
+  confirmStagingByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmStagingByQr(tripId, qrToken)),
+  confirmStagingManually: onForeignTrip((db, tripId) => db.confirmStagingManually(tripId, { packageInstanceId: 'PKG-001-01', reason: 'LABEL_DAMAGED' })),
+  reportStagingShortage: onForeignTrip((db, tripId) => db.reportStagingShortage(tripId, 'PKG-001-01')),
+  resolveStagingShortage: onForeignTrip((db, tripId) => db.resolveStagingShortage(tripId, 'PKG-001-01', 'KEEP_SEARCHING')),
+  reportDamagedPackage: onForeignTrip((db, tripId) => db.reportDamagedPackage(tripId, 'PKG-001-01')),
   confirmLoadingByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmLoadingByQr(tripId, qrToken)),
   recordSeal: onForeignTrip((db, tripId) => db.recordSeal(tripId, 'SEAL-0914')),
   confirmUnloadByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmUnloadByQr(tripId, 1, qrToken)),
+  confirmLoadingManually: onForeignTrip((db, tripId) => db.confirmLoadingManually(tripId, { packageInstanceId: 'PKG-001-01', reason: 'LABEL_DAMAGED' })),
+  confirmUnloadManually: onForeignTrip((db, tripId) => db.confirmUnloadManually(tripId, 1, { packageInstanceId: 'PKG-001-01', reason: 'QR_UNREADABLE' })),
+  approveManualConfirmation: onForeignTrip((db, tripId) => db.approveManualConfirmation(tripId, 'VF-001')),
+  rejectManualConfirmation: onForeignTrip((db, tripId) => db.rejectManualConfirmation(tripId, 'VF-001', 'Sai kiện')),
+  postDriverLocation: onForeignTrip((db, tripId) => db.postDriverLocation(tripId, { lat: 10.9294, lng: 106.8747 })),
+  setDriverGps: onForeignTrip((db, tripId) => db.setDriverGps(tripId, true)),
+  getLatestLocation: { scope: 'operational', hidden: ({ db, other }) => db.getLatestLocation(other.trip) },
+  getLocationHistory: { scope: 'operational', hidden: ({ db, other }) => db.getLocationHistory(other.trip) },
+  getTripMonitoring: { scope: 'operational', hidden: ({ db, other }) => db.getTripMonitoring(other.trip) },
+  listTripMonitoring: { scope: 'operational', list: { call: ({ db }) => db.listTripMonitoring(), ids: (rows: { tripId: string }[]) => rows.map((row) => row.tripId), own: (c) => c.inTransit } },
+  // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12): seed không có sự cố nào
+  reportTripException: onForeignTrip((db, tripId) => db.reportTripException(tripId, { type: 'TRAFFIC', description: 'Kẹt xe ở ngã tư Vũng Tàu', delayMinutes: 20 })),
+  listTripExceptions: { scope: 'operational', hidden: ({ db, other }) => db.listTripExceptions(other.trip) },
+  escalateTripException: onForeignTrip((db, tripId) => db.escalateTripException(tripId, 'EXC-001')),
+  resolveTripException: onForeignTrip((db, tripId) => db.resolveTripException(tripId, 'EXC-001')),
+  requestReroute: onForeignTrip((db, tripId) => db.requestReroute(tripId)),
+  confirmReroute: onForeignTrip((db, tripId) => db.confirmReroute(tripId, 0)),
+  listTripReroutes: { scope: 'operational', hidden: ({ db, other }) => db.listTripReroutes(other.trip) },
+  renegotiateDeadline: onForeignTrip((db, tripId) => db.renegotiateDeadline(tripId, 'EXC-001', { requirementId: 'REQ-001', deadline: '2026-09-16T10:00:00.000Z', contactNote: 'Đã gọi khách' })),
 
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },

@@ -40,11 +40,17 @@ export const viewer = {
     loadErrorTitle: 'Không tải được phương án',
     loadErrorDescription: 'Không tìm thấy chuyến {tripId}.',
     toSetup: 'Tới Thiết lập tối ưu',
-    blocked: {
-      one: 'Chưa duyệt được: {count} lỗi cần xử lý.',
-      other: 'Chưa duyệt được: {count} lỗi cần xử lý.',
+    /** Lý do chặn Duyệt ở tooltip và mô tả của nút (FE-5b-08, D-80): các lý do theo từng loại, nối bằng `format.list`. */
+    blockedReason: 'Chưa duyệt được: {reasons}.',
+    blockedBy: {
+      stale: 'kết quả lỗi thời',
+      mustLoad: { one: '{count} dòng kiện bắt buộc chưa xếp đủ', other: '{count} dòng kiện bắt buộc chưa xếp đủ' },
+      axle: 'tải trục vượt giới hạn',
+      errors: { one: '{count} lỗi ràng buộc', other: '{count} lỗi ràng buộc' },
     },
     blockedStale: 'Chưa duyệt được: kết quả lỗi thời.',
+    /** Nút phụ "Đổi xe" ở góc dưới phải khung 3D của Planner (FE-5b-08), cạnh "Chi tiết / Hiển thị". */
+    changeVehicle: 'Đổi xe',
     metricsTab: 'Chỉ số',
     metrics: {
       title: 'Chỉ số phương án',
@@ -56,6 +62,9 @@ export const viewer = {
       payloadUtilization: 'Tỷ lệ tải trọng',
       placedCount: 'Kiện đã xếp',
       unplacedCount: 'Kiện chưa xếp',
+      frontAxleLoad: 'Tải trục trước',
+      rearAxleLoad: 'Tải trục sau',
+      rehandlingCount: 'Số lần dỡ-xếp lại',
       centerOfGravity: 'Trọng tâm (X, Y, Z)',
       runtime: 'Thời gian chạy',
       runtimeValue: '{ms} ms',
@@ -80,6 +89,21 @@ export const viewer = {
       noManual: 'Không có chỉnh tay.',
       ordersRecomputed: 'Thứ tự xếp và dỡ sẽ được tính lại khi duyệt.',
       stale: 'Kết quả lỗi thời — chạy tối ưu lại trước khi duyệt.',
+      /**
+       * Mức hạn của các điểm giao theo tuyến đã tối ưu (FE-5b-08, D-80): điểm sát hạn chỉ hiện; điểm trễ hạn dự kiến phải xác nhận
+       * ở bước `late` rồi mới duyệt.
+       */
+      deadlinesOk: 'Mọi điểm giao có hạn đều kịp hạn.',
+      atRisk: { one: '{count} điểm giao sát hạn (không chặn duyệt).', other: '{count} điểm giao sát hạn (không chặn duyệt).' },
+      missed: { one: '{count} điểm giao trễ hạn dự kiến — cần xác nhận khi duyệt.', other: '{count} điểm giao trễ hạn dự kiến — cần xác nhận khi duyệt.' },
+      stopTimes: 'Dự kiến đến {etaTime} {etaDate} · hạn {deadlineTime} {deadlineDate}',
+      late: {
+        title: 'Duyệt dù có điểm trễ hạn?',
+        description: 'Theo tuyến đã tối ưu, xe tới các điểm giao dưới đây sau hạn. Duyệt thì kho và tài xế làm theo phương án này.',
+        list: 'Điểm giao trễ hạn dự kiến',
+        back: 'Quay lại',
+        confirm: 'Vẫn duyệt',
+      },
       cancel: 'Huỷ',
       confirm: 'Duyệt',
       done: 'Đã duyệt phương án.',
@@ -119,11 +143,42 @@ export const viewer = {
     cancelled: 'Chuyến đã huỷ — phương án chỉ để xem.',
     readOnly: 'Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.',
   },
+  /** Tải trục trước / sau của phương án (FE-5b-03): số của mô hình đòn bẩy so với giới hạn, hoặc lý do chưa tính được. */
   axles: {
     title: 'Tải trục',
-    comingLater: 'Sẽ có sau',
-    pending: 'Chờ backend tính tải trục; không hiển thị số ước lượng.',
-    axle: '{name} · cách vách trước {position} · tối đa {maxLoad}',
+    groups: { front: 'Trục trước', rear: 'Trục sau' },
+    loadOfLimit: '{load} / {limit}',
+    loadNoLimit: '{load} · chưa khai giới hạn',
+    over: 'Vượt {over}',
+    model: 'Ước lượng theo đòn bẩy từ tải rỗng của trục và trọng tâm của các kiện đang xếp.',
+    unavailable: {
+      NO_AXLES: 'Chưa tính được: xe này chưa khai báo trục. Khai vị trí, tải rỗng và tải tối đa của trục ở trang xe.',
+      SINGLE_AXLE: 'Chưa tính được: xe mới khai một trục, cần ít nhất một trục trước và một trục sau.',
+      AXLES_COINCIDE: 'Chưa tính được: các trục của xe đang khai cùng một vị trí.',
+    },
+  },
+  /** Vùng theo điểm giao của phương án (FE-5b-07): dải vùng trên sàn, vùng của kiện, dấu kiện nằm ngoài vùng. */
+  zones: {
+    zoneOf: 'Vùng điểm {number}',
+    outOfZone: 'Ngoài vùng',
+    outOfZoneOf: 'Nằm ngoài vùng của điểm {stop} — tính một lần dỡ-xếp lại.',
+    onlyOutOfZone: 'Chỉ kiện nằm ngoài vùng',
+  },
+  /** Số lần dỡ-xếp lại ở hộp Chi tiết: kiện nằm ngoài vùng của điểm giao mình, tính trên bản đang xem (kể cả đang chỉnh tay). */
+  rehandling: {
+    title: 'Dỡ-xếp lại',
+    count: { one: '{count} kiện nằm ngoài vùng của điểm giao mình', other: '{count} kiện nằm ngoài vùng của điểm giao mình' },
+    none: 'Không kiện nào nằm ngoài vùng của điểm giao mình.',
+    hint: 'Thùng chia vùng theo tỷ lệ thể tích hàng của từng điểm giao. Kiện có tâm nằm trong vùng của điểm khác phải dỡ ra rồi xếp lại dọc đường; trong mô hình các kiện đó có viền trắng dày.',
+    noZones: 'Phương án này không chia vùng theo điểm giao nên không tính được số lần dỡ-xếp lại.',
+  },
+  /** Mức hạn của từng điểm giao theo tuyến đã tối ưu của chuyến, ở hộp Chi tiết. */
+  deadlines: {
+    title: 'Mức hạn',
+    eta: 'Dự kiến đến {time} {date}',
+    noDeadline: 'Không có hạn',
+    noRoute: 'Chuyến chưa tối ưu tuyến nên chưa có giờ đến dự kiến.',
+    stop: 'Điểm {number} · {name}',
   },
   orientation: {
     allowed: 'Hướng được phép: {codes}',
@@ -254,9 +309,9 @@ export const viewer = {
     layers: 'Lớp hiển thị',
     showMass: 'Hiện tâm khối lượng hàng',
     hideMass: 'Ẩn tâm khối lượng hàng',
-    showDistribution: 'Hiện phân bố điểm giao',
-    hideDistribution: 'Ẩn phân bố điểm giao',
-    stopMapHint: 'Bản đồ điểm giao nằm trên mép trong sàn; hàng có thể che bản đồ.',
+    showZones: 'Hiện dải vùng điểm giao',
+    hideZones: 'Ẩn dải vùng điểm giao',
+    zonesHint: 'Dải vùng nằm trên sàn thùng theo màu điểm giao, kèm tên điểm và tỷ lệ thể tích; hàng có thể che dải. Kiện nằm ngoài vùng của điểm mình có viền trắng dày.',
     colorMode: 'Chế độ tô màu',
     shortcuts: 'Space: phát/dừng · ←/→: từng bước · Esc: thoát tập trung. Kéo mô hình để xoay, chụm hai ngón để phóng to.',
   },
@@ -311,6 +366,7 @@ export const viewer = {
     above: 'phía trên: {id} ({weight})',
     pinned: 'Đã ghim vị trí',
     notPinned: 'Chưa ghim',
+    zone: 'Vùng điểm giao',
   },
   packageList: {
     label: 'Danh sách kiện',
@@ -491,6 +547,7 @@ export const viewer = {
     NO_ALLOWED_ORIENTATION: 'Không có hướng đặt được phép vừa thùng',
     STACKING_VIOLATION: 'Vi phạm luật xếp chồng',
     LIFO_VIOLATION: 'Vi phạm thứ tự dỡ theo điểm giao',
+    CONSTRAINT_VIOLATED: 'Xếp kiện này sẽ vi phạm ràng buộc',
     UNKNOWN: 'Chưa xếp được, không rõ lý do',
   },
 } as const

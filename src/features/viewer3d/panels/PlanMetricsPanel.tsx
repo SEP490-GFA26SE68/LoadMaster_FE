@@ -2,7 +2,11 @@ import type { ReactNode } from 'react'
 import type { OptimizationResult } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 
-/** Tab "Chỉ số" (LM-049): đủ `metrics` của Spec, số lấy thẳng từ kết quả, định dạng theo ngôn ngữ. */
+/**
+ * Tab "Chỉ số" (LM-049): đủ `metrics` của Spec, số lấy thẳng từ kết quả, định dạng theo ngôn ngữ. Tải trục trước / sau (FE-5b-03) chỉ
+ * có dòng khi kết quả tính được — xe không khai trục thì không có số nào để hiện. Số lần dỡ-xếp lại (FE-5b-02) có dòng khi kết quả
+ * chia vùng theo điểm giao.
+ */
 export function PlanMetricsPanel({ metrics }: { metrics: OptimizationResult['metrics'] }) {
   const t = useT()
   const format = useFormat()
@@ -24,6 +28,9 @@ export function PlanMetricsPanel({ metrics }: { metrics: OptimizationResult['met
             {[cog.x, cog.y, cog.z].map((value) => format.length(value)).join(' · ')}
           </Row>
         ) : null}
+        {metrics.frontAxleLoadKg === undefined ? null : <Row label={t('viewer.plan.metrics.frontAxleLoad')}>{format.weight(metrics.frontAxleLoadKg)}</Row>}
+        {metrics.rearAxleLoadKg === undefined ? null : <Row label={t('viewer.plan.metrics.rearAxleLoad')}>{format.weight(metrics.rearAxleLoadKg)}</Row>}
+        {metrics.rehandlingCount === undefined ? null : <Row label={t('viewer.plan.metrics.rehandlingCount')}>{format.integer(metrics.rehandlingCount)}</Row>}
         <Row label={t('viewer.plan.metrics.runtime')}>{t('viewer.plan.metrics.runtimeValue', { ms: format.integer(metrics.runtimeMs) })}</Row>
       </dl>
     </section>
