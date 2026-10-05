@@ -326,7 +326,7 @@ export const snapshot = {
       "fullName": "Trần Thị Mai",
       "email": "quanly@loadmaster.vn",
       "phone": "0902 345 678",
-      "role": "manager",
+      "role": "companyManager",
       "status": "active",
       "depot": "Trụ sở TP. Hồ Chí Minh",
       "lastActiveAt": "2026-09-22T01:10:00.000Z"
@@ -473,7 +473,7 @@ export const snapshot = {
       "fleet.view",
       "fleet.edit"
     ],
-    "manager": [
+    "companyManager": [
       "dashboard.view",
       "reports.export",
       "trips.view",
@@ -1170,7 +1170,7 @@ export const snapshot = {
       },
       "params": {
         "fullName": "Lý Minh Châu",
-        "role": "manager"
+        "role": "companyManager"
       },
       "id": "EV-000051"
     },

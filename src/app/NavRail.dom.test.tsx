@@ -52,7 +52,7 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
  */
 test.each<[Role, string[]]>([
   ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
-  ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
+  ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
@@ -60,7 +60,11 @@ test.each<[Role, string[]]>([
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
-  expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
+  expect(
+  Array.from(nav.querySelectorAll('a')).map(
+    (link) => link.textContent,
+  ),
+).toStrictEqual(items)
 })
 
 /** FE-0-03 (quyết định G1): hai vai trò nền tảng chưa có màn riêng — không vẽ khay điều hướng rỗng, logo và menu tài khoản vẫn có. */
