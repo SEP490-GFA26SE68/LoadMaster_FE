@@ -23,5 +23,5 @@ export const pageHero = {
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
   subscriptionPlans: 'Danh mục gói cước bán cho công ty: giá, credit mỗi tháng và hạng thuật toán của từng gói.',
   billing: 'Gói cước của công ty, số dư credit, lịch sử và thanh toán.',
-  payment: 'Trang thanh toán giả lập của bản demo, thay cổng thanh toán thật.',
+  payment: 'Hoàn tất hoặc huỷ một giao dịch đăng ký gói, gia hạn hay nạp credit.',
 } as const

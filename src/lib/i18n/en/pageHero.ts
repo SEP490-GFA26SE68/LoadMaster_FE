@@ -21,5 +21,5 @@ export const pageHero = {
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
   subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
   billing: 'The company’s plan, credit balance, history and payments.',
-  payment: 'The demo’s simulated payment page, standing in for a real payment gateway.',
+  payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
 } satisfies Dictionary<typeof source>

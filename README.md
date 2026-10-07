@@ -19,7 +19,8 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
 | Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
-| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
+| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
+| Quản lý nền tảng | Desktop | Danh mục gói cước: thêm, sửa giá và credit, bật/tắt bán, xoá gói không còn công ty dùng |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
 (chồng lấn, quá tải, chịu tải, hướng đặt, khoảng hở cửa) chạy ngay khi thả kiện.
@@ -38,7 +39,7 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 | Vai trò | Email | Mở ra |
 |---|---|---|
 | Quản trị hệ thống | `quantri@loadmaster.vn` | `/nguoi-dung` |
-| Quản lý nền tảng | `nentang@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
+| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` — gõ email (không nằm trong ô chọn nhanh) |
 | Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
 | Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
 | Quản lý công ty | `quanly@loadmaster.vn` | `/` |

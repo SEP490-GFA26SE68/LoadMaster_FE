@@ -35,6 +35,7 @@ export const billing = {
     title: 'Choose a plan',
     subscribe: 'Subscribe',
     subscribeTo: 'Subscribe to plan {name}',
+    credits: '{credits} credits per month',
     none: 'No plan is on sale right now.',
   },
   credit: {

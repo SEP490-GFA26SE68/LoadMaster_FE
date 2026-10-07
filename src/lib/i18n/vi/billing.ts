@@ -37,6 +37,7 @@ export const billing = {
     title: 'Chọn gói',
     subscribe: 'Đăng ký',
     subscribeTo: 'Đăng ký gói {name}',
+    credits: '{credits} credit mỗi tháng',
     none: 'Hiện chưa có gói nào đang bán.',
   },
   credit: {

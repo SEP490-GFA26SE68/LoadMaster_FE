@@ -35,4 +35,6 @@ export const titles = {
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
   subscriptionPlans: 'Subscription plans',
+  billing: 'Plan and credits',
+  payment: 'Simulated payment',
 } satisfies Dictionary<typeof source>

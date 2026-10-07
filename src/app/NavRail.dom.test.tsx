@@ -57,7 +57,7 @@ test.each<[Role, string[]]>([
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
-  ['companyAdmin', ['Người dùng', 'Nhật ký']],
+  ['companyAdmin', ['Người dùng', 'Nhật ký', 'Gói và credit']],
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
