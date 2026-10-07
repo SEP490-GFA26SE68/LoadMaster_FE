@@ -107,7 +107,9 @@ describe('plan lifecycle on the store clock', () => {
     // Còn hiệu lực tới hết kỳ: vẫn chạy được, vẫn chưa đăng ký lại được
     jump(before, -1000)
     await expect(db.subscribeToPlan(PRO)).rejects.toMatchObject({ code: 'SUBSCRIPTION_ACTIVE' })
+    db.restoreSession(PHUONG_NAM_DISPATCHER)
     await expect(db.reserveOptimizationCredit('TRIP-PN-001')).resolves.toMatchObject({ cost: 1 })
+    db.restoreSession(PHUONG_NAM_ADMIN)
 
     jump(before)
     expect((await db.getCurrentSubscription())?.subscription.status).toBe('EXPIRED')
@@ -267,6 +269,43 @@ describe('credit of an optimization run', () => {
     const revisions = (await db.listRevisions('TRIP-012')).length
     await expect(saveRun(db, reference)).rejects.toMatchObject({ code: 'CREDIT_NOT_RESERVED' })
     expect((await db.listRevisions('TRIP-012')).length).toBe(revisions)
+  })
+
+  // Ba lối lách credit kho phải tự chặn — giao diện bị bỏ qua cũng không chạy miễn phí được
+  test('a run already saved cannot be refunded: its credit stays spent', async () => {
+    const { db } = open(LONG_BINH_DISPATCHER)
+    const { reference } = await db.reserveOptimizationCredit('TRIP-012')
+    await saveRun(db, reference)
+    await expect(db.refundOptimizationCredit(reference)).rejects.toMatchObject({ code: 'CREDIT_NOT_RESERVED' })
+    expect(await balanceOf(db)).toBe(485)
+    expect((await db.listCreditTransactions()).filter((entry) => entry.reference === reference).map((entry) => [entry.type, entry.usageStatus])).toStrictEqual([['USAGE', 'DEDUCTED']])
+  })
+
+  test('a signed-in session that saves a run without a reserved credit is charged by the store; with none left nothing is saved', async () => {
+    const { db } = open(LONG_BINH_DISPATCHER)
+    await saveRun(db)
+    expect(await balanceOf(db)).toBe(485)
+    expect((await db.listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -1, usageStatus: 'DEDUCTED', tripId: 'TRIP-012' })
+
+    const empty = open(PHUONG_NAM_DISPATCHER).db
+    await empty.reserveOptimizationCredit('TRIP-PN-001')
+    await empty.reserveOptimizationCredit('TRIP-PN-001')
+    const trip = await empty.getTrip('TRIP-PN-001')
+    const [approved] = await empty.listRevisions(trip.id)
+    if (!approved) throw new Error('seed phải có phương án của TRIP-PN-001')
+    const revisions = (await empty.listRevisions(trip.id)).length
+    const job = runMockCandidates(approved.request, { clock: () => 0 })
+    await expect(empty.saveOptimizationRun({ tripId: trip.id, request: approved.request, jobId: job.jobId, plans: job.plans })).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+    expect((await empty.listRevisions(trip.id)).length).toBe(revisions)
+  })
+
+  test('only the dispatcher holds and returns the credit of a run', async () => {
+    const { db } = open(LONG_BINH_DISPATCHER)
+    const { reference } = await db.reserveOptimizationCredit('TRIP-012')
+    db.restoreSession(LONG_BINH_ADMIN)
+    await expect(db.reserveOptimizationCredit('TRIP-012')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+    await expect(db.refundOptimizationCredit(reference)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+    expect(await balanceOf(db)).toBe(485)
   })
 
   test('with no credit left the run is refused and nothing is written; running low tells the company admin', async () => {

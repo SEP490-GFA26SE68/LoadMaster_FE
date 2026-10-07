@@ -1660,7 +1660,10 @@ dù giao diện bị bỏ qua:
   **Một lần chạy tối ưu 3D = 1 credit** (ba phương án vẫn một): `reserveOptimizationCredit(tripId)` giữ credit lúc bắt đầu (gói hết hạn hoặc chưa có
   gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; hết credit: `INSUFFICIENT_CREDITS`; gói không giới hạn ghi `0`), `saveOptimizationRun({ creditReference })`
   trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn khi lỗi hoặc huỷ.
-  Kho kiểm luật dù giao diện bị bỏ qua; `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không tốn credit.
+  **Kho tự tính credit, không tin nơi gọi** (`runCredit`): phiên đăng nhập lưu kết quả mà không kèm mã giữ (`saveOptimizationRun`, `addRevision`)
+  thì kho giữ và trừ ngay tại chỗ — hết credit hay gói hết hạn là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test logic kho) mới
+  lưu không tính. Lượt đã trừ hẳn **không hoàn được** (`CREDIT_NOT_RESERVED`) — hoàn chỉ dành cho lượt còn đang giữ; giữ và hoàn chỉ điều phối
+  viên gọi được (`ROLE_NOT_ALLOWED`). `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không tốn credit.
   Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
   Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ chối,
   huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`, `staleTime: 0`,

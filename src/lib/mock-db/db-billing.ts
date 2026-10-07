@@ -4,6 +4,7 @@ import {
   isUnlimited,
   optimizationCost,
   PLAN_TIERS,
+  type CreditTransaction,
   type CurrentSubscription,
   type SubscriptionPlan,
 } from './billing-model'
@@ -28,14 +29,62 @@ export function claimReservedCredit(ctx: DbContext, reference: string, companyId
 }
 
 /**
+ * Giữ credit cho một lần chạy tối ưu của chuyến: gói hết hạn hoặc hết credit thì từ chối và không ghi gì; không thì ghi lượt dùng
+ * `RESERVED` (số dư giảm ngay) và báo quản trị công ty khi số dư xuống tới ngưỡng. Một chỗ cho `reserveOptimizationCredit` và cho lần
+ * lưu không kèm mã giữ (`runCredit`).
+ */
+function reserveCredit(ctx: DbContext, trip: { id: string; companyId: string }): { reference: string; cost: number } {
+  const { companyTarget, currentOf, accountOf, appendTransaction, settle } = billingCore(ctx)
+  const { companyId } = trip
+  settle(companyId)
+  const current = currentOf(companyId)
+  const { balance } = accountOf(companyId)
+  const block = creditBlock(current, balance)
+  if (block === 'SUBSCRIPTION_EXPIRED') throw new MockDbError(block, { expiredAt: current?.subscription.expiresAt ?? null })
+  if (block === 'INSUFFICIENT_CREDITS') throw new MockDbError(block, { balance })
+  const cost = optimizationCost((current as CurrentSubscription).plan)
+  const reference = nextId('JOB', [...ctx.state.creditTransactions.values()].map((item) => item.reference), 3)
+  appendTransaction(companyId, { type: 'USAGE', amount: negated(cost), reference, usageStatus: 'RESERVED', tripId: trip.id })
+  // Số dư từ ngưỡng trở xuống thì báo quản trị công ty (đề xuất `lowCreditThreshold`); gói không giới hạn không bao giờ hết
+  if (cost > 0 && balance - cost <= BILLING_CONSTANTS.lowCreditThreshold) {
+    ctx.logSystem('credit.lowBalance', companyTarget(companyId), { balance: balance - cost }, companyId)
+  }
+  return { reference, cost }
+}
+
+/** Hoàn lượt dùng còn đang giữ: `RESERVED` → `REFUNDED` kèm một dòng hoàn. Lượt đã trừ hẳn không hoàn được. */
+function refundReserved(ctx: DbContext, usage: CreditTransaction): void {
+  usage.usageStatus = 'REFUNDED'
+  usage.refunded = true
+  billingCore(ctx).appendTransaction(usage.companyId, { type: 'REFUND', amount: Math.abs(usage.amount), reference: usage.reference, ...(usage.tripId === undefined ? {} : { tripId: usage.tripId }) })
+}
+
+/**
+ * Credit của một lần lưu kết quả tối ưu (`saveOptimizationRun`, `addRevision`) — **kho tự tính, không tin nơi gọi**: có mã giữ thì lượt
+ * đó phải còn `RESERVED`; không có mã giữ mà kho đang có phiên đăng nhập thì kho giữ ngay tại đây (hết credit hay gói hết hạn là từ chối).
+ * Chỉ kho không có phiên (dựng seed, test logic kho) mới lưu không tính credit. `deduct` gọi khi đã ghi xong, `rollback` khi ghi lỗi —
+ * chỉ hoàn lượt kho tự giữ, lượt nơi gọi giữ thì nơi gọi hoàn.
+ */
+export function runCredit(ctx: DbContext, trip: { id: string; companyId: string }, reference?: string): { deduct: () => void; rollback: () => void } {
+  if (reference !== undefined) return { deduct: claimReservedCredit(ctx, reference, trip.companyId), rollback: () => {} }
+  if (ctx.state.session.userId === null) return { deduct: () => {}, rollback: () => {} }
+  const own = reserveCredit(ctx, trip).reference
+  const usage = ctx.scope.creditTransactions.list().find((item) => item.type === 'USAGE' && item.reference === own)
+  return {
+    deduct: claimReservedCredit(ctx, own, trip.companyId),
+    rollback: () => { if (usage?.usageStatus === 'RESERVED') refundReserved(ctx, usage) },
+  }
+}
+
+/**
  * Hàm công khai của kho gói cước, credit và thanh toán (FE-8-01, FE-8-05; D-89, D-94). Sổ cái, thanh toán và vòng đời gói chạy lười theo
  * đồng hồ của kho nằm ở `billing-core.ts`: mọi hàm chạm tới công ty gọi `settle` trước (việc tới hạn mới được xử lý), như vị trí xe mô
  * phỏng (`db-tracking.ts`).
  */
 export function billingMethods(ctx: DbContext): BillingDb {
-  const { plans, subscriptions, creditTransactions, payments } = ctx.state
+  const { plans, subscriptions, payments } = ctx.state
   const {
-    companyTarget, assertRole, subscriptionOf, planOf, currentOf, accountOf, appendTransaction, createPayment, pendingOf, failPayment, settle,
+    companyTarget, assertRole, subscriptionOf, planOf, currentOf, accountOf, createPayment, pendingOf, failPayment, settle,
     settledCompany, applyPayment,
   } = billingCore(ctx)
 
@@ -159,35 +208,23 @@ export function billingMethods(ctx: DbContext): BillingDb {
         return payment
       }),
 
+    // Chỉ người chạy tối ưu (điều phối viên) giữ và hoàn credit của một lần chạy
     reserveOptimizationCredit: (tripId) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
-        const { companyId } = trip
-        settle(companyId)
-        const current = currentOf(companyId)
-        const { balance } = accountOf(companyId)
-        const block = creditBlock(current, balance)
-        if (block === 'SUBSCRIPTION_EXPIRED') throw new MockDbError(block, { expiredAt: current?.subscription.expiresAt ?? null })
-        if (block === 'INSUFFICIENT_CREDITS') throw new MockDbError(block, { balance })
-        const cost = optimizationCost((current as CurrentSubscription).plan)
-        const reference = nextId('JOB', [...creditTransactions.values()].map((item) => item.reference), 3)
-        appendTransaction(companyId, { type: 'USAGE', amount: negated(cost), reference, usageStatus: 'RESERVED', tripId })
-        // Số dư từ ngưỡng trở xuống thì báo quản trị công ty (đề xuất `lowCreditThreshold`); gói không giới hạn không bao giờ hết
-        if (cost > 0 && balance - cost <= BILLING_CONSTANTS.lowCreditThreshold) {
-          ctx.logSystem('credit.lowBalance', companyTarget(companyId), { balance: balance - cost }, companyId)
-        }
-        return { reference, cost }
+        assertRole('dispatcher')
+        return reserveCredit(ctx, trip)
       }),
 
     refundOptimizationCredit: (reference) =>
       ctx.respond(() => {
         const usage = ctx.scope.creditTransactions.list().find((item) => item.type === 'USAGE' && item.reference === reference)
         if (usage === undefined) throw new MockDbError('NOT_FOUND', { collection: 'creditTransactions', id: reference })
-        // Hoàn đúng một lần theo tham chiếu
+        assertRole('dispatcher')
+        // Hoàn đúng một lần theo tham chiếu; lượt đã trừ hẳn (lần chạy đã lưu) không hoàn được — nếu không, chạy xong gọi hoàn là chạy miễn phí
         if (usage.usageStatus === 'REFUNDED') return
-        usage.usageStatus = 'REFUNDED'
-        usage.refunded = true
-        appendTransaction(usage.companyId, { type: 'REFUND', amount: Math.abs(usage.amount), reference, ...(usage.tripId === undefined ? {} : { tripId: usage.tripId }) })
+        if (usage.usageStatus !== 'RESERVED') throw new MockDbError('CREDIT_NOT_RESERVED', { reference })
+        refundReserved(ctx, usage)
       }),
   }
 }
