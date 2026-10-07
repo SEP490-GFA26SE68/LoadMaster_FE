@@ -71,10 +71,9 @@ export const support = {
     columns: { ticket: 'Yêu cầu', company: 'Công ty', kind: 'Loại', status: 'Trạng thái', updated: 'Cập nhật' },
     statusLabel: 'Trạng thái yêu cầu',
     statusChanged: 'Yêu cầu {id} chuyển sang {status}',
-    close: 'Đóng yêu cầu',
-    reopen: 'Mở lại yêu cầu',
     panel: {
-      title: 'Công ty {name}',
+      title: 'Thông tin công ty',
+      company: 'Công ty',
       readOnly: 'Chỉ đọc',
       plan: 'Gói',
       planStatus: 'Trạng thái gói',

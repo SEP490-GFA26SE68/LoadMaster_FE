@@ -32,23 +32,24 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  *   xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` (đề xuất). Bấm mở màn gói cước `/goi-cuoc` (FE-8-03) để nạp thêm.
  * - Nhận hàng dọc đường (FE-7-03, FE-7-04): điều phối viên được báo khi có yêu cầu nhận mới (chính tài xế gửi); tài xế được báo quyết định
  *   duyệt / từ chối yêu cầu của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện).
- * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8). Vai trò không có nguồn nào thì
- *   không có chuông (`hasNotifications`).
+ * - Mọi vai trò công ty được báo khi Hỗ trợ khách hàng **trả lời yêu cầu hỗ trợ của chính mình** (`ticket.replied`, FE-8-07): lọc theo người gửi
+ *   (tham số `requestedBy`), không báo cho đồng nghiệp. Sự kiện thuộc công ty của yêu cầu nên người gửi đọc được dù người làm là tài khoản nền tảng.
+ * - Quản lý nền tảng, hỗ trợ khách hàng không có loại thông báo nào. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
  * Sự kiện của luồng mới (nguy cơ trễ, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
  */
 export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>> = {
   systemAdmin: ACCOUNT_ACTIONS,
   systemManager: [],
   systemSupporter: [],
-  companyAdmin: [...ACCOUNT_ACTIONS, 'credit.lowBalance'],
-  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated'],
+  companyAdmin: [...ACCOUNT_ACTIONS, 'credit.lowBalance', 'ticket.replied'],
+  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated', 'ticket.replied'],
   dispatcher: [
     'revision.approved', 'loading.completed', 'loading.shortageReported', 'loading.damaged', 'package.found', 'delivery.issue', 'delivery.etaRisk',
     'delivery.completed', 'trip.cancelled', 'manualConfirm.requested', 'exception.reported', 'exception.escalated',
-    'exception.deadlineRenegotiated', 'pickup.requested',
+    'exception.deadlineRenegotiated', 'pickup.requested', 'ticket.replied',
   ],
-  warehouse: ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped', 'trip.cancelled'],
-  driver: ['manualConfirm.rejected', 'pickup.approved', 'pickup.rejected'],
+  warehouse: ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped', 'trip.cancelled', 'ticket.replied'],
+  driver: ['manualConfirm.rejected', 'pickup.approved', 'pickup.rejected', 'ticket.replied'],
 }
 
 /**
@@ -62,6 +63,8 @@ const PICKUP_DECISIONS: readonly AuditAction[] = ['pickup.approved', 'pickup.rej
 
 /** Sự kiện có đáng báo cho `viewer` không, ngoài việc đúng loại của vai trò: luật theo người gửi và theo tham số của sự kiện. */
 function concerns(event: AuditEvent, viewer: NotificationViewer): boolean {
+  // Trả lời yêu cầu hỗ trợ chỉ đáng báo cho người đã gửi yêu cầu (FE-8-07)
+  if (event.action === 'ticket.replied') return event.params.requestedBy === viewer.id
   if (viewer.role === 'warehouse' || viewer.role === 'driver') {
     if (PERSONAL_ACTIONS.includes(event.action)) return event.params.requestedBy === viewer.id
     if (PICKUP_DECISIONS.includes(event.action)) return event.params.driverId === viewer.id

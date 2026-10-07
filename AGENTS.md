@@ -19,7 +19,7 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 |---|---|---|
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02) |
-| Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
+| Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07) |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03) |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; lập yêu cầu giao (FE-4b-02); xem chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; quản lý kho kiện (thêm kiện, nhập file, in nhãn QR), lập chuyến, tối ưu, duyệt phương án |
@@ -69,7 +69,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*), `billing.manage` (màn `/goi-cuoc` và `/thanh-toan/gia-lap` — quản trị công ty; *bổ sung 08/10/2026, FE-8-03, FE-8-04*), `companies.manage` (màn `/nen-tang/cong-ty` — quản trị hệ thống; *bổ sung 08/10/2026, FE-8-06*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*), `billing.manage` (màn `/goi-cuoc` và `/thanh-toan/gia-lap` — quản trị công ty; *bổ sung 08/10/2026, FE-8-03, FE-8-04*), `companies.manage` (màn `/nen-tang/cong-ty` — quản trị hệ thống; *bổ sung 08/10/2026, FE-8-06*), `support.create` (mục "Yêu cầu hỗ trợ" của menu tài khoản — năm vai trò công ty) và `support.handle` (màn `/ho-tro` — hỗ trợ khách hàng; *bổ sung 08/10/2026, FE-8-07*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -97,7 +97,7 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 chính đứng đầu. Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
 (*đã điều chỉnh 03/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
-họ ở màn hồ sơ). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
+họ ở màn hồ sơ). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng: Hỗ trợ (FE-8-07). Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
 màn Đội xe. *(đã điều chỉnh 03/10/2026, FE-3b-06)* Tra cứu kiện cũng không có mục riêng: điều phối viên mở bằng nút "Tra cứu kiện" trên dải
@@ -108,8 +108,7 @@ Nhật ký và chuông chỉ biến đối tượng thành liên kết khi ngư�
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
-quản trị hệ thống `/nen-tang/cong-ty` (FE-8-06), quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); *(tạm, FE-0-03)* hỗ trợ khách hàng `/ho-so` tới khi có màn ticket ở
-Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
+quản trị hệ thống `/nen-tang/cong-ty` (FE-8-06), quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); hỗ trợ khách hàng `/ho-tro` (FE-8-07) — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
 trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
 nhân viên kho và tài xế **ở màn danh sách** thì **đăng xuất** (màn chính của họ), **trong phiên xếp / trong chuyến** thì về danh sách
@@ -122,7 +121,7 @@ Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/Langua
 `LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
 rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm kho kiện, loại kiện, và nhóm yêu cầu giao theo `requirements.view` thay nhóm đơn hàng (FE-4b-02) — kho kiện theo `packages.view` (FE-3b-03), loại kiện theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
-`read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
+`read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (mục "Yêu cầu hỗ trợ" kế bên là của năm vai trò công ty, FE-8-07; `/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
 56 px ở màn chính). Nút hành động trên thanh dùng `components/NavRailButton.tsx`. Thanh ngang chật hơn rail dọc: thêm mục vào đây phải
 đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý công ty ở cả hai ngôn ngữ).
 *(đã điều chỉnh 02/10/2026, FE-0-04)* **Tìm nhanh theo vai trò**: quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm
@@ -131,6 +130,7 @@ nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi h
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao, và kiện **của một yêu cầu giao** bị bỏ khỏi chuyến vì thiếu hoặc hỏng (yêu cầu thành giao thiếu, D-92);
 *(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai; *(bổ sung 08/10/2026, FE-8-05)* quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`, sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm mở màn gói cước `/goi-cuoc` (FE-8-03; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy);
+*(bổ sung 08/10/2026, FE-8-07)* mọi vai trò công ty còn nhận **trả lời yêu cầu hỗ trợ của chính mình** (`ticket.replied`, lọc theo người gửi — tham số `requestedBy`).
 vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
 *(đã điều chỉnh 03/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
 xế có chuông với đúng một loại: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo tham số `requestedBy` —
@@ -287,6 +287,8 @@ src/
     platform/           *(bổ sung 08/10/2026, FE-8-02)* màn của quản lý nền tảng: danh mục gói cước `/nen-tang/goi` (`PlansPage`, `PlanFormDialog`,
                         `subscription-plans-api.ts`); *(bổ sung 08/10/2026, FE-8-06)* màn Công ty của quản trị hệ thống `/nen-tang/cong-ty` (`CompaniesPage`,
                         `CompanyFormDialog`, `companies-api.ts`)
+    support/            *(bổ sung 08/10/2026, FE-8-07)* yêu cầu hỗ trợ: màn `/ho-tro` của hỗ trợ khách hàng (`SupportPage`, `CompanyPanel`), hộp thoại "Yêu cầu hỗ trợ" của người dùng
+                        công ty mở từ menu tài khoản (`SupportTicketDialog`), cuộc trao đổi dùng chung (`TicketThread`); `support-api.ts` → `useSupportQuery.ts`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
@@ -1716,6 +1718,18 @@ dù giao diện bị bỏ qua:
   trị đầu tiên chỉ có ở form tạo. Tạo xong mở `TemporaryPasswordDialog` (dùng chung với màn Người dùng); kho từ chối thì câu lỗi hiện trong hộp thoại, dữ liệu đang nhập giữ nguyên.
   Lớp API `companies-api.ts` → `useCompaniesQuery.ts`, khoá `['companies', 'overview']` (dưới `['companies']` — khoá tên công ty của Người dùng và Nhật ký, `staleTime: Infinity`),
   mọi lần ghi làm mới `['companies']`, `['users']`, `['audit']`.
+- *(bổ sung 08/10/2026, FE-8-07, D-67)* **Yêu cầu hỗ trợ** (`features/support`; backend chưa có entity — Q-18). Kiểu `SupportTicket` (`support-model.ts`, mã `TKT-NNN`): công ty, người gửi (tên chụp lúc
+  gửi), loại `TECHNICAL | BILLING`, tiêu đề (≤ 120 ký tự), mô tả (≤ 2.000), trạng thái `OPEN | IN_PROGRESS | CLOSED`, các lần trả lời (người, vai trò, nội dung, giờ — tên và vai trò cũng chụp lúc trả lời vì
+  người của công ty không đọc được tài khoản nền tảng). Kho (`db-support.ts`, `ctx.scope.supportTickets` theo công ty rồi lọc tiếp theo người gửi): **người của công ty chỉ thấy và trả lời yêu cầu do chính mình
+  gửi** — của đồng nghiệp hay của công ty khác đọc là `NOT_FOUND`, ghi vào yêu cầu của công ty khác `FORBIDDEN_COMPANY`; **hỗ trợ khách hàng thấy mọi yêu cầu** và là người duy nhất đổi trạng thái
+  (`setSupportTicketStatus`, kể cả mở lại) và đọc khung công ty (`getSupportCompanyPanel`: gói, `planStatus` tính theo đồng hồ, số dư, 20 giao dịch credit gần nhất, qua `ctx.scope.platform*`); vai trò nền tảng khác
+  `ROLE_NOT_ALLOWED`; gửi và trả lời cần phiên (`NOT_SIGNED_IN`). Hỗ trợ khách hàng trả lời yêu cầu Mở thì yêu cầu sang Đang xử lý; yêu cầu Đóng không nhận trả lời (`TICKET_CLOSED`, mở lại bằng đổi trạng thái);
+  sai dữ liệu `TICKET_INVALID`. Nhật ký nhóm `ticket` (`created` mang `ticketKind`, `replied` mang người gửi ở `requestedBy`, `statusChanged` mang `ticketStatus`) — **thuộc công ty của yêu cầu** (tham số
+  `companyId` của `ctx.log`) dù người làm là tài khoản nền tảng, nên chuông của người gửi nhận được. Seed (`seed-support.ts`, không sự kiện nhật ký đi kèm): `TKT-001` Long Bình, kỹ thuật, Mở, do `US-0001` gửi;
+  `TKT-002` Phương Nam, thanh toán, Đã đóng sau hai lần trả lời, do `US-PN-03` gửi. **Người dùng công ty**: hộp thoại `SupportTicketDialog` mở từ mục "Yêu cầu hỗ trợ" của menu tài khoản (`NavRail`, và
+  `AccountMenu` 56 px của kho, tài xế — cỡ cảm ứng ở nút, ô nhập, chữ) — danh sách yêu cầu của mình, gửi yêu cầu mới, đọc và trả lời. **`/ho-tro`** (`support.handle`, màn chính của hỗ trợ khách hàng): bảng
+  mọi yêu cầu (hoạt động gần nhất trước; lọc `cong-ty`, `loai`, `trang-thai`, tìm theo tiêu đề / mã / người gửi — trên URL), `?ticket=<mã>` mở cuộc trao đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") kèm
+  `CompanyPanel` chỉ đọc; màn không có nút chính ngoài "Gửi trả lời". Khoá Query `['support', 'tickets' | 'panel', mã công ty]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

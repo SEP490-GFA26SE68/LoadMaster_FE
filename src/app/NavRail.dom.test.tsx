@@ -56,20 +56,13 @@ test.each<[Role, string[]]>([
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước']],
+  ['systemSupporter', ['Hỗ trợ']],
   ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký']],
   ['companyAdmin', ['Người dùng', 'Nhật ký', 'Gói và credit']],
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
   expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
-})
-
-/** FE-0-03 (quyết định G1): hỗ trợ khách hàng chưa có màn riêng — không vẽ khay điều hướng rỗng, logo và menu tài khoản vẫn có. */
-test.each<Role>(['systemSupporter'])('nav rail của %s không có khay điều hướng', (role) => {
-  renderRail(role, '/ho-so')
-  expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-so')
-  expect(screen.getByRole('button', { name: /^Tài khoản / })).toBeInTheDocument()
 })
 
 /**
@@ -109,7 +102,7 @@ test.each<[Role, boolean]>([
 test.each<[Role, string]>([
   ['systemAdmin', '/nen-tang/cong-ty'],
   ['systemManager', '/nen-tang/goi'],
-  ['systemSupporter', '/ho-so'],
+  ['systemSupporter', '/ho-tro'],
   ['companyAdmin', '/nguoi-dung'],
   ['manager', '/'],
   ['dispatcher', '/'],
@@ -136,7 +129,7 @@ test('menu tài khoản có mục Hồ sơ cá nhân mở /ho-so', async () => {
   renderRail('manager')
   await user.click(screen.getByRole('button', { name: 'Tài khoản Trần Thị Mai' }))
   const items = await screen.findAllByRole('menuitem')
-  expect(items.map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Đăng xuất'])
+  expect(items.map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Yêu cầu hỗ trợ', 'Đăng xuất'])
   expect(items[0]).toHaveAttribute('href', '/ho-so')
   // Dưới tên và email: vai trò và kho trực thuộc
   expect(screen.getByRole('menu')).toHaveTextContent('Trần Thị Maiquanly@loadmaster.vnQuản lý công tyTrụ sở TP. Hồ Chí Minh')

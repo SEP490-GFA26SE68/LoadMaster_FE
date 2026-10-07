@@ -1,4 +1,5 @@
-import { LogOut, UserRound } from 'lucide-react'
+import { LifeBuoy, LogOut, UserRound } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { LanguageMenu } from '@/components/LanguageMenu'
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { can } from '@/features/auth/permissions'
 import { EtaRiskWatcher } from '@/features/monitoring/EtaRiskWatcher'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { QuickSearch } from '@/features/search/QuickSearch'
@@ -20,6 +22,9 @@ import { cn } from '@/lib/utils'
 import { initialsOf } from '@/types/user'
 import { logoPath, navItemsFor } from './nav-items'
 import { useGlassFollow } from './useGlassFollow'
+
+/** Hộp thoại yêu cầu hỗ trợ (FE-8-07) tải khi mở lần đầu: chỉ người dùng công ty mở. */
+const SupportTicketDialog = lazy(() => import('@/features/support/SupportTicketDialog').then((m) => ({ default: m.SupportTicketDialog })))
 
 /** Ảnh đại diện chữ tắt tròn, gradient cyan (V2.3 `.avatar`) — chỉ ở thanh điều hướng và menu tài khoản (AGENTS mục 5). */
 function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
@@ -48,6 +53,7 @@ export function NavRail() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const { navRef, followRef } = useGlassFollow<HTMLElement>()
+  const [supportOpen, setSupportOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
   const items = user ? navItemsFor(user.role) : []
 
@@ -69,7 +75,7 @@ export function NavRail() {
         </span>
       </Link>
 
-      {/* Vai trò chưa có màn nào (quản lý nền tảng, hỗ trợ khách hàng — tới Sprint 8) thì không vẽ khay kính rỗng */}
+      {/* Vai trò không có mục nào thì không vẽ khay kính rỗng (hiện cả tám vai trò đều có) */}
       {items.length > 0 ? (
         <nav
           ref={navRef}
@@ -110,7 +116,7 @@ export function NavRail() {
         <EtaRiskWatcher />
 
         {user ? (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger
               aria-label={t('nav.account', { name: user.fullName })}
               className="rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 data-[state=open]:shadow-[0_0_0_2px_var(--cyan-300)]"
@@ -137,6 +143,12 @@ export function NavRail() {
                   {t('nav.profile')}
                 </Link>
               </DropdownMenuItem>
+              {can(user.role, 'support.create') ? (
+                <DropdownMenuItem onSelect={() => setSupportOpen(true)}>
+                  <LifeBuoy strokeWidth={1.5} aria-hidden />
+                  {t('nav.supportRequests')}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => void handleSignOut()}>
                 <LogOut strokeWidth={1.5} aria-hidden />
                 {t('nav.signOut')}
@@ -145,6 +157,11 @@ export function NavRail() {
           </DropdownMenu>
         ) : null}
       </div>
+      {supportOpen ? (
+        <Suspense fallback={null}>
+          <SupportTicketDialog onClose={() => setSupportOpen(false)} />
+        </Suspense>
+      ) : null}
     </header>
   )
 }

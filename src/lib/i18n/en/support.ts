@@ -68,10 +68,9 @@ export const support = {
     columns: { ticket: 'Request', company: 'Company', kind: 'Type', status: 'Status', updated: 'Updated' },
     statusLabel: 'Request status',
     statusChanged: 'Request {id} is now {status}',
-    close: 'Close request',
-    reopen: 'Reopen request',
     panel: {
-      title: 'Company {name}',
+      title: 'Company information',
+      company: 'Company',
       readOnly: 'Read only',
       plan: 'Plan',
       planStatus: 'Plan status',

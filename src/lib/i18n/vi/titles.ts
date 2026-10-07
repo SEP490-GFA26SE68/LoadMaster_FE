@@ -43,4 +43,5 @@ export const titles = {
   payment: 'Thanh toán giả lập',
   // FE-8-06, FE-8-07
   companies: 'Công ty',
+  support: 'Hỗ trợ khách hàng',
 } as const

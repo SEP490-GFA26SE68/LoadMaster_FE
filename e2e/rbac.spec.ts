@@ -10,10 +10,10 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
 const HOMES: readonly (readonly [email: string, path: string, heading: string])[] = [
-  // Nền tảng: quản lý nền tảng mở danh mục gói (FE-8-02); hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
+  // Nền tảng: quản trị hệ thống mở công ty (FE-8-06), quản lý nền tảng mở danh mục gói (FE-8-02), hỗ trợ khách hàng mở yêu cầu hỗ trợ (FE-8-07)
   ['quantri@loadmaster.vn', '/nen-tang/cong-ty', 'Công ty'],
   ['nentang@loadmaster.vn', '/nen-tang/goi', 'Gói cước'],
-  ['hotro@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
+  ['hotro@loadmaster.vn', '/ho-tro', 'Hỗ trợ khách hàng'],
   // Long Bình
   ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
   ['quanly@loadmaster.vn', '/', 'Bảng điều khiển'],
@@ -64,28 +64,28 @@ test('the quick sign-in box groups accounts by platform and company; picking one
   expect(browserErrors).toStrictEqual([])
 })
 
-test('customer support has no nav items and is never stranded: logo, 403 and 404 lead back to the profile (FE-0-03)', async ({ page, browserErrors }) => {
+test('customer support lands on the support screen with its one nav item and is never stranded: logo, 403 and 404 lead back (FE-8-07)', async ({ page, browserErrors }) => {
   await page.goto('/')
   await signInWith(page, 'hotro@loadmaster.vn')
-  await page.waitForURL((url) => url.pathname === '/ho-so')
-  // Logo trước (thanh điều hướng đã dựng), rồi mới khẳng định thanh đó không có khay mục nào
-  await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-so')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toHaveCount(0)
-  // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào)
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
+  await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-tro')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Hỗ trợ'])
+  // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào) và không có mục yêu cầu hỗ trợ (đó là của người dùng công ty)
   await page.getByRole('button', { name: /^Tài khoản / }).click()
   await expect(page.getByRole('menu')).toContainText('Hỗ trợ khách hàng')
+  await expect(page.getByRole('menuitem')).toHaveText(['Hồ sơ cá nhân', 'Đăng xuất'])
   await page.keyboard.press('Escape')
 
   await navigateInApp(page, '/chuyen')
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/ho-so')
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
 
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/ho-so')
-  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ cá nhân', exact: true })).toBeVisible()
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
+  await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ khách hàng', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 

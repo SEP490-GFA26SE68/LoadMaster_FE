@@ -1,4 +1,4 @@
-import { Box, Building2, ClipboardList, CreditCard, LayoutDashboard, Layers, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
+import { Box, Building2, ClipboardList, CreditCard, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
@@ -29,6 +29,8 @@ export const NAV_SCREENS = {
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
   // Công ty: quản trị hệ thống (FE-8-06)
   companies: { to: '/nen-tang/cong-ty', labelKey: 'nav.companies', icon: Building2, permission: 'companies.manage' },
+  // Hỗ trợ: Hỗ trợ khách hàng (FE-8-07)
+  support: { to: '/ho-tro', labelKey: 'nav.support', icon: LifeBuoy, permission: 'support.handle' },
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
   // Gói cước: quản lý nền tảng quản lý danh mục gói (FE-8-02); quản trị công ty xem gói và credit của công ty (FE-8-03)
   plans: { to: '/nen-tang/goi', labelKey: 'nav.plans', icon: Layers, permission: 'subscriptionPlans.manage' },
@@ -52,7 +54,7 @@ export type NavScreenId = keyof typeof NAV_SCREENS
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemAdmin: ['companies', 'users', 'audit'],
   systemManager: ['plans'],
-  systemSupporter: [],
+  systemSupporter: ['support'],
   companyAdmin: ['users', 'audit', 'billing'],
   manager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],

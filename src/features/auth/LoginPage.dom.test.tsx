@@ -52,10 +52,10 @@ test.each([
   ['dieuphoi@loadmaster.vn', '/chuyen'],
   ['quanly@loadmaster.vn', '/'],
   ['quantri@loadmaster.vn', '/nen-tang/cong-ty'],
-  // FE-0-03: quản trị công ty; hai vai trò nền tảng chưa có màn riêng mở hồ sơ cá nhân; tài khoản của Phương Nam
+  // FE-0-03: quản trị công ty; quản lý nền tảng mở danh mục gói, hỗ trợ khách hàng mở màn hỗ trợ; tài khoản của Phương Nam
   ['qtcongty@loadmaster.vn', '/nguoi-dung'],
   ['nentang@loadmaster.vn', '/nen-tang/goi'],
-  ['hotro@loadmaster.vn', '/ho-so'],
+  ['hotro@loadmaster.vn', '/ho-tro'],
   ['dieuphoi@phuongnam.vn', '/chuyen'],
   // FE-0-06: `viet.lam@` là nhân viên kho của Phương Nam (trước là tài khoản logistics mở `/nhan-hang`)
   ['viet.lam@phuongnam.vn', '/kho'],

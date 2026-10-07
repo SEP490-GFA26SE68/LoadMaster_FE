@@ -6,10 +6,10 @@ import type { Role } from '@/types/user'
  */
 export const ROLE_HOME: Readonly<Record<Role, string>> = {
   // PRD v2 mục 5.1 đặt `/nen-tang/cong-ty`, `/nen-tang/goi`, `/ho-tro`: quản trị hệ thống mở màn Công ty (FE-8-06), quản lý nền tảng mở danh mục gói
-  // cước (FE-8-02); Hỗ trợ khách hàng chưa có màn nào ngoài hồ sơ của mình (tạm, tới màn ticket).
+  // cước (FE-8-02), Hỗ trợ khách hàng mở màn yêu cầu hỗ trợ (FE-8-07). Quản trị công ty mở màn Người dùng.
   systemAdmin: '/nen-tang/cong-ty',
   systemManager: '/nen-tang/goi',
-  systemSupporter: '/ho-so',
+  systemSupporter: '/ho-tro',
   companyAdmin: '/nguoi-dung',
   manager: '/',
   dispatcher: '/chuyen',
