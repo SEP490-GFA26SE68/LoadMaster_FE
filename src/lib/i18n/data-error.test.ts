@@ -82,6 +82,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   REROUTE_UNAVAILABLE: { tripId: 'TRIP-009' },
   PICKUP_INVALID: { field: 'packages.weightKg' },
   INVALID_PICKUP_STATUS_TRANSITION: { pickupId: 'PKR-001', from: 'PENDING', to: 'LOADED' },
+  PICKUP_ROUTE_UNAVAILABLE: { tripId: 'TRIP-009', stopNumbers: [2, 3] },
   UNSUPPORTED_FILE_TYPE: {},
   EMPTY_FILE: {},
   FILE_TOO_LARGE: { maxMb: 10 },

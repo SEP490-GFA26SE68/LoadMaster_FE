@@ -81,6 +81,7 @@ export const dataErrors = {
   // En-route pickup requests (FE-7-01)
   PICKUP_INVALID: 'The pickup request is not valid: it needs a name, address and coordinates for the pickup and delivery points, a readable deadline (if any), and a code, dimensions, weight and handling class for every package.',
   INVALID_PICKUP_STATUS_TRANSITION: 'Pickup request {pickupId} cannot move to that status from its current one. Reload to see its latest status.',
+  PICKUP_ROUTE_UNAVAILABLE: 'Stop {stopNumbers} of the trip has no coordinates, so the pickup request cannot be checked yet.',
   UNSUPPORTED_FILE_TYPE: 'This file cannot be read. Only .csv or .xlsx files are accepted.',
   EMPTY_FILE: 'The file has no data rows.',
   FILE_TOO_LARGE: 'The file is larger than {maxMb} MB and cannot be imported.',

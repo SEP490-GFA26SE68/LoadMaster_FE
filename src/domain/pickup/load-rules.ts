@@ -35,10 +35,17 @@ function loadAfterPickup(context: PickupContext): { totalKg: number; center?: Po
   const incomingKg = pickupKg(context)
   const tallestCm = Math.max(0, ...request.packages.map((pkg) => pkg.heightCm))
   const incoming = { weightKg: incomingKg, x: freed.lengthCm > 0 ? (freed.startXCm + freed.endXCm) / 2 : vehicle.innerLengthCm, y: vehicle.innerWidthCm / 2, z: tallestCm / 2 }
-  const items = [
-    ...onboard.map((item) => ({ weightKg: item.weightKg, x: item.xCm + item.lengthCm / 2, y: item.yCm + item.widthCm / 2, z: item.zCm + item.heightCm / 2 })),
-    incoming,
-  ]
+  return massCenter([...onboard.map(massOf), incoming])
+}
+
+type Mass = { weightKg: number; x: number; y: number; z: number }
+
+const massOf = (item: PickupContext['onboard'][number]): Mass => ({
+  weightKg: item.weightKg, x: item.xCm + item.lengthCm / 2, y: item.yCm + item.widthCm / 2, z: item.zCm + item.heightCm / 2,
+})
+
+/** Tổng khối lượng và tâm khối lượng của một nhóm kiện; không có khối lượng thì không có tâm. */
+function massCenter(items: readonly Mass[]): { totalKg: number; center?: PointCm } {
   const totalKg = sum(items, (item) => item.weightKg)
   if (!gt(totalKg, 0)) return { totalKg }
   return { totalKg, center: { x: sum(items, (i) => i.weightKg * i.x) / totalKg, y: sum(items, (i) => i.weightKg * i.y) / totalKg, z: sum(items, (i) => i.weightKg * i.z) / totalKg } }
@@ -75,12 +82,24 @@ export function axleRule(context: PickupContext): PickupRuleResult {
   }
 }
 
-/** Luật 6: trọng tâm hàng sau khi nhận không lệch quá ngưỡng của xe (`checkCenterOfGravity`). */
+type CogIssue = ReturnType<typeof checkCenterOfGravity>[number]
+
+/** Một kiểu lệch trọng tâm: mã, kèm phía bị dồn về với lệch dọc — dồn về đầu thùng và dồn về cửa là hai kiểu khác nhau. */
+const cogKind = (issue: CogIssue) => `${issue.code}:${'toward' in issue.params ? issue.params.toward : ''}`
+
+/**
+ * Luật 6: kiện nhận không làm trọng tâm hàng lệch quá ngưỡng của xe (`checkCenterOfGravity`). Giữa chuyến, hàng còn lại thường đã dồn về
+ * đầu thùng vì hàng gần cửa đã giao: kiểu lệch **có từ trước khi nhận** không tính cho yêu cầu (`PICKUP_COG_NOT_WORSE`, đạt); chỉ kiểu
+ * lệch mới xuất hiện sau khi nhận mới làm luật không đạt.
+ */
 export function centerOfGravityRule(context: PickupContext): PickupRuleResult {
-  const { center } = loadAfterPickup(context)
-  const issues = center === undefined ? [] : checkCenterOfGravity(context.vehicle, center)
-  const passed = issues.length === 0
-  return { rule: 6, passed, code: passed ? 'PICKUP_COG_OK' : 'PICKUP_COG_OFF_CENTER', estimated: true, params: { reasons: issues.map((issue) => issue.code).join(',') } }
+  const issuesAt = (center: PointCm | undefined) => (center === undefined ? [] : checkCenterOfGravity(context.vehicle, center))
+  const after = issuesAt(loadAfterPickup(context).center)
+  const before = new Set(issuesAt(massCenter(context.onboard.map(massOf)).center).map(cogKind))
+  const added = after.filter((issue) => !before.has(cogKind(issue)))
+  const code = after.length === 0 ? 'PICKUP_COG_OK' : added.length === 0 ? 'PICKUP_COG_NOT_WORSE' : 'PICKUP_COG_OFF_CENTER'
+  const reasons = (added.length === 0 ? after : added).map((issue) => issue.code).join(',')
+  return { rule: 6, passed: code !== 'PICKUP_COG_OFF_CENTER', code, estimated: true, params: { reasons } }
 }
 
 /**

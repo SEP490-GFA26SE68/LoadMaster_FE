@@ -33,6 +33,7 @@ import { runs } from './vi/runs'
 import { lookup } from './vi/lookup'
 import { map } from './vi/map'
 import { monitoring } from './vi/monitoring'
+import { pickups } from './vi/pickups'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -79,4 +80,5 @@ export const vi = {
   lookup,
   map,
   monitoring,
+  pickups,
 } as const

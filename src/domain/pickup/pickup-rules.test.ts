@@ -146,6 +146,12 @@ describe('rules 5 and 6: axle load and centre of gravity with the pickup placed 
     expect(rule(withPackages(boxes(4, { weightKg: 300 })), 6)).toMatchObject({ passed: false, code: 'PICKUP_COG_OFF_CENTER' })
   })
 
+  test('cargo already off-centre before the pickup (400 kg at x = 150) does not fail a 12 kg pickup: centre 160 cm, still towards the front', () => {
+    const ctx = context({ onboard: [{ xCm: 100, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 240, heightCm: 100, weightKg: 400 }] })
+    const light = { ...ctx, request: { ...ctx.request, packages: boxes(4, { weightKg: 3 }) } }
+    expect(rule(light, 6)).toMatchObject({ passed: true, code: 'PICKUP_COG_NOT_WORSE', params: { reasons: 'COG_LONGITUDINAL' } })
+  })
+
   test('a vehicle that declares no axle is not checked, not failed', () => {
     const ctx = context()
     const { axles: _axles, ...vehicle } = ctx.vehicle

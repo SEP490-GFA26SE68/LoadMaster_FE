@@ -336,6 +336,8 @@ export const trips = {
     stateA11y: { done: 'đã giao lúc {time}', current: 'đang giao', pending: 'chưa giao' },
     unloaded: 'Đã dỡ {done} / {total}',
     issueTag: { one: '{count} sự cố', other: '{count} sự cố' },
+    /** Điểm nhận hàng dọc đường chèn vào tuyến đang chạy (FE-7-04): nhãn chữ kèm biểu tượng gói hàng. */
+    pickupTag: 'Nhận hàng',
     /** Số tổng hợp ở đầu sơ đồ khi chuyến đang giao / đã hoàn thành. */
     summary: {
       stops: 'Đã giao',

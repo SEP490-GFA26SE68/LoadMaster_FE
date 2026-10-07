@@ -138,3 +138,14 @@ test('the warehouse is told about a trip cancelled while it was loading — to u
   expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual([])
   expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })
+
+test('a pickup request reaches the dispatcher, and the decision on it reaches only the driver of that trip', () => {
+  const requested = { ...event('EV-3', '2026-09-14T10:30:00.000Z', 'US-0006', 'pickup.requested', 'TRIP-009'), params: { pickupId: 'PKR-002', count: 1, failedRules: 0 } }
+  const approved = { ...event('EV-2', '2026-09-14T10:20:00.000Z', 'US-0001', 'pickup.approved', 'TRIP-009'), params: { pickupId: 'PKR-002', driverId: 'US-0006' } }
+  const rejected = { ...event('EV-1', '2026-09-14T10:10:00.000Z', 'US-0001', 'pickup.rejected', 'TRIP-009'), params: { pickupId: 'PKR-003', driverId: 'US-0004' } }
+  const events = [requested, approved, rejected]
+  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-3'])
+  expect(ids(selectNotifications(events, { id: 'US-0006', role: 'driver' }, NOW))).toStrictEqual(['EV-2'])
+  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual([])
+})

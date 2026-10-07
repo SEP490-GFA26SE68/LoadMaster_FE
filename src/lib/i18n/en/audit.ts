@@ -23,6 +23,7 @@ export const audit = {
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
     manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
     exception: { reported: 'Reported a trip incident', escalated: 'Sent the incident to the manager', resolved: 'Marked the incident as handled', deadlineRenegotiated: 'Contacted the customer, entered a new deadline' },
+    pickup: { requested: 'Sent an en-route pickup request', approved: 'Approved an en-route pickup request', rejected: 'Rejected an en-route pickup request', loaded: 'Loaded en-route pickup packages', delivered: 'Delivered en-route pickup packages' },
   },
   groups: {
     auth: 'Sign-in',
@@ -39,6 +40,7 @@ export const audit = {
     vehicleType: 'Vehicle types',
     manualConfirm: 'Manual confirmations',
     exception: 'Trip incidents',
+    pickup: 'En-route pickup',
   },
   log: {
     title: 'System log',
@@ -134,6 +136,10 @@ export const audit = {
       delayMinutes: 'Expected delay (min)',
       escalation: 'Reason sent up',
       route: 'Route',
+      // En-route pickup (FE-7-03 to FE-7-05)
+      pickupId: 'Pickup request',
+      failedRules: 'Failed rules',
+      driverId: 'Driver',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {

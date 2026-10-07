@@ -1,11 +1,18 @@
 import { gt, roundCm, roundKg } from '@/domain/geometry'
 import { HANDLING_CLASSES } from '@/domain/models'
+import { evaluatePickup, type PickupRuleResult } from '@/domain/pickup'
+import type { Role } from '@/types/user'
 import type { PickupsDb } from './db-api-pickups'
 import { nextId, optionalText, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
-import { canTransitionPickup, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
+import { createPickupPackages } from './db-pickup-packages'
+import { pickupEntries } from './db-pickup-progress'
+import { insertPickupIntoTrip } from './db-pickup-stops'
+import { buildPickupContext } from './pickup-context'
+import { canTransitionPickup, MAX_PICKUP_REASON_LENGTH, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
 import { isValidCoordinate } from './requirement-model'
+import type { Trip } from './types'
 
 const invalid = (field: string) => new MockDbError('PICKUP_INVALID', { field })
 
@@ -42,12 +49,24 @@ function deadlineOf(deadline: string | undefined): string | undefined {
   return new Date(ms).toISOString()
 }
 
+/** Mười luật đạt cả mười: yêu cầu `VALIDATED`; còn luật không đạt thì `PENDING`, chờ điều phối viên quyết. */
+const statusOf = (results: readonly PickupRuleResult[]): 'VALIDATED' | 'PENDING' => (results.every((result) => result.passed) ? 'VALIDATED' : 'PENDING')
+
 /**
- * Yêu cầu nhận hàng dọc đường (FE-7-01, D-88): tạo cho chuyến Đang vận chuyển, đọc, đổi trạng thái theo `PICKUP_TRANSITIONS`. Công ty
- * lọc qua chuyến (`ctx.scope.trips`). Kiểm mười luật, tạo kiện, chèn điểm vào tuyến khi duyệt là việc của lớp trên (FE-7-03, FE-7-04).
+ * Yêu cầu nhận hàng dọc đường (FE-7-01, D-88): tạo cho chuyến Đang vận chuyển, kiểm mười luật (FE-7-03), đọc, đổi trạng thái theo
+ * `PICKUP_TRANSITIONS`. Công ty lọc qua chuyến (`ctx.scope.trips`), vai trò xét như hàm sự cố cấp chuyến (`db-exceptions.ts`).
  */
 export function pickupMethods(ctx: DbContext): PickupsDb {
-  const { pickups } = ctx.state
+  const { pickups, users } = ctx.state
+
+  const sessionUser = () => (ctx.state.session.userId === null ? undefined : users.get(ctx.state.session.userId))
+
+  /** Việc của một vai trò; kho không có phiên (test logic) thì không xét. Tài xế chỉ làm trên chuyến của mình. */
+  function assertRole(trip: Trip, ...roles: Role[]) {
+    const user = sessionUser()
+    if (user === undefined) return
+    if (!roles.includes(user.role) || (user.role === 'driver' && trip.driverId !== user.id)) throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
+  }
 
   /** Yêu cầu `pickupId` của chuyến `tripId`; không có, hoặc thuộc chuyến khác: `NOT_FOUND`. */
   function pickupOf(tripId: string, pickupId: string): PickupRequest {
@@ -67,14 +86,20 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
         ctx.scope.trips.read(tripId)
         return pickupOf(tripId, pickupId)
       }),
+    listPickupPackages: (tripId) =>
+      ctx.respond(() => {
+        ctx.scope.trips.read(tripId)
+        return pickupEntries(ctx, tripId).map(({ pkg }) => pkg)
+      }),
     createPickupRequest: (tripId, input) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher', 'driver')
         const status = tripStatus(trip)
         if (status !== 'IN_TRANSIT') throw new MockDbError('INVALID_TRIP_STATUS_TRANSITION', { tripId, from: status, to: 'IN_TRANSIT' })
         if (input.packages.length === 0) throw new MockDbError('PACKAGES_REQUIRED', {})
         const deadline = deadlineOf(input.deadline)
-        return put(pickups, {
+        const draft: PickupRequest = {
           id: nextId('PKR', pickups.keys()),
           companyId: trip.companyId,
           tripId,
@@ -86,7 +111,63 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
           validationResults: [],
           createdAt: ctx.nowIso(),
           createdBy: ctx.state.session.userId,
+        }
+        // Kiểm trước khi ghi: không dựng được ngữ cảnh (điểm chưa có toạ độ) thì không ghi gì
+        const validationResults = evaluatePickup(buildPickupContext(ctx, trip, draft))
+        const stored = put(pickups, { ...draft, validationResults, status: statusOf(validationResults) })
+        ctx.log('pickup.requested', { type: 'trip', id: tripId }, {
+          pickupId: stored.id, count: stored.packages.length, failedRules: validationResults.filter((result) => !result.passed).length,
         })
+        return stored
+      }),
+    validatePickupRequest: (tripId, pickupId) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher', 'driver')
+        const current = pickupOf(tripId, pickupId)
+        if (current.status !== 'PENDING' && current.status !== 'VALIDATED') {
+          throw new MockDbError('INVALID_PICKUP_STATUS_TRANSITION', { pickupId, from: current.status, to: 'VALIDATED' })
+        }
+        const validationResults = evaluatePickup(buildPickupContext(ctx, trip, current))
+        return put(pickups, { ...current, validationResults, status: statusOf(validationResults) })
+      }),
+    approvePickupRequest: (tripId, pickupId, input = {}) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher')
+        const current = pickupOf(tripId, pickupId)
+        if (!canTransitionPickup(current.status, 'APPROVED')) throw new MockDbError('INVALID_PICKUP_STATUS_TRANSITION', { pickupId, from: current.status, to: 'APPROVED' })
+        if (trip.phase !== 'delivering') throw new MockDbError('TRIP_PHASE_INVALID', { tripId, phase: trip.phase })
+        // Kiểm lại trên chuyến lúc này: xe đã đi tiếp từ lúc gửi yêu cầu
+        const context = buildPickupContext(ctx, trip, current)
+        const validationResults = evaluatePickup(context)
+        const failed = validationResults.filter((result) => !result.passed).length
+        const overrideReason = failed === 0 ? undefined : optionalText(input.overrideReason)?.slice(0, MAX_PICKUP_REASON_LENGTH)
+        if (failed > 0 && overrideReason === undefined) throw new MockDbError('REASON_REQUIRED', {})
+        const inserted = insertPickupIntoTrip(ctx, trip, current, context.stops)
+        const created = createPickupPackages(ctx, current, inserted.deliveryStopId)
+        const { overrideReason: _earlier, ...kept } = current
+        const request = put(pickups, {
+          ...kept, validationResults, status: 'APPROVED', approvedAt: ctx.nowIso(), approvedBy: ctx.state.session.userId,
+          packageIds: created.map((pkg) => pkg.id), pickupStopId: inserted.pickupStopId, deliveryStopId: inserted.deliveryStopId,
+          ...(overrideReason === undefined ? {} : { overrideReason }),
+        })
+        ctx.log('pickup.approved', { type: 'trip', id: tripId }, {
+          pickupId, count: created.length, failedRules: failed, ...(overrideReason === undefined ? {} : { reason: overrideReason }),
+          ...(trip.driverId === null ? {} : { driverId: trip.driverId }),
+        })
+        return { request, packages: created }
+      }),
+    rejectPickupRequest: (tripId, pickupId, reason) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher')
+        const current = pickupOf(tripId, pickupId)
+        if (!canTransitionPickup(current.status, 'REJECTED')) throw new MockDbError('INVALID_PICKUP_STATUS_TRANSITION', { pickupId, from: current.status, to: 'REJECTED' })
+        const rejectReason = optionalText(reason)?.slice(0, MAX_PICKUP_REASON_LENGTH)
+        if (rejectReason === undefined) throw new MockDbError('REASON_REQUIRED', {})
+        ctx.log('pickup.rejected', { type: 'trip', id: tripId }, { pickupId, reason: rejectReason, ...(trip.driverId === null ? {} : { driverId: trip.driverId }) })
+        return put(pickups, { ...current, status: 'REJECTED', rejectReason, rejectedAt: ctx.nowIso(), rejectedBy: ctx.state.session.userId })
       }),
     updatePickupStatus: (tripId, pickupId, status, details = {}) =>
       ctx.respond(() => {

@@ -100,7 +100,13 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   trí, xác nhận tay chờ duyệt). Tài xế và điều phối viên báo sự cố trên đường kèm số phút dự kiến chậm — xe mô phỏng đứng thêm đúng số
   phút đó; điều phối viên tìm tuyến khác (mock, MOCK RESULT; chỉ đổi đường, không đổi thứ tự điểm), đánh dấu đã xử lý hoặc chuyển quản
   lý, và sự cố quá 30 phút chưa xử lý tự chuyển lên. Quản lý công ty ghi đã liên hệ khách và nhập hạn mới ở tab "Sự cố cần xử lý";
-  mức hạn tính lại ngay và điều phối viên được báo. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
+  mức hạn tính lại ngay và điều phối viên được báo. Nhận hàng dọc đường (D-88): điều phối viên hoặc tài xế gửi yêu cầu nhận thêm hàng khi
+  chuyến đang vận chuyển (điểm nhận, điểm giao, hạn, nhiều dòng kiện); kho kiểm mười luật Đạt / Không đạt ngay khi lưu (luật 4–7 và 10 là
+  ước lượng, có nhãn). Điều phối viên duyệt — còn luật không đạt thì phải ghi lý do vượt luật — hoặc từ chối kèm lý do: duyệt xong kiện vào kho
+  kiện có mã QR, điểm nhận và điểm giao chèn vào tuyến đang chạy (các điểm cũ giữ thứ tự, phương án đã xếp không lỗi thời) và có nút in
+  nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
+  mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
+  trợ khách hàng làm ở các bước sau.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -122,12 +128,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.929 test unit + DOM
-pnpm test:e2e      # Playwright: 128 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 2.030 test unit + DOM
+pnpm test:e2e      # Playwright: 130 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.929/1.929 unit, 128/128 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (07/10/2026, nhánh `feat/fe-7-03-04-05-nhan-doc-duong`): lint, kiểm kiểu, 2.030/2.030 unit; hai spec E2E của nhận hàng dọc đường xanh, bộ E2E đủ do CI chạy (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

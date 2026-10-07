@@ -103,7 +103,7 @@ function verificationCounts(trip: Trip): TripReport['verifications'] {
 
 /** `plan`: bản kho làm theo (`trip.loading.revisionId`); chuyến chưa xếp thì `undefined` — báo cáo chỉ còn khung điểm giao. */
 export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'> | undefined, incidents: TripReportIncidents = {}): TripReport {
-  const planned = plan ? plannedStops(plan) : new Map<string, number>()
+  const planned = plan ? plannedStops(plan, trip.stops) : new Map<string, number>()
   const weightById = new Map(plan ? expandPackages(plan.request.packages).instances.map((i) => [i.packageInstanceId, i.weightKg]) : [])
   const leftOut = leftOutIds(trip)
   const delivery = trip.delivery

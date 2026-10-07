@@ -1,7 +1,7 @@
 import { expandPackages } from '@/domain/cargo'
 import { orientDimensions, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
 import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
-import { isStale, type DeliveryStop, type Revision, type RouteStopEta } from '@/lib/mock-db'
+import { currentNumbersOfPlan, hasInsertedStops, isStale, type DeliveryStop, type Revision, type RouteStopEta } from '@/lib/mock-db'
 import type { ScenePlacement, SceneStop, SceneUnplaced, SceneZone, ViewerSceneModel } from './scene-types'
 
 /** Kiểu của scene (cm) nằm ở `scene-types.ts`; nơi dùng vẫn import từ đây. */
@@ -28,11 +28,15 @@ function indexById<T extends { readonly id: string }>(items: readonly T[]): Map<
   return byId
 }
 
-/** Revision của mock repository (LM-026) → scene cm. Kích thước, luật xoay, tên và điểm giao lấy từ kiện gốc của request. */
+/**
+ * Revision của mock repository (LM-026) → scene cm. Kích thước, luật xoay, tên và điểm giao lấy từ kiện gốc của request. Phương án đánh số
+ * điểm giao theo lúc duyệt; chuyến đã chèn điểm nhận dọc đường (FE-7-04) thì số điểm trong scene là số **hiện tại** của điểm
+ * (`DeliveryStop.planNumber`), nên màn của tài xế và Planner đọc đúng kiện của từng điểm.
+ */
 export type ResultSceneSource = {
   readonly trip: {
     readonly id: string
-    readonly stops: readonly (Pick<DeliveryStop, 'name'> & Partial<Pick<DeliveryStop, 'id' | 'deadline'>>)[]
+    readonly stops: readonly (Pick<DeliveryStop, 'name'> & Partial<Pick<DeliveryStop, 'id' | 'deadline' | 'planNumber'>>)[]
     readonly inputVersion?: number
     /** Tuyến đã tối ưu của chuyến: giờ đến dự kiến và mức hạn từng điểm, cho hộp Chi tiết của Planner. */
     readonly routePlan?: { readonly stops: readonly RouteStopEta[] }
@@ -51,9 +55,12 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
     return instance
   }
   const stopZones = result.stopZones ?? []
+  const currentNumbers = hasInsertedStops(trip.stops) ? currentNumbersOfPlan(trip.stops) : null
+  const current = (planStop: number) => currentNumbers?.get(planStop) ?? planStop
   const zones = stopZones.map((zone): SceneZone => Object.freeze({
     ...zone,
-    name: trip.stops[zone.stopId - 1]?.name ?? '',
+    stopId: current(zone.stopId),
+    name: trip.stops[current(zone.stopId) - 1]?.name ?? '',
     sharePercent: zoneSharePercent(stopZones, zone),
   }))
   const etaByStopId = new Map(trip.routePlan?.stops.map((stop) => [stop.stopId, stop]))
@@ -65,7 +72,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       id: placement.packageInstanceId,
       packageId,
       name: nameById.get(packageId) ?? packageId,
-      stop: instance.deliveryStop,
+      stop: current(instance.deliveryStop),
       lengthCm: placement.placedLengthCm,
       widthCm: placement.placedWidthCm,
       heightCm: placement.placedHeightCm,
@@ -81,6 +88,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       pinned: false,
       supportRatio: placement.supportRatio,
       constraintWarnings: Object.freeze([...placement.constraintWarnings]),
+      // Vùng của phương án đánh số theo lúc duyệt: so với số điểm trong phương án, không phải số điểm hiện tại
       ...zoneFields(stopZones, { position, lengthCm: placement.placedLengthCm, stop: instance.deliveryStop }),
     })
   })
@@ -91,7 +99,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       id: item.packageInstanceId,
       packageId,
       name: nameById.get(packageId) ?? packageId,
-      stop: instance.deliveryStop,
+      stop: current(instance.deliveryStop),
       lengthCm: instance.lengthCm,
       widthCm: instance.widthCm,
       heightCm: instance.heightCm,
@@ -110,7 +118,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       return Object.freeze({
         number: index + 1,
         name: stop.name,
-        packageCount: instances.filter(({ deliveryStop }) => deliveryStop === index + 1).length,
+        packageCount: instances.filter(({ deliveryStop }) => current(deliveryStop) === index + 1).length,
         ...(stop.deadline === undefined ? {} : { deadline: stop.deadline }),
         ...(eta === undefined ? {} : { eta: eta.eta }),
         ...(eta?.deadlineStatus === undefined ? {} : { deadlineStatus: eta.deadlineStatus }),

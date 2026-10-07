@@ -93,6 +93,7 @@ export const dataErrors = {
   // Yêu cầu nhận hàng dọc đường (FE-7-01)
   PICKUP_INVALID: 'Yêu cầu nhận hàng chưa hợp lệ: cần tên, địa chỉ, toạ độ của điểm nhận và điểm giao, hạn đọc được (nếu có), mã, kích thước, khối lượng và loại hàng của từng kiện.',
   INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận {pickupId} không chuyển sang trạng thái này được từ trạng thái hiện tại. Tải lại để xem trạng thái mới.',
+  PICKUP_ROUTE_UNAVAILABLE: 'Điểm giao số {stopNumbers} của chuyến chưa có toạ độ nên chưa kiểm được yêu cầu nhận hàng.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

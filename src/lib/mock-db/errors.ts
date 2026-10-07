@@ -202,6 +202,8 @@ export type MockDbErrorParams = {
   PICKUP_INVALID: { field: string }
   /** Chuyển trạng thái yêu cầu nhận ngoài bảng `PICKUP_TRANSITIONS`. */
   INVALID_PICKUP_STATUS_TRANSITION: { pickupId: string; from: PickupStatus; to: PickupStatus }
+  /** Kiểm mười luật khi chuyến còn điểm giao chưa có toạ độ (FE-7-03): không biết tuyến đi đâu nên không kiểm được; `stopNumbers` là số các điểm đó. */
+  PICKUP_ROUTE_UNAVAILABLE: { tripId: string; stopNumbers: number[] }
 
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */

@@ -139,6 +139,47 @@ export const driver = {
       noteTooLong: 'Ghi chú tối đa {max} ký tự.',
     },
   },
+  /** Loại điểm và danh sách điểm của chuyến (FE-7-05): điểm nhận dọc đường có biểu tượng riêng và chữ riêng. */
+  stopKinds: { PICKUP: 'Điểm nhận hàng', DELIVERY: 'Điểm giao hàng' },
+  stopList: {
+    summary: 'Các điểm của chuyến ({count})',
+    label: 'Các điểm của chuyến',
+    state: { done: 'Đã xong', current: 'Đang ở điểm này', waiting: 'Chưa tới' },
+  },
+  /** Kiện nhận dọc đường (FE-7-05, D-88): nhận ở điểm nhận, giao ở điểm giao như kiện thường; chưa có vị trí 3D (P2). */
+  pickup: {
+    banner: 'Điểm nhận hàng dọc đường: nhận {count} kiện từ {name}. Đối chiếu từng kiện lên xe rồi mới hoàn tất điểm nhận.',
+    listTitle: 'Kiện nhận dọc đường — chưa có vị trí 3D',
+    listHint: 'Kiện nhận không nằm trong phương án xếp hàng nên chưa có vị trí trong khung 3D. Đối chiếu bằng nhãn QR như kiện thường.',
+    request: 'Yêu cầu {id}',
+    pick: { waiting: 'Chưa nhận', done: 'Đã nhận' },
+    deliver: { waiting: 'Chưa dỡ', done: 'Đã dỡ' },
+    via: {
+      QR: 'quét QR',
+      CODE: 'gõ mã',
+      MANUAL_PENDING: 'xác nhận tay, chờ duyệt',
+      MANUAL_APPROVED: 'xác nhận tay đã duyệt',
+    },
+    summary: 'Cần nhận {total} kiện · Đã nhận {done}',
+    progress: 'Tiến độ nhận hàng',
+    remaining: { one: 'Còn {count} kiện chưa đối chiếu', other: 'Còn {count} kiện chưa đối chiếu' },
+    allHandled: 'Mọi kiện của điểm nhận này đã đối chiếu.',
+    scanOpen: 'Đối chiếu kiện nhận',
+    scanTitle: 'Đối chiếu kiện nhận tại điểm {number}',
+    scanDescription: 'Quét nhãn QR của từng kiện khi đưa lên xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã nhận {done} / {total} kiện.',
+    lastPicked: 'Vừa nhận {id} · {name}.',
+    picked: 'Đã nhận {id}',
+    candidate: 'Kiện nhận · yêu cầu {request}',
+    complete: 'Hoàn tất điểm nhận',
+    stopDone: 'Đã hoàn tất điểm nhận {number}',
+    blocked: {
+      one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
+      other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
+    },
+    cargoTitle: 'Kiện nhận dọc đường — chưa có vị trí 3D',
+    cargoNote: 'Không vẽ trong khung 3D; đối chiếu bằng nhãn QR ở màn điểm giao.',
+    cargoRow: '{id} · {name} · {weight}',
+  },
   /** Màn tổng kết khi giao xong điểm cuối. */
   tripSummary: {
     title: 'Tổng kết chuyến',

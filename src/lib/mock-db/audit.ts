@@ -83,6 +83,12 @@ export const AUDIT_ACTIONS = [
   'exception.escalated',
   'exception.resolved',
   'exception.deadlineRenegotiated',
+  // Yêu cầu nhận hàng dọc đường (FE-7-03 → FE-7-05)
+  'pickup.requested',
+  'pickup.approved',
+  'pickup.rejected',
+  'pickup.loaded',
+  'pickup.delivered',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

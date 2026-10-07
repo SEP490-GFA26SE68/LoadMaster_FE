@@ -1,4 +1,4 @@
-import { ExternalLink, TriangleAlert } from 'lucide-react'
+import { ExternalLink, PackagePlus, TriangleAlert } from 'lucide-react'
 import { memo, useState } from 'react'
 import { Link } from 'react-router'
 import { VehicleName } from '@/components/VehicleName'
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useCan } from '@/features/auth/useCan'
+import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
 import { useFormat, useT } from '@/lib/i18n'
 import type { TripMonitoring } from '@/lib/mock-db'
@@ -80,7 +81,15 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                       <th scope="row" className="py-2.5 pr-3 text-left font-medium text-ink-1">
                         <span className="flex items-center gap-2.5">
                           <span aria-hidden className="flex-none"><StopMarker number={stop.number} /></span>
-                          <span><span className="sr-only">{t('common.stop', { number: stop.number })} · </span>{stop.name}</span>
+                          <span>
+                            <span className="sr-only">{t('common.stop', { number: stop.number })} · </span>{stop.name}
+                            {stop.kind === 'PICKUP' ? (
+                              <Badge shape="tag" tone="azure" className="ml-2 align-middle">
+                                <PackagePlus aria-hidden className="size-3" strokeWidth={2} />
+                                {t('trips.route.pickupTag')}
+                              </Badge>
+                            ) : null}
+                          </span>
                         </span>
                       </th>
                       <td className="px-3 py-2.5 text-ink-1 tabular-nums">
@@ -127,6 +136,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
       </div>
 
       <ManualConfirmCard tripId={trip.tripId} />
+      <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} />
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>

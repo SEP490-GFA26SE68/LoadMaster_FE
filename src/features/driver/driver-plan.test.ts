@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import type { PackagePlacement } from '@/domain/models'
 import { adaptResult } from '@/features/viewer3d/scene-input'
+import type { DeliveryStop } from '@/lib/mock-db'
 import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
 import { stopDeliveries } from './driver-plan'
 
@@ -45,4 +46,21 @@ test('lớp: trên sàn, lớp dưới khi tâm thấp hơn nửa chiều cao th
   // Tâm z: 45 + 22,5 = 67,5 < 125 → lớp dưới; 102,5 + 22,5 = 125 = nửa chiều cao → lớp trên
   expect(stops[2]!.items[0]!.layer).toBe('lower')
   expect(stops[0]!.items[0]!.layer).toBe('upper')
+})
+
+test('chuyến đã chèn điểm nhận dọc đường: kiện của phương án nằm ở đúng điểm theo số điểm hiện tại, điểm chèn không có kiện nào của phương án', () => {
+  const source = twoCartonTrip()
+  const [first, second, third] = source.stops as [DeliveryStop, DeliveryStop, DeliveryStop]
+  // Điểm nhận chèn giữa điểm 1 và điểm 2: điểm 2 và 3 của phương án thành điểm 3 và 4
+  const stops: DeliveryStop[] = [
+    { ...first, planNumber: 1 },
+    { id: 'STOP-NHAN', name: 'Xưởng may', address: 'KCN VSIP 1', kind: 'PICKUP', planNumber: null },
+    { ...second, planNumber: 2 },
+    { ...third, planNumber: 3 },
+  ]
+  const model = adaptResult({ trip: { id: 'TRIP-001', stops }, revision: { request: twoCartonRequest(), result: twoCartonResult(), ordersRecomputed: true } })
+  const byStop = stopDeliveries(stops, model).map((stop) => stop.items.map((item) => item.id))
+  const before = stopDeliveries(source.stops, adaptResult({ trip: { id: 'TRIP-001', stops: source.stops }, revision: { request: twoCartonRequest(), result: twoCartonResult(), ordersRecomputed: true } })).map((stop) => stop.items.map((item) => item.id))
+  expect(byStop).toStrictEqual([before[0], [], before[1], before[2]])
+  expect(model.stops.map((stop) => stop.number)).toStrictEqual([1, 2, 3, 4])
 })
