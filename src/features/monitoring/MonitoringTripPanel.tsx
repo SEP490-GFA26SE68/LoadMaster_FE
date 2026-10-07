@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useCan } from '@/features/auth/useCan'
+import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
 import { useFormat, useT } from '@/lib/i18n'
 import type { TripMonitoring } from '@/lib/mock-db'
@@ -127,6 +128,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
       </div>
 
       <ManualConfirmCard tripId={trip.tripId} />
+      <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} />
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>

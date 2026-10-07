@@ -67,7 +67,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -140,6 +140,7 @@ vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ 
 người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
 chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau lần đọc đầu thành toast (sát hạn: cảnh báo; trễ hạn dự kiến: lỗi) và chuông đọc lại ngay,
 cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty không nhận loại này.
+*(đã điều chỉnh 07/10/2026, FE-7-03)* **Nhận hàng dọc đường ở chuông**: điều phối viên nhận `pickup.requested` (tài xế hoặc đồng nghiệp gửi yêu cầu nhận); tài xế nhận quyết định `pickup.approved` / `pickup.rejected` — chỉ của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện).
 *(đã điều chỉnh 03/10/2026, FE-6-11, FE-6-12)* **Sự cố cấp chuyến ở chuông**: điều phối viên — tài xế báo sự cố (`exception.reported`), kho
 tự chuyển sự cố cho quản lý sau 30 phút (`exception.escalated`, sự kiện của hệ thống), quản lý đã liên hệ khách và nhập hạn mới
 (`exception.deadlineRenegotiated`, để xử lý tiếp); quản lý công ty — sự cố chuyển lên mình (`exception.escalated`). `EtaRiskWatcher` chạy cho
@@ -275,6 +276,9 @@ src/
                         nhãn QR `/kien-hang/nhan` (FE-3b-05), tra cứu kiện `/tra-cuu-kien` (FE-3b-06) — thay `packages-source/` của LM-104
     requirements/       *(đã điều chỉnh 03/10/2026, FE-4b-01)* yêu cầu giao `/yeu-cau-giao`: danh sách, form tạo / sửa, chi tiết, đưa vào
                         chuyến (FE-4b-02) — thay `orders/` của LM-104
+    pickups/            *(bổ sung 07/10/2026, FE-7-03)* nhận hàng dọc đường: hộp tạo yêu cầu `PickupRequestDialog` (ô chọn toạ độ, nhiều dòng kiện), mười luật
+                        Đạt / Không đạt `PickupRulesList` (câu dựng từ mã + tham số ở `pickup-rule-text.ts`), thẻ yêu cầu của chuyến
+                        `PickupRequestsCard` (Chi tiết chuyến, Giám sát), nút của tài xế `PickupDriverButton`; `pickups-api.ts` → `usePickupsQuery.ts`
     vehicle-types/      danh mục loại xe (LM-104)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
@@ -1575,6 +1579,19 @@ dù giao diện bị bỏ qua:
   ở `PICKUP_CONSTANTS`. `insertPickupStops(stops, { pickupStopId, deliveryStopId }, deliveryLocation)` đặt điểm nhận rồi điểm giao **ngay sau
   điểm hiện tại**, không đổi chỗ điểm cũ nào; điểm giao trùng một điểm có sẵn sau điểm hiện tại và không quá điểm được bảo vệ thì dùng lại
   (`deliveryReused`), không còn điểm chưa hoàn tất thì `null`.
+- *(bổ sung 07/10/2026, FE-7-03, D-88)* **Tạo yêu cầu nhận và kiểm luật.** `createPickupRequest` xét vai trò như hàm sự cố cấp chuyến (kho không có
+  phiên thì không xét): điều phối viên, hoặc tài xế **của chính chuyến**; khác là `ROLE_NOT_ALLOWED`, xét sau công ty. Kho dựng ngữ cảnh mười
+  luật từ chuyến (`pickup-context.ts`, chỉ đọc): xe kèm giới hạn của loại xe, vị trí xe lúc này (ghi bù `advanceTracking`), điểm của tuyến kèm
+  `completed` / `onboardCount` / `arrivedAt` theo tiến độ giao, vùng và kiện còn trên xe của **phương án kho đã xếp** (`Trip.loading.revisionId`),
+  dòng kiện và lý do vượt luật phân tách hàng; rồi chạy `evaluatePickup` **trước khi ghi**: đạt cả mười thì yêu cầu `VALIDATED`, không thì `PENDING`
+  kèm `validationResults`; chuyến còn điểm chưa có toạ độ là `PICKUP_ROUTE_UNAVAILABLE`, không ghi gì. `validatePickupRequest` kiểm lại theo
+  trạng thái chuyến lúc này (chỉ yêu cầu `PENDING` / `VALIDATED`). Bảng chuyển trạng thái nay cho `PENDING → APPROVED` (duyệt kèm lý do vượt luật)
+  và `REJECTED` là trạng thái cuối. Nhật ký nhóm `pickup` (`requested`, `approved`, `rejected`, `loaded`, `delivered`), đối tượng là chuyến, tham số
+  `pickupId`. Điểm của tuyến mang số điểm trong phương án (`planNumberOf`): điểm chèn lúc đang chạy không có số đó (`number` là 0, không khớp vùng
+  nào). Luật 4–7 và 10 vẫn là ước lượng và luật 3, 5, 6 chưa tính kiện của yêu cầu nhận **trước đó** (chúng chưa có hộp 3D, P2). Màn: `PickupRequestDialog`
+  (nhiều dòng kiện, `react-hook-form` + zod — lỗi là mã, luật thuần ở `pickup-form.ts`) lưu xong chuyển sang kết quả mười luật thay vì đóng; mỗi luật
+  là một dòng Đạt / Không đạt bằng chữ kèm nhãn "Ước lượng" ở luật ước lượng (`PickupRulesList`, câu dịch ở `pickup-rule-text.ts` — mỗi mã một
+  nhánh nên thêm mã mà quên câu là lỗi kiểu). Khoá Query `['trips', tripId, 'pickups']`; ghi làm mới `['trips']`, `['notifications']`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).
