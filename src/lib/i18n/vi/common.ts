@@ -13,6 +13,10 @@ export const common = {
   backToTrips: 'Về danh sách chuyến',
   on: 'Bật',
   off: 'Tắt',
+  /** Gói cước (FE-8-02, FE-8-03): hạng là tên gói, giống ở mọi ngôn ngữ; nhãn tạm và "không giới hạn" dùng ở màn nền tảng lẫn màn công ty. */
+  planTiers: { BASIC: 'Basic', PRO: 'Pro', ULTIMATE: 'Ultimate' },
+  provisionalPlan: 'Giá trị tạm — chờ chốt',
+  unlimitedCredits: 'Không giới hạn',
   /** Loại sự cố giao (`DeliveryIssueKind`, D-47): một nguồn cho báo sự cố của tài xế, tiến trình chuyến và nhật ký (LM-100). */
   deliveryIssueKinds: { damaged: 'Hàng hỏng', missing: 'Thiếu hàng', refused: 'Khách từ chối', other: 'Khác' },
   /** Loại sự cố cấp chuyến (`TripExceptionType`, D-87, FE-6-11): một nguồn cho hộp báo sự cố, màn Giám sát và nhật ký. */

@@ -13,6 +13,8 @@ export const nav = {
   packages: 'Package pool',
   requirements: 'Requirements',
   monitoring: 'Monitoring',
+  plans: 'Plans',
+  billing: 'Plan and credits',
   account: 'Account {name}',
   signOut: 'Sign out',
   profile: 'My profile',

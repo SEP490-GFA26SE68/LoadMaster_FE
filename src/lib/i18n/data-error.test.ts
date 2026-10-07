@@ -95,6 +95,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   SUBSCRIPTION_STATUS_INVALID: { status: 'EXPIRED' },
   PLAN_INACTIVE: { planId: 'PLAN-002' },
   PLAN_INVALID: { field: 'priceVnd' },
+  PLAN_TIER_TAKEN: { tier: 'PRO', planId: 'PLAN-002' },
+  PLAN_IN_USE: { planId: 'PLAN-002', companies: 1 },
   TOPUP_INVALID: { credits: 75 },
   CREDIT_NOT_RESERVED: { reference: 'JOB-017' },
 }

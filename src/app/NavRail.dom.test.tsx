@@ -55,6 +55,7 @@ test.each<[Role, string[]]>([
   ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
+  ['systemManager', ['Gói cước']],
   ['systemAdmin', ['Người dùng', 'Nhật ký']],
   ['companyAdmin', ['Người dùng', 'Nhật ký']],
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
@@ -63,8 +64,8 @@ test.each<[Role, string[]]>([
   expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
 })
 
-/** FE-0-03 (quyết định G1): hai vai trò nền tảng chưa có màn riêng — không vẽ khay điều hướng rỗng, logo và menu tài khoản vẫn có. */
-test.each<Role>(['systemManager', 'systemSupporter'])('nav rail của %s không có khay điều hướng', (role) => {
+/** FE-0-03 (quyết định G1): hỗ trợ khách hàng chưa có màn riêng — không vẽ khay điều hướng rỗng, logo và menu tài khoản vẫn có. */
+test.each<Role>(['systemSupporter'])('nav rail của %s không có khay điều hướng', (role) => {
   renderRail(role, '/ho-so')
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-so')
@@ -107,7 +108,7 @@ test.each<[Role, boolean]>([
 /** LM-104, FE-0-04: logo mở bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không rơi vào màn 403 hay 404. */
 test.each<[Role, string]>([
   ['systemAdmin', '/nguoi-dung'],
-  ['systemManager', '/ho-so'],
+  ['systemManager', '/nen-tang/goi'],
   ['systemSupporter', '/ho-so'],
   ['companyAdmin', '/nguoi-dung'],
   ['manager', '/'],

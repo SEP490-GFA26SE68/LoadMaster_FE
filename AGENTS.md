@@ -18,7 +18,7 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
-| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: gói cước — màn tới Sprint 8 mới có |
+| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02) |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; lập yêu cầu giao (FE-4b-02); xem chuyến và phương án chỉ đọc |
@@ -67,7 +67,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -95,7 +95,7 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
 (*đã điều chỉnh 03/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
-họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
+họ ở màn hồ sơ). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
 màn Đội xe. *(đã điều chỉnh 03/10/2026, FE-3b-06)* Tra cứu kiện cũng không có mục riêng: điều phối viên mở bằng nút "Tra cứu kiện" trên dải
@@ -106,7 +106,7 @@ Nhật ký và chuông chỉ biến đối tượng thành liên kết khi ngư�
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
-quản trị hệ thống và quản trị công ty `/nguoi-dung`; *(tạm, FE-0-03)* quản lý nền tảng và hỗ trợ khách hàng `/ho-so` tới khi có màn nền tảng ở
+quản trị hệ thống và quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); *(tạm, FE-0-03)* hỗ trợ khách hàng `/ho-so` tới khi có màn ticket ở
 Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
 trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
@@ -280,6 +280,8 @@ src/
                         Đạt / Không đạt `PickupRulesList` (câu dựng từ mã + tham số ở `pickup-rule-text.ts`), thẻ yêu cầu của chuyến
                         `PickupRequestsCard` (Chi tiết chuyến, Giám sát), nút của tài xế `PickupDriverButton`; `pickups-api.ts` → `usePickupsQuery.ts`
     vehicle-types/      danh mục loại xe (LM-104)
+    platform/           *(bổ sung 08/10/2026, FE-8-02)* màn của quản lý nền tảng: danh mục gói cước `/nen-tang/goi` (`PlansPage`, `PlanFormDialog`,
+                        `subscription-plans-api.ts`); màn Công ty và Hỗ trợ vào đây khi làm
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
@@ -1671,6 +1673,15 @@ dù giao diện bị bỏ qua:
   này dùng 1 credit · còn N" (số dư hiện tại; hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì dòng credit mờ + lý do
   "Hết credit — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi bấm. Màn chỉ điều phối viên
   (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty thuộc màn `/goi-cuoc` (FE-8-03).
+- *(bổ sung 08/10/2026, FE-8-02)* **Danh mục gói cước `/nen-tang/goi`** (`features/platform`, `subscriptionPlans.manage`, màn chính của quản lý nền tảng): bảng gói
+  (hạng, giá `format.currency`, credit tháng hoặc "Không giới hạn", tên thuật toán của hạng, số công ty gắn với gói, công tắc đang bán, menu Sửa / Xoá), gói chưa
+  được chốt giá mang nhãn "Giá trị tạm — chờ chốt" (`common.provisionalPlan`) tới khi được sửa. Kho thêm `createSubscriptionPlan` (hạng chọn bộ thuật toán và tính
+  năng: `TIER_ALGORITHM`, `TIER_FEATURES`), `setSubscriptionPlanActive`, `deleteSubscriptionPlan`, `countPlanCompanies`, cùng luật vai trò với `updateSubscriptionPlan`
+  (`ROLE_NOT_ALLOWED`): **mỗi hạng một gói đang bán** (`PLAN_TIER_TAKEN` khi tạo gói đang bán hoặc bật bán gói thứ hai cùng hạng), gói còn công ty gắn — kể cả công
+  ty đã hết hạn, vì dòng đăng ký của họ vẫn trỏ tới gói — không xoá được (`PLAN_IN_USE`; mục Xoá mờ kèm lý do, ngừng bán thay vì xoá). Gói ngừng bán thì công ty đang dùng
+  vẫn giữ và gia hạn. Form (`plan-form.ts`, zod, message là key từ điển): giá nguyên đồng ≥ 0, credit tháng nguyên > 0 hoặc "không giới hạn" (kho lưu `null`), hạng chỉ
+  chọn lúc thêm (mở sẵn hạng chưa có gói đang bán), và luôn ghi rõ giá, credit mới áp dụng từ kỳ gia hạn kế tiếp của từng công ty. Lớp API
+  `subscription-plans-api.ts` → `useSubscriptionPlansQuery.ts`, khoá `['billing', 'plans']`; mọi lần ghi làm mới cả `['billing']`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

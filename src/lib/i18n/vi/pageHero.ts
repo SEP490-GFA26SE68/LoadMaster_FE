@@ -21,4 +21,7 @@ export const pageHero = {
   monitoring: 'Xe đang vận chuyển trên bản đồ, giờ đến dự kiến so với hạn giao và sự cố trên đường.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
+  subscriptionPlans: 'Danh mục gói cước bán cho công ty: giá, credit mỗi tháng và hạng thuật toán của từng gói.',
+  billing: 'Gói cước của công ty, số dư credit, lịch sử và thanh toán.',
+  payment: 'Trang thanh toán giả lập của bản demo, thay cổng thanh toán thật.',
 } as const
