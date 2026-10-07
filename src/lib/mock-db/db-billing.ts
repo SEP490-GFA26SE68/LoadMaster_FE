@@ -4,6 +4,8 @@ import {
   isUnlimited,
   optimizationCost,
   PLAN_TIERS,
+  TIER_ALGORITHM,
+  TIER_FEATURES,
   type CreditTransaction,
   type CurrentSubscription,
   type SubscriptionPlan,
@@ -95,6 +97,14 @@ export function billingMethods(ctx: DbContext): BillingDb {
     if (patch.monthlyCredits !== undefined && patch.monthlyCredits !== null && (!Number.isInteger(patch.monthlyCredits) || patch.monthlyCredits <= 0)) throw bad('monthlyCredits')
   }
 
+  /** Mỗi hạng một gói đang bán (D-90): `exceptId` là gói đang được sửa / bật, không tự va chính nó. */
+  function assertTierFree(tier: SubscriptionPlan['tier'], exceptId?: string) {
+    const taken = [...plans.values()].find((item) => item.active && item.tier === tier && item.id !== exceptId)
+    if (taken !== undefined) throw new MockDbError('PLAN_TIER_TAKEN', { tier, planId: taken.id })
+  }
+
+  const companiesOnPlan = (planId: string) => [...subscriptions.values()].filter((item) => item.planId === planId).length
+
   return {
     listSubscriptionPlans: () =>
       ctx.respond(() => ctx.scope.plans.list().toSorted((a, b) => PLAN_TIERS.indexOf(a.tier) - PLAN_TIERS.indexOf(b.tier) || (a.id < b.id ? -1 : 1))),
@@ -123,6 +133,40 @@ export function billingMethods(ctx: DbContext): BillingDb {
         }
         return next
       }),
+
+    createSubscriptionPlan: (input) =>
+      ctx.respond(() => {
+        assertRole('systemManager')
+        if (!PLAN_TIERS.includes(input.tier)) throw new MockDbError('PLAN_INVALID', { field: 'tier' })
+        validatePlanPatch(input)
+        if (input.name.trim() === '') throw new MockDbError('PLAN_INVALID', { field: 'name' })
+        const active = input.active ?? true
+        if (active) assertTierFree(input.tier)
+        return put(plans, {
+          id: nextId('PLAN', plans.keys()), name: input.name.trim(), tier: input.tier, priceVnd: input.priceVnd, monthlyCredits: input.monthlyCredits,
+          algorithmTier: TIER_ALGORITHM[input.tier], features: [...TIER_FEATURES[input.tier]], active, provisional: false,
+        })
+      }),
+
+    setSubscriptionPlanActive: (planId, active) =>
+      ctx.respond(() => {
+        const plan = ctx.scope.plans.read(planId)
+        assertRole('systemManager')
+        if (active) assertTierFree(plan.tier, plan.id)
+        return put(plans, { ...plan, active })
+      }),
+
+    deleteSubscriptionPlan: (planId) =>
+      ctx.respond(() => {
+        ctx.scope.plans.read(planId)
+        assertRole('systemManager')
+        const companies = companiesOnPlan(planId)
+        if (companies > 0) throw new MockDbError('PLAN_IN_USE', { planId, companies })
+        plans.delete(planId)
+      }),
+
+    countPlanCompanies: () =>
+      ctx.respond(() => Object.fromEntries(ctx.scope.plans.list().map((plan) => [plan.id, companiesOnPlan(plan.id)]))),
 
     getCurrentSubscription: () => ctx.respond(() => currentOf(settledCompany())),
 

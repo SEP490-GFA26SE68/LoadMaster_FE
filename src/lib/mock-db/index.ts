@@ -22,6 +22,7 @@ export {
   type PaymentPurpose,
   type PaymentStatus,
   type PaymentTransaction,
+  type PlanInput,
   type PlanPatch,
   type PlanTier,
   type SubscriptionPlan,

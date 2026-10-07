@@ -14,6 +14,14 @@ export type PlanTier = (typeof PLAN_TIERS)[number]
 export const ALGORITHM_TIERS = ['EP_DBLF', 'EP_DBLF_GA', 'EP_DBLF_GA_AI'] as const
 export type AlgorithmTier = (typeof ALGORITHM_TIERS)[number]
 
+/** Hạng thuật toán và tính năng của gói theo hạng: gói tạo mới (FE-8-02) nhận đúng bộ của hạng, người tạo chỉ chọn hạng. */
+export const TIER_ALGORITHM: Readonly<Record<PlanTier, AlgorithmTier>> = { BASIC: 'EP_DBLF', PRO: 'EP_DBLF_GA', ULTIMATE: 'EP_DBLF_GA_AI' }
+export const TIER_FEATURES: Readonly<Record<PlanTier, readonly string[]>> = {
+  BASIC: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION'],
+  PRO: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION', 'ADVANCED_ALGORITHM'],
+  ULTIMATE: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION', 'ADVANCED_ALGORITHM', 'UNLIMITED_CREDITS'],
+}
+
 export type SubscriptionPlan = {
   /** `PLAN-NNN`. */
   id: string
@@ -109,6 +117,9 @@ export type CreditBalance = { balance: number; unlimited: boolean }
 
 /** Phần gói được sửa (D-90): đổi giá, credit tháng áp dụng từ kỳ gia hạn kế tiếp của từng công ty. */
 export type PlanPatch = Partial<Pick<SubscriptionPlan, 'name' | 'priceVnd' | 'monthlyCredits' | 'features'>>
+
+/** Gói mới (FE-8-02): hạng chọn bộ thuật toán và tính năng; `active` vắng là đang bán. Quản lý nền tảng tạo, `provisional` luôn tắt. */
+export type PlanInput = Pick<SubscriptionPlan, 'name' | 'tier' | 'priceVnd' | 'monthlyCredits'> & { active?: boolean }
 
 /** Một lần chạy tối ưu đã giữ credit; `reference` đưa cho `saveOptimizationRun` (trừ) hoặc `refundOptimizationCredit` (hoàn). */
 export type CreditReservation = { reference: string; cost: number }
