@@ -156,3 +156,11 @@ export function creditBlock(current: CurrentSubscription | null, balance: number
 
 /** Credit một lần chạy tốn: 1, gói không giới hạn ghi 0 (D-89). */
 export const optimizationCost = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => (isUnlimited(plan) ? 0 : BILLING_CONSTANTS.optimizationCost)
+
+/**
+ * Trạng thái của gói **tính theo đồng hồ**, không ghi gì: gói còn `ACTIVE` / `CANCELLED` mà đã quá hạn thì là `EXPIRED`. Kho chỉ ghi
+ * `EXPIRED` khi chính công ty đó chạm tới nó (`settle`); các màn của vai trò nền tảng (công ty, hỗ trợ) chỉ đọc nên dùng hàm này.
+ */
+export function effectiveSubscriptionStatus(subscription: Pick<CompanySubscription, 'status' | 'expiresAt'>, nowIso: string): SubscriptionStatus {
+  return subscription.status !== 'EXPIRED' && Date.parse(subscription.expiresAt) <= Date.parse(nowIso) ? 'EXPIRED' : subscription.status
+}

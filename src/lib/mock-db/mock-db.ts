@@ -1,10 +1,12 @@
 import { createSimClock, SEED_ANCHOR_DATE } from './clock'
 import { auditMethods } from './db-audit'
 import { billingMethods } from './db-billing'
+import { companyMethods } from './db-companies'
 import { exceptionMethods } from './db-exceptions'
 import { createDbContext, type DbState } from './db-context'
 import { manualConfirmMethods } from './db-manual-confirm'
 import { stagingMethods } from './db-staging'
+import { supportMethods } from './db-support'
 import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
@@ -24,6 +26,7 @@ import { vehicleTypeMethods } from './db-vehicle-types'
 import { vehicleMethods } from './db-vehicles'
 import { seededRandom } from './qr-token'
 import { seedBilling } from './seed-billing'
+import { seedSupport } from './seed-support'
 import { buildSeed } from './seed'
 import { shiftSeedTimes } from './seed-shift'
 import type { MockDb, MockDbOptions } from './types'
@@ -68,6 +71,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     creditAccounts: new Map(billing.creditAccounts.map((account) => [account.id, account])),
     creditTransactions: new Map(billing.creditTransactions.map((transaction) => [transaction.id, transaction])),
     payments: new Map(billing.payments.map((payment) => [payment.id, payment])),
+    supportTickets: new Map(seedSupport(clock.now()).map((ticket) => [ticket.id, ticket])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
   return {
@@ -93,5 +97,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...exceptionMethods(ctx),
     ...pickupMethods(ctx),
     ...billingMethods(ctx),
+    ...companyMethods(ctx),
+    ...supportMethods(ctx),
   }
 }

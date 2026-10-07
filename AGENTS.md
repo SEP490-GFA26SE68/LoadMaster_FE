@@ -311,7 +311,10 @@ src/
                         *(bổ sung 07/10/2026, FE-7-01)* yêu cầu nhận dọc đường (`pickup-model.ts`: kiểu, trạng thái, bảng chuyển;
                         `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`);
                         *(bổ sung 08/10/2026, FE-8-01, FE-8-05)* gói cước, credit và thanh toán (`billing-model.ts`: kiểu, hằng số, luật chặn
-                        `creditBlock`; `billing-core.ts` sổ cái + vòng đời, `db-billing.ts` + `db-api-billing.ts` hàm công khai; `seed-billing.ts` — bảng gói và giá trị tạm)
+                        `creditBlock`; `billing-core.ts` sổ cái + vòng đời, `db-billing.ts` + `db-api-billing.ts` hàm công khai; `seed-billing.ts` — bảng gói và giá trị tạm);
+                        *(bổ sung 08/10/2026, FE-8-06)* công ty của quản trị hệ thống (`db-companies.ts` + `db-api-companies.ts`: danh sách kèm gói, tạo kèm quản trị
+                        công ty đầu tiên, sửa); *(bổ sung 08/10/2026, FE-8-07)* yêu cầu hỗ trợ (`support-model.ts` kiểu, `db-support.ts` + `db-api-support.ts`, `seed-support.ts`);
+                        `session-role.ts` (người đăng nhập và kiểm vai trò dùng chung hai module đó)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian

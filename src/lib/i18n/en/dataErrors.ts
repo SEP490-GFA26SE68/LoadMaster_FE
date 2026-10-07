@@ -99,5 +99,9 @@ export const dataErrors = {
   PLAN_IN_USE: 'Companies are still on this plan (count: {companies}), so it cannot be deleted. Stop selling it instead.',
   TOPUP_INVALID: 'Only packs of 50 or 500 credits can be topped up.',
   CREDIT_NOT_RESERVED: 'This run has no credit on hold, or the credit was already refunded.',
+  // Companies and support tickets (FE-8-06, FE-8-07)
+  COMPANY_INVALID: 'The company information is not valid: it needs a name, address, phone number, a departure depot with coordinates, and the name, email and phone number of the first company administrator.',
+  TICKET_INVALID: 'The support ticket is not valid: it needs a type, a title and a description, none empty or too long.',
+  TICKET_CLOSED: 'This support ticket is closed — ask customer support to reopen it to continue the conversation.',
   UNKNOWN: 'Something went wrong. Try again later.',
 } satisfies Dictionary<typeof source>

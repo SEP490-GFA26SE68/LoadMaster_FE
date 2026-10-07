@@ -14,6 +14,8 @@ import {
   REQUIREMENT_PRIORITIES,
   PACKAGE_STATUSES,
   RUN_FAILURE_CODES,
+  TICKET_KINDS,
+  TICKET_STATUSES,
   TRIP_EXCEPTION_TYPES,
   VERIFY_CONTEXTS,
   type AuditAction,
@@ -76,12 +78,16 @@ const PARAM_KEYS = [
   'pickupId', 'failedRules', 'driverId',
   // Gói cước và credit (FE-8-01, FE-8-05)
   'plan', 'credits', 'balance',
+  // Yêu cầu hỗ trợ (FE-8-07)
+  'ticketKind', 'ticketStatus',
 ] as const
 
 const FIELD_NAMES = [
   'name', 'vehicleId', 'stops', 'packages', 'scheduledDate', 'departureAt', 'departureDepot', 'driverId', 'fullName', 'email', 'phone', 'role', 'depot',
   // Yêu cầu giao (FE-4b-01)
   'destinationName', 'address', 'lat', 'lng', 'deadline', 'priority', 'note', 'packageIds',
+  // Công ty (FE-8-06)
+  'companyName',
 ] as const
 
 const REASONS = ['suspended'] as const
@@ -100,6 +106,8 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   vehicleType: 'fleet.view',
   // Gói cước và credit của công ty mở màn gói cước của chính công ty đó (FE-8-03): chỉ quản trị công ty (`billing.manage`)
   company: 'billing.manage',
+  // Yêu cầu hỗ trợ mở ở màn của Hỗ trợ khách hàng (FE-8-07); người gửi không có trang riêng (hộp thoại ở menu tài khoản)
+  ticket: 'support.handle',
 }
 
 /** `can(permission)` của người xem (`useCan`): đối tượng chỉ thành liên kết khi người xem mở được trang đích. */
@@ -183,6 +191,8 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
       return { id, label: saved, href: '/doi-xe/loai-xe' }
     case 'company':
       return { id, label: saved, href: '/goi-cuoc' }
+    case 'ticket':
+      return { id, label: saved, href: `/ho-tro?ticket=${encodeURIComponent(id)}` }
   }
 }
 
@@ -238,6 +248,10 @@ function paramValue(event: AuditEvent, key: string, value: string | number, dire
       return isOneOf(EXCEPTION_ESCALATIONS, value) ? t(`audit.log.escalations.${value}`) : value
     case 'route':
       return isOneOf(REROUTE_ROUTES, value) ? t(`monitoring.reroute.routes.${value}`) : value
+    case 'ticketKind':
+      return isOneOf(TICKET_KINDS, value) ? t(`support.kinds.${value}`) : value
+    case 'ticketStatus':
+      return isOneOf(TICKET_STATUSES, value) ? t(`support.statuses.${value}`) : value
     case 'requestedBy':
     case 'driverId':
       return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })

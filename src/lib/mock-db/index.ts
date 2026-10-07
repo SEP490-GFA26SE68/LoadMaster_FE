@@ -30,6 +30,20 @@ export {
   type UsageStatus,
 } from './billing-model'
 export type { BillingDb } from './db-api-billing'
+export { effectiveSubscriptionStatus } from './billing-model'
+export type { CompaniesDb, CompanyInfo, CompanyOverview, CreatedCompany, NewCompany, NewCompanyAdmin } from './db-api-companies'
+export { SUPPORT_PANEL_TRANSACTIONS, type SupportCompanyPanel, type SupportDb } from './db-api-support'
+export {
+  MAX_TICKET_TEXT,
+  MAX_TICKET_TITLE,
+  TICKET_KINDS,
+  TICKET_STATUSES,
+  type NewSupportTicket,
+  type SupportTicket,
+  type TicketKind,
+  type TicketReply,
+  type TicketStatus,
+} from './support-model'
 export { SEED_PLANS } from './seed-billing'
 export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'

@@ -41,6 +41,8 @@ type Company = {
   payment: string
   balance: number
   usageReference: string
+  /** Yêu cầu hỗ trợ của seed, do chính `viewer` gửi (FE-8-07). */
+  tickets: string[]
 }
 
 const range = (prefix: string, from: number, to: number, digits: number) =>
@@ -69,6 +71,7 @@ const LONG_BINH: Company = {
   payment: 'PAY-001',
   balance: 486,
   usageReference: 'JOB-001',
+  tickets: ['TKT-001'],
 }
 
 const PHUONG_NAM: Company = {
@@ -93,6 +96,7 @@ const PHUONG_NAM: Company = {
   payment: 'PAY-002',
   balance: 2,
   usageReference: 'JOB-113',
+  tickets: ['TKT-002'],
 }
 
 const PLATFORM_USERS = ['US-0005', 'US-NT-01', 'US-NT-02']
@@ -139,6 +143,11 @@ const PICKUP_INPUT = {
   delivery: { name: 'Bếp ăn KCN Sóng Thần', address: '12 Đường số 6, KCN Sóng Thần 1, Dĩ An', lat: 10.893, lng: 106.75 },
   packages: [{ packageCode: 'HG-0412', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' as const }],
 }
+const COMPANY_INFO = {
+  name: 'Công ty TNHH Vận tải Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2, Đồng Nai', phone: '0251 111 2222',
+  depot: { name: 'Kho Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2', lat: 10.93, lng: 106.87 },
+}
+const TICKET_INPUT = { kind: 'TECHNICAL' as const, title: 'Không mở được phương án', description: 'Khung 3D trắng khi mở phương án của chuyến nháp.' }
 const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id)
 const vehicleIdsOf = (rows: { vehicleId: string }[]) => rows.map((row) => row.vehicleId)
 /** Công ty của từng dòng (không lặp): mọi dòng sổ cái, thanh toán của phiên phải cùng một công ty. */
@@ -387,6 +396,18 @@ const PROBES = {
     forbidden: { 'chuyến của công ty kia': ({ db, other }) => db.reserveOptimizationCredit(other.trip) },
   },
   refundOptimizationCredit: { scope: 'operational', hidden: ({ db, other }) => db.refundOptimizationCredit(other.usageReference) },
+
+  // Công ty (FE-8-06): việc của quản trị hệ thống — vai trò kiểm ở companies.test.ts; sửa công ty của công ty kia là FORBIDDEN_COMPANY
+  listCompanyOverview: { scope: 'session' },
+  createCompany: { scope: 'session' },
+  updateCompany: { scope: 'directory', forbidden: { 'công ty kia': ({ db, other }) => db.updateCompany(other.id, COMPANY_INFO) } },
+  // Yêu cầu hỗ trợ (FE-8-07): người của công ty chỉ thấy yêu cầu do mình gửi (viewer của mỗi công ty là người gửi yêu cầu seed của nó)
+  listSupportTickets: { scope: 'directory', list: { call: ({ db }) => db.listSupportTickets(), ids: idsOf, own: (c) => c.tickets } },
+  getSupportTicket: { scope: 'directory', hidden: ({ db, other }) => db.getSupportTicket(other.tickets[0]!) },
+  createSupportTicket: { scope: 'directory', creates: ({ db }) => db.createSupportTicket(TICKET_INPUT) },
+  replyToSupportTicket: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.replyToSupportTicket(other.tickets[0]!, 'Xin chào') } },
+  setSupportTicketStatus: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.setSupportTicketStatus(other.tickets[0]!, 'CLOSED') } },
+  getSupportCompanyPanel: { scope: 'directory', hidden: ({ db, other }) => db.getSupportCompanyPanel(other.id) },
 } satisfies Record<keyof MockDb, Probe>
 
 const probes = Object.entries(PROBES) as [keyof MockDb, Probe][]
@@ -421,6 +442,7 @@ async function wholeStore(db: MockDb) {
     packages: await db.listPackages(), requirements: await db.listDeliveryRequirements(), vehicleTypes: await db.listVehicleTypes(),
     assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
     billing: [] as unknown[],
+    tickets: await db.listSupportTickets(),
   }
   // Gói cước, số dư, sổ cái và thanh toán của từng công ty — đọc lần lượt, mỗi công ty bằng phiên của mình
   for (const company of [LONG_BINH, PHUONG_NAM]) {

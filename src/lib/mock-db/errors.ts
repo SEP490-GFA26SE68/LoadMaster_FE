@@ -28,6 +28,8 @@ export type MockDbCollection =
   | 'creditAccounts'
   | 'creditTransactions'
   | 'payments'
+  // FE-8-07
+  | 'supportTickets'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -232,6 +234,14 @@ export type MockDbErrorParams = {
   TOPUP_INVALID: { credits: number }
   /** Trừ credit của một lần chạy chưa giữ credit (đã hoàn, hoặc mã lạ). */
   CREDIT_NOT_RESERVED: { reference: string }
+
+  // Công ty và yêu cầu hỗ trợ (FE-8-06, FE-8-07)
+  /** Công ty sai dữ liệu ở trường `field` (`admin.email`…): tên, địa chỉ, số điện thoại, kho xuất phát hoặc quản trị công ty đầu tiên thiếu hay không đọc được. */
+  COMPANY_INVALID: { field: string }
+  /** Yêu cầu hỗ trợ sai dữ liệu ở trường `field`: loại lạ, tiêu đề, mô tả hoặc nội dung trả lời trống hay quá dài, trạng thái lạ. */
+  TICKET_INVALID: { field: string }
+  /** Trả lời yêu cầu đã đóng: Hỗ trợ khách hàng mở lại (đổi trạng thái) trước. */
+  TICKET_CLOSED: { ticketId: string }
 
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */

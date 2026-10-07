@@ -29,6 +29,8 @@ export const audit = {
     pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
     subscription: { subscribed: 'Đăng ký gói cước', renewed: 'Gia hạn gói cước', cancelled: 'Huỷ gói cước', expired: 'Gói cước hết hạn' },
     credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
+    company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },
+    ticket: { created: 'Gửi yêu cầu hỗ trợ', replied: 'Trả lời yêu cầu hỗ trợ', statusChanged: 'Đổi trạng thái yêu cầu hỗ trợ' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -48,6 +50,8 @@ export const audit = {
     pickup: 'Nhận hàng dọc đường',
     subscription: 'Gói cước',
     credit: 'Credit',
+    company: 'Công ty',
+    ticket: 'Hỗ trợ',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -172,6 +176,9 @@ export const audit = {
       plan: 'Gói cước',
       credits: 'Credit',
       balance: 'Số dư',
+      // Yêu cầu hỗ trợ (FE-8-07)
+      ticketKind: 'Loại yêu cầu',
+      ticketStatus: 'Trạng thái',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
@@ -190,6 +197,7 @@ export const audit = {
       phone: 'Số điện thoại',
       role: 'Vai trò',
       depot: 'Kho / chi nhánh',
+      companyName: 'Tên công ty',
       // Yêu cầu giao (FE-4b-01)
       destinationName: 'Tên điểm đến',
       address: 'Địa chỉ',

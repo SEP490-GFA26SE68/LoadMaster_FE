@@ -3,9 +3,11 @@ import type { VehicleConfig } from '@/domain/models'
 import type { User, UserStatus } from '@/types/user'
 import type { AuditEvent, AuditNames } from './audit'
 import type { BillingDb } from './db-api-billing'
+import type { CompaniesDb } from './db-api-companies'
 import type { ExceptionsDb } from './db-api-exceptions'
 import type { Review1Db } from './db-api-review1'
 import type { PickupsDb } from './db-api-pickups'
+import type { SupportDb } from './db-api-support'
 import type { TrackingDb } from './db-api-tracking'
 import type {
   AuditFilter,
@@ -40,7 +42,7 @@ export type ApproveOptions = { force?: boolean }
  * là `FORBIDDEN_COMPANY`; phiên nền tảng bị mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED` (người dùng, nhật ký, công ty thì
  * đọc hết); kho không có phiên thì không lọc. Thêm hàm công khai thì khai nó ở `tenancy.test.ts`.
  */
-export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb & PickupsDb & BillingDb
+export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb & PickupsDb & BillingDb & CompaniesDb & SupportDb
 
 type CoreMockDb = {
   /** Theo thứ tự tạo: xe seed trước. */

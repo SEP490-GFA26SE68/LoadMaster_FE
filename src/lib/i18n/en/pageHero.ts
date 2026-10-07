@@ -22,4 +22,6 @@ export const pageHero = {
   subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
   billing: 'The company’s plan, credit balance, history and payments.',
   payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
+  companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
+  support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
 } satisfies Dictionary<typeof source>
