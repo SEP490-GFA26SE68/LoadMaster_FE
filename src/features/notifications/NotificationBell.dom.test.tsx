@@ -6,7 +6,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { getMockDb, SEED_PASSWORD } from '@/lib/mock-db'
-import { signedInAs } from '@/test/signed-in'
+import { signedInAs, type SeedUserId } from '@/test/signed-in'
 import type { Role } from '@/types/user'
 import { NotificationBell } from './NotificationBell'
 
@@ -31,7 +31,7 @@ function Elsewhere() {
   return <output aria-label="route">{useLocation().pathname + useLocation().search}</output>
 }
 
-function renderBell(role: Role) {
+function renderBell(role: Role | SeedUserId) {
   const account = signedInAs(role)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -198,4 +198,15 @@ test('a plan approved by a colleague reaches the dispatcher bell and opens the t
     text: ['Duyệt phương án', 'Tuyến Q.7 – Thủ Dầu Một – Dĩ An – Biên Hoà · TRIP-2026-0914'], unread: true, href: '/chuyen/TRIP-2026-0914',
   })
   expect(part(menuItems()[0] ?? document.body, 'meta')).toMatch(/^Hoàng Đức Anh · /)
+})
+
+/** FE-8-05: Phương Nam còn 2 credit — lần chạy của điều phối viên đưa số dư xuống ngưỡng, quản trị công ty được báo bằng chữ (chưa có màn gói cước để mở). */
+test('the company administrator is told when the credits run low, without a link to open', async () => {
+  const user = userEvent.setup()
+  const admin = renderBell('US-PN-01')
+  await actAs('US-PN-03', admin.id, () => getMockDb().reserveOptimizationCredit('TRIP-PN-001'))
+  await user.click(screen.getByRole('button', { name: /^Thông báo/ }))
+  await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Sắp hết credit'), SLOW)
+  expect(notificationRows()[0]).toMatchObject({ unread: true, href: null })
+  expect(part(menuItems()[0] ?? document.body, 'meta')).toBe('Hệ thống · Số dư: 1')
 })

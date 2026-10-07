@@ -2,12 +2,18 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   changeTripVehicle → POST /api/trips/{id}/change-vehicle
  *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07)
+ *                       (giữ / trừ / hoàn credit do BE làm phía server, HTTP 402 `INSUFFICIENT_CREDITS`; mock gọi thẳng kho)
+ *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance
  *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
  */
 
 import type { OptimizationRequest, OptimizationResult, VehicleConfig } from '@/domain/models'
 import {
+  creditBlock,
   getMockDb,
+  optimizationCost,
+  type AlgorithmTier,
+  type CreditBlock,
   type OptimizationRun,
   type Revision,
   type Trip,
@@ -56,6 +62,33 @@ export async function changeTripVehicle(tripId: string, vehicleId: string): Prom
   return getMockDb().updateTrip(tripId, { vehicleId })
 }
 
+/** Gói và credit của công ty cho một lần chạy: dòng "Lần chạy này dùng N credit · còn M", hạng thuật toán và trạng thái chặn. */
+export type OptimizationCredit = {
+  /** Tên và hạng thuật toán của gói; `null` khi công ty chưa có gói. */
+  readonly planName: string | null
+  readonly algorithmTier: AlgorithmTier | null
+  /** Credit một lần chạy tốn: 1, gói không giới hạn 0. */
+  readonly cost: number
+  readonly balance: number
+  readonly unlimited: boolean
+  /** Vì sao chưa chạy được (gói hết hạn xét trước số dư); `null` khi chạy được. Kho kiểm lại bằng cùng luật. */
+  readonly block: CreditBlock | null
+}
+
+// GET /api/subscription/current · GET /api/credits/balance
+export async function fetchOptimizationCredit(): Promise<OptimizationCredit> {
+  const db = getMockDb()
+  const [current, credit] = await Promise.all([db.getCurrentSubscription(), db.getCreditBalance()])
+  return {
+    planName: current?.plan.name ?? null,
+    algorithmTier: current?.plan.algorithmTier ?? null,
+    cost: current ? optimizationCost(current.plan) : 0,
+    balance: credit.balance,
+    unlimited: credit.unlimited,
+    block: creditBlock(current, credit.balance),
+  }
+}
+
 export type RunInput = {
   readonly tripId: string
   readonly request: OptimizationRequest
@@ -79,25 +112,36 @@ export type RunOutcome =
  * (FE-5b-05, D-77), kho lưu mỗi phương án thành một revision bất biến (D-31) của cùng một lần chạy. `status: FAILED` không lưu revision.
  * Lỗi service (`OptimizationServiceError`), huỷ (`AbortError` — không phương án nào được lưu) và lỗi của kho (`MockDbError`, ví dụ chuyến
  * chưa tối ưu tuyến) ném lên cho UI.
+ *
+ * Credit (FE-8-05, D-89): kho giữ 1 credit trước khi chạy — hết credit hoặc gói hết hạn thì ném `MockDbError` và không chạy —, trừ hẳn
+ * khi lưu xong, hoàn khi service lỗi, request bị từ chối, bị huỷ, hoặc kho không lưu được. Mỗi lần chạy đúng một bộ giao dịch.
  */
 // POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
 export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress }: RunInput): Promise<RunOutcome> {
   const service = createOptimizationService({ simulateFailure })
   const db = getMockDb()
+  const { reference } = await db.reserveOptimizationCredit(tripId)
   let job: CandidateRun
   try {
     job = await service.optimizeCandidates(request, { signal, onProgress })
   } catch (error) {
+    await db.refundOptimizationCredit(reference)
     // Lịch sử lần chạy (LM-104): service không phản hồi vẫn là một lần chạy; người dùng huỷ thì không
     if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE' })
     throw error
   }
   const failed = job.plans.find(({ result }) => result.status === 'FAILED')
   if (failed) {
+    await db.refundOptimizationCredit(reference)
     await db.recordFailedRun(tripId, { failureCode: 'REQUEST_REJECTED' })
     return { kind: 'failed', result: failed.result }
   }
-  return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans })) }
+  try {
+    return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans, creditReference: reference })) }
+  } catch (error) {
+    await db.refundOptimizationCredit(reference)
+    throw error
+  }
 }
 
 /** Lịch sử lần chạy tối ưu của chuyến (LM-104), cũ trước: thuật toán, các phương án ứng viên hoặc lý do không ra kết quả. */

@@ -29,6 +29,23 @@ export const optimization = {
   history: {
     description: 'Every run of this trip, including runs without a result.',
   },
+  credit: {
+    title: 'Credits',
+    usage: {
+      one: 'This run uses {count} credit · {left} left',
+      other: 'This run uses {count} credits · {left} left',
+    },
+    usageUnlimited: 'This run uses 0 credits · Unlimited',
+    tier: 'Algorithm tier of the {plan} plan',
+    tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
+    aiOptimizer: 'AI Optimizer — not available yet',
+    tierNote: 'The demo runs EP + DBLF (mock) for every tier.',
+    noPlan: 'The company has no plan.',
+    blocked: {
+      INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator',
+      SUBSCRIPTION_EXPIRED: 'The plan has expired — contact your company administrator',
+    },
+  },
   limits: {
     eyebrow: 'Before loading',
     title: 'Two separate limits',
