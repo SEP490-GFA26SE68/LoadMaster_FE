@@ -128,7 +128,7 @@ chuyến, kiện, yêu cầu giao, kho kiện, xe; điều phối viên thêm lo
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao, và kiện **của một yêu cầu giao** bị bỏ khỏi chuyến vì thiếu hoặc hỏng (yêu cầu thành giao thiếu, D-92);
-*(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai;
+*(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai; *(bổ sung 08/10/2026, FE-8-05)* quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`, sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): chỉ là chữ, chưa có liên kết vì màn `/goi-cuoc` tới FE-8-03;
 vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
 *(đã điều chỉnh 03/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
 xế có chuông với đúng một loại: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo tham số `requestedBy` —
@@ -305,7 +305,9 @@ src/
                         qua `ctx.scope`; `tenancy.test.ts` liệt kê mọi hàm công khai) và seed của Phương Nam
                         (`seed-phuong-nam.ts`) — FE-0-02;
                         *(bổ sung 07/10/2026, FE-7-01)* yêu cầu nhận dọc đường (`pickup-model.ts`: kiểu, trạng thái, bảng chuyển;
-                        `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`)
+                        `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`);
+                        *(bổ sung 08/10/2026, FE-8-01, FE-8-05)* gói cước, credit và thanh toán (`billing-model.ts`: kiểu, hằng số, luật chặn
+                        `creditBlock`; `billing-core.ts` sổ cái + vòng đời, `db-billing.ts` + `db-api-billing.ts` hàm công khai; `seed-billing.ts` — bảng gói và giá trị tạm)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -861,7 +863,9 @@ chỉ hiện thiết lập và metrics có trong revision đã lưu; không đ�
 ứng viên A · B · C theo ba mục tiêu (tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — tên ở `runs.objectives`, là ngôn ngữ của điều
 phối viên, dùng được ở màn vận hành). **Tên thuật toán đã chạy** chỉ hiện ở ba chỗ: dòng chỉ đọc trong "Thiết lập nâng cao" và bảng lần
 chạy của Thiết lập tối ưu, và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty nên nhãn luôn
-kèm chữ **"(mock)"** — `runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; hạng thuật toán theo gói nối ở FE-8-05. Màn So sánh theo lần chạy
+kèm chữ **"(mock)"** — `runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; *(đã điều chỉnh 08/10/2026, FE-8-05)* **hạng thuật toán của gói** nay hiện ở thẻ "Credit" của Thiết lập tối ưu (`optimization.credit.tiers`: "EP + DBLF", "EP + DBLF + GA/SA",
+Ultimate thêm dòng "AI Optimizer — chưa có") — đó là hạng gói được dùng, **không phải** thuật toán đã chạy: mock vẫn chạy "EP + DBLF (mock)" cho mọi hạng,
+thẻ nói rõ và phương án ghi đúng tên đã chạy; không bao giờ có chữ "AI optimized". Màn So sánh theo lần chạy
 (`/chuyen/:tripId/so-sanh?lan-chay=<mã lần chạy>`): thẻ đầu nói lần chạy (người chạy, thuật toán, seed, LIFO, trọng tâm thấp, giới hạn thời
 gian) và **mức hạn các điểm giao một lần** — ba phương án cùng một tuyến; dưới đó ba thẻ cạnh nhau, mỗi thẻ: mục tiêu, MOCK RESULT, mã
 revision, ảnh thu nhỏ SVG, thể tích, tải trọng, tải trục trước / sau so giới hạn, chênh mức tải hai trục (điểm phần trăm), trọng tâm hàng,
@@ -1633,6 +1637,40 @@ dù giao diện bị bỏ qua:
   Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt"
   đọc cả bước `PICKUP`. Giới hạn đã biết: yêu cầu nhận thứ hai chưa tính kiện của yêu cầu thứ nhất ở luật 3, 5, 6 (chúng chưa có hộp 3D); hộp huỷ
   chuyến (`undeliveredCount`) và báo cáo chuyến (khối lượng đã giao) chưa đếm kiện nhận.
+- *(bổ sung 08/10/2026, FE-8-01, FE-8-05, D-89, D-90, D-94)* **Gói cước, credit, thanh toán** (`billing-model.ts`, `billing-core.ts`, `db-billing.ts`; `DbState.plans`,
+  `subscriptions`, `creditAccounts`, `creditTransactions`, `payments`). Danh mục gói (`SubscriptionPlan`: hạng `BASIC | PRO | ULTIMATE`, giá VND,
+  credit tháng — `null` là không giới hạn, hạng thuật toán `EP_DBLF | EP_DBLF_GA | EP_DBLF_GA_AI`) là dữ liệu nền tảng, mọi phiên đọc được;
+  gói của công ty, tài khoản credit, sổ cái và thanh toán thuộc công ty, đi qua `ctx.scope` (phiên nền tảng: `COMPANY_REQUIRED`; không phiên:
+  công ty mặc định). **Số dư = tổng sổ cái, không bao giờ âm**: chỉ `appendTransaction` đổi số dư. Giao dịch `MONTHLY_GRANT | PURCHASE | USAGE |
+  REFUND`; lượt dùng `RESERVED → DEDUCTED | REFUNDED`, hoàn đúng một lần theo mã tham chiếu `JOB-NNN`. Vai trò: quản trị công ty đăng ký, huỷ,
+  nạp credit, xử lý thanh toán (`ROLE_NOT_ALLOWED`, xét sau công ty); quản lý nền tảng sửa gói; đọc và giữ / hoàn credit của lần chạy không xét
+  vai trò (quyền `optimization.run` chặn ở route). **Vòng đời theo đồng hồ của kho, không hẹn giờ**: mọi hàm chạm tới công ty gọi `settle`
+  trước. `subscribeToPlan` / `topUpCredits` chỉ tạo thanh toán `PENDING`; `settlePayment(id, 'SUCCESS' | 'FAILED')` (việc của cổng thanh toán, sau
+  này là màn giả lập) xử lý **đúng một lần** — kích hoạt gói + cấp credit tháng, nối kỳ gia hạn + cấp credit, hay cộng credit đã mua. Đăng ký chỉ
+  khi chưa có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30);
+  còn `renewalNoticeDays` (3, đề xuất) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
+  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
+  `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Credit tháng cộng
+  dồn sang kỳ sau (BE chưa xác nhận, Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ:
+  `SEED_PLANS` ở `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit),
+  Phương Nam gói Basic (100 credit, đã dùng gần hết: còn 2); sổ cái dựng từ các lần chạy của seed sau khi dời giờ — mỗi lần chạy một lượt dùng
+  tại đúng giờ của nó, lần chạy hỏng đã hoàn — và kỳ hiện tại bao giờ của kho (nên số dư của seed không đổi theo ngày chạy test). Nhật ký: nhóm
+  `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit` (`purchased`, `lowBalance` — hệ thống ghi), đối tượng
+  `company` (chưa có trang để mở).
+  **Một lần chạy tối ưu 3D = 1 credit** (ba phương án vẫn một): `reserveOptimizationCredit(tripId)` giữ credit lúc bắt đầu (gói hết hạn hoặc chưa có
+  gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; hết credit: `INSUFFICIENT_CREDITS`; gói không giới hạn ghi `0`), `saveOptimizationRun({ creditReference })`
+  trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn khi lỗi hoặc huỷ.
+  **Kho tự tính credit, không tin nơi gọi** (`runCredit`): phiên đăng nhập lưu kết quả mà không kèm mã giữ (`saveOptimizationRun`, `addRevision`)
+  thì kho giữ và trừ ngay tại chỗ — hết credit hay gói hết hạn là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test logic kho) mới
+  lưu không tính. Lượt đã trừ hẳn **không hoàn được** (`CREDIT_NOT_RESERVED`) — hoàn chỉ dành cho lượt còn đang giữ; giữ và hoàn chỉ điều phối
+  viên gọi được (`ROLE_NOT_ALLOWED`). `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không tốn credit.
+  Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
+  Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ chối,
+  huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`, `staleTime: 0`,
+  làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu (`SetupCreditPanel`): "Lần chạy
+  này dùng 1 credit · còn N" (số dư hiện tại; hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì dòng credit mờ + lý do
+  "Hết credit — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi bấm. Màn chỉ điều phối viên
+  (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty thuộc màn `/goi-cuoc` (FE-8-03).
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

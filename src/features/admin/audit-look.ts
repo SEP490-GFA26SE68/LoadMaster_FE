@@ -14,6 +14,8 @@ import {
   Truck,
   UserRound,
   TriangleAlert,
+  Wallet,
+  Coins,
   type LucideIcon,
 } from 'lucide-react'
 import type { KpiTone } from '@/components/KpiTile'
@@ -36,6 +38,8 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   manualConfirm: Hand,
   exception: TriangleAlert,
   pickup: PackagePlus,
+  subscription: Wallet,
+  credit: Coins,
 }
 
 /**
@@ -116,6 +120,12 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'pickup.rejected': 'amber',
   'pickup.loaded': 'blue',
   'pickup.delivered': 'green',
+  'subscription.subscribed': 'green',
+  'subscription.renewed': 'green',
+  'subscription.cancelled': 'amber',
+  'subscription.expired': 'amber',
+  'credit.purchased': 'green',
+  'credit.lowBalance': 'amber',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

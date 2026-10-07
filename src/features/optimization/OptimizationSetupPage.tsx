@@ -14,6 +14,7 @@ import { dataErrorMessage, formatIssue, useFormat, useT } from '@/lib/i18n'
 import { MockDbError } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
+import type { OptimizationCredit } from './optimization-api'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
 import { OptimizationSetupHero } from './OptimizationSetupHero'
 import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, type SetupValues } from './optimization-request'
@@ -22,9 +23,10 @@ import { RunHistoryCard } from './RunHistoryCard'
 import { buildSetupChecklist } from './setup-checklist'
 import { SetupAfterSteps } from './SetupAfterSteps'
 import { SetupContextPanels } from './SetupContextPanels'
+import { SetupCreditPanel } from './SetupCreditPanel'
 import { SetupLimitsPanel } from './SetupLimitsPanel'
 import { SetupAdvancedFields, SetupCandidateList, SetupRequirementFields } from './SetupSettingsFields'
-import { useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
+import { useOptimizationCreditQuery, useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
 /**
  * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
@@ -42,7 +44,10 @@ export function OptimizationSetupPage() {
   const format = useFormat()
   const query = useOptimizationSetupQuery(tripId)
   const run = useOptimizationRun(tripId)
+  const creditQuery = useOptimizationCreditQuery()
   const [failure, setFailure] = useState<OptimizationFailure | null>(null)
+  // Credit lúc bấm Tối ưu: hộp chạy hiện số của lần chạy này dù câu hỏi credit được làm mới giữa chừng
+  const [runCredit, setRunCredit] = useState<OptimizationCredit | null>(null)
 
   const schema = useMemo(() => z.object({
     method: z.enum(METHODS),
@@ -66,7 +71,11 @@ export function OptimizationSetupPage() {
   // Xếp 3D theo tuyến: chuyến phải đã tối ưu tuyến (Đã lập kế hoạch) — kho cũng từ chối `ROUTE_NOT_PLANNED`
   const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary, setup.trip.routePlan !== undefined) : null
   const formErrors = (errors.timeLimitSeconds ? 1 : 0) + (errors.randomSeed ? 1 : 0)
-  const blockedReason = !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
+  // Hết credit, gói hết hạn (FE-8-05): nút Tối ưu mờ kèm lý do trước khi bấm; kho cũng từ chối (`INSUFFICIENT_CREDITS`, `SUBSCRIPTION_EXPIRED`)
+  const creditBlock = creditQuery.data?.block ?? null
+  const blockedReason = !locked && creditBlock !== null
+    ? t(`optimization.credit.blocked.${creditBlock}`)
+    : !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
     ? t('optimization.blockedHint', {
       count: checklist.errorCount + formErrors,
       places: format.list([
@@ -79,6 +88,7 @@ export function OptimizationSetupPage() {
   function start(submitted: SetupValues) {
     if (!setup) return
     setFailure(null)
+    setRunCredit(creditQuery.data ?? null)
     const payload = buildOptimizationRequest(setup.trip, setup.vehicle, submitted)
     run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
       onSuccess: (outcome) => {
@@ -119,7 +129,7 @@ export function OptimizationSetupPage() {
       <OptimizationSetupHero
         tripId={tripId}
         setup={setup}
-        disabled={locked || !checklist?.canRun || run.isPending || !isValid}
+        disabled={locked || !checklist?.canRun || run.isPending || !isValid || creditBlock !== null}
         blockedReason={run.isPending ? null : blockedReason}
         onRun={() => void handleRun()}
       >
@@ -154,6 +164,7 @@ export function OptimizationSetupPage() {
             <RunHistoryCard tripId={tripId} />
           </div>
           <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-0">
+            <SetupCreditPanel credit={creditQuery.data} />
             <SetupLimitsPanel setup={setup} />
             <RequestIssueList tripId={tripId} setup={setup} checklist={checklist} canRun={checklist.canRun} locked={locked} />
             <SetupAfterSteps />
@@ -164,7 +175,7 @@ export function OptimizationSetupPage() {
       {run.isPending && setup ? (
         <OptimizationRunDialog
           progress={run.progress}
-          context={{ tripId, vehicleName: setup.vehicle.name, total: checklist?.dimensions.instances ?? 0, values }}
+          context={{ tripId, vehicleName: setup.vehicle.name, total: checklist?.dimensions.instances ?? 0, values, credit: runCredit }}
           onCancel={run.cancel}
         />
       ) : null}

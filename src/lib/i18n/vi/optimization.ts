@@ -31,6 +31,26 @@ export const optimization = {
   history: {
     description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
   },
+  /**
+   * Credit và hạng thuật toán của gói (FE-8-05, D-89): dòng "Lần chạy này dùng N credit · còn M", trạng thái chặn trước khi bấm Tối ưu
+   * (câu cho điều phối viên và cho quản trị công ty khác nhau) và tên hạng thuật toán. Tên hạng là từ vựng thuật toán — chỉ ở màn
+   * này; mock chạy EP + DBLF (mock) cho mọi hạng nên màn nói rõ.
+   */
+  credit: {
+    title: 'Credit',
+    usage: { one: 'Lần chạy này dùng {count} credit · còn {left}', other: 'Lần chạy này dùng {count} credit · còn {left}' },
+    usageUnlimited: 'Lần chạy này dùng 0 credit · Không giới hạn',
+    tier: 'Hạng thuật toán của gói {plan}',
+    tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
+    aiOptimizer: 'AI Optimizer — chưa có',
+    tierNote: 'Bản demo chạy EP + DBLF (mock) cho mọi hạng.',
+    noPlan: 'Công ty chưa có gói cước.',
+    /** Chỉ điều phối viên mở được màn này (`optimization.run`); quản trị công ty nạp credit ở màn gói cước. */
+    blocked: {
+      INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty',
+      SUBSCRIPTION_EXPIRED: 'Gói cước đã hết hạn — liên hệ quản trị công ty',
+    },
+  },
   limits: {
     eyebrow: 'Trước khi xếp',
     title: 'Hai giới hạn khác nhau',

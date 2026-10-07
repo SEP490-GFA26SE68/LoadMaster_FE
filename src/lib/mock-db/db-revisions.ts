@@ -1,5 +1,6 @@
 import { deadlineReview } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
+import { runCredit } from './db-billing'
 import { found, nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
@@ -76,17 +77,34 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Lịch sử lần chạy (LM-104): kết quả lưu lẻ là một lần chạy một phương án
-        const stored = storeRun(ctx, { trip, request, jobId: result.jobId, algorithm: run.algorithm, plans: [{ objective: run.objective, result }] })
-        return stored.revisions[0] as Revision
+        // Phiên đăng nhập lưu kết quả cũng tốn 1 credit như một lần chạy (`runCredit`); kho không phiên thì không
+        const credit = runCredit(ctx, trip)
+        try {
+          const stored = storeRun(ctx, { trip, request, jobId: result.jobId, algorithm: run.algorithm, plans: [{ objective: run.objective, result }] })
+          credit.deduct()
+          return stored.revisions[0] as Revision
+        } catch (error) {
+          credit.rollback()
+          throw error
+        }
       }),
-    saveOptimizationRun: ({ tripId, request, jobId, plans, algorithm = DEFAULT_RUN_ALGORITHM }) =>
+    saveOptimizationRun: ({ tripId, request, jobId, plans, algorithm = DEFAULT_RUN_ALGORITHM, creditReference }) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Xếp 3D theo tuyến (PRD v2 mục 8.3): thứ tự điểm giao phải đã chốt bằng tối ưu tuyến
         if (tripStatus(trip) !== 'PLANNED') throw new MockDbError('ROUTE_NOT_PLANNED', { tripId })
         if (plans.length === 0) throw new Error(`Lần chạy của chuyến ${tripId} không có phương án nào`)
-        return storeRun(ctx, { trip, request, jobId, algorithm, plans })
+        // Credit đã giữ phải còn giữ trước khi ghi gì; lưu xong thì trừ hẳn (FE-8-05, D-89)
+        const credit = runCredit(ctx, trip, creditReference)
+        try {
+          const saved = storeRun(ctx, { trip, request, jobId, algorithm, plans })
+          credit.deduct()
+          return saved
+        } catch (error) {
+          credit.rollback()
+          throw error
+        }
       }),
     approveRevision: (revisionId, patches, { force = false } = {}) =>
       ctx.respond(() => {

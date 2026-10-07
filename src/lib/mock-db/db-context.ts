@@ -1,5 +1,6 @@
 import type { VehicleConfig } from '@/domain/models'
 import type { User } from '@/types/user'
+import type { CompanySubscription, CreditAccount, CreditTransaction, PaymentTransaction, SubscriptionPlan } from './billing-model'
 import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
 import type { TripIncidents } from './exception-model'
@@ -58,6 +59,16 @@ export type DbState = {
   exceptions: Map<string, TripIncidents>
   /** Yêu cầu nhận hàng dọc đường (FE-7-01). */
   pickups: Map<string, PickupRequest>
+
+  // Gói cước, credit, thanh toán (FE-8-01)
+  /** Danh mục gói: dữ liệu nền tảng, mọi phiên đọc được. */
+  plans: Map<string, SubscriptionPlan>
+  /** Gói của từng công ty (tối đa một dòng mỗi công ty). */
+  subscriptions: Map<string, CompanySubscription>
+  creditAccounts: Map<string, CreditAccount>
+  /** Sổ cái credit: cũ trước, chỉ thêm dòng, trừ cờ `refunded` và `usageStatus` của lượt dùng. */
+  creditTransactions: Map<string, CreditTransaction>
+  payments: Map<string, PaymentTransaction>
 }
 
 export type DbContext = {

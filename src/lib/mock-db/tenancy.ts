@@ -118,6 +118,13 @@ export function createTenancy(state: DbState) {
     trips: scoped(state, state.trips, 'trips', (trip) => trip.companyId),
     /** Revision thuộc công ty của chuyến. */
     revisions: scoped(state, state.revisions, 'revisions', (revision) => tripCompany(revision.tripId)),
+    /** Danh mục gói (FE-8-01): dữ liệu nền tảng, không thuộc công ty nào — mọi phiên đọc được. */
+    plans: scoped(state, state.plans, 'plans', () => undefined, () => null),
+    /** Gói, tài khoản credit, sổ cái và thanh toán thuộc công ty (FE-8-01): vai trò nền tảng bị từ chối `COMPANY_REQUIRED`. */
+    subscriptions: scoped(state, state.subscriptions, 'subscriptions', (subscription) => subscription.companyId),
+    creditAccounts: scoped(state, state.creditAccounts, 'creditAccounts', (account) => account.companyId),
+    creditTransactions: scoped(state, state.creditTransactions, 'creditTransactions', (transaction) => transaction.companyId),
+    payments: scoped(state, state.payments, 'payments', (payment) => payment.companyId),
     users: scoped(state, state.users, 'users', (user) => user.companyId, directoryFilter),
     companies: scoped(state, state.companies, 'companies', (company) => company.id, directoryFilter),
     /** Sự kiện nhật ký phiên được đọc, cũ trước. */

@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { DEFAULT_RUN_ALGORITHM } from '@/lib/mock-db'
+import type { OptimizationCredit } from './optimization-api'
 import type { SetupValues } from './optimization-request'
+import { useCreditUsageText } from './useCreditUsageText'
 import type { RunProgress } from './useOptimizationSetup'
 
 /** Thiết lập của lần chạy đang chạy: đọc lại trong hộp thoại để người dùng biết mình đang chờ cái gì. */
@@ -15,6 +17,8 @@ export type RunDialogContext = {
   /** Tổng kiện của chuyến — hiện ngay khi service chưa kịp báo tiến trình đầu tiên. */
   readonly total: number
   readonly values: SetupValues
+  /** Credit của công ty lúc bấm Tối ưu; lần chạy này đã giữ `cost` credit nên số còn lại là `balance - cost`. */
+  readonly credit: OptimizationCredit | null
 }
 
 /**
@@ -30,6 +34,7 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
 }) {
   const t = useT()
   const format = useFormat()
+  const usageText = useCreditUsageText()
   const [startedAt] = useState(() => Date.now())
   const [now, setNow] = useState(startedAt)
 
@@ -55,6 +60,9 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
         seed: values.randomSeed === undefined || Number.isNaN(values.randomSeed) ? t('runs.noValue') : String(values.randomSeed),
       }),
     },
+    ...(context.credit === null
+      ? []
+      : [{ label: t('optimization.credit.title'), value: usageText(context.credit, context.credit.balance - context.credit.cost) }]),
     {
       label: t('optimization.running.requirements'),
       value: t('optimization.running.requirementsValue', { lifo: onOff(values.enforceLifo), lowCenter: onOff(values.prioritizeLowCenterOfGravity) }),

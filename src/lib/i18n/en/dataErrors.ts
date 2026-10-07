@@ -88,5 +88,14 @@ export const dataErrors = {
   BATCH_TOO_LARGE: 'The file has {rows} rows; one import takes at most {max} rows.',
   IMPORT_COLUMNS_MISSING: 'The header row is missing columns: {columns}. Download the template to see every column.',
   PACKAGE_IMPORT_INVALID: 'The file still has {errors} rows with errors, so no row can be imported.',
+  // Plans and credits (FE-8-01, FE-8-05)
+  INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator.',
+  SUBSCRIPTION_EXPIRED: 'The company plan has expired, so optimization cannot run — contact your company administrator.',
+  SUBSCRIPTION_ACTIVE: 'The company already has a plan in effect. A new plan can only be bought once the current one has expired.',
+  SUBSCRIPTION_STATUS_INVALID: 'The company has no plan in use to cancel.',
+  PLAN_INACTIVE: 'This plan is no longer on sale.',
+  PLAN_INVALID: 'The plan is not valid: the name cannot be empty, the price is a non-negative whole number, monthly credits a positive whole number or unlimited.',
+  TOPUP_INVALID: 'Only packs of 50 or 500 credits can be topped up.',
+  CREDIT_NOT_RESERVED: 'This run has no credit on hold, or the credit was already refunded.',
   UNKNOWN: 'Something went wrong. Try again later.',
 } satisfies Dictionary<typeof source>

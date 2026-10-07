@@ -74,6 +74,8 @@ const PARAM_KEYS = [
   'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
   // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
   'pickupId', 'failedRules', 'driverId',
+  // Gói cước và credit (FE-8-01, FE-8-05)
+  'plan', 'credits', 'balance',
 ] as const
 
 const FIELD_NAMES = [
@@ -96,6 +98,8 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   package: 'packages.view',
   requirement: 'requirements.view',
   vehicleType: 'fleet.view',
+  // Gói cước và credit của công ty chưa có trang để mở (màn gói cước tới FE-8-03)
+  company: null,
 }
 
 /** `can(permission)` của người xem (`useCan`): đối tượng chỉ thành liên kết khi người xem mở được trang đích. */
@@ -177,6 +181,8 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
       return { id, label: typeof params.destinationName === 'string' ? params.destinationName : saved, href: `/yeu-cau-giao?q=${encodeURIComponent(id)}` }
     case 'vehicleType':
       return { id, label: saved, href: '/doi-xe/loai-xe' }
+    case 'company':
+      return { id, label: saved, href: null }
   }
 }
 
