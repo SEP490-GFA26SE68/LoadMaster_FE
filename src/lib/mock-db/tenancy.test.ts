@@ -365,6 +365,10 @@ const PROBES = {
   // Danh mục gói là dữ liệu nền tảng; đăng ký, huỷ, nạp credit chỉ nhận phiên của chính người gọi (không mã bản ghi nào của công ty)
   listSubscriptionPlans: { scope: 'session' },
   updateSubscriptionPlan: { scope: 'session' },
+  createSubscriptionPlan: { scope: 'session' },
+  setSubscriptionPlanActive: { scope: 'session' },
+  deleteSubscriptionPlan: { scope: 'session' },
+  countPlanCompanies: { scope: 'session' },
   subscribeToPlan: { scope: 'session' },
   cancelSubscription: { scope: 'session' },
   topUpCredits: { scope: 'session' },

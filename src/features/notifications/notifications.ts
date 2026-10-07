@@ -29,7 +29,7 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  *   lại. Nhân viên kho còn được báo quyết định của điều phối viên với kiện **mình báo thiếu** (tìm tiếp, hoặc bỏ kiện — chuyến chờ tối
  *   ưu lại), và chuyến bị huỷ **lúc đang xếp** để dỡ phần đã xếp (FE-6-07, D-91).
  * - Quản trị công ty còn được báo "Sắp hết credit" (`credit.lowBalance`, FE-8-05): sự kiện của hệ thống khi số dư sau một lần chạy tối ưu
- *   xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` (đề xuất). Chưa có màn gói cước để mở nên thông báo chỉ là chữ, không liên kết.
+ *   xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` (đề xuất). Bấm mở màn gói cước `/goi-cuoc` (FE-8-03) để nạp thêm.
  * - Nhận hàng dọc đường (FE-7-03, FE-7-04): điều phối viên được báo khi có yêu cầu nhận mới (chính tài xế gửi); tài xế được báo quyết định
  *   duyệt / từ chối yêu cầu của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện).
  * - Quản lý nền tảng, hỗ trợ khách hàng chưa có loại thông báo nào (gói cước, ticket tới Sprint 8). Vai trò không có nguồn nào thì

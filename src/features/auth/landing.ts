@@ -5,10 +5,10 @@ import type { Role } from '@/types/user'
  * (403, 404), logo và nút thoát — nên phải là màn vai trò đó mở được.
  */
 export const ROLE_HOME: Readonly<Record<Role, string>> = {
-  // Tạm (quyết định G1): PRD v2 mục 5.1 đặt `/nen-tang/cong-ty`, `/nen-tang/goi`, `/ho-tro`, nhưng ba màn nền tảng tới Sprint 8 mới có.
-  // Quản trị hệ thống mở màn Người dùng; Quản lý nền tảng và Hỗ trợ khách hàng chưa có màn nào ngoài hồ sơ của mình.
+  // PRD v2 mục 5.1 đặt `/nen-tang/cong-ty`, `/nen-tang/goi`, `/ho-tro`; Sprint 8 làm dần từng màn. Quản trị hệ thống mở màn Người dùng;
+  // Quản lý nền tảng mở danh mục gói (FE-8-02); Hỗ trợ khách hàng chưa có màn nào ngoài hồ sơ của mình (tạm, tới màn ticket).
   systemAdmin: '/nguoi-dung',
-  systemManager: '/ho-so',
+  systemManager: '/nen-tang/goi',
   systemSupporter: '/ho-so',
   companyAdmin: '/nguoi-dung',
   manager: '/',

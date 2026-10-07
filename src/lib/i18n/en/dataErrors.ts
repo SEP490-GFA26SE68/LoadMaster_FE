@@ -95,6 +95,8 @@ export const dataErrors = {
   SUBSCRIPTION_STATUS_INVALID: 'The company has no plan in use to cancel.',
   PLAN_INACTIVE: 'This plan is no longer on sale.',
   PLAN_INVALID: 'The plan is not valid: the name cannot be empty, the price is a non-negative whole number, monthly credits a positive whole number or unlimited.',
+  PLAN_TIER_TAKEN: 'This tier already has a plan on sale. Stop selling that plan before putting another one of the same tier on sale.',
+  PLAN_IN_USE: 'Companies are still on this plan (count: {companies}), so it cannot be deleted. Stop selling it instead.',
   TOPUP_INVALID: 'Only packs of 50 or 500 credits can be topped up.',
   CREDIT_NOT_RESERVED: 'This run has no credit on hold, or the credit was already refunded.',
   UNKNOWN: 'Something went wrong. Try again later.',

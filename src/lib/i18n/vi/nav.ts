@@ -13,6 +13,9 @@ export const nav = {
   requirements: 'Yêu cầu giao',
   // Giám sát chuyến đang vận chuyển (FE-6-10): điều phối viên và quản lý công ty
   monitoring: 'Giám sát',
+  // Gói cước (FE-8-02, FE-8-03): quản lý nền tảng quản lý danh mục gói, quản trị công ty xem gói và credit của công ty
+  plans: 'Gói cước',
+  billing: 'Gói và credit',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

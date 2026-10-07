@@ -5,6 +5,7 @@ import type {
   CreditTransaction,
   CurrentSubscription,
   PaymentTransaction,
+  PlanInput,
   PlanPatch,
   SubscriptionPlan,
 } from './billing-model'
@@ -28,6 +29,17 @@ export type BillingDb = {
    * theo, kỳ đang chạy giữ nguyên. Sửa xong gói hết cờ `provisional`. Sai dữ liệu: `PLAN_INVALID`.
    */
   updateSubscriptionPlan(planId: string, patch: PlanPatch): Promise<SubscriptionPlan>
+  /**
+   * Quản lý nền tảng tạo gói (FE-8-02): `PLAN_INVALID` khi tên trống, hạng lạ, giá không phải số nguyên không âm, credit tháng không phải
+   * số nguyên dương hoặc `null`; mở bán một gói khi hạng đó đã có gói đang bán là `PLAN_TIER_TAKEN`. Hạng thuật toán và tính năng theo hạng.
+   */
+  createSubscriptionPlan(input: PlanInput): Promise<SubscriptionPlan>
+  /** Bật / tắt bán một gói. Bật khi hạng đã có gói khác đang bán: `PLAN_TIER_TAKEN`. Công ty đang dùng gói ngừng bán vẫn dùng và gia hạn được. */
+  setSubscriptionPlanActive(planId: string, active: boolean): Promise<SubscriptionPlan>
+  /** Xoá gói; còn công ty gắn với nó (kể cả đã hết hạn) là `PLAN_IN_USE`. */
+  deleteSubscriptionPlan(planId: string): Promise<void>
+  /** Số công ty gắn với từng gói (mã gói → số công ty; gói không ai dùng là 0), cho màn danh mục gói. */
+  countPlanCompanies(): Promise<Record<string, number>>
 
   /** Gói hiện tại của công ty và gói cước nó theo; `null` khi công ty chưa từng đăng ký. */
   getCurrentSubscription(): Promise<CurrentSubscription | null>

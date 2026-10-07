@@ -36,6 +36,6 @@ test('the four new roles never follow the trip link: they return to the screen t
   // Quản trị hệ thống và quản trị công ty không xem được chuyến: trang chuyến sẽ là 403
   expect(exitAction('systemAdmin', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/nguoi-dung' })
   expect(exitAction('companyAdmin', '/tai-xe/diem-giao', '/tai-xe')).toStrictEqual({ kind: 'link', to: '/nguoi-dung' })
-  expect(exitAction('systemManager', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/ho-so' })
+  expect(exitAction('systemManager', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/nen-tang/goi' })
   expect(exitAction('systemSupporter', '/tai-xe/diem-giao')).toStrictEqual({ kind: 'link', to: '/ho-so' })
 })

@@ -32,6 +32,8 @@ export type Formatter = {
   volume(cubicCentimeters: number): string
   /** Nhận cm³, hiện m³ một chữ số thập phân cho tổng lớn: 18400000 → "18,4 m³" */
   volumeM3(cubicCentimeters: number): string
+  /** Tiền VND nguyên, ký hiệu theo ngôn ngữ: 490000 → "490.000 ₫" · "₫490,000" */
+  currency(value: number): string
   /** Giá trị 0–100, một chữ số thập phân: 87.42 → "87,4%" · "87.4%" */
   percent(value: number): string
   /** Tỷ lệ 0–1, hai chữ số thập phân: 0.62 → "0,62" · "0.62" */
@@ -94,6 +96,7 @@ export function createFormatter(locale: FormatLocale): Formatter {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   })
+  const currency = numbers({ style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
   const date = new Intl.DateTimeFormat(locale, DATE_OPTIONS[locale])
   const time = new Intl.DateTimeFormat(locale, TIME_OPTIONS)
   const conjunction = new Intl.ListFormat(locale, { type: 'conjunction' })
@@ -110,6 +113,7 @@ export function createFormatter(locale: FormatLocale): Formatter {
     weight: (value) => kilograms.format(value),
     volume: (value) => `${whole.format(value)} cm³`,
     volumeM3: (value) => `${oneDecimal.format(value / CUBIC_CENTIMETERS_PER_CUBIC_METER)} m³`,
+    currency: (value) => currency.format(value),
     percent: (value) => percent.format(value),
     ratio: (value) => twoDecimals.format(value),
     date: (value) => date.format(toDate(value)),

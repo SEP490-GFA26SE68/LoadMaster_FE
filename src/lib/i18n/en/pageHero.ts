@@ -19,4 +19,7 @@ export const pageHero = {
   monitoring: 'Vehicles in transit on the map, expected arrival against the delivery deadline, and incidents on the road.',
   vehicleTypes: 'Cargo dimensions and payload by vehicle type.',
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
+  subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
+  billing: 'The company’s plan, credit balance, history and payments.',
+  payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
 } satisfies Dictionary<typeof source>

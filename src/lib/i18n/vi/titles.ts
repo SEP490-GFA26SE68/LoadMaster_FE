@@ -37,4 +37,8 @@ export const titles = {
   monitoring: 'Giám sát',
   vehicleTypes: 'Loại xe',
   tripReport: 'Báo cáo chuyến {id}',
+  // FE-8-02 → FE-8-04
+  subscriptionPlans: 'Gói cước',
+  billing: 'Gói cước và credit',
+  payment: 'Thanh toán giả lập',
 } as const

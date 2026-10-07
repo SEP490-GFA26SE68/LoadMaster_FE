@@ -108,6 +108,8 @@ export const dataErrors = {
   SUBSCRIPTION_STATUS_INVALID: 'Công ty không có gói đang dùng để huỷ.',
   PLAN_INACTIVE: 'Gói này đã ngừng bán.',
   PLAN_INVALID: 'Gói chưa hợp lệ: tên không được trống, giá là số nguyên không âm, credit tháng là số nguyên dương hoặc không giới hạn.',
+  PLAN_TIER_TAKEN: 'Hạng này đã có một gói đang bán. Ngừng bán gói đó trước khi mở bán gói khác cùng hạng.',
+  PLAN_IN_USE: 'Còn {companies} công ty đang gắn với gói này nên chưa xoá được. Ngừng bán gói thay vì xoá.',
   TOPUP_INVALID: 'Chỉ nạp được gói 50 hoặc 500 credit.',
   CREDIT_NOT_RESERVED: 'Lần chạy này chưa giữ credit hoặc đã được hoàn.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */

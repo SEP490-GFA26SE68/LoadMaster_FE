@@ -18,9 +18,9 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
-| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: gói cước — màn tới Sprint 8 mới có |
+| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02) |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
-| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký; gói cước và credit về sau |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03) |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; lập yêu cầu giao (FE-4b-02); xem chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; quản lý kho kiện (thêm kiện, nhập file, in nhãn QR), lập chuyến, tối ưu, duyệt phương án |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
@@ -67,7 +67,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*), `billing.manage` (màn `/goi-cuoc` và `/thanh-toan/gia-lap` — quản trị công ty; *bổ sung 08/10/2026, FE-8-03, FE-8-04*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -92,10 +92,10 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
 ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
-chính đứng đầu. Quản trị hệ thống, quản trị công ty: Người dùng · Nhật ký. Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
+chính đứng đầu. Quản trị hệ thống: Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
 (*đã điều chỉnh 03/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
-họ ở màn hồ sơ). Quản lý nền tảng, hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
+họ ở màn hồ sơ). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
 quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền). Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn
 đó. Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ
 màn Đội xe. *(đã điều chỉnh 03/10/2026, FE-3b-06)* Tra cứu kiện cũng không có mục riêng: điều phối viên mở bằng nút "Tra cứu kiện" trên dải
@@ -106,7 +106,7 @@ Nhật ký và chuông chỉ biến đối tượng thành liên kết khi ngư�
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
-quản trị hệ thống và quản trị công ty `/nguoi-dung`; *(tạm, FE-0-03)* quản lý nền tảng và hỗ trợ khách hàng `/ho-so` tới khi có màn nền tảng ở
+quản trị hệ thống và quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); *(tạm, FE-0-03)* hỗ trợ khách hàng `/ho-so` tới khi có màn ticket ở
 Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
 trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
@@ -128,7 +128,7 @@ chuyến, kiện, yêu cầu giao, kho kiện, xe; điều phối viên thêm lo
 nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần. **Chuông theo vai trò**
 (`NOTIFICATION_ACTIONS`): điều phối viên — đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành, chuyến bị
 huỷ; quản lý công ty — chuyến hoàn thành, chuyến bị huỷ, sự cố giao, và kiện **của một yêu cầu giao** bị bỏ khỏi chuyến vì thiếu hoặc hỏng (yêu cầu thành giao thiếu, D-92);
-*(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai; *(bổ sung 08/10/2026, FE-8-05)* quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`, sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): chỉ là chữ, chưa có liên kết vì màn `/goi-cuoc` tới FE-8-03;
+*(đã điều chỉnh 03/10/2026, FE-6-02, FE-6-07)* nhân viên kho — quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp); quản trị hệ thống, quản trị công ty — việc trên tài khoản và đăng nhập sai; *(bổ sung 08/10/2026, FE-8-05)* quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`, sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm mở màn gói cước `/goi-cuoc` (FE-8-03; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy);
 vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông. Sự kiện của luồng mới thêm ở issue của luồng đó.
 *(đã điều chỉnh 03/10/2026, FE-6-04)* Điều phối viên còn nhận **xác nhận tay mới gửi** (`manualConfirm.requested`). Nhân viên kho và tài
 xế có chuông với đúng một loại: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo tham số `requestedBy` —
@@ -280,6 +280,10 @@ src/
                         Đạt / Không đạt `PickupRulesList` (câu dựng từ mã + tham số ở `pickup-rule-text.ts`), thẻ yêu cầu của chuyến
                         `PickupRequestsCard` (Chi tiết chuyến, Giám sát), nút của tài xế `PickupDriverButton`; `pickups-api.ts` → `usePickupsQuery.ts`
     vehicle-types/      danh mục loại xe (LM-104)
+    billing/            *(bổ sung 08/10/2026, FE-8-03, FE-8-04)* gói cước và credit của công ty `/goi-cuoc` (`BillingPage`, `billing-api.ts`,
+                        `useBillingQuery.ts`) và trang thanh toán giả lập `/thanh-toan/gia-lap` (`PaymentSimulationPage`, `payment-api.ts`)
+    platform/           *(bổ sung 08/10/2026, FE-8-02)* màn của quản lý nền tảng: danh mục gói cước `/nen-tang/goi` (`PlansPage`, `PlanFormDialog`,
+                        `subscription-plans-api.ts`); màn Công ty và Hỗ trợ vào đây khi làm
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
@@ -1656,7 +1660,7 @@ dù giao diện bị bỏ qua:
   Phương Nam gói Basic (100 credit, đã dùng gần hết: còn 2); sổ cái dựng từ các lần chạy của seed sau khi dời giờ — mỗi lần chạy một lượt dùng
   tại đúng giờ của nó, lần chạy hỏng đã hoàn — và kỳ hiện tại bao giờ của kho (nên số dư của seed không đổi theo ngày chạy test). Nhật ký: nhóm
   `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit` (`purchased`, `lowBalance` — hệ thống ghi), đối tượng
-  `company` (chưa có trang để mở).
+  `company` (liên kết tới `/goi-cuoc` cho người có `billing.manage`).
   **Một lần chạy tối ưu 3D = 1 credit** (ba phương án vẫn một): `reserveOptimizationCredit(tripId)` giữ credit lúc bắt đầu (gói hết hạn hoặc chưa có
   gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; hết credit: `INSUFFICIENT_CREDITS`; gói không giới hạn ghi `0`), `saveOptimizationRun({ creditReference })`
   trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn khi lỗi hoặc huỷ.
@@ -1670,7 +1674,30 @@ dù giao diện bị bỏ qua:
   làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu (`SetupCreditPanel`): "Lần chạy
   này dùng 1 credit · còn N" (số dư hiện tại; hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì dòng credit mờ + lý do
   "Hết credit — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi bấm. Màn chỉ điều phối viên
-  (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty thuộc màn `/goi-cuoc` (FE-8-03).
+  (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty ở màn `/goi-cuoc` (FE-8-03).
+- *(bổ sung 08/10/2026, FE-8-02)* **Danh mục gói cước `/nen-tang/goi`** (`features/platform`, `subscriptionPlans.manage`, màn chính của quản lý nền tảng): bảng gói
+  (hạng, giá `format.currency`, credit tháng hoặc "Không giới hạn", tên thuật toán của hạng, số công ty gắn với gói, công tắc đang bán, menu Sửa / Xoá), gói chưa
+  được chốt giá mang nhãn "Giá trị tạm — chờ chốt" (`common.provisionalPlan`) tới khi được sửa. Kho thêm `createSubscriptionPlan` (hạng chọn bộ thuật toán và tính
+  năng: `TIER_ALGORITHM`, `TIER_FEATURES`), `setSubscriptionPlanActive`, `deleteSubscriptionPlan`, `countPlanCompanies`, cùng luật vai trò với `updateSubscriptionPlan`
+  (`ROLE_NOT_ALLOWED`): **mỗi hạng một gói đang bán** (`PLAN_TIER_TAKEN` khi tạo gói đang bán hoặc bật bán gói thứ hai cùng hạng), gói còn công ty gắn — kể cả công
+  ty đã hết hạn, vì dòng đăng ký của họ vẫn trỏ tới gói — không xoá được (`PLAN_IN_USE`; mục Xoá mờ kèm lý do, ngừng bán thay vì xoá). Gói ngừng bán thì công ty đang dùng
+  vẫn giữ và gia hạn. Form (`plan-form.ts`, zod, message là key từ điển): giá nguyên đồng ≥ 0, credit tháng nguyên > 0 hoặc "không giới hạn" (kho lưu `null`), hạng chỉ
+  chọn lúc thêm (mở sẵn hạng chưa có gói đang bán), và luôn ghi rõ giá, credit mới áp dụng từ kỳ gia hạn kế tiếp của từng công ty. Lớp API
+  `subscription-plans-api.ts` → `useSubscriptionPlansQuery.ts`, khoá `['billing', 'plans']`; mọi lần ghi làm mới cả `['billing']`.
+- *(bổ sung 08/10/2026, FE-8-03, FE-8-04)* **Gói cước và credit của công ty `/goi-cuoc`** (`features/billing`, `billing.manage`, mục "Gói và credit" của quản trị
+  công ty): thẻ "Gói hiện tại" (tên, hạng, nhãn "Giá trị tạm — chờ chốt" khi gói mang cờ tạm, trạng thái Đang hoạt động / Đã huỷ — còn hiệu lực / Đã hết hạn,
+  bắt đầu, hết hạn, tự gia hạn, giá và credit mỗi tháng; nút phụ "Huỷ gói" kèm hộp xác nhận nói gói còn dùng tới hết kỳ), thẻ "Số dư" (`KpiTile`; gói không giới
+  hạn ghi "Không giới hạn"), thẻ "Chọn gói" **chỉ khi chưa có gói hoặc gói đã hết hạn** (mỗi gói đang bán một nút "Đăng ký"), thẻ "Lịch sử" hai tab (`?lich-su=thanh-toan`,
+  vắng là credit) — sổ cái credit (`CreditLedgerTable`: Cấp theo tháng / Mua / Dùng / Hoàn, số có dấu, trạng thái giữ / trừ / hoàn của lượt dùng) và thanh toán
+  (`PaymentsTable`, thanh toán còn chờ có nút Trả) — phân trang bằng `useListUrlState`. **Một nút chính của màn: "Nạp credit"** → `TopUpDialog` (gói 50 hoặc 500,
+  1.000 đ mỗi credit, `format.currency`). Đăng ký và nạp chỉ tạo thanh toán `PENDING` rồi mở `paymentPath(mã thanh toán)`; thanh toán gia hạn (hoặc đăng ký dở) đang chờ có
+  banner kèm nút Trả. Khoá Query `['billing', 'subscription' | 'balance' | 'credit-transactions' | 'payments' | 'plans-on-sale' | 'payment', mã]`, `staleTime: 0`; mọi lần
+  ghi làm mới cả `['billing']` và `['notifications']`. **Trang thanh toán giả lập `/thanh-toan/gia-lap?giao-dich=<mã thanh toán>`** (cùng quyền `billing.manage`): trung tính —
+  không tên, logo hay màu của cổng thanh toán nào —, nói rõ đây là giả lập, hiện số tiền, nội dung (đăng ký / gia hạn gói, nạp N credit), mã giao dịch và ba nút Huỷ · Thất bại ·
+  Thành công (chính). Trang **không tự chặn gì thêm** cho "đúng một lần": việc đó do `settlePayment` của kho (trả nguyên kết quả cũ khi giao dịch đã xử lý); trang chỉ không vẽ
+  nút khi giao dịch không còn `PENDING` ("Giao dịch đã được xử lý"). Xong thì về `/goi-cuoc` kèm toast nói đúng điều kho trả về (theo trạng thái cuối, không theo nút đã bấm);
+  mã không có hoặc của công ty khác là màn "Không tìm thấy giao dịch". Có backend: `subscribe` / `topUpCredits` trả URL thanh toán và app chuyển thẳng sang đó (hiện
+  `GET /api/payment/mock-checkout`), trang này không dùng nữa.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

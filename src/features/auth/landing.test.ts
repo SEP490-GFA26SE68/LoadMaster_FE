@@ -12,14 +12,14 @@ test('each role lands on its own screen when nothing else was asked for', () => 
 
 test('every role has a home that is still a route: no role lands on the removed receiving screen (FE-0-06)', () => {
   expect(ROLES.map((role) => [role, ROLE_HOME[role]])).toStrictEqual([
-    ['systemAdmin', '/nguoi-dung'], ['systemManager', '/ho-so'], ['systemSupporter', '/ho-so'], ['companyAdmin', '/nguoi-dung'],
+    ['systemAdmin', '/nguoi-dung'], ['systemManager', '/nen-tang/goi'], ['systemSupporter', '/ho-so'], ['companyAdmin', '/nguoi-dung'],
     ['manager', '/'], ['dispatcher', '/chuyen'], ['warehouse', '/kho'], ['driver', '/tai-xe'],
   ])
 })
 
 test('the platform roles land on a screen that exists today: users for the system administrator, the profile for the other two (FE-0-03)', () => {
   expect(landingPath('systemAdmin')).toBe('/nguoi-dung')
-  expect(landingPath('systemManager')).toBe('/ho-so')
+  expect(landingPath('systemManager')).toBe('/nen-tang/goi')
   expect(landingPath('systemSupporter', '/?lang=en')).toBe('/ho-so?lang=en')
 })
 

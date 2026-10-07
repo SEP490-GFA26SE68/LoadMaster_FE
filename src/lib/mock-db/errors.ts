@@ -224,6 +224,10 @@ export type MockDbErrorParams = {
   PLAN_INACTIVE: { planId: string }
   /** Gói sai dữ liệu ở trường `field`: tên trống, giá âm hoặc không nguyên, credit tháng không nguyên dương. */
   PLAN_INVALID: { field: string }
+  /** Mở bán (tạo hoặc bật bán) một gói trong khi hạng `tier` đã có gói `planId` đang bán — mỗi hạng một gói đang bán (D-90). */
+  PLAN_TIER_TAKEN: { tier: string; planId: string }
+  /** Xoá gói mà `companies` công ty còn gắn với (có dòng đăng ký của gói đó, kể cả đã hết hạn). */
+  PLAN_IN_USE: { planId: string; companies: number }
   /** Nạp credit ngoài các gói 50 và 500. */
   TOPUP_INVALID: { credits: number }
   /** Trừ credit của một lần chạy chưa giữ credit (đã hoàn, hoặc mã lạ). */

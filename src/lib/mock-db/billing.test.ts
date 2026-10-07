@@ -222,6 +222,35 @@ describe('plan lifecycle on the store clock', () => {
     await expect(db.updateSubscriptionPlan(BASIC, patch)).rejects.toMatchObject({ code: 'PLAN_INVALID', params: { field } })
   })
 
+  test('creating a plan: one on sale per tier, derived algorithm tier, PLAN_INVALID for a bad tier or credits, platform manager only', async () => {
+    const { db } = open(PLATFORM_MANAGER)
+    // Hạng nào cũng đã có gói đang bán (seed): mở bán gói thứ hai cùng hạng là PLAN_TIER_TAKEN, chỉ ra gói đang giữ chỗ
+    await expect(db.createSubscriptionPlan({ name: 'Basic 2', tier: 'BASIC', priceVnd: 1, monthlyCredits: 10 })).rejects.toMatchObject({ code: 'PLAN_TIER_TAKEN', params: { tier: 'BASIC', planId: BASIC } })
+    await expect(db.createSubscriptionPlan({ name: 'Pro 2', tier: 'PRO', priceVnd: 1, monthlyCredits: 0 })).rejects.toMatchObject({ code: 'PLAN_INVALID', params: { field: 'monthlyCredits' } })
+    await expect(db.createSubscriptionPlan({ name: 'X', tier: 'GOLD' as never, priceVnd: 1, monthlyCredits: 1 })).rejects.toMatchObject({ code: 'PLAN_INVALID', params: { field: 'tier' } })
+    const draft = await db.createSubscriptionPlan({ name: ' Pro mới ', tier: 'PRO', priceVnd: 1_990_000, monthlyCredits: null, active: false })
+    expect(draft).toMatchObject({ id: 'PLAN-004', name: 'Pro mới', tier: 'PRO', active: false, provisional: false, algorithmTier: 'EP_DBLF_GA' })
+    expect((await db.listSubscriptionPlans()).map((plan) => plan.id)).toStrictEqual([BASIC, PRO, 'PLAN-004', ULTIMATE])
+    db.restoreSession(PHUONG_NAM_ADMIN)
+    await expect(db.createSubscriptionPlan({ name: 'X', tier: 'BASIC', priceVnd: 1, monthlyCredits: 1, active: false })).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+  })
+
+  test('the on-sale switch keeps one plan per tier, and a plan nobody uses can be deleted but one a company is on cannot', async () => {
+    const { db } = open(PLATFORM_MANAGER)
+    const draft = await db.createSubscriptionPlan({ name: 'Pro mới', tier: 'PRO', priceVnd: 1, monthlyCredits: 5, active: false })
+    await expect(db.setSubscriptionPlanActive(draft.id, true)).rejects.toMatchObject({ code: 'PLAN_TIER_TAKEN', params: { planId: PRO } })
+    // Ngừng bán gói cũ thì bật gói mới được; công ty đang dùng gói ngừng bán vẫn giữ gói của mình
+    expect(await db.setSubscriptionPlanActive(PRO, false)).toMatchObject({ active: false })
+    expect(await db.setSubscriptionPlanActive(draft.id, true)).toMatchObject({ active: true })
+    expect(await db.countPlanCompanies()).toStrictEqual({ [BASIC]: 1, [PRO]: 1, [ULTIMATE]: 0, [draft.id]: 0 })
+    await expect(db.deleteSubscriptionPlan(PRO)).rejects.toMatchObject({ code: 'PLAN_IN_USE', params: { planId: PRO, companies: 1 } })
+    await db.deleteSubscriptionPlan(ULTIMATE)
+    expect((await db.listSubscriptionPlans()).map((plan) => plan.id)).toStrictEqual([BASIC, PRO, draft.id])
+    db.restoreSession(PHUONG_NAM_ADMIN)
+    await expect(db.deleteSubscriptionPlan(draft.id)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+    await expect(db.setSubscriptionPlanActive(draft.id, false)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+  })
+
   test('roles: only the company admin buys, cancels, tops up and settles; only the platform manager edits plans; the platform has no company', async () => {
     const { db } = open(PHUONG_NAM_ADMIN)
     const pending = await db.topUpCredits(50)

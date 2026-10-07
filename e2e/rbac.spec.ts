@@ -10,9 +10,9 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
 const HOMES: readonly (readonly [email: string, path: string, heading: string])[] = [
-  // Nền tảng: quản lý nền tảng và hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
+  // Nền tảng: quản lý nền tảng mở danh mục gói (FE-8-02); hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
   ['quantri@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
-  ['nentang@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
+  ['nentang@loadmaster.vn', '/nen-tang/goi', 'Gói cước'],
   ['hotro@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
   // Long Bình
   ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
@@ -64,16 +64,16 @@ test('the quick sign-in box groups accounts by platform and company; picking one
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a platform manager has no nav items and is never stranded: logo, 403 and 404 lead back to the profile (FE-0-03)', async ({ page, browserErrors }) => {
+test('customer support has no nav items and is never stranded: logo, 403 and 404 lead back to the profile (FE-0-03)', async ({ page, browserErrors }) => {
   await page.goto('/')
-  await signInWith(page, 'nentang@loadmaster.vn')
+  await signInWith(page, 'hotro@loadmaster.vn')
   await page.waitForURL((url) => url.pathname === '/ho-so')
   // Logo trước (thanh điều hướng đã dựng), rồi mới khẳng định thanh đó không có khay mục nào
   await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-so')
   await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toHaveCount(0)
   // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào)
-  await page.getByRole('button', { name: 'Tài khoản Đinh Quang Huy', exact: true }).click()
-  await expect(page.getByRole('menu')).toContainText('Quản lý nền tảng')
+  await page.getByRole('button', { name: /^Tài khoản / }).click()
+  await expect(page.getByRole('menu')).toContainText('Hỗ trợ khách hàng')
   await page.keyboard.press('Escape')
 
   await navigateInApp(page, '/chuyen')
@@ -81,7 +81,7 @@ test('a platform manager has no nav items and is never stranded: logo, 403 and 4
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/ho-so')
 
-  await navigateInApp(page, '/nen-tang/goi')
+  await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/ho-so')

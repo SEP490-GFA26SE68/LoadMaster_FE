@@ -200,13 +200,13 @@ test('a plan approved by a colleague reaches the dispatcher bell and opens the t
   expect(part(menuItems()[0] ?? document.body, 'meta')).toMatch(/^Hoàng Đức Anh · /)
 })
 
-/** FE-8-05: Phương Nam còn 2 credit — lần chạy của điều phối viên đưa số dư xuống ngưỡng, quản trị công ty được báo bằng chữ (chưa có màn gói cước để mở). */
-test('the company administrator is told when the credits run low, without a link to open', async () => {
+/** FE-8-05, FE-8-03: Phương Nam còn 2 credit — lần chạy của điều phối viên đưa số dư xuống ngưỡng, quản trị công ty được báo và bấm mở được màn gói cước. */
+test('the company administrator is told when the credits run low and the notice opens the billing screen', async () => {
   const user = userEvent.setup()
   const admin = renderBell('US-PN-01')
   await actAs('US-PN-03', admin.id, () => getMockDb().reserveOptimizationCredit('TRIP-PN-001'))
   await user.click(screen.getByRole('button', { name: /^Thông báo/ }))
   await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Sắp hết credit'), SLOW)
-  expect(notificationRows()[0]).toMatchObject({ unread: true, href: null })
+  expect(notificationRows()[0]).toMatchObject({ unread: true, href: '/goi-cuoc' })
   expect(part(menuItems()[0] ?? document.body, 'meta')).toBe('Hệ thống · Số dư: 1')
 })
