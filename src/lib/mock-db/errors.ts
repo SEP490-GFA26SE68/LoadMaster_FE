@@ -2,6 +2,7 @@ import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
 import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
+import type { PickupStatus } from './pickup-model'
 import type { RequirementStoredStatus } from './requirement-model'
 import type { TripPhase } from './types'
 
@@ -19,6 +20,8 @@ export type MockDbCollection =
   | 'vehicleTypes'
   // FE-6-11
   | 'exceptions'
+  // FE-7-01
+  | 'pickups'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -193,6 +196,12 @@ export type MockDbErrorParams = {
   // Vị trí xe (FE-6-08)
   /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
   LOCATION_INVALID: { field: string }
+
+  // Yêu cầu nhận hàng dọc đường (FE-7-01)
+  /** Yêu cầu nhận sai ở trường `field`: tên, địa chỉ hoặc toạ độ của điểm nhận / điểm giao, hạn, mã, kích thước, khối lượng, loại hàng của kiện. */
+  PICKUP_INVALID: { field: string }
+  /** Chuyển trạng thái yêu cầu nhận ngoài bảng `PICKUP_TRANSITIONS`. */
+  INVALID_PICKUP_STATUS_TRANSITION: { pickupId: string; from: PickupStatus; to: PickupStatus }
 
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */

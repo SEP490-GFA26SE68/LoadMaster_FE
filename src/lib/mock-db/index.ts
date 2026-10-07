@@ -24,7 +24,7 @@ export {
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
-export { nextStopId, normalizeAddress, stopKey } from './trip-stops'
+export { nextStopId, normalizeAddress, stopKey, stopKindOf } from './trip-stops'
 export { isLastActiveAdmin, rolesInScope, userScopeOf, type UserScope } from './user-scope'
 export { COMPANIES as SEED_COMPANIES } from './seed-sourcing'
 export { PLACE_KINDS, SEED_PLACES, type Place, type PlaceKind } from './seed-places'
@@ -55,6 +55,18 @@ export {
   type PackageSource,
   type PackageStatus,
 } from './package-model'
+export type { PickupsDb } from './db-api-pickups'
+export {
+  canTransitionPickup,
+  PICKUP_STATUSES,
+  PICKUP_TRANSITIONS,
+  type PickupPackage,
+  type PickupPoint,
+  type PickupRequest,
+  type PickupRequestInput,
+  type PickupStatus,
+  type PickupStatusDetails,
+} from './pickup-model'
 export { cargoFromPackage, handlingClassOfType } from './package-type-cargo'
 export { backendLimitsOf, orientationsFor, specFieldsOf, type PackageTypeStacking } from './package-type-limits'
 export { axleLimitsFromAxles, limitsOfType, sameLimits, withoutLimits, withTypeLimits, type VehicleLimits } from './vehicle-limits'
@@ -155,6 +167,7 @@ export {
 export {
   DELIVERY_ISSUE_KINDS,
   REPLAN_REASONS,
+  STOP_KINDS,
   TRIP_PHASES,
   type ApproveOptions,
   type AuditFilter,
@@ -177,6 +190,7 @@ export {
   type Revision,
   type SavedOptimizationRun,
   type StagingShortage,
+  type StopKind,
   type StopProgress,
   type TemporaryPassword,
   type Trip,

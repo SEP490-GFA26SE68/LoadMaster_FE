@@ -80,6 +80,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   EXCEPTION_INVALID: { field: 'delayMinutes' },
   EXCEPTION_STATUS_INVALID: { exceptionId: 'EXC-002', status: 'RESOLVED' },
   REROUTE_UNAVAILABLE: { tripId: 'TRIP-009' },
+  PICKUP_INVALID: { field: 'packages.weightKg' },
+  INVALID_PICKUP_STATUS_TRANSITION: { pickupId: 'PKR-001', from: 'PENDING', to: 'LOADED' },
   UNSUPPORTED_FILE_TYPE: {},
   EMPTY_FILE: {},
   FILE_TOO_LARGE: { maxMb: 10 },

@@ -78,6 +78,9 @@ export const dataErrors = {
   EXCEPTION_INVALID: 'The incident is not valid: it needs a type, a description and a delay within range; a new deadline needs a delivery requirement of the trip and a readable time.',
   EXCEPTION_STATUS_INVALID: 'Incident {exceptionId} is no longer in a state that allows this. Reload to see its current state.',
   REROUTE_UNAVAILABLE: 'No other route can be found for trip {tripId}: the vehicle has no position, or no stop is left that it has not reached.',
+  // En-route pickup requests (FE-7-01)
+  PICKUP_INVALID: 'The pickup request is not valid: it needs a name, address and coordinates for the pickup and delivery points, a readable deadline (if any), and a code, dimensions, weight and handling class for every package.',
+  INVALID_PICKUP_STATUS_TRANSITION: 'Pickup request {pickupId} cannot move to that status from its current one. Reload to see its latest status.',
   UNSUPPORTED_FILE_TYPE: 'This file cannot be read. Only .csv or .xlsx files are accepted.',
   EMPTY_FILE: 'The file has no data rows.',
   FILE_TOO_LARGE: 'The file is larger than {maxMb} MB and cannot be imported.',

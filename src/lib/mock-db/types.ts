@@ -6,6 +6,13 @@ import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings,
 import type { PackageVerification } from './verify-model'
 
 /**
+ * Loại điểm của chuyến (FE-7-01, D-88): điểm giao, hoặc điểm nhận hàng dọc đường chèn vào tuyến khi duyệt yêu cầu nhận.
+ * Điểm vắng `kind` là `DELIVERY` (`stopKindOf`).
+ */
+export const STOP_KINDS = ['DELIVERY', 'PICKUP'] as const
+export type StopKind = (typeof STOP_KINDS)[number]
+
+/**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
  *
  * Từ FE-4b-04 (D-73) điểm giao **tự sinh** khi đưa yêu cầu giao vào chuyến (`generated`), hoặc do điều phối viên **thêm tay** cho kiện
@@ -16,6 +23,8 @@ export type DeliveryStop = {
   id: string
   name: string
   address: string
+  /** Loại điểm; vắng là `DELIVERY`. */
+  kind?: StopKind
   /** Số điện thoại người nhận, dạng hiển thị (`0901 234 567`); tài xế gọi qua `tel:` (D-46). */
   phone?: string
   contactName?: string
