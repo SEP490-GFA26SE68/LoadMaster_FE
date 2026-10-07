@@ -98,8 +98,8 @@ const TARGET_PERMISSION: Readonly<Record<AuditTargetType, Permission | null>> = 
   package: 'packages.view',
   requirement: 'requirements.view',
   vehicleType: 'fleet.view',
-  // Gói cước và credit của công ty chưa có trang để mở (màn gói cước tới FE-8-03)
-  company: null,
+  // Gói cước và credit của công ty mở màn gói cước của chính công ty đó (FE-8-03): chỉ quản trị công ty (`billing.manage`)
+  company: 'billing.manage',
 }
 
 /** `can(permission)` của người xem (`useCan`): đối tượng chỉ thành liên kết khi người xem mở được trang đích. */
@@ -182,7 +182,7 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
     case 'vehicleType':
       return { id, label: saved, href: '/doi-xe/loai-xe' }
     case 'company':
-      return { id, label: saved, href: null }
+      return { id, label: saved, href: '/goi-cuoc' }
   }
 }
 
