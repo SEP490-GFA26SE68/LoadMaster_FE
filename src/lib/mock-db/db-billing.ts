@@ -165,8 +165,9 @@ export function billingMethods(ctx: DbContext): BillingDb {
         plans.delete(planId)
       }),
 
+    // Số công ty theo gói là số liệu của nền tảng: người của một công ty không đọc được
     countPlanCompanies: () =>
-      ctx.respond(() => Object.fromEntries(ctx.scope.plans.list().map((plan) => [plan.id, companiesOnPlan(plan.id)]))),
+      ctx.respond(() => { assertRole('systemManager'); return Object.fromEntries(ctx.scope.plans.list().map((plan) => [plan.id, companiesOnPlan(plan.id)])) }),
 
     getCurrentSubscription: () => ctx.respond(() => currentOf(settledCompany())),
 
