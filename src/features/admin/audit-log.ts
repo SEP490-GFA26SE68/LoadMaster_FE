@@ -72,6 +72,8 @@ const PARAM_KEYS = [
   'deadlineStatus', 'eta', 'deadline',
   // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
   'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
+  // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
+  'pickupId', 'failedRules', 'driverId',
 ] as const
 
 const FIELD_NAMES = [
@@ -231,6 +233,7 @@ function paramValue(event: AuditEvent, key: string, value: string | number, dire
     case 'route':
       return isOneOf(REROUTE_ROUTES, value) ? t(`monitoring.reroute.routes.${value}`) : value
     case 'requestedBy':
+    case 'driverId':
       return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho

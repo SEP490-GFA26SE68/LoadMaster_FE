@@ -220,6 +220,7 @@ const PROBES = {
   listPickupRequests: { scope: 'operational', hidden: ({ db, other }) => db.listPickupRequests(other.trip) },
   getPickupRequest: { scope: 'operational', hidden: ({ db, other }) => db.getPickupRequest(other.trip, 'PKR-001') },
   createPickupRequest: onForeignTrip((db, tripId) => db.createPickupRequest(tripId, PICKUP_INPUT)),
+  validatePickupRequest: onForeignTrip((db, tripId) => db.validatePickupRequest(tripId, 'PKR-001')),
   updatePickupStatus: onForeignTrip((db, tripId) => db.updatePickupStatus(tripId, 'PKR-001', 'VALIDATED')),
 
   authenticate: { scope: 'session' },

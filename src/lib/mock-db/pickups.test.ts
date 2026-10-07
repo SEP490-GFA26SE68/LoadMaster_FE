@@ -29,11 +29,11 @@ const PATH_TO: Record<PickupStatus, PickupStatus[]> = {
   DELIVERED: ['VALIDATED', 'APPROVED', 'LOADED', 'DELIVERED'],
 }
 
-/** Sơ đồ BE 3.3 chép tay: `PENDING` → `VALIDATED` / `REJECTED` → `APPROVED` (kể cả `REJECTED` có lý do vượt) → `LOADED` → `DELIVERED`. */
+/** Sơ đồ BE 3.3 chép tay: `PENDING` → `VALIDATED` / `REJECTED` → `APPROVED` (`PENDING` còn luật không đạt duyệt kèm lý do vượt) → `LOADED` → `DELIVERED`. */
 const ALLOWED: Record<PickupStatus, PickupStatus[]> = {
-  PENDING: ['VALIDATED', 'REJECTED'],
+  PENDING: ['VALIDATED', 'REJECTED', 'APPROVED'],
   VALIDATED: ['APPROVED', 'REJECTED'],
-  REJECTED: ['APPROVED'],
+  REJECTED: [],
   APPROVED: ['LOADED'],
   LOADED: ['DELIVERED'],
   DELIVERED: [],
@@ -56,15 +56,51 @@ test('the seed has one request waiting for approval, on the one trip of Long Bin
 })
 
 describe('createPickupRequest', () => {
-  test('creates a PENDING request with the next code, rounds sizes at the boundary and records the author', async () => {
+  test('creates a request with the next code, rounds sizes at the boundary, records the author and runs the ten rules at once', async () => {
     const db = newDb()
     const created = await db.createPickupRequest(TRIP, { ...INPUT, packages: [{ ...BOX, lengthCm: 60.04, weightKg: 12.004 }] })
     expect(created).toMatchObject({
-      id: 'PKR-002', companyId: 'LOG-001', tripId: TRIP, status: 'PENDING', validationResults: [], createdBy: DISPATCHER,
+      id: 'PKR-002', companyId: 'LOG-001', tripId: TRIP, createdBy: DISPATCHER,
       deadline: '2026-09-14T10:30:00.000Z', packages: [{ lengthCm: 60, weightKg: 12 }],
     })
+    expect(created.validationResults.map((result) => result.rule)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     expect((await db.listPickupRequests(TRIP)).map((item) => item.id)).toStrictEqual(['PKR-001', 'PKR-002'])
     expect(await db.getPickupRequest(TRIP, 'PKR-002')).toStrictEqual(created)
+    expect((await db.listEvents())[0]).toMatchObject({ action: 'pickup.requested', actorId: DISPATCHER, target: { type: 'trip', id: TRIP }, params: { pickupId: 'PKR-002', count: 1, failedRules: 1 } })
+  })
+
+  // Xe đang đứng ở điểm 2, hàng còn lại của điểm 3 nằm sâu trong thùng: 12 kg không đủ kéo trọng tâm về giữa (luật 6, ước lượng), 800 kg thì đủ
+  test.each([
+    { weightKg: 12, status: 'PENDING', failed: [6] },
+    { weightKg: 800, status: 'VALIDATED', failed: [] },
+  ])('a $weightKg kg request is $status: rules not passed $failed', async ({ weightKg, status, failed }) => {
+    const created = await newDb().createPickupRequest(TRIP, { ...INPUT, packages: [{ ...BOX, weightKg }] })
+    expect(created.status).toBe(status)
+    expect(created.validationResults.filter((result) => !result.passed).map((result) => result.rule)).toStrictEqual(failed)
+  })
+
+  test('validatePickupRequest checks the seed request that was never checked, and only a PENDING or VALIDATED one', async () => {
+    const db = newDb()
+    const checked = await db.validatePickupRequest(TRIP, 'PKR-001')
+    expect(checked.validationResults).toHaveLength(10)
+    expect(checked.status).toBe(checked.validationResults.every((result) => result.passed) ? 'VALIDATED' : 'PENDING')
+    await db.updatePickupStatus(TRIP, 'PKR-001', 'REJECTED')
+    await expect(db.validatePickupRequest(TRIP, 'PKR-001')).rejects.toMatchObject({ code: 'INVALID_PICKUP_STATUS_TRANSITION', params: { from: 'REJECTED' } })
+  })
+
+  test.each([
+    { who: 'the dispatcher', user: 'US-0001', allowed: true, can: 'can' },
+    { who: 'the driver of the trip', user: 'US-0006', allowed: true, can: 'can' },
+    { who: 'another driver', user: 'US-0004', allowed: false, can: 'cannot' },
+    { who: 'the manager', user: 'US-0002', allowed: false, can: 'cannot' },
+    { who: 'the warehouse worker', user: 'US-0003', allowed: false, can: 'cannot' },
+  ])('$who $can create and check a request', async ({ user, allowed }) => {
+    const db = createMockDb({ now: () => NOW })
+    db.restoreSession(user)
+    const create = db.createPickupRequest(TRIP, INPUT)
+    const validate = db.validatePickupRequest(TRIP, 'PKR-001')
+    if (allowed) await expect(Promise.all([create, validate])).resolves.toHaveLength(2)
+    else await expect(Promise.all([create.catch((error: unknown) => error), validate.catch((error: unknown) => error)])).resolves.toMatchObject([{ code: 'ROLE_NOT_ALLOWED' }, { code: 'ROLE_NOT_ALLOWED' }])
   })
 
   test.each([
@@ -110,13 +146,12 @@ describe('updatePickupStatus follows the transition table', () => {
     }
   })
 
-  test('approving a rejected request keeps the results and the override reason, and records who approved it and when', async () => {
-    const rejected = [{ rule: 3 as const, passed: false, code: 'PICKUP_PAYLOAD_EXCEEDED' as const, params: { overKg: 40 }, estimated: false }]
+  test('approving a PENDING request keeps the results and the override reason, and records who approved it and when', async () => {
+    const failed = [{ rule: 3 as const, passed: false, code: 'PICKUP_PAYLOAD_EXCEEDED' as const, params: { overKg: 40 }, estimated: false }]
     const id = await reach('PENDING')
-    await db.updatePickupStatus(TRIP, id, 'REJECTED', { validationResults: rejected })
-    const approved = await db.updatePickupStatus(TRIP, id, 'APPROVED', { overrideReason: '  Khách quen, xe còn chỗ  ' })
+    const approved = await db.updatePickupStatus(TRIP, id, 'APPROVED', { validationResults: failed, overrideReason: '  Khách quen, xe còn chỗ  ' })
     expect(approved).toMatchObject({
-      status: 'APPROVED', validationResults: rejected, overrideReason: 'Khách quen, xe còn chỗ', approvedBy: DISPATCHER, approvedAt: NOW.toISOString(),
+      status: 'APPROVED', validationResults: failed, overrideReason: 'Khách quen, xe còn chỗ', approvedBy: DISPATCHER, approvedAt: NOW.toISOString(),
     })
   })
 })

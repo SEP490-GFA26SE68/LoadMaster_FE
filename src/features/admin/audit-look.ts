@@ -7,6 +7,7 @@ import {
   KeyRound,
   MapPin,
   Package,
+  PackagePlus,
   QrCode,
   Route,
   Shapes,
@@ -34,6 +35,7 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   vehicleType: Container,
   manualConfirm: Hand,
   exception: TriangleAlert,
+  pickup: PackagePlus,
 }
 
 /**
@@ -109,6 +111,11 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'exception.escalated': 'amber',
   'exception.resolved': 'green',
   'exception.deadlineRenegotiated': 'blue',
+  'pickup.requested': 'amber',
+  'pickup.approved': 'green',
+  'pickup.rejected': 'amber',
+  'pickup.loaded': 'blue',
+  'pickup.delivered': 'green',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */
