@@ -17,7 +17,7 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
-| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
+| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02) |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: ticket hỗ trợ — màn tới Sprint 8 mới có |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03) |
@@ -47,7 +47,9 @@ là việc của route; kho chỉ xét phiên thuộc phạm vi nào. Nhật ký
 công ty đọc sự kiện của công ty mình. **Sự kiện về một tài khoản thuộc công ty của tài khoản đó**, ai làm cũng vậy (`auditEventCompany` —
 một luật cho seed và `ctx.log`; ghi nhật ký trước khi xoá tài khoản): quản trị hệ thống khoá một nhân viên thì quản trị công ty của người
 đó đọc được, kèm tên người làm (`listAuditNames` trả thêm người làm ngoài công ty); việc trên tài khoản nền tảng không thuộc công ty nào.
-Màn công ty (`companies.manage`) chưa có; tạo công ty kèm quản trị công ty đầu tiên là việc của màn đó.
+*(đã điều chỉnh 08/10/2026, FE-8-06)* **Màn công ty** `/nen-tang/cong-ty` (`companies.manage`, màn chính của quản trị hệ thống): danh sách công ty
+(tên, gói, trạng thái gói, số người dùng), tạo công ty **kèm Quản trị công ty đầu tiên** (mật khẩu tạm hiện một lần, như màn Người dùng), sửa thông tin và kho
+xuất phát; công ty mới chưa có gói. Chi tiết ở mục 9.
 *(đã điều chỉnh 02/10/2026, FE-0-07, D-80)* **Điều phối viên duyệt phương án**: `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều
 phối — lập chuyến, chạy tối ưu, chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty (`manager`) chỉ đọc + xuất báo cáo: mở
 Planner ở chế độ chỉ xem, một dòng lý do. Không còn hàng đợi `/duyet` (đường dẫn cũ là màn 404), quyền `plans.review` và các quyết định trả lại
@@ -67,7 +69,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*), `billing.manage` (màn `/goi-cuoc` và `/thanh-toan/gia-lap` — quản trị công ty; *bổ sung 08/10/2026, FE-8-03, FE-8-04*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*), `subscriptionPlans.manage` (màn `/nen-tang/goi` — quản lý nền tảng; *bổ sung 08/10/2026, FE-8-02*), `billing.manage` (màn `/goi-cuoc` và `/thanh-toan/gia-lap` — quản trị công ty; *bổ sung 08/10/2026, FE-8-03, FE-8-04*), `companies.manage` (màn `/nen-tang/cong-ty` — quản trị hệ thống; *bổ sung 08/10/2026, FE-8-06*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -92,7 +94,7 @@ nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài 
 Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
 ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
-chính đứng đầu. Quản trị hệ thống: Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
+chính đứng đầu. Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển
 (*đã điều chỉnh 03/10/2026, FE-6-10*: mục "Giám sát" `/giam-sat` đứng ngay sau Chuyến hàng ở cả hai vai trò — sáu mục, đã đo ở 1.366 px). Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với
 họ ở màn hồ sơ). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng chưa có mục nào nên thanh không vẽ khay điều hướng. Danh sách là phần chọn lọc và thứ tự;
@@ -106,7 +108,7 @@ Nhật ký và chuông chỉ biến đối tượng thành liên kết khi ngư�
 quản trị viên đọc nhật ký nhưng không xem được chuyến, xe. Màn kho và tài xế chỉ còn vai trò của chính nó mở được.
 Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. *(bổ sung 17/09/2026)* Đăng nhập xong mở
 màn của vai trò (`features/auth/landing.ts`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe` (LM-087),
-quản trị hệ thống và quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); *(tạm, FE-0-03)* hỗ trợ khách hàng `/ho-so` tới khi có màn ticket ở
+quản trị hệ thống `/nen-tang/cong-ty` (FE-8-06), quản trị công ty `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi` (FE-8-02); *(tạm, FE-0-03)* hỗ trợ khách hàng `/ho-so` tới khi có màn ticket ở
 Sprint 8 — màn chính phải là màn vai trò đó mở được, vì nút "Về màn chính" của 403 / 404, logo và nút thoát đều dẫn tới đó); liên kết sâu mở
 trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi nhớ trang đang đứng
 (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó). Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`):
@@ -283,7 +285,8 @@ src/
     billing/            *(bổ sung 08/10/2026, FE-8-03, FE-8-04)* gói cước và credit của công ty `/goi-cuoc` (`BillingPage`, `billing-api.ts`,
                         `useBillingQuery.ts`) và trang thanh toán giả lập `/thanh-toan/gia-lap` (`PaymentSimulationPage`, `payment-api.ts`)
     platform/           *(bổ sung 08/10/2026, FE-8-02)* màn của quản lý nền tảng: danh mục gói cước `/nen-tang/goi` (`PlansPage`, `PlanFormDialog`,
-                        `subscription-plans-api.ts`); màn Công ty và Hỗ trợ vào đây khi làm
+                        `subscription-plans-api.ts`); *(bổ sung 08/10/2026, FE-8-06)* màn Công ty của quản trị hệ thống `/nen-tang/cong-ty` (`CompaniesPage`,
+                        `CompanyFormDialog`, `companies-api.ts`)
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/ — LM-080), provider, hook (LM-027)
     mock-db/            kho in-memory: xe, chuyến, revision bất biến, Duyệt (LM-026); vòng đời chuyến, tiến độ kho/giao,
@@ -1701,6 +1704,18 @@ dù giao diện bị bỏ qua:
   nút khi giao dịch không còn `PENDING` ("Giao dịch đã được xử lý"). Xong thì về `/goi-cuoc` kèm toast nói đúng điều kho trả về (theo trạng thái cuối, không theo nút đã bấm);
   mã không có hoặc của công ty khác là màn "Không tìm thấy giao dịch". Có backend: `subscribe` / `topUpCredits` trả URL thanh toán và app chuyển thẳng sang đó (hiện
   `GET /api/payment/mock-checkout`), trang này không dùng nữa.
+- *(bổ sung 08/10/2026, FE-8-06, D-65)* **Công ty `/nen-tang/cong-ty`** (`features/platform`, `companies.manage`, màn chính và mục đầu của quản trị hệ thống): bảng công ty (tên + mã,
+  gói + hạng, trạng thái gói — nhãn của `billing.plan.status`, "Chưa có gói" khi chưa từng đăng ký —, số người dùng, nút sửa), **một nút chính "Tạo công ty"**. Kho
+  (`db-companies.ts`) chỉ cho quản trị hệ thống (`ROLE_NOT_ALLOWED`, xét sau công ty như mọi hàm ghi): `listCompanyOverview` (công ty + gói hiện tại + `planStatus` **tính theo
+  đồng hồ, không ghi** — `effectiveSubscriptionStatus`: gói quá hạn mà công ty chưa chạm tới vẫn hiện Đã hết hạn — + số người dùng), `createCompany` (mã `LOG-NNN`, **chưa có gói**,
+  kèm Quản trị công ty đầu tiên đang hoạt động có `depot` là tên kho xuất phát; mật khẩu tạm 10 ký tự trả đúng một lần — ngoại lệ duy nhất của luật "phiên nền tảng chỉ tạo vai trò
+  nền tảng" của `createUser`; ghi `company.created` — không thuộc công ty nào — rồi `user.created` — thuộc công ty mới) và `updateCompany` (tên, địa chỉ, số điện thoại, kho xuất phát;
+  ghi `company.updated` với `fields`, không đổi gì thì không ghi). Thiếu hoặc sai dữ liệu: `COMPANY_INVALID` kèm trường (`admin.email`, `depot.coordinates`…); email trùng (không phân biệt
+  hoa thường): `EMAIL_TAKEN`. Đọc gói, số dư của mọi công ty đi qua `ctx.scope.platform*` (`tenancy.ts`): phiên nền tảng và kho không phiên đọc được, phiên của một công ty bị
+  `ROLE_NOT_ALLOWED` — `getCurrentSubscription`… vẫn chỉ của công ty của phiên. Form (`company-form.ts`, zod, message là key từ điển) dùng `CoordinatePicker` cho kho; ba ô của quản
+  trị đầu tiên chỉ có ở form tạo. Tạo xong mở `TemporaryPasswordDialog` (dùng chung với màn Người dùng); kho từ chối thì câu lỗi hiện trong hộp thoại, dữ liệu đang nhập giữ nguyên.
+  Lớp API `companies-api.ts` → `useCompaniesQuery.ts`, khoá `['companies', 'overview']` (dưới `['companies']` — khoá tên công ty của Người dùng và Nhật ký, `staleTime: Infinity`),
+  mọi lần ghi làm mới `['companies']`, `['users']`, `['audit']`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

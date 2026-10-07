@@ -38,5 +38,4 @@ export const titles = {
   billing: 'Plan and credits',
   payment: 'Simulated payment',
   companies: 'Companies',
-  support: 'Customer support',
 } satisfies Dictionary<typeof source>

@@ -55,7 +55,7 @@ test('a trip the dispatcher cancels tops the system log and the log of its compa
 
   await signOutFromMenu(page, 'Nguyễn Thanh Tùng')
   await signIn(page, DEMO_EMAILS.systemAdmin, DEMO_PASSWORD)
-  await page.waitForURL(/\/nguoi-dung$/)
+  await page.waitForURL(/\/nen-tang\/cong-ty$/)
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhật ký', exact: true }).click()
   await page.waitForURL(/\/nhat-ky$/)
   await expect(page.getByRole('heading', { name: 'Nhật ký hệ thống', exact: true })).toBeVisible()

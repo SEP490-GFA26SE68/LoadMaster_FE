@@ -11,7 +11,7 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
 const HOMES: readonly (readonly [email: string, path: string, heading: string])[] = [
   // Nền tảng: quản lý nền tảng mở danh mục gói (FE-8-02); hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
-  ['quantri@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
+  ['quantri@loadmaster.vn', '/nen-tang/cong-ty', 'Công ty'],
   ['nentang@loadmaster.vn', '/nen-tang/goi', 'Gói cước'],
   ['hotro@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
   // Long Bình
@@ -89,18 +89,18 @@ test('customer support has no nav items and is never stranded: logo, 403 and 404
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the system administrator has users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
+test('the system administrator has companies, users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'systemAdmin')
-  await page.waitForURL((url) => url.pathname === '/nguoi-dung')
-  await expect(nav.getByRole('link')).toHaveText(['Người dùng', 'Nhật ký'])
+  await page.waitForURL((url) => url.pathname === '/nen-tang/cong-ty')
+  await expect(nav.getByRole('link')).toHaveText(['Công ty', 'Người dùng', 'Nhật ký'])
   for (const route of ['/', '/chuyen', `/chuyen/${SEED_TRIP}/phuong-an`, '/doi-xe', '/kho', '/tai-xe']) {
     await navigateInApp(page, route)
     await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true }), route).toBeVisible()
     // Về màn chính trước khi thử route kế tiếp: màn 403 của route trước không được làm route sau đạt thay
     await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-    await page.waitForURL((url) => url.pathname === '/nguoi-dung')
-    await expect(page.getByRole('heading', { level: 1, name: 'Người dùng', exact: true }), route).toBeVisible()
+    await page.waitForURL((url) => url.pathname === '/nen-tang/cong-ty')
+    await expect(page.getByRole('heading', { level: 1, name: 'Công ty', exact: true }), route).toBeVisible()
   }
   expect(browserErrors).toStrictEqual([])
 })

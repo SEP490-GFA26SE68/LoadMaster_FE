@@ -56,7 +56,7 @@ test.each<[Role, string[]]>([
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước']],
-  ['systemAdmin', ['Người dùng', 'Nhật ký']],
+  ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký']],
   ['companyAdmin', ['Người dùng', 'Nhật ký', 'Gói và credit']],
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
@@ -107,7 +107,7 @@ test.each<[Role, boolean]>([
 
 /** LM-104, FE-0-04: logo mở bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không rơi vào màn 403 hay 404. */
 test.each<[Role, string]>([
-  ['systemAdmin', '/nguoi-dung'],
+  ['systemAdmin', '/nen-tang/cong-ty'],
   ['systemManager', '/nen-tang/goi'],
   ['systemSupporter', '/ho-so'],
   ['companyAdmin', '/nguoi-dung'],

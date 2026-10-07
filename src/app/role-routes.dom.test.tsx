@@ -45,8 +45,8 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 }
 
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
-  expect(['/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi'].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
-  expect(['/duyet', '/lo-hang', '/nhan-hang', '/nen-tang/cong-ty', '/ho-tro'].filter((path) => routeAccess(path).exists))
+  expect(['/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty'].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
+  expect(['/duyet', '/lo-hang', '/nhan-hang', '/ho-tro'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
   expect(routeAccess('/chuyen/moi').permissions).toStrictEqual(['trips.edit'])
   // Yêu cầu giao thay Đơn hàng (FE-4b-02): đường dẫn cũ chuyển hướng, cùng nhóm quyền với màn mới
@@ -56,6 +56,8 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/giam-sat').permissions).toStrictEqual(['monitoring.view'])
   // Danh mục gói (FE-8-02): quản lý nền tảng
   expect(routeAccess('/nen-tang/goi').permissions).toStrictEqual(['subscriptionPlans.manage'])
+  // Công ty (FE-8-06): quản trị hệ thống
+  expect(routeAccess('/nen-tang/cong-ty').permissions).toStrictEqual(['companies.manage'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])
 })
 

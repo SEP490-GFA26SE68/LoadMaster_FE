@@ -51,7 +51,7 @@ test.each([
   ['taixe@loadmaster.vn', '/tai-xe'],
   ['dieuphoi@loadmaster.vn', '/chuyen'],
   ['quanly@loadmaster.vn', '/'],
-  ['quantri@loadmaster.vn', '/nguoi-dung'],
+  ['quantri@loadmaster.vn', '/nen-tang/cong-ty'],
   // FE-0-03: quản trị công ty; hai vai trò nền tảng chưa có màn riêng mở hồ sơ cá nhân; tài khoản của Phương Nam
   ['qtcongty@loadmaster.vn', '/nguoi-dung'],
   ['nentang@loadmaster.vn', '/nen-tang/goi'],
