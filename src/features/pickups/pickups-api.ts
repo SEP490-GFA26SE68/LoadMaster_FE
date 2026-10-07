@@ -2,9 +2,10 @@
  * Hàm → endpoint backend (FE-0-09, issue BE S7-02, S7-03); nối backend chỉ thay thân hàm.
  *   createPickupRequest   → POST /api/trips/{id}/pickup-requests
  *   validatePickupRequest → GET /api/trips/{id}/pickup-requests/{pid}/validate (kho FE ghi cả kết quả lên yêu cầu)
- *   chưa có ở BE: listPickupRequests, getPickupRequest
+ *   approvePickupRequest  → POST /api/trips/{id}/pickup-requests/{pid}/approve (`override`)
+ *   chưa có ở BE: fetchPickupRows, getPickupRequest, rejectPickupRequest
  */
-import { getMockDb, type PickupRequest, type PickupRequestInput } from '@/lib/mock-db'
+import { getMockDb, type PickupApproval, type PickupApproveInput, type PickupRequest, type PickupRequestInput } from '@/lib/mock-db'
 
 /**
  * Lớp gọi API của nhận hàng dọc đường (FE-7-03, D-88). Chưa có backend: yêu cầu nằm trong kho của tab đang mở. Mười luật do kho kiểm
@@ -42,4 +43,19 @@ export function createPickupRequest(tripId: string, input: PickupRequestInput): 
 // GET /api/trips/{id}/pickup-requests/{pid}/validate
 export function validatePickupRequest(tripId: string, pickupId: string): Promise<PickupRequest> {
   return getMockDb().validatePickupRequest(tripId, pickupId)
+}
+
+/**
+ * Điều phối viên duyệt. Kho kiểm lại mười luật; còn luật không đạt thì cần `overrideReason`. Duyệt xong kiện vào kho kiện kèm mã QR,
+ * điểm nhận và điểm giao chèn vào tuyến của chuyến đang vận chuyển.
+ */
+// POST /api/trips/{id}/pickup-requests/{pid}/approve
+export function approvePickupRequest(tripId: string, pickupId: string, input: PickupApproveInput = {}): Promise<PickupApproval> {
+  return getMockDb().approvePickupRequest(tripId, pickupId, input)
+}
+
+/** Điều phối viên từ chối kèm lý do: không tạo kiện, không chèn điểm. */
+// chưa có ở BE
+export function rejectPickupRequest(tripId: string, pickupId: string, reason: string): Promise<PickupRequest> {
+  return getMockDb().rejectPickupRequest(tripId, pickupId, reason)
 }

@@ -1,8 +1,10 @@
-import { RefreshCw } from 'lucide-react'
+import { Check, Printer, RefreshCw, X } from 'lucide-react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
+import { labelsPath } from '@/features/package-pool/packages-list'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { PICKUP_STATUS_LOOK } from './pickup-look'
 import { PickupRulesList } from './PickupRulesList'
@@ -12,9 +14,17 @@ import { useValidatePickupMutation } from './usePickupsQuery'
 /**
  * Một yêu cầu nhận hàng dọc đường trong thẻ của chuyến (FE-7-03): mã, trạng thái, điểm nhận → điểm giao, số kiện và khối lượng, hạn,
  * người gửi; số luật đạt kèm danh sách mười luật mở ra được; lý do vượt luật hoặc từ chối nếu có. Yêu cầu còn chờ duyệt kiểm lại luật
- * được (theo `pickups.create`) — xe đã đi tiếp nên kết quả có thể khác lúc gửi.
+ * được (theo `pickups.create`) — xe đã đi tiếp nên kết quả có thể khác lúc gửi. Điều phối viên (`pickups.approve`) có cặp nút phụ Từ chối /
+ * Duyệt ở yêu cầu còn chờ; yêu cầu đã duyệt có lối in nhãn gửi bên gửi (`labels.print`).
  */
-export function PickupRequestItem({ tripId, row, stopLabel }: { tripId: string; row: PickupRow; stopLabel: (stopId: string) => string }) {
+export function PickupRequestItem({ tripId, row, stopLabel, onApprove, onReject }: {
+  tripId: string
+  row: PickupRow
+  stopLabel: (stopId: string) => string
+  /** Có mặt khi người xem có `pickups.approve`: Duyệt, Từ chối cho yêu cầu còn chờ. */
+  onApprove?: (row: PickupRow) => void
+  onReject?: (row: PickupRow) => void
+}) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
@@ -25,6 +35,7 @@ export function PickupRequestItem({ tripId, row, stopLabel }: { tripId: string; 
   const passed = results.filter((result) => result.passed).length
   const weightKg = request.packages.reduce((sum, pkg) => sum + pkg.weightKg, 0)
   const waiting = request.status === 'PENDING' || request.status === 'VALIDATED'
+  const printable = request.packageIds !== undefined && request.packageIds.length > 0 && can('labels.print')
   const moment = { time: format.time(request.createdAt), date: format.dayMonth(request.createdAt) }
 
   function handleRecheck() {
@@ -57,6 +68,26 @@ export function PickupRequestItem({ tripId, row, stopLabel }: { tripId: string; 
           <Button variant="ghost" size="sm" loading={validate.isPending} aria-label={t('pickups.card.recheckLabel', { id: request.id })} onClick={handleRecheck}>
             <RefreshCw strokeWidth={1.5} />
             {t('pickups.card.recheck')}
+          </Button>
+        ) : null}
+        {waiting && onApprove && onReject ? (
+          <div className="ml-auto flex flex-none items-center gap-2">
+            <Button variant="ghost" size="sm" aria-label={t('pickups.actions.rejectLabel', { id: request.id })} onClick={() => onReject(row)}>
+              <X strokeWidth={1.5} />
+              {t('pickups.actions.reject')}
+            </Button>
+            <Button variant="secondary" size="sm" aria-label={t('pickups.actions.approveLabel', { id: request.id })} onClick={() => onApprove(row)}>
+              <Check strokeWidth={1.5} />
+              {t('pickups.actions.approve')}
+            </Button>
+          </div>
+        ) : null}
+        {printable ? (
+          <Button asChild variant="secondary" size="sm" className="ml-auto">
+            <Link to={labelsPath(request.packageIds ?? [])} aria-label={t('pickups.actions.printLabelsLabel', { id: request.id })}>
+              <Printer strokeWidth={1.5} />
+              {t('pickups.actions.printLabels')}
+            </Link>
           </Button>
         ) : null}
       </div>

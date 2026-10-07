@@ -57,7 +57,7 @@ export function arrivedStopProgress(trip: Trip, stopNumber: number): StopProgres
 
 /** Kiện `packageInstanceId` dỡ được ở điểm `stopNumber`: thuộc phương án, đúng điểm, và có trên xe. */
 export function assertUnloadable(trip: Trip, plan: Revision, stopNumber: number, packageInstanceId: string, token: string) {
-  const plannedStop = plannedStops(plan).get(packageInstanceId)
+  const plannedStop = plannedStops(plan, trip.stops).get(packageInstanceId)
   if (plannedStop === undefined) throw new MockDbError('PACKAGE_NOT_IN_TRIP', { tripId: trip.id, token })
   if (plannedStop !== stopNumber) throw new MockDbError('QR_WRONG_STOP', { packageInstanceId, stopNumber: plannedStop })
   if (leftOutIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId: trip.id, packageInstanceId })

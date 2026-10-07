@@ -1,8 +1,9 @@
 import { expandPackages } from '@/domain/cargo'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { isActiveException, type TripException } from './exception-model'
+import { currentNumbersOfPlan, hasInsertedStops } from './plan-stops'
 import { isStale } from './revisions'
-import type { Revision, Trip, TripPhase } from './types'
+import type { DeliveryStop, Revision, Trip, TripPhase } from './types'
 import { pendingManualConfirms } from './verify-model'
 
 /** Pha xe đang bận (D-53): kho đang xếp, đã xếp xong chờ chạy, đang giao. */
@@ -12,7 +13,11 @@ export function isActivePhase(phase: TripPhase): boolean {
   return ACTIVE_PHASES.includes(phase)
 }
 
-/** Từ khi kho bắt đầu xếp, xe, điểm giao và kiện của chuyến bị khoá (D-45). */
+/**
+ * Từ khi kho bắt đầu xếp, xe, điểm giao và kiện của chuyến bị khoá (D-45). Ngoại lệ duy nhất, ở **một** chỗ: duyệt yêu cầu nhận hàng dọc
+ * đường chèn điểm nhận và điểm giao vào chuyến đang vận chuyển (`insertPickupIntoTrip`, FE-7-04, PRD v2 mục 7.1); mọi hàm sửa chuyến
+ * khác vẫn chặn `TRIP_LOCKED`.
+ */
 export function isLockedPhase(phase: TripPhase): boolean {
   return phase !== 'planning'
 }
@@ -113,13 +118,17 @@ export function tripManualSubStatus(trip: Pick<Trip, 'phase' | 'verifications'>)
   return count > 0 ? { kind: 'manualPending', count } : null
 }
 
-/** Kiện đã xếp trong phương án: mã instance → số điểm giao. */
-export function plannedStops(revision: Pick<Revision, 'request' | 'result'>): Map<string, number> {
+/**
+ * Kiện đã xếp trong phương án: mã instance → số điểm giao. Phương án đánh số điểm theo lúc duyệt; chuyến đã chèn điểm nhận dọc đường
+ * (FE-7-04) thì truyền `stops` để đổi sang số điểm **hiện tại** (`plan-stops.ts`) — không truyền thì giữ số của phương án.
+ */
+export function plannedStops(revision: Pick<Revision, 'request' | 'result'>, stops?: readonly Pick<DeliveryStop, 'planNumber'>[]): Map<string, number> {
   const stopById = new Map(expandPackages(revision.request.packages).instances.map((i) => [i.packageInstanceId, i.deliveryStop]))
+  const current = stops !== undefined && hasInsertedStops(stops) ? currentNumbersOfPlan(stops) : undefined
   const planned = new Map<string, number>()
   for (const { packageInstanceId } of revision.result.placements) {
     const stop = stopById.get(packageInstanceId)
-    if (stop !== undefined) planned.set(packageInstanceId, stop)
+    if (stop !== undefined) planned.set(packageInstanceId, current?.get(stop) ?? stop)
   }
   return planned
 }
@@ -142,7 +151,7 @@ export function loadingRemaining(trip: Pick<Trip, 'loading'>, revision: Pick<Rev
 }
 
 /** Kiện phải dỡ ở điểm `stopNumber`: kiện đã xếp của phương án thuộc điểm đó, trừ kiện hỏng bị bỏ lại kho. */
-export function stopItemIds(trip: Pick<Trip, 'loading'>, revision: Pick<Revision, 'request' | 'result'>, stopNumber: number): string[] {
+export function stopItemIds(trip: Pick<Trip, 'loading' | 'stops'>, revision: Pick<Revision, 'request' | 'result'>, stopNumber: number): string[] {
   const leftOut = leftOutIds(trip)
-  return [...plannedStops(revision)].filter(([id, stop]) => stop === stopNumber && !leftOut.has(id)).map(([id]) => id)
+  return [...plannedStops(revision, trip.stops)].filter(([id, stop]) => stop === stopNumber && !leftOut.has(id)).map(([id]) => id)
 }

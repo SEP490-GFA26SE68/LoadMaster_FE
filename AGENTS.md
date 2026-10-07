@@ -67,7 +67,7 @@ PRD v2 (`requirements.*`, `packages.view`/`manage`/`lookup`, `labels.print`, `ro
 `exceptions.*`, `deadlines.renegotiate`, `pickups.*`, `companies.manage`, `subscriptionPlans.manage`, `billing.manage`, `support.*`) đã có tên và
 nhãn; trừ `packages.view`, `packages.manage`, `packages.lookup`, `labels.print`, `requirements.view` / `requirements.edit` (FE-4b-02),
 `routes.optimize` (nút "Tối ưu tuyến" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-4b-09*), `manualConfirm.approve` (nút
-Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*) và — *(đã điều chỉnh
+Duyệt / Từ chối của thẻ "Xác nhận tay chờ duyệt" ở Chi tiết chuyến — điều phối viên, *bổ sung 03/10/2026, FE-6-04*), `pickups.create` (nút "Nhận hàng dọc đường" của thẻ yêu cầu nhận ở Chi tiết chuyến và `/giam-sat` — điều phối viên; ở màn điểm giao — tài xế; *bổ sung 07/10/2026, FE-7-03*), `pickups.approve` (cặp nút Từ chối / Duyệt của thẻ đó — điều phối viên; *bổ sung 07/10/2026, FE-7-04*) và — *(đã điều chỉnh
 03/10/2026, FE-6-10 → FE-6-12)* — bốn quyền của giám sát: `monitoring.view` (màn `/giam-sat` và vị trí xe ở Chi tiết chuyến — điều phối viên,
 quản lý công ty), `exceptions.report` (nút "Báo sự cố" ở `/giam-sat` của điều phối viên, nút "Sự cố trên đường" ở màn điểm giao của tài xế),
 `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối viên) và `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý
@@ -1592,6 +1592,24 @@ dù giao diện bị bỏ qua:
   (nhiều dòng kiện, `react-hook-form` + zod — lỗi là mã, luật thuần ở `pickup-form.ts`) lưu xong chuyển sang kết quả mười luật thay vì đóng; mỗi luật
   là một dòng Đạt / Không đạt bằng chữ kèm nhãn "Ước lượng" ở luật ước lượng (`PickupRulesList`, câu dịch ở `pickup-rule-text.ts` — mỗi mã một
   nhánh nên thêm mã mà quên câu là lỗi kiểu). Khoá Query `['trips', tripId, 'pickups']`; ghi làm mới `['trips']`, `['notifications']`.
+- *(bổ sung 07/10/2026, FE-7-04, D-88)* **Duyệt và từ chối.** `approvePickupRequest(tripId, pickupId, { overrideReason? })` — chỉ điều phối viên
+  (`ROLE_NOT_ALLOWED`), chuyến phải Đang vận chuyển, yêu cầu `PENDING` / `VALIDATED`. Kho **kiểm lại mười luật** trên chuyến lúc này: còn luật
+  không đạt mà không có lý do là `REASON_REQUIRED` (lý do lưu trên yêu cầu và vào nhật ký; đạt cả mười thì lý do bị bỏ). Rồi, trong một lần
+  ghi: (1) `createPickupPackages` tạo kiện kho kiện nguồn `PICKUP`, `ASSIGNED`, kèm chuyến, điểm giao và mã QR thật (kiện thứ i ứng
+  `packages[i]`, `PickupRequest.packageIds`); (2) `insertPickupIntoTrip` (`db-pickup-stops.ts`) chèn điểm nhận (`kind: 'PICKUP'`) và điểm giao
+  ngay sau điểm hiện tại bằng `insertPickupStops` của domain — điểm giao trùng điểm có sẵn thì dùng lại, hạn của điểm là hạn sớm nhất. Đây là
+  **ngoại lệ duy nhất của `TRIP_LOCKED`** khi chuyến đã rời kho và nằm ở đúng một hàm: `updateTrip`, `changeTripVehicle`, tối ưu tuyến… vẫn từ
+  chối. Số điểm là vị trí + 1 nên các điểm sau lệch số: kho đánh số lại tiến độ giao, sự cố giao, lần đối chiếu, dòng kiện của chuyến, sự cố cấp
+  chuyến, tuyến thay thế, cảnh báo trễ hạn, và ghi `DeliveryStop.planNumber` — số của điểm trong phương án đã duyệt (`null` cho điểm chèn lúc
+  chạy; `plan-stops.ts`). Phương án là revision bất biến đánh số theo lúc duyệt, nên mọi chỗ đọc "kiện của điểm n" từ phương án đổi số qua
+  `plannedStops(plan, trip.stops)` / `stopItemIds` / `adaptResult` (scene của tài xế, Planner, báo cáo chuyến). Chèn điểm **không** tăng
+  `inputVersion` (phương án không lỗi thời) và **không** đi qua `withFreshRoute` — thêm điểm ở pha lập kế hoạch bỏ `routePlan` và đưa chuyến
+  về Nháp, còn ở đây `routePlan` giữ lại và tính lại giờ đến, mức hạn theo thứ tự mới (`routePlanOf`), ETA trực tiếp tính lại từ vị trí xe.
+  `rejectPickupRequest(tripId, pickupId, reason)` cũng chỉ điều phối viên, lý do bắt buộc, không tạo kiện hay điểm nào; `REJECTED` là trạng
+  thái cuối. Nhật ký `pickup.approved` / `pickup.rejected` mang `driverId` của chuyến — tài xế của chuyến nhận chuông. Màn: thẻ `PickupRequestsCard`
+  có cặp nút phụ Từ chối / Duyệt ở yêu cầu còn chờ (`pickups.approve`); `PickupApproveDialog` kiểm lại luật khi mở, ô lý do vượt luật hiện khi
+  còn luật không đạt, duyệt xong chuyển sang bước liệt kê kiện kèm mã QR và nút "In nhãn gửi bên gửi" (`labelsPath`, cần `labels.print`) —
+  yêu cầu đã duyệt giữ nút này trong thẻ. Duyệt làm mới `['trips']`, `['notifications']`, `['package-pool']`, `['driver']`, `['warehouse-labels']`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

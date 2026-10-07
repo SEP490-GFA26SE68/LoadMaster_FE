@@ -6,8 +6,10 @@ import type { PickupsDb } from './db-api-pickups'
 import { nextId, optionalText, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
+import { createPickupPackages } from './db-pickup-packages'
+import { insertPickupIntoTrip } from './db-pickup-stops'
 import { buildPickupContext } from './pickup-context'
-import { canTransitionPickup, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
+import { canTransitionPickup, MAX_PICKUP_REASON_LENGTH, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
 import { isValidCoordinate } from './requirement-model'
 import type { Trip } from './types'
 
@@ -122,6 +124,44 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
         }
         const validationResults = evaluatePickup(buildPickupContext(ctx, trip, current))
         return put(pickups, { ...current, validationResults, status: statusOf(validationResults) })
+      }),
+    approvePickupRequest: (tripId, pickupId, input = {}) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher')
+        const current = pickupOf(tripId, pickupId)
+        if (!canTransitionPickup(current.status, 'APPROVED')) throw new MockDbError('INVALID_PICKUP_STATUS_TRANSITION', { pickupId, from: current.status, to: 'APPROVED' })
+        if (trip.phase !== 'delivering') throw new MockDbError('TRIP_PHASE_INVALID', { tripId, phase: trip.phase })
+        // Kiểm lại trên chuyến lúc này: xe đã đi tiếp từ lúc gửi yêu cầu
+        const context = buildPickupContext(ctx, trip, current)
+        const validationResults = evaluatePickup(context)
+        const failed = validationResults.filter((result) => !result.passed).length
+        const overrideReason = failed === 0 ? undefined : optionalText(input.overrideReason)?.slice(0, MAX_PICKUP_REASON_LENGTH)
+        if (failed > 0 && overrideReason === undefined) throw new MockDbError('REASON_REQUIRED', {})
+        const inserted = insertPickupIntoTrip(ctx, trip, current, context.stops)
+        const created = createPickupPackages(ctx, current, inserted.deliveryStopId)
+        const { overrideReason: _earlier, ...kept } = current
+        const request = put(pickups, {
+          ...kept, validationResults, status: 'APPROVED', approvedAt: ctx.nowIso(), approvedBy: ctx.state.session.userId,
+          packageIds: created.map((pkg) => pkg.id), pickupStopId: inserted.pickupStopId, deliveryStopId: inserted.deliveryStopId,
+          ...(overrideReason === undefined ? {} : { overrideReason }),
+        })
+        ctx.log('pickup.approved', { type: 'trip', id: tripId }, {
+          pickupId, count: created.length, failedRules: failed, ...(overrideReason === undefined ? {} : { reason: overrideReason }),
+          ...(trip.driverId === null ? {} : { driverId: trip.driverId }),
+        })
+        return { request, packages: created }
+      }),
+    rejectPickupRequest: (tripId, pickupId, reason) =>
+      ctx.respond(() => {
+        const trip = ctx.scope.trips.own(tripId)
+        assertRole(trip, 'dispatcher')
+        const current = pickupOf(tripId, pickupId)
+        if (!canTransitionPickup(current.status, 'REJECTED')) throw new MockDbError('INVALID_PICKUP_STATUS_TRANSITION', { pickupId, from: current.status, to: 'REJECTED' })
+        const rejectReason = optionalText(reason)?.slice(0, MAX_PICKUP_REASON_LENGTH)
+        if (rejectReason === undefined) throw new MockDbError('REASON_REQUIRED', {})
+        ctx.log('pickup.rejected', { type: 'trip', id: tripId }, { pickupId, reason: rejectReason, ...(trip.driverId === null ? {} : { driverId: trip.driverId }) })
+        return put(pickups, { ...current, status: 'REJECTED', rejectReason, rejectedAt: ctx.nowIso(), rejectedBy: ctx.state.session.userId })
       }),
     updatePickupStatus: (tripId, pickupId, status, details = {}) =>
       ctx.respond(() => {

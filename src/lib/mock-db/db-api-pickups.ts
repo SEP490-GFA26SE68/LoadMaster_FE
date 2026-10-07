@@ -1,4 +1,11 @@
+import type { Package } from './package-model'
 import type { PickupRequest, PickupRequestInput, PickupStatus, PickupStatusDetails } from './pickup-model'
+
+/** Kết quả duyệt: yêu cầu `APPROVED` và các kiện kho kiện vừa tạo, theo thứ tự `request.packages`. */
+export type PickupApproval = { request: PickupRequest; packages: Package[] }
+
+/** Lý do vượt luật gửi kèm lần duyệt: bắt buộc khi còn luật không đạt, bỏ qua khi đạt cả mười. */
+export type PickupApproveInput = { overrideReason?: string }
 
 /**
  * Phần kho của yêu cầu nhận hàng dọc đường (FE-7-01, D-88). Cùng quy ước với `MockDb`: bất đồng bộ, trả bản sao, từ chối bằng
@@ -24,6 +31,19 @@ export type PickupsDb = {
    * đạt cả mười thì `VALIDATED`, không thì `PENDING`. Chỉ yêu cầu `PENDING` hoặc `VALIDATED`, khác là `INVALID_PICKUP_STATUS_TRANSITION`.
    */
   validatePickupRequest(tripId: string, pickupId: string): Promise<PickupRequest>
+  /**
+   * Điều phối viên duyệt (FE-7-04): kho **kiểm lại mười luật** trên chuyến lúc này. Còn luật không đạt mà không có `overrideReason`:
+   * `REASON_REQUIRED`; có lý do thì duyệt được và lý do lưu trên yêu cầu. Duyệt xong kho tạo kiện kho kiện (nguồn `PICKUP`, `ASSIGNED`,
+   * mã QR mới) và chèn điểm nhận, điểm giao vào tuyến — ngoại lệ duy nhất của `TRIP_LOCKED` (`db-pickup-stops.ts`). Chuyến phải đang
+   * vận chuyển (`TRIP_PHASE_INVALID`), yêu cầu phải `PENDING` hoặc `VALIDATED` (`INVALID_PICKUP_STATUS_TRANSITION`); vai trò khác điều
+   * phối viên: `ROLE_NOT_ALLOWED`. Ghi sự kiện `pickup.approved`.
+   */
+  approvePickupRequest(tripId: string, pickupId: string, input?: PickupApproveInput): Promise<PickupApproval>
+  /**
+   * Điều phối viên từ chối kèm lý do bắt buộc (`REASON_REQUIRED`): yêu cầu `REJECTED`, không tạo kiện, không chèn điểm. Yêu cầu phải
+   * `PENDING` hoặc `VALIDATED`. Ghi sự kiện `pickup.rejected`.
+   */
+  rejectPickupRequest(tripId: string, pickupId: string, reason: string): Promise<PickupRequest>
   /**
    * Chuyển trạng thái theo bảng `PICKUP_TRANSITIONS`; sai bảng: `INVALID_PICKUP_STATUS_TRANSITION`. `details` ghi kết quả kiểm luật
    * và lý do vượt luật; sang `APPROVED` kho ghi người và thời điểm duyệt.

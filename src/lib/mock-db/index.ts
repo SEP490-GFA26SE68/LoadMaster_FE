@@ -55,9 +55,11 @@ export {
   type PackageSource,
   type PackageStatus,
 } from './package-model'
-export type { PickupsDb } from './db-api-pickups'
+export type { PickupApproval, PickupApproveInput, PickupsDb } from './db-api-pickups'
+export { currentNumbersOfPlan, hasInsertedStops, planNumberOf } from './plan-stops'
 export {
   canTransitionPickup,
+  MAX_PICKUP_REASON_LENGTH,
   PICKUP_STATUSES,
   PICKUP_TRANSITIONS,
   type PickupPackage,

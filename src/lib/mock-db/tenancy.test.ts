@@ -221,6 +221,8 @@ const PROBES = {
   getPickupRequest: { scope: 'operational', hidden: ({ db, other }) => db.getPickupRequest(other.trip, 'PKR-001') },
   createPickupRequest: onForeignTrip((db, tripId) => db.createPickupRequest(tripId, PICKUP_INPUT)),
   validatePickupRequest: onForeignTrip((db, tripId) => db.validatePickupRequest(tripId, 'PKR-001')),
+  approvePickupRequest: onForeignTrip((db, tripId) => db.approvePickupRequest(tripId, 'PKR-001')),
+  rejectPickupRequest: onForeignTrip((db, tripId) => db.rejectPickupRequest(tripId, 'PKR-001', 'Không nhận được')),
   updatePickupStatus: onForeignTrip((db, tripId) => db.updatePickupStatus(tripId, 'PKR-001', 'VALIDATED')),
 
   authenticate: { scope: 'session' },

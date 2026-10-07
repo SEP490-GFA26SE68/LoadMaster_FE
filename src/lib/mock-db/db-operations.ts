@@ -133,7 +133,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         if (packageInstanceId !== undefined) {
           // Sự cố theo kiện xảy ra ở điểm giao: tài xế phải đã đến (FE-6-06)
           arrivedStop(trip, stopNumber)
-          if (plannedStops(planOf(trip)).get(packageInstanceId) !== stopNumber) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId })
+          if (plannedStops(planOf(trip), trip.stops).get(packageInstanceId) !== stopNumber) throw new MockDbError('INSTANCE_NOT_IN_PLAN', { tripId, packageInstanceId })
           if (leftOutIds(trip).has(packageInstanceId)) throw new MockDbError('INSTANCE_NOT_LOADED', { tripId, packageInstanceId })
         }
         const trimmed = note.trim()

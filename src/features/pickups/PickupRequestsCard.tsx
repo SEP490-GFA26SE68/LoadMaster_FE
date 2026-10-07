@@ -7,9 +7,12 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { useT } from '@/lib/i18n'
 import type { TripPhase } from '@/lib/mock-db'
+import { PickupApproveDialog } from './PickupApproveDialog'
+import { PickupRejectDialog } from './PickupRejectDialog'
 import { PickupRequestDialog } from './PickupRequestDialog'
 import { PickupRequestItem } from './PickupRequestItem'
 import { stopLabeler, type StopRef } from './pickup-stops'
+import type { PickupRow } from './pickups-api'
 import { usePickupRequestsQuery } from './usePickupsQuery'
 
 /**
@@ -25,9 +28,12 @@ export function PickupRequestsCard({ tripId, phase, stops }: { tripId: string; p
   const blockedId = useId()
   const query = usePickupRequestsQuery(tripId)
   const [creating, setCreating] = useState(false)
+  const [approving, setApproving] = useState<PickupRow | null>(null)
+  const [rejecting, setRejecting] = useState<PickupRow | null>(null)
   const stopLabel = useMemo(() => stopLabeler(stops, t), [stops, t])
   const rows = query.data ?? []
   const inTransit = phase === 'delivering'
+  const canDecide = can('pickups.approve') && inTransit
   if (!inTransit && rows.length === 0) return null
 
   return (
@@ -51,11 +57,23 @@ export function PickupRequestsCard({ tripId, phase, stops }: { tripId: string; p
         <p className="m-0 px-4.5 pb-4 text-small text-ink-3">{t('pickups.card.empty')}</p>
       ) : (
         <ul className="m-0 flex list-none flex-col divide-y divide-line-soft border-t border-line-soft p-0">
-          {rows.map((row) => <PickupRequestItem key={row.request.id} tripId={tripId} row={row} stopLabel={stopLabel} />)}
+          {rows.map((row) => (
+            <PickupRequestItem
+              key={row.request.id}
+              tripId={tripId}
+              row={row}
+              stopLabel={stopLabel}
+              onApprove={canDecide ? setApproving : undefined}
+              onReject={canDecide ? setRejecting : undefined}
+            />
+          ))}
         </ul>
       )}
       {!inTransit && can('pickups.create') ? <p id={blockedId} className="m-0 border-t border-line-soft px-4.5 py-2.5 text-note text-ink-3">{t('pickups.blocked')}</p> : null}
       {can('pickups.create') ? <PickupRequestDialog tripId={tripId} stops={stops} open={creating} onOpenChange={setCreating} /> : null}
+      {canDecide ? <PickupApproveDialog tripId={tripId} row={approving} stopLabel={stopLabel} onOpenChange={(open) => { if (!open) setApproving(null) }} /> : null}
+      {canDecide ? <PickupRejectDialog tripId={tripId} row={rejecting} onOpenChange={(open) => { if (!open) setRejecting(null) }} /> : null}
+      {!canDecide && rows.some((row) => row.request.status === 'PENDING' || row.request.status === 'VALIDATED') && !can('pickups.approve') ? <p className="m-0 border-t border-line-soft px-4.5 py-2.5 text-note text-ink-3">{t('pickups.actions.readOnly')}</p> : null}
     </Card>
   )
 }
