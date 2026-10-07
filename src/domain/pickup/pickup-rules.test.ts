@@ -100,6 +100,12 @@ describe('rule 2: the delivery point is after the current stop and not beyond th
     expect(rule(at(106.85, stops), 2)).toMatchObject({ passed: true })
     expect(rule(at(106.95, stops), 2)).toMatchObject({ passed: false, code: 'PICKUP_DELIVERY_BEYOND_PROTECTED' })
   })
+
+  test('the current stop is the last one of the route: any delivery point passes, even one behind it', () => {
+    const lastLeg = STOPS.slice(0, 2)
+    expect(rule(at(106.9, lastLeg), 2)).toMatchObject({ passed: true, code: 'PICKUP_DELIVERY_IN_RANGE' })
+    expect(rule(at(106.6, lastLeg), 2)).toMatchObject({ passed: true, code: 'PICKUP_DELIVERY_IN_RANGE' })
+  })
 })
 
 describe('rule 3: the vehicle still has payload', () => {

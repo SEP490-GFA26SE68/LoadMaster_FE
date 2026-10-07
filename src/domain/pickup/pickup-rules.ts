@@ -27,10 +27,12 @@ function routeRule({ request, position, stops }: PickupContext): PickupRuleResul
 /**
  * Luật 2: điểm giao nằm sau điểm hiện tại và không vượt quá điểm được bảo vệ (điểm kế tiếp còn hàng trên xe; được trùng điểm đó). Đo
  * bằng tiến độ của điểm giao dọc đường từ điểm hiện tại qua các điểm còn lại; không có điểm được bảo vệ thì chỉ cần sau điểm hiện tại.
+ * Điểm hiện tại là điểm cuối của tuyến: sau nó không còn đoạn đường nào để đo và không còn hàng nào để chắn — điểm giao nào cũng đạt.
  */
 function deliveryRule({ request, stops }: PickupContext): PickupRuleResult {
   const current = currentStopIndex(stops)
   if (current < 0) return noStop(2)
+  if (current === stops.length - 1) return { rule: 2, passed: true, code: 'PICKUP_DELIVERY_IN_RANGE', params: {}, estimated: false }
   const route = stops.slice(current).map((stop) => stop.location)
   const { progressKm, vertexKm } = locateOnPath(route, request.delivery)
   const protectedIndex = protectedStopIndex(stops, current)
