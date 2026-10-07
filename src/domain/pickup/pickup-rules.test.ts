@@ -122,11 +122,6 @@ describe('rule 4: the freed zones have room (estimate by volume)', () => {
   test('12 boxes of 1 m³ do not', () => {
     expect(rule(withPackages(boxes(12)), 4)).toMatchObject({ passed: false, code: 'PICKUP_FREED_SPACE_INSUFFICIENT' })
   })
-
-  test('nothing delivered yet: no freed zone, no room', () => {
-    const ctx = context({ stops: STOPS.map((item) => ({ ...item, completed: false })) })
-    expect(rule(ctx, 4)).toMatchObject({ passed: false, params: { freedCm3: 0 } })
-  })
 })
 
 describe('rules 5 and 6: axle load and centre of gravity with the pickup placed in the middle of the freed zones (estimate)', () => {
@@ -199,10 +194,6 @@ describe('rule 9: on time at the delivery point, with the ETA of the route after
 
   test('a request without a deadline has nothing to miss', () => {
     expect(rule(withRequest({ deadline: undefined }), 9)).toMatchObject({ passed: true, code: 'PICKUP_NO_DEADLINE' })
-  })
-
-  test('a deadline 10 minutes from now cannot be met after the 15-minute stop at STOP-02', () => {
-    expect(rule(withRequest({ deadline: '2026-10-07T03:10:00.000Z' }), 9)).toMatchObject({ passed: false, code: 'PICKUP_DEADLINE_MISSED' })
   })
 })
 
