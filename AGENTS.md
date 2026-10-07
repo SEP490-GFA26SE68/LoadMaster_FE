@@ -299,7 +299,9 @@ src/
                         `db-scans.ts`, `db-manual-confirm.ts`); lô hàng và nhận hàng
                         (`db-shipments.ts`) đã bỏ ở FE-0-06; cách ly theo công ty của phiên (`tenancy.ts`, mọi `db-*.ts` đi
                         qua `ctx.scope`; `tenancy.test.ts` liệt kê mọi hàm công khai) và seed của Phương Nam
-                        (`seed-phuong-nam.ts`) — FE-0-02
+                        (`seed-phuong-nam.ts`) — FE-0-02;
+                        *(bổ sung 07/10/2026, FE-7-01)* yêu cầu nhận dọc đường (`pickup-model.ts`: kiểu, trạng thái, bảng chuyển;
+                        `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -1542,6 +1544,18 @@ dù giao diện bị bỏ qua:
   `EXCEPTION_STATUS_INVALID`, `REROUTE_UNAVAILABLE`; nhật ký nhóm `exception` (`reported`, `escalated`, `resolved`, `deadlineRenegotiated`).
   Lệnh ghi của màn làm mới `['trips']`, `['notifications']`, `['requirements']`, `['dashboard']`. E2E `e2e/monitoring.spec.ts` đi cả luồng
   trên một tab với `?toc-do=60`.
+- *(bổ sung 07/10/2026, FE-7-01, D-88)* **Yêu cầu nhận dọc đường** (`pickup-model.ts`, `db-pickups.ts`, `DbState.pickups`): `PickupRequest`
+  (`PKR-NNN`, Phương Nam `PKR-PN-NNN`) mang `companyId` của chuyến, `tripId`, điểm nhận và điểm giao (`PickupPoint`: tên, địa chỉ, toạ độ),
+  `deadline?`, `packages` (`PickupPackage`: mã của bên gửi, cm, kg, loại hàng), `status`, `validationResults` (kết quả `evaluatePickup`, rỗng
+  khi chưa kiểm), `overrideReason?`, người và lúc tạo, `approvedBy` / `approvedAt` từ lúc `APPROVED`. Trạng thái **ghi thật**, chỉ
+  `updatePickupStatus` đổi, theo bảng `PICKUP_TRANSITIONS`: `PENDING → VALIDATED | REJECTED`, `VALIDATED → APPROVED | REJECTED`, `REJECTED →
+  APPROVED` (duyệt kèm lý do vượt luật), `APPROVED → LOADED → DELIVERED`; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Hàm của kho đều
+  nhận mã chuyến và lọc công ty qua chuyến như endpoint `/api/trips/{id}/pickup-requests` của backend: `listPickupRequests`,
+  `getPickupRequest`, `createPickupRequest` (chuyến phải Đang vận chuyển — khác là `INVALID_TRIP_STATUS_TRANSITION`, không kiện nào là
+  `PACKAGES_REQUIRED`, trường sai là `PICKUP_INVALID` kèm tên trường), `updatePickupStatus(tripId, pickupId, status, details?)`. Kho **chưa** kiểm
+  luật, tạo kiện kho kiện, chèn điểm, ghi nhật ký hay xét vai trò — lớp duyệt (FE-7-03, FE-7-04) làm trên các hàm này. `DeliveryStop.kind`
+  (`DELIVERY | PICKUP`) vắng nghĩa là `DELIVERY` (`stopKindOf`), nên điểm có từ trước không phải sửa. Seed: một yêu cầu `PKR-001` chờ duyệt trên
+  `TRIP-009` (chuyến Đang vận chuyển duy nhất của Long Bình), điểm giao là điểm 3 của chuyến; Phương Nam không có.
 - *(bổ sung 07/10/2026, FE-7-02, D-88)* **Mười luật nhận hàng dọc đường** (`@/domain/pickup`, thuần): `evaluatePickup(context)` trả đúng 10
   kết quả `{ rule, passed, code, params, estimated }` theo thứ tự luật 1 → 10, luôn đánh giá đủ cả mười (luật trước không đạt không bỏ qua
   luật sau); mã `PICKUP_*` ở `PICKUP_RULE_CODES`, UI dịch từng mã. `context` là mọi thứ luật cần — yêu cầu (`request`: điểm nhận, điểm giao,

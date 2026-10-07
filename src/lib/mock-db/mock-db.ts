@@ -8,6 +8,7 @@ import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
 import { packageMethods } from './db-packages'
+import { pickupMethods } from './db-pickups'
 import { requirementMethods } from './db-requirements'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
@@ -57,6 +58,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     vehicleTypeOf: new Map(seed.vehicleTypeOf),
     tracking: new Map(),
     exceptions: new Map(),
+    pickups: new Map(seed.pickups.map((pickup) => [pickup.id, pickup])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
   return {
@@ -80,5 +82,6 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...stagingMethods(ctx),
     ...trackingMethods(ctx),
     ...exceptionMethods(ctx),
+    ...pickupMethods(ctx),
   }
 }

@@ -90,6 +90,9 @@ export const dataErrors = {
   EXCEPTION_INVALID: 'Sự cố chưa hợp lệ: cần loại sự cố, mô tả, số phút chậm trong khoảng cho phép; gia hạn cần một yêu cầu giao của chuyến và hạn đọc được.',
   EXCEPTION_STATUS_INVALID: 'Sự cố {exceptionId} không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
   REROUTE_UNAVAILABLE: 'Chưa tìm được tuyến khác cho chuyến {tripId}: xe chưa có vị trí, hoặc không còn điểm giao nào xe chưa tới.',
+  // Yêu cầu nhận hàng dọc đường (FE-7-01)
+  PICKUP_INVALID: 'Yêu cầu nhận hàng chưa hợp lệ: cần tên, địa chỉ, toạ độ của điểm nhận và điểm giao, hạn đọc được (nếu có), mã, kích thước, khối lượng và loại hàng của từng kiện.',
+  INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận {pickupId} không chuyển sang trạng thái này được từ trạng thái hiện tại. Tải lại để xem trạng thái mới.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',
