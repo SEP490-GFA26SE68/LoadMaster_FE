@@ -32,6 +32,11 @@ export type PickupsDb = {
    */
   validatePickupRequest(tripId: string, pickupId: string): Promise<PickupRequest>
   /**
+   * Kiện kho kiện của các yêu cầu **đã duyệt** của chuyến (FE-7-05), theo thứ tự yêu cầu rồi thứ tự kiện: tài xế đọc để biết kiện nhận ở
+   * điểm nhận và kiện giao ở điểm giao (kiện nhận chưa có vị trí 3D nên không nằm trong phương án).
+   */
+  listPickupPackages(tripId: string): Promise<Package[]>
+  /**
    * Điều phối viên duyệt (FE-7-04): kho **kiểm lại mười luật** trên chuyến lúc này. Còn luật không đạt mà không có `overrideReason`:
    * `REASON_REQUIRED`; có lý do thì duyệt được và lý do lưu trên yêu cầu. Duyệt xong kho tạo kiện kho kiện (nguồn `PICKUP`, `ASSIGNED`,
    * mã QR mới) và chèn điểm nhận, điểm giao vào tuyến — ngoại lệ duy nhất của `TRIP_LOCKED` (`db-pickup-stops.ts`). Chuyến phải đang

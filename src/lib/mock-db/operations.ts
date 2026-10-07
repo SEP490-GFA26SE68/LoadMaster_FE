@@ -114,7 +114,7 @@ export function tripRouteSubStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): Tri
 export function tripManualSubStatus(trip: Pick<Trip, 'phase' | 'verifications'>): TripSubStatus | null {
   const count = trip.phase === 'loading'
     ? pendingManualConfirms(trip, 'STAGING').length + pendingManualConfirms(trip, 'LOADING').length
-    : trip.phase === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING').length : 0
+    : trip.phase === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING').length + pendingManualConfirms(trip, 'PICKUP').length : 0
   return count > 0 ? { kind: 'manualPending', count } : null
 }
 

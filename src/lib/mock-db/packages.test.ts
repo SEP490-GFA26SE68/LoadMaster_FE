@@ -140,7 +140,7 @@ test('the QR token never changes when other fields are edited; only a package st
 test('the transition table: forward along the trip, back to the pool before departure, delivered or returned at the end', () => {
   const allowed: Record<PackageStatus, PackageStatus[]> = {
     IMPORTED: ['ASSIGNED'],
-    ASSIGNED: ['STAGED', 'IMPORTED'],
+    ASSIGNED: ['STAGED', 'LOADED', 'IMPORTED'],
     STAGED: ['LOADED', 'IMPORTED'],
     LOADED: ['IN_TRANSIT', 'IMPORTED'],
     IN_TRANSIT: ['DELIVERED', 'RETURNED'],

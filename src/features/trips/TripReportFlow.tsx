@@ -34,7 +34,8 @@ export function TripReportVerifications({ report }: { report: TripReport }) {
           </tr>
         </thead>
         <tbody>
-          {VERIFY_CONTEXTS.map((context) => (
+          {/* Bước nhận dọc đường (FE-7-05) chỉ có dòng khi chuyến có đối chiếu ở đó */}
+          {VERIFY_CONTEXTS.filter((context) => context !== 'PICKUP' || VERIFY_METHODS.some((method) => report.verifications[context][method] > 0)).map((context) => (
             <tr key={context} className="h-10 border-t border-line-soft">
               <th scope="row" className="px-4.5 text-left font-medium text-ink-1">{t(`common.verifyContexts.${context}`)}</th>
               {VERIFY_METHODS.map((method) => (

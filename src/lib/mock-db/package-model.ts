@@ -70,11 +70,12 @@ export type PackageChanges = Partial<Omit<PackageInput, 'packageTypeId'>> & { pa
 
 /**
  * Bảng chuyển trạng thái (D-70). Về `IMPORTED`: kiện bị bỏ khỏi chuyến, hoặc chuyến huỷ trước khi xe chạy; `IN_TRANSIT` → `RETURNED`:
- * khách không nhận. `DELIVERED` và `RETURNED` là trạng thái cuối.
+ * khách không nhận. `DELIVERED` và `RETURNED` là trạng thái cuối. `ASSIGNED` → `LOADED` (FE-7-05, PRD v2 mục 7.2) là đường của kiện nhận
+ * dọc đường: tài xế đối chiếu kiện ở điểm nhận thì kiện lên xe, không qua bước soạn của kho.
  */
 export const PACKAGE_TRANSITIONS: Readonly<Record<PackageStatus, readonly PackageStatus[]>> = {
   IMPORTED: ['ASSIGNED'],
-  ASSIGNED: ['STAGED', 'IMPORTED'],
+  ASSIGNED: ['STAGED', 'LOADED', 'IMPORTED'],
   STAGED: ['LOADED', 'IMPORTED'],
   LOADED: ['IN_TRANSIT', 'IMPORTED'],
   IN_TRANSIT: ['DELIVERED', 'RETURNED'],

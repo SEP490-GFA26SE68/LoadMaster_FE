@@ -7,6 +7,7 @@ import { nextId, optionalText, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
 import { createPickupPackages } from './db-pickup-packages'
+import { pickupEntries } from './db-pickup-progress'
 import { insertPickupIntoTrip } from './db-pickup-stops'
 import { buildPickupContext } from './pickup-context'
 import { canTransitionPickup, MAX_PICKUP_REASON_LENGTH, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
@@ -84,6 +85,11 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
       ctx.respond(() => {
         ctx.scope.trips.read(tripId)
         return pickupOf(tripId, pickupId)
+      }),
+    listPickupPackages: (tripId) =>
+      ctx.respond(() => {
+        ctx.scope.trips.read(tripId)
+        return pickupEntries(ctx, tripId).map(({ pkg }) => pkg)
       }),
     createPickupRequest: (tripId, input) =>
       ctx.respond(() => {
