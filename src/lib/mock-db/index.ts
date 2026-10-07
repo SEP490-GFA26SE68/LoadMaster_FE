@@ -1,6 +1,35 @@
 export { getMockDb } from './app-db'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
 export { addDays, CLOCK_SPEED_PARAM, clockSpeedFrom, MAX_CLOCK_SPEED, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
+export {
+  ALGORITHM_TIERS,
+  BILLING_CONSTANTS,
+  creditBlock,
+  CREDIT_TRANSACTION_TYPES,
+  isUnlimited,
+  optimizationCost,
+  PAYMENT_STATUSES,
+  PLAN_TIERS,
+  type AlgorithmTier,
+  type CompanySubscription,
+  type CreditAccount,
+  type CreditBalance,
+  type CreditBlock,
+  type CreditReservation,
+  type CreditTransaction,
+  type CreditTransactionType,
+  type CurrentSubscription,
+  type PaymentPurpose,
+  type PaymentStatus,
+  type PaymentTransaction,
+  type PlanPatch,
+  type PlanTier,
+  type SubscriptionPlan,
+  type SubscriptionStatus,
+  type UsageStatus,
+} from './billing-model'
+export type { BillingDb } from './db-api-billing'
+export { SEED_PLANS } from './seed-billing'
 export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'

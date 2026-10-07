@@ -36,6 +36,11 @@ type Company = {
   draftTrip: string
   /** Kiện đã ở kho, chưa thuộc yêu cầu giao nào. */
   freePackage: string
+  /** Gói cước, thanh toán, số dư credit và mã tham chiếu của một lần dùng credit trong seed (FE-8-01). */
+  subscription: string
+  payment: string
+  balance: number
+  usageReference: string
 }
 
 const range = (prefix: string, from: number, to: number, digits: number) =>
@@ -60,6 +65,10 @@ const LONG_BINH: Company = {
   revision: 'REV-002',
   draftTrip: 'TRIP-014',
   freePackage: 'PK-0023',
+  subscription: 'SUB-001',
+  payment: 'PAY-001',
+  balance: 486,
+  usageReference: 'JOB-001',
 }
 
 const PHUONG_NAM: Company = {
@@ -80,6 +89,10 @@ const PHUONG_NAM: Company = {
   revision: 'REV-PN-002',
   draftTrip: 'TRIP-PN-002',
   freePackage: 'PK-PN-0005',
+  subscription: 'SUB-002',
+  payment: 'PAY-002',
+  balance: 2,
+  usageReference: 'JOB-113',
 }
 
 const PLATFORM_USERS = ['US-0005', 'US-NT-01', 'US-NT-02']
@@ -128,6 +141,8 @@ const PICKUP_INPUT = {
 }
 const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id)
 const vehicleIdsOf = (rows: { vehicleId: string }[]) => rows.map((row) => row.vehicleId)
+/** Công ty của từng dòng (không lặp): mọi dòng sổ cái, thanh toán của phiên phải cùng một công ty. */
+const companiesOf = (rows: { companyId: string }[]) => [...new Set(rows.map((row) => row.companyId))]
 
 /** Mọi hàm ghi tiến độ của chuyến: gọi trên chuyến của công ty kia. */
 const onForeignTrip = (call: (db: MockDb, tripId: string, foreign: Foreign) => Promise<unknown>): Probe => ({
@@ -346,6 +361,28 @@ const PROBES = {
       'loại xe của công ty kia': ({ db, own, other }) => db.setVehicleType(own.vehicles[0]!, other.vehicleTypes[0]!),
     },
   },
+
+  // Danh mục gói là dữ liệu nền tảng; đăng ký, huỷ, nạp credit chỉ nhận phiên của chính người gọi (không mã bản ghi nào của công ty)
+  listSubscriptionPlans: { scope: 'session' },
+  updateSubscriptionPlan: { scope: 'session' },
+  subscribeToPlan: { scope: 'session' },
+  cancelSubscription: { scope: 'session' },
+  topUpCredits: { scope: 'session' },
+  getCurrentSubscription: {
+    scope: 'operational',
+    list: { call: ({ db }) => db.getCurrentSubscription(), ids: (current: { subscription: { id: string } } | null) => (current ? [current.subscription.id] : []), own: (c) => [c.subscription] },
+  },
+  getCreditBalance: { scope: 'operational', list: { call: ({ db }) => db.getCreditBalance(), ids: (credit: { balance: number }) => [String(credit.balance)], own: (c) => [String(c.balance)] } },
+  listCreditTransactions: { scope: 'operational', list: { call: ({ db }) => db.listCreditTransactions(), ids: companiesOf, own: (c) => [c.id] } },
+  listPayments: { scope: 'operational', list: { call: ({ db }) => db.listPayments(), ids: companiesOf, own: (c) => [c.id] } },
+  getPayment: { scope: 'operational', hidden: ({ db, other }) => db.getPayment(other.payment) },
+  settlePayment: { scope: 'operational', forbidden: { 'thanh toán của công ty kia': ({ db, other }) => db.settlePayment(other.payment, 'FAILED') } },
+  reserveOptimizationCredit: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.reserveOptimizationCredit(own.trip),
+    forbidden: { 'chuyến của công ty kia': ({ db, other }) => db.reserveOptimizationCredit(other.trip) },
+  },
+  refundOptimizationCredit: { scope: 'operational', hidden: ({ db, other }) => db.refundOptimizationCredit(other.usageReference) },
 } satisfies Record<keyof MockDb, Probe>
 
 const probes = Object.entries(PROBES) as [keyof MockDb, Probe][]
@@ -379,6 +416,12 @@ async function wholeStore(db: MockDb) {
     users: await db.listUsers(), events: await db.listEvents(), packageTypes: await db.listPackageTypes(),
     packages: await db.listPackages(), requirements: await db.listDeliveryRequirements(), vehicleTypes: await db.listVehicleTypes(),
     assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
+    billing: [] as unknown[],
+  }
+  // Gói cước, số dư, sổ cái và thanh toán của từng công ty — đọc lần lượt, mỗi công ty bằng phiên của mình
+  for (const company of [LONG_BINH, PHUONG_NAM]) {
+    db.restoreSession(company.viewer)
+    snapshot.billing.push([await db.getCurrentSubscription(), await db.getCreditBalance(), await db.listCreditTransactions(), await db.listPayments()])
   }
   db.restoreSession(session)
   return snapshot

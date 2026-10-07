@@ -24,6 +24,8 @@ export const audit = {
     manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
     exception: { reported: 'Reported a trip incident', escalated: 'Sent the incident to the manager', resolved: 'Marked the incident as handled', deadlineRenegotiated: 'Contacted the customer, entered a new deadline' },
     pickup: { requested: 'Sent an en-route pickup request', approved: 'Approved an en-route pickup request', rejected: 'Rejected an en-route pickup request', loaded: 'Loaded en-route pickup packages', delivered: 'Delivered en-route pickup packages' },
+    subscription: { subscribed: 'Subscribed to a plan', renewed: 'Renewed the plan', cancelled: 'Cancelled the plan', expired: 'Plan expired' },
+    credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
   },
   groups: {
     auth: 'Sign-in',
@@ -41,6 +43,8 @@ export const audit = {
     manualConfirm: 'Manual confirmations',
     exception: 'Trip incidents',
     pickup: 'En-route pickup',
+    subscription: 'Plan',
+    credit: 'Credits',
   },
   log: {
     title: 'System log',
@@ -140,6 +144,10 @@ export const audit = {
       pickupId: 'Pickup request',
       failedRules: 'Failed rules',
       driverId: 'Driver',
+      // Plan and credits (FE-8-01, FE-8-05)
+      plan: 'Plan',
+      credits: 'Credits',
+      balance: 'Balance',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {

@@ -22,6 +22,12 @@ export type MockDbCollection =
   | 'exceptions'
   // FE-7-01
   | 'pickups'
+  // FE-8-01
+  | 'plans'
+  | 'subscriptions'
+  | 'creditAccounts'
+  | 'creditTransactions'
+  | 'payments'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -204,6 +210,24 @@ export type MockDbErrorParams = {
   INVALID_PICKUP_STATUS_TRANSITION: { pickupId: string; from: PickupStatus; to: PickupStatus }
   /** Kiểm mười luật khi chuyến còn điểm giao chưa có toạ độ (FE-7-03): không biết tuyến đi đâu nên không kiểm được; `stopNumbers` là số các điểm đó. */
   PICKUP_ROUTE_UNAVAILABLE: { tripId: string; stopNumbers: number[] }
+
+  // Gói cước, credit, thanh toán (FE-8-01, FE-8-05; D-89, D-94)
+  /** Chạy tối ưu khi số dư credit không đủ (HTTP 402 của backend). */
+  INSUFFICIENT_CREDITS: { balance: number }
+  /** Chạy tối ưu khi gói của công ty đã hết hạn hoặc chưa có gói; `expiredAt` là hạn của gói (vắng khi chưa có gói). Số dư credit giữ nguyên. */
+  SUBSCRIPTION_EXPIRED: { expiredAt: string | null }
+  /** Đăng ký gói khi công ty còn gói hiệu lực (đang dùng hoặc đã huỷ nhưng chưa hết kỳ). */
+  SUBSCRIPTION_ACTIVE: { subscriptionId: string }
+  /** Huỷ gói không còn đang dùng (đã huỷ hoặc đã hết hạn), hoặc công ty chưa có gói. */
+  SUBSCRIPTION_STATUS_INVALID: { status: string }
+  /** Đăng ký gói đã ngừng bán. */
+  PLAN_INACTIVE: { planId: string }
+  /** Gói sai dữ liệu ở trường `field`: tên trống, giá âm hoặc không nguyên, credit tháng không nguyên dương. */
+  PLAN_INVALID: { field: string }
+  /** Nạp credit ngoài các gói 50 và 500. */
+  TOPUP_INVALID: { credits: number }
+  /** Trừ credit của một lần chạy chưa giữ credit (đã hoàn, hoặc mã lạ). */
+  CREDIT_NOT_RESERVED: { reference: string }
 
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */

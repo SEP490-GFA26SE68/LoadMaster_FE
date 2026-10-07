@@ -89,6 +89,14 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   BATCH_TOO_LARGE: { max: 1000, rows: 1204 },
   IMPORT_COLUMNS_MISSING: { columns: ['weight', 'destination'] },
   PACKAGE_IMPORT_INVALID: { errors: 3 },
+  INSUFFICIENT_CREDITS: { balance: 0 },
+  SUBSCRIPTION_EXPIRED: { expiredAt: '2026-09-30T00:00:00.000Z' },
+  SUBSCRIPTION_ACTIVE: { subscriptionId: 'SUB-001' },
+  SUBSCRIPTION_STATUS_INVALID: { status: 'EXPIRED' },
+  PLAN_INACTIVE: { planId: 'PLAN-002' },
+  PLAN_INVALID: { field: 'priceVnd' },
+  TOPUP_INVALID: { credits: 75 },
+  CREDIT_NOT_RESERVED: { reference: 'JOB-017' },
 }
 
 test('every data error code has a vi and en sentence with every placeholder filled', () => {

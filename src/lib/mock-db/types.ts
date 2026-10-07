@@ -242,6 +242,11 @@ export type NewOptimizationRun = {
   jobId: string
   plans: readonly { objective: PlanObjective; result: OptimizationResult }[]
   algorithm?: OptimizationAlgorithm
+  /**
+   * Mã tham chiếu của `reserveOptimizationCredit`: lưu xong thì credit đã giữ được trừ hẳn (FE-8-05). Vắng là lối ghi không qua credit
+   * (test, dữ liệu mẫu); có mà credit không còn được giữ là `CREDIT_NOT_RESERVED`, không lưu gì.
+   */
+  creditReference?: string
 }
 
 /** Lần chạy đã lưu và các revision nó tạo, theo thứ tự của `plans`. */

@@ -305,7 +305,9 @@ src/
                         qua `ctx.scope`; `tenancy.test.ts` liệt kê mọi hàm công khai) và seed của Phương Nam
                         (`seed-phuong-nam.ts`) — FE-0-02;
                         *(bổ sung 07/10/2026, FE-7-01)* yêu cầu nhận dọc đường (`pickup-model.ts`: kiểu, trạng thái, bảng chuyển;
-                        `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`)
+                        `db-pickups.ts`, `db-api-pickups.ts`; `seed-pickups.ts`);
+                        *(bổ sung 08/10/2026, FE-8-01, FE-8-05)* gói cước, credit và thanh toán (`billing-model.ts`: kiểu, hằng số, luật chặn
+                        `creditBlock`; `db-billing.ts`, `db-api-billing.ts`; `seed-billing.ts` — bảng gói và giá trị tạm)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -1633,6 +1635,31 @@ dù giao diện bị bỏ qua:
   Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt"
   đọc cả bước `PICKUP`. Giới hạn đã biết: yêu cầu nhận thứ hai chưa tính kiện của yêu cầu thứ nhất ở luật 3, 5, 6 (chúng chưa có hộp 3D); hộp huỷ
   chuyến (`undeliveredCount`) và báo cáo chuyến (khối lượng đã giao) chưa đếm kiện nhận.
+- *(bổ sung 08/10/2026, FE-8-01, FE-8-05, D-89, D-90, D-94)* **Gói cước, credit, thanh toán** (`billing-model.ts`, `db-billing.ts`; `DbState.plans`,
+  `subscriptions`, `creditAccounts`, `creditTransactions`, `payments`). Danh mục gói (`SubscriptionPlan`: hạng `BASIC | PRO | ULTIMATE`, giá VND,
+  credit tháng — `null` là không giới hạn, hạng thuật toán `EP_DBLF | EP_DBLF_GA | EP_DBLF_GA_AI`) là dữ liệu nền tảng, mọi phiên đọc được;
+  gói của công ty, tài khoản credit, sổ cái và thanh toán thuộc công ty, đi qua `ctx.scope` (phiên nền tảng: `COMPANY_REQUIRED`; không phiên:
+  công ty mặc định). **Số dư = tổng sổ cái, không bao giờ âm**: chỉ `appendTransaction` đổi số dư. Giao dịch `MONTHLY_GRANT | PURCHASE | USAGE |
+  REFUND`; lượt dùng `RESERVED → DEDUCTED | REFUNDED`, hoàn đúng một lần theo mã tham chiếu `JOB-NNN`. Vai trò: quản trị công ty đăng ký, huỷ,
+  nạp credit, xử lý thanh toán (`ROLE_NOT_ALLOWED`, xét sau công ty); quản lý nền tảng sửa gói; đọc và giữ / hoàn credit của lần chạy không xét
+  vai trò (quyền `optimization.run` chặn ở route). **Vòng đời theo đồng hồ của kho, không hẹn giờ**: mọi hàm chạm tới công ty gọi `settle`
+  trước. `subscribeToPlan` / `topUpCredits` chỉ tạo thanh toán `PENDING`; `settlePayment(id, 'SUCCESS' | 'FAILED')` (việc của cổng thanh toán, sau
+  này là màn giả lập) xử lý **đúng một lần** — kích hoạt gói + cấp credit tháng, nối kỳ gia hạn + cấp credit, hay cộng credit đã mua. Đăng ký chỉ
+  khi chưa có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30);
+  còn `renewalNoticeDays` (3, đề xuất) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
+  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
+  `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Credit tháng cộng
+  dồn sang kỳ sau (BE chưa xác nhận, Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ:
+  `SEED_PLANS` ở `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit),
+  Phương Nam gói Basic (100 credit, đã dùng gần hết: còn 2); sổ cái dựng từ các lần chạy của seed sau khi dời giờ — mỗi lần chạy một lượt dùng
+  tại đúng giờ của nó, lần chạy hỏng đã hoàn — và kỳ hiện tại bao giờ của kho (nên số dư của seed không đổi theo ngày chạy test). Nhật ký: nhóm
+  `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit` (`purchased`, `lowBalance` — hệ thống ghi), đối tượng
+  `company` (chưa có trang để mở).
+  **Một lần chạy tối ưu 3D = 1 credit** (ba phương án vẫn một): `reserveOptimizationCredit(tripId)` giữ credit lúc bắt đầu (gói hết hạn hoặc chưa có
+  gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; hết credit: `INSUFFICIENT_CREDITS`; gói không giới hạn ghi `0`), `saveOptimizationRun({ creditReference })`
+  trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn khi lỗi hoặc huỷ.
+  Kho kiểm luật dù giao diện bị bỏ qua; `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không tốn credit.
+  Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

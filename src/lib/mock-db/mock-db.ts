@@ -1,5 +1,6 @@
 import { createSimClock, SEED_ANCHOR_DATE } from './clock'
 import { auditMethods } from './db-audit'
+import { billingMethods } from './db-billing'
 import { exceptionMethods } from './db-exceptions'
 import { createDbContext, type DbState } from './db-context'
 import { manualConfirmMethods } from './db-manual-confirm'
@@ -22,6 +23,7 @@ import { userMethods } from './db-users'
 import { vehicleTypeMethods } from './db-vehicle-types'
 import { vehicleMethods } from './db-vehicles'
 import { seededRandom } from './qr-token'
+import { seedBilling } from './seed-billing'
 import { buildSeed } from './seed'
 import { shiftSeedTimes } from './seed-shift'
 import type { MockDb, MockDbOptions } from './types'
@@ -38,6 +40,8 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
   const clock = createSimClock(now, speed)
   // Mở app trước giờ của các việc "hôm nay" trong seed thì lùi mốc giờ seed, không để lịch sử có sự kiện ở tương lai
   const seed = shiftSeedTimes(buildSeed(today), clock.now())
+  // Gói cước và sổ cái credit dựng từ các lần chạy của seed sau khi dời giờ, theo giờ của kho (FE-8-01)
+  const billing = seedBilling({ runs: seed.runs, trips: seed.trips, now: clock.now() })
   const state: DbState = {
     vehicles: new Map(seed.vehicles.map((vehicle) => [vehicle.id, vehicle])),
     vehicleCompany: new Map(seed.vehicleCompany),
@@ -59,6 +63,11 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     tracking: new Map(),
     exceptions: new Map(),
     pickups: new Map(seed.pickups.map((pickup) => [pickup.id, pickup])),
+    plans: new Map(billing.plans.map((plan) => [plan.id, plan])),
+    subscriptions: new Map(billing.subscriptions.map((subscription) => [subscription.id, subscription])),
+    creditAccounts: new Map(billing.creditAccounts.map((account) => [account.id, account])),
+    creditTransactions: new Map(billing.creditTransactions.map((transaction) => [transaction.id, transaction])),
+    payments: new Map(billing.payments.map((payment) => [payment.id, payment])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
   return {
@@ -83,5 +92,6 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...trackingMethods(ctx),
     ...exceptionMethods(ctx),
     ...pickupMethods(ctx),
+    ...billingMethods(ctx),
   }
 }

@@ -101,6 +101,15 @@ export const dataErrors = {
   BATCH_TOO_LARGE: 'File có {rows} dòng, mỗi lần chỉ nhập tối đa {max} dòng.',
   IMPORT_COLUMNS_MISSING: 'Dòng tiêu đề thiếu cột: {columns}. Tải file mẫu để xem đủ cột.',
   PACKAGE_IMPORT_INVALID: 'File còn {errors} dòng lỗi nên chưa nhập được dòng nào.',
+  // Gói cước và credit (FE-8-01, FE-8-05)
+  INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  SUBSCRIPTION_EXPIRED: 'Gói cước của công ty đã hết hạn nên chưa chạy tối ưu được — liên hệ quản trị công ty.',
+  SUBSCRIPTION_ACTIVE: 'Công ty đang có gói cước còn hiệu lực. Chỉ đăng ký gói mới khi gói hiện tại đã hết hạn.',
+  SUBSCRIPTION_STATUS_INVALID: 'Công ty không có gói đang dùng để huỷ.',
+  PLAN_INACTIVE: 'Gói này đã ngừng bán.',
+  PLAN_INVALID: 'Gói chưa hợp lệ: tên không được trống, giá là số nguyên không âm, credit tháng là số nguyên dương hoặc không giới hạn.',
+  TOPUP_INVALID: 'Chỉ nạp được gói 50 hoặc 500 credit.',
+  CREDIT_NOT_RESERVED: 'Lần chạy này chưa giữ credit hoặc đã được hoàn.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */
   UNKNOWN: 'Có lỗi xảy ra. Thử lại sau.',
 } as const satisfies Record<MockDbErrorCode | 'UNKNOWN', string>

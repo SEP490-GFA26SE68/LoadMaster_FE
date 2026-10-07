@@ -27,6 +27,8 @@ export const audit = {
     manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
     exception: { reported: 'Báo sự cố chuyến', escalated: 'Chuyển sự cố cho quản lý', resolved: 'Đánh dấu sự cố đã xử lý', deadlineRenegotiated: 'Liên hệ khách, nhập hạn mới' },
     pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
+    subscription: { subscribed: 'Đăng ký gói cước', renewed: 'Gia hạn gói cước', cancelled: 'Huỷ gói cước', expired: 'Gói cước hết hạn' },
+    credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -44,6 +46,8 @@ export const audit = {
     manualConfirm: 'Xác nhận tay',
     exception: 'Sự cố chuyến',
     pickup: 'Nhận hàng dọc đường',
+    subscription: 'Gói cước',
+    credit: 'Credit',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -164,6 +168,10 @@ export const audit = {
       pickupId: 'Yêu cầu nhận',
       failedRules: 'Luật không đạt',
       driverId: 'Tài xế',
+      // Gói cước và credit (FE-8-01, FE-8-05)
+      plan: 'Gói cước',
+      credits: 'Credit',
+      balance: 'Số dư',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
