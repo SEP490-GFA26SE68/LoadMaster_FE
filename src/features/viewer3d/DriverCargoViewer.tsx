@@ -21,9 +21,14 @@ const PRESETS = [['cua-sau', 'rear'], ['tren', 'top'], ['goc-cheo', 'diagonal'],
  * Khung 3D "Xem vị trí hàng" của tài xế (LM-061): scene cm của revision đã duyệt (LM-030), mô phỏng dỡ theo `unloadingOrder` của
  * kết quả, LIFO từ domain — `LIFO_BLOCKED` dừng mô phỏng và tô kiện chắn. Không có editor, không đánh dấu đã giao.
  * `?debug&packages=N` thay scene bằng fixture benchmark cm.
+ *
+ * Kiện nhận dọc đường (FE-7-05, D-88) chưa có vị trí 3D (P2) nên không có mesh nào: `pickupCargo` chỉ là một danh sách DOM cạnh khung,
+ * "Kiện nhận dọc đường — chưa có vị trí 3D", không thêm draw call.
  */
-export function DriverCargoViewer({ model: source, stopNumber, doneIds }: {
+export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCargo = [] }: {
   model: ViewerSceneModel; stopNumber: number; doneIds: ReadonlySet<string>
+  /** Kiện nhận dọc đường còn đi cùng xe hoặc sắp lên xe: mã kiện kho kiện, mã của bên gửi, khối lượng. */
+  pickupCargo?: readonly { readonly id: string; readonly name: string; readonly weightKg: number }[]
 }) {
   const t = useT()
   const format = useFormat()
@@ -70,6 +75,15 @@ export function DriverCargoViewer({ model: source, stopNumber, doneIds }: {
       {search.has('debug') ? <DebugOverlay store={perf} className="top-2 bottom-auto left-2 translate-x-0" /> : null}
     </div>
     <div className="max-h-[30dvh] shrink-0 overflow-y-auto border-t border-border p-3">
+      {pickupCargo.length > 0 ? (
+        <section aria-label={t('driver.pickup.cargoTitle')} className="mb-2 rounded-md border border-badge-azure-border bg-badge-azure-bg p-3 text-badge-azure-fg">
+          <h3 className="m-0 font-semibold">{t('driver.pickup.cargoTitle')}</h3>
+          <p className="m-0 mt-0.5">{t('driver.pickup.cargoNote')}</p>
+          <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 font-mono">
+            {pickupCargo.map((item) => <li key={item.id}>{t('driver.pickup.cargoRow', { id: item.id, name: item.name, weight: format.weight(item.weightKg) })}</li>)}
+          </ul>
+        </section>
+      ) : null}
       <p className="font-medium">{t(unload.fromResult ? 'viewer.operations.unloadingOrder' : 'viewer.operations.suggestedUnloadingOrder')} · {t('driver.cargo.noDelivery')}</p>
       <p className="mt-1">{unload.current ? t('driver.cargo.current', { id: unload.current.id }) : t('driver.cargo.allViewed')}{unload.next ? ` · ${t('driver.cargo.next', { id: unload.next.id })}` : ''}</p>
       {selected && measurements ? <>

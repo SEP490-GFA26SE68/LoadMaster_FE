@@ -8,7 +8,7 @@
  *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
  *   chưa có ở BE: listTripMonitoring (kênh cập nhật của BE là WebSocket, Q-08), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
-import { getMockDb, type DriverLocationInput, type LocationPoint, type TripMonitoring } from '@/lib/mock-db'
+import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type TripMonitoring } from '@/lib/mock-db'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
 /**
@@ -69,7 +69,16 @@ export function subscribeTrip(tripId: string, onEvent: (event: TripMonitoringEve
 }
 
 /** Điểm giao của một chuyến trên màn Giám sát; `completedAt` có khi tài xế đã hoàn tất điểm. */
-export type MonitoringStop = { readonly id: string; readonly number: number; readonly name: string; readonly lat?: number; readonly lng?: number; readonly completedAt?: string }
+export type MonitoringStop = {
+  readonly id: string
+  readonly number: number
+  readonly name: string
+  /** Điểm nhận hàng dọc đường (FE-7-04); vắng là điểm giao. */
+  readonly kind?: StopKind
+  readonly lat?: number
+  readonly lng?: number
+  readonly completedAt?: string
+}
 
 /** Phần ít đổi của một chuyến Đang vận chuyển: tên, xe, tài xế, kho xuất phát và các điểm giao theo thứ tự đi. */
 export type MonitoringTrip = {
@@ -108,6 +117,7 @@ export async function fetchMonitoringBoard(): Promise<MonitoringBoard> {
         const completedAt = trip.delivery?.stops.find((progress) => progress.number === index + 1)?.completedAt
         return {
           id: stop.id, number: index + 1, name: stop.name,
+          ...(stop.kind === undefined ? {} : { kind: stop.kind }),
           ...(stop.lat === undefined || stop.lng === undefined ? {} : { lat: stop.lat, lng: stop.lng }),
           ...(completedAt === undefined ? {} : { completedAt }),
         }

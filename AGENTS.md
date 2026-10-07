@@ -1610,6 +1610,27 @@ dù giao diện bị bỏ qua:
   có cặp nút phụ Từ chối / Duyệt ở yêu cầu còn chờ (`pickups.approve`); `PickupApproveDialog` kiểm lại luật khi mở, ô lý do vượt luật hiện khi
   còn luật không đạt, duyệt xong chuyển sang bước liệt kê kiện kèm mã QR và nút "In nhãn gửi bên gửi" (`labelsPath`, cần `labels.print`) —
   yêu cầu đã duyệt giữ nút này trong thẻ. Duyệt làm mới `['trips']`, `['notifications']`, `['package-pool']`, `['driver']`, `['warehouse-labels']`.
+- *(bổ sung 07/10/2026, FE-7-05, D-88)* **Tài xế nhận hàng và giao kiện nhận.** Kiện nhận không có dòng kiện trong chuyến nên **mã kiện kho kiện** (`PK-NNNN`)
+  đóng vai mã instance ở mọi chỗ kho ghi tiến độ: nhãn của chuyến (`labelsOf` thêm `pickupLabels`), lần đối chiếu, `StopProgress.pickedIds` (kiện đã
+  đối chiếu ở điểm nhận) và `unloadedIds` (kiện đã dỡ ở điểm giao, như kiện thường). Vai trò của kiện tại một điểm suy từ yêu cầu của nó
+  (`db-pickup-progress.ts`): `pick` — điểm là điểm nhận và yêu cầu còn `APPROVED`; `deliver` — điểm là điểm giao và yêu cầu đã `LOADED`; kiện không
+  phải việc của điểm là `QR_WRONG_STOP` kèm số điểm đúng. Không thêm hàm kho cho tài xế: `confirmUnloadByQr` / `confirmUnloadManually` /
+  `completeStop` chọn lối theo vai trò của kiện (`recordPickupItem`, `db-pickup-scans.ts`). Điểm nhận: đối chiếu bằng nhãn đưa kiện `ASSIGNED → LOADED`
+  ngay (bảng chuyển kiện thêm `ASSIGNED → LOADED`, PRD v2 mục 7.2); xác nhận tay (bước đối chiếu `PICKUP`) chỉ lên xe khi điều phối viên duyệt,
+  bị từ chối thì kiện rời `pickedIds`; còn xác nhận tay chờ thì `completeStop` từ chối `MANUAL_CONFIRM_PENDING`. Hoàn tất điểm nhận: kiện
+  `IN_TRANSIT`, yêu cầu `LOADED` (`pickup.loaded`); hoàn tất điểm giao: kiện đã dỡ `DELIVERED`, còn lại `RETURNED`, mọi kiện đã giao thì yêu
+  cầu `DELIVERED` (`pickup.delivered`). `completeStop` tính cả kiện nhận vào số kiện còn thiếu (`STOP_INCOMPLETE`). Kiện nhận chưa có vị trí 3D
+  (P2) nên không có trong phương án, không có thứ tự dỡ, không báo sự cố theo kiện (`reportDeliveryIssue` chỉ nhận kiện của phương án).
+  `listPickupPackages(tripId)` trả kiện kho kiện của các yêu cầu đã duyệt; `fetchDriverTrip` đọc thêm chúng và yêu cầu (`DriverTrip.pickups`,
+  `pickupPackages`). Màn tài xế (`/tai-xe/diem-giao`): `stopDeliveries` thêm `kind` và `pickupItems` (`driver-pickups.ts`) cho từng điểm; **danh sách
+  điểm của chuyến** (`DriverStopList`, thu gọn một dòng 56 px, chỉ vẽ khi chuyến có điểm nhận) ghi mỗi điểm bằng biểu tượng **và** chữ — gói hàng "Điểm nhận hàng", ghim "Điểm giao hàng";
+  điểm nhận có dải thông báo, nút "Đối chiếu kiện nhận" (`PackageVerify`, ba mức) và "Hoàn tất điểm nhận"; kiện nhận nằm ở danh sách riêng "Kiện nhận
+  dọc đường — chưa có vị trí 3D" (`PickupItemRow`, không thứ tự dỡ / vùng / lớp), cả ở điểm nhận lẫn điểm giao; khung 3D "Xem vị trí hàng" liệt
+  kê chúng bằng DOM cạnh khung (`pickupCargo` của `DriverCargoViewer`), không thêm mesh hay draw call. Số điểm của scene tài xế là số **hiện tại**
+  (`adaptResult` đổi số của phương án qua `DeliveryStop.planNumber`), nên điểm giao dùng lại vẫn mang đủ hàng của phương án.
+  Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt"
+  đọc cả bước `PICKUP`. Giới hạn đã biết: yêu cầu nhận thứ hai chưa tính kiện của yêu cầu thứ nhất ở luật 3, 5, 6 (chúng chưa có hộp 3D); hộp huỷ
+  chuyến (`undeliveredCount`) và báo cáo chuyến (khối lượng đã giao) chưa đếm kiện nhận.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).

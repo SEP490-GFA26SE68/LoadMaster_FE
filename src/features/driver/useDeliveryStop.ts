@@ -49,7 +49,7 @@ export function useDeliveryStop(tripId: string, view: DeliveryView | undefined, 
     if (!view) return
     const number = view.stop.number
     void complete.mutateAsync(number).then(
-      () => toast.success(t('driver.stopDone', { number }), {
+      () => toast.success(t(view.stop.kind === 'PICKUP' ? 'driver.pickup.stopDone' : 'driver.stopDone', { number }), {
         description: number >= stopCount ? t('driver.lastStop') : t('driver.nextStop', { number: number + 1 }),
       }),
       showError,
