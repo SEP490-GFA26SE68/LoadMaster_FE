@@ -97,8 +97,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Chromium của đúng phiên bản @playwright/test trong lockfile, kèm thư viện hệ thống
-      - run: pnpm exec playwright install --with-deps chromium
+      # Thư viện hệ thống của Chromium đi qua apt: kho Ubuntu đôi lúc đứng kết nối giữa `apt-get update` và giữ job tới hết
+      # 30 phút. Quá 5 phút thì bỏ qua bước này — ảnh ubuntu-latest đã có sẵn thư viện của Chrome — rồi chạy tiếp.
+      - run: pnpm exec playwright install-deps chromium
+        timeout-minutes: 5
+        continue-on-error: true
+      # Chromium của đúng phiên bản @playwright/test trong lockfile
+      - run: pnpm exec playwright install chromium
       # CI=true: server Vite mới cho mỗi lượt, retries 1, forbidOnly (playwright.config.ts)
       - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
       - if: failure()
