@@ -51,6 +51,19 @@ function directoryFilter(state: DbState): CompanyFilter {
   return scope.kind === 'company' ? scope.companyId : null
 }
 
+/**
+ * Công ty lọc **đọc của vai trò nền tảng** (FE-8-06, FE-8-07): gói, số dư, sổ cái của mọi công ty cho màn công ty và màn hỗ trợ. Phiên của
+ * một công ty bị từ chối `ROLE_NOT_ALLOWED`; kho không có phiên không lọc. Việc chọn vai trò nền tảng nào được đọc là của hàm gọi.
+ */
+function platformFilter(state: DbState): CompanyFilter {
+  const scope = sessionScope(state)
+  if (scope.kind === 'company') {
+    const role = state.users.get(state.session.userId ?? '')?.role
+    if (role !== undefined) throw new MockDbError('ROLE_NOT_ALLOWED', { role })
+  }
+  return null
+}
+
 /** Một bộ sưu tập nhìn qua phạm vi của phiên. Mỗi hàm xét lại phiên lúc được gọi. */
 export type Scoped<T> = {
   /** Bản ghi phiên được thấy, theo thứ tự của kho. */
@@ -125,6 +138,12 @@ export function createTenancy(state: DbState) {
     creditAccounts: scoped(state, state.creditAccounts, 'creditAccounts', (account) => account.companyId),
     creditTransactions: scoped(state, state.creditTransactions, 'creditTransactions', (transaction) => transaction.companyId),
     payments: scoped(state, state.payments, 'payments', (payment) => payment.companyId),
+    /** Gói, tài khoản credit và sổ cái của mọi công ty, chỉ cho vai trò nền tảng đọc (FE-8-06, FE-8-07). */
+    platformSubscriptions: scoped(state, state.subscriptions, 'subscriptions', (subscription) => subscription.companyId, platformFilter),
+    platformCreditAccounts: scoped(state, state.creditAccounts, 'creditAccounts', (account) => account.companyId, platformFilter),
+    platformCreditTransactions: scoped(state, state.creditTransactions, 'creditTransactions', (transaction) => transaction.companyId, platformFilter),
+    /** Yêu cầu hỗ trợ (FE-8-07): phiên của một công ty chỉ thấy của công ty mình (hàm của kho còn lọc theo người gửi), nền tảng thấy hết. */
+    supportTickets: scoped(state, state.supportTickets, 'supportTickets', (ticket) => ticket.companyId, directoryFilter),
     users: scoped(state, state.users, 'users', (user) => user.companyId, directoryFilter),
     companies: scoped(state, state.companies, 'companies', (company) => company.id, directoryFilter),
     /** Sự kiện nhật ký phiên được đọc, cũ trước. */

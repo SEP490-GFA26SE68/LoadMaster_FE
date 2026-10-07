@@ -10,10 +10,10 @@ import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-
 
 /** Mỗi tài khoản demo → màn chính của vai trò và tiêu đề của màn đó (không phải màn 403 hay 404). */
 const HOMES: readonly (readonly [email: string, path: string, heading: string])[] = [
-  // Nền tảng: quản lý nền tảng mở danh mục gói (FE-8-02); hỗ trợ khách hàng tạm mở hồ sơ cá nhân tới khi có màn riêng (quyết định G1)
-  ['quantri@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
+  // Nền tảng: quản trị hệ thống mở công ty (FE-8-06), quản lý nền tảng mở danh mục gói (FE-8-02), hỗ trợ khách hàng mở yêu cầu hỗ trợ (FE-8-07)
+  ['quantri@loadmaster.vn', '/nen-tang/cong-ty', 'Công ty'],
   ['nentang@loadmaster.vn', '/nen-tang/goi', 'Gói cước'],
-  ['hotro@loadmaster.vn', '/ho-so', 'Hồ sơ cá nhân'],
+  ['hotro@loadmaster.vn', '/ho-tro', 'Hỗ trợ khách hàng'],
   // Long Bình
   ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
   ['quanly@loadmaster.vn', '/', 'Bảng điều khiển'],
@@ -42,8 +42,9 @@ test('every demo account signs in and lands on the home screen of its role (FE-0
 test('the quick sign-in box groups accounts by platform and company; picking one fills the form (FE-0-03)', async ({ page, browserErrors }) => {
   await page.goto('/')
   const roles = (group: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button')
-  // Quản lý nền tảng và hỗ trợ khách hàng chưa có màn riêng nên chưa nằm trong ô chọn nhanh
-  await expect(roles('Nền tảng')).toHaveText([/^Quản trị hệ thống\s*quantri@loadmaster\.vn$/])
+  await expect(roles('Nền tảng')).toHaveText([
+    /^Quản trị hệ thống\s*quantri@loadmaster\.vn$/, /^Quản lý nền tảng\s*nentang@loadmaster\.vn$/, /^Hỗ trợ khách hàng\s*hotro@loadmaster\.vn$/,
+  ])
   await expect(roles('Công ty TNHH Vận tải Long Bình')).toHaveText([
     /^Quản trị công ty\s*qtcongty@loadmaster\.vn$/, /^Quản lý công ty\s*quanly@loadmaster\.vn$/, /^Điều phối viên\s*dieuphoi@loadmaster\.vn$/,
     /^Nhân viên kho\s*kho@loadmaster\.vn$/, /^Tài xế\s*taixe@loadmaster\.vn$/,
@@ -64,43 +65,43 @@ test('the quick sign-in box groups accounts by platform and company; picking one
   expect(browserErrors).toStrictEqual([])
 })
 
-test('customer support has no nav items and is never stranded: logo, 403 and 404 lead back to the profile (FE-0-03)', async ({ page, browserErrors }) => {
+test('customer support lands on the support screen with its one nav item and is never stranded: logo, 403 and 404 lead back (FE-8-07)', async ({ page, browserErrors }) => {
   await page.goto('/')
   await signInWith(page, 'hotro@loadmaster.vn')
-  await page.waitForURL((url) => url.pathname === '/ho-so')
-  // Logo trước (thanh điều hướng đã dựng), rồi mới khẳng định thanh đó không có khay mục nào
-  await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-so')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toHaveCount(0)
-  // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào)
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
+  await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-tro')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Hỗ trợ'])
+  // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào) và không có mục yêu cầu hỗ trợ (đó là của người dùng công ty)
   await page.getByRole('button', { name: /^Tài khoản / }).click()
   await expect(page.getByRole('menu')).toContainText('Hỗ trợ khách hàng')
+  await expect(page.getByRole('menuitem')).toHaveText(['Hồ sơ cá nhân', 'Đăng xuất'])
   await page.keyboard.press('Escape')
 
   await navigateInApp(page, '/chuyen')
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/ho-so')
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
 
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-  await page.waitForURL((url) => url.pathname === '/ho-so')
-  await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ cá nhân', exact: true })).toBeVisible()
+  await page.waitForURL((url) => url.pathname === '/ho-tro')
+  await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ khách hàng', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the system administrator has users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
+test('the system administrator has companies, users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'systemAdmin')
-  await page.waitForURL((url) => url.pathname === '/nguoi-dung')
-  await expect(nav.getByRole('link')).toHaveText(['Người dùng', 'Nhật ký'])
+  await page.waitForURL((url) => url.pathname === '/nen-tang/cong-ty')
+  await expect(nav.getByRole('link')).toHaveText(['Công ty', 'Người dùng', 'Nhật ký'])
   for (const route of ['/', '/chuyen', `/chuyen/${SEED_TRIP}/phuong-an`, '/doi-xe', '/kho', '/tai-xe']) {
     await navigateInApp(page, route)
     await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true }), route).toBeVisible()
     // Về màn chính trước khi thử route kế tiếp: màn 403 của route trước không được làm route sau đạt thay
     await page.getByRole('link', { name: 'Về màn chính', exact: true }).click()
-    await page.waitForURL((url) => url.pathname === '/nguoi-dung')
-    await expect(page.getByRole('heading', { level: 1, name: 'Người dùng', exact: true }), route).toBeVisible()
+    await page.waitForURL((url) => url.pathname === '/nen-tang/cong-ty')
+    await expect(page.getByRole('heading', { level: 1, name: 'Công ty', exact: true }), route).toBeVisible()
   }
   expect(browserErrors).toStrictEqual([])
 })

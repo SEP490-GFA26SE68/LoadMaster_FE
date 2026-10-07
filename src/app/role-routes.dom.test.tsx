@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, matchRoutes, RouterProvider, type RouteObject } from 'react-router'
 import { beforeEach, expect, test } from 'vitest'
@@ -45,8 +45,8 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 }
 
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
-  expect(['/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi'].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
-  expect(['/duyet', '/lo-hang', '/nhan-hang', '/nen-tang/cong-ty', '/ho-tro'].filter((path) => routeAccess(path).exists))
+  expect(['/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty', '/ho-tro'].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
+  expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
   expect(routeAccess('/chuyen/moi').permissions).toStrictEqual(['trips.edit'])
   // Yêu cầu giao thay Đơn hàng (FE-4b-02): đường dẫn cũ chuyển hướng, cùng nhóm quyền với màn mới
@@ -56,6 +56,10 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/giam-sat').permissions).toStrictEqual(['monitoring.view'])
   // Danh mục gói (FE-8-02): quản lý nền tảng
   expect(routeAccess('/nen-tang/goi').permissions).toStrictEqual(['subscriptionPlans.manage'])
+  // Công ty (FE-8-06): quản trị hệ thống
+  expect(routeAccess('/nen-tang/cong-ty').permissions).toStrictEqual(['companies.manage'])
+  // Hỗ trợ (FE-8-07): Hỗ trợ khách hàng
+  expect(routeAccess('/ho-tro').permissions).toStrictEqual(['support.handle'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])
 })
 
@@ -150,15 +154,14 @@ test.each(ROLES)('%s: the 404 and 403 screens lead back to the home screen of th
   expect(screen.getByRole('link', { name: 'Về màn chính' })).toHaveAttribute('href', ROLE_HOME[role])
 })
 
-test('customer support, who has no screen of its own yet, gets from a 404 back to a real screen', async () => {
+test('customer support gets from a 404 back to the support screen, with its nav item and a logo that leads there', async () => {
   const user = userEvent.setup()
-  const router = openAt('/ho-tro', 'systemSupporter')
+  const router = openAt('/khong-co-trang-nay', 'systemSupporter')
   await screen.findByRole('heading', { name: 'Không tìm thấy trang' }, SLOW)
   await user.click(screen.getByRole('link', { name: 'Về màn chính' }))
-  expect(await screen.findByRole('heading', { level: 1, name: 'Hồ sơ cá nhân' }, SLOW)).toBeInTheDocument()
-  expect(router.state.location.pathname).toBe('/ho-so')
-  await waitFor(() => expect(document.title).toBe('Hồ sơ cá nhân · LoadMaster'))
-  // Thanh điều hướng không có khay mục rỗng; logo cũng về hồ sơ
-  expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-so')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Hỗ trợ khách hàng' }, SLOW)).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/ho-tro')
+  await waitFor(() => expect(document.title).toBe('Hỗ trợ khách hàng · LoadMaster'))
+  expect(within(screen.getByRole('navigation')).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Hỗ trợ'])
+  expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-tro')
 })

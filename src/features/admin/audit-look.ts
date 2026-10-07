@@ -15,6 +15,8 @@ import {
   UserRound,
   TriangleAlert,
   Wallet,
+  Building2,
+  LifeBuoy,
   Coins,
   type LucideIcon,
 } from 'lucide-react'
@@ -40,6 +42,8 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   pickup: PackagePlus,
   subscription: Wallet,
   credit: Coins,
+  company: Building2,
+  ticket: LifeBuoy,
 }
 
 /**
@@ -126,6 +130,11 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'subscription.expired': 'amber',
   'credit.purchased': 'green',
   'credit.lowBalance': 'amber',
+  'company.created': 'green',
+  'company.updated': 'blue',
+  'ticket.created': 'blue',
+  'ticket.replied': 'blue',
+  'ticket.statusChanged': 'green',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

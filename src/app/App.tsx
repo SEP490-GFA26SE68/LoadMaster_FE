@@ -39,6 +39,8 @@ const MonitoringPage = lazy(() => import('@/features/monitoring/MonitoringPage')
 const RequirementsPage = lazy(() => import('@/features/requirements/RequirementsPage').then((m) => ({ default: m.RequirementsPage })))
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
+const CompaniesPage = lazy(() => import('@/features/platform/CompaniesPage').then((m) => ({ default: m.CompaniesPage })))
+const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m) => ({ default: m.SupportPage })))
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
@@ -124,6 +126,10 @@ export const routes: RouteObject[] = [
                   guarded('fleet.edit', [{ path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
                   guarded('users.manage', [{ path: '/nguoi-dung', element: <UsersPage />, handle: titled((t) => t('titles.users')) }]),
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
+                  // Công ty: màn chính của quản trị hệ thống (FE-8-06, D-65)
+                  guarded('companies.manage', [{ path: '/nen-tang/cong-ty', element: <CompaniesPage />, handle: titled((t) => t('titles.companies')) }]),
+                  // Yêu cầu hỗ trợ của mọi công ty: màn chính của Hỗ trợ khách hàng (FE-8-07). Người dùng công ty gửi yêu cầu ở hộp thoại của menu tài khoản
+                  guarded('support.handle', [{ path: '/ho-tro', element: <SupportPage />, handle: titled((t) => t('titles.support')) }]),
                   // Danh mục gói cước: màn chính của quản lý nền tảng (FE-8-02, D-90)
                   guarded('subscriptionPlans.manage', [{ path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) }]),
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty

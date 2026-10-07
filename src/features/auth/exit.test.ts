@@ -34,8 +34,8 @@ test('roles that cannot open trips return to their own screen', () => {
 test('the four new roles never follow the trip link: they return to the screen they can open (FE-0-03)', () => {
   const session = '/kho?chuyen=TRIP-2026-0914'
   // Quản trị hệ thống và quản trị công ty không xem được chuyến: trang chuyến sẽ là 403
-  expect(exitAction('systemAdmin', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/nguoi-dung' })
+  expect(exitAction('systemAdmin', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/nen-tang/cong-ty' })
   expect(exitAction('companyAdmin', '/tai-xe/diem-giao', '/tai-xe')).toStrictEqual({ kind: 'link', to: '/nguoi-dung' })
   expect(exitAction('systemManager', session, '/chuyen/TRIP-2026-0914')).toStrictEqual({ kind: 'link', to: '/nen-tang/goi' })
-  expect(exitAction('systemSupporter', '/tai-xe/diem-giao')).toStrictEqual({ kind: 'link', to: '/ho-so' })
+  expect(exitAction('systemSupporter', '/tai-xe/diem-giao')).toStrictEqual({ kind: 'link', to: '/ho-tro' })
 })

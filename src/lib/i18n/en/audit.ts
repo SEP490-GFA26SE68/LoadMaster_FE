@@ -26,6 +26,8 @@ export const audit = {
     pickup: { requested: 'Sent an en-route pickup request', approved: 'Approved an en-route pickup request', rejected: 'Rejected an en-route pickup request', loaded: 'Loaded en-route pickup packages', delivered: 'Delivered en-route pickup packages' },
     subscription: { subscribed: 'Subscribed to a plan', renewed: 'Renewed the plan', cancelled: 'Cancelled the plan', expired: 'Plan expired' },
     credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
+    company: { created: 'Created a company', updated: 'Edited company information' },
+    ticket: { created: 'Sent a support ticket', replied: 'Replied to a support ticket', statusChanged: 'Changed the support ticket status' },
   },
   groups: {
     auth: 'Sign-in',
@@ -45,6 +47,8 @@ export const audit = {
     pickup: 'En-route pickup',
     subscription: 'Plan',
     credit: 'Credits',
+    company: 'Company',
+    ticket: 'Support',
   },
   log: {
     title: 'System log',
@@ -148,6 +152,9 @@ export const audit = {
       plan: 'Plan',
       credits: 'Credits',
       balance: 'Balance',
+      // Support tickets (FE-8-07)
+      ticketKind: 'Ticket type',
+      ticketStatus: 'Status',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {
@@ -164,6 +171,7 @@ export const audit = {
       phone: 'Phone',
       role: 'Role',
       depot: 'Depot / branch',
+      companyName: 'Company name',
       destinationName: 'Destination name',
       address: 'Address',
       lat: 'Latitude',

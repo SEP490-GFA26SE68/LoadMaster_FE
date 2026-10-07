@@ -19,8 +19,9 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
 | Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
-| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
+| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị hệ thống còn quản lý công ty (tạo công ty kèm quản trị công ty đầu tiên với mật khẩu tạm hiện một lần, sửa kho xuất phát); quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
 | Quản lý nền tảng | Desktop | Danh mục gói cước: thêm, sửa giá và credit, bật/tắt bán, xoá gói không còn công ty dùng |
+| Hỗ trợ khách hàng | Desktop | Mọi yêu cầu hỗ trợ của các công ty: lọc theo công ty, loại, trạng thái; trả lời, đổi trạng thái; xem gói, số dư và giao dịch credit gần nhất của công ty đó. Người dùng công ty gửi và theo dõi yêu cầu của mình ở mục "Yêu cầu hỗ trợ" của menu tài khoản, chuông báo khi có trả lời |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
 (chồng lấn, quá tải, chịu tải, hướng đặt, khoảng hở cửa) chạy ngay khi thả kiện.
@@ -38,9 +39,9 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 
 | Vai trò | Email | Mở ra |
 |---|---|---|
-| Quản trị hệ thống | `quantri@loadmaster.vn` | `/nguoi-dung` |
-| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` — gõ email (không nằm trong ô chọn nhanh) |
-| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
+| Quản trị hệ thống | `quantri@loadmaster.vn` | `/nen-tang/cong-ty` |
+| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` |
+| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-tro` |
 | Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
 | Quản lý công ty | `quanly@loadmaster.vn` | `/` |
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
@@ -129,12 +130,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.099 test unit + DOM
-pnpm test:e2e      # Playwright: 133 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
+pnpm test          # Vitest: 2.152 test unit + DOM
+pnpm test:e2e      # Playwright: 135 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (08/10/2026, nhánh `feat/fe-8-02-03-04-goi-cuoc-thanh-toan`): lint, kiểm kiểu, 2.099/2.099 unit; ba spec E2E (danh mục gói, gói cước và nạp credit, phân quyền) xanh, bộ E2E đủ do CI chạy (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (08/10/2026, nhánh `feat/fe-8-06-07-cong-ty-ho-tro`): lint, kiểm kiểu, 2.152/2.152 unit; sáu spec E2E (công ty, yêu cầu hỗ trợ, phân quyền, nhật ký, người dùng, hồ sơ) xanh, bộ E2E đủ do CI chạy (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

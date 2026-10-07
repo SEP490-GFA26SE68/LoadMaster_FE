@@ -41,7 +41,7 @@ test('the 56px account button names the user and opens the profile from a touch-
   const menu = within(await screen.findByRole('menu'))
   expect(menu.getByText('kho@loadmaster.vn')).toBeInTheDocument()
   expect(menu.getByText('Nhân viên kho · Kho Long Bình')).toBeInTheDocument()
-  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Đăng xuất'])
+  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Yêu cầu hỗ trợ', 'Đăng xuất'])
   const profile = menu.getByRole('menuitem', { name: 'Hồ sơ cá nhân' })
   expect(profile).toHaveAttribute('href', '/ho-so')
   expect(profile).toHaveClass('h-14', 'text-body-lg')

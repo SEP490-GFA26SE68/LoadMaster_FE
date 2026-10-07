@@ -1,4 +1,4 @@
-import { Box, ClipboardList, CreditCard, LayoutDashboard, Layers, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
+import { Box, Building2, ClipboardList, CreditCard, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
@@ -27,6 +27,10 @@ export const NAV_SCREENS = {
   requirements: { to: '/yeu-cau-giao', labelKey: 'nav.requirements', icon: ClipboardList, permission: 'requirements.view' },
   // Loại xe mở từ màn Đội xe
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
+  // Công ty: quản trị hệ thống (FE-8-06)
+  companies: { to: '/nen-tang/cong-ty', labelKey: 'nav.companies', icon: Building2, permission: 'companies.manage' },
+  // Hỗ trợ: Hỗ trợ khách hàng (FE-8-07)
+  support: { to: '/ho-tro', labelKey: 'nav.support', icon: LifeBuoy, permission: 'support.handle' },
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
   // Gói cước: quản lý nền tảng quản lý danh mục gói (FE-8-02); quản trị công ty xem gói và credit của công ty (FE-8-03)
   plans: { to: '/nen-tang/goi', labelKey: 'nav.plans', icon: Layers, permission: 'subscriptionPlans.manage' },
@@ -42,15 +46,15 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * Mục điều hướng của từng vai trò, theo thứ tự của vai trò đó (FE-0-04): màn chính của vai trò đứng đầu. Danh sách là phần chọn lọc
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
- * - Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng: chưa có màn nào (Sprint 8) nên chưa có mục nào.
+ * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng: Hỗ trợ (FE-8-07).
  * - Quản lý công ty lập yêu cầu giao (FE-4b-02) và xem kho kiện chỉ đọc (FE-3b-03); điều phối viên xem yêu cầu giao để đưa vào chuyến.
  * - Giám sát (FE-6-10) đứng ngay sau Chuyến hàng ở cả hai vai trò: chuyến đang chạy là việc kế tiếp của chuyến đã lập.
  * - Nhân viên kho, tài xế làm việc ở màn toàn màn hình; thanh này chỉ hiện với họ ở màn hồ sơ, mục duy nhất đưa về màn của mình.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['users', 'audit'],
+  systemAdmin: ['companies', 'users', 'audit'],
   systemManager: ['plans'],
-  systemSupporter: [],
+  systemSupporter: ['support'],
   companyAdmin: ['users', 'audit', 'billing'],
   manager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],

@@ -96,6 +96,12 @@ export const AUDIT_ACTIONS = [
   'subscription.expired',
   'credit.purchased',
   'credit.lowBalance',
+  // Công ty do quản trị hệ thống tạo và sửa (FE-8-06); yêu cầu hỗ trợ (FE-8-07)
+  'company.created',
+  'company.updated',
+  'ticket.created',
+  'ticket.replied',
+  'ticket.statusChanged',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -117,6 +123,8 @@ export type AuditTargetType =
   | 'vehicleType'
   // FE-8-01: gói cước và credit thuộc công ty
   | 'company'
+  // FE-8-07
+  | 'ticket'
 
 export type AuditEvent = {
   /** `EV-NNNNNN`, tăng theo thứ tự ghi. */

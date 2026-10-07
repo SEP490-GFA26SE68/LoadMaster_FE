@@ -8,6 +8,7 @@ import type { Package } from './package-model'
 import type { PickupRequest } from './pickup-model'
 import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
+import type { SupportTicket } from './support-model'
 import type {
   Company,
   OptimizationRun,
@@ -69,6 +70,9 @@ export type DbState = {
   /** Sổ cái credit: cũ trước, chỉ thêm dòng, trừ cờ `refunded` và `usageStatus` của lượt dùng. */
   creditTransactions: Map<string, CreditTransaction>
   payments: Map<string, PaymentTransaction>
+
+  // Yêu cầu hỗ trợ (FE-8-07)
+  supportTickets: Map<string, SupportTicket>
 }
 
 export type DbContext = {

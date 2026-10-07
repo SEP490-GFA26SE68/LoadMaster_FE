@@ -13,7 +13,7 @@ export function useUsersQuery() {
 
 /**
  * Tên công ty theo mã, cho cột và bộ lọc công ty (FE-0-08). Chỉ đọc kho khi `enabled` — quản trị công ty không có cột hay bộ lọc đó.
- * Chưa có màn nào sửa công ty nên không cần làm mới.
+ * Tên công ty ít đổi nên không tự làm mới; màn Công ty (FE-8-06) vô hiệu khoá này sau mỗi lần tạo hoặc sửa.
  */
 export function useCompanyNamesQuery(enabled: boolean) {
   return useQuery({ queryKey: ['companies'], queryFn: enabled ? fetchCompanies : skipToken, select: companyNames, staleTime: Infinity })
