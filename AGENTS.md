@@ -316,6 +316,7 @@ src/
                         *(bổ sung 03/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
+    pickup/             *(bổ sung 07/10/2026, FE-7-02)* nhận hàng dọc đường: mười luật `evaluatePickup` và chèn điểm `insertPickupStops`
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker (LM-024 →); mock xếp kệ theo vùng điểm giao
                         (`shelf-packer.ts` chia dải, `shelf-walls.ts` vách / cột / chồng — FE-5b-02); ba phương án ứng viên một job
@@ -1541,6 +1542,25 @@ dù giao diện bị bỏ qua:
   `EXCEPTION_STATUS_INVALID`, `REROUTE_UNAVAILABLE`; nhật ký nhóm `exception` (`reported`, `escalated`, `resolved`, `deadlineRenegotiated`).
   Lệnh ghi của màn làm mới `['trips']`, `['notifications']`, `['requirements']`, `['dashboard']`. E2E `e2e/monitoring.spec.ts` đi cả luồng
   trên một tab với `?toc-do=60`.
+- *(bổ sung 07/10/2026, FE-7-02, D-88)* **Mười luật nhận hàng dọc đường** (`@/domain/pickup`, thuần): `evaluatePickup(context)` trả đúng 10
+  kết quả `{ rule, passed, code, params, estimated }` theo thứ tự luật 1 → 10, luôn đánh giá đủ cả mười (luật trước không đạt không bỏ qua
+  luật sau); mã `PICKUP_*` ở `PICKUP_RULE_CODES`, UI dịch từng mã. `context` là mọi thứ luật cần — yêu cầu (`request`: điểm nhận, điểm giao,
+  hạn, kiện), `vehicle`, vị trí xe `position` và giờ kho `at`, `stops` (mọi điểm của chuyến theo thứ tự tuyến: `completed`, `onboardCount`,
+  `arrivedAt`, `number` khớp `StopZone.stopId`), `zones` của phương án đã duyệt, `onboard` (kiện còn trên xe: hộp đã xếp + khối lượng),
+  `tripCargo` (dòng kiện của chuyến) và `overrideReason` — để kho dựng từ chuyến, phương án đã duyệt, vị trí xe và tiến độ giao. **Điểm hiện
+  tại** là điểm đầu tiên chưa hoàn tất; **điểm được bảo vệ** là điểm đầu tiên sau nó còn `onboardCount` > 0. Luật 1: khoảng cách từ điểm nhận
+  tới đường gấp khúc vị trí xe → các điểm chưa hoàn tất ≤ 10 km (đúng 10 km vẫn đạt) và không nằm sau vị trí xe. Luật 2: tiến độ của điểm giao
+  dọc đường từ điểm hiện tại phải > 0 và không quá tiến độ của điểm được bảo vệ (trùng vẫn đạt); không có điểm được bảo vệ thì chỉ cần sau điểm
+  hiện tại. Luật 3 đạt khi tổng kiện còn trên xe + kiện nhận ≤ tải trọng (đúng bằng vẫn đạt). Luật 8 dùng `addedConflicts` của
+  `domain/constraints/segregation`: kiện nhận khác loại đang khoá thì không đạt, trừ khi chuyến đã có lý do vượt luật. Luật 9: ETA tới điểm giao
+  từ `liveEta` trên tuyến **sau khi chèn**, đạt khi không `MISSED` (đúng hạn vẫn đạt); yêu cầu không có hạn thì `PICKUP_NO_DEADLINE`. **Luật
+  4–7 và 10 là ước lượng** (`estimated: true`): vùng đã trống là vùng của các điểm đã hoàn tất (`zones` lọc theo `completed`), kiện nhận đặt
+  một lớp ở giữa vùng đó — thể tích so với thể tích vùng (4), tải trục `axleLoadsOf` (5) và trọng tâm `checkCenterOfGravity` (6) của khối hàng
+  gộp kiện còn trên xe với kiện nhận, hàng dễ vỡ bị đè khi kiện nhận cần hơn một lớp trên sàn vùng trống (7), kiện còn trên xe nằm trong vùng
+  trống thì kiện nhận chắn nó (10); xe không khai trục thì luật 5 đạt với `PICKUP_AXLE_UNAVAILABLE`. Hằng số (10 km, 50 m coi là cùng một điểm)
+  ở `PICKUP_CONSTANTS`. `insertPickupStops(stops, { pickupStopId, deliveryStopId }, deliveryLocation)` đặt điểm nhận rồi điểm giao **ngay sau
+  điểm hiện tại**, không đổi chỗ điểm cũ nào; điểm giao trùng một điểm có sẵn sau điểm hiện tại và không quá điểm được bảo vệ thì dùng lại
+  (`deliveryReused`), không còn điểm chưa hoàn tất thì `null`.
 - Trạng thái demo lỗi service bật bằng tham số URL (`?mo-phong=loi`), đọc ở `-api.ts`, không đưa
   công tắc kỹ thuật lên UI vận hành. `-api.ts` lấy service qua `createOptimizationService({ simulateFailure })`:
   Web Worker trong trình duyệt, chạy trên luồng gọi khi không có Worker (jsdom), mọi đường kết thúc đều `terminate` (LM-025).
