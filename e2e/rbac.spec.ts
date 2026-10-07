@@ -42,8 +42,9 @@ test('every demo account signs in and lands on the home screen of its role (FE-0
 test('the quick sign-in box groups accounts by platform and company; picking one fills the form (FE-0-03)', async ({ page, browserErrors }) => {
   await page.goto('/')
   const roles = (group: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button')
-  // Quản lý nền tảng và hỗ trợ khách hàng chưa có màn riêng nên chưa nằm trong ô chọn nhanh
-  await expect(roles('Nền tảng')).toHaveText([/^Quản trị hệ thống\s*quantri@loadmaster\.vn$/])
+  await expect(roles('Nền tảng')).toHaveText([
+    /^Quản trị hệ thống\s*quantri@loadmaster\.vn$/, /^Quản lý nền tảng\s*nentang@loadmaster\.vn$/, /^Hỗ trợ khách hàng\s*hotro@loadmaster\.vn$/,
+  ])
   await expect(roles('Công ty TNHH Vận tải Long Bình')).toHaveText([
     /^Quản trị công ty\s*qtcongty@loadmaster\.vn$/, /^Quản lý công ty\s*quanly@loadmaster\.vn$/, /^Điều phối viên\s*dieuphoi@loadmaster\.vn$/,
     /^Nhân viên kho\s*kho@loadmaster\.vn$/, /^Tài xế\s*taixe@loadmaster\.vn$/,

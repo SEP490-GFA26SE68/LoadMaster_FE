@@ -91,8 +91,8 @@ kiện, 88 kiện kho kiện, 6 yêu cầu giao) thuộc Long Bình; Phương Na
 yêu cầu giao, 2 chuyến; kiện nhập tay của các chuyến seed cũng là kiện kho kiện (FE-3b-07, mục 9) (`TRIP-PN-001` đã duyệt, gán `taixe@phuongnam.vn`; `TRIP-PN-002` nháp) — mã mang `PN` (`TRIP-PN-…`, `VEHICLE-PN-…`, `REV-PN-…`)
 nên `nextId` không tính. Tài khoản seed thêm ở FE-0-03 mang mã ngoài dạng
 `US-NNNN` (`US-NT-…`, `US-LB-…`, `US-PN-…`): `nextId` không tính nên mã kế tiếp ghi trong test giữ nguyên (`US-0016`, vì `US-0015` ở lại).
-Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); `nentang@`, `hotro@` chưa nằm trong
-ô đó tới khi có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
+Ô đăng nhập nhanh (`DemoAccounts`) chia ba nhóm — "Nền tảng", Long Bình, Phương Nam (tên công ty lấy từ seed); *(đã điều chỉnh 08/10/2026, FE-8-02, FE-8-07)* nhóm
+"Nền tảng" có đủ ba tài khoản (`quantri@`, `nentang@`, `hotro@`) vì cả ba vai trò nay đều có màn riêng. *(đã điều chỉnh 02/10/2026, FE-0-04)* Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts`:
 `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn
 chính đứng đầu. Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý công ty: Bảng điều khiển · Đơn hàng (chỉ đọc) · Kho kiện (chỉ đọc,
 FE-3b-03) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Đơn hàng · Đội xe · Bảng điều khiển

@@ -74,8 +74,7 @@ test('the quick sign-in box groups the demo accounts by platform and company; pi
   // Tên nhóm là dòng đầu của nhóm (cũng là tên truy cập của nhóm): nền tảng và hai công ty logistics — không còn nhóm nhà sản xuất (FE-0-06)
   expect(screen.getAllByRole('group').map((group) => group.firstElementChild?.textContent))
     .toStrictEqual(['Nền tảng', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam'])
-  // Quản lý nền tảng và hỗ trợ khách hàng chưa có màn riêng (Sprint 8) nên chưa có trong ô chọn nhanh
-  expect(rows('Nền tảng')).toStrictEqual(['Quản trị hệ thốngquantri@loadmaster.vn'])
+  expect(rows('Nền tảng')).toStrictEqual(['Quản trị hệ thốngquantri@loadmaster.vn', 'Quản lý nền tảngnentang@loadmaster.vn', 'Hỗ trợ khách hànghotro@loadmaster.vn'])
   expect(rows('Công ty TNHH Vận tải Long Bình')).toStrictEqual([
     'Quản trị công tyqtcongty@loadmaster.vn', 'Quản lý công tyquanly@loadmaster.vn', 'Điều phối viêndieuphoi@loadmaster.vn',
     'Nhân viên khokho@loadmaster.vn', 'Tài xếtaixe@loadmaster.vn',

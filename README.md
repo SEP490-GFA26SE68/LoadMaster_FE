@@ -40,8 +40,8 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 | Vai trò | Email | Mở ra |
 |---|---|---|
 | Quản trị hệ thống | `quantri@loadmaster.vn` | `/nen-tang/cong-ty` |
-| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` — gõ email (không nằm trong ô chọn nhanh) |
-| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-tro` — gõ email (không nằm trong ô chọn nhanh) |
+| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` |
+| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-tro` |
 | Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
 | Quản lý công ty | `quanly@loadmaster.vn` | `/` |
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
