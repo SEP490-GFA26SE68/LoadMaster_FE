@@ -55,9 +55,10 @@ export function ruleText(result: PickupRuleResult, { t, format, stopLabel }: Rul
       return t('pickups.rules.codes.PICKUP_AXLE_OVERLOAD', {
         frontLoadKg: format.weight(num(p.frontLoadKg)), rearLoadKg: format.weight(num(p.rearLoadKg)), overKg: format.weight(num(p.overKg)),
       })
+    case 'PICKUP_COG_NOT_WORSE':
     case 'PICKUP_COG_OFF_CENTER': {
       const reasons = str(p.reasons).split(',').flatMap((reason) => (reason === 'COG_LATERAL' || reason === 'COG_LONGITUDINAL' || reason === 'COG_HIGH' ? [t(`pickups.rules.cogReasons.${reason}`)] : []))
-      return t('pickups.rules.codes.PICKUP_COG_OFF_CENTER', { reasons: format.list(reasons) })
+      return t(`pickups.rules.codes.${result.code}`, { reasons: format.list(reasons) })
     }
     case 'PICKUP_FRAGILE_STACKED':
       return t('pickups.rules.codes.PICKUP_FRAGILE_STACKED', { fragileCount: format.integer(num(p.fragileCount)), layers: format.integer(num(p.layers)) })

@@ -154,6 +154,7 @@ export const pickups = {
       PICKUP_AXLE_OVERLOAD: 'Tải trục trước {frontLoadKg}, trục sau {rearLoadKg}, vượt giới hạn {overKg}.',
       PICKUP_AXLE_UNAVAILABLE: 'Xe chưa khai đủ dữ liệu trục nên chưa kiểm tải trục.',
       PICKUP_COG_OK: 'Trọng tâm hàng sau khi nhận nằm trong ngưỡng của xe.',
+      PICKUP_COG_NOT_WORSE: 'Trọng tâm hàng trên xe đã ngoài ngưỡng từ trước khi nhận ({reasons}); kiện nhận không gây thêm kiểu lệch nào.',
       PICKUP_COG_OFF_CENTER: 'Trọng tâm hàng sau khi nhận lệch quá ngưỡng của xe: {reasons}.',
       PICKUP_STACK_OK: 'Không có kiện dễ vỡ nào bị đè.',
       PICKUP_FRAGILE_STACKED: '{fragileCount} kiện dễ vỡ có thể bị đè: kiện nhận cần {layers} lớp trên sàn vùng đã trống.',

@@ -1575,7 +1575,9 @@ dù giao diện bị bỏ qua:
   4–7 và 10 là ước lượng** (`estimated: true`): vùng đã trống là vùng của các điểm đã hoàn tất (`zones` lọc theo `completed`), kiện nhận đặt
   một lớp ở giữa vùng đó — thể tích so với thể tích vùng (4), tải trục `axleLoadsOf` (5) và trọng tâm `checkCenterOfGravity` (6) của khối hàng
   gộp kiện còn trên xe với kiện nhận, hàng dễ vỡ bị đè khi kiện nhận cần hơn một lớp trên sàn vùng trống (7), kiện còn trên xe nằm trong vùng
-  trống thì kiện nhận chắn nó (10); xe không khai trục thì luật 5 đạt với `PICKUP_AXLE_UNAVAILABLE`. Hằng số (10 km, 50 m coi là cùng một điểm)
+  trống thì kiện nhận chắn nó (10); xe không khai trục thì luật 5 đạt với `PICKUP_AXLE_UNAVAILABLE`. Luật 6 chỉ tính **kiểu lệch trọng tâm
+  mới xuất hiện sau khi nhận**: giữa chuyến hàng còn lại thường đã dồn về đầu thùng, kiểu lệch có từ trước là đạt với `PICKUP_COG_NOT_WORSE`;
+  điểm hiện tại là điểm cuối của tuyến thì luật 2 đạt với mọi điểm giao. Hằng số (10 km, 50 m coi là cùng một điểm)
   ở `PICKUP_CONSTANTS`. `insertPickupStops(stops, { pickupStopId, deliveryStopId }, deliveryLocation)` đặt điểm nhận rồi điểm giao **ngay sau
   điểm hiện tại**, không đổi chỗ điểm cũ nào; điểm giao trùng một điểm có sẵn sau điểm hiện tại và không quá điểm được bảo vệ thì dùng lại
   (`deliveryReused`), không còn điểm chưa hoàn tất thì `null`.

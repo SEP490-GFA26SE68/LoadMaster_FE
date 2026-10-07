@@ -15,7 +15,7 @@ import { PickupRulesList } from './PickupRulesList'
 
 /**
  * Hộp "Nhận hàng dọc đường" và thẻ yêu cầu của chuyến (FE-7-03) trên kho mock thật. Đồng hồ chỉ giả `Date` về 12:00 ngày neo 14/09/2026:
- * `TRIP-009` đang vận chuyển, xe đứng ở điểm 2 (số đã kiểm ở `pickups.test.ts`: yêu cầu 12 kg chỉ trượt luật 6, ước lượng). Mười luật tự
+ * `TRIP-009` đang vận chuyển, xe đứng ở điểm 2 (số đã kiểm ở `pickups.test.ts`: yêu cầu một kiện thường 12 kg đạt cả mười luật). Mười luật tự
  * nó kiểm ở `pickup-rules.test.ts`; ở đây chỉ kiểm màn nối đúng kho.
  */
 beforeEach(() => {
@@ -50,7 +50,7 @@ function renderCard(role: Role, phase: TripPhase = 'delivering') {
   )
 }
 
-test('the dispatcher sends a request, sees the ten rules with the estimated one that failed, and finds it in the card', async () => {
+test('the dispatcher sends a request, sees the ten rules with the estimated ones labelled, and finds it in the card', async () => {
   const user = userEvent.setup()
   renderCard('dispatcher')
   const card = within(await screen.findByRole('region', { name: 'Nhận hàng dọc đường' }, SLOW))
@@ -76,21 +76,21 @@ test('the dispatcher sends a request, sees the ten rules with the estimated one 
   await user.type(row.getByLabelText(/Khối lượng/), '12')
   await user.click(dialog.getByRole('button', { name: 'Gửi yêu cầu' }))
 
-  // Kết quả của mười luật ngay sau khi lưu: chỉ luật 6 (ước lượng) không đạt — chữ, không chỉ màu
+  // Kết quả của mười luật ngay sau khi lưu: đạt cả mười — chữ, không chỉ màu; luật ước lượng có nhãn
   const result = within(await screen.findByRole('dialog', { name: /Yêu cầu PKR-002/ }, SLOW))
   const rules = within(result.getByRole('list', { name: 'Mười luật nhận hàng' })).getAllByRole('listitem')
   expect(rules).toHaveLength(10)
-  expect(rules.filter((item) => item.getAttribute('data-passed') === 'false').map((item) => item.getAttribute('data-rule'))).toStrictEqual(['6'])
-  expect(rules[5]).toHaveTextContent('Không đạt')
+  expect(rules.filter((item) => item.getAttribute('data-passed') === 'false').map((item) => item.getAttribute('data-rule'))).toStrictEqual([])
+  expect(rules[5]).not.toHaveTextContent('Không đạt')
   expect(rules[5]).toHaveTextContent('Ước lượng')
   expect(rules[0]).toHaveTextContent('Điểm nhận cách tuyến')
   expect(rules[1]).toHaveTextContent('không vượt điểm 3 (Bếp ăn công nghiệp KCN Sóng Thần)')
-  expect(result.getByText('Còn 1 luật chưa đạt. Điều phối viên vẫn duyệt được nếu ghi lý do vượt luật.')).toBeInTheDocument()
+  expect(result.getByText('Đạt cả mười luật. Điều phối viên có thể duyệt ngay.')).toBeInTheDocument()
 
   await user.click(result.getByRole('button', { name: 'Đóng' }))
   const request = await within(await screen.findByRole('region', { name: 'Nhận hàng dọc đường' })).findByText('PKR-002', undefined, SLOW)
-  expect(request.closest('li')).toHaveTextContent('9 / 10 luật đạt')
-  expect(request.closest('li')).toHaveTextContent('Chờ duyệt')
+  expect(request.closest('li')).toHaveTextContent('10 / 10 luật đạt')
+  expect(request.closest('li')).toHaveTextContent('Đạt mười luật — chờ duyệt')
 })
 
 test('a form with nothing filled in is refused in place and sends nothing; a trip no longer in transit dims the button with its reason', async () => {

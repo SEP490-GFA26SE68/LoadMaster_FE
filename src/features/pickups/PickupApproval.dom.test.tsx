@@ -76,12 +76,12 @@ test('approving a request with a failed rule asks for the override reason, then 
   db.restoreSession('US-0001')
   const seed = (await db.listPickupRequests('TRIP-009'))[0]
   if (!seed) throw new Error('seed phải có một yêu cầu')
-  await db.createPickupRequest('TRIP-009', { pickup: seed.pickup, delivery: seed.delivery, packages: [{ ...seed.packages[0]!, packageCode: 'HG-0777' }] })
+  await db.createPickupRequest('TRIP-009', { pickup: seed.pickup, delivery: seed.delivery, packages: [{ ...seed.packages[0]!, packageCode: 'HG-0777', handlingClass: 'FRAGILE' }] })
   renderCard('dispatcher')
   const item = within(await itemOf('PKR-002'))
   await user.click(item.getByRole('button', { name: 'Duyệt yêu cầu PKR-002' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Duyệt yêu cầu PKR-002' }))
-  // Mở hộp là kiểm lại mười luật: luật 6 (ước lượng) chưa đạt nên cần lý do
+  // Mở hộp là kiểm lại mười luật: kiện dễ vỡ trên chuyến chở hàng thường trượt luật 8 nên cần lý do
   expect(await dialog.findByText('1 luật chưa đạt. Muốn duyệt vẫn phải ghi lý do vượt luật.', undefined, SLOW)).toBeInTheDocument()
   expect(dialog.getAllByRole('listitem')).toHaveLength(10)
   // Nút Duyệt mờ cho tới khi kho kiểm xong lần kiểm lại
@@ -103,7 +103,7 @@ test('the manager sees a request still waiting and the reason it cannot decide, 
   db.restoreSession('US-0001')
   const seed = (await db.listPickupRequests('TRIP-009'))[0]
   if (!seed) throw new Error('seed phải có một yêu cầu')
-  await db.createPickupRequest('TRIP-009', { pickup: seed.pickup, delivery: seed.delivery, packages: seed.packages.slice(0, 1) })
+  await db.createPickupRequest('TRIP-009', { pickup: seed.pickup, delivery: seed.delivery, packages: [{ ...seed.packages[0]!, handlingClass: 'FRAGILE' }] })
   renderCard('manager')
   const item = within(await itemOf('PKR-003'))
   expect(item.getByText('Chờ duyệt')).toBeInTheDocument()

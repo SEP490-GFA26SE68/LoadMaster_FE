@@ -11,7 +11,8 @@ const NOW = new Date('2026-09-14T05:00:00.000Z')
 const TRIP = 'TRIP-009'
 const DISPATCHER = 'US-0001'
 
-const BOX: PickupPackage = { packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }
+/** Kiện dễ vỡ trên chuyến chở hàng thường: trượt đúng luật 8 (khác loại hàng của chuyến) — yêu cầu mặc định của file là yêu cầu còn `PENDING`. */
+const BOX: PickupPackage = { packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'FRAGILE' }
 const INPUT: PickupRequestInput = {
   pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
   delivery: { name: 'Bếp ăn KCN Sóng Thần', address: '12 Đường số 6, KCN Sóng Thần 1, Dĩ An', lat: 10.893, lng: 106.75 },
@@ -69,12 +70,13 @@ describe('createPickupRequest', () => {
     expect((await db.listEvents())[0]).toMatchObject({ action: 'pickup.requested', actorId: DISPATCHER, target: { type: 'trip', id: TRIP }, params: { pickupId: 'PKR-002', count: 1, failedRules: 1 } })
   })
 
-  // Xe đang đứng ở điểm 2, hàng còn lại của điểm 3 nằm sâu trong thùng: 12 kg không đủ kéo trọng tâm về giữa (luật 6, ước lượng), 800 kg thì đủ
+  // Chuyến chở hàng thường: kiện dễ vỡ trượt luật 8; kiện thường 12 kg đạt cả mười — hàng còn lại đã dồn về đầu thùng từ trước nên
+  // luật 6 không tính cho yêu cầu
   test.each([
-    { weightKg: 12, status: 'PENDING', failed: [6] },
-    { weightKg: 800, status: 'VALIDATED', failed: [] },
-  ])('a $weightKg kg request is $status: rules not passed $failed', async ({ weightKg, status, failed }) => {
-    const created = await newDb().createPickupRequest(TRIP, { ...INPUT, packages: [{ ...BOX, weightKg }] })
+    { handlingClass: 'FRAGILE', status: 'PENDING', failed: [8] },
+    { handlingClass: 'STANDARD', status: 'VALIDATED', failed: [] },
+  ] as const)('a $handlingClass box makes the request $status: rules not passed $failed', async ({ handlingClass, status, failed }) => {
+    const created = await newDb().createPickupRequest(TRIP, { ...INPUT, packages: [{ ...BOX, handlingClass }] })
     expect(created.status).toBe(status)
     expect(created.validationResults.filter((result) => !result.passed).map((result) => result.rule)).toStrictEqual(failed)
   })

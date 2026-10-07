@@ -150,6 +150,7 @@ export const pickups = {
       PICKUP_AXLE_OVERLOAD: 'Front axle {frontLoadKg}, rear axle {rearLoadKg}, {overKg} over the limit.',
       PICKUP_AXLE_UNAVAILABLE: 'The vehicle has no complete axle data, so the axle load is not checked.',
       PICKUP_COG_OK: 'The center of gravity after the pickup is within the vehicle threshold.',
+      PICKUP_COG_NOT_WORSE: 'The center of gravity was already beyond the threshold before the pickup ({reasons}); the pickup adds no new offset.',
       PICKUP_COG_OFF_CENTER: 'The center of gravity after the pickup is beyond the vehicle threshold: {reasons}.',
       PICKUP_STACK_OK: 'No fragile package would be stacked on.',
       PICKUP_FRAGILE_STACKED: '{fragileCount} fragile packages could be stacked on: the pickup needs {layers} layers on the freed floor.',

@@ -4,7 +4,7 @@ import { createMockDb, stopItemIds, type MockDb, type PickupPackage, type Pickup
 /**
  * Duyệt và từ chối yêu cầu nhận hàng dọc đường (FE-7-04, D-88): kho kiểm lại mười luật trên chuyến lúc này, tạo kiện kho kiện và chèn
  * điểm vào chuyến đang vận chuyển. `TRIP-009` có ba điểm, xe đứng ở điểm 2, điểm 3 là điểm được bảo vệ. Điểm giao của `INPUT` trùng điểm 3
- * nên dùng lại nó. Xe đứng ở điểm 2 với hàng còn lại ở sâu trong thùng: kiện 12 kg trượt luật 6 (ước lượng), kiện 800 kg đạt cả mười
+ * nên dùng lại nó. Chuyến chở hàng thường: kiện dễ vỡ trượt luật 8 (khác loại hàng của chuyến), kiện thường đạt cả mười
  * (số đã kiểm ở `pickups.test.ts`).
  */
 
@@ -12,7 +12,7 @@ const NOW = new Date('2026-09-14T05:00:00.000Z')
 const TRIP = 'TRIP-009'
 const DISPATCHER = 'US-0001'
 
-const BOX: PickupPackage = { packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }
+const BOX: PickupPackage = { packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'FRAGILE' }
 const INPUT: PickupRequestInput = {
   pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
   delivery: { name: 'Bếp ăn KCN Sóng Thần', address: '12 Đường số 6, KCN Sóng Thần 1, Dĩ An', lat: 10.893, lng: 106.75 },
@@ -45,7 +45,7 @@ describe('approvePickupRequest', () => {
     expect(approved).toMatchObject({
       status: 'APPROVED', overrideReason: 'Khách quen, xe còn chỗ', approvedBy: DISPATCHER, pickupStopId: 'STOP-04', deliveryStopId: 'STOP-03', packageIds: [packages[0]?.id],
     })
-    expect(approved.validationResults.filter((result) => !result.passed).map((result) => result.rule)).toStrictEqual([6])
+    expect(approved.validationResults.filter((result) => !result.passed).map((result) => result.rule)).toStrictEqual([8])
     expect(packages).toMatchObject([{ packageCode: 'HG-0501', source: 'PICKUP', status: 'ASSIGNED', tripId: TRIP, stopId: 'STOP-03', weightKg: 12, destination: 'Bếp ăn KCN Sóng Thần' }])
     expect(packages[0]?.qrToken).toMatch(/^LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/)
 
@@ -70,7 +70,7 @@ describe('approvePickupRequest', () => {
 
   test('a request that passes all ten rules is approved without a reason, and a new delivery point is inserted after the pickup point', async () => {
     const db = newDb()
-    const request = await db.createPickupRequest(TRIP, { ...OTHER_DELIVERY, packages: [{ ...BOX, weightKg: 800 }] })
+    const request = await db.createPickupRequest(TRIP, { ...OTHER_DELIVERY, packages: [{ ...BOX, handlingClass: 'STANDARD' }] })
     expect(request.status).toBe('VALIDATED')
     const { request: approved } = await db.approvePickupRequest(TRIP, request.id, { overrideReason: 'không cần' })
     expect(approved).toMatchObject({ status: 'APPROVED', pickupStopId: 'STOP-04', deliveryStopId: 'STOP-05' })
