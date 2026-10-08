@@ -388,7 +388,7 @@ Bản thiết kế đã chốt nằm ở `design/v2.3/` (`README.md` thứ tự 
 - `font-display` là họ chữ trong `cn()` (`THEME_FONT_FAMILIES` của `lib/utils.ts`); thêm họ chữ mới vào `@theme` thì thêm tên vào đó.
 - *(đợt 2, 26/09/2026)* Kính sáng của V2 đã xoá (`--nav-glass`, `--follow-*`, `--tile-*`, `--glass-edge`, `--icon-ring`, `--spring`,
   lớp `.glass-follow`, `.glass-tile`). Còn lại tới đợt của màn dùng chúng: `--chrome` (header trắng của Chi tiết chuyến, So sánh),
-  `--hero-icon` (form xe), `--table-head`. Thêm cho dải trời: `--sky-end`, `--sky-h`, `--sky-dots`, `--sky-overlap`, `--sky-text*`,
+  `--hero-icon` (form xe), `--table-head`. *(đã điều chỉnh 09/10/2026, V2.3 đợt 7)* `--chrome`, `--hero-icon*` và lớp `.hero-icon` đã xoá khi form xe lên dải trời; còn `--table-head`. Thêm cho dải trời: `--sky-end`, `--sky-h`, `--sky-dots`, `--sky-overlap`, `--sky-text*`,
   `--sky-glass*`, `--nav-on*`, `--avatar-fill`, `--logo-*` (ba màu logo, LM-105); cho thành phần: `--scrim`, `--danger-shadow`, `--meter-fill`,
   `--focus-ring`, `--error-ring`. Lớp dùng chung trong `index.css`: `.sky`, `.glass-nav`, `.glass-dark`, utility `sky-overlap`.
 
@@ -613,6 +613,36 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
 - **Trạng thái rỗng**: không khung nét đứt; ô minh hoạ 64 px bo 18 theo nghĩa (`icon` + `tone`), tiêu đề Archivo 700. Màn không có dữ liệu
   dùng Lumo (`mascot`, LM-105) thay ô icon; `compact` 96 px trong card; `wide` cho mô tả tới 520 px trong card rộng (LM-106).
 - **Menu, Select, tooltip**: menu trắng đặc bo 14 padding 6, mục 36 px, `tone="danger"`; tooltip nền `--cyan-950`.
+
+### V2.3 đợt 7 — đội xe, quản trị, đăng nhập, hồ sơ, màn lỗi *(bổ sung 09/10/2026)*
+
+Mẫu: `design/v2.3/screens/web/DoiXe.jpg`, `ChiTietXe.jpg`, `NguoiDung.jpg`, `MaTranQuyen.jpg`, `NhatKy.jpg`, `DangNhap.jpg`, `HoSo.jpg`.
+
+- **Vai trò** hiện bằng `components/RoleBadge` (nhãn slate, icon theo vai trò, tên từ từ điển; `size` `sm` | `md`): bảng và panel người dùng,
+  dưới tên người làm ở Nhật ký, hộp tài khoản dùng thử, thẻ nhận diện của Hồ sơ.
+- **Đội xe**: dòng dưới tiêu đề là số đếm từ danh sách xe (`FleetHeroSummary`). Cột lòng thùng vẽ hình nhìn từ trên bằng SVG, cùng tỉ lệ cho
+  mọi dòng (`vehicle-top-view.ts`; vật cản xám, cạnh cửa sau cyan) kèm thể tích m³. Cột trạng thái ghi mã chuyến kèm pha của chuyến
+  (`fetchVehicleStates` đọc thêm `listTrips` khi có xe đang chạy) hoặc "Từ ngày · ghi chú bảo dưỡng". Bốn `KpiTile` vẫn là công tắc lọc.
+- **Form xe**: `PageHero` (crumbs, chip trạng thái ở `badge`, nút Lưu là nút chính duy nhất), một thẻ ba phần đánh số (`VehicleFormSection`),
+  thẻ xem trước 3D nền tối đặc, tóm tắt lỗi đánh số; bảng vật cản giữ hai dòng mỗi vật cản. Mọi ô bắt buộc có dấu `*` (`aria-hidden`):
+  test tìm ô bằng role + `name`, không bằng `getByLabel` khớp cả chuỗi.
+- **Người dùng**: dòng dưới tiêu đề là số đếm từ danh sách người xem đọc được; dòng đang chọn có vạch cyan bên trái; nút thao tác của panel
+  rộng hết panel. Kho không lưu ai khoá và khoá lúc nào nên panel không có dòng "Khoá lúc … bởi …".
+- **Ma trận quyền** dựng bằng `<table>` riêng, không qua `DataTable` (có dòng khu vực và dòng tổng giữa các dòng dữ liệu). Quyền xếp theo khu vực
+  ở `admin/permission-groups.ts` — suy từ tiền tố mã quyền, giữ đúng thứ tự `PERMISSIONS`, có test canh; thêm quyền thì thêm tiền tố và nhãn
+  `admin.permissions.groups`. Số tài khoản dưới tên vai trò: quản trị hệ thống thấy đủ tám vai trò, quản trị công ty chỉ năm vai trò công ty
+  (không liệt kê được tài khoản nền tảng, ghi "0" là sai).
+- **Nhật ký** vẫn là bảng. Khoảng ngày là nút `AuditDateRange` mở bảng nhỏ (Dialog Radix không modal; tham số `tu`, `den` giữ nguyên); nút ghi
+  ngày bằng `format` của app, hai ô nhập bên trong là ô ngày của trình duyệt. Sự kiện có `before` + `after` hiện chip "trước → sau"
+  (`audit-change.ts`, chữ đầy đủ ở `sr-only`). Nhãn "Chỉ đọc" là `badge` của `PageHero`.
+- **Đăng nhập**: card trắng đặc nổi trên nền `.sky` toàn trang, không kính. Hộp tài khoản dùng thử tự cuộn trong card từ 1.024 px (trang không
+  cuộn ở 1.366×768); nút "VI | EN" (`LanguageSwitch tone="sky"`, 56 px trên máy cảm ứng) nằm trong `<header>` ngoài `main` — test đếm nhóm tài
+  khoản dùng thử đếm trong `main`. Hình đẳng cự và ba ý chính ở bên phải, ẩn dưới 1.024 px.
+- **Ô mật khẩu** dùng `components/ui/PasswordInput`: nút mắt `type="button"` có `aria-pressed`, tên "Hiện mật khẩu" / "Ẩn mật khẩu"
+  (`auth.passwordToggle`); khi đang hiện thì tắt soát chính tả / tự sửa chữ, và tự ẩn lại lúc form gửi đi. Tên truy cập của ô vẫn là chữ nhãn.
+- **Nhãn, gợi ý và lỗi của ô nhập** (`field-styles.tsx`) lên 16 px trên máy có con trỏ cảm ứng; máy bàn giữ 13 / 12,5 px.
+- **Hồ sơ**: thẻ nhận diện bên trái, hai thẻ form riêng bên phải, thẻ đầu đè lên dải trời (`overlap`). **Màn lỗi** 404 / 403 / lỗi tải dùng
+  `ErrorScreen`: card trắng bo 18 giữa trang, Lumo, chip mã, "Về màn chính" là nút chính; ngoài khung ứng dụng có dải trời mang logo.
 
 ### Thanh tiêu đề màn *(bổ sung)*
 
@@ -1947,6 +1977,11 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện) | Nhóm khác chưa có việc ở từng điểm; không bịa số |
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
+| Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
+| Ma trận quyền 13 quyền × 5 vai trò | 33 quyền × 8 vai trò, chia 13 khu vực | Ma trận thật của sản phẩm |
+| Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
+| Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
+| Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |
 
 ## 12. Tối ưu token và context *(bổ sung)*
 
