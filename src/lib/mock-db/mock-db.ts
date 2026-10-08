@@ -12,6 +12,7 @@ import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
 import { packageMethods } from './db-packages'
 import { pickupMethods } from './db-pickups'
+import { reorderMethods } from './db-trip-reorder'
 import { requirementMethods } from './db-requirements'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
@@ -106,6 +107,7 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     ...trackingMethods(ctx),
     ...exceptionMethods(ctx),
     ...pickupMethods(ctx),
+    ...reorderMethods(ctx),
     ...billingMethods(ctx),
     ...companyMethods(ctx),
     ...supportMethods(ctx),

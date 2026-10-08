@@ -43,6 +43,7 @@ export function RoutePlanBar({ tripId, eta, stopCount, canOptimize }: {
           <span className="font-semibold text-ink-strong">{t('trips.routePlan.optimized')}</span>
           {eta.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
           <span className="tabular-nums">{t('trips.routePlan.summary', { km: format.decimal(eta.totalKm), duration: durationLabel(eta.totalMinutes, t, format) })}</span>
+          {eta.restCount ? <span className="tabular-nums text-ink-3">{t('trips.routePlan.rests', { count: eta.restCount, duration: durationLabel(eta.restMinutes ?? 0, t, format) })}</span> : null}
           {late > 0 ? <Badge shape="tag" tone="danger">{t('trips.routePlan.late', { count: late })}</Badge> : null}
         </p>
       ) : (

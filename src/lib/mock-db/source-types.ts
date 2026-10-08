@@ -183,8 +183,11 @@ export type TripRoutePlan = {
   missedStopIds: string[]
   /** Quãng đường ước lượng kho → điểm cuối, km (làm tròn 0,1). */
   totalKm: number
-  /** Từ lúc xuất phát tới khi xong điểm cuối, phút. */
+  /** Từ lúc xuất phát tới khi xong điểm cuối, phút (gồm giờ nghỉ bắt buộc của tài xế, FE-BL-04). */
   totalMinutes: number
+  /** Số lần nghỉ bắt buộc và tổng thời gian nghỉ (phút, đã nằm trong `totalMinutes`); vắng khi tuyến không phải nghỉ lần nào. */
+  restCount?: number
+  restMinutes?: number
   /** Lần bấm "Tối ưu tuyến" gần nhất, ISO 8601. */
   optimizedAt: string
   /** Người bấm; `null` khi không có phiên (seed, test). */

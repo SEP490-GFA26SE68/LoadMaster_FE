@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { deadlineStatus, haversineKm, optimizeRoute, routeEta, ROUTING_CONSTANTS, sequenceStops, type GeoPoint, type RouteInput } from '@/domain/routing'
+import { deadlineStatus, haversineKm, legWithRests, optimizeRoute, routeEta, ROUTING_CONSTANTS, sequenceStops, type GeoPoint, type RouteInput } from '@/domain/routing'
 
 /**
  * Số kỳ vọng không tính lại bằng code đang test (AGENTS mục 9):
@@ -32,7 +32,7 @@ describe('haversineKm', () => {
 })
 
 test('the constants are the FE proposal awaiting business confirmation (PRD 17.2)', () => {
-  expect(ROUTING_CONSTANTS).toStrictEqual({ ROAD_FACTOR: 1.3, AVERAGE_SPEED_KMH: 50, SERVICE_MINUTES_PER_STOP: 15, AT_RISK_MARGIN_MINUTES: 30 })
+  expect(ROUTING_CONSTANTS).toStrictEqual({ ROAD_FACTOR: 1.3, AVERAGE_SPEED_KMH: 50, SERVICE_MINUTES_PER_STOP: 15, AT_RISK_MARGIN_MINUTES: 30, MAX_CONTINUOUS_DRIVING_MINUTES: 240, REST_MINUTES: 15 })
 })
 
 describe('stop order', () => {
@@ -50,11 +50,14 @@ describe('stop order', () => {
       stops: [
         { stopId: 'DI-AN', eta: '2026-09-14T15:18:21.515Z' },
         { stopId: 'THU-DAU-MOT', eta: '2026-09-14T15:57:05.741Z' },
-        { stopId: 'NHA-TRANG', eta: '2026-09-15T00:16:27.656Z' },
+        // chặng Thu Dầu Một → Nha Trang 29.061.915 ms (8 giờ 4 phút): lái 4 giờ, nghỉ 15 phút, 4 giờ, nghỉ 15 phút, lái nốt — thêm 30 phút
+        { stopId: 'NHA-TRANG', eta: '2026-09-15T00:46:27.656Z' },
       ],
       missedStopIds: [],
       totalKm: 438.7,
-      totalMinutes: 571,
+      totalMinutes: 601,
+      restCount: 2,
+      restMinutes: 30,
     })
   })
 
@@ -72,13 +75,16 @@ describe('stop order', () => {
     expect(result).toStrictEqual({
       orderedStopIds: ['NHA-TRANG', 'DI-AN', 'THU-DAU-MOT'],
       stops: [
-        { stopId: 'NHA-TRANG', eta: '2026-09-14T22:35:16.422Z', deadlineStatus: 'OK' },
-        { stopId: 'DI-AN', eta: '2026-09-15T06:43:03.425Z', deadlineStatus: 'OK' },
-        { stopId: 'THU-DAU-MOT', eta: '2026-09-15T07:21:47.651Z', deadlineStatus: 'OK' },
+        // hai chặng dài (27.316.422 ms và 28.367.003 ms), mỗi chặng một lần nghỉ 15 phút; dừng 15 phút ở Nha Trang đặt lại bộ đếm
+        { stopId: 'NHA-TRANG', eta: '2026-09-14T22:50:16.422Z', deadlineStatus: 'OK' },
+        { stopId: 'DI-AN', eta: '2026-09-15T07:13:03.425Z', deadlineStatus: 'OK' },
+        { stopId: 'THU-DAU-MOT', eta: '2026-09-15T07:51:47.651Z', deadlineStatus: 'OK' },
       ],
       missedStopIds: [],
       totalKm: 793.2,
-      totalMinutes: 997,
+      totalMinutes: 1027,
+      restCount: 2,
+      restMinutes: 30,
     })
   })
 
@@ -187,4 +193,31 @@ test('deadline status: OK up to 30 minutes before the deadline, AT_RISK up to th
   expect(deadlineStatus('2026-09-14T10:00:00.001Z', deadline)).toBe('MISSED')
   // mốc giờ ISO khác múi giờ so đúng thời điểm
   expect(deadlineStatus('2026-09-14T16:45:00+07:00', deadline)).toBe('AT_RISK')
+})
+
+describe('mandatory driver rest (FE-BL-04): 240 minutes of driving, then 15 minutes of rest', () => {
+  const MINUTE = 60_000
+
+  test('a leg is split only when there is still road after the limit', () => {
+    const rests = (minutes: number, drivenMinutes = 0) => legWithRests(minutes * MINUTE, drivenMinutes * MINUTE).rests
+    expect(rests(239)).toBe(0)
+    expect(rests(240)).toBe(0) // đủ giờ lái ngay tại đích: không còn đường nên không nghỉ
+    expect(rests(241)).toBe(1)
+    expect(rests(481)).toBe(2)
+    expect(rests(100, 200)).toBe(1) // đã lái 200 phút từ trước
+    expect(legWithRests(300 * MINUTE)).toMatchObject({ chunks: [240 * MINUTE, 60 * MINUTE], totalMs: 315 * MINUTE, drivenAfterMs: 60 * MINUTE })
+  })
+
+  test('a stop of at least 15 minutes resets the continuous-driving counter', () => {
+    // hai chặng dọc xích đạo, mỗi chặng 12.000.245 ms (200 phút): không nghỉ lần nào vì dừng 15 phút ở giữa đặt lại bộ đếm
+    const legs: RouteInput = {
+      depot: { lat: 0, lng: 0 },
+      departureTime: '2026-09-14T00:00:00.000Z',
+      stops: [{ stopId: 'A', location: { lat: 0, lng: 1.153 } }, { stopId: 'B', location: { lat: 0, lng: 2.306 } }],
+    }
+    const result = routeEta(legs, ['A', 'B'])
+    expect(result).not.toHaveProperty('restCount')
+    expect(result.totalMinutes).toBe(430) // 200 + 15 + 200 + 15
+    expect(result.stops[1]?.eta).toBe(new Date(Date.parse('2026-09-14T00:00:00.000Z') + 2 * 12_000_245 + 15 * MINUTE).toISOString())
+  })
 })

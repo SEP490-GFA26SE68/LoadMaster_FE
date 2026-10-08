@@ -117,6 +117,29 @@ export const monitoring = {
     cancel: 'Huỷ',
     submit: 'Báo sự cố',
   },
+  /** Hộp "Đổi thứ tự điểm giao" khi xe đang chạy (FE-BL-03, D-87). */
+  reorder: {
+    open: 'Đổi thứ tự điểm',
+    unavailable: 'Cần ít nhất hai điểm chưa giao và xe chưa tới để đổi thứ tự.',
+    title: 'Đổi thứ tự điểm giao của chuyến {id}',
+    description: 'Dời các điểm chưa giao bằng nút lên, xuống. Kho kiểm lại kiện còn trên xe có dỡ được theo thứ tự mới không trước khi áp dụng.',
+    list: 'Thứ tự các điểm',
+    up: 'Dời {name} lên',
+    down: 'Dời {name} xuống',
+    completed: 'Đã giao xong',
+    arrived: 'Xe đã tới',
+    note: 'Điểm đã giao xong và điểm xe đã tới đứng nguyên. Điểm nhận hàng dọc đường phải đứng trước điểm giao của chính yêu cầu đó. Giờ đến và mức hạn tính lại; phương án xếp hàng không đổi.',
+    apply: 'Áp dụng thứ tự mới',
+    close: 'Đóng',
+    done: 'Đã đổi thứ tự điểm giao của chuyến {id}.',
+    partial: { one: '{count} kiện bị che một phần lối dỡ theo thứ tự mới.', other: '{count} kiện bị che một phần lối dỡ theo thứ tự mới.' },
+    blocked: {
+      title: 'Không đổi được: các kiện sau bị kiện giao sau che kín lối dỡ',
+      list: 'Kiện bị chắn',
+      item: 'điểm {number} · {name}',
+      unchanged: 'Thứ tự điểm giữ nguyên.',
+    },
+  },
   /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */
   reroute: {
     title: 'Tìm tuyến khác cho chuyến {id}',

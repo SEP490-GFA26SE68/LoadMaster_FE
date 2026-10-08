@@ -6,9 +6,9 @@
  *   getTripMonitoring    → GET /api/trips/{id}/monitoring
  *   fetchMonitoringBoard → GET /api/dispatcher/dashboard
  *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
- *   chưa có ở BE: listTripMonitoring (kênh cập nhật của BE là WebSocket, Q-08), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
+ *   chưa có ở BE: reorderRunningStops (Luồng BE mục 13 "Dynamic stop reordering" chưa có endpoint), listTripMonitoring (kênh cập nhật của BE là WebSocket, Q-08), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
-import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type TripMonitoring } from '@/lib/mock-db'
+import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorder, type TripMonitoring } from '@/lib/mock-db'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
 /**
@@ -68,7 +68,17 @@ export function subscribeTrip(tripId: string, onEvent: (event: TripMonitoringEve
   return subscribe(tripId, onEvent)
 }
 
-/** Điểm giao của một chuyến trên màn Giám sát; `completedAt` có khi tài xế đã hoàn tất điểm. */
+/**
+ * Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03, D-87). Kho kiểm lại khả năng dỡ của phương án như đã xếp; không đạt
+ * thì từ chối `STOP_ORDER_BLOCKS_CARGO` kèm kiện bị chắn và không đổi gì. Đạt thì áp dụng: giờ đến, mức hạn tính lại, xe đi tiếp từ chỗ
+ * đang đứng tới điểm kế tiếp mới, tài xế nhận thông báo.
+ */
+// chưa có ở BE
+export function reorderRunningStops(tripId: string, orderedStopIds: string[]): Promise<StopReorder> {
+  return getMockDb().reorderRunningStops(tripId, orderedStopIds)
+}
+
+/** Điểm giao của một chuyến trên màn Giám sát; `completedAt` có khi tài xế đã hoàn tất điểm, `arrivedAt` khi xe đã tới. */
 export type MonitoringStop = {
   readonly id: string
   readonly number: number
@@ -77,6 +87,7 @@ export type MonitoringStop = {
   readonly kind?: StopKind
   readonly lat?: number
   readonly lng?: number
+  readonly arrivedAt?: string
   readonly completedAt?: string
 }
 
@@ -114,12 +125,13 @@ export async function fetchMonitoringBoard(): Promise<MonitoringBoard> {
       driverName: trip.driverId === null || trip.driverId === undefined ? null : (userNames[trip.driverId] ?? null),
       depot: { name: trip.depot.name, lat: trip.depot.lat, lng: trip.depot.lng },
       stops: trip.stops.map((stop, index) => {
-        const completedAt = trip.delivery?.stops.find((progress) => progress.number === index + 1)?.completedAt
+        const progress = trip.delivery?.stops.find((item) => item.number === index + 1)
         return {
           id: stop.id, number: index + 1, name: stop.name,
           ...(stop.kind === undefined ? {} : { kind: stop.kind }),
           ...(stop.lat === undefined || stop.lng === undefined ? {} : { lat: stop.lat, lng: stop.lng }),
-          ...(completedAt === undefined ? {} : { completedAt }),
+          ...(progress?.arrivedAt === undefined ? {} : { arrivedAt: progress.arrivedAt }),
+          ...(progress?.completedAt === undefined ? {} : { completedAt: progress.completedAt }),
         }
       }),
     })),

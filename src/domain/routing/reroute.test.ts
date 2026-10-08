@@ -52,7 +52,7 @@ test('taking another route cuts the hold at that moment and adds the extra time 
   const route: SimulationInput = { depot: DEPOT, departureTime: at(0), stops: [{ stopId: 'A', location: A }], delays: after }
   expect(simulateVehicle(route, at(8 * MINUTE))).toMatchObject({ speedKmh: 0, stopId: 'A' })
   expect(simulateVehicle(route, at(3_507_414))).toMatchObject({ speedKmh: 50, stopId: 'A' })
-  expect(simulateVehicle(route, at(3_507_415))).toStrictEqual({ lat: 10.3, lng: 106, speedKmh: 0, heading: 0, recordedAt: at(3_507_415), stopId: 'A', arrivedAt: at(3_507_415) })
+  expect(simulateVehicle(route, at(3_507_415))).toStrictEqual({ lat: 10.3, lng: 106, speedKmh: 0, heading: 0, recordedAt: at(3_507_415), stopId: 'A', arrivedAt: at(3_507_415), drivenMs: 3_122_354 })
   // không đổi tuyến thì xe đứng đủ 40 phút: tới nơi sau 3.122.354 + 2.400.000 ms
   const waiting = { ...route, delays: [{ at: at(5 * MINUTE), minutes: 40 }] }
   expect(simulateVehicle(waiting, at(5_522_353))).toMatchObject({ speedKmh: 50 })

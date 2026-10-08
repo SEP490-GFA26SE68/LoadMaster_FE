@@ -490,6 +490,7 @@ export const trips = {
     summary: '{km} km · {duration}',
     duration: '{hours} h {minutes} min',
     minutes: '{minutes} min',
+    rests: { one: 'includes {count} mandatory rest ({duration})', other: 'includes {count} mandatory rests ({duration})' },
     late: { one: '{count} stop expected late', other: '{count} stops expected late' },
     basis: 'Distance and arrival times are estimates along straight lines between the stops.',
     basisEditable: 'Distance and arrival times are estimates along straight lines between the stops. Drag to reorder the stops: arrival times are recalculated and the existing load plan becomes stale.',

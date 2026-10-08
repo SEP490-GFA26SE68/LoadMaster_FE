@@ -49,7 +49,7 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
     'exception.deadlineRenegotiated', 'pickup.requested', 'ticket.replied',
   ],
   warehouse: ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped', 'trip.cancelled', 'ticket.replied'],
-  driver: ['manualConfirm.rejected', 'pickup.approved', 'pickup.rejected', 'ticket.replied'],
+  driver: ['manualConfirm.rejected', 'pickup.approved', 'pickup.rejected', 'trip.stopsReordered', 'ticket.replied'],
 }
 
 /**
@@ -58,8 +58,11 @@ export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>
  */
 const PERSONAL_ACTIONS: readonly AuditAction[] = ['manualConfirm.rejected', 'loading.shortageKept', 'loading.shortageDropped']
 
-/** Quyết định của điều phối viên với một yêu cầu nhận hàng dọc đường: chỉ báo cho tài xế của chuyến (tham số `driverId`). */
-const PICKUP_DECISIONS: readonly AuditAction[] = ['pickup.approved', 'pickup.rejected']
+/**
+ * Quyết định của điều phối viên với một yêu cầu nhận hàng dọc đường, và việc đổi thứ tự điểm giao khi xe đang chạy (FE-BL-03): chỉ báo cho
+ * tài xế của chuyến (tham số `driverId`).
+ */
+const PICKUP_DECISIONS: readonly AuditAction[] = ['pickup.approved', 'pickup.rejected', 'trip.stopsReordered']
 
 /** Sự kiện có đáng báo cho `viewer` không, ngoài việc đúng loại của vai trò: luật theo người gửi và theo tham số của sự kiện. */
 function concerns(event: AuditEvent, viewer: NotificationViewer): boolean {

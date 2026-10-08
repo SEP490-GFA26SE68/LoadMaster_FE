@@ -540,6 +540,8 @@ export const trips = {
     summary: '{km} km · {duration}',
     duration: '{hours} giờ {minutes} phút',
     minutes: '{minutes} phút',
+    /** Thời gian trên đã gồm giờ nghỉ bắt buộc của tài xế (FE-BL-04); chỉ hiện khi tuyến có chặng dài phải nghỉ. */
+    rests: { one: 'đã gồm {count} lần nghỉ bắt buộc ({duration})', other: 'đã gồm {count} lần nghỉ bắt buộc ({duration})' },
     late: { one: '{count} điểm trễ hạn dự kiến', other: '{count} điểm trễ hạn dự kiến' },
     basis: 'Quãng đường và giờ đến là ước lượng theo đường nối thẳng giữa các điểm.',
     basisEditable: 'Quãng đường và giờ đến là ước lượng theo đường nối thẳng giữa các điểm. Kéo đổi thứ tự điểm thì giờ đến tính lại và phương án xếp hàng đã có thành lỗi thời.',

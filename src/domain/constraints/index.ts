@@ -26,6 +26,7 @@ export {
 } from './issues'
 export { createPlacementLayout, movePlacement, type PlacementLayout } from './layout'
 export { lifoIssues, type LifoRules } from './lifo'
+export { checkStopReorder, type ReorderBlockage, type ReorderCargo, type ReorderCheck } from './stop-reorder'
 export { loadingOrderIssues, recomputeOrders, type RecomputedOrders } from './loading-order'
 export { obstacleIssues } from './obstacles'
 export { checkPayload } from './payload'
