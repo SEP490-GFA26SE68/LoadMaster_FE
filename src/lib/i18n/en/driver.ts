@@ -34,6 +34,7 @@ export const driver = {
     },
     completed: 'Completed at {time} · {date}',
     issues: { one: '{count} issue', other: '{count} issues' },
+    stopsLabel: 'Stops of trip {tripId}',
     emptyTitle: 'No trips yet',
     emptyDescription: 'Trips a dispatcher assigns to you appear here.',
   },
@@ -63,8 +64,9 @@ export const driver = {
   },
   start: 'Depart',
   arrive: 'Arrived at stop {number}',
-  arrived: 'Arrival time recorded for stop {number}',
   stopTitle: 'Stop {number} / {total}',
+  callLabel: 'Call',
+  directionsLabel: 'Directions',
   directions: 'Directions to {name}',
   call: 'Call {name}',
   contact: '{name} · {phone}',
@@ -75,9 +77,6 @@ export const driver = {
   remaining: { one: '{count} package not unloaded or reported yet', other: '{count} packages not unloaded or reported yet' },
   allHandled: 'Every package of this stop is unloaded or reported.',
   complete: 'Complete stop',
-  stopDone: 'Stop {number} completed',
-  nextStop: 'Moving to stop {number}.',
-  lastStop: 'The trip is delivered.',
   item: {
     order: 'Unload #{order}',
     where: '{area}, {layer}',
@@ -93,7 +92,6 @@ export const driver = {
     description: 'Scan the QR label of each package as it leaves the vehicle, or type the code printed on the label. Stop {number}: {done} / {total} packages unloaded.',
     lastUnloaded: 'Just unloaded {id} · {name}.',
     wrongStop: 'Package {id} ({name}) belongs to stop {stop} · {stopName}, not this one. Nothing was recorded — keep it on the vehicle.',
-    unloaded: '{id} unloaded',
     manualRecorded: 'Manual confirmation recorded for {id}',
     manualRecordedDescription: 'It waits for the dispatcher before the stop can be completed.',
     via: {
@@ -120,7 +118,6 @@ export const driver = {
     noteHint: 'Required for Other.',
     submit: 'Record issue',
     cancel: 'Go back',
-    recorded: 'Issue recorded for {id}',
     refusedRecorded: 'The customer refused {id}',
     refusedRecordedDescription: 'The package stays on the vehicle and becomes Returned when the stop is completed.',
     errors: {
@@ -157,10 +154,8 @@ export const driver = {
     scanTitle: 'Check pickup packages at stop {number}',
     scanDescription: 'Scan the QR label of each package as it goes onto the vehicle, or type the code printed on the label. Stop {number}: {done} / {total} packages picked up.',
     lastPicked: 'Just picked up {id} · {name}.',
-    picked: 'Picked up {id}',
     candidate: 'Pickup package · request {request}',
     complete: 'Complete the pickup stop',
-    stopDone: 'Pickup stop {number} completed',
     blocked: {
       one: '{count} manual confirmation of this stop is awaiting the dispatcher — the pickup stop cannot be completed yet.',
       other: '{count} manual confirmations of this stop are awaiting the dispatcher — the pickup stop cannot be completed yet.',
@@ -169,6 +164,7 @@ export const driver = {
     cargoNote: 'These packages did not fit the freed zone, so they have no position in the 3D view; load them as the dispatcher instructs and check them by QR label on the stop screen.',
     cargoRow: '{id} · {name} · {weight} · {reason}',
   },
+  more: { open: 'More', title: 'More actions', description: 'Things you rarely need while the vehicle is on the road.' },
   tripSummary: {
     title: 'Trip summary',
     heading: 'Trip {tripId} is delivered',
@@ -180,6 +176,8 @@ export const driver = {
     noIssues: 'No issues.',
     issueWhere: '{id} · Stop {stop}',
     wholeStop: 'Whole stop · Stop {stop}',
+    stopsTitle: 'Delivery stops',
+    stopLine: { one: 'Delivered {time} · {count} package', other: 'Delivered {time} · {count} packages' },
   },
   cargo: {
     title: 'Cargo positions at this stop',

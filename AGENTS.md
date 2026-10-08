@@ -120,8 +120,11 @@ riêng, nếu không sẽ thành hai lớp chồng nhau. *(26/09/2026)* Bản đ
 Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
 `LanguageSwitch` 56 px. *(đã điều chỉnh 08/10/2026, V2.3 đợt 6)* **Màn kho** (`/kho`, soạn, xếp, xếp xong, chờ duyệt lại) có thanh trên là dải trời cao 80 px
 (`components/TouchTopBar`) với điều khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và
-`tone="sky"` của `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng nên màn tài xế không đổi tới
-đợt của nó. Panel và nút nổi trên khung 3D của kho cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở màn kho và
+`tone="sky"` của `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng.
+*(đã điều chỉnh 08/10/2026, V2.3 đợt 6, nhóm Tài xế)* **Màn tài xế** (`/tai-xe`, điểm giao, tổng kết, màn thông báo) dùng cùng thanh `TouchTopBar` và điều khiển đặc: không
+logo ở thanh; `wrap` cho thanh cao theo nội dung và dưới 480 px đẩy tiêu đề xuống hàng riêng (hàng trên là thoát, ngôn ngữ, chuông, tài khoản —
+bốn điều khiển 56 px), `below` đặt dải tiến độ theo điểm giao ngay trong dải trời; thanh vẫn thấp hơn offset 152 px của toast nên toast không
+che điều khiển nào (chân màn có nút chính ghim ở đáy, toast ở đầu màn). Panel và nút nổi trên khung 3D của kho và tài xế cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở màn kho và
 tài xế chờ số đo thiết bị thật (mục "Thử nghiệm visual V2"). Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
 rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm kho kiện, loại kiện, và nhóm yêu cầu giao theo `requirements.view` thay nhóm đơn hàng (FE-4b-02) — kho kiện theo `packages.view` (FE-3b-03), loại kiện theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
@@ -257,7 +260,7 @@ src/
   components/ui/        primitive tự viết trên Radix
   components/brand/     logo LoadMaster: LogoMark (biểu tượng SVG), Logo (bộ ghép + khẩu hiệu) — LM-105
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
-                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), TouchTopBar (thanh dải trời điều khiển đặc của màn cảm ứng, kho — V2.3 đợt 6), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104), PackageVerify (đối chiếu kiện ba mức, FE-6-03),
+                        StopChip / StopDot (số điểm giao trên màu định danh, dùng ở kho và tài xế), VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), TouchTopBar (thanh dải trời điều khiển đặc của màn cảm ứng, kho — V2.3 đợt 6), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104), PackageVerify (đối chiếu kiện ba mức, FE-6-03),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
   components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl;
                         *(bổ sung 03/10/2026, FE-4b-03)* CoordinatePicker (ô chọn toạ độ: tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ
@@ -270,7 +273,7 @@ src/
                         *(đã điều chỉnh 03/10/2026, FE-6-10 → FE-6-12)* màn Giám sát `/giam-sat` (`MonitoringPage` → `MonitoringBoard`:
                         bản đồ, danh sách, chi tiết chuyến; hàm thuần `monitoring-view.ts`), kênh sự kiện `monitoring-events.ts`
                         (`subscribeTrip`), sự cố cấp chuyến (`exceptions-api.ts`, `ReportExceptionDialog`, `RerouteDialog`,
-                        `TripExceptionList`, `TripExceptionButton` cho màn tài xế), tab của quản lý (`EscalationTab`, `RenegotiateDialog`)
+                        `TripExceptionList`; màn tài xế mở `ReportExceptionDialog` từ tờ "Thêm" của `driver/StopMoreActions`), tab của quản lý (`EscalationTab`, `RenegotiateDialog`)
     optimization/       chạy job, theo dõi tiến trình
     viewer3d/           toàn bộ code Three.js, tách biệt hoàn toàn
     warehouse/          luồng xếp hàng ở kho
@@ -284,7 +287,7 @@ src/
                         chuyến (FE-4b-02) — thay `orders/` của LM-104
     pickups/            *(bổ sung 07/10/2026, FE-7-03)* nhận hàng dọc đường: hộp tạo yêu cầu `PickupRequestDialog` (ô chọn toạ độ, nhiều dòng kiện), mười luật
                         Đạt / Không đạt `PickupRulesList` (câu dựng từ mã + tham số ở `pickup-rule-text.ts`), thẻ yêu cầu của chuyến
-                        `PickupRequestsCard` (Chi tiết chuyến, Giám sát), nút của tài xế `PickupDriverButton`; `pickups-api.ts` → `usePickupsQuery.ts`
+                        `PickupRequestsCard` (Chi tiết chuyến, Giám sát), nút của tài xế là hàng "Nhận hàng dọc đường" trong tờ "Thêm" của `driver/StopMoreActions`; `pickups-api.ts` → `usePickupsQuery.ts`
     vehicle-types/      danh mục loại xe (LM-104)
     billing/            *(bổ sung 08/10/2026, FE-8-03, FE-8-04)* gói cước và credit của công ty `/goi-cuoc` (`BillingPage`, `billing-api.ts`,
                         `useBillingQuery.ts`) và trang thanh toán giả lập `/thanh-toan/gia-lap` (`PaymentSimulationPage`, `payment-api.ts`)
@@ -596,6 +599,15 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề và cách card đè dải 16 px, số 0 mờ đi. Bản mẫu V2.3 vẽ tab gạch
   chân trên dải — vạch nằm sát mép card nên nhìn như đường kẻ thừa; người dùng yêu cầu làm lại.
 - **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
+  *(bổ sung 08/10/2026, V2.3 đợt 6)* **Tờ trượt từ đáy**: `DialogContent sheet` là biến thể trình bày của chính hộp thoại Radix — dưới 768 px hộp thoại trượt
+  lên từ đáy (bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội dung cuộn bên trong, cao tối đa `100dvh − 5rem`, dùng `dvh` để bàn phím ảo không che ô đang nhập,
+  chân hộp thoại `sticky bottom-0`), từ 768 px vẫn ở giữa màn; focus trap, Esc, tiêu đề có nhãn không đổi, reduced-motion theo luật chung. Dùng ở màn tài xế:
+  "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), *(đã điều chỉnh 08/10/2026,
+  V2.3 đợt 6)* hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn) và hộp nhận hàng dọc đường
+  (`PickupRequestDialog`, điều phối viên trên desktop vẫn là hộp giữa màn). **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
+  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu, số seal đã ghi);
+  nơi thay toast là vùng đọc được bằng trình đọc màn hình (`role="status"` / `aria-live`). Lỗi và cảnh báo (khách từ chối, xác nhận tay chờ duyệt, báo thiếu,
+  kiện hỏng) luôn có toast. Toast thành công chỉ giữ khi màn không cho thấy gì khác.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
 - **Banner** (`components/Banner.tsx`): info / warning / danger / neutral, hành động dồn phải. `TripLockBanner` dựng trên nó.
 - **Trạng thái rỗng**: không khung nét đứt; ô minh hoạ 64 px bo 18 theo nghĩa (`icon` + `tone`), tiêu đề Archivo 700. Màn không có dữ liệu
@@ -1928,6 +1940,12 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Bước Soạn hàng và hộp đối chiếu ba mức không có trong mockup kho | Áp ngôn ngữ V2.3 cho màn hiện có, giữ danh sách phẳng kèm "Báo thiếu" từng dòng | Luồng kho đã đổi sau khi mockup được vẽ |
 | Nút "Xác nhận đã xếp", "Kiện này không có ở kho" | Không đưa lại: "Đối chiếu kiện" (chính) và "Kiện hỏng" (phụ) | Mỗi kiện phải đối chiếu (FE-6-05) |
 | Màn Xếp xong có tên tài xế và số điện thoại | Bỏ hai dòng đó; có tuyến, xe (khi chuyến còn ở danh sách kho) và ngày chạy | Màn không có nguồn số điện thoại / tài xế (không bịa số) |
+| Màn tài xế: nút "VI" kính, tab đáy, nút tròn "Đã dỡ" từng dòng kiện, "Bắt đầu giao" (V2.3 đợt 6) | Hai nút `LanguageSwitch` 56 px đặc; không tab đáy; dòng kiện chỉ hiện trạng thái, dỡ qua hộp đối chiếu; nút chính "Xuất phát" → "Đã đến điểm n" → "Hoàn tất điểm giao" | Luật mục 1; luồng đã đổi sau khi mockup được vẽ (FE-6-03, FE-6-06) |
+| Màn điểm giao tài xế: "Báo sự cố" là nút vuông 48 px cạnh nút chính ở chân màn | Nút phụ 56 px trong vùng cuộn; chân màn chỉ có nút chính | Mục 10 (vùng chạm 56 px); mỗi màn một nút chính |
+| Màn điểm giao: "Sự cố trên đường", "Nhận hàng dọc đường" không có trong mockup | Gom sau nút phụ "Thêm" mở tờ trượt từ đáy (mỗi hàng 56 px, giữ quyền và hộp thoại cũ) | Hai việc ít dùng; không bốn nút phụ xếp chồng giữa màn |
+| Chip "đang chạy" màu tím, chữ 13 px, hộp "Báo sự cố" có dấu sao bắt buộc ở nhãn (màn tài xế) | Thang azure; chữ 16 px; nhãn không kèm dấu sao | Không dùng tím; mục 10; tên truy cập của nhãn giữ nguyên |
+| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện) | Nhóm khác chưa có việc ở từng điểm; không bịa số |
+| Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 
 ## 12. Tối ưu token và context *(bổ sung)*

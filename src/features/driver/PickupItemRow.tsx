@@ -23,7 +23,7 @@ export function PickupItemRow({ progress }: { progress: PickupItemProgress }) {
       data-package-id={item.id}
       data-role={item.role}
       data-state={done ? 'done' : 'pending'}
-      className={cn('flex min-h-20 items-center gap-3 border-b border-border py-3 pr-3 pl-4 last:border-b-0', done ? 'bg-badge-success-bg' : 'bg-bg')}
+      className={cn('flex min-h-20 items-center gap-3 border-b border-line-soft py-3 pr-3 pl-4 last:border-b-0', done ? 'bg-badge-success-bg' : 'bg-bg')}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="font-mono text-body-lg leading-5.5 font-semibold text-text">{item.id}</span>

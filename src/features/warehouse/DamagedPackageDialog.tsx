@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
-import { StopChip } from './StopChip'
+import { StopChip } from '@/components/StopChip'
 
 /**
  * Hộp xác nhận "Kiện hỏng" ở bước xếp (FE-6-05, D-92): ghi hỏng là ghi thật — kiện về kho kiện kèm cờ "Hư hỏng", không lên xe — nên

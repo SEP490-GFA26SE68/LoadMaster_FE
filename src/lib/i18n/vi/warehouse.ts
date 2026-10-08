@@ -167,7 +167,6 @@ export const warehouse = {
     submit: 'Ghi số seal',
     change: 'Đổi số seal',
     recorded: 'Số seal {number} · ghi lúc {time}',
-    saved: 'Đã ghi số seal {number}',
     none: 'Chuyến này không ghi số seal.',
     locked: 'Xe đã rời kho: không đổi số seal được nữa.',
   },

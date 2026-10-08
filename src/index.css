@@ -518,6 +518,13 @@
   }
 }
 
+/* Tờ trượt từ đáy của màn tài xế (`DialogContent sheet`, V2.3 đợt 6) */
+@keyframes lm-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
 /* Skeleton: dải sáng chạy ngang trên nền sáng; nhấp nháy nhẹ trên nền tối */
 @keyframes lm-shimmer {
   0% {
