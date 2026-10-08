@@ -165,7 +165,6 @@ export const admin = {
     /** Đầu thẻ ma trận: tiêu đề, kích thước (đếm từ danh sách quyền và vai trò), chú giải hai loại ô. */
     title: 'Ma trận quyền',
     size: '{permissions} quyền × {roles} vai trò',
-    legend: 'Chú giải',
     /** Dưới tên vai trò ở đầu cột: số tài khoản người xem đang liệt kê được. */
     accountCount: { one: '{count} tài khoản', other: '{count} tài khoản' },
     /** Dòng cuối: số quyền của từng vai trò trên tổng số quyền. */

@@ -37,7 +37,6 @@ export const lookup = {
     weight: 'Khối lượng',
     handlingClass: 'Loại hàng',
     destination: 'Điểm đến',
-    status: 'Trạng thái',
     flags: 'Cờ',
     noFlags: 'Không có cờ',
     trip: 'Chuyến',

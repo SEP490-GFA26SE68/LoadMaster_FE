@@ -1,6 +1,6 @@
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
-import { useFormat, useT } from '@/lib/i18n'
-import type { PackageFlag, PackageStatus, PackageType } from '@/lib/mock-db'
+import { useT } from '@/lib/i18n'
+import type { PackageFlag, PackageStatus } from '@/lib/mock-db'
 
 /**
  * Chip trạng thái kiện của kho kiện (FE-3b-01) theo ngữ pháp chấm V2.3: xám đã nhập · cyan đã gán chuyến · cyan vòng rỗng đã soạn
@@ -35,16 +35,3 @@ export function None() {
   return <span className="text-ink-3"><span aria-hidden>—</span><span className="sr-only">{t('sourcing.packages.none')}</span></span>
 }
 
-/** "50 × 35 × 25 cm · 13 kg" của một loại kiện hoặc một kiện, mono (số đo). */
-export function TypeMeasure({ type, className }: { type: Pick<PackageType, 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg'>; className?: string }) {
-  const t = useT()
-  const format = useFormat()
-  return (
-    <span className={className ?? 'font-mono text-caption text-ink-3 tabular-nums'}>
-      {t('sourcing.measure', {
-        dimensions: format.dimensions(type.lengthCm, type.widthCm, type.heightCm),
-        weight: format.weight(type.weightKg),
-      })}
-    </span>
-  )
-}

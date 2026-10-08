@@ -102,7 +102,6 @@ export const monitoring = {
     title: 'Báo sự cố chuyến {id}',
     description: 'Xe mô phỏng dừng thêm đúng số phút dự kiến chậm; giờ đến các điểm tính lại theo vị trí xe.',
     type: 'Loại sự cố',
-    typePlaceholder: 'Chọn loại sự cố',
     details: 'Mô tả',
     detailsHint: 'Chuyện gì xảy ra, ở đâu.',
     delay: 'Số phút dự kiến chậm',

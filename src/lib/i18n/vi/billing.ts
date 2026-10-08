@@ -5,7 +5,6 @@
 export const billing = {
   title: 'Gói cước và credit',
   loading: 'Đang tải gói cước',
-  errorTitle: 'Không tải được gói cước',
   retry: 'Thử lại',
   topUp: 'Nạp credit',
   pay: 'Trả',
@@ -41,7 +40,6 @@ export const billing = {
     none: 'Hiện chưa có gói nào đang bán.',
   },
   credit: {
-    title: 'Credit',
     balance: 'Số dư',
     note: 'Mỗi lần chạy tối ưu 3D dùng 1 credit; gói không giới hạn dùng 0.',
     unlimitedNote: 'Gói không giới hạn nên số dư không bị trừ khi chạy tối ưu.',
@@ -57,7 +55,6 @@ export const billing = {
     title: 'Nạp credit',
     description: '{price} mỗi credit. Bạn sang trang thanh toán để hoàn tất; credit chỉ được cộng khi thanh toán thành công.',
     pack: '{credits} credit',
-    packAmount: '{amount}',
     cancel: 'Huỷ',
     confirm: 'Tiếp tục thanh toán',
   },

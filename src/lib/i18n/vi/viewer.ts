@@ -370,8 +370,6 @@ export const viewer = {
   },
   packageList: {
     label: 'Danh sách kiện',
-    collapse: 'Thu gọn danh sách kiện',
-    expand: 'Mở danh sách kiện',
     unplacedTab: 'Kiện chưa xếp',
     pinnedTab: 'Kiện đã ghim',
     unplacedHint: 'Không vừa chỗ trống còn lại.',
@@ -412,7 +410,6 @@ export const viewer = {
   /** Kiện đã ghim và "Chạy lại giữ ghim" ở góc khung 3D của Planner (FE-BL-02). */
   pins: {
     count: { one: '{count} kiện đã ghim', other: '{count} kiện đã ghim' },
-    label: 'Kiện đã ghim',
     rerun: 'Chạy lại giữ ghim',
     rerunHint: 'Tối ưu lại: kiện đã ghim giữ nguyên chỗ, các kiện còn lại được xếp quanh chúng.',
     unsaved: 'Duyệt bản chỉnh để lưu ghim trước khi chạy lại.',

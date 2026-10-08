@@ -3,7 +3,6 @@ import type { runs as source } from '../vi/runs'
 
 export const runs = {
   title: 'Optimization runs',
-  objective: 'Objective',
   algorithm: 'Algorithm',
   objectives: {
     MAX_VOLUME: 'Maximize volume',
