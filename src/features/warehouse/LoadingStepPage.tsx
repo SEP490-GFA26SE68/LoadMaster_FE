@@ -44,9 +44,9 @@ export function LoadingStepPage({ tripId }: { tripId: string }) {
     }
     case 'stale': {
       const { replan } = trip
-      if (!replan) return <WarehouseEmpty tripId={tripId} title={t('warehouse.staleTitle')} description={t('warehouse.staleDescription', { tripId })} />
+      if (!replan) return <WarehouseEmpty tripId={tripId} showTrip title={t('warehouse.staleTitle')} description={t('warehouse.staleDescription', { tripId })} />
       const reason = t(`warehouse.replan.${replan.reason}`, { tripId })
-      return <WarehouseEmpty tripId={tripId} title={t('warehouse.replan.title')} description={replan.unload ? `${reason} ${t('warehouse.replan.unload')}` : reason} />
+      return <WarehouseEmpty tripId={tripId} showTrip title={t('warehouse.replan.title')} description={replan.unload ? `${reason} ${t('warehouse.replan.unload')}` : reason} />
     }
     case 'start':
       return <StartingSession tripId={tripId} />
@@ -61,7 +61,7 @@ export function LoadingStepPage({ tripId }: { tripId: string }) {
 
 function FullScreenStatus({ label }: { label: string }) {
   return (
-    <div role="status" aria-label={label} className="grid h-dvh place-items-center bg-bg">
+    <div role="status" aria-label={label} className="grid h-dvh place-items-center bg-app">
       <Spinner />
     </div>
   )

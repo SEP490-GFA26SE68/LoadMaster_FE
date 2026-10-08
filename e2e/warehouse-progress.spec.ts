@@ -137,7 +137,7 @@ test('tablet: stage in any order with a shortage found again, load in order by v
   await reopen(page)
   await page.getByRole('button', { name: 'Hoàn tất xếp hàng', exact: true }).tap()
   await expect(page.getByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${SEED_TRIP}` })).toBeVisible()
-  await expect(page.getByText('Đã xếp 131 / 132 kiện', { exact: true })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Đã xếp 131 / 132 kiện' })).toBeVisible()
   await expect(page.getByText('Xếp xong — chờ xuất phát. Đóng cửa thùng và bàn giao cho tài xế.', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Kiện hỏng, bỏ lại kho (1)' })).toContainText(at(9))
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).tap()

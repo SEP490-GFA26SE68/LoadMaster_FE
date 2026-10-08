@@ -31,7 +31,12 @@ import { useNotificationsQuery } from './useNotificationsQuery'
  * chữ trong danh sách 16 px (mục 10). Kho và tài xế chỉ nhận một loại: xác nhận tay của chính mình bị từ chối; bấm vào mở chuyến đó ở
  * màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến.
  */
-export function NotificationBell({ variant = 'rail', className }: { variant?: 'rail' | 'touch'; className?: string }) {
+export function NotificationBell({ variant = 'rail', tone = 'light', className }: {
+  variant?: 'rail' | 'touch'
+  /** `sky` (chỉ với `touch`): nút đặc trên dải trời của kho (V2.3 đợt 6). */
+  tone?: 'light' | 'sky'
+  className?: string
+}) {
   const t = useT()
   const format = useFormat()
   const { user } = useAuth()
@@ -49,6 +54,7 @@ export function NotificationBell({ variant = 'rail', className }: { variant?: 'r
     [feed, t, format, can, role],
   )
   const touch = variant === 'touch'
+  const sky = touch && tone === 'sky'
   if (!user || !hasNotifications(user.role)) return null
 
   const userId = user.id
@@ -68,13 +74,16 @@ export function NotificationBell({ variant = 'rail', className }: { variant?: 'r
         <DropdownMenuTrigger
           aria-label={unreadCount > 0 ? t('notifications.labelUnread', { count: unreadCount }) : t('notifications.label')}
           className={cn(
-            'relative grid size-14 flex-none place-items-center rounded-md text-text-2 outline-none transition-colors duration-(--dur-fast) ease-standard',
-            'hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary data-[state=open]:bg-surface',
+            'relative grid size-14 flex-none place-items-center rounded-md outline-none transition-colors duration-(--dur-fast) ease-standard',
+            'focus-visible:outline-2 focus-visible:outline-offset-2',
+            sky
+              ? 'border border-sky-solid-border bg-sky-solid text-sky-text hover:bg-sky-solid-hover focus-visible:outline-cyan-300 data-[state=open]:bg-sky-solid-hover'
+              : 'text-text-2 hover:bg-surface focus-visible:outline-primary data-[state=open]:bg-surface',
             className,
           )}
         >
           <Bell className="size-6" strokeWidth={1.5} aria-hidden />
-          {unreadCount > 0 ? <span aria-hidden data-unread-dot className="absolute top-3 right-3 size-2.5 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--bg)]" /> : null}
+          {unreadCount > 0 ? <span aria-hidden data-unread-dot className={cn('absolute top-3 right-3 size-2.5 rounded-full bg-amber-500', sky ? 'shadow-[0_0_0_2px_var(--sky-solid)]' : 'shadow-[0_0_0_2px_var(--bg)]')} /> : null}
         </DropdownMenuTrigger>
       ) : (
         <DropdownMenuTrigger asChild>

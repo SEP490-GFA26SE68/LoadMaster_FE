@@ -33,7 +33,9 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
   expect(approved.getByText('Đã lập kế hoạch')).toBeInTheDocument()
   expect(approved.getByText('Đã duyệt')).toBeInTheDocument()
   expect(approved.getByText('14/09/2026')).toBeInTheDocument()
-  expect(approved.getByText('Hyundai HD210 · 60C-446.32')).toBeInTheDocument()
+  // `VehicleName` tách biển số thành phần không bẻ dòng: tên và biển số là hai text node
+  expect(approved.getByText('Hyundai HD210 ·')).toBeInTheDocument()
+  expect(approved.getByText('60C-446.32')).toBeInTheDocument()
   expect(approved.getByText('132')).toBeInTheDocument()
   expect(approved.getByText('0/132')).toBeInTheDocument()
   expect(approved.getByRole('link', { name: 'Bắt đầu soạn hàng' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')

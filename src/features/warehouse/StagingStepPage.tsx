@@ -11,6 +11,7 @@ import { stagingProgress } from './loading-session'
 import { MissingPackageDialog } from './MissingPackageDialog'
 import { PlanNotices } from './PlanNotices'
 import { StepHeader } from './StepHeader'
+import { StopChip } from './StopChip'
 import { useSessionModel } from './useSessionModel'
 import { useStagingScan } from './useStagingScan'
 import { useReportShortageMutation } from './useWarehouseQueries'
@@ -42,12 +43,12 @@ export function StagingStepPage({ trip, plan }: { trip: Trip; plan: Revision }) 
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-bg text-body-lg">
+    <div className="flex h-dvh flex-col overflow-hidden bg-app text-body-lg">
       <StepHeader label={t('warehouse.staging.step')} progressLabel={t('warehouse.staging.progress')} step={progress.staged} totalSteps={progress.total} recorded={progress.staged} tripId={trip.id} />
       <PlanNotices model={model} />
       <ConfirmNotices trip={trip} />
       {shortages > 0 ? (
-        <p role="status" className="m-0 mx-3 mt-3 flex flex-none items-start gap-3 rounded-md border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
+        <p role="status" className="m-0 mx-3 mt-3 flex flex-none items-start gap-3 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
           <Hourglass className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
           {t('warehouse.staging.shortages', { count: shortages })}
         </p>
@@ -55,18 +56,19 @@ export function StagingStepPage({ trip, plan }: { trip: Trip; plan: Revision }) 
 
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-h2 font-semibold">{t('warehouse.staging.title', { count: format.integer(progress.pending.length) })}</h1>
-          <p className="m-0 text-pretty text-text-2">{t('warehouse.staging.hint')}</p>
+          <h1 className="font-display text-h2 font-bold text-ink-strong font-stretch-106%">{t('warehouse.staging.title', { count: format.integer(progress.pending.length) })}</h1>
+          <p className="m-0 text-pretty text-ink-2">{t('warehouse.staging.hint')}</p>
         </div>
-        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col overflow-hidden rounded-md border border-border bg-bg p-0">
+        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-bg p-0 shadow-card">
           {progress.pending.map((placement) => {
             const reported = progress.shortageIds.has(placement.id)
             return (
-              <li key={placement.id} data-package-id={placement.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border py-3 pr-3 pl-4 last:border-b-0">
-                <div className="flex min-w-0 flex-1 basis-64 flex-col gap-0.5">
-                  <span className="font-mono text-[18px] leading-6 font-semibold">{placement.id}</span>
-                  <span className="text-pretty text-text-2">{placement.name} · {t('common.stop', { number: placement.stop })}</span>
+              <li key={placement.id} data-package-id={placement.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line-soft py-3 pr-3 pl-4 last:border-b-0">
+                <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
+                  <span className="font-mono text-[18px] leading-6 font-semibold text-ink-strong">{placement.id}</span>
+                  <span className="text-pretty text-ink-2">{placement.name}</span>
                 </div>
+                <StopChip stop={placement.stop} label={t('common.stop', { number: placement.stop })} className="flex-none" />
                 {reported ? (
                   <span className="inline-flex min-h-14 items-center gap-2 font-medium text-badge-warning-fg">
                     <Hourglass className="size-5 flex-none" strokeWidth={2} aria-hidden />
