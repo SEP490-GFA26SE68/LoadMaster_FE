@@ -54,7 +54,8 @@ test('the quick sign-in box groups accounts by platform and company; picking one
     /^Nhân viên kho\s*viet\.lam@phuongnam\.vn$/, /^Tài xế\s*taixe@phuongnam\.vn$/,
   ])
   // Ba nhóm: nền tảng và hai công ty logistics — không còn nhóm của nhà sản xuất, không dòng nào mang nhãn vai trò đã bỏ (FE-0-06)
-  await expect(page.getByRole('group')).toHaveCount(3)
+  // Nút ngôn ngữ ở đầu trang cũng là một nhóm (V2.3 đợt 7), nên chỉ đếm nhóm trong phần chính của màn
+  await expect(page.getByRole('main').getByRole('group')).toHaveCount(3)
   await expect(page.getByText(/Nhà sản xuất|logistics/i)).toHaveCount(0)
 
   await roles('Công ty CP Giao nhận Phương Nam').filter({ hasText: 'Điều phối viên' }).click()

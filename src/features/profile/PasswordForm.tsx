@@ -3,13 +3,13 @@ import { useId, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { MIN_PASSWORD_LENGTH } from '@/lib/mock-db'
 import { isIncorrectPassword } from './profile-api'
 import { passwordSchema, PROFILE_ERRORS, translateProfileError, type PasswordValues } from './profile-form.schema'
-import { cn } from '@/lib/utils'
-import { FORM_ALERT, SECTION_TEXT, SECTION_TITLE, TOUCH_CONTROL } from './profile-styles'
+import { FORM_ALERT, SECTION_TEXT, TOUCH_CONTROL } from './profile-styles'
 import { useChangePasswordMutation } from './useProfileMutations'
 
 const EMPTY: PasswordValues = { currentPassword: '', nextPassword: '', confirmPassword: '' }
@@ -39,52 +39,51 @@ export function PasswordForm({ className }: { className?: string }) {
   }
 
   return (
-    <section aria-labelledby={titleId} className={cn('flex flex-col gap-4', className)}>
-      <div className="flex flex-col gap-1">
-        <h2 id={titleId} className={SECTION_TITLE}>{t('profile.password.title')}</h2>
-        <p className={SECTION_TEXT}>{t('profile.password.description')}</p>
-      </div>
+    <section aria-labelledby={titleId} className={className}>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2" id={titleId}>{t('profile.password.title')}</CardTitle>
+          <CardMeta className={SECTION_TEXT}>{t('profile.password.description')}</CardMeta>
+        </CardHeader>
 
-      <form noValidate onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-5">
-        {/* Mật khẩu hiện tại một dòng riêng (nửa bề rộng, thẳng cột với Họ và tên), hai ô mật khẩu mới cạnh nhau */}
-        <div className="grid items-start gap-4 sm:grid-cols-2">
-          <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
-            <Input
-              label={t('profile.password.current')}
-              type="password"
-              autoComplete="current-password"
-              className={TOUCH_CONTROL}
-              error={translateProfileError(t, errors.currentPassword?.message)}
-              {...form.register('currentPassword')}
-            />
-          </div>
-          <Input
-            label={t('profile.password.next')}
-            type="password"
-            autoComplete="new-password"
-            className={TOUCH_CONTROL}
-            hint={t('profile.password.nextHint', { min: MIN_PASSWORD_LENGTH })}
-            error={translateProfileError(t, errors.nextPassword?.message)}
-            {...form.register('nextPassword')}
-          />
-          <Input
-            label={t('profile.password.confirm')}
-            type="password"
-            autoComplete="new-password"
-            className={TOUCH_CONTROL}
-            error={translateProfileError(t, errors.confirmPassword?.message)}
-            {...form.register('confirmPassword')}
-          />
-        </div>
+        <CardBody className="p-5">
+          <form noValidate onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-5">
+            {/* Ba ô một hàng trên desktop; hẹp hoặc cảm ứng (ô 56px, chữ 16px) thì xếp dọc cho nhãn không bị cắt */}
+            <div className="grid items-start gap-4 md:grid-cols-3 pointer-coarse:grid-cols-1">
+              <PasswordInput
+                label={t('profile.password.current')}
+                autoComplete="current-password"
+                className={TOUCH_CONTROL}
+                error={translateProfileError(t, errors.currentPassword?.message)}
+                {...form.register('currentPassword')}
+              />
+              <PasswordInput
+                label={t('profile.password.next')}
+                autoComplete="new-password"
+                className={TOUCH_CONTROL}
+                hint={t('profile.password.nextHint', { min: MIN_PASSWORD_LENGTH })}
+                error={translateProfileError(t, errors.nextPassword?.message)}
+                {...form.register('nextPassword')}
+              />
+              <PasswordInput
+                label={t('profile.password.confirm')}
+                autoComplete="new-password"
+                className={TOUCH_CONTROL}
+                error={translateProfileError(t, errors.confirmPassword?.message)}
+                {...form.register('confirmPassword')}
+              />
+            </div>
 
-        {failure ? <p role="alert" className={FORM_ALERT}>{dataErrorMessage(failure, t)}</p> : null}
+            {failure ? <p role="alert" className={FORM_ALERT}>{dataErrorMessage(failure, t)}</p> : null}
 
-        <div>
-          <Button type="submit" variant="secondary" loading={isSubmitting} className={TOUCH_CONTROL}>
-            {t('profile.password.submit')}
-          </Button>
-        </div>
-      </form>
+            <div>
+              <Button type="submit" variant="secondary" loading={isSubmitting} className={TOUCH_CONTROL}>
+                {t('profile.password.submit')}
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
     </section>
   )
 }

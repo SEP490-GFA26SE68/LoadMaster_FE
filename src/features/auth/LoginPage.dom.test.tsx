@@ -72,7 +72,8 @@ test('the quick sign-in box groups the demo accounts by platform and company; pi
   const rows = (group: string) => within(screen.getByRole('group', { name: group })).getAllByRole('button').map((button) => button.textContent)
 
   // Tên nhóm là dòng đầu của nhóm (cũng là tên truy cập của nhóm): nền tảng và hai công ty logistics — không còn nhóm nhà sản xuất (FE-0-06)
-  expect(screen.getAllByRole('group').map((group) => group.firstElementChild?.textContent))
+  // Nút ngôn ngữ ở đầu trang cũng là một nhóm nên chỉ đếm nhóm trong phần chính của màn
+  expect(within(screen.getByRole('main')).getAllByRole('group').map((group) => group.firstElementChild?.textContent))
     .toStrictEqual(['Nền tảng', 'Công ty TNHH Vận tải Long Bình', 'Công ty CP Giao nhận Phương Nam'])
   expect(rows('Nền tảng')).toStrictEqual(['Quản trị hệ thốngquantri@loadmaster.vn', 'Quản lý nền tảngnentang@loadmaster.vn', 'Hỗ trợ khách hànghotro@loadmaster.vn'])
   expect(rows('Công ty TNHH Vận tải Long Bình')).toStrictEqual([
