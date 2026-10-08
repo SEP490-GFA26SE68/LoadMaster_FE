@@ -120,7 +120,7 @@ test('permission denied: tracking stops, the switch goes back off with the reaso
   geo.fail(1)
   expect(await screen.findByText('Trình duyệt không cho dùng vị trí: vị trí xe về mô phỏng. Cấp quyền vị trí cho trang rồi bật lại.')).toBeInTheDocument()
   expect(toggle).not.toBeChecked()
-  expect([geo.geolocation.clearWatch.mock.calls.length, geo.watching()]).toStrictEqual([1, 0])
+  await waitFor(() => expect([geo.geolocation.clearWatch.mock.calls.length, geo.watching()]).toStrictEqual([1, 0]))
   expect(screen.getByText('Mô phỏng', { exact: true })).toBeInTheDocument()
   expect((await gpsPoints(tripId)).length).toBe(before)
 })
@@ -135,7 +135,8 @@ test('a lost signal and turning it off both go back to simulation with a message
   expect(await screen.findByText(/^Đã gửi vị trí lúc/, {}, LOAD)).toBeInTheDocument()
   geo.fail(2)
   expect(await screen.findByText('Mất tín hiệu GPS: vị trí xe về mô phỏng. Bật lại khi có tín hiệu.')).toBeInTheDocument()
-  expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['false', 0])
+  // Thôi theo dõi nằm ở phần dọn của effect, chạy sau lần vẽ đã hiện câu trên: chờ nó thay vì đọc ngay
+  await waitFor(() => expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['false', 0]))
 
   await userEvent.click(toggle)
   expect(geo.watching()).toBe(1)
