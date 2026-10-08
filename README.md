@@ -109,7 +109,7 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
   mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
   trợ khách hàng làm ở các bước sau.
-- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
+- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó (`BroadcastChannel`), và mất khi tải lại mọi tab; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
@@ -130,12 +130,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.152 test unit + DOM
-pnpm test:e2e      # Playwright: 135 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
+pnpm test          # Vitest: 2.161 test unit + DOM
+pnpm test:e2e      # Playwright: 136 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (08/10/2026, nhánh `feat/fe-8-06-07-cong-ty-ho-tro`): lint, kiểm kiểu, 2.152/2.152 unit; sáu spec E2E (công ty, yêu cầu hỗ trợ, phân quyền, nhật ký, người dùng, hồ sơ) xanh, bộ E2E đủ do CI chạy (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (08/10/2026, nhánh `feat/fe-bl-06-dong-bo-tab`): lint, kiểm kiểu, 2.161/2.161 unit; ba spec E2E (đồng bộ giữa các tab, vòng đời chuyến, phân quyền) xanh, bộ E2E đủ do CI chạy (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

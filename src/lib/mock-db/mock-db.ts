@@ -1,4 +1,4 @@
-import { createSimClock, SEED_ANCHOR_DATE } from './clock'
+import { createSimClock, SEED_ANCHOR_DATE, type SimClock } from './clock'
 import { auditMethods } from './db-audit'
 import { billingMethods } from './db-billing'
 import { companyMethods } from './db-companies'
@@ -38,7 +38,17 @@ const QR_SEED = 20_260_927
  * Tạo một kho mới đã nạp seed neo theo `today` (D-44). Mỗi kho giữ dữ liệu và phiên riêng. Kho mới chưa có phiên: không lọc theo công
  * ty cho tới khi `authenticate` / `restoreSession` đặt phiên (`tenancy.ts`).
  */
-export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = () => new Date(), speed = 1, random }: MockDbOptions = {}): MockDb {
+export function createMockDb(options: MockDbOptions = {}): MockDb {
+  return createMockDbParts(options).db
+}
+
+/**
+ * Kho cùng dữ liệu và đồng hồ của nó — dành cho lớp bọc ngoài kho (đồng bộ giữa các tab, `tab-sync.ts`). Mã nghiệp vụ chỉ dùng
+ * `createMockDb`; `db-*.ts` không biết có lớp này.
+ */
+export type MockDbParts = { db: MockDb; state: DbState; clock: SimClock }
+
+export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = () => new Date(), speed = 1, random }: MockDbOptions = {}): MockDbParts {
   // Đồng hồ của kho (FE-6-08): bắt đầu đúng giờ của `now` rồi chạy nhanh `speed` lần; ở tốc độ 1 nó chính là `now`
   const clock = createSimClock(now, speed)
   // Mở app trước giờ của các việc "hôm nay" trong seed thì lùi mốc giờ seed, không để lịch sử có sự kiện ở tương lai
@@ -74,7 +84,7 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     supportTickets: new Map(seedSupport(clock.now()).map((ticket) => [ticket.id, ticket])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
-  return {
+  const db: MockDb = {
     ...vehicleMethods(ctx),
     ...tripMethods(ctx),
     ...tripVehicleMethods(ctx),
@@ -100,4 +110,5 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...companyMethods(ctx),
     ...supportMethods(ctx),
   }
+  return { db, state, clock }
 }
