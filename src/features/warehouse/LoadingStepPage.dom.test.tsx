@@ -153,7 +153,7 @@ test('two-carton trip: staging both cartons opens the Loading step with the cm m
   await userEvent.click(within(dialog).getByRole('button', { name: 'Ghi kiện hỏng' }))
   expect(await screen.findByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${trip.id}` }, NEXT)).toBeInTheDocument()
   expect(toast.warning).toHaveBeenCalledWith('Đã bỏ lại kiện hỏng PKG-002-01', { description: 'Kiện không lên xe. Xếp tiếp kiện kế tiếp.' })
-  expect(screen.getByText('Đã xếp 1 / 2 kiện')).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Đã xếp 1 / 2 kiện' })).toBeInTheDocument()
   expect(screen.getByText('Xếp xong — chờ xuất phát. Đóng cửa thùng và bàn giao cho tài xế.')).toBeInTheDocument()
   const damaged = screen.getByRole('region', { name: 'Kiện hỏng, bỏ lại kho (1)' })
   expect(within(damaged).getByText('PKG-002-01')).toBeInTheDocument()

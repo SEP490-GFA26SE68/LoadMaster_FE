@@ -25,6 +25,7 @@ export const warehouse = {
   ordersRecomputed: 'Loading order recalculated at approval',
   list: {
     title: 'Trips to load',
+    summary: { one: '{count} trip · {date}', other: '{count} trips · {date}' },
     lookup: 'Package lookup',
     date: 'Run date',
     vehicle: 'Vehicle',
@@ -116,6 +117,11 @@ export const warehouse = {
     damagedTitle: { one: 'Damaged, left at the warehouse ({count})', other: 'Damaged, left at the warehouse ({count})' },
     noDamaged: 'No package was left out.',
     description: 'Loaded — ready to depart. Close the cargo door and hand over to the driver.',
+    tiles: { loaded: 'Loaded', ofTotal: '/ {total} packages', left: 'Left at warehouse', unit: 'packages' },
+    byStop: {
+      title: 'By delivery stop',
+      left: { one: '{count} left out', other: '{count} left out' },
+    },
   },
   scan: {
     open: 'Verify package',

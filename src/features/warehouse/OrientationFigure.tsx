@@ -68,13 +68,13 @@ export function OrientationFigure({ placement }: { placement: ScenePlacement }) 
         <polyline points={figure.top} fill="none" stroke="var(--primary)" strokeWidth={3} strokeLinecap="round" />
         <circle cx={figure.tipX} cy={figure.tipY} r={5} fill="var(--primary)" />
       </g>
-      <text x="236" y="170" textAnchor="end" fontFamily="var(--font-sans)" fontSize="16" fontWeight="600" fill="var(--text)">
+      <text x="236" y="170" textAnchor="end" fontFamily="var(--font-sans)" fontSize="20" fontWeight="600" fill="var(--text)">
         {t('warehouse.figure.door')}
       </text>
-      <text x="14" y="24" fontFamily="var(--font-sans)" fontSize="16" fill="var(--text-3)">
+      <text x="8" y="26" fontFamily="var(--font-sans)" fontSize="20" fill="var(--text-3)">
         {t('warehouse.figure.front')}
       </text>
-      <text x="246" y="24" textAnchor="end" fontFamily="var(--font-mono)" fontSize="18" fontWeight="600" fill="var(--text)">
+      <text x="252" y="26" textAnchor="end" fontFamily="var(--font-mono)" fontSize="22" fontWeight="600" fill="var(--text)">
         {placement.orientation}
       </text>
     </svg>

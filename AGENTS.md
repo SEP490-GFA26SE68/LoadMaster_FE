@@ -118,7 +118,11 @@ trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn 
 đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục đang mở chỉ có chữ trắng 600, **không** nền
 riêng, nếu không sẽ thành hai lớp chồng nhau. *(26/09/2026)* Bản đầu của đợt 2 bỏ chỉ báo này; người dùng yêu cầu giữ lại.
 Ngôn ngữ trên thanh là một nút "VI" mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút
-`LanguageSwitch` 56 px. Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
+`LanguageSwitch` 56 px. *(đã điều chỉnh 08/10/2026, V2.3 đợt 6)* **Màn kho** (`/kho`, soạn, xếp, xếp xong, chờ duyệt lại) có thanh trên là dải trời cao 80 px
+(`components/TouchTopBar`) với điều khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và
+`tone="sky"` của `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng nên màn tài xế không đổi tới
+đợt của nó. Panel và nút nổi trên khung 3D của kho cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở màn kho và
+tài xế chờ số đo thiết bị thật (mục "Thử nghiệm visual V2"). Vòng focus trên dải trời là `--cyan-300` (`--primary` không đủ tương phản trên nền tối). Trước 23/09/2026 đây là
 rail dọc 96 px; 23/09 đổi sang ngang 56 px nền sáng (V2), 26/09 lên dải trời (V2.3). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; LM-104 thêm kho kiện, loại kiện, và nhóm yêu cầu giao theo `requirements.view` thay nhóm đơn hàng (FE-4b-02) — kho kiện theo `packages.view` (FE-3b-03), loại kiện theo `packages.manage` của điều phối viên, nhóm lô hàng và lô đang đến đã bỏ; màn toàn màn hình không
 có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao diện trong tab,
 `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (mục "Yêu cầu hỗ trợ" kế bên là của năm vai trò công ty, FE-8-07; `/ho-so`, LM-096 — mọi người đã đăng nhập; kho/tài xế mở từ nút tài khoản
@@ -253,7 +257,7 @@ src/
   components/ui/        primitive tự viết trên Radix
   components/brand/     logo LoadMaster: LogoMark (biểu tượng SVG), Logo (bộ ghép + khẩu hiệu) — LM-105
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
-                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104), PackageVerify (đối chiếu kiện ba mức, FE-6-03),
+                        VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn), TouchTopBar (thanh dải trời điều khiển đặc của màn cảm ứng, kho — V2.3 đợt 6), KpiTile (ô số liệu), QrCode / QrScanDialog (vẽ và quét mã QR, LM-104), PackageVerify (đối chiếu kiện ba mức, FE-6-03),
                         ScreenShell (PageHero + vùng cuộn + trạng thái tải / lỗi / câu đếm, LM-104)...
   components/map/       bản đồ dùng chung (FE-4b-07): RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl;
                         *(bổ sung 03/10/2026, FE-4b-03)* CoordinatePicker (ô chọn toạ độ: tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ
@@ -714,7 +718,8 @@ phản và FPS. Đây đúng hai vai trò cần tương phản nhất. Phải đ
   `prefers-reduced-transparency`. Trước 23/09/2026 luật này cấm kính hoàn toàn; đổi sau khi duyệt hướng V2. Viền phát sáng
   vẫn không dùng ngoài ba chỗ kể trên.
 - Toast nằm dưới thanh tiêu đề (`offset` trên 80 px): không che nút hành động ở góc phải header — rê chuột lên toast làm nó dừng đếm giờ
-  (LM-101 phát hiện toast che nút Duyệt của Planner).
+  (LM-101 phát hiện toast che nút Duyệt của Planner). *(đã điều chỉnh 08/10/2026, V2.3 đợt 6)* Thanh trên của màn kho cao 80 px, thấp hơn `offset` 152 px
+  của toast nên toast không che nút nào của thanh; `offset` không đổi. Đổi chiều cao thanh `TouchTopBar` thì kiểm lại con số này.
 - Không đổ bóng lên card. *(đã điều chỉnh 25/09/2026, V2.3)* Trừ `--card-shadow` rất nhẹ (bo `--r-lg` 14 px) như `design/v2.3`;
   không thêm bóng nào khác, không nâng card khi rê chuột. Card phân tách bằng viền 1px `--border`. Bóng chỉ dùng cho dropdown, modal, toast, popover, và **thẻ đang được kéo** (lúc đó nó là lớp đang nhấc khỏi mặt phẳng).
   *(đã điều chỉnh 23/09/2026)* Bề mặt **kính** không phải card phẳng: được viền sáng trong và bóng nâng rất nhẹ bằng token
@@ -1916,6 +1921,14 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Chữ 11px và 13px rải rác | Ép về 11px (micro) hoặc 12/14px | Giữ thang chữ ở mục 4 |
 | Màn kho không có nút thoát | Thêm nút quay lại 56px | Mục 10: màn toàn màn hình phải có lối ra |
 | Ô vị trí 3D ở màn kho là ảnh tĩnh | Three.js xoay được | Công nhân cần nhìn quanh kiện để đặt đúng |
+| Thanh trên màn kho: một nút "VI" kính (V2.3 đợt 6) | Hai nút `LanguageSwitch` 56 px, điều khiển đặc | Luật mục 1; kính chưa đo ở thiết bị kho |
+| Chip "đang xếp" màu tím trong `KhoChuyenCanXep` | Thang azure | Không dùng tím ở đâu trong app |
+| Chú thích 13–14 px ở màn kho | Nâng lên 16 px | Mục 10: chữ tối thiểu 16 px trên tablet |
+| Màn kho trống / chờ duyệt lại: ô icon, không linh vật | Giữ Lumo, nằm trong card trắng | Mục "Thương hiệu": tư thế chờ việc của kho |
+| Bước Soạn hàng và hộp đối chiếu ba mức không có trong mockup kho | Áp ngôn ngữ V2.3 cho màn hiện có, giữ danh sách phẳng kèm "Báo thiếu" từng dòng | Luồng kho đã đổi sau khi mockup được vẽ |
+| Nút "Xác nhận đã xếp", "Kiện này không có ở kho" | Không đưa lại: "Đối chiếu kiện" (chính) và "Kiện hỏng" (phụ) | Mỗi kiện phải đối chiếu (FE-6-05) |
+| Màn Xếp xong có tên tài xế và số điện thoại | Bỏ hai dòng đó; có tuyến, xe (khi chuyến còn ở danh sách kho) và ngày chạy | Màn không có nguồn số điện thoại / tài xế (không bịa số) |
+| Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 
 ## 12. Tối ưu token và context *(bổ sung)*
 

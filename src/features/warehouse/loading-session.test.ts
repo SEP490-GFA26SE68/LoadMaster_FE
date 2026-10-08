@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import type { LoadingOutcome, TripPhase } from '@/lib/mock-db'
 import { sceneBox } from '@/test/scene'
 import { twoCartonRequest, twoCartonResult } from '@/test/mock-db-samples'
-import { loadingProgress, loadingStep, stagingProgress, warehouseSession } from './loading-session'
+import { loadingProgress, loadingStep, stagingProgress, stopTallies, warehouseSession } from './loading-session'
 
 const approved = (id: string, inputVersion = 1) => ({ id, inputVersion, approvedAt: '2026-09-14T02:00:00.000Z' })
 const optimized = (id: string, inputVersion = 1) => ({ id, inputVersion })
@@ -70,4 +70,13 @@ test('the step of a trip at the warehouse: staging while a planned package is no
   expect(loadingStep(at([]), plan)).toBe('staging')
   expect(loadingStep(at(['PKG-002-01']), plan)).toBe('staging')
   expect(loadingStep(at(['PKG-002-01', 'PKG-001-01']), plan)).toBe('loading')
+})
+
+test('finished screen: packages per delivery stop with the ones left at the warehouse; stops without packages are skipped', () => {
+  const stops = [{ number: 2, name: 'B' }, { number: 1, name: 'A' }, { number: 3, name: 'C' }]
+  const packages = [{ id: 'P1', stop: 1 }, { id: 'P2', stop: 1 }, { id: 'P3', stop: 2 }]
+  expect(stopTallies(stops, packages, [{ id: 'P2' }])).toStrictEqual([
+    { stop: 1, name: 'A', total: 2, left: 1 },
+    { stop: 2, name: 'B', total: 1, left: 0 },
+  ])
 })

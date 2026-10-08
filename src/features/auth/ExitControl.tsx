@@ -28,7 +28,9 @@ function useExit({ screenHome, contextual }: ExitTarget) {
 }
 
 /** Nút thoát cỡ cảm ứng ở thanh trên của màn toàn màn hình. */
-export function ExitIconButton({ label, className, iconClassName, ...target }: ExitTarget & {
+export function ExitIconButton({ label, className, iconClassName, tone = 'light', ...target }: ExitTarget & {
+  /** `sky`: nút đặc trên dải trời (kho, V2.3 đợt 6); mặc định nền sáng. */
+  tone?: 'light' | 'sky'
   /** Nhãn khi thoát là quay về trang khác, ví dụ "Thoát phiên xếp hàng". */
   label: string
   className?: string
@@ -37,7 +39,10 @@ export function ExitIconButton({ label, className, iconClassName, ...target }: E
   const t = useT()
   const { action, handleSignOut } = useExit(target)
   const classes = cn(
-    'grid size-14 flex-none place-items-center rounded-md text-text-2 transition-colors duration-(--dur-fast) ease-standard hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+    'grid size-14 flex-none place-items-center rounded-md transition-colors duration-(--dur-fast) ease-standard focus-visible:outline-2 focus-visible:outline-offset-2',
+    tone === 'sky'
+      ? 'border border-sky-solid-border bg-sky-solid text-sky-text hover:bg-sky-solid-hover focus-visible:outline-cyan-300'
+      : 'text-text-2 hover:bg-surface focus-visible:outline-primary',
     className,
   )
   if (action.kind === 'signOut') {

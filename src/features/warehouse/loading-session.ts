@@ -96,3 +96,25 @@ export function loadingProgress(
     pending,
   }
 }
+
+/** Một điểm giao ở màn Xếp xong: tổng kiện của điểm và số kiện bị bỏ lại kho (hỏng lúc xếp). */
+export type StopTally = { readonly stop: number; readonly name: string; readonly total: number; readonly left: number }
+
+/**
+ * Kiện của phương án theo điểm giao, kèm số kiện hỏng bị bỏ lại kho — mọi số đọc từ phương án và bước xếp đã ghi (không bịa). Điểm
+ * không có kiện nào của phương án (điểm thêm tay chưa có hàng) bỏ qua; theo thứ tự số điểm.
+ */
+export function stopTallies(
+  stops: readonly { readonly number: number; readonly name: string }[],
+  placements: readonly Pick<ScenePlacement, 'id' | 'stop'>[],
+  damaged: readonly Pick<ScenePlacement, 'id'>[],
+): StopTally[] {
+  const leftOut = new Set(damaged.map((placement) => placement.id))
+  return stops
+    .map((stop) => {
+      const own = placements.filter((placement) => placement.stop === stop.number)
+      return { stop: stop.number, name: stop.name, total: own.length, left: own.filter((placement) => leftOut.has(placement.id)).length }
+    })
+    .filter((tally) => tally.total > 0)
+    .toSorted((a, b) => a.stop - b.stop)
+}

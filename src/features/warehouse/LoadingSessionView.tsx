@@ -53,7 +53,7 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-bg text-body-lg">
+    <div className="flex h-dvh flex-col overflow-hidden bg-app text-body-lg">
       <StepHeader step={current?.step ?? session.total} totalSteps={session.total} recorded={session.recorded} tripId={trip.id} />
       <PlanNotices model={model} />
       <ConfirmNotices trip={trip} />
@@ -66,7 +66,7 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
             <div className="order-first min-h-96 lg:order-last lg:min-h-0">
               <Suspense
                 fallback={
-                  <div role="status" aria-label={t('warehouse.viewerLoading')} className="grid h-full min-h-80 place-items-center rounded-md bg-canvas-1">
+                  <div role="status" aria-label={t('warehouse.viewerLoading')} className="grid h-full min-h-80 place-items-center rounded-lg bg-canvas-1">
                     <Spinner tone="light" />
                   </div>
                 }
@@ -137,7 +137,7 @@ function AllRecorded({ tripId, pendingConfirms }: { tripId: string; pendingConfi
   const complete = useCompleteLoadingMutation(tripId)
   const blocked = pendingConfirms > 0
   return (
-    <div className="col-span-full flex flex-col items-start justify-center gap-3 rounded-md border border-border p-8">
+    <div className="col-span-full flex flex-col items-start justify-center gap-3 rounded-lg border border-border bg-bg p-8 shadow-card">
       <p id={reasonId} className="m-0">{blocked ? t('warehouse.confirms.blocked', { count: pendingConfirms }) : t('warehouse.allRecorded')}</p>
       <Button
         variant="primary"

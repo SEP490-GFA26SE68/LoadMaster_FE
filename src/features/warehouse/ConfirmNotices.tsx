@@ -21,7 +21,7 @@ export function ConfirmNotices({ trip }: { trip: Trip }) {
         <p
           key={entry.id}
           role="alert"
-          className="m-0 flex items-start gap-3 rounded-md border border-badge-danger-border bg-badge-danger-bg px-4 py-3 font-medium text-badge-danger-fg"
+          className="m-0 flex items-start gap-3 rounded-lg border border-badge-danger-border bg-badge-danger-bg px-4 py-3 font-medium text-badge-danger-fg"
         >
           <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
           <span className="flex min-w-0 flex-col">
@@ -31,7 +31,7 @@ export function ConfirmNotices({ trip }: { trip: Trip }) {
         </p>
       ))}
       {pending > 0 ? (
-        <p role="status" className="m-0 flex items-start gap-3 rounded-md border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
+        <p role="status" className="m-0 flex items-start gap-3 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
           <Hourglass className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
           {t('warehouse.confirms.pending', { count: pending })}
         </p>

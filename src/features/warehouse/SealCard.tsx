@@ -48,8 +48,8 @@ export function SealCard({ trip }: { trip: Pick<Trip, 'id' | 'phase' | 'loading'
   }
 
   return (
-    <section aria-labelledby="niem-phong" className="flex w-full flex-col gap-3 rounded-lg border border-border bg-bg p-4 sm:p-5">
-      <h2 id="niem-phong" className="flex items-center gap-2 text-h2 font-semibold">
+    <section aria-labelledby="niem-phong" className="flex w-full flex-col gap-3 rounded-lg border border-line-soft bg-surface p-4">
+      <h2 id="niem-phong" className="flex items-center gap-2 font-display text-h3 font-[650] text-ink-strong font-stretch-106%">
         <Lock className="size-5 flex-none text-primary" strokeWidth={1.5} aria-hidden />
         {t('warehouse.seal.title')}
       </h2>

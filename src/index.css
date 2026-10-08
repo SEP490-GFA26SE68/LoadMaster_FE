@@ -223,6 +223,11 @@
   --sky-glass-border: rgba(255, 255, 255, 0.14);
   /* mục điều hướng đang mở: nền cyan trong + viền + quầng */
   --nav-on: linear-gradient(180deg, rgba(0, 195, 212, 0.34), rgba(0, 195, 212, 0.14));
+  /* điều khiển ĐẶC trên dải trời của màn cảm ứng (kho; V2.3 đợt 6): không kính, không blur — kính chưa đo ngoài thực tế (AGENTS mục 4).
+     Chữ trắng trên nền này 12:1; viền cyan-600 cho khung nút 3:1 trên dải. */
+  --sky-solid: var(--cyan-900);
+  --sky-solid-hover: var(--cyan-800);
+  --sky-solid-border: var(--cyan-600);
   --nav-on-shadow: inset 0 0 0 1px rgba(92, 219, 230, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 22px -4px rgba(0, 195, 212, 0.65);
   /* chuyển động lò xo của chỉ báo kính trên thanh điều hướng: vượt nhẹ rồi lắng lại */
   --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);
@@ -335,6 +340,9 @@
   --color-sky-text: var(--sky-text);
   --color-sky-text-2: var(--sky-text-2);
   --color-sky-text-3: var(--sky-text-3);
+  --color-sky-solid: var(--sky-solid);
+  --color-sky-solid-hover: var(--sky-solid-hover);
+  --color-sky-solid-border: var(--sky-solid-border);
   --color-sky-glass: var(--sky-glass);
   --color-sky-glass-hover: var(--sky-glass-hover);
   --color-sky-glass-border: var(--sky-glass-border);

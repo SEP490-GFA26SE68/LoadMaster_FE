@@ -25,7 +25,11 @@ const TOUCH_ITEM = 'h-14 px-3 text-body-lg [&_svg]:size-5'
  * Nút tài khoản 56px ở header màn chính của kho (`/kho`) và tài xế (`/tai-xe`) — hai màn không có nav rail (LM-096): mở hồ sơ cá
  * nhân, yêu cầu hỗ trợ (FE-8-07) hoặc đăng xuất. Cùng nhãn "Tài khoản {tên}" với menu tài khoản của nav rail.
  */
-export function AccountMenu({ className }: { className?: string }) {
+export function AccountMenu({ className, tone = 'light' }: {
+  className?: string
+  /** `sky`: nút trên dải trời của kho (V2.3 đợt 6) — ảnh đại diện cyan, vòng focus sáng. */
+  tone?: 'light' | 'sky'
+}) {
   const t = useT()
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -44,11 +48,17 @@ export function AccountMenu({ className }: { className?: string }) {
           aria-label={t('nav.account', { name: user.fullName })}
           className={cn(
             'grid size-14 flex-none place-items-center rounded-md outline-none transition-colors duration-(--dur-fast) ease-standard',
-            'hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+            'focus-visible:outline-2 focus-visible:outline-offset-2',
+            tone === 'sky' ? 'hover:bg-sky-solid-hover focus-visible:outline-cyan-300' : 'hover:bg-surface focus-visible:outline-primary',
             className,
           )}
         >
-          <span className="grid size-11 place-items-center rounded-full bg-primary-bg text-body-lg font-semibold leading-none text-primary-hover">
+          <span
+            className={cn(
+              'grid size-11 place-items-center rounded-full text-body-lg font-semibold leading-none',
+              tone === 'sky' ? 'bg-(image:--avatar-fill) text-cyan-950' : 'bg-primary-bg text-primary-hover',
+            )}
+          >
             {initialsOf(user.fullName)}
           </span>
         </DropdownMenuTrigger>
