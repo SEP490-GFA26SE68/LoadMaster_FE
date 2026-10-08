@@ -94,7 +94,7 @@ export function LoginPage() {
     <div className="sky relative flex min-h-dvh flex-col">
       {/* Ngôn ngữ: góc phải trang (hẹp hơn 1.024px thì một hàng trên card). Điều khiển đặc, không kính — kính chỉ ở thanh điều hướng */}
       <header className="z-10 flex justify-end px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
-        <LanguageSwitch tone="sky" />
+        <LanguageSwitch tone="sky" className="pointer-coarse:[&_button]:size-14 pointer-coarse:[&_button]:text-body-lg" />
       </header>
 
       <main className="mx-auto flex w-full max-w-(--shell-max) flex-1 flex-col items-center justify-center gap-12 px-4 py-4 sm:py-8 lg:flex-row lg:px-6 lg:py-6">
