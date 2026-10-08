@@ -49,6 +49,11 @@ export type SimClock = {
   speed(): number
   /** Đổi tốc độ từ bây giờ: giờ của kho đi tiếp từ chỗ đang đứng, không nhảy — mốc giờ đã ghi không bao giờ nằm sau mốc ghi sau đó. */
   setSpeed(speed: number): void
+  /**
+   * Theo đồng hồ của một kho khác (đồng bộ giữa các tab, FE-BL-06): giờ của kho là `simMs` ngay từ bây giờ, rồi chạy `speed` lần.
+   * Giờ nhảy một lần — chỉ gọi lúc nhận trạng thái của tab khác, không phải trong lúc kho đang ghi.
+   */
+  adopt(simMs: number, speed: number): void
 }
 
 /**
@@ -72,6 +77,12 @@ export function createSimClock(wall: () => Date, speed = 1): SimClock {
       const wallMs = wall().getTime()
       anchor = { wall: wallMs, sim: simMs(wallMs) }
       factor = next
+    },
+    adopt(simMs, next) {
+      const wallMs = wall().getTime()
+      factor = next
+      // Cùng giờ máy và tốc độ 1 thì không cần mốc neo: đồng hồ lại là giờ máy như lúc chưa đồng bộ
+      anchor = next === 1 && Math.abs(simMs - wallMs) < 1000 ? null : { wall: wallMs, sim: simMs }
     },
   }
 }

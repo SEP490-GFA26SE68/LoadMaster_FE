@@ -28,7 +28,7 @@ backend nằm ở `BACKEND_ROLE_CODES` (`types/user.ts`), `-api.ts` đổi khi n
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
-**Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
+**Trạng thái hiện tại:** backend chưa nối. Toàn bộ dữ liệu là mẫu. *(bổ sung 08/10/2026, FE-BL-06)* Kho nằm trong bộ nhớ từng tab nhưng các tab **cùng trình duyệt** dùng chung nó qua `BroadcastChannel` (mục 9): hai tab mở hai người dùng khác nhau thấy việc của nhau; vẫn không lưu bền (đóng hoặc tải lại mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). *(đã điều chỉnh 19/09/2026, LM-084, D-41)* Phân quyền
 **giả lập ở FE**: ma trận `features/auth/permissions.ts` — *(đã điều chỉnh 01/10/2026, FE-0-01, FE-0-03)* **một bảng** `ROLE_PERMISSIONS` theo
 PRD v2 mục 5.2 (`REVIEW1_EXTRA` đã gộp vào; đọc quyền qua `can`/`permissionsOf`), thứ tự của `PERMISSIONS` là thứ tự dòng của Ma trận quyền.
 Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ thống (trước là `admin` toàn quyền) chỉ còn `companies.manage`, `users.manage`,
@@ -169,7 +169,7 @@ Việc chia nhỏ: [docs/issues/](docs/issues/README.md). Tiến độ theo ngà
 
 MVP đã nghiệm thu và nằm ở `main`. Đợt 6 làm trên `feat/ui-complete` để cả 5 vai trò ở bảng trên có luồng đầu-cuối
 (bảo vệ SEP490): [rà soát giao diện](docs/ui-audit-2026-09-19.md), [PRD mục 15](docs/prd.md) (D-40 → D-57), issue LM-080 → LM-101.
-Không chờ backend: giả lập phân quyền, **không** giả lập lưu bền — kho vẫn in-memory.
+Không chờ backend: giả lập phân quyền, **không** giả lập lưu bền — kho vẫn in-memory. *(bổ sung 08/10/2026, FE-BL-06)* Các tab cùng trình duyệt đồng bộ kho với nhau, vẫn không lưu bền.
 
 ### Kế hoạch sau Review 1 *(bổ sung 30/09/2026)*
 
@@ -319,7 +319,7 @@ src/
                         `creditBlock`; `billing-core.ts` sổ cái + vòng đời, `db-billing.ts` + `db-api-billing.ts` hàm công khai; `seed-billing.ts` — bảng gói và giá trị tạm);
                         *(bổ sung 08/10/2026, FE-8-06)* công ty của quản trị hệ thống (`db-companies.ts` + `db-api-companies.ts`: danh sách kèm gói, tạo kèm quản trị
                         công ty đầu tiên, sửa); *(bổ sung 08/10/2026, FE-8-07)* yêu cầu hỗ trợ (`support-model.ts` kiểu, `db-support.ts` + `db-api-support.ts`, `seed-support.ts`);
-                        `session-role.ts` (người đăng nhập và kiểm vai trò dùng chung hai module đó)
+                        `session-role.ts` (người đăng nhập và kiểm vai trò dùng chung hai module đó); *(bổ sung 08/10/2026, FE-BL-06)* `tab-sync.ts` (đồng bộ kho giữa các tab cùng trình duyệt, mục 9; `app-db.ts` nối nó vào kho của app)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -1368,6 +1368,18 @@ dù giao diện bị bỏ qua:
 - Dữ liệu đi qua nhiều màn (xe, chuyến, kiện, revision kết quả) nằm trong **mock repository
   in-memory** (`src/lib/mock-db/`, LM-026) → `features/<tên>/<tên>-api.ts` → hook TanStack Query.
   Ghi bằng `useMutation` rồi invalidate. Không thêm store client (Zustand, Redux, Context giữ dữ liệu nghiệp vụ).
+- *(bổ sung 08/10/2026, FE-BL-06)* **Đồng bộ kho giữa các tab cùng trình duyệt** (`tab-sync.ts`, chỉ cho kho của app `getMockDb()` — mỗi `createMockDb()` của
+  test là một kho riêng; Vitest không bao giờ mở kênh thật, `BroadcastChannel` của Node nối được cả các worker). Đứng ngoài kho: `db-*.ts` không biết có nó;
+  `withTabSync` báo sau mỗi lượt đọc/ghi, lớp này so từng bản ghi với bản đã gửi (kho ghi cả tại chỗ và ghi lúc đọc nên không có chỗ biết "vừa đổi gì") rồi gửi
+  phần đổi (`delta`, vài KB) qua kênh `loadmaster-mock-db-v1`; `packages`, `revisions`, `events` chỉ thêm hoặc thay cả bản ghi nên so theo danh tính object.
+  **Phiên (`state.session`) không bao giờ được gửi**: mỗi tab một người dùng. Mọi trường mới của `DbState` phải là `Map` (hoặc `events`/`session`) — một test canh việc đó.
+  Tab mở sau gửi `hello`; tab đang mở đầu tiên trả lời thì gửi nguyên trạng thái (`snapshot`, khoảng 6,5 MB cho seed Long Bình) kèm đồng hồ của nó; 250 ms
+  không ai trả lời thì tab dùng seed như khi chỉ có một tab (tab không có bạn không so, không gửi gì). Hai tab ghi cùng lúc: mỗi bản ghi có dấu Lamport
+  `(bộ đếm, mã tab)`, dấu mới hơn thắng ở mọi tab — các tab hội tụ, bản thua mất (ví dụ hai sự kiện nhật ký cùng mã). **Các tab dùng chung đồng hồ của tab đầu**:
+  tab sau nhận giờ và tốc độ từ snapshot (`?toc-do` của nó bị bỏ qua), đổi tốc độ giữa chừng đi kèm `delta`. Nhận dữ liệu từ tab khác thì `Providers` làm
+  mới mọi truy vấn (`onRemoteDbChange` → `invalidateQueries`, gộp 100 ms), không đụng state của form. Giới hạn: mở tab thứ hai **sau khi** tab đầu đã tải xong;
+  tải lại một tab đang đăng nhập bằng tài khoản tạo lúc chạy thì phiên khôi phục trước khi nhận snapshot (tài khoản seed thì không sao); không có `BroadcastChannel`
+  thì không đồng bộ, không lỗi.
 - Tối ưu đi qua interface `OptimizationService` (`src/services/optimization`). Hiện có mock chạy trên luồng gọi
   (`MockOptimizationService`), trong Web Worker (`WorkerOptimizationService`) và bản giả lập sự cố
   (`UnavailableOptimizationService`); API thật sau này thay tại `-api.ts`, UI không đổi. Kết quả mock luôn

@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/Tooltip'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
+import { onRemoteDbChange } from '@/lib/mock-db'
 import { TOAST_CLASSES, TOAST_ICONS } from './toast-look'
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -20,6 +21,10 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   )
+
+  // Kho vừa nhận dữ liệu của tab khác (FE-BL-06): làm mới mọi truy vấn đang hiện. Chỉ đánh dấu cũ và tải lại truy vấn đang mở, không đụng
+  // tới state của form nên chữ người dùng đang nhập không mất.
+  useEffect(() => onRemoteDbChange(() => void queryClient.invalidateQueries()), [queryClient])
 
   // Ngôn ngữ bọc ngoài cùng: đổi ngôn ngữ chỉ render lại chữ, không dựng lại
   // router hay cache query nên không mất dữ liệu đang nhập.
