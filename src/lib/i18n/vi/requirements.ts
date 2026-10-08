@@ -124,7 +124,6 @@ export const requirements = {
     coordinates: 'Toạ độ',
     noCoordinates: 'Chưa có toạ độ',
     deadline: 'Hạn giao',
-    priority: 'Ưu tiên',
     note: 'Ghi chú',
     noNote: 'Không có ghi chú',
     createdBy: 'Người lập',

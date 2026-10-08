@@ -144,7 +144,6 @@ export const admin = {
     denied: 'No',
     title: 'Permission matrix',
     size: '{permissions} permissions × {roles} roles',
-    legend: 'Legend',
     accountCount: { one: '{count} account', other: '{count} accounts' },
     total: 'Permissions of the role',
     totalOf: '{count} of {total} permissions',

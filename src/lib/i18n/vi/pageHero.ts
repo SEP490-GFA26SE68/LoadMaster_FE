@@ -6,7 +6,6 @@ export const pageHero = {
   breadcrumb: 'Vị trí trang',
   trips: 'Chuyến trong kỳ, trạng thái phương án và việc cần xử lý trước khi bàn giao kho.',
   tripForm: 'Nhập thông tin chuyến, chọn xe và sắp thứ tự điểm giao.',
-  optimization: 'Khai báo yêu cầu xếp và kiểm tra đầu vào trước khi chạy tối ưu.',
   fleet: 'Trạng thái đội xe và xe đang phục vụ chuyến nào.',
   dashboard: 'Chuyến, tỷ lệ lấp đầy và khối lượng đã giao trong kỳ đang xem.',
   users: 'Tài khoản, vai trò và quyền trong hệ thống.',

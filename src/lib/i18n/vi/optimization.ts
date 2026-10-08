@@ -84,7 +84,6 @@ export const optimization = {
     approve: 'Duyệt để kho thực hiện',
   },
   method: 'Phương pháp',
-  methodUnavailable: 'Chưa có trong bản MVP: chỉ phương án mock chạy được.',
   methods: {
     MOCK: 'Mock (xếp kệ tất định)',
     EP_DBLF: 'EP-DBLF',

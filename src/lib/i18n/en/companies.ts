@@ -12,7 +12,6 @@ export const companies = {
   columns: { company: 'Company', plan: 'Plan', planStatus: 'Plan status', users: 'Users', actions: 'Actions' },
   noPlan: 'No plan yet',
   actions: 'Actions for {name}',
-  edit: 'Edit',
   created: 'Company {name} created',
   saved: 'Company {name} saved',
   form: {

@@ -6,7 +6,6 @@
  */
 export const runs = {
   title: 'Lần chạy tối ưu',
-  objective: 'Mục tiêu',
   algorithm: 'Thuật toán',
   objectives: {
     MAX_VOLUME: 'Tối đa thể tích',

@@ -4,7 +4,6 @@ import type { billing as source } from '../vi/billing'
 export const billing = {
   title: 'Plan and credits',
   loading: 'Loading the plan',
-  errorTitle: 'Could not load the plan',
   retry: 'Try again',
   topUp: 'Top up credits',
   pay: 'Pay',
@@ -39,7 +38,6 @@ export const billing = {
     none: 'No plan is on sale right now.',
   },
   credit: {
-    title: 'Credits',
     balance: 'Balance',
     note: 'Each 3D optimisation run uses 1 credit; the unlimited plan uses 0.',
     unlimitedNote: 'The plan is unlimited, so the balance is not reduced by optimisation runs.',
@@ -55,7 +53,6 @@ export const billing = {
     title: 'Top up credits',
     description: '{price} per credit. You finish on the payment page; credits are only added when the payment succeeds.',
     pack: '{credits} credits',
-    packAmount: '{amount}',
     cancel: 'Cancel',
     confirm: 'Continue to payment',
   },
