@@ -4,9 +4,9 @@ import type { OptimizationRequest, PlanObjective } from '@/domain/models'
 import type { OptimizationProgress } from '@/services/optimization'
 import { changeTripVehicle, fetchOptimizationCredit, fetchOptimizationSetup, runOptimization } from './optimization-api'
 
-/** Chuyến, xe đang gán và danh sách xe cho màn Thiết lập tối ưu (LM-047). */
-export function useOptimizationSetupQuery(tripId: string) {
-  return useQuery({ queryKey: ['trips', tripId, 'optimization-setup'], queryFn: () => fetchOptimizationSetup(tripId), enabled: tripId !== '' })
+/** Chuyến, xe đang gán và danh sách xe cho màn Thiết lập tối ưu (LM-047); `pinRevisionId`: phương án có kiện ghim để giữ (FE-BL-02). */
+export function useOptimizationSetupQuery(tripId: string, pinRevisionId?: string) {
+  return useQuery({ queryKey: ['trips', tripId, 'optimization-setup', pinRevisionId ?? null], queryFn: () => fetchOptimizationSetup(tripId, pinRevisionId), enabled: tripId !== '' })
 }
 
 /**

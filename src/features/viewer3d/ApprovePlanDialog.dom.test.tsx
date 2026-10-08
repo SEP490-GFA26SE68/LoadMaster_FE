@@ -21,7 +21,7 @@ const CLOSE: SceneStop = { number: 2, name: 'Bách Hoá Xanh Dĩ An', packageCou
 const LATE: SceneStop = { number: 3, name: 'Co.opmart Bình Dương', packageCount: 30, deadline: at(10, 30), eta: at(11, 5), deadlineStatus: 'MISSED' }
 const NO_DEADLINE: SceneStop = { number: 4, name: 'Kho Sóng Thần', packageCount: 10, eta: at(11, 50) }
 
-const CLEAN: PlanApproval = { blockers: { canApprove: true, issues: [], stale: false }, warnings: [], patches: [] }
+const CLEAN: PlanApproval = { blockers: { canApprove: true, issues: [], stale: false }, warnings: [], patches: [], pinned: [], pinsChanged: false }
 
 function renderDialog(stops: readonly SceneStop[], approval: PlanApproval = CLEAN) {
   const onConfirm = vi.fn()
@@ -76,7 +76,7 @@ test('every stop with a deadline on time says so; a trip without a route says no
 test('a plan with blockers lists them and cannot be approved, late stops or not', async () => {
   const mustLoad: ConstraintIssue = { code: 'MUST_LOAD_UNPLACED', severity: 'blockApproval', params: { packageId: 'PKG-002' } }
   const overload: ConstraintIssue = { code: 'AXLE_OVERLOAD', severity: 'error', params: { group: 'rear', loadKg: 6240.5, limitKg: 6000, overKg: 240.5 } }
-  const { onConfirm, user } = renderDialog([LATE], { blockers: { canApprove: false, issues: [overload, mustLoad], stale: false }, warnings: [], patches: [] })
+  const { onConfirm, user } = renderDialog([LATE], { blockers: { canApprove: false, issues: [overload, mustLoad], stale: false }, warnings: [], patches: [], pinned: [], pinsChanged: false })
   const dialog = within(screen.getByRole('dialog', { name: 'Duyệt phương án này?' }))
   expect(within(dialog.getByRole('alert')).getAllByRole('listitem')).toHaveLength(2)
   const approve = dialog.getByRole('button', { name: 'Duyệt' })

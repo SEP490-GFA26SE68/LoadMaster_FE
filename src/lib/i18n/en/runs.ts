@@ -37,6 +37,7 @@ export const runs = {
   },
   approvedPlans: 'Plan {labels}',
   limitSeconds: '{seconds} s',
+  pinned: { one: 'Kept {count} pinned package', other: 'Kept {count} pinned packages' },
   seed: 'seed {seed}',
   noValue: '—',
   planAllPlaced: 'all placed',

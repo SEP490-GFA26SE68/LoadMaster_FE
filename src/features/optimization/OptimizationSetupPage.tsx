@@ -8,7 +8,7 @@ import { TripLockBanner } from '@/components/TripLockBanner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import { validateRequest } from '@/domain/constraints'
+import { pinnedIssues, validateRequest } from '@/domain/constraints'
 import { TripFormSection } from '@/features/trips/TripFormSection'
 import { dataErrorMessage, formatIssue, useFormat, useT } from '@/lib/i18n'
 import { MockDbError } from '@/lib/mock-db'
@@ -20,6 +20,7 @@ import { OptimizationSetupHero } from './OptimizationSetupHero'
 import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, type SetupValues } from './optimization-request'
 import { RequestIssueList } from './RequestIssueList'
 import { RunHistoryCard } from './RunHistoryCard'
+import { SetupPinsCard } from './SetupPinsCard'
 import { buildSetupChecklist } from './setup-checklist'
 import { SetupAfterSteps } from './SetupAfterSteps'
 import { SetupContextPanels } from './SetupContextPanels'
@@ -42,10 +43,12 @@ export function OptimizationSetupPage() {
   const navigate = useNavigate()
   const t = useT()
   const format = useFormat()
-  const query = useOptimizationSetupQuery(tripId)
+  // `?giu-ghim=<mã revision>`: mở từ Planner để chạy lại giữ kiện đã ghim của phương án đó (FE-BL-02)
+  const query = useOptimizationSetupQuery(tripId, searchParams.get('giu-ghim') ?? undefined)
   const run = useOptimizationRun(tripId)
   const creditQuery = useOptimizationCreditQuery()
   const [failure, setFailure] = useState<OptimizationFailure | null>(null)
+  const [keepPins, setKeepPins] = useState(true)
   // Credit lúc bấm Tối ưu: hộp chạy hiện số của lần chạy này dù câu hỏi credit được làm mới giữa chừng
   const [runCredit, setRunCredit] = useState<OptimizationCredit | null>(null)
 
@@ -66,7 +69,11 @@ export function OptimizationSetupPage() {
 
   const setup = query.data
   const locked = setup !== undefined && setup.trip.phase !== 'planning'
-  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, values) : null
+  // Giữ kiện đã ghim (FE-BL-02): request mang `pinnedPlacements` chỉ khi có kiện để giữ và công tắc bật
+  const pinOffer = setup?.pinOffer ?? null
+  const pinnedPlacements = pinOffer !== null && keepPins && pinOffer.placements.length > 0 ? pinOffer.placements : undefined
+  const request = setup ? buildOptimizationRequest(setup.trip, setup.vehicle, values, pinnedPlacements) : null
+  const pinFaults = request && pinnedPlacements ? pinnedIssues(request) : []
   const summary = request && setup ? groupRequestIssues(validateRequest(request), { tripId, vehicleId: setup.vehicle.id }) : null
   // Xếp 3D theo tuyến: chuyến phải đã tối ưu tuyến (Đã lập kế hoạch) — kho cũng từ chối `ROUTE_NOT_PLANNED`
   const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary, setup.trip.routePlan !== undefined) : null
@@ -75,6 +82,8 @@ export function OptimizationSetupPage() {
   const creditBlock = creditQuery.data?.block ?? null
   const blockedReason = !locked && creditBlock !== null
     ? t(`optimization.credit.blocked.${creditBlock}`)
+    : !locked && pinFaults.length > 0
+    ? t('optimization.pins.blockedReason')
     : !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
     ? t('optimization.blockedHint', {
       count: checklist.errorCount + formErrors,
@@ -89,7 +98,7 @@ export function OptimizationSetupPage() {
     if (!setup) return
     setFailure(null)
     setRunCredit(creditQuery.data ?? null)
-    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, submitted)
+    const payload = buildOptimizationRequest(setup.trip, setup.vehicle, submitted, pinnedPlacements)
     run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
       onSuccess: (outcome) => {
         if (outcome.kind === 'failed') {
@@ -129,7 +138,7 @@ export function OptimizationSetupPage() {
       <OptimizationSetupHero
         tripId={tripId}
         setup={setup}
-        disabled={locked || !checklist?.canRun || run.isPending || !isValid || creditBlock !== null}
+        disabled={locked || !checklist?.canRun || run.isPending || !isValid || creditBlock !== null || pinFaults.length > 0}
         blockedReason={run.isPending ? null : blockedReason}
         onRun={() => void handleRun()}
       >
@@ -145,6 +154,7 @@ export function OptimizationSetupPage() {
       ) : (
         <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
           <div className="flex min-w-0 flex-col gap-4">
+            {pinOffer ? <SetupPinsCard offer={pinOffer} keep={keepPins} onKeepChange={setKeepPins} issues={pinFaults} /> : null}
             {/* Một thẻ ba mục đánh số; nút chính giữ ở dải trời (AGENTS mục 5: một nút primary mỗi màn) */}
             <Card className="overflow-hidden">
               <TripFormSection number={1} title={t('optimization.inputTitle')}>

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from './useOperations'
 import { MassCard } from './OperationsPanel'
+import { PinnedRerun } from './PinnedRerun'
 import type { InspectorTab } from '../panels/WorkspaceToolbar'
 import { DARK_SCOPE, GLASS_PANEL, GLASS_PRESSED, MUTED, StopMark } from '../panels/scene-ui'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
@@ -17,13 +18,16 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * quay lại kiện cần dỡ và lối dỡ bị che kín. Thông tin không gian nằm trên chính kiện (nhãn neo). Thẻ kiện đang chọn và panel
  * dỡ hàng nổi bên phải nằm ở `SceneInspector` (cần lỗi ràng buộc của phương án). Dưới 1.280 px bỏ danh sách điểm giao và dùng
  * thanh kiện gọn ở góc dưới trái. Góc dưới phải: "Đổi xe" (FE-5b-08, D-80 — nút phụ, từ 768 px; thanh trên của Planner không còn chỗ
- * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị".
+ * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai nút đó: nhãn kiện đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột
+ * nổi bên phải nên không bị nó che.
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
   /** Mở hộp thoại Đổi xe; vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
   onChangeVehicle?: () => void
+  /** Mở Thiết lập tối ưu để chạy lại giữ kiện đã ghim (FE-BL-02); vắng khi người xem không chạy tối ưu được hoặc chuyến đã sang pha vận hành. */
+  onRerunPinned?: () => void
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const stops = state.sceneModel.stops
@@ -34,6 +38,8 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
     return byStop
   }, [state.placements])
   const count = stopNumber === undefined ? 0 : counts.get(stopNumber) ?? 0
+  const pinnedCount = useMemo(() => state.placements.filter((placement) => placement.pinned).length, [state.placements])
+  const pinsUnsaved = useMemo(() => [...state.draft.patches.values()].some((patch) => patch.pinned !== undefined), [state.draft])
   const format = useFormat()
   const t = useT()
   const unloading = operations.kind === 'unloading'
@@ -92,6 +98,7 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
         {onEdit ? <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.edit')} disabled={!state.selected} onClick={onEdit}><Pencil strokeWidth={1.5} /></Button> : null}
       </div>
       <div className="ml-auto flex shrink-0 items-end gap-2">
+        {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} onRerun={onRerunPinned} /> : null}
         {onChangeVehicle ? (
           <Button variant="glass" className="pointer-events-auto hidden size-14 shrink-0 p-0 glass-dark md:flex xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.plan.changeVehicle')} onClick={onChangeVehicle}>
             <Truck strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.plan.changeVehicle')}</span>

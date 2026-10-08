@@ -9,7 +9,7 @@ export type PlannerLock = Exclude<TripPhase, 'planning'> | 'readOnly'
 export type PlannerAccess = {
   /** `null`: chỉnh sửa và duyệt được. Có lý do thì Planner ẩn Chỉnh sửa, Duyệt và nói lý do một lần. */
   readonly lock: PlannerLock | null
-  /** Nút Duyệt cần hiện: `plan` "Duyệt phương án", `draft` "Duyệt bản chỉnh" (đã dời hoặc xoay kiện), `null` không có nút. */
+  /** Nút Duyệt cần hiện: `plan` "Duyệt phương án", `draft` "Duyệt bản chỉnh" (đã dời, xoay hoặc ghim kiện), `null` không có nút. */
   readonly approve: 'plan' | 'draft' | null
   /** Thời điểm duyệt của revision đang xem khi không có chỉnh sửa chưa duyệt: hiện "Đã duyệt lúc …" thay cho nút Duyệt. */
   readonly approvedAt: string | null
@@ -17,8 +17,8 @@ export type PlannerAccess = {
 
 /**
  * Hành động của Planner (LM-094, D-51). Pha khoá thắng quyền: chuyến đang xếp thì "phương án đã chốt" đúng với mọi vai trò.
- * `canApprove`: tài khoản chỉnh tay và duyệt được (`plans.approve`). `hasEdits`: draft có dời hoặc xoay kiện (thứ được gửi khi Duyệt;
- * ghim không tính). `approvedAt`: `null` khi revision chưa duyệt hoặc là fixture benchmark.
+ * `canApprove`: tài khoản chỉnh tay và duyệt được (`plans.approve`). `hasEdits`: draft có dời, xoay hoặc ghim kiện (thứ được gửi khi
+ * Duyệt). `approvedAt`: `null` khi revision chưa duyệt hoặc là fixture benchmark.
  */
 export function plannerAccess({ phase = 'planning', canApprove, approvedAt, hasEdits }: {
   phase?: TripPhase

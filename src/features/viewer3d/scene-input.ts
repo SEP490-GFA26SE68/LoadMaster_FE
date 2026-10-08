@@ -85,7 +85,8 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       fragilityLevel: instance.fragilityLevel,
       fragile: instance.fragilityLevel === 'HIGH',
       stackable: instance.stackable,
-      pinned: false,
+      // Ghim lưu cùng phương án (FE-BL-02): mở lại phương án đã duyệt vẫn thấy kiện đã ghim
+      pinned: placement.pinned === true,
       supportRatio: placement.supportRatio,
       constraintWarnings: Object.freeze([...placement.constraintWarnings]),
       // Vùng của phương án đánh số theo lúc duyệt: so với số điểm trong phương án, không phải số điểm hiện tại

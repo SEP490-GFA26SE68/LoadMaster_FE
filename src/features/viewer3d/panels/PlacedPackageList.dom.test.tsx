@@ -59,3 +59,11 @@ test('only-warnings keeps the packages an issue names, and a click selects', asy
   await userEvent.click(rows()[0]!)
   expect(onSelect).toHaveBeenCalledWith(first!.id)
 })
+
+test('a pinned package is marked in its row by the pin icon and the words "Đã ghim"', async () => {
+  const scene = await seedScene()
+  const placements = [sceneBox('A-01', 0, 0, 0, { step: 1, stop: 2, pinned: true }), sceneBox('B-01', 100, 0, 0, { step: 2, stop: 1 })]
+  render(<I18nProvider><PlacedPackageList placements={placements} stops={scene.stops} issues={[]} selectedId={null} onSelect={() => undefined} /></I18nProvider>)
+  expect(rows().map((row) => [row.textContent?.includes('A-01'), row.textContent?.includes('Đã ghim'), row.querySelector('svg.lucide-pin') !== null]))
+    .toStrictEqual([[true, true, true], [false, false, false]])
+})

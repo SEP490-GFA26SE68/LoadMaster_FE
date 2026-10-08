@@ -12,8 +12,12 @@ export type PlanApproval = {
   readonly blockers: ApprovalBlockers
   /** Cảnh báo còn lại của phương án sau khi áp draft — không chặn Duyệt, chỉ tóm tắt trong hộp thoại. */
   readonly warnings: readonly ConstraintIssue[]
-  /** Patch gửi `approveRevision`: tư thế hiệu lực của mọi kiện draft đã dời hoặc xoay (ghim không thuộc contract). */
+  /** Patch gửi `approveRevision`: tư thế hiệu lực của mọi kiện draft đã dời hoặc xoay (ghim đi riêng, `pinned`). */
   readonly patches: readonly PlacementPatch[]
+  /** Mã các kiện ghim của bản sẽ duyệt (tư thế hiệu lực của draft); gửi kèm Duyệt để ghim lưu cùng phương án (FE-BL-02). */
+  readonly pinned: readonly string[]
+  /** Draft có ghim hoặc bỏ ghim kiện nào so với phương án đang xem — thứ cần Duyệt để lưu, dù không dời kiện nào. */
+  readonly pinsChanged: boolean
 }
 
 /**
@@ -51,5 +55,11 @@ export function planApproval(
     })),
     stale: model.revision?.stale ?? false,
   })
-  return { blockers, warnings: issues.filter(({ severity }) => severity === 'warning'), patches }
+  return {
+    blockers,
+    warnings: issues.filter(({ severity }) => severity === 'warning'),
+    patches,
+    pinned: placements.filter(({ pinned }) => pinned).map(({ id }) => id),
+    pinsChanged: [...draft.patches.values()].some(({ pinned }) => pinned !== undefined),
+  }
 }

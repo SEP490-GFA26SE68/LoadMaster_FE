@@ -40,7 +40,7 @@ export function useViewerApproval(model: ViewerSceneModel, state: LoadPlanViewer
   function confirm(onDone: () => void, { force = false }: { force?: boolean } = {}) {
     const revision = model.revision
     if (!revision || !approval?.blockers.canApprove) return
-    mutation.mutate({ revisionId: revision.id, patches: approval.patches, force }, {
+    mutation.mutate({ revisionId: revision.id, patches: approval.patches, pinned: approval.pinned, force }, {
       onSuccess: (approved) => {
         onDone()
         toast.success(t('viewer.plan.dialog.done'))
