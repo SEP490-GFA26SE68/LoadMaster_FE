@@ -35,7 +35,7 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
           </span>
         </div>
         <p className="m-0 font-display text-h2 leading-6 font-bold text-pretty text-ink-strong font-stretch-106%">{row.name}</p>
-        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2 lg:grid-cols-[1fr_1.7fr_0.8fr_1fr]">
+        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2 lg:grid-cols-[0.9fr_2.3fr_0.7fr_0.9fr]">
           <Fact label={t('warehouse.list.date')}>{format.date(calendarDate(row.scheduledDate))}</Fact>
           <Fact label={t('warehouse.list.vehicle')}><VehicleName name={row.vehicleName} /></Fact>
           <Fact label={t('warehouse.list.packages')}><span className="font-mono">{format.integer(row.total)}</span></Fact>
