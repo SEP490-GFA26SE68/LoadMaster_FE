@@ -1,5 +1,5 @@
 import type { HandlingClass } from '@/domain/models'
-import type { PickupRuleResult } from '@/domain/pickup'
+import type { PickupPlacement, PickupRuleResult, PickupUnplaced } from '@/domain/pickup'
 
 /**
  * Yêu cầu nhận hàng dọc đường (FE-7-01, D-88, PRD v2 mục 7.4, 8.7): điều phối viên hoặc tài xế đề nghị nhận thêm hàng ở một điểm trên
@@ -44,6 +44,18 @@ export type PickupPackage = {
   handlingClass: HandlingClass
 }
 
+/**
+ * Chỗ của kiện nhận trên xe (FE-BL-01): kết quả xếp vào vùng trống lúc duyệt. Phương án đã duyệt của chuyến không đổi — chỗ của kiện
+ * nhận nằm cùng yêu cầu. `placements[].packageIndex` và `unplaced[].packageIndex` là chỉ số trong `packages` (cũng là chỉ số trong
+ * `packageIds`); kiện không xếp được vẫn lên xe theo yêu cầu đã duyệt kèm lý do vượt luật, nhưng chưa có chỗ — tài xế đọc lý do.
+ */
+export type PickupLayout = {
+  placements: PickupPlacement[]
+  unplaced: PickupUnplaced[]
+  /** ISO 8601 */
+  plannedAt: string
+}
+
 /** Yêu cầu nhận dọc đường (`PKR-NNN`, Phương Nam `PKR-PN-NNN`). */
 export type PickupRequest = {
   id: string
@@ -75,6 +87,8 @@ export type PickupRequest = {
    * `Trip.stops` (điểm giao có thể là điểm có sẵn dùng lại).
    */
   packageIds?: string[]
+  /** Từ lúc `APPROVED`: chỗ của kiện nhận trên xe. */
+  layout?: PickupLayout
   pickupStopId?: string
   deliveryStopId?: string
   /** Tài xế hoàn tất điểm nhận (`LOADED`, FE-7-05) và kiện giao xong ở điểm giao (`DELIVERED`). */

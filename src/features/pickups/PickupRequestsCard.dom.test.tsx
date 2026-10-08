@@ -50,7 +50,7 @@ function renderCard(role: Role, phase: TripPhase = 'delivering') {
   )
 }
 
-test('the dispatcher sends a request, sees the ten rules with the estimated ones labelled, and finds it in the card', async () => {
+test('the dispatcher sends a request, sees the ten rules with no estimate tag, and finds it in the card', async () => {
   const user = userEvent.setup()
   renderCard('dispatcher')
   const card = within(await screen.findByRole('region', { name: 'Nhận hàng dọc đường' }, SLOW))
@@ -76,13 +76,13 @@ test('the dispatcher sends a request, sees the ten rules with the estimated ones
   await user.type(row.getByLabelText(/Khối lượng/), '12')
   await user.click(dialog.getByRole('button', { name: 'Gửi yêu cầu' }))
 
-  // Kết quả của mười luật ngay sau khi lưu: đạt cả mười — chữ, không chỉ màu; luật ước lượng có nhãn
+  // Kết quả của mười luật ngay sau khi lưu: đạt cả mười — chữ, không chỉ màu; không luật nào còn nhãn ước lượng
   const result = within(await screen.findByRole('dialog', { name: /Yêu cầu PKR-002/ }, SLOW))
   const rules = within(result.getByRole('list', { name: 'Mười luật nhận hàng' })).getAllByRole('listitem')
   expect(rules).toHaveLength(10)
   expect(rules.filter((item) => item.getAttribute('data-passed') === 'false').map((item) => item.getAttribute('data-rule'))).toStrictEqual([])
   expect(rules[5]).not.toHaveTextContent('Không đạt')
-  expect(rules[5]).toHaveTextContent('Ước lượng')
+  expect(result.queryByText('Ước lượng')).not.toBeInTheDocument()
   expect(rules[0]).toHaveTextContent('Điểm nhận cách tuyến')
   expect(rules[1]).toHaveTextContent('không vượt điểm 3 (Bếp ăn công nghiệp KCN Sóng Thần)')
   expect(result.getByText('Đạt cả mười luật. Điều phối viên có thể duyệt ngay.')).toBeInTheDocument()
@@ -120,11 +120,11 @@ test('the manager reads the requests but has no button to send one', async () =>
   expect(card.queryByRole('button', { name: 'Nhận hàng dọc đường' })).not.toBeInTheDocument()
 })
 
-test('the rules list says pass or fail in words, tags the estimated rules and writes each reason from its code and parameters', () => {
+test('the rules list says pass or fail in words, writes each reason from its code and parameters', () => {
   const results: PickupRuleResult[] = [
-    { rule: 1, passed: false, code: 'PICKUP_OFF_ROUTE', params: { distanceKm: 12.34, maxKm: 10 }, estimated: false },
-    { rule: 3, passed: true, code: 'PICKUP_PAYLOAD_OK', params: { totalKg: 2262, maxPayloadKg: 7000, overKg: 0 }, estimated: false },
-    { rule: 6, passed: false, code: 'PICKUP_COG_OFF_CENTER', params: { reasons: 'COG_LONGITUDINAL,COG_HIGH' }, estimated: true },
+    { rule: 1, passed: false, code: 'PICKUP_OFF_ROUTE', params: { distanceKm: 12.34, maxKm: 10 } },
+    { rule: 3, passed: true, code: 'PICKUP_PAYLOAD_OK', params: { totalKg: 2262, maxPayloadKg: 7000, overKg: 0 } },
+    { rule: 6, passed: false, code: 'PICKUP_COG_OFF_CENTER', params: { reasons: 'COG_LONGITUDINAL,COG_HIGH' } },
   ]
   render(<I18nProvider><PickupRulesList results={results} stopLabel={(id) => id} /></I18nProvider>)
   const items = screen.getAllByRole('listitem')
@@ -133,6 +133,6 @@ test('the rules list says pass or fail in words, tags the estimated rules and wr
   expect(items[0]).not.toHaveTextContent('Ước lượng')
   expect(items[1]).toHaveTextContent('Đạt')
   expect(items[1]).toHaveTextContent('Tổng tải 2.262 kg, tải trọng tối đa 7.000 kg.')
-  expect(items[2]).toHaveTextContent('Ước lượng')
+  expect(items[2]).not.toHaveTextContent('Ước lượng')
   expect(items[2]).toHaveTextContent('lệch dọc và quá cao')
 })

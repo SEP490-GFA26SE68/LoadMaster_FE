@@ -1,12 +1,14 @@
-import type { Box } from '@/domain/geometry'
-import type { CargoPackage, HandlingClass, VehicleConfig } from '@/domain/models'
+import type { ConstraintIssue } from '@/domain/constraints'
+import type { Box, OrientationCode } from '@/domain/geometry'
+import type { AxleLoads, PointCm } from '@/domain/metrics'
+import type { CargoPackage, HandlingClass, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { GeoPoint } from '@/domain/routing'
 import type { StopZone } from '@/domain/zones'
 
 /**
  * Nhận hàng dọc đường (FE-7-02, D-88, PRD v2 mục 8.7): mười luật kiểm một yêu cầu nhận khi chuyến Đang vận chuyển, và vị trí chèn
- * điểm mới vào tuyến. Hàm thuần, trả mã + tham số (D-28); UI dịch. Luật 4–7 và 10 là **ước lượng** theo thể tích, khối lượng của các
- * vùng đã trống cho tới khi có tái tối ưu vùng trống (P2).
+ * điểm mới vào tuyến. Hàm thuần, trả mã + tham số (D-28); UI dịch. Luật 4–7 và 10 đọc kết quả xếp kiện nhận vào vùng trống
+ * (`FreedZonePacking`, FE-BL-01) do mock tái tối ưu vùng trống tính — kho chạy nó rồi đưa vào ngữ cảnh.
  */
 
 /**
@@ -45,8 +47,6 @@ export type PickupRuleResult = {
   passed: boolean
   code: PickupRuleCode
   params: Readonly<Record<string, string | number>>
-  /** Kết quả là ước lượng theo thể tích, khối lượng vùng đã trống (luật 4–7, 10). */
-  estimated: boolean
 }
 
 /** Một kiện của yêu cầu nhận: một kiện vật lý, cm / kg. Vắng loại hàng là hàng thường. */
@@ -84,6 +84,38 @@ export type PickupVehicle = Pick<
   'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg' | 'axles' | 'frontAxleLimitKg' | 'rearAxleLimitKg' | 'maxCogOffsetRatio'
 >
 
+/** Vị trí xếp của kiện nhận thứ `packageIndex` của yêu cầu (cm, hệ toạ độ thùng); kích thước đã áp hướng đặt. */
+export type PickupPlacement = {
+  packageIndex: number
+  orientation: OrientationCode
+  xCm: number
+  yCm: number
+  zCm: number
+  placedLengthCm: number
+  placedWidthCm: number
+  placedHeightCm: number
+}
+
+/** Kiện nhận thứ `packageIndex` không xếp được vào vùng trống, kèm mã lý do của hợp đồng tối ưu. */
+export type PickupUnplaced = { packageIndex: number; reasonCode: UnplacedPackage['reasonCode'] }
+
+/** Khối hàng trên xe: tổng khối lượng, trọng tâm và tải trục (chưa làm tròn). */
+export type LoadSnapshot = { totalKg: number; centerOfGravityCm?: PointCm; axle: AxleLoads }
+
+/**
+ * Kết quả xếp kiện nhận vào vùng trống (FE-BL-01): kiện đang chở không bị dời. `before` là hàng đang chở (kể cả kiện của yêu cầu nhận
+ * đã duyệt trước), `after` thêm các kiện nhận đã có chỗ. `stackingIssues` là issue xếp chồng của constraint engine trên kết quả,
+ * `blockedCount` số kiện còn chở mà kiện nhận chắn lối dỡ (LIFO của domain).
+ */
+export type FreedZonePacking = {
+  placements: PickupPlacement[]
+  unplaced: PickupUnplaced[]
+  before: LoadSnapshot
+  after: LoadSnapshot
+  stackingIssues: ConstraintIssue[]
+  blockedCount: number
+}
+
 /**
  * Mọi thứ mười luật cần — kho dựng từ chuyến, phương án đã duyệt, vị trí xe và tiến độ giao. Hàm đánh giá không đọc gì ngoài đây.
  */
@@ -98,8 +130,12 @@ export type PickupContext = {
   stops: readonly PickupRouteStop[]
   /** Vùng theo điểm giao của phương án đã duyệt (`result.stopZones`); rỗng khi phương án không chia vùng. */
   zones: readonly StopZone[]
-  /** Kiện còn trên xe (chưa dỡ, chưa bị bỏ lại kho). */
+  /** Kiện còn trên xe (chưa dỡ, chưa bị bỏ lại kho), kể cả kiện của yêu cầu nhận đã duyệt trước đã có chỗ. */
   onboard: readonly OnboardCargo[]
+  /** Khối lượng kiện của yêu cầu nhận đã duyệt trước mà chưa có chỗ trên xe (không có hộp trong `onboard`), kg; vắng là 0. */
+  looseKg?: number
+  /** Kết quả xếp kiện nhận vào vùng trống — nguồn của luật 4–7 và 10. */
+  packing: FreedZonePacking
   /** Dòng kiện của chuyến (`Trip.packages`): loại hàng đang khoá theo `segregation`. */
   tripCargo: readonly Pick<CargoPackage, 'id' | 'quantity' | 'handlingClass'>[]
   /** Lý do vượt luật phân tách hàng đã ghi cho chuyến (`Trip.overrideReason`, D-74). */

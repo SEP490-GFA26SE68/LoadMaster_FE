@@ -146,11 +146,11 @@ export const driver = {
     label: 'Các điểm của chuyến',
     state: { done: 'Đã xong', current: 'Đang ở điểm này', waiting: 'Chưa tới' },
   },
-  /** Kiện nhận dọc đường (FE-7-05, D-88): nhận ở điểm nhận, giao ở điểm giao như kiện thường; chưa có vị trí 3D (P2). */
+  /** Kiện nhận dọc đường (FE-7-05, D-88): nhận ở điểm nhận, giao ở điểm giao như kiện thường; có chỗ trong khung 3D khi vừa vùng trống (FE-BL-01). */
   pickup: {
     banner: 'Điểm nhận hàng dọc đường: nhận {count} kiện từ {name}. Đối chiếu từng kiện lên xe rồi mới hoàn tất điểm nhận.',
-    listTitle: 'Kiện nhận dọc đường — chưa có vị trí 3D',
-    listHint: 'Kiện nhận không nằm trong phương án xếp hàng nên chưa có vị trí trong khung 3D. Đối chiếu bằng nhãn QR như kiện thường.',
+    listTitle: 'Kiện nhận dọc đường',
+    listHint: 'Kiện nhận không nằm trong phương án xếp hàng; chỗ xếp của chúng hiện trong khung 3D "Xem vị trí hàng". Đối chiếu bằng nhãn QR như kiện thường.',
     request: 'Yêu cầu {id}',
     pick: { waiting: 'Chưa nhận', done: 'Đã nhận' },
     deliver: { waiting: 'Chưa dỡ', done: 'Đã dỡ' },
@@ -176,9 +176,9 @@ export const driver = {
       one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
       other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
     },
-    cargoTitle: 'Kiện nhận dọc đường — chưa có vị trí 3D',
-    cargoNote: 'Không vẽ trong khung 3D; đối chiếu bằng nhãn QR ở màn điểm giao.',
-    cargoRow: '{id} · {name} · {weight}',
+    cargoTitle: 'Kiện nhận dọc đường — chưa có chỗ trên xe',
+    cargoNote: 'Các kiện này không vừa vùng đã trống nên chưa có vị trí trong khung 3D; xếp theo hướng dẫn của điều phối viên và đối chiếu bằng nhãn QR ở màn điểm giao.',
+    cargoRow: '{id} · {name} · {weight} · {reason}',
   },
   /** Màn tổng kết khi giao xong điểm cuối. */
   tripSummary: {

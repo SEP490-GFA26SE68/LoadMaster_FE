@@ -11,7 +11,8 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: v
 /**
  * Tài xế ở điểm nhận hàng dọc đường (FE-7-05) trên `TRIP-009` của tài xế `US-0006`: điều phối viên đã duyệt một yêu cầu hai kiện (điểm giao
  * dùng lại điểm 3 nên thành điểm 4), tài xế xong điểm 2 và tới điểm nhận (điểm 3). Luật của kho (nhận, giao, chặn khi còn xác nhận tay)
- * kiểm ở `pickup-progress.test.ts`; ở đây kiểm màn nói đúng và nối đúng kho. Hai bài theo thứ tự: bài đầu đưa chuyến sang điểm 4.
+ * kiểm ở `pickup-progress.test.ts`; chỗ xếp của kiện nhận trong khung 3D kiểm ở `driver-pickups.test.ts` (jsdom không dựng WebGL). Ở đây
+ * kiểm màn nói đúng và nối đúng kho. Hai bài theo thứ tự: bài đầu đưa chuyến sang điểm 4.
  */
 const TRIP = 'TRIP-009'
 const WRITE = { timeout: 5000 }
@@ -41,7 +42,7 @@ async function typeCode(value: string) {
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
 }
 
-test('the pickup stop is named in the stop list with its own icon and words, the packages are listed apart without a 3D position, a package of another stop is refused, and the stop completes once both are checked', async () => {
+test('the pickup stop is named in the stop list with its own icon and words, the packages are listed apart from the plan, a package of another stop is refused, and the stop completes once both are checked', async () => {
   const { db, packages } = await approvedPickup()
   const tokens = new Map((await db.listTripLabels(TRIP)).map((label) => [label.packageInstanceId, label.qrToken]))
   const planLabel = (await db.listTripLabels(TRIP)).find((label) => label.deliveryStop === 4 && label.packageInstanceId.startsWith('PKG-'))
@@ -55,8 +56,8 @@ test('the pickup stop is named in the stop list with its own icon and words, the
   expect(kinds[3]?.[1]).toContain('Điểm giao hàng')
   expect(screen.getByText('Điểm nhận hàng dọc đường: nhận 2 kiện từ Xưởng may Hoàng Gia. Đối chiếu từng kiện lên xe rồi mới hoàn tất điểm nhận.')).toBeInTheDocument()
 
-  // Kiện nhận ở danh sách riêng, không có thứ tự dỡ hay vị trí
-  const list = within(screen.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có vị trí 3D' }))
+  // Kiện nhận ở danh sách riêng, không có thứ tự dỡ, vùng hay lớp; chỗ xếp của chúng nằm trong khung 3D
+  const list = within(screen.getByRole('region', { name: 'Kiện nhận dọc đường' }))
   expect(list.getAllByRole('listitem').map((row) => row.getAttribute('data-package-id'))).toStrictEqual(packages.map((pkg) => pkg.id))
   expect(list.getAllByText('Chưa nhận')).toHaveLength(2)
   await userEvent.click(await screen.findByRole('button', { name: 'Đã đến điểm 3' }, WRITE))
@@ -95,7 +96,7 @@ test('at the delivery stop the pickup packages come with the stop and are unload
   const tokens = new Map((await db.listTripLabels(TRIP)).map((label) => [label.packageInstanceId, label.qrToken]))
   renderDriver(`/tai-xe/diem-giao?chuyen=${TRIP}`, 'US-0006')
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 4 / 4' }, LOAD)).toBeInTheDocument()
-  const list = within(screen.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có vị trí 3D' }))
+  const list = within(screen.getByRole('region', { name: 'Kiện nhận dọc đường' }))
   const ids = request?.packageIds ?? []
   expect(list.getAllByRole('listitem').map((row) => row.getAttribute('data-package-id'))).toStrictEqual(ids)
   expect(list.getAllByText('Chưa dỡ')).toHaveLength(2)

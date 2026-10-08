@@ -10,7 +10,7 @@ import { createPickupPackages } from './db-pickup-packages'
 import { pickupEntries } from './db-pickup-progress'
 import { insertPickupIntoTrip } from './db-pickup-stops'
 import { buildPickupContext } from './pickup-context'
-import { canTransitionPickup, MAX_PICKUP_REASON_LENGTH, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
+import { canTransitionPickup, MAX_PICKUP_REASON_LENGTH, type PickupLayout, type PickupPackage, type PickupPoint, type PickupRequest } from './pickup-model'
 import { isValidCoordinate } from './requirement-model'
 import type { Trip } from './types'
 
@@ -147,11 +147,15 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
         const inserted = insertPickupIntoTrip(ctx, trip, current, context.stops)
         const created = createPickupPackages(ctx, current, inserted.deliveryStopId)
         const { overrideReason: _earlier, ...kept } = current
+        // Chỗ của kiện nhận (FE-BL-01): kiện không xếp được vẫn lên xe theo lý do vượt luật nhưng chưa có chỗ — tài xế đọc lý do.
+        // Tái tối ưu vùng trống chưa tốn credit: backend chưa trả lời có tính 1 credit hay không (Q-09), nên không gọi `reserveOptimizationCredit`.
+        const layout: PickupLayout = { placements: context.packing.placements, unplaced: context.packing.unplaced, plannedAt: ctx.nowIso() }
         const request = put(pickups, {
           ...kept, validationResults, status: 'APPROVED', approvedAt: ctx.nowIso(), approvedBy: ctx.state.session.userId,
-          packageIds: created.map((pkg) => pkg.id), pickupStopId: inserted.pickupStopId, deliveryStopId: inserted.deliveryStopId,
+          packageIds: created.map((pkg) => pkg.id), layout, pickupStopId: inserted.pickupStopId, deliveryStopId: inserted.deliveryStopId,
           ...(overrideReason === undefined ? {} : { overrideReason }),
         })
+        ctx.log('pickup.reoptimized', { type: 'trip', id: tripId }, { pickupId, placed: layout.placements.length, unplaced: layout.unplaced.length })
         ctx.log('pickup.approved', { type: 'trip', id: tripId }, {
           pickupId, count: created.length, failedRules: failed, ...(overrideReason === undefined ? {} : { reason: overrideReason }),
           ...(trip.driverId === null ? {} : { driverId: trip.driverId }),

@@ -26,7 +26,7 @@ export const audit = {
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
     manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
     exception: { reported: 'Báo sự cố chuyến', escalated: 'Chuyển sự cố cho quản lý', resolved: 'Đánh dấu sự cố đã xử lý', deadlineRenegotiated: 'Liên hệ khách, nhập hạn mới' },
-    pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
+    pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', reoptimized: 'Xếp kiện nhận vào vùng trống của thùng xe', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
     subscription: { subscribed: 'Đăng ký gói cước', renewed: 'Gia hạn gói cước', cancelled: 'Huỷ gói cước', expired: 'Gói cước hết hạn' },
     credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
     company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },

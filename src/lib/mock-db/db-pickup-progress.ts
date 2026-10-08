@@ -15,7 +15,7 @@ import type { StopProgress, Trip } from './types'
  * - `deliver`: điểm là điểm giao và yêu cầu đã `LOADED` — tài xế dỡ như kiện thường (`DELIVERED`).
  *
  * Hoàn tất điểm nhận: kiện `IN_TRANSIT`, yêu cầu `LOADED`. Hoàn tất điểm giao: kiện đã dỡ `DELIVERED`, còn lại `RETURNED`; mọi kiện của
- * yêu cầu đã giao thì yêu cầu `DELIVERED`. Kiện nhận chưa có vị trí 3D (P2) nên không có trong phương án, không có thứ tự dỡ.
+ * yêu cầu đã giao thì yêu cầu `DELIVERED`. Kiện nhận không có trong phương án (chỗ xếp nằm ở `PickupRequest.layout`), không có thứ tự dỡ của phương án.
  */
 
 export type PickupRole = 'pick' | 'deliver'

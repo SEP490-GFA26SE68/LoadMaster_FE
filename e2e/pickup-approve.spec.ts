@@ -1,10 +1,11 @@
 import { expect, test } from './fixtures'
-import { overflowingText } from './spec-flow-helpers'
+import { MOCK_DB, overflowingText } from './spec-flow-helpers'
 
 /**
  * FE-7-03, FE-7-04: điều phối viên gửi yêu cầu nhận hàng dọc đường cho chuyến `TRIP-009` đang vận chuyển, đọc mười luật Đạt / Không đạt,
  * duyệt, thấy hai điểm mới chèn vào tuyến và mở nhãn gửi bên gửi — cả luồng trên **một tab** (kho nằm trong bộ nhớ trang, không tải lại).
  * Kết quả mười luật phụ thuộc vị trí xe lúc chạy test nên kịch bản không đòi luật nào trượt: ô lý do vượt luật có thì điền, không có thì duyệt luôn.
+ * Luật 4–7 và 10 đọc kết quả xếp kiện nhận vào vùng trống (FE-BL-01), không còn nhãn ước lượng; duyệt xong yêu cầu giữ chỗ của kiện.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -39,12 +40,12 @@ test('1.366 px: the dispatcher sends a pickup request, reads its ten rules, appr
   await box.getByRole('textbox', { name: 'Khối lượng (kg)', exact: true }).fill('12')
   await dialog.getByRole('button', { name: 'Gửi yêu cầu', exact: true }).click()
 
-  // Mười luật ngay sau khi lưu: mỗi luật nói Đạt hoặc Không đạt bằng chữ; luật ước lượng có nhãn
+  // Mười luật ngay sau khi lưu: mỗi luật nói Đạt hoặc Không đạt bằng chữ, không luật nào còn nhãn ước lượng
   const result = page.getByRole('dialog', { name: /^Yêu cầu PKR-002/ })
   const rules = result.getByRole('list', { name: 'Mười luật nhận hàng', exact: true }).getByRole('listitem')
   await expect(rules).toHaveCount(10)
   for (const rule of await rules.all()) await expect(rule).toContainText(/Đạt|Không đạt/)
-  await expect(rules.nth(3)).toContainText('Ước lượng')
+  await expect(result.getByText('Ước lượng')).toHaveCount(0)
   await result.getByRole('button', { name: 'Đóng', exact: true }).click()
   await expect(card.getByText('PKR-002', { exact: true })).toBeVisible()
 
@@ -73,6 +74,16 @@ test('1.366 px: the dispatcher sends a pickup request, reads its ten rules, appr
   await expect(card.getByRole('listitem').filter({ hasText: 'PKR-002' })).toContainText('Đã duyệt — chờ nhận hàng')
   // Chữ mới của thẻ và của tuyến không tràn khung (điểm 1 đã giao có dấu kiểm nhô ra ngoài mốc từ trước, không thuộc kiểm này)
   expect((await overflowingText(page)).filter((line) => /Nhận hàng|PKR-|Xưởng may|Kho Dĩ An/.test(line))).toStrictEqual([])
+
+  // Duyệt giữ chỗ của kiện nhận trên xe (kiện 60 × 40 × 40 vừa vùng đã trống của điểm 1) cùng yêu cầu
+  const layout = await page.evaluate(async ({ db: dbUrl, trip }) => {
+    const { getMockDb } = (await import(dbUrl)) as typeof import('@/lib/mock-db')
+    const db = getMockDb()
+    db.restoreSession('US-0001')
+    return (await db.getPickupRequest(trip, 'PKR-002')).layout
+  }, { db: MOCK_DB, trip: TRIP })
+  expect(layout?.unplaced).toStrictEqual([])
+  expect(layout?.placements).toHaveLength(1)
 
   // Nhãn gửi bên gửi: liên kết từ thẻ mở trang in nhãn của đúng kiện đó
   await card.getByRole('link', { name: 'In nhãn gửi bên gửi của yêu cầu PKR-002', exact: true }).click()

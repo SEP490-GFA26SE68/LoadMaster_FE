@@ -48,7 +48,10 @@ export function ruleText(result: PickupRuleResult, { t, format, stopLabel }: Rul
       })
     case 'PICKUP_FREED_SPACE_OK':
     case 'PICKUP_FREED_SPACE_INSUFFICIENT':
-      return t(`pickups.rules.codes.${result.code}`, { pickupVolume: format.volumeM3(num(p.pickupCm3)), freedVolume: format.volumeM3(num(p.freedCm3)) })
+      return t(`pickups.rules.codes.${result.code}`, {
+        pickupVolume: format.volumeM3(num(p.pickupCm3)), freedVolume: format.volumeM3(num(p.freedCm3)),
+        total: format.integer(num(p.totalCount)), unplaced: format.integer(num(p.unplacedCount)),
+      })
     case 'PICKUP_AXLE_OK':
       return t('pickups.rules.codes.PICKUP_AXLE_OK', { frontLoadKg: format.weight(num(p.frontLoadKg)), rearLoadKg: format.weight(num(p.rearLoadKg)) })
     case 'PICKUP_AXLE_OVERLOAD':
@@ -61,7 +64,7 @@ export function ruleText(result: PickupRuleResult, { t, format, stopLabel }: Rul
       return t(`pickups.rules.codes.${result.code}`, { reasons: format.list(reasons) })
     }
     case 'PICKUP_FRAGILE_STACKED':
-      return t('pickups.rules.codes.PICKUP_FRAGILE_STACKED', { fragileCount: format.integer(num(p.fragileCount)), layers: format.integer(num(p.layers)) })
+      return t('pickups.rules.codes.PICKUP_FRAGILE_STACKED', { count: format.integer(num(p.count)) })
     case 'PICKUP_CLASS_OK':
       return t('pickups.rules.codes.PICKUP_CLASS_OK', { lockedClass: handlingLabel(p.lockedClass, t) })
     case 'PICKUP_CLASS_OVERRIDDEN':

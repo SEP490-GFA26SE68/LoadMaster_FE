@@ -106,6 +106,7 @@ export {
   MAX_PICKUP_REASON_LENGTH,
   PICKUP_STATUSES,
   PICKUP_TRANSITIONS,
+  type PickupLayout,
   type PickupPackage,
   type PickupPoint,
   type PickupRequest,

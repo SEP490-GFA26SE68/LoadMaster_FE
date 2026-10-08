@@ -36,7 +36,7 @@ function noSpace(stackingRejected: boolean): Rejection {
 }
 
 /** Các hướng đặt của kiện đưa được qua cửa. */
-function doorOrientations(vehicle: VehicleConfig, instance: PackageInstance): Orientation[] {
+export function doorOrientations(vehicle: VehicleConfig, instance: PackageInstance): Orientation[] {
   return effectiveOrientations(instance)
     .map((code) => ({ code, dims: orientDimensions(instance, code) }))
     .filter(({ dims }) => !gt(dims.placedWidthCm + vehicle.clearanceCm, vehicle.doorWidthCm) && !gt(dims.placedHeightCm + vehicle.clearanceCm, vehicle.doorHeightCm))

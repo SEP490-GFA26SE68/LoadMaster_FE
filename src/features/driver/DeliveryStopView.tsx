@@ -7,11 +7,12 @@ import { Spinner } from '@/components/ui/Spinner'
 import { TripExceptionButton } from '@/features/monitoring/TripExceptionButton'
 import { PickupDriverButton } from '@/features/pickups/PickupDriverButton'
 import { adaptResult } from '@/features/viewer3d/scene-input'
+import { withPickupPlacements } from '@/features/viewer3d/scene-pickups'
 import { useFormat, useT } from '@/lib/i18n'
 import { leftOutIds, type Revision, type Trip } from '@/lib/mock-db'
 import { DeliveryItemRow } from './DeliveryItemRow'
 import { deliveryView, type DeliveryView } from './delivery-progress'
-import { NO_PICKUPS, type PickupFacts } from './driver-pickups'
+import { NO_PICKUPS, pickupSceneItems, unplacedPickups, type PickupFacts } from './driver-pickups'
 import { DriverGpsToggle } from './DriverGpsToggle'
 import { DriverNotice } from './DriverNotice'
 import { stopDeliveries } from './driver-plan'
@@ -44,14 +45,12 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
   const t = useT()
   const { id, stops: tripStops, inputVersion } = trip
   // Dựng lại chỉ khi phương án hoặc điểm giao đổi; mỗi lần đánh dấu dỡ chỉ đổi `trip.delivery`
-  const model = useMemo(() => adaptResult({ trip: { id, stops: tripStops, inputVersion }, revision: plan }), [id, tripStops, inputVersion, plan])
-  const stops = useMemo(() => stopDeliveries(tripStops, model, pickup), [tripStops, model, pickup])
-  // Kiện nhận dọc đường còn đi cùng xe hoặc sắp lên xe: chưa có vị trí 3D nên khung 3D chỉ liệt kê (FE-7-05)
-  const pickupCargo = useMemo(
-    () => pickup.requests.filter((request) => request.status === 'APPROVED' || request.status === 'LOADED').flatMap((request) =>
-      pickup.packages.filter((pkg) => request.packageIds?.includes(pkg.id)).map((pkg) => ({ id: pkg.id, name: pkg.packageCode, weightKg: pkg.weightKg }))),
-    [pickup],
-  )
+  const planModel = useMemo(() => adaptResult({ trip: { id, stops: tripStops, inputVersion }, revision: plan }), [id, tripStops, inputVersion, plan])
+  const stops = useMemo(() => stopDeliveries(tripStops, planModel, pickup), [tripStops, planModel, pickup])
+  // Kiện nhận dọc đường đã có chỗ (FE-BL-01) vào scene của khung 3D cùng kiện của phương án — dòng kiện của điểm vẫn chỉ lấy từ phương án,
+  // kiện nhận có danh sách riêng; kiện chưa có chỗ chỉ liệt kê cạnh khung, kèm lý do
+  const model = useMemo(() => withPickupPlacements(planModel, pickupSceneItems(tripStops, pickup)), [planModel, tripStops, pickup])
+  const pickupCargo = useMemo(() => unplacedPickups(pickup), [pickup])
   const view = deliveryView(trip, stops)
   const actions = useDeliveryStop(trip.id, view, stops.length)
   const scan = useUnloadScan(trip.id, view, stops)

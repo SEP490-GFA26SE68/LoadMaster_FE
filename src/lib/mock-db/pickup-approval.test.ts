@@ -118,3 +118,52 @@ test.each([
   await expect(db.rejectPickupRequest(TRIP, 'PKR-001', 'x')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
   expect(await db.getPickupRequest(TRIP, 'PKR-001')).toMatchObject({ status: 'PENDING' })
 })
+
+describe('placing the pickup in the freed zone (FE-BL-01)', () => {
+  // TRIP-009: điểm 1 đã giao xong nên vùng X 393,1–610 (cm) trống; hai hốc bánh xe nằm ở X 350–450, Y 0–25 và 190–215.
+  // Kiện 60 × 40 × 40 không đặt được sát vách trái (chồng hốc bánh xe) nên nằm sát hốc: Y = 25
+  const STANDARD: PickupPackage = { ...BOX, handlingClass: 'STANDARD' }
+  const standard = (weightKg = 12): PickupRequestInput => ({ ...OTHER_DELIVERY, packages: [{ ...STANDARD, weightKg }] })
+  const ruleThree = (request: { validationResults: { rule: number; params: Readonly<Record<string, string | number>> }[] }) =>
+    request.validationResults.find((result) => result.rule === 3)?.params.totalKg as number
+
+  test('approval keeps the place with the request and logs it; the approved plan is not touched', async () => {
+    const db = newDb()
+    const plans = await db.listRevisions(TRIP)
+    const request = await db.createPickupRequest(TRIP, standard())
+    const { request: approved } = await db.approvePickupRequest(TRIP, request.id)
+    expect(approved.layout).toMatchObject({
+      placements: [{ packageIndex: 0, orientation: 'LWH', xCm: 393.1, yCm: 25, zCm: 0, placedLengthCm: 60, placedWidthCm: 40, placedHeightCm: 40 }],
+      unplaced: [],
+    })
+    expect(await db.listRevisions(TRIP)).toStrictEqual(plans)
+    const events = await db.listEvents()
+    expect(events.map((event) => event.action).slice(0, 2)).toStrictEqual(['pickup.approved', 'pickup.reoptimized'])
+    expect(events[1]).toMatchObject({ target: { type: 'trip', id: TRIP }, params: { pickupId: request.id, placed: 1, unplaced: 0 } })
+  })
+
+  test('a later request counts the earlier approved one: its weight, and its place is not reused', async () => {
+    const db = newDb()
+    const first = await db.createPickupRequest(TRIP, standard())
+    await db.approvePickupRequest(TRIP, first.id)
+    const second = await db.createPickupRequest(TRIP, standard(7))
+    expect(ruleThree(second) - ruleThree(first)).toBe(7)
+    const { request } = await db.approvePickupRequest(TRIP, second.id)
+    expect(request.layout?.placements).toMatchObject([{ xCm: 393.1, yCm: 65, zCm: 0 }])
+  })
+
+  test('a package that does not fit is approved only with a reason, gets no place, and its weight still counts for the next request', async () => {
+    const db = newDb()
+    const tooLong: PickupPackage = { ...STANDARD, lengthCm: 300, widthCm: 150, weightKg: 20 }
+    const first = await db.createPickupRequest(TRIP, { ...OTHER_DELIVERY, packages: [tooLong] })
+    expect(first.validationResults.filter((result) => !result.passed).map((result) => result.rule)).toStrictEqual([4])
+    await expect(db.approvePickupRequest(TRIP, first.id)).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
+    const { request, packages } = await db.approvePickupRequest(TRIP, first.id, { overrideReason: 'Xếp tay ở cửa sau' })
+    expect(request.layout).toMatchObject({ placements: [], unplaced: [{ packageIndex: 0, reasonCode: 'NO_SPACE' }] })
+    expect(packages).toMatchObject([{ status: 'ASSIGNED', tripId: TRIP }])
+    expect((await db.listEvents())[1]).toMatchObject({ action: 'pickup.reoptimized', params: { placed: 0, unplaced: 1 } })
+    const second = await db.createPickupRequest(TRIP, standard(7))
+    // 20 kg đã duyệt nhưng chưa có chỗ vẫn nặng: tổng tải của yêu cầu sau = tổng tải trước (đã gồm 20 kg) + 7 kg của nó
+    expect(ruleThree(second) - ruleThree(first)).toBe(7)
+  })
+})

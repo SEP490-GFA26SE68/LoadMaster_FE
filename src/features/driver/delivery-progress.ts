@@ -44,7 +44,7 @@ export type DeliveryView = {
   /** Kiện phải dỡ ở điểm này theo thứ tự dỡ: kiện của phương án trừ kiện hỏng bị bỏ lại kho (không có trên xe). */
   readonly items: readonly ItemProgress[]
   /**
-   * Kiện nhận dọc đường của điểm (FE-7-05), ngoài phương án và chưa có vị trí 3D. Điểm nhận: kiện phải đối chiếu lên xe; điểm giao: kiện
+   * Kiện nhận dọc đường của điểm (FE-7-05), ngoài phương án (chỗ xếp của chúng nằm cùng yêu cầu, FE-BL-01). Điểm nhận: kiện phải đối chiếu lên xe; điểm giao: kiện
    * dỡ như kiện thường. Mọi số đếm dưới đây (`unloadedCount`, `remaining`, `verifiable`, `pendingConfirms`) tính cả chúng.
    */
   readonly pickupItems: readonly PickupItemProgress[]

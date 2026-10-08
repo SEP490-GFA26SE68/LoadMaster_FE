@@ -33,7 +33,7 @@ export type PickupsDb = {
   validatePickupRequest(tripId: string, pickupId: string): Promise<PickupRequest>
   /**
    * Kiện kho kiện của các yêu cầu **đã duyệt** của chuyến (FE-7-05), theo thứ tự yêu cầu rồi thứ tự kiện: tài xế đọc để biết kiện nhận ở
-   * điểm nhận và kiện giao ở điểm giao (kiện nhận chưa có vị trí 3D nên không nằm trong phương án).
+   * điểm nhận và kiện giao ở điểm giao (kiện nhận không nằm trong phương án; chỗ xếp ở `PickupRequest.layout`).
    */
   listPickupPackages(tripId: string): Promise<Package[]>
   /**
@@ -41,7 +41,8 @@ export type PickupsDb = {
    * `REASON_REQUIRED`; có lý do thì duyệt được và lý do lưu trên yêu cầu. Duyệt xong kho tạo kiện kho kiện (nguồn `PICKUP`, `ASSIGNED`,
    * mã QR mới) và chèn điểm nhận, điểm giao vào tuyến — ngoại lệ duy nhất của `TRIP_LOCKED` (`db-pickup-stops.ts`). Chuyến phải đang
    * vận chuyển (`TRIP_PHASE_INVALID`), yêu cầu phải `PENDING` hoặc `VALIDATED` (`INVALID_PICKUP_STATUS_TRANSITION`); vai trò khác điều
-   * phối viên: `ROLE_NOT_ALLOWED`. Ghi sự kiện `pickup.approved`.
+   * phối viên: `ROLE_NOT_ALLOWED`. Kho xếp kiện nhận vào vùng trống (`reoptimizeFreedZone`, FE-BL-01) và lưu chỗ ở `request.layout`; phương án
+   * đã duyệt không đổi, kiện không xếp được ở `layout.unplaced`. Ghi sự kiện `pickup.reoptimized` rồi `pickup.approved`.
    */
   approvePickupRequest(tripId: string, pickupId: string, input?: PickupApproveInput): Promise<PickupApproval>
   /**

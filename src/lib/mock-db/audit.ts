@@ -87,6 +87,7 @@ export const AUDIT_ACTIONS = [
   'pickup.requested',
   'pickup.approved',
   'pickup.rejected',
+  'pickup.reoptimized',
   'pickup.loaded',
   'pickup.delivered',
   // Gói cước và credit của công ty (FE-8-01, FE-8-05); `expired` và `lowBalance` do hệ thống ghi

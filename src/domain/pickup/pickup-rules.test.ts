@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'vitest'
+import { axleLoadsOf } from '@/domain/metrics'
 import {
   evaluatePickup,
   insertPickupStops,
+  type FreedZonePacking,
+  type LoadSnapshot,
   type PickupCargo,
   type PickupContext,
   type PickupRouteStop,
@@ -26,17 +29,27 @@ const stop = (number: number, lng: number, patch: Partial<PickupRouteStop> = {})
 /** STOP-01 đã giao xong (vùng của nó, X 400–600, là vùng trống); xe đang tới STOP-02; STOP-03 là điểm được bảo vệ. */
 const STOPS = [stop(1, 106.55, { completed: true, onboardCount: 0 }), stop(2, 106.7), stop(3, 106.8, { onboardCount: 20 })]
 
+/**
+ * Kết quả xếp vào vùng trống (FE-BL-01) do mock tính — kiểm riêng ở `reoptimize-freed-zone.test.ts`; ở đây là số cho sẵn.
+ * `snapshot(tổng kg, hoành độ trọng tâm)` trên hai trục của xe: trục trước −100 cm, trục sau 500 cm, trọng tâm ngang giữa thùng.
+ */
+const AXLES = [
+  { id: 'AX-1', name: 'Cầu trước', positionXCm: -100, emptyLoadKg: 1000, maxLoadKg: 2000 },
+  { id: 'AX-2', name: 'Cầu sau', positionXCm: 500, emptyLoadKg: 1000, maxLoadKg: 2500 },
+]
+const snapshot = (totalKg: number, centerX: number, axles = AXLES): LoadSnapshot => ({
+  totalKg,
+  centerOfGravityCm: { x: centerX, y: 120, z: 50 },
+  axle: axleLoadsOf({ axles }, { totalKg, centerXCm: centerX }),
+})
+/** 400 kg đang chở có tâm ở x = 260; thêm 200 kg ở x = 500 thì tâm 340 cm, trục trước 1.160 kg, trục sau 1.440 kg. */
+const PACKING: FreedZonePacking = { placements: [], unplaced: [], before: snapshot(400, 260), after: snapshot(600, 340), stackingIssues: [], blockedCount: 0 }
+
 /** Thùng 600 × 240 × 240 cm, hai trục cách nhau 600 cm; tải trọng 3.000 kg. */
 function context(patch: Partial<PickupContext> = {}): PickupContext {
   return {
     request: { pickup: { lat: LAT, lng: 106.75 }, delivery: { lat: LAT, lng: 106.75 }, deadline: '2026-10-07T12:00:00.000Z', packages: boxes(4) },
-    vehicle: {
-      innerLengthCm: 600, innerWidthCm: 240, innerHeightCm: 240, maxPayloadKg: 3000,
-      axles: [
-        { id: 'AX-1', name: 'Cầu trước', positionXCm: -100, emptyLoadKg: 1000, maxLoadKg: 2000 },
-        { id: 'AX-2', name: 'Cầu sau', positionXCm: 500, emptyLoadKg: 1000, maxLoadKg: 2500 },
-      ],
-    },
+    vehicle: { innerLengthCm: 600, innerWidthCm: 240, innerHeightCm: 240, maxPayloadKg: 3000, axles: AXLES },
     position: { lat: LAT, lng: 106.65 },
     at: AT,
     stops: STOPS,
@@ -47,6 +60,7 @@ function context(patch: Partial<PickupContext> = {}): PickupContext {
     ],
     // 400 kg nằm trong vùng của STOP-02 (X 210–310): tâm hàng x = 260
     onboard: [{ xCm: 210, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 240, heightCm: 100, weightKg: 400 }],
+    packing: PACKING,
     tripCargo: [{ id: 'PKG-001', quantity: 30, handlingClass: 'STANDARD' }],
     ...patch,
   }
@@ -54,12 +68,13 @@ function context(patch: Partial<PickupContext> = {}): PickupContext {
 
 const withRequest = (patch: Partial<PickupContext['request']>) => context({ request: { ...context().request, ...patch } })
 const withPackages = (packages: PickupCargo[]) => withRequest({ packages })
+const withPacking = (patch: Partial<FreedZonePacking>) => context({ packing: { ...PACKING, ...patch } })
 const rule = (ctx: PickupContext, number: number) => evaluatePickup(ctx).find((result) => result.rule === number)
 
-test('returns ten results in rule order; rules 4-7 and 10 are estimates, the others are not', () => {
+test('returns ten results in rule order, and none of them is an estimate', () => {
   const results = evaluatePickup(context())
   expect(results.map((result) => result.rule)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-  expect(results.filter((result) => result.estimated).map((result) => result.rule)).toStrictEqual([4, 5, 6, 7, 10])
+  expect(results.every((result) => !('estimated' in result))).toBe(true)
   expect(results.every((result) => result.passed)).toBe(true)
 })
 
@@ -72,7 +87,7 @@ describe('rule 1: the pickup point is within 10 km of the route and ahead of the
     { what: '10.01 km beside the route', ctx: at(0.09002209275246492), passed: false, code: 'PICKUP_OFF_ROUTE' },
     { what: 'on the route but behind the vehicle', ctx: at(0, 106.64), passed: false, code: 'PICKUP_BEHIND_VEHICLE' },
   ])('$what', ({ ctx, passed, code }) => {
-    expect(rule(ctx, 1)).toMatchObject({ rule: 1, passed, code, estimated: false })
+    expect(rule(ctx, 1)).toMatchObject({ rule: 1, passed, code })
   })
 
   test('no stop left on the route: nothing to be ahead of', () => {
@@ -91,7 +106,7 @@ describe('rule 2: the delivery point is after the current stop and not beyond th
     { what: 'behind the current stop', ctx: at(106.65), passed: false, code: 'PICKUP_DELIVERY_NOT_AFTER_CURRENT' },
     { what: 'on the current stop itself', ctx: at(106.7), passed: false, code: 'PICKUP_DELIVERY_NOT_AFTER_CURRENT' },
   ])('$what', ({ ctx, passed, code }) => {
-    expect(rule(ctx, 2)).toMatchObject({ rule: 2, passed, code, estimated: false })
+    expect(rule(ctx, 2)).toMatchObject({ rule: 2, passed, code })
   })
 
   test('a stop with no cargo left is not protected: the protected stop is the next one that still carries cargo', () => {
@@ -116,60 +131,69 @@ describe('rule 3: the vehicle still has payload', () => {
     { maxPayloadKg: 599.99, passed: false, code: 'PICKUP_PAYLOAD_EXCEEDED', overKg: 0.01 },
   ])('payload $maxPayloadKg kg', ({ maxPayloadKg, passed, code, overKg }) => {
     const ctx = context()
-    expect(rule({ ...ctx, vehicle: { ...ctx.vehicle, maxPayloadKg } }, 3)).toMatchObject({ passed, code, estimated: false, params: { totalKg: 600, overKg } })
+    expect(rule({ ...ctx, vehicle: { ...ctx.vehicle, maxPayloadKg } }, 3)).toMatchObject({ passed, code, params: { totalKg: 600, overKg } })
+  })
+
+  test('pickup packages approved earlier that have no place on the vehicle yet still weigh', () => {
+    expect(rule({ ...context(), looseKg: 100 }, 3)).toMatchObject({ params: { totalKg: 700 } })
   })
 })
 
-describe('rule 4: the freed zones have room (estimate by volume)', () => {
-  test('4 boxes of 1 m³ fit into the 11.52 m³ freed by STOP-01', () => {
-    expect(rule(context(), 4)).toMatchObject({ passed: true, code: 'PICKUP_FREED_SPACE_OK', estimated: true, params: { pickupCm3: 4_000_000, freedCm3: 11_520_000 } })
+describe('rule 4: every pickup package has a place in the freed zones', () => {
+  test('all four placed', () => {
+    expect(rule(context(), 4)).toMatchObject({
+      passed: true, code: 'PICKUP_FREED_SPACE_OK', params: { pickupCm3: 4_000_000, freedCm3: 11_520_000, totalCount: 4, unplacedCount: 0 },
+    })
   })
 
-  test('12 boxes of 1 m³ do not', () => {
-    expect(rule(withPackages(boxes(12)), 4)).toMatchObject({ passed: false, code: 'PICKUP_FREED_SPACE_INSUFFICIENT' })
+  test('one without a place fails and says how many', () => {
+    expect(rule(withPacking({ unplaced: [{ packageIndex: 3, reasonCode: 'NO_SPACE' }] }), 4)).toMatchObject({
+      passed: false, code: 'PICKUP_FREED_SPACE_INSUFFICIENT', params: { totalCount: 4, unplacedCount: 1 },
+    })
+  })
+
+  test('a package left out only because it would be stacked on a fragile one is rule 7, not rule 4', () => {
+    const packing = withPacking({ unplaced: [{ packageIndex: 3, reasonCode: 'STACKING_VIOLATION' }] })
+    expect(rule(packing, 4)).toMatchObject({ passed: true })
+    expect(rule(packing, 7)).toMatchObject({ passed: false })
   })
 })
 
-describe('rules 5 and 6: axle load and centre of gravity with the pickup placed in the middle of the freed zones (estimate)', () => {
-  test('200 kg at x = 500 behind 400 kg at x = 260: centre 340 cm, rear axle 1.440 kg of 2.500', () => {
-    expect(rule(context(), 5)).toMatchObject({ passed: true, code: 'PICKUP_AXLE_OK', estimated: true, params: { frontLoadKg: 1160, rearLoadKg: 1440 } })
-    expect(rule(context(), 6)).toMatchObject({ passed: true, code: 'PICKUP_COG_OK', estimated: true })
+describe('rules 5 and 6: axle load and centre of gravity of the packed result', () => {
+  test('600 kg with centre 340 cm: rear axle 1.440 kg of 2.500, centre inside the limit', () => {
+    expect(rule(context(), 5)).toMatchObject({ passed: true, code: 'PICKUP_AXLE_OK', params: { frontLoadKg: 1160, rearLoadKg: 1440 } })
+    expect(rule(context(), 6)).toMatchObject({ passed: true, code: 'PICKUP_COG_OK' })
   })
 
-  test('2.000 kg at x = 500: centre 460 cm, rear axle 3.240 kg of 2.500', () => {
-    expect(rule(withPackages(boxes(4, { weightKg: 500 })), 5)).toMatchObject({
+  test('2.400 kg with centre 460 cm: rear axle 3.240 kg of 2.500', () => {
+    expect(rule(withPacking({ after: snapshot(2400, 460) }), 5)).toMatchObject({
       passed: false, code: 'PICKUP_AXLE_OVERLOAD', params: { rearLoadKg: 3240, overKg: 740 },
     })
   })
 
-  test('1.200 kg at x = 500: centre 440 cm is 140 cm from the middle, more than 15 % of 600 cm', () => {
-    expect(rule(withPackages(boxes(4, { weightKg: 300 })), 6)).toMatchObject({ passed: false, code: 'PICKUP_COG_OFF_CENTER' })
+  test('1.600 kg with centre 440 cm is 140 cm from the middle, more than 15 % of 600 cm', () => {
+    expect(rule(withPacking({ after: snapshot(1600, 440) }), 6)).toMatchObject({ passed: false, code: 'PICKUP_COG_OFF_CENTER' })
   })
 
-  test('cargo already off-centre before the pickup (400 kg at x = 150) does not fail a 12 kg pickup: centre 160 cm, still towards the front', () => {
-    const ctx = context({ onboard: [{ xCm: 100, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 240, heightCm: 100, weightKg: 400 }] })
-    const light = { ...ctx, request: { ...ctx.request, packages: boxes(4, { weightKg: 3 }) } }
-    expect(rule(light, 6)).toMatchObject({ passed: true, code: 'PICKUP_COG_NOT_WORSE', params: { reasons: 'COG_LONGITUDINAL' } })
+  test('cargo already off-centre before the pickup (centre 160 cm) does not fail a pickup that leaves it just as off-centre', () => {
+    expect(rule(withPacking({ before: snapshot(400, 160), after: snapshot(412, 170) }), 6)).toMatchObject({
+      passed: true, code: 'PICKUP_COG_NOT_WORSE', params: { reasons: 'COG_LONGITUDINAL' },
+    })
   })
 
   test('a vehicle that declares no axle is not checked, not failed', () => {
-    const ctx = context()
-    const { axles: _axles, ...vehicle } = ctx.vehicle
-    expect(rule({ ...ctx, vehicle }, 5)).toMatchObject({ passed: true, code: 'PICKUP_AXLE_UNAVAILABLE' })
+    expect(rule(withPacking({ after: snapshot(600, 340, []) }), 5)).toMatchObject({ passed: true, code: 'PICKUP_AXLE_UNAVAILABLE', params: { reason: 'NO_AXLES' } })
   })
 })
 
-describe('rule 7: stacking — a fragile box is not stacked under another (estimate)', () => {
-  // Vùng trống rộng 200 × 240 = 48.000 cm²; mỗi thùng chiếm 10.000 cm²
-  const fragile = (count: number) => [...boxes(count - 1), { ...STANDARD_BOX, handlingClass: 'FRAGILE' as const }]
-
-  test('four boxes fit in one layer, fragile or not', () => {
-    expect(rule(withPackages(fragile(4)), 7)).toMatchObject({ passed: true, code: 'PICKUP_STACK_OK', estimated: true })
+describe('rule 7: stacking of the packed result', () => {
+  test('no stacking issue and nothing left out for stacking passes', () => {
+    expect(rule(context(), 7)).toMatchObject({ passed: true, code: 'PICKUP_STACK_OK', params: { count: 0 } })
   })
 
-  test('five boxes need two layers: fragile among them fails, none fragile passes', () => {
-    expect(rule(withPackages(fragile(5)), 7)).toMatchObject({ passed: false, code: 'PICKUP_FRAGILE_STACKED', params: { layers: 2 } })
-    expect(rule(withPackages(boxes(5)), 7)).toMatchObject({ passed: true })
+  test('an issue of the constraint engine on a pickup package fails', () => {
+    const issue = { code: 'NOT_STACKABLE', severity: 'error', packageInstanceId: 'PICKUP-1-01', relatedIds: ['PICKUP-2-01'], params: {} } as const
+    expect(rule(withPacking({ stackingIssues: [issue] }), 7)).toMatchObject({ passed: false, code: 'PICKUP_FRAGILE_STACKED', params: { count: 1 } })
   })
 })
 
@@ -177,7 +201,7 @@ describe('rule 8: same handling class as the trip, or the trip already has a rea
   const fragile = withPackages([{ ...STANDARD_BOX, handlingClass: 'FRAGILE' }])
 
   test('same class passes', () => {
-    expect(rule(context(), 8)).toMatchObject({ passed: true, code: 'PICKUP_CLASS_OK', estimated: false })
+    expect(rule(context(), 8)).toMatchObject({ passed: true, code: 'PICKUP_CLASS_OK' })
   })
 
   test('a different class fails', () => {
@@ -201,7 +225,7 @@ describe('rule 9: on time at the delivery point, with the ETA of the route after
     { deadline: '2026-10-07T03:30:00.000Z', passed: true, code: 'PICKUP_DEADLINE_OK' },
     { deadline: '2026-10-07T03:29:59.999Z', passed: false, code: 'PICKUP_DEADLINE_MISSED' },
   ])('delivery ETA is 03:30:00 — deadline $deadline', ({ deadline, passed, code }) => {
-    expect(rule(standing(deadline), 9)).toMatchObject({ passed, code, estimated: false, params: { eta: '2026-10-07T03:30:00.000Z' } })
+    expect(rule(standing(deadline), 9)).toMatchObject({ passed, code, params: { eta: '2026-10-07T03:30:00.000Z' } })
   })
 
   test('a request without a deadline has nothing to miss', () => {
@@ -209,14 +233,13 @@ describe('rule 9: on time at the delivery point, with the ETA of the route after
   })
 })
 
-describe('rule 10: the pickup does not block cargo that is still on board (estimate)', () => {
-  test('cargo deeper than the freed zone is not blocked', () => {
-    expect(rule(context(), 10)).toMatchObject({ passed: true, code: 'PICKUP_NOT_BLOCKING', estimated: true })
+describe('rule 10: the packed pickup does not block cargo that is still on board', () => {
+  test('nothing blocked', () => {
+    expect(rule(context(), 10)).toMatchObject({ passed: true, code: 'PICKUP_NOT_BLOCKING', params: { blockedCount: 0 } })
   })
 
-  test('cargo of a later stop that sits in the freed zone would be blocked', () => {
-    const ctx = context({ onboard: [{ xCm: 450, yCm: 0, zCm: 0, lengthCm: 100, widthCm: 240, heightCm: 100, weightKg: 400 }] })
-    expect(rule(ctx, 10)).toMatchObject({ passed: false, code: 'PICKUP_BLOCKS_CARGO', params: { blockedCount: 1 } })
+  test('cargo the packed pickup covers fails and says how many', () => {
+    expect(rule(withPacking({ blockedCount: 2 }), 10)).toMatchObject({ passed: false, code: 'PICKUP_BLOCKS_CARGO', params: { blockedCount: 2 } })
   })
 })
 
