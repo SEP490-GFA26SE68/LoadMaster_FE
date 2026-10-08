@@ -1,3 +1,4 @@
+import { House, RotateCw } from 'lucide-react'
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -29,9 +30,13 @@ export function NotFoundPage() {
       actions={
         <>
           <Button variant="primary" asChild>
-            <Link to={user ? ROLE_HOME[user.role] : '/dang-nhap'}>{t('notFound.backHome')}</Link>
+            <Link to={user ? ROLE_HOME[user.role] : '/dang-nhap'}>
+              <House aria-hidden strokeWidth={1.5} />
+              {t('notFound.backHome')}
+            </Link>
           </Button>
           <Button variant="secondary" onClick={() => window.location.reload()}>
+            <RotateCw aria-hidden strokeWidth={1.5} />
             {t('notFound.reload')}
           </Button>
         </>

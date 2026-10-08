@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils'
  *   dấu hiệu focus đủ rõ, không chồng hai vòng.
  * - Chỉ đọc / vô hiệu hoá: nền `--n-50`, viền `--n-200`.
  */
-export const fieldLabelClass = 'text-small font-semibold text-ink-2'
+/** Máy có con trỏ cảm ứng (tablet kho, điện thoại tài xế): nhãn, gợi ý và lỗi lên 16 px (AGENTS mục 10). */
+export const fieldLabelClass = 'text-small font-semibold text-ink-2 pointer-coarse:text-body-lg'
 
 export function fieldBoxClass(invalid: boolean) {
   return cn(
@@ -42,14 +43,14 @@ export function FieldLabel({ htmlFor, required, children }: { htmlFor: string; r
 export function FieldMessage({ id, error, hint }: { id?: string; error?: ReactNode; hint?: ReactNode }) {
   if (error) {
     return (
-      <span id={id} className="flex items-start gap-1.5 text-fine text-danger">
+      <span id={id} className="flex items-start gap-1.5 text-fine text-danger pointer-coarse:text-body-lg">
         <TriangleAlert aria-hidden className="mt-0.75 size-3.5 flex-none" strokeWidth={1.75} />
         <span>{error}</span>
       </span>
     )
   }
   return hint ? (
-    <span id={id} className="text-fine text-ink-3">
+    <span id={id} className="text-fine text-ink-3 pointer-coarse:text-body-lg">
       {hint}
     </span>
   ) : null

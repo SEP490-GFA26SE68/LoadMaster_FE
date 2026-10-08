@@ -24,6 +24,10 @@ export const auth = {
     sharedPlan: 'The warehouse loads and drivers unload from the same approved 3D plan',
     artworkLabel: 'Animation of a truck body being loaded in unloading order',
   },
+  passwordToggle: {
+    show: 'Show password',
+    hide: 'Hide password',
+  },
   demo: {
     title: 'Demo accounts',
     password: 'password {password}',
