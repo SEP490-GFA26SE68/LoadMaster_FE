@@ -130,7 +130,7 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.161 test unit + DOM
+pnpm test          # Vitest: 2.186 test unit + DOM
 pnpm test:e2e      # Playwright: 136 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
