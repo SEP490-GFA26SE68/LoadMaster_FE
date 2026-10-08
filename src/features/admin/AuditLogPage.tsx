@@ -14,6 +14,8 @@ import { compareText } from '@/lib/list-filter'
 import { AUDIT_GROUPS, userScopeOf, type AuditGroup } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import type { AuditLogFilter } from './audit-api'
+import { AuditDateRange } from './AuditDateRange'
+import { describeChange, type AuditTableRow } from './audit-change'
 import { auditColumns } from './audit-columns'
 import { describeLogRow, type AuditDirectory } from './audit-log'
 import { AuditSummary } from './AuditSummary'
@@ -79,7 +81,13 @@ export function AuditLogPage() {
     vehicles: new Map(directoryQuery.data.vehicles.map((vehicle) => [vehicle.id, vehicle.name])),
   }, [directoryQuery.data])
   const rows = useMemo(
-    () => (events.data && directory ? events.data.map((event) => describeLogRow(event, directory, t, format, can)) : []),
+    () => (events.data && directory
+      ? events.data.map((event): AuditTableRow => ({
+        ...describeLogRow(event, directory, t, format, can),
+        actorRoleCode: event.actorId === null ? null : directory.roles?.get(event.actorId) ?? null,
+        change: describeChange(event, directory, t, format),
+      }))
+      : []),
     [events.data, directory, t, format, can],
   )
   const columns = useMemo(() => auditColumns(t, format), [t, format])
@@ -109,7 +117,7 @@ export function AuditLogPage() {
         title={t('audit.log.title')}
         meta={events.data ? t('audit.log.count', { count: rows.length }) : undefined}
         description={t('pageHero.audit')}
-        actions={<Badge>{t('audit.log.readOnly')}</Badge>}
+        badge={<Badge>{t('audit.log.readOnly')}</Badge>}
       />
 
       <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
@@ -141,25 +149,33 @@ export function AuditLogPage() {
             {/* Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới (V2). flex-none: con overflow-hidden của cột flex không được co —
                 thiếu nó bảng bị cắt còn chiều cao khung, vùng cuộn không có gì để cuộn. */}
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg">
-              <FilterBar
-                layout="toolbar"
-                className="border-b border-border px-4 py-3"
-                query={list.query}
-                onQueryChange={list.setQuery}
-                searchLabel={t('audit.log.search')}
-                fields={[
-                  { kind: 'select', name: 'nguoi-lam', label: t('audit.log.actor'), options: actorOptions, allLabel: t('audit.log.allActors') },
-                  { kind: 'select', name: 'nhom', label: t('audit.log.group'), options: groupOptions, allLabel: t('audit.log.allGroups') },
-                  { kind: 'dateRange', label: t('audit.log.dateRange'), from: 'tu', to: 'den', secondary: true },
-                  ...(platform ? [{
-                    kind: 'select' as const, name: 'cong-ty' as const, label: t('audit.log.company'), options: companyOptions,
-                    allLabel: t('audit.log.allCompanies'), secondary: true,
-                  }] : []),
-                ]}
-                values={list.filters}
-                onValueChange={list.setFilter}
-                onClear={list.clearAll}
-              />
+              {/* Khoảng ngày là một nút mở bảng nhỏ (V2.3) nằm cạnh thanh lọc; `values` vẫn mang `tu`, `den` để "Xoá lọc" biết đang lọc ngày */}
+              <div className="flex items-start gap-3 border-b border-border px-4 py-3">
+                <FilterBar
+                  layout="toolbar"
+                  className="min-w-0 flex-1"
+                  query={list.query}
+                  onQueryChange={list.setQuery}
+                  searchLabel={t('audit.log.search')}
+                  fields={[
+                    { kind: 'select', name: 'nguoi-lam', label: t('audit.log.actor'), options: actorOptions, allLabel: t('audit.log.allActors') },
+                    { kind: 'select', name: 'nhom', label: t('audit.log.group'), options: groupOptions, allLabel: t('audit.log.allGroups') },
+                    ...(platform ? [{
+                      kind: 'select' as const, name: 'cong-ty' as const, label: t('audit.log.company'), options: companyOptions,
+                      allLabel: t('audit.log.allCompanies'), secondary: true,
+                    }] : []),
+                  ]}
+                  values={list.filters}
+                  onValueChange={list.setFilter}
+                  onClear={list.clearAll}
+                />
+                <AuditDateRange
+                  from={from}
+                  to={to}
+                  onFromChange={(value) => list.setFilter('tu', value)}
+                  onToChange={(value) => list.setFilter('den', value)}
+                />
+              </div>
               {/* Màn quản trị là màn desktop: khung hẹp hơn bảng thì cuộn ngang trong khung, không bóp cột */}
               <div
                 aria-busy={events.isFetching || undefined}

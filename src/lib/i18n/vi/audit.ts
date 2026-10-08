@@ -65,6 +65,16 @@ export const audit = {
     noMatch: 'Không có sự kiện khớp bộ lọc.',
     search: 'Tìm theo mã chuyến, xe, người dùng',
     dateRange: 'Khoảng ngày',
+    /** Nút khoảng ngày (V2.3): giá trị hiện trên nút; ngày format theo ngôn ngữ. */
+    dateRangeClose: 'Đóng bộ lọc khoảng ngày',
+    dateRangeValue: {
+      any: 'Mọi ngày',
+      from: 'Từ {date}',
+      to: 'Đến {date}',
+      between: '{from} – {to}',
+    },
+    /** Chữ cho trình đọc màn hình của chip "trước → sau" ở cột Chi tiết. */
+    change: 'Trước: {before} · Sau: {after}',
     actor: 'Người làm',
     allActors: 'Mọi người',
     group: 'Nhóm hành động',

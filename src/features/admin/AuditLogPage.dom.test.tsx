@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router'
 import { expect, test } from 'vitest'
@@ -117,6 +117,32 @@ test('khoảng ngày tính theo giờ Việt Nam: ngày chạy của TRIP-001 (1
     'Tài xế đã đến điểm giao', 'Xuất phát giao hàng', 'Xếp xong', 'Bắt đầu soạn hàng',
   ])
   expect(rows.every((row) => row[3]?.endsWith('TRIP-001'))).toBe(true)
+})
+
+test('nút khoảng ngày: mở bảng nhỏ, chọn khoảng thì danh sách lọc và nút nói khoảng đó, "Xoá lọc" trả về mọi ngày, Esc đóng', async () => {
+  const user = userEvent.setup()
+  renderLog()
+  await dataRows()
+  const button = screen.getByRole('button', { name: /^Khoảng ngày/ })
+  expect(button).toHaveTextContent('Mọi ngày')
+
+  await user.click(button)
+  const panel = await screen.findByRole('dialog', { name: 'Khoảng ngày' })
+  // Hai ô ngày có nhãn; đổi giá trị như trình duyệt đổi ô `type="date"`
+  fireEvent.change(within(panel).getByLabelText('Từ ngày'), { target: { value: '2026-08-18' } })
+  fireEvent.change(within(panel).getByLabelText('Đến ngày'), { target: { value: '2026-08-18' } })
+  expect(await screen.findByTestId('search')).toHaveTextContent('?tu=2026-08-18&den=2026-08-18')
+  await screen.findByText('10 sự kiện', {}, SLOW)
+  expect(button).toHaveTextContent('18/08/2026')
+
+  await user.click(within(panel).getByRole('button', { name: 'Xoá lọc' }))
+  await waitFor(() => expect(screen.getByTestId('search')).not.toHaveTextContent('tu='), SLOW)
+  expect(button).toHaveTextContent('Mọi ngày')
+  await waitFor(() => expect(screen.queryByText('10 sự kiện')).toBeNull(), SLOW)
+
+  await user.keyboard('{Escape}')
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(button).toHaveFocus()
 })
 
 test('ba ô tóm tắt đếm cả nhật ký dù đang lọc; ô ngày gần nhất lọc đúng ngày đó, bấm lại thì bỏ', async () => {

@@ -189,7 +189,7 @@ test('thao tác từ panel: cùng luật chặn với menu; nhân sự công ty 
   const platform = within(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Đinh Quang Huy' }))
   await user.click(platform.getByRole('button', { name: 'Sửa thông tin' }))
   const form = await screen.findByRole('dialog', { name: 'Sửa người dùng' })
-  expect(within(form).getByLabelText('Email')).toHaveValue('nentang@loadmaster.vn')
+  expect(within(form).getByLabelText(/^Email/)).toHaveValue('nentang@loadmaster.vn')
   await user.click(within(form).getByRole('button', { name: 'Huỷ' }))
 })
 

@@ -27,10 +27,10 @@ test('a driver account the company administrator creates signs in with its one-t
   await login('/nguoi-dung', 'companyAdmin')
   await page.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Thêm người dùng', exact: true })
-  await form.getByLabel('Họ và tên', { exact: true }).fill(NEW_DRIVER.name)
-  await form.getByLabel('Số điện thoại', { exact: true }).fill('0915111222')
-  await form.getByLabel('Email', { exact: true }).fill(NEW_DRIVER.email)
-  await form.getByLabel('Kho / chi nhánh', { exact: true }).fill('Kho Long Bình')
+  await form.getByRole('textbox', { name: 'Họ và tên', exact: true }).fill(NEW_DRIVER.name)
+  await form.getByRole('textbox', { name: 'Số điện thoại', exact: true }).fill('0915111222')
+  await form.getByRole('textbox', { name: 'Email', exact: true }).fill(NEW_DRIVER.email)
+  await form.getByRole('textbox', { name: 'Kho / chi nhánh', exact: true }).fill('Kho Long Bình')
   await form.getByRole('combobox', { name: 'Vai trò', exact: true }).click()
   await page.getByRole('option', { name: 'Tài xế', exact: true }).click()
   await form.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
@@ -103,7 +103,7 @@ test('the system administrator sees every company, filters by company, locks com
   // Thêm người dùng: chỉ ba vai trò nền tảng, không có ô kho — tài xế do quản trị công ty tạo
   await page.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Thêm người dùng', exact: true })
-  await expect(form.getByLabel('Kho / chi nhánh', { exact: true })).toHaveCount(0)
+  await expect(form.getByRole('textbox', { name: 'Kho / chi nhánh', exact: true })).toHaveCount(0)
   await form.getByRole('combobox', { name: 'Vai trò', exact: true }).click()
   await expect(page.getByRole('option')).toHaveText(['Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng'])
   expect(browserErrors).toStrictEqual([])
@@ -157,14 +157,14 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(9)
-    await expect(matrix.getByRole('row')).toHaveCount(34)
+    await expect(matrix.getByRole('row')).toHaveCount(48)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!
       const scrolling = [...document.querySelectorAll('html, [role="tabpanel"], section, table')]
         .filter((element) => element.scrollWidth > element.clientWidth + 1).map((element) => element.tagName)
-      const headers = [...table.querySelectorAll('th')].slice(1).map((th) => {
-        const text = th.querySelector('span')!
+      const headers = [...table.querySelectorAll('thead th')].slice(1).map((th) => {
+        const text = th.querySelector('span > span')!
         const [cell, label] = [th.getBoundingClientRect(), text.getBoundingClientRect()]
         const lines = Math.round(label.height / Number.parseFloat(getComputedStyle(text).lineHeight))
         return { name: text.textContent, lines, inside: label.left >= cell.left - 0.5 && label.right <= cell.right + 0.5 && text.scrollWidth <= text.clientWidth + 1 }

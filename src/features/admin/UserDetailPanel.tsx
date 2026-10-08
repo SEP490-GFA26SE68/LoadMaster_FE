@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { permissionsOf } from '@/features/auth/permissions'
 import { useT } from '@/lib/i18n'
@@ -79,7 +79,8 @@ export function UserDetailPanel({ id, user, guards, company, onAction, onClose }
           <p className="text-caption text-ink-2">{t('admin.users.detail.permissionsNote', { role })}</p>
           <ul className="flex flex-wrap gap-1.5">
             {permissionsOf(user.role).map((permission) => (
-              <li key={permission} className="rounded-sm border border-border bg-surface px-2 py-1 text-caption text-ink-1">
+              <li key={permission} className="flex items-center gap-1 rounded-sm border border-border bg-surface px-2 py-1 text-caption text-ink-1">
+                <Check aria-hidden className="size-3 flex-none text-cyan-700" strokeWidth={2} />
                 {t(`admin.permissions.labels.${permission}`)}
               </li>
             ))}

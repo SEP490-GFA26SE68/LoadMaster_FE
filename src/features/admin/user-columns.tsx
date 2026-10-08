@@ -24,7 +24,9 @@ function NameCell({ user }: { user: User }) {
   const { selectedId, onSelect, panelId } = useUsersTable()
   const selected = user.id === selectedId
   return (
-    <span className="flex min-w-0 items-center gap-2.5">
+    <span className="relative flex min-w-0 items-center gap-2.5">
+      {/* Dòng đang mở panel: thanh cyan ở mép trái, cao bằng dòng (`spacious` 72 px, lề ô 14 px), ngoài nền cyan của dòng */}
+      {selected ? <span aria-hidden className="absolute top-1/2 -left-3.5 h-18 w-0.75 -translate-y-1/2 bg-cyan-500" /> : null}
       <UserAvatar fullName={user.fullName} status={user.status} />
       <span className="flex min-w-0 flex-col items-start whitespace-normal">
         {/* Dòng mở panel bằng chuột; nút ở tên cho bàn phím (AGENTS mục 10). Chặn nổi bọt để dòng không bật/tắt lần hai. */}
