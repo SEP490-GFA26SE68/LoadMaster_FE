@@ -7,6 +7,12 @@ export const admin = {
   users: {
     title: 'Người dùng',
     count: { one: '{count} tài khoản', other: '{count} tài khoản' },
+    /** Dòng số đếm dưới tiêu đề màn: đếm trên danh sách kho trả cho người xem, ghép các phần bằng dấu chấm giữa. */
+    heroCount: {
+      roles: { one: '{count} vai trò', other: '{count} vai trò' },
+      depots: { one: '{count} kho / chi nhánh', other: '{count} kho / chi nhánh' },
+      companies: { one: '{count} công ty', other: '{count} công ty' },
+    },
     neverSignedIn: 'Chưa đăng nhập',
     /** Người dùng nền tảng không thuộc kho nào (FE-0-03): chữ thay cho ô kho ở bảng và panel chi tiết. */
     noDepot: 'Không thuộc kho nào',
@@ -156,6 +162,31 @@ export const admin = {
     permission: 'Quyền',
     granted: 'Có',
     denied: 'Không',
+    /** Đầu thẻ ma trận: tiêu đề, kích thước (đếm từ danh sách quyền và vai trò), chú giải hai loại ô. */
+    title: 'Ma trận quyền',
+    size: '{permissions} quyền × {roles} vai trò',
+    legend: 'Chú giải',
+    /** Dưới tên vai trò ở đầu cột: số tài khoản người xem đang liệt kê được. */
+    accountCount: { one: '{count} tài khoản', other: '{count} tài khoản' },
+    /** Dòng cuối: số quyền của từng vai trò trên tổng số quyền. */
+    total: 'Số quyền của vai trò',
+    totalOf: '{count} trong {total} quyền',
+    /** Nhóm quyền theo khu vực (`permission-groups.ts`): key trùng mã nhóm. */
+    groups: {
+      administration: 'Công ty, người dùng và nhật ký',
+      billing: 'Gói cước và credit',
+      support: 'Hỗ trợ khách hàng',
+      dashboard: 'Bảng điều khiển và báo cáo',
+      requirements: 'Yêu cầu giao',
+      packages: 'Kho kiện và nhãn QR',
+      trips: 'Chuyến hàng và phương án',
+      monitoring: 'Giám sát',
+      fleet: 'Đội xe',
+      exceptions: 'Sự cố và gia hạn giao',
+      pickups: 'Nhận hàng dọc đường',
+      warehouse: 'Kho',
+      driver: 'Tài xế',
+    },
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },
       users: { manage: 'Quản lý người dùng' },

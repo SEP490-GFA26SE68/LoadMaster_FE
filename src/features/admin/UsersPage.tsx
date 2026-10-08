@@ -13,6 +13,7 @@ import { PermissionMatrix } from './PermissionMatrix'
 import { TemporaryPasswordDialog } from './TemporaryPasswordDialog'
 import { UserFormDialog } from './UserFormDialog'
 import { UsersTable } from './UsersTable'
+import { userDistinct } from './user-summary'
 import { useUserActions } from './useUserActions'
 import { useCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
 
@@ -36,14 +37,22 @@ export function UsersPage() {
   const companies = useCompanyNamesQuery(scope === 'platform')
   const { dialog } = actions
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
+  // Dòng số đếm dưới tiêu đề: đếm trên danh sách kho trả cho người xem (quản trị hệ thống thấy công ty, quản trị công ty thấy kho)
+  const distinct = userDistinct(users)
+  const heroCounts = [
+    t('admin.users.count', { count: users.length }),
+    t('admin.users.heroCount.roles', { count: distinct.roles }),
+    scope === 'platform'
+      ? t('admin.users.heroCount.companies', { count: distinct.companies })
+      : t('admin.users.heroCount.depots', { count: distinct.depots }),
+  ].join(' · ')
 
   return (
     <Tabs defaultValue="accounts" className="flex min-w-0 flex-1 flex-col">
       <PageHero
         overlap
         title={t('admin.users.title')}
-        meta={query.data ? t('admin.users.count', { count: users.length }) : undefined}
-        description={t('pageHero.users')}
+        description={query.data ? heroCounts : t('pageHero.users')}
         actions={
           <Button variant="primary" onClick={actions.openCreate}>
             <Plus strokeWidth={1.5} aria-hidden />
@@ -73,7 +82,7 @@ export function UsersPage() {
           )}
         </TabsContent>
         <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
-          <PermissionMatrix />
+          <PermissionMatrix users={query.data} scope={scope} />
         </TabsContent>
 
       {dialog?.kind === 'create' || dialog?.kind === 'edit' ? (

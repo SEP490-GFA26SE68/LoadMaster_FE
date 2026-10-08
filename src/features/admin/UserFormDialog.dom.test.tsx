@@ -23,9 +23,9 @@ async function fill(user: UserEvent, field: HTMLElement, text: string) {
 }
 
 async function fillIdentity(user: UserEvent, form: ReturnType<typeof renderForm>['form']) {
-  await fill(user, form.getByLabelText('Họ và tên'), 'Vương Thị Bích Ngọc')
-  await fill(user, form.getByLabelText('Số điện thoại'), '0926971238')
-  await fill(user, form.getByLabelText('Email'), 'ngoc.vuong@loadmaster.vn')
+  await fill(user, form.getByLabelText(/^Họ và tên/), 'Vương Thị Bích Ngọc')
+  await fill(user, form.getByLabelText(/^Số điện thoại/), '0926971238')
+  await fill(user, form.getByLabelText(/^Email/), 'ngoc.vuong@loadmaster.vn')
 }
 
 async function roleOptions(user: UserEvent, form: ReturnType<typeof renderForm>['form']) {
@@ -37,7 +37,7 @@ test('quản trị hệ thống: chỉ ba vai trò nền tảng, không có ô k
   const user = userEvent.setup()
   const { onSubmit, form } = renderForm('platform')
   expect(form.getByText(/^Tài khoản nền tảng, không thuộc công ty nào\./)).toBeInTheDocument()
-  expect(form.queryByLabelText('Kho / chi nhánh')).toBeNull()
+  expect(form.queryByLabelText(/^Kho . chi nhánh/)).toBeNull()
   // Vai trò chọn sẵn là vai trò nền tảng ít quyền nhất
   expect(form.getByRole('combobox', { name: 'Vai trò' })).toHaveTextContent('Hỗ trợ khách hàng')
   expect(await roleOptions(user, form)).toStrictEqual(['Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng'])
@@ -60,7 +60,7 @@ test('quản trị công ty: chỉ năm vai trò công ty; bỏ trống kho thì
 
   await fillIdentity(user, form)
   await user.click(form.getByRole('button', { name: 'Thêm người dùng' }))
-  const depot = form.getByLabelText('Kho / chi nhánh')
+  const depot = form.getByLabelText(/^Kho . chi nhánh/)
   await waitFor(() => expect(depot).toHaveAccessibleDescription('Nhập kho hoặc chi nhánh'))
   expect(depot).toBeInvalid()
   expect(onSubmit).not.toHaveBeenCalled()

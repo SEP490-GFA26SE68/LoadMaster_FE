@@ -196,11 +196,11 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
   }
 }
 
-function paramLabel(key: string, t: TFunction): string {
+export function paramLabel(key: string, t: TFunction): string {
   return isOneOf(PARAM_KEYS, key) ? t(`audit.log.params.${key}`) : key
 }
 
-function paramValue(event: AuditEvent, key: string, value: string | number, directory: AuditDirectory, t: TFunction, format: Formatter): string {
+export function paramValue(event: AuditEvent, key: string, value: string | number, directory: AuditDirectory, t: TFunction, format: Formatter): string {
   // Quãng đường của tuyến giữ số lẻ; số khác là số đếm
   if (typeof value === 'number') return key === 'totalKm' ? format.decimal(value) : format.integer(value)
   switch (key) {
