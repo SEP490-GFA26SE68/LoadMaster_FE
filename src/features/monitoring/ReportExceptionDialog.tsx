@@ -26,14 +26,14 @@ const isError = (code: string | undefined): code is (typeof ERRORS)[number] => E
 
 /**
  * Hộp "Báo sự cố" của một chuyến Đang vận chuyển (FE-6-11, D-87): loại (5 loại, nhãn ở `common.tripExceptionTypes`), mô tả và số phút
- * dự kiến chậm. Dùng ở màn Giám sát (điều phối viên) và ở màn điểm giao của tài xế (`touch`: chữ 16 px, ô và nút 56 px). Form dựng lại
+ * dự kiến chậm. Dùng ở màn Giám sát (điều phối viên) và ở màn điểm giao của tài xế (`touch`: chữ 16 px, ô và nút 56 px, dưới 768 px là tờ trượt từ đáy). Form dựng lại
  * mỗi lần mở.
  */
 export function ReportExceptionDialog({ tripId, open, onOpenChange, touch = false }: { tripId: string; open: boolean; onOpenChange: (open: boolean) => void; touch?: boolean }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
-        <DialogContent className="w-[min(34rem,calc(100vw-3rem))]">
+        <DialogContent sheet={touch} className="w-[min(34rem,calc(100vw-3rem))]">
           <ReportForm tripId={tripId} touch={touch} onDone={() => onOpenChange(false)} />
         </DialogContent>
       ) : null}
@@ -103,11 +103,11 @@ function ReportForm({ tripId, touch, onDone }: { tripId: string; touch: boolean;
           {...form.register('delayMinutes')}
         />
       </div>
-      <DialogFooter>
+      <DialogFooter className={touch ? 'sticky bottom-0' : undefined}>
         <DialogClose asChild>
-          <Button type="button" variant="secondary" size={size}>{t('monitoring.reportDialog.cancel')}</Button>
+          <Button type="button" variant="secondary" size={size} className={touch ? 'max-md:flex-1' : undefined}>{t('monitoring.reportDialog.cancel')}</Button>
         </DialogClose>
-        <Button type="submit" size={size} loading={report.isPending}>{t('monitoring.reportDialog.submit')}</Button>
+        <Button type="submit" size={size} className={touch ? 'max-md:flex-1' : undefined} loading={report.isPending}>{t('monitoring.reportDialog.submit')}</Button>
       </DialogFooter>
     </form>
   )

@@ -37,6 +37,8 @@ export const driver = {
     },
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
+    /** Tên danh sách các điểm trong thẻ chuyến (V2.3 đợt 6). */
+    stopsLabel: 'Các điểm của chuyến {tripId}',
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
   },
@@ -70,6 +72,9 @@ export const driver = {
   arrive: 'Đã đến điểm {number}',
   arrived: 'Đã ghi giờ đến điểm {number}',
   stopTitle: 'Điểm {number} / {total}',
+  /** Chữ trên hai nút của thẻ liên hệ (V2.3 đợt 6); tên đọc đầy đủ ở `call` và `directions`. */
+  callLabel: 'Gọi',
+  directionsLabel: 'Chỉ đường',
   directions: 'Chỉ đường tới {name}',
   call: 'Gọi {name}',
   contact: '{name} · {phone}',
@@ -180,6 +185,8 @@ export const driver = {
     cargoNote: 'Các kiện này không vừa vùng đã trống nên chưa có vị trí trong khung 3D; xếp theo hướng dẫn của điều phối viên và đối chiếu bằng nhãn QR ở màn điểm giao.',
     cargoRow: '{id} · {name} · {weight} · {reason}',
   },
+  /** Nút "Thêm" ở chân màn điểm giao: tờ trượt từ đáy chứa hai việc ít dùng khi chuyến đang chạy (V2.3 đợt 6). */
+  more: { open: 'Thêm', title: 'Thêm thao tác', description: 'Những việc ít dùng khi xe đang trên đường.' },
   /** Màn tổng kết khi giao xong điểm cuối. */
   tripSummary: {
     title: 'Tổng kết chuyến',
@@ -192,6 +199,8 @@ export const driver = {
     noIssues: 'Không có sự cố.',
     issueWhere: '{id} · Điểm {stop}',
     wholeStop: 'Cả điểm giao · Điểm {stop}',
+    stopsTitle: 'Điểm giao',
+    stopLine: { one: 'Đã giao {time} · {count} kiện', other: 'Đã giao {time} · {count} kiện' },
   },
   cargo: {
     title: 'Vị trí hàng tại điểm giao',

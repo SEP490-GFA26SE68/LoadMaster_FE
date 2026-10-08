@@ -112,7 +112,12 @@ test('a renewal payment waiting to be paid has a banner with Pay; cancelling kee
   vi.setSystemTime(Date.parse(expiresAt) - 2 * DAY_MS)
   renderBilling(LONG_BINH_ADMIN)
 
-  const banner = await screen.findByRole('status', {}, SLOW)
+  // Lúc đang tải màn cũng có một vùng `status` (vòng xoay): tìm dải thông báo theo chữ của nó, không theo vai trò
+  const banner = await waitFor(() => {
+    const found = screen.getAllByRole('status').find((el) => el.textContent?.startsWith('Thanh toán gia hạn gói Pro'))
+    if (!found) throw new Error('chưa thấy dải thông báo gia hạn')
+    return found
+  }, SLOW)
   expect(banner).toHaveTextContent('Thanh toán gia hạn gói Pro (1.490.000 ₫) đang chờ')
   expect(within(banner).getByRole('link', { name: 'Trả' })).toHaveAttribute('href', expect.stringMatching(/^\/thanh-toan\/gia-lap\?giao-dich=PAY-\d+$/))
 

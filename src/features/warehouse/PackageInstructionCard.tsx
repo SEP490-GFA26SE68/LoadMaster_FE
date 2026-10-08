@@ -8,7 +8,7 @@ import { stopColor } from '@/lib/stops'
 import { cn } from '@/lib/utils'
 import { measureStep, nearestObstacle, stepNote, zonePlace } from './describe-step'
 import { OrientationFigure } from './OrientationFigure'
-import { StopChip } from './StopChip'
+import { StopChip } from '@/components/StopChip'
 
 /**
  * Thẻ hướng dẫn xếp một kiện (V2.3 đợt 6, `KhoXepHang.jpg`): mã kiện, điểm giao (chip sáng, số trên màu điểm giao), vùng của kiện trong
