@@ -16,6 +16,8 @@ export type TimelineProps = {
   kind?: 'loading' | 'unloading'; orderedOverride?: readonly ScenePlacement[]
   /** Thứ tự dỡ do FE suy ra (phương án cũ không có `unloadingOrder`): nhãn ghi "gợi ý" */
   suggested?: boolean
+  /** Nút Phát nền cyan đặc (màn tài xế, V2.3 đợt 6): hành động chính của khung 3D chỉ có mô phỏng; mặc định là nút kính. */
+  emphasizePlay?: boolean
 }
 
 /** Nút điều khiển vuông kính (`.ib`): 56 px cảm ứng, 40 px từ `xl`. */
@@ -27,7 +29,7 @@ const CONTROL = cn('size-14 p-0 xl:size-10 [&_svg]:size-5', GLASS_PRESSED)
  * cao gấp đôi; nút Phát là nút kính bật cyan, không phải nút chính tròn — màn chỉ có một nút chính (Duyệt).
  */
 export function Timeline({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
-  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false }: TimelineProps) {
+  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false, emphasizePlay = false }: TimelineProps) {
   const t = useT()
   const format = useFormat()
   const rail = useRef<HTMLDivElement>(null)
@@ -49,7 +51,7 @@ export function Timeline({ placements, step, totalSteps, playing, speed, onStepC
     <div className="flex shrink-0 items-center gap-1.5">
       <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.start')} onClick={onGoToStart} disabled={!totalSteps}><SkipBack strokeWidth={1.5} /></Button>
       <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.back')} onClick={onStepBackward} disabled={step <= minimum}><ChevronLeft strokeWidth={1.5} /></Button>
-      <Button variant="glass" className={cn(CONTROL, 'xl:size-11')} aria-label={playing ? t('viewer.timeline.pause') : t('viewer.timeline.play')} aria-pressed={playing} onClick={onTogglePlaying} disabled={!totalSteps}>
+      <Button variant="glass" className={cn(CONTROL, 'xl:size-11', emphasizePlay && 'border-cyan-300 bg-cyan-300 text-cyan-950 hover:bg-cyan-200 aria-pressed:bg-cyan-200 aria-pressed:text-cyan-950 aria-pressed:ring-0')} aria-label={playing ? t('viewer.timeline.pause') : t('viewer.timeline.play')} aria-pressed={playing} onClick={onTogglePlaying} disabled={!totalSteps}>
         {playing ? <Pause strokeWidth={1.5} /> : <Play strokeWidth={1.5} />}
       </Button>
       <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.forward')} onClick={onStepForward} disabled={step >= totalSteps}><ChevronRight strokeWidth={1.5} /></Button>

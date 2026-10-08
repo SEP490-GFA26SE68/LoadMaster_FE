@@ -6,6 +6,10 @@ import { cn } from '@/lib/utils'
 /**
  * Hộp thoại V2.3 (`.dlg`): rộng 640px, bo 18px, bóng `--e3`, lớp phủ `--scrim` (cyan-950 50 %, không làm mờ nền). Modal mở 220ms
  * standard (mục 8 AGENTS.md). Đầu hộp thoại có thể kèm ô icon theo nghĩa (`DialogHeader`), chân nền `--n-25`.
+ *
+ * `sheet` (V2.3 đợt 6, màn tài xế): dưới 768 px hộp thoại thành **tờ trượt từ đáy** — bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội
+ * dung cuộn bên trong, cao tối đa `100dvh − 5rem` để thanh trên còn thấy (dùng `dvh` để bàn phím ảo không che ô đang nhập). Vẫn là
+ * Radix Dialog: bẫy focus, Esc, tiêu đề có nhãn không đổi. Từ 768 px vẫn là hộp thoại giữa màn. Chân hộp thoại trong tờ nên là `sticky bottom-0`.
  */
 export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
@@ -16,8 +20,9 @@ export const DialogDescription = DialogPrimitive.Description
 export function DialogContent({
   className,
   children,
+  sheet = false,
   ...props
-}: ComponentProps<typeof DialogPrimitive.Content>) {
+}: ComponentProps<typeof DialogPrimitive.Content> & { sheet?: boolean }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
@@ -25,6 +30,7 @@ export function DialogContent({
           'fixed inset-0 z-300 grid grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto p-6',
           'bg-scrim',
           'data-[state=open]:animate-[lm-fade-in_220ms_var(--ease-standard)]',
+          sheet && 'max-md:place-items-end max-md:p-0',
         )}
       >
         <DialogPrimitive.Content
@@ -32,10 +38,15 @@ export function DialogContent({
             'flex w-160 max-w-full flex-col overflow-hidden rounded-xl bg-bg shadow-e3',
             'outline-none',
             'data-[state=open]:animate-[lm-dialog-in_220ms_var(--ease-standard)]',
+            sheet && [
+              'max-md:max-h-[calc(100dvh-5rem)] max-md:w-full max-md:overflow-y-auto max-md:rounded-b-none max-md:rounded-t-xl max-md:pb-[env(safe-area-inset-bottom)]',
+              'max-md:data-[state=open]:animate-[lm-sheet-in_260ms_var(--ease-decelerate)]',
+            ],
             className,
           )}
           {...props}
         >
+          {sheet ? <span aria-hidden className="mx-auto mt-2 mb-1 h-1.5 w-10 flex-none rounded-full bg-n-300 md:hidden" /> : null}
           {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Overlay>

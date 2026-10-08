@@ -44,7 +44,7 @@ export function DeliveryItemRow({
       data-package-id={item.id}
       data-state={done ? 'unloaded' : returned ? 'returned' : issueLabel ? 'issue' : 'pending'}
       className={cn(
-        'flex min-h-20 items-center gap-3 border-b border-border py-3 pr-3 pl-4 last:border-b-0',
+        'flex min-h-20 items-center gap-3 border-b border-line-soft py-3 pr-3 pl-4 last:border-b-0',
         done ? 'bg-badge-success-bg' : issueLabel ? 'bg-badge-warning-bg' : 'bg-bg',
       )}
     >

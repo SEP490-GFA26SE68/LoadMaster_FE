@@ -21,6 +21,7 @@ export function Banner({
   tone = 'info',
   icon,
   action,
+  role = 'status',
   className,
   children,
 }: {
@@ -28,13 +29,15 @@ export function Banner({
   /** Đè icon mặc định của tông (ví dụ ổ khoá cho chuyến đã khoá). */
   icon?: LucideIcon
   action?: ReactNode
+  /** `alert` cho thông báo phải đọc ngay (phương án lỗi thời ở màn tài xế). */
+  role?: 'status' | 'alert'
   className?: string
   children: ReactNode
 }) {
   const spec = TONE[tone]
   const Icon = icon ?? spec.icon
   return (
-    <div role="status" className={cn('flex items-start gap-3 rounded-lg border px-3.5 py-3 text-body', spec.box, className)}>
+    <div role={role} className={cn('flex items-start gap-3 rounded-lg border px-3.5 py-3 text-body', spec.box, className)}>
       <Icon aria-hidden className={cn('mt-0.5 size-4 flex-none', spec.accent)} strokeWidth={1.75} />
       <div className="min-w-0 flex-1">{children}</div>
       {action ? <div className={cn('flex-none font-semibold whitespace-nowrap', spec.accent)}>{action}</div> : null}

@@ -1,12 +1,14 @@
 import { useId, type ReactNode } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { TouchTopBar } from '@/components/TouchTopBar'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { MY_TRIP_GROUPS } from './my-trips'
 import { MyTripCard } from './MyTripCard'
 import { useMyTripsQuery } from './useDriverQueries'
@@ -20,15 +22,26 @@ import { useMyTripsQuery } from './useDriverQueries'
  */
 export function MyTripsPage() {
   const t = useT()
+  const format = useFormat()
   return (
-    <div className="flex h-dvh flex-col bg-bg text-body-lg">
-      <header className="flex flex-none flex-wrap items-center gap-x-1.5 gap-y-1 border-b border-border bg-bg px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3">
-        <ExitIconButton screenHome="/tai-xe" label={t('driver.exit')} className="-ml-2" iconClassName="size-6" />
-        <h1 className="min-w-0 flex-1 text-h2 font-semibold max-[479px]:order-last max-[479px]:basis-full">{t('driver.list.title')}</h1>
-        <LanguageSwitch size="touch" className="flex-none max-[479px]:ml-auto [&>svg]:hidden min-[400px]:[&>svg]:block" />
-        <NotificationBell variant="touch" />
-        <AccountMenu className="-mr-2" />
-      </header>
+    <div className="flex h-dvh flex-col bg-app text-body-lg">
+      {/* Dải trời với điều khiển đặc 56 px (V2.3 đợt 6): dưới 480 px tiêu đề xuống hàng riêng */}
+      <TouchTopBar
+        wrap
+        leading={<ExitIconButton tone="sky" screenHome="/tai-xe" label={t('driver.exit')} iconClassName="size-7" />}
+        trailing={
+          <>
+            <LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />
+            <NotificationBell variant="touch" tone="sky" />
+            <AccountMenu tone="sky" />
+          </>
+        }
+      >
+        <div className="flex min-w-0 flex-col">
+          <h1 className="font-display text-h1 leading-8 font-bold text-sky-text font-stretch-112%">{t('driver.list.title')}</h1>
+          <p className="m-0 text-body-lg text-sky-text-3">{format.date(new Date())}</p>
+        </div>
+      </TouchTopBar>
       <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
         <TripGroups />
       </main>
@@ -44,24 +57,30 @@ function TripGroups() {
   }
   if (query.isError) {
     return (
-      <EmptyState
-        mascot="error"
-        className="[&_span]:text-body-lg"
-        title={t('driver.loadErrorTitle')}
-        description={dataErrorMessage(query.error, t)}
-        action={<Button variant="secondary" size="touch" onClick={() => void query.refetch()}>{t('driver.retry')}</Button>}
-      />
+      <Card>
+        <EmptyState
+          mascot="error"
+          className="[&_span]:text-body-lg"
+          title={t('driver.loadErrorTitle')}
+          description={dataErrorMessage(query.error, t)}
+          action={<Button variant="secondary" size="touch" onClick={() => void query.refetch()}>{t('driver.retry')}</Button>}
+        />
+      </Card>
     )
   }
   const trips = query.data
   if (MY_TRIP_GROUPS.every((group) => trips[group].length === 0)) {
-    return <EmptyState mascot="driverWaiting" className="[&_span]:text-body-lg" title={t('driver.list.emptyTitle')} description={t('driver.list.emptyDescription')} />
+    return (
+      <Card>
+        <EmptyState mascot="driverWaiting" className="[&_span]:text-body-lg" title={t('driver.list.emptyTitle')} description={t('driver.list.emptyDescription')} />
+      </Card>
+    )
   }
   // Một nút primary mỗi màn (mục 5): chuyến nên làm trước — đang giao dở, không thì chuyến đã xếp xong sớm nhất
   const primaryId = (trips.inTransit[0] ?? trips.loaded[0])?.id
   return (
     <div className="flex flex-col gap-6">
-      {primaryId === undefined ? <p className="m-0 text-text-2">{t('driver.list.noReady')}</p> : null}
+      {primaryId === undefined ? <p className="m-0 text-ink-2">{t('driver.list.noReady')}</p> : null}
       {MY_TRIP_GROUPS.map((group) => (trips[group].length === 0 ? null : (
         <Group key={group} title={t(`driver.list.groups.${group}`)}>
           {trips[group].map((row) => <MyTripCard key={row.id} row={row} primary={row.id === primaryId} />)}
@@ -75,7 +94,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   const id = useId()
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="text-h2 font-semibold">{title}</h2>
+      <h2 id={id} className="font-display text-h2 font-bold text-ink-strong font-stretch-106%">{title}</h2>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">{children}</ul>
     </section>
   )
