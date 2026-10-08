@@ -3,6 +3,27 @@ export const fleet = {
   title: 'Đội xe',
   count: { one: '{count} xe', other: '{count} xe' },
   add: 'Thêm xe',
+  /** Dòng số dưới tiêu đề (V2.3): tính từ danh sách xe đã tải; khoảng chỉ nói khi có hai giá trị khác nhau. */
+  hero: {
+    count: { one: '{count} xe trong danh mục', other: '{count} xe trong danh mục' },
+    payload: 'tải tối đa từ {min} đến {max}',
+    payloadOne: 'tải tối đa {max}',
+    length: 'lòng thùng dài {range}',
+    lengthOne: 'lòng thùng dài {length}',
+  },
+  /** Chân thẻ danh sách: hình nhỏ ở cột lòng thùng nhìn từ trên, cùng tỉ lệ cho mọi dòng. */
+  legend: {
+    scale: 'Hình lòng thùng nhìn từ trên, cùng tỉ lệ.',
+    obstacle: 'Vật cản',
+    door: 'Cửa sau',
+  },
+  /** Pha chuyến đang dùng xe, ghi cạnh mã chuyến ở cột trạng thái. */
+  tripPhase: {
+    loading: 'Đang xếp hàng',
+    loaded: 'Đã xếp xong',
+    delivering: 'Đang giao',
+  },
+  maintenanceSince: 'Từ {date}',
   /** Chân bảng (V2): nói trạng thái đến từ đâu và cái chưa có — không hứa vị trí thời gian thực. */
   sourceNote: 'Trạng thái lấy từ chuyến và lịch bảo dưỡng trong hệ thống. Chưa có GPS hay vị trí xe thời gian thực.',
   columns: {
@@ -43,6 +64,8 @@ export const fleet = {
   },
   detail: {
     newTitle: 'Thêm xe',
+    newDescription: 'Khai báo kích thước lòng thùng, tải trọng và vật cản để chạy tối ưu cho chuyến.',
+    facts: 'Lòng thùng {inner} · tải tối đa {payload} · cửa {door}',
     back: 'Quay lại đội xe',
     save: 'Lưu',
     delete: 'Xoá xe',
@@ -57,9 +80,13 @@ export const fleet = {
     specTitle: 'Kích thước và tải trọng',
     obstaclesTitle: 'Vật cản trong thùng',
     axlesTitle: 'Trục xe',
+    specHint: 'lòng thùng, cửa sau, tải trọng',
+    obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
+    axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
   },
   preview: {
     title: 'Xem trước 3D',
+    caption: 'Theo số đang nhập · đúng tỉ lệ',
     label: 'Xem trước 3D thùng xe và vật cản',
     pending: 'Đang chờ giá trị hợp lệ',
     loading: 'Đang dựng mô hình 3D',
@@ -112,6 +139,7 @@ export const fleet = {
   validation: {
     title: { one: '{count} lỗi cần sửa trước khi lưu', other: '{count} lỗi cần sửa trước khi lưu' },
     focusHint: 'Bấm một dòng để nhảy tới ô cần sửa.',
+    section: 'Mục {number}',
   },
   leave: {
     title: 'Rời trang khi chưa lưu?',
@@ -142,6 +170,7 @@ export const fleet = {
     notePlaceholder: 'Thay dầu, kiểm tra phanh',
     noteRequired: 'Ghi lý do bảo dưỡng.',
     noteTooLong: 'Ghi chú tối đa {max} ký tự.',
+    counter: '{count} / {max}',
     cancel: 'Huỷ',
     confirm: 'Đưa vào bảo dưỡng',
     started: 'Đã đưa xe {name} vào bảo dưỡng',

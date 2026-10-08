@@ -5,6 +5,24 @@ export const fleet = {
   title: 'Fleet',
   count: { one: '{count} vehicle', other: '{count} vehicles' },
   add: 'Add vehicle',
+  hero: {
+    count: { one: '{count} vehicle in the fleet', other: '{count} vehicles in the fleet' },
+    payload: 'max payload from {min} to {max}',
+    payloadOne: 'max payload {max}',
+    length: 'cargo space length {range}',
+    lengthOne: 'cargo space length {length}',
+  },
+  legend: {
+    scale: 'Cargo space seen from above, same scale for every row.',
+    obstacle: 'Obstacle',
+    door: 'Rear door',
+  },
+  tripPhase: {
+    loading: 'Loading',
+    loaded: 'Loaded',
+    delivering: 'Delivering',
+  },
+  maintenanceSince: 'Since {date}',
   sourceNote: 'Status comes from trips and maintenance records in the system. No GPS or real-time vehicle location yet.',
   columns: {
     name: 'Vehicle',
@@ -42,6 +60,8 @@ export const fleet = {
   },
   detail: {
     newTitle: 'Add vehicle',
+    newDescription: 'Declare the cargo space, the payload and the obstacles so a trip can be optimized.',
+    facts: 'Cargo space {inner} · max payload {payload} · door {door}',
     back: 'Back to the fleet',
     save: 'Save',
     delete: 'Delete vehicle',
@@ -56,9 +76,13 @@ export const fleet = {
     specTitle: 'Dimensions and payload',
     obstaclesTitle: 'Obstacles inside the cargo space',
     axlesTitle: 'Axles',
+    specHint: 'cargo space, rear door, payload',
+    obstaclesCount: { one: '{count} zone', other: '{count} zones' },
+    axlesHint: 'optional, used to estimate axle load',
   },
   preview: {
     title: '3D preview',
+    caption: 'From the values you type · to scale',
     label: '3D preview of the cargo space and obstacles',
     pending: 'Waiting for valid values',
     loading: 'Building the 3D model',
@@ -111,6 +135,7 @@ export const fleet = {
   validation: {
     title: { one: '{count} error to fix before saving', other: '{count} errors to fix before saving' },
     focusHint: 'Select a line to jump to the field that needs a fix.',
+    section: 'Section {number}',
   },
   leave: {
     title: 'Leave without saving?',
@@ -139,6 +164,7 @@ export const fleet = {
     notePlaceholder: 'Oil change, brake check',
     noteRequired: 'Write the reason for the maintenance.',
     noteTooLong: 'The note can have at most {max} characters.',
+    counter: '{count} / {max}',
     cancel: 'Cancel',
     confirm: 'Start maintenance',
     started: '{name} is in maintenance',

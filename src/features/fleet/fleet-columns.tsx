@@ -1,19 +1,23 @@
 import { createColumnHelper } from '@tanstack/react-table'
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
-import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
+import { CargoBoxCell, ObstacleCell, PayloadCell, VehicleNameText } from './FleetCells'
 import { statusRank, type VehicleRow } from './vehicle-status'
-import { VehicleStatusCell, VehicleThumb } from './VehicleStatusBadge'
+import { VehicleStatusCell } from './VehicleStatusBadge'
 
 const helper = createColumnHelper<BaseTableFeatures, VehicleRow>()
-const mono = 'font-mono text-caption text-ink-1'
+
+/** Cột mũi tên không có tiêu đề; khai một lần ở cấp module để bảng không dựng lại ô tiêu đề (AGENTS mục 5). */
+const NoHeader = () => null
 
 /**
- * Cột bảng đội xe (V2): Phương tiện · Lòng thùng · Tải tối đa · Vật cản · Trạng thái. Cửa xe xem ở trang cấu hình xe.
- * Phụ thuộc ngôn ngữ đang chọn (số và tiêu đề), nên dựng trong component chứ không ở module.
+ * Cột bảng đội xe (V2.3, DoiXe.jpg): Phương tiện · Lòng thùng · Tải tối đa · Vật cản · Trạng thái, và một cột mũi tên trang trí vì
+ * cả dòng mở trang cấu hình xe. Cửa xe xem ở trang cấu hình xe. Chữ trong ô tự lấy ngôn ngữ (`useT`, `useFormat`); `t` ở đây chỉ cho
+ * tiêu đề cột, nên cột dựng lại khi đổi ngôn ngữ.
  */
-export function createFleetColumns(t: TFunction, format: Formatter) {
+export function createFleetColumns(t: TFunction) {
   return helper.columns([
     helper.accessor('name', {
       header: t('fleet.columns.name'),
@@ -21,21 +25,18 @@ export function createFleetColumns(t: TFunction, format: Formatter) {
       cell: (info) => {
         const vehicle = info.row.original
         return (
-          <span className="flex min-w-0 items-center gap-2.5">
-            <VehicleThumb status={vehicle.state.status} />
-            <span className="flex min-w-0 flex-col whitespace-normal">
-              {/* Dòng mở trang bằng chuột; liên kết ở tên cho bàn phím (AGENTS mục 10). */}
-              <Link
-                to={`/doi-xe/${vehicle.id}`}
-                onClick={(event) => event.stopPropagation()}
-                className="line-clamp-2 rounded-sm font-medium text-ink-strong hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                {info.getValue()}
-              </Link>
-              {/* Khoảng trắng không hiện trong flex nhưng tách tên và mã trong tên truy cập của dòng */}
-              {' '}
-              <span className="font-mono text-caption text-ink-3">{vehicle.id}</span>
-            </span>
+          <span className="flex min-w-0 flex-col whitespace-normal">
+            {/* Dòng mở trang bằng chuột; liên kết ở tên cho bàn phím (AGENTS mục 10). */}
+            <Link
+              to={`/doi-xe/${vehicle.id}`}
+              onClick={(event) => event.stopPropagation()}
+              className="line-clamp-2 rounded-sm font-semibold text-ink-strong hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <VehicleNameText name={info.getValue()} />
+            </Link>
+            {/* Khoảng trắng không hiện trong flex nhưng tách tên và mã trong tên truy cập của dòng */}
+            {' '}
+            <span className="font-mono text-caption text-ink-3">{vehicle.id}</span>
           </span>
         )
       },
@@ -43,23 +44,20 @@ export function createFleetColumns(t: TFunction, format: Formatter) {
     helper.accessor('innerLengthCm', {
       header: t('fleet.columns.inner'),
       enableSorting: true,
-      meta: { align: 'right', width: '220px' } satisfies ColumnMeta,
-      cell: (info) => {
-        const vehicle = info.row.original
-        return <span className={mono}>{format.dimensions(vehicle.innerLengthCm, vehicle.innerWidthCm, vehicle.innerHeightCm)}</span>
-      },
+      meta: { width: '330px' } satisfies ColumnMeta,
+      cell: (info) => <CargoBoxCell vehicle={info.row.original} />,
     }),
     helper.accessor('maxPayloadKg', {
       header: t('fleet.columns.payload'),
       enableSorting: true,
-      meta: { align: 'right', width: '140px' } satisfies ColumnMeta,
-      cell: (info) => <span className={mono}>{format.weight(info.getValue())}</span>,
+      meta: { align: 'right', width: '130px' } satisfies ColumnMeta,
+      cell: (info) => <PayloadCell kilograms={info.getValue()} />,
     }),
     helper.accessor((vehicle) => vehicle.obstacles.length, {
       id: 'obstacleCount',
       header: t('fleet.columns.obstacles'),
-      meta: { width: '110px' } satisfies ColumnMeta,
-      cell: (info) => <span className="text-body text-ink-1">{t('fleet.obstacleZones', { count: info.getValue() })}</span>,
+      meta: { width: '150px' } satisfies ColumnMeta,
+      cell: (info) => <ObstacleCell vehicle={info.row.original} />,
     }),
     helper.accessor((vehicle) => statusRank(vehicle.state.status), {
       id: 'status',
@@ -67,8 +65,14 @@ export function createFleetColumns(t: TFunction, format: Formatter) {
       enableSorting: true,
       // Bấm lần đầu: sẵn sàng trước, như thứ tự bộ lọc
       sortDescFirst: false,
-      meta: { width: '280px' } satisfies ColumnMeta,
+      meta: { width: '260px' } satisfies ColumnMeta,
       cell: (info) => <VehicleStatusCell state={info.row.original.state} />,
+    }),
+    helper.display({
+      id: 'open',
+      header: NoHeader,
+      meta: { align: 'right', width: '48px' } satisfies ColumnMeta,
+      cell: () => <ChevronRight aria-hidden className="ml-auto size-4 text-ink-3" strokeWidth={1.5} />,
     }),
   ])
 }

@@ -90,7 +90,7 @@ test('the fleet list does not request the Three.js chunk; opening a vehicle does
 test('typing 600 into the length re-fits the camera once; editing an obstacle does not move it', async ({ page, login, browserErrors }) => {
   await openPreview(page, login)
   await startFitCounter(page)
-  const length = page.getByLabel('Chiều dài lòng thùng', { exact: true })
+  const length = page.getByRole('spinbutton', { name: 'Chiều dài lòng thùng', exact: true })
 
   await length.clear()
   await expect(page.getByText('Đang chờ giá trị hợp lệ', { exact: true })).toBeVisible()
@@ -111,7 +111,7 @@ test('a new vehicle without obstacles: every intermediate length is valid, the d
   // Xe mới bắt đầu từ thùng 600 cm, chưa có vật cản: "6", "60", "600" đều hợp lệ, không debounce thì camera nhảy 3 lần
   await openPreview(page, login, '/doi-xe/moi')
   await startFitCounter(page)
-  const length = page.getByLabel('Chiều dài lòng thùng', { exact: true })
+  const length = page.getByRole('spinbutton', { name: 'Chiều dài lòng thùng', exact: true })
   await length.clear()
   await length.pressSequentially('600', { delay: 80 })
   await page.waitForTimeout(600)
