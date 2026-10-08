@@ -1441,6 +1441,13 @@ dù giao diện bị bỏ qua:
   việc tìm chỗ (không kiện nào đè hay chồng lên chúng, vách bị chúng chắn kín thì nhảy tới mép sau của chúng), nhưng khối lượng, trọng tâm,
   tải trục, vùng điểm giao, LIFO và số dỡ-xếp lại tính như mọi kiện; placement của chúng đứng đầu kết quả với `pinned: true`. Kiện
   không vừa quanh chúng ở lại với lý do như thường. Lần chạy không ghim chạy đúng đường cũ (`fixed` rỗng).
+  **Kho**: ghim lưu qua Duyệt — `approveRevision(id, patches, { force, pinned })`, `pinned` là mã các kiện ghim của bản duyệt, **thay hẳn** tập ghim
+  của revision nguồn (vắng thì giữ; mã lạ là `PATCH_UNKNOWN_INSTANCE`); ghim không phải chỉnh tay (`manuallyEdited`) và không đổi vị trí kiện
+  nào. `saveOptimizationRun` tự kiểm bộ ghim của request (`PINNED_SET_INVALID`, trước khi giữ credit, không lưu gì) và ghi `OptimizationRun.pinnedCount`;
+  lần chạy giữ ghim vẫn là một lần chạy ba phương án, một credit, một sự kiện `optimization.saved`. **Kiện hỏng lúc xếp** làm chuyến về Đã lập
+  kế hoạch (`db-replan.ts`) thì `Trip.replan.keep` giữ chỗ của các kiện kho đã xếp lên xe (`keptLoaded`, mã theo dòng kiện hiện tại: dòng của kiện
+  hỏng bớt một nên mã đánh số lại, kiện cùng dòng giống hệt nhau nên kiện đã xếp thứ i nhận mã thứ i); có kiện đã xếp tựa lên kiện hỏng thì
+  không giữ được — `replan.blocked` là các kiện đó, `keep` vắng. Kho chưa dùng `keep` để bỏ bước quét lại của kho: phiên xếp mới vẫn quét từng kiện.
 - *(bổ sung 03/10/2026, FE-5b-05)* **Lần chạy và revision của nó.** `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương
   án một revision bất biến mang `runId` và `run: { objective, algorithm }` (bản duyệt giữ của bản nguồn), theo thứ tự A · B · C — bản mới
   nhất chưa duyệt của chuyến là phương án C — cùng **một** lần chạy `OptimizationRun { algorithm, jobId, plans[] }` và **một** sự kiện

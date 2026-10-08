@@ -108,6 +108,8 @@ export type OptimizationRun = {
   /** Lần chạy xong: mã job của service và các phương án đã lưu. */
   jobId?: string
   plans?: RunPlan[]
+  /** Số kiện ghim mà lần chạy giữ nguyên (FE-BL-02); vắng khi lần chạy không giữ kiện nào. */
+  pinnedCount?: number
   /** Lần chạy hỏng: mã lý do (`REQUEST_REJECTED`, `SERVICE_UNAVAILABLE`), UI dịch. */
   failureCode?: string
 }

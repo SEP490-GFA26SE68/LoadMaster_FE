@@ -1,5 +1,5 @@
 import type { PlacementPatch } from '@/domain/constraints'
-import type { CargoPackage, OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
+import type { CargoPackage, OptimizationRequest, OptimizationResult, PackagePlacement, PlanObjective } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
 import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings, TripRoutePlan } from './source-types'
@@ -171,8 +171,12 @@ export type Trip = {
   /**
    * Chuyến vừa từ Đang xếp hàng quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do và thời điểm, để kho biết đang chờ điều phối viên tối
    * ưu lại. `unload`: đã có kiện lên xe, kho phải dỡ ra xếp lại theo phương án mới. Kho gỡ khi bắt đầu xếp lại.
+   *
+   * Kiện hỏng lúc xếp (FE-BL-02): `keep` là chỗ của các kiện kho đã xếp lên xe, mã theo dòng kiện **hiện tại** của chuyến, để điều phối
+   * viên tối ưu lại mà giữ nguyên chúng thay vì dỡ ra; có kiện đã xếp tựa lên kiện hỏng thì không giữ được — `blocked` là các kiện đó
+   * (mã trong phương án cũ) và `keep` vắng.
    */
-  replan?: { reason: ReplanReason; at: string; unload: boolean }
+  replan?: { reason: ReplanReason; at: string; unload: boolean; keep?: PackagePlacement[]; blocked?: string[] }
   /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
   routePlan?: TripRoutePlan
   /** Lý do điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06, D-74); kho tự gỡ khi chuyến hết kiện khác loại. */

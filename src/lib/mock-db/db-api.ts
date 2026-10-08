@@ -31,8 +31,11 @@ export type TemporaryPassword = { user: User; temporaryPassword: string }
 
 export type DeliveryIssueInput = Pick<DeliveryIssue, 'stopNumber' | 'kind' | 'note'> & { packageInstanceId?: string }
 
-/** `force`: người duyệt đã xem và xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến (`POST /api/load-plans/{id}/approve`). */
-export type ApproveOptions = { force?: boolean }
+/**
+ * `force`: người duyệt đã xem và xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến (`POST /api/load-plans/{id}/approve`).
+ * `pinned` (FE-BL-02): mã các kiện ghim của bản duyệt — thay hẳn tập ghim của revision nguồn (vắng thì giữ); ghim lưu cùng phương án.
+ */
+export type ApproveOptions = { force?: boolean; pinned?: readonly string[] }
 
 /**
  * Kho dữ liệu in-memory thay backend (D-06). Mọi hàm bất đồng bộ như gọi mạng thật, trả bản sao, và từ chối bằng

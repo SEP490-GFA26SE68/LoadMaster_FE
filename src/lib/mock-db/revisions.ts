@@ -11,7 +11,7 @@ import {
   type PlacementPatch,
 } from '@/domain/constraints'
 import { computeMetrics } from '@/domain/metrics'
-import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
+import type { OptimizationRequest, OptimizationResult, PackagePlacement } from '@/domain/models'
 import { zonePlacements } from '@/domain/zones'
 import { MockDbError } from './errors'
 import type { Revision, Trip } from './types'
@@ -29,7 +29,9 @@ export function isStale(revision: Pick<Revision, 'inputVersion'>, trip: Pick<Tri
  * 3. tính lại `supportRatio` và `constraintWarnings` của từng placement bằng constraint engine (`annotatePlacements`, LM-023);
  * 4. ghi lại `stopZoneId` của từng placement và đếm lại số lần dỡ-xếp lại theo các vùng của lần tối ưu (`result.stopZones` — Duyệt
  *    không chia lại vùng, FE-5b-02); kết quả không chia vùng thì giữ nguyên;
- * 5. tính lại `metrics` bằng `computeMetrics`.
+ * 5. tính lại `metrics` bằng `computeMetrics`;
+ * 6. `pinned` (FE-BL-02): tập kiện ghim sau lần Duyệt này — thay hẳn tập ghim của kết quả nguồn (vắng thì giữ tập của nguồn); mã không
+ *    có trong kết quả là `PATCH_UNKNOWN_INSTANCE`. Ghim không đổi vị trí kiện nào.
  *
  * Các trường khác giữ nguyên, gồm `isMockResult`.
  */
@@ -37,6 +39,7 @@ export function approvedResult(
   request: OptimizationRequest,
   result: OptimizationResult,
   patches: readonly PlacementPatch[],
+  pinned?: readonly string[],
 ): OptimizationResult {
   const { instances } = expandPackages(request.packages)
   const instanceById = new Map(instances.map((instance) => [instance.packageInstanceId, instance]))
@@ -62,7 +65,10 @@ export function approvedResult(
     settings: request.settings,
   })
   const zoned = result.stopZones === undefined ? undefined : zonePlacements(result.stopZones, annotated, deliveryStops)
-  const placements = zoned?.placements ?? annotated
+  const pinnedIds = pinned === undefined ? undefined : new Set(pinned)
+  for (const id of pinnedIds ?? []) if (!placementById.has(id)) throw new MockDbError('PATCH_UNKNOWN_INSTANCE', { packageInstanceId: id })
+  const zonedPlacements = zoned?.placements ?? annotated
+  const placements = pinnedIds === undefined ? zonedPlacements : zonedPlacements.map(({ pinned: _before, ...placement }): PackagePlacement => (pinnedIds.has(placement.packageInstanceId) ? { ...placement, pinned: true } : placement))
   const metrics = computeMetrics({
     vehicle: request.vehicle,
     placements,
