@@ -138,8 +138,8 @@ export const driver = {
   },
   pickup: {
     banner: 'En-route pickup stop: pick up {count} packages from {name}. Check each package onto the vehicle before completing the pickup.',
-    listTitle: 'En-route pickup packages — no 3D position yet',
-    listHint: 'Pickup packages are not in the loading plan, so they have no position in the 3D view yet. Check them with the QR label like any package.',
+    listTitle: 'En-route pickup packages',
+    listHint: 'Pickup packages are not in the loading plan; their places are shown in the "View cargo positions" 3D view. Check them with the QR label like any package.',
     request: 'Request {id}',
     pick: { waiting: 'Not picked up', done: 'Picked up' },
     deliver: { waiting: 'Not unloaded', done: 'Unloaded' },
@@ -165,9 +165,9 @@ export const driver = {
       one: '{count} manual confirmation of this stop is awaiting the dispatcher — the pickup stop cannot be completed yet.',
       other: '{count} manual confirmations of this stop are awaiting the dispatcher — the pickup stop cannot be completed yet.',
     },
-    cargoTitle: 'En-route pickup packages — no 3D position yet',
-    cargoNote: 'Not drawn in the 3D view; check them by QR label on the stop screen.',
-    cargoRow: '{id} · {name} · {weight}',
+    cargoTitle: 'En-route pickup packages — no place on the vehicle yet',
+    cargoNote: 'These packages did not fit the freed zone, so they have no position in the 3D view; load them as the dispatcher instructs and check them by QR label on the stop screen.',
+    cargoRow: '{id} · {name} · {weight} · {reason}',
   },
   tripSummary: {
     title: 'Trip summary',

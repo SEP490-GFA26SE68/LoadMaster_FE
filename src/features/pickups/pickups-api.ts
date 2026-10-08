@@ -3,6 +3,8 @@
  *   createPickupRequest   → POST /api/trips/{id}/pickup-requests
  *   validatePickupRequest → GET /api/trips/{id}/pickup-requests/{pid}/validate (kho FE ghi cả kết quả lên yêu cầu)
  *   approvePickupRequest  → POST /api/trips/{id}/pickup-requests/{pid}/approve (`override`)
+ *     kho FE xếp kiện nhận vào vùng trống lúc duyệt (FE-BL-01): vùng trống → GET /api/trips/{id}/freed-zones;
+ *     xếp → POST /api/v1/optimize/reoptimize-freed-zone (dịch vụ tối ưu; chưa rõ có tốn credit không, Q-09)
  *   chưa có ở BE: fetchPickupRows, getPickupRequest, rejectPickupRequest
  */
 import { getMockDb, type PickupApproval, type PickupApproveInput, type PickupRequest, type PickupRequestInput } from '@/lib/mock-db'

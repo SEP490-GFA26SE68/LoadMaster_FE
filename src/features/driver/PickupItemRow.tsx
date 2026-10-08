@@ -5,7 +5,7 @@ import type { PickupItemProgress } from './delivery-progress'
 
 /**
  * Một dòng kiện nhận dọc đường (FE-7-05), cao tối thiểu 80px như `DeliveryItemRow`. Khác kiện của phương án: không có thứ tự dỡ, vùng hay lớp
- * — kiện chưa có vị trí 3D (P2). Điểm nhận: "Chưa nhận" / "Đã nhận"; điểm giao: "Chưa dỡ" / "Đã dỡ", kèm cách đối chiếu gần nhất. Trạng thái
+ * — chỗ xếp của kiện nằm cùng yêu cầu và hiện trong khung 3D (FE-BL-01). Điểm nhận: "Chưa nhận" / "Đã nhận"; điểm giao: "Chưa dỡ" / "Đã dỡ", kèm cách đối chiếu gần nhất. Trạng thái
  * không chỉ nằm ở màu: kiện xong có nền xanh nhạt, dấu kiểm và chữ; xác nhận tay bị điều phối viên từ chối (FE-6-04) thì kiện quay về chưa xong
  * kèm lý do.
  */

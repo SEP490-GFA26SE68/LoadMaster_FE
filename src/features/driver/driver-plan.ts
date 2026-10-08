@@ -33,7 +33,7 @@ export type StopDelivery = {
   readonly items: readonly DeliveryItem[]
   /** Loại điểm (FE-7-05); vắng là điểm giao. Điểm nhận dọc đường chèn lúc đang chạy không có kiện nào của phương án. */
   readonly kind?: StopKind
-  /** Kiện nhận dọc đường của điểm (nhận hoặc giao), ngoài phương án — chưa có vị trí 3D. */
+  /** Kiện nhận dọc đường của điểm (nhận hoặc giao), ngoài phương án (chỗ xếp nằm cùng yêu cầu). */
   readonly pickupItems?: readonly PickupItem[]
 }
 

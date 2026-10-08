@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import type { CameraPreset, PlaybackSpeed } from '@/features/viewer3d/viewer-types'
+import type { UnplacedPickup } from '@/features/driver/driver-pickups'
 import { adaptResult, type ScenePlacement, type ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { SceneCanvas } from './scene/SceneCanvas'
 import { usePerformanceFlags } from './usePerformanceFlags'
@@ -22,13 +23,14 @@ const PRESETS = [['cua-sau', 'rear'], ['tren', 'top'], ['goc-cheo', 'diagonal'],
  * kết quả, LIFO từ domain — `LIFO_BLOCKED` dừng mô phỏng và tô kiện chắn. Không có editor, không đánh dấu đã giao.
  * `?debug&packages=N` thay scene bằng fixture benchmark cm.
  *
- * Kiện nhận dọc đường (FE-7-05, D-88) chưa có vị trí 3D (P2) nên không có mesh nào: `pickupCargo` chỉ là một danh sách DOM cạnh khung,
- * "Kiện nhận dọc đường — chưa có vị trí 3D", không thêm draw call.
+ * Kiện nhận dọc đường (FE-BL-01, D-88) đã có chỗ nằm ngay trong `model` (`withPickupPlacements`) và được vẽ bằng chính các InstancedMesh của
+ * kiện thường — không mesh hay draw call mới. `pickupCargo` chỉ là kiện **chưa có chỗ** (không vừa vùng trống): một danh sách DOM cạnh
+ * khung, kèm lý do, để tài xế vẫn thấy chúng.
  */
 export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCargo = [] }: {
   model: ViewerSceneModel; stopNumber: number; doneIds: ReadonlySet<string>
-  /** Kiện nhận dọc đường còn đi cùng xe hoặc sắp lên xe: mã kiện kho kiện, mã của bên gửi, khối lượng. */
-  pickupCargo?: readonly { readonly id: string; readonly name: string; readonly weightKg: number }[]
+  /** Kiện nhận dọc đường còn đi cùng xe hoặc sắp lên xe mà chưa có chỗ: mã kiện kho kiện, mã của bên gửi, khối lượng, lý do. */
+  pickupCargo?: readonly UnplacedPickup[]
 }) {
   const t = useT()
   const format = useFormat()
@@ -80,7 +82,7 @@ export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCa
           <h3 className="m-0 font-semibold">{t('driver.pickup.cargoTitle')}</h3>
           <p className="m-0 mt-0.5">{t('driver.pickup.cargoNote')}</p>
           <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 font-mono">
-            {pickupCargo.map((item) => <li key={item.id}>{t('driver.pickup.cargoRow', { id: item.id, name: item.name, weight: format.weight(item.weightKg) })}</li>)}
+            {pickupCargo.map((item) => <li key={item.id}>{t('driver.pickup.cargoRow', { id: item.id, name: item.name, weight: format.weight(item.weightKg), reason: t(`viewer.unplacedReasons.${item.reasonCode}`) })}</li>)}
           </ul>
         </section>
       ) : null}

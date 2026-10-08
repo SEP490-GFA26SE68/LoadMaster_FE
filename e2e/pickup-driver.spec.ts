@@ -45,7 +45,7 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
   const packages = await approveAndReachPickupStop(page)
   await navigateInApp(page, `/tai-xe/diem-giao?chuyen=${TRIP}`)
 
-  // Điểm nhận nằm trong danh sách điểm với biểu tượng và chữ riêng, kiện nhận ở danh sách riêng chưa có vị trí 3D
+  // Điểm nhận nằm trong danh sách điểm với biểu tượng và chữ riêng, kiện nhận ở danh sách riêng
   await expect(page.getByRole('heading', { level: 1, name: 'Điểm 3 / 4', exact: true })).toBeVisible()
   await page.getByText('Các điểm của chuyến (4)', { exact: true }).tap()
   const stops = page.getByRole('list', { name: 'Các điểm của chuyến', exact: true }).getByRole('listitem')
@@ -53,16 +53,15 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
   await expect(stops.nth(2)).toContainText('Điểm nhận hàng')
   await expect(stops.nth(2)).toHaveAttribute('data-stop-kind', 'PICKUP')
   await expect(stops.nth(3)).toContainText('Điểm giao hàng')
-  const cargo = page.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có vị trí 3D', exact: true })
+  const cargo = page.getByRole('region', { name: 'Kiện nhận dọc đường', exact: true })
   await expect(cargo.getByRole('listitem')).toHaveCount(2)
   await expect(cargo.getByText('Chưa nhận', { exact: true })).toHaveCount(2)
 
-  // Khung 3D không vẽ kiện nhận (chưa có vị trí) nhưng liệt kê chúng cạnh khung
+  // Cả hai kiện nhận vừa vùng đã trống nên có chỗ trong khung 3D (FE-BL-01): cạnh khung không còn danh sách "chưa có chỗ"
   await page.getByRole('button', { name: 'Xem vị trí hàng', exact: true }).tap()
   const viewer = page.getByRole('dialog', { name: 'Vị trí hàng tại điểm giao', exact: true })
-  const viewerList = viewer.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có vị trí 3D', exact: true })
-  await expect(viewerList.getByRole('listitem')).toHaveCount(2)
-  await expect(viewerList).toContainText('HG-0901')
+  await expect(viewer.locator('canvas')).toBeVisible()
+  await expect(viewer.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có chỗ trên xe', exact: true })).toHaveCount(0)
   await viewer.getByRole('button', { name: 'Đóng 3D', exact: true }).tap()
   await expect(viewer).toBeHidden()
 
@@ -111,8 +110,9 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
     return {
       request: (await db.listPickupRequests(trip)).find((item) => item.status === 'DELIVERED')?.id,
       statuses: await Promise.all(ids.map(async (id) => (await db.getPackage(id)).status)),
+      placed: (await db.listPickupRequests(trip)).find((item) => item.status === 'DELIVERED')?.layout?.placements.length,
     }
   }, { db: MOCK_DB, trip: TRIP, ids: packages.map((pkg) => pkg.id) })
-  expect(final).toStrictEqual({ request: 'PKR-002', statuses: ['DELIVERED', 'DELIVERED'] })
+  expect(final).toStrictEqual({ request: 'PKR-002', statuses: ['DELIVERED', 'DELIVERED'], placed: 2 })
   expect(browserErrors).toStrictEqual([])
 })

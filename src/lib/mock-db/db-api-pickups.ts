@@ -33,7 +33,7 @@ export type PickupsDb = {
   validatePickupRequest(tripId: string, pickupId: string): Promise<PickupRequest>
   /**
    * Kiện kho kiện của các yêu cầu **đã duyệt** của chuyến (FE-7-05), theo thứ tự yêu cầu rồi thứ tự kiện: tài xế đọc để biết kiện nhận ở
-   * điểm nhận và kiện giao ở điểm giao (kiện nhận chưa có vị trí 3D nên không nằm trong phương án).
+   * điểm nhận và kiện giao ở điểm giao (kiện nhận không nằm trong phương án; chỗ xếp ở `PickupRequest.layout`).
    */
   listPickupPackages(tripId: string): Promise<Package[]>
   /**

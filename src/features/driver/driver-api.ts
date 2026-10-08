@@ -47,7 +47,7 @@ export async function fetchMyTrips(): Promise<MyTrips> {
 
 /**
  * Chuyến và phương án tài xế làm theo (bản kho đã xếp, chưa xếp thì bản duyệt mới nhất); `plan` là `null` khi chưa có bản duyệt. Kèm
- * kiện nhận dọc đường đã duyệt (FE-7-05): yêu cầu và kiện kho kiện của chúng — ngoài phương án, chưa có vị trí 3D.
+ * kiện nhận dọc đường đã duyệt (FE-7-05): yêu cầu và kiện kho kiện của chúng — ngoài phương án; chỗ xếp của kiện nhận nằm ở `PickupRequest.layout` (FE-BL-01).
  */
 export type DriverTrip = { readonly trip: Trip; readonly plan: Revision | null; readonly pickups: readonly PickupRequest[]; readonly pickupPackages: readonly Package[] }
 
