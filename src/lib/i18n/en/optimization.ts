@@ -29,6 +29,21 @@ export const optimization = {
   history: {
     description: 'Every run of this trip, including runs without a result.',
   },
+  pins: {
+    title: 'Keep pinned packages',
+    switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
+    on: {
+      plan: 'Plan {revision} has {count} pinned packages. This run keeps their exact position and orientation and the mock packs only the other packages around them. Still three plans A · B · C, still one credit.',
+      loaded: 'The warehouse had loaded {count} packages before it met the damaged one. This run keeps their place and orientation and packs only the other packages around them — they do not have to be unloaded. Still three plans A · B · C, still one credit.',
+    },
+    off: 'Normal run: every package is packed again from scratch.',
+    blocked: {
+      one: 'Loaded package {packages} cannot be kept: it rests on the damaged one. Normal run — the warehouse unloads and loads again by the new plan.',
+      other: '{count} loaded packages cannot be kept ({packages}): they rest on the damaged one. Normal run — the warehouse unloads and loads again by the new plan.',
+    },
+    invalid: { one: 'The pinned packages cannot stand on their own ({count} error). Turn off keeping pins to run normally.', other: 'The pinned packages cannot stand on their own ({count} errors). Turn off keeping pins to run normally.' },
+    blockedReason: 'The pinned packages cannot be kept yet: turn off keeping pins to run normally.',
+  },
   credit: {
     title: 'Credits',
     usage: {

@@ -6,6 +6,7 @@ import type { OptimizationRequest, OptimizationResult, PackagePlacement, Unplace
 import { stopVolumes, stopZones, zonePlacements, type StopZone } from '@/domain/zones'
 import { preflight } from './mock-preflight'
 import type { Packed, PackInput } from './shelf-packer'
+import type { FixedCargo } from './shelf-walls'
 
 type ReasonCode = UnplacedPackage['reasonCode']
 
@@ -50,10 +51,12 @@ function lifoOrder(chosen: readonly PackageInstance[]): PackageInstance[] {
 /**
  * D-23: dành tải trọng theo thứ tự chọn trước khi đặt chỗ, phần vượt trả `OVER_PAYLOAD` — nhờ vậy xếp theo điểm giao không để kiện
  * ưu tiên thấp chiếm tải của kiện ưu tiên cao. Kiện đã dành tải mà hết chỗ vẫn giữ phần tải đó (ước tính thận trọng của mock).
+ * `fixedKg`: tải của kiện ghim, tính trước mọi kiện.
  */
-function overPayload(chosen: readonly PackageInstance[], known: ReadonlyMap<string, ReasonCode>, maxPayloadKg: number): Map<string, ReasonCode> {
+function overPayload(chosen: readonly PackageInstance[], known: ReadonlyMap<string, ReasonCode>, maxPayloadKg: number, fixedKg: number): Map<string, ReasonCode> {
   const reasons = new Map(known)
-  let reservedKg = 0
+  // Kiện ghim (FE-BL-02) đã nằm trên xe: tải của chúng đã được dành
+  let reservedKg = fixedKg
   for (const { packageInstanceId, weightKg } of chosen) {
     if (reasons.has(packageInstanceId)) continue
     if (gt(reservedKg + weightKg, maxPayloadKg)) reasons.set(packageInstanceId, 'OVER_PAYLOAD')
@@ -65,7 +68,9 @@ function overPayload(chosen: readonly PackageInstance[], known: ReadonlyMap<stri
 /** Mã job của một request: tất định theo request + seed. */
 export function mockJobId(request: OptimizationRequest): string {
   const seed = request.settings?.randomSeed ?? 0
-  return `MOCK-${seed}-${fnv1a(JSON.stringify(request)).toString(16).padStart(8, '0')}`
+  // Danh sách kiện ghim rỗng là không giữ kiện nào: cùng mã job với request không có trường đó
+  const { pinnedPlacements, ...rest } = request
+  return `MOCK-${seed}-${fnv1a(JSON.stringify(pinnedPlacements?.length ? request : rest)).toString(16).padStart(8, '0')}`
 }
 
 /** Request đã qua kiểm, sẵn sàng đưa vào bộ xếp kệ. */
@@ -73,7 +78,9 @@ export type MockPlan = {
   readonly request: OptimizationRequest
   /** Mọi instance của request, theo mã. */
   readonly instances: ReadonlyMap<string, PackageInstance>
-  /** Theo thứ tự chọn (D-23). */
+  /** Kiện ghim (FE-BL-02): đứng yên, có trong `instances` nhưng không trong `chosen` / `lifo`. Rỗng khi lần chạy không giữ kiện nào. */
+  readonly fixed: readonly FixedCargo[]
+  /** Theo thứ tự chọn (D-23), không gồm kiện ghim. */
   readonly chosen: readonly PackageInstance[]
   /** Theo thứ tự đặt chỗ khi `enforceLifo`: điểm giao muộn trước. */
   readonly lifo: readonly PackageInstance[]
@@ -87,17 +94,24 @@ export type MockPlan = {
 export function planMockRun(request: OptimizationRequest): { ok: true; plan: MockPlan } | { ok: false; instances: readonly PackageInstance[] } {
   const checked = preflight(request)
   if (!checked.ok) return { ok: false, instances: checked.instances }
-  const chosen = selectionOrder(checked.instances, request.settings.randomSeed ?? 0)
-  const reasons = overPayload(chosen, checked.reasons, request.vehicle.maxPayloadKg)
+  const byId = new Map(checked.instances.map((instance) => [instance.packageInstanceId, instance]))
+  // `preflight` đã bảo đảm mỗi kiện ghim thuộc request, không lặp và đứng vững một mình (`pinnedIssues`)
+  const fixed = (request.pinnedPlacements ?? []).map((placement): FixedCargo => ({ placement, weightKg: (byId.get(placement.packageInstanceId) as PackageInstance).weightKg }))
+  const pinned = new Set(fixed.map(({ placement }) => placement.packageInstanceId))
+  const chosen = selectionOrder(checked.instances.filter(({ packageInstanceId }) => !pinned.has(packageInstanceId)), request.settings.randomSeed ?? 0)
+  const reasons = overPayload(chosen, checked.reasons, request.vehicle.maxPayloadKg, roundKg(fixed.reduce((sum, { weightKg }) => sum + weightKg, 0)))
+  // Vùng chia theo thể tích mọi kiện nằm trên xe, kể cả kiện ghim: chúng chiếm sàn của điểm giao của chúng
+  const onTruck = [...fixed.map(({ placement }) => byId.get(placement.packageInstanceId) as PackageInstance), ...chosen.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId))]
   return {
     ok: true,
     plan: {
       request,
-      instances: new Map(checked.instances.map((instance) => [instance.packageInstanceId, instance])),
+      instances: byId,
+      fixed,
       chosen,
       lifo: lifoOrder(chosen),
       reasons,
-      zones: stopZones(request.vehicle, stopVolumes(chosen.filter(({ packageInstanceId }) => !reasons.has(packageInstanceId)))),
+      zones: stopZones(request.vehicle, stopVolumes(onTruck)),
     },
   }
 }
@@ -105,7 +119,7 @@ export function planMockRun(request: OptimizationRequest): { ok: true; plan: Moc
 /** Đầu vào chung của mọi lượt xếp trên một `MockPlan`; nơi gọi thêm thứ tự kiện, vùng và báo tiến độ. */
 export function packInput(plan: MockPlan, instances: readonly PackageInstance[]): PackInput {
   const { vehicle, settings } = plan.request
-  return { vehicle, instances, reasons: plan.reasons, lowCenterOfGravity: settings.prioritizeLowCenterOfGravity }
+  return { vehicle, instances, reasons: plan.reasons, lowCenterOfGravity: settings.prioritizeLowCenterOfGravity, fixed: plan.fixed }
 }
 
 /** Số kiện nằm ngoài vùng của điểm giao mình trong một lượt xếp (`zonePlacements`). */

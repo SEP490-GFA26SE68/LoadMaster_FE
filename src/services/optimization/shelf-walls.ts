@@ -2,7 +2,7 @@ import type { PackageInstance } from '@/domain/cargo'
 import type { ConstraintIssue } from '@/domain/constraints'
 import { createSpatialGrid, gt, overlaps, roundCm, roundKg, type Box, type OrientationCode, type PlacedDimensions } from '@/domain/geometry'
 import { axleLoadsOf, checkAxleLoads } from '@/domain/metrics'
-import { obstacleToBox, type PackagePlacement, type UnplacedPackage, type VehicleConfig } from '@/domain/models'
+import { obstacleToBox, placementToBox, type PackagePlacement, type UnplacedPackage, type VehicleConfig } from '@/domain/models'
 
 /** Vì sao một kiện không lên xe: mã lý do, kèm ràng buộc đã chặn khi lý do là `CONSTRAINT_VIOLATED`. */
 export type Rejection = Pick<UnplacedPackage, 'reasonCode' | 'violatedConstraints'>
@@ -13,6 +13,12 @@ type StackedBox = { readonly instance: PackageInstance; readonly box: Box; loadA
 type Stack = { readonly xCm: number; readonly yCm: number; readonly boxes: StackedBox[] }
 type Wall = { readonly xCm: number; depthCm: number; nextYCm: number; readonly stacks: Stack[] }
 type Spot = { readonly box: Box; readonly code: OrientationCode; readonly stack?: Stack }
+
+/**
+ * Kiện ghim (FE-BL-02): hộp cố định đã có chỗ. Với bộ xếp nó là vật cản — kiện khác không đè lên, không chồng lên — nhưng khối lượng và
+ * trọng tâm của nó tính vào tải trọng và tải trục như mọi kiện, và placement của nó nằm đầu danh sách kết quả, giữ nguyên.
+ */
+export type FixedCargo = { readonly weightKg: number; readonly placement: PackagePlacement }
 
 /**
  * Một dải xếp dọc thùng, bắt đầu ở `startXCm`: giữ vách đang xếp. Vách đã qua không quay lại. `misses` nhớ dạng kiện đã thử mà dải
@@ -39,14 +45,18 @@ function wallAt(xCm: number): Wall {
  *
  * Xe khai trục (FE-5b-03, FE-5b-04): kiện mà đặt vào chỗ tìm được sẽ làm tải nhóm trục trước hoặc sau vượt giới hạn thì không lên xe,
  * lý do `CONSTRAINT_VIOLATED` kèm issue `AXLE_OVERLOAD` của lần thử đó. Xe không khai trục không có kiểm này.
+ *
+ * `fixed` (FE-BL-02): kiện ghim — vật cản cho việc tìm chỗ, đã nằm sẵn trong `placements` và trong khối lượng / trọng tâm đã xếp. Vách
+ * trống bị kiện ghim chắn kín thì nhảy tới mép sau của kiện ghim (`skipFixed`), không bỏ dải.
  */
-export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolean) {
+export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolean, fixed: readonly FixedCargo[] = []) {
   const grid = createSpatialGrid([])
-  const obstacles = vehicle.obstacles.map(obstacleToBox)
-  const placements: PackagePlacement[] = []
-  let usedKg = 0
+  const fixedBoxes = fixed.map(({ placement }) => placementToBox(placement))
+  const obstacles = [...vehicle.obstacles.map(obstacleToBox), ...fixedBoxes]
+  const placements: PackagePlacement[] = fixed.map(({ placement }) => ({ ...placement, pinned: true }))
+  let usedKg = roundKg(fixed.reduce((sum, { weightKg }) => sum + weightKg, 0))
   /** Tổng (khối lượng × hoành độ tâm hộp) của kiện đã xếp, kg·cm — trọng tâm hàng theo X cho mô hình tải trục. */
-  let momentKgCm = 0
+  let momentKgCm = fixed.reduce((sum, { weightKg, placement }) => sum + weightKg * (placement.xCm + placement.placedLengthCm / 2), 0)
 
   const inside = (box: Box, limitXCm: number) =>
     !gt(box.xCm + box.lengthCm, limitXCm) &&
@@ -91,6 +101,12 @@ export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolea
       }
     }
     return { stackingRejected }
+  }
+
+  /** Vách trống kế tiếp nằm sau mép sau của kiện ghim đang chắn vách `wall`; không còn thì `undefined`. */
+  function skipFixed(wall: Wall, limitXCm: number): Wall | undefined {
+    const ahead = fixedBoxes.map((box) => box.xCm + box.lengthCm).filter((endXCm) => gt(endXCm, wall.xCm) && !gt(endXCm, limitXCm))
+    return ahead.length === 0 ? undefined : wallAt(Math.min(...ahead))
   }
 
   function place(wall: Wall, instance: PackageInstance, { box, code, stack }: Spot): void {
@@ -142,8 +158,9 @@ export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolea
       const miss = lane.misses.size > 0 ? lane.misses.get(shape()) : undefined
       if (miss !== undefined && !gt(limitXCm, miss.limitXCm)) return { placed: false, stackingRejected: miss.stackingRejected }
       let stackingRejected = false
-      for (let turn = 0; turn < 2; turn += 1) {
-        const wall = turn === 0 ? lane.wall : wallAt(lane.wall.xCm + lane.wall.depthCm)
+      let wall: Wall | undefined = lane.wall
+      let opened = false
+      while (wall !== undefined) {
         const onTop = topSpot(wall, limitXCm, instance, orientations)
         stackingRejected ||= onTop.stackingRejected
         const spot = lowCenterOfGravity ? (floorSpot(wall, limitXCm, orientations) ?? onTop.spot) : (onTop.spot ?? floorSpot(wall, limitXCm, orientations))
@@ -155,8 +172,13 @@ export function createShelves(vehicle: VehicleConfig, lowCenterOfGravity: boolea
           place(wall, instance, spot)
           return { placed: true, stackingRejected }
         }
-        // Vách đang xếp còn trống mà vẫn không vừa thì vách mới cũng không vừa
-        if (lane.wall.stacks.length === 0) break
+        // Vách trống mà vẫn không vừa thì vách mới ngay sau cũng không vừa: chỉ còn kiện ghim chắn kín vách là có lối tiếp (sau mép nó).
+        // Vách đã có kiện thì thử đúng một vách mới ngay sau nó.
+        if (wall.stacks.length === 0) wall = skipFixed(wall, limitXCm)
+        else if (!opened) {
+          opened = true
+          wall = wallAt(wall.xCm + wall.depthCm)
+        } else wall = undefined
       }
       lane.misses.set(shape(), { limitXCm, stackingRejected })
       return { placed: false, stackingRejected }

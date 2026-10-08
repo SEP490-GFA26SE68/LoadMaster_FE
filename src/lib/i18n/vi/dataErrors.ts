@@ -69,6 +69,7 @@ export const dataErrors = {
   // Luật duyệt và đổi xe (FE-5b-08)
   APPROVAL_BLOCKED: 'Phương án {revisionId} còn {count} lỗi phải xử lý nên chưa duyệt được.',
   LATE_STOPS_UNCONFIRMED: 'Điểm giao số {stopNumbers} trễ hạn dự kiến: cần xác nhận trước khi duyệt.',
+  PINNED_SET_INVALID: 'Các kiện đã ghim của chuyến {tripId} có {count} lỗi nên không giữ nguyên được: bỏ giữ ghim hoặc sửa lại ghim.',
   TRIP_NOT_PLANNED: 'Chuyến {tripId} chưa ở trạng thái Đã lập kế hoạch nên chưa đổi xe ở đây được.',
   ROUTE_NOT_PLANNED: 'Chuyến {tripId} chưa tối ưu tuyến nên chưa chạy tối ưu xếp hàng được. Tối ưu tuyến trước.',
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',

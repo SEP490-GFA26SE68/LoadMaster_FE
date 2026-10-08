@@ -31,6 +31,7 @@ export const CONSTRAINT_CODES = [
   'DUPLICATE_INSTANCE_ID',
   'ORIENTATION_MISMATCH',
   'ORIENTATION_NOT_ALLOWED',
+  'PINNED_INSTANCE_UNKNOWN',
 ] as const
 
 export type ConstraintCode = (typeof CONSTRAINT_CODES)[number]
@@ -91,6 +92,8 @@ export type ConstraintParams = {
   ORIENTATION_MISMATCH: { orientation: OrientationCode }
   /** Spec 7.5, PRD mục 8 (LM-023): hướng đặt của placement không nằm trong `effectiveOrientations` của kiện (`allowedOrientations`, `keepUpright`). */
   ORIENTATION_NOT_ALLOWED: { orientation: OrientationCode }
+  /** FE-BL-02: kiện ghim không thuộc kiện nào của request (chuyến đã đổi kiện sau khi ghim); `packageInstanceId` là mã kiện ghim. */
+  PINNED_INSTANCE_UNKNOWN: NoParams
 }
 
 /**

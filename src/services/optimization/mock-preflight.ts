@@ -1,5 +1,5 @@
 import { expandPackages, type PackageInstance } from '@/domain/cargo'
-import { validateRequest, type ConstraintCode } from '@/domain/constraints'
+import { pinnedIssues, validateRequest, type ConstraintCode } from '@/domain/constraints'
 import { optimizationRequestSchema, type OptimizationRequest, type UnplacedPackage } from '@/domain/models'
 
 type ReasonCode = UnplacedPackage['reasonCode']
@@ -23,7 +23,8 @@ export type Preflight =
  * Kiểm request trước khi xếp:
  * - sai schema LM-010 (kể cả quy tắc chưa có mã ràng buộc và `settings`) → không chạy, `FAILED`, không có instance;
  * - còn `error` của `validateRequest` ngoài lỗi riêng từng kiện (xe, vật cản, riêng kiện `mustLoad` vượt tải, trùng mã) → `FAILED`;
- * - `DOOR_TOO_SMALL`, `NO_ALLOWED_ORIENTATION` của một kiện → mọi instance của kiện đó chưa xếp với lý do tương ứng.
+ * - `DOOR_TOO_SMALL`, `NO_ALLOWED_ORIENTATION` của một kiện → mọi instance của kiện đó chưa xếp với lý do tương ứng;
+ * - bộ kiện ghim (FE-BL-02) không đứng vững một mình (`pinnedIssues`) → `FAILED`: mock không sửa ngầm bộ ghim.
  */
 export function preflight(request: OptimizationRequest): Preflight {
   if (!optimizationRequestSchema.safeParse(request).success) return { ok: false, instances: [] }
@@ -35,6 +36,7 @@ export function preflight(request: OptimizationRequest): Preflight {
     if (reason === undefined || !('packageId' in issue.params)) return { ok: false, instances }
     if (!reasonByPackage.has(issue.params.packageId)) reasonByPackage.set(issue.params.packageId, reason)
   }
+  if (pinnedIssues(request).length > 0) return { ok: false, instances }
   const reasons = new Map<string, ReasonCode>()
   for (const { packageInstanceId } of instances) {
     const reason = reasonByPackage.get(packageIdByInstanceId.get(packageInstanceId) ?? '')

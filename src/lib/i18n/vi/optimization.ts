@@ -36,6 +36,22 @@ export const optimization = {
    * (câu cho điều phối viên và cho quản trị công ty khác nhau) và tên hạng thuật toán. Tên hạng là từ vựng thuật toán — chỉ ở màn
    * này; mock chạy EP + DBLF (mock) cho mọi hạng nên màn nói rõ.
    */
+  /** Giữ kiện đã ghim khi chạy lại (FE-BL-02). */
+  pins: {
+    title: 'Giữ kiện đã ghim',
+    switch: { one: 'Giữ nguyên chỗ {count} kiện đã ghim', other: 'Giữ nguyên chỗ {count} kiện đã ghim' },
+    on: {
+      plan: 'Phương án {revision} có {count} kiện đã ghim. Lần chạy này giữ đúng vị trí và hướng của chúng, mock chỉ xếp các kiện còn lại quanh chúng. Vẫn ba phương án A · B · C, vẫn một credit.',
+      loaded: 'Kho đã xếp {count} kiện lên xe trước khi gặp kiện hỏng. Lần chạy này giữ nguyên chỗ và hướng của chúng, chỉ xếp các kiện còn lại quanh chúng — không phải dỡ chúng ra. Vẫn ba phương án A · B · C, vẫn một credit.',
+    },
+    off: 'Chạy bình thường: mọi kiện được xếp lại từ đầu.',
+    blocked: {
+      one: 'Không giữ được kiện đã xếp {packages}: nó tựa lên kiện hỏng. Chạy bình thường — kho dỡ ra xếp lại theo phương án mới.',
+      other: 'Không giữ được {count} kiện đã xếp ({packages}): chúng tựa lên kiện hỏng. Chạy bình thường — kho dỡ ra xếp lại theo phương án mới.',
+    },
+    invalid: { one: 'Kiện đã ghim không đứng vững ({count} lỗi). Tắt giữ ghim để chạy bình thường.', other: 'Kiện đã ghim không đứng vững ({count} lỗi). Tắt giữ ghim để chạy bình thường.' },
+    blockedReason: 'Kiện đã ghim chưa giữ được: tắt giữ ghim để chạy bình thường.',
+  },
   credit: {
     title: 'Credit',
     usage: { one: 'Lần chạy này dùng {count} credit · còn {left}', other: 'Lần chạy này dùng {count} credit · còn {left}' },

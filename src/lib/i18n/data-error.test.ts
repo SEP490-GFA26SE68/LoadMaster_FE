@@ -62,6 +62,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   ROUTE_STOPS_REQUIRED: { tripId: 'TRIP-015' },
   MISSING_STOP_COORDINATES: { tripId: 'TRIP-014', stopIds: ['STOP-01'], stopNumbers: [1] },
   APPROVAL_BLOCKED: { revisionId: 'REV-025', count: 2, codes: ['AXLE_OVERLOAD', 'MUST_LOAD_UNPLACED'] },
+  PINNED_SET_INVALID: { tripId: 'TRIP-012', count: 2, codes: ['OVERLAP', 'SUPPORT_BELOW_MIN'] },
   LATE_STOPS_UNCONFIRMED: { tripId: 'TRIP-012', stopIds: ['STOP-02', 'STOP-03'], stopNumbers: [2, 3] },
   TRIP_NOT_PLANNED: { tripId: 'TRIP-014' },
   ROUTE_NOT_PLANNED: { tripId: 'TRIP-014' },

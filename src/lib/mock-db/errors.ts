@@ -172,6 +172,11 @@ export type MockDbErrorParams = {
   APPROVAL_BLOCKED: { revisionId: string; count: number; codes: string[] }
   /** Duyệt khi tuyến của chuyến có điểm trễ hạn dự kiến mà người duyệt chưa xác nhận (`force`). `stopNumbers`: số điểm, 1-based. */
   LATE_STOPS_UNCONFIRMED: { tripId: string; stopIds: string[]; stopNumbers: number[] }
+  /**
+   * Chạy lại giữ kiện ghim mà bộ ghim không đứng vững một mình (FE-BL-02): `count` là số lý do, `codes` là mã của chúng (không lặp). Chi tiết
+   * từng lý do là `pinnedIssues` của domain — màn Thiết lập tối ưu hiện chúng trước khi chạy.
+   */
+  PINNED_SET_INVALID: { tripId: string; count: number; codes: string[] }
   /** Đổi xe khi chuyến chưa Đã lập kế hoạch (còn Nháp: chưa tối ưu tuyến). */
   TRIP_NOT_PLANNED: { tripId: string }
   /** Chạy tối ưu xếp hàng khi chuyến chưa Đã lập kế hoạch (FE-5b-05): phải tối ưu tuyến trước. */

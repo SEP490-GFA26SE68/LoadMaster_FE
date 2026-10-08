@@ -814,6 +814,7 @@ export const trips = {
       runLine: '{time} {date} · {runner}',
       runLineNoRunner: '{time} {date}',
       /** Thiết lập chung của ba phương án; tên thuật toán là từ vựng thuật toán — chỉ màn so sánh và thiết lập nâng cao dùng. */
+      pinned: { one: 'Lần chạy này giữ nguyên chỗ {count} kiện đã ghim.', other: 'Lần chạy này giữ nguyên chỗ {count} kiện đã ghim.' },
       settings: '{algorithm} · random seed {seed} · LIFO {lifo} · trọng tâm thấp {lowCenter} · giới hạn {seconds} giây',
       bestHint: 'Giá trị tốt nhất giữa các phương án in đậm kèm nhãn "Tốt nhất". Chỉ số mà các phương án bằng nhau thì không đánh dấu.',
       deadlinesTitle: 'Mức hạn các điểm giao',

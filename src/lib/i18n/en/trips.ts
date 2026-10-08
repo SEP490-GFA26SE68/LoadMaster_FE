@@ -745,6 +745,7 @@ export const trips = {
       runTitle: 'Run {run}',
       runLine: '{time} {date} · {runner}',
       runLineNoRunner: '{time} {date}',
+      pinned: { one: 'This run kept {count} pinned package in place.', other: 'This run kept {count} pinned packages in place.' },
       settings: '{algorithm} · random seed {seed} · LIFO {lifo} · low center of gravity {lowCenter} · limit {seconds} s',
       bestHint: 'The best value among the plans is bold and tagged "Best". A metric on which the plans are equal is not marked.',
       deadlinesTitle: 'Stop deadlines',

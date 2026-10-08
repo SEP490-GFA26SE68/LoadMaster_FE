@@ -380,6 +380,14 @@ export const viewer = {
     rearDoor: 'Rear door · Unloading direction',
     centerOfMass: 'Cargo center of mass',
   },
+  pins: {
+    count: { one: '{count} pinned package', other: '{count} pinned packages' },
+    label: 'Pinned packages',
+    rerun: 'Run again keeping pins',
+    rerunHint: 'Optimize again: pinned packages keep their place, the others are packed around them.',
+    unsaved: 'Approve the edited plan to save the pins before running again.',
+    tag: 'Pinned',
+  },
   hud: {
     stopsTitle: 'Stops · unloading order',
     stopOf: '{kind} · Stop {number} / {total}',

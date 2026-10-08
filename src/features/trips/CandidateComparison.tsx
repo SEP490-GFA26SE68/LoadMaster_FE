@@ -91,6 +91,7 @@ function RunCard({ run, first, runnerName, trip, eta }: {
         <CardMeta>
           {runnerName ? t('trips.compare.candidates.runLine', { ...when, runner: runnerName }) : t('trips.compare.candidates.runLineNoRunner', when)}
         </CardMeta>
+        {run.pinnedCount ? <CardMeta data-run-pinned className="basis-full">{t('trips.compare.candidates.pinned', { count: run.pinnedCount })}</CardMeta> : null}
         {settings ? (
           <CardMeta data-run-settings className="basis-full">
             {t('trips.compare.candidates.settings', {

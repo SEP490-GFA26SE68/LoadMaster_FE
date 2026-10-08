@@ -409,6 +409,15 @@ export const viewer = {
     rearDoor: 'Cửa sau · Hướng dỡ',
     centerOfMass: 'Tâm khối lượng hàng',
   },
+  /** Kiện đã ghim và "Chạy lại giữ ghim" ở góc khung 3D của Planner (FE-BL-02). */
+  pins: {
+    count: { one: '{count} kiện đã ghim', other: '{count} kiện đã ghim' },
+    label: 'Kiện đã ghim',
+    rerun: 'Chạy lại giữ ghim',
+    rerunHint: 'Tối ưu lại: kiện đã ghim giữ nguyên chỗ, các kiện còn lại được xếp quanh chúng.',
+    unsaved: 'Duyệt bản chỉnh để lưu ghim trước khi chạy lại.',
+    tag: 'Đã ghim',
+  },
   /** HUD trên khung 3D của Planner. */
   hud: {
     stopsTitle: 'Điểm giao · thứ tự dỡ',

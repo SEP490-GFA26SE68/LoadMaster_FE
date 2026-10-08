@@ -61,6 +61,7 @@ export const dataErrors = {
   MISSING_STOP_COORDINATES: 'Stop {stopNumbers} has no coordinates, so the route cannot be optimized yet.',
   APPROVAL_BLOCKED: 'Plan {revisionId} still has {count} errors to fix, so it cannot be approved yet.',
   LATE_STOPS_UNCONFIRMED: 'Stop {stopNumbers} is expected to miss its deadline: confirm before approving.',
+  PINNED_SET_INVALID: 'The pinned packages of trip {tripId} have {count} errors and cannot be kept as they are: stop keeping the pins or fix them.',
   TRIP_NOT_PLANNED: 'Trip {tripId} is not Planned yet, so its vehicle cannot be changed here.',
   ROUTE_NOT_PLANNED: 'Trip {tripId} has no optimized route yet, so the load cannot be optimized. Optimize the route first.',
   VEHICLE_UNCHANGED: 'The trip already uses vehicle {vehicleId}.',

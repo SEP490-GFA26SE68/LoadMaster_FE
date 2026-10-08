@@ -56,4 +56,5 @@ export const issues = {
   DUPLICATE_INSTANCE_ID: 'Mã {id} bị trùng ở {occurrences} dòng kiện: {related}.',
   ORIENTATION_MISMATCH: 'Kích thước đã xếp của {id} không khớp hướng {orientation}.',
   ORIENTATION_NOT_ALLOWED: '{id} được đặt theo hướng {orientation}, không thuộc các hướng được phép của kiện.',
+  PINNED_INSTANCE_UNKNOWN: 'Kiện đã ghim {id} không còn trong chuyến nên không giữ được.',
 } as const
