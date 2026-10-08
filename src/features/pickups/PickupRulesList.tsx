@@ -7,8 +7,7 @@ import { ruleText } from './pickup-rule-text'
 
 /**
  * Mười luật nhận hàng dọc đường Đạt / Không đạt (FE-7-03, D-88). Mỗi dòng: icon, tên luật, chip Đạt / Không đạt (chữ, không chỉ màu) và
- * câu lý do dựng từ mã + tham số của kho. Luật ước lượng (4–7, 10) mang thêm nhãn "Ước lượng" — kết quả theo thể tích, khối lượng vùng
- * đã trống, chưa có vị trí 3D của kiện nhận (P2). `touch`: chữ 16 px cho màn tài xế.
+ * câu lý do dựng từ mã + tham số của kho. Luật 4–7 và 10 đọc kết quả xếp kiện nhận vào vùng trống (FE-BL-01), không còn là ước lượng. `touch`: chữ 16 px cho màn tài xế.
  */
 export function PickupRulesList({ results, stopLabel, touch = false, className }: {
   results: readonly PickupRuleResult[]
@@ -32,7 +31,6 @@ export function PickupRulesList({ results, stopLabel, touch = false, className }
                 <span className="font-mono tabular-nums">{result.rule}.</span> {t(`pickups.rules.names.${result.rule}`)}
               </span>
               <Badge shape="tag" tone={result.passed ? 'success' : 'danger'}>{result.passed ? t('pickups.rules.pass') : t('pickups.rules.fail')}</Badge>
-              {result.estimated ? <Badge shape="tag" tone="neutral" title={t('pickups.rules.estimatedHint')}>{t('pickups.rules.estimated')}</Badge> : null}
             </div>
             <span className={cn('text-ink-2', touch ? 'text-body-lg' : 'text-small')}>{ruleText(result, { t, format, stopLabel })}</span>
           </div>

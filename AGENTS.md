@@ -336,11 +336,13 @@ src/
                         *(bổ sung 03/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
-    pickup/             *(bổ sung 07/10/2026, FE-7-02)* nhận hàng dọc đường: mười luật `evaluatePickup` và chèn điểm `insertPickupStops`
+    pickup/             *(bổ sung 07/10/2026, FE-7-02)* nhận hàng dọc đường: mười luật `evaluatePickup` và chèn điểm `insertPickupStops`;
+                        *(bổ sung 08/10/2026, FE-BL-01)* vùng trống sau các điểm đã giao `freedZones` (`freed-zones.ts`)
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker (LM-024 →); mock xếp kệ theo vùng điểm giao
                         (`shelf-packer.ts` chia dải, `shelf-walls.ts` vách / cột / chồng — FE-5b-02); ba phương án ứng viên một job
-                        (`mock-candidates.ts`, `candidate-layouts.ts` dựng và chọn cách xếp, `mock-plan.ts` phần dùng chung — FE-5b-05)
+                        (`mock-candidates.ts`, `candidate-layouts.ts` dựng và chọn cách xếp, `mock-plan.ts` phần dùng chung — FE-5b-05);
+                        *(bổ sung 08/10/2026, FE-BL-01)* xếp kiện nhận dọc đường vào vùng trống `reoptimize-freed-zone.ts`
   test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
 tests/                  unit test cũ của viewer3d (Vitest)
 e2e/                    Playwright (LM-005)
@@ -1589,7 +1591,7 @@ dù giao diện bị bỏ qua:
   (`DELIVERY | PICKUP`) vắng nghĩa là `DELIVERY` (`stopKindOf`), nên điểm có từ trước không phải sửa. Seed: một yêu cầu `PKR-001` chờ duyệt trên
   `TRIP-009` (chuyến Đang vận chuyển duy nhất của Long Bình), điểm giao là điểm 3 của chuyến; Phương Nam không có.
 - *(bổ sung 07/10/2026, FE-7-02, D-88)* **Mười luật nhận hàng dọc đường** (`@/domain/pickup`, thuần): `evaluatePickup(context)` trả đúng 10
-  kết quả `{ rule, passed, code, params, estimated }` theo thứ tự luật 1 → 10, luôn đánh giá đủ cả mười (luật trước không đạt không bỏ qua
+  kết quả `{ rule, passed, code, params }` theo thứ tự luật 1 → 10, luôn đánh giá đủ cả mười (luật trước không đạt không bỏ qua
   luật sau); mã `PICKUP_*` ở `PICKUP_RULE_CODES`, UI dịch từng mã. `context` là mọi thứ luật cần — yêu cầu (`request`: điểm nhận, điểm giao,
   hạn, kiện), `vehicle`, vị trí xe `position` và giờ kho `at`, `stops` (mọi điểm của chuyến theo thứ tự tuyến: `completed`, `onboardCount`,
   `arrivedAt`, `number` khớp `StopZone.stopId`), `zones` của phương án đã duyệt, `onboard` (kiện còn trên xe: hộp đã xếp + khối lượng),
@@ -1600,10 +1602,11 @@ dù giao diện bị bỏ qua:
   hiện tại. Luật 3 đạt khi tổng kiện còn trên xe + kiện nhận ≤ tải trọng (đúng bằng vẫn đạt). Luật 8 dùng `addedConflicts` của
   `domain/constraints/segregation`: kiện nhận khác loại đang khoá thì không đạt, trừ khi chuyến đã có lý do vượt luật. Luật 9: ETA tới điểm giao
   từ `liveEta` trên tuyến **sau khi chèn**, đạt khi không `MISSED` (đúng hạn vẫn đạt); yêu cầu không có hạn thì `PICKUP_NO_DEADLINE`. **Luật
-  4–7 và 10 là ước lượng** (`estimated: true`): vùng đã trống là vùng của các điểm đã hoàn tất (`zones` lọc theo `completed`), kiện nhận đặt
-  một lớp ở giữa vùng đó — thể tích so với thể tích vùng (4), tải trục `axleLoadsOf` (5) và trọng tâm `checkCenterOfGravity` (6) của khối hàng
-  gộp kiện còn trên xe với kiện nhận, hàng dễ vỡ bị đè khi kiện nhận cần hơn một lớp trên sàn vùng trống (7), kiện còn trên xe nằm trong vùng
-  trống thì kiện nhận chắn nó (10); xe không khai trục thì luật 5 đạt với `PICKUP_AXLE_UNAVAILABLE`. Luật 6 chỉ tính **kiểu lệch trọng tâm
+  4–7 và 10 đọc kết quả xếp thật** (`context.packing`, FE-BL-01, bên dưới — *đã điều chỉnh 08/10/2026*: trước đó là ước lượng theo thể tích, khối lượng
+  vùng trống, mang cờ `estimated`, nay đã bỏ cờ và nhãn "Ước lượng"): 4 = mọi kiện nhận có chỗ trong vùng đã trống (kiện chỉ ở lại vì phải đè lên
+  kiện không chịu tải thuộc luật 7), 5 = tải trục `checkAxleLoads` của khối hàng sau khi nhận, 6 = trọng tâm `checkCenterOfGravity` của khối đó, 7 = không
+  issue xếp chồng của constraint engine trên kiện nhận và không kiện nào ở lại vì `STACKING_VIOLATION`, 10 = số kiện còn chở bị kiện nhận che kín
+  mặt sau (`LIFO_BLOCKED`) bằng không; xe không khai trục thì luật 5 đạt với `PICKUP_AXLE_UNAVAILABLE`. Luật 6 chỉ tính **kiểu lệch trọng tâm
   mới xuất hiện sau khi nhận**: giữa chuyến hàng còn lại thường đã dồn về đầu thùng, kiểu lệch có từ trước là đạt với `PICKUP_COG_NOT_WORSE`;
   điểm hiện tại là điểm cuối của tuyến thì luật 2 đạt với mọi điểm giao. Hằng số (10 km, 50 m coi là cùng một điểm)
   ở `PICKUP_CONSTANTS`. `insertPickupStops(stops, { pickupStopId, deliveryStopId }, deliveryLocation)` đặt điểm nhận rồi điểm giao **ngay sau
@@ -1618,9 +1621,9 @@ dù giao diện bị bỏ qua:
   trạng thái chuyến lúc này (chỉ yêu cầu `PENDING` / `VALIDATED`). Bảng chuyển trạng thái nay cho `PENDING → APPROVED` (duyệt kèm lý do vượt luật)
   và `REJECTED` là trạng thái cuối. Nhật ký nhóm `pickup` (`requested`, `approved`, `rejected`, `loaded`, `delivered`), đối tượng là chuyến, tham số
   `pickupId`. Điểm của tuyến mang số điểm trong phương án (`planNumberOf`): điểm chèn lúc đang chạy không có số đó (`number` là 0, không khớp vùng
-  nào). Luật 4–7 và 10 vẫn là ước lượng và luật 3, 5, 6 chưa tính kiện của yêu cầu nhận **trước đó** (chúng chưa có hộp 3D, P2). Màn: `PickupRequestDialog`
+  nào). Kiện của yêu cầu nhận **đã duyệt trước** được tính là hàng đang chở ở mọi luật (FE-BL-01, bên dưới). Màn: `PickupRequestDialog`
   (nhiều dòng kiện, `react-hook-form` + zod — lỗi là mã, luật thuần ở `pickup-form.ts`) lưu xong chuyển sang kết quả mười luật thay vì đóng; mỗi luật
-  là một dòng Đạt / Không đạt bằng chữ kèm nhãn "Ước lượng" ở luật ước lượng (`PickupRulesList`, câu dịch ở `pickup-rule-text.ts` — mỗi mã một
+  là một dòng Đạt / Không đạt bằng chữ (`PickupRulesList`, câu dịch ở `pickup-rule-text.ts` — mỗi mã một
   nhánh nên thêm mã mà quên câu là lỗi kiểu). Khoá Query `['trips', tripId, 'pickups']`; ghi làm mới `['trips']`, `['notifications']`.
 - *(bổ sung 07/10/2026, FE-7-04, D-88)* **Duyệt và từ chối.** `approvePickupRequest(tripId, pickupId, { overrideReason? })` — chỉ điều phối viên
   (`ROLE_NOT_ALLOWED`), chuyến phải Đang vận chuyển, yêu cầu `PENDING` / `VALIDATED`. Kho **kiểm lại mười luật** trên chuyến lúc này: còn luật
@@ -1661,6 +1664,24 @@ dù giao diện bị bỏ qua:
   Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt"
   đọc cả bước `PICKUP`. Giới hạn đã biết: yêu cầu nhận thứ hai chưa tính kiện của yêu cầu thứ nhất ở luật 3, 5, 6 (chúng chưa có hộp 3D); hộp huỷ
   chuyến (`undeliveredCount`) và báo cáo chuyến (khối lượng đã giao) chưa đếm kiện nhận.
+- *(bổ sung 08/10/2026, FE-BL-01, D-88)* **Tái tối ưu vùng trống — kiện nhận có chỗ thật.** `freedZones({ vehicle, zones, stops, onboardKg })` (`@/domain/pickup`, thuần)
+  trả vùng của các điểm đã hoàn tất (`zones`: hộp suốt chiều rộng và cao lòng thùng, thể tích), `spans` (đoạn liền theo X — hai vùng kề nhau cùng
+  trống thì gộp, kể cả khoảng đệm 10 cm), tổng thể tích và tải trọng còn nhận được. `reoptimizeFreedZone` (`@/services/optimization/reoptimize-freed-zone.ts`,
+  thuần, tất định) xếp kiện nhận vào đó **không dời kiện nào đang chở**: kiện xếp theo diện tích đáy rồi thể tích giảm dần; mỗi kiện thử các điểm ứng
+  viên (sàn trước, rồi X tăng — sâu trước —, rồi Y; điểm đầu là đầu mỗi đoạn trống và mọi mép sau / phải của kiện đang chở hay hốc bánh xe lấn vào đoạn
+  trống; sau mỗi kiện thêm ba điểm quanh nó) với từng hướng đặt qua được cửa (`doorOrientations`, cùng luật hướng của mock xếp kệ) và nhận chỗ hợp lệ đầu
+  tiên: trọn trong một đoạn trống và lòng thùng, không chồng kiện / vật cản (lưới không gian của domain), còn tải trọng; ở trên cao thì chỉ tựa lên kiện
+  nhận khác cho xếp chồng (tải đè, số tầng, diện tích tựa tối thiểu của dòng kiện) — **kiện nhận không bao giờ tựa lên kiện đang chở**. Không xếp được thì
+  mã lý do của hợp đồng (`OVER_PAYLOAD`, `DOOR_TOO_SMALL`, `NO_ALLOWED_ORIENTATION`, `NO_SPACE`, `STACKING_VIOLATION`). Cuối cùng cả hàng (đang chở + kiện
+  nhận) qua constraint engine: issue xếp chồng của kiện nhận và số kiện còn chở bị che kín mặt sau (`LIFO_BLOCKED`). Điểm giao của mọi kiện trong lần xếp
+  này là **thứ tự tuyến sau khi chèn** (`pickup-context.ts`), không phải số điểm của phương án; kiện của điểm hiện tại (và trước đó) rời xe trước khi
+  kiện nhận lên nên không tính là bị chắn. Kết quả `FreedZonePacking` (chỗ từng kiện theo chỉ số trong yêu cầu, kiện không xếp được, `before` / `after`
+  khối lượng + trọng tâm + tải trục, `stackingIssues`, `blockedCount`) vào `PickupContext.packing` — nguồn của luật 4–7 và 10. Đo ở máy dev: 1.000 kiện
+  đang chở + 4 kiện nhận khoảng 40 ms. **Duyệt** lưu `PickupRequest.layout` (`placements`, `unplaced`, `plannedAt`) — phương án đã duyệt (revision bất biến) không
+  đổi — và ghi `pickup.reoptimized` (`placed`, `unplaced`); việc này **không tốn credit**: backend chưa trả lời (Q-09), quyết định nằm ở một chỗ có chú thích,
+  `db-pickups.ts`. Kiện không xếp được vẫn lên xe theo lý do vượt luật nhưng chưa có chỗ. Yêu cầu nhận sau coi kiện của yêu cầu `APPROVED` / `LOADED` trước
+  là hàng đang chở: có chỗ thì là hộp trong `onboard` (tải trọng, trục, trọng tâm, vật cản, chắn lối), chưa có chỗ thì chỉ cộng khối lượng vào luật 3
+  (`PickupContext.looseKg`). Phương thức backend: `GET /api/trips/{id}/freed-zones`, `POST /api/v1/optimize/reoptimize-freed-zone`.
 - *(bổ sung 08/10/2026, FE-8-01, FE-8-05, D-89, D-90, D-94)* **Gói cước, credit, thanh toán** (`billing-model.ts`, `billing-core.ts`, `db-billing.ts`; `DbState.plans`,
   `subscriptions`, `creditAccounts`, `creditTransactions`, `payments`). Danh mục gói (`SubscriptionPlan`: hạng `BASIC | PRO | ULTIMATE`, giá VND,
   credit tháng — `null` là không giới hạn, hạng thuật toán `EP_DBLF | EP_DBLF_GA | EP_DBLF_GA_AI`) là dữ liệu nền tảng, mọi phiên đọc được;

@@ -122,6 +122,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'pickup.requested': 'amber',
   'pickup.approved': 'green',
   'pickup.rejected': 'amber',
+  'pickup.reoptimized': 'blue',
   'pickup.loaded': 'blue',
   'pickup.delivered': 'green',
   'subscription.subscribed': 'green',
