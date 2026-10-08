@@ -53,7 +53,7 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
   const model = useMemo(() => withPickupPlacements(planModel, pickupSceneItems(tripStops, pickup)), [planModel, tripStops, pickup])
   const pickupCargo = useMemo(() => unplacedPickups(pickup), [pickup])
   const view = deliveryView(trip, stops)
-  const actions = useDeliveryStop(trip.id, view, stops.length)
+  const actions = useDeliveryStop(trip.id, view)
   const scan = useUnloadScan(trip.id, view, stops)
   const [issueOpen, setIssueOpen] = useState(false)
   const pickupListId = useId()
