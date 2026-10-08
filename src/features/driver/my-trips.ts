@@ -7,6 +7,7 @@ import {
   tripStatus,
   tripSubStatus,
   type Revision,
+  type StopKind,
   type Trip,
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
@@ -14,6 +15,16 @@ import type { User } from '@/types/user'
 
 /** Một chuyến và các revision của nó theo thứ tự kho trả (cũ trước). */
 export type TripRevisions = { readonly trip: Trip; readonly revisions: readonly Revision[] }
+
+/** Một điểm của chuyến trong thẻ "Chuyến của tôi" (V2.3 đợt 6): số điểm, tên, số kiện của phương án ở điểm đó, đã hoàn tất chưa. */
+export type MyTripStop = {
+  readonly number: number
+  readonly name: string
+  readonly kind: StopKind
+  /** Kiện của phương án ở điểm (trừ kiện hỏng bị bỏ lại kho); điểm nhận dọc đường chèn lúc chạy không có kiện nào của phương án. */
+  readonly packageCount: number
+  readonly done: boolean
+}
 
 export type MyTripRow = {
   readonly id: string
@@ -37,6 +48,8 @@ export type MyTripRow = {
   readonly issueCount: number
   /** Đang vận chuyển: xác nhận tay bị điều phối viên từ chối mà kiện chưa được kiểm lại (FE-6-04). */
   readonly recheck: number
+  /** Các điểm của chuyến theo thứ tự đi — chỉ chuyến đang vận chuyển và xếp xong chờ xuất phát; nhóm khác để trống. */
+  readonly stops: readonly MyTripStop[]
 }
 
 /**
@@ -79,16 +92,39 @@ export function myTripGroup(row: Pick<MyTripRow, 'status' | 'sub'>): MyTripGroup
   return row.sub?.kind === 'loaded' ? 'loaded' : 'preparing'
 }
 
+/**
+ * Điểm của chuyến kèm số kiện của phương án và dấu "đã hoàn tất" (`StopProgress.completedAt`). Số điểm của phương án đổi sang số hiện
+ * tại (`plannedStops(plan, trip.stops)`) nên chuyến đã chèn điểm nhận dọc đường vẫn đếm đúng.
+ */
+export function tripStopLines(trip: Pick<Trip, 'stops' | 'loading' | 'delivery'>, plan: Revision): MyTripStop[] {
+  const left = leftOutIds(trip)
+  const perStop = new Map<number, number>()
+  for (const [instanceId, stop] of plannedStops(plan, trip.stops)) {
+    if (!left.has(instanceId)) perStop.set(stop, (perStop.get(stop) ?? 0) + 1)
+  }
+  const finished = new Set(trip.delivery?.stops.filter((stop) => stop.completedAt !== undefined).map((stop) => stop.number))
+  return trip.stops.map((stop, index) => ({
+    number: index + 1,
+    name: stop.name,
+    kind: stop.kind ?? 'DELIVERY',
+    packageCount: perStop.get(index + 1) ?? 0,
+    done: finished.has(index + 1),
+  }))
+}
+
 function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicleNames: ReadonlyMap<string, string>): MyTripRow {
   const total = plannedStops(plan).size
   const unloaded = new Set(trip.delivery?.stops.flatMap((stop) => stop.unloadedIds))
+  const status = tripStatus(trip)
+  const sub = tripSubStatus(trip, revisions)
+  const group = myTripGroup({ status, sub })
   return {
     id: trip.id,
     name: trip.name,
     scheduledDate: trip.scheduledDate,
     vehicleName: vehicleNames.get(trip.vehicleId) ?? trip.vehicleId,
-    status: tripStatus(trip),
-    sub: tripSubStatus(trip, revisions),
+    status,
+    sub,
     manualSub: tripManualSubStatus(trip),
     stopCount: trip.stops.length,
     packageCount: total - leftOutIds(trip).size,
@@ -96,6 +132,7 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
     completedAt: trip.delivery?.completedAt,
     issueCount: trip.delivery?.issues.length ?? 0,
     recheck: trip.phase === 'delivering' ? rejectedConfirms(trip, 'UNLOADING', unloaded).length : 0,
+    stops: group === 'inTransit' || group === 'loaded' ? tripStopLines(trip, plan) : [],
   }
 }
 

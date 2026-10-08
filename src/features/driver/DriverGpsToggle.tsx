@@ -17,9 +17,9 @@ export function DriverGpsToggle({ tripId }: { tripId: string }) {
   const { supported, enabled, state, toggle } = useDeviceLocation(tripId)
   const active = state.status === 'active'
   return (
-    <section aria-label={t('driver.gps.title')} className="flex flex-none flex-col gap-1 border-b border-border bg-bg px-4 pb-2.5">
+    <section aria-label={t('driver.gps.title')} className="flex flex-none flex-col gap-1 rounded-lg border border-border bg-bg px-4 pb-3 shadow-card">
       <div className="flex min-h-14 items-center gap-3">
-        <label htmlFor={switchId} className="flex min-h-14 flex-1 cursor-pointer items-center font-semibold">{t('driver.gps.toggle')}</label>
+        <label htmlFor={switchId} className="flex min-h-14 flex-1 cursor-pointer items-center font-display font-[650] text-ink-strong">{t('driver.gps.toggle')}</label>
         <Badge tone={active ? 'success' : 'neutral'} className="h-8 px-3 text-body-lg">
           {t(`monitoring.location.sources.${active ? 'GPS' : 'SIMULATED'}`)}
         </Badge>
@@ -34,8 +34,8 @@ export function DriverGpsToggle({ tripId }: { tripId: string }) {
         />
       </div>
       {/* Thiết bị không có định vị là lý do cố định của công tắc mờ, không phải thông báo mới: không `role="status"` */}
-      {supported ? <GpsStatus state={state} /> : <p className="m-0 font-medium text-text-2">{t('driver.gps.stopped.unsupported')}</p>}
-      <p id={noteId} className="m-0 text-text-3">{t('driver.gps.localOnly')}</p>
+      {supported ? <GpsStatus state={state} /> : <p className="m-0 font-medium text-ink-2">{t('driver.gps.stopped.unsupported')}</p>}
+      <p id={noteId} className="m-0 text-ink-3">{t('driver.gps.localOnly')}</p>
     </section>
   )
 }
@@ -47,7 +47,7 @@ function GpsStatus({ state }: { state: DeviceLocationState }) {
   if (state.status === 'off' && state.reason === undefined) return null
   const warn = state.status === 'off' && state.reason !== 'user'
   return (
-    <p role="status" className={warn ? 'm-0 rounded-md border border-badge-warning-border bg-badge-warning-bg px-3 py-2 font-medium text-badge-warning-fg' : 'm-0 text-text-2'}>
+    <p role="status" className={warn ? 'm-0 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-3 py-2 font-medium text-badge-warning-fg' : 'm-0 text-ink-2'}>
       {state.status === 'requesting'
         ? t('driver.gps.requesting')
         : state.status === 'active'

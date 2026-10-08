@@ -16,6 +16,8 @@ export type TimelineProps = {
   kind?: 'loading' | 'unloading'; orderedOverride?: readonly ScenePlacement[]
   /** Thứ tự dỡ do FE suy ra (phương án cũ không có `unloadingOrder`): nhãn ghi "gợi ý" */
   suggested?: boolean
+  /** Điều khiển nền đặc, không blur, nút Phát cyan đặc (màn tài xế, V2.3 đợt 6 — kính chưa đo trên điện thoại thật); mặc định là nút kính. */
+  solid?: boolean
 }
 
 /** Nút điều khiển vuông kính (`.ib`): 56 px cảm ứng, 40 px từ `xl`. */
@@ -27,8 +29,9 @@ const CONTROL = cn('size-14 p-0 xl:size-10 [&_svg]:size-5', GLASS_PRESSED)
  * cao gấp đôi; nút Phát là nút kính bật cyan, không phải nút chính tròn — màn chỉ có một nút chính (Duyệt).
  */
 export function Timeline({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
-  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false }: TimelineProps) {
+  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false, solid = false }: TimelineProps) {
   const t = useT()
+  const variant = solid ? 'skySolid' : 'glass'
   const format = useFormat()
   const rail = useRef<HTMLDivElement>(null)
   const [budget, setBudget] = useState(32)
@@ -47,12 +50,12 @@ export function Timeline({ placements, step, totalSteps, playing, speed, onStepC
   const current = ordered[currentIndex], next = ordered[currentIndex + 1]
   return <div className={cn('flex flex-none flex-wrap items-center gap-x-4 gap-y-1 border-t border-glass-dark-border bg-panel-dark px-3 py-2 text-body-lg sm:flex-nowrap xl:px-4 xl:py-3 xl:text-body', DARK_SCOPE)} data-operation-timeline>
     <div className="flex shrink-0 items-center gap-1.5">
-      <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.start')} onClick={onGoToStart} disabled={!totalSteps}><SkipBack strokeWidth={1.5} /></Button>
-      <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.back')} onClick={onStepBackward} disabled={step <= minimum}><ChevronLeft strokeWidth={1.5} /></Button>
-      <Button variant="glass" className={cn(CONTROL, 'xl:size-11')} aria-label={playing ? t('viewer.timeline.pause') : t('viewer.timeline.play')} aria-pressed={playing} onClick={onTogglePlaying} disabled={!totalSteps}>
+      <Button variant={variant} className={CONTROL} aria-label={t('viewer.timeline.start')} onClick={onGoToStart} disabled={!totalSteps}><SkipBack strokeWidth={1.5} /></Button>
+      <Button variant={variant} className={CONTROL} aria-label={t('viewer.timeline.back')} onClick={onStepBackward} disabled={step <= minimum}><ChevronLeft strokeWidth={1.5} /></Button>
+      <Button variant={variant} className={cn(CONTROL, 'xl:size-11', solid && 'border-cyan-300 bg-cyan-300 text-cyan-950 hover:bg-cyan-200 aria-pressed:bg-cyan-200 aria-pressed:text-cyan-950 aria-pressed:ring-0')} aria-label={playing ? t('viewer.timeline.pause') : t('viewer.timeline.play')} aria-pressed={playing} onClick={onTogglePlaying} disabled={!totalSteps}>
         {playing ? <Pause strokeWidth={1.5} /> : <Play strokeWidth={1.5} />}
       </Button>
-      <Button variant="glass" className={CONTROL} aria-label={t('viewer.timeline.forward')} onClick={onStepForward} disabled={step >= totalSteps}><ChevronRight strokeWidth={1.5} /></Button>
+      <Button variant={variant} className={CONTROL} aria-label={t('viewer.timeline.forward')} onClick={onStepForward} disabled={step >= totalSteps}><ChevronRight strokeWidth={1.5} /></Button>
     </div>
     <div className="ml-auto shrink-0 sm:ml-0 sm:w-28">
       <span className={cn('block text-body xl:text-caption', MUTED)}>{label}</span>

@@ -1,4 +1,4 @@
-import { latestVerifications, leftOutIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type Trip, type TripPhase } from '@/lib/mock-db'
+import { latestVerifications, leftOutIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type StopKind, type Trip, type TripPhase } from '@/lib/mock-db'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 import type { PickupItem } from './driver-pickups'
 
@@ -141,4 +141,30 @@ export function deliverySummary(trip: Pick<Trip, 'stops' | 'delivery'>): Deliver
     startedAt: trip.delivery?.startedAt,
     completedAt: trip.delivery?.completedAt,
   }
+}
+
+/** Một điểm trong tổng kết chuyến (V2.3 đợt 6): giờ hoàn tất, số kiện đã dỡ ở điểm, số sự cố đã báo ở điểm. */
+export type SummaryStop = {
+  readonly number: number
+  readonly name: string
+  readonly kind: StopKind
+  readonly completedAt: string | undefined
+  readonly delivered: number
+  readonly issues: number
+}
+
+/** Các điểm của chuyến theo thứ tự đi, mỗi số đọc từ tiến độ giao trong kho (D-47) — không có số nào gõ tay. */
+export function summaryStops(trip: Pick<Trip, 'stops' | 'delivery'>): SummaryStop[] {
+  return trip.stops.map((stop, index) => {
+    const number = index + 1
+    const progress = trip.delivery?.stops.find((item) => item.number === number)
+    return {
+      number,
+      name: stop.name,
+      kind: stop.kind ?? 'DELIVERY',
+      completedAt: progress?.completedAt,
+      delivered: progress?.unloadedIds.length ?? 0,
+      issues: trip.delivery?.issues.filter((issue) => issue.stopNumber === number).length ?? 0,
+    }
+  })
 }

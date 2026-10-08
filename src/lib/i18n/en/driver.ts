@@ -34,6 +34,7 @@ export const driver = {
     },
     completed: 'Completed at {time} · {date}',
     issues: { one: '{count} issue', other: '{count} issues' },
+    stopsLabel: 'Stops of trip {tripId}',
     emptyTitle: 'No trips yet',
     emptyDescription: 'Trips a dispatcher assigns to you appear here.',
   },
@@ -65,6 +66,8 @@ export const driver = {
   arrive: 'Arrived at stop {number}',
   arrived: 'Arrival time recorded for stop {number}',
   stopTitle: 'Stop {number} / {total}',
+  callLabel: 'Call',
+  directionsLabel: 'Directions',
   directions: 'Directions to {name}',
   call: 'Call {name}',
   contact: '{name} · {phone}',
@@ -169,6 +172,7 @@ export const driver = {
     cargoNote: 'These packages did not fit the freed zone, so they have no position in the 3D view; load them as the dispatcher instructs and check them by QR label on the stop screen.',
     cargoRow: '{id} · {name} · {weight} · {reason}',
   },
+  more: { open: 'More', title: 'More actions', description: 'Things you rarely need while the vehicle is on the road.' },
   tripSummary: {
     title: 'Trip summary',
     heading: 'Trip {tripId} is delivered',
@@ -180,6 +184,8 @@ export const driver = {
     noIssues: 'No issues.',
     issueWhere: '{id} · Stop {stop}',
     wholeStop: 'Whole stop · Stop {stop}',
+    stopsTitle: 'Delivery stops',
+    stopLine: { one: 'Delivered {time} · {count} package', other: 'Delivered {time} · {count} packages' },
   },
   cargo: {
     title: 'Cargo positions at this stop',
