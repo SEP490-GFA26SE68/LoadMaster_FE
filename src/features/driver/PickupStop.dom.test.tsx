@@ -1,6 +1,5 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { toast } from 'sonner'
 import { expect, test, vi } from 'vitest'
 import { getMockDb } from '@/lib/mock-db'
 import { unloadStop } from '@/test/trip-flow'
@@ -76,7 +75,6 @@ test('the pickup stop is named in the stop list with its own icon and words, the
   await userEvent.clear(within(screen.getByRole('dialog')).getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }))
   await typeCode(tokens.get(first.id) ?? '')
   expect(await screen.findByText(`Vừa nhận ${first.id} · HG-0601.`, {}, WRITE)).toBeInTheDocument()
-  expect(toast.success).toHaveBeenCalledWith(`Đã nhận ${first.id}`)
   await userEvent.clear(within(screen.getByRole('dialog')).getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }))
   await typeCode(tokens.get(packages[1]!.id) ?? '')
   await screen.findByText('Mọi kiện của điểm nhận này đã đối chiếu.', {}, WRITE)
@@ -85,7 +83,6 @@ test('the pickup stop is named in the stop list with its own icon and words, the
 
   await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất điểm nhận' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 4 / 4' }, LOAD)).toBeInTheDocument()
-  expect(toast.success).toHaveBeenCalledWith('Đã hoàn tất điểm nhận 3', expect.anything())
   expect((await db.getPackage(first.id)).status).toBe('IN_TRANSIT')
   expect(await db.getPickupRequest(TRIP, 'PKR-002')).toMatchObject({ status: 'LOADED' })
 }, 30_000)

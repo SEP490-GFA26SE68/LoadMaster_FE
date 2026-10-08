@@ -126,7 +126,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
           </p>
         ) : null}
       </Tabs>
-      <DialogFooter className="px-5 sm:px-7">
+      <DialogFooter className="sticky bottom-0 px-5 sm:px-7">
         <Button type="button" variant="secondary" size="touch" onClick={onClose}>{t('qr.verify.close')}</Button>
       </DialogFooter>
     </>
@@ -141,7 +141,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
  * 3. **Xác nhận tay**: chọn kiện + lý do khi nhãn không đọc được — ghi `MANUAL_PENDING`, điều phối viên duyệt (FE-6-04).
  *
  * Hộp không biết kiện "đúng" là kiện nào: nơi gọi gửi mã / kiện đã chọn cho kho và trả kết quả về qua `result`. Nút 56 px, chữ 16 px;
- * kết quả là vùng `status` / `alert` nên trình đọc màn hình đọc được. Mỗi lần mở là một thân mới: về mức đầu, ô nhập trống. Khi camera
+ * kết quả là vùng `status` / `alert` nên trình đọc màn hình đọc được. Dưới 768 px hộp là tờ trượt từ đáy (V2.3 đợt 6). Mỗi lần mở là một thân mới: về mức đầu, ô nhập trống. Khi camera
  * chạy, con trỏ đứng ở hộp thoại để bàn phím ảo không che khung hình; không có camera thì hộp mở ở mức 2 và con trỏ vào ô gõ mã.
  */
 export function PackageVerify({ open, onOpenChange, ...body }: PackageVerifyProps) {
@@ -151,7 +151,8 @@ export function PackageVerify({ open, onOpenChange, ...body }: PackageVerifyProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         ref={contentRef}
-        // Khung 640 px không co theo lưới của lớp phủ: trên điện thoại giới hạn bằng bề ngang màn trừ lề 24 px mỗi bên
+        // Điện thoại: tờ trượt từ đáy, nội dung cuộn cùng tờ và nút Đóng dính đáy; từ 768 px là hộp giữa màn rộng tối đa 640 px
+        sheet
         className="w-[min(40rem,calc(100vw-3rem))]"
         onOpenAutoFocus={(event) => {
           event.preventDefault()

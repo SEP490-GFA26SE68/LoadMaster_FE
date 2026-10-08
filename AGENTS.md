@@ -602,8 +602,12 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   *(bổ sung 08/10/2026, V2.3 đợt 6)* **Tờ trượt từ đáy**: `DialogContent sheet` là biến thể trình bày của chính hộp thoại Radix — dưới 768 px hộp thoại trượt
   lên từ đáy (bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội dung cuộn bên trong, cao tối đa `100dvh − 5rem`, dùng `dvh` để bàn phím ảo không che ô đang nhập,
   chân hộp thoại `sticky bottom-0`), từ 768 px vẫn ở giữa màn; focus trap, Esc, tiêu đề có nhãn không đổi, reduced-motion theo luật chung. Dùng ở màn tài xế:
-  "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`) và tờ "Thêm" (`StopMoreActions`); hộp đối chiếu ba mức
-  (`PackageVerify`) và hộp nhận hàng dọc đường chưa chuyển sang tờ.
+  "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), *(đã điều chỉnh 08/10/2026,
+  V2.3 đợt 6)* hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn) và hộp nhận hàng dọc đường
+  (`PickupRequestDialog`, điều phối viên trên desktop vẫn là hộp giữa màn). **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
+  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu, số seal đã ghi);
+  nơi thay toast là vùng đọc được bằng trình đọc màn hình (`role="status"` / `aria-live`). Lỗi và cảnh báo (khách từ chối, xác nhận tay chờ duyệt, báo thiếu,
+  kiện hỏng) luôn có toast. Toast thành công chỉ giữ khi màn không cho thấy gì khác.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
 - **Banner** (`components/Banner.tsx`): info / warning / danger / neutral, hành động dồn phải. `TripLockBanner` dựng trên nó.
 - **Trạng thái rỗng**: không khung nét đứt; ô minh hoạ 64 px bo 18 theo nghĩa (`icon` + `tone`), tiêu đề Archivo 700. Màn không có dữ liệu

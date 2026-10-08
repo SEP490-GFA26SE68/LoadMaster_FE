@@ -152,7 +152,6 @@ export const warehouse = {
     submit: 'Record seal number',
     change: 'Change seal number',
     recorded: 'Seal {number} · recorded at {time}',
-    saved: 'Seal number {number} recorded',
     none: 'No seal number was recorded for this trip.',
     locked: 'The vehicle has left the warehouse: the seal number can no longer change.',
   },
