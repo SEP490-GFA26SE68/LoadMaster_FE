@@ -343,8 +343,6 @@ export const viewer = {
   },
   packageList: {
     label: 'Package list',
-    collapse: 'Collapse package list',
-    expand: 'Expand package list',
     unplacedTab: 'Unplaced',
     pinnedTab: 'Pinned',
     unplacedHint: 'Did not fit the remaining free space.',
@@ -382,7 +380,6 @@ export const viewer = {
   },
   pins: {
     count: { one: '{count} pinned package', other: '{count} pinned packages' },
-    label: 'Pinned packages',
     rerun: 'Run again keeping pins',
     rerunHint: 'Optimize again: pinned packages keep their place, the others are packed around them.',
     unsaved: 'Approve the edited plan to save the pins before running again.',

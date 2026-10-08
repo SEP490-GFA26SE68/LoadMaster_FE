@@ -91,7 +91,6 @@ export const monitoring = {
     title: 'Report an incident of trip {id}',
     description: 'The simulated vehicle stands still for exactly the expected delay; arrival times are recalculated from the vehicle position.',
     type: 'Incident type',
-    typePlaceholder: 'Choose the incident type',
     details: 'Description',
     detailsHint: 'What happened, and where.',
     delay: 'Expected delay in minutes',

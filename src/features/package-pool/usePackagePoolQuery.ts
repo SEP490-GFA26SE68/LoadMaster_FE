@@ -10,7 +10,6 @@ import {
   fetchPackageDetail,
   fetchPackageLabels,
   fetchPackages,
-  fetchPackageType,
   fetchPackageTypes,
   lookupPackages,
   previewPackageImport,
@@ -32,11 +31,6 @@ export const PACKAGE_POOL_KEY = ['package-pool'] as const
 
 export function usePackageTypesQuery() {
   return useQuery({ queryKey: PACKAGE_TYPES_KEY, queryFn: fetchPackageTypes })
-}
-
-/** `id` rỗng (form thêm mới) thì không gọi kho. */
-export function usePackageTypeQuery(id: string) {
-  return useQuery({ queryKey: [...PACKAGE_TYPES_KEY, id], queryFn: () => fetchPackageType(id), enabled: id !== '' })
 }
 
 export function useSavePackageTypeMutation() {

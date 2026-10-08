@@ -3,7 +3,6 @@ import type { VehicleTypeInput } from '@/lib/mock-db'
 import {
   deleteVehicleType,
   fetchVehicleAssignmentRows,
-  fetchVehicleTypeAssignments,
   fetchVehicleTypes,
   saveVehicleType,
   setVehicleType,
@@ -29,10 +28,6 @@ export function useVehicleTypesQuery() {
 /** Mọi xe của đội kèm loại đang gắn — bảng "Gắn loại cho xe". */
 export function useVehicleAssignmentRowsQuery() {
   return useQuery({ queryKey: [...KEY, 'vehicles'], queryFn: fetchVehicleAssignmentRows, staleTime: 0 })
-}
-
-export function useVehicleTypeAssignmentsQuery() {
-  return useQuery({ queryKey: [...KEY, 'assignments'], queryFn: fetchVehicleTypeAssignments })
 }
 
 export function useSaveVehicleTypeMutation() {

@@ -8,7 +8,6 @@ export const support = {
     title: 'Support requests',
     description: 'Send a technical or billing problem to the LoadMaster support team and follow the replies. You only see the requests you sent.',
     loading: 'Loading support requests',
-    errorTitle: 'Could not load support requests',
     retry: 'Try again',
     new: 'Send a new request',
     empty: 'You have not sent any support request yet.',

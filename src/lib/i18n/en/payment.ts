@@ -5,7 +5,6 @@ export const payment = {
   title: 'Simulated payment',
   loading: 'Loading the transaction',
   notice: 'This is the demo’s simulated payment page: there is no real payment gateway and no money is taken.',
-  amount: 'Amount',
   description: 'Description',
   code: 'Transaction code',
   status: 'Status',

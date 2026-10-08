@@ -10,7 +10,6 @@ export const support = {
     title: 'Yêu cầu hỗ trợ',
     description: 'Gửi vấn đề kỹ thuật hoặc thanh toán cho đội hỗ trợ LoadMaster và theo dõi trả lời. Bạn chỉ thấy yêu cầu do chính bạn gửi.',
     loading: 'Đang tải yêu cầu hỗ trợ',
-    errorTitle: 'Không tải được yêu cầu hỗ trợ',
     retry: 'Thử lại',
     new: 'Gửi yêu cầu mới',
     empty: 'Bạn chưa gửi yêu cầu hỗ trợ nào.',

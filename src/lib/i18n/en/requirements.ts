@@ -122,7 +122,6 @@ export const requirements = {
     coordinates: 'Coordinates',
     noCoordinates: 'No coordinates yet',
     deadline: 'Deadline',
-    priority: 'Priority',
     note: 'Note',
     noNote: 'No note',
     createdBy: 'Created by',

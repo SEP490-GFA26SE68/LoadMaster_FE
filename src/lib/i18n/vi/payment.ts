@@ -6,7 +6,6 @@ export const payment = {
   title: 'Thanh toán giả lập',
   loading: 'Đang tải giao dịch',
   notice: 'Đây là trang thanh toán giả lập của bản demo: không có cổng thanh toán thật và không có tiền nào bị trừ.',
-  amount: 'Số tiền',
   description: 'Nội dung',
   code: 'Mã giao dịch',
   status: 'Trạng thái',

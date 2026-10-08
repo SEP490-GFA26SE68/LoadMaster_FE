@@ -6,7 +6,6 @@
 export const qr = {
   imageLabel: 'Mã QR {token}',
   label: {
-    poolId: 'Mã kho kiện',
     senderCode: 'Mã bên gửi',
     handlingClass: 'Loại hàng',
     dimensions: 'Kích thước',

@@ -14,7 +14,6 @@ export const companies = {
   columns: { company: 'Công ty', plan: 'Gói', planStatus: 'Trạng thái gói', users: 'Người dùng', actions: 'Thao tác' },
   noPlan: 'Chưa có gói',
   actions: 'Thao tác với {name}',
-  edit: 'Sửa',
   created: 'Đã tạo công ty {name}',
   saved: 'Đã lưu công ty {name}',
   form: {
