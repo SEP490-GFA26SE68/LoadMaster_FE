@@ -39,10 +39,7 @@ export function SealCard({ trip }: { trip: Pick<Trip, 'id' | 'phase' | 'loading'
 
   function handleSubmit({ number }: SealValues) {
     record.mutate(number, {
-      onSuccess: () => {
-        setEditing(false)
-        toast.success(t('warehouse.seal.saved', { number }))
-      },
+      onSuccess: () => setEditing(false),
       onError: (failure) => toast.error(dataErrorMessage(failure, t)),
     })
   }
@@ -54,7 +51,7 @@ export function SealCard({ trip }: { trip: Pick<Trip, 'id' | 'phase' | 'loading'
         {t('warehouse.seal.title')}
       </h2>
       {seal ? (
-        <p className="m-0 font-medium">
+        <p role="status" className="m-0 font-medium">
           {t('warehouse.seal.recorded', { number: seal.number, time: format.time(seal.at) })}
         </p>
       ) : !editable ? (

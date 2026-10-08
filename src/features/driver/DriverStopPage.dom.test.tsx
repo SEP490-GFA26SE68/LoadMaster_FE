@@ -115,7 +115,6 @@ test('the driver delivers a trip (FE-6-06): depart, arrive, unload by verificati
 
   // Điểm 1: PKG-002-01. Chưa dỡ thì chưa hoàn tất được; dỡ bằng đối chiếu (gõ mã của bên gửi)
   const complete = await screen.findByRole('button', { name: 'Hoàn tất điểm giao' }, WRITE)
-  expect(toast.success).toHaveBeenCalledWith('Đã ghi giờ đến điểm 1')
   expect(screen.getByRole('status')).toHaveTextContent(/^Đã đến điểm 1 lúc \d{2}:\d{2}\.$/)
   expect((await db.getTrip(tripId)).delivery?.stops[0]?.arrivedAt).toBeDefined()
   expect(complete).toBeDisabled()
@@ -130,7 +129,6 @@ test('the driver delivers a trip (FE-6-06): depart, arrive, unload by verificati
   await waitFor(() => expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeEnabled(), WRITE)
   await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất điểm giao' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' }, WRITE)).toBeInTheDocument()
-  expect(toast.success).toHaveBeenCalledWith('Đã hoàn tất điểm giao 1', { description: 'Chuyển sang điểm giao 2.' })
   expect(await poolStatus('PKG-002-01')).toBe('DELIVERED')
 
   // Điểm 2 không có kiện nào: vẫn phải đến rồi mới hoàn tất
@@ -232,7 +230,6 @@ test('verification at a stop (FE-6-03, FE-6-04): a package of another stop is ex
   await userEvent.type(again.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }), 'pkg-002-01')
   await userEvent.click(again.getByRole('button', { name: 'Đối chiếu mã' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), WRITE)
-  expect(toast.success).toHaveBeenCalledWith('Đã dỡ PKG-002-01')
   await waitFor(() => expect(container.querySelector('li[data-package-id="PKG-002-01"]')).toHaveAttribute('data-state', 'unloaded'), WRITE)
   expect(within(container.querySelector('li[data-package-id="PKG-002-01"]') as HTMLElement).getByText('Đã dỡ · gõ mã')).toBeInTheDocument()
   await waitFor(() => expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeEnabled(), WRITE)

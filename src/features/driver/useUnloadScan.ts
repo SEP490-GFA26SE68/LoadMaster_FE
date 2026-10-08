@@ -61,11 +61,7 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
     const waiting = waitingIds()
     setResult(null)
     scan.mutate({ stopNumber: view.stop.number, ...input }, {
-      onSuccess: ({ packageInstanceId }) => {
-        const picked = view.pickupItems.some((entry) => entry.item.id === packageInstanceId && entry.item.role === 'pick')
-        toast.success(t(picked ? 'driver.pickup.picked' : 'driver.scan.unloaded', { id: packageInstanceId }))
-        recorded(packageInstanceId, waiting)
-      },
+      onSuccess: ({ packageInstanceId }) => recorded(packageInstanceId, waiting),
       onError: showError,
     })
   }

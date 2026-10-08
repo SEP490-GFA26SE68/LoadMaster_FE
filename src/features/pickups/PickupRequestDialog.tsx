@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CircleCheck, PackagePlus, Plus, X } from 'lucide-react'
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Controller, useFieldArray, useForm, type FieldErrors } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -59,7 +59,8 @@ const SIZE_COLUMNS = [
  * Hộp "Nhận hàng dọc đường" (FE-7-03, D-88): điểm nhận, điểm giao (ô chọn toạ độ dùng chung), hạn tuỳ chọn và danh sách kiện nhận (mã
  * của bên gửi, kích thước cm, khối lượng kg, loại hàng). Lưu xong kho kiểm mười luật ngay; hộp chuyển sang kết quả Đạt / Không đạt
  * (`PickupRulesList`) thay vì đóng. Điều phối viên mở từ Chi tiết chuyến và Giám sát; tài xế mở từ màn điểm giao (`touch`: ô và nút 56 px,
- * chữ 16 px). Thân form dựng lại mỗi lần mở.
+ * chữ 16 px). Dưới 768 px là tờ trượt từ đáy (`DialogContent sheet`): thân cuộn cùng tờ, chân hộp dính đáy; từ 768 px là hộp giữa màn.
+ * Thân form dựng lại mỗi lần mở.
  */
 export function PickupRequestDialog({ tripId, stops, open, onOpenChange, touch = false }: {
   tripId: string
@@ -72,7 +73,7 @@ export function PickupRequestDialog({ tripId, stops, open, onOpenChange, touch =
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
-        <DialogContent className="w-[min(60rem,calc(100vw-3rem))]">
+        <DialogContent sheet className="w-[min(60rem,calc(100vw-3rem))]">
           <PickupForm tripId={tripId} stops={stops} touch={touch} onClose={() => onOpenChange(false)} />
         </DialogContent>
       ) : null}
@@ -95,7 +96,8 @@ function PickupForm({ tripId, stops, touch, onClose }: { tripId: string; stops: 
   function handleSubmit(values: PickupFormValues) {
     create.mutate(toPickupInput(values), {
       onSuccess: (request) => {
-        toast.success(t('pickups.result.sent', { id: request.id }))
+        // Màn cảm ứng của tài xế: bước kết quả ngay trong hộp đã nói yêu cầu vừa gửi, không thêm toast phủ lên tờ trượt
+        if (!touch) toast.success(t('pickups.result.sent', { id: request.id }))
         setCreated(request)
       },
     })
@@ -104,7 +106,7 @@ function PickupForm({ tripId, stops, touch, onClose }: { tripId: string; stops: 
   return (
     <form noValidate className={touch ? 'text-body-lg' : undefined} onSubmit={form.handleSubmit(handleSubmit)}>
       <DialogHeader icon={PackagePlus} title={t('pickups.dialog.title', { id: tripId })} description={t('pickups.dialog.description')} />
-      <div className="flex max-h-[calc(100dvh-14rem)] flex-col gap-5 overflow-y-auto px-7 py-5 max-sm:px-4">
+      <div className="flex flex-col gap-5 px-7 py-5 max-sm:px-4 md:max-h-[calc(100dvh-14rem)] md:overflow-y-auto">
         <div className="grid gap-5 md:grid-cols-2">
           <PointFields prefix="pickup" form={form} touch={touch} />
           <PointFields prefix="delivery" form={form} touch={touch} />
@@ -136,7 +138,7 @@ function PickupForm({ tripId, stops, touch, onClose }: { tripId: string; stops: 
         </fieldset>
         {create.isError ? <p role="alert" className="m-0 text-caption text-danger">{dataErrorMessage(create.error, t)}</p> : null}
       </div>
-      <DialogFooter>
+      <DialogFooter className="sticky bottom-0">
         <DialogClose asChild><Button type="button" variant="secondary" size={size}>{t('pickups.dialog.cancel')}</Button></DialogClose>
         <Button type="submit" size={size} loading={create.isPending}>{t('pickups.dialog.submit')}</Button>
       </DialogFooter>
@@ -225,14 +227,19 @@ function PackageRow({ index, form, touch, removable, onRemove }: {
 function PickupResult({ request, stopLabel, touch, onClose }: { request: PickupRequest; stopLabel: (stopId: string) => string; touch: boolean; onClose: () => void }) {
   const t = useT()
   const failed = request.validationResults.filter((result) => !result.passed).length
+  const rootRef = useRef<HTMLDivElement>(null)
+  // Tờ trượt dùng lại khung cuộn của form: bước kết quả bắt đầu từ đầu, không giữ chỗ cuộn của form
+  useEffect(() => {
+    if (rootRef.current?.parentElement) rootRef.current.parentElement.scrollTop = 0
+  }, [])
   return (
-    <div className={touch ? 'text-body-lg' : undefined}>
+    <div ref={rootRef} className={touch ? 'text-body-lg' : undefined}>
       <DialogHeader icon={CircleCheck} tone="success" title={t('pickups.result.title', { id: request.id })} description={t(`pickups.status.${request.status}`)} />
-      <div className="flex max-h-[calc(100dvh-14rem)] flex-col gap-3 overflow-y-auto px-7 py-5 max-sm:px-4">
+      <div className="flex flex-col gap-3 px-7 py-5 max-sm:px-4 md:max-h-[calc(100dvh-14rem)] md:overflow-y-auto">
         <Banner tone={failed === 0 ? 'info' : 'warning'}>{failed === 0 ? t('pickups.result.validated') : t('pickups.result.pending', { count: failed })}</Banner>
         <PickupRulesList results={request.validationResults} stopLabel={stopLabel} touch={touch} />
       </div>
-      <DialogFooter>
+      <DialogFooter className="sticky bottom-0">
         <Button type="button" size={touch ? 'touch' : 'md'} onClick={onClose}>{t('pickups.dialog.close')}</Button>
       </DialogFooter>
     </div>
