@@ -37,4 +37,5 @@ expectTypeOf<ConstraintCode>().toEqualTypeOf<
   | 'DUPLICATE_INSTANCE_ID'
   | 'ORIENTATION_MISMATCH'
   | 'ORIENTATION_NOT_ALLOWED'
+  | 'PINNED_INSTANCE_UNKNOWN'
 >()

@@ -126,6 +126,12 @@ const SAMPLE_ISSUES: { readonly [C in ConstraintCode]: ConstraintIssue<C> } = {
     packageInstanceId: 'PKG-001-02',
     params: { orientation: 'HWL' },
   },
+  PINNED_INSTANCE_UNKNOWN: {
+    code: 'PINNED_INSTANCE_UNKNOWN',
+    severity: 'error',
+    packageInstanceId: 'PKG-001-03',
+    params: {},
+  },
 }
 
 describe.each(LOCALES)('every constraint code has a finished sentence in %s', (locale) => {

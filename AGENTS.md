@@ -1431,6 +1431,16 @@ dù giao diện bị bỏ qua:
   tiêu đó + phần domain tính cho nó. Ba phương án chạy trong **một worker** (`start-candidates`): tiến trình báo theo từng mục tiêu
   (`CandidateProgress`), huỷ hay hết giờ là bỏ cả ba, kho không lưu gì. Đo ở máy dev: 132 kiện 7 ms → 18 ms, 1.000 kiện 42 ms → 130 ms
   (một kết quả → ba phương án); cổng bench 1.000 instance ≤ 1 s áp cho cả job.
+- *(bổ sung 08/10/2026, FE-BL-02)* **Kiện ghim và chạy lại giữ ghim.** `PackagePlacement.pinned?: true` (ngoài type Spec, khai ở
+  `spec-contract.test.ts`) là ghim **lưu cùng phương án**: sống qua Duyệt và mở lại. `OptimizationRequest.pinnedPlacements?` (ngoài type Spec) mang
+  các placement phải giữ nguyên vị trí và hướng; **vắng — không phải mảng rỗng — khi không giữ kiện nào** (`mockJobId` coi rỗng như vắng, nên request
+  cũ giữ nguyên mã job và kết quả). Bộ ghim phải đứng vững một mình (`pinnedIssues` ở `@/domain/constraints`): kiện không thuộc chuyến
+  (`PINNED_INSTANCE_UNKNOWN`), trùng mã, ra ngoài thùng (`EXCEEDS_BOUNDARY`), chồng lấn (`OVERLAP`), đè vật cản, lơ lửng (`SUPPORT_BELOW_MIN`,
+  cảnh báo ở phương án nhưng là lỗi ở đây vì chỗ đỡ không được xếp lại), vượt tải trục hay tải trọng (`PAYLOAD_EXCEEDED`) — trả issue mã + tham
+  số, không sửa ngầm; `preflight` thấy lỗi thì kết quả `FAILED`. Mock coi kiện ghim là **hộp cố định** (`FixedCargo` của `shelf-walls.ts`): vật cản cho
+  việc tìm chỗ (không kiện nào đè hay chồng lên chúng, vách bị chúng chắn kín thì nhảy tới mép sau của chúng), nhưng khối lượng, trọng tâm,
+  tải trục, vùng điểm giao, LIFO và số dỡ-xếp lại tính như mọi kiện; placement của chúng đứng đầu kết quả với `pinned: true`. Kiện
+  không vừa quanh chúng ở lại với lý do như thường. Lần chạy không ghim chạy đúng đường cũ (`fixed` rỗng).
 - *(bổ sung 03/10/2026, FE-5b-05)* **Lần chạy và revision của nó.** `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương
   án một revision bất biến mang `runId` và `run: { objective, algorithm }` (bản duyệt giữ của bản nguồn), theo thứ tự A · B · C — bản mới
   nhất chưa duyệt của chuyến là phương án C — cùng **một** lần chạy `OptimizationRun { algorithm, jobId, plans[] }` và **một** sự kiện

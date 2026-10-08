@@ -119,6 +119,8 @@ export function formatIssue(issue: ConstraintIssue, t: TFunction, format: Format
     case 'ORIENTATION_MISMATCH':
     case 'ORIENTATION_NOT_ALLOWED':
       return t(`issues.${issue.code}`, { id: subjectOf(issue), orientation: issue.params.orientation })
+    case 'PINNED_INSTANCE_UNKNOWN':
+      return t('issues.PINNED_INSTANCE_UNKNOWN', { id: subjectOf(issue) })
     default:
       return unreachable(issue)
   }

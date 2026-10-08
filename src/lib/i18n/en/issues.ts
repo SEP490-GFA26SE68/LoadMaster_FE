@@ -54,4 +54,5 @@ export const issues = {
   DUPLICATE_INSTANCE_ID: 'ID {id} is used by {occurrences} package lines: {related}.',
   ORIENTATION_MISMATCH: 'Placed dimensions of {id} do not match orientation {orientation}.',
   ORIENTATION_NOT_ALLOWED: '{id} is placed in orientation {orientation}, which its package does not allow.',
+  PINNED_INSTANCE_UNKNOWN: 'Pinned package {id} is no longer on the trip, so it cannot be kept.',
 } satisfies Dictionary<typeof source>
