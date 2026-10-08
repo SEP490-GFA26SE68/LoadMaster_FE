@@ -40,7 +40,7 @@ export function TripSummary({ trip, plan }: { trip: Trip; plan: Revision }) {
         leading={<ExitIconButton tone="sky" screenHome={DRIVER_TRIP_SCREEN} contextual="/tai-xe" label={t('driver.toTrips')} iconClassName="size-7" />}
         trailing={<LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />}
       >
-        <h1 className="min-w-0 font-display text-h2 leading-7 font-bold whitespace-nowrap text-sky-text font-stretch-106%">{t('driver.tripSummary.title')}</h1>
+        <h1 className="min-w-0 font-display text-h2 leading-6 font-bold text-balance text-sky-text font-stretch-106%">{t('driver.tripSummary.title')}</h1>
       </TouchTopBar>
 
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-4">
