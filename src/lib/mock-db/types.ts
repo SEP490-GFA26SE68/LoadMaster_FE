@@ -125,6 +125,11 @@ export type DeliveryProgress = {
   /** Mỗi điểm giao của chuyến một phần tử, theo thứ tự giao. */
   stops: StopProgress[]
   issues: DeliveryIssue[]
+  /**
+   * Lần đổi thứ tự điểm gần nhất khi xe đang chạy (FE-BL-03): xe mô phỏng đi tới điểm `stopId` từ vị trí `lat`/`lng` lúc `at` (điểm vị
+   * trí ghi gần nhất), với `drivenMs` lái liên tục — không từ điểm trước nó. Chỉ `reorderRunningStops` ghi.
+   */
+  redirect?: { stopId: string; lat: number; lng: number; at: string; drivenMs: number }
 }
 
 export type Cancellation = {

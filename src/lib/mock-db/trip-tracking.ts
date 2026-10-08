@@ -30,6 +30,7 @@ const progressOf = (trip: Tracked, index: number): StopProgress | undefined => t
 export function simulationOf(trip: Tracked, delays: readonly SimulationDelay[] = []): SimulationInput | null {
   if (!isTrackable(trip) || !trip.delivery) return null
   const firstOpen = trip.stops.findIndex((_, index) => progressOf(trip, index)?.completedAt === undefined)
+  const redirect = trip.delivery.redirect
   const driven = firstOpen === -1 ? trip.stops : trip.stops.slice(0, firstOpen + 1)
   return {
     depot: { lat: trip.depot.lat, lng: trip.depot.lng },
@@ -41,6 +42,7 @@ export function simulationOf(trip: Tracked, delays: readonly SimulationDelay[] =
         location: pointOf(stop),
         ...(progress?.arrivedAt === undefined ? {} : { arrivedAt: progress.arrivedAt }),
         ...(progress?.completedAt === undefined ? {} : { completedAt: progress.completedAt }),
+        ...(redirect?.stopId === stop.id ? { startFrom: { location: { lat: redirect.lat, lng: redirect.lng }, at: redirect.at, drivenMs: redirect.drivenMs } } : {}),
       }
     }),
     delays,

@@ -1,4 +1,4 @@
-import { ExternalLink, PackagePlus, TriangleAlert } from 'lucide-react'
+import { ExternalLink, ListOrdered, PackagePlus, TriangleAlert } from 'lucide-react'
 import { memo, useState } from 'react'
 import { Link } from 'react-router'
 import { VehicleName } from '@/components/VehicleName'
@@ -15,6 +15,8 @@ import { LiveLocationBar } from './LiveLocationBar'
 import { LocationHistory } from './LocationHistory'
 import type { MonitoringTrip } from './monitoring-api'
 import { DeadlineChip } from './monitoring-chips'
+import { fixedStopCount } from './monitoring-view'
+import { ReorderStopsDialog } from './ReorderStopsDialog'
 import { ReportExceptionDialog } from './ReportExceptionDialog'
 import { RerouteDialog } from './RerouteDialog'
 import { TripExceptionList } from './TripExceptionList'
@@ -34,10 +36,13 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
   const moment = useMoment()
   const [reporting, setReporting] = useState(false)
   const [rerouting, setRerouting] = useState(false)
+  const [reordering, setReordering] = useState(false)
   useTripChannel(trip.tripId)
   const etaOf = new Map((live?.stops ?? []).map((stop) => [stop.stopId, stop]))
   const reroute = live?.reroute
   const stopName = (stopNumber: number) => trip.stops.find((stop) => stop.number === stopNumber)?.name ?? ''
+  // Đổi thứ tự cần ít nhất hai điểm chưa giao và chưa tới (FE-BL-03); không thì nút mờ kèm lý do
+  const canReorder = trip.stops.length - fixedStopCount(trip.stops) >= 2
 
   return (
     <section aria-label={t('monitoring.panel.label', { id: trip.tripId })} className="flex flex-col gap-3">
@@ -52,6 +57,19 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                 {t('monitoring.panel.openTrip')}
               </Link>
             </Button>
+            {can('routes.optimize') ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!canReorder}
+                aria-describedby={canReorder ? undefined : `${trip.tripId}-reorder-reason`}
+                onClick={() => setReordering(true)}
+              >
+                <ListOrdered strokeWidth={1.5} />
+                {t('monitoring.reorder.open')}
+              </Button>
+            ) : null}
+            {can('routes.optimize') && !canReorder ? <span id={`${trip.tripId}-reorder-reason`} className="sr-only">{t('monitoring.reorder.unavailable')}</span> : null}
             {can('exceptions.report') ? (
               <Button onClick={() => setReporting(true)}>
                 <TriangleAlert strokeWidth={1.5} />
@@ -138,6 +156,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
       <ManualConfirmCard tripId={trip.tripId} />
       <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} />
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
+      <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} />
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>
   )

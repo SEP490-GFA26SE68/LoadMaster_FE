@@ -82,6 +82,11 @@ export const dataErrors = {
   PICKUP_INVALID: 'The pickup request is not valid: it needs a name, address and coordinates for the pickup and delivery points, a readable deadline (if any), and a code, dimensions, weight and handling class for every package.',
   INVALID_PICKUP_STATUS_TRANSITION: 'Pickup request {pickupId} cannot move to that status from its current one. Reload to see its latest status.',
   PICKUP_ROUTE_UNAVAILABLE: 'Stop {stopNumbers} of the trip has no coordinates, so the pickup request cannot be checked yet.',
+  // Reordering stops while the vehicle is on the road (FE-BL-03)
+  STOP_ORDER_INVALID: 'The stop order is not valid: it must contain exactly the stops of trip {tripId} and differ from the current order.',
+  STOP_NOT_MOVABLE: 'Stop {stopIds} is completed or the vehicle has arrived there, so it cannot move.',
+  PICKUP_AFTER_DELIVERY: 'Pickup stop {pickupStopId} must come before delivery stop {deliveryStopId} of the same request.',
+  STOP_ORDER_BLOCKS_CARGO: 'In this order, package {packages} is fully blocked by cargo delivered later and could not be unloaded. The stop order stays as it is.',
   UNSUPPORTED_FILE_TYPE: 'This file cannot be read. Only .csv or .xlsx files are accepted.',
   EMPTY_FILE: 'The file has no data rows.',
   FILE_TOO_LARGE: 'The file is larger than {maxMb} MB and cannot be imported.',

@@ -29,4 +29,5 @@ export {
   type SimulationInput,
   type VehicleFix,
 } from './simulate'
+export { checkProposedOrder, type OrderViolation, type ProposedOrderInput } from './reorder'
 export { optimizeRoute, sequenceStops } from './stop-sequence'

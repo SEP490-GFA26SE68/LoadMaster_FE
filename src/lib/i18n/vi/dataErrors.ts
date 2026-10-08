@@ -94,6 +94,11 @@ export const dataErrors = {
   PICKUP_INVALID: 'Yêu cầu nhận hàng chưa hợp lệ: cần tên, địa chỉ, toạ độ của điểm nhận và điểm giao, hạn đọc được (nếu có), mã, kích thước, khối lượng và loại hàng của từng kiện.',
   INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận {pickupId} không chuyển sang trạng thái này được từ trạng thái hiện tại. Tải lại để xem trạng thái mới.',
   PICKUP_ROUTE_UNAVAILABLE: 'Điểm giao số {stopNumbers} của chuyến chưa có toạ độ nên chưa kiểm được yêu cầu nhận hàng.',
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  STOP_ORDER_INVALID: 'Thứ tự điểm giao chưa hợp lệ: phải gồm đúng các điểm của chuyến {tripId} và khác thứ tự hiện tại.',
+  STOP_NOT_MOVABLE: 'Điểm {stopIds} đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
+  PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng {pickupStopId} phải đứng trước điểm giao {deliveryStopId} của cùng yêu cầu.',
+  STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này, kiện {packages} bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',

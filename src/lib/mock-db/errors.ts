@@ -261,6 +261,15 @@ export type MockDbErrorParams = {
   BATCH_TOO_LARGE: { max: number; rows: number }
   /** Dòng tiêu đề thiếu cột bắt buộc `columns` (tên cột của backend). */
   IMPORT_COLUMNS_MISSING: { columns: string[] }
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  /** Thứ tự đề xuất không phải hoán vị của các điểm hiện có, hoặc không khác thứ tự hiện tại. */
+  STOP_ORDER_INVALID: { tripId: string }
+  /** Thứ tự đề xuất dời điểm đã hoàn tất hoặc điểm xe đã tới (`stopIds`). */
+  STOP_NOT_MOVABLE: { tripId: string; stopIds: string[] }
+  /** Điểm nhận hàng dọc đường chưa tới bị đặt sau điểm giao của chính yêu cầu đó. */
+  PICKUP_AFTER_DELIVERY: { tripId: string; pickupStopId: string; deliveryStopId: string }
+  /** Theo thứ tự mới, kiện còn trên xe bị kiện giao sau che kín lối dỡ: `packages[i]` thuộc điểm `stopIds[i]`. Không đổi gì. */
+  STOP_ORDER_BLOCKS_CARGO: { tripId: string; packages: string[]; stopIds: string[] }
   /** Xác nhận nhập khi bản xem trước còn `errors` dòng lỗi: không dòng nào được ghi (D-68). */
   PACKAGE_IMPORT_INVALID: { errors: number }
 }

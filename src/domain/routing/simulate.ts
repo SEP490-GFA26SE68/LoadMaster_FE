@@ -21,6 +21,11 @@ export type SimulatedStop = {
   readonly arrivedAt?: string
   /** Tài xế hoàn tất điểm, ISO 8601: xe rời điểm đúng lúc đó. Vắng thì xe đứng 15 phút rồi đi tiếp. */
   readonly completedAt?: string
+  /**
+   * Chặng tới điểm này không xuất phát từ điểm trước mà từ `location` lúc `at` (ISO 8601), với `drivenMs` lái liên tục đã tích luỹ:
+   * điều phối viên đổi thứ tự điểm khi xe đang chạy (FE-BL-03) — xe đi tiếp từ chỗ nó đang đứng tới điểm kế tiếp mới, không nhảy vị trí.
+   */
+  readonly startFrom?: { readonly location: GeoPoint; readonly at: string; readonly drivenMs: number }
 }
 
 /** Sự cố làm xe dừng `minutes` phút kể từ `at` (ISO 8601). Sự cố chồng giờ nhau thì nối tiếp: mỗi sự cố tốn đúng số phút của nó. */
@@ -158,6 +163,11 @@ export function simulateVehicle(input: SimulationInput, at: string): SimulatedVe
   let heading = 0
   let driven = 0
   for (const [index, stop] of input.stops.entries()) {
+    if (stop.startFrom) {
+      from = stop.startFrom.location
+      leaveMs = parseTime(stop.startFrom.at)
+      driven = stop.startFrom.drivenMs
+    }
     const travel = travelMs(from, stop.location)
     if (travel > 0) heading = bearing(from, stop.location)
     if (atMs < leaveMs) return { ...fix(from, 0, heading), stopId: stop.stopId, drivenMs: driven }

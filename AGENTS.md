@@ -142,7 +142,7 @@ vai trò không có nguồn nào (kho, tài xế, quản lý nền tảng, hỗ 
 người làm) ở chuông **và toast**: `EtaRiskWatcher` (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận
 chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau lần đọc đầu thành toast (sát hạn: cảnh báo; trễ hạn dự kiến: lỗi) và chuông đọc lại ngay,
 cảnh báo có từ trước chỉ nằm ở chuông. Quản lý công ty không nhận loại này.
-*(đã điều chỉnh 07/10/2026, FE-7-03)* **Nhận hàng dọc đường ở chuông**: điều phối viên nhận `pickup.requested` (tài xế hoặc đồng nghiệp gửi yêu cầu nhận); tài xế nhận quyết định `pickup.approved` / `pickup.rejected` — chỉ của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện).
+*(đã điều chỉnh 07/10/2026, FE-7-03)* **Nhận hàng dọc đường ở chuông**: điều phối viên nhận `pickup.requested` (tài xế hoặc đồng nghiệp gửi yêu cầu nhận); tài xế nhận quyết định `pickup.approved` / `pickup.rejected` — chỉ của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện); *(bổ sung 08/10/2026, FE-BL-03)* và `trip.stopsReordered` khi điều phối viên đổi thứ tự điểm chuyến của mình.
 *(đã điều chỉnh 03/10/2026, FE-6-11, FE-6-12)* **Sự cố cấp chuyến ở chuông**: điều phối viên — tài xế báo sự cố (`exception.reported`), kho
 tự chuyển sự cố cho quản lý sau 30 phút (`exception.escalated`, sự kiện của hệ thống), quản lý đã liên hệ khách và nhập hạn mới
 (`exception.deadlineRenegotiated`, để xử lý tiếp); quản lý công ty — sự cố chuyển lên mình (`exception.escalated`). `EtaRiskWatcher` chạy cho
@@ -325,7 +325,8 @@ src/
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
     models/             type contract Spec + zod schema (LM-010); ba mục tiêu của phương án ứng viên `plan-objective.ts` (FE-5b-05)
     constraints/        validation và ràng buộc, trả mã lỗi (LM-014 →); phân tách hàng `segregation.ts` (FE-4b-06); luật duyệt
-                        `approval.ts` và xe có chở được hàng của chuyến không `vehicle-fit.ts` (FE-5b-08)
+                        `approval.ts` và xe có chở được hàng của chuyến không `vehicle-fit.ts` (FE-5b-08); *(bổ sung 08/10/2026, FE-BL-03)* kiện còn trên xe có
+                        dỡ được theo thứ tự điểm mới không `stop-reorder.ts` (`checkStopReorder`, dùng `lifoIssues`)
     metrics/            tỷ lệ sử dụng, trọng tâm (LM-021); tải trục trước / sau theo mô hình đòn bẩy `axle-load.ts` (FE-5b-03); độ lệch
                         tải giữa hai nhóm trục và điểm cân tải `axle-balance.ts` (FE-5b-05)
     fixtures/           dữ liệu mẫu Spec mục 12
@@ -333,7 +334,8 @@ src/
     routing/            mock tối ưu tuyến (FE-4b-08): haversine, thứ tự điểm, ETA, mức hạn; hằng số ở `ROUTING_CONSTANTS`; chuyến
                         gọi qua `lib/mock-db/trip-route.ts` (FE-4b-09); *(bổ sung 03/10/2026, FE-6-08, FE-6-09)* xe mô phỏng dọc tuyến
                         `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`;
-                        *(bổ sung 03/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`)
+                        *(bổ sung 03/10/2026, FE-6-11)* mock tuyến thay thế `reroute.ts` (`rerouteOptions`, `REROUTE_CONSTANTS`);
+                        *(bổ sung 08/10/2026, FE-BL-03)* luật thứ tự khi đổi điểm lúc xe đang chạy `reorder.ts` (`checkProposedOrder`)
     zones/              vùng theo điểm giao (FE-5b-02): `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`,
                         `zonePlacements`)
     pickup/             *(bổ sung 07/10/2026, FE-7-02)* nhận hàng dọc đường: mười luật `evaluatePickup` và chèn điểm `insertPickupStops`;
@@ -1559,6 +1561,22 @@ dù giao diện bị bỏ qua:
   cảnh báo) và trả `drivenMs` + `restEndsAt`; `liveEta` nhận hai giá trị đó nên ETA từ vị trí khớp ETA kế hoạch (GPS thật không có: coi như vừa
   nghỉ). Thứ tự điểm của `sequenceStops` vẫn tính theo thời gian chạy thuần (heuristic). Có BE thì ETA lấy từ Goong theo giao thông và thay công
   thức mock. Seed: không chuyến nào có chặng đủ dài nên ETA của seed không đổi.
+- *(bổ sung 08/10/2026, FE-BL-03, D-87)* **Đổi thứ tự điểm giao khi xe đang chạy.** `reorderRunningStops(tripId, orderedStopIds)` (`db-trip-reorder.ts`) là
+  **ngoại lệ thứ hai của `TRIP_LOCKED`** cho chuyến đã rời kho, hẹp như ngoại lệ nhận hàng dọc đường: một hàm, chỉ điều phối viên (`ROLE_NOT_ALLOWED`),
+  chuyến phải Đang vận chuyển (`TRIP_PHASE_INVALID`), mọi điểm có toạ độ (`MISSING_STOP_COORDINATES`); `updateTrip`, `changeTripVehicle`… vẫn từ chối.
+  Luật thứ tự thuần ở `checkProposedOrder`: phải là hoán vị **khác** thứ tự hiện tại (`STOP_ORDER_INVALID`); các điểm đầu danh sách đã hoàn tất, và điểm
+  xe đã tới (`StopProgress.arrivedAt`) đứng nguyên (`STOP_NOT_MOVABLE`); điểm nhận dọc đường của yêu cầu `APPROVED` đứng trước điểm giao của nó
+  (`PICKUP_AFTER_DELIVERY`). **Khả năng dỡ**: kho chạy `checkStopReorder` (`lifoIssues` của domain, thứ hạng giao thay số điểm) trên kiện còn phải dỡ —
+  kiện phương án đã xếp chưa dỡ, không bị bỏ lại kho, không thuộc điểm đã hoàn tất, cộng kiện nhận dọc đường đã có chỗ (`PickupRequest.layout`) chưa giao
+  — ở thứ tự cũ và mới; kiện bị che **kín** theo thứ tự mới mà trước đó chưa bị là `STOP_ORDER_BLOCKS_CARGO { packages, stopIds }` (song song, kiện thứ i
+  thuộc điểm thứ i) và không đổi gì; che một phần chỉ trả ở `partial` (toast cảnh báo). Đạt thì áp dụng bằng đúng bộ máy đánh số lại của nhận hàng dọc
+  đường (`renumberTripStops`, `DeliveryStop.planNumber` — mọi điểm mang số của nó trong phương án): `inputVersion` giữ nguyên nên phương án đã duyệt không
+  lỗi thời, `routePlan` giữ và tính lại giờ đến, mức hạn. Xe mô phỏng đi tiếp **từ điểm vị trí gần nhất** tới điểm kế tiếp mới (`DeliveryProgress.redirect`
+  → `SimulatedStop.startFrom`; điểm vị trí đã ghi theo thứ tự cũ được ghi bù trước khi đổi; đang nghỉ bắt buộc thì đi tiếp sau khi nghỉ xong). Nhật ký
+  `trip.stopsReordered { count, lateStops, driverId }` — chuông của tài xế **của chuyến đó** (như quyết định nhận hàng dọc đường); màn tài xế đọc thứ tự
+  mới từ `Trip.stops`. Màn: nút phụ "Đổi thứ tự điểm" ở đầu thẻ chuyến trên `/giam-sat` theo quyền `routes.optimize` (là việc đổi tuyến của điều phối
+  viên, không thêm quyền mới; mờ kèm lý do khi dưới hai điểm chưa giao và chưa tới) mở `ReorderStopsDialog`: nút lên / xuống cho điểm tự do, điểm khoá
+  hiện "Đã giao xong" / "Xe đã tới"; bị từ chối vì kiện thì hộp liệt kê từng kiện kèm điểm của nó bằng chữ. Chưa có ở BE (`monitoring-api.ts`).
 - *(đã điều chỉnh 03/10/2026, FE-6-10)* **Màn Giám sát `/giam-sat`** (`monitoring.view`): `fetchMonitoringBoard` (`['trips',
   'monitoring-board']`) đọc phần ít đổi — chuyến Đang vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp
   của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải
@@ -1580,8 +1598,8 @@ dù giao diện bị bỏ qua:
   (`advanceTracking`, sự kiện hệ thống `exception.escalated`, ghi đúng mốc 30 phút). **Tuyến thay thế** (`@/domain/routing`
   `rerouteOptions`, mock — hằng số ở `REROUTE_CONSTANTS`, chờ nghiệp vụ xác nhận): 2–3 đường tới **điểm kế tiếp** từ vị trí xe (đường tránh
   +15 %, vành đai +30 %, cao tốc +50 % ở 70 km/h khi chặng còn từ 15 km), mang MOCK RESULT; chọn một thì khoảng giữ đang chạy bị cắt và xe
-  đứng thêm phần đường vòng chậm hơn đường nối thẳng (`delaysAfterReroute`), nhật ký `trip.rerouted`. **Thứ tự điểm giao không bao giờ đổi
-  khi xe đang chạy** và đường vẽ vẫn nối thẳng. **Gia hạn**: trên sự cố `ESCALATED`, quản lý ghi đã liên hệ khách (bắt buộc) và nhập hạn mới
+  đứng thêm phần đường vòng chậm hơn đường nối thẳng (`delaysAfterReroute`), nhật ký `trip.rerouted`. **Chọn tuyến khác không đổi thứ tự điểm giao**
+  (thứ tự chỉ đổi qua `reorderRunningStops`, FE-BL-03, bên dưới) và đường vẽ vẫn nối thẳng. **Gia hạn**: trên sự cố `ESCALATED`, quản lý ghi đã liên hệ khách (bắt buộc) và nhập hạn mới
   cho một yêu cầu giao của chuyến — phải sau giờ của kho (`REQUIREMENT_DEADLINE_PAST`); hạn của điểm giao và mức hạn tính lại ngay
   (`refreshLiveEta`), sự cố giữ `ESCALATED` tới khi điều phối viên đánh dấu đã xử lý. Mã lỗi mới: `EXCEPTION_INVALID`,
   `EXCEPTION_STATUS_INVALID`, `REROUTE_UNAVAILABLE`; nhật ký nhóm `exception` (`reported`, `escalated`, `resolved`, `deadlineRenegotiated`).
@@ -1640,7 +1658,7 @@ dù giao diện bị bỏ qua:
   ghi: (1) `createPickupPackages` tạo kiện kho kiện nguồn `PICKUP`, `ASSIGNED`, kèm chuyến, điểm giao và mã QR thật (kiện thứ i ứng
   `packages[i]`, `PickupRequest.packageIds`); (2) `insertPickupIntoTrip` (`db-pickup-stops.ts`) chèn điểm nhận (`kind: 'PICKUP'`) và điểm giao
   ngay sau điểm hiện tại bằng `insertPickupStops` của domain — điểm giao trùng điểm có sẵn thì dùng lại, hạn của điểm là hạn sớm nhất. Đây là
-  **ngoại lệ duy nhất của `TRIP_LOCKED`** khi chuyến đã rời kho và nằm ở đúng một hàm: `updateTrip`, `changeTripVehicle`, tối ưu tuyến… vẫn từ
+  **ngoại lệ thứ nhất của `TRIP_LOCKED`** khi chuyến đã rời kho (thứ hai: đổi thứ tự điểm, FE-BL-03) và nằm ở đúng một hàm: `updateTrip`, `changeTripVehicle`, tối ưu tuyến… vẫn từ
   chối. Số điểm là vị trí + 1 nên các điểm sau lệch số: kho đánh số lại tiến độ giao, sự cố giao, lần đối chiếu, dòng kiện của chuyến, sự cố cấp
   chuyến, tuyến thay thế, cảnh báo trễ hạn, và ghi `DeliveryStop.planNumber` — số của điểm trong phương án đã duyệt (`null` cho điểm chèn lúc
   chạy; `plan-stops.ts`). Phương án là revision bất biến đánh số theo lúc duyệt, nên mọi chỗ đọc "kiện của điểm n" từ phương án đổi số qua

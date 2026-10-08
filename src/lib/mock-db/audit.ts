@@ -26,6 +26,8 @@ export const AUDIT_ACTIONS = [
   'trip.vehicleChanged',
   // Điều phối viên chọn tuyến thay thế khi có sự cố (FE-6-11, sự kiện `TRIP_REROUTED` của backend)
   'trip.rerouted',
+  // Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03)
+  'trip.stopsReordered',
   'optimization.saved',
   'revision.approved',
   'loading.started',

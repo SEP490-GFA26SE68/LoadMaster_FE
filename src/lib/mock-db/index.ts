@@ -100,6 +100,7 @@ export {
   type PackageStatus,
 } from './package-model'
 export type { PickupApproval, PickupApproveInput, PickupsDb } from './db-api-pickups'
+export type { ReorderDb, StopReorder, StopReorderWarning } from './db-api-reorder'
 export { currentNumbersOfPlan, hasInsertedStops, planNumberOf } from './plan-stops'
 export {
   canTransitionPickup,

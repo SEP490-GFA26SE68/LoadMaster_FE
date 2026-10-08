@@ -250,6 +250,9 @@ const PROBES = {
   rejectPickupRequest: onForeignTrip((db, tripId) => db.rejectPickupRequest(tripId, 'PKR-001', 'Không nhận được')),
   updatePickupStatus: onForeignTrip((db, tripId) => db.updatePickupStatus(tripId, 'PKR-001', 'VALIDATED')),
 
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  reorderRunningStops: onForeignTrip((db, tripId) => db.reorderRunningStops(tripId, ['STOP-01'])),
+
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },
   restoreSession: { scope: 'session' },
