@@ -51,7 +51,7 @@ test('a door wider than the cargo space fails on the door field with the Spec se
   const user = renderAt('/doi-xe/VEHICLE-001')
 
   // Truck 6m của Spec mục 12: lòng thùng rộng 240 cm, cửa 220 cm
-  const doorWidth = await screen.findByLabelText('Chiều rộng cửa', {}, SLOW)
+  const doorWidth = await screen.findByLabelText(/^Chiều rộng cửa/, {}, SLOW)
   await retype(user, doorWidth, '250')
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
 
@@ -82,7 +82,7 @@ test('a saved new vehicle shows up in the fleet list without reloading the page'
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
 
   expect(await screen.findByRole('heading', { name: 'Đội xe' }, SLOW)).toBeInTheDocument()
-  expect(await screen.findByText(name, {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByRole('link', { name }, SLOW)).toBeInTheDocument()
 })
 
 test('a dispatcher puts an available vehicle into maintenance with a required note, then ends it', async () => {
@@ -118,7 +118,7 @@ test('a vehicle running a trip opens read-only and says which trip locks it', as
   expect(banner).toHaveTextContent('Xe đang chạy chuyến TRIP-011: cấu hình bị khoá tới khi chuyến kết thúc')
   expect(within(banner).getByRole('link', { name: 'Xem chuyến TRIP-011' })).toHaveAttribute('href', '/chuyen/TRIP-011')
   expect(screen.getByText('Đang phục vụ chuyến')).toBeInTheDocument()
-  expect(screen.getByLabelText('Chiều rộng cửa')).toBeDisabled()
+  expect(screen.getByLabelText(/^Chiều rộng cửa/)).toBeDisabled()
   for (const name of ['Lưu', 'Xoá xe', 'Đưa vào bảo dưỡng', 'Kết thúc bảo dưỡng']) {
     expect(screen.queryByRole('button', { name })).toBeNull()
   }

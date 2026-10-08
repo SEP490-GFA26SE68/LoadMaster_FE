@@ -256,11 +256,6 @@
      điều phối cần thêm dòng, không cần thêm chiều ngang */
   --shell-max: 1680px;
 
-  /* ---- còn lại của V2: header trắng của Chi tiết chuyến, form xe, So sánh (đợt 3–7 chuyển sang dải trời) */
-  /* nền của dải chrome: đủ đục để chữ đọc rõ */
-  --chrome: #ffffffd9;
-  --hero-icon: 140deg, var(--cyan-50), var(--cyan-100);
-  --hero-icon-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px rgba(92, 219, 230, 0.35), 0 2px 6px rgba(2, 34, 45, 0.1);
   /* nền tiêu đề cột của bảng (DataTable appearance="paper") */
   --table-head: var(--n-25);
 
@@ -304,7 +299,6 @@
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
   --color-text-disabled: var(--text-disabled);
-  --color-chrome: var(--chrome);
   --container-shell: var(--shell-max);
   --color-ink-strong: var(--ink-strong);
   --color-ink-1: var(--ink-1);
@@ -499,7 +493,7 @@
 
 /* Lề ngang của vùng làm việc (V2): 24px, và từ khi cột rộng hơn --shell-max thì nội dung
    dừng ở --shell-max, căn giữa. Dùng padding thay vì bọc thêm một div max-w, để vùng cuộn
-   vẫn rộng hết cột (thanh cuộn nằm ở mép) và thanh tiêu đề giữ nền chrome tràn ngang —
+   vẫn rộng hết cột (thanh cuộn nằm ở mép) và thanh tiêu đề giữ nền dải trời tràn ngang —
    chỉ nội dung dừng lại. `100%` là bề rộng khối chứa, tức cột của màn. */
 @utility px-shell {
   padding-inline: max(1.5rem, calc((100% - var(--shell-max)) / 2 + 1.5rem));
@@ -794,13 +788,6 @@
     background: var(--panel-dark);
     backdrop-filter: none;
   }
-}
-
-/* Ô icon nhận diện màn trên header trắng còn lại của V2 (form xe) — bỏ khi màn đó lên dải trời */
-.hero-icon {
-  border: 1px solid #fff;
-  background: linear-gradient(var(--hero-icon));
-  box-shadow: var(--hero-icon-shadow);
 }
 
 /* Nội dung đè lên dải trời: vùng cuộn ngay dưới thanh tiêu đề kéo lên --sky-overlap, card đầu tiên nằm nửa trên dải

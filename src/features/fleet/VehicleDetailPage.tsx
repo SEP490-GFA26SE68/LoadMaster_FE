@@ -72,12 +72,12 @@ function ExistingVehicle({ vehicle, state }: { vehicle: VehicleConfig; state: Ve
   }
 
   const action = !canEdit || !state || running ? null : state.status === 'maintenance' ? (
-    <Button type="button" variant="secondary" loading={maintenance.isPending} onClick={() => handleMaintenance(null)}>
+    <Button type="button" variant="glass" loading={maintenance.isPending} onClick={() => handleMaintenance(null)}>
       <Wrench strokeWidth={1.5} />
       {t('fleet.maintenance.end')}
     </Button>
   ) : (
-    <Button type="button" variant="secondary" onClick={() => setDialogOpen(true)}>
+    <Button type="button" variant="glass" onClick={() => setDialogOpen(true)}>
       <Wrench strokeWidth={1.5} />
       {t('fleet.maintenance.start')}
     </Button>

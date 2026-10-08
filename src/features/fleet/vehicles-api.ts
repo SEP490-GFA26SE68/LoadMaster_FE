@@ -5,6 +5,7 @@
 
 import type { VehicleConfig } from '@/domain/models'
 import { getMockDb, type VehicleState } from '@/lib/mock-db'
+import type { FleetVehicleState } from './vehicle-status'
 
 /**
  * Lớp gọi API cho Đội xe (D-06). Backend Spring Boot chưa có nên mọi lượt đọc/ghi đi qua kho mock
@@ -36,10 +37,20 @@ export function deleteVehicle(id: string): Promise<void> {
   return getMockDb().deleteVehicle(id)
 }
 
-/** Trạng thái mọi xe (D-53): đang chạy suy từ chuyến `loading`…`delivering`, bảo dưỡng do người đặt. */
+/**
+ * Trạng thái mọi xe (D-53): đang chạy suy từ chuyến `loading`…`delivering`, bảo dưỡng do người đặt. Xe đang chạy kèm pha của chuyến
+ * (đọc từ danh sách chuyến, chỉ khi có xe đang chạy) để danh sách ghi chuyến đó đang ở bước nào.
+ */
 // chưa có ở BE
-export function fetchVehicleStates(): Promise<VehicleState[]> {
-  return getMockDb().listVehicleStates()
+export async function fetchVehicleStates(): Promise<FleetVehicleState[]> {
+  const db = getMockDb()
+  const states = await db.listVehicleStates()
+  if (!states.some((state) => state.tripId !== undefined)) return states
+  const phaseOf = new Map((await db.listTrips()).map((trip) => [trip.id, trip.phase]))
+  return states.map((state) => {
+    const tripPhase = state.tripId === undefined ? undefined : phaseOf.get(state.tripId)
+    return tripPhase === undefined ? state : { ...state, tripPhase }
+  })
 }
 
 /** Bật bảo dưỡng kèm ghi chú, hoặc tắt khi `note` là `null`. Xe đang chạy chuyến: `VEHICLE_LOCKED`. */
