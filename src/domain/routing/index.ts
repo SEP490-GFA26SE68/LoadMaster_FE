@@ -1,10 +1,12 @@
 export {
   deadlineStatus,
   DEFAULT_STOP_PRIORITY,
+  legWithRests,
   liveEta,
   routeEta,
   ROUTING_CONSTANTS,
   type DeadlineStatus,
+  type LegSchedule,
   type LiveEtaInput,
   type LiveEtaStop,
   type LiveStopEta,

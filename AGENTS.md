@@ -1550,6 +1550,15 @@ dù giao diện bị bỏ qua:
   Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không
   `setInterval` riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo
   nhịp đó. E2E có giá trị đang chạy chờ tới trạng thái dừng (xe tới điểm), không chờ theo giờ (`e2e/live-tracking.spec.ts`).
+- *(bổ sung 08/10/2026, FE-BL-04)* **Giờ nghỉ bắt buộc trong ETA.** `ROUTING_CONSTANTS` có `MAX_CONTINUOUS_DRIVING_MINUTES` (240) và `REST_MINUTES` (15) —
+  **đề xuất FE chờ nghiệp vụ xác nhận** (PRD v2 mục 17.2); giới hạn lái theo ngày, theo tuần **chưa mô hình hoá**. Một chỗ tính duy nhất:
+  `legWithRests(thời gian chạy, bộ đếm lái liên tục)` chia chặng thành các đoạn lái xen nghỉ (đủ giờ lái ngay tại đích thì không nghỉ); dừng ở
+  một điểm từ `REST_MINUTES` trở lên đặt lại bộ đếm (`drivenAfterStop`). `routeEta` (và `routePlan`) cộng giờ nghỉ vào ETA và `totalMinutes`, thêm
+  `restCount` / `restMinutes` **chỉ khi có nghỉ** (`TripRoutePlan` cũng vậy) — `RoutePlanBar` nói "đã gồm n lần nghỉ bắt buộc (x)" cạnh dòng km · thời
+  gian; tuyến không phải nghỉ thì giống hệt cũ. Xe mô phỏng đứng nghỉ đúng giờ ETA đã cộng (không phải sự cố, không cộng vào `delays`, không
+  cảnh báo) và trả `drivenMs` + `restEndsAt`; `liveEta` nhận hai giá trị đó nên ETA từ vị trí khớp ETA kế hoạch (GPS thật không có: coi như vừa
+  nghỉ). Thứ tự điểm của `sequenceStops` vẫn tính theo thời gian chạy thuần (heuristic). Có BE thì ETA lấy từ Goong theo giao thông và thay công
+  thức mock. Seed: không chuyến nào có chặng đủ dài nên ETA của seed không đổi.
 - *(đã điều chỉnh 03/10/2026, FE-6-10)* **Màn Giám sát `/giam-sat`** (`monitoring.view`): `fetchMonitoringBoard` (`['trips',
   'monitoring-board']`) đọc phần ít đổi — chuyến Đang vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp
   của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải

@@ -49,9 +49,10 @@ export function simulationOf(trip: Tracked, delays: readonly SimulationDelay[] =
 
 /**
  * ETA trực tiếp của các điểm chưa hoàn tất lúc `at`, tính từ `position`. `arrivedAt`: xe đang đứng ở điểm chưa hoàn tất đầu tiên từ
- * lúc đó — với GPS thật là giờ tài xế bấm "Đã đến", với xe mô phỏng là giờ nó tới nơi.
+ * lúc đó — với GPS thật là giờ tài xế bấm "Đã đến", với xe mô phỏng là giờ nó tới nơi. `rest`: bộ đếm lái liên tục và giờ nghỉ xong của xe
+ * mô phỏng (FE-BL-04); GPS thật không có nên ETA coi tài xế vừa nghỉ.
  */
-export function liveStops(trip: Tracked, position: GeoPoint, at: string, arrivedAt?: string): TripLiveStop[] {
+export function liveStops(trip: Tracked, position: GeoPoint, at: string, arrivedAt?: string, rest: Pick<SimulatedVehicle, 'drivenMs' | 'restEndsAt'> | null = null): TripLiveStop[] {
   const atMs = Date.parse(at)
   const open = trip.stops
     .map((stop, index) => ({ stop, number: index + 1, completedAt: progressOf(trip, index)?.completedAt }))
@@ -59,6 +60,7 @@ export function liveStops(trip: Tracked, position: GeoPoint, at: string, arrived
   const etas = liveEta({
     position,
     at,
+    ...(rest === null ? {} : { drivenMs: rest.drivenMs, ...(rest.restEndsAt === undefined ? {} : { restEndsAt: rest.restEndsAt }) }),
     stops: open.map(({ stop }, index) => ({
       stopId: stop.id,
       location: pointOf(stop),
@@ -84,5 +86,5 @@ export function simulatedSnapshot(trip: Tracked, at: string, delays: readonly Si
   const input = simulationOf(trip, delays)
   if (!input) return null
   const vehicle = simulateVehicle(input, at)
-  return { vehicle, stops: liveStops(trip, vehicle, at, vehicle.arrivedAt) }
+  return { vehicle, stops: liveStops(trip, vehicle, at, vehicle.arrivedAt, vehicle) }
 }

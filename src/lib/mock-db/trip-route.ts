@@ -48,6 +48,7 @@ export function routePlanOf(trip: Routed, meta: PlanMeta): TripRoutePlan {
     missedStopIds: [...result.missedStopIds],
     totalKm: result.totalKm,
     totalMinutes: result.totalMinutes,
+    ...(result.restCount === undefined ? {} : { restCount: result.restCount, restMinutes: result.restMinutes }),
     optimizedAt: meta.optimizedAt,
     optimizedBy: meta.optimizedBy,
     isMockResult: true,

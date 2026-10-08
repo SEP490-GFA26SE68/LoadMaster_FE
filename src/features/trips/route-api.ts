@@ -7,7 +7,8 @@ import { getMockDb, type Trip, type TripEta } from '@/lib/mock-db'
 
 /**
  * Tối ưu tuyến của chuyến (FE-4b-09, D-76). Chưa có backend: kho chạy mock `@/domain/routing` — kết quả là MOCK RESULT, không tốn
- * credit. Thứ tự điểm giao của chuyến đổi theo kết quả; giờ đến dự kiến và mức hạn đọc qua `getTripEta`.
+ * credit. Thứ tự điểm giao của chuyến đổi theo kết quả; giờ đến dự kiến và mức hạn đọc qua `getTripEta`. ETA mock cộng giờ nghỉ bắt buộc của
+ * tài xế (FE-BL-04); ETA theo giao thông (Goong) thay công thức mock chưa có ở BE.
  */
 
 /** Xếp thứ tự điểm giao, tính giờ đến dự kiến và mức hạn; chuyến Nháp thành Đã lập kế hoạch. Thiếu toạ độ: `MISSING_STOP_COORDINATES`. */
