@@ -106,7 +106,7 @@ export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCa
       </> : null}
     </div>
     <Timeline placements={available} orderedOverride={unload.ordered} suggested={!unload.fromResult} kind="unloading" step={unload.cursor} totalSteps={unload.ordered.length}
-      emphasizePlay playing={unload.playing} speed={speed} onSpeedChange={setSpeed} onStepChange={unload.setCursor}
+      solid playing={unload.playing} speed={speed} onSpeedChange={setSpeed} onStepChange={unload.setCursor}
       onStepForward={unload.advance} onStepBackward={() => unload.setCursor(unload.cursor - 1)}
       onGoToStart={() => { unload.stop(); unload.setCursor(0) }} onTogglePlaying={unload.toggle} />
   </div>
