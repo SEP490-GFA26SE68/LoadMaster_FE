@@ -61,13 +61,14 @@ const HEAD_CELL = 'sticky top-0 z-10 h-20 border-b border-border bg-table-head p
  * nhận danh sách dòng phẳng. Tiêu đề cột dính khi cuộn: thẻ cắt góc bằng `overflow-clip` chứ không `overflow-hidden` — cái sau biến
  * thẻ thành khung cuộn và giữ tiêu đề lại trong thẻ (AGENTS mục 5).
  *
- * `users` (danh sách tab Tài khoản đã đọc, theo phạm vi của người xem) cho số tài khoản dưới tên vai trò; chỉ vai trò thuộc `scope`
- * của người xem có số — vai trò ngoài phạm vi người xem không liệt kê được, hiện "0" sẽ như nói chúng không có ai.
+ * `users` (danh sách tab Tài khoản đã đọc, theo phạm vi của người xem) cho số tài khoản dưới tên vai trò. Quản trị hệ thống liệt kê được
+ * mọi tài khoản nên mọi vai trò có số; quản trị công ty không liệt kê được tài khoản nền tảng — hiện "0" ở ba vai trò đó sẽ như nói
+ * chúng không có ai, nên chỉ vai trò công ty có số.
  */
 export function PermissionMatrix({ users, scope = 'company' }: { users?: readonly User[]; scope?: UserScope }) {
   const t = useT()
   const format = useFormat()
-  const counted = new Set<Role>(users === undefined ? [] : rolesInScope(scope))
+  const counted = new Set<Role>(users === undefined ? [] : scope === 'platform' ? ROLES : rolesInScope('company'))
   const accountsOf = (role: Role) => (users ?? []).filter((user) => user.role === role).length
   const total = PERMISSIONS.length
 
