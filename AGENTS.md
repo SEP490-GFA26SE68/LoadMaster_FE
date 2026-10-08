@@ -319,7 +319,7 @@ src/
                         `creditBlock`; `billing-core.ts` sổ cái + vòng đời, `db-billing.ts` + `db-api-billing.ts` hàm công khai; `seed-billing.ts` — bảng gói và giá trị tạm);
                         *(bổ sung 08/10/2026, FE-8-06)* công ty của quản trị hệ thống (`db-companies.ts` + `db-api-companies.ts`: danh sách kèm gói, tạo kèm quản trị
                         công ty đầu tiên, sửa); *(bổ sung 08/10/2026, FE-8-07)* yêu cầu hỗ trợ (`support-model.ts` kiểu, `db-support.ts` + `db-api-support.ts`, `seed-support.ts`);
-                        `session-role.ts` (người đăng nhập và kiểm vai trò dùng chung hai module đó); *(bổ sung 08/10/2026, FE-BL-06)* `tab-sync.ts` (đồng bộ kho giữa các tab cùng trình duyệt, mục 9; `app-db.ts` nối nó vào kho của app)
+                        `session-role.ts` (người đăng nhập và kiểm vai trò dùng chung hai module đó); *(bổ sung 08/10/2026, FE-BL-06)* `tab-sync.ts`, `tab-sync-tables.ts` (đồng bộ kho giữa các tab cùng trình duyệt, mục 9; `app-db.ts` nối nó vào kho của app)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
