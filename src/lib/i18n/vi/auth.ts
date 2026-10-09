@@ -16,6 +16,12 @@ export const auth = {
     /** Một câu cho cả hai loại tài khoản (FE-0-08): nhân sự công ty do quản trị công ty mở khoá, tài khoản nền tảng do quản trị hệ thống. */
     accountSuspended: 'Tài khoản đã bị khoá. Liên hệ quản trị viên của bạn để mở khoá.',
     serverUnreachable: 'Không kết nối được máy chủ. Thử lại sau.',
+    roleUnknown: 'Tài khoản mang vai trò mà ứng dụng chưa hỗ trợ. Liên hệ quản trị viên của bạn.',
+    /** Chế độ đăng nhập bằng máy chủ (`VITE_AUTH_SOURCE=keycloak`): app chuyển sang trang đăng nhập của hệ thống. */
+    sso: {
+      hint: 'Bạn sẽ được chuyển sang trang đăng nhập của hệ thống rồi quay lại đây.',
+      sampleData: 'Tài khoản lấy từ máy chủ. Chuyến, xe và kiện hàng trên màn vẫn là dữ liệu mẫu.',
+    },
   },
   showcase: {
     tagline: 'Mỗi chuyến xe chở được nhiều hơn, và dỡ hàng đúng thứ tự.',
