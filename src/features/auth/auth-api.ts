@@ -1,10 +1,13 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: login, logout, restoreSession, currentSessionUser
+ *   GET /api/users/me — fetchBackendUser (chế độ `VITE_AUTH_SOURCE=keycloak`; đăng nhập và đăng xuất do Keycloak làm, `keycloak-session.ts`)
+ *   chỉ kho mẫu: login, logout, restoreSession, currentSessionUser
  */
 
-import { getMockDb, isMockDbError } from '@/lib/mock-db'
+import { api } from '@/lib/api-client'
+import { DEMO_ACCOUNTS, getMockDb, isMockDbError } from '@/lib/mock-db'
 import type { User } from '@/types/user'
+import { isActiveOnBackend, roleOfBackend, userFromBackend, type BackendUserProfile } from './backend-user'
 
 /**
  * Lớp gọi API xác thực (D-42): đăng nhập, đăng xuất và phiên đi qua kho mock như qua server — kho giữ phiên để ghi người làm
@@ -12,7 +15,7 @@ import type { User } from '@/types/user'
  */
 
 /** Lỗi trả về dạng mã; màn đăng nhập dịch mã sang câu theo ngôn ngữ đang chọn. */
-export type AuthErrorCode = 'invalid-credentials' | 'account-suspended'
+export type AuthErrorCode = 'invalid-credentials' | 'account-suspended' | 'role-unknown'
 
 export class AuthError extends Error {
   readonly code: AuthErrorCode
@@ -39,6 +42,21 @@ export async function login(email: string, password: string): Promise<User> {
 // chưa có ở BE
 export async function logout(): Promise<void> {
   await getMockDb().signOut()
+}
+
+/**
+ * Người đang đăng nhập ở backend, sau khi Keycloak đã cấp phiên. Dữ liệu vận hành của app còn là kho mẫu, nên kho mẫu được đặt phiên
+ * của tài khoản mẫu cùng vai trò — danh tính hiện trên màn là của backend (`userFromBackend`).
+ */
+// GET /api/users/me
+export async function fetchBackendUser(): Promise<User> {
+  const profile = await api().get<BackendUserProfile>('/api/users/me')
+  const role = roleOfBackend(profile.userRoleType)
+  if (role === null) throw new AuthError('role-unknown')
+  if (!isActiveOnBackend(profile.status)) throw new AuthError('account-suspended')
+  const standIn = getMockDb().restoreSession(DEMO_ACCOUNTS.find((account) => account.role === role)?.id ?? null)
+  if (standIn === null) throw new AuthError('role-unknown')
+  return userFromBackend(profile, role, standIn)
 }
 
 /**
