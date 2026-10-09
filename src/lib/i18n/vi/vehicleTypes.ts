@@ -29,6 +29,31 @@ export const vehicleTypes = {
   delete: 'Xoá',
   inUse: { one: 'Còn gắn với {count} xe, gỡ khỏi xe trước khi xoá', other: 'Còn gắn với {count} xe, gỡ khỏi xe trước khi xoá' },
   form: {
+    hazardousCapable: 'Cho phép chở hàng nguy hiểm',
+
+    obstacles: {
+      title: 'Vật cản trong thùng',
+      description:
+        'Khai báo các vùng không thể xếp hàng như hốc bánh hoặc dàn lạnh.',
+      add: 'Thêm vật cản',
+      empty: 'Chưa khai báo vật cản nào.',
+      item: 'Vật cản {index}',
+      remove: 'Xoá',
+      name: 'Tên vật cản',
+      type: 'Loại vật cản',
+      length: 'Dài',
+      width: 'Rộng',
+      height: 'Cao',
+      loadBearing: 'Có thể đặt hàng lên trên vật cản',
+
+      types: {
+        wheelArch: 'Hốc bánh',
+        coolingUnit: 'Dàn lạnh',
+        partition: 'Vách ngăn',
+        reservedZone: 'Vùng dành riêng',
+        other: 'Khác',
+      },
+    },
     createTitle: 'Thêm loại xe',
     editTitle: 'Sửa loại xe {id}',
     description: 'Kích thước lòng thùng tính bằng cm, tải trọng và giới hạn trục bằng kg.',
