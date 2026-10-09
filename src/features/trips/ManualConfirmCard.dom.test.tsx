@@ -134,7 +134,7 @@ test('a manual confirmation sent while staging names that step; approved, the pa
 test('the company manager reads the list but cannot decide: no buttons, one line saying who can', async () => {
   const { db, id } = await twoCartons('loading')
   await db.confirmLoadingManually(id, { packageInstanceId: 'PKG-001-01', reason: 'OTHER', note: 'Nhãn dính dầu' })
-  renderCard(id, 'manager')
+  renderCard(id, 'companyManager')
   expect(await screen.findByText('Lý do: Khác', { exact: false }, SLOW)).toBeInTheDocument()
   expect(card().queryByRole('button')).not.toBeInTheDocument()
   expect(card().getByText('Chỉ điều phối viên duyệt hoặc từ chối được xác nhận tay.')).toBeInTheDocument()

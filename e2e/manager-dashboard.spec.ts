@@ -16,7 +16,7 @@ function addDays(date: string, days: number): string {
 }
 
 test('the manager switches to 7 days and exports a three-sheet report named after the period', async ({ page, login, browserErrors }) => {
-  await login('/', 'manager')
+  await login('/', 'companyManager')
   const trips = page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })
   await expect(trips).toContainText('7/ 12 chuyến')
   await expect(page.getByRole('figure', { name: 'Lấp đầy theo ngày', exact: true })).toBeVisible()

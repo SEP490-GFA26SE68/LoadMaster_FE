@@ -51,8 +51,8 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
  * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
-  ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe']],
+  ['dispatcher', ['Chuyến hàng', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
+  ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước']],
@@ -62,7 +62,11 @@ test.each<[Role, string[]]>([
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)
   const nav = screen.getByRole('navigation')
-  expect([...nav.querySelectorAll('a')].map((link) => link.textContent)).toStrictEqual(items)
+  expect(
+  Array.from(nav.querySelectorAll('a')).map(
+    (link) => link.textContent,
+  ),
+).toStrictEqual(items)
 })
 
 /**
@@ -71,7 +75,7 @@ test.each<[Role, string[]]>([
  */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
-  ['manager', true],
+  ['companyManager', true],
   ['systemAdmin', true],
   ['companyAdmin', true],
   ['warehouse', true],
@@ -86,7 +90,7 @@ test.each<[Role, boolean]>([
 /** LM-099: nút Tìm nhanh chỉ có khi vai trò được xem ít nhất một nhóm (chuyến, xe, người dùng). */
 test.each<[Role, boolean]>([
   ['dispatcher', true],
-  ['manager', true],
+  ['companyManager', true],
   ['systemAdmin', true],
   ['companyAdmin', true],
   ['warehouse', false],
@@ -104,7 +108,7 @@ test.each<[Role, string]>([
   ['systemManager', '/nen-tang/goi'],
   ['systemSupporter', '/ho-tro'],
   ['companyAdmin', '/nguoi-dung'],
-  ['manager', '/'],
+  ['companyManager', '/'],
   ['dispatcher', '/'],
   ['warehouse', '/kho'],
   ['driver', '/tai-xe'],
@@ -126,7 +130,7 @@ test('mục Kho kiện của điều phối viên mở /kien-hang và sáng ở 
 /** LM-096: menu tài khoản mở hồ sơ cá nhân trước mục đăng xuất. */
 test('menu tài khoản có mục Hồ sơ cá nhân mở /ho-so', async () => {
   const user = userEvent.setup()
-  renderRail('manager')
+  renderRail('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tài khoản Trần Thị Mai' }))
   const items = await screen.findAllByRole('menuitem')
   expect(items.map((item) => item.textContent)).toStrictEqual(['Hồ sơ cá nhân', 'Yêu cầu hỗ trợ', 'Đăng xuất'])

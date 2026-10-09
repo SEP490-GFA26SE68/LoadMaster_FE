@@ -1,5 +1,5 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Company, NewUser, UserChanges } from '@/lib/mock-db'
+import type { NewUser, UserChanges } from '@/lib/mock-db'
 import type { UserStatus } from '@/types/user'
 import { createUser, deleteUser, fetchCompanies, fetchUsers, resetPassword, setUserStatus, updateUser } from './users-api'
 
@@ -16,14 +16,16 @@ export function useUsersQuery() {
  * Tên công ty ít đổi nên không tự làm mới; màn Công ty (FE-8-06) vô hiệu khoá này sau mỗi lần tạo hoặc sửa.
  */
 export function useCompanyNamesQuery(enabled: boolean) {
-  return useQuery({ queryKey: ['companies'], queryFn: enabled ? fetchCompanies : skipToken, select: companyNames, staleTime: Infinity })
+  return useQuery({
+    queryKey: ['companies'],
+    queryFn: enabled ? fetchCompanies : skipToken,
+    staleTime: Infinity,
+  })
 }
 
 export type CompanyName = { readonly id: string; readonly name: string }
 
-function companyNames(companies: readonly Company[]): CompanyName[] {
-  return companies.map(({ id, name }) => ({ id, name }))
-}
+
 
 function useInvalidateUsers() {
   const client = useQueryClient()

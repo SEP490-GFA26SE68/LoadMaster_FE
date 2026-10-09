@@ -12,7 +12,7 @@ export const DEMO_EMAILS: Readonly<Record<Role, string>> = {
   systemManager: 'nentang@loadmaster.vn',
   systemSupporter: 'hotro@loadmaster.vn',
   companyAdmin: 'qtcongty@loadmaster.vn',
-  manager: 'quanly@loadmaster.vn',
+  companyManager: 'quanly@loadmaster.vn',
   dispatcher: 'dieuphoi@loadmaster.vn',
   warehouse: 'kho@loadmaster.vn',
   driver: 'taixe@loadmaster.vn',

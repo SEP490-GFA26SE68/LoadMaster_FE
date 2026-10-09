@@ -121,7 +121,7 @@ test('the dispatcher sees what others did in the last seven days; opening one ma
 
 test('the manager gets completed and cancelled trips; opening the bell reads the store again', async () => {
   const user = userEvent.setup()
-  const manager = renderBell('manager')
+  const manager = renderBell('companyManager')
   const bell = await screen.findByRole('button', { name: 'Thông báo, 1 chưa đọc' }, SLOW)
 
   await actAs('US-0001', manager.id, () => getMockDb().cancelTrip('TRIP-012', 'Khách đổi lịch nhận hàng'))

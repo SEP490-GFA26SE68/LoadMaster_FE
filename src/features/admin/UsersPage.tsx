@@ -67,6 +67,10 @@ export function UsersPage() {
         </TabsList>
       </PageHero>
 
+      
+      <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        <PermissionMatrix />
+      </TabsContent>
         <TabsContent value="accounts" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
           {query.isPending ? (
             <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
@@ -90,9 +94,25 @@ export function UsersPage() {
           key={editing?.id ?? 'new'}
           scope={scope}
           user={editing}
-          roleBlock={editing ? accountGuards(editing, currentUser, users).role : null}
+          companies={companies.data ?? []}
+          roleBlock={
+            editing
+              ? accountGuards(
+                editing,
+                currentUser,
+                users,
+              ).role
+              : null
+          }
           onClose={actions.close}
-          onSubmit={(values) => (editing ? actions.submitEdit(editing, values) : actions.submitCreate(values))}
+          onSubmit={(values) =>
+            editing
+              ? actions.submitEdit(
+                editing,
+                values,
+              )
+              : actions.submitCreate(values)
+          }
         />
       ) : null}
       <TemporaryPasswordDialog
