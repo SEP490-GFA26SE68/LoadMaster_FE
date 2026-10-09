@@ -4,21 +4,10 @@ import { finiteNumber, flag, listOf, objectOf, oneOf, positive, ratio, text } fr
 import { cargoPackageSchema, orientationCodeSchema } from './package'
 import { vehicleConfigSchema } from './vehicle'
 
-export const optimizationRequestSchema = objectOf({
-  vehicle: vehicleConfigSchema,
-  packages: listOf(cargoPackageSchema),
-  settings: objectOf({
-    method: oneOf(['MOCK', 'EP_DBLF', 'GA', 'SA', 'BBMP_DCS_PQNET']),
-    timeLimitSeconds: finiteNumber(),
-    randomSeed: finiteNumber().optional(),
-    enforceLifo: flag(),
-    prioritizeLowCenterOfGravity: flag(),
-  }),
-})
-
 /**
  * `stopZoneId` (FE-5b-02, ngoài type Spec): mã vùng theo điểm giao mà kiện đang nằm (`stopZones[].id` của kết quả); vắng khi kết quả
- * không chia vùng.
+ * không chia vùng. `pinned` (FE-BL-02, ngoài type Spec): kiện đã ghim vị trí, có mặt chỉ khi `true` — ghim lưu cùng phương án nên sống
+ * qua Duyệt và mở lại.
  */
 export const packagePlacementSchema = objectOf({
   packageInstanceId: text(),
@@ -34,6 +23,24 @@ export const packagePlacementSchema = objectOf({
   supportRatio: ratio('placement.supportRatio.range'),
   constraintWarnings: listOf(text()),
   stopZoneId: text().optional(),
+  pinned: flag().optional(),
+})
+
+/**
+ * `pinnedPlacements` (FE-BL-02, ngoài type Spec): kiện đã ghim — giữ đúng vị trí và hướng trong mọi phương án của lần chạy, mock xếp phần
+ * còn lại quanh chúng. Vắng khi lần chạy không giữ kiện nào (không phải mảng rỗng, để request cũ giữ nguyên mã job).
+ */
+export const optimizationRequestSchema = objectOf({
+  vehicle: vehicleConfigSchema,
+  packages: listOf(cargoPackageSchema),
+  settings: objectOf({
+    method: oneOf(['MOCK', 'EP_DBLF', 'GA', 'SA', 'BBMP_DCS_PQNET']),
+    timeLimitSeconds: finiteNumber(),
+    randomSeed: finiteNumber().optional(),
+    enforceLifo: flag(),
+    prioritizeLowCenterOfGravity: flag(),
+  }),
+  pinnedPlacements: listOf(packagePlacementSchema).optional(),
 })
 
 /**

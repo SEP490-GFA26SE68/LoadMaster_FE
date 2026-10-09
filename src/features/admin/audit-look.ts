@@ -7,12 +7,17 @@ import {
   KeyRound,
   MapPin,
   Package,
+  PackagePlus,
   QrCode,
   Route,
   Shapes,
   Truck,
   UserRound,
   TriangleAlert,
+  Wallet,
+  Building2,
+  LifeBuoy,
+  Coins,
   type LucideIcon,
 } from 'lucide-react'
 import type { KpiTone } from '@/components/KpiTile'
@@ -34,6 +39,11 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   vehicleType: Container,
   manualConfirm: Hand,
   exception: TriangleAlert,
+  pickup: PackagePlus,
+  subscription: Wallet,
+  credit: Coins,
+  company: Building2,
+  ticket: LifeBuoy,
 }
 
 /**
@@ -59,6 +69,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'trip.routeOptimized': 'azure',
   'trip.vehicleChanged': 'blue',
   'trip.rerouted': 'azure',
+  'trip.stopsReordered': 'azure',
   'optimization.saved': 'azure',
   'revision.approved': 'green',
   'loading.started': 'blue',
@@ -109,6 +120,23 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'exception.escalated': 'amber',
   'exception.resolved': 'green',
   'exception.deadlineRenegotiated': 'blue',
+  'pickup.requested': 'amber',
+  'pickup.approved': 'green',
+  'pickup.rejected': 'amber',
+  'pickup.reoptimized': 'blue',
+  'pickup.loaded': 'blue',
+  'pickup.delivered': 'green',
+  'subscription.subscribed': 'green',
+  'subscription.renewed': 'green',
+  'subscription.cancelled': 'amber',
+  'subscription.expired': 'amber',
+  'credit.purchased': 'green',
+  'credit.lowBalance': 'amber',
+  'company.created': 'green',
+  'company.updated': 'blue',
+  'ticket.created': 'blue',
+  'ticket.replied': 'blue',
+  'ticket.statusChanged': 'green',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */

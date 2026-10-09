@@ -35,7 +35,9 @@ export function seedTripPool(options: {
     vehicles: new Map(), vehicleCompany: new Map(), maintenance: new Map(), trips: new Map(), revisions: new Map(), users: new Map(),
     passwords: new Map(), events: [], session: { userId: null }, companies: new Map(), packageTypes: new Map(),
     packages: new Map(existing.map((pkg) => [pkg.id, pkg])), tripPackageLinks: new Map(), requirements: new Map(), runs: new Map(),
-    vehicleTypes: new Map(), vehicleTypeOf: new Map(), tracking: new Map(), exceptions: new Map(),
+    vehicleTypes: new Map(), vehicleTypeOf: new Map(), tracking: new Map(), exceptions: new Map(), pickups: new Map(),
+    plans: new Map(), subscriptions: new Map(), creditAccounts: new Map(), creditTransactions: new Map(), payments: new Map(),
+    supportTickets: new Map(),
   }
   const ctx = createDbContext(state, 0, () => new Date(clock.at), seededRandom(QR_SEED))
   const counts = new Map<string, number>()

@@ -170,6 +170,8 @@ interface FeVehicleConfig extends Spec.VehicleConfig {
 interface FeOptimizationRequest extends Omit<Spec.OptimizationRequest, 'packages' | 'vehicle'> {
   vehicle: FeVehicleConfig;
   packages: FeCargoPackage[];
+  /** FE-BL-02: kiện đã ghim, giữ đúng vị trí và hướng trong mọi phương án của lần chạy. */
+  pinnedPlacements?: FePackagePlacement[];
 }
 /** FE-5b-04: lý do `CONSTRAINT_VIOLATED` kèm các ràng buộc đã chặn kiện. */
 interface FeUnplacedPackage extends Omit<Spec.UnplacedPackage, 'reasonCode'> {
@@ -184,9 +186,10 @@ interface FeMetrics extends SpecMetrics {
   /** FE-5b-02: số kiện nằm ngoài vùng của điểm giao mình. */
   rehandlingCount?: number;
 }
-/** FE-5b-02: vùng theo điểm giao mà kiện đang nằm. */
+/** FE-5b-02: vùng theo điểm giao mà kiện đang nằm. FE-BL-02: kiện đã ghim vị trí. */
 interface FePackagePlacement extends Spec.PackagePlacement {
   stopZoneId?: string;
+  pinned?: boolean;
 }
 /** FE-5b-02: một vùng theo điểm giao trên trục X của thùng; `stopId` là số điểm giao (`deliveryStop`). */
 interface FeStopZone {

@@ -43,7 +43,7 @@ export function VehiclePreview({
       <div
         role="region"
         aria-label={t('fleet.preview.label')}
-        className="relative h-80 overflow-hidden rounded-md bg-canvas-1"
+        className="relative h-80 overflow-hidden rounded-md border border-border-dark bg-canvas-1"
         data-preview-pending={pending}
       >
         {vehicle && frame && HAS_WEBGL ? (
@@ -67,13 +67,13 @@ export function VehiclePreview({
         {pending ? (
           <span
             role="status"
-            className="pointer-events-none absolute top-3 left-3 rounded-sm bg-panel-dark px-2 py-1 text-caption text-bg"
+            className="pointer-events-none absolute top-3 left-3 rounded-sm border border-border-dark bg-panel-dark px-2 py-1 text-caption text-glass-dark-text"
           >
             {t('fleet.preview.pending')}
           </span>
         ) : null}
       </div>
-      <p className="text-caption text-text-3">{HAS_WEBGL ? t('fleet.preview.hint') : t('fleet.preview.unsupported')}</p>
+      <p className="text-small text-glass-dark-muted">{HAS_WEBGL ? t('fleet.preview.hint') : t('fleet.preview.unsupported')}</p>
     </div>
   )
 }

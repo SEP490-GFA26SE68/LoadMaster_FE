@@ -2,8 +2,13 @@ import type { PlacementPatch } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import type { User, UserStatus } from '@/types/user'
 import type { AuditEvent, AuditNames } from './audit'
+import type { BillingDb } from './db-api-billing'
+import type { CompaniesDb } from './db-api-companies'
 import type { ExceptionsDb } from './db-api-exceptions'
 import type { Review1Db } from './db-api-review1'
+import type { PickupsDb } from './db-api-pickups'
+import type { ReorderDb } from './db-api-reorder'
+import type { SupportDb } from './db-api-support'
 import type { TrackingDb } from './db-api-tracking'
 import type {
   AuditFilter,
@@ -26,8 +31,11 @@ export type TemporaryPassword = { user: User; temporaryPassword: string }
 
 export type DeliveryIssueInput = Pick<DeliveryIssue, 'stopNumber' | 'kind' | 'note'> & { packageInstanceId?: string }
 
-/** `force`: người duyệt đã xem và xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến (`POST /api/load-plans/{id}/approve`). */
-export type ApproveOptions = { force?: boolean }
+/**
+ * `force`: người duyệt đã xem và xác nhận duyệt dù tuyến có điểm trễ hạn dự kiến (`POST /api/load-plans/{id}/approve`).
+ * `pinned` (FE-BL-02): mã các kiện ghim của bản duyệt — thay hẳn tập ghim của revision nguồn (vắng thì giữ); ghim lưu cùng phương án.
+ */
+export type ApproveOptions = { force?: boolean; pinned?: readonly string[] }
 
 /**
  * Kho dữ liệu in-memory thay backend (D-06). Mọi hàm bất đồng bộ như gọi mạng thật, trả bản sao, và từ chối bằng
@@ -38,7 +46,7 @@ export type ApproveOptions = { force?: boolean }
  * là `FORBIDDEN_COMPANY`; phiên nền tảng bị mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED` (người dùng, nhật ký, công ty thì
  * đọc hết); kho không có phiên thì không lọc. Thêm hàm công khai thì khai nó ở `tenancy.test.ts`.
  */
-export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb
+export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb & PickupsDb & ReorderDb & BillingDb & CompaniesDb & SupportDb
 
 type CoreMockDb = {
   /** Theo thứ tự tạo: xe seed trước. */

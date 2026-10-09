@@ -1,10 +1,12 @@
 export {
   deadlineStatus,
   DEFAULT_STOP_PRIORITY,
+  legWithRests,
   liveEta,
   routeEta,
   ROUTING_CONSTANTS,
   type DeadlineStatus,
+  type LegSchedule,
   type LiveEtaInput,
   type LiveEtaStop,
   type LiveStopEta,
@@ -27,4 +29,5 @@ export {
   type SimulationInput,
   type VehicleFix,
 } from './simulate'
+export { checkProposedOrder, type OrderViolation, type ProposedOrderInput } from './reorder'
 export { optimizeRoute, sequenceStops } from './stop-sequence'

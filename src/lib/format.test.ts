@@ -60,6 +60,11 @@ test('large volumes given in cm³ can be read in m³, always with one decimal li
   expect(vi.volumeM3(40_000_000)).toBe('40,0 m³')
 })
 
+test('currency is whole VND with the symbol of the language', () => {
+  expect(vi.currency(1_490_000)).toBe('1.490.000 ₫')
+  expect(en.currency(1_490_000)).toBe('₫1,490,000')
+})
+
 test('percent of 0–100 always shows one decimal, like the screens do today', () => {
   expect(vi.percent(87.42)).toBe('87,4%')
   expect(en.percent(87.42)).toBe('87.4%')

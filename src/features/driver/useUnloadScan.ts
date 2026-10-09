@@ -10,7 +10,8 @@ import { useConfirmUnloadByQrMutation, useConfirmUnloadManuallyMutation, useDriv
 /**
  * Đối chiếu kiện khi dỡ (LM-104; ba mức từ FE-6-03, D-83) — cách duy nhất ghi một kiện "đã dỡ" (FE-6-06). Kho chỉ nhận kiện của điểm đang giao: quét hoặc gõ đúng mã thì ghi "đã
  * dỡ" kèm cách đối chiếu và hộp ở lại để làm kiện kế tiếp — dòng kết quả nói kiện vừa dỡ; dỡ hết kiện thì hộp tự đóng. Kiện của điểm
- * khác: nói kiện đó thuộc điểm nào, không ghi gì. Nhãn không đọc được: xác nhận tay một kiện chưa dỡ của điểm này kèm lý do — ghi "đã
+ * khác: nói kiện đó thuộc điểm nào, không ghi gì. Kiện nhận dọc đường (FE-7-05) đi cùng lối: điểm nhận ghi "đã nhận" lên xe, điểm giao ghi
+ * "đã dỡ"; kho quyết định theo vai trò của kiện tại điểm. Nhãn không đọc được: xác nhận tay một kiện chưa dỡ của điểm này kèm lý do — ghi "đã
  * dỡ" kèm xác nhận tay chờ điều phối viên duyệt; còn chờ thì chưa hoàn tất điểm giao được (FE-6-04).
  */
 export function useUnloadScan(tripId: string, view: DeliveryView | undefined, stops: readonly StopDelivery[]) {
@@ -24,8 +25,12 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
   const labelById = useMemo(() => new Map((labels.data ?? []).map((label) => [label.packageInstanceId, label])), [labels.data])
   // Kiện xác nhận tay được: kiện của điểm này chưa dỡ và khách không từ chối, theo thứ tự dỡ
   const candidates = useMemo(
-    () => (view?.items ?? []).flatMap(({ item, unloaded, returned }): VerifyCandidate[] =>
-      unloaded || returned ? [] : [{ packageInstanceId: item.id, name: item.name, description: t('driver.item.order', { order: item.unloadingOrder }) }]),
+    () => [
+      ...(view?.items ?? []).flatMap(({ item, unloaded, returned }): VerifyCandidate[] =>
+        unloaded || returned ? [] : [{ packageInstanceId: item.id, name: item.name, description: t('driver.item.order', { order: item.unloadingOrder }) }]),
+      ...(view?.pickupItems ?? []).flatMap(({ item, done }): VerifyCandidate[] =>
+        done ? [] : [{ packageInstanceId: item.id, name: item.name, description: t('driver.pickup.candidate', { request: item.requestId }) }]),
+    ],
     [view, t],
   )
 
@@ -40,22 +45,23 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
 
   /** Kho đã ghi kiện `id`: nói kết quả; vừa xong kiện cuối còn chờ dỡ của điểm thì đóng hộp — không còn gì để đối chiếu. */
   function recorded(id: string, waiting: ReadonlySet<string>) {
-    const name = view?.items.find((entry) => entry.item.id === id)?.item.name ?? labelById.get(id)?.name ?? ''
-    setResult({ tone: 'success', message: t('driver.scan.lastUnloaded', { id, name }) })
+    const pickup = view?.pickupItems.find((entry) => entry.item.id === id)?.item
+    const name = view?.items.find((entry) => entry.item.id === id)?.item.name ?? pickup?.name ?? labelById.get(id)?.name ?? ''
+    setResult({ tone: 'success', message: pickup?.role === 'pick' ? t('driver.pickup.lastPicked', { id, name }) : t('driver.scan.lastUnloaded', { id, name }) })
     if ([...waiting].every((item) => item === id)) setOpenState(false)
   }
 
-  const waitingIds = () => new Set((view?.items ?? []).filter((entry) => !entry.unloaded && !entry.returned).map((entry) => entry.item.id))
+  const waitingIds = () => new Set([
+    ...(view?.items ?? []).filter((entry) => !entry.unloaded && !entry.returned).map((entry) => entry.item.id),
+    ...(view?.pickupItems ?? []).filter((entry) => !entry.done).map((entry) => entry.item.id),
+  ])
 
   function handleVerify(input: VerifyCode) {
     if (!view) return
     const waiting = waitingIds()
     setResult(null)
     scan.mutate({ stopNumber: view.stop.number, ...input }, {
-      onSuccess: ({ packageInstanceId }) => {
-        toast.success(t('driver.scan.unloaded', { id: packageInstanceId }))
-        recorded(packageInstanceId, waiting)
-      },
+      onSuccess: ({ packageInstanceId }) => recorded(packageInstanceId, waiting),
       onError: showError,
     })
   }

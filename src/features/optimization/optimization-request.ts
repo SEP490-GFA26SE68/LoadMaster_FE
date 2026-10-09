@@ -1,5 +1,5 @@
 import type { ConstraintIssue } from '@/domain/constraints'
-import type { CargoPackage, OptimizationRequest, VehicleConfig } from '@/domain/models'
+import type { CargoPackage, OptimizationRequest, PackagePlacement, VehicleConfig } from '@/domain/models'
 
 /**
  * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT). Mục tiêu và thuật
@@ -27,8 +27,10 @@ export function buildOptimizationRequest(
   trip: { readonly packages: readonly CargoPackage[] },
   vehicle: VehicleConfig,
   settings: OptimizationSettings,
+  pinnedPlacements?: readonly PackagePlacement[],
 ): OptimizationRequest {
-  return { vehicle, packages: [...trip.packages], settings }
+  // Kiện ghim (FE-BL-02): trường chỉ có mặt khi giữ kiện nào đó, để lần chạy thường giữ nguyên request và mã job
+  return { vehicle, packages: [...trip.packages], settings, ...(pinnedPlacements?.length ? { pinnedPlacements: [...pinnedPlacements] } : {}) }
 }
 
 /** Nhóm của `validateRequest`; danh sách kiểm tra của màn có thêm nhóm `route` (chuyến đã tối ưu tuyến) ở `setup-checklist.ts`. */

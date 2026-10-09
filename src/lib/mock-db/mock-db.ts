@@ -1,13 +1,18 @@
-import { createSimClock, SEED_ANCHOR_DATE } from './clock'
+import { createSimClock, SEED_ANCHOR_DATE, type SimClock } from './clock'
 import { auditMethods } from './db-audit'
+import { billingMethods } from './db-billing'
+import { companyMethods } from './db-companies'
 import { exceptionMethods } from './db-exceptions'
 import { createDbContext, type DbState } from './db-context'
 import { manualConfirmMethods } from './db-manual-confirm'
 import { stagingMethods } from './db-staging'
+import { supportMethods } from './db-support'
 import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
 import { packageMethods } from './db-packages'
+import { pickupMethods } from './db-pickups'
+import { reorderMethods } from './db-trip-reorder'
 import { requirementMethods } from './db-requirements'
 import { revisionMethods } from './db-revisions'
 import { runMethods } from './db-runs'
@@ -21,6 +26,8 @@ import { userMethods } from './db-users'
 import { vehicleTypeMethods } from './db-vehicle-types'
 import { vehicleMethods } from './db-vehicles'
 import { seededRandom } from './qr-token'
+import { seedBilling } from './seed-billing'
+import { seedSupport } from './seed-support'
 import { buildSeed } from './seed'
 import { shiftSeedTimes } from './seed-shift'
 import type { MockDb, MockDbOptions } from './types'
@@ -32,11 +39,23 @@ const QR_SEED = 20_260_927
  * Tạo một kho mới đã nạp seed neo theo `today` (D-44). Mỗi kho giữ dữ liệu và phiên riêng. Kho mới chưa có phiên: không lọc theo công
  * ty cho tới khi `authenticate` / `restoreSession` đặt phiên (`tenancy.ts`).
  */
-export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = () => new Date(), speed = 1, random }: MockDbOptions = {}): MockDb {
+export function createMockDb(options: MockDbOptions = {}): MockDb {
+  return createMockDbParts(options).db
+}
+
+/**
+ * Kho cùng dữ liệu và đồng hồ của nó — dành cho lớp bọc ngoài kho (đồng bộ giữa các tab, `tab-sync.ts`). Mã nghiệp vụ chỉ dùng
+ * `createMockDb`; `db-*.ts` không biết có lớp này.
+ */
+export type MockDbParts = { db: MockDb; state: DbState; clock: SimClock }
+
+export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = () => new Date(), speed = 1, random }: MockDbOptions = {}): MockDbParts {
   // Đồng hồ của kho (FE-6-08): bắt đầu đúng giờ của `now` rồi chạy nhanh `speed` lần; ở tốc độ 1 nó chính là `now`
   const clock = createSimClock(now, speed)
   // Mở app trước giờ của các việc "hôm nay" trong seed thì lùi mốc giờ seed, không để lịch sử có sự kiện ở tương lai
   const seed = shiftSeedTimes(buildSeed(today), clock.now())
+  // Gói cước và sổ cái credit dựng từ các lần chạy của seed sau khi dời giờ, theo giờ của kho (FE-8-01)
+  const billing = seedBilling({ runs: seed.runs, trips: seed.trips, now: clock.now() })
   const state: DbState = {
     vehicles: new Map(seed.vehicles.map((vehicle) => [vehicle.id, vehicle])),
     vehicleCompany: new Map(seed.vehicleCompany),
@@ -57,9 +76,16 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     vehicleTypeOf: new Map(seed.vehicleTypeOf),
     tracking: new Map(),
     exceptions: new Map(),
+    pickups: new Map(seed.pickups.map((pickup) => [pickup.id, pickup])),
+    plans: new Map(billing.plans.map((plan) => [plan.id, plan])),
+    subscriptions: new Map(billing.subscriptions.map((subscription) => [subscription.id, subscription])),
+    creditAccounts: new Map(billing.creditAccounts.map((account) => [account.id, account])),
+    creditTransactions: new Map(billing.creditTransactions.map((transaction) => [transaction.id, transaction])),
+    payments: new Map(billing.payments.map((payment) => [payment.id, payment])),
+    supportTickets: new Map(seedSupport(clock.now()).map((ticket) => [ticket.id, ticket])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
-  return {
+  const db: MockDb = {
     ...vehicleMethods(ctx),
     ...tripMethods(ctx),
     ...tripVehicleMethods(ctx),
@@ -80,5 +106,11 @@ export function createMockDb({ latencyMs = 0, today = SEED_ANCHOR_DATE, now = ()
     ...stagingMethods(ctx),
     ...trackingMethods(ctx),
     ...exceptionMethods(ctx),
+    ...pickupMethods(ctx),
+    ...reorderMethods(ctx),
+    ...billingMethods(ctx),
+    ...companyMethods(ctx),
+    ...supportMethods(ctx),
   }
+  return { db, state, clock }
 }

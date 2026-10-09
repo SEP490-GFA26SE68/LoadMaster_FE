@@ -28,9 +28,13 @@ test('tám cột vai trò theo thứ tự nền tảng → công ty, 33 dòng qu
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  expect(within(matrix).getAllByRole('row')).toHaveLength(34)
+  // Một dòng tiêu đề, 13 dòng khu vực, 33 dòng quyền, một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(48)
+  // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
+  const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
+  expect(permissionRows).toHaveLength(33)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
-  const labels = within(matrix).getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0]?.textContent)
+  const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
   expect(labels.filter((label) => /packages\.register|shipments\.|receiving\.|orders\./.test(label ?? ''))).toStrictEqual([])
   // Quyền của màn chưa làm vẫn có dòng và nhãn

@@ -1,9 +1,16 @@
 import type { PlacementPatch } from '@/domain/constraints'
-import type { CargoPackage, OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
+import type { CargoPackage, OptimizationRequest, OptimizationResult, PackagePlacement, PlanObjective } from '@/domain/models'
 import type { User } from '@/types/user'
 import type { RequirementPriority } from './requirement-model'
 import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings, TripRoutePlan } from './source-types'
 import type { PackageVerification } from './verify-model'
+
+/**
+ * Loại điểm của chuyến (FE-7-01, D-88): điểm giao, hoặc điểm nhận hàng dọc đường chèn vào tuyến khi duyệt yêu cầu nhận.
+ * Điểm vắng `kind` là `DELIVERY` (`stopKindOf`).
+ */
+export const STOP_KINDS = ['DELIVERY', 'PICKUP'] as const
+export type StopKind = (typeof STOP_KINDS)[number]
 
 /**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
@@ -16,6 +23,13 @@ export type DeliveryStop = {
   id: string
   name: string
   address: string
+  /** Loại điểm; vắng là `DELIVERY`. */
+  kind?: StopKind
+  /**
+   * Số của điểm trong phương án đã duyệt (FE-7-04) — chỉ ghi khi chèn điểm nhận dọc đường làm số điểm lệch vị trí; `null` là điểm chèn
+   * lúc đang chạy, không có trong phương án. Vắng: số trong phương án bằng vị trí + 1 (`plan-stops.ts`).
+   */
+  planNumber?: number | null
   /** Số điện thoại người nhận, dạng hiển thị (`0901 234 567`); tài xế gọi qua `tel:` (D-46). */
   phone?: string
   contactName?: string
@@ -91,6 +105,11 @@ export type StopProgress = {
   /** Số điểm giao, khớp vị trí trong `Trip.stops` + 1. */
   number: number
   unloadedIds: string[]
+  /**
+   * Điểm **nhận** dọc đường (FE-7-05): kiện đã đối chiếu để lên xe, theo mã kiện kho kiện. Điểm giao không có trường này; kiện nhận
+   * không tính vào `unloadedIds` — chúng chưa phải kiện đã giao.
+   */
+  pickedIds?: string[]
   /** Kiện dỡ đã đối chiếu bằng nhãn — quét hoặc gõ mã (tập con của `unloadedIds`, LM-104); cách đối chiếu ở `Trip.verifications`. */
   qrConfirmedIds?: string[]
   /** Tài xế bấm "Đã đến" (`arriveAtStop`, FE-6-06), ISO 8601: từ lúc đó dỡ được hàng, và xe mô phỏng đứng ở điểm này (FE-6-08). */
@@ -106,6 +125,11 @@ export type DeliveryProgress = {
   /** Mỗi điểm giao của chuyến một phần tử, theo thứ tự giao. */
   stops: StopProgress[]
   issues: DeliveryIssue[]
+  /**
+   * Lần đổi thứ tự điểm gần nhất khi xe đang chạy (FE-BL-03): xe mô phỏng đi tới điểm `stopId` từ vị trí `lat`/`lng` lúc `at` (điểm vị
+   * trí ghi gần nhất), với `drivenMs` lái liên tục — không từ điểm trước nó. Chỉ `reorderRunningStops` ghi.
+   */
+  redirect?: { stopId: string; lat: number; lng: number; at: string; drivenMs: number }
 }
 
 export type Cancellation = {
@@ -147,8 +171,12 @@ export type Trip = {
   /**
    * Chuyến vừa từ Đang xếp hàng quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do và thời điểm, để kho biết đang chờ điều phối viên tối
    * ưu lại. `unload`: đã có kiện lên xe, kho phải dỡ ra xếp lại theo phương án mới. Kho gỡ khi bắt đầu xếp lại.
+   *
+   * Kiện hỏng lúc xếp (FE-BL-02): `keep` là chỗ của các kiện kho đã xếp lên xe, mã theo dòng kiện **hiện tại** của chuyến, để điều phối
+   * viên tối ưu lại mà giữ nguyên chúng thay vì dỡ ra; có kiện đã xếp tựa lên kiện hỏng thì không giữ được — `blocked` là các kiện đó
+   * (mã trong phương án cũ) và `keep` vắng.
    */
-  replan?: { reason: ReplanReason; at: string; unload: boolean }
+  replan?: { reason: ReplanReason; at: string; unload: boolean; keep?: PackagePlacement[]; blocked?: string[] }
   /** Tuyến đã tối ưu (FE-4b-09); vắng là chưa tối ưu tuyến, hoặc điểm giao đã thêm / bớt sau lần tối ưu. */
   routePlan?: TripRoutePlan
   /** Lý do điều phối viên cho chở chung kiện khác loại hàng (FE-4b-06, D-74); kho tự gỡ khi chuyến hết kiện khác loại. */
@@ -223,6 +251,11 @@ export type NewOptimizationRun = {
   jobId: string
   plans: readonly { objective: PlanObjective; result: OptimizationResult }[]
   algorithm?: OptimizationAlgorithm
+  /**
+   * Mã tham chiếu của `reserveOptimizationCredit`: lưu xong thì credit đã giữ được trừ hẳn (FE-8-05). Vắng là lối ghi không qua credit
+   * (test, dữ liệu mẫu); có mà credit không còn được giữ là `CREDIT_NOT_RESERVED`, không lưu gì.
+   */
+  creditReference?: string
 }
 
 /** Lần chạy đã lưu và các revision nó tạo, theo thứ tự của `plans`. */

@@ -13,8 +13,11 @@ export type VerifyMethod = (typeof VERIFY_METHODS)[number]
 /** Đối chiếu bằng nhãn — kiểm như quét, không cần duyệt. */
 export type LabelVerifyMethod = Exclude<VerifyMethod, 'MANUAL'>
 
-/** Bước của chuyến mà kiện được đối chiếu: soạn hàng (FE-6-02), xếp, dỡ. Nhận dọc đường thêm ở issue của luồng đó. */
-export const VERIFY_CONTEXTS = ['STAGING', 'LOADING', 'UNLOADING'] as const
+/**
+ * Bước của chuyến mà kiện được đối chiếu: soạn hàng (FE-6-02), xếp, dỡ, và nhận dọc đường (`PICKUP`, FE-7-05 — tài xế đối chiếu kiện nhận
+ * ở điểm nhận; `packageInstanceId` là mã kiện kho kiện vì kiện nhận không có dòng kiện trong chuyến).
+ */
+export const VERIFY_CONTEXTS = ['STAGING', 'LOADING', 'UNLOADING', 'PICKUP'] as const
 export type VerifyContext = (typeof VERIFY_CONTEXTS)[number]
 
 /** Lý do xác nhận tay; `OTHER` bắt buộc ghi chú. */
@@ -47,7 +50,7 @@ export type PackageVerification = {
   /** `VF-NNN`, duy nhất trong chuyến. */
   id: string
   context: VerifyContext
-  /** Số điểm giao, chỉ khi dỡ. */
+  /** Số điểm giao, chỉ khi dỡ hoặc nhận dọc đường. */
   stopNumber?: number
   packageInstanceId: string
   method: VerifyMethod

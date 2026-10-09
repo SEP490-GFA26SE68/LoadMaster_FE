@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useEffect } from 'react'
 import type { DeadlineRenegotiationInput, TripExceptionInput } from '@/lib/mock-db'
 import { confirmReroute, escalateTripException, renegotiateDeadline, reportTripException, requestReroute, resolveTripException } from './exceptions-api'
-import { fetchMonitoringBoard, getLocationHistory, subscribeTrip } from './monitoring-api'
+import { fetchMonitoringBoard, getLocationHistory, reorderRunningStops, subscribeTrip } from './monitoring-api'
 
 /**
  * Hook Query của màn Giám sát (FE-6-10 → FE-6-12). Vị trí, ETA và sự cố đọc theo nhịp của kho ở `useTrackingQuery.ts`
@@ -68,4 +68,13 @@ export function useConfirmRerouteMutation(tripId: string) {
 export function useRenegotiateDeadlineMutation(tripId: string, exceptionId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: DeadlineRenegotiationInput) => renegotiateDeadline(tripId, exceptionId, input), onSettled: () => refresh(client) })
+}
+
+/** Đổi thứ tự điểm khi xe đang chạy: giờ đến, tiến độ giao của tài xế và chuông đổi theo, nên làm mới cả `['driver']`. */
+export function useReorderStopsMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (orderedStopIds: string[]) => reorderRunningStops(tripId, orderedStopIds),
+    onSettled: () => Promise.all([refresh(client), client.invalidateQueries({ queryKey: ['driver'] })]),
+  })
 }

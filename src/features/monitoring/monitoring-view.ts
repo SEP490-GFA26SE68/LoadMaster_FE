@@ -14,6 +14,14 @@ export const INCIDENT_PARAM = 'co-su-co'
 
 const RANK: Readonly<Record<DeadlineStatus, number>> = { OK: 0, AT_RISK: 1, MISSED: 2 }
 
+/**
+ * Số điểm đầu danh sách đứng nguyên chỗ khi đổi thứ tự điểm lúc xe đang chạy (FE-BL-03): tới điểm cuối cùng đã hoàn tất hoặc đã được xe tới.
+ * Cùng luật với kho (`reorderRunningStops`), để hộp thoại không mời đổi chỗ điểm kho sẽ từ chối.
+ */
+export function fixedStopCount(stops: readonly Pick<MonitoringTrip['stops'][number], 'completedAt' | 'arrivedAt'>[]): number {
+  return stops.findLastIndex((stop) => stop.completedAt !== undefined || stop.arrivedAt !== undefined) + 1
+}
+
 /** Mức hạn xấu nhất trong các điểm chưa hoàn tất có hạn; `null` khi không điểm nào có hạn. */
 export function worstDeadline(stops: readonly Pick<TripLiveStop, 'deadlineStatus'>[]): DeadlineStatus | null {
   return stops.reduce<DeadlineStatus | null>((worst, { deadlineStatus }) => {

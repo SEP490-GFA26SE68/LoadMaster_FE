@@ -67,16 +67,10 @@ const demo = ({ id, role, email, companyId }: UserSeed): DemoAccount => ({ id, r
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = USERS.filter((user, index) => USERS.findIndex((item) => item.role === user.role) === index).map(demo)
 
 /**
- * Vai trò chưa có màn riêng (quyết định G1) nên chưa hiện ở ô đăng nhập nhanh: màn Gói cước và Hỗ trợ tới Sprint 8 mới có. Tài khoản
- * vẫn đăng nhập được bằng email và mở hồ sơ cá nhân.
- */
-const QUICK_LOGIN_HIDDEN: readonly Role[] = ['systemManager', 'systemSupporter']
-
-/**
  * Tài khoản hiện ở ô đăng nhập nhanh của màn đăng nhập (FE-0-03): tài khoản nền tảng, rồi của từng công ty — mỗi công ty một tài khoản
- * cho mỗi vai trò (tài khoản đầu tiên của vai trò trong công ty). Màn đăng nhập nhóm theo `companyId`.
+ * cho mỗi vai trò (tài khoản đầu tiên của vai trò trong công ty). Màn đăng nhập nhóm theo `companyId`. Cả tám vai trò đều có màn riêng
+ * từ Sprint 8 nên không vai trò nào bị ẩn.
  */
 export const QUICK_LOGIN_ACCOUNTS: readonly DemoAccount[] = USERS
   .filter((user, index) => USERS.findIndex((item) => item.role === user.role && item.companyId === user.companyId) === index)
-  .filter((user) => !QUICK_LOGIN_HIDDEN.includes(user.role))
   .map(demo)

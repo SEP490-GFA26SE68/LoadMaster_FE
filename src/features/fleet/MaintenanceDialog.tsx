@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Wrench } from 'lucide-react'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/Dialog'
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Textarea } from '@/components/ui/Textarea'
 import { useFormat, useT } from '@/lib/i18n'
 
@@ -39,6 +39,7 @@ export function MaintenanceDialog({ open, onOpenChange, vehicleName, pending, on
     if (open) reset({ note: '' })
   }, [open, reset])
 
+  const length = useWatch({ control: form.control, name: 'note' }).length
   const message = form.formState.errors.note?.message
   const error = message === 'fleet.maintenance.noteTooLong'
     ? t('fleet.maintenance.noteTooLong', { max: format.integer(MAINTENANCE_NOTE_MAX) })
@@ -48,16 +49,22 @@ export function MaintenanceDialog({ open, onOpenChange, vehicleName, pending, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-120">
         <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(values.note))}>
-          <div className="flex flex-col gap-4 px-7 pt-6 pb-2">
-            <div className="flex flex-col gap-2">
-              <DialogTitle className="text-h2 font-semibold">{t('fleet.maintenance.title', { name: vehicleName })}</DialogTitle>
-              <DialogDescription className="text-body text-text-2">{t('fleet.maintenance.description')}</DialogDescription>
-            </div>
+          {/* Ô icon hổ phách: việc cần chú ý, chưa phải phá huỷ (V2.3 — HopThoaiQuanTri.jpg) */}
+          <DialogHeader
+            icon={Wrench}
+            tone="warning"
+            title={t('fleet.maintenance.title', { name: vehicleName })}
+            description={t('fleet.maintenance.description')}
+          />
+          <div className="px-7 pt-4 pb-5">
             <Textarea
               label={t('fleet.maintenance.note')}
               placeholder={t('fleet.maintenance.notePlaceholder')}
               maxLength={MAINTENANCE_NOTE_MAX}
+              aria-required
               error={error}
+              // Bộ đếm là gợi ý dưới ô; lỗi thay chỗ nó như mọi ô nhập
+              hint={t('fleet.maintenance.counter', { count: format.integer(length), max: format.integer(MAINTENANCE_NOTE_MAX) })}
               {...form.register('note')}
             />
           </div>

@@ -4,13 +4,15 @@ import { Link } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { EmptyState } from '@/components/EmptyState'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { TouchTopBar } from '@/components/TouchTopBar'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { useCan } from '@/features/auth/useCan'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useWarehouseTripsQuery } from './useWarehouseQueries'
 import { warehouseGroups, type WarehouseStage, type WarehouseTripRow } from './warehouse-trips'
 import { WarehouseTripCard } from './WarehouseTripCard'
@@ -23,28 +25,44 @@ import { WarehouseTripCard } from './WarehouseTripCard'
  */
 export function WarehouseTripsPage() {
   const t = useT()
+  const format = useFormat()
   const can = useCan()
+  // Cùng khoá truy vấn với danh sách bên dưới: không thêm lần đọc kho nào
+  const query = useWarehouseTripsQuery()
   return (
-    <div className="flex h-dvh flex-col bg-bg text-body-lg">
-      <header className="flex h-18 flex-none items-center gap-3 border-b border-border pr-6 pl-3">
-        <ExitIconButton screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />
+    <div className="flex h-dvh flex-col bg-app text-body-lg">
+      {/* Dải trời với điều khiển đặc (V2.3 đợt 6): kính chưa đo ở thiết bị kho */}
+      <TouchTopBar
+        leading={<ExitIconButton tone="sky" screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />}
+        trailing={
+          <>
+            {/* Tra cứu kiện (FE-3b-06): nút phụ 56 px; dưới 1.024 px chỉ còn icon để tiêu đề không bị cắt, tên ở `aria-label` */}
+            {can('packages.lookup') ? (
+              <Button asChild variant="skySolid" size="touch" className="flex-none max-lg:w-14 max-lg:px-0">
+                <Link to="/tra-cuu-kien" aria-label={t('warehouse.list.lookup')}>
+                  <ScanLine strokeWidth={1.5} />
+                  <span className="max-lg:hidden">{t('warehouse.list.lookup')}</span>
+                </Link>
+              </Button>
+            ) : null}
+            <LanguageSwitch size="touch" tone="sky" className="flex-none" />
+            {/* Chuông (FE-6-04): xác nhận tay của mình bị điều phối viên từ chối */}
+            <NotificationBell variant="touch" tone="sky" />
+            <AccountMenu tone="sky" />
+          </>
+        }
+      >
         {/* Logo ở màn chính của kho (LM-105); phiên xếp giữ thanh gọn cho một thao tác mỗi màn */}
-        <LogoMark className="size-8" />
-        <h1 className="min-w-0 flex-1 truncate text-h1 font-semibold">{t('warehouse.list.title')}</h1>
-        {/* Tra cứu kiện (FE-3b-06): nút phụ 56 px; dưới 1.024 px chỉ còn icon để tiêu đề không bị cắt, tên ở `aria-label` */}
-        {can('packages.lookup') ? (
-          <Button asChild variant="secondary" size="touch" className="flex-none max-lg:w-14 max-lg:px-0">
-            <Link to="/tra-cuu-kien" aria-label={t('warehouse.list.lookup')}>
-              <ScanLine strokeWidth={1.5} />
-              <span className="max-lg:hidden">{t('warehouse.list.lookup')}</span>
-            </Link>
-          </Button>
-        ) : null}
-        <LanguageSwitch size="touch" className="flex-none" />
-        {/* Chuông (FE-6-04): xác nhận tay của mình bị điều phối viên từ chối */}
-        <NotificationBell variant="touch" />
-        <AccountMenu />
-      </header>
+        <LogoMark tone="dark" className="size-9" />
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate font-display text-h1 leading-8 font-bold text-sky-text font-stretch-112%">{t('warehouse.list.title')}</h1>
+          {query.data ? (
+            <p className="m-0 truncate text-body-lg text-sky-text-3">
+              {t('warehouse.list.summary', { count: query.data.length, date: format.date(new Date()) })}
+            </p>
+          ) : null}
+        </div>
+      </TouchTopBar>
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <TripList />
       </main>
@@ -52,8 +70,8 @@ export function WarehouseTripsPage() {
   )
 }
 
-/** Trạng thái rỗng dùng chữ 16px như phần còn lại của màn tablet (mô tả của `EmptyState` mặc định 14px). */
-const TOUCH_EMPTY = 'mx-auto w-full max-w-160 [&_span]:text-body-lg'
+/** Trạng thái rỗng nằm trong card trắng, chữ 16px như phần còn lại của màn tablet (mô tả của `EmptyState` mặc định 14px). */
+const TOUCH_EMPTY = 'mx-auto w-full max-w-160 [&_span+span]:text-body-lg'
 
 function TripList() {
   const t = useT()
@@ -63,22 +81,27 @@ function TripList() {
   }
   if (query.isError) {
     return (
-      <EmptyState
-        mascot="error"
-        className={TOUCH_EMPTY}
-        title={t('warehouse.loadErrorTitle')}
-        description={dataErrorMessage(query.error, t)}
-        action={<Button variant="secondary" size="touch" onClick={() => void query.refetch()}>{t('warehouse.retry')}</Button>}
-      />
+      <Card className={TOUCH_EMPTY}>
+        <EmptyState
+          mascot="error"
+          title={t('warehouse.loadErrorTitle')}
+          description={dataErrorMessage(query.error, t)}
+          action={<Button variant="secondary" size="touch" onClick={() => void query.refetch()}>{t('warehouse.retry')}</Button>}
+        />
+      </Card>
     )
   }
   if (query.data.length === 0) {
-    return <EmptyState mascot="warehouseWaiting" className={TOUCH_EMPTY} title={t('warehouse.list.emptyTitle')} description={t('warehouse.list.emptyDescription')} />
+    return (
+      <Card className={TOUCH_EMPTY}>
+        <EmptyState mascot="warehouseWaiting" title={t('warehouse.list.emptyTitle')} description={t('warehouse.list.emptyDescription')} />
+      </Card>
+    )
   }
   // Một nút primary mỗi màn (mục 5): chuyến nên làm trước — đang xếp dở, không thì chuyến chờ soạn sớm nhất
   const primaryId = query.data.find((row) => row.stage === 'loading' || row.stage === 'waiting')?.id
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-(--shell-max) flex-col gap-6">
       {warehouseGroups(query.data).map((group) => <TripGroup key={group.stage} stage={group.stage} rows={group.rows} primaryId={primaryId} />)}
     </div>
   )
@@ -90,7 +113,7 @@ function TripGroup({ stage, rows, primaryId }: { stage: WarehouseStage; rows: re
   const id = useId()
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="text-h2 font-semibold">{t(`warehouse.list.groups.${stage}`)}</h2>
+      <h2 id={id} className="font-display text-h2 font-bold text-ink-strong font-stretch-106%">{t(`warehouse.list.groups.${stage}`)}</h2>
       <ul aria-labelledby={id} className="m-0 flex list-none flex-col gap-3 p-0">
         {rows.map((row) => <WarehouseTripCard key={row.id} row={row} primary={row.id === primaryId} />)}
       </ul>

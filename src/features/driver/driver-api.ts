@@ -1,6 +1,6 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchMyTrips, fetchDriverTrip, reportDeliveryIssue, fetchDriverTripLabels
+ *   chưa có ở BE: fetchMyTrips, fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
  *   chưa có ở BE (Q-02, Q-11): startDelivery, arriveAtStop, completeStop, confirmUnloadByQr, confirmUnloadManually
  */
 
@@ -11,6 +11,8 @@ import {
   type LabelVerifyMethod,
   type ManualConfirmInput,
   type MockDb,
+  type Package,
+  type PickupRequest,
   type Revision,
   type ScanResult,
   type Trip,
@@ -43,16 +45,19 @@ export async function fetchMyTrips(): Promise<MyTrips> {
   return myTrips(entries, new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name])), viewer)
 }
 
-/** Chuyến và phương án tài xế làm theo (bản kho đã xếp, chưa xếp thì bản duyệt mới nhất); `plan` là `null` khi chưa có bản duyệt. */
-export type DriverTrip = { readonly trip: Trip; readonly plan: Revision | null }
+/**
+ * Chuyến và phương án tài xế làm theo (bản kho đã xếp, chưa xếp thì bản duyệt mới nhất); `plan` là `null` khi chưa có bản duyệt. Kèm
+ * kiện nhận dọc đường đã duyệt (FE-7-05): yêu cầu và kiện kho kiện của chúng — ngoài phương án; chỗ xếp của kiện nhận nằm ở `PickupRequest.layout` (FE-BL-01).
+ */
+export type DriverTrip = { readonly trip: Trip; readonly plan: Revision | null; readonly pickups: readonly PickupRequest[]; readonly pickupPackages: readonly Package[] }
 
 // chưa có ở BE
 export async function fetchDriverTrip(tripId: string): Promise<DriverTrip> {
   const db = getMockDb()
   const viewer = sessionUser(db)
-  const [trip, revisions] = await Promise.all([db.getTrip(tripId), db.listRevisions(tripId)])
+  const [trip, revisions, pickups, pickupPackages] = await Promise.all([db.getTrip(tripId), db.listRevisions(tripId), db.listPickupRequests(tripId), db.listPickupPackages(tripId)])
   if (!isVisibleTo(trip, viewer)) throw new MockDbError('NOT_FOUND', { collection: 'trips', id: tripId })
-  return { trip, plan: driverPlan(trip, revisions) ?? null }
+  return { trip, plan: driverPlan(trip, revisions) ?? null, pickups, pickupPackages }
 }
 
 /** Tài xế bấm Xuất phát: `loaded` → `delivering`, kiện sang `IN_TRANSIT` (D-84). Chỉ khi kho đã xếp xong. */

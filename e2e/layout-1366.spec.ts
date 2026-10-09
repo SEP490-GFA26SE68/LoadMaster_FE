@@ -188,7 +188,13 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
     expect.soft(await bottomOfLastChild(), `${screen.name}: content taller than the screen`).toBe(false)
     await page.mouse.move(683, 500)
     await page.mouse.wheel(0, 5000)
-    await expect.poll(bottomOfLastChild, { message: `${screen.name}: wheel reaches the end` }).toBe(true)
+    // Một lần lăn có thể bị trình duyệt bỏ dở khi phần tử dưới con trỏ vừa được dựng lại (bản đồ, ảnh tải lười trên máy CI chậm): chưa tới
+    // đáy thì lăn tiếp như người dùng — màn không cuộn được bằng bánh xe thì lăn bao nhiêu lần cũng không tới đáy, test vẫn đỏ
+    await expect.poll(async () => {
+      if (await bottomOfLastChild()) return true
+      await page.mouse.wheel(0, 5000)
+      return bottomOfLastChild()
+    }, { message: `${screen.name}: wheel reaches the end` }).toBe(true)
     const pageScroll = await page.evaluate(() => ({ tall: document.documentElement.scrollHeight > innerHeight, y: scrollY, navTop: document.querySelector('header')!.getBoundingClientRect().top }))
     expect.soft(pageScroll, screen.name).toStrictEqual({ tall: false, y: 0, navTop: 0 })
   }

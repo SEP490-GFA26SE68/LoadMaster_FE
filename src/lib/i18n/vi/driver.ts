@@ -37,6 +37,8 @@ export const driver = {
     },
     completed: 'Hoàn thành lúc {time} · {date}',
     issues: { one: '{count} sự cố', other: '{count} sự cố' },
+    /** Tên danh sách các điểm trong thẻ chuyến (V2.3 đợt 6). */
+    stopsLabel: 'Các điểm của chuyến {tripId}',
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
   },
@@ -68,8 +70,10 @@ export const driver = {
   },
   start: 'Xuất phát',
   arrive: 'Đã đến điểm {number}',
-  arrived: 'Đã ghi giờ đến điểm {number}',
   stopTitle: 'Điểm {number} / {total}',
+  /** Chữ trên hai nút của thẻ liên hệ (V2.3 đợt 6); tên đọc đầy đủ ở `call` và `directions`. */
+  callLabel: 'Gọi',
+  directionsLabel: 'Chỉ đường',
   directions: 'Chỉ đường tới {name}',
   call: 'Gọi {name}',
   contact: '{name} · {phone}',
@@ -80,9 +84,6 @@ export const driver = {
   remaining: { one: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố', other: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố' },
   allHandled: 'Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.',
   complete: 'Hoàn tất điểm giao',
-  stopDone: 'Đã hoàn tất điểm giao {number}',
-  nextStop: 'Chuyển sang điểm giao {number}.',
-  lastStop: 'Chuyến đã giao xong.',
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',
@@ -99,7 +100,6 @@ export const driver = {
     description: 'Quét nhãn QR của từng kiện khi đưa xuống xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã dỡ {done} / {total} kiện.',
     lastUnloaded: 'Vừa dỡ {id} · {name}.',
     wrongStop: 'Kiện {id} ({name}) thuộc điểm {stop} · {stopName}, không phải điểm này. Chưa ghi gì — để kiện lại trên xe.',
-    unloaded: 'Đã dỡ {id}',
     manualRecorded: 'Đã ghi xác nhận tay {id}',
     manualRecordedDescription: 'Chờ điều phối viên duyệt trước khi hoàn tất điểm giao.',
     /** Dòng "Đã dỡ" của một kiện kèm cách đối chiếu. */
@@ -129,7 +129,6 @@ export const driver = {
     noteHint: 'Bắt buộc khi chọn Khác.',
     submit: 'Ghi sự cố',
     cancel: 'Quay lại',
-    recorded: 'Đã ghi sự cố cho {id}',
     refusedRecorded: 'Khách từ chối {id}',
     refusedRecordedDescription: 'Kiện ở lại xe và thành Hoàn trả khi hoàn tất điểm giao.',
     errors: {
@@ -139,6 +138,47 @@ export const driver = {
       noteTooLong: 'Ghi chú tối đa {max} ký tự.',
     },
   },
+  /** Loại điểm và danh sách điểm của chuyến (FE-7-05): điểm nhận dọc đường có biểu tượng riêng và chữ riêng. */
+  stopKinds: { PICKUP: 'Điểm nhận hàng', DELIVERY: 'Điểm giao hàng' },
+  stopList: {
+    summary: 'Các điểm của chuyến ({count})',
+    label: 'Các điểm của chuyến',
+    state: { done: 'Đã xong', current: 'Đang ở điểm này', waiting: 'Chưa tới' },
+  },
+  /** Kiện nhận dọc đường (FE-7-05, D-88): nhận ở điểm nhận, giao ở điểm giao như kiện thường; có chỗ trong khung 3D khi vừa vùng trống (FE-BL-01). */
+  pickup: {
+    banner: 'Điểm nhận hàng dọc đường: nhận {count} kiện từ {name}. Đối chiếu từng kiện lên xe rồi mới hoàn tất điểm nhận.',
+    listTitle: 'Kiện nhận dọc đường',
+    listHint: 'Kiện nhận không nằm trong phương án xếp hàng; chỗ xếp của chúng hiện trong khung 3D "Xem vị trí hàng". Đối chiếu bằng nhãn QR như kiện thường.',
+    request: 'Yêu cầu {id}',
+    pick: { waiting: 'Chưa nhận', done: 'Đã nhận' },
+    deliver: { waiting: 'Chưa dỡ', done: 'Đã dỡ' },
+    via: {
+      QR: 'quét QR',
+      CODE: 'gõ mã',
+      MANUAL_PENDING: 'xác nhận tay, chờ duyệt',
+      MANUAL_APPROVED: 'xác nhận tay đã duyệt',
+    },
+    summary: 'Cần nhận {total} kiện · Đã nhận {done}',
+    progress: 'Tiến độ nhận hàng',
+    remaining: { one: 'Còn {count} kiện chưa đối chiếu', other: 'Còn {count} kiện chưa đối chiếu' },
+    allHandled: 'Mọi kiện của điểm nhận này đã đối chiếu.',
+    scanOpen: 'Đối chiếu kiện nhận',
+    scanTitle: 'Đối chiếu kiện nhận tại điểm {number}',
+    scanDescription: 'Quét nhãn QR của từng kiện khi đưa lên xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã nhận {done} / {total} kiện.',
+    lastPicked: 'Vừa nhận {id} · {name}.',
+    candidate: 'Kiện nhận · yêu cầu {request}',
+    complete: 'Hoàn tất điểm nhận',
+    blocked: {
+      one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
+      other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
+    },
+    cargoTitle: 'Kiện nhận dọc đường — chưa có chỗ trên xe',
+    cargoNote: 'Các kiện này không vừa vùng đã trống nên chưa có vị trí trong khung 3D; xếp theo hướng dẫn của điều phối viên và đối chiếu bằng nhãn QR ở màn điểm giao.',
+    cargoRow: '{id} · {name} · {weight} · {reason}',
+  },
+  /** Nút "Thêm" ở chân màn điểm giao: tờ trượt từ đáy chứa hai việc ít dùng khi chuyến đang chạy (V2.3 đợt 6). */
+  more: { open: 'Thêm', title: 'Thêm thao tác', description: 'Những việc ít dùng khi xe đang trên đường.' },
   /** Màn tổng kết khi giao xong điểm cuối. */
   tripSummary: {
     title: 'Tổng kết chuyến',
@@ -151,6 +191,8 @@ export const driver = {
     noIssues: 'Không có sự cố.',
     issueWhere: '{id} · Điểm {stop}',
     wholeStop: 'Cả điểm giao · Điểm {stop}',
+    stopsTitle: 'Điểm giao',
+    stopLine: { one: 'Đã giao {time} · {count} kiện', other: 'Đã giao {time} · {count} kiện' },
   },
   cargo: {
     title: 'Vị trí hàng tại điểm giao',

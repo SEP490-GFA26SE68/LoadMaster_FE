@@ -113,6 +113,8 @@ export type OptimizationRun = {
   /** Lần chạy xong: mã job của service và các phương án đã lưu. */
   jobId?: string
   plans?: RunPlan[]
+  /** Số kiện ghim mà lần chạy giữ nguyên (FE-BL-02); vắng khi lần chạy không giữ kiện nào. */
+  pinnedCount?: number
   /** Lần chạy hỏng: mã lý do (`REQUEST_REJECTED`, `SERVICE_UNAVAILABLE`), UI dịch. */
   failureCode?: string
 }
@@ -188,8 +190,11 @@ export type TripRoutePlan = {
   missedStopIds: string[]
   /** Quãng đường ước lượng kho → điểm cuối, km (làm tròn 0,1). */
   totalKm: number
-  /** Từ lúc xuất phát tới khi xong điểm cuối, phút. */
+  /** Từ lúc xuất phát tới khi xong điểm cuối, phút (gồm giờ nghỉ bắt buộc của tài xế, FE-BL-04). */
   totalMinutes: number
+  /** Số lần nghỉ bắt buộc và tổng thời gian nghỉ (phút, đã nằm trong `totalMinutes`); vắng khi tuyến không phải nghỉ lần nào. */
+  restCount?: number
+  restMinutes?: number
   /** Lần bấm "Tối ưu tuyến" gần nhất, ISO 8601. */
   optimizedAt: string
   /** Người bấm; `null` khi không có phiên (seed, test). */

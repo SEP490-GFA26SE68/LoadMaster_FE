@@ -5,7 +5,6 @@ export const pageHero = {
   breadcrumb: 'Breadcrumb',
   trips: 'Trips in the period, plan status and what needs handling before handover to the warehouse.',
   tripForm: 'Enter trip details, pick a vehicle and order the delivery stops.',
-  optimization: 'Set loading requirements and check the input before running the optimization.',
   fleet: 'Fleet status and which trip each vehicle is serving.',
   dashboard: 'Trips, fill rate and delivered weight for the period in view.',
   users: 'Accounts, roles and permissions in the system.',
@@ -19,4 +18,9 @@ export const pageHero = {
   monitoring: 'Vehicles in transit on the map, expected arrival against the delivery deadline, and incidents on the road.',
   vehicleTypes: 'Cargo dimensions and payload by vehicle type.',
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
+  subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
+  billing: 'The company’s plan, credit balance, history and payments.',
+  payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
+  companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
+  support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
 } satisfies Dictionary<typeof source>

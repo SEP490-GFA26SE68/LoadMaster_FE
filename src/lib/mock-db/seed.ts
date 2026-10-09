@@ -9,6 +9,7 @@ import type { TripPackageLink } from './review1-status'
 import { PHUONG_NAM_DISPATCHER, seedPhuongNam } from './seed-phuong-nam'
 import { seedPlanner, withSeedRoute, type SeedPlanner } from './seed-plan'
 import { seedDelivery, seedLoading, type SeedEvent } from './seed-progress'
+import { seedPickups } from './seed-pickups'
 import { seedTrip } from './seed-trip'
 import { seedTripPool } from './seed-trip-pool'
 import { MAINTENANCE_SPEC, SEED_ADMIN, SEED_DISPATCHER, TRIP_SPECS, type TripSpec } from './seed-trips'
@@ -18,6 +19,7 @@ import { auditEventCompany } from './tenancy'
 import { tripChangeParams } from './trip-changes'
 import { seedSourcing, type SourcingSeed } from './seed-sourcing'
 import { DEFAULT_RUN_ALGORITHM, type OptimizationRun } from './source-types'
+import type { PickupRequest } from './pickup-model'
 import type { Revision, Trip } from './types'
 
 export type SeedData = {
@@ -35,6 +37,8 @@ export type SeedData = {
   runs: OptimizationRun[]
   /** Chuyến → kiện kho kiện của từng dòng kiện nhập tay (FE-3b-07). */
   tripPackageLinks: [string, TripPackageLink[]][]
+  /** Yêu cầu nhận dọc đường (FE-7-01): một yêu cầu chờ duyệt trên chuyến đang vận chuyển của Long Bình. */
+  pickups: PickupRequest[]
 } & SourcingSeed
 
 const cache = new Map<string, SeedData>()
@@ -119,6 +123,7 @@ function createSeed(today: string): SeedData {
     packageTypes: [...sourcing.packageTypes, ...phuongNam.packageTypes],
     packages: [...tripPool.packages, ...sourced],
     tripPackageLinks: tripPool.tripPackageLinks,
+    pickups: seedPickups(today),
     requirements: [...sourcing.requirements, ...phuongNam.requirements],
     vehicleTypes: [...sourcing.vehicleTypes, ...phuongNam.vehicleTypes],
     vehicleTypeOf: [...sourcing.vehicleTypeOf, ...phuongNam.vehicleTypeOf],

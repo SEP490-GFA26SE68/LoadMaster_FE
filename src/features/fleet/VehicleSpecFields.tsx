@@ -41,6 +41,7 @@ export function VehicleSpecFields({
           <Input
             key={field}
             label={t(`fields.${field}`)}
+            required
             suffix="cm"
             step={CM_STEP}
             error={errors[field]?.message}
@@ -50,6 +51,7 @@ export function VehicleSpecFields({
         ))}
         <Input
           label={t('fields.maxPayloadKg')}
+          required
           suffix="kg"
           step={KG_STEP}
           error={errors.maxPayloadKg?.message}
@@ -58,6 +60,7 @@ export function VehicleSpecFields({
         />
         <Input
           label={t('fleet.form.clearanceCm')}
+          required
           suffix="cm"
           step={CM_STEP}
           hint={t('fleet.form.clearanceHint')}

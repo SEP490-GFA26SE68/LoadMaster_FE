@@ -1,5 +1,6 @@
-import { deadlineReview } from '@/domain/constraints'
+import { deadlineReview, pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
+import { runCredit } from './db-billing'
 import { found, nextId, put, type DbContext } from './db-context'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
@@ -45,6 +46,7 @@ function storeRun(ctx: DbContext, { trip, request, jobId, algorithm, plans }: Ru
   }))
   const run: OptimizationRun = {
     id: runId, tripId: trip.id, algorithm, status: 'COMPLETED', at, by: ctx.state.session.userId, jobId,
+    ...(request.pinnedPlacements?.length ? { pinnedCount: request.pinnedPlacements.length } : {}),
     plans: saved.map((revision, index) => ({
       objective: (plans[index] as RunInput['plans'][number]).objective, revisionId: revision.id, jobId: revision.jobId,
       placedCount: revision.result.metrics.placedCount, unplacedCount: revision.result.metrics.unplacedCount,
@@ -76,26 +78,46 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Lịch sử lần chạy (LM-104): kết quả lưu lẻ là một lần chạy một phương án
-        const stored = storeRun(ctx, { trip, request, jobId: result.jobId, algorithm: run.algorithm, plans: [{ objective: run.objective, result }] })
-        return stored.revisions[0] as Revision
+        // Phiên đăng nhập lưu kết quả cũng tốn 1 credit như một lần chạy (`runCredit`); kho không phiên thì không
+        const credit = runCredit(ctx, trip)
+        try {
+          const stored = storeRun(ctx, { trip, request, jobId: result.jobId, algorithm: run.algorithm, plans: [{ objective: run.objective, result }] })
+          credit.deduct()
+          return stored.revisions[0] as Revision
+        } catch (error) {
+          credit.rollback()
+          throw error
+        }
       }),
-    saveOptimizationRun: ({ tripId, request, jobId, plans, algorithm = DEFAULT_RUN_ALGORITHM }) =>
+    saveOptimizationRun: ({ tripId, request, jobId, plans, algorithm = DEFAULT_RUN_ALGORITHM, creditReference }) =>
       ctx.respond(() => {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Xếp 3D theo tuyến (PRD v2 mục 8.3): thứ tự điểm giao phải đã chốt bằng tối ưu tuyến
         if (tripStatus(trip) !== 'PLANNED') throw new MockDbError('ROUTE_NOT_PLANNED', { tripId })
         if (plans.length === 0) throw new Error(`Lần chạy của chuyến ${tripId} không có phương án nào`)
-        return storeRun(ctx, { trip, request, jobId, algorithm, plans })
+        // Kiện ghim (FE-BL-02): bộ ghim hỏng thì không lưu lần chạy nào, kho không tin nơi gọi đã kiểm
+        const faults = pinnedIssues(request)
+        if (faults.length > 0) throw new MockDbError('PINNED_SET_INVALID', { tripId, count: faults.length, codes: [...new Set(faults.map(({ code }) => code))] })
+        // Credit đã giữ phải còn giữ trước khi ghi gì; lưu xong thì trừ hẳn (FE-8-05, D-89)
+        const credit = runCredit(ctx, trip, creditReference)
+        try {
+          const saved = storeRun(ctx, { trip, request, jobId, algorithm, plans })
+          credit.deduct()
+          return saved
+        } catch (error) {
+          credit.rollback()
+          throw error
+        }
       }),
-    approveRevision: (revisionId, patches, { force = false } = {}) =>
+    approveRevision: (revisionId, patches, { force = false, pinned } = {}) =>
       ctx.respond(() => {
         const source = ctx.scope.revisions.own(revisionId)
         const trip = found(trips, 'trips', source.tripId)
         assertPlanning(trip)
         if (isStale(source, trip)) throw new MockDbError('REVISION_STALE', { revisionId })
         if (source.result.status !== 'COMPLETED') throw new MockDbError('REVISION_NOT_COMPLETED', { revisionId })
-        const result = approvedResult(source.request, source.result, patches)
+        const result = approvedResult(source.request, source.result, patches, pinned)
         // Kho kiểm lại lý do chặn trên chính bản sẽ duyệt (D-80): `force` không gỡ được lý do nào ở đây
         const blocking = approvalIssues(source.request, result)
         if (blocking.length > 0) {

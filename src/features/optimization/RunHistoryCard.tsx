@@ -1,4 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table'
+import { Pin } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { DataTable, type BaseTableFeatures, type ColumnMeta } from '@/components/DataTable'
@@ -49,11 +50,12 @@ function createColumns(tripId: string, t: TFunction, format: Formatter) {
       header: t('runs.columns.choice'),
       meta: { width: '18%' } satisfies ColumnMeta,
       cell: (info) => {
-        const { timeLimitSeconds: seconds, randomSeed: seed } = info.row.original
+        const { timeLimitSeconds: seconds, randomSeed: seed, pinnedCount } = info.row.original
         // Seed là mã để chạy lại đúng kết quả, không phải số lượng: in nguyên, không nhóm hàng nghìn
         return (
           <span className={two}>
             <span className="text-ink-1">{t(`runs.algorithms.${info.getValue()}`)}</span>
+            {pinnedCount ? <span className="inline-flex items-center gap-1 text-caption text-ink-2"><Pin className="size-3" strokeWidth={1.5} aria-hidden />{t('runs.pinned', { count: pinnedCount })}</span> : null}
             {seconds === null ? null : (
               <span className={`${mono} text-ink-3`}>
                 {t('runs.limitSeconds', { seconds: format.integer(seconds) })} · {t('runs.seed', { seed: seed === null ? t('runs.noValue') : String(seed) })}

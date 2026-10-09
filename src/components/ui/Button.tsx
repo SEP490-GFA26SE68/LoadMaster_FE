@@ -37,6 +37,9 @@ const buttonVariants = cva(
         // Hành động phụ nhẹ nhất trên nền tối ("Huỷ" cạnh "Tạo chuyến" ở TaoChuyen.jpg): chữ trắng, không nền, rê chuột hiện kính mờ.
         skyGhost:
           'border-none bg-transparent text-sky-text hover:bg-sky-glass disabled:text-sky-text-2 disabled:opacity-60',
+        // Nút phụ ĐẶC trên dải trời của màn cảm ứng (kho, V2.3 đợt 6): nền `--sky-solid`, không blur — kính chưa đo ngoài thực tế.
+        skySolid:
+          'border border-sky-solid-border bg-sky-solid text-sky-text hover:bg-sky-solid-hover focus-visible:outline-cyan-300 disabled:text-sky-text-2 disabled:opacity-60',
         glass:
           'border border-sky-glass-border bg-sky-glass text-sky-text backdrop-blur-[16px] hover:bg-sky-glass-hover disabled:text-sky-text-2 disabled:opacity-60',
       },

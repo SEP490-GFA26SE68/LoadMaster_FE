@@ -26,6 +26,8 @@ export const AUDIT_ACTIONS = [
   'trip.vehicleChanged',
   // Điều phối viên chọn tuyến thay thế khi có sự cố (FE-6-11, sự kiện `TRIP_REROUTED` của backend)
   'trip.rerouted',
+  // Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03)
+  'trip.stopsReordered',
   'optimization.saved',
   'revision.approved',
   'loading.started',
@@ -83,6 +85,26 @@ export const AUDIT_ACTIONS = [
   'exception.escalated',
   'exception.resolved',
   'exception.deadlineRenegotiated',
+  // Yêu cầu nhận hàng dọc đường (FE-7-03 → FE-7-05)
+  'pickup.requested',
+  'pickup.approved',
+  'pickup.rejected',
+  'pickup.reoptimized',
+  'pickup.loaded',
+  'pickup.delivered',
+  // Gói cước và credit của công ty (FE-8-01, FE-8-05); `expired` và `lowBalance` do hệ thống ghi
+  'subscription.subscribed',
+  'subscription.renewed',
+  'subscription.cancelled',
+  'subscription.expired',
+  'credit.purchased',
+  'credit.lowBalance',
+  // Công ty do quản trị hệ thống tạo và sửa (FE-8-06); yêu cầu hỗ trợ (FE-8-07)
+  'company.created',
+  'company.updated',
+  'ticket.created',
+  'ticket.replied',
+  'ticket.statusChanged',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -102,6 +124,10 @@ export type AuditTargetType =
   | 'package'
   | 'requirement'
   | 'vehicleType'
+  // FE-8-01: gói cước và credit thuộc công ty
+  | 'company'
+  // FE-8-07
+  | 'ticket'
 
 export type AuditEvent = {
   /** `EV-NNNNNN`, tăng theo thứ tự ghi. */

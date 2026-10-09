@@ -138,3 +138,25 @@ test('the warehouse is told about a trip cancelled while it was loading — to u
   expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual([])
   expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })
+
+test('a pickup request reaches the dispatcher, and the decision on it reaches only the driver of that trip', () => {
+  const requested = { ...event('EV-3', '2026-09-14T10:30:00.000Z', 'US-0006', 'pickup.requested', 'TRIP-009'), params: { pickupId: 'PKR-002', count: 1, failedRules: 0 } }
+  const approved = { ...event('EV-2', '2026-09-14T10:20:00.000Z', 'US-0001', 'pickup.approved', 'TRIP-009'), params: { pickupId: 'PKR-002', driverId: 'US-0006' } }
+  const rejected = { ...event('EV-1', '2026-09-14T10:10:00.000Z', 'US-0001', 'pickup.rejected', 'TRIP-009'), params: { pickupId: 'PKR-003', driverId: 'US-0004' } }
+  const events = [requested, approved, rejected]
+  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-3'])
+  expect(ids(selectNotifications(events, { id: 'US-0006', role: 'driver' }, NOW))).toStrictEqual(['EV-2'])
+  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual([])
+})
+
+test('a reply from customer support reaches only the person who sent the ticket, whichever company role they have (FE-8-07)', () => {
+  const reply = { ...event('EV-1', '2026-09-14T10:00:00.000Z', 'US-NT-02', 'ticket.replied', 'TKT-001'), params: { requestedBy: 'US-0003' } }
+  expect(ids(selectNotifications([reply], { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-1'])
+  // Đồng nghiệp cùng công ty chỉ nhận khi chính họ là người gửi, ở vai trò nào cũng vậy
+  expect(selectNotifications([reply], { id: 'US-0001', role: 'dispatcher' }, NOW)).toStrictEqual([])
+  expect(ids(selectNotifications([{ ...reply, params: { requestedBy: 'US-0001' } }], { id: 'US-0001', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-1'])
+  // Tài khoản nền tảng không có chuông; lần trả lời của chính người gửi không tự báo cho mình
+  expect(selectNotifications([reply], { id: 'US-NT-02', role: 'systemSupporter' }, NOW)).toStrictEqual([])
+  expect(selectNotifications([{ ...reply, actorId: 'US-0003' }], { id: 'US-0003', role: 'warehouse' }, NOW)).toStrictEqual([])
+})

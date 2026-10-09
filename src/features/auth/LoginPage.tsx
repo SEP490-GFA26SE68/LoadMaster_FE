@@ -1,9 +1,13 @@
+
 import { Boxes, Gauge, Layers } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
+
 import { Logo } from '@/components/brand/Logo'
 import { Lumo } from '@/components/brand/Lumo'
+import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
+
 import { landingPath } from './landing'
 import { LoginArtwork } from './LoginArtwork'
 import { useAuth } from './AuthProvider'
@@ -16,13 +20,7 @@ const HIGHLIGHTS = [
 
 export function LoginPage() {
   const t = useT()
-
-  const {
-    user,
-    initialized,
-    signIn,
-  } = useAuth()
-
+  const { user, initialized, signIn } = useAuth()
   const location = useLocation()
 
   const from =
@@ -49,40 +47,33 @@ export function LoginPage() {
 
   async function handleLogin() {
     const target =
-      from && from !== '/'
+      from && from.startsWith('/') && !from.startsWith('//')
         ? from
         : '/dang-nhap'
 
-    const redirectUri =
-      `${window.location.origin}${target}`
+    const redirectUri = `${window.location.origin}${target}`
 
     await signIn(redirectUri)
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[2fr_3fr]">
+    <div className="sky relative flex min-h-dvh flex-col">
+      <header className="z-10 flex justify-end px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
+        <LanguageSwitch
+          tone="sky"
+          className="pointer-coarse:[&_button]:size-14 pointer-coarse:[&_button]:text-body-lg"
+        />
+      </header>
 
-      <main className="flex flex-col items-center justify-center px-8 py-12 sm:px-14">
-
-        <div className="flex w-full max-w-115 flex-col gap-8">
-
-          <div className="flex flex-col gap-4">
-
-            <Logo
-              size="md"
-              tagline
-              className="mb-2 self-start"
-            />
+      <main className="mx-auto flex w-full max-w-(--shell-max) flex-1 flex-col items-center justify-center gap-12 px-4 py-4 sm:py-8 lg:flex-row lg:px-6 lg:py-6">
+        <div className="flex w-full max-w-120 flex-none flex-col rounded-xl bg-bg p-6 text-text shadow-e3 sm:p-8 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:p-7">
+          <div className="flex flex-col gap-5 pb-5">
+            <Logo size="md" tagline />
 
             <div className="flex items-center gap-4">
-
-              <Lumo
-                pose="greet"
-                size="sm"
-              />
+              <Lumo pose="greet" size="sm" />
 
               <div className="flex min-w-0 flex-col gap-1.5">
-
                 <p className="text-small font-medium text-primary">
                   {t('auth.login.greeting')}
                 </p>
@@ -94,11 +85,8 @@ export function LoginPage() {
                 <p className="text-body text-text-2">
                   {t('auth.login.subtitle')}
                 </p>
-
               </div>
-
             </div>
-
           </div>
 
           <Button
@@ -110,65 +98,39 @@ export function LoginPage() {
             {t('auth.login.submit')}
           </Button>
 
-          <p className="text-center text-small text-text-2">
+          <p className="mt-4 text-center text-small text-text-2">
             Bạn sẽ được chuyển đến hệ thống xác thực LoadMaster.
           </p>
-
         </div>
 
-      </main>
-
-      <aside
-        className="
-          relative hidden flex-col items-center justify-center
-          overflow-hidden
-          bg-[linear-gradient(180deg,var(--canvas-1)_0%,var(--canvas-2)_100%)]
-          px-12 py-12
-          lg:flex
-        "
-      >
-
-        <div className="flex w-full max-w-180 flex-col gap-8">
-
-          <LoginArtwork />
+        <aside className="hidden min-w-0 max-w-220 flex-1 flex-col gap-7 lg:flex">
+          <div className="rounded-xl border border-border-dark bg-[linear-gradient(180deg,var(--canvas-1)_0%,var(--canvas-2)_100%)] p-5">
+            <LoginArtwork />
+          </div>
 
           <div className="flex flex-col gap-5">
-
-            <p className="max-w-160 text-h1 leading-9 font-semibold text-pretty text-white">
+            <p className="max-w-160 font-display text-display leading-10 font-bold tracking-[-0.5px] text-pretty text-sky-text font-stretch-112%">
               {t('auth.showcase.tagline')}
             </p>
 
-            <ul className="m-0 flex list-none flex-col gap-3 p-0">
-
-              {HIGHLIGHTS.map(
-                ({ icon: Icon, textKey }) => (
-
-                  <li
-                    key={textKey}
-                    className="flex items-start gap-3 text-body-lg text-white/75"
-                  >
-
-                    <Icon
-                      className="mt-0.5 size-5 flex-none text-white/50"
-                      strokeWidth={1.5}
-                      aria-hidden
-                    />
-
-                    {t(textKey)}
-
-                  </li>
-
-                ),
-              )}
-
+            <ul className="m-0 grid list-none gap-4 p-0 xl:grid-cols-3">
+              {HIGHLIGHTS.map(({ icon: Icon, textKey }) => (
+                <li
+                  key={textKey}
+                  className="flex items-start gap-3 text-body text-sky-text-2"
+                >
+                  <Icon
+                    className="mt-0.5 size-5 flex-none text-cyan-300"
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                  {t(textKey)}
+                </li>
+              ))}
             </ul>
-
           </div>
-
-        </div>
-
-      </aside>
-
+        </aside>
+      </main>
     </div>
   )
 }

@@ -69,6 +69,7 @@ export const dataErrors = {
   // Luật duyệt và đổi xe (FE-5b-08)
   APPROVAL_BLOCKED: 'Phương án {revisionId} còn {count} lỗi phải xử lý nên chưa duyệt được.',
   LATE_STOPS_UNCONFIRMED: 'Điểm giao số {stopNumbers} trễ hạn dự kiến: cần xác nhận trước khi duyệt.',
+  PINNED_SET_INVALID: 'Các kiện đã ghim của chuyến {tripId} có {count} lỗi nên không giữ nguyên được: bỏ giữ ghim hoặc sửa lại ghim.',
   TRIP_NOT_PLANNED: 'Chuyến {tripId} chưa ở trạng thái Đã lập kế hoạch nên chưa đổi xe ở đây được.',
   ROUTE_NOT_PLANNED: 'Chuyến {tripId} chưa tối ưu tuyến nên chưa chạy tối ưu xếp hàng được. Tối ưu tuyến trước.',
   VEHICLE_UNCHANGED: 'Chuyến đang dùng chính xe {vehicleId}.',
@@ -90,6 +91,15 @@ export const dataErrors = {
   EXCEPTION_INVALID: 'Sự cố chưa hợp lệ: cần loại sự cố, mô tả, số phút chậm trong khoảng cho phép; gia hạn cần một yêu cầu giao của chuyến và hạn đọc được.',
   EXCEPTION_STATUS_INVALID: 'Sự cố {exceptionId} không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
   REROUTE_UNAVAILABLE: 'Chưa tìm được tuyến khác cho chuyến {tripId}: xe chưa có vị trí, hoặc không còn điểm giao nào xe chưa tới.',
+  // Yêu cầu nhận hàng dọc đường (FE-7-01)
+  PICKUP_INVALID: 'Yêu cầu nhận hàng chưa hợp lệ: cần tên, địa chỉ, toạ độ của điểm nhận và điểm giao, hạn đọc được (nếu có), mã, kích thước, khối lượng và loại hàng của từng kiện.',
+  INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận {pickupId} không chuyển sang trạng thái này được từ trạng thái hiện tại. Tải lại để xem trạng thái mới.',
+  PICKUP_ROUTE_UNAVAILABLE: 'Điểm giao số {stopNumbers} của chuyến chưa có toạ độ nên chưa kiểm được yêu cầu nhận hàng.',
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  STOP_ORDER_INVALID: 'Thứ tự điểm giao chưa hợp lệ: phải gồm đúng các điểm của chuyến {tripId} và khác thứ tự hiện tại.',
+  STOP_NOT_MOVABLE: 'Điểm {stopIds} đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
+  PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng {pickupStopId} phải đứng trước điểm giao {deliveryStopId} của cùng yêu cầu.',
+  STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này, kiện {packages} bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
   // Nhập file vào kho kiện (FE-3b-02)
   UNSUPPORTED_FILE_TYPE: 'Không đọc được file này. Chỉ nhận file .csv hoặc .xlsx.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',
@@ -97,6 +107,21 @@ export const dataErrors = {
   BATCH_TOO_LARGE: 'File có {rows} dòng, mỗi lần chỉ nhập tối đa {max} dòng.',
   IMPORT_COLUMNS_MISSING: 'Dòng tiêu đề thiếu cột: {columns}. Tải file mẫu để xem đủ cột.',
   PACKAGE_IMPORT_INVALID: 'File còn {errors} dòng lỗi nên chưa nhập được dòng nào.',
+  // Gói cước và credit (FE-8-01, FE-8-05)
+  INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  SUBSCRIPTION_EXPIRED: 'Gói cước của công ty đã hết hạn nên chưa chạy tối ưu được — liên hệ quản trị công ty.',
+  SUBSCRIPTION_ACTIVE: 'Công ty đang có gói cước còn hiệu lực. Chỉ đăng ký gói mới khi gói hiện tại đã hết hạn.',
+  SUBSCRIPTION_STATUS_INVALID: 'Công ty không có gói đang dùng để huỷ.',
+  PLAN_INACTIVE: 'Gói này đã ngừng bán.',
+  PLAN_INVALID: 'Gói chưa hợp lệ: tên không được trống, giá là số nguyên không âm, credit tháng là số nguyên dương hoặc không giới hạn.',
+  PLAN_TIER_TAKEN: 'Hạng này đã có một gói đang bán. Ngừng bán gói đó trước khi mở bán gói khác cùng hạng.',
+  PLAN_IN_USE: 'Còn {companies} công ty đang gắn với gói này nên chưa xoá được. Ngừng bán gói thay vì xoá.',
+  TOPUP_INVALID: 'Chỉ nạp được gói 50 hoặc 500 credit.',
+  CREDIT_NOT_RESERVED: 'Lần chạy này chưa giữ credit hoặc đã được hoàn.',
+  // Công ty và yêu cầu hỗ trợ (FE-8-06, FE-8-07)
+  COMPANY_INVALID: 'Thông tin công ty chưa hợp lệ: cần tên, địa chỉ, số điện thoại, kho xuất phát có toạ độ, và họ tên, email, số điện thoại của quản trị công ty đầu tiên.',
+  TICKET_INVALID: 'Yêu cầu hỗ trợ chưa hợp lệ: cần loại, tiêu đề và nội dung, không để trống hay quá dài.',
+  TICKET_CLOSED: 'Yêu cầu hỗ trợ này đã đóng — nhờ Hỗ trợ khách hàng mở lại nếu cần trao đổi tiếp.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */
   UNKNOWN: 'Có lỗi xảy ra. Thử lại sau.',
 } as const satisfies Record<MockDbErrorCode | 'UNKNOWN', string>

@@ -8,7 +8,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Đăng nhập', signedOut: 'Đăng xuất', signInFailed: 'Đăng nhập không thành công' },
     vehicle: { created: 'Thêm xe', updated: 'Sửa cấu hình xe', deleted: 'Xoá xe', maintenanceOn: 'Đưa xe vào bảo dưỡng', maintenanceOff: 'Kết thúc bảo dưỡng xe' },
-    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến', rerouted: 'Chọn tuyến thay thế' },
+    trip: { created: 'Tạo chuyến', updated: 'Sửa chuyến', cancelled: 'Huỷ chuyến', packagesAdded: 'Đưa kiện kho kiện vào chuyến', packageRemoved: 'Bỏ kiện khỏi chuyến', segregationOverridden: 'Cho chở chung kiện khác loại hàng', routeOptimized: 'Tối ưu tuyến', vehicleChanged: 'Đổi xe của chuyến', rerouted: 'Chọn tuyến thay thế', stopsReordered: 'Đổi thứ tự điểm giao khi xe đang chạy' },
     optimization: { saved: 'Lưu kết quả tối ưu', failed: 'Lần chạy tối ưu không ra kết quả' },
     revision: { approved: 'Duyệt phương án' },
     loading: {
@@ -26,6 +26,11 @@ export const audit = {
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
     manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
     exception: { reported: 'Báo sự cố chuyến', escalated: 'Chuyển sự cố cho quản lý', resolved: 'Đánh dấu sự cố đã xử lý', deadlineRenegotiated: 'Liên hệ khách, nhập hạn mới' },
+    pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', reoptimized: 'Xếp kiện nhận vào vùng trống của thùng xe', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
+    subscription: { subscribed: 'Đăng ký gói cước', renewed: 'Gia hạn gói cước', cancelled: 'Huỷ gói cước', expired: 'Gói cước hết hạn' },
+    credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
+    company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },
+    ticket: { created: 'Gửi yêu cầu hỗ trợ', replied: 'Trả lời yêu cầu hỗ trợ', statusChanged: 'Đổi trạng thái yêu cầu hỗ trợ' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -42,6 +47,11 @@ export const audit = {
     vehicleType: 'Loại xe',
     manualConfirm: 'Xác nhận tay',
     exception: 'Sự cố chuyến',
+    pickup: 'Nhận hàng dọc đường',
+    subscription: 'Gói cước',
+    credit: 'Credit',
+    company: 'Công ty',
+    ticket: 'Hỗ trợ',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -55,6 +65,16 @@ export const audit = {
     noMatch: 'Không có sự kiện khớp bộ lọc.',
     search: 'Tìm theo mã chuyến, xe, người dùng',
     dateRange: 'Khoảng ngày',
+    /** Nút khoảng ngày (V2.3): giá trị hiện trên nút; ngày format theo ngôn ngữ. */
+    dateRangeClose: 'Đóng bộ lọc khoảng ngày',
+    dateRangeValue: {
+      any: 'Mọi ngày',
+      from: 'Từ {date}',
+      to: 'Đến {date}',
+      between: '{from} – {to}',
+    },
+    /** Chữ cho trình đọc màn hình của chip "trước → sau" ở cột Chi tiết. */
+    change: 'Trước: {before} · Sau: {after}',
     actor: 'Người làm',
     allActors: 'Mọi người',
     group: 'Nhóm hành động',
@@ -158,6 +178,17 @@ export const audit = {
       delayMinutes: 'Dự kiến chậm (phút)',
       escalation: 'Lý do chuyển',
       route: 'Tuyến',
+      // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
+      pickupId: 'Yêu cầu nhận',
+      failedRules: 'Luật không đạt',
+      driverId: 'Tài xế',
+      // Gói cước và credit (FE-8-01, FE-8-05)
+      plan: 'Gói cước',
+      credits: 'Credit',
+      balance: 'Số dư',
+      // Yêu cầu hỗ trợ (FE-8-07)
+      ticketKind: 'Loại yêu cầu',
+      ticketStatus: 'Trạng thái',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
@@ -176,6 +207,7 @@ export const audit = {
       phone: 'Số điện thoại',
       role: 'Vai trò',
       depot: 'Kho / chi nhánh',
+      companyName: 'Tên công ty',
       // Yêu cầu giao (FE-4b-01)
       destinationName: 'Tên điểm đến',
       address: 'Địa chỉ',

@@ -34,7 +34,7 @@ export type ManualConfirmRow = {
 export async function fetchManualConfirmations(tripId: string): Promise<ManualConfirmRow[]> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)
-  const contexts: readonly VerifyContext[] = trip.phase === 'loading' ? ['STAGING', 'LOADING'] : trip.phase === 'delivering' ? ['UNLOADING'] : []
+  const contexts: readonly VerifyContext[] = trip.phase === 'loading' ? ['STAGING', 'LOADING'] : trip.phase === 'delivering' ? ['UNLOADING', 'PICKUP'] : []
   const pending: PackageVerification[] = pendingManualConfirms(trip).filter((entry) => contexts.includes(entry.context))
   if (pending.length === 0) return []
   const [labels, names] = await Promise.all([db.listTripLabels(tripId), db.listAuditNames()])

@@ -1,3 +1,4 @@
+import { RoleBadge } from '@/components/RoleBadge'
 import { Badge } from '@/components/ui/Badge'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -35,14 +36,9 @@ export function UserAvatar({ fullName, status, size = 'md' }: { fullName: string
   )
 }
 
-/** Vai trò là nhãn ngữ cảnh, không phải trạng thái: nền slate, bo 6 px (không phải viên thuốc — không bấm được, không phải badge). */
+/** Vai trò là nhãn ngữ cảnh, không phải trạng thái: dùng chung `RoleBadge` (icon + tên vai trò). */
 export function RoleLabel({ role }: { role: Role }) {
-  const t = useT()
-  return (
-    <span className="inline-flex min-h-5.5 items-center rounded-sm bg-tint-slate px-2 text-caption font-medium text-tint-slate-fg">
-      {t(`roles.${role}`)}
-    </span>
-  )
+  return <RoleBadge role={role} />
 }
 
 /** Hoạt động gần nhất: giờ + ngày mono, hoặc "Chưa đăng nhập" khi tài khoản chưa vào lần nào. */

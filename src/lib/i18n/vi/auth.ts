@@ -25,6 +25,11 @@ export const auth = {
     sharedPlan: 'Kho xếp và tài xế dỡ theo cùng một phương án 3D đã duyệt',
     artworkLabel: 'Mô phỏng thùng xe được xếp hàng theo thứ tự dỡ',
   },
+  /** Nút hiện / ẩn mật khẩu trong ô nhập (`PasswordInput`): tên nút nói việc sẽ xảy ra khi bấm. */
+  passwordToggle: {
+    show: 'Hiện mật khẩu',
+    hide: 'Ẩn mật khẩu',
+  },
   demo: {
     title: 'Tài khoản dùng thử',
     password: 'mật khẩu {password}',

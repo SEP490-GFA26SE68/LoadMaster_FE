@@ -1,3 +1,4 @@
+import { Pin } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { SceneCallout } from './SceneCallout'
 import { SceneTag } from './SceneTag'
@@ -6,7 +7,7 @@ import { boxCenter, boxSize } from './units'
 
 /**
  * Nhãn neo trên đỉnh kiện đang chọn / hiện tại / tiếp theo — trường hợp duy nhất mục 7 cho phép dùng `<Html>` của drei, vì nhãn
- * phải bám theo vật thể 3D. Kính tối hai dòng (V2.3): vai trò · điểm giao, rồi mã kiện; "tiếp theo" chỉ một dòng.
+ * phải bám theo vật thể 3D. Kính tối hai dòng (V2.3): vai trò · điểm giao, rồi mã kiện; "tiếp theo" chỉ một dòng. Kiện đã ghim (FE-BL-02) thêm dòng "Đã ghim" kèm biểu tượng ghim.
  */
 export function SelectionLabel({ placement, role = 'selected' }: { placement: ScenePlacement; role?: 'selected' | 'current' | 'next' }) {
   const t = useT()
@@ -20,7 +21,9 @@ export function SelectionLabel({ placement, role = 'selected' }: { placement: Sc
       width={role === 'next' ? 180 : 168}
       anchor={role !== 'next'}
     >
-      <SceneTag tone={role} title={t(`viewer.selectionLabel.${role}`, { stop: placement.stop })} code={role !== 'next' ? placement.id : undefined} />
+      <SceneTag tone={role} title={t(`viewer.selectionLabel.${role}`, { stop: placement.stop })} code={role !== 'next' ? placement.id : undefined}>
+        {placement.pinned ? <span className="flex items-center gap-1 text-body-lg xl:text-note"><Pin className="size-3" strokeWidth={1.5} aria-hidden />{t('viewer.pins.tag')}</span> : null}
+      </SceneTag>
     </SceneCallout>
   )
 }

@@ -24,6 +24,12 @@ test('the demo driver sees only their trips, grouped by status (FE-6-01): the lo
     id: 'TRIP-010', name: 'Tuyến Thủ Đức – An Phú – Phú Nhuận', scheduledDate: '2026-09-14', vehicleName: 'Isuzu NQR 550 · 51C-284.19',
     status: 'LOADING', sub: { kind: 'loaded' }, manualSub: null, stopCount: 3, packageCount: 210, currentStop: undefined,
     completedAt: undefined, issueCount: 0, recheck: 0,
+    // Các điểm của chuyến xếp xong chờ xuất phát: số kiện của phương án ở từng điểm (80 + 40, 45, 45), chưa điểm nào hoàn tất
+    stops: [
+      { number: 1, name: 'Cửa hàng Bách Hoá Xanh Thủ Đức', kind: 'DELIVERY', packageCount: 120, done: false },
+      { number: 2, name: 'MM Mega Market An Phú', kind: 'DELIVERY', packageCount: 45, done: false },
+      { number: 3, name: 'Circle K Phan Xích Long', kind: 'DELIVERY', packageCount: 45, done: false },
+    ],
   }])
   // TRIP-2026-0914 (Đã lập kế hoạch, đã duyệt, kho chưa bắt đầu) cũng gán cho tài xế này nhưng không còn hiện
   expect([groups.inTransit, groups.preparing]).toStrictEqual([[], []])
@@ -43,6 +49,15 @@ test('every Long Bình trip given to one driver: in transit, loaded, being loade
   expect(groups.recent.map((row) => [row.id, row.packageCount])).toStrictEqual([
     ['TRIP-008', 400], ['TRIP-007', 85], ['TRIP-006', 175], ['TRIP-005', 200], ['TRIP-003', 144],
   ])
+})
+
+test('the stop lines of a trip are only filled for the in-transit and loaded groups: the in-transit trip marks completed stops, the others stay empty', async () => {
+  const groups = await tripsFor('US-0004', { reassign: true })
+  const [transit] = groups.inTransit
+  // TRIP-009 đang giao điểm 2 (currentStop = 2): điểm 1 đã hoàn tất, các điểm sau chưa
+  expect(transit?.stops.map((stop) => [stop.number, stop.done])).toStrictEqual([[1, true], [2, false], [3, false]])
+  expect(transit?.stops.reduce((sum, stop) => sum + stop.packageCount, 0)).toBe(transit?.packageCount)
+  expect([...groups.preparing, ...groups.recent].every((row) => row.stops.length === 0)).toBe(true)
 })
 
 test('another driver sees none of the demo driver trips', async () => {

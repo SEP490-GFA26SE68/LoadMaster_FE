@@ -314,7 +314,7 @@ describe('what the driver recorded, read as of a moment (trip-tracking)', () => 
     expect(simulatedSnapshot(trip, plus(T, 9 * MINUTE))?.vehicle).toMatchObject({ speedKmh: 50, stopId: 'STOP-01' })
     // bấm "Đã đến" lúc 03:10: xe ở điểm 1, ETA của điểm 1 là giờ đến thật; điểm 2 = đến + 15 phút + 517.677 ms
     expect(simulatedSnapshot(trip, plus(T, 12 * MINUTE))).toStrictEqual({
-      vehicle: { lat: 10.8494, lng: 106.7537, speedKmh: 0, heading: 236, recordedAt: plus(T, 12 * MINUTE), stopId: 'STOP-01', arrivedAt: plus(T, 10 * MINUTE) },
+      vehicle: { lat: 10.8494, lng: 106.7537, speedKmh: 0, heading: 236, recordedAt: plus(T, 12 * MINUTE), stopId: 'STOP-01', arrivedAt: plus(T, 10 * MINUTE), drivenMs: 1_490_848 },
       stops: [
         { stopId: 'STOP-01', number: 1, eta: plus(T, 10 * MINUTE), arrived: true },
         { stopId: 'STOP-02', number: 2, eta: plus(T, 25 * MINUTE + 517_677), deadline: plus(T, 120 * MINUTE), deadlineStatus: 'OK' },
@@ -322,7 +322,7 @@ describe('what the driver recorded, read as of a moment (trip-tracking)', () => 
     })
     // hoàn tất điểm 1 lúc 03:40: xe rời điểm, điểm 1 không còn là điểm chưa xong
     const leaving = simulatedSnapshot(trip, plus(T, 40 * MINUTE))
-    expect(leaving?.vehicle).toStrictEqual({ lat: 10.8494, lng: 106.7537, speedKmh: 50, heading: 194, recordedAt: plus(T, 40 * MINUTE), stopId: 'STOP-02' })
+    expect(leaving?.vehicle).toStrictEqual({ lat: 10.8494, lng: 106.7537, speedKmh: 50, heading: 194, recordedAt: plus(T, 40 * MINUTE), stopId: 'STOP-02', drivenMs: 0 })
     expect(leaving?.stops).toStrictEqual([{ stopId: 'STOP-02', number: 2, eta: plus(T, 40 * MINUTE + 517_677), deadline: plus(T, 120 * MINUTE), deadlineStatus: 'OK' }])
   })
 

@@ -1,10 +1,11 @@
-import { parseTime, ROUTING_CONSTANTS, SERVICE_MS, travelMs } from './eta'
+import { drivenAfterStop, legWithRests, parseTime, REST_MS, ROUTING_CONSTANTS, SERVICE_MS, travelMs, type LegSchedule } from './eta'
 import type { GeoPoint } from './haversine'
 
 /**
  * Vị trí xe mô phỏng (FE-6-08, D-85) — hàm thuần, kết quả là **mô phỏng**, không phải GPS. Xe đi trên đường nối thẳng kho → các điểm
  * theo thứ tự: mỗi chặng mất đúng thời gian của công thức D-76 (đường chim bay × hệ số đường ÷ 50 km/h, `travelMs`), dừng 15 phút ở mỗi
- * điểm, dừng thêm đúng số phút chậm của từng sự cố. Tốc độ và thời gian dừng lấy ở `ROUTING_CONSTANTS`; ở đây chỉ khai nhịp ghi vị trí.
+ * điểm, dừng thêm đúng số phút chậm của từng sự cố và đứng nghỉ đúng giờ nghỉ bắt buộc mà ETA đã cộng (FE-BL-04, `legWithRests`: nghỉ không
+ * phải sự cố, không cộng vào phút chậm). Tốc độ và thời gian dừng lấy ở `ROUTING_CONSTANTS`; ở đây chỉ khai nhịp ghi vị trí.
  */
 export const SIMULATION_CONSTANTS = {
   /** Một điểm vị trí mỗi chừng này giây mô phỏng. */
@@ -20,6 +21,11 @@ export type SimulatedStop = {
   readonly arrivedAt?: string
   /** Tài xế hoàn tất điểm, ISO 8601: xe rời điểm đúng lúc đó. Vắng thì xe đứng 15 phút rồi đi tiếp. */
   readonly completedAt?: string
+  /**
+   * Chặng tới điểm này không xuất phát từ điểm trước mà từ `location` lúc `at` (ISO 8601), với `drivenMs` lái liên tục đã tích luỹ:
+   * điều phối viên đổi thứ tự điểm khi xe đang chạy (FE-BL-03) — xe đi tiếp từ chỗ nó đang đứng tới điểm kế tiếp mới, không nhảy vị trí.
+   */
+  readonly startFrom?: { readonly location: GeoPoint; readonly at: string; readonly drivenMs: number }
 }
 
 /** Sự cố làm xe dừng `minutes` phút kể từ `at` (ISO 8601). Sự cố chồng giờ nhau thì nối tiếp: mỗi sự cố tốn đúng số phút của nó. */
@@ -51,6 +57,10 @@ export type SimulatedVehicle = VehicleFix & {
   readonly stopId: string | null
   /** Chỉ có khi xe đang đứng ở `stopId`: giờ đến — giờ tài xế bấm "Đã đến" nếu đã bấm, không thì giờ xe mô phỏng tới nơi. */
   readonly arrivedAt?: string
+  /** Thời gian tài xế đã lái liên tục tới lúc này, ms (FE-BL-04): đầu vào của `liveEta` để ETA tính từ vị trí vẫn cộng đúng giờ nghỉ. */
+  readonly drivenMs: number
+  /** Chỉ có khi xe đang đứng nghỉ bắt buộc giữa đường: giờ nghỉ xong, ISO 8601. */
+  readonly restEndsAt?: string
 }
 
 type Pause = { readonly start: number; readonly end: number }
@@ -96,6 +106,36 @@ function activeEnd(from: number, active: number, pauses: readonly Pause[]): numb
   return cursor + remaining
 }
 
+type LegSegment = {
+  /** Lúc bắt đầu đoạn lái, epoch ms. */
+  readonly start: number
+  /** Lúc hết đoạn lái (đã tính các khoảng giữ của sự cố), epoch ms. */
+  readonly driveEnd: number
+  /** Giờ nghỉ bắt buộc sau đoạn này xong lúc nào; vắng ở đoạn cuối của chặng. */
+  readonly restEnd?: number
+  /** Thời gian lái đã đi trên chặng trước đoạn này, ms. */
+  readonly activeBefore: number
+  /** Độ dài đoạn lái, ms. */
+  readonly chunk: number
+  /** Bộ đếm lái liên tục lúc bắt đầu đoạn, ms. */
+  readonly drivenStart: number
+}
+
+/** Lịch của một chặng: các đoạn lái xen với giờ nghỉ bắt buộc, mỗi đoạn lái chịu các khoảng giữ của sự cố (`pauses`). */
+function legSegments(leaveMs: number, leg: LegSchedule, drivenBefore: number, pauses: readonly Pause[]): LegSegment[] {
+  const segments: LegSegment[] = []
+  let cursor = leaveMs
+  let activeBefore = 0
+  for (const [index, chunk] of leg.chunks.entries()) {
+    const driveEnd = activeEnd(cursor, chunk, pauses)
+    const restEnd = index === leg.chunks.length - 1 ? undefined : driveEnd + REST_MS
+    segments.push({ start: cursor, driveEnd, ...(restEnd === undefined ? {} : { restEnd }), activeBefore, chunk, drivenStart: index === 0 ? drivenBefore : 0 })
+    activeBefore += chunk
+    cursor = restEnd ?? driveEnd
+  }
+  return segments
+}
+
 const round6 = (value: number) => Math.round(value * 1e6) / 1e6
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180
 
@@ -121,30 +161,46 @@ export function simulateVehicle(input: SimulationInput, at: string): SimulatedVe
   let from = input.depot
   let leaveMs = parseTime(input.departureTime)
   let heading = 0
+  let driven = 0
   for (const [index, stop] of input.stops.entries()) {
+    if (stop.startFrom) {
+      from = stop.startFrom.location
+      leaveMs = parseTime(stop.startFrom.at)
+      driven = stop.startFrom.drivenMs
+    }
     const travel = travelMs(from, stop.location)
     if (travel > 0) heading = bearing(from, stop.location)
-    if (atMs < leaveMs) return { ...fix(from, 0, heading), stopId: stop.stopId }
+    if (atMs < leaveMs) return { ...fix(from, 0, heading), stopId: stop.stopId, drivenMs: driven }
 
+    const leg = legWithRests(travel, driven)
+    const segments = legSegments(leaveMs, leg, driven, pauses)
     const driverArrivedMs = stop.arrivedAt === undefined ? Infinity : parseTime(stop.arrivedAt)
     const completedMs = stop.completedAt === undefined ? Infinity : parseTime(stop.completedAt)
-    const arriveMs = Math.min(activeEnd(leaveMs, travel, pauses), Math.max(leaveMs, Math.min(driverArrivedMs, completedMs)))
+    const arriveMs = Math.min(segments.at(-1)?.driveEnd ?? leaveMs, Math.max(leaveMs, Math.min(driverArrivedMs, completedMs)))
     if (atMs < arriveMs) {
-      const done = travel === 0 ? 1 : activeBetween(leaveMs, atMs, pauses) / travel
-      const point = { lat: from.lat + (stop.location.lat - from.lat) * done, lng: from.lng + (stop.location.lng - from.lng) * done }
-      return { ...fix(point, stopped ? 0 : ROUTING_CONSTANTS.AVERAGE_SPEED_KMH, heading), stopId: stop.stopId }
+      const pointAt = (done: number) => ({ lat: from.lat + (stop.location.lat - from.lat) * done, lng: from.lng + (stop.location.lng - from.lng) * done })
+      for (const segment of segments) {
+        if (atMs < segment.driveEnd) {
+          const moved = activeBetween(segment.start, atMs, pauses)
+          return { ...fix(pointAt((segment.activeBefore + moved) / travel), stopped ? 0 : ROUTING_CONSTANTS.AVERAGE_SPEED_KMH, heading), stopId: stop.stopId, drivenMs: segment.drivenStart + moved }
+        }
+        if (segment.restEnd !== undefined && atMs < segment.restEnd) {
+          return { ...fix(pointAt((segment.activeBefore + segment.chunk) / travel), 0, heading), stopId: stop.stopId, drivenMs: segment.drivenStart + segment.chunk, restEndsAt: new Date(segment.restEnd).toISOString() }
+        }
+      }
     }
 
     const isLast = index === input.stops.length - 1
     const departMs = stop.completedAt !== undefined ? Math.max(completedMs, arriveMs) : isLast ? Infinity : activeEnd(arriveMs, SERVICE_MS, pauses)
     if (atMs < departMs) {
       const arrivedMs = driverArrivedMs <= atMs ? driverArrivedMs : arriveMs
-      return { ...fix(stop.location, 0, heading), stopId: stop.stopId, arrivedAt: new Date(arrivedMs).toISOString() }
+      return { ...fix(stop.location, 0, heading), stopId: stop.stopId, arrivedAt: new Date(arrivedMs).toISOString(), drivenMs: leg.drivenAfterMs }
     }
     from = stop.location
     leaveMs = departMs
+    driven = drivenAfterStop(leg.drivenAfterMs, departMs - arriveMs)
   }
-  return { ...fix(from, 0, heading), stopId: null }
+  return { ...fix(from, 0, heading), stopId: null, drivenMs: driven }
 }
 
 /**

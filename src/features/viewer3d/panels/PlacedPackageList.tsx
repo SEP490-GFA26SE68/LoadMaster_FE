@@ -1,4 +1,4 @@
-import { AlertCircle, MapPinOff } from 'lucide-react'
+import { AlertCircle, MapPinOff, Pin } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { ConstraintIssue } from '@/domain/constraints'
 import { useFormat, useT } from '@/lib/i18n'
@@ -21,7 +21,7 @@ export function issueIdsOf(issues: readonly ConstraintIssue[]): Set<string> {
 
 /**
  * Danh sách kiện đã xếp (LM-049) theo thứ tự xếp: lọc theo điểm giao, chỉ kiện có cảnh báo, tìm theo mã; bấm để xem chi tiết.
- * Kiện có cảnh báo gắn nhãn hổ phách: tỷ lệ đỡ đáy (%) khi kiện không được đỡ trọn, còn lại chữ "Cảnh báo". Kiện nằm ngoài vùng của
+ * Kiện có cảnh báo gắn nhãn hổ phách: tỷ lệ đỡ đáy (%) khi kiện không được đỡ trọn, còn lại chữ "Cảnh báo". Kiện đã ghim (FE-BL-02) gắn nhãn "Đã ghim" kèm biểu tượng ghim. Kiện nằm ngoài vùng của
  * điểm giao mình (FE-5b-07) gắn nhãn "Ngoài vùng"; khi phương án có kiện như vậy thì có thêm ô lọc riêng.
  */
 export function PlacedPackageList({ placements, stops, issues, selectedId, onSelect }: {
@@ -88,6 +88,7 @@ export function PlacedPackageList({ placements, stops, issues, selectedId, onSel
                 <span className={cn('min-w-0 flex-1 font-mono text-caption', MUTED)}>
                   {format.dimensions(p.lengthCm, p.widthCm, p.heightCm)} · {format.weight(p.weightKg)}
                 </span>
+                {p.pinned ? <GlassChip tone="cyan" size="tag"><Pin strokeWidth={1.5} aria-hidden />{t('viewer.pins.tag')}</GlassChip> : null}
                 {p.outOfZone ? <GlassChip tone="warn" size="tag"><MapPinOff strokeWidth={1.5} aria-hidden />{t('viewer.zones.outOfZone')}</GlassChip> : null}
                 {warn ? <GlassChip tone="warn" size="tag">
                   <AlertCircle strokeWidth={1.5} aria-hidden />

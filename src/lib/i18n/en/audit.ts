@@ -5,7 +5,7 @@ export const audit = {
   actions: {
     auth: { signedIn: 'Signed in', signedOut: 'Signed out', signInFailed: 'Sign-in failed' },
     vehicle: { created: 'Added vehicle', updated: 'Edited vehicle', deleted: 'Deleted vehicle', maintenanceOn: 'Put vehicle in maintenance', maintenanceOff: 'Ended vehicle maintenance' },
-    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip', segregationOverridden: 'Allowed mixed handling classes', routeOptimized: 'Optimized the route', vehicleChanged: 'Changed the trip vehicle', rerouted: 'Chose an alternative route' },
+    trip: { created: 'Created trip', updated: 'Edited trip', cancelled: 'Cancelled trip', packagesAdded: 'Put pool packages on the trip', packageRemoved: 'Took a package off the trip', segregationOverridden: 'Allowed mixed handling classes', routeOptimized: 'Optimized the route', vehicleChanged: 'Changed the trip vehicle', rerouted: 'Chose an alternative route', stopsReordered: 'Reordered stops while the vehicle is on the road' },
     optimization: { saved: 'Saved optimization result', failed: 'Optimization run returned no result' },
     revision: { approved: 'Approved plan' },
     loading: {
@@ -23,6 +23,11 @@ export const audit = {
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
     manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
     exception: { reported: 'Reported a trip incident', escalated: 'Sent the incident to the manager', resolved: 'Marked the incident as handled', deadlineRenegotiated: 'Contacted the customer, entered a new deadline' },
+    pickup: { requested: 'Sent an en-route pickup request', approved: 'Approved an en-route pickup request', rejected: 'Rejected an en-route pickup request', reoptimized: 'Placed pickup packages in the freed cargo zone', loaded: 'Loaded en-route pickup packages', delivered: 'Delivered en-route pickup packages' },
+    subscription: { subscribed: 'Subscribed to a plan', renewed: 'Renewed the plan', cancelled: 'Cancelled the plan', expired: 'Plan expired' },
+    credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
+    company: { created: 'Created a company', updated: 'Edited company information' },
+    ticket: { created: 'Sent a support ticket', replied: 'Replied to a support ticket', statusChanged: 'Changed the support ticket status' },
   },
   groups: {
     auth: 'Sign-in',
@@ -39,6 +44,11 @@ export const audit = {
     vehicleType: 'Vehicle types',
     manualConfirm: 'Manual confirmations',
     exception: 'Trip incidents',
+    pickup: 'En-route pickup',
+    subscription: 'Plan',
+    credit: 'Credits',
+    company: 'Company',
+    ticket: 'Support',
   },
   log: {
     title: 'System log',
@@ -51,6 +61,14 @@ export const audit = {
     noMatch: 'No event matches the filters.',
     search: 'Search by trip, vehicle or user ID',
     dateRange: 'Date range',
+    dateRangeClose: 'Close date range filter',
+    dateRangeValue: {
+      any: 'Any day',
+      from: 'From {date}',
+      to: 'Until {date}',
+      between: '{from} – {to}',
+    },
+    change: 'Before: {before} · After: {after}',
     actor: 'Done by',
     allActors: 'Everyone',
     group: 'Action group',
@@ -134,6 +152,17 @@ export const audit = {
       delayMinutes: 'Expected delay (min)',
       escalation: 'Reason sent up',
       route: 'Route',
+      // En-route pickup (FE-7-03 to FE-7-05)
+      pickupId: 'Pickup request',
+      failedRules: 'Failed rules',
+      driverId: 'Driver',
+      // Plan and credits (FE-8-01, FE-8-05)
+      plan: 'Plan',
+      credits: 'Credits',
+      balance: 'Balance',
+      // Support tickets (FE-8-07)
+      ticketKind: 'Ticket type',
+      ticketStatus: 'Status',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {
@@ -150,6 +179,7 @@ export const audit = {
       phone: 'Phone',
       role: 'Role',
       depot: 'Depot / branch',
+      companyName: 'Company name',
       destinationName: 'Destination name',
       address: 'Address',
       lat: 'Latitude',

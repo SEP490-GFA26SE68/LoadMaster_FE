@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
 import { ChangeVehicleDialog } from '@/features/trips/ChangeVehicleDialog'
 import { useT } from '@/lib/i18n'
@@ -54,8 +54,9 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const editor = useManualEditor(state)
   const operations = useOperations(state)
   const approval = useViewerApproval(plan, state)
-  // Chỉ dời/xoay kiện là chỉnh sửa cần Duyệt lại; ghim không thuộc phương án gửi Duyệt.
-  const hasEdits = (approval.approval?.patches.length ?? 0) > 0
+  // Dời, xoay hoặc ghim kiện là chỉnh sửa cần Duyệt để lưu (ghim lưu cùng phương án, FE-BL-02); chỉ dời / xoay mới là "chỉnh tay"
+  const poseEdits = (approval.approval?.patches.length ?? 0) > 0
+  const hasEdits = poseEdits || (approval.approval?.pinsChanged ?? false)
   // Điều phối viên chỉnh tay và duyệt (`plans.approve`, FE-0-07), quản lý công ty chỉ xem; chuyến đã sang pha vận hành thì phương án
   // đã chốt với mọi vai trò (D-45)
   const planInfo = usePlanApprovalQuery(plan.revision?.id).data
@@ -72,6 +73,10 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   // xong phương án đang xem thành lỗi thời
   const canChangeVehicle = source !== undefined && can('trips.edit') && tripStatus(source.trip) === 'PLANNED'
   const [vehicleOpen, setVehicleOpen] = useState(false)
+  // Chạy lại giữ kiện đã ghim (FE-BL-02): mở Thiết lập tối ưu với ghim của phương án đang xem; cần quyền chạy tối ưu và chuyến Đã lập kế hoạch
+  const navigate = useNavigate()
+  const canRerunPinned = source !== undefined && plan.revision !== undefined && can('optimization.run') && tripStatus(source.trip) === 'PLANNED'
+  const handleRerunPinned = canRerunPinned ? () => void navigate(`/chuyen/${tripId}/toi-uu?giu-ghim=${encodeURIComponent(plan.revision?.id ?? '')}`) : undefined
   const [inspectorTab, setInspectorTab] = useState<InspectorTab | null>(null)
   const { followPlacement } = editor
   const { follow, current: currentOperation } = operations
@@ -80,8 +85,8 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const totalPackages = plan.placements.length + plan.unplaced.length
   const planIssues = useMemo(() => approval.approval ? [...approval.approval.blockers.issues, ...approval.approval.warnings] : [], [approval.approval])
   const approvalChecks = useMemo(() => approveOpen
-    ? operationApprovalChecks(state.placements, state.draft.patches.size > 0, t) : [],
-  [approveOpen, state.placements, state.draft.patches.size, t])
+    ? operationApprovalChecks(state.placements, poseEdits, t) : [],
+  [approveOpen, state.placements, poseEdits, t])
 
   const { togglePlaying, stepForward, stepBackward, goToStart } = operations
   useEffect(() => {
@@ -116,7 +121,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         placedCount={plan.placements.length}
         totalCount={totalPackages}
         isMockResult={plan.isMockResult}
-        manuallyEdited={!hasEdits && (plan.revision?.manuallyEdited ?? false)}
+        manuallyEdited={!poseEdits && (plan.revision?.manuallyEdited ?? false)}
         candidateLabel={plan.revision?.manuallyEdited ? undefined : candidate?.label}
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
@@ -134,7 +139,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
           </Suspense>
 
           {editor.mode === 'view' ? <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
-            onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined}
+            onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined} onRerunPinned={handleRerunPinned}
             onResetFocus={editor.focus ? () => { operations.setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} /> : null}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}

@@ -79,7 +79,7 @@ export function LoginArtwork() {
       preserveAspectRatio="xMidYMid meet"
       // Chặn chiều cao để trên laptop màn thấp, hình không đẩy phần chữ bên
       // dưới ra ngoài vùng nhìn thấy (cột phải có `overflow-hidden`).
-      className="block max-h-[58vh] w-full"
+      className="block max-h-[38vh] w-full"
       role="img"
       aria-label={t('auth.showcase.artworkLabel')}
     >

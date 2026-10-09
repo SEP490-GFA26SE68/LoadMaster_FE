@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { UserPen, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
@@ -7,9 +8,8 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogTitle,
+  DialogHeader,
 } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
@@ -128,22 +128,19 @@ export function UserFormDialog({
     <Dialog open onOpenChange={(open) => (open || form.formState.isSubmitting ? undefined : onClose())}>
       <DialogContent className="w-140">
         <form noValidate onSubmit={form.handleSubmit(handleValid)}>
-          <div className="flex flex-col gap-5 px-6 pt-6">
-            <div className="flex flex-col gap-1">
-              <DialogTitle className="text-h2 font-semibold">
-                {isEdit ? t('admin.users.form.editTitle') : t('admin.users.form.createTitle')}
-              </DialogTitle>
-              <DialogDescription className="text-body text-text-2">
-                {t(`admin.users.form.${isEdit ? 'editDescription' : 'createDescription'}${platform ? 'Platform' : ''}`)}
-              </DialogDescription>
-            </div>
-
+          <DialogHeader
+            icon={isEdit ? UserPen : UserPlus}
+            title={isEdit ? t('admin.users.form.editTitle') : t('admin.users.form.createTitle')}
+            description={t(`admin.users.form.${isEdit ? 'editDescription' : 'createDescription'}${platform ? 'Platform' : ''}`)}
+          />
+          <div className="flex flex-col gap-5 px-7 pt-5 pb-6">
             <div className="grid grid-cols-2 gap-4">
-              <Input label={t('admin.users.form.fullName')} placeholder={t('admin.users.form.fullNamePlaceholder')} error={translateUserFormError(t, errors.fullName?.message)} {...form.register('fullName')} />
-              <Input label={t('admin.users.form.phone')} placeholder="0901 234 567" className="font-mono" error={translateUserFormError(t, errors.phone?.message)} {...form.register('phone')} />
-              <Input label={t('admin.users.form.email')} type="email" placeholder={t('admin.users.form.emailPlaceholder')} error={translateUserFormError(t, errors.email?.message)} {...form.register('email')} />
+              <Input required label={t('admin.users.form.fullName')} placeholder={t('admin.users.form.fullNamePlaceholder')} error={translateUserFormError(t, errors.fullName?.message)} {...form.register('fullName')} />
+              <Input required label={t('admin.users.form.phone')} placeholder="0901 234 567" className="font-mono" error={translateUserFormError(t, errors.phone?.message)} {...form.register('phone')} />
+              <Input required label={t('admin.users.form.email')} type="email" placeholder={t('admin.users.form.emailPlaceholder')} error={translateUserFormError(t, errors.email?.message)} {...form.register('email')} />
               {platform ? null : (
                 <Input
+                  required
                   label={t('admin.users.form.depot')}
                   placeholder={t('admin.users.form.depotPlaceholder')}
                   error={translateUserFormError(t, errors.depot?.message)}
@@ -186,7 +183,7 @@ export function UserFormDialog({
             ) : null}
           </div>
 
-          <DialogFooter className="justify-end px-6">
+          <DialogFooter>
             <DialogClose asChild>
               {/* Đang lưu thì không huỷ được: thao tác không dừng giữa chừng, huỷ chỉ làm người dùng tưởng chưa lưu */}
               <Button type="button" variant="secondary" disabled={form.formState.isSubmitting}>{t('admin.users.form.cancel')}</Button>

@@ -336,6 +336,8 @@ export const trips = {
     stateA11y: { done: 'đã giao lúc {time}', current: 'đang giao', pending: 'chưa giao' },
     unloaded: 'Đã dỡ {done} / {total}',
     issueTag: { one: '{count} sự cố', other: '{count} sự cố' },
+    /** Điểm nhận hàng dọc đường chèn vào tuyến đang chạy (FE-7-04): nhãn chữ kèm biểu tượng gói hàng. */
+    pickupTag: 'Nhận hàng',
     /** Số tổng hợp ở đầu sơ đồ khi chuyến đang giao / đã hoàn thành. */
     summary: {
       stops: 'Đã giao',
@@ -367,7 +369,6 @@ export const trips = {
     errorsTitle: { one: '{count} dòng lỗi, sẽ bỏ qua', other: '{count} dòng lỗi, sẽ bỏ qua' },
     validTitle: { one: '{count} dòng hợp lệ', other: '{count} dòng hợp lệ' },
     moreRows: { one: 'Còn {count} dòng nữa', other: 'Còn {count} dòng nữa' },
-    row: 'Dòng {row}',
     submit: { one: 'Nhập {count} dòng hợp lệ', other: 'Nhập {count} dòng hợp lệ' },
     submitIdle: 'Nhập kiện',
     skipped: { one: 'Bỏ qua {count} dòng lỗi.', other: 'Bỏ qua {count} dòng lỗi.' },
@@ -453,7 +454,6 @@ export const trips = {
     status: 'Trạng thái',
   },
   cargoSummary: 'Tóm tắt hàng hoá',
-  lines: 'Dòng kiện',
   instances: 'Kiện',
   volume: 'Thể tích',
   weight: 'Khối lượng',
@@ -538,6 +538,8 @@ export const trips = {
     summary: '{km} km · {duration}',
     duration: '{hours} giờ {minutes} phút',
     minutes: '{minutes} phút',
+    /** Thời gian trên đã gồm giờ nghỉ bắt buộc của tài xế (FE-BL-04); chỉ hiện khi tuyến có chặng dài phải nghỉ. */
+    rests: { one: 'đã gồm {count} lần nghỉ bắt buộc ({duration})', other: 'đã gồm {count} lần nghỉ bắt buộc ({duration})' },
     late: { one: '{count} điểm trễ hạn dự kiến', other: '{count} điểm trễ hạn dự kiến' },
     basis: 'Quãng đường và giờ đến là ước lượng theo đường nối thẳng giữa các điểm.',
     basisEditable: 'Quãng đường và giờ đến là ước lượng theo đường nối thẳng giữa các điểm. Kéo đổi thứ tự điểm thì giờ đến tính lại và phương án xếp hàng đã có thành lỗi thời.',
@@ -810,6 +812,7 @@ export const trips = {
       runLine: '{time} {date} · {runner}',
       runLineNoRunner: '{time} {date}',
       /** Thiết lập chung của ba phương án; tên thuật toán là từ vựng thuật toán — chỉ màn so sánh và thiết lập nâng cao dùng. */
+      pinned: { one: 'Lần chạy này giữ nguyên chỗ {count} kiện đã ghim.', other: 'Lần chạy này giữ nguyên chỗ {count} kiện đã ghim.' },
       settings: '{algorithm} · random seed {seed} · LIFO {lifo} · trọng tâm thấp {lowCenter} · giới hạn {seconds} giây',
       bestHint: 'Giá trị tốt nhất giữa các phương án in đậm kèm nhãn "Tốt nhất". Chỉ số mà các phương án bằng nhau thì không đánh dấu.',
       deadlinesTitle: 'Mức hạn các điểm giao',

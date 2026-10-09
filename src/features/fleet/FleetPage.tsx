@@ -1,4 +1,4 @@
-import { Container, Plus, RotateCcw } from 'lucide-react'
+import { Container, Info, Plus, RotateCcw } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { DataTable } from '@/components/DataTable'
@@ -9,13 +9,37 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
-import { useFormat, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { createFleetColumns } from './fleet-columns'
+import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
 import { useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
 import { filterVehicleRows, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS } from './vehicle-status'
 
 const STATUS_FILTER = 'trang-thai'
+
+/** Chân thẻ danh sách (V2.3): trạng thái lấy từ đâu và cách đọc hình lòng thùng — màu vật cản, cạnh cửa sau. */
+function FleetLegend() {
+  const t = useT()
+  return (
+    <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 bg-surface px-4 py-3 text-small text-ink-3">
+      <p className="flex min-w-0 items-start gap-2">
+        <Info aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
+        <span>{t('fleet.sourceNote')} {t('fleet.legend.scale')}</span>
+      </p>
+      <p className="flex flex-none items-center gap-4">
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-1 w-3.5 rounded-xs bg-(--obstacle)" />
+          {t('fleet.legend.obstacle')}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-3.5 w-1 rounded-xs bg-cyan-500" />
+          {t('fleet.legend.door')}
+        </span>
+      </p>
+    </footer>
+  )
+}
 
 /**
  * Đội xe — danh sách xe và trạng thái (LM-040, LM-089) đọc qua TanStack Query từ kho mock dùng chung (D-06), bố cục V2:
@@ -25,7 +49,6 @@ const STATUS_FILTER = 'trang-thai'
  */
 export function FleetPage() {
   const t = useT()
-  const format = useFormat()
   const navigate = useNavigate()
   const canEdit = useCan()('fleet.edit')
   const vehiclesQuery = useVehiclesQuery()
@@ -33,7 +56,7 @@ export function FleetPage() {
   const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'name', desc: false } })
   const statusSlug = list.filters[STATUS_FILTER]
 
-  const columns = useMemo(() => createFleetColumns(t, format), [t, format])
+  const columns = useMemo(() => createFleetColumns(t), [t])
   const vehicles = useMemo(() => vehicleRows(vehiclesQuery.data ?? [], statesQuery.data ?? []), [vehiclesQuery.data, statesQuery.data])
   const rows = useMemo(() => filterVehicleRows(vehicles, list.query, statusSlug), [vehicles, list.query, statusSlug])
   const statusOptions = VEHICLE_STATUSES.map((status) => ({ value: VEHICLE_STATUS_SLUGS[status], label: t(`fleet.status.${status}`) }))
@@ -51,8 +74,7 @@ export function FleetPage() {
       <PageHero
         overlap
         title={t('fleet.title')}
-        meta={vehiclesQuery.isSuccess ? t('fleet.count', { count: vehicles.length }) : undefined}
-        description={t('pageHero.fleet')}
+        description={vehiclesQuery.isSuccess ? <FleetHeroSummary vehicles={vehiclesQuery.data} /> : t('pageHero.fleet')}
         actions={
           <>
             {/* Review 1 (LM-104): danh mục loại xe nằm dưới Đội xe, không thêm mục vào thanh điều hướng */}
@@ -134,8 +156,8 @@ export function FleetPage() {
                 onClearFilters={list.clearAll}
                 onRowClick={(vehicle) => void navigate(`/doi-xe/${vehicle.id}`)}
               />
+              <FleetLegend />
             </section>
-            <p className="text-caption text-ink-3">{t('fleet.sourceNote')}</p>
           </div>
         )}
       </div>

@@ -3,7 +3,6 @@ import type { runs as source } from '../vi/runs'
 
 export const runs = {
   title: 'Optimization runs',
-  objective: 'Objective',
   algorithm: 'Algorithm',
   objectives: {
     MAX_VOLUME: 'Maximize volume',
@@ -37,6 +36,7 @@ export const runs = {
   },
   approvedPlans: 'Plan {labels}',
   limitSeconds: '{seconds} s',
+  pinned: { one: 'Kept {count} pinned package', other: 'Kept {count} pinned packages' },
   seed: 'seed {seed}',
   noValue: '—',
   planAllPlaced: 'all placed',

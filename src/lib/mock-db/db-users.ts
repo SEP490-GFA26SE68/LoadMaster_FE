@@ -16,7 +16,7 @@ export const MIN_PASSWORD_LENGTH = 8
 const PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 /** Mật khẩu tạm 10 ký tự cho tài khoản mới và lần đặt lại (D-42). Chỉ trả về một lần. */
-function temporaryPassword(): string {
+export function temporaryPassword(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(10))
   return [...bytes].map((byte) => PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length]).join('')
 }

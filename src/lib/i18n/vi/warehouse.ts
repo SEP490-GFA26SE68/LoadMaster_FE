@@ -29,6 +29,8 @@ export const warehouse = {
   /** Danh sách chuyến `/kho` (D-46). */
   list: {
     title: 'Chuyến cần xếp',
+    /** Dòng dưới tiêu đề: số chuyến đang hiện và ngày hôm nay (V2.3 đợt 6). */
+    summary: { one: '{count} chuyến · {date}', other: '{count} chuyến · {date}' },
     lookup: 'Tra cứu kiện',
     date: 'Ngày chạy',
     vehicle: 'Xe',
@@ -125,6 +127,12 @@ export const warehouse = {
     damagedTitle: { one: 'Kiện hỏng, bỏ lại kho ({count})', other: 'Kiện hỏng, bỏ lại kho ({count})' },
     noDamaged: 'Không có kiện nào bị bỏ lại.',
     description: 'Xếp xong — chờ xuất phát. Đóng cửa thùng và bàn giao cho tài xế.',
+    /** Hai ô số của màn Xếp xong (V2.3 đợt 6): đã xếp trên tổng, và kiện hỏng bỏ lại kho. */
+    tiles: { loaded: 'Đã xếp', ofTotal: '/ {total} kiện', left: 'Bỏ lại kho', unit: 'kiện' },
+    byStop: {
+      title: 'Theo điểm giao',
+      left: { one: 'bỏ lại {count}', other: 'bỏ lại {count}' },
+    },
   },
   /** Đối chiếu kiện khi xếp (LM-104; ba mức từ FE-6-03): chỉ kiện của bước hiện tại được ghi. */
   scan: {
@@ -159,7 +167,6 @@ export const warehouse = {
     submit: 'Ghi số seal',
     change: 'Đổi số seal',
     recorded: 'Số seal {number} · ghi lúc {time}',
-    saved: 'Đã ghi số seal {number}',
     none: 'Chuyến này không ghi số seal.',
     locked: 'Xe đã rời kho: không đổi số seal được nữa.',
   },

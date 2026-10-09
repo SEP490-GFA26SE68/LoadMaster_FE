@@ -1,5 +1,5 @@
 # CI cho LoadMaster FE (LM-006). Chạy lint, kiểm kiểu, unit test, build và E2E.
-# Benchmark FPS 3D (tests/viewer-benchmark.mjs) không chạy ở đây: SwiftShader không đại diện thiết bị thật (AGENTS mục 7).
+# Không đo FPS 3D ở đây: SwiftShader của máy CI không đại diện thiết bị thật (AGENTS mục 7).
 name: CI
 
 on:
@@ -77,18 +77,18 @@ jobs:
           path: dist
           retention-days: 7
 
-  # Ba máy chạy song song, mỗi máy một phần ba số file spec (Playwright chia theo file vì `fullyParallel: false`); mỗi máy vẫn
+  # Bốn máy chạy song song, mỗi máy một phần tư số file spec (Playwright chia theo file vì `fullyParallel: false`); mỗi máy vẫn
   # một worker — SwiftShader và các suite đo frame không chịu được chạy chen nhau (playwright.config.ts).
   e2e:
-    name: E2E (Playwright) ${{ matrix.shard }}/3
+    name: E2E (Playwright) ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [lint, typecheck]
     strategy:
-      # Một phần đỏ không huỷ hai phần kia: cần thấy đủ danh sách test đỏ trong một lượt
+      # Một phần đỏ không huỷ các phần kia: cần thấy đủ danh sách test đỏ trong một lượt
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -97,10 +97,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Chromium của đúng phiên bản @playwright/test trong lockfile, kèm thư viện hệ thống
-      - run: pnpm exec playwright install --with-deps chromium
+      # Thư viện hệ thống của Chromium đi qua apt: kho Ubuntu đôi lúc đứng kết nối giữa `apt-get update` và giữ job tới hết
+      # 30 phút. Quá 5 phút thì bỏ qua bước này — ảnh ubuntu-latest đã có sẵn thư viện của Chrome — rồi chạy tiếp.
+      - run: pnpm exec playwright install-deps chromium
+        timeout-minutes: 5
+        continue-on-error: true
+      # Chromium của đúng phiên bản @playwright/test trong lockfile
+      - run: pnpm exec playwright install chromium
       # CI=true: server Vite mới cho mỗi lượt, retries 1, forbidOnly (playwright.config.ts)
-      - run: pnpm test:e2e --shard=${{ matrix.shard }}/3
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

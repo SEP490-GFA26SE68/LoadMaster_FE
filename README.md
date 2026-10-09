@@ -19,7 +19,9 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
 | Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
 | Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
-| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống |
+| Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị hệ thống còn quản lý công ty (tạo công ty kèm quản trị công ty đầu tiên với mật khẩu tạm hiện một lần, sửa kho xuất phát); quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
+| Quản lý nền tảng | Desktop | Danh mục gói cước: thêm, sửa giá và credit, bật/tắt bán, xoá gói không còn công ty dùng |
+| Hỗ trợ khách hàng | Desktop | Mọi yêu cầu hỗ trợ của các công ty: lọc theo công ty, loại, trạng thái; trả lời, đổi trạng thái; xem gói, số dư và giao dịch credit gần nhất của công ty đó. Người dùng công ty gửi và theo dõi yêu cầu của mình ở mục "Yêu cầu hỗ trợ" của menu tài khoản, chuông báo khi có trả lời |
 
 Phần 3D dựng bằng Three.js: 1.000 kiện vẫn dưới 100 draw call, có chế độ chỉnh tay với kiểm tra ràng buộc
 (chồng lấn, quá tải, chịu tải, hướng đặt, khoảng hở cửa) chạy ngay khi thả kiện.
@@ -37,9 +39,9 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 
 | Vai trò | Email | Mở ra |
 |---|---|---|
-| Quản trị hệ thống | `quantri@loadmaster.vn` | `/nguoi-dung` |
-| Quản lý nền tảng | `nentang@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
-| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-so` — chưa có màn riêng, gõ email (không nằm trong ô chọn nhanh) |
+| Quản trị hệ thống | `quantri@loadmaster.vn` | `/nen-tang/cong-ty` |
+| Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` |
+| Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-tro` |
 | Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
 | Quản lý công ty | `quanly@loadmaster.vn` | `/` |
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
@@ -100,8 +102,14 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   trí, xác nhận tay chờ duyệt). Tài xế và điều phối viên báo sự cố trên đường kèm số phút dự kiến chậm — xe mô phỏng đứng thêm đúng số
   phút đó; điều phối viên tìm tuyến khác (mock, MOCK RESULT; chỉ đổi đường, không đổi thứ tự điểm), đánh dấu đã xử lý hoặc chuyển quản
   lý, và sự cố quá 30 phút chưa xử lý tự chuyển lên. Quản lý công ty ghi đã liên hệ khách và nhập hạn mới ở tab "Sự cố cần xử lý";
-  mức hạn tính lại ngay và điều phối viên được báo. Màn của quản lý nền tảng và hỗ trợ khách hàng làm ở các bước sau.
-- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`) và mất khi tải lại trang; đăng nhập,
+  mức hạn tính lại ngay và điều phối viên được báo. Nhận hàng dọc đường (D-88): điều phối viên hoặc tài xế gửi yêu cầu nhận thêm hàng khi
+  chuyến đang vận chuyển (điểm nhận, điểm giao, hạn, nhiều dòng kiện); kho kiểm mười luật Đạt / Không đạt ngay khi lưu (luật 4–7 và 10 là
+  ước lượng, có nhãn). Điều phối viên duyệt — còn luật không đạt thì phải ghi lý do vượt luật — hoặc từ chối kèm lý do: duyệt xong kiện vào kho
+  kiện có mã QR, điểm nhận và điểm giao chèn vào tuyến đang chạy (các điểm cũ giữ thứ tự, phương án đã xếp không lỗi thời) và có nút in
+  nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
+  mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
+  trợ khách hàng làm ở các bước sau.
+- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó (`BroadcastChannel`), và mất khi tải lại mọi tab; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
@@ -122,12 +130,12 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 1.929 test unit + DOM
-pnpm test:e2e      # Playwright: 128 test trên desktop / tablet / phone (CI chia ba phần chạy song song)
+pnpm test          # Vitest: 2.243 test unit + DOM
+pnpm test:e2e      # Playwright: 138 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (03/10/2026, nhánh `developer`): lint, build, 1.929/1.929 unit, 128/128 E2E — xanh trên CI (`.github/workflows/ci.yml`).
+Lần chạy gần nhất (09/10/2026, CI của nhánh `developer` sau khi gộp V2.3 đợt 6–7): lint, kiểm kiểu, build, 2.243/2.243 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

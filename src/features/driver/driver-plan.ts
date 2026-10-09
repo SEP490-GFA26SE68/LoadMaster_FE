@@ -1,7 +1,8 @@
 import { lt } from '@/domain/geometry'
 import type { ScenePlacement, ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { unloadSequence } from '@/features/viewer3d/operations/unloading'
-import type { DeliveryStop } from '@/lib/mock-db'
+import type { DeliveryStop, StopKind } from '@/lib/mock-db'
+import { NO_PICKUPS, stopPickupItems, type PickupFacts, type PickupItem } from './driver-pickups'
 
 /** Vùng dọc thùng theo tâm kiện: một phần ba sát vách trước, giữa, một phần ba gần cửa sau. */
 export type DeliveryArea = 'front' | 'middle' | 'door'
@@ -30,6 +31,10 @@ export type StopDelivery = {
   readonly contactName?: string
   /** Kiện đã xếp của điểm theo phương án (kể cả kiện kho báo thiếu), theo `unloadingOrder` */
   readonly items: readonly DeliveryItem[]
+  /** Loại điểm (FE-7-05); vắng là điểm giao. Điểm nhận dọc đường chèn lúc đang chạy không có kiện nào của phương án. */
+  readonly kind?: StopKind
+  /** Kiện nhận dọc đường của điểm (nhận hoặc giao), ngoài phương án (chỗ xếp nằm cùng yêu cầu). */
+  readonly pickupItems?: readonly PickupItem[]
 }
 
 function areaOf(p: ScenePlacement, lengthCm: number): DeliveryArea {
@@ -43,8 +48,12 @@ function layerOf(p: ScenePlacement, heightCm: number): DeliveryLayer {
   return lt(p.position.z + p.heightCm / 2, heightCm / 2) ? 'lower' : 'upper'
 }
 
-/** Điểm giao của chuyến kèm kiện cần dỡ ở từng điểm, thứ tự dỡ lấy từ kết quả (`unloadSequence`), không suy ra. */
-export function stopDeliveries(stops: readonly DeliveryStop[], model: Pick<ViewerSceneModel, 'placements' | 'vehicle'>): StopDelivery[] {
+/**
+ * Điểm giao của chuyến kèm kiện cần dỡ ở từng điểm, thứ tự dỡ lấy từ kết quả (`unloadSequence`), không suy ra. `model` đã đổi số điểm
+ * của phương án sang số điểm hiện tại (`adaptResult`), nên chuyến đã chèn điểm nhận vẫn đọc đúng. Kiện nhận dọc đường (`pickups`) đứng
+ * riêng ở `pickupItems`.
+ */
+export function stopDeliveries(stops: readonly DeliveryStop[], model: Pick<ViewerSceneModel, 'placements' | 'vehicle'>, pickups: PickupFacts = NO_PICKUPS): StopDelivery[] {
   const { innerLengthCm, innerHeightCm } = model.vehicle
   return stops.map((stop, index) => {
     const number = index + 1
@@ -57,6 +66,6 @@ export function stopDeliveries(stops: readonly DeliveryStop[], model: Pick<Viewe
       area: areaOf(p, innerLengthCm),
       layer: layerOf(p, innerHeightCm),
     }))
-    return { number, name: stop.name, address: stop.address, phone: stop.phone, contactName: stop.contactName, items }
+    return { number, name: stop.name, address: stop.address, phone: stop.phone, contactName: stop.contactName, items, kind: stop.kind ?? 'DELIVERY', pickupItems: stopPickupItems(stop.id, pickups) }
   })
 }

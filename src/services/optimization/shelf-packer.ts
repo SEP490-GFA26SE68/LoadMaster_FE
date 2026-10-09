@@ -3,7 +3,7 @@ import { effectiveOrientations, gt, lt, orientDimensions, roundCm } from '@/doma
 import type { PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { StopZone } from '@/domain/zones'
 import type { OptimizationProgress } from './OptimizationService'
-import { createShelves, type Lane, type Orientation, type Rejection } from './shelf-walls'
+import { createShelves, type FixedCargo, type Lane, type Orientation, type Rejection } from './shelf-walls'
 
 type ReasonCode = UnplacedPackage['reasonCode']
 /**
@@ -26,6 +26,8 @@ export type PackInput = {
    * một dải suốt chiều dài thùng theo đúng thứ tự `instances`.
    */
   readonly zones?: readonly StopZone[]
+  /** Kiện ghim (FE-BL-02): đứng yên, nằm đầu `placements` của kết quả; `instances` không chứa chúng. */
+  readonly fixed?: readonly FixedCargo[]
   readonly onProgress?: (progress: OptimizationProgress) => void
 }
 
@@ -36,7 +38,7 @@ function noSpace(stackingRejected: boolean): Rejection {
 }
 
 /** Các hướng đặt của kiện đưa được qua cửa. */
-function doorOrientations(vehicle: VehicleConfig, instance: PackageInstance): Orientation[] {
+export function doorOrientations(vehicle: VehicleConfig, instance: PackageInstance): Orientation[] {
   return effectiveOrientations(instance)
     .map((code) => ({ code, dims: orientDimensions(instance, code) }))
     .filter(({ dims }) => !gt(dims.placedWidthCm + vehicle.clearanceCm, vehicle.doorWidthCm) && !gt(dims.placedHeightCm + vehicle.clearanceCm, vehicle.doorHeightCm))
@@ -53,8 +55,8 @@ function byStop(instances: readonly PackageInstance[]): Map<number, PackageInsta
 }
 
 /** Một lượt xếp trên thùng trống: ghi lý do của kiện ở lại, báo tiến độ nếu có `onProgress`. */
-function createRun({ vehicle, instances, reasons, lowCenterOfGravity }: PackInput, onProgress?: PackInput['onProgress']) {
-  const shelves = createShelves(vehicle, lowCenterOfGravity)
+function createRun({ vehicle, instances, reasons, lowCenterOfGravity, fixed }: PackInput, onProgress?: PackInput['onProgress']) {
+  const shelves = createShelves(vehicle, lowCenterOfGravity, fixed)
   const rejections = new Map<string, Rejection>()
   let settled = 0
   return {
@@ -172,10 +174,10 @@ function packable({ instances, reasons }: PackInput): Map<number, PackageInstanc
  * điểm giao không dùng được nhiều hơn cả thùng.
  */
 function neededDepths(input: PackInput, zones: readonly StopZone[]): number[] {
-  const { vehicle, lowCenterOfGravity } = input
+  const { vehicle, lowCenterOfGravity, fixed } = input
   const groups = packable(input)
   return zones.map((zone) => {
-    const shelves = createShelves(vehicle, lowCenterOfGravity)
+    const shelves = createShelves(vehicle, lowCenterOfGravity, fixed)
     const lane = shelves.lane(zone.startXCm)
     const limitXCm = zone.startXCm + vehicle.innerLengthCm
     for (const instance of groups.get(zone.stopId) ?? []) shelves.attempt(lane, limitXCm, instance, doorOrientations(vehicle, instance))
@@ -207,6 +209,7 @@ function pulledBackStarts(zones: readonly StopZone[], depths: readonly number[],
 function exceedsVehicleVolume(input: PackInput): boolean {
   const { innerLengthCm, innerWidthCm, innerHeightCm } = input.vehicle
   let volumeCm3 = 0
+  for (const { placement } of input.fixed ?? []) volumeCm3 += placement.placedLengthCm * placement.placedWidthCm * placement.placedHeightCm
   for (const group of packable(input).values()) for (const { lengthCm, widthCm, heightCm } of group) volumeCm3 += lengthCm * widthCm * heightCm
   return gt(volumeCm3, innerLengthCm * innerWidthCm * innerHeightCm)
 }

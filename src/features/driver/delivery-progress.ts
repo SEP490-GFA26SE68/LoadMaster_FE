@@ -1,5 +1,6 @@
-import { latestVerifications, leftOutIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type Trip, type TripPhase } from '@/lib/mock-db'
+import { latestVerifications, leftOutIds, pendingManualConfirms, type DeliveryIssue, type PackageVerification, type StopKind, type Trip, type TripPhase } from '@/lib/mock-db'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
+import type { PickupItem } from './driver-pickups'
 
 /**
  * Màn điểm giao làm gì theo pha chuyến (D-45, D-84): `preview` — kho chưa xếp xong, chỉ xem; `ready` — kho đã xếp xong, chờ tài xế bấm
@@ -27,6 +28,13 @@ export type ItemProgress = {
   readonly verification: PackageVerification | undefined
 }
 
+/** Một kiện nhận dọc đường của điểm (FE-7-05): đã đối chiếu lên xe (`pick`) hoặc đã dỡ (`deliver`) chưa, và cách đối chiếu gần nhất. */
+export type PickupItemProgress = {
+  readonly item: PickupItem
+  readonly done: boolean
+  readonly verification: PackageVerification | undefined
+}
+
 export type DeliveryView = {
   readonly mode: DeliveryMode
   /** Điểm đang giao: điểm chưa hoàn tất đầu tiên; chưa giao thì điểm 1. */
@@ -35,6 +43,13 @@ export type DeliveryView = {
   readonly arrivedAt: string | undefined
   /** Kiện phải dỡ ở điểm này theo thứ tự dỡ: kiện của phương án trừ kiện hỏng bị bỏ lại kho (không có trên xe). */
   readonly items: readonly ItemProgress[]
+  /**
+   * Kiện nhận dọc đường của điểm (FE-7-05), ngoài phương án (chỗ xếp của chúng nằm cùng yêu cầu, FE-BL-01). Điểm nhận: kiện phải đối chiếu lên xe; điểm giao: kiện
+   * dỡ như kiện thường. Mọi số đếm dưới đây (`unloadedCount`, `remaining`, `verifiable`, `pendingConfirms`) tính cả chúng.
+   */
+  readonly pickupItems: readonly PickupItemProgress[]
+  /** Số kiện cần xử lý ở điểm: kiện của phương án (trừ kiện bỏ lại kho) và kiện nhận. */
+  readonly total: number
   /** Kiện của điểm này hỏng lúc xếp, bị bỏ lại kho. */
   readonly leftAtWarehouse: readonly string[]
   readonly unloadedCount: number
@@ -67,6 +82,15 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery' |
   const unloadedIds = new Set(stopProgress?.unloadedIds)
   const stopIssues = progress?.issues.filter((issue) => issue.stopNumber === stop.number) ?? []
   const verified = latestVerifications(trip, 'UNLOADING')
+  const verifiedPick = latestVerifications(trip, 'PICKUP')
+  const pickedIds = new Set(stopProgress?.pickedIds)
+  const pickupItems = (stop.pickupItems ?? []).map((item): PickupItemProgress => {
+    const done = item.role === 'pick' ? pickedIds.has(item.id) : unloadedIds.has(item.id)
+    const verification = (item.role === 'pick' ? verifiedPick : verified).get(item.id)
+    // Xác nhận tay bị từ chối giữ lại để nói lý do kiểm lại; kiện đã đối chiếu lại thì lần mới nhất thắng
+    return { item, done, verification: done !== (verification?.manual?.status === 'MANUAL_REJECTED') ? verification : undefined }
+  })
+  const pickupWaiting = pickupItems.filter((entry) => !entry.done).length
   const items = stop.items
     .filter((item) => !leftOut.has(item.id))
     .map((item): ItemProgress => {
@@ -88,11 +112,13 @@ export function deliveryView(trip: Pick<Trip, 'phase' | 'loading' | 'delivery' |
     arrivedAt: mode === 'delivering' ? stopProgress?.arrivedAt : undefined,
     items,
     leftAtWarehouse: stop.items.filter((item) => leftOut.has(item.id)).map((item) => item.id),
-    unloadedCount: items.filter((item) => item.unloaded).length,
+    pickupItems,
+    total: items.length + pickupItems.length,
+    unloadedCount: items.filter((item) => item.unloaded).length + pickupItems.length - pickupWaiting,
     issueCount: items.filter((item) => item.issue !== undefined).length,
-    remaining: items.filter((item) => !item.unloaded && item.issue === undefined).length,
-    verifiable: items.filter((item) => !item.unloaded && !item.returned).length,
-    pendingConfirms: mode === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING', stop.number).length : 0,
+    remaining: items.filter((item) => !item.unloaded && item.issue === undefined).length + pickupWaiting,
+    verifiable: items.filter((item) => !item.unloaded && !item.returned).length + pickupWaiting,
+    pendingConfirms: mode === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING', stop.number).length + pendingManualConfirms(trip, 'PICKUP', stop.number).length : 0,
     completedStops: new Set(progress?.stops.filter((item) => item.completedAt !== undefined).map((item) => item.number)),
   }
 }
@@ -115,4 +141,30 @@ export function deliverySummary(trip: Pick<Trip, 'stops' | 'delivery'>): Deliver
     startedAt: trip.delivery?.startedAt,
     completedAt: trip.delivery?.completedAt,
   }
+}
+
+/** Một điểm trong tổng kết chuyến (V2.3 đợt 6): giờ hoàn tất, số kiện đã dỡ ở điểm, số sự cố đã báo ở điểm. */
+export type SummaryStop = {
+  readonly number: number
+  readonly name: string
+  readonly kind: StopKind
+  readonly completedAt: string | undefined
+  readonly delivered: number
+  readonly issues: number
+}
+
+/** Các điểm của chuyến theo thứ tự đi, mỗi số đọc từ tiến độ giao trong kho (D-47) — không có số nào gõ tay. */
+export function summaryStops(trip: Pick<Trip, 'stops' | 'delivery'>): SummaryStop[] {
+  return trip.stops.map((stop, index) => {
+    const number = index + 1
+    const progress = trip.delivery?.stops.find((item) => item.number === number)
+    return {
+      number,
+      name: stop.name,
+      kind: stop.kind ?? 'DELIVERY',
+      completedAt: progress?.completedAt,
+      delivered: progress?.unloadedIds.length ?? 0,
+      issues: trip.delivery?.issues.filter((issue) => issue.stopNumber === number).length ?? 0,
+    }
+  })
 }

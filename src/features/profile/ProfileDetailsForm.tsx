@@ -3,12 +3,13 @@ import { useId } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
+import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { User } from '@/types/user'
 import { profileSchema, translateProfileError, type ProfileInput, type ProfileValues } from './profile-form.schema'
-import { FORM_ALERT, SECTION_TEXT, SECTION_TITLE, TOUCH_CONTROL } from './profile-styles'
+import { FORM_ALERT, SECTION_TEXT, TOUCH_CONTROL } from './profile-styles'
 import { useSaveProfileMutation } from './useProfileMutations'
 
 /**
@@ -37,41 +38,45 @@ export function ProfileDetailsForm({ user }: { user: User }) {
   }
 
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 id={titleId} className={SECTION_TITLE}>{t('profile.details.title')}</h2>
-        <p className={SECTION_TEXT}>{t('profile.details.description')}</p>
-      </div>
+    <section aria-labelledby={titleId}>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2" id={titleId}>{t('profile.details.title')}</CardTitle>
+          <CardMeta className={SECTION_TEXT}>{t('profile.details.description')}</CardMeta>
+        </CardHeader>
 
-      <form noValidate onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={t('profile.details.fullName')}
-            autoComplete="name"
-            className={TOUCH_CONTROL}
-            error={translateProfileError(t, errors.fullName?.message)}
-            {...form.register('fullName')}
-          />
-          <Input
-            label={t('profile.details.phone')}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            className={cn('font-mono', TOUCH_CONTROL)}
-            error={translateProfileError(t, errors.phone?.message)}
-            {...form.register('phone')}
-          />
-        </div>
+        <CardBody className="p-5">
+          <form noValidate onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label={t('profile.details.fullName')}
+                autoComplete="name"
+                className={TOUCH_CONTROL}
+                error={translateProfileError(t, errors.fullName?.message)}
+                {...form.register('fullName')}
+              />
+              <Input
+                label={t('profile.details.phone')}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                className={cn('font-mono', TOUCH_CONTROL)}
+                error={translateProfileError(t, errors.phone?.message)}
+                {...form.register('phone')}
+              />
+            </div>
 
-        {save.isError ? <p role="alert" className={FORM_ALERT}>{dataErrorMessage(save.error, t)}</p> : null}
+            {save.isError ? <p role="alert" className={FORM_ALERT}>{dataErrorMessage(save.error, t)}</p> : null}
 
-        <div>
-          {/* Nút chính duy nhất của màn (mục 5); đổi mật khẩu dùng nút phụ */}
-          <Button type="submit" loading={isSubmitting} disabled={!isDirty || isSubmitting} className={TOUCH_CONTROL}>
-            {t('profile.details.save')}
-          </Button>
-        </div>
-      </form>
+            <div>
+              {/* Nút chính duy nhất của màn (mục 5); đổi mật khẩu dùng nút phụ */}
+              <Button type="submit" loading={isSubmitting} disabled={!isDirty || isSubmitting} className={TOUCH_CONTROL}>
+                {t('profile.details.save')}
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
     </section>
   )
 }

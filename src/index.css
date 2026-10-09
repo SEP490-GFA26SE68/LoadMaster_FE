@@ -223,6 +223,11 @@
   --sky-glass-border: rgba(255, 255, 255, 0.14);
   /* mục điều hướng đang mở: nền cyan trong + viền + quầng */
   --nav-on: linear-gradient(180deg, rgba(0, 195, 212, 0.34), rgba(0, 195, 212, 0.14));
+  /* điều khiển ĐẶC trên dải trời của màn cảm ứng (kho; V2.3 đợt 6): không kính, không blur — kính chưa đo ngoài thực tế (AGENTS mục 4).
+     Chữ trắng trên nền này 12:1; viền cyan-600 cho khung nút 3:1 trên dải. */
+  --sky-solid: var(--cyan-900);
+  --sky-solid-hover: var(--cyan-800);
+  --sky-solid-border: var(--cyan-600);
   --nav-on-shadow: inset 0 0 0 1px rgba(92, 219, 230, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 22px -4px rgba(0, 195, 212, 0.65);
   /* chuyển động lò xo của chỉ báo kính trên thanh điều hướng: vượt nhẹ rồi lắng lại */
   --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);
@@ -251,11 +256,6 @@
      điều phối cần thêm dòng, không cần thêm chiều ngang */
   --shell-max: 1680px;
 
-  /* ---- còn lại của V2: header trắng của Chi tiết chuyến, form xe, So sánh (đợt 3–7 chuyển sang dải trời) */
-  /* nền của dải chrome: đủ đục để chữ đọc rõ */
-  --chrome: #ffffffd9;
-  --hero-icon: 140deg, var(--cyan-50), var(--cyan-100);
-  --hero-icon-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px rgba(92, 219, 230, 0.35), 0 2px 6px rgba(2, 34, 45, 0.1);
   /* nền tiêu đề cột của bảng (DataTable appearance="paper") */
   --table-head: var(--n-25);
 
@@ -299,7 +299,6 @@
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
   --color-text-disabled: var(--text-disabled);
-  --color-chrome: var(--chrome);
   --container-shell: var(--shell-max);
   --color-ink-strong: var(--ink-strong);
   --color-ink-1: var(--ink-1);
@@ -335,6 +334,9 @@
   --color-sky-text: var(--sky-text);
   --color-sky-text-2: var(--sky-text-2);
   --color-sky-text-3: var(--sky-text-3);
+  --color-sky-solid: var(--sky-solid);
+  --color-sky-solid-hover: var(--sky-solid-hover);
+  --color-sky-solid-border: var(--sky-solid-border);
   --color-sky-glass: var(--sky-glass);
   --color-sky-glass-hover: var(--sky-glass-hover);
   --color-sky-glass-border: var(--sky-glass-border);
@@ -491,7 +493,7 @@
 
 /* Lề ngang của vùng làm việc (V2): 24px, và từ khi cột rộng hơn --shell-max thì nội dung
    dừng ở --shell-max, căn giữa. Dùng padding thay vì bọc thêm một div max-w, để vùng cuộn
-   vẫn rộng hết cột (thanh cuộn nằm ở mép) và thanh tiêu đề giữ nền chrome tràn ngang —
+   vẫn rộng hết cột (thanh cuộn nằm ở mép) và thanh tiêu đề giữ nền dải trời tràn ngang —
    chỉ nội dung dừng lại. `100%` là bề rộng khối chứa, tức cột của màn. */
 @utility px-shell {
   padding-inline: max(1.5rem, calc((100% - var(--shell-max)) / 2 + 1.5rem));
@@ -513,6 +515,13 @@
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+
+/* Tờ trượt từ đáy của màn tài xế (`DialogContent sheet`, V2.3 đợt 6) */
+@keyframes lm-sheet-in {
+  from {
+    transform: translateY(100%);
   }
 }
 
@@ -779,13 +788,6 @@
     background: var(--panel-dark);
     backdrop-filter: none;
   }
-}
-
-/* Ô icon nhận diện màn trên header trắng còn lại của V2 (form xe) — bỏ khi màn đó lên dải trời */
-.hero-icon {
-  border: 1px solid #fff;
-  background: linear-gradient(var(--hero-icon));
-  box-shadow: var(--hero-icon-shadow);
 }
 
 /* Nội dung đè lên dải trời: vùng cuộn ngay dưới thanh tiêu đề kéo lên --sky-overlap, card đầu tiên nằm nửa trên dải

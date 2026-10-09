@@ -2,6 +2,7 @@ import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
 import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
+import type { PickupStatus } from './pickup-model'
 import type { RequirementStoredStatus } from './requirement-model'
 import type { TripPhase } from './types'
 
@@ -19,6 +20,16 @@ export type MockDbCollection =
   | 'vehicleTypes'
   // FE-6-11
   | 'exceptions'
+  // FE-7-01
+  | 'pickups'
+  // FE-8-01
+  | 'plans'
+  | 'subscriptions'
+  | 'creditAccounts'
+  | 'creditTransactions'
+  | 'payments'
+  // FE-8-07
+  | 'supportTickets'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -161,6 +172,11 @@ export type MockDbErrorParams = {
   APPROVAL_BLOCKED: { revisionId: string; count: number; codes: string[] }
   /** Duyệt khi tuyến của chuyến có điểm trễ hạn dự kiến mà người duyệt chưa xác nhận (`force`). `stopNumbers`: số điểm, 1-based. */
   LATE_STOPS_UNCONFIRMED: { tripId: string; stopIds: string[]; stopNumbers: number[] }
+  /**
+   * Chạy lại giữ kiện ghim mà bộ ghim không đứng vững một mình (FE-BL-02): `count` là số lý do, `codes` là mã của chúng (không lặp). Chi tiết
+   * từng lý do là `pinnedIssues` của domain — màn Thiết lập tối ưu hiện chúng trước khi chạy.
+   */
+  PINNED_SET_INVALID: { tripId: string; count: number; codes: string[] }
   /** Đổi xe khi chuyến chưa Đã lập kế hoạch (còn Nháp: chưa tối ưu tuyến). */
   TRIP_NOT_PLANNED: { tripId: string }
   /** Chạy tối ưu xếp hàng khi chuyến chưa Đã lập kế hoạch (FE-5b-05): phải tối ưu tuyến trước. */
@@ -194,6 +210,44 @@ export type MockDbErrorParams = {
   /** Vị trí tài xế gửi sai ở trường `field`: toạ độ ngoài khoảng, tốc độ âm, hướng ngoài 0–359. */
   LOCATION_INVALID: { field: string }
 
+  // Yêu cầu nhận hàng dọc đường (FE-7-01)
+  /** Yêu cầu nhận sai ở trường `field`: tên, địa chỉ hoặc toạ độ của điểm nhận / điểm giao, hạn, mã, kích thước, khối lượng, loại hàng của kiện. */
+  PICKUP_INVALID: { field: string }
+  /** Chuyển trạng thái yêu cầu nhận ngoài bảng `PICKUP_TRANSITIONS`. */
+  INVALID_PICKUP_STATUS_TRANSITION: { pickupId: string; from: PickupStatus; to: PickupStatus }
+  /** Kiểm mười luật khi chuyến còn điểm giao chưa có toạ độ (FE-7-03): không biết tuyến đi đâu nên không kiểm được; `stopNumbers` là số các điểm đó. */
+  PICKUP_ROUTE_UNAVAILABLE: { tripId: string; stopNumbers: number[] }
+
+  // Gói cước, credit, thanh toán (FE-8-01, FE-8-05; D-89, D-94)
+  /** Chạy tối ưu khi số dư credit không đủ (HTTP 402 của backend). */
+  INSUFFICIENT_CREDITS: { balance: number }
+  /** Chạy tối ưu khi gói của công ty đã hết hạn hoặc chưa có gói; `expiredAt` là hạn của gói (vắng khi chưa có gói). Số dư credit giữ nguyên. */
+  SUBSCRIPTION_EXPIRED: { expiredAt: string | null }
+  /** Đăng ký gói khi công ty còn gói hiệu lực (đang dùng hoặc đã huỷ nhưng chưa hết kỳ). */
+  SUBSCRIPTION_ACTIVE: { subscriptionId: string }
+  /** Huỷ gói không còn đang dùng (đã huỷ hoặc đã hết hạn), hoặc công ty chưa có gói. */
+  SUBSCRIPTION_STATUS_INVALID: { status: string }
+  /** Đăng ký gói đã ngừng bán. */
+  PLAN_INACTIVE: { planId: string }
+  /** Gói sai dữ liệu ở trường `field`: tên trống, giá âm hoặc không nguyên, credit tháng không nguyên dương. */
+  PLAN_INVALID: { field: string }
+  /** Mở bán (tạo hoặc bật bán) một gói trong khi hạng `tier` đã có gói `planId` đang bán — mỗi hạng một gói đang bán (D-90). */
+  PLAN_TIER_TAKEN: { tier: string; planId: string }
+  /** Xoá gói mà `companies` công ty còn gắn với (có dòng đăng ký của gói đó, kể cả đã hết hạn). */
+  PLAN_IN_USE: { planId: string; companies: number }
+  /** Nạp credit ngoài các gói 50 và 500. */
+  TOPUP_INVALID: { credits: number }
+  /** Trừ credit của một lần chạy chưa giữ credit (đã hoàn, hoặc mã lạ). */
+  CREDIT_NOT_RESERVED: { reference: string }
+
+  // Công ty và yêu cầu hỗ trợ (FE-8-06, FE-8-07)
+  /** Công ty sai dữ liệu ở trường `field` (`admin.email`…): tên, địa chỉ, số điện thoại, kho xuất phát hoặc quản trị công ty đầu tiên thiếu hay không đọc được. */
+  COMPANY_INVALID: { field: string }
+  /** Yêu cầu hỗ trợ sai dữ liệu ở trường `field`: loại lạ, tiêu đề, mô tả hoặc nội dung trả lời trống hay quá dài, trạng thái lạ. */
+  TICKET_INVALID: { field: string }
+  /** Trả lời yêu cầu đã đóng: Hỗ trợ khách hàng mở lại (đổi trạng thái) trước. */
+  TICKET_CLOSED: { ticketId: string }
+
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */
   EXCEPTION_INVALID: { field: string }
@@ -212,6 +266,15 @@ export type MockDbErrorParams = {
   BATCH_TOO_LARGE: { max: number; rows: number }
   /** Dòng tiêu đề thiếu cột bắt buộc `columns` (tên cột của backend). */
   IMPORT_COLUMNS_MISSING: { columns: string[] }
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  /** Thứ tự đề xuất không phải hoán vị của các điểm hiện có, hoặc không khác thứ tự hiện tại. */
+  STOP_ORDER_INVALID: { tripId: string }
+  /** Thứ tự đề xuất dời điểm đã hoàn tất hoặc điểm xe đã tới (`stopIds`). */
+  STOP_NOT_MOVABLE: { tripId: string; stopIds: string[] }
+  /** Điểm nhận hàng dọc đường chưa tới bị đặt sau điểm giao của chính yêu cầu đó. */
+  PICKUP_AFTER_DELIVERY: { tripId: string; pickupStopId: string; deliveryStopId: string }
+  /** Theo thứ tự mới, kiện còn trên xe bị kiện giao sau che kín lối dỡ: `packages[i]` thuộc điểm `stopIds[i]`. Không đổi gì. */
+  STOP_ORDER_BLOCKS_CARGO: { tripId: string; packages: string[]; stopIds: string[] }
   /** Xác nhận nhập khi bản xem trước còn `errors` dòng lỗi: không dòng nào được ghi (D-68). */
   PACKAGE_IMPORT_INVALID: { errors: number }
 }

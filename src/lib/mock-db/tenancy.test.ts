@@ -36,6 +36,13 @@ type Company = {
   draftTrip: string
   /** Kiện đã ở kho, chưa thuộc yêu cầu giao nào. */
   freePackage: string
+  /** Gói cước, thanh toán, số dư credit và mã tham chiếu của một lần dùng credit trong seed (FE-8-01). */
+  subscription: string
+  payment: string
+  balance: number
+  usageReference: string
+  /** Yêu cầu hỗ trợ của seed, do chính `viewer` gửi (FE-8-07). */
+  tickets: string[]
 }
 
 const range = (prefix: string, from: number, to: number, digits: number) =>
@@ -60,6 +67,11 @@ const LONG_BINH: Company = {
   revision: 'REV-002',
   draftTrip: 'TRIP-014',
   freePackage: 'PK-0023',
+  subscription: 'SUB-001',
+  payment: 'PAY-001',
+  balance: 486,
+  usageReference: 'JOB-001',
+  tickets: ['TKT-001'],
 }
 
 const PHUONG_NAM: Company = {
@@ -80,6 +92,11 @@ const PHUONG_NAM: Company = {
   revision: 'REV-PN-002',
   draftTrip: 'TRIP-PN-002',
   freePackage: 'PK-PN-0005',
+  subscription: 'SUB-002',
+  payment: 'PAY-002',
+  balance: 2,
+  usageReference: 'JOB-113',
+  tickets: ['TKT-002'],
 }
 
 const PLATFORM_USERS = ['US-0005', 'US-NT-01', 'US-NT-02']
@@ -121,8 +138,20 @@ const newUser = (companyId?: string) => ({ fullName: 'Phan Thị Yến', email: 
 const requirement = (packageIds: string[]) => ({
   destinationName: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, Biên Hoà', deadline: '2026-09-16T10:00:00.000Z', priority: 'NORMAL' as const, packageIds,
 })
+const PICKUP_INPUT = {
+  pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An', lat: 10.928, lng: 106.712 },
+  delivery: { name: 'Bếp ăn KCN Sóng Thần', address: '12 Đường số 6, KCN Sóng Thần 1, Dĩ An', lat: 10.893, lng: 106.75 },
+  packages: [{ packageCode: 'HG-0412', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' as const }],
+}
+const COMPANY_INFO = {
+  name: 'Công ty TNHH Vận tải Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2, Đồng Nai', phone: '0251 111 2222',
+  depot: { name: 'Kho Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2', lat: 10.93, lng: 106.87 },
+}
+const TICKET_INPUT = { kind: 'TECHNICAL' as const, title: 'Không mở được phương án', description: 'Khung 3D trắng khi mở phương án của chuyến nháp.' }
 const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id)
 const vehicleIdsOf = (rows: { vehicleId: string }[]) => rows.map((row) => row.vehicleId)
+/** Công ty của từng dòng (không lặp): mọi dòng sổ cái, thanh toán của phiên phải cùng một công ty. */
+const companiesOf = (rows: { companyId: string }[]) => [...new Set(rows.map((row) => row.companyId))]
 
 /** Mọi hàm ghi tiến độ của chuyến: gọi trên chuyến của công ty kia. */
 const onForeignTrip = (call: (db: MockDb, tripId: string, foreign: Foreign) => Promise<unknown>): Probe => ({
@@ -210,6 +239,19 @@ const PROBES = {
   confirmReroute: onForeignTrip((db, tripId) => db.confirmReroute(tripId, 0)),
   listTripReroutes: { scope: 'operational', hidden: ({ db, other }) => db.listTripReroutes(other.trip) },
   renegotiateDeadline: onForeignTrip((db, tripId) => db.renegotiateDeadline(tripId, 'EXC-001', { requirementId: 'REQ-001', deadline: '2026-09-16T10:00:00.000Z', contactNote: 'Đã gọi khách' })),
+
+  // Yêu cầu nhận dọc đường (FE-7-01): lọc qua chuyến, như mọi hàm ghi tiến độ của chuyến
+  listPickupRequests: { scope: 'operational', hidden: ({ db, other }) => db.listPickupRequests(other.trip) },
+  listPickupPackages: { scope: 'operational', hidden: ({ db, other }) => db.listPickupPackages(other.trip) },
+  getPickupRequest: { scope: 'operational', hidden: ({ db, other }) => db.getPickupRequest(other.trip, 'PKR-001') },
+  createPickupRequest: onForeignTrip((db, tripId) => db.createPickupRequest(tripId, PICKUP_INPUT)),
+  validatePickupRequest: onForeignTrip((db, tripId) => db.validatePickupRequest(tripId, 'PKR-001')),
+  approvePickupRequest: onForeignTrip((db, tripId) => db.approvePickupRequest(tripId, 'PKR-001')),
+  rejectPickupRequest: onForeignTrip((db, tripId) => db.rejectPickupRequest(tripId, 'PKR-001', 'Không nhận được')),
+  updatePickupStatus: onForeignTrip((db, tripId) => db.updatePickupStatus(tripId, 'PKR-001', 'VALIDATED')),
+
+  // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
+  reorderRunningStops: onForeignTrip((db, tripId) => db.reorderRunningStops(tripId, ['STOP-01'])),
 
   authenticate: { scope: 'session' },
   signOut: { scope: 'session' },
@@ -331,6 +373,44 @@ const PROBES = {
       'loại xe của công ty kia': ({ db, own, other }) => db.setVehicleType(own.vehicles[0]!, other.vehicleTypes[0]!),
     },
   },
+
+  // Danh mục gói là dữ liệu nền tảng; đăng ký, huỷ, nạp credit chỉ nhận phiên của chính người gọi (không mã bản ghi nào của công ty)
+  listSubscriptionPlans: { scope: 'session' },
+  updateSubscriptionPlan: { scope: 'session' },
+  createSubscriptionPlan: { scope: 'session' },
+  setSubscriptionPlanActive: { scope: 'session' },
+  deleteSubscriptionPlan: { scope: 'session' },
+  countPlanCompanies: { scope: 'session' },
+  subscribeToPlan: { scope: 'session' },
+  cancelSubscription: { scope: 'session' },
+  topUpCredits: { scope: 'session' },
+  getCurrentSubscription: {
+    scope: 'operational',
+    list: { call: ({ db }) => db.getCurrentSubscription(), ids: (current: { subscription: { id: string } } | null) => (current ? [current.subscription.id] : []), own: (c) => [c.subscription] },
+  },
+  getCreditBalance: { scope: 'operational', list: { call: ({ db }) => db.getCreditBalance(), ids: (credit: { balance: number }) => [String(credit.balance)], own: (c) => [String(c.balance)] } },
+  listCreditTransactions: { scope: 'operational', list: { call: ({ db }) => db.listCreditTransactions(), ids: companiesOf, own: (c) => [c.id] } },
+  listPayments: { scope: 'operational', list: { call: ({ db }) => db.listPayments(), ids: companiesOf, own: (c) => [c.id] } },
+  getPayment: { scope: 'operational', hidden: ({ db, other }) => db.getPayment(other.payment) },
+  settlePayment: { scope: 'operational', forbidden: { 'thanh toán của công ty kia': ({ db, other }) => db.settlePayment(other.payment, 'FAILED') } },
+  reserveOptimizationCredit: {
+    scope: 'operational',
+    creates: ({ db, own }) => db.reserveOptimizationCredit(own.trip),
+    forbidden: { 'chuyến của công ty kia': ({ db, other }) => db.reserveOptimizationCredit(other.trip) },
+  },
+  refundOptimizationCredit: { scope: 'operational', hidden: ({ db, other }) => db.refundOptimizationCredit(other.usageReference) },
+
+  // Công ty (FE-8-06): việc của quản trị hệ thống — vai trò kiểm ở companies.test.ts; sửa công ty của công ty kia là FORBIDDEN_COMPANY
+  listCompanyOverview: { scope: 'session' },
+  createCompany: { scope: 'session' },
+  updateCompany: { scope: 'directory', forbidden: { 'công ty kia': ({ db, other }) => db.updateCompany(other.id, COMPANY_INFO) } },
+  // Yêu cầu hỗ trợ (FE-8-07): người của công ty chỉ thấy yêu cầu do mình gửi (viewer của mỗi công ty là người gửi yêu cầu seed của nó)
+  listSupportTickets: { scope: 'directory', list: { call: ({ db }) => db.listSupportTickets(), ids: idsOf, own: (c) => c.tickets } },
+  getSupportTicket: { scope: 'directory', hidden: ({ db, other }) => db.getSupportTicket(other.tickets[0]!) },
+  createSupportTicket: { scope: 'directory', creates: ({ db }) => db.createSupportTicket(TICKET_INPUT) },
+  replyToSupportTicket: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.replyToSupportTicket(other.tickets[0]!, 'Xin chào') } },
+  setSupportTicketStatus: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.setSupportTicketStatus(other.tickets[0]!, 'CLOSED') } },
+  getSupportCompanyPanel: { scope: 'directory', hidden: ({ db, other }) => db.getSupportCompanyPanel(other.id) },
 } satisfies Record<keyof MockDb, Probe>
 
 const probes = Object.entries(PROBES) as [keyof MockDb, Probe][]
@@ -364,6 +444,13 @@ async function wholeStore(db: MockDb) {
     users: await db.listUsers(), events: await db.listEvents(), packageTypes: await db.listPackageTypes(),
     packages: await db.listPackages(), requirements: await db.listDeliveryRequirements(), vehicleTypes: await db.listVehicleTypes(),
     assignments: await db.listVehicleTypeAssignments(), companies: await db.listCompanies(),
+    billing: [] as unknown[],
+    tickets: await db.listSupportTickets(),
+  }
+  // Gói cước, số dư, sổ cái và thanh toán của từng công ty — đọc lần lượt, mỗi công ty bằng phiên của mình
+  for (const company of [LONG_BINH, PHUONG_NAM]) {
+    db.restoreSession(company.viewer)
+    snapshot.billing.push([await db.getCurrentSubscription(), await db.getCreditBalance(), await db.listCreditTransactions(), await db.listPayments()])
   }
   db.restoreSession(session)
   return snapshot

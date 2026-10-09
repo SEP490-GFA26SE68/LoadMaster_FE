@@ -100,7 +100,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await damaged.getByRole('button', { name: 'Ghi kiện hỏng', exact: true }).click()
   // Kiện cuối có kết quả thì màn tự hoàn tất xếp (nút "Hoàn tất xếp hàng" chỉ hiện khi mở lại một phiên đã ghi đủ)
   await expect(page.getByText(`Đã xếp xong chuyến ${TRIP}`, { exact: true })).toBeVisible()
-  await expect(page.getByText('Đã xếp 5 / 6 kiện', { exact: true })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Đã xếp 5 / 6 kiện' })).toBeVisible()
   await page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }).click()
   await signOut(page, NAMES.warehouse)
 

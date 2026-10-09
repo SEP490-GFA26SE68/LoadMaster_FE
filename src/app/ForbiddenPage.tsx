@@ -1,3 +1,4 @@
+import { House } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -17,7 +18,10 @@ export function ForbiddenPage() {
       description={t('notFound.forbiddenDescription', { role: user ? t(`roles.${user.role}`) : '' })}
       actions={
         <Button variant="primary" asChild>
-          <Link to={user ? ROLE_HOME[user.role] : '/dang-nhap'}>{t('notFound.backHome')}</Link>
+          <Link to={user ? ROLE_HOME[user.role] : '/dang-nhap'}>
+            <House aria-hidden strokeWidth={1.5} />
+            {t('notFound.backHome')}
+          </Link>
         </Button>
       }
     />

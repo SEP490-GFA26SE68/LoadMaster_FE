@@ -31,8 +31,8 @@ export function usePlanApprovalQuery(revisionId: string | undefined) {
 export function useApproveRevisionMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ revisionId, patches, force = false }: { revisionId: string; patches: readonly PlacementPatch[]; force?: boolean }) =>
-      approveLoadPlan(revisionId, patches, { force }),
+    mutationFn: ({ revisionId, patches, pinned, force = false }: { revisionId: string; patches: readonly PlacementPatch[]; pinned?: readonly string[]; force?: boolean }) =>
+      approveLoadPlan(revisionId, patches, { force, pinned }),
     onSuccess: () => Promise.all([
       client.invalidateQueries({ queryKey: ['trips', tripId] }),
       client.invalidateQueries({ queryKey: ['dashboard'] }),

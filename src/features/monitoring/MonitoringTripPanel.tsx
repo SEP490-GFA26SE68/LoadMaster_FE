@@ -1,4 +1,4 @@
-import { ExternalLink, TriangleAlert } from 'lucide-react'
+import { ExternalLink, ListOrdered, PackagePlus, TriangleAlert } from 'lucide-react'
 import { memo, useState } from 'react'
 import { Link } from 'react-router'
 import { VehicleName } from '@/components/VehicleName'
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useCan } from '@/features/auth/useCan'
+import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
 import { useFormat, useT } from '@/lib/i18n'
 import type { TripMonitoring } from '@/lib/mock-db'
@@ -14,6 +15,8 @@ import { LiveLocationBar } from './LiveLocationBar'
 import { LocationHistory } from './LocationHistory'
 import type { MonitoringTrip } from './monitoring-api'
 import { DeadlineChip } from './monitoring-chips'
+import { fixedStopCount } from './monitoring-view'
+import { ReorderStopsDialog } from './ReorderStopsDialog'
 import { ReportExceptionDialog } from './ReportExceptionDialog'
 import { RerouteDialog } from './RerouteDialog'
 import { TripExceptionList } from './TripExceptionList'
@@ -33,10 +36,13 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
   const moment = useMoment()
   const [reporting, setReporting] = useState(false)
   const [rerouting, setRerouting] = useState(false)
+  const [reordering, setReordering] = useState(false)
   useTripChannel(trip.tripId)
   const etaOf = new Map((live?.stops ?? []).map((stop) => [stop.stopId, stop]))
   const reroute = live?.reroute
   const stopName = (stopNumber: number) => trip.stops.find((stop) => stop.number === stopNumber)?.name ?? ''
+  // Đổi thứ tự cần ít nhất hai điểm chưa giao và chưa tới (FE-BL-03); không thì nút mờ kèm lý do
+  const canReorder = trip.stops.length - fixedStopCount(trip.stops) >= 2
 
   return (
     <section aria-label={t('monitoring.panel.label', { id: trip.tripId })} className="flex flex-col gap-3">
@@ -51,6 +57,19 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                 {t('monitoring.panel.openTrip')}
               </Link>
             </Button>
+            {can('routes.optimize') ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!canReorder}
+                aria-describedby={canReorder ? undefined : `${trip.tripId}-reorder-reason`}
+                onClick={() => setReordering(true)}
+              >
+                <ListOrdered strokeWidth={1.5} />
+                {t('monitoring.reorder.open')}
+              </Button>
+            ) : null}
+            {can('routes.optimize') && !canReorder ? <span id={`${trip.tripId}-reorder-reason`} className="sr-only">{t('monitoring.reorder.unavailable')}</span> : null}
             {can('exceptions.report') ? (
               <Button onClick={() => setReporting(true)}>
                 <TriangleAlert strokeWidth={1.5} />
@@ -80,7 +99,15 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                       <th scope="row" className="py-2.5 pr-3 text-left font-medium text-ink-1">
                         <span className="flex items-center gap-2.5">
                           <span aria-hidden className="flex-none"><StopMarker number={stop.number} /></span>
-                          <span><span className="sr-only">{t('common.stop', { number: stop.number })} · </span>{stop.name}</span>
+                          <span>
+                            <span className="sr-only">{t('common.stop', { number: stop.number })} · </span>{stop.name}
+                            {stop.kind === 'PICKUP' ? (
+                              <Badge shape="tag" tone="azure" className="ml-2 align-middle">
+                                <PackagePlus aria-hidden className="size-3" strokeWidth={2} />
+                                {t('trips.route.pickupTag')}
+                              </Badge>
+                            ) : null}
+                          </span>
                         </span>
                       </th>
                       <td className="px-3 py-2.5 text-ink-1 tabular-nums">
@@ -127,7 +154,9 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
       </div>
 
       <ManualConfirmCard tripId={trip.tripId} />
+      <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} />
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
+      <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} />
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>
   )

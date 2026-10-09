@@ -36,7 +36,6 @@ export const lookup = {
     weight: 'Weight',
     handlingClass: 'Handling class',
     destination: 'Destination',
-    status: 'Status',
     flags: 'Flags',
     noFlags: 'No flag',
     trip: 'Trip',

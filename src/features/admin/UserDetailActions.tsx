@@ -53,7 +53,7 @@ export function UserDetailActions({ user, guards, onAction }: {
           disabled={block !== null}
           aria-describedby={block === null ? undefined : `${reasonId}-${block}`}
           onClick={() => onAction(action, user)}
-          className={cn('justify-start', danger && block === null && 'text-danger hover:text-danger-hover')}
+          className={cn('w-full justify-start', danger && block === null && 'text-danger hover:text-danger-hover')}
         >
           <Icon strokeWidth={1.5} aria-hidden />
           {label}

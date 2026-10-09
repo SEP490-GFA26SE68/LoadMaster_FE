@@ -1,6 +1,6 @@
 import type { CargoPackage } from '@/domain/models'
 import { REQUIREMENT_PRIORITIES, type RequirementPriority } from './requirement-model'
-import type { DeliveryStop } from './types'
+import type { DeliveryStop, StopKind } from './types'
 
 /**
  * Điểm giao tự sinh (FE-4b-04, D-73) — hàm thuần, kho gọi khi đưa yêu cầu giao vào chuyến, gỡ yêu cầu, bỏ kiện:
@@ -20,6 +20,9 @@ const WHITESPACE = /\s+/g
 export function normalizeAddress(address: string): string {
   return address.normalize('NFC').toLocaleLowerCase('vi').replace(PUNCTUATION, ' ').replace(WHITESPACE, ' ').trim()
 }
+
+/** Loại của điểm: điểm vắng `kind` là điểm giao (FE-7-01), nên dữ liệu có từ trước không phải sửa. */
+export const stopKindOf = (stop: Pick<DeliveryStop, 'kind'>): StopKind => stop.kind ?? 'DELIVERY'
 
 type StopPlace = Pick<DeliveryStop, 'address' | 'lat' | 'lng'>
 

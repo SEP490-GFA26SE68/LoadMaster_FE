@@ -1,6 +1,8 @@
 import { optionalText, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { movePackage } from './db-packages'
+import { pickupEntryOf } from './db-pickup-progress'
+import { recordPickupItem } from './db-pickup-scans'
 import { arrivedStopProgress, assertPhase, assertStaged, assertUnloadable, expectedLoadingInstance, labelsOf, loadingPlan, verificationBy } from './db-scans'
 import { MockDbError } from './errors'
 import { plannedStops } from './operations'
@@ -57,7 +59,7 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
   function pending(trip: Trip, confirmationId: string): PackageVerification & { manual: ManualConfirm } {
     const entry = trip.verifications?.find((item) => item.id === confirmationId)
     if (entry?.manual?.status !== 'MANUAL_PENDING') throw new MockDbError('MANUAL_CONFIRM_NOT_PENDING', { tripId: trip.id, confirmationId })
-    assertPhase(trip, entry.context === 'UNLOADING' ? 'delivering' : 'loading')
+    assertPhase(trip, entry.context === 'UNLOADING' || entry.context === 'PICKUP' ? 'delivering' : 'loading')
     return { ...entry, manual: entry.manual }
   }
 
@@ -71,6 +73,11 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
    * thì kiện rời danh sách đã soạn — chuyến quay lại bước soạn cho kiện đó — và mất luôn kết quả xếp nếu đã có.
    */
   function withoutResult(trip: Trip, { context, stopNumber, packageInstanceId }: PackageVerification): Trip {
+    if (context === 'PICKUP') {
+      if (!trip.delivery) return trip
+      const stops = trip.delivery.stops.map((stop) => stop.number !== stopNumber ? stop : { ...stop, pickedIds: (stop.pickedIds ?? []).filter((id) => id !== packageInstanceId) })
+      return { ...trip, delivery: { ...trip.delivery, stops } }
+    }
     if (context !== 'UNLOADING') {
       if (!trip.loading) return trip
       const steps = trip.loading.steps.filter((step) => step.packageInstanceId !== packageInstanceId)
@@ -129,6 +136,13 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
         arrivedStopProgress(trip, stopNumber)
         if (!delivery) throw new Error(`Chuyến ${tripId} đang giao nhưng không có tiến độ giao`)
         const id = input.packageInstanceId
+        // Kiện nhận dọc đường (FE-7-05): điểm nhận ghi kiện lên xe chờ duyệt, điểm giao dỡ như kiện thường
+        const pickup = pickupEntryOf(ctx, trip, id)
+        if (pickup) {
+          const recorded = recordPickupItem(ctx, trip, stopNumber, pickup, 'MANUAL', manualOf(input))
+          logRequested(tripId, recorded.verification)
+          return { trip: recorded.trip, packageInstanceId: id }
+        }
         const token = labelsOf(ctx, trip).find((label) => label.packageInstanceId === id)?.qrToken ?? id
         assertUnloadable(trip, loadingPlan(ctx, trip), stopNumber, id, token)
         const entry = verificationBy(ctx, { context: 'UNLOADING', stopNumber, packageInstanceId: id, method: 'MANUAL', manual: manualOf(input) })
@@ -147,6 +161,11 @@ export function manualConfirmMethods(ctx: DbContext): ManualConfirmMethods {
         assertDispatcher()
         const entry = pending(trip, confirmationId)
         ctx.log('manualConfirm.approved', { type: 'trip', id: tripId }, { packageInstanceId: entry.packageInstanceId, ...requestedBy(entry) })
+        // Nhận dọc đường bằng xác nhận tay: kiện chỉ lên xe (`LOADED`) khi điều phối viên duyệt (FE-7-05)
+        if (entry.context === 'PICKUP') {
+          const pkg = packages.get(entry.packageInstanceId)
+          if (pkg?.status === 'ASSIGNED') movePackage(ctx, pkg, 'LOADED')
+        }
         // Soạn bằng xác nhận tay: kiện chỉ thành "đã soạn" khi điều phối viên duyệt (FE-6-02)
         if (entry.context === 'STAGING') {
           const poolId = labelsOf(ctx, trip).find((label) => label.packageInstanceId === entry.packageInstanceId)?.poolPackageId

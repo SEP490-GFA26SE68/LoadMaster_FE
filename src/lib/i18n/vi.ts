@@ -33,6 +33,12 @@ import { runs } from './vi/runs'
 import { lookup } from './vi/lookup'
 import { map } from './vi/map'
 import { monitoring } from './vi/monitoring'
+import { pickups } from './vi/pickups'
+import { platform } from './vi/platform'
+import { billing } from './vi/billing'
+import { payment } from './vi/payment'
+import { companies } from './vi/companies'
+import { support } from './vi/support'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -79,4 +85,10 @@ export const vi = {
   lookup,
   map,
   monitoring,
+  pickups,
+  platform,
+  billing,
+  payment,
+  companies,
+  support,
 } as const

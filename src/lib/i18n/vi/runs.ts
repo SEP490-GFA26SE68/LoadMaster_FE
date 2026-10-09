@@ -6,7 +6,6 @@
  */
 export const runs = {
   title: 'Lần chạy tối ưu',
-  objective: 'Mục tiêu',
   algorithm: 'Thuật toán',
   objectives: {
     MAX_VOLUME: 'Tối đa thể tích',
@@ -43,6 +42,8 @@ export const runs = {
   /** Dưới chip "Đã duyệt": phương án nào của lần chạy đã được duyệt. */
   approvedPlans: 'Phương án {labels}',
   limitSeconds: '{seconds} s',
+  /** Lần chạy giữ kiện đã ghim (FE-BL-02). */
+  pinned: { one: 'Giữ {count} kiện đã ghim', other: 'Giữ {count} kiện đã ghim' },
   seed: 'seed {seed}',
   /** Lần chạy hỏng không có revision nên kho không có thiết lập hay số của nó. */
   noValue: '—',

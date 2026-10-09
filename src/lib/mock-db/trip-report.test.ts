@@ -74,7 +74,7 @@ test('arrival against the planned time and the deadline, verification methods, m
   ])
   expect(report.packages).toStrictEqual({ planned: 2, staged: 2, loaded: 2, damaged: 0, loadedByQr: 2, delivered: 1, returned: 0, withIssue: 0 })
   expect(report.verifications).toStrictEqual({
-    STAGING: { QR: 2, CODE: 0, MANUAL: 0 }, LOADING: { QR: 1, CODE: 1, MANUAL: 0 }, UNLOADING: { QR: 0, CODE: 0, MANUAL: 1 },
+    STAGING: { QR: 2, CODE: 0, MANUAL: 0 }, LOADING: { QR: 1, CODE: 1, MANUAL: 0 }, UNLOADING: { QR: 0, CODE: 0, MANUAL: 1 }, PICKUP: { QR: 0, CODE: 0, MANUAL: 0 },
   })
   expect(report.manualConfirms).toStrictEqual([MANUAL])
   expect([report.exceptions, report.reroutes]).toStrictEqual([[EXCEPTION], [REROUTE]])

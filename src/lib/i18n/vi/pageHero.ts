@@ -6,7 +6,6 @@ export const pageHero = {
   breadcrumb: 'Vị trí trang',
   trips: 'Chuyến trong kỳ, trạng thái phương án và việc cần xử lý trước khi bàn giao kho.',
   tripForm: 'Nhập thông tin chuyến, chọn xe và sắp thứ tự điểm giao.',
-  optimization: 'Khai báo yêu cầu xếp và kiểm tra đầu vào trước khi chạy tối ưu.',
   fleet: 'Trạng thái đội xe và xe đang phục vụ chuyến nào.',
   dashboard: 'Chuyến, tỷ lệ lấp đầy và khối lượng đã giao trong kỳ đang xem.',
   users: 'Tài khoản, vai trò và quyền trong hệ thống.',
@@ -21,4 +20,9 @@ export const pageHero = {
   monitoring: 'Xe đang vận chuyển trên bản đồ, giờ đến dự kiến so với hạn giao và sự cố trên đường.',
   vehicleTypes: 'Kích thước lòng thùng và tải trọng theo loại xe.',
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
+  subscriptionPlans: 'Danh mục gói cước bán cho công ty: giá, credit mỗi tháng và hạng thuật toán của từng gói.',
+  billing: 'Gói cước của công ty, số dư credit, lịch sử và thanh toán.',
+  payment: 'Hoàn tất hoặc huỷ một giao dịch đăng ký gói, gia hạn hay nạp credit.',
+  companies: 'Công ty dùng LoadMaster: gói cước, số người dùng, kho xuất phát và quản trị công ty đầu tiên.',
+  support: 'Yêu cầu hỗ trợ của mọi công ty: trả lời, đổi trạng thái và xem gói, credit của công ty đó.',
 } as const

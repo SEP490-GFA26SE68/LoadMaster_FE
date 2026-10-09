@@ -71,6 +71,7 @@ export function StopCard({ stop, total, lead, state, eta, missingCoordinates = f
     >
       <span className="sr-only">
         {t('trips.route.stop', { number: stop.number, total, name: stop.name, packages, weight })}
+        {stop.kind === 'PICKUP' ? `, ${t('trips.route.pickupTag')}` : null}
         {stop.deadline ? `, ${t('trips.route.deadlineA11y', { time: format.time(stop.deadline), date: format.date(stop.deadline) })}` : null}
         {stop.priority ? `, ${t('trips.route.priorityA11y', { priority: t(`requirements.priority.${stop.priority}`) })}` : null}
         {eta ? `, ${t(eta.arrived ? 'trips.routePlan.arrivedA11y' : 'trips.routePlan.etaA11y', { time: format.time(eta.eta), date: format.date(eta.eta) })}` : null}
@@ -177,6 +178,9 @@ function StopBody({ stop, packages, weight, state, eta, missingCoordinates }: {
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="line-clamp-2 text-body font-semibold text-ink-strong">{stop.name}</span>
+        {stop.kind === 'PICKUP' ? (
+          <Badge shape="tag" tone="azure" className="mt-1 w-fit max-w-full">{t('trips.route.pickupTag')}</Badge>
+        ) : null}
         {stop.address ? <span className="mt-0.5 line-clamp-2 text-fine text-ink-3">{stop.address}</span> : null}
         <span className={cn('mt-1 text-small tabular-nums', stop.packageCount === 0 ? 'text-ink-3' : 'font-medium text-ink-2')}>
           {packages} · {weight}

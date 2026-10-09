@@ -1,6 +1,50 @@
-export { getMockDb } from './app-db'
+export { getMockDb, onRemoteDbChange } from './app-db'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
 export { addDays, CLOCK_SPEED_PARAM, clockSpeedFrom, MAX_CLOCK_SPEED, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
+export {
+  ALGORITHM_TIERS,
+  BILLING_CONSTANTS,
+  creditBlock,
+  CREDIT_TRANSACTION_TYPES,
+  isUnlimited,
+  optimizationCost,
+  PAYMENT_STATUSES,
+  PLAN_TIERS,
+  type AlgorithmTier,
+  type CompanySubscription,
+  type CreditAccount,
+  type CreditBalance,
+  type CreditBlock,
+  type CreditReservation,
+  type CreditTransaction,
+  type CreditTransactionType,
+  type CurrentSubscription,
+  type PaymentPurpose,
+  type PaymentStatus,
+  type PaymentTransaction,
+  type PlanInput,
+  type PlanPatch,
+  type PlanTier,
+  type SubscriptionPlan,
+  type SubscriptionStatus,
+  type UsageStatus,
+} from './billing-model'
+export type { BillingDb } from './db-api-billing'
+export { effectiveSubscriptionStatus } from './billing-model'
+export type { CompaniesDb, CompanyInfo, CompanyOverview, CreatedCompany, NewCompany, NewCompanyAdmin } from './db-api-companies'
+export { SUPPORT_PANEL_TRANSACTIONS, type SupportCompanyPanel, type SupportDb } from './db-api-support'
+export {
+  MAX_TICKET_TEXT,
+  MAX_TICKET_TITLE,
+  TICKET_KINDS,
+  TICKET_STATUSES,
+  type NewSupportTicket,
+  type SupportTicket,
+  type TicketKind,
+  type TicketReply,
+  type TicketStatus,
+} from './support-model'
+export { SEED_PLANS } from './seed-billing'
 export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'
 export { isMockDbError, MockDbError, type MockDbCollection, type MockDbErrorCode, type MockDbErrorParams } from './errors'
@@ -24,7 +68,7 @@ export {
 } from './operations'
 export { isStale } from './revisions'
 export { PACKAGE_CHANGE_FIELDS, type PackageChangeField } from './trip-changes'
-export { nextStopId, normalizeAddress, stopKey } from './trip-stops'
+export { nextStopId, normalizeAddress, stopKey, stopKindOf } from './trip-stops'
 export { isLastActiveAdmin, rolesInScope, userScopeOf, type UserScope } from './user-scope'
 export { COMPANIES as SEED_COMPANIES } from './seed-sourcing'
 export { PLACE_KINDS, SEED_PLACES, type Place, type PlaceKind } from './seed-places'
@@ -55,6 +99,22 @@ export {
   type PackageSource,
   type PackageStatus,
 } from './package-model'
+export type { PickupApproval, PickupApproveInput, PickupsDb } from './db-api-pickups'
+export type { ReorderDb, StopReorder, StopReorderWarning } from './db-api-reorder'
+export { currentNumbersOfPlan, hasInsertedStops, planNumberOf } from './plan-stops'
+export {
+  canTransitionPickup,
+  MAX_PICKUP_REASON_LENGTH,
+  PICKUP_STATUSES,
+  PICKUP_TRANSITIONS,
+  type PickupLayout,
+  type PickupPackage,
+  type PickupPoint,
+  type PickupRequest,
+  type PickupRequestInput,
+  type PickupStatus,
+  type PickupStatusDetails,
+} from './pickup-model'
 export { cargoFromPackage, handlingClassOfType } from './package-type-cargo'
 export { backendLimitsOf, orientationsFor, specFieldsOf, type PackageTypeStacking } from './package-type-limits'
 export { axleLimitsFromAxles, limitsOfType, sameLimits, withoutLimits, withTypeLimits, type VehicleLimits } from './vehicle-limits'
@@ -155,6 +215,7 @@ export {
 export {
   DELIVERY_ISSUE_KINDS,
   REPLAN_REASONS,
+  STOP_KINDS,
   TRIP_PHASES,
   type ApproveOptions,
   type AuditFilter,
@@ -177,6 +238,7 @@ export {
   type Revision,
   type SavedOptimizationRun,
   type StagingShortage,
+  type StopKind,
   type StopProgress,
   type TemporaryPassword,
   type Trip,
