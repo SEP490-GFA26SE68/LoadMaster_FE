@@ -7,7 +7,13 @@ export const map = {
   canvas: 'Bản đồ tương tác',
   zoomIn: 'Phóng to',
   zoomOut: 'Thu nhỏ',
+  /** Canh khung nhìn toàn tuyến (nút Maximize trong modal phóng lớn). */
   fit: 'Xem toàn tuyến',
+  /** Mở hộp thoại bản đồ lớn (nút Maximize trên bản đồ nhúng). */
+  expand: 'Phóng lớn bản đồ',
+  expandTitle: 'Bản đồ tuyến',
+  expandMap: 'Bản đồ phóng lớn: {label}',
+  expandClose: 'Đóng',
   keyboardHint: 'Khi bản đồ đang được chọn: phím + và − để phóng to, thu nhỏ; phím mũi tên để dời bản đồ.',
   attribution: 'Hiện hoặc ẩn nguồn dữ liệu bản đồ',
   /** Lời nhắc của bản đồ khi người dùng lăn chuột / vuốt một ngón qua nó: trang cuộn, bản đồ đứng yên. */

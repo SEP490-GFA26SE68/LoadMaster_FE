@@ -75,7 +75,7 @@ function RerouteBody({ tripId, stopName, onDone }: { tripId: string; stopName: (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-small font-semibold text-ink-2">{t('monitoring.reroute.options')}</span>
-              <Badge shape="tag" tone="mock">MOCK RESULT</Badge>
+              {proposal.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
             </div>
             <div role="radiogroup" aria-label={t('monitoring.reroute.options')} className="flex flex-col gap-2">
               {proposal.options.map((option) => (

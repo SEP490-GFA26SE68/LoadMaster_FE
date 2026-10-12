@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
 import { stopColor } from '@/lib/stops'
@@ -64,4 +65,16 @@ test('the list is translated', () => {
   const items = within(within(region).getByRole('list', { name: 'Points on the map, in visiting order' })).getAllByRole('listitem')
   expect(items[0]).toHaveTextContent('Departure depot: Kho Long Bình')
   expect(items[1]).toHaveTextContent('Stop 4: Nhà thuốc Long Châu Biên Hoà')
+})
+
+test('the expand button opens a large map dialog and Close dismisses it', async () => {
+  window.history.replaceState(null, '', '/')
+  sessionStorage.clear()
+  const user = userEvent.setup()
+  renderMap()
+  await user.click(screen.getByRole('button', { name: 'Phóng lớn bản đồ' }))
+  expect(screen.getByRole('heading', { name: 'Bản đồ tuyến' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Bản đồ phóng lớn: Bản đồ tuyến TRIP-2026-0914' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Đóng' }))
+  expect(screen.queryByRole('heading', { name: 'Bản đồ tuyến' })).not.toBeInTheDocument()
 })
