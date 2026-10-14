@@ -4,28 +4,41 @@ import type { VehicleConfig } from '@/domain/models'
 import type { SceneMaterials } from './materials'
 import { containerSize, type Vec3 } from './units'
 import { ContainerDoor, FloorScale } from './ContainerDetails'
+import { doorOpening as doorOpeningOf } from './vehicle-spec-marks'
 
 /**
  * Thùng xe: sàn, ba vách, gờ thấp hai bên, viền nóc đứt nét và hai cánh cửa
  * sau mở ~110°. Vách dùng mặt đơn với pháp tuyến hướng vào trong nên vách
  * gần camera tự biến mất — nhìn từ góc nào cũng thấy hàng bên trong.
+ *
+ * `doorOpening` (xem trước ở form xe): vẽ vách sau với ô cửa đúng `doorWidthCm` × `doorHeightCm` — hai trụ cửa, phần vách
+ * trên cửa, hai cánh thu về đúng cỡ ô cửa. Mặc định cánh cửa phủ cả mặt sau, để vách sau không che hàng ở Planner.
  */
 
 const DOOR_THICKNESS = 0.03
 const SKIRT_HEIGHT = 0.28
+/** Trụ cửa hay vách trên cửa mỏng hơn 1 mm thì không vẽ (cửa bằng đúng mặt cắt thùng). */
+const MIN_FRAME = 0.001
+const NO_RAYCAST = () => null
 
 export function Container({
   vehicle,
   materials,
   detail = true,
   reducedMotion = false,
+  doorOpening = false,
+  edgeOpacity = 0.28,
 }: {
   vehicle: VehicleConfig
   materials: SceneMaterials
   detail?: boolean
   reducedMotion?: boolean
+  doorOpening?: boolean
+  /** Độ rõ của viền nóc và cạnh đứng; xem trước ở form xe không có hàng che nên vẽ rõ hơn. */
+  edgeOpacity?: number
 }) {
   const { length: L, height: H, width: W } = containerSize(vehicle)
+  const door = doorOpening ? doorOpeningOf(vehicle) : { width: W, height: H, jamb: 0, header: 0 }
   const EDGE_COLOR = materials.light
 
   const roofRectangle: Vec3[] = [
@@ -83,12 +96,25 @@ export function Container({
       </mesh>
 
       {/* Viền nóc và cạnh đứng đứt nét */}
-      <Line points={roofRectangle} color={EDGE_COLOR} transparent opacity={0.28} lineWidth={1} dashed dashSize={0.08} gapSize={0.06} />
-      <Line points={verticalEdges} segments color={EDGE_COLOR} transparent opacity={0.22} lineWidth={1} dashed dashSize={0.08} gapSize={0.06} />
+      <Line points={roofRectangle} color={EDGE_COLOR} transparent opacity={edgeOpacity} lineWidth={1} dashed dashSize={0.08} gapSize={0.06} />
+      <Line points={verticalEdges} segments color={EDGE_COLOR} transparent opacity={edgeOpacity * 0.8} lineWidth={1} dashed dashSize={0.08} gapSize={0.06} />
 
       {detail ? <FloorScale length={L} width={W} color={materials.light} /> : null}
-      <ContainerDoor length={L} height={H} width={W} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
-      <ContainerDoor length={L} height={H} width={W} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
+      {/* Vách sau quanh ô cửa: hộp đặc nhìn được từ cả hai phía, vì góc nhìn mặc định nhìn vào mặt này từ bên ngoài */}
+      {door.jamb > MIN_FRAME ? [door.jamb / 2, W - door.jamb / 2].map((z) => (
+        <mesh key={z} name="door-jamb" position={[L + DOOR_THICKNESS / 2, H / 2, z]} raycast={NO_RAYCAST}>
+          <boxGeometry args={[DOOR_THICKNESS, H, door.jamb]} />
+          <meshStandardMaterial color={materials.skirt} roughness={0.85} />
+        </mesh>
+      )) : null}
+      {door.header > MIN_FRAME ? (
+        <mesh name="door-header" position={[L + DOOR_THICKNESS / 2, door.height + door.header / 2, W / 2]} raycast={NO_RAYCAST}>
+          <boxGeometry args={[DOOR_THICKNESS, door.header, door.width]} />
+          <meshStandardMaterial color={materials.skirt} roughness={0.85} />
+        </mesh>
+      ) : null}
+      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={door.jamb} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
+      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={W - door.jamb} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
     </group>
   )
 }
