@@ -28,6 +28,31 @@ export const vehicleTypes = {
   delete: 'Delete',
   inUse: { one: 'Still set on {count} vehicle; remove it from the vehicle first', other: 'Still set on {count} vehicles; remove it from the vehicles first' },
   form: {
+    hazardousCapable: 'Hazardous cargo capable',
+
+    obstacles: {
+      title: 'Cargo area obstacles',
+      description:
+        'Define non-loadable areas such as wheel arches or cooling units.',
+      add: 'Add obstacle',
+      empty: 'No obstacles defined.',
+      item: 'Obstacle {index}',
+      remove: 'Remove',
+      name: 'Obstacle name',
+      type: 'Obstacle type',
+      length: 'Length',
+      width: 'Width',
+      height: 'Height',
+      loadBearing: 'Cargo can be placed on top',
+
+      types: {
+        wheelArch: 'Wheel arch',
+        coolingUnit: 'Cooling unit',
+        partition: 'Partition',
+        reservedZone: 'Reserved zone',
+        other: 'Other',
+      },
+    },
     createTitle: 'Add vehicle type',
     editTitle: 'Edit vehicle type {id}',
     description: 'Cargo space in cm, payload and axle limits in kg.',

@@ -67,18 +67,59 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   systemManager: ['subscriptionPlans.manage'],
   systemSupporter: ['support.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
-  manager: [
-    'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
+
+  companyManager: [
+    'support.create',
+    'dashboard.view',
+    'reports.export',
+    'requirements.view',
+    'requirements.edit',
+    'packages.view',
+    'trips.view',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'deadlines.renegotiate',
   ],
+
   dispatcher: [
-    'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
-    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
-    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
+    'support.create',
+    'dashboard.view',
+    'requirements.view',
+    'packages.view',
+    'packages.manage',
+    'packages.lookup',
+    'labels.print',
+    'trips.view',
+    'trips.edit',
+    'routes.optimize',
+    'optimization.run',
+    'plans.approve',
+    'manualConfirm.approve',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'fleet.edit',
+    'vehicleTypes.edit',
+    'exceptions.report',
+    'exceptions.resolve',
+    'pickups.create',
     'pickups.approve',
   ],
-  warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
-  driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
+
+  warehouse: [
+    'support.create',
+    'packages.lookup',
+    'labels.print',
+    'warehouse.operate',
+  ],
+
+  driver: [
+    'support.create',
+    'exceptions.report',
+    'pickups.create',
+    'driver.operate',
+  ],
 }
 
 /** Quyền của vai trò, theo thứ tự của `PERMISSIONS`. Mọi nơi đọc quyền đi qua đây hoặc `can`. */

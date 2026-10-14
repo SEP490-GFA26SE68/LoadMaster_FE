@@ -125,7 +125,7 @@ test('a vehicle running a trip opens read-only and says which trip locks it', as
 })
 
 test('the manager reads the maintenance note but has no maintenance action', async () => {
-  renderAt('/doi-xe/VEHICLE-008', 'manager')
+  renderAt('/doi-xe/VEHICLE-008', 'companyManager')
   const banner = await screen.findByRole('status', {}, SLOW)
   expect(banner).toHaveTextContent('Ghi chú: Thay má phanh và bảo dưỡng định kỳ 20.000 km')
   expect(screen.getByText('Bảo dưỡng')).toBeInTheDocument()

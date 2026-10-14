@@ -9,7 +9,13 @@ export const map = {
   canvas: 'Interactive map',
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
+  /** Fit the view to the whole route (Maximize button inside the expanded dialog). */
   fit: 'Show the whole route',
+  /** Open the large map dialog (Maximize on the embedded map). */
+  expand: 'Expand map',
+  expandTitle: 'Route map',
+  expandMap: 'Expanded map: {label}',
+  expandClose: 'Close',
   keyboardHint: 'While the map is focused: + and − zoom in and out; the arrow keys move the map.',
   attribution: 'Show or hide the map data sources',
   gestures: {

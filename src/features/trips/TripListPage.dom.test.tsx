@@ -161,7 +161,7 @@ test('the stats line counts the whole store; tabs are the six statuses, filter o
 
 /** FE-0-04: quản lý công ty chỉ đọc từ FE-0-07 — phương án chờ duyệt không chờ họ, nên không có chữ và số "cần bạn xử lý". */
 test('the company manager, who cannot approve plans, sees the plain counts without "needs you"', async () => {
-  renderList('/chuyen', 'manager')
+  renderList('/chuyen', 'companyManager')
   await screen.findByRole('row', { name: /TRIP-014/ }, SLOW)
   const header = screen.getByRole('heading', { name: 'Chuyến hàng' }).closest('header')
   expect(header).toHaveTextContent('15 chuyến·1 đang vận chuyển')

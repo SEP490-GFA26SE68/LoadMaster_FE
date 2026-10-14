@@ -38,8 +38,27 @@ export function VehicleTypesPage() {
   const [editing, setEditing] = useState<{ row: VehicleTypeRow | null } | null>(null)
   const [deleting, setDeleting] = useState<VehicleTypeRow | null>(null)
 
-  const types = useMemo(() => typesQuery.data ?? [], [typesQuery.data])
-  const assigned = types.reduce((sum, row) => sum + row.vehicleIds.length, 0)
+  const types = useMemo<VehicleTypeRow[]>(() => {
+    const vehicleTypes = typesQuery.data?.data ?? []
+    const assignmentRows = vehiclesQuery.data ?? []
+
+    return vehicleTypes.map((type) => {
+      const vehicles = assignmentRows
+        .filter((row) => row.vehicleTypeId === type.id)
+        .map((row) => row.vehicle)
+
+      return {
+        type,
+        vehicleIds: vehicles.map((vehicle) => vehicle.id),
+        vehicles,
+      }
+    })
+  }, [typesQuery.data, vehiclesQuery.data])
+
+  const assigned = types.reduce(
+    (sum, row) => sum + row.vehicleIds.length,
+    0,
+  )
   const typeColumns = useMemo(() => createTypeColumns(t), [t])
   const assignColumns = useMemo(() => createAssignColumns(t), [t])
 
@@ -102,7 +121,14 @@ export function VehicleTypesPage() {
       <PageHero
         overlap={typesQuery.isSuccess && types.length > 0}
         title={t('vehicleTypes.title')}
-        meta={typesQuery.isSuccess ? t('vehicleTypes.count', { count: types.length, assigned }) : undefined}
+        meta={
+          typesQuery.isSuccess
+            ? t('vehicleTypes.count', {
+              count: typesQuery.data.totalElements,
+              assigned,
+            })
+            : undefined
+        }
         description={t('pageHero.vehicleTypes')}
         back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
         actions={types.length > 0 ? addButton : null}

@@ -15,6 +15,35 @@ import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title
  * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D.
  */
 const LoginPage = lazy(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() =>
+  import('@/features/auth/ForgotPasswordPage')
+    .then((m) => ({
+      default: m.ForgotPasswordPage,
+    })),
+)
+const VerifyOtpPage = lazy(() =>
+  import('@/features/auth/VerifyOtpPage')
+    .then((m) => ({
+      default: m.VerifyOtpPage,
+    })),
+)
+const ResetPasswordPage = lazy(() =>
+  import(
+    '@/features/auth/ResetPasswordPage'
+  ).then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+)
+
+const ResetPasswordSuccessPage =
+  lazy(() =>
+    import(
+      '@/features/auth/ResetPasswordSuccessPage'
+    ).then((m) => ({
+      default:
+        m.ResetPasswordSuccessPage,
+    })),
+  )
 const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const TripListPage = lazy(() => import('@/features/trips/TripListPage').then((m) => ({ default: m.TripListPage })))
 const TripFormPage = lazy(() => import('@/features/trips/TripFormPage').then((m) => ({ default: m.TripFormPage })))
@@ -92,6 +121,49 @@ export const routes: RouteObject[] = [
         path: '/dang-nhap',
         element: <RouteOutlet />,
         children: [{ index: true, element: <LoginPage />, handle: titled((t) => t('titles.login')) }],
+      },
+      {
+        path: '/quen-mat-khau',
+        element: <RouteOutlet />,
+        children: [
+          {
+            index: true,
+            element: <ForgotPasswordPage />,
+            handle: titled(() => 'Quên mật khẩu'),
+          },
+        ],
+      },
+      {
+        path: '/xac-thuc-otp',
+        element: <RouteOutlet />,
+        children: [
+          {
+            index: true,
+            element: <VerifyOtpPage />,
+            handle: titled(() => 'Xác thực OTP'),
+          },
+        ],
+      },
+      {
+        path: '/dat-lai-mat-khau',
+        element: <RouteOutlet />,
+        children: [
+          {
+            index: true,
+            element: <ResetPasswordPage />,
+          },
+        ],
+      },
+      {
+        path: '/dat-lai-mat-khau/thanh-cong',
+        element: <RouteOutlet />,
+        children: [
+          {
+            index: true,
+            element:
+              <ResetPasswordSuccessPage />,
+          },
+        ],
       },
 
       {

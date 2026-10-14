@@ -70,7 +70,7 @@ test('a draft trip without packages is not ready; putting a requirement on it ad
 
 test('the manager sees the check without ways to change the trip', async () => {
   const trip = await getMockDb().createTrip({ ...twoCartonTrip(), packages: [] })
-  renderDetail(trip.id, 'manager')
+  renderDetail(trip.id, 'companyManager')
 
   const card = within(await screen.findByRole('region', { name: 'Kiểm tra trước khi tối ưu' }, SLOW))
   expect(await card.findByText('Chưa sẵn sàng tối ưu', {}, SLOW)).toBeInTheDocument()
