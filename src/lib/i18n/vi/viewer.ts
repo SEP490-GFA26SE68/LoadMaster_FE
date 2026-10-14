@@ -407,6 +407,13 @@ export const viewer = {
     rearDoor: 'Cửa sau · Hướng dỡ',
     centerOfMass: 'Tâm khối lượng hàng',
   },
+  /** Nhãn đường kích thước trên mô hình ở form xe (`VehicleSpecMarks`): số là số đang nhập. */
+  spec: {
+    length: 'Dài {value}',
+    width: 'Rộng {value}',
+    height: 'Cao {value}',
+    door: 'Cửa {size}',
+  },
   /** Kiện đã ghim và "Chạy lại giữ ghim" ở góc khung 3D của Planner (FE-BL-02). */
   pins: {
     count: { one: '{count} kiện đã ghim', other: '{count} kiện đã ghim' },
