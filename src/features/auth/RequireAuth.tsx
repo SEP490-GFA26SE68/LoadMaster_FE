@@ -10,10 +10,13 @@ import { useAuth } from './AuthProvider'
  * mở màn của vai trò (`landingPath`). Quyền theo vai trò kiểm ở từng nhóm route bằng `RequirePermission` (D-41).
  */
 export function RequireAuth() {
-  const { user } = useAuth()
+  const { user, status } = useAuth()
   const location = useLocation()
   // Layout này giữ nguyên khi đăng xuất (user đổi từ có sang null), nhưng mount mới khi mở trang lúc chưa đăng nhập.
   const [signedInOnMount] = useState(user !== null)
+
+  // Chế độ Keycloak: chưa biết còn phiên hay không thì chưa quyết — không chớp sang màn đăng nhập rồi quay lại
+  if (status === 'restoring') return null
 
   if (!user) {
     return (

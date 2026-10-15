@@ -15,7 +15,7 @@ import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
 import { landingPath } from './landing'
 import { LoginArtwork } from './LoginArtwork'
-import { useAuth } from './AuthProvider'
+import { readReturnPath, useAuth } from './AuthProvider'
 
 /**
  * Schema giữ key từ điển thay vì câu chữ; màn dịch lúc hiển thị, nên đổi ngôn ngữ
@@ -42,7 +42,23 @@ function translateFieldError(t: TFunction, message: string | undefined): string 
 const AUTH_ERRORS = {
   'invalid-credentials': 'auth.login.invalidCredentials',
   'account-suspended': 'auth.login.accountSuspended',
+  'role-unknown': 'auth.login.roleUnknown',
 } as const satisfies Record<AuthErrorCode, MessageKey>
+
+/** Lỗi có mã thì hiện câu của mã; lỗi khác (mạng, máy chủ) hiện câu chung "không kết nối được". */
+const errorKeyOf = (error: unknown): ServerErrorKey => (error instanceof AuthError ? AUTH_ERRORS[error.code] : 'auth.login.serverUnreachable')
+
+function ServerError({ message }: { message: string }) {
+  return (
+    <p
+      role="alert"
+      className="flex items-start gap-2 rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg pointer-coarse:text-body-lg"
+    >
+      <Lock aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
+      <span>{message}</span>
+    </p>
+  )
+}
 
 type ServerErrorKey = (typeof AUTH_ERRORS)[AuthErrorCode] | 'auth.login.serverUnreachable'
 
@@ -63,7 +79,8 @@ const HIGHLIGHTS = [
  */
 export function LoginPage() {
   const t = useT()
-  const { user, signIn } = useAuth()
+  const { user, status, source, sessionError, signIn, signInWithRedirect } = useAuth()
+  const viaKeycloak = source === 'keycloak'
   const navigate = useNavigate()
   const location = useLocation()
   const [serverError, setServerError] = useState<ServerErrorKey | null>(null)
@@ -76,7 +93,8 @@ export function LoginPage() {
   /** Trang người dùng định vào trước khi bị chuyển tới đây; không có (hoặc là gốc `/`) thì mở màn của vai trò. */
   const from = (location.state as { from?: string } | null)?.from
 
-  if (user) return <Navigate to={landingPath(user.role, from)} replace />
+  // Chế độ Keycloak: trang định vào được nhớ trước khi sang trang đăng nhập của Keycloak, vì `location.state` không sống qua lượt đó
+  if (user) return <Navigate to={landingPath(user.role, viaKeycloak ? readReturnPath() : from)} replace />
 
   async function onSubmit(values: FormValues) {
     setServerError(null)
@@ -84,10 +102,16 @@ export function LoginPage() {
       const signedIn = await signIn(values.email, values.password)
       void navigate(landingPath(signedIn.role, from), { replace: true })
     } catch (error) {
-      setServerError(
-        error instanceof AuthError ? AUTH_ERRORS[error.code] : 'auth.login.serverUnreachable',
-      )
+      setServerError(errorKeyOf(error))
     }
+  }
+
+  /** Chế độ Keycloak: lỗi là của lần mở lại phiên, hoặc của chính lượt chuyển sang Keycloak. */
+  const ssoError = serverError ?? (sessionError === null ? null : errorKeyOf(sessionError))
+
+  function onSsoSignIn() {
+    setServerError(null)
+    signInWithRedirect(from).catch((error: unknown) => setServerError(errorKeyOf(error)))
   }
 
   return (
@@ -113,6 +137,16 @@ export function LoginPage() {
               </div>
             </div>
 
+            {viaKeycloak ? (
+              <div className="flex flex-col gap-4">
+                <p className="text-body text-text-2 pointer-coarse:text-body-lg">{t('auth.login.sso.hint')}</p>
+                {ssoError ? <ServerError message={t(ssoError)} /> : null}
+                <Button type="button" variant="primary" block loading={status === 'restoring'} className={TOUCH_CONTROL} onClick={onSsoSignIn}>
+                  {t('auth.login.submit')}
+                </Button>
+                <p className="text-small text-text-3 pointer-coarse:text-body-lg">{t('auth.login.sso.sampleData')}</p>
+              </div>
+            ) : (
             <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
                 label={t('auth.login.email')}
@@ -131,29 +165,25 @@ export function LoginPage() {
                 {...form.register('password')}
               />
 
-              {serverError ? (
-                <p
-                  role="alert"
-                  className="flex items-start gap-2 rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg pointer-coarse:text-body-lg"
-                >
-                  <Lock aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
-                  <span>{t(serverError)}</span>
-                </p>
-              ) : null}
+              {serverError ? <ServerError message={t(serverError)} /> : null}
 
               <Button type="submit" variant="primary" block loading={form.formState.isSubmitting} className={TOUCH_CONTROL}>
                 {t('auth.login.submit')}
               </Button>
             </form>
+            )}
           </div>
 
-          <DemoAccounts
-            onPick={(email, password) => {
-              form.setValue('email', email)
-              form.setValue('password', password)
-              setServerError(null)
-            }}
-          />
+          {/* Tài khoản dùng thử là của kho mẫu: không có ý nghĩa khi đăng nhập bằng backend */}
+          {viaKeycloak ? null : (
+            <DemoAccounts
+              onPick={(email, password) => {
+                form.setValue('email', email)
+                form.setValue('password', password)
+                setServerError(null)
+              }}
+            />
+          )}
         </div>
 
         {/* Cột minh hoạ: ẩn dưới 1024px để màn hẹp chỉ còn card */}

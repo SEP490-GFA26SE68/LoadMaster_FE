@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>LoadMaster</title>
+  </head>
+  <body>
+    <!-- Trang trung gian của keycloak-js: iframe ẩn mở trang này để biết trình duyệt còn phiên ở Keycloak hay không. -->
+    <script>
+      parent.postMessage(location.href, location.origin)
+    </script>
+  </body>
+</html>
