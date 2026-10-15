@@ -16,9 +16,9 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
-| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền; không có quyền vận hành |
-| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02) |
-| Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07) |
+| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
+| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), liên hệ của khách `/lien-he-khach` |
+| Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03) |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; lập yêu cầu giao (FE-4b-02); xem chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; quản lý kho kiện (thêm kiện, nhập file, in nhãn QR), lập chuyến, tối ưu, duyệt phương án |
@@ -34,10 +34,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2, đúng 33 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, đúng 34 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
-  thống chỉ có `companies.manage`, `users.manage`, `audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`.
-  Quản trị công ty có `users.manage`, `audit.view`, `billing.manage`, `support.create`.
+  thống chỉ có `companies.manage`, `users.manage`, `audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`;
+  cả ba cùng có `contacts.handle` (yêu cầu liên hệ của khách). Quản trị công ty có `users.manage`, `audit.view`, `billing.manage`, `support.create`.
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
@@ -49,16 +49,31 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
   (FE-8-02). `billing.manage`: `/goi-cuoc` và `/thanh-toan/gia-lap` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty` (FE-8-06).
-  `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). Giám sát (FE-6-10 → FE-6-12):
+  `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
+  `/lien-he-khach` (ba vai trò nền tảng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
   `monitoring.view` mở `/giam-sat` và vị trí xe ở Chi tiết chuyến (điều phối viên, quản lý công ty), `exceptions.report` ("Báo sự cố" ở `/giam-sat`
   của điều phối viên, "Sự cố trên đường" ở màn điểm giao của tài xế), `exceptions.resolve` (tìm tuyến khác, chuyển quản lý, đã xử lý — điều phối
   viên), `deadlines.renegotiate` (tab "Sự cố cần xử lý" — quản lý công ty).
 - **Điều phối viên duyệt phương án** (FE-0-07, D-80): `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều phối — lập chuyến, chạy tối ưu,
   chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty chỉ đọc + xuất báo cáo: mở Planner ở chế độ chỉ xem, một dòng lý do. Không có hàng đợi `/duyet` hay quyền duyệt của quản lý.
 - Đường dẫn của các màn đã bỏ (`/lo-hang`, `/nhan-hang`, `/duyet`) là màn 404.
-- E2E đăng nhập bằng `login(route, role)`; không còn vai trò toàn quyền nên kịch bản đi qua nhiều vai trò **đăng nhập đúng vai trò của từng
-  bước**, đổi người trong app bằng `switchUser` (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho); test DOM đăng nhập đúng người bằng
-  `signedInAs(vai trò | mã người dùng seed)`.
+- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ) và `/bang-gia` (`features/marketing`, hằng `PUBLIC_HOME`, `PUBLIC_PRICING` ở
+  `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Khách
+  chưa đăng nhập mở đúng gốc `/` thì sang `/gioi-thieu` (giữ query và neo); mở trang khác vẫn về `/dang-nhap` (nhớ trang đó). Ai đã đăng nhập
+  trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
+  "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
+  mũi tên, chữ vẫn là tên truy cập). Không có đăng ký, mua gói hay dùng thử: tài khoản công ty do đội LoadMaster mở sau khi khách gửi yêu cầu liên hệ.
+- **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp
+  hơn thì gom vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không
+  về nút menu). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
+  qua tới nội dung chính" (chỉ hiện khi nhận focus; đưa focus vào `<main>` mà không đổi neo). Tới một phần qua neo thì tiêu đề `<h2>` của phần
+  nhận focus (`useHashScroll`; neo mã hoá hỏng như `#%` coi như không có neo). Điều khiển trên dải trời của hai trang công khai và màn đăng nhập
+  (nút chính, nút kính, nút về, "Đăng nhập") ghép `SKY_FOCUS` (`components/sky-focus.ts`): vòng focus `--cyan-300` thay `--primary` ngay ở
+  `className`, không đổi biến thể của `Button`, nên màn trong khung ứng dụng giữ nguyên. Hình `CargoArtwork` (đăng nhập, giới thiệu) xếp đầy
+  **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
+- E2E đăng nhập bằng `login(route, role)` (`login('/')` mở thẳng `/dang-nhap`, vì khách mở `/` là sang trang giới thiệu); không còn vai trò toàn
+  quyền nên kịch bản đi qua nhiều vai trò **đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser`
+  (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho); test DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`.
 
 **Tài khoản, công ty, phạm vi**
 
@@ -96,10 +111,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
-  Quản trị hệ thống: Công ty · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit. Quản lý công ty: Bảng điều khiển ·
+  Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit. Quản lý công ty: Bảng điều khiển ·
   Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Yêu cầu giao · Đội xe ·
-  Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với họ ở màn hồ sơ). Quản lý nền tảng: Gói cước. Hỗ trợ khách hàng: Hỗ
-  trợ. Màn mới thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
+  Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với họ ở màn hồ sơ). Quản lý nền tảng: Gói cước · Liên hệ của khách. Hỗ trợ
+  khách hàng: Hỗ trợ · Liên hệ của khách — Liên hệ của khách luôn đứng cuối, màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
+  thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
 - Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ màn
   Đội xe; Tra cứu kiện: điều phối viên mở bằng nút "Tra cứu kiện" trên dải tiêu đề của Kho kiện, nhân viên kho bằng nút 56 px ở thanh màn chính `/kho`.
 - `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi nhóm tìm
@@ -110,7 +126,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - Logo mở `/` khi có quyền bảng điều khiển, không thì màn chính của vai trò. Đăng nhập xong mở màn của vai trò (`features/auth/landing.ts`,
   `ROLE_HOME`: điều phối `/chuyen`, quản lý `/`, kho `/kho`, tài xế `/tai-xe`, quản trị hệ thống `/nen-tang/cong-ty`, quản trị công ty
   `/nguoi-dung`, quản lý nền tảng `/nen-tang/goi`, hỗ trợ khách hàng `/ho-tro`) — màn chính phải là màn vai trò đó mở được, vì nút "Về màn
-  chính" của 403 / 404, logo và nút thoát đều dẫn tới đó; liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không. Đăng xuất không ghi
+  chính" của 403 / 404, logo và nút thoát đều dẫn tới đó; liên kết sâu mở trước khi đăng nhập được giữ, gốc `/` thì không (khách mở `/` là sang
+  trang giới thiệu). Đăng xuất không ghi
   nhớ trang đang đứng (`RequireAuth` chỉ nhớ trang khi người **chưa** đăng nhập mở nó).
 - Nút thoát ở màn kho/tài xế theo vai trò (`features/auth/exit.ts`): nhân viên kho và tài xế **ở màn danh sách** thì **đăng xuất**, **trong phiên
   xếp / trong chuyến** thì về danh sách (`/kho`, `/tai-xe`, LM-086/087); vai trò khác về màn chính của mình; vai trò xem được chuyến về trang
@@ -248,7 +265,8 @@ src/
   components/           component dùng chung: StatusBadge, DataTable, FilterBar, EmptyState, TripLockBanner, ConfirmDialog,
                         StopChip / StopDot (số điểm giao trên màu định danh), VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn),
                         TouchTopBar (thanh dải trời điều khiển đặc của màn cảm ứng, kho và tài xế), KpiTile (ô số liệu),
-                        QrCode / QrScanDialog (vẽ và quét mã QR), PackageVerify (đối chiếu kiện ba mức)...
+                        QrCode / QrScanDialog (vẽ và quét mã QR), PackageVerify (đối chiếu kiện ba mức), CargoArtwork (thùng xe đẳng cự
+                        xếp dần của màn đăng nhập và trang giới thiệu)...
   components/map/       bản đồ dùng chung: RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl; CoordinatePicker
                         (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ — chưa có ở BE, Q-20)
   features/
@@ -276,6 +294,9 @@ src/
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
+    marketing/          hai trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`) và bảng giá
+                        `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter`, cuộn tới neo `useHashScroll`)
+    contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (ba vai trò nền tảng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
     mock-db/            kho in-memory (LM-026). Quy ước tên: `<x>-model.ts` kiểu + hằng số + luật thuần, `db-<x>.ts` hàm kho (mọi hàm
@@ -686,9 +707,10 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 ### Bố cục: màn có dữ liệu và màn không có dữ liệu
 
 - **Màn vận hành** (có dữ liệu): nội dung căn trái, bám mép trên, không tiêu đề khổng lồ căn giữa, không hình minh hoạ lớn. Đây là mặc định.
-- **Màn không có dữ liệu** (đăng nhập, 404, trạng thái rỗng): được phép bố cục hai cột, căn giữa theo chiều dọc, và có hình minh hoạ. Hình minh
-  hoạ phải dựng từ chính sản phẩm (phép chiếu đẳng cự ở `lib/isometric.ts`, bảng màu điểm giao) hoặc là linh vật **Lumo** (LM-105, theo bảng tư thế
-  ở mục "Thương hiệu"); không mượn ảnh trang trí bên ngoài.
+- **Màn không có dữ liệu** (đăng nhập, hai trang công khai, 404, trạng thái rỗng): được phép bố cục hai cột, căn giữa theo chiều dọc, và có hình
+  minh hoạ. Hình minh hoạ phải dựng từ chính sản phẩm (phép chiếu đẳng cự ở `lib/isometric.ts`, bảng màu điểm giao — `components/CargoArtwork` của
+  màn đăng nhập và trang giới thiệu) hoặc là linh vật **Lumo** (LM-105, theo bảng tư thế ở mục "Thương hiệu"); không mượn ảnh trang trí bên ngoài,
+  không số liệu hay lời khen của khách hàng nghĩ ra. Hai trang công khai nằm ngoài khung ứng dụng nên cuộn cả tài liệu (đầu trang dính trên cùng).
 
 **Cuộn trong khung ứng dụng**: trang không bao giờ cuộn; mỗi màn tự cuộn vùng nội dung của nó. `AppShell` đặt màn
 trong một **hàng** flex `relative min-h-0` dưới thanh điều hướng. Gốc màn `flex min-w-0 flex-1 flex-col`, vùng cuộn
@@ -1084,9 +1106,12 @@ theo công ty** và không cần biết công ty của người xem. Kho xét ph
   xế, loại kiện, kiện, chuyến của công ty khác — là `FORBIDDEN_COMPANY`.
 - **Phiên nền tảng** (ba vai trò không thuộc công ty nào): mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED`. Người dùng, nhật ký và danh
   sách công ty không phải dữ liệu vận hành: nền tảng đọc hết, người của công ty chỉ đọc của công ty mình (ai tạo, sửa, khoá được ai: mục 1).
+  Yêu cầu liên hệ của khách không thuộc công ty nào: chỉ phiên nền tảng đọc và xử lý (`ctx.scope.guestContacts`), phiên của một công ty bị
+  `ROLE_NOT_ALLOWED`.
   Màn cần tên chuyến, xe để đọc nhật ký hay thông báo gọi `listAuditNames` — theo phạm vi nhật ký, không đòi quyền vận hành — không gọi
   `listTrips` / `listVehicles`.
-- **Không có phiên** (test logic kho bằng `createMockDb()`, dựng seed, hai trang tài liệu `/kieu-dang`, `/thanh-phan` ngoài `RequireAuth`):
+- **Không có phiên** (test logic kho bằng `createMockDb()`, dựng seed, hai trang tài liệu `/kieu-dang`, `/thanh-phan` ngoài `RequireAuth`, và
+  khách ở hai trang công khai `/gioi-thieu`, `/bang-gia` — chỉ đọc danh mục gói và gửi yêu cầu liên hệ, `createGuestContact` không cần phiên):
   **không lọc**; bản ghi tạo ra thuộc công ty mặc định `LOG-001`. Luật "bản ghi chỉ tham chiếu bản ghi cùng công ty" vẫn giữ. Test cần đúng
   dữ liệu của một công ty thì đặt phiên: `db.restoreSession(mã người dùng)` (không ghi nhật ký) hoặc `signedInAs`.
 
@@ -1717,6 +1742,35 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   yêu cầu (hoạt động gần nhất trước; lọc `cong-ty`, `loai`, `trang-thai`, tìm theo tiêu đề / mã / người gửi — trên URL), `?ticket=<mã>` mở cuộc trao
   đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") kèm `CompanyPanel` chỉ đọc; màn không có nút chính ngoài "Gửi trả lời". Khoá Query `['support',
   'tickets' | 'panel', mã công ty]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
+- **Liên hệ của khách** (entity `ContactOfGuest` của backend; `contact-model.ts`, `db-contacts.ts`, `DbState.guestContacts`, seed `seed-contacts.ts`).
+  `GuestContact` (`LH-NNN`): họ tên, email, số điện thoại / tên công ty / gói quan tâm / nội dung tuỳ chọn, loại `INQUIRY | DEMO_REQUEST | PRICING |
+  CONTRACT | OTHER`, trạng thái `NEW | IN_PROGRESS | RESOLVED | CLOSED`, người nhận việc (mã + tên chụp lúc giao), ghi chú nội bộ, `resolvedAt` (lần
+  đầu thành Đã giải quyết / Đã đóng, giữ khi mở lại). **Gửi không cần phiên** và không qua phạm vi công ty (`createGuestContact`): kho kiểm độ dài theo
+  cột của backend (`CONTACT_LIMITS`), email, loại, gói có trong danh mục — sai là `CONTACT_INVALID { field }`; yêu cầu mới luôn `NEW`. Đọc và sửa đi
+  qua `ctx.scope.guestContacts` (phiên của một công ty: `ROLE_NOT_ALLOWED`) rồi chỉ ba vai trò `CONTACT_HANDLER_ROLES`. `updateGuestContact(id, {
+  status?, assignedToId?, note? })`: trạng thái đổi mọi chiều, người nhận việc là người đang hoạt động của ba vai trò đó (`null` bỏ người nhận),
+  `note: ''` xoá ghi chú; không đổi gì thì không ghi. Nhật ký nhóm `contact` (`received` — người làm "Chưa đăng nhập" —, `updated` mang `fields`)
+  **không thuộc công ty nào** nên chỉ quản trị hệ thống đọc; đối tượng là liên kết `/lien-he-khach?lien-he=<mã>` cho người có `contacts.handle`.
+  Không vào chuông: số yêu cầu Mới nằm ở dòng số đếm của màn. **Email** của khách theo một luật cho form và kho (`isContactEmail`, định dạng email
+  của zod): `?`, `&`, `=`, `%` không qua được, nên email không chèn được người nhận hay tiêu đề vào liên kết `mailto:` của khung xử lý (liên kết
+  còn mã hoá phần trước và sau `@`, `mailtoHref`). `CONTACT_INVALID` nói tên mục bằng lời người dùng (`contacts.fields`). **Trang công khai**
+  (`features/marketing`, lối vào ở mục 1): bảng giá đọc gói đang bán (`listPublicPlans`, khoá `['billing', 'plans', 'public']` — sửa danh mục gói
+  làm mới cả nó), số cột theo số gói (tối đa ba, mỗi hạng một gói đang bán) để không hàng nào lẻ một thẻ, nhãn "Giá trị tạm — chờ chốt" chỉ trên
+  gói mang cờ tạm, hạng thuật toán bằng lời của khách ("Cơ bản" / "Nâng cao" — không tên thuật toán, không "mock"; tên thuật toán chỉ ở Thiết lập
+  tối ưu) và câu "Bản demo hiện tối ưu ở hạng Cơ bản cho mọi gói."; mỗi gói một nút phụ "Liên hệ tư vấn" (tên gói chỉ cho trình đọc màn hình, nên
+  tên truy cập "Liên hệ tư vấn gói Pro" bắt đầu bằng đúng chữ hiện ra) mở `/gioi-thieu?goi=<mã gói>&loai=bao-gia#lien-he` — form đọc `goi`,
+  `loai` (slug ở `lib/contact-slugs.ts`, dùng chung với bộ lọc của màn) để chọn sẵn; gói lạ hoặc đã ngừng bán thì không chọn, loại lạ là "Hỏi
+  thông tin". Kho từ chối thì banner `danger` ngay trên nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
+  `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu là
+  "Nhận tư vấn" ở phần mở đầu, nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
+  trước (lọc `trang-thai`, `loai`, tìm theo tên / email / điện thoại / công ty / mã — trên URL); bấm tên mở khung xử lý ở cột phải
+  (`?lien-he=<mã>`: chi tiết, ô trạng thái, người nhận việc, ghi chú, "Lưu thay đổi" là nút chính duy nhất, mờ kèm lý do khi chưa đổi gì) và bảng
+  bỏ ba cột khung đã có. **Khung chỉ gửi ô người dùng đã sửa** (`contactPatch` theo `dirtyFields`): người khác vừa lưu thì kho trả bản mới, ô chưa
+  sửa theo kho, ô đang sửa giữ chữ đang nhập (`reset(…, { keepDirtyValues: true })`) — lưu không ghi đè việc của người khác. Mở khung và lưu xong thì
+  tiêu đề của khung nhận focus; đóng khung thì focus về liên kết tên của dòng đó. Người đang nhận việc mà tài khoản đã khoá vẫn hiện tên trong ô
+  (mục mờ, không chọn lại được); danh sách người nhận việc tải lỗi thì ô có gợi ý tải lại; tên gói không đọc được thì hiện mã gói. Danh sách người
+  nhận việc (`listContactHandlers`, chỉ người đang hoạt động) chưa có ở BE. Khoá `['contacts', …]`, `staleTime: 0`; gửi và sửa làm
+  mới `['contacts']`, `['audit']`.
 
 ### Kiểm thử
 
@@ -1820,7 +1874,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 33 quyền × 8 vai trò, chia 13 khu vực | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 34 quyền × 8 vai trò, chia 13 khu vực | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |

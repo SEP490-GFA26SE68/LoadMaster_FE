@@ -2,8 +2,9 @@ import type { IsoBox } from '@/lib/isometric'
 import { stopColor } from '@/lib/stops'
 
 /**
- * Hình học của hình minh hoạ màn đăng nhập (màn không có dữ liệu, AGENTS.md mục 5): một thùng 7,2 × 2,35 × 2,4 m xếp
- * kín theo điểm giao, sâu nhất là điểm 4. Chỉ để trang trí — không phải kết quả tối ưu nào, không hiện số liệu.
+ * Hình học của hình minh hoạ thùng xe `CargoArtwork` (màn đăng nhập, trang giới thiệu — màn không có dữ liệu, AGENTS.md mục 5):
+ * một thùng 7,2 × 2,35 × 2,4 m xếp kín theo điểm giao, sâu nhất là điểm 4. Chỉ để trang trí — không phải kết quả tối ưu nào, không
+ * hiện số liệu.
  * Tách khỏi dữ liệu thuật toán giả cũ của màn So sánh phương án ở LM-051.
  */
 
