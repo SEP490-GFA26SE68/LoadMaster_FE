@@ -39,4 +39,7 @@ export const titles = {
   payment: 'Simulated payment',
   companies: 'Companies',
   support: 'Customer support',
+  landing: 'About',
+  pricing: 'Pricing',
+  contacts: 'Guest contacts',
 } satisfies Dictionary<typeof source>

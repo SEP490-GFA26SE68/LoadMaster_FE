@@ -24,6 +24,7 @@ export function SelectField<TValues extends FieldValues>({
   options,
   placeholder,
   hint,
+  required,
   className,
 }: {
   control: Control<TValues>
@@ -32,9 +33,12 @@ export function SelectField<TValues extends FieldValues>({
   options: readonly SelectOption[]
   placeholder?: string
   hint?: ReactNode
+  /** Dấu * sau nhãn (`aria-hidden`) và `aria-required` trên ô — như `Input required`. */
+  required?: boolean
   className?: string
 }) {
   const id = useId()
+  const messageId = `${id}-message`
   const t = useT()
 
   return (
@@ -45,13 +49,16 @@ export function SelectField<TValues extends FieldValues>({
         const message = fieldState.error?.message
         return (
           <div className={cn('flex flex-col gap-1.5', className)}>
-            <FieldLabel htmlFor={id}>{label}</FieldLabel>
+            <FieldLabel htmlFor={id} required={required}>{label}</FieldLabel>
             <Select value={field.value ?? ''} onValueChange={field.onChange}>
               <SelectTrigger
                 id={id}
                 ref={field.ref}
                 onBlur={field.onBlur}
                 aria-invalid={message ? true : undefined}
+                aria-required={required || undefined}
+                // Gợi ý và lỗi đọc cùng ô, như `Input` và `Textarea`
+                aria-describedby={message || hint ? messageId : undefined}
               >
                 <SelectValue placeholder={placeholder ?? t('common.selectPlaceholder')} />
               </SelectTrigger>
@@ -63,7 +70,7 @@ export function SelectField<TValues extends FieldValues>({
                 ))}
               </SelectContent>
             </Select>
-            <FieldMessage error={message} hint={hint} />
+            <FieldMessage id={messageId} error={message} hint={hint} />
           </div>
         )
       }}

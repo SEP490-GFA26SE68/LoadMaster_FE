@@ -44,4 +44,8 @@ export const titles = {
   // FE-8-06, FE-8-07
   companies: 'Công ty',
   support: 'Hỗ trợ khách hàng',
+  // Trang công khai và màn liên hệ của khách
+  landing: 'Giới thiệu',
+  pricing: 'Bảng giá',
+  contacts: 'Liên hệ của khách',
 } as const

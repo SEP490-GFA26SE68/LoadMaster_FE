@@ -9,7 +9,7 @@ import { navigateInApp, optimizeAndCompare, signInWith, signOutInApp } from './s
 test.use({ collectConsoleErrors: true })
 
 test('a Phương Nam company admin tops up 50 credits through the simulated payment and the dispatcher then runs an optimisation', async ({ page, browserErrors }) => {
-  await page.goto('/')
+  await page.goto('/dang-nhap')
   await signInWith(page, 'qtcongty@phuongnam.vn')
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Gói và credit', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/goi-cuoc')

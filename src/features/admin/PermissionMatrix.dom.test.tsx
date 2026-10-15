@@ -22,17 +22,17 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('tám cột vai trò theo thứ tự nền tảng → công ty, 33 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
+test('tám cột vai trò theo thứ tự nền tảng → công ty, 34 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 33 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(48)
+  // Một dòng tiêu đề, 13 dòng khu vực, 34 dòng quyền, một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(49)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(33)
+  expect(permissionRows).toHaveLength(34)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
