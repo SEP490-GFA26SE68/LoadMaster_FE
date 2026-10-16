@@ -152,10 +152,11 @@ export const audit = {
       delayMinutes: 'Expected delay (min)',
       escalation: 'Reason sent up',
       route: 'Route',
-      // En-route pickup (FE-7-03 to FE-7-05)
+      // En-route pickup (FE-7-03 to FE-7-05); the trip's driver and the driver just replaced once the warehouse started loading
       pickupId: 'Pickup request',
       failedRules: 'Failed rules',
       driverId: 'Driver',
+      previousDriverId: 'Previous driver',
       // Plan and credits (FE-8-01, FE-8-05)
       plan: 'Plan',
       credits: 'Credits',

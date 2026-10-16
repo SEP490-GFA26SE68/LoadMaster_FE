@@ -69,6 +69,12 @@ test('mã trong tham số được dịch: tên trường, loại sự cố, vai
   expect(describe(locked).details).toBe('Email: loc.truong@loadmaster.vn · Lý do: Tài khoản đã bị khoá')
 })
 
+test('đổi tài xế khi kho đã bắt đầu xếp: tài xế mới và tài xế trước đọc bằng tên, tài khoản đã xoá ghi mã', () => {
+  const changed = event('trip.updated', { type: 'trip', id: 'TRIP-004' }, { fields: 'driverId', driverId: 'US-0010', previousDriverId: 'US-0099' })
+  expect(describe(changed).details).toBe('Trường đã sửa: Tài xế · Tài xế: Trương Văn Lộc · Tài xế trước: Tài khoản đã xoá (US-0099)')
+  expect(describe(changed, en).details).toBe('Fields changed: Driver · Driver: Trương Văn Lộc · Previous driver: Deleted account (US-0099)')
+})
+
 test('không có phiên: đăng nhập sai là "Chưa đăng nhập", việc khác là "Hệ thống"; email lạ không có liên kết', () => {
   const failed = event('auth.signInFailed', { type: 'user', id: 'khong.co@loadmaster.vn' }, { email: 'khong.co@loadmaster.vn' }, null)
   expect(describe(failed)).toMatchObject({

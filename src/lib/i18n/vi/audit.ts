@@ -178,10 +178,11 @@ export const audit = {
       delayMinutes: 'Dự kiến chậm (phút)',
       escalation: 'Lý do chuyển',
       route: 'Tuyến',
-      // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
+      // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay khi kho đã bắt đầu xếp
       pickupId: 'Yêu cầu nhận',
       failedRules: 'Luật không đạt',
       driverId: 'Tài xế',
+      previousDriverId: 'Tài xế trước',
       // Gói cước và credit (FE-8-01, FE-8-05)
       plan: 'Gói cước',
       credits: 'Credit',

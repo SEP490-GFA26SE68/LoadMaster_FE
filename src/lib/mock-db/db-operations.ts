@@ -43,6 +43,14 @@ function arrivedStop(trip: Trip, stopNumber: number): StopProgress {
   return stop
 }
 
+/**
+ * Tài xế của chuyến trong sự kiện bắt đầu / xong xếp (tham số `driverId`): từ lúc kho bắt đầu soạn hàng, chuyến hiện ở "Chuyến của tôi"
+ * của họ (FE-6-01) — chuông của tài xế báo chuyến mới và chuyến đã xếp xong chờ xuất phát. Chuyến chưa gán tài xế: không có tham số.
+ */
+function driverParam(trip: Pick<Trip, 'driverId'>): Record<string, string> {
+  return trip.driverId === null ? {} : { driverId: trip.driverId }
+}
+
 /** Còn xác nhận tay chờ điều phối viên duyệt thì chưa xong xếp, chưa hoàn tất điểm giao được (FE-6-04, D-83). */
 function assertNoPendingConfirm(trip: Trip, contexts: readonly VerifyContext[], stopNumber?: number) {
   const count = contexts.reduce((sum, context) => sum + pendingManualConfirms(trip, context, stopNumber).length, 0)
@@ -79,7 +87,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
           .filter((label) => planned.has(label.packageInstanceId) && ctx.state.packages.get(label.poolPackageId)?.status === 'STAGED')
           .map((label) => label.packageInstanceId)
         const loading: LoadingProgress = { revisionId: approved.id, startedAt: ctx.nowIso(), startedBy: ctx.state.session.userId, stagedIds, steps: [] }
-        ctx.log('loading.started', { type: 'trip', id: tripId }, { revisionId: approved.id })
+        ctx.log('loading.started', { type: 'trip', id: tripId }, { revisionId: approved.id, ...driverParam(trip) })
         const { replan: _replan, ...rest } = trip
         return put(trips, { ...rest, phase: 'loading', loading })
       }),
@@ -94,7 +102,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         assertNoPendingConfirm(trip, ['STAGING', 'LOADING'])
         const loading = loadingOf(trip)
         const damaged = leftOutIds(trip).size
-        ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - damaged, damaged })
+        ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - damaged, damaged, ...driverParam(trip) })
         settleLoadedPackages(ctx, trip)
         return put(trips, { ...trip, phase: 'loaded', loading: { ...loading, completedAt: ctx.nowIso() } })
       }),

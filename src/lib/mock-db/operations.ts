@@ -23,6 +23,15 @@ export function isLockedPhase(phase: TripPhase): boolean {
 }
 
 /**
+ * Chuyến đang hiện ở "Chuyến của tôi" của tài xế (FE-6-01): từ lúc kho bắt đầu soạn hàng tới khi giao xong; chuyến còn lập kế hoạch chưa
+ * hiện với tài xế nào, chuyến đã huỷ thôi hiện. Kho chỉ nêu tài xế trong sự kiện về chuyến (tham số `driverId` — chuông của tài xế đọc nó)
+ * khi chuyến đang hiện với họ: huỷ chuyến hay đổi tài xế lúc còn lập kế hoạch không có tài xế nào phải báo.
+ */
+export function isShownToDriver(phase: TripPhase): boolean {
+  return phase !== 'planning' && phase !== 'cancelled'
+}
+
+/**
  * Huỷ được trước khi xe rời kho (D-91): Nháp, Đã lập kế hoạch, Đang xếp hàng. Chuyến Đang vận chuyển còn tuỳ sự cố (`canCancelTrip`).
  */
 export function isCancellablePhase(phase: TripPhase): boolean {

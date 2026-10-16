@@ -74,8 +74,8 @@ const PARAM_KEYS = [
   'deadlineStatus', 'eta', 'deadline',
   // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
   'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
-  // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
-  'pickupId', 'failedRules', 'driverId',
+  // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay — người chuông của tài xế báo
+  'pickupId', 'failedRules', 'driverId', 'previousDriverId',
   // Gói cước và credit (FE-8-01, FE-8-05)
   'plan', 'credits', 'balance',
   // Yêu cầu hỗ trợ (FE-8-07)
@@ -254,6 +254,7 @@ export function paramValue(event: AuditEvent, key: string, value: string | numbe
       return isOneOf(TICKET_STATUSES, value) ? t(`support.statuses.${value}`) : value
     case 'requestedBy':
     case 'driverId':
+    case 'previousDriverId':
       return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho

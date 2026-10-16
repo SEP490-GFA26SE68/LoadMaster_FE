@@ -21,4 +21,11 @@ export const notifications = {
     moment: '{time} {date}',
   },
   exceptionEscalated: 'Trip {tripId}: incident ({type}) sent to the manager',
+  driver: {
+    loadingStarted: 'New trip: the warehouse is staging your cargo',
+    loadingCompleted: 'Loaded — waiting for you to depart',
+    cancelled: 'Trip cancelled',
+    assigned: 'New trip: you now drive this trip',
+    unassigned: 'You no longer drive this trip',
+  },
 } satisfies Dictionary<typeof source>

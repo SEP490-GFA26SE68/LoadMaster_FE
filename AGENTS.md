@@ -154,9 +154,14 @@ luồng mới thêm ở issue của luồng đó.
 - Nhân viên kho: quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp). Nhân viên kho và
   tài xế có thêm đúng một loại cá nhân: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo `requestedBy` —
   `PERSONAL_ACTIONS`); chuông của họ là nút 56 px ở thanh màn chính `/kho`, `/tai-xe` (`NotificationBell variant="touch"`, chữ 16 px), và thông
-  báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến.
-- Tài xế: `pickup.approved` / `pickup.rejected` — chỉ của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện); `trip.stopsReordered`
-  khi điều phối viên đổi thứ tự điểm chuyến của mình (FE-BL-03).
+  báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
+- Tài xế: việc của **chuyến mình** — chỉ sự kiện nêu đúng người đó ở tham số `driverId` (`DRIVER_TRIP_ACTIONS`). Kho chỉ nêu tài xế khi chuyến
+  đang hiện ở "Chuyến của tôi" (`isShownToDriver`: từ lúc kho bắt đầu soạn hàng tới khi giao xong): `loading.started` (chuyến mới), `loading.completed`
+  (xếp xong — chờ xuất phát), `trip.cancelled` (huỷ lúc đang xếp, đã xếp xong hoặc đang chạy — huỷ lúc còn lập kế hoạch không báo tài xế nào), đổi
+  tài xế khi kho đã bắt đầu xếp (`trip.updated` mang `driverId` của người mới — chuyến mới — và `previousDriverId` của người bị thay — không còn
+  chạy chuyến này; thông báo của chuyến đó thôi mở chuyến với người bị thay), `pickup.approved` / `pickup.rejected`, `trip.stopsReordered` khi điều
+  phối viên đổi thứ tự điểm (FE-BL-03). Sự kiện về chuyến của tài xế nói bằng câu của tài xế (`driverNotice` → `notifications.driver.*`), chi tiết
+  chỉ còn lý do huỷ và số kiện; vai trò khác vẫn nhận đúng những gì đã nhận, nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước".
 - Quản trị hệ thống, quản trị công ty: việc trên tài khoản và đăng nhập sai. Quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`,
   sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm
   mở `/goi-cuoc`; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy.

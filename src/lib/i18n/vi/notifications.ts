@@ -32,4 +32,15 @@ export const notifications = {
   },
   /** Toast khi một sự cố cấp chuyến được chuyển lên quản lý công ty (FE-6-11) — người nhận thông báo đó ở chuông thấy. */
   exceptionEscalated: 'Chuyến {tripId}: sự cố {type} đã chuyển quản lý',
+  /**
+   * Chuông của tài xế: câu thay nhãn hành động của nhật ký cho sự kiện về chuyến của chính họ (`DriverNotice`). Chuyến hiện ở "Chuyến của
+   * tôi" từ lúc kho bắt đầu soạn hàng, nên đó là lúc tài xế có chuyến mới.
+   */
+  driver: {
+    loadingStarted: 'Chuyến mới: kho đang soạn hàng',
+    loadingCompleted: 'Xếp xong — chờ bạn xuất phát',
+    cancelled: 'Chuyến đã huỷ',
+    assigned: 'Chuyến mới: bạn được giao chuyến này',
+    unassigned: 'Bạn không còn chạy chuyến này',
+  },
 } as const
