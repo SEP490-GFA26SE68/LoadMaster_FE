@@ -911,7 +911,11 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Thẻ liên hệ của điểm có giờ đến và hạn giao (`StopEta`, hàm
   thuần `stop-timing.ts`): chưa đến là giờ đến dự kiến kèm nguồn, mức hạn bằng chữ và MOCK RESULT — Đang vận chuyển thì tính từ vị trí xe
   (`fetchDriverTripMonitoring` → `useDriverTripMonitoringQuery`, đọc lại theo `refreshMs`), không thì theo `Trip.routePlan`; đã đến là giờ đến
-  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến.
+  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến. Hai danh sách điểm —
+  thẻ "Chuyến của tôi" (`MyTripStops`) và danh sách điểm của màn điểm giao (`DriverStopList`) — theo cùng luật (`stopListTimings` gọi `stopTiming`
+  cho từng điểm; chữ, chip và dòng nguồn dùng chung ở `StopTimingParts`): điểm chưa hoàn tất có dòng "Dự kiến HH:mm" hoặc "Đã đến HH:mm" dưới tên,
+  mức hạn bằng chữ chỉ khi điểm có hạn; điểm đã hoàn tất giữ dấu xong, không giờ; cả danh sách một dòng nguồn kèm MOCK RESULT; chuyến chưa tối ưu
+  tuyến thì không điểm nào có giờ. Chỉ chuyến Đang vận chuyển đã có tuyến bật nhịp đọc lại vị trí xe, qua cùng hook đó.
 - Kích thước placement **đã áp orientation**. Xoay luôn áp mã đích lên kích thước danh nghĩa `baseDimensionsById` (lấy từ `CargoPackage`), không đảo ngược kích thước đã xoay (`orientedSize` trong `scene-input.ts`). Xoay giữ nguyên góc vị trí của kiện.
 - Cả ba vai trò dùng chung `SceneCanvas` với `frameloop="demand"`. CameraControls tự invalidate khi chuyển động; mọi thay đổi buffer imperative phải gọi invalidate. Spring chỉ ghi ma trận/proxy kiện đang chạy, không đưa state từng frame qua React.
 - `frustumCulled={false}` không loại bỏ nhu cầu bounds của **raycast**. Cargo dùng sphere bao toàn bộ effective geometry và quãng animation, cập nhật khi geometry đổi. Không tính lại `computeBoundingSphere()` trong animation/step/slice path; cập nhật màu không ghi lại ma trận.
@@ -1828,7 +1832,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Màn tài xế: nút "VI" kính, tab đáy, nút tròn "Đã dỡ" từng dòng kiện, "Bắt đầu giao" (V2.3 đợt 6) | Hai nút `LanguageSwitch` 56 px đặc; không tab đáy; dòng kiện chỉ hiện trạng thái, dỡ qua hộp đối chiếu; nút chính "Xuất phát" → "Đã đến điểm n" → "Hoàn tất điểm giao" | Luật mục 1; luồng đã đổi sau khi mockup được vẽ (FE-6-03, FE-6-06) |
 | Màn điểm giao tài xế: "Báo sự cố" là nút vuông 48 px cạnh nút chính ở chân màn; "Sự cố trên đường", "Nhận hàng dọc đường" không có trong mockup | "Báo sự cố" là nút phụ 56 px trong vùng cuộn, chân màn chỉ có nút chính; hai việc kia gom sau nút phụ "Thêm" mở tờ trượt từ đáy (mỗi hàng 56 px, giữ quyền và hộp thoại cũ) | Mục 10 (vùng chạm 56 px); mỗi màn một nút chính; không bốn nút phụ xếp chồng giữa màn |
 | Chip "đang xếp" / "đang chạy" màu tím (mockup kho, tài xế); chữ 13 px, hộp "Báo sự cố" có dấu sao bắt buộc ở nhãn (màn tài xế) | Thang azure; chữ 16 px; nhãn không kèm dấu sao | Không dùng tím; mục 10; tên truy cập của nhãn giữ nguyên |
-| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện) | Nhóm khác chưa có việc ở từng điểm; không bịa số |
+| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện); giờ đến của điểm ở dòng thứ hai dưới tên (dự kiến từ tuyến hoặc vị trí xe, hay giờ đã đến), một dòng nguồn + MOCK RESULT cho cả danh sách | Nhóm khác chưa có việc ở từng điểm; không bịa số; ở 360 px giờ và chip mức hạn không còn chỗ trên dòng tên |
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |

@@ -40,3 +40,35 @@ export function stopTiming(
     : { eta: planned.eta, source: 'PLAN' as const, status: planned.deadlineStatus }
   return { deadline, arrival: undefined, expected }
 }
+
+/** Giờ của các điểm trong một danh sách điểm của chuyến. */
+export type StopListTimings = {
+  /** Theo số điểm (vị trí trong `Trip.stops` + 1); chỉ điểm chưa hoàn tất mà có giờ để nói. */
+  readonly byStop: ReadonlyMap<number, StopTiming>
+  /** Nguồn của các giờ đến dự kiến trong danh sách, không lặp, theo thứ tự điểm — một dòng nguồn cho cả danh sách. */
+  readonly sources: readonly EtaSource[]
+}
+
+/**
+ * Giờ của từng điểm ở hai danh sách điểm của tài xế ("Chuyến của tôi", danh sách điểm ở màn điểm giao), cùng luật với thẻ liên hệ: mỗi điểm
+ * chưa hoàn tất là `stopTiming` của nó — đã bấm "Đã đến" thì giờ đến thật, chưa thì giờ đến dự kiến (từ vị trí xe khi `live` có, không thì
+ * theo tuyến). Điểm đã hoàn tất không có giờ. Chuyến chưa tối ưu tuyến thì không điểm nào có giờ, kể cả điểm đã đến: danh sách giữ như cũ.
+ */
+export function stopListTimings(
+  trip: Pick<Trip, 'stops' | 'routePlan' | 'delivery'>,
+  live: Pick<TripMonitoring, 'location' | 'stops'> | undefined,
+): StopListTimings {
+  const byStop = new Map<number, StopTiming>()
+  const sources: EtaSource[] = []
+  if (trip.routePlan === undefined) return { byStop, sources }
+  trip.stops.forEach((_, index) => {
+    const number = index + 1
+    const progress = trip.delivery?.stops.find((entry) => entry.number === number)
+    if (progress?.completedAt !== undefined) return
+    const timing = stopTiming(trip, number, progress?.arrivedAt, live)
+    if (!timing.arrival && !timing.expected) return
+    byStop.set(number, timing)
+    if (timing.expected && !sources.includes(timing.expected.source)) sources.push(timing.expected.source)
+  })
+  return { byStop, sources }
+}

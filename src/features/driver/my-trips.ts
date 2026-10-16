@@ -50,6 +50,8 @@ export type MyTripRow = {
   readonly recheck: number
   /** Các điểm của chuyến theo thứ tự đi — chỉ chuyến đang vận chuyển và xếp xong chờ xuất phát; nhóm khác để trống. */
   readonly stops: readonly MyTripStop[]
+  /** Điểm giao (kèm hạn), tuyến đã tối ưu và tiến độ giao của chuyến: nguồn giờ của từng điểm trong thẻ (`stopListTimings`). */
+  readonly schedule: Pick<Trip, 'stops' | 'routePlan' | 'delivery'>
 }
 
 /**
@@ -133,6 +135,7 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
     issueCount: trip.delivery?.issues.length ?? 0,
     recheck: trip.phase === 'delivering' ? rejectedConfirms(trip, 'UNLOADING', unloaded).length : 0,
     stops: group === 'inTransit' || group === 'loaded' ? tripStopLines(trip, plan) : [],
+    schedule: trip,
   }
 }
 

@@ -16,8 +16,8 @@ const SUB_TOUCH = 'h-8 px-3 text-body-lg'
 
 /**
  * Một chuyến ở "Chuyến của tôi" (LM-087, FE-6-01; V2.3 đợt 6): mã chuyến và chip trạng thái trên một dòng (dòng phụ xuống hàng khi hết chỗ),
- * tuyến là tiêu đề, ngày chạy · số điểm · số kiện, xe, các điểm của chuyến (chỉ nhóm đang vận chuyển và xếp xong — `MyTripStops`) và một
- * nút 56px rộng hết thẻ theo nhóm — "Tiếp tục giao" (đang vận chuyển), "Mở chuyến" (xếp xong), "Xem tổng kết" (đã giao). Chuyến kho đang
+ * tuyến là tiêu đề, ngày chạy · số điểm · số kiện, xe, các điểm của chuyến kèm giờ đến (chỉ nhóm đang vận chuyển và xếp xong — `MyTripStops`)
+ * và một nút 56px rộng hết thẻ theo nhóm — "Tiếp tục giao" (đang vận chuyển), "Mở chuyến" (xếp xong), "Xem tổng kết" (đã giao). Chuyến kho đang
  * soạn / xếp chỉ xem: nói lý do và có nút phụ "Xem trước" (màn điểm giao ở chế độ chỉ xem). Chuyến có xác nhận tay bị điều phối viên từ
  * chối nói rõ còn kiện phải kiểm lại (FE-6-04). Chữ 16px, chip 16px (mục 10).
  */
@@ -45,7 +45,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {row.status === 'IN_TRANSIT' && row.currentStop !== undefined ? (
         <p className="m-0 font-semibold text-ink-strong">{t('driver.list.atStop', { number: row.currentStop, total: row.stopCount })}</p>
       ) : null}
-      <MyTripStops tripId={row.id} stops={row.stops} />
+      {row.stops.length > 0 ? <MyTripStops row={row} /> : null}
       {row.recheck > 0 ? (
         <p className="m-0 flex items-start gap-2 rounded-lg border border-badge-danger-border bg-badge-danger-bg px-3 py-2 font-medium text-badge-danger-fg">
           <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />

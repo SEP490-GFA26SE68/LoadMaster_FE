@@ -79,7 +79,9 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-4 pt-4 pb-4">
         <StopNotices view={view} stale={model.revision?.stale ?? false} />
         {view.mode === 'delivering' ? <DriverGpsToggle tripId={trip.id} /> : null}
-        {stops.some((stop) => stop.kind === 'PICKUP') ? <DriverStopList stops={stops} currentNumber={view.stop.number} completedStops={view.completedStops} /> : null}
+        {stops.some((stop) => stop.kind === 'PICKUP') ? (
+          <DriverStopList trip={trip} delivering={view.mode === 'delivering'} stops={stops} currentNumber={view.stop.number} completedStops={view.completedStops} />
+        ) : null}
         <StopContactCard stop={view.stop}>
           <StopEta trip={trip} stopNumber={view.stop.number} arrivedAt={view.arrivedAt} delivering={view.mode === 'delivering'} />
         </StopContactCard>

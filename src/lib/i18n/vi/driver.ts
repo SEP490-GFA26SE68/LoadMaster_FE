@@ -97,9 +97,14 @@ export const driver = {
     confirm: 'Hoàn tất',
     cancel: 'Quay lại',
   },
-  /** Giờ đến và hạn giao của điểm đang giao, ở thẻ liên hệ (FE-6-09): dự kiến theo vị trí xe hoặc theo tuyến, giờ đến thật, hạn. */
+  /**
+   * Giờ đến và hạn giao (FE-6-09): ở thẻ liên hệ của điểm đang giao và ở dòng từng điểm của hai danh sách điểm ("Chuyến của tôi", danh sách
+   * điểm ở màn điểm giao) — dự kiến theo vị trí xe hoặc theo tuyến, giờ đến thật, hạn.
+   */
   timing: {
     expected: 'Dự kiến đến',
+    /** Nhãn ngắn trước giờ ở dòng của một điểm trong danh sách điểm: "Dự kiến 08:15". */
+    expectedShort: 'Dự kiến',
     arrived: 'Đã đến',
     deadline: 'Hạn giao',
     noDeadline: 'Không có hạn',

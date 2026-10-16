@@ -94,6 +94,7 @@ export const driver = {
   },
   timing: {
     expected: 'Expected arrival',
+    expectedShort: 'Expected',
     arrived: 'Arrived',
     deadline: 'Deadline',
     noDeadline: 'No deadline',
