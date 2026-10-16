@@ -69,6 +69,21 @@ test('mã trong tham số được dịch: tên trường, loại sự cố, vai
   expect(describe(locked).details).toBe('Email: loc.truong@loadmaster.vn · Lý do: Tài khoản đã bị khoá')
 })
 
+test('đổi tài xế khi kho đã bắt đầu xếp: tài xế mới và tài xế trước đọc bằng tên, tài khoản đã xoá ghi mã', () => {
+  const changed = event('trip.updated', { type: 'trip', id: 'TRIP-004' }, { fields: 'driverId', driverId: 'US-0010', previousDriverId: 'US-0099' })
+  expect(describe(changed).details).toBe('Trường đã sửa: Tài xế · Tài xế: Trương Văn Lộc · Tài xế trước: Tài khoản đã xoá (US-0099)')
+  expect(describe(changed, en).details).toBe('Fields changed: Driver · Driver: Trương Văn Lộc · Previous driver: Deleted account (US-0099)')
+})
+
+test('kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch: lý do lần quay về là mã của kho, đọc theo ngôn ngữ', () => {
+  const restarted = event('loading.started', { type: 'trip', id: 'TRIP-004' }, { revisionId: 'REV-031', replanReason: 'SHORTAGE', driverId: 'US-0010' })
+  expect(describe(restarted).details).toBe('Phương án: REV-031 · Lý do soạn lại: Thiếu kiện lúc soạn hàng · Tài xế: Trương Văn Lộc')
+  expect(describe(restarted, en).details).toBe('Plan: REV-031 · Re-staging reason: Missing package while staging · Driver: Trương Văn Lộc')
+  const afterDamage = event('loading.started', { type: 'trip', id: 'TRIP-004' }, { revisionId: 'REV-031', replanReason: 'DAMAGED' }, 'US-0003')
+  expect([describe(afterDamage).details, describe(afterDamage, en).details])
+    .toStrictEqual(['Phương án: REV-031 · Lý do soạn lại: Kiện hỏng lúc xếp', 'Plan: REV-031 · Re-staging reason: Damaged package while loading'])
+})
+
 test('không có phiên: đăng nhập sai và khách gửi liên hệ là "Chưa đăng nhập", việc khác là "Hệ thống"; email lạ không có liên kết', () => {
   const failed = event('auth.signInFailed', { type: 'user', id: 'khong.co@loadmaster.vn' }, { email: 'khong.co@loadmaster.vn' }, null)
   expect(describe(failed)).toMatchObject({

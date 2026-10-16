@@ -135,6 +135,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await expect(unloading).toBeHidden()
   await expect(page.getByText('Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true }).click()
+  await page.getByRole('dialog', { name: /^Hoàn tất điểm 1 — / }).getByRole('button', { name: 'Hoàn tất', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Tổng kết chuyến', exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Sự cố', exact: true })).toContainText('Hàng hỏng')
   await page.getByRole('link', { name: /Về danh sách|Chuyến của tôi/ }).first().click()

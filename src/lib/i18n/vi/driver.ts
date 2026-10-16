@@ -11,7 +11,17 @@ export const driver = {
   toTrips: 'Về danh sách chuyến',
   cancelledTitle: 'Chuyến đã huỷ',
   cancelledDescription: 'Chuyến {tripId} đã huỷ: {reason}',
-  stale: 'Phương án đã duyệt này đã lỗi thời — xe hoặc kiện của chuyến đổi sau khi tối ưu. Hỏi điều phối viên trước khi dỡ.',
+  /**
+   * Chuyến ở Đã lập kế hoạch chưa hiện ở "Chuyến của tôi" (FE-6-01): màn chuyến chỉ nói lý do, không xem trước phương án còn có thể đổi.
+   * `replan`: chuyến đang xếp vừa quay về Đã lập kế hoạch (FE-6-02, FE-6-05), theo lý do kho ghi — tới khi kho soạn lại hàng.
+   */
+  planningTitle: 'Kho chưa soạn hàng chuyến này',
+  planningDescription: 'Chuyến {tripId} còn đang lập kế hoạch. Khi kho bắt đầu soạn hàng, chuyến hiện ở "Chuyến của tôi".',
+  replan: {
+    title: 'Chuyến tạm dừng',
+    DAMAGED: 'Kho báo một kiện của chuyến {tripId} bị hỏng lúc xếp nên chuyến quay về lập kế hoạch. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+    SHORTAGE: 'Kho không tìm thấy một kiện của chuyến {tripId} lúc soạn hàng, điều phối đã bỏ kiện đó khỏi chuyến. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+  },
   exit: 'Thoát màn hình tài xế',
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
@@ -84,6 +94,34 @@ export const driver = {
   remaining: { one: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố', other: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố' },
   allHandled: 'Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.',
   complete: 'Hoàn tất điểm giao',
+  /** Hộp hỏi lại trước khi hoàn tất điểm giao hoặc điểm nhận: số kiện lấy từ tiến độ của điểm trên màn. */
+  completeConfirm: {
+    title: 'Hoàn tất điểm {number} — {name}?',
+    description: 'Hoàn tất rồi thì không mở lại được điểm này.',
+    delivered: { one: '{count} kiện đã dỡ được ghi Đã giao.', other: '{count} kiện đã dỡ được ghi Đã giao.' },
+    returned: { one: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:', other: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:' },
+    issues: { one: 'Đã báo sự cố cho {count} kiện ở điểm này.', other: 'Đã báo sự cố cho {count} kiện ở điểm này.' },
+    picked: { one: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.', other: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.' },
+    next: 'Tiếp theo: điểm {number} · {name}.',
+    last: 'Đây là điểm cuối: hoàn tất là giao xong chuyến.',
+    confirm: 'Hoàn tất',
+    cancel: 'Quay lại',
+  },
+  /**
+   * Giờ đến và hạn giao (FE-6-09): ở thẻ liên hệ của điểm đang giao và ở dòng từng điểm của hai danh sách điểm ("Chuyến của tôi", danh sách
+   * điểm ở màn điểm giao) — dự kiến theo vị trí xe hoặc theo tuyến, giờ đến thật, hạn.
+   */
+  timing: {
+    expected: 'Dự kiến đến',
+    /** Nhãn ngắn trước giờ ở dòng của một điểm trong danh sách điểm: "Dự kiến 08:15". */
+    expectedShort: 'Dự kiến',
+    arrived: 'Đã đến',
+    deadline: 'Hạn giao',
+    noDeadline: 'Không có hạn',
+    /** Giờ kèm ngày khi không phải hôm nay. */
+    dated: '{time} · {date}',
+    sources: { PLAN: 'Theo kế hoạch tuyến', SIMULATED: 'Theo vị trí xe mô phỏng', GPS: 'Theo vị trí GPS của xe' },
+  },
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',

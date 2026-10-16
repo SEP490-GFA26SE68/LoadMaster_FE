@@ -17,7 +17,7 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 |---|---|---|
 | Điều phối | Desktop | Đăng ký kiện và in nhãn QR, đưa yêu cầu giao vào chuyến, tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
-| Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
+| Tài xế | Điện thoại | Chuyến của tôi, xuất phát, giờ đến dự kiến và hạn giao của từng điểm, danh sách kiện theo điểm giao, báo sự cố, gọi khách, hỏi lại trước khi hoàn tất điểm, chuông báo chuyến mới / xếp xong / tạm dừng / bị huỷ, tổng kết chuyến |
 | Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
 | Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị hệ thống còn quản lý công ty (tạo công ty kèm quản trị công ty đầu tiên với mật khẩu tạm hiện một lần, sửa kho xuất phát); quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
 | Quản lý nền tảng | Desktop | Danh mục gói cước: thêm, sửa giá và credit, bật/tắt bán, xoá gói không còn công ty dùng |
