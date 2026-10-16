@@ -154,9 +154,19 @@ luồng mới thêm ở issue của luồng đó.
 - Nhân viên kho: quyết định của điều phối viên với kiện **mình báo thiếu** và chuyến bị huỷ **lúc đang xếp** (dỡ phần đã xếp). Nhân viên kho và
   tài xế có thêm đúng một loại cá nhân: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo `requestedBy` —
   `PERSONAL_ACTIONS`); chuông của họ là nút 56 px ở thanh màn chính `/kho`, `/tai-xe` (`NotificationBell variant="touch"`, chữ 16 px), và thông
-  báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến.
-- Tài xế: `pickup.approved` / `pickup.rejected` — chỉ của **chuyến mình** (`PICKUP_DECISIONS`, tham số `driverId` của sự kiện); `trip.stopsReordered`
-  khi điều phối viên đổi thứ tự điểm chuyến của mình (FE-BL-03).
+  báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
+- Tài xế: việc của **chuyến mình** — chỉ sự kiện nêu đúng người đó ở tham số `driverId` (`DRIVER_TRIP_ACTIONS`; xác nhận tay bị từ chối vẫn lọc
+  theo người gửi). Kho chỉ nêu tài xế khi họ đã biết chuyến (`isKnownToDriver`): chuyến đang hiện ở "Chuyến của tôi" (`isShownToDriver`: từ lúc
+  kho bắt đầu soạn hàng tới khi giao xong) hoặc đang tạm dừng sau lần quay về Đã lập kế hoạch (`Trip.replan`, tới khi kho soạn lại).
+  `loading.started` (chuyến mới; kho soạn lại sau lần quay về thì sự kiện mang `replanReason` và câu là "Kho đang soạn lại hàng cho chuyến"),
+  `loading.completed` (xếp xong — chờ xuất phát), `loading.damaged` có kiện tựa lên và `loading.shortageDropped` (chuyến tạm dừng, chờ điều phối
+  lập lại phương án — báo tài xế của chuyến, không theo người báo thiếu; kiện hỏng bị bỏ lại kho mà kho xếp tiếp không nêu tài xế),
+  `trip.cancelled` (huỷ lúc còn lập kế hoạch lần đầu không báo tài xế nào), đổi tài xế (`trip.updated` mang `driverId` của người mới — chuyến mới
+  — và `previousDriverId` của người bị thay — không còn chạy chuyến này; thông báo của chuyến đó thôi mở chuyến với người bị thay),
+  `pickup.approved` / `pickup.rejected`, `trip.stopsReordered` khi điều phối viên đổi thứ tự điểm (FE-BL-03). Mỗi sự kiện về chuyến của tài xế
+  nói bằng câu của tài xế (`driverNotice` → `notifications.driver.*`) và chỉ giữ chi tiết họ làm theo (`DRIVER_NOTICE_PARAMS`, theo từng câu): số
+  kiện đã lên xe (xếp xong, huỷ), lý do huỷ, số kiện hoàn trả, số kiện phải nhận dọc đường, lý do yêu cầu nhận bị từ chối, số điểm trễ hạn dự
+  kiến theo thứ tự mới. Vai trò khác vẫn nhận đúng những gì đã nhận; nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước" / "Lý do soạn lại".
 - Quản trị hệ thống, quản trị công ty: việc trên tài khoản và đăng nhập sai. Quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`,
   sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm
   mở `/goi-cuoc`; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy.
@@ -800,7 +810,8 @@ format nhận locale đang chọn.
 - Tham số sự kiện nhật ký (LM-091) là dữ liệu: số format theo locale, mã (tên trường, loại sự cố, vai trò) dịch qua `audit.log.*`; chữ
   người dùng nhập (lý do huỷ, ghi chú) giữ nguyên. Thêm tham số mới vào `ctx.log` của kho thì thêm nhãn `audit.log.params.<tên>`.
 - Nhãn một mã nghiệp vụ dùng ở nhiều màn (loại sự cố giao: `common.deliveryIssueKinds`; mức hạn của điểm giao:
-  `common.deadlineStatuses` — chi tiết chuyến và Planner, FE-5b-07) khai một lần, không chép vào nhánh của từng màn.
+  `common.deadlineStatuses` — chi tiết chuyến và Planner, FE-5b-07; giờ đến thật so với hạn: `common.arrivalStatuses` — báo cáo chuyến và
+  màn điểm giao của tài xế) khai một lần, không chép vào nhánh của từng màn.
 - Tiêu đề tab (LM-100): mỗi route trong `App.tsx` khai `handle: titled(...)` bằng chữ của nhánh `titles` (màn có mã thì kèm mã);
   `useRouteTitle` chạy trong `RouteOutlet` của mọi nhóm route — trang không tự đặt `document.title`; 404/lỗi router dùng `useDocumentTitle`.
   Thêm màn mới thì thêm tiêu đề.
@@ -901,8 +912,17 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - **Tài xế** (`/tai-xe` "Chuyến của tôi", LM-087, FE-6-01; chỉ chuyến có `driverId` là mình, chỉ vai trò có `driver.operate`): nhóm theo trạng thái
   (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ
   xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện. `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` →
-  `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và
-  mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06).
+  `adaptResult`, phương án là bản kho chốt lúc bắt đầu soạn hàng (kho chưa xếp xong thì chỉ xem). Chuyến còn lập kế hoạch không xem trước phương
+  án nào (phương án còn đổi): màn nói kho chưa soạn hàng, hoặc "Chuyến tạm dừng" kèm lý do khi chuyến đang xếp vừa quay về (`Trip.replan`, tới khi
+  kho soạn lại hàng). Kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và
+  mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Thẻ liên hệ của điểm có giờ đến và hạn giao (`StopEta`, hàm
+  thuần `stop-timing.ts`): chưa đến là giờ đến dự kiến kèm nguồn, mức hạn bằng chữ và MOCK RESULT — Đang vận chuyển thì tính từ vị trí xe
+  (`fetchDriverTripMonitoring` → `useDriverTripMonitoringQuery`, đọc lại theo `refreshMs`), không thì theo `Trip.routePlan`; đã đến là giờ đến
+  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến. Hai danh sách điểm —
+  thẻ "Chuyến của tôi" (`MyTripStops`) và danh sách điểm của màn điểm giao (`DriverStopList`) — theo cùng luật (`stopListTimings` gọi `stopTiming`
+  cho từng điểm; chữ, chip và dòng nguồn dùng chung ở `StopTimingParts`): điểm chưa hoàn tất có dòng "Dự kiến HH:mm" hoặc "Đã đến HH:mm" dưới tên,
+  mức hạn bằng chữ chỉ khi điểm có hạn; điểm đã hoàn tất giữ dấu xong, không giờ; cả danh sách một dòng nguồn kèm MOCK RESULT; chuyến chưa tối ưu
+  tuyến thì không điểm nào có giờ. Chỉ chuyến Đang vận chuyển đã có tuyến bật nhịp đọc lại vị trí xe, qua cùng hook đó.
 - Kích thước placement **đã áp orientation**. Xoay luôn áp mã đích lên kích thước danh nghĩa `baseDimensionsById` (lấy từ `CargoPackage`), không đảo ngược kích thước đã xoay (`orientedSize` trong `scene-input.ts`). Xoay giữ nguyên góc vị trí của kiện.
 - Cả ba vai trò dùng chung `SceneCanvas` với `frameloop="demand"`. CameraControls tự invalidate khi chuyển động; mọi thay đổi buffer imperative phải gọi invalidate. Spring chỉ ghi ma trận/proxy kiện đang chạy, không đưa state từng frame qua React.
 - `frustumCulled={false}` không loại bỏ nhu cầu bounds của **raycast**. Cargo dùng sphere bao toàn bộ effective geometry và quãng animation, cập nhật khi geometry đổi. Không tính lại `computeBoundingSphere()` trong animation/step/slice path; cập nhật màu không ghi lại ma trận.
@@ -1286,7 +1306,10 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   thì vẫn tính là đã soạn.
 - **Tài xế**: "Xuất phát" (`startDelivery`, chỉ khi xếp xong) → mỗi điểm "Đã đến" (`arriveAtStop` ghi `StopProgress.arrivedAt`) rồi mới
   dỡ, báo sự cố theo kiện và hoàn tất điểm (`STOP_NOT_ARRIVED`); dỡ chỉ qua hộp đối chiếu; "Khách từ chối" bỏ dấu đã dỡ của kiện — kiện
-  ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao.
+  ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao. Hoàn tất điểm
+  (giao hoặc nhận) hỏi lại trước khi ghi (`CompleteStopDialog`, tờ trượt từ đáy; số đọc từ tiến độ trên màn qua `stop-completion.ts`): kiện đã
+  dỡ thành Đã giao, kiện chưa dỡ thành Hoàn trả kèm mã từng kiện, kiện nhận lên xe, số sự cố, điểm kế tiếp hay điểm cuối; kho từ chối thì hộp
+  giữ nguyên kèm toast lỗi, ghi xong hộp đóng, không toast thành công.
 - **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp
   thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Chuyến **Đang vận chuyển** huỷ được **chỉ khi có sự cố cấp chuyến
   chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã
@@ -1816,7 +1839,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Màn tài xế: nút "VI" kính, tab đáy, nút tròn "Đã dỡ" từng dòng kiện, "Bắt đầu giao" (V2.3 đợt 6) | Hai nút `LanguageSwitch` 56 px đặc; không tab đáy; dòng kiện chỉ hiện trạng thái, dỡ qua hộp đối chiếu; nút chính "Xuất phát" → "Đã đến điểm n" → "Hoàn tất điểm giao" | Luật mục 1; luồng đã đổi sau khi mockup được vẽ (FE-6-03, FE-6-06) |
 | Màn điểm giao tài xế: "Báo sự cố" là nút vuông 48 px cạnh nút chính ở chân màn; "Sự cố trên đường", "Nhận hàng dọc đường" không có trong mockup | "Báo sự cố" là nút phụ 56 px trong vùng cuộn, chân màn chỉ có nút chính; hai việc kia gom sau nút phụ "Thêm" mở tờ trượt từ đáy (mỗi hàng 56 px, giữ quyền và hộp thoại cũ) | Mục 10 (vùng chạm 56 px); mỗi màn một nút chính; không bốn nút phụ xếp chồng giữa màn |
 | Chip "đang xếp" / "đang chạy" màu tím (mockup kho, tài xế); chữ 13 px, hộp "Báo sự cố" có dấu sao bắt buộc ở nhãn (màn tài xế) | Thang azure; chữ 16 px; nhãn không kèm dấu sao | Không dùng tím; mục 10; tên truy cập của nhãn giữ nguyên |
-| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện) | Nhóm khác chưa có việc ở từng điểm; không bịa số |
+| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện); giờ đến của điểm ở dòng thứ hai dưới tên (dự kiến từ tuyến hoặc vị trí xe, hay giờ đã đến), một dòng nguồn + MOCK RESULT cho cả danh sách | Nhóm khác chưa có việc ở từng điểm; không bịa số; ở 360 px giờ và chip mức hạn không còn chỗ trên dòng tên |
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |

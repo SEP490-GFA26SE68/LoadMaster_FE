@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import type { AuditEvent } from '@/lib/mock-db'
-import { hasNotifications, NOTIFICATION_LIMIT, operationHref, selectNotifications } from './notifications'
+import { driverNotice, driverNoticeEvent, hasNotifications, NOTIFICATION_LIMIT, operationHrefs, selectNotifications } from './notifications'
 
 /** Lọc sự kiện nhật ký thành thông báo theo vai trò (LM-098). Sự kiện dựng tay, mới nhất trước như kho trả. */
 
@@ -62,7 +62,7 @@ test('the system administrator gets account events by others and failed sign-ins
   expect(ids(selectNotifications(events, { id: 'US-LB-01', role: 'companyAdmin' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-3', 'EV-2'])
 })
 
-test('the platform manager and customer support have no bell; the warehouse and the driver get no trip or account events', () => {
+test('the platform manager and customer support have no bell; the warehouse and the driver get no account events, nor trip events that do not name them', () => {
   const events = [
     event('EV-2', '2026-09-14T10:30:00.000Z', 'US-0005', 'user.created', 'US-0016'),
     event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled'),
@@ -96,10 +96,73 @@ test('manual confirmations (FE-6-04): a new one reaches the dispatcher; a reject
 
 test('a trip notification opens the screen of the warehouse or the driver; other roles follow the audit log link', () => {
   const trip = event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'manualConfirm.rejected', 'TRIP-2026-0914')
-  expect(operationHref(trip, 'warehouse')).toBe('/kho?chuyen=TRIP-2026-0914')
-  expect(operationHref(trip, 'driver')).toBe('/tai-xe/diem-giao?chuyen=TRIP-2026-0914')
-  expect(operationHref(trip, 'dispatcher')).toBeNull()
-  expect(operationHref(event('EV-2', '2026-09-14T10:00:00.000Z', 'US-0005', 'user.locked', 'US-0003'), 'warehouse')).toBeNull()
+  const account = event('EV-2', '2026-09-14T10:00:00.000Z', 'US-0005', 'user.locked', 'US-0003')
+  expect(operationHrefs([trip, account], { id: 'US-0003', role: 'warehouse' })).toStrictEqual(['/kho?chuyen=TRIP-2026-0914', null])
+  expect(operationHrefs([trip], { id: 'US-0004', role: 'driver' })).toStrictEqual(['/tai-xe/diem-giao?chuyen=TRIP-2026-0914'])
+  expect(operationHrefs([trip], DISPATCHER)).toStrictEqual([null])
+})
+
+/** Sự kiện về chuyến kèm tham số, lúc `time` (giờ UTC) của ngày neo. */
+const onTrip = (id: string, time: string, actorId: string, action: AuditEvent['action'], params: AuditEvent['params'], tripId = 'TRIP-010'): AuditEvent =>
+  ({ ...event(id, `2026-09-14T${time}:00.000Z`, actorId, action, tripId), params })
+
+/** Tham số tài xế `driverId` đọc ở thông báo `item` (câu riêng của tài xế); `null` khi sự kiện không có câu cho họ. */
+function keptFor(item: AuditEvent, driverId: string): AuditEvent['params'] | null {
+  const notice = driverNotice(item, driverId)
+  return notice === null ? null : driverNoticeEvent(item, notice).params
+}
+
+const asDriver = (id: string) => ({ id, role: 'driver' as const })
+
+test('the driver is told about their own trip once the warehouse starts staging it: a new trip, loaded, cancelled; never about the trip of another driver', () => {
+  const events = [
+    onTrip('EV-6', '10:50', 'US-0001', 'trip.cancelled', { reason: 'Xe hỏng hộp số', returned: 12, driverId: 'US-0004' }, 'TRIP-009'),
+    // Huỷ lúc còn lập kế hoạch: chuyến chưa hiện với tài xế nào, kho không nêu tài xế
+    onTrip('EV-5', '10:40', 'US-0001', 'trip.cancelled', { reason: 'Khách huỷ đơn' }, 'TRIP-012'),
+    onTrip('EV-4', '10:30', 'US-0003', 'loading.completed', { loaded: 40, damaged: 0, driverId: 'US-0004' }),
+    onTrip('EV-3', '10:20', 'US-0011', 'loading.started', { revisionId: 'REV-011', driverId: 'US-0007' }, 'TRIP-011'),
+    onTrip('EV-2', '10:10', 'US-0003', 'loading.started', { revisionId: 'REV-010', driverId: 'US-0004' }),
+    // Chuyến chưa gán tài xế
+    onTrip('EV-1', '10:00', 'US-0003', 'loading.started', { revisionId: 'REV-013' }, 'TRIP-013'),
+  ]
+  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-6', 'EV-4', 'EV-2'])
+  expect(ids(selectNotifications(events, { id: 'US-0007', role: 'driver' }, NOW))).toStrictEqual(['EV-3'])
+  expect(events.map((item) => driverNotice(item, 'US-0004'))).toStrictEqual(['cancelled', null, 'loadingCompleted', null, 'loadingStarted', null])
+  // Tài xế chỉ đọc chi tiết cần cho mình: lý do huỷ, số kiện — không tên chính mình, mã phương án hay số kiện hỏng bị bỏ lại kho
+  expect(events.map((item) => keptFor(item, 'US-0004')))
+    .toStrictEqual([{ reason: 'Xe hỏng hộp số', returned: 12 }, null, { loaded: 40 }, null, {}, null])
+  // Vai trò khác nhận đúng những gì đã nhận: tham số tài xế không đổi gì
+  expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-6', 'EV-5', 'EV-4'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-6', 'EV-5'])
+  expect(selectNotifications(events, { id: 'US-0010', role: 'warehouse' }, NOW)).toStrictEqual([])
+})
+
+test('a new driver after staging started gets a new trip, the replaced one is told it is no longer theirs and its notices stop opening it; nobody while planning', () => {
+  const changed = (id: string, time: string, params: AuditEvent['params']) => onTrip(id, time, 'US-0001', 'trip.updated', { fields: 'driverId', ...params })
+  const events = [
+    changed('EV-5', '10:40', { before: 'US-0006', after: 'US-0004', driverId: 'US-0004', previousDriverId: 'US-0006' }),
+    changed('EV-4', '10:30', { before: 'US-0004', after: 'US-0006', driverId: 'US-0006', previousDriverId: 'US-0004' }),
+    onTrip('EV-3', '10:20', 'US-0003', 'loading.started', { revisionId: 'REV-010', driverId: 'US-0004' }),
+    // Lúc còn lập kế hoạch: kho không nêu tài xế
+    changed('EV-2', '10:10', { before: 'US-0007', after: 'US-0004' }),
+    onTrip('EV-1', '10:00', 'US-0001', 'trip.updated', { fields: 'name', before: 'Tuyến sáng', after: 'Tuyến chiều' }),
+  ]
+  const driver = (id: string) => ({ id, role: 'driver' as const })
+  expect([ids(selectNotifications(events, driver('US-0004'), NOW)), ids(selectNotifications(events, driver('US-0006'), NOW))])
+    .toStrictEqual([['EV-5', 'EV-4', 'EV-3'], ['EV-5', 'EV-4']])
+  expect(selectNotifications(events, driver('US-0007'), NOW)).toStrictEqual([])
+  expect(['US-0004', 'US-0006'].map((id) => events.map((item) => driverNotice(item, id)))).toStrictEqual([
+    ['assigned', 'unassigned', 'loadingStarted', null, null],
+    ['unassigned', 'assigned', null, null, null],
+  ])
+  // US-0006 thôi chạy chuyến: không thông báo nào của chuyến còn mở được nó; US-0004 được giao lại nên mọi thông báo đều mở chuyến
+  const href = '/tai-xe/diem-giao?chuyen=TRIP-010'
+  expect(operationHrefs(events.slice(0, 2), driver('US-0006'))).toStrictEqual([null, null])
+  expect(operationHrefs(events.slice(0, 3), driver('US-0004'))).toStrictEqual([href, href, href])
+  // Trước khi được giao lại, US-0004 không mở được chuyến từ thông báo nào của nó
+  expect(operationHrefs(events.slice(1, 3), driver('US-0004'))).toStrictEqual([null, null])
+  // Không vai trò nào khác được báo việc sửa chuyến
+  expect(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW)).toStrictEqual([])
 })
 
 test('at most twenty, the newest first', () => {
@@ -129,6 +192,53 @@ test('shortages and damaged packages reach who must act (FE-6-02, FE-6-05): the 
   // Nhân viên kho: quyết định cho kiện chính mình báo thiếu
   expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-6', 'EV-4'])
   expect(ids(selectNotifications(events, { id: 'US-0011', role: 'warehouse' }, NOW))).toStrictEqual(['EV-5'])
+})
+
+test('the driver of a loading trip sent back to planned is told it is on hold — a damaged package others rest on, a dropped missing one — and told again when staging restarts', () => {
+  const events = [
+    onTrip('EV-7', '10:50', 'US-0003', 'loading.started', { revisionId: 'REV-031', replanReason: 'SHORTAGE', driverId: 'US-0007' }, 'TRIP-011'),
+    onTrip('EV-6', '10:40', 'US-0001', 'loading.shortageDropped',
+      { packageInstanceId: 'PKG-001-02', packageCode: 'KH-101', requirementId: 'REQ-001', requestedBy: 'US-0003', driverId: 'US-0007' }, 'TRIP-011'),
+    onTrip('EV-5', '10:30', 'US-0003', 'loading.started', { revisionId: 'REV-030', replanReason: 'DAMAGED', driverId: 'US-0004' }),
+    onTrip('EV-4', '10:20', 'US-0003', 'loading.damaged', { packageInstanceId: 'PKG-002-01', packageCode: 'PKG-002-01', supporting: 2, driverId: 'US-0004' }),
+    // Kiện hỏng bị bỏ lại kho, kho xếp tiếp: kho không nêu tài xế
+    onTrip('EV-3', '10:10', 'US-0003', 'loading.damaged', { packageInstanceId: 'PKG-002-02', packageCode: 'PKG-002-02' }),
+    // Bỏ kiện thiếu của chuyến chưa gán tài xế
+    onTrip('EV-2', '10:05', 'US-0001', 'loading.shortageDropped', { packageInstanceId: 'PKG-003-01', packageCode: 'KH-301', requestedBy: 'US-0011' }, 'TRIP-015'),
+    // "Tìm tiếp" là việc của người báo thiếu, không phải của tài xế
+    onTrip('EV-1', '10:00', 'US-0001', 'loading.shortageKept', { packageInstanceId: 'PKG-001-02', requestedBy: 'US-0003' }, 'TRIP-011'),
+  ]
+  // EV-6 tới tài xế theo `driverId` dù người báo thiếu là nhân viên kho: với tài xế chỉ xác nhận tay mới tính theo người gửi
+  expect([ids(selectNotifications(events, asDriver('US-0004'), NOW)), ids(selectNotifications(events, asDriver('US-0007'), NOW))])
+    .toStrictEqual([['EV-5', 'EV-4'], ['EV-7', 'EV-6']])
+  expect(['US-0004', 'US-0007'].map((id) => events.map((item) => driverNotice(item, id)))).toStrictEqual([
+    [null, null, 'loadingRestarted', 'replanDamaged', null, null, null],
+    ['loadingRestarted', 'replanShortage', null, null, null, null, null],
+  ])
+  // Câu đã nói đủ: tài xế không đọc mã kiện, mã phương án, số kiện tựa lên, lý do soạn lại hay người báo thiếu
+  expect(events.slice(0, 4).map((item) => keptFor(item, item.params.driverId as string))).toStrictEqual([{}, {}, {}, {}])
+  // Thông báo mở chuyến ở màn của tài xế, nơi nói chuyến đang tạm dừng
+  expect(operationHrefs(events.slice(0, 2), asDriver('US-0007'))).toStrictEqual(['/tai-xe/diem-giao?chuyen=TRIP-011', '/tai-xe/diem-giao?chuyen=TRIP-011'])
+  // Vai trò khác nhận đúng những gì đã nhận: tham số tài xế không đổi gì
+  expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-4', 'EV-3'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-6'])
+  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-6', 'EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0011', role: 'warehouse' }, NOW))).toStrictEqual(['EV-2'])
+})
+
+test('the driver reads a pickup decision and a new stop order of their trip in their own words, with only what they act on', () => {
+  const events = [
+    onTrip('EV-4', '10:40', 'US-0001', 'trip.stopsReordered', { count: 2, lateStops: 1, driverId: 'US-0006' }, 'TRIP-009'),
+    onTrip('EV-3', '10:30', 'US-0001', 'pickup.rejected', { pickupId: 'PKR-003', reason: 'Xe không còn chỗ', driverId: 'US-0006' }, 'TRIP-009'),
+    onTrip('EV-2', '10:20', 'US-0001', 'pickup.approved', { pickupId: 'PKR-002', count: 2, failedRules: 1, reason: 'Khách quen', driverId: 'US-0006' }, 'TRIP-009'),
+    onTrip('EV-1', '10:10', 'US-0001', 'trip.stopsReordered', { count: 3, lateStops: 0, driverId: 'US-0006' }, 'TRIP-009'),
+  ]
+  expect(ids(selectNotifications(events, asDriver('US-0006'), NOW))).toStrictEqual(['EV-4', 'EV-3', 'EV-2', 'EV-1'])
+  expect(events.map((item) => driverNotice(item, 'US-0006'))).toStrictEqual(['stopsReordered', 'pickupRejected', 'pickupApproved', 'stopsReordered'])
+  // Số điểm trễ hạn dự kiến, lý do từ chối, số kiện phải nhận — không mã yêu cầu, số luật không đạt, lý do vượt luật của điều phối viên
+  // hay số điểm đổi chỗ
+  expect(events.map((item) => keptFor(item, 'US-0006'))).toStrictEqual([{ lateStops: 1 }, { reason: 'Xe không còn chỗ' }, { count: 2 }, { lateStops: 0 }])
+  expect(selectNotifications(events, asDriver('US-0004'), NOW)).toStrictEqual([])
 })
 
 test('the warehouse is told about a trip cancelled while it was loading — to unload — not about other cancellations (FE-6-07)', () => {

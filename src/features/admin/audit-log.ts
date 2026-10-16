@@ -13,6 +13,7 @@ import {
   PACKAGE_FLAGS,
   REQUIREMENT_PRIORITIES,
   PACKAGE_STATUSES,
+  REPLAN_REASONS,
   RUN_FAILURE_CODES,
   TICKET_KINDS,
   TICKET_STATUSES,
@@ -74,8 +75,10 @@ const PARAM_KEYS = [
   'deadlineStatus', 'eta', 'deadline',
   // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
   'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
-  // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
-  'pickupId', 'failedRules', 'driverId',
+  // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay — người chuông của tài xế báo
+  'pickupId', 'failedRules', 'driverId', 'previousDriverId',
+  // Kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do lần quay về
+  'replanReason',
   // Gói cước và credit (FE-8-01, FE-8-05)
   'plan', 'credits', 'balance',
   // Yêu cầu hỗ trợ (FE-8-07)
@@ -246,6 +249,8 @@ export function paramValue(event: AuditEvent, key: string, value: string | numbe
       return isOneOf(TRIP_EXCEPTION_TYPES, value) ? t(`common.tripExceptionTypes.${value}`) : value
     case 'escalation':
       return isOneOf(EXCEPTION_ESCALATIONS, value) ? t(`audit.log.escalations.${value}`) : value
+    case 'replanReason':
+      return isOneOf(REPLAN_REASONS, value) ? t(`audit.log.replanReasons.${value}`) : value
     case 'route':
       return isOneOf(REROUTE_ROUTES, value) ? t(`monitoring.reroute.routes.${value}`) : value
     case 'ticketKind':
@@ -254,6 +259,7 @@ export function paramValue(event: AuditEvent, key: string, value: string | numbe
       return isOneOf(TICKET_STATUSES, value) ? t(`support.statuses.${value}`) : value
     case 'requestedBy':
     case 'driverId':
+    case 'previousDriverId':
       return directory.users.get(value) ?? t('audit.log.deletedUser', { id: value })
     case 'reason':
       // Lý do huỷ chuyến là chữ người dùng nhập; lý do đăng nhập sai là mã của kho

@@ -44,7 +44,7 @@ function DeadlineCell({ stop }: { stop: TripReportStop }) {
     <span className="flex flex-col items-end gap-1">
       <span className={mono}>{format.time(stop.deadline)} · {format.dayMonth(stop.deadline)}</span>
       {stop.arrivedOnTime !== null ? (
-        <Badge shape="tag" tone={stop.arrivedOnTime ? 'success' : 'danger'}>{t(stop.arrivedOnTime ? 'tripReport.stops.onTime' : 'tripReport.stops.late')}</Badge>
+        <Badge shape="tag" tone={stop.arrivedOnTime ? 'success' : 'danger'}>{t(stop.arrivedOnTime ? 'common.arrivalStatuses.onTime' : 'common.arrivalStatuses.late')}</Badge>
       ) : stop.plannedStatus !== null ? (
         <Badge shape="tag" tone={DEADLINE_TONE[stop.plannedStatus]}>{t(`common.deadlineStatuses.${stop.plannedStatus}`)}</Badge>
       ) : null}

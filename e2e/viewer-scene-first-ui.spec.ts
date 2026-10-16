@@ -147,7 +147,7 @@ test('timeline cells and scene labels stay bounded on tablet and phone', { tag: 
 
 test('driver opens the cargo view on phone', { tag: '@phone' }, async ({ page, login, browserErrors }, testInfo) => {
   const { shot, scenes } = shooter(page, testInfo)
-  await login('/tai-xe/diem-giao?chuyen=TRIP-2026-0914&debug&quality=balanced', 'driver')
+  await login('/tai-xe/diem-giao?chuyen=TRIP-010&debug&quality=balanced', 'driver')
   await button(page, 'Xem vị trí hàng').click(); await shot('10-driver-phone')
   await attachJson(testInfo, 'report', { scenes })
   expect(browserErrors).toStrictEqual([])

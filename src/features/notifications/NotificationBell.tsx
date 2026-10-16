@@ -10,15 +10,42 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Spinner } from '@/components/ui/Spinner'
-import { describeLogRow } from '@/features/admin/audit-log'
+import { describeLogRow, type AuditDirectory, type AuditLogRow, type CanOpen } from '@/features/admin/audit-log'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useCan } from '@/features/auth/useCan'
-import { useFormat, useT } from '@/lib/i18n'
+import type { Formatter } from '@/lib/format'
+import { useFormat, useT, type TFunction } from '@/lib/i18n'
+import type { AuditEvent } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
-import { hasNotifications, NOTIFICATION_WINDOW_DAYS, operationHref } from './notifications'
+import {
+  driverNotice,
+  driverNoticeEvent,
+  hasNotifications,
+  NOTIFICATION_WINDOW_DAYS,
+  operationHrefs,
+  type NotificationViewer,
+} from './notifications'
 import { NotificationItem } from './NotificationItem'
 import { markNotificationsRead, useReadNotifications } from './read-state'
 import { useNotificationsQuery } from './useNotificationsQuery'
+
+/** Những gì `describeLogRow` cần để đọc một sự kiện. */
+type RowContext = { readonly directory: AuditDirectory; readonly t: TFunction; readonly format: Formatter; readonly can: CanOpen }
+
+/**
+ * Dòng của chuông là dòng nhật ký (`describeLogRow`) cộng hai việc riêng của chuông: thông báo về chuyến của tài xế nói bằng câu của tài xế
+ * và chỉ kèm chi tiết họ cần (`driverNotice`); kho và tài xế mở chuyến ở màn của vai trò (`operation`, từ `operationHrefs`), vì họ không
+ * mở được trang chuyến mà nhật ký dẫn tới.
+ */
+function notificationRow(event: AuditEvent, viewer: NotificationViewer, operation: string | null, { directory, t, format, can }: RowContext): AuditLogRow {
+  const notice = viewer.role === 'driver' ? driverNotice(event, viewer.id) : null
+  const row = describeLogRow(notice === null ? event : driverNoticeEvent(event, notice), directory, t, format, can)
+  return {
+    ...row,
+    action: notice === null ? row.action : t(`notifications.driver.${notice}`),
+    target: { ...row.target, href: row.target.href ?? operation },
+  }
+}
 
 /**
  * Chuông thông báo trên thanh điều hướng (LM-098, D-55; V2.3 MenuToanCuc): chấm hổ phách trên icon khi có tin chưa đọc — số nằm trong
@@ -28,8 +55,8 @@ import { useNotificationsQuery } from './useNotificationsQuery'
  * Nguồn sự kiện của từng vai trò: `NOTIFICATION_ACTIONS`.
  *
  * `variant="touch"` (FE-6-04): chuông ở thanh màn chính của kho và tài xế — hai màn không có thanh điều hướng. Nút 56 px trên nền sáng,
- * chữ trong danh sách 16 px (mục 10). Kho và tài xế chỉ nhận một loại: xác nhận tay của chính mình bị từ chối; bấm vào mở chuyến đó ở
- * màn của vai trò (`operationHref`), vì họ không mở được Chi tiết chuyến.
+ * chữ trong danh sách 16 px (mục 10). Kho và tài xế nhận việc của chính mình (xác nhận tay bị từ chối; với tài xế còn việc của chuyến
+ * mình — `DRIVER_TRIP_ACTIONS`); bấm vào mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
  */
 export function NotificationBell({ variant = 'rail', tone = 'light', className }: {
   variant?: 'rail' | 'touch'
@@ -44,15 +71,15 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
   const query = useNotificationsQuery()
   const read = useReadNotifications(user?.id ?? '')
   const feed = query.data
+  const viewerId = user?.id
   const role = user?.role
-  const rows = useMemo(
-    () => (feed ? feed.events.map((event) => {
-      const row = describeLogRow(event, feed.directory, t, format, can)
-      const href = row.target.href ?? (role ? operationHref(event, role) : null)
-      return href === row.target.href ? row : { ...row, target: { ...row.target, href } }
-    }) : []),
-    [feed, t, format, can, role],
-  )
+  const rows = useMemo(() => {
+    if (!feed || viewerId === undefined || role === undefined) return []
+    const viewer = { id: viewerId, role }
+    const hrefs = operationHrefs(feed.events, viewer)
+    const context = { directory: feed.directory, t, format, can }
+    return feed.events.map((event, index) => notificationRow(event, viewer, hrefs[index] ?? null, context))
+  }, [feed, t, format, can, viewerId, role])
   const touch = variant === 'touch'
   const sky = touch && tone === 'sky'
   if (!user || !hasNotifications(user.role)) return null

@@ -143,7 +143,7 @@ test('runtime quality monitor downgrades to low under sustained software-rendere
 })
 
 test('driver cargo view fills the phone width', { tag: '@phone' }, async ({ page, login, browserErrors }, testInfo) => {
-  await login('/tai-xe/diem-giao?chuyen=TRIP-2026-0914&debug&quality=balanced', 'driver'); await emulateSlowMachine(page, testInfo)
+  await login('/tai-xe/diem-giao?chuyen=TRIP-010&debug&quality=balanced', 'driver'); await emulateSlowMachine(page, testInfo)
   await button(page, 'Xem vị trí hàng').click(); await settle(page)
   await attachScreenshot(page, testInfo, 'driver-phone')
   const phone = (await page.locator('canvas').boundingBox())!

@@ -5,7 +5,7 @@ import { movePackage } from './db-packages'
 import { returnToPlanning } from './db-replan'
 import { assertPhase, assertStaged, expectedLoadingInstance, labelsOf, loadingPlan, scannedLabel, verificationBy } from './db-scans'
 import { MockDbError } from './errors'
-import { leftOutIds, plannedStops } from './operations'
+import { driverParam, leftOutIds, plannedStops } from './operations'
 import type { Package } from './package-model'
 import type { LoadingProgress, Trip } from './types'
 import { withoutPendingConfirm, withVerification } from './verify-model'
@@ -92,8 +92,13 @@ export function stagingMethods(ctx: DbContext): StagingMethods {
           ctx.log('loading.shortageKept', { type: 'trip', id: tripId }, { packageInstanceId, packageCode: pkg.packageCode, ...requestedBy })
           return put(trips, { ...trip, loading: withoutShortage(loading, packageInstanceId) })
         }
+        // Bỏ kiện là chuyến quay về Đã lập kế hoạch: tài xế của chuyến (`driverId`) được báo chuyến tạm dừng
         ctx.log('loading.shortageDropped', { type: 'trip', id: tripId }, {
-          packageInstanceId, packageCode: pkg.packageCode, ...(pkg.requirementId === undefined ? {} : { requirementId: pkg.requirementId }), ...requestedBy,
+          packageInstanceId,
+          packageCode: pkg.packageCode,
+          ...(pkg.requirementId === undefined ? {} : { requirementId: pkg.requirementId }),
+          ...requestedBy,
+          ...driverParam(trip),
         })
         return returnToPlanning(ctx, trip, packageInstanceId, 'NOT_FOUND', 'SHORTAGE')
       }),
@@ -112,9 +117,11 @@ export function stagingMethods(ctx: DbContext): StagingMethods {
         const resting = restingOnIds(plan.result.placements, packageInstanceId).filter((id) => !leftOut.has(id))
         const params = { packageInstanceId, packageCode: pkg.packageCode, ...(pkg.requirementId === undefined ? {} : { requirementId: pkg.requirementId }) }
         if (resting.length > 0) {
-          ctx.log('loading.damaged', { type: 'trip', id: tripId }, { ...params, supporting: resting.length })
+          // Chuyến quay về Đã lập kế hoạch: tài xế của chuyến (`driverId`) được báo chuyến tạm dừng
+          ctx.log('loading.damaged', { type: 'trip', id: tripId }, { ...params, supporting: resting.length, ...driverParam(trip) })
           return returnToPlanning(ctx, trip, packageInstanceId, 'DAMAGED', 'DAMAGED')
         }
+        // Kiện bị bỏ lại kho, kho xếp tiếp: chuyến của tài xế không đổi gì nên sự kiện không nêu tài xế
         ctx.log('loading.damaged', { type: 'trip', id: tripId }, params)
         movePackage(ctx, pkg, 'IMPORTED', { flags: [...new Set([...pkg.flags, 'DAMAGED' as const])] })
         const steps = [...loading.steps, { packageInstanceId, outcome: 'damaged' as const, at: ctx.nowIso() }]
