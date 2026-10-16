@@ -84,6 +84,29 @@ export const driver = {
   remaining: { one: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố', other: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố' },
   allHandled: 'Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.',
   complete: 'Hoàn tất điểm giao',
+  /** Hộp hỏi lại trước khi hoàn tất điểm giao hoặc điểm nhận: số kiện lấy từ tiến độ của điểm trên màn. */
+  completeConfirm: {
+    title: 'Hoàn tất điểm {number} — {name}?',
+    description: 'Hoàn tất rồi thì không mở lại được điểm này.',
+    delivered: { one: '{count} kiện đã dỡ được ghi Đã giao.', other: '{count} kiện đã dỡ được ghi Đã giao.' },
+    returned: { one: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:', other: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:' },
+    issues: { one: 'Đã báo sự cố cho {count} kiện ở điểm này.', other: 'Đã báo sự cố cho {count} kiện ở điểm này.' },
+    picked: { one: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.', other: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.' },
+    next: 'Tiếp theo: điểm {number} · {name}.',
+    last: 'Đây là điểm cuối: hoàn tất là giao xong chuyến.',
+    confirm: 'Hoàn tất',
+    cancel: 'Quay lại',
+  },
+  /** Giờ đến và hạn giao của điểm đang giao, ở thẻ liên hệ (FE-6-09): dự kiến theo vị trí xe hoặc theo tuyến, giờ đến thật, hạn. */
+  timing: {
+    expected: 'Dự kiến đến',
+    arrived: 'Đã đến',
+    deadline: 'Hạn giao',
+    noDeadline: 'Không có hạn',
+    /** Giờ kèm ngày khi không phải hôm nay. */
+    dated: '{time} · {date}',
+    sources: { PLAN: 'Theo kế hoạch tuyến', SIMULATED: 'Theo vị trí xe mô phỏng', GPS: 'Theo vị trí GPS của xe' },
+  },
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',

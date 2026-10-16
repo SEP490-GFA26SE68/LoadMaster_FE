@@ -800,7 +800,8 @@ format nhận locale đang chọn.
 - Tham số sự kiện nhật ký (LM-091) là dữ liệu: số format theo locale, mã (tên trường, loại sự cố, vai trò) dịch qua `audit.log.*`; chữ
   người dùng nhập (lý do huỷ, ghi chú) giữ nguyên. Thêm tham số mới vào `ctx.log` của kho thì thêm nhãn `audit.log.params.<tên>`.
 - Nhãn một mã nghiệp vụ dùng ở nhiều màn (loại sự cố giao: `common.deliveryIssueKinds`; mức hạn của điểm giao:
-  `common.deadlineStatuses` — chi tiết chuyến và Planner, FE-5b-07) khai một lần, không chép vào nhánh của từng màn.
+  `common.deadlineStatuses` — chi tiết chuyến và Planner, FE-5b-07; giờ đến thật so với hạn: `common.arrivalStatuses` — báo cáo chuyến và
+  màn điểm giao của tài xế) khai một lần, không chép vào nhánh của từng màn.
 - Tiêu đề tab (LM-100): mỗi route trong `App.tsx` khai `handle: titled(...)` bằng chữ của nhánh `titles` (màn có mã thì kèm mã);
   `useRouteTitle` chạy trong `RouteOutlet` của mọi nhóm route — trang không tự đặt `document.title`; 404/lỗi router dùng `useDocumentTitle`.
   Thêm màn mới thì thêm tiêu đề.
@@ -902,7 +903,10 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ
   xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện. `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` →
   `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và
-  mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06).
+  mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Thẻ liên hệ của điểm có giờ đến và hạn giao (`StopEta`, hàm
+  thuần `stop-timing.ts`): chưa đến là giờ đến dự kiến kèm nguồn, mức hạn bằng chữ và MOCK RESULT — Đang vận chuyển thì tính từ vị trí xe
+  (`fetchDriverTripMonitoring` → `useDriverTripMonitoringQuery`, đọc lại theo `refreshMs`), không thì theo `Trip.routePlan`; đã đến là giờ đến
+  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến.
 - Kích thước placement **đã áp orientation**. Xoay luôn áp mã đích lên kích thước danh nghĩa `baseDimensionsById` (lấy từ `CargoPackage`), không đảo ngược kích thước đã xoay (`orientedSize` trong `scene-input.ts`). Xoay giữ nguyên góc vị trí của kiện.
 - Cả ba vai trò dùng chung `SceneCanvas` với `frameloop="demand"`. CameraControls tự invalidate khi chuyển động; mọi thay đổi buffer imperative phải gọi invalidate. Spring chỉ ghi ma trận/proxy kiện đang chạy, không đưa state từng frame qua React.
 - `frustumCulled={false}` không loại bỏ nhu cầu bounds của **raycast**. Cargo dùng sphere bao toàn bộ effective geometry và quãng animation, cập nhật khi geometry đổi. Không tính lại `computeBoundingSphere()` trong animation/step/slice path; cập nhật màu không ghi lại ma trận.
@@ -1286,7 +1290,10 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   thì vẫn tính là đã soạn.
 - **Tài xế**: "Xuất phát" (`startDelivery`, chỉ khi xếp xong) → mỗi điểm "Đã đến" (`arriveAtStop` ghi `StopProgress.arrivedAt`) rồi mới
   dỡ, báo sự cố theo kiện và hoàn tất điểm (`STOP_NOT_ARRIVED`); dỡ chỉ qua hộp đối chiếu; "Khách từ chối" bỏ dấu đã dỡ của kiện — kiện
-  ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao.
+  ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao. Hoàn tất điểm
+  (giao hoặc nhận) hỏi lại trước khi ghi (`CompleteStopDialog`, tờ trượt từ đáy; số đọc từ tiến độ trên màn qua `stop-completion.ts`): kiện đã
+  dỡ thành Đã giao, kiện chưa dỡ thành Hoàn trả kèm mã từng kiện, kiện nhận lên xe, số sự cố, điểm kế tiếp hay điểm cuối; kho từ chối thì hộp
+  giữ nguyên kèm toast lỗi, ghi xong hộp đóng, không toast thành công.
 - **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp
   thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Chuyến **Đang vận chuyển** huỷ được **chỉ khi có sự cố cấp chuyến
   chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã

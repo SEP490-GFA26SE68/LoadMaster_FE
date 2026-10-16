@@ -86,6 +86,10 @@ test('phone: the driver screens run in English and switching language mid-delive
 
   // FE-6-06: xuất phát, bấm "Đã đến" rồi mới dỡ — dỡ bằng hộp đối chiếu (gõ mã của bên gửi), không có nút đánh dấu tay
   await page.getByRole('button', { name: 'Depart', exact: true }).tap()
+  // Thẻ liên hệ: giờ đến dự kiến tính từ vị trí xe mô phỏng, nói bằng tiếng Anh; điểm không có hạn
+  await expect(page.getByText(/^From the simulated vehicle position/)).toBeVisible()
+  await expect(page.getByText('Expected arrival', { exact: true })).toBeVisible()
+  await expect(page.getByText('No deadline', { exact: true })).toBeVisible()
   const arrive = page.getByRole('button', { name: 'Arrived at stop 1', exact: true })
   expect(await heightOf(arrive)).toBeGreaterThanOrEqual(56)
   expect(await overflowingText(page)).toStrictEqual([])

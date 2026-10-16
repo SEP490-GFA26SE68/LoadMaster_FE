@@ -1,5 +1,6 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   fetchDriverTripMonitoring → GET /api/trips/{id}/monitoring
  *   chưa có ở BE: fetchMyTrips, fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
  *   chưa có ở BE (Q-02, Q-11): startDelivery, arriveAtStop, completeStop, confirmUnloadByQr, confirmUnloadManually
  */
@@ -17,6 +18,7 @@ import {
   type ScanResult,
   type Trip,
   type TripLabel,
+  type TripMonitoring,
 } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { driverPlan, isVisibleTo, myTrips, type MyTrips } from './my-trips'
@@ -58,6 +60,19 @@ export async function fetchDriverTrip(tripId: string): Promise<DriverTrip> {
   const [trip, revisions, pickups, pickupPackages] = await Promise.all([db.getTrip(tripId), db.listRevisions(tripId), db.listPickupRequests(tripId), db.listPickupPackages(tripId)])
   if (!isVisibleTo(trip, viewer)) throw new MockDbError('NOT_FOUND', { collection: 'trips', id: tripId })
   return { trip, plan: driverPlan(trip, revisions) ?? null, pickups, pickupPackages }
+}
+
+/**
+ * Vị trí xe mới nhất và giờ đến dự kiến tính từ nó của các điểm chưa xong (FE-6-09), khi chuyến Đang vận chuyển; `refreshMs` là lúc nên
+ * đọc lại (`null` khi chuyến không còn chạy). Chuyến của tài xế khác trả `NOT_FOUND`.
+ */
+// GET /api/trips/{id}/monitoring
+export async function fetchDriverTripMonitoring(tripId: string): Promise<TripMonitoring> {
+  const db = getMockDb()
+  const viewer = sessionUser(db)
+  const [trip, monitoring] = await Promise.all([db.getTrip(tripId), db.getTripMonitoring(tripId)])
+  if (!isVisibleTo(trip, viewer)) throw new MockDbError('NOT_FOUND', { collection: 'trips', id: tripId })
+  return monitoring
 }
 
 /** Tài xế bấm Xuất phát: `loaded` → `delivering`, kiện sang `IN_TRANSIT` (D-84). Chỉ khi kho đã xếp xong. */

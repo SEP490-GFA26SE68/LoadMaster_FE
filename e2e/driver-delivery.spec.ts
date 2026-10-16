@@ -35,6 +35,12 @@ test('phone: the demo driver departs, arrives at every stop before unloading, ha
   await expect(scan).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Báo sự cố', exact: true })).toHaveCount(0)
   await expect(page.getByRole('link', { name: /^Gọi / })).toHaveAttribute('href', /^tel:\d{9,11}$/)
+  // Thẻ liên hệ: giờ đến dự kiến tính từ vị trí xe mô phỏng, kèm MOCK RESULT; điểm của chuyến seed không có hạn
+  const eta = page.getByText(/^Theo vị trí xe mô phỏng/)
+  await expect(eta).toBeVisible()
+  await expect(eta.getByText('MOCK RESULT', { exact: true })).toBeVisible()
+  await expect(page.getByText('Dự kiến đến', { exact: true })).toBeVisible()
+  await expect(page.getByText('Không có hạn', { exact: true })).toBeVisible()
   expect(await overflowingText(page)).toStrictEqual([])
   await arrive(1).tap()
   await expect(page.getByText(/^Đã đến điểm 1 lúc \d\d:\d\d\.$/)).toBeVisible()
@@ -100,6 +106,19 @@ test('phone: the demo driver departs, arrives at every stop before unloading, ha
     await expect(page.getByText('Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.', { exact: true })).toBeVisible()
     await expect(complete).toBeEnabled()
     await complete.tap()
+    // Hoàn tất hỏi lại trong tờ trượt từ đáy: nói điều sẽ ghi vào kho; ghi xong tờ tự đóng, không có toast thành công
+    const question = page.getByRole('dialog', { name: new RegExp(`^Hoàn tất điểm ${stop} — `) })
+    const confirm = question.getByRole('button', { name: 'Hoàn tất', exact: true })
+    if (stop === 1) {
+      await expect(question.getByText('119 kiện đã dỡ được ghi Đã giao.', { exact: true })).toBeVisible()
+      await expect(question.getByText('1 kiện chưa dỡ ở lại xe, được ghi Hoàn trả:', { exact: true })).toBeVisible()
+      await expect(question).toContainText(refused)
+      expect(await heightOf(confirm)).toBeGreaterThanOrEqual(56)
+      expect(await overflowingText(page)).toStrictEqual([])
+    }
+    if (stop === 3) await expect(question.getByText('Đây là điểm cuối: hoàn tất là giao xong chuyến.', { exact: true })).toBeVisible()
+    await confirm.tap()
+    await expect(question).toBeHidden()
     if (stop < 3) await expect(heading(stop + 1)).toBeVisible()
   }
   // seed-trips.ts: TRIP-010 chở 80 + 40 kiện tới điểm 1, 45 kiện tới điểm 2, 45 kiện tới điểm 3

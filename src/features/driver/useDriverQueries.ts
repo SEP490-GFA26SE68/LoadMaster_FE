@@ -7,6 +7,7 @@ import {
   confirmUnloadByQr,
   confirmUnloadManually,
   fetchDriverTripLabels,
+  fetchDriverTripMonitoring,
   fetchDriverTrip,
   fetchMyTrips,
   reportDeliveryIssue,
@@ -30,6 +31,21 @@ function tripKey(tripId: string) {
 
 export function useDriverTripQuery(tripId: string) {
   return useQuery({ queryKey: tripKey(tripId), queryFn: () => fetchDriverTrip(tripId), staleTime: 0 })
+}
+
+/**
+ * Vị trí xe và giờ đến dự kiến trực tiếp của chuyến Đang vận chuyển (FE-6-09). Đọc lại theo `refreshMs` kho trả — lúc có điểm vị trí kế
+ * tiếp; chuyến hết chạy thì `refreshMs` là `null`, hết nhịp. `enabled` tắt khi màn không cần (chưa xuất phát, chưa có tuyến, đã đến điểm):
+ * không có hẹn giờ riêng, gỡ màn là hết nhịp.
+ */
+export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...tripKey(tripId), 'monitoring'],
+    queryFn: () => fetchDriverTripMonitoring(tripId),
+    enabled,
+    staleTime: 0,
+    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
+  })
 }
 
 /** Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). */

@@ -70,8 +70,6 @@ export const tripReport = {
     notArrived: 'Not arrived',
     noEta: 'Not yet',
     noDeadline: 'No deadline',
-    onTime: 'Arrived on time',
-    late: 'Arrived late',
   },
   verify: {
     title: 'Package verification',

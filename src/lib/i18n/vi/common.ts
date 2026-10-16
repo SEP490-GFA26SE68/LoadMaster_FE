@@ -23,6 +23,8 @@ export const common = {
   tripExceptionTypes: { TRAFFIC: 'Tắc đường', ACCIDENT: 'Tai nạn', ROAD_CONSTRUCTION: 'Công trình trên đường', VEHICLE_BREAKDOWN: 'Hỏng xe', OTHER: 'Khác' },
   /** Mức hạn của điểm giao theo giờ đến dự kiến (`DeadlineStatus`, FE-4b-09): chi tiết chuyến và hộp Chi tiết của Planner (FE-5b-07). */
   deadlineStatuses: { OK: 'Kịp hạn', AT_RISK: 'Sát hạn', MISSED: 'Trễ hạn dự kiến' },
+  /** Giờ đến thật so với hạn giao của điểm: báo cáo chuyến và màn điểm giao của tài xế. */
+  arrivalStatuses: { onTime: 'Đến kịp hạn', late: 'Đến trễ hạn' },
   /** Loại hàng của kiện (`HandlingClass`, D-69, FE-3b-04): một nguồn cho kho kiện, nhãn, yêu cầu giao và nhật ký. */
   handlingClasses: { STANDARD: 'Thường', FRAGILE: 'Dễ vỡ', REFRIGERATED: 'Hàng lạnh', HAZARDOUS: 'Nguy hiểm', HIGH_VALUE: 'Giá trị cao' },
   /** Trạng thái kiện của kho kiện (`PackageStatus`, D-70, FE-3b-01), key trùng mã của kho. */

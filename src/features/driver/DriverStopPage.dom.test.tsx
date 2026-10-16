@@ -3,9 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { expect, test, vi } from 'vitest'
 import { getMockDb } from '@/lib/mock-db'
-import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
-import { loadingOrder, stageAll } from '@/test/trip-flow'
-import { LOAD, renderDriver } from './driver-test-utils'
+import { completeStop, LOAD, loadedTwoCartonTrip, renderDriver } from './driver-test-utils'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 
@@ -28,26 +26,6 @@ async function approvedUnloadOrder(tripId: string, stop: number) {
 
 function rowIds(container: HTMLElement) {
   return [...container.querySelectorAll('li[data-package-id]')].map((row) => row.getAttribute('data-package-id'))
-}
-
-/**
- * Chuyến hai thùng của tài xế demo, đã duyệt; kho đã soạn và xếp xong, mọi kiện đều quét (`VF-001`…`VF-004` khi không kiện nào hỏng).
- * `damaged` là các kiện hỏng lúc xếp, bị bỏ lại kho — hai thùng nằm cạnh nhau trên sàn nên không kiện nào tựa lên kiện nào.
- */
-async function loadedTwoCartonTrip(damaged: string[] = []) {
-  const db = getMockDb()
-  const trip = await db.createTrip({ ...twoCartonTrip(), driverId: 'US-0004' })
-  const revision = await db.addRevision({ tripId: trip.id, request: twoCartonRequest(), result: twoCartonResult() })
-  await db.approveRevision(revision.id, [])
-  await db.startLoading(trip.id)
-  await stageAll(db, trip.id)
-  const tokens = new Map((await db.listTripLabels(trip.id)).map((label) => [label.packageInstanceId, label.qrToken]))
-  for (const id of await loadingOrder(db, trip.id)) {
-    if (damaged.includes(id)) await db.reportDamagedPackage(trip.id, id)
-    else await db.confirmLoadingByQr(trip.id, tokens.get(id) ?? '')
-  }
-  await db.completeLoading(trip.id)
-  return trip.id
 }
 
 /** Gõ một mã vào hộp đối chiếu đang mở rồi bấm "Đối chiếu mã". */
@@ -127,13 +105,17 @@ test('the driver delivers a trip (FE-6-06): depart, arrive, unload by verificati
   expect(row).toHaveClass('bg-badge-success-bg')
   expect(within(row).getByText('Đã dỡ · gõ mã')).toBeInTheDocument()
   await waitFor(() => expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeEnabled(), WRITE)
-  await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất điểm giao' }))
+  // Hoàn tất qua hộp hỏi lại: hộp nói điều sẽ ghi, điểm kế tiếp
+  await completeStop('Hoàn tất điểm giao', (dialog) => {
+    expect(within(dialog).getByText('1 kiện đã dỡ được ghi Đã giao.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tiếp theo: điểm 2 · Kho Bách Hoá Xanh Dĩ An.')).toBeInTheDocument()
+  })
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' }, WRITE)).toBeInTheDocument()
   expect(await poolStatus('PKG-002-01')).toBe('DELIVERED')
 
   // Điểm 2 không có kiện nào: vẫn phải đến rồi mới hoàn tất
   await userEvent.click(screen.getByRole('button', { name: 'Đã đến điểm 2' }))
-  await userEvent.click(await screen.findByRole('button', { name: 'Hoàn tất điểm giao' }, WRITE))
+  await completeStop()
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 3 / 3' }, WRITE)).toBeInTheDocument()
 
   // Điểm 3: khách từ chối PKG-001-01; "Khác" mà không ghi chú thì không ghi
@@ -154,7 +136,14 @@ test('the driver delivers a trip (FE-6-06): depart, arrive, unload by verificati
   expect(within(refused).getByText('Sự cố: Khách từ chối')).toBeInTheDocument()
   expect(within(refused).getByText('Hoàn trả — kiện ở lại xe')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất điểm giao' }))
+  // Hộp hỏi lại nói bằng chữ kiện nào thành Hoàn trả, sự cố đã báo, và đây là điểm cuối
+  await completeStop('Hoàn tất điểm giao', (dialog) => {
+    expect(within(dialog).getByText('1 kiện chưa dỡ ở lại xe, được ghi Hoàn trả:')).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('PKG-001-01 · Carton A')
+    expect(within(dialog).getByText('Đã báo sự cố cho 1 kiện ở điểm này.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Đây là điểm cuối: hoàn tất là giao xong chuyến.')).toBeInTheDocument()
+    expect(within(dialog).queryByText(/được ghi Đã giao/)).not.toBeInTheDocument()
+  })
   expect(await screen.findByRole('heading', { level: 1, name: 'Tổng kết chuyến' }, WRITE)).toBeInTheDocument()
   expect(screen.getByText(`Đã giao xong chuyến ${tripId}`)).toBeInTheDocument()
   expect(screen.getByText('Số điểm giao').nextSibling).toHaveTextContent('3')

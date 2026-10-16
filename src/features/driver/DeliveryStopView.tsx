@@ -18,6 +18,7 @@ import { DriverStopList } from './DriverStopList'
 import { PickupItemRow } from './PickupItemRow'
 import { ReportIssueDialog } from './ReportIssueDialog'
 import { StopContactCard } from './StopContactCard'
+import { StopEta } from './StopEta'
 import { StopFooter } from './StopFooter'
 import { StopMoreActions } from './StopMoreActions'
 import { StopNotices } from './StopNotices'
@@ -28,8 +29,9 @@ import { useUnloadScan } from './useUnloadScan'
 /**
  * Màn tài xế tại điểm giao (LM-061, LM-087, FE-6-06) — điện thoại, một tay, ngoài trời. Vùng chạm 56px, chữ 16px, một hành động chính
  * ở chân màn theo bước của luồng giao nhiều điểm (D-84): "Xuất phát" khi kho đã xếp xong; đang vận chuyển thì "Đã đến điểm n" — ghi giờ
- * đến thật — rồi mới tới "Hoàn tất điểm giao" (`StopFooter`). Kho chưa xếp xong thì chỉ xem trước điểm 1. Đang vận chuyển có công tắc
- * "Dùng GPS thật" đầu vùng cuộn (`DriverGpsToggle`, FE-6-13).
+ * đến thật — rồi mới tới "Hoàn tất điểm giao" (`StopFooter`, hỏi lại trước khi ghi). Kho chưa xếp xong thì chỉ xem trước điểm 1. Đang vận
+ * chuyển có công tắc "Dùng GPS thật" đầu vùng cuộn (`DriverGpsToggle`, FE-6-13). Thẻ liên hệ có giờ đến dự kiến (hoặc giờ đến thật) và hạn
+ * giao của điểm (`StopEta`).
  * Kiện, thứ tự dỡ lấy từ phương án kho đã xếp; kiện đã dỡ, sự cố và điểm đã hoàn tất đọc/ghi trong kho (D-47) — mở lại là đúng điểm.
  *
  * Lệch có chủ ý khỏi design: nút chỉ đường trong design màu primary — mỗi màn chỉ một nút primary (mục 5) nên đổi sang secondary;
@@ -78,7 +80,9 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
         <StopNotices view={view} stale={model.revision?.stale ?? false} />
         {view.mode === 'delivering' ? <DriverGpsToggle tripId={trip.id} /> : null}
         {stops.some((stop) => stop.kind === 'PICKUP') ? <DriverStopList stops={stops} currentNumber={view.stop.number} completedStops={view.completedStops} /> : null}
-        <StopContactCard stop={view.stop} />
+        <StopContactCard stop={view.stop}>
+          <StopEta trip={trip} stopNumber={view.stop.number} arrivedAt={view.arrivedAt} delivering={view.mode === 'delivering'} />
+        </StopContactCard>
         <StopProgress view={view} />
 
         <div className="flex flex-none flex-wrap gap-2 *:grow">
@@ -134,7 +138,7 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
         ) : null}
       </div>
 
-      <StopFooter view={view} actions={actions} scanPending={scan.pending} />
+      <StopFooter view={view} stops={stops} actions={actions} scanPending={scan.pending} />
 
       <ReportIssueDialog
         open={issueOpen}
