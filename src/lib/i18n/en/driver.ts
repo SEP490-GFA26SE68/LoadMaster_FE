@@ -17,7 +17,6 @@ export const driver = {
     DAMAGED: 'The warehouse reported a damaged package on trip {tripId} while loading, so the trip went back to planning. The dispatcher re-plans, then the warehouse stages the cargo again; the trip then shows up in "My trips" again.',
     SHORTAGE: 'The warehouse could not find a package of trip {tripId} while staging, and the dispatcher dropped it from the trip. The dispatcher re-plans, then the warehouse stages the cargo again; the trip then shows up in "My trips" again.',
   },
-  stale: 'This approved plan is outdated — the vehicle or cargo changed after optimization. Check with the dispatcher before unloading.',
   exit: 'Leave driver screen',
   list: {
     title: 'My trips',

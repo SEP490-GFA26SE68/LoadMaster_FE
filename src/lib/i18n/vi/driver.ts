@@ -22,7 +22,6 @@ export const driver = {
     DAMAGED: 'Kho báo một kiện của chuyến {tripId} bị hỏng lúc xếp nên chuyến quay về lập kế hoạch. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
     SHORTAGE: 'Kho không tìm thấy một kiện của chuyến {tripId} lúc soạn hàng, điều phối đã bỏ kiện đó khỏi chuyến. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
   },
-  stale: 'Phương án đã duyệt này đã lỗi thời — xe hoặc kiện của chuyến đổi sau khi tối ưu. Hỏi điều phối viên trước khi dỡ.',
   exit: 'Thoát màn hình tài xế',
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
