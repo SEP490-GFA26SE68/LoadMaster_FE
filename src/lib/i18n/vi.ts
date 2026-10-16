@@ -16,6 +16,7 @@ import { viewer } from './vi/viewer'
 import { fields } from './vi/fields'
 import { admin } from './vi/admin'
 import { designSystem } from './vi/designSystem'
+import { apiErrors } from './vi/apiErrors'
 import { dataErrors } from './vi/dataErrors'
 import { audit } from './vi/audit'
 import { profile } from './vi/profile'
@@ -69,6 +70,7 @@ export const vi = {
   admin,
   designSystem,
   dataErrors,
+  apiErrors,
   audit,
   profile,
   notifications,

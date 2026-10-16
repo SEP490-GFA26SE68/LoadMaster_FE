@@ -30,7 +30,7 @@ type AuthValue = {
   /** Chế độ kho mẫu. */
   signIn: (email: string, password: string) => Promise<User>
   /** Chế độ Keycloak: chuyển sang trang đăng nhập của Keycloak; `returnTo` là trang sẽ mở sau khi đăng nhập xong. */
-  signInWithRedirect: (returnTo?: string) => Promise<void>
+  signInWithRedirect: (returnTo: string | undefined, locale: string) => Promise<void>
   signOut: () => Promise<void>
   /** Đọc lại người dùng của phiên, ví dụ sau khi sửa hồ sơ (LM-096). */
   refreshUser: () => void
@@ -137,10 +137,10 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
     return signedIn
   }, [queryClient, viaKeycloak])
 
-  const signInWithRedirect = useCallback(async (returnTo?: string) => {
+  const signInWithRedirect = useCallback(async (returnTo: string | undefined, locale: string) => {
     if (session === null) throw new Error('Chế độ kho mẫu đăng nhập bằng signIn')
     rememberReturnPath(returnTo)
-    await session.login(`${window.location.origin}/dang-nhap`)
+    await session.login(`${window.location.origin}/dang-nhap`, locale)
   }, [session])
 
   const signOut = useCallback(async () => {

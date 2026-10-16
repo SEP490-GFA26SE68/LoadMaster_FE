@@ -18,6 +18,7 @@ import { viewer } from './en/viewer'
 import { fields } from './en/fields'
 import { admin } from './en/admin'
 import { designSystem } from './en/designSystem'
+import { apiErrors } from './en/apiErrors'
 import { dataErrors } from './en/dataErrors'
 import { audit } from './en/audit'
 import { profile } from './en/profile'
@@ -63,6 +64,7 @@ export const en = {
   admin,
   designSystem,
   dataErrors,
+  apiErrors,
   audit,
   profile,
   notifications,

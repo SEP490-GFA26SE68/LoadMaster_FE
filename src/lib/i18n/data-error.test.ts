@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { MockDbError, type MockDbErrorCode, type MockDbErrorParams } from '@/lib/mock-db/errors'
+import { ApiError } from '@/lib/api-client'
 import { createTranslator, dataErrorMessage } from '@/lib/i18n'
 
 /** Một bộ tham số mẫu cho mỗi mã lỗi của kho — thiếu mã là lỗi kiểu. */
@@ -147,4 +148,10 @@ test('a record of another company is named by its id, never by the company it be
   const error = new MockDbError('FORBIDDEN_COMPANY', SAMPLES.FORBIDDEN_COMPANY)
   expect(dataErrorMessage(error, createTranslator('vi'))).toBe('TRIP-PN-001 thuộc công ty khác nên không dùng được.')
   expect(dataErrorMessage(error, createTranslator('en'))).toBe('TRIP-PN-001 belongs to another company and cannot be used.')
+})
+
+test('backend errors use the sentence of their code, never the raw server message; unknown codes fall back', () => {
+  expect(dataErrorMessage(new ApiError('EMAIL_ALREADY_EXISTS', { status: 409 }), createTranslator('vi'))).toBe('Email này đã có người dùng.')
+  expect(dataErrorMessage(new ApiError('NETWORK_ERROR'), createTranslator('en'))).toBe('Cannot reach the server. Check the network and try again.')
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 400 }), createTranslator('en'))).toBe('Something went wrong. Try again later.')
 })

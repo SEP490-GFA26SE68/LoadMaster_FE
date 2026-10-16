@@ -15,7 +15,7 @@ import { UserFormDialog } from './UserFormDialog'
 import { UsersTable } from './UsersTable'
 import { userDistinct } from './user-summary'
 import { useUserActions } from './useUserActions'
-import { useCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
+import { useUserCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
 
 /**
  * Quản trị người dùng (LM-092, D-41, D-42): danh sách đọc từ kho qua `useUsersQuery` (tìm, lọc, sắp xếp, phân trang trên URL), menu
@@ -34,7 +34,7 @@ export function UsersPage() {
   const users = query.data ?? []
   // Chưa biết người xem (màn luôn nằm sau `RequireAuth`) thì theo phạm vi hẹp hơn
   const scope = currentUser ? userScopeOf(currentUser.role) : 'company'
-  const companies = useCompanyNamesQuery(scope === 'platform')
+  const companies = useUserCompanyNamesQuery(scope === 'platform')
   const { dialog } = actions
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
   // Dòng số đếm dưới tiêu đề: đếm trên danh sách kho trả cho người xem (quản trị hệ thống thấy công ty, quản trị công ty thấy kho)

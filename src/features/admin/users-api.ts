@@ -1,52 +1,150 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchUsers, fetchCompanies, createUser, updateUser, setUserStatus, deleteUser, resetPassword
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Chế độ `VITE_AUTH_SOURCE=keycloak` gọi backend, chế độ mẫu gọi kho.
+ *   fetchUsers        GET    /api/users
+ *   fetchUserCompanies GET   /api/companies
+ *   createUser        POST   /api/users
+ *   updateUser        PUT    /api/users/{id}
+ *   setUserStatus     PATCH  /api/users/{id}/status
+ *   deleteUser        DELETE /api/users/{id}
+ *   resetPassword     POST   /api/users/{id}/reset-password
+ *   chưa có ở BE: fetchCompanies (danh sách công ty của Nhật ký, Hỗ trợ — vẫn đọc kho)
+ * Tên vai trò: backend đang dùng `ADMIN`, `MANAGER` cho hai vai trò công ty; sẽ đổi sang `COMPANY_ADMIN`, `COMPANY_MANAGER`.
  */
 
+import { roleOfBackend } from '@/features/auth/backend-user'
+import { api, ApiError } from '@/lib/api-client'
+import { backendConfig } from '@/lib/backend-config'
 import { getMockDb, type Company, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
-import type { User, UserStatus } from '@/types/user'
+import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
+import { BACKEND_ROLE_CODES, type Role, type User, type UserStatus } from '@/types/user'
 
 /**
- * Lớp gọi API của màn Người dùng (LM-092, D-42) — nơi duy nhất trong màn biết về kho. Kho kiểm luật (email trùng, tự khoá/xoá mình,
- * người quản trị cuối cùng, tài xế còn chuyến, phạm vi theo vai trò — FE-0-08) và từ chối bằng `MockDbError`; màn hiện lỗi qua
- * `dataErrorMessage`. Mọi hàm ghi thêm một sự kiện nhật ký. Nối backend thật chỉ thay thân hàm.
+ * Lớp gọi API của màn Người dùng (LM-092, D-42). Kho mẫu kiểm luật (email trùng, tự khoá/xoá mình, người quản trị cuối cùng, tài xế còn
+ * chuyến, phạm vi theo vai trò — FE-0-08) và từ chối bằng `MockDbError`; backend từ chối bằng `ApiError`. Màn hiện cả hai qua
+ * `dataErrorMessage`.
  */
 
-/** Người dùng trong phạm vi của người đang đăng nhập: quản trị hệ thống nhận mọi tài khoản, quản trị công ty chỉ người của công ty mình. */
-// chưa có ở BE
-export function fetchUsers(): Promise<User[]> {
-  return getMockDb().listUsers()
+type BackendUser = {
+  readonly id: number
+  readonly email: string
+  readonly fullName: string
+  readonly phoneNumber: string | null
+  readonly userRoleType: string
+  readonly status: string
+  readonly companyId: number | null
 }
 
-/** Công ty trong phạm vi của người đang đăng nhập — tên công ty cho cột và bộ lọc công ty của quản trị hệ thống (màn Người dùng, Nhật ký). */
+type BackendCompany = { readonly id: number; readonly companyName: string }
+
+type BackendTemporaryPassword = { readonly user: BackendUser; readonly temporaryPassword: string }
+
+const ON_BACKEND = backendConfig.authSource === 'keycloak'
+
+/** Backend chưa có màn danh sách phân trang ở FE: đọc một trang đủ lớn. */
+const PAGE_SIZE = 500
+
+const BACKEND_ROLE: Readonly<Record<Role, string>> = { ...BACKEND_ROLE_CODES, companyAdmin: 'ADMIN', manager: 'MANAGER' }
+
+function backendRole(role: Role): string {
+  return BACKEND_ROLE[role]
+}
+
+function phoneOf(value: string | null): string {
+  const digits = phoneDigits(value ?? '')
+  return PHONE_PATTERN.test(digits) ? formatPhone(digits) : (value ?? '')
+}
+
+/** Vai trò backend lạ (chưa có ở FE) không vào danh sách: màn không có cách hiển thị hay thao tác đúng với nó. */
+function userOf(dto: BackendUser): User | null {
+  const role = roleOfBackend(dto.userRoleType)
+  if (role === null) return null
+  return {
+    id: String(dto.id),
+    fullName: dto.fullName,
+    email: dto.email,
+    phone: phoneOf(dto.phoneNumber),
+    role,
+    // Backend có ACTIVE, INACTIVE, LOCKED; FE chỉ phân biệt dùng được hay không
+    status: dto.status === 'ACTIVE' ? 'active' : 'suspended',
+    lastActiveAt: null,
+    ...(dto.companyId === null ? {} : { companyId: String(dto.companyId) }),
+  }
+}
+
+function requiredUserOf(dto: BackendUser): User {
+  const user = userOf(dto)
+  if (user === null) throw new ApiError('SERVER_ERROR')
+  return user
+}
+
+function passwordOf(dto: BackendTemporaryPassword): TemporaryPassword {
+  return { user: requiredUserOf(dto.user), temporaryPassword: dto.temporaryPassword }
+}
+
+/** Người dùng trong phạm vi của người đang đăng nhập: quản trị hệ thống nhận mọi tài khoản, quản trị công ty chỉ người của công ty mình. */
+// GET /api/users
+export async function fetchUsers(): Promise<User[]> {
+  if (!ON_BACKEND) return getMockDb().listUsers()
+  const users = await api().get<BackendUser[]>('/api/users', { query: { page: 0, size: PAGE_SIZE } })
+  return users.flatMap((dto) => userOf(dto) ?? [])
+}
+
+/** Công ty trong phạm vi của người đang đăng nhập — tên công ty cho cột và bộ lọc công ty của Nhật ký, Hỗ trợ (kho mẫu). */
 // chưa có ở BE
 export function fetchCompanies(): Promise<Company[]> {
   return getMockDb().listCompanies()
 }
 
-/** Kho cấp mã, trạng thái hoạt động và mật khẩu tạm — mật khẩu chỉ có trong kết quả này. */
-// chưa có ở BE
-export function createUser(input: NewUser): Promise<TemporaryPassword> {
-  return getMockDb().createUser(input)
+/** Tên công ty cho cột và bộ lọc công ty của màn Người dùng — cùng nguồn với mã công ty của danh sách người dùng. */
+// GET /api/companies
+export async function fetchUserCompanies(): Promise<{ id: string; name: string }[]> {
+  if (!ON_BACKEND) return (await getMockDb().listCompanies()).map(({ id, name }) => ({ id, name }))
+  const page = await api().get<{ content: BackendCompany[] }>('/api/companies', { query: { page: 0, size: PAGE_SIZE } })
+  return page.content.map((company) => ({ id: String(company.id), name: company.companyName }))
 }
 
-// chưa có ở BE
-export function updateUser(id: string, changes: UserChanges): Promise<User> {
-  return getMockDb().updateUser(id, changes)
+/** Cấp mã, trạng thái hoạt động và mật khẩu tạm — mật khẩu chỉ có trong kết quả này. Backend tự gán công ty của quản trị công ty. */
+// POST /api/users
+export async function createUser(input: NewUser): Promise<TemporaryPassword> {
+  if (!ON_BACKEND) return getMockDb().createUser(input)
+  const result = await api().post<BackendTemporaryPassword>('/api/users', {
+    body: { email: input.email, fullName: input.fullName, phoneNumber: phoneDigits(input.phone), role: backendRole(input.role) },
+  })
+  return passwordOf(result)
 }
 
-// chưa có ở BE
-export function setUserStatus(id: string, status: UserStatus): Promise<User> {
-  return getMockDb().setUserStatus(id, status)
+/** `current` là tài khoản trước khi sửa: backend chưa đổi được email, nên đổi email bị từ chối thay vì bỏ qua im lặng. */
+// PUT /api/users/{id}
+export async function updateUser(id: string, changes: UserChanges, current?: User): Promise<User> {
+  if (!ON_BACKEND) return getMockDb().updateUser(id, changes)
+  if (current === undefined) throw new Error('updateUser cần tài khoản trước khi sửa khi nối backend')
+  if (changes.email !== undefined && changes.email.toLowerCase() !== current.email.toLowerCase()) throw new ApiError('EMAIL_CHANGE_UNSUPPORTED')
+  const result = await api().put<BackendUser>(`/api/users/${id}`, {
+    body: {
+      fullName: changes.fullName ?? current.fullName,
+      phoneNumber: phoneDigits(changes.phone ?? current.phone),
+      role: backendRole(changes.role ?? current.role),
+    },
+  })
+  return requiredUserOf(result)
 }
 
-// chưa có ở BE
-export function deleteUser(id: string): Promise<void> {
-  return getMockDb().deleteUser(id)
+// PATCH /api/users/{id}/status
+export async function setUserStatus(id: string, status: UserStatus): Promise<User> {
+  if (!ON_BACKEND) return getMockDb().setUserStatus(id, status)
+  const result = await api().patch<BackendUser>(`/api/users/${id}/status`, { body: { status: status === 'active' ? 'ACTIVE' : 'LOCKED' } })
+  return requiredUserOf(result)
+}
+
+// DELETE /api/users/{id}
+export async function deleteUser(id: string): Promise<void> {
+  if (!ON_BACKEND) return getMockDb().deleteUser(id)
+  await api().delete<unknown>(`/api/users/${id}`)
 }
 
 /** Mật khẩu cũ hết hiệu lực ngay; mật khẩu tạm mới chỉ trả về một lần. */
-// chưa có ở BE
-export function resetPassword(id: string): Promise<TemporaryPassword> {
-  return getMockDb().resetPassword(id)
+// POST /api/users/{id}/reset-password
+export async function resetPassword(id: string): Promise<TemporaryPassword> {
+  if (!ON_BACKEND) return getMockDb().resetPassword(id)
+  return passwordOf(await api().post<BackendTemporaryPassword>(`/api/users/${id}/reset-password`))
 }

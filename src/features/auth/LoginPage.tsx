@@ -10,7 +10,7 @@ import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
-import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
+import { useLocale, useT, type MessageKey, type TFunction } from '@/lib/i18n'
 import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
 import { landingPath } from './landing'
@@ -79,6 +79,7 @@ const HIGHLIGHTS = [
  */
 export function LoginPage() {
   const t = useT()
+  const { locale } = useLocale()
   const { user, status, source, sessionError, signIn, signInWithRedirect } = useAuth()
   const viaKeycloak = source === 'keycloak'
   const navigate = useNavigate()
@@ -111,7 +112,7 @@ export function LoginPage() {
 
   function onSsoSignIn() {
     setServerError(null)
-    signInWithRedirect(from).catch((error: unknown) => setServerError(errorKeyOf(error)))
+    signInWithRedirect(from, locale).catch((error: unknown) => setServerError(errorKeyOf(error)))
   }
 
   return (

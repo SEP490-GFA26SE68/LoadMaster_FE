@@ -19,7 +19,7 @@ window.matchMedia ??= (query: string) => ({
 function fakeSession(signedIn: boolean) {
   const session = {
     start: vi.fn(() => Promise.resolve(signedIn)),
-    login: vi.fn((_returnTo: string) => Promise.resolve()),
+    login: vi.fn((_returnTo: string, _locale: string) => Promise.resolve()),
     logout: vi.fn((_returnTo: string) => Promise.resolve()),
     token: vi.fn(() => Promise.resolve(signedIn ? 'TOKEN' : null)),
   } satisfies KeycloakSession
@@ -90,7 +90,7 @@ test('without a Keycloak session the login screen offers one button and no passw
   expect(screen.getByText(/vẫn là dữ liệu mẫu/)).toBeInTheDocument()
 
   await user.click(button)
-  expect(session.login).toHaveBeenCalledWith(`${window.location.origin}/dang-nhap`)
+  expect(session.login).toHaveBeenCalledWith(`${window.location.origin}/dang-nhap`, 'vi')
 })
 
 test('coming back from Keycloak reads the profile with the session token and opens the home screen of the backend role', async () => {

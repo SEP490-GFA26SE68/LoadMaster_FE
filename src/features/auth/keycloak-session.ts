@@ -8,8 +8,8 @@ import { backendConfig, type BackendConfig } from '@/lib/backend-config'
 export type KeycloakSession = {
   /** Gọi một lần khi mở app: `true` khi trình duyệt còn phiên ở Keycloak (kể cả vừa quay về từ trang đăng nhập). */
   start(): Promise<boolean>
-  /** Chuyển sang trang đăng nhập của Keycloak; xong thì Keycloak đưa người dùng về `returnTo`. */
-  login(returnTo: string): Promise<void>
+  /** Chuyển sang trang đăng nhập của Keycloak, mở bằng ngôn ngữ `locale` đang chọn ở app; xong thì Keycloak đưa người dùng về `returnTo`. */
+  login(returnTo: string, locale: string): Promise<void>
   /** Đóng phiên ở Keycloak rồi về `returnTo`. */
   logout(returnTo: string): Promise<void>
   /** Token truy cập còn hạn (tự làm mới khi sắp hết); `null` khi không còn phiên. */
@@ -44,8 +44,8 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
       )
       return started
     },
-    async login(returnTo) {
-      await (await keycloak()).login({ redirectUri: returnTo })
+    async login(returnTo, locale) {
+      await (await keycloak()).login({ redirectUri: returnTo, locale })
     },
     async logout(returnTo) {
       await (await keycloak()).logout({ redirectUri: returnTo })
