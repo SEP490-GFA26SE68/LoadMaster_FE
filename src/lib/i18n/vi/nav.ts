@@ -20,6 +20,8 @@ export const nav = {
   companies: 'Công ty',
   support: 'Hỗ trợ',
   supportRequests: 'Yêu cầu hỗ trợ',
+  // Liên hệ của khách: yêu cầu khách chưa có tài khoản gửi từ trang giới thiệu; ba vai trò nền tảng
+  contacts: 'Liên hệ của khách',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

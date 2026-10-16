@@ -18,6 +18,7 @@ export const nav = {
   companies: 'Companies',
   support: 'Support',
   supportRequests: 'Support requests',
+  contacts: 'Guest contacts',
   account: 'Account {name}',
   signOut: 'Sign out',
   profile: 'My profile',

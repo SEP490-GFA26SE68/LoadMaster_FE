@@ -40,6 +40,9 @@ import { billing } from './vi/billing'
 import { payment } from './vi/payment'
 import { companies } from './vi/companies'
 import { support } from './vi/support'
+import { contacts } from './vi/contacts'
+import { landing } from './vi/landing'
+import { pricing } from './vi/pricing'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -93,4 +96,7 @@ export const vi = {
   payment,
   companies,
   support,
+  contacts,
+  landing,
+  pricing,
 } as const

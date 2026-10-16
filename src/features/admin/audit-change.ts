@@ -2,7 +2,8 @@ import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
 import type { AuditEvent } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
-import { paramLabel, paramValue, type AuditDirectory, type AuditLogRow } from './audit-log'
+import type { AuditDirectory, AuditLogRow } from './audit-log'
+import { paramLabel, paramValue } from './audit-params'
 
 /**
  * Sự kiện sửa đúng một giá trị (V2.3, quyết định 2) mang `before` và `after`: cột Chi tiết hiện chúng thành một chip "80 → 86" cạnh

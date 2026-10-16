@@ -55,9 +55,9 @@ test.each<[Role, string[]]>([
   ['manager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe']],
   ['warehouse', ['Kho']],
   ['driver', ['Tài xế']],
-  ['systemManager', ['Gói cước']],
-  ['systemSupporter', ['Hỗ trợ']],
-  ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký']],
+  ['systemManager', ['Gói cước', 'Liên hệ của khách']],
+  ['systemSupporter', ['Hỗ trợ', 'Liên hệ của khách']],
+  ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký', 'Liên hệ của khách']],
   ['companyAdmin', ['Người dùng', 'Nhật ký', 'Gói và credit']],
 ])('nav rail của %s chỉ có mục được phép, theo thứ tự của vai trò', (role, items) => {
   renderRail(role)

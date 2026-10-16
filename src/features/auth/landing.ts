@@ -17,6 +17,11 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
   driver: '/tai-xe',
 }
 
+/** Trang giới thiệu công khai: khách chưa đăng nhập mở gốc `/` thì tới đây thay cho màn đăng nhập (`RequireAuth`). */
+export const PUBLIC_HOME = '/gioi-thieu'
+/** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
+export const PUBLIC_PRICING = '/bang-gia'
+
 /**
  * Trang mở sau khi đăng nhập. `from` là trang định vào trước khi bị chuyển tới màn đăng nhập (kèm query).
  * Gốc `/` và chính màn đăng nhập không phải lựa chọn của người dùng — mở ứng dụng luôn đi qua đó — nên đổi thành

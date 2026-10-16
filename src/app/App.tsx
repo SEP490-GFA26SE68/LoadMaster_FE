@@ -44,6 +44,10 @@ const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m)
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
+// Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
+const LandingPage = lazy(() => import('@/features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })))
+const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
+const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
 const ComponentSheetPage = lazy(() => import('./design-system/ComponentSheetPage').then((m) => ({ default: m.ComponentSheetPage })))
 
@@ -94,6 +98,15 @@ export const routes: RouteObject[] = [
         children: [{ index: true, element: <LoginPage />, handle: titled((t) => t('titles.login')) }],
       },
 
+      // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thì RequireAuth đưa sang `/gioi-thieu`.
+      {
+        element: <RouteOutlet />,
+        children: [
+          { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
+          { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
+        ],
+      },
+
       {
         element: <RequireAuth />,
         children: [
@@ -130,6 +143,8 @@ export const routes: RouteObject[] = [
                   guarded('companies.manage', [{ path: '/nen-tang/cong-ty', element: <CompaniesPage />, handle: titled((t) => t('titles.companies')) }]),
                   // Yêu cầu hỗ trợ của mọi công ty: màn chính của Hỗ trợ khách hàng (FE-8-07). Người dùng công ty gửi yêu cầu ở hộp thoại của menu tài khoản
                   guarded('support.handle', [{ path: '/ho-tro', element: <SupportPage />, handle: titled((t) => t('titles.support')) }]),
+                  // Liên hệ của khách gửi từ trang giới thiệu: ba vai trò nền tảng
+                  guarded('contacts.handle', [{ path: '/lien-he-khach', element: <ContactsPage />, handle: titled((t) => t('titles.contacts')) }]),
                   // Danh mục gói cước: màn chính của quản lý nền tảng (FE-8-02, D-90)
                   guarded('subscriptionPlans.manage', [{ path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) }]),
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty

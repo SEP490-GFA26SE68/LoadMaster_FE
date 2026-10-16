@@ -1,20 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Boxes, Gauge, Layers, Lock } from 'lucide-react'
+import { ArrowLeft, Boxes, Gauge, Layers, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { Logo } from '@/components/brand/Logo'
 import { Lumo } from '@/components/brand/Lumo'
+import { CargoArtwork } from '@/components/CargoArtwork'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { useLocale, useT, type MessageKey, type TFunction } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
-import { landingPath } from './landing'
-import { LoginArtwork } from './LoginArtwork'
+import { landingPath, PUBLIC_HOME } from './landing'
 import { readReturnPath, useAuth } from './AuthProvider'
 
 /**
@@ -117,8 +119,15 @@ export function LoginPage() {
 
   return (
     <div className="sky relative flex min-h-dvh flex-col">
-      {/* Ngôn ngữ: góc phải trang (hẹp hơn 1.024px thì một hàng trên card). Điều khiển đặc, không kính — kính chỉ ở thanh điều hướng */}
-      <header className="z-10 flex justify-end px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
+      {/* Về trang giới thiệu và ngôn ngữ: góc phải trang (hẹp hơn 1.024px thì một hàng trên card). Điều khiển đặc, không kính — kính
+          chỉ ở thanh điều hướng. Dưới 640px nút về chỉ còn mũi tên (chữ tiếng Anh tràn hàng ở điện thoại), chữ vẫn là tên truy cập */}
+      <header className="z-10 flex items-center justify-between gap-3 px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
+        <Button asChild variant="skyGhost" className={cn(TOUCH_CONTROL, SKY_FOCUS, 'max-sm:aspect-square max-sm:px-0')}>
+          <Link to={PUBLIC_HOME}>
+            <ArrowLeft aria-hidden strokeWidth={1.5} />
+            <span className="max-sm:sr-only">{t('auth.login.backToLanding')}</span>
+          </Link>
+        </Button>
         <LanguageSwitch tone="sky" className="pointer-coarse:[&_button]:size-14 pointer-coarse:[&_button]:text-body-lg" />
       </header>
 
@@ -190,7 +199,7 @@ export function LoginPage() {
         {/* Cột minh hoạ: ẩn dưới 1024px để màn hẹp chỉ còn card */}
         <aside className="hidden min-w-0 max-w-220 flex-1 flex-col gap-7 lg:flex">
           <div className="rounded-xl border border-border-dark bg-[linear-gradient(180deg,var(--canvas-1)_0%,var(--canvas-2)_100%)] p-5">
-            <LoginArtwork />
+            <CargoArtwork label={t('auth.showcase.artworkLabel')} />
           </div>
 
           <div className="flex flex-col gap-5">

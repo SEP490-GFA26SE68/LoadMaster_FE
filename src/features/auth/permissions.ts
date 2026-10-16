@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   'billing.manage',
   'support.create',
   'support.handle',
+  'contacts.handle',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -61,11 +62,14 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
  * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
+ *
+ * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
+ * trò nền tảng; gửi yêu cầu không cần quyền.
  */
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
-  systemManager: ['subscriptionPlans.manage'],
-  systemSupporter: ['support.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
+  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',

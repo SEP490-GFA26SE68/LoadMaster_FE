@@ -109,6 +109,10 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
   mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
   trợ khách hàng làm ở các bước sau.
+- Trang công khai cho khách chưa có tài khoản: giới thiệu `/gioi-thieu` (khách mở `/` khi chưa đăng nhập sẽ tới đây), bảng giá `/bang-gia`
+  (các gói đang bán, giá còn là giá tạm) và form liên hệ. Hỗ trợ khách hàng, quản lý nền tảng và quản trị hệ thống xử lý các yêu cầu đó ở
+  màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi chú nội bộ. Không có trang tự đăng ký: tài khoản công ty do đội
+  LoadMaster tạo.
 - **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó (`BroadcastChannel`), và mất khi tải lại mọi tab; đăng nhập,
   phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
@@ -130,8 +134,8 @@ Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOpt
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.243 test unit + DOM
-pnpm test:e2e      # Playwright: 138 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
+pnpm test          # Vitest: 2.359 test unit + DOM
+pnpm test:e2e      # Playwright: 142 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
