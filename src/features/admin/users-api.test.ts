@@ -8,7 +8,8 @@ import { createUser, deleteUser, fetchUserCompanies, fetchUsers, resetPassword, 
  * `fetch` giả trả phong bì như backend thật (nhánh `feat/contract-and-support-ticket`).
  */
 vi.mock('@/lib/backend-config', () => ({
-  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', keycloak: { url: '', realm: '', clientId: '' } },
+  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['users']), keycloak: { url: '', realm: '', clientId: '' } },
+  usesBackend: (feature: string) => feature === 'users',
 }))
 
 type Call = { readonly method: string; readonly url: string; readonly body: unknown; readonly auth: string | null }

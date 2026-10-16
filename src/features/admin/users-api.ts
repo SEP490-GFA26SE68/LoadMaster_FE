@@ -13,7 +13,7 @@
 
 import { roleOfBackend } from '@/features/auth/backend-user'
 import { api, ApiError } from '@/lib/api-client'
-import { backendConfig } from '@/lib/backend-config'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type Company, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
 import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
 import { BACKEND_ROLE_CODES, type Role, type User, type UserStatus } from '@/types/user'
@@ -38,7 +38,7 @@ type BackendCompany = { readonly id: number; readonly companyName: string }
 
 type BackendTemporaryPassword = { readonly user: BackendUser; readonly temporaryPassword: string }
 
-const ON_BACKEND = backendConfig.authSource === 'keycloak'
+const ON_BACKEND = usesBackend('users')
 
 /** Backend chưa có màn danh sách phân trang ở FE: đọc một trang đủ lớn. */
 const PAGE_SIZE = 500

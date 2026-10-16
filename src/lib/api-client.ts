@@ -6,8 +6,22 @@ import { backendConfig } from './backend-config'
  * thô của máy chủ. `-api.ts` của feature đã nối backend dùng `api()`; không nơi nào khác gọi `fetch` tới backend.
  */
 
-/** Lỗi không thuộc nghiệp vụ; mã nghiệp vụ là `code` backend trả trong phong bì. */
-export const TRANSPORT_ERROR_CODES = ['NETWORK_ERROR', 'TIMEOUT', 'UNAUTHENTICATED', 'UNAUTHORIZED', 'SERVER_ERROR'] as const
+/**
+ * Lỗi không thuộc nghiệp vụ; mã nghiệp vụ là `code` backend trả trong phong bì. Phong bì không có `code` (backend `develop` chỉ trả mã
+ * cho lỗi nhập file) thì mã suy từ HTTP: 400 `BAD_REQUEST`, 402 `PAYMENT_REQUIRED`, 404 `NOT_FOUND`, 409 `CONFLICT` — câu chung
+ * nhưng vẫn đúng loại lỗi, không gộp hết vào "máy chủ gặp lỗi".
+ */
+export const TRANSPORT_ERROR_CODES = [
+  'NETWORK_ERROR',
+  'TIMEOUT',
+  'UNAUTHENTICATED',
+  'UNAUTHORIZED',
+  'BAD_REQUEST',
+  'PAYMENT_REQUIRED',
+  'NOT_FOUND',
+  'CONFLICT',
+  'SERVER_ERROR',
+] as const
 
 export type TransportErrorCode = (typeof TRANSPORT_ERROR_CODES)[number]
 
@@ -45,15 +59,26 @@ export type RequestOptions = {
   readonly body?: unknown
 }
 
+export type DownloadOptions = RequestOptions & { readonly method?: 'GET' | 'POST' }
+
 export type ApiClient = {
   get<T>(path: string, options?: Omit<RequestOptions, 'body'>): Promise<T>
   post<T>(path: string, options?: RequestOptions): Promise<T>
   put<T>(path: string, options?: RequestOptions): Promise<T>
   patch<T>(path: string, options?: RequestOptions): Promise<T>
   delete<T>(path: string, options?: RequestOptions): Promise<T>
+  /** GET trả nguyên thân phản hồi, không mở phong bì — để đọc số trang của danh sách phân trang (`fetchAllPages`). */
+  getRaw(path: string, options?: Omit<RequestOptions, 'body'>): Promise<unknown>
+  /** POST multipart (`FormData`, ví dụ file nhập): không đặt `Content-Type` để trình duyệt tự thêm boundary. */
+  postForm<T>(path: string, form: FormData, options?: Omit<RequestOptions, 'body'>): Promise<T>
+  /** Tải tệp (ảnh QR, PDF nhãn, mẫu Excel) về `Blob`; lỗi vẫn đọc mã từ phong bì JSON nếu máy chủ trả. */
+  download(path: string, options?: DownloadOptions): Promise<Blob>
 }
 
 type Envelope = { success?: unknown; code?: unknown; data?: unknown; errors?: unknown }
+
+/** Thân của một lượt gửi: JSON, multipart, hoặc không có. */
+type Body = { readonly json: unknown } | { readonly form: FormData } | null
 
 const DEFAULT_TIMEOUT_MS = 15_000
 
@@ -73,6 +98,10 @@ function urlOf(baseUrl: string, path: string, query: RequestOptions['query']): s
 function codeOfStatus(status: number): TransportErrorCode {
   if (status === 401) return 'UNAUTHENTICATED'
   if (status === 403) return 'UNAUTHORIZED'
+  if (status === 400 || status === 422) return 'BAD_REQUEST'
+  if (status === 402) return 'PAYMENT_REQUIRED'
+  if (status === 404) return 'NOT_FOUND'
+  if (status === 409) return 'CONFLICT'
   return 'SERVER_ERROR'
 }
 
@@ -86,40 +115,64 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+function envelopeOf(payload: unknown): Envelope | null {
+  return isRecord(payload) && 'success' in payload ? payload : null
+}
+
+function failureOf(status: number, envelope: Envelope | null): ApiError {
+  const code = typeof envelope?.code === 'string' && envelope.code !== '' ? envelope.code : codeOfStatus(status)
+  return new ApiError(code, { status, params: isRecord(envelope?.errors) ? envelope.errors : {} })
+}
+
 /** Gọi `fetch` hiện hành của trình duyệt ở từng lượt (không giữ tham chiếu lúc tạo client). */
 const browserFetch: typeof fetch = (input, init) => fetch(input, init)
 
 export function createApiClient({ baseUrl, accessToken, fetch: fetchImpl = browserFetch, timeoutMs = DEFAULT_TIMEOUT_MS }: ApiClientOptions): ApiClient {
-  async function request<T>(method: string, path: string, { query, body }: RequestOptions = {}): Promise<T> {
+  async function send(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string): Promise<Response> {
     const token = await accessToken()
-    const headers: Record<string, string> = { Accept: 'application/json' }
-    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    const headers: Record<string, string> = { Accept: accept }
+    if (body !== null && 'json' in body) headers['Content-Type'] = 'application/json'
     if (token !== null) headers.Authorization = `Bearer ${token}`
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
-    let response: Response
     try {
-      response = await fetchImpl(urlOf(baseUrl, path, query), {
+      return await fetchImpl(urlOf(baseUrl, path, query), {
         method,
         headers,
         signal: controller.signal,
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        ...(body === null ? {} : { body: 'json' in body ? JSON.stringify(body.json) : body.form }),
       })
     } catch {
       throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
     } finally {
       clearTimeout(timer)
     }
+  }
 
+  /** Gửi rồi kiểm thất bại; trả nguyên thân và phong bì (nếu có). */
+  async function exchange(method: string, path: string, query: RequestOptions['query'], body: Body) {
+    const response = await send(method, path, query, body, 'application/json')
     const payload = await readJson(response)
-    const envelope: Envelope | null = isRecord(payload) && 'success' in payload ? payload : null
+    const envelope = envelopeOf(payload)
+    if (!response.ok || envelope?.success === false) throw failureOf(response.status, envelope)
+    return { payload, envelope }
+  }
 
-    if (!response.ok || envelope?.success === false) {
-      const code = typeof envelope?.code === 'string' && envelope.code !== '' ? envelope.code : codeOfStatus(response.status)
-      throw new ApiError(code, { status: response.status, params: isRecord(envelope?.errors) ? envelope.errors : {} })
-    }
+  async function request<T>(method: string, path: string, { query, body }: RequestOptions = {}): Promise<T> {
+    const { payload, envelope } = await exchange(method, path, query, body === undefined ? null : { json: body })
     return (envelope === null ? payload : envelope.data) as T
+  }
+
+  async function postForm<T>(path: string, form: FormData, { query }: Omit<RequestOptions, 'body'> = {}): Promise<T> {
+    const { payload, envelope } = await exchange('POST', path, query, { form })
+    return (envelope === null ? payload : envelope.data) as T
+  }
+
+  async function download(path: string, { method = 'GET', query, body }: DownloadOptions = {}): Promise<Blob> {
+    const response = await send(method, path, query, body === undefined ? null : { json: body }, '*/*')
+    if (!response.ok) throw failureOf(response.status, envelopeOf(await readJson(response)))
+    return response.blob()
   }
 
   return {
@@ -128,6 +181,9 @@ export function createApiClient({ baseUrl, accessToken, fetch: fetchImpl = brows
     put: (path, options) => request('PUT', path, options),
     patch: (path, options) => request('PATCH', path, options),
     delete: (path, options) => request('DELETE', path, options),
+    getRaw: async (path, options) => (await exchange('GET', path, options?.query, null)).payload,
+    postForm,
+    download,
   }
 }
 

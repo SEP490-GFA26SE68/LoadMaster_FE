@@ -52,6 +52,8 @@ test('statuses without a code map to transport codes', async () => {
   expect((await failure(() => clientWith(respond(403, undefined)).client.get('/x'))).code).toBe('UNAUTHORIZED')
   const broken = { ok: false, status: 500, text: () => Promise.resolve('<html>') } as Response
   expect((await failure(() => clientWith(broken).client.get('/x'))).code).toBe('SERVER_ERROR')
+  const codes = await Promise.all([400, 402, 404, 409, 422].map(async (status) => (await failure(() => clientWith(respond(status, { success: false, message: 'thô' })).client.get('/x'))).code))
+  expect(codes).toStrictEqual(['BAD_REQUEST', 'PAYMENT_REQUIRED', 'NOT_FOUND', 'CONFLICT', 'BAD_REQUEST'])
 })
 
 test('no response at all is NETWORK_ERROR; a request that outlives the limit is TIMEOUT', async () => {
@@ -68,4 +70,35 @@ test('no response at all is NETWORK_ERROR; a request that outlives the limit is 
       })) as unknown as typeof fetch,
   })
   expect((await failure(() => slow.get('/x'))).code).toBe('TIMEOUT')
+})
+
+test('getRaw returns the whole body, keeping the page numbers of a paged list', async () => {
+  const page = { success: true, data: [{ id: 1 }], page: 0, totalPages: 3, last: false }
+  const { client } = clientWith(respond(200, page))
+  await expect(client.getRaw('/api/packages', { query: { page: 0 } })).resolves.toStrictEqual(page)
+})
+
+test('postForm sends multipart without a JSON content type, so the browser adds the boundary', async () => {
+  const { client, calls } = clientWith(respond(200, { success: true, data: { rows: 2 } }))
+  const form = new FormData()
+  form.append('file', new Blob(['a,b']), 'kien.csv')
+  await expect(client.postForm('/api/packages/import/preview', form)).resolves.toStrictEqual({ rows: 2 })
+  expect(calls[0]?.init.body).toBe(form)
+  expect(calls[0]?.init.headers).not.toHaveProperty('Content-Type')
+  expect(calls[0]?.init.headers).toMatchObject({ Authorization: 'Bearer TOKEN' })
+})
+
+test('download returns the file as a Blob; a failed download still reads the code of the envelope', async () => {
+  const png = new Blob(['png-bytes'], { type: 'image/png' })
+  const ok = clientWith({ ok: true, status: 200, blob: () => Promise.resolve(png) } as Response)
+  await expect(ok.client.download('/api/packages/7/qr')).resolves.toBe(png)
+  expect(ok.calls[0]?.init).toMatchObject({ method: 'GET', headers: { Accept: '*/*' } })
+
+  const posted = clientWith({ ok: true, status: 200, blob: () => Promise.resolve(png) } as Response)
+  await posted.client.download('/api/packages/export/labels', { method: 'POST', body: { packageIds: [1, 2] } })
+  expect(posted.calls[0]?.init).toMatchObject({ method: 'POST', body: '{"packageIds":[1,2]}' })
+
+  const failed = clientWith(respond(400, { success: false, code: 'EXPORT_TOO_MANY_PACKAGES' }))
+  const error = await failure(() => failed.client.download('/api/packages/export/labels', { method: 'POST', body: {} }))
+  expect([error.code, error.status]).toStrictEqual(['EXPORT_TOO_MANY_PACKAGES', 400])
 })
