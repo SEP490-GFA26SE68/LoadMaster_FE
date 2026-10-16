@@ -9,7 +9,7 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: v
 
 /**
  * Một chuyến của tài xế `/tai-xe/diem-giao?chuyen=` (LM-087, FE-6-06): kho dùng chung → `driver-api.ts` → hook → màn, không giả lập module
- * nào. Tiến độ đọc/ghi trong kho. Test theo thứ tự: bài cuối làm chuyến chính lỗi thời.
+ * nào. Tiến độ đọc/ghi trong kho. Các bài dùng chung kho, theo thứ tự: bài xem trước cho kho bắt đầu soạn hàng chuyến chính.
  */
 const SEED_TRIP = 'TRIP-2026-0914'
 const WRITE = { timeout: 5000 }
@@ -40,7 +40,11 @@ test('without a trip the screen goes back to My trips', async () => {
   expect(await screen.findByRole('heading', { level: 1, name: 'Chuyến của tôi' }, LOAD)).toBeInTheDocument()
 }, 15_000)
 
-test('a trip the warehouse has not loaded: preview of stop 1 in the approved unloading order, call and directions, nothing to start', async () => {
+test('a trip the warehouse is staging: preview of stop 1 in the approved unloading order, call and directions, nothing to start', async () => {
+  // Kho bắt đầu soạn hàng chuyến chính: từ lúc đó chuyến hiện với tài xế (FE-6-01)
+  const db = getMockDb()
+  db.restoreSession('US-0003')
+  await db.startLoading(SEED_TRIP)
   const { container } = renderDriver(`/tai-xe/diem-giao?chuyen=${SEED_TRIP}`)
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 1 / 4' }, LOAD)).toBeInTheDocument()
   expect(screen.getByRole('status')).toHaveTextContent('Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.')
@@ -240,11 +244,13 @@ test('reopening a trip in delivery resumes at the first stop not completed', asy
   expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/tai-xe')
 }, 15_000)
 
-test('a stale approved plan still previews, with a warning', async () => {
-  const db = getMockDb()
-  const trip = await db.getTrip(SEED_TRIP)
-  await db.updateTrip(SEED_TRIP, { packages: trip.packages.map((pkg, i) => (i === 0 ? { ...pkg, weightKg: pkg.weightKg + 1 } : pkg)) })
-  renderDriver(`/tai-xe/diem-giao?chuyen=${SEED_TRIP}`)
-  expect(await screen.findByRole('alert', {}, LOAD)).toHaveTextContent('Phương án đã duyệt này đã lỗi thời')
-  expect(screen.getByRole('heading', { level: 1, name: 'Điểm 1 / 4' })).toBeInTheDocument()
+test('a trip still being planned is not previewed: the screen says the warehouse has not staged it and leads back to My trips', async () => {
+  // TRIP-013 (seed) của Đặng Hoài Nam (US-0007): Đã lập kế hoạch, phương án đã duyệt lỗi thời — phương án còn đổi nên không xem trước
+  renderDriver('/tai-xe/diem-giao?chuyen=TRIP-013', 'US-0007')
+  expect(await screen.findByText('Kho chưa soạn hàng chuyến này', {}, LOAD)).toBeInTheDocument()
+  expect(screen.getByText('Chuyến TRIP-013 còn đang lập kế hoạch. Khi kho bắt đầu soạn hàng, chuyến hiện ở "Chuyến của tôi".')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { level: 1, name: /^Điểm / })).not.toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Xem vị trí hàng' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('link', { name: 'Về danh sách chuyến' }).map((link) => link.getAttribute('href'))).toStrictEqual(['/tai-xe', '/tai-xe'])
 }, 15_000)

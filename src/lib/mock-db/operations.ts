@@ -24,11 +24,28 @@ export function isLockedPhase(phase: TripPhase): boolean {
 
 /**
  * Chuyến đang hiện ở "Chuyến của tôi" của tài xế (FE-6-01): từ lúc kho bắt đầu soạn hàng tới khi giao xong; chuyến còn lập kế hoạch chưa
- * hiện với tài xế nào, chuyến đã huỷ thôi hiện. Kho chỉ nêu tài xế trong sự kiện về chuyến (tham số `driverId` — chuông của tài xế đọc nó)
- * khi chuyến đang hiện với họ: huỷ chuyến hay đổi tài xế lúc còn lập kế hoạch không có tài xế nào phải báo.
+ * hiện với tài xế nào, chuyến đã huỷ thôi hiện.
  */
 export function isShownToDriver(phase: TripPhase): boolean {
   return phase !== 'planning' && phase !== 'cancelled'
+}
+
+/**
+ * Chuyến tài xế đã được báo: đang hiện ở "Chuyến của tôi", hoặc đang xếp thì quay về Đã lập kế hoạch (`Trip.replan`, FE-6-02, FE-6-05) —
+ * tài xế đã nhận "chuyến tạm dừng" và chờ kho soạn lại. Kho chỉ nêu tài xế trong sự kiện huỷ chuyến, đổi tài xế (tham số `driverId` /
+ * `previousDriverId` — chuông của tài xế đọc chúng) khi tài xế đã biết chuyến: lúc còn lập kế hoạch lần đầu không có tài xế nào phải báo.
+ */
+export function isKnownToDriver(trip: Pick<Trip, 'phase' | 'replan'>): boolean {
+  return isShownToDriver(trip.phase) || (trip.phase === 'planning' && trip.replan !== undefined)
+}
+
+/**
+ * Tài xế của chuyến trong sự kiện kho ghi lúc chuyến đang hiện (hoặc sắp hiện) với họ — tham số `driverId` mà chuông của tài xế đọc: kho
+ * bắt đầu soạn hàng, xếp xong, và chuyến quay về Đã lập kế hoạch giữa lúc xếp (thiếu kiện, kiện hỏng có kiện tựa lên). Chuyến chưa gán tài
+ * xế: không có tham số.
+ */
+export function driverParam(trip: Pick<Trip, 'driverId'>): Record<string, string> {
+  return trip.driverId === null ? {} : { driverId: trip.driverId }
 }
 
 /**

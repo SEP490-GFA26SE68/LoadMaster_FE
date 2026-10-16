@@ -39,7 +39,7 @@ type RowContext = { readonly directory: AuditDirectory; readonly t: TFunction; r
  */
 function notificationRow(event: AuditEvent, viewer: NotificationViewer, operation: string | null, { directory, t, format, can }: RowContext): AuditLogRow {
   const notice = viewer.role === 'driver' ? driverNotice(event, viewer.id) : null
-  const row = describeLogRow(notice === null ? event : driverNoticeEvent(event), directory, t, format, can)
+  const row = describeLogRow(notice === null ? event : driverNoticeEvent(event, notice), directory, t, format, can)
   return {
     ...row,
     action: notice === null ? row.action : t(`notifications.driver.${notice}`),
@@ -55,8 +55,8 @@ function notificationRow(event: AuditEvent, viewer: NotificationViewer, operatio
  * Nguồn sự kiện của từng vai trò: `NOTIFICATION_ACTIONS`.
  *
  * `variant="touch"` (FE-6-04): chuông ở thanh màn chính của kho và tài xế — hai màn không có thanh điều hướng. Nút 56 px trên nền sáng,
- * chữ trong danh sách 16 px (mục 10). Kho và tài xế nhận việc của chính mình (xác nhận tay bị từ chối; với tài xế còn chuyến mới, xếp
- * xong, chuyến bị huỷ, đổi tài xế); bấm vào mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
+ * chữ trong danh sách 16 px (mục 10). Kho và tài xế nhận việc của chính mình (xác nhận tay bị từ chối; với tài xế còn việc của chuyến
+ * mình — `DRIVER_TRIP_ACTIONS`); bấm vào mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
  */
 export function NotificationBell({ variant = 'rail', tone = 'light', className }: {
   variant?: 'rail' | 'touch'

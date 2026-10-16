@@ -11,6 +11,17 @@ export const driver = {
   toTrips: 'Về danh sách chuyến',
   cancelledTitle: 'Chuyến đã huỷ',
   cancelledDescription: 'Chuyến {tripId} đã huỷ: {reason}',
+  /**
+   * Chuyến ở Đã lập kế hoạch chưa hiện ở "Chuyến của tôi" (FE-6-01): màn chuyến chỉ nói lý do, không xem trước phương án còn có thể đổi.
+   * `replan`: chuyến đang xếp vừa quay về Đã lập kế hoạch (FE-6-02, FE-6-05), theo lý do kho ghi — tới khi kho soạn lại hàng.
+   */
+  planningTitle: 'Kho chưa soạn hàng chuyến này',
+  planningDescription: 'Chuyến {tripId} còn đang lập kế hoạch. Khi kho bắt đầu soạn hàng, chuyến hiện ở "Chuyến của tôi".',
+  replan: {
+    title: 'Chuyến tạm dừng',
+    DAMAGED: 'Kho báo một kiện của chuyến {tripId} bị hỏng lúc xếp nên chuyến quay về lập kế hoạch. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+    SHORTAGE: 'Kho không tìm thấy một kiện của chuyến {tripId} lúc soạn hàng, điều phối đã bỏ kiện đó khỏi chuyến. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+  },
   stale: 'Phương án đã duyệt này đã lỗi thời — xe hoặc kiện của chuyến đổi sau khi tối ưu. Hỏi điều phối viên trước khi dỡ.',
   exit: 'Thoát màn hình tài xế',
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */

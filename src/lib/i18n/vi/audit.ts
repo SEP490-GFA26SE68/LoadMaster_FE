@@ -183,6 +183,8 @@ export const audit = {
       failedRules: 'Luật không đạt',
       driverId: 'Tài xế',
       previousDriverId: 'Tài xế trước',
+      // Kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch (FE-6-02, FE-6-05)
+      replanReason: 'Lý do soạn lại',
       // Gói cước và credit (FE-8-01, FE-8-05)
       plan: 'Gói cước',
       credits: 'Credit',
@@ -193,6 +195,8 @@ export const audit = {
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
+    /** Giá trị của tham số `replanReason` (`ReplanReason` của kho): vì sao chuyến từng quay về Đã lập kế hoạch trước lần soạn này. */
+    replanReasons: { SHORTAGE: 'Thiếu kiện lúc soạn hàng', DAMAGED: 'Kiện hỏng lúc xếp' },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {
       name: 'Tên chuyến',

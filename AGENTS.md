@@ -155,13 +155,18 @@ luồng mới thêm ở issue của luồng đó.
   tài xế có thêm đúng một loại cá nhân: xác nhận tay **của chính mình** bị từ chối (`manualConfirm.rejected`, lọc theo `requestedBy` —
   `PERSONAL_ACTIONS`); chuông của họ là nút 56 px ở thanh màn chính `/kho`, `/tai-xe` (`NotificationBell variant="touch"`, chữ 16 px), và thông
   báo về một chuyến mở chuyến đó ở màn của vai trò (`operationHrefs`), vì họ không mở được Chi tiết chuyến.
-- Tài xế: việc của **chuyến mình** — chỉ sự kiện nêu đúng người đó ở tham số `driverId` (`DRIVER_TRIP_ACTIONS`). Kho chỉ nêu tài xế khi chuyến
-  đang hiện ở "Chuyến của tôi" (`isShownToDriver`: từ lúc kho bắt đầu soạn hàng tới khi giao xong): `loading.started` (chuyến mới), `loading.completed`
-  (xếp xong — chờ xuất phát), `trip.cancelled` (huỷ lúc đang xếp, đã xếp xong hoặc đang chạy — huỷ lúc còn lập kế hoạch không báo tài xế nào), đổi
-  tài xế khi kho đã bắt đầu xếp (`trip.updated` mang `driverId` của người mới — chuyến mới — và `previousDriverId` của người bị thay — không còn
-  chạy chuyến này; thông báo của chuyến đó thôi mở chuyến với người bị thay), `pickup.approved` / `pickup.rejected`, `trip.stopsReordered` khi điều
-  phối viên đổi thứ tự điểm (FE-BL-03). Sự kiện về chuyến của tài xế nói bằng câu của tài xế (`driverNotice` → `notifications.driver.*`), chi tiết
-  chỉ còn lý do huỷ và số kiện; vai trò khác vẫn nhận đúng những gì đã nhận, nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước".
+- Tài xế: việc của **chuyến mình** — chỉ sự kiện nêu đúng người đó ở tham số `driverId` (`DRIVER_TRIP_ACTIONS`; xác nhận tay bị từ chối vẫn lọc
+  theo người gửi). Kho chỉ nêu tài xế khi họ đã biết chuyến (`isKnownToDriver`): chuyến đang hiện ở "Chuyến của tôi" (`isShownToDriver`: từ lúc
+  kho bắt đầu soạn hàng tới khi giao xong) hoặc đang tạm dừng sau lần quay về Đã lập kế hoạch (`Trip.replan`, tới khi kho soạn lại).
+  `loading.started` (chuyến mới; kho soạn lại sau lần quay về thì sự kiện mang `replanReason` và câu là "Kho đang soạn lại hàng cho chuyến"),
+  `loading.completed` (xếp xong — chờ xuất phát), `loading.damaged` có kiện tựa lên và `loading.shortageDropped` (chuyến tạm dừng, chờ điều phối
+  lập lại phương án — báo tài xế của chuyến, không theo người báo thiếu; kiện hỏng bị bỏ lại kho mà kho xếp tiếp không nêu tài xế),
+  `trip.cancelled` (huỷ lúc còn lập kế hoạch lần đầu không báo tài xế nào), đổi tài xế (`trip.updated` mang `driverId` của người mới — chuyến mới
+  — và `previousDriverId` của người bị thay — không còn chạy chuyến này; thông báo của chuyến đó thôi mở chuyến với người bị thay),
+  `pickup.approved` / `pickup.rejected`, `trip.stopsReordered` khi điều phối viên đổi thứ tự điểm (FE-BL-03). Mỗi sự kiện về chuyến của tài xế
+  nói bằng câu của tài xế (`driverNotice` → `notifications.driver.*`) và chỉ giữ chi tiết họ làm theo (`DRIVER_NOTICE_PARAMS`, theo từng câu): số
+  kiện đã lên xe (xếp xong, huỷ), lý do huỷ, số kiện hoàn trả, số kiện phải nhận dọc đường, lý do yêu cầu nhận bị từ chối, số điểm trễ hạn dự
+  kiến theo thứ tự mới. Vai trò khác vẫn nhận đúng những gì đã nhận; nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước" / "Lý do soạn lại".
 - Quản trị hệ thống, quản trị công ty: việc trên tài khoản và đăng nhập sai. Quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`,
   sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm
   mở `/goi-cuoc`; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy.
@@ -907,7 +912,9 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - **Tài xế** (`/tai-xe` "Chuyến của tôi", LM-087, FE-6-01; chỉ chuyến có `driverId` là mình, chỉ vai trò có `driver.operate`): nhóm theo trạng thái
   (`MY_TRIP_GROUPS`): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem: nút phụ "Xem trước" mở màn điểm giao ở chế độ chỉ
   xem) · Đã giao gần đây (5 chuyến); chuyến còn Đã lập kế hoạch và chuyến đã huỷ không hiện. `/tai-xe/diem-giao?chuyen=` đọc qua `driver-api.ts` →
-  `adaptResult`, phương án là bản kho đã xếp (chưa xếp thì bản duyệt mới nhất, chỉ xem); kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và
+  `adaptResult`, phương án là bản kho chốt lúc bắt đầu soạn hàng (kho chưa xếp xong thì chỉ xem). Chuyến còn lập kế hoạch không xem trước phương
+  án nào (phương án còn đổi): màn nói kho chưa soạn hàng, hoặc "Chuyến tạm dừng" kèm lý do khi chuyến đang xếp vừa quay về (`Trip.replan`, tới khi
+  kho soạn lại hàng). Kiện hỏng bị bỏ lại kho không nằm trong danh sách dỡ và
   mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Thẻ liên hệ của điểm có giờ đến và hạn giao (`StopEta`, hàm
   thuần `stop-timing.ts`): chưa đến là giờ đến dự kiến kèm nguồn, mức hạn bằng chữ và MOCK RESULT — Đang vận chuyển thì tính từ vị trí xe
   (`fetchDriverTripMonitoring` → `useDriverTripMonitoringQuery`, đọc lại theo `refreshMs`), không thì theo `Trip.routePlan`; đã đến là giờ đến

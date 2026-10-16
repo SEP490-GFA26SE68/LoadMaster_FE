@@ -157,6 +157,8 @@ export const audit = {
       failedRules: 'Failed rules',
       driverId: 'Driver',
       previousDriverId: 'Previous driver',
+      // The warehouse stages again after the trip went back to Planned (FE-6-02, FE-6-05)
+      replanReason: 'Re-staging reason',
       // Plan and credits (FE-8-01, FE-8-05)
       plan: 'Plan',
       credits: 'Credits',
@@ -166,6 +168,7 @@ export const audit = {
       ticketStatus: 'Status',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
+    replanReasons: { SHORTAGE: 'Missing package while staging', DAMAGED: 'Damaged package while loading' },
     fieldNames: {
       name: 'Trip name',
       vehicleId: 'Vehicle',

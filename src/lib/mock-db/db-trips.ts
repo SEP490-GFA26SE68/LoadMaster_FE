@@ -7,7 +7,7 @@ import { stopDemandsOf } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
 import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
-import { canCancelTrip, isShownToDriver, tripStatus } from './operations'
+import { canCancelTrip, driverParam, isKnownToDriver, tripStatus } from './operations'
 import { isValidCoordinate } from './requirement-model'
 import type { CompanyDepot } from './source-types'
 import { driverChangeParams, tripChangeParams } from './trip-changes'
@@ -147,8 +147,9 @@ export function tripMethods(ctx: DbContext): TripMethods {
         }
         const trimmed = reason.trim()
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
-        // Tài xế được báo khi chuyến đã hiện ở "Chuyến của tôi" (kho đã bắt đầu xếp); huỷ lúc còn lập kế hoạch thì không
-        const driver: Record<string, string> = current.driverId !== null && isShownToDriver(current.phase) ? { driverId: current.driverId } : {}
+        // Tài xế được báo khi đã biết chuyến: kho đã bắt đầu xếp, hoặc chuyến đang tạm dừng sau lần quay về Đã lập kế hoạch; huỷ lúc còn
+        // lập kế hoạch lần đầu thì không
+        const driver = isKnownToDriver(current) ? driverParam(current) : {}
         if (current.phase === 'delivering') {
           // Vị trí xe ghi bù tới lúc huỷ; kiện chưa giao thành Hoàn trả và ở lại chuyến — yêu cầu giao của chúng đọc là giao thiếu
           advanceTracking(ctx, current)

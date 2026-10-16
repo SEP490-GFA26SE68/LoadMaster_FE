@@ -10,6 +10,13 @@ export const driver = {
   toTrips: 'Back to trips',
   cancelledTitle: 'Trip cancelled',
   cancelledDescription: 'Trip {tripId} was cancelled: {reason}',
+  planningTitle: 'The warehouse has not staged this trip yet',
+  planningDescription: 'Trip {tripId} is still being planned. Once the warehouse starts staging, the trip shows up in "My trips".',
+  replan: {
+    title: 'Trip on hold',
+    DAMAGED: 'The warehouse reported a damaged package on trip {tripId} while loading, so the trip went back to planning. The dispatcher re-plans, then the warehouse stages the cargo again; the trip then shows up in "My trips" again.',
+    SHORTAGE: 'The warehouse could not find a package of trip {tripId} while staging, and the dispatcher dropped it from the trip. The dispatcher re-plans, then the warehouse stages the cargo again; the trip then shows up in "My trips" again.',
+  },
   stale: 'This approved plan is outdated — the vehicle or cargo changed after optimization. Check with the dispatcher before unloading.',
   exit: 'Leave driver screen',
   list: {
