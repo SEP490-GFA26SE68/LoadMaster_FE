@@ -48,6 +48,7 @@ export function TripFormPage() {
       </TripFormShell>
     )
   }
+
   const { trip, status, sub } = detail.data
   if (!EDITABLE_PHASES.includes(trip.phase)) {
     return (
@@ -100,7 +101,7 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
     const onError = (error: unknown) => toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) })
     const driverId = driverIdOf(values.driverId)
     const departureAt = departureAtOf(values)
-    const onSuccess = (trip: Trip, message: string) => {
+    const onSuccess = (trip: { id: string }, message: string) => {
       toast.success(message)
       setSavedPath(`/chuyen/${trip.id}`)
     }
@@ -117,6 +118,8 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
       onError,
     })
   }
+
+
 
   const actions = (
     <>

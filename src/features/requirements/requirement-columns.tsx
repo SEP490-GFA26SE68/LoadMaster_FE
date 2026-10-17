@@ -62,13 +62,26 @@ function DeadlineCell({ value }: { value: string }) {
 }
 
 function PackagesCell({ row }: { row: RequirementRow }) {
-  const t = useT()
   const format = useFormat()
+
+  const received = row.requirement.receivedPackageCount
+    ?? row.packages.length
+
+  const expected = row.requirement.expectedPackageCount
+
   return (
     <span className="flex min-w-0 flex-col">
-      <span className="text-ink-1">{t('requirements.packageCount', { count: row.packages.length })}</span>
-      {' '}
-      <span className="font-mono text-caption text-ink-3 tabular-nums">{format.weight(row.totalKg)}</span>
+      <span className="text-ink-1">
+        {expected == null
+          ? `${received} kiện`
+          : `${received}/${expected} kiện`}
+      </span>
+
+      {row.packages.length > 0 ? (
+        <span className="font-mono text-caption text-ink-3 tabular-nums">
+          {format.weight(row.totalKg)}
+        </span>
+      ) : null}
     </span>
   )
 }
@@ -114,7 +127,9 @@ export function requirementColumns(t: TFunction) {
     helper.accessor((row) => row.requirement.destinationName, { id: 'destination', header: t('requirements.columns.destination'), enableSorting: true, meta: { width: '28%' } satisfies ColumnMeta, cell: destinationCell }),
     helper.accessor((row) => row.requirement.deadline, { id: 'deadline', header: t('requirements.columns.deadline'), enableSorting: true, sortDescFirst: false, meta: { width: '124px' } satisfies ColumnMeta, cell: deadlineCell }),
     helper.accessor((row) => REQUIREMENT_PRIORITY_ORDER.indexOf(row.requirement.priority), { id: 'priority', header: t('requirements.columns.priority'), enableSorting: true, meta: { width: '120px' } satisfies ColumnMeta, cell: priorityCell }),
-    helper.accessor((row) => row.packages.length, { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
+    helper.accessor(
+      (row) => row.requirement.receivedPackageCount ?? row.packages.length,
+      { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
     helper.accessor((row) => REQUIREMENT_STATUS_ORDER.indexOf(row.status), { id: 'status', header: t('requirements.columns.status'), enableSorting: true, sortDescFirst: false, meta: { width: '168px' } satisfies ColumnMeta, cell: statusCell }),
     helper.accessor((row) => row.trip?.name ?? '', { id: 'trip', header: t('requirements.columns.trip'), enableSorting: true, meta: { width: '22%' } satisfies ColumnMeta, cell: tripCell }),
     helper.display({ id: 'actions', header: ActionsHeader, meta: { width: '56px', align: 'right' } satisfies ColumnMeta, cell: actionsCell }),

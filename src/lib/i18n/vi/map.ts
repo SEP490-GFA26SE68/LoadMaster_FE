@@ -24,6 +24,7 @@ export const map = {
   },
   /** Ô chọn toạ độ (FE-4b-03): `components/map/CoordinatePicker.tsx` — tìm địa danh mẫu, hai ô vĩ độ / kinh độ, bản đồ bấm chọn. */
   picker: {
+    expand: 'Phóng to bản đồ',
     search: 'Tìm địa danh',
     searchPlaceholder: 'Gõ tên tỉnh, quận hoặc khu công nghiệp',
     results: 'Địa danh khớp',

@@ -1,7 +1,14 @@
 import type { HandlingClass } from '@/domain/models'
 import { matchesQuery } from '@/lib/list-filter'
 import { PACKAGE_FLAGS, PACKAGE_STATUSES, type Package, type PackageFlag, type PackageStatus, type PackageType } from '@/lib/mock-db'
+import type {
+  CargoPackage,
+  PackageStatus as CargoPackageStatus,
+} from './packages-api'
 
+import type {
+  PackageType as ApiPackageType,
+} from './package-types-api'
 /**
  * Danh sách kiện của kho kiện `/kien-hang` (FE-3b-03): ghép loại kiện (kiện có thể không gắn loại), tab trạng thái và ba bộ lọc giữ
  * trên URL (slug tiếng Việt không dấu, D-52), tìm bỏ dấu và chọn kiện để in nhãn. Hàm thuần để test không cần React.
@@ -26,6 +33,122 @@ export const PACKAGE_STATUS_SLUGS: Readonly<Record<PackageStatus, string>> = {
   RETURNED: 'hoan-tra',
 }
 
+export type CargoPackageRow = CargoPackage & {
+  readonly type: ApiPackageType | undefined
+}
+
+
+export function cargoPackageRows(
+  packages: readonly CargoPackage[],
+  types: readonly ApiPackageType[],
+): CargoPackageRow[] {
+  const typeById = new Map(
+    types.map((type) => [type.id, type]),
+  )
+
+  return packages.map((pkg) => ({
+    ...pkg,
+    type:
+      pkg.packageTypeId === undefined
+        ? undefined
+        : typeById.get(pkg.packageTypeId),
+  }))
+}
+
+export const CARGO_PACKAGE_STATUS_SLUGS: Readonly<
+  Record<CargoPackageStatus, string>
+> = {
+  PENDING: 'cho-xu-ly',
+  PLANNED: 'da-lap-ke-hoach',
+  LOADED: 'da-xep',
+  DELIVERED: 'da-giao',
+  CANCELLED: 'da-huy',
+}
+
+export type CargoPackageTab = 'all' | CargoPackageStatus
+
+export const CARGO_PACKAGE_TABS: readonly CargoPackageTab[] = [
+  'all',
+  'PENDING',
+  'PLANNED',
+  'LOADED',
+  'DELIVERED',
+  'CANCELLED',
+]
+
+export function cargoTabFromSlug(
+  slug: string,
+): CargoPackageTab {
+  return fromSlug(CARGO_PACKAGE_STATUS_SLUGS, slug) ?? 'all'
+}
+
+export function cargoSlugFromTab(
+  tab: CargoPackageTab,
+): string {
+  return tab === 'all'
+    ? ''
+    : CARGO_PACKAGE_STATUS_SLUGS[tab]
+}
+
+export function searchCargoPackages(
+  rows: readonly CargoPackageRow[],
+  query: string,
+): CargoPackageRow[] {
+  if (!query.trim()) {
+    return [...rows]
+  }
+
+  return rows.filter((row) =>
+    matchesQuery(
+      [
+        row.packageCode,
+        row.id,
+        row.destination,
+        row.qrToken,
+        row.trackingBarcode,
+        row.type?.name,
+        row.type?.typeCode,
+        row.packageTypeId,
+        row.orderId,
+      ],
+      query,
+    ),
+  )
+}
+
+export type CargoPackageFilters = {
+  readonly handlingClass?: HandlingClass
+}
+
+export function cargoFiltersFromUrl(
+  values: Readonly<Record<typeof CLASS_FILTER, string>>,
+): CargoPackageFilters {
+  return {
+    handlingClass: fromSlug(
+      HANDLING_CLASS_SLUGS,
+      values[CLASS_FILTER],
+    ),
+  }
+}
+
+export function filterCargoByTab(
+  rows: readonly CargoPackageRow[],
+  tab: CargoPackageTab,
+): CargoPackageRow[] {
+  return tab === 'all'
+    ? [...rows]
+    : rows.filter((row) => row.status === tab)
+}
+export function filterCargoPackages(
+  rows: readonly CargoPackageRow[],
+  filters: CargoPackageFilters,
+): CargoPackageRow[] {
+  return rows.filter(
+    (row) =>
+      filters.handlingClass === undefined ||
+      row.handlingClass === filters.handlingClass,
+  )
+}
 export const HANDLING_CLASS_SLUGS: Readonly<Record<HandlingClass, string>> = {
   STANDARD: 'thuong',
   FRAGILE: 'de-vo',

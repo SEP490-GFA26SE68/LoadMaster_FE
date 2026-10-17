@@ -4,6 +4,7 @@ import type { TFunction } from '@/lib/i18n'
 import { DEFAULT_DEPARTURE_TIME, vnClock, vnTime, type CompanyDepot, type Trip } from '@/lib/mock-db'
 import { todayInVietnam } from './trip-dates'
 
+
 /** Giá trị "Chưa gán" của ô chọn tài xế: Radix Select không nhận `value=""` cho một dòng chọn được. */
 export const UNASSIGNED = 'none'
 

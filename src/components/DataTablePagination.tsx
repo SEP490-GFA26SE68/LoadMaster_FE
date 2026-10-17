@@ -43,8 +43,14 @@ export function PaginationFooter({
   const format = useFormat()
   const sizeId = useId()
   const pageCount = pageCountOf(rowCount, pageSize)
-  const from = pageIndex * pageSize + 1
-  const to = Math.min(rowCount, (pageIndex + 1) * pageSize)
+  const from = rowCount === 0
+    ? 0
+    : pageIndex * pageSize + 1
+
+  const to = Math.min(
+    rowCount,
+    (pageIndex + 1) * pageSize,
+  )
 
   return (
     <div className="flex h-12 items-center justify-between gap-4 px-3">

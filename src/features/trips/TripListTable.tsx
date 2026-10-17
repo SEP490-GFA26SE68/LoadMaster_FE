@@ -39,6 +39,8 @@ export function TripListTable({
   sorting,
   onSortingChange,
   pagination,
+  serverPagination = false,
+  totalRows,
   countsByDate,
   today,
   onClearFilters,
@@ -49,6 +51,10 @@ export function TripListTable({
   sorting: SortingState
   onSortingChange: (sorting: SortingState) => void
   pagination: DataTablePagination
+  /** Bật khi data đã được Backend phân trang. */
+  serverPagination?: boolean
+  /** Tổng số chuyến khớp bộ lọc, lấy từ Backend. */
+  totalRows?: number
   countsByDate: ReadonlyMap<string, number>
   /** Hôm nay `YYYY-MM-DD` (giờ Việt Nam) để gắn nhãn "Hôm nay" / "Ngày mai". */
   today: string
@@ -56,8 +62,12 @@ export function TripListTable({
   onClearFilters: () => void
   onRowClick: (row: TripRow) => void
 }) {
-  const rowCount = data.length
-  const pageIndex = clampPageIndex(pagination.pageIndex, rowCount, pagination.pageSize)
+  const rowCount = serverPagination ? (totalRows ?? data.length) : data.length
+
+  const pageIndex = serverPagination
+    ? pagination.pageIndex
+    : clampPageIndex(pagination.pageIndex, rowCount, pagination.pageSize)
+
   const { pageSize } = pagination
   const page = useMemo(() => ({ pageIndex, pageSize }), [pageIndex, pageSize])
 
@@ -68,10 +78,14 @@ export function TripListTable({
     defaultColumn: NO_SORTING,
     enableMultiSort: false,
     enableSortingRemoval: false,
-    // Trang do màn giữ trên URL: dữ liệu về muộn không được kéo người dùng về trang 1.
+
+    manualPagination: serverPagination,
+    manualSorting: serverPagination,
+
     autoResetPageIndex: false,
     state: { sorting, pagination: page },
-    onSortingChange: (updater: Updater<SortingState>) => onSortingChange(functionalUpdate(updater, sorting)),
+    onSortingChange: (updater: Updater<SortingState>) =>
+      onSortingChange(functionalUpdate(updater, sorting)),
     getRowId: (row) => row.id,
   })
 
@@ -109,7 +123,7 @@ export function TripListTable({
             })}
           </tr>
         </thead>
-        {rowCount === 0 ? (
+        {data.length === 0 ? (
           <tbody>
             <NoMatchRow columnCount={visible.length} onClear={onClearFilters} />
           </tbody>
@@ -133,7 +147,13 @@ export function TripListTable({
           </tbody>
         ))}
       </table>
-      {rowCount > 0 ? <PaginationFooter {...pagination} pageIndex={pageIndex} rowCount={rowCount} /> : null}
+      {rowCount > 0 ? (
+        <PaginationFooter
+          {...pagination}
+          pageIndex={pageIndex}
+          rowCount={rowCount}
+        />
+      ) : null}
     </>
   )
 }

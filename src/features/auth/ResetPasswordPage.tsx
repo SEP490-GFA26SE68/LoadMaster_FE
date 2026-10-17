@@ -11,17 +11,24 @@ import { z } from 'zod'
 import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
 import { resetPassword } from './auth-api'
+
+const FIELD_ERRORS = {
+  passwordTooShort: 'auth.passwordReset.passwordTooShort',
+  confirmRequired: 'auth.passwordReset.confirmRequired',
+  passwordMismatch: 'auth.passwordReset.passwordMismatch',
+} as const satisfies Record<string, MessageKey>
 
 const schema = z
   .object({
     newPassword: z
       .string()
-      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự'),
+      .min(8, FIELD_ERRORS.passwordTooShort),
 
     confirmPassword: z
       .string()
-      .min(1, 'Vui lòng nhập lại mật khẩu'),
+      .min(1, FIELD_ERRORS.confirmRequired),
   })
   .refine(
     (data) =>
@@ -29,13 +36,19 @@ const schema = z
       data.confirmPassword,
     {
       path: ['confirmPassword'],
-      message: 'Mật khẩu nhập lại không khớp',
+      message: FIELD_ERRORS.passwordMismatch,
     },
   )
 
 type FormValues = z.infer<typeof schema>
 
+function translateFieldError(t: TFunction, message: string | undefined): string | undefined {
+  const key = Object.values(FIELD_ERRORS).find((candidate) => candidate === message)
+  return key ? t(key) : undefined
+}
+
 export function ResetPasswordPage() {
+  const t = useT()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -66,7 +79,7 @@ export function ResetPasswordPage() {
     setServerError(null)
 
     if (!resetToken) {
-      setServerError('Token đặt lại mật khẩu không hợp lệ')
+      setServerError(t('auth.passwordReset.invalidToken'))
       return
     }
 
@@ -79,12 +92,8 @@ export function ResetPasswordPage() {
       navigate('/dat-lai-mat-khau/thanh-cong', {
         replace: true,
       })
-    } catch (error) {
-      setServerError(
-        error instanceof Error
-          ? error.message
-          : 'Không thể đặt lại mật khẩu',
-      )
+    } catch {
+      setServerError(t('auth.passwordReset.resetFailed'))
     }
   }
 
@@ -97,12 +106,11 @@ export function ResetPasswordPage() {
 
           <div>
             <h1 className="text-h1 font-semibold">
-              Đặt lại mật khẩu
+              {t('auth.passwordReset.resetTitle')}
             </h1>
 
             <p className="mt-2 text-body text-text-2">
-              Tạo mật khẩu mới cho tài khoản
-              LoadMaster của bạn.
+              {t('auth.passwordReset.resetDescription')}
             </p>
           </div>
         </div>
@@ -115,12 +123,11 @@ export function ResetPasswordPage() {
           className="flex flex-col gap-5"
         >
           <Input
-            label="Mật khẩu mới"
+            label={t('auth.passwordReset.newPassword')}
             type="password"
             autoComplete="new-password"
             error={
-              form.formState.errors
-                .newPassword?.message
+              translateFieldError(t, form.formState.errors.newPassword?.message)
             }
             {...form.register(
               'newPassword',
@@ -128,12 +135,11 @@ export function ResetPasswordPage() {
           />
 
           <Input
-            label="Nhập lại mật khẩu"
+            label={t('auth.passwordReset.confirmPassword')}
             type="password"
             autoComplete="new-password"
             error={
-              form.formState.errors
-                .confirmPassword?.message
+              translateFieldError(t, form.formState.errors.confirmPassword?.message)
             }
             {...form.register(
               'confirmPassword',
@@ -158,7 +164,7 @@ export function ResetPasswordPage() {
                 .isSubmitting
             }
           >
-            Đặt lại mật khẩu
+            {t('auth.passwordReset.resetSubmit')}
           </Button>
         </form>
       </div>

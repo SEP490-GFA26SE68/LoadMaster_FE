@@ -25,6 +25,7 @@ export function SelectField<TValues extends FieldValues>({
   placeholder,
   hint,
   className,
+  disabled = false,
 }: {
   control: Control<TValues>
   name: FieldPath<TValues>
@@ -33,6 +34,7 @@ export function SelectField<TValues extends FieldValues>({
   placeholder?: string
   hint?: ReactNode
   className?: string
+  disabled?: boolean
 }) {
   const id = useId()
   const t = useT()

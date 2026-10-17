@@ -12,6 +12,7 @@ import {
 
 import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
+import { useT } from '@/lib/i18n'
 import {
   requestPasswordReset,
   verifyPasswordResetOtp,
@@ -21,6 +22,7 @@ import { OtpInput } from '../../components/OtpInput'
 const RESEND_SECONDS = 60
 
 export function VerifyOtpPage() {
+  const t = useT()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -88,7 +90,7 @@ export function VerifyOtpPage() {
 
     if (!/^\d{6}$/.test(otp)) {
       setServerError(
-        'Vui lòng nhập đủ 6 chữ số OTP',
+        t('auth.passwordReset.otpIncomplete'),
       )
       return
     }
@@ -108,12 +110,8 @@ export function VerifyOtpPage() {
           replace: true,
         },
       )
-    } catch (error) {
-      setServerError(
-        error instanceof Error
-          ? error.message
-          : 'Không thể xác thực OTP',
-      )
+    } catch {
+      setServerError(t('auth.passwordReset.verifyOtpFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -137,12 +135,8 @@ export function VerifyOtpPage() {
       setSecondsLeft(
         RESEND_SECONDS,
       )
-    } catch (error) {
-      setServerError(
-        error instanceof Error
-          ? error.message
-          : 'Không thể gửi lại OTP',
-      )
+    } catch {
+      setServerError(t('auth.passwordReset.resendOtpFailed'))
     } finally {
       setResending(false)
     }
@@ -157,19 +151,17 @@ export function VerifyOtpPage() {
 
           <div>
             <h1 className="text-h1 font-semibold">
-              Xác thực OTP
+              {t('auth.passwordReset.otpTitle')}
             </h1>
 
             <p className="mt-2 text-body text-text-2">
-              Mã xác thực đã được gửi tới{' '}
               <span className="font-medium text-ink-1">
-                {maskedEmail}
+                {t('auth.passwordReset.otpSentTo', { email: maskedEmail })}
               </span>
             </p>
 
             <p className="mt-1 text-small text-text-2">
-              Mã OTP có hiệu lực trong
-              3 phút.
+              {t('auth.passwordReset.otpExpires')}
             </p>
           </div>
         </div>
@@ -184,7 +176,7 @@ export function VerifyOtpPage() {
 
           <div className="flex flex-col gap-3">
             <label className="text-body font-medium text-ink-1">
-              Mã OTP
+              {t('auth.passwordReset.otpLabel')}
             </label>
 
             <OtpInput
@@ -196,8 +188,7 @@ export function VerifyOtpPage() {
             />
 
             <p className="text-center text-small text-text-2">
-              Nhập mã gồm 6 chữ số
-              được gửi qua email
+              {t('auth.passwordReset.otpHint')}
             </p>
           </div>
 
@@ -224,14 +215,13 @@ export function VerifyOtpPage() {
             block
             loading={submitting}
           >
-            Xác thực OTP
+            {t('auth.passwordReset.verifyOtp')}
           </Button>
 
           <div className="text-center text-body text-text-2">
             {secondsLeft > 0 ? (
               <span>
-                Gửi lại mã sau{' '}
-                {secondsLeft}s
+                {t('auth.passwordReset.resendAfter', { seconds: secondsLeft })}
               </span>
             ) : (
               <button
@@ -249,8 +239,8 @@ export function VerifyOtpPage() {
                 "
               >
                 {resending
-                  ? 'Đang gửi lại...'
-                  : 'Gửi lại mã OTP'}
+                  ? t('auth.passwordReset.resending')
+                  : t('auth.passwordReset.resendOtp')}
               </button>
             )}
           </div>
@@ -259,7 +249,7 @@ export function VerifyOtpPage() {
             to="/quen-mat-khau"
             className="text-center text-body text-primary hover:underline"
           >
-            Đổi email
+            {t('auth.passwordReset.changeEmail')}
           </Link>
 
         </form>

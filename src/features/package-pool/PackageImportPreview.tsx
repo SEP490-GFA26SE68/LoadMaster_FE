@@ -71,17 +71,60 @@ const classCell = (info: Cell<ImportRow['handlingClass']>) => {
   return value === null ? <None /> : <HandlingClassChip handlingClass={value} />
 }
 const destinationCell = (info: Cell<string>) => (info.getValue() === '' ? <None /> : <span className="line-clamp-2 whitespace-normal">{info.getValue()}</span>)
+const packageTypeCell = (
+  info: Cell<ImportRow['packageTypeId']>
+) => {
+  const value = info.getValue()
+
+  return value === undefined
+    ? <None />
+    : (
+      <span className="font-mono text-caption">
+        {value}
+      </span>
+    )
+}
 const checkCell = (info: Cell<unknown>) => <CheckCell row={info.row.original} />
 
 function previewColumns(t: TFunction) {
   const label = (key: 'line' | 'packageCode' | 'measure' | 'handlingClass' | 'destination' | 'check') => t(`sourcing.import.columns.${key}`)
   return helper.columns([
-    helper.accessor('line', { header: label('line'), meta: { width: '60px', align: 'right' } satisfies ColumnMeta, cell: lineCell }),
-    helper.accessor('packageCode', { header: label('packageCode'), meta: { width: '148px' } satisfies ColumnMeta, cell: codeCell }),
-    helper.display({ id: 'measure', header: label('measure'), meta: { width: '184px' } satisfies ColumnMeta, cell: measureCell }),
-    helper.accessor('handlingClass', { header: label('handlingClass'), meta: { width: '128px' } satisfies ColumnMeta, cell: classCell }),
-    helper.accessor('destination', { header: label('destination'), cell: destinationCell }),
-    helper.display({ id: 'check', header: label('check'), meta: { width: '240px' } satisfies ColumnMeta, cell: checkCell }),
+    helper.accessor('line', {
+      header: label('line'),
+      meta: { width: '60px', align: 'right' } satisfies ColumnMeta,
+      cell: lineCell,
+    }),
+    helper.accessor('packageCode', {
+      header: label('packageCode'),
+      meta: { width: '148px' } satisfies ColumnMeta,
+      cell: codeCell,
+    }),
+    helper.display({
+      id: 'measure',
+      header: label('measure'),
+      meta: { width: '184px' } satisfies ColumnMeta,
+      cell: measureCell,
+    }),
+    helper.accessor('handlingClass', {
+      header: label('handlingClass'),
+      meta: { width: '128px' } satisfies ColumnMeta,
+      cell: classCell,
+    }),
+    helper.accessor('destination', {
+      header: label('destination'),
+      cell: destinationCell,
+    }),
+    helper.accessor('packageTypeId', {
+      header: 'Mã loại kiện',
+      meta: { width: '130px' } satisfies ColumnMeta,
+      cell: packageTypeCell,
+    }),
+    helper.display({
+      id: 'check',
+      header: label('check'),
+      meta: { width: '240px' } satisfies ColumnMeta,
+      cell: checkCell,
+    }),
   ])
 }
 

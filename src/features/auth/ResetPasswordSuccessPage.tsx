@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router'
 
 import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
+import { useT } from '@/lib/i18n'
 
 export function ResetPasswordSuccessPage() {
+  const t = useT()
   const navigate = useNavigate()
 
   return (
@@ -15,12 +17,11 @@ export function ResetPasswordSuccessPage() {
 
           <div>
             <h1 className="text-h1 font-semibold">
-              Đổi mật khẩu thành công
+              {t('auth.passwordReset.successTitle')}
             </h1>
 
             <p className="mt-2 text-body text-text-2">
-              Bạn có thể sử dụng mật khẩu mới
-              để đăng nhập vào LoadMaster.
+              {t('auth.passwordReset.successDescription')}
             </p>
           </div>
 
@@ -31,7 +32,7 @@ export function ResetPasswordSuccessPage() {
               navigate('/dang-nhap')
             }
           >
-            Quay lại đăng nhập
+            {t('auth.passwordReset.backToLogin')}
           </Button>
         </div>
       </div>

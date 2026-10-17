@@ -42,6 +42,13 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
     </span>
   ) : selected?.status === 'maintenance' ? t('trips.create.vehicleMaintenanceHint') : t('trips.create.vehicleHint')
   const status = selected ? VEHICLE_STATUS[selected.status] : null
+  const statusKey = selected
+    ? selected.status === 'available'
+      ? 'AVAILABLE'
+      : selected.status === 'in_use'
+        ? 'IN_TRIP'
+        : 'MAINTENANCE'
+    : null
 
   return (
     <TripFormSection number={1} title={t('trips.create.infoTitle')} description={t('trips.create.infoHint')}>
@@ -113,7 +120,7 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
               <dd className="m-0 font-display text-body font-semibold whitespace-nowrap text-ink-strong tabular-nums">{format.weight(selected.vehicle.maxPayloadKg)}</dd>
             </div>
             {status && !locked ? (
-              <Badge tone={status.tone} dot={status.dot} className="ml-auto">{t(`fleet.status.${selected.status}`)}</Badge>
+              <Badge tone={status.tone} dot={status.dot} className="ml-auto">{statusKey ? t(`fleet.status.${statusKey}`) : null}</Badge>
             ) : null}
           </dl>
         ) : null}

@@ -57,7 +57,23 @@ export const requirements = {
     closed: 'Yêu cầu đã giao xong nên không sửa được nữa',
     tripLocked: 'Chỉ gỡ được khi chuyến chưa bắt đầu xếp hàng',
   },
+  customer: {
+    add: 'Thêm khách hàng mới',
+    created: 'Đã tạo khách hàng thành công',
+    name: 'Tên khách hàng',
+    phone: 'Số điện thoại liên hệ',
+    address: 'Địa chỉ khách hàng',
+    save: 'Lưu khách hàng',
+    invalid: 'Vui lòng nhập thông tin khách hàng hợp lệ'
+  },
+
   form: {
+    customer: 'Khách hàng / Chủ hàng',
+    expectedPackageCount: 'Số kiện dự kiến',
+    packagesAfterReceiving: 'Nhân viên kho sẽ tiếp nhận và liên kết kiện sau khi tạo yêu cầu.',
+    receivingProgress: 'Tiến độ nhận kiện',
+  
+    
     createTitle: 'Tạo yêu cầu giao',
     editTitle: 'Sửa yêu cầu {id}',
     description: 'Yêu cầu gồm kiện ở kho kiện, giao tới một điểm đến trước hạn. Một kiện chỉ thuộc một yêu cầu.',
@@ -79,6 +95,11 @@ export const requirements = {
     selected: { one: 'Đã chọn {count} kiện · {weight}', other: 'Đã chọn {count} kiện · {weight}' },
     packageMeta: '{dimensions} · {weight}',
     errors: {
+      invalidCount:'Số kiện dự kiến phải là số nguyên lớn hơn 0',
+      customerRequired: 'Vui lòng chọn khách hàng',
+      
+      
+      
       destinationRequired: 'Nhập tên điểm đến.',
       addressRequired: 'Nhập địa chỉ.',
       tooLong: 'Tối đa {max} ký tự.',

@@ -17,6 +17,8 @@ export const vehicleTypes = {
     limits: 'Giới hạn xếp hàng',
     vehicles: 'Xe đang dùng',
     actions: 'Thao tác',
+    cargoPreview: 'Mô phỏng lòng thùng',
+    vehicleCount: 'Số lượng xe đang dùng'
   },
   noVehicles: 'Chưa gắn xe nào',
   limits: {

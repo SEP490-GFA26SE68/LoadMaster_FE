@@ -1,24 +1,42 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { downloadBlob } from '@/features/trips/download-file'
-import type { PackageFlag, PackageInput, PackageTypeInput } from '@/lib/mock-db'
+import type {
+  PackageFlag,
+  PackageInput,
+} from '@/lib/mock-db'
+import {
+  fetchPackages as fetchCargoPackages,
+  fetchPackage as fetchCargoPackage,
+  createPackage as createCargoPackage,
+  createPackages as createCargoPackages,
+  updatePackage as updateCargoPackage,
+  deletePackage as deleteCargoPackage,
+  type CargoPackageInput,
+} from './packages-api'
+import {
+  fetchPackageTypes,
+  savePackageType,
+  deletePackageType,
+  type PackageTypeInput,
+} from './package-types-api'
+import { getMockDb } from '@/lib/mock-db'
 import {
   clearPackageFlag,
-  confirmPackageImport,
   createPackage,
-  deletePackageType,
-  downloadPackageImportTemplate,
   fetchPackageDetail,
   fetchPackageLabels,
   fetchPackages,
-  fetchPackageTypes,
   lookupPackages,
-  previewPackageImport,
   reportPackageFound,
-  savePackageType,
   scanPackage,
   type LabelSelection,
 } from './package-pool-api'
-import type { PackageImportPreview } from './package-pool-import'
+
+import {
+  previewCargoPackageImport,
+  confirmCargoPackageImport,
+  downloadCargoPackageImportTemplate,
+} from './package-import-api'
 
 /**
  * Hook Query của kho kiện (FE-3b-03) — component không gọi `package-pool-api.ts` trực tiếp (mục 9). Khoá `['package-pool', …]` không
@@ -26,25 +44,83 @@ import type { PackageImportPreview } from './package-pool-import'
  * lần mở màn (`staleTime: 0`).
  */
 
+
 export const PACKAGE_TYPES_KEY = ['package-types'] as const
 export const PACKAGE_POOL_KEY = ['package-pool'] as const
+export const CARGO_PACKAGES_KEY = ['cargo-packages'] as const
 
-export function usePackageTypesQuery() {
-  return useQuery({ queryKey: PACKAGE_TYPES_KEY, queryFn: fetchPackageTypes })
-}
 
-export function useSavePackageTypeMutation() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: ({ input, id }: { input: PackageTypeInput; id?: string }) => savePackageType(input, id),
-    onSuccess: () => client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }),
+/**
+ * Lấy danh sách loại kiện từ BE.
+ * page bắt đầu từ 0.
+ */
+export function usePackageTypesQuery(
+  page = 0,
+  size = 25,
+) {
+  return useQuery({
+    queryKey: [
+      ...PACKAGE_TYPES_KEY,
+      'list',
+      page,
+      size,
+    ],
+    queryFn: () => fetchPackageTypes(page, size),
   })
 }
 
+export function useMockPackageTypesQuery() {
+  return useQuery({
+    queryKey: [
+      ...PACKAGE_POOL_KEY,
+      'mock-package-types',
+    ],
+    queryFn: () =>
+      getMockDb().listPackageTypes(),
+  })
+}
+
+/**
+ * Tạo mới hoặc cập nhật loại kiện.
+ */
+export function useSavePackageTypeMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      input,
+      id,
+    }: {
+      input: PackageTypeInput
+      id?: string
+    }) => savePackageType(input, id),
+
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: PACKAGE_TYPES_KEY,
+      })
+    },
+  })
+}
+
+/**
+ * Xóa loại kiện.
+ */
 export function useDeletePackageTypeMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (id: string) => deletePackageType(id), onSuccess: () => client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }) })
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      deletePackageType(id),
+
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: PACKAGE_TYPES_KEY,
+      })
+    },
+  })
 }
+
 
 export function usePackagesQuery() {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'list'], queryFn: fetchPackages, staleTime: 0 })
@@ -87,23 +163,58 @@ export function useClearPackageFlagMutation() {
 }
 
 /** Đọc và kiểm file — dạng mutation vì chạy theo lần chọn file, không phải dữ liệu nền của màn. */
+
+/**
+ * Gửi XLSX đến BE để xem trước.
+ * API: POST /api/packages/import/preview
+ */
 export function usePreviewPackageImportMutation() {
-  return useMutation({ mutationFn: (file: File) => previewPackageImport(file) })
+  return useMutation({
+    mutationFn: (file: File) =>
+      previewCargoPackageImport(file),
+  })
 }
 
+/**
+ * Gửi lại XLSX gốc để BE lưu các kiện vào PostgreSQL.
+ * API: POST /api/packages/import/confirm
+ */
 export function useConfirmPackageImportMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (preview: PackageImportPreview) => confirmPackageImport(preview), onSuccess: () => refreshPool(client) })
-}
 
-/** Tải file mẫu nhập kho kiện về máy dưới tên `fileName`. */
-export function useDownloadImportTemplateMutation() {
   return useMutation({
-    mutationFn: async ({ format, rows, sheet, fileName }: { format: 'xlsx' | 'csv'; rows: readonly (readonly (string | number)[])[]; sheet: string; fileName: string }) => {
-      downloadBlob(await downloadPackageImportTemplate(format, rows, sheet), fileName)
+    mutationFn: (file: File) =>
+      confirmCargoPackageImport(file),
+
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({
+          queryKey: CARGO_PACKAGES_KEY,
+        }),
+        refreshPool(client),
+      ])
     },
   })
 }
+
+/**
+ * Tải mẫu XLSX chung từ BE.
+ * API: GET /api/packages/import/template
+ */
+export function useDownloadImportTemplateMutation() {
+  return useMutation({
+    mutationFn: async () => {
+      const blob =
+        await downloadCargoPackageImportTemplate()
+
+      downloadBlob(
+        blob,
+        'mau-nhap-kien-chung.xlsx',
+      )
+    },
+  })
+}
+
 
 /** Tra kiện theo mã QR — dạng mutation vì chạy theo cú quét, không phải dữ liệu nền của màn. */
 export function useScanPackageMutation() {
@@ -114,4 +225,126 @@ export function useScanPackageMutation() {
 export function useReportPackageFoundMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (token: string) => reportPackageFound(token), onSuccess: () => refreshPool(client) })
+}
+
+/**
+ * Danh sách CargoPackage từ BE.
+ * page bắt đầu từ 0.
+ */
+export function useCargoPackagesQuery(
+  page = 0,
+  size = 25,
+) {
+  return useQuery({
+    queryKey: [
+      ...CARGO_PACKAGES_KEY,
+      'list',
+      page,
+      size,
+    ],
+    queryFn: () => fetchCargoPackages(page, size),
+    staleTime: 0,
+  })
+}
+
+/**
+ * Chi tiết một kiện từ BE.
+ */
+export function useCargoPackageQuery(id: string | null) {
+  return useQuery({
+    queryKey: [
+      ...CARGO_PACKAGES_KEY,
+      'detail',
+      id,
+    ],
+    queryFn: () => fetchCargoPackage(id!),
+    enabled: id !== null,
+    staleTime: 0,
+  })
+}
+
+/**
+ * Tạo kiện mới trong PostgreSQL.
+ */
+export function useCreateCargoPackageMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CargoPackageInput) =>
+      createCargoPackage(input),
+
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: CARGO_PACKAGES_KEY,
+      })
+    },
+  })
+}
+
+
+/**
+ * Tạo một hoặc nhiều kiện thủ công trong PostgreSQL.
+ * API: POST /api/packages/batch
+ *
+ * Trả về danh sách kiện vật lý đã tạo,
+ * mỗi kiện có ID và QR token riêng.
+ */
+export function useCreateCargoPackagesMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CargoPackageInput) =>
+      createCargoPackages(input),
+
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({
+          queryKey: CARGO_PACKAGES_KEY,
+        }),
+        refreshPool(client),
+      ])
+    },
+  })
+}
+
+
+/**
+ * Cập nhật kiện.
+ */
+export function useUpdateCargoPackageMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string
+      input: CargoPackageInput
+    }) => updateCargoPackage(id, input),
+
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: CARGO_PACKAGES_KEY,
+      })
+    },
+  })
+}
+
+/**
+ * Xóa kiện.
+ */
+export function useDeleteCargoPackageMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      deleteCargoPackage(id),
+
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: CARGO_PACKAGES_KEY,
+      })
+    },
+  })
 }

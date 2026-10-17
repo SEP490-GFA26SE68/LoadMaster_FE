@@ -209,6 +209,15 @@ export const trips = {
     driverPhone: '{name} · {phone}',
   },
   detail: {
+    deliveryStops: 'Delivery stops',
+    stopCount: 'delivery stops',
+    noStops: 'No delivery stops yet',
+    noStopsHint: 'Assign delivery requirements to create stops.',
+    unnamedStop: 'Unnamed stop',
+    requirementId: 'Delivery requirement #',
+    plannedArrival: 'Planned arrival',
+    actualArrival: 'Actual arrival',
+
     runOptimization: 'Run optimization',
     openPlan: 'View 3D plan',
     loading: 'Loading trip',

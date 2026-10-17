@@ -56,7 +56,21 @@ export const requirements = {
     closed: 'The requirement is fully delivered and can no longer be edited',
     tripLocked: 'Only before the trip starts loading',
   },
+  customer: {
+    add: 'Add new customer',
+    created: 'Customer created successfully',
+    name: 'Customer name',
+    phone: 'Contact phone',
+    address: 'Customer address',
+    save: 'Save customer',
+    invalid: 'Please enter valid customer information'
+  },
+
   form: {
+    customer: 'Customer/Shipper',
+    expectedPackageCount: 'Expected packages',
+    packagesAfterReceiving: 'Warehouse staff will receive and link packages after the requirement is created.',
+    receivingProgress: 'Receiving progress',
     createTitle: 'New delivery requirement',
     editTitle: 'Edit requirement {id}',
     description: 'A requirement holds packages from the pool, due at one destination before a deadline. A package belongs to one requirement only.',
@@ -77,6 +91,9 @@ export const requirements = {
     selected: { one: '{count} package chosen · {weight}', other: '{count} packages chosen · {weight}' },
     packageMeta: '{dimensions} · {weight}',
     errors: {
+      invalidCount:'Expected package count must be a positive integer',
+      customerRequired: 'Please select a customer',
+      
       destinationRequired: 'Enter the destination name.',
       addressRequired: 'Enter the address.',
       tooLong: 'At most {max} characters.',

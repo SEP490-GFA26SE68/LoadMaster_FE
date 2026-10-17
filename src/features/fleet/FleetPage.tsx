@@ -13,8 +13,12 @@ import { useT } from '@/lib/i18n'
 import { createFleetColumns } from './fleet-columns'
 import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
-import { useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
-import { filterVehicleRows, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS } from './vehicle-status'
+import { useVehiclesQuery } from './useVehiclesQuery'
+import {
+  filterVehicleRows,
+  VEHICLE_STATUSES,
+  VEHICLE_STATUS_SLUGS,
+} from './vehicle-status'
 
 const STATUS_FILTER = 'trang-thai'
 
@@ -51,22 +55,44 @@ export function FleetPage() {
   const t = useT()
   const navigate = useNavigate()
   const canEdit = useCan()('fleet.edit')
-  const vehiclesQuery = useVehiclesQuery()
-  const statesQuery = useVehicleStatesQuery()
-  const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'name', desc: false } })
+  const list = useListUrlState({
+    filters: [STATUS_FILTER],
+    defaultSort: {
+      id: 'name',
+      desc: false,
+    },
+  })
+
+  const vehiclesQuery = useVehiclesQuery(
+    list.pageIndex,
+    list.pageSize,
+    list.query,
+  )
+
   const statusSlug = list.filters[STATUS_FILTER]
 
-  const columns = useMemo(() => createFleetColumns(t), [t])
-  const vehicles = useMemo(() => vehicleRows(vehiclesQuery.data ?? [], statesQuery.data ?? []), [vehiclesQuery.data, statesQuery.data])
-  const rows = useMemo(() => filterVehicleRows(vehicles, list.query, statusSlug), [vehicles, list.query, statusSlug])
-  const statusOptions = VEHICLE_STATUSES.map((status) => ({ value: VEHICLE_STATUS_SLUGS[status], label: t(`fleet.status.${status}`) }))
+  const columns = useMemo(
+    () => createFleetColumns(t),
+    [t],
+  )
 
-  const isPending = vehiclesQuery.isPending || statesQuery.isPending
-  const isError = vehiclesQuery.isError || statesQuery.isError
+  const vehicles = vehiclesQuery.data?.data ?? []
+
+  const rows = useMemo(
+    () => filterVehicleRows(vehicles, '', statusSlug),
+    [vehicles, statusSlug],
+  )
+
+  const statusOptions = VEHICLE_STATUSES.map((status) => ({
+    value: VEHICLE_STATUS_SLUGS[status],
+    label: t(`fleet.status.${status}`),
+  }))
+
+  const isPending = vehiclesQuery.isPending
+  const isError = vehiclesQuery.isError
 
   function handleRetry() {
     void vehiclesQuery.refetch()
-    void statesQuery.refetch()
   }
 
   return (
@@ -74,7 +100,16 @@ export function FleetPage() {
       <PageHero
         overlap
         title={t('fleet.title')}
-        description={vehiclesQuery.isSuccess ? <FleetHeroSummary vehicles={vehiclesQuery.data} /> : t('pageHero.fleet')}
+        description={
+          vehiclesQuery.isSuccess
+            ? (
+              <FleetHeroSummary
+                vehicles={vehicles}
+                totalElements={vehiclesQuery.data?.totalElements}
+              />
+            )
+            : t('pageHero.fleet')
+        }
         actions={
           <>
             {/* Review 1 (LM-104): danh mục loại xe nằm dưới Đội xe, không thêm mục vào thanh điều hướng */}
@@ -107,7 +142,7 @@ export function FleetPage() {
             title={t('fleet.error.title')}
             description={t('fleet.error.description')}
             action={
-              <Button variant="secondary" onClick={handleRetry} loading={vehiclesQuery.isFetching || statesQuery.isFetching}>
+              <Button variant="secondary" onClick={handleRetry} loading={vehiclesQuery.isFetching}>
                 <RotateCcw strokeWidth={1.5} />
                 {t('fleet.error.retry')}
               </Button>
@@ -129,7 +164,11 @@ export function FleetPage() {
           />
         ) : (
           <div className="flex flex-col gap-4">
-            <FleetSummary vehicles={vehicles} statusSlug={statusSlug} onStatusSlugChange={(slug) => list.setFilter(STATUS_FILTER, slug)} />
+            <FleetSummary
+              totalElements={
+                vehiclesQuery.data?.totalElements ?? 0
+              }
+            />
             {/* Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới (V2). flex-none: con overflow-hidden của cột flex không được co. */}
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg">
               <FilterBar
@@ -149,12 +188,21 @@ export function FleetPage() {
                 getRowId={(row) => row.id}
                 density="spacious"
                 appearance="paper"
+                serverPagination
+                totalRows={vehiclesQuery.data?.totalElements ?? 0}
                 sorting={list.sorting}
                 onSortingChange={list.setSorting}
-                pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+                pagination={{
+                  pageIndex: list.pageIndex,
+                  pageSize: list.pageSize,
+                  onPageChange: list.setPage,
+                  onPageSizeChange: list.setPageSize,
+                }}
                 isFiltering={list.isFiltering}
                 onClearFilters={list.clearAll}
-                onRowClick={(vehicle) => void navigate(`/doi-xe/${vehicle.id}`)}
+                onRowClick={(vehicle) =>
+                  void navigate(`/doi-xe/${vehicle.id}`)
+                }
               />
               <FleetLegend />
             </section>

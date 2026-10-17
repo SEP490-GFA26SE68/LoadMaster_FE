@@ -8,6 +8,7 @@ import type { User } from '@/types/user'
 /** Một dòng danh sách chuyến (LM-053, LM-088): mọi giá trị lấy từ kho — chuyến, xe, tài xế và revision. */
 export type TripRow = {
   readonly id: string
+  readonly tripCode?: string
   readonly name: string
   /** Ngày chạy `YYYY-MM-DD` (D-46). */
   readonly scheduledDate: string

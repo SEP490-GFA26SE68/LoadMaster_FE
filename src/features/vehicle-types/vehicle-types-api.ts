@@ -24,6 +24,7 @@ type PageResponse<T> = {
   last: boolean
 }
 
+<<<<<<< HEAD
 type SpringPage<T> = {
   content: T[]
   number: number
@@ -32,6 +33,9 @@ type SpringPage<T> = {
   totalPages: number
   last: boolean
 }
+=======
+
+>>>>>>> 852201851fa0ed1118b7cb902879b59920460a13
 
 type VehicleTypeApi = {
   id: number
@@ -45,6 +49,7 @@ type VehicleTypeApi = {
   maxCogOffsetRatio: number
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleApi[]
+  vehicleCount: number
 }
 
 type VehicleTypeObstacleApi = {
@@ -80,8 +85,14 @@ export type VehicleType = {
 
   maxCogOffsetRatio: number
 
+<<<<<<< HEAD
   hazardousCapable?: boolean
   obstacles?: VehicleTypeObstacle[]
+=======
+  hazardousCapable: boolean
+  obstacles: VehicleTypeObstacle[]
+  vehicleCount: number
+>>>>>>> 852201851fa0ed1118b7cb902879b59920460a13
 }
 
 export type VehicleTypeObstacle = {
@@ -136,6 +147,7 @@ function mapVehicleType(
         loadBearing:
           obstacle.loadBearing,
       })),
+      vehicleCount: item.vehicleCount,
   }
 }
 

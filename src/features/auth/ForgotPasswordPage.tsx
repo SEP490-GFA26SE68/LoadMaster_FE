@@ -7,18 +7,27 @@ import { z } from 'zod'
 import { Logo } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
 import { requestPasswordReset } from './auth-api'
 
+const FIELD_ERRORS = {
+  emailRequired: 'auth.passwordReset.emailRequired',
+  emailInvalid: 'auth.passwordReset.emailInvalid',
+} as const satisfies Record<string, MessageKey>
+
 const schema = z.object({
-  email: z
-    .string()
-    .min(1, 'Vui lòng nhập email')
-    .email('Email không hợp lệ'),
+  email: z.string().min(1, FIELD_ERRORS.emailRequired).email(FIELD_ERRORS.emailInvalid),
 })
+
+function translateFieldError(t: TFunction, message: string | undefined): string | undefined {
+  const key = Object.values(FIELD_ERRORS).find((candidate) => candidate === message)
+  return key ? t(key) : undefined
+}
 
 type FormValues = z.infer<typeof schema>
 
 export function ForgotPasswordPage() {
+  const t = useT()
   const navigate = useNavigate()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -38,12 +47,8 @@ export function ForgotPasswordPage() {
       navigate(
         `/xac-thuc-otp?email=${encodeURIComponent(email)}`,
       )
-    } catch (error) {
-      setServerError(
-        error instanceof Error
-          ? error.message
-          : 'Không thể gửi mã OTP',
-      )
+    } catch {
+      setServerError(t('auth.passwordReset.sendOtpFailed'))
     }
   }
 
@@ -56,12 +61,11 @@ export function ForgotPasswordPage() {
 
           <div>
             <h1 className="text-h1 font-semibold">
-              Quên mật khẩu
+              {t('auth.passwordReset.forgotTitle')}
             </h1>
 
             <p className="mt-2 text-body text-text-2">
-              Nhập email tài khoản của bạn.
-              LoadMaster sẽ gửi mã OTP để xác minh.
+              {t('auth.passwordReset.forgotDescription')}
             </p>
           </div>
         </div>
@@ -72,11 +76,11 @@ export function ForgotPasswordPage() {
           className="flex flex-col gap-5"
         >
           <Input
-            label="Email"
+            label={t('auth.passwordReset.email')}
             type="email"
             autoComplete="email"
-            placeholder="name@example.com"
-            error={form.formState.errors.email?.message}
+            placeholder={t('auth.passwordReset.emailPlaceholder')}
+            error={translateFieldError(t, form.formState.errors.email?.message)}
             {...form.register('email')}
           />
 
@@ -95,14 +99,14 @@ export function ForgotPasswordPage() {
             block
             loading={form.formState.isSubmitting}
           >
-            Gửi mã OTP
+            {t('auth.passwordReset.sendOtp')}
           </Button>
 
           <Link
             to="/dang-nhap"
             className="text-center text-body text-primary hover:underline"
           >
-            Quay lại đăng nhập
+            {t('auth.passwordReset.backToLogin')}
           </Link>
         </form>
       </div>

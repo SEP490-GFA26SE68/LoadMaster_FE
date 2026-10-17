@@ -16,6 +16,8 @@ export const vehicleTypes = {
     limits: 'Loading limits',
     vehicles: 'Vehicles using it',
     actions: 'Actions',
+    cargoPreview: 'Cargo simulation',
+    vehicleCount: 'Vehicle count using'
   },
   noVehicles: 'No vehicles yet',
   limits: {

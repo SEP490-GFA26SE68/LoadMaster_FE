@@ -3,7 +3,6 @@ import { UserPen, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
-import type { CompanyOption } from './users-api'
 import {
   Dialog,
   DialogClose,
@@ -34,7 +33,6 @@ function emptyValues(scope: UserScope): UserFormInput {
     phone: '',
     role: DEFAULT_ROLE[scope],
     depot: '',
-    companyId: '',
   }
 }
 
@@ -45,7 +43,6 @@ function toFormValues(user: User): UserFormInput {
     phone: user.phone,
     role: user.role,
     depot: user.depot ?? '',
-    companyId: user.companyId ?? '',
   }
 }
 
@@ -63,14 +60,12 @@ function toFormValues(user: User): UserFormInput {
 export function UserFormDialog({
   scope,
   user,
-  companies = [],
   roleBlock = null,
   onClose,
   onSubmit,
 }: {
   scope: UserScope
   user?: User
-  companies?: CompanyOption[]
   roleBlock?: AccountBlock | null
   onClose: () => void
   onSubmit: (values: UserFormValues) => Promise<void>
@@ -94,9 +89,9 @@ export function UserFormDialog({
       'systemAdmin',
       'systemManager',
       'systemSupporter',
-      'companyAdmin',
     ]
     : [
+      'companyAdmin',
       'companyManager',
       'dispatcher',
       'warehouse',
@@ -115,14 +110,6 @@ export function UserFormDialog({
       setServerError(error)
     }
   }
-
-  const companyOptions = companies.map((company) => ({
-    value: company.id,
-    label: company.name,
-  }))
-
-  const needsCompany =
-    platform && role === 'companyAdmin'
 
   return (
     <Dialog open onOpenChange={(open) => (open || form.formState.isSubmitting ? undefined : onClose())}>
@@ -164,16 +151,6 @@ export function UserFormDialog({
                   hint={t('admin.users.form.device', { device: t(`admin.users.devices.${role}`) })}
                 />
               )}
-              {needsCompany ? (
-                <div className="col-span-2">
-                  <SelectField
-                    control={form.control}
-                    name="companyId"
-                    label={t('admin.users.form.company')}
-                    options={companyOptions}
-                  />
-                </div>
-              ) : null}
             </div>
 
             {serverError ? (
