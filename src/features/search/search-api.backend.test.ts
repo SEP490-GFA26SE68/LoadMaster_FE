@@ -10,8 +10,8 @@ vi.mock('@/lib/backend-config', () => ({
 }))
 
 /**
- * Tìm nhanh khi kho kiện nối backend: nhóm kho kiện đọc `GET /api/packages` thay kho mẫu, mở kiện ở Kho kiện theo mã QR (mã của kho là
- * số ngắn); loại kiện không có nguồn nên nhóm loại kiện rỗng; máy chủ từ chối người xem (403) thì nhóm kho kiện rỗng, không lỗi.
+ * Tìm nhanh khi kho kiện nối backend: nhóm kho kiện đọc `GET /api/packages` thay kho mẫu; dòng đầu là mã của bên gửi, dòng phụ là
+ * trạng thái và loại hàng (không phải mã QR); mở kiện ở Kho kiện theo mã QR (mã của kho là số ngắn); loại kiện không có nguồn nên nhóm loại kiện rỗng; máy chủ từ chối người xem (403) thì nhóm kho kiện rỗng, không lỗi.
  */
 const TOKEN = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const PACKAGE = {
@@ -46,7 +46,9 @@ test('kho kiện của tìm nhanh đọc từ backend và mở ở Kho kiện th
   const listPackageTypes = vi.spyOn(db, 'listPackageTypes')
   const sources = await fetchSearchSources(['pool', 'packageTypes'])
   expect(paths).toEqual(['/api/packages'])
-  expect(sources.pool).toEqual([{ id: '7', reference: 'QA PK-0007', qrToken: TOKEN, typeName: TOKEN, query: TOKEN }])
+  expect(sources.pool).toEqual([
+    { id: '7', label: 'QA PK-0007', qrToken: TOKEN, typeName: '', query: TOKEN, status: 'IMPORTED', handlingClass: 'FRAGILE' },
+  ])
   expect(sources.packageTypes).toEqual([])
   expect(listPackages).not.toHaveBeenCalled()
   expect(listPackageTypes).not.toHaveBeenCalled()

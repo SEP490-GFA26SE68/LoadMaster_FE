@@ -23,18 +23,21 @@ function mockPool(packages: readonly Package[], types: readonly PackageType[]): 
 }
 
 /**
- * Kiện của kho kiện, nối backend: danh sách của máy chủ không có loại kiện hay điểm đến nên dòng phụ là mã QR, và kiện mở ở Kho kiện
- * theo mã QR (mã của kho là số ngắn: `?q=` theo nó khớp cả kiện khác). Máy chủ từ chối người xem (403 — chỉ điều phối viên đọc được kho
- * kiện) thì nhóm không có kết quả.
+ * Kiện của kho kiện, nối backend: mã của kho là số ngắn nên dòng đầu là mã của bên gửi; danh sách của máy chủ không có loại kiện, điểm
+ * đến thường vắng nên dòng phụ là điểm đến (nếu có), trạng thái và loại hàng — không phải mã QR. Kiện mở ở Kho kiện theo mã QR (`?q=`
+ * theo mã số khớp cả kiện khác); mã QR vẫn tìm được. Người xem không đọc được kho kiện thì `fetchSearchSources` không gọi tới đây
+ * (`quickSearchGroups`); máy chủ vẫn từ chối (403) thì nhóm không có kết quả.
  */
 async function backendPool(): Promise<SearchSources['pool']> {
   try {
     return (await fetchPackages()).map((pkg) => ({
       id: pkg.id,
-      ...(pkg.packageCode === pkg.id ? {} : { reference: pkg.packageCode }),
+      label: pkg.packageCode,
       qrToken: pkg.qrToken,
-      typeName: pkg.qrToken,
+      typeName: pkg.destination,
       query: pkg.qrToken,
+      status: pkg.status,
+      handlingClass: pkg.handlingClass,
     }))
   } catch (error) {
     if (isApiError(error) && error.status === 403) return []
