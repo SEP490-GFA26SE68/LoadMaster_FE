@@ -50,6 +50,8 @@ export type GuestContact = {
   companyName?: string
   /** Gói khách quan tâm (`PLAN-NNN`), vắng khi khách không chọn. */
   interestedPlanId?: string
+  /** Tên gói backend trả kèm yêu cầu (`interestedPlanName`); kho mẫu không ghi — màn tra tên theo danh mục gói. */
+  interestedPlanName?: string
   message?: string
   requestType: ContactRequestType
   status: ContactStatus
