@@ -50,6 +50,7 @@ export const apiErrors = {
   FILE_INVALID: 'File không đọc được. Kiểm tra lại file rồi thử lại.',
   UNSUPPORTED_FILE_TYPE: 'Định dạng file chưa được hỗ trợ. Dùng file .xlsx hoặc .csv.',
   EMPTY_FILE: 'File không có dòng dữ liệu nào.',
+  IMPORT_FILE_REJECTED: 'Máy chủ không đọc được file này. Thường là file chưa có dòng kiện nào dưới dòng tiêu đề (file mẫu còn trống); cũng có thể file hỏng hoặc quá 1.000 dòng.',
   FILE_SIZE_LIMIT_EXCEEDED: 'File quá lớn so với giới hạn cho phép.',
   BATCH_SIZE_LIMIT_EXCEEDED: 'File có quá nhiều dòng cho một lần nhập.',
   IMPORT_DUPLICATE_CODE: 'File có mã kiện bị trùng.',
