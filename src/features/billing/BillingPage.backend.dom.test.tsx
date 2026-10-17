@@ -97,6 +97,10 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   await waitFor(() => expect(rowsOf()).toHaveLength(2), SLOW)
   await waitFor(() => expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Credit2', 'Hoá đơn1']))
   expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell')[1]).toHaveTextContent('Mua')
+  // Tham chiếu dài của máy chủ cắt trong cột, đủ chữ ở title
+  const reference = within(rowsOf()[0] as HTMLElement).getAllByRole('cell')[3]?.firstElementChild
+  expect(reference).toHaveAttribute('title', 'MOCK_09D3DE34151E4578')
+  expect(reference).toHaveClass('truncate')
 
   await user.click(screen.getByRole('tab', { name: /Hoá đơn/ }))
   await waitFor(() => expect(rowsOf()).toHaveLength(1))
