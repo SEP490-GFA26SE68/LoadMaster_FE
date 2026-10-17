@@ -101,6 +101,14 @@ test('a day and month without the year keeps the same order as the full date of 
   expect(en.dayMonth(approved)).toBe('Sep 4')
 })
 
+test('a "YYYY-MM" billing period reads as month and year; anything else is kept as is', () => {
+  expect(vi.monthYear('2026-10')).toBe('10/2026')
+  expect(en.monthYear('2026-10')).toBe('Oct 2026')
+  expect(vi.monthYear('2026-01')).toBe('01/2026')
+  expect(en.monthYear('2026-13')).toBe('2026-13')
+  expect(vi.monthYear('')).toBe('')
+})
+
 test('times use the 24-hour clock in both languages', () => {
   expect(vi.time(new Date(2026, 8, 14, 14, 30))).toBe('14:30')
   expect(en.time(new Date(2026, 8, 14, 14, 30))).toBe('14:30')

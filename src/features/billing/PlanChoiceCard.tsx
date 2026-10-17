@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
 
 /**
  * Chọn gói để đăng ký (FE-8-03) — chỉ hiện khi công ty chưa có gói hoặc gói đã hết hạn. Mỗi gói đang bán một dòng: tên, hạng, giá,
@@ -31,7 +32,9 @@ export function PlanChoiceCard({ plans, pendingId, onSubscribe }: {
               <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-display text-h3 leading-5.5 font-[650] text-ink-strong">{plan.name}</span>
-                  <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>
+                  {tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`)) === null
+                    ? null
+                    : <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>}
                   {plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
                 </span>
                 <span className="text-small text-ink-2 tabular-nums">

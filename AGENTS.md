@@ -166,7 +166,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   tài xế cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở hai màn này chờ số đo thiết bị thật (mục 5, luật kính).
 - **Tìm nhanh theo vai trò** (FE-0-04): quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm chuyến, kiện, yêu cầu giao
   (`requirements.view`), kho kiện (`packages.view`), xe; điều phối viên thêm loại kiện (`packages.manage`); kho, tài xế, quản lý nền tảng, hỗ
-  trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần.
+  trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần;
+  kho kiện nối backend chỉ điều phối viên đọc được nên nhóm kho kiện bỏ với vai trò khác (`quickSearchGroups`, `packagePoolReachable`).
 
 **Chuông thông báo theo vai trò**
 
@@ -832,6 +833,7 @@ Giờ              14:30                      (theo LM-027)
 ```
 
 `format.dayMonth` ("14/09" · "Sep 14") cắt năm khỏi mẫu ngày đầy đủ — CLDR tiếng Việt cho mẫu ngày + tháng là "dd-MM" (LM-090, LM-094).
+`format.monthYear` ("10/2026" · "Oct 2026") đọc kỳ "YYYY-MM" của máy chủ, cắt ngày khỏi cùng mẫu đó (mẫu tháng + năm của vi là "tháng 10, 2026").
 
 Đặt các hàm format trong `src/lib/format.ts` và dùng lại, không viết rải rác. Từ LM-027 hàm
 format nhận locale đang chọn.
@@ -1157,12 +1159,14 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): `/api/packages*` chỉ điều phối viên gọi được — quản lý công ty và
   nhân viên kho thấy câu lý do (`sourcing.backend.*`), màn kho bỏ nút tra cứu và liên kết in lại nhãn (`packagePoolReachable`). Điểm đến và
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
-  file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`); nhãn in vẫn là tờ A4 của app, PDF của máy chủ là nút phụ (1–200 kiện).
-  Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+  file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
+  vẫn là tờ A4 của app, PDF của máy chủ là nút phụ (1–200 kiện). Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — chỉ chuyến đang vận chuyển, thẻ bỏ tên tuyến, số kiện, điểm đang giao.
-  Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã in trên
-  nhãn (`trackingBarcode`, không có thì mã kiện; `PackageVerify methods={['CODE']}`) → `POST …/packages/{id}/unload`; backend không trả kiện
+  Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã của kiện
+  (`packageOfCode`: `trackingBarcode`, mã kho kiện in ở góc nhãn, mã của bên gửi / mã QR khi backend trả; không phân biệt hoa thường; mã bên gửi
+  trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`; `PackageVerify methods={['CODE']}` kèm `codeLabel` / `codeHint` riêng) →
+  `POST …/packages/{id}/unload`; backend không trả kiện
   đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
   `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc

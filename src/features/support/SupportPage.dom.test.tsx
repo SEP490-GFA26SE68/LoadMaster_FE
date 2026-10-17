@@ -52,6 +52,10 @@ test('lists every ticket of every company and filters by status, on the URL', as
   const cells = async (text: string) => within(await rowOf(text)).getAllByRole('cell').map((cell) => cell.textContent)
   expect(await cells('TKT-001')).toStrictEqual(['Planner tải chậm với phương án nhiều kiệnTKT-001 · Nguyễn Thanh Tùng', 'Công ty TNHH Vận tải Long Bình', 'Kỹ thuật', 'Mở', expect.stringMatching(/\d{2}:\d{2}$/)])
   expect(await cells('TKT-002')).toStrictEqual(['Hỏi cách nạp thêm creditTKT-002 · Kiều Anh Tuấn', 'Công ty CP Giao nhận Phương Nam', 'Thanh toán', 'Đã đóng', expect.stringMatching(/\d{2}:\d{2}$/)])
+  // Cột giờ có bề rộng riêng (các cột % không ép nó tới mức cắt chữ khi khung xử lý mở) và ghi ngày, giờ thành hai dòng
+  expect(screen.getByRole('columnheader', { name: 'Cập nhật' })).toHaveStyle({ width: '112px' })
+  const time = within(await rowOf('TKT-001')).getAllByRole('cell').at(-1)
+  expect(time?.querySelectorAll('span > span')).toHaveLength(2)
 
   await user.click(screen.getByRole('combobox', { name: 'Trạng thái' }))
   await user.click(await screen.findByRole('option', { name: 'Đã đóng' }))
@@ -88,7 +92,7 @@ test('replying starts the ticket, and its status can be changed to closed and ba
 test('the side panel shows the plan, the balance and the latest credit transactions of the company of the open ticket, read only', async () => {
   renderSupport('?ticket=TKT-002')
   const panel = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
-  await within(panel).findByText('Basic · Basic', {}, SLOW)
+  await within(panel).findByText('Basic', {}, SLOW)
   expect(within(panel).getByText('Công ty CP Giao nhận Phương Nam')).toBeInTheDocument()
   expect(within(panel).getByText('Đang hoạt động')).toBeInTheDocument()
   // Phương Nam đã dùng gần hết 100 credit của gói Basic: còn 2, và hơn 20 giao dịch nên khung chỉ giữ 20 dòng mới nhất

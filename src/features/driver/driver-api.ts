@@ -181,8 +181,9 @@ export type UnloadVerifyInput = { readonly stopNumber: number; readonly method: 
 
 /**
  * Đối chiếu kiện ở điểm giao hiện tại bằng nhãn — mức 1 và 2: ghi "đã dỡ" và cách đối chiếu. Kiện của điểm khác: `QR_WRONG_STOP` (kèm
- * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: chỉ mã gõ, khớp mã in trên nhãn của một kiện
- * của điểm (`UNLOAD_CODE_UNMATCHED` khi không khớp, `DUPLICATE_UNLOAD` khi đã dỡ, `WRONG_DELIVERY_STOP` khi backend từ chối điểm).
+ * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: chỉ mã gõ, khớp mã của một kiện của điểm
+ * (`packageOfCode`; `UNLOAD_CODE_UNMATCHED` khi không khớp, `UNLOAD_CODE_AMBIGUOUS` khi mã của bên gửi trùng nhiều kiện, `DUPLICATE_UNLOAD`
+ * khi đã dỡ, `WRONG_DELIVERY_STOP` khi backend từ chối điểm).
  */
 // POST /api/driver/packages/{id}/unload?driverId=
 export function confirmUnloadByQr(tripId: string, { stopNumber, method, code }: UnloadVerifyInput): Promise<UnloadRecorded> {

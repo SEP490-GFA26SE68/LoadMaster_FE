@@ -17,7 +17,10 @@ import { useDeliveryStop } from './useDeliveryStop'
 import { useDriverStopScreenQuery } from './useDriverQueries'
 import { useUnloadScan } from './useUnloadScan'
 
-/** Backend chưa trả mã QR của kiện cho tài xế và chưa có xác nhận tay: hộp đối chiếu chỉ còn gõ mã in trên nhãn. */
+/**
+ * Backend chưa trả mã QR của kiện cho tài xế và chưa có xác nhận tay: hộp đối chiếu chỉ còn gõ mã — mã đứng đầu dòng kiện hoặc mã của kho
+ * kiện (`packageOfCode`), nên ô gõ mã có nhãn và gợi ý riêng.
+ */
 const CODE_ONLY: readonly VerifyMethod[] = ['CODE']
 
 /**
@@ -94,6 +97,8 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
         open={scan.open}
         onOpenChange={scan.setOpen}
         methods={CODE_ONLY}
+        codeLabel={t('driver.backend.codeLabel')}
+        codeHint={t('driver.backend.codeHint')}
         title={t('driver.scan.title', { number: view.stop.number })}
         description={t('driver.backend.scanDescription', { number: view.stop.number, done: view.unloadedCount, total: view.total })}
         onVerify={scan.handleVerify}

@@ -6,6 +6,7 @@ import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
+import { tierBesideName } from '@/lib/plan-tier'
 import type { ServerCompanyRow, ServerCompanyStatus, ServerPlanStatus } from './companies-server-api'
 
 /**
@@ -81,10 +82,11 @@ function PlanCell({ row }: { row: ServerCompanyRow }) {
   const { plansLoaded } = useServerCompaniesTable()
   if (!plansLoaded) return <NotLoaded />
   if (row.plan === null) return <span className="text-ink-3">{t('companies.noPlan')}</span>
+  const tier = row.plan.tier === null ? null : tierBesideName(row.plan.name, t(`common.planTiers.${row.plan.tier}`))
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-2">
       <span className="font-medium text-ink-1">{row.plan.name}</span>
-      {row.plan.tier === null ? null : <Badge tone="cyan" shape="tag">{t(`common.planTiers.${row.plan.tier}`)}</Badge>}
+      {tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}
     </span>
   )
 }

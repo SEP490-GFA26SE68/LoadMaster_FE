@@ -25,6 +25,12 @@ export type StopPackageDto = {
   readonly packageId: number | null
   readonly packageName: string | null
   readonly trackingBarcode: string | null
+  /**
+   * Mã của bên gửi và mã QR in trên nhãn: `StopPackageResponse` của backend chưa trả hai trường này (chỉ có mã vạch) — trả thì tài xế gõ
+   * được chúng.
+   */
+  readonly packageCode?: string | null
+  readonly qrToken?: string | null
   readonly weight: number | null
   readonly unloadOrder: number | null
 }
@@ -84,34 +90,66 @@ export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
   return { inTransit, loaded: [], preparing: [], recent: [] }
 }
 
-/** Mã in trên nhãn của kiện: mã vạch; kiện không có mã vạch thì mã kiện của backend. */
-const labelOf = (pkg: StopPackageDto & { readonly packageId: number }) => pkg.trackingBarcode?.trim() || String(pkg.packageId)
+type StopPackage = StopPackageDto & { readonly packageId: number }
+
+/** Kiện của điểm, bỏ dòng backend trả không kèm kiện. */
+const stopPackagesOf = (dto: CurrentStopDto): StopPackage[] =>
+  (dto.packages ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [{ ...pkg, packageId: pkg.packageId }]))
+
+/** Mã so được: bỏ khoảng trắng hai đầu, không phân biệt hoa thường. */
+const normalized = (value: string | null | undefined) => value?.trim().toLocaleUpperCase('vi') ?? ''
+
+/** Mã của bên gửi của kiện, khi chỉ kiện đó của điểm mang nó (nhập file không cấm hai kiện trùng mã của bên gửi). */
+function uniqueSenderCode(pkg: StopPackage, packages: readonly StopPackage[]): string | undefined {
+  const code = normalized(pkg.packageCode)
+  if (code === '') return undefined
+  return packages.filter((other) => normalized(other.packageCode) === code).length === 1 ? pkg.packageCode?.trim() : undefined
+}
 
 /**
- * Kiện của điểm ứng với mã tài xế gõ: khớp đúng mã in trên nhãn (`labelOf`), không phân biệt hoa thường, bỏ khoảng trắng hai đầu.
- * Không khớp kiện nào của điểm thì `undefined`.
+ * Mã đứng đầu dòng kiện — mã tài xế gõ được: mã của bên gửi (in trên nhãn) khi nó duy nhất trong điểm; không thì mã vạch; không có mã
+ * vạch thì mã của kho kiện (số in ở góc trên nhãn).
  */
-export function packageOfCode(dto: CurrentStopDto, code: string): { readonly packageId: number; readonly label: string } | undefined {
-  const wanted = code.trim().toUpperCase()
-  if (wanted === '') return undefined
-  for (const pkg of dto.packages ?? []) {
-    if (pkg.packageId === null) continue
-    const label = labelOf({ ...pkg, packageId: pkg.packageId })
-    if (label.toUpperCase() === wanted) return { packageId: pkg.packageId, label }
-  }
-  return undefined
+const labelOf = (pkg: StopPackage, packages: readonly StopPackage[]) =>
+  uniqueSenderCode(pkg, packages) ?? (pkg.trackingBarcode?.trim() || String(pkg.packageId))
+
+/** Kiện của điểm ứng với mã tài xế gõ. `ambiguous`: mã khớp `count` kiện của điểm — không biết là kiện nào. */
+export type StopCodeMatch =
+  | { readonly kind: 'matched'; readonly packageId: number; readonly label: string }
+  | { readonly kind: 'ambiguous'; readonly count: number }
+  | { readonly kind: 'unknown' }
+
+function matchOf(found: readonly StopPackage[], packages: readonly StopPackage[]): StopCodeMatch | undefined {
+  const [only] = found
+  if (only === undefined) return undefined
+  return found.length > 1 ? { kind: 'ambiguous', count: found.length } : { kind: 'matched', packageId: only.packageId, label: labelOf(only, packages) }
+}
+
+/**
+ * Kiện của điểm ứng với mã tài xế gõ (bỏ khoảng trắng hai đầu, không phân biệt hoa thường), như `resolveVerifyCode` của kho mẫu: trước hết
+ * các mã riêng của một kiện — mã QR, mã vạch, mã của kho kiện —; không khớp thì mã của bên gửi, chỉ nhận khi đúng một kiện của điểm mang
+ * nó. Backend chưa trả mã QR và mã của bên gửi cho tài xế (`StopPackageDto`): khi thiếu, chỉ còn mã vạch và mã của kho kiện.
+ */
+export function packageOfCode(dto: CurrentStopDto, code: string): StopCodeMatch {
+  const wanted = normalized(code)
+  if (wanted === '') return { kind: 'unknown' }
+  const packages = stopPackagesOf(dto)
+  const byOwnCode = packages.filter((pkg) => [pkg.qrToken, pkg.trackingBarcode, String(pkg.packageId)].some((value) => normalized(value) === wanted))
+  const bySenderCode = packages.filter((pkg) => normalized(pkg.packageCode) === wanted)
+  return matchOf(byOwnCode, packages) ?? matchOf(bySenderCode, packages) ?? { kind: 'unknown' }
 }
 
 /** Mã kiện (dạng chuỗi) của mọi kiện của điểm, bỏ dòng backend trả không kèm kiện. */
 export function packageIdsOf(dto: CurrentStopDto): string[] {
-  return (dto.packages ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [String(pkg.packageId)]))
+  return stopPackagesOf(dto).map((pkg) => String(pkg.packageId))
 }
 
 function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
+  const packages = stopPackagesOf(dto)
   return (dto.packages ?? []).flatMap((pkg, index): DeliveryItem[] => {
     if (pkg.packageId === null) return []
     const id = String(pkg.packageId)
-    const label = labelOf({ ...pkg, packageId: pkg.packageId })
+    const label = labelOf({ ...pkg, packageId: pkg.packageId }, packages)
     return [{ id, packageId: id, label, name: pkg.packageName ?? label, weightKg: pkg.weight ?? undefined, unloadingOrder: pkg.unloadOrder ?? index + 1 }]
   })
 }

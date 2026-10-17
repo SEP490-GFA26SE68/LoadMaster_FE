@@ -14,7 +14,7 @@
 
 import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-import-template'
 import { readImportFile } from '@/features/trips/read-import-file'
-import { api, ApiError } from '@/lib/api-client'
+import { api, ApiError, isApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import {
   getMockDb, MockDbError, PACKAGE_STATUSES, type Package, type PackageFlag, type PackageHistoryEntry, type PackageInput, type PackageStatus, type PackageType,
@@ -182,6 +182,16 @@ function fileError(error: ImportFileError): MockDbError {
   return new MockDbError(error.code, error.params as never)
 }
 
+/**
+ * Máy chủ chưa trả mã cho lỗi đọc file (chỉ HTTP 400): ở bước xem trước, 400 chỉ là file không đọc được — thường là file chưa có dòng
+ * kiện nào dưới tiêu đề (file mẫu còn trống), hoặc file hỏng, quá số dòng. Loại file và cỡ file đã kiểm trước khi gửi. Đổi sang
+ * `IMPORT_FILE_REJECTED` để câu báo nói đúng việc thay câu chung của 400; máy chủ trả mã riêng (`EMPTY_FILE`…) thì giữ mã đó.
+ */
+function previewFailure(error: unknown): unknown {
+  if (isApiError(error) && error.code === 'BAD_REQUEST' && error.status === 400) return new ApiError('IMPORT_FILE_REJECTED', { status: 400 })
+  return error
+}
+
 function formOf(file: File): FormData {
   const form = new FormData()
   form.append('file', file)
@@ -197,7 +207,12 @@ function formOf(file: File): FormData {
 export async function previewPackageImport(file: File): Promise<PackageImportPreview> {
   const early = importFileError(file, PACKAGE_POOL_SUPPORT.maxImportMb)
   if (early) throw fileError(early)
-  if (ON_BACKEND) return previewOf(await api().postForm<BackendImportPreview>('/api/packages/import/preview', formOf(file)), file)
+  if (ON_BACKEND) {
+    const dto = await api().postForm<BackendImportPreview>('/api/packages/import/preview', formOf(file)).catch((error: unknown) => {
+      throw previewFailure(error)
+    })
+    return previewOf(dto, file)
+  }
   const table = await readImportFile(file).catch(() => {
     throw new MockDbError('UNSUPPORTED_FILE_TYPE', {})
   })

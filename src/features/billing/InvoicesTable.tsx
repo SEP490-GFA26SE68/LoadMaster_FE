@@ -26,7 +26,7 @@ function columnsOf(t: TFunction, format: Formatter) {
       cell: (info) => <span className="text-ink-1 tabular-nums">{format.date(info.getValue())} {format.time(info.getValue())}</span>,
     }),
     helper.accessor('number', { id: 'number', header: t('billing.invoices.columns.number'), cell: (info) => <span className={mono}>{info.getValue()}</span> }),
-    helper.accessor('period', { id: 'period', header: t('billing.invoices.columns.period'), meta: { width: '110px' } satisfies ColumnMeta, cell: (info) => <span className={mono}>{info.getValue()}</span> }),
+    helper.accessor('period', { id: 'period', header: t('billing.invoices.columns.period'), meta: { width: '110px' } satisfies ColumnMeta, cell: (info) => <span className={mono}>{format.monthYear(info.getValue())}</span> }),
     helper.accessor('planName', { id: 'plan', header: t('billing.invoices.columns.plan'), meta: { width: '140px' } satisfies ColumnMeta, cell: (info) => <span className="text-ink-1">{info.getValue()}</span> }),
     helper.accessor('amountVnd', {
       id: 'amount',

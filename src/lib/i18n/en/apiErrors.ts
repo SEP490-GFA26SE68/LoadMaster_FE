@@ -43,6 +43,7 @@ export const apiErrors = {
   FILE_INVALID: 'The file cannot be read. Check it and try again.',
   UNSUPPORTED_FILE_TYPE: 'This file type is not supported. Use an .xlsx or .csv file.',
   EMPTY_FILE: 'The file has no data rows.',
+  IMPORT_FILE_REJECTED: 'The server could not read this file. Usually it has no package rows under the header row (the template is still empty); the file may also be damaged or longer than 1,000 rows.',
   FILE_SIZE_LIMIT_EXCEEDED: 'The file is larger than allowed.',
   BATCH_SIZE_LIMIT_EXCEEDED: 'The file has too many rows for one import.',
   IMPORT_DUPLICATE_CODE: 'The file has duplicate package codes.',

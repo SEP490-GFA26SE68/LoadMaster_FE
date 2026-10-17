@@ -107,6 +107,11 @@ function unloadScanErrorMessage(
     const key = BACKEND_UNLOAD_ERRORS[error.code as keyof typeof BACKEND_UNLOAD_ERRORS]
     return t(key, { code: typeof error.params.code === 'string' ? error.params.code : '' })
   }
+  // Mã của bên gửi trùng nhiều kiện của điểm: dòng của các kiện đó đứng đầu bằng mã riêng của kiện
+  if (isApiError(error) && error.code === 'UNLOAD_CODE_AMBIGUOUS') {
+    const { code, count } = error.params
+    return t('driver.backend.codeAmbiguous', { code: typeof code === 'string' ? code : '', count: typeof count === 'number' ? count : 0 })
+  }
   if (isMockDbError(error) && error.code === 'QR_WRONG_STOP') {
     const { packageInstanceId, stopNumber } = (error as MockDbError<'QR_WRONG_STOP'>).params
     return t('driver.scan.wrongStop', {

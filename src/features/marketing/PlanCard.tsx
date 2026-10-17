@@ -6,6 +6,7 @@ import { Card, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
 import { contactPath } from './contact-form'
 import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 
@@ -23,7 +24,7 @@ const isKnownFeature = (code: string): code is KnownFeature => (FEATURES as read
 export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
   const t = useT()
   const format = useFormat()
-  const tierLabel = t(`common.planTiers.${plan.tier}`)
+  const tierLabel = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
   const titleId = `plan-${plan.id}`
 
   return (
@@ -31,7 +32,7 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
       <div className="flex flex-col items-start gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle as="h2" id={titleId} className="text-h2 leading-7">{plan.name}</CardTitle>
-          {plan.name === tierLabel ? null : <Badge tone="cyan" shape="tag" className={PUBLIC_TOUCH_TAG}>{tierLabel}</Badge>}
+          {tierLabel === null ? null : <Badge tone="cyan" shape="tag" className={PUBLIC_TOUCH_TAG}>{tierLabel}</Badge>}
         </div>
         {plan.provisional ? <Badge shape="tag" tone="warning" outlined className={PUBLIC_TOUCH_TAG}>{t('common.provisionalPlan')}</Badge> : null}
       </div>

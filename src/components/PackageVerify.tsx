@@ -37,6 +37,12 @@ type PackageVerifyProps = {
   pending?: boolean
   /** Mức nơi gọi làm được, theo thứ tự hiện (mặc định đủ ba mức). Chỉ một mức thì không có hàng tab. */
   methods?: readonly VerifyMethod[]
+  /**
+   * Nhãn và gợi ý của ô gõ mã, đã dịch — cho nơi gọi nhận mã khác với mặc định "mã QR hoặc mã bên gửi" (tài xế khi nối backend). Vắng
+   * thì dùng chữ mặc định.
+   */
+  codeLabel?: string
+  codeHint?: string
 }
 
 type CodeValues = { code: string }
@@ -51,7 +57,7 @@ function initialMethod(methods: readonly VerifyMethod[]): VerifyMethod {
 /** Ô và nút của màn cảm ứng: 56 px, chữ 16 px (mục 10) — hộp này chỉ dùng ở kho (máy tính bảng) và tài xế (điện thoại). */
 const TOUCH_FIELD = 'h-14 w-full min-w-0 px-3 text-body-lg'
 
-function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, methods = VERIFY_METHODS, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
+function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, methods = VERIFY_METHODS, codeLabel, codeHint, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
   inputRef: RefObject<HTMLInputElement | null>
   onClose: () => void
 }) {
@@ -100,7 +106,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
         <TabsContent value="CODE" className="outline-none">
           <form noValidate className="flex flex-col gap-3" onSubmit={form.handleSubmit(({ code }) => onVerify({ method: 'CODE', code }))}>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={codeId} className="font-medium">{t('qr.verify.codeLabel')}</label>
+              <label htmlFor={codeId} className="font-medium">{codeLabel ?? t('qr.verify.codeLabel')}</label>
               <input
                 id={codeId}
                 autoComplete="off"
@@ -116,7 +122,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
                   inputRef.current = element
                 }}
               />
-              <span id={`${codeId}-mo-ta`} className={codeError ? 'text-danger' : 'text-ink-3'}>{codeError ?? t('qr.verify.codeHint')}</span>
+              <span id={`${codeId}-mo-ta`} className={codeError ? 'text-danger' : 'text-ink-3'}>{codeError ?? codeHint ?? t('qr.verify.codeHint')}</span>
             </div>
             <Button type="submit" size="touch" className="self-end" loading={pending}>{t('qr.verify.codeSubmit')}</Button>
           </form>

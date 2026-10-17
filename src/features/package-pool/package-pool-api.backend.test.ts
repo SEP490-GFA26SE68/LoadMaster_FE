@@ -116,6 +116,16 @@ test('xem trước file: gửi multipart, giữ file cho bước xác nhận; fi
   expect(calls).toHaveLength(1)
 })
 
+test('xem trước file: máy chủ trả 400 không mã (file mẫu còn trống) thì báo IMPORT_FILE_REJECTED; mã riêng của máy chủ giữ nguyên', async () => {
+  const file = new File(['package_code,length,width,height,weight,handling_class,destination'], 'kien.csv')
+  routes['POST /api/packages/import/preview'] = { status: 400, body: { success: false, message: 'File rỗng hoặc không có dữ liệu để xử lý', data: null } }
+  await expect(previewPackageImport(file)).rejects.toMatchObject({ code: 'IMPORT_FILE_REJECTED', status: 400 })
+  routes['POST /api/packages/import/preview'] = { status: 400, body: { success: false, code: 'EMPTY_FILE', message: 'File rỗng' } }
+  await expect(previewPackageImport(file)).rejects.toMatchObject({ code: 'EMPTY_FILE' })
+  routes['POST /api/packages/import/preview'] = { status: 403, body: { success: false, message: 'Access Denied' } }
+  await expect(previewPackageImport(file)).rejects.not.toMatchObject({ code: 'IMPORT_FILE_REJECTED' })
+})
+
 test('xác nhận nhập: gửi lại file, kiện vừa tạo theo thứ tự backend trả; file còn lỗi là IMPORT_HAS_ERRORS', async () => {
   const file = new File(['x'], 'kien.csv')
   routes['POST /api/packages/import/confirm'] = { body: envelope({ totalImported: 2, packageIds: [3, 1], orderId: 1 }) }
