@@ -23,7 +23,7 @@ import {
   type ContactPanelValues,
 } from './contact-panel-form'
 import type { ContactHandler } from './contacts-api'
-import { useUpdateContactMutation } from './useContactsQuery'
+import { CONTACTS_SOURCE, useUpdateContactMutation } from './useContactsQuery'
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -80,8 +80,10 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
   // Bản mới của yêu cầu từ kho: giá trị gốc của form theo kho, ô người dùng đang sửa giữ chữ đang nhập
   useEffect(() => form.reset(contactPanelValues(contact), { keepDirtyValues: true }), [contact, form])
 
+  // Backend chưa bỏ được người nhận việc: yêu cầu đã giao thì "Chưa ai nhận" mờ, lý do ở gợi ý của ô
+  const keepsAssignee = contact.assignedToId !== undefined && !CONTACTS_SOURCE.canUnassign
   const assigneeOptions = [
-    { value: NO_ASSIGNEE, label: t('contacts.panel.unassigned') },
+    { value: NO_ASSIGNEE, label: t('contacts.panel.unassigned'), disabled: keepsAssignee },
     ...handlers.map((handler) => ({ value: handler.id, label: `${handler.name} · ${t(`roles.${handler.role}`)}` })),
     // Người đang nhận việc nhưng không còn nhận được (tài khoản đã khoá): vẫn hiện tên, không chọn lại được
     ...(contact.assignedToId !== undefined && !handlers.some((handler) => handler.id === contact.assignedToId)
@@ -166,7 +168,7 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
           name="assignee"
           label={t('contacts.panel.assignee')}
           options={assigneeOptions}
-          hint={handlersError ? t('contacts.panel.handlersError') : undefined}
+          hint={handlersError ? t('contacts.panel.handlersError') : keepsAssignee ? t('contacts.panel.unassignUnavailable') : undefined}
         />
         <Textarea label={t('contacts.panel.note')} hint={t('contacts.panel.noteHint')} rows={4} error={noteError} {...form.register('note')} />
         <SaveButton control={form.control} contact={contact} pending={update.isPending} />

@@ -19,12 +19,15 @@ export const CONTACT_STATUS_SLUGS = {
   CLOSED: 'da-dong',
 } as const satisfies Record<ContactStatus, string>
 
-/** Một dòng của bảng: yêu cầu kèm tên gói khách quan tâm (vắng khi khách không chọn hoặc gói không còn trong danh mục). */
+/**
+ * Một dòng của bảng: yêu cầu kèm tên gói khách quan tâm (vắng khi khách không chọn hoặc gói không còn trong danh mục). Tên backend trả kèm
+ * yêu cầu đứng trước tên tra theo danh mục.
+ */
 export type ContactRow = { readonly contact: GuestContact; readonly planName?: string }
 
 export function contactRows(contacts: readonly GuestContact[], planNames: ReadonlyMap<string, string>): ContactRow[] {
   return contacts.map((contact) => {
-    const planName = contact.interestedPlanId === undefined ? undefined : planNames.get(contact.interestedPlanId)
+    const planName = contact.interestedPlanName ?? (contact.interestedPlanId === undefined ? undefined : planNames.get(contact.interestedPlanId))
     return planName === undefined ? { contact } : { contact, planName }
   })
 }
