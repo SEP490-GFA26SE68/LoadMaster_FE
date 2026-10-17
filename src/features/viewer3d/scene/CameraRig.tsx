@@ -5,7 +5,9 @@ import { useEffect, useRef, type ComponentRef } from 'react'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { VehicleConfig } from '@/domain/models'
+import { fitFrame } from './frame-fit'
 import { boxCenter, containerCenter, SCENE_SCALE, type Vec3 } from './units'
+import { specFramePoints } from './vehicle-spec-marks'
 
 /**
  * Điều khiển camera bằng camera-controls (qua drei). Gốc thế giới là tâm
@@ -28,11 +30,17 @@ const PRESET_POSITIONS: Record<CameraPreset, Vec3> = {
   'gam-xe': [5.5, -4.2, 7],
 }
 
+/** Xem trước ở form xe: góc "Trên" nhìn thẳng xuống, trục dọc xe nằm ngang màn hình. */
+const SPEC_PRESET_POSITIONS: Partial<Record<CameraPreset, Vec3>> = { tren: [0, 11, 0.001] }
+
 /** Khoảng hạ tâm nhìn so với tâm thùng, tính từ sàn thùng (m): góc gầm xe nhìn vào khung sườn, không vào giữa thùng. */
 const PRESET_TARGET_BELOW_FLOOR: Partial<Record<CameraPreset, number>> = { 'gam-xe': 0.5 }
 
 /** Cho phép xoay xuống dưới gầm; chừa một chút để không lật qua cực dưới. */
 const MAX_POLAR_ANGLE = Math.PI - 0.12
+
+/** Lề quanh các điểm của `specFramePoints`: chỗ cho nhãn DOM neo ở mép hình. */
+const SPEC_FRAME_MARGIN = 1.08
 
 /** smoothTime của SmoothDamp ≈ 60% thời gian tới đích → ~500ms */
 const SMOOTH_TIME = 0.3
@@ -43,6 +51,8 @@ export function CameraRig({
   focus,
   vehicle,
   fit = false,
+  fitRequest = 0,
+  specFrame = false,
   vehicleDecoration = false,
   onUserControl,
 }: {
@@ -51,11 +61,15 @@ export function CameraRig({
   focus?: { placement: ScenePlacement; request: number; follow?: boolean } | null
   vehicle?: VehicleConfig
   fit?: boolean
+  /** Tăng lên để canh lại khung dù preset và xe không đổi (bấm lại góc đang chọn sau khi tự xoay). */
+  fitRequest?: number
+  /** Xem trước ở form xe: canh khung theo đúng những điểm hình vẽ chạm tới (`specFramePoints`) thay cho hộp bao rộng rãi. */
+  specFrame?: boolean
   vehicleDecoration?: boolean
   onUserControl?: () => void
 }) {
   const controlsRef = useRef<ComponentRef<typeof CameraControls>>(null)
-  const applied = useRef<{ preset: CameraPreset; vehicle?: VehicleConfig } | null>(null)
+  const applied = useRef<{ preset: CameraPreset; vehicle?: VehicleConfig; request: number } | null>(null)
   const size = useThree((state) => state.size)
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
@@ -66,10 +80,22 @@ export function CameraRig({
     if (!controls || !size.width || !size.height) return
     // Responsive panels can resize the Canvas mid-orbit. Keep the user's pose;
     // only an explicit preset or a new vehicle requests a fresh framing.
-    if (applied.current?.preset === preset && applied.current.vehicle === vehicle) return
-    applied.current = { preset, vehicle }
+    if (applied.current?.preset === preset && applied.current.vehicle === vehicle && applied.current.request === fitRequest) return
+    applied.current = { preset, vehicle, request: fitRequest }
     beforeFocus.current = null
-    let [x, y, z] = PRESET_POSITIONS[preset]
+    let [x, y, z] = (specFrame ? SPEC_PRESET_POSITIONS[preset] : undefined) ?? PRESET_POSITIONS[preset]
+    if (fit && specFrame && vehicle && camera instanceof PerspectiveCamera) {
+      const center = containerCenter(vehicle)
+      const tanHalfV = Math.tan(camera.fov * Math.PI / 360)
+      const points = specFramePoints(vehicle).map((p): Vec3 => [p[0] - center[0], p[1] - center[1], p[2] - center[2]])
+      const { distance, target } = fitFrame(points, [x, y, z], {
+        tanHalfH: tanHalfV * size.width / Math.max(1, size.height), tanHalfV, margin: SPEC_FRAME_MARGIN, minDistance: 3,
+      })
+      const scale = distance / Math.hypot(x, y, z)
+      void controls.setLookAt(target[0] + x * scale, target[1] + y * scale, target[2] + z * scale, ...target, !reducedMotion)
+      invalidate()
+      return
+    }
     if (fit && vehicle && camera instanceof PerspectiveCamera) {
       const center = containerCenter(vehicle)
       const vfov = camera.fov * Math.PI / 180
@@ -98,7 +124,7 @@ export function CameraRig({
     const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] - below : 0
     void controls.setLookAt(x, y + targetY, z, 0, targetY, 0, !reducedMotion)
     invalidate()
-  }, [preset, reducedMotion, vehicle, fit, vehicleDecoration, size.width, size.height, camera, invalidate])
+  }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, size.width, size.height, camera, invalidate])
 
   useEffect(() => {
     const controls = controlsRef.current

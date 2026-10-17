@@ -129,7 +129,7 @@ export const routes: RouteObject[] = [
           {
             index: true,
             element: <ForgotPasswordPage />,
-            handle: titled(() => 'Quên mật khẩu'),
+            handle: titled((t) => t('titles.forgotPassword')),
           },
         ],
       },
@@ -140,7 +140,7 @@ export const routes: RouteObject[] = [
           {
             index: true,
             element: <VerifyOtpPage />,
-            handle: titled(() => 'Xác thực OTP'),
+            handle: titled((t) => t('titles.verifyOtp')),
           },
         ],
       },
@@ -151,6 +151,7 @@ export const routes: RouteObject[] = [
           {
             index: true,
             element: <ResetPasswordPage />,
+            handle: titled((t) => t('titles.resetPassword')),
           },
         ],
       },
@@ -162,6 +163,7 @@ export const routes: RouteObject[] = [
             index: true,
             element:
               <ResetPasswordSuccessPage />,
+            handle: titled((t) => t('titles.resetPasswordSuccess')),
           },
         ],
       },

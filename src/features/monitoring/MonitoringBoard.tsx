@@ -1,4 +1,5 @@
-import { RouteMap } from '@/components/map'
+import { useMemo } from 'react'
+import { RouteMap, pathFromEncodedPolylines } from '@/components/map'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useT } from '@/lib/i18n'
@@ -8,6 +9,7 @@ import { MonitoringTripList } from './MonitoringTripList'
 import { MonitoringTripPanel } from './MonitoringTripPanel'
 import { matchesFilter, selectedTripId, tripSummary, type MonitoringFilter } from './monitoring-view'
 import { useFleetMonitoringQuery } from './useTrackingQuery'
+import { useTripRoutePathQuery } from '@/features/trips/useRouteQuery'
 
 /**
  * Thân của tab "Chuyến đang chạy" (FE-6-10): bản đồ, danh sách cạnh nó và chi tiết của chuyến đang chọn. **Chỉ thành phần này đọc
@@ -62,6 +64,7 @@ export function MonitoringBoard({ board, filter, requestedTripId, onToggleFilter
 function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]; fleet: readonly TripMonitoring[]; selected: MonitoringTrip | undefined }) {
   const t = useT()
   const tripOf = new Map(trips.map((trip) => [trip.tripId, trip]))
+  const liveSelected = selected ? fleet.find((live) => live.tripId === selected.tripId) : undefined
   const vehicles = fleet.flatMap((live) => {
     const trip = tripOf.get(live.tripId)
     if (!trip || !live.location) return []
@@ -74,7 +77,25 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
       lng: live.location.lng,
     }]
   })
-  const stops = (selected?.stops ?? []).flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }]))
+  const stops = useMemo(
+    () => (selected?.stops ?? []).flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }])),
+    [selected?.stops],
+  )
+  const depot = selected?.depot
+  const pathFallback = useMemo(() => ({
+    depot: depot ? { lat: depot.lat, lng: depot.lng } : undefined,
+    stops: stops.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
+  }), [depot, stops])
+  const routePathQuery = useTripRoutePathQuery(selected?.tripId ?? '', pathFallback, Boolean(selected && stops.length > 0))
+  const monitoringPath = useMemo(() => {
+    const legs = liveSelected?.routeLegs
+    if (!legs?.length) return undefined
+    const path = pathFromEncodedPolylines(
+      [...legs].sort((a, b) => a.legSequence - b.legSequence).map((leg) => leg.polyline),
+    )
+    return path.length > 1 ? path : undefined
+  }, [liveSelected?.routeLegs])
+  const path = monitoringPath ?? routePathQuery.data
   const vehicle = vehicles.find((item) => item.id === selected?.tripId)
   const hasPosition = selected === undefined || vehicle !== undefined || fleet.length === 0
   return (
@@ -93,6 +114,7 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
           stops={stops}
           vehicle={vehicle}
           others={vehicles.filter((item) => item.id !== selected?.tripId)}
+          path={path}
         />
       </CardBody>
     </Card>

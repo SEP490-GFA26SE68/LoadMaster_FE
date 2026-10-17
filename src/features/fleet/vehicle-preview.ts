@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { eq, roundCm } from '@/domain/geometry'
+import { eq, gt, lt, roundCm, roundKg } from '@/domain/geometry'
 import { validateVehicle } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import { OBSTACLE_TYPES } from './vehicle-form'
@@ -7,10 +7,12 @@ import { OBSTACLE_TYPES } from './vehicle-form'
 /**
  * Xem trước 3D ở form xe (LM-042): phần thuần, không React.
  *
- * - `previewVehicle` lấy **phần hình học** của giá trị đang nhập (lòng thùng, cửa, vật cản) và trả `null` khi phần đó
- *   chưa parse được hoặc vi phạm `validateVehicle`. Tên xe, tải trọng, tải trên và trục không vẽ nên không chặn hình.
- * - `nextPreview` giữ hình hợp lệ gần nhất; `frame` chỉ đổi tham chiếu khi kích thước lòng thùng đổi, nên sửa vật cản
- *   hay cửa không làm camera canh khung lại.
+ * - `previewVehicle` lấy **phần hình học** của giá trị đang nhập (lòng thùng, cửa, vật cản, vị trí từng trục) và trả `null`
+ *   khi phần đó chưa parse được hoặc vi phạm `validateVehicle`. Tên xe, tải trọng, tải trên của vật cản, tên và tải của trục
+ *   không có hình nên không chặn hình.
+ * - `previewFacts` đọc hai số không có hình nhưng có trong bảng số dưới mô hình: tải trọng và khoảng hở.
+ * - `nextPreview` giữ hình hợp lệ gần nhất; `frame` chỉ đổi tham chiếu khi kích thước lòng thùng đổi, nên sửa vật cản,
+ *   cửa hay trục không làm camera canh khung lại.
  */
 
 const cm = () => z.number()
@@ -34,6 +36,8 @@ const geometrySchema = z.object({
       loadBearing: z.boolean(),
     }),
   ),
+  // Trục chỉ vẽ theo vị trí: tên và hai ô tải đang gõ dở không giữ hình cũ.
+  axles: z.array(z.object({ id: z.string(), name: z.string().optional(), positionXCm: cm() })).optional(),
 })
 
 /** Trường không vẽ trong xem trước: lỗi của chúng không giữ hình cũ. */
@@ -66,11 +70,52 @@ export function previewVehicle(values: unknown): VehicleConfig | null {
       heightCm: roundCm(row.heightCm),
       loadBearing: row.loadBearing,
     })),
+    // Không trục nào thì vắng hẳn, như `toVehicleConfig`: mô hình khi đó vẽ bánh minh hoạ.
+    ...(data.axles?.length
+      ? {
+          axles: data.axles.map((row) => ({
+            id: row.id,
+            name: row.name?.trim() ?? '',
+            positionXCm: roundCm(row.positionXCm),
+            // Tải trục không có hình; 0 là "chưa khai" ở mô hình tải trục và không tham gia gì ở đây.
+            emptyLoadKg: 0,
+            maxLoadKg: 0,
+          })),
+        }
+      : {}),
   }
   const blocking = validateVehicle(vehicle).filter(
     (issue) => issue.severity === 'error' && !(issue.field !== undefined && IGNORED_FIELD.test(issue.field)),
   )
   return blocking.length === 0 ? vehicle : null
+}
+
+/** Số không có hình nhưng có trong bảng số dưới mô hình; `null` khi ô đang trống hoặc chưa hợp lệ. */
+export type PreviewFacts = { readonly payloadKg: number | null; readonly clearanceCm: number | null }
+
+const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+
+export function previewFacts(values: { maxPayloadKg?: unknown; clearanceCm?: unknown }): PreviewFacts {
+  const { maxPayloadKg, clearanceCm } = values
+  return {
+    payloadKg: finite(maxPayloadKg) && gt(maxPayloadKg, 0) ? roundKg(maxPayloadKg) : null,
+    clearanceCm: finite(clearanceCm) && !lt(clearanceCm, 0) ? roundCm(clearanceCm) : null,
+  }
+}
+
+/** Giữ đúng object cũ khi hai số không đổi, để React bỏ qua render. */
+export function nextFacts(state: PreviewFacts, next: PreviewFacts): PreviewFacts {
+  return state.payloadKg === next.payloadKg && state.clearanceCm === next.clearanceCm ? state : next
+}
+
+/**
+ * Kiện lớn nhất lọt cửa theo luật của domain (`door.ts`: cạnh kiện + khoảng hở ≤ cạnh cửa). `null` khi khoảng hở bằng 0 (ô cửa
+ * đã nói hết) hoặc lớn tới mức không kiện nào lọt.
+ */
+export function passableOpening(vehicle: Pick<VehicleConfig, 'doorWidthCm' | 'doorHeightCm'>, clearanceCm: number | null) {
+  if (clearanceCm === null || !gt(clearanceCm, 0)) return null
+  const widthCm = roundCm(vehicle.doorWidthCm - clearanceCm), heightCm = roundCm(vehicle.doorHeightCm - clearanceCm)
+  return gt(widthCm, 0) && gt(heightCm, 0) ? { widthCm, heightCm } : null
 }
 
 export type PreviewState = {

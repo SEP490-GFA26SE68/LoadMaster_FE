@@ -21,7 +21,7 @@ function Screen() {
       <button type="button" onClick={() => void signOut()}>sign out</button>
       <button
         type="button"
-        onClick={() => void signIn()}
+        onClick={() => void signIn('dieuphoi@phuongnam.vn', 'loadmaster')}
       >
         sign in at Phuong Nam
       </button>

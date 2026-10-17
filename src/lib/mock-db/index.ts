@@ -185,6 +185,7 @@ export {
   type LocationSource,
   type TripLiveStop,
   type TripMonitoring,
+  type RouteLegGeometry,
 } from './tracking-model'
 export {
   DEFAULT_RUN_ALGORITHM,

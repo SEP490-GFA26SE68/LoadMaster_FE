@@ -378,6 +378,12 @@ export const viewer = {
     rearDoor: 'Rear door · Unloading direction',
     centerOfMass: 'Cargo center of mass',
   },
+  spec: {
+    length: 'Length {value}',
+    width: 'Width {value}',
+    height: 'Height {value}',
+    door: 'Door {size}',
+  },
   pins: {
     count: { one: '{count} pinned package', other: '{count} pinned packages' },
     rerun: 'Run again keeping pins',

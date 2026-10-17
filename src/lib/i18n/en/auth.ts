@@ -16,6 +16,11 @@ export const auth = {
     invalidCredentials: 'Incorrect email or password',
     accountSuspended: 'This account is locked. Contact your administrator to unlock it.',
     serverUnreachable: 'Cannot reach the server. Try again later.',
+    roleUnknown: 'This account has a role the app does not support yet. Contact your administrator.',
+    sso: {
+      hint: 'You will be taken to the system sign-in page and brought back here.',
+      sampleData: 'Your account comes from the server. Trips, vehicles and packages on screen are still sample data.',
+    },
   },
   showcase: {
     tagline: 'Every truck carries more, and unloads in the right order.',

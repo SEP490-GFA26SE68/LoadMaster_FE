@@ -22,9 +22,12 @@ export function FloorScale({ length, width, color }: { length: number; width: nu
   </lineSegments>
 }
 
-/** Door opening is presentation only; no state is written to the domain plan. */
-export function ContainerDoor({ length, height, width, side, materials, detail, reducedMotion }: {
-  length: number; height: number; width: number; side: -1 | 1
+/**
+ * Door opening is presentation only; no state is written to the domain plan. `width` × `height` là cả ô cửa (hai cánh),
+ * `hingeZ` là vị trí bản lề của cánh này theo chiều ngang thùng.
+ */
+export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion }: {
+  length: number; height: number; width: number; hingeZ: number; side: -1 | 1
   materials: SceneMaterials; detail: boolean; reducedMotion: boolean
 }) {
   const invalidate = useThree((state) => state.invalidate)
@@ -47,7 +50,7 @@ export function ContainerDoor({ length, height, width, side, materials, detail, 
     return geometry
   }, [height, width, side])
   useEffect(() => () => hardware.dispose(), [hardware])
-  return <animated.group position={[length, 0, side === 1 ? 0 : width]} rotation-y={spring.angle}>
+  return <animated.group position={[length, 0, hingeZ]} rotation-y={spring.angle}>
     <mesh position={[0.015, height / 2, side * width / 4]} castShadow>
       <boxGeometry args={[0.03, height, width / 2]} />
       <meshStandardMaterial color={materials.wall} roughness={0.82} />

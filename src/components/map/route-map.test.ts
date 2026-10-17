@@ -15,6 +15,18 @@ test('the route line joins the depot and the stops in visiting order; a backend 
   expect(routeLine({ depot: DEPOT, stops: STOPS, path })).toBe(path)
 })
 
+test('TripRouteCard / FleetMap should pass decoded Goong polylines as path (not straight depot→stops)', () => {
+  // Hợp đồng: có path thì RouteMap không nối thẳng; nguồn path = RouteLeg.polyline (BE) hoặc mock fallback.
+  const roadPath = [
+    { lat: 10.9294, lng: 106.8747 },
+    { lat: 10.92, lng: 106.86 },
+    { lat: 10.91, lng: 106.84 },
+    { lat: 10.947, lng: 106.824 },
+  ]
+  expect(routeLine({ depot: DEPOT, stops: STOPS, path: roadPath })).toBe(roadPath)
+  expect(routeLine({ depot: DEPOT, stops: STOPS, path: roadPath })).not.toStrictEqual([DEPOT, ...STOPS])
+})
+
 test('the extent covers the vehicle too, though it is not on the line', () => {
   const vehicle = { name: '60C-123.45', lat: 11.2, lng: 107.1 }
   expect(routeExtent({ depot: DEPOT, stops: STOPS, vehicle })).toContainEqual(vehicle)

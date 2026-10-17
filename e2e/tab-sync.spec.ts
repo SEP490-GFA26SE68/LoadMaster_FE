@@ -36,7 +36,7 @@ test('a trip cancelled by the dispatcher in one tab disappears from the warehous
   const manager = await context.newPage()
   manager.on('pageerror', (error) => browserErrors.push(error.message))
   await manager.goto('/chuyen/TRIP-011')
-  await signInWith(manager, DEMO_EMAILS.manager)
+  await signInWith(manager, DEMO_EMAILS.companyManager)
   await expect(manager.locator('header').getByText('Đã huỷ', { exact: true })).toBeVisible({ timeout: 15_000 })
 
   // Tab 1 vẫn là điều phối viên: phiên không được đồng bộ

@@ -12,23 +12,12 @@
  * Bật BE thật: `VITE_USE_REAL_MONITORING=true` trong `.env` (cần Keycloak + LoadMasterService).
  * Mặc định / CI / DOM test: vẫn dùng mock-db (seed TRIP-009).
  */
-import { apiFetch } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
 import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorder, type TripMonitoring } from '@/lib/mock-db'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
-type ApiEnvelope<T> = {
-  success: boolean
-  message?: string
-  data: T
-}
-
 function useRealMonitoring(): boolean {
   return import.meta.env.VITE_USE_REAL_MONITORING === 'true'
-}
-
-async function unwrap<T>(path: string, init?: RequestInit): Promise<T> {
-  const body = await apiFetch<ApiEnvelope<T>>(path, init)
-  return body.data
 }
 
 /** Điện thoại tài xế gửi vị trí GPS thật của chuyến đang chạy. */
@@ -37,15 +26,14 @@ export async function postDriverLocation(tripId: string, location: DriverLocatio
   if (!useRealMonitoring()) {
     return getMockDb().postDriverLocation(tripId, location)
   }
-  return unwrap<LocationPoint>('/api/driver/location', {
-    method: 'POST',
-    body: JSON.stringify({
+  return api().post<LocationPoint>('/api/driver/location', {
+    body: {
       tripId,
       lat: location.lat,
       lng: location.lng,
       speedKmh: location.speedKmh ?? 0,
       heading: location.heading ?? 0,
-    }),
+    },
   })
 }
 
@@ -63,7 +51,7 @@ export async function getLatestLocation(tripId: string): Promise<LocationPoint |
   if (!useRealMonitoring()) {
     return getMockDb().getLatestLocation(tripId)
   }
-  return unwrap<LocationPoint | null>(`/api/trips/${encodeURIComponent(tripId)}/location/latest`)
+  return api().get<LocationPoint | null>(`/api/trips/${encodeURIComponent(tripId)}/location/latest`)
 }
 
 /** Lịch sử vị trí của chuyến, cũ trước. */
@@ -72,14 +60,14 @@ export async function getLocationHistory(tripId: string): Promise<LocationPoint[
   if (!useRealMonitoring()) {
     return getMockDb().getLocationHistory(tripId)
   }
-  return unwrap<LocationPoint[]>(`/api/trips/${encodeURIComponent(tripId)}/location/history`)
+  return api().get<LocationPoint[]>(`/api/trips/${encodeURIComponent(tripId)}/location/history`)
 }
 
 /** Vị trí mới nhất, ETA trực tiếp từng điểm chưa hoàn tất, cảnh báo nguy cơ trễ và sự cố của một chuyến. */
 // GET /api/trips/{id}/monitoring
 export async function getTripMonitoring(tripId: string): Promise<TripMonitoring> {
   const monitoring = useRealMonitoring()
-    ? await unwrap<TripMonitoring>(`/api/trips/${encodeURIComponent(tripId)}/monitoring`)
+    ? await api().get<TripMonitoring>(`/api/trips/${encodeURIComponent(tripId)}/monitoring`)
     : await getMockDb().getTripMonitoring(tripId)
   publish(monitoring)
   return monitoring
@@ -89,7 +77,7 @@ export async function getTripMonitoring(tripId: string): Promise<TripMonitoring>
 // GET /api/trips/monitoring
 export async function listTripMonitoring(): Promise<TripMonitoring[]> {
   const fleet = useRealMonitoring()
-    ? await unwrap<TripMonitoring[]>('/api/trips/monitoring')
+    ? await api().get<TripMonitoring[]>('/api/trips/monitoring')
     : await getMockDb().listTripMonitoring()
   publishFleet(fleet)
   return fleet
@@ -147,7 +135,7 @@ export type MonitoringBoard = {
 // GET /api/dispatcher/dashboard
 export async function fetchMonitoringBoard(): Promise<MonitoringBoard> {
   if (useRealMonitoring()) {
-    return unwrap<MonitoringBoard>('/api/dispatcher/dashboard')
+    return api().get<MonitoringBoard>('/api/dispatcher/dashboard')
   }
   const db = getMockDb()
   const [trips, vehicles, names] = await Promise.all([db.listTrips(), db.listVehicles(), db.listAuditNames()])

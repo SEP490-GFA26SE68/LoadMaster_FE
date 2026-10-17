@@ -10,7 +10,7 @@
  *
  * Cùng cờ `VITE_USE_REAL_MONITORING=true` với `monitoring-api.ts`.
  */
-import { apiFetch } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
 import {
   getMockDb,
   type DeadlineRenegotiationInput,
@@ -20,19 +20,8 @@ import {
   type TripReroute,
 } from '@/lib/mock-db'
 
-type ApiEnvelope<T> = {
-  success: boolean
-  message?: string
-  data: T
-}
-
 function useRealMonitoring(): boolean {
   return import.meta.env.VITE_USE_REAL_MONITORING === 'true'
-}
-
-async function unwrap<T>(path: string, init?: RequestInit): Promise<T> {
-  const body = await apiFetch<ApiEnvelope<T>>(path, init)
-  return body.data
 }
 
 /** Điều phối viên hoặc tài xế báo sự cố của chuyến Đang vận chuyển, kèm số phút dự kiến chậm. */
@@ -41,9 +30,8 @@ export async function reportTripException(tripId: string, input: TripExceptionIn
   if (!useRealMonitoring()) {
     return getMockDb().reportTripException(tripId, input)
   }
-  return unwrap<TripException>(`/api/trips/${encodeURIComponent(tripId)}/exceptions`, {
-    method: 'POST',
-    body: JSON.stringify(input),
+  return api().post<TripException>(`/api/trips/${encodeURIComponent(tripId)}/exceptions`, {
+    body: input,
   })
 }
 
@@ -53,7 +41,7 @@ export async function listTripExceptions(tripId: string): Promise<TripException[
   if (!useRealMonitoring()) {
     return getMockDb().listTripExceptions(tripId)
   }
-  return unwrap<TripException[]>(`/api/trips/${encodeURIComponent(tripId)}/exceptions`)
+  return api().get<TripException[]>(`/api/trips/${encodeURIComponent(tripId)}/exceptions`)
 }
 
 /** Điều phối viên đánh dấu sự cố đã xử lý. */
@@ -62,11 +50,10 @@ export async function resolveTripException(tripId: string, exceptionId: string, 
   if (!useRealMonitoring()) {
     return getMockDb().resolveTripException(tripId, exceptionId, note)
   }
-  return unwrap<TripException>(
+  return api().post<TripException>(
     `/api/trips/${encodeURIComponent(tripId)}/exceptions/${encodeURIComponent(exceptionId)}/resolve`,
     {
-      method: 'POST',
-      body: JSON.stringify(note === undefined ? {} : { note }),
+      body: note === undefined ? {} : { note },
     },
   )
 }
@@ -83,9 +70,7 @@ export async function requestReroute(tripId: string): Promise<RerouteProposal> {
   if (!useRealMonitoring()) {
     return getMockDb().requestReroute(tripId)
   }
-  return unwrap<RerouteProposal>(`/api/trips/${encodeURIComponent(tripId)}/reroute`, {
-    method: 'POST',
-  })
+  return api().post<RerouteProposal>(`/api/trips/${encodeURIComponent(tripId)}/reroute`)
 }
 
 /** Chọn một lựa chọn của lần tìm gần nhất. */
@@ -94,10 +79,7 @@ export async function confirmReroute(tripId: string, routeIndex: number): Promis
   if (!useRealMonitoring()) {
     return getMockDb().confirmReroute(tripId, routeIndex)
   }
-  return unwrap<TripReroute>(
-    `/api/trips/${encodeURIComponent(tripId)}/reroute/${routeIndex}/confirm`,
-    { method: 'POST' },
-  )
+  return api().post<TripReroute>(`/api/trips/${encodeURIComponent(tripId)}/reroute/${routeIndex}/confirm`)
 }
 
 /** Quản lý công ty ghi đã liên hệ khách và nhập hạn mới cho một yêu cầu giao của chuyến có sự cố đã chuyển lên. */

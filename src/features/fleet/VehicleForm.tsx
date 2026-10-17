@@ -138,7 +138,8 @@ export function VehicleForm({ vehicle, readOnly = false, status, actions, notice
 
       <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
         {/* Màn rộng: xem trước 3D là cột phải dính khi cuộn; màn hẹp: nằm cuối form (LM-042) */}
-        <div className="grid max-w-400 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        {/* Cột xem trước rộng theo màn (34 %, ít nhất 400 px; từ 1.536 px là 40 %): ở 1.366 px cột form vẫn đủ chỗ cho bảng vật cản và bảng trục */}
+        <div className="grid max-w-400 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(400px,34%)] 2xl:grid-cols-[minmax(0,1fr)_40%]">
           <Card className="flex min-w-0 flex-col rounded-lg">
             {notice || issues.length > 0 ? (
               <div className="flex flex-col gap-3 border-b border-line-soft p-5">

@@ -4,6 +4,10 @@
  */
 export const titles = {
   login: 'Đăng nhập',
+  forgotPassword: 'Quên mật khẩu',
+  verifyOtp: 'Xác thực OTP',
+  resetPassword: 'Đặt lại mật khẩu',
+  resetPasswordSuccess: 'Đổi mật khẩu thành công',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
   trip: 'Chuyến {id}',

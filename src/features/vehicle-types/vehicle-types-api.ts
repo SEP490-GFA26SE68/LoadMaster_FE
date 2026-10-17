@@ -1,4 +1,6 @@
-import { apiFetch } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
+import { DEFAULT_MAX_COG_OFFSET_RATIO } from '@/domain/models'
+import { backendConfig } from '@/lib/backend-config'
 
 import { compareText } from '@/lib/list-filter'
 import {
@@ -16,6 +18,15 @@ type PageResponse<T> = {
   message?: string
   data: T[]
   page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
+type SpringPage<T> = {
+  content: T[]
+  number: number
   size: number
   totalElements: number
   totalPages: number
@@ -69,8 +80,8 @@ export type VehicleType = {
 
   maxCogOffsetRatio: number
 
-  hazardousCapable: boolean
-  obstacles: VehicleTypeObstacle[]
+  hazardousCapable?: boolean
+  obstacles?: VehicleTypeObstacle[]
 }
 
 export type VehicleTypeObstacle = {
@@ -157,10 +168,10 @@ export type VehicleTypeInput = {
   frontAxleLimitKg?: number
   rearAxleLimitKg?: number
 
-  maxCogOffsetRatio: number
+  maxCogOffsetRatio?: number
 
-  hazardousCapable: boolean
-  obstacles: VehicleTypeObstacleInput[]
+  hazardousCapable?: boolean
+  obstacles?: VehicleTypeObstacleInput[]
 }
 
 function toCreateVehicleTypeRequest(
@@ -182,13 +193,13 @@ function toCreateVehicleTypeRequest(
       input.rearAxleLimitKg,
 
     maxCogOffsetRatio:
-      input.maxCogOffsetRatio,
+      input.maxCogOffsetRatio ?? DEFAULT_MAX_COG_OFFSET_RATIO,
 
     hazardousCapable:
-      input.hazardousCapable,
+      input.hazardousCapable ?? false,
 
     obstacles:
-      input.obstacles,
+      input.obstacles ?? [],
   }
 }
 
@@ -206,6 +217,21 @@ export async function fetchVehicleTypes(
   size = 20,
   search?: string,
 ): Promise<PageResponse<VehicleType>> {
+  if (backendConfig.authSource === 'mock') {
+    const all = await getMockDb().listVehicleTypes()
+    const normalizedSearch = search?.trim().toLocaleLowerCase('vi')
+    const filtered = normalizedSearch ? all.filter((type) => type.name.toLocaleLowerCase('vi').includes(normalizedSearch)) : all
+    const data = filtered.slice(page * size, (page + 1) * size)
+    return {
+      success: true,
+      data,
+      page,
+      size,
+      totalElements: filtered.length,
+      totalPages: Math.ceil(filtered.length / size),
+      last: (page + 1) * size >= filtered.length,
+    }
+  }
   const params =
     new URLSearchParams({
       page: String(page),
@@ -216,14 +242,18 @@ export async function fetchVehicleTypes(
     params.set('search', search.trim())
   }
 
-  const body =
-    await apiFetch<PageResponse<VehicleTypeApi>>(
-      `/api/vehicle-types?${params.toString()}`,
-    )
+  const pageResult = await api().get<SpringPage<VehicleTypeApi>>(
+    `/api/vehicle-types?${params.toString()}`,
+  )
 
   return {
-    ...body,
-    data: body.data.map(mapVehicleType),
+    success: true,
+    data: pageResult.content.map(mapVehicleType),
+    page: pageResult.number,
+    size: pageResult.size,
+    totalElements: pageResult.totalElements,
+    totalPages: pageResult.totalPages,
+    last: pageResult.last,
   }
 }
 
@@ -249,33 +279,25 @@ export async function saveVehicleType(
   input: VehicleTypeInput,
   id?: string,
 ): Promise<VehicleType> {
+  if (backendConfig.authSource === 'mock') {
+    return id === undefined ? getMockDb().createVehicleType(input) : getMockDb().updateVehicleType(id, input)
+  }
   if (id !== undefined) {
     throw new Error(
       'Update vehicle type API is not implemented yet',
     )
   }
 
-  const body =
-    await apiFetch<{
-      success: boolean
-      message?: string
-      data: VehicleTypeApi
-    }>(
-      '/api/vehicle-types',
-      {
-        method: 'POST',
-        body: JSON.stringify(
-          toCreateVehicleTypeRequest(input),
-        ),
-      },
-    )
+  const created = await api().post<VehicleTypeApi>('/api/vehicle-types', {
+    body: toCreateVehicleTypeRequest(input),
+  })
 
-  return mapVehicleType(body.data)
+  return mapVehicleType(created)
 }
 
 // DELETE /api/vehicle-types/{id}
 export function deleteVehicleType(id: string): Promise<void> {
-  return getMockDb().deleteVehicleType(id)
+  return backendConfig.authSource === 'mock' ? getMockDb().deleteVehicleType(id) : api().delete(`/api/vehicle-types/${encodeURIComponent(id)}`)
 }
 
 // chưa có ở BE

@@ -5,7 +5,8 @@ import type {
 } from '@/lib/mock-db'
 import { getMockDb } from '@/lib/mock-db'
 
-import { apiFetch } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
+import { backendConfig } from '@/lib/backend-config'
 
 
 import {
@@ -101,8 +102,9 @@ type CreateUserApiResponse = {
 /** Người dùng trong phạm vi của người đang đăng nhập: quản trị hệ thống nhận mọi tài khoản, quản trị công ty chỉ người của công ty mình. */
 // chưa có ở BE
 export async function fetchUsers(): Promise<User[]> {
+  if (backendConfig.authSource === 'mock') return getMockDb().listUsers()
   const response =
-    await apiFetch<PageResponse<UserListItemApi>>(
+    await api().get<PageResponse<UserListItemApi>>(
       '/api/users?page=0&size=100',
     )
 
@@ -116,24 +118,18 @@ type CompanyApi = {
   companyName: string
 }
 
-type ApiResponse<T> = {
-  success: boolean
-  message?: string
-  data: T
-}
-
 export type CompanyOption = {
   readonly id: string
   readonly name: string
 }
 
 export async function fetchCompanies(): Promise<CompanyOption[]> {
-  const body =
-    await apiFetch<ApiResponse<CompanyApi[]>>(
-      '/api/companies/options',
-    )
+  if (backendConfig.authSource === 'mock') {
+    return (await getMockDb().listCompanies()).map((company) => ({ id: company.id, name: company.name }))
+  }
+  const companies = await api().get<CompanyApi[]>('/api/companies/options')
 
-  return body.data.map((company) => ({
+  return companies.map((company) => ({
     id: String(company.id),
     name: company.companyName,
   }))
@@ -144,12 +140,9 @@ export async function fetchCompanies(): Promise<CompanyOption[]> {
 export async function createUser(
   input: NewUser,
 ): Promise<TemporaryPassword> {
-  const body =
-    await apiFetch<CreateUserApiResponse>(
-      '/api/users',
-      {
-        method: 'POST',
-        body: JSON.stringify({
+  if (backendConfig.authSource === 'mock') return getMockDb().createUser(input)
+  const result = await api().post<CreateUserApiResponse['data']>('/api/users', {
+        body: {
           email: input.email,
           fullName: input.fullName,
           phoneNumber: input.phone,
@@ -158,14 +151,13 @@ export async function createUser(
               ? Number(input.companyId)
               : null,
           role: ROLE_TO_BACKEND[input.role],
-        }),
-      },
-    )
+        },
+      })
 
   return {
-    user: mapUser(body.data.user),
+    user: mapUser(result.user),
     temporaryPassword:
-      body.data.temporaryPassword,
+      result.temporaryPassword,
   }
 }
 

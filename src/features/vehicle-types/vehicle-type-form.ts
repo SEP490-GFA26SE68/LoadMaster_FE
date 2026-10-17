@@ -151,10 +151,10 @@ export function toVehicleTypeForm(
       ),
 
     hazardousCapable:
-      type.hazardousCapable,
+      type.hazardousCapable ?? false,
 
     obstacles:
-      type.obstacles.map(
+      (type.obstacles ?? []).map(
         (obstacle) => ({
           name: obstacle.name,
           type: obstacle.type,

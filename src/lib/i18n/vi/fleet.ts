@@ -87,11 +87,25 @@ export const fleet = {
   preview: {
     title: 'Xem trước 3D',
     caption: 'Theo số đang nhập · đúng tỉ lệ',
-    label: 'Xem trước 3D thùng xe và vật cản',
+    label: 'Xem trước 3D của xe theo số đang nhập',
     pending: 'Đang chờ giá trị hợp lệ',
     loading: 'Đang dựng mô hình 3D',
     unsupported: 'Trình duyệt này không dựng được 3D; hình phác chỉ thể hiện tỉ lệ thùng.',
-    hint: 'Bấm vật cản trong hình hoặc một dòng trong bảng vật cản để làm nổi.',
+    hint: 'Kéo để xoay, lăn chuột để phóng to. Bấm vật cản trong hình hoặc một dòng trong bảng vật cản để làm nổi.',
+    /** Bảng số dưới mô hình: đúng những số mô hình đang vẽ. */
+    readout: {
+      label: 'Số đang vẽ trong mô hình',
+      cargoSpace: 'Lòng thùng',
+      door: 'Cửa sau',
+      passable: 'kiện lọt tối đa {size}',
+      payload: 'Tải trọng tối đa',
+      payloadMissing: 'Chưa nhập',
+      obstacles: 'Vật cản',
+      axles: 'Trục xe',
+      axle: '{name} {position}',
+      axleUnnamed: 'Trục {index}',
+      axlesMissing: 'Chưa khai — bánh xe trong hình là minh hoạ',
+    },
   },
   form: {
     name: 'Tên xe',

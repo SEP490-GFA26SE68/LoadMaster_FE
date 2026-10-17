@@ -39,6 +39,7 @@ test('a new type starts at a 15% offset; blank axle limits stay out of the store
   expect(EMPTY_VEHICLE_TYPE.maxCogOffsetPercent).toBe(15)
   expect(toVehicleTypeInput(vehicleTypeFormSchema.parse(VALID))).toStrictEqual({
     name: 'Xe tải 9,5 tấn thùng 7,2 m', cargoLengthCm: 720, cargoWidthCm: 235, cargoHeightCm: 240, payloadKg: 9500, maxCogOffsetRatio: 0.15,
+    hazardousCapable: false, obstacles: [],
   })
 })
 
@@ -65,7 +66,7 @@ test('a stored type fills the form: missing axle limits are blank inputs, the ra
   }
   expect(toVehicleTypeForm(type)).toStrictEqual({
     name: 'Xe tải 9,5 tấn thùng 7,2 m', cargoLengthCm: 720, cargoWidthCm: 235, cargoHeightCm: 240, payloadKg: 9500,
-    frontAxleLimitKg: Number.NaN, rearAxleLimitKg: 9200, maxCogOffsetPercent: 15,
+    frontAxleLimitKg: Number.NaN, rearAxleLimitKg: 9200, maxCogOffsetPercent: 15, hazardousCapable: false, obstacles: [],
   })
 })
 
