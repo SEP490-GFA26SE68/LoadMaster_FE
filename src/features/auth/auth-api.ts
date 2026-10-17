@@ -1,49 +1,59 @@
+
 import { keycloak } from './keycloak'
 import {
   ROLE_FROM_BACKEND,
   type User,
 } from '@/types/user'
-
 import { apiFetch } from '@/lib/api-client'
 
 let initPromise: Promise<boolean> | null = null
 
-
+// Khởi tạo Keycloak
 export function initAuth(): Promise<boolean> {
   if (!initPromise) {
     initPromise = keycloak.init({
       onLoad: 'check-sso',
       pkceMethod: 'S256',
-
       checkLoginIframe: true,
       checkLoginIframeInterval: 5,
+    }).catch((error: unknown) => {
+      initPromise = null
+      throw error
     })
   }
 
   return initPromise
 }
 
-export async function login(redirectUri?: string): Promise<void> {
+// Đăng nhập qua Keycloak
+export async function login(
+  redirectUri?: string,
+): Promise<void> {
   await keycloak.login({
-    redirectUri: redirectUri ?? `${window.location.origin}/`,
+    redirectUri:
+      redirectUri ?? `${window.location.origin}/`,
   })
 }
 
+// Đăng xuất qua Keycloak
 export async function logout(): Promise<void> {
   await keycloak.logout({
-    redirectUri: `${window.location.origin}/dang-nhap`,
+    redirectUri:
+      `${window.location.origin}/dang-nhap`,
   })
 }
 
-
+// Lấy access token
 export function getAccessToken(): string | undefined {
   return keycloak.token
 }
 
+// Kiểm tra xác thực
 export function isAuthenticated(): boolean {
   return Boolean(keycloak.authenticated)
 }
 
+// Response từ backend
 type UserProfileApiResponse = {
   success: boolean
   data: {
@@ -67,6 +77,7 @@ type UserProfileApiResponse = {
   }
 }
 
+// Lấy thông tin người dùng từ backend thật
 export async function getCurrentUser(): Promise<User> {
   const body =
     await apiFetch<UserProfileApiResponse>(
@@ -76,10 +87,17 @@ export async function getCurrentUser(): Promise<User> {
   return mapUser(body.data)
 }
 
+type ApiResponse<T = unknown> = {
+  success: boolean
+  message?: string
+  data?: T
+}
+
 type VerifyOtpResponse = {
   resetToken: string
 }
 
+// Xác thực mã OTP
 export async function verifyPasswordResetOtp(
   email: string,
   otp: string,
@@ -91,14 +109,12 @@ export async function verifyPasswordResetOtp(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email,
-        otp,
-      }),
+      body: JSON.stringify({ email, otp }),
     },
   )
 
-  const body = (await response.json()) as ApiResponse<VerifyOtpResponse>
+  const body =
+    (await response.json()) as ApiResponse<VerifyOtpResponse>
 
   if (!response.ok) {
     throw new Error(
@@ -113,13 +129,10 @@ export async function verifyPasswordResetOtp(
   return body.data.resetToken
 }
 
-type ApiResponse<T = unknown> = {
-  success: boolean
-  message?: string
-  data?: T
-}
-
-export async function requestPasswordReset(email: string): Promise<void> {
+// Yêu cầu đặt lại mật khẩu
+export async function requestPasswordReset(
+  email: string,
+): Promise<void> {
   const response = await fetch(
     'http://localhost:8080/api/auth/password-reset/request',
     {
@@ -135,11 +148,13 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   if (!response.ok) {
     throw new Error(
-      body.message ?? 'Failed to request password reset',
+      body.message ??
+        'Failed to request password reset',
     )
   }
 }
 
+// Đặt lại mật khẩu
 export async function resetPassword(
   resetToken: string,
   newPassword: string,
@@ -158,7 +173,8 @@ export async function resetPassword(
     },
   )
 
-  const body = await response.json()
+  const body =
+    (await response.json()) as ApiResponse
 
   if (!response.ok) {
     throw new Error(
@@ -167,6 +183,7 @@ export async function resetPassword(
   }
 }
 
+// Chuyển đổi user backend sang frontend
 function mapUser(
   data: UserProfileApiResponse['data'],
 ): User {
@@ -188,5 +205,3 @@ function mapUser(
     lastActiveAt: null,
   }
 }
-
-

@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './AuthProvider'
@@ -8,11 +9,12 @@ export function RequireAuth() {
 
   const [signedInOnMount] = useState(user !== null)
 
+  // Chờ Keycloak kiểm tra phiên đăng nhập
   if (!initialized) {
     return null
-    // hoặc loading component nếu bạn có
   }
 
+  // Chưa đăng nhập thì chuyển về trang đăng nhập
   if (!user) {
     return (
       <Navigate
@@ -24,7 +26,8 @@ export function RequireAuth() {
             : {
                 from:
                   location.pathname +
-                  location.search
+                  location.search +
+                  location.hash,
               }
         }
       />

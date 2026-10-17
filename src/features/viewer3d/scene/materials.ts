@@ -26,14 +26,18 @@ function derive(token: `--${string}`, fallback: string, factor: number): string 
   return `#${color.getHexString()}`
 }
 
-export function sceneMaterials(): SceneMaterials {
+/**
+ * `lift` > 1 làm sáng sàn, vách và gờ thùng: xem trước ở form xe không có kiện nào tô màu bên trong, thùng tối trên nền tối
+ * thì không còn nhìn ra hình khối.
+ */
+export function sceneMaterials(lift = 1): SceneMaterials {
   const info = new Color(readToken('--info') || '#0891b2')
   const bg = new Color(readToken('--bg') || '#ffffff')
 
   return {
-    floor: derive('--border-dark', '#2d323b', 1.55),
-    wall: derive('--border-dark', '#2d323b', 1.25),
-    skirt: derive('--border-dark', '#2d323b', 1.9),
+    floor: derive('--border-dark', '#2d323b', 1.55 * lift),
+    wall: derive('--border-dark', '#2d323b', 1.25 * lift),
+    skirt: derive('--border-dark', '#2d323b', 1.9 * lift),
     cab: derive('--bg', '#ffffff', 0.62),
     chassis: derive('--panel-dark', '#1e2228', 0.9),
     wheel: derive('--canvas-2', '#0f1115', 1.1),

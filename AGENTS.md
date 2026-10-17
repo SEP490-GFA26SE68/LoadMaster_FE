@@ -27,7 +27,8 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
-**Trạng thái hiện tại:** backend chưa nối, toàn bộ dữ liệu là mẫu. Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
+**Trạng thái hiện tại:** toàn bộ dữ liệu là mẫu; riêng **đăng nhập** nối được vào Keycloak của backend khi đặt `VITE_AUTH_SOURCE=keycloak`
+(mặc định vẫn là kho mẫu — mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
 mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). Phân quyền **giả lập ở FE** (LM-084, D-41).
 
@@ -198,6 +199,7 @@ maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một ve
                            và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
+keycloak-js              — đăng nhập qua Keycloak của backend; CHỈ import (động) trong features/auth/keycloak-session.ts
 motion                   — animation 2D
 ```
 
@@ -971,7 +973,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   ghim" ở bảng lần chạy và thẻ lần chạy của màn So sánh (`OptimizationRun.pinnedCount`). Endpoint BE: ghim `POST /api/load-plans/{id}/pin`, `DELETE …/pin/{placementId}`, chạy lại `POST …/rerun`.
 - Planner mặc định ưu tiên scene với HUD gọn; thông tin kiện, tải trục, màu/slice và lớp phân tích nằm trong inspector mở theo nhu cầu. Double-click focus giữ góc nhìn; Esc hoặc “Xem toàn xe” thoát focus. Theo bước là tùy chọn, tạm dừng khi người dùng tự điều khiển camera. Chọn blocker không đổi target dỡ; có đường quay lại target.
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
-- Xem trước 3D ở form xe (LM-042): `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer` (`SceneCanvas` không kiện, tier `low`, không cabin). Camera chỉ canh lại qua `frameVehicle` khi kích thước lòng thùng đổi. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call, không callout. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
+- Xem trước 3D ở form xe (LM-042): `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer`: `SceneCanvas` không kiện với `specView` — tier `balanced` cố định ở DPR màn hình (tối đa 2×; `?debug&quality=` khoá tier khác), có cabin, bánh, khung gầm, thùng sáng hơn (`sceneMaterials(lift)`) và không có nhãn "Cửa sau · Hướng dỡ". **Mọi số có hình đều vẽ đúng số đang nhập**: vách sau có ô cửa đúng rộng × cao (`doorOpening`: trụ cửa và phần vách trên cửa, cánh cửa bản lề ở mép ô), đường kích thước dài · rộng · cao, viền ô cửa và vị trí từng trục đã khai đo từ vách trước (`VehicleSpecMarks` — mọi đoạn thẳng trong **một** `Line`, một draw call; hình học thuần ở `scene/vehicle-spec-marks.ts`), bánh xe vẽ tại `positionXCm` của trục đã khai (`previewVehicle` đưa trục vào hình; chưa khai trục thì bánh là minh hoạ và bảng số nói rõ). Nhãn là DOM neo vào đường; góc nhìn cố định ẩn nhãn nằm dọc tia nhìn (`HIDDEN_SPEC_LABELS`), tự xoay thì hiện lại; đang làm nổi một vật cản thì chỉ còn nhãn của vật cản (`ObstacleCallout`). Dưới hình là bảng số DOM `fleet/VehiclePreviewReadout` (lòng thùng + m³, cửa + kiện lọt tối đa theo khoảng hở, tải trọng, số vật cản, trục) — tải trọng và khoảng hở không có hình nên chỉ có ở đây (`previewFacts`). Bốn góc nhìn (Góc chéo · Bên hông · Cửa sau · Trên) là hàng nút **ngoài** khung hình: chunk 3D vẽ vào `toolbarHost` bằng portal; bấm lại góc đang chọn canh lại khung (`fitRequest`). Camera canh theo các điểm hình thật sự chạm tới và dời tâm nhìn cho hình nằm giữa khung (`specFramePoints` + `fitFrame` ở `scene/frame-fit.ts`, thuần) — chỉ phụ thuộc kích thước lòng thùng, nên camera chỉ canh lại qua `frameVehicle` khi kích thước đó đổi; Planner, kho, tài xế vẫn canh theo hộp bao quanh tâm thùng. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
 - Three của kho và driver được lazy-load từ `viewer3d`. Driver chỉ tải khi mở “Xem vị trí hàng”; mô phỏng không đánh dấu giao hàng và không có editor. Phone dùng panel dưới/drawer, nút thao tác 56px, không phụ thuộc hover/gizmo nhỏ.
 
 ### Ảnh xem trước tĩnh dùng SVG, không dùng Three.js
@@ -1024,7 +1026,27 @@ Commit theo Conventional Commits: `feat(viewer3d): add cross-section slider`.
   56 px trên desktop (LM-096).
 - Hộp thoại có `<form>` riêng không đặt trong `<form>` khác của cây React — portal không chặn sự kiện submit lan theo cây React (LM-089).
 - Mọi form dùng react-hook-form + zod schema, không tự quản state form. Đọc giá trị đang nhập bằng `useWatch`, **không** dùng `form.watch()` trong thân render — React Compiler không memo được và sẽ cảnh báo.
-- Không dùng `localStorage`. Phiên đăng nhập tạm giữ trong `sessionStorage`; khi nối backend thật sẽ đổi sang cookie HttpOnly do server đặt.
+- Không dùng `localStorage`. Chế độ kho mẫu giữ phiên đăng nhập trong `sessionStorage`; chế độ Keycloak không giữ phiên ở app (xem dưới).
+
+### Nối backend
+
+App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trên kho mẫu — dev, CI, E2E và test không cần backend.
+
+- **Cấu hình** ở `lib/backend-config.ts`, đọc từ `.env.local` (mẫu: `.env.example`): `VITE_AUTH_SOURCE` (`mock` mặc định | `keycloak`),
+  `VITE_API_URL`, `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID`. Giá trị lạ là lỗi lúc mở app. Không viết
+  địa chỉ backend hay Keycloak thẳng trong code.
+- **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
+  `{ success, code, message, data, errors }` và đổi thất bại thành `ApiError` có mã. Màn không hiện thông điệp thô của máy chủ.
+- **Đăng nhập Keycloak** (`features/auth/keycloak-session.ts`, `keycloak-js` tải lười): app chuyển sang trang đăng nhập của Keycloak
+  (PKCE), không tự thu mật khẩu. Mở app thì hỏi Keycloak còn phiên không qua iframe ẩn (`public/silent-check-sso.html`) —
+  `useAuth().status` là `restoring` cho tới khi có câu trả lời và `RequireAuth` chưa quyết gì trong lúc đó. Hồ sơ đọc ở
+  `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` / `COMPANY_ADMIN`,
+  `MANAGER` / `COMPANY_MANAGER`). Token của realm sống 60 giây: mọi lượt gọi lấy token qua phiên để nó tự làm mới.
+- **Khi đăng nhập bằng backend mà dữ liệu còn là kho mẫu:** kho mẫu được đặt phiên của tài khoản mẫu cùng vai trò, nên chuyến, xe,
+  kiện trên màn là của Long Bình; tên, email, vai trò là của backend. Màn đăng nhập nói rõ điều này. Feature nào nối backend thì dữ
+  liệu của nó đi theo token.
+- Nối một feature: viết thân hàm trong `-api.ts` của nó bằng `api()` và đổi DTO của backend sang kiểu của app ngay tại đó; kiểu DTO
+  không đi ra khỏi `-api.ts`. Đọc controller và DTO thật ở repo backend trước, không đoán. Mỗi hàm nối có test với `fetch` giả.
 
 ### Lớp dữ liệu
 
