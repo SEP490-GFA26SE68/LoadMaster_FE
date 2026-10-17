@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import type { Permission } from '@/features/auth/permissions'
 import { downloadBlob } from '@/features/trips/download-file'
 import type { PackageFlag, PackageInput, PackageTypeInput } from '@/lib/mock-db'
 import {
@@ -14,6 +15,7 @@ import {
   fetchPackages,
   fetchPackageTypes,
   lookupPackages,
+  PACKAGE_POOL_SUPPORT,
   previewPackageImport,
   reportPackageFound,
   savePackageType,
@@ -23,6 +25,14 @@ import {
 import type { PackageImportPreview } from './package-pool-import'
 
 export { isUnknownPackage, MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT } from './package-pool-api'
+
+/**
+ * Người xem đọc được kho kiện từ nguồn đang dùng: backend chỉ cho điều phối viên (`PACKAGE_POOL_SUPPORT.dispatcherOnly`), nên nút tra cứu
+ * và liên kết in lại nhãn của màn kho không hiện với nhân viên kho khi kho kiện nối backend.
+ */
+export function packagePoolReachable(can: (permission: Permission) => boolean): boolean {
+  return !PACKAGE_POOL_SUPPORT.dispatcherOnly || can('packages.manage')
+}
 
 /**
  * Hook Query của kho kiện (FE-3b-03) — component không gọi `package-pool-api.ts` trực tiếp (mục 9). Khoá `['package-pool', …]` không

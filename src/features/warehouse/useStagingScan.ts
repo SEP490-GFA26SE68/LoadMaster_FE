@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { VerifyCandidate, VerifyCode, VerifyOutcome } from '@/components/PackageVerify'
 import { useCan } from '@/features/auth/useCan'
 import { loadingLabelPath } from '@/features/package-pool/packages-list'
+import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { ManualConfirmInput } from '@/lib/mock-db'
@@ -30,7 +31,7 @@ export function useStagingScan({ tripId, placements, pending }: {
   const [result, setResult] = useState<VerifyOutcome | null>(null)
 
   const nameById = useMemo(() => new Map(placements.map((placement) => [placement.id, placement.name])), [placements])
-  const canPrint = can('labels.print')
+  const canPrint = can('labels.print') && packagePoolReachable(can)
   const candidates = useMemo((): VerifyCandidate[] => {
     const poolIdOf = new Map((labels.data ?? []).map((label) => [label.packageInstanceId, label.poolPackageId]))
     return pending.map((placement) => {
