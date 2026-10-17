@@ -121,7 +121,7 @@ test('lists the server columns: billing, plan from the contract, users, company 
   renderCompanies()
   expect(await screen.findByText('2 công ty', {}, SLOW)).toBeInTheDocument()
   expect(cellsOf(await rowOf('Long Bình'))).toStrictEqual([
-    'Vận tải Long BìnhLM-LOGISTICS', 'qtcongty@loadmaster.vnMST TAX-LM-001', 'ProPro', 'Đang hoạt độngHết hạn 17/10/2026', '2', 'Đang hoạt động', '17/10/2026', '',
+    'Vận tải Long BìnhLM-LOGISTICS', 'qtcongty@loadmaster.vnMST TAX-LM-001', 'Pro', 'Đang hoạt độngHết hạn 17/10/2026', '2', 'Đang hoạt động', '17/10/2026', '',
   ])
   expect(cellsOf(await rowOf('Phương Nam'))).toStrictEqual([
     'Logistics Phương NamFAST-MOVE', 'qtcongty@phuongnam.vnMST TAX-FM-001', 'Chưa có gói', '—', '0Chưa có quản trị', 'Tạm ngưng', '17/10/2026', '',
