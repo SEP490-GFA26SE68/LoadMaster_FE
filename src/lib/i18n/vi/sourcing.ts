@@ -12,6 +12,8 @@ export const sourcing = {
     packageCode: 'Mã kiện của bên gửi',
     packageCodePlaceholder: 'VD: HK-DNG-2609-06',
     packageCodeHint: 'Để trống thì dùng mã của kho kiện (PK-…).',
+    /** Khi nối máy chủ: mã của kho là số máy chủ cấp. */
+    packageCodeHintBackend: 'Để trống thì dùng mã của kho kiện do máy chủ cấp.',
     handlingClass: 'Loại hàng',
     destination: 'Điểm đến',
     destinationPlaceholder: 'VD: KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng',
@@ -42,6 +44,8 @@ export const sourcing = {
     templateSheet: 'Kho kiện',
     reading: 'Đang đọc file…',
     hint: 'Cột: mã kiện, dài, rộng, cao, khối lượng, loại hàng, điểm đến; cột loại kiện không bắt buộc. Dòng đầu là tiêu đề.',
+    /** Khi nối máy chủ: máy chủ chỉ nhận tên cột của nó và mã loại hàng. */
+    hintBackend: 'Dùng file mẫu của máy chủ: cột packageCode, lengthCm, widthCm, heightCm, weightKg, handlingClass, destination. Dòng đầu là tiêu đề; loại hàng ghi bằng mã (STANDARD, FRAGILE, REFRIGERATED, HAZARDOUS, HIGH_VALUE).',
     summary: {
       label: 'Kết quả kiểm tra file',
       total: 'Tổng dòng',
@@ -85,6 +89,11 @@ export const sourcing = {
       DUPLICATE_PACKAGE_CODE: 'Trùng mã kiện với dòng {line}',
       PACKAGE_TYPE_NOT_FOUND: 'Không có loại kiện "{value}"',
       PACKAGE_CODE_EXISTS: 'Mã kiện đã có trong kho kiện ({packageId})',
+      /** Bốn mã dưới chỉ có khi máy chủ kiểm file (`package-pool-dto.ts`). */
+      PACKAGE_CODE_EXISTS_ON_SERVER: 'Mã kiện đã có trong kho kiện trên máy chủ',
+      DUPLICATE_PACKAGE_CODE_IN_FILE: 'Trùng mã kiện với một dòng khác của file',
+      ROW_INVALID: 'Dòng không hợp lệ',
+      ROW_WARNING: 'Máy chủ có cảnh báo cho dòng này',
     },
     dimensionFields: { length: 'Chiều dài', width: 'Chiều rộng', height: 'Chiều cao' },
   },
@@ -95,6 +104,8 @@ export const sourcing = {
     info: 'Thông tin kiện',
     poolId: 'Mã của kho kiện',
     dimensions: 'Kích thước (D × R × C)',
+    /** Khi nối máy chủ: máy chủ chỉ trả chiều dài của kiện. */
+    length: 'Chiều dài',
     weight: 'Khối lượng',
     destination: 'Điểm đến',
     packageType: 'Loại kiện',
@@ -122,6 +133,14 @@ export const sourcing = {
       flagCleared: 'Gỡ cờ {flag}',
     },
     loadError: 'Không tải được chi tiết kiện.',
+    /** Xoá kiện — chỉ khi nối máy chủ (kho mẫu giữ mọi kiện để còn lịch sử). */
+    delete: 'Xoá kiện',
+    deleteTitle: 'Xoá kiện {code}?',
+    deleteDescription: 'Kiện bị xoá khỏi kho kiện trên máy chủ; nhãn đã in của kiện không quét được nữa.',
+    deleteConfirm: 'Xoá kiện',
+    deleteCancel: 'Huỷ',
+    deleted: 'Đã xoá kiện {code} khỏi kho kiện.',
+    deleteOnlyImported: 'Chỉ xoá được kiện đang ở trạng thái Đã nhập.',
   },
   packageTypes: {
     title: 'Loại kiện',
@@ -184,6 +203,8 @@ export const sourcing = {
     lookup: 'Tra cứu kiện',
     added: 'Đã thêm kiện {code} vào kho kiện.',
     search: 'Tìm theo mã kiện, điểm đến, mã QR, yêu cầu giao, chuyến',
+    /** Khi nối máy chủ: danh sách của máy chủ không có điểm đến, yêu cầu giao, chuyến. */
+    searchBackend: 'Tìm theo mã kiện hoặc mã QR',
     tabs: { label: 'Lọc theo trạng thái', all: 'Tất cả' },
     filters: {
       handlingClass: 'Loại hàng',
@@ -200,6 +221,7 @@ export const sourcing = {
       select: 'Chọn',
       code: 'Mã kiện',
       dimensions: 'Kích thước (D × R × C)',
+      length: 'Chiều dài',
       weight: 'Khối lượng',
       handlingClass: 'Loại hàng',
       destination: 'Điểm đến',
@@ -238,5 +260,21 @@ export const sourcing = {
     hint: 'Khổ A4 dọc, bốn nhãn mỗi trang. Khi in, chọn tỷ lệ 100 % để mã QR giữ đúng cỡ.',
     sheet: 'Trang nhãn QR',
     count: { one: '{count} nhãn có thể in', other: '{count} nhãn có thể in' },
+    /** File PDF nhãn do máy chủ dựng — chỉ khi nối máy chủ. */
+    downloadPdf: 'Tải PDF nhãn',
+    pdfFile: 'nhan-kien',
+    pdfLimit: 'Mỗi file PDF nhãn tối đa {max} kiện.',
+  },
+  /**
+   * Khi kho kiện đọc từ máy chủ: câu cho phần máy chủ chưa có — chỉ điều phối viên đọc được kiện, danh mục loại kiện chưa mở, nhãn theo
+   * chuyến chưa nối, danh sách thiếu nhiều trường.
+   */
+  backend: {
+    dispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc kho kiện, nên tài khoản của bạn chưa xem được kiện ở đây.',
+    lookupDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên tra cứu kiện, nên tài khoản của bạn chưa tra cứu được ở đây.',
+    labelsDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc kiện để in nhãn, nên tài khoản của bạn chưa in nhãn được ở đây.',
+    packageTypes: 'Máy chủ chưa mở danh mục loại kiện cho điều phối viên, nên khi nối máy chủ màn này chưa có dữ liệu.',
+    tripLabels: 'Nhãn theo chuyến cần dữ liệu chuyến của máy chủ, phần này chưa nối. Chọn kiện ở màn Kho kiện để in nhãn.',
+    sourceNote: 'Kiện đọc từ máy chủ. Danh sách của máy chủ chưa có chiều rộng, chiều cao, điểm đến, cờ và yêu cầu giao, nên bảng chỉ có chiều dài; mở một kiện để xem điểm đến và chuyến.',
   },
 } as const

@@ -58,8 +58,8 @@ export const PACKAGE_POOL_SUPPORT = {
   flags: !ON_BACKEND,
   /** Lịch sử kiện ở panel chi tiết. */
   history: !ON_BACKEND,
-  /** File mẫu `.csv` (backend chỉ có `.xlsx`). */
-  csvTemplate: !ON_BACKEND,
+  /** File mẫu và luật đọc file nhập là của backend: chỉ mẫu `.xlsx`, chỉ tên cột của backend, loại hàng ghi bằng mã. */
+  serverTemplate: ON_BACKEND,
   /** Nhãn mọi kiện của một chuyến (`?chuyen=`). */
   tripLabels: !ON_BACKEND,
   /** Liên kết tới chuyến của kiện: mã chuyến của backend chỉ mở được khi chuyến cũng đọc từ backend. */
@@ -70,6 +70,11 @@ export const PACKAGE_POOL_SUPPORT = {
   deletePackage: ON_BACKEND,
   /** File PDF nhãn do backend dựng. */
   pdfLabels: ON_BACKEND,
+  /**
+   * Mã của kho là số backend cấp, không phải `PK-…`: tìm theo số ngắn đó khớp cả mã QR của kiện khác, nên mở một kiện ở Kho kiện
+   * (`/kien-hang?q=`) bằng mã QR của nó.
+   */
+  numericIds: ON_BACKEND,
   /** Trạng thái kiện có ở nguồn dữ liệu (tab của màn Kho kiện). */
   statuses: ON_BACKEND ? BACKEND_STATUSES : PACKAGE_STATUSES,
   /** Dung lượng file nhập lớn nhất (MB). */
@@ -109,14 +114,25 @@ export function fetchPackages(): Promise<Package[]> {
 /** Một mốc lịch sử của kiện kèm tên người làm (`null`: kho không ghi người, hoặc tài khoản đã xoá). */
 export type PackageHistoryLine = PackageHistoryEntry & { readonly actorName: string | null }
 
-export type PackageDetail = { readonly package: Package; readonly type: PackageType | undefined; readonly history: readonly PackageHistoryLine[] }
+export type PackageDetail = {
+  readonly package: Package
+  readonly type: PackageType | undefined
+  readonly history: readonly PackageHistoryLine[]
+  /** Chuyến đang giữ kiện kèm tên — chỉ backend trả (kho mẫu: mã chuyến nằm ở `package.tripId`). */
+  readonly trip?: { readonly id: string; readonly name: string }
+}
 
 /** Backend: kiện đọc theo mã, điểm đến và chuyến đọc từ lượt quét mã QR của nó (đọc theo mã không trả hai trường đó). */
 async function detailOnBackend(id: string): Promise<PackageDetail> {
   const pkg = await readBackendPackage(id)
   const place = lookupOf(await scanBackendPackage(pkg.qrToken))
-  const tripId = place?.trip?.id
-  return { package: { ...pkg, destination: place?.package.destination ?? '', ...(tripId === undefined ? {} : { tripId }) }, type: undefined, history: [] }
+  const trip = place?.trip
+  return {
+    package: { ...pkg, destination: place?.package.destination ?? '', ...(trip === undefined ? {} : { tripId: trip.id }) },
+    type: undefined,
+    history: [],
+    ...(trip === undefined ? {} : { trip }),
+  }
 }
 
 /** Chi tiết một kiện: kiện, loại kiện (nếu gắn) và lịch sử kho đã ghi (`Package.history`), mới nhất trước. */

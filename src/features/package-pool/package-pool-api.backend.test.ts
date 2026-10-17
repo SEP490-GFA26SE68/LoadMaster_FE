@@ -98,7 +98,7 @@ test('chi tiết kiện: kiện theo mã, điểm đến và chuyến từ lư�
   routes[`GET /api/packages/scan/${TOKEN_3}`] = { body: scanOf(IMPORTED, { trip: { id: 12, name: 'TRIP-A' }, stop: { number: 2, name: 'Kho Thủ Đức' } }) }
   const detail = await fetchPackageDetail('3')
   expect(detail.package).toMatchObject({ id: '3', destination: 'Kho 3', tripId: '12', lengthCm: 50 })
-  expect(detail).toMatchObject({ type: undefined, history: [] })
+  expect(detail).toMatchObject({ type: undefined, history: [], trip: { id: '12', name: 'TRIP-A' } })
 })
 
 test('xem trước file: gửi multipart, giữ file cho bước xác nhận; file quá 1 MB bị chặn trước khi gửi', async () => {
@@ -184,6 +184,6 @@ test('phần backend chưa có: loại kiện rỗng, ghi loại kiện / gỡ c
   expect(calls).toEqual([])
   expect(PACKAGE_POOL_SUPPORT).toMatchObject({
     packageTypes: false, flags: false, history: false, fullSize: false, deletePackage: true, pdfLabels: true, dispatcherOnly: true, tripLinks: false,
-    statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED'], maxImportMb: 1,
+    numericIds: true, serverTemplate: true, tripLabels: false, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED'], maxImportMb: 1,
   })
 })

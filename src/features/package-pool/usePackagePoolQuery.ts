@@ -60,16 +60,20 @@ export function usePackageDetailQuery(id: string | null) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'detail', id], queryFn: () => fetchPackageDetail(id ?? ''), enabled: id !== null, staleTime: 0 })
 }
 
-/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. */
-export function usePackageLabelsQuery(selection: LabelSelection) {
+/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. `enabled: false` khi nguồn đang dùng không có nhãn đó. */
+export function usePackageLabelsQuery(selection: LabelSelection, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: [...PACKAGE_POOL_KEY, 'labels', selection.tripId ?? null, selection.ids ?? null],
     queryFn: () => fetchPackageLabels(selection),
     staleTime: 0,
+    enabled,
   })
 }
 
-/** Tra cứu theo mã đang gõ trên URL (`/tra-cuu-kien?ma=`); `code` rỗng thì không gọi kho. Không khớp: lỗi `QR_UNKNOWN`, không thử lại. */
+/**
+ * Tra cứu theo mã đang gõ trên URL (`/tra-cuu-kien?ma=`); `code` rỗng thì không gọi kho (màn truyền rỗng cả khi người xem không tra
+ * được ở nguồn đang dùng). Không khớp: lỗi `QR_UNKNOWN`, không thử lại.
+ */
 export function usePackageLookupQuery(code: string) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'lookup', code], queryFn: () => lookupPackages(code), enabled: code !== '', staleTime: 0, retry: false })
 }
@@ -85,10 +89,20 @@ export function useCreatePackageMutation() {
   return useMutation({ mutationFn: (input: PackageInput) => createPackage(input), onSuccess: () => refreshPool(client) })
 }
 
-/** Xoá một kiện (chỉ khi nối backend): kho kiện và kiện để chọn vào yêu cầu giao đều đổi. */
+/**
+ * Xoá một kiện (chỉ khi nối backend): kho kiện và kiện để chọn vào yêu cầu giao đều đổi. Chi tiết của chính kiện vừa xoá không đọc lại
+ * (backend trả 404) — panel đóng khi danh sách mới về.
+ */
 export function useDeletePackageMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (id: string) => deletePoolPackage(id), onSuccess: () => refreshPool(client) })
+  return useMutation({
+    mutationFn: (id: string) => deletePoolPackage(id),
+    onSuccess: (_data, id) => Promise.all([
+      client.invalidateQueries({ queryKey: PACKAGE_POOL_KEY, predicate: (query) => !(query.queryKey[1] === 'detail' && query.queryKey[2] === id) }),
+      client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }),
+      client.invalidateQueries({ queryKey: ['requirements'] }),
+    ]),
+  })
 }
 
 /** Tải PDF nhãn backend dựng cho các kiện `ids` về máy dưới tên `fileName`. */
