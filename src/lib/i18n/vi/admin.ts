@@ -105,6 +105,8 @@ export const admin = {
       /** Quản trị hệ thống tạo tài khoản nền tảng; quản trị công ty tạo người cho công ty mình (FE-0-08). */
       createDescriptionPlatform: 'Tài khoản nền tảng, không thuộc công ty nào. Hệ thống cấp mật khẩu tạm và chỉ hiện một lần sau khi tạo.',
       editDescription: 'Sửa thông tin liên hệ, kho và vai trò của tài khoản.',
+      // Nối backend: máy chủ chưa lưu kho / chi nhánh của tài khoản nên form không có ô kho
+      editDescriptionNoDepot: 'Sửa thông tin liên hệ và vai trò của tài khoản.',
       editDescriptionPlatform: 'Sửa thông tin liên hệ và vai trò của tài khoản nền tảng.',
       fullName: 'Họ và tên',
       fullNamePlaceholder: 'Nguyễn Thanh Tùng',

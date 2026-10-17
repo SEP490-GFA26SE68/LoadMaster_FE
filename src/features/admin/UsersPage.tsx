@@ -15,7 +15,7 @@ import { UserFormDialog } from './UserFormDialog'
 import { UsersTable } from './UsersTable'
 import { userDistinct } from './user-summary'
 import { useUserActions } from './useUserActions'
-import { useUserCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
+import { userDepotAvailable, useUserCompanyNamesQuery, useUsersQuery } from './useUsersQuery'
 
 /**
  * Quản trị người dùng (LM-092, D-41, D-42): danh sách đọc từ kho qua `useUsersQuery` (tìm, lọc, sắp xếp, phân trang trên URL), menu
@@ -39,12 +39,13 @@ export function UsersPage() {
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
   // Dòng số đếm dưới tiêu đề: đếm trên danh sách kho trả cho người xem (quản trị hệ thống thấy công ty, quản trị công ty thấy kho)
   const distinct = userDistinct(users)
+  // Nối backend thì máy chủ chưa có kho của tài khoản: không đếm kho
   const heroCounts = [
     t('admin.users.count', { count: users.length }),
     t('admin.users.heroCount.roles', { count: distinct.roles }),
-    scope === 'platform'
-      ? t('admin.users.heroCount.companies', { count: distinct.companies })
-      : t('admin.users.heroCount.depots', { count: distinct.depots }),
+    ...(scope === 'platform'
+      ? [t('admin.users.heroCount.companies', { count: distinct.companies })]
+      : userDepotAvailable ? [t('admin.users.heroCount.depots', { count: distinct.depots })] : []),
   ].join(' · ')
 
   return (

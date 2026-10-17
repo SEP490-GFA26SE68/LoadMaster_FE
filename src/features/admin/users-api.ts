@@ -43,6 +43,13 @@ type BackendTemporaryPassword = { readonly user: BackendUser; readonly temporary
 
 const ON_BACKEND = usesBackend('users')
 
+/**
+ * Kho / chi nhánh và lần hoạt động gần nhất chỉ kho mẫu có: tài khoản của backend không mang hai trường đó. Nối backend thì màn bỏ cột,
+ * ô và số đếm của chúng — không ghi "Chưa đăng nhập" cho người vừa đăng nhập, không đòi nhập kho mà máy chủ bỏ đi.
+ */
+export const USER_DEPOT_AVAILABLE = !ON_BACKEND
+export const USER_ACTIVITY_AVAILABLE = !ON_BACKEND
+
 /** Màn tự lọc, sắp xếp và phân trang ở client như với kho mẫu: đọc hết các trang, mỗi trang lớn. */
 const PAGE_SIZE = 500
 

@@ -2,6 +2,8 @@ import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/reac
 import type { Company, NewUser, UserChanges } from '@/lib/mock-db'
 import type { User, UserStatus } from '@/types/user'
 import {
+  USER_ACTIVITY_AVAILABLE,
+  USER_DEPOT_AVAILABLE,
   createUser,
   deleteUser,
   fetchCompanies,
@@ -11,6 +13,10 @@ import {
   setUserStatus,
   updateUser,
 } from './users-api'
+
+/** Màn có cột, ô kho / chi nhánh và lần hoạt động gần nhất không — backend chưa có hai trường đó (`users-api.ts`). */
+export const userDepotAvailable = USER_DEPOT_AVAILABLE
+export const userActivityAvailable = USER_ACTIVITY_AVAILABLE
 
 /**
  * Người dùng qua TanStack Query (mục 9, LM-092) — thay `useState` + `users.mock.ts` cũ. Mọi ghi làm mới danh sách người dùng và

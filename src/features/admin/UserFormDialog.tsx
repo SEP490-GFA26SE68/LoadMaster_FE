@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useT, type MessageKey } from '@/lib/i18n'
 import { rolesInScope, type UserScope } from '@/lib/mock-db'
 import type { Role, User } from '@/types/user'
 import type { AccountBlock } from './account-guards'
@@ -22,6 +22,21 @@ import {
   type UserFormInput,
   type UserFormValues,
 } from './user-form.schema'
+import { userDepotAvailable } from './useUsersQuery'
+
+/** Câu mô tả dưới tiêu đề: theo thêm / sửa, tài khoản nền tảng hay công ty, và form có ô kho không. */
+const DESCRIPTION = {
+  create: {
+    platform: 'admin.users.form.createDescriptionPlatform',
+    company: 'admin.users.form.createDescription',
+    companyNoDepot: 'admin.users.form.createDescription',
+  },
+  edit: {
+    platform: 'admin.users.form.editDescriptionPlatform',
+    company: 'admin.users.form.editDescription',
+    companyNoDepot: 'admin.users.form.editDescriptionNoDepot',
+  },
+} as const satisfies Record<'create' | 'edit', Record<'platform' | 'company' | 'companyNoDepot', MessageKey>>
 
 /** Vai trò chọn sẵn của form thêm mới, theo phạm vi của người quản trị. */
 const DEFAULT_ROLE: Record<UserScope, Role> = { platform: 'systemSupporter', company: 'dispatcher' }
@@ -67,7 +82,9 @@ export function UserFormDialog({
   const [serverError, setServerError] = useState<unknown>(null)
 
   const platform = scope === 'platform'
-  const schema = useMemo(() => userFormSchema(scope), [scope])
+  // Tài khoản nền tảng không thuộc kho nào; nối backend thì máy chủ chưa lưu kho — cả hai không có ô kho
+  const withDepot = !platform && userDepotAvailable
+  const schema = useMemo(() => userFormSchema(scope, { depot: withDepot }), [scope, withDepot])
 
   const form = useForm<UserFormInput, unknown, UserFormValues>({
     resolver: zodResolver(schema),
@@ -94,14 +111,14 @@ export function UserFormDialog({
           <DialogHeader
             icon={isEdit ? UserPen : UserPlus}
             title={isEdit ? t('admin.users.form.editTitle') : t('admin.users.form.createTitle')}
-            description={t(`admin.users.form.${isEdit ? 'editDescription' : 'createDescription'}${platform ? 'Platform' : ''}`)}
+            description={t(DESCRIPTION[isEdit ? 'edit' : 'create'][platform ? 'platform' : withDepot ? 'company' : 'companyNoDepot'])}
           />
           <div className="flex flex-col gap-5 px-7 pt-5 pb-6">
             <div className="grid grid-cols-2 gap-4">
               <Input required label={t('admin.users.form.fullName')} placeholder={t('admin.users.form.fullNamePlaceholder')} error={translateUserFormError(t, errors.fullName?.message)} {...form.register('fullName')} />
               <Input required label={t('admin.users.form.phone')} placeholder="0901 234 567" className="font-mono" error={translateUserFormError(t, errors.phone?.message)} {...form.register('phone')} />
               <Input required label={t('admin.users.form.email')} type="email" placeholder={t('admin.users.form.emailPlaceholder')} error={translateUserFormError(t, errors.email?.message)} {...form.register('email')} />
-              {platform ? null : (
+              {withDepot ? (
                 <Input
                   required
                   label={t('admin.users.form.depot')}
@@ -109,7 +126,7 @@ export function UserFormDialog({
                   error={translateUserFormError(t, errors.depot?.message)}
                   {...form.register('depot')}
                 />
-              )}
+              ) : null}
               {roleBlock ? (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-body font-medium text-text">{t('admin.users.form.role')}</span>

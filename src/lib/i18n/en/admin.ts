@@ -90,6 +90,7 @@ export const admin = {
       createDescription: 'The system issues a temporary password and shows it only once after the account is created.',
       createDescriptionPlatform: 'A platform account, not part of any company. The system issues a temporary password and shows it only once after the account is created.',
       editDescription: 'Edit the contact details, warehouse and role of the account.',
+      editDescriptionNoDepot: 'Edit the contact details and role of the account.',
       editDescriptionPlatform: 'Edit the contact details and role of the platform account.',
       fullName: 'Full name',
       fullNamePlaceholder: 'Nguyễn Thanh Tùng',
