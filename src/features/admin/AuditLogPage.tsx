@@ -18,8 +18,9 @@ import { AuditDateRange } from './AuditDateRange'
 import { describeChange, type AuditTableRow } from './audit-change'
 import { auditColumns } from './audit-columns'
 import { describeLogRow, type AuditDirectory } from './audit-log'
+import { AuditLogUnavailable } from './AuditLogUnavailable'
 import { AuditSummary } from './AuditSummary'
-import { useAuditDirectoryQuery, useAuditEventsQuery, useAuditSummaryQuery } from './useAuditLogQuery'
+import { auditLogAvailable, useAuditDirectoryQuery, useAuditEventsQuery, useAuditSummaryQuery } from './useAuditLogQuery'
 import { useCompanyNamesQuery } from './useUsersQuery'
 
 /** Bộ lọc trên URL (D-52): khoảng ngày, người làm, nhóm hành động; ô tìm (`q`) là mã đối tượng. */
@@ -45,8 +46,14 @@ function isAuditGroup(value: string): value is AuditGroup {
  *
  * Phạm vi theo vai trò (D-65, FE-0-08), do kho lọc: quản trị hệ thống đọc nhật ký toàn hệ thống và có bộ lọc công ty; quản trị công ty
  * chỉ đọc sự kiện của công ty mình — việc người của công ty làm và việc quản trị hệ thống làm trên tài khoản của công ty.
+ *
+ * Người dùng đã nối backend mà backend chưa có nhật ký: `AuditLogUnavailable` thay cả màn.
  */
 export function AuditLogPage() {
+  return auditLogAvailable ? <AuditLogContent /> : <AuditLogUnavailable />
+}
+
+function AuditLogContent() {
   const t = useT()
   const format = useFormat()
   const can = useCan()
