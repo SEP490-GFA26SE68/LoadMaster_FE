@@ -44,7 +44,7 @@ function freezeAt(iso: string) {
 }
 
 test('nguồn backend: hoá đơn thay lịch sử thanh toán, giá credit 5.000 đ, xác nhận ở trang của app', () => {
-  expect(BILLING_CAPABILITIES).toStrictEqual({ payments: false, invoices: true, simulation: false, serverPayment: true, creditPriceVnd: 5000 })
+  expect(BILLING_CAPABILITIES).toStrictEqual({ payments: false, invoices: true, simulation: false, serverPayment: true, autoRenew: false, creditPriceVnd: 5000 })
 })
 
 test('gói đang dùng: đọc gói hiện tại rồi gói cước của nó, giờ Việt Nam đổi sang ISO', async () => {

@@ -48,13 +48,15 @@ const BACKEND_CREDIT_PRICE_VND = 5000
 /**
  * Phần của màn theo nguồn dữ liệu. Backend chưa có endpoint đọc giao dịch thanh toán: không có lịch sử thanh toán, nút Trả hay banner
  * thanh toán chờ; có hoá đơn mà kho mẫu không có. Kho mẫu trả bằng trang giả lập `/thanh-toan/gia-lap` (`simulation`); backend xác
- * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`).
+ * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`). Gói trả phí của backend không bao giờ tự gia hạn (tới hạn là hết hạn, huỷ chỉ
+ * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật.
  */
 export const BILLING_CAPABILITIES = {
   payments: !ON_BACKEND,
   invoices: ON_BACKEND,
   simulation: !ON_BACKEND,
   serverPayment: ON_BACKEND,
+  autoRenew: !ON_BACKEND,
   creditPriceVnd: ON_BACKEND ? BACKEND_CREDIT_PRICE_VND : BILLING_CONSTANTS.creditPriceVnd,
 } as const
 

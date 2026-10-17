@@ -90,6 +90,7 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   const plan = within(await screen.findByRole('region', { name: 'Gói hiện tại' }, SLOW))
   for (const text of ['Đang hoạt động', '1.490.000 ₫', '500', '01/11/2026']) expect(plan.getByText(text)).toBeInTheDocument()
   expect(plan.queryByText('Giá trị tạm — chờ chốt')).toBeNull()
+  expect(plan.queryByText('Tự gia hạn')).toBeNull()
   expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('1.200')).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 

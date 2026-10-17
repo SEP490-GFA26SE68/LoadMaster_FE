@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
 import type { CurrentSubscription, SubscriptionStatus } from '@/lib/mock-db'
+import { BILLING_CAPABILITIES } from './billing-api'
 
 /** Gói đang dùng là xanh lá, đã huỷ nhưng còn hiệu lực là hổ phách (sắp hết), đã hết hạn là đỏ (chặn chạy tối ưu). */
 const STATUS_LOOK: Record<SubscriptionStatus, { tone: BadgeTone; dot: BadgeDot }> = {
@@ -48,7 +49,9 @@ export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscri
         <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <Field label={t('billing.plan.started')}>{format.date(subscription.startedAt)}</Field>
           <Field label={t('billing.plan.expires')}>{format.date(subscription.expiresAt)}</Field>
-          <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
+          {BILLING_CAPABILITIES.autoRenew ? (
+            <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
+          ) : null}
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>
