@@ -111,13 +111,13 @@ test('adding a package sends millimetres and a generated barcode, then opens it 
   expect(await panel.findByText('QA Huế', {}, SLOW)).toBeInTheDocument()
   expect(panel.getByRole('button', { name: 'Xoá kiện' })).toBeEnabled()
 
-  const post = calls.find((call) => call.method === 'POST')
-  expect(post?.body).toMatchObject({ packageCode: 'QA NEW-1', actualLength: 605, actualWidth: 400, actualHeight: 300, actualWeightKg: 4.25, handlingClass: 'STANDARD', destination: 'QA Huế' })
+  const body = calls.find((call) => call.method === 'POST')?.body as Record<string, unknown>
+  expect(body).toMatchObject({ packageCode: 'QA NEW-1', actualLength: 605, actualWidth: 400, actualHeight: 300, actualWeightKg: 4.25, handlingClass: 'STANDARD', destination: 'QA Huế' })
   // Không đơn hàng, không loại kiện, không ghim; mã vạch bắt buộc của backend do app cấp
-  expect(Object.keys(post?.body as object).sort()).toStrictEqual([
+  expect(Object.keys(body).sort()).toStrictEqual([
     'actualHeight', 'actualLength', 'actualWeightKg', 'actualWidth', 'destination', 'handlingClass', 'packageCode', 'trackingBarcode',
   ])
-  expect((post?.body as { trackingBarcode: string }).trackingBarcode).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+  expect(body.trackingBarcode).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
 })
 
 test('labels are drawn from backend packages with the scanned destination, and the server PDF is requested for the same packages', async () => {

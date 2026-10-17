@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 import { afterEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
-import { envelope, page, stubBackend, type FakeRoutes } from '@/test/fake-backend'
+import { envelope, page, stubBackend, type FakeCall, type FakeRoutes } from '@/test/fake-backend'
 import { signedInAs } from '@/test/signed-in'
 import type { Role } from '@/types/user'
 import { PackagesPage } from './PackagesPage'
@@ -23,13 +23,17 @@ vi.mock('@/lib/backend-config', () => ({
 const SLOW = { timeout: 5000 }
 const TOKEN_1 = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const TOKEN_3 = '301a4619-a65b-4540-8d12-2f7060b268d5'
-const MANUAL = {
+type Dto = {
+  id: number; orderId: number | null; trackingBarcode: string | null; actualLength: number; actualWeightKg: number | string
+  packageCode: string; qrToken: string; handlingClass: string | null; status: string
+}
+const MANUAL: Dto = {
   id: 1, orderId: null, trackingBarcode: 'QA-BARCODE-0001', actualLength: 1205, actualWeightKg: 12.5, packageCode: 'QA PK-0001', qrToken: TOKEN_1,
   handlingClass: 'FRAGILE', status: 'PENDING',
 }
-const PLANNED = { ...MANUAL, id: 3, orderId: 1, trackingBarcode: null, actualLength: 500, actualWeightKg: '3.00', packageCode: 'QA HK-7', qrToken: TOKEN_3, handlingClass: null, status: 'PLANNED' }
-const IMPORTED = { ...PLANNED, id: 9, orderId: 2, actualLength: 600, packageCode: 'QA IMP-1', qrToken: '0c6f8a1e-2b3d-4e5f-8a9b-1c2d3e4f5a6b', status: 'PENDING' }
-const scanOf = (dto: typeof MANUAL, destination: string, trip: { id: number; name: string } | null = null) => envelope({
+const PLANNED: Dto = { ...MANUAL, id: 3, orderId: 1, trackingBarcode: null, actualLength: 500, actualWeightKg: '3.00', packageCode: 'QA HK-7', qrToken: TOKEN_3, handlingClass: null, status: 'PLANNED' }
+const IMPORTED: Dto = { ...PLANNED, id: 9, orderId: 2, actualLength: 600, packageCode: 'QA IMP-1', qrToken: '0c6f8a1e-2b3d-4e5f-8a9b-1c2d3e4f5a6b', status: 'PENDING' }
+const scanOf = (dto: Dto, destination: string, trip: { id: number; name: string } | null = null) => envelope({
   id: dto.id, packageCode: dto.packageCode, qrToken: dto.qrToken, handlingClass: dto.handlingClass ?? 'STANDARD', actualWeightKg: dto.actualWeightKg,
   status: dto.status, orderId: dto.orderId, trip, stop: null, destination,
 })
@@ -61,7 +65,7 @@ function renderPool(role: Role, routes: FakeRoutes) {
 }
 
 const headers = () => within(screen.getByRole('table')).getAllByRole('columnheader').map((cell) => cell.textContent)
-const listCalls = (calls: readonly { method: string; path: string }[]) => calls.filter((call) => call.method === 'GET' && call.path === '/api/packages')
+const listCalls = (calls: readonly FakeCall[]) => calls.filter((call) => call.method === 'GET' && call.path === '/api/packages')
 
 test('the dispatcher sees only what the backend returns, opens a package and deletes it after confirming', async () => {
   let rows = [MANUAL, PLANNED]
