@@ -1,6 +1,6 @@
 import type { DeadlineStatus } from '@/domain/routing'
-import { isActiveException, type TripException, type TripLiveStop, type TripMonitoring } from '@/lib/mock-db'
-import type { MonitoringBoard, MonitoringTrip } from './monitoring-api'
+import { isActiveException, type TripException, type TripLiveStop } from '@/lib/mock-db'
+import type { LiveMonitoring, MonitoringBoard, MonitoringStop, MonitoringTrip } from './monitoring-api'
 
 /**
  * Phần thuần của màn Giám sát (FE-6-10, FE-6-12): ghép phần ít đổi của chuyến (`MonitoringBoard`) với lần đọc giám sát mới nhất, lọc
@@ -20,6 +20,15 @@ const RANK: Readonly<Record<DeadlineStatus, number>> = { OK: 0, AT_RISK: 1, MISS
  */
 export function fixedStopCount(stops: readonly Pick<MonitoringTrip['stops'][number], 'completedAt' | 'arrivedAt'>[]): number {
   return stops.findLastIndex((stop) => stop.completedAt !== undefined || stop.arrivedAt !== undefined) + 1
+}
+
+/**
+ * Điểm đã giao xong mà nguồn dữ liệu không ghi giờ — chỉ xảy ra với backend: máy chủ không ghi giờ hoàn tất điểm, còn giờ đến của nó chỉ
+ * liệt kê điểm chưa giao có toạ độ. Nên khi đã có vị trí xe (có giờ đến), điểm có toạ độ vắng khỏi danh sách giờ đến là điểm đã giao.
+ */
+export function doneWithoutTime(stop: MonitoringStop, live: LiveMonitoring | undefined): boolean {
+  if (stop.completedAt !== undefined || stop.lat === undefined || !live?.location) return false
+  return !live.stops.some((item) => item.stopId === stop.id)
 }
 
 /** Mức hạn xấu nhất trong các điểm chưa hoàn tất có hạn; `null` khi không điểm nào có hạn. */
@@ -46,7 +55,7 @@ export type TripSummary = {
   readonly lateRisk: boolean
 }
 
-export function tripSummary(trip: MonitoringTrip, live: TripMonitoring | undefined): TripSummary {
+export function tripSummary(trip: MonitoringTrip, live: LiveMonitoring | undefined): TripSummary {
   const [first] = live?.stops ?? []
   const worst = worstDeadline(live?.stops ?? [])
   return {
@@ -78,7 +87,7 @@ export type EscalationRow = {
 }
 
 /** Sự cố đã chuyển quản lý của các chuyến Đang vận chuyển, cũ trước. */
-export function escalationRows(board: MonitoringBoard, fleet: readonly TripMonitoring[]): EscalationRow[] {
+export function escalationRows(board: MonitoringBoard, fleet: readonly LiveMonitoring[]): EscalationRow[] {
   const trips = new Map(board.trips.map((trip) => [trip.tripId, trip]))
   return fleet
     .flatMap((live) => {

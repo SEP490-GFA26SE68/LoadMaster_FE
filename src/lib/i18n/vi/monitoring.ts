@@ -193,4 +193,12 @@ export const monitoring = {
     submit: 'Lưu hạn mới',
     done: 'Đã nhập hạn mới cho {requirementId}',
   },
+  /** Màn Giám sát khi nhóm `monitoring` đọc backend: giờ đến và hạn do máy chủ tính. */
+  backend: {
+    basis: 'Giờ đến do máy chủ tính từ vị trí xe mới nhất theo từng chặng tới các điểm chưa giao, chưa cộng thời gian dừng ở mỗi điểm.',
+    noPosition: 'Máy chủ chưa nhận vị trí nào của chuyến {id}.',
+    deadlineNote: 'Hạn ở đây là giờ đến theo kế hoạch của tuyến — máy chủ chưa trả hạn giao của yêu cầu giao.',
+    completed: 'Đã giao xong',
+    reportDescription: 'Máy chủ ghi lại sự cố kèm số phút dự kiến chậm.',
+  },
 } as const

@@ -36,13 +36,15 @@ export function ExceptionFacts({ exception, userNames }: { exception: TripExcept
 /**
  * Sự cố của chuyến đang chọn ở màn Giám sát (FE-6-11), mới nhất trước. Người có `exceptions.resolve` (điều phối viên) xử lý sự cố còn
  * mở: "Tìm tuyến khác", "Không có tuyến khả thi — chuyển quản lý" (chỉ khi chưa chuyển), "Đã xử lý". Các nút đều là nút phụ: nút chính
- * của màn là "Báo sự cố". Người chỉ xem (quản lý công ty) thấy một dòng lý do.
+ * của màn là "Báo sự cố". Người chỉ xem (quản lý công ty) thấy một dòng lý do. Nguồn dữ liệu chưa có việc chuyển quản lý (backend) thì
+ * không có nút đó (`canEscalate`).
  */
-export function TripExceptionList({ tripId, exceptions, userNames, canResolve, onReroute }: {
+export function TripExceptionList({ tripId, exceptions, userNames, canResolve, canEscalate, onReroute }: {
   tripId: string
   exceptions: readonly TripException[]
   userNames: Readonly<Record<string, string>>
   canResolve: boolean
+  canEscalate: boolean
   onReroute: () => void
 }) {
   const t = useT()
@@ -73,7 +75,7 @@ export function TripExceptionList({ tripId, exceptions, userNames, canResolve, o
             {canResolve && isActiveException(exception) ? (
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button variant="secondary" size="sm" disabled={busy} onClick={onReroute}>{t('monitoring.exceptions.actions.reroute')}</Button>
-                {exception.status === 'OPEN' ? (
+                {canEscalate && exception.status === 'OPEN' ? (
                   <Button variant="secondary" size="sm" className="h-auto min-h-8 py-1 whitespace-normal" disabled={busy} onClick={() => run(escalate, exception.id, 'escalated')}>
                     {t('monitoring.exceptions.actions.escalate')}
                   </Button>
