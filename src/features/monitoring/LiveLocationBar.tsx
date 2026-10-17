@@ -5,9 +5,10 @@ import type { LocationPoint } from '@/lib/mock-db'
 /**
  * Dòng nói xe đang ở đâu, đứng ngay trên bản đồ tuyến của chuyến Đang vận chuyển (FE-6-08, FE-6-09): nguồn của vị trí — **"Mô phỏng"**
  * khi là xe mô phỏng của kho, "GPS" khi là vị trí thật — giờ của điểm vị trí, xe đang chạy hay đứng, và nhãn **MOCK RESULT** vì giờ đến
- * tính từ vị trí là kết quả của công thức mock. Chỉ hiện số kho ghi ở điểm vị trí.
+ * tính từ vị trí là kết quả của công thức mock. Chỉ hiện số kho ghi ở điểm vị trí. `backend`: giờ đến do máy chủ tính, câu nói nguồn
+ * đổi theo.
  */
-export function LiveLocationBar({ location, isMockResult }: { location: LocationPoint; isMockResult: boolean }) {
+export function LiveLocationBar({ location, isMockResult, backend = false }: { location: LocationPoint; isMockResult: boolean; backend?: boolean }) {
   const t = useT()
   const format = useFormat()
   const time = format.time(location.recordedAt)
@@ -21,7 +22,7 @@ export function LiveLocationBar({ location, isMockResult }: { location: Location
           : t('monitoring.location.standing', { time })}
       </span>
       {isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
-      <p className="basis-full text-note text-ink-3">{t('monitoring.location.basis')}</p>
+      <p className="basis-full text-note text-ink-3">{t(backend ? 'monitoring.backend.basis' : 'monitoring.location.basis')}</p>
     </div>
   )
 }

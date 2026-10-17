@@ -1,10 +1,12 @@
-import type { EtaRiskAlert, LocationPoint, TripException, TripLiveStop, TripMonitoring } from '@/lib/mock-db'
+import type { EtaRiskAlert, LocationPoint, TripException, TripLiveStop } from '@/lib/mock-db'
+import type { LiveMonitoring } from './monitoring-api'
 
 /**
- * Kênh cập nhật của giám sát khi chưa có backend (FE-6-10, D-86): sự kiện **trong bộ nhớ** của tab đang mở, thay cho WebSocket
+ * Kênh cập nhật của giám sát khi chưa có WebSocket (FE-6-10, D-86): sự kiện **trong bộ nhớ** của tab đang mở, thay cho WebSocket
  * `/ws/trips/{tripId}/monitoring`. Kho không tự chạy — nó ghi điểm vị trí mới mỗi lần được đọc — nên sự kiện phát ra khi một lần đọc
  * giám sát (`monitoring-api.ts`) trả về điều gì mới so với lần đọc trước của chuyến đó. Màn đọc lại nhiều nhất một lần mỗi giây
- * (`refreshMs` của kho), nên sự kiện cũng không dày hơn thế.
+ * (`refreshMs` của kho), nên sự kiện cũng không dày hơn thế. Nhóm `monitoring` nối backend thì lần đọc là của backend: sự kiện chỉ nói
+ * về chuyến của backend, không bao giờ trộn chuyến của kho mẫu.
  */
 export type TripMonitoringEvent =
   | { type: 'LocationUpdate'; tripId: string; location: LocationPoint }
@@ -20,7 +22,7 @@ type Listener = (event: TripMonitoringEvent) => void
  * Sự kiện giữa hai lần đọc giám sát của một chuyến — hàm thuần. Lần đọc đầu (`previous` vắng) phát vị trí và ETA hiện có, không phát
  * lại cảnh báo và sự cố đã có từ trước. Chuyến không còn chạy (`refreshMs` là `null`) phát `TripCompleted` một lần.
  */
-export function monitoringEvents(previous: TripMonitoring | undefined, next: TripMonitoring): TripMonitoringEvent[] {
+export function monitoringEvents(previous: LiveMonitoring | undefined, next: LiveMonitoring): TripMonitoringEvent[] {
   const { tripId } = next
   const events: TripMonitoringEvent[] = []
   if (next.location && next.location.recordedAt !== previous?.location?.recordedAt) events.push({ type: 'LocationUpdate', tripId, location: next.location })
@@ -36,7 +38,7 @@ export function monitoringEvents(previous: TripMonitoring | undefined, next: Tri
 }
 
 const listeners = new Map<string, Set<Listener>>()
-const lastSeen = new Map<string, TripMonitoring>()
+const lastSeen = new Map<string, LiveMonitoring>()
 
 /**
  * Nghe sự kiện giám sát của một chuyến; trả hàm thôi nghe. Chỉ chuyến đang có người nghe mới được giữ lần đọc trước: không ai nghe
@@ -55,7 +57,7 @@ export function subscribe(tripId: string, listener: Listener): () => void {
 }
 
 /** Một lần đọc giám sát vừa về: phát sự kiện cho người đang nghe chuyến đó. */
-export function publish(monitoring: TripMonitoring) {
+export function publish(monitoring: LiveMonitoring) {
   const set = listeners.get(monitoring.tripId)
   if (!set) return
   const events = monitoringEvents(lastSeen.get(monitoring.tripId), monitoring)
@@ -67,7 +69,7 @@ export function publish(monitoring: TripMonitoring) {
  * Lần đọc cả đội xe vừa về: phát cho từng chuyến; chuyến đang có người nghe mà không còn trong danh sách Đang vận chuyển là đã kết
  * thúc.
  */
-export function publishFleet(fleet: readonly TripMonitoring[]) {
+export function publishFleet(fleet: readonly LiveMonitoring[]) {
   const running = new Set(fleet.map((trip) => trip.tripId))
   for (const trip of fleet) publish(trip)
   for (const [tripId, previous] of lastSeen) {
