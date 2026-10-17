@@ -46,6 +46,8 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   const size = touch ? 'touch' : 'md'
   const chip = touch ? TOUCH_CHIP : undefined
   const mono = cn('font-mono tabular-nums', touch ? 'text-body-lg' : 'text-body')
+  // Máy chủ cấp mã chuyến là số nội bộ; người dùng nhận ra chuyến bằng mã chuyến (`trip.name`), như ở panel chi tiết kiện
+  const tripCode = PACKAGE_POOL_SUPPORT.numericIds ? (trip?.name ?? pkg.tripId) : pkg.tripId
 
   function handleClear(flag: PackageFlag) {
     clear.mutate({ id: pkg.id, flag }, {
@@ -88,9 +90,9 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
           {pkg.tripId === undefined ? t('lookup.fields.notInTrip') : (
             <span className="flex flex-col">
               {actions.openTrip && PACKAGE_POOL_SUPPORT.tripLinks
-                ? <Link to={`/chuyen/${encodeURIComponent(pkg.tripId)}`} className={cn(mono, 'self-start rounded-sm text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}>{pkg.tripId}</Link>
-                : <span className={mono}>{pkg.tripId}</span>}
-              {trip ? <span>{trip.name}</span> : null}
+                ? <Link to={`/chuyen/${encodeURIComponent(pkg.tripId)}`} className={cn(mono, 'self-start rounded-sm text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}>{tripCode}</Link>
+                : <span className={mono}>{tripCode}</span>}
+              {trip && !PACKAGE_POOL_SUPPORT.numericIds ? <span>{trip.name}</span> : null}
             </span>
           )}
         </Fact>
