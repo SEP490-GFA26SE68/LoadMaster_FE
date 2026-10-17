@@ -62,8 +62,11 @@ export const PACKAGE_POOL_SUPPORT = {
   serverTemplate: ON_BACKEND,
   /** Nhãn mọi kiện của một chuyến (`?chuyen=`). */
   tripLabels: !ON_BACKEND,
-  /** Liên kết tới chuyến của kiện: mã chuyến của backend chỉ mở được khi chuyến cũng đọc từ backend. */
-  tripLinks: !ON_BACKEND || usesBackend('trips'),
+  /**
+   * Liên kết tới chuyến của kiện. Màn chuyến chưa nối backend (cờ `trips` bật cũng chưa có thân hàm nào), nên mã chuyến của backend không
+   * mở được chuyến nào: chỉ kho mẫu có liên kết.
+   */
+  tripLinks: !ON_BACKEND,
   /** Chỉ điều phối viên đọc được kho kiện (backend từ chối quản lý công ty và nhân viên kho). */
   dispatcherOnly: ON_BACKEND,
   /** Xoá kiện (chỉ backend có). */
