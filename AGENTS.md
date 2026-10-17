@@ -166,7 +166,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   tài xế cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở hai màn này chờ số đo thiết bị thật (mục 5, luật kính).
 - **Tìm nhanh theo vai trò** (FE-0-04): quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm chuyến, kiện, yêu cầu giao
   (`requirements.view`), kho kiện (`packages.view`), xe; điều phối viên thêm loại kiện (`packages.manage`); kho, tài xế, quản lý nền tảng, hỗ
-  trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần.
+  trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ gọi hàm kho mà nhóm của vai trò cần;
+  kho kiện nối backend chỉ điều phối viên đọc được nên nhóm kho kiện bỏ với vai trò khác (`quickSearchGroups`, `packagePoolReachable`).
 
 **Chuông thông báo theo vai trò**
 
