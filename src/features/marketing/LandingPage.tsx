@@ -1,4 +1,5 @@
 import { ContactSection } from './ContactSection'
+import { LandingFacts } from './LandingFacts'
 import { LandingFeatures } from './LandingFeatures'
 import { LandingHero } from './LandingHero'
 import { LandingSteps } from './LandingSteps'
@@ -11,7 +12,11 @@ import { PublicPage } from './PublicPage'
 export function LandingPage() {
   return (
     <PublicPage>
-      <LandingHero />
+      {/* Khối tối liền một dải: phần mở đầu, khung 3D và dải số liệu */}
+      <div className="landing-cinema">
+        <LandingHero />
+        <LandingFacts />
+      </div>
       <LandingFeatures />
       <LandingSteps />
       <ContactSection />

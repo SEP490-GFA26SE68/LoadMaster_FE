@@ -20,7 +20,7 @@ const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'manager'] as const
 export function LandingHero() {
   const t = useT()
   return (
-    <section aria-labelledby="landing-title" className="landing-cinema">
+    <section aria-labelledby="landing-title">
       <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:gap-14 xl:pt-8 xl:pb-20">
         <div className="flex min-w-0 flex-col items-start gap-6">
           <p className="m-0 flex items-center gap-3 text-small font-semibold text-cyan-300 pointer-coarse:text-body-lg">

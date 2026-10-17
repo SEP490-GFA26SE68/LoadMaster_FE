@@ -66,6 +66,39 @@ export const landing = {
     stop3: 'Nhà phân phối',
     stop4: 'Đại lý tạp hoá',
   },
+  /**
+   * Dải số liệu dưới phần mở đầu (`#con-so`): mỗi số lấy từ hằng số trong code của ứng dụng (số hướng đặt, số phương án, số luật nhận
+   * hàng, số vai trò, bước làm tròn) hoặc từ ngưỡng kiểm hiệu năng của bộ tối ưu mô phỏng — câu nguồn nói rõ số đến từ đâu.
+   */
+  facts: {
+    title: 'Con số kiểm được',
+    lede: 'Mỗi con số dưới đây lấy thẳng từ mã nguồn của ứng dụng hoặc từ phép đo của nó — không con số nào là ước đoán.',
+    orientations: {
+      label: 'hướng đặt được thử cho mỗi kiện',
+      source: 'Kiện phải giữ đứng chỉ dùng hai hướng; hướng nào không lọt cửa xe thì bị loại.',
+    },
+    plans: {
+      label: 'phương án cho mỗi lần chạy tối ưu',
+      source: 'Tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — so sánh cạnh nhau rồi duyệt một.',
+    },
+    precision: {
+      label: 'bước làm tròn kích thước',
+      source: 'Khối lượng làm tròn tới {kg}; hai kiện chạm mặt không bị báo chồng lấn vì sai số làm tròn.',
+    },
+    speed: {
+      value: '< {seconds} giây',
+      label: 'để xếp {count} kiện, đủ ba phương án',
+      source: 'Ngưỡng kiểm hiệu năng của bộ tối ưu mô phỏng, đo trên máy phát triển.',
+    },
+    pickup: {
+      label: 'luật kiểm trước khi nhận hàng dọc đường',
+      source: 'Tải trọng, tải trục, trọng tâm, chỗ trống trong thùng, thứ tự dỡ, hạn giao…',
+    },
+    roles: {
+      label: 'vai trò, mỗi vai trò chỉ thấy việc của mình',
+      source: 'Ba vai trò của nền tảng, năm vai trò của công ty vận tải.',
+    },
+  },
   features: {
     title: 'Tính năng chính',
     lede: 'Một hệ thống cho cả chuyến hàng: từ lúc nhận kiện tới lúc giao xong điểm cuối.',
@@ -73,9 +106,33 @@ export const landing = {
       title: 'Xếp hàng 3D theo điểm giao',
       text: 'Hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa: tới điểm nào lấy hàng điểm đó. Xem, xoay và chỉnh tay phương án trong không gian 3D.',
     },
+    /** Sơ đồ thùng xe chia vùng của thẻ "Xếp hàng 3D theo điểm giao" — chữ trong hình. */
+    zones: {
+      door: 'Cửa sau',
+      zone: 'Vùng {number}',
+    },
+    plans: {
+      title: 'Ba phương án, một lần chạy',
+      text: 'Mỗi lần chạy cho ba phương án theo ba mục tiêu. So sánh cạnh nhau, chỉnh tay nếu cần rồi duyệt một.',
+    },
     route: {
       title: 'Tối ưu tuyến và giám sát',
       text: 'Tối ưu thứ tự điểm giao, xem giờ đến dự kiến so với hạn giao, vị trí xe trên bản đồ và sự cố trên đường.',
+      /** Kho xuất phát trên sơ đồ tuyến của thẻ. */
+      depot: 'Kho',
+    },
+    verify: {
+      title: 'Đối chiếu kiện ba mức',
+      text: 'Mỗi kiện được đối chiếu khi soạn, xếp và dỡ. Nhãn rách hay mất mã vẫn làm tiếp được, chờ điều phối viên duyệt.',
+      levels: {
+        qr: 'Quét mã QR',
+        code: 'Gõ mã kiện',
+        manual: 'Xác nhận tay',
+      },
+    },
+    pickup: {
+      title: 'Nhận hàng dọc đường',
+      text: 'Xe đang chạy vẫn nhận thêm hàng: mười luật kiểm trước khi duyệt, kiện mới được xếp vào chỗ trống mà không dời kiện nào đang chở.',
     },
     roles: {
       title: 'Mỗi vai trò một màn phù hợp',
@@ -93,6 +150,8 @@ export const landing = {
     title: 'Cách hoạt động',
     lede: 'Bốn bước của một chuyến hàng trên LoadMaster.',
     step: 'Bước {number}',
+    /** Ai làm bước đó; tên vai trò lấy từ nhánh `roles`. */
+    who: 'Người làm',
     steps: {
       intake: {
         title: 'Nhập kiện và yêu cầu giao',
@@ -112,11 +171,27 @@ export const landing = {
       },
     },
   },
+  /** Phần gói cước của trang giới thiệu (`#goi-cuoc`): tóm tắt danh mục gói đang bán; chi tiết ở Bảng giá. */
+  plans: {
+    title: 'Gói cước',
+    lede: 'Chọn theo số lần chạy tối ưu 3D mỗi tháng. Tối ưu tuyến không tốn credit.',
+    credit: 'Một lần chạy tối ưu 3D dùng 1 credit và cho ra cả ba phương án.',
+    credits: '{count} credit mỗi tháng',
+    compare: 'So sánh các gói',
+    loading: 'Đang tải danh sách gói',
+    error: 'Chưa tải được danh sách gói. Bảng giá có đủ thông tin của từng gói.',
+  },
   contact: {
     title: 'Liên hệ với LoadMaster',
     lede: 'Để lại thông tin, đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn.',
     signUpNote: 'Tài khoản công ty do đội LoadMaster tạo sau khi trao đổi với bạn.',
     loading: 'Đang tải form liên hệ',
+    /** Việc xảy ra sau khi khách gửi yêu cầu; bước cuối là `signUpNote`. */
+    next: {
+      title: 'Sau khi bạn gửi',
+      reply: 'Đội LoadMaster đọc yêu cầu và trả lời qua email bạn để lại.',
+      talk: 'Hai bên trao đổi về đội xe, tuyến hay chạy và gói phù hợp.',
+    },
     form: {
       fullName: 'Họ tên',
       email: 'Email',
@@ -148,9 +223,13 @@ export const landing = {
   },
   footer: {
     nav: 'Liên kết cuối trang',
+    /** Tiêu đề hai cột liên kết — là `<p>`, không phải tiêu đề mục (Bảng giá chỉ có tên gói làm tiêu đề cấp 2). */
+    product: 'Sản phẩm',
+    account: 'Tài khoản',
     landing: 'Giới thiệu',
     pricing: 'Bảng giá',
     contact: 'Liên hệ',
     signIn: 'Đăng nhập',
+    note: 'Đây là bản demo: dữ liệu trong ứng dụng là dữ liệu mẫu, kết quả tối ưu do bộ tối ưu mô phỏng tính và luôn mang nhãn MOCK RESULT.',
   },
 } as const

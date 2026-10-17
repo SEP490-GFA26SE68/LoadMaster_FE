@@ -1,16 +1,32 @@
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
- * Tiêu đề một phần của trang công khai: `<h2>` Archivo 700 24/32 kèm một câu mô tả; `id` để phần đó `aria-labelledby` vào. Nhận focus
- * bằng code (`tabIndex -1`) khi trang tới phần này qua neo (`useHashScroll`).
+ * Tiêu đề một phần của trang công khai: `<h2>` Archivo 700 cỡ `section` (28 → 44 px theo bề rộng) kèm một câu mô tả 18 px; `id` để phần
+ * đó `aria-labelledby` vào. Nhận focus bằng code (`tabIndex -1`) khi trang tới phần này qua neo (`useHashScroll`). `tone="dark"` cho
+ * phần nền tối (dải số liệu, dải liên hệ): chữ trắng và `--sky-text-2`.
  */
-export function SectionHeading({ id, title, lede }: { id: string; title: string; lede?: ReactNode }) {
+export function SectionHeading({ id, title, lede, tone = 'light', className }: {
+  id: string
+  title: string
+  lede?: ReactNode
+  tone?: 'light' | 'dark'
+  className?: string
+}) {
+  const dark = tone === 'dark'
   return (
-    <div className="flex max-w-180 flex-col gap-2">
-      <h2 id={id} tabIndex={-1} className="m-0 outline-none font-display text-h1 leading-8 font-bold tracking-[-0.3px] text-ink-strong font-stretch-112%">
+    <div className={cn('flex max-w-180 flex-col gap-3', className)}>
+      <h2
+        id={id}
+        tabIndex={-1}
+        className={cn(
+          'm-0 outline-none font-display text-section font-bold tracking-[-0.02em] text-balance font-stretch-112%',
+          dark ? 'text-sky-text' : 'text-ink-strong',
+        )}
+      >
         {title}
       </h2>
-      {lede ? <p className="m-0 text-body-lg text-ink-2">{lede}</p> : null}
+      {lede ? <p className={cn('m-0 text-intro text-pretty', dark ? 'text-sky-text-2' : 'text-ink-2')}>{lede}</p> : null}
     </div>
   )
 }
