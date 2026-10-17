@@ -122,3 +122,59 @@ export async function apiFetch<T>(
 
   return (await response.json()) as T
 }
+
+/**
+ * Gọi API có xác thực Keycloak và nhận file nhị phân.
+ * Dùng cho XLSX, PDF, ảnh hoặc các file tải về.
+ */
+export async function apiFetchBlob(
+  path: string,
+  init: RequestInit = {},
+): Promise<Blob> {
+  const token = await getValidAccessToken()
+
+  const headers = new Headers(init.headers)
+
+  headers.set(
+    'Authorization',
+    `Bearer ${token}`,
+  )
+
+  const response = await fetch(
+    `${API_BASE_URL}${path}`,
+    {
+      ...init,
+      headers,
+    },
+  )
+
+  if (response.status === 401) {
+    await keycloak.login({
+      redirectUri: window.location.href,
+    })
+
+    throw new ApiError(
+      401,
+      'Authentication session expired',
+    )
+  }
+
+  if (!response.ok) {
+    let body: ErrorResponse | undefined
+
+    try {
+      body = (await response.json()) as ErrorResponse
+    } catch {
+      body = undefined
+    }
+
+    throw new ApiError(
+      response.status,
+      body?.message ??
+        `API request failed: ${response.status}`,
+      body,
+    )
+  }
+
+  return response.blob()
+}

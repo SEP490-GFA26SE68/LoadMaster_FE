@@ -7,19 +7,45 @@ import { TRIP_LIST_TABS, type TripListTab } from './trip-list'
  * lọc). Số in đậm trắng, số việc cần xử lý màu hổ phách như số hổ phách trên tab "Đã lập kế hoạch". `review` vắng thì không có phần
  * "cần bạn xử lý": người xem không duyệt được phương án (quản lý công ty chỉ đọc, FE-0-04) nên việc đó không chờ họ.
  */
-export function TripListStats({ total, transit, review }: { total: number; transit: number; review?: number }) {
+export function TripListStats({
+  total,
+  transit,
+  review,
+}: {
+  total: number
+  transit?: number
+  review?: number
+}) {
   const t = useT()
   const format = useFormat()
   const number = 'font-semibold text-sky-text tabular-nums'
+
   return (
     <span className="flex gap-3.5">
-      <span><b className={number}>{format.integer(total)}</b> {t('trips.list.stats.total', { count: total })}</span>
-      <span aria-hidden>·</span>
-      <span><b className={number}>{format.integer(transit)}</b> {t('trips.list.stats.transit')}</span>
-      {review === undefined ? null : (
+      <span>
+        <b className={number}>{format.integer(total)}</b>{' '}
+        {t('trips.list.stats.total', { count: total })}
+      </span>
+
+      {transit !== undefined && (
         <>
           <span aria-hidden>·</span>
-          <span><b className="font-semibold text-amber-500 tabular-nums">{format.integer(review)}</b> {t('trips.list.stats.review')}</span>
+          <span>
+            <b className={number}>{format.integer(transit)}</b>{' '}
+            {t('trips.list.stats.transit')}
+          </span>
+        </>
+      )}
+
+      {review !== undefined && (
+        <>
+          <span aria-hidden>·</span>
+          <span>
+            <b className="font-semibold text-amber-500 tabular-nums">
+              {format.integer(review)}
+            </b>{' '}
+            {t('trips.list.stats.review')}
+          </span>
         </>
       )}
     </span>

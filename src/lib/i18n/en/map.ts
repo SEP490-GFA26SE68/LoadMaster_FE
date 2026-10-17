@@ -24,6 +24,7 @@ export const map = {
     touch: 'Use two fingers to move the map',
   },
   picker: {
+    expand: 'Expand map',
     search: 'Find a place',
     searchPlaceholder: 'Type a province, district or industrial park',
     results: 'Matching places',

@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
-import type { VehicleTypeInput } from '@/lib/mock-db'
 import {
   deleteVehicleType,
   fetchVehicleAssignmentRows,
   fetchVehicleTypes,
   saveVehicleType,
   setVehicleType,
+  type VehicleTypeInput,
 } from './vehicle-types-api'
 
 /**

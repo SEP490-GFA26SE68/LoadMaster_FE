@@ -1,5 +1,5 @@
 import { Printer } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
 import { Banner } from '@/components/Banner'
@@ -12,6 +12,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { LABEL_SHEET, labelsBackTarget, labelSelection } from './label-sheet'
 import { PackageLabel } from './PackageLabel'
 import { usePackageLabelsQuery } from './usePackagePoolQuery'
+import { apiFetchBlob } from '@/lib/api-client'
 
 /*
  * Bản in là một tờ riêng gắn thẳng vào `<body>`: khi in, mọi thứ khác của trang (thanh điều hướng, dải trời, toast) bị ẩn và tờ nhãn
@@ -41,55 +42,185 @@ export function PackageLabelsPage() {
   const back = labelsBackTarget(search, can)
   const touch = can('warehouse.operate')
   const chosen = selection.ids !== undefined || selection.tripId !== undefined
+  const backendPackageIds = useMemo(
+    () =>
+      (selection.ids ?? [])
+        .map(Number)
+        .filter((id) => Number.isSafeInteger(id) && id > 0),
+    [selection.ids],
+  )
   const query = usePackageLabelsQuery(selection)
   const labels = query.data ?? []
   const missing = selection.ids === undefined || !query.isSuccess ? 0 : selection.ids.length - labels.length
   const backLabel = back.kind === 'trip' ? t('sourcing.labels.backToTrip', { id: back.tripId })
     : back.kind === 'loading' ? t('sourcing.labels.backToLoading', { id: back.tripId })
-    : back.kind === 'lookup' ? t('sourcing.labels.backToLookup') : t('sourcing.labels.back')
+      : back.kind === 'lookup' ? t('sourcing.labels.backToLookup') : t('sourcing.labels.back')
+
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<unknown>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  const packageIdsKey = backendPackageIds.join(',')
+
+  useEffect(() => {
+    if (backendPackageIds.length === 0) {
+      setPreviewUrl(null)
+      return
+    }
+
+    let cancelled = false
+    let url: string | null = null
+
+    async function loadPreview() {
+      setPreviewUrl(null)
+      setExportError(null)
+
+      try {
+        const pdf = await apiFetchBlob(
+          '/api/packages/export/labels',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              packageIds: backendPackageIds,
+            }),
+          },
+        )
+
+        if (cancelled) return
+
+        url = URL.createObjectURL(pdf)
+        setPreviewUrl(url)
+      } catch (error) {
+        if (!cancelled) {
+          setExportError(error)
+        }
+      }
+    }
+
+    void loadPreview()
+
+    return () => {
+      cancelled = true
+
+      if (url) URL.revokeObjectURL(url)
+    }
+    // Chỉ tải lại khi danh sách ID thay đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageIdsKey])
+  async function handleExportLabels() {
+    if (exporting || backendPackageIds.length === 0) return
+
+    const packageIds = backendPackageIds
+
+    if (
+      packageIds.some(
+        (id) => !Number.isSafeInteger(id) || id <= 0,
+      )
+    ) {
+      setExportError(
+        new Error('Invalid package ID for PDF export'),
+      )
+      return
+    }
+
+    setExporting(true)
+    setExportError(null)
+
+    try {
+      const pdf = await apiFetchBlob(
+        '/api/packages/export/labels',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ packageIds }),
+        },
+      )
+
+      const url = URL.createObjectURL(pdf)
+      const link = document.createElement('a')
+
+      link.href = url
+      link.download = 'package-labels.pdf'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      // Không thu hồi URL ngay trước khi trình duyệt bắt đầu tải.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (error) {
+      setExportError(error)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
+
     <div className="flex min-w-0 flex-1 flex-col">
+
       <PageHero
         title={t('sourcing.labels.title')}
         meta={query.isSuccess && chosen ? t('sourcing.labels.count', { count: labels.length }) : undefined}
         description={t('pageHero.labels')}
         back={{ to: back.to, label: backLabel }}
-        actions={labels.length > 0 ? (
-          <Button variant="primary" size={touch ? 'touch' : 'md'} onClick={() => window.print()}>
+        actions={backendPackageIds.length > 0 ? (
+          <Button
+            variant="primary"
+            size={touch ? 'touch' : 'md'}
+            loading={exporting}
+            disabled={exporting}
+            onClick={() => void handleExportLabels()}
+          >
             <Printer strokeWidth={1.5} />
             {t('sourcing.labels.print')}
           </Button>
         ) : null}
       />
+      {exportError ? (
+        <div className="px-shell pt-4">
+          <Banner tone="danger">
+            {dataErrorMessage(exportError, t)}
+          </Banner>
+        </div>
+      ) : null}
       <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
-        {query.isPending ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
-        ) : query.error ? (
-          <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
-        ) : labels.length === 0 ? (
-          <div className="flex flex-col gap-4">
-            {missing > 0 ? <Banner tone="warning">{t('sourcing.labels.missing', { count: missing })}</Banner> : null}
-            <EmptyState mascot="empty" title={t('sourcing.labels.empty')} description={back.kind === 'lookup' ? t('sourcing.labels.emptyLookup') : t('sourcing.labels.emptyDescription')} />
+        {previewUrl ? (
+          <div className="overflow-hidden rounded-lg border border-border bg-bg">
+            <iframe
+              src={previewUrl}
+              title={t('sourcing.labels.title')}
+              className="h-[75vh] w-full"
+            />
+          </div>
+        ) : exportError ? (
+          <Banner tone="danger">
+            {dataErrorMessage(exportError, t)}
+          </Banner>
+        ) : backendPackageIds.length > 0 ? (
+          <div className="flex justify-center py-12">
+            <Spinner />
           </div>
         ) : (
-          <div className={touch ? 'flex flex-col gap-4 text-body-lg' : 'flex flex-col gap-4'}>
-            <Banner tone="info" icon={Printer}>{t('sourcing.labels.hint')}</Banner>
-            {missing > 0 ? <Banner tone="warning">{t('sourcing.labels.missing', { count: missing })}</Banner> : null}
-            <section aria-label={t('sourcing.labels.sheet')} className="flex flex-wrap items-start gap-4">
-              {labels.map((label) => <PackageLabel key={label.package.id} label={label} />)}
-            </section>
-          </div>
+          <EmptyState
+            mascot="empty"
+            title={t('sourcing.labels.empty')}
+            description={t('sourcing.labels.emptyDescription')}
+          />
         )}
       </main>
       {labels.length > 0
         ? createPortal(
-            <div data-label-sheet aria-hidden>
-              <style>{PRINT_CSS}</style>
-              {labels.map((label) => <PackageLabel key={label.package.id} label={label} print />)}
-            </div>,
-            document.body,
-          )
+          <div data-label-sheet aria-hidden>
+            <style>{PRINT_CSS}</style>
+            {labels.map((label) => <PackageLabel key={label.package.id} label={label} print />)}
+          </div>,
+          document.body,
+        )
         : null}
     </div>
   )

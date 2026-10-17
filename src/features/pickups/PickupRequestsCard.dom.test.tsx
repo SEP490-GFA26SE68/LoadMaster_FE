@@ -114,7 +114,7 @@ test('a form with nothing filled in is refused in place and sends nothing; a tri
 })
 
 test('the manager reads the requests but has no button to send one', async () => {
-  renderCard('manager')
+  renderCard('companyManager')
   const card = within(await screen.findByRole('region', { name: 'Nhận hàng dọc đường' }, SLOW))
   expect(await card.findByText('PKR-001', undefined, SLOW)).toBeInTheDocument()
   expect(card.queryByRole('button', { name: 'Nhận hàng dọc đường' })).not.toBeInTheDocument()

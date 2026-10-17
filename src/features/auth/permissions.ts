@@ -6,6 +6,15 @@ import type { Role } from '@/types/user'
  * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (tối ưu tuyến, giám
  * sát, sự cố, nhận hàng dọc đường, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
  */
+
+/**
+ * Kho kiện:
+ * - Warehouse: xem và quản lý kiện, import Excel, quản lý loại kiện.
+ * - Dispatcher: chỉ xem và tra cứu kiện, không được thêm/sửa/xóa.
+ * - CompanyManager: xem kiện.
+ *
+ * Yêu cầu giao và lập chuyến thuộc luồng điều phối.
+ */
 export const PERMISSIONS = [
   'companies.manage',
   'users.manage',
@@ -73,7 +82,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'dashboard.view',
     'reports.export',
     'requirements.view',
-    'requirements.edit',
     'packages.view',
     'trips.view',
     'plans.view',
@@ -87,7 +95,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'dashboard.view',
     'requirements.view',
     'packages.view',
-    'packages.manage',
     'packages.lookup',
     'labels.print',
     'trips.view',
@@ -105,10 +112,13 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'exceptions.resolve',
     'pickups.create',
     'pickups.approve',
+    'requirements.edit'
   ],
 
   warehouse: [
     'support.create',
+    'packages.view',
+    'packages.manage',
     'packages.lookup',
     'labels.print',
     'warehouse.operate',

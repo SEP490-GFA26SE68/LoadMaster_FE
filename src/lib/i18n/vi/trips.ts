@@ -229,6 +229,15 @@ export const trips = {
   },
   /** Vỏ màn Chi tiết chuyến: dải trời, menu thao tác, banner theo pha, cột phải (LM-088, V2.3 LM-103). */
   detail: {
+    deliveryStops: 'Danh sách điểm giao',
+    stopCount: 'Điểm giao',
+    noStops: 'Chuyến chưa có điểm giao',
+    noStopsHint: 'Gán yêu cầu giao để tạo điểm giao cho chuyến.',
+    unnamedStop: 'Điểm giao chưa đặt tên',
+    requirementId: 'Yêu cầu giao #',
+    plannedArrival: 'Đến dự kiến',
+    actualArrival: 'Đến thực tế',
+
     runOptimization: 'Chạy tối ưu',
     openPlan: 'Xem phương án 3D',
     loading: 'Đang tải chuyến',
