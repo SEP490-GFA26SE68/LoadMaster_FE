@@ -91,7 +91,7 @@ export const apiErrors = {
   SUBSCRIPTION_PLAN_NOT_FOUND: 'The plan was not found.',
   SUBSCRIPTION_PLAN_ALREADY_EXISTS: 'This plan already exists.',
   SUBSCRIPTION_TIER_ALREADY_EXISTS: 'This tier already has a plan on sale.',
-  PLAN_IN_USE: 'Companies still use this plan, so it cannot be deleted — stop selling it instead.',
+  PLAN_IN_USE: 'Companies use or have used this plan, so it cannot be deleted.',
   ACTIVE_SUBSCRIPTION_ALREADY_EXISTS: 'The company already has an active plan.',
   NO_ACTIVE_SUBSCRIPTION: 'The company has no active plan.',
   PAYMENT_FAILED: 'The payment did not go through.',

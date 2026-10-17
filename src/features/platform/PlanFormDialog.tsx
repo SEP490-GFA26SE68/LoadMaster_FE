@@ -1,71 +1,90 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Tags } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Controller, useForm, useWatch, type UseFormReturn } from 'react-hook-form'
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
-import { optionsFromLabels, SelectField } from '@/components/ui/SelectField'
+import { SelectField } from '@/components/ui/SelectField'
 import { Switch } from '@/components/ui/Switch'
 import { useT } from '@/lib/i18n'
 import type { PlanInput, PlanPatch, PlanTier, SubscriptionPlan } from '@/lib/mock-db'
 import {
   CREDITS_INVALID,
+  CREDITS_POSITIVE,
   emptyPlanForm,
+  isUnlimitedForm,
   NAME_REQUIRED,
   PLAN_NAME_MAX,
-  planFormSchema,
+  planFormSchemaFor,
   PRICE_INVALID,
   toPlanForm,
   toPlanInput,
   toPlanPatch,
   type PlanFormInput,
+  type PlanFormRules,
   type PlanFormValues,
 } from './plan-form'
 
 const NUMERIC = { type: 'number', numeric: true, inputMode: 'numeric', step: 1 } as const
 
-/** Ô credit tắt khi chọn "không giới hạn"; đọc công tắc bằng `useWatch` ở component con để thân form không vẽ lại theo từng phím. */
-function CreditsField({ form, error }: { form: UseFormReturn<PlanFormInput, unknown, PlanFormValues>; error: boolean }) {
+/** Việc form làm được theo nguồn dữ liệu: công tắc "không giới hạn" hay credit theo hạng, công tắc mở bán, hạng chọn được khi thêm. */
+export type PlanFormCatalog = PlanFormRules & { readonly saleSwitch: boolean; readonly tiers: readonly PlanTier[] }
+
+/**
+ * Ô credit tắt khi gói không giới hạn — theo công tắc, hoặc theo hạng khi `unlimitedByTier` (không có công tắc). Đọc công tắc và hạng bằng
+ * `useWatch` ở component con để thân form không vẽ lại theo từng phím.
+ */
+function CreditsField({ form, error, rules }: { form: UseFormReturn<PlanFormInput, unknown, PlanFormValues>; error: boolean; rules: PlanFormRules }) {
   const t = useT()
   const { control, register } = form
-  const unlimited = useWatch({ control, name: 'unlimited' })
+  const [unlimitedSwitch, tier] = useWatch({ control, name: ['unlimited', 'tier'] })
+  const unlimited = isUnlimitedForm({ tier, unlimited: unlimitedSwitch }, rules)
+  const message = rules.unlimitedByTier ? CREDITS_POSITIVE : CREDITS_INVALID
   return (
     <div className="flex flex-col gap-3">
       <Input
         label={t('platform.form.credits')}
         required={!unlimited}
         disabled={unlimited}
-        error={error && !unlimited ? t(CREDITS_INVALID) : undefined}
+        hint={rules.unlimitedByTier && unlimited ? t('platform.form.unlimitedByTier') : undefined}
+        error={error && !unlimited ? t(message) : undefined}
         {...NUMERIC}
         {...register('monthlyCredits', { valueAsNumber: true })}
       />
-      <Controller
-        control={control}
-        name="unlimited"
-        render={({ field }) => <Switch label={t('platform.form.unlimited')} checked={field.value} onCheckedChange={field.onChange} />}
-      />
+      {rules.unlimitedByTier ? null : (
+        <Controller
+          control={control}
+          name="unlimited"
+          render={({ field }) => <Switch label={t('platform.form.unlimited')} checked={field.value} onCheckedChange={field.onChange} />}
+        />
+      )}
     </div>
   )
 }
 
 /**
- * Thêm / sửa gói cước (FE-8-02, D-90). `plan` vắng là thêm gói: chọn hạng (mở sẵn hạng chưa có gói đang bán — `defaultTier`), có công tắc
- * "Mở bán ngay". Có `plan` là sửa: hạng chỉ đọc (đổi hạng làm lệch thuật toán và tính năng của công ty đang dùng), cờ bán là công tắc ở danh
- * sách. Form nói rõ giá và credit mới áp dụng từ kỳ gia hạn kế tiếp. Kho kiểm lại — `PLAN_TIER_TAKEN`, `PLAN_INVALID` hiện qua toast của màn.
+ * Thêm / sửa gói cước (FE-8-02, D-90). `plan` vắng là thêm gói: chọn hạng trong `catalog.tiers` (mở sẵn hạng chưa có gói đang bán —
+ * `defaultTier`), có công tắc "Mở bán ngay" khi `catalog.saleSwitch`. Có `plan` là sửa: hạng chỉ đọc (đổi hạng làm lệch thuật toán và
+ * tính năng của công ty đang dùng), cờ bán là công tắc ở danh sách. Form nói rõ giá và credit mới áp dụng từ kỳ gia hạn kế tiếp. Kho
+ * kiểm lại — `PLAN_TIER_TAKEN`, `PLAN_INVALID` hiện qua toast của màn. `code` là mã hiện ở tiêu đề khi sửa.
  */
-export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending, onCreate, onUpdate }: {
+export function PlanFormDialog({ open, onOpenChange, plan, code, defaultTier, catalog, pending, onCreate, onUpdate }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   plan: SubscriptionPlan | null
+  code: string
   defaultTier: PlanTier
+  catalog: PlanFormCatalog
   pending: boolean
   onCreate: (input: PlanInput) => void
   onUpdate: (planId: string, patch: PlanPatch) => void
 }) {
   const t = useT()
-  const form = useForm<PlanFormInput, unknown, PlanFormValues>({ resolver: zodResolver(planFormSchema) })
+  const rules: PlanFormRules = useMemo(() => ({ unlimitedByTier: catalog.unlimitedByTier }), [catalog.unlimitedByTier])
+  const resolver = useMemo(() => zodResolver(planFormSchemaFor(rules)), [rules])
+  const form = useForm<PlanFormInput, unknown, PlanFormValues>({ resolver })
   const { reset, register, control, formState: { errors } } = form
 
   useEffect(() => {
@@ -80,8 +99,8 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
     : undefined
 
   function handleValid(values: PlanFormValues) {
-    if (plan) onUpdate(plan.id, toPlanPatch(values))
-    else onCreate(toPlanInput(values))
+    if (plan) onUpdate(plan.id, toPlanPatch(values, rules))
+    else onCreate(toPlanInput(values, rules))
   }
 
   return (
@@ -90,7 +109,7 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
         <form noValidate onSubmit={form.handleSubmit(handleValid)}>
           <DialogHeader
             icon={Tags}
-            title={plan ? t('platform.form.editTitle', { id: plan.id }) : t('platform.form.createTitle')}
+            title={plan ? t('platform.form.editTitle', { id: code }) : t('platform.form.createTitle')}
             description={t('platform.form.description')}
           />
           <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
@@ -102,7 +121,7 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
                 control={control}
                 name="tier"
                 label={t('platform.form.tier')}
-                options={optionsFromLabels({ BASIC: t('common.planTiers.BASIC'), PRO: t('common.planTiers.PRO'), ULTIMATE: t('common.planTiers.ULTIMATE') })}
+                options={catalog.tiers.map((tier) => ({ value: tier, label: t(`common.planTiers.${tier}`) }))}
                 hint={t('platform.form.onSaleHint')}
               />
             )}
@@ -114,8 +133,8 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
               {...NUMERIC}
               {...register('priceVnd', { valueAsNumber: true })}
             />
-            <CreditsField form={form} error={errors.monthlyCredits !== undefined} />
-            {plan ? null : (
+            <CreditsField form={form} error={errors.monthlyCredits !== undefined} rules={rules} />
+            {plan || !catalog.saleSwitch ? null : (
               <Controller
                 control={control}
                 name="active"

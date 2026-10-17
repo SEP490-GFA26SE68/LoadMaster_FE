@@ -1,6 +1,5 @@
 import { RotateCcw } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useSearchParams, useNavigate } from 'react-router'
+import { Navigate, useSearchParams, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { EmptyState } from '@/components/EmptyState'
@@ -10,6 +9,8 @@ import { Card, CardBody } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT, type TFunction } from '@/lib/i18n'
 import { MockDbError, type PaymentTransaction } from '@/lib/mock-db'
+import { BILLING_CAPABILITIES } from './billing-api'
+import { CheckoutRow } from './CheckoutRow'
 import type { Checkout } from './payment-api'
 import { PAYMENT_PARAM } from './payment-path'
 import { useCheckoutQuery, useSettlePaymentMutation } from './useBillingQuery'
@@ -24,23 +25,19 @@ function outcomeMessage(t: TFunction, format: ReturnType<typeof useFormat>, resu
   return t(choice === 'CANCELLED' && result.status === 'FAILED' ? 'payment.toasts.CANCELLED' : 'payment.toasts.FAILED')
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-6 border-b border-line-soft py-3 last:border-b-0">
-      <dt className="text-small text-ink-3">{label}</dt>
-      <dd className="m-0 text-right font-medium text-ink-strong">{children}</dd>
-    </div>
-  )
-}
-
 /**
  * Thanh toán giả lập `/thanh-toan/gia-lap?giao-dich=<mã>` (FE-8-04, D-89) — thay cổng thanh toán thật khi chưa có backend; trung tính,
  * không mang tên, logo hay màu của cổng nào, và nói rõ đây là giả lập. Hiện số tiền, nội dung, mã giao dịch và ba nút Thành công /
  * Thất bại / Huỷ. Thành công kích hoạt gói hoặc cộng credit **đúng một lần** — việc đó do kho bảo đảm (`settlePayment` trả nguyên kết
  * quả cũ nếu giao dịch đã xử lý), trang không tự chặn thêm: giao dịch đã xử lý thì chỉ hiện kết quả, không còn nút. Xong thì về
- * `/goi-cuoc` kèm toast nói đúng điều đã xảy ra. Mã không có, hoặc của công ty khác: màn "Không tìm thấy giao dịch".
+ * `/goi-cuoc` kèm toast nói đúng điều đã xảy ra. Mã không có, hoặc của công ty khác: màn "Không tìm thấy giao dịch". Khi nối backend
+ * trang không dùng (thanh toán đi qua `/thanh-toan/ket-qua`) nên về gói cước.
  */
 export function PaymentSimulationPage() {
+  return BILLING_CAPABILITIES.simulation ? <PaymentSimulation /> : <Navigate to="/goi-cuoc" replace />
+}
+
+function PaymentSimulation() {
   const t = useT()
   const format = useFormat()
   const navigate = useNavigate()
@@ -90,11 +87,11 @@ export function PaymentSimulationPage() {
                 {format.currency(data.payment.amountVnd)}
               </p>
               <dl className="m-0 flex flex-col">
-                <Row label={t('payment.description')}>
+                <CheckoutRow label={t('payment.description')}>
                   {t(`payment.purposes.${data.payment.purpose}`, { plan: data.planName ?? '', credits: format.integer(data.payment.credits ?? 0) })}
-                </Row>
-                <Row label={t('payment.code')}><span className="font-mono text-body tabular-nums">{data.payment.id}</span></Row>
-                {data.payment.status === 'PENDING' ? null : <Row label={t('payment.status')}>{t(`billing.payments.statuses.${data.payment.status}`)}</Row>}
+                </CheckoutRow>
+                <CheckoutRow label={t('payment.code')}><span className="font-mono text-body tabular-nums">{data.payment.id}</span></CheckoutRow>
+                {data.payment.status === 'PENDING' ? null : <CheckoutRow label={t('payment.status')}>{t(`billing.payments.statuses.${data.payment.status}`)}</CheckoutRow>}
               </dl>
               {data.payment.status === 'PENDING' ? (
                 <>

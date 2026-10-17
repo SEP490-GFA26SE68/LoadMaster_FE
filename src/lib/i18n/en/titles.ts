@@ -37,6 +37,7 @@ export const titles = {
   subscriptionPlans: 'Subscription plans',
   billing: 'Plan and credits',
   payment: 'Simulated payment',
+  paymentResult: 'Confirm payment',
   companies: 'Companies',
   support: 'Customer support',
   landing: 'About',

@@ -102,7 +102,7 @@ export const apiErrors = {
   SUBSCRIPTION_PLAN_NOT_FOUND: 'Không tìm thấy gói cước.',
   SUBSCRIPTION_PLAN_ALREADY_EXISTS: 'Gói cước này đã có.',
   SUBSCRIPTION_TIER_ALREADY_EXISTS: 'Hạng gói này đã có gói đang bán.',
-  PLAN_IN_USE: 'Gói đang có công ty dùng, không xoá được — hãy ngừng bán.',
+  PLAN_IN_USE: 'Gói đang có hoặc từng có công ty dùng nên không xoá được.',
   ACTIVE_SUBSCRIPTION_ALREADY_EXISTS: 'Công ty đang có gói còn hiệu lực.',
   NO_ACTIVE_SUBSCRIPTION: 'Công ty chưa có gói còn hiệu lực.',
   PAYMENT_FAILED: 'Thanh toán không thành công.',

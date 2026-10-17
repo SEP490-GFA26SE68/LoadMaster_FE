@@ -21,6 +21,7 @@ export const pageHero = {
   subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
   billing: 'The company’s plan, credit balance, history and payments.',
   payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
+  paymentResult: 'Confirm a payment to subscribe or top up credits with the server.',
   companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
   support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
   contacts: 'Requests that guests send from the website: take them on, change the status and keep internal notes.',

@@ -1,5 +1,5 @@
 import { Plus, RotateCcw } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DataTable } from '@/components/DataTable'
@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { PlanInput, PlanPatch } from '@/lib/mock-db'
-import { firstFreeTier } from './plan-form'
-import { PlanFormDialog } from './PlanFormDialog'
+import { PLAN_TIERS, type PlanInput, type PlanPatch } from '@/lib/mock-db'
+import { firstFreeTier, freeTiers } from './plan-form'
+import { PlanFormDialog, type PlanFormCatalog } from './PlanFormDialog'
 import { createPlanColumns, PlansTableContext, type PlansTableValue } from './plans-table'
-import type { PlanRow } from './subscription-plans-api'
+import { PLAN_CATALOG_CAPABILITIES, type PlanRow } from './subscription-plans-api'
 import {
   useCreatePlanMutation,
   useDeletePlanMutation,
@@ -26,6 +26,7 @@ import {
  * Danh mục gói cước `/nen-tang/goi` (FE-8-02, D-90) — màn chính của quản lý nền tảng (`subscriptionPlans.manage`). Bảng gói: hạng, giá,
  * credit mỗi tháng, thuật toán, số công ty đang dùng, công tắc đang bán; gói chưa được nhóm chốt giá mang nhãn "Giá trị tạm — chờ chốt"
  * cho tới khi được sửa. Thêm / sửa ở `PlanFormDialog`, xoá gói chỉ khi không còn công ty dùng (mục Xoá mờ kèm lý do). Một nút chính: Thêm gói.
+ * Nối backend (`PLAN_CATALOG_CAPABILITIES`): không có công tắc bán, chỉ thêm được gói cho hạng chưa có gói — hết hạng thì nút mờ kèm lý do.
  */
 export function PlansPage() {
   const t = useT()
@@ -36,9 +37,15 @@ export function PlansPage() {
   const remove = useDeletePlanMutation()
   const [editing, setEditing] = useState<{ row: PlanRow | null } | null>(null)
   const [deleting, setDeleting] = useState<PlanRow | null>(null)
+  const addHintId = useId()
 
   const rows = useMemo(() => query.data ?? [], [query.data])
   const columns = useMemo(() => createPlanColumns(t), [t])
+  const catalog: PlanFormCatalog = useMemo(() => {
+    const tiers = PLAN_CATALOG_CAPABILITIES.createInTakenTier ? [...PLAN_TIERS] : freeTiers(rows.map((row) => row.plan))
+    return { unlimitedByTier: PLAN_CATALOG_CAPABILITIES.unlimitedByTier, saleSwitch: PLAN_CATALOG_CAPABILITIES.saleToggle, tiers }
+  }, [rows])
+  const addBlocked = catalog.tiers.length === 0
 
   function showError(error: unknown) {
     toast.error(dataErrorMessage(error, t))
@@ -93,11 +100,15 @@ export function PlansPage() {
     togglingId: toggle.isPending ? (toggle.variables?.planId ?? null) : null,
   }
 
+  // Hết hạng để thêm (backend: mỗi hạng một gói, mọi gói đều đang bán): nút mờ, lý do ngay cạnh nút (LM-092)
   const addButton = (
-    <Button variant="primary" onClick={() => setEditing({ row: null })}>
-      <Plus strokeWidth={1.5} />
-      {t('platform.add')}
-    </Button>
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {addBlocked ? <p id={addHintId} className="m-0 max-w-80 text-small text-sky-text">{t('platform.allTiersTaken')}</p> : null}
+      <Button variant="primary" disabled={addBlocked} aria-describedby={addBlocked ? addHintId : undefined} onClick={() => setEditing({ row: null })}>
+        <Plus strokeWidth={1.5} />
+        {t('platform.add')}
+      </Button>
+    </div>
   )
   const showTable = query.isSuccess && rows.length > 0
 
@@ -134,7 +145,9 @@ export function PlansPage() {
         open={editing !== null}
         onOpenChange={(open) => { if (!open) setEditing(null) }}
         plan={editing?.row?.plan ?? null}
+        code={editing?.row?.code ?? ''}
         defaultTier={firstFreeTier(rows.map((row) => row.plan))}
+        catalog={catalog}
         pending={create.isPending || update.isPending}
         onCreate={handleCreate}
         onUpdate={handleUpdate}
@@ -143,7 +156,7 @@ export function PlansPage() {
         open={deleting !== null}
         onOpenChange={(open) => { if (!open) setDeleting(null) }}
         title={deleting ? t('platform.deleteDialog.title', { name: deleting.plan.name }) : ''}
-        description={deleting ? t('platform.deleteDialog.description', { id: deleting.plan.id }) : ''}
+        description={deleting ? t('platform.deleteDialog.description', { id: deleting.code }) : ''}
         cancelLabel={t('platform.deleteDialog.cancel')}
         confirmLabel={t('platform.deleteDialog.confirm')}
         danger
