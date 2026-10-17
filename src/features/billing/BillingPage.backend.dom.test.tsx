@@ -101,7 +101,7 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   await user.click(screen.getByRole('tab', { name: /Hoá đơn/ }))
   await waitFor(() => expect(rowsOf()).toHaveLength(1))
   expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell').map((cell) => cell.textContent?.replace(/\s+/g, ' ')).slice(1))
-    .toStrictEqual(['INV-1-1792203135003', '2026-10', 'Pro', '1.490.000 ₫', 'Đã trả'])
+    .toStrictEqual(['INV-1-1792203135003', '10/2026', 'Pro', '1.490.000 ₫', 'Đã trả'])
 })
 
 test('topping up at the backend price opens the confirmation page with the gateway transaction code', async () => {

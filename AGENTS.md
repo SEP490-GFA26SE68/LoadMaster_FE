@@ -833,6 +833,7 @@ Giờ              14:30                      (theo LM-027)
 ```
 
 `format.dayMonth` ("14/09" · "Sep 14") cắt năm khỏi mẫu ngày đầy đủ — CLDR tiếng Việt cho mẫu ngày + tháng là "dd-MM" (LM-090, LM-094).
+`format.monthYear` ("10/2026" · "Oct 2026") đọc kỳ "YYYY-MM" của máy chủ, cắt ngày khỏi cùng mẫu đó (mẫu tháng + năm của vi là "tháng 10, 2026").
 
 Đặt các hàm format trong `src/lib/format.ts` và dùng lại, không viết rải rác. Từ LM-027 hàm
 format nhận locale đang chọn.
