@@ -72,7 +72,9 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 2' }))
   expect(dialog.queryByRole('tablist')).toBeNull()
-  const code = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
+  // Nhãn và gợi ý nói đúng mã gõ được: dữ liệu điểm của máy chủ chưa có mã QR hay mã bên gửi
+  const code = dialog.getByRole('textbox', { name: 'Mã kiện' })
+  expect(dialog.getByText(/Mã đứng đầu dòng kiện trên màn này/)).toBeInTheDocument()
   await userEvent.type(code, 'lb-pk-0007')
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   expect(await dialog.findByRole('status')).toHaveTextContent('Vừa dỡ LB-PK-0007 · Thùng dầu ăn 12 chai.')

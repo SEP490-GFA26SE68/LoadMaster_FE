@@ -1161,8 +1161,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — chỉ chuyến đang vận chuyển, thẻ bỏ tên tuyến, số kiện, điểm đang giao.
-  Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã in trên
-  nhãn (`trackingBarcode`, không có thì mã kiện; `PackageVerify methods={['CODE']}`) → `POST …/packages/{id}/unload`; backend không trả kiện
+  Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã của kiện
+  (`packageOfCode`: `trackingBarcode`, mã kho kiện in ở góc nhãn, mã của bên gửi / mã QR khi backend trả; không phân biệt hoa thường; mã bên gửi
+  trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`; `PackageVerify methods={['CODE']}` kèm `codeLabel` / `codeHint` riêng) →
+  `POST …/packages/{id}/unload`; backend không trả kiện
   đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
   `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
 

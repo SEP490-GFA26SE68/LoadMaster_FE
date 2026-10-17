@@ -147,17 +147,41 @@ test('dỡ: mã gõ khớp mã trên nhãn (không phân biệt hoa thường), 
   expect(screen.kind === 'stop' && screen.view.remaining).toBe(1)
 })
 
-test('dỡ: mã không khớp hoặc kiện đã ghi thì không gọi backend', async () => {
+test('dỡ: mã không khớp, trùng nhiều kiện hoặc kiện đã ghi thì không gọi backend', async () => {
   onStop()
   const driver = createDriverBackend()
   await driver.fetchStopScreen('1')
-  // Mã kiện của backend chỉ khớp kiện không có mã vạch: kiện có mã vạch phải gõ mã vạch
-  expect(await rejection(driver.unload('1', { stopNumber: 2, code: '11' }))).toMatchObject({ code: 'UNLOAD_CODE_UNMATCHED', params: { code: '11' } })
-  routes['POST /api/driver/packages/12/unload'] = ok({ packageId: 12, stopId: 2, remainingPackagesCount: 1 })
-  await driver.unload('1', { stopNumber: 2, code: '12' })
   const before = calls.length
-  expect(await rejection(driver.unload('1', { stopNumber: 2, code: '12' }))).toMatchObject({ code: 'DUPLICATE_UNLOAD', params: { code: '12' } })
-  expect(calls).toHaveLength(before)
+  expect(await rejection(driver.unload('1', { stopNumber: 2, code: ' xx-1 ' }))).toMatchObject({ code: 'UNLOAD_CODE_UNMATCHED', params: { code: 'xx-1' } })
+  // Mã của kho kiện (số in ở góc trên nhãn) khớp cả kiện có mã vạch; lần gõ thứ hai là kiện đã ghi
+  routes['POST /api/driver/packages/11/unload'] = ok({ packageId: 11, stopId: 2, remainingPackagesCount: 1 })
+  expect(await driver.unload('1', { stopNumber: 2, code: '11' })).toStrictEqual({ packageInstanceId: '11' })
+  const sent = calls.length
+  expect(sent).toBe(before + 1)
+  expect(await rejection(driver.unload('1', { stopNumber: 2, code: 'LB-PK-0007' }))).toMatchObject({ code: 'DUPLICATE_UNLOAD', params: { code: 'LB-PK-0007' } })
+  expect(calls).toHaveLength(sent)
+})
+
+test('dỡ: backend trả mã của bên gửi thì gõ được mã đó; mã trùng nhiều kiện của điểm thì từ chối, không gọi backend', async () => {
+  routes['GET /api/driver/trips'] = ok([TRIP])
+  routes['GET /api/driver/trips/1/current-stop'] = ok({
+    ...STOP,
+    packages: [
+      { ...STOP.packages[0], packageCode: 'BHXDA-1001' },
+      { ...STOP.packages[1], packageCode: 'BHXDA-2002' },
+      { packageId: 13, packageName: 'Thùng mì', trackingBarcode: 'LB-PK-0009', packageCode: 'BHXDA-2002', weight: 5, stepSequence: 2, unloadOrder: 3 },
+    ],
+  })
+  const driver = createDriverBackend()
+  const screen = await driver.fetchStopScreen('1')
+  // Dòng kiện đứng đầu bằng mã của bên gửi khi nó duy nhất trong điểm; trùng thì bằng mã riêng của kiện
+  expect(screen.kind === 'stop' && screen.view.items.map(({ item }) => item.label)).toStrictEqual(['BHXDA-1001', '12', 'LB-PK-0009'])
+  routes['POST /api/driver/packages/11/unload'] = ok({ packageId: 11, stopId: 2, remainingPackagesCount: 2 })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'bhxda-1001' })).toStrictEqual({ packageInstanceId: '11' })
+  expect(paths().at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
+  const sent = calls.length
+  expect(await rejection(driver.unload('1', { stopNumber: 2, code: 'BHXDA-2002' }))).toMatchObject({ code: 'UNLOAD_CODE_AMBIGUOUS', params: { code: 'BHXDA-2002', count: 2 } })
+  expect(calls).toHaveLength(sent)
 })
 
 test('dỡ: 409 là kiện đã dỡ từ trước — ghi nhận lại; 400 là kiện không thuộc điểm; còn 0 kiện là cả điểm đã dỡ', async () => {
