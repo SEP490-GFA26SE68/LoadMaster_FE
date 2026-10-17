@@ -22,17 +22,17 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('tám cột vai trò theo thứ tự nền tảng → công ty, 34 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
+test('tám cột vai trò theo thứ tự nền tảng → công ty, 35 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 34 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(49)
+  // Một dòng tiêu đề, 13 dòng khu vực, 35 dòng quyền, một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(50)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(34)
+  expect(permissionRows).toHaveLength(35)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
@@ -47,6 +47,7 @@ test('quản trị hệ thống và quản trị công ty quản lý người d�
   const matrix = renderMatrix()
   // Cột: quản trị hệ thống, quản lý nền tảng, hỗ trợ, quản trị công ty, quản lý, điều phối, kho, tài xế
   expect(cellsOf(matrix, 'Tạo và quản lý công ty khách hàng')).toStrictEqual([YES, NO, NO, NO, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Xem và sửa thông tin công ty của mình')).toStrictEqual([NO, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Quản lý người dùng')).toStrictEqual([YES, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Xem nhật ký hệ thống')).toStrictEqual([YES, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Tạo, sửa gói cước và chính sách credit')).toStrictEqual([NO, YES, NO, NO, NO, NO, NO, NO])

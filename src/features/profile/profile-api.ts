@@ -1,9 +1,11 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: saveProfile, changePassword
+ *   chưa có ở BE: saveProfile, changePassword (PATCH /api/users/me, đổi mật khẩu của chính mình)
  *   isIncorrectPassword → không gọi BE (đọc mã lỗi)
+ *   accountConsoleUrl → không gọi BE (trang tài khoản của Keycloak: /realms/{realm}/account)
  */
 
+import { backendConfig } from '@/lib/backend-config'
 import { getMockDb, isMockDbError, type ProfileChanges } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 
@@ -22,6 +24,15 @@ export type PasswordChange = { currentPassword: string; nextPassword: string }
 // chưa có ở BE
 export function changePassword({ currentPassword, nextPassword }: PasswordChange): Promise<void> {
   return getMockDb().changePassword(currentPassword, nextPassword)
+}
+
+/**
+ * Trang tài khoản của Keycloak cho người đăng nhập bằng Keycloak: đổi mật khẩu ở đó — app không thu mật khẩu (mục 9 "Nối backend") và
+ * backend chưa có lối đổi mật khẩu của chính mình. Địa chỉ theo `VITE_KEYCLOAK_URL` / `VITE_KEYCLOAK_REALM`.
+ */
+// không gọi BE (Keycloak: /realms/{realm}/account)
+export function accountConsoleUrl(): string {
+  return `${backendConfig.keycloak.url}/realms/${encodeURIComponent(backendConfig.keycloak.realm)}/account`
 }
 
 /** Kho từ chối vì mật khẩu hiện tại sai: màn báo lỗi tại ô "Mật khẩu hiện tại", không báo chung. */

@@ -29,6 +29,8 @@ export const NAV_SCREENS = {
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
   // Công ty: quản trị hệ thống (FE-8-06)
   companies: { to: '/nen-tang/cong-ty', labelKey: 'nav.companies', icon: Building2, permission: 'companies.manage' },
+  // Thông tin công ty của chính mình: quản trị công ty
+  companyProfile: { to: '/cong-ty', labelKey: 'nav.companyProfile', icon: Building2, permission: 'companyProfile.manage' },
   // Hỗ trợ: Hỗ trợ khách hàng (FE-8-07)
   support: { to: '/ho-tro', labelKey: 'nav.support', icon: LifeBuoy, permission: 'support.handle' },
   // Liên hệ của khách gửi từ trang giới thiệu công khai: ba vai trò nền tảng
@@ -48,7 +50,8 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * Mục điều hướng của từng vai trò, theo thứ tự của vai trò đó (FE-0-04): màn chính của vai trò đứng đầu. Danh sách là phần chọn lọc
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
- * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03).
+ * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03)
+ *   · Thông tin công ty.
  *   Quản lý nền tảng: Gói cước (FE-8-02) · Liên hệ của khách. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách. Liên hệ của khách luôn đứng cuối:
  *   màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò.
  * - Quản lý công ty lập yêu cầu giao (FE-4b-02) và xem kho kiện chỉ đọc (FE-3b-03); điều phối viên xem yêu cầu giao để đưa vào chuyến.
@@ -59,7 +62,7 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemAdmin: ['companies', 'users', 'audit', 'contacts'],
   systemManager: ['plans', 'contacts'],
   systemSupporter: ['support', 'contacts'],
-  companyAdmin: ['users', 'audit', 'billing'],
+  companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
   manager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
   warehouse: ['warehouse'],

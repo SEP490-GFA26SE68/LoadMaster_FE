@@ -39,6 +39,7 @@ export const titles = {
   payment: 'Simulated payment',
   paymentResult: 'Confirm payment',
   companies: 'Companies',
+  companyProfile: 'Company details',
   support: 'Customer support',
   landing: 'About',
   pricing: 'Pricing',

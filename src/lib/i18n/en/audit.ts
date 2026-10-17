@@ -58,6 +58,8 @@ export const audit = {
     loading: 'Loading the log…',
     errorTitle: 'Could not load the log',
     errorDescription: 'The data store did not answer. Try again in a moment.',
+    unavailableTitle: 'The server has no activity log yet',
+    unavailableDescription: 'The LoadMaster server does not record what users do yet, so there are no events to show here.',
     retry: 'Try again',
     empty: 'No events yet.',
     noMatch: 'No event matches the filters.',

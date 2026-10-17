@@ -16,6 +16,7 @@ export const nav = {
   plans: 'Plans',
   billing: 'Plan and credits',
   companies: 'Companies',
+  companyProfile: 'Company details',
   support: 'Support',
   supportRequests: 'Support requests',
   contacts: 'Guest contacts',

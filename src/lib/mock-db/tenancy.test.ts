@@ -404,6 +404,9 @@ const PROBES = {
   listCompanyOverview: { scope: 'session' },
   createCompany: { scope: 'session' },
   updateCompany: { scope: 'directory', forbidden: { 'công ty kia': ({ db, other }) => db.updateCompany(other.id, COMPANY_INFO) } },
+  // Thông tin công ty của chính phiên (`/cong-ty`): không nhận mã công ty nào — công ty và vai trò kiểm ở companies.test.ts
+  getCompanyProfile: { scope: 'session' },
+  updateCompanyProfile: { scope: 'session' },
   // Yêu cầu hỗ trợ (FE-8-07): người của công ty chỉ thấy yêu cầu do mình gửi (viewer của mỗi công ty là người gửi yêu cầu seed của nó)
   listSupportTickets: { scope: 'directory', list: { call: ({ db }) => db.listSupportTickets(), ids: idsOf, own: (c) => c.tickets } },
   getSupportTicket: { scope: 'directory', hidden: ({ db, other }) => db.getSupportTicket(other.tickets[0]!) },

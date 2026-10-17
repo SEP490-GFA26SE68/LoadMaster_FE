@@ -114,6 +114,29 @@ test('khoá, mở khoá, xoá, đặt lại mật khẩu', async () => {
   ])
 })
 
+test('danh sách nhiều trang: đọc tới trang cuối của PageResponse', async () => {
+  const pages = [
+    { success: true, data: [DISPATCHER], page: 0, size: 500, totalElements: 2, totalPages: 2, last: false },
+    { success: true, data: [{ ...DISPATCHER, id: 12, email: 'b@loadmaster.local' }], page: 1, size: 500, totalElements: 2, totalPages: 2, last: true },
+  ]
+  vi.stubGlobal('fetch', (input: string) => {
+    calls.push({ method: 'GET', url: input, body: undefined, auth: null })
+    return Promise.resolve(new Response(JSON.stringify(pages[calls.length - 1]), { status: 200 }))
+  })
+  expect((await fetchUsers()).map((user) => user.id)).toStrictEqual(['11', '12'])
+  expect(calls.map((call) => call.url)).toStrictEqual(['http://be.test/api/users?page=0&size=500', 'http://be.test/api/users?page=1&size=500'])
+})
+
+test('tạo người của một công ty: gửi mã công ty dạng số; 409 không mang mã là email đã có', async () => {
+  reply = envelope({ user: DISPATCHER, temporaryPassword: 'Tmp#12345' })
+  await createUser({ fullName: 'A', email: 'a@b.vn', phone: '0900000000', role: 'companyAdmin', depot: '', companyId: '2' })
+  expect(calls[0]?.body).toStrictEqual({ email: 'a@b.vn', fullName: 'A', phoneNumber: '0900000000', role: 'ADMIN', companyId: 2 })
+
+  reply = new Response(JSON.stringify({ success: false, message: 'Email đã được sử dụng' }), { status: 409 })
+  await expect(createUser({ fullName: 'A', email: 'a@b.vn', phone: '0900000000', role: 'driver', depot: '' }))
+    .rejects.toMatchObject({ name: 'ApiError', code: 'EMAIL_ALREADY_EXISTS', status: 409 })
+})
+
 test('backend từ chối: lỗi mang mã nghiệp vụ của phong bì', async () => {
   reply = new Response(JSON.stringify({ success: false, code: 'EMAIL_ALREADY_EXISTS', message: 'Email đã được sử dụng' }), { status: 409 })
   await expect(createUser({ fullName: 'A', email: 'a@b.vn', phone: '0900000000', role: 'driver', depot: '' }))

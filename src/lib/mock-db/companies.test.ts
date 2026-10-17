@@ -110,3 +110,47 @@ test('editing a company changes its information and depot and logs only what cha
   await expect(db.updateCompany('LOG-001', { ...base, phone: '' })).rejects.toMatchObject({ code: 'COMPANY_INVALID', params: { field: 'phone' } })
   await expect(db.updateCompany('LOG-404', base)).rejects.toMatchObject({ code: 'NOT_FOUND' })
 })
+
+// Thông tin công ty `/cong-ty`: công ty của chính phiên, như `GET` / `PATCH /api/company/profile` của backend
+test('the company profile is the company of the session; like the backend, the warehouse, the driver and the platform cannot read it', async () => {
+  const db = createMockDb({ now: () => NOW })
+  for (const [userId, companyId] of [['US-LB-01', 'LOG-001'], ['US-PN-01', 'LOG-002'], ['US-0002', 'LOG-001'], ['US-0001', 'LOG-001']] as const) {
+    db.restoreSession(userId)
+    expect((await db.getCompanyProfile()).id, userId).toBe(companyId)
+  }
+  for (const [userId, code] of [['US-0003', 'ROLE_NOT_ALLOWED'], ['US-0004', 'ROLE_NOT_ALLOWED'], [SYSTEM_ADMIN, 'COMPANY_REQUIRED'], ['US-NT-01', 'COMPANY_REQUIRED']] as const) {
+    db.restoreSession(userId)
+    await expect(db.getCompanyProfile(), userId).rejects.toMatchObject({ code })
+  }
+})
+
+test('the company admin edits the name, address and phone of their own company; the depot stays and the event belongs to the company', async () => {
+  const db = createMockDb({ now: () => NOW })
+  db.restoreSession('US-PN-01')
+  const current = await db.getCompanyProfile()
+  const eventsBefore = (await db.listEvents()).length
+  expect(await db.updateCompanyProfile({ name: current.name, address: ` ${current.address} `, phone: current.phone })).toStrictEqual(current)
+  expect((await db.listEvents()).length).toBe(eventsBefore)
+
+  const saved = await db.updateCompanyProfile({ name: ' Công ty TNHH Vận tải Phương Nam Mới ', address: current.address, phone: '028 3773 0000' })
+  expect(saved).toStrictEqual({ ...current, name: 'Công ty TNHH Vận tải Phương Nam Mới', phone: '028 3773 0000' })
+  expect(await db.getCompanyProfile()).toStrictEqual(saved)
+  expect((await db.listEvents())[0]).toMatchObject({
+    action: 'company.updated', actorId: 'US-PN-01', companyId: 'LOG-002', target: { type: 'company', id: 'LOG-002' }, params: { fields: 'companyName,phone' },
+  })
+  await expect(db.updateCompanyProfile({ ...saved, address: '  ' })).rejects.toMatchObject({ code: 'COMPANY_INVALID', params: { field: 'address' } })
+
+  // Công ty kia không đổi gì
+  db.restoreSession('US-LB-01')
+  expect((await db.getCompanyProfile()).name).not.toBe(saved.name)
+})
+
+test.each([
+  ['the manager', 'US-0002', 'ROLE_NOT_ALLOWED'],
+  ['the dispatcher', 'US-0001', 'ROLE_NOT_ALLOWED'],
+  ['the system admin', SYSTEM_ADMIN, 'COMPANY_REQUIRED'],
+])('%s may not edit the company profile', async (_who, userId, code) => {
+  const db = createMockDb({ now: () => NOW })
+  db.restoreSession(userId)
+  await expect(db.updateCompanyProfile({ name: 'Công ty Đổi Tên', address: '1 Đường số 1', phone: '0251 111 2222' })).rejects.toMatchObject({ code })
+})

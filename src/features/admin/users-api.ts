@@ -1,8 +1,10 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Chế độ `VITE_AUTH_SOURCE=keycloak` gọi backend, chế độ mẫu gọi kho.
- *   fetchUsers        GET    /api/users
+ *   fetchUsers        GET    /api/users (đọc hết các trang)
+ *   fetchServerUsers  GET    /api/users — luôn gọi backend, cho màn Công ty đếm người dùng
  *   fetchUserCompanies GET   /api/companies
  *   createUser        POST   /api/users
+ *   createServerUser  POST   /api/users — luôn gọi backend, cho màn Công ty tạo quản trị công ty đầu tiên
  *   updateUser        PUT    /api/users/{id}
  *   setUserStatus     PATCH  /api/users/{id}/status
  *   deleteUser        DELETE /api/users/{id}
@@ -12,7 +14,8 @@
  */
 
 import { roleOfBackend } from '@/features/auth/backend-user'
-import { api, ApiError } from '@/lib/api-client'
+import { api, ApiError, isApiError } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type Company, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
 import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
@@ -40,7 +43,14 @@ type BackendTemporaryPassword = { readonly user: BackendUser; readonly temporary
 
 const ON_BACKEND = usesBackend('users')
 
-/** Backend chưa có màn danh sách phân trang ở FE: đọc một trang đủ lớn. */
+/**
+ * Kho / chi nhánh và lần hoạt động gần nhất chỉ kho mẫu có: tài khoản của backend không mang hai trường đó. Nối backend thì màn bỏ cột,
+ * ô và số đếm của chúng — không ghi "Chưa đăng nhập" cho người vừa đăng nhập, không đòi nhập kho mà máy chủ bỏ đi.
+ */
+export const USER_DEPOT_AVAILABLE = !ON_BACKEND
+export const USER_ACTIVITY_AVAILABLE = !ON_BACKEND
+
+/** Màn tự lọc, sắp xếp và phân trang ở client như với kho mẫu: đọc hết các trang, mỗi trang lớn. */
 const PAGE_SIZE = 500
 
 const BACKEND_ROLE: Readonly<Record<Role, string>> = { ...BACKEND_ROLE_CODES, companyAdmin: 'ADMIN', manager: 'MANAGER' }
@@ -85,7 +95,13 @@ function passwordOf(dto: BackendTemporaryPassword): TemporaryPassword {
 // GET /api/users
 export async function fetchUsers(): Promise<User[]> {
   if (!ON_BACKEND) return getMockDb().listUsers()
-  const users = await api().get<BackendUser[]>('/api/users', { query: { page: 0, size: PAGE_SIZE } })
+  return fetchServerUsers()
+}
+
+/** Người dùng trên backend dù `users` có trong `VITE_API_FEATURES` hay không — màn Công ty nối backend đếm người dùng của từng công ty. */
+// GET /api/users
+export async function fetchServerUsers(): Promise<User[]> {
+  const users = await fetchAllPages<BackendUser>('/api/users', { size: PAGE_SIZE })
   return users.flatMap((dto) => userOf(dto) ?? [])
 }
 
@@ -107,10 +123,31 @@ export async function fetchUserCompanies(): Promise<{ id: string; name: string }
 // POST /api/users
 export async function createUser(input: NewUser): Promise<TemporaryPassword> {
   if (!ON_BACKEND) return getMockDb().createUser(input)
-  const result = await api().post<BackendTemporaryPassword>('/api/users', {
-    body: { email: input.email, fullName: input.fullName, phoneNumber: phoneDigits(input.phone), role: backendRole(input.role) },
-  })
-  return passwordOf(result)
+  return createServerUser(input)
+}
+
+/**
+ * Tạo tài khoản trên backend dù `users` có trong `VITE_API_FEATURES` hay không. `companyId` chỉ quản trị hệ thống gửi (người của một
+ * công ty); quản trị công ty để trống, backend gán công ty của người gọi. Phong bì lỗi của backend chưa mang mã: 409 ở đây chỉ có một
+ * nghĩa — email đã có tài khoản.
+ */
+// POST /api/users
+export async function createServerUser(input: NewUser): Promise<TemporaryPassword> {
+  try {
+    const result = await api().post<BackendTemporaryPassword>('/api/users', {
+      body: {
+        email: input.email,
+        fullName: input.fullName,
+        phoneNumber: phoneDigits(input.phone),
+        role: backendRole(input.role),
+        ...(input.companyId === undefined ? {} : { companyId: Number(input.companyId) }),
+      },
+    })
+    return passwordOf(result)
+  } catch (error) {
+    if (isApiError(error) && error.code === 'CONFLICT') throw new ApiError('EMAIL_ALREADY_EXISTS', { status: error.status, params: error.params })
+    throw error
+  }
 }
 
 /** `current` là tài khoản trước khi sửa: backend chưa đổi được email, nên đổi email bị từ chối thay vì bỏ qua im lặng. */

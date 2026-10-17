@@ -15,6 +15,8 @@ const MAX_PHONE = 20
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const COMPANY_FIELDS = ['companyName', 'address', 'phone', 'departureDepot'] as const
+/** Trường quản trị công ty tự sửa (`/cong-ty`), cùng tên trường với `company.updated` của quản trị hệ thống. */
+const PROFILE_FIELDS = ['companyName', 'address', 'phone'] as const
 
 const bad = (field: string) => new MockDbError('COMPANY_INVALID', { field })
 
@@ -119,6 +121,31 @@ export function companyMethods(ctx: DbContext): CompaniesDb {
         const changed = COMPANY_FIELDS.filter((field) => !same[field])
         if (changed.length === 0) return current
         ctx.log('company.updated', companyTarget(id), { fields: changed.join(',') }, null)
+        return put(companies, next)
+      }),
+
+    getCompanyProfile: () =>
+      ctx.respond(() => {
+        const company = ctx.scope.companies.read(ctx.scope.newRecordCompany())
+        assertRole(ctx, 'companyAdmin', 'manager', 'dispatcher')
+        return company
+      }),
+
+    updateCompanyProfile: (changes) =>
+      ctx.respond(() => {
+        const current = ctx.scope.companies.own(ctx.scope.newRecordCompany())
+        assertRole(ctx, 'companyAdmin')
+        const next: Company = {
+          ...current,
+          name: required(changes.name, 'name', MAX_NAME),
+          address: required(changes.address, 'address', MAX_ADDRESS),
+          phone: required(changes.phone, 'phone', MAX_PHONE),
+        }
+        const same = { companyName: current.name === next.name, address: current.address === next.address, phone: current.phone === next.phone }
+        const changed = PROFILE_FIELDS.filter((field) => !same[field])
+        if (changed.length === 0) return current
+        // Người làm là người của công ty: sự kiện thuộc công ty đó, quản trị công ty đọc được ở nhật ký của mình
+        ctx.log('company.updated', companyTarget(current.id), { fields: changed.join(',') })
         return put(companies, next)
       }),
   }

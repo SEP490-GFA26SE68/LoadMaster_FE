@@ -18,6 +18,8 @@ export const nav = {
   billing: 'Gói và credit',
   // Công ty (FE-8-06): quản trị hệ thống. Hỗ trợ (FE-8-07): Hỗ trợ khách hàng; mục menu tài khoản của người dùng công ty
   companies: 'Công ty',
+  // Thông tin công ty của chính mình: quản trị công ty
+  companyProfile: 'Thông tin công ty',
   support: 'Hỗ trợ',
   supportRequests: 'Yêu cầu hỗ trợ',
   // Liên hệ của khách: yêu cầu khách chưa có tài khoản gửi từ trang giới thiệu; ba vai trò nền tảng

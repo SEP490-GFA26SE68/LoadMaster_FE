@@ -23,6 +23,8 @@ export const pageHero = {
   payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
   paymentResult: 'Confirm a payment to subscribe or top up credits with the server.',
   companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
+  companiesServer: 'Companies using LoadMaster: billing details, plan, number of users and first company administrator.',
+  companyProfile: 'The name, contact and billing details of your company.',
   support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
   supportStatusOnly: 'Support requests from every company: read them and change their status.',
   contacts: 'Requests that guests send from the website: take them on, change the status and keep internal notes.',

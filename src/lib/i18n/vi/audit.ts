@@ -62,6 +62,9 @@ export const audit = {
     loading: 'Đang tải nhật ký…',
     errorTitle: 'Không tải được nhật ký',
     errorDescription: 'Kho dữ liệu không trả lời. Thử lại sau giây lát.',
+    // Người dùng đã nối backend mà backend chưa có nhật ký: không hiện sự kiện của kho mẫu
+    unavailableTitle: 'Máy chủ chưa có nhật ký hoạt động',
+    unavailableDescription: 'Máy chủ LoadMaster chưa ghi lại thao tác của người dùng, nên chưa có sự kiện nào để xem ở đây.',
     retry: 'Thử lại',
     empty: 'Chưa có sự kiện nào.',
     noMatch: 'Không có sự kiện khớp bộ lọc.',

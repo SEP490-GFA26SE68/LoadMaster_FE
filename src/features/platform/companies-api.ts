@@ -1,9 +1,9 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ * Hàm → endpoint backend (FE-0-09) của bản kho mẫu. Bản nối backend nằm ở `companies-server-api.ts`: dòng của backend có cột khác
+ * (mã số thuế, email thanh toán; chưa có địa chỉ, số điện thoại, kho xuất phát), nên màn có hai bản thay vì một hàm hai thân.
  *   listCompanies  → GET /api/companies   (gói và số người dùng của từng dòng: chưa có ở BE — Q-19)
  *   createCompany  → POST /api/companies  (kèm Quản trị công ty đầu tiên và mật khẩu tạm trong cùng một lần gọi: chưa có ở BE — Q-19)
  *   updateCompany  → PUT /api/companies/{id}
- *   không dùng ở màn này: GET /api/companies/{id}, PATCH /api/companies/{id}/status (khoá, mở khoá công ty)
  */
 
 import { getMockDb, type Company, type CompanyInfo, type CompanyOverview, type CreatedCompany, type NewCompany } from '@/lib/mock-db'

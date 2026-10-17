@@ -83,7 +83,10 @@ const actionsCell = (info: Cell<unknown>) => <ActionsCell user={info.row.origina
  * công ty đã nằm trong panel. Tên công ty đọc qua context (về sau từ kho) nên cột không sắp xếp; lọc theo công ty ở thanh lọc.
  * Chỉ dựng lại khi đổi ngôn ngữ, đổi tập cột hoặc panel đóng/mở; hàm ô giữ nguyên nên các ô còn lại không bị gắn lại.
  */
-export function userColumns(t: TFunction, { panelOpen, showCompany }: { panelOpen: boolean; showCompany: boolean }) {
+export function userColumns(
+  t: TFunction,
+  { panelOpen, showCompany, showDepot = true, showActivity = true }: { panelOpen: boolean; showCompany: boolean; showDepot?: boolean; showActivity?: boolean },
+) {
   return helper.columns([
     helper.accessor('fullName', { header: t('admin.users.columns.user'), enableSorting: true, cell: nameCell }),
     ...(panelOpen ? [] : [helper.accessor('phone', {
@@ -103,20 +106,21 @@ export function userColumns(t: TFunction, { panelOpen, showCompany }: { panelOpe
       meta: { width: '168px' } satisfies ColumnMeta,
       cell: companyCell,
     })] : []),
-    helper.accessor('depot', {
+    // Nối backend: máy chủ chưa có kho và lần hoạt động gần nhất của tài khoản (`userDepotAvailable`, `userActivityAvailable`)
+    ...(showDepot ? [helper.accessor('depot', {
       header: t('admin.users.columns.depot'),
       enableSorting: true,
       // Panel mở thì hẹp lại (kho dài xuống hai dòng) để email ở cột đầu không bị bẻ giữa chừng ở 1.366 px
       meta: { width: panelOpen ? '172px' : '196px' } satisfies ColumnMeta,
       cell: depotCell,
-    }),
-    helper.accessor('lastActiveAt', {
+    })] : []),
+    ...(showActivity ? [helper.accessor('lastActiveAt', {
       header: t('admin.users.columns.lastActive'),
       enableSorting: true,
       sortDescFirst: true,
       meta: { align: 'right', width: '176px' } satisfies ColumnMeta,
       cell: lastActiveCell,
-    }),
+    })] : []),
     helper.accessor('status', {
       header: t('admin.users.columns.status'),
       meta: { width: '144px' } satisfies ColumnMeta,

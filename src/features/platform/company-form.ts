@@ -10,6 +10,7 @@ import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
  */
 export const COMPANY_NAME_MAX = 120
 export const COMPANY_ADDRESS_MAX = 200
+export const COMPANY_PHONE_MAX = 20
 
 const ERRORS = {
   nameRequired: 'companies.form.errors.nameRequired',
@@ -29,7 +30,7 @@ const ERRORS = {
 
 /** Độ dài tối đa của từng ô chữ (kho kiểm cùng giới hạn). */
 const MAX_OF: Partial<Record<string, number>> = {
-  name: COMPANY_NAME_MAX, address: COMPANY_ADDRESS_MAX, phone: 20, depotName: COMPANY_NAME_MAX, depotAddress: COMPANY_ADDRESS_MAX, adminName: 80,
+  name: COMPANY_NAME_MAX, address: COMPANY_ADDRESS_MAX, phone: COMPANY_PHONE_MAX, depotName: COMPANY_NAME_MAX, depotAddress: COMPANY_ADDRESS_MAX, adminName: 80,
 }
 
 /** Dịch message của schema (key từ điển) cho ô `field`; message không phải key của schema thì bỏ qua. */
@@ -41,14 +42,14 @@ export function translateCompanyFormError(t: TFunction, field: string, message: 
 }
 
 /** Số điện thoại công ty có thể là máy bàn ("0251 383 6120") hay có mã vùng "+84": chữ số, dấu cách và `+ - . ( )`. */
-const COMPANY_PHONE = /^[0-9+().\s-]+$/
+export const COMPANY_PHONE = /^[0-9+().\s-]+$/
 
 export function companyFormSchema(withAdmin: boolean) {
   return z
     .object({
       name: z.string().trim().min(1, ERRORS.nameRequired).max(COMPANY_NAME_MAX, ERRORS.tooLong),
       address: z.string().trim().min(1, ERRORS.addressRequired).max(COMPANY_ADDRESS_MAX, ERRORS.tooLong),
-      phone: z.string().trim().min(1, ERRORS.phoneRequired).max(20, ERRORS.tooLong).regex(COMPANY_PHONE, ERRORS.phoneInvalid),
+      phone: z.string().trim().min(1, ERRORS.phoneRequired).max(COMPANY_PHONE_MAX, ERRORS.tooLong).regex(COMPANY_PHONE, ERRORS.phoneInvalid),
       depotName: z.string().trim().min(1, ERRORS.depotNameRequired).max(COMPANY_NAME_MAX, ERRORS.tooLong),
       depotAddress: z.string().trim().max(COMPANY_ADDRESS_MAX, ERRORS.tooLong),
       coordinates: z.object({ lat: z.string(), lng: z.string() }),
