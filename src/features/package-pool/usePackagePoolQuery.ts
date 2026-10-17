@@ -6,7 +6,9 @@ import {
   confirmPackageImport,
   createPackage,
   deletePackageType,
+  deletePoolPackage,
   downloadPackageImportTemplate,
+  exportPackageLabelsPdf,
   fetchPackageDetail,
   fetchPackageLabels,
   fetchPackages,
@@ -20,10 +22,12 @@ import {
 } from './package-pool-api'
 import type { PackageImportPreview } from './package-pool-import'
 
+export { isUnknownPackage, MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT } from './package-pool-api'
+
 /**
  * Hook Query của kho kiện (FE-3b-03) — component không gọi `package-pool-api.ts` trực tiếp (mục 9). Khoá `['package-pool', …]` không
  * mang người dùng: `AuthProvider` xoá cache lúc đổi người (FE-0-02). Trạng thái kiện đổi theo đơn và chuyến ở màn khác nên đọc lại mỗi
- * lần mở màn (`staleTime: 0`).
+ * lần mở màn (`staleTime: 0`). `PACKAGE_POOL_SUPPORT` nói màn nào có nguồn dữ liệu khi nối backend.
  */
 
 export const PACKAGE_TYPES_KEY = ['package-types'] as const
@@ -46,8 +50,9 @@ export function useDeletePackageTypeMutation() {
   return useMutation({ mutationFn: (id: string) => deletePackageType(id), onSuccess: () => client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }) })
 }
 
-export function usePackagesQuery() {
-  return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'list'], queryFn: fetchPackages, staleTime: 0 })
+/** `enabled: false` khi người xem không đọc được kho kiện ở nguồn đang dùng (backend chỉ mở cho điều phối viên). */
+export function usePackagesQuery({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'list'], queryFn: fetchPackages, staleTime: 0, enabled })
 }
 
 /** Chi tiết một kiện kèm lịch sử (`/kien-hang`, panel chi tiết); `id` `null` thì không gọi kho. */
@@ -55,16 +60,20 @@ export function usePackageDetailQuery(id: string | null) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'detail', id], queryFn: () => fetchPackageDetail(id ?? ''), enabled: id !== null, staleTime: 0 })
 }
 
-/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. */
-export function usePackageLabelsQuery(selection: LabelSelection) {
+/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. `enabled: false` khi nguồn đang dùng không có nhãn đó. */
+export function usePackageLabelsQuery(selection: LabelSelection, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: [...PACKAGE_POOL_KEY, 'labels', selection.tripId ?? null, selection.ids ?? null],
     queryFn: () => fetchPackageLabels(selection),
     staleTime: 0,
+    enabled,
   })
 }
 
-/** Tra cứu theo mã đang gõ trên URL (`/tra-cuu-kien?ma=`); `code` rỗng thì không gọi kho. Không khớp: lỗi `QR_UNKNOWN`, không thử lại. */
+/**
+ * Tra cứu theo mã đang gõ trên URL (`/tra-cuu-kien?ma=`); `code` rỗng thì không gọi kho (màn truyền rỗng cả khi người xem không tra
+ * được ở nguồn đang dùng). Không khớp: lỗi `QR_UNKNOWN`, không thử lại.
+ */
 export function usePackageLookupQuery(code: string) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'lookup', code], queryFn: () => lookupPackages(code), enabled: code !== '', staleTime: 0, retry: false })
 }
@@ -78,6 +87,31 @@ function refreshPool(client: QueryClient) {
 export function useCreatePackageMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: PackageInput) => createPackage(input), onSuccess: () => refreshPool(client) })
+}
+
+/**
+ * Xoá một kiện (chỉ khi nối backend): kho kiện và kiện để chọn vào yêu cầu giao đều đổi. Chi tiết của chính kiện vừa xoá không đọc lại
+ * (backend trả 404) — panel đóng khi danh sách mới về.
+ */
+export function useDeletePackageMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deletePoolPackage(id),
+    onSuccess: (_data, id) => Promise.all([
+      client.invalidateQueries({ queryKey: PACKAGE_POOL_KEY, predicate: (query) => !(query.queryKey[1] === 'detail' && query.queryKey[2] === id) }),
+      client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }),
+      client.invalidateQueries({ queryKey: ['requirements'] }),
+    ]),
+  })
+}
+
+/** Tải PDF nhãn backend dựng cho các kiện `ids` về máy dưới tên `fileName`. */
+export function useExportLabelsPdfMutation() {
+  return useMutation({
+    mutationFn: async ({ ids, fileName }: { ids: readonly string[]; fileName: string }) => {
+      downloadBlob(await exportPackageLabelsPdf(ids), fileName)
+    },
+  })
 }
 
 /** Gỡ cờ: kiện lại chọn được vào yêu cầu giao, nên làm mới cả yêu cầu giao. */

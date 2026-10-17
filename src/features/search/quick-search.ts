@@ -44,8 +44,11 @@ export type SearchSources = {
   readonly vehicles: readonly { readonly id: string; readonly name: string }[]
   readonly users: readonly { readonly id: string; readonly fullName: string; readonly email: string; readonly role: Role }[]
   readonly requirements: readonly { readonly id: string; readonly destinationName: string; readonly address: string }[]
-  /** Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). */
-  readonly pool: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
+  /**
+   * Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). `query` là chữ đặt vào
+   * `/kien-hang?q=` để mở đúng kiện; vắng là mã của kho.
+   */
+  readonly pool: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string; readonly query?: string }[]
   readonly packageTypes: readonly { readonly id: string; readonly name: string }[]
 }
 
@@ -72,7 +75,7 @@ const path = (value: string) => encodeURIComponent(value)
  * - Xe: mã, tên (tên xe gồm biển số) → chi tiết xe.
  * - Người dùng: họ tên, email, mã → danh sách người dùng lọc đúng mã.
  * - Yêu cầu giao: mã, điểm đến, địa chỉ → danh sách yêu cầu lọc đúng mã. Kho kiện: mã, mã của bên gửi, mã QR, tên loại hoặc điểm đến → kho kiện lọc
- *   đúng mã. Loại kiện: mã, tên → danh sách loại lọc đúng mã.
+ *   đúng mã (hoặc đúng `query` của nguồn). Loại kiện: mã, tên → danh sách loại lọc đúng mã.
  */
 export function searchSources(sources: SearchSources, query: string, groups: readonly SearchGroup[]): SearchResultGroup[] {
   if (normalizeSearchText(query) === '') return []
@@ -112,7 +115,7 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
       sources.pool
         .filter((pkg) => matchesQuery([pkg.id, pkg.reference ?? '', pkg.qrToken, pkg.typeName], query))
         .map((pkg) => ({
-          group: 'pool', key: `pool:${pkg.id}`, href: `/kien-hang?q=${path(pkg.id)}`,
+          group: 'pool', key: `pool:${pkg.id}`, href: `/kien-hang?q=${path(pkg.query ?? pkg.id)}`,
           id: pkg.id, name: pkg.typeName, reference: pkg.reference,
         })),
     packageTypes: () =>

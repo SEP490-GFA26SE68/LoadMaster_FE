@@ -15,7 +15,7 @@ import { PackageFlagTag, PackageStatusBadge } from './package-look'
 import { lookupActions } from './package-lookup'
 import type { PackageLookup } from './package-pool-api'
 import { labelsPath } from './packages-list'
-import { useClearPackageFlagMutation, useReportPackageFoundMutation } from './usePackagePoolQuery'
+import { PACKAGE_POOL_SUPPORT, useClearPackageFlagMutation, useReportPackageFoundMutation } from './usePackagePoolQuery'
 
 /** Chip và nhãn cỡ cảm ứng: chữ 16 px như phần còn lại của màn kho (AGENTS mục 10). */
 const TOUCH_CHIP = 'h-8 px-3 text-body-lg'
@@ -24,7 +24,8 @@ const TOUCH_CHIP = 'h-8 px-3 text-body-lg'
  * Thẻ một kiện của màn Tra cứu kiện (FE-3b-06): mã, kích thước, khối lượng, loại hàng, điểm đến, trạng thái, cờ, chuyến và điểm giao.
  * Hành động theo vai trò (`lookupActions`): ai có `labels.print` in lại nhãn; điều phối viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến;
  * nhân viên kho xác nhận đã tìm thấy kiện mang cờ "Không tìm thấy" (D-92). Nền đặc, viền 1 px — bề mặt đọc lâu. `touch`: máy tính bảng
- * của kho — nút 56 px, chữ từ 16 px.
+ * của kho — nút 56 px, chữ từ 16 px. Nối backend: lượt quét của backend không trả kích thước và backend không có cờ kiện, nên thẻ
+ * không có hai mục đó; "Mở trong Kho kiện" tìm theo mã QR vì mã của kho là số ngắn (`PACKAGE_POOL_SUPPORT.numericIds`).
  */
 export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   item: PackageLookup
@@ -45,6 +46,8 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   const size = touch ? 'touch' : 'md'
   const chip = touch ? TOUCH_CHIP : undefined
   const mono = cn('font-mono tabular-nums', touch ? 'text-body-lg' : 'text-body')
+  // Máy chủ cấp mã chuyến là số nội bộ; người dùng nhận ra chuyến bằng mã chuyến (`trip.name`), như ở panel chi tiết kiện
+  const tripCode = PACKAGE_POOL_SUPPORT.numericIds ? (trip?.name ?? pkg.tripId) : pkg.tripId
 
   function handleClear(flag: PackageFlag) {
     clear.mutate({ id: pkg.id, flag }, {
@@ -77,22 +80,24 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
         <Fact label={t('lookup.fields.poolId')} touch={touch}><span className={mono}>{pkg.id}</span></Fact>
         <Fact label={t('lookup.fields.senderCode')} touch={touch}><span className={cn(mono, 'wrap-anywhere')}>{pkg.packageCode}</span></Fact>
         <Fact label={t('lookup.fields.qrToken')} touch={touch}><span className={mono}>{pkg.qrToken}</span></Fact>
-        <Fact label={t('lookup.fields.dimensions')} touch={touch}><span className={mono}>{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span></Fact>
+        {PACKAGE_POOL_SUPPORT.fullSize ? (
+          <Fact label={t('lookup.fields.dimensions')} touch={touch}><span className={mono}>{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span></Fact>
+        ) : null}
         <Fact label={t('lookup.fields.weight')} touch={touch}><span className={mono}>{format.weight(pkg.weightKg)}</span></Fact>
         <Fact label={t('lookup.fields.handlingClass')} touch={touch}><HandlingClassChip handlingClass={pkg.handlingClass} className={chip} /></Fact>
-        <Fact label={t('lookup.fields.destination')} touch={touch} wide>{pkg.destination}</Fact>
+        {pkg.destination === '' ? null : <Fact label={t('lookup.fields.destination')} touch={touch} wide>{pkg.destination}</Fact>}
         <Fact label={t('lookup.fields.trip')} touch={touch}>
           {pkg.tripId === undefined ? t('lookup.fields.notInTrip') : (
             <span className="flex flex-col">
-              {actions.openTrip
-                ? <Link to={`/chuyen/${encodeURIComponent(pkg.tripId)}`} className={cn(mono, 'self-start rounded-sm text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}>{pkg.tripId}</Link>
-                : <span className={mono}>{pkg.tripId}</span>}
-              {trip ? <span>{trip.name}</span> : null}
+              {actions.openTrip && PACKAGE_POOL_SUPPORT.tripLinks
+                ? <Link to={`/chuyen/${encodeURIComponent(pkg.tripId)}`} className={cn(mono, 'self-start rounded-sm text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}>{tripCode}</Link>
+                : <span className={mono}>{tripCode}</span>}
+              {trip && !PACKAGE_POOL_SUPPORT.numericIds ? <span>{trip.name}</span> : null}
             </span>
           )}
         </Fact>
         {stop ? <Fact label={t('lookup.fields.stop')} touch={touch} wide>{t('lookup.fields.stopValue', { number: stop.number, name: stop.name })}</Fact> : null}
-        {pkg.flags.length === 0 ? <Fact label={t('lookup.fields.flags')} touch={touch}>{t('lookup.fields.noFlags')}</Fact> : null}
+        {PACKAGE_POOL_SUPPORT.flags && pkg.flags.length === 0 ? <Fact label={t('lookup.fields.flags')} touch={touch}>{t('lookup.fields.noFlags')}</Fact> : null}
       </dl>
 
       {pkg.flags.length > 0 ? (
@@ -123,7 +128,7 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
           ) : null}
           {actions.openInPool ? (
             <Button variant="ghost" size={size} asChild>
-              <Link to={`/kien-hang?q=${encodeURIComponent(pkg.id)}`}><ExternalLink strokeWidth={1.5} />{t('lookup.openInPool')}</Link>
+              <Link to={`/kien-hang?q=${encodeURIComponent(PACKAGE_POOL_SUPPORT.numericIds ? pkg.qrToken : pkg.id)}`}><ExternalLink strokeWidth={1.5} />{t('lookup.openInPool')}</Link>
             </Button>
           ) : null}
         </footer>

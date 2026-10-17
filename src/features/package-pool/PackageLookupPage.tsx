@@ -14,14 +14,11 @@ import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { isMockDbError } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { CODE_PARAM, lookupView, PICK_PARAM } from './package-lookup'
 import { PackageLookupCard } from './PackageLookupCard'
 import { PackageLookupList } from './PackageLookupList'
-import { usePackageLookupQuery, useReportPackageFoundMutation, useScanPackageMutation } from './usePackagePoolQuery'
-
-const isUnknown = (error: unknown) => isMockDbError(error) && error.code === 'QR_UNKNOWN'
+import { isUnknownPackage, PACKAGE_POOL_SUPPORT, usePackageLookupQuery, useReportPackageFoundMutation, useScanPackageMutation } from './usePackagePoolQuery'
 
 /** Chữ 16 px cho nhãn, gợi ý và lỗi của ô nhập ở màn cảm ứng (mặc định 13 / 12,5 px). */
 const TOUCH_FIELD = '[&_label]:text-body-lg [&_span]:text-body-lg'
@@ -35,20 +32,24 @@ const TOUCH_FIELD = '[&_label]:text-body-lg [&_span]:text-body-lg'
  * Nhân viên kho **quét** thấy kiện đang mang cờ "Không tìm thấy" thì cờ được gỡ ngay và điều phối viên được báo qua chuông; gõ mã thì
  * thẻ kiện có nút xác nhận — gõ mã chưa chắc là đang cầm kiện. Nhân viên kho dùng máy tính bảng: nút 56 px, chữ từ 16 px, và nút về
  * màn kho trên dải trời. "Quét mã QR" là hành động chính của màn.
+ *
+ * Nối backend: máy chủ chỉ cho điều phối viên tra kiện, nên nhân viên kho thấy một câu lý do thay cho ô tra và nút quét; backend không
+ * có cờ kiện nên không có bước gỡ cờ "Không tìm thấy".
  */
 export function PackageLookupPage() {
   const t = useT()
   const can = useCan()
   const touch = can('warehouse.operate')
+  const blocked = PACKAGE_POOL_SUPPORT.dispatcherOnly && !can('packages.manage')
   const [search, setSearch] = useSearchParams()
-  const code = search.get(CODE_PARAM)?.trim() ?? ''
+  const code = blocked ? '' : (search.get(CODE_PARAM)?.trim() ?? '')
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
   const [foundId, setFoundId] = useState<string | null>(null)
   const query = usePackageLookupQuery(code)
   const scan = useScanPackageMutation()
   const found = useReportPackageFoundMutation()
-  const view = lookupView({ code, pickedId: search.get(PICK_PARAM), pending: query.isPending, notFound: isUnknown(query.error), data: query.data })
+  const view = lookupView({ code, pickedId: search.get(PICK_PARAM), pending: query.isPending, notFound: isUnknownPackage(query.error), data: query.data })
 
   const schema = useMemo(() => z.object({ code: z.string().trim().min(1, t('lookup.codeRequired')) }), [t])
   const form = useForm<{ code: string }>({ resolver: zodResolver(schema), values: { code } })
@@ -63,14 +64,14 @@ export function PackageLookupPage() {
     setScanError(null)
     try {
       const item = await scan.mutateAsync(token)
-      if (touch && item.package.flags.includes('NOT_FOUND')) {
+      if (touch && PACKAGE_POOL_SUPPORT.flags && item.package.flags.includes('NOT_FOUND')) {
         await found.mutateAsync(item.package.qrToken)
         setFoundId(item.package.id)
       }
       setScanning(false)
       show(item.package.qrToken)
     } catch (error) {
-      setScanError(isUnknown(error) ? t('lookup.notFound.description', { code: token }) : dataErrorMessage(error, t))
+      setScanError(isUnknownPackage(error) ? t('lookup.notFound.description', { code: token }) : dataErrorMessage(error, t))
     }
   }
 
@@ -88,32 +89,36 @@ export function PackageLookupPage() {
       />
       <main className={cn('sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6', touch && 'text-body-lg')}>
         <div className="flex max-w-220 flex-col gap-4">
-          <Card className="flex flex-wrap items-start gap-3 p-5">
-            <form noValidate className="flex min-w-64 flex-1 flex-wrap items-start gap-3" onSubmit={form.handleSubmit((values) => { setFoundId(null); show(values.code) })}>
-              <div className={cn('min-w-56 flex-1', touch && TOUCH_FIELD)}>
-                <Input
-                  label={t('lookup.codeLabel')}
-                  placeholder={t('lookup.codePlaceholder')}
-                  hint={t('lookup.codeHint')}
-                  error={form.formState.errors.code?.message}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  className={cn('font-mono', touch && 'h-14 text-body-lg')}
-                  {...form.register('code')}
-                />
-              </div>
-              {/* Nút đứng ngang hàng ô nhập: bù chiều cao nhãn của ô */}
-              <Button type="submit" variant="secondary" size={size} className={touch ? 'mt-7.5' : 'mt-6'}>
-                <Search strokeWidth={1.5} />{t('lookup.submit')}
+          {blocked ? (
+            <Card className="p-5"><Banner tone="info">{t('sourcing.backend.lookupDispatcherOnly')}</Banner></Card>
+          ) : (
+            <Card className="flex flex-wrap items-start gap-3 p-5">
+              <form noValidate className="flex min-w-64 flex-1 flex-wrap items-start gap-3" onSubmit={form.handleSubmit((values) => { setFoundId(null); show(values.code) })}>
+                <div className={cn('min-w-56 flex-1', touch && TOUCH_FIELD)}>
+                  <Input
+                    label={t('lookup.codeLabel')}
+                    placeholder={PACKAGE_POOL_SUPPORT.numericIds ? t('lookup.codePlaceholderBackend') : t('lookup.codePlaceholder')}
+                    hint={t('lookup.codeHint')}
+                    error={form.formState.errors.code?.message}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className={cn('font-mono', touch && 'h-14 text-body-lg')}
+                    {...form.register('code')}
+                  />
+                </div>
+                {/* Nút đứng ngang hàng ô nhập: bù chiều cao nhãn của ô */}
+                <Button type="submit" variant="secondary" size={size} className={touch ? 'mt-7.5' : 'mt-6'}>
+                  <Search strokeWidth={1.5} />{t('lookup.submit')}
+                </Button>
+              </form>
+              <Button variant="primary" size={size} className={touch ? 'mt-7.5' : 'mt-6'} onClick={() => { setScanError(null); setScanning(true) }}>
+                <ScanLine strokeWidth={1.5} />{t('lookup.scan')}
               </Button>
-            </form>
-            <Button variant="primary" size={size} className={touch ? 'mt-7.5' : 'mt-6'} onClick={() => { setScanError(null); setScanning(true) }}>
-              <ScanLine strokeWidth={1.5} />{t('lookup.scan')}
-            </Button>
-          </Card>
+            </Card>
+          )}
 
-          {view.kind === 'idle' ? (
+          {blocked ? null : view.kind === 'idle' ? (
             <EmptyState icon={ScanLine} className={touch ? '[&_span]:text-body-lg' : undefined} title={t('lookup.idle.title')} description={t('lookup.idle.description')} />
           ) : view.kind === 'pending' ? (
             query.error
