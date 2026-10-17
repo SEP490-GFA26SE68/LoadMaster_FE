@@ -4,12 +4,13 @@
  *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07);
  *                       chạy lại giữ kiện ghim (`request.pinnedPlacements`): POST /api/load-plans/{id}/rerun (kiện ghim: Q-14)
  *                       (giữ / trừ / hoàn credit do BE làm phía server, HTTP 402 `INSUFFICIENT_CREDITS`; mock gọi thẳng kho)
- *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance
+ *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance (nối khi bật nhóm `billing`: optimization-credit-api.ts)
  *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
  */
 
 import { pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
+import { usesBackend } from '@/lib/backend-config'
 import {
   creditBlock,
   getMockDb,
@@ -26,6 +27,7 @@ import {
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createOptimizationService, OptimizationServiceError, type CandidateProgress, type CandidateRun } from '@/services/optimization'
+import { fetchBackendOptimizationCredit } from './optimization-credit-api'
 import { buildRunHistory, type RunHistoryRow } from './run-history'
 
 /**
@@ -99,10 +101,16 @@ export type OptimizationCredit = {
   readonly unlimited: boolean
   /** Vì sao chưa chạy được (gói hết hạn xét trước số dư); `null` khi chạy được. Kho kiểm lại bằng cùng luật. */
   readonly block: CreditBlock | null
+  /**
+   * Gói đã hết hạn mà nguồn không còn trả tên gói (backend chỉ trả trạng thái và số dư): thẻ vẫn nói số dư, không nói "chưa có gói".
+   * Kho mẫu luôn trả tên gói nên không đặt trường này.
+   */
+  readonly lapsed?: boolean
 }
 
 // GET /api/subscription/current · GET /api/credits/balance
 export async function fetchOptimizationCredit(): Promise<OptimizationCredit> {
+  if (usesBackend('billing')) return fetchBackendOptimizationCredit()
   const db = getMockDb()
   const [current, credit] = await Promise.all([db.getCurrentSubscription(), db.getCreditBalance()])
   return {
