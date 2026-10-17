@@ -35,21 +35,30 @@ type PackageVerifyProps = {
   onManual: (input: ManualConfirmInput) => void
   result?: VerifyOutcome | null
   pending?: boolean
+  /** Mức nơi gọi làm được, theo thứ tự hiện (mặc định đủ ba mức). Chỉ một mức thì không có hàng tab. */
+  methods?: readonly VerifyMethod[]
 }
 
 type CodeValues = { code: string }
 
+/** Mức mở đầu: quét khi có camera và nơi gọi cho quét; không thì gõ mã; còn lại là mức đầu nơi gọi cho. */
+function initialMethod(methods: readonly VerifyMethod[]): VerifyMethod {
+  if (methods.includes('QR') && barcodeDetectorClass()) return 'QR'
+  if (methods.includes('CODE')) return 'CODE'
+  return methods[0] ?? 'CODE'
+}
+
 /** Ô và nút của màn cảm ứng: 56 px, chữ 16 px (mục 10) — hộp này chỉ dùng ở kho (máy tính bảng) và tài xế (điện thoại). */
 const TOUCH_FIELD = 'h-14 w-full min-w-0 px-3 text-body-lg'
 
-function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
+function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, methods = VERIFY_METHODS, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
   inputRef: RefObject<HTMLInputElement | null>
   onClose: () => void
 }) {
   const t = useT()
   const codeId = useId()
   // Không quét được bằng camera (Safari, Firefox, máy bàn): mở thẳng mức 2
-  const [method, setMethod] = useState<VerifyMethod>(() => (barcodeDetectorClass() ? 'QR' : 'CODE'))
+  const [method, setMethod] = useState<VerifyMethod>(() => initialMethod(methods))
   const lastScanned = useRef<string | null>(null)
   const schema = useMemo(() => z.object({ code: z.string().trim().min(1, t('qr.verify.codeRequired')) }), [t])
   const form = useForm<CodeValues>({ resolver: zodResolver(schema), defaultValues: { code: '' } })
@@ -72,17 +81,21 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
         onValueChange={(next) => setMethod(next as VerifyMethod)}
         className="flex min-h-0 flex-col gap-4 px-5 py-5 text-body-lg sm:px-7"
       >
-        <TabsList aria-label={t('qr.verify.levels')} className="px-0">
-          {VERIFY_METHODS.map((level) => (
-            <TabsTrigger key={level} value={level} className="h-14 min-w-0 flex-1 justify-center px-2 text-body-lg whitespace-normal">
-              {t(`common.verifyMethods.${level}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {methods.length > 1 ? (
+          <TabsList aria-label={t('qr.verify.levels')} className="px-0">
+            {methods.map((level) => (
+              <TabsTrigger key={level} value={level} className="h-14 min-w-0 flex-1 justify-center px-2 text-body-lg whitespace-normal">
+                {t(`common.verifyMethods.${level}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        ) : null}
 
-        <TabsContent value="QR" className="flex flex-col gap-3 outline-none">
-          <QrCamera onDetected={handleDetected} statusClassName="text-body-lg" />
-        </TabsContent>
+        {methods.includes('QR') ? (
+          <TabsContent value="QR" className="flex flex-col gap-3 outline-none">
+            <QrCamera onDetected={handleDetected} statusClassName="text-body-lg" />
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="CODE" className="outline-none">
           <form noValidate className="flex flex-col gap-3" onSubmit={form.handleSubmit(({ code }) => onVerify({ method: 'CODE', code }))}>
@@ -109,9 +122,11 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
           </form>
         </TabsContent>
 
-        <TabsContent value="MANUAL" className="outline-none">
-          <PackageVerifyManual candidates={candidates} pending={pending} onSubmit={onManual} />
-        </TabsContent>
+        {methods.includes('MANUAL') ? (
+          <TabsContent value="MANUAL" className="outline-none">
+            <PackageVerifyManual candidates={candidates} pending={pending} onSubmit={onManual} />
+          </TabsContent>
+        ) : null}
 
         {/* Kết quả lần đối chiếu gần nhất: lỗi là `alert` (đọc ngay), kết quả ghi được là `status` */}
         {result ? (
@@ -143,10 +158,12 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
  * Hộp không biết kiện "đúng" là kiện nào: nơi gọi gửi mã / kiện đã chọn cho kho và trả kết quả về qua `result`. Nút 56 px, chữ 16 px;
  * kết quả là vùng `status` / `alert` nên trình đọc màn hình đọc được. Dưới 768 px hộp là tờ trượt từ đáy (V2.3 đợt 6). Mỗi lần mở là một thân mới: về mức đầu, ô nhập trống. Khi camera
  * chạy, con trỏ đứng ở hộp thoại để bàn phím ảo không che khung hình; không có camera thì hộp mở ở mức 2 và con trỏ vào ô gõ mã.
+ * Nơi gọi chưa làm được mọi mức (tài xế khi nối backend: chỉ gõ mã) truyền `methods`: mức không có trong đó không hiện.
  */
 export function PackageVerify({ open, onOpenChange, ...body }: PackageVerifyProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const startsOnCode = initialMethod(body.methods ?? VERIFY_METHODS) === 'CODE'
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -156,8 +173,8 @@ export function PackageVerify({ open, onOpenChange, ...body }: PackageVerifyProp
         className="w-[min(40rem,calc(100vw-3rem))]"
         onOpenAutoFocus={(event) => {
           event.preventDefault()
-          if (barcodeDetectorClass()) contentRef.current?.focus()
-          else inputRef.current?.focus()
+          if (startsOnCode) inputRef.current?.focus()
+          else contentRef.current?.focus()
         }}
       >
         <VerifyBody {...body} inputRef={inputRef} onClose={() => onOpenChange(false)} />

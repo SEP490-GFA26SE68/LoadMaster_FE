@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { Navigate, useSearchParams } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
+import { BackendDriverStop } from './BackendDriverStop'
 import { DeliveryStopView } from './DeliveryStopView'
 import { DriverNotice } from './DriverNotice'
 import { TripSummary } from './TripSummary'
-import { useDriverTripQuery } from './useDriverQueries'
+import { useDriverCapabilities, useDriverTripQuery } from './useDriverQueries'
 
 /**
  * Một chuyến của tài xế `/tai-xe/diem-giao?chuyen=<mã>` (LM-087). Không có `?chuyen` thì về "Chuyến của tôi" `/tai-xe`.
@@ -13,8 +14,11 @@ import { useDriverTripQuery } from './useDriverQueries'
  */
 export function DriverStopPage() {
   const [search] = useSearchParams()
+  const caps = useDriverCapabilities()
   const tripId = search.get('chuyen')
   if (!tripId) return <Navigate to="/tai-xe" replace />
+  // Nối backend: màn điểm giao dựng từ điểm đang giao của backend, không từ chuyến và phương án của kho mẫu
+  if (caps.backend) return <BackendDriverStop key={tripId} tripId={tripId} />
   return <DriverTripScreen key={tripId} tripId={tripId} />
 }
 

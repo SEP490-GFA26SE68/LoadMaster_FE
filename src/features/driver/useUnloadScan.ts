@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type { VerifyCandidate, VerifyCode, VerifyOutcome } from '@/components/PackageVerify'
+import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT, type TFunction } from '@/lib/i18n'
 import { isMockDbError, type ManualConfirmInput, type MockDbError, type TripLabel } from '@/lib/mock-db'
 import type { DeliveryView } from './delivery-progress'
@@ -46,8 +47,11 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
   /** Kho đã ghi kiện `id`: nói kết quả; vừa xong kiện cuối còn chờ dỡ của điểm thì đóng hộp — không còn gì để đối chiếu. */
   function recorded(id: string, waiting: ReadonlySet<string>) {
     const pickup = view?.pickupItems.find((entry) => entry.item.id === id)?.item
-    const name = view?.items.find((entry) => entry.item.id === id)?.item.name ?? pickup?.name ?? labelById.get(id)?.name ?? ''
-    setResult({ tone: 'success', message: pickup?.role === 'pick' ? t('driver.pickup.lastPicked', { id, name }) : t('driver.scan.lastUnloaded', { id, name }) })
+    const item = view?.items.find((entry) => entry.item.id === id)?.item
+    const name = item?.name ?? pickup?.name ?? labelById.get(id)?.name ?? ''
+    // Kiện của backend nói bằng mã in trên nhãn (mã tài xế vừa gõ), không bằng mã số nội bộ
+    const shown = item?.label ?? id
+    setResult({ tone: 'success', message: pickup?.role === 'pick' ? t('driver.pickup.lastPicked', { id, name }) : t('driver.scan.lastUnloaded', { id: shown, name }) })
     if ([...waiting].every((item) => item === id)) setOpenState(false)
   }
 
@@ -82,13 +86,27 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
   return { open, setOpen: setOpenState, candidates, result, pending: scan.isPending || manual.isPending, handleVerify, handleManual }
 }
 
-/** Kiện của điểm khác: câu riêng nêu điểm đúng của kiện; lỗi khác của kho dùng câu chung (`dataErrors`). */
+/** Lỗi của backend khi dỡ: câu riêng kèm mã kiện tài xế đã gõ (`params.code`). */
+const BACKEND_UNLOAD_ERRORS = {
+  UNLOAD_CODE_UNMATCHED: 'driver.backend.codeUnmatched',
+  DUPLICATE_UNLOAD: 'driver.backend.alreadyUnloaded',
+  WRONG_DELIVERY_STOP: 'driver.backend.wrongStop',
+} as const
+
+/**
+ * Kiện của điểm khác: câu riêng nêu điểm đúng của kiện; lỗi dỡ của backend: câu riêng kèm mã kiện (backend không nói kiện thuộc điểm
+ * nào); lỗi khác dùng câu chung (`dataErrors`, `apiErrors`).
+ */
 function unloadScanErrorMessage(
   error: unknown,
   t: TFunction,
   labelById: ReadonlyMap<string, TripLabel>,
   stops: readonly StopDelivery[],
 ): string {
+  if (isApiError(error) && Object.hasOwn(BACKEND_UNLOAD_ERRORS, error.code)) {
+    const key = BACKEND_UNLOAD_ERRORS[error.code as keyof typeof BACKEND_UNLOAD_ERRORS]
+    return t(key, { code: typeof error.params.code === 'string' ? error.params.code : '' })
+  }
   if (isMockDbError(error) && error.code === 'QR_WRONG_STOP') {
     const { packageInstanceId, stopNumber } = (error as MockDbError<'QR_WRONG_STOP'>).params
     return t('driver.scan.wrongStop', {
