@@ -116,7 +116,7 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 - **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
   (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì đăng nhập qua Keycloak của
   backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
-  điểm giao của tài xế đọc ghi backend thật; `VITE_API_FEATURES` chọn nhóm. Chuyến, Planner, tối ưu, giám sát, kho xếp hàng, đội xe, yêu cầu
+  điểm giao của tài xế, màn Giám sát đọc ghi backend thật; `VITE_API_FEATURES` chọn nhóm. Chuyến, Planner, tối ưu, kho xếp hàng, đội xe, yêu cầu
   giao vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
