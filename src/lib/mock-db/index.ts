@@ -31,7 +31,7 @@ export {
 } from './billing-model'
 export type { BillingDb } from './db-api-billing'
 export { effectiveSubscriptionStatus } from './billing-model'
-export type { CompaniesDb, CompanyInfo, CompanyOverview, CreatedCompany, NewCompany, NewCompanyAdmin } from './db-api-companies'
+export type { CompaniesDb, CompanyInfo, CompanyOverview, CompanyProfileChanges, CreatedCompany, NewCompany, NewCompanyAdmin } from './db-api-companies'
 export { SUPPORT_PANEL_TRANSACTIONS, type SupportCompanyPanel, type SupportDb } from './db-api-support'
 export {
   MAX_TICKET_TEXT,

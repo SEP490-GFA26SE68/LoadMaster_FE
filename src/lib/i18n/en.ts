@@ -41,6 +41,7 @@ import { platform } from './en/platform'
 import { billing } from './en/billing'
 import { payment } from './en/payment'
 import { companies } from './en/companies'
+import { companyProfile } from './en/companyProfile'
 import { support } from './en/support'
 import { contacts } from './en/contacts'
 import { landing } from './en/landing'
@@ -89,6 +90,7 @@ export const en = {
   billing,
   payment,
   companies,
+  companyProfile,
   support,
   contacts,
   landing,

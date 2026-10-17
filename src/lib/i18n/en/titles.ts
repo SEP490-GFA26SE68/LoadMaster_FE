@@ -38,6 +38,7 @@ export const titles = {
   billing: 'Plan and credits',
   payment: 'Simulated payment',
   companies: 'Companies',
+  companyProfile: 'Company details',
   support: 'Customer support',
   landing: 'About',
   pricing: 'Pricing',

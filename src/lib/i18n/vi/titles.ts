@@ -43,6 +43,7 @@ export const titles = {
   payment: 'Thanh toán giả lập',
   // FE-8-06, FE-8-07
   companies: 'Công ty',
+  companyProfile: 'Thông tin công ty',
   support: 'Hỗ trợ khách hàng',
   // Trang công khai và màn liên hệ của khách
   landing: 'Giới thiệu',

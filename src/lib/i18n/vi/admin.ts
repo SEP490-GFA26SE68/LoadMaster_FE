@@ -188,6 +188,7 @@ export const admin = {
     },
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },
+      companyProfile: { manage: 'Xem và sửa thông tin công ty của mình' },
       users: { manage: 'Quản lý người dùng' },
       audit: { view: 'Xem nhật ký hệ thống' },
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },

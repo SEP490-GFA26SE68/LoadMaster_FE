@@ -121,11 +121,15 @@ function UsersCell({ row }: { row: ServerCompanyRow }) {
   )
 }
 
-function StatusCell({ row }: { row: ServerCompanyRow }) {
+/** Trạng thái của công ty trên máy chủ — dùng chung với màn Thông tin công ty của quản trị công ty. */
+export function ServerCompanyStatusBadge({ status }: { status: ServerCompanyStatus | null }) {
   const t = useT()
-  const { status } = row.company
   if (status === null) return <Badge>{t('companies.server.statusUnknown')}</Badge>
   return <Badge tone={STATUS_LOOK[status].tone} dot={STATUS_LOOK[status].dot}>{t(`companies.server.status.${status}`)}</Badge>
+}
+
+function StatusCell({ row }: { row: ServerCompanyRow }) {
+  return <ServerCompanyStatusBadge status={row.company.status} />
 }
 
 function CreatedCell({ row }: { row: ServerCompanyRow }) {

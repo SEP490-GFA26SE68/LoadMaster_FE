@@ -39,6 +39,7 @@ import { platform } from './vi/platform'
 import { billing } from './vi/billing'
 import { payment } from './vi/payment'
 import { companies } from './vi/companies'
+import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
@@ -95,6 +96,7 @@ export const vi = {
   billing,
   payment,
   companies,
+  companyProfile,
   support,
   contacts,
   landing,

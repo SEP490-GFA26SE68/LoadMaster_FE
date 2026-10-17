@@ -8,6 +8,7 @@ import type { Role } from '@/types/user'
  */
 export const PERMISSIONS = [
   'companies.manage',
+  'companyProfile.manage',
   'users.manage',
   'audit.view',
   'subscriptionPlans.manage',
@@ -65,12 +66,15 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
  * trò nền tảng; gửi yêu cầu không cần quyền.
+ *
+ * `companyProfile.manage` mở Thông tin công ty `/cong-ty` — Quản trị công ty xem và sửa thông tin của chính công ty mình; khác
+ * `companies.manage` (danh sách mọi công ty của Quản trị hệ thống).
  */
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
   systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
   systemSupporter: ['support.handle', 'contacts.handle'],
-  companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
+  companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',

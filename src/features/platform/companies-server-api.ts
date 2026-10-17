@@ -6,7 +6,7 @@
  *   updateServerCompany       PUT   /api/companies/{id}
  *   setServerCompanyStatus    PATCH /api/companies/{id}/status
  *   chưa có ở BE: tạo công ty kèm quản trị trong một lần gọi, xoá công ty; địa chỉ, số điện thoại, kho xuất phát của công ty (Q-19)
- * Kiểu của backend dừng ở file này; màn nhận `ServerCompany…`.
+ * Kiểu của backend dừng ở file này và `company-profile-api.ts` (cùng `CompanyResponse`); màn nhận `ServerCompany…`.
  */
 
 import { createServerUser, fetchServerUsers } from '@/features/admin/users-api'
@@ -71,7 +71,8 @@ export type ServerCompanyCreated =
   | { readonly company: ServerCompany; readonly admin: TemporaryPassword }
   | { readonly company: ServerCompany; readonly adminError: unknown }
 
-type CompanyDto = {
+/** `CompanyResponse` của backend — cũng là kết quả của `/api/company/profile` (`company-profile-api.ts`). */
+export type CompanyDto = {
   readonly id: number
   readonly companyCode: string
   readonly companyName: string
@@ -94,7 +95,7 @@ function oneOf<T extends string>(values: readonly T[], value: unknown): T | null
   return values.find((item) => item === value) ?? null
 }
 
-function companyOf(dto: CompanyDto): ServerCompany {
+export function companyOf(dto: CompanyDto): ServerCompany {
   return {
     id: String(dto.id),
     code: dto.companyCode,

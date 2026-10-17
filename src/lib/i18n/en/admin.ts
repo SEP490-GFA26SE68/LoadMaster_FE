@@ -164,6 +164,7 @@ export const admin = {
     },
     labels: {
       companies: { manage: 'Create and manage customer companies' },
+      companyProfile: { manage: 'View and edit your own company details' },
       users: { manage: 'Manage users' },
       audit: { view: 'View the system log' },
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },

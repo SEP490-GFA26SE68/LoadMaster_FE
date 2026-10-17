@@ -25,6 +25,7 @@ export const pageHero = {
   payment: 'Hoàn tất hoặc huỷ một giao dịch đăng ký gói, gia hạn hay nạp credit.',
   companies: 'Công ty dùng LoadMaster: gói cước, số người dùng, kho xuất phát và quản trị công ty đầu tiên.',
   companiesServer: 'Công ty dùng LoadMaster: thông tin thanh toán, gói cước, số người dùng và quản trị công ty đầu tiên.',
+  companyProfile: 'Tên, liên hệ và thông tin thanh toán của công ty bạn.',
   support: 'Yêu cầu hỗ trợ của mọi công ty: trả lời, đổi trạng thái và xem gói, credit của công ty đó.',
   contacts: 'Yêu cầu khách gửi từ trang giới thiệu: nhận việc, đổi trạng thái và ghi chú nội bộ.',
 } as const

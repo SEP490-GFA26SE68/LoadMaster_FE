@@ -40,6 +40,7 @@ const RequirementsPage = lazy(() => import('@/features/requirements/Requirements
 const VehicleTypesPage = lazy(() => import('@/features/vehicle-types/VehicleTypesPage').then((m) => ({ default: m.VehicleTypesPage })))
 const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then((m) => ({ default: m.TripReportPage })))
 const CompaniesPage = lazy(() => import('@/features/platform/CompaniesPage').then((m) => ({ default: m.CompaniesPage })))
+const CompanyProfilePage = lazy(() => import('@/features/company-profile/CompanyProfilePage').then((m) => ({ default: m.CompanyProfilePage })))
 const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m) => ({ default: m.SupportPage })))
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
@@ -141,6 +142,8 @@ export const routes: RouteObject[] = [
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Công ty: màn chính của quản trị hệ thống (FE-8-06, D-65)
                   guarded('companies.manage', [{ path: '/nen-tang/cong-ty', element: <CompaniesPage />, handle: titled((t) => t('titles.companies')) }]),
+                  // Thông tin công ty của chính mình: quản trị công ty
+                  guarded('companyProfile.manage', [{ path: '/cong-ty', element: <CompanyProfilePage />, handle: titled((t) => t('titles.companyProfile')) }]),
                   // Yêu cầu hỗ trợ của mọi công ty: màn chính của Hỗ trợ khách hàng (FE-8-07). Người dùng công ty gửi yêu cầu ở hộp thoại của menu tài khoản
                   guarded('support.handle', [{ path: '/ho-tro', element: <SupportPage />, handle: titled((t) => t('titles.support')) }]),
                   // Liên hệ của khách gửi từ trang giới thiệu: ba vai trò nền tảng
