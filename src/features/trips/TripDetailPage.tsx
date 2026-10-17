@@ -21,7 +21,6 @@ import { SegregationCard } from './SegregationCard'
 import { SegregationOverrideDialog } from './SegregationOverrideDialog'
 import { StopFormDialog } from './StopFormDialog'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
-import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
 import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
@@ -37,7 +36,9 @@ import {
   useTripDetailQuery,
   useTripStopsMutation,
 } from './useTripsQuery'
-
+import { useQuery } from '@tanstack/react-query'
+import { fetchBackendTripDetail } from './trips-api'
+import { RealTripDetailHeader, TripDetailHeader } from './TripDetailHeader'
 /**
  * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097; V2.3 LM-103): dải trời có tên chuyến, tiến trình và banner
  * theo pha; card sơ đồ tuyến đè lên đáy dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
@@ -55,7 +56,187 @@ import {
  * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
  * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
  */
-export function TripDetailPage() {
+
+function BackendTripDetail({ tripId }: { tripId: string }) {
+  const t = useT()
+
+  const query = useQuery({
+    queryKey: ['trips', tripId, 'backend-detail'],
+    queryFn: () => fetchBackendTripDetail(tripId),
+    enabled: tripId !== '',
+  })
+
+  if (query.isPending) {
+    return (
+      <div
+        role="status"
+        aria-label={t('trips.detail.loading')}
+        className="grid flex-1 place-items-center"
+      >
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="flex flex-col items-start gap-3 px-shell py-8">
+        <p role="alert" className="text-body text-danger">
+          {dataErrorMessage(query.error, t)}
+        </p>
+        <Button variant="secondary" asChild>
+          <Link to="/chuyen">{t('common.backToTrips')}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const { trip, stops } = query.data
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <RealTripDetailHeader tripId={tripId} />
+
+      <div className="flex flex-col gap-4 px-shell py-6">
+        <div className="rounded-lg border border-border bg-bg p-5">
+          <h2 className="mb-4 text-lg font-semibold">
+            {trip.tripName}
+          </h2>
+
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-text-2">Mã chuyến</dt>
+              <dd className="font-medium">{trip.tripCode}</dd>
+            </div>
+
+            <div>
+              <dt className="text-text-2">Trạng thái</dt>
+              <dd className="font-medium">{trip.status}</dd>
+            </div>
+
+            <div>
+              <dt className="text-text-2">Xe</dt>
+              <dd className="font-medium">
+                {trip.vehicleName} — {trip.licensePlate}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-text-2">Tài xế</dt>
+              <dd className="font-medium">
+                {trip.driverName ?? t('trips.detail.noDriver')}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-text-2">Giờ xuất phát</dt>
+              <dd className="font-medium">
+                {typeof trip.departureTime === 'string'
+                  ? trip.departureTime.replace('T', ' ')
+                  : '—'}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-text-2">Kho xuất phát</dt>
+              <dd className="font-medium">
+                {trip.originName}
+                {trip.originAddress
+                  ? ` — ${trip.originAddress}`
+                  : ''}
+              </dd>
+            </div>
+          </dl>
+
+          <section className="rounded-lg border border-border bg-bg p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {t('trips.detail.deliveryStops')}
+                </h2>
+                <p className="mt-1 text-sm text-text-2">
+                  {stops.length} {t('trips.detail.deliveryStops')}
+                </p>
+              </div>
+            </div>
+
+            {stops.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+                <p className="font-medium">
+                  {t('trips.detail.noStops')}
+                </p>
+                <p className="mt-2 text-sm text-text-2">
+                  {t('trips.detail.noStopsHint')}
+                </p>
+              </div>
+            ) : (
+              <ol className="space-y-3">
+                {stops.map((stop) => (
+                  <li
+                    key={stop.id}
+                    className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-start"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                      {stop.stopSequence}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">
+                          {stop.stopName ||
+                            stop.address ||
+                            t('trips.detail.unnamedStop')}
+                        </h3>
+
+                        <span className="rounded-full border border-border px-2 py-0.5 text-xs">
+                          {stop.status}
+                        </span>
+                      </div>
+
+                      {stop.address && (
+                        <p className="mt-1 text-sm text-text-2">
+                          {stop.address}
+                        </p>
+                      )}
+
+                      {stop.deliveryRequirementId !== null && (
+                        <p className="mt-2 text-xs text-text-2">
+                          {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.plannedArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.plannedArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.actualArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.actualArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+function MockTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
   const can = useCan()
@@ -189,20 +370,20 @@ export function TripDetailPage() {
             {editing ? (
               // Ô lưới giãn hết hai hàng để panel tự dính (sticky, card riêng của panel) khi cuộn bảng kiện; không bọc thêm card
               <div className="min-w-0 xl:self-stretch xl:[grid-area:side]">
-              <PackageFormPanel
-                key={editing.id}
-                tripId={tripId}
-                value={editing}
-                vehicle={vehicle}
-                stops={stops}
-                readOnly={!editable}
-                onSave={handleSave}
-                onDelete={trip.packages.some((pkg) => pkg.id === editing.id)
-                  ? (pkg) => deletePackage.mutate(pkg.id, { onSuccess: () => setEditing(null) })
-                  : undefined}
-                onDuplicate={trip.packages.some((pkg) => pkg.id === editing.id) ? handleDuplicate : undefined}
-                onClose={() => setEditing(null)}
-              />
+                <PackageFormPanel
+                  key={editing.id}
+                  tripId={tripId}
+                  value={editing}
+                  vehicle={vehicle}
+                  stops={stops}
+                  readOnly={!editable}
+                  onSave={handleSave}
+                  onDelete={trip.packages.some((pkg) => pkg.id === editing.id)
+                    ? (pkg) => deletePackage.mutate(pkg.id, { onSuccess: () => setEditing(null) })
+                    : undefined}
+                  onDuplicate={trip.packages.some((pkg) => pkg.id === editing.id) ? handleDuplicate : undefined}
+                  onClose={() => setEditing(null)}
+                />
               </div>
             ) : (
               // Chuyến còn lập kế hoạch: "Kiểm tra trước khi tối ưu" đứng đầu cột phải (LM-104)
@@ -217,4 +398,18 @@ export function TripDetailPage() {
       )}
     </div>
   )
+}
+
+export function TripDetailPage() {
+  const { tripId = '' } = useParams()
+
+  // Các chuyến có ID số được tạo từ Backend hiện tại.
+  if (/^[1-9]\d*$/.test(tripId)) {
+    return <BackendTripDetail tripId={tripId} />
+  }
+
+
+
+  // Các chuyến mẫu giữ nguyên luồng cũ.
+  return <MockTripDetailPage />
 }

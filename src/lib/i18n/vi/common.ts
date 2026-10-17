@@ -13,6 +13,9 @@ export const common = {
   backToTrips: 'Về danh sách chuyến',
   on: 'Bật',
   off: 'Tắt',
+  yes: 'Có',
+  no: 'Không',
+  clearFilters: 'Xóa bộ lọc',
   /** Gói cước (FE-8-02, FE-8-03): hạng là tên gói, giống ở mọi ngôn ngữ; nhãn tạm và "không giới hạn" dùng ở màn nền tảng lẫn màn công ty. */
   planTiers: { BASIC: 'Basic', PRO: 'Pro', ULTIMATE: 'Ultimate' },
   provisionalPlan: 'Giá trị tạm — chờ chốt',

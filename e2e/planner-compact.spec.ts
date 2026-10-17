@@ -158,8 +158,8 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
   expect(browserErrors).toStrictEqual([])
 })
 
-test('tablet keeps two 56 px control rows; the company manager reads the plan with one reason and no actions (FE-0-07)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
-  await login(PLANNER_ROUTE, 'manager')
+test('tablet keeps two 56 px control rows; the company companyManager reads the plan with one reason and no actions (FE-0-07)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
+  await login(PLANNER_ROUTE, 'companyManager')
   await page.locator('canvas').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()

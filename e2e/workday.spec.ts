@@ -13,7 +13,7 @@ import { addPackage, addStop, MOCK_DB, optimizeAndOpenPlanner, optimizeRoute, wa
 test.use({ collectConsoleErrors: true })
 
 const TRIP = 'TRIP-015'
-const NAMES = { dispatcher: 'Nguyễn Thanh Tùng', warehouse: 'Lê Văn Hải', driver: 'Phạm Quốc Dũng', manager: 'Trần Thị Mai' } as const
+const NAMES = { dispatcher: 'Nguyễn Thanh Tùng', warehouse: 'Lê Văn Hải', driver: 'Phạm Quốc Dũng', companyManager: 'Trần Thị Mai' } as const
 
 /** Hôm nay theo giờ Việt Nam — ngày chạy của chuyến, cùng mốc với seed và kỳ của bảng điều khiển. */
 function vnToday(): string {
@@ -142,7 +142,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await signOut(page, NAMES.driver)
 
   // Quản lý: chuyến hoàn thành nằm trong kỳ 7 ngày, xuất báo cáo
-  await signIn(page, 'manager')
+  await signIn(page, 'companyManager')
   await page.waitForURL((url) => url.pathname === '/')
   await page.getByRole('button', { name: '7 ngày', exact: true }).click()
   await expect(page.getByRole('link', { name: new RegExp(TRIP) }).first()).toBeVisible()
@@ -155,7 +155,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
     return { status: tripStatus(trip), issues: trip.delivery?.issues.map((item) => item.kind) }
   }, { db: MOCK_DB, tripId: TRIP })
   expect(store).toStrictEqual({ status: 'DELIVERED', issues: ['damaged'] })
-  await signOut(page, NAMES.manager)
+  await signOut(page, NAMES.companyManager)
 
   // Quản trị công ty: nhật ký của công ty có đủ chuỗi việc của chuyến, đúng người làm
   await signIn(page, 'companyAdmin')

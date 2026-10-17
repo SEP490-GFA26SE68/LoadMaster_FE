@@ -292,7 +292,7 @@ test('twenty seeded users cover the eight roles; the history names only real use
   expect(users).toHaveLength(20)
   expect(users.map((user) => user.id).filter((id) => /^US-\d+$/.test(id)).toSorted().slice(-3)).toStrictEqual(['US-0011', 'US-0012', 'US-0015'])
   expect(new Set(users.map((user) => user.role))).toStrictEqual(new Set([
-    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver',
+    'systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'CompanyManager', 'dispatcher', 'warehouse', 'driver',
   ]))
   expect(users.filter((user) => user.status === 'suspended').map((user) => user.id)).toStrictEqual(['US-0008'])
   const events = await db.listEvents()

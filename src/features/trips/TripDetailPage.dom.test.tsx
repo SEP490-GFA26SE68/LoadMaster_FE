@@ -150,7 +150,7 @@ test('a damaged package the warehouse left out while loading is listed with its 
 })
 
 test('the manager reads a trip without the actions menu, with one primary action to view the plan', async () => {
-  const { container } = renderDetail('TRIP-2026-0914', 'manager')
+  const { container } = renderDetail('TRIP-2026-0914', 'companyManager')
   expect(await screen.findByRole('heading', { name: 'Kiện hàng' }, SLOW)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Thao tác' })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Chạy tối ưu' })).not.toBeInTheDocument()
@@ -188,7 +188,7 @@ test('the stop list filters the package table; the fragile chip and the search n
 })
 
 test('the right column warns about fragile cargo; selecting a package shows its preview, and a read-only viewer gets no form', async () => {
-  const { user } = renderDetail('TRIP-2026-0914', 'manager')
+  const { user } = renderDetail('TRIP-2026-0914', 'companyManager')
   expect(await screen.findByText('22 kiện dễ vỡ', {}, SLOW)).toBeInTheDocument()
 
   await user.click(screen.getByRole('row', { name: /PKG-003/ }))

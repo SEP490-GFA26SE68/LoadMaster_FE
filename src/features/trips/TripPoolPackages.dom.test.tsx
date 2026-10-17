@@ -125,7 +125,7 @@ test('a package taken off the trip goes back to the pool; the next time the hand
 })
 
 test('the manager only reads: no way to add or remove; the card hides when the trip has no pool package', async () => {
-  const { trip, db } = await renderTrip('Tuyến thử chỉ xem', { role: 'manager' })
+  const { trip, db } = await renderTrip('Tuyến thử chỉ xem', { role: 'companyManager' })
   await screen.findByRole('region', { name: 'Sơ đồ tuyến' }, SLOW)
   expect(screen.queryByRole('region', { name: 'Kiện đưa thẳng từ kho kiện' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Thêm kiện từ kho kiện' })).toBeNull()
