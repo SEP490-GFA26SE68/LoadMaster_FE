@@ -11,6 +11,7 @@
 
 import { api, ApiError, isApiError, type ApiClient, type TransportErrorCode } from './api-client'
 import { fetchAllPages, type FetchAllPagesOptions } from './api-page'
+import { isoFromBackend } from './backend-time'
 import {
   effectiveSubscriptionStatus,
   PLAN_TIERS,
@@ -67,18 +68,14 @@ export type CreditBalanceDto = { readonly companyId: number | null; readonly bal
 /** Backend coi hạng Ultimate là không giới hạn credit (không theo `monthlyCredits`). */
 export const UNLIMITED_TIER: PlanTier = 'ULTIMATE'
 
-/**
- * `LocalDateTime` của backend là giờ Việt Nam không kèm múi (JVM chạy giờ +07:00); `Instant` có `Z`. Trả ISO UTC như kho mẫu, phần lẻ
- * của giây cắt về mili giây; chuỗi không đọc được là `null`.
- */
-export const BACKEND_UTC_OFFSET = '+07:00'
-
+/** Mốc giờ của backend (cách đọc ở `isoFromBackend`) cho trường có thể vắng: vắng hoặc không đọc được là `null`. */
 export function fromBackendLocalDateTime(value: string | null | undefined): string | null {
   if (value === null || value === undefined || value.trim() === '') return null
-  const trimmed = value.trim().replace(/(\.\d{3})\d+/, '$1')
-  const zoned = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed) ? trimmed : `${trimmed}${BACKEND_UTC_OFFSET}`
-  const time = Date.parse(zoned)
-  return Number.isNaN(time) ? null : new Date(time).toISOString()
+  try {
+    return isoFromBackend(value)
+  } catch {
+    return null
+  }
 }
 
 /**
