@@ -113,7 +113,7 @@ export function supportMethods(ctx: DbContext): SupportDb {
       ctx.respond(() => {
         const ticket = ctx.scope.supportTickets.own(ticketId)
         assertRole(ctx, 'systemSupporter')
-        if (!TICKET_STATUSES.includes(status)) throw bad('status')
+        if (!(TICKET_STATUSES as readonly TicketStatus[]).includes(status)) throw bad('status')
         if (ticket.status === status) return ticket
         ticket.status = status as TicketStatus
         ticket.updatedAt = ctx.nowIso()

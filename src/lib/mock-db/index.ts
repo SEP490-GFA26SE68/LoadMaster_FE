@@ -37,6 +37,7 @@ export {
   MAX_TICKET_TEXT,
   MAX_TICKET_TITLE,
   TICKET_KINDS,
+  BACKEND_TICKET_STATUSES,
   TICKET_STATUSES,
   type NewSupportTicket,
   type SupportTicket,

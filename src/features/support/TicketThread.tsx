@@ -8,6 +8,8 @@ import type { SupportTicket } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { replyFormSchema, translateSupportError, type ReplyFormValues } from './support-form'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
+import { ticketLabel } from './ticket-view'
+import { SUPPORT_SOURCE } from './useSupportQuery'
 
 /** Cỡ cảm ứng cho kho và tài xế mở hộp thoại từ nút tài khoản 56 px (AGENTS mục 5, 10): nút 56 px, chữ từ 16 px. */
 const TOUCH_BUTTON = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
@@ -50,10 +52,53 @@ function ReplyForm({ onReply, pending }: { onReply: (text: string) => Promise<vo
   )
 }
 
+function Replies({ ticket, when }: { ticket: SupportTicket; when: (iso: string) => string }) {
+  const t = useT()
+  return (
+    <section aria-label={t('support.thread.replies')} className="flex flex-col gap-2.5">
+      {ticket.replies.length === 0 ? (
+        <p className="m-0 text-small text-ink-3 pointer-coarse:text-body">{t('support.thread.noReplies')}</p>
+      ) : (
+        <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
+          {ticket.replies.map((reply) => (
+            <li
+              key={`${reply.at}-${reply.authorId}`}
+              className={cn('rounded-md border px-3.5 py-3', reply.authorRole === 'systemSupporter' ? 'border-cyan-200 bg-cyan-50' : 'border-line-soft bg-bg')}
+            >
+              <div className="mb-1 flex flex-wrap items-baseline gap-x-2 text-small text-ink-3 pointer-coarse:text-body">
+                <span className="font-medium text-ink-1">{t('support.thread.author', { name: reply.authorName, role: t(`roles.${reply.authorRole}`) })}</span>
+                <time dateTime={reply.at} className="tabular-nums">{when(reply.at)}</time>
+              </div>
+              <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{reply.text}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )
+}
+
+/** Backend chưa có trao đổi: phản hồi một dòng của đội hỗ trợ (nếu có, chỉ đọc) và câu nói yêu cầu chỉ theo dõi bằng trạng thái. */
+function StatusOnly({ ticket }: { ticket: SupportTicket }) {
+  const t = useT()
+  return (
+    <>
+      {ticket.resolutionNote === undefined ? null : (
+        <section aria-label={t('support.thread.supportNote')} className="rounded-md border border-cyan-200 bg-cyan-50 px-3.5 py-3">
+          <p className="m-0 mb-1 text-small font-medium text-ink-1 pointer-coarse:text-body">{t('support.thread.supportNote')}</p>
+          <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.resolutionNote}</p>
+        </section>
+      )}
+      <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{t('support.thread.statusOnly')}</p>
+    </>
+  )
+}
+
 /**
  * Cuộc trao đổi của một yêu cầu hỗ trợ (FE-8-07), dùng chung cho hộp thoại của người dùng công ty và màn `/ho-tro`: tiêu đề, loại,
  * trạng thái, nội dung yêu cầu, các lần trả lời theo thứ tự, rồi ô trả lời. Yêu cầu đã đóng không có ô trả lời mà có một câu nói lý do
  * (Hỗ trợ khách hàng mở lại bằng ô trạng thái ở màn của họ). Lần trả lời của Hỗ trợ khách hàng nền tint để người gửi nhận ra ngay.
+ * Nối backend (chưa có trao đổi): không có các lần trả lời và ô trả lời — chỉ nội dung, phản hồi của đội hỗ trợ và trạng thái.
  */
 export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
   ticket: SupportTicket
@@ -70,7 +115,7 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
         <div className="flex flex-wrap items-center gap-2">
           <TicketStatusBadge status={ticket.status} />
           <TicketKindBadge kind={ticket.kind} />
-          <span className="font-mono text-caption text-ink-3">{ticket.id}</span>
+          <span className="font-mono text-caption text-ink-3">{ticketLabel(ticket)}</span>
         </div>
         <h3 className="m-0 font-display text-h3 leading-6 font-semibold text-ink-strong pointer-coarse:text-body-lg">{ticket.title}</h3>
         <p className="m-0 text-small text-ink-3">{t('support.thread.sentBy', { name: ticket.senderName, time: when(ticket.createdAt) })}</p>
@@ -80,31 +125,17 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
         <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.description}</p>
       </section>
 
-      <section aria-label={t('support.thread.replies')} className="flex flex-col gap-2.5">
-        {ticket.replies.length === 0 ? (
-          <p className="m-0 text-small text-ink-3 pointer-coarse:text-body">{t('support.thread.noReplies')}</p>
-        ) : (
-          <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-            {ticket.replies.map((reply) => (
-              <li
-                key={`${reply.at}-${reply.authorId}`}
-                className={cn('rounded-md border px-3.5 py-3', reply.authorRole === 'systemSupporter' ? 'border-cyan-200 bg-cyan-50' : 'border-line-soft bg-bg')}
-              >
-                <div className="mb-1 flex flex-wrap items-baseline gap-x-2 text-small text-ink-3 pointer-coarse:text-body">
-                  <span className="font-medium text-ink-1">{t('support.thread.author', { name: reply.authorName, role: t(`roles.${reply.authorRole}`) })}</span>
-                  <time dateTime={reply.at} className="tabular-nums">{when(reply.at)}</time>
-                </div>
-                <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{reply.text}</p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
-      {ticket.status === 'CLOSED' ? (
-        <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{viewerIsSupport ? t('support.thread.closedSupport') : t('support.thread.closed')}</p>
+      {!SUPPORT_SOURCE.replies ? (
+        <StatusOnly ticket={ticket} />
       ) : (
-        <ReplyForm key={ticket.id} onReply={onReply} pending={pending} />
+        <>
+          <Replies ticket={ticket} when={when} />
+          {ticket.status === 'CLOSED' ? (
+            <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{viewerIsSupport ? t('support.thread.closedSupport') : t('support.thread.closed')}</p>
+          ) : (
+            <ReplyForm key={ticket.id} onReply={onReply} pending={pending} />
+          )}
+        </>
       )}
     </div>
   )
