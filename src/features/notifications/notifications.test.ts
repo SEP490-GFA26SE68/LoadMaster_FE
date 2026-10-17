@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import type { AuditEvent } from '@/lib/mock-db'
-import { driverNotice, driverNoticeEvent, hasNotifications, NOTIFICATION_LIMIT, operationHrefs, selectNotifications } from './notifications'
+import { driverNotice, driverNoticeEvent, hasNotifications, NOTIFICATION_LIMIT, operationHrefs, selectNotifications, withoutAccountEvents } from './notifications'
 
 /** Lọc sự kiện nhật ký thành thông báo theo vai trò (LM-098). Sự kiện dựng tay, mới nhất trước như kho trả. */
 
@@ -269,4 +269,14 @@ test('a reply from customer support reaches only the person who sent the ticket,
   // Tài khoản nền tảng không có chuông; lần trả lời của chính người gửi không tự báo cho mình
   expect(selectNotifications([reply], { id: 'US-NT-02', role: 'systemSupporter' }, NOW)).toStrictEqual([])
   expect(selectNotifications([{ ...reply, actorId: 'US-0003' }], { id: 'US-0003', role: 'warehouse' }, NOW)).toStrictEqual([])
+})
+
+test('without account events: account changes and failed sign-ins go, credit and support events stay (users on the backend)', () => {
+  const events = [
+    event('EV-4', '2026-09-14T10:00:00.000Z', null, 'auth.signInFailed', 'ai-do@example.vn'),
+    event('EV-3', '2026-09-14T09:00:00.000Z', null, 'credit.lowBalance'),
+    event('EV-2', '2026-09-14T08:00:00.000Z', 'US-0005', 'user.locked', 'US-0013'),
+    event('EV-1', '2026-09-14T07:00:00.000Z', 'US-NT-02', 'ticket.replied'),
+  ]
+  expect(ids(withoutAccountEvents(events))).toStrictEqual(['EV-3', 'EV-1'])
 })

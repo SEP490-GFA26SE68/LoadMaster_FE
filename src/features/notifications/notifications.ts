@@ -112,6 +112,14 @@ export function notificationWindowStart(now: Date): Date {
 }
 
 /**
+ * Bỏ sự kiện tài khoản (`ACCOUNT_ACTIONS`) — khi người dùng đã nối backend, chúng nói về tài khoản của kho mẫu chứ không phải tài khoản
+ * thật trên màn Người dùng, cùng lý do Nhật ký nói backend chưa có nhật ký. Sự kiện khác (credit, hỗ trợ) giữ nguyên.
+ */
+export function withoutAccountEvents(events: readonly AuditEvent[]): AuditEvent[] {
+  return events.filter((event) => !ACCOUNT_ACTIONS.includes(event.action))
+}
+
+/**
  * Thông báo của `viewer` từ nhật ký (mới nhất trước, như kho trả): đúng loại sự kiện của vai trò, không phải việc chính người đó làm,
  * từ `NOTIFICATION_WINDOW_DAYS` ngày trước `now`, tối đa `NOTIFICATION_LIMIT` dòng. Giữ thứ tự của kho.
  */
