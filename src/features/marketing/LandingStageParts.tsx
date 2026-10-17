@@ -24,6 +24,7 @@ const CONTROL = cn(
   SKY_FOCUS,
 )
 
+/** Điện thoại: hai góc đầu, cuối giữ một dòng, góc giữa (chữ dài nhất) nhận phần còn lại và xuống dòng khi chữ 16 px của máy cảm ứng không vừa. */
 export function StageViews({ preset, onPreset, className }: {
   preset: CameraPreset
   onPreset: (preset: CameraPreset) => void
@@ -32,10 +33,10 @@ export function StageViews({ preset, onPreset, className }: {
   const t = useT()
   return (
     <div role="group" aria-label={t('landing.stage.views')}
-      className={cn('grid grid-cols-3 rounded-lg border border-landing-hairline bg-canvas-2 p-0.75 sm:flex', className)}>
+      className={cn('grid grid-cols-[auto_minmax(0,1fr)_auto] rounded-lg border border-landing-hairline bg-canvas-2 p-0.75 sm:flex', className)}>
       {STAGE_VIEWS.map((view) => (
         <button key={view.preset} type="button" aria-pressed={view.preset === preset} onClick={() => onPreset(view.preset)}
-          className={cn(CONTROL, 'text-center aria-pressed:bg-cyan-400/20 aria-pressed:text-sky-text aria-pressed:ring-1 aria-pressed:ring-cyan-300/60 aria-pressed:ring-inset')}>
+          className={cn(CONTROL, 'text-center max-sm:px-2 aria-pressed:bg-cyan-400/20 aria-pressed:text-sky-text aria-pressed:ring-1 aria-pressed:ring-cyan-300/60 aria-pressed:ring-inset')}>
           {t(`landing.stage.view.${view.key}`)}
         </button>
       ))}
