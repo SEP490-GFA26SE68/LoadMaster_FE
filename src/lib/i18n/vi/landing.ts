@@ -1,6 +1,8 @@
 /**
- * Trang giới thiệu công khai `/gioi-thieu` (`features/marketing`): đầu trang và chân trang dùng chung với Bảng giá, phần mở đầu, tính năng,
- * cách hoạt động và form liên hệ của khách. Chỉ nói điều ứng dụng làm được thật: không số liệu, không tên khách hàng.
+ * Trang giới thiệu công khai `/gioi-thieu` (`features/marketing`): đầu trang và chân trang dùng chung với Bảng giá, phần mở đầu và khung
+ * 3D, dải số liệu, tính năng, cách hoạt động, gói cước và form liên hệ của khách. Chỉ nói điều ứng dụng làm được thật: không tên hay lời
+ * khen của khách hàng; số nào cũng có nguồn — lần chạy của bộ tối ưu mô phỏng trên trình duyệt (kèm MOCK RESULT), hằng số trong code,
+ * hoặc danh mục gói.
  */
 export const landing = {
   /** Liên kết đầu tiên của trang, chỉ hiện khi nhận focus bằng bàn phím. */
@@ -23,6 +25,46 @@ export const landing = {
     cta: 'Nhận tư vấn',
     pricing: 'Xem bảng giá',
     artworkLabel: 'Mô phỏng thùng xe được xếp hàng theo thứ tự dỡ',
+    /** Bốn vai trò làm việc trên cùng một phương án; tên vai trò lấy từ nhánh `roles`. */
+    roles: 'Một phương án cho cả bốn vai trò',
+  },
+  /**
+   * Khung 3D của phần mở đầu: chuyến mẫu do bộ tối ưu mô phỏng tính ngay trên trình duyệt của người xem, vẽ bằng bộ máy 3D của ứng dụng.
+   * Mọi số ở đây là số của lần chạy đó và đi kèm MOCK RESULT.
+   */
+  stage: {
+    title: 'Thùng mẫu 6 m',
+    caption: 'Chuyến mẫu {count} kiện cho {stops} điểm giao, do bộ tối ưu mô phỏng tính ngay trên trình duyệt của bạn rồi xếp từng kiện theo thứ tự. Hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa.',
+    /** Câu dưới hình minh hoạ khi trình duyệt không vẽ được khung 3D: không nói gì về lần chạy, vì không có lần chạy nào. */
+    artworkCaption: 'Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa — tới điểm nào lấy hàng điểm đó.',
+    preparing: 'Đang tính phương án mẫu…',
+    views: 'Góc nhìn',
+    view: {
+      overview: 'Toàn cảnh',
+      zones: 'Vùng điểm giao',
+      door: 'Cửa sau',
+    },
+    replay: 'Xếp lại',
+    replayLabel: 'Xếp lại thùng xe từ đầu',
+    legend: 'Màu của kiện theo điểm giao',
+    stop: 'Điểm {number}',
+    readout: {
+      title: 'Kết quả của lần chạy',
+      placed: 'Kiện đã xếp',
+      placedValue: '{placed} / {total}',
+      volume: 'Lấp đầy thể tích',
+      payload: 'Tải trọng',
+      rehandling: 'Phải dỡ-xếp lại',
+      runtime: 'Thời gian tính',
+      runtimeValue: '{ms} ms',
+    },
+  },
+  /** Tên bốn điểm giao của chuyến mẫu — khung 3D ghi tên này trên dải vùng; bản tiếng Anh không có chữ có dấu. */
+  sample: {
+    stop1: 'Siêu thị',
+    stop2: 'Cửa hàng tiện lợi',
+    stop3: 'Nhà phân phối',
+    stop4: 'Đại lý tạp hoá',
   },
   features: {
     title: 'Tính năng chính',

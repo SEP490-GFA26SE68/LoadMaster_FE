@@ -54,6 +54,7 @@ export function CameraRig({
   fitRequest = 0,
   specFrame = false,
   vehicleDecoration = false,
+  zoom = 1,
   onUserControl,
 }: {
   preset: CameraPreset
@@ -66,6 +67,8 @@ export function CameraRig({
   /** Xem trước ở form xe: canh khung theo đúng những điểm hình vẽ chạm tới (`specFramePoints`) thay cho hộp bao rộng rãi. */
   specFrame?: boolean
   vehicleDecoration?: boolean
+  /** Lớn hơn 1: camera đứng gần hơn khung vừa khít (trang giới thiệu: khung hình không có HUD nên không cần chừa lề rộng). */
+  zoom?: number
   onUserControl?: () => void
 }) {
   const controlsRef = useRef<ComponentRef<typeof CameraControls>>(null)
@@ -117,14 +120,14 @@ export function CameraRig({
           }
         }
       }
-      const scale = distance / Math.hypot(x, y, z)
+      const scale = distance / zoom / Math.hypot(x, y, z)
       x *= scale; y *= scale; z *= scale
     }
     const below = PRESET_TARGET_BELOW_FLOOR[preset]
     const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] - below : 0
     void controls.setLookAt(x, y + targetY, z, 0, targetY, 0, !reducedMotion)
     invalidate()
-  }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, size.width, size.height, camera, invalidate])
+  }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, zoom, size.width, size.height, camera, invalidate])
 
   useEffect(() => {
     const controls = controlsRef.current

@@ -65,8 +65,18 @@ export type SceneCanvasProps = {
   onObstacleSelect?: (id: string | null) => void
   /** Xem trước ở form xe: vách sau có ô cửa đúng kích thước cửa của xe và viền thùng rõ hơn; mặc định cánh cửa phủ cả mặt sau. */
   specView?: boolean
+  /**
+   * `false`: khung hình không nhận con trỏ, chạm hay lăn chuột (trang giới thiệu) — cuộn trang đi xuyên qua, camera chỉ đổi theo
+   * `preset`. R3F đặt `pointer-events` ngay trên phần tử bọc canvas nên CSS của phần tử cha không ghi đè được: phải đặt ở `style`.
+   */
+  interactive?: boolean
+  /** Phóng camera gần hơn khung vừa khít của mọi góc nhìn (mặc định 1) — trang giới thiệu, nơi khung hình không có HUD. */
+  frameZoom?: number
   children?: ReactNode
 }
+
+const CANVAS_STYLE = { position: 'absolute', inset: 0 } as const
+const STATIC_CANVAS_STYLE = { ...CANVAS_STYLE, pointerEvents: 'none', touchAction: 'pan-y' } as const
 
 /** Độ sáng thêm của thùng ở xem trước form xe (`sceneMaterials`). */
 const SPEC_VIEW_LIFT = 2.2
@@ -76,7 +86,7 @@ export function SceneCanvas({
   experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
   animateLoading = true, decoration = true, xraySelection, showMass, zones, unloadMotion, onPerfSample, obstaclePicking = true,
-  frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, children,
+  frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1, children,
 }: SceneCanvasProps) {
   const materials = useMemo(() => sceneMaterials(specView ? SPEC_VIEW_LIFT : 1), [specView])
   const colorContext = useMemo(() => createColorContext(model), [model])
@@ -105,10 +115,10 @@ export function SceneCanvas({
     shadows={flags.shadows ? 'percentage' : false} flat
     gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
     camera={{ fov: 38, near: 0.1, far: 160, position: [8.5, 5.2, 7] }}
-    onPointerMissed={() => handleSelect(null)} style={{ position: 'absolute', inset: 0 }}>
+    onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
-      vehicleDecoration={decoration && flags.decoration} onUserControl={onUserControl} />
+      vehicleDecoration={decoration && flags.decoration} zoom={frameZoom} onUserControl={onUserControl} />
     <group position={[-cx, -cy, -cz]}>
       <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
         doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} />
