@@ -80,7 +80,8 @@ export function LandingStage() {
         {live && !reducedMotion ? <StageReplay onReplay={handleReplay} /> : null}
       </div>
 
-      <div className="relative mx-2 mt-3 aspect-16/10 overflow-hidden rounded-lg bg-canvas-1 sm:mx-3">
+      {/* Điện thoại: nhãn "Cửa sau · Hướng dỡ" của khung 3D xuống hai dòng và bị mép khung cắt — chỉ giữ mũi tên, câu dưới khung đã nói cửa */}
+      <div className="relative mx-2 mt-3 aspect-16/10 overflow-hidden rounded-lg bg-canvas-1 max-sm:[&_[data-rear-door-cue]]:hidden sm:mx-3">
         {sample.data ? (
           <div aria-hidden className="absolute inset-0">
             <StageBoundary onError={handleError}>
