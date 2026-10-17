@@ -74,7 +74,7 @@ export function LandingStage() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-3 px-4 pt-4 sm:px-5">
         <div className="mr-auto flex min-w-0 flex-col">
           <p id={titleId} className="m-0 font-display text-h3 font-semibold text-sky-text font-stretch-108%">{t('landing.stage.title')}</p>
-          <span className="font-mono text-small text-sky-text-3 tabular-nums">{format.dimensions(innerLengthCm, innerWidthCm, innerHeightCm)}</span>
+          <span className="font-mono text-small text-sky-text-3 tabular-nums pointer-coarse:text-body-lg">{format.dimensions(innerLengthCm, innerWidthCm, innerHeightCm)}</span>
         </div>
         {live ? <StageViews preset={preset} onPreset={setPreset} className="order-last basis-full sm:order-none sm:basis-auto" /> : null}
         {live && !reducedMotion ? <StageReplay onReplay={handleReplay} /> : null}

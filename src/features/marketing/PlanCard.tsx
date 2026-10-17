@@ -7,15 +7,12 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { contactPath } from './contact-form'
-import { PUBLIC_TOUCH } from './public-chrome'
+import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 
 /** Mã tính năng của gói có câu ở `pricing.features`; mã lạ (gói tạo sau, chưa có câu) không hiện thay vì hiện mã thô. */
 const FEATURES = ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION', 'ADVANCED_ALGORITHM', 'UNLIMITED_CREDITS'] as const
 type KnownFeature = (typeof FEATURES)[number]
 const isKnownFeature = (code: string): code is KnownFeature => (FEATURES as readonly string[]).includes(code)
-
-/** Nhãn 20 px của thẻ lên chữ 16 px trên máy cảm ứng (AGENTS mục 10), xuống dòng được khi thẻ hẹp — hai dòng dài gần bằng nhau. */
-const TOUCH_TAG = 'pointer-coarse:h-auto pointer-coarse:min-h-7 pointer-coarse:whitespace-normal pointer-coarse:text-balance pointer-coarse:py-1 pointer-coarse:text-body-lg pointer-coarse:leading-5'
 
 /**
  * Thẻ một gói đang bán ở Bảng giá: tên (kèm hạng khi tên gói khác tên hạng), nhãn "Giá trị tạm — chờ chốt" khi gói mang cờ tạm, giá
@@ -34,9 +31,9 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
       <div className="flex flex-col items-start gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle as="h2" id={titleId} className="text-h2 leading-7">{plan.name}</CardTitle>
-          {plan.name === tierLabel ? null : <Badge tone="cyan" shape="tag" className={TOUCH_TAG}>{tierLabel}</Badge>}
+          {plan.name === tierLabel ? null : <Badge tone="cyan" shape="tag" className={PUBLIC_TOUCH_TAG}>{tierLabel}</Badge>}
         </div>
-        {plan.provisional ? <Badge shape="tag" tone="warning" outlined className={TOUCH_TAG}>{t('common.provisionalPlan')}</Badge> : null}
+        {plan.provisional ? <Badge shape="tag" tone="warning" outlined className={PUBLIC_TOUCH_TAG}>{t('common.provisionalPlan')}</Badge> : null}
       </div>
 
       <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-ink-strong">

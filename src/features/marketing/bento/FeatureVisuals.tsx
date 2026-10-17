@@ -2,6 +2,7 @@ import { QrCode } from '@/components/QrCode'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
 import { useT } from '@/lib/i18n'
+import { PUBLIC_TOUCH_TAG } from '../public-chrome'
 
 /** Mã mẫu đúng dạng mã QR của kho kiện (`LM-XXXX-XXXX-XXXX`, Crockford base32) — không thuộc kiện nào; chỉ để vẽ hình. */
 const SAMPLE_QR_TOKEN = 'LM-7K2M-9QXD-4F8T'
@@ -40,7 +41,7 @@ export function VerifyVisual() {
       <ol className="m-0 flex min-w-0 list-none flex-col gap-2.5 p-0">
         {VERIFY_LEVELS.map((level, index) => (
           <li key={level} className="flex items-center gap-2.5 text-body-lg text-ink-strong">
-            <span aria-hidden className="grid size-6 flex-none place-items-center rounded-full bg-tint-blue font-mono text-small font-semibold text-tint-blue-fg">
+            <span aria-hidden className="grid size-6 flex-none place-items-center rounded-full bg-tint-blue font-mono text-small font-semibold text-tint-blue-fg pointer-coarse:size-7 pointer-coarse:text-body-lg">
               {index + 1}
             </span>
             {t(`landing.features.verify.levels.${level}`)}
@@ -57,7 +58,7 @@ export function DeadlineChips() {
   return (
     <div className="flex flex-wrap gap-2">
       {DEADLINES.map(({ status, tone }) => (
-        <Badge key={status} tone={tone} dot>{t(`common.deadlineStatuses.${status}`)}</Badge>
+        <Badge key={status} tone={tone} dot className={PUBLIC_TOUCH_TAG}>{t(`common.deadlineStatuses.${status}`)}</Badge>
       ))}
     </div>
   )

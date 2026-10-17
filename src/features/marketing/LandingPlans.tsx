@@ -8,7 +8,7 @@ import { PUBLIC_PRICING } from '@/features/auth/landing'
 import { useFormat, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
-import { PUBLIC_TOUCH } from './public-chrome'
+import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 import { SectionHeading } from './SectionHeading'
 import { usePublicPlansQuery } from './useMarketingQuery'
 
@@ -24,7 +24,7 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
     <Card role="group" aria-labelledby={titleId} className="flex flex-col gap-4 p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <h3 id={titleId} className="m-0 font-display text-h2 font-[650] text-ink-strong font-stretch-108%">{plan.name}</h3>
-        {plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
+        {plan.provisional ? <Badge shape="tag" tone="warning" outlined className={PUBLIC_TOUCH_TAG}>{t('common.provisionalPlan')}</Badge> : null}
       </div>
       <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-ink-strong">
         <span className="font-display text-figure font-bold tracking-[-0.02em] tabular-nums font-stretch-108%">{format.currency(plan.priceVnd)}</span>

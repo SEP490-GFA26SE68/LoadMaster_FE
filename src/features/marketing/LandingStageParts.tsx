@@ -6,6 +6,7 @@ import type { OptimizationResult } from '@/domain/models'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { PUBLIC_TOUCH_TAG } from './public-chrome'
 
 /** Ba góc nhìn của khung 3D: toàn cảnh, nhìn từ trên (bật dải vùng điểm giao) và cửa sau — nơi kho và tài xế đứng. */
 export const STAGE_VIEWS = [
@@ -63,7 +64,7 @@ export function StageLegend({ stopNames }: { stopNames: readonly string[] }) {
         const stop = index + 1
         return (
           <li key={stop} className="flex min-w-0 items-center gap-2 text-small text-sky-text-2 pointer-coarse:text-body-lg">
-            <StopDot stop={stop} className="size-6 flex-none text-small" />
+            <StopDot stop={stop} className="size-6 flex-none text-small pointer-coarse:size-7 pointer-coarse:text-body-lg" />
             <span className="sr-only">{t('landing.stage.stop', { number: stop })}: </span>
             <span className="font-medium text-sky-text">{name}</span>
           </li>
@@ -91,7 +92,7 @@ export function StageReadout({ result }: { result: OptimizationResult }) {
       <div className="flex flex-wrap items-center gap-2">
         <p className="m-0 text-small font-semibold text-sky-text-2 pointer-coarse:text-body-lg">{t('landing.stage.readout.title')}</p>
         {/* Chữ hổ phách đậm của nhãn không đủ tương phản trên nền tối: dùng bậc 200 */}
-        <Badge shape="tag" tone="mock" className="text-amber-200">MOCK RESULT</Badge>
+        <Badge shape="tag" tone="mock" className={cn('text-amber-200', PUBLIC_TOUCH_TAG)}>MOCK RESULT</Badge>
       </div>
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 md:grid-cols-5">
         {items.map((item) => (

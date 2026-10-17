@@ -78,7 +78,7 @@ export function ZoneDiagram() {
       <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
         {ZONES.map((zone) => (
           <li key={zone.stop} className="flex items-center gap-2 text-small font-medium text-sky-text-2 pointer-coarse:text-body-lg">
-            <StopDot stop={zone.stop} className="size-6 text-small" />
+            <StopDot stop={zone.stop} className="size-6 text-small pointer-coarse:size-7 pointer-coarse:text-body-lg" />
             {t('landing.features.zones.zone', { number: zone.stop })}
           </li>
         ))}
