@@ -1,4 +1,18 @@
 import type { SupportTicket } from '@/lib/mock-db'
+import type { Role } from '@/types/user'
+
+/**
+ * CHỈ ĐỂ HIỂN THỊ — không phải kiểm soát truy cập. Chọn yêu cầu nào được vẽ cho giống kho mẫu: Hỗ trợ khách hàng thấy mọi yêu cầu, mọi
+ * người khác (kể cả hai vai trò nền tảng còn lại) chỉ thấy yêu cầu do chính mình gửi. Backend vẫn gửi về trình duyệt mọi yêu cầu của công
+ * ty cho mọi người của công ty: dữ liệu của đồng nghiệp nằm sẵn trong phản hồi mạng, chặn thật là việc của backend.
+ */
+export function ticketsToDisplay(
+  tickets: readonly SupportTicket[],
+  viewer: { readonly id: string; readonly role: Role | null },
+): SupportTicket[] {
+  if (viewer.role === 'systemSupporter') return [...tickets]
+  return tickets.filter((ticket) => ticket.senderId === viewer.id)
+}
 
 /** Mã người đọc thấy: mã backend cấp (`TCK-…`) khi có, không thì mã của kho mẫu (`TKT-NNN`). */
 export function ticketLabel(ticket: SupportTicket): string {

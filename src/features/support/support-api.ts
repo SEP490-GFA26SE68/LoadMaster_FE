@@ -1,6 +1,6 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `support` nối backend thì gọi backend, không thì gọi kho mẫu:
- *   listSupportTickets      → GET /api/support-tickets (+ GET /api/users/me để giữ yêu cầu của chính mình)
+ *   listSupportTickets      → GET /api/support-tickets (+ GET /api/users/me)
  *   createSupportTicket     → POST /api/support-tickets
  *   setSupportTicketStatus  → PATCH /api/support-tickets/{id}
  *   chưa có ở BE (Q-18): replyToSupportTicket, getSupportCompanyPanel
@@ -18,8 +18,8 @@ import {
   type SupportTicket,
   type TicketStatus,
 } from '@/lib/mock-db'
-import { isPlatformRole } from '@/types/user'
 import { ticketCreateBody, ticketOf, type SupportTicketDto } from './support-dto'
+import { ticketsToDisplay } from './ticket-view'
 
 const ON_BACKEND = usesBackend('support')
 
@@ -49,16 +49,15 @@ function requiredTicketOf(dto: SupportTicketDto): SupportTicket {
 }
 
 /**
- * Yêu cầu hỗ trợ phiên được thấy, mới nhất trước: người của công ty chỉ thấy yêu cầu do mình gửi, Hỗ trợ khách hàng thấy mọi yêu cầu
- * (vai trò nền tảng khác: `ROLE_NOT_ALLOWED`). Backend trả **mọi yêu cầu của công ty** cho người của công ty, nên ở đây chỉ giữ yêu cầu
- * do chính người xem gửi — lọc ở trình duyệt, backend chưa chặn (người của công ty gọi thẳng API vẫn đọc được yêu cầu của đồng nghiệp).
+ * Yêu cầu hỗ trợ màn vẽ, mới nhất trước: Hỗ trợ khách hàng thấy mọi yêu cầu, người khác chỉ thấy yêu cầu do mình gửi. Kho mẫu chặn thật
+ * (vai trò nền tảng khác: `ROLE_NOT_ALLOWED`); backend thì chưa — nó trả mọi yêu cầu của công ty cho mọi người của công ty — nên khi nối
+ * backend ở đây chỉ chọn yêu cầu để vẽ (`ticketsToDisplay`): bộ lọc hiển thị, không phải lớp bảo mật.
  */
 // GET /api/support-tickets
 export async function listSupportTickets(): Promise<SupportTicket[]> {
   if (!ON_BACKEND) return getMockDb().listSupportTickets()
-  const [tickets, me] = await Promise.all([api().get<SupportTicketDto[]>('/api/support-tickets'), fetchBackendMe()])
-  const seesAll = me.role !== null && isPlatformRole(me.role)
-  return tickets.filter((dto) => seesAll || String(dto.requesterId) === me.id).flatMap((dto) => ticketOf(dto) ?? [])
+  const [dtos, viewer] = await Promise.all([api().get<SupportTicketDto[]>('/api/support-tickets'), fetchBackendMe()])
+  return ticketsToDisplay(dtos.flatMap((dto) => ticketOf(dto) ?? []), viewer)
 }
 
 /** Người của công ty gửi yêu cầu kỹ thuật hoặc thanh toán; trạng thái Mở. Kho mẫu cấp mã `TKT-NNN`, backend cấp `TCK-…`. */

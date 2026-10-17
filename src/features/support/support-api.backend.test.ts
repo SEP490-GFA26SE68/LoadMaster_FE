@@ -4,8 +4,9 @@ import { createSupportTicket, listSupportTickets, setSupportTicketStatus } from 
 
 /**
  * Yêu cầu hỗ trợ khi nhóm `support` nối backend. `/api/support-tickets` trả phong bì `ApiResponse`; `createdAt` là `LocalDateTime`
- * không múi giờ (giờ Việt Nam của máy chủ). Backend trả mọi yêu cầu của công ty cho người của công ty: lớp API chỉ giữ yêu cầu của chính
- * người xem (đọc mã của họ ở `/api/users/me`).
+ * không múi giờ (giờ Việt Nam của máy chủ). Backend trả mọi yêu cầu của công ty cho mọi người của công ty: lớp API chỉ chọn yêu cầu để vẽ
+ * (bộ lọc hiển thị, không phải bảo mật) — Hỗ trợ khách hàng thấy mọi yêu cầu, người khác chỉ thấy yêu cầu do mình gửi (mã của người xem
+ * đọc ở `/api/users/me`).
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['support']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -41,7 +42,7 @@ const COLLEAGUE = { ...OWN, id: 1, ticketCode: 'TCK-20261017-2258', subject: 'Ho
 
 const meAs = (id: number, userRoleType: string) => envelope({ id, fullName: 'Người xem', userRoleType, status: 'ACTIVE' })
 
-test('a company user keeps only the tickets they sent, although the backend sends every ticket of the company', async () => {
+test('a company user is shown only the tickets they sent (display only: the backend still sends every ticket of the company)', async () => {
   routes = { 'GET /api/support-tickets': envelope([OWN, COLLEAGUE]), 'GET /api/users/me': meAs(7, 'DISPATCHER') }
   expect(await listSupportTickets()).toStrictEqual([{
     id: '2', code: 'TCK-20261017-4403', companyId: '1', companyName: 'Vận tải Long Bình', senderId: '7', senderName: 'Nguyễn Thanh Tùng',
@@ -64,6 +65,13 @@ test('a supporter keeps every ticket; Resolved and the note of the support team 
     { id: '1', kind: 'BILLING', status: 'RESOLVED', resolutionNote: 'Đã gửi lại hoá đơn có mã số thuế.' },
     { id: '2', kind: 'TECHNICAL', status: 'IN_PROGRESS', resolutionNote: undefined },
   ])
+})
+
+test('only the support role is shown every ticket: the admin and the manager of the platform are shown none', async () => {
+  routes = { 'GET /api/support-tickets': envelope([OWN, COLLEAGUE]), 'GET /api/users/me': meAs(1, 'SYSTEM_ADMIN') }
+  expect(await listSupportTickets()).toStrictEqual([])
+  routes = { ...routes, 'GET /api/users/me': meAs(3, 'SYSTEM_MANAGER') }
+  expect(await listSupportTickets()).toStrictEqual([])
 })
 
 test('sending maps the two FE kinds to backend categories; a status change sends only the status', async () => {
