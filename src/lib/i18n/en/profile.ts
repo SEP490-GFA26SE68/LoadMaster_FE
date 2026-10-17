@@ -8,6 +8,14 @@ export const profile = {
     email: 'Email',
     depot: 'Depot',
     note: 'Your email, role and depot are changed by an administrator.',
+    phone: 'Phone number',
+    serverNote: 'Your name, email and phone number belong to your account on the server. An administrator edits the name and phone number on the Users screen.',
+  },
+  account: {
+    title: 'Password',
+    description: 'Your sign-in password is managed by Keycloak. Change it on the account page, which opens in a new tab.',
+    changePassword: 'Change password',
+    newTab: '(opens in a new tab)',
   },
   details: {
     title: 'Personal details',
