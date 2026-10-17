@@ -44,6 +44,7 @@ const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m)
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
+const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
 // Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
 const LandingPage = lazy(() => import('@/features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })))
 const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
@@ -147,10 +148,11 @@ export const routes: RouteObject[] = [
                   guarded('contacts.handle', [{ path: '/lien-he-khach', element: <ContactsPage />, handle: titled((t) => t('titles.contacts')) }]),
                   // Danh mục gói cước: màn chính của quản lý nền tảng (FE-8-02, D-90)
                   guarded('subscriptionPlans.manage', [{ path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) }]),
-                  // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty
+                  // Gói cước và credit của công ty, thanh toán giả lập (kho mẫu) và xác nhận thanh toán (backend) (FE-8-03, FE-8-04): quản trị công ty
                   guarded('billing.manage', [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
+                    { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
                   ]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },

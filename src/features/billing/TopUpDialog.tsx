@@ -5,10 +5,12 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { useFormat, useT } from '@/lib/i18n'
 import { BILLING_CONSTANTS } from '@/lib/mock-db'
+import { BILLING_CAPABILITIES } from './billing-api'
 
 /**
- * Nạp credit (FE-8-03, D-89): chọn gói 50 hoặc 500 credit, 1.000 đ mỗi credit. Xác nhận chỉ tạo thanh toán chờ và đưa sang trang thanh
- * toán — credit chỉ được cộng khi thanh toán thành công. Nội dung dựng lại mỗi lần mở (gói chọn sẵn là gói nhỏ nhất).
+ * Nạp credit (FE-8-03, D-89): chọn gói 50 hoặc 500 credit, giá mỗi credit theo nguồn dữ liệu (kho mẫu 1.000 đ, backend 5.000 đ). Xác
+ * nhận chỉ tạo thanh toán chờ và đưa sang trang thanh toán — credit chỉ được cộng khi thanh toán thành công. Nội dung dựng lại mỗi lần
+ * mở (gói chọn sẵn là gói nhỏ nhất).
  */
 export function TopUpDialog({ open, onOpenChange, pending, onConfirm }: {
   open: boolean
@@ -32,7 +34,7 @@ function TopUpForm({ pending, onConfirm }: { pending: boolean; onConfirm: (credi
       <DialogHeader
         icon={Coins}
         title={t('billing.topUpDialog.title')}
-        description={t('billing.topUpDialog.description', { price: format.currency(BILLING_CONSTANTS.creditPriceVnd) })}
+        description={t('billing.topUpDialog.description', { price: format.currency(BILLING_CAPABILITIES.creditPriceVnd) })}
       />
       <RadioGroup className="px-7 py-5" value={String(credits)} onValueChange={(value) => setCredits(Number(value))} aria-label={t('billing.topUpDialog.title')}>
         {BILLING_CONSTANTS.topUpPacks.map((pack) => (
@@ -42,7 +44,7 @@ function TopUpForm({ pending, onConfirm }: { pending: boolean; onConfirm: (credi
             label={
               <span className="flex flex-wrap items-baseline gap-x-3">
                 <span className="font-semibold text-ink-strong">{t('billing.topUpDialog.pack', { credits: format.integer(pack) })}</span>
-                <span className="text-ink-2 tabular-nums">{format.currency(pack * BILLING_CONSTANTS.creditPriceVnd)}</span>
+                <span className="text-ink-2 tabular-nums">{format.currency(pack * BILLING_CAPABILITIES.creditPriceVnd)}</span>
               </span>
             }
           />

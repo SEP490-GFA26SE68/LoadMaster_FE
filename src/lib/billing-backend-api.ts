@@ -6,10 +6,24 @@
  *   getPlanDto                    → GET /api/subscription/plans/{id}
  *   getCurrentSubscriptionDto     → GET /api/subscription/current
  *   getCreditBalanceDto           → GET /api/credits/balance
+ *   listCreditTransactionDtos     → GET /api/credits/transactions (đọc theo trang)
  */
 
 import { api, ApiError, isApiError, type ApiClient, type TransportErrorCode } from './api-client'
-import { PLAN_TIERS, TIER_ALGORITHM, TIER_FEATURES, type AlgorithmTier, type CreditBalance, type PlanTier, type SubscriptionPlan } from './mock-db/billing-model'
+import { fetchAllPages, type FetchAllPagesOptions } from './api-page'
+import {
+  effectiveSubscriptionStatus,
+  PLAN_TIERS,
+  TIER_ALGORITHM,
+  TIER_FEATURES,
+  type AlgorithmTier,
+  type CreditBalance,
+  type CreditTransaction,
+  type CreditTransactionType,
+  type PlanTier,
+  type SubscriptionPlan,
+  type SubscriptionStatus,
+} from './mock-db/billing-model'
 
 export const PLANS_PATH = '/api/subscription/plans'
 
@@ -150,4 +164,49 @@ export function getCreditBalanceDto(client: ApiClient = api()): Promise<CreditBa
 
 export function creditBalanceOf(dto: CreditBalanceDto): CreditBalance {
   return { balance: dto.balance ?? 0, unlimited: dto.isUnlimited === true }
+}
+
+/**
+ * Trạng thái gói của app từ `/current`; `null` khi công ty chưa từng có gói (hoặc ở trạng thái app không có, như `TRIAL`). Backend huỷ
+ * gói chỉ tắt tự gia hạn — gói vẫn `ACTIVE` tới hết kỳ — nên `ACTIVE` đã tắt tự gia hạn là "Đã huỷ — còn hiệu lực"; gói quá hạn mà lịch
+ * hằng ngày của backend chưa chạy tới là "Đã hết hạn" (`effectiveSubscriptionStatus`, như kho mẫu).
+ */
+export function subscriptionStatusOf(dto: CurrentSubscriptionDto, nowIso: string): SubscriptionStatus | null {
+  if (dto.status === 'EXPIRED' || dto.status === 'CANCELLED') return 'EXPIRED'
+  if (dto.status !== 'ACTIVE') return null
+  const status: SubscriptionStatus = dto.autoRenew === false ? 'CANCELLED' : 'ACTIVE'
+  const expiresAt = fromBackendLocalDateTime(dto.expiresAt)
+  return expiresAt === null ? status : effectiveSubscriptionStatus({ status, expiresAt }, nowIso)
+}
+
+export const CREDIT_TRANSACTIONS_PATH = '/api/credits/transactions'
+
+/** `CreditTransactionResponse`: lượt dùng ghi `-1`, hoàn rồi thì lượt dùng mang `refunded`. */
+export type CreditTransactionDto = {
+  readonly id: number
+  readonly amount: number | null
+  readonly type: CreditTransactionType
+  readonly reference: string | null
+  readonly refunded: boolean | null
+  readonly createdAt: string | null
+}
+
+// GET /api/credits/transactions
+export function listCreditTransactionDtos(options: FetchAllPagesOptions = {}, client: ApiClient = api()): Promise<CreditTransactionDto[]> {
+  return fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { size: 100, ...options }, client)
+}
+
+/** Backend trừ credit ngay khi chạy, không có bước giữ: lượt dùng là "Đã trừ", hoặc "Đã hoàn" khi đã được hoàn. Không có mã chuyến. */
+export function creditTransactionOf(dto: CreditTransactionDto): CreditTransaction {
+  const refunded = dto.refunded === true
+  return {
+    id: String(dto.id),
+    companyId: '',
+    type: dto.type,
+    amount: dto.amount ?? 0,
+    reference: dto.reference ?? '',
+    refunded,
+    ...(dto.type === 'USAGE' ? { usageStatus: refunded ? ('REFUNDED' as const) : ('DEDUCTED' as const) } : {}),
+    createdAt: fromBackendLocalDateTime(dto.createdAt) ?? '',
+  }
 }

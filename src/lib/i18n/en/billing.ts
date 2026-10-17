@@ -29,6 +29,8 @@ export const billing = {
   noPlan: {
     title: 'The company has no plan yet',
     description: 'Choose a plan to run 3D optimisation. Credits you top up are kept when a plan expires.',
+    lapsedTitle: 'The company’s plan has expired',
+    lapsedDescription: 'Choose a plan to run 3D optimisation again. The credit balance is kept.',
   },
   choose: {
     title: 'Choose a plan',
@@ -49,6 +51,7 @@ export const billing = {
     confirm: 'Cancel plan',
   },
   cancelled: 'Plan {plan} cancelled. It can be used until {date}.',
+  activated: 'Plan {plan} is active',
   topUpDialog: {
     title: 'Top up credits',
     description: '{price} per credit. You finish on the payment page; credits are only added when the payment succeeds.',
@@ -58,7 +61,7 @@ export const billing = {
   },
   history: {
     title: 'History',
-    tabs: { credit: 'Credits', payments: 'Payments' },
+    tabs: { credit: 'Credits', payments: 'Payments', invoices: 'Invoices' },
   },
   ledger: {
     columns: { time: 'Time', type: 'Type', amount: 'Credits', reference: 'Reference', note: 'Note' },
@@ -71,5 +74,10 @@ export const billing = {
     purposes: { SUBSCRIBE: 'Subscribe to a plan', RENEWAL: 'Plan renewal', TOPUP: 'Credit top-up' },
     statuses: { PENDING: 'Awaiting payment', SUCCESS: 'Succeeded', FAILED: 'Failed' },
     empty: 'No payments yet.',
+  },
+  invoices: {
+    columns: { time: 'Issued', number: 'Invoice', period: 'Period', plan: 'Plan', amount: 'Amount', status: 'Status' },
+    statuses: { UNPAID: 'Unpaid', PAID: 'Paid', FAILED: 'Failed', VOID: 'Void' },
+    empty: 'No invoices yet.',
   },
 } satisfies Dictionary<typeof source>
