@@ -25,20 +25,25 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
   const t = useT()
   const format = useFormat()
   const preparing = myTripGroup(row) === 'preparing'
+  // Ngày chạy · số điểm · số kiện — phần nào backend chưa trả thì bỏ, không điền số thay
+  const facts = [
+    row.scheduledDate === undefined ? null : format.date(calendarDate(row.scheduledDate)),
+    t('driver.list.stops', { count: row.stopCount }),
+    row.packageCount === undefined ? null : t('common.packageCount', { count: row.packageCount }),
+  ].filter((fact) => fact !== null)
 
   return (
     <li className="flex flex-col gap-3 rounded-lg border border-border bg-bg p-4 shadow-card">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 className="font-mono text-body-lg leading-6 font-semibold text-ink-1">{row.id}</h3>
+        <h3 className="font-mono text-body-lg leading-6 font-semibold text-ink-1">{row.code ?? row.id}</h3>
         <StatusBadge status={row.status} className={SUB_TOUCH} />
         <TripSubStatusTag sub={row.sub} className={SUB_TOUCH} />
         <TripSubStatusTag sub={row.manualSub} className={SUB_TOUCH} />
       </div>
-      <p className="m-0 font-display text-h2 leading-6 font-bold text-pretty text-ink-strong font-stretch-106%">{row.name}</p>
-      <p className="m-0 font-medium text-ink-2">
-        {format.date(calendarDate(row.scheduledDate))} · {t('driver.list.stops', { count: row.stopCount })} ·{' '}
-        {t('common.packageCount', { count: row.packageCount })}
-      </p>
+      {row.name === undefined ? null : (
+        <p className="m-0 font-display text-h2 leading-6 font-bold text-pretty text-ink-strong font-stretch-106%">{row.name}</p>
+      )}
+      <p className="m-0 font-medium text-ink-2">{facts.join(' · ')}</p>
       {/* Tên xe có biển số: dòng riêng để biển số không bị ngắt ở dấu gạch trên điện thoại */}
       <p className="m-0 text-ink-3">{row.vehicleName}</p>
 

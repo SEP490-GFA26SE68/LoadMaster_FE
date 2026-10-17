@@ -51,6 +51,8 @@ export const driver = {
     stopsLabel: 'Các điểm của chuyến {tripId}',
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
+    /** Dữ liệu từ backend: backend chỉ trả chuyến đang vận chuyển. */
+    emptyDescriptionInTransit: 'Chuyến đang vận chuyển của bạn sẽ hiện ở đây.',
   },
   notice: {
     preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.',
@@ -76,6 +78,15 @@ export const driver = {
       lost: 'Mất tín hiệu GPS: vị trí xe về mô phỏng. Bật lại khi có tín hiệu.',
       unsupported: 'Thiết bị này không có định vị: vị trí xe là mô phỏng.',
       error: 'Không gửi được vị trí: vị trí xe về mô phỏng. {message}',
+    },
+    /** Dữ liệu từ backend: không có xe mô phỏng — tắt GPS là thôi gửi vị trí. */
+    serverNote: 'Bật để gửi vị trí của điện thoại lên máy chủ cho chuyến này.',
+    stoppedServer: {
+      user: 'Đã tắt GPS thật: không gửi vị trí nữa.',
+      denied: 'Trình duyệt không cho dùng vị trí: chưa gửi được vị trí. Cấp quyền vị trí cho trang rồi bật lại.',
+      lost: 'Mất tín hiệu GPS: đã thôi gửi vị trí. Bật lại khi có tín hiệu.',
+      unsupported: 'Thiết bị này không có định vị: không gửi được vị trí.',
+      error: 'Không gửi được vị trí: đã thôi gửi. {message}',
     },
   },
   start: 'Xuất phát',
@@ -103,6 +114,8 @@ export const driver = {
     issues: { one: 'Đã báo sự cố cho {count} kiện ở điểm này.', other: 'Đã báo sự cố cho {count} kiện ở điểm này.' },
     picked: { one: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.', other: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.' },
     next: 'Tiếp theo: điểm {number} · {name}.',
+    /** Backend chỉ trả tên của điểm đang giao. */
+    nextNumber: 'Tiếp theo: điểm {number}.',
     last: 'Đây là điểm cuối: hoàn tất là giao xong chuyến.',
     confirm: 'Hoàn tất',
     cancel: 'Quay lại',
@@ -247,5 +260,25 @@ export const driver = {
     selected: '{id} · Điểm {stop} · {orientation}',
     backToCurrent: 'Quay lại kiện cần dỡ',
     skipStep: 'Bỏ qua bước trong mô phỏng',
+  },
+  /**
+   * Màn điểm giao khi dữ liệu từ backend (`BackendDriverStop`): điểm đang giao luôn dỡ được (backend chưa có bước "Đã đến"), dỡ bằng mã
+   * gõ trên nhãn, không có sự cố theo kiện — và vì sao không mở được chuyến.
+   */
+  backend: {
+    notInTransitTitle: 'Chuyến không đang vận chuyển',
+    notInTransitDescription: 'Chuyến này không có trong các chuyến đang vận chuyển của bạn.',
+    noStopsTitle: 'Không còn điểm nào cần giao',
+    noStopsDescription: 'Chuyến {tripId} không còn điểm giao nào chờ giao.',
+    completedTitle: 'Đã giao xong chuyến',
+    completedDescription: 'Chuyến {tripId}: mọi điểm giao đã hoàn tất.',
+    atStop: 'Đang giao điểm {number}: gõ mã trên nhãn của từng kiện khi đưa xuống xe.',
+    scanDescription: 'Gõ mã in trên nhãn của từng kiện khi đưa xuống xe — mã đứng đầu mỗi dòng kiện. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    summary: 'Cần dỡ {total} kiện · Đã dỡ {done}',
+    remaining: { one: 'Còn {count} kiện chưa dỡ', other: 'Còn {count} kiện chưa dỡ' },
+    allUnloaded: 'Đã dỡ mọi kiện của điểm này.',
+    codeUnmatched: 'Mã {code} không khớp kiện nào của điểm này. Chưa ghi gì — kiểm tra lại mã trên nhãn.',
+    alreadyUnloaded: 'Kiện {code} đã được ghi dỡ trước đó.',
+    wrongStop: 'Kiện {code} không thuộc điểm đang giao. Chưa ghi gì — để kiện lại trên xe.',
   },
 } as const
