@@ -67,6 +67,32 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(screen.queryByText(/Đăng ký|Mua gói|Dùng thử/)).not.toBeInTheDocument()
 })
 
+test('every number on the page has a source: code constants, the plan catalogue — and no run, no result numbers', async () => {
+  renderLanding('/gioi-thieu')
+  // jsdom không có WebGL: khung 3D nhường chỗ cho hình minh hoạ, không lần chạy nào nên không số nào của lần chạy
+  expect(screen.getByText(/^Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất/)).toBeInTheDocument()
+  expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
+
+  const facts = within(screen.getByRole('region', { name: 'Con số kiểm được' }))
+  expect(facts.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
+    'hướng đặt được thử cho mỗi kiện',
+    'phương án cho mỗi lần chạy tối ưu',
+    'bước làm tròn kích thước',
+    'để xếp 1.000 kiện, đủ ba phương án',
+    'luật kiểm trước khi nhận hàng dọc đường',
+    'vai trò, mỗi vai trò chỉ thấy việc của mình',
+  ])
+  // Mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp
+  const values = facts.getAllByRole('definition').filter((_, index) => index % 2 === 0)
+  expect(values.map((value) => value.textContent)).toStrictEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
+
+  const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
+  expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('500 credit mỗi tháng')
+  expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
+  expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
+  expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')
+})
+
 test('the skip link moves focus to the main content without changing the address', async () => {
   const user = userEvent.setup()
   renderLanding('/gioi-thieu')

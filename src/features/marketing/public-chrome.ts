@@ -10,6 +10,10 @@ import { CONTACT_ANCHOR } from './contact-form'
 /** Ô nhập, nút và mục menu cao 56px, chữ 16px khi con trỏ là ngón tay (AGENTS mục 10). */
 export const PUBLIC_TOUCH = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
 
+/** Nhãn và chip nhỏ (20–26 px) lên chữ 16 px trên máy cảm ứng (AGENTS mục 10), xuống dòng được khi khung hẹp — hai dòng dài gần bằng nhau. */
+export const PUBLIC_TOUCH_TAG =
+  'pointer-coarse:h-auto pointer-coarse:min-h-7 pointer-coarse:whitespace-normal pointer-coarse:text-balance pointer-coarse:py-1 pointer-coarse:text-body-lg pointer-coarse:leading-5'
+
 export type PublicLink = { readonly labelKey: MessageKey; readonly to: { readonly pathname: string; readonly hash?: string } }
 
 /** Mục của trang giới thiệu: neo trong trang, riêng Bảng giá là trang khác. */
