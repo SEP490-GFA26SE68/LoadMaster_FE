@@ -19,7 +19,7 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), liên hệ của khách `/lien-he-khach` |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
-| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03) |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
 | Quản lý công ty (`manager` · `COMPANY_MANAGER`) | Desktop / tablet | Dashboard, biểu đồ, xuất báo cáo; lập yêu cầu giao (FE-4b-02); xem chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; quản lý kho kiện (thêm kiện, nhập file, in nhãn QR), lập chuyến, tối ưu, duyệt phương án |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn |
@@ -27,17 +27,18 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
-**Trạng thái hiện tại:** toàn bộ dữ liệu là mẫu; riêng **đăng nhập** nối được vào Keycloak của backend khi đặt `VITE_AUTH_SOURCE=keycloak`
-(mặc định vẫn là kho mẫu — mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
+**Trạng thái hiện tại:** mặc định toàn bộ dữ liệu là mẫu. Đặt `VITE_AUTH_SOURCE=keycloak` thì đăng nhập qua Keycloak của backend, và các
+nhóm đã nối — người dùng, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn tài xế — đọc ghi backend thật
+(`VITE_API_FEATURES` chọn nhóm); chuyến, Planner, giám sát, kho xếp hàng, đội xe, yêu cầu giao vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
 mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). Phân quyền **giả lập ở FE** (LM-084, D-41).
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, đúng 34 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle` và `companyProfile.manage`, đúng 35 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống chỉ có `companies.manage`, `users.manage`, `audit.view`; quản lý nền tảng `subscriptionPlans.manage`; hỗ trợ khách hàng `support.handle`;
-  cả ba cùng có `contacts.handle` (yêu cầu liên hệ của khách). Quản trị công ty có `users.manage`, `audit.view`, `billing.manage`, `support.create`.
+  cả ba cùng có `contacts.handle` (yêu cầu liên hệ của khách). Quản trị công ty có `companyProfile.manage`, `users.manage`, `audit.view`, `billing.manage`, `support.create`.
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
@@ -48,7 +49,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `billing.manage`: `/goi-cuoc` và `/thanh-toan/gia-lap` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty` (FE-8-06).
+  (FE-8-02). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (ba vai trò nền tảng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
   `monitoring.view` mở `/giam-sat` và vị trí xe ở Chi tiết chuyến (điều phối viên, quản lý công ty), `exceptions.report` ("Báo sự cố" ở `/giam-sat`
@@ -111,7 +113,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
-  Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit. Quản lý công ty: Bảng điều khiển ·
+  Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit · Thông tin công ty. Quản lý công ty: Bảng điều khiển ·
   Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe. Điều phối viên: Chuyến hàng · Giám sát · Kho kiện · Yêu cầu giao · Đội xe ·
   Bảng điều khiển. Kho, tài xế: một mục về màn của mình (thanh chỉ hiện với họ ở màn hồ sơ). Quản lý nền tảng: Gói cước · Liên hệ của khách. Hỗ trợ
   khách hàng: Hỗ trợ · Liên hệ của khách — Liên hệ của khách luôn đứng cuối, màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
@@ -294,6 +296,7 @@ src/
     manager/            dashboard
     fleet/              đội xe
     admin/              người dùng
+    company-profile/    thông tin công ty `/cong-ty` của quản trị công ty
     package-pool/       kho kiện `/kien-hang` (danh sách, thêm kiện, nhập file, chi tiết kiện), loại kiện, nhãn QR `/kien-hang/nhan`,
                         tra cứu kiện `/tra-cuu-kien`
     requirements/       yêu cầu giao `/yeu-cau-giao`: danh sách, form tạo / sửa, chi tiết, đưa vào chuyến
@@ -1075,8 +1078,14 @@ Commit theo Conventional Commits: `feat(viewer3d): add cross-section slider`.
 App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trên kho mẫu — dev, CI, E2E và test không cần backend.
 
 - **Cấu hình** ở `lib/backend-config.ts`, đọc từ `.env.local` (mẫu: `.env.example`): `VITE_AUTH_SOURCE` (`mock` mặc định | `keycloak`),
-  `VITE_API_URL`, `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID`. Giá trị lạ là lỗi lúc mở app. Không viết
-  địa chỉ backend hay Keycloak thẳng trong code.
+  `VITE_API_URL`, `VITE_API_FEATURES`, `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID`. Giá trị lạ là lỗi lúc mở app.
+  Không viết địa chỉ backend hay Keycloak thẳng trong code. Web chạy với backend ở máy phải mở đúng `http://localhost:5173` (origin backend
+  cho phép).
+- **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
+  nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
+  như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`.
+  `platformOps`, `trips`, `monitoring`, `warehouse` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend` của các
+  nhóm đó cho tới khi nối (liên kết tới chuyến của Kho kiện từng mở `/chuyen/<mã backend>` không có trong kho mẫu).
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
   `{ success, code, message, data, errors }` và đổi thất bại thành `ApiError` có mã. Màn không hiện thông điệp thô của máy chủ.
 - **Đăng nhập Keycloak** (`features/auth/keycloak-session.ts`, `keycloak-js` tải lười): app chuyển sang trang đăng nhập của Keycloak
@@ -1088,7 +1097,51 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   kiện trên màn là của Long Bình; tên, email, vai trò là của backend. Màn đăng nhập nói rõ điều này. Feature nào nối backend thì dữ
   liệu của nó đi theo token.
 - Nối một feature: viết thân hàm trong `-api.ts` của nó bằng `api()` và đổi DTO của backend sang kiểu của app ngay tại đó; kiểu DTO
-  không đi ra khỏi `-api.ts`. Đọc controller và DTO thật ở repo backend trước, không đoán. Mỗi hàm nối có test với `fetch` giả.
+  không đi ra khỏi `-api.ts` (hoặc file `*-dto.ts` chỉ `-api.ts` import). Đọc controller và DTO thật ở repo backend trước, không đoán. Mỗi
+  hàm nối có test với `fetch` giả: `vi.mock('@/lib/backend-config', …)` bật đúng nhóm, `fetch` giả qua `src/test/fake-backend.ts`
+  (`stubBackend`, `envelope`, `page`); test màn ở chế độ backend đặt tên `*.backend.dom.test.tsx`.
+- **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
+  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu.
+  Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
+  giờ là giờ Việt Nam, `Instant` có `Z`. Backend `develop` chưa trả `code` cho lỗi nghiệp vụ: `api-client` đổi 400 (và 422) / 402 / 404 / 409 sang
+  `BAD_REQUEST`, `PAYMENT_REQUIRED`, `NOT_FOUND`, `CONFLICT`; chỗ một mã HTTP chỉ có một nghĩa thì `withBusinessCode` đổi sang mã nghiệp vụ.
+  Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`.
+- **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
+  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES` — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
+  chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
+- **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
+  Nhật ký là màn trống "Máy chủ chưa có nhật ký hoạt động", chuông bỏ sự kiện tài khoản và đăng nhập; `/ho-so` chỉ đọc, đổi mật khẩu ở trang tài khoản
+  của Keycloak; `userFromBackend` không chép kho của tài khoản mẫu. Màn Công ty đọc `/api/companies`, `/api/contracts` (cột gói), `/api/users`
+  (số người dùng); tạo công ty rồi tạo quản trị đầu tiên bằng `POST /api/users` (hai lượt gọi); tạm dừng / mở lại bằng `PATCH …/status`; bỏ
+  địa chỉ, điện thoại, kho xuất phát. **Thông tin công ty `/cong-ty`** (`companyProfile.manage`): kho mẫu `getCompanyProfile` (công ty của
+  phiên) / `updateCompanyProfile` (chỉ quản trị công ty; tên, địa chỉ, số điện thoại; ghi `company.updated { fields }`, không đổi thì không
+  ghi); backend `GET` / `PATCH /api/company/profile` chỉ sửa tên và email nhận hoá đơn, mã, mã số thuế, trạng thái chỉ đọc.
+- **Gói cước và credit** (`billing`; `lib/billing-backend-api.ts`): backend chỉ trả gói `ACTIVE`; huỷ gói chỉ tắt `autoRenew` nên `ACTIVE` +
+  `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit; giá credit 5.000 đ (backend chưa có endpoint đọc giá).
+  `BILLING_CAPABILITIES`: kho mẫu có lịch sử thanh toán, `/thanh-toan/gia-lap`, "Tự gia hạn"; backend có hoá đơn và `/thanh-toan/ket-qua`.
+  Thanh toán luôn gửi `gateway: 'MOCK'`; `paymentUrl` của backend là endpoint JSON `/api/payment/mock-checkout?txnRef=…`, không chuyển hướng:
+  app mở `/thanh-toan/ket-qua?ma=<txnRef>&loai=goi|credit`, chỉ nút "Xác nhận thanh toán" gọi endpoint đó, rồi **đọc lại sự thật từ backend**
+  (nạp: sổ cái có `PURCHASE` cùng tham chiếu; đăng ký: `/api/subscription/current` là `ACTIVE`), không tin tham số URL. Danh mục gói: mỗi hạng
+  một gói đang bán (409) và backend chỉ liệt kê gói đang bán, nên không có công tắc bán; sửa là đọc rồi ghi cả bản ghi. Lần chạy tối ưu vẫn
+  là mock và trừ credit ở kho mẫu: số dư backend không giảm sau lần chạy.
+- **Liên hệ của khách, yêu cầu hỗ trợ** (`contacts`, `support`): form công khai gửi `POST /api/contact-guests` không token (mã gói chỉ gửi khi
+  là số của backend); `/lien-he-khach` đọc `GET /api/contact-guests`, lưu `PATCH …/{id}`; backend bỏ qua `assignedToId: null` nên "Chưa ai
+  nhận" mờ kèm lý do khi đã có người nhận; hỗ trợ khách hàng không đọc được `/api/users` nên chỉ nhận việc cho chính mình. Yêu cầu hỗ trợ:
+  `GET`, `POST` (Kỹ thuật → `SYSTEM_BUG`, Thanh toán → `BILLING`; `ALGORITHM_ERROR` đọc là Kỹ thuật), `PATCH …/{id}` chỉ gửi `status`;
+  `SUPPORT_SOURCE` bỏ trao đổi, khung công ty, giờ cập nhật, thêm trạng thái `RESOLVED`, `resolutionNote` chỉ đọc. `ticketsToDisplay` chỉ
+  chọn yêu cầu để vẽ (hỗ trợ khách hàng thấy hết, người khác chỉ yêu cầu của mình) — **bộ lọc hiển thị, không phải kiểm quyền**: quyền xem
+  do backend quyết.
+- **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): `/api/packages*` chỉ điều phối viên gọi được — quản lý công ty và
+  nhân viên kho thấy câu lý do (`sourcing.backend.*`), màn kho bỏ nút tra cứu và liên kết in lại nhãn (`packagePoolReachable`). Điểm đến và
+  chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
+  file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`); nhãn in vẫn là tờ A4 của app, PDF của máy chủ là nút phụ (1–200 kiện).
+  Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+- **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
+  nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — chỉ chuyến đang vận chuyển, thẻ bỏ tên tuyến, số kiện, điểm đang giao.
+  Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã in trên
+  nhãn (`trackingBarcode`, không có thì mã kiện; `PackageVerify methods={['CODE']}`) → `POST …/packages/{id}/unload`; backend không trả kiện
+  đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
+  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
 
 ### Lớp dữ liệu
 
@@ -1299,7 +1352,7 @@ dọc đường): (1) quét QR (`QrCamera` của `QrScanDialog`); (2) gõ mã �
 (trùng: `PACKAGE_CODE_AMBIGUOUS`; luật thuần `resolveVerifyCode`); (3) xác nhận tay — chọn kiện + lý do (`MANUAL_CONFIRM_REASONS`: nhãn rách /
 mất, QR không đọc được, khác kèm ghi chú bắt buộc), kho in lại được nhãn của kiện (`loadingLabelPath`, mã QR giữ nguyên, nút quay lại về đúng
 phiên xếp). Hộp không biết kiện nào đúng: nơi gọi gửi mã / kiện cho kho và trả kết quả về (`result` là vùng `status` / `alert`); nút 56 px,
-chữ 16 px. `QrScanDialog` chỉ quét + gõ mã, cho Tra cứu kiện. Kho ghi **mỗi lần đối chiếu** vào `Trip.verifications` (`PackageVerification`:
+chữ 16 px; `methods` chọn mức được dùng (mặc định đủ ba mức; một mức thì không có hàng tab). `QrScanDialog` chỉ quét + gõ mã, cho Tra cứu kiện. Kho ghi **mỗi lần đối chiếu** vào `Trip.verifications` (`PackageVerification`:
 bước `STAGING` / `LOADING` / `UNLOADING` / `PICKUP`, cách `QR` / `CODE` / `MANUAL`, người, thời điểm; mã `VF-NNN` trong chuyến); `steps[].via: 'qr'`
 và `qrConfirmedIds` nghĩa là "đã đối chiếu bằng nhãn" (quét hoặc gõ). Hàm của kho: `confirmLoadingByQr` / `confirmUnloadByQr` nhận thêm
 `method`; `confirmLoadingManually` / `confirmUnloadManually` ghi kiện như đã xếp / đã dỡ để làm tiếp, kèm xác nhận tay `MANUAL_PENDING`. Không
@@ -1733,8 +1786,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `billing.manage`): trung tính — không tên, logo hay màu của cổng thanh toán nào —, nói rõ đây là giả lập, hiện số tiền, nội dung, mã giao dịch và ba
   nút Huỷ · Thất bại · Thành công (chính). Trang **không tự chặn gì thêm** cho "đúng một lần": việc đó do `settlePayment` của kho (trả nguyên kết quả
   cũ khi giao dịch đã xử lý); không vẽ nút khi giao dịch không còn `PENDING`. Xong thì về `/goi-cuoc` kèm toast nói đúng điều kho trả về (theo trạng
-  thái cuối, không theo nút đã bấm); mã không có hoặc của công ty khác là màn "Không tìm thấy giao dịch". Có backend: `subscribe` / `topUpCredits` trả
-  URL thanh toán và app chuyển thẳng sang đó (hiện `GET /api/payment/mock-checkout`), trang này không dùng nữa.
+  thái cuối, không theo nút đã bấm); mã không có hoặc của công ty khác là màn "Không tìm thấy giao dịch". Nối backend thì trang này chuyển về
+  `/goi-cuoc`; thanh toán đi qua `/thanh-toan/ket-qua` (mục 9 "Nối backend").
 - **Công ty `/nen-tang/cong-ty`** (FE-8-06, D-65; `features/platform`, `companies.manage`, màn chính và mục đầu của quản trị hệ thống): bảng công ty
   (tên + mã, gói + hạng, trạng thái gói — nhãn của `billing.plan.status`, "Chưa có gói" khi chưa từng đăng ký —, số người dùng, nút sửa), **một nút
   chính "Tạo công ty"**. Kho (`db-companies.ts`) chỉ cho quản trị hệ thống (`ROLE_NOT_ALLOWED`, xét sau công ty như mọi hàm ghi):
@@ -1897,7 +1950,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 34 quyền × 8 vai trò, chia 13 khu vực | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 35 quyền × 8 vai trò, chia 13 khu vực | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |
