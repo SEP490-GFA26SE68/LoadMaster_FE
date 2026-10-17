@@ -54,7 +54,7 @@ export function CompleteStopDialog({ open, onOpenChange, view, stops, pending, o
                 <ul className="m-0 flex list-none flex-col gap-0.5 p-0 pl-7.5 text-ink-strong">
                   {returned.map((item) => (
                     <li key={item.id} className="text-pretty">
-                      <span className="font-mono">{item.id}</span> · {item.name}
+                      <span className="font-mono">{item.label ?? item.id}</span> · {item.name}
                     </li>
                   ))}
                 </ul>
@@ -65,7 +65,10 @@ export function CompleteStopDialog({ open, onOpenChange, view, stops, pending, o
 
           <p className="m-0 flex items-start gap-2.5 text-ink-2">
             {next ? <ArrowRight className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden /> : <Flag className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />}
-            <span className="min-w-0 text-pretty">{next ? t('driver.completeConfirm.next', { number: next.number, name: next.name }) : t('driver.completeConfirm.last')}</span>
+            <span className="min-w-0 text-pretty">{next
+              // Backend chỉ trả tên của điểm đang giao: điểm kế tiếp chưa có tên thì nói số điểm
+              ? next.name === '' ? t('driver.completeConfirm.nextNumber', { number: next.number }) : t('driver.completeConfirm.next', { number: next.number, name: next.name })
+              : t('driver.completeConfirm.last')}</span>
           </p>
         </div>
 

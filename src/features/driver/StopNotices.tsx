@@ -2,6 +2,7 @@ import { MapPinCheck, PackagePlus } from 'lucide-react'
 import { Banner } from '@/components/Banner'
 import { useFormat, useT } from '@/lib/i18n'
 import type { DeliveryView } from './delivery-progress'
+import { useDriverCapabilities } from './useDriverQueries'
 
 const TEXT = 'text-body-lg'
 
@@ -14,15 +15,19 @@ const TEXT = 'text-body-lg'
 export function StopNotices({ view }: { view: DeliveryView }) {
   const t = useT()
   const format = useFormat()
+  const caps = useDriverCapabilities()
   const leftOut = view.leftAtWarehouse.length
   return (
     <>
       <Banner tone="info" icon={view.arrivedAt === undefined ? undefined : MapPinCheck} className={TEXT}>
         {view.mode !== 'delivering'
           ? t(view.mode === 'preview' ? 'driver.notice.preview' : 'driver.notice.ready')
-          : view.arrivedAt === undefined
-            ? t('driver.notice.enRoute', { number: view.stop.number })
-            : t('driver.notice.arrived', { number: view.stop.number, time: format.time(view.arrivedAt) })}
+          // Backend chưa có bước "Đã đến" (Q-02) nên không có giờ đến: nói việc cần làm ở điểm đang giao
+          : !caps.arrive
+            ? t('driver.backend.atStop', { number: view.stop.number })
+            : view.arrivedAt === undefined
+              ? t('driver.notice.enRoute', { number: view.stop.number })
+              : t('driver.notice.arrived', { number: view.stop.number, time: format.time(view.arrivedAt) })}
       </Banner>
       {leftOut > 0 ? <Banner tone="warning" className={TEXT}>{t('driver.notice.leftOut', { count: leftOut })}</Banner> : null}
       {view.stop.kind === 'PICKUP' ? (

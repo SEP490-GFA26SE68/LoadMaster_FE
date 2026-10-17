@@ -56,6 +56,25 @@ test('three levels as tabs with 56 px targets; without a camera the dialog opens
   expect(document.querySelector('video')).toBeNull()
 })
 
+test('a caller with only the typed code (driver on the backend): no tab row, no other level, focus in the code field', async () => {
+  const onVerify = vi.fn()
+  render(
+    <I18nProvider>
+      <MemoryRouter>
+        <PackageVerify open onOpenChange={vi.fn()} title="Đối chiếu kiện dỡ tại điểm 2" methods={['CODE']} onVerify={onVerify} onManual={vi.fn()} candidates={CANDIDATES} />
+      </MemoryRouter>
+    </I18nProvider>,
+  )
+  const dialog = within(screen.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 2' }))
+  expect(dialog.queryByRole('tablist')).toBeNull()
+  expect(dialog.queryByRole('tab')).toBeNull()
+  const code = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
+  expect(code).toHaveFocus()
+  await userEvent.type(code, 'LB-PK-0007')
+  await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
+  expect(onVerify).toHaveBeenCalledExactlyOnceWith({ method: 'CODE', code: 'LB-PK-0007' })
+})
+
 test('level 2: a typed code is sent as typed, marked CODE; an empty one is refused in place', async () => {
   const { dialog, onVerify } = renderVerify()
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))

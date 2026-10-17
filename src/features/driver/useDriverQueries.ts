@@ -6,14 +6,22 @@ import {
   completeStop,
   confirmUnloadByQr,
   confirmUnloadManually,
+  DRIVER_CAPABILITIES,
+  fetchDriverStopScreen,
   fetchDriverTripLabels,
   fetchDriverTripMonitoring,
   fetchDriverTrip,
   fetchMyTrips,
   reportDeliveryIssue,
   startDelivery,
+  type DriverCapabilities,
   type UnloadVerifyInput,
 } from './driver-api'
+
+/** Màn tài xế làm được gì với nguồn dữ liệu đang dùng (kho mẫu hay backend): component đọc ở đây để ẩn phần chưa có (D-20). */
+export function useDriverCapabilities(): DriverCapabilities {
+  return DRIVER_CAPABILITIES
+}
 
 /**
  * Dữ liệu màn tài xế qua TanStack Query — component không gọi `driver-api.ts` trực tiếp (mục 9). Khoá nằm dưới `['trips']` nên mọi
@@ -31,6 +39,11 @@ function tripKey(tripId: string) {
 
 export function useDriverTripQuery(tripId: string) {
   return useQuery({ queryKey: tripKey(tripId), queryFn: () => fetchDriverTrip(tripId), staleTime: 0 })
+}
+
+/** Màn điểm giao theo backend: dưới `['trips']` nên mỗi lần dỡ, hoàn tất điểm (`refreshAfterWrite`) đọc lại điểm đang giao. */
+export function useDriverStopScreenQuery(tripId: string) {
+  return useQuery({ queryKey: [...tripKey(tripId), 'stop-screen'], queryFn: () => fetchDriverStopScreen(tripId), staleTime: 0 })
 }
 
 /**
@@ -82,7 +95,8 @@ export function useCompleteStopMutation(tripId: string) {
 export function useDriverTripLabelsQuery(tripId: string) {
   // Ngoài khoá `['trips']`: nhãn không đổi khi đang giao (chuyến đã khoá), mỗi lần ghi dỡ không phải đọc lại — và lượt ghi không phải
   // chờ lần đọc lại đó trước khi xong
-  return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
+  // Backend chưa có nhãn của chuyến cho tài xế: chỉ kho mẫu đọc
+  return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' && !DRIVER_CAPABILITIES.backend })
 }
 
 /** Đối chiếu bằng nhãn (quét hoặc gõ mã) để ghi dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */

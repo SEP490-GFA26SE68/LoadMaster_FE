@@ -28,9 +28,12 @@ export type MyTripStop = {
 
 export type MyTripRow = {
   readonly id: string
-  readonly name: string
-  /** Ngày chạy `YYYY-MM-DD`. */
-  readonly scheduledDate: string
+  /** Mã chuyến hiện trên thẻ; vắng là `id` (kho mẫu dùng một mã cho cả hai, backend có mã số và mã chuyến). */
+  readonly code?: string
+  /** Tên tuyến; backend chưa trả thì vắng — thẻ bỏ dòng đó. */
+  readonly name?: string
+  /** Ngày chạy `YYYY-MM-DD`; vắng khi backend không có giờ xuất phát. */
+  readonly scheduledDate?: string
   /** Tên xe (có biển số); xe không còn trong kho thì là mã xe. */
   readonly vehicleName: string
   readonly status: TripStatus
@@ -39,8 +42,8 @@ export type MyTripRow = {
   /** Dòng phụ thứ hai: còn xác nhận tay chờ điều phối viên duyệt (FE-6-04). */
   readonly manualSub: TripSubStatus | null
   readonly stopCount: number
-  /** Kiện của phương án trừ kiện hỏng bị bỏ lại kho — số kiện trên xe (hoặc sẽ lên xe). */
-  readonly packageCount: number
+  /** Kiện của phương án trừ kiện hỏng bị bỏ lại kho — số kiện trên xe (hoặc sẽ lên xe); backend chưa trả thì vắng. */
+  readonly packageCount?: number
   /** Đang vận chuyển: điểm chưa hoàn tất đầu tiên. */
   readonly currentStop: number | undefined
   /** Đã giao: thời điểm giao xong (ISO 8601). */
@@ -141,7 +144,7 @@ function row(trip: Trip, plan: Revision, revisions: readonly Revision[], vehicle
 
 /** Ngày chạy sớm trước, rồi mã chuyến. */
 function byDate(a: MyTripRow, b: MyTripRow): number {
-  return a.scheduledDate.localeCompare(b.scheduledDate) || a.id.localeCompare(b.id)
+  return (a.scheduledDate ?? '').localeCompare(b.scheduledDate ?? '') || a.id.localeCompare(b.id)
 }
 
 /**

@@ -3,26 +3,33 @@ import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useDeviceLocation, type DeviceLocationState } from './useDeviceLocation'
+import { useDriverCapabilities } from './useDriverQueries'
 
 /**
  * Công tắc "Dùng GPS thật" trên màn điểm giao khi chuyến Đang vận chuyển (FE-6-13). Một hàng 56 px: nhãn công tắc, nhãn nguồn vị trí
  * ("GPS" khi đang gửi, "Mô phỏng" khi không) và công tắc; dưới là một dòng trạng thái — đang chờ quyền, đã gửi lúc nào, hoặc vì sao đã
  * về mô phỏng — và câu nói rõ khi chưa có máy chủ thì vị trí chỉ hiện trong trình duyệt này. Thiết bị không có định vị: công tắc mờ kèm
- * lý do. Gỡ màn chuyến là dừng theo dõi (`useDeviceLocation`).
+ * lý do. Gỡ màn chuyến là dừng theo dõi (`useDeviceLocation`). Nối backend: vị trí gửi lên máy chủ và không có xe mô phỏng — câu và
+ * trạng thái nói đúng điều đó.
  */
 export function DriverGpsToggle({ tripId }: { tripId: string }) {
   const t = useT()
   const switchId = useId()
   const noteId = useId()
+  const caps = useDriverCapabilities()
   const { supported, enabled, state, toggle } = useDeviceLocation(tripId)
   const active = state.status === 'active'
+  // Backend không có xe mô phỏng: không gửi GPS thì không có vị trí nào, nên không có nhãn "Mô phỏng"
+  const sourceShown = active || caps.simulatedPosition
   return (
     <section aria-label={t('driver.gps.title')} className="flex flex-none flex-col gap-1 rounded-lg border border-border bg-bg px-4 pb-3 shadow-card">
       <div className="flex min-h-14 items-center gap-3">
         <label htmlFor={switchId} className="flex min-h-14 flex-1 cursor-pointer items-center font-display font-[650] text-ink-strong">{t('driver.gps.toggle')}</label>
-        <Badge tone={active ? 'success' : 'neutral'} className="h-8 px-3 text-body-lg">
-          {t(`monitoring.location.sources.${active ? 'GPS' : 'SIMULATED'}`)}
-        </Badge>
+        {sourceShown ? (
+          <Badge tone={active ? 'success' : 'neutral'} className="h-8 px-3 text-body-lg">
+            {t(`monitoring.location.sources.${active ? 'GPS' : 'SIMULATED'}`)}
+          </Badge>
+        ) : null}
         {/* Vùng chạm 56 px quanh công tắc 36 × 20 (mục 10) */}
         <Switch
           id={switchId}
@@ -34,14 +41,19 @@ export function DriverGpsToggle({ tripId }: { tripId: string }) {
         />
       </div>
       {/* Thiết bị không có định vị là lý do cố định của công tắc mờ, không phải thông báo mới: không `role="status"` */}
-      {supported ? <GpsStatus state={state} /> : <p className="m-0 font-medium text-ink-2">{t('driver.gps.stopped.unsupported')}</p>}
-      <p id={noteId} className="m-0 text-ink-3">{t('driver.gps.localOnly')}</p>
+      {supported ? <GpsStatus state={state} server={caps.backend} /> : (
+        <p className="m-0 font-medium text-ink-2">{t(caps.backend ? 'driver.gps.stoppedServer.unsupported' : 'driver.gps.stopped.unsupported')}</p>
+      )}
+      <p id={noteId} className="m-0 text-ink-3">{t(caps.backend ? 'driver.gps.serverNote' : 'driver.gps.localOnly')}</p>
     </section>
   )
 }
 
-/** Dòng trạng thái của GPS thật; chưa bật lần nào thì không có dòng nào. */
-function GpsStatus({ state }: { state: DeviceLocationState }) {
+/**
+ * Dòng trạng thái của GPS thật; chưa bật lần nào thì không có dòng nào. `server`: vị trí gửi lên backend — thôi gửi là hết vị trí, không
+ * về xe mô phỏng như kho mẫu.
+ */
+function GpsStatus({ state, server }: { state: DeviceLocationState; server: boolean }) {
   const t = useT()
   const format = useFormat()
   if (state.status === 'off' && state.reason === undefined) return null
@@ -53,8 +65,10 @@ function GpsStatus({ state }: { state: DeviceLocationState }) {
         : state.status === 'active'
           ? t('driver.gps.sent', { time: format.time(state.sentAt) })
           : state.reason === 'error'
-            ? t('driver.gps.stopped.error', { message: dataErrorMessage(state.error, t) })
-            : t(`driver.gps.stopped.${state.reason ?? 'user'}`)}
+            ? t(server ? 'driver.gps.stoppedServer.error' : 'driver.gps.stopped.error', { message: dataErrorMessage(state.error, t) })
+            : server
+              ? t(`driver.gps.stoppedServer.${state.reason ?? 'user'}`)
+              : t(`driver.gps.stopped.${state.reason ?? 'user'}`)}
     </p>
   )
 }

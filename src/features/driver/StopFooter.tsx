@@ -7,6 +7,7 @@ import { CompleteStopDialog } from './CompleteStopDialog'
 import type { DeliveryView } from './delivery-progress'
 import type { StopDelivery } from './driver-plan'
 import type { useDeliveryStop } from './useDeliveryStop'
+import { useDriverCapabilities } from './useDriverQueries'
 
 type StopFooterProps = {
   view: DeliveryView
@@ -25,11 +26,13 @@ type StopFooterProps = {
  */
 export function StopFooter({ view, stops, actions, scanPending }: StopFooterProps) {
   const t = useT()
+  const caps = useDriverCapabilities()
   const blockedId = useId()
   const [asking, setAsking] = useState<number | null>(null)
   if (view.mode === 'preview') return null
   const pickupStop = view.stop.kind === 'PICKUP'
-  const arrived = view.arrivedAt !== undefined
+  // Backend chưa có bước "Đã đến" (Q-02): điểm đang giao dỡ được ngay, không có nút "Đã đến điểm n"
+  const arrived = !caps.arrive || view.arrivedAt !== undefined
   const completable = arrived && view.remaining === 0 && view.pendingConfirms === 0 && !scanPending
   const asked = completable && asking === view.stop.number
   // Hộp đã tự đóng: quên câu hỏi, để hộp không tự mở lại khi điểm hoàn tất được trở lại
