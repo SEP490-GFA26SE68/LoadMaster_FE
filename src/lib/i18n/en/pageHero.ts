@@ -24,5 +24,6 @@ export const pageHero = {
   paymentResult: 'Confirm a payment to subscribe or top up credits with the server.',
   companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
   support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
+  supportStatusOnly: 'Support requests from every company: read them and change their status.',
   contacts: 'Requests that guests send from the website: take them on, change the status and keep internal notes.',
 } satisfies Dictionary<typeof source>

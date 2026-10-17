@@ -4,11 +4,13 @@ import type { TicketKind, TicketStatus } from '@/lib/mock-db'
 
 /**
  * Chip của yêu cầu hỗ trợ (FE-8-07), theo ngữ pháp chấm của AGENTS mục 5: Mở là chờ người xử lý tiếp (hổ phách, vòng rỗng), Đang xử lý
- * là đang chạy (xanh lam, quầng), Đã đóng là xong việc (xám đặc). Loại chỉ là nhãn: không mượn màu của trạng thái.
+ * là đang chạy (xanh lam, quầng), Đã giải quyết là xong việc (xanh lá đặc, chỉ backend có), Đã đóng là xong và cất đi (xám đặc). Loại
+ * chỉ là nhãn: không mượn màu của trạng thái.
  */
 const STATUS_LOOK: Record<TicketStatus, { tone: BadgeTone; dot: BadgeDot }> = {
   OPEN: { tone: 'warning', dot: 'ring' },
   IN_PROGRESS: { tone: 'azure', dot: 'halo' },
+  RESOLVED: { tone: 'success', dot: 'solid' },
   CLOSED: { tone: 'neutral', dot: 'solid' },
 }
 

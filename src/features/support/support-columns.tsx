@@ -4,14 +4,17 @@ import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
 import type { SupportTicket } from '@/lib/mock-db'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
+import { ticketLabel } from './ticket-view'
 
 const helper = createColumnHelper<BaseTableFeatures, SupportTicket>()
 
 /**
  * Cột bảng yêu cầu hỗ trợ (FE-8-07). Ô không giữ trạng thái nên dựng cột theo ngôn ngữ và tên công ty được (AGENTS mục 5, Bảng dữ liệu);
- * thứ tự là thứ tự kho trả — hoạt động gần nhất trước — nên không cột nào sắp xếp.
+ * thứ tự là thứ tự kho trả — hoạt động gần nhất trước — nên không cột nào sắp xếp. Nguồn không có mốc hoạt động (backend,
+ * `activityTime` sai) thì cột cuối là lúc gửi.
  */
-export function createTicketColumns(t: TFunction, format: Formatter, companyNames: ReadonlyMap<string, string>) {
+export function createTicketColumns(t: TFunction, format: Formatter, companyNames: ReadonlyMap<string, string>, activityTime: boolean) {
+  const timeOf = (ticket: SupportTicket) => (activityTime ? ticket.updatedAt : ticket.createdAt)
   return helper.columns([
     helper.display({
       id: 'ticket',
@@ -22,7 +25,7 @@ export function createTicketColumns(t: TFunction, format: Formatter, companyName
         return (
           <span className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
             <span className="line-clamp-2 font-medium text-ink-strong">{ticket.title}</span>
-            <span className="text-small text-ink-3"><span className="font-mono text-caption">{ticket.id}</span> · {ticket.senderName}</span>
+            <span className="text-small text-ink-3"><span className="font-mono text-caption">{ticketLabel(ticket)}</span> · {ticket.senderName}</span>
           </span>
         )
       },
@@ -37,8 +40,8 @@ export function createTicketColumns(t: TFunction, format: Formatter, companyName
     helper.display({ id: 'status', header: t('support.page.columns.status'), meta: { width: '140px' } satisfies ColumnMeta, cell: (info) => <TicketStatusBadge status={info.row.original.status} /> }),
     helper.display({
       id: 'updated',
-      header: t('support.page.columns.updated'),
-      cell: (info) => <span className="text-ink-1 tabular-nums">{format.date(info.row.original.updatedAt)} {format.time(info.row.original.updatedAt)}</span>,
+      header: t(activityTime ? 'support.page.columns.updated' : 'support.page.columns.sent'),
+      cell: (info) => <span className="text-ink-1 tabular-nums">{format.date(timeOf(info.row.original))} {format.time(timeOf(info.row.original))}</span>,
     }),
   ])
 }

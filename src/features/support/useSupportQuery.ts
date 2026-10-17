@@ -8,6 +8,9 @@ import {
   setSupportTicketStatus,
 } from './support-api'
 
+/** Việc màn làm được theo nguồn dữ liệu (kho mẫu hay backend) — component đọc ở đây, không gọi `-api.ts`. */
+export { SUPPORT_SOURCE } from './support-api'
+
 /**
  * Hook Query của yêu cầu hỗ trợ (FE-8-07). Khoá `['support', 'tickets']` và `['support', 'panel', mã công ty]`, `staleTime: 0` — yêu cầu
  * đổi ở màn của người kia. Danh sách theo phiên của người đăng nhập; `AuthProvider` xoá cache khi đổi người. Mọi lần ghi làm mới cả

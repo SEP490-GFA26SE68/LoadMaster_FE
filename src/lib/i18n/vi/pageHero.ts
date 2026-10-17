@@ -26,5 +26,7 @@ export const pageHero = {
   paymentResult: 'Xác nhận thanh toán đăng ký gói hoặc nạp credit với máy chủ.',
   companies: 'Công ty dùng LoadMaster: gói cước, số người dùng, kho xuất phát và quản trị công ty đầu tiên.',
   support: 'Yêu cầu hỗ trợ của mọi công ty: trả lời, đổi trạng thái và xem gói, credit của công ty đó.',
+  /** `/ho-tro` khi nối backend: chưa có trao đổi và thông tin công ty. */
+  supportStatusOnly: 'Yêu cầu hỗ trợ của mọi công ty: đọc nội dung và đổi trạng thái.',
   contacts: 'Yêu cầu khách gửi từ trang giới thiệu: nhận việc, đổi trạng thái và ghi chú nội bộ.',
 } as const
