@@ -22,6 +22,7 @@ export const pageHero = {
   billing: 'The company’s plan, credit balance, history and payments.',
   payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
   companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',
+  companiesServer: 'Companies using LoadMaster: billing details, plan, number of users and first company administrator.',
   support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
   contacts: 'Requests that guests send from the website: take them on, change the status and keep internal notes.',
 } satisfies Dictionary<typeof source>
