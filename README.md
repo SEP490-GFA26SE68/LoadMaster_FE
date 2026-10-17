@@ -113,8 +113,11 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   (các gói đang bán, giá còn là giá tạm) và form liên hệ. Hỗ trợ khách hàng, quản lý nền tảng và quản trị hệ thống xử lý các yêu cầu đó ở
   màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi chú nội bộ. Không có trang tự đăng ký: tài khoản công ty do đội
   LoadMaster tạo.
-- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó (`BroadcastChannel`), và mất khi tải lại mọi tab; đăng nhập,
-  phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
+- **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
+  (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì đăng nhập qua Keycloak của
+  backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
+  điểm giao của tài xế đọc ghi backend thật; `VITE_API_FEATURES` chọn nhóm. Chuyến, Planner, tối ưu, giám sát, kho xếp hàng, đội xe, yêu cầu
+  giao vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
 ## Kiến trúc
@@ -127,7 +130,8 @@ src/features/<màn>         <màn>-api.ts (nơi duy nhất biết nguồn dữ l
 src/features/viewer3d      toàn bộ Three.js; một SceneCanvas dùng chung cho Planner, kho và tài xế
 ```
 
-Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOptimizationService`; hook và component giữ nguyên.
+Nối backend: thân hàm trong `features/*/*-api.ts` gọi `api()` (`src/lib/api-client.ts`) khi nhóm của nó bật, không thì gọi kho mẫu; hook và
+component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `createOptimizationService` cho tối ưu.
 
 ## Kiểm thử
 
