@@ -1,10 +1,10 @@
-import { Building2, CircleCheck } from 'lucide-react'
+import { Building2, CircleCheck, MailCheck, MessagesSquare, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import { useT } from '@/lib/i18n'
+import { useT, type MessageKey } from '@/lib/i18n'
 import type { GuestContact } from '@/lib/mock-db'
 import { CONTACT_ANCHOR, contactDefaults } from './contact-form'
 import { ContactForm } from './ContactForm'
@@ -31,9 +31,36 @@ function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () 
   )
 }
 
+/** Ba việc xảy ra sau khi khách gửi yêu cầu, theo thứ tự; bước cuối là câu "tài khoản công ty do đội LoadMaster tạo". */
+const NEXT_STEPS: readonly { icon: LucideIcon; key: MessageKey }[] = [
+  { icon: MailCheck, key: 'landing.contact.next.reply' },
+  { icon: MessagesSquare, key: 'landing.contact.next.talk' },
+  { icon: Building2, key: 'landing.contact.signUpNote' },
+]
+
+function ContactNextSteps() {
+  const t = useT()
+  return (
+    <div className="flex flex-col gap-4">
+      <h3 className="m-0 font-display text-h3 font-[650] text-sky-text font-stretch-108%">{t('landing.contact.next.title')}</h3>
+      <ol className="m-0 flex list-none flex-col gap-4 p-0">
+        {NEXT_STEPS.map(({ icon: Icon, key }) => (
+          <li key={key} className="flex items-start gap-3 text-body-lg text-sky-text-2">
+            <span aria-hidden className="grid size-9 flex-none place-items-center rounded-md border border-landing-hairline bg-sky-glass text-cyan-300">
+              <Icon className="size-5" strokeWidth={1.5} />
+            </span>
+            <span className="pt-1">{t(key)}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 /**
  * Phần "Liên hệ" của trang giới thiệu (`#lien-he`) — lời kêu gọi duy nhất của hai trang công khai: không có nút đăng ký hay mua gói,
- * tài khoản công ty do đội LoadMaster mở sau khi trao đổi. Form chờ danh sách gói đang bán (để chọn sẵn gói trên URL `?goi=`); đọc
+ * tài khoản công ty do đội LoadMaster mở sau khi trao đổi. Dải tối cuối trang: tiêu đề, câu mô tả và ba việc xảy ra sau khi gửi bên
+ * trái; form trong thẻ trắng bên phải. Form chờ danh sách gói đang bán (để chọn sẵn gói trên URL `?goi=`); đọc
  * gói lỗi thì form vẫn dùng được, chỉ không có gói để chọn.
  */
 export function ContactSection() {
@@ -45,17 +72,14 @@ export function ContactSection() {
   const [round, setRound] = useState(0)
 
   return (
-    <section id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="scroll-mt-24 px-4 py-14 md:px-shell lg:py-18">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
-        <div className="flex flex-col gap-6">
-          <SectionHeading id="landing-contact" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />
-          <p className="m-0 flex items-start gap-3 text-body text-ink-2 pointer-coarse:text-body-lg">
-            <Building2 aria-hidden className="mt-0.5 size-5 flex-none text-primary" strokeWidth={1.5} />
-            {t('landing.contact.signUpNote')}
-          </p>
+    <section id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-14">
+        <div className="flex flex-col gap-10">
+          <SectionHeading id="landing-contact" tone="dark" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />
+          <ContactNextSteps />
         </div>
 
-        <Card className="p-5 sm:p-6">
+        <Card className="self-start p-5 sm:p-7">
           {sent !== null ? (
             <ContactSent contact={sent} onAgain={() => { setSent(null); setRound((value) => value + 1) }} />
           ) : plans.isPending ? (
