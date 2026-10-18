@@ -27,7 +27,11 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
           <MoreHorizontal strokeWidth={1.5} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent
+        align="end"
+        collisionPadding={16}
+        className="w-80 max-w-[calc(100vw-2rem)]"
+      >
         <MenuAction icon={<Eye strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.view')} block={null} onSelect={() => onAction('view', row)} />
         {canAssign ? (
           pending ? (
@@ -63,9 +67,14 @@ function MenuAction({ icon, label, block, danger = false, onSelect }: {
       className={cn(block !== null && 'h-auto items-start py-1.5')}
     >
       {icon}
-      <span className="flex min-w-0 flex-col">
-        <span>{label}</span>
-        {block !== null ? <span className="text-caption text-text-3">{block}</span> : null}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="whitespace-normal">{label}</span>
+
+        {block !== null ? (
+          <span className="whitespace-normal wrap-break-word text-caption leading-relaxed text-text-3">
+            {block}
+          </span>
+        ) : null}
       </span>
     </DropdownMenuItem>
   )

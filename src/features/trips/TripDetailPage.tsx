@@ -28,6 +28,7 @@ import { TripRouteCard } from './TripRouteCard'
 import { TripReadinessCard } from './TripReadinessCard'
 import { useTripEtaQuery } from './useRouteQuery'
 import { useSegregationGuard } from './useSegregationQuery'
+import { BackendTripRouteCard } from './BackendTripRouteCard'
 import {
   useDeletePackageMutation,
   useDuplicatePackageMutation,
@@ -36,35 +37,55 @@ import {
   useTripDetailQuery,
   useTripStopsMutation,
 } from './useTripsQuery'
-import { useQuery } from '@tanstack/react-query'
-import { fetchBackendTripDetail } from './trips-api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  fetchBackendActiveRoutePlan,
+  fetchBackendTripDetail,
+  optimizeBackendTrip,
+} from './trips-api'
 import { RealTripDetailHeader, TripDetailHeader } from './TripDetailHeader'
-/**
- * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097; V2.3 LM-103): dải trời có tên chuyến, tiến trình và banner
- * theo pha; card sơ đồ tuyến đè lên đáy dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
- * phải (tóm tắt hàng, phương tiện, sự cố). Chọn một kiện thì cột phải thành panel kiện và sơ đồ tuyến thu về cột trái
- * (`ChiTietChuyenKien.jpg`).
- * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
- * xếp, banner nói lý do và mọi thao tác sửa ẩn đi. LM-104: chuyến còn lập kế hoạch có card "Kiểm tra trước khi tối ưu" đầu cột phải;
- * dưới bảng kiện là "Yêu cầu giao của chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`). FE-4b-04: điểm giao tự sinh khi đưa
- * yêu cầu vào chuyến; chân card sơ đồ tuyến có "Thêm điểm giao" cho điểm tay. Chuyến chưa có điểm giao nào thì chưa thêm kiện tay được
- * — kiện phải thuộc một điểm giao. FE-4b-05: dưới thẻ yêu cầu giao là "Kiện đưa thẳng từ kho kiện" (thêm / bỏ kiện Đã nhập).
- * FE-4b-09: đầu card sơ đồ tuyến có "Tối ưu tuyến" (quyền `routes.optimize`), mỗi điểm có giờ đến dự kiến và mức hạn, dưới là bản đồ
- * tuyến (`RouteMap`); kéo đổi thứ tự điểm thì giờ đến tính lại. FE-4b-06: cột phải có thẻ "Phân nhóm hàng"; lưu một kiện khác loại
- * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-04: chuyến đang xếp / đang giao còn xác nhận tay chờ duyệt thì thẻ "Xác nhận tay
- * chờ duyệt" đứng đầu cột chính.
- * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
- * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
- */
+import { Plus, Route } from 'lucide-react'
+import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
 
 function BackendTripDetail({ tripId }: { tripId: string }) {
   const t = useT()
+  const can = useCan()
+
+  const [assigning, setAssigning] = useState(false)
+
+  const queryClient = useQueryClient()
+
+  const optimizeRoute = useMutation({
+    mutationFn: () => optimizeBackendTrip(tripId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['trips', tripId],
+      })
+
+      toast.success(t('trips.optimization.success'))
+    },
+
+    onError: (error) => {
+      toast.error(dataErrorMessage(error, t))
+    },
+  })
+
 
   const query = useQuery({
     queryKey: ['trips', tripId, 'backend-detail'],
     queryFn: () => fetchBackendTripDetail(tripId),
     enabled: tripId !== '',
   })
+
+  
+const routePlanQuery = useQuery({
+  queryKey: ['trips', tripId, 'active-route-plan'],
+  queryFn: () => fetchBackendActiveRoutePlan(tripId),
+  enabled: tripId !== '',
+  retry: false,
+})
+
 
   if (query.isPending) {
     return (
@@ -92,12 +113,42 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   }
 
   const { trip, stops } = query.data
+  const canAssign =
+    can('trips.edit') &&
+    trip.status === 'DRAFT'
+  const canOptimize =
+    can('trips.edit') &&
+    (trip.status === 'DRAFT' || trip.status === 'PLANNED') &&
+    stops.length > 0
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <RealTripDetailHeader tripId={tripId} />
 
-      <div className="flex flex-col gap-4 px-shell py-6">
+
+      <div className="sky-overlap flex flex-col gap-4 px-shell pb-8">
+        {canOptimize ? (
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button
+              type="button"
+              loading={optimizeRoute.isPending}
+              disabled={optimizeRoute.isPending}
+              onClick={() => optimizeRoute.mutate()}
+            >
+              <Route className="size-4" />
+              {t('trips.optimization.run')}
+            </Button>
+          </div>
+        ) : null}
+
+        
+<BackendTripRouteCard
+  trip={trip}
+  stops={stops}
+  routePlan={routePlanQuery.data ?? null}
+/>
+
+
         <div className="rounded-lg border border-border bg-bg p-5">
           <h2 className="mb-4 text-lg font-semibold">
             {trip.tripName}
@@ -147,95 +198,113 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
               </dd>
             </div>
           </dl>
+        </div>
+        <section className="rounded-lg border border-border bg-bg p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">
+                {t('trips.detail.deliveryStops')}
+              </h2>
 
-          <section className="rounded-lg border border-border bg-bg p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {t('trips.detail.deliveryStops')}
-                </h2>
-                <p className="mt-1 text-sm text-text-2">
-                  {stops.length} {t('trips.detail.deliveryStops')}
-                </p>
-              </div>
+              <p className="mt-1 text-sm text-text-2">
+                {stops.length} {t('trips.detail.stopUnit')}
+              </p>
             </div>
 
-            {stops.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
-                <p className="font-medium">
-                  {t('trips.detail.noStops')}
-                </p>
-                <p className="mt-2 text-sm text-text-2">
-                  {t('trips.detail.noStopsHint')}
-                </p>
-              </div>
-            ) : (
-              <ol className="space-y-3">
-                {stops.map((stop) => (
-                  <li
-                    key={stop.id}
-                    className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-start"
-                  >
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                      {stop.stopSequence}
+            {canAssign ? (
+              <Button
+                type="button"
+                onClick={() => setAssigning(true)}
+              >
+                <Plus className="size-4" />
+                {t('trips.assign.title')}
+              </Button>
+            ) : null}
+          </div>
+
+          {stops.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+              <p className="font-medium">
+                {t('trips.detail.noStops')}
+              </p>
+              <p className="mt-2 text-sm text-text-2">
+                {t('trips.detail.noStopsHint')}
+              </p>
+            </div>
+          ) : (
+            <ol className="space-y-3">
+              {stops.map((stop) => (
+                <li
+                  key={stop.id}
+                  className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-start"
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                    {stop.stopSequence}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold">
+                        {stop.stopName ||
+                          stop.address ||
+                          t('trips.detail.unnamedStop')}
+                      </h3>
+
+                      <span className="rounded-full border border-border px-2 py-0.5 text-xs">
+                        {stop.status}
+                      </span>
                     </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold">
-                          {stop.stopName ||
-                            stop.address ||
-                            t('trips.detail.unnamedStop')}
-                        </h3>
+                    {stop.address && (
+                      <p className="mt-1 text-sm text-text-2">
+                        {stop.address}
+                      </p>
+                    )}
 
-                        <span className="rounded-full border border-border px-2 py-0.5 text-xs">
-                          {stop.status}
+                    {stop.deliveryRequirementId !== null && (
+                      <p className="mt-2 text-xs text-text-2">
+                        {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
+                      </p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <span className="text-text-2">
+                          {t('trips.detail.plannedArrival')}:
+                        </span>{' '}
+                        <span className="font-medium">
+                          {stop.plannedArrival?.replace('T', ' ') ?? '—'}
                         </span>
                       </div>
 
-                      {stop.address && (
-                        <p className="mt-1 text-sm text-text-2">
-                          {stop.address}
-                        </p>
-                      )}
-
-                      {stop.deliveryRequirementId !== null && (
-                        <p className="mt-2 text-xs text-text-2">
-                          {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
-                        </p>
-                      )}
-
-                      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        <div>
-                          <span className="text-text-2">
-                            {t('trips.detail.plannedArrival')}:
-                          </span>{' '}
-                          <span className="font-medium">
-                            {stop.plannedArrival?.replace('T', ' ') ?? '—'}
-                          </span>
-                        </div>
-
-                        <div>
-                          <span className="text-text-2">
-                            {t('trips.detail.actualArrival')}:
-                          </span>{' '}
-                          <span className="font-medium">
-                            {stop.actualArrival?.replace('T', ' ') ?? '—'}
-                          </span>
-                        </div>
+                      <div>
+                        <span className="text-text-2">
+                          {t('trips.detail.actualArrival')}:
+                        </span>{' '}
+                        <span className="font-medium">
+                          {stop.actualArrival?.replace('T', ' ') ?? '—'}
+                        </span>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-
-        </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
+
+      {canAssign ? (
+        <BackendRequirementAssignDialog
+          open={assigning}
+          onOpenChange={setAssigning}
+          tripId={tripId}
+        />
+      ) : null}
     </div>
   )
 }
+
 function MockTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
@@ -252,6 +321,7 @@ function MockTripDetailPage() {
   const [draft, setDraft] = useState<CargoPackage | null>(null)
   const [importing, setImporting] = useState(false)
   const [assigning, setAssigning] = useState(false)
+
   const [addingStop, setAddingStop] = useState(false)
   const [pickingPool, setPickingPool] = useState(false)
   // Điểm giao đang lọc bảng kiện: điểm trên sơ đồ tuyến và ô chọn trên bảng dùng chung

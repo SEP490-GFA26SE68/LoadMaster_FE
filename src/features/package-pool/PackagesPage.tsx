@@ -309,7 +309,7 @@ export function PackagesPage() {
             setDialog(null)
           }}
         />
-      ) : null}F
+      ) : null}
     </Tabs>
   )
 }

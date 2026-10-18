@@ -1,5 +1,4 @@
 import { createColumnHelper, type CellContext } from '@tanstack/react-table'
-import { Link } from 'react-router'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import type { RequirementRow } from './requirements-api'
@@ -86,21 +85,7 @@ function PackagesCell({ row }: { row: RequirementRow }) {
   )
 }
 
-function TripCell({ row }: { row: RequirementRow }) {
-  const t = useT()
-  if (!row.trip) return <span className="text-ink-3">{t('requirements.notAssigned')}</span>
-  return (
-    <span className="flex min-w-0 flex-col whitespace-normal">
-      <Link to={`/chuyen/${row.trip.id}`} className={`line-clamp-1 font-medium text-ink-strong hover:text-primary ${FOCUS}`}>
-        {row.trip.name}
-      </Link>
-      {' '}
-      <span className="font-mono text-caption text-ink-3">
-        {row.stopNumber === undefined ? row.trip.id : `${row.trip.id} · ${t('requirements.stop', { number: row.stopNumber })}`}
-      </span>
-    </span>
-  )
-}
+
 
 function ActionsHeader() {
   const t = useT()
@@ -113,7 +98,6 @@ const deadlineCell = (info: Cell<string>) => <DeadlineCell value={info.getValue(
 const priorityCell = (info: Cell<number>) => <RequirementPriorityTag priority={info.row.original.requirement.priority} />
 const packagesCell = (info: Cell<number>) => <PackagesCell row={info.row.original} />
 const statusCell = (info: Cell<number>) => <RequirementStatusBadge status={info.row.original.status} />
-const tripCell = (info: Cell<string>) => <TripCell row={info.row.original} />
 const actionsCell = (info: Cell<unknown>) => <RequirementRowMenu row={info.row.original} />
 
 /**
@@ -131,7 +115,6 @@ export function requirementColumns(t: TFunction) {
       (row) => row.requirement.receivedPackageCount ?? row.packages.length,
       { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
     helper.accessor((row) => REQUIREMENT_STATUS_ORDER.indexOf(row.status), { id: 'status', header: t('requirements.columns.status'), enableSorting: true, sortDescFirst: false, meta: { width: '168px' } satisfies ColumnMeta, cell: statusCell }),
-    helper.accessor((row) => row.trip?.name ?? '', { id: 'trip', header: t('requirements.columns.trip'), enableSorting: true, meta: { width: '22%' } satisfies ColumnMeta, cell: tripCell }),
     helper.display({ id: 'actions', header: ActionsHeader, meta: { width: '56px', align: 'right' } satisfies ColumnMeta, cell: actionsCell }),
   ])
 }

@@ -6,9 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-
 import { Banner } from '@/components/Banner'
-import { CoordinatePicker, placeAddress } from '@/components/map'
+import { CoordinatePicker, parseCoordinates } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import {
   Dialog,
@@ -31,7 +30,11 @@ import {
   fetchCustomers,
   type CreateCustomerInput,
 } from './customers-api'
-import type { RequirementRow } from './requirements-api'
+import {
+  updateRequirementCoordinates,
+  type RequirementRow,
+} from './requirements-api'
+
 import {
   initialValues,
   MAX_ADDRESS,
@@ -209,6 +212,41 @@ function RequirementForm({
   const update = useUpdateRequirementMutation(current?.id ?? '')
   const mutation = current ? update : create
 
+  const updateCoordinates = useMutation({
+    mutationFn: ({
+      id,
+      lat,
+      lng,
+    }: {
+      id: string
+      lat: number
+      lng: number
+    }) =>
+      updateRequirementCoordinates(id, {
+        destinationLat: lat,
+        destinationLng: lng,
+      }),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['requirements'],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['trips'],
+        }),
+      ])
+
+      toast.success(t('requirements.form.coordinatesSaved'))
+      onClose()
+    },
+
+    onError: (error) => {
+      toast.error(dataErrorMessage(error, t))
+    },
+  })
+
+
   const schema = useMemo(
     () => requirementSchema(t, current),
     [t, current],
@@ -238,6 +276,24 @@ function RequirementForm({
 
   const canChangeDestination =
     !locked && !hasReceivedPackages
+
+
+
+
+  const hasCoordinates =
+    current?.lat != null ||
+    current?.lng != null
+
+  const canAddCoordinates =
+    current !== undefined &&
+    !hasCoordinates &&
+    (
+      current.status === 'PENDING' ||
+      current.tripId !== undefined
+    )
+
+  const canEditCoordinates =
+    canChangeDestination || canAddCoordinates
 
   const { errors } = form.formState
 
@@ -283,6 +339,32 @@ function RequirementForm({
 
     createCustomerMutation.mutate(input)
   }
+
+
+  function handleSaveCoordinates() {
+    if (!current || !canAddCoordinates) return
+
+    const coordinates = form.getValues('coordinates')
+
+    const parsed = parseCoordinates(
+      coordinates.lat,
+      coordinates.lng,
+    )
+
+    if (parsed.kind !== 'ok') {
+      toast.error(
+        t('requirements.form.errors.coordinatesInvalid'),
+      )
+      return
+    }
+
+    updateCoordinates.mutate({
+      id: current.id,
+      lat: parsed.lat,
+      lng: parsed.lng,
+    })
+  }
+
 
   function handleSubmit(values: RequirementFormValues) {
     if (locked) return
@@ -467,19 +549,18 @@ function RequirementForm({
               <CoordinatePicker
                 label={t('requirements.form.coordinates')}
                 value={field.value}
-                onChange={field.onChange}
-                disabled={!canChangeDestination}
+                onChange={(next) => {
+                  field.onChange(next)
+                  field.onBlur()
+                }}
+                disabled={!canEditCoordinates}
                 showErrors={form.formState.isSubmitted}
                 onPlacePicked={(place) => {
-                  if (form.getValues('address').trim() === '') {
-                    form.setValue(
-                      'address',
-                      placeAddress(place),
-                      {
-                        shouldDirty: true,
-                        shouldValidate: form.formState.isSubmitted,
-                      },
-                    )
+                  if (canChangeDestination) {
+                    form.setValue('address', place.address, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
                   }
                 }}
               />
@@ -567,6 +648,19 @@ function RequirementForm({
         >
           {t('requirements.form.cancel')}
         </Button>
+
+
+        {locked && canAddCoordinates ? (
+          <Button
+            type="button"
+            loading={updateCoordinates.isPending}
+            disabled={updateCoordinates.isPending}
+            onClick={handleSaveCoordinates}
+          >
+            {t('requirements.form.saveCoordinates')}
+          </Button>
+        ) : null}
+
 
         {!locked ? (
           <Button

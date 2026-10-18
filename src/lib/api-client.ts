@@ -70,30 +70,40 @@ function codeOfStatus(status: number): TransportErrorCode {
   return 'SERVER_ERROR'
 }
 
+
 async function getValidAccessToken(): Promise<string> {
   if (!keycloak.authenticated) {
-    throw new ApiError('UNAUTHENTICATED', { status: 401 })
+    throw new ApiError('UNAUTHENTICATED', {
+      status: 401,
+    })
   }
+
   try {
     await keycloak.updateToken(30)
-  } catch {
-    // Không che mất lỗi xác thực nếu chuyển hướng thất bại.
-    try {
-      await keycloak.login({ redirectUri: window.location.href })
-    } catch {
-      // Giữ lỗi 401 cho caller.
-    }
-    throw new ApiError('UNAUTHENTICATED', { status: 401 })
+  } catch (error) {
+    console.error(
+      '[KEYCLOAK] Refresh token failed',
+      error,
+    )
+
+    throw new ApiError('UNAUTHENTICATED', {
+      status: 401,
+    })
   }
+
   if (!keycloak.token) {
-    throw new ApiError('UNAUTHENTICATED', { status: 401 })
+    throw new ApiError('UNAUTHENTICATED', {
+      status: 401,
+    })
   }
+
   return keycloak.token
 }
 
+
 async function redirectOnUnauthorized(): Promise<never> {
   try {
-    await keycloak.login({ redirectUri: window.location.href })
+    await keycloak.login({ redirectUri: `${window.location.origin}/dang-nhap` })
   } catch {
     // Giữ một kiểu lỗi nhất quán cho caller.
   }
@@ -131,7 +141,11 @@ async function fetchAuthorized(path: string, init: RequestInit = {}, timeoutMs =
     clearTimeout(timer)
     init.signal?.removeEventListener('abort', onAbort)
   }
-  if (response.status === 401) await redirectOnUnauthorized()
+  if (response.status === 401) {
+    throw new ApiError('UNAUTHENTICATED', {
+      status: 401,
+    })
+  }
   return response
 }
 

@@ -195,10 +195,8 @@ export async function fetchTrips(): Promise<TripRow[]> {
 export type TripFrame = {
   readonly name: string
   readonly vehicleId: string
-  /** Giờ xuất phát, ISO 8601; ngày chạy của chuyến là ngày của nó theo giờ Việt Nam. */
   readonly departureAt: string
-  /** Kho xuất phát; vắng thì kho của công ty. */
-  readonly depot?: CompanyDepot
+  readonly originWarehouseId: string
   readonly driverId?: string | null
 }
 
@@ -209,6 +207,31 @@ type TripCreateApiResponse = {
   tripName: string
   status: 'DRAFT'
 }
+
+
+export type BackendRouteLeg = {
+  id: number
+  routePlanId: number
+  legSequence: number
+  startStopId: number | null
+  endStopId: number
+  distanceMeters: number | null
+  durationSeconds: number | null
+  polyline: string | null
+}
+
+export type BackendActiveRoutePlan = {
+  id: number
+  tripId: number
+  planVersion: number
+  totalDistanceMeters: number | null
+  totalDurationSeconds: number | null
+  isActive: boolean
+  createdAt: string
+  legs: BackendRouteLeg[]
+}
+
+
 
 export type TripDetailApiResponse = {
   id: number
@@ -251,17 +274,22 @@ export async function createTrip({
   name,
   vehicleId,
   departureAt,
-  depot,
+  originWarehouseId,
   driverId = null,
 }: TripFrame): Promise<CreatedTrip> {
 
-  if (!depot) {
-    throw new Error('Missing departure depot')
-  }
+
 
   const vehicleIdNumber = Number(vehicleId)
   const driverIdNumber = driverId ? Number(driverId) : null
+  const warehouseIdNumber = Number(originWarehouseId)
 
+  if (
+    !Number.isSafeInteger(warehouseIdNumber) ||
+    warehouseIdNumber <= 0
+  ) {
+    throw new Error('Invalid origin warehouse ID')
+  }
   if (
     !Number.isSafeInteger(vehicleIdNumber) ||
     vehicleIdNumber <= 0 ||
@@ -309,10 +337,7 @@ export async function createTrip({
         departureTime,
         vehicleId: vehicleIdNumber,
         driverId: driverIdNumber,
-        originName: depot.name,
-        originAddress: depot.address,
-        originLatitude: depot.lat,
-        originLongitude: depot.lng,
+        originWarehouseId: warehouseIdNumber,
       }),
     },
   )
@@ -330,6 +355,64 @@ export async function createTrip({
     status: created.status,
   }
 }
+
+
+
+export async function fetchBackendActiveRoutePlan(
+  tripId: string,
+): Promise<BackendActiveRoutePlan> {
+  const response = await apiFetch<{
+    success: boolean
+    data: BackendActiveRoutePlan
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
+  )
+
+  return response.data
+}
+
+
+
+export type RouteOptimizationResult = {
+  origin: {
+    latitude: number
+    longitude: number
+  }
+  orderedStops: number[]
+  totalTravelDurationSeconds: number
+  totalDistanceMeters: number
+  estimatedTotalDurationSeconds: number
+  deadlineMissedStops: number[]
+  segments: {
+    fromStopId: number | null
+    toStopId: number
+    durationSeconds: number
+    distanceMeters: number
+    polyline: string | null
+  }[]
+  stopSchedules: {
+    stopId: number
+    stopSequence: number
+    plannedArrival: string
+  }[]
+}
+
+export async function optimizeBackendTrip(
+  tripId: string,
+): Promise<RouteOptimizationResult> {
+  const response = await apiFetch<{
+    success: boolean
+    data: RouteOptimizationResult
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/optimize-route`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
 
 export type TripFrameChanges = {
   readonly name: string
@@ -564,6 +647,32 @@ export async function fetchBackendTripDetail(
 
   return response.data
 }
+
+
+/**
+ * POST /api/trips/{tripId}/delivery-requirements/{requirementId}
+ *
+ * Dispatcher gán toàn bộ yêu cầu giao vào Trip.
+ * Backend tự kiểm tra điều kiện và tạo DeliveryStop.
+ */
+export async function assignBackendRequirementToTrip(
+  tripId: string,
+  requirementId: string,
+): Promise<TripStopApiResponse> {
+  const response = await apiFetch<{
+    success: boolean
+    data: TripStopApiResponse
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}` +
+    `/delivery-requirements/${encodeURIComponent(requirementId)}`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
 
 function mapTripFromApi(api: TripDetailApiResponse): Trip {
   // Lưu ý: Spring LocalDateTime không mang thông tin múi giờ.

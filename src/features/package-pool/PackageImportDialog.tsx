@@ -13,6 +13,11 @@ import {
   usePreviewPackageImportMutation,
 } from './usePackagePoolQuery'
 
+import { useQuery } from '@tanstack/react-query'
+import { listDeliveryRequirements } from '@/features/requirements/requirements-api'
+import { SelectField } from '@/components/ui/SelectField'
+import { useForm } from 'react-hook-form'
+
 export function PackageImportDialog({
   onClose,
   onDone,
@@ -26,7 +31,34 @@ export function PackageImportDialog({
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const requirementForm = useForm<{ deliveryRequirementId: string }>({
+    defaultValues: {
+      deliveryRequirementId: '',
+    },
+  })
 
+  const requirementsQuery = useQuery({
+    queryKey: ['requirements'],
+    queryFn: listDeliveryRequirements,
+  })
+
+  const deliveryRequirementId = requirementForm.watch('deliveryRequirementId')
+
+  const availableRequirements = (requirementsQuery.data ?? [])
+    .map((row) => row.requirement)
+    .filter(
+      (requirement) =>
+        requirement.status === 'PENDING' &&
+        requirement.tripId === undefined,
+    )
+
+  const requirementOptions = availableRequirements.map((requirement) => ({
+    value: requirement.id,
+    label:
+      `#${requirement.id} — ${requirement.customerName ?? '—'}` +
+      ` — ${requirement.address}` +
+      ` (${requirement.receivedPackageCount ?? 0}/${requirement.expectedPackageCount ?? '—'} kiện)`,
+  }))
   const preview = usePreviewPackageImportMutation()
   const confirm = useConfirmPackageImportMutation()
   const template = useDownloadImportTemplateMutation()
@@ -68,15 +100,34 @@ export function PackageImportDialog({
     preview.mutate(file)
   }
 
-  function handleConfirm() {
-    if (!selectedFile || !result || blocked || pending) return
 
-    confirm.mutate(selectedFile, {
-      onSuccess: () => {
-        onDone()
+  function handleConfirm() {
+    if (
+      !deliveryRequirementId ||
+      !selectedFile ||
+      !result ||
+      blocked ||
+      pending ||
+      preview.isPending ||
+      requirementsQuery.isPending ||
+      requirementsQuery.isError
+    ) {
+      return
+    }
+
+    confirm.mutate(
+      {
+        file: selectedFile,
+        deliveryRequirementId,
       },
-    })
+      {
+        onSuccess: () => {
+          onDone()
+        },
+      },
+    )
   }
+
 
   return (
     <Dialog
@@ -96,6 +147,30 @@ export function PackageImportDialog({
         />
 
         <div className="flex max-h-[64vh] flex-col gap-3 overflow-y-auto px-7 pt-5 pb-6">
+          <div className="flex flex-col gap-2">
+            {requirementsQuery.isPending ? (
+              <div className="flex items-center gap-2">
+                <Spinner />
+                <span>{t('sourcing.import.loadingRequirements')}</span>
+              </div>
+            ) : requirementsQuery.isError ? (
+              <Banner tone="danger">
+                {dataErrorMessage(requirementsQuery.error, t)}
+              </Banner>
+            ) : availableRequirements.length === 0 ? (
+              <Banner tone="info">
+                {t('sourcing.import.noRequirements')}
+              </Banner>
+            ) : (
+              <SelectField
+                control={requirementForm.control}
+                name="deliveryRequirementId"
+                label={t('sourcing.import.deliveryRequirement')}
+                options={requirementOptions}
+                disabled={preview.isPending || confirm.isPending}
+              />
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <input
               ref={input}
@@ -247,6 +322,9 @@ export function PackageImportDialog({
             variant="primary"
             loading={pending}
             disabled={
+              !deliveryRequirementId ||
+              requirementsQuery.isPending ||
+              requirementsQuery.isError ||
               !selectedFile ||
               !result ||
               blocked ||

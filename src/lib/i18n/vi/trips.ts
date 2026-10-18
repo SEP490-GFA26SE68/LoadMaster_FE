@@ -1,5 +1,15 @@
 /** Màn chuyến hàng: danh sách, form, chi tiết, điểm giao, bảng kiện (LM-043 → LM-046, LM-088). */
 export const trips = {
+  assign: {
+    title: 'Gán yêu cầu giao vào chuyến',
+    description: 'Chọn một yêu cầu đã tiếp nhận đủ kiện để đưa vào chuyến.',
+    empty: 'Không có yêu cầu giao đang chờ phân chuyến.',
+    packages: 'kiện',
+    ready: 'Đủ điều kiện phân chuyến',
+    notReady: 'Chưa tiếp nhận đủ kiện',
+    confirm: 'Gán vào chuyến',
+    success: 'Gán yêu cầu giao thành công',
+  },
   /** Danh sách `/chuyen` (LM-088): cột, ô tìm và bộ lọc. */
   list: {
     title: 'Chuyến hàng',
@@ -229,12 +239,13 @@ export const trips = {
   },
   /** Vỏ màn Chi tiết chuyến: dải trời, menu thao tác, banner theo pha, cột phải (LM-088, V2.3 LM-103). */
   detail: {
+    stopUnit: 'điểm giao',
     deliveryStops: 'Danh sách điểm giao',
     stopCount: 'Điểm giao',
     noStops: 'Chuyến chưa có điểm giao',
     noStopsHint: 'Gán yêu cầu giao để tạo điểm giao cho chuyến.',
     unnamedStop: 'Điểm giao chưa đặt tên',
-    requirementId: 'Yêu cầu giao #',
+    requirementId: 'Yêu cầu giao:',
     plannedArrival: 'Đến dự kiến',
     actualArrival: 'Đến thực tế',
 
@@ -280,6 +291,11 @@ export const trips = {
     damagedTitle: { one: '{count} kiện hỏng, bỏ lại kho', other: '{count} kiện hỏng, bỏ lại kho' },
     wholeStop: 'Cả điểm giao',
     at: '{time} {date}',
+  },
+
+  optimization: {
+    run: 'Tối ưu tuyến đường',
+    success: 'Tối ưu tuyến đường thành công',
   },
   /** Hộp thoại huỷ chuyến (D-45): lý do bắt buộc, ghi nhật ký. */
   cancel: {
@@ -365,7 +381,7 @@ export const trips = {
     open: 'Nhập từ file',
     title: 'Nhập kiện từ file',
     description: 'Mỗi dòng một kiện, dòng đầu là tiêu đề cột như file mẫu (tiếng Việt, tiếng Anh hoặc tên trường). Kiện nhập được thêm sau các kiện đang có.',
-    choose: 'Chọn file .csv hoặc .xlsx',
+    choose: 'Chọn file .xlsx ',
     chooseAnother: 'Chọn file khác',
     fileInput: 'File kiện (.csv, .xlsx)',
     templateCsv: 'Tải mẫu .csv',

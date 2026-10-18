@@ -6,32 +6,31 @@ import {
 } from '@/types/user'
 import { apiFetch } from '@/lib/api-client'
 
-let initPromise: Promise<boolean> | null = null
 
 // Khởi tạo Keycloak
+let initPromise: Promise<boolean> | null = null
+
 export function initAuth(): Promise<boolean> {
   if (!initPromise) {
     initPromise = keycloak.init({
       onLoad: 'check-sso',
       pkceMethod: 'S256',
-      checkLoginIframe: true,
-      checkLoginIframeInterval: 5,
-    }).catch((error: unknown) => {
-      initPromise = null
-      throw error
+      checkLoginIframe: false,
+      silentCheckSsoRedirectUri:
+        `${window.location.origin}/silent-check-sso.html`,
+      silentCheckSsoFallback: false,
     })
   }
 
   return initPromise
 }
 
+
 // Đăng nhập qua Keycloak
-export async function login(
-  redirectUri?: string,
-): Promise<void> {
+export async function login(): Promise<void> {
   await keycloak.login({
     redirectUri:
-      redirectUri ?? `${window.location.origin}/`,
+      `${window.location.origin}/dang-nhap`,
   })
 }
 

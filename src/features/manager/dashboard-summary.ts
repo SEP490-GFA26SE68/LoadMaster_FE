@@ -1,6 +1,7 @@
 import { roundKg } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
-import type { VehicleState, VehicleStatus } from '@/lib/mock-db'
+import type { VehicleState } from '@/lib/mock-db'
+import type { VehicleStatus } from '@/features/fleet/vehicles-api'
 import { compareText } from '@/lib/list-filter'
 import { TRIP_STATUSES, type TripStatus } from '@/types/trip'
 import type { User } from '@/types/user'
@@ -120,12 +121,44 @@ export function summarizeDashboard(data: DashboardData, period: DateRange): Dash
  * Xe theo trạng thái, cùng luật với màn Đội xe (`vehicleRows`): xe không có trong danh sách trạng thái là Sẵn sàng. Đếm trên
  * danh sách xe, nên trạng thái của xe đã xoá không được tính.
  */
-function summarizeFleet(data: DashboardData): DashboardSummary['vehicles'] {
-  const statusOf = new Map(data.vehicleStates.map((state) => [state.vehicleId, state.status]))
-  const byStatus: Record<VehicleStatus, number> = { available: 0, in_use: 0, maintenance: 0 }
-  for (const vehicle of data.vehicles) byStatus[statusOf.get(vehicle.id) ?? 'available'] += 1
-  return { inUse: byStatus.in_use, total: data.vehicles.length, byStatus }
+
+function summarizeFleet(
+  data: DashboardData,
+): DashboardSummary['vehicles'] {
+  // Dashboard hiện vẫn lấy trạng thái xe từ mock-db.
+  // Chuyển sang enum Backend trước khi thống kê.
+  const statusMap: Record<VehicleState['status'], VehicleStatus> = {
+    available: 'AVAILABLE',
+    in_use: 'IN_TRIP',
+    maintenance: 'MAINTENANCE',
+  }
+
+  const statusOf = new Map(
+    data.vehicleStates.map((state) => [
+      state.vehicleId,
+      statusMap[state.status],
+    ]),
+  )
+
+  const byStatus: Record<VehicleStatus, number> = {
+    AVAILABLE: 0,
+    IN_TRIP: 0,
+    MAINTENANCE: 0,
+    RETIRED: 0,
+  }
+
+  for (const vehicle of data.vehicles) {
+    const status = statusOf.get(vehicle.id) ?? 'AVAILABLE'
+    byStatus[status] += 1
+  }
+
+  return {
+    inUse: byStatus.IN_TRIP,
+    total: data.vehicles.length,
+    byStatus,
+  }
 }
+
 
 function summarizeVehicles(rows: readonly DashboardTripRow[]): VehicleSummary[] {
   const byVehicle = new Map<string, DashboardTripRow[]>()

@@ -67,6 +67,8 @@ export const requirements = {
   },
 
   form: {
+    saveCoordinates: 'Save coordinates',
+    coordinatesSaved: 'Destination coordinates saved',
     customer: 'Customer/Shipper',
     expectedPackageCount: 'Expected packages',
     packagesAfterReceiving: 'Warehouse staff will receive and link packages after the requirement is created.',
@@ -91,9 +93,9 @@ export const requirements = {
     selected: { one: '{count} package chosen · {weight}', other: '{count} packages chosen · {weight}' },
     packageMeta: '{dimensions} · {weight}',
     errors: {
-      invalidCount:'Expected package count must be a positive integer',
+      invalidCount: 'Expected package count must be a positive integer',
       customerRequired: 'Please select a customer',
-      
+
       destinationRequired: 'Enter the destination name.',
       addressRequired: 'Enter the address.',
       tooLong: 'At most {max} characters.',

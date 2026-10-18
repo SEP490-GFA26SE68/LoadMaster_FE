@@ -179,12 +179,23 @@ export function usePreviewPackageImportMutation() {
  * Gửi lại XLSX gốc để BE lưu các kiện vào PostgreSQL.
  * API: POST /api/packages/import/confirm
  */
+export type ConfirmPackageImportInput = {
+  file: File
+  deliveryRequirementId: string
+}
+
 export function useConfirmPackageImportMutation() {
   const client = useQueryClient()
 
   return useMutation({
-    mutationFn: (file: File) =>
-      confirmCargoPackageImport(file),
+    mutationFn: ({
+      file,
+      deliveryRequirementId,
+    }: ConfirmPackageImportInput) =>
+      confirmCargoPackageImport(
+        file,
+        deliveryRequirementId,
+      ),
 
     onSuccess: async () => {
       await Promise.all([
@@ -196,6 +207,7 @@ export function useConfirmPackageImportMutation() {
     },
   })
 }
+
 
 /**
  * Tải mẫu XLSX chung từ BE.

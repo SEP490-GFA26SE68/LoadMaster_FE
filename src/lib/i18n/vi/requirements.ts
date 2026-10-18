@@ -68,12 +68,14 @@ export const requirements = {
   },
 
   form: {
+    saveCoordinates: 'Lưu tọa độ',
+    coordinatesSaved: 'Đã bổ sung tọa độ điểm đến',
     customer: 'Khách hàng / Chủ hàng',
     expectedPackageCount: 'Số kiện dự kiến',
     packagesAfterReceiving: 'Nhân viên kho sẽ tiếp nhận và liên kết kiện sau khi tạo yêu cầu.',
     receivingProgress: 'Tiến độ nhận kiện',
-  
-    
+
+
     createTitle: 'Tạo yêu cầu giao',
     editTitle: 'Sửa yêu cầu {id}',
     description: 'Yêu cầu gồm kiện ở kho kiện, giao tới một điểm đến trước hạn. Một kiện chỉ thuộc một yêu cầu.',
@@ -95,11 +97,11 @@ export const requirements = {
     selected: { one: 'Đã chọn {count} kiện · {weight}', other: 'Đã chọn {count} kiện · {weight}' },
     packageMeta: '{dimensions} · {weight}',
     errors: {
-      invalidCount:'Số kiện dự kiến phải là số nguyên lớn hơn 0',
+      invalidCount: 'Số kiện dự kiến phải là số nguyên lớn hơn 0',
       customerRequired: 'Vui lòng chọn khách hàng',
-      
-      
-      
+
+
+
       destinationRequired: 'Nhập tên điểm đến.',
       addressRequired: 'Nhập địa chỉ.',
       tooLong: 'Tối đa {max} ký tự.',

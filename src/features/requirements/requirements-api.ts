@@ -16,6 +16,11 @@ import {
   type Trip,
 } from '@/lib/mock-db'
 
+import {
+  fetchPackage,
+  type CargoPackage,
+} from '@/features/package-pool/packages-api'
+
 
 type DeliveryRequirementApi = {
   id: number
@@ -135,11 +140,85 @@ function requirementRowFromApi(
   }
 }
 
-export type RequirementPackage = { readonly package: Package; readonly type: PackageType | undefined }
-
-function withType(pkg: Package, typeById: ReadonlyMap<string, PackageType>): RequirementPackage {
-  return { package: pkg, type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId) }
+function packageViewFromApi(
+  pkg: CargoPackage,
+): RequirementPackageView {
+  return {
+    id: pkg.id,
+    packageCode: pkg.packageCode,
+    lengthCm: pkg.lengthCm,
+    widthCm: pkg.widthCm,
+    heightCm: pkg.heightCm,
+    weightKg: pkg.weightKg,
+    handlingClass: pkg.handlingClass,
+    destination: pkg.destination,
+    status: pkg.status,
+  }
 }
+
+export type RequirementPackageView = {
+  id: string
+  packageCode: string
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  weightKg: number
+  handlingClass: CargoPackage['handlingClass']
+  destination: string
+  status: CargoPackage['status']
+}
+
+
+
+export type RequirementPackage = {
+  readonly package: RequirementPackageView
+  readonly type: PackageType | undefined
+}
+
+
+function withType(
+  pkg: Package,
+  typeById: ReadonlyMap<string, PackageType>,
+): RequirementPackage {
+  return {
+    package: {
+      id: pkg.id,
+      packageCode: pkg.packageCode,
+      lengthCm: pkg.lengthCm,
+      widthCm: pkg.widthCm,
+      heightCm: pkg.heightCm,
+      weightKg: pkg.weightKg,
+      handlingClass: pkg.handlingClass,
+      destination: pkg.destination,
+      status: mockPackageStatusLabel(pkg.status),
+    },
+    type: pkg.packageTypeId === undefined
+      ? undefined
+      : typeById.get(pkg.packageTypeId),
+  }
+}
+
+
+function mockPackageStatusLabel(
+  status: Package['status'],
+): CargoPackage['status'] {
+  switch (status) {
+    case 'IMPORTED':
+      return 'PENDING'
+    case 'ASSIGNED':
+    case 'STAGED':
+      return 'PLANNED'
+    case 'LOADED':
+    case 'IN_TRANSIT':
+      return 'LOADED'
+    case 'DELIVERED':
+      return 'DELIVERED'
+    case 'RETURNED':
+      return 'CANCELLED'
+  }
+}
+
+
 
 /** Một yêu cầu kèm kiện (kèm loại kiện nếu kiện gắn loại), trạng thái hiển thị, tổng khối lượng, chuyến đang chở và người lập. */
 export type RequirementRow = {
@@ -208,6 +287,7 @@ export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
 }
 
 // GET /api/delivery-requirements/{id}
+
 export async function getDeliveryRequirement(
   id: string,
 ): Promise<RequirementRow> {
@@ -215,8 +295,35 @@ export async function getDeliveryRequirement(
     `/api/delivery-requirements/${encodeURIComponent(id)}`,
   )
 
-  return requirementRowFromApi(response.data)
+  const api = response.data
+  const row = requirementRowFromApi(api)
+
+  const packages = await Promise.all(
+    api.packageIds.map((packageId) =>
+      fetchPackage(String(packageId)),
+    ),
+  )
+
+  const members = packages
+
+
+
+  return {
+    ...row,
+    packages: members.map((pkg) => ({
+      package: packageViewFromApi(pkg),
+      type: undefined,
+    })),
+    totalKg: roundKg(
+      members.reduce(
+        (sum, pkg) => sum + pkg.weightKg,
+        0,
+      ),
+    ),
+  }
 }
+
+
 
 // POST /api/delivery-requirements
 export async function createDeliveryRequirement(
@@ -260,6 +367,28 @@ export async function createDeliveryRequirement(
 export function updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement> {
   return getMockDb().updateDeliveryRequirement(id, changes)
 }
+
+
+export type RequirementCoordinatesInput = {
+  destinationLat: number
+  destinationLng: number
+}
+
+export async function updateRequirementCoordinates(
+  id: string,
+  input: RequirementCoordinatesInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<RequirementDetailApi>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}/coordinates`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
 
 // DELETE /api/delivery-requirements/{id}
 // DELETE /api/delivery-requirements/{id}

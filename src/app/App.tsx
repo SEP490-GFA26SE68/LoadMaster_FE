@@ -52,6 +52,10 @@ const OptimizationSetupPage = lazy(() => import('@/features/optimization/Optimiz
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
 const WarehousePage = lazy(() => import('@/features/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })))
+const CompanyWarehousesPage = lazy(() =>
+  import('@/features/company-warehouses/CompanyWarehousesPage')
+    .then((m) => ({ default: m.CompanyWarehousesPage }))
+)
 const MyTripsPage = lazy(() => import('@/features/driver/MyTripsPage').then((m) => ({ default: m.MyTripsPage })))
 const DriverStopPage = lazy(() => import('@/features/driver/DriverStopPage').then((m) => ({ default: m.DriverStopPage })))
 const FleetPage = lazy(() => import('@/features/fleet/FleetPage').then((m) => ({ default: m.FleetPage })))
@@ -75,7 +79,11 @@ const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m)
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
 const ComponentSheetPage = lazy(() => import('./design-system/ComponentSheetPage').then((m) => ({ default: m.ComponentSheetPage })))
-
+const WarehouseCustomersPage = lazy(() =>
+  import('@/features/warehouse/WarehouseCustomersPage').then(
+    (m) => ({ default: m.WarehouseCustomersPage }),
+  ),
+)
 /** Layout của mỗi nhóm route: chờ chunk của màn và đặt tiêu đề tab theo `handle` của route (LM-100). */
 function RouteOutlet() {
   const t = useT()
@@ -195,6 +203,13 @@ export const routes: RouteObject[] = [
                     { path: '/doi-xe', element: <FleetPage />, handle: titled((t) => t('titles.fleet')) },
                     { path: '/doi-xe/:vehicleId', element: <VehicleDetailPage />, handle: titled((t, s) => t('titles.vehicle', idParam(s, 'vehicleId'))) },
                   ]),
+                  guarded('companyWarehouses.manage', [
+                    {
+                      path: '/quan-ly-kho',
+                      element: <CompanyWarehousesPage />,
+                      handle: titled((t) => t('companyWarehouses.title')),
+                    },
+                  ]),
                   guarded('fleet.edit', [{ path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
                   guarded('users.manage', [{ path: '/nguoi-dung', element: <UsersPage />, handle: titled((t) => t('titles.users')) }]),
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
@@ -213,6 +228,13 @@ export const routes: RouteObject[] = [
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
                   // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty xem (`packages.view`); loại kiện là của điều phối viên
                   guarded('packages.view', [{ path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) }]),
+                  guarded('warehouse.operate', [
+                    {
+                      path: '/kho-khach-hang',
+                      element: <WarehouseCustomersPage />,
+                      handle: titled(() => 'Khách hàng gửi hàng'),
+                    },
+                  ]),
                   guarded('packages.manage', [
                     { path: '/loai-kien', element: <PackageTypesPage />, handle: titled((t) => t('titles.packageTypes')) },
                   ]),

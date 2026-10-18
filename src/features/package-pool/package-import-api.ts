@@ -59,6 +59,23 @@ function createImportFormData(file: File): FormData {
   return formData
 }
 
+function createConfirmImportFormData(
+  file: File,
+  deliveryRequirementId: string,
+): FormData {
+  const id = Number(deliveryRequirementId)
+
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Invalid delivery requirement ID')
+  }
+
+  const formData = createImportFormData(file)
+
+  formData.append('deliveryRequirementId', String(id))
+
+  return formData
+}
+
 /**
  * Xem trước, kiểm tra file XLSX.
  * Không ghi dữ liệu vào PostgreSQL.
@@ -81,19 +98,34 @@ export async function previewCargoPackageImport(
  * Xác nhận nhập kiện.
  * Gửi lại file XLSX gốc cho BE.
  */
+
+/**
+ * Xác nhận nhập các kiện vật lý từ Excel vào PostgreSQL.
+ *
+ * Backend nhận:
+ * - file: MultipartFile
+ * - deliveryRequirementId: Long
+ *
+ * Backend tự tạo kiện, QR và liên kết với DeliveryRequirement.
+ */
 export async function confirmCargoPackageImport(
   file: File,
+  deliveryRequirementId: string,
 ): Promise<ImportConfirmResultApi> {
   const response = await apiFetch<ApiResponse<ImportConfirmResultApi>>(
     '/api/packages/import/confirm',
     {
       method: 'POST',
-      body: createImportFormData(file),
+      body: createConfirmImportFormData(
+        file,
+        deliveryRequirementId,
+      ),
     },
   )
 
   return response.data
 }
+
 
 /**
  * Tải mẫu Excel XLSX chung từ BE.

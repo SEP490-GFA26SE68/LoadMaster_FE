@@ -49,28 +49,10 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
+  'companyWarehouses.manage'
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
-
-/**
- * Ma trận quyền — **một bảng duy nhất** (FE-0-01), mỗi vai trò liệt kê quyền theo thứ tự của `PERMISSIONS`. Khớp PRD v2 mục 5.2: hai
- * quyền tạm `orders.view` / `orders.edit` của Review 1 đã bỏ khi Yêu cầu giao thay Đơn hàng (FE-4b-01).
- *
- * Yêu cầu giao `/yeu-cau-giao` mở theo `requirements.view` (Quản lý công ty và Điều phối viên); tạo, sửa, xoá theo `requirements.edit`
- * của Quản lý công ty; đưa yêu cầu vào chuyến là sửa chuyến — `trips.edit` của Điều phối viên (FE-4b-02).
- *
- * Kho kiện `/kien-hang` mở theo `packages.view` (Điều phối viên và Quản lý công ty, FE-3b-03); nút ghi của màn đó và `/loai-kien` theo
- * `packages.manage` của Điều phối viên. In nhãn `/kien-hang/nhan` theo `labels.print`, Tra cứu kiện `/tra-cuu-kien` theo
- * `packages.lookup` — Điều phối viên và Nhân viên kho (FE-3b-05, FE-3b-06). Vai trò nhà sản xuất, logistics và ba quyền `packages.register`, `shipments.manage`,
- * `receiving.operate` đã bỏ (FE-0-06, D-63).
- *
- * `plans.approve` — chỉnh tay và duyệt phương án trong Planner — là của Điều phối viên (FE-0-07, D-80); Quản lý công ty xem phương án
- * chỉ đọc.
- *
- * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
- * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
- */
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
   systemManager: ['subscriptionPlans.manage'],
@@ -88,6 +70,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'monitoring.view',
     'fleet.view',
     'deadlines.renegotiate',
+    'companyWarehouses.manage'
   ],
 
   dispatcher: [
