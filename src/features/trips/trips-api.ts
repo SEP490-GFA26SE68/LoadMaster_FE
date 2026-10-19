@@ -57,6 +57,7 @@ export type TripStopApiResponse = {
   status: string
   plannedArrival: string | null
   actualArrival: string | null
+  deadline: string | null
 }
 
 export type BackendTripDetail = {
@@ -80,11 +81,6 @@ type TripListApiResponse = {
 }
 
 function tripRowFromApi(trip: TripDetailApiResponse): TripRow {
-  if (trip.status !== 'DRAFT') {
-    throw new Error(
-      `Trip ${trip.id}: danh sách chưa hỗ trợ đầy đủ dữ liệu trạng thái ${trip.status}`,
-    )
-  }
 
   return {
     id: String(trip.id),
@@ -101,14 +97,24 @@ function tripRowFromApi(trip: TripDetailApiResponse): TripRow {
     driverName: trip.driverName,
 
     route: '',
-    packageCount: 0,
-    stopCount: 0,
+    packageCount: trip.packageCount ?? 0,
+    stopCount: trip.stopCount ?? 0,
     volumePercent: null,
+    hasActiveRoutePlan: trip.hasActiveRoutePlan ?? false,
 
     status: trip.status,
     sub: null,
     extraSub: null,
-    phase: 'planning',
+    phase:
+      trip.status === 'CANCELLED'
+        ? 'cancelled'
+        : trip.status === 'DELIVERED'
+          ? 'completed'
+          : trip.status === 'IN_TRANSIT'
+            ? 'delivering'
+            : trip.status === 'LOADING'
+              ? 'loading'
+              : 'planning',
   }
 }
 
@@ -257,6 +263,9 @@ export type TripDetailApiResponse = {
   | 'DELIVERED'
   | 'CANCELLED'
   createdAt: string
+  stopCount?: number | null
+  packageCount?: number | null
+  hasActiveRoutePlan?: boolean | null
 }
 
 export type CreatedTrip = {

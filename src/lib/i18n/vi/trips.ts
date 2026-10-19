@@ -12,6 +12,10 @@ export const trips = {
   },
   /** Danh sách `/chuyen` (LM-088): cột, ô tìm và bộ lọc. */
   list: {
+    statusColumn: 'Trạng thái',
+    routeOptimization: 'Tuyến đường',
+    routeOptimized: 'Đã tối ưu',
+    routeNotOptimized: 'Chưa tối ưu',
     title: 'Chuyến hàng',
     create: 'Tạo chuyến',
     createFirst: 'Tạo chuyến đầu tiên',
@@ -26,7 +30,14 @@ export const trips = {
     packages: 'Kiện',
     volume: 'Lấp đầy',
     notOptimized: 'Chưa tối ưu',
-    status: 'Trạng thái',
+    status: {
+      DRAFT: 'Nháp',
+      PLANNED: 'Đã lập kế hoạch',
+      LOADING: 'Đang xếp hàng',
+      IN_TRANSIT: 'Đang vận chuyển',
+      DELIVERED: 'Đã giao',
+      CANCELLED: 'Đã hủy',
+    },
     loadError: 'Không tải được danh sách chuyến.',
     search: 'Tìm theo mã, tên, tuyến, xe, tài xế',
     stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
@@ -239,6 +250,20 @@ export const trips = {
   },
   /** Vỏ màn Chi tiết chuyến: dải trời, menu thao tác, banner theo pha, cột phải (LM-088, V2.3 LM-103). */
   detail: {
+    deadlineStatus: 'Trạng thái hạn giao',
+    deadlineStatusValues: {
+      onTime: 'Dự kiến đúng hạn',
+      late: 'Có nguy cơ trễ hạn',
+      unknown: 'Chưa xác định'
+    },
+    stopStatus: {
+      PENDING: 'Chờ giao',
+      ARRIVED: 'Đã đến điểm giao',
+      DELIVERED: 'Đã giao',
+      FAILED: 'Giao thất bại',
+      SKIPPED: 'Đã bỏ qua',
+    },
+
     stopUnit: 'điểm giao',
     deliveryStops: 'Danh sách điểm giao',
     stopCount: 'Điểm giao',

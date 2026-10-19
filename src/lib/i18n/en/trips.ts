@@ -14,6 +14,10 @@ export const trips = {
     success: 'Delivery requirement assigned successfully',
   },
   list: {
+    statusColumn: 'Status',
+    routeOptimization: 'Route',
+    routeOptimized: 'Optimized',
+    routeNotOptimized: 'Not optimized',
     title: 'Trips',
     create: 'Create trip',
     createFirst: 'Create the first trip',
@@ -28,7 +32,14 @@ export const trips = {
     packages: 'Packages',
     volume: 'Fill',
     notOptimized: 'Not optimized',
-    status: 'Status',
+    status: {
+      DRAFT: 'Draft',
+      PLANNED: 'Planned',
+      LOADING: 'Loading',
+      IN_TRANSIT: 'In transit',
+      DELIVERED: 'Delivered',
+      CANCELLED: 'Cancelled',
+    },
     loadError: 'Could not load trips.',
     search: 'Search by ID, name, route, vehicle, driver',
     stops: { one: '{count} stop', other: '{count} stops' },
@@ -220,6 +231,20 @@ export const trips = {
     driverPhone: '{name} · {phone}',
   },
   detail: {
+    deadlineStatus: 'Delivery deadline status',
+    deadlineStatusValues: {
+      onTime: 'Expected on time',
+      late: 'Risk of late delivery',
+      unknown: 'Not determined'
+    },
+    stopStatus: {
+      PENDING: 'Pending',
+      ARRIVED: 'Arrived',
+      DELIVERED: 'Delivered',
+      FAILED: 'Failed',
+      SKIPPED: 'Skipped',
+    },
+
     stopUnit: 'delivery stops',
     deliveryStops: 'Delivery stops',
     stopCount: 'delivery stops',

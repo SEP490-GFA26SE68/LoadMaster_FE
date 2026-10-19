@@ -7,6 +7,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Banner } from '@/components/Banner'
+import { fetchTripById } from '@/features/trips/trips-api'
 import { CoordinatePicker, parseCoordinates } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import {
@@ -31,11 +32,14 @@ import {
   type CreateCustomerInput,
 } from './customers-api'
 import {
+  extendRequirementDeadline,
   updateRequirementCoordinates,
+  updateRequirementSchedule,
   type RequirementRow,
 } from './requirements-api'
 
 import {
+  deadlineVietnamLocal,
   initialValues,
   MAX_ADDRESS,
   MAX_NAME,
@@ -180,6 +184,31 @@ function RequirementForm({
   const queryClient = useQueryClient()
   const current = row?.requirement
 
+  const [extensionReason, setExtensionReason] = useState('')
+
+
+  const tripQuery = useQuery({
+    queryKey: ['trips', current?.tripId, 'status'],
+    queryFn: () => fetchTripById(current!.tripId!),
+    enabled: Boolean(current?.tripId),
+    retry: false,
+  })
+
+  const tripStatus = current?.tripId
+    ? tripQuery.data?.status
+    : undefined
+
+  const canEditSchedule =
+    current !== undefined &&
+    current.tripId !== undefined &&
+    (tripStatus === 'DRAFT' || tripStatus === 'PLANNED')
+
+  const canExtendDeadline =
+    current !== undefined &&
+    current.tripId !== undefined &&
+    tripStatus === 'IN_TRANSIT'
+
+
   const customers = useQuery({
     queryKey: ['customers', 'list'],
     queryFn: fetchCustomers,
@@ -245,6 +274,64 @@ function RequirementForm({
       toast.error(dataErrorMessage(error, t))
     },
   })
+
+
+
+  const updateSchedule = useMutation({
+    mutationFn: ({
+      id,
+      deadline,
+      priority,
+    }: {
+      id: string
+      deadline?: string
+      priority: DeliveryRequirement['priority']
+    }) =>
+      updateRequirementSchedule(id, { deadline, priority }),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['requirements'],
+      })
+      toast.success(t('requirements.form.savedSchedule'))
+      onClose()
+    },
+
+    onError: (error) => {
+      toast.error(dataErrorMessage(error, t))
+    },
+  })
+
+  const extendDeadline = useMutation({
+    mutationFn: ({
+      id,
+      newDeadline,
+      reason,
+    }: {
+      id: string
+      newDeadline: string
+      reason: string
+    }) =>
+      extendRequirementDeadline(id, { newDeadline, reason }),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['requirements'],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['trips'],
+        }),
+      ])
+      toast.success(t('requirements.form.deadlineExtended'))
+      onClose()
+    },
+
+    onError: (error) => {
+      toast.error(dataErrorMessage(error, t))
+    },
+  })
+
 
 
   const schema = useMemo(
@@ -364,6 +451,89 @@ function RequirementForm({
       lng: parsed.lng,
     })
   }
+
+
+  function getScheduleDeadline(): string | null {
+    const values = form.getValues()
+
+    const deadline = deadlineVietnamLocal(
+      values.deadlineDate,
+      values.deadlineTime,
+    )
+
+    if (!deadline) {
+      toast.error(t('requirements.form.errors.deadlineInvalid'))
+      return null
+    }
+
+    // Spring Boot LocalDateTime sử dụng giờ Việt Nam.
+    const deadlineMs = Date.parse(`${deadline}+07:00`)
+
+    if (
+      !Number.isFinite(deadlineMs) ||
+      deadlineMs <= Date.now()
+    ) {
+      toast.error(t('requirements.form.errors.deadlinePast'))
+      return null
+    }
+
+    return deadline
+  }
+
+  function handleSaveSchedule() {
+    if (!current || !canEditSchedule) return
+
+    const values = form.getValues()
+    const original = initialValues(current)
+
+    const deadlineChanged =
+      values.deadlineDate !== original.deadlineDate ||
+      values.deadlineTime !== original.deadlineTime
+
+    // Không bắt nhập lại hạn giao tương lai
+    // nếu Dispatcher chỉ thay đổi ưu tiên.
+    const deadline = deadlineChanged
+      ? getScheduleDeadline()
+      : undefined
+
+    if (deadlineChanged && !deadline) return
+
+    updateSchedule.mutate({
+      id: current.id,
+      deadline: deadline ?? undefined,
+      priority: values.priority,
+    })
+  }
+
+  function handleExtendDeadline() {
+    if (!current || !canExtendDeadline) return
+
+    const reason = extensionReason.trim()
+
+    if (!reason || reason.length > 500) {
+      toast.error(t('requirements.form.extensionReasonRequired'))
+      return
+    }
+
+    const newDeadline = getScheduleDeadline()
+
+    if (!newDeadline) return
+
+    const newDeadlineMs = Date.parse(`${newDeadline}+07:00`)
+    const previousDeadlineMs = Date.parse(current.deadline)
+
+    if (newDeadlineMs <= previousDeadlineMs) {
+      toast.error(t('requirements.form.extensionMustBeLater'))
+      return
+    }
+
+    extendDeadline.mutate({
+      id: current.id,
+      newDeadline,
+      reason,
+    })
+  }
+
 
 
   function handleSubmit(values: RequirementFormValues) {
@@ -572,7 +742,7 @@ function RequirementForm({
               type="date"
               label={t('requirements.form.deadlineDate')}
               required
-              readOnly={locked}
+              readOnly={locked && !canEditSchedule && !canExtendDeadline}
               error={errors.deadlineDate?.message}
               {...form.register('deadlineDate')}
             />
@@ -581,7 +751,7 @@ function RequirementForm({
               type="time"
               label={t('requirements.form.deadlineTime')}
               required
-              readOnly={locked}
+              readOnly={locked && !canEditSchedule && !canExtendDeadline}
               error={errors.deadlineTime?.message}
               {...form.register('deadlineTime')}
             />
@@ -591,7 +761,7 @@ function RequirementForm({
             control={form.control}
             name="priority"
             label={t('requirements.form.priority')}
-            disabled={locked}
+            disabled={locked && !canEditSchedule}
             options={REQUIREMENT_PRIORITY_ORDER.map(
               (value) => ({
                 value,
@@ -599,6 +769,35 @@ function RequirementForm({
               }),
             )}
           />
+
+
+          {canExtendDeadline ? (
+            <div className="rounded-lg border border-border p-4">
+              <h3 className="mb-2 font-semibold">
+                {t('requirements.form.extendDeadline')}
+              </h3>
+
+              <p className="mb-3 text-sm text-text-2">
+                {t('requirements.form.extensionHint')}
+              </p>
+
+              <Textarea
+                label={t('requirements.form.extensionReason')}
+                rows={3}
+                required
+                maxLength={500}
+                value={extensionReason}
+                onChange={(event) =>
+                  setExtensionReason(event.target.value)
+                }
+              />
+
+              <p className="mt-1 text-xs text-text-2">
+                {extensionReason.length}/500
+              </p>
+            </div>
+          ) : null}
+
 
           <Textarea
             label={t('requirements.form.note')}
@@ -658,6 +857,32 @@ function RequirementForm({
             onClick={handleSaveCoordinates}
           >
             {t('requirements.form.saveCoordinates')}
+          </Button>
+        ) : null}
+
+
+        {canEditSchedule ? (
+          <Button
+            type="button"
+            loading={updateSchedule.isPending}
+            disabled={updateSchedule.isPending}
+            onClick={handleSaveSchedule}
+          >
+            {t('requirements.form.saveSchedule')}
+          </Button>
+        ) : null}
+
+        {canExtendDeadline ? (
+          <Button
+            type="button"
+            loading={extendDeadline.isPending}
+            disabled={
+              extendDeadline.isPending ||
+              extensionReason.trim().length === 0
+            }
+            onClick={handleExtendDeadline}
+          >
+            {t('requirements.form.extendDeadline')}
           </Button>
         ) : null}
 

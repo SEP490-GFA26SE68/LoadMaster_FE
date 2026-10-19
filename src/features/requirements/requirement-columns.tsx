@@ -86,6 +86,30 @@ function PackagesCell({ row }: { row: RequirementRow }) {
 }
 
 
+function TripCell({ row }: { row: RequirementRow }) {
+  const { onAction } = useRequirementsTable()
+  const tripCode = row.requirement.tripCode
+
+  if (!tripCode) {
+    return (
+      <span className="text-small text-ink-3">
+        —
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onAction('viewTrip', row)}
+      className={`font-mono text-caption font-medium text-primary hover:text-primary-hover ${FOCUS}`}
+      title={`Xem chuyến #${tripCode}`}
+    >
+      {tripCode}
+    </button>
+  )
+}
+
 
 function ActionsHeader() {
   const t = useT()
@@ -98,6 +122,8 @@ const deadlineCell = (info: Cell<string>) => <DeadlineCell value={info.getValue(
 const priorityCell = (info: Cell<number>) => <RequirementPriorityTag priority={info.row.original.requirement.priority} />
 const packagesCell = (info: Cell<number>) => <PackagesCell row={info.row.original} />
 const statusCell = (info: Cell<number>) => <RequirementStatusBadge status={info.row.original.status} />
+const tripCell = (info: Cell<string>) =>
+  <TripCell row={info.row.original} />
 const actionsCell = (info: Cell<unknown>) => <RequirementRowMenu row={info.row.original} />
 
 /**
@@ -115,6 +141,20 @@ export function requirementColumns(t: TFunction) {
       (row) => row.requirement.receivedPackageCount ?? row.packages.length,
       { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
     helper.accessor((row) => REQUIREMENT_STATUS_ORDER.indexOf(row.status), { id: 'status', header: t('requirements.columns.status'), enableSorting: true, sortDescFirst: false, meta: { width: '168px' } satisfies ColumnMeta, cell: statusCell }),
+    helper.accessor(
+      (row) => row.requirement.tripId ?? '',
+      {
+        id: 'trip',
+        header: t('requirements.columns.trip'),
+        enableSorting: true,
+        meta: {
+          width: '120px',
+        } satisfies ColumnMeta,
+        cell: tripCell,
+      },
+    ),
+
     helper.display({ id: 'actions', header: ActionsHeader, meta: { width: '56px', align: 'right' } satisfies ColumnMeta, cell: actionsCell }),
+
   ])
 }

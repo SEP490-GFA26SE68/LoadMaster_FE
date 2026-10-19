@@ -45,6 +45,7 @@ export type DeliveryRequirement = {
    * (`TripPackageLink.requirementId`, FE-4b-04).
    */
   tripId?: string
+  tripCode?: string
   /** ISO 8601 */
   createdAt: string
   createdBy: string | null

@@ -55,6 +55,7 @@ export const requirements = {
     onlyPending: 'Only while the requirement is waiting for a trip',
     closed: 'The requirement is fully delivered and can no longer be edited',
     tripLocked: 'Only before the trip starts loading',
+    viewTrip: 'View assigned trip',
   },
   customer: {
     add: 'Add new customer',
@@ -67,6 +68,15 @@ export const requirements = {
   },
 
   form: {
+    savedSchedule: 'Delivery schedule updated',
+    saveSchedule: 'Save deadline and priority',
+    extendDeadline: 'Extend delivery deadline',
+    deadlineExtended: 'Delivery deadline extended successfully',
+    extensionReason: 'Extension reason',
+    extensionHint: 'Enter the new agreed deadline and reason.',
+    extensionReasonRequired: 'Enter a valid extension reason (maximum 500 characters).',
+    extensionMustBeLater: 'The new deadline must be later than the current deadline.',
+
     saveCoordinates: 'Save coordinates',
     coordinatesSaved: 'Destination coordinates saved',
     customer: 'Customer/Shipper',

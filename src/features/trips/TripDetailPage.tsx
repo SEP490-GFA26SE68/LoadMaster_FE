@@ -29,6 +29,8 @@ import { TripReadinessCard } from './TripReadinessCard'
 import { useTripEtaQuery } from './useRouteQuery'
 import { useSegregationGuard } from './useSegregationQuery'
 import { BackendTripRouteCard } from './BackendTripRouteCard'
+import { StatusBadge } from '@/components/StatusBadge'
+
 import {
   useDeletePackageMutation,
   useDuplicatePackageMutation,
@@ -46,6 +48,43 @@ import {
 import { RealTripDetailHeader, TripDetailHeader } from './TripDetailHeader'
 import { Plus, Route } from 'lucide-react'
 import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
+
+
+function getDeadlineStatus(
+  plannedArrival: string | null,
+  deadline: string | null,
+): 'onTime' | 'late' | 'unknown' {
+  if (!plannedArrival || !deadline) return 'unknown'
+
+  const arrivalMs = Date.parse(`${plannedArrival}+07:00`)
+  const deadlineMs = Date.parse(`${deadline}+07:00`)
+
+  if (!Number.isFinite(arrivalMs) || !Number.isFinite(deadlineMs)) {
+    return 'unknown'
+  }
+
+  return arrivalMs <= deadlineMs ? 'onTime' : 'late'
+}
+
+
+
+function getStopStatusKey(status: string) {
+  switch (status) {
+    case 'PENDING':
+      return 'trips.detail.stopStatus.PENDING' as const
+    case 'ARRIVED':
+      return 'trips.detail.stopStatus.ARRIVED' as const
+    case 'DELIVERED':
+      return 'trips.detail.stopStatus.DELIVERED' as const
+    case 'FAILED':
+      return 'trips.detail.stopStatus.FAILED' as const
+    case 'SKIPPED':
+      return 'trips.detail.stopStatus.SKIPPED' as const
+    default:
+      return null
+  }
+}
+
 
 function BackendTripDetail({ tripId }: { tripId: string }) {
   const t = useT()
@@ -78,13 +117,13 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
     enabled: tripId !== '',
   })
 
-  
-const routePlanQuery = useQuery({
-  queryKey: ['trips', tripId, 'active-route-plan'],
-  queryFn: () => fetchBackendActiveRoutePlan(tripId),
-  enabled: tripId !== '',
-  retry: false,
-})
+
+  const routePlanQuery = useQuery({
+    queryKey: ['trips', tripId, 'active-route-plan'],
+    queryFn: () => fetchBackendActiveRoutePlan(tripId),
+    enabled: tripId !== '',
+    retry: false,
+  })
 
 
   if (query.isPending) {
@@ -121,177 +160,218 @@ const routePlanQuery = useQuery({
     (trip.status === 'DRAFT' || trip.status === 'PLANNED') &&
     stops.length > 0
 
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <RealTripDetailHeader tripId={tripId} />
 
+      <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
+        <div className="flex flex-col gap-4">
 
-      <div className="sky-overlap flex flex-col gap-4 px-shell pb-8">
-        {canOptimize ? (
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <Button
-              type="button"
-              loading={optimizeRoute.isPending}
-              disabled={optimizeRoute.isPending}
-              onClick={() => optimizeRoute.mutate()}
-            >
-              <Route className="size-4" />
-              {t('trips.optimization.run')}
-            </Button>
-          </div>
-        ) : null}
-
-        
-<BackendTripRouteCard
-  trip={trip}
-  stops={stops}
-  routePlan={routePlanQuery.data ?? null}
-/>
-
-
-        <div className="rounded-lg border border-border bg-bg p-5">
-          <h2 className="mb-4 text-lg font-semibold">
-            {trip.tripName}
-          </h2>
-
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <dt className="text-text-2">Mã chuyến</dt>
-              <dd className="font-medium">{trip.tripCode}</dd>
-            </div>
-
-            <div>
-              <dt className="text-text-2">Trạng thái</dt>
-              <dd className="font-medium">{trip.status}</dd>
-            </div>
-
-            <div>
-              <dt className="text-text-2">Xe</dt>
-              <dd className="font-medium">
-                {trip.vehicleName} — {trip.licensePlate}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-text-2">Tài xế</dt>
-              <dd className="font-medium">
-                {trip.driverName ?? t('trips.detail.noDriver')}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-text-2">Giờ xuất phát</dt>
-              <dd className="font-medium">
-                {typeof trip.departureTime === 'string'
-                  ? trip.departureTime.replace('T', ' ')
-                  : '—'}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-text-2">Kho xuất phát</dt>
-              <dd className="font-medium">
-                {trip.originName}
-                {trip.originAddress
-                  ? ` — ${trip.originAddress}`
-                  : ''}
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <section className="rounded-lg border border-border bg-bg p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {t('trips.detail.deliveryStops')}
-              </h2>
-
-              <p className="mt-1 text-sm text-text-2">
-                {stops.length} {t('trips.detail.stopUnit')}
-              </p>
-            </div>
-
-            {canAssign ? (
+          {canOptimize ? (
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <Button
                 type="button"
-                onClick={() => setAssigning(true)}
+                loading={optimizeRoute.isPending}
+                disabled={optimizeRoute.isPending}
+                onClick={() => optimizeRoute.mutate()}
               >
-                <Plus className="size-4" />
-                {t('trips.assign.title')}
+                <Route className="size-4" />
+                {t('trips.optimization.run')}
               </Button>
-            ) : null}
-          </div>
-
-          {stops.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
-              <p className="font-medium">
-                {t('trips.detail.noStops')}
-              </p>
-              <p className="mt-2 text-sm text-text-2">
-                {t('trips.detail.noStopsHint')}
-              </p>
             </div>
-          ) : (
-            <ol className="space-y-3">
-              {stops.map((stop) => (
-                <li
-                  key={stop.id}
-                  className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-start"
+          ) : null}
+
+
+          <BackendTripRouteCard
+            trip={trip}
+            stops={stops}
+            routePlan={routePlanQuery.data ?? null}
+          />
+
+
+
+          <section className="rounded-xl border border-border bg-bg p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-ink-strong">
+                Thông tin vận hành
+              </h2>
+
+              <StatusBadge status={trip.status} />
+            </div>
+
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Mã chuyến</dt>
+                <dd className="break-all font-mono text-sm font-semibold">
+                  {trip.tripCode}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Xe vận chuyển</dt>
+                <dd className="text-sm font-medium">
+                  {trip.vehicleName}
+                </dd>
+                <dd className="mt-1 font-mono text-xs text-text-2">
+                  {trip.licensePlate}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Tài xế</dt>
+                <dd className="text-sm font-medium">
+                  {trip.driverName ?? t('trips.detail.noDriver')}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Giờ xuất phát</dt>
+                <dd className="text-sm font-medium tabular-nums">
+                  {trip.departureTime?.replace('T', ' ') ?? '—'}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3 sm:col-span-2">
+                <dt className="mb-1 text-xs text-text-2">Kho xuất phát</dt>
+                <dd className="text-sm font-medium">
+                  {trip.originName}
+                </dd>
+                {trip.originAddress ? (
+                  <dd className="mt-1 text-xs text-text-2">
+                    {trip.originAddress}
+                  </dd>
+                ) : null}
+              </div>
+            </dl>
+          </section>
+
+          <section className="rounded-lg border border-border bg-bg p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {t('trips.detail.deliveryStops')}
+                </h2>
+
+                <p className="mt-1 text-sm text-text-2">
+                  {stops.length} {t('trips.detail.stopUnit')}
+                </p>
+              </div>
+
+              {canAssign ? (
+                <Button
+                  type="button"
+                  onClick={() => setAssigning(true)}
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                    {stop.stopSequence}
-                  </div>
+                  <Plus className="size-4" />
+                  {t('trips.assign.title')}
+                </Button>
+              ) : null}
+            </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">
-                        {stop.stopName ||
-                          stop.address ||
-                          t('trips.detail.unnamedStop')}
-                      </h3>
-
-                      <span className="rounded-full border border-border px-2 py-0.5 text-xs">
-                        {stop.status}
-                      </span>
+            {stops.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+                <p className="font-medium">
+                  {t('trips.detail.noStops')}
+                </p>
+                <p className="mt-2 text-sm text-text-2">
+                  {t('trips.detail.noStopsHint')}
+                </p>
+              </div>
+            ) : (
+              <ol className="space-y-3">
+                {stops.map((stop) => (
+                  <li
+                    key={stop.id}
+                    className="flex flex-col gap-3 rounded-xl border border-border bg-bg p-4 shadow-sm transition-colors hover:border-primary/30 sm:flex-row sm:items-start"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-semibold text-primary">
+                      {stop.stopSequence}
                     </div>
 
-                    {stop.address && (
-                      <p className="mt-1 text-sm text-text-2">
-                        {stop.address}
-                      </p>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">
+                          {stop.stopName ||
+                            stop.address ||
+                            t('trips.detail.unnamedStop')}
+                        </h3>
 
-                    {stop.deliveryRequirementId !== null && (
-                      <p className="mt-2 text-xs text-text-2">
-                        {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
-                      </p>
-                    )}
 
-                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-text-2">
-                          {t('trips.detail.plannedArrival')}:
-                        </span>{' '}
-                        <span className="font-medium">
-                          {stop.plannedArrival?.replace('T', ' ') ?? '—'}
+                        <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium">
+                          {getStopStatusKey(stop.status)
+                            ? t(getStopStatusKey(stop.status)!)
+                            : stop.status}
                         </span>
+
                       </div>
 
-                      <div>
-                        <span className="text-text-2">
-                          {t('trips.detail.actualArrival')}:
-                        </span>{' '}
-                        <span className="font-medium">
-                          {stop.actualArrival?.replace('T', ' ') ?? '—'}
-                        </span>
+                      {stop.address && (
+                        <p className="mt-1 text-sm text-text-2">
+                          {stop.address}
+                        </p>
+                      )}
+
+                      {stop.deliveryRequirementId !== null && (
+                        <p className="mt-2 text-xs text-text-2">
+                          {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.plannedArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.plannedArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.actualArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.actualArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
                       </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-text-2">
+                          {t('trips.detail.deadlineStatus')}:
+                        </span>
+
+                        {(() => {
+                          const status = getDeadlineStatus(
+                            stop.plannedArrival,
+                            stop.deadline,
+                          )
+
+                          return (
+                            <span
+                              className={
+                                status === 'onTime'
+                                  ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700'
+                                  : status === 'late'
+                                    ? 'rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700'
+                                    : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'
+                              }
+                            >
+                              {t(`trips.detail.deadlineStatusValues.${status}`)}
+                            </span>
+                          )
+                        })()}
+                      </div>
+
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </div>
       </div>
 
       {canAssign ? (

@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api-client'
 
+
 import { roundKg } from '@/domain/geometry'
 import {
   getMockDb,
@@ -22,6 +23,8 @@ import {
 } from '@/features/package-pool/packages-api'
 
 
+
+
 type DeliveryRequirementApi = {
   id: number
   companyId: number
@@ -38,6 +41,7 @@ type DeliveryRequirementApi = {
   packageIds: number[]
   note: string | null
   tripId: number | null
+  tripCode: string | null
   createdBy: number | null
   createdAt: string
 }
@@ -118,6 +122,7 @@ function requirementFromApi(
 
     note: api.note ?? undefined,
     tripId: api.tripId == null ? undefined : String(api.tripId),
+    tripCode: api.tripCode == null ? undefined : String(api.tripCode),
     createdBy: api.createdBy == null ? null : String(api.createdBy),
     createdAt: vietnamIso(api.createdAt),
   }
@@ -380,6 +385,62 @@ export async function updateRequirementCoordinates(
 ): Promise<DeliveryRequirement> {
   const response = await apiFetch<RequirementDetailApi>(
     `/api/delivery-requirements/${encodeURIComponent(id)}/coordinates`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
+
+
+export type UpdateRequirementScheduleInput = {
+  deadline?: string
+  priority?: string
+}
+
+/**
+ * Sửa hạn giao và ưu tiên khi Trip còn DRAFT/PLANNED.
+ * Không gửi các trường khách hàng, địa chỉ hay kiện hàng.
+ */
+export async function updateRequirementSchedule(
+  id: string,
+  input: UpdateRequirementScheduleInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<{
+    success: boolean
+    data: DeliveryRequirementApi
+  }>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
+export type ExtendRequirementDeadlineInput = {
+  newDeadline: string
+  reason: string
+}
+
+/**
+ * Gia hạn khi Trip đang IN_TRANSIT.
+ * Backend kiểm tra quyền, deadline và ghi Audit Log.
+ */
+export async function extendRequirementDeadline(
+  id: string,
+  input: ExtendRequirementDeadlineInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<{
+    success: boolean
+    data: DeliveryRequirementApi
+  }>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}/extend-deadline`,
     {
       method: 'PATCH',
       body: JSON.stringify(input),

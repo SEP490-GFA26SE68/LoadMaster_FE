@@ -1,4 +1,12 @@
-import { Eye, Link2, Link2Off, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import {
+  Eye,
+  Link2,
+  Link2Off,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Truck,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
@@ -33,6 +41,16 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
         className="w-80 max-w-[calc(100vw-2rem)]"
       >
         <MenuAction icon={<Eye strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.view')} block={null} onSelect={() => onAction('view', row)} />
+
+        {row.requirement.tripId ? (
+          <MenuAction
+            icon={<Truck strokeWidth={1.5} aria-hidden />}
+            label={t('requirements.menu.viewTrip')}
+            block={null}
+            onSelect={() => onAction('viewTrip', row)}
+          />
+        ) : null}
+
         {canAssign ? (
           pending ? (
             <MenuAction icon={<Link2 strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.assign')} block={null} onSelect={() => onAction('assign', row)} />
