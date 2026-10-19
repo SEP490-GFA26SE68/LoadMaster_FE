@@ -5,6 +5,7 @@ import type {
 } from '@/lib/mock-db'
 import { getMockDb } from '@/lib/mock-db'
 
+import { isAuthenticated } from '@/features/auth/auth-api'
 import { apiFetch } from '@/lib/api-client'
 
 
@@ -128,6 +129,10 @@ export type CompanyOption = {
 }
 
 export async function fetchCompanies(): Promise<CompanyOption[]> {
+  if (!isAuthenticated()) {
+    return (await getMockDb().listCompanies()).map(({ id, name }) => ({ id, name }))
+  }
+
   const body =
     await apiFetch<ApiResponse<CompanyApi[]>>(
       '/api/companies/options',

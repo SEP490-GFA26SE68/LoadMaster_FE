@@ -30,14 +30,14 @@ test.each(ROLES)('%s has exactly its permissions from the matrix', (role) => {
 })
 
 test('exactly the eight roles of the backend, each with its backend code; manufacturer and logistics are gone (FE-0-06)', () => {
-  expect(ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
+  expect(ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'])
   expect(Object.keys(BACKEND_ROLE_CODES)).toStrictEqual([...ROLES])
   expect(BACKEND_ROLE_CODES).toStrictEqual({
     systemAdmin: 'SYSTEM_ADMIN',
     systemManager: 'SYSTEM_MANAGER',
     systemSupporter: 'SYSTEM_SUPPORTER',
-    companyAdmin: 'COMPANY_ADMIN',
-    manager: 'COMPANY_MANAGER',
+    companyAdmin: 'ADMIN',
+    companyManager: 'MANAGER',
     dispatcher: 'DISPATCHER',
     warehouse: 'WAREHOUSE_WORKER',
     driver: 'DRIVER',
@@ -68,7 +68,7 @@ test('the three platform roles have no operational permission: no packages, trip
     expect(isPlatformRole(role), role).toBe(true)
     expect(operational.filter((permission) => can(role, permission)), role).toStrictEqual([])
   }
-  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
+  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'])
 })
 
 test('users and the audit log belong to the system administrator and the company administrator only', () => {
@@ -91,6 +91,6 @@ test('the dispatcher edits and approves plans, the company manager only reads th
   expect(can('companyManager', 'optimization.run')).toBe(false)
   expect(can('companyManager', 'trips.edit')).toBe(false)
   // Yêu cầu giao: quản lý công ty tạo và sửa, điều phối viên chỉ xem (D-72)
-  expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['manager', 'dispatcher'])
-  expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['manager'])
+  expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['companyManager', 'dispatcher'])
+  expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['companyManager'])
 })

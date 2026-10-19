@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { DEMO_ACCOUNTS, getMockDb } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import * as authApi from './auth-api'
 import { keycloak } from './keycloak'
@@ -22,8 +23,26 @@ type AuthValue = {
 
 const AuthContext = createContext<AuthValue | null>(null)
 
+const SESSION_KEY = 'loadmaster.phien'
+
+function restoreMockSession(): User | null {
+  if (typeof sessionStorage === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as User
+    if (parsed?.id) {
+      getMockDb().restoreSession(parsed.id)
+      return parsed
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(restoreMockSession)
   const [initialized, setInitialized] = useState(false)
 
   const queryClient = use(QueryClientContext)
@@ -33,6 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initialize() {
       try {
+        const storedMock = restoreMockSession()
+        if (storedMock && import.meta.env.MODE === 'test') {
+          if (mounted) {
+            setUser(storedMock)
+            setInitialized(true)
+          }
+          return
+        }
+
         const authenticated = await authApi.initAuth()
 
         if (!mounted) return
@@ -42,6 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await authApi.getCurrentUser()
 
           if (!mounted) return
+
+          const demoAccount = DEMO_ACCOUNTS.find((item) => item.role === currentUser.role)
+          if (demoAccount) {
+            getMockDb().restoreSession(demoAccount.id)
+          }
 
           setUser(currentUser)
         }
