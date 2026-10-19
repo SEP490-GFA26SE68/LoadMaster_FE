@@ -44,7 +44,7 @@ export const landing = {
       dispatcher: 'Lập chuyến, chạy tối ưu, so sánh và duyệt phương án.',
       warehouse: 'Soạn và xếp từng kiện trên máy tính bảng, đối chiếu bằng mã QR.',
       driver: 'Giao theo từng điểm trên điện thoại, xem vị trí hàng trong thùng.',
-      manager: 'Lập yêu cầu giao, theo dõi bảng điều khiển và xuất báo cáo.',
+      companyManager: 'Lập yêu cầu giao, theo dõi bảng điều khiển và xuất báo cáo.',
     },
   },
   how: {

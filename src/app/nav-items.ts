@@ -18,7 +18,7 @@ export type NavScreen = {
  * thêm một dòng ở đây và mã của nó vào `NAV_ITEMS` của vai trò, trong chính issue làm màn đó.
  */
 export const NAV_SCREENS = {
-  dashboard: { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+  dashboard: { to: '/tong-quan', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   trips: { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
   // Giám sát chuyến Đang vận chuyển (FE-6-10)
   monitoring: { to: '/giam-sat', labelKey: 'nav.monitoring', icon: MapPinned, permission: 'monitoring.view' },
@@ -90,5 +90,5 @@ export function navItemsFor(role: Role): readonly NavScreen[] {
 
 /** Đích của logo: bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không bao giờ là màn 403. */
 export function logoPath(role: Role | undefined): string {
-  return role === undefined || can(role, 'dashboard.view') ? '/' : ROLE_HOME[role]
+  return role === undefined || can(role, 'dashboard.view') ? '/tong-quan' : ROLE_HOME[role]
 }

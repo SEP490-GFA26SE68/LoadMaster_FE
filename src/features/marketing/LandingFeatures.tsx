@@ -11,7 +11,7 @@ const FEATURES: readonly { icon: LucideIcon; titleKey: MessageKey; textKey: Mess
 ]
 
 /** Bốn vai trò cùng làm trên một phương án (tên vai trò lấy từ nhánh `roles`, icon là thiết bị của vai trò). */
-const ROLES = ['dispatcher', 'warehouse', 'driver', 'manager'] as const satisfies readonly Role[]
+const ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as const satisfies readonly Role[]
 
 function IconTile({ icon: Icon, tone }: { icon: LucideIcon; tone: 'blue' | 'slate' }) {
   return (

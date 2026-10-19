@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider, type RouteObject
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { Permission } from '@/features/auth/permissions'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { landingPath } from '@/features/auth/landing'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
 import { AppShell } from './AppShell'
@@ -88,6 +90,14 @@ const WarehouseCustomersPage = lazy(() =>
     (m) => ({ default: m.WarehouseCustomersPage }),
   ),
 )
+function RootLandingPage() {
+  const { user, initialized } = useAuth()
+  if (initialized && user) {
+    return <Navigate to={landingPath(user.role)} replace />
+  }
+  return <LandingPage />
+}
+
 /** Layout của mỗi nhóm route: chờ chunk của màn và đặt tiêu đề tab theo `handle` của route (LM-100). */
 function RouteOutlet() {
   const t = useT()
@@ -178,10 +188,11 @@ export const routes: RouteObject[] = [
         ],
       },
 
-      // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thì RequireAuth đưa sang `/gioi-thieu`.
+      // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thấy trang giới thiệu công khai trực tiếp.
       {
         element: <RouteOutlet />,
         children: [
+          { path: '/', element: <RootLandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
         ],
@@ -197,7 +208,10 @@ export const routes: RouteObject[] = [
               {
                 element: <RouteOutlet />,
                 children: [
-                  guarded('dashboard.view', [{ path: '/', element: <DashboardPage />, handle: titled((t) => t('titles.dashboard')) }]),
+                  guarded('dashboard.view', [
+                    { path: '/tong-quan', element: <DashboardPage />, handle: titled((t) => t('titles.dashboard')) },
+                    { path: '/dashboard', element: <Navigate to="/tong-quan" replace /> },
+                  ]),
                   guarded('trips.view', [
                     { path: '/chuyen', element: <TripListPage />, handle: titled((t) => t('titles.trips')) },
                     { path: '/chuyen/:tripId', element: <TripDetailPage />, handle: titled((t, s) => t('titles.trip', idParam(s, 'tripId'))) },

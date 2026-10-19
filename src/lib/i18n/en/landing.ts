@@ -41,7 +41,7 @@ export const landing = {
       dispatcher: 'Builds trips, runs the optimization, compares and approves plans.',
       warehouse: 'Stages and loads each package on a tablet, checked by QR code.',
       driver: 'Delivers stop by stop on a phone and sees where the cargo sits in the truck.',
-      manager: 'Creates delivery requirements, follows the dashboard and exports reports.',
+      companyManager: 'Creates delivery requirements, follows the dashboard and exports reports.',
     },
   },
   how: {
