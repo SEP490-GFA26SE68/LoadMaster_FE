@@ -148,3 +148,10 @@ test('a record of another company is named by its id, never by the company it be
   expect(dataErrorMessage(error, createTranslator('vi'))).toBe('TRIP-PN-001 thuộc công ty khác nên không dùng được.')
   expect(dataErrorMessage(error, createTranslator('en'))).toBe('TRIP-PN-001 belongs to another company and cannot be used.')
 })
+
+test('ApiError from Backend returns its explicit backend message instead of generic unknown error (Option M1)', async () => {
+  const { ApiError } = await import('@/lib/api-client')
+  const error = new ApiError(403, 'Bạn không có quyền thực hiện hành động này')
+  expect(dataErrorMessage(error, createTranslator('vi'))).toBe('Bạn không có quyền thực hiện hành động này')
+})
+
