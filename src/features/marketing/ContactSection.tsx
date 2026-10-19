@@ -23,8 +23,11 @@ function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () 
         <CircleCheck className="size-5" strokeWidth={1.5} />
       </span>
       <h3 ref={headingRef} tabIndex={-1} className="m-0 font-display text-h2 leading-7 font-bold text-ink-strong outline-none">
-        {t('landing.contact.sent.title', { id: contact.id })}
+        {t('landing.contact.sent.title')}
       </h3>
+      <p className="m-0 text-caption font-medium text-ink-muted">
+        Mã tiếp nhận: #{contact.id}
+      </p>
       <p className="m-0 text-body text-ink-2 pointer-coarse:text-body-lg">{t('landing.contact.sent.text')}</p>
       <Button variant="secondary" className={PUBLIC_TOUCH} onClick={onAgain}>{t('landing.contact.sent.again')}</Button>
     </div>

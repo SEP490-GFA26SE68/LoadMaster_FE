@@ -49,6 +49,8 @@ export const NAV_SCREENS = {
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
   // Gói cước: quản lý nền tảng quản lý danh mục gói (FE-8-02); quản trị công ty xem gói và credit của công ty (FE-8-03)
   plans: { to: '/nen-tang/goi', labelKey: 'nav.plans', icon: Layers, permission: 'subscriptionPlans.manage' },
+  // Đơn yêu cầu tạo tài khoản dùng thử
+  trialRequests: { to: '/nen-tang/yeu-cau-dung-thu', labelKey: 'nav.trialRequests', icon: ClipboardList, permission: 'trialRequests.manage' },
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
   audit: { to: '/nhat-ky', labelKey: 'nav.audit', icon: ScrollText, permission: 'audit.view' },
   warehouse: { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
@@ -61,21 +63,17 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * Mục điều hướng của từng vai trò, theo thứ tự của vai trò đó (FE-0-04): màn chính của vai trò đứng đầu. Danh sách là phần chọn lọc
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
- * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03).
- *   Quản lý nền tảng: Gói cước (FE-8-02) · Liên hệ của khách. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách. Liên hệ của khách luôn đứng cuối:
- *   màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò.
- * - Quản lý công ty lập yêu cầu giao (FE-4b-02) và xem kho kiện chỉ đọc (FE-3b-03); điều phối viên xem yêu cầu giao để đưa vào chuyến.
- * - Giám sát (FE-6-10) đứng ngay sau Chuyến hàng ở cả hai vai trò: chuyến đang chạy là việc kế tiếp của chuyến đã lập.
- * - Nhân viên kho, tài xế làm việc ở màn toàn màn hình; thanh này chỉ hiện với họ ở màn hồ sơ, mục duy nhất đưa về màn của mình.
+ * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử.
+ *   Quản lý nền tảng: Gói cước (FE-8-02) · Công ty · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['companies', 'users', 'audit', 'contacts'],
-  systemManager: ['plans', 'contacts'],
+  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests'],
+  systemManager: ['plans', 'companies', 'trialRequests'],
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet','companyWarehouses'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
-  warehouse: ['packages', 'warehouseCustomers', 'warehouse'],
+  warehouse: ['warehouse', 'packages', 'warehouseCustomers'],
   driver: ['driver'],
 }
 

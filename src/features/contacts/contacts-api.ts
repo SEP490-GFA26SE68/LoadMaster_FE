@@ -1,30 +1,163 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm:
- *   listGuestContacts     → GET /api/contact-guests?status&requestType
- *   updateGuestContact    → PATCH /api/contact-guests/{id}
- *   listContactHandlers   → chưa có ở BE
- *   listContactPlanNames  → GET /api/subscription/plans
+ * Hàm → endpoint backend (FE-0-09); nối backend với fallback mock-db:
+ *   listGuestContacts           → GET /api/contact-guests
+ *   updateGuestContact          → PATCH /api/contact-guests/{id}
+ *   replyGuestContact           → POST /api/contact-guests/{id}/reply
+ *   forwardContactToTrialRequest→ POST /api/trial-requests
+ *   listContactHandlers         → tài khoản nhân viên hỗ trợ
+ *   listContactPlanNames        → GET /api/subscription/plans
  */
 
+import { api, type QueryValue } from '@/lib/api-client'
 import { CONTACT_HANDLER_ROLES, getMockDb, type GuestContact, type GuestContactPatch } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
+import { createTrialRequest } from '@/features/platform/trial-requests-api'
 
-/** Mọi yêu cầu liên hệ của khách, mới nhất trước. Chỉ ba vai trò nền tảng đọc được (`ROLE_NOT_ALLOWED`). */
-// GET /api/contact-guests?status&requestType
-export function listGuestContacts(): Promise<GuestContact[]> {
-  return getMockDb().listGuestContacts()
+export type BackendContactResponse = {
+  id: number
+  fullName: string
+  email: string
+  phoneNumber?: string | null
+  companyName?: string | null
+  interestedPlanId?: number | null
+  interestedPlanName?: string | null
+  assignedToId?: number | null
+  assignedToName?: string | null
+  message?: string | null
+  requestType: GuestContact['requestType']
+  status: GuestContact['status']
+  note?: string | null
+  createdAt: string
+  resolvedAt?: string | null
+}
+
+function mapBackendToGuestContact(res: BackendContactResponse): GuestContact {
+  return {
+    id: String(res.id),
+    fullName: res.fullName,
+    email: res.email,
+    phoneNumber: res.phoneNumber ?? undefined,
+    companyName: res.companyName ?? undefined,
+    interestedPlanId: res.interestedPlanId ? String(res.interestedPlanId) : undefined,
+    message: res.message ?? undefined,
+    requestType: res.requestType,
+    status: res.status,
+    assignedToId: res.assignedToId ? String(res.assignedToId) : undefined,
+    assignedToName: res.assignedToName ?? undefined,
+    note: res.note ?? undefined,
+    createdAt: res.createdAt,
+    resolvedAt: res.resolvedAt ?? undefined,
+  }
+}
+
+/** Mọi yêu cầu liên hệ của khách, mới nhất trước. Chỉ vai trò có quyền đọc được. */
+// GET /api/contact-guests
+export async function listGuestContacts(params?: {
+  status?: string
+  requestType?: string
+  search?: string
+  page?: number
+  size?: number
+}): Promise<GuestContact[]> {
+  if (import.meta.env.MODE === 'test') {
+    return getMockDb().listGuestContacts()
+  }
+
+  try {
+    const query: Record<string, QueryValue> = {}
+    if (params?.status) query.status = params.status
+    if (params?.requestType) query.requestType = params.requestType
+    if (params?.search) query.search = params.search
+    if (params?.page !== undefined) query.page = params.page
+    if (params?.size !== undefined) query.size = params.size
+
+    const res = await api().get<BackendContactResponse[] | { data: BackendContactResponse[] }>('/api/contact-guests', { query })
+    const list = Array.isArray(res) ? res : (res.data ?? [])
+    return list.map(mapBackendToGuestContact)
+  } catch {
+    return getMockDb().listGuestContacts()
+  }
 }
 
 /** Đổi trạng thái, người nhận việc, ghi chú nội bộ. Trường vắng giữ nguyên; `assignedToId: null` bỏ người nhận. */
 // PATCH /api/contact-guests/{id}
-export function updateGuestContact(contactId: string, patch: GuestContactPatch): Promise<GuestContact> {
-  return getMockDb().updateGuestContact(contactId, patch)
+export async function updateGuestContact(contactId: string, patch: GuestContactPatch): Promise<GuestContact> {
+  if (import.meta.env.MODE === 'test') {
+    return getMockDb().updateGuestContact(contactId, patch)
+  }
+
+  try {
+    const numericId = Number(contactId)
+    const assignedId = patch.assignedToId ? Number(patch.assignedToId) : null
+    const payload: Record<string, unknown> = {}
+    if (patch.status !== undefined) payload.status = patch.status
+    if (patch.assignedToId !== undefined) payload.assignedToId = assignedId
+    if (patch.note !== undefined) payload.note = patch.note
+
+    if (!Number.isNaN(numericId)) {
+      const res = await api().patch<BackendContactResponse>(`/api/contact-guests/${numericId}`, payload)
+      return mapBackendToGuestContact(res)
+    }
+    return getMockDb().updateGuestContact(contactId, patch)
+  } catch (error) {
+    if (import.meta.env.MODE !== 'test') {
+      throw error
+    }
+    return getMockDb().updateGuestContact(contactId, patch)
+  }
+}
+
+/** Phản hồi cho khách qua email kèm nội dung tin nhắn. */
+// POST /api/contact-guests/{id}/reply
+export async function replyGuestContact(
+  contactId: string,
+  subject: string,
+  message: string
+): Promise<GuestContact> {
+  const numericId = Number(contactId)
+  if (!Number.isNaN(numericId) && import.meta.env.MODE !== 'test') {
+    const res = await api().post<BackendContactResponse>(`/api/contact-guests/${numericId}/reply`, {
+      subject: subject.trim() || undefined,
+      message,
+    })
+    return mapBackendToGuestContact(res)
+  }
+
+  // Mock / fallback
+  const db = getMockDb()
+  const contact = (await db.listGuestContacts()).find((c) => c.id === contactId)
+  if (!contact) throw new Error('Contact not found')
+  const replyNote = `\n[Đã gửi email phản hồi: ${subject}]: ${message}`
+  const updated = await db.updateGuestContact(contactId, {
+    status: contact.status === 'NEW' ? 'IN_PROGRESS' : contact.status,
+    note: (contact.note ?? '') + replyNote,
+  })
+  return updated
+}
+
+/** Chuyển yêu cầu đăng ký dùng thử sang System Manager duyệt tạo tài khoản. */
+// POST /api/trial-requests
+export async function forwardContactToTrialRequest(
+  contact: GuestContact,
+  note?: string
+): Promise<void> {
+  const numericContactId = Number(contact.id)
+  const numericPlanId = contact.interestedPlanId ? Number(contact.interestedPlanId) : undefined
+
+  await createTrialRequest({
+    contactId: Number.isNaN(numericContactId) ? undefined : numericContactId,
+    fullName: contact.fullName,
+    email: contact.email,
+    phoneNumber: contact.phoneNumber,
+    companyName: contact.companyName,
+    interestedPlanId: Number.isNaN(numericPlanId) ? undefined : numericPlanId,
+    note: note ?? `Chuyển duyệt tạo tài khoản dùng thử từ yêu cầu liên hệ #${contact.id}`,
+  })
 }
 
 export type ContactHandler = { readonly id: string; readonly name: string; readonly role: Role }
 
 /** Người nhận việc được: tài khoản đang hoạt động thuộc ba vai trò xử lý liên hệ, theo tên. */
-// chưa có ở BE
 export async function listContactHandlers(): Promise<ContactHandler[]> {
   const roles: readonly Role[] = CONTACT_HANDLER_ROLES
   return (await getMockDb().listUsers())

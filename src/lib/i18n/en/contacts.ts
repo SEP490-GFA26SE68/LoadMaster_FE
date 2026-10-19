@@ -2,7 +2,18 @@ import type { Dictionary } from '../types'
 import type { contacts as source } from '../vi/contacts'
 
 export const contacts = {
-  types: { INQUIRY: 'Question', DEMO_REQUEST: 'See a demo', PRICING: 'Quote', CONTRACT: 'Contract', OTHER: 'Other' },
+  types: {
+    PRICING: 'Advisory support',
+    DEMO_REQUEST: 'Trial account registration',
+    INQUIRY: 'Information inquiry',
+    CONTRACT: 'Contract',
+    OTHER: 'Other',
+  },
+  typeNotes: {
+    PRICING: 'A dedicated staff member will provide advisory support',
+    DEMO_REQUEST: 'The customer will receive trial account credentials via email',
+    INQUIRY: 'The customer will receive a response via email',
+  },
   statuses: { NEW: 'New', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   fields: {
     fullName: 'Full name',

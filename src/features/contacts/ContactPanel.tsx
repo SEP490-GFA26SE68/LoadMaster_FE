@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { X } from 'lucide-react'
+import { AlertCircle, Mail, Send, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useForm, useFormState, useWatch, type Control } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
@@ -23,7 +24,7 @@ import {
   type ContactPanelValues,
 } from './contact-panel-form'
 import type { ContactHandler } from './contacts-api'
-import { useUpdateContactMutation } from './useContactsQuery'
+import { useForwardTrialMutation, useReplyContactMutation, useUpdateContactMutation } from './useContactsQuery'
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -56,9 +57,8 @@ function SaveButton({ control, contact, pending }: { control: Control<ContactPan
 
 /**
  * Khung bên phải của `/lien-he-khach` (`?lien-he=<mã>`): thông tin khách gửi, nội dung, và phần xử lý — trạng thái, người nhận việc (ba
- * vai trò nền tảng đang hoạt động), ghi chú nội bộ. "Lưu thay đổi" là nút chính duy nhất của màn và chỉ gửi ô người dùng đã sửa: kho trả
- * bản mới của yêu cầu (người khác vừa lưu) thì ô chưa sửa theo kho, ô đang sửa giữ nguyên. Mở ra và lưu xong thì tiêu đề nhận focus:
- * liên kết vừa bấm trong bảng bị dựng lại khi bảng gọn cột, nút Lưu vừa mờ đi.
+ * vai trò nền tảng đang hoạt động), ghi chú nội bộ.
+ * Phản hồi qua email cho khách và chuyển Quản lý duyệt tạo tài khoản với yêu cầu dùng thử (`DEMO_REQUEST`).
  */
 export function ContactPanel({ row, handlers, handlersError, onClose }: {
   row: ContactRow
@@ -71,14 +71,24 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
   const format = useFormat()
   const { contact } = row
   const update = useUpdateContactMutation()
+  const replyMutation = useReplyContactMutation()
+  const forwardMutation = useForwardTrialMutation()
+
   const headingId = useId()
   const headingRef = useRef<HTMLHeadingElement>(null)
   // Mở khung (lần vẽ đầu) và mỗi lần lưu xong: tiêu đề nhận focus
   const [focusRequest, setFocusRequest] = useState(0)
   useEffect(() => headingRef.current?.focus(), [focusRequest])
+
+  const [replySubject, setReplySubject] = useState(`Phản hồi yêu cầu liên hệ #${contact.id}`)
+  const [replyMessage, setReplyMessage] = useState('')
+
   const form = useForm<ContactPanelValues>({ resolver: zodResolver(contactPanelSchema), defaultValues: contactPanelValues(contact) })
   // Bản mới của yêu cầu từ kho: giá trị gốc của form theo kho, ô người dùng đang sửa giữ chữ đang nhập
-  useEffect(() => form.reset(contactPanelValues(contact), { keepDirtyValues: true }), [contact, form])
+  useEffect(() => {
+    form.reset(contactPanelValues(contact), { keepDirtyValues: true })
+    setReplySubject(`Phản hồi yêu cầu liên hệ #${contact.id}`)
+  }, [contact, form])
 
   const assigneeOptions = [
     { value: NO_ASSIGNEE, label: t('contacts.panel.unassigned') },
@@ -89,7 +99,14 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
       : []),
   ]
 
+  const isDemo = contact.requestType === 'DEMO_REQUEST'
+
   function handleValid(values: ContactPanelValues) {
+    if (isDemo && (values.status === 'RESOLVED' || values.status === 'CLOSED')) {
+      toast.error('Yêu cầu dùng thử phải do Quản lý nền tảng duyệt tạo tài khoản. Hãy bấm nút chuyển sang System Manager.')
+      return
+    }
+
     // `getFieldState` đọc trạng thái hiện thời của form, không phải bản của lần vẽ trước
     const dirty: ContactPanelDirty = {
       status: form.getFieldState('status').isDirty,
@@ -103,6 +120,33 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
         setFocusRequest((request) => request + 1)
       },
       onError: (error) => toast.error(dataErrorMessage(error, t)),
+    })
+  }
+
+  function handleSendReply() {
+    if (!replyMessage.trim()) return
+    replyMutation.mutate({
+      contactId: contact.id,
+      subject: replySubject.trim() || `Phản hồi yêu cầu liên hệ #${contact.id}`,
+      message: replyMessage.trim(),
+    }, {
+      onSuccess: () => {
+        toast.success(`Đã gửi email phản hồi thành công tới ${contact.email}`)
+        setReplyMessage('')
+      },
+      onError: (err) => toast.error(dataErrorMessage(err, t)),
+    })
+  }
+
+  function handleForwardTrial() {
+    forwardMutation.mutate({
+      contact,
+      note: `Chuyển Quản lý duyệt tạo tài khoản dùng thử từ yêu cầu #${contact.id} (${contact.fullName})`,
+    }, {
+      onSuccess: () => {
+        toast.success('Đã chuyển đơn yêu cầu tạo tài khoản dùng thử sang System Manager thành công!')
+      },
+      onError: (err) => toast.error(dataErrorMessage(err, t)),
     })
   }
 
@@ -153,13 +197,81 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
           : <p className="m-0 text-body text-ink-3">{t('contacts.panel.noMessage')}</p>}
       </div>
 
+      {isDemo && (
+        <div className="border-b border-line-soft px-4.5 py-4">
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-caption text-amber-800 dark:text-amber-200">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold text-ink-strong">Yêu cầu đăng ký tài khoản dùng thử</span>
+                <span>
+                  System Support không được phép approve trực tiếp. Vui lòng chuyển sang bên Quản lý nền tảng (System Manager) để tạo tài khoản cho người dùng.
+                </span>
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    loading={forwardMutation.isPending}
+                    onClick={handleForwardTrial}
+                  >
+                    <Send className="mr-1.5 size-3.5" />
+                    Chuyển Quản lý duyệt tạo tài khoản
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phản hồi email */}
+      <div className="flex flex-col gap-3 border-b border-line-soft px-4.5 py-4">
+        <h3 className="m-0 flex items-center gap-1.5 text-small font-semibold text-ink-2">
+          <Mail className="size-4 text-primary" />
+          Phản hồi qua email cho khách
+        </h3>
+        <div className="flex flex-col gap-2.5">
+          <Input
+            label="Tiêu đề email"
+            value={replySubject}
+            onChange={(e) => setReplySubject(e.target.value)}
+          />
+          <Textarea
+            label="Nội dung phản hồi email"
+            rows={3}
+            placeholder="Nhập nội dung phản hồi gửi qua email tới khách hàng..."
+            value={replyMessage}
+            onChange={(e) => setReplyMessage(e.target.value)}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              loading={replyMutation.isPending}
+              disabled={!replyMessage.trim()}
+              onClick={handleSendReply}
+            >
+              <Send className="mr-1.5 size-3.5" />
+              Gửi email phản hồi
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <form noValidate onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-4 px-4.5 py-4" aria-labelledby={`${headingId}-xu-ly`}>
         <h3 id={`${headingId}-xu-ly`} className="m-0 text-small font-semibold text-ink-2">{t('contacts.panel.handling')}</h3>
         <SelectField
           control={form.control}
           name="status"
           label={t('contacts.panel.status')}
-          options={CONTACT_STATUSES.map((status) => ({ value: status, label: t(`contacts.statuses.${status}`) }))}
+          options={CONTACT_STATUSES.map((status) => ({
+            value: status,
+            label: isDemo && (status === 'RESOLVED' || status === 'CLOSED')
+              ? `${t(`contacts.statuses.${status}`)} (Cần Quản lý duyệt)`
+              : t(`contacts.statuses.${status}`),
+            disabled: isDemo && (status === 'RESOLVED' || status === 'CLOSED'),
+          }))}
         />
         <SelectField
           control={form.control}

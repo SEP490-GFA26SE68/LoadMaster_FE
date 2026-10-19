@@ -8,8 +8,15 @@ import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { CONTACT_REQUEST_TYPES, type GuestContact, type SubscriptionPlan } from '@/lib/mock-db'
-import { contactFormSchema, NO_PLAN, toNewContact, translateContactError, type ContactFormValues } from './contact-form'
+import type { GuestContact, SubscriptionPlan } from '@/lib/mock-db'
+import {
+  contactFormSchema,
+  GUEST_CONTACT_OPTIONS,
+  NO_PLAN,
+  toNewContact,
+  translateContactError,
+  type ContactFormValues,
+} from './contact-form'
 import { PUBLIC_TOUCH } from './public-chrome'
 import { useSendContactMutation } from './useMarketingQuery'
 
@@ -33,6 +40,7 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
   const [serverError, setServerError] = useState<unknown>(null)
   const form = useForm<ContactFormValues>({ resolver: zodResolver(contactFormSchema), defaultValues: initial })
   const { errors } = form.formState
+  const selectedType = form.watch('requestType')
   useEffect(() => {
     if (focusFirst) form.setFocus('fullName')
   }, [focusFirst, form])
@@ -81,14 +89,21 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
         error={translateContactError(t, errors.companyName?.message)}
         {...form.register('companyName')}
       />
-      <SelectField
-        control={form.control}
-        name="requestType"
-        label={t('landing.contact.form.type')}
-        required
-        options={CONTACT_REQUEST_TYPES.map((type) => ({ value: type, label: t(`contacts.types.${type}`) }))}
-        className={TOUCH_SELECT}
-      />
+      <div className="flex flex-col gap-1.5">
+        <SelectField
+          control={form.control}
+          name="requestType"
+          label={t('landing.contact.form.type')}
+          required
+          options={GUEST_CONTACT_OPTIONS.map((type) => ({ value: type, label: t(`contacts.types.${type}`) }))}
+          className={TOUCH_SELECT}
+        />
+        {selectedType ? (
+          <p className="m-0 text-caption text-ink-2">
+            ℹ️ {t(`contacts.typeNotes.${selectedType}`)}
+          </p>
+        ) : null}
+      </div>
       <SelectField
         control={form.control}
         name="planId"

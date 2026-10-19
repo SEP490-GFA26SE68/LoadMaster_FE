@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { CONTACT_LIMITS, createMockDb } from '@/lib/mock-db'
-import { contactDefaults, contactFormSchema, NO_PLAN, type ContactFormValues } from './contact-form'
+import { contactDefaults, contactFormSchema, GUEST_CONTACT_OPTIONS, NO_PLAN, type ContactFormValues } from './contact-form'
 
 /**
  * Luật của form liên hệ công khai: cùng giới hạn độ dài và luật email với kho (`contacts.test.ts` kiểm phía kho), và giá trị chọn sẵn từ
@@ -58,10 +58,15 @@ test('the plan and request type come from the URL only when they are known and o
   }
 
   expect(pick('goi=PLAN-002&loai=xem-demo')).toStrictEqual(['PLAN-002', 'DEMO_REQUEST'])
-  // Gói lạ, loại lạ, hay không có gì: chưa chọn gói, loại "Hỏi thông tin"
-  expect(pick('goi=PLAN-999&loai=khong-co')).toStrictEqual([NO_PLAN, 'INQUIRY'])
-  expect(pick('')).toStrictEqual([NO_PLAN, 'INQUIRY'])
+  // Gói lạ, loại lạ, hay không có gì: chưa chọn gói, mặc định "Hỗ trợ tư vấn"
+  expect(pick('goi=PLAN-999&loai=khong-co')).toStrictEqual([NO_PLAN, 'PRICING'])
+  expect(pick('')).toStrictEqual([NO_PLAN, 'PRICING'])
   // Gói đã ngừng bán không chọn sẵn được
   const retired = plans.map((plan) => (plan.id === 'PLAN-001' ? { ...plan, active: false } : plan))
   expect(pick('goi=PLAN-001&loai=bao-gia', retired)).toStrictEqual([NO_PLAN, 'PRICING'])
 })
+
+test('guest contact options are strictly PRICING, DEMO_REQUEST, INQUIRY', () => {
+  expect(GUEST_CONTACT_OPTIONS).toEqual(['PRICING', 'DEMO_REQUEST', 'INQUIRY'])
+})
+

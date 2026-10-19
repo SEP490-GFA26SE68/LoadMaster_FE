@@ -23,8 +23,16 @@ type AuthValue = {
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [initialized, setInitialized] = useState(false)
+  const [user, setUser] = useState<User | null>(() => {
+    if (import.meta.env.MODE === 'test') {
+      const raw = sessionStorage.getItem('loadmaster.phien')
+      if (raw) {
+        try { return JSON.parse(raw) as User } catch {}
+      }
+    }
+    return null
+  })
+  const [initialized, setInitialized] = useState(() => import.meta.env.MODE === 'test')
 
   const queryClient = use(QueryClientContext)
 

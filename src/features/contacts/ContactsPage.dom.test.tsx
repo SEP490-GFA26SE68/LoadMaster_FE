@@ -65,8 +65,8 @@ test('lists every guest request newest first with the count of new ones; status 
   expect(await screen.findByText('3 yêu cầu · 1 mới', {}, SLOW)).toBeInTheDocument()
   const rows = await dataRows()
   expect(rows.map((row) => within(row).getAllByRole('cell').slice(1).map((cell) => cell.textContent))).toStrictEqual([
-    ['Lê Hoàng NamLH-001 · Công ty TNHH Vận tải Minh Phát', 'nam.le@vantaiminhphat.vn0903 412 875', 'Báo giá', 'Pro', 'Mới', 'Chưa ai nhận'],
-    ['Phạm Thu TrangLH-002 · Giao nhận Hoà An', 'trang.pham@giaonhanhoaan.com0938 220 641', 'Xem demo', 'Chưa chọn', 'Đang xử lý', 'Tạ Thị Ngọc Ánh'],
+    ['Lê Hoàng NamLH-001 · Công ty TNHH Vận tải Minh Phát', 'nam.le@vantaiminhphat.vn0903 412 875', 'Hỗ trợ tư vấn', 'Pro', 'Mới', 'Chưa ai nhận'],
+    ['Phạm Thu TrangLH-002 · Giao nhận Hoà An', 'trang.pham@giaonhanhoaan.com0938 220 641', 'Đăng ký tài khoản dùng thử', 'Chưa chọn', 'Đang xử lý', 'Tạ Thị Ngọc Ánh'],
     ['Trần Quốc BảoLH-003', 'bao.tran@logisticsvietbac.vn', 'Hỏi thông tin', 'Chưa chọn', 'Đã giải quyết', 'Tạ Thị Ngọc Ánh'],
   ])
 
@@ -77,7 +77,7 @@ test('lists every guest request newest first with the count of new ones; status 
 
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
   await user.click(screen.getByRole('combobox', { name: 'Loại' }))
-  await user.click(await screen.findByRole('option', { name: 'Xem demo' }))
+  await user.click(await screen.findByRole('option', { name: 'Đăng ký tài khoản dùng thử' }))
   await waitFor(() => expect(screen.getByLabelText('url')).toHaveTextContent('loai=xem-demo'))
   expect((await dataRows()).map((row) => row.textContent)).toStrictEqual([expect.stringContaining('LH-002')])
 })

@@ -96,7 +96,7 @@ export const landing = {
       },
     },
     sent: {
-      title: 'Request {id} received',
+      title: 'Request sent successfully',
       text: 'The LoadMaster team will get back to you at the email you entered.',
       again: 'Send another request',
     },

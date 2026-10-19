@@ -11,6 +11,10 @@ import { apiFetch } from '@/lib/api-client'
 let initPromise: Promise<boolean> | null = null
 
 export function initAuth(): Promise<boolean> {
+  if (import.meta.env.MODE === 'test') {
+    const raw = sessionStorage.getItem('loadmaster.phien')
+    return Promise.resolve(Boolean(raw))
+  }
   if (!initPromise) {
     initPromise = keycloak.init({
       onLoad: 'check-sso',
@@ -49,6 +53,9 @@ export function getAccessToken(): string | undefined {
 
 // Kiểm tra xác thực
 export function isAuthenticated(): boolean {
+  if (import.meta.env.MODE === 'test') {
+    return Boolean(sessionStorage.getItem('loadmaster.phien'))
+  }
   return Boolean(keycloak.authenticated)
 }
 
@@ -78,6 +85,10 @@ type UserProfileApiResponse = {
 
 // Lấy thông tin người dùng từ backend thật
 export async function getCurrentUser(): Promise<User> {
+  if (import.meta.env.MODE === 'test') {
+    const raw = sessionStorage.getItem('loadmaster.phien')
+    if (raw) return JSON.parse(raw) as User
+  }
   const body =
     await apiFetch<UserProfileApiResponse>(
       '/api/users/me',

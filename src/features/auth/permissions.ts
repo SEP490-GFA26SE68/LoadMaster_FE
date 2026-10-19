@@ -24,6 +24,7 @@ export const PERMISSIONS = [
   'support.create',
   'support.handle',
   'contacts.handle',
+  'trialRequests.manage',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -78,8 +79,8 @@ export type Permission = (typeof PERMISSIONS)[number]
  */
 
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
-  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
+  systemManager: ['subscriptionPlans.manage', 'companies.manage', 'trialRequests.manage'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
 

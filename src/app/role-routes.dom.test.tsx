@@ -49,7 +49,7 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
   expect([
     '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
-    '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia',
+    '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/nen-tang/yeu-cau-dung-thu',
   ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
@@ -61,6 +61,8 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/giam-sat').permissions).toStrictEqual(['monitoring.view'])
   // Danh mục gói (FE-8-02): quản lý nền tảng
   expect(routeAccess('/nen-tang/goi').permissions).toStrictEqual(['subscriptionPlans.manage'])
+  // Đơn yêu cầu dùng thử (FE-8-08): quản lý nền tảng
+  expect(routeAccess('/nen-tang/yeu-cau-dung-thu').permissions).toStrictEqual(['trialRequests.manage'])
   // Công ty (FE-8-06): quản trị hệ thống
   expect(routeAccess('/nen-tang/cong-ty').permissions).toStrictEqual(['companies.manage'])
   // Hỗ trợ (FE-8-07): Hỗ trợ khách hàng

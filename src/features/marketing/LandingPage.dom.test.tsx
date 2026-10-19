@@ -64,7 +64,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(within(screen.getByRole('region', { name: 'Cách hoạt động' })).getAllByRole('listitem')).toHaveLength(4)
   expect(screen.getByText(/đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn\.$/)).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)).toBeInTheDocument()
-  expect(screen.queryByText(/Đăng ký|Mua gói|Dùng thử/)).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /Đăng ký|Mua gói/ })).not.toBeInTheDocument()
 })
 
 test('the skip link moves focus to the main content without changing the address', async () => {
@@ -105,7 +105,7 @@ test('the contact form needs a name and a valid email, keeps the input when send
   // Tới qua neo: tiêu đề của phần nhận focus
   expect(screen.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster' })).toHaveFocus()
   const submit = await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)
-  expect(screen.getByRole('combobox', { name: 'Bạn cần gì' })).toHaveTextContent('Báo giá')
+  expect(screen.getByRole('combobox', { name: 'Bạn cần gì' })).toHaveTextContent('Hỗ trợ tư vấn')
   expect(screen.getByRole('combobox', { name: 'Gói quan tâm' })).toHaveTextContent('Pro')
 
   await user.click(submit)
@@ -134,7 +134,7 @@ test('the contact form needs a name and a valid email, keeps the input when send
   expect(email).toHaveValue('quan@vantaiminhquan.vn')
 
   await user.click(submit)
-  const sent = await screen.findByRole('heading', { name: 'Đã ghi nhận yêu cầu LH-004' }, SLOW)
+  const sent = await screen.findByRole('heading', { name: 'Gửi yêu cầu thành công' }, SLOW)
   expect(sent).toHaveFocus()
   expect(sent.closest('[role="status"]')).toHaveTextContent('Đội LoadMaster sẽ liên hệ lại qua email bạn đã nhập.')
 

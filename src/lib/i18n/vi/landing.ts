@@ -99,7 +99,7 @@ export const landing = {
       },
     },
     sent: {
-      title: 'Đã ghi nhận yêu cầu {id}',
+      title: 'Gửi yêu cầu thành công',
       text: 'Đội LoadMaster sẽ liên hệ lại qua email bạn đã nhập.',
       again: 'Gửi yêu cầu khác',
     },

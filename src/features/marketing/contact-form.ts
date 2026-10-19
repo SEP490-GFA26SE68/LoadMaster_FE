@@ -33,13 +33,16 @@ const ERRORS = {
   messageTooLong: 'landing.contact.form.errors.messageTooLong',
 } as const satisfies Record<string, MessageKey>
 
+export const GUEST_CONTACT_OPTIONS = ['PRICING', 'DEMO_REQUEST', 'INQUIRY'] as const
+export type GuestContactOption = (typeof GUEST_CONTACT_OPTIONS)[number]
+
 export const contactFormSchema = z.object({
   fullName: z.string().trim().min(1, ERRORS.fullNameRequired).max(CONTACT_LIMITS.fullName, ERRORS.fullNameTooLong),
   // Cùng luật email với kho (`isContactEmail`): form không nhận gì kho sẽ từ chối
   email: z.string().trim().min(1, ERRORS.emailRequired).max(CONTACT_LIMITS.email, ERRORS.emailTooLong).refine(isContactEmail, ERRORS.emailInvalid),
   phoneNumber: z.string().trim().max(CONTACT_LIMITS.phoneNumber, ERRORS.phoneTooLong),
   companyName: z.string().trim().max(CONTACT_LIMITS.companyName, ERRORS.companyTooLong),
-  requestType: z.enum(CONTACT_REQUEST_TYPES),
+  requestType: z.enum(GUEST_CONTACT_OPTIONS),
   planId: z.string(),
   message: z.string().trim().max(CONTACT_LIMITS.message, ERRORS.messageTooLong),
 })
@@ -47,16 +50,20 @@ export type ContactFormValues = z.infer<typeof contactFormSchema>
 
 /**
  * Giá trị đầu của form: loại yêu cầu và gói chọn sẵn từ URL (`?loai=bao-gia&goi=PLAN-002`, nút "Liên hệ tư vấn" của thẻ gói ở Bảng giá).
- * Gói không có trong danh sách hoặc đã ngừng bán thì bỏ; loại lạ thì là "Hỏi thông tin".
+ * Gói không có trong danh sách hoặc đã ngừng bán thì bỏ; loại lạ thì mặc định là "Hỗ trợ tư vấn".
  */
 export function contactDefaults(search: URLSearchParams, plans: readonly SubscriptionPlan[]): ContactFormValues {
   const planId = search.get('goi')
+  const slugType = contactTypeFromSlug(search.get('loai'))
+  const requestType = slugType && GUEST_CONTACT_OPTIONS.includes(slugType as GuestContactOption)
+    ? (slugType as GuestContactOption)
+    : 'PRICING'
   return {
     fullName: '',
     email: '',
     phoneNumber: '',
     companyName: '',
-    requestType: contactTypeFromSlug(search.get('loai')) ?? 'INQUIRY',
+    requestType,
     planId: plans.find((plan) => plan.id === planId && plan.active)?.id ?? NO_PLAN,
     message: '',
   }
@@ -81,7 +88,7 @@ export function contactPath(prefill: { planId?: string; type?: ContactRequestTyp
   if (prefill.planId !== undefined) params.set('goi', prefill.planId)
   if (prefill.type !== undefined) params.set('loai', CONTACT_TYPE_SLUGS[prefill.type])
   const search = params.toString()
-  return `${PUBLIC_HOME}${search === '' ? '' : `?${search}`}#${CONTACT_ANCHOR}`
+  return `/gioi-thieu${search === '' ? '' : `?${search}`}#${CONTACT_ANCHOR}`
 }
 
 /** Dịch message của schema; message không phải key của schema thì bỏ qua. */

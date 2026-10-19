@@ -18,7 +18,7 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
 }
 
 /** Trang giới thiệu công khai: khách chưa đăng nhập mở gốc `/` thì tới đây thay cho màn đăng nhập (`RequireAuth`). */
-export const PUBLIC_HOME = '/'
+export const PUBLIC_HOME = '/gioi-thieu'
 /** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
 export const PUBLIC_PRICING = '/bang-gia'
 

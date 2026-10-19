@@ -15,6 +15,7 @@ export const nav = {
   requirements: 'Requirements',
   monitoring: 'Monitoring',
   plans: 'Plans',
+  trialRequests: 'Trial requests',
   billing: 'Plan and credits',
   companies: 'Companies',
   support: 'Support',

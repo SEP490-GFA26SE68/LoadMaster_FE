@@ -70,83 +70,19 @@ function codeOfStatus(status: number): TransportErrorCode {
   return 'SERVER_ERROR'
 }
 
-
-async function getValidAccessToken(): Promise<string> {
+async function getValidAccessToken(): Promise<string | null> {
   if (!keycloak.authenticated) {
-    throw new ApiError('UNAUTHENTICATED', {
-      status: 401,
-    })
+    return null
   }
 
   try {
     await keycloak.updateToken(30)
   } catch (error) {
-    console.error(
-      '[KEYCLOAK] Refresh token failed',
-      error,
-    )
-
-    throw new ApiError('UNAUTHENTICATED', {
-      status: 401,
-    })
+    console.error('[KEYCLOAK] Refresh token failed', error)
+    return null
   }
 
-  if (!keycloak.token) {
-    throw new ApiError('UNAUTHENTICATED', {
-      status: 401,
-    })
-  }
-
-  return keycloak.token
-}
-
-
-async function redirectOnUnauthorized(): Promise<never> {
-  try {
-    await keycloak.login({ redirectUri: `${window.location.origin}/dang-nhap` })
-  } catch {
-    // Giữ một kiểu lỗi nhất quán cho caller.
-  }
-  throw new ApiError('UNAUTHENTICATED', { status: 401 })
-}
-
-function urlOf(path: string, query?: Readonly<Record<string, QueryValue>>): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const url = new URL(`${API_BASE_URL}${normalizedPath}`)
-  for (const [key, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null) url.searchParams.set(key, String(value))
-  }
-  return url.toString()
-}
-
-async function fetchAuthorized(path: string, init: RequestInit = {}, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Response> {
-  const token = await getValidAccessToken()
-  const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bearer ${token}`)
-  headers.set('Accept', headers.get('Accept') ?? 'application/json')
-  if (init.body != null && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json')
-  }
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  const onAbort = () => controller.abort()
-  init.signal?.addEventListener('abort', onAbort, { once: true })
-  let response: Response
-  try {
-    response = await fetch(urlOf(path), { ...init, headers, signal: controller.signal })
-  } catch (error) {
-    if (init.signal?.aborted) throw error
-    throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
-  } finally {
-    clearTimeout(timer)
-    init.signal?.removeEventListener('abort', onAbort)
-  }
-  if (response.status === 401) {
-    throw new ApiError('UNAUTHENTICATED', {
-      status: 401,
-    })
-  }
-  return response
+  return keycloak.token ?? null
 }
 
 async function readResponse(response: Response): Promise<unknown> {
@@ -165,7 +101,34 @@ function errorFromResponse(response: Response, payload: unknown): ApiError {
 
 /** Giữ nguyên response JSON dạng {success, data} để getCurrentUser() đang dùng body.data. */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetchAuthorized(path, init)
+  const token = await getValidAccessToken()
+  const headers = new Headers(init.headers)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  headers.set('Accept', headers.get('Accept') ?? 'application/json')
+  if (init.body != null && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+  const onAbort = () => controller.abort()
+  init.signal?.addEventListener('abort', onAbort, { once: true })
+  let response: Response
+  try {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    const url = new URL(`${API_BASE_URL}${normalizedPath}`)
+    response = await fetch(url.toString(), { ...init, headers, signal: controller.signal })
+  } catch (error) {
+    if (init.signal?.aborted) throw error
+    throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
+  } finally {
+    clearTimeout(timer)
+    init.signal?.removeEventListener('abort', onAbort)
+  }
+  if (response.status === 401) {
+    throw new ApiError('UNAUTHENTICATED', { status: 401 })
+  }
   const payload = await readResponse(response)
   if (!response.ok || (isRecord(payload) && payload.success === false)) {
     throw errorFromResponse(response, payload)
@@ -175,7 +138,24 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
 /** Tải file với Bearer token Keycloak. */
 export async function apiFetchBlob(path: string, init: RequestInit = {}): Promise<Blob> {
-  const response = await fetchAuthorized(path, init)
+  const token = await getValidAccessToken()
+  const headers = new Headers(init.headers)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+  let response: Response
+  try {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    const url = new URL(`${API_BASE_URL}${normalizedPath}`)
+    response = await fetch(url.toString(), { ...init, headers, signal: controller.signal })
+  } catch (error) {
+    if (init.signal?.aborted) throw error
+    throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
+  } finally {
+    clearTimeout(timer)
+  }
   if (!response.ok) {
     throw errorFromResponse(response, await readResponse(response))
   }
@@ -195,39 +175,95 @@ export type ApiClient = {
   delete<T>(path: string, options?: RequestOptions): Promise<T>
 }
 
-/** api() trả về phần data của envelope backend, giống feature API ở nhánh bạn của bạn. */
-async function requestData<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-  const { query, body } = options
-  const search = new URLSearchParams()
-  for (const [name, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null) search.set(name, String(value))
-  }
-  const suffix = search.toString()
-  const fullPath = `${path}${suffix ? `${path.includes('?') ? '&' : '?'}${suffix}` : ''}`
-  const response = await fetchAuthorized(fullPath, {
-    method,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  })
-  const payload = await readResponse(response)
-  if (!response.ok || (isRecord(payload) && payload.success === false)) {
-    throw errorFromResponse(response, payload)
-  }
-  return (isRecord(payload) && 'success' in payload ? payload.data : payload) as T
+export type CreateApiClientOptions = {
+  readonly baseUrl?: string
+  readonly accessToken?: () => Promise<string | null>
+  readonly fetch?: typeof fetch
+  readonly timeoutMs?: number
 }
 
-const client: ApiClient = {
-  get: (path, options) => requestData('GET', path, options),
-  post: (path, options) => requestData('POST', path, options),
-  put: (path, options) => requestData('PUT', path, options),
-  patch: (path, options) => requestData('PATCH', path, options),
-  delete: (path, options) => requestData('DELETE', path, options),
+export function createApiClient(options: CreateApiClientOptions = {}): ApiClient {
+  const baseUrl = (options.baseUrl ?? API_BASE_URL).replace(/\/$/, '')
+  const getAccessToken = options.accessToken ?? getValidAccessToken
+  const fetchFn = options.fetch ?? fetch
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+
+  async function fetchAuthorized(path: string, init: RequestInit = {}): Promise<Response> {
+    const token = await getAccessToken()
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...(init.headers instanceof Headers
+        ? Object.fromEntries(init.headers.entries())
+        : (init.headers as Record<string, string> ?? {})),
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (init.body != null && !(init.body instanceof FormData) && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json'
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const onAbort = () => controller.abort()
+    init.signal?.addEventListener('abort', onAbort, { once: true })
+    let response: Response
+    try {
+      const normalizedPath = path.startsWith('/') ? path : `/${path}`
+      const url = new URL(`${baseUrl}${normalizedPath}`)
+      response = await fetchFn(url.toString(), { ...init, headers, signal: controller.signal })
+    } catch (error) {
+      if (init.signal?.aborted) throw error
+      throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
+    } finally {
+      clearTimeout(timer)
+      init.signal?.removeEventListener('abort', onAbort)
+    }
+    if (response.status === 401) {
+      throw new ApiError('UNAUTHENTICATED', { status: 401 })
+    }
+    return response
+  }
+
+  async function requestData<T>(method: string, path: string, reqOptions: RequestOptions = {}): Promise<T> {
+    const { query, body } = reqOptions
+    const search = new URLSearchParams()
+    for (const [name, value] of Object.entries(query ?? {})) {
+      if (value !== undefined && value !== null) search.set(name, String(value))
+    }
+    const suffix = search.toString()
+    const fullPath = `${path}${suffix ? `${path.includes('?') ? '&' : '?'}${suffix}` : ''}`
+    const response = await fetchAuthorized(fullPath, {
+      method,
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
+    const payload = await readResponse(response)
+    if (!response.ok || (isRecord(payload) && payload.success === false)) {
+      throw errorFromResponse(response, payload)
+    }
+    if (isRecord(payload) && 'success' in payload) {
+      if ('totalElements' in payload || 'totalPages' in payload) {
+        return payload as T
+      }
+      return payload.data as T
+    }
+    return payload as T
+  }
+
+  return {
+    get: (path, reqOptions) => requestData('GET', path, reqOptions),
+    post: (path, reqOptions) => requestData('POST', path, reqOptions),
+    put: (path, reqOptions) => requestData('PUT', path, reqOptions),
+    patch: (path, reqOptions) => requestData('PATCH', path, reqOptions),
+    delete: (path, reqOptions) => requestData('DELETE', path, reqOptions),
+  }
 }
 
-/** Giữ tên hàm để code mới có thể import; token thật vẫn lấy trực tiếp từ Keycloak. */
-export function connectApiAuth(_accessToken: () => Promise<string | null>): void {
-  // Keycloak là nguồn token duy nhất trong phiên bản này.
+let configuredClient: ApiClient | null = null
+
+export function connectApiAuth(accessToken: () => Promise<string | null>): void {
+  configuredClient = createApiClient({ accessToken })
 }
 
 export function api(): ApiClient {
-  return client
+  return configuredClient ?? createApiClient()
 }

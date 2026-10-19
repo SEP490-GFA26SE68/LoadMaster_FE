@@ -41,7 +41,9 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
 
       <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-ink-strong">
         <span className="font-display text-[26px] leading-8 font-bold tabular-nums">{format.currency(plan.priceVnd)}</span>
-        <span className="text-body text-ink-2 pointer-coarse:text-body-lg">{t('pricing.perMonth')}</span>
+        <span className="text-body text-ink-2 pointer-coarse:text-body-lg">
+          {plan.billingCycle === 'YEARLY' ? '/ năm' : t('pricing.perMonth')}
+        </span>
       </p>
 
       {/* Nhãn không xuống dòng; giá trị không vừa bên cạnh thì xuống hàng riêng, căn phải (thẻ hẹp ở điện thoại) */}
@@ -56,18 +58,38 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
           <dt className="whitespace-nowrap text-ink-2">{t('pricing.algorithm')}</dt>
           <dd className="m-0 ml-auto text-right font-semibold text-ink-strong">{t(`pricing.tiers.${plan.algorithmTier}`)}</dd>
         </div>
+        {plan.maxVehicles != null ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5">
+            <dt className="whitespace-nowrap text-ink-2">Số xe tối đa</dt>
+            <dd className="m-0 ml-auto text-right font-semibold text-ink-strong tabular-nums">
+              {format.integer(plan.maxVehicles)} xe
+            </dd>
+          </div>
+        ) : null}
+        {plan.maxMonthlyJobs != null ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5">
+            <dt className="whitespace-nowrap text-ink-2">Chuyến / tháng</dt>
+            <dd className="m-0 ml-auto text-right font-semibold text-ink-strong tabular-nums">
+              {format.integer(plan.maxMonthlyJobs)} chuyến
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="flex flex-col gap-2.5">
         <h3 className="m-0 text-small font-semibold text-ink-2 pointer-coarse:text-body-lg">{t('pricing.includes')}</h3>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0 text-body text-ink-1 pointer-coarse:text-body-lg">
-          {plan.features.filter(isKnownFeature).map((code) => (
-            <li key={code} className="flex items-start gap-2.5">
-              <Check aria-hidden className="mt-0.5 size-4 flex-none text-success" strokeWidth={1.5} />
-              {t(`pricing.features.${code}`)}
-            </li>
-          ))}
-        </ul>
+        {plan.features.length > 0 ? (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0 text-body text-ink-1 pointer-coarse:text-body-lg">
+            {plan.features.map((item, idx) => (
+              <li key={`${item}-${idx}`} className="flex items-start gap-2.5">
+                <Check aria-hidden className="mt-0.5 size-4 flex-none text-success" strokeWidth={1.5} />
+                <span>{isKnownFeature(item) ? t(`pricing.features.${item}`) : item}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="m-0 text-caption text-ink-muted italic">Chưa có thông tin tính năng chi tiết</p>
+        )}
       </div>
 
       <Button asChild variant="secondary" className={cn('mt-auto w-full', PUBLIC_TOUCH)}>

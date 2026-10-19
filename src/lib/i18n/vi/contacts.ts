@@ -3,7 +3,18 @@
  * màn `/lien-he-khach` và nhật ký; phần còn lại là màn `/lien-he-khach` của ba vai trò nền tảng (`features/contacts`).
  */
 export const contacts = {
-  types: { INQUIRY: 'Hỏi thông tin', DEMO_REQUEST: 'Xem demo', PRICING: 'Báo giá', CONTRACT: 'Hợp đồng', OTHER: 'Khác' },
+  types: {
+    PRICING: 'Hỗ trợ tư vấn',
+    DEMO_REQUEST: 'Đăng ký tài khoản dùng thử',
+    INQUIRY: 'Hỏi thông tin',
+    CONTRACT: 'Hợp đồng',
+    OTHER: 'Khác',
+  },
+  typeNotes: {
+    PRICING: 'Sẽ có nhân viên trực hỗ trợ tư vấn',
+    DEMO_REQUEST: 'Khách hàng sẽ được cung cấp tài khoản dùng thử qua email',
+    INQUIRY: 'Khách sẽ nhận được câu phản hồi qua email',
+  },
   statuses: { NEW: 'Mới', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Tên trường trong câu lỗi `CONTACT_INVALID` của kho (`dataErrorMessage`). */
   fields: {
