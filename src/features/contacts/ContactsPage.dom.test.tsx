@@ -113,6 +113,11 @@ test('supporter can click "Đảm nhận" on a new contact to assign themselves 
   // Không có nút Hủy cho contact
   expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
 
+  // Chưa đảm nhận thì CHƯA ĐƯỢC có các nút "Đã giải quyết", "Liên hệ thất bại", "Chuyển giao cho System Manager"
+  expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Liên hệ thất bại' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: /Chuyển giao cho System Manager/i })).not.toBeInTheDocument()
+
   // Nút "Đảm nhận"
   const claimBtn = within(panel).getByRole('button', { name: 'Đảm nhận' })
   await user.click(claimBtn)
@@ -122,9 +127,14 @@ test('supporter can click "Đảm nhận" on a new contact to assign themselves 
     status: 'IN_PROGRESS',
     assignedToId: SUPPORTER,
   })
+
+  // Sau khi đã đảm nhận: nút "Đảm nhận" không còn, các nút "Đã giải quyết" và "Liên hệ thất bại" xuất hiện
+  expect(within(panel).queryByRole('button', { name: 'Đảm nhận' })).not.toBeInTheDocument()
+  expect(within(panel).getByRole('button', { name: 'Đã giải quyết' })).toBeInTheDocument()
+  expect(within(panel).getByRole('button', { name: 'Liên hệ thất bại' })).toBeInTheDocument()
 })
 
-test('pricing contact has "Đã giải quyết" and "Liên hệ thất bại" buttons; clicking "Liên hệ thất bại" sets status to CLOSED', async () => {
+test('pricing contact in-progress has "Đã giải quyết" and "Liên hệ thất bại" buttons; clicking "Liên hệ thất bại" sets status to CLOSED', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=LH-001')
   const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)

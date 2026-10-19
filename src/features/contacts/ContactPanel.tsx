@@ -65,8 +65,9 @@ export function ContactPanel({ row, handlers: _handlers, handlersError: _handler
   const isDemo = contact.requestType === 'DEMO_REQUEST'
   const isPricing = contact.requestType === 'PRICING'
   const isDone = contact.status === 'RESOLVED' || contact.status === 'CLOSED'
-  const isAssignedToMe = Boolean(user && contact.assignedToId === String(user.id))
-  const canAssignToMe = !isDone && (!isAssignedToMe || contact.status === 'NEW')
+  const isClaimed = contact.status === 'IN_PROGRESS'
+  const canClaim = !isDone && !isClaimed
+  const canTakeAction = isClaimed
 
   function handleAssignToMe() {
     update.mutate({
@@ -218,7 +219,9 @@ export function ContactPanel({ row, handlers: _handlers, handlersError: _handler
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold text-ink-strong">Yêu cầu đăng ký tài khoản dùng thử</span>
                   <span>
-                    System Support không được phép duyệt trực tiếp. Hãy bấm nút "Chuyển giao cho System Manager" ở mục xử lý bên dưới để chuyển yêu cầu này sang Quản lý nền tảng.
+                    {isClaimed
+                      ? 'System Support không được phép duyệt trực tiếp. Hãy bấm nút "Chuyển giao cho System Manager" ở mục xử lý bên dưới để chuyển yêu cầu này sang Quản lý nền tảng.'
+                      : 'System Support không được phép duyệt trực tiếp. Hãy bấm nút "Đảm nhận" ở mục xử lý bên dưới trước khi chuyển giao cho Quản lý nền tảng.'}
                   </span>
                 </div>
               </div>
@@ -282,7 +285,7 @@ export function ContactPanel({ row, handlers: _handlers, handlersError: _handler
 
           {/* Nút hành động trạng thái */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {canAssignToMe && (
+            {canClaim && (
               <Button
                 type="button"
                 variant="primary"
@@ -294,40 +297,42 @@ export function ContactPanel({ row, handlers: _handlers, handlersError: _handler
               </Button>
             )}
 
-            {isDemo ? (
-              <Button
-                type="button"
-                variant="secondary"
-                loading={forwardMutation.isPending}
-                onClick={handleForwardTrial}
-              >
-                <Send className="mr-1.5 size-3.5" />
-                Chuyển giao cho System Manager
-              </Button>
-            ) : (
-              !isDone && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  loading={update.isPending}
-                  onClick={handleResolve}
-                >
-                  <CheckCircle2 className="mr-1.5 size-4" />
-                  Đã giải quyết
-                </Button>
-              )
-            )}
+            {canTakeAction && (
+              <>
+                {isDemo ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={forwardMutation.isPending}
+                    onClick={handleForwardTrial}
+                  >
+                    <Send className="mr-1.5 size-3.5" />
+                    Chuyển giao cho System Manager
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={update.isPending}
+                    onClick={handleResolve}
+                  >
+                    <CheckCircle2 className="mr-1.5 size-4" />
+                    Đã giải quyết
+                  </Button>
+                )}
 
-            {isPricing && !isDone && (
-              <Button
-                type="button"
-                variant="outline"
-                loading={update.isPending}
-                onClick={handleFailContact}
-              >
-                <PhoneOff className="mr-1.5 size-4" />
-                Liên hệ thất bại
-              </Button>
+                {isPricing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    loading={update.isPending}
+                    onClick={handleFailContact}
+                  >
+                    <PhoneOff className="mr-1.5 size-4" />
+                    Liên hệ thất bại
+                  </Button>
+                )}
+              </>
             )}
           </div>
 

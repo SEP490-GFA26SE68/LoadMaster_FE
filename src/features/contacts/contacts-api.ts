@@ -106,7 +106,7 @@ export async function updateGuestContact(contactId: string, patch: GuestContactP
     if (patch.note !== undefined) payload.note = patch.note
 
     if (!Number.isNaN(numericId)) {
-      const res = await api().patch<BackendContactResponse>(`/api/contact-guests/${numericId}`, payload)
+      const res = await api().patch<BackendContactResponse>(`/api/contact-guests/${numericId}`, { body: payload })
       return mapBackendToGuestContact(res)
     }
     return getMockDb().updateGuestContact(contactId, patch)
@@ -128,8 +128,10 @@ export async function replyGuestContact(
   const numericId = Number(contactId)
   if (!Number.isNaN(numericId) && import.meta.env.MODE !== 'test') {
     const res = await api().post<BackendContactResponse>(`/api/contact-guests/${numericId}/reply`, {
-      subject: subject.trim() || undefined,
-      message,
+      body: {
+        subject: subject.trim() || undefined,
+        message,
+      },
     })
     return mapBackendToGuestContact(res)
   }

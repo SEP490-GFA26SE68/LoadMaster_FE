@@ -225,7 +225,9 @@ export function createApiClient(options: CreateApiClientOptions = {}): ApiClient
   }
 
   async function requestData<T>(method: string, path: string, reqOptions: RequestOptions = {}): Promise<T> {
-    const { query, body } = reqOptions
+    const isExplicitOptions = isRecord(reqOptions) && ('body' in reqOptions || 'query' in reqOptions)
+    const query = isExplicitOptions ? reqOptions.query : undefined
+    const body = isExplicitOptions ? reqOptions.body : (method !== 'GET' && method !== 'HEAD' ? reqOptions : undefined)
     const search = new URLSearchParams()
     for (const [name, value] of Object.entries(query ?? {})) {
       if (value !== undefined && value !== null) search.set(name, String(value))
