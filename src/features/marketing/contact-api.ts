@@ -11,6 +11,8 @@ export type CreateContactOfGuestRequest = {
   email: string
   phoneNumber?: string
   companyName?: string
+  companyCode?: string
+  taxCode?: string
   interestedPlanId?: number | null
   message?: string
   requestType: ContactRequestType
@@ -22,6 +24,8 @@ export type ContactOfGuestResponse = {
   email: string
   phoneNumber?: string | null
   companyName?: string | null
+  companyCode?: string | null
+  taxCode?: string | null
   interestedPlanId?: number | null
   interestedPlanName?: string | null
   assignedToId?: number | null
@@ -41,6 +45,8 @@ export function toGuestContact(res: ContactOfGuestResponse): GuestContact {
     email: res.email,
     phoneNumber: res.phoneNumber || undefined,
     companyName: res.companyName || undefined,
+    companyCode: res.companyCode || undefined,
+    taxCode: res.taxCode || undefined,
     interestedPlanId: res.interestedPlanId != null ? String(res.interestedPlanId) : undefined,
     message: res.message || undefined,
     requestType: res.requestType,
@@ -69,6 +75,8 @@ export async function sendGuestContact(input: NewGuestContact): Promise<GuestCon
     email: input.email.trim(),
     phoneNumber: input.phoneNumber?.trim() || undefined,
     companyName: input.companyName?.trim() || undefined,
+    companyCode: input.companyCode?.trim() || undefined,
+    taxCode: input.taxCode?.trim() || undefined,
     interestedPlanId,
     message: input.message?.trim() || undefined,
     requestType: input.requestType,

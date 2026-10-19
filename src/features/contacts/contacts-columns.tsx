@@ -81,19 +81,19 @@ export function createContactColumns(t: TFunction, compact: boolean) {
     cell: (info) => <ReceivedCell row={info.row.original} />,
   })
   const sender = helper.display({
-    id: 'sender', header: t('contacts.page.columns.sender'), meta: { width: compact ? '46%' : '26%' } satisfies ColumnMeta,
+    id: 'sender', header: t('contacts.page.columns.sender'), meta: { width: compact ? '42%' : '24%' } satisfies ColumnMeta,
     cell: (info) => <SenderCell row={info.row.original} />,
   })
   const contact = helper.display({
-    id: 'contact', header: t('contacts.page.columns.contact'), meta: { width: '22%' } satisfies ColumnMeta,
+    id: 'contact', header: t('contacts.page.columns.contact'), meta: { width: '20%' } satisfies ColumnMeta,
     cell: (info) => <ContactInfoCell row={info.row.original} />,
   })
   const type = helper.display({
-    id: 'type', header: t('contacts.page.columns.type'), meta: { width: '120px' } satisfies ColumnMeta,
+    id: 'type', header: t('contacts.page.columns.type'), meta: { width: '185px' } satisfies ColumnMeta,
     cell: (info) => <ContactTypeBadge type={info.row.original.contact.requestType} />,
   })
   const plan = helper.display({
-    id: 'plan', header: t('contacts.page.columns.plan'), meta: { width: '112px' } satisfies ColumnMeta,
+    id: 'plan', header: t('contacts.page.columns.plan'), meta: { width: '120px' } satisfies ColumnMeta,
     cell: (info) => <ContactPlan row={info.row.original} />,
   })
   const status = helper.display({

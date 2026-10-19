@@ -21,13 +21,15 @@ export const CONTACT_LIMITS = {
   email: 150,
   phoneNumber: 30,
   companyName: 200,
+  companyCode: 50,
+  taxCode: 50,
   message: 2000,
   note: 2000,
 } as const
 
 /** Trường kho báo sai (`CONTACT_INVALID { field }`): các trường khách gửi, gói quan tâm, và ba trường người xử lý sửa. Nhãn ở `contacts.fields`. */
 export const CONTACT_FIELDS = [
-  'fullName', 'email', 'phoneNumber', 'companyName', 'requestType', 'interestedPlanId', 'message', 'status', 'assignedToId', 'note',
+  'fullName', 'email', 'phoneNumber', 'companyName', 'companyCode', 'taxCode', 'requestType', 'interestedPlanId', 'message', 'status', 'assignedToId', 'note',
 ] as const
 export type ContactField = (typeof CONTACT_FIELDS)[number]
 
@@ -48,6 +50,8 @@ export type GuestContact = {
   email: string
   phoneNumber?: string
   companyName?: string
+  companyCode?: string
+  taxCode?: string
   /** Gói khách quan tâm (`PLAN-NNN`), vắng khi khách không chọn. */
   interestedPlanId?: string
   message?: string
@@ -65,7 +69,7 @@ export type GuestContact = {
 }
 
 export type NewGuestContact = Pick<GuestContact, 'fullName' | 'email' | 'requestType'> &
-  Partial<Pick<GuestContact, 'phoneNumber' | 'companyName' | 'interestedPlanId' | 'message'>>
+  Partial<Pick<GuestContact, 'phoneNumber' | 'companyName' | 'companyCode' | 'taxCode' | 'interestedPlanId' | 'message'>>
 
 /** `PATCH /api/contact-guests/{id}`: trường vắng giữ nguyên; `assignedToId: null` bỏ người nhận, `note: ''` xoá ghi chú. */
 export type GuestContactPatch = {

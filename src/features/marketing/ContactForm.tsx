@@ -82,13 +82,6 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
         error={translateContactError(t, errors.phoneNumber?.message)}
         {...form.register('phoneNumber')}
       />
-      <Input
-        label={t('landing.contact.form.company')}
-        autoComplete="organization"
-        className={PUBLIC_TOUCH}
-        error={translateContactError(t, errors.companyName?.message)}
-        {...form.register('companyName')}
-      />
       <div className="flex flex-col gap-1.5">
         <SelectField
           control={form.control}
@@ -114,6 +107,53 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
         ]}
         className={TOUCH_SELECT}
       />
+
+      {selectedType === 'DEMO_REQUEST' ? (
+        <div className="sm:col-span-2 rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col gap-3">
+          <div>
+            <h4 className="m-0 text-small font-semibold text-ink-strong">
+              🏢 {t('landing.contact.form.trialCompanyTitle')}
+            </h4>
+            <p className="m-0 mt-0.5 text-caption text-ink-2">
+              {t('landing.contact.form.trialCompanyDesc')}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input
+              label={t('landing.contact.form.company')}
+              autoComplete="organization"
+              required
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.companyName?.message)}
+              {...form.register('companyName')}
+            />
+            <Input
+              label={t('landing.contact.form.companyCode')}
+              placeholder={t('landing.contact.form.companyCodePlaceholder')}
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.companyCode?.message)}
+              {...form.register('companyCode')}
+            />
+            <Input
+              label={t('landing.contact.form.taxCode')}
+              placeholder={t('landing.contact.form.taxCodePlaceholder')}
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.taxCode?.message)}
+              {...form.register('taxCode')}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="sm:col-span-2">
+          <Input
+            label={t('landing.contact.form.company')}
+            autoComplete="organization"
+            className={PUBLIC_TOUCH}
+            error={translateContactError(t, errors.companyName?.message)}
+            {...form.register('companyName')}
+          />
+        </div>
+      )}
       <div className="sm:col-span-2">
         <Textarea
           label={t('landing.contact.form.message')}

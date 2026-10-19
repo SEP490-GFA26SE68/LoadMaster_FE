@@ -70,3 +70,33 @@ test('guest contact options are strictly PRICING, DEMO_REQUEST, INQUIRY', () => 
   expect(GUEST_CONTACT_OPTIONS).toEqual(['PRICING', 'DEMO_REQUEST', 'INQUIRY'])
 })
 
+test('companyName is required when requestType is DEMO_REQUEST', () => {
+  const resultEmpty = contactFormSchema.safeParse({
+    ...VALID,
+    requestType: 'DEMO_REQUEST',
+    companyName: '',
+  })
+  expect(resultEmpty.success).toBe(false)
+  if (!resultEmpty.success) {
+    expect(resultEmpty.error.issues.some((i) => i.path.includes('companyName') && i.message === 'landing.contact.form.errors.companyRequired')).toBe(true)
+  }
+
+  const resultValid = contactFormSchema.safeParse({
+    ...VALID,
+    requestType: 'DEMO_REQUEST',
+    companyName: 'Công ty Cổ phần Vận tải Á Châu',
+    companyCode: 'ACHAU-LOG',
+    taxCode: '0312345678',
+  })
+  expect(resultValid.success).toBe(true)
+})
+
+test('companyName is optional when requestType is PRICING or INQUIRY', () => {
+  const resultPricing = contactFormSchema.safeParse({
+    ...VALID,
+    requestType: 'PRICING',
+    companyName: '',
+  })
+  expect(resultPricing.success).toBe(true)
+})
+

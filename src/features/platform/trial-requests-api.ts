@@ -9,6 +9,8 @@ export type TrialAccountRequestResponse = {
   email: string
   phoneNumber?: string | null
   companyName?: string | null
+  companyCode?: string | null
+  taxCode?: string | null
   interestedPlanId?: number | null
   interestedPlanName?: string | null
   status: TrialRequestStatus
@@ -40,6 +42,8 @@ export type CreateTrialAccountRequest = {
   email: string
   phoneNumber?: string
   companyName?: string
+  companyCode?: string
+  taxCode?: string
   interestedPlanId?: number
   note?: string
 }

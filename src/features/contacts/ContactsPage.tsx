@@ -110,7 +110,7 @@ export function ContactsPage() {
         ) : contacts.length === 0 ? (
           <EmptyState mascot="empty" title={t('contacts.page.empty')} description={t('contacts.page.emptyDescription')} />
         ) : (
-          <div className={cn('grid flex-none items-start gap-5', selected && 'xl:grid-cols-[minmax(0,1fr)_400px]')}>
+          <div className={cn('grid flex-none items-start gap-5', selected && 'xl:grid-cols-[minmax(0,1fr)_560px] 2xl:grid-cols-[minmax(0,1fr)_620px]')}>
             {/* relative: ô ẩn định vị tuyệt đối của Radix Select không thoát khung cuộn */}
             <section ref={tableRef} aria-label={t('contacts.page.title')} className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-bg">
               <FilterBar

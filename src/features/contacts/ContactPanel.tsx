@@ -185,9 +185,17 @@ export function ContactPanel({ row, handlers, handlersError, onClose }: {
           {contact.phoneNumber ? <span className="font-mono text-caption tabular-nums">{contact.phoneNumber}</span> : notGiven}
         </Detail>
         <Detail label={t('contacts.panel.plan')}><ContactPlan row={row} /></Detail>
-        <div className="col-span-2">
-          <Detail label={t('contacts.panel.company')}>{contact.companyName ?? notGiven}</Detail>
-        </div>
+        <Detail label={t('contacts.panel.company')}>{contact.companyName ?? notGiven}</Detail>
+        <Detail label="Mã công ty">
+          {contact.companyCode ? <span className="font-mono text-caption font-semibold">{contact.companyCode}</span> : notGiven}
+        </Detail>
+        {contact.taxCode ? (
+          <div className="col-span-2">
+            <Detail label="Mã số thuế">
+              <span className="font-mono text-caption font-semibold">{contact.taxCode}</span>
+            </Detail>
+          </div>
+        ) : null}
       </dl>
 
       <div className="flex flex-col gap-1.5 border-b border-line-soft px-4.5 py-4">

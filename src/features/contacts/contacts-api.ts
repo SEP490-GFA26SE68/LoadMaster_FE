@@ -13,14 +13,19 @@ import { CONTACT_HANDLER_ROLES, getMockDb, type GuestContact, type GuestContactP
 import type { Role } from '@/types/user'
 import { createTrialRequest } from '@/features/platform/trial-requests-api'
 
+import type { PageResponse, SubscriptionPlanResponse } from '@/features/platform/subscription-plans-api'
+
 export type BackendContactResponse = {
   id: number
   fullName: string
   email: string
   phoneNumber?: string | null
   companyName?: string | null
+  companyCode?: string | null
+  taxCode?: string | null
   interestedPlanId?: number | null
   interestedPlanName?: string | null
+  interestedPlanCode?: string | null
   assignedToId?: number | null
   assignedToName?: string | null
   message?: string | null
@@ -38,6 +43,8 @@ function mapBackendToGuestContact(res: BackendContactResponse): GuestContact {
     email: res.email,
     phoneNumber: res.phoneNumber ?? undefined,
     companyName: res.companyName ?? undefined,
+    companyCode: res.companyCode ?? undefined,
+    taxCode: res.taxCode ?? undefined,
     interestedPlanId: res.interestedPlanId ? String(res.interestedPlanId) : undefined,
     message: res.message ?? undefined,
     requestType: res.requestType,
@@ -150,6 +157,8 @@ export async function forwardContactToTrialRequest(
     email: contact.email,
     phoneNumber: contact.phoneNumber,
     companyName: contact.companyName,
+    companyCode: contact.companyCode,
+    taxCode: contact.taxCode,
     interestedPlanId: Number.isNaN(numericPlanId) ? undefined : numericPlanId,
     note: note ?? `Chuyển duyệt tạo tài khoản dùng thử từ yêu cầu liên hệ #${contact.id}`,
   })
@@ -166,8 +175,27 @@ export async function listContactHandlers(): Promise<ContactHandler[]> {
     .toSorted((a, b) => a.name.localeCompare(b.name, 'vi'))
 }
 
-/** Tên gói theo mã — cột "Gói quan tâm"; gồm cả gói đã ngừng bán (khách có thể đã chọn trước đó). */
+/** Tên/mã gói cước theo ID hoặc mã gói — cột "Gói quan tâm"; gồm cả gói đã ngừng bán (khách có thể đã chọn trước đó). */
 // GET /api/subscription/plans
 export async function listContactPlanNames(): Promise<ReadonlyMap<string, string>> {
-  return new Map((await getMockDb().listSubscriptionPlans()).map((plan) => [plan.id, plan.name]))
+  if (import.meta.env.MODE === 'test') {
+    return new Map((await getMockDb().listSubscriptionPlans()).map((plan) => [plan.id, plan.name]))
+  }
+
+  try {
+    const res = await api().get<PageResponse<SubscriptionPlanResponse> | SubscriptionPlanResponse[] | { data: SubscriptionPlanResponse[] }>('/api/subscription/plans', {
+      query: { size: 100 },
+    })
+    const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []
+    const map = new Map<string, string>()
+    for (const p of list) {
+      const code = p.planCode || p.name
+      map.set(String(p.id), code)
+      if (p.planCode) map.set(p.planCode, code)
+    }
+    return map
+  } catch {
+    const plans = await getMockDb().listSubscriptionPlans()
+    return new Map(plans.map((plan) => [plan.id, plan.planCode || plan.name]))
+  }
 }

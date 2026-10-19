@@ -316,10 +316,10 @@ function ApproveTrialDialog({
     item.companyName || `Công ty dùng thử ${item.fullName}`
   )
   const [companyCode, setCompanyCode] = useState(
-    `COMP-TRIAL-${Math.floor(1000 + Math.random() * 9000)}`
+    item.companyCode || `COMP-TRIAL-${Math.floor(1000 + Math.random() * 9000)}`
   )
   const [taxCode, setTaxCode] = useState(
-    `TAX-TRIAL-${Math.floor(10000000 + Math.random() * 90000000)}`
+    item.taxCode || `TAX-TRIAL-${Math.floor(10000000 + Math.random() * 90000000)}`
   )
   const [note, setNote] = useState('')
 
