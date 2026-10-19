@@ -144,6 +144,8 @@ export function createTenancy(state: DbState) {
     platformCreditTransactions: scoped(state, state.creditTransactions, 'creditTransactions', (transaction) => transaction.companyId, platformFilter),
     /** Yêu cầu hỗ trợ (FE-8-07): phiên của một công ty chỉ thấy của công ty mình (hàm của kho còn lọc theo người gửi), nền tảng thấy hết. */
     supportTickets: scoped(state, state.supportTickets, 'supportTickets', (ticket) => ticket.companyId, directoryFilter),
+    /** Yêu cầu liên hệ của khách: không thuộc công ty nào, chỉ vai trò nền tảng đọc (phiên của một công ty: `ROLE_NOT_ALLOWED`). */
+    guestContacts: scoped(state, state.guestContacts, 'guestContacts', () => undefined, platformFilter),
     users: scoped(state, state.users, 'users', (user) => user.companyId, directoryFilter),
     companies: scoped(state, state.companies, 'companies', (company) => company.id, directoryFilter),
     /** Sự kiện nhật ký phiên được đọc, cũ trước. */

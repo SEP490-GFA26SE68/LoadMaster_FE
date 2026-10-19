@@ -7,11 +7,11 @@ import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } fr
  * từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
-  systemManager: ['subscriptionPlans.manage'],
-  systemSupporter: ['support.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
+  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
-  manager: [
+  companyManager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
   ],
@@ -44,10 +44,11 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
   })
 })
 
-test('one table: 33 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  // 33 quyền của ma trận PRD v2; ba quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
-  expect(PERMISSIONS).toHaveLength(33)
-  expect(new Set(PERMISSIONS).size).toBe(33)
+test('one table: 34 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  // 33 quyền của ma trận PRD v2 cộng `contacts.handle` (yêu cầu liên hệ của khách, chốt với backend 15/10); ba quyền của nhà sản xuất và
+  // logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
+  expect(PERMISSIONS).toHaveLength(34)
+  expect(new Set(PERMISSIONS).size).toBe(34)
   expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
   expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
@@ -80,17 +81,22 @@ test('users and the audit log belong to the system administrator and the company
 test('writing to the package pool, package types and QR labels belong to the dispatcher alone, through packages.manage (FE-0-06)', () => {
   expect(ROLES.filter((role) => can(role, 'packages.manage'))).toStrictEqual(['dispatcher'])
   // Quản lý công ty xem kho kiện chỉ đọc (`packages.view`, FE-3b-03); ghi vào kho kiện là của điều phối viên
-  expect(can('manager', 'packages.view')).toBe(true)
-  expect(can('manager', 'packages.manage')).toBe(false)
+  expect(can('companyManager', 'packages.view')).toBe(true)
+  expect(can('companyManager', 'packages.manage')).toBe(false)
 })
 
 test('the dispatcher edits and approves plans, the company manager only reads them (FE-0-07); the manager edits no trip or order', () => {
   expect(ROLES.filter((role) => can(role, 'plans.approve'))).toStrictEqual(['dispatcher'])
   expect(can('dispatcher', 'optimization.run')).toBe(true)
-  expect(can('manager', 'plans.view')).toBe(true)
-  expect(can('manager', 'optimization.run')).toBe(false)
-  expect(can('manager', 'trips.edit')).toBe(false)
+  expect(can('companyManager', 'plans.view')).toBe(true)
+  expect(can('companyManager', 'optimization.run')).toBe(false)
+  expect(can('companyManager', 'trips.edit')).toBe(false)
   // Yêu cầu giao: quản lý công ty tạo và sửa, điều phối viên chỉ xem (D-72)
   expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['manager', 'dispatcher'])
   expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['manager'])
+})
+
+test('guest contact requests are handled by the three platform roles only (contacts.handle)', () => {
+  expect(ROLES.filter((role) => can(role, 'contacts.handle'))).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
+  expect(PERMISSIONS.indexOf('contacts.handle')).toBe(PERMISSIONS.indexOf('support.handle') + 1)
 })

@@ -1,7 +1,13 @@
 import { createContext, use } from 'react'
 import type { RequirementRow } from './requirements-api'
 
-export type RequirementAction = 'view' | 'edit' | 'delete' | 'assign' | 'unassign'
+export type RequirementAction =
+  | 'view'
+  | 'viewTrip'
+  | 'edit'
+  | 'delete'
+  | 'assign'
+  | 'unassign'
 
 /**
  * Phần thay đổi theo thời gian mà ô của bảng yêu cầu giao cần (quyền, hàm thao tác). Hàm `cell` khai ở mức module vì TanStack Table

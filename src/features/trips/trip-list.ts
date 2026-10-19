@@ -8,6 +8,7 @@ import type { User } from '@/types/user'
 /** Một dòng danh sách chuyến (LM-053, LM-088): mọi giá trị lấy từ kho — chuyến, xe, tài xế và revision. */
 export type TripRow = {
   readonly id: string
+  readonly tripCode?: string
   readonly name: string
   /** Ngày chạy `YYYY-MM-DD` (D-46). */
   readonly scheduledDate: string
@@ -22,8 +23,12 @@ export type TripRow = {
   readonly packageCount: number
   /** Số điểm giao của chuyến */
   readonly stopCount: number
-  /** Tỷ lệ thể tích của revision Planner mở mặc định; `null` khi chưa tối ưu */
+
+  /** Tỷ lệ lấp đầy từ thuật toán sắp xếp kiện hàng lên xe */
   readonly volumePercent: number | null
+
+  /** Có kết quả tối ưu tuyến đường đang hoạt động từ Goong */
+  readonly hasActiveRoutePlan: boolean
   readonly status: TripStatus
   /** Dòng phụ dưới chip (FE-0-05): phương án chờ duyệt / đã duyệt / lỗi thời, hoặc tiến độ kho. */
   readonly sub: TripSubStatus | null
@@ -58,6 +63,7 @@ export function tripRow(
     packageCount: expandPackages(trip.packages).instances.length,
     stopCount: trip.stops.length,
     volumePercent: shown ? shown.result.metrics.volumeUtilizationPercent : null,
+    hasActiveRoutePlan: false,
     status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
     extraSub: tripRouteSubStatus(trip) ?? tripManualSubStatus(trip),

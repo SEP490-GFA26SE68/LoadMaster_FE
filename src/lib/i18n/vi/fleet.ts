@@ -32,13 +32,17 @@ export const fleet = {
     inner: 'Lòng thùng (D × R × C)',
     payload: 'Tải tối đa',
     obstacles: 'Vật cản',
+    licensePlate: 'Biển số',
+    vehicleType: 'Loại xe',
+    company: 'Công ty',
   },
   obstacleZones: { one: '{count} vùng', other: '{count} vùng' },
   /** Trạng thái xe (D-53), key trùng `VehicleStatus`. "Đang phục vụ chuyến" gồm cả lúc xe đứng ở kho chờ xếp. */
   status: {
-    available: 'Sẵn sàng',
-    in_use: 'Đang phục vụ chuyến',
-    maintenance: 'Bảo dưỡng',
+    AVAILABLE: 'Sẵn sàng',
+    IN_TRIP: 'Đang chạy chuyến',
+    MAINTENANCE: 'Bảo dưỡng',
+    RETIRED: 'Ngừng sử dụng',
   },
   /** Bốn ô số liệu trên đầu danh sách (V2). Số tính trên cả đội xe; ba ô trạng thái bấm để lọc. */
   summary: {
@@ -64,7 +68,7 @@ export const fleet = {
   },
   detail: {
     newTitle: 'Thêm xe',
-    newDescription: 'Khai báo kích thước lòng thùng, tải trọng và vật cản để chạy tối ưu cho chuyến.',
+    newDescription: 'Khai báo thông tin xe và chọn loại xe đã được cấu hình sẵn.',
     facts: 'Lòng thùng {inner} · tải tối đa {payload} · cửa {door}',
     back: 'Quay lại đội xe',
     save: 'Lưu',
@@ -77,12 +81,14 @@ export const fleet = {
     saveFailed: 'Không lưu được xe. Thử lại.',
     inUse: 'Xe đang được dùng ở chuyến {trips}, không xoá được.',
     deleteFailed: 'Không xoá được xe. Thử lại.',
-    specTitle: 'Kích thước và tải trọng',
+    specTitle: 'Thông tin phương tiện',
     obstaclesTitle: 'Vật cản trong thùng',
     axlesTitle: 'Trục xe',
-    specHint: 'lòng thùng, cửa sau, tải trọng',
+    specHint: 'Tên xe, biển số và loại xe',
     obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
     axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
+    detailNotAvailable:
+      'Vehicle details are not connected yet.',
   },
   preview: {
     title: 'Xem trước 3D',
@@ -118,6 +124,13 @@ export const fleet = {
     doorPosition: 'Vị trí cửa',
     doorPositionRear: 'Cửa sau',
     doorPositionHint: 'Bản này chỉ hỗ trợ cửa mở phía sau.',
+    licensePlateRequired: 'Nhập biển số xe.',
+    vehicleTypeRequired: 'Chọn loại xe.',
+    licensePlate: 'Biển số xe',
+    vehicleType: 'Loại xe',
+    vehicleTypePlaceholder: 'Chọn loại xe',
+    vehicleTypeHint:
+      'Kích thước lòng thùng, tải trọng và vật cản sẽ được kế thừa từ loại xe đã chọn.',
   },
   obstacles: {
     add: 'Thêm vật cản',

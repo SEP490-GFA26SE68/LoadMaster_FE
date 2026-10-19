@@ -56,7 +56,7 @@ export const admin = {
       systemManager: 'Computer',
       systemSupporter: 'Computer',
       companyAdmin: 'Computer',
-      manager: 'Computer / tablet',
+      companyManager: 'Computer / tablet',
       dispatcher: 'Computer',
       warehouse: 'Warehouse tablet',
       driver: 'Phone',
@@ -99,6 +99,7 @@ export const admin = {
       depot: 'Warehouse / branch',
       depotPlaceholder: 'Kho Long Bình',
       role: 'Role',
+      company: 'Công ty',
       device: 'Main device: {device}',
       cancel: 'Cancel',
       save: 'Save changes',
@@ -113,6 +114,7 @@ export const admin = {
       phoneInvalid: 'Phone number must be 10 digits starting with 0',
       roleRequired: 'Choose a role',
       depotRequired: 'Enter a warehouse or branch',
+      companyRequired: 'Please select a company'
     },
     password: {
       createdTitle: 'Account created for {name}',
@@ -150,7 +152,7 @@ export const admin = {
     groups: {
       administration: 'Companies, users and log',
       billing: 'Plans and credits',
-      support: 'Customer support',
+      support: 'Customer support and guest contacts',
       dashboard: 'Dashboard and reports',
       requirements: 'Delivery requirements',
       packages: 'Package pool and QR labels',
@@ -169,6 +171,7 @@ export const admin = {
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },
       billing: { manage: 'Buy plans, top up credits, view transactions' },
       support: { create: 'Send support requests', handle: 'Handle support requests' },
+      contacts: { handle: 'Handle guest contact requests' },
       dashboard: { view: 'View the dashboard' },
       reports: { export: 'Export .xlsx reports' },
       requirements: { view: 'View delivery requirements', edit: 'Create and edit delivery requirements' },

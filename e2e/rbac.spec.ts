@@ -29,7 +29,7 @@ const HOMES: readonly (readonly [email: string, path: string, heading: string])[
 ]
 
 test('every demo account signs in and lands on the home screen of its role (FE-0-03)', async ({ page, browserErrors }) => {
-  await page.goto('/')
+  await page.goto('/dang-nhap')
   for (const [email, path, heading] of HOMES) {
     await signInWith(page, email)
     await expect.poll(() => new URL(page.url()).pathname, { message: email }).toBe(path)
@@ -40,7 +40,7 @@ test('every demo account signs in and lands on the home screen of its role (FE-0
 })
 
 test('the quick sign-in box groups accounts by platform and company; picking one fills the form (FE-0-03)', async ({ page, browserErrors }) => {
-  await page.goto('/')
+  await page.goto('/dang-nhap')
   const roles = (group: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button')
   await expect(roles('Nền tảng')).toHaveText([
     /^Quản trị hệ thống\s*quantri@loadmaster\.vn$/, /^Quản lý nền tảng\s*nentang@loadmaster\.vn$/, /^Hỗ trợ khách hàng\s*hotro@loadmaster\.vn$/,
@@ -66,12 +66,12 @@ test('the quick sign-in box groups accounts by platform and company; picking one
   expect(browserErrors).toStrictEqual([])
 })
 
-test('customer support lands on the support screen with its one nav item and is never stranded: logo, 403 and 404 lead back (FE-8-07)', async ({ page, browserErrors }) => {
-  await page.goto('/')
+test('customer support lands on the support screen with its nav items and is never stranded: logo, 403 and 404 lead back (FE-8-07)', async ({ page, browserErrors }) => {
+  await page.goto('/dang-nhap')
   await signInWith(page, 'hotro@loadmaster.vn')
   await page.waitForURL((url) => url.pathname === '/ho-tro')
   await expect(page.getByRole('link', { name: 'LoadMaster — về màn chính', exact: true })).toHaveAttribute('href', '/ho-tro')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Hỗ trợ'])
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Hỗ trợ', 'Liên hệ của khách'])
   // Menu tài khoản: vai trò, không có dòng kho (người dùng nền tảng không thuộc kho nào) và không có mục yêu cầu hỗ trợ (đó là của người dùng công ty)
   await page.getByRole('button', { name: /^Tài khoản / }).click()
   await expect(page.getByRole('menu')).toContainText('Hỗ trợ khách hàng')
@@ -91,11 +91,11 @@ test('customer support lands on the support screen with its one nav item and is 
   expect(browserErrors).toStrictEqual([])
 })
 
-test('the system administrator has companies, users and the audit log only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
+test('the system administrator has companies, users, the audit log and guest contacts only: trips, fleet and the dashboard are forbidden (FE-0-01)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'systemAdmin')
   await page.waitForURL((url) => url.pathname === '/nen-tang/cong-ty')
-  await expect(nav.getByRole('link')).toHaveText(['Công ty', 'Người dùng', 'Nhật ký'])
+  await expect(nav.getByRole('link')).toHaveText(['Công ty', 'Người dùng', 'Nhật ký', 'Liên hệ của khách'])
   for (const route of ['/', '/chuyen', `/chuyen/${SEED_TRIP}/phuong-an`, '/doi-xe', '/kho', '/tai-xe']) {
     await navigateInApp(page, route)
     await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true }), route).toBeVisible()
@@ -109,7 +109,7 @@ test('the system administrator has companies, users and the audit log only: trip
 
 test('the company manager lands on the dashboard and sees its own nav items: requirements to edit, the pool read-only (FE-0-04, FE-4b-02)', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
-  await login('/', 'manager')
+  await login('/', 'companyManager')
   await page.waitForURL((url) => url.pathname === '/')
   await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
   // Yêu cầu giao là việc của quản lý công ty (D-72): có nút tạo
@@ -189,7 +189,7 @@ test('a driver opening the admin screen gets 403 with a way back', { tag: '@phon
 })
 
 test('the company manager reads trips and plans without any write action; the approval queue is gone (FE-0-07)', async ({ page, login, browserErrors }) => {
-  await login(`/chuyen/${SEED_TRIP}`, 'manager')
+  await login(`/chuyen/${SEED_TRIP}`, 'companyManager')
   await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Chạy tối ưu', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thêm kiện', exact: true })).toHaveCount(0)

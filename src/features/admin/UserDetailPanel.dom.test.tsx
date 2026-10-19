@@ -163,11 +163,11 @@ test('thao tác từ panel: cùng luật chặn với menu; nhân sự công ty 
   expect(own.getByRole('button', { name: 'Xoá tài khoản' })).toBeDisabled()
   expect(own.getByRole('button', { name: 'Sửa thông tin' })).toBeEnabled()
   expect(own.getAllByText('Không áp dụng cho tài khoản bạn đang đăng nhập')).toHaveLength(1)
-  // Quản trị hệ thống là người của nền tảng (FE-0-01, FE-0-03): không thuộc công ty hay kho nào, ba quyền và không quyền vận hành nào
+  // Quản trị hệ thống là người của nền tảng (FE-0-01, FE-0-03): không thuộc công ty hay kho nào, bốn quyền và không quyền vận hành nào
   expect(within(own.getByRole('region', { name: 'Thông tin cá nhân' })).getAllByRole('definition').slice(2, 4).map((value) => value.textContent))
     .toStrictEqual(['Nền tảng', 'Không thuộc kho nào'])
   expect(within(own.getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem').map((chip) => chip.textContent))
-    .toStrictEqual(['Tạo và quản lý công ty khách hàng', 'Quản lý người dùng', 'Xem nhật ký hệ thống'])
+    .toStrictEqual(['Tạo và quản lý công ty khách hàng', 'Quản lý người dùng', 'Xem nhật ký hệ thống', 'Xử lý yêu cầu liên hệ của khách'])
 
   await user.click(within(await rowOf('Ngô Văn Bảo')).getByRole('button', { name: 'Ngô Văn Bảo' }))
   const panel = within(screen.getByRole('complementary', { name: 'Chi tiết tài khoản Ngô Văn Bảo' }))

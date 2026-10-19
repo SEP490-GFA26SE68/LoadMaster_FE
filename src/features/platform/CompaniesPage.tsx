@@ -28,6 +28,8 @@ export function CompaniesPage() {
   const create = useCreateCompanyMutation()
   const update = useUpdateCompanyMutation()
   const [dialog, setDialog] = useState<Dialog | null>(null)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(25)
 
   const rows = useMemo(() => query.data ?? [], [query.data])
   const columns = useMemo(() => createCompanyColumns(t), [t])
@@ -64,7 +66,22 @@ export function CompaniesPage() {
         ) : (
           <CompaniesTableContext value={context}>
             <Card className="relative flex-none overflow-hidden">
-              <DataTable data={rows} columns={columns} getRowId={(row) => row.company.id} density="spacious" appearance="paper" />
+              <DataTable
+                data={rows}
+                columns={columns}
+                getRowId={(row) => row.company.id}
+                density="spacious"
+                appearance="paper"
+                pagination={{
+                  pageIndex,
+                  pageSize,
+                  onPageChange: setPageIndex,
+                  onPageSizeChange: (newSize) => {
+                    setPageSize(newSize)
+                    setPageIndex(0)
+                  },
+                }}
+              />
             </Card>
           </CompaniesTableContext>
         )}

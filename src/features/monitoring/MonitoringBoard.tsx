@@ -81,7 +81,7 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle as="h2">{t('monitoring.map.title')}</CardTitle>
-        <Badge shape="tag" tone="mock">MOCK RESULT</Badge>
+        {fleet.some((live) => live.isMockResult) ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
         <CardMeta className="basis-full">{t('monitoring.map.note')}</CardMeta>
       </CardHeader>
       <CardBody className="flex flex-col gap-2.5">
