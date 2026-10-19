@@ -1,16 +1,6 @@
-/**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   createTrip                  → POST /api/trips
- *   savePackage, importPackages nhận thêm `overrideReason` của luật phân tách hàng (cùng endpoint: `override`, `overrideReason`)
- *   updateTripFrame             → chưa có ở BE
- *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE) — dòng kiện gõ / nhập ngay trong chuyến
- *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId} — bỏ cả một dòng kiện
- *   Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage — cùng hai endpoint trên, theo từng kiện): `trip-pool-api.ts`.
- *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages,
- *   duplicateTripPackage, fetchTripRevisions
- * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
- * Đổi xe của chuyến Đã lập kế hoạch (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trip-vehicle-api.ts`.
- */
+import { fetchVehicles } from '@/features/fleet/vehicles-api'
+import { fetchVehicleTypes } from '@/features/vehicle-types/vehicle-types-api'
+import { apiFetch } from '@/lib/api-client'
 
 import type { CargoPackage, VehicleConfig } from '@/domain/models'
 import {
@@ -32,7 +22,161 @@ import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { tripRow, type TripRow } from './trip-list'
 import { duplicatePackage, stopFields, type TripStopInput } from './trip-packages'
+export type TripListParams = {
+  page: number
+  size: number
+  search?: string
+  status?: string
+  fromDate?: string
+  toDate?: string
+  vehicleId?: string
+  driverId?: string
+  unassignedDriver?: boolean
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
+}
 
+export type TripListPageResult = {
+  data: TripRow[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
+export type TripStopApiResponse = {
+  id: number
+  tripId: number
+  deliveryRequirementId: number | null
+  stopSequence: number
+  stopName: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  status: string
+  plannedArrival: string | null
+  actualArrival: string | null
+  deadline: string | null
+}
+
+export type BackendTripDetail = {
+  trip: TripDetailApiResponse
+  stops: TripStopApiResponse[]
+}
+
+type BackendTripDetailApiResponse = {
+  success: boolean
+  data: BackendTripDetail
+}
+
+type TripListApiResponse = {
+  success: boolean
+  data: TripDetailApiResponse[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
+function tripRowFromApi(trip: TripDetailApiResponse): TripRow {
+
+  return {
+    id: String(trip.id),
+    tripCode: trip.tripCode,
+    name: trip.tripName,
+    scheduledDate: trip.departureTime.slice(0, 10),
+
+    vehicleId: String(trip.vehicleId),
+    vehicleName: [trip.vehicleName, trip.licensePlate]
+      .filter(Boolean)
+      .join(' · '),
+
+    driverId: trip.driverId === null ? null : String(trip.driverId),
+    driverName: trip.driverName,
+
+    route: '',
+    packageCount: trip.packageCount ?? 0,
+    stopCount: trip.stopCount ?? 0,
+    volumePercent: null,
+    hasActiveRoutePlan: trip.hasActiveRoutePlan ?? false,
+
+    status: trip.status,
+    sub: null,
+    extraSub: null,
+    phase:
+      trip.status === 'CANCELLED'
+        ? 'cancelled'
+        : trip.status === 'DELIVERED'
+          ? 'completed'
+          : trip.status === 'IN_TRANSIT'
+            ? 'delivering'
+            : trip.status === 'LOADING'
+              ? 'loading'
+              : 'planning',
+  }
+}
+
+export async function fetchTripsPage({
+  page,
+  size,
+  search,
+  status,
+  fromDate,
+  toDate,
+  vehicleId,
+  driverId,
+  unassignedDriver,
+  sortBy = 'departureTime',
+  sortDir = 'desc',
+}: TripListParams): Promise<TripListPageResult> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sortBy,
+    sortDir,
+  })
+
+  if (search?.trim()) {
+    params.set('search', search.trim())
+  }
+
+  if (status) {
+    params.set('status', status)
+  }
+
+  if (fromDate) {
+    params.set('fromDate', fromDate)
+  }
+
+  if (toDate) {
+    params.set('toDate', toDate)
+  }
+
+  if (vehicleId) {
+    params.set('vehicleId', vehicleId)
+  }
+
+  if (unassignedDriver) {
+    params.set('unassignedDriver', 'true')
+  } else if (driverId) {
+    params.set('driverId', driverId)
+  }
+
+  const response = await apiFetch<TripListApiResponse>(
+    `/api/trips?${params.toString()}`,
+  )
+
+  return {
+    data: response.data.map(tripRowFromApi),
+    page: response.page,
+    size: response.size,
+    totalElements: response.totalElements,
+    totalPages: response.totalPages,
+    last: response.last,
+  }
+}
 /**
  * Lớp gọi API cho chuyến hàng và kiện (LM-043, LM-088). Chi tiết chuyến, điểm giao và kiện đọc/ghi qua mock repository
  * (`@/lib/mock-db`, D-06); nối backend thật chỉ thay thân hàm, hook và component giữ nguyên.
@@ -57,21 +201,227 @@ export async function fetchTrips(): Promise<TripRow[]> {
 export type TripFrame = {
   readonly name: string
   readonly vehicleId: string
-  /** Giờ xuất phát, ISO 8601; ngày chạy của chuyến là ngày của nó theo giờ Việt Nam. */
   readonly departureAt: string
-  /** Kho xuất phát; vắng thì kho của công ty. */
-  readonly depot?: CompanyDepot
+  readonly originWarehouseId: string
   readonly driverId?: string | null
 }
 
+
+type TripCreateApiResponse = {
+  id: number
+  tripCode: string
+  tripName: string
+  status: 'DRAFT'
+}
+
+
+export type BackendRouteLeg = {
+  id: number
+  routePlanId: number
+  legSequence: number
+  startStopId: number | null
+  endStopId: number
+  distanceMeters: number | null
+  durationSeconds: number | null
+  polyline: string | null
+}
+
+export type BackendActiveRoutePlan = {
+  id: number
+  tripId: number
+  planVersion: number
+  totalDistanceMeters: number | null
+  totalDurationSeconds: number | null
+  isActive: boolean
+  createdAt: string
+  legs: BackendRouteLeg[]
+}
+
+
+
+export type TripDetailApiResponse = {
+  id: number
+  tripCode: string
+  tripName: string
+  companyId: number
+  vehicleId: number
+  vehicleName: string
+  licensePlate: string
+  driverId: number | null
+  driverName: string | null
+  createdByDispatcherId: number
+  departureTime: string
+  originName: string
+  originAddress: string | null
+  originLatitude: number
+  originLongitude: number
+  status:
+  | 'DRAFT'
+  | 'PLANNED'
+  | 'LOADING'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  createdAt: string
+  stopCount?: number | null
+  packageCount?: number | null
+  hasActiveRoutePlan?: boolean | null
+}
+
+export type CreatedTrip = {
+  id: string
+  tripCode: string
+  tripName: string
+  status: 'DRAFT'
+}
 /**
  * Tạo chuyến (FE-4b-04): kho cấp mã chuyến. Chuyến mới chưa có điểm giao và kiện — điểm giao tự sinh khi đưa yêu cầu giao vào chuyến,
  * hoặc thêm tay ở Chi tiết chuyến (D-73).
  */
 // POST /api/trips
-export async function createTrip({ name, vehicleId, departureAt, depot, driverId = null }: TripFrame): Promise<Trip> {
-  return getMockDb().createTrip({ name, vehicleId, packages: [], stops: [], driverId, departureAt, depot, scheduledDate: vnDate(new Date(departureAt)) })
+export async function createTrip({
+  name,
+  vehicleId,
+  departureAt,
+  originWarehouseId,
+  driverId = null,
+}: TripFrame): Promise<CreatedTrip> {
+
+
+
+  const vehicleIdNumber = Number(vehicleId)
+  const driverIdNumber = driverId ? Number(driverId) : null
+  const warehouseIdNumber = Number(originWarehouseId)
+
+  if (
+    !Number.isSafeInteger(warehouseIdNumber) ||
+    warehouseIdNumber <= 0
+  ) {
+    throw new Error('Invalid origin warehouse ID')
+  }
+  if (
+    !Number.isSafeInteger(vehicleIdNumber) ||
+    vehicleIdNumber <= 0 ||
+    (driverIdNumber !== null &&
+      (!Number.isSafeInteger(driverIdNumber) ||
+        driverIdNumber <= 0))
+  ) {
+    throw new Error('Invalid vehicle or driver ID')
+  }
+
+  // Chuyển giờ ISO về thời gian địa phương Việt Nam
+  // để gửi cho LocalDateTime của Spring Boot.
+  const departureDate = new Date(departureAt)
+
+  if (Number.isNaN(departureDate.getTime())) {
+    throw new Error('Invalid departure time')
+  }
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(departureDate)
+
+  const getPart = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+
+  const departureTime =
+    `${getPart('year')}-${getPart('month')}-${getPart('day')}` +
+    `T${getPart('hour')}:${getPart('minute')}:00`
+
+  const response = await apiFetch<{
+    success: boolean
+    data: TripCreateApiResponse
+  }>(
+    '/api/trips',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        tripName: name.trim(),
+        departureTime,
+        vehicleId: vehicleIdNumber,
+        driverId: driverIdNumber,
+        originWarehouseId: warehouseIdNumber,
+      }),
+    },
+  )
+
+  const created = response.data
+
+  if (!created || !Number.isSafeInteger(created.id) || created.id <= 0) {
+    throw new Error('Invalid create trip response: missing trip ID')
+  }
+
+  return {
+    id: String(created.id),
+    tripCode: created.tripCode,
+    tripName: created.tripName,
+    status: created.status,
+  }
 }
+
+
+
+export async function fetchBackendActiveRoutePlan(
+  tripId: string,
+): Promise<BackendActiveRoutePlan> {
+  const response = await apiFetch<{
+    success: boolean
+    data: BackendActiveRoutePlan
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
+  )
+
+  return response.data
+}
+
+
+
+export type RouteOptimizationResult = {
+  origin: {
+    latitude: number
+    longitude: number
+  }
+  orderedStops: number[]
+  totalTravelDurationSeconds: number
+  totalDistanceMeters: number
+  estimatedTotalDurationSeconds: number
+  deadlineMissedStops: number[]
+  segments: {
+    fromStopId: number | null
+    toStopId: number
+    durationSeconds: number
+    distanceMeters: number
+    polyline: string | null
+  }[]
+  stopSchedules: {
+    stopId: number
+    stopSequence: number
+    plannedArrival: string
+  }[]
+}
+
+export async function optimizeBackendTrip(
+  tripId: string,
+): Promise<RouteOptimizationResult> {
+  const response = await apiFetch<{
+    success: boolean
+    data: RouteOptimizationResult
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/optimize-route`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
 
 export type TripFrameChanges = {
   readonly name: string
@@ -103,26 +453,121 @@ export async function updateTripFrame(tripId: string, changes: TripFrameChanges)
   return db.updateTrip(tripId, { ...frame, ...(stops ? { stops } : {}) })
 }
 
-export type VehicleOption = { readonly vehicle: VehicleConfig; readonly status: VehicleStatus }
-
+export type VehicleOption = {
+  readonly vehicle: Pick<
+    VehicleConfig,
+    | 'id'
+    | 'name'
+    | 'innerLengthCm'
+    | 'innerWidthCm'
+    | 'innerHeightCm'
+    | 'maxPayloadKg'
+  >
+  readonly status: VehicleStatus
+}
 /**
  * Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. `depot`:
  * kho của công ty của người đang đăng nhập — kho xuất phát mặc định của chuyến mới (D-76).
  */
 export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[]; readonly depot: CompanyDepot | null }
 
+async function fetchAllPages<T>(
+  fetchPage: (page: number, size: number) => Promise<{
+    data: T[]
+    totalPages: number
+  }>,
+): Promise<T[]> {
+  const size = 100
+  const first = await fetchPage(0, size)
+  const result = [...first.data]
+
+  for (let page = 1; page < first.totalPages; page++) {
+    const response = await fetchPage(page, size)
+    result.push(...response.data)
+  }
+
+  return result
+}
 // chưa có ở BE
 export async function fetchTripFormOptions(): Promise<TripFormOptions> {
+  const [vehicles, vehicleTypes] = await Promise.all([
+    fetchAllPages((page, size) => fetchVehicles(page, size)),
+    fetchAllPages((page, size) => fetchVehicleTypes(page, size)),
+  ])
+
+  const typeById = new Map(
+    vehicleTypes.map((type) => [type.id, type]),
+  )
+
   const db = getMockDb()
-  const [vehicles, states, users, companies] = await Promise.all([db.listVehicles(), db.listVehicleStates(), db.listUsers(), db.listCompanies()])
-  const statusById = new Map(states.map((state) => [state.vehicleId, state.status]))
-  // Phiên của một công ty chỉ thấy công ty mình; kho chưa có phiên (test) thì lấy công ty đầu tiên, như công ty mặc định của kho
-  const company = companies.find((item) => item.id === db.sessionUser()?.companyId) ?? companies[0]
+
+  const [drivers, companies] = await Promise.all([
+    fetchDriverOptions(),
+    db.listCompanies(),
+  ])
+
+  const company = companies.find(
+    (item) => item.id === db.sessionUser()?.companyId,
+  ) ?? companies[0]
+
+  const options: VehicleOption[] = vehicles.flatMap((vehicle) => {
+    const type = typeById.get(vehicle.vehicleTypeId)
+
+    if (!type) return []
+
+    // Xe đã ngừng sử dụng không được đưa vào danh sách chọn.
+    if (vehicle.status === 'RETIRED') return []
+
+    const status: VehicleStatus =
+      vehicle.status === 'AVAILABLE'
+        ? 'available'
+        : vehicle.status === 'IN_TRIP'
+          ? 'in_use'
+          : 'maintenance'
+
+    return [{
+      vehicle: {
+        id: vehicle.id,
+        name: vehicle.name,
+        innerLengthCm: type.cargoLengthCm,
+        innerWidthCm: type.cargoWidthCm,
+        innerHeightCm: type.cargoHeightCm,
+        maxPayloadKg: type.payloadKg,
+      },
+      status,
+    }]
+  })
+
   return {
-    vehicles: vehicles.map((vehicle) => ({ vehicle, status: statusById.get(vehicle.id) ?? 'available' })),
-    drivers: users.filter((user) => user.role === 'driver'),
+    vehicles: options,
+    drivers: drivers.map((driver) => ({
+      id: String(driver.id),
+      fullName: driver.fullName,
+      email: '',
+      phone: '',
+      role: 'driver' as const,
+      status: 'active' as const,
+      companyId: company?.id,
+      lastActiveAt: null,
+    })),
     depot: company?.depot ?? null,
   }
+}
+
+type DriverOptionApi = {
+  id: number
+  fullName: string
+}
+
+
+
+async function fetchDriverOptions(): Promise<DriverOptionApi[]> {
+  const response = await apiFetch<{
+    success: boolean
+    data: DriverOptionApi[]
+  }>('/api/trips/driver-options')
+
+  return response.data
 }
 
 export type TripDetail = {
@@ -191,7 +636,100 @@ export async function cancelTrip(tripId: string, reason: string): Promise<Trip> 
 export async function fetchPackages(tripId: string): Promise<CargoPackage[]> {
   return (await getMockDb().getTrip(tripId)).packages
 }
+export async function fetchTripById(
+  tripId: string,
+): Promise<TripDetailApiResponse> {
+  const response = await apiFetch<{
+    success: boolean
+    data: TripDetailApiResponse
+  }>(`/api/trips/${encodeURIComponent(tripId)}`)
 
+  return response.data
+}
+
+export async function fetchBackendTripDetail(
+  tripId: string,
+): Promise<BackendTripDetail> {
+  const response = await apiFetch<BackendTripDetailApiResponse>(
+    `/api/trips/${encodeURIComponent(tripId)}/detail`,
+  )
+
+  return response.data
+}
+
+
+/**
+ * POST /api/trips/{tripId}/delivery-requirements/{requirementId}
+ *
+ * Dispatcher gán toàn bộ yêu cầu giao vào Trip.
+ * Backend tự kiểm tra điều kiện và tạo DeliveryStop.
+ */
+export async function assignBackendRequirementToTrip(
+  tripId: string,
+  requirementId: string,
+): Promise<TripStopApiResponse> {
+  const response = await apiFetch<{
+    success: boolean
+    data: TripStopApiResponse
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}` +
+    `/delivery-requirements/${encodeURIComponent(requirementId)}`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
+
+function mapTripFromApi(api: TripDetailApiResponse): Trip {
+  // Lưu ý: Spring LocalDateTime không mang thông tin múi giờ.
+  // departureTime và createdAt được hiểu là giờ Việt Nam.
+  const vietnamIso = (value: string): string =>
+    /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+      ? value
+      : `${value}+07:00`
+
+  const departureAt = vietnamIso(api.departureTime)
+
+  const phase: Trip['phase'] =
+    api.status === 'CANCELLED'
+      ? 'cancelled'
+      : api.status === 'DELIVERED'
+        ? 'completed'
+        : api.status === 'IN_TRANSIT'
+          ? 'delivering'
+          : api.status === 'LOADING'
+            ? 'loading'
+            : 'planning'
+
+  return {
+    id: String(api.id),
+    companyId: String(api.companyId),
+    name: api.tripName,
+    vehicleId: String(api.vehicleId),
+    driverId: api.driverId === null ? null : String(api.driverId),
+
+    departureAt,
+    scheduledDate: api.departureTime.slice(0, 10),
+
+    depot: {
+      name: api.originName,
+      address: api.originAddress ?? '',
+      lat: api.originLatitude,
+      lng: api.originLongitude,
+    },
+
+    phase,
+    createdAt: vietnamIso(api.createdAt),
+
+    // Chỉ dành cho chuyến mới chưa được gán dữ liệu.
+    stops: [],
+    packages: [],
+    inputVersion: 0,
+  }
+}
 /** Thêm kiện mới hoặc thay kiện cùng mã; kiện đổi thì `inputVersion` tăng và revision cũ thành lỗi thời (D-31). */
 // POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE)
 export async function savePackage(tripId: string, pkg: CargoPackage, overrideReason?: string): Promise<Trip> {

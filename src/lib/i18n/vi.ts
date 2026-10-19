@@ -42,6 +42,11 @@ import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
 import { pricing } from './vi/pricing'
+import { warehouseCustomers } from './vi/warehouseCustomers'
+import { backendTripRoute } from './vi/backendTripRoute'
+import { companyWarehouses } from './vi/companyWarehouses'
+import { tripWarehouse } from './vi/tripWarehouse'
+import { packageStatus } from './vi/packageStatus'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -97,4 +102,9 @@ export const vi = {
   contacts,
   landing,
   pricing,
+  warehouseCustomers,
+  backendTripRoute,
+  companyWarehouses,
+  tripWarehouse,
+  packageStatus,
 } as const

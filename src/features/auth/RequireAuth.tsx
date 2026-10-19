@@ -14,20 +14,35 @@ import { PUBLIC_HOME } from './landing'
  * họ chọn nên không có gì để ghi nhớ. Người vừa đăng xuất vẫn về màn đăng nhập.
  */
 export function RequireAuth() {
-  const { user, status } = useAuth()
+  const { user, initialized } = useAuth()
   const location = useLocation()
-  // Đã có người đăng nhập lúc layout này đang mở: layout giữ nguyên khi đăng xuất (user từ có sang null). Không chỉ xét lúc mount — ở
-  // chế độ Keycloak phiên được mở lại sau khi layout đã mount, nên lúc mount chưa có ai. Ghi ngay trong lúc vẽ (state suy từ prop).
+
+  // Đã có người đăng nhập lúc layout này đang mở: layout giữ nguyên khi đăng xuất (user từ có sang null).
   const [seenUser, setSeenUser] = useState(user !== null)
   if (user !== null && !seenUser) setSeenUser(true)
 
-  // Chế độ Keycloak: chưa biết còn phiên hay không thì chưa quyết — không chớp sang màn đăng nhập rồi quay lại
-  if (status === 'restoring') return null
+  // Chờ Keycloak kiểm tra phiên đăng nhập
+  if (!initialized) {
+    return null
+  }
 
+  // Chưa đăng nhập thì chuyển về trang đăng nhập hoặc trang giới thiệu nếu vào root
   if (!user) {
-    if (seenUser) return <Navigate to="/dang-nhap" replace state={null} />
-    if (location.pathname === '/') return <Navigate to={PUBLIC_HOME + location.search + location.hash} replace />
-    return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />
+    if (seenUser) {
+      return <Navigate to="/dang-nhap" replace state={null} />
+    }
+    if (location.pathname === '/') {
+      return <Navigate to={PUBLIC_HOME + location.search + location.hash} replace />
+    }
+    return (
+      <Navigate
+        to="/dang-nhap"
+        replace
+        state={{
+          from: location.pathname + location.search + location.hash,
+        }}
+      />
+    )
   }
 
   return <Outlet />

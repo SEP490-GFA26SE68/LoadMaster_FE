@@ -4,7 +4,7 @@ import { landingPath, ROLE_HOME } from './landing'
 
 test('each role lands on its own screen when nothing else was asked for', () => {
   expect(landingPath('dispatcher')).toBe('/chuyen')
-  expect(landingPath('manager')).toBe('/')
+  expect(landingPath('companyManager')).toBe('/')
   expect(landingPath('warehouse')).toBe('/kho')
   expect(landingPath('driver')).toBe('/tai-xe')
   expect(landingPath('companyAdmin')).toBe('/nguoi-dung')

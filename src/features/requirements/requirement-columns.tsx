@@ -1,5 +1,4 @@
 import { createColumnHelper, type CellContext } from '@tanstack/react-table'
-import { Link } from 'react-router'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import type { RequirementRow } from './requirements-api'
@@ -62,32 +61,55 @@ function DeadlineCell({ value }: { value: string }) {
 }
 
 function PackagesCell({ row }: { row: RequirementRow }) {
-  const t = useT()
   const format = useFormat()
+
+  const received = row.requirement.receivedPackageCount
+    ?? row.packages.length
+
+  const expected = row.requirement.expectedPackageCount
+
   return (
     <span className="flex min-w-0 flex-col">
-      <span className="text-ink-1">{t('requirements.packageCount', { count: row.packages.length })}</span>
-      {' '}
-      <span className="font-mono text-caption text-ink-3 tabular-nums">{format.weight(row.totalKg)}</span>
+      <span className="text-ink-1">
+        {expected == null
+          ? `${received} kiện`
+          : `${received}/${expected} kiện`}
+      </span>
+
+      {row.packages.length > 0 ? (
+        <span className="font-mono text-caption text-ink-3 tabular-nums">
+          {format.weight(row.totalKg)}
+        </span>
+      ) : null}
     </span>
   )
 }
 
+
 function TripCell({ row }: { row: RequirementRow }) {
-  const t = useT()
-  if (!row.trip) return <span className="text-ink-3">{t('requirements.notAssigned')}</span>
-  return (
-    <span className="flex min-w-0 flex-col whitespace-normal">
-      <Link to={`/chuyen/${row.trip.id}`} className={`line-clamp-1 font-medium text-ink-strong hover:text-primary ${FOCUS}`}>
-        {row.trip.name}
-      </Link>
-      {' '}
-      <span className="font-mono text-caption text-ink-3">
-        {row.stopNumber === undefined ? row.trip.id : `${row.trip.id} · ${t('requirements.stop', { number: row.stopNumber })}`}
+  const { onAction } = useRequirementsTable()
+  const tripCode = row.requirement.tripCode
+
+  if (!tripCode) {
+    return (
+      <span className="text-small text-ink-3">
+        —
       </span>
-    </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onAction('viewTrip', row)}
+      className={`font-mono text-caption font-medium text-primary hover:text-primary-hover ${FOCUS}`}
+      title={`Xem chuyến #${tripCode}`}
+    >
+      {tripCode}
+    </button>
   )
 }
+
 
 function ActionsHeader() {
   const t = useT()
@@ -100,7 +122,8 @@ const deadlineCell = (info: Cell<string>) => <DeadlineCell value={info.getValue(
 const priorityCell = (info: Cell<number>) => <RequirementPriorityTag priority={info.row.original.requirement.priority} />
 const packagesCell = (info: Cell<number>) => <PackagesCell row={info.row.original} />
 const statusCell = (info: Cell<number>) => <RequirementStatusBadge status={info.row.original.status} />
-const tripCell = (info: Cell<string>) => <TripCell row={info.row.original} />
+const tripCell = (info: Cell<string>) =>
+  <TripCell row={info.row.original} />
 const actionsCell = (info: Cell<unknown>) => <RequirementRowMenu row={info.row.original} />
 
 /**
@@ -114,9 +137,24 @@ export function requirementColumns(t: TFunction) {
     helper.accessor((row) => row.requirement.destinationName, { id: 'destination', header: t('requirements.columns.destination'), enableSorting: true, meta: { width: '28%' } satisfies ColumnMeta, cell: destinationCell }),
     helper.accessor((row) => row.requirement.deadline, { id: 'deadline', header: t('requirements.columns.deadline'), enableSorting: true, sortDescFirst: false, meta: { width: '124px' } satisfies ColumnMeta, cell: deadlineCell }),
     helper.accessor((row) => REQUIREMENT_PRIORITY_ORDER.indexOf(row.requirement.priority), { id: 'priority', header: t('requirements.columns.priority'), enableSorting: true, meta: { width: '120px' } satisfies ColumnMeta, cell: priorityCell }),
-    helper.accessor((row) => row.packages.length, { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
+    helper.accessor(
+      (row) => row.requirement.receivedPackageCount ?? row.packages.length,
+      { id: 'packages', header: t('requirements.columns.packages'), enableSorting: true, meta: { width: '110px' } satisfies ColumnMeta, cell: packagesCell }),
     helper.accessor((row) => REQUIREMENT_STATUS_ORDER.indexOf(row.status), { id: 'status', header: t('requirements.columns.status'), enableSorting: true, sortDescFirst: false, meta: { width: '168px' } satisfies ColumnMeta, cell: statusCell }),
-    helper.accessor((row) => row.trip?.name ?? '', { id: 'trip', header: t('requirements.columns.trip'), enableSorting: true, meta: { width: '22%' } satisfies ColumnMeta, cell: tripCell }),
+    helper.accessor(
+      (row) => row.requirement.tripId ?? '',
+      {
+        id: 'trip',
+        header: t('requirements.columns.trip'),
+        enableSorting: true,
+        meta: {
+          width: '120px',
+        } satisfies ColumnMeta,
+        cell: tripCell,
+      },
+    ),
+
     helper.display({ id: 'actions', header: ActionsHeader, meta: { width: '56px', align: 'right' } satisfies ColumnMeta, cell: actionsCell }),
+
   ])
 }

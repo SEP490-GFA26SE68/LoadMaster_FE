@@ -34,7 +34,7 @@ test('the dispatcher gets plan approvals, loading, delivery and cancellation eve
   // một điểm giao không phải loại báo; EV-2 đúng mốc 7 ngày còn, EV-1 quá mốc
   expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-13', 'EV-12', 'EV-9', 'EV-7', 'EV-6', 'EV-4', 'EV-3', 'EV-2'])
   // Quản lý công ty không nhận việc của kho kiện
-  expect(ids(selectNotifications(events.slice(0, 1), { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual([])
+  expect(ids(selectNotifications(events.slice(0, 1), { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual([])
 })
 
 test('the manager gets completed and cancelled trips and delivery issues; not warehouse progress or plan approvals', () => {
@@ -45,7 +45,7 @@ test('the manager gets completed and cancelled trips and delivery issues; not wa
     event('EV-2', '2026-09-13T09:00:00.000Z', 'US-0004', 'delivery.issue'),
     event('EV-1', '2026-09-12T09:00:00.000Z', 'US-0004', 'delivery.completed'),
   ]
-  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })
 
 test('the system administrator gets account events by others and failed sign-ins, not routine sign-ins and no trip events', () => {
@@ -68,7 +68,7 @@ test('the platform manager and customer support have no bell; the warehouse and 
     event('EV-1', '2026-09-14T10:00:00.000Z', 'US-0001', 'trip.cancelled'),
   ]
   expect([hasNotifications('systemManager'), hasNotifications('systemSupporter')]).toStrictEqual([false, false])
-  expect([hasNotifications('dispatcher'), hasNotifications('manager'), hasNotifications('systemAdmin'), hasNotifications('companyAdmin')])
+  expect([hasNotifications('dispatcher'), hasNotifications('companyManager'), hasNotifications('systemAdmin'), hasNotifications('companyAdmin')])
     .toStrictEqual([true, true, true, true])
   expect(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW)).toStrictEqual([])
   expect(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW)).toStrictEqual([])
@@ -91,7 +91,7 @@ test('manual confirmations (FE-6-04): a new one reaches the dispatcher; a reject
   expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-5'])
   // Điều phối viên khác nhận xác nhận tay mới gửi; quyết định duyệt / từ chối không phải loại báo cho điều phối
   expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-1'])
-  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual([])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual([])
 })
 
 test('a trip notification opens the screen of the warehouse or the driver; other roles follow the audit log link', () => {
@@ -125,7 +125,7 @@ test('shortages and damaged packages reach who must act (FE-6-02, FE-6-05): the 
   // Điều phối viên khác (US-PN-03 ở đây chỉ là một mã người dùng): kho báo thiếu và kiện hỏng; quyết định của đồng nghiệp thì không báo
   expect(ids(selectNotifications(events, { id: 'US-0009', role: 'dispatcher' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
   // Quản lý công ty: chỉ kiện của một yêu cầu giao — yêu cầu đó thành giao thiếu
-  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-6', 'EV-3'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual(['EV-6', 'EV-3'])
   // Nhân viên kho: quyết định cho kiện chính mình báo thiếu
   expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-6', 'EV-4'])
   expect(ids(selectNotifications(events, { id: 'US-0011', role: 'warehouse' }, NOW))).toStrictEqual(['EV-5'])
@@ -136,7 +136,7 @@ test('the warehouse is told about a trip cancelled while it was loading — to u
   const events = [cancelled('EV-3', { reason: 'Xe hỏng', loaded: 110 }), cancelled('EV-2', { reason: 'Xe hỏng', loaded: 0 }), cancelled('EV-1', { reason: 'Khách huỷ' })]
   expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-3', 'EV-2'])
   expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual([])
-  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'manager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
+  expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
 })
 
 test('a pickup request reaches the dispatcher, and the decision on it reaches only the driver of that trip', () => {
