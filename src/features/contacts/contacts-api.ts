@@ -98,7 +98,11 @@ export async function updateGuestContact(contactId: string, patch: GuestContactP
     const assignedId = patch.assignedToId ? Number(patch.assignedToId) : null
     const payload: Record<string, unknown> = {}
     if (patch.status !== undefined) payload.status = patch.status
-    if (patch.assignedToId !== undefined) payload.assignedToId = assignedId
+    if (patch.assignedToId !== undefined) {
+      if (assignedId !== null && !Number.isNaN(assignedId)) {
+        payload.assignedToId = assignedId
+      }
+    }
     if (patch.note !== undefined) payload.note = patch.note
 
     if (!Number.isNaN(numericId)) {

@@ -98,7 +98,7 @@ export function ContactsPage() {
           : undefined}
         description={t('pageHero.contacts')}
       />
-      <div className={showTable ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className={cn('min-h-0 flex-1 px-shell pb-6', showTable ? 'sky-overlap' : 'py-6', selected ? 'overflow-auto md:overflow-hidden' : 'overflow-auto')}>
         {query.isPending ? (
           <div className="flex justify-center py-16"><Spinner label={t('contacts.page.loading')} /></div>
         ) : query.isError ? (
@@ -110,7 +110,7 @@ export function ContactsPage() {
         ) : contacts.length === 0 ? (
           <EmptyState mascot="empty" title={t('contacts.page.empty')} description={t('contacts.page.emptyDescription')} />
         ) : (
-          <div className={cn('grid flex-none items-start gap-5', selected && 'xl:grid-cols-[minmax(0,1fr)_560px] 2xl:grid-cols-[minmax(0,1fr)_620px]')}>
+          <div className={cn('grid flex-none items-start gap-5', selected && 'md:grid-cols-[minmax(0,1fr)_390px] lg:grid-cols-[minmax(0,1fr)_480px] xl:grid-cols-[minmax(0,1fr)_540px] 2xl:grid-cols-[minmax(0,1fr)_600px]')}>
             {/* relative: ô ẩn định vị tuyệt đối của Radix Select không thoát khung cuộn */}
             <section ref={tableRef} aria-label={t('contacts.page.title')} className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-bg">
               <FilterBar
@@ -140,7 +140,7 @@ export function ContactsPage() {
               />
             </section>
             {selected ? (
-              <aside className="min-w-0">
+              <aside className="min-w-0 md:sticky md:top-0 h-full max-h-[calc(100vh-140px)] flex flex-col">
                 <ContactPanel
                   key={selected.contact.id}
                   row={selected}

@@ -101,105 +101,99 @@ test('the name opens the request on the right; closing it gives the focus back t
   await waitFor(() => expect(screen.getByRole('link', { name: 'Mở yêu cầu LH-002 của Phạm Thu Trang' })).toHaveFocus())
 })
 
-test('status, assignee and note of a new request are saved together; then the button dims again and the panel title takes the focus', async () => {
+test('supporter can click "Đảm nhận" on a new contact to assign themselves and set status to in-progress; no status or assignee comboboxes exist', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=LH-001')
   const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)
-  const save = within(panel).getByRole('button', { name: 'Lưu thay đổi' })
-  expect(save).toBeDisabled()
-  expect(save).toHaveAccessibleDescription('Chưa có gì thay đổi để lưu')
 
-  await user.click(within(panel).getByRole('combobox', { name: 'Trạng thái' }))
-  await user.click(await screen.findByRole('option', { name: 'Đang xử lý' }))
-  await user.click(within(panel).getByRole('combobox', { name: 'Người nhận việc' }))
-  await user.click(await screen.findByRole('option', { name: 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng' }))
-  await user.type(within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' }), 'Đã gửi báo giá gói Pro qua email.')
-  expect(save).toBeEnabled()
-  await user.click(save)
+  // Không cho supporter tự ý thay đổi bằng combobox
+  expect(within(panel).queryByRole('combobox', { name: 'Trạng thái' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('combobox', { name: 'Người nhận việc' })).not.toBeInTheDocument()
 
-  expect(await screen.findByText('3 yêu cầu · 0 mới', {}, SLOW)).toBeInTheDocument()
-  await waitFor(() => expect(within(panel).getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled())
-  expect(within(panel).getByRole('heading', { level: 2, name: 'Lê Hoàng Nam' })).toHaveFocus()
+  // Không có nút Hủy cho contact
+  expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
+
+  // Nút "Đảm nhận"
+  const claimBtn = within(panel).getByRole('button', { name: 'Đảm nhận' })
+  await user.click(claimBtn)
+
+  expect(await screen.findByText('Đã nhận xử lý yêu cầu liên hệ!', {}, SLOW)).toBeInTheDocument()
   expect(await getMockDb().getGuestContact('LH-001')).toMatchObject({
-    status: 'IN_PROGRESS', assignedToId: SUPPORTER, assignedToName: 'Tạ Thị Ngọc Ánh', note: 'Đã gửi báo giá gói Pro qua email.',
+    status: 'IN_PROGRESS',
+    assignedToId: SUPPORTER,
   })
-  expect((await getMockDb().listEvents({ targetId: 'LH-001' })).map((event) => event.action)).toStrictEqual(['contact.updated'])
 })
 
-test('a change another person saved while the panel is open is shown, not overwritten: only the field edited here is sent', async () => {
-  const user = userEvent.setup()
-  const client = renderContacts('?lien-he=LH-001')
-  const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)
-  const status = within(panel).getByRole('combobox', { name: 'Trạng thái' })
-  const assignee = within(panel).getByRole('combobox', { name: 'Người nhận việc' })
-  const note = within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' })
-  const save = within(panel).getByRole('button', { name: 'Lưu thay đổi' })
-
-  await asOtherUser(PLATFORM_MANAGER, (db) => db.updateGuestContact('LH-001', { status: 'RESOLVED', assignedToId: PLATFORM_MANAGER }))
-  await act(() => client.invalidateQueries({ queryKey: ['contacts'] }))
-  await waitFor(() => expect(status).toHaveTextContent('Đã giải quyết'))
-  expect(assignee).toHaveTextContent('Đinh Quang Huy · Quản lý nền tảng')
-  expect(save).toBeDisabled()
-
-  // Đang sửa ghi chú thì người kia đóng yêu cầu: ô trạng thái theo kho, chữ đang nhập giữ nguyên
-  await user.clear(note)
-  await user.type(note, 'Khách hẹn gọi lại tuần sau.')
-  await asOtherUser(PLATFORM_MANAGER, (db) => db.updateGuestContact('LH-001', { status: 'CLOSED' }))
-  await act(() => client.invalidateQueries({ queryKey: ['contacts'] }))
-  await waitFor(() => expect(status).toHaveTextContent('Đã đóng'))
-  expect(note).toHaveValue('Khách hẹn gọi lại tuần sau.')
-  await user.click(save)
-
-  await waitFor(() => expect(within(panel).getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled())
-  expect(await getMockDb().getGuestContact('LH-001')).toMatchObject({
-    status: 'CLOSED', assignedToId: PLATFORM_MANAGER, assignedToName: 'Đinh Quang Huy', note: 'Khách hẹn gọi lại tuần sau.',
-  })
-  expect((await getMockDb().listEvents({ targetId: 'LH-001' }))[0]).toMatchObject({ actorId: SUPPORTER, params: { fields: 'note' } })
-})
-
-test('a save the store refuses keeps everything that was entered and says which field is wrong', async () => {
-  const user = userEvent.setup()
-  renderContacts('?lien-he=LH-002')
-  const panel = await screen.findByRole('region', { name: 'Phạm Thu Trang' }, SLOW)
-  await user.click(within(panel).getByRole('combobox', { name: 'Người nhận việc' }))
-  await user.click(await screen.findByRole('option', { name: 'Đinh Quang Huy · Quản lý nền tảng' }))
-  // Người được chọn bị khoá trước khi bấm lưu
-  await asOtherUser(SYSTEM_ADMIN, (db) => db.setUserStatus(PLATFORM_MANAGER, 'suspended'))
-  await user.click(within(panel).getByRole('button', { name: 'Lưu thay đổi' }))
-
-  expect(await screen.findByText('Mục "Người nhận việc" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.', {}, SLOW)).toBeInTheDocument()
-  expect(within(panel).getByRole('combobox', { name: 'Người nhận việc' })).toHaveTextContent('Đinh Quang Huy · Quản lý nền tảng')
-  expect(within(panel).getByRole('button', { name: 'Lưu thay đổi' })).toBeEnabled()
-  expect((await getMockDb().getGuestContact('LH-002')).assignedToId).toBe(SUPPORTER)
-})
-
-test('a locked person who still holds a request is shown by name but cannot be picked again', async () => {
+test('pricing contact has "Đã giải quyết" and "Liên hệ thất bại" buttons; clicking "Liên hệ thất bại" sets status to CLOSED', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=LH-001')
   const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)
-  const assignee = within(panel).getByRole('combobox', { name: 'Người nhận việc' })
-  await waitFor(() => expect(assignee).toHaveTextContent('Đinh Quang Huy'))
-  await user.click(assignee)
-  expect(await screen.findByRole('option', { name: 'Đinh Quang Huy' })).toHaveAttribute('aria-disabled', 'true')
-  expect(screen.queryByRole('option', { name: 'Đinh Quang Huy · Quản lý nền tảng' })).not.toBeInTheDocument()
-  expect(screen.getByRole('option', { name: 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng' })).not.toHaveAttribute('aria-disabled')
+
+  const resolveBtn = within(panel).getByRole('button', { name: 'Đã giải quyết' })
+  const failBtn = within(panel).getByRole('button', { name: 'Liên hệ thất bại' })
+  expect(resolveBtn).toBeInTheDocument()
+  expect(failBtn).toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
+
+  await user.click(failBtn)
+  expect(await screen.findByText('Đã cập nhật trạng thái liên hệ thất bại.', {}, SLOW)).toBeInTheDocument()
+  expect(await getMockDb().getGuestContact('LH-001')).toMatchObject({
+    status: 'CLOSED',
+  })
 })
 
-test('when plan names cannot be read the row shows the plan code; a guest who chose no plan still reads "none chosen"', async () => {
-  vi.spyOn(getMockDb(), 'listSubscriptionPlans').mockRejectedValueOnce(new Error('offline'))
-  renderContacts()
-  const rows = await dataRows()
-  await waitFor(() => expect(within(rows[0]!).getAllByRole('cell')[4]).toHaveTextContent('PLAN-002'))
-  expect(within(rows[1]!).getAllByRole('cell')[4]).toHaveTextContent('Chưa chọn')
+test('pricing contact can be resolved via "Đã giải quyết", setting status to RESOLVED', async () => {
+  const user = userEvent.setup()
+  // Reset LH-001 về IN_PROGRESS để test giải quyết
+  await getMockDb().updateGuestContact('LH-001', { status: 'IN_PROGRESS' })
+  renderContacts('?lien-he=LH-001')
+  const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)
+
+  const resolveBtn = within(panel).getByRole('button', { name: 'Đã giải quyết' })
+  await user.click(resolveBtn)
+  expect(await screen.findByText('Đã cập nhật yêu cầu thành đã giải quyết!', {}, SLOW)).toBeInTheDocument()
+  expect(await getMockDb().getGuestContact('LH-001')).toMatchObject({
+    status: 'RESOLVED',
+  })
 })
 
-test('when the people who can take requests cannot be read the assignee field says so', async () => {
-  vi.spyOn(getMockDb(), 'listUsers').mockRejectedValueOnce(new Error('offline'))
+test('panel container confines scrolling within its block with max-height, flex-col and overscroll-contain', async () => {
+  renderContacts('?lien-he=LH-001')
+  const panel = await screen.findByRole('region', { name: 'Lê Hoàng Nam' }, SLOW)
+  expect(panel).toHaveClass('max-h-[calc(100vh-140px)]', 'overflow-hidden', 'flex', 'flex-col')
+  expect(panel.querySelector('.overflow-y-auto.overscroll-contain')).toBeInTheDocument()
+})
+
+test('demo request contact replaces "Đã giải quyết" with forwarding to System Manager; no "Hủy" button exists', async () => {
+  const user = userEvent.setup()
   renderContacts('?lien-he=LH-002')
   const panel = await screen.findByRole('region', { name: 'Phạm Thu Trang' }, SLOW)
-  const assignee = within(panel).getByRole('combobox', { name: 'Người nhận việc' })
-  await waitFor(() => expect(assignee).toHaveAccessibleDescription('Chưa tải được danh sách người nhận việc. Tải lại trang để thử lại.'))
-  expect(assignee).toHaveTextContent('Tạ Thị Ngọc Ánh')
+
+  // LH-002 là DEMO_REQUEST: Không có nút "Đã giải quyết", có nút chuyển cho System Manager
+  expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
+
+  const forwardBtn = within(panel).getByRole('button', { name: /Chuyển giao cho System Manager|Chuyển Quản lý duyệt tạo tài khoản/i })
+  expect(forwardBtn).toBeInTheDocument()
+})
+
+test('internal note can be updated via "Lưu ghi chú" button', async () => {
+  const user = userEvent.setup()
+  renderContacts('?lien-he=LH-002')
+  const panel = await screen.findByRole('region', { name: 'Phạm Thu Trang' }, SLOW)
+
+  const noteInput = within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' })
+  const saveNoteBtn = within(panel).getByRole('button', { name: 'Lưu ghi chú' })
+  expect(saveNoteBtn).toBeDisabled()
+
+  await user.type(noteInput, ' Đã liên hệ sơ bộ.')
+  expect(saveNoteBtn).toBeEnabled()
+  await user.click(saveNoteBtn)
+
+  expect(await screen.findByText('Đã lưu ghi chú nội bộ thành công!', {}, SLOW)).toBeInTheDocument()
+  expect(await getMockDb().getGuestContact('LH-002')).toMatchObject({
+    note: expect.stringContaining('Đã liên hệ sơ bộ.'),
+  })
 })
 
 test('a list that fails to load says so and loads again with "Try again"', async () => {
