@@ -45,18 +45,20 @@ export function createTripColumns(t: TFunction, format: Formatter) {
     helper.accessor('id', {
       header: t('trips.list.id'),
       enableSorting: true,
-      // "TRIP-2026-0914" mono 12 px cùng mũi tên sắp xếp
-      meta: { width: '136px' } satisfies TripColumnMeta,
-      cell: (info) => (
-        <Link
-          to={`/chuyen/${info.getValue()}`}
-          // Dòng cũng mở chi tiết khi bấm: chặn nổi bọt để không đẩy hai mục lịch sử
-          onClick={(event) => event.stopPropagation()}
-          className="rounded-sm font-mono text-caption text-ink-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {info.getValue()}
-        </Link>
-      ),
+      meta: { width: '176px' } satisfies TripColumnMeta,
+      cell: (info) => {
+        const trip = info.row.original
+
+        return (
+          <Link
+            to={`/chuyen/${trip.id}`}
+            onClick={(event) => event.stopPropagation()}
+            className="rounded-sm font-mono text-caption text-ink-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            {trip.tripCode ?? trip.id}
+          </Link>
+        )
+      },
     }),
     helper.accessor('vehicleName', {
       header: t('trips.list.vehicle'),
@@ -111,8 +113,38 @@ export function createTripColumns(t: TFunction, format: Formatter) {
         )
       },
     }),
+
+    helper.accessor('hasActiveRoutePlan', {
+      header: t('trips.list.routeOptimization'),
+      enableSorting: true,
+      meta: {
+        width: '150px',
+      } satisfies TripColumnMeta,
+      cell: (info) => {
+        const optimized = info.getValue()
+
+        return optimized ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-caption font-medium text-emerald-700">
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-emerald-500"
+            />
+            {t('trips.list.routeOptimized')}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-caption font-medium text-slate-600">
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-slate-400"
+            />
+            {t('trips.list.routeNotOptimized')}
+          </span>
+        )
+      },
+    }),
+
     helper.accessor('status', {
-      header: t('trips.list.status'),
+      header: t('trips.list.statusColumn'),
       meta: { width: '184px' } satisfies TripColumnMeta,
       // Dòng phụ (LM-104) nằm dưới chip: tiến độ kho hoặc phương án lỗi thời — hai dòng vừa hàng 56 px
       cell: (info) => (

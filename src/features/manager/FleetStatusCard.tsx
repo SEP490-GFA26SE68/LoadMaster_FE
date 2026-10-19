@@ -5,16 +5,34 @@ import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
 import { VEHICLE_STATUSES } from '@/features/fleet/vehicle-status'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
+import type { VehicleStatus } from '@/features/fleet/vehicles-api'
 import { cn } from '@/lib/utils'
 import type { DashboardSummary } from './dashboard-summary'
 
 /** Icon và tint như ô trạng thái ở màn Đội xe (mục 4): sẵn sàng → xanh lá, vận hành → xanh dương, cần chú ý → hổ phách. */
-const STATUS_GLYPH: Record<VehicleStatus, { icon: LucideIcon; tint: string }> = {
-  available: { icon: CircleCheck, tint: 'bg-tint-green text-tint-green-fg' },
-  in_use: { icon: Truck, tint: 'bg-tint-blue text-tint-blue-fg' },
-  maintenance: { icon: Wrench, tint: 'bg-tint-amber text-tint-amber-fg' },
+
+const STATUS_GLYPH: Record<
+  VehicleStatus,
+  { icon: LucideIcon; tint: string }
+> = {
+  AVAILABLE: {
+    icon: CircleCheck,
+    tint: 'bg-tint-green text-tint-green-fg',
+  },
+  IN_TRIP: {
+    icon: Truck,
+    tint: 'bg-tint-blue text-tint-blue-fg',
+  },
+  MAINTENANCE: {
+    icon: Wrench,
+    tint: 'bg-tint-amber text-tint-amber-fg',
+  },
+  RETIRED: {
+    icon: Truck,
+    tint: 'bg-tint-amber text-tint-amber-fg',
+  },
 }
+
 
 /**
  * Thẻ đội xe (V2): số xe đang phục vụ chuyến trên tổng, rồi ba trạng thái theo thứ tự và nhãn của màn Đội xe. Đếm trên cả đội lúc

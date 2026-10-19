@@ -104,7 +104,7 @@ test('the manager sees a request still waiting and the reason it cannot decide, 
   const seed = (await db.listPickupRequests('TRIP-009'))[0]
   if (!seed) throw new Error('seed phải có một yêu cầu')
   await db.createPickupRequest('TRIP-009', { pickup: seed.pickup, delivery: seed.delivery, packages: [{ ...seed.packages[0]!, handlingClass: 'FRAGILE' }] })
-  renderCard('manager')
+  renderCard('companyManager')
   const item = within(await itemOf('PKR-003'))
   expect(item.getByText('Chờ duyệt')).toBeInTheDocument()
   expect(item.queryByRole('button', { name: /Duyệt yêu cầu|Từ chối yêu cầu/ })).not.toBeInTheDocument()

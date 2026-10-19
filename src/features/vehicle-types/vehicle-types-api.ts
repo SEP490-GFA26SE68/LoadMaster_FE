@@ -22,6 +22,8 @@ type PageResponse<T> = {
   last: boolean
 }
 
+
+
 type VehicleTypeApi = {
   id: number
   name: string
@@ -34,6 +36,7 @@ type VehicleTypeApi = {
   maxCogOffsetRatio: number
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleApi[]
+  vehicleCount: number
 }
 
 type VehicleTypeObstacleApi = {
@@ -71,6 +74,7 @@ export type VehicleType = {
 
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacle[]
+  vehicleCount: number
 }
 
 export type VehicleTypeObstacle = {
@@ -125,6 +129,7 @@ function mapVehicleType(
         loadBearing:
           obstacle.loadBearing,
       })),
+      vehicleCount: item.vehicleCount,
   }
 }
 

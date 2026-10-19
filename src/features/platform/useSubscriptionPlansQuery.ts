@@ -6,6 +6,9 @@ import {
   listSubscriptionPlans,
   setSubscriptionPlanActive,
   updateSubscriptionPlan,
+  type CreatePlanInput,
+  type ListPlansParams,
+  type UpdatePlanInput,
 } from './subscription-plans-api'
 
 /**
@@ -13,10 +16,12 @@ import {
  * công ty (gói đang theo, danh sách gói đang bán) và thẻ Credit của Thiết lập tối ưu đọc lại. `staleTime: 0` — số công ty dùng đổi ở màn
  * khác.
  */
-const KEY = ['billing', 'plans'] as const
-
-export function useSubscriptionPlansQuery() {
-  return useQuery({ queryKey: KEY, queryFn: listSubscriptionPlans, staleTime: 0 })
+export function useSubscriptionPlansQuery(params: ListPlansParams = {}) {
+  return useQuery({
+    queryKey: ['billing', 'plans', params],
+    queryFn: () => listSubscriptionPlans(params),
+    staleTime: 0,
+  })
 }
 
 function useRefreshBilling() {
@@ -26,20 +31,41 @@ function useRefreshBilling() {
 
 export function useCreatePlanMutation() {
   const refresh = useRefreshBilling()
-  return useMutation({ mutationFn: (input: PlanInput) => createSubscriptionPlan(input), onSuccess: refresh })
+  return useMutation({
+    mutationFn: (input: CreatePlanInput | PlanInput) => createSubscriptionPlan(input),
+    onSuccess: refresh,
+  })
 }
 
 export function useUpdatePlanMutation() {
   const refresh = useRefreshBilling()
-  return useMutation({ mutationFn: ({ planId, patch }: { planId: string; patch: PlanPatch }) => updateSubscriptionPlan(planId, patch), onSuccess: refresh })
+  return useMutation({
+    mutationFn: ({ planId, patch }: { planId: string; patch: UpdatePlanInput | PlanPatch }) =>
+      updateSubscriptionPlan(planId, patch),
+    onSuccess: refresh,
+  })
 }
 
 export function useSetPlanActiveMutation() {
   const refresh = useRefreshBilling()
-  return useMutation({ mutationFn: ({ planId, active }: { planId: string; active: boolean }) => setSubscriptionPlanActive(planId, active), onSuccess: refresh })
+  return useMutation({
+    mutationFn: ({
+      planId,
+      active,
+      existingPlan,
+    }: {
+      planId: string
+      active: boolean
+      existingPlan?: Partial<UpdatePlanInput>
+    }) => setSubscriptionPlanActive(planId, active, existingPlan),
+    onSuccess: refresh,
+  })
 }
 
 export function useDeletePlanMutation() {
   const refresh = useRefreshBilling()
-  return useMutation({ mutationFn: (planId: string) => deleteSubscriptionPlan(planId), onSuccess: refresh })
+  return useMutation({
+    mutationFn: (planId: string) => deleteSubscriptionPlan(planId),
+    onSuccess: refresh,
+  })
 }

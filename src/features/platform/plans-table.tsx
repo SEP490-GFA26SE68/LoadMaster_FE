@@ -34,19 +34,31 @@ const mono = 'font-mono text-caption text-ink-1 tabular-nums'
 
 function PlanCell({ row }: { row: PlanRow }) {
   const t = useT()
+  const code = row.plan.planCode || row.plan.id
+  const hasLimits = row.plan.maxVehicles != null || row.plan.maxMonthlyJobs != null
+  const limits = hasLimits
+    ? [
+        row.plan.maxVehicles ? `${row.plan.maxVehicles} xe` : null,
+        row.plan.maxMonthlyJobs ? `${row.plan.maxMonthlyJobs} chuyến/tháng` : null,
+      ]
+        .filter(Boolean)
+        .join(' • ')
+    : null
+
   return (
     <span className="flex min-w-0 flex-col items-start gap-1 whitespace-normal">
       <span className="line-clamp-2 font-medium text-ink-strong">{row.plan.name}</span>
-      <span className="font-mono text-caption text-ink-3">{row.plan.id}</span>
+      <span className="font-mono text-caption text-ink-3">{code}</span>
+      {limits ? <span className="text-caption text-ink-2 font-medium">{limits}</span> : null}
       {row.plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
     </span>
   )
 }
 
 function PriceCell({ row }: { row: PlanRow }) {
-  const t = useT()
   const format = useFormat()
-  return <span className={mono}>{t('platform.perMonth', { price: format.currency(row.plan.priceVnd) })}</span>
+  const cycle = row.plan.billingCycle === 'YEARLY' ? ' / năm' : ' / tháng'
+  return <span className={mono}>{format.currency(row.plan.priceVnd)}{cycle}</span>
 }
 
 function CreditsCell({ row }: { row: PlanRow }) {

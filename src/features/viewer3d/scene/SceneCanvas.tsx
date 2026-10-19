@@ -55,23 +55,30 @@ export type SceneCanvasProps = {
   obstaclePicking?: boolean
   /** Xe để canh khung camera, mặc định `model.vehicle`. Xem trước ở form xe giữ tham chiếu khi chỉ vật cản đổi (LM-042). */
   frameVehicle?: VehicleConfig
+  /** Tăng lên để camera về lại đúng `preset` dù preset không đổi (xem `CameraRig`). */
+  fitRequest?: number
   /**
    * Vật cản đang làm nổi do bên ngoài giữ (LM-042). Có prop này thì bấm vật cản gọi `onObstacleSelect` thay cho callout,
    * và vật cản đó được tô `--highlight` qua `setColorAt`, không thêm draw call.
    */
   highlightedObstacleId?: string | null
   onObstacleSelect?: (id: string | null) => void
+  /** Xem trước ở form xe: vách sau có ô cửa đúng kích thước cửa của xe và viền thùng rõ hơn; mặc định cánh cửa phủ cả mặt sau. */
+  specView?: boolean
   children?: ReactNode
 }
+
+/** Độ sáng thêm của thùng ở xem trước form xe (`sceneMaterials`). */
+const SPEC_VIEW_LIFT = 2.2
 
 /** Shared renderer; experience wrappers own controls/workflows, not another scene engine. */
 export function SceneCanvas({
   experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
   animateLoading = true, decoration = true, xraySelection, showMass, zones, unloadMotion, onPerfSample, obstaclePicking = true,
-  frameVehicle, highlightedObstacleId, onObstacleSelect, children,
+  frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, children,
 }: SceneCanvasProps) {
-  const materials = useMemo(() => sceneMaterials(), [])
+  const materials = useMemo(() => sceneMaterials(specView ? SPEC_VIEW_LIFT : 1), [specView])
   const colorContext = useMemo(() => createColorContext(model), [model])
   const [cx, cy, cz] = containerCenter(model.vehicle)
   const visibleSelection = placements.find((p) => p.id === selectedId && p.id !== hiddenId && semantics?.appearanceById.get(p.id)?.visibility !== 'hidden')
@@ -100,10 +107,11 @@ export function SceneCanvas({
     camera={{ fov: 38, near: 0.1, far: 160, position: [8.5, 5.2, 7] }}
     onPointerMissed={() => handleSelect(null)} style={{ position: 'absolute', inset: 0 }}>
     <SceneLighting shadows={flags.shadows} />
-    <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit focus={focus}
+    <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
       vehicleDecoration={decoration && flags.decoration} onUserControl={onUserControl} />
     <group position={[-cx, -cy, -cz]}>
-      <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion} />
+      <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
+        doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} />
       {decoration && flags.decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} /> : null}
       <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
         step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
@@ -113,7 +121,8 @@ export function SceneCanvas({
       <ObstacleInstances obstacles={model.vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
         highlightedId={highlightedObstacleId ?? null} />
       {obstacle ? <ObstacleCallout key={obstacle.id} obstacle={obstacle} /> : null}
-      <RearDoorCue vehicle={model.vehicle} />
+      {/* Form xe đã có nhãn "Cửa rộng × cao" ngay trên ô cửa */}
+      {specView ? null : <RearDoorCue vehicle={model.vehicle} />}
       {zones?.length ? <ZoneStrips zones={zones} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} /> : null}
       {showMass ? <CargoMassMarker placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} /> : null}
       {inspected ? <ExtractionCorridor key={`${inspected.id}:${warningSignal}`} target={inspected} vehicle={model.vehicle} blockers={semantics?.blockers ?? []} reducedMotion={flags.reducedMotion} /> : null}
