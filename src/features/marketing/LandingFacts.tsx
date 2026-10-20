@@ -69,7 +69,7 @@ export function LandingFacts() {
             <dd className="order-first m-0 font-display text-figure font-bold tracking-[-0.02em] whitespace-nowrap text-sky-text tabular-nums font-stretch-112%">
               <Odometer value={fact.value} delay={100} />
             </dd>
-            <Reveal as="dd" kind="fade" delay={300} className="m-0 text-small text-sky-text-3 pointer-coarse:text-body-lg">
+            <Reveal as="dd" kind="fade" delay={300} className="m-0 text-small text-pretty text-sky-text-3 pointer-coarse:text-body-lg">
               {fact.source}
             </Reveal>
           </Reveal>

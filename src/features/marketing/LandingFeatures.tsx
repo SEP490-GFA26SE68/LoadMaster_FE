@@ -13,15 +13,16 @@ import { SectionHeading } from './SectionHeading'
 /** Bốn vai trò cùng làm trên một phương án (tên vai trò lấy từ nhánh `roles`, icon là thiết bị của vai trò). */
 const ROLES = ['dispatcher', 'warehouse', 'driver', 'manager'] as const satisfies readonly Role[]
 
-const TILE_TITLE = 'm-0 font-display text-h2 font-[650] tracking-[-0.2px] font-stretch-108%'
-const TILE_TEXT = 'm-0 text-body-lg'
+const TILE_TITLE = 'm-0 font-display text-h2 font-[650] tracking-[-0.2px] text-balance font-stretch-108%'
+const TILE_TEXT = 'm-0 text-body-lg text-pretty'
 
 /**
  * Một ô của lưới: tiêu đề, một câu, hình minh hoạ dồn xuống đáy ô; ô tối là thẻ nền tối đặc như thẻ xem trước 3D. Mỗi ô là một cổng hiện
- * ra riêng (nhô lên khi chính nó cuộn tới), `index` so le các ô cùng hàng 70 ms một bậc; hình bên trong chạy theo mốc của ô.
+ * ra riêng (nhô lên khi chính nó cuộn tới), `index` so le các ô cùng hàng 70 ms một bậc; hình bên trong chạy theo mốc của ô. `at`: ngưỡng
+ * lộ riêng của ô cao hơn ô cùng hàng, để hai ô mở cùng lúc.
  */
-function Tile({ title, text, dark = false, index, className, children }: {
-  title: string; text: string; dark?: boolean; index: number; className?: string; children: ReactNode
+function Tile({ title, text, dark = false, index, at, className, children }: {
+  title: string; text: string; dark?: boolean; index: number; at?: number; className?: string; children: ReactNode
 }) {
   const body = (
     <>
@@ -33,7 +34,7 @@ function Tile({ title, text, dark = false, index, className, children }: {
     </>
   )
   return (
-    <Reveal index={index} className={cn('flex min-w-0 flex-col', className)}>
+    <Reveal index={index} at={at} className={cn('flex min-w-0 flex-col', className)}>
       {dark ? (
         <div className="flex min-w-0 flex-1 flex-col gap-6 rounded-lg border border-border-dark bg-panel-dark p-5 sm:p-7">{body}</div>
       ) : (
@@ -85,7 +86,8 @@ export function LandingFeatures() {
     <section id="tinh-nang" aria-labelledby="landing-features" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
       <SectionHeading id="landing-features" title={t('landing.features.title')} lede={t('landing.features.lede')} />
       <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-        <Tile dark index={0} title={t('landing.features.loading.title')} text={t('landing.features.loading.text')} className="md:col-span-2 lg:row-span-2">
+        {/* Ô tối cao hai hàng (từ 1.024 px) cạnh ô một hàng: 7 % của nó ≈ 15 % của ô bên cạnh, hai ô hiện cùng lúc */}
+        <Tile dark index={0} at={0.07} title={t('landing.features.loading.title')} text={t('landing.features.loading.text')} className="md:col-span-2 lg:row-span-2">
           <ZoneDiagram />
         </Tile>
         <Tile index={1} title={t('landing.features.plans.title')} text={t('landing.features.plans.text')}>

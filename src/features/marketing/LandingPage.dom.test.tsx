@@ -52,7 +52,8 @@ afterEach(() => {
 
 test('a guest sees what the app does and how to get in touch: sign-in in the header, no sign-up or purchase', async () => {
   renderLanding('/gioi-thieu')
-  expect(screen.getByRole('heading', { level: 1, name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' })).toBeInTheDocument()
+  // Từ ghép của tiêu đề nối bằng khoảng trắng không ngắt (không xuống dòng giữa "thùng xe"); tên truy cập giữ nguyên ký tự đó
+  expect(screen.getByRole('heading', { level: 1, name: 'Tận dụng thùng\u00a0xe, dỡ đúng thứ\u00a0tự, theo\u00a0dõi tới điểm\u00a0giao cuối.' })).toBeInTheDocument()
   const banner = within(screen.getByRole('banner'))
   expect(banner.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap')
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
@@ -75,7 +76,7 @@ test('every number on the page has a source: code constants, the plan catalogue 
 
   const facts = within(screen.getByRole('region', { name: 'Con số kiểm được' }))
   expect(facts.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'hướng đặt được thử cho mỗi kiện',
+    'hướng đặt tối đa của một kiện',
     'phương án cho mỗi lần chạy tối ưu',
     'bước làm tròn kích thước',
     'để xếp 1.000 kiện, đủ ba phương án',

@@ -31,12 +31,18 @@ function createDriver() {
   const flags = { sample: false, frame: false, reduced: false, due: false, visible: typeof IntersectionObserver !== 'function', hidden: false }
   let snap: Snapshot = { time: 0, status: 'idle' }
   let sentAt = Number.NEGATIVE_INFINITY
+  /** Thời gian đã báo trên kênh nhanh: kênh đó chỉ báo khi thời gian đổi — mỗi lần báo là khung 3D vẽ thêm một khung hình. */
+  let fastTime = clock.time()
   let frame = 0
   let last = 0
   let live = false
 
   const publish = (force: boolean) => {
-    for (const listener of fast) listener()
+    const time = clock.time()
+    if (time !== fastTime) {
+      fastTime = time
+      for (const listener of fast) listener()
+    }
     const now = performance.now()
     const next: Snapshot = { time: clock.time(), status: clock.status() }
     if (next.time === snap.time && next.status === snap.status) return
@@ -69,7 +75,7 @@ function createDriver() {
   }
 
   return {
-    /** Thời gian mỗi khung hình, cho khung 3D. */
+    /** Thời gian của chuyện cho khung 3D: báo mỗi khi thời gian đổi (mỗi khung hình lúc đang chạy), đứng yên thì không báo. */
     story: { time: () => clock.time(), subscribe: (listener) => { fast.add(listener); return () => { fast.delete(listener) } } } satisfies StorySource,
     subscribe: (listener: () => void) => { slow.add(listener); return () => { slow.delete(listener) } },
     snapshot: () => snap,

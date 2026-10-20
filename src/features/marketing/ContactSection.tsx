@@ -52,7 +52,7 @@ function ContactNextSteps() {
               className="grid size-9 flex-none place-items-center rounded-md border border-landing-hairline bg-sky-glass text-cyan-300">
               <Icon className="size-5" strokeWidth={1.5} />
             </Reveal>
-            <span className="pt-1">{t(key)}</span>
+            <span className="pt-1 text-pretty">{t(key)}</span>
           </Reveal>
         ))}
       </ol>

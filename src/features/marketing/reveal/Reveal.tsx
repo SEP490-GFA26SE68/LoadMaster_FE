@@ -19,6 +19,11 @@ type RevealProps = Omit<HTMLAttributes<HTMLElement>, 'children' | 'className'> &
   delay?: number
   /** Thứ tự trong nhóm: so le `index × --stagger-item` (70 ms) và đặt `--i` cho CSS riêng. */
   index?: number
+  /**
+   * Ngưỡng lộ riêng (0–1) thay 15 %, chỉ khi khối tự làm cổng (`data-reveal-at`). Observer chung báo ở 0, 7 % và 15 %, nên ngưỡng khác
+   * mở ở bậc kế tiếp từ dưới lên.
+   */
+  at?: number
   className?: string
   children?: ReactNode
   ref?: Ref<HTMLElement>
@@ -57,7 +62,7 @@ function useMergedRef(gate: RefCallback<HTMLElement> | null, outer: Ref<HTMLElem
  * thì chạy theo cổng bao quanh, mốc cộng dồn. Chuyển động tắt: vẽ đúng phần tử như không bọc gì. Chạy xong nhận `data-done` — CSS bỏ hẳn
  * animation, phần tử về đúng style của nó.
  */
-export function Reveal({ as = 'div', kind = 'rise', group = false, delay = 0, index, className, children, style, ref, onAnimationEnd, ...rest }: RevealProps) {
+export function Reveal({ as = 'div', kind = 'rise', group = false, delay = 0, index, at, className, children, style, ref, onAnimationEnd, ...rest }: RevealProps) {
   const motion = useRevealMotion()
   const parent = useContext(RevealScopeContext)
   const gateRef = useRevealRef<HTMLElement>()
@@ -84,6 +89,7 @@ export function Reveal({ as = 'div', kind = 'rise', group = false, delay = 0, in
           ref: mergedRef,
           'data-reveal': group ? undefined : kind,
           'data-reveal-group': group ? '' : undefined,
+          'data-reveal-at': at !== undefined && !parent ? at : undefined,
           className,
           style: withVars({ '--reveal-delay': delayValue(scope), '--i': index }, style),
           onAnimationEnd: handleAnimationEnd,

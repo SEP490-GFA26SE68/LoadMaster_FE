@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { createContext, useContext, type CSSProperties } from 'react'
 import type { Projector } from '@/lib/isometric'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +11,17 @@ import { cn } from '@/lib/utils'
 /** Khung chung của mọi cảnh (đơn vị SVG); cảnh co giãn giữ tỉ lệ trong vùng giữa của khung dính. */
 export const SCENE_WIDTH = 400
 export const SCENE_HEIGHT = 220
+
+/**
+ * Cỡ chữ tối thiểu của cảnh (đơn vị SVG): 0 với con trỏ chuột — mọi nhãn đúng cỡ thiết kế; máy cảm ứng: đủ để chữ hiện ra ít nhất 16 px
+ * theo tỉ lệ co của hình (`useSceneTextFloor`). Nhãn lớn lên thì khung của nó (ô, nhãn tag, mốc điểm giao) lớn theo.
+ */
+export const SceneTextFloor = createContext(0)
+
+/** Cỡ chữ của một nhãn trong cảnh: cỡ thiết kế, hoặc cỡ tối thiểu khi lớn hơn. */
+export function useSceneFont(size: number): number {
+  return Math.max(size, useContext(SceneTextFloor))
+}
 
 /** Lớp tô của bốn màu điểm giao — viết đủ tên để Tailwind quét thấy. */
 export const STOP_FILL = { 1: 'fill-stop-1', 2: 'fill-stop-2', 3: 'fill-stop-3', 4: 'fill-stop-4' } as const
@@ -62,12 +73,21 @@ export function IsoBlock({ box, project, piece }: { box: SceneBox; project: Proj
   )
 }
 
-/** Mốc điểm giao như `StopDot`: tròn màu điểm giao, số tối ở giữa (chữ tối trên bốn màu đầu — `stopForeground`), viền nền thẻ. */
+/** Bán kính của mốc điểm giao bán kính thiết kế `r` khi số trong nó là `font` (cỡ đã qua `useSceneFont`): mốc lớn theo số. */
+export function stopRadius(r: number, font: number): number {
+  return Math.max(r, font / 1.1)
+}
+
+/**
+ * Mốc điểm giao như `StopDot`: tròn màu điểm giao, số tối ở giữa (chữ tối trên bốn màu đầu — `stopForeground`), viền nền thẻ. Số cỡ
+ * `r × 1,1`, hay cỡ tối thiểu của cảnh khi lớn hơn — mốc lớn theo.
+ */
 export function StopMark({ stop, x, y, r = 16, piece }: { stop: SceneStop; x: number; y: number; r?: number; piece?: Piece }) {
+  const font = useSceneFont(Math.round(r * 1.1))
   return (
     <g className={piece?.className} style={piece?.style}>
-      <circle cx={x} cy={y} r={r} className={cn(STOP_FILL[stop], 'stroke-surface')} strokeWidth={3} />
-      <text x={x} y={y} dy="0.36em" textAnchor="middle" fontSize={Math.round(r * 1.1)} className="fill-ink-strong font-display font-bold">
+      <circle cx={x} cy={y} r={stopRadius(r, font)} className={cn(STOP_FILL[stop], 'stroke-surface')} strokeWidth={3} />
+      <text x={x} y={y} dy="0.36em" textAnchor="middle" fontSize={font} className="fill-ink-strong font-display font-bold">
         {stop}
       </text>
     </g>

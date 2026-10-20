@@ -8,9 +8,12 @@ import { createContext, type CSSProperties } from 'react'
 /** Người nghe một cổng: `instant` khi cổng được mở bằng lưới an toàn (focus, in trang) — nhảy thẳng tới trạng thái cuối. */
 export type RevealListener = { readonly current: ((instant: boolean) => void) | undefined }
 
-/** Ngưỡng lộ: 15 % phần tử, đáy khung nhìn bớt 10 %. Thêm ngưỡng 0 để biết lúc một phần tử quá cao (không thể lộ 15 %) vừa vào khung. */
+/**
+ * Ngưỡng lộ: 15 % phần tử, đáy khung nhìn bớt 10 %. Thêm ngưỡng 0 để biết lúc một phần tử quá cao (không thể lộ 15 %) vừa vào khung, và
+ * ngưỡng 7 % cho cổng tự đặt ngưỡng thấp hơn (`data-reveal-at`, `Reveal at`) — vd. ô cao gấp đôi ô bên cạnh, để hai ô cùng hàng mở cùng lúc.
+ */
 const THRESHOLD = 0.15
-const OBSERVER_INIT: IntersectionObserverInit = { threshold: [0, THRESHOLD], rootMargin: '0px 0px -10% 0px' }
+const OBSERVER_INIT: IntersectionObserverInit = { threshold: [0, 0.07, THRESHOLD], rootMargin: '0px 0px -10% 0px' }
 /** Phần tử cao hơn năm lần khung nhìn không bao giờ lộ được 15 %: coi là lộ ngay khi vào khung. */
 const TALL_RATIO = 0.2
 
@@ -20,10 +23,14 @@ const INSTANT = 'data-instant'
 
 export type RevealRegistry = ReturnType<typeof createRevealRegistry>
 
-/** Lộ đủ: 15 % phần tử, hoặc phần tử quá cao đã vào khung; không có `rootBounds` (khung lồng khác gốc) thì chỉ cần giao cắt. */
+/**
+ * Lộ đủ: 15 % phần tử (hay ngưỡng riêng của cổng, `data-reveal-at`), hoặc phần tử quá cao đã vào khung; không có `rootBounds` (khung
+ * lồng khác gốc) thì chỉ cần giao cắt.
+ */
 function enough(entry: IntersectionObserverEntry): boolean {
   if (!entry.isIntersecting) return false
-  if (entry.intersectionRatio >= THRESHOLD - 1e-3) return true
+  const need = entry.target instanceof HTMLElement && entry.target.dataset.revealAt ? Number(entry.target.dataset.revealAt) : THRESHOLD
+  if (entry.intersectionRatio >= need - 1e-3) return true
   const root = entry.rootBounds
   const height = entry.boundingClientRect.height
   return !root || (height > 0 && root.height / height < TALL_RATIO)

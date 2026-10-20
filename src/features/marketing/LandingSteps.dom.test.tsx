@@ -19,7 +19,7 @@ const TITLES = ['Nhập kiện và yêu cầu giao', 'Lập chuyến, tối ưu 
 const NOTES = [
   'Mỗi kiện có nhãn QR riêng, nên lúc soạn, xếp hay dỡ đều đối chiếu được.',
   'Điểm giao sinh ra từ yêu cầu giao; tối ưu tuyến xếp thứ tự đi và tính giờ đến dự kiến.',
-  'Bạn xem các phương án cạnh nhau, chỉnh tay nếu cần rồi mới duyệt — kho chỉ nhận bản đã duyệt.',
+  'Chỉ bản đã duyệt mới tới kho và tài xế; đổi xe hay kiện sau đó thì phải tối ưu lại.',
   'Kho đối chiếu từng kiện khi xếp, tài xế đối chiếu khi dỡ — đều theo phương án đã duyệt.',
 ]
 const DONE = 'Giao xong điểm cuối là có báo cáo chuyến.'

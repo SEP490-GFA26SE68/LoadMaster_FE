@@ -47,6 +47,8 @@ export function StageViews({ view, onChange, layout, className }: {
       {STAGE_VIEWS.map((key) => (
         <button key={key} type="button" aria-pressed={key === view} onClick={() => onChange(key)}
           className={cn(CONTROL, 'text-center aria-pressed:bg-cyan-400/20 aria-pressed:text-sky-text aria-pressed:shadow-[inset_0_0_0_1px_var(--cyan-300)]',
+            // Chế độ tương phản cao bỏ nền và bóng: viền đáy trong suốt được tô màu chữ của hệ thống, thành vạch 4 px dưới góc đang chọn
+            'forced-colors:aria-pressed:border-b-4 forced-colors:aria-pressed:border-transparent',
             segmented && 'min-h-14 px-2 text-body-lg text-balance')}>
           {t(`landing.stage.view.${key}`)}
         </button>
@@ -112,7 +114,7 @@ export function StageRoute({ stopNames, className }: { stopNames: readonly strin
         className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-2 p-0 md:flex md:flex-wrap md:items-center md:gap-x-2.5">
         <li className={ROUTE_ITEM}>
           <span aria-hidden className="grid size-6 flex-none place-items-center rounded-sm bg-panel-dark text-cyan-300 shadow-[inset_0_0_0_1px_var(--border-dark)] pointer-coarse:size-7">
-            <Warehouse className="size-3.5" strokeWidth={1.5} />
+            <Warehouse className="size-4" strokeWidth={1.5} />
           </span>
           <span className="font-medium text-sky-text">{t('landing.stage.depot')}</span>
         </li>

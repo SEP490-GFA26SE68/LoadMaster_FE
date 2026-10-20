@@ -84,6 +84,12 @@ export type SceneCanvasProps = {
 
 const CANVAS_STYLE = { position: 'absolute', inset: 0 } as const
 const STATIC_CANVAS_STYLE = { ...CANVAS_STYLE, pointerEvents: 'none', touchAction: 'pan-y' } as const
+/**
+ * Khung không nhận thao tác (trang giới thiệu) không đo lại khi trang cuộn: R3F mặc định đo cả lúc cuộn, mỗi lần cuộn dừng là `top` đổi,
+ * `setSize` chạy và cảnh vẽ thêm một khung dù không có gì đổi (kể cả khi khung đã khuất). Đổi cỡ vẫn đo qua ResizeObserver như cũ; không
+ * gì trong viewer3d đọc `size.top` / `size.left` (sự kiện con trỏ dùng `offsetX` / `offsetY`).
+ */
+const NO_SCROLL_RESIZE = { scroll: false } as const
 
 /** Độ sáng thêm của thùng ở xem trước form xe (`sceneMaterials`). */
 const SPEC_VIEW_LIFT = 2.2
@@ -119,7 +125,7 @@ export function SceneCanvas({
     onPerformanceSample(sample)
     onPerfSample?.(sample)
   }, [onPerformanceSample, onPerfSample])
-  return <><Canvas data-experience={experience} frameloop="demand" dpr={flags.dpr}
+  return <><Canvas data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
     shadows={flags.shadows ? 'percentage' : false} flat
     gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
     camera={{ fov, near: 0.1, far: 160, position: [8.5, 5.2, 7] }}

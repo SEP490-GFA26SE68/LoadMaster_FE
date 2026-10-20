@@ -6,19 +6,28 @@ import { I18nProvider } from '@/lib/i18n'
 import { installFakeIntersectionObserver, type FakeIntersectionObserverControl } from '@/test/intersection-observer'
 import { installMatchMedia, type MatchMediaControl } from '@/test/match-media'
 import { LandingStage } from './LandingStage'
+import { RevealProvider } from './reveal'
 
 /**
  * Khung 3D kể chuyện của phần mở đầu trang giới thiệu, với bộ tối ưu mô phỏng thật (chuyến mẫu 366 kiện). jsdom không có WebGL nên cổng
  * của khung được ép mở và khung 3D là bản giả: báo đã vẽ khung hình đầu, hoặc báo hỏng. Thời gian của chuyện chạy bằng đồng hồ giả
  * (`requestAnimationFrame`, `performance`) — chỉ đi khi test tua; 1,2 giây chờ trước khi chuyện bắt đầu vẫn là giờ thật.
  */
-const stage = vi.hoisted(() => ({ gate: 'go' as 'off' | 'wait' | 'go', fail: false }))
+const stage = vi.hoisted(() => ({ gate: 'go' as 'off' | 'wait' | 'go', fail: false, never: false, redraws: 0 }))
 
 vi.mock('./useStageGate', () => ({ useStageGate: () => stage.gate }))
 vi.mock('@/features/viewer3d/LandingStageViewer', async () => {
   const { createElement, useEffect } = await import('react')
-  function FakeViewer({ view, onReady, onFail }: { view: string; onReady: () => void; onFail: () => void }) {
+  // `never`: như tab ẩn — không khung hình nào được vẽ, khung 3D không báo gì. `redraws`: số lần chuyện xin khung 3D vẽ lại
+  function FakeViewer({ view, story, onReady, onFail }: {
+    view: string
+    story: { subscribe: (listener: () => void) => () => void }
+    onReady: () => void
+    onFail: () => void
+  }) {
+    useEffect(() => story.subscribe(() => { stage.redraws += 1 }), [story])
     useEffect(() => {
+      if (stage.never) return
       if (stage.fail) onFail()
       else onReady()
     }, [onReady, onFail])
@@ -37,6 +46,8 @@ beforeEach(() => {
   sessionStorage.clear()
   stage.gate = 'go'
   stage.fail = false
+  stage.never = false
+  stage.redraws = 0
 })
 afterEach(() => {
   vi.useRealTimers()
@@ -44,17 +55,26 @@ afterEach(() => {
   io?.restore()
   media = undefined
   io = undefined
+  Reflect.deleteProperty(document, 'hidden')
 })
 
-function renderStage() {
+/** `motion`: bọc trong `RevealProvider` (cần IntersectionObserver giả) để Lumo gõ chữ theo thời gian thay vì hiện cả câu ngay. */
+function renderStage({ motion = false } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const stageUi = motion ? <RevealProvider><LandingStage /></RevealProvider> : <LandingStage />
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider>
-        <LandingStage />
-      </I18nProvider>
+      <I18nProvider>{stageUi}</I18nProvider>
     </QueryClientProvider>,
   )
+}
+
+/** Ẩn hay hiện tab: `document.hidden` của jsdom luôn `false`. */
+function setHidden(hidden: boolean) {
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+  act(() => {
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
 }
 
 const figure = () => screen.getByRole('figure', { name: 'Chuyến mẫu' })
@@ -73,12 +93,12 @@ test('the sample trip plays once: app chips on the trip card, Lumo narrates each
   media = installMatchMedia(WIDE)
   fakeStoryClock()
   renderStage()
-  // Bộ tối ưu đang tính trên trình duyệt: chưa số nào của lần chạy
+  // Bộ tối ưu đang tính trên trình duyệt: chưa số nào của phương án mẫu
   expect(card().getByText('Đang tính phương án mẫu…')).toBeInTheDocument()
   expect(pose()).toBe('tablet')
-  expect(narration()).toContain('Mình đang nhờ bộ tối ưu mô phỏng tính một chuyến mẫu.')
-  const readout = screen.getByRole('group', { name: 'Kết quả của lần chạy' })
-  expect(within(readout).getByText('Số liệu của lần chạy hiện ra khi xếp xong.')).toBeInTheDocument()
+  expect(narration()).toContain('Bộ tối ưu mô phỏng tính chuyến mẫu này ngay trên trình duyệt của bạn.')
+  const readout = screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })
+  expect(within(readout).getByText('Số liệu của phương án mẫu hiện ra khi xếp xong.')).toBeInTheDocument()
   expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
 
   expect(await card().findByText('Đã tính phương án', {}, SLOW)).toBeInTheDocument()
@@ -114,8 +134,8 @@ test('the sample trip plays once: app chips on the trip card, Lumo narrates each
   expect(figure()).toHaveAttribute('data-story-status', 'ended')
   expect(card().getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
   expect(pose()).toBe('done')
-  expect(narration()).toContain('Xếp xong, chờ xuất phát.')
-  // Số của chính lần chạy này, một nhãn MOCK RESULT duy nhất nằm trong dải số
+  expect(narration()).toContain('Xếp xong, chờ xuất phát. Số bên dưới là của chính phương án vừa tính.')
+  // Số của chính phương án vừa tính, một nhãn MOCK RESULT duy nhất nằm trong dải số
   expect(screen.getAllByText('MOCK RESULT')).toHaveLength(1)
   expect(within(readout).getByText('MOCK RESULT')).toBeInTheDocument()
   expect(within(readout).getByText('366 / 366')).toBeInTheDocument()
@@ -135,7 +155,7 @@ test('the story starts only once the frame is 40 % in view, holds below 20 % and
   media = installMatchMedia(WIDE)
   io = installFakeIntersectionObserver()
   fakeStoryClock()
-  renderStage()
+  renderStage({ motion: true })
   const box = figure().querySelector<HTMLElement>('[data-view]')
   if (!box) throw new Error('Không thấy khung 3D')
   await card().findByText('Đã tính phương án', {}, SLOW)
@@ -147,8 +167,15 @@ test('the story starts only once the frame is 40 % in view, holds below 20 % and
   expect(figure()).toHaveAttribute('data-story-status', 'playing')
   io.trigger(box, { intersectionRatio: 0.1 })
   expect(figure()).toHaveAttribute('data-story-status', 'held')
-  // Giữ vì khung bị cuộn khuất không phải người xem tạm dừng: nút vẫn là "Tạm dừng"
+  // Giữ vì khung bị cuộn khuất không phải người xem tạm dừng: nút vẫn là "Tạm dừng", và câu Lumo đang gõ vẫn gõ xong (tối đa 1 giây) —
+  // hàng Lumo dưới khung ở màn hẹp có thể đang hiện trọn trong lúc khung lộ chưa tới 40 %
   expect(screen.getByRole('button', { name: 'Tạm dừng chuyến mẫu' })).toBeInTheDocument()
+  const untyped = () => figure().querySelector('p[data-side] .reveal-type-rest')
+  expect(untyped()).toHaveTextContent('Kiện của mỗi điểm giao chờ ở một làn')
+  play(1500)
+  expect(untyped()).toBeNull()
+  expect(narration()).toContain('Kiện của mỗi điểm giao chờ ở một làn')
+  expect(figure()).toHaveAttribute('data-story-status', 'held')
   io.trigger(box, { intersectionRatio: 0.3 })
   expect(figure()).toHaveAttribute('data-story-status', 'held')
   io.trigger(box, { intersectionRatio: 0.5 })
@@ -160,9 +187,26 @@ test('with reduced motion the trip is loaded at once: the run figures and the re
   renderStage()
   await waitFor(() => expect(figure()).toHaveAttribute('data-story-status', 'ended'), SLOW)
   expect(card().getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Kết quả của lần chạy' })).getByText('MOCK RESULT')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })).getByText('MOCK RESULT')).toBeInTheDocument()
   expect(pose()).toBe('done')
   expect(screen.queryByRole('button', { name: /chuyến mẫu|Xếp lại/ })).not.toBeInTheDocument()
+})
+
+test('once the trip is loaded the 3D frame is not asked to redraw: scrolling the frame away and back or switching tabs changes nothing', async () => {
+  media = installMatchMedia({ ...WIDE, '(prefers-reduced-motion: reduce)': true })
+  io = installFakeIntersectionObserver()
+  renderStage()
+  await waitFor(() => expect(figure()).toHaveAttribute('data-story-status', 'ended'), SLOW)
+  await screen.findByTestId('viewer', {}, SLOW)
+  const box = figure().querySelector<HTMLElement>('[data-view]')
+  if (!box) throw new Error('Không thấy khung 3D')
+  const before = stage.redraws
+  io.trigger(box, { intersectionRatio: 0.1 })
+  io.trigger(box, { intersectionRatio: 1 })
+  setHidden(true)
+  setHidden(false)
+  expect(stage.redraws).toBe(before)
+  expect(figure()).toHaveAttribute('data-story-status', 'ended')
 })
 
 test('three views, overview by default from 1,280 px: the chosen view goes to the 3D frame', async () => {
@@ -190,12 +234,30 @@ test('on a phone the frame opens on the truck body, the views sit under it and t
   expect(within(route).getAllByRole('listitem')).toHaveLength(5)
 })
 
+test('a hidden tab draws no frame, so it does not count towards the 15 s first-frame timeout: the wait starts again once shown', () => {
+  media = installMatchMedia(WIDE)
+  stage.never = true
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  renderStage()
+  const stageShown = () => document.querySelector('figure[data-story-status]') !== null
+  setHidden(true)
+  play(20_000)
+  expect(stageShown()).toBe(true)
+
+  setHidden(false)
+  play(14_900)
+  expect(stageShown()).toBe(true)
+  play(200)
+  expect(stageShown()).toBe(false)
+  expect(document.querySelector('img[data-lumo]')).toHaveAttribute('data-lumo', 'point')
+})
+
 test('when the 3D frame fails, the illustration takes its place and Lumo says why: no trip card, controls or figures', async () => {
   media = installMatchMedia(WIDE)
   stage.fail = true
   renderStage()
   expect(await screen.findByText(/^Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất/, {}, SLOW)).toBeInTheDocument()
-  expect(document.querySelector('p[data-side]')).toHaveTextContent('Khung xe không hiện được ở đây, nên mình gửi bạn hình minh hoạ.')
+  expect(document.querySelector('p[data-side]')).toHaveTextContent('Hình xe ba chiều không hiện được ở đây, nên mình gửi bạn hình minh hoạ.')
   expect(document.querySelector('img[data-lumo]')).toHaveAttribute('data-lumo', 'point')
   expect(screen.queryByText('Chuyến mẫu')).not.toBeInTheDocument()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()

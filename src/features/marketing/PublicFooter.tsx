@@ -55,7 +55,8 @@ export function PublicFooter() {
       <div className="flex flex-col gap-8 px-4 pt-12 pb-8 md:px-shell">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <Logo tone="dark" size="md" tagline />
-          <nav aria-label={t('landing.footer.nav')} className="flex flex-wrap gap-x-10 gap-y-6 md:-mr-2">
+          {/* Tiêu đề và liên kết có lề 8 px cho vùng bấm: lề âm của cột đưa chữ thẳng mép logo (dưới md) hay mép phải (từ md) */}
+          <nav aria-label={t('landing.footer.nav')} className="flex flex-wrap gap-x-10 gap-y-6 max-md:-ml-2 md:-mr-2">
             {COLUMNS.map((column) => <FooterColumn key={column.titleKey} {...column} />)}
           </nav>
         </div>

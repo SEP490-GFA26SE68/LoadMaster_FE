@@ -45,7 +45,7 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
 /**
  * Phần "Gói cước" của trang giới thiệu (`#goi-cuoc`): tóm tắt các gói đang bán (cùng truy vấn với Bảng giá và form liên hệ), câu nói một
  * lần chạy tối ưu 3D dùng một credit, và liên kết phụ "So sánh các gói" sang Bảng giá. Không nút đăng ký hay mua. Khi có thẻ gói, Lumo
- * (`idea`) ló lên trên mép thẻ cuối hàng, mời gửi yêu cầu tư vấn; thẻ nhô lên cả khối, so le 70 ms — giá và credit không chuyển động.
+ * (`idea`) ló lên trên mép thẻ cuối hàng, mời gửi yêu cầu tư vấn; thẻ nhô lên cả khối, so le 70 ms; giá và credit trong thẻ không đếm, không lăn.
  */
 export function LandingPlans() {
   const t = useT()
@@ -78,7 +78,7 @@ export function LandingPlans() {
       )}
 
       <Reveal kind="fade" delay={450} className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="m-0 flex items-start gap-3 text-body-lg text-ink-2">
+        <p className="m-0 flex items-start gap-3 text-body-lg text-pretty text-ink-2">
           <Coins aria-hidden className="mt-0.5 size-5 flex-none text-primary" strokeWidth={1.5} />
           {t('landing.plans.credit')}
         </p>

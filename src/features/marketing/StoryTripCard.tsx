@@ -26,9 +26,11 @@ type TripCardProps = {
 const TOUCH = PUBLIC_TOUCH_TAG
 
 /**
- * Thẻ "Chuyến mẫu" nằm đè trên khung 3D (từ 1.280 px) hay ngay trên khung (hẹp hơn): nền tối đặc, đúng chip trạng thái của ứng dụng —
- * "Đã tính phương án", rồi Đang xếp hàng kèm "Đang xếp n / 366" và "Xếp xong — chờ xuất phát". Không có chip Đã lập kế hoạch: chuyến mẫu
- * không có tuyến. Không số kết quả nào nên không có MOCK RESULT: số kiện, số điểm giao là của yêu cầu mẫu, n là số hộp đang vẽ trong thùng.
+ * Thẻ "Chuyến mẫu" nằm đè trên khung 3D (từ 1.280 px) hay ngay trên khung (hẹp hơn), nền tối đặc. Chip đầu "Đã tính phương án" chỉ có ở
+ * trang giới thiệu (`landing.stage.computed`): tông trung tính, chấm vòng rỗng — chờ người kế tiếp, không trùng trạng thái nào của ứng dụng.
+ * Sau đó là chip của chính ứng dụng: `StatusBadge` Đang xếp hàng kèm dòng phụ "Đang xếp n / 366" rồi "Xếp xong — chờ xuất phát". Không có
+ * chip Đã lập kế hoạch: chuyến mẫu không có tuyến, cũng không được duyệt. Không số kết quả nào nên không có MOCK RESULT: số kiện, số điểm
+ * giao là của yêu cầu mẫu, n là số hộp đang vẽ trong thùng.
  * Chiều cao không đổi theo giai đoạn: dưới 768 px (và khi `compact`) chip xuống hàng riêng — chip "đang tính" dài nhất không vừa cạnh tên.
  */
 export function StoryTripCard({ phase, recorded, total, titleId, compact = false, className }: TripCardProps) {
@@ -36,7 +38,7 @@ export function StoryTripCard({ phase, recorded, total, titleId, compact = false
   const format = useFormat()
   const chip =
     phase === 'preparing' ? <Badge dot="spin" className={TOUCH}>{t('landing.stage.preparing')}</Badge>
-      : phase === 'computed' ? <Badge tone="cyan" dot="solid" className={TOUCH}>{t('landing.stage.computed')}</Badge>
+      : phase === 'computed' ? <Badge dot="ring" className={TOUCH}>{t('landing.stage.computed')}</Badge>
         : <StatusBadge status="LOADING" className={TOUCH} />
   const sub = phase === 'loading' ? { kind: 'loading' as const, recorded, total } : phase === 'ready' ? { kind: 'loaded' as const } : null
   return (

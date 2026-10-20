@@ -8,8 +8,9 @@ const STRIP = Array.from('01234567890123456789').join('\n')
 
 /**
  * Số lăn kiểu đồng hồ cơ, một lần: mỗi chữ số ASCII một ô cao đúng một dòng, rộng đúng chữ số của nó (chữ số trong suốt giữ chỗ và đường
- * chân chữ), nên chuỗi không đổi bề rộng; chữ khác hiện dần. Chạy xong trở lại đúng chuỗi đã format — trình đọc màn hình chỉ nhận chuỗi đó
- * (bản `sr-only`) suốt lúc lăn. Chuyển động tắt hay chuỗi không có chữ số: chữ thường. Trong `Reveal group` thì chạy theo nhóm.
+ * chân chữ), nên chuỗi không đổi bề rộng; chữ khác hiện dần. Chạy xong trở lại đúng chuỗi đã format — trình đọc màn hình và bản chép
+ * (bản `sr-only`; phần lăn `aria-hidden`, `select-none`) chỉ nhận chuỗi đó suốt lúc lăn. Chuyển động tắt hay chuỗi không có chữ số: chữ
+ * thường. Trong `Reveal group` thì chạy theo nhóm.
  */
 export function Odometer({ value, delay = 0 }: { value: string; delay?: number }) {
   const motion = useRevealMotion()
@@ -32,8 +33,8 @@ export function Odometer({ value, delay = 0 }: { value: string; delay?: number }
       style={withVars({ '--reveal-delay': delayValue(scope) })}
       onAnimationEnd={handleAnimationEnd}
     >
-      <span className="sr-only select-none">{value}</span>
-      <span aria-hidden="true" key={value}>
+      <span className="sr-only">{value}</span>
+      <span aria-hidden="true" key={value} className="select-none">
         {parts.map((part, key) =>
           part.kind === 'digit' ? (
             <span key={key} className="reveal-odo-cell">

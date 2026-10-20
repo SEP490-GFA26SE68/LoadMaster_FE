@@ -50,7 +50,8 @@
     height: var(--lumo-px) !important;
   }
 
-  /* Bong bóng: đáy nâng lên để đuôi (cách đáy 1,25rem) ngang miệng Lumo — 64 % chiều cao ảnh toàn thân, 36 % ảnh bán thân */
+  /* Bong bóng: đáy nâng lên để đuôi (cách đáy 1,25rem) ngang miệng Lumo — 64 % chiều cao ảnh toàn thân, 36 % ảnh bán thân. Bong bóng
+     (và bản giữ chỗ của nó, nếu có) không mang lớp margin dưới nào (`m-0`, `mb-*`): utilities thắng quy tắc này và đuôi rơi xuống chân Lumo. */
   .reveal-lumo > .reveal-bubble {
     margin-bottom: max(0px, calc(var(--lumo-px) * 0.64 - 1.25rem));
   }

@@ -4,6 +4,8 @@ import { LUMO_POSES, type LumoPose } from '@/components/brand/Lumo'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { LumoSays, Reveal, useRevealMotion } from './reveal'
+import { SceneTextFloor } from './steps/scene-kit'
+import { savesData, useNearViewport, useSceneTextFloor } from './steps/stage-hooks'
 import { STEP_SCENES, type StepSceneKey } from './steps/StepScenes'
 
 /** Tư thế của Lumo theo mục đang đọc: bốn bước rồi câu kết (4, chuyến đã giao xong); lời là `landingStory.lumo.how.<key>`. */
@@ -86,7 +88,9 @@ function StageProgress({ index }: { index: number }) {
  * đoạn tiến độ của mục đang đọc; giữa khung là cảnh của bước đó (`StepScenes`: nhập kiện → tuyến → ba phương án → dỡ ở cửa sau → chuyến đã
  * giao xong); dưới cùng Lumo đổi tư thế (mang kiện → chỉ → máy tính bảng → quét → xong) và gõ lời của bước. Đổi mục: số, tên và cảnh cũ mờ
  * đi trong khi cái mới hiện lên chồng đúng chỗ (220 ms), các mảnh của cảnh mới hiện dần một lần; số không đổi (bước 4 → câu kết) thì đứng
- * yên. Ảnh của hai tư thế kế tiếp tải trước. Chuyển động tắt: mọi thứ đổi ngay, cảnh tĩnh ở trạng thái cuối.
+ * yên. Ảnh Lumo tải lười; ảnh của hai tư thế kế tiếp chỉ tải trước khi khung đã tới gần khung nhìn và người xem không bật tiết kiệm dữ
+ * liệu. Máy cảm ứng: chữ trong cảnh không nhỏ hơn 16 px (`SceneTextFloor`), vùng cảnh quá nhỏ cho cỡ đó thì bỏ hình (`data-small`).
+ * Chuyển động tắt: mọi thứ đổi ngay, cảnh tĩnh ở trạng thái cuối.
  */
 export function StepsStage({ active }: { active: number }) {
   const t = useT()
@@ -96,10 +100,13 @@ export function StepsStage({ active }: { active: number }) {
   if (view.current.index !== index) setView({ current: { index, gen: view.current.gen + 1 }, previous: motion ? view.current : null })
   const { current, previous } = view
   const { key } = STEP_SCENES[current.index] ?? STEP_SCENES[0]
+  const [nearRef, near] = useNearViewport<HTMLElement>()
+  const [scenesRef, textFloor] = useSceneTextFloor<HTMLDivElement>()
 
   useEffect(() => {
+    if (!near || savesData()) return
     for (const scene of STEP_SCENES.slice(current.index + 1, current.index + 3)) preload(POSES[scene.key])
-  }, [current.index])
+  }, [near, current.index])
 
   const handleLeft = (event: AnimationEvent<HTMLElement>) => {
     if (event.target === event.currentTarget) setView((now) => (now.previous ? { ...now, previous: null } : now))
@@ -119,7 +126,7 @@ export function StepsStage({ active }: { active: number }) {
   })
 
   return (
-    <Reveal kind="fade" aria-hidden className="lp-steps-stage sticky flex flex-col self-start rounded-xl border border-border bg-surface p-7 xl:p-9">
+    <Reveal ref={nearRef} kind="fade" aria-hidden className="lp-steps-stage sticky flex flex-col self-start rounded-xl border border-border bg-surface p-7 xl:p-9">
       <div className="grid font-display text-figure font-bold text-primary tabular-nums font-stretch-112%">
         {numerals.map((shot) => (
           <span key={`numeral-${shot.gen}`} {...layer(shot, numerals.length === 1)}>{numeralOf(shot.index)}</span>
@@ -131,22 +138,23 @@ export function StepsStage({ active }: { active: number }) {
         ))}
       </p>
       <StageProgress index={current.index} />
-      <div className="lp-stage-scenes relative my-4 min-h-0 flex-1">
-        {shots.map((shot) => {
-          const { key: scene, Scene } = STEP_SCENES[shot.index] ?? STEP_SCENES[0]
-          const { className, ...rest } = layer(shot)
-          return (
-            <div key={`scene-${shot.gen}`} data-scene={scene} {...rest} className={cn('lp-stage-scene absolute inset-0', className)}>
-              <Scene motion={motion} />
-            </div>
-          )
-        })}
+      <div ref={scenesRef} data-small={textFloor === null ? '' : undefined} className="lp-stage-scenes relative my-4 min-h-0 flex-1">
+        <SceneTextFloor value={textFloor ?? 0}>
+          {shots.map((shot) => {
+            const { key: scene, Scene } = STEP_SCENES[shot.index] ?? STEP_SCENES[0]
+            const { className, ...rest } = layer(shot)
+            return (
+              <div key={`scene-${shot.gen}`} data-scene={scene} {...rest} className={cn('lp-stage-scene absolute inset-0', className)}>
+                <Scene motion={motion} />
+              </div>
+            )
+          })}
+        </SceneTextFloor>
       </div>
       <LumoSays
         pose={POSES[key]}
-        px={{ base: 144, wide: 176 }}
+        px={{ base: 144, wide: 160 }}
         side="bubble-right"
-        loading="eager"
         text={t(`landingStory.lumo.how.${key}`)}
         className="flex-none [@media(max-height:719px)]:[--lumo-px:112px]"
       />

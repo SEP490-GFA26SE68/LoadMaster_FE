@@ -137,7 +137,10 @@ describe('overview framing (fov 26, wide insets)', () => {
     expect(r.truck[2]).toBeLessThan(r.lanes[0])
     const controls: Rect = [16, 16, 16 + 480, 16 + 56]
     const lumoBox: Rect = [16, height - 16 - lumo, 16 + lumo, height - 16]
-    const bubbleBox: Rect = [16 + lumo + 8, height - 16 - 120, 16 + lumo + 8 + bubble, height - 16]
+    // Đáy bong bóng nâng lên để đuôi ngang miệng Lumo: 64 % chiều cao ảnh trừ 20 px (lumo-says.css); bong bóng tính rộng tay 120 px (bốn
+    // dòng — câu dài nhất hiện là ba)
+    const lift = Math.round(lumo * 0.64 - 20)
+    const bubbleBox: Rect = [16 + lumo + 8, height - 16 - 120 - lift, 16 + lumo + 8 + bubble, height - 16 - lift]
     const card: Rect = [width - 16 - 288, 16, width - 16, 16 + 140]
     // Nút ba trạng thái ở góc dưới phải: rộng nhất 160 px, cao 56 px trên máy cảm ứng
     const storyButton: Rect = [width - 16 - 160, height - 16 - 56, width - 16, height - 16]

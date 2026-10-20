@@ -21,17 +21,17 @@ export const landing = {
     cta: 'Talk to us',
     pricing: 'See pricing',
     artworkLabel: 'A truck body being loaded in unloading order',
-    roles: 'One plan for all four roles',
+    roles: 'One plan for the four operational roles',
   },
   stage: {
     title: '6 m body',
     trip: 'Sample trip',
     load: '{count} packages · {stops} stops',
-    computed: 'Plan ready',
+    computed: 'Plan computed',
     route: 'Delivery order',
     depot: 'Depot',
     caption: 'A sample trip of {count} packages for {stops} stops, planned by the simulated optimizer right in your browser, then loaded box by box in order. Cargo for the last stop sits deepest, cargo for the first stop by the door.',
-    artworkCaption: 'Illustration: cargo for the last stop sits deepest, cargo for the first stop by the door — at each stop you take that stop’s cargo.',
+    artworkCaption: 'Illustration: cargo for the last stop sits deepest, cargo for the first stop by the door — each stop unloads only its own cargo.',
     preparing: 'Planning the sample trip…',
     views: 'View',
     view: {
@@ -47,16 +47,16 @@ export const landing = {
       resume: 'Resume',
       resumeLabel: 'Resume the sample trip',
     },
-    legend: 'Package colour by delivery stop',
+    legend: 'Package color by delivery stop',
     stop: 'Stop {number}',
     readout: {
-      title: 'Result of this run',
-      pending: 'This run’s figures appear once loading finishes.',
+      title: 'Result of the sample plan',
+      pending: 'The sample plan’s figures appear once loading finishes.',
       placed: 'Packages placed',
       placedValue: '{placed} / {total}',
       volume: 'Volume used',
       payload: 'Payload used',
-      rehandling: 'Re-handling',
+      rehandling: 'Rehandling',
       runtime: 'Planning time',
       runtimeValue: '{ms} ms',
     },
@@ -71,12 +71,12 @@ export const landing = {
     title: 'Numbers you can check',
     lede: 'Every number below comes straight from the app’s source code or from its own measurements — none of them is a guess.',
     orientations: {
-      label: 'orientations tried for every package',
+      label: 'possible orientations per package',
       source: 'Packages that must stay upright use two; an orientation that does not fit through the door is ruled out.',
     },
     plans: {
       label: 'plans from every optimization run',
-      source: 'Most volume, balanced axle load, least re-handling — compared side by side, then one is approved.',
+      source: 'Maximize volume, balance axle load, least rehandling — compared side by side, then one is approved.',
     },
     precision: {
       label: 'rounding step for dimensions',
@@ -88,8 +88,8 @@ export const landing = {
       source: 'Performance gate of the simulated optimizer, measured on a development machine.',
     },
     pickup: {
-      label: 'rules checked before an on-the-way pickup',
-      source: 'Payload, axle load, centre of gravity, free space in the body, unloading order, deadlines…',
+      label: 'rules checked before an en-route pickup',
+      source: 'Payload, axle load, center of gravity, free space in the body, unloading order, deadlines…',
     },
     roles: {
       label: 'roles, each seeing only its own work',
@@ -101,7 +101,7 @@ export const landing = {
     lede: 'One system for the whole trip: from receiving the packages to finishing the last stop.',
     loading: {
       title: '3D loading by delivery stop',
-      text: 'Cargo for the last stop sits deepest and cargo for the first stop sits by the door: at each stop you take that stop’s cargo. View, rotate and adjust the plan in 3D.',
+      text: 'Cargo for the last stop sits deepest and cargo for the first stop sits by the door: each stop unloads only its own cargo. View, rotate and adjust the plan in 3D.',
     },
     zones: {
       door: 'Rear door',
@@ -117,16 +117,11 @@ export const landing = {
       depot: 'Depot',
     },
     verify: {
-      title: 'Three-level package check',
-      text: 'Every package is checked while staging, loading and unloading. A torn or missing label does not stop the work: it waits for the dispatcher’s approval.',
-      levels: {
-        qr: 'Scan the QR code',
-        code: 'Type the code',
-        manual: 'Confirm by hand',
-      },
+      title: 'Three-level package verification',
+      text: 'Every package is verified while staging, loading and unloading. A torn or missing label does not stop the work: the package is confirmed by hand, pending the dispatcher’s approval.',
     },
     pickup: {
-      title: 'Pickups on the way',
+      title: 'En-route pickups',
       text: 'A truck on the road can still take more cargo: ten rules are checked before approval, and new packages go into free space without moving anything already on board.',
     },
     roles: {
@@ -135,7 +130,7 @@ export const landing = {
     },
     roleList: {
       dispatcher: 'Builds trips, runs the optimization, compares and approves plans.',
-      warehouse: 'Stages and loads each package on a tablet, checked by QR code.',
+      warehouse: 'Stages and loads each package on a tablet, verified by QR code.',
       driver: 'Delivers stop by stop on a phone and sees where the cargo sits in the truck.',
       manager: 'Creates delivery requirements, follows the dashboard and exports reports.',
     },
@@ -164,7 +159,7 @@ export const landing = {
       },
       operate: {
         title: 'Stage, load, deliver, monitor',
-        text: 'The warehouse checks each package while staging and loading, the driver delivers stop by stop, the dispatcher monitors vehicles and handles incidents.',
+        text: 'The warehouse verifies each package while staging and loading, the driver delivers stop by stop, the dispatcher monitors vehicles and handles incidents.',
       },
     },
   },
@@ -224,6 +219,6 @@ export const landing = {
     pricing: 'Pricing',
     contact: 'Contact',
     signIn: 'Sign in',
-    note: 'This is a demo: the data in the app is sample data, and optimization results come from the simulated optimizer and always carry the MOCK RESULT label.',
+    note: 'This is a demo: the data in the app is sample data, and optimization results come from the simulated optimizer and always carry the MOCK\u00a0RESULT label.',
   },
 } satisfies Dictionary<typeof source>

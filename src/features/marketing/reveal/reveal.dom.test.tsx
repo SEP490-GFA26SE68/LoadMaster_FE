@@ -115,7 +115,7 @@ describe('motion on', () => {
     const { container } = renderPage(<SectionHeading id="tieu-de" title={TITLE} lede={LEDE} />)
     expect(container.querySelector('[data-reveal-root]')).toHaveAttribute('data-motion', 'on')
     expect(io.instances).toHaveLength(1)
-    expect(io.instances[0]?.options).toEqual({ threshold: [0, 0.15], rootMargin: '0px 0px -10% 0px' })
+    expect(io.instances[0]?.options).toEqual({ threshold: [0, 0.07, 0.15], rootMargin: '0px 0px -10% 0px' })
 
     const heading = screen.getByRole('heading', { level: 2, name: TITLE })
     const gate = gateOf(heading)
@@ -137,6 +137,28 @@ describe('motion on', () => {
     const block = screen.getByTestId('cao')
     io.trigger(block, { intersectionRatio: 0.05, rootBounds: new DOMRect(0, 0, 1000, 800), boundingClientRect: new DOMRect(0, 0, 1000, 6000) })
     expect(block).toHaveAttribute('data-shown')
+  })
+
+  test('a gate with its own threshold (at) opens at 7 %; inside a group the threshold is not rendered', () => {
+    const { io } = motionOn()
+    renderPage(
+      <>
+        <Reveal at={0.07} data-testid="cao">Ô cao</Reveal>
+        <Reveal data-testid="thuong">Ô thường</Reveal>
+        <Reveal group>
+          <Reveal at={0.07} data-testid="con">Trong nhóm</Reveal>
+        </Reveal>
+      </>,
+    )
+    const tall = screen.getByTestId('cao')
+    const plain = screen.getByTestId('thuong')
+    expect(tall).toHaveAttribute('data-reveal-at', '0.07')
+    expect(screen.getByTestId('con')).not.toHaveAttribute('data-reveal-at')
+    const lowRatio = { intersectionRatio: 0.07, rootBounds: new DOMRect(0, 0, 1000, 800), boundingClientRect: new DOMRect(0, 0, 1000, 700) }
+    io.trigger(plain, lowRatio)
+    expect(plain).not.toHaveAttribute('data-shown')
+    io.trigger(tall, lowRatio)
+    expect(tall).toHaveAttribute('data-shown')
   })
 
   test('the heading keeps its exact accessible name; getByText finds only the sr-only copy', () => {

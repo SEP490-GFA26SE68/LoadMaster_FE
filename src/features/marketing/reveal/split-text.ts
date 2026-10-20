@@ -6,9 +6,12 @@
 /** Một từ và khoảng trắng đứng sau nó (rỗng ở từ cuối). Dấu câu dính vào từ. */
 export type WordPart = { word: string; space: string }
 
-/** Tách theo khoảng trắng, giữ nguyên khoảng trắng: nối lại `word + space` của mọi phần là đúng chuỗi (đã NFC). */
+/**
+ * Tách theo khoảng trắng ngắt dòng được, giữ nguyên khoảng trắng: nối lại `word + space` của mọi phần là đúng chuỗi (đã NFC). Khoảng
+ * trắng không ngắt (U+00A0, U+202F) nằm trong từ, nên từ ghép viết bằng nó ("thùng\u00a0xe") là một mảnh, không xuống dòng giữa chừng.
+ */
 export function words(text: string): WordPart[] {
-  const tokens = text.normalize('NFC').split(/(\s+)/)
+  const tokens = text.normalize('NFC').split(/([^\S\u00a0\u202f]+)/)
   const parts: WordPart[] = []
   for (let i = 0; i < tokens.length; i += 2) {
     const word = tokens[i] ?? ''

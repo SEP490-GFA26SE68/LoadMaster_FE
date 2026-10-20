@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { Truck } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { svgPiece } from '../bento/FeatureVisuals'
-import { CheckBadge, SCENE_HEIGHT, SCENE_WIDTH, StopMark, type SceneStop } from './scene-kit'
+import { CheckBadge, SCENE_HEIGHT, SCENE_WIDTH, StopMark, useSceneFont, type SceneStop } from './scene-kit'
 
 const VIEW_BOX = `0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`
 
@@ -27,12 +27,13 @@ const PLAN_AT = { depot: 80, truck: 160, leg: 240, legStep: 220, stopLag: 180 } 
 
 function Depot({ x, y, size, motion, at, label }: { x: number; y: number; size: number; motion: boolean; at: number; label?: string }) {
   const inner = size * 0.32
+  const font = useSceneFont(14)
   return (
     <g {...svgPiece(motion, 'lp-pop', at)}>
       <rect x={x - size / 2} y={y - size / 2} width={size} height={size} rx={size * 0.24} className="fill-panel-dark" />
       <rect x={x - inner / 2} y={y - inner / 2} width={inner} height={inner} rx={2} className="fill-cyan-300" />
       {label ? (
-        <text x={x} y={y + size / 2 + 20} textAnchor="middle" fontSize={14} className="fill-ink-2 font-semibold">{label}</text>
+        <text x={x} y={y + size / 2 + 20} textAnchor="middle" fontSize={font} className="fill-ink-2 font-semibold">{label}</text>
       ) : null}
     </g>
   )
@@ -102,6 +103,7 @@ export function DoneScene({ motion }: { motion: boolean }) {
   const line = `M${DONE_DEPOT.x} ${LINE_Y} H${end}`
   const { x, y, width: w, height: h } = SHEET
   const fold = 14
+  const font = useSceneFont(15)
   return (
     <svg viewBox={VIEW_BOX} preserveAspectRatio="xMidYMid meet" className="block size-full">
       <path d={line} pathLength={motion ? 1 : undefined} fill="none" strokeWidth={10} strokeLinecap="round" {...svgPiece(motion, 'lp-draw', DONE_AT.line, 'stroke-cyan-100')} />
@@ -122,7 +124,7 @@ export function DoneScene({ motion }: { motion: boolean }) {
         ))}
         <CheckBadge x={x + w - 4} y={y + h - 4} r={10} />
       </g>
-      <text x={x + w / 2} y={y + h + 26} textAnchor="middle" fontSize={15} {...svgPiece(motion, 'lp-fade', DONE_AT.label, 'fill-ink-1 font-semibold')}>
+      <text x={x + w / 2} y={y + h + 26} textAnchor="middle" fontSize={font} {...svgPiece(motion, 'lp-fade', DONE_AT.label, 'fill-ink-1 font-semibold')}>
         {t('tripReport.title')}
       </text>
     </svg>

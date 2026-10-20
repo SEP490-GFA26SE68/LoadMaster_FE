@@ -80,7 +80,8 @@ export function LumoSays({
     <p
       data-side={side}
       className={cn(
-        'reveal-bubble reveal-piece relative m-0 min-w-0 max-w-md rounded-lg border border-border bg-bg px-4 py-3 text-body-lg text-ink-strong',
+        // Không đặt margin dưới: utilities thắng lớp nâng bong bóng lên ngang miệng Lumo (`lumo-says.css`)
+        'reveal-bubble reveal-piece relative mx-0 mt-0 min-w-0 max-w-md rounded-lg border border-border bg-bg px-4 py-3 text-body-lg text-pretty text-ink-strong',
         bubbleClassName,
       )}
     >

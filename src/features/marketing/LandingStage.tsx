@@ -83,10 +83,20 @@ export function LandingStage() {
   useEffect(() => {
     if (gate === 'go') loadViewer().catch(() => {})
   }, [gate])
+  // Chỉ đếm giờ khi tab đang hiện: tab ẩn không vẽ khung hình nào (trình duyệt dừng requestAnimationFrame), hiện lại thì đếm lại từ đầu
   useEffect(() => {
     if (gate !== 'go' || frameReady || failed) return
-    const timer = window.setTimeout(handleError, STAGE_TIMEOUT_MS)
-    return () => window.clearTimeout(timer)
+    let timer = 0
+    const arm = () => {
+      window.clearTimeout(timer)
+      timer = document.hidden ? 0 : window.setTimeout(handleError, STAGE_TIMEOUT_MS)
+    }
+    arm()
+    document.addEventListener('visibilitychange', arm)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', arm)
+    }
   }, [gate, frameReady, failed, handleError])
 
   if (gate === 'off' || failed || sample.isError) return <StageFallback />
@@ -97,7 +107,8 @@ export function LandingStage() {
   const line: NarratorLine | null = !going ? null : phase === 'ready' && result && placed < PACKAGE_COUNT ? 'readyPartial' : phase
   const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
   const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
-  const narrator = <StoryNarrator line={line} paused={status === 'paused' || status === 'held'} layout={wide ? 'overlay' : 'row'} preload={going} />
+  // Chỉ nút tạm dừng làm chữ đứng lại; khung bị cuộn khuất thì câu đang gõ vẫn gõ xong (tối đa 1 giây), pha giữ nguyên nên câu không đổi
+  const narrator = <StoryNarrator line={line} paused={status === 'paused'} layout={wide ? 'overlay' : 'row'} preload={going} />
   // Thẻ chuyến: từ 1.280 px nằm đè góc trên phải khung; hẹp hơn nằm trên khung — lúc chưa tải phần 3D vẫn giữ chỗ (trong suốt)
   const card = going ? (
     <StoryTripCardLive driver={driver} resolved={result !== undefined} placed={placed} total={PACKAGE_COUNT} titleId={titleId} compact={wide}
@@ -111,8 +122,9 @@ export function LandingStage() {
       <div className="relative">
         <span aria-hidden className="landing-stage-glow" />
         <div ref={observe} data-view={view} className={cn('landing-stage-surface relative overflow-hidden rounded-xl', BOX[tier], DOOR_CUE)}>
+          {/* `isolate`: z-index của nhãn neo drei (`<Html>`, như "Cửa sau · Hướng dỡ") ở lại trong lớp 3D, không vẽ đè thẻ, Lumo và nút */}
           {result ? (
-            <div aria-hidden className="absolute inset-0">
+            <div aria-hidden className="absolute inset-0 isolate">
               <StageBoundary onError={handleError}>
                 <Suspense fallback={null}>
                   <LandingStageViewer request={LANDING_REQUEST} result={result} stopNames={stopNames} view={view} tier={tier}

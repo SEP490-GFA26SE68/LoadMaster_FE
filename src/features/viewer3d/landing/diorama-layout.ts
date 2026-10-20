@@ -14,9 +14,12 @@ export type StageView = 'overview' | 'truck' | 'zones'
 /** Bề rộng trang: `wide` từ 1.280 px · `medium` 768–1.279 px · `narrow` dưới 768 px. */
 export type HeroTier = 'wide' | 'medium' | 'narrow'
 
-/** Lề (px) của góc Toàn cảnh nơi nút, thẻ chuyến và Lumo nằm đè lên khung: cảnh được canh vào phần còn lại. */
+/**
+ * Lề (px) của góc Toàn cảnh nơi nút, thẻ chuyến và Lumo nằm đè lên khung: cảnh được canh vào phần còn lại. Lề dưới của `wide` là đỉnh
+ * bong bóng của Lumo: cách mép 16 px, đáy bong bóng nâng 72 px cho đuôi ngang miệng Lumo 144 px, câu dài nhất ba dòng (chừng 96 px).
+ */
 export const HERO_INSETS: Record<HeroTier, Insets> = {
-  wide: { top: 76, right: 16, bottom: 160, left: 48 },
+  wide: { top: 76, right: 16, bottom: 184, left: 48 },
   medium: { top: 72, right: 16, bottom: 16, left: 16 },
   narrow: { top: 72, right: 12, bottom: 12, left: 12 },
 }

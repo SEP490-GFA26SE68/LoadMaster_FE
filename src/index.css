@@ -244,8 +244,9 @@
   --landing-stage-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 40px 90px -40px rgba(0, 0, 0, 0.75);
   /* đường kẻ mảnh trên nền tối của trang giới thiệu (khung 3D, dải số liệu, dải liên hệ) — trang trí, không làm viền điều khiển */
   --landing-hairline: rgba(155, 237, 242, 0.14);
-  /* dải liên hệ cuối trang: tối đặc, vệt cyan từ góc dưới phải */
-  --landing-closing: radial-gradient(55% 75% at 100% 100%, rgba(0, 138, 157, 0.3), transparent 70%),
+  /* dải liên hệ cuối trang: tối đặc, vệt cyan bên phải, tắt hẳn trước mép dưới (100% − 60% ≥ 0,7 × 55%) để nối liền với nền phẳng
+     --panel-dark của chân trang, không có vết cắt */
+  --landing-closing: radial-gradient(60% 55% at 100% 60%, rgba(0, 138, 157, 0.3), transparent 70%),
     linear-gradient(180deg, #053341 0%, #02222d 100%);
   /* chuyển động lò xo của chỉ báo kính trên thanh điều hướng: vượt nhẹ rồi lắng lại */
   --spring: linear(0, .0069 1.15%, .1135 5.18%, .5977 15.84%, .9676 28.8%, 1.0352 36.29%, 1.046 42.05%, 1.0118 61.63%, .9981 80.35%, 1);

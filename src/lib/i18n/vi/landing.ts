@@ -19,22 +19,26 @@ export const landing = {
     home: 'LoadMaster — trang giới thiệu',
   },
   hero: {
-    eyebrow: 'Lập kế hoạch chất xếp hàng 3D cho doanh nghiệp vận tải',
-    title: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.',
+    /** Khoảng trắng không ngắt (`\u00a0`) giữ từ ghép trên một dòng: "doanh nghiệp", "thùng xe", "thứ tự", "theo dõi", "điểm giao". */
+    eyebrow: 'Lập kế hoạch chất xếp hàng 3D cho doanh\u00a0nghiệp vận tải',
+    title: 'Tận dụng thùng\u00a0xe, dỡ đúng thứ\u00a0tự, theo\u00a0dõi tới điểm\u00a0giao cuối.',
     lede: 'LoadMaster giúp điều phối viên lập chuyến, tối ưu tuyến và phương án xếp hàng 3D. Kho xếp và tài xế dỡ theo cùng một phương án đã duyệt.',
     cta: 'Nhận tư vấn',
     pricing: 'Xem bảng giá',
     artworkLabel: 'Mô phỏng thùng xe được xếp hàng theo thứ tự dỡ',
     /** Bốn vai trò làm việc trên cùng một phương án; tên vai trò lấy từ nhánh `roles`. */
-    roles: 'Một phương án cho cả bốn vai trò',
+    roles: 'Một phương án cho bốn vai trò vận hành',
   },
   /**
    * Khung 3D của phần mở đầu: chuyến mẫu do bộ tối ưu mô phỏng tính ngay trên trình duyệt của người xem, vẽ bằng bộ máy 3D của ứng dụng.
    * Mọi số ở đây là số của lần chạy đó và đi kèm MOCK RESULT.
    */
   stage: {
-    title: 'Thùng mẫu 6 m',
-    /** Thẻ chuyến trong khung: số kiện và số điểm giao của yêu cầu mẫu (cố định); chip "Đã tính phương án" đứng trước pha xếp. */
+    title: 'Thùng 6 m',
+    /**
+     * Thẻ chuyến trong khung: số kiện và số điểm giao của yêu cầu mẫu (cố định); chip "Đã tính phương án" đứng trước pha xếp — chip này chỉ
+     * có ở trang giới thiệu, không phải trạng thái chuyến của ứng dụng.
+     */
     trip: 'Chuyến mẫu',
     load: '{count} kiện · {stops} điểm giao',
     computed: 'Đã tính phương án',
@@ -63,9 +67,9 @@ export const landing = {
     legend: 'Màu của kiện theo điểm giao',
     stop: 'Điểm {number}',
     readout: {
-      title: 'Kết quả của lần chạy',
-      /** Câu giữ chỗ trước khi xếp xong, cùng chiều cao với dải số: số của lần chạy chỉ hiện khi đã có. */
-      pending: 'Số liệu của lần chạy hiện ra khi xếp xong.',
+      title: 'Kết quả của phương án mẫu',
+      /** Câu giữ chỗ trước khi xếp xong, cùng chiều cao với dải số: số của phương án mẫu chỉ hiện khi đã có. */
+      pending: 'Số liệu của phương án mẫu hiện ra khi xếp xong.',
       placed: 'Kiện đã xếp',
       placedValue: '{placed} / {total}',
       volume: 'Lấp đầy thể tích',
@@ -90,7 +94,7 @@ export const landing = {
     title: 'Con số kiểm được',
     lede: 'Mỗi con số dưới đây lấy thẳng từ mã nguồn của ứng dụng hoặc từ phép đo của nó — không con số nào là ước đoán.',
     orientations: {
-      label: 'hướng đặt được thử cho mỗi kiện',
+      label: 'hướng đặt tối đa của một kiện',
       source: 'Kiện phải giữ đứng chỉ dùng hai hướng; hướng nào không lọt cửa xe thì bị loại.',
     },
     plans: {
@@ -140,11 +144,6 @@ export const landing = {
     verify: {
       title: 'Đối chiếu kiện ba mức',
       text: 'Mỗi kiện được đối chiếu khi soạn, xếp và dỡ. Nhãn rách hay mất mã vẫn làm tiếp được, chờ điều phối viên duyệt.',
-      levels: {
-        qr: 'Quét mã QR',
-        code: 'Gõ mã kiện',
-        manual: 'Xác nhận tay',
-      },
     },
     pickup: {
       title: 'Nhận hàng dọc đường',
@@ -252,6 +251,7 @@ export const landing = {
     pricing: 'Bảng giá',
     contact: 'Liên hệ',
     signIn: 'Đăng nhập',
-    note: 'Đây là bản demo: dữ liệu trong ứng dụng là dữ liệu mẫu, kết quả tối ưu do bộ tối ưu mô phỏng tính và luôn mang nhãn MOCK RESULT.',
+    /** `\u00a0` giữ nhãn MOCK RESULT trên một dòng. */
+    note: 'Đây là bản demo: dữ liệu trong ứng dụng là dữ liệu mẫu, kết quả tối ưu do bộ tối ưu mô phỏng tính và luôn mang nhãn MOCK\u00a0RESULT.',
   },
 } as const

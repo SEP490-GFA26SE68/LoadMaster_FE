@@ -20,7 +20,7 @@ const STEPS = [
 
 const TITLE = 'm-0 font-display text-h2 font-[650] tracking-[-0.2px] text-ink-strong font-stretch-108%'
 /** Lời của Lumo cho một bước: khung chú thích nhìn thấy được, trừ khi khung dính đang nói thay (từ 1.024 px). */
-const NOTE = 'm-0 rounded-md border-l-2 border-cyan-300 bg-tint-blue p-3 text-body text-ink-2 pointer-coarse:text-body-lg'
+const NOTE = 'm-0 rounded-md border-l-2 border-cyan-300 bg-tint-blue p-3 text-body text-pretty text-ink-2 pointer-coarse:text-body-lg'
 
 /** Tiêu đề bước: "Bước n:" ẩn rồi tên bước. Chuyển động bật: tên bước nhô lên từng từ như `RevealWords`, cổng là mục của danh sách. */
 function StepTitle({ prefix, title }: { prefix: string; title: string }) {
@@ -68,7 +68,7 @@ function StepItem({ step, index, stage, state }: { step: (typeof STEPS)[number];
         {stage ? null : <span className="size-2 flex-none rounded-full bg-cyan-400 group-last:hidden" />}
       </div>
       <StepTitle prefix={t('landing.how.step', { number: index + 1 })} title={t(`landing.how.steps.${key}.title`)} />
-      <RevealWords as="p" text={t(`landing.how.steps.${key}.text`)} mode="ink" delay={200} className="m-0 text-body-lg text-ink-2" />
+      <RevealWords as="p" text={t(`landing.how.steps.${key}.text`)} mode="ink" delay={200} className="m-0 text-body-lg text-pretty text-ink-2" />
       <Reveal as="p" kind="fade" delay={350} className={cn(NOTE, stage && 'lg:sr-only')}>
         <span className="sr-only">{t('landingStory.lumo.says', { name: LUMO_NAME })}</span> {t(`landingStory.lumo.how.${key}`)}
       </Reveal>

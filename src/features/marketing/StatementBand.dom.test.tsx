@@ -86,7 +86,9 @@ test('with motion each block loads through the rear door on the scroll of the ba
   media = installMatchMedia({ '(prefers-reduced-motion: reduce)': false })
   const { container } = renderBand()
   const band = container.querySelector<HTMLElement>('.lp-statement')
+  // Hai bản ở lại suốt (theo cuộn, không bao giờ xong): bản cho trình đọc màn hình không chọn được, chép câu chỉ được một lần
   expect(band?.querySelector('.sr-only')).toHaveTextContent(STATEMENT)
+  expect(band?.querySelector('.sr-only')).toHaveClass('select-none')
   expect(band?.querySelectorAll('.lp-statement-word').length).toBeGreaterThan(10)
 
   const { svg } = truckOf(container)

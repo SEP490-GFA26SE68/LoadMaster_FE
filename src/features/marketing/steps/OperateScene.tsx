@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { svgPiece } from '../bento/FeatureVisuals'
-import { CheckBadge, FlatQr, LOAD_ORDER, SCENE_HEIGHT, SCENE_WIDTH, StopMark, STOP_FILL } from './scene-kit'
+import { CheckBadge, FlatQr, LOAD_ORDER, SCENE_HEIGHT, SCENE_WIDTH, StopMark, STOP_FILL, useSceneFont } from './scene-kit'
 import { groundOf, TruckFrame, type TruckBody } from './truck-side'
 
 /** Thùng xe nhìn ngang: bốn vùng 4 · 3 · 2 · 1 từ cabin ra cửa sau, mỗi vùng hai kiện chồng nhau. */
@@ -19,6 +19,9 @@ const UNLOADED = { x: 330, y: GROUND - UPPER.height }
  * lúc kiện chạm đất — xong trước 1,5 giây.
  */
 const AT = { zone: 60, zoneStep: 70, badgeLag: 120, door: 380, arrow: 500, unload: 600, check: 1140 } as const
+/** Cỡ thiết kế của nhãn cửa sau và số trên kiện được dỡ (số nằm trong vòng bán kính 10, tâm cách mép trái kiện 15). */
+const LABEL_FONT = 13
+const NUMBER = { r: 10, cx: 15 }
 
 function zoneX(order: number): number {
   return BODY.left + ZONE.inset + order * (ZONE.width + ZONE.gap)
@@ -35,6 +38,12 @@ export function OperateScene({ motion }: { motion: boolean }) {
   const lastX = zoneX(LOAD_ORDER.length - 1)
   const unload = svgPiece(motion, 'lp-unload', AT.unload)
   const unloadStyle = { ...unload.style, '--from-x': `${lastX - UNLOADED.x}px`, '--from-y': `${UPPER.y - UNLOADED.y}px` } as CSSProperties
+  // Máy cảm ứng (`SceneTextFloor`): nhãn cửa lớn lên thì canh phải theo mép khung để không tràn ra ngoài; vòng số lớn theo số, lùi trái
+  // khỏi nhãn QR của kiện
+  const font = useSceneFont(LABEL_FONT)
+  const doorEnd = font > LABEL_FONT
+  const numberR = Math.max(NUMBER.r, font * 0.7)
+  const numberX = UNLOADED.x + NUMBER.cx - (numberR - NUMBER.r)
   return (
     <svg viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`} preserveAspectRatio="xMidYMid meet" className="block size-full">
       <TruckFrame body={BODY} tone="light" groundFrom={8} groundTo={SCENE_WIDTH - 8} />
@@ -54,14 +63,16 @@ export function OperateScene({ motion }: { motion: boolean }) {
       })}
       <g {...svgPiece(motion, 'lp-fade', AT.door)}>
         <line x1={door} x2={door} y1={BODY.top} y2={BODY.floor} className="stroke-cyan-500" strokeWidth={2.5} strokeDasharray="6 5" strokeLinecap="round" />
-        <text x={door + 6} y={BODY.top - 18} dy="0.36em" fontSize={13} className="fill-primary font-semibold">{t('landing.features.zones.door')}</text>
+        <text x={doorEnd ? SCENE_WIDTH - 4 : door + 6} y={BODY.top - 18} dy="0.36em" textAnchor={doorEnd ? 'end' : undefined} fontSize={font} className="fill-primary font-semibold">
+          {t('landing.features.zones.door')}
+        </text>
       </g>
       <path d={`M${door + 6} ${UPPER.y + 22} C ${door + 30} ${UPPER.y + 22}, ${UNLOADED.x + 30} ${UPPER.y + 34}, ${UNLOADED.x + 30} ${UNLOADED.y - 12} M${UNLOADED.x + 24} ${UNLOADED.y - 19} L${UNLOADED.x + 30} ${UNLOADED.y - 11} L${UNLOADED.x + 36} ${UNLOADED.y - 19}`}
         pathLength={motion ? 1 : undefined} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...svgPiece(motion, 'lp-draw lp-draw-short', AT.arrow, 'stroke-primary')} />
       <g className={unload.className} style={unloadStyle}>
         <rect x={UNLOADED.x} y={UNLOADED.y} width={ZONE.width} height={UPPER.height} rx={3} className={cn(STOP_FILL[FIRST_STOP], 'stroke-bg')} strokeWidth={1.5} />
-        <circle cx={UNLOADED.x + 15} cy={UNLOADED.y + UPPER.height / 2} r={10} className="fill-bg" />
-        <text x={UNLOADED.x + 15} y={UNLOADED.y + UPPER.height / 2} dy="0.36em" textAnchor="middle" fontSize={13} className="fill-ink-strong font-display font-bold">{FIRST_STOP}</text>
+        <circle cx={numberX} cy={UNLOADED.y + UPPER.height / 2} r={numberR} className="fill-bg" />
+        <text x={numberX} y={UNLOADED.y + UPPER.height / 2} dy="0.36em" textAnchor="middle" fontSize={font} className="fill-ink-strong font-display font-bold">{FIRST_STOP}</text>
         <FlatQr x={UNLOADED.x + ZONE.width - 21} y={UNLOADED.y + 6} size={16} />
       </g>
       <CheckBadge x={UNLOADED.x + ZONE.width + 2} y={UNLOADED.y + 4} r={9} piece={svgPiece(motion, 'lp-pop', AT.check)} />

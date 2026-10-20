@@ -23,7 +23,7 @@ test('the landing sample trip packs every package into one zone per stop, with n
   for (const line of LANDING_REQUEST.packages) expect(line.name).toMatch(/^[\x20-\x7e]+$/)
 })
 
-/** Thẻ chuyến ghi "Thùng mẫu 6 m" và bốn điểm giao; cảnh sân kho dựng thùng dài 6 m và bốn làn chờ: chuyến mẫu phải đúng như vậy. */
+/** Thẻ chuyến ghi "Thùng 6 m" và bốn điểm giao; cảnh sân kho dựng thùng dài 6 m và bốn làn chờ: chuyến mẫu phải đúng như vậy. */
 test('the landing sample trip runs on the 6 m truck with the four stops the page names', () => {
   expect(LANDING_REQUEST.vehicle.innerLengthCm).toBe(600)
   expect(new Set(LANDING_REQUEST.packages.map((line) => line.deliveryStop)).size).toBe(4)

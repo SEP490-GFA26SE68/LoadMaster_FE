@@ -17,6 +17,13 @@ describe('words', () => {
     expect(words('')).toEqual([])
   })
 
+  it('khoảng trắng không ngắt (U+00A0, U+202F) ở trong từ: từ ghép là một mảnh', () => {
+    const text = 'Tận dụng thùng xe, dỡ đúng thứ tự.'
+    expect(words(text).map((part) => part.word)).toEqual(['Tận', 'dụng', 'thùng xe,', 'dỡ', 'đúng', 'thứ tự.'])
+    expect(words(text).map((part) => part.word + part.space).join('')).toBe(text)
+    expect(words(' ')).toEqual([{ word: ' ', space: '' }])
+  })
+
   it('chuẩn hoá NFC: từ gõ kiểu tổ hợp thành chữ dựng sẵn', () => {
     expect(DECOMPOSED).not.toBe('Tận dụng')
     expect(words(DECOMPOSED).map((part) => part.word)).toEqual(['Tận', 'dụng'])

@@ -32,9 +32,10 @@ const toPx = (value: number) => `${value}px`
 const BUBBLE = { overlay: 'w-80 flex-none min-[90rem]:w-88', row: 'flex-1 md:max-w-[34rem]' } as const
 
 /**
- * Lumo dẫn chuyện của khung 3D (`LumoSays`, `budgetMs` 1.000, chữ dừng gõ khi chuyện bị giữ). Câu đổi bốn lần trong một chuyện, nên hộp
- * giữ chỗ theo câu dài nhất: một bản trong suốt `aria-hidden` cùng cỡ chồng tất cả các câu vào một ô lưới — hàng dưới khung không nhảy khi
- * Lumo đổi câu. `line` rỗng: chỉ giữ chỗ (trang chưa tải khung 3D). Câu của hình dự phòng không đổi nên không cần giữ chỗ.
+ * Lumo dẫn chuyện của khung 3D (`LumoSays`, `budgetMs` 1.000, chữ dừng gõ khi người xem bấm tạm dừng). Câu đổi bốn lần trong một
+ * chuyện, nên hộp giữ chỗ theo câu dài nhất: một bản trong suốt `aria-hidden` cùng cỡ chồng tất cả các câu vào một ô lưới — hàng dưới
+ * khung không nhảy khi Lumo đổi câu. Bản giữ chỗ dùng đúng lề dưới (đáy bong bóng nâng ngang miệng Lumo) và cách xuống dòng của bong bóng
+ * thật. `line` rỗng: chỉ giữ chỗ (trang chưa tải khung 3D). Câu của hình dự phòng không đổi nên không cần giữ chỗ.
  */
 export function StoryNarrator({ line, paused = false, layout, preload = false, className }: {
   line: NarratorLine | null
@@ -62,7 +63,7 @@ export function StoryNarrator({ line, paused = false, layout, preload = false, c
         <div aria-hidden className="reveal-lumo invisible flex items-end gap-3 [grid-area:1/1]"
           style={withVars({ '--lumo-px-base': toPx(SIZES.base), '--lumo-px-md': toPx(SIZES.md), '--lumo-px-wide': toPx(SIZES.wide) })}>
           <div className="reveal-lumo-fig" />
-          <p className={cn('reveal-bubble relative m-0 grid min-w-0 max-w-md rounded-lg border px-4 py-3 text-body-lg', bubble)}>
+          <p className={cn('reveal-bubble relative mx-0 mt-0 grid min-w-0 max-w-md rounded-lg border px-4 py-3 text-body-lg text-pretty', bubble)}>
             {STORY_LINES.map((key) => <span key={key} className="[grid-area:1/1]">{t(LINES[key][1])}</span>)}
           </p>
         </div>

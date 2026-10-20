@@ -133,6 +133,10 @@
       display: none;
     }
   }
+  /* Máy cảm ứng: vùng cảnh nhỏ tới mức chữ 16 px không còn vừa hình (`useSceneTextFloor` trả null) thì cũng bỏ hình */
+  .lp-stage-scenes[data-small] .lp-stage-scene {
+    display: none;
+  }
   /* Kiện được dỡ trong cảnh "Soạn, xếp, giao": ra khỏi cửa sau ở độ cao của nó rồi hạ xuống mặt đường (--from-x, --from-y: ô cũ), 600 ms */
   [data-motion='on'] .lp-unload {
     animation: lp-unload 600ms var(--ease-standard) both;

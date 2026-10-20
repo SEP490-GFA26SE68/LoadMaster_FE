@@ -20,7 +20,8 @@ export function svgPiece(motion: boolean, effect: string, at: number, className?
 /** Mã mẫu đúng dạng mã QR của kho kiện (`LM-XXXX-XXXX-XXXX`, Crockford base32) — không thuộc kiện nào; chỉ để vẽ hình. */
 const SAMPLE_QR_TOKEN = 'LM-7K2M-9QXD-4F8T'
 const QR_PX = 88
-const VERIFY_LEVELS = ['qr', 'code', 'manual'] as const
+/** Ba mức đối chiếu, theo mã của ứng dụng: tên lấy từ `common.verifyMethods` như hộp đối chiếu và báo cáo chuyến. */
+const VERIFY_LEVELS = ['QR', 'CODE', 'MANUAL'] as const
 const DEADLINES = [
   { status: 'OK', tone: 'success' },
   { status: 'AT_RISK', tone: 'warning' },
@@ -74,7 +75,7 @@ export function VerifyVisual() {
             <span aria-hidden className="grid size-6 flex-none place-items-center rounded-full bg-tint-blue font-mono text-small font-semibold text-tint-blue-fg pointer-coarse:size-7 pointer-coarse:text-body-lg">
               {index + 1}
             </span>
-            {t(`landing.features.verify.levels.${level}`)}
+            {t(`common.verifyMethods.${level}`)}
           </Reveal>
         ))}
       </ol>

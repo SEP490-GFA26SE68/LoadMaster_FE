@@ -2,7 +2,7 @@ import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
 import { createProjector, type Projector } from '@/lib/isometric'
 import { useT } from '@/lib/i18n'
 import { svgPiece } from '../bento/FeatureVisuals'
-import { byDepth, CheckBadge, IsoBlock, LOAD_ORDER, SCENE_HEIGHT, SCENE_WIDTH, StopMark, stopTone, type SceneBox, type SceneStop } from './scene-kit'
+import { byDepth, CheckBadge, IsoBlock, LOAD_ORDER, SCENE_HEIGHT, SCENE_WIDTH, StopMark, stopRadius, stopTone, useSceneFont, type SceneBox, type SceneStop } from './scene-kit'
 
 /** Ba thẻ cạnh nhau như màn So sánh phương án; thùng thu nhỏ dài 4,2 × rộng 1,6 × cao 1,7 (đơn vị hình). */
 const CARD = { width: 116, height: 154, gap: 10, y: 14 }
@@ -15,6 +15,17 @@ const ROWS = [
 ] as const
 /** Phương án được duyệt trong hình: ít dỡ-xếp lại (C), như bản điều phối viên duyệt của chuyến mẫu. */
 const APPROVED = 'MIN_REHANDLING'
+/** Cỡ thiết kế: chữ cái trong ô 24 × 24, nhãn "Đã duyệt" 64 × 20 ở góc phải trên của thẻ, chú giải bốn mốc bán kính 11 cách nhau 30. */
+const LETTER = { font: 14, box: 24 }
+const TAG = { font: 11.5, width: 64, height: 20 }
+const LEGEND = { r: 11, step: 30, y: 196 }
+/**
+ * Nhãn "Đã duyệt" lớn hơn cỡ thiết kế (máy cảm ứng) không còn vừa cạnh chữ cái: nằm giữa viền dưới của thẻ, rộng theo chữ (ước lượng
+ * 0,62 em mỗi ký tự, không quá thẻ).
+ */
+function ribbonWidth(label: string, font: number): number {
+  return Math.min(CARD.width - 8, Math.ceil(label.length * font * 0.62) + 16)
+}
 
 /** Một dòng hàng: khối (x, dài, hàng ngang, cao, điểm giao). */
 type Cargo = readonly [x: number, l: number, row: 0 | 1, h: number, stop: SceneStop]
@@ -64,6 +75,13 @@ function PlanCard({ objective, order, motion, approved }: { objective: (typeof P
   const project = createProjector(SCALE, x + 36.6, y + 83.6)
   const at = AT.card + order * AT.cardStep
   const isApproved = objective === APPROVED
+  const letterFont = useSceneFont(LETTER.font)
+  const box = Math.max(LETTER.box, letterFont + 10)
+  const tagFont = useSceneFont(TAG.font)
+  const ribbon = tagFont > TAG.font
+  const tagWidth = ribbon ? ribbonWidth(approved, tagFont) : TAG.width
+  const tagHeight = Math.max(TAG.height, tagFont + 8)
+  const tag = ribbon ? { x: x + (width - tagWidth) / 2, y: y + height - tagHeight / 2 } : { x: x + width - 10 - tagWidth, y: y + 12 }
   return (
     <g>
       {isApproved ? (
@@ -71,8 +89,8 @@ function PlanCard({ objective, order, motion, approved }: { objective: (typeof P
       ) : null}
       <g {...svgPiece(motion, 'lp-lift', at)}>
         <rect x={x} y={y} width={width} height={height} rx={11} className="fill-bg stroke-border" strokeWidth={1} />
-        <rect x={x + 10} y={y + 10} width={24} height={24} rx={6} className="fill-tint-blue" />
-        <text x={x + 22} y={y + 22} dy="0.36em" textAnchor="middle" fontSize={14} className="fill-tint-blue-fg font-display font-bold">{PLAN_LABELS[objective]}</text>
+        <rect x={x + 10} y={y + 10} width={box} height={box} rx={6} className="fill-tint-blue" />
+        <text x={x + 10 + box / 2} y={y + 10 + box / 2} dy="0.36em" textAnchor="middle" fontSize={letterFont} className="fill-tint-blue-fg font-display font-bold">{PLAN_LABELS[objective]}</text>
         {shellFaces(project).map((face, index) => (
           <polygon key={index} points={face.points} className={`${face.className} stroke-n-300`} strokeWidth={0.75} strokeLinejoin="round" />
         ))}
@@ -83,8 +101,8 @@ function PlanCard({ objective, order, motion, approved }: { objective: (typeof P
       {isApproved ? (
         <>
           <g {...svgPiece(motion, 'lp-fade', AT.tag)}>
-            <rect x={x + width - 74} y={y + 12} width={64} height={20} rx={6} className="fill-badge-cyan-bg" />
-            <text x={x + width - 42} y={y + 22} dy="0.36em" textAnchor="middle" fontSize={11.5} className="fill-badge-cyan-fg font-semibold">{approved}</text>
+            <rect x={tag.x} y={tag.y} width={tagWidth} height={tagHeight} rx={6} className="fill-badge-cyan-bg" />
+            <text x={tag.x + tagWidth / 2} y={tag.y + tagHeight / 2} dy="0.36em" textAnchor="middle" fontSize={tagFont} className="fill-badge-cyan-fg font-semibold">{approved}</text>
           </g>
           <CheckBadge x={x + width} y={y} r={11} piece={svgPiece(motion, 'lp-pop', AT.check)} />
         </>
@@ -96,17 +114,25 @@ function PlanCard({ objective, order, motion, approved }: { objective: (typeof P
 /**
  * Cảnh "Xếp 3D, so sánh, duyệt": ba phương án A · B · C của một lần chạy cạnh nhau, mỗi phương án một thùng thu nhỏ — A kín thùng, B dồn
  * giữa thùng, C chia vùng theo điểm giao; C nhận vòng cyan, nhãn "Đã duyệt" và dấu kiểm. Hàng chú giải bốn điểm giao có số dưới thẻ.
+ * Máy cảm ứng (`SceneTextFloor`): chữ cái, nhãn và số chú giải lớn lên cùng ô của chúng; nhãn "Đã duyệt" xuống giữa viền dưới thẻ C.
  */
 export function OptimizeScene({ motion }: { motion: boolean }) {
   const t = useT()
   const approved = t('trips.compare.candidates.approved')
+  // Chú giải: mốc lớn theo số thì cách nhau ít nhất 2r + 6; giữa khung, trừ khi chạm nhãn "Đã duyệt" nằm ở viền dưới thẻ C — lùi sang trái
+  const tagFont = useSceneFont(TAG.font)
+  const legendR = stopRadius(LEGEND.r, useSceneFont(Math.round(LEGEND.r * 1.1)))
+  const step = Math.max(LEGEND.step, 2 * legendR + 6)
+  const approvedX = LEFT + PLAN_OBJECTIVES.indexOf(APPROVED) * (CARD.width + CARD.gap)
+  const ribbonLeft = tagFont > TAG.font ? approvedX + (CARD.width - ribbonWidth(approved, tagFont)) / 2 : SCENE_WIDTH
+  const center = Math.min(SCENE_WIDTH / 2, ribbonLeft - 4 - legendR - 1.5 * step)
   return (
     <svg viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`} preserveAspectRatio="xMidYMid meet" className="block size-full">
       {PLAN_OBJECTIVES.map((objective, order) => (
         <PlanCard key={objective} objective={objective} order={order} motion={motion} approved={approved} />
       ))}
       {([1, 2, 3, 4] as const).map((stop, order) => (
-        <StopMark key={stop} stop={stop} x={SCENE_WIDTH / 2 - 45 + order * 30} y={196} r={11} piece={svgPiece(motion, 'lp-fade', AT.legend)} />
+        <StopMark key={stop} stop={stop} x={center + (order - 1.5) * step} y={LEGEND.y} r={LEGEND.r} piece={svgPiece(motion, 'lp-fade', AT.legend)} />
       ))}
     </svg>
   )
