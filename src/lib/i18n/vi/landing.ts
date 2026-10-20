@@ -34,6 +34,13 @@ export const landing = {
    */
   stage: {
     title: 'Thùng mẫu 6 m',
+    /** Thẻ chuyến trong khung: số kiện và số điểm giao của yêu cầu mẫu (cố định); chip "Đã tính phương án" đứng trước pha xếp. */
+    trip: 'Chuyến mẫu',
+    load: '{count} kiện · {stops} điểm giao',
+    computed: 'Đã tính phương án',
+    /** Hàng "Thứ tự giao" dưới khung: kho rồi các điểm giao theo thứ tự đi. */
+    route: 'Thứ tự giao',
+    depot: 'Kho',
     caption: 'Chuyến mẫu {count} kiện cho {stops} điểm giao, do bộ tối ưu mô phỏng tính ngay trên trình duyệt của bạn rồi xếp từng kiện theo thứ tự. Hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa.',
     /** Câu dưới hình minh hoạ khi trình duyệt không vẽ được khung 3D: không nói gì về lần chạy, vì không có lần chạy nào. */
     artworkCaption: 'Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa — tới điểm nào lấy hàng điểm đó.',
@@ -41,15 +48,24 @@ export const landing = {
     views: 'Góc nhìn',
     view: {
       overview: 'Toàn cảnh',
+      truck: 'Thùng xe',
       zones: 'Vùng điểm giao',
-      door: 'Cửa sau',
     },
     replay: 'Xếp lại',
     replayLabel: 'Xếp lại thùng xe từ đầu',
+    /** Nút ba trạng thái của chuyện trong khung (Tạm dừng · Tiếp tục · Xếp lại): chữ hiện ra là phần đầu của tên truy cập (WCAG 2.5.3). */
+    story: {
+      pause: 'Tạm dừng',
+      pauseLabel: 'Tạm dừng chuyến mẫu',
+      resume: 'Tiếp tục',
+      resumeLabel: 'Tiếp tục chuyến mẫu',
+    },
     legend: 'Màu của kiện theo điểm giao',
     stop: 'Điểm {number}',
     readout: {
       title: 'Kết quả của lần chạy',
+      /** Câu giữ chỗ trước khi xếp xong, cùng chiều cao với dải số: số của lần chạy chỉ hiện khi đã có. */
+      pending: 'Số liệu của lần chạy hiện ra khi xếp xong.',
       placed: 'Kiện đã xếp',
       placedValue: '{placed} / {total}',
       volume: 'Lấp đầy thể tích',
@@ -152,6 +168,12 @@ export const landing = {
     step: 'Bước {number}',
     /** Ai làm bước đó; tên vai trò lấy từ nhánh `roles`. */
     who: 'Người làm',
+    /** Tên của khung dính khi đọc tới câu kết sau bốn bước. */
+    done: 'Chuyến đã giao xong',
+    /** Chữ trong hình của khung dính (trang trí). */
+    scene: {
+      requirement: 'Yêu cầu giao',
+    },
     steps: {
       intake: {
         title: 'Nhập kiện và yêu cầu giao',

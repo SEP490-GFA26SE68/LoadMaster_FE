@@ -190,3 +190,25 @@ test('a signed-in company admin is offered the app, not the sign-in screen', asy
   renderLanding('/gioi-thieu')
   expect(await within(screen.getByRole('banner')).findByRole('link', { name: 'Vào ứng dụng' })).toHaveAttribute('href', '/nguoi-dung')
 })
+
+test('Lumo speaks with an sr-only "Lumo nói:" prefix, at most once per section, and every Lumo picture is hidden from screen readers', async () => {
+  renderLanding('/gioi-thieu')
+  expect(await within(screen.getByRole('region', { name: 'Gói cước' })).findByRole('group', { name: 'Pro' }, SLOW)).toBeInTheDocument()
+  const lines = [
+    ['Con số kiểm được', 'Đây là các con số cố định của chính ứng dụng, không phải số của một chuyến hàng nào.'],
+    ['Cách hoạt động', 'Mỗi kiện có nhãn QR riêng, nên lúc soạn, xếp hay dỡ đều đối chiếu được.'],
+    ['Gói cước', 'Chưa chắc gói nào hợp? Gửi yêu cầu, đội LoadMaster tư vấn theo đội xe của bạn.'],
+    ['Liên hệ với LoadMaster', 'Cần báo giá, xem demo hay hỏi hợp đồng? Chọn ở ô “Bạn cần gì” để đội LoadMaster trả lời đúng việc.'],
+  ] as const
+  for (const [name, line] of lines) {
+    const section = screen.getByRole('region', { name })
+    expect(section).toHaveTextContent(`Lumo nói: ${line}`)
+    expect(section.querySelectorAll('img[data-lumo]').length).toBeLessThanOrEqual(1)
+  }
+  const pictures = [...document.querySelectorAll('img[data-lumo]')]
+  expect(pictures.length).toBeGreaterThanOrEqual(lines.length)
+  for (const picture of pictures) {
+    expect(picture).toHaveAttribute('alt', '')
+    expect(picture).toHaveAttribute('aria-hidden', 'true')
+  }
+})

@@ -3,6 +3,7 @@ import { PLAN_OBJECTIVES } from '@/domain/models'
 import { PICKUP_RULES } from '@/domain/pickup'
 import { useFormat, useT } from '@/lib/i18n'
 import { ROLES } from '@/types/user'
+import { LumoSays, Odometer, Reveal } from './reveal'
 import { SectionHeading } from './SectionHeading'
 
 /** Bước làm tròn của domain, lấy từ chính hai hàm làm tròn: 0,06 cm lên một bước 0,1 cm, 0,006 kg lên một bước 0,01 kg. */
@@ -16,12 +17,17 @@ const WEIGHT_STEP_KG = roundKg(0.006)
  */
 const BENCH = { packages: 1000, seconds: 1 } as const
 
+/** Số cột của lưới từ 1.024 px: ô cùng hàng hiện so le theo cột, ô hàng dưới hiện khi chính nó cuộn tới. */
+const COLUMNS = 3
+
 type Fact = { key: string; value: string; label: string; source: string }
 
 /**
  * Dải "Con số kiểm được" (`#con-so`), cuối khối tối của phần mở đầu: sáu con số, mỗi số có câu nguồn — hằng số trong mã của ứng dụng
- * (số hướng đặt, số phương án, bước làm tròn, số luật nhận hàng, số vai trò) hoặc cổng hiệu năng của bộ tối ưu mô phỏng. Không đếm
- * tăng dần, không chuyển động.
+ * (số hướng đặt, số phương án, bước làm tròn, số luật nhận hàng, số vai trò) hoặc cổng hiệu năng của bộ tối ưu mô phỏng. Lumo (`explain`)
+ * ló lên trên mép của lưới, nói đây là số cố định của ứng dụng. Khi cuộn tới, mỗi ô nhô lên, vạch cyan kéo ra, số lăn kiểu đồng hồ cơ
+ * (`Odometer`) **một lần** rồi dừng đúng chuỗi đã format — ô số giữ nguyên bề rộng, trình đọc màn hình chỉ nhận chuỗi đó; không đếm tăng
+ * dần. Giảm chuyển động hay không có IntersectionObserver: số đứng yên ngay từ đầu.
  */
 export function LandingFacts() {
   const t = useT()
@@ -41,17 +47,32 @@ export function LandingFacts() {
   ]
   return (
     <section id="con-so" aria-labelledby="landing-facts" className="relative scroll-mt-24 border-t border-landing-hairline px-4 py-14 md:px-shell lg:py-18">
-      <SectionHeading id="landing-facts" tone="dark" title={t('landing.facts.title')} lede={t('landing.facts.lede')} />
-      <dl className="m-0 mt-10 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-        {facts.map((fact) => (
-          <div key={fact.key} className="relative flex min-w-0 flex-col gap-2 border-t border-landing-hairline pt-6">
-            <span aria-hidden className="absolute -top-px left-0 h-px w-10 bg-cyan-300" />
-            <dt className="text-body-lg font-semibold text-sky-text">{fact.label}</dt>
+      {/* Lumo đứng ngay trên mép trên của lưới (từ 1.280 px: cạnh tiêu đề) để ló lên trên đường kẻ của các ô */}
+      <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between xl:gap-12">
+        <SectionHeading id="landing-facts" tone="dark" title={t('landing.facts.title')} lede={t('landing.facts.lede')} className="min-w-0 xl:pb-10" />
+        <LumoSays
+          pose="explain"
+          px={{ base: 112, md: 144, xl: 176 }}
+          side="bubble-left"
+          text={t('landingStory.lumo.facts')}
+          className="flex-none justify-end"
+          bubbleClassName="max-w-sm"
+        />
+      </div>
+      <dl className="m-0 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        {facts.map((fact, index) => (
+          <Reveal key={fact.key} index={index % COLUMNS} className="relative flex min-w-0 flex-col gap-2 border-t border-landing-hairline pt-6">
+            <Reveal as="span" kind="fill-x" aria-hidden className="absolute -top-px left-0 h-px w-10 bg-cyan-300" />
+            <Reveal as="dt" kind="fade" delay={200} className="text-body-lg font-semibold text-sky-text">
+              {fact.label}
+            </Reveal>
             <dd className="order-first m-0 font-display text-figure font-bold tracking-[-0.02em] whitespace-nowrap text-sky-text tabular-nums font-stretch-112%">
-              {fact.value}
+              <Odometer value={fact.value} delay={100} />
             </dd>
-            <dd className="m-0 text-small text-sky-text-3 pointer-coarse:text-body-lg">{fact.source}</dd>
-          </div>
+            <Reveal as="dd" kind="fade" delay={300} className="m-0 text-small text-sky-text-3 pointer-coarse:text-body-lg">
+              {fact.source}
+            </Reveal>
+          </Reveal>
         ))}
       </dl>
     </section>

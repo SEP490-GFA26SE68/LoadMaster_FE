@@ -1,0 +1,222 @@
+/*
+ * Chuyển động riêng của các phần dưới khối mở đầu trang giới thiệu (features/marketing): hình của lưới tính năng và cảnh của khung dính
+ * Cách hoạt động (vùng điểm giao, tuyến, nhận hàng dọc đường, tia quét mã QR, kiện được dỡ ở cửa sau), dải nguyên tắc xếp hàng (từng từ
+ * sáng dần, khối hàng vào xe theo cuộn), khung dính (số, tên bước, cảnh mờ chéo) và vạch tiến độ cuộn của đầu trang. Cùng luật với
+ * reveal/reveal.css:
+ * - chỉ chạy dưới [data-motion='on'] (RevealProvider bật khi có IntersectionObserver và không giảm chuyển động); tắt thì không gì bị ẩn;
+ * - mỗi mảnh đọc --reveal-play của cổng bao quanh (paused tới khi cổng mở) và bắt đầu ở --reveal-delay của khối cộng --at của chính nó;
+ * - keyframes chỉ có khung đầu: khung cuối là style của chính phần tử, nên bỏ animation (in trang, data-instant) là đúng trạng thái cuối;
+ *   mảnh mang lớp reveal-piece để lưới an toàn (focus, in trang) nhảy ngay tới đó;
+ * - nằm trong lớp components: class utilities của nơi gọi thắng.
+ */
+
+@layer components {
+  /* Chấm, huy hiệu trong hình SVG: bật ra quanh tâm của chính nó */
+  [data-motion='on'] .lp-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lp-pop 320ms var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+  /* Khối hàng của một vùng: hiện dần và nhô lên 8 px */
+  [data-motion='on'] .lp-lift {
+    transform-box: fill-box;
+    animation: lp-lift 500ms var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] .lp-fade {
+    animation: reveal-fade var(--dur-slow) var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+  /* Đường vẽ dần: phần tử mang pathLength="1", nét 1 rồi khoảng hở 2 — nét phủ trọn đường khi dashoffset về 0 */
+  [data-motion='on'] .lp-draw {
+    stroke-dasharray: 1 2;
+    animation: lp-draw 900ms var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] .lp-draw-short {
+    animation-duration: 400ms;
+  }
+  /* Kiện nhận dọc đường phồng lên một lần */
+  [data-motion='on'] .lp-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lp-pulse 400ms var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+
+  /* Ô đối chiếu: Lumo quét nhô lên nhanh hơn khối thường, rồi tia 2 px chạy một lần từ mép trên xuống mép dưới mã QR, không quầng.
+     Tia đứng sẵn ở mép dưới, trong suốt (khung cuối): ngoài lúc chạy thì không thấy. */
+  [data-motion='on'] [data-reveal].lp-scan {
+    animation-duration: 400ms;
+  }
+  .lp-beam {
+    opacity: 0;
+    transform: translateY(var(--beam-travel, 0px));
+  }
+  [data-motion='on'] .lp-beam {
+    animation: lp-beam 600ms var(--ease-standard);
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+
+  /* Dải nguyên tắc xếp hàng: từng từ sáng dần theo cuộn khi dải đi qua khung nhìn — chuyển động theo cuộn, không tự chạy. Trình duyệt
+     không có view timeline thì chữ đứng yên, sáng hẳn (style của chính từ). */
+  @supports (animation-timeline: view()) {
+    [data-motion='on'] .lp-statement {
+      view-timeline-name: --statement;
+    }
+    [data-motion='on'] .lp-statement-word {
+      animation: lp-word-lit linear both;
+      animation-duration: auto;
+      animation-timeline: --statement;
+      animation-range: cover calc(25% + var(--p, 0) * 35%) cover calc(28% + var(--p, 0) * 35%);
+    }
+    /* Hình xe của dải: từng khối hàng vào qua cửa sau theo cùng nhịp cuộn — điểm 4 trước (--q = 0), điểm 1 sau cùng (--q = 1) — và khối
+       cuối vào chỗ đúng lúc từ cuối của câu sáng hẳn (63 %). --load-x: quãng từ ô của khối tới cửa sau. */
+    [data-motion='on'] .lp-load {
+      animation: lp-load var(--ease-decelerate) both;
+      animation-duration: auto;
+      animation-timeline: --statement;
+      animation-range: cover calc(24% + var(--q, 0) * 29%) cover calc(34% + var(--q, 0) * 29%);
+    }
+  }
+
+  /* Cách hoạt động từ 1.024 px: đường ray dọc nối các bước, phần đã qua tô cyan tới bước đang đọc (250 ms) */
+  .lp-rail-fill {
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform var(--dur-md) var(--ease-standard);
+  }
+  [data-step-state='done'] .lp-rail-fill {
+    transform: none;
+  }
+  .lp-rail-node {
+    transition:
+      background-color var(--dur-md) var(--ease-standard),
+      border-color var(--dur-md) var(--ease-standard),
+      color var(--dur-md) var(--ease-standard);
+  }
+  /* Số lớn, tên bước và cảnh của khung dính: cái cũ mờ đi, cái mới hiện lên chồng đúng chỗ (220 ms) */
+  [data-motion='on'] .lp-swap-in {
+    animation: reveal-fade var(--dur-pose) var(--ease-standard) both;
+  }
+  [data-motion='on'] .lp-swap-out {
+    animation: lp-fade-out var(--dur-pose) var(--ease-standard) both;
+  }
+  /* Khung dính: cao tối đa 680 px, vừa khung nhìn dưới đầu trang (64 px, máy cảm ứng 80 px) và nằm giữa phần còn lại */
+  .lp-steps-stage {
+    --stage-top: 64px;
+    --stage-h: min(680px, calc(100vh - var(--stage-top) - 2rem));
+    top: calc(var(--stage-top) + max(1rem, (100vh - var(--stage-top) - var(--stage-h)) / 2));
+    height: var(--stage-h);
+  }
+  @media (pointer: coarse) {
+    .lp-steps-stage {
+      --stage-top: 80px;
+    }
+  }
+  .lp-stage-step {
+    transition: background-color var(--dur-md) var(--ease-standard);
+  }
+  /* Vùng cảnh: hình co giãn theo cả hai chiều; khung thấp tới mức hình không còn đọc được thì bỏ hình, chữ và Lumo vẫn đủ */
+  .lp-stage-scenes {
+    container-type: size;
+  }
+  @container (max-height: 104px) {
+    .lp-stage-scene {
+      display: none;
+    }
+  }
+  /* Kiện được dỡ trong cảnh "Soạn, xếp, giao": ra khỏi cửa sau ở độ cao của nó rồi hạ xuống mặt đường (--from-x, --from-y: ô cũ), 600 ms */
+  [data-motion='on'] .lp-unload {
+    animation: lp-unload 600ms var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+
+  /* Vạch tiến độ cuộn dưới đầu trang (chỉ trang giới thiệu): chạy theo vị trí cuộn của cả tài liệu; trình duyệt không có scroll
+     timeline hoặc người xem giảm chuyển động thì không có vạch. */
+  .landing-progress {
+    display: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .landing-progress {
+        display: block;
+        animation: lp-progress linear both;
+        animation-duration: auto;
+        animation-timeline: scroll(root block);
+      }
+    }
+  }
+}
+
+@keyframes lp-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes lp-lift {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes lp-draw {
+  from {
+    stroke-dashoffset: 1.001;
+  }
+}
+@keyframes lp-pulse {
+  50% {
+    transform: scale(1.15);
+  }
+}
+@keyframes lp-beam {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+  }
+}
+@keyframes lp-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes lp-word-lit {
+  from {
+    color: var(--sky-text-2);
+  }
+}
+@keyframes lp-unload {
+  from {
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px));
+  }
+  45% {
+    transform: translate(calc(var(--from-x, 0px) * 0.2), var(--from-y, 0px));
+  }
+}
+@keyframes lp-load {
+  from {
+    opacity: 0;
+    transform: translateX(var(--load-x, 0px));
+  }
+  25% {
+    opacity: 1;
+  }
+}
+@keyframes lp-progress {
+  from {
+    transform: scaleX(0);
+  }
+}

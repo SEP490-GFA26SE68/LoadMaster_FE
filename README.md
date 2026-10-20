@@ -138,13 +138,13 @@ component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `create
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.601 test unit + DOM
-pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
+pnpm test          # Vitest: 2.692 test unit + DOM
+pnpm test:e2e      # Playwright: 150 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất ở máy (18/10/2026, nhánh `feat/demo-noi-backend` sau khi nối giám sát và sửa lỗi QA): lint, kiểm kiểu, build, 2.601/2.601
-unit + DOM xanh; E2E chỉ chạy các spec trang công khai (4/4), bộ đủ chưa chạy lại. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
+Lần chạy gần nhất ở máy (20/10/2026, nhánh `feat/landing-dong` sau khi làm lại trang giới thiệu): lint, kiểm kiểu, build, 2.692/2.692
+unit + DOM xanh; E2E chạy 7 spec của trang giới thiệu và khung 3D (26/26), bộ đủ chưa chạy lại. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo

@@ -75,16 +75,42 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `SKY_FOCUS`, 44 px (56 px cảm ứng). Chip và nhãn nhỏ của hai trang công khai ghép `PUBLIC_TOUCH_TAG` (`public-chrome.ts`): chữ 16 px, xuống
   dòng được trên máy cảm ứng. Hình `CargoArtwork` của màn đăng nhập xếp đầy **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có
   nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
-- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he`, khung 3D chuyến mẫu,
-  "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với
-  Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`).
-- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
-  kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit; mọi số kèm MOCK RESULT. Xếp **một lần** (khoảng 3
-  giây) rồi đứng yên; "Xếp lại" xếp từ đầu; giảm chuyển động thì đầy ngay, không có "Xếp lại". Khung không nhận thao tác, camera chỉ theo ba nút
-  góc nhìn. Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải hay mất ngữ cảnh: `CargoArtwork`, không số nào; `useStageGate`
-  biết trước thì không tải Three.js, không chạy bộ tối ưu.
+  Riêng trang giới thiệu (`PublicPage progress`), mép dưới đầu trang có vạch tiến độ cuộn 2 px `--cyan-300`, `aria-hidden`, chạy bằng CSS
+  `animation-timeline: scroll()` trong `@supports` và tắt khi giảm chuyển động.
+- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he`, khung 3D chuyến mẫu kèm thẻ
+  chuyến, Lumo dẫn chuyện, hàng "Thứ tự giao" và dải kết quả; "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · dải nguyên tắc xếp hàng
+  (`StatementBand`, nền `--panel-dark`) · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với Bảng giá) · dải liên hệ tối
+  `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`) và không đánh dấu phần đang đọc. Mỗi phần có tối đa một Lumo
+  (mục 5 "Thương hiệu"). Chữ và khối hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 6, 8); cuộn ngược không chạy lại. Giá, credit,
+  số của lần chạy và ô nhập của form không bao giờ chuyển động. Cách hoạt động từ 1.024 px có khung dính theo mục đang đọc (`StepsStage`,
+  `aria-hidden`; cao tối đa 680 px, giữa phần khung nhìn dưới đầu trang): số lớn, tên bước, bốn đoạn tiến độ; giữa khung một cảnh SVG cho mỗi mục
+  (`steps/`, khung 400 × 220 co giãn giữ tỉ lệ, vùng cảnh thấp dưới 104 px thì bỏ cảnh): kiện có nhãn QR cạnh thẻ yêu cầu giao (ghim, đồng hồ),
+  tia quét chạy qua một nhãn · kho rồi tuyến vẽ dần qua điểm 1 → 4 trên mảnh bản đồ · ba phương án A · B · C cạnh nhau, C (ít dỡ-xếp lại) mang
+  vòng cyan và nhãn "Đã duyệt" · xe nhìn ngang, vùng 4 · 3 · 2 · 1 từ cabin ra cửa sau, kiện của điểm 1 ra khỏi cửa rồi có dấu đối chiếu QR ·
+  câu kết (mục 4, sau danh sách): bốn điểm đã giao và tờ báo cáo chuyến; dưới cùng Lumo nói lời của mục. Cảnh chỉ mang số điểm giao (luôn kèm màu
+  của điểm) và chữ cái phương án, không số liệu nào. Lời của Lumo cho từng bước vẫn nằm trong mục của danh sách, danh sách vẫn đúng bốn mục.
+  Dải nguyên tắc: từ 1.024 px câu bên trái, hình bên phải; hẹp hơn hình nằm dưới câu, rộng tối đa 28rem. Hình (`StatementTruck`, `aria-hidden`)
+  là xe tải nhìn ngang, bốn khối hàng có số xếp 4 · 3 · 2 · 1 từ cabin ra cửa sau; nhãn "Cửa sau" ở cửa là chữ HTML đặt lên hình (hình co theo
+  bề rộng, nhãn vẫn 14 px, 16 px trên máy cảm ứng).
+- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer` và `viewer3d/landing/`, tải lười): bộ tối ưu mô phỏng tính
+  chuyến mẫu 366 kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit. Cảnh là một sân kho thu nhỏ — xe, sàn
+  dock, bốn làn chờ theo màu điểm giao, nhà kho — chỉ để minh hoạ, không chữ, không số. Mỗi kiện của lần chạy là **đúng một hộp**: chờ ở làn của điểm
+  giao mình tới bước xếp của nó thì rời làn và hiện trong thùng (`laneSlots`); kiện chưa xếp được ở lại làn. Chuyện chạy **một lần**, 9 giây, theo
+  đồng hồ `story-clock` (mỗi nhịp tiến tối đa 250 ms): nhập kiện 0–2 s → tối ưu 2–4 s (dải vùng điểm giao hiện ra) → xếp 4–9 s (`fillStep`,
+  `LANDING_FILL_MS`) → xếp xong rồi đứng yên. Bắt đầu khi khung đã vẽ, phương án đã tính, khung lộ ít nhất 40 % và trang đã mở 1,2 giây; giữ lại khi
+  khung lộ dưới 20 %, khi tab ẩn, hoặc khi người xem bấm. Một nút ba trạng thái "Tạm dừng" / "Tiếp tục" / "Xếp lại" (một phần tử, focus giữ nguyên, bề
+  rộng giữ chỗ cho cả ba chữ). Ba góc nhìn: Toàn cảnh, Thùng xe (mặc định dưới 768 px), Vùng điểm giao (có nhãn vùng); camera không tự đổi khi chuyện
+  chạy. Thẻ chuyến dùng đúng chip của ứng dụng: "Đã tính phương án", rồi `StatusBadge` Đang xếp hàng kèm `TripSubStatusTag` "Đang xếp n / 366" và "Xếp
+  xong — chờ xuất phát"; không có chip Đã lập kế hoạch vì chuyến mẫu không có tuyến. Giảm chuyển động: trạng thái cuối ngay, không nút. Lúc tải: hình
+  `DioramaPoster` (SVG, cùng góc nhìn, không số). Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải hay mất ngữ cảnh:
+  `CargoArtwork` kèm Lumo `point` nói một câu, không số nào; `useStageGate` biết trước thì không tải Three.js, không chạy bộ tối ưu. Câu mô tả khung
+  (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
 - **Số trên trang giới thiệu** đều có nguồn: mỗi số của `#con-so` kèm câu nguồn (hằng số code, cổng bench), giá và credit từ danh mục gói, số
   của khung 3D từ lần chạy vừa tính. Không lời khen, logo khách hay thống kê sử dụng.
+  Số của kết quả lần chạy (dải kết quả) kèm MOCK RESULT và chỉ hiện ở pha xếp xong; trước đó là một câu chờ, cùng chiều cao. Số kiện, số điểm giao
+  trên thẻ chuyến là của yêu cầu mẫu; "Đang xếp n / 366" đếm hộp đã vẽ trong thùng. Số của `#con-so` lăn kiểu đồng hồ cơ (`Odometer`) một lần rồi dừng
+  đúng chuỗi đã format; trình đọc màn hình chỉ nhận chuỗi đó. Giá, credit và số của lần chạy không bao giờ đếm, lăn hay hiện dần từng chữ. Lời của
+  Lumo và câu của dải nguyên tắc không chứa chữ số (test canh); hình của dải chỉ mang số điểm giao.
 - E2E đăng nhập bằng `login(route, role)` (`login('/')` mở thẳng `/dang-nhap`, vì khách mở `/` là sang trang giới thiệu); không còn vai trò toàn
   quyền nên kịch bản đi qua nhiều vai trò **đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser`
   (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho); test DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`.
@@ -242,7 +268,7 @@ maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một ve
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
 keycloak-js              — đăng nhập qua Keycloak của backend; CHỈ import (động) trong features/auth/keycloak-session.ts
-motion                   — animation 2D
+motion                   — animation 2D trong khung ứng dụng; hai trang công khai không import nó (CSS + IntersectionObserver, mục 8)
 ```
 
 Riêng cho 3D viewer (chỉ trong `src/features/viewer3d`):
@@ -265,7 +291,7 @@ Bản đồ (FE-4b-07): màn import `RouteMap` từ `@/components/map`, không i
 OpenStreetMap** hay nguồn gạch nào ngoài Goong (D-75: không bảo đảm thể hiện Hoàng Sa, Trường Sa). Khoá map tiles chỉ nằm ở `.env.local`
 (mẫu: `.env.example`; mọi `.env*` khác bị `.gitignore` chặn); dev, CI và test chạy không khoá. Khoá REST của Goong không bao giờ ở FE.
 
-**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác.
+**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · GSAP (ScrollTrigger, SplitText) · Lenis hay thư viện cuộn mượt · thư viện tách chữ (Splitting, SplitType) · Lottie.
 
 ### Radix trực tiếp, không dùng shadcn CLI
 
@@ -303,7 +329,8 @@ src/
                         `TripExceptionList`; màn tài xế mở `ReportExceptionDialog` từ tờ "Thêm" của `driver/StopMoreActions`), tab của quản lý
                         (`EscalationTab`, `RenegotiateDialog`), việc màn làm được theo nguồn dữ liệu `monitoring-capabilities.ts`
     optimization/       chạy job, theo dõi tiến trình
-    viewer3d/           toàn bộ code Three.js, tách biệt hoàn toàn
+    viewer3d/           toàn bộ code Three.js, tách biệt hoàn toàn; cảnh sân kho của trang giới thiệu ở `viewer3d/landing/` (`story-clock.ts`,
+                        `story-timeline.ts`, `diorama-layout.ts` thuần, không import three; `diorama-geometry.ts`, `DioramaScene.tsx`)
     warehouse/          luồng xếp hàng ở kho
     driver/             luồng giao hàng
     manager/            dashboard
@@ -322,7 +349,9 @@ src/
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
     marketing/          hai trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`) và bảng giá
                         `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter`, cuộn tới neo `useHashScroll`);
-                        khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`)
+                        khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`); hệ hiện chữ một lần
+                        `reveal/` (`RevealProvider` — một IntersectionObserver, `Reveal`, `RevealWords`, `Odometer`, `LumoSays`, `split-text.ts`
+                        thuần, `reveal.css`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (ba vai trò nền tảng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
@@ -492,6 +521,10 @@ giá trị cyan, thêm thang `--cyan-*`, `--n-*`, `--amber/azure/green/red-*`, `
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* chuyển động của trang giới thiệu, chỉ features/marketing dùng */
+  --dur-reveal: 600ms;  --dur-reveal-long: 700ms;  --dur-odometer: 1100ms;  --dur-pose: 220ms;
+  --reveal-rise: 24px;  --stagger-word: 40ms;  --stagger-item: 70ms;
 }
 ```
 
@@ -701,13 +734,20 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   `mono` ở góc **nhãn QR** (in đen trắng dán lên kiện) và đầu **báo cáo chuyến bản in**; thanh màn chính của kho (`/kho`). **Không** đặt
   logo ở thanh của tài xế (điện thoại 360–390 px: tiêu đề gãy ba dòng) và ở thanh phiên xếp / điểm giao (một thao tác mỗi màn).
 - Nhỏ nhất 16 px; chừa trống quanh logo ít nhất một phần tư chiều cao biểu tượng. Không đổ bóng, không đặt logo trong ô màu.
-- **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
-  mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
-  · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong)
-  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
-  (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
-  `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
-  tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
+- **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP ở `src/assets/brand/lumo/`, tải theo màn — bảy tư thế 320 px khoảng 20 KB, bốn tư thế toàn
+  thân 512 px và ba tư thế bán thân 400 px khoảng 28–41 KB; kích thước ở `LUMO_ASSET_PX`): mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập)
+  · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404) · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài
+  xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong, chuyến mẫu xếp xong) · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ
+  chuyến · `point` chỉ vào việc đang diễn ra · `carry` mang kiện · `scan` đối chiếu kiện · `tablet` phương án trên máy tính bảng · `explain` giải
+  thích · `idea` gợi ý · `wink` mời liên hệ. Trạng thái rỗng dùng `EmptyState mascot` (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`;
+  `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` + `aria-hidden`. **Không bao giờ lật ảnh** (mũ và áo có chữ "Ln"): `point`,
+  `carry` đứng bên trái việc nó chỉ hay mang tới; `scan` đứng bên phải thứ nó quét; tư thế bán thân ló lên trên một cạnh ngang, cạnh che khoảng 12 %
+  đáy ảnh. Cỡ hiển thị không quá nửa cạnh ảnh. Ngoài trang giới thiệu Lumo **đứng yên** và **không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ
+  không có dữ liệu), toast, hộp thoại; ở màn kho và tài xế chỉ màn rỗng, màn lỗi và màn xong việc. **Trang giới thiệu**: mỗi phần tối đa một Lumo — mở
+  đầu dẫn chuyện (đổi tư thế theo pha của khung 3D), `#con-so` `explain`, `#tinh-nang` `scan` trong ô đối chiếu (từ 768 px), `#cach-hoat-dong` khung
+  dính từ 1.024 px (hẹp hơn: `carry`), `#goi-cuoc` `idea`, `#lien-he` `wink`; chân trang không có. Lời trong bong bóng là nội dung (`LumoSays`, tiền
+  tố `sr-only` "Lumo nói:", không `aria-live`), không chứa số. Chuyển động một lần, không lặp: vào ≤ 600 ms, gõ chữ ≤ 1,4 s (lời dẫn khung 3D ≤ 1 s),
+  một cú nhún 220 ms, đổi tư thế mờ chéo 220 ms sau khi ảnh mới đã giải mã. Giảm chuyển động: ảnh đứng yên, chữ hiện đủ ngay.
 
 ### Cấm tuyệt đối
 
@@ -743,7 +783,10 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   màn đăng nhập, cũng là hình dự phòng của trang giới thiệu) hoặc là linh vật **Lumo** (LM-105, theo bảng tư thế ở mục "Thương hiệu"); không mượn
   ảnh trang trí bên ngoài, không số liệu hay lời khen của khách hàng nghĩ ra. Hai trang công khai nằm ngoài khung ứng dụng nên cuộn cả tài liệu
   (đầu trang dính trên cùng). Hình của trang giới thiệu dựng từ chính sản phẩm: khung 3D chuyến mẫu, sơ đồ đẳng cự, mã QR mẫu không thuộc kiện
-  nào; lưới tính năng có một thẻ nền tối đặc `--panel-dark`.
+  nào; lưới tính năng có một thẻ nền tối đặc `--panel-dark`. Cảnh của khung dính Cách hoạt động và xe của dải nguyên tắc là SVG vẽ tay bằng token
+  (lớp `fill-*` / `stroke-*`, mặt khuất của khối pha bằng `color-mix` từ token, icon Lucide nét 1,5), không mã màu nào trong component.
+  Sân kho quanh xe trong khung 3D trang giới thiệu là cảnh minh hoạ dựng bằng chính bộ máy 3D: không chữ, không số, không biển hiệu; hộp trên làn chờ
+  là kiện thật của lần chạy.
 
 **Cuộn trong khung ứng dụng**: trang không bao giờ cuộn; mỗi màn tự cuộn vùng nội dung của nó. `AppShell` đặt màn
 trong một **hàng** flex `relative min-h-0` dưới thanh điều hướng. Gốc màn `flex min-w-0 flex-1 flex-col`, vùng cuộn
@@ -865,6 +908,11 @@ format nhận locale đang chọn.
 - Câu cho mã ràng buộc nằm ở nhánh `issues` của từ điển, key trùng tên mã, và chỉ gọi qua
   `formatIssue(issue, t, format)` của `@/lib/i18n` (LM-028). Thêm mã vào `CONSTRAINT_CODES` mà
   chưa có câu thì `tsc -b` báo lỗi. Bản en giữ đúng từng chữ câu mẫu Spec mục 13 (`src/test/spec-13.ts`).
+- **Chữ tách để chuyển động** (trang giới thiệu, `marketing/reveal/split-text.ts`): chỉ tách khi chuyển động được bật (có IntersectionObserver, không
+  giảm chuyển động); còn lại DOM là chữ thường như cũ. Tiêu đề: một bản `sr-only` (`select-none`) và một bản `aria-hidden` tách theo **từ**, giữ
+  nguyên sau khi chạy — tên truy cập vẫn đúng từng chữ (`exact: true`). Đoạn văn, bong bóng, số lăn: bản `sr-only` và mảnh `aria-hidden` trong lúc
+  chạy, xong thì trở lại một nút chữ. Gõ chữ đếm theo grapheme (`Intl.Segmenter` sau NFC, dự phòng `Array.from`) để dấu tiếng Việt không rời chữ;
+  không bọc dòng chữ trong khung `overflow: hidden` (cắt dấu chồng). Tên Lumo không vào từ điển: câu dùng tham số `{name}` với `LUMO_NAME`.
 
 ### Không để từ vựng kỹ thuật rò ra màn vận hành
 
@@ -937,7 +985,9 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Nền Canvas luôn tối, kể cả khi phần còn lại của app sáng.
 - Target chức năng/performance là 1.000 placements với draw calls dưới 100, số mesh/nhãn không tăng tuyến tính theo cargo. Mục tiêu thiết bị thật: desktop hướng tới 60 FPS, tablet 45–60 FPS, phone khoảng ≥30 FPS bằng quality adaptation. Số đo SwiftShader không phải cam kết FPS trên thiết bị thật. Thêm `?debug` để đo trước khi thêm hiệu ứng.
 - Mọi hiệu ứng nâng cao (post-processing, shadow, AO) phải có cờ tắt được trong `usePerformanceFlags`. Ba tier `high / balanced / low` điều khiển DPR, bóng, viền chung, trang trí, bề mặt cargo và animation; viền kiện đang chọn luôn được giữ. Runtime bỏ qua idle, hạ tier sau 3 mẫu chậm (>28 ms), nâng sau 8 mẫu nhanh (<18 ms), cooldown 12 giây. Debug quality override khóa tier để đo lặp lại.
-- Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng `motion`.
+- Animation trong Canvas dùng `@react-spring/three`; riêng chuyện của khung 3D trang giới thiệu là hàm thuần của thời gian `story-clock`
+  (`viewer3d/landing/story-timeline.ts`), đọc trong `useFrame`. Animation ngoài Canvas dùng `motion` trong khung ứng dụng; hai trang công khai dùng
+  CSS + một IntersectionObserver (`features/marketing/reveal`).
 - Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`; FE-5b-07). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
 - Canvas phải có `touch-action: none` (đã đặt toàn cục trong `index.css`). Thiếu nó thì trên máy tính bảng kéo ngón tay sẽ cuộn trang thay vì xoay mô hình — lỗi chỉ lộ khi chạm tay, dùng chuột không thấy.
 - Ba lưu ý về camera: `fitToBox` của camera-controls **xoay camera** về nhìn thẳng mặt gần nhất nên làm mất góc chéo — dùng phép chiếu các góc bao theo preset và tỉ lệ khung; bounding sphere theo chiều dài làm góc cửa sau trên phone quá nhỏ. Resize panel giữ góc người dùng đang xoay. Vách thùng dùng mặt đơn pháp tuyến hướng vào trong để vách gần camera tự biến mất. `PCFSoftShadowMap` đã bị gỡ khỏi three r186, dùng `shadows="percentage"`.
@@ -1041,10 +1091,15 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Viền/nhãn selected/current/next/hover là tập nhỏ cố định; `SceneCallout` giữ nhãn trong khung và đường chỉ dẫn neo đúng vị trí 3D. Editor có ba hướng đo, mặt phẳng kéo, tối đa ba mặt snap và bốn vùng overlap bằng hai InstancedMesh phụ cố định. Geometry/nhãn của preview cập nhật imperative, không đưa pointer frames qua React. Phone giữ trạng thái/snap/invalid, lược nhãn đo phụ để dành chỗ cho kiện.
 - Xem trước 3D ở form xe (LM-042): `fleet/VehiclePreview.tsx` lo `useWatch` + debounce 250 ms + `previewVehicle` (chỉ phần hình học hợp lệ, không thì giữ hình cũ), rồi lazy-load `viewer3d/VehiclePreviewViewer`: `SceneCanvas` không kiện với `specView` — tier `balanced` cố định ở DPR màn hình (tối đa 2×; `?debug&quality=` khoá tier khác), có cabin, bánh, khung gầm, thùng sáng hơn (`sceneMaterials(lift)`) và không có nhãn "Cửa sau · Hướng dỡ". **Mọi số có hình đều vẽ đúng số đang nhập**: vách sau có ô cửa đúng rộng × cao (`doorOpening`: trụ cửa và phần vách trên cửa, cánh cửa bản lề ở mép ô), đường kích thước dài · rộng · cao, viền ô cửa và vị trí từng trục đã khai đo từ vách trước (`VehicleSpecMarks` — mọi đoạn thẳng trong **một** `Line`, một draw call; hình học thuần ở `scene/vehicle-spec-marks.ts`), bánh xe vẽ tại `positionXCm` của trục đã khai (`previewVehicle` đưa trục vào hình; chưa khai trục thì bánh là minh hoạ và bảng số nói rõ). Nhãn là DOM neo vào đường; góc nhìn cố định ẩn nhãn nằm dọc tia nhìn (`HIDDEN_SPEC_LABELS`), tự xoay thì hiện lại; đang làm nổi một vật cản thì chỉ còn nhãn của vật cản (`ObstacleCallout`). Dưới hình là bảng số DOM `fleet/VehiclePreviewReadout` (lòng thùng + m³, cửa + kiện lọt tối đa theo khoảng hở, tải trọng, số vật cản, trục) — tải trọng và khoảng hở không có hình nên chỉ có ở đây (`previewFacts`). Bốn góc nhìn (Góc chéo · Bên hông · Cửa sau · Trên) là hàng nút **ngoài** khung hình: chunk 3D vẽ vào `toolbarHost` bằng portal; bấm lại góc đang chọn canh lại khung (`fitRequest`). Camera canh theo các điểm hình thật sự chạm tới và dời tâm nhìn cho hình nằm giữa khung (`specFramePoints` + `fitFrame` ở `scene/frame-fit.ts`, thuần) — chỉ phụ thuộc kích thước lòng thùng, nên camera chỉ canh lại qua `frameVehicle` khi kích thước đó đổi; Planner, kho, tài xế vẫn canh theo hộp bao quanh tâm thùng. Làm nổi vật cản từ ngoài canvas đi qua `highlightedObstacleId`/`onObstacleSelect` của `SceneCanvas`: `setColorAt` màu `--highlight`, không thêm draw call. Không có `WebGLRenderingContext` (jsdom) thì chỉ vẽ phác thảo SVG, không tải chunk 3D.
 - Three của kho và driver được lazy-load từ `viewer3d`. Driver chỉ tải khi mở “Xem vị trí hàng”; mô phỏng không đánh dấu giao hàng và không có editor. Phone dùng panel dưới/drawer, nút thao tác 56px, không phụ thuộc hover/gizmo nhỏ.
-- Khung 3D trang giới thiệu (`LandingStageViewer`, chế độ `landing` của `usePerformanceFlags`) dùng cùng `SceneCanvas` với hai tuỳ chọn chỉ nó
-  bật: `interactive={false}` (phần tử bọc canvas `pointer-events: none`, `touch-action: pan-y` — cuộn trang đi xuyên qua, camera chỉ đổi theo
-  `preset`) và `frameZoom` (camera đứng gần hơn khung vừa khít, chuyển cho `CameraRig` qua `zoom`). Mặc định của cả hai giữ nguyên Planner, kho,
-  tài xế và form xe. Số kiện hiện ra theo thời gian thật do hàm thuần `landing-fill.ts` tính.
+- Khung 3D trang giới thiệu (`LandingStageViewer`, chế độ `landing` của `usePerformanceFlags`) dùng cùng `SceneCanvas` với các tuỳ chọn chỉ nó bật:
+  `interactive={false}` (phần tử bọc canvas `pointer-events: none`, `touch-action: pan-y` — cuộn trang đi xuyên qua, camera chỉ đổi theo góc nhìn),
+  `fov` 26 (mặc định 38), `frameZoom` (góc Thùng xe và Vùng điểm giao), `framePoints` (góc Toàn cảnh: camera canh theo một tập điểm thuần của cảnh
+  trong khung đã trừ lề `insets` px nơi thẻ và nút nằm đè — `insetFrame` của `scene/frame-fit.ts` — và canh lại khi khung đổi cỡ qua `fitRequest`) và
+  `zoneLabels` (chỉ góc Vùng điểm giao có nhãn vùng). Cảnh sân kho là `children` của `SceneCanvas` (`viewer3d/landing/DioramaScene`): một mesh gộp tô
+  màu theo đỉnh cho nền, đường, dock, nhà kho, cây; một InstancedMesh 366 hộp làn chờ dùng chung atlas bề mặt của kiện; một mặt quét chỉ có trong pha
+  tối ưu — thêm tối đa ba draw call (`e2e/landing-story.spec.ts` đo cả cảnh). Ánh sáng dùng chung không đổi; màu của cảnh chỉnh bằng màu đỉnh; mặt
+  đường nằm dưới mặt nhận bóng của `TruckCab`. Mặc định của mọi tuỳ chọn giữ nguyên Planner, kho, tài xế và form xe. Số kiện trong thùng vẫn là `step`
+  của `fillStep`; làn chờ, mặt quét và dải vùng đọc thời gian của đồng hồ trong `useFrame`, không qua state React; xong chuyện thì vòng `demand` nghỉ.
 
 ### Ảnh xem trước tĩnh dùng SVG, không dùng Three.js
 
@@ -1073,8 +1128,20 @@ không dùng sprite hay font của style nền. Chi tiết chuyến (FE-4b-09) g
 | Kéo thả sắp xếp | 200ms | standard |
 | Chuyển góc camera 3D | 500ms | decelerate |
 | Một bước phát lại xếp hàng | 400–700ms | decelerate |
+| Chữ và khối hiện ra khi cuộn tới (trang giới thiệu) | 500–700ms, so le 40ms mỗi từ / 70ms mỗi khối | decelerate |
+| Số lăn của `#con-so` | 1100ms, so le 60ms mỗi chữ số | decelerate |
+| Lumo gõ chữ | ≤ 1,4s (lời dẫn khung 3D ≤ 1s) | tuyến tính |
+| Lumo đổi tư thế | 220ms | standard |
+| Khung dính Cách hoạt động đổi mục: số, tên bước, cảnh mờ chéo | 220ms; mảnh của cảnh mới hiện một lần, xong trước 1,5s | standard / decelerate |
+| Dải nguyên tắc: chữ sáng dần, khối hàng vào xe qua cửa sau | theo cuộn, khối cuối vào chỗ khi câu sáng hẳn | tuyến tính / decelerate |
+| Chuyện của khung 3D trang giới thiệu | 9s, một lần, có nút tạm dừng | — |
 
 Bắt buộc hỗ trợ `prefers-reduced-motion`: mọi thời lượng trên 200ms rút về 100ms, tắt chuyển động lớn.
+
+Trang giới thiệu: chuyển động chỉ bật khi có IntersectionObserver và không giảm chuyển động (`data-motion="on"`); khi tắt, mọi thứ ở trạng thái cuối
+ngay từ đầu — không bao giờ có nội dung ẩn chờ chuyển động. Phần tử nhận focus (kể cả tiêu đề do `useHashScroll` đặt focus) và khi in trang
+(`beforeprint`, `@media print`) hiện ngay trạng thái cuối. Mỗi chuyển động tự chạy xong trong 1,5 giây, trừ chuyện của khung 3D (có nút tạm dừng);
+chuyển động theo cuộn không tự chạy.
 
 ## 9. Quy ước code
 
@@ -1928,6 +1995,13 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - Playwright **cuộn được cả vùng `overflow-hidden` bằng code** (`scrollIntoView` trước mỗi thao tác), nên màn
   người dùng không lăn được vẫn xanh. Kiểm cuộn bằng `page.mouse.wheel` (`layout-1366.spec.ts`, test "mouse wheel"); thêm màn cuộn
   dài mới thì thêm vào danh sách của test đó.
+- Trang giới thiệu trong jsdom là **tĩnh**: không có IntersectionObserver nên hệ hiện chữ không bật, chữ không tách, không có khung dính của Cách hoạt
+  động, dải nguyên tắc đứng yên đủ bốn khối, và không WebGL nên khung 3D là hình dự phòng — test DOM đọc đúng chữ như trước. Khung dính được test
+  bằng `data-scene` của cảnh đang hiện (`LandingSteps.dom.test.tsx`), hình xe bằng `data-stop` của bốn khối (`StatementBand.dom.test.tsx`). Test cần chuyển động cài IntersectionObserver giả
+  `src/test/intersection-observer.ts` (kích hoạt bằng tay) và `src/test/match-media.ts`. `e2e/landing-story.spec.ts` chạy chuyện thật (đọc R3F qua
+  `_roots`, `waitDemandIdle`): chuyện chạy xong, nút tạm dừng giữ nguyên số và khung hình, giảm chuyển động, số lăn dừng đúng chuỗi, neo `#lien-he`,
+  điện thoại 390 px. `src/test/three-boundary.test.ts` canh: ngoài `src/features/viewer3d` không file nào import `three`, `@react-three/*`,
+  `@react-spring/three`, `camera-controls`; các module thuần của `viewer3d/landing/`, `landing-fill.ts` và `scene/frame-fit.ts` cũng không.
 
 ### Chia chunk theo route
 
@@ -1945,6 +2019,10 @@ Thêm màn mới thì thêm theo đúng lối này.
 - Màu điểm giao luôn đi kèm nhãn hoặc số, không bao giờ chỉ dựa vào màu. Trong 3D, chèn nhãn ẩn `sr-only` cho khối màu.
 - Chữ tối thiểu 16px trên tablet và điện thoại.
 - Mọi màn toàn màn hình (kho, tài xế, 3D) phải có lối thoát nhìn thấy được. Màn kiosk không có nghĩa là không có đường ra.
+- Chuyển động tự chạy quá 5 giây phải có nút tạm dừng nhìn thấy được, hoặc tự dừng trước 5 giây (WCAG 2.2.2): khung 3D trang giới thiệu có nút ba
+  trạng thái; chữ hiện ra, số lăn, Lumo gõ chữ, cảnh của khung dính xong trong 1,5 giây; chuyển động theo cuộn (vạch tiến độ, dải nguyên tắc: chữ
+  và khối hàng) không tính. Chữ tách để chuyển động giữ tên truy cập và thứ tự đọc (mục 6). Trang giới thiệu không có vùng `aria-live` nào ngoài
+  kết quả gửi form: chuyện của khung 3D không đọc to từng pha.
 
 ## 11. Khi dựng lại màn hình từ mockup
 

@@ -1,16 +1,19 @@
 import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { CargoArtwork } from '@/components/CargoArtwork'
-import { Spinner } from '@/components/ui/Spinner'
-import type { CameraPreset } from '@/features/viewer3d/viewer-types'
+import type { StageView } from '@/features/viewer3d/landing/diorama-layout'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { LandingStagePoster } from './LandingStagePoster'
-import { StageLegend, StageReadout, StageReplay, StageViews } from './LandingStageParts'
+import { DioramaPoster } from './DioramaPoster'
+import { StageReadout, StageRoute, StageViews, StoryButton } from './LandingStageParts'
 import { StageBoundary } from './StageBoundary'
+import { StoryNarrator, type NarratorLine } from './StoryNarrator'
+import { StoryTripCard, StoryTripCardLive } from './StoryTripCard'
 import { LANDING_REQUEST, LANDING_STOP_COUNT } from './landing-sample.mock'
+import { useHeroFit } from './useHeroFit'
 import { useLandingSample } from './useLandingSample'
 import { useStageGate } from './useStageGate'
+import { useStoryDriver, useStoryPhase, useStoryStatus } from './useStoryDriver'
 
 const loadViewer = () => import('@/features/viewer3d/LandingStageViewer')
 const LandingStageViewer = lazy(loadViewer)
@@ -18,96 +21,129 @@ const LandingStageViewer = lazy(loadViewer)
 /** Quá lâu chưa có khung hình đầu (tải hỏng, tạo ngữ cảnh WebGL lỗi — lỗi đó không qua `StageBoundary`): đổi sang hình minh hoạ. */
 const STAGE_TIMEOUT_MS = 15_000
 
+/** Số kiện của yêu cầu mẫu (366): thẻ chuyến, tổng của "Đang xếp n / 366" và của dải số. */
 const PACKAGE_COUNT = LANDING_REQUEST.packages.reduce((count, line) => count + line.quantity, 0)
-const { innerLengthCm, innerWidthCm, innerHeightCm } = LANDING_REQUEST.vehicle
 
 /**
- * Khung 3D của phần mở đầu trang giới thiệu. Lần vẽ đầu chỉ có chữ và ảnh tĩnh của thùng rỗng; khi trình duyệt rảnh, trang tải bộ máy
- * 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay trên máy người xem, rồi khung hình thay ảnh tĩnh và xếp đầy thùng một
- * lần (khoảng 3 giây). Không có WebGL, bật tiết kiệm dữ liệu, hay tải / tính hỏng: hình minh hoạ SVG (`CargoArtwork`), không số nào.
- * Số của lần chạy luôn kèm MOCK RESULT.
+ * Nhãn "Cửa sau · Hướng dỡ" của khung 3D chỉ hiện ở góc Thùng xe: góc Toàn cảnh có cầu dẫn nằm đúng chỗ đó, góc Vùng điểm giao có nhãn
+ * vùng; điện thoại thì nhãn xuống hai dòng và bị mép khung cắt.
+ */
+const DOOR_CUE = 'max-sm:[&_[data-rear-door-cue]]:hidden [&:not([data-view=truck])_[data-rear-door-cue]]:hidden'
+/** Khung cao 600 px từ 1.440 px, 560 px tới 1.439 px; hẹp hơn theo tỉ lệ. */
+const BOX = { wide: 'h-140 min-[90rem]:h-150', medium: 'aspect-[16/10]', narrow: 'aspect-[4/3]' } as const
+
+/** Không có WebGL, tiết kiệm dữ liệu, tải hay tính hỏng: hình minh hoạ SVG kèm câu không nói gì về lần chạy, và Lumo nói vì sao. */
+function StageFallback() {
+  const t = useT()
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <figure className="landing-stage-surface relative m-0 flex flex-col gap-3 rounded-xl p-4 sm:p-5">
+        <span aria-hidden className="landing-stage-glow" />
+        <CargoArtwork label={t('landing.hero.artworkLabel')} className="max-h-[46vh]" />
+        <figcaption className="text-small text-sky-text-3 pointer-coarse:text-body-lg">{t('landing.stage.artworkCaption')}</figcaption>
+      </figure>
+      <StoryNarrator line="fallback" layout="row" />
+    </div>
+  )
+}
+
+/**
+ * Khung 3D "Sân kho kể chuyện" của phần mở đầu trang giới thiệu. Lần vẽ đầu là ảnh tĩnh của sân kho (`DioramaPoster`); khi trình duyệt
+ * rảnh, trang tải bộ máy 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay trên máy người xem, rồi khung hình thay ảnh tĩnh
+ * và chuyện 9 giây chạy một lần (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp xong. Quanh khung: thẻ chuyến với chip của ứng
+ * dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn, hàng "Thứ tự giao" và dải số của lần chạy (MOCK RESULT, chỉ khi xếp xong). Từ
+ * 1.280 px thẻ, nút và Lumo nằm đè trên khung; hẹp hơn thì thẻ ở trên, Lumo ở dưới khung. Không có WebGL hay hỏng: `StageFallback`.
  */
 export function LandingStage() {
   const t = useT()
   const format = useFormat()
-  const titleId = useId()
+  const { tier, insets, defaultView } = useHeroFit()
   const reducedMotion = usePrefersReducedMotion()
   const gate = useStageGate()
   const sample = useLandingSample(gate === 'go')
+  const result = sample.data
   const [failed, setFailed] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [preset, setPreset] = useState<CameraPreset>('goc-cheo')
-  const [playKey, setPlayKey] = useState(0)
+  const [frameReady, setFrameReady] = useState(false)
+  const [chosen, setChosen] = useState<StageView | null>(null)
+  const view = chosen ?? defaultView
+  const driver = useStoryDriver({ sampleReady: result !== undefined, frameReady, reducedMotion })
+  const { story, observe, toggle } = driver
+  const status = useStoryStatus(driver)
+  const phase = useStoryPhase(driver)
+  const titleId = useId()
+  const captionId = useId()
   const stopNames = useMemo(
     () => [t('landing.sample.stop1'), t('landing.sample.stop2'), t('landing.sample.stop3'), t('landing.sample.stop4')],
     [t],
   )
-  const handleReady = useCallback(() => setReady(true), [])
+  const handleReady = useCallback(() => setFrameReady(true), [])
   const handleError = useCallback(() => setFailed(true), [])
-  const handleReplay = useCallback(() => setPlayKey((key) => key + 1), [])
 
   // Tải phần 3D song song với lần chạy tối ưu; lỗi tải để `lazy` báo lại cho `StageBoundary`.
   useEffect(() => {
     if (gate === 'go') loadViewer().catch(() => {})
   }, [gate])
   useEffect(() => {
-    if (gate !== 'go' || ready || failed) return
+    if (gate !== 'go' || frameReady || failed) return
     const timer = window.setTimeout(handleError, STAGE_TIMEOUT_MS)
     return () => window.clearTimeout(timer)
-  }, [gate, ready, failed, handleError])
+  }, [gate, frameReady, failed, handleError])
 
-  if (gate === 'off' || failed || sample.isError) {
-    return (
-      <figure className="landing-stage-surface relative m-0 flex flex-col gap-3 rounded-xl p-4 sm:p-5">
-        <span aria-hidden className="landing-stage-glow" />
-        <CargoArtwork label={t('landing.hero.artworkLabel')} className="max-h-[46vh]" />
-        <figcaption className="text-small text-sky-text-3 pointer-coarse:text-body-lg">{t('landing.stage.artworkCaption')}</figcaption>
-      </figure>
-    )
-  }
+  if (gate === 'off' || failed || sample.isError) return <StageFallback />
 
-  const live = ready && sample.data !== undefined
+  const wide = tier === 'wide'
+  const going = gate === 'go'
+  const placed = result?.placements.length ?? 0
+  const line: NarratorLine | null = !going ? null : phase === 'ready' && result && placed < PACKAGE_COUNT ? 'readyPartial' : phase
+  const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
+  const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
+  const narrator = <StoryNarrator line={line} paused={status === 'paused' || status === 'held'} layout={wide ? 'overlay' : 'row'} preload={going} />
+  // Thẻ chuyến: từ 1.280 px nằm đè góc trên phải khung; hẹp hơn nằm trên khung — lúc chưa tải phần 3D vẫn giữ chỗ (trong suốt)
+  const card = going ? (
+    <StoryTripCardLive driver={driver} resolved={result !== undefined} placed={placed} total={PACKAGE_COUNT} titleId={titleId} compact={wide}
+      className={wide ? 'absolute top-4 right-4 w-72' : 'mb-3 md:max-w-105'} />
+  ) : wide ? null : <StoryTripCard phase="preparing" recorded={0} total={PACKAGE_COUNT} className="invisible mb-3 md:max-w-105" />
+
   return (
-    <figure aria-labelledby={titleId} className="landing-stage-surface relative m-0 flex min-w-0 flex-col rounded-xl">
-      <span aria-hidden className="landing-stage-glow" />
-      {/* Hẹp: tên thùng + "Xếp lại" một hàng, góc nhìn xuống hàng riêng rộng hết khung; rộng: cả ba một hàng */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-3 px-4 pt-4 sm:px-5">
-        <div className="mr-auto flex min-w-0 flex-col">
-          <p id={titleId} className="m-0 font-display text-h3 font-semibold text-sky-text font-stretch-108%">{t('landing.stage.title')}</p>
-          <span className="font-mono text-small text-sky-text-3 tabular-nums pointer-coarse:text-body-lg">{format.dimensions(innerLengthCm, innerWidthCm, innerHeightCm)}</span>
-        </div>
-        {live ? <StageViews preset={preset} onPreset={setPreset} className="order-last basis-full sm:order-none sm:basis-auto" /> : null}
-        {live && !reducedMotion ? <StageReplay onReplay={handleReplay} /> : null}
-      </div>
-
-      {/* Điện thoại: nhãn "Cửa sau · Hướng dỡ" của khung 3D xuống hai dòng và bị mép khung cắt — chỉ giữ mũi tên, câu dưới khung đã nói cửa */}
-      <div className="relative mx-2 mt-3 aspect-16/10 overflow-hidden rounded-lg bg-canvas-1 max-sm:[&_[data-rear-door-cue]]:hidden sm:mx-3">
-        {sample.data ? (
-          <div aria-hidden className="absolute inset-0">
-            <StageBoundary onError={handleError}>
-              <Suspense fallback={null}>
-                <LandingStageViewer request={LANDING_REQUEST} result={sample.data} stopNames={stopNames} preset={preset}
-                  playKey={playKey} onReady={handleReady} onFail={handleError} />
-              </Suspense>
-            </StageBoundary>
+    <figure aria-labelledby={going ? titleId : undefined} aria-describedby={captionId} data-story-status={status}
+      data-paused={status === 'paused' ? '' : undefined} className="m-0 flex min-w-0 flex-col">
+      {wide ? null : card}
+      <div className="relative">
+        <span aria-hidden className="landing-stage-glow" />
+        <div ref={observe} data-view={view} className={cn('landing-stage-surface relative overflow-hidden rounded-xl', BOX[tier], DOOR_CUE)}>
+          {result ? (
+            <div aria-hidden className="absolute inset-0">
+              <StageBoundary onError={handleError}>
+                <Suspense fallback={null}>
+                  <LandingStageViewer request={LANDING_REQUEST} result={result} stopNames={stopNames} view={view} tier={tier}
+                    story={story} onReady={handleReady} onFail={handleError} />
+                </Suspense>
+              </StageBoundary>
+            </div>
+          ) : null}
+          <DioramaPoster view={view} insets={insets}
+            className={cn('pointer-events-none absolute inset-0 transition-opacity duration-(--dur-md) ease-standard motion-reduce:transition-none', frameReady && 'opacity-0')} />
+          <div className="pointer-events-none absolute inset-0">
+            {tier === 'narrow' ? (
+              <div className="pointer-events-auto absolute top-4 right-4">{button}</div>
+            ) : (
+              <div className="pointer-events-auto absolute top-4 left-4 flex gap-2">{views}{wide ? null : button}</div>
+            )}
+            {wide ? (
+              <>
+                {card}
+                <div className="absolute bottom-4 left-4">{narrator}</div>
+                <div className="pointer-events-auto absolute right-4 bottom-4">{button}</div>
+              </>
+            ) : null}
           </div>
-        ) : null}
-        <LandingStagePoster className={cn('pointer-events-none absolute inset-0 transition-opacity duration-(--dur-md) ease-standard', live && 'opacity-0')} />
-        {live ? null : (
-          <p className="absolute bottom-3 left-3 m-0 inline-flex items-center gap-2 rounded-md bg-canvas-2 px-3 py-2 text-small text-sky-text-2 pointer-coarse:text-body-lg">
-            <Spinner tone="light" label={t('landing.stage.preparing')} />
-            <span aria-hidden>{t('landing.stage.preparing')}</span>
-          </p>
-        )}
-      </div>
-
-      {live ? (
-        <div className="px-4 pt-3 sm:px-5">
-          <StageLegend stopNames={stopNames} />
         </div>
-      ) : null}
-      {live && sample.data ? <div className="mt-3"><StageReadout result={sample.data} /></div> : null}
-      <figcaption className={cn('px-4 pb-4 text-small text-sky-text-3 pointer-coarse:text-body-lg sm:px-5', live ? 'pt-0' : 'pt-4')}>
+      </div>
+      {tier === 'narrow' ? views : null}
+      {wide ? null : <div className="mt-3">{narrator}</div>}
+      <StageRoute stopNames={stopNames} className="mt-4" />
+      <StageReadout result={phase === 'ready' && result ? result : null} total={PACKAGE_COUNT} className="mt-3" />
+      <figcaption id={captionId} className="sr-only">
         {t('landing.stage.caption', { count: format.integer(PACKAGE_COUNT), stops: format.integer(LANDING_STOP_COUNT) })}
       </figcaption>
     </figure>

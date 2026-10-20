@@ -1,0 +1,172 @@
+/*
+ * Hệ hiện chữ một lần của trang giới thiệu (features/marketing/reveal). Chuyển động chỉ có dưới [data-motion='on'] — RevealProvider
+ * bật khi có IntersectionObserver và người xem không xin giảm chuyển động; không có nó thì không gì bị ẩn.
+ *
+ * - Cổng [data-reveal-gate] đặt --reveal-play: paused tới khi nhận data-shown; mọi mảnh bên trong đọc biến này (cổng lồng nhau vẫn đúng).
+ * - Mọi animation fill-mode both và chỉ có khung đầu: khung cuối là style của chính phần tử, nên bỏ animation (data-done, in trang) là
+ *   đúng trạng thái cuối. Riêng dải số của Odometer đứng sẵn ở số cuối, animation chạy từ số 0 tới đó.
+ * - Mốc: --reveal-delay (kế thừa, mỗi khối đặt) cộng so le của mảnh. Lưới an toàn: [data-instant] cho mọi [data-reveal], .reveal-piece
+ *   bên trong chạy 0 giây (vẫn phát animationend để chữ tách trở lại chữ thường).
+ * - Nằm trong lớp components: class utilities của nơi gọi (className, bubbleClassName) thắng các quy tắc ở đây.
+ * - Quy tắc riêng của Lumo nói nằm ở lumo-says.css (LumoSays nạp); keyframes reveal-rise, reveal-fade, reveal-pop ở đây dùng chung.
+ */
+
+@layer components {
+  [data-motion='on'] [data-reveal-gate] {
+    --reveal-play: paused;
+  }
+  [data-motion='on'] [data-reveal-gate][data-shown] {
+    --reveal-play: running;
+  }
+
+  /* Khối (Reveal) */
+  [data-motion='on'] [data-reveal] {
+    animation: reveal-rise var(--dur-reveal) var(--ease-decelerate) both;
+    animation-delay: var(--reveal-delay, 0s);
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] [data-reveal='fade'] {
+    animation-name: reveal-fade;
+    animation-duration: var(--dur-slow);
+  }
+  [data-motion='on'] [data-reveal='pop'] {
+    animation-name: reveal-pop;
+    animation-duration: 300ms;
+  }
+  [data-motion='on'] [data-reveal='wipe'] {
+    animation-name: reveal-wipe;
+  }
+  [data-motion='on'] [data-reveal='fill-x'] {
+    animation-name: reveal-fill-x;
+    animation-duration: var(--dur-slow);
+    transform-origin: left center;
+  }
+  [data-motion='on'] [data-reveal][data-done] {
+    animation: none;
+  }
+
+  /* Tiêu đề: từng từ nhô lên; chuột (pointer: fine) thêm nhoè 6 px tan dần */
+  [data-motion='on'] .reveal-word {
+    display: inline-block;
+    animation: reveal-word var(--dur-reveal) var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--w, 0) * var(--word-step, 0s));
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] h1 .reveal-word {
+    animation-duration: var(--dur-reveal-long);
+  }
+  @media (pointer: fine) {
+    [data-motion='on'] .reveal-word {
+      animation-name: reveal-word-blur;
+    }
+  }
+  [data-motion='on'] [data-done] .reveal-word {
+    animation: none;
+  }
+
+  /* Đoạn văn: từng từ đậm dần từ 18 %, span inline nên bố cục y như chữ thường */
+  [data-motion='on'] .reveal-ink {
+    animation: reveal-ink 400ms var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--w, 0) * var(--word-step, 0s));
+    animation-play-state: var(--reveal-play, running);
+  }
+
+  /* Số lăn: ô rộng đúng chữ số cuối (chữ số trong suốt giữ chỗ và đường chân chữ), cắt theo chiều dọc bằng clip-path — overflow
+     hidden sẽ dời đường chân chữ của inline-block xuống mép dưới. Dải 20 dòng đứng sẵn ở số cuối của lượt thứ hai. */
+  .reveal-odo-cell {
+    position: relative;
+    display: inline-block;
+    clip-path: inset(0 -0.25em);
+  }
+  .reveal-odo-ghost {
+    visibility: hidden;
+  }
+  .reveal-odo-strip {
+    position: absolute;
+    inset: 0 0 auto;
+    white-space: pre;
+    text-align: center;
+    transform: translateY(calc(-100% * (10 + var(--d, 0)) / 20));
+  }
+  [data-motion='on'] .reveal-odo-strip {
+    animation: reveal-odo var(--dur-odometer) var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--k, 0) * 60ms);
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] .reveal-odo-text {
+    animation: reveal-fade var(--dur-slow) var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--k, 0) * 60ms);
+    animation-play-state: var(--reveal-play, running);
+  }
+
+  /* Lưới an toàn: focus và lúc in — trạng thái cuối ngay */
+  [data-motion='on'] [data-instant]:is([data-reveal], .reveal-piece),
+  [data-motion='on'] [data-instant] :is([data-reveal], .reveal-piece) {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+  }
+  @media print {
+    [data-reveal-root] * {
+      animation: none !important;
+    }
+  }
+  /* Nút tạm dừng của chuyện trong khung 3D đặt [data-paused] lên khung: mọi chuyển động bên trong đứng lại */
+  [data-paused] * {
+    animation-play-state: paused !important;
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-rise));
+  }
+}
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes reveal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+/* Chỉ mở theo chiều ngang, trên dưới chừa 0,5em nên dấu chồng không bao giờ bị cắt */
+@keyframes reveal-wipe {
+  from {
+    clip-path: inset(-0.5em 100% -0.5em -0.5em);
+  }
+  to {
+    clip-path: inset(-0.5em);
+  }
+}
+@keyframes reveal-fill-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes reveal-word {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+@keyframes reveal-word-blur {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+    filter: blur(6px);
+  }
+}
+@keyframes reveal-ink {
+  from {
+    opacity: 0.18;
+  }
+}
+@keyframes reveal-odo {
+  from {
+    transform: translateY(0);
+  }
+}

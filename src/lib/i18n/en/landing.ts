@@ -24,22 +24,34 @@ export const landing = {
     roles: 'One plan for all four roles',
   },
   stage: {
-    title: 'Sample 6 m body',
+    title: '6 m body',
+    trip: 'Sample trip',
+    load: '{count} packages · {stops} stops',
+    computed: 'Plan ready',
+    route: 'Delivery order',
+    depot: 'Depot',
     caption: 'A sample trip of {count} packages for {stops} stops, planned by the simulated optimizer right in your browser, then loaded box by box in order. Cargo for the last stop sits deepest, cargo for the first stop by the door.',
     artworkCaption: 'Illustration: cargo for the last stop sits deepest, cargo for the first stop by the door — at each stop you take that stop’s cargo.',
     preparing: 'Planning the sample trip…',
     views: 'View',
     view: {
       overview: 'Overview',
+      truck: 'Truck body',
       zones: 'Stop zones',
-      door: 'Rear door',
     },
     replay: 'Load again',
-    replayLabel: 'Load the truck again from empty',
+    replayLabel: 'Load again from an empty truck',
+    story: {
+      pause: 'Pause',
+      pauseLabel: 'Pause the sample trip',
+      resume: 'Resume',
+      resumeLabel: 'Resume the sample trip',
+    },
     legend: 'Package colour by delivery stop',
     stop: 'Stop {number}',
     readout: {
       title: 'Result of this run',
+      pending: 'This run’s figures appear once loading finishes.',
       placed: 'Packages placed',
       placedValue: '{placed} / {total}',
       volume: 'Volume used',
@@ -133,6 +145,10 @@ export const landing = {
     lede: 'The four steps of a trip in LoadMaster.',
     step: 'Step {number}',
     who: 'Done by',
+    done: 'Trip delivered',
+    scene: {
+      requirement: 'Delivery requirement',
+    },
     steps: {
       intake: {
         title: 'Packages and delivery requirements',

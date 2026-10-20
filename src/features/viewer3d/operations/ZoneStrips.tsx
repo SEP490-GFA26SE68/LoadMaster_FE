@@ -28,9 +28,11 @@ type Rect = { left: number; right: number; top: number; bottom: number }
  * xuống dưới nhãn đó. Vị trí ghi thẳng vào DOM, không qua React, và chỉ ghi khi đổi.
  *
  * `<Html>` của drei dựng nội dung ở một React root riêng, không có context của app: chữ dịch và số đã định dạng được tính ở đây rồi
- * truyền vào, trong nhãn không gọi `useT` / `useFormat`.
+ * truyền vào, trong nhãn không gọi `useT` / `useFormat`. `labels` false: chỉ dải màu (trang giới thiệu ngoài góc Vùng điểm giao).
  */
-export function ZoneStrips({ zones, vehicle, reducedMotion }: { zones: readonly SceneZone[]; vehicle: VehicleConfig; reducedMotion: boolean }) {
+export function ZoneStrips({ zones, vehicle, reducedMotion, labels: showLabels = true }: {
+  zones: readonly SceneZone[]; vehicle: VehicleConfig; reducedMotion: boolean; labels?: boolean
+}) {
   const format = useFormat()
   const t = useT()
   const invalidate = useThree((s) => s.invalidate)
@@ -54,7 +56,9 @@ export function ZoneStrips({ zones, vehicle, reducedMotion }: { zones: readonly 
   const point = useMemo(() => new Vector3(), [])
   useFrame(({ camera, size }) => {
     const root = group.current
-    if (!root) return
+    // Nhãn ẩn rồi hiện lại là phần tử DOM mới: lần đo sau phải ghi lại vị trí dù khoá không đổi
+    if (!showLabels) applied.current = ''
+    if (!root || !showLabels) return
     const boxes: LabelBox[] = []
     let unmeasured = false
     strips.forEach((strip, index) => {
@@ -101,7 +105,7 @@ export function ZoneStrips({ zones, vehicle, reducedMotion }: { zones: readonly 
       {/* `forceSinglePass`: vật liệu trong suốt hai mặt mặc định vẽ hai lượt (mặt sau rồi mặt trước) — dải phẳng chỉ cần một */}
       <animated.meshBasicMaterial vertexColors side={DoubleSide} transparent forceSinglePass opacity={spring.opacity} depthWrite={false} />
     </mesh>
-    {strips.map((strip, index) => {
+    {showLabels && strips.map((strip, index) => {
       const zone = zones.find(({ stopId }) => stopId === strip.stop)
       const [x, y, z] = strip.labelAt
       return <Html key={strip.stop} position={[x * SCENE_SCALE, y * SCENE_SCALE, z * SCENE_SCALE]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>

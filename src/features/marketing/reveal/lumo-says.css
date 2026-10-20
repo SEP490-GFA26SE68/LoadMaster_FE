@@ -1,0 +1,151 @@
+/*
+ * Lumo nói (LumoSays): cỡ theo bề rộng màn, bong bóng có đuôi chỉ vào Lumo, ảnh mới mờ chéo lên ảnh cũ, cú nhún. Cổng, lưới an toàn
+ * (focus, in trang, [data-paused]) và các keyframes chung (reveal-rise, reveal-fade, reveal-pop) nằm ở reveal.css — RevealProvider
+ * nạp file đó, LumoSays luôn kéo theo nó. Cùng lớp components: class utilities của nơi gọi thắng các quy tắc ở đây.
+ */
+
+@layer components {
+  /* Cỡ theo bề rộng màn; tư thế bán thân bị mép dưới của hàng che 12 % đáy; ảnh mới chồng lên ảnh cũ */
+  .reveal-lumo {
+    --lumo-px: var(--lumo-px-base);
+  }
+  @media (min-width: 768px) {
+    .reveal-lumo {
+      --lumo-px: var(--lumo-px-md, var(--lumo-px-base));
+    }
+  }
+  @media (min-width: 1280px) {
+    .reveal-lumo {
+      --lumo-px: var(--lumo-px-xl, var(--lumo-px-md, var(--lumo-px-base)));
+    }
+  }
+  @media (min-width: 1440px) {
+    .reveal-lumo {
+      --lumo-px: var(--lumo-px-wide, var(--lumo-px-xl, var(--lumo-px-md, var(--lumo-px-base))));
+    }
+  }
+  .reveal-lumo-fig {
+    flex: none;
+    width: var(--lumo-px);
+    height: var(--lumo-px);
+  }
+  .reveal-lumo[data-bust] > .reveal-lumo-fig {
+    height: calc(var(--lumo-px) * 0.88);
+    clip-path: inset(-1rem -1rem 0 -1rem);
+  }
+  .reveal-lumo-hop {
+    display: grid;
+  }
+  .reveal-lumo-layer {
+    display: block;
+    grid-area: 1 / 1;
+  }
+  .reveal-lumo-layer[data-state='next'] {
+    opacity: 0;
+  }
+  /* Cỡ theo --lumo-px thắng cỡ inline của Lumo (px) để cỡ đổi theo bề rộng màn */
+  .reveal-lumo-img {
+    display: block;
+    width: var(--lumo-px) !important;
+    height: var(--lumo-px) !important;
+  }
+
+  /* Bong bóng: đáy nâng lên để đuôi (cách đáy 1,25rem) ngang miệng Lumo — 64 % chiều cao ảnh toàn thân, 36 % ảnh bán thân */
+  .reveal-lumo > .reveal-bubble {
+    margin-bottom: max(0px, calc(var(--lumo-px) * 0.64 - 1.25rem));
+  }
+  .reveal-lumo[data-bust] > .reveal-bubble {
+    margin-bottom: max(0px, calc(var(--lumo-px) * 0.36 - 1.25rem));
+  }
+  .reveal-type-rest {
+    opacity: 0;
+  }
+  /* Đuôi chỉ vào Lumo: hình vuông xoay 45°, cùng nền và viền với bong bóng, nửa ngoài lộ ra 10 px */
+  .reveal-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: 1.25rem;
+    width: 14px;
+    height: 14px;
+    border: 0 solid var(--border);
+    background: var(--bg);
+  }
+  .reveal-bubble[data-side='bubble-left']::before {
+    left: 100%;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    transform: translate(-50%, 50%) rotate(45deg);
+  }
+  .reveal-bubble[data-side='bubble-right']::before {
+    right: 100%;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    transform: translate(50%, 50%) rotate(45deg);
+  }
+  @media (forced-colors: active) {
+    .reveal-bubble {
+      border: 1px solid transparent;
+    }
+  }
+
+  /* Vào một lần: Lumo nhô lên (bán thân thì ló lên từ sau mép), bong bóng bật ra từ phía đuôi sau 150 ms */
+  [data-motion='on'] .reveal-lumo-rise {
+    animation: reveal-rise var(--dur-reveal) var(--ease-decelerate) both;
+    animation-delay: var(--reveal-delay, 0s);
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] .reveal-lumo[data-bust] .reveal-lumo-rise {
+    animation-name: reveal-peek;
+  }
+  [data-motion='on'] .reveal-bubble {
+    transform-origin: right calc(100% - 1.25rem);
+    animation: reveal-pop 300ms var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + 150ms);
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] .reveal-bubble[data-side='bubble-right'] {
+    transform-origin: left calc(100% - 1.25rem);
+  }
+  /* Nhún khi gõ xong và khi đổi tư thế; mờ chéo hai ảnh */
+  [data-motion='on'] .reveal-lumo-hop[data-hop='a'] {
+    animation: reveal-hop-a var(--dur-pose) var(--ease-standard);
+  }
+  [data-motion='on'] .reveal-lumo-hop[data-hop='b'] {
+    animation: reveal-hop-b var(--dur-pose) var(--ease-standard);
+  }
+  [data-motion='on'] .reveal-lumo-layer[data-state='enter'] {
+    animation: reveal-fade var(--dur-pose) var(--ease-standard) both;
+  }
+  [data-motion='on'] .reveal-lumo-layer[data-state='leave'] {
+    animation: reveal-fade-out var(--dur-pose) var(--ease-standard) both;
+  }
+  @media print {
+    [data-reveal-root] .reveal-type-rest {
+      opacity: 1 !important;
+    }
+  }
+}
+
+@keyframes reveal-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+/* Tư thế bán thân ló lên từ sau mép che */
+@keyframes reveal-peek {
+  from {
+    opacity: 0;
+    transform: translateY(45%);
+  }
+}
+/* Hai tên giống hệt nhau: đổi qua lại giữa a và b là chạy lại cú nhún */
+@keyframes reveal-hop-a {
+  45% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes reveal-hop-b {
+  45% {
+    transform: translateY(-6px);
+  }
+}

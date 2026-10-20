@@ -9,13 +9,17 @@ import { useFormat, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
+import { LumoSays, Reveal } from './reveal'
 import { SectionHeading } from './SectionHeading'
 import { usePublicPlansQuery } from './useMarketingQuery'
 
 /** Số cột theo số gói đang bán (mỗi hạng một gói, tối đa ba) để không hàng nào lẻ một thẻ — như Bảng giá. */
 const COLUMNS: Readonly<Record<number, string>> = { 1: 'md:max-w-120', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }
 
-/** Một gói: tên, nhãn "Giá trị tạm — chờ chốt" khi gói mang cờ tạm, giá theo tháng và credit mỗi tháng — số của danh mục gói. */
+/**
+ * Một gói: tên, nhãn "Giá trị tạm — chờ chốt" khi gói mang cờ tạm, giá theo tháng và credit mỗi tháng — số của danh mục gói. Từ 768 tới
+ * 1.023 px ba thẻ chung một hàng hẹp nên giá xuống cỡ h1 để không tràn thẻ.
+ */
 function PlanTile({ plan }: { plan: SubscriptionPlan }) {
   const t = useT()
   const format = useFormat()
@@ -27,7 +31,7 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
         {plan.provisional ? <Badge shape="tag" tone="warning" outlined className={PUBLIC_TOUCH_TAG}>{t('common.provisionalPlan')}</Badge> : null}
       </div>
       <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-ink-strong">
-        <span className="font-display text-figure font-bold tracking-[-0.02em] tabular-nums font-stretch-108%">{format.currency(plan.priceVnd)}</span>
+        <span className="font-display text-figure font-bold tracking-[-0.02em] tabular-nums font-stretch-108% md:max-lg:text-h1">{format.currency(plan.priceVnd)}</span>
         <span className="text-body-lg text-ink-2">{t('pricing.perMonth')}</span>
       </p>
       <p className="m-0 flex items-center gap-2 border-t border-line-soft pt-4 text-body-lg font-medium text-ink-1">
@@ -40,27 +44,40 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
 
 /**
  * Phần "Gói cước" của trang giới thiệu (`#goi-cuoc`): tóm tắt các gói đang bán (cùng truy vấn với Bảng giá và form liên hệ), câu nói một
- * lần chạy tối ưu 3D dùng một credit, và liên kết phụ "So sánh các gói" sang Bảng giá. Không nút đăng ký hay mua.
+ * lần chạy tối ưu 3D dùng một credit, và liên kết phụ "So sánh các gói" sang Bảng giá. Không nút đăng ký hay mua. Khi có thẻ gói, Lumo
+ * (`idea`) ló lên trên mép thẻ cuối hàng, mời gửi yêu cầu tư vấn; thẻ nhô lên cả khối, so le 70 ms — giá và credit không chuyển động.
  */
 export function LandingPlans() {
   const t = useT()
   const plans = usePublicPlansQuery()
   const list = plans.data ?? []
+  const ready = !plans.isPending && !plans.isError && list.length > 0
   return (
     <section id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
-      <SectionHeading id="landing-plans" title={t('landing.plans.title')} lede={t('landing.plans.lede')} />
+      <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between xl:gap-12">
+        <SectionHeading id="landing-plans" title={t('landing.plans.title')} lede={t('landing.plans.lede')} className={cn('min-w-0', ready && 'xl:pb-10')} />
+        {/* Lumo đứng ngay trên mép trên của lưới thẻ, lùi khỏi góc bo của thẻ cuối hàng */}
+        {ready ? (
+          <LumoSays pose="idea" px={{ base: 112, md: 144, xl: 176 }} side="bubble-left" text={t('landingStory.lumo.plans')}
+            className="flex-none justify-end pr-4" bubbleClassName="max-w-sm" />
+        ) : null}
+      </div>
 
       {plans.isPending ? (
         <div className="flex justify-center py-12"><Spinner label={t('landing.plans.loading')} /></div>
-      ) : plans.isError || list.length === 0 ? (
+      ) : !ready ? (
         <p className="m-0 mt-10 text-body-lg text-ink-2">{t('landing.plans.error')}</p>
       ) : (
-        <div className={cn('mt-10 grid gap-4 lg:gap-5', COLUMNS[Math.min(list.length, 3)])}>
-          {list.map((plan) => <PlanTile key={plan.id} plan={plan} />)}
+        <div className={cn('grid gap-4 lg:gap-5', COLUMNS[Math.min(list.length, 3)])}>
+          {list.map((plan, index) => (
+            <Reveal key={plan.id} index={index} className="grid min-w-0">
+              <PlanTile plan={plan} />
+            </Reveal>
+          ))}
         </div>
       )}
 
-      <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <Reveal kind="fade" delay={450} className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="m-0 flex items-start gap-3 text-body-lg text-ink-2">
           <Coins aria-hidden className="mt-0.5 size-5 flex-none text-primary" strokeWidth={1.5} />
           {t('landing.plans.credit')}
@@ -71,7 +88,7 @@ export function LandingPlans() {
             <ArrowRight aria-hidden strokeWidth={1.5} />
           </Link>
         </Button>
-      </div>
+      </Reveal>
     </section>
   )
 }

@@ -43,6 +43,7 @@ import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
+import { landingStory } from './vi/landingStory'
 import { pricing } from './vi/pricing'
 
 /**
@@ -100,5 +101,6 @@ export const vi = {
   support,
   contacts,
   landing,
+  landingStory,
   pricing,
 } as const

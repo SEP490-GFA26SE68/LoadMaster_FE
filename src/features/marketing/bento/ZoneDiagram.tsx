@@ -3,6 +3,8 @@ import { StopDot } from '@/components/StopChip'
 import { boxFaces, containerShell, createProjector, fitViewBox, shellColors, sortByDepth, type IsoBox, type IsoFace } from '@/lib/isometric'
 import { useT } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
+import { useRevealMotion } from '../reveal'
+import { svgPiece } from './FeatureVisuals'
 
 /** Thùng 6 × 2,4 × 2,5 m như chuyến mẫu của phần mở đầu; đơn vị mét như `lib/isometric`. */
 const BODY = { length: 6, width: 2.4, height: 2.5 }
@@ -18,6 +20,11 @@ const ZONES = [
 const COLUMN = 0.48
 const ROWS = [0.03, 0.82, 1.61] as const
 const ROW_WIDTH = 0.76
+/** Mốc (ms sau lúc ô bắt đầu): vùng hiện dần theo thứ tự xếp — điểm cuối trước — cách nhau 120 ms; số điểm bật ra sau vùng của nó. */
+const ZONE_AT = 200
+const ZONE_STEP = 120
+const BADGE_LAG = 150
+const DOOR_AT = 700
 
 /** Khối hàng của một vùng: các cột hai lớp, lớp trên thấp dần ra phía cửa để nhìn thấy vùng sau. */
 function zoneBoxes(zone: (typeof ZONES)[number], zoneIndex: number): IsoBox[] {
@@ -35,43 +42,48 @@ function zoneBoxes(zone: (typeof ZONES)[number], zoneIndex: number): IsoBox[] {
   return boxes
 }
 
+const shape = (face: IsoFace, key: number) => (
+  <polygon key={key} points={face.points} fill={face.fill} stroke={face.stroke} strokeWidth={face.strokeWidth} strokeLinejoin="round" />
+)
+
 /**
  * Sơ đồ đẳng cự của thẻ "Xếp hàng 3D theo điểm giao": thùng xe chia bốn vùng theo điểm giao, vùng điểm 4 sát vách trước, vùng điểm 1
  * sát cửa sau (viền cyan). Hình trang trí bằng SVG (`lib/isometric`, không Three.js) — chữ của thẻ đã nói điều hình vẽ; hàng chú giải
- * dưới hình đọc từ trái sang phải đúng như hình.
+ * dưới hình đọc từ trái sang phải đúng như hình. Các vùng cách nhau theo chiều dài thùng nên vẽ vùng sâu trước, mỗi vùng theo chiều sâu
+ * riêng, là đúng thứ tự che khuất — mỗi vùng một nhóm, hiện dần và nhô lên 8 px khi ô hiện ra.
  */
 export function ZoneDiagram() {
   const t = useT()
-  const { frame, faces, badges, door } = useMemo(() => {
+  const motion = useRevealMotion()
+  const { frame, back, zones, front, door } = useMemo(() => {
     const frame = fitViewBox(BODY, SCALE, PAD)
     const project = createProjector(SCALE, frame.offsetX, frame.offsetY)
     const point = (x: number, y: number, z: number) => project(x, y, z).split(',').map(Number) as [number, number]
-    const shell = containerShell(BODY, project, shellColors(), { skirtHeight: 0.2 })
-    const cargo: IsoFace[] = ZONES.flatMap((zone, index) => zoneBoxes(zone, index)).flatMap((box) =>
-      boxFaces(box, project, { topTint: 0.12 }),
-    )
-    const badges = ZONES.map((zone, index) => {
+    const shell = sortByDepth(containerShell(BODY, project, shellColors(), { skirtHeight: 0.2 }))
+    const zones = ZONES.map((zone, index) => {
       const [cx, cy] = point((zone.from + zone.to) / 2, BODY.width / 2, index < 3 ? 2.15 : 1.55)
-      return { stop: zone.stop, cx, cy }
+      const faces = sortByDepth(zoneBoxes(zone, index).flatMap((box) => boxFaces(box, project, { topTint: 0.12 })))
+      return { stop: zone.stop, faces, cx, cy }
     })
     const { length: l, width: w, height: h } = BODY
     const door = [project(l, 0, 0), project(l, w, 0), project(l, w, h), project(l, 0, h), project(l, 0, 0)].join(' ')
-    return { frame, faces: sortByDepth([...shell, ...cargo]), badges, door }
+    return { frame, back: shell.filter((face) => face.depth < 0), zones, front: shell.filter((face) => face.depth >= 0), door }
   }, [])
 
   return (
     <div aria-hidden className="flex flex-col gap-4">
       <svg viewBox={frame.viewBox} className="mx-auto block h-auto w-full max-w-150">
-        {faces.map((face, index) => (
-          <polygon key={index} points={face.points} fill={face.fill} stroke={face.stroke} strokeWidth={face.strokeWidth} strokeLinejoin="round" />
+        {back.map(shape)}
+        {zones.map((zone, order) => (
+          <g key={zone.stop} {...svgPiece(motion, 'lp-lift', ZONE_AT + order * ZONE_STEP)}>{zone.faces.map(shape)}</g>
         ))}
-        <polyline points={door} fill="none" className="stroke-cyan-300" strokeWidth={2.5} strokeDasharray="7 5" strokeLinejoin="round" />
-        {badges.map((badge) => (
-          <g key={badge.stop}>
-            <line x1={badge.cx} y1={badge.cy + 15} x2={badge.cx} y2={badge.cy + 34} className="stroke-sky-text-3" strokeWidth={1.5} />
-            <circle cx={badge.cx} cy={badge.cy} r={16} fill={stopColor(badge.stop)} className="stroke-panel-dark" strokeWidth={3} />
-            <text x={badge.cx} y={badge.cy} dy="0.36em" textAnchor="middle" fontSize={17} fill={stopForeground(badge.stop)}
-              className="font-display font-bold">{badge.stop}</text>
+        {front.map(shape)}
+        <polyline points={door} fill="none" strokeWidth={2.5} strokeDasharray="7 5" strokeLinejoin="round" {...svgPiece(motion, 'lp-fade', DOOR_AT, 'stroke-cyan-300')} />
+        {zones.map(({ stop, cx, cy }, order) => (
+          <g key={stop} {...svgPiece(motion, 'lp-pop', ZONE_AT + order * ZONE_STEP + BADGE_LAG)}>
+            <line x1={cx} y1={cy + 15} x2={cx} y2={cy + 34} className="stroke-sky-text-3" strokeWidth={1.5} />
+            <circle cx={cx} cy={cy} r={16} fill={stopColor(stop)} className="stroke-panel-dark" strokeWidth={3} />
+            <text x={cx} y={cy} dy="0.36em" textAnchor="middle" fontSize={17} fill={stopForeground(stop)} className="font-display font-bold">{stop}</text>
           </g>
         ))}
       </svg>

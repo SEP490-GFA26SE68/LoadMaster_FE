@@ -301,6 +301,16 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* chuyển động của trang giới thiệu, chỉ features/marketing dùng (AGENTS mục 8): chữ và khối hiện ra một lần khi cuộn tới, số lăn
+     của dải số liệu, Lumo đổi tư thế; độ nhô lên lúc hiện và độ so le giữa từng từ / từng khối */
+  --dur-reveal: 600ms;
+  --dur-reveal-long: 700ms;
+  --dur-odometer: 1100ms;
+  --dur-pose: 220ms;
+  --reveal-rise: 24px;
+  --stagger-word: 40ms;
+  --stagger-item: 70ms;
 }
 
 
@@ -710,6 +720,10 @@
   :root {
     --dur-md: 100ms;
     --dur-slow: 100ms;
+    --dur-reveal: 100ms;
+    --dur-reveal-long: 100ms;
+    --dur-odometer: 100ms;
+    --dur-pose: 100ms;
   }
 
   *,
@@ -867,6 +881,11 @@
   z-index: -1;
   pointer-events: none;
   background: var(--landing-stage-glow);
+}
+
+/* Dải nguyên tắc xếp hàng giữa Tính năng và Cách hoạt động (StatementBand): nền tối đặc như panel trên khung 3D */
+.landing-statement {
+  background: var(--panel-dark);
 }
 
 /* Dải liên hệ cuối trang */

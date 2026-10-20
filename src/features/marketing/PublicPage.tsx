@@ -18,9 +18,9 @@ function handleSkip(event: MouseEvent<HTMLAnchorElement>) {
 /**
  * Khung của hai trang công khai: liên kết bỏ qua đầu trang (chỉ hiện khi nhận focus bằng bàn phím), đầu trang dải trời, nội dung trên
  * nền `--app`, chân trang tối. Khác khung ứng dụng: trang cuộn cả tài liệu (màn không có dữ liệu vận hành), nên neo `#…` và chỗ cuộn khi
- * đổi trang do `useHashScroll` lo.
+ * đổi trang do `useHashScroll` lo. `progress`: vạch tiến độ cuộn dưới đầu trang — chỉ trang giới thiệu bật.
  */
-export function PublicPage({ children }: { children: ReactNode }) {
+export function PublicPage({ children, progress = false }: { children: ReactNode; progress?: boolean }) {
   const t = useT()
   useHashScroll()
   return (
@@ -33,7 +33,7 @@ export function PublicPage({ children }: { children: ReactNode }) {
       >
         {t('landing.skipToContent')}
       </a>
-      <PublicHeader />
+      <PublicHeader progress={progress} />
       <main id={MAIN_ID} tabIndex={-1} className="flex flex-1 flex-col outline-none">{children}</main>
       <PublicFooter />
     </div>

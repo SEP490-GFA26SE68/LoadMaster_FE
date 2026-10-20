@@ -43,6 +43,27 @@ export function createProjector(
   }
 }
 
+/**
+ * Phép chiếu song song nhìn theo `direction` — hướng từ tâm nhìn tới camera trong hệ của khung 3D (x dọc thùng, y lên, z ngang), cùng
+ * cơ sở phải / lên với `fitFrame` của viewer3d: hình SVG đứng đúng góc của khung 3D. Đầu vào theo quy ước của file này (x dài, y ngang,
+ * z cao), tức điểm (x, z, y) của khung 3D. `alongPoint` trả toạ độ màn chưa nhân tỉ lệ (y hướng xuống) để tính khung nhìn.
+ */
+export function alongPoint(direction: readonly [number, number, number], x: number, y: number, z: number): [number, number] {
+  const [dx, dy, dz] = direction
+  const length = Math.hypot(dx, dy, dz) || 1
+  const fx = dx / length, fy = dy / length, fz = dz / length
+  const across = Math.hypot(fx, fz) || 1
+  const rx = fz / across, rz = -fx / across
+  return [x * rx + y * rz, -(x * fy * rz + z * (fz * rx - fx * rz) - y * fy * rx)]
+}
+
+export function projectAlong(direction: readonly [number, number, number], scale: number, offsetX = 0, offsetY = 0): Projector {
+  return (x, y, z) => {
+    const [px, py] = alongPoint(direction, x, y, z)
+    return `${(px * scale + offsetX).toFixed(1)},${(py * scale + offsetY).toFixed(1)}`
+  }
+}
+
 function channels(hex: string): [number, number, number] {
   const n = Number.parseInt(hex.slice(1), 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
