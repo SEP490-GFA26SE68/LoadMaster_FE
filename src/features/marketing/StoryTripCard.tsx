@@ -6,8 +6,8 @@ import { LANDING_STOP_COUNT } from './landing-sample.mock'
 import { PUBLIC_TOUCH_TAG } from './public-chrome'
 import { useStoryLoaded, useStoryPhase, type StoryDriver } from './useStoryDriver'
 
-/** Giai đoạn mà thẻ kể: đang tính · đã tính phương án · kho đang xếp · xếp xong. */
-export type TripCardPhase = 'preparing' | 'computed' | 'loading' | 'ready'
+/** Giai đoạn mà thẻ kể: đang tính · đã tính phương án · kho đang xếp · xếp xong · xe đã rời kho. */
+export type TripCardPhase = 'preparing' | 'computed' | 'loading' | 'ready' | 'depart'
 
 type TripCardProps = {
   phase: TripCardPhase
@@ -28,7 +28,8 @@ const TOUCH = PUBLIC_TOUCH_TAG
 /**
  * Thẻ "Chuyến mẫu" nằm đè trên khung 3D (từ 1.280 px) hay ngay trên khung (hẹp hơn), nền tối đặc. Chip đầu "Đã tính phương án" chỉ có ở
  * trang giới thiệu (`landing.stage.computed`): tông trung tính, chấm vòng rỗng — chờ người kế tiếp, không trùng trạng thái nào của ứng dụng.
- * Sau đó là chip của chính ứng dụng: `StatusBadge` Đang xếp hàng kèm dòng phụ "Đang xếp n / 366" rồi "Xếp xong — chờ xuất phát". Không có
+ * Sau đó là chip của chính ứng dụng: `StatusBadge` Đang xếp hàng kèm dòng phụ "Đang xếp n / 366" rồi "Xếp xong — chờ xuất phát"; xe rời
+ * kho thì Đang vận chuyển kèm nhãn trung tính "Đã rời kho" (`landingStage.departed`, chỉ trang giới thiệu dùng). Không có
  * chip Đã lập kế hoạch: chuyến mẫu không có tuyến, cũng không được duyệt. Không số kết quả nào nên không có MOCK RESULT: số kiện, số điểm
  * giao là của yêu cầu mẫu, n là số hộp đang vẽ trong thùng.
  * Chiều cao không đổi theo giai đoạn: dưới 768 px (và khi `compact`) chip xuống hàng riêng — chip "đang tính" dài nhất không vừa cạnh tên.
@@ -39,7 +40,7 @@ export function StoryTripCard({ phase, recorded, total, titleId, compact = false
   const chip =
     phase === 'preparing' ? <Badge dot="spin" className={TOUCH}>{t('landing.stage.preparing')}</Badge>
       : phase === 'computed' ? <Badge dot="ring" className={TOUCH}>{t('landing.stage.computed')}</Badge>
-        : <StatusBadge status="LOADING" className={TOUCH} />
+        : <StatusBadge status={phase === 'depart' ? 'IN_TRANSIT' : 'LOADING'} className={TOUCH} />
   const sub = phase === 'loading' ? { kind: 'loading' as const, recorded, total } : phase === 'ready' ? { kind: 'loaded' as const } : null
   return (
     <div className={cn('rounded-lg border border-border-dark bg-panel-dark p-3.5', className)}>
@@ -55,7 +56,9 @@ export function StoryTripCard({ phase, recorded, total, titleId, compact = false
         <span className="whitespace-nowrap">{t('landing.stage.load', { count: format.integer(total), stops: format.integer(LANDING_STOP_COUNT) })}</span>
       </p>
       <div className="mt-2.5 flex min-h-5 items-center pointer-coarse:min-h-7">
-        <TripSubStatusTag sub={sub} className={cn('tabular-nums', TOUCH)} />
+        {phase === 'depart'
+          ? <Badge shape="tag" className={TOUCH}>{t('landingStage.departed')}</Badge>
+          : <TripSubStatusTag sub={sub} className={cn('tabular-nums', TOUCH)} />}
       </div>
     </div>
   )
@@ -78,6 +81,6 @@ export function StoryTripCardLive({ driver, resolved, placed, total, titleId, co
 }) {
   const story = useStoryPhase(driver)
   const loaded = useStoryLoaded(driver, total)
-  const phase: TripCardPhase = !resolved ? 'preparing' : story === 'loading' || story === 'ready' ? story : 'computed'
+  const phase: TripCardPhase = !resolved ? 'preparing' : story === 'loading' || story === 'ready' || story === 'depart' ? story : 'computed'
   return <StoryTripCard phase={phase} recorded={Math.min(loaded, placed)} total={total} titleId={titleId} compact={compact} className={className} />
 }

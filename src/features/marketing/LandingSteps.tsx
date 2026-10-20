@@ -1,11 +1,10 @@
-import { useRef, useState, type AnimationEvent, type CSSProperties, type ReactNode } from 'react'
+import { useRef } from 'react'
 import { Lumo, LUMO_NAME } from '@/components/brand/Lumo'
 import { ROLE_ICON } from '@/components/RoleBadge'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/types/user'
-import { Reveal, RevealWords, useRevealMotion, words } from './reveal'
-import { wordStagger } from './reveal/split-text'
+import { FlowHeading, Reveal, RevealWords } from './reveal'
 import { SectionHeading } from './SectionHeading'
 import { StepRail, StepsStage, stepState, type StepState } from './StepsStage'
 import { useActiveStep, useStepsStage } from './useActiveStep'
@@ -22,36 +21,16 @@ const TITLE = 'm-0 font-display text-h2 font-[650] tracking-[-0.2px] text-ink-st
 /** Lời của Lumo cho một bước: khung chú thích nhìn thấy được, trừ khi khung dính đang nói thay (từ 1.024 px). */
 const NOTE = 'm-0 rounded-md border-l-2 border-cyan-300 bg-tint-blue p-3 text-body text-pretty text-ink-2 pointer-coarse:text-body-lg'
 
-/** Tiêu đề bước: "Bước n:" ẩn rồi tên bước. Chuyển động bật: tên bước nhô lên từng từ như `RevealWords`, cổng là mục của danh sách. */
+/**
+ * Tiêu đề bước: "Bước n:" ẩn rồi tên bước. Chuyển động bật: tên bước chảy từng chữ theo sóng (`FlowHeading`), cổng là mục của danh sách;
+ * tên truy cập vẫn đúng "Bước n: tên bước".
+ */
 function StepTitle({ prefix, title }: { prefix: string; title: string }) {
-  const motion = useRevealMotion()
-  const [settled, setSettled] = useState(false)
-  const parts = words(title)
-  const count = parts.filter((part) => part.word).length
-  const pieces: ReactNode[] = []
-  let index = 0
-  for (const [key, part] of parts.entries()) {
-    if (part.word) {
-      const last = index === count - 1 ? '' : undefined
-      pieces.push(<span key={key} className="reveal-word reveal-piece" style={{ '--w': index } as CSSProperties} data-last={last}>{part.word}</span>)
-      index += 1
-    }
-    if (part.space) pieces.push(part.space)
-  }
-  const handleEnd = (event: AnimationEvent<HTMLHeadingElement>) => {
-    if (event.target instanceof Element && event.target.hasAttribute('data-last')) setSettled(true)
-  }
-  const step = { '--word-step': `min(var(--stagger-word), ${wordStagger(count).toFixed(2)}ms)` } as CSSProperties
-  return (
-    <h3 className={TITLE} style={motion ? step : undefined} data-done={settled ? '' : undefined} onAnimationEnd={motion ? handleEnd : undefined}>
-      <span className="sr-only">{prefix}: </span>
-      {motion ? <><span className="sr-only select-none">{title}</span><span aria-hidden="true" data-words="rise" key={title}>{pieces}</span></> : title}
-    </h3>
-  )
+  return <FlowHeading as="h3" className={TITLE} text={title} before={<span className="sr-only">{prefix}: </span>} />
 }
 
 /**
- * Một bước: số 01–04 mở ngang, tên bước nhô lên từng từ, câu mô tả đậm dần, lời của Lumo hiện dần, chip vai trò bật ra cách nhau 70 ms.
+ * Một bước: số 01–04 mở ngang, tên bước chảy từng chữ, câu mô tả đậm dần, lời của Lumo hiện dần, chip vai trò bật ra cách nhau 70 ms.
  * Có khung dính: cột đường ray bên trái, mục cao ít nhất 56 % khung nhìn, lời của Lumo chỉ còn cho trình đọc màn hình (khung dính nói thay).
  */
 function StepItem({ step, index, stage, state }: { step: (typeof STEPS)[number]; index: number; stage: boolean; state: StepState }) {
@@ -131,7 +110,7 @@ export function LandingSteps() {
     <section id="cach-hoat-dong" aria-labelledby="landing-how" className="scroll-mt-24 overflow-x-clip border-y border-border bg-bg px-4 py-16 md:px-shell lg:py-24">
       <SectionHeading id="landing-how" title={t('landing.how.title')} lede={t('landing.how.lede')} />
       {stage ? null : (
-        <Reveal className="mt-10 flex"><Lumo pose="carry" px={112} loading="lazy" /></Reveal>
+        <Reveal className="mt-10 flex"><Lumo pose="carry" px={112} sizes="112px" loading="lazy" /></Reveal>
       )}
       <div className={stage ? 'mt-14 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-x-12 xl:gap-x-20' : 'mt-6'}>
         <div ref={track} className="min-w-0">

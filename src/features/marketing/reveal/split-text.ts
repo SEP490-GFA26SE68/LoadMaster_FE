@@ -28,6 +28,38 @@ export function graphemes(text: string, locale: string): string[] {
   return Array.from(new Intl.Segmenter(locale, { granularity: 'grapheme' }).segment(nfc), (part) => part.segment)
 }
 
+/**
+ * Tách đoạn thành câu theo ngôn ngữ (`Intl.Segmenter`, `sentence`, sau NFC), bỏ khoảng trắng hai đầu mỗi câu, bỏ câu rỗng. Trình duyệt
+ * thiếu Segmenter: cả đoạn là một câu. Dùng cho `LineRise` (mỗi câu một dòng).
+ */
+export function sentences(text: string, locale: string): string[] {
+  const nfc = text.normalize('NFC').trim()
+  if (!nfc) return []
+  if (typeof Intl.Segmenter !== 'function') return [nfc]
+  const parts = Array.from(new Intl.Segmenter(locale, { granularity: 'sentence' }).segment(nfc), (part) => part.segment.trim())
+  return parts.filter(Boolean)
+}
+
+/** Một từ của tiêu đề chảy chữ (`FlowHeading`): grapheme của từ, khoảng trắng đứng sau nó, số thứ tự grapheme đầu của từ. */
+export type FlowWord = { chars: string[]; space: string; start: number }
+
+/** Tách tiêu đề thành từ (`words`: khoảng trắng không ngắt ở trong từ) rồi mỗi từ thành grapheme; đếm grapheme liên tục qua các từ. */
+export function flowWords(text: string, locale: string): { parts: FlowWord[]; count: number } {
+  const parts: FlowWord[] = []
+  let count = 0
+  for (const { word, space } of words(text)) {
+    const chars = word ? graphemes(word, locale) : []
+    parts.push({ chars, space, start: count })
+    count += chars.length
+  }
+  return { parts, count }
+}
+
+/** So le giữa hai grapheme của tiêu đề chảy chữ (ms): tối đa 26 ms, cả tiêu đề so le không quá 720 ms. */
+export function flowStagger(count: number): number {
+  return count > 1 ? Math.min(26, 720 / (count - 1)) : 0
+}
+
 /** Nhịp gõ mỗi grapheme (ms): tối đa 22 ms, và cả câu không quá `budgetMs`. */
 export function typeStep(count: number, budgetMs: number): number {
   return Math.min(22, budgetMs / Math.max(1, count))
@@ -36,11 +68,6 @@ export function typeStep(count: number, budgetMs: number): number {
 /** Trần so le giữa hai từ của tiêu đề (ms): cả tiêu đề so le không quá 600 ms; CSS lấy `min` với `--stagger-word`. */
 export function wordStagger(count: number): number {
   return count > 1 ? 600 / (count - 1) : 0
-}
-
-/** So le giữa hai từ của đoạn văn hiện dần (ms): tối đa 14 ms, cả đoạn không quá 500 ms. */
-export function inkStagger(count: number): number {
-  return Math.min(14, 500 / Math.max(1, count))
 }
 
 /** Mảnh của số lăn: một ô cho mỗi chữ số ASCII, chữ khác gộp thành một đoạn hiện dần. `cell` là số thứ tự ô (so le 60 ms mỗi ô). */

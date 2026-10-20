@@ -8,14 +8,15 @@ export const landingStory = {
   lumo: {
     /** Tiền tố `sr-only` đứng trước mọi bong bóng, để trình đọc màn hình biết ai đang nói. */
     says: '{name} nói:',
-    /** Lời dẫn của khung 3D theo pha của chuyện: chuẩn bị, nhập kiện, tối ưu, xếp, xếp xong (hết hay còn kiện chưa xếp), hình dự phòng. */
+    /** Lời dẫn của khung 3D theo pha của chuyện: chuẩn bị, nhập kiện, tối ưu, xếp, xếp xong (hết hay còn kiện chưa xếp), xe lăn bánh, hình dự phòng. */
     hero: {
       preparing: 'Bộ tối ưu mô phỏng tính chuyến mẫu này ngay trên trình duyệt của bạn.',
       intake: 'Kiện của mỗi điểm giao chờ ở một làn, cùng màu với điểm đó.',
-      optimize: 'Thùng được chia vùng: điểm cuối nằm sâu nhất, điểm đầu sát cửa.',
+      optimize: 'Thùng được chia vùng theo điểm giao, mỗi điểm một màu.',
       loading: 'Hàng của điểm cuối lên trước. Kiện rời làn đúng lúc vào thùng.',
       ready: 'Xếp xong, chờ xuất phát. Số bên dưới là của chính phương án vừa tính.',
       readyPartial: 'Có kiện chưa xếp được. Số bên dưới ghi đúng phương án vừa tính.',
+      depart: 'Xe lăn bánh; tài xế dỡ hàng theo đúng thứ tự của phương án.',
       fallback: 'Hình xe ba chiều không hiện được ở đây, nên mình gửi bạn hình minh hoạ.',
     },
     /** Dải số liệu `#con-so`. */

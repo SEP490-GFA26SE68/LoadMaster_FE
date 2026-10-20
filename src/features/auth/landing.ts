@@ -21,6 +21,8 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
 export const PUBLIC_HOME = '/gioi-thieu'
 /** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
 export const PUBLIC_PRICING = '/bang-gia'
+/** Chính sách bảo mật công khai: form liên hệ dẫn tới đây trước khi khách gửi họ tên, email, số điện thoại. */
+export const PUBLIC_PRIVACY = '/chinh-sach-bao-mat'
 
 /**
  * Trang mở sau khi đăng nhập. `from` là trang định vào trước khi bị chuyển tới màn đăng nhập (kèm query).

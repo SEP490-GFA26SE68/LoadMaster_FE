@@ -18,7 +18,7 @@ export function PublicNavMenu({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={t('landing.header.menu')}
+        aria-label={t('landingChrome.menu')}
         className={cn(
           'grid size-10 flex-none place-items-center rounded-md border border-sky-glass-border bg-sky-glass text-sky-text outline-none',
           'hover:bg-sky-glass-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',

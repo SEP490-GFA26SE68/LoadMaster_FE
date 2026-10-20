@@ -36,8 +36,11 @@ export type StoryClock = {
   release(reason: StoryHold): void
   /** Về 0 và chạy lại (kể cả khi đã hết), giữ nguyên các lý do đang giữ. */
   restart(): void
-  /** Đặt thẳng về cuối: giảm chuyển động, hoặc khi chuyện không cần chạy. */
-  finish(): void
+  /**
+   * Kết thúc ngay: thời gian đặt ở `atMs` (mặc định cuối chuyện, kẹp trong 0…`durationMs`) và trạng thái là `ended`. Giảm chuyển động
+   * kết thúc ở lúc xếp xong, trước pha xuất phát.
+   */
+  finish(atMs?: number): void
 }
 
 export function createStoryClock(durationMs: number): StoryClock {
@@ -79,10 +82,10 @@ export function createStoryClock(durationMs: number): StoryClock {
       finished = false
       elapsed = 0
     },
-    finish() {
+    finish(atMs = duration) {
       started = true
       finished = true
-      elapsed = duration
+      elapsed = Math.min(duration, Math.max(0, atMs))
     },
   }
 }

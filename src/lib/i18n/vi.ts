@@ -45,6 +45,17 @@ import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
 import { landingStory } from './vi/landingStory'
 import { pricing } from './vi/pricing'
+import { landingFooter } from './vi/landingFooter'
+import { landingFaq } from './vi/landingFaq'
+import { landingCompare } from './vi/landingCompare'
+import { landingAxle } from './vi/landingAxle'
+import { landingTry } from './vi/landingTry'
+import { legal } from './vi/legal'
+import { seo } from './vi/seo'
+import { landingChrome } from './vi/landingChrome'
+import { landingMotion } from './vi/landingMotion'
+import { landingStage } from './vi/landingStage'
+import { landingContact } from './vi/landingContact'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -103,4 +114,15 @@ export const vi = {
   landing,
   landingStory,
   pricing,
+  landingFooter,
+  landingFaq,
+  landingCompare,
+  landingAxle,
+  landingTry,
+  legal,
+  seo,
+  landingChrome,
+  landingMotion,
+  landingStage,
+  landingContact,
 } as const

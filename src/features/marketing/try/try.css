@@ -1,0 +1,80 @@
+/*
+ * "Thử với xe của bạn" (features/marketing/try): màu kiện của hình đẳng cự và lúc kiện rơi vào thùng.
+ *
+ * - Màu theo loại kiện, dựng từ token: nóc là màu gốc, hai mặt bên trộn với --cyan-950 (vùng 3D luôn tối) cho có khối. Không dùng màu
+ *   điểm giao — bản thử chỉ có một điểm giao, màu ở đây kể loại kiện và luôn đi kèm chú giải bằng chữ.
+ * - Kiện rơi vào một lần khi kết quả hiện ra (dịch xuống + hiện dần, chỉ transform/opacity), theo thứ tự xếp, cả lượt dưới 2 giây. Chỉ
+ *   dưới [data-motion='on'] của RevealProvider: giảm chuyển động, không có IntersectionObserver hay jsdom thì kiện đứng sẵn.
+ */
+
+@layer components {
+  .try-kind-0 {
+    --try-box: var(--cyan-300);
+  }
+  .try-kind-1 {
+    --try-box: var(--amber-200);
+  }
+
+  .try-face {
+    stroke: color-mix(in srgb, var(--cyan-950) 55%, transparent);
+    stroke-width: 0.5;
+    stroke-linejoin: round;
+  }
+  .try-face-top {
+    fill: var(--try-box);
+  }
+  .try-face-front {
+    fill: color-mix(in srgb, var(--try-box) 80%, var(--cyan-950));
+  }
+  .try-face-side {
+    fill: color-mix(in srgb, var(--try-box) 60%, var(--cyan-950));
+  }
+
+  .try-swatch {
+    background-color: var(--try-box);
+  }
+
+  /* Viền nóc thùng, nét đứt mờ */
+  .try-roof {
+    fill: none;
+    stroke: color-mix(in srgb, var(--n-0) 28%, transparent);
+    stroke-width: 0.8;
+    stroke-dasharray: 2 2;
+  }
+
+  [data-motion='on'] .try-drop {
+    animation: try-drop 420ms var(--ease-decelerate) both;
+    animation-delay: calc(var(--try-step, 0) * var(--try-gap, 4ms));
+  }
+
+  /* Thanh tiến độ: chỉ đổi transform */
+  .try-meter {
+    transform-origin: left center;
+    transition: transform var(--dur-md) var(--ease-standard);
+  }
+}
+
+@keyframes try-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .try-drop {
+    animation: none;
+  }
+  .try-meter {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .try-face {
+    stroke: CanvasText;
+  }
+  .try-swatch {
+    border: 1px solid CanvasText;
+  }
+}

@@ -2,18 +2,20 @@ import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, type RouteObject } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { Permission } from '@/features/auth/permissions'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
-import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
 import { Providers } from './providers'
 import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title'
 
 /**
  * Mỗi màn là một chunk riêng: dispatcher không tải code tài xế, tablet kho
- * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D.
+ * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D. Khung ứng dụng (thanh điều hướng, chuông, tìm nhanh) cũng là chunk
+ * riêng: khách mở trang công khai không tải nó.
  */
+const AppShell = lazy(() => import('./AppShell').then((m) => ({ default: m.AppShell })))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
 const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const TripListPage = lazy(() => import('@/features/trips/TripListPage').then((m) => ({ default: m.TripListPage })))
@@ -46,25 +48,29 @@ const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) =>
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
-// Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
+// Trang công khai (giới thiệu, bảng giá, chính sách bảo mật) và màn liên hệ của khách gửi từ trang giới thiệu
 const LandingPage = lazy(() => import('@/features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })))
 const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
+const PrivacyPage = lazy(() => import('@/features/marketing/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
 const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
 const ComponentSheetPage = lazy(() => import('./design-system/ComponentSheetPage').then((m) => ({ default: m.ComponentSheetPage })))
 
+/** Vòng chờ khi chunk của màn hay của khung ứng dụng đang tải. */
+function ScreenLoading({ className }: { className?: string }) {
+  const t = useT()
+  return (
+    <div className={cn('flex flex-1 items-center justify-center p-8', className)} role="status" aria-label={t('common.loadingScreen')}>
+      <Spinner />
+    </div>
+  )
+}
+
 /** Layout của mỗi nhóm route: chờ chunk của màn và đặt tiêu đề tab theo `handle` của route (LM-100). */
 function RouteOutlet() {
-  const t = useT()
   useRouteTitle()
   return (
-    <Suspense
-      fallback={
-        <div className="flex flex-1 items-center justify-center p-8" role="status" aria-label={t('common.loadingScreen')}>
-          <Spinner />
-        </div>
-      }
-    >
+    <Suspense fallback={<ScreenLoading />}>
       <Outlet />
     </Suspense>
   )
@@ -106,6 +112,7 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
+          { path: '/chinh-sach-bao-mat', element: <PrivacyPage />, handle: titled((t) => t('titles.privacy')) },
         ],
       },
 
@@ -114,7 +121,7 @@ export const routes: RouteObject[] = [
         children: [
           // Màn desktop có nav rail.
           {
-            element: <AppShell />,
+            element: <Suspense fallback={<ScreenLoading className="min-h-dvh" />}><AppShell /></Suspense>,
             children: [
               {
                 element: <RouteOutlet />,

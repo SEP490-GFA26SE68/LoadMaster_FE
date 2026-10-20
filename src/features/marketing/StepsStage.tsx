@@ -1,9 +1,9 @@
 import { Check } from 'lucide-react'
 import { useEffect, useState, type AnimationEvent } from 'react'
-import { LUMO_POSES, type LumoPose } from '@/components/brand/Lumo'
+import { LUMO_POSES, lumoSrcSet, type LumoPose } from '@/components/brand/Lumo'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { LumoSays, Reveal, useRevealMotion } from './reveal'
+import { FlowHeading, LumoSays, lumoSizesAttr, Reveal, useRevealMotion, type LumoSizes } from './reveal'
 import { SceneTextFloor } from './steps/scene-kit'
 import { savesData, useNearViewport, useSceneTextFloor } from './steps/stage-hooks'
 import { STEP_SCENES, type StepSceneKey } from './steps/StepScenes'
@@ -57,9 +57,14 @@ export function StepRail({ state, end = false }: { state: StepState; end?: boole
   )
 }
 
+/** Cỡ Lumo của khung dính; ảnh tải sẵn dùng cùng `sizes` để trình duyệt chọn đúng bản sẽ hiện. */
+const LUMO_SIZES = { base: 144, wide: 160 } as const satisfies LumoSizes
+
 function preload(pose: LumoPose): void {
   const image = new Image()
   image.decoding = 'async'
+  image.sizes = lumoSizesAttr(LUMO_SIZES)
+  image.srcset = lumoSrcSet(pose)
   image.src = LUMO_POSES[pose]
 }
 
@@ -87,7 +92,7 @@ function StageProgress({ index }: { index: number }) {
  * Khung dính của Cách hoạt động (từ 1.024 px, `aria-hidden` — chữ của từng bước vẫn nằm trong mục của danh sách): số lớn, tên bước và bốn
  * đoạn tiến độ của mục đang đọc; giữa khung là cảnh của bước đó (`StepScenes`: nhập kiện → tuyến → ba phương án → dỡ ở cửa sau → chuyến đã
  * giao xong); dưới cùng Lumo đổi tư thế (mang kiện → chỉ → máy tính bảng → quét → xong) và gõ lời của bước. Đổi mục: số, tên và cảnh cũ mờ
- * đi trong khi cái mới hiện lên chồng đúng chỗ (220 ms), các mảnh của cảnh mới hiện dần một lần; số không đổi (bước 4 → câu kết) thì đứng
+ * đi trong khi cái mới hiện lên chồng đúng chỗ (220 ms), tên mới chảy từng chữ (`FlowHeading`), các mảnh của cảnh mới hiện dần một lần; số không đổi (bước 4 → câu kết) thì đứng
  * yên. Ảnh Lumo tải lười; ảnh của hai tư thế kế tiếp chỉ tải trước khi khung đã tới gần khung nhìn và người xem không bật tiết kiệm dữ
  * liệu. Máy cảm ứng: chữ trong cảnh không nhỏ hơn 16 px (`SceneTextFloor`), vùng cảnh quá nhỏ cho cỡ đó thì bỏ hình (`data-small`).
  * Chuyển động tắt: mọi thứ đổi ngay, cảnh tĩnh ở trạng thái cuối.
@@ -134,7 +139,9 @@ export function StepsStage({ active }: { active: number }) {
       </div>
       <p className="m-0 mt-1 grid font-display text-h2 font-[650] tracking-[-0.2px] text-balance text-ink-strong font-stretch-108%">
         {shots.map((shot) => (
-          <span key={`title-${shot.gen}`} {...layer(shot)}>{titleOf(shot)}</span>
+          <span key={`title-${shot.gen}`} {...layer(shot)}>
+            <FlowHeading as="span" text={titleOf(shot)} />
+          </span>
         ))}
       </p>
       <StageProgress index={current.index} />
@@ -153,7 +160,7 @@ export function StepsStage({ active }: { active: number }) {
       </div>
       <LumoSays
         pose={POSES[key]}
-        px={{ base: 144, wide: 160 }}
+        px={LUMO_SIZES}
         side="bubble-right"
         text={t(`landingStory.lumo.how.${key}`)}
         className="flex-none [@media(max-height:719px)]:[--lumo-px:112px]"

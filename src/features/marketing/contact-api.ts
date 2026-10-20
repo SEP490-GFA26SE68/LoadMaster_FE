@@ -12,6 +12,12 @@ import { getMockDb, type GuestContact, type NewGuestContact } from '@/lib/mock-d
 const ON_BACKEND = usesBackend('contacts')
 
 /**
+ * Yêu cầu của khách được lưu ở đâu (AGENTS mục 9, "Phần backend chưa có thì ẩn"): kho mẫu chỉ giữ nó trong trình duyệt này, nên form liên
+ * hệ và trang chính sách bảo mật nói thật điều đó thay vì hứa đội LoadMaster sẽ nhận được. Không đổi lượt gọi mạng nào.
+ */
+export const GUEST_CONTACT_SOURCE = { storedInBrowser: !ON_BACKEND } as const
+
+/**
  * Gửi yêu cầu liên hệ của khách chưa có tài khoản; trả yêu cầu vừa ghi, trạng thái Mới. Kho mẫu cấp mã `LH-NNN`, backend cấp mã số.
  * Backend từ chối (thiếu trường, email sai): `ApiError` mã `BAD_REQUEST`; form hiện câu qua `dataErrorMessage`.
  */

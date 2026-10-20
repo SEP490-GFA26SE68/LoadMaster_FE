@@ -45,8 +45,8 @@ function writeLanes(mesh: InstancedMesh, slots: readonly LaneSlot[], time: numbe
  * pha quét). Ánh sáng của cảnh không đổi.
  *
  * Mọi chuyển động đọc `story.time()` trong `useFrame`, không qua React: ma trận của làn chỉ ghi lại khi bước xếp đổi, khi hộp còn đang
- * rơi, hoặc khi chuyện quay lại từ đầu. `low` (tier thấp): vật liệu Lambert, không thả hộp, không quét — làn đầy ngay từ đầu, và nền
- * thêm một khối xe giản lược vì tier thấp không vẽ cabin, bánh xe.
+ * rơi, hoặc khi chuyện quay lại từ đầu. `low` (tier thấp): vật liệu Lambert, không thả hộp, không quét — làn đầy ngay từ đầu. Khối xe
+ * giản lược của tier thấp nằm ở `DepartMotion` (đi cùng xe), không ở nền.
  */
 export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion }: {
   slots: readonly LaneSlot[]
@@ -64,7 +64,7 @@ export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion 
   const written = useRef<Written>({ step: -1, time: -1, motion })
   const { length, width, height } = containerSize(vehicle)
 
-  const base = useMemo(() => dioramaBaseGeometry(dioramaPalette(), low ? vehicle : undefined), [low, vehicle])
+  const base = useMemo(() => dioramaBaseGeometry(dioramaPalette()), [])
   const boxes = useMemo(() => laneBoxGeometry(slots.length), [slots.length])
   const surface = useMemo(() => low ? null : createCargoSurface(), [low])
   const sweepColor = useMemo(() => readToken('--cyan-300'), [])

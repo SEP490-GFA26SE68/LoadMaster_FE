@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { EmptyState } from '@/components/EmptyState'
-import { Lumo, LUMO_ASSET_PX, LUMO_NAME, LUMO_POSES, type LumoPose } from './Lumo'
+import { Lumo, LUMO_ASSET_PX, LUMO_HALF_POSES, LUMO_NAME, LUMO_POSES, lumoSrcSet, type LumoPose } from './Lumo'
 
 /** Mười bốn tư thế theo đúng thứ tự khai báo (AGENTS "Thương hiệu"): bảy tư thế của ứng dụng, bốn toàn thân, ba bán thân. */
 const POSES: readonly LumoPose[] = [
@@ -78,6 +78,32 @@ test('without px the size presets still apply and there is no inline size', () =
   const img = imageOf(container)
   expect(img.className).toContain('size-32')
   expect(img.getAttribute('style')).toBeNull()
+})
+
+/** Bản nửa cạnh cho màn 1× và ảnh nhỏ: cỡ đặt sẵn tự có `srcset` + `sizes`; `px` chỉ có khi nơi gọi đưa `sizes`. */
+test('every pose has its own half-edge picture, offered next to the original', () => {
+  const halves = Object.values(LUMO_HALF_POSES)
+  expect(Object.keys(LUMO_HALF_POSES)).toStrictEqual(POSES)
+  expect(new Set([...halves, ...Object.values(LUMO_POSES)]).size).toBe(halves.length * 2)
+  expect(lumoSrcSet('carry')).toBe(`${LUMO_HALF_POSES.carry} 256w, ${LUMO_POSES.carry} 512w`)
+  expect(lumoSrcSet('greet')).toBe(`${LUMO_HALF_POSES.greet} 160w, ${LUMO_POSES.greet} 320w`)
+})
+
+test('size presets tell the browser their display size so it can pick the half-edge picture', () => {
+  const img = imageOf(render(<Lumo pose="greet" size="xl" />).container)
+  expect(img).toHaveAttribute('srcset', lumoSrcSet('greet'))
+  expect(img).toHaveAttribute('sizes', '(min-width: 640px) 160px, 128px')
+  expect(img).toHaveAttribute('src', LUMO_POSES.greet)
+  expect(imageOf(render(<Lumo pose="done" size="sm" />).container)).toHaveAttribute('sizes', '96px')
+})
+
+test('a px size offers the half-edge picture only with sizes, so a page that preloads the original does not load twice', () => {
+  const plain = imageOf(render(<Lumo pose="scan" px={96} />).container)
+  expect(plain).not.toHaveAttribute('srcset')
+  expect(plain).not.toHaveAttribute('sizes')
+  const hinted = imageOf(render(<Lumo pose="scan" px={96} sizes="96px" />).container)
+  expect(hinted).toHaveAttribute('srcset', lumoSrcSet('scan'))
+  expect(hinted).toHaveAttribute('sizes', '96px')
 })
 
 test('loading can be lazy for pictures far down a page', () => {

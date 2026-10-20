@@ -237,3 +237,27 @@ test('StrictMode keeps one observer of the step being read; with reduced motion 
   expect(stage?.querySelectorAll('[data-scene]')).toHaveLength(1)
   expect(stage?.querySelector('[data-scene]')).toHaveAttribute('data-scene', 'operate')
 })
+
+test('with motion each step title flows in letter by letter with its group, keeping the name "Bước n: title"; the stage title flows too', () => {
+  browser(true)
+  renderSteps()
+  const items = within(region()).getAllByRole('listitem')
+  const first = items[0]
+  if (!first) throw new Error('Thiếu bước 1')
+  const heading = within(first).getByRole('heading', { level: 3, name: /^Bước 1:\s?Nhập kiện và yêu cầu giao$/ })
+  // Không tự làm cổng: chạy theo mục của danh sách
+  expect(heading).not.toHaveAttribute('data-reveal-gate')
+  expect(heading.closest('[data-reveal-gate]')).toBe(first)
+  const flow = heading.querySelector('[aria-hidden="true"][data-flow]')
+  // 20 chữ, mỗi chữ (kể cả có dấu chồng) là một mảnh; 6 từ không ngắt dòng bên trong
+  expect(flow?.querySelectorAll('.reveal-flow-char')).toHaveLength(20)
+  expect(flow?.querySelectorAll('.reveal-flow-word')).toHaveLength(6)
+  expect([...(flow?.querySelectorAll('.reveal-flow-char') ?? [])].map((char) => char.textContent).slice(0, 4)).toStrictEqual(['N', 'h', 'ậ', 'p'])
+  const last = flow?.querySelector('[data-last]')
+  if (!last) throw new Error('Không thấy chữ cuối')
+  finishAnimation(last, 'reveal-flow')
+  expect(heading).toHaveAttribute('data-flow-done')
+
+  const stage = stageOf(region())
+  expect(stage?.querySelector('[data-flow]')).toHaveTextContent(TITLES[0] ?? '')
+})

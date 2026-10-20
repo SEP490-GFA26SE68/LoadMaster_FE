@@ -39,6 +39,19 @@ const TYPE_LEAD_MS = 300
 const toPx = (value: number | undefined) => (value === undefined ? undefined : `${value}px`)
 
 /**
+ * Thuộc tính `sizes` của ảnh Lumo theo cùng các bậc bề rộng với `lumo-says.css` (768 · 1.280 · 1.440 px): trình duyệt được chọn bản nửa
+ * cạnh khi đủ nét. Nơi tải sẵn ảnh (`new Image()`) dùng đúng chuỗi này cùng `lumoSrcSet` để ảnh không tải hai lần.
+ */
+export function lumoSizesAttr({ base, md, xl, wide }: LumoSizes): string {
+  return [
+    wide === undefined ? null : `(min-width: 1440px) ${wide}px`,
+    xl === undefined ? null : `(min-width: 1280px) ${xl}px`,
+    md === undefined ? null : `(min-width: 768px) ${md}px`,
+    `${base}px`,
+  ].filter((part) => part !== null).join(', ')
+}
+
+/**
  * Lumo nói một câu: ảnh Lumo (`aria-hidden`) và bong bóng chữ — tiền tố `sr-only` "Lumo nói:", không `aria-live` (lời dẫn không tự đọc to).
  * Hàng `flex items-end`: Lumo đứng (hay ló lên, tư thế bán thân) trên mép dưới của hàng, đuôi bong bóng chỉ vào ngang miệng Lumo — đặt hàng
  * ngay trên cạnh mà Lumo ló lên. Chuyển động bật: vào một lần (nhô lên 600 ms, bong bóng bật ra từ đuôi), gõ theo grapheme trong `budgetMs`,
@@ -70,6 +83,7 @@ export function LumoSays({
   const { done: typed, typedRef, restRef } = useTyping({ text, locale, budgetMs, paused, started: live, leadMs: delay + TYPE_LEAD_MS, instant: !motion || shown === 'instant', onDone: hop })
   const { swap, nextRef, finish } = useLumoSwap(pose, live && shown !== 'instant')
   const sizes = typeof px === 'number' ? { base: px } : px
+  const sizesHint = lumoSizesAttr(sizes)
 
   const handleFadeEnd = (event: AnimationEvent<HTMLSpanElement>) => {
     if (event.target !== event.currentTarget) return
@@ -104,7 +118,7 @@ export function LumoSays({
       <div className="reveal-lumo-rise reveal-piece">
         <div className="reveal-lumo-hop reveal-piece" data-hop={hops === 0 ? undefined : hops % 2 === 1 ? 'a' : 'b'}>
           <span key={swap.current} className="reveal-lumo-layer reveal-piece" data-state={swap.fading ? 'leave' : 'current'}>
-            <Lumo pose={swap.current} px={sizes.base} loading={loading} className="reveal-lumo-img" />
+            <Lumo pose={swap.current} px={sizes.base} sizes={sizesHint} loading={loading} className="reveal-lumo-img" />
           </span>
           {swap.next ? (
             <span
@@ -114,7 +128,7 @@ export function LumoSays({
               data-state={swap.fading ? 'enter' : 'next'}
               onAnimationEnd={handleFadeEnd}
             >
-              <Lumo pose={swap.next} px={sizes.base} className="reveal-lumo-img" />
+              <Lumo pose={swap.next} px={sizes.base} sizes={sizesHint} className="reveal-lumo-img" />
             </span>
           ) : null}
         </div>

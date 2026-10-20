@@ -48,7 +48,10 @@ function readStoredUser(): User | null {
   }
 }
 
-/** Phiên lưu ở tab được kho xác nhận lại: tài khoản đã bị khoá hoặc xoá thì coi như chưa đăng nhập. */
+/**
+ * Phiên lưu ở tab được kho xác nhận lại: tài khoản đã bị khoá hoặc xoá thì coi như chưa đăng nhập. Khách (không có phiên lưu) thì không
+ * dựng kho mẫu lúc mở trang (`authApi.restoreSession`).
+ */
 function restoreUser(): User | null {
   const restored = authApi.restoreSession(readStoredUser()?.id ?? null)
   writeStoredUser(restored)

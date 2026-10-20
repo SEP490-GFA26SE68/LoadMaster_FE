@@ -6,14 +6,21 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type MessageKey } from '@/lib/i18n'
 import type { GuestContact } from '@/lib/mock-db'
+import { cn } from '@/lib/utils'
+import { GUEST_CONTACT_SOURCE } from './contact-api'
 import { CONTACT_ANCHOR, contactDefaults } from './contact-form'
 import { ContactForm } from './ContactForm'
+import { DemoContactNote } from './ContactFormParts'
 import { PUBLIC_TOUCH } from './public-chrome'
-import { LumoSays, Reveal } from './reveal'
+import { LineRise, LumoSays, Reveal } from './reveal'
 import { SectionHeading } from './SectionHeading'
 import { usePublicPlansQuery } from './useMarketingQuery'
+import { useNearViewport } from './useNearViewport'
 
-/** Gửi xong: mã yêu cầu kèm một câu nói điều đã xảy ra, và nút gửi yêu cầu khác. Tiêu đề nhận focus để bàn phím không lạc về đầu trang. */
+/**
+ * Gửi xong: mã yêu cầu kèm một câu nói điều đã xảy ra, và nút gửi yêu cầu khác. Tiêu đề nhận focus để bàn phím không lạc về đầu trang.
+ * Bản demo không hứa "đội sẽ liên hệ lại": yêu cầu chỉ nằm trong trình duyệt này, câu thay thế chỉ tới email hỗ trợ.
+ */
 function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () => void }) {
   const t = useT()
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -26,8 +33,12 @@ function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () 
       <h3 ref={headingRef} tabIndex={-1} className="m-0 font-display text-h2 leading-7 font-bold text-ink-strong outline-none">
         {t('landing.contact.sent.title', { id: contact.id })}
       </h3>
-      <p className="m-0 text-body text-ink-2 pointer-coarse:text-body-lg">{t('landing.contact.sent.text')}</p>
-      <Button variant="secondary" className={PUBLIC_TOUCH} onClick={onAgain}>{t('landing.contact.sent.again')}</Button>
+      {GUEST_CONTACT_SOURCE.storedInBrowser ? (
+        <DemoContactNote kind="sent" />
+      ) : (
+        <p className="m-0 text-body text-ink-2 pointer-coarse:text-body-lg">{t('landing.contact.sent.text')}</p>
+      )}
+      <Button variant="secondary" className={cn('w-full sm:w-auto', PUBLIC_TOUCH)} onClick={onAgain}>{t('landing.contact.sent.again')}</Button>
     </div>
   )
 }
@@ -39,12 +50,12 @@ const NEXT_STEPS: readonly { icon: LucideIcon; key: MessageKey }[] = [
   { icon: Building2, key: 'landing.contact.signUpNote' },
 ]
 
-/** Ba việc sau khi gửi: tiêu đề rồi từng việc nhô lên so le 70 ms, ô biểu tượng bật ra. */
+/** Ba việc sau khi gửi: tiêu đề lên khỏi mặt nạ rồi từng việc nhô lên so le 70 ms, ô biểu tượng bật ra. */
 function ContactNextSteps() {
   const t = useT()
   return (
     <Reveal group className="flex flex-col gap-4">
-      <Reveal as="h3" className="m-0 font-display text-h3 font-[650] text-sky-text font-stretch-108%">{t('landing.contact.next.title')}</Reveal>
+      <LineRise as="h3" className="m-0 font-display text-h3 font-[650] text-sky-text font-stretch-108%" lines={[t('landing.contact.next.title')]} />
       <ol className="m-0 flex list-none flex-col gap-4 p-0">
         {NEXT_STEPS.map(({ icon: Icon, key }, index) => (
           <Reveal as="li" key={key} index={index + 1} className="flex items-start gap-3 text-body-lg text-sky-text-2">
@@ -70,13 +81,15 @@ function ContactNextSteps() {
 export function ContactSection() {
   const t = useT()
   const [searchParams] = useSearchParams()
-  const plans = usePublicPlansQuery()
+  // Chưa đọc danh mục gói (dựng cả kho mẫu) khi khách còn ở phần mở đầu; liên kết sâu `#lien-he` tới thẳng đây nên đọc ngay
+  const [sectionRef, near] = useNearViewport<HTMLElement>()
+  const plans = usePublicPlansQuery(near)
   const [sent, setSent] = useState<GuestContact | null>(null)
   // Gửi yêu cầu khác: form mới, chọn sẵn như lúc mở trang
   const [round, setRound] = useState(0)
 
   return (
-    <section id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-14">
         <div className="flex flex-col gap-10">
           <SectionHeading id="landing-contact" tone="dark" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />

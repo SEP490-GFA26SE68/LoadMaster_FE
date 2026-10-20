@@ -49,8 +49,9 @@ function StageFallback() {
 
 /**
  * Khung 3D "Sân kho kể chuyện" của phần mở đầu trang giới thiệu. Lần vẽ đầu là ảnh tĩnh của sân kho (`DioramaPoster`); khi trình duyệt
- * rảnh, trang tải bộ máy 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay trên máy người xem, rồi khung hình thay ảnh tĩnh
- * và chuyện 9 giây chạy một lần (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp xong. Quanh khung: thẻ chuyến với chip của ứng
+ * rảnh và khung đã tới gần khung nhìn (`useStageGate`), trang tải bộ máy 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay
+ * trên máy người xem, rồi khung hình thay ảnh tĩnh và chuyện 15 giây chạy một lần (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp
+ * xong → cửa thùng đóng, xe nổ máy và lăn bánh rời kho (giảm chuyển động: dừng ở xếp xong). Quanh khung: thẻ chuyến với chip của ứng
  * dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn, hàng "Thứ tự giao" và dải số của lần chạy (MOCK RESULT, chỉ khi xếp xong). Từ
  * 1.280 px thẻ, nút và Lumo nằm đè trên khung; hẹp hơn thì thẻ ở trên, Lumo ở dưới khung. Không có WebGL hay hỏng: `StageFallback`.
  */
@@ -59,7 +60,8 @@ export function LandingStage() {
   const format = useFormat()
   const { tier, insets, defaultView } = useHeroFit()
   const reducedMotion = usePrefersReducedMotion()
-  const gate = useStageGate()
+  const [figure, setFigure] = useState<HTMLElement | null>(null)
+  const gate = useStageGate(figure)
   const sample = useLandingSample(gate === 'go')
   const result = sample.data
   const [failed, setFailed] = useState(false)
@@ -105,6 +107,8 @@ export function LandingStage() {
   const going = gate === 'go'
   const placed = result?.placements.length ?? 0
   const line: NarratorLine | null = !going ? null : phase === 'ready' && result && placed < PACKAGE_COUNT ? 'readyPartial' : phase
+  // Số của lần chạy hiện từ lúc xếp xong và ở lại khi xe rời kho
+  const loaded = phase === 'ready' || phase === 'depart'
   const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
   const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
   // Chỉ nút tạm dừng làm chữ đứng lại; khung bị cuộn khuất thì câu đang gõ vẫn gõ xong (tối đa 1 giây), pha giữ nguyên nên câu không đổi
@@ -116,7 +120,7 @@ export function LandingStage() {
   ) : wide ? null : <StoryTripCard phase="preparing" recorded={0} total={PACKAGE_COUNT} className="invisible mb-3 md:max-w-105" />
 
   return (
-    <figure aria-labelledby={going ? titleId : undefined} aria-describedby={captionId} data-story-status={status}
+    <figure ref={setFigure} aria-labelledby={going ? titleId : undefined} aria-describedby={captionId} data-story-status={status} data-story-phase={phase}
       data-paused={status === 'paused' ? '' : undefined} className="m-0 flex min-w-0 flex-col">
       {wide ? null : card}
       <div className="relative">
@@ -154,9 +158,10 @@ export function LandingStage() {
       {tier === 'narrow' ? views : null}
       {wide ? null : <div className="mt-3">{narrator}</div>}
       <StageRoute stopNames={stopNames} className="mt-4" />
-      <StageReadout result={phase === 'ready' && result ? result : null} total={PACKAGE_COUNT} className="mt-3" />
+      <StageReadout result={loaded && result ? result : null} total={PACKAGE_COUNT} className="mt-3" />
       <figcaption id={captionId} className="sr-only">
         {t('landing.stage.caption', { count: format.integer(PACKAGE_COUNT), stops: format.integer(LANDING_STOP_COUNT) })}
+        {reducedMotion ? null : ` ${t('landingStage.caption')}`}
       </figcaption>
     </figure>
   )

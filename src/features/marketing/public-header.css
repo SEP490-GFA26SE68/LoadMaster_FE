@@ -1,0 +1,39 @@
+/*
+ * Đầu trang công khai (`PublicHeader`) khi đã cuộn qua phần mở đầu (`data-scrolled`, do `useHeaderScroll` ghi): nền dải trời phủ thêm một
+ * lớp đặc `--cyan-950` (vệt sáng và lưới chấm chìm xuống, chữ vẫn trắng trên nền tối) và đường kẻ đáy 1 px `--landing-hairline` — không
+ * gradient mới, không bóng. Hai lớp là phần tử giả định vị nên nằm dưới nội dung (nội dung `relative`, đứng sau trong cây), chuyển bằng
+ * opacity 250 ms (giảm chuyển động: `--dur-md` còn 100 ms).
+ */
+@layer components {
+  .public-header::before,
+  .public-header::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-md) var(--ease-standard);
+  }
+  .public-header::before {
+    inset: 0;
+    background-color: var(--cyan-950);
+  }
+  .public-header::after {
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: var(--landing-hairline);
+  }
+  .public-header[data-scrolled]::before {
+    opacity: 0.72;
+  }
+  .public-header[data-scrolled]::after {
+    opacity: 1;
+  }
+}
+
+/* Chế độ tương phản cao: đường kẻ đáy hiện rõ */
+@media (forced-colors: active) {
+  .public-header::after {
+    background-color: CanvasText;
+  }
+}

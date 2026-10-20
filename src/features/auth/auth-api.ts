@@ -5,7 +5,7 @@
  */
 
 import { api } from '@/lib/api-client'
-import { DEMO_ACCOUNTS, getMockDb, isMockDbError } from '@/lib/mock-db'
+import { DEMO_ACCOUNTS, getMockDb, isMockDbError, peekMockDb } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { isActiveOnBackend, roleOfBackend, userFromBackend, type BackendUserProfile } from './backend-user'
 
@@ -62,9 +62,17 @@ export async function fetchBackendUser(): Promise<User> {
 /**
  * Phiên có sẵn khi mở trang (như cookie): trả người dùng hiện tại của kho, `null` khi tài khoản không còn hoặc đã bị khoá.
  * Đồng bộ vì chạy lúc khởi tạo `AuthProvider`.
+ *
+ * Khách chưa đăng nhập (`userId` null: trang giới thiệu, bảng giá, màn đăng nhập) không dựng kho mẫu: kho chưa dựng thì vốn chưa có
+ * phiên, còn dựng kho (seed) là việc nặng nhất lúc mở trang. Màn nào cần dữ liệu thì kho dựng ở lần gọi đầu. Kho đã dựng (dưới Vitest kho
+ * sống qua mọi test của một file — test trước có thể để lại phiên) thì xoá phiên như lúc tải lại trang.
  */
 // chưa có ở BE
 export function restoreSession(userId: string | null): User | null {
+  if (userId === null) {
+    peekMockDb()?.restoreSession(null)
+    return null
+  }
   return getMockDb().restoreSession(userId)
 }
 

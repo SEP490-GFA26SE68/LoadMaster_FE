@@ -1,0 +1,30 @@
+/*
+ * Chuyển động riêng của lưới Tính năng chính (features/marketing/bento), cùng luật với reveal/reveal.css và sections.css:
+ * - chỉ chạy dưới [data-motion='on'] (RevealProvider bật khi có IntersectionObserver và không giảm chuyển động); tắt thì không gì bị ẩn;
+ * - mỗi mảnh đọc --reveal-play của cổng bao quanh và bắt đầu ở --reveal-delay của khối cộng --at của chính nó;
+ * - khung cuối là style của chính phần tử, nên bỏ animation (in trang, data-instant) là đúng trạng thái cuối;
+ * - nằm trong lớp components: class utilities của nơi gọi thắng.
+ */
+
+@layer components {
+  /* Vòng sáng quanh xe trên sơ đồ tuyến: lan ra rồi tắt, hai lần, không lặp mãi. Ngoài lúc chạy thì trong suốt. */
+  .bn-ping {
+    opacity: 0;
+  }
+  [data-motion='on'] .bn-ping {
+    animation: bn-ping 900ms var(--ease-decelerate) 2 both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--at, 0ms));
+    animation-play-state: var(--reveal-play, running);
+  }
+}
+
+@keyframes bn-ping {
+  from {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}

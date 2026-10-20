@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Logo } from '@/components/brand/Logo'
 import { Lumo } from '@/components/brand/Lumo'
 import { CargoArtwork } from '@/components/CargoArtwork'
-import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { LanguageMenu } from '@/components/LanguageMenu'
 import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -128,7 +128,12 @@ export function LoginPage() {
             <span className="max-sm:sr-only">{t('auth.login.backToLanding')}</span>
           </Link>
         </Button>
-        <LanguageSwitch tone="sky" className="pointer-coarse:[&_button]:size-14 pointer-coarse:[&_button]:text-body-lg" />
+        {/* Ngôn ngữ: nút quả địa cầu đặc 40 px (56 px trên máy cảm ứng), cùng cỡ nút về */}
+        <LanguageMenu
+          tone="solid"
+          className="size-10 pointer-coarse:size-14"
+          itemClassName="pointer-coarse:h-14 pointer-coarse:text-body-lg"
+        />
       </header>
 
       <main className="mx-auto flex w-full max-w-(--shell-max) flex-1 flex-col items-center justify-center gap-12 px-4 py-4 sm:py-8 lg:flex-row lg:px-6 lg:py-6">

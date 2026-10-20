@@ -21,7 +21,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { initialsOf } from '@/types/user'
 import { logoPath, navItemsFor } from './nav-items'
-import { useGlassFollow } from './useGlassFollow'
+import { useGlassFollow } from '@/components/useGlassFollow'
 
 /** Hộp thoại yêu cầu hỗ trợ (FE-8-07) tải khi mở lần đầu: chỉ người dùng công ty mở. */
 const SupportTicketDialog = lazy(() => import('@/features/support/SupportTicketDialog').then((m) => ({ default: m.SupportTicketDialog })))

@@ -121,7 +121,8 @@ describe('motion on', () => {
     const gate = gateOf(heading)
     expect(gate).toHaveAttribute('data-reveal-group')
     expect(gate).not.toHaveAttribute('data-shown')
-    expect(heading.querySelectorAll('.reveal-word')).toHaveLength(8)
+    // Tiêu đề phần chảy chữ (`FlowHeading`): tám từ, mỗi từ một khối không ngắt dòng
+    expect(heading.querySelectorAll('.reveal-flow-word')).toHaveLength(8)
 
     // Lộ dưới 15 % của một khối thấp: chưa đủ
     io.trigger(gate, { intersectionRatio: 0.1, rootBounds: new DOMRect(0, 0, 1000, 800) })
@@ -167,7 +168,7 @@ describe('motion on', () => {
     const heading = screen.getByRole('heading', { level: 2, name: TITLE })
     expect(screen.getAllByText(TITLE)).toHaveLength(1)
     expect(screen.getByText(TITLE)).toHaveClass('sr-only')
-    expect(heading.querySelector('[aria-hidden="true"][data-words="rise"]')).toHaveTextContent(TITLE)
+    expect(heading.querySelector('[aria-hidden="true"][data-flow]')).toHaveTextContent(TITLE)
   })
 
   test('focus on a heading inside a hidden block opens its gate at once (data-instant)', () => {
@@ -191,15 +192,16 @@ describe('motion on', () => {
     expect(gate).toHaveAttribute('data-instant')
   })
 
-  test('a paragraph returns to one plain text node after its last word animates', () => {
+  test('a paragraph rises as one block: its text is never split into animated words', () => {
     motionOn()
     renderPage(<SectionHeading id="tieu-de" title={TITLE} lede={LEDE} />)
     const lede = screen.getByText(LEDE).closest('p')
     if (!lede) throw new Error('Không thấy câu mô tả')
-    expect(lede.querySelectorAll('.reveal-ink')).toHaveLength(6)
-    const last = lede.querySelector('[data-last]')
-    if (!last) throw new Error('Không thấy từ cuối')
-    finishAnimation(last)
+    // Tách từng từ là hàng trăm animation màu trên luồng chính lúc cuộn: cả đoạn là một khối nhô lên (opacity + transform)
+    expect(lede).toHaveAttribute('data-reveal', 'rise')
+    expect(lede.childNodes).toHaveLength(1)
+    finishAnimation(lede)
+    expect(lede).toHaveAttribute('data-done')
     expect(lede.childNodes).toHaveLength(1)
     expect(lede.firstChild?.nodeType).toBe(Node.TEXT_NODE)
     expect(lede).toHaveTextContent(LEDE)

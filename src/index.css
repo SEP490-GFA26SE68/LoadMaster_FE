@@ -42,6 +42,49 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Font dự phòng khớp số đo (giảm CLS): trong lúc Archivo (tải trước, `vite.config.ts`) và Be Vietnam Pro (Google Fonts, `swap`) chưa
+   về, chữ vẽ bằng Arial đã chỉnh cỡ và độ cao dòng cho gần bằng font thật — đổi font không làm dòng chữ dài ra, xuống dòng khác hay
+   đẩy nội dung bên dưới. Số đo bằng Chromium 20/10/2026 (bề rộng câu tiêu đề vi + en, đường cơ sở ở 1.000 px): Archivo đậm ở
+   độ rộng 112 % rộng hơn Arial Bold 7,7–10 %, Archivo thường hẹp hơn Arial 3,4 %; ascent 0,878 · descent 0,21 · không line gap.
+   Be Vietnam Pro rộng hơn Arial 7,7–9 % (400–500), hơn Arial Bold 2–4 % (600); ascent 1,0 · descent 0,265. Ghi đè ascent / descent
+   chia cho `size-adjust` vì trình duyệt nhân cả hai với nó. Máy không có Arial (Android) thì bỏ qua họ này, dùng họ kế tiếp. */
+@font-face {
+  font-family: 'Archivo Fallback';
+  font-weight: 100 549;
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
+  size-adjust: 96.6%;
+  ascent-override: 90.9%;
+  descent-override: 21.7%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Archivo Fallback';
+  font-weight: 550 900;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold');
+  size-adjust: 108%;
+  ascent-override: 81.3%;
+  descent-override: 19.4%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro Fallback';
+  font-weight: 100 549;
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
+  size-adjust: 108.5%;
+  ascent-override: 92.2%;
+  descent-override: 24.4%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro Fallback';
+  font-weight: 550 900;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold');
+  size-adjust: 103%;
+  ascent-override: 97.1%;
+  descent-override: 25.7%;
+  line-gap-override: 0%;
+}
+
 /* V2.3 "Cyan kính" (design/v2.3/tokens/index.v2.3.css). Giữ nguyên tên token cũ để component không phải đổi class;
    giá trị đổi sang bảng cyan + xám ánh cyan. Đổi token nào thì đo lại tương phản trên nền trắng và nền --app (mục 10). */
 :root {
@@ -291,8 +334,9 @@
   --e3: 0 30px 80px -24px rgba(2, 34, 45, 0.6), 0 0 0 1px rgba(2, 34, 45, 0.06);
 
   /* chữ */
-  --font-display: 'Archivo Variable', 'Archivo', 'Be Vietnam Pro', sans-serif; /* tiêu đề, số lớn */
-  --font-text: 'Be Vietnam Pro', system-ui, sans-serif;
+  /* `… Fallback`: Arial chỉnh theo số đo của font thật, chỉ hiện trong lúc font chưa tải xong (khối @font-face đầu file) */
+  --font-display: 'Archivo Variable', 'Archivo', 'Archivo Fallback', 'Be Vietnam Pro', sans-serif; /* tiêu đề, số lớn */
+  --font-text: 'Be Vietnam Pro', 'Be Vietnam Pro Fallback', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace; /* mã, số đo */
 
   /* chuyển động */
@@ -767,7 +811,7 @@
   backdrop-filter: blur(18px) saturate(1.6);
 }
 
-/* Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (`app/useGlassFollow.ts`). Vị trí và kích thước do hook đặt inline;
+/* Chỉ báo kính trượt theo con trỏ trong thanh điều hướng (`components/useGlassFollow.ts`). Vị trí và kích thước do hook đặt inline;
    ở đây chỉ có vật liệu và chuyển động. V2.3: kính cyan trong + viền cyan + quầng (`--nav-on`) — nằm dưới mục đang mở khi con trỏ
    ở ngoài thanh, bám mục đang rê / focus khi con trỏ ở trong. Mục đang mở không có nền riêng: chỉ báo là phản hồi nền duy nhất. */
 .glass-follow {

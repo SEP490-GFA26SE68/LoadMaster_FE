@@ -7,6 +7,7 @@ import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { getMockDb, MockDbError } from '@/lib/mock-db'
 import { signedInAs } from '@/test/signed-in'
+import { CONTACT_MIN_FILL_MS } from './contact-form'
 import { LandingPage } from './LandingPage'
 
 /**
@@ -57,7 +58,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   const banner = within(screen.getByRole('banner'))
   expect(banner.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap')
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
-  expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu#lien-he')
+  expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu?loai=xem-demo#lien-he')
   expect(screen.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
   for (const name of ['Tính năng chính', 'Cách hoạt động', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
@@ -68,24 +69,26 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(screen.queryByText(/Đăng ký|Mua gói|Dùng thử/)).not.toBeInTheDocument()
 })
 
-test('every number on the page has a source: code constants, the plan catalogue — and no run, no result numbers', async () => {
+test('every number on the page has a source: code constants, the plan catalogue, the seed truck of the axle demo — and no run numbers', async () => {
   renderLanding('/gioi-thieu')
   // jsdom không có WebGL: khung 3D nhường chỗ cho hình minh hoạ, không lần chạy nào nên không số nào của lần chạy
-  expect(screen.getByText(/^Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất/)).toBeInTheDocument()
+  expect(screen.getByText(/^Hình minh hoạ: thùng xe xếp theo điểm giao/)).toBeInTheDocument()
+  // Trang công khai không mang nhãn MOCK RESULT (quyết định của chủ sản phẩm, 20/10/2026), kể cả mục tải trục
+  expect(screen.getByRole('region', { name: 'Tải trục trong giới hạn' })).toBeInTheDocument()
   expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
 
   const facts = within(screen.getByRole('region', { name: 'Con số kiểm được' }))
   expect(facts.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'hướng đặt tối đa của một kiện',
     'phương án cho mỗi lần chạy tối ưu',
-    'bước làm tròn kích thước',
-    'để xếp 1.000 kiện, đủ ba phương án',
+    'cho một lần chạy tối ưu 3D',
+    'để xếp 1.000 kiện thành đủ ba phương án',
     'luật kiểm trước khi nhận hàng dọc đường',
-    'vai trò, mỗi vai trò chỉ thấy việc của mình',
+    'cách đối chiếu một kiện',
+    'vai trò trong công ty của bạn',
   ])
   // Mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp
   const values = facts.getAllByRole('definition').filter((_, index) => index % 2 === 0)
-  expect(values.map((value) => value.textContent)).toStrictEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
+  expect(values.map((value) => value.textContent)).toStrictEqual(['3', '1 credit', '< 1 giây', '10', '3', '5'])
 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
   expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('500 credit mỗi tháng')
@@ -132,6 +135,9 @@ test('the contact form needs a name and a valid email, keeps the input when send
   // Tới qua neo: tiêu đề của phần nhận focus
   expect(screen.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster' })).toHaveFocus()
   const submit = await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)
+  // Form ghi lúc hiện ra (jsdom: lúc dựng); dời đồng hồ qua thời gian điền tối thiểu để lần gửi không bị chặn
+  const realNow = Date.now.bind(Date)
+  vi.spyOn(Date, 'now').mockImplementation(() => realNow() + CONTACT_MIN_FILL_MS)
   expect(screen.getByRole('combobox', { name: 'Bạn cần gì' })).toHaveTextContent('Báo giá')
   expect(screen.getByRole('combobox', { name: 'Gói quan tâm' })).toHaveTextContent('Pro')
 
@@ -151,6 +157,7 @@ test('the contact form needs a name and a valid email, keeps the input when send
   await user.type(email, 'quan@vantaiminhquan.vn')
   await user.type(screen.getByRole('textbox', { name: 'Tên công ty' }), 'Vận tải Minh Quân')
   await user.type(screen.getByRole('textbox', { name: 'Nội dung' }), 'Đội 12 xe tải, cần báo giá gói Pro.')
+  await user.click(screen.getByRole('checkbox', { name: 'Tôi đồng ý để LoadMaster dùng thông tin này để liên hệ tư vấn' }))
 
   // Kho từ chối: banner nói mục nào, dữ liệu đang nhập giữ nguyên
   vi.spyOn(getMockDb(), 'createGuestContact').mockRejectedValueOnce(new MockDbError('CONTACT_INVALID', { field: 'email' }))
@@ -163,7 +170,7 @@ test('the contact form needs a name and a valid email, keeps the input when send
   await user.click(submit)
   const sent = await screen.findByRole('heading', { name: 'Đã ghi nhận yêu cầu LH-004' }, SLOW)
   expect(sent).toHaveFocus()
-  expect(sent.closest('[role="status"]')).toHaveTextContent('Đội LoadMaster sẽ liên hệ lại qua email bạn đã nhập.')
+  expect(sent.closest('[role="status"]')).toHaveTextContent('Bản demo chỉ lưu yêu cầu trong trình duyệt này nên đội LoadMaster chưa nhận được.')
 
   // Gửi yêu cầu khác: form trống, con trỏ ở ô Họ tên, vẫn chọn sẵn như lúc mở trang
   await user.click(screen.getByRole('button', { name: 'Gửi yêu cầu khác' }))
@@ -212,4 +219,18 @@ test('Lumo speaks with an sr-only "Lumo nói:" prefix, at most once per section,
     expect(picture).toHaveAttribute('alt', '')
     expect(picture).toHaveAttribute('aria-hidden', 'true')
   }
+})
+
+test('the recap ribbon before Gói cước repeats the feature titles for the eye only: hidden from screen readers, no digits', () => {
+  renderLanding('/gioi-thieu')
+  const features = within(screen.getByRole('region', { name: 'Tính năng chính' }))
+  const titles = features.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent ?? '').slice(0, 5)
+  const ribbon = screen.getByRole('region', { name: 'Gói cước' }).previousElementSibling
+  expect(ribbon).toHaveAttribute('aria-hidden', 'true')
+  // Hàng trên là đúng năm tiêu đề lợi ích của lưới Tính năng, theo thứ tự của lưới; cả dải không có chữ số nào
+  const rows = [...(ribbon?.querySelectorAll('.reveal-ribbon-track') ?? [])]
+  expect(rows).toHaveLength(2)
+  const top = [...(rows[0]?.querySelectorAll('.reveal-ribbon-item') ?? [])].map((item) => item.textContent).slice(0, titles.length)
+  expect(top).toStrictEqual(titles)
+  expect(ribbon?.textContent).not.toMatch(/\d/)
 })

@@ -34,7 +34,7 @@ test('the branch has the lines the landing page reads, in both languages', () =>
   const keys = [
     'lumo.says',
     'lumo.hero.preparing', 'lumo.hero.intake', 'lumo.hero.optimize', 'lumo.hero.loading', 'lumo.hero.ready', 'lumo.hero.readyPartial',
-    'lumo.hero.fallback',
+    'lumo.hero.depart', 'lumo.hero.fallback',
     'lumo.facts',
     'lumo.how.intake', 'lumo.how.plan', 'lumo.how.optimize', 'lumo.how.operate', 'lumo.how.done',
     'lumo.plans',

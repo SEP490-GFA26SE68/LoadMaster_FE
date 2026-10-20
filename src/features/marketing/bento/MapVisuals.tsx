@@ -1,10 +1,12 @@
-import { useId } from 'react'
+import { Truck } from 'lucide-react'
+import { useId, type CSSProperties } from 'react'
 import { StopDot } from '@/components/StopChip'
 import { useT } from '@/lib/i18n'
 import { stopColor } from '@/lib/stops'
 import { cn } from '@/lib/utils'
 import { useRevealMotion } from '../reveal'
-import { svgPiece } from './FeatureVisuals'
+import { svgPiece } from './svg-piece'
+import './bento.css'
 
 /** Vị trí trong khung hình theo phần trăm, để đặt chữ HTML đúng chỗ dù hình co giãn. */
 function percent(value: number, total: number): string {
@@ -26,6 +28,9 @@ const STOPS = [
 const ROUTE = `M${[DEPOT, ...STOPS].map((point) => `${point.x} ${point.y}`).join(' L')}`
 /** Mốc của tuyến (ms sau lúc ô bắt đầu): kho bật ra, bốn điểm bật ra cách nhau 80 ms, rồi đường vẽ dần qua chúng trong 900 ms. */
 const ROUTE_AT = { depot: 150, stop: 230, stopStep: 80, draw: 300 } as const
+/** Xe đứng trên chặng điểm 2 → điểm 3 (55 % quãng), bật ra khi đường vẽ tới đó. */
+const VEHICLE = { x: STOPS[1].x + (STOPS[2].x - STOPS[1].x) * 0.55, y: STOPS[1].y + (STOPS[2].y - STOPS[1].y) * 0.55 }
+const VEHICLE_AT = ROUTE_AT.draw + 700
 
 /**
  * Sơ đồ tuyến của thẻ "Tối ưu tuyến và giám sát" (trang trí, `aria-hidden`): kho, đường đi, số điểm giao trên màu định danh. Đường và ô kho
@@ -72,8 +77,26 @@ export function RouteVisual() {
             </span>
           )
         })}
+        <VehicleMark motion={motion} left={percent(VEHICLE.x, width)} top={percent(VEHICLE.y, height)} />
       </div>
     </div>
+  )
+}
+
+/**
+ * Xe trên tuyến, giữa điểm 2 và điểm 3: bật ra sau khi đường vẽ xong rồi một vòng sáng lan ra hai lần (`bn-ping`, `bento.css`) — nói ý "vị
+ * trí xe trên bản đồ", không phải vị trí của chuyến nào.
+ */
+function VehicleMark({ motion, left, top }: { motion: boolean; left: string; top: string }) {
+  const piece = svgPiece(motion, 'lp-pop', VEHICLE_AT)
+  const ping = { '--at': `${VEHICLE_AT + 250}ms` } as CSSProperties
+  return (
+    <span className={cn('absolute -translate-x-1/2 -translate-y-1/2', piece.className)} style={{ left, top, ...piece.style }}>
+      <span className="relative grid size-8 place-items-center rounded-md bg-panel-dark text-cyan-300 ring-3 ring-bg sm:size-9">
+        <Truck className="size-4 sm:size-5" strokeWidth={1.5} />
+        {motion ? <span className="bn-ping reveal-piece pointer-events-none absolute -inset-0.5 rounded-md border-2 border-cyan-400" style={ping} /> : null}
+      </span>
+    </span>
   )
 }
 
@@ -110,10 +133,30 @@ function zoneBox({ from, to, delivered }: (typeof ZONES)[number]) {
  * hình co giãn; vùng đã giao có vòng màu điểm giao quanh số.
  */
 export function PickupVisual() {
+  const t = useT()
   const motion = useRevealMotion()
   const { width, height } = PICKUP_VIEW
   return (
-    <div aria-hidden className={cn(DRAWING, 'relative')}>
+    <div aria-hidden className={cn(DRAWING, 'flex flex-col gap-3')}>
+      <PickupDrawing motion={motion} width={width} height={height} />
+      <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-small font-medium text-ink-2 pointer-coarse:text-body-lg">
+        <li className="flex items-center gap-2">
+          <span className="size-4 flex-none rounded-sm border-[1.5px] border-dashed border-line-strong" />
+          {t('landing.features.pickup.freed')}
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="size-4 flex-none rounded-sm border-[1.5px] border-cyan-600 bg-cyan-100" />
+          {t('landing.features.pickup.picked')}
+        </li>
+      </ul>
+    </div>
+  )
+}
+
+/** Thùng nhìn từ trên của `PickupVisual`; số điểm đặt theo phần trăm của chính khung này nên khung chỉ chứa hình. */
+function PickupDrawing({ motion, width, height }: { motion: boolean; width: number; height: number }) {
+  return (
+    <div className="relative">
       <svg viewBox={`0 0 ${width} ${height}`} className="block h-auto w-full">
         <rect x={BODY.x} y={BODY.y} width={BODY.width} height={BODY.height} rx={6} className="fill-surface stroke-line-strong" strokeWidth={1.5} />
         {ZONES.map((zone) => {

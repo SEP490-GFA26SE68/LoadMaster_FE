@@ -1,8 +1,8 @@
 /*
  * Chuyển động riêng của các phần dưới khối mở đầu trang giới thiệu (features/marketing): hình của lưới tính năng và cảnh của khung dính
  * Cách hoạt động (vùng điểm giao, tuyến, nhận hàng dọc đường, tia quét mã QR, kiện được dỡ ở cửa sau), dải nguyên tắc xếp hàng (từng từ
- * sáng dần, khối hàng vào xe theo cuộn), khung dính (số, tên bước, cảnh mờ chéo) và vạch tiến độ cuộn của đầu trang. Cùng luật với
- * reveal/reveal.css:
+ * sáng dần theo cuộn), khung dính (số, tên bước, cảnh mờ chéo) và vạch tiến độ cuộn của đầu trang. Cùng luật với
+ * reveal/reveal.css (xe tải nhìn ngang — xếp hàng, đóng cửa, chạy đi, khói ống xả — ở steps/truck-motion.css):
  * - chỉ chạy dưới [data-motion='on'] (RevealProvider bật khi có IntersectionObserver và không giảm chuyển động); tắt thì không gì bị ẩn;
  * - mỗi mảnh đọc --reveal-play của cổng bao quanh (paused tới khi cổng mở) và bắt đầu ở --reveal-delay của khối cộng --at của chính nó;
  * - keyframes chỉ có khung đầu: khung cuối là style của chính phần tử, nên bỏ animation (in trang, data-instant) là đúng trạng thái cuối;
@@ -65,8 +65,13 @@
     animation-play-state: var(--reveal-play, running);
   }
 
-  /* Dải nguyên tắc xếp hàng: từng từ sáng dần theo cuộn khi dải đi qua khung nhìn — chuyển động theo cuộn, không tự chạy. Trình duyệt
-     không có view timeline thì chữ đứng yên, sáng hẳn (style của chính từ). */
+  /* Dải nguyên tắc xếp hàng: xe của dải chạy ra khỏi mép phải (steps/truck-motion.css) — dải cắt phần ra ngoài, trang không cuộn ngang */
+  .lp-statement {
+    overflow-x: clip;
+  }
+  /* Từng từ sáng dần theo cuộn khi dải đi qua khung nhìn — chuyển động theo cuộn, không tự chạy — và sáng hẳn trước khi xe đóng cửa, lăn
+     bánh (mốc của hình xe theo view timeline riêng của nó). Trình duyệt không có view timeline thì chữ đứng yên, sáng hẳn (style của chính
+     từ). */
   @supports (animation-timeline: view()) {
     [data-motion='on'] .lp-statement {
       view-timeline-name: --statement;
@@ -75,15 +80,7 @@
       animation: lp-word-lit linear both;
       animation-duration: auto;
       animation-timeline: --statement;
-      animation-range: cover calc(25% + var(--p, 0) * 35%) cover calc(28% + var(--p, 0) * 35%);
-    }
-    /* Hình xe của dải: từng khối hàng vào qua cửa sau theo cùng nhịp cuộn — điểm 4 trước (--q = 0), điểm 1 sau cùng (--q = 1) — và khối
-       cuối vào chỗ đúng lúc từ cuối của câu sáng hẳn (63 %). --load-x: quãng từ ô của khối tới cửa sau. */
-    [data-motion='on'] .lp-load {
-      animation: lp-load var(--ease-decelerate) both;
-      animation-duration: auto;
-      animation-timeline: --statement;
-      animation-range: cover calc(24% + var(--q, 0) * 29%) cover calc(34% + var(--q, 0) * 29%);
+      animation-range: cover calc(14% + var(--p, 0) * 16%) cover calc(17% + var(--p, 0) * 16%);
     }
   }
 
@@ -208,15 +205,6 @@
   }
   45% {
     transform: translate(calc(var(--from-x, 0px) * 0.2), var(--from-y, 0px));
-  }
-}
-@keyframes lp-load {
-  from {
-    opacity: 0;
-    transform: translateX(var(--load-x, 0px));
-  }
-  25% {
-    opacity: 1;
   }
 }
 @keyframes lp-progress {

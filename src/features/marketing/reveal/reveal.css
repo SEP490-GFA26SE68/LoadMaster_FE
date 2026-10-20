@@ -45,7 +45,7 @@
     animation: none;
   }
 
-  /* Tiêu đề: từng từ nhô lên; chuột (pointer: fine) thêm nhoè 6 px tan dần */
+  /* Tiêu đề: từng từ nhô lên (không nhoè: filter trên từng từ làm trang khựng khi tiêu đề hiện giữa lúc cuộn) */
   [data-motion='on'] .reveal-word {
     display: inline-block;
     animation: reveal-word var(--dur-reveal) var(--ease-decelerate) both;
@@ -55,20 +55,112 @@
   [data-motion='on'] h1 .reveal-word {
     animation-duration: var(--dur-reveal-long);
   }
-  @media (pointer: fine) {
-    [data-motion='on'] .reveal-word {
-      animation-name: reveal-word-blur;
-    }
-  }
   [data-motion='on'] [data-done] .reveal-word {
     animation: none;
   }
 
-  /* Đoạn văn: từng từ đậm dần từ 18 %, span inline nên bố cục y như chữ thường */
-  [data-motion='on'] .reveal-ink {
-    animation: reveal-ink 400ms var(--ease-standard) both;
-    animation-delay: calc(var(--reveal-delay, 0s) + var(--w, 0) * var(--word-step, 0s));
+  /* Màu của sóng mực (đoạn văn, tiêu đề chảy chữ): nền sáng chờ ở --ink-3 (5,9:1 trên trắng, 5,5:1 trên --app), sóng --primary (5,8:1).
+     Nền tối — khối mở đầu, dải liên hệ, dải nguyên tắc, dải trời, thẻ --panel-dark, hay khối tự khai [data-reveal-tone='dark'] — chờ ở
+     --sky-text-3 và sóng --cyan-300 (đều ≥ 5:1 kể cả ở quầng cyan sáng nhất của khối mở đầu). Khối sáng nằm trong vùng tối khai
+     [data-reveal-tone='light']. Mọi trạng thái của chữ đều đọc được, kể cả lúc chờ cổng mở. */
+  :where([data-reveal-root]) {
+    --reveal-ink-from: var(--ink-3);
+    --reveal-ink-wave: var(--primary);
+  }
+  :where(.landing-cinema, .landing-closing, .landing-statement, .sky, .bg-panel-dark, .bg-cyan-950, [data-reveal-tone='dark']) {
+    --reveal-ink-from: var(--sky-text-3);
+    --reveal-ink-wave: var(--cyan-300);
+  }
+  :where([data-reveal-tone='light']) {
+    --reveal-ink-from: var(--ink-3);
+    --reveal-ink-wave: var(--primary);
+  }
+
+  /* Tiêu đề chảy chữ (FlowHeading): từ không ngắt dòng bên trong, mỗi grapheme một inline-block nhô lên theo sóng */
+  .reveal-flow-word {
+    white-space: nowrap;
+  }
+  .reveal-flow-char {
+    display: inline-block;
+  }
+  [data-motion='on'] .reveal-flow-char {
+    animation: reveal-flow var(--dur-reveal-long) var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--c, 0) * var(--flow-step, 0ms));
     animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] [data-flow-done] .reveal-flow-char {
+    animation: none;
+  }
+
+  /* Dòng nhô lên từ mặt nạ (LineRise): khối dòng cắt theo chiều dọc, chừa 0,6 em trên cho dấu chồng, 0,3 em dưới cho chân chữ */
+  .reveal-line {
+    display: block;
+  }
+  [data-motion='on'] .reveal-line {
+    clip-path: inset(-0.6em -0.6em -0.3em -0.6em);
+  }
+  [data-motion='on'] .reveal-line-inner {
+    display: block;
+    animation: reveal-line var(--dur-reveal-long) var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + var(--l, 0) * 2 * var(--stagger-item));
+    animation-play-state: var(--reveal-play, running);
+  }
+  [data-motion='on'] [data-lines-done] .reveal-line {
+    clip-path: none;
+  }
+  [data-motion='on'] [data-lines-done] .reveal-line-inner {
+    animation: none;
+  }
+
+  /* Dải chữ trôi theo cuộn (TextRibbon): khung cắt ngang, hàng rộng đúng nội dung; quãng chạy --ribbon-shift (phần trăm bề rộng hàng) */
+  .reveal-ribbon {
+    overflow-x: clip;
+    background-color: var(--ribbon-bg, transparent);
+  }
+  /* Nền đặc ngay dưới chữ (--ribbon-bg của nơi đặt dải): phần hàng trôi ra ngoài khung nhìn vẫn nằm trên nền tối của nó, công cụ đo
+     tương phản không lấy nền trắng của trang */
+  .reveal-ribbon-track {
+    display: flex;
+    width: max-content;
+    white-space: nowrap;
+    background-color: var(--ribbon-bg, transparent);
+  }
+  .reveal-ribbon-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding-inline-end: 0.75em;
+  }
+  .reveal-ribbon-mark {
+    flex: none;
+    width: 0.3em;
+    height: 0.3em;
+    border-radius: 2px;
+    background: var(--ribbon-mark, var(--cyan-400));
+  }
+  [data-motion='on'] .reveal-ribbon-track {
+    --ribbon-from: 0%;
+    --ribbon-to: var(--ribbon-shift, -12.5%);
+  }
+  [data-motion='on'] .reveal-ribbon-track[data-dir='right'] {
+    --ribbon-from: var(--ribbon-shift, -12.5%);
+    --ribbon-to: 0%;
+  }
+  @supports (animation-timeline: view()) {
+    [data-motion='on'] .reveal-ribbon {
+      view-timeline-name: --reveal-ribbon;
+    }
+    [data-motion='on'] .reveal-ribbon-track {
+      animation: reveal-ribbon linear both;
+      animation-duration: auto;
+      animation-timeline: --reveal-ribbon;
+      animation-range: cover 0% cover 100%;
+    }
+  }
+  @supports not (animation-timeline: view()) {
+    [data-motion='on'] .reveal-ribbon-track {
+      transform: translateX(calc(var(--ribbon-from) + (var(--ribbon-to) - var(--ribbon-from)) * var(--scroll-p, 0)));
+    }
   }
 
   /* Số lăn: ô rộng đúng chữ số cuối (chữ số trong suốt giữ chỗ và đường chân chữ), cắt theo chiều dọc bằng clip-path — overflow
@@ -153,16 +245,31 @@
     transform: translateY(0.4em);
   }
 }
-@keyframes reveal-word-blur {
+@keyframes reveal-flow {
   from {
     opacity: 0;
-    transform: translateY(0.4em);
-    filter: blur(6px);
+    transform: translateY(0.55em);
+    color: var(--reveal-ink-wave);
+  }
+  55% {
+    color: var(--reveal-ink-wave);
   }
 }
-@keyframes reveal-ink {
+@keyframes reveal-line {
   from {
-    opacity: 0.18;
+    opacity: 0;
+    transform: translateY(110%);
+  }
+  40% {
+    opacity: 1;
+  }
+}
+@keyframes reveal-ribbon {
+  from {
+    transform: translateX(var(--ribbon-from));
+  }
+  to {
+    transform: translateX(var(--ribbon-to));
   }
 }
 @keyframes reveal-odo {

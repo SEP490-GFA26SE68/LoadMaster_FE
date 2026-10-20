@@ -1,10 +1,19 @@
 import { expect, test } from 'vitest'
 import { CONTACT_LIMITS, createMockDb } from '@/lib/mock-db'
-import { contactDefaults, contactFormSchema, NO_PLAN, type ContactFormValues } from './contact-form'
+import {
+  CONTACT_FORM_FIELDS,
+  CONTACT_MIN_FILL_MS,
+  contactDefaults,
+  contactFormSchema,
+  contactGuard,
+  NO_PLAN,
+  toNewContact,
+  type ContactFormValues,
+} from './contact-form'
 
 /**
  * Luật của form liên hệ công khai: cùng giới hạn độ dài và luật email với kho (`contacts.test.ts` kiểm phía kho), và giá trị chọn sẵn từ
- * URL của Bảng giá.
+ * URL của Bảng giá; ô đồng ý bắt buộc, ô bẫy và thời gian điền tối thiểu chặn trình gửi tự động.
  */
 const VALID: ContactFormValues = {
   fullName: 'Lê Thu Hà',
@@ -14,6 +23,8 @@ const VALID: ContactFormValues = {
   requestType: 'INQUIRY',
   planId: NO_PLAN,
   message: '',
+  consent: true,
+  website: '',
 }
 
 /** Mã lỗi đầu tiên của ô `field` khi ô đó nhận `value`; `undefined` là ô hợp lệ. */
@@ -64,4 +75,33 @@ test('the plan and request type come from the URL only when they are known and o
   // Gói đã ngừng bán không chọn sẵn được
   const retired = plans.map((plan) => (plan.id === 'PLAN-001' ? { ...plan, active: false } : plan))
   expect(pick('goi=PLAN-001&loai=bao-gia', retired)).toStrictEqual([NO_PLAN, 'PRICING'])
+})
+
+test('the consent box must be ticked, and the store never receives it nor the trap field', () => {
+  const unticked = contactFormSchema.safeParse({ ...VALID, consent: false })
+  expect(unticked.success).toBe(false)
+  expect(unticked.error?.issues.map((issue) => [issue.path[0], issue.message])).toStrictEqual([['consent', 'landingContact.errors.consentRequired']])
+
+  const sent = toNewContact(contactFormSchema.parse({ ...VALID, website: 'https://spam.example' }))
+  expect(sent).toStrictEqual({ fullName: 'Lê Thu Hà', email: 'ha.le@vantaimientay.vn', requestType: 'INQUIRY' })
+  expect(contactDefaults(new URLSearchParams(''), [])).toMatchObject({ consent: false, website: '' })
+})
+
+test('a filled trap field or a send sooner than the minimum fill time is blocked before the store', () => {
+  const shownAt = 1_000_000
+  expect(CONTACT_MIN_FILL_MS).toBe(3000)
+  expect(contactGuard({ trap: '', shownAt, now: shownAt + 2999 })).toBe('TOO_FAST')
+  expect(contactGuard({ trap: '', shownAt, now: shownAt + 3000 })).toBeNull()
+  expect(contactGuard({ trap: '   ', shownAt, now: shownAt + 60_000 })).toBeNull()
+  // Ô bẫy thắng: có chữ là chặn dù đã đủ thời gian
+  expect(contactGuard({ trap: 'x', shownAt, now: shownAt + 60_000 })).toBe('TRAP_FILLED')
+})
+
+test('the field list the privacy page shows is every field the store receives, with the right required flags', () => {
+  const sentFields = Object.keys(contactFormSchema.shape).filter((name) => name !== 'consent' && name !== 'website')
+  expect(CONTACT_FORM_FIELDS.map((field) => field.name)).toStrictEqual(sentFields)
+  for (const field of CONTACT_FORM_FIELDS) {
+    const empty = field.name === 'requestType' ? undefined : ''
+    expect(contactFormSchema.shape[field.name].safeParse(empty).success, field.name).toBe(!field.required)
+  }
 })

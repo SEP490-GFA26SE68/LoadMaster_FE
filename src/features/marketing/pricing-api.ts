@@ -6,7 +6,7 @@
 import { createApiClient, type ApiClient } from '@/lib/api-client'
 import { backendConfig, usesBackend } from '@/lib/backend-config'
 import { listActivePlans } from '@/lib/billing-backend-api'
-import { getMockDb, type SubscriptionPlan } from '@/lib/mock-db'
+import { peekMockDb, SEED_PLANS, type SubscriptionPlan } from '@/lib/mock-db'
 
 /**
  * Client không gắn token cho endpoint công khai: bảng giá không phụ thuộc phiên đăng nhập, nên token hết hạn hay phiên Keycloak đang mở
@@ -19,5 +19,10 @@ const publicApi = () => (publicClient ??= createApiClient({ baseUrl: backendConf
 // GET /api/subscription/plans
 export async function listPublicPlans(): Promise<SubscriptionPlan[]> {
   if (usesBackend('billing')) return listActivePlans(publicApi())
-  return (await getMockDb().listSubscriptionPlans()).filter((plan) => plan.active)
+  // Khách chưa làm gì dựng kho thì đọc thẳng danh mục của seed: dựng kho (chạy bộ tối ưu cho mọi chuyến seed) mất 0,6–3 giây trên luồng
+  // chính, và bảng giá tải khi người xem cuộn tới gần — trang khựng giữa lúc cuộn. Kho đã dựng (đã đăng nhập, sửa danh mục, tab khác gửi
+  // dữ liệu sang) thì đọc kho như mọi màn.
+  const db = peekMockDb()
+  const plans = db ? await db.listSubscriptionPlans() : SEED_PLANS.map((plan) => structuredClone(plan))
+  return plans.filter((plan) => plan.active)
 }

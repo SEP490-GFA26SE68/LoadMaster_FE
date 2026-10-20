@@ -146,3 +146,22 @@ test('a deep link opened before signing in is kept for any role', async () => {
   await signInAs('kho@loadmaster.vn')
   expect(await screen.findByText('Đang ở /chuyen/TRIP-2026-0914/phuong-an?revision=REV-002', {}, { timeout: 3000 })).toBeInTheDocument()
 })
+
+/** Ngôn ngữ ở đầu màn là nút quả địa cầu không chữ mở menu, như thanh điều hướng và trang công khai (không còn hai nút VI | EN). */
+test('the language globe in the page header switches the sign-in screen to English in place', async () => {
+  const user = userEvent.setup()
+  renderLogin('/')
+  const header = within(screen.getByRole('banner'))
+  expect(header.queryByRole('group', { name: 'Ngôn ngữ giao diện' })).not.toBeInTheDocument()
+  const globe = header.getByRole('button', { name: 'Ngôn ngữ giao diện' })
+  expect(globe).toHaveTextContent(/^$/)
+  expect(globe).toHaveAttribute('title', 'Ngôn ngữ giao diện: Tiếng Việt')
+  await user.type(screen.getByLabelText('Email'), 'kho@loadmaster.vn')
+
+  await user.click(globe)
+  await user.click(await screen.findByRole('menuitemradio', { name: 'EN English' }))
+  expect(header.getByRole('button', { name: 'Interface language' })).toHaveAttribute('title', 'Interface language: English')
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+  // Đổi ngôn ngữ tại chỗ: chữ đang nhập giữ nguyên
+  expect(screen.getByLabelText('Email')).toHaveValue('kho@loadmaster.vn')
+})

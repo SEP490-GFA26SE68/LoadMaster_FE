@@ -4,7 +4,7 @@ import { boxFaces, containerShell, createProjector, fitViewBox, shellColors, sor
 import { useT } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
 import { useRevealMotion } from '../reveal'
-import { svgPiece } from './FeatureVisuals'
+import { svgPiece } from './svg-piece'
 
 /** Thùng 6 × 2,4 × 2,5 m như chuyến mẫu của phần mở đầu; đơn vị mét như `lib/isometric`. */
 const BODY = { length: 6, width: 2.4, height: 2.5 }

@@ -47,6 +47,17 @@ import { contacts } from './en/contacts'
 import { landing } from './en/landing'
 import { landingStory } from './en/landingStory'
 import { pricing } from './en/pricing'
+import { landingFooter } from './en/landingFooter'
+import { landingFaq } from './en/landingFaq'
+import { landingCompare } from './en/landingCompare'
+import { landingAxle } from './en/landingAxle'
+import { landingTry } from './en/landingTry'
+import { legal } from './en/legal'
+import { seo } from './en/seo'
+import { landingChrome } from './en/landingChrome'
+import { landingMotion } from './en/landingMotion'
+import { landingStage } from './en/landingStage'
+import { landingContact } from './en/landingContact'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -97,4 +108,15 @@ export const en = {
   landing,
   landingStory,
   pricing,
+  landingFooter,
+  landingFaq,
+  landingCompare,
+  landingAxle,
+  landingTry,
+  legal,
+  seo,
+  landingChrome,
+  landingMotion,
+  landingStage,
+  landingContact,
 } satisfies Dictionary<typeof vi>

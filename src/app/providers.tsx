@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/Tooltip'
 import { AuthProvider } from '@/features/auth/AuthProvider'
-import { I18nProvider } from '@/lib/i18n'
+import { I18nProvider, useT } from '@/lib/i18n'
 import { onRemoteDbChange } from '@/lib/mock-db'
 import { TOAST_CLASSES, TOAST_ICONS } from './toast-look'
 
@@ -34,19 +34,31 @@ export function Providers({ children }: { children: ReactNode }) {
         <AuthProvider>
           <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         </AuthProvider>
-        <Toaster
-          position="top-right"
-          closeButton
-          gap={12}
-          // Dưới nút hành động của dải trời (V2.3): thanh điều hướng 60 px + tiêu đề 32 px + mô tả, nút chính kết thúc ở
-          // khoảng 139 px. Rê chuột lên toast làm nó dừng đếm giờ, nên toast đè nút hành động góc phải thì người dùng không
-          // bấm được nút cho tới khi đóng toast (LM-101). Trước V2.3 là 136 (thanh ngang 56 + tiêu đề 72).
-          offset={{ top: 152, right: 16 }}
-          mobileOffset={{ top: 152, right: 16, left: 16 }}
-          icons={TOAST_ICONS}
-          toastOptions={{ unstyled: true, classNames: TOAST_CLASSES, duration: 5000 }}
-        />
+        <AppToaster />
       </QueryClientProvider>
     </I18nProvider>
+  )
+}
+
+/**
+ * Vùng toast của sonner. Tên vùng và nút đóng của sonner mặc định là tiếng Anh ("Notifications", "Close toast") bất kể ngôn ngữ, nên
+ * truyền chữ của từ điển — component con của `I18nProvider` để đọc được `useT`.
+ */
+function AppToaster() {
+  const t = useT()
+  return (
+    <Toaster
+      position="top-right"
+      closeButton
+      gap={12}
+      containerAriaLabel={t('notifications.toastRegion')}
+      // Dưới nút hành động của dải trời (V2.3): thanh điều hướng 60 px + tiêu đề 32 px + mô tả, nút chính kết thúc ở
+      // khoảng 139 px. Rê chuột lên toast làm nó dừng đếm giờ, nên toast đè nút hành động góc phải thì người dùng không
+      // bấm được nút cho tới khi đóng toast (LM-101). Trước V2.3 là 136 (thanh ngang 56 + tiêu đề 72).
+      offset={{ top: 152, right: 16 }}
+      mobileOffset={{ top: 152, right: 16, left: 16 }}
+      icons={TOAST_ICONS}
+      toastOptions={{ unstyled: true, classNames: TOAST_CLASSES, duration: 5000, closeButtonAriaLabel: t('notifications.toastClose') }}
+    />
   )
 }

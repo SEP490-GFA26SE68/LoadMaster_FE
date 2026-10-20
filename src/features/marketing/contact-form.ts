@@ -13,7 +13,8 @@ import {
 
 /**
  * Form liên hệ công khai ở trang giới thiệu (`ContactOfGuest`): luật thuần, không React. Message của schema là key từ điển nên lỗi đổi
- * theo ngôn ngữ; kho kiểm lại cùng giới hạn (`CONTACT_INVALID`).
+ * theo ngôn ngữ; kho kiểm lại cùng giới hạn (`CONTACT_INVALID`). Hai ô không gửi cho kho: ô đồng ý (phải đánh dấu) và ô bẫy `website`
+ * chống gửi tự động.
  */
 
 /** Neo của phần liên hệ trên trang giới thiệu (`#lien-he`). */
@@ -31,6 +32,7 @@ const ERRORS = {
   phoneTooLong: 'landing.contact.form.errors.phoneTooLong',
   companyTooLong: 'landing.contact.form.errors.companyTooLong',
   messageTooLong: 'landing.contact.form.errors.messageTooLong',
+  consentRequired: 'landingContact.errors.consentRequired',
 } as const satisfies Record<string, MessageKey>
 
 export const contactFormSchema = z.object({
@@ -42,12 +44,42 @@ export const contactFormSchema = z.object({
   requestType: z.enum(CONTACT_REQUEST_TYPES),
   planId: z.string(),
   message: z.string().trim().max(CONTACT_LIMITS.message, ERRORS.messageTooLong),
+  /** Đồng ý để LoadMaster dùng thông tin này để liên hệ tư vấn: không đánh dấu thì không gửi. */
+  consent: z.boolean().refine((value) => value, ERRORS.consentRequired),
+  /** Ô bẫy: ẩn với người dùng, chỉ trình gửi tự động điền (`contactGuard`). */
+  website: z.string(),
 })
 export type ContactFormValues = z.infer<typeof contactFormSchema>
 
 /**
+ * Ô của form gửi cho kho, theo thứ tự trên form, kèm nhãn và có bắt buộc không. Trang chính sách bảo mật liệt kê đúng danh sách này;
+ * `contact-form.test.ts` canh nó khớp schema (đủ ô, đúng ô bắt buộc).
+ */
+export const CONTACT_FORM_FIELDS = [
+  { name: 'fullName', label: 'landing.contact.form.fullName', required: true },
+  { name: 'email', label: 'landing.contact.form.email', required: true },
+  { name: 'phoneNumber', label: 'landing.contact.form.phone', required: false },
+  { name: 'companyName', label: 'landing.contact.form.company', required: false },
+  { name: 'requestType', label: 'landing.contact.form.type', required: true },
+  { name: 'planId', label: 'landing.contact.form.plan', required: false },
+  { name: 'message', label: 'landing.contact.form.message', required: false },
+] as const satisfies readonly { name: keyof ContactFormValues; label: MessageKey; required: boolean }[]
+
+/** Thời gian tối thiểu (ms) từ lúc form hiện ra tới lúc gửi: người điền form cần lâu hơn thế, trình gửi tự động thì không. */
+export const CONTACT_MIN_FILL_MS = 3000
+
+/** Vì sao một lần gửi bị chặn trước khi tới kho: ô bẫy có chữ, hoặc gửi quá nhanh. Màn không nói lý do, chỉ mời thử lại. */
+export type ContactGuard = 'TRAP_FILLED' | 'TOO_FAST'
+
+/** Kiểm chống gửi tự động; `shownAt`, `now` là mili giây (`Date.now()`). `null`: gửi được. */
+export function contactGuard({ trap, shownAt, now }: { trap: string; shownAt: number; now: number }): ContactGuard | null {
+  if (trap.trim() !== '') return 'TRAP_FILLED'
+  return now - shownAt < CONTACT_MIN_FILL_MS ? 'TOO_FAST' : null
+}
+
+/**
  * Giá trị đầu của form: loại yêu cầu và gói chọn sẵn từ URL (`?loai=bao-gia&goi=PLAN-002`, nút "Liên hệ tư vấn" của thẻ gói ở Bảng giá).
- * Gói không có trong danh sách hoặc đã ngừng bán thì bỏ; loại lạ thì là "Hỏi thông tin".
+ * Gói không có trong danh sách hoặc đã ngừng bán thì bỏ; loại lạ thì là "Hỏi thông tin". Ô đồng ý luôn bắt đầu chưa đánh dấu.
  */
 export function contactDefaults(search: URLSearchParams, plans: readonly SubscriptionPlan[]): ContactFormValues {
   const planId = search.get('goi')
@@ -59,10 +91,12 @@ export function contactDefaults(search: URLSearchParams, plans: readonly Subscri
     requestType: contactTypeFromSlug(search.get('loai')) ?? 'INQUIRY',
     planId: plans.find((plan) => plan.id === planId && plan.active)?.id ?? NO_PLAN,
     message: '',
+    consent: false,
+    website: '',
   }
 }
 
-/** Yêu cầu gửi cho kho: ô tuỳ chọn để trống thì không gửi. Giá trị đã qua schema nên đã cắt khoảng trắng. */
+/** Yêu cầu gửi cho kho: ô tuỳ chọn để trống thì không gửi; ô đồng ý và ô bẫy không bao giờ gửi. Giá trị đã qua schema nên đã cắt khoảng trắng. */
 export function toNewContact(values: ContactFormValues): NewGuestContact {
   return {
     fullName: values.fullName,
@@ -95,6 +129,7 @@ export function translateContactError(t: TFunction, message: string | undefined)
     case ERRORS.phoneTooLong: return t(ERRORS.phoneTooLong, { max: CONTACT_LIMITS.phoneNumber })
     case ERRORS.companyTooLong: return t(ERRORS.companyTooLong, { max: CONTACT_LIMITS.companyName })
     case ERRORS.messageTooLong: return t(ERRORS.messageTooLong, { max: CONTACT_LIMITS.message })
+    case ERRORS.consentRequired: return t(ERRORS.consentRequired)
     default: return undefined
   }
 }

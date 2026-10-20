@@ -42,7 +42,7 @@ export type DioramaLane = {
 
 export type Diorama = {
   readonly slab: { readonly footprint: Footprint; readonly top: number; readonly bottom: number }
-  /** Bãi đỗ dưới xe; đầu bãi dừng trước hàng cây (cây chỉ đứng ở x < −2) */
+  /** Bãi đỗ dưới xe, chạy tới mép nền phía đầu xe: lúc rời kho xe lăn bánh về phía đó; cây đứng bên kia đường (z < −1) */
   readonly road: { readonly x: Range; readonly z: Range; readonly top: number; readonly line: number }
   readonly dock: { readonly footprint: Footprint; readonly top: number; readonly band: number }
   readonly leveller: { readonly x: Range; readonly z: Range; readonly top: number; readonly thickness: number }
@@ -62,11 +62,11 @@ export type Diorama = {
 
 export const DIORAMA: Diorama = {
   slab: { footprint: [[-3.4, 3.4], [8.6, 3.4], [12, 0], [12, -10.8], [5, -10.8], [-3.4, -3]], top: -1.12, bottom: -1.35 },
-  road: { x: [-2.1, 6], z: [-0.6, 3], top: -1.115, line: 0.08 },
+  road: { x: [-3.4, 6], z: [-0.6, 3], top: -1.115, line: 0.08 },
   dock: { footprint: [[7.4, 3], [9, 3], [11.6, 0.4], [11.6, -8.6], [7.4, -8.6]], top: 0, band: 0.06 },
   leveller: { x: [6, 7.4], z: [0.2, 2.2], top: 0, thickness: 0.08 },
   warehouse: { x: [7.2, 11.8], z: [-10.6, -8.6], top: 2.9, parapet: 0.3, parapetWidth: 0.16, band: [2.42, 2.58], doors: [[7.8, 9.2], [9.8, 11.2]], doorTop: 2.3 },
-  trees: [{ x: -2.7, z: -2.2, height: 1.6 }, { x: -2.9, z: -0.6, height: 2 }, { x: -2.6, z: 1, height: 1.3 }, { x: -2.9, z: 2.6, height: 1.8 }],
+  trees: [{ x: -2.85, z: -1.3, height: 1.8 }, { x: -2.2, z: -2.6, height: 1.4 }, { x: -1, z: -3.9, height: 2 }, { x: 0.6, z: -4.6, height: 1.5 }],
   truck: { x: [-1.85, 7.13], y: [-1.1, 2.55], z: [-0.41, 2.81] },
   laneX: 7.65,
   lanes: [

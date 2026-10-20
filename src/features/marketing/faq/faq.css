@@ -1,0 +1,39 @@
+/*
+ * Mục Hỏi đáp của trang giới thiệu (features/marketing/faq): mỗi câu hỏi là một <details> gốc của trình duyệt. Bỏ dấu tam giác mặc định của
+ * <summary> (đã có mũi tên Lucide xoay khi mở); mở một câu thì câu trả lời hiện dần và nhích xuống một chút — chỉ opacity và transform, chỉ
+ * khi người dùng không chọn giảm chuyển động. Đóng không có hiệu ứng: nội dung rời khỏi cây đọc ngay.
+ */
+
+@layer components {
+  .faq-item > summary {
+    list-style: none;
+  }
+  .faq-item > summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq-chevron {
+    transition: transform var(--dur-md) var(--ease-standard);
+  }
+  .faq-item[open] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item[open] .faq-answer {
+      animation: faq-open var(--dur-md) var(--ease-decelerate);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-chevron {
+      transition: none;
+    }
+  }
+}
+
+@keyframes faq-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}

@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode, type Ref } from 'react'
+import type { Group } from 'three'
 import type { CameraPreset, ColorMode } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { SceneZone, ViewerSceneModel } from '@/features/viewer3d/scene-input'
@@ -79,6 +80,19 @@ export type SceneCanvasProps = {
   framePoints?: FramePoints
   /** `false`: dải vùng điểm giao không kèm nhãn (mặc định có nhãn). */
   zoneLabels?: boolean
+  /**
+   * Trang giới thiệu (xe rời kho): mọi thứ thuộc về xe — thùng, cabin, bánh, kiện, vật cản, dải vùng, nhãn neo — nằm trong **một** group
+   * nhận ref này, để nơi gọi dời / chúi cả xe bằng ma trận của group đó (không qua React). Vắng (mặc định): không có group thêm, cây cảnh
+   * đúng như trước.
+   */
+  vehicleRef?: Ref<Group>
+  /** Vẽ cùng nhóm xe (đi theo xe khi xe được dời), sau kiện và trước `children` — trang giới thiệu: khối xe giản lược của tier thấp. */
+  vehicleChildren?: ReactNode
+  /**
+   * Hai cánh cửa sau quay về đóng kín (lò xo 500 ms, giảm chuyển động thì đặt thẳng) và bỏ mũi tên "Cửa sau · Hướng dỡ"; mặc định mở
+   * 110° như mọi màn.
+   */
+  doorsClosed?: boolean
   children?: ReactNode
 }
 
@@ -100,7 +114,7 @@ export function SceneCanvas({
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
   animateLoading = true, decoration = true, xraySelection, showMass, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1,
-  fov = 38, framePoints, zoneLabels = true, children,
+  fov = 38, framePoints, zoneLabels = true, vehicleRef, vehicleChildren, doorsClosed = false, children,
 }: SceneCanvasProps) {
   const materials = useMemo(() => sceneMaterials(specView ? SPEC_VIEW_LIFT : 1), [specView])
   const colorContext = useMemo(() => createColorContext(model), [model])
@@ -125,6 +139,27 @@ export function SceneCanvas({
     onPerformanceSample(sample)
     onPerfSample?.(sample)
   }, [onPerformanceSample, onPerfSample])
+  const vehicleParts = <>
+    <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
+      doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
+    {decoration && flags.decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} /> : null}
+    <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
+      step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
+      reducedMotion={flags.reducedMotion} animationQuality={animateLoading ? flags.animationQuality : 'none'} hiddenId={hiddenId}
+      semantics={semantics} warningSignal={warningSignal} xraySelection={xraySelection} surfaceDetail={flags.decoration}
+      zoneMarks={Boolean(zones?.length)} />
+    <ObstacleInstances obstacles={model.vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
+      highlightedId={highlightedObstacleId ?? null} />
+    {obstacle ? <ObstacleCallout key={obstacle.id} obstacle={obstacle} /> : null}
+    {/* Form xe đã có nhãn "Cửa rộng × cao" ngay trên ô cửa; cửa đã đóng (xe rời kho ở trang giới thiệu) thì không còn hướng dỡ để chỉ */}
+    {specView || doorsClosed ? null : <RearDoorCue vehicle={model.vehicle} />}
+    {zones?.length ? <ZoneStrips zones={zones} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} labels={zoneLabels} /> : null}
+    {showMass ? <CargoMassMarker placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} /> : null}
+    {inspected ? <ExtractionCorridor key={`${inspected.id}:${warningSignal}`} target={inspected} vehicle={model.vehicle} blockers={semantics?.blockers ?? []} reducedMotion={flags.reducedMotion} /> : null}
+    {unloadMotion ? <UnloadMotion motion={unloadMotion} remaining={semantics?.massPlacements ?? placements}
+      vehicle={model.vehicle} quality={flags.animationQuality} reducedMotion={flags.reducedMotion} /> : null}
+    {vehicleChildren}
+  </>
   return <><Canvas data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
     shadows={flags.shadows ? 'percentage' : false} flat
     gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
@@ -134,24 +169,7 @@ export function SceneCanvas({
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
       vehicleDecoration={decoration && flags.decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={experience === 'landing'} onUserControl={onUserControl} />
     <group position={[-cx, -cy, -cz]}>
-      <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
-        doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} />
-      {decoration && flags.decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} /> : null}
-      <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
-        step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
-        reducedMotion={flags.reducedMotion} animationQuality={animateLoading ? flags.animationQuality : 'none'} hiddenId={hiddenId}
-        semantics={semantics} warningSignal={warningSignal} xraySelection={xraySelection} surfaceDetail={flags.decoration}
-        zoneMarks={Boolean(zones?.length)} />
-      <ObstacleInstances obstacles={model.vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
-        highlightedId={highlightedObstacleId ?? null} />
-      {obstacle ? <ObstacleCallout key={obstacle.id} obstacle={obstacle} /> : null}
-      {/* Form xe đã có nhãn "Cửa rộng × cao" ngay trên ô cửa */}
-      {specView ? null : <RearDoorCue vehicle={model.vehicle} />}
-      {zones?.length ? <ZoneStrips zones={zones} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} labels={zoneLabels} /> : null}
-      {showMass ? <CargoMassMarker placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} /> : null}
-      {inspected ? <ExtractionCorridor key={`${inspected.id}:${warningSignal}`} target={inspected} vehicle={model.vehicle} blockers={semantics?.blockers ?? []} reducedMotion={flags.reducedMotion} /> : null}
-      {unloadMotion ? <UnloadMotion motion={unloadMotion} remaining={semantics?.massPlacements ?? placements}
-        vehicle={model.vehicle} quality={flags.animationQuality} reducedMotion={flags.reducedMotion} /> : null}
+      {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{vehicleParts}</group> : vehicleParts}
       {children}
     </group>
     <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} />

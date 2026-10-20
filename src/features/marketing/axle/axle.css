@@ -1,0 +1,113 @@
+/*
+ * Mục tải trục của trang giới thiệu (features/marketing/axle): thanh trượt gốc của trình duyệt, thanh đo hai trục, khối hàng trượt theo
+ * trọng tâm, và một lần khối hàng vào thùng qua cửa sau khi mục cuộn tới. Cùng luật với reveal/reveal.css và sections.css:
+ * - chuyển động lúc hiện chỉ chạy dưới [data-motion='on'] (RevealProvider), đọc --reveal-play / --reveal-delay của cổng bao quanh, keyframes
+ *   chỉ có khung đầu nên bỏ animation là đúng trạng thái cuối;
+ * - phần chạy theo thao tác (khối hàng, nhãn trọng tâm, thanh đo) là transition 120 ms, tắt khi giảm chuyển động;
+ * - màu chỉ từ token; chế độ tương phản cao của hệ điều hành dùng lại thanh trượt gốc.
+ */
+
+@layer components {
+  .ax-range {
+    appearance: none;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--r-md);
+  }
+  .ax-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right, var(--primary) var(--fill, 0%), var(--n-200) var(--fill, 0%));
+  }
+  .ax-range::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--n-200);
+  }
+  .ax-range::-moz-range-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--primary);
+  }
+  .ax-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -9px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    background: var(--bg);
+    box-shadow: var(--e1);
+  }
+  .ax-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    background: var(--bg);
+    box-shadow: var(--e1);
+  }
+  .ax-range:active::-webkit-slider-thumb {
+    background: var(--primary-bg);
+  }
+  .ax-range:active::-moz-range-thumb {
+    background: var(--primary-bg);
+  }
+  @media (pointer: coarse) {
+    .ax-range {
+      height: 56px;
+    }
+    .ax-range::-webkit-slider-thumb {
+      width: 32px;
+      height: 32px;
+      margin-top: -13px;
+    }
+    .ax-range::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+    }
+  }
+  @media (forced-colors: active) {
+    .ax-range {
+      appearance: auto;
+    }
+  }
+
+  .ax-meter-fill {
+    background: var(--meter-fill);
+  }
+  .ax-meter,
+  .ax-slide {
+    transition: transform var(--dur-fast) var(--ease-standard);
+  }
+  .ax-follow {
+    transition: left var(--dur-fast) var(--ease-standard);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ax-meter,
+    .ax-slide,
+    .ax-follow {
+      transition: none;
+    }
+  }
+
+  /* Khối hàng vào thùng qua cửa sau một lần (700 ms) khi mục cuộn tới: trượt từ phía cửa, hiện dần */
+  [data-motion='on'] .ax-drop {
+    animation: ax-load 700ms var(--ease-decelerate) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + 250ms);
+    animation-play-state: var(--reveal-play, running);
+  }
+}
+
+@keyframes ax-load {
+  from {
+    opacity: 0;
+    transform: translateX(var(--load-x, 0px));
+  }
+  30% {
+    opacity: 1;
+  }
+}

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Send } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
@@ -9,7 +9,9 @@ import { SelectField } from '@/components/ui/SelectField'
 import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { CONTACT_REQUEST_TYPES, type GuestContact, type SubscriptionPlan } from '@/lib/mock-db'
+import { cn } from '@/lib/utils'
 import { contactFormSchema, NO_PLAN, toNewContact, translateContactError, type ContactFormValues } from './contact-form'
+import { ConsentField, DemoContactNote, useContactGuard } from './ContactFormParts'
 import { PUBLIC_TOUCH } from './public-chrome'
 import { useSendContactMutation } from './useMarketingQuery'
 
@@ -18,8 +20,10 @@ const TOUCH_SELECT = 'pointer-coarse:[&_button]:h-14 pointer-coarse:[&_button]:t
 
 /**
  * Form liên hệ của khách chưa có tài khoản (`POST /api/contact-guests`): họ tên, email, loại yêu cầu bắt buộc; số điện thoại, công ty,
- * gói quan tâm (gói đang bán) và nội dung tuỳ chọn. Lỗi của kho (mất mạng, dữ liệu sai) hiện bằng banner ngay trên nút gửi, dữ liệu đang
- * nhập giữ nguyên. Nút gửi là nút phụ: nút chính duy nhất của trang là "Nhận tư vấn" ở phần mở đầu (AGENTS mục 5).
+ * gói quan tâm (gói đang bán) và nội dung tuỳ chọn; ô đồng ý bắt buộc. Chống gửi tự động ngay ở form: ô bẫy ẩn và thời gian điền tối thiểu
+ * — bị chặn thì không lưu, không báo thành công giả, chỉ mời thử lại. Lỗi của kho (mất mạng, dữ liệu sai) hiện bằng banner ngay trên nút
+ * gửi, dữ liệu đang nhập giữ nguyên. Nút gửi là nút phụ (rộng hết dòng trên điện thoại): nút chính duy nhất của trang là "Nhận tư vấn" ở
+ * phần mở đầu (AGENTS mục 5).
  */
 export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
   plans: readonly SubscriptionPlan[]
@@ -30,15 +34,28 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
 }) {
   const t = useT()
   const send = useSendContactMutation()
+  const trapId = useId()
+  const formRef = useRef<HTMLFormElement>(null)
+  const checkGuard = useContactGuard(formRef)
   const [serverError, setServerError] = useState<unknown>(null)
+  const [blocked, setBlocked] = useState(false)
   const form = useForm<ContactFormValues>({ resolver: zodResolver(contactFormSchema), defaultValues: initial })
   const { errors } = form.formState
   useEffect(() => {
     if (focusFirst) form.setFocus('fullName')
   }, [focusFirst, form])
+  // Liên kết trong trang (nút "Nhận tư vấn", thẻ gói) đổi `?loai=` / `?goi=` khi form đã dựng: chọn lại theo URL, trừ ô khách đã tự chọn
+  useEffect(() => {
+    const { dirtyFields } = form.formState
+    if (!dirtyFields.requestType) form.setValue('requestType', initial.requestType)
+    if (!dirtyFields.planId) form.setValue('planId', initial.planId)
+  }, [initial.requestType, initial.planId, form])
 
   async function handleValid(values: ContactFormValues) {
     setServerError(null)
+    const guard = checkGuard(values.website)
+    setBlocked(guard !== null)
+    if (guard !== null) return
     try {
       onSent(await send.mutateAsync(toNewContact(values)))
     } catch (error) {
@@ -47,7 +64,10 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
   }
 
   return (
-    <form noValidate onSubmit={form.handleSubmit(handleValid)} className="grid gap-4 sm:grid-cols-2">
+    <form ref={formRef} noValidate onSubmit={form.handleSubmit(handleValid)} className="relative grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <DemoContactNote kind="note" />
+      </div>
       <Input
         label={t('landing.contact.form.fullName')}
         autoComplete="name"
@@ -110,14 +130,25 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
         />
       </div>
 
+      {/* Ô bẫy: ngoài khung nhìn, không nhận Tab, ẩn với trình đọc màn hình; chỉ trình gửi tự động điền vào */}
+      <div aria-hidden className="sr-only">
+        <label htmlFor={trapId}>{t('landingContact.trap')}</label>
+        <input id={trapId} type="text" tabIndex={-1} autoComplete="off" {...form.register('website')} />
+      </div>
+
+      <ConsentField control={form.control} />
+
       {serverError ? (
         <Banner tone="danger" role="alert" className="sm:col-span-2 pointer-coarse:text-body-lg">
           {dataErrorMessage(serverError, t)}
         </Banner>
       ) : null}
+      {blocked ? (
+        <Banner tone="neutral" className="sm:col-span-2 pointer-coarse:text-body-lg">{t('landingContact.retry')}</Banner>
+      ) : null}
 
-      <div className="flex justify-end sm:col-span-2">
-        <Button type="submit" variant="secondary" loading={send.isPending} className={PUBLIC_TOUCH}>
+      <div className="flex sm:col-span-2 sm:justify-end">
+        <Button type="submit" variant="secondary" loading={send.isPending} className={cn('w-full sm:w-auto', PUBLIC_TOUCH)}>
           {send.isPending ? null : <Send aria-hidden strokeWidth={1.5} />}
           {t('landing.contact.form.submit')}
         </Button>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { createStoryClock, type StorySource, type StoryStatus } from '@/features/viewer3d/landing/story-clock'
-import { loadedCount, phaseAt, STORY_MS, type StoryPhase } from '@/features/viewer3d/landing/story-timeline'
+import { loadedCount, phaseAt, READY_AT, STORY_MS, type StoryPhase } from '@/features/viewer3d/landing/story-timeline'
 
 /** Trang đã mở chừng này ms thì chuyện mới bắt đầu: chữ của phần mở đầu hiện xong trước. */
 const START_AFTER_MS = 1200
@@ -60,7 +60,8 @@ function createDriver() {
   }
   /** Sau mọi thay đổi: bắt đầu (hay đặt thẳng về cuối khi giảm chuyển động) nếu đủ điều kiện, chạy hay dừng vòng khung hình, báo hai kênh. */
   const settle = () => {
-    if (flags.sample && flags.reduced && clock.status() !== 'ended') clock.finish()
+    // Giảm chuyển động: xếp xong ngay, xe đứng chỗ cũ — không có pha xuất phát (lăn bánh, khói)
+    if (flags.sample && flags.reduced && clock.status() !== 'ended') clock.finish(READY_AT)
     if (clock.status() === 'idle' && flags.sample && flags.frame && flags.due && flags.visible && !flags.hidden) clock.start()
     const playing = live && clock.status() === 'playing'
     if (playing && frame === 0) {
@@ -133,8 +134,9 @@ export type StoryDriver = ReturnType<typeof createDriver>
 /**
  * Người chạy chuyện của khung 3D trang giới thiệu: một đồng hồ `story-clock` và một vòng `requestAnimationFrame` chỉ chạy khi chuyện đang
  * chạy. Bắt đầu khi phương án mẫu đã tính, khung hình đầu đã vẽ, khung lộ từ 40 % và trang đã mở 1,2 giây; giữ lại khi khung lộ dưới
- * 20 %, khi tab ẩn, hoặc khi người xem bấm tạm dừng. Không có IntersectionObserver thì coi khung luôn lộ. Giảm chuyển động: đặt thẳng về
- * cuối ngay khi phương án đã tính. Hai kênh: `story` mỗi khung hình (khung 3D), `subscribe` tối đa 10 lần mỗi giây (thẻ chuyến, Lumo, nút).
+ * 20 %, khi tab ẩn, hoặc khi người xem bấm tạm dừng. Không có IntersectionObserver thì coi khung luôn lộ. Giảm chuyển động: đặt thẳng tới
+ * lúc xếp xong (`READY_AT`, không xuất phát) ngay khi phương án đã tính. Hai kênh: `story` mỗi khung hình (khung 3D), `subscribe` tối
+ * đa 10 lần mỗi giây (thẻ chuyến, Lumo, nút).
  */
 export function useStoryDriver({ sampleReady, frameReady, reducedMotion }: { sampleReady: boolean; frameReady: boolean; reducedMotion: boolean }): StoryDriver {
   const [driver] = useState(createDriver)

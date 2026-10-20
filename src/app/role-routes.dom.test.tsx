@@ -49,7 +49,7 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
   expect([
     '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
-    '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia',
+    '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat',
   ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
@@ -71,7 +71,7 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/lien-he-khach').permissions).toStrictEqual(['contacts.handle'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])
   // Trang công khai: không quyền nào và nằm ngoài RequireAuth — khách chưa đăng nhập mở được
-  for (const path of ['/gioi-thieu', '/bang-gia']) {
+  for (const path of ['/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat']) {
     expect(routeAccess(path).permissions, path).toStrictEqual([])
     expect((matchRoutes(routes, path) ?? []).some(({ route }) => isValidElement(route.element) && route.element.type === RequireAuth), path).toBe(false)
   }

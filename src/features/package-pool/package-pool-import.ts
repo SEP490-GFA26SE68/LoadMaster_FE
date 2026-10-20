@@ -13,7 +13,8 @@ import type { Package, PackageInput, PackageType } from '@/lib/mock-db'
  */
 export const IMPORT_COLUMNS = ['package_code', 'length', 'width', 'height', 'weight', 'handling_class', 'destination', 'package_type'] as const
 export type ImportColumn = (typeof IMPORT_COLUMNS)[number]
-const OPTIONAL_COLUMNS: readonly ImportColumn[] = ['package_type']
+/** Cột thiếu trong file vẫn nhập được; trang giới thiệu đánh dấu chúng trong danh sách cột của file mẫu. */
+export const OPTIONAL_COLUMNS: readonly ImportColumn[] = ['package_type']
 
 export const MAX_IMPORT_FILE_MB = 10
 export const MAX_IMPORT_ROWS = 1000

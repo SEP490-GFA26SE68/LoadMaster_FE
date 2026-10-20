@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
-import { LUMO_POSES, type LumoPose } from '@/components/brand/Lumo'
+import { LUMO_POSES, lumoSrcSet, type LumoPose } from '@/components/brand/Lumo'
 import { useT, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { LumoSays, type LumoSizes } from './reveal'
+import { LumoSays, lumoSizesAttr, type LumoSizes } from './reveal'
 import { withVars } from './reveal/reveal-runtime'
 import type { HeroPhase } from './useStoryDriver'
 
 /** Câu Lumo đang nói: theo pha của chuyện, câu "còn kiện chưa xếp" khi phương án không xếp hết, và câu của hình dự phòng. */
 export type NarratorLine = HeroPhase | 'readyPartial' | 'fallback'
 
-/** Mỗi câu một tư thế, theo nghĩa cố định của tư thế (AGENTS "Thương hiệu"): máy tính bảng lúc tính, mang kiện lúc nhập, chỉ lúc xếp. */
+/**
+ * Mỗi câu một tư thế, theo nghĩa cố định của tư thế (AGENTS "Thương hiệu"): máy tính bảng lúc tính, mang kiện lúc nhập, chỉ lúc xếp và
+ * lúc xe rời kho.
+ */
 const LINES = {
   preparing: ['tablet', 'landingStory.lumo.hero.preparing'],
   intake: ['carry', 'landingStory.lumo.hero.intake'],
@@ -17,10 +20,11 @@ const LINES = {
   loading: ['point', 'landingStory.lumo.hero.loading'],
   ready: ['done', 'landingStory.lumo.hero.ready'],
   readyPartial: ['point', 'landingStory.lumo.hero.readyPartial'],
+  depart: ['point', 'landingStory.lumo.hero.depart'],
   fallback: ['point', 'landingStory.lumo.hero.fallback'],
 } as const satisfies Record<NarratorLine, readonly [LumoPose, MessageKey]>
 
-const STORY_LINES = ['preparing', 'intake', 'optimize', 'loading', 'ready', 'readyPartial'] as const satisfies readonly NarratorLine[]
+const STORY_LINES = ['preparing', 'intake', 'optimize', 'loading', 'ready', 'readyPartial', 'depart'] as const satisfies readonly NarratorLine[]
 /** Tư thế của lời dẫn, tải sẵn khi khung 3D bắt đầu tải để lúc đổi pha không chờ ảnh. */
 const HERO_POSES = ['tablet', 'carry', 'point', 'done'] as const satisfies readonly LumoPose[]
 /** 96 px dưới 768 · 128 px tới 1.439 · 144 px từ 1.440 (không quá nửa cạnh ảnh 512 px). Hình dự phòng: 96 · 128. */
@@ -49,8 +53,11 @@ export function StoryNarrator({ line, paused = false, layout, preload = false, c
   useEffect(() => {
     if (!preload) return
     for (const pose of HERO_POSES) {
+      // Cùng `sizes` + `srcset` với ảnh `LumoSays` sẽ hiện: trình duyệt chọn đúng bản đó, không tải thêm bản khác
       const image = new Image()
       image.decoding = 'async'
+      image.sizes = lumoSizesAttr(SIZES)
+      image.srcset = lumoSrcSet(pose)
       image.src = LUMO_POSES[pose]
     }
   }, [preload])

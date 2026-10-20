@@ -161,14 +161,20 @@ function addTruckStandIn(b: Builder, vehicle: VehicleConfig) {
   }
 }
 
-/** Nền, đường, dock, cầu dẫn, làn, nhà kho, cây — một BufferGeometry; `standInFor` thêm khối xe giản lược của tier thấp. */
-export function dioramaBaseGeometry(palette: Palette, standInFor?: VehicleConfig): BufferGeometry {
+/** Nền, đường, dock, cầu dẫn, làn, nhà kho, cây — một BufferGeometry. */
+export function dioramaBaseGeometry(palette: Palette): BufferGeometry {
   const b = createBuilder()
   addYard(b, palette)
   addLanes(b)
   addWarehouse(b, palette)
   addTrees(b, palette)
-  if (standInFor) addTruckStandIn(b, standInFor)
+  return b.toGeometry()
+}
+
+/** Khối xe giản lược của tier thấp, một BufferGeometry riêng: nó đi cùng nhóm xe (`SceneCanvas vehicleChildren`) khi xe rời kho. */
+export function truckStandInGeometry(vehicle: VehicleConfig): BufferGeometry {
+  const b = createBuilder()
+  addTruckStandIn(b, vehicle)
   return b.toGeometry()
 }
 

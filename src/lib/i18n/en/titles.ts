@@ -43,5 +43,6 @@ export const titles = {
   support: 'Customer support',
   landing: 'About',
   pricing: 'Pricing',
+  privacy: 'Privacy policy',
   contacts: 'Guest contacts',
 } satisfies Dictionary<typeof source>

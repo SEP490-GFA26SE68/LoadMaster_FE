@@ -2,7 +2,8 @@ import { expect, test } from './fixtures'
 import { signInWith } from './spec-flow-helpers'
 
 /**
- * Khách chưa có tài khoản: mở gốc `/` thì sang trang giới thiệu, xem bảng giá, chọn một gói rồi gửi yêu cầu liên hệ. Hỗ trợ khách hàng
+ * Khách chưa có tài khoản: mở gốc `/` thì sang trang giới thiệu, xem bảng giá, chọn một gói rồi gửi yêu cầu liên hệ (đánh dấu ô đồng ý,
+ * gửi sau thời gian điền tối thiểu của form). Hỗ trợ khách hàng
  * đăng nhập ngay trên tab đó — không tải lại trang, kho in-memory còn giữ yêu cầu vừa gửi — và xử lý nó ở màn Liên hệ của khách.
  * Seed có LH-001 → LH-003 (một yêu cầu Mới) nên yêu cầu của khách là LH-004.
  */
@@ -12,6 +13,8 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await page.goto('/')
   await page.waitForURL(/\/gioi-thieu$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' })).toBeVisible()
+  // Font chữ thân tải xong thì câu mở đầu xuống dòng khác đi và hàng nút nhích lên: bấm trước lúc đó là bấm trượt dưới nút
+  await page.evaluate(() => document.fonts.ready.then(() => undefined))
 
   await page.getByRole('main').getByRole('link', { name: 'Xem bảng giá', exact: true }).click()
   await page.waitForURL(/\/bang-gia$/)
@@ -29,6 +32,9 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill('hung.do@vantaisongtien.vn')
   await page.getByRole('textbox', { name: 'Tên công ty', exact: true }).fill('Vận tải Sông Tiền')
   await page.getByRole('textbox', { name: 'Nội dung', exact: true }).fill('Đội 8 xe tải chạy miền Tây, cần báo giá gói Pro.')
+  await page.getByRole('checkbox', { name: 'Tôi đồng ý để LoadMaster dùng thông tin này để liên hệ tư vấn', exact: true }).click()
+  // Form chặn lần gửi sớm hơn 3 giây kể từ lúc nó hiện ra trong khung nhìn (chống gửi tự động): người thật không điền nhanh như vậy
+  await page.waitForTimeout(3_000)
   await page.getByRole('button', { name: 'Gửi yêu cầu', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Đã ghi nhận yêu cầu LH-004', exact: true })).toBeFocused()
 

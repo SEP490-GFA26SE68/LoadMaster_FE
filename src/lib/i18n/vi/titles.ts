@@ -49,5 +49,6 @@ export const titles = {
   // Trang công khai và màn liên hệ của khách
   landing: 'Giới thiệu',
   pricing: 'Bảng giá',
+  privacy: 'Chính sách bảo mật',
   contacts: 'Liên hệ của khách',
 } as const

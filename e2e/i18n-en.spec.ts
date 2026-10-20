@@ -191,6 +191,18 @@ for (const viewport of VIEWPORTS) {
 }
 
 /**
+ * Cuộn hết trang một lượt, từng khung nhìn: gói cước và form liên hệ của trang giới thiệu chỉ đọc danh mục gói khi khách cuộn tới gần
+ * (`useNearViewport`), nên trang chỉ đủ chữ sau khi đã cuộn qua. Trang dài thêm khi các phần đó hiện ra: đo lại chiều cao mỗi bước.
+ */
+async function scrollThrough(page: Page) {
+  const step = page.viewportSize()?.height ?? 800
+  for (let y = 0; y < (await page.evaluate(() => document.documentElement.scrollHeight)); y += step) {
+    await page.evaluate((top) => window.scrollTo(0, top), y)
+    await page.waitForTimeout(60)
+  }
+}
+
+/**
  * Hai trang công khai bằng `?lang=en`, khách chưa đăng nhập: không còn chữ tiếng Việt, không tràn chữ, không cuộn ngang — kể cả ở 390 px
  * (khách mở trang giới thiệu trên điện thoại). Trang không có dữ liệu riêng nào ngoài tên ngôn ngữ trong nút chuyển.
  */
@@ -198,8 +210,9 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name}: landing and pricing pages in English`, async ({ page, browserErrors }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/gioi-thieu?lang=en')
-    await expect(page.getByRole('heading', { level: 1, name: 'Make the most of every truck, unload in the right order, follow it to the last stop.', exact: true }))
+    await expect(page.getByRole('heading', { level: 1, name: 'Make the most of every truck, unload in the right order, track every trip to the last stop.', exact: true }))
       .toBeVisible()
+    await scrollThrough(page)
     await expect(page.getByRole('button', { name: 'Send request', exact: true })).toBeVisible()
     await check(page, testInfo, `${viewport.name}-landing`, DATA_NAMES)
 

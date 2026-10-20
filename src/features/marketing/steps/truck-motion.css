@@ -1,0 +1,251 @@
+/*
+ * Chuyển động của xe tải nhìn ngang (steps/truck-side.tsx) trong hình của dải nguyên tắc xếp hàng (StatementTruck): xếp hàng, đóng cửa,
+ * nổ máy, chạy đi. Cảnh "Soạn, xếp, giao" (OperateScene) dùng cùng xe nhưng đứng yên ở điểm giao — không lớp nào ở đây. Cùng luật với
+ * reveal/reveal.css: chỉ chạy dưới [data-motion='on']; tắt thì hình tĩnh (đủ hàng, cửa đóng, đứng yên, không khói). Khác một điều: chuỗi
+ * chạy đi kết thúc ở chỗ khác chỗ đứng yên (xe ra khỏi dải, khói tan), nên keyframes ở đây có khung cuối riêng.
+ *
+ * Dải nguyên tắc, mốc theo view timeline của chính hình xe (--truck, `cover` 0 % → 100 %):
+ *   10–38 % bốn khối vào qua cửa sau (điểm 4 trước) · 38–43 % cửa cuốn đóng · 42–53 % nổ máy, hai cụm khói · 43–74 % thân xe nhún ·
+ *   46–62 % vạch kẻ đường trôi (máy quay bám theo xe) · 46–74 % bánh quay, xe nhích lên rồi tăng tốc ra khỏi mép phải · 48–69 % khói ở
+ *   lại sau xe. Câu của dải sáng hẳn trước khi cửa đóng (sections.css). Trình duyệt thiếu view timeline: cùng chuỗi theo thời gian, một lần,
+ *   khi cổng của hình mở (--reveal-play), xong trước 4,6 giây.
+ */
+
+@layer components {
+  /* Khói đứng yên là trong suốt: hình tĩnh không có khói. Cùng kiểu với khói của chân trang (footer.css) và khói 3D của phần mở đầu:
+     --n-200, bốn múi, viền nhoè nhẹ, đục nhất 0,6, tan theo --ease-decelerate */
+  .lp-smoke {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    filter: blur(0.8px);
+  }
+  /* Vạch cửa đang mở: chỉ có khi chuyển động bật, mờ đi khi cửa đóng */
+  .lp-doorway {
+    opacity: 0;
+  }
+  .lp-door {
+    transform-box: fill-box;
+    transform-origin: top;
+  }
+  .lp-spin {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .lp-load {
+    transform-box: fill-box;
+  }
+
+  @supports (animation-timeline: view()) {
+    [data-motion='on'] .lp-truck {
+      view-timeline-name: --truck;
+    }
+    [data-motion='on'] :is(.lp-load, .lp-doorway, .lp-door, .lp-puff, .lp-trail, .lp-bob, .lp-spin, .lp-dash, .lp-drive) {
+      animation-duration: auto;
+      animation-fill-mode: both;
+      animation-timeline: --truck;
+    }
+    [data-motion='on'] .lp-load {
+      animation-name: lp-load;
+      animation-timing-function: var(--ease-decelerate);
+      animation-range: cover calc(10% + var(--q, 0) * 20%) cover calc(18% + var(--q, 0) * 20%);
+    }
+    [data-motion='on'] .lp-doorway {
+      animation-name: lp-doorway;
+      animation-timing-function: linear;
+      animation-range: cover 37% cover 41%;
+    }
+    [data-motion='on'] .lp-door {
+      animation-name: lp-door;
+      animation-timing-function: var(--ease-standard);
+      animation-range: cover 38% cover 43%;
+    }
+    [data-motion='on'] .lp-puff {
+      animation-name: lp-puff;
+      animation-timing-function: var(--ease-decelerate);
+      animation-range: cover calc(42% + var(--k, 0) * 3%) cover calc(50% + var(--k, 0) * 3%);
+    }
+    [data-motion='on'] .lp-bob {
+      animation-name: lp-bob;
+      animation-timing-function: linear;
+      animation-range: cover 43% cover 74%;
+    }
+    [data-motion='on'] .lp-spin {
+      animation-name: lp-spin;
+      animation-timing-function: var(--ease-accelerate);
+      animation-range: cover 46% cover 74%;
+    }
+    [data-motion='on'] .lp-dash {
+      animation-name: lp-dash;
+      animation-timing-function: var(--ease-standard);
+      animation-range: cover 46% cover 62%;
+    }
+    [data-motion='on'] .lp-drive {
+      animation-name: lp-drive;
+      animation-timing-function: linear;
+      animation-range: cover 46% cover 74%;
+    }
+    [data-motion='on'] .lp-trail {
+      animation-name: lp-trail;
+      animation-timing-function: var(--ease-decelerate);
+      animation-range: cover calc(48% + var(--k, 0) * 4%) cover calc(57% + var(--k, 0) * 4%);
+    }
+  }
+
+  @supports not (animation-timeline: view()) {
+    [data-motion='on'] :is(.lp-load, .lp-doorway, .lp-door, .lp-puff, .lp-trail, .lp-bob, .lp-spin, .lp-dash, .lp-drive) {
+      animation-fill-mode: both;
+      animation-play-state: var(--reveal-play, running);
+    }
+    [data-motion='on'] .lp-load {
+      animation-name: lp-load;
+      animation-duration: 560ms;
+      animation-timing-function: var(--ease-decelerate);
+      animation-delay: calc(400ms + var(--q, 0) * 900ms);
+    }
+    [data-motion='on'] .lp-doorway {
+      animation-name: lp-doorway;
+      animation-duration: 200ms;
+      animation-timing-function: linear;
+      animation-delay: 1900ms;
+    }
+    [data-motion='on'] .lp-door {
+      animation-name: lp-door;
+      animation-duration: 300ms;
+      animation-timing-function: var(--ease-standard);
+      animation-delay: 1950ms;
+    }
+    [data-motion='on'] .lp-puff {
+      animation-name: lp-puff;
+      animation-duration: 700ms;
+      animation-timing-function: var(--ease-decelerate);
+      animation-delay: calc(2250ms + var(--k, 0) * 180ms);
+    }
+    [data-motion='on'] .lp-bob {
+      animation-name: lp-bob;
+      animation-duration: 2300ms;
+      animation-timing-function: linear;
+      animation-delay: 2300ms;
+    }
+    [data-motion='on'] .lp-spin {
+      animation-name: lp-spin;
+      animation-duration: 2000ms;
+      animation-timing-function: var(--ease-accelerate);
+      animation-delay: 2500ms;
+    }
+    [data-motion='on'] .lp-dash {
+      animation-name: lp-dash;
+      animation-duration: 1100ms;
+      animation-timing-function: var(--ease-standard);
+      animation-delay: 2500ms;
+    }
+    [data-motion='on'] .lp-drive {
+      animation-name: lp-drive;
+      animation-duration: 2000ms;
+      animation-timing-function: linear;
+      animation-delay: 2500ms;
+    }
+    [data-motion='on'] .lp-trail {
+      animation-name: lp-trail;
+      animation-duration: 800ms;
+      animation-timing-function: var(--ease-decelerate);
+      animation-delay: calc(2600ms + var(--k, 0) * 300ms);
+    }
+  }
+}
+
+@keyframes lp-load {
+  from {
+    opacity: 0;
+    transform: translateX(var(--load-x, 0px));
+  }
+  25% {
+    opacity: 1;
+  }
+}
+@keyframes lp-doorway {
+  from {
+    opacity: 1;
+  }
+}
+@keyframes lp-door {
+  from {
+    transform: scaleY(0);
+  }
+}
+/* Cụm khói lúc nổ máy: phồng lên ở miệng ống, bay ra sau và lên trên rồi tan (--puff-dir: hướng ra sau của xe) */
+@keyframes lp-puff {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(var(--puff-dir, -1) * 16px), -20px) scale(1.9);
+  }
+}
+/* Cụm khói lúc xe chạy: bị bỏ lại phía sau — bay xa ra sau, to hơn, rồi tan */
+@keyframes lp-trail {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  20% {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(var(--puff-dir, -1) * 84px), -26px) scale(2.6);
+  }
+}
+/* Thân xe nhún 1,5 đơn vị mỗi nhịp, về đúng chỗ ở khung cuối */
+@keyframes lp-bob {
+  0%,
+  16%,
+  32%,
+  48%,
+  64%,
+  80%,
+  100% {
+    transform: none;
+  }
+  8%,
+  24%,
+  40%,
+  56%,
+  72%,
+  90% {
+    transform: translateY(-1.5px);
+  }
+}
+/* Năm vòng: ba chốt cách nhau 120°, nên khung cuối trùng hình đứng yên */
+@keyframes lp-spin {
+  to {
+    transform: rotate(5turn);
+  }
+}
+/* Vạch kẻ đường trôi ra sau đúng ba khoảng vạch (3 × 34): khung cuối trùng hình đứng yên */
+@keyframes lp-dash {
+  to {
+    transform: translateX(-102px);
+  }
+}
+/* Xe nhích lên trong lúc máy quay bám theo, rồi tăng tốc ra khỏi mép phải: dịch hơn một bề rộng khung nhìn là chắc chắn ra khỏi dải.
+   Đường cong của từng đoạn viết thẳng giá trị của --ease-standard và --ease-accelerate: Chromium bỏ var() trong animation-timing-function
+   của một khung hình (đoạn chạy đều). */
+@keyframes lp-drive {
+  from {
+    transform: none;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  30% {
+    transform: translateX(2%);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.15);
+  }
+  to {
+    transform: translateX(100vw);
+  }
+}

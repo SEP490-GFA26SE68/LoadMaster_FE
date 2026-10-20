@@ -89,7 +89,7 @@ const play = (ms: number) => act(() => {
 })
 const fakeStoryClock = () => vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] })
 
-test('the sample trip plays once: app chips on the trip card, Lumo narrates each phase, run figures with MOCK RESULT only at the end', async () => {
+test('the sample trip plays once: app chips on the trip card, Lumo narrates each phase, run figures only at the end, no MOCK RESULT tag', async () => {
   media = installMatchMedia(WIDE)
   fakeStoryClock()
   renderStage()
@@ -130,15 +130,31 @@ test('the sample trip plays once: app chips on the trip card, Lumo narrates each
 
   await user.click(button)
   expect(screen.getByRole('button', { name: 'Tạm dừng chuyến mẫu' })).toBe(button)
-  play(5000)
-  expect(figure()).toHaveAttribute('data-story-status', 'ended')
+  play(4500)
+  expect(figure()).toHaveAttribute('data-story-phase', 'ready')
   expect(card().getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
   expect(pose()).toBe('done')
   expect(narration()).toContain('Xếp xong, chờ xuất phát. Số bên dưới là của chính phương án vừa tính.')
-  // Số của chính phương án vừa tính, một nhãn MOCK RESULT duy nhất nằm trong dải số
-  expect(screen.getAllByText('MOCK RESULT')).toHaveLength(1)
-  expect(within(readout).getByText('MOCK RESULT')).toBeInTheDocument()
+  // Số của chính phương án vừa tính nằm trong dải số; trang công khai không mang nhãn MOCK RESULT
+  expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
   expect(within(readout).getByText('366 / 366')).toBeInTheDocument()
+  expect(within(readout).queryByText('Số liệu của phương án mẫu hiện ra khi xếp xong.')).not.toBeInTheDocument()
+
+  // Xe rời kho: chip Đang vận chuyển của ứng dụng kèm nhãn "Đã rời kho", Lumo chỉ theo xe, số của lần chạy ở lại
+  play(2000)
+  expect(figure()).toHaveAttribute('data-story-phase', 'depart')
+  expect(card().getByText('Đang vận chuyển')).toBeInTheDocument()
+  expect(card().getByText('Đã rời kho')).toBeInTheDocument()
+  expect(card().queryByText('Xếp xong — chờ xuất phát')).not.toBeInTheDocument()
+  expect(pose()).toBe('point')
+  expect(narration()).toContain('Xe lăn bánh; tài xế dỡ hàng theo đúng thứ tự của phương án.')
+  expect(within(readout).getByText('366 / 366')).toBeInTheDocument()
+  expect(figure()).toHaveAttribute('data-story-status', 'playing')
+
+  play(4000)
+  expect(figure()).toHaveAttribute('data-story-status', 'ended')
+  expect(card().getByText('Đang vận chuyển')).toBeInTheDocument()
+  expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Xếp lại thùng xe từ đầu' })).toBe(button)
   expect(button).toHaveFocus()
 
@@ -186,10 +202,14 @@ test('with reduced motion the trip is loaded at once: the run figures and the re
   media = installMatchMedia({ ...WIDE, '(prefers-reduced-motion: reduce)': true })
   renderStage()
   await waitFor(() => expect(figure()).toHaveAttribute('data-story-status', 'ended'), SLOW)
+  // Dừng ở lúc xếp xong: xe không rời kho, không có pha xuất phát
+  expect(figure()).toHaveAttribute('data-story-phase', 'ready')
   expect(card().getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })).getByText('MOCK RESULT')).toBeInTheDocument()
+  expect(card().queryByText('Đang vận chuyển')).not.toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })).getByText('366 / 366')).toBeInTheDocument()
   expect(pose()).toBe('done')
   expect(screen.queryByRole('button', { name: /chuyến mẫu|Xếp lại/ })).not.toBeInTheDocument()
+  expect(figure().querySelector('figcaption')?.textContent).not.toContain('rời kho')
 })
 
 test('once the trip is loaded the 3D frame is not asked to redraw: scrolling the frame away and back or switching tabs changes nothing', async () => {
@@ -256,7 +276,7 @@ test('when the 3D frame fails, the illustration takes its place and Lumo says wh
   media = installMatchMedia(WIDE)
   stage.fail = true
   renderStage()
-  expect(await screen.findByText(/^Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất/, {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText(/^Hình minh hoạ: thùng xe xếp theo điểm giao/, {}, SLOW)).toBeInTheDocument()
   expect(document.querySelector('p[data-side]')).toHaveTextContent('Hình xe ba chiều không hiện được ở đây, nên mình gửi bạn hình minh hoạ.')
   expect(document.querySelector('img[data-lumo]')).toHaveAttribute('data-lumo', 'point')
   expect(screen.queryByText('Chuyến mẫu')).not.toBeInTheDocument()

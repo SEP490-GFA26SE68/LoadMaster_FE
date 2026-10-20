@@ -6,6 +6,13 @@ import type { Vec3 } from '@/features/viewer3d/scene/units'
 import {
   boxCorners, DIORAMA, DIORAMA_FRAME_POINTS, HERO_INSETS, laneBounds, laneSlots, laneVisible, prismCorners,
 } from '@/features/viewer3d/landing/diorama-layout'
+import { DEPART_M } from '@/features/viewer3d/landing/story-timeline'
+
+/** Bán kính tán cây lớn nhất (`diorama-geometry` `addTrees`). */
+const CANOPY = 0.45
+/** Hộp bao của xe sau khi lăn bánh rời kho (`departDistance` tối đa). */
+const DEPARTED_X = [DIORAMA.truck.x[0] - DEPART_M, DIORAMA.truck.x[1] - DEPART_M] as const
+const slabX = DIORAMA.slab.footprint.map(([x]) => x)
 
 const result = runMockOptimization(LANDING_REQUEST, { clock: () => 0 })
 const slots = laneSlots(LANDING_REQUEST, result)
@@ -66,15 +73,24 @@ describe('lane slots', () => {
 })
 
 describe('yard geometry', () => {
-  test('dock and leveller clear the open rear doors; trees stand left of the bay', () => {
+  test('dock and leveller clear the open rear doors; trees stand across the road from the truck', () => {
     expect(Math.min(...DIORAMA.dock.footprint.map(([x]) => x))).toBeGreaterThanOrEqual(7.4)
     expect(DIORAMA.truck.x[1]).toBeLessThan(7.4)
     expect(DIORAMA.leveller.z[0]).toBeGreaterThanOrEqual(0.2)
     expect(DIORAMA.leveller.z[1]).toBeLessThanOrEqual(2.2)
     expect(DIORAMA.leveller.x).toEqual([6, 7.4])
-    for (const tree of DIORAMA.trees) expect(tree.x).toBeLessThan(-2)
-    for (const tree of DIORAMA.trees) expect(tree.x + 0.45).toBeLessThan(DIORAMA.road.x[0])
+    for (const tree of DIORAMA.trees) {
+      expect(tree.z + CANOPY).toBeLessThan(DIORAMA.road.z[0])
+      expect(tree.z + CANOPY).toBeLessThan(DIORAMA.truck.z[0])
+      expect(tree.x - CANOPY).toBeGreaterThan(Math.min(...slabX))
+    }
     expect(DIORAMA.laneX).toBeGreaterThan(DIORAMA.leveller.x[1])
+  })
+
+  test('depart: the road runs to the slab edge and the truck stops on it, still on the slab', () => {
+    expect(DIORAMA.road.x[0]).toBe(Math.min(...slabX))
+    // Đầu cabin dừng cách mép nền ít nhất 20 cm
+    expect(DEPARTED_X[0]).toBeGreaterThanOrEqual(DIORAMA.road.x[0] + 0.2)
   })
 
   test('line of sight: nothing rises more than 0.3 m above the slab in front of the truck (z > 2.4, −2 < x < 7.4)', () => {
@@ -83,7 +99,7 @@ describe('yard geometry', () => {
       { x: [Math.min(...dockX), Math.max(...dockX)], z: [Math.min(...dockZ), Math.max(...dockZ)] },
       { x: DIORAMA.leveller.x, z: DIORAMA.leveller.z },
       { x: DIORAMA.warehouse.x, z: DIORAMA.warehouse.z },
-      ...DIORAMA.trees.map((tree) => ({ x: [tree.x - 0.45, tree.x + 0.45] as const, z: [tree.z - 0.45, tree.z + 0.45] as const })),
+      ...DIORAMA.trees.map((tree) => ({ x: [tree.x - CANOPY, tree.x + CANOPY] as const, z: [tree.z - CANOPY, tree.z + CANOPY] as const })),
       ...DIORAMA.lanes.map((lane) => laneBounds(lane)),
     ]
     for (const { x, z } of tall) expect(x[0] < 7.4 && x[1] > -2 && z[1] > 2.4).toBe(false)
@@ -118,12 +134,13 @@ type Rect = readonly [number, number, number, number]
 const intersects = (a: Rect, b: Rect) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
 
 describe('overview framing (fov 26, wide insets)', () => {
-  const truck = boxCorners(DIORAMA.truck.x, DIORAMA.truck.y, DIORAMA.truck.z)
+  // Xe ở cả hai chỗ: đứng ở dock và đã lăn bánh rời kho
+  const truck = [...boxCorners(DIORAMA.truck.x, DIORAMA.truck.y, DIORAMA.truck.z), ...boxCorners(DEPARTED_X, DIORAMA.truck.y, DIORAMA.truck.z)]
   const lanes = DIORAMA.lanes.flatMap((lane) => { const b = laneBounds(lane); return boxCorners(b.x, [0, b.height], b.z) })
   const dock = prismCorners(DIORAMA.dock.footprint, DIORAMA.slab.top, DIORAMA.dock.top)
   const slab = prismCorners(DIORAMA.slab.footprint, DIORAMA.slab.bottom, DIORAMA.slab.top)
   const warehouse = boxCorners(DIORAMA.warehouse.x, [DIORAMA.slab.top, DIORAMA.warehouse.top + DIORAMA.warehouse.parapet], DIORAMA.warehouse.z)
-  const trees = DIORAMA.trees.flatMap((t) => boxCorners([t.x - 0.45, t.x + 0.45], [DIORAMA.slab.top, DIORAMA.slab.top + t.height], [t.z - 0.45, t.z + 0.45]))
+  const trees = DIORAMA.trees.flatMap((t) => boxCorners([t.x - CANOPY, t.x + CANOPY], [DIORAMA.slab.top, DIORAMA.slab.top + t.height], [t.z - CANOPY, t.z + CANOPY]))
   const sizes = [
     { width: 824, height: 600, lumo: 144, bubble: 352 },
     { width: 750, height: 560, lumo: 128, bubble: 320 },

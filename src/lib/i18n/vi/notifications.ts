@@ -7,6 +7,13 @@ export const notifications = {
   /** Nhãn đọc của nút chuông khi có thông báo chưa đọc; bắt đầu bằng nhãn nhìn thấy. */
   labelUnread: { one: 'Thông báo, {count} chưa đọc', other: 'Thông báo, {count} chưa đọc' },
   title: 'Thông báo',
+  /**
+   * Tên vùng toast của sonner (`Toaster containerAriaLabel`, `app/providers.tsx`): vùng `aria-live` nơi toast hiện ra, khác hộp
+   * thông báo của chuông. Sonner nối phím tắt vào sau ("… alt+T").
+   */
+  toastRegion: 'Thông báo tức thời',
+  /** Nút đóng của từng toast (`toastOptions.closeButtonAriaLabel`). */
+  toastClose: 'Đóng thông báo',
   /** Chip cạnh tiêu đề danh sách (V2.3): số chưa đọc — nút chuông chỉ còn chấm, số nằm ở đây và trong nhãn đọc. */
   unreadCount: { one: '{count} chưa đọc', other: '{count} chưa đọc' },
   markAllRead: 'Đánh dấu đã đọc',

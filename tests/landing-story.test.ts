@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import { fillStep, LANDING_FILL_MS } from '@/features/viewer3d/landing-fill'
 import { createStoryClock, STORY_TICK_CAP_MS } from '@/features/viewer3d/landing/story-clock'
+import { EXHAUST_AT, PUFFS, puffAt, SMOKE_END, SMOKE_START, smokeActive } from '@/features/viewer3d/landing/exhaust-smoke'
 import {
-  laneArrival, laneDrop, LANE_DROP_M, loadedCount, phaseAt, STORY_MS, sweepFade, sweepX, ZONES_AT,
+  DEPART_AT, DEPART_M, departDistance, departPitch, doorsShut, ENGINE_AT, laneArrival, laneDrop, LANE_DROP_M, loadedCount, phaseAt,
+  READY_AT, ROLL_AT, ROLL_MS, STORY_MS, sweepFade, sweepX, ZONES_AT,
 } from '@/features/viewer3d/landing/story-timeline'
 
 describe('story clock', () => {
@@ -75,15 +77,89 @@ describe('story clock', () => {
     fresh.restart()
     expect(fresh.status()).toBe('playing')
   })
+
+  test('finish can stop at a given moment (reduced motion stops at ready), clamped to the story', () => {
+    const clock = createStoryClock(STORY_MS)
+    clock.finish(READY_AT)
+    expect(clock.time()).toBe(9000)
+    expect(clock.status()).toBe('ended')
+    expect(clock.tick(100)).toBe(false)
+    clock.finish(-50)
+    expect(clock.time()).toBe(0)
+    expect(clock.status()).toBe('ended')
+    clock.finish(STORY_MS + 1000)
+    expect(clock.time()).toBe(STORY_MS)
+    clock.restart()
+    expect(clock.time()).toBe(0)
+    expect(clock.status()).toBe('playing')
+  })
 })
 
 describe('story timeline', () => {
-  test('phases follow the 2 / 2 / 5 s beats and the story lasts 9 s', () => {
-    expect(STORY_MS).toBe(9000)
+  test('phases follow the 2 / 2 / 5 / 2 / 4 s beats and the story lasts 15 s', () => {
+    expect(STORY_MS).toBe(15000)
     expect(ZONES_AT).toBe(3400)
-    expect([0, 1999, 2000, 3999, 4000, 8999, 9000, 12000].map(phaseAt))
-      .toEqual(['intake', 'intake', 'optimize', 'optimize', 'loading', 'loading', 'ready', 'ready'])
+    expect(READY_AT).toBe(9000)
+    expect(DEPART_AT).toBe(11000)
+    expect([0, 1999, 2000, 3999, 4000, 8999, 9000, 10999, 11000, 15000].map(phaseAt))
+      .toEqual(['intake', 'intake', 'optimize', 'optimize', 'loading', 'loading', 'ready', 'ready', 'depart', 'depart'])
   })
+
+  test('depart: doors shut first, the engine starts, then the truck rolls 1.3 m forward smoothly and stands still before the end', () => {
+    expect([READY_AT, DEPART_AT - 1, DEPART_AT, STORY_MS].map(doorsShut)).toEqual([false, false, true, true])
+    expect(DEPART_AT).toBeLessThan(ENGINE_AT)
+    expect(ENGINE_AT).toBeLessThan(ROLL_AT)
+    expect(DEPART_M).toBe(1.3)
+    for (const t of [0, READY_AT, DEPART_AT, ROLL_AT]) expect(departDistance(t)).toBe(0)
+    expect(departDistance(ROLL_AT + ROLL_MS / 2)).toBeCloseTo(0.65, 10)
+    expect(departDistance(ROLL_AT + ROLL_MS)).toBeCloseTo(DEPART_M, 10)
+    expect(departDistance(STORY_MS)).toBeCloseTo(DEPART_M, 10)
+    let previous = 0
+    for (let t = ROLL_AT; t <= STORY_MS; t += 20) {
+      const distance = departDistance(t)
+      expect(distance).toBeGreaterThanOrEqual(previous)
+      expect(distance - previous).toBeLessThan(0.025)
+      previous = distance
+    }
+  })
+
+  test('depart pitch: the nose lifts on launch and dips on braking, tiny, back to exactly 0 at rest', () => {
+    for (const t of [0, READY_AT, ROLL_AT, STORY_MS, STORY_MS + 500]) expect(departPitch(t)).toBeCloseTo(0, 12)
+    expect(departPitch(ROLL_AT + 350)).toBeLessThan(0)
+    expect(departPitch(ROLL_AT + ROLL_MS)).toBeGreaterThan(0)
+    for (let t = 0; t <= STORY_MS; t += 25) expect(Math.abs(departPitch(t))).toBeLessThanOrEqual(0.012)
+  })
+})
+
+describe('exhaust smoke', () => {
+  test('puffs start with the engine and all fade out before the story ends, so the scene can rest', () => {
+    expect(SMOKE_START).toBe(ENGINE_AT)
+    expect(SMOKE_END).toBeLessThan(STORY_MS)
+    expect(smokeActive(ENGINE_AT - 1)).toBe(false)
+    expect(smokeActive(ENGINE_AT)).toBe(true)
+    expect(smokeActive(STORY_MS)).toBe(false)
+    expect(smokeActive(READY_AT)).toBe(false)
+    for (const puff of PUFFS) {
+      expect(puffAt(puff, puff.birth - 1)).toBeNull()
+      expect(puffAt(puff, puff.birth + puff.life)).toBeNull()
+    }
+  })
+
+  test('a puff rises, grows and fades; it stays where it was born while the truck rolls on', () => {
+    const puff = PUFFS[PUFFS.length - 1]!
+    const early = puffAt(puff, puff.birth + 100)!, late = puffAt(puff, puff.birth + puff.life - 100)!
+    expect(late.center[1]).toBeGreaterThan(early.center[1])
+    expect(late.size).toBeGreaterThan(early.size)
+    expect(late.alpha).toBeLessThan(early.alpha)
+    for (let age = 0; age < puff.life; age += 50) expect(puffAt(puff, puff.birth + age)!.alpha).toBeLessThanOrEqual(puff.peak)
+    // Sinh lúc xe đã lăn: miệng ống xả lùi về đầu xe đúng quãng đã lăn lúc đó, không theo xe về sau
+    expect(puff.birth).toBeGreaterThan(ROLL_AT)
+    const born = puffAt(puff, puff.birth)!
+    expect(born.center[0]).toBeCloseTo(EXHAUST_AT[0] - departDistance(puff.birth) + puff.jitter[0], 10)
+  })
+})
+
+describe('story timeline (loading)', () => {
 
   test('the loaded count is fillStep of the loading phase, monotonic, and complete at the end', () => {
     expect(LANDING_FILL_MS).toBe(5000)

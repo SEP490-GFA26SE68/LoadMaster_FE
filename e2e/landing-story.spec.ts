@@ -3,20 +3,22 @@ import { attachJson, expect, test } from './fixtures'
 import { drawnFrames, R3F_DEPS, waitDemandIdle, type R3FModule } from './viewer-helpers'
 
 /**
- * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: phương án mẫu tính ngay trên trình duyệt, chuyện 9 giây
- * chạy một lần tới xếp xong; nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm chuyển động cho thấy ngay trạng thái
- * cuối; số của "Con số kiểm được" lăn rồi dừng đúng chuỗi; neo `#lien-he` hiện tiêu đề ngay; điện thoại 390 px không cuộn ngang. Scene R3F
+ * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: phương án mẫu tính ngay trên trình duyệt, chuyện 15 giây
+ * chạy một lần tới lúc xe rời kho (xếp xong, đóng cửa, lăn bánh); nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm
+ * chuyển động cho thấy ngay trạng thái xếp xong (không lăn bánh); số của "Con số kiểm được" lăn rồi dừng đúng chuỗi; neo `#lien-he` hiện
+ * tiêu đề ngay; điện thoại 390 px không cuộn ngang. Scene R3F
  * đọc qua `_roots` như các suite viewer — trang giới thiệu không có bảng đo của `?debug` (`?debug&quality=` chỉ khoá tier), nên số draw
  * call đọc thẳng từ renderer.
  */
 test.use({ collectConsoleErrors: true })
 
 const STAGE = 'figure[data-story-status]'
-/** Chuyện dài 9 giây nhưng mỗi khung hình chỉ tiến tối đa 250 ms: SwiftShader vẽ chậm thì chuyện chạy chậm theo. */
+/** Chuyện dài 15 giây nhưng mỗi khung hình chỉ tiến tối đa 250 ms: SwiftShader vẽ chậm thì chuyện chạy chậm theo. */
 const STORY_WAIT_MS = 120_000
 /**
  * Trần draw call của khung nghỉ ở góc Toàn cảnh: max(40, cảnh khi chưa có sân kho + 3). Đo ngày 20/10/2026 trên SwiftShader, chuyện đã
- * xong (cả cảnh / khi ẩn sân kho): high 34 / 32, balanced 27 / 25, low 19 / 17 — sân kho tốn đúng 2 ở mọi tier (mặt quét đã tắt).
+ * xong (cả cảnh / khi ẩn sân kho): high 34 / 32, balanced 27 / 25, low 20 / 18 — sân kho tốn đúng 2 ở mọi tier (mặt quét đã tắt). Khói
+ * xả lúc xe rời kho là một InstancedMesh, chỉ vẽ khi còn bụi khói nên khung nghỉ không tính nó.
  */
 const DRAW_CALL_CAP = 40
 /** Sân kho (`DioramaScene`) thêm tối đa ba draw call: nền gộp, hộp của làn chờ, mặt quét (chỉ trong pha tối ưu). */
@@ -84,7 +86,7 @@ function scrollsSideways(page: Page): Promise<boolean> {
 test.describe('landing story at 1440 × 900', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('the sample trip plays once to the end: MOCK RESULT and 366 / 366 fill a readout that keeps its height, and the resting overview stays under the draw-call cap', async ({ page, browserErrors }, testInfo) => {
+  test('the sample trip plays once to the end and the truck leaves the yard: 366 / 366 (no MOCK RESULT tag on the public page) fills a readout that keeps its height, and the resting overview stays under the draw-call cap', async ({ page, browserErrors }, testInfo) => {
     await page.goto('/gioi-thieu')
     const stage = page.locator(STAGE)
     const readout = stage.locator('[data-stage-readout]')
@@ -93,11 +95,14 @@ test.describe('landing story at 1440 × 900', () => {
     const pendingHeight = await layoutHeight(readout)
 
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
-    await expect(readout).toContainText('MOCK RESULT')
+    await expect(readout).not.toContainText('MOCK RESULT')
     await expect(readout).toContainText('366 / 366')
     await expect(readout).not.toContainText('Số liệu của phương án mẫu hiện ra khi xếp xong.')
     expect(await layoutHeight(readout)).toBe(pendingHeight)
-    await expect(stage.getByText('Xếp xong — chờ xuất phát', { exact: true })).toBeVisible()
+    // Chuyện kết ở pha xe rời kho: thẻ chuyến là Đang vận chuyển kèm nhãn "Đã rời kho"
+    await expect(stage).toHaveAttribute('data-story-phase', 'depart')
+    await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã rời kho', { exact: true })).toBeVisible()
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeVisible()
 
     await expect(stage.locator('[data-view]')).toHaveAttribute('data-view', 'overview')
@@ -151,17 +156,20 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeFocused()
     await expect(stage.locator('[data-stage-readout]')).toContainText('366 / 366')
+    await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã rời kho', { exact: true })).toBeVisible()
     expect(browserErrors).toStrictEqual([])
   })
 
-  test('reduced motion shows the final state at once: no story button, nothing animates', async ({ page, browserErrors }) => {
+  test('reduced motion shows the loaded state at once: no story button, nothing animates, the truck does not drive off', async ({ page, browserErrors }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/gioi-thieu')
     const stage = page.locator(STAGE)
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage).toHaveAttribute('data-story-phase', 'ready')
     await expect(stage.getByText('Xếp xong — chờ xuất phát', { exact: true })).toBeVisible()
     const readout = stage.locator('[data-stage-readout]')
-    await expect(readout).toContainText('MOCK RESULT')
+    await expect(readout).not.toContainText('MOCK RESULT')
     await expect(readout).toContainText('366 / 366')
     await waitDemandIdle(page, 500)
     await expect(stage.getByRole('button', { name: /chuyến mẫu|Xếp lại/ })).toHaveCount(0)
@@ -175,14 +183,14 @@ test.describe('landing story at 1440 × 900', () => {
     const cells = facts.locator('.reveal-odo-cell')
     await expect(page.locator('[data-motion="on"]')).toHaveCount(1)
     // `#con-so` nằm dưới màn hình đầu: mỗi chữ số của sáu chuỗi đã có một ô, chờ cuộn tới mới lăn
-    await expect(cells).toHaveCount(8)
+    await expect(cells).toHaveCount(7)
     await facts.scrollIntoViewIfNeeded()
     const items = facts.locator('dl > *')
     await expect(items).toHaveCount(6)
     for (const item of await items.all()) await item.scrollIntoViewIfNeeded()
     await expect(cells).toHaveCount(0, { timeout: 10_000 })
     const values = await facts.locator('dl > * > dd:first-of-type').allInnerTexts()
-    expect(values.map((value) => value.replace(/[  ]/g, ' ').trim())).toEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
+    expect(values.map((value) => value.replace(/[  ]/g, ' ').trim())).toEqual(['3', '1 credit', '< 1 giây', '10', '3', '5'])
     expect(browserErrors).toStrictEqual([])
   })
 

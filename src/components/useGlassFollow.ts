@@ -8,8 +8,12 @@ import { useEffect, useRef } from 'react'
  * Chỉ nghe `pointerenter` và `focus` — không nghe `pointermove`, không vòng lặp frame.
  * Chuyển động chỉ bật sau khi đã đặt đúng chỗ ở frame đầu (`data-follow="ready"`), nếu
  * không lúc tải trang chỉ báo sẽ trượt từ mép trái vào mục đang mở.
+ *
+ * Dùng ở thanh điều hướng của ứng dụng (`NavRail`) và đầu trang công khai (`PublicHeader`). `activeSelector` chọn mục chỉ báo về khi con
+ * trỏ rời thanh: mặc định là trang đang mở; đầu trang công khai thêm mục của phần đang đọc (`[data-active]`). Hook chạy lại sau mỗi lần
+ * vẽ, nên mục đang bật đổi (cuộn sang phần khác) là chỉ báo trượt theo.
  */
-export function useGlassFollow<T extends HTMLElement>() {
+export function useGlassFollow<T extends HTMLElement>(activeSelector = '[aria-current="page"]') {
   const navRef = useRef<T>(null)
   const followRef = useRef<HTMLSpanElement>(null)
 
@@ -30,7 +34,7 @@ export function useGlassFollow<T extends HTMLElement>() {
       follow.style.width = `${link.offsetWidth}px`
       follow.style.height = `${link.offsetHeight}px`
     }
-    const current = () => nav.querySelector<HTMLElement>('[aria-current="page"]')
+    const current = () => nav.querySelector<HTMLElement>(activeSelector)
     const toActive = () => anchor(current())
 
     const links = [...nav.querySelectorAll<HTMLElement>('a')]

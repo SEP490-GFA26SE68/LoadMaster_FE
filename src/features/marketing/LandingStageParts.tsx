@@ -2,13 +2,11 @@ import { ChevronRight, Pause, Play, RotateCcw, Warehouse, type LucideIcon } from
 import { useId } from 'react'
 import { StopDot } from '@/components/StopChip'
 import { SKY_FOCUS } from '@/components/sky-focus'
-import { Badge } from '@/components/ui/Badge'
 import type { OptimizationResult } from '@/domain/models'
 import type { StageView } from '@/features/viewer3d/landing/diorama-layout'
 import type { StoryStatus } from '@/features/viewer3d/landing/story-clock'
 import { useFormat, useT, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { PUBLIC_TOUCH_TAG } from './public-chrome'
 import { Reveal } from './reveal'
 
 /** Ba góc nhìn của khung 3D: toàn sân kho, cận thùng xe, nhìn từ trên (dải vùng điểm giao kèm nhãn). */
@@ -134,16 +132,23 @@ export function StageRoute({ stopNames, className }: { stopNames: readonly strin
 type ReadoutCell = { key: string; label: MessageKey; value: string }
 const CELL_LABELS = ['placed', 'volume', 'payload', 'rehandling', 'runtime'] as const
 
-/** Năm ô cùng bố cục cho bản giữ chỗ (chỉ nhãn) và bản có số: dải không đổi chiều cao khi số hiện ra. */
-const CELLS = 'm-0 grid grid-cols-2 gap-x-4 gap-y-3 [grid-area:1/1] sm:grid-cols-3 md:grid-cols-5'
+/**
+ * Năm ô cùng bố cục cho bản chờ (nhãn kèm vạch giữ chỗ) và bản có số: dải không đổi chiều cao khi số hiện ra. Điện thoại: ba cột, số
+ * 16 px — dải chỉ còn hai hàng.
+ */
+const CELLS = 'm-0 grid grid-cols-3 gap-x-3 gap-y-3 sm:gap-x-4 md:grid-cols-5'
 const CELL = 'flex min-w-0 flex-col justify-end gap-0.5'
 const LABEL = 'text-small text-sky-text-3 pointer-coarse:text-body-lg'
-const VALUE = 'm-0 font-mono text-h2 leading-7 font-semibold whitespace-nowrap text-sky-text tabular-nums'
+const VALUE = 'm-0 font-mono text-body-lg leading-6 font-semibold whitespace-nowrap text-sky-text tabular-nums sm:text-h2 sm:leading-7'
+/** Vạch giữ chỗ của một số: đúng chiều cao dòng số, độ dài khác nhau theo ô. */
+const BAR = 'block h-6 max-w-full rounded-sm bg-sky-glass sm:h-7'
+const BAR_WIDTHS = ['w-20', 'w-14', 'w-14', 'w-8', 'w-16'] as const
 
 /**
- * Dải số của lần chạy, dưới khung. Trước khi xếp xong: một câu chờ, cùng chiều cao (năm ô nhãn trong suốt giữ chỗ) — số của lần chạy
- * chỉ hiện khi đã có. Xếp xong: MOCK RESULT và năm ô — kiện đã xếp / kiện của yêu cầu, lấp đầy, tải trọng, kiện phải dỡ-xếp lại, thời gian
- * tính — bật ra lần lượt cách nhau 70 ms; số không đếm, không lăn.
+ * Dải số của lần chạy, dưới khung. Trước khi xếp xong: năm nhãn kèm vạch giữ chỗ và câu chờ (từ 768 px nằm cạnh tiêu đề; hẹp hơn chỉ
+ * cho trình đọc màn hình — vạch đã nói số chưa có), cùng chiều cao với bản có số — số của lần chạy chỉ hiện khi đã có. Xếp xong: MOCK
+ * RESULT và năm ô — kiện đã xếp / kiện của yêu cầu, lấp đầy, tải trọng, kiện phải dỡ-xếp lại, thời gian tính — bật ra lần lượt cách
+ * nhau 70 ms; số không đếm, không lăn.
  */
 export function StageReadout({ result, total, className }: { result: OptimizationResult | null; total: number; className?: string }) {
   const t = useT()
@@ -163,10 +168,9 @@ export function StageReadout({ result, total, className }: { result: Optimizatio
     <Reveal group role="group" aria-labelledby={titleId} data-stage-readout="" className={cn(STAGE_SURFACE, 'flex flex-col gap-2.5 rounded-lg px-4 py-3', className)}>
       <div className="flex min-h-5 flex-wrap items-center gap-2 pointer-coarse:min-h-7">
         <p id={titleId} className="m-0 text-small font-semibold text-sky-text-2 pointer-coarse:text-body-lg">{t('landing.stage.readout.title')}</p>
-        {/* Chữ hổ phách đậm của nhãn không đủ tương phản trên nền tối: dùng bậc 200 */}
-        {result ? <Badge shape="tag" tone="mock" className={cn('text-amber-200', PUBLIC_TOUCH_TAG)}>MOCK RESULT</Badge> : null}
+        {result ? null : <p className="m-0 text-small text-sky-text-3 max-md:sr-only pointer-coarse:text-body-lg">{t('landing.stage.readout.pending')}</p>}
       </div>
-      <div className="grid">
+      <div>
         {result ? (
           <dl className={CELLS}>
             {cells.map((cell, index) => (
@@ -177,17 +181,14 @@ export function StageReadout({ result, total, className }: { result: Optimizatio
             ))}
           </dl>
         ) : (
-          <>
-            <dl aria-hidden className={cn(CELLS, 'invisible')}>
-              {cells.map((cell) => (
-                <div key={cell.key} className={CELL}>
-                  <dt className={LABEL}>{t(cell.label)}</dt>
-                  <dd className={VALUE}>{cell.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="m-0 self-center text-small text-sky-text-3 [grid-area:1/1] pointer-coarse:text-body-lg">{t('landing.stage.readout.pending')}</p>
-          </>
+          <div aria-hidden className={CELLS}>
+            {cells.map((cell, index) => (
+              <div key={cell.key} className={CELL}>
+                <span className={LABEL}>{t(cell.label)}</span>
+                <span className={cn(BAR, BAR_WIDTHS[index % BAR_WIDTHS.length])} />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </Reveal>

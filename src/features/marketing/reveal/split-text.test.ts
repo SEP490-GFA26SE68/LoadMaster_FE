@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { graphemes, inkStagger, odometerParts, typeStep, words, wordStagger } from './split-text'
+import { flowStagger, flowWords, graphemes, odometerParts, sentences, typeStep, words, wordStagger } from './split-text'
 
 /** "Tận dụng" gõ kiểu tổ hợp: chữ gốc kèm dấu rời (U+0323 nặng, U+0302 mũ…), như chép từ một số bộ gõ. */
 const DECOMPOSED = 'Tận dụng'
@@ -46,11 +46,9 @@ describe('nhịp và so le', () => {
     expect(typeStep(10, 1400)).toBe(22)
   })
 
-  it('so le của tiêu đề và đoạn văn có trần', () => {
+  it('so le của tiêu đề có trần', () => {
     expect(wordStagger(1)).toBe(0)
     expect(wordStagger(16) * 15).toBe(600)
-    expect(inkStagger(10)).toBe(14)
-    expect(inkStagger(100) * 100).toBe(500)
   })
 })
 
@@ -68,5 +66,37 @@ describe('odometerParts', () => {
       { kind: 'text', text: ' giây', cell: 0 },
     ])
     expect(odometerParts('10').map((part) => part.kind)).toEqual(['digit', 'digit'])
+  })
+})
+
+describe('sentences', () => {
+  it('mỗi câu một phần theo ngôn ngữ, bỏ khoảng trắng hai đầu và phần rỗng', () => {
+    const text = 'Hàng giao sau lên xe trước. Hàng giao trước nằm sát cửa. Tới điểm nào, lấy hàng điểm đó.'
+    expect(sentences(text, 'vi')).toEqual(['Hàng giao sau lên xe trước.', 'Hàng giao trước nằm sát cửa.', 'Tới điểm nào, lấy hàng điểm đó.'])
+    expect(sentences('  One line only  ', 'en')).toEqual(['One line only'])
+    expect(sentences('   ', 'en')).toEqual([])
+  })
+
+  it('chuẩn hoá NFC trước khi tách', () => {
+    expect(sentences(`${DECOMPOSED}. Xong.`, 'vi')).toEqual(['Tận dụng.', 'Xong.'])
+  })
+})
+
+describe('flowWords', () => {
+  it('mỗi từ thành grapheme, đếm liên tục qua các từ; dấu không rời chữ, khoảng trắng không ngắt ở trong từ', () => {
+    const { parts, count } = flowWords(`${DECOMPOSED} xe, dỡ`, 'vi')
+    expect(parts).toEqual([
+      { chars: ['T', 'ậ', 'n'], space: ' ', start: 0 },
+      { chars: ['d', 'ụ', 'n', 'g', ' ', 'x', 'e', ','], space: ' ', start: 3 },
+      { chars: ['d', 'ỡ'], space: '', start: 11 },
+    ])
+    expect(count).toBe(13)
+    expect(flowWords('', 'vi')).toEqual({ parts: [], count: 0 })
+  })
+
+  it('so le giữa hai grapheme có trần: 26 ms, cả tiêu đề không quá 720 ms', () => {
+    expect(flowStagger(1)).toBe(0)
+    expect(flowStagger(10)).toBe(26)
+    expect(flowStagger(61) * 60).toBe(720)
   })
 })

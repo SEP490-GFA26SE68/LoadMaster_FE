@@ -1,11 +1,13 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'react-router'
+import type { Group } from 'three'
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
 import { DIORAMA_FRAME_POINTS, HERO_INSETS, laneSlots, STAGE_CAMERA, type HeroTier, type StageView } from './landing/diorama-layout'
 import { DioramaScene } from './landing/DioramaScene'
 import type { StorySource } from './landing/story-clock'
-import { loadedCount, ZONES_AT } from './landing/story-timeline'
+import { DepartMotion, TruckStandIn } from './landing/DepartMotion'
+import { doorsShut, loadedCount, ZONES_AT } from './landing/story-timeline'
 import { adaptResult } from './scene-input'
 import type { FramePoints } from './scene/frame-fit'
 import { SceneCanvas } from './scene/SceneCanvas'
@@ -69,11 +71,12 @@ function useRefitOnResize() {
  * Khung 3D "Sân kho kể chuyện" của trang giới thiệu (`features/marketing` tải lười): cùng `SceneCanvas` với Planner, kho và tài xế,
  * vẽ phương án mẫu mà bộ tối ưu mô phỏng vừa tính trên trình duyệt của người xem, giữa một sân kho thu nhỏ (`DioramaScene`). Không
  * thao tác (`interactive={false}`: cuộn trang đi xuyên qua khung hình). Thời gian do trang giữ (`story`): kiện vào làn chờ, mặt quét
- * lúc tối ưu, dải vùng điểm giao từ `ZONES_AT`, rồi từng kiện rời làn vào thùng đúng `loadingOrder`.
+ * lúc tối ưu, dải vùng điểm giao từ `ZONES_AT`, rồi từng kiện rời làn vào thùng đúng `loadingOrder`, cuối cùng cửa thùng đóng và xe
+ * lăn bánh rời kho (`DepartMotion`: nhóm xe của `SceneCanvas`, khói ở ống xả).
  *
  * Ba góc nhìn: `overview` toàn sân kho canh vào phần khung không bị nút, thẻ và Lumo che (`HERO_INSETS[tier]`); `truck` cận xe;
- * `zones` nhìn từ trên, dải vùng kèm nhãn. React chỉ đọc hai giá trị suy ra từ thời gian (bước xếp, đã có dải vùng chưa); hộp của làn
- * và mặt quét đọc thời gian trong `useFrame`.
+ * `zones` nhìn từ trên, dải vùng kèm nhãn. React chỉ đọc ba giá trị suy ra từ thời gian (bước xếp, đã có dải vùng chưa, cửa đã đóng
+ * chưa); hộp của làn, mặt quét, xe lăn bánh và khói đọc thời gian trong `useFrame`.
  */
 export default function LandingStageViewer({ request, result, stopNames, view, tier, story, onReady, onFail }: {
   request: OptimizationRequest
@@ -97,6 +100,8 @@ export default function LandingStageViewer({ request, result, stopNames, view, t
   const subscribe = useCallback((listener: () => void) => story.subscribe(listener), [story])
   const step = useSyncExternalStore(subscribe, () => loadedCount(total, story.time()))
   const zonesOn = useSyncExternalStore(subscribe, () => story.time() >= ZONES_AT)
+  const doorsClosed = useSyncExternalStore(subscribe, () => doorsShut(story.time()))
+  const vehicleRef = useRef<Group>(null)
   const framePoints = useMemo<FramePoints | undefined>(
     () => view === 'overview' ? { points: DIORAMA_FRAME_POINTS, insets: HERO_INSETS[tier] } : undefined, [view, tier])
   const [fitRequest, observe] = useRefitOnResize()
@@ -105,11 +110,13 @@ export default function LandingStageViewer({ request, result, stopNames, view, t
     <div ref={observe} className="absolute inset-0">
       <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={view === 'zones' ? 'tren' : 'goc-cheo'}
         selectedId={null} onSelect={noop} step={step} zones={zonesOn ? model.zones : undefined} zoneLabels={view === 'zones'}
-        interactive={false} fov={STAGE_CAMERA.fov} framePoints={framePoints} frameZoom={view === 'overview' ? 1 : STAGE_CAMERA.zoom} fitRequest={fitRequest}>
+        interactive={false} fov={STAGE_CAMERA.fov} framePoints={framePoints} frameZoom={view === 'overview' ? 1 : STAGE_CAMERA.zoom} fitRequest={fitRequest}
+        vehicleRef={vehicleRef} doorsClosed={doorsClosed} vehicleChildren={flags.decoration ? null : <TruckStandIn vehicle={model.vehicle} />}>
         <FirstFrame onFrame={onReady} />
         <ContextWatch onLost={onFail} />
         <StoryFrames story={story} />
         <DioramaScene slots={slots} total={total} vehicle={model.vehicle} story={story} low={!flags.decoration} reducedMotion={flags.reducedMotion} />
+        <DepartMotion vehicleRef={vehicleRef} story={story} vehicle={model.vehicle} smoke={flags.decoration && !flags.reducedMotion} />
       </SceneCanvas>
     </div>
   )

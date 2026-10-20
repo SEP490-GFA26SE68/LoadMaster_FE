@@ -5,6 +5,8 @@ export const notifications = {
   label: 'Notifications',
   labelUnread: { one: 'Notifications, {count} unread', other: 'Notifications, {count} unread' },
   title: 'Notifications',
+  toastRegion: 'Live notifications',
+  toastClose: 'Close notification',
   unreadCount: { one: '{count} unread', other: '{count} unread' },
   markAllRead: 'Mark as read',
   unread: 'Unread',
