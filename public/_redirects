@@ -1,0 +1,2 @@
+# Netlify: route của ứng dụng (React Router) trả index.html; file có thật (trang công khai đã dựng sẵn, asset) vẫn được phục vụ trước
+/*    /index.html    200
