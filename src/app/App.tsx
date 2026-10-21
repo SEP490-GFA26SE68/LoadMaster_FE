@@ -77,6 +77,7 @@ const TripReportPage = lazy(() => import('@/features/trips/TripReportPage').then
 const CompaniesPage = lazy(() => import('@/features/platform/CompaniesPage').then((m) => ({ default: m.CompaniesPage })))
 const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m) => ({ default: m.SupportPage })))
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
+const SubscriptionHistoryPage = lazy(() => import('@/features/platform/SubscriptionHistoryPage').then((m) => ({ default: m.SubscriptionHistoryPage })))
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
@@ -249,8 +250,11 @@ export const routes: RouteObject[] = [
                   guarded('support.handle', [{ path: '/ho-tro', element: <SupportPage />, handle: titled((t) => t('titles.support')) }]),
                   // Liên hệ của khách gửi từ trang giới thiệu: ba vai trò nền tảng
                   guarded('contacts.handle', [{ path: '/lien-he-khach', element: <ContactsPage />, handle: titled((t) => t('titles.contacts')) }]),
-                  // Danh mục gói cước: màn chính của quản lý nền tảng (FE-8-02, D-90)
-                  guarded('subscriptionPlans.manage', [{ path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) }]),
+                  // Danh mục gói cước & Lịch sử gói cước (FE-8-02)
+                  guarded('subscriptionPlans.manage', [
+                    { path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) },
+                    { path: '/nen-tang/lich-su-goi', element: <SubscriptionHistoryPage />, handle: titled((t) => t('titles.subscriptionHistory')) },
+                  ]),
                   // Đơn yêu cầu tạo tài khoản dùng thử
                   guarded('trialRequests.manage', [{ path: '/nen-tang/yeu-cau-dung-thu', element: <TrialRequestsPage />, handle: titled((t) => t('titles.trialRequests')) }]),
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty

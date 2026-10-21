@@ -82,9 +82,11 @@ export function companyFormDefaults(company?: Company): CompanyFormInput {
     name: company?.name ?? '',
     address: company?.address ?? '',
     phone: company?.phone ?? '',
-    depotName: company?.depot.name ?? '',
-    depotAddress: company?.depot.address ?? '',
-    coordinates: company ? coordinateText(company.depot.lat, company.depot.lng) : EMPTY_COORDINATES,
+    depotName: company?.depot?.name ?? '',
+    depotAddress: company?.depot?.address ?? '',
+    coordinates: company?.depot && typeof company.depot.lat === 'number' && typeof company.depot.lng === 'number'
+      ? coordinateText(company.depot.lat, company.depot.lng)
+      : EMPTY_COORDINATES,
     adminName: '',
     adminEmail: '',
     adminPhone: '',

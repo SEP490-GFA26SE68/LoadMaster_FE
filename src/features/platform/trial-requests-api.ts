@@ -53,6 +53,8 @@ export type ApproveTrialAccountRequest = {
   companyName?: string
   taxCode?: string
   planId?: number
+  trialDays?: number
+  trialCredits?: number
   note?: string
 }
 

@@ -39,6 +39,7 @@ export const titles = {
   tripReport: 'Báo cáo chuyến {id}',
   // FE-8-02 → FE-8-04
   subscriptionPlans: 'Gói cước',
+  subscriptionHistory: 'Lịch sử gói cước',
   trialRequests: 'Đơn yêu cầu tạo tài khoản dùng thử',
   billing: 'Gói cước và credit',
   payment: 'Thanh toán giả lập',

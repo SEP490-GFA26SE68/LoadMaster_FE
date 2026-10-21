@@ -16,6 +16,7 @@ export const nav = {
   monitoring: 'Giám sát',
   // Gói cước (FE-8-02, FE-8-03): quản lý nền tảng quản lý danh mục gói, quản trị công ty xem gói và credit của công ty
   plans: 'Gói cước',
+  subscriptionHistory: 'Lịch sử gói cước',
   trialRequests: 'Đơn dùng thử',
   billing: 'Gói và credit',
   // Công ty (FE-8-06): quản trị hệ thống. Hỗ trợ (FE-8-07): Hỗ trợ khách hàng; mục menu tài khoản của người dùng công ty

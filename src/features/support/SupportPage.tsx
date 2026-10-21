@@ -63,12 +63,29 @@ export function SupportPage() {
   const tickets = useMemo(() => query.data ?? [], [query.data])
   const companyNames = useMemo(() => new Map((companies.data ?? []).map((company) => [company.id, company.name])), [companies.data])
   const { [COMPANY_FILTER]: company, [KIND_FILTER]: kind, [STATUS_FILTER]: status } = list.filters
-  const rows = useMemo(() => tickets.filter((ticket) =>
-    matchesQuery([ticket.title, ticket.id, ticket.senderName], list.query)
-    && (company === '' || ticket.companyId === company)
-    && (kind === '' || ticket.kind === kind)
-    && (status === '' || ticket.status === status)),
-  [tickets, list.query, company, kind, status])
+  const rows = useMemo(() => {
+    const statusWeight = (ticketStatus: TicketStatus) => {
+      switch (ticketStatus) {
+        case 'OPEN': return 1
+        case 'IN_PROGRESS': return 2
+        case 'RESOLVED': return 3
+        case 'CLOSED': return 4
+        default: return 5
+      }
+    }
+    const filtered = tickets.filter((ticket) =>
+      matchesQuery([ticket.title, ticket.id, ticket.senderName], list.query)
+      && (company === '' || ticket.companyId === company)
+      && (kind === '' || ticket.kind === kind)
+      && (status === '' || ticket.status === status))
+
+    return filtered.sort((a, b) => {
+      const wA = statusWeight(a.status)
+      const wB = statusWeight(b.status)
+      if (wA !== wB) return wA - wB
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    })
+  }, [tickets, list.query, company, kind, status])
   const columns = useMemo(() => createTicketColumns(t, format, companyNames), [t, format, companyNames])
 
   const selectedId = params.get(SELECTED_PARAM)
