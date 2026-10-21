@@ -64,7 +64,7 @@ export const admin = {
       systemManager: 'Máy tính',
       systemSupporter: 'Máy tính',
       companyAdmin: 'Máy tính',
-      manager: 'Máy tính / máy tính bảng',
+      companyManager: 'Máy tính / máy tính bảng',
       dispatcher: 'Máy tính',
       warehouse: 'Máy tính bảng tại kho',
       driver: 'Điện thoại',
@@ -114,6 +114,7 @@ export const admin = {
       depot: 'Kho / chi nhánh',
       depotPlaceholder: 'Kho Long Bình',
       role: 'Vai trò',
+      company: 'Công ty',
       device: 'Thiết bị chính: {device}',
       cancel: 'Huỷ',
       save: 'Lưu thay đổi',
@@ -128,6 +129,7 @@ export const admin = {
       phoneInvalid: 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0',
       roleRequired: 'Chọn vai trò',
       depotRequired: 'Nhập kho hoặc chi nhánh',
+      companyRequired: 'Vui lòng chọn công ty'
     },
     /** Hộp thoại hiện mật khẩu tạm một lần (tạo tài khoản, đặt lại mật khẩu — D-42). */
     password: {
@@ -174,7 +176,7 @@ export const admin = {
     groups: {
       administration: 'Công ty, người dùng và nhật ký',
       billing: 'Gói cước và credit',
-      support: 'Hỗ trợ khách hàng',
+      support: 'Hỗ trợ khách hàng và liên hệ của khách',
       dashboard: 'Bảng điều khiển và báo cáo',
       requirements: 'Yêu cầu giao',
       packages: 'Kho kiện và nhãn QR',
@@ -193,6 +195,7 @@ export const admin = {
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },
       support: { create: 'Gửi yêu cầu hỗ trợ', handle: 'Xử lý yêu cầu hỗ trợ' },
+      contacts: { handle: 'Xử lý yêu cầu liên hệ của khách' },
       dashboard: { view: 'Xem bảng điều khiển' },
       reports: { export: 'Xuất báo cáo .xlsx' },
       requirements: { view: 'Xem yêu cầu giao', edit: 'Tạo, sửa yêu cầu giao' },

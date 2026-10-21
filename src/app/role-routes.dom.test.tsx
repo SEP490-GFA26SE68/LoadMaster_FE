@@ -1,9 +1,11 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { isValidElement } from 'react'
 import { createMemoryRouter, matchRoutes, RouterProvider, type RouteObject } from 'react-router'
 import { beforeEach, expect, test } from 'vitest'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
+import { RequireAuth } from '@/features/auth/RequireAuth'
 import { SEARCH_GROUPS, searchGroupsFor, searchSources, type SearchSources } from '@/features/search/quick-search'
 import { createTranslator } from '@/lib/i18n'
 import { titles } from '@/lib/i18n/vi/titles'
@@ -45,7 +47,10 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 }
 
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
-  expect(['/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty', '/ho-tro'].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
+  expect([
+    '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
+    '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/nen-tang/yeu-cau-dung-thu',
+  ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
   expect(routeAccess('/chuyen/moi').permissions).toStrictEqual(['trips.edit'])
@@ -56,11 +61,21 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/giam-sat').permissions).toStrictEqual(['monitoring.view'])
   // Danh mục gói (FE-8-02): quản lý nền tảng
   expect(routeAccess('/nen-tang/goi').permissions).toStrictEqual(['subscriptionPlans.manage'])
+  // Đơn yêu cầu dùng thử (FE-8-08): quản lý nền tảng
+  expect(routeAccess('/nen-tang/yeu-cau-dung-thu').permissions).toStrictEqual(['trialRequests.manage'])
   // Công ty (FE-8-06): quản trị hệ thống
   expect(routeAccess('/nen-tang/cong-ty').permissions).toStrictEqual(['companies.manage'])
   // Hỗ trợ (FE-8-07): Hỗ trợ khách hàng
   expect(routeAccess('/ho-tro').permissions).toStrictEqual(['support.handle'])
+  // Liên hệ của khách: ba vai trò nền tảng
+  expect(routeAccess('/lien-he-khach').permissions).toStrictEqual(['contacts.handle'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])
+  // Trang công khai: không quyền nào và nằm ngoài RequireAuth — khách chưa đăng nhập mở được
+  for (const path of ['/gioi-thieu', '/bang-gia']) {
+    expect(routeAccess(path).permissions, path).toStrictEqual([])
+    expect((matchRoutes(routes, path) ?? []).some(({ route }) => isValidElement(route.element) && route.element.type === RequireAuth), path).toBe(false)
+  }
+  expect((matchRoutes(routes, '/lien-he-khach') ?? []).some(({ route }) => isValidElement(route.element) && route.element.type === RequireAuth)).toBe(true)
 })
 
 test.each(ROLES)('%s: the home screen is a route the role may open', (role) => {
@@ -162,6 +177,6 @@ test('customer support gets from a 404 back to the support screen, with its nav 
   expect(await screen.findByRole('heading', { level: 1, name: 'Hỗ trợ khách hàng' }, SLOW)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/ho-tro')
   await waitFor(() => expect(document.title).toBe('Hỗ trợ khách hàng · LoadMaster'))
-  expect(within(screen.getByRole('navigation')).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Hỗ trợ'])
+  expect(within(screen.getByRole('navigation')).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Hỗ trợ', 'Liên hệ của khách'])
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-tro')
 })

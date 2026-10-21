@@ -53,8 +53,8 @@ export type TripMonitoring = {
   reroute?: TripReroute
   /** Số ms **thật** tới điểm vị trí kế tiếp (ít nhất 1 giây); `null` khi chuyến không còn chạy — màn không cần làm mới nữa. */
   refreshMs: number | null
-  /** Vị trí mô phỏng và ETA đều là kết quả mock (công thức D-76). */
-  isMockResult: true
+  /** `true` khi vị trí/ETA từ mock; `false` khi từ BE (GPS + Goong). */
+  isMockResult: boolean
 }
 
 /** Phần kho giữ cho mỗi chuyến đã xuất phát. */

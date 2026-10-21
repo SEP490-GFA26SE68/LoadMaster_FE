@@ -24,7 +24,7 @@ export const PHUONG_NAM = 'LOG-002'
  */
 const USERS: readonly UserSeed[] = [
   { id: 'US-0001', fullName: 'Nguyễn Thanh Tùng', email: 'dieuphoi@loadmaster.vn', phone: '0901 234 567', role: 'dispatcher', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [0, '07:50'] },
-  { id: 'US-0002', fullName: 'Trần Thị Mai', email: 'quanly@loadmaster.vn', phone: '0902 345 678', role: 'manager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [0, '08:10'] },
+  { id: 'US-0002', fullName: 'Trần Thị Mai', email: 'quanly@loadmaster.vn', phone: '0902 345 678', role: 'companyManager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [0, '08:10'] },
   { id: 'US-0003', fullName: 'Lê Văn Hải', email: 'kho@loadmaster.vn', phone: '0903 456 789', role: 'warehouse', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [0, '05:20'] },
   { id: 'US-0004', fullName: 'Phạm Quốc Dũng', email: 'taixe@loadmaster.vn', phone: '0904 567 890', role: 'driver', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [1, '17:40'] },
   // Tài khoản quản trị cũ thành Quản trị hệ thống (D-65): người của nền tảng, không thuộc công ty hay kho nào
@@ -35,7 +35,7 @@ const USERS: readonly UserSeed[] = [
   { id: 'US-0009', fullName: 'Hoàng Đức Anh', email: 'anh.hoang@loadmaster.vn', phone: '0909 012 345', role: 'dispatcher', status: 'active', depot: 'Kho Sóng Thần', companyId: LONG_BINH, lastActive: null },
   { id: 'US-0010', fullName: 'Trương Văn Lộc', email: 'loc.truong@loadmaster.vn', phone: '0912 345 670', role: 'driver', status: 'active', depot: 'Kho Long Bình', companyId: LONG_BINH, lastActive: [2, '18:10'] },
   { id: 'US-0011', fullName: 'Đỗ Thị Hạnh', email: 'hanh.do@loadmaster.vn', phone: '0913 456 781', role: 'warehouse', status: 'active', depot: 'Kho Sóng Thần', companyId: LONG_BINH, lastActive: [0, '05:45'] },
-  { id: 'US-0012', fullName: 'Lý Minh Châu', email: 'chau.ly@loadmaster.vn', phone: '0914 567 892', role: 'manager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [4, '09:30'] },
+  { id: 'US-0012', fullName: 'Lý Minh Châu', email: 'chau.ly@loadmaster.vn', phone: '0914 567 892', role: 'companyManager', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [4, '09:30'] },
   // Nhân viên kho của Phương Nam (PRD v2 mục 5.3): trước FE-0-06 là tài khoản logistics của Review 1; giữ mã `US-0015`
   { id: 'US-0015', fullName: 'Lâm Quốc Việt', email: 'viet.lam@phuongnam.vn', phone: '0917 456 320', role: 'warehouse', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [3, '15:10'] },
   // FE-0-03: hai vai trò nền tảng còn lại, Quản trị công ty của Long Bình, và nhân sự của Phương Nam
@@ -43,7 +43,7 @@ const USERS: readonly UserSeed[] = [
   { id: 'US-NT-02', fullName: 'Tạ Thị Ngọc Ánh', email: 'hotro@loadmaster.vn', phone: '0919 315 672', role: 'systemSupporter', status: 'active', lastActive: [0, '08:30'] },
   { id: 'US-LB-01', fullName: 'Dương Thị Kim Oanh', email: 'qtcongty@loadmaster.vn', phone: '0921 426 783', role: 'companyAdmin', status: 'active', depot: 'Trụ sở TP. Hồ Chí Minh', companyId: LONG_BINH, lastActive: [1, '16:45'] },
   { id: 'US-PN-01', fullName: 'Châu Minh Trí', email: 'qtcongty@phuongnam.vn', phone: '0922 537 894', role: 'companyAdmin', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [1, '09:05'] },
-  { id: 'US-PN-02', fullName: 'Mạc Thị Hồng Nhung', email: 'quanly@phuongnam.vn', phone: '0923 648 905', role: 'manager', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [0, '07:55'] },
+  { id: 'US-PN-02', fullName: 'Mạc Thị Hồng Nhung', email: 'quanly@phuongnam.vn', phone: '0923 648 905', role: 'companyManager', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [0, '07:55'] },
   { id: 'US-PN-03', fullName: 'Kiều Anh Tuấn', email: 'dieuphoi@phuongnam.vn', phone: '0924 759 016', role: 'dispatcher', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [0, '07:20'] },
   { id: 'US-PN-04', fullName: 'Thái Văn Sơn', email: 'taixe@phuongnam.vn', phone: '0925 860 127', role: 'driver', status: 'active', depot: 'Kho Phú Thuận, Q.7', companyId: PHUONG_NAM, lastActive: [1, '18:20'] },
 ]

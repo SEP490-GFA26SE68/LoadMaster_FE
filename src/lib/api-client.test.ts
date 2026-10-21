@@ -69,3 +69,18 @@ test('no response at all is NETWORK_ERROR; a request that outlives the limit is 
   })
   expect((await failure(() => slow.get('/x'))).code).toBe('TIMEOUT')
 })
+
+test('returns full page response when totalElements is present', async () => {
+  const pagePayload = { success: true, data: [{ id: 1 }], page: 0, size: 10, totalElements: 1, totalPages: 1, last: true }
+  const { client } = clientWith(respond(200, pagePayload))
+  const res = await client.get('/api/subscription/plans', { query: { paged: true } })
+  expect(res).toStrictEqual(pagePayload)
+})
+
+test('guest request without token makes successful request without Authorization header', async () => {
+  const { client, calls } = clientWith(respond(200, [{ id: 1, name: 'Basic' }]), null)
+  const res = await client.get('/api/subscription/plans')
+  expect(res).toStrictEqual([{ id: 1, name: 'Basic' }])
+  expect(calls[0]?.init.headers).not.toHaveProperty('Authorization')
+})
+

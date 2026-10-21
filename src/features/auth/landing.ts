@@ -11,21 +11,26 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
   systemManager: '/nen-tang/goi',
   systemSupporter: '/ho-tro',
   companyAdmin: '/nguoi-dung',
-  manager: '/',
+  companyManager: '/tong-quan',
   dispatcher: '/chuyen',
   warehouse: '/kho',
   driver: '/tai-xe',
 }
 
+/** Trang giới thiệu công khai: khách chưa đăng nhập mở gốc `/` thì tới đây thay cho màn đăng nhập (`RequireAuth`). */
+export const PUBLIC_HOME = '/gioi-thieu'
+/** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
+export const PUBLIC_PRICING = '/bang-gia'
+
 /**
  * Trang mở sau khi đăng nhập. `from` là trang định vào trước khi bị chuyển tới màn đăng nhập (kèm query).
- * Gốc `/` và chính màn đăng nhập không phải lựa chọn của người dùng — mở ứng dụng luôn đi qua đó — nên đổi thành
+ * Gốc `/`, `/gioi-thieu` và chính màn đăng nhập không phải lựa chọn của người dùng — mở ứng dụng luôn đi qua đó — nên đổi thành
  * màn của vai trò, giữ nguyên query (ví dụ `?lang=en`). Liên kết sâu khác được giữ.
  */
 export function landingPath(role: Role, from?: string): string {
   if (!from) return ROLE_HOME[role]
   const queryStart = from.search(/[?#]/)
   const path = queryStart === -1 ? from : from.slice(0, queryStart)
-  if (path !== '/' && path !== '/dang-nhap') return from
+  if (path !== '/' && path !== '/gioi-thieu' && path !== '/dang-nhap') return from
   return ROLE_HOME[role] + (queryStart === -1 ? '' : from.slice(queryStart))
 }

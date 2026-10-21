@@ -17,6 +17,8 @@ export const auth = {
     accountSuspended: 'Tài khoản đã bị khoá. Liên hệ quản trị viên của bạn để mở khoá.',
     serverUnreachable: 'Không kết nối được máy chủ. Thử lại sau.',
     roleUnknown: 'Tài khoản mang vai trò mà ứng dụng chưa hỗ trợ. Liên hệ quản trị viên của bạn.',
+    /** Liên kết về trang giới thiệu công khai `/gioi-thieu`. */
+    backToLanding: 'Về trang giới thiệu',
     /** Chế độ đăng nhập bằng máy chủ (`VITE_AUTH_SOURCE=keycloak`): app chuyển sang trang đăng nhập của hệ thống. */
     sso: {
       hint: 'Bạn sẽ được chuyển sang trang đăng nhập của hệ thống rồi quay lại đây.',
