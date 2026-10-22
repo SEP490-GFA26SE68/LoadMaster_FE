@@ -4,6 +4,8 @@ import {
   CheckCircle2,
   Coins,
   CreditCard,
+  FileSignature,
+  FileText,
   Mail,
   MapPin,
   Pencil,
@@ -13,6 +15,7 @@ import {
   User,
   Users,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import {
@@ -22,6 +25,8 @@ import {
   DialogFooter,
   DialogHeader,
 } from '@/components/ui/Dialog'
+import { useCompanyAgreementQuery } from '@/features/billing/useAgreementQuery'
+import { ViewAgreementDialog } from '@/features/billing/ViewAgreementDialog'
 import { useFormat, useT } from '@/lib/i18n'
 import type { CompanyOverview, SubscriptionStatus } from '@/lib/mock-db'
 
@@ -49,6 +54,9 @@ export function ViewCompanyDetailsDialog({
 
   const { company, current, adminUser, userCount, planStatus, creditBalance } = overview
   const planLook = planStatus ? STATUS_LOOK[planStatus] : null
+  const numericCompanyId = (overview.company as any).backendId || (Number(overview.company.id) > 0 ? Number(overview.company.id) : undefined)
+  const agreementQuery = useCompanyAgreementQuery(numericCompanyId)
+  const [viewAgreementOpen, setViewAgreementOpen] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -212,6 +220,64 @@ export function ViewCompanyDetailsDialog({
               </div>
             )}
           </div>
+
+          {/* Section 4: Thỏa thuận Dịch vụ & Điều khoản */}
+          <div className="rounded-xl border border-line-soft bg-surface/40 p-4 shadow-2xs">
+            <div className="mb-3 flex items-center justify-between border-b border-line-soft pb-2.5">
+              <div className="flex items-center gap-2">
+                <FileSignature className="size-4 text-primary" />
+                <span className="text-small font-bold text-ink-strong">4. Thỏa thuận Dịch vụ & Pháp lý</span>
+              </div>
+              {agreementQuery.data && (
+                agreementQuery.data.status === 'SIGNED' ? (
+                  <Badge tone="success" dot="solid">Đã ký kết</Badge>
+                ) : agreementQuery.data.isExpired ? (
+                  <Badge tone="danger" dot="solid">Quá hạn (Đã khóa)</Badge>
+                ) : (
+                  <Badge tone="warning" dot="ring">Chờ ký ({agreementQuery.data.hoursRemaining}h)</Badge>
+                )
+              )}
+            </div>
+            {agreementQuery.data ? (
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 text-small">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-caption text-ink-3">Mã thỏa thuận:</span>
+                    <span className="font-mono font-medium text-ink-1">#{agreementQuery.data.agreementCode}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-caption text-ink-3">Thời hạn ký kết:</span>
+                    <span className="flex items-center gap-1.5 font-medium text-ink-1">
+                      <Calendar className="size-3.5 text-ink-3" />
+                      {agreementQuery.data.deadlineAt ? format.date(agreementQuery.data.deadlineAt) : '3 ngày'}
+                    </span>
+                  </div>
+                  {agreementQuery.data.status === 'SIGNED' && (
+                    <>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-caption text-ink-3">Người đại diện ký:</span>
+                        <span className="font-semibold text-emerald-700">{agreementQuery.data.signerName}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-caption text-ink-3">Thời điểm ký kết:</span>
+                        <span className="text-ink-2">{agreementQuery.data.signedAt ? format.date(agreementQuery.data.signedAt) : '—'}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="secondary" onClick={() => setViewAgreementOpen(true)} className="h-7 text-caption">
+                    <FileText className="mr-1.5 size-3.5" />
+                    Xem văn bản thỏa thuận
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-2 text-center text-caption text-ink-3">
+                Doanh nghiệp chưa có thỏa thuận thử nghiệm cần ký kết.
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="flex items-center justify-between border-t border-line-soft bg-surface/50 px-6 py-4">
@@ -234,6 +300,11 @@ export function ViewCompanyDetailsDialog({
           </DialogClose>
         </DialogFooter>
       </DialogContent>
+      <ViewAgreementDialog
+        agreement={agreementQuery.data ?? null}
+        open={viewAgreementOpen}
+        onClose={() => setViewAgreementOpen(false)}
+      />
     </Dialog>
   )
 }

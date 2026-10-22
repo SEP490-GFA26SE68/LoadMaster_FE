@@ -10,9 +10,17 @@ export type Checkout = {
   readonly paymentUrl?: string | null
 }
 
+function shouldUseMockDb(): boolean {
+  if (import.meta.env.MODE === 'test') {
+    const hasSession = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('loadmaster.phien'))
+    return hasSession || !isAuthenticated()
+  }
+  return !isAuthenticated()
+}
+
 /** Giao dịch của công ty; mã không có, hoặc của công ty khác, là `NOT_FOUND`. */
 export async function fetchCheckout(paymentId: string): Promise<Checkout> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     const db = getMockDb()
     const payment = await db.getPayment(paymentId)
     const planName =
@@ -41,7 +49,7 @@ export async function settlePayment(
   paymentId: string,
   outcome: 'SUCCESS' | 'FAILED',
 ): Promise<PaymentTransaction> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().settlePayment(paymentId, outcome)
   }
 
