@@ -6,6 +6,15 @@ import type { Role } from '@/types/user'
  * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (tối ưu tuyến, giám
  * sát, sự cố, nhận hàng dọc đường, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
  */
+
+/**
+ * Kho kiện:
+ * - Warehouse: xem và quản lý kiện, import Excel, quản lý loại kiện.
+ * - Dispatcher: chỉ xem và tra cứu kiện, không được thêm/sửa/xóa.
+ * - CompanyManager: xem kiện.
+ *
+ * Yêu cầu giao và lập chuyến thuộc luồng điều phối.
+ */
 export const PERMISSIONS = [
   'companies.manage',
   'users.manage',
@@ -14,6 +23,8 @@ export const PERMISSIONS = [
   'billing.manage',
   'support.create',
   'support.handle',
+  'contacts.handle',
+  'trialRequests.manage',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -40,6 +51,7 @@ export const PERMISSIONS = [
   'pickups.approve',
   'warehouse.operate',
   'driver.operate',
+  'companyWarehouses.manage'
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -61,24 +73,71 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
  * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
+ *
+ * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
+ * trò nền tảng; gửi yêu cầu không cần quyền.
  */
+
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
-  systemManager: ['subscriptionPlans.manage'],
-  systemSupporter: ['support.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
+  systemManager: ['subscriptionPlans.manage', 'companies.manage', 'trialRequests.manage'],
+  systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
-  manager: [
-    'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
+
+  companyManager: [
+    'support.create',
+    'dashboard.view',
+    'reports.export',
+    'requirements.view',
+    'packages.view',
+    'trips.view',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'deadlines.renegotiate',
+    'companyWarehouses.manage'
   ],
+
   dispatcher: [
-    'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
-    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
-    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
+    'support.create',
+    'dashboard.view',
+    'requirements.view',
+    'packages.view',
+    'packages.lookup',
+    'labels.print',
+    'trips.view',
+    'trips.edit',
+    'routes.optimize',
+    'optimization.run',
+    'plans.approve',
+    'manualConfirm.approve',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'fleet.edit',
+    'vehicleTypes.edit',
+    'exceptions.report',
+    'exceptions.resolve',
+    'pickups.create',
     'pickups.approve',
+    'requirements.edit'
   ],
-  warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
-  driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
+
+  warehouse: [
+    'support.create',
+    'packages.view',
+    'packages.manage',
+    'packages.lookup',
+    'labels.print',
+    'warehouse.operate',
+  ],
+
+  driver: [
+    'support.create',
+    'exceptions.report',
+    'pickups.create',
+    'driver.operate',
+  ],
 }
 
 /** Quyền của vai trò, theo thứ tự của `PERMISSIONS`. Mọi nơi đọc quyền đi qua đây hoặc `can`. */

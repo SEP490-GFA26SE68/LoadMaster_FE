@@ -1,10 +1,23 @@
+import { useEffect, useId, useState } from 'react'
+import { toast } from 'sonner'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardHeader, CardTitle } from '@/components/ui/Card'
+import { FieldLabel, fieldBoxClass, focusClass } from '@/components/ui/field-styles'
 import { Spinner } from '@/components/ui/Spinner'
+import { isAuthenticated } from '@/features/auth/auth-api'
+import { usePlansOnSaleQuery } from '@/features/billing/useBillingQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { Formatter } from '@/lib/format'
-import type { CreditTransactionType, SubscriptionStatus } from '@/lib/mock-db'
-import { useCompanyPanelQuery } from './useSupportQuery'
+import type { CreditTransactionType, PlanTier, SubscriptionPlan, SubscriptionStatus } from '@/lib/mock-db'
+import { cn } from '@/lib/utils'
+import { useAssignCompanyPlanMutation, useCompanyPanelQuery } from './useSupportQuery'
+
+const TIER_RANK: Record<PlanTier, number> = {
+  BASIC: 1,
+  PRO: 2,
+  ULTIMATE: 3,
+}
 
 /** Cùng nghĩa với thẻ gói của màn gói cước: đang dùng xanh lá, đã huỷ nhưng còn hiệu lực hổ phách, hết hạn đỏ. */
 const STATUS_LOOK: Record<SubscriptionStatus, { tone: BadgeTone; dot: BadgeDot }> = {
@@ -27,15 +40,61 @@ const TYPE_KEY: Record<CreditTransactionType, `billing.ledger.types.${CreditTran
 }
 
 /**
- * Khung công ty bên cạnh màn hỗ trợ (FE-8-07), **chỉ đọc**: gói và trạng thái gói, số dư credit, và các giao dịch credit gần nhất
- * (tối đa 20, mới nhất trước) của công ty đã gửi yêu cầu — để Hỗ trợ khách hàng trả lời câu hỏi thanh toán mà không phải xin thêm.
- * Số lấy từ kho (`getSupportCompanyPanel`), không nghĩ ra; công ty chưa có gói thì nói vậy.
+ * Khung công ty bên cạnh màn hỗ trợ (FE-8-07): hiển thị gói và trạng thái gói, số dư credit, và các giao dịch credit gần nhất.
+ * Khi kết nối Backend thật (`isAuthenticated()`), cho phép `SystemSupporter` đổi/nâng cấp gói cho công ty khách hàng ngay lập tức.
  */
-export function CompanyPanel({ companyId }: { companyId: string }) {
+export function CompanyPanel({ companyId, ticketClosed = false }: { companyId: string; ticketClosed?: boolean }) {
   const t = useT()
   const format = useFormat()
+  const planFieldId = useId()
+  const authed = isAuthenticated()
   const query = useCompanyPanelQuery(companyId)
+  const plansQuery = usePlansOnSaleQuery()
+  const assignPlan = useAssignCompanyPlanMutation()
   const panel = query.data
+  const [selectedPlanId, setSelectedPlanId] = useState('')
+
+  const isActiveSub = panel?.planStatus === 'ACTIVE' && Boolean(panel?.current?.plan.tier)
+  const currentRank = isActiveSub && panel?.current?.plan.tier ? TIER_RANK[panel.current.plan.tier] : 0
+
+  function isPlanDisabled(plan: SubscriptionPlan): boolean {
+    return isActiveSub && TIER_RANK[plan.tier] <= currentRank
+  }
+
+  useEffect(() => {
+    setSelectedPlanId('')
+  }, [companyId])
+
+  useEffect(() => {
+    if (selectedPlanId) return
+    const plansList = plansQuery.data ?? []
+    if (isActiveSub && plansList.length > 0) {
+      const nextUpgrade = plansList.find((p) => TIER_RANK[p.tier] > currentRank)
+      if (nextUpgrade) {
+        setSelectedPlanId(nextUpgrade.id)
+        return
+      }
+    }
+    if (panel?.current?.plan.id) {
+      setSelectedPlanId(panel.current.plan.id)
+    } else if (plansList.length > 0) {
+      setSelectedPlanId(plansList[0]?.id ?? '')
+    }
+  }, [selectedPlanId, isActiveSub, currentRank, panel?.current?.plan.id, plansQuery.data])
+
+  const selectedPlanObj = (plansQuery.data ?? []).find((p) => p.id === selectedPlanId)
+  const selectedIsBlocked = selectedPlanObj ? isPlanDisabled(selectedPlanObj) : false
+
+  async function handleQuickPlanUpdate() {
+    if (!selectedPlanId || ticketClosed || selectedIsBlocked) return
+    try {
+      const updated = await assignPlan.mutateAsync({ companyId, planId: selectedPlanId })
+      toast.success(`Đã cập nhật gói ${updated.planName ?? ''} cho ${panel?.company.name ?? 'khách hàng'}!`)
+    } catch (error) {
+      toast.error(dataErrorMessage(error, t))
+    }
+  }
+
   return (
     <Card role="region" aria-label={t('support.page.panel.title')}>
       <CardHeader>
@@ -72,6 +131,41 @@ export function CompanyPanel({ companyId }: { companyId: string }) {
               </dd>
             </div>
           </dl>
+
+          {authed ? (
+            <div className="flex flex-col gap-2.5 rounded-md border border-line-soft bg-surface p-3">
+              <FieldLabel htmlFor={planFieldId}>Đổi gói nhanh</FieldLabel>
+              <select
+                id={planFieldId}
+                value={selectedPlanId}
+                disabled={ticketClosed}
+                onChange={(e) => setSelectedPlanId(e.target.value)}
+                className={cn(fieldBoxClass(false), focusClass, 'h-9 px-2.5 text-small text-ink-strong')}
+              >
+                {(plansQuery.data ?? []).map((plan) => (
+                  <option key={plan.id} value={plan.id} disabled={isPlanDisabled(plan)}>
+                    {plan.name} — {format.currency(plan.priceVnd)}/tháng
+                  </option>
+                ))}
+              </select>
+              {ticketClosed ? (
+                <p className="m-0 text-fine text-danger">
+                  Yêu cầu hỗ trợ đã đóng. Vui lòng mở lại yêu cầu trước khi đổi gói.
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                loading={assignPlan.isPending}
+                disabled={!selectedPlanId || ticketClosed || selectedIsBlocked}
+                onClick={() => void handleQuickPlanUpdate()}
+              >
+                Cập nhật gói ngay
+              </Button>
+            </div>
+          ) : null}
+
           <section aria-label={t('support.page.panel.recent')} className="flex flex-col gap-2">
             <h3 className="m-0 text-small font-semibold text-ink-2">{t('support.page.panel.recent')}</h3>
             {panel.transactions.length === 0 ? (
@@ -93,3 +187,4 @@ export function CompanyPanel({ companyId }: { companyId: string }) {
     </Card>
   )
 }
+

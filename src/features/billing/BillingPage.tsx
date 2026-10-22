@@ -1,4 +1,4 @@
-import { Coins, RotateCcw } from 'lucide-react'
+import { Coins, FileSignature, LifeBuoy, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -6,11 +6,14 @@ import { Banner } from '@/components/Banner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { TabCount, Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
+import { isAuthenticated } from '@/features/auth/auth-api'
+import { SupportTicketDialog } from '@/features/support/SupportTicketDialog'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { PaymentTransaction } from '@/lib/mock-db'
 import { BalanceCard } from './BalanceCard'
@@ -19,7 +22,11 @@ import { PaymentsTable } from './PaymentsTable'
 import { paymentPath } from './payment-path'
 import { PlanChoiceCard } from './PlanChoiceCard'
 import { PlanSummaryCard } from './PlanSummaryCard'
+import { SignAgreementDialog } from './SignAgreementDialog'
 import { TopUpDialog } from './TopUpDialog'
+import { TrialAgreementBanner } from './TrialAgreementBanner'
+import { ViewAgreementDialog } from './ViewAgreementDialog'
+import { useMyAgreementQuery, useSignAgreementMutation } from './useAgreementQuery'
 import {
   useCancelSubscriptionMutation,
   useCreditBalanceQuery,
@@ -58,9 +65,15 @@ export function BillingPage() {
   const subscribe = useSubscribeMutation()
   const topUp = useTopUpMutation()
   const cancel = useCancelSubscriptionMutation()
+  const agreementQuery = useMyAgreementQuery()
+  const signAgreementMutation = useSignAgreementMutation()
   const list = useListUrlState<typeof HISTORY_TAB>({ filters: [HISTORY_TAB] })
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
+  const [signAgreementOpen, setSignAgreementOpen] = useState(false)
+  const [viewAgreementOpen, setViewAgreementOpen] = useState(false)
+  const isMockSession = import.meta.env.MODE === 'test' && typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('loadmaster.phien'))
 
   const current = subscription.data
   const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED')
@@ -104,10 +117,16 @@ export function BillingPage() {
         description={t('pageHero.billing')}
         actions={
           failed || loading ? null : (
-            <Button variant="primary" onClick={() => setTopUpOpen(true)}>
-              <Coins strokeWidth={1.5} />
-              {t('billing.topUp')}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" onClick={() => setSupportOpen(true)}>
+                <LifeBuoy strokeWidth={1.5} />
+                {t('nav.supportRequests')}
+              </Button>
+              <Button variant="primary" onClick={() => setTopUpOpen(true)}>
+                <Coins strokeWidth={1.5} />
+                {t('billing.topUp')}
+              </Button>
+            </div>
           )
         }
       />
@@ -138,19 +157,78 @@ export function BillingPage() {
                 })}
               </Banner>
             ) : null}
+            <TrialAgreementBanner
+              agreement={agreementQuery.data}
+              onOpenSignDialog={() => setSignAgreementOpen(true)}
+            />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               {current ? (
-                <PlanSummaryCard current={current} onCancel={() => setCancelOpen(true)} />
+                <PlanSummaryCard
+                  current={current}
+                  onCancel={() => setCancelOpen(true)}
+                  onRenew={isAuthenticated() ? () => handleSubscribe(current.plan.id) : undefined}
+                  renewPending={subscribe.isPending}
+                />
               ) : (
                 <Card><EmptyState compact mascot="empty" title={t('billing.noPlan.title')} description={t('billing.noPlan.description')} /></Card>
               )}
-              <BalanceCard credit={balance.data} />
+              <div className="flex flex-col gap-4">
+                <BalanceCard credit={balance.data} />
+                {agreementQuery.data && (
+                  <Card className="flex flex-col justify-between p-4 border border-line-soft bg-surface/50 shadow-2xs">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex size-9 items-center justify-center rounded-lg ${
+                          agreementQuery.data.status === 'SIGNED' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+                        }`}>
+                          <FileSignature className="size-4.5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <h4 className="text-small font-bold text-ink-strong">Thỏa thuận dịch vụ</h4>
+                          <span className="font-mono text-fine text-ink-3">#{agreementQuery.data.agreementCode}</span>
+                        </div>
+                      </div>
+                      {agreementQuery.data.status === 'SIGNED' ? (
+                        <Badge tone="success" dot="solid">Đã ký</Badge>
+                      ) : agreementQuery.data.isExpired ? (
+                        <Badge tone="danger" dot="solid">Quá hạn</Badge>
+                      ) : (
+                        <Badge tone="warning" dot="ring">Chờ ký ({agreementQuery.data.hoursRemaining}h)</Badge>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-line-soft pt-2.5 text-caption text-ink-2">
+                      <span className="truncate">
+                        {agreementQuery.data.status === 'SIGNED'
+                          ? `Ký bởi: ${agreementQuery.data.signerName || 'Đại diện'}`
+                          : `Hạn: ${agreementQuery.data.deadlineAt ? format.date(agreementQuery.data.deadlineAt) : '3 ngày'}`}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {agreementQuery.data.status === 'PENDING' && !agreementQuery.data.isExpired && (
+                          <Button size="sm" variant="primary" onClick={() => setSignAgreementOpen(true)} className="h-7 text-caption">
+                            Ký ngay
+                          </Button>
+                        )}
+                        <Button size="sm" variant="secondary" onClick={() => setViewAgreementOpen(true)} className="h-7 text-caption">
+                          Xem văn bản
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </div>
             </div>
-            {canSubscribe ? (
+            {(isMockSession ? canSubscribe : (canSubscribe || (isAuthenticated() && current !== null && current.subscription.status !== 'CANCELLED'))) ? (
               <PlanChoiceCard
-                plans={plans.data ?? []}
+                plans={
+                  isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED' && !isMockSession
+                    ? (plans.data ?? []).filter((plan) => plan.id === current.plan.id || plan.priceVnd > current.plan.priceVnd)
+                    : (plans.data ?? [])
+                }
                 pendingId={subscribe.isPending ? (subscribe.variables ?? null) : null}
+                currentPlanId={!isMockSession && isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED' ? current.plan.id : null}
+                currentPlanTier={!isMockSession && isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED' ? current.plan.tier : null}
                 onSubscribe={(plan) => handleSubscribe(plan.id)}
+                onRequestUpgrade={!isMockSession && isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED' ? () => setSupportOpen(true) : undefined}
               />
             ) : null}
             <Card role="region" aria-labelledby="billing-history" className="relative flex-none overflow-hidden">
@@ -175,7 +253,15 @@ export function BillingPage() {
         )}
       </div>
 
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} pending={topUp.isPending} onConfirm={handleTopUp} />
+      <TopUpDialog
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        pending={topUp.isPending}
+        onConfirm={handleTopUp}
+        tier={isMockSession ? undefined : (isAuthenticated() ? (current?.plan.tier ?? 'BASIC') : undefined)}
+        currentBalance={isMockSession ? undefined : (isAuthenticated() ? (balance.data?.balance ?? 0) : undefined)}
+      />
+      {supportOpen ? <SupportTicketDialog onClose={() => setSupportOpen(false)} /> : null}
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
@@ -186,6 +272,26 @@ export function BillingPage() {
         danger
         pending={cancel.isPending}
         onConfirm={handleCancel}
+      />
+      <SignAgreementDialog
+        agreement={agreementQuery.data ?? null}
+        open={signAgreementOpen}
+        onClose={() => setSignAgreementOpen(false)}
+        onSign={async (data) => {
+          try {
+            await signAgreementMutation.mutateAsync(data)
+            setSignAgreementOpen(false)
+            toast.success('Ký thỏa thuận dịch vụ thành công!')
+          } catch (err: any) {
+            toast.error(err?.message || 'Không thể ký thỏa thuận. Vui lòng thử lại.')
+          }
+        }}
+        isSigning={signAgreementMutation.isPending}
+      />
+      <ViewAgreementDialog
+        agreement={agreementQuery.data ?? null}
+        open={viewAgreementOpen}
+        onClose={() => setViewAgreementOpen(false)}
       />
     </div>
   )

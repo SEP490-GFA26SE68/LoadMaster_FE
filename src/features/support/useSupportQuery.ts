@@ -1,8 +1,10 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { NewSupportTicket, TicketStatus } from '@/lib/mock-db'
 import {
+  assignCompanyPlan,
   createSupportTicket,
   getSupportCompanyPanel,
+  listAllCompanyContracts,
   listSupportTickets,
   replyToSupportTicket,
   setSupportTicketStatus,
@@ -26,9 +28,17 @@ export function useCompanyPanelQuery(companyId: string | undefined) {
   })
 }
 
+export function useAllCompanyContractsQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['support', 'contracts'],
+    queryFn: enabled ? listAllCompanyContracts : skipToken,
+    staleTime: 0,
+  })
+}
+
 function useRefreshSupport() {
   const client = useQueryClient()
-  return () => Promise.all(['support', 'audit', 'notifications'].map((key) => client.invalidateQueries({ queryKey: [key] })))
+  return () => Promise.all(['support', 'billing', 'audit', 'notifications'].map((key) => client.invalidateQueries({ queryKey: [key] })))
 }
 
 export function useCreateTicketMutation() {
@@ -45,3 +55,12 @@ export function useSetTicketStatusMutation() {
   const refresh = useRefreshSupport()
   return useMutation({ mutationFn: ({ ticketId, status }: { ticketId: string; status: TicketStatus }) => setSupportTicketStatus(ticketId, status), onSuccess: refresh })
 }
+
+export function useAssignCompanyPlanMutation() {
+  const refresh = useRefreshSupport()
+  return useMutation({
+    mutationFn: ({ companyId, planId }: { companyId: string; planId: string }) => assignCompanyPlan(companyId, planId),
+    onSuccess: refresh,
+  })
+}
+

@@ -21,7 +21,6 @@ import { SegregationCard } from './SegregationCard'
 import { SegregationOverrideDialog } from './SegregationOverrideDialog'
 import { StopFormDialog } from './StopFormDialog'
 import { cargoSummary, stopRows, type StopRow } from './trip-summary'
-import { TripDetailHeader } from './TripDetailHeader'
 import { TripDetailSide } from './TripDetailSide'
 import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
@@ -29,6 +28,9 @@ import { TripRouteCard } from './TripRouteCard'
 import { TripReadinessCard } from './TripReadinessCard'
 import { useTripEtaQuery } from './useRouteQuery'
 import { useSegregationGuard } from './useSegregationQuery'
+import { BackendTripRouteCard } from './BackendTripRouteCard'
+import { StatusBadge } from '@/components/StatusBadge'
+
 import {
   useDeletePackageMutation,
   useDuplicatePackageMutation,
@@ -37,25 +39,353 @@ import {
   useTripDetailQuery,
   useTripStopsMutation,
 } from './useTripsQuery'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  fetchBackendActiveRoutePlan,
+  fetchBackendTripDetail,
+  optimizeBackendTrip,
+} from './trips-api'
+import { RealTripDetailHeader, TripDetailHeader } from './TripDetailHeader'
+import { Plus, Route } from 'lucide-react'
+import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
 
-/**
- * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097; V2.3 LM-103): dải trời có tên chuyến, tiến trình và banner
- * theo pha; card sơ đồ tuyến đè lên đáy dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
- * phải (tóm tắt hàng, phương tiện, sự cố). Chọn một kiện thì cột phải thành panel kiện và sơ đồ tuyến thu về cột trái
- * (`ChiTietChuyenKien.jpg`).
- * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
- * xếp, banner nói lý do và mọi thao tác sửa ẩn đi. LM-104: chuyến còn lập kế hoạch có card "Kiểm tra trước khi tối ưu" đầu cột phải;
- * dưới bảng kiện là "Yêu cầu giao của chuyến" (đưa vào / gỡ yêu cầu khi có quyền `trips.edit`). FE-4b-04: điểm giao tự sinh khi đưa
- * yêu cầu vào chuyến; chân card sơ đồ tuyến có "Thêm điểm giao" cho điểm tay. Chuyến chưa có điểm giao nào thì chưa thêm kiện tay được
- * — kiện phải thuộc một điểm giao. FE-4b-05: dưới thẻ yêu cầu giao là "Kiện đưa thẳng từ kho kiện" (thêm / bỏ kiện Đã nhập).
- * FE-4b-09: đầu card sơ đồ tuyến có "Tối ưu tuyến" (quyền `routes.optimize`), mỗi điểm có giờ đến dự kiến và mức hạn, dưới là bản đồ
- * tuyến (`RouteMap`); kéo đổi thứ tự điểm thì giờ đến tính lại. FE-4b-06: cột phải có thẻ "Phân nhóm hàng"; lưu một kiện khác loại
- * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-04: chuyến đang xếp / đang giao còn xác nhận tay chờ duyệt thì thẻ "Xác nhận tay
- * chờ duyệt" đứng đầu cột chính.
- * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
- * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
- */
-export function TripDetailPage() {
+
+function getDeadlineStatus(
+  plannedArrival: string | null,
+  deadline: string | null,
+): 'onTime' | 'late' | 'unknown' {
+  if (!plannedArrival || !deadline) return 'unknown'
+
+  const arrivalMs = Date.parse(`${plannedArrival}+07:00`)
+  const deadlineMs = Date.parse(`${deadline}+07:00`)
+
+  if (!Number.isFinite(arrivalMs) || !Number.isFinite(deadlineMs)) {
+    return 'unknown'
+  }
+
+  return arrivalMs <= deadlineMs ? 'onTime' : 'late'
+}
+
+
+
+function getStopStatusKey(status: string) {
+  switch (status) {
+    case 'PENDING':
+      return 'trips.detail.stopStatus.PENDING' as const
+    case 'ARRIVED':
+      return 'trips.detail.stopStatus.ARRIVED' as const
+    case 'DELIVERED':
+      return 'trips.detail.stopStatus.DELIVERED' as const
+    case 'FAILED':
+      return 'trips.detail.stopStatus.FAILED' as const
+    case 'SKIPPED':
+      return 'trips.detail.stopStatus.SKIPPED' as const
+    default:
+      return null
+  }
+}
+
+
+function BackendTripDetail({ tripId }: { tripId: string }) {
+  const t = useT()
+  const can = useCan()
+
+  const [assigning, setAssigning] = useState(false)
+
+  const queryClient = useQueryClient()
+
+  const optimizeRoute = useMutation({
+    mutationFn: () => optimizeBackendTrip(tripId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['trips', tripId],
+      })
+
+      toast.success(t('trips.optimization.success'))
+    },
+
+    onError: (error) => {
+      toast.error(dataErrorMessage(error, t))
+    },
+  })
+
+
+  const query = useQuery({
+    queryKey: ['trips', tripId, 'backend-detail'],
+    queryFn: () => fetchBackendTripDetail(tripId),
+    enabled: tripId !== '',
+  })
+
+
+  const routePlanQuery = useQuery({
+    queryKey: ['trips', tripId, 'active-route-plan'],
+    queryFn: () => fetchBackendActiveRoutePlan(tripId),
+    enabled: tripId !== '',
+    retry: false,
+  })
+
+
+  if (query.isPending) {
+    return (
+      <div
+        role="status"
+        aria-label={t('trips.detail.loading')}
+        className="grid flex-1 place-items-center"
+      >
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="flex flex-col items-start gap-3 px-shell py-8">
+        <p role="alert" className="text-body text-danger">
+          {dataErrorMessage(query.error, t)}
+        </p>
+        <Button variant="secondary" asChild>
+          <Link to="/chuyen">{t('common.backToTrips')}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const { trip, stops } = query.data
+  const canAssign =
+    can('trips.edit') &&
+    trip.status === 'DRAFT'
+  const canOptimize =
+    can('trips.edit') &&
+    (trip.status === 'DRAFT' || trip.status === 'PLANNED') &&
+    stops.length > 0
+
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <RealTripDetailHeader tripId={tripId} />
+
+      <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
+        <div className="flex flex-col gap-4">
+
+          {canOptimize ? (
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Button
+                type="button"
+                loading={optimizeRoute.isPending}
+                disabled={optimizeRoute.isPending}
+                onClick={() => optimizeRoute.mutate()}
+              >
+                <Route className="size-4" />
+                {t('trips.optimization.run')}
+              </Button>
+            </div>
+          ) : null}
+
+
+          <BackendTripRouteCard
+            trip={trip}
+            stops={stops}
+            routePlan={routePlanQuery.data ?? null}
+          />
+
+
+
+          <section className="rounded-xl border border-border bg-bg p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-ink-strong">
+                Thông tin vận hành
+              </h2>
+
+              <StatusBadge status={trip.status} />
+            </div>
+
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Mã chuyến</dt>
+                <dd className="break-all font-mono text-sm font-semibold">
+                  {trip.tripCode}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Xe vận chuyển</dt>
+                <dd className="text-sm font-medium">
+                  {trip.vehicleName}
+                </dd>
+                <dd className="mt-1 font-mono text-xs text-text-2">
+                  {trip.licensePlate}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Tài xế</dt>
+                <dd className="text-sm font-medium">
+                  {trip.driverName ?? t('trips.detail.noDriver')}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="mb-1 text-xs text-text-2">Giờ xuất phát</dt>
+                <dd className="text-sm font-medium tabular-nums">
+                  {trip.departureTime?.replace('T', ' ') ?? '—'}
+                </dd>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3 sm:col-span-2">
+                <dt className="mb-1 text-xs text-text-2">Kho xuất phát</dt>
+                <dd className="text-sm font-medium">
+                  {trip.originName}
+                </dd>
+                {trip.originAddress ? (
+                  <dd className="mt-1 text-xs text-text-2">
+                    {trip.originAddress}
+                  </dd>
+                ) : null}
+              </div>
+            </dl>
+          </section>
+
+          <section className="rounded-lg border border-border bg-bg p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {t('trips.detail.deliveryStops')}
+                </h2>
+
+                <p className="mt-1 text-sm text-text-2">
+                  {stops.length} {t('trips.detail.stopUnit')}
+                </p>
+              </div>
+
+              {canAssign ? (
+                <Button
+                  type="button"
+                  onClick={() => setAssigning(true)}
+                >
+                  <Plus className="size-4" />
+                  {t('trips.assign.title')}
+                </Button>
+              ) : null}
+            </div>
+
+            {stops.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+                <p className="font-medium">
+                  {t('trips.detail.noStops')}
+                </p>
+                <p className="mt-2 text-sm text-text-2">
+                  {t('trips.detail.noStopsHint')}
+                </p>
+              </div>
+            ) : (
+              <ol className="space-y-3">
+                {stops.map((stop) => (
+                  <li
+                    key={stop.id}
+                    className="flex flex-col gap-3 rounded-xl border border-border bg-bg p-4 shadow-sm transition-colors hover:border-primary/30 sm:flex-row sm:items-start"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-semibold text-primary">
+                      {stop.stopSequence}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">
+                          {stop.stopName ||
+                            stop.address ||
+                            t('trips.detail.unnamedStop')}
+                        </h3>
+
+
+                        <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium">
+                          {getStopStatusKey(stop.status)
+                            ? t(getStopStatusKey(stop.status)!)
+                            : stop.status}
+                        </span>
+
+                      </div>
+
+                      {stop.address && (
+                        <p className="mt-1 text-sm text-text-2">
+                          {stop.address}
+                        </p>
+                      )}
+
+                      {stop.deliveryRequirementId !== null && (
+                        <p className="mt-2 text-xs text-text-2">
+                          {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.plannedArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.plannedArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-text-2">
+                            {t('trips.detail.actualArrival')}:
+                          </span>{' '}
+                          <span className="font-medium">
+                            {stop.actualArrival?.replace('T', ' ') ?? '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-text-2">
+                          {t('trips.detail.deadlineStatus')}:
+                        </span>
+
+                        {(() => {
+                          const status = getDeadlineStatus(
+                            stop.plannedArrival,
+                            stop.deadline,
+                          )
+
+                          return (
+                            <span
+                              className={
+                                status === 'onTime'
+                                  ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700'
+                                  : status === 'late'
+                                    ? 'rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700'
+                                    : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'
+                              }
+                            >
+                              {t(`trips.detail.deadlineStatusValues.${status}`)}
+                            </span>
+                          )
+                        })()}
+                      </div>
+
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {canAssign ? (
+        <BackendRequirementAssignDialog
+          open={assigning}
+          onOpenChange={setAssigning}
+          tripId={tripId}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function MockTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
   const can = useCan()
@@ -71,6 +401,7 @@ export function TripDetailPage() {
   const [draft, setDraft] = useState<CargoPackage | null>(null)
   const [importing, setImporting] = useState(false)
   const [assigning, setAssigning] = useState(false)
+
   const [addingStop, setAddingStop] = useState(false)
   const [pickingPool, setPickingPool] = useState(false)
   // Điểm giao đang lọc bảng kiện: điểm trên sơ đồ tuyến và ô chọn trên bảng dùng chung
@@ -189,20 +520,20 @@ export function TripDetailPage() {
             {editing ? (
               // Ô lưới giãn hết hai hàng để panel tự dính (sticky, card riêng của panel) khi cuộn bảng kiện; không bọc thêm card
               <div className="min-w-0 xl:self-stretch xl:[grid-area:side]">
-              <PackageFormPanel
-                key={editing.id}
-                tripId={tripId}
-                value={editing}
-                vehicle={vehicle}
-                stops={stops}
-                readOnly={!editable}
-                onSave={handleSave}
-                onDelete={trip.packages.some((pkg) => pkg.id === editing.id)
-                  ? (pkg) => deletePackage.mutate(pkg.id, { onSuccess: () => setEditing(null) })
-                  : undefined}
-                onDuplicate={trip.packages.some((pkg) => pkg.id === editing.id) ? handleDuplicate : undefined}
-                onClose={() => setEditing(null)}
-              />
+                <PackageFormPanel
+                  key={editing.id}
+                  tripId={tripId}
+                  value={editing}
+                  vehicle={vehicle}
+                  stops={stops}
+                  readOnly={!editable}
+                  onSave={handleSave}
+                  onDelete={trip.packages.some((pkg) => pkg.id === editing.id)
+                    ? (pkg) => deletePackage.mutate(pkg.id, { onSuccess: () => setEditing(null) })
+                    : undefined}
+                  onDuplicate={trip.packages.some((pkg) => pkg.id === editing.id) ? handleDuplicate : undefined}
+                  onClose={() => setEditing(null)}
+                />
               </div>
             ) : (
               // Chuyến còn lập kế hoạch: "Kiểm tra trước khi tối ưu" đứng đầu cột phải (LM-104)
@@ -217,4 +548,18 @@ export function TripDetailPage() {
       )}
     </div>
   )
+}
+
+export function TripDetailPage() {
+  const { tripId = '' } = useParams()
+
+  // Các chuyến có ID số được tạo từ Backend hiện tại.
+  if (/^[1-9]\d*$/.test(tripId)) {
+    return <BackendTripDetail tripId={tripId} />
+  }
+
+
+
+  // Các chuyến mẫu giữ nguyên luồng cũ.
+  return <MockTripDetailPage />
 }

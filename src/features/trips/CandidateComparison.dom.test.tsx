@@ -102,7 +102,7 @@ test('the run of the seed trip: deadlines once on top, then cards A, B, C with t
 test('a truck without axles shows why the axle loads are not computed; stale plans are flagged; the manager gets no way to run again', async () => {
   // TRIP-013: "Truck 6m" của Spec không khai trục, và chuyến đã sửa kiện sau khi duyệt
   const [run] = await getMockDb().listOptimizationRuns('TRIP-013')
-  renderRun('TRIP-013', run?.id ?? '', 'manager')
+  renderRun('TRIP-013', run?.id ?? '', 'companyManager')
   const a = await candidate('Phương án A — Tối đa thể tích')
   expect(metric(a, 'Tải trục trước').value).toBe('Chưa tính đượcXe chưa khai báo trục')
   expect(a.queryByText('Chênh mức tải hai trục')).toBeNull()

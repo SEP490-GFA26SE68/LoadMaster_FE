@@ -1,5 +1,5 @@
 import { RotateCcw } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useSearchParams, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
@@ -7,7 +7,9 @@ import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
+import { isAuthenticated } from '@/features/auth/auth-api'
 import { dataErrorMessage, useFormat, useT, type TFunction } from '@/lib/i18n'
 import { MockDbError, type PaymentTransaction } from '@/lib/mock-db'
 import type { Checkout } from './payment-api'
@@ -33,13 +35,6 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-/**
- * Thanh toán giả lập `/thanh-toan/gia-lap?giao-dich=<mã>` (FE-8-04, D-89) — thay cổng thanh toán thật khi chưa có backend; trung tính,
- * không mang tên, logo hay màu của cổng nào, và nói rõ đây là giả lập. Hiện số tiền, nội dung, mã giao dịch và ba nút Thành công /
- * Thất bại / Huỷ. Thành công kích hoạt gói hoặc cộng credit **đúng một lần** — việc đó do kho bảo đảm (`settlePayment` trả nguyên kết
- * quả cũ nếu giao dịch đã xử lý), trang không tự chặn thêm: giao dịch đã xử lý thì chỉ hiện kết quả, không còn nút. Xong thì về
- * `/goi-cuoc` kèm toast nói đúng điều đã xảy ra. Mã không có, hoặc của công ty khác: màn "Không tìm thấy giao dịch".
- */
 export function PaymentSimulationPage() {
   const t = useT()
   const format = useFormat()
@@ -48,6 +43,11 @@ export function PaymentSimulationPage() {
   const paymentId = params.get(PAYMENT_PARAM) ?? ''
   const checkout = useCheckoutQuery(paymentId)
   const settle = useSettlePaymentMutation()
+
+  const [cardNumber, setCardNumber] = useState('9704198526191432198')
+  const [cardHolder, setCardHolder] = useState('NGUYEN VAN A')
+  const [issueDate, setIssueDate] = useState('07/15')
+  const [otp, setOtp] = useState('123456')
 
   function handleChoose(data: Checkout, choice: Choice) {
     settle.mutate({ paymentId: data.payment.id, outcome: choice === 'SUCCESS' ? 'SUCCESS' : 'FAILED' }, {
@@ -60,6 +60,16 @@ export function PaymentSimulationPage() {
     })
   }
 
+  function handleCardSubmit(data: Checkout) {
+    const cleanCard = cardNumber.replace(/\s+/g, '')
+    if (cleanCard !== '9704198526191432198' || otp.trim() !== '123456') {
+      toast.error('Thông tin thẻ test NCB hoặc OTP không đúng (Số thẻ: 9704198526191432198, OTP: 123456)')
+      return
+    }
+    handleChoose(data, 'SUCCESS')
+  }
+
+  const isMockSession = import.meta.env.MODE === 'test' && typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('loadmaster.phien'))
   const notFound = paymentId === '' || (checkout.error instanceof MockDbError && checkout.error.code === 'NOT_FOUND')
   const data = checkout.data
 
@@ -98,6 +108,44 @@ export function PaymentSimulationPage() {
               </dl>
               {data.payment.status === 'PENDING' ? (
                 <>
+                  {isAuthenticated() && !isMockSession ? (
+                    <div className="flex flex-col gap-3 rounded-lg border border-line-soft bg-surface p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-ink-strong">Thẻ nội địa NCB (VNPay Sandbox)</span>
+                        {data.paymentUrl?.startsWith('http') ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              window.location.href = data.paymentUrl!
+                            }}
+                          >
+                            Mở trang sandbox.vnpayment.vn
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label className="flex flex-col gap-1 text-small text-ink-2 sm:col-span-2">
+                          <span>Số thẻ (Ngân hàng NCB)</span>
+                          <Input value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="9704198526191432198" />
+                        </label>
+                        <label className="flex flex-col gap-1 text-small text-ink-2">
+                          <span>Tên chủ thẻ</span>
+                          <Input value={cardHolder} onChange={(e) => setCardHolder(e.target.value)} placeholder="NGUYEN VAN A" />
+                        </label>
+                        <label className="flex flex-col gap-1 text-small text-ink-2">
+                          <span>Ngày phát hành (MM/YY)</span>
+                          <Input value={issueDate} onChange={(e) => setIssueDate(e.target.value)} placeholder="07/15" />
+                        </label>
+                        <label className="flex flex-col gap-1 text-small text-ink-2 sm:col-span-2">
+                          <span>Mã OTP Sandbox</span>
+                          <Input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" />
+                        </label>
+                      </div>
+                      <Button variant="primary" loading={settle.isPending} onClick={() => handleCardSubmit(data)}>
+                        Xác nhận thanh toán thẻ NCB
+                      </Button>
+                    </div>
+                  ) : null}
                   <p className="m-0 text-small text-ink-2">{t('payment.hint')}</p>
                   <div className="flex flex-wrap justify-end gap-2.5">
                     <Button variant="ghost" disabled={settle.isPending} onClick={() => handleChoose(data, 'CANCELLED')}>{t('payment.cancel')}</Button>

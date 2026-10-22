@@ -24,6 +24,16 @@ export type Company = {
   address: string
   phone: string
   depot: CompanyDepot
+  taxId?: string
+  billingEmail?: string
+  backendId?: number
+  code?: string
+  status?: string
+}
+
+export type CompanyOption = {
+  readonly id: string
+  readonly name: string
 }
 
 /**

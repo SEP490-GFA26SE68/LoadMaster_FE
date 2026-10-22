@@ -99,7 +99,7 @@ test('filters read from the URL: handling class and "not in a requirement or a t
 })
 
 test('the company manager reads the pool but gets no write button, no selection and no flag action', async () => {
-  const user = renderPool('manager')
+  const user = renderPool('companyManager')
   expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   for (const name of ['Thêm kiện', 'Nhập file']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Loại kiện' })).not.toBeInTheDocument()

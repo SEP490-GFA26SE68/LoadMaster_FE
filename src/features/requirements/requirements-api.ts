@@ -1,13 +1,5 @@
-/**
- * Hàm → endpoint backend (FE-0-09, issue BE S4b-02); nối backend chỉ thay thân hàm.
- *   listDeliveryRequirements   → GET /api/delivery-requirements
- *   getDeliveryRequirement     → GET /api/delivery-requirements/{id}
- *   createDeliveryRequirement  → POST /api/delivery-requirements
- *   updateDeliveryRequirement  → PATCH /api/delivery-requirements/{id}
- *   deleteDeliveryRequirement  → DELETE /api/delivery-requirements/{id}
- *   chưa có ở BE: fetchSelectablePackages, fetchAssignableTrips, assignRequirementToTrip, unassignRequirementFromTrip (đưa cả yêu
- *   cầu vào chuyến — BE có POST /api/trips/{id}/packages theo từng kiện; điểm giao tự sinh ở kho mock, FE-4b-04)
- */
+import { apiFetch } from '@/lib/api-client'
+
 
 import { roundKg } from '@/domain/geometry'
 import {
@@ -25,17 +17,213 @@ import {
   type Trip,
 } from '@/lib/mock-db'
 
-/**
- * Lớp dữ liệu yêu cầu giao (FE-4b-02, D-72): quản lý công ty lập yêu cầu từ kiện `IMPORTED` của kho kiện; điều phối viên đưa vào
- * chuyến đang lập kế hoạch — điểm giao tự sinh (FE-4b-04, D-73). Đưa vào chuyến thêm dòng kiện vào chuyến nên chuyến và revision
- * cũng đổi (lỗi thời, D-31).
- */
+import {
+  fetchPackage,
+  type CargoPackage,
+} from '@/features/package-pool/packages-api'
 
-export type RequirementPackage = { readonly package: Package; readonly type: PackageType | undefined }
 
-function withType(pkg: Package, typeById: ReadonlyMap<string, PackageType>): RequirementPackage {
-  return { package: pkg, type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId) }
+
+
+type DeliveryRequirementApi = {
+  id: number
+  companyId: number
+  customerId: number | null
+  customerName: string | null
+  destination: string
+  destinationLat: number | null
+  destinationLng: number | null
+  deadline: string
+  priority: DeliveryRequirement['priority']
+  status: DeliveryRequirement['status']
+  expectedPackageCount: number | null
+  receivedPackageCount: number
+  packageIds: number[]
+  note: string | null
+  tripId: number | null
+  tripCode: string | null
+  createdBy: number | null
+  createdAt: string
 }
+
+type RequirementPageApi = {
+  success: boolean
+  data: DeliveryRequirementApi[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
+type RequirementDetailApi = {
+  success: boolean
+  data: DeliveryRequirementApi
+}
+function vietnamIso(value: string): string {
+  return /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    ? value
+    : `${value}+07:00`
+}
+
+function toVietnamLocalDateTime(value: string): string {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid deadline')
+  }
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:00`
+}
+
+function requirementFromApi(
+  api: DeliveryRequirementApi,
+): DeliveryRequirement {
+  return {
+    id: String(api.id),
+    companyId: String(api.companyId),
+
+    customerId: api.customerId == null
+      ? undefined
+      : String(api.customerId),
+    customerName: api.customerName ?? undefined,
+
+    // Backend hiện chưa lưu tên điểm đến riêng.
+    destinationName: api.destination,
+    address: api.destination,
+
+    ...(api.destinationLat == null
+      ? {}
+      : { lat: api.destinationLat }),
+    ...(api.destinationLng == null
+      ? {}
+      : { lng: api.destinationLng }),
+
+    deadline: vietnamIso(api.deadline),
+    priority: api.priority,
+    status: api.status,
+    packageIds: api.packageIds.map(String),
+
+    expectedPackageCount: api.expectedPackageCount ?? undefined,
+    receivedPackageCount: api.receivedPackageCount,
+
+    note: api.note ?? undefined,
+    tripId: api.tripId == null ? undefined : String(api.tripId),
+    tripCode: api.tripCode == null ? undefined : String(api.tripCode),
+    createdBy: api.createdBy == null ? null : String(api.createdBy),
+    createdAt: vietnamIso(api.createdAt),
+  }
+}
+
+function requirementRowFromApi(
+  api: DeliveryRequirementApi,
+): RequirementRow {
+  const requirement = requirementFromApi(api)
+
+  return {
+    requirement,
+    status: requirement.status,
+    closed: false,
+    packages: [],
+    totalKg: 0,
+    trip: undefined,
+    stopNumber: undefined,
+    createdByName: null,
+  }
+}
+
+function packageViewFromApi(
+  pkg: CargoPackage,
+): RequirementPackageView {
+  return {
+    id: pkg.id,
+    packageCode: pkg.packageCode,
+    lengthCm: pkg.lengthCm,
+    widthCm: pkg.widthCm,
+    heightCm: pkg.heightCm,
+    weightKg: pkg.weightKg,
+    handlingClass: pkg.handlingClass,
+    destination: pkg.destination,
+    status: pkg.status,
+  }
+}
+
+export type RequirementPackageView = {
+  id: string
+  packageCode: string
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  weightKg: number
+  handlingClass: CargoPackage['handlingClass']
+  destination: string
+  status: CargoPackage['status']
+}
+
+
+
+export type RequirementPackage = {
+  readonly package: RequirementPackageView
+  readonly type: PackageType | undefined
+}
+
+
+function withType(
+  pkg: Package,
+  typeById: ReadonlyMap<string, PackageType>,
+): RequirementPackage {
+  return {
+    package: {
+      id: pkg.id,
+      packageCode: pkg.packageCode,
+      lengthCm: pkg.lengthCm,
+      widthCm: pkg.widthCm,
+      heightCm: pkg.heightCm,
+      weightKg: pkg.weightKg,
+      handlingClass: pkg.handlingClass,
+      destination: pkg.destination,
+      status: mockPackageStatusLabel(pkg.status),
+    },
+    type: pkg.packageTypeId === undefined
+      ? undefined
+      : typeById.get(pkg.packageTypeId),
+  }
+}
+
+
+function mockPackageStatusLabel(
+  status: Package['status'],
+): CargoPackage['status'] {
+  switch (status) {
+    case 'IMPORTED':
+      return 'PENDING'
+    case 'ASSIGNED':
+    case 'STAGED':
+      return 'PLANNED'
+    case 'LOADED':
+    case 'IN_TRANSIT':
+      return 'LOADED'
+    case 'DELIVERED':
+      return 'DELIVERED'
+    case 'RETURNED':
+      return 'CANCELLED'
+  }
+}
+
+
 
 /** Một yêu cầu kèm kiện (kèm loại kiện nếu kiện gắn loại), trạng thái hiển thị, tổng khối lượng, chuyến đang chở và người lập. */
 export type RequirementRow = {
@@ -84,19 +272,100 @@ function toRow(requirement: DeliveryRequirement, context: Awaited<ReturnType<typ
 
 // GET /api/delivery-requirements
 export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
-  const [requirements, context] = await Promise.all([getMockDb().listDeliveryRequirements(), requirementContext()])
-  return requirements.map((requirement) => toRow(requirement, context))
+  const size = 100
+
+  const first = await apiFetch<RequirementPageApi>(
+    `/api/delivery-requirements?page=0&size=${size}`,
+  )
+
+  const results = [...first.data]
+
+  for (let page = 1; page < first.totalPages; page++) {
+    const response = await apiFetch<RequirementPageApi>(
+      `/api/delivery-requirements?page=${page}&size=${size}`,
+    )
+
+    results.push(...response.data)
+  }
+
+  return results.map(requirementRowFromApi)
 }
 
 // GET /api/delivery-requirements/{id}
-export async function getDeliveryRequirement(id: string): Promise<RequirementRow> {
-  const [requirement, context] = await Promise.all([getMockDb().getDeliveryRequirement(id), requirementContext()])
-  return toRow(requirement, context)
+
+export async function getDeliveryRequirement(
+  id: string,
+): Promise<RequirementRow> {
+  const response = await apiFetch<RequirementDetailApi>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}`,
+  )
+
+  const api = response.data
+  const row = requirementRowFromApi(api)
+
+  const packages = await Promise.all(
+    api.packageIds.map((packageId) =>
+      fetchPackage(String(packageId)),
+    ),
+  )
+
+  const members = packages
+
+
+
+  return {
+    ...row,
+    packages: members.map((pkg) => ({
+      package: packageViewFromApi(pkg),
+      type: undefined,
+    })),
+    totalKg: roundKg(
+      members.reduce(
+        (sum, pkg) => sum + pkg.weightKg,
+        0,
+      ),
+    ),
+  }
 }
 
+
+
 // POST /api/delivery-requirements
-export function createDeliveryRequirement(input: RequirementInput): Promise<DeliveryRequirement> {
-  return getMockDb().createDeliveryRequirement(input)
+export async function createDeliveryRequirement(
+  input: RequirementInput,
+): Promise<DeliveryRequirement> {
+  const customerId = Number(input.customerId)
+  const expectedPackageCount = input.expectedPackageCount
+
+  if (
+    !Number.isSafeInteger(customerId) ||
+    customerId <= 0 ||
+    !Number.isSafeInteger(expectedPackageCount) ||
+    expectedPackageCount === undefined ||
+    expectedPackageCount < 1
+  ) {
+    throw new Error('Invalid customer or expected package count')
+  }
+
+  const response = await apiFetch<RequirementDetailApi>(
+    '/api/delivery-requirements',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        customerId,
+        destination: input.address.trim(),
+        destinationLat: input.lat ?? null,
+        destinationLng: input.lng ?? null,
+        deadline: toVietnamLocalDateTime(input.deadline),
+        priority: input.priority,
+        expectedPackageCount,
+        note: input.note?.trim() ?? null,
+        packageIds: [],
+      }),
+    },
+  )
+
+  return requirementFromApi(response.data)
 }
 
 // PATCH /api/delivery-requirements/{id}
@@ -104,9 +373,95 @@ export function updateDeliveryRequirement(id: string, changes: RequirementChange
   return getMockDb().updateDeliveryRequirement(id, changes)
 }
 
+
+export type RequirementCoordinatesInput = {
+  destinationLat: number
+  destinationLng: number
+}
+
+export async function updateRequirementCoordinates(
+  id: string,
+  input: RequirementCoordinatesInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<RequirementDetailApi>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}/coordinates`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
+
+
+export type UpdateRequirementScheduleInput = {
+  deadline?: string
+  priority?: string
+}
+
+/**
+ * Sửa hạn giao và ưu tiên khi Trip còn DRAFT/PLANNED.
+ * Không gửi các trường khách hàng, địa chỉ hay kiện hàng.
+ */
+export async function updateRequirementSchedule(
+  id: string,
+  input: UpdateRequirementScheduleInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<{
+    success: boolean
+    data: DeliveryRequirementApi
+  }>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
+export type ExtendRequirementDeadlineInput = {
+  newDeadline: string
+  reason: string
+}
+
+/**
+ * Gia hạn khi Trip đang IN_TRANSIT.
+ * Backend kiểm tra quyền, deadline và ghi Audit Log.
+ */
+export async function extendRequirementDeadline(
+  id: string,
+  input: ExtendRequirementDeadlineInput,
+): Promise<DeliveryRequirement> {
+  const response = await apiFetch<{
+    success: boolean
+    data: DeliveryRequirementApi
+  }>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}/extend-deadline`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  )
+
+  return requirementFromApi(response.data)
+}
+
+
 // DELETE /api/delivery-requirements/{id}
-export function deleteDeliveryRequirement(id: string): Promise<void> {
-  return getMockDb().deleteDeliveryRequirement(id)
+// DELETE /api/delivery-requirements/{id}
+export async function deleteDeliveryRequirement(
+  id: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/api/delivery-requirements/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+    },
+  )
 }
 
 /** Kiện chọn được cho yêu cầu mới: còn ở kho kiện (`IMPORTED`), không cờ, chưa thuộc yêu cầu nào. Mới nhất trước, như bảng kho kiện. */

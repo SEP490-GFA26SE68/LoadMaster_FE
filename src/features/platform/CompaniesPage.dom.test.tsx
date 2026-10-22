@@ -57,8 +57,10 @@ async function fillForm(user: ReturnType<typeof userEvent.setup>, dialog: HTMLEl
 test('lists the companies with plan, plan status and the number of users', async () => {
   renderCompanies()
   expect(await screen.findByText('2 công ty', {}, SLOW)).toBeInTheDocument()
-  expect(cellsOf(await rowOf('Vận tải Long Bình'))).toStrictEqual(['Công ty TNHH Vận tải Long BìnhLOG-001', 'ProPro', 'Đang hoạt động', '12', ''])
-  expect(cellsOf(await rowOf('Giao nhận Phương Nam'))).toStrictEqual(['Công ty CP Giao nhận Phương NamLOG-002', 'BasicBasic', 'Đang hoạt động', '5', ''])
+  expect(cellsOf(await rowOf('Vận tải Long Bình'))).toStrictEqual(['Công ty TNHH Vận tải Long BìnhLOG-001', 'Dương Thị Kim Oanhqtcongty@loadmaster.vn', 'ProPro', 'Đang hoạt động', '12', ''])
+  expect(cellsOf(await rowOf('Giao nhận Phương Nam'))).toStrictEqual(['Công ty CP Giao nhận Phương NamLOG-002', 'Châu Minh Tríqtcongty@phuongnam.vn', 'BasicBasic', 'Đang hoạt động', '5', ''])
+  expect(await screen.findByText('Số dòng mỗi trang', {}, SLOW)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Trang sau' })).toBeInTheDocument()
 })
 
 test('a first admin whose email is already taken is refused with the store message; the dialog stays open with what was typed', async () => {
@@ -90,12 +92,12 @@ test('creating a company shows the temporary password of its first admin once; t
 
   const password = await screen.findByRole('textbox', { name: 'Mật khẩu tạm' }, SLOW)
   expect((password as HTMLInputElement).value).toMatch(/^[A-Za-z2-9]{10}$/)
-  expect(screen.getByText(/ha\.ho@bienho\.vn/)).toBeInTheDocument()
+  expect(screen.getAllByText(/ha\.ho@bienho\.vn/).length).toBeGreaterThanOrEqual(1)
   await user.click(screen.getByRole('button', { name: 'Xong' }))
   // Đóng hộp thoại là không xem lại được
   expect(screen.queryByRole('textbox', { name: 'Mật khẩu tạm' })).not.toBeInTheDocument()
   await waitFor(() => expect(screen.getByText('3 công ty')).toBeInTheDocument())
-  expect(cellsOf(await rowOf('Biển Hồ'))).toStrictEqual(['Công ty TNHH Vận tải Biển HồLOG-003', 'Chưa có gói', '—', '1', ''])
+  expect(cellsOf(await rowOf('Biển Hồ'))).toStrictEqual(['Công ty TNHH Vận tải Biển HồLOG-003', 'Hồ Thị Thu Hàha.ho@bienho.vn', 'Chưa có gói', '—', '1', ''])
 })
 
 test('editing a company changes its name and depot', async () => {
@@ -111,4 +113,55 @@ test('editing a company changes its name and depot', async () => {
   await user.click(within(dialog).getByRole('button', { name: 'Lưu công ty' }))
   expect(await screen.findByText('Đã lưu công ty Công ty CP Vận tải Biển Hồ', {}, SLOW)).toBeInTheDocument()
   expect(cellsOf(await rowOf('Biển Hồ'))[0]).toBe('Công ty CP Vận tải Biển HồLOG-003')
+})
+
+test('systemManager can access companies page and view companies and their admins', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  signedInAs('systemManager')
+  render(
+    <QueryClientProvider client={client}>
+      <I18nProvider>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/nen-tang/cong-ty']}>
+            <CompaniesPage />
+          </MemoryRouter>
+          <Toaster />
+        </AuthProvider>
+      </I18nProvider>
+    </QueryClientProvider>,
+  )
+  expect(await screen.findByText('3 công ty', {}, SLOW)).toBeInTheDocument()
+  expect(screen.getByText('Dương Thị Kim Oanh')).toBeInTheDocument()
+  expect(screen.getByText('qtcongty@loadmaster.vn')).toBeInTheDocument()
+})
+
+test('clicking "Xem chi tiết" opens ViewCompanyDetailsDialog with full info', async () => {
+  const user = userEvent.setup()
+  renderCompanies()
+  const viewBtn = await screen.findByRole('button', { name: /Xem chi tiết.*Long Bình/i }, SLOW)
+  await user.click(viewBtn)
+
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText(/Thông tin Doanh nghiệp/i)).toBeInTheDocument()
+  expect(within(dialog).getByText(/Chủ tài khoản Doanh nghiệp/i)).toBeInTheDocument()
+  expect(within(dialog).getByText('Dương Thị Kim Oanh')).toBeInTheDocument()
+  expect(within(dialog).getByText('qtcongty@loadmaster.vn')).toBeInTheDocument()
+
+  await user.click(within(dialog).getByRole('button', { name: 'Đóng' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('left sidebar switches between Doanh nghiệp and Chủ tài khoản Doanh nghiệp', async () => {
+  const user = userEvent.setup()
+  renderCompanies()
+
+  const adminsTab = await screen.findByRole('tab', { name: /Chủ tài khoản/i }, SLOW)
+  await user.click(adminsTab)
+
+  expect(await screen.findByText(/Quản lý Chủ tài khoản Doanh nghiệp/i)).toBeInTheDocument()
+
+  const companiesTab = screen.getByRole('tab', { name: /Doanh nghiệp/i })
+  await user.click(companiesTab)
+
+  expect(await screen.findByText('3 công ty', {}, SLOW)).toBeInTheDocument()
 })

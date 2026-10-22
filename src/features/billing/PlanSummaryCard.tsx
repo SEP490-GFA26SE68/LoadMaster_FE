@@ -23,10 +23,20 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Gói hiện tại của công ty (FE-8-03): tên, hạng, nhãn "Giá trị tạm" khi gói mang cờ tạm, trạng thái, ngày bắt đầu và hết hạn, tự gia hạn,
- * giá và credit mỗi tháng. Gói đang dùng có nút Huỷ gói (secondary — nút chính của màn là Nạp credit); gói đã huỷ hay hết hạn nói rõ
+ * giá và credit mỗi tháng; gói đã huỷ hay hết hạn nói rõ
  * hệ quả bằng một dòng.
  */
-export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscription; onCancel: () => void }) {
+export function PlanSummaryCard({
+  current,
+  onCancel,
+  onRenew,
+  renewPending = false,
+}: {
+  current: CurrentSubscription
+  onCancel: () => void
+  onRenew?: () => void
+  renewPending?: boolean
+}) {
   const t = useT()
   const format = useFormat()
   const { subscription, plan } = current
@@ -45,20 +55,24 @@ export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscri
           <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>
           {plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
         </div>
-        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
           <Field label={t('billing.plan.started')}>{format.date(subscription.startedAt)}</Field>
           <Field label={t('billing.plan.expires')}>{format.date(subscription.expiresAt)}</Field>
-          <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>
         {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
         {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
-        {subscription.status === 'ACTIVE' ? (
-          <div>
+        <div className="flex flex-wrap gap-2.5">
+          {(subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && onRenew ? (
+            <Button variant="primary" loading={renewPending} onClick={onRenew}>
+              Gia hạn thêm 1 tháng
+            </Button>
+          ) : null}
+          {subscription.status === 'ACTIVE' ? (
             <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </Card>
   )
