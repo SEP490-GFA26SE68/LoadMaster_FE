@@ -171,7 +171,7 @@ export function SupportPage() {
                       />
                     </div>
                   </Card>
-                  <CompanyPanel companyId={selected.companyId} />
+                  <CompanyPanel companyId={selected.companyId} ticketClosed={selected.status === 'CLOSED'} />
                 </>
               ) : (
                 <Card>
