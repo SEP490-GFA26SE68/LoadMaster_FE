@@ -90,6 +90,12 @@ type DataTableProps<TData extends RowData> = SortingProps & {
   emptyMessage?: string
   /** Phân trang ở chân bảng: 25/50/100 dòng, "x–y / n", trước/sau. Vắng thì hiện mọi dòng. */
   pagination?: DataTablePagination
+  /**
+ * Bật khi dữ liệu đã được phân trang từ BE.
+ * rowCount là tổng số bản ghi BE trả về.
+ */
+  serverPagination?: boolean
+  totalRows?: number
   /** Màn đang tìm/lọc (`list.isFiltering`): bảng rỗng thì nói không có kết quả khớp, kèm nút xoá lọc. */
   isFiltering?: boolean
   onClearFilters?: () => void
@@ -111,15 +117,40 @@ export function DataTable<TData extends RowData>({
   sorting,
   onSortingChange,
   pagination,
+
+  serverPagination = false,
+  totalRows,
+
   isFiltering = false,
   onClearFilters,
   noMatchMessage,
 }: DataTableProps<TData>) {
   const t = useT()
-  const rowCount = data.length
-  const pageIndex = pagination ? clampPageIndex(pagination.pageIndex, rowCount, pagination.pageSize) : 0
+  // Số dòng thực tế của trang hiện tại
+  const visibleRowCount = data.length
+
+  // Tổng số bản ghi để phân trang
+  const rowCount = serverPagination
+    ? (totalRows ?? data.length)
+    : data.length
+
+  const pageIndex = pagination
+  ? clampPageIndex(
+      pagination.pageIndex,
+      rowCount,
+      pagination.pageSize,
+    )
+  : 0
+
   const pageSize = pagination?.pageSize
-  const page = useMemo(() => (pageSize === undefined ? undefined : { pageIndex, pageSize }), [pageIndex, pageSize])
+
+  const page = useMemo(
+    () =>
+      pageSize === undefined
+        ? undefined
+        : { pageIndex, pageSize },
+    [pageIndex, pageSize],
+  )
   // Chỉ gắn khi màn giữ thứ tự: gắn `undefined` sẽ đè hàm ghi state mặc định và bảng tự giữ không sắp được nữa.
   const controlledSorting = sorting && onSortingChange
     ? { onSortingChange: (updater: Updater<SortingState>) => onSortingChange(functionalUpdate(updater, sorting)) }
@@ -130,12 +161,23 @@ export function DataTable<TData extends RowData>({
     columns,
     data,
     defaultColumn: SORTING_OFF_BY_DEFAULT,
+
     enableMultiSort: false,
     enableSortingRemoval: false,
-    // Trang do màn giữ trên URL: dữ liệu về muộn không được kéo người dùng về trang 1.
     autoResetPageIndex: false,
-    manualPagination: page === undefined,
-    state: { ...(sorting ? { sorting } : {}), ...(page ? { pagination: page } : {}) },
+
+    manualPagination:
+      serverPagination || page === undefined,
+
+    ...(serverPagination
+      ? { rowCount }
+      : {}),
+
+    state: {
+      ...(sorting ? { sorting } : {}),
+      ...(page ? { pagination: page } : {}),
+    },
+
     ...controlledSorting,
     ...(getRowId ? { getRowId } : {}),
   })
@@ -143,7 +185,11 @@ export function DataTable<TData extends RowData>({
   const look = APPEARANCE[appearance]
   const padX = look.padX ?? CELL_PADDING[cellPadding]
 
-  if (rowCount === 0 && !isFiltering) {
+  if (
+    visibleRowCount === 0 &&
+    !isFiltering &&
+    (!serverPagination || rowCount === 0)
+  ) {
     return (
       <div className="flex h-24 items-center justify-center text-body text-text-3">
         {emptyMessage ?? t('common.noData')}
@@ -188,7 +234,7 @@ export function DataTable<TData extends RowData>({
           ))}
         </thead>
         <tbody>
-          {rowCount === 0 ? (
+          {visibleRowCount === 0 ? (
             <NoMatchRow columnCount={table.getAllLeafColumns().length} message={noMatchMessage} onClear={onClearFilters} />
           ) : table.getRowModel().rows.map((row) => {
             const selected = isRowSelected?.(row.original) ?? false
@@ -224,7 +270,11 @@ export function DataTable<TData extends RowData>({
         </tbody>
       </table>
       {pagination && rowCount > 0 ? (
-        <PaginationFooter {...pagination} pageIndex={pageIndex} rowCount={rowCount} />
+        <PaginationFooter
+          {...pagination}
+          pageIndex={pageIndex}
+          rowCount={rowCount}
+        />
       ) : null}
     </>
   )

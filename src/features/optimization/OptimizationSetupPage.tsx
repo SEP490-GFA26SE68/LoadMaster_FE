@@ -29,6 +29,20 @@ import { SetupLimitsPanel } from './SetupLimitsPanel'
 import { SetupAdvancedFields, SetupCandidateList, SetupRequirementFields } from './SetupSettingsFields'
 import { useOptimizationCreditQuery, useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
+import { useQuery } from '@tanstack/react-query'
+import { fetchBackendLoadPlans } from './optimization-api'
+
+import {
+  fetchBackendTripDetail,
+  fetchTripVehicleConfig,
+} from '@/features/trips/trips-api'
+import { fetchPackage } from '@/features/package-pool/packages-api'
+import {
+  adaptBackendScene,
+  adaptBackendVehicle,
+} from '@/features/viewer3d/backend-scene-adapter'
+import { BackendLoadPlanViewer } from '@/features/viewer3d/BackendLoadPlanViewer'
+
 /**
  * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
  * và nút primary duy nhất "Tối ưu" (khoá khi còn lỗi, lý do ngay trên nút). Cột trái một thẻ ba mục đánh số rồi bảng "Lần chạy tối ưu"
@@ -37,7 +51,7 @@ import { useOptimizationCreditQuery, useOptimizationRun, useOptimizationSetupQue
  * lần chạy đó (`?lan-chay=`).
  * Chuyến đã sang pha vận hành (D-45, LM-088): banner nói lý do, không đổi xe, nút Tối ưu tắt — kho cũng từ chối `TRIP_LOCKED`.
  */
-export function OptimizationSetupPage() {
+function MockOptimizationSetupPage() {
   const { tripId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -83,16 +97,16 @@ export function OptimizationSetupPage() {
   const blockedReason = !locked && creditBlock !== null
     ? t(`optimization.credit.blocked.${creditBlock}`)
     : !locked && pinFaults.length > 0
-    ? t('optimization.pins.blockedReason')
-    : !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
-    ? t('optimization.blockedHint', {
-      count: checklist.errorCount + formErrors,
-      places: format.list([
-        ...checklist.errorGroups.map((group) => t(`optimization.groups.${group}`)),
-        ...(formErrors > 0 ? [t('optimization.advancedTitle')] : []),
-      ]),
-    })
-    : null
+      ? t('optimization.pins.blockedReason')
+      : !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
+        ? t('optimization.blockedHint', {
+          count: checklist.errorCount + formErrors,
+          places: format.list([
+            ...checklist.errorGroups.map((group) => t(`optimization.groups.${group}`)),
+            ...(formErrors > 0 ? [t('optimization.advancedTitle')] : []),
+          ]),
+        })
+        : null
 
   function start(submitted: SetupValues) {
     if (!setup) return
@@ -190,6 +204,145 @@ export function OptimizationSetupPage() {
         />
       ) : null}
       {failure ? <OptimizationErrorDialog failure={failure} onClose={() => setFailure(null)} onRetry={() => void handleRun()} /> : null}
+    </div>
+  )
+}
+
+
+export function OptimizationSetupPage() {
+  const { tripId = '' } = useParams()
+
+  if (/^[1-9]\d*$/.test(tripId)) {
+    return <BackendOptimizationSetupPage tripId={tripId} />
+  }
+
+  return <MockOptimizationSetupPage />
+}
+
+function BackendOptimizationSetupPage({
+  tripId,
+}: {
+  tripId: string
+}) {
+  const t = useT()
+
+  // Job đã hoàn thành của Trip 3, chỉ dùng để kiểm thử kết nối.
+  const jobId =
+    tripId === '3'
+      ? 'c429898c-0b02-4cf5-ad66-d476bb2c505c'
+      : null
+
+  const plansQuery = useQuery({
+    queryKey: ['backend', 'optimization-plans', tripId, jobId],
+    queryFn: () => fetchBackendLoadPlans(jobId!),
+    enabled: jobId !== null,
+  })
+  const sceneQuery = useQuery({
+    queryKey: ['backend', 'optimization-scene', tripId, jobId],
+    enabled: jobId !== null && plansQuery.isSuccess,
+    queryFn: async () => {
+      const plan = plansQuery.data?.[0]
+
+      if (!plan) {
+        throw new Error('No load plan found')
+      }
+
+      const [tripDetail, vehicleConfigResponse, packages] =
+        await Promise.all([
+          fetchBackendTripDetail(tripId),
+          fetchTripVehicleConfig(tripId),
+          Promise.all(
+            plan.placements.map((placement) =>
+              fetchPackage(String(placement.package_id)),
+            ),
+          ),
+        ])
+
+      if (
+        String(vehicleConfigResponse.vehicleId) !==
+        String(tripDetail.trip.vehicleId)
+      ) {
+        throw new Error('Trip vehicle configuration mismatch')
+      }
+
+      const vehicleConfig = adaptBackendVehicle(
+        vehicleConfigResponse,
+      )
+
+      return adaptBackendScene(
+        tripId,
+        tripDetail,
+        vehicleConfig,
+        plan,
+        packages,
+      )
+    },
+  })
+
+  const plans = plansQuery.data ?? []
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-4 px-shell py-6">
+      <Button variant="secondary" asChild>
+        <Link to={`/chuyen/${encodeURIComponent(tripId)}`}>
+          {t('optimization.back')}
+        </Link>
+      </Button>
+
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold">
+          {t('trips.loadingOptimization.run')}
+        </h2>
+
+        {jobId === null ? (
+          <p className="mt-3 text-sm">
+            Trip #{tripId}: No optimization job selected.
+          </p>
+        ) : plansQuery.isPending ? (
+          <div className="mt-4">
+            <Spinner />
+          </div>
+        ) : plansQuery.isError ? (
+          <p className="mt-3 text-sm text-red-500">
+            {plansQuery.error.message}
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <p>Job: {jobId}</p>
+
+            {plans.map((plan) => (
+              <div key={plan.id} className="rounded-lg border p-4">
+                <p className="font-medium">{plan.plan_name}</p>
+                <p>LoadPlan ID: {plan.id}</p>
+                <p>Packages: {plan.packed_items_count}</p>
+                <p>
+                  Volume utilization:{' '}
+                  {((plan.volume_utilization ?? 0) * 100).toFixed(2)}%
+                </p>
+                <p>
+                  Weight utilization:{' '}
+                  {((plan.weight_utilization ?? 0) * 100).toFixed(2)}%
+                </p>
+                <p>Placements returned: {plan.placements.length}</p>
+              </div>
+            ))}
+            {sceneQuery.isPending ? (
+              <div role="status" className="py-6">
+                <Spinner />
+              </div>
+            ) : sceneQuery.isError ? (
+              <p role="alert" className="text-sm text-red-500">
+                {sceneQuery.error.message}
+              </p>
+            ) : sceneQuery.data ? (
+              <BackendLoadPlanViewer
+                key={`${tripId}-${plans[0]?.id}`}
+                model={sceneQuery.data}
+              />
+            ) : null}
+          </div>
+        )}
+      </Card>
     </div>
   )
 }

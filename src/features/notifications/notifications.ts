@@ -37,12 +37,15 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  * - Quản lý nền tảng, hỗ trợ khách hàng không có loại thông báo nào. Vai trò không có nguồn nào thì không có chuông (`hasNotifications`).
  * Sự kiện của luồng mới (nguy cơ trễ, yêu cầu nhận…) thêm vào đây trong issue của luồng đó.
  */
-export const NOTIFICATION_ACTIONS: Readonly<Record<Role, readonly AuditAction[]>> = {
+export const NOTIFICATION_ACTIONS: Readonly<
+  Record<Role, readonly AuditAction[]>
+> = {
   systemAdmin: ACCOUNT_ACTIONS,
   systemManager: [],
   systemSupporter: [],
+
   companyAdmin: [...ACCOUNT_ACTIONS, 'credit.lowBalance', 'ticket.replied'],
-  manager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated', 'ticket.replied'],
+  companyManager: ['delivery.completed', 'delivery.issue', 'trip.cancelled', 'loading.shortageDropped', 'loading.damaged', 'exception.escalated', 'ticket.replied'],
   dispatcher: [
     'revision.approved', 'loading.completed', 'loading.shortageReported', 'loading.damaged', 'package.found', 'delivery.issue', 'delivery.etaRisk',
     'delivery.completed', 'trip.cancelled', 'manualConfirm.requested', 'exception.reported', 'exception.escalated',
@@ -75,12 +78,11 @@ function concerns(event: AuditEvent, viewer: NotificationViewer): boolean {
     return event.action !== 'trip.cancelled' || event.params.loaded !== undefined
   }
   // Quản lý công ty lo yêu cầu giao: kiện bị bỏ chỉ đáng báo khi nó thuộc một yêu cầu
-  if (viewer.role === 'manager' && (event.action === 'loading.shortageDropped' || event.action === 'loading.damaged')) {
+  if (viewer.role === 'companyManager' && (event.action === 'loading.shortageDropped' || event.action === 'loading.damaged')) {
     return event.params.requirementId !== undefined
   }
   return true
 }
-
 /** Chỉ sự kiện trong chừng ấy ngày gần nhất, tối đa chừng ấy dòng. */
 export const NOTIFICATION_WINDOW_DAYS = 7
 export const NOTIFICATION_LIMIT = 20
@@ -90,7 +92,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export type NotificationViewer = { readonly id: string; readonly role: Role }
 
 export function hasNotifications(role: Role): boolean {
-  return NOTIFICATION_ACTIONS[role].length > 0
+  return (NOTIFICATION_ACTIONS[role] ?? []).length > 0
 }
 
 /** Mốc bắt đầu của cửa sổ thông báo tính từ `now`. */
@@ -102,10 +104,23 @@ export function notificationWindowStart(now: Date): Date {
  * Thông báo của `viewer` từ nhật ký (mới nhất trước, như kho trả): đúng loại sự kiện của vai trò, không phải việc chính người đó làm,
  * từ `NOTIFICATION_WINDOW_DAYS` ngày trước `now`, tối đa `NOTIFICATION_LIMIT` dòng. Giữ thứ tự của kho.
  */
-export function selectNotifications(events: readonly AuditEvent[], viewer: NotificationViewer, now: Date): AuditEvent[] {
-  const actions = NOTIFICATION_ACTIONS[viewer.role]
-  const since = notificationWindowStart(now).getTime()
+export function selectNotifications(
+  events: readonly AuditEvent[],
+  viewer: NotificationViewer,
+  now: Date,
+): AuditEvent[] {
+  const actions = NOTIFICATION_ACTIONS[viewer.role] ?? []
+
+  const since =
+    notificationWindowStart(now).getTime()
+
   return events
+    .filter(
+      (event) =>
+        actions.includes(event.action) &&
+        event.actorId !== viewer.id &&
+        Date.parse(event.at) >= since,
+    )
     .filter((event) => actions.includes(event.action) && event.actorId !== viewer.id && Date.parse(event.at) >= since)
     .filter((event) => concerns(event, viewer))
     .slice(0, NOTIFICATION_LIMIT)

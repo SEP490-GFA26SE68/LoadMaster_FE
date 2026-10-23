@@ -1,12 +1,4 @@
-/**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   changeTripVehicle → POST /api/trips/{id}/change-vehicle
- *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07);
- *                       chạy lại giữ kiện ghim (`request.pinnedPlacements`): POST /api/load-plans/{id}/rerun (kiện ghim: Q-14)
- *                       (giữ / trừ / hoàn credit do BE làm phía server, HTTP 402 `INSUFFICIENT_CREDITS`; mock gọi thẳng kho)
- *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance
- *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
- */
+import { apiFetch } from '@/lib/api-client'
 
 import { pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
@@ -191,4 +183,71 @@ export async function fetchRunHistory(tripId: string): Promise<RunHistoryRow[]> 
     db.getTrip(tripId), db.listOptimizationRuns(tripId), db.listRevisions(tripId), db.listUsers(),
   ])
   return buildRunHistory({ trip, runs, revisions, userNames: new Map(users.map((user) => [user.id, user.fullName])) })
+}
+
+
+
+//be
+export type BackendOptimizationJob = {
+  id?: number
+  job_uuid?: string
+  status: string
+}
+
+export type BackendPackagePlacement = {
+  id: number
+  package_id: string
+  step_sequence: number
+  pos_x: number
+  pos_y: number
+  pos_z: number
+  dim_x: number
+  dim_y: number
+  dim_z: number
+  rotation_type: number
+  stopZoneId: number | null
+  stopZoneName: string | null
+}
+
+export type BackendLoadPlan = {
+  id: number
+  plan_name: string | null
+  packed_items_count: number
+  volume_utilization: number | null
+  weight_utilization: number | null
+  approved: boolean
+  approved_by_id: number | null
+  cogX: number | null
+  cogY: number | null
+  cogZ: number | null
+  frontAxleLoad: number | null
+  rearAxleLoad: number | null
+  rehandlingCount: number
+  placements: BackendPackagePlacement[]
+}
+
+type BackendApiResponse<T> = {
+  success: boolean
+  message: string | null
+  data: T
+}
+
+export async function fetchBackendOptimizationJob(
+  jobId: string,
+): Promise<BackendOptimizationJob> {
+  const response = await apiFetch<BackendApiResponse<BackendOptimizationJob>>(
+    `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`,
+  )
+
+  return response.data
+}
+
+export async function fetchBackendLoadPlans(
+  jobId: string,
+): Promise<BackendLoadPlan[]> {
+  const response = await apiFetch<BackendApiResponse<BackendLoadPlan[]>>(
+    `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}/plans`,
+  )
+
+  return response.data
 }

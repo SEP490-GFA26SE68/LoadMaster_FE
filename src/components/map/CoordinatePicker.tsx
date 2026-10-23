@@ -1,14 +1,18 @@
-import { X } from 'lucide-react'
+import { Maximize2, X } from 'lucide-react'
 import { lazy, Suspense, useId, useState, type FocusEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { fieldLabelClass } from '@/components/ui/field-styles'
 import { Input } from '@/components/ui/Input'
 import { useLocale, useT, type TFunction } from '@/lib/i18n'
-import type { Place } from '@/lib/mock-db'
+import type { ResolvedAddress } from './places-api'
 import { cn } from '@/lib/utils'
 import { EMPTY_COORDINATES, formatCoordinate, parseCoordinates, type CoordinateText, type ParsedCoordinates } from './coordinates'
 import { goongMapTilesKey } from './map-style'
 import { PlaceSearchBox } from './PlaceSearchBox'
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/Dialog'
 
 const CoordinatePickerMap = lazy(() => import('./CoordinatePickerMap'))
 
@@ -32,7 +36,7 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
   value: CoordinateText
   onChange: (next: CoordinateText) => void
   /** Người dùng vừa chọn một địa danh từ danh sách — form có thể điền sẵn địa chỉ. */
-  onPlacePicked?: (place: Place) => void
+  onPlacePicked?: (place: ResolvedAddress) => void
   disabled?: boolean
   showErrors?: boolean
   hint?: string
@@ -51,13 +55,17 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
   const hasValue = value.lat !== '' || value.lng !== ''
   // Tên địa danh chỉ còn đúng khi hai ô vẫn là toạ độ của nó
   const pickedName = picked && picked.lat === value.lat && picked.lng === value.lng ? picked.name : null
-
-  function handlePick(place: Place) {
-    const next = { lat: formatCoordinate(place.lat), lng: formatCoordinate(place.lng) }
-    setPicked({ name: place.name, ...next })
-    onChange(next)
-    onPlacePicked?.(place)
+  const [mapExpanded, setMapExpanded] = useState(false)
+function handlePick(place: ResolvedAddress) {
+  const next = {
+    lat: formatCoordinate(place.lat),
+    lng: formatCoordinate(place.lng),
   }
+
+  setPicked({ name: place.name, ...next })
+  onChange(next)
+  onPlacePicked?.(place)
+}
 
   function handleBlur(event: FocusEvent<HTMLFieldSetElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) setTouched(true)
@@ -106,6 +114,19 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
       </div>
       {pickedName ? <p role="status" className="text-fine text-ink-2">{t('map.picker.picked', { name: pickedName })}</p> : null}
       {withMap ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setMapExpanded(true)}
+          >
+            <Maximize2 className="size-4" />
+            {t('map.picker.expand')}
+          </Button>
+        </div>
+      ) : null}
+      {withMap ? (
         <Suspense fallback={null}>
           <CoordinatePickerMap
             key={locale}
@@ -117,6 +138,48 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
         </Suspense>
       ) : null}
       {disabled ? null : <p className="text-fine text-ink-3">{hint ?? (withMap ? t('map.picker.hintMap') : t('map.picker.hint'))}</p>}
+
+      {withMap ? (
+        <Dialog open={mapExpanded} onOpenChange={setMapExpanded}>
+          <DialogContent className="flex h-[85dvh] w-[95vw] max-w-6xl flex-col overflow-hidden p-4">
+            <div className="shrink-0">
+              <h2 className="text-lg font-semibold">
+                {t('map.picker.expand')}
+              </h2>
+              <p className="text-sm text-ink-3">
+                {t('map.picker.hintMap')}
+              </p>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg">
+              <Suspense fallback={null}>
+                <CoordinatePickerMap
+                  key={`expanded-${locale}`}
+                  apiKey={apiKey!}
+                  heightClassName="h-full min-h-0 flex-1"
+                  value={
+                    parsed.kind === 'ok'
+                      ? { lat: parsed.lat, lng: parsed.lng }
+                      : null
+                  }
+                  onPick={(point) => {
+                    setPicked(null)
+                    onChange({
+                      lat: formatCoordinate(point.lat),
+                      lng: formatCoordinate(point.lng),
+                    })
+                    setMapExpanded(false)
+                  }}
+                  onUnavailable={() => {
+                    setMapUnavailable(true)
+                    setMapExpanded(false)
+                  }}
+                />
+              </Suspense>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </fieldset>
   )
 }

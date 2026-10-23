@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 import { useT } from '@/lib/i18n'
 import type { Coordinates } from './coordinates'
 import { GOONG_STYLE_URL } from './map-style'
-
+import { cn } from '@/lib/utils'
 setWorkerUrl(workerUrl)
 
 /** Tâm khi chưa có toạ độ: giữa vùng TP. Hồ Chí Minh – Đồng Nai – Bình Dương, như `RouteMapCanvas`. */
@@ -16,11 +16,18 @@ const FALLBACK_CENTER: [number, number] = [106.8, 10.9]
  * thì ô chọn toạ độ chỉ còn danh sách địa danh và hai ô gõ. Bấm lên bản đồ là chọn điểm đó; mốc đứng ở toạ độ đang có. Không xoay,
  * không nghiêng; lăn chuột chỉ phóng khi giữ Ctrl / ⌘. Bàn phím không bấm được lên bản đồ: lối tương đương là danh sách và hai ô gõ.
  */
-export default function CoordinatePickerMap({ apiKey, value, onPick, onUnavailable }: {
+export default function CoordinatePickerMap({
+  apiKey,
+  value,
+  onPick,
+  onUnavailable,
+  heightClassName = 'h-44 sm:h-52',
+}: {
   apiKey: string
   value: Coordinates | null
   onPick: (point: Coordinates) => void
   onUnavailable: () => void
+  heightClassName?: string
 }) {
   const t = useT()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -99,10 +106,20 @@ export default function CoordinatePickerMap({ apiKey, value, onPick, onUnavailab
   }, [lat, lng])
 
   return (
-    <div className="relative h-56 overflow-hidden rounded-md border border-border bg-n-100">
-      <div className="absolute inset-0">
-        <div ref={containerRef} data-coordinate-map className="size-full" style={{ fontFamily: 'inherit' }} />
-      </div>
+  <div
+    className={cn(
+      'relative min-w-0 overflow-hidden rounded-md border border-border bg-n-100',
+      heightClassName,
+    )}
+  >
+    <div className="absolute inset-0">
+      <div
+        ref={containerRef}
+        data-coordinate-map
+        className="size-full"
+        style={{ fontFamily: 'inherit' }}
+      />
     </div>
-  )
+  </div>
+)
 }

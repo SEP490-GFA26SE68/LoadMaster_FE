@@ -11,7 +11,7 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   systemManager: ['subscriptionPlans.manage'],
   systemSupporter: ['support.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
-  manager: [
+  companyManager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
   ],
@@ -30,14 +30,14 @@ test.each(ROLES)('%s has exactly its permissions from the matrix', (role) => {
 })
 
 test('exactly the eight roles of the backend, each with its backend code; manufacturer and logistics are gone (FE-0-06)', () => {
-  expect(ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
+  expect(ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'])
   expect(Object.keys(BACKEND_ROLE_CODES)).toStrictEqual([...ROLES])
   expect(BACKEND_ROLE_CODES).toStrictEqual({
     systemAdmin: 'SYSTEM_ADMIN',
     systemManager: 'SYSTEM_MANAGER',
     systemSupporter: 'SYSTEM_SUPPORTER',
-    companyAdmin: 'COMPANY_ADMIN',
-    manager: 'COMPANY_MANAGER',
+    companyAdmin: 'ADMIN',
+    companyManager: 'MANAGER',
     dispatcher: 'DISPATCHER',
     warehouse: 'WAREHOUSE_WORKER',
     driver: 'DRIVER',
@@ -68,7 +68,7 @@ test('the three platform roles have no operational permission: no packages, trip
     expect(isPlatformRole(role), role).toBe(true)
     expect(operational.filter((permission) => can(role, permission)), role).toStrictEqual([])
   }
-  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'])
+  expect(ROLES.filter((role) => !isPlatformRole(role))).toStrictEqual(['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'])
 })
 
 test('users and the audit log belong to the system administrator and the company administrator only', () => {
@@ -80,17 +80,17 @@ test('users and the audit log belong to the system administrator and the company
 test('writing to the package pool, package types and QR labels belong to the dispatcher alone, through packages.manage (FE-0-06)', () => {
   expect(ROLES.filter((role) => can(role, 'packages.manage'))).toStrictEqual(['dispatcher'])
   // Quản lý công ty xem kho kiện chỉ đọc (`packages.view`, FE-3b-03); ghi vào kho kiện là của điều phối viên
-  expect(can('manager', 'packages.view')).toBe(true)
-  expect(can('manager', 'packages.manage')).toBe(false)
+  expect(can('companyManager', 'packages.view')).toBe(true)
+  expect(can('companyManager', 'packages.manage')).toBe(false)
 })
 
 test('the dispatcher edits and approves plans, the company manager only reads them (FE-0-07); the manager edits no trip or order', () => {
   expect(ROLES.filter((role) => can(role, 'plans.approve'))).toStrictEqual(['dispatcher'])
   expect(can('dispatcher', 'optimization.run')).toBe(true)
-  expect(can('manager', 'plans.view')).toBe(true)
-  expect(can('manager', 'optimization.run')).toBe(false)
-  expect(can('manager', 'trips.edit')).toBe(false)
+  expect(can('companyManager', 'plans.view')).toBe(true)
+  expect(can('companyManager', 'optimization.run')).toBe(false)
+  expect(can('companyManager', 'trips.edit')).toBe(false)
   // Yêu cầu giao: quản lý công ty tạo và sửa, điều phối viên chỉ xem (D-72)
-  expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['manager', 'dispatcher'])
-  expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['manager'])
+  expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['companyManager', 'dispatcher'])
+  expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['companyManager'])
 })

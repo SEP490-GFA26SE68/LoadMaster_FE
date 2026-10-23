@@ -23,6 +23,8 @@ import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
 import { useDeleteRequirementMutation, useRequirementsQuery, useUnassignRequirementMutation } from './useRequirementsQuery'
+import { useNavigate } from 'react-router'
+
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 
@@ -35,6 +37,7 @@ type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 export function RequirementsPage() {
   const t = useT()
   const can = useCan()
+  const navigate = useNavigate()
   const canEdit = can('requirements.edit')
   const canAssign = can('trips.edit')
   const query = useRequirementsQuery()
@@ -56,18 +59,34 @@ export function RequirementsPage() {
     canAssign,
     onAction: (action: RequirementAction, row: RequirementRow) => {
       const { id } = row.requirement
-      if (action === 'view') setViewing(id)
-      else if (action === 'edit') setEditing({ kind: 'edit', row })
-      else if (action === 'delete') setDeleting(row)
-      else if (action === 'assign') setAssigning(id)
-      else {
+
+      if (action === 'view') {
+        setViewing(id)
+      } else if (action === 'viewTrip') {
+        const tripId = row.requirement.tripId
+
+        if (tripId) {
+          navigate(`/chuyen/${encodeURIComponent(tripId)}`)
+        }
+      } else if (action === 'edit') {
+        setEditing({ kind: 'edit', row })
+      } else if (action === 'delete') {
+        setDeleting(row)
+      } else if (action === 'assign') {
+        setAssigning(id)
+      } else if (action === 'unassign') {
         unassign.mutate(id, {
-          onSuccess: () => toast.success(t('requirements.assign.unassigned', { id })),
-          onError: (error) => toast.error(dataErrorMessage(error, t)),
+          onSuccess: () =>
+            toast.success(
+              t('requirements.assign.unassigned', { id }),
+            ),
+          onError: (error) =>
+            toast.error(dataErrorMessage(error, t)),
         })
       }
+
     },
-  }), [canEdit, canAssign, unassign, t])
+  }), [canEdit, canAssign, unassign, t, navigate])
 
   const fields: FilterField<RequirementFilterName>[] = [
     { kind: 'select', name: STATUS_FILTER, label: t('requirements.filters.status'), options: REQUIREMENT_STATUS_ORDER.map((value) => ({ value: REQUIREMENT_STATUS_SLUGS[value], label: t(`requirements.status.${value}`) })) },

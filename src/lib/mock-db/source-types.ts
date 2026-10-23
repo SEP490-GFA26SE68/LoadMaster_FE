@@ -26,6 +26,11 @@ export type Company = {
   depot: CompanyDepot
 }
 
+export type CompanyOption = {
+  readonly id: string
+  readonly name: string
+}
+
 /**
  * Ba trường ràng buộc của loại kiện theo backend (FE-5b-01, D-79): tải xếp chồng tối đa, có cho xoay kiện không, có dễ vỡ không. Là
  * hình chiếu thô của các trường Spec đã có (`maxTopLoadKg`, `allowedOrientations`, `fragilityLevel`); ánh xạ hai chiều ở
