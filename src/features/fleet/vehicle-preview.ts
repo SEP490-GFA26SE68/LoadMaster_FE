@@ -2,18 +2,15 @@ import { z } from 'zod'
 import { eq, gt, lt, roundCm, roundKg } from '@/domain/geometry'
 import { validateVehicle } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
-import { OBSTACLE_TYPES } from './vehicle-form'
+const OBSTACLE_TYPES = [
+  'WHEEL_ARCH',
+  'COOLING_UNIT',
+  'PARTITION',
+  'RESERVED_ZONE',
+  'OTHER',
+] as const
 
-/**
- * Xem trước 3D ở form xe (LM-042): phần thuần, không React.
- *
- * - `previewVehicle` lấy **phần hình học** của giá trị đang nhập (lòng thùng, cửa, vật cản, vị trí từng trục) và trả `null`
- *   khi phần đó chưa parse được hoặc vi phạm `validateVehicle`. Tên xe, tải trọng, tải trên của vật cản, tên và tải của trục
- *   không có hình nên không chặn hình.
- * - `previewFacts` đọc hai số không có hình nhưng có trong bảng số dưới mô hình: tải trọng và khoảng hở.
- * - `nextPreview` giữ hình hợp lệ gần nhất; `frame` chỉ đổi tham chiếu khi kích thước lòng thùng đổi, nên sửa vật cản,
- *   cửa hay trục không làm camera canh khung lại.
- */
+
 
 const cm = () => z.number()
 
@@ -73,15 +70,15 @@ export function previewVehicle(values: unknown): VehicleConfig | null {
     // Không trục nào thì vắng hẳn, như `toVehicleConfig`: mô hình khi đó vẽ bánh minh hoạ.
     ...(data.axles?.length
       ? {
-          axles: data.axles.map((row) => ({
-            id: row.id,
-            name: row.name?.trim() ?? '',
-            positionXCm: roundCm(row.positionXCm),
-            // Tải trục không có hình; 0 là "chưa khai" ở mô hình tải trục và không tham gia gì ở đây.
-            emptyLoadKg: 0,
-            maxLoadKg: 0,
-          })),
-        }
+        axles: data.axles.map((row) => ({
+          id: row.id,
+          name: row.name?.trim() ?? '',
+          positionXCm: roundCm(row.positionXCm),
+          // Tải trục không có hình; 0 là "chưa khai" ở mô hình tải trục và không tham gia gì ở đây.
+          emptyLoadKg: 0,
+          maxLoadKg: 0,
+        })),
+      }
       : {}),
   }
   const blocking = validateVehicle(vehicle).filter(
@@ -141,4 +138,164 @@ export function nextPreview(state: PreviewState, candidate: VehicleConfig | null
   const frame = state.frame !== null && sameCargoSpace(state.frame, candidate) ? state.frame : candidate
   if (vehicle === state.vehicle && frame === state.frame && !state.pending) return state
   return { vehicle, frame, pending: false }
+}
+
+
+/**
+ * Chuyển dữ liệu form loại xe sang cấu trúc hình học
+ * mà VehiclePreview hiện tại đang sử dụng.
+ */
+const vehicleTypePreviewSchema = z.object({
+  cargoLengthCm: z.number().finite().positive(),
+  cargoWidthCm: z.number().finite().positive(),
+  cargoHeightCm: z.number().finite().positive(),
+
+  doorWidthCm: z.number().optional(),
+  doorHeightCm: z.number().optional(),
+
+  frontAxleX: z.number().optional(),
+  rearAxleX: z.number().optional(),
+
+  obstacles: z.array(
+    z.object({
+      type: z.enum(OBSTACLE_TYPES),
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+      length: z.number(),
+      width: z.number(),
+      height: z.number(),
+      loadBearing: z.boolean(),
+    }),
+  ).optional(),
+})
+
+/**
+ * Xem trước hình học của loại xe.
+ * Không yêu cầu tên, tải trọng hay những trường không ảnh hưởng hình học.
+ */
+export function previewVehicleType(
+  values: unknown,
+): VehicleConfig | null {
+  const parsed = vehicleTypePreviewSchema.safeParse(values)
+  if (!parsed.success) return null
+
+  const data = parsed.data
+
+  const obstacles = (data.obstacles ?? []).map(
+    (obstacle, index) => ({
+      id: `obstacle-${index}`,
+      type: obstacle.type,
+      xCm: obstacle.x,
+      yCm: obstacle.y,
+      zCm: obstacle.z,
+      lengthCm: obstacle.length,
+      widthCm: obstacle.width,
+      heightCm: obstacle.height,
+      loadBearing: obstacle.loadBearing,
+    }),
+  )
+
+  const axles = [
+    { id: 'front', name: 'front', positionXCm: data.frontAxleX },
+    { id: 'rear', name: 'rear', positionXCm: data.rearAxleX },
+  ].filter(
+    (axle): axle is {
+      id: string
+      name: string
+      positionXCm: number
+    } =>
+      axle.positionXCm !== undefined &&
+      Number.isFinite(axle.positionXCm),
+  )
+
+  // Không khai cửa thì dùng mặt cắt thùng để xem trước.
+  // Đây chỉ là giá trị hiển thị, không gửi lên Backend.
+  const doorWidth = Number.isFinite(data.doorWidthCm)
+    ? data.doorWidthCm!
+    : data.cargoWidthCm
+
+  const doorHeight = Number.isFinite(data.doorHeightCm)
+    ? data.doorHeightCm!
+    : data.cargoHeightCm
+
+  return previewVehicle({
+    innerLengthCm: data.cargoLengthCm,
+    innerWidthCm: data.cargoWidthCm,
+    innerHeightCm: data.cargoHeightCm,
+    doorWidthCm: doorWidth,
+    doorHeightCm: doorHeight,
+    obstacles,
+    axles,
+  })
+}
+
+export type VehicleTypePreviewIssue =
+  | 'lengthMissing'
+  | 'widthMissing'
+  | 'heightMissing'
+  | 'doorWidthExceeded'
+  | 'doorHeightExceeded'
+  | 'obstacleIncomplete'
+  | 'obstacleOutside'
+
+export function getVehicleTypePreviewIssues(
+  values: unknown,
+): VehicleTypePreviewIssue[] {
+  const input = z.object({
+    cargoLengthCm: z.number().optional(),
+    cargoWidthCm: z.number().optional(),
+    cargoHeightCm: z.number().optional(),
+    doorWidthCm: z.number().optional(),
+    doorHeightCm: z.number().optional(),
+    obstacles: z.array(z.object({
+      x: z.number().optional(),
+      y: z.number().optional(),
+      z: z.number().optional(),
+      length: z.number().optional(),
+      width: z.number().optional(),
+      height: z.number().optional(),
+    })).optional(),
+  }).safeParse(values)
+
+  if (!input.success) return ['obstacleIncomplete']
+
+  const data = input.data
+  const issues: VehicleTypePreviewIssue[] = []
+
+  const validDimension = (value: number | undefined) =>
+    value !== undefined && Number.isFinite(value) && value > 0
+
+  if (!validDimension(data.cargoLengthCm)) issues.push('lengthMissing')
+  if (!validDimension(data.cargoWidthCm)) issues.push('widthMissing')
+  if (!validDimension(data.cargoHeightCm)) issues.push('heightMissing')
+
+  if (
+    validDimension(data.doorWidthCm) &&
+    validDimension(data.cargoWidthCm) &&
+    data.doorWidthCm! > data.cargoWidthCm!
+  ) {
+    issues.push('doorWidthExceeded')
+  }
+
+  if (
+    validDimension(data.doorHeightCm) &&
+    validDimension(data.cargoHeightCm) &&
+    data.doorHeightCm! > data.cargoHeightCm!
+  ) {
+    issues.push('doorHeightExceeded')
+  }
+
+  for (const obstacle of data.obstacles ?? []) {
+    const valid = [obstacle.x, obstacle.y, obstacle.z].every(
+      (value) => value !== undefined && Number.isFinite(value) && value >= 0,
+    ) &&
+    [obstacle.length, obstacle.width, obstacle.height].every(validDimension)
+
+    if (!valid) {
+      issues.push('obstacleIncomplete')
+    }
+  }
+
+  return [...new Set(issues)]
 }

@@ -103,6 +103,8 @@ export const fleet = {
       label: 'Số đang vẽ trong mô hình',
       cargoSpace: 'Lòng thùng',
       door: 'Cửa sau',
+      width: 'Rộng cửa',
+      heigh: 'Cao cửa',
       passable: 'kiện lọt tối đa {size}',
       payload: 'Tải trọng tối đa',
       payloadMissing: 'Chưa nhập',

@@ -295,6 +295,9 @@ export const trips = {
     run: 'Optimize route',
     success: 'Route optimized successfully',
   },
+  loadingOptimization: {
+    run: 'Optimize loading',
+  },
   cancel: {
     title: 'Cancel trip {id}?',
     description: 'The trip becomes Cancelled and cannot be reopened. Its packages go back to the package pool and its delivery requirements back to Waiting for a trip. The reason is written to the activity log.',

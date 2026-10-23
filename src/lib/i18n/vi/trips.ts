@@ -322,6 +322,9 @@ export const trips = {
     run: 'Tối ưu tuyến đường',
     success: 'Tối ưu tuyến đường thành công',
   },
+  loadingOptimization: {
+    run: 'Tối ưu xếp hàng',
+  },
   /** Hộp thoại huỷ chuyến (D-45): lý do bắt buộc, ghi nhật ký. */
   cancel: {
     title: 'Huỷ chuyến {id}?',

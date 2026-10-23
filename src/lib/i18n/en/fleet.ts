@@ -98,6 +98,8 @@ export const fleet = {
       label: 'Values drawn in the model',
       cargoSpace: 'Cargo space',
       door: 'Rear door',
+      width: 'Door width',
+      heigh: 'Door heigh',
       passable: 'largest package through {size}',
       payload: 'Max payload',
       payloadMissing: 'Not entered',

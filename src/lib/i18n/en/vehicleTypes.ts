@@ -30,8 +30,14 @@ export const vehicleTypes = {
   delete: 'Delete',
   inUse: { one: 'Still set on {count} vehicle; remove it from the vehicle first', other: 'Still set on {count} vehicles; remove it from the vehicles first' },
   form: {
+    frontAxleX: 'Front axle position',
+    rearAxleX: 'Rear axle position',
+    emptyFrontAxleLoadKg: 'Empty front axle load',
+    emptyRearAxleLoadKg: 'Empty rear axle load',
     hazardousCapable: 'Hazardous cargo capable',
-
+    doorWidth: 'Cargo door width',
+    doorHeight: 'Cargo door height',
+    doorHint: 'Cargo door dimensions are measured in cm. Leave blank if the actual measurements are unavailable.',
     obstacles: {
       title: 'Cargo area obstacles',
       description:
@@ -77,7 +83,20 @@ export const vehicleTypes = {
       nameTooLong: 'The name has at most {max} characters.',
       positive: 'Enter a number greater than 0.',
       cogRange: 'Enter a number greater than 0 and at most {max}.',
+      doorWidthExceeded: 'Door width must not exceed the cargo bay width.',
+      doorHeightExceeded: 'Door height must not exceed the cargo bay height.',
+      doorPairRequired: 'Please enter both cargo door width and height.',
     },
+    preview: {
+      lengthInvalid: 'Cargo length is missing or invalid.',
+      widthInvalid: 'Cargo width is missing or invalid.',
+      heightInvalid: 'Cargo height is missing or invalid.',
+      doorWidthExceeded: 'Door width exceeds the cargo width.',
+      doorHeightExceeded: 'Door height exceeds the cargo height.',
+      obstacleIncomplete: 'An obstacle has incomplete coordinates or dimensions.',
+      obstacleOutside: 'An obstacle extends outside the cargo compartment.',
+      waiting: 'Enter valid cargo dimensions to preview the 3D vehicle.',
+    }
   },
   created: 'Vehicle type {name} added',
   saved: 'Vehicle type {name} saved',

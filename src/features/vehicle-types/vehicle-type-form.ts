@@ -48,7 +48,21 @@ const optionalPositive = z
     if (!Number.isNaN(value) && !(value > 0)) ctx.addIssue({ code: 'custom', message: POSITIVE })
   })
   .transform((value) => (Number.isNaN(value) ? undefined : value))
+/** Tọa độ trục: cho phép âm, 0 hoặc dương; ô trống là chưa khai báo. */
+const optionalFinite = z
+  .union([z.number().finite(), z.nan()])
+  .transform((value) =>
+    Number.isNaN(value) ? undefined : value,
+  )
 
+/** Tải trọng trục khi xe rỗng: không âm; ô trống là chưa khai báo. */
+const optionalNonNegative = z
+  .union([z.number().finite().nonnegative(), z.nan()])
+  .transform((value) =>
+    Number.isNaN(value) ? undefined : value,
+  )
+
+const optionalDoorDimension = optionalPositive
 export const vehicleTypeFormSchema = z.object({
   name: z
     .string()
@@ -66,10 +80,18 @@ export const vehicleTypeFormSchema = z.object({
   cargoWidthCm: positive,
   cargoHeightCm: positive,
 
+  doorWidthCm: optionalDoorDimension,
+  doorHeightCm: optionalDoorDimension,
+
   payloadKg: positive,
 
   frontAxleLimitKg: optionalPositive,
   rearAxleLimitKg: optionalPositive,
+  frontAxleX: optionalFinite,
+  rearAxleX: optionalFinite,
+
+  emptyFrontAxleLoadKg: optionalNonNegative,
+  emptyRearAxleLoadKg: optionalNonNegative,
 
   maxCogOffsetPercent: z
     .number({ error: COG_RANGE })
@@ -81,8 +103,51 @@ export const vehicleTypeFormSchema = z.object({
 
   hazardousCapable: z.boolean(),
 
+
   obstacles: z.array(obstacleSchema),
 })
+  .superRefine((values, ctx) => {
+    const { doorWidthCm, doorHeightCm } = values
+
+    if (
+      (doorWidthCm === undefined) !==
+      (doorHeightCm === undefined)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [
+          doorWidthCm === undefined
+            ? 'doorWidthCm'
+            : 'doorHeightCm',
+        ],
+        message: 'vehicleTypes.form.errors.doorPairRequired',
+      })
+    }
+
+    if (
+      doorWidthCm !== undefined &&
+      doorWidthCm > values.cargoWidthCm
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['doorWidthCm'],
+        message: 'vehicleTypes.form.errors.doorWidthExceeded',
+      })
+    }
+
+    if (
+      doorHeightCm !== undefined &&
+      doorHeightCm > values.cargoHeightCm
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['doorHeightCm'],
+        message: 'vehicleTypes.form.errors.doorHeightExceeded',
+      })
+    }
+  })
+
+
 
 export type VehicleTypeFormInput = z.input<typeof vehicleTypeFormSchema>
 export type VehicleTypeFormValues = z.output<typeof vehicleTypeFormSchema>
@@ -104,10 +169,18 @@ export const EMPTY_VEHICLE_TYPE: VehicleTypeFormInput = {
   cargoWidthCm: Number.NaN,
   cargoHeightCm: Number.NaN,
 
+  doorWidthCm: Number.NaN,
+  doorHeightCm: Number.NaN,
+
   payloadKg: Number.NaN,
 
   frontAxleLimitKg: Number.NaN,
   rearAxleLimitKg: Number.NaN,
+  frontAxleX: Number.NaN,
+  rearAxleX: Number.NaN,
+
+  emptyFrontAxleLoadKg: Number.NaN,
+  emptyRearAxleLoadKg: Number.NaN,
 
   maxCogOffsetPercent:
     ratioToPercent(
@@ -134,6 +207,9 @@ export function toVehicleTypeForm(
     cargoHeightCm:
       type.cargoHeightCm,
 
+    doorWidthCm: type.doorWidthCm ?? Number.NaN,
+    doorHeightCm: type.doorHeightCm ?? Number.NaN,
+
     payloadKg:
       type.payloadKg,
 
@@ -144,6 +220,14 @@ export function toVehicleTypeForm(
     rearAxleLimitKg:
       type.rearAxleLimitKg
       ?? Number.NaN,
+    frontAxleX: type.frontAxleX ?? Number.NaN,
+    rearAxleX: type.rearAxleX ?? Number.NaN,
+
+    emptyFrontAxleLoadKg:
+      type.emptyFrontAxleLoadKg ?? Number.NaN,
+
+    emptyRearAxleLoadKg:
+      type.emptyRearAxleLoadKg ?? Number.NaN,
 
     maxCogOffsetPercent:
       ratioToPercent(
@@ -189,6 +273,17 @@ export function toVehicleTypeInput(
 
     cargoHeightCm:
       roundCm(values.cargoHeightCm),
+    ...(values.doorWidthCm === undefined
+      ? {}
+      : {
+        doorWidthCm: roundCm(values.doorWidthCm),
+      }),
+
+    ...(values.doorHeightCm === undefined
+      ? {}
+      : {
+        doorHeightCm: roundCm(values.doorHeightCm),
+      }),
 
     payloadKg:
       roundKg(values.payloadKg),
@@ -196,20 +291,41 @@ export function toVehicleTypeInput(
     ...(values.frontAxleLimitKg === undefined
       ? {}
       : {
-          frontAxleLimitKg:
-            roundKg(
-              values.frontAxleLimitKg,
-            ),
-        }),
+        frontAxleLimitKg:
+          roundKg(
+            values.frontAxleLimitKg,
+          ),
+      }),
 
     ...(values.rearAxleLimitKg === undefined
       ? {}
       : {
-          rearAxleLimitKg:
-            roundKg(
-              values.rearAxleLimitKg,
-            ),
-        }),
+        rearAxleLimitKg:
+          roundKg(
+            values.rearAxleLimitKg,
+          ),
+      }),
+    ...(values.frontAxleX === undefined
+      ? {}
+      : { frontAxleX: roundCm(values.frontAxleX) }),
+
+    ...(values.rearAxleX === undefined
+      ? {}
+      : { rearAxleX: roundCm(values.rearAxleX) }),
+
+    ...(values.emptyFrontAxleLoadKg === undefined
+      ? {}
+      : {
+        emptyFrontAxleLoadKg:
+          roundKg(values.emptyFrontAxleLoadKg),
+      }),
+
+    ...(values.emptyRearAxleLoadKg === undefined
+      ? {}
+      : {
+        emptyRearAxleLoadKg:
+          roundKg(values.emptyRearAxleLoadKg),
+      }),
 
     maxCogOffsetRatio:
       percentToRatio(

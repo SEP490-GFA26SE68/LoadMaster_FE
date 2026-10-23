@@ -46,7 +46,7 @@ import {
   optimizeBackendTrip,
 } from './trips-api'
 import { RealTripDetailHeader, TripDetailHeader } from './TripDetailHeader'
-import { Plus, Route } from 'lucide-react'
+import { PackageOpen, Plus, Route } from 'lucide-react'
 import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
 
 
@@ -168,8 +168,8 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
       <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
         <div className="flex flex-col gap-4">
 
-          {canOptimize ? (
-            <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {canOptimize && (
               <Button
                 type="button"
                 loading={optimizeRoute.isPending}
@@ -179,8 +179,15 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                 <Route className="size-4" />
                 {t('trips.optimization.run')}
               </Button>
-            </div>
-          ) : null}
+            )}
+
+            <Button type="button" variant="secondary" asChild>
+              <Link to={`/chuyen/${encodeURIComponent(tripId)}/toi-uu`}>
+                <PackageOpen className="size-4" />
+                {t('trips.loadingOptimization.run')}
+              </Link>
+            </Button>
+          </div>
 
 
           <BackendTripRouteCard

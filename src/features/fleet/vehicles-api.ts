@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api-client'
-
+import type { TripVehicleConfigResponse } from '@/features/trips/trips-api'
 export type VehicleApi = {
   id: number
   name: string
@@ -154,3 +154,38 @@ export async function saveVehicle(
   return mapVehicle(response.data)
 }
 
+/**
+ * Lấy thông tin một xe theo Vehicle ID.
+ * Chỉ đọc, không thay đổi trạng thái xe.
+ */
+export async function fetchVehicleById(
+  vehicleId: string,
+): Promise<Vehicle> {
+  const response = await apiFetch<{
+    success: boolean
+    message?: string
+    data: VehicleApi
+  }>(
+    `/api/vehicles/${encodeURIComponent(vehicleId)}`,
+  )
+
+  return mapVehicle(response.data)
+}
+
+/**
+ * Lấy cấu hình 3D của xe theo Vehicle ID.
+ * Bao gồm kích thước thùng, cửa, thông số trục và vật cản.
+ */
+export async function fetchVehicleConfig(
+  vehicleId: string,
+): Promise<TripVehicleConfigResponse> {
+  const response = await apiFetch<{
+    success: boolean
+    message?: string
+    data: TripVehicleConfigResponse
+  }>(
+    `/api/vehicles/${encodeURIComponent(vehicleId)}/config`,
+  )
+
+  return response.data
+}
