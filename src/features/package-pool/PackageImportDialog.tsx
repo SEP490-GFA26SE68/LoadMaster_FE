@@ -1,11 +1,10 @@
-
 import { Download, FileUp } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { MAX_IMPORT_FILE_MB, MAX_IMPORT_ROWS } from './package-pool-import'
 import {
   useConfirmPackageImportMutation,
@@ -18,6 +17,29 @@ import { listDeliveryRequirements } from '@/features/requirements/requirements-a
 import { SelectField } from '@/components/ui/SelectField'
 import { useForm } from 'react-hook-form'
 
+const IMPORT_FIELD_LABELS: Record<string, string> = {
+  packageCode: 'Mã kiện (packageCode)',
+  packageName: 'Tên kiện (packageName)',
+  lengthCm: 'Chiều dài (lengthCm)',
+  widthCm: 'Chiều rộng (widthCm)',
+  heightCm: 'Chiều cao (heightCm)',
+  weightKg: 'Khối lượng (weightKg)',
+  quantity: 'Số lượng (quantity)',
+  handlingClass: 'Phân loại xử lý (handlingClass)',
+  destination: 'Điểm đến (destination)',
+  packageTypeCode: 'Mã loại kiện (packageTypeCode)',
+  orientation: 'Hướng đặt (orientation)',
+  fragilityLevel: 'Mức dễ vỡ (fragilityLevel)',
+  maxTopLoadKg: 'Tải đè tối đa (maxTopLoadKg)',
+  maxLayers: 'Số tầng tối đa (maxLayers)',
+  minSupportRatio: 'Tỷ lệ đỡ tối thiểu (minSupportRatio)',
+  priority: 'Độ ưu tiên (priority)',
+}
+
+function formatImportFieldLabel(field: string): string {
+  return IMPORT_FIELD_LABELS[field] ?? field
+}
+
 export function PackageImportDialog({
   onClose,
   onDone,
@@ -26,6 +48,7 @@ export function PackageImportDialog({
   onDone: () => void
 }) {
   const t = useT()
+  const format = useFormat()
   const inputId = useId()
   const input = useRef<HTMLInputElement>(null)
 
@@ -100,7 +123,6 @@ export function PackageImportDialog({
     preview.mutate(file)
   }
 
-
   function handleConfirm() {
     if (
       !deliveryRequirementId ||
@@ -127,7 +149,6 @@ export function PackageImportDialog({
       },
     )
   }
-
 
   return (
     <Dialog
@@ -255,7 +276,6 @@ export function PackageImportDialog({
                 ))}
               </div>
 
-
               {blocked ? (
                 <Banner tone="danger">
                   {t('sourcing.import.blockedExcel', {
@@ -271,7 +291,7 @@ export function PackageImportDialog({
                 >
                   {t('sourcing.import.rowErrorDetail', {
                     row: issue.rowIndex,
-                    field: issue.field,
+                    field: formatImportFieldLabel(issue.field),
                     message: issue.message,
                   })}
                 </Banner>
@@ -284,12 +304,44 @@ export function PackageImportDialog({
                 >
                   {t('sourcing.import.rowWarningDetail', {
                     row: issue.rowIndex,
-                    field: issue.field,
+                    field: formatImportFieldLabel(issue.field),
                     message: issue.message,
                   })}
                 </Banner>
               ))}
 
+              {result.validRows.length > 0 ? (
+                <div className="overflow-x-auto rounded-md border border-border">
+                  <table className="w-full text-left text-small">
+                    <thead className="border-b border-border bg-n-50 text-caption font-semibold text-ink-2">
+                      <tr>
+                        <th className="px-3 py-2">Dòng</th>
+                        <th className="px-3 py-2">Mã kiện</th>
+                        <th className="px-3 py-2">Kích thước (D × R × C)</th>
+                        <th className="px-3 py-2">Khối lượng</th>
+                        <th className="px-3 py-2">Loại hàng</th>
+                        <th className="px-3 py-2">Điểm đến</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {result.validRows.map((row) => (
+                        <tr key={`valid-row-${row.rowIndex}-${row.packageCode}`}>
+                          <td className="px-3 py-2 font-mono tabular-nums">{row.rowIndex}</td>
+                          <td className="px-3 py-2 font-mono font-medium">{row.packageCode}</td>
+                          <td className="px-3 py-2 tabular-nums">
+                            {format.dimensions(row.lengthCm, row.widthCm, row.heightCm)}
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">
+                            {format.weight(row.weightKg)}
+                          </td>
+                          <td className="px-3 py-2 font-mono">{row.handlingClass || 'STANDARD'}</td>
+                          <td className="px-3 py-2">{row.destination}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
 
               <p className="text-body text-ink-2">
                 {t('sourcing.import.previewResult', {
