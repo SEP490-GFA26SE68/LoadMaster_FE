@@ -13,6 +13,7 @@ export default defineConfig({
   server: {
     // Vite đã bỏ qua `test-results`; báo cáo Playwright bị xoá/tạo lại giữa các lượt chạy
     // làm watcher trên Windows ném lỗi scandir và dừng dev server của `pnpm test:e2e`.
-    watch: { ignored: ['**/playwright-report/**', '**/blob-report/**'] },
   },
 })
+
+

@@ -13,12 +13,17 @@ import {
   fetchTripFormOptions,
   fetchTripRevisions,
   fetchTrips,
+  fetchTripsPage,
   importPackages,
   savePackage,
   updateTripFrame,
   type TripFrame,
   type TripFrameChanges,
+  type TripListParams,
+  type TripListPageResult,
 } from './trips-api'
+
+import { optimizeBackendTrip } from './trips-api'
 
 /** Chuyến và kiện qua TanStack Query — component không gọi API trực tiếp (mục 9). */
 
@@ -26,7 +31,30 @@ export function useTripsQuery() {
   // Trạng thái và tỷ lệ của từng dòng đổi theo mọi mutation của từng chuyến (khoá `['trips', tripId]`): đọc lại mỗi lần mở màn.
   return useQuery({ queryKey: ['trips', 'list'], queryFn: fetchTrips, staleTime: 0 })
 }
-
+/** Danh sách chuyến lấy từ PostgreSQL, phân trang tại Backend. */
+/** Danh sách chuyến từ PostgreSQL: phân trang, tìm kiếm, lọc và sắp xếp tại Backend. */
+export function useTripsPageQuery(params: TripListParams) {
+  return useQuery<TripListPageResult>({
+    queryKey: [
+      'trips',
+      'list',
+      'paged',
+      params.page,
+      params.size,
+      params.search ?? '',
+      params.status ?? '',
+      params.fromDate ?? '',
+      params.toDate ?? '',
+      params.vehicleId ?? '',
+      params.driverId ?? '',
+      params.unassignedDriver ?? false,
+      params.sortBy ?? 'departureTime',
+      params.sortDir ?? 'desc',
+    ],
+    queryFn: () => fetchTripsPage(params),
+    staleTime: 0,
+  })
+}
 /** Xe (kèm trạng thái bảo dưỡng) và tài xế của form chuyến: đọc lại mỗi lần mở form vì Đội xe và Người dùng đổi chúng. */
 export function useTripFormOptionsQuery() {
   return useQuery({ queryKey: ['trips', 'form-options'], queryFn: fetchTripFormOptions, staleTime: 0 })
@@ -43,6 +71,24 @@ export function useCreateTripMutation() {
     ]),
   })
 }
+
+
+export function useOptimizeBackendTripMutation(
+  tripId: string,
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => optimizeBackendTrip(tripId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['trips', tripId],
+      })
+    },
+  })
+}
+
 
 export function useUpdateTripFrameMutation(tripId: string) {
   const client = useQueryClient()

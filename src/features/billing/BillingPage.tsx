@@ -1,4 +1,4 @@
-import { Coins, RotateCcw } from 'lucide-react'
+import { Coins, LifeBuoy, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -11,6 +11,8 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { TabCount, Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
+import { isAuthenticated } from '@/features/auth/auth-api'
+import { SupportTicketDialog } from '@/features/support/SupportTicketDialog'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { PaymentTransaction } from '@/lib/mock-db'
 import { BalanceCard } from './BalanceCard'
@@ -61,6 +63,7 @@ export function BillingPage() {
   const list = useListUrlState<typeof HISTORY_TAB>({ filters: [HISTORY_TAB] })
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
 
   const current = subscription.data
   const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED')
@@ -104,10 +107,16 @@ export function BillingPage() {
         description={t('pageHero.billing')}
         actions={
           failed || loading ? null : (
-            <Button variant="primary" onClick={() => setTopUpOpen(true)}>
-              <Coins strokeWidth={1.5} />
-              {t('billing.topUp')}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" onClick={() => setSupportOpen(true)}>
+                <LifeBuoy strokeWidth={1.5} />
+                {t('nav.supportRequests')}
+              </Button>
+              <Button variant="primary" onClick={() => setTopUpOpen(true)}>
+                <Coins strokeWidth={1.5} />
+                {t('billing.topUp')}
+              </Button>
+            </div>
           )
         }
       />
@@ -140,17 +149,29 @@ export function BillingPage() {
             ) : null}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               {current ? (
-                <PlanSummaryCard current={current} onCancel={() => setCancelOpen(true)} />
+                <PlanSummaryCard
+                  current={current}
+                  onCancel={() => setCancelOpen(true)}
+                  onRenew={isAuthenticated() ? () => handleSubscribe(current.plan.id) : undefined}
+                  renewPending={subscribe.isPending}
+                />
               ) : (
                 <Card><EmptyState compact mascot="empty" title={t('billing.noPlan.title')} description={t('billing.noPlan.description')} /></Card>
               )}
               <BalanceCard credit={balance.data} />
             </div>
-            {canSubscribe ? (
+            {canSubscribe || (isAuthenticated() && current !== null && current.subscription.status !== 'CANCELLED') ? (
               <PlanChoiceCard
-                plans={plans.data ?? []}
+                plans={
+                  isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED'
+                    ? (plans.data ?? []).filter((plan) => plan.id === current.plan.id || plan.priceVnd > current.plan.priceVnd)
+                    : (plans.data ?? [])
+                }
                 pendingId={subscribe.isPending ? (subscribe.variables ?? null) : null}
+                currentPlanId={isAuthenticated() && current !== null ? current.plan.id : null}
+                currentPlanTier={isAuthenticated() && current !== null ? current.plan.tier : null}
                 onSubscribe={(plan) => handleSubscribe(plan.id)}
+                onRequestUpgrade={isAuthenticated() && current !== null ? () => setSupportOpen(true) : undefined}
               />
             ) : null}
             <Card role="region" aria-labelledby="billing-history" className="relative flex-none overflow-hidden">
@@ -175,7 +196,15 @@ export function BillingPage() {
         )}
       </div>
 
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} pending={topUp.isPending} onConfirm={handleTopUp} />
+      <TopUpDialog
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        pending={topUp.isPending}
+        onConfirm={handleTopUp}
+        tier={isAuthenticated() ? (current?.plan.tier ?? 'BASIC') : undefined}
+        currentBalance={isAuthenticated() ? (balance.data?.balance ?? 0) : undefined}
+      />
+      {supportOpen ? <SupportTicketDialog onClose={() => setSupportOpen(false)} /> : null}
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}

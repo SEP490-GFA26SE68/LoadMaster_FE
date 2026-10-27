@@ -6,7 +6,13 @@ import { report, rule } from './issue-codes'
 
 const vehicleObstacleSchema = objectOf({
   id: text(),
-  type: oneOf(['WHEEL_ARCH', 'COOLING_UNIT', 'PARTITION', 'RESERVED_ZONE']),
+  type: oneOf([
+    'WHEEL_ARCH',
+    'COOLING_UNIT',
+    'PARTITION',
+    'RESERVED_ZONE',
+    'OTHER',
+  ]),
   xCm: finiteNumber(),
   yCm: finiteNumber(),
   zCm: finiteNumber(),

@@ -1,45 +1,76 @@
-import { ChevronLeft, Wrench } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router'
-import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
-import { useCan } from '@/features/auth/useCan'
-import type { VehicleConfig } from '@/domain/models'
-import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { VehicleState } from '@/lib/mock-db'
-import { MaintenanceDialog } from './MaintenanceDialog'
-import { useVehicleMaintenanceMutation, useVehicleQuery, useVehicleStateQuery } from './useVehiclesQuery'
+import { useT } from '@/lib/i18n'
+import { adaptBackendVehicle } from '@/features/viewer3d/backend-scene-adapter'
+
 import { VehicleForm } from './VehicleForm'
-import { VehicleStateBanner } from './VehicleStateBanner'
-import { VehicleStatusBadge } from './VehicleStatusBadge'
+import {
+  fetchVehicleById,
+  fetchVehicleConfig,
+} from './vehicles-api'
 
-/**
- * Trang cấu hình xe (D-17, D-38): `/doi-xe/moi` thêm xe mới, `/doi-xe/:vehicleId` sửa xe đang có.
- * Trạng thái xe (LM-089, D-53): xe đang chạy chuyến thì form chỉ đọc kèm thông báo chuyến nào; người có quyền sửa đội xe bật/tắt
- * bảo dưỡng bằng nút phụ trên thanh tiêu đề.
- */
+const VehiclePreviewViewer = lazy(() =>
+  import('@/features/viewer3d/VehiclePreviewViewer').then(
+    (module) => ({ default: module.VehiclePreviewViewer }),
+  ),
+)
+
+const HAS_WEBGL =
+  typeof WebGLRenderingContext !== 'undefined'
+
 export function VehicleDetailPage() {
-  const t = useT()
   const { vehicleId } = useParams()
-  const query = useVehicleQuery(vehicleId ?? '')
-  const stateQuery = useVehicleStateQuery(vehicleId ?? '')
 
-  if (vehicleId === undefined) return <VehicleForm />
+  if (vehicleId === undefined) {
+    return <VehicleForm />
+  }
 
-  // Chờ cả trạng thái: form của xe đang chạy chuyến không được hiện ô nhập mở rồi mới khoá.
-  if (query.isPending || stateQuery.isPending) {
+  return <BackendVehicleDetail vehicleId={vehicleId} />
+}
+
+function BackendVehicleDetail({
+  vehicleId,
+}: {
+  vehicleId: string
+}) {
+  const t = useT()
+
+  const [highlightedObstacleId, setHighlightedObstacleId] =
+    useState<string | null>(null)
+
+  const [toolbarHost, setToolbarHost] =
+    useState<HTMLDivElement | null>(null)
+
+  const vehicleQuery = useQuery({
+    queryKey: ['backend', 'vehicle', vehicleId],
+    queryFn: () => fetchVehicleById(vehicleId),
+  })
+
+  const configQuery = useQuery({
+    queryKey: ['backend', 'vehicle-config', vehicleId],
+    queryFn: () => fetchVehicleConfig(vehicleId),
+  })
+
+  if (vehicleQuery.isPending || configQuery.isPending) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8" role="status" aria-label={t('fleet.detail.loading')}>
-        <Spinner />
+      <div role="status" className="p-8">
+        {t('fleet.preview.loading')}
       </div>
     )
   }
 
-  if (query.isError || !query.data) {
+  if (vehicleQuery.isError || configQuery.isError) {
+    const error = vehicleQuery.error ?? configQuery.error
+
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <p className="text-body text-text-2">{t('fleet.detail.notFound', { id: vehicleId })}</p>
+      <div className="flex flex-col gap-4 p-8">
+        <p role="alert" className="text-sm text-red-500">
+          {error?.message}
+        </p>
         <Button variant="secondary" asChild>
           <Link to="/doi-xe">
             <ChevronLeft strokeWidth={1.5} />
@@ -50,56 +81,118 @@ export function VehicleDetailPage() {
     )
   }
 
-  // `key` để form nạp lại giá trị mặc định khi chuyển sang xe khác
-  return <ExistingVehicle key={query.data.id} vehicle={query.data} state={stateQuery.data ?? null} />
-}
+  const vehicle = vehicleQuery.data
+  const config = configQuery.data
 
-function ExistingVehicle({ vehicle, state }: { vehicle: VehicleConfig; state: VehicleState | null }) {
-  const t = useT()
-  const canEdit = useCan()('fleet.edit')
-  const maintenance = useVehicleMaintenanceMutation()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const running = state?.status === 'in_use'
-
-  function handleMaintenance(note: string | null) {
-    maintenance.mutate({ id: vehicle.id, note }, {
-      onSuccess: () => {
-        setDialogOpen(false)
-        toast.success(t(note === null ? 'fleet.maintenance.ended' : 'fleet.maintenance.started', { name: vehicle.name }))
-      },
-      onError: (error) => toast.error(dataErrorMessage(error, t)),
-    })
+  if (!vehicle || !config) {
+    return null
   }
 
-  const action = !canEdit || !state || running ? null : state.status === 'maintenance' ? (
-    <Button type="button" variant="glass" loading={maintenance.isPending} onClick={() => handleMaintenance(null)}>
-      <Wrench strokeWidth={1.5} />
-      {t('fleet.maintenance.end')}
-    </Button>
-  ) : (
-    <Button type="button" variant="glass" onClick={() => setDialogOpen(true)}>
-      <Wrench strokeWidth={1.5} />
-      {t('fleet.maintenance.start')}
-    </Button>
-  )
+  if (String(config.vehicleId) !== vehicle.id) {
+    return (
+      <p role="alert" className="p-8 text-sm text-red-500">
+        Vehicle configuration mismatch
+      </p>
+    )
+  }
+
+  // Dùng adapter đã được kiểm thử với LoadPlan 3D.
+  const vehicleConfig = adaptBackendVehicle(config)
 
   return (
-    <>
-      <VehicleForm
-        vehicle={vehicle}
-        readOnly={!canEdit || running}
-        status={state ? <VehicleStatusBadge status={state.status} /> : null}
-        actions={action}
-        notice={state && state.status !== 'available' ? <VehicleStateBanner state={state} /> : null}
-      />
-      {/* Ngoài form xe trong cây React: submit của hộp thoại không được lan tới nút Lưu (xem MaintenanceDialog). */}
-      <MaintenanceDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        vehicleName={vehicle.name}
-        pending={maintenance.isPending}
-        onSubmit={handleMaintenance}
-      />
-    </>
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      <div className="flex flex-wrap items-center gap-4">
+        <Button variant="secondary" asChild>
+          <Link to="/doi-xe">
+            <ChevronLeft strokeWidth={1.5} />
+            {t('fleet.detail.back')}
+          </Link>
+        </Button>
+
+        <div>
+          <h1 className="text-xl font-semibold">
+            {vehicle.name}
+          </h1>
+          <p className="text-sm text-text-2">
+            {vehicle.licensePlate}
+            {' · '}
+            {vehicle.vehicleTypeName}
+          </p>
+        </div>
+      </div>
+
+      <section className="flex flex-col gap-3">
+        <div ref={setToolbarHost} className="min-h-12" />
+
+        <div
+          className="relative h-[520px] overflow-hidden rounded-xl border border-border-dark bg-canvas-1"
+          role="region"
+          aria-label={t('fleet.preview.label')}
+        >
+          {HAS_WEBGL ? (
+            <Suspense
+              fallback={
+                <div className="p-6" role="status">
+                  {t('fleet.preview.loading')}
+                </div>
+              }
+            >
+              <VehiclePreviewViewer
+                vehicle={vehicleConfig}
+                frameVehicle={vehicleConfig}
+                toolbarHost={toolbarHost}
+                highlightedObstacleId={highlightedObstacleId}
+                onObstacleSelect={setHighlightedObstacleId}
+              />
+            </Suspense>
+          ) : (
+            <p className="p-6 text-sm text-text-2">
+              {t('fleet.preview.unsupported')}
+            </p>
+          )}
+        </div>
+
+        <p className="text-sm text-text-2">
+          {t('fleet.preview.hint')}
+        </p>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <DetailField
+          label={t('fleet.preview.label')}
+          value={`X ${config.innerLength} × Y ${config.innerWidth} × Z ${config.innerHeight} cm`}
+        />
+
+        <DetailField
+          label={t('fleet.preview.readout.door')}
+          value={
+            config.doorWidth != null &&
+              config.doorHeight != null
+              ? `${t('fleet.preview.readout.width')}: ${config.doorWidth} cm · ${t('fleet.preview.readout.heigh')}: ${config.doorHeight} cm`
+              : '—'
+          }
+        />
+
+        <DetailField
+          label={t('fleet.preview.readout.payload')}
+          value={`${config.maxPayloadKg} kg`}
+        />
+      </section>
+    </div>
+  )
+}
+
+function DetailField({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-lg border p-4">
+      <p className="text-sm text-text-2">{label}</p>
+      <p className="mt-2 font-semibold">{value}</p>
+    </div>
   )
 }

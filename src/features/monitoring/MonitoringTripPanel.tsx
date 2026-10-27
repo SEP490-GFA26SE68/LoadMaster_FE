@@ -138,7 +138,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                   time: format.time(reroute.confirmedAt), route: t(`monitoring.reroute.routes.${reroute.route}`),
                   km: format.decimal(reroute.distanceKm), minutes: format.integer(reroute.durationMinutes), number: format.integer(reroute.stopNumber),
                 })}
-                <Badge shape="tag" tone="mock">MOCK RESULT</Badge>
+                {live?.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
               </p>
             ) : null}
             <TripExceptionList

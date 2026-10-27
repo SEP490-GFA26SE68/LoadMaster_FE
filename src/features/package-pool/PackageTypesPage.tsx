@@ -12,11 +12,11 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { PackageTypeInput } from '@/lib/mock-db'
 import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
-import { useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
+import { useDeletePackageTypeMutation, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
+import type { PackageTypeInput } from './package-types-api'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
@@ -28,28 +28,30 @@ type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 export function PackageTypesPage() {
   const t = useT()
   const canEdit = useCan()('packages.manage')
-  const typesQuery = usePackageTypesQuery()
-  const packagesQuery = usePackagesQuery()
   const save = useSavePackageTypeMutation()
   const remove = useDeletePackageTypeMutation()
-  const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
+  const list = useListUrlState({
+    defaultSort: {
+      id: 'name',
+      desc: false,
+    },
+  })
+
+  const typesQuery = usePackageTypesQuery(
+    list.pageIndex,
+    list.pageSize,
+  )
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<PackageTypeRow | null>(null)
-
-  const rows = useMemo<PackageTypeRow[]>(() => {
-    const usage = new Map<string, number>()
-    for (const pkg of packagesQuery.data ?? []) {
-      if (pkg.packageTypeId !== undefined) usage.set(pkg.packageTypeId, (usage.get(pkg.packageTypeId) ?? 0) + 1)
-    }
-    return (typesQuery.data ?? []).map((type) => ({ ...type, usage: usage.get(type.id) ?? 0 }))
-  }, [typesQuery.data, packagesQuery.data])
+  const rows = typesQuery.data?.data ?? []
   const visible = useMemo(() => rows.filter((row) => matchesQuery([row.name, row.id], list.query)), [rows, list.query])
   const columns = useMemo(() => packageTypeColumns(t, canEdit), [t, canEdit])
   const actions = useMemo(() => ({ onEdit: (row: PackageTypeRow) => setEditing({ kind: 'edit', row }), onDelete: setDeleting }), [])
 
-  const pending = typesQuery.isPending || packagesQuery.isPending
-  const error = typesQuery.error ?? packagesQuery.error
-  const hasRows = rows.length > 0
+  const pending = typesQuery.isPending
+  const error = typesQuery.error
+  const totalElements = typesQuery.data?.totalElements ?? 0
+  const hasRows = totalElements > 0
   const overlap = pending || (!error && hasRows)
 
   async function handleSubmit(input: PackageTypeInput) {
@@ -81,10 +83,16 @@ export function PackageTypesPage() {
       <PageHero
         overlap={overlap}
         title={t('sourcing.packageTypes.title')}
-        meta={typesQuery.isSuccess ? t('sourcing.packageTypes.count', { count: rows.length }) : undefined}
+        meta={
+          typesQuery.isSuccess
+            ? t('sourcing.packageTypes.count', {
+              count: typesQuery.data.totalElements,
+            })
+            : undefined
+        }
         description={t('pageHero.packageTypes')}
         back={{ to: '/kien-hang', label: t('sourcing.labels.back') }}
-        actions={hasRows ? addButton : null}
+        actions={addButton}
       />
       <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
         {pending ? (
@@ -113,6 +121,14 @@ export function PackageTypesPage() {
                       getRowId={(row) => row.id}
                       density="roomy"
                       appearance="paper"
+                      serverPagination
+                      totalRows={typesQuery.data?.totalElements ?? 0}
+                      pagination={{
+                        pageIndex: list.pageIndex,
+                        pageSize: list.pageSize,
+                        onPageChange: list.setPage,
+                        onPageSizeChange: list.setPageSize,
+                      }}
                       sorting={list.sorting}
                       onSortingChange={list.setSorting}
                       isFiltering={list.isFiltering}

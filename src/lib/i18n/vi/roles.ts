@@ -4,7 +4,7 @@ export const roles = {
   systemManager: 'Quản lý nền tảng',
   systemSupporter: 'Hỗ trợ khách hàng',
   companyAdmin: 'Quản trị công ty',
-  manager: 'Quản lý công ty',
+  companyManager: 'Quản lý công ty',
   dispatcher: 'Điều phối viên',
   warehouse: 'Nhân viên kho',
   driver: 'Tài xế',
