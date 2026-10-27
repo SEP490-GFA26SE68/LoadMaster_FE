@@ -25,7 +25,7 @@ type SupportTicketApi = {
   subject: string
   description: string | null
   category: 'BILLING' | 'ALGORITHM_ERROR' | 'SYSTEM_BUG'
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  priority: 'MEDIUM' | 'HIGH'
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
   requesterId: number | null
   requesterName: string | null
@@ -36,7 +36,7 @@ type SupportTicketApi = {
   assignedToName: string | null
   resolutionNote: string | null
   createdAt: string | number[] | null
-  resolvedAt: string | number | null
+  resolvedAt: string | number | number[] | null
 }
 
 type ContractApi = {
@@ -158,7 +158,7 @@ export async function createSupportTicket(input: NewSupportTicket): Promise<Supp
       subject: input.title,
       description: input.description,
       category: input.kind === 'BILLING' ? 'BILLING' : 'SYSTEM_BUG',
-      priority: 'MEDIUM',
+      priority: input.kind === 'BILLING' ? 'MEDIUM' : 'HIGH',
     }),
   })
   return mapTicketApi(body.data)
@@ -359,4 +359,3 @@ export async function assignCompanyPlan(companyId: string, planId: string): Prom
     }),
   })
 }
-

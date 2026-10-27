@@ -1,4 +1,3 @@
-
 import { apiFetch, apiFetchBlob } from '@/lib/api-client'
 
 type ApiResponse<T> = {
@@ -29,10 +28,12 @@ export type ImportRowWarningApi = {
 export type PackageImportRowApi = {
   rowIndex: number
   packageCode: string
+  packageName?: string | null
   lengthCm: number
   widthCm: number
   heightCm: number
   weightKg: number
+  quantity?: number
   handlingClass: string
   destination: string
 }
@@ -95,11 +96,6 @@ export async function previewCargoPackageImport(
 }
 
 /**
- * Xác nhận nhập kiện.
- * Gửi lại file XLSX gốc cho BE.
- */
-
-/**
  * Xác nhận nhập các kiện vật lý từ Excel vào PostgreSQL.
  *
  * Backend nhận:
@@ -125,7 +121,6 @@ export async function confirmCargoPackageImport(
 
   return response.data
 }
-
 
 /**
  * Tải mẫu Excel XLSX chung từ BE.

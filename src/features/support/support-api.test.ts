@@ -171,3 +171,58 @@ test('when authenticated with Keycloak, support-api calls Backend /api/support-t
   expect(contract.planName).toBe('Pro')
   expect(apiFetchSpy).toHaveBeenCalled()
 })
+
+
+test('createSupportTicket maps BILLING to MEDIUM priority and TECHNICAL to HIGH priority', async () => {
+  vi.spyOn(authApi, 'isAuthenticated').mockReturnValue(true)
+
+  const postedPayloads: Array<{ category: string; priority: string }> = []
+  vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (_path: string, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as {
+      subject: string
+      description: string
+      category: string
+      priority: string
+    }
+    postedPayloads.push({ category: body.category, priority: body.priority })
+    return {
+      success: true,
+      data: {
+        id: 20,
+        ticketCode: 'TCK-20261027-9999',
+        subject: body.subject,
+        description: body.description,
+        category: body.category,
+        priority: body.priority,
+        status: 'OPEN',
+        requesterId: 5,
+        requesterName: 'Tran Quan Tri Acme',
+        requesterEmail: 'newadmin.acme@loadmaster.vn',
+        companyId: 1,
+        companyName: 'Acme Logistics',
+        assignedToId: null,
+        assignedToName: null,
+        resolutionNote: null,
+        createdAt: '2026-10-27 21:40:00',
+        resolvedAt: null,
+      },
+    } as unknown as never
+  })
+
+  await createSupportTicket({
+    kind: 'BILLING',
+    title: 'Hỏi về gói cước',
+    description: 'Cần xuất hóa đơn VAT',
+  })
+
+  await createSupportTicket({
+    kind: 'TECHNICAL',
+    title: 'Lỗi không hiển thị 3D',
+    description: 'Màn hình 3D bị trắng',
+  })
+
+  expect(postedPayloads).toEqual([
+    { category: 'BILLING', priority: 'MEDIUM' },
+    { category: 'SYSTEM_BUG', priority: 'HIGH' },
+  ])
+})

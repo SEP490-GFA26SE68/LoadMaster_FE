@@ -35,6 +35,7 @@ test('a cm value without its unit keeps the 0.1 cm step, for lists that write "c
 test('dimensions read length × width × height with one cm unit at the end', () => {
   expect(vi.dimensions(1203.5, 235, 239.2)).toBe('1.203,5 × 235 × 239,2 cm')
   expect(en.dimensions(1203.5, 235, 239.2)).toBe('1,203.5 × 235 × 239.2 cm')
+  expect(vi.dimensions(2.22, 3.45, 10.55)).toBe('2,22 × 3,45 × 10,55 cm')
 })
 
 test('a door opening reads width × height with one cm unit at the end, as in "the 220 × 230 cm door"', () => {
