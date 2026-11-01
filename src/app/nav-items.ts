@@ -24,9 +24,22 @@ export const NAV_SCREENS = {
   monitoring: { to: '/giam-sat', labelKey: 'nav.monitoring', icon: MapPinned, permission: 'monitoring.view' },
   // Loại kiện và In nhãn mở từ màn Kho kiện, không có mục riêng
   packages: { to: '/kien-hang', labelKey: 'nav.packages', icon: Package, permission: 'packages.view' },
+
+  warehouseCustomers: {
+    to: '/kho-khach-hang',
+    labelKey: 'nav.customers',
+    icon: Users,
+    permission: 'warehouse.operate',
+  },
   requirements: { to: '/yeu-cau-giao', labelKey: 'nav.requirements', icon: ClipboardList, permission: 'requirements.view' },
   // Loại xe mở từ màn Đội xe
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
+  companyWarehouses: {
+    to: '/quan-ly-kho',
+    labelKey: 'companyWarehouses.title',
+    icon: Warehouse,
+    permission: 'companyWarehouses.manage',
+  },
   // Công ty: quản trị hệ thống (FE-8-06)
   companies: { to: '/nen-tang/cong-ty', labelKey: 'nav.companies', icon: Building2, permission: 'companies.manage' },
   // Hỗ trợ: Hỗ trợ khách hàng (FE-8-07)
@@ -56,9 +69,9 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemManager: ['plans'],
   systemSupporter: ['support'],
   companyAdmin: ['users', 'audit', 'billing'],
-  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet'],
+  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet','companyWarehouses'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
-  warehouse: ['packages', 'warehouse'],
+  warehouse: ['packages', 'warehouseCustomers', 'warehouse'],
   driver: ['driver'],
 }
 

@@ -1,45 +1,117 @@
-/**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   listSubscriptionPlans  → GET /api/subscription/plans
- *   createSubscriptionPlan → POST /api/subscription/plans
- *   updateSubscriptionPlan → PUT /api/subscription/plans/{id}
- *   deleteSubscriptionPlan → DELETE /api/subscription/plans/{id}
- *   chưa có ở BE: setSubscriptionPlanActive (BE bật / tắt bán bằng PUT cùng cờ `active`), countPlanCompanies
- */
-
-import { getMockDb, type PlanInput, type PlanPatch, type SubscriptionPlan } from '@/lib/mock-db'
+import { isAuthenticated } from '@/features/auth/auth-api'
+import { apiFetch } from '@/lib/api-client'
+import { mapSubscriptionPlanApi, type SubscriptionPlanApi } from '@/features/billing/billing-api'
+import {
+  getMockDb,
+  type PlanInput,
+  type PlanPatch,
+  type SubscriptionPlan,
+} from '@/lib/mock-db'
+import { TIER_ALGORITHM, TIER_FEATURES } from '@/lib/mock-db/billing-model'
 
 /** Một dòng của danh mục: gói kèm số công ty đang gắn với nó. */
 export type PlanRow = { readonly plan: SubscriptionPlan; readonly companies: number }
 
-/** Danh mục gói theo thứ tự hạng, mỗi gói kèm số công ty dùng. */
-// GET /api/subscription/plans (số công ty dùng: chưa có ở BE)
+// GET /api/subscription/plans
 export async function listSubscriptionPlans(): Promise<PlanRow[]> {
-  const db = getMockDb()
-  const [plans, companies] = await Promise.all([db.listSubscriptionPlans(), db.countPlanCompanies()])
-  return plans.map((plan) => ({ plan, companies: companies[plan.id] ?? 0 }))
+  if (!isAuthenticated()) {
+    const db = getMockDb()
+    const [plans, companies] = await Promise.all([db.listSubscriptionPlans(), db.countPlanCompanies()])
+    return plans.map((plan) => ({ plan, companies: companies[plan.id] ?? 0 }))
+  }
+
+  const items = await apiFetch<SubscriptionPlanApi[]>('/api/subscription/plans')
+  return items.map((item) => ({
+    plan: mapSubscriptionPlanApi(item),
+    companies: Number(item.activeCompanyCount ?? 0),
+  }))
 }
 
-/** Gói mới đang bán trừ khi `active: false`. Hạng đã có gói đang bán: `PLAN_TIER_TAKEN`; sai dữ liệu: `PLAN_INVALID` kèm tên trường. */
 // POST /api/subscription/plans
-export function createSubscriptionPlan(input: PlanInput): Promise<SubscriptionPlan> {
-  return getMockDb().createSubscriptionPlan(input)
+export async function createSubscriptionPlan(input: PlanInput): Promise<SubscriptionPlan> {
+  if (!isAuthenticated()) {
+    return getMockDb().createSubscriptionPlan(input)
+  }
+
+  const created = await apiFetch<SubscriptionPlanApi>('/api/subscription/plans', {
+    method: 'POST',
+    body: JSON.stringify({
+      planCode: `${input.tier}_${Date.now()}`,
+      name: input.name.trim(),
+      priceVnd: input.priceVnd,
+      tier: input.tier,
+      monthlyCredits: input.monthlyCredits,
+      algorithmTier: TIER_ALGORITHM[input.tier],
+      features: TIER_FEATURES[input.tier].join(','),
+      billingCycle: 'MONTHLY',
+      active: input.active ?? true,
+    }),
+  })
+  return mapSubscriptionPlanApi(created)
 }
 
-/** Giá và credit mới áp dụng từ kỳ gia hạn kế tiếp của từng công ty; sửa xong gói hết nhãn "giá trị tạm". */
 // PUT /api/subscription/plans/{id}
-export function updateSubscriptionPlan(planId: string, patch: PlanPatch): Promise<SubscriptionPlan> {
-  return getMockDb().updateSubscriptionPlan(planId, patch)
+export async function updateSubscriptionPlan(
+  planId: string,
+  patch: PlanPatch,
+): Promise<SubscriptionPlan> {
+  if (!isAuthenticated()) {
+    return getMockDb().updateSubscriptionPlan(planId, patch)
+  }
+
+  const current = await apiFetch<SubscriptionPlanApi>(`/api/subscription/plans/${planId}`)
+  const updated = await apiFetch<SubscriptionPlanApi>(`/api/subscription/plans/${planId}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      planCode: current.planCode,
+      name: patch.name?.trim() ?? current.name,
+      priceVnd: patch.priceVnd ?? current.priceVnd,
+      tier: current.tier,
+      monthlyCredits:
+        patch.monthlyCredits === undefined ? current.monthlyCredits : patch.monthlyCredits,
+      algorithmTier: current.algorithmTier,
+      features: patch.features ? patch.features.join(',') : current.features,
+      billingCycle: current.billingCycle ?? 'MONTHLY',
+      active: current.active ?? true,
+    }),
+  })
+  return mapSubscriptionPlanApi(updated)
 }
 
-/** Bật / tắt bán. Bật khi hạng đã có gói khác đang bán: `PLAN_TIER_TAKEN`. */
-// chưa có ở BE (BE: PUT /api/subscription/plans/{id} với cờ `active`)
-export function setSubscriptionPlanActive(planId: string, active: boolean): Promise<SubscriptionPlan> {
-  return getMockDb().setSubscriptionPlanActive(planId, active)
+// PUT /api/subscription/plans/{id} với cờ `active`
+export async function setSubscriptionPlanActive(
+  planId: string,
+  active: boolean,
+): Promise<SubscriptionPlan> {
+  if (!isAuthenticated()) {
+    return getMockDb().setSubscriptionPlanActive(planId, active)
+  }
+
+  const current = await apiFetch<SubscriptionPlanApi>(`/api/subscription/plans/${planId}`)
+  const updated = await apiFetch<SubscriptionPlanApi>(`/api/subscription/plans/${planId}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      planCode: current.planCode,
+      name: current.name,
+      priceVnd: current.priceVnd,
+      tier: current.tier,
+      monthlyCredits: current.monthlyCredits,
+      algorithmTier: current.algorithmTier,
+      features: current.features,
+      billingCycle: current.billingCycle ?? 'MONTHLY',
+      active,
+    }),
+  })
+  return mapSubscriptionPlanApi(updated)
 }
 
-/** Còn công ty gắn với gói: `PLAN_IN_USE`. */
 // DELETE /api/subscription/plans/{id}
-export function deleteSubscriptionPlan(planId: string): Promise<void> {
-  return getMockDb().deleteSubscriptionPlan(planId)
+export async function deleteSubscriptionPlan(planId: string): Promise<void> {
+  if (!isAuthenticated()) {
+    return getMockDb().deleteSubscriptionPlan(planId)
+  }
+
+  await apiFetch<void>(`/api/subscription/plans/${planId}`, {
+    method: 'DELETE',
+  })
 }

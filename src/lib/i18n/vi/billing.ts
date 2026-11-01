@@ -25,12 +25,12 @@ export const billing = {
     price: 'Giá mỗi tháng',
     credits: 'Credit mỗi tháng',
     cancel: 'Huỷ gói',
-    expiredNote: 'Gói đã hết hạn nên chưa chạy tối ưu được. Số dư credit được giữ lại, chọn gói mới để dùng tiếp.',
+    expiredNote: 'Gói đã hết hạn, số dư credit đã về 0 và tạm khóa chạy tối ưu. Chọn gói bên dưới để gia hạn hoặc đăng ký tiếp.',
     cancelledNote: 'Gói đã huỷ, dùng được tới hết {date} rồi hết hạn, không tự gia hạn.',
   },
   noPlan: {
     title: 'Công ty chưa có gói cước',
-    description: 'Chọn một gói để chạy tối ưu 3D. Credit đã nạp được giữ lại khi gói hết hạn.',
+    description: 'Chọn một gói để kích hoạt tài khoản và chạy tối ưu 3D.',
   },
   choose: {
     title: 'Chọn gói',

@@ -31,8 +31,14 @@ export const vehicleTypes = {
   delete: 'Xoá',
   inUse: { one: 'Còn gắn với {count} xe, gỡ khỏi xe trước khi xoá', other: 'Còn gắn với {count} xe, gỡ khỏi xe trước khi xoá' },
   form: {
+    frontAxleX: 'Vị trí trục trước',
+    rearAxleX: 'Vị trí trục sau',
+    emptyFrontAxleLoadKg: 'Tải trọng trục trước khi xe rỗng',
+    emptyRearAxleLoadKg: 'Tải trọng trục sau khi xe rỗng',
     hazardousCapable: 'Cho phép chở hàng nguy hiểm',
-
+    doorWidth: 'Chiều rộng cửa xe',
+    doorHeight: 'Chiều cao cửa xe',
+    doorHint: 'Kích thước cửa khoang hàng tính bằng cm. Có thể để trống nếu chưa có thông số thực tế.',
     obstacles: {
       title: 'Vật cản trong thùng',
       description:
@@ -78,7 +84,20 @@ export const vehicleTypes = {
       nameTooLong: 'Tên tối đa {max} ký tự.',
       positive: 'Nhập số lớn hơn 0.',
       cogRange: 'Nhập số lớn hơn 0 và không quá {max}.',
+      doorWidthExceeded: 'Chiều rộng cửa không được vượt quá chiều rộng lòng thùng.',
+      doorHeightExceeded: 'Chiều cao cửa không được vượt quá chiều cao lòng thùng.',
+      doorPairRequired: 'Vui lòng nhập cả chiều rộng và chiều cao cửa xe.',
     },
+    preview: {
+      lengthInvalid: 'Chiều dài lòng thùng chưa được nhập hoặc không hợp lệ.',
+      widthInvalid: 'Chiều rộng lòng thùng chưa được nhập hoặc không hợp lệ.',
+      heightInvalid: 'Chiều cao lòng thùng chưa được nhập hoặc không hợp lệ.',
+      doorWidthExceeded: 'Chiều rộng cửa vượt quá chiều rộng lòng thùng.',
+      doorHeightExceeded: 'Chiều cao cửa vượt quá chiều cao lòng thùng.',
+      obstacleIncomplete: 'Có vật cản chưa nhập đủ tọa độ hoặc kích thước.',
+      obstacleOutside: 'Có vật cản nằm ngoài giới hạn lòng thùng.',
+      waiting: 'Nhập kích thước lòng thùng hợp lệ để xem mô hình 3D.',
+    }
   },
   created: 'Đã thêm loại xe {name}',
   saved: 'Đã lưu loại xe {name}',

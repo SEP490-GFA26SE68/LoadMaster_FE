@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { fieldLabelClass } from '@/components/ui/field-styles'
 import { Input } from '@/components/ui/Input'
 import { useLocale, useT, type TFunction } from '@/lib/i18n'
-import type { Place } from '@/lib/mock-db'
+import type { ResolvedAddress } from './places-api'
 import { cn } from '@/lib/utils'
 import { EMPTY_COORDINATES, formatCoordinate, parseCoordinates, type CoordinateText, type ParsedCoordinates } from './coordinates'
 import { goongMapTilesKey } from './map-style'
@@ -36,7 +36,7 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
   value: CoordinateText
   onChange: (next: CoordinateText) => void
   /** Người dùng vừa chọn một địa danh từ danh sách — form có thể điền sẵn địa chỉ. */
-  onPlacePicked?: (place: Place) => void
+  onPlacePicked?: (place: ResolvedAddress) => void
   disabled?: boolean
   showErrors?: boolean
   hint?: string
@@ -56,12 +56,16 @@ export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabl
   // Tên địa danh chỉ còn đúng khi hai ô vẫn là toạ độ của nó
   const pickedName = picked && picked.lat === value.lat && picked.lng === value.lng ? picked.name : null
   const [mapExpanded, setMapExpanded] = useState(false)
-  function handlePick(place: Place) {
-    const next = { lat: formatCoordinate(place.lat), lng: formatCoordinate(place.lng) }
-    setPicked({ name: place.name, ...next })
-    onChange(next)
-    onPlacePicked?.(place)
+function handlePick(place: ResolvedAddress) {
+  const next = {
+    lat: formatCoordinate(place.lat),
+    lng: formatCoordinate(place.lng),
   }
+
+  setPicked({ name: place.name, ...next })
+  onChange(next)
+  onPlacePicked?.(place)
+}
 
   function handleBlur(event: FocusEvent<HTMLFieldSetElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) setTouched(true)

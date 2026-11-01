@@ -57,6 +57,7 @@ export type TripStopApiResponse = {
   status: string
   plannedArrival: string | null
   actualArrival: string | null
+  deadline: string | null
 }
 
 export type BackendTripDetail = {
@@ -80,11 +81,6 @@ type TripListApiResponse = {
 }
 
 function tripRowFromApi(trip: TripDetailApiResponse): TripRow {
-  if (trip.status !== 'DRAFT') {
-    throw new Error(
-      `Trip ${trip.id}: danh sách chưa hỗ trợ đầy đủ dữ liệu trạng thái ${trip.status}`,
-    )
-  }
 
   return {
     id: String(trip.id),
@@ -101,14 +97,24 @@ function tripRowFromApi(trip: TripDetailApiResponse): TripRow {
     driverName: trip.driverName,
 
     route: '',
-    packageCount: 0,
-    stopCount: 0,
+    packageCount: trip.packageCount ?? 0,
+    stopCount: trip.stopCount ?? 0,
     volumePercent: null,
+    hasActiveRoutePlan: trip.hasActiveRoutePlan ?? false,
 
     status: trip.status,
     sub: null,
     extraSub: null,
-    phase: 'planning',
+    phase:
+      trip.status === 'CANCELLED'
+        ? 'cancelled'
+        : trip.status === 'DELIVERED'
+          ? 'completed'
+          : trip.status === 'IN_TRANSIT'
+            ? 'delivering'
+            : trip.status === 'LOADING'
+              ? 'loading'
+              : 'planning',
   }
 }
 
@@ -195,10 +201,8 @@ export async function fetchTrips(): Promise<TripRow[]> {
 export type TripFrame = {
   readonly name: string
   readonly vehicleId: string
-  /** Giờ xuất phát, ISO 8601; ngày chạy của chuyến là ngày của nó theo giờ Việt Nam. */
   readonly departureAt: string
-  /** Kho xuất phát; vắng thì kho của công ty. */
-  readonly depot?: CompanyDepot
+  readonly originWarehouseId: string
   readonly driverId?: string | null
 }
 
@@ -209,6 +213,70 @@ type TripCreateApiResponse = {
   tripName: string
   status: 'DRAFT'
 }
+
+export type TripVehicleConfigResponse = {
+  vehicleId: number
+  vehicleName: string
+  licensePlate: string
+
+  vehicleTypeId: number
+  vehicleTypeName: string
+
+  innerLength: number
+  innerWidth: number
+  innerHeight: number
+
+  doorWidth: number | null
+  doorHeight: number | null
+
+  maxPayloadKg: number
+  frontAxleLimitKg: number | null
+  rearAxleLimitKg: number | null
+  maxCogOffsetRatio: number
+
+  frontAxleX: number | null
+  rearAxleX: number | null
+  emptyFrontAxleLoadKg: number | null
+  emptyRearAxleLoadKg: number | null
+
+  obstacles: {
+    id: number
+    name: string
+    type: 'WHEEL_ARCH' | 'COOLING_UNIT' | 'PARTITION' | 'RESERVED_ZONE' | 'OTHER'
+    x: number
+    y: number
+    z: number
+    length: number
+    width: number
+    height: number
+    loadBearing: boolean
+  }[]
+}
+
+
+export type BackendRouteLeg = {
+  id: number
+  routePlanId: number
+  legSequence: number
+  startStopId: number | null
+  endStopId: number
+  distanceMeters: number | null
+  durationSeconds: number | null
+  polyline: string | null
+}
+
+export type BackendActiveRoutePlan = {
+  id: number
+  tripId: number
+  planVersion: number
+  totalDistanceMeters: number | null
+  totalDurationSeconds: number | null
+  isActive: boolean
+  createdAt: string
+  legs: BackendRouteLeg[]
+}
+
+
 
 export type TripDetailApiResponse = {
   id: number
@@ -234,6 +302,9 @@ export type TripDetailApiResponse = {
   | 'DELIVERED'
   | 'CANCELLED'
   createdAt: string
+  stopCount?: number | null
+  packageCount?: number | null
+  hasActiveRoutePlan?: boolean | null
 }
 
 export type CreatedTrip = {
@@ -241,6 +312,24 @@ export type CreatedTrip = {
   tripCode: string
   tripName: string
   status: 'DRAFT'
+}
+
+type BackendApiResponse<T> = {
+  success: boolean
+  message?: string
+  data: T
+}
+
+export async function fetchTripVehicleConfig(
+  tripId: string,
+): Promise<TripVehicleConfigResponse> {
+  const response = await apiFetch<
+    BackendApiResponse<TripVehicleConfigResponse>
+  >(
+    `/api/trips/${encodeURIComponent(tripId)}/vehicle-config`,
+  )
+
+  return response.data
 }
 /**
  * Tạo chuyến (FE-4b-04): kho cấp mã chuyến. Chuyến mới chưa có điểm giao và kiện — điểm giao tự sinh khi đưa yêu cầu giao vào chuyến,
@@ -251,17 +340,22 @@ export async function createTrip({
   name,
   vehicleId,
   departureAt,
-  depot,
+  originWarehouseId,
   driverId = null,
 }: TripFrame): Promise<CreatedTrip> {
 
-  if (!depot) {
-    throw new Error('Missing departure depot')
-  }
+
 
   const vehicleIdNumber = Number(vehicleId)
   const driverIdNumber = driverId ? Number(driverId) : null
+  const warehouseIdNumber = Number(originWarehouseId)
 
+  if (
+    !Number.isSafeInteger(warehouseIdNumber) ||
+    warehouseIdNumber <= 0
+  ) {
+    throw new Error('Invalid origin warehouse ID')
+  }
   if (
     !Number.isSafeInteger(vehicleIdNumber) ||
     vehicleIdNumber <= 0 ||
@@ -309,10 +403,7 @@ export async function createTrip({
         departureTime,
         vehicleId: vehicleIdNumber,
         driverId: driverIdNumber,
-        originName: depot.name,
-        originAddress: depot.address,
-        originLatitude: depot.lat,
-        originLongitude: depot.lng,
+        originWarehouseId: warehouseIdNumber,
       }),
     },
   )
@@ -330,6 +421,64 @@ export async function createTrip({
     status: created.status,
   }
 }
+
+
+
+export async function fetchBackendActiveRoutePlan(
+  tripId: string,
+): Promise<BackendActiveRoutePlan> {
+  const response = await apiFetch<{
+    success: boolean
+    data: BackendActiveRoutePlan
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
+  )
+
+  return response.data
+}
+
+
+
+export type RouteOptimizationResult = {
+  origin: {
+    latitude: number
+    longitude: number
+  }
+  orderedStops: number[]
+  totalTravelDurationSeconds: number
+  totalDistanceMeters: number
+  estimatedTotalDurationSeconds: number
+  deadlineMissedStops: number[]
+  segments: {
+    fromStopId: number | null
+    toStopId: number
+    durationSeconds: number
+    distanceMeters: number
+    polyline: string | null
+  }[]
+  stopSchedules: {
+    stopId: number
+    stopSequence: number
+    plannedArrival: string
+  }[]
+}
+
+export async function optimizeBackendTrip(
+  tripId: string,
+): Promise<RouteOptimizationResult> {
+  const response = await apiFetch<{
+    success: boolean
+    data: RouteOptimizationResult
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/optimize-route`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
 
 export type TripFrameChanges = {
   readonly name: string
@@ -564,6 +713,32 @@ export async function fetchBackendTripDetail(
 
   return response.data
 }
+
+
+/**
+ * POST /api/trips/{tripId}/delivery-requirements/{requirementId}
+ *
+ * Dispatcher gán toàn bộ yêu cầu giao vào Trip.
+ * Backend tự kiểm tra điều kiện và tạo DeliveryStop.
+ */
+export async function assignBackendRequirementToTrip(
+  tripId: string,
+  requirementId: string,
+): Promise<TripStopApiResponse> {
+  const response = await apiFetch<{
+    success: boolean
+    data: TripStopApiResponse
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}` +
+    `/delivery-requirements/${encodeURIComponent(requirementId)}`,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response.data
+}
+
 
 function mapTripFromApi(api: TripDetailApiResponse): Trip {
   // Lưu ý: Spring LocalDateTime không mang thông tin múi giờ.

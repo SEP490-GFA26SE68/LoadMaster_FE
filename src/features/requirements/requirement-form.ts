@@ -50,12 +50,58 @@ export function deadlineParts(iso: string): Pick<RequirementFormValues, 'deadlin
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const TIME = /^\d{2}:\d{2}$/
 
+
+
 /** Thời điểm ISO của ngày + giờ nhập theo giờ của máy; `null` khi thiếu hoặc sai dạng. */
 export function deadlineIso(date: string, time: string): string | null {
   if (!DATE.test(date) || !TIME.test(time)) return null
   const at = new Date(`${date}T${time}:00`)
   return Number.isNaN(at.getTime()) ? null : at.toISOString()
 }
+
+
+/**
+ * Chuyển ngày/giờ Việt Nam sang LocalDateTime
+ * mà Spring Boot chấp nhận.
+ *
+ * Ví dụ:
+ * 20/10/2026 15:00 -> 2026-10-20T15:00:00
+ */
+export function deadlineVietnamLocal(
+  date: string,
+  time: string,
+): string | null {
+  if (!DATE.test(date) || !TIME.test(time)) {
+    return null
+  }
+
+  const [year = NaN, month = NaN, day = NaN] =
+    date.split('-').map(Number)
+
+  const [hour = NaN, minute = NaN] =
+    time.split(':').map(Number)
+  const validDate = new Date(Date.UTC(year, month - 1, day))
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    validDate.getUTCFullYear() !== year ||
+    validDate.getUTCMonth() !== month - 1 ||
+    validDate.getUTCDate() !== day ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null
+  }
+
+  return `${date}T${time}:00`
+}
+
 
 /** Giờ mặc định của hạn trên form tạo mới: cuối giờ hành chính. Ngày để trống cho người lập chọn. */
 export const DEFAULT_DEADLINE_TIME = '17:00'

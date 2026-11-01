@@ -1,5 +1,6 @@
 /** Thanh điều hướng và menu tài khoản (`app/NavRail.tsx`); mục nào hiện với vai trò nào khai ở `app/nav-items.ts`. */
 export const nav = {
+  customers: 'Khách hàng',
   label: 'Điều hướng chính',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',

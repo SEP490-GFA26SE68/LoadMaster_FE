@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
 import { Boxes, Gauge, Layers } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
 import { Logo } from '@/components/brand/Logo'
@@ -17,11 +18,36 @@ const HIGHLIGHTS = [
 ] as const
 
 export function LoginPage() {
+
   const t = useT()
   const { user, initialized, signIn } = useAuth()
   const location = useLocation()
   const [loginError, setLoginError] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        // Trang được khôi phục từ Back-Forward Cache
+        setIsRedirecting(false)
+        setLoginError(false)
+      }
+    }
+
+    function handlePageHide() {
+      // Đặt lại trạng thái trước khi trang bị lưu vào cache
+      setIsRedirecting(false)
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('pagehide', handlePageHide)
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('pagehide', handlePageHide)
+    }
+  }, [])
+
   const from = (location.state as { from?: string } | null)?.from
 
   if (!initialized) {
@@ -36,19 +62,30 @@ export function LoginPage() {
     return <Navigate to={landingPath(user.role, from)} replace />
   }
 
+
+
   async function handleLogin() {
     if (isRedirecting) return
-    const target = from && from.startsWith('/') && !from.startsWith('//') ? from : '/dang-nhap'
+
+    setLoginError(false)
+    setIsRedirecting(true)
+
     try {
-      setLoginError(false)
-      setIsRedirecting(true)
-      await signIn(`${window.location.origin}${target}`)
+      await signIn(
+        `${window.location.origin}/dang-nhap`,
+      )
     } catch (error) {
-      console.error('Keycloak login redirect failed', error)
+      console.error(
+        'Keycloak login redirect failed:',
+        error,
+      )
       setLoginError(true)
+    } finally {
       setIsRedirecting(false)
     }
   }
+
+
 
   return (
     <div className="sky relative flex min-h-dvh flex-col">

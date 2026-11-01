@@ -38,8 +38,9 @@ export const requirements = {
     priority: 'Ưu tiên',
     packages: 'Kiện',
     status: 'Trạng thái',
-    trip: 'Chuyến',
+    trip: 'Chuyến hàng',
     actions: 'Thao tác',
+
   },
   packageCount: { one: '{count} kiện', other: '{count} kiện' },
   createdAt: 'Tạo {date}',
@@ -56,6 +57,7 @@ export const requirements = {
     onlyPending: 'Chỉ làm được khi yêu cầu còn chờ xếp chuyến',
     closed: 'Yêu cầu đã giao xong nên không sửa được nữa',
     tripLocked: 'Chỉ gỡ được khi chuyến chưa bắt đầu xếp hàng',
+    viewTrip: 'Xem chuyến đã gán',
   },
   customer: {
     add: 'Thêm khách hàng mới',
@@ -68,12 +70,23 @@ export const requirements = {
   },
 
   form: {
+    savedSchedule: 'Đã cập nhật hạn giao và ưu tiên',
+    saveSchedule: 'Lưu hạn giao và ưu tiên',
+    extendDeadline: 'Gia hạn giao hàng',
+    deadlineExtended: 'Gia hạn giao hàng thành công',
+    extensionReason: 'Lý do gia hạn',
+    extensionHint: 'Nhập hạn giao mới và lý do đã thống nhất với khách hàng.',
+    extensionReasonRequired: 'Vui lòng nhập lý do gia hạn hợp lệ (tối đa 500 ký tự).',
+    extensionMustBeLater: 'Hạn giao mới phải muộn hơn hạn giao hiện tại.',
+
+    saveCoordinates: 'Lưu tọa độ',
+    coordinatesSaved: 'Đã bổ sung tọa độ điểm đến',
     customer: 'Khách hàng / Chủ hàng',
     expectedPackageCount: 'Số kiện dự kiến',
     packagesAfterReceiving: 'Nhân viên kho sẽ tiếp nhận và liên kết kiện sau khi tạo yêu cầu.',
     receivingProgress: 'Tiến độ nhận kiện',
-  
-    
+
+
     createTitle: 'Tạo yêu cầu giao',
     editTitle: 'Sửa yêu cầu {id}',
     description: 'Yêu cầu gồm kiện ở kho kiện, giao tới một điểm đến trước hạn. Một kiện chỉ thuộc một yêu cầu.',
@@ -95,11 +108,11 @@ export const requirements = {
     selected: { one: 'Đã chọn {count} kiện · {weight}', other: 'Đã chọn {count} kiện · {weight}' },
     packageMeta: '{dimensions} · {weight}',
     errors: {
-      invalidCount:'Số kiện dự kiến phải là số nguyên lớn hơn 0',
+      invalidCount: 'Số kiện dự kiến phải là số nguyên lớn hơn 0',
       customerRequired: 'Vui lòng chọn khách hàng',
-      
-      
-      
+
+
+
       destinationRequired: 'Nhập tên điểm đến.',
       addressRequired: 'Nhập địa chỉ.',
       tooLong: 'Tối đa {max} ký tự.',

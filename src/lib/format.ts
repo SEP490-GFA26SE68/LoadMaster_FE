@@ -85,10 +85,12 @@ export function createFormatter(locale: FormatLocale): Formatter {
   const whole = numbers({ maximumFractionDigits: 0 })
   const oneDecimal = numbers({ minimumFractionDigits: 1, maximumFractionDigits: 1 })
   const upToOneDecimal = numbers({ maximumFractionDigits: 1 })
+  const upToTwoDecimals = numbers({ maximumFractionDigits: 2 })
   const twoDecimals = numbers({ minimumFractionDigits: 2, maximumFractionDigits: 2 })
   // kg, cm, % có trong danh sách unit của ECMA-402 nên để Intl ghép đơn vị;
   // m³ và cm³ thì không có, đành nối ký hiệu sau con số đã format.
   const centimeters = numbers({ style: 'unit', unit: 'centimeter', maximumFractionDigits: 1 })
+  const centimetersUpToTwo = numbers({ style: 'unit', unit: 'centimeter', maximumFractionDigits: 2 })
   const kilograms = numbers({ style: 'unit', unit: 'kilogram', maximumFractionDigits: 2 })
   const percent = numbers({
     style: 'unit',
@@ -107,7 +109,7 @@ export function createFormatter(locale: FormatLocale): Formatter {
     length: (value) => centimeters.format(value),
     lengthValue: (value) => upToOneDecimal.format(value),
     dimensions: (lengthCm, widthCm, heightCm) =>
-      `${upToOneDecimal.format(lengthCm)} × ${upToOneDecimal.format(widthCm)} × ${centimeters.format(heightCm)}`,
+      `${upToTwoDecimals.format(lengthCm)} × ${upToTwoDecimals.format(widthCm)} × ${centimetersUpToTwo.format(heightCm)}`,
     widthByHeight: (widthCm, heightCm) => `${upToOneDecimal.format(widthCm)} × ${centimeters.format(heightCm)}`,
     list: (items) => conjunction.format(items),
     weight: (value) => kilograms.format(value),

@@ -1,33 +1,35 @@
-import { keycloak } from "./keycloak";
-import { ROLE_FROM_BACKEND, type User } from "@/types/user";
-import { apiFetch } from "@/lib/api-client";
-
-let initPromise: Promise<boolean> | null = null;
+import { keycloak } from './keycloak'
+import { ROLE_FROM_BACKEND, type User } from '@/types/user'
+import { apiFetch } from '@/lib/api-client'
 
 // Khởi tạo Keycloak
+let initPromise: Promise<boolean> | null = null
+
 export function initAuth(): Promise<boolean> {
   if (!initPromise) {
     initPromise = keycloak
       .init({
-        onLoad: "check-sso",
-        pkceMethod: "S256",
-        checkLoginIframe: true,
-        checkLoginIframeInterval: 5,
+        onLoad: 'check-sso',
+        pkceMethod: 'S256',
+        checkLoginIframe: false,
+        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+        silentCheckSsoFallback: false,
       })
       .catch((error: unknown) => {
-        initPromise = null;
-        throw error;
-      });
+        initPromise = null
+        throw error
+      })
   }
 
-  return initPromise;
+  return initPromise
 }
 
-// Đăng nhập qua Keycloak
+
+// Đăng nhập qua Keycloak — AuthProvider truyền redirectUri khi người dùng bấm đăng nhập
 export async function login(redirectUri?: string): Promise<void> {
   await keycloak.login({
     redirectUri: redirectUri ?? `${window.location.origin}/`,
-  });
+  })
 }
 
 // Đăng xuất qua Keycloak

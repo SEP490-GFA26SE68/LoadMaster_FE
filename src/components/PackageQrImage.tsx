@@ -32,6 +32,11 @@ export function PackageQrImage({
       try {
         const blob = await apiFetchBlob(
           `/api/packages/${encodeURIComponent(packageId)}/qr`,
+          {
+            headers: {
+              Accept: 'image/png',
+            },
+          },
         )
 
         if (cancelled) return

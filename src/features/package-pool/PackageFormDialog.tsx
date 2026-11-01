@@ -1,9 +1,11 @@
-
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PackagePlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+
+import { useQuery } from '@tanstack/react-query'
+import { listDeliveryRequirements } from '@/features/requirements/requirements-api'
 
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
@@ -41,6 +43,14 @@ const ORIENTATION_OPTIONS = [
 
 const optionalNumber = z.number().finite().optional()
 
+function hasAtMostTwoDecimals(value: number | undefined): boolean {
+  if (value === undefined) return true
+  const [, fraction = ''] = String(value).split('.')
+  return fraction.length <= 2
+}
+
+const DECIMAL_SCALE_ERROR_MSG = 'Giá trị số chỉ được phép tối đa 2 chữ số sau dấu phẩy'
+
 const createSchema = (t: ReturnType<typeof useT>) =>
   z.object({
     packageCode: z
@@ -51,11 +61,27 @@ const createSchema = (t: ReturnType<typeof useT>) =>
     packageName: z.string().max(150),
     quantity: z.number().int().min(1).max(1000),
     packageTypeId: z.string(),
+    deliveryRequirementId: z.string(),
 
-    lengthCm: z.number().int().positive().optional(),
-    widthCm: z.number().int().positive().optional(),
-    heightCm: z.number().int().positive().optional(),
-    weightKg: z.number().positive(),
+    lengthCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    widthCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    heightCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    weightKg: z
+      .number()
+      .positive()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
 
     handlingClass: z.enum(HANDLING_CLASSES),
     destination: z
@@ -116,6 +142,7 @@ const createSchema = (t: ReturnType<typeof useT>) =>
 type FormValues = z.infer<ReturnType<typeof createSchema>>
 
 const DEFAULT_VALUES: FormValues = {
+  deliveryRequirementId: '',
   packageCode: '',
   packageName: '',
   quantity: 1,
@@ -174,6 +201,33 @@ export function PackageFormDialog({
   const update = useUpdateCargoPackageMutation()
 
   const isEditing = editPackage !== undefined
+  const requirementsQuery = useQuery({
+    queryKey: ['requirements', 'warehouse', 'manual-create'],
+    queryFn: () => listDeliveryRequirements(),
+    enabled: !isEditing,
+  })
+
+  const availableRequirements = (requirementsQuery.data ?? []).filter(
+    (row) =>
+      row.requirement.status === 'PENDING' &&
+      !row.requirement.tripId,
+  )
+
+  const requirementOptions = [
+    {
+      value: '',
+      label: 'Chọn yêu cầu giao',
+    },
+    ...availableRequirements.map((row) => ({
+      value: row.requirement.id,
+      label: [
+        `#${row.requirement.id}`,
+        row.requirement.customerName ?? 'Chưa có tên khách hàng',
+        row.requirement.destinationName,
+        `${row.requirement.receivedPackageCount ?? 0}/${row.requirement.expectedPackageCount ?? '—'} kiện`,
+      ].join(' · '),
+    })),
+  ]
   const isSaving = create.isPending || update.isPending
 
 
@@ -273,6 +327,24 @@ export function PackageFormDialog({
     name: 'packageTypeId',
   })
 
+  const selectedRequirementId = useWatch({
+    control,
+    name: 'deliveryRequirementId',
+  })
+  useEffect(() => {
+    if (isEditing || !selectedRequirementId) return
+
+    const selected = availableRequirements.find(
+      (row) => row.requirement.id === selectedRequirementId,
+    )
+
+    if (!selected) return
+
+    setValue('destination', selected.requirement.address, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+  }, [isEditing, selectedRequirementId, requirementsQuery.data, setValue])
   const types = typesQuery.data?.data ?? []
 
   const selectedType = useMemo(
@@ -334,6 +406,13 @@ export function PackageFormDialog({
   )
 
   async function handleValid(values: FormValues) {
+    if (!isEditing && !values.deliveryRequirementId) {
+      form.setError('deliveryRequirementId', {
+        type: 'manual',
+        message: 'Vui lòng chọn yêu cầu giao',
+      })
+      return
+    }
     if (hasPackageType && !selectedType) {
       form.setError('packageTypeId', {
         type: 'manual',
@@ -351,6 +430,10 @@ export function PackageFormDialog({
         values.packageTypeId === NO_PACKAGE_TYPE
           ? undefined
           : values.packageTypeId,
+
+      ...(!isEditing
+        ? { deliveryRequirementId: values.deliveryRequirementId }
+        : {}),
 
       lengthCm: hasPackageType
         ? undefined
@@ -441,6 +524,24 @@ export function PackageFormDialog({
                 {t('sourcing.form.basicInformation')}
               </h3>
 
+              {!isEditing && (
+                <div className="flex flex-col gap-2">
+                  <SelectField
+                    control={control}
+                    name="deliveryRequirementId"
+                    label="Yêu cầu giao"
+                    options={requirementOptions}
+                    disabled={requirementsQuery.isPending}
+                  />
+
+                  {requirementsQuery.error && (
+                    <Banner tone="danger">
+                      {dataErrorMessage(requirementsQuery.error, t)}
+                    </Banner>
+                  )}
+                </div>
+              )}
+
               <Input
                 label={t('sourcing.form.packageCode')}
                 required
@@ -512,21 +613,21 @@ export function PackageFormDialog({
                   'lengthCm',
                   t('trips.form.length'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
                   'widthCm',
                   t('trips.form.width'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
                   'heightCm',
                   t('trips.form.height'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
@@ -730,7 +831,10 @@ export function PackageFormDialog({
               loading={isSaving}
               disabled={
                 typesQuery.isPending ||
-                Boolean(typesQuery.error)
+                Boolean(typesQuery.error) ||
+                (!isEditing &&
+                  (requirementsQuery.isPending ||
+                    Boolean(requirementsQuery.error)))
               }
             >
               {isEditing

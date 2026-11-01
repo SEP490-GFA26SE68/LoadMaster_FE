@@ -61,9 +61,12 @@ export const sourcing = {
     },
   },
   import: {
+    deliveryRequirement: 'Delivery requirement',
+    loadingRequirements: 'Loading delivery requirements...',
+    noRequirements: 'No pending delivery requirements.',
     title: 'Import a file into the package pool',
     description: 'A .csv or .xlsx file, one package per row, up to {maxRows} rows and {maxMb} MB. Sizes in cm, weight in kg.',
-    choose: 'Choose a .csv or .xlsx file',
+    choose: 'Choose a .xlsx file',
     change: 'Choose another file',
     fileInput: 'Package file (.csv, .xlsx)',
     templateXlsx: 'Download .xlsx template',

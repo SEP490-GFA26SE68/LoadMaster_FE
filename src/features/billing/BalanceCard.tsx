@@ -14,7 +14,6 @@ export function BalanceCard({ credit }: { credit: CreditBalance }) {
     <KpiTile
       label={t('billing.credit.balance')}
       value={credit.unlimited ? t('common.unlimitedCredits') : format.integer(credit.balance)}
-      note={credit.unlimited ? t('billing.credit.unlimitedNote') : t('billing.credit.note')}
       icon={Coins}
       tone="blue"
     />

@@ -23,6 +23,8 @@ import {
   type TripListPageResult,
 } from './trips-api'
 
+import { optimizeBackendTrip } from './trips-api'
+
 /** Chuyến và kiện qua TanStack Query — component không gọi API trực tiếp (mục 9). */
 
 export function useTripsQuery() {
@@ -69,6 +71,24 @@ export function useCreateTripMutation() {
     ]),
   })
 }
+
+
+export function useOptimizeBackendTripMutation(
+  tripId: string,
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => optimizeBackendTrip(tripId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['trips', tripId],
+      })
+    },
+  })
+}
+
 
 export function useUpdateTripFrameMutation(tripId: string) {
   const client = useQueryClient()

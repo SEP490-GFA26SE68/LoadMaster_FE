@@ -1,4 +1,4 @@
-import { LifeBuoy, LogOut, UserRound } from 'lucide-react'
+import { Layers, LifeBuoy, LogOut, UserRound } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
@@ -25,6 +25,8 @@ import { useGlassFollow } from './useGlassFollow'
 
 /** Hộp thoại yêu cầu hỗ trợ (FE-8-07) tải khi mở lần đầu: chỉ người dùng công ty mở. */
 const SupportTicketDialog = lazy(() => import('@/features/support/SupportTicketDialog').then((m) => ({ default: m.SupportTicketDialog })))
+/** Hộp thoại Đổi gói khách hàng ngay trên NavBar của role SystemSupporter (Phương án A1). */
+const CustomerPlanDialog = lazy(() => import('@/features/support/CustomerPlanDialog').then((m) => ({ default: m.CustomerPlanDialog })))
 
 /** Ảnh đại diện chữ tắt tròn, gradient cyan (V2.3 `.avatar`) — chỉ ở thanh điều hướng và menu tài khoản (AGENTS mục 5). */
 function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
@@ -54,6 +56,7 @@ export function NavRail() {
   const navigate = useNavigate()
   const { navRef, followRef } = useGlassFollow<HTMLElement>()
   const [supportOpen, setSupportOpen] = useState(false)
+  const [customerPlanOpen, setCustomerPlanOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
   const items = user ? navItemsFor(user.role) : []
 
@@ -110,6 +113,16 @@ export function NavRail() {
       ) : null}
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
+        {user && can(user.role, 'support.handle') ? (
+          <button
+            type="button"
+            onClick={() => setCustomerPlanOpen(true)}
+            className="flex h-9 items-center gap-2 rounded-md border border-cyan-300/40 bg-cyan-950/50 px-3 text-small font-semibold text-sky-text transition-colors hover:bg-cyan-900/60 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          >
+            <Layers className="size-4 text-cyan-200" strokeWidth={1.75} aria-hidden />
+            <span>Đổi gói khách hàng</span>
+          </button>
+        ) : null}
         <QuickSearch />
         <LanguageMenu />
         <NotificationBell />
@@ -149,6 +162,12 @@ export function NavRail() {
                   {t('nav.supportRequests')}
                 </DropdownMenuItem>
               ) : null}
+              {can(user.role, 'support.handle') ? (
+                <DropdownMenuItem onSelect={() => setCustomerPlanOpen(true)}>
+                  <Layers strokeWidth={1.5} aria-hidden />
+                  Đổi gói khách hàng
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => void handleSignOut()}>
                 <LogOut strokeWidth={1.5} aria-hidden />
                 {t('nav.signOut')}
@@ -162,6 +181,12 @@ export function NavRail() {
           <SupportTicketDialog onClose={() => setSupportOpen(false)} />
         </Suspense>
       ) : null}
+      {customerPlanOpen ? (
+        <Suspense fallback={null}>
+          <CustomerPlanDialog onClose={() => setCustomerPlanOpen(false)} />
+        </Suspense>
+      ) : null}
     </header>
   )
 }
+

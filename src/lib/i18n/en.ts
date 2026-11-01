@@ -41,6 +41,11 @@ import { billing } from './en/billing'
 import { payment } from './en/payment'
 import { companies } from './en/companies'
 import { support } from './en/support'
+import { warehouseCustomers } from './en/warehouseCustomers'
+import {backendTripRoute } from './en/backendTripRoute'
+import {companyWarehouses } from './en/companyWarehouses.ts'
+import { tripWarehouse } from './en/tripWarehouse.ts'
+import { packageStatus } from './en/packageStatus'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -85,4 +90,9 @@ export const en = {
   payment,
   companies,
   support,
+  warehouseCustomers,
+  backendTripRoute,
+  companyWarehouses,
+  tripWarehouse,
+  packageStatus
 } satisfies Dictionary<typeof vi>

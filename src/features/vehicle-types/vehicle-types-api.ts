@@ -25,9 +25,15 @@ type VehicleTypeApi = {
   innerLength: number;
   innerWidth: number;
   innerHeight: number;
+  doorWidth: number | null;
+  doorHeight: number | null;
   maxPayloadKg: number;
   frontAxleLimitKg: number | null;
   rearAxleLimitKg: number | null;
+  frontAxleX: number | null;
+  rearAxleX: number | null;
+  emptyFrontAxleLoadKg: number | null;
+  emptyRearAxleLoadKg: number | null;
   maxCogOffsetRatio: number;
   hazardousCapable: boolean;
   obstacles: VehicleTypeObstacleApi[];
@@ -50,18 +56,19 @@ type VehicleTypeObstacleApi = {
 export type VehicleType = {
   id: string;
   name: string;
-
   cargoLengthCm: number;
   cargoWidthCm: number;
   cargoHeightCm: number;
-
+  doorWidthCm: number | null;
+  doorHeightCm: number | null;
   payloadKg: number;
-
   frontAxleLimitKg?: number;
   rearAxleLimitKg?: number;
-
+  frontAxleX: number | null;
+  rearAxleX: number | null;
+  emptyFrontAxleLoadKg: number | null;
+  emptyRearAxleLoadKg: number | null;
   maxCogOffsetRatio: number;
-
   hazardousCapable: boolean;
   obstacles: VehicleTypeObstacle[];
   vehicleCount: number;
@@ -84,21 +91,20 @@ function mapVehicleType(item: VehicleTypeApi): VehicleType {
   return {
     id: String(item.id),
     name: item.name,
-
     cargoLengthCm: item.innerLength,
     cargoWidthCm: item.innerWidth,
     cargoHeightCm: item.innerHeight,
-
+    doorWidthCm: item.doorWidth ?? null,
+    doorHeightCm: item.doorHeight ?? null,
     payloadKg: item.maxPayloadKg,
-
     frontAxleLimitKg: item.frontAxleLimitKg ?? undefined,
-
     rearAxleLimitKg: item.rearAxleLimitKg ?? undefined,
-
+    frontAxleX: item.frontAxleX ?? null,
+    rearAxleX: item.rearAxleX ?? null,
+    emptyFrontAxleLoadKg: item.emptyFrontAxleLoadKg ?? null,
+    emptyRearAxleLoadKg: item.emptyRearAxleLoadKg ?? null,
     maxCogOffsetRatio: item.maxCogOffsetRatio,
-
     hazardousCapable: item.hazardousCapable,
-
     obstacles: item.obstacles.map((obstacle) => ({
       id: String(obstacle.id),
       name: obstacle.name,
@@ -129,18 +135,19 @@ export type VehicleTypeObstacleInput = {
 
 export type VehicleTypeInput = {
   name: string;
-
   cargoLengthCm: number;
   cargoWidthCm: number;
   cargoHeightCm: number;
-
+  doorWidthCm?: number;
+  doorHeightCm?: number;
   payloadKg: number;
-
   frontAxleLimitKg?: number;
   rearAxleLimitKg?: number;
-
+  frontAxleX?: number | null;
+  rearAxleX?: number | null;
+  emptyFrontAxleLoadKg?: number | null;
+  emptyRearAxleLoadKg?: number | null;
   maxCogOffsetRatio: number;
-
   hazardousCapable: boolean;
   obstacles: VehicleTypeObstacleInput[];
 };
@@ -148,21 +155,20 @@ export type VehicleTypeInput = {
 function toCreateVehicleTypeRequest(input: VehicleTypeInput) {
   return {
     name: input.name,
-
     innerLength: input.cargoLengthCm,
     innerWidth: input.cargoWidthCm,
     innerHeight: input.cargoHeightCm,
-
+    doorWidth: input.doorWidthCm ?? null,
+    doorHeight: input.doorHeightCm ?? null,
     maxPayloadKg: input.payloadKg,
-
-    frontAxleLimitKg: input.frontAxleLimitKg,
-
-    rearAxleLimitKg: input.rearAxleLimitKg,
-
+    frontAxleLimitKg: input.frontAxleLimitKg ?? null,
+    rearAxleLimitKg: input.rearAxleLimitKg ?? null,
+    frontAxleX: input.frontAxleX ?? null,
+    rearAxleX: input.rearAxleX ?? null,
+    emptyFrontAxleLoadKg: input.emptyFrontAxleLoadKg ?? null,
+    emptyRearAxleLoadKg: input.emptyRearAxleLoadKg ?? null,
     maxCogOffsetRatio: input.maxCogOffsetRatio,
-
     hazardousCapable: input.hazardousCapable,
-
     obstacles: input.obstacles,
   };
 }

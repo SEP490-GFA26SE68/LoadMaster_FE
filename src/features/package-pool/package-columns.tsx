@@ -77,7 +77,7 @@ function CodeCell({ row }: { row: CargoPackageRow }) {
         {row.packageCode || `PKG-${row.id}`}
       </button>
 
-      
+
     </span>
   )
 }
@@ -109,6 +109,54 @@ function PackageTypeCell({
     </span>
   )
 }
+
+
+function RequirementCell({
+  row,
+}: {
+  row: CargoPackageRow
+}) {
+  if (!row.deliveryRequirementId) {
+    return (
+      <span className="text-sm text-ink-3">
+        Chưa có yêu cầu giao
+      </span>
+    )
+  }
+
+  const received = row.receivedPackageCount
+  const expected = row.expectedPackageCount
+
+  const isOverExpected =
+    received != null &&
+    expected != null &&
+    received > expected
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1 whitespace-normal">
+      <span className="font-medium text-ink-strong">
+        {row.customerName || 'Chưa có tên khách hàng'}
+      </span>
+
+      <span className="text-xs text-ink-3">
+        Yêu cầu giao #{row.deliveryRequirementId}
+      </span>
+
+      <span
+        className={
+          isOverExpected
+            ? 'text-xs font-semibold text-amber-600'
+            : 'text-xs text-ink-2'
+        }
+      >
+        Đã nhận: {received ?? '—'}
+        /{expected ?? '—'} kiện
+        {isOverExpected ? ' · Vượt dự kiến' : ''}
+      </span>
+    </div>
+  )
+}
+
 
 function DimensionsCell({
   row,
@@ -158,6 +206,10 @@ const codeCell = (info: Cell<string>) => (
 
 const typeCell = (info: Cell<unknown>) => (
   <PackageTypeCell row={info.row.original} />
+)
+
+const requirementCell = (info: Cell<unknown>) => (
+  <RequirementCell row={info.row.original} />
 )
 
 const dimensionsCell = (info: Cell<unknown>) => (
@@ -218,6 +270,18 @@ export function packageColumns(
       cell: codeCell,
     }),
 
+
+    helper.display({
+      id: 'deliveryRequirement',
+      header: 'Khách hàng / Yêu cầu giao',
+      enableSorting: false,
+      meta: {
+        width: '240px',
+      } satisfies ColumnMeta,
+      cell: requirementCell,
+    }),
+
+
     helper.display({
       id: 'packageType',
       header: label('packageType'),
@@ -230,26 +294,26 @@ export function packageColumns(
     ...(panelOpen
       ? []
       : [
-          helper.display({
-            id: 'dimensions',
-            header: label('dimensions'),
-            meta: {
-              width: '156px',
-            } satisfies ColumnMeta,
-            cell: dimensionsCell,
-          }),
+        helper.display({
+          id: 'dimensions',
+          header: label('dimensions'),
+          meta: {
+            width: '156px',
+          } satisfies ColumnMeta,
+          cell: dimensionsCell,
+        }),
 
-          helper.accessor('weightKg', {
-            id: 'weight',
-            header: label('weight'),
-            enableSorting: true,
-            meta: {
-              width: '128px',
-              align: 'right',
-            } satisfies ColumnMeta,
-            cell: weightCell,
-          }),
-        ]),
+        helper.accessor('weightKg', {
+          id: 'weight',
+          header: label('weight'),
+          enableSorting: true,
+          meta: {
+            width: '128px',
+            align: 'right',
+          } satisfies ColumnMeta,
+          cell: weightCell,
+        }),
+      ]),
 
     helper.accessor('handlingClass', {
       header: label('handlingClass'),

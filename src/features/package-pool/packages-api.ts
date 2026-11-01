@@ -19,6 +19,10 @@ export type CargoPackageApi = {
   id: number
   orderId: number | null
   packageTypeId: number | null
+  deliveryRequirementId: number | null
+  customerName: string | null
+  receivedPackageCount: number | null
+  expectedPackageCount: number | null
   packageCode: string | null
   trackingBarcode: string | null
   qrToken: string
@@ -50,6 +54,10 @@ export type CargoPackage = {
   id: string
   orderId: string | undefined
   packageTypeId: string | undefined
+  deliveryRequirementId: string | undefined
+  customerName: string | null
+  receivedPackageCount: number | null
+  expectedPackageCount: number | null
   packageCode: string
   trackingBarcode: string | null
   qrToken: string
@@ -78,6 +86,7 @@ export type CargoPackage = {
 
 
 export type CargoPackageInput = {
+  deliveryRequirementId?: string
   orderId?: string
   packageTypeId?: string
   packageCode?: string
@@ -135,6 +144,16 @@ function mapPackage(item: CargoPackageApi): CargoPackage {
       item.packageTypeId == null
         ? undefined
         : String(item.packageTypeId),
+    deliveryRequirementId:
+      item.deliveryRequirementId == null
+        ? undefined
+        : String(item.deliveryRequirementId),
+
+    customerName: item.customerName ?? null,
+
+    receivedPackageCount: item.receivedPackageCount ?? null,
+
+    expectedPackageCount: item.expectedPackageCount ?? null,
     packageCode: item.packageCode ?? '',
     trackingBarcode: item.trackingBarcode,
     qrToken: item.qrToken,
@@ -163,8 +182,18 @@ function mapPackage(item: CargoPackageApi): CargoPackage {
 }
 
 
-function toRequest(input: CargoPackageInput) {
+function toRequest(
+  input: CargoPackageInput,
+  includeRequirement = false,
+) {
   return {
+    ...(includeRequirement
+      ? {
+        deliveryRequirementId: input.deliveryRequirementId
+          ? Number(input.deliveryRequirementId)
+          : null,
+      }
+      : {}),
     orderId: input.orderId ? Number(input.orderId) : null,
     packageTypeId: input.packageTypeId
       ? Number(input.packageTypeId)
@@ -206,7 +235,7 @@ export async function createPackages(
     '/api/packages/batch',
     {
       method: 'POST',
-      body: JSON.stringify(toRequest(input)),
+      body: JSON.stringify(toRequest(input, true)),
     },
   )
 

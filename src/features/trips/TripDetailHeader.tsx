@@ -11,7 +11,10 @@ import { plannerPath } from '@/lib/planner-path'
 import { dateOnly } from './trip-dates'
 import { TripActionsMenu } from './TripActionsMenu'
 import { TripDetailBanner } from './TripDetailBanner'
-import { TripDetailStepper } from './TripDetailStepper'
+import {
+  BackendTripDetailStepper,
+  TripDetailStepper,
+} from './TripDetailStepper'
 import type { TripDetail } from './trips-api'
 import { useQuery } from '@tanstack/react-query'
 import { fetchTripById } from './trips-api'
@@ -151,6 +154,12 @@ export function RealTripDetailHeader({ tripId }: { tripId: string }) {
           </span>
         ) : undefined
       }
-    />
+     >
+    {trip ? (
+      <div className="px-5 pt-3 pb-5">
+        <BackendTripDetailStepper status={trip.status} />
+      </div>
+    ) : null}
+  </PageHero>
   )
 }

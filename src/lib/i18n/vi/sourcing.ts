@@ -65,9 +65,12 @@ export const sourcing = {
   },
   /** Hộp thoại "Nhập file" ở `/kien-hang` (FE-3b-02): chọn file, xem trước từng dòng, xác nhận. */
   import: {
+    deliveryRequirement: 'Yêu cầu giao cần tiếp nhận',
+    loadingRequirements: 'Đang tải yêu cầu giao...',
+    noRequirements: 'Không có yêu cầu giao đang chờ tiếp nhận.',
     title: 'Nhập file vào kho kiện',
     description: 'File .csv hoặc .xlsx, mỗi dòng một kiện, tối đa {maxRows} dòng và {maxMb} MB. Kích thước tính bằng cm, khối lượng bằng kg.',
-    choose: 'Chọn file .csv hoặc .xlsx',
+    choose: 'Chọn file .xlsx',
     change: 'Chọn file khác',
     fileInput: 'File kiện (.csv, .xlsx)',
     templateXlsx: 'Tải mẫu .xlsx',
