@@ -6,7 +6,7 @@
  *   requestReroute       → POST /api/trips/{id}/reroute
  *   confirmReroute       → POST /api/trips/{id}/reroute/{routeIndex}/confirm
  *   renegotiateDeadline  → PATCH /api/delivery-requirements/{id} (hạn mới; ghi "đã liên hệ khách": chưa có ở BE, Q-23)
- *   chưa có ở BE: escalateTripException
+ *   escalateTripException → POST /api/trips/{id}/exceptions/{eid}/escalate
  *
  * Cùng cờ `VITE_USE_REAL_MONITORING=true` với `monitoring-api.ts`.
  */
@@ -59,9 +59,14 @@ export async function resolveTripException(tripId: string, exceptionId: string, 
 }
 
 /** Điều phối viên: không có tuyến khả thi, chuyển sự cố cho quản lý công ty. */
-// chưa có ở BE
-export function escalateTripException(tripId: string, exceptionId: string): Promise<TripException> {
-  return getMockDb().escalateTripException(tripId, exceptionId)
+// POST /api/trips/{id}/exceptions/{eid}/escalate
+export async function escalateTripException(tripId: string, exceptionId: string): Promise<TripException> {
+  if (!useRealMonitoring()) {
+    return getMockDb().escalateTripException(tripId, exceptionId)
+  }
+  return api().post<TripException>(
+    `/api/trips/${encodeURIComponent(tripId)}/exceptions/${encodeURIComponent(exceptionId)}/escalate`,
+  )
 }
 
 /** Tìm tuyến khác tới điểm kế tiếp từ vị trí xe: 2–3 lựa chọn. */

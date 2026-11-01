@@ -11,6 +11,7 @@ import { DeliveryItemRow } from './DeliveryItemRow'
 import { deliveryView } from './delivery-progress'
 import { NO_PICKUPS, pickupSceneItems, unplacedPickups, type PickupFacts } from './driver-pickups'
 import { DriverGpsToggle } from './DriverGpsToggle'
+import { DriverNavigation } from './DriverNavigation'
 import { DriverNotice } from './DriverNotice'
 import { stopDeliveries } from './driver-plan'
 import { DriverStopHeader } from './DriverStopHeader'
@@ -78,6 +79,7 @@ export function DeliveryStopView({ trip, plan, pickup = NO_PICKUPS }: { trip: Tr
         <StopNotices view={view} stale={model.revision?.stale ?? false} />
         {view.mode === 'delivering' ? <DriverGpsToggle tripId={trip.id} /> : null}
         {stops.some((stop) => stop.kind === 'PICKUP') ? <DriverStopList stops={stops} currentNumber={view.stop.number} completedStops={view.completedStops} /> : null}
+        <DriverNavigation trip={trip} stopNumber={view.stop.number} stopName={view.stop.name} arrived={arrived} />
         <StopContactCard stop={view.stop} />
         <StopProgress view={view} />
 

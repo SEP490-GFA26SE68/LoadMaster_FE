@@ -11,6 +11,15 @@ import { api } from '@/lib/api-client'
 import { getMockDb } from '@/lib/mock-db'
 import { fetchRoadPath } from './road-path'
 
+export type RouteGuidanceStepDto = {
+  readonly instruction?: string | null
+  readonly maneuver?: string | null
+  readonly distanceMeters?: number | null
+  readonly durationSeconds?: number | null
+  readonly lat?: number | null
+  readonly lng?: number | null
+}
+
 export type RouteLegDto = {
   readonly id: number
   readonly routePlanId?: number
@@ -20,6 +29,7 @@ export type RouteLegDto = {
   readonly distanceMeters: number
   readonly durationSeconds: number
   readonly polyline?: string | null
+  readonly steps?: readonly RouteGuidanceStepDto[] | null
 }
 
 export type RoutePlanDetailDto = {
@@ -36,14 +46,11 @@ function useRealRoutes(): boolean {
   return import.meta.env.VITE_USE_REAL_MONITORING === 'true'
 }
 
-/** BE RoutePlan chỉ nhận `Long` tripId — bỏ qua id mock kiểu `TRIP-012`. */
-function isNumericTripId(tripId: string): boolean {
-  return /^\d+$/.test(tripId)
-}
+/** BE nhận id số hoặc tripCode (TripLookupHelper). */
 
 /** Plan active của chuyến; `null` khi chưa có (chưa optimize / 404) hoặc id mock. */
 export async function getActiveRoutePlan(tripId: string): Promise<RoutePlanDetailDto | null> {
-  if (!useRealRoutes() || !isNumericTripId(tripId)) return null
+  if (!useRealRoutes()) return null
   try {
     return await api().get<RoutePlanDetailDto>(`/api/trips/${encodeURIComponent(tripId)}/route-plans/active`)
   } catch {

@@ -1,102 +1,92 @@
+import { keycloak } from "./keycloak";
+import { ROLE_FROM_BACKEND, type User } from "@/types/user";
+import { apiFetch } from "@/lib/api-client";
 
-import { keycloak } from './keycloak'
-import {
-  ROLE_FROM_BACKEND,
-  type User,
-} from '@/types/user'
-import { apiFetch } from '@/lib/api-client'
-
-/**
- * Lớp gọi API xác thực (D-42): đăng nhập, đăng xuất và phiên đi qua kho mock như qua server — kho giữ phiên để ghi người làm
- * vào nhật ký. Nối backend thật chỉ thay thân hàm; phần còn lại của app không đổi.
- */
+let initPromise: Promise<boolean> | null = null;
 
 // Khởi tạo Keycloak
 export function initAuth(): Promise<boolean> {
   if (!initPromise) {
-    initPromise = keycloak.init({
-      onLoad: 'check-sso',
-      pkceMethod: 'S256',
-      checkLoginIframe: true,
-      checkLoginIframeInterval: 5,
-    }).catch((error: unknown) => {
-      initPromise = null
-      throw error
-    })
+    initPromise = keycloak
+      .init({
+        onLoad: "check-sso",
+        pkceMethod: "S256",
+        checkLoginIframe: true,
+        checkLoginIframeInterval: 5,
+      })
+      .catch((error: unknown) => {
+        initPromise = null;
+        throw error;
+      });
   }
+
+  return initPromise;
 }
 
 // Đăng nhập qua Keycloak
-export async function login(
-  redirectUri?: string,
-): Promise<void> {
+export async function login(redirectUri?: string): Promise<void> {
   await keycloak.login({
-    redirectUri:
-      redirectUri ?? `${window.location.origin}/`,
-  })
+    redirectUri: redirectUri ?? `${window.location.origin}/`,
+  });
 }
 
 // Đăng xuất qua Keycloak
 export async function logout(): Promise<void> {
   await keycloak.logout({
-    redirectUri:
-      `${window.location.origin}/dang-nhap`,
-  })
+    redirectUri: `${window.location.origin}/dang-nhap`,
+  });
 }
 
 // Lấy access token
 export function getAccessToken(): string | undefined {
-  return keycloak.token
+  return keycloak.token;
 }
 
 // Kiểm tra xác thực
 export function isAuthenticated(): boolean {
-  return Boolean(keycloak.authenticated)
+  return Boolean(keycloak.authenticated);
 }
 
 // Response từ backend
 type UserProfileApiResponse = {
-  success: boolean
+  success: boolean;
   data: {
-    id: number
-    keycloakId: string
-    username: string
-    email: string
-    fullName: string
-    phoneNumber: string | null
-    companyId: number | null
+    id: number;
+    keycloakId: string;
+    username: string;
+    email: string;
+    fullName: string;
+    phoneNumber: string | null;
+    companyId: number | null;
     userRoleType:
-      | 'SYSTEM_ADMIN'
-      | 'SYSTEM_MANAGER'
-      | 'SYSTEM_SUPPORTER'
-      | 'ADMIN'
-      | 'MANAGER'
-      | 'DISPATCHER'
-      | 'WAREHOUSE_WORKER'
-      | 'DRIVER'
-    status: 'ACTIVE' | 'LOCKED'
-  }
-}
+      | "SYSTEM_ADMIN"
+      | "SYSTEM_MANAGER"
+      | "SYSTEM_SUPPORTER"
+      | "ADMIN"
+      | "MANAGER"
+      | "DISPATCHER"
+      | "WAREHOUSE_WORKER"
+      | "DRIVER";
+    status: "ACTIVE" | "LOCKED";
+  };
+};
 
 // Lấy thông tin người dùng từ backend thật
 export async function getCurrentUser(): Promise<User> {
-  const body =
-    await apiFetch<UserProfileApiResponse>(
-      '/api/users/me',
-    )
+  const body = await apiFetch<UserProfileApiResponse>("/api/users/me");
 
-  return mapUser(body.data)
+  return mapUser(body.data);
 }
 
 type ApiResponse<T = unknown> = {
-  success: boolean
-  message?: string
-  data?: T
-}
+  success: boolean;
+  message?: string;
+  data?: T;
+};
 
 type VerifyOtpResponse = {
-  resetToken: string
-}
+  resetToken: string;
+};
 
 // Xác thực mã OTP
 export async function verifyPasswordResetOtp(
@@ -104,54 +94,46 @@ export async function verifyPasswordResetOtp(
   otp: string,
 ): Promise<string> {
   const response = await fetch(
-    'http://localhost:8080/api/auth/password-reset/verify',
+    "http://localhost:8080/api/auth/password-reset/verify",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, otp }),
     },
-  )
+  );
 
-  const body =
-    (await response.json()) as ApiResponse<VerifyOtpResponse>
+  const body = (await response.json()) as ApiResponse<VerifyOtpResponse>;
 
   if (!response.ok) {
-    throw new Error(
-      body.message ?? 'OTP không hợp lệ',
-    )
+    throw new Error(body.message ?? "OTP không hợp lệ");
   }
 
   if (!body.data?.resetToken) {
-    throw new Error('Không nhận được reset token')
+    throw new Error("Không nhận được reset token");
   }
 
-  return body.data.resetToken
+  return body.data.resetToken;
 }
 
 // Yêu cầu đặt lại mật khẩu
-export async function requestPasswordReset(
-  email: string,
-): Promise<void> {
+export async function requestPasswordReset(email: string): Promise<void> {
   const response = await fetch(
-    'http://localhost:8080/api/auth/password-reset/request',
+    "http://localhost:8080/api/auth/password-reset/request",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ email }),
     },
-  )
+  );
 
-  const body = (await response.json()) as ApiResponse
+  const body = (await response.json()) as ApiResponse;
 
   if (!response.ok) {
-    throw new Error(
-      body.message ??
-        'Failed to request password reset',
-    )
+    throw new Error(body.message ?? "Failed to request password reset");
   }
 }
 
@@ -161,48 +143,37 @@ export async function resetPassword(
   newPassword: string,
 ): Promise<void> {
   const response = await fetch(
-    'http://localhost:8080/api/auth/password-reset/reset',
+    "http://localhost:8080/api/auth/password-reset/reset",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         resetToken,
         newPassword,
       }),
     },
-  )
+  );
 
-  const body =
-    (await response.json()) as ApiResponse
+  const body = (await response.json()) as ApiResponse;
 
   if (!response.ok) {
-    throw new Error(
-      body.message ?? 'Không thể đặt lại mật khẩu',
-    )
+    throw new Error(body.message ?? "Không thể đặt lại mật khẩu");
   }
 }
 
 // Chuyển đổi user backend sang frontend
-function mapUser(
-  data: UserProfileApiResponse['data'],
-): User {
+function mapUser(data: UserProfileApiResponse["data"]): User {
   return {
     id: String(data.id),
     fullName: data.fullName,
     email: data.email,
-    phone: data.phoneNumber ?? '',
+    phone: data.phoneNumber ?? "",
     role: ROLE_FROM_BACKEND[data.userRoleType],
-    status:
-      data.status === 'ACTIVE'
-        ? 'active'
-        : 'suspended',
-    companyId:
-      data.companyId != null
-        ? String(data.companyId)
-        : undefined,
+    status: data.status === "ACTIVE" ? "active" : "suspended",
+    companyId: data.companyId != null ? String(data.companyId) : undefined,
     depot: undefined,
     lastActiveAt: null,
-  }
+  };
 }
