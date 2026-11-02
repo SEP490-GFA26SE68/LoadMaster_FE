@@ -76,6 +76,21 @@ type UserProfileApiResponse = {
   }
 }
 
+let cachedCurrentUser: User | null = null
+
+export function getCachedCurrentUser(): User | null {
+  if (cachedCurrentUser) return cachedCurrentUser
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const raw = sessionStorage.getItem('loadmaster.phien')
+      if (raw) return JSON.parse(raw) as User
+    } catch {
+      // ignore
+    }
+  }
+  return null
+}
+
 // Lấy thông tin người dùng từ backend thật
 export async function getCurrentUser(): Promise<User> {
   const body =
@@ -83,7 +98,8 @@ export async function getCurrentUser(): Promise<User> {
       '/api/users/me',
     )
 
-  return mapUser(body.data)
+  cachedCurrentUser = mapUser(body.data)
+  return cachedCurrentUser
 }
 
 type ApiResponse<T = unknown> = {
