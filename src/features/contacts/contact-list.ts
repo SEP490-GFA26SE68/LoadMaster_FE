@@ -23,7 +23,24 @@ export const CONTACT_STATUS_SLUGS = {
 export type ContactRow = { readonly contact: GuestContact; readonly planName?: string }
 
 export function contactRows(contacts: readonly GuestContact[], planNames: ReadonlyMap<string, string>): ContactRow[] {
-  return contacts.map((contact) => {
+  const statusWeight = (status: ContactStatus) => {
+    switch (status) {
+      case 'NEW': return 1
+      case 'IN_PROGRESS': return 2
+      case 'RESOLVED': return 3
+      case 'CLOSED': return 4
+      default: return 5
+    }
+  }
+
+  const sortedContacts = [...contacts].sort((a, b) => {
+    const wA = statusWeight(a.status)
+    const wB = statusWeight(b.status)
+    if (wA !== wB) return wA - wB
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+
+  return sortedContacts.map((contact) => {
     const planName = contact.interestedPlanId === undefined ? undefined : planNames.get(contact.interestedPlanId)
     return planName === undefined ? { contact } : { contact, planName }
   })

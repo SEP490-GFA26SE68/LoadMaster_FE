@@ -19,6 +19,7 @@ export type CompanyOverview = {
   current: CurrentSubscription | null
   planStatus: SubscriptionStatus | null
   userCount: number
+  adminUser?: User | null
 }
 
 /**

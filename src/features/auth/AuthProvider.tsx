@@ -42,8 +42,8 @@ function restoreMockSession(): User | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [initialized, setInitialized] = useState(false)
+  const [user, setUser] = useState<User | null>(restoreMockSession)
+  const [initialized, setInitialized] = useState(() => import.meta.env.MODE === 'test')
 
   const queryClient = use(QueryClientContext)
 

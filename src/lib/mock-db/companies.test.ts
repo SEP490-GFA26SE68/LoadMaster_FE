@@ -79,7 +79,6 @@ test('the first admin needs a free email, whatever its case', async () => {
 })
 
 test.each([
-  ['the platform manager', 'US-NT-01'],
   ['customer support', 'US-NT-02'],
   ['a company admin', 'US-LB-01'],
   ['a dispatcher', 'US-0001'],
@@ -89,6 +88,16 @@ test.each([
   await expect(db.listCompanyOverview()).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
   await expect(db.createCompany(NEW_COMPANY)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
   await expect(db.updateCompany('LOG-001', NEW_COMPANY)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+})
+
+test('the system manager can list company overview and view company admin accounts', async () => {
+  const db = createMockDb({ now: () => NOW })
+  db.restoreSession('US-NT-01')
+  const rows = await db.listCompanyOverview()
+  expect(rows.length).toBe(2)
+  expect(rows[0].adminUser?.fullName).toBe('Dương Thị Kim Oanh')
+  expect(rows[0].adminUser?.email).toBe('qtcongty@loadmaster.vn')
+  expect(rows[1].adminUser?.fullName).toBe('Châu Minh Trí')
 })
 
 test('editing a company changes its information and depot and logs only what changed; saving the same data logs nothing', async () => {

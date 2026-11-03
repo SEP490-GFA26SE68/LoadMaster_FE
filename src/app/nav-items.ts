@@ -49,6 +49,8 @@ export const NAV_SCREENS = {
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
   // Gói cước: quản lý nền tảng quản lý danh mục gói (FE-8-02); quản trị công ty xem gói và credit của công ty (FE-8-03)
   plans: { to: '/nen-tang/goi', labelKey: 'nav.plans', icon: Layers, permission: 'subscriptionPlans.manage' },
+  // Lịch sử gói cước đã thêm/kích hoạt
+  subscriptionHistory: { to: '/nen-tang/lich-su-goi', labelKey: 'nav.subscriptionHistory', icon: ScrollText, permission: 'subscriptionPlans.manage' },
   // Đơn yêu cầu tạo tài khoản dùng thử
   trialRequests: { to: '/nen-tang/yeu-cau-dung-thu', labelKey: 'nav.trialRequests', icon: ClipboardList, permission: 'trialRequests.manage' },
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
@@ -64,11 +66,11 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
  * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử.
- *   Quản lý nền tảng: Gói cước (FE-8-02) · Công ty · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
+ *   Quản lý nền tảng: Gói cước (FE-8-02) · Công ty · Đơn dùng thử · Lịch sử gói. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests'],
-  systemManager: ['plans', 'companies', 'trialRequests'],
+  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests', 'subscriptionHistory'],
+  systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests'],
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet','companyWarehouses'],

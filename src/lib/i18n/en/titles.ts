@@ -35,6 +35,7 @@ export const titles = {
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
   subscriptionPlans: 'Subscription plans',
+  subscriptionHistory: 'Subscription History',
   trialRequests: 'Trial account requests',
   billing: 'Plan and credits',
   payment: 'Simulated payment',
