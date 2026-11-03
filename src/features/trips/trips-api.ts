@@ -214,6 +214,45 @@ type TripCreateApiResponse = {
   status: 'DRAFT'
 }
 
+export type TripVehicleConfigResponse = {
+  vehicleId: number
+  vehicleName: string
+  licensePlate: string
+
+  vehicleTypeId: number
+  vehicleTypeName: string
+
+  innerLength: number
+  innerWidth: number
+  innerHeight: number
+
+  doorWidth: number | null
+  doorHeight: number | null
+
+  maxPayloadKg: number
+  frontAxleLimitKg: number | null
+  rearAxleLimitKg: number | null
+  maxCogOffsetRatio: number
+
+  frontAxleX: number | null
+  rearAxleX: number | null
+  emptyFrontAxleLoadKg: number | null
+  emptyRearAxleLoadKg: number | null
+
+  obstacles: {
+    id: number
+    name: string
+    type: 'WHEEL_ARCH' | 'COOLING_UNIT' | 'PARTITION' | 'RESERVED_ZONE' | 'OTHER'
+    x: number
+    y: number
+    z: number
+    length: number
+    width: number
+    height: number
+    loadBearing: boolean
+  }[]
+}
+
 
 export type BackendRouteLeg = {
   id: number
@@ -273,6 +312,24 @@ export type CreatedTrip = {
   tripCode: string
   tripName: string
   status: 'DRAFT'
+}
+
+type BackendApiResponse<T> = {
+  success: boolean
+  message?: string
+  data: T
+}
+
+export async function fetchTripVehicleConfig(
+  tripId: string,
+): Promise<TripVehicleConfigResponse> {
+  const response = await apiFetch<
+    BackendApiResponse<TripVehicleConfigResponse>
+  >(
+    `/api/trips/${encodeURIComponent(tripId)}/vehicle-config`,
+  )
+
+  return response.data
 }
 /**
  * Tạo chuyến (FE-4b-04): kho cấp mã chuyến. Chuyến mới chưa có điểm giao và kiện — điểm giao tự sinh khi đưa yêu cầu giao vào chuyến,

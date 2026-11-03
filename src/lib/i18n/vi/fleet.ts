@@ -43,6 +43,10 @@ export const fleet = {
     IN_TRIP: 'Đang chạy chuyến',
     MAINTENANCE: 'Bảo dưỡng',
     RETIRED: 'Ngừng sử dụng',
+    available: 'Sẵn sàng',
+    in_use: 'Đang phục vụ chuyến',
+    maintenance: 'Bảo dưỡng',
+    retired: 'Ngừng sử dụng',
   },
   /** Bốn ô số liệu trên đầu danh sách (V2). Số tính trên cả đội xe; ba ô trạng thái bấm để lọc. */
   summary: {
@@ -103,6 +107,8 @@ export const fleet = {
       label: 'Số đang vẽ trong mô hình',
       cargoSpace: 'Lòng thùng',
       door: 'Cửa sau',
+      width: 'Rộng cửa',
+      heigh: 'Cao cửa',
       passable: 'kiện lọt tối đa {size}',
       payload: 'Tải trọng tối đa',
       payloadMissing: 'Chưa nhập',

@@ -74,13 +74,16 @@ export function createFleetColumns(t: TFunction) {
       header: t('fleet.columns.vehicleType'),
       enableSorting: true,
       meta: {
-        width: '200px',
+        width: '260px',
       } satisfies ColumnMeta,
 
       cell: (info) => (
-        <span className="text-body text-ink-1">
+        <div
+          className="min-w-0 max-w-full break-words text-body leading-relaxed text-ink-1"
+          title={info.getValue()}
+        >
           {info.getValue()}
-        </span>
+        </div>
       ),
     }),
 
@@ -88,13 +91,16 @@ export function createFleetColumns(t: TFunction) {
       header: t('fleet.columns.company'),
       enableSorting: true,
       meta: {
-        width: '200px',
+        width: '220px',
       } satisfies ColumnMeta,
 
       cell: (info) => (
-        <span className="text-body text-ink-1">
+        <div
+          className="min-w-0 max-w-full break-words text-body leading-relaxed text-ink-1"
+          title={info.getValue()}
+        >
           {info.getValue()}
-        </span>
+        </div>
       ),
     }),
 

@@ -7,6 +7,7 @@
  *   setSubscriptionPlanActive → PUT /api/subscription/plans/{id}
  */
 
+import { isAuthenticated } from '@/features/auth/auth-api'
 import { api, type QueryValue } from '@/lib/api-client'
 import {
   TIER_ALGORITHM,
@@ -33,6 +34,8 @@ export type SubscriptionPlanResponse = {
   active: boolean
   activeCompanyCount?: number
 }
+
+export type SubscriptionPlanApi = SubscriptionPlanResponse
 
 export type PageResponse<T> = {
   success: boolean
@@ -69,7 +72,7 @@ export type ListPlansResult = {
 }
 
 export type CreatePlanInput = {
-  planCode: string
+  planCode?: string
   name: string
   priceVnd: number
   tier: PlanTier
@@ -96,6 +99,13 @@ export type UpdatePlanInput = {
   active?: boolean
 }
 
+function shouldUseMockDb(): boolean {
+  if (import.meta.env.MODE === 'test') {
+    return !('mock' in (api as unknown as Record<string, unknown>))
+  }
+  return !isAuthenticated()
+}
+
 export function toSubscriptionPlan(res: SubscriptionPlanResponse): SubscriptionPlan {
   return {
     id: String(res.id),
@@ -115,6 +125,8 @@ export function toSubscriptionPlan(res: SubscriptionPlanResponse): SubscriptionP
   }
 }
 
+export const mapSubscriptionPlanApi = toSubscriptionPlan
+
 export function toPlanRow(res: SubscriptionPlanResponse): PlanRow {
   return {
     plan: toSubscriptionPlan(res),
@@ -125,7 +137,7 @@ export function toPlanRow(res: SubscriptionPlanResponse): PlanRow {
 /** Danh mục gói theo thứ tự hạng, mỗi gói kèm số công ty dùng. */
 // GET /api/subscription/plans
 export async function listSubscriptionPlans(params: ListPlansParams = {}): Promise<ListPlansResult> {
-  if (import.meta.env.MODE === 'test' && !('mock' in (api as unknown as Record<string, unknown>))) {
+  if (shouldUseMockDb()) {
     const db = (await import('@/lib/mock-db')).getMockDb()
     const [plans, companies] = await Promise.all([db.listSubscriptionPlans(), db.countPlanCompanies()])
     const rows = plans.map((plan) => ({ plan, companies: companies[plan.id] ?? 0 }))
@@ -162,7 +174,7 @@ export async function listSubscriptionPlans(params: ListPlansParams = {}): Promi
 /** Thêm gói mới */
 // POST /api/subscription/plans
 export async function createSubscriptionPlan(input: CreatePlanInput | PlanInput): Promise<SubscriptionPlan> {
-  if (import.meta.env.MODE === 'test' && !('mock' in (api as unknown as Record<string, unknown>))) {
+  if (shouldUseMockDb()) {
     const db = (await import('@/lib/mock-db')).getMockDb()
     return db.createSubscriptionPlan(input as PlanInput)
   }
@@ -195,7 +207,7 @@ export async function createSubscriptionPlan(input: CreatePlanInput | PlanInput)
 /** Sửa gói */
 // PUT /api/subscription/plans/{id}
 export async function updateSubscriptionPlan(planId: string, patch: UpdatePlanInput | PlanPatch): Promise<SubscriptionPlan> {
-  if (import.meta.env.MODE === 'test' && !('mock' in (api as unknown as Record<string, unknown>))) {
+  if (shouldUseMockDb()) {
     const db = (await import('@/lib/mock-db')).getMockDb()
     return db.updateSubscriptionPlan(planId, patch as PlanPatch)
   }
@@ -235,7 +247,7 @@ export async function setSubscriptionPlanActive(
   active: boolean,
   existingPlan?: Partial<UpdatePlanInput>,
 ): Promise<SubscriptionPlan> {
-  if (import.meta.env.MODE === 'test' && !('mock' in (api as unknown as Record<string, unknown>))) {
+  if (shouldUseMockDb()) {
     const db = (await import('@/lib/mock-db')).getMockDb()
     return db.setSubscriptionPlanActive(planId, active)
   }
@@ -256,7 +268,7 @@ export async function setSubscriptionPlanActive(
 /** Xoá gói */
 // DELETE /api/subscription/plans/{id}
 export async function deleteSubscriptionPlan(planId: string): Promise<void> {
-  if (import.meta.env.MODE === 'test' && !('mock' in (api as unknown as Record<string, unknown>))) {
+  if (shouldUseMockDb()) {
     const db = (await import('@/lib/mock-db')).getMockDb()
     return db.deleteSubscriptionPlan(planId)
   }

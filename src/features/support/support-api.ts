@@ -1,4 +1,4 @@
-import { isAuthenticated } from '@/features/auth/auth-api'
+import { getCachedCurrentUser, isAuthenticated } from '@/features/auth/auth-api'
 import { apiFetch } from '@/lib/api-client'
 import {
   getMockDb,
@@ -25,7 +25,7 @@ type SupportTicketApi = {
   subject: string
   description: string | null
   category: 'BILLING' | 'ALGORITHM_ERROR' | 'SYSTEM_BUG'
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  priority: 'MEDIUM' | 'HIGH'
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
   requesterId: number | null
   requesterName: string | null
@@ -36,7 +36,7 @@ type SupportTicketApi = {
   assignedToName: string | null
   resolutionNote: string | null
   createdAt: string | number[] | null
-  resolvedAt: string | number | null
+  resolvedAt: string | number | number[] | null
 }
 
 type ContractApi = {
@@ -158,10 +158,41 @@ export async function createSupportTicket(input: NewSupportTicket): Promise<Supp
       subject: input.title,
       description: input.description,
       category: input.kind === 'BILLING' ? 'BILLING' : 'SYSTEM_BUG',
-      priority: 'MEDIUM',
+      priority: input.kind === 'BILLING' ? 'MEDIUM' : 'HIGH',
     }),
   })
   return mapTicketApi(body.data)
+}
+
+const MAX_ACTIVE_CHAT_DAYS = 2
+
+function formatChatTimestamp(val: Date | string = new Date()): string {
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(trimmed)) {
+      return trimmed.slice(0, 19)
+    }
+    const parsed = new Date(trimmed)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 19).replace('T', ' ')
+    }
+    return trimmed.slice(0, 19).replace('T', ' ')
+  }
+  return val.toISOString().slice(0, 19).replace('T', ' ')
+}
+
+function pruneRepliesToMaxActiveDays(replies: readonly TicketReply[], maxActiveDays = MAX_ACTIVE_CHAT_DAYS): TicketReply[] {
+  const normalized = replies.map((reply) => ({
+    ...reply,
+    at: formatChatTimestamp(reply.at),
+  }))
+  const recentDates = Array.from(
+    new Set(normalized.map((r) => r.at.slice(0, 10)).filter((d) => d.length === 10)),
+  )
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, maxActiveDays)
+  const allowedDates = new Set(recentDates)
+  return normalized.filter((r) => allowedDates.has(r.at.slice(0, 10)))
 }
 
 // PATCH /api/support-tickets/:id
@@ -173,12 +204,26 @@ export async function replyToSupportTicket(ticketId: string, text: string): Prom
   const dbId = await resolveDbId(ticketId)
   const existing = ticketCacheByCode.get(ticketId)
   const nextStatus = existing?.status === 'OPEN' ? 'IN_PROGRESS' : existing?.status ?? 'IN_PROGRESS'
+  const currentUser = getCachedCurrentUser()
+  const newReply: TicketReply = {
+    authorId: currentUser?.id ?? '3',
+    authorName: currentUser?.fullName ?? 'Hỗ trợ Hệ thống',
+    authorRole: currentUser?.role ?? 'systemSupporter',
+    text,
+    at: formatChatTimestamp(new Date()),
+  }
+  const combinedReplies = pruneRepliesToMaxActiveDays([...(existing?.replies ?? []), newReply], MAX_ACTIVE_CHAT_DAYS)
+  const isPlatformCaller =
+    !currentUser ||
+    currentUser.role === 'systemSupporter' ||
+    currentUser.role === 'systemManager' ||
+    currentUser.role === 'systemAdmin'
 
   const body = await apiFetch<ApiResponse<SupportTicketApi>>(`/api/support-tickets/${dbId}`, {
     method: 'PATCH',
     body: JSON.stringify({
-      status: nextStatus,
-      resolutionNote: text,
+      ...(isPlatformCaller ? { status: nextStatus } : {}),
+      resolutionNote: JSON.stringify(combinedReplies),
     }),
   })
   return mapTicketApi(body.data)
@@ -348,6 +393,46 @@ export async function listAllCompanyContracts(): Promise<CompanyContractSummary[
   return apiFetch<CompanyContractSummary[]>('/api/contracts')
 }
 
+export type CompanyChatHistoryEntry = {
+  ticketId: string
+  ticketTitle: string
+  authorName: string
+  authorRole: TicketReply['authorRole']
+  text: string
+  at: string
+  date: string
+}
+
+export function getRecentCompanyChatHistory(
+  tickets: readonly SupportTicket[],
+  companyId: string,
+  maxActiveDays = MAX_ACTIVE_CHAT_DAYS,
+): CompanyChatHistoryEntry[] {
+  const entries: CompanyChatHistoryEntry[] = []
+  for (const ticket of tickets) {
+    if (ticket.companyId !== companyId) continue
+    for (const reply of ticket.replies) {
+      const formattedAt = formatChatTimestamp(reply.at)
+      entries.push({
+        ticketId: ticket.id,
+        ticketTitle: ticket.title,
+        authorName: reply.authorName,
+        authorRole: reply.authorRole,
+        text: reply.text,
+        at: formattedAt,
+        date: formattedAt.slice(0, 10),
+      })
+    }
+  }
+  const recentDates = Array.from(new Set(entries.map((e) => e.date).filter((d) => d.length === 10)))
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, maxActiveDays)
+  const allowedDates = new Set(recentDates)
+  return entries
+    .filter((e) => allowedDates.has(e.date))
+    .sort((a, b) => a.at.localeCompare(b.at))
+}
+
 // POST /api/contracts — SystemSupporter đổi/kích hoạt gói cho công ty khách hàng ngay lập tức
 export async function assignCompanyPlan(companyId: string, planId: string): Promise<CompanyContractSummary> {
   return apiFetch<CompanyContractSummary>('/api/contracts', {
@@ -359,4 +444,3 @@ export async function assignCompanyPlan(companyId: string, planId: string): Prom
     }),
   })
 }
-

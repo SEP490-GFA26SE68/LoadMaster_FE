@@ -17,6 +17,7 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TICKET_KINDS, TICKET_STATUSES, type SupportTicket, type TicketStatus } from '@/lib/mock-db'
 import { CompanyPanel } from './CompanyPanel'
+import { getRecentCompanyChatHistory } from './support-api'
 import { createTicketColumns } from './support-columns'
 import { TicketThread } from './TicketThread'
 import { useReplyMutation, useSetTicketStatusMutation, useSupportTicketsQuery } from './useSupportQuery'
@@ -90,6 +91,10 @@ export function SupportPage() {
 
   const selectedId = params.get(SELECTED_PARAM)
   const selected = tickets.find((ticket) => ticket.id === selectedId)
+  const companyRecentHistory = useMemo(
+    () => (selected ? getRecentCompanyChatHistory(tickets, selected.companyId, 2) : []),
+    [tickets, selected],
+  )
   function select(ticket: SupportTicket) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
@@ -189,6 +194,24 @@ export function SupportPage() {
                     </div>
                   </Card>
                   <CompanyPanel companyId={selected.companyId} ticketClosed={selected.status === 'CLOSED'} />
+                  {companyRecentHistory.length > 0 ? (
+                    <Card role="region" aria-label="Lịch sử chat 2 ngày gần nhất của công ty">
+                      <CardHeader>
+                        <CardTitle as="h2">Lịch sử chat (2 ngày hoạt động gần nhất)</CardTitle>
+                      </CardHeader>
+                      <ul className="m-0 flex max-h-64 list-none flex-col gap-2 overflow-y-auto p-4.5 pt-0">
+                        {companyRecentHistory.map((entry, idx) => (
+                          <li key={`${entry.ticketId}-${entry.at}-${idx}`} className="rounded-md border border-line-soft bg-n-25 px-3 py-2">
+                            <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-fine text-ink-3">
+                              <span className="font-medium text-ink-1">{entry.authorName} · {entry.ticketId}</span>
+                              <time dateTime={entry.at} className="font-mono tabular-nums">{entry.at}</time>
+                            </div>
+                            <p className="m-0 whitespace-pre-wrap text-small text-ink-1">{entry.text}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  ) : null}
                 </>
               ) : (
                 <Card>

@@ -27,27 +27,35 @@ type PageResponse<T> = {
 type VehicleTypeApi = {
   id: number
   name: string
+
   innerLength: number
   innerWidth: number
   innerHeight: number
+
+  doorWidth: number | null
+  doorHeight: number | null
+
   maxPayloadKg: number
   frontAxleLimitKg: number | null
   rearAxleLimitKg: number | null
+  frontAxleX: number | null
+  rearAxleX: number | null
+  emptyFrontAxleLoadKg: number | null
+  emptyRearAxleLoadKg: number | null
   maxCogOffsetRatio: number
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleApi[]
   vehicleCount: number
 }
-
 type VehicleTypeObstacleApi = {
   id: number
   name: string
   type:
-    | 'WHEEL_ARCH'
-    | 'COOLING_UNIT'
-    | 'PARTITION'
-    | 'RESERVED_ZONE'
-    | 'OTHER'
+  | 'WHEEL_ARCH'
+  | 'COOLING_UNIT'
+  | 'PARTITION'
+  | 'RESERVED_ZONE'
+  | 'OTHER'
   x: number
   y: number
   z: number
@@ -64,11 +72,17 @@ export type VehicleType = {
   cargoLengthCm: number
   cargoWidthCm: number
   cargoHeightCm: number
+  doorWidthCm: number | null
+  doorHeightCm: number | null
 
   payloadKg: number
 
   frontAxleLimitKg?: number
   rearAxleLimitKg?: number
+  frontAxleX: number | null
+  rearAxleX: number | null
+  emptyFrontAxleLoadKg: number | null
+  emptyRearAxleLoadKg: number | null
 
   maxCogOffsetRatio: number
 
@@ -100,6 +114,8 @@ function mapVehicleType(
     cargoLengthCm: item.innerLength,
     cargoWidthCm: item.innerWidth,
     cargoHeightCm: item.innerHeight,
+    doorWidthCm: item.doorWidth ?? null,
+    doorHeightCm: item.doorHeight ?? null,
 
     payloadKg: item.maxPayloadKg,
 
@@ -108,6 +124,10 @@ function mapVehicleType(
 
     rearAxleLimitKg:
       item.rearAxleLimitKg ?? undefined,
+    frontAxleX: item.frontAxleX ?? null,
+    rearAxleX: item.rearAxleX ?? null,
+    emptyFrontAxleLoadKg: item.emptyFrontAxleLoadKg ?? null,
+    emptyRearAxleLoadKg: item.emptyRearAxleLoadKg ?? null,
 
     maxCogOffsetRatio:
       item.maxCogOffsetRatio,
@@ -129,18 +149,18 @@ function mapVehicleType(
         loadBearing:
           obstacle.loadBearing,
       })),
-      vehicleCount: item.vehicleCount,
+    vehicleCount: item.vehicleCount,
   }
 }
 
 export type VehicleTypeObstacleInput = {
   name: string
   type:
-    | 'WHEEL_ARCH'
-    | 'COOLING_UNIT'
-    | 'PARTITION'
-    | 'RESERVED_ZONE'
-    | 'OTHER'
+  | 'WHEEL_ARCH'
+  | 'COOLING_UNIT'
+  | 'PARTITION'
+  | 'RESERVED_ZONE'
+  | 'OTHER'
   x: number
   y: number
   z: number
@@ -157,16 +177,25 @@ export type VehicleTypeInput = {
   cargoWidthCm: number
   cargoHeightCm: number
 
+  // Kích thước cửa xe
+  doorWidthCm?: number
+  doorHeightCm?: number
+
   payloadKg: number
 
   frontAxleLimitKg?: number
   rearAxleLimitKg?: number
+  frontAxleX?: number | null
+  rearAxleX?: number | null
+  emptyFrontAxleLoadKg?: number | null
+  emptyRearAxleLoadKg?: number | null
 
   maxCogOffsetRatio: number
 
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleInput[]
 }
+
 
 function toCreateVehicleTypeRequest(
   input: VehicleTypeInput,
@@ -178,13 +207,21 @@ function toCreateVehicleTypeRequest(
     innerWidth: input.cargoWidthCm,
     innerHeight: input.cargoHeightCm,
 
+    // Kích thước cửa xe gửi lên backend
+    doorWidth: input.doorWidthCm ?? null,
+    doorHeight: input.doorHeightCm ?? null,
+
     maxPayloadKg: input.payloadKg,
 
     frontAxleLimitKg:
-      input.frontAxleLimitKg,
+      input.frontAxleLimitKg ?? null,
 
     rearAxleLimitKg:
-      input.rearAxleLimitKg,
+      input.rearAxleLimitKg ?? null,
+    frontAxleX: input.frontAxleX ?? null,
+    rearAxleX: input.rearAxleX ?? null,
+    emptyFrontAxleLoadKg: input.emptyFrontAxleLoadKg ?? null,
+    emptyRearAxleLoadKg: input.emptyRearAxleLoadKg ?? null,
 
     maxCogOffsetRatio:
       input.maxCogOffsetRatio,
@@ -196,6 +233,7 @@ function toCreateVehicleTypeRequest(
       input.obstacles,
   }
 }
+
 
 export type VehicleRef = { readonly id: string; readonly name: string }
 

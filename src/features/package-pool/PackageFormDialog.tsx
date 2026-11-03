@@ -1,4 +1,3 @@
-
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PackagePlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -44,6 +43,14 @@ const ORIENTATION_OPTIONS = [
 
 const optionalNumber = z.number().finite().optional()
 
+function hasAtMostTwoDecimals(value: number | undefined): boolean {
+  if (value === undefined) return true
+  const [, fraction = ''] = String(value).split('.')
+  return fraction.length <= 2
+}
+
+const DECIMAL_SCALE_ERROR_MSG = 'Giá trị số chỉ được phép tối đa 2 chữ số sau dấu phẩy'
+
 const createSchema = (t: ReturnType<typeof useT>) =>
   z.object({
     packageCode: z
@@ -56,10 +63,25 @@ const createSchema = (t: ReturnType<typeof useT>) =>
     packageTypeId: z.string(),
     deliveryRequirementId: z.string(),
 
-    lengthCm: z.number().int().positive().optional(),
-    widthCm: z.number().int().positive().optional(),
-    heightCm: z.number().int().positive().optional(),
-    weightKg: z.number().positive(),
+    lengthCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    widthCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    heightCm: z
+      .number()
+      .positive()
+      .optional()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
+    weightKg: z
+      .number()
+      .positive()
+      .refine(hasAtMostTwoDecimals, DECIMAL_SCALE_ERROR_MSG),
 
     handlingClass: z.enum(HANDLING_CLASSES),
     destination: z
@@ -591,21 +613,21 @@ export function PackageFormDialog({
                   'lengthCm',
                   t('trips.form.length'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
                   'widthCm',
                   t('trips.form.width'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
                   'heightCm',
                   t('trips.form.height'),
                   'cm',
-                  '1',
+                  '0.01',
                   hasPackageType,
                 )}
                 {numeric(
