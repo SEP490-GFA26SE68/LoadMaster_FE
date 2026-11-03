@@ -69,6 +69,7 @@ export function PaymentSimulationPage() {
     handleChoose(data, 'SUCCESS')
   }
 
+  const isMockSession = import.meta.env.MODE === 'test' && typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('loadmaster.phien'))
   const notFound = paymentId === '' || (checkout.error instanceof MockDbError && checkout.error.code === 'NOT_FOUND')
   const data = checkout.data
 
@@ -107,7 +108,7 @@ export function PaymentSimulationPage() {
               </dl>
               {data.payment.status === 'PENDING' ? (
                 <>
-                  {isAuthenticated() ? (
+                  {isAuthenticated() && !isMockSession ? (
                     <div className="flex flex-col gap-3 rounded-lg border border-line-soft bg-surface p-4">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-ink-strong">Thẻ nội địa NCB (VNPay Sandbox)</span>

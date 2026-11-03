@@ -165,9 +165,17 @@ function toIsoString(dateStr: string | null | undefined): string {
   return Number.isNaN(parsed) ? new Date().toISOString() : new Date(parsed).toISOString()
 }
 
+function shouldUseMockDb(): boolean {
+  if (import.meta.env.MODE === 'test') {
+    const hasSession = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('loadmaster.phien'))
+    return hasSession || !isAuthenticated()
+  }
+  return !isAuthenticated()
+}
+
 // GET /api/subscription/current
 export async function getCurrentSubscription(): Promise<CurrentSubscription | null> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().getCurrentSubscription()
   }
 
@@ -217,7 +225,7 @@ export async function getCurrentSubscription(): Promise<CurrentSubscription | nu
 
 // GET /api/subscription/plans
 export async function listPlansOnSale(): Promise<SubscriptionPlan[]> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return (await getMockDb().listSubscriptionPlans()).filter((plan) => plan.active)
   }
 
@@ -227,7 +235,7 @@ export async function listPlansOnSale(): Promise<SubscriptionPlan[]> {
 
 // POST /api/subscription/subscribe
 export async function subscribe(planId: string): Promise<PaymentTransaction> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().subscribeToPlan(planId)
   }
 
@@ -265,7 +273,7 @@ export async function subscribe(planId: string): Promise<PaymentTransaction> {
 
 // POST /api/subscription/cancel
 export async function cancelSubscription(): Promise<CompanySubscription> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().cancelSubscription()
   }
 
@@ -289,7 +297,7 @@ export async function cancelSubscription(): Promise<CompanySubscription> {
 
 // GET /api/credits/balance
 export async function getCreditBalance(): Promise<CreditBalance> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().getCreditBalance()
   }
 
@@ -302,7 +310,7 @@ export async function getCreditBalance(): Promise<CreditBalance> {
 
 // GET /api/credits/transactions
 export async function listCreditTransactions(): Promise<CreditTransaction[]> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().listCreditTransactions()
   }
 
@@ -326,7 +334,7 @@ export async function listCreditTransactions(): Promise<CreditTransaction[]> {
 
 // POST /api/credits/topup
 export async function topUpCredits(credits: number): Promise<PaymentTransaction> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().topUpCredits(credits)
   }
 
@@ -363,7 +371,7 @@ export async function topUpCredits(credits: number): Promise<PaymentTransaction>
 }
 
 export async function listPayments(): Promise<PaymentTransaction[]> {
-  if (!isAuthenticated()) {
+  if (shouldUseMockDb()) {
     return getMockDb().listPayments()
   }
 

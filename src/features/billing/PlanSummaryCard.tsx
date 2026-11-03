@@ -61,14 +61,18 @@ export function PlanSummaryCard({
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>
+        {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
         {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
-        {(subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && onRenew ? (
-          <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2.5">
+          {(subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && onRenew ? (
             <Button variant="primary" loading={renewPending} onClick={onRenew}>
               Gia hạn thêm 1 tháng
             </Button>
-          </div>
-        ) : null}
+          ) : null}
+          {subscription.status === 'ACTIVE' ? (
+            <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button>
+          ) : null}
+        </div>
       </div>
     </Card>
   )
