@@ -44,6 +44,10 @@ export {
   type TicketReply,
   type TicketStatus,
 } from './support-model'
+export type { ContactsDb } from './db-api-contacts'
+// Yêu cầu liên hệ của khách chưa có tài khoản (`ContactOfGuest`)
+export { CONTACT_FIELDS, CONTACT_HANDLER_ROLES, CONTACT_LIMITS, CONTACT_REQUEST_TYPES, CONTACT_STATUSES, isContactEmail } from './contact-model'
+export type { ContactField, ContactRequestType, ContactStatus, GuestContact, GuestContactPatch, NewGuestContact } from './contact-model'
 export { SEED_PLANS } from './seed-billing'
 export { DEFAULT_DEPARTURE_TIME } from './db-trips'
 export { MIN_PASSWORD_LENGTH } from './db-users'

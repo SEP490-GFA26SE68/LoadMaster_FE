@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-
-import { Boxes, Gauge, Layers } from 'lucide-react'
-import { Navigate, useLocation } from 'react-router'
+import { ArrowLeft, Boxes, Gauge, Layers } from 'lucide-react'
+import { Link, Navigate, useLocation } from 'react-router'
 import { Logo } from '@/components/brand/Logo'
 import { Lumo } from '@/components/brand/Lumo'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
+import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
-import { landingPath } from './landing'
-import { LoginArtwork } from './LoginArtwork'
+import { cn } from '@/lib/utils'
+import { CargoArtwork } from '@/components/CargoArtwork'
+import { landingPath, PUBLIC_HOME } from './landing'
 import { useAuth } from './AuthProvider'
+
+const TOUCH_CONTROL = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
 
 const HIGHLIGHTS = [
   { icon: Gauge, textKey: 'auth.showcase.fillRate' },
@@ -18,7 +21,6 @@ const HIGHLIGHTS = [
 ] as const
 
 export function LoginPage() {
-
   const t = useT()
   const { user, initialized, signIn } = useAuth()
   const location = useLocation()
@@ -62,8 +64,6 @@ export function LoginPage() {
     return <Navigate to={landingPath(user.role, from)} replace />
   }
 
-
-
   async function handleLogin() {
     if (isRedirecting) return
 
@@ -85,11 +85,15 @@ export function LoginPage() {
     }
   }
 
-
-
   return (
     <div className="sky relative flex min-h-dvh flex-col">
-      <header className="z-10 flex justify-end px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
+      <header className="z-10 flex items-center justify-between gap-3 px-4 pt-4 lg:absolute lg:top-5 lg:right-6 lg:p-0">
+        <Button asChild variant="skyGhost" className={cn(TOUCH_CONTROL, SKY_FOCUS, 'max-sm:aspect-square max-sm:px-0')}>
+          <Link to={PUBLIC_HOME}>
+            <ArrowLeft aria-hidden strokeWidth={1.5} />
+            <span className="max-sm:sr-only">{t('auth.login.backToLanding')}</span>
+          </Link>
+        </Button>
         <LanguageSwitch tone="sky" className="pointer-coarse:[&_button]:size-14 pointer-coarse:[&_button]:text-body-lg" />
       </header>
       <main className="mx-auto flex w-full max-w-(--shell-max) flex-1 flex-col items-center justify-center gap-12 px-4 py-4 sm:py-8 lg:flex-row lg:px-6 lg:py-6">
@@ -113,7 +117,7 @@ export function LoginPage() {
         </div>
         <aside className="hidden min-w-0 max-w-220 flex-1 flex-col gap-7 lg:flex">
           <div className="rounded-xl border border-border-dark bg-[linear-gradient(180deg,var(--canvas-1)_0%,var(--canvas-2)_100%)] p-5">
-            <LoginArtwork />
+            <CargoArtwork label={t('auth.showcase.artworkLabel')} />
           </div>
           <div className="flex flex-col gap-5">
             <p className="max-w-160 font-display text-display leading-10 font-bold tracking-[-0.5px] text-pretty text-sky-text font-stretch-112%">

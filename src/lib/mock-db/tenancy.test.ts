@@ -411,6 +411,11 @@ const PROBES = {
   replyToSupportTicket: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.replyToSupportTicket(other.tickets[0]!, 'Xin chào') } },
   setSupportTicketStatus: { scope: 'directory', forbidden: { 'yêu cầu của công ty kia': ({ db, other }) => db.setSupportTicketStatus(other.tickets[0]!, 'CLOSED') } },
   getSupportCompanyPanel: { scope: 'directory', hidden: ({ db, other }) => db.getSupportCompanyPanel(other.id) },
+  // Yêu cầu liên hệ của khách: không thuộc công ty nào — gửi công khai, đọc và xử lý chỉ vai trò nền tảng (`contacts.test.ts`)
+  createGuestContact: { scope: 'session' },
+  listGuestContacts: { scope: 'session' },
+  getGuestContact: { scope: 'session' },
+  updateGuestContact: { scope: 'session' },
 } satisfies Record<keyof MockDb, Probe>
 
 const probes = Object.entries(PROBES) as [keyof MockDb, Probe][]

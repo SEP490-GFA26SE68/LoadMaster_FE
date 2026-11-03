@@ -28,6 +28,7 @@ export const audit = {
     credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
     company: { created: 'Created a company', updated: 'Edited company information' },
     ticket: { created: 'Sent a support ticket', replied: 'Replied to a support ticket', statusChanged: 'Changed the support ticket status' },
+    contact: { received: 'A guest sent a contact request', updated: 'Updated a guest contact request' },
   },
   groups: {
     auth: 'Sign-in',
@@ -49,6 +50,7 @@ export const audit = {
     credit: 'Credits',
     company: 'Company',
     ticket: 'Support',
+    contact: 'Guest contacts',
   },
   log: {
     title: 'System log',
@@ -163,6 +165,10 @@ export const audit = {
       // Support tickets (FE-8-07)
       ticketKind: 'Ticket type',
       ticketStatus: 'Status',
+      // Guest contact requests
+      contactType: 'Request type',
+      contactStatus: 'Status',
+      assignedTo: 'Assignee',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
     fieldNames: {
@@ -188,6 +194,9 @@ export const audit = {
       priority: 'Priority',
       note: 'Note',
       packageIds: 'Packages',
+      // Guest contact requests
+      status: 'Status',
+      assignedToId: 'Assignee',
     },
     reasons: { suspended: 'Account locked' },
     packageFields: {

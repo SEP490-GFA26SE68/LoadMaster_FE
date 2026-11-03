@@ -31,6 +31,7 @@ export const audit = {
     credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
     company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },
     ticket: { created: 'Gửi yêu cầu hỗ trợ', replied: 'Trả lời yêu cầu hỗ trợ', statusChanged: 'Đổi trạng thái yêu cầu hỗ trợ' },
+    contact: { received: 'Khách gửi yêu cầu liên hệ', updated: 'Cập nhật yêu cầu liên hệ của khách' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -52,6 +53,7 @@ export const audit = {
     credit: 'Credit',
     company: 'Công ty',
     ticket: 'Hỗ trợ',
+    contact: 'Liên hệ của khách',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -189,6 +191,10 @@ export const audit = {
       // Yêu cầu hỗ trợ (FE-8-07)
       ticketKind: 'Loại yêu cầu',
       ticketStatus: 'Trạng thái',
+      // Yêu cầu liên hệ của khách
+      contactType: 'Loại yêu cầu',
+      contactStatus: 'Trạng thái',
+      assignedTo: 'Người nhận việc',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
@@ -217,6 +223,9 @@ export const audit = {
       priority: 'Ưu tiên',
       note: 'Ghi chú',
       packageIds: 'Kiện',
+      // Yêu cầu liên hệ của khách
+      status: 'Trạng thái',
+      assignedToId: 'Người nhận việc',
     },
     /** Mã lý do đăng nhập không thành công. */
     reasons: { suspended: 'Tài khoản đã bị khoá' },

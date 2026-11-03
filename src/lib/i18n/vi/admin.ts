@@ -176,7 +176,7 @@ export const admin = {
     groups: {
       administration: 'Công ty, người dùng và nhật ký',
       billing: 'Gói cước và credit',
-      support: 'Hỗ trợ khách hàng',
+      support: 'Hỗ trợ khách hàng và liên hệ của khách',
       dashboard: 'Bảng điều khiển và báo cáo',
       requirements: 'Yêu cầu giao',
       packages: 'Kho kiện và nhãn QR',
@@ -195,6 +195,7 @@ export const admin = {
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },
       support: { create: 'Gửi yêu cầu hỗ trợ', handle: 'Xử lý yêu cầu hỗ trợ' },
+      contacts: { handle: 'Xử lý yêu cầu liên hệ của khách' },
       dashboard: { view: 'Xem bảng điều khiển' },
       reports: { export: 'Xuất báo cáo .xlsx' },
       requirements: { view: 'Xem yêu cầu giao', edit: 'Tạo, sửa yêu cầu giao' },

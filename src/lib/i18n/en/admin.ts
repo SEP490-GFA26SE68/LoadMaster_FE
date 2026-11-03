@@ -152,7 +152,7 @@ export const admin = {
     groups: {
       administration: 'Companies, users and log',
       billing: 'Plans and credits',
-      support: 'Customer support',
+      support: 'Customer support and guest contacts',
       dashboard: 'Dashboard and reports',
       requirements: 'Delivery requirements',
       packages: 'Package pool and QR labels',
@@ -171,6 +171,7 @@ export const admin = {
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },
       billing: { manage: 'Buy plans, top up credits, view transactions' },
       support: { create: 'Send support requests', handle: 'Handle support requests' },
+      contacts: { handle: 'Handle guest contact requests' },
       dashboard: { view: 'View the dashboard' },
       reports: { export: 'Export .xlsx reports' },
       requirements: { view: 'View delivery requirements', edit: 'Create and edit delivery requirements' },

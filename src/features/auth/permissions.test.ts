@@ -7,9 +7,9 @@ import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } fr
  * từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
-  systemManager: ['subscriptionPlans.manage'],
-  systemSupporter: ['support.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
+  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
   companyManager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
@@ -44,10 +44,11 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
   })
 })
 
-test('one table: 33 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  // 33 quyền của ma trận PRD v2; ba quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
-  expect(PERMISSIONS).toHaveLength(33)
-  expect(new Set(PERMISSIONS).size).toBe(33)
+test('one table: 34 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  // 33 quyền của ma trận PRD v2 cộng `contacts.handle` (yêu cầu liên hệ của khách, chốt với backend 15/10); ba quyền của nhà sản xuất và
+  // logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
+  expect(PERMISSIONS).toHaveLength(34)
+  expect(new Set(PERMISSIONS).size).toBe(34)
   expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
   expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
@@ -93,4 +94,9 @@ test('the dispatcher edits and approves plans, the company manager only reads th
   // Yêu cầu giao: quản lý công ty tạo và sửa, điều phối viên chỉ xem (D-72)
   expect(ROLES.filter((role) => can(role, 'requirements.view'))).toStrictEqual(['companyManager', 'dispatcher'])
   expect(ROLES.filter((role) => can(role, 'requirements.edit'))).toStrictEqual(['companyManager'])
+})
+
+test('guest contact requests are handled by the three platform roles only (contacts.handle)', () => {
+  expect(ROLES.filter((role) => can(role, 'contacts.handle'))).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
+  expect(PERMISSIONS.indexOf('contacts.handle')).toBe(PERMISSIONS.indexOf('support.handle') + 1)
 })

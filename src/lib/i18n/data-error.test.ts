@@ -107,6 +107,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   COMPANY_INVALID: { field: 'admin.email' },
   TICKET_INVALID: { field: 'title' },
   TICKET_CLOSED: { ticketId: 'TKT-002' },
+  CONTACT_INVALID: { field: 'email' },
 }
 
 test('every data error code has a vi and en sentence with every placeholder filled', () => {
@@ -155,3 +156,11 @@ test('ApiError from Backend returns its explicit backend message instead of gene
   expect(dataErrorMessage(error, createTranslator('vi'))).toBe('Bạn không có quyền thực hiện hành động này')
 })
 
+test('a guest contact error names the field in the language of the screen, not by its code', () => {
+  const email = new MockDbError('CONTACT_INVALID', { field: 'email' })
+  expect(dataErrorMessage(email, createTranslator('vi'))).toBe('Mục "Email" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
+  expect(dataErrorMessage(email, createTranslator('en'))).toBe('The "Email" field of the contact request is not valid. Check it and try again.')
+  const assignee = new MockDbError('CONTACT_INVALID', { field: 'assignedToId' })
+  expect(dataErrorMessage(assignee, createTranslator('vi'))).toBe('Mục "Người nhận việc" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
+  expect(dataErrorMessage(assignee, createTranslator('en'))).toBe('The "Assignee" field of the contact request is not valid. Check it and try again.')
+})

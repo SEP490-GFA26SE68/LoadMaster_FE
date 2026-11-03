@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { optionsFromLabels, SelectField } from '@/components/ui/SelectField'
 import { Switch } from '@/components/ui/Switch'
 import { useT } from '@/lib/i18n'
-import type { PlanInput, PlanPatch, PlanTier, SubscriptionPlan } from '@/lib/mock-db'
+import type { PlanTier, SubscriptionPlan } from '@/lib/mock-db/billing-model'
 import {
   CREDITS_INVALID,
   emptyPlanForm,
@@ -23,6 +23,7 @@ import {
   type PlanFormInput,
   type PlanFormValues,
 } from './plan-form'
+import type { CreatePlanInput, UpdatePlanInput } from './subscription-plans-api'
 
 const NUMERIC = { type: 'number', numeric: true, inputMode: 'numeric', step: 1 } as const
 
@@ -51,9 +52,8 @@ function CreditsField({ form, error }: { form: UseFormReturn<PlanFormInput, unkn
 }
 
 /**
- * Thêm / sửa gói cước (FE-8-02, D-90). `plan` vắng là thêm gói: chọn hạng (mở sẵn hạng chưa có gói đang bán — `defaultTier`), có công tắc
- * "Mở bán ngay". Có `plan` là sửa: hạng chỉ đọc (đổi hạng làm lệch thuật toán và tính năng của công ty đang dùng), cờ bán là công tắc ở danh
- * sách. Form nói rõ giá và credit mới áp dụng từ kỳ gia hạn kế tiếp. Kho kiểm lại — `PLAN_TIER_TAKEN`, `PLAN_INVALID` hiện qua toast của màn.
+ * Thêm / sửa gói cước (FE-8-02, D-90) đầy đủ các trường:
+ * mã gói, tên, hạng, chu kỳ thanh toán, giá, credits, thuật toán, giới hạn xe & chuyến, tính năng, trạng thái bán.
  */
 export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending, onCreate, onUpdate }: {
   open: boolean
@@ -61,8 +61,8 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
   plan: SubscriptionPlan | null
   defaultTier: PlanTier
   pending: boolean
-  onCreate: (input: PlanInput) => void
-  onUpdate: (planId: string, patch: PlanPatch) => void
+  onCreate: (input: CreatePlanInput) => void
+  onUpdate: (planId: string, patch: UpdatePlanInput) => void
 }) {
   const t = useT()
   const form = useForm<PlanFormInput, unknown, PlanFormValues>({ resolver: zodResolver(planFormSchema) })
@@ -86,35 +86,110 @@ export function PlanFormDialog({ open, onOpenChange, plan, defaultTier, pending,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-140">
+      <DialogContent className="w-150 max-w-[95vw]">
         <form noValidate onSubmit={form.handleSubmit(handleValid)}>
           <DialogHeader
             icon={Tags}
             title={plan ? t('platform.form.editTitle', { id: plan.id }) : t('platform.form.createTitle')}
             description={t('platform.form.description')}
           />
-          <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
-            <Input label={t('platform.form.name')} placeholder={t('platform.form.namePlaceholder')} required error={nameError} {...register('name')} />
-            {plan ? (
-              <Input label={t('platform.form.tier')} value={t(`common.planTiers.${plan.tier}`)} readOnly hint={t('platform.form.tierFixed')} />
-            ) : (
+          <div className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto px-7 py-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Mã gói (Plan Code)"
+                placeholder="ví dụ: PLAN-BASIC, PLAN-PRO"
+                disabled={Boolean(plan)}
+                error={errors.planCode?.message}
+                {...register('planCode')}
+              />
+              <Input
+                label={t('platform.form.name')}
+                placeholder={t('platform.form.namePlaceholder')}
+                required
+                error={nameError}
+                {...register('name')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {plan ? (
+                <Input label={t('platform.form.tier')} value={t(`common.planTiers.${plan.tier}`)} readOnly hint={t('platform.form.tierFixed')} />
+              ) : (
+                <SelectField
+                  control={control}
+                  name="tier"
+                  label={t('platform.form.tier')}
+                  options={optionsFromLabels({ BASIC: t('common.planTiers.BASIC'), PRO: t('common.planTiers.PRO'), ULTIMATE: t('common.planTiers.ULTIMATE') })}
+                  hint={t('platform.form.onSaleHint')}
+                />
+              )}
               <SelectField
                 control={control}
-                name="tier"
-                label={t('platform.form.tier')}
-                options={optionsFromLabels({ BASIC: t('common.planTiers.BASIC'), PRO: t('common.planTiers.PRO'), ULTIMATE: t('common.planTiers.ULTIMATE') })}
-                hint={t('platform.form.onSaleHint')}
+                name="billingCycle"
+                label="Chu kỳ thanh toán"
+                options={[
+                  { value: 'MONTHLY', label: 'Hàng tháng' },
+                  { value: 'YEARLY', label: 'Hàng năm' },
+                ]}
               />
-            )}
-            <Input
-              label={t('platform.form.price')}
-              suffix="₫"
-              required
-              error={errors.priceVnd ? t(PRICE_INVALID) : undefined}
-              {...NUMERIC}
-              {...register('priceVnd', { valueAsNumber: true })}
-            />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label={t('platform.form.price')}
+                suffix="₫"
+                required
+                error={errors.priceVnd ? t(PRICE_INVALID) : undefined}
+                {...NUMERIC}
+                {...register('priceVnd', { valueAsNumber: true })}
+              />
+              <SelectField
+                control={control}
+                name="algorithmTier"
+                label="Hạng thuật toán"
+                options={[
+                  { value: 'EP_DBLF', label: 'Cơ bản (EP + DBLF)' },
+                  { value: 'EP_DBLF_GA', label: 'Nâng cao (EP + DBLF + GA)' },
+                  { value: 'EP_DBLF_GA_AI', label: 'Tối ưu AI (EP + DBLF + GA + AI)' },
+                ]}
+              />
+            </div>
+
             <CreditsField form={form} error={errors.monthlyCredits !== undefined} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Số xe tối đa"
+                placeholder="để trống nếu không giới hạn"
+                error={errors.maxVehicles?.message}
+                {...NUMERIC}
+                {...register('maxVehicles', { valueAsNumber: true })}
+              />
+              <Input
+                label="Số chuyến tối đa / tháng"
+                placeholder="để trống nếu không giới hạn"
+                error={errors.maxMonthlyJobs?.message}
+                {...NUMERIC}
+                {...register('maxMonthlyJobs', { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="features" className="text-small font-medium text-ink-strong">
+                Tính năng chi tiết ("Gói gồm")
+              </label>
+              <textarea
+                id="features"
+                rows={4}
+                className="w-full rounded-md border border-line-strong bg-surface p-2.5 text-body text-ink-strong placeholder:text-ink-muted focus:border-cyan-500 focus:outline-none"
+                placeholder="- Hỗ trợ tải 3D container&#10;- Tối ưu lộ trình đa điểm&#10;- Xuất báo cáo Excel / PDF"
+                {...register('features')}
+              />
+              <span className="text-caption text-ink-muted">
+                Mỗi dòng một tính năng (bắt đầu bằng dấu "-"). Hỗ trợ xuống hàng hoặc dùng ký tự "/n-".
+              </span>
+            </div>
+
             {plan ? null : (
               <Controller
                 control={control}

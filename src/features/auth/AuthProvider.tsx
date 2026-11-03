@@ -42,7 +42,7 @@ function restoreMockSession(): User | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(restoreMockSession)
+  const [user, setUser] = useState<User | null>(null)
   const [initialized, setInitialized] = useState(false)
 
   const queryClient = use(QueryClientContext)

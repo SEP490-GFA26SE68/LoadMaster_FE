@@ -1,0 +1,182 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Send } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { Banner } from '@/components/Banner'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { SelectField } from '@/components/ui/SelectField'
+import { Textarea } from '@/components/ui/Textarea'
+import { dataErrorMessage, useT } from '@/lib/i18n'
+import type { GuestContact, SubscriptionPlan } from '@/lib/mock-db'
+import {
+  contactFormSchema,
+  GUEST_CONTACT_OPTIONS,
+  NO_PLAN,
+  toNewContact,
+  translateContactError,
+  type ContactFormValues,
+} from './contact-form'
+import { PUBLIC_TOUCH } from './public-chrome'
+import { useSendContactMutation } from './useMarketingQuery'
+
+/** Select của Radix là nút: cao 56px, chữ 16px trên máy cảm ứng như ô nhập. */
+const TOUCH_SELECT = 'pointer-coarse:[&_button]:h-14 pointer-coarse:[&_button]:text-body-lg'
+
+/**
+ * Form liên hệ của khách chưa có tài khoản (`POST /api/contact-guests`): họ tên, email, loại yêu cầu bắt buộc; số điện thoại, công ty,
+ * gói quan tâm (gói đang bán) và nội dung tuỳ chọn. Lỗi của kho (mất mạng, dữ liệu sai) hiện bằng banner ngay trên nút gửi, dữ liệu đang
+ * nhập giữ nguyên. Nút gửi là nút phụ: nút chính duy nhất của trang là "Nhận tư vấn" ở phần mở đầu (AGENTS mục 5).
+ */
+export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
+  plans: readonly SubscriptionPlan[]
+  initial: ContactFormValues
+  /** Đặt con trỏ vào ô Họ tên khi form hiện ra — sau "Gửi yêu cầu khác", không phải lúc mở trang. */
+  focusFirst?: boolean
+  onSent: (contact: GuestContact) => void
+}) {
+  const t = useT()
+  const send = useSendContactMutation()
+  const [serverError, setServerError] = useState<unknown>(null)
+  const form = useForm<ContactFormValues>({ resolver: zodResolver(contactFormSchema), defaultValues: initial })
+  const { errors } = form.formState
+  const selectedType = form.watch('requestType')
+  useEffect(() => {
+    if (focusFirst) form.setFocus('fullName')
+  }, [focusFirst, form])
+
+  async function handleValid(values: ContactFormValues) {
+    setServerError(null)
+    try {
+      onSent(await send.mutateAsync(toNewContact(values)))
+    } catch (error) {
+      setServerError(error)
+    }
+  }
+
+  return (
+    <form noValidate onSubmit={form.handleSubmit(handleValid)} className="grid gap-4 sm:grid-cols-2">
+      <Input
+        label={t('landing.contact.form.fullName')}
+        autoComplete="name"
+        required
+        className={PUBLIC_TOUCH}
+        error={translateContactError(t, errors.fullName?.message)}
+        {...form.register('fullName')}
+      />
+      <Input
+        label={t('landing.contact.form.email')}
+        type="email"
+        autoComplete="email"
+        placeholder={t('landing.contact.form.emailPlaceholder')}
+        required
+        className={PUBLIC_TOUCH}
+        error={translateContactError(t, errors.email?.message)}
+        {...form.register('email')}
+      />
+      <Input
+        label={t('landing.contact.form.phone')}
+        type="tel"
+        autoComplete="tel"
+        className={PUBLIC_TOUCH}
+        error={translateContactError(t, errors.phoneNumber?.message)}
+        {...form.register('phoneNumber')}
+      />
+      <div className="flex flex-col gap-1.5">
+        <SelectField
+          control={form.control}
+          name="requestType"
+          label={t('landing.contact.form.type')}
+          required
+          options={GUEST_CONTACT_OPTIONS.map((type) => ({ value: type, label: t(`contacts.types.${type}`) }))}
+          className={TOUCH_SELECT}
+        />
+        {selectedType ? (
+          <p className="m-0 text-caption text-ink-2">
+            ℹ️ {t(`contacts.typeNotes.${selectedType}`)}
+          </p>
+        ) : null}
+      </div>
+      <SelectField
+        control={form.control}
+        name="planId"
+        label={t('landing.contact.form.plan')}
+        options={[
+          { value: NO_PLAN, label: t('landing.contact.form.noPlan') },
+          ...plans.map((plan) => ({ value: plan.id, label: plan.name })),
+        ]}
+        className={TOUCH_SELECT}
+      />
+
+      {selectedType === 'DEMO_REQUEST' ? (
+        <div className="sm:col-span-2 rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col gap-3">
+          <div>
+            <h4 className="m-0 text-small font-semibold text-ink-strong">
+              🏢 {t('landing.contact.form.trialCompanyTitle')}
+            </h4>
+            <p className="m-0 mt-0.5 text-caption text-ink-2">
+              {t('landing.contact.form.trialCompanyDesc')}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input
+              label={t('landing.contact.form.company')}
+              autoComplete="organization"
+              required
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.companyName?.message)}
+              {...form.register('companyName')}
+            />
+            <Input
+              label={t('landing.contact.form.companyCode')}
+              placeholder={t('landing.contact.form.companyCodePlaceholder')}
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.companyCode?.message)}
+              {...form.register('companyCode')}
+            />
+            <Input
+              label={t('landing.contact.form.taxCode')}
+              placeholder={t('landing.contact.form.taxCodePlaceholder')}
+              className={PUBLIC_TOUCH}
+              error={translateContactError(t, errors.taxCode?.message)}
+              {...form.register('taxCode')}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="sm:col-span-2">
+          <Input
+            label={t('landing.contact.form.company')}
+            autoComplete="organization"
+            className={PUBLIC_TOUCH}
+            error={translateContactError(t, errors.companyName?.message)}
+            {...form.register('companyName')}
+          />
+        </div>
+      )}
+      <div className="sm:col-span-2">
+        <Textarea
+          label={t('landing.contact.form.message')}
+          placeholder={t('landing.contact.form.messagePlaceholder')}
+          rows={5}
+          className="pointer-coarse:text-body-lg"
+          error={translateContactError(t, errors.message?.message)}
+          {...form.register('message')}
+        />
+      </div>
+
+      {serverError ? (
+        <Banner tone="danger" role="alert" className="sm:col-span-2 pointer-coarse:text-body-lg">
+          {dataErrorMessage(serverError, t)}
+        </Banner>
+      ) : null}
+
+      <div className="flex justify-end sm:col-span-2">
+        <Button type="submit" variant="secondary" loading={send.isPending} className={PUBLIC_TOUCH}>
+          {send.isPending ? null : <Send aria-hidden strokeWidth={1.5} />}
+          {t('landing.contact.form.submit')}
+        </Button>
+      </div>
+    </form>
+  )
+}

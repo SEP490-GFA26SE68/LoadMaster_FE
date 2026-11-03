@@ -1,4 +1,4 @@
-import { isMockDbError } from '@/lib/mock-db/errors'
+import { isMockDbError, type MockDbError } from '@/lib/mock-db/errors'
 import type { TFunction } from './types'
 
 /**
@@ -20,8 +20,18 @@ export function dataErrorMessage(error: unknown, t: TFunction): string {
   const params = Object.fromEntries(
     Object.entries(error.params).map(([name, value]) => [name, Array.isArray(value) ? value.join(', ') : value]),
   ) as Record<string, string | number>
+  const field = fieldLabel(error, t)
+  if (field !== undefined) params.field = field
   // Tham số của từng mã trùng placeholder của câu cùng mã (kiểm ở data-error.test.ts); TFunction không suy được từ mã động.
   const translate = t as unknown as (key: string, values: Record<string, string | number>) => string
   return translate(`dataErrors.${error.code}`, params)
 }
 
+/**
+ * Mã có câu nêu tên trường (`{field}`): tham số `field` là mã trường của kho, câu nhận tên trường theo ngôn ngữ đang chọn — như cột của
+ * file nhập (`sourcing.import.dimensionFields`). Mã `*_INVALID` khác liệt kê điều kiện, không nêu trường.
+ */
+function fieldLabel(error: MockDbError, t: TFunction): string | undefined {
+  if (error.code !== 'CONTACT_INVALID') return undefined
+  return t(`contacts.fields.${(error as MockDbError<'CONTACT_INVALID'>).params.field}`)
+}
