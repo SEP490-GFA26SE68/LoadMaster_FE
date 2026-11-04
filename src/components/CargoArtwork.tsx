@@ -11,7 +11,7 @@ import {
   sortByDepth,
 } from '@/lib/isometric'
 import { cn } from '@/lib/utils'
-import { ARTWORK_CONTAINER, artworkBoxes } from './cargo-artwork-boxes'
+import { ARTWORK_CONTAINER, artworkBoxesInLoadingOrder } from './cargo-artwork-boxes'
 
 const SCALE = 64
 /** Lề trong khung nhìn, chừa chỗ cho bóng đổ mềm khỏi bị cắt thành cạnh thẳng. */
@@ -43,10 +43,7 @@ export function CargoArtwork({ label, className }: { label: string; className?: 
       shell: containerShell(ARTWORK_CONTAINER, projector, shellColors()),
       roof: roofOutline(ARTWORK_CONTAINER, projector),
       shadow: groundShadow(ARTWORK_CONTAINER, projector),
-      // Thứ tự xếp: vách trước → cửa sau, lớp dưới → lớp trên.
-      boxes: artworkBoxes().sort(
-        (a, b) => a.x - b.x || a.z - b.z || a.y - b.y,
-      ),
+      boxes: artworkBoxesInLoadingOrder(),
     }
   }, [])
 

@@ -54,7 +54,7 @@ export const optimization = {
     tier: 'Algorithm tier of the {plan} plan',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — not available yet',
-    tierNote: 'The demo runs EP + DBLF (mock) for every tier.',
+    tierNote: 'The system picks the algorithm within your plan tier. The demo runs EP + DBLF (mock) for every tier.',
     noPlan: 'The company has no plan.',
     blocked: {
       INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator',
@@ -130,6 +130,17 @@ export const optimization = {
     progress: '{done} of {count} plans done',
     planProgress: 'Checked {placed} of {total} packages',
     planWaiting: 'Waiting',
+    stagesLabel: 'Steps of this run',
+    stages: {
+      reserve: 'Reserve credit',
+      pack: 'Pack three plans',
+      save: 'Save results',
+    },
+    stageStates: {
+      done: 'done',
+      current: 'in progress',
+      pending: 'not started',
+    },
     elapsed: 'Running for {seconds} s',
     cancel: 'Cancel',
     note: 'Cancelling creates no plan at all.',

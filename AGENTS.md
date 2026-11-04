@@ -887,7 +887,8 @@ Người dùng **không chọn mục tiêu hay thuật toán** (FE-5b-05, FE-5b-
 phối viên, dùng được ở màn vận hành). **Tên thuật toán đã chạy** chỉ hiện ở ba chỗ: dòng chỉ đọc trong "Thiết lập nâng cao" và bảng lần
 chạy của Thiết lập tối ưu, và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty nên nhãn luôn
 kèm chữ **"(mock)"** — `runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; **hạng thuật toán của gói** (FE-8-05) hiện ở thẻ "Credit" của Thiết lập tối ưu (`optimization.credit.tiers`: "EP + DBLF", "EP + DBLF + GA/SA",
-Ultimate thêm dòng "AI Optimizer — chưa có") — đó là hạng gói được dùng, **không phải** thuật toán đã chạy: mock vẫn chạy "EP + DBLF (mock)" cho mọi hạng,
+Ultimate thêm dòng "AI Optimizer — chưa có") — đó là hạng gói được dùng, **không phải** thuật toán đã chạy. **Hệ thống tự chọn thuật toán** trong hạng của
+gói, người dùng không chọn (D-77, như dịch vụ tối ưu của backend); có backend thì phương án ghi tên thuật toán backend trả về. Mock vẫn chạy "EP + DBLF (mock)" cho mọi hạng,
 thẻ nói rõ và phương án ghi đúng tên đã chạy; không bao giờ có chữ "AI optimized". Màn So sánh theo lần chạy
 (`/chuyen/:tripId/so-sanh?lan-chay=<mã lần chạy>`): thẻ đầu nói lần chạy (người chạy, thuật toán, seed, LIFO, trọng tâm thấp, giới hạn thời
 gian) và **mức hạn các điểm giao một lần** — ba phương án cùng một tuyến; dưới đó ba thẻ cạnh nhau, mỗi thẻ: mục tiêu, MOCK RESULT, mã
@@ -926,6 +927,12 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   ghi chú nói số đến từ đâu.
 - Trang tài liệu `/thanh-phan` được dùng số mẫu để trình bày component, nhưng lấy từ dữ liệu seed
   thật (132 kiện của chuyến mẫu), không phải số nghĩ ra.
+- **Hình của hộp thoại chạy tối ưu** (`optimization/RunFigure`): thùng xe đẳng cự có khối hiện dần, và số khối là hàm thuần của phần việc
+  thật `checked / workload` mà service báo (`revealedBoxCount` ở `run-progress.ts`, làm tròn xuống — hình không bao giờ đi trước tiến
+  trình); trên hình không có số nào, khối không phải kiện thật. Chưa có sự kiện tiến trình nào, hoặc nguồn không báo số kiện (máy chủ chỉ báo
+  trạng thái job), thì `fraction` là `null`: một dải khối chạy vòng, không dừng ở mức đầy nào; giảm chuyển động thì hình đứng ở mức hiện tại,
+  chế độ không xác định là thùng rỗng. Cạnh hình là đúng các bước `runOptimization` báo qua `onStage` (giữ credit → xếp ba phương án → lưu
+  kết quả); nguồn nào không có bước đó thì không vẽ bước đó. Khối tô thang azure ("đang chạy"), không dùng màu điểm giao.
 - **Tải trục** (FE-5b-03, D-78) là số tính được: mô hình đòn bẩy thuần
   `axleLoadsOf` (`domain/metrics/axle-load.ts`) trên dữ liệu trục **người dùng khai ở trang xe** (`axles[]`: vị trí, tải rỗng, tải tối
   đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
@@ -1055,9 +1062,11 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 ### Ảnh xem trước tĩnh dùng SVG, không dùng Three.js
 
 Ảnh nhỏ, không xoay được thì vẽ bằng SVG đẳng cự qua `lib/isometric.ts` — nhẹ hơn
-nhiều và không kéo Three.js vào chunk. Đang dùng ở: xem trước trong modal tối ưu,
-ảnh thu nhỏ màn so sánh phương án, hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
+nhiều và không kéo Three.js vào chunk. Đang dùng ở: hình thùng xếp dần của hộp thoại chạy tối ưu
+(`optimization/RunFigure`, mục 6 "Không bịa số"), ảnh thu nhỏ màn so sánh phương án, hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
 đang tải Three.js, hình minh hoạ màn đăng nhập và sơ đồ tuyến ở chi tiết chuyến (`trips/RouteDiagram.tsx`, LM-097).
+Hình chỉ cần hình học thì lấy toạ độ mặt qua `boxFacePoints` / `shellFacePoints` và tô bằng class token (`fill-azure-500`), không đưa mã hex
+vào component.
 
 Chỉ dùng Three.js khi người dùng **cần xoay hoặc bấm vào vật thể**.
 
