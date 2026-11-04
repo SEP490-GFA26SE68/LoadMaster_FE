@@ -576,6 +576,32 @@
   }
 }
 
+/* Hình của hộp thoại chạy tối ưu (`RunFigure`): một khối hạ xuống chỗ của nó khi phần việc của nó xong */
+@keyframes lm-box-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* Chế độ không xác định của `RunFigure`: một dải khối chạy từ vách trước ra cửa sau rồi lặp lại — không nói mức đầy nào */
+@keyframes lm-run-wave {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  8%,
+  30% {
+    opacity: 1;
+    transform: none;
+  }
+  40%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Thanh trượt native. Phần đã đi qua tô primary qua biến --lm-range-fill
    (component đặt inline), phần còn lại màu viền.

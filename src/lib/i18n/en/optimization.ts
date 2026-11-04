@@ -130,6 +130,17 @@ export const optimization = {
     progress: '{done} of {count} plans done',
     planProgress: 'Checked {placed} of {total} packages',
     planWaiting: 'Waiting',
+    stagesLabel: 'Steps of this run',
+    stages: {
+      reserve: 'Reserve credit',
+      pack: 'Pack three plans',
+      save: 'Save results',
+    },
+    stageStates: {
+      done: 'done',
+      current: 'in progress',
+      pending: 'not started',
+    },
     elapsed: 'Running for {seconds} s',
     cancel: 'Cancel',
     note: 'Cancelling creates no plan at all.',
