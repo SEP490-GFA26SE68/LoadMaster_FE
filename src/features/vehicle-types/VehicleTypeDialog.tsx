@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleType, VehicleTypeInput } from '@/lib/mock-db'
+import type { VehicleTypeInput } from '@/lib/mock-db'
+import type { VehicleTypeEntry } from './vehicle-types-api'
 import {
   COG_RANGE,
   EMPTY_VEHICLE_TYPE,
@@ -39,7 +40,7 @@ const AXLE_LIMITS = [
 export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  type: VehicleType | null
+  type: VehicleTypeEntry | null
   pending: boolean
   onSubmit: (input: VehicleTypeInput) => void
 }) {

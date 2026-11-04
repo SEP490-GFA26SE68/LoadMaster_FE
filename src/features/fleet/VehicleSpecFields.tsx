@@ -1,6 +1,7 @@
 import { useFormState, type Control, type UseFormRegister } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
 import { useT } from '@/lib/i18n'
+import { useFleetCapabilities } from './useVehiclesQuery'
 import type { VehicleFormValues } from './vehicle-form'
 
 /** Bước nhập của Spec: 0,1 cm và 0,01 kg — đúng bước `roundCm` / `roundKg` áp khi lưu. */
@@ -13,7 +14,7 @@ export const NUMERIC_FIELD_PROPS = { type: 'number' as const, numeric: true, inp
 const CM_FIELDS = ['innerLengthCm', 'innerWidthCm', 'innerHeightCm', 'doorWidthCm', 'doorHeightCm'] as const
 
 /**
- * Khối "Kích thước và tải trọng" của form xe (Spec 9.2): lòng thùng, tải trọng, cửa sau, khoảng hở.
+ * Khối "Kích thước và tải trọng" của form xe (Spec 9.2): lòng thùng, tải trọng, cửa sau, khoảng hở (nguồn không có khoảng hở thì bỏ ô).
  * Mọi ô là số có hậu tố đơn vị; câu lỗi do resolver đặt sẵn nên ở đây chỉ hiển thị.
  */
 export function VehicleSpecFields({
@@ -24,6 +25,7 @@ export function VehicleSpecFields({
   register: UseFormRegister<VehicleFormValues>
 }) {
   const t = useT()
+  const caps = useFleetCapabilities()
   const { errors } = useFormState({ control })
 
   return (
@@ -58,16 +60,18 @@ export function VehicleSpecFields({
           {...NUMERIC_FIELD_PROPS}
           {...register('maxPayloadKg', { valueAsNumber: true })}
         />
-        <Input
-          label={t('fleet.form.clearanceCm')}
-          required
-          suffix="cm"
-          step={CM_STEP}
-          hint={t('fleet.form.clearanceHint')}
-          error={errors.clearanceCm?.message}
-          {...NUMERIC_FIELD_PROPS}
-          {...register('clearanceCm', { valueAsNumber: true })}
-        />
+        {caps.clearance ? (
+          <Input
+            label={t('fleet.form.clearanceCm')}
+            required
+            suffix="cm"
+            step={CM_STEP}
+            hint={t('fleet.form.clearanceHint')}
+            error={errors.clearanceCm?.message}
+            {...NUMERIC_FIELD_PROPS}
+            {...register('clearanceCm', { valueAsNumber: true })}
+          />
+        ) : null}
       </div>
 
       <p className="text-caption text-text-3">

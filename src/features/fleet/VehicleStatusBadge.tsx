@@ -2,20 +2,20 @@ import type { MouseEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
-import type { FleetVehicleState } from './vehicle-status'
+import type { FleetStatus, FleetVehicleState } from './vehicle-status'
 
 /**
  * Chip trạng thái xe theo ngữ pháp chấm V2.3 (Main.jpg): sẵn sàng chấm xanh lá, đang phục vụ chuyến xanh lam có quầng (đang chạy, cùng
- * tông với chuyến đang xếp / đang giao), bảo dưỡng chip xám.
+ * tông với chuyến đang xếp / đang giao), bảo dưỡng và ngừng sử dụng (chỉ backend có) chip xám — phân biệt bằng chữ.
  */
-const TONE: Record<VehicleStatus, { tone: BadgeTone; dot: BadgeDot }> = {
+const TONE: Record<FleetStatus, { tone: BadgeTone; dot: BadgeDot }> = {
   available: { tone: 'success', dot: 'solid' },
   in_use: { tone: 'azure', dot: 'halo' },
   maintenance: { tone: 'neutral', dot: 'solid' },
+  retired: { tone: 'neutral', dot: 'solid' },
 }
 
-export function VehicleStatusBadge({ status }: { status: VehicleStatus }) {
+export function VehicleStatusBadge({ status }: { status: FleetStatus }) {
   const t = useT()
   const spec = TONE[status]
   return <Badge tone={spec.tone} dot={spec.dot}>{t(`fleet.status.${status}`)}</Badge>

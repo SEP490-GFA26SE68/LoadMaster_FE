@@ -60,7 +60,7 @@ export const EMPTY_VEHICLE_TYPE: VehicleTypeFormInput = {
   maxCogOffsetPercent: ratioToPercent(DEFAULT_MAX_COG_OFFSET_RATIO),
 }
 
-export function toVehicleTypeForm(type: VehicleType): VehicleTypeFormInput {
+export function toVehicleTypeForm(type: Omit<VehicleType, 'companyId' | 'createdAt'>): VehicleTypeFormInput {
   return {
     name: type.name,
     cargoLengthCm: type.cargoLengthCm,

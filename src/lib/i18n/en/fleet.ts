@@ -36,6 +36,7 @@ export const fleet = {
     available: 'Available',
     in_use: 'On a trip',
     maintenance: 'Maintenance',
+    retired: 'Retired',
   },
   summary: {
     total: 'Vehicles in the fleet',
@@ -167,6 +168,17 @@ export const fleet = {
     openTrip: 'Open trip {tripId}',
     maintenance: 'In maintenance since {time} {date}: it cannot be assigned to any trip.',
     maintenanceNote: 'Note: {note}',
+    retired: 'The server marks this vehicle as retired.',
+  },
+  backend: {
+    dispatcherOnly: 'The server currently lets only dispatchers read the fleet, so your account cannot see vehicles here yet.',
+    vehicleTypesDispatcherOnly: 'The server currently lets only dispatchers read vehicle types, so your account cannot see vehicle types here yet.',
+    sourceNote: 'Vehicles come from the server. The server does not return the trip using a vehicle or maintenance notes yet, so the status column shows the status only.',
+    readOnly: 'This configuration comes from the server and is view-only: the cargo space, door, payload, obstacles and axles belong to the assigned vehicle type. The server has no way to edit a vehicle or put it into maintenance yet.',
+    doorUnknown: 'This vehicle type has no rear door size yet: the door is shown as the cargo space cross-section.',
+    axlesUnknown: 'This vehicle type has no front and rear axle positions and empty loads yet, so there are no axles to estimate axle loads.',
+    noCreate: 'The server has no way to add a vehicle from this screen yet: the fleet list and vehicle configuration are view-only.',
+    axleNames: { front: 'Front axle', rear: 'Rear axle' },
   },
   maintenance: {
     start: 'Start maintenance',
