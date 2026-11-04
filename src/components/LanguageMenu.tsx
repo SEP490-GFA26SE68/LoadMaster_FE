@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,7 @@ import { LOCALE_NAMES, LOCALES, useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /**
- * Ngôn ngữ giao diện trên dải trời (V2.3 `MenuToanCuc.jpg`): nút kính 36px ghi mã ngôn ngữ đang dùng, mở menu nền trắng đặc chọn
+ * Ngôn ngữ giao diện trên dải trời (V2.3 `MenuToanCuc.jpg`): nút kính 36px có quả địa cầu và mã ngôn ngữ đang dùng, mở menu nền trắng đặc chọn
  * Tiếng Việt / English. Đổi ngôn ngữ tại chỗ như `LanguageSwitch` — không tải lại trang, dữ liệu đang nhập giữ nguyên.
  *
  * Mỗi mục đọc là mã + tên ngôn ngữ viết bằng chính ngôn ngữ đó ("EN English"), để người không đọc được ngôn ngữ đang hiện vẫn tìm ra.
@@ -26,10 +27,11 @@ export function LanguageMenu({ className, itemClassName }: { className?: string;
       <DropdownMenuTrigger
         aria-label={t('language.label')}
         className={cn(
-          'grid h-9 min-w-9 place-items-center rounded-md border border-sky-glass-border bg-sky-glass px-2.5 text-caption font-semibold text-sky-text outline-none hover:bg-sky-glass-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 data-[state=open]:border-cyan-300',
+          'inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-md border border-sky-glass-border bg-sky-glass px-2.5 text-caption font-semibold text-sky-text outline-none hover:bg-sky-glass-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 data-[state=open]:border-cyan-300',
           className,
         )}
       >
+        <Globe aria-hidden className="size-4 flex-none text-sky-text-2" strokeWidth={1.5} />
         {locale.toUpperCase()}
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="end" className="min-w-58">
