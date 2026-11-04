@@ -25,22 +25,7 @@ export const optimization = {
     AXLE_BALANCE: 'Places the cargo so both axle groups carry the same share of their limit.',
     MIN_REHANDLING: 'Loads by the zone of each stop, so the least cargo has to be moved to unload.',
   },
-  algorithmNote: 'All three plans run with the selected algorithm; the subscription plan decides which algorithms you can use. Demo build: the plans come from the simulated optimizer and carry MOCK RESULT.',
-  algorithmChoice: {
-    hints: {
-      EP_DBLF: 'Puts each package into the deepest, lowest free corner. Fast, on every plan.',
-      EP_DBLF_GA: 'Adds GA/SA to try many packing orders for a fuller load; takes longer.',
-      EP_DBLF_GA_AI: 'Adds the AI Optimizer on top of GA/SA.',
-    },
-    blocked: {
-      ALGORITHM_NOT_ALLOWED: 'Needs the {tier} plan',
-      ALGORITHM_UNAVAILABLE: 'The demo only runs EP + DBLF',
-    },
-    blockedReason: {
-      ALGORITHM_NOT_ALLOWED: 'The selected algorithm needs the {tier} plan.',
-      ALGORITHM_UNAVAILABLE: 'The demo only runs EP + DBLF: choose EP + DBLF to run.',
-    },
-  },
+  algorithmNote: 'All three plans run with this algorithm. Demo build: the plans come from the simulated optimizer and carry MOCK RESULT.',
   history: {
     description: 'Every run of this trip, including runs without a result.',
   },
@@ -69,7 +54,7 @@ export const optimization = {
     tier: 'Algorithm tier of the {plan} plan',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — not available yet',
-    tierNote: 'Choose the algorithm in Advanced settings. The demo only runs EP + DBLF (mock).',
+    tierNote: 'The system picks the algorithm within your plan tier. The demo runs EP + DBLF (mock) for every tier.',
     noPlan: 'The company has no plan.',
     blocked: {
       INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator',

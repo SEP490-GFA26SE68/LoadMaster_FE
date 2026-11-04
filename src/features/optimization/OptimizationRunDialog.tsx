@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/Dialog'
 import { PLAN_LABELS } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
+import { DEFAULT_RUN_ALGORITHM } from '@/lib/mock-db'
 import type { OptimizationCredit } from './optimization-api'
 import type { SetupValues } from './optimization-request'
 import { RunFigure } from './RunFigure'
@@ -55,7 +56,7 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
     {
       label: t('optimization.running.choice'),
       value: t('optimization.running.choiceValue', {
-        algorithm: t(`runs.algorithms.${values.algorithm}`),
+        algorithm: t(`runs.algorithms.${DEFAULT_RUN_ALGORITHM}`),
         seed: values.randomSeed === undefined || Number.isNaN(values.randomSeed) ? t('runs.noValue') : String(values.randomSeed),
       }),
     },

@@ -31,18 +31,6 @@ export {
 } from './billing-model'
 export type { BillingDb } from './db-api-billing'
 export { effectiveSubscriptionStatus } from './billing-model'
-export {
-  algorithmBlock,
-  algorithmChoices,
-  assertRunAlgorithm,
-  defaultAlgorithm,
-  planAlgorithms,
-  requiredPlanTier,
-  RUNNABLE_ALGORITHMS,
-  type AlgorithmBlock,
-  type AlgorithmChoice,
-  type OptimizationSource,
-} from './algorithm-model'
 export type { CompaniesDb, CompanyInfo, CompanyOverview, CompanyProfileChanges, CreatedCompany, NewCompany, NewCompanyAdmin } from './db-api-companies'
 export { SUPPORT_PANEL_TRANSACTIONS, type SupportCompanyPanel, type SupportDb } from './db-api-support'
 export {

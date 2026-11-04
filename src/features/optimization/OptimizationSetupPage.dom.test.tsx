@@ -22,11 +22,11 @@ function renderSetup(client = new QueryClient({ defaultOptions: { queries: { ret
   )
 }
 
-test('the seed trip is ready to optimize, and the screen never says "AI optimized"', async () => {
+test('the seed trip is ready to optimize, and the screen never says "AI"', async () => {
   renderSetup()
   expect(await screen.findByText('Không có lỗi — có thể tối ưu.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Tối ưu' })).toBeEnabled()
-  expect(document.body.textContent ?? '').not.toMatch(/AI[ -]?optimi[sz]ed/i)
+  expect(document.body.textContent ?? '').not.toMatch(/\bAI\b/)
 })
 
 test('the run history lists every run newest first, the failed one with its reason (LM-104)', async () => {
@@ -53,7 +53,7 @@ test('the run history lists every run newest first, the failed one with its reas
   expect(within(rows[2] as HTMLElement).queryByRole('link')).toBeNull()
 })
 
-test('the setup does not ask for an objective: it lists the three plans of a run, and offers the three algorithms with the one that runs selected', async () => {
+test('the setup no longer asks for an objective or an algorithm: it lists the three plans of a run and names the method that runs (FE-5b-05)', async () => {
   renderSetup()
   const plans = within(await screen.findByRole('list', { name: 'Ba phương án mỗi lần chạy' }))
   expect(plans.getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
@@ -61,9 +61,8 @@ test('the setup does not ask for an objective: it lists the three plans of a run
     'BPhương án B: Cân bằng tải trụcĐặt khối hàng sao cho hai nhóm trục cùng mức tải.',
     'CPhương án C: Ít dỡ-xếp lạiXếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
   ])
-  const algorithms = within(screen.getByRole('radiogroup', { name: 'Thuật toán' }))
-  expect(algorithms.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toStrictEqual(['EP_DBLF', 'EP_DBLF_GA', 'EP_DBLF_GA_AI'])
-  expect(algorithms.getByRole('radio', { name: 'EP + DBLF (mock)' })).toBeChecked()
+  expect(screen.queryByRole('radio')).toBeNull()
+  expect(document.querySelector('[data-run-algorithm]')).toHaveTextContent('EP + DBLF (mock)')
 })
 
 test('a draft trip cannot be optimized: the route check fails, links back to the trip, and the reason sits on the button (FE-5b-05)', async () => {

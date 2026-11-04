@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import type { OptimizationRequest } from '@/domain/models'
-import type { OptimizationAlgorithm } from '@/lib/mock-db'
 import { changeTripVehicle, fetchOptimizationCredit, fetchOptimizationSetup, runOptimization } from './optimization-api'
 import type { RunProgress } from './run-progress'
 
@@ -32,7 +31,7 @@ export function useChangeVehicleMutation(tripId: string) {
 
 /**
  * Một lần chạy tối ưu (LM-048; ba phương án ứng viên, FE-5b-05): mutation gọi service, giữ bước đang làm và tiến trình của từng phương
- * án, và cho huỷ. Cả ba phương án chạy bằng thuật toán điều phối viên đã chọn (`algorithm`).
+ * án, và cho huỷ.
  * Huỷ là `abort` — worker bị `terminate`, cả ba phương án bị bỏ, không revision nào được tạo. Xong thì làm mới revision của chuyến để
  * Planner và So sánh đọc bản mới.
  */
@@ -41,11 +40,11 @@ export function useOptimizationRun(tripId: string) {
   const controller = useRef<AbortController | null>(null)
   const [progress, setProgress] = useState<RunProgress | null>(null)
   const mutation = useMutation({
-    mutationFn: ({ request, algorithm, simulateFailure }: { request: OptimizationRequest; algorithm: OptimizationAlgorithm; simulateFailure: boolean }) => {
+    mutationFn: ({ request, simulateFailure }: { request: OptimizationRequest; simulateFailure: boolean }) => {
       controller.current = new AbortController()
       setProgress({ total: request.packages.reduce((sum, pkg) => sum + pkg.quantity, 0), stage: 'reserve', plans: {} })
       return runOptimization({
-        tripId, request, algorithm, simulateFailure, signal: controller.current.signal,
+        tripId, request, simulateFailure, signal: controller.current.signal,
         onStage: (stage) => setProgress((current) => current && { ...current, stage }),
         onProgress: ({ objective, placed, total }) => setProgress((current) => ({
           total, stage: current?.stage ?? 'pack', plans: { ...current?.plans, [objective]: { placed, total } },

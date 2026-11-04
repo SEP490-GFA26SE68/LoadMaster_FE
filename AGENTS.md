@@ -876,22 +876,14 @@ Tên trường dữ liệu trong code vẫn giữ đúng hợp đồng với bac
 giao diện làm lớp dịch. Ngoại lệ: màn **So sánh phương án** được dùng từ vựng thuật
 toán (tên phương pháp, random seed, LIFO) vì ở đó người đọc đang so sánh thuật toán (LM-051). Màn này
 chỉ hiện thiết lập và metrics có trong revision đã lưu; không đặt nhãn thuật toán nào chưa thật sự chạy.
-Người dùng **không chọn mục tiêu** (FE-5b-05, FE-5b-06, D-77): một lần chạy ra ba phương án
+Người dùng **không chọn mục tiêu hay thuật toán** (FE-5b-05, FE-5b-06, D-77): một lần chạy ra ba phương án
 ứng viên A · B · C theo ba mục tiêu (tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — tên ở `runs.objectives`, là ngôn ngữ của điều
-phối viên, dùng được ở màn vận hành). **Thuật toán thì điều phối viên chọn** (thay phần thuật toán của D-77): ô chọn trong "Thiết lập nâng
-cao" (`SetupAlgorithmField`, `RadioGroup`) liệt kê cả ba thuật toán (`OPTIMIZATION_ALGORITHMS`: "EP + DBLF", "EP + DBLF + GA/SA", "EP + DBLF
-+ GA/SA + AI Optimizer"), mỗi dòng tên + một câu; dòng chọn được khi **gói cho phép** (Basic chỉ EP + DBLF, Pro thêm GA/SA, Ultimate đủ ba —
-`planAlgorithms`, chưa có gói tính như Basic) **và nguồn chạy được** (`RUNNABLE_ALGORITHMS` theo nguồn, một bảng ở `algorithm-model.ts`;
-mock chỉ `EP_DBLF`; nguồn của app ở `optimization/optimization-source.ts`). Gói chưa có thì dòng mờ kèm "Cần gói Pro" / "Cần gói Ultimate",
-gói có mà nguồn chưa chạy được thì "Bản demo chỉ chạy EP + DBLF" — lý do ngay tại dòng, nối vào ô chọn bằng `aria-describedby`; chưa đọc
-được gói thì chỉ nói lý do của nguồn. Mặc định là thuật toán cao nhất chọn được (`defaultAlgorithm`; nay luôn `EP_DBLF`), đặt lại theo gói
-tới khi người dùng tự chọn. Giá trị nằm trong form của trang (`SetupValues.algorithm`) và **không vào request của Spec** (mã job không đổi
-theo nó); cả ba phương án chạy cùng thuật toán đó và lần chạy ghi nó (mục 9). **Tên thuật toán** chỉ hiện ở Thiết lập tối ưu (ô chọn, hộp
-thoại đang chạy, bảng lần chạy) và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" nên nhãn đó luôn kèm chữ **"(mock)"** —
-`runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; hai tên kia không kèm vì bản demo chưa chạy chúng. **Hạng thuật toán của gói** (FE-8-05)
-vẫn hiện ở thẻ "Credit" (`optimization.credit.tiers`, Ultimate thêm dòng "AI Optimizer — chưa có", câu `tierNote` trỏ về ô chọn) — đó là
-hạng gói được dùng, không phải thuật toán đã chạy; phương án ghi đúng tên đã chạy. Chữ "AI Optimizer" là tên thuật toán của hạng Ultimate;
-không bao giờ có chữ "AI optimized". Màn So sánh theo lần chạy
+phối viên, dùng được ở màn vận hành). **Tên thuật toán đã chạy** chỉ hiện ở ba chỗ: dòng chỉ đọc trong "Thiết lập nâng cao" và bảng lần
+chạy của Thiết lập tối ưu, và thẻ lần chạy của màn So sánh. Mock chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty nên nhãn luôn
+kèm chữ **"(mock)"** — `runs.algorithms.EP_DBLF` là "EP + DBLF (mock)"; **hạng thuật toán của gói** (FE-8-05) hiện ở thẻ "Credit" của Thiết lập tối ưu (`optimization.credit.tiers`: "EP + DBLF", "EP + DBLF + GA/SA",
+Ultimate thêm dòng "AI Optimizer — chưa có") — đó là hạng gói được dùng, **không phải** thuật toán đã chạy. **Hệ thống tự chọn thuật toán** trong hạng của
+gói, người dùng không chọn (D-77, như dịch vụ tối ưu của backend); có backend thì phương án ghi tên thuật toán backend trả về. Mock vẫn chạy "EP + DBLF (mock)" cho mọi hạng,
+thẻ nói rõ và phương án ghi đúng tên đã chạy; không bao giờ có chữ "AI optimized". Màn So sánh theo lần chạy
 (`/chuyen/:tripId/so-sanh?lan-chay=<mã lần chạy>`): thẻ đầu nói lần chạy (người chạy, thuật toán, seed, LIFO, trọng tâm thấp, giới hạn thời
 gian) và **mức hạn các điểm giao một lần** — ba phương án cùng một tuyến; dưới đó ba thẻ cạnh nhau, mỗi thẻ: mục tiêu, MOCK RESULT, mã
 revision, ảnh thu nhỏ SVG, thể tích, tải trọng, tải trục trước / sau so giới hạn, chênh mức tải hai trục (điểm phần trăm), trọng tâm hàng,
@@ -1524,19 +1516,14 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   kho đã xếp lên xe (`keptLoaded`, mã theo dòng kiện hiện tại: dòng của kiện hỏng bớt một nên mã đánh số lại, kiện cùng dòng giống hệt nhau nên
   kiện đã xếp thứ i nhận mã thứ i); có kiện đã xếp tựa lên kiện hỏng thì không giữ được — `replan.blocked` là các kiện đó, `keep` vắng. Kho
   chưa dùng `keep` để bỏ bước quét lại của kho: phiên xếp mới vẫn quét từng kiện.
-- **Lần chạy và revision của nó** (FE-5b-05). `saveOptimizationRun({ tripId, request, jobId, plans, algorithm })` lưu mỗi phương án một revision bất biến
+- **Lần chạy và revision của nó** (FE-5b-05). `saveOptimizationRun({ tripId, request, jobId, plans })` lưu mỗi phương án một revision bất biến
   mang `runId` và `run: { objective, algorithm }` (bản duyệt giữ của bản nguồn), theo thứ tự A · B · C — bản mới nhất chưa duyệt của chuyến là
   phương án C — cùng **một** lần chạy `OptimizationRun { algorithm, jobId, plans[] }` và **một** sự kiện `optimization.saved { runId, revisionId }`.
   Chỉ khi chuyến **Đã lập kế hoạch**: còn Nháp là `ROUTE_NOT_PLANNED`, đã sang pha vận hành là `TRIP_LOCKED`; `trip-readiness` có `ROUTE_PLANNED`,
   và Thiết lập tối ưu có nhóm kiểm tra "Tuyến" (lý do nằm trên nút Tối ưu, kèm lối về Chi tiết chuyến). `addRevision` giữ lối ghi **một** kết
-  quả dựng tay (test, dữ liệu mẫu) — một lần chạy một phương án, không kiểm chuyến đã lập kế hoạch. Thuật toán kho ghi là **thuật toán điều
-  phối viên đã chọn** (`OPTIMIZATION_ALGORITHMS`; vắng là `EP_DBLF`), lần chạy hỏng chỉ mang thuật toán và mã lý do. **Kho tự kiểm thuật
-  toán** (`checkRunAlgorithm`, luật thuần `assertRunAlgorithm` của `algorithm-model.ts`): `saveOptimizationRun`, `addRevision` và
-  `recordFailedRun` từ chối `ALGORITHM_NOT_ALLOWED { algorithm, requiredTier }` khi gói của công ty chưa có thuật toán đó (xét trước), rồi
-  `ALGORITHM_UNAVAILABLE { algorithm }` khi mock chưa chạy được (`RUNNABLE_ALGORITHMS.mock`) — trước khi giữ hay trừ credit, không lưu gì;
-  credit đang giữ vẫn ở trạng thái giữ. Kho đọc gói không qua `settle` (gói hết hạn vẫn mang hạng của nó; hết hạn là việc của credit).
-  Lớp API `runOptimization` (`optimization-api.ts`) nhận `algorithm`, kiểm bằng cùng luật **trước khi giữ credit** rồi trả `{ run,
-  revisions }`; nút Tối ưu mờ kèm lý do (`optimization.algorithmChoice.blockedReason`) nếu thuật toán đang chọn bị chặn. Chạy xong màn mở `/chuyen/:id/so-sanh?lan-chay=<runId>`. Hộp thoại đang chạy có một dòng tiến trình cho mỗi phương án; "Kết quả
+  quả dựng tay (test, dữ liệu mẫu) — một lần chạy một phương án, không kiểm chuyến đã lập kế hoạch. Thuật toán kho ghi là `EP_DBLF`
+  (`OPTIMIZATION_ALGORITHMS`), lần chạy hỏng chỉ mang thuật toán và mã lý do. Lớp API `runOptimization` (`optimization-api.ts`) trả `{ run,
+  revisions }`; chạy xong màn mở `/chuyen/:id/so-sanh?lan-chay=<runId>`. Hộp thoại đang chạy có một dòng tiến trình cho mỗi phương án; "Kết quả
   một phần" chỉ báo khi **không phương án nào** xếp hết, kèm số kiện chưa xếp của phương án xếp được nhiều nhất. Bảng lần chạy
   (`RunHistoryCard`): mỗi lần chạy ba dòng phương án (mở Planner), liên kết "So sánh", và cột Duyệt nói phương án nào đã duyệt; lần chạy "chờ
   duyệt" là lần chạy chứa revision mới nhất chưa duyệt, không lỗi thời. Thẻ Tiến trình của Chi tiết chuyến tìm người chạy tối ưu theo `runId`
@@ -1817,11 +1804,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   logic kho) mới lưu không tính. Lượt đã trừ hẳn **không hoàn được** (`CREDIT_NOT_RESERVED`) — hoàn chỉ dành cho lượt còn đang giữ; giữ và hoàn
   chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`). `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không
   tốn credit. Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
-  Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` kiểm thuật toán đã chọn (`ALGORITHM_NOT_ALLOWED`, `ALGORITHM_UNAVAILABLE` — không giữ
-  gì), rồi giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ
+  Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ
   chối, huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`,
-  `staleTime: 0`, làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho ô chọn thuật toán (hạng `algorithmTier`
-  quyết định dòng nào chọn được, mục 6) và **thẻ "Credit"** của Thiết lập tối ưu
+  `staleTime: 0`, làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu
   (`SetupCreditPanel`): "Lần chạy này dùng 1 credit · còn N" (hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì
   dòng credit mờ + lý do "Hết credit — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi
   bấm. Màn chỉ điều phối viên (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty ở `/goi-cuoc`.

@@ -118,9 +118,6 @@ export const dataErrors = {
   PLAN_IN_USE: 'Còn {companies} công ty đang gắn với gói này nên chưa xoá được. Ngừng bán gói thay vì xoá.',
   TOPUP_INVALID: 'Chỉ nạp được gói 50 hoặc 500 credit.',
   CREDIT_NOT_RESERVED: 'Lần chạy này chưa giữ credit hoặc đã được hoàn.',
-  // Thuật toán của lần chạy theo gói cước
-  ALGORITHM_NOT_ALLOWED: 'Gói cước của công ty chưa có thuật toán {algorithm}: cần gói {requiredTier}. Chưa chạy và chưa dùng credit nào.',
-  ALGORITHM_UNAVAILABLE: 'Bản demo chưa chạy được thuật toán {algorithm}, chỉ chạy EP + DBLF. Chưa chạy và chưa dùng credit nào.',
   // Công ty và yêu cầu hỗ trợ (FE-8-06, FE-8-07)
   COMPANY_INVALID: 'Thông tin công ty chưa hợp lệ: cần tên, địa chỉ, số điện thoại, kho xuất phát có toạ độ, và họ tên, email, số điện thoại của quản trị công ty đầu tiên.',
   TICKET_INVALID: 'Yêu cầu hỗ trợ chưa hợp lệ: cần loại, tiêu đề và nội dung, không để trống hay quá dài.',

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { getMockDb, MockDbError } from '@/lib/mock-db'
+import { getMockDb } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
 import { buildOptimizationRequest, DEFAULT_SETUP } from './optimization-request'
 import { fetchOptimizationCredit, runOptimization } from './optimization-api'
@@ -26,7 +26,6 @@ test('a saved run costs one credit for its three plans, and reports its three st
   const outcome = await runOptimization({ ...(await runInput()), onStage: (stage) => stages.push(stage) })
   expect(stages).toStrictEqual(['reserve', 'pack', 'save'])
   expect(outcome.kind === 'saved' ? outcome.revisions : []).toHaveLength(3)
-  expect(outcome.kind === 'saved' ? outcome.run.algorithm : null).toBe('EP_DBLF')
   expect(await fetchOptimizationCredit()).toMatchObject({ balance: before - 1, cost: 1, planName: 'Pro', algorithmTier: 'EP_DBLF_GA', block: null })
   expect((await getMockDb().listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -1, usageStatus: 'DEDUCTED', tripId: TRIP_ID })
 }, SLOW)
@@ -47,23 +46,4 @@ test.each([
     { type: 'REFUND', amount: 1, reference: usage?.reference },
     { type: 'USAGE', amount: -1, usageStatus: 'REFUNDED', refunded: true },
   ])
-}, SLOW)
-
-test.each([
-  { algorithm: 'EP_DBLF_GA', code: 'ALGORITHM_UNAVAILABLE', params: { algorithm: 'EP_DBLF_GA' } },
-  { algorithm: 'EP_DBLF_GA_AI', code: 'ALGORITHM_NOT_ALLOWED', params: { algorithm: 'EP_DBLF_GA_AI', requiredTier: 'ULTIMATE' } },
-] as const)('$algorithm is refused with $code before any credit is held: nothing runs, nothing is written', async ({ algorithm, code, params }) => {
-  const db = getMockDb()
-  const before = { credit: await fetchOptimizationCredit(), ledger: await db.listCreditTransactions(), runs: await db.listOptimizationRuns(TRIP_ID) }
-  const error = await runOptimization({ ...(await runInput()), algorithm }).catch((caught: unknown) => caught)
-  expect(error).toBeInstanceOf(MockDbError)
-  expect(error).toMatchObject({ code, params })
-  expect(await fetchOptimizationCredit()).toStrictEqual(before.credit)
-  expect(await db.listCreditTransactions()).toStrictEqual(before.ledger)
-  expect(await db.listOptimizationRuns(TRIP_ID)).toStrictEqual(before.runs)
-})
-
-test('a run that gets no result still records the algorithm it ran with', async () => {
-  await expect(runOptimization(await runInput({ simulateFailure: true }))).rejects.toBeInstanceOf(OptimizationServiceError)
-  expect((await getMockDb().listOptimizationRuns(TRIP_ID)).at(-1)).toMatchObject({ status: 'FAILED', algorithm: 'EP_DBLF', failureCode: 'SERVICE_UNAVAILABLE' })
 }, SLOW)

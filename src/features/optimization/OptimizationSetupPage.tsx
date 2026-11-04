@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -11,13 +11,12 @@ import { Spinner } from '@/components/ui/Spinner'
 import { pinnedIssues, validateRequest } from '@/domain/constraints'
 import { TripFormSection } from '@/features/trips/TripFormSection'
 import { dataErrorMessage, formatIssue, useFormat, useT } from '@/lib/i18n'
-import { algorithmChoices, defaultAlgorithm, MockDbError, OPTIMIZATION_ALGORITHMS } from '@/lib/mock-db'
+import { MockDbError } from '@/lib/mock-db'
 import { OptimizationServiceError } from '@/services/optimization'
 import { OptimizationErrorDialog, type OptimizationFailure } from './OptimizationErrorDialog'
 import type { OptimizationCredit } from './optimization-api'
 import { OptimizationRunDialog } from './OptimizationRunDialog'
 import { OptimizationSetupHero } from './OptimizationSetupHero'
-import { RUNNABLE_RUN_ALGORITHMS } from './optimization-source'
 import { buildOptimizationRequest, DEFAULT_SETUP, groupRequestIssues, METHODS, type SetupValues } from './optimization-request'
 import { RequestIssueList } from './RequestIssueList'
 import { RunHistoryCard } from './RunHistoryCard'
@@ -34,9 +33,8 @@ import { useOptimizationCreditQuery, useOptimizationRun, useOptimizationSetupQue
  * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
  * và nút primary duy nhất "Tối ưu" (khoá khi còn lỗi, lý do ngay trên nút). Cột trái một thẻ ba mục đánh số rồi bảng "Lần chạy tối ưu"
  * (LM-104); cột phải 416 px: "Hai giới hạn", danh sách kiểm tra trực tiếp, "Sau khi chạy". Mỗi lần chạy ra ba phương án ứng viên
- * (FE-5b-05, D-77): màn không có ô chọn mục tiêu, chỉ chạy khi chuyến đã tối ưu tuyến, và chạy xong mở màn So sánh của lần chạy đó
- * (`?lan-chay=`). Thuật toán thì chọn ở "Thiết lập nâng cao", trong phạm vi gói cho phép và nguồn chạy được; mặc định là thuật toán cao
- * nhất chọn được, và được đặt lại theo gói tới khi người dùng tự chọn.
+ * (FE-5b-05, D-77): màn không còn ô chọn mục tiêu và thuật toán, chỉ chạy khi chuyến đã tối ưu tuyến, và chạy xong mở màn So sánh của
+ * lần chạy đó (`?lan-chay=`).
  * Chuyến đã sang pha vận hành (D-45, LM-088): banner nói lý do, không đổi xe, nút Tối ưu tắt — kho cũng từ chối `TRIP_LOCKED`.
  */
 export function OptimizationSetupPage() {
@@ -61,7 +59,6 @@ export function OptimizationSetupPage() {
     randomSeed: z.number({ error: t('optimization.seedInteger') }).int(t('optimization.seedInteger')).min(0, t('optimization.seedInteger')).optional(),
     enforceLifo: z.boolean(),
     prioritizeLowCenterOfGravity: z.boolean(),
-    algorithm: z.enum(OPTIMIZATION_ALGORITHMS),
   }), [t])
   const form = useForm<SetupValues>({ resolver: zodResolver(schema), defaultValues: DEFAULT_SETUP, mode: 'onChange' })
   const watched = useWatch({ control: form.control })
@@ -69,16 +66,6 @@ export function OptimizationSetupPage() {
   // lần mở lại với bản cache còn lỗi bỏ qua nó, và nút Tối ưu kẹt ở trạng thái tắt sau khi dữ liệu đã sửa (LM-054).
   const { isValid, errors } = form.formState
   const values: SetupValues = { ...DEFAULT_SETUP, ...watched }
-
-  // Thuật toán theo gói và nguồn chạy được. Chưa đọc được gói thì chỉ nói điều chắc chắn: nguồn chạy được thuật toán nào
-  const credit = creditQuery.data
-  const tier = credit ? credit.algorithmTier : 'EP_DBLF_GA_AI'
-  const choices = algorithmChoices(tier, RUNNABLE_RUN_ALGORITHMS)
-  const preferred = defaultAlgorithm(tier, RUNNABLE_RUN_ALGORITHMS)
-  useEffect(() => {
-    if (!form.getFieldState('algorithm').isDirty) form.resetField('algorithm', { defaultValue: preferred })
-  }, [form, preferred])
-  const algorithmBlocked = choices.find((choice) => choice.algorithm === values.algorithm && choice.block !== null) ?? null
 
   const setup = query.data
   const locked = setup !== undefined && setup.trip.phase !== 'planning'
@@ -95,8 +82,6 @@ export function OptimizationSetupPage() {
   const creditBlock = creditQuery.data?.block ?? null
   const blockedReason = !locked && creditBlock !== null
     ? t(`optimization.credit.blocked.${creditBlock}`)
-    : !locked && algorithmBlocked?.block
-    ? t(`optimization.algorithmChoice.blockedReason.${algorithmBlocked.block}`, { tier: t(`common.planTiers.${algorithmBlocked.requiredTier}`) })
     : !locked && pinFaults.length > 0
     ? t('optimization.pins.blockedReason')
     : !locked && checklist && (checklist.errorCount > 0 || formErrors > 0)
@@ -114,7 +99,7 @@ export function OptimizationSetupPage() {
     setFailure(null)
     setRunCredit(creditQuery.data ?? null)
     const payload = buildOptimizationRequest(setup.trip, setup.vehicle, submitted, pinnedPlacements)
-    run.mutate({ request: payload, algorithm: submitted.algorithm, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
+    run.mutate({ request: payload, simulateFailure: searchParams.get('mo-phong') === 'loi' }, {
       onSuccess: (outcome) => {
         if (outcome.kind === 'failed') {
           setFailure({
@@ -153,7 +138,7 @@ export function OptimizationSetupPage() {
       <OptimizationSetupHero
         tripId={tripId}
         setup={setup}
-        disabled={locked || !checklist?.canRun || run.isPending || !isValid || creditBlock !== null || algorithmBlocked !== null || pinFaults.length > 0}
+        disabled={locked || !checklist?.canRun || run.isPending || !isValid || creditBlock !== null || pinFaults.length > 0}
         blockedReason={run.isPending ? null : blockedReason}
         onRun={() => void handleRun()}
       >
@@ -182,7 +167,7 @@ export function OptimizationSetupPage() {
                 <SetupCandidateList />
               </TripFormSection>
               <section className="border-t border-line-soft px-7 pt-5.5 pb-6.5 max-sm:px-4">
-                <SetupAdvancedFields form={form} choices={choices} />
+                <SetupAdvancedFields form={form} />
               </section>
             </Card>
             {/* Lịch sử lần chạy (LM-104): thuật toán, ba phương án của từng lần chạy và lần chạy đã duyệt hay còn chờ duyệt */}

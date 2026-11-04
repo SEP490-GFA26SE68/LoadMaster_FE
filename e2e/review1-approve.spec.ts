@@ -22,10 +22,11 @@ const newestRun = (page: Page) => page.locator('[data-run-history]').getByRole('
 test('the dispatcher optimizes into three plans, approves one of them; the company manager reads it and has no approval queue', async ({ page, login, browserErrors }, testInfo) => {
   test.setTimeout(4 * 60_000)
 
-  // Điều phối: không có ô chọn mục tiêu; thuật toán mặc định là thuật toán cao nhất gói cho phép mà bản demo chạy được
+  // Điều phối: không còn ô chọn mục tiêu hay thuật toán — thiết lập nâng cao chỉ nói tên thuật toán sẽ chạy
   await login(SETUP, 'dispatcher')
   await page.locator('summary').filter({ hasText: 'Thiết lập nâng cao' }).click()
-  await expect(page.getByRole('radiogroup', { name: 'Thuật toán', exact: true }).getByRole('radio', { name: 'EP + DBLF (mock)', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio')).toHaveCount(0)
+  await expect(page.locator('[data-run-algorithm]')).toHaveText('EP + DBLF (mock)')
   await optimizeAndOpenPlanner(page, 'B')
   // Phương án mới chưa duyệt: điều phối viên có nút Duyệt, không có dòng nào bảo chờ người khác
   await expect(button(page, 'Duyệt phương án')).toBeVisible()

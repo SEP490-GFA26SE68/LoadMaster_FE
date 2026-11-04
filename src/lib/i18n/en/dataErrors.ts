@@ -105,9 +105,6 @@ export const dataErrors = {
   PLAN_IN_USE: 'Companies are still on this plan (count: {companies}), so it cannot be deleted. Stop selling it instead.',
   TOPUP_INVALID: 'Only packs of 50 or 500 credits can be topped up.',
   CREDIT_NOT_RESERVED: 'This run has no credit on hold, or the credit was already refunded.',
-  // Algorithm of a run by subscription plan
-  ALGORITHM_NOT_ALLOWED: 'The company plan does not include the {algorithm} algorithm: it needs the {requiredTier} plan. Nothing ran and no credit was used.',
-  ALGORITHM_UNAVAILABLE: 'The demo cannot run the {algorithm} algorithm yet, only EP + DBLF. Nothing ran and no credit was used.',
   // Companies and support tickets (FE-8-06, FE-8-07)
   COMPANY_INVALID: 'The company information is not valid: it needs a name, address, phone number, a departure depot with coordinates, and the name, email and phone number of the first company administrator.',
   TICKET_INVALID: 'The support ticket is not valid: it needs a type, a title and a description, none empty or too long.',

@@ -4,7 +4,6 @@
  *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07);
  *                       chạy lại giữ kiện ghim (`request.pinnedPlacements`): POST /api/load-plans/{id}/rerun (kiện ghim: Q-14)
  *                       (giữ / trừ / hoàn credit do BE làm phía server, HTTP 402 `INSUFFICIENT_CREDITS`; mock gọi thẳng kho)
- *                       (thuật toán đã chọn `algorithm_name`: chưa có ở BE)
  *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance (nối khi bật nhóm `billing`: optimization-credit-api.ts)
  *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
  */
@@ -13,15 +12,12 @@ import { pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
 import { usesBackend } from '@/lib/backend-config'
 import {
-  assertRunAlgorithm,
   creditBlock,
-  DEFAULT_RUN_ALGORITHM,
   getMockDb,
   MockDbError,
   optimizationCost,
   type AlgorithmTier,
   type CreditBlock,
-  type OptimizationAlgorithm,
   type OptimizationRun,
   type Revision,
   type Trip,
@@ -32,7 +28,6 @@ import {
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createOptimizationService, OptimizationServiceError, type CandidateProgress, type CandidateRun } from '@/services/optimization'
 import { fetchBackendOptimizationCredit } from './optimization-credit-api'
-import { RUNNABLE_RUN_ALGORITHMS } from './optimization-source'
 import { buildRunHistory, type RunHistoryRow } from './run-history'
 import type { RunStage } from './run-progress'
 
@@ -132,8 +127,6 @@ export async function fetchOptimizationCredit(): Promise<OptimizationCredit> {
 export type RunInput = {
   readonly tripId: string
   readonly request: OptimizationRequest
-  /** Thuật toán điều phối viên chọn; vắng là `EP_DBLF`. Kho ghi nó vào lần chạy. */
-  readonly algorithm?: OptimizationAlgorithm
   /** `?mo-phong=loi` (D-12): service giả lập không phản hồi. */
   readonly simulateFailure: boolean
   readonly signal?: AbortSignal
@@ -160,18 +153,14 @@ export type RunOutcome =
  * Credit (FE-8-05, D-89): kho giữ 1 credit trước khi chạy — hết credit hoặc gói hết hạn thì ném `MockDbError` và không chạy —, trừ hẳn
  * khi lưu xong, hoàn khi service lỗi, request bị từ chối, bị huỷ, hoặc kho không lưu được. Mỗi lần chạy đúng một bộ giao dịch.
  * Chạy lại giữ kiện ghim (FE-BL-02) là cùng lối này với `request.pinnedPlacements`: ba phương án, một credit, cùng quyền.
- *
- * Thuật toán: gói chưa có (`ALGORITHM_NOT_ALLOWED`) hoặc nguồn chưa chạy được (`ALGORITHM_UNAVAILABLE`) thì từ chối trước khi giữ credit —
- * không chạy, không tốn gì; kho kiểm lại bằng cùng luật khi lưu. Cả ba phương án chạy cùng thuật toán đó.
  */
 // POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
-export async function runOptimization({ tripId, request, algorithm = DEFAULT_RUN_ALGORITHM, simulateFailure, signal, onProgress, onStage }: RunInput): Promise<RunOutcome> {
+export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, onStage }: RunInput): Promise<RunOutcome> {
   // Bộ kiện ghim hỏng thì từ chối trước khi giữ credit: không chạy, không tốn gì (FE-BL-02)
   const faults = pinnedIssues(request)
   if (faults.length > 0) throw new MockDbError('PINNED_SET_INVALID', { tripId, count: faults.length, codes: [...new Set(faults.map(({ code }) => code))] })
-  const db = getMockDb()
-  assertRunAlgorithm(algorithm, (await db.getCurrentSubscription())?.plan.algorithmTier ?? null, RUNNABLE_RUN_ALGORITHMS)
   const service = createOptimizationService({ simulateFailure })
+  const db = getMockDb()
   onStage?.('reserve')
   const { reference } = await db.reserveOptimizationCredit(tripId)
   let job: CandidateRun
@@ -181,18 +170,18 @@ export async function runOptimization({ tripId, request, algorithm = DEFAULT_RUN
   } catch (error) {
     await db.refundOptimizationCredit(reference)
     // Lịch sử lần chạy (LM-104): service không phản hồi vẫn là một lần chạy; người dùng huỷ thì không
-    if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE', algorithm })
+    if (error instanceof OptimizationServiceError) await db.recordFailedRun(tripId, { failureCode: 'SERVICE_UNAVAILABLE' })
     throw error
   }
   const failed = job.plans.find(({ result }) => result.status === 'FAILED')
   if (failed) {
     await db.refundOptimizationCredit(reference)
-    await db.recordFailedRun(tripId, { failureCode: 'REQUEST_REJECTED', algorithm })
+    await db.recordFailedRun(tripId, { failureCode: 'REQUEST_REJECTED' })
     return { kind: 'failed', result: failed.result }
   }
   try {
     onStage?.('save')
-    return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans, algorithm, creditReference: reference })) }
+    return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans, creditReference: reference })) }
   } catch (error) {
     await db.refundOptimizationCredit(reference)
     throw error

@@ -68,10 +68,10 @@ export const OPTIMIZATION_OBJECTIVES = PLAN_OBJECTIVES
 export type OptimizationObjective = PlanObjective
 
 /**
- * Thuật toán xếp hàng của một lần chạy: đúng ba tên `AlgorithmName` của dịch vụ tối ưu, theo thứ tự hạng. Điều phối viên chọn ở "Thiết
- * lập nâng cao" trong phạm vi gói cho phép và nguồn chạy được (`algorithm-model.ts`); kho mẫu chỉ chạy EP + DBLF (bộ xếp kệ mock).
+ * Thuật toán đã chạy của một lần chạy. Hiện chỉ có một: mock xếp kệ chạy dưới tên "EP + DBLF" của hạng Basic cho mọi công ty; thuật
+ * toán theo hạng gói (D-77) nối ở FE-8-05. Người dùng không chọn thuật toán.
  */
-export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF', 'EP_DBLF_GA', 'EP_DBLF_GA_AI'] as const
+export const OPTIMIZATION_ALGORITHMS = ['EP_DBLF'] as const
 export type OptimizationAlgorithm = (typeof OPTIMIZATION_ALGORITHMS)[number]
 
 /** Thuật toán kho ghi cho lần chạy khi nơi gọi không nói. */
