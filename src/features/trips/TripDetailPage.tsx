@@ -10,6 +10,7 @@ import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { BackendTripDetailPage } from './BackendTripDetailPage'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
 import { ManualConfirmCard } from './ManualConfirmCard'
@@ -27,6 +28,7 @@ import { TripPoolPackagesCard } from './TripPoolPackagesCard'
 import { TripRequirementsCard } from './TripRequirementsCard'
 import { TripRouteCard } from './TripRouteCard'
 import { TripReadinessCard } from './TripReadinessCard'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 import { useTripEtaQuery } from './useRouteQuery'
 import { useSegregationGuard } from './useSegregationQuery'
 import {
@@ -54,8 +56,13 @@ import {
  * chờ duyệt" đứng đầu cột chính.
  * hàng của chuyến thì hộp vượt luật hỏi lý do. FE-6-08, FE-6-09: chuyến Đang vận chuyển có vị trí xe trên bản đồ và giờ đến tính từ vị
  * trí — card sơ đồ tuyến (`TripRouteCard`) tự đọc và tự làm mới, trang không vẽ lại theo nhịp vị trí.
+ * Nhóm `trips` nối backend thì màn là `BackendTripDetailPage`: chỉ phần máy chủ trả, không thẻ nào đọc kho mẫu bằng mã của máy chủ.
  */
 export function TripDetailPage() {
+  return TRIPS_CAPABILITIES.backend ? <BackendTripDetailPage /> : <StoreTripDetailPage />
+}
+
+function StoreTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
   const can = useCan()

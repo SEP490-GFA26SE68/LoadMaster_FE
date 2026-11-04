@@ -4,7 +4,7 @@
  *   postDriverLocation   → POST /api/driver/location (màn tài xế của kho mẫu; nhóm `driver` gửi vị trí ở `driver-backend-api.ts`)
  *   getLatestLocation    → GET /api/trips/{id}/location/latest (BE)
  *   getLocationHistory   → GET /api/trips/{id}/location/history (BE)
- *   getTripMonitoring    → GET /api/trips/{id}/monitoring (Chi tiết chuyến của kho mẫu: nối cùng nhóm `trips`)
+ *   getTripMonitoring    → GET /api/trips/{id}/monitoring (BE khi nhóm `trips` cũng nối backend: mã chuyến của Chi tiết chuyến là của máy chủ)
  *   listTripMonitoring   → GET /api/trips/monitoring (BE)
  *   fetchMonitoringBoard → GET /api/dispatcher/dashboard (BE)
  *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
@@ -17,6 +17,8 @@ import * as backend from './monitoring-backend-api'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
 const ON_BACKEND = usesBackend('monitoring')
+/** Chi tiết chuyến đọc giám sát theo mã chuyến của chính nó: chỉ hỏi máy chủ khi chuyến cũng là của máy chủ. */
+const TRIP_ON_BACKEND = ON_BACKEND && usesBackend('trips')
 
 /** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ ghi vào kho mẫu thay cho chuyến của backend. */
 const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
@@ -60,8 +62,8 @@ export function getLocationHistory(tripId: string): Promise<LocationPoint[]> {
 
 /** Vị trí mới nhất, ETA trực tiếp từng điểm chưa hoàn tất, cảnh báo nguy cơ trễ và sự cố của một chuyến. */
 // GET /api/trips/{id}/monitoring
-export async function getTripMonitoring(tripId: string): Promise<TripMonitoring> {
-  const monitoring = await getMockDb().getTripMonitoring(tripId)
+export async function getTripMonitoring(tripId: string): Promise<LiveMonitoring> {
+  const monitoring = TRIP_ON_BACKEND ? await backend.tripMonitoring(tripId) : await getMockDb().getTripMonitoring(tripId)
   publish(monitoring)
   return monitoring
 }

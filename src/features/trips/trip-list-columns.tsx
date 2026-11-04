@@ -12,6 +12,9 @@ import { splitVehicleName, type TripRow } from './trip-list'
 const helper = createColumnHelper<BaseTableFeatures, TripRow>()
 const mono = 'font-mono text-caption'
 
+/** Cột theo nguồn dữ liệu (`TripsCapabilities`): backend chưa trả tên các điểm giao và phương án xếp hàng. */
+export type TripColumnOptions = { readonly routeNames: boolean; readonly plans: boolean }
+
 /** `hidden`: cột chỉ để sắp xếp — ngày chạy là dòng nhóm của bảng chứ không phải một cột (V2.3). */
 export type TripColumnMeta = ColumnMeta & { hidden?: boolean }
 
@@ -20,7 +23,7 @@ export type TripColumnMeta = ColumnMeta & { hidden?: boolean }
  * trạng thái, mũi tên mở. Ngày chạy là cột ẩn để sắp xếp; bảng nhóm dòng theo nó. Cột sắp xếp được khai `enableSorting`. Mã chuyến
  * là liên kết để mở chi tiết bằng bàn phím; bấm cả dòng cũng mở.
  */
-export function createTripColumns(t: TFunction, format: Formatter) {
+export function createTripColumns(t: TFunction, format: Formatter, { routeNames, plans }: TripColumnOptions) {
   return helper.columns([
     helper.accessor('scheduledDate', {
       header: t('trips.list.date'),
@@ -33,7 +36,8 @@ export function createTripColumns(t: TFunction, format: Formatter) {
       enableSorting: true,
       cell: (info) => {
         const row = info.row.original
-        const line = t('trips.list.routeLine', { stops: t('trips.list.stopsShort', { count: row.stopCount }), route: row.route })
+        const stops = t('trips.list.stopsShort', { count: row.stopCount })
+        const line = routeNames ? t('trips.list.routeLine', { stops, route: row.route }) : stops
         return (
           <span className="flex min-w-0 flex-col gap-0.75">
             <span className="truncate font-semibold text-ink-strong">{info.getValue()}</span>
@@ -96,7 +100,8 @@ export function createTripColumns(t: TFunction, format: Formatter) {
       meta: { align: 'right', width: '104px' } satisfies TripColumnMeta,
       cell: (info) => <span className="font-mono text-body font-semibold text-ink-strong tabular-nums">{format.integer(info.getValue())}</span>,
     }),
-    helper.accessor('volumePercent', {
+    // Không có phương án thì không có lấp đầy: bỏ cả cột thay vì ghi "Chưa tối ưu" cho mọi chuyến
+    ...(plans ? [helper.accessor('volumePercent', {
       header: t('trips.list.volume'),
       enableSorting: true,
       meta: { width: '150px' } satisfies TripColumnMeta,
@@ -110,7 +115,7 @@ export function createTripColumns(t: TFunction, format: Formatter) {
           </span>
         )
       },
-    }),
+    })] : []),
     helper.accessor('status', {
       header: t('trips.list.status'),
       meta: { width: '184px' } satisfies TripColumnMeta,

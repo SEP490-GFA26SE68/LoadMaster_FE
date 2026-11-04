@@ -3,7 +3,14 @@
  *   chưa có ở BE (Q-11): fetchStagingShortages, resolveStagingShortage
  */
 
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type ShortageDecision, type Trip } from '@/lib/mock-db'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /**
  * Lớp dữ liệu của thẻ "Kiện kho báo thiếu" ở Chi tiết chuyến (FE-6-02, D-82) — nơi duy nhất của thẻ biết về kho. Kho báo thiếu một kiện
@@ -52,5 +59,6 @@ export async function fetchStagingShortages(tripId: string): Promise<ShortageRow
  */
 // chưa có ở BE (Q-11)
 export function resolveStagingShortage(tripId: string, packageInstanceId: string, decision: ShortageDecision): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().resolveStagingShortage(tripId, packageInstanceId, decision)
 }

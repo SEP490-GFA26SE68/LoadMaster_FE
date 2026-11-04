@@ -1,15 +1,18 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchSearchSources (kho kiện và loại kiện đọc qua `package-pool-api.ts`: GET /api/packages khi nối nhóm packages)
+ *   chưa có ở BE: fetchSearchSources (kho kiện và loại kiện đọc qua `package-pool-api.ts`: GET /api/packages khi nối nhóm packages;
+ *   chuyến đọc qua `trips-api.ts`: GET /api/trips khi nối nhóm trips)
  */
 
 import { fetchPackages, fetchPackageTypes } from '@/features/package-pool/package-pool-api'
+import { fetchTrips } from '@/features/trips/trips-api'
 import { isApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type Package, type PackageType } from '@/lib/mock-db'
 import type { SearchGroup, SearchSources } from './quick-search'
 
 const POOL_ON_BACKEND = usesBackend('packages')
+const TRIPS_ON_BACKEND = usesBackend('trips')
 
 /** Kiện của kho kiện, kho mẫu: dòng phụ là tên loại kiện, kiện không gắn loại thì điểm đến; mở ở Kho kiện theo mã của kho. */
 function mockPool(packages: readonly Package[], types: readonly PackageType[]): SearchSources['pool'] {
@@ -46,6 +49,19 @@ async function backendPool(): Promise<SearchSources['pool']> {
 }
 
 /**
+ * Chuyến của máy chủ: chỉ mã và tên — danh sách không có tên điểm giao hay kiện, nên nhóm kiện của chuyến đã bị bỏ (`quickSearchGroups`).
+ * Máy chủ từ chối vai trò (403) thì nhóm không có kết quả.
+ */
+async function backendTrips(): Promise<SearchSources['trips']> {
+  try {
+    return (await fetchTrips()).map(({ id, name }) => ({ id, name, stops: [], packageIds: [] }))
+  } catch (error) {
+    if (isApiError(error) && error.status === 403) return []
+    throw error
+  }
+}
+
+/**
  * Lớp gọi API của tìm nhanh (LM-099) — nơi duy nhất của hộp thoại biết về kho. Chỉ đọc những gì các nhóm được phép cần: điều phối
  * viên không kéo danh sách người dùng về máy. Nối backend thật thì thay bằng một API tìm kiếm phía server; kho kiện và loại kiện đi
  * theo nguồn của màn Kho kiện (`package-pool-api.ts`), nên khi nối nhóm packages tìm nhanh thấy đúng kiện của máy chủ.
@@ -55,8 +71,9 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
   const db = getMockDb()
   const wants = (group: SearchGroup) => groups.includes(group)
   const sourcing = !POOL_ON_BACKEND && (wants('pool') || wants('packageTypes'))
-  const [trips, vehicles, users, requirements, packages, packageTypes] = await Promise.all([
-    wants('trips') || wants('packages') ? db.listTrips() : [],
+  const [trips, serverTrips, vehicles, users, requirements, packages, packageTypes] = await Promise.all([
+    !TRIPS_ON_BACKEND && (wants('trips') || wants('packages')) ? db.listTrips() : [],
+    TRIPS_ON_BACKEND && wants('trips') ? backendTrips() : null,
     wants('vehicles') ? db.listVehicles() : [],
     wants('users') ? db.listUsers() : [],
     wants('requirements') ? db.listDeliveryRequirements() : [],
@@ -65,7 +82,7 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
   ])
   const pool = !wants('pool') ? [] : POOL_ON_BACKEND ? await backendPool() : mockPool(packages, packageTypes)
   return {
-    trips: trips.map((trip) => ({
+    trips: serverTrips ?? trips.map((trip) => ({
       id: trip.id,
       name: trip.name,
       stops: trip.stops.map((stop) => stop.name),

@@ -5,6 +5,7 @@ import { useT, type TFunction } from '@/lib/i18n'
 import type { Permission } from '@/features/auth/permissions'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
+import { StoreTripRoute } from '@/features/trips/StoreTripRoute'
 import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
 import { Providers } from './providers'
@@ -131,14 +132,14 @@ export const routes: RouteObject[] = [
                     { path: '/chuyen/:tripId', element: <TripDetailPage />, handle: titled((t, s) => t('titles.trip', idParam(s, 'tripId'))) },
                   ]),
                   guarded('trips.edit', [
-                    { path: '/chuyen/moi', element: <TripFormPage />, handle: titled((t) => t('titles.newTrip')) },
-                    { path: '/chuyen/:tripId/sua', element: <TripFormPage />, handle: titled((t, s) => t('titles.editTrip', idParam(s, 'tripId'))) },
+                    { path: '/chuyen/moi', element: <StoreTripRoute><TripFormPage /></StoreTripRoute>, handle: titled((t) => t('titles.newTrip')) },
+                    { path: '/chuyen/:tripId/sua', element: <StoreTripRoute><TripFormPage /></StoreTripRoute>, handle: titled((t, s) => t('titles.editTrip', idParam(s, 'tripId'))) },
                   ]),
                   guarded('optimization.run', [
-                    { path: '/chuyen/:tripId/toi-uu', element: <OptimizationSetupPage />, handle: titled((t, s) => t('titles.optimize', idParam(s, 'tripId'))) },
+                    { path: '/chuyen/:tripId/toi-uu', element: <StoreTripRoute><OptimizationSetupPage /></StoreTripRoute>, handle: titled((t, s) => t('titles.optimize', idParam(s, 'tripId'))) },
                   ]),
                   guarded('plans.view', [
-                    { path: '/chuyen/:tripId/so-sanh', element: <PlanComparisonPage />, handle: titled((t, s) => t('titles.compare', idParam(s, 'tripId'))) },
+                    { path: '/chuyen/:tripId/so-sanh', element: <StoreTripRoute><PlanComparisonPage /></StoreTripRoute>, handle: titled((t, s) => t('titles.compare', idParam(s, 'tripId'))) },
                   ]),
                   guarded('fleet.view', [
                     { path: '/doi-xe', element: <FleetPage />, handle: titled((t) => t('titles.fleet')) },
@@ -184,7 +185,7 @@ export const routes: RouteObject[] = [
                   // Loại xe, báo cáo chuyến (LM-104)
                   guarded('fleet.view', [{ path: '/doi-xe/loai-xe', element: <VehicleTypesPage />, handle: titled((t) => t('titles.vehicleTypes')) }]),
                   guarded('trips.view', [
-                    { path: '/chuyen/:tripId/bao-cao', element: <TripReportPage />, handle: titled((t, s) => t('titles.tripReport', idParam(s, 'tripId'))) },
+                    { path: '/chuyen/:tripId/bao-cao', element: <StoreTripRoute><TripReportPage /></StoreTripRoute>, handle: titled((t, s) => t('titles.tripReport', idParam(s, 'tripId'))) },
                   ]),
                 ],
               },
@@ -196,7 +197,7 @@ export const routes: RouteObject[] = [
             element: <RouteOutlet />,
             children: [
               guarded('plans.view', [
-                { path: '/chuyen/:tripId/phuong-an', element: <ViewerPage />, handle: titled((t, s) => t('titles.plan', idParam(s, 'tripId'))) },
+                { path: '/chuyen/:tripId/phuong-an', element: <StoreTripRoute><ViewerPage /></StoreTripRoute>, handle: titled((t, s) => t('titles.plan', idParam(s, 'tripId'))) },
               ]),
               // `/kho` là danh sách chuyến cần xếp; `/kho?chuyen=<mã>` là phiên xếp của chuyến đó (LM-086).
               guarded('warehouse.operate', [{
