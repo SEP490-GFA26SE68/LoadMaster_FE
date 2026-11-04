@@ -57,8 +57,8 @@ async function fillForm(user: ReturnType<typeof userEvent.setup>, dialog: HTMLEl
 test('lists the companies with plan, plan status and the number of users', async () => {
   renderCompanies()
   expect(await screen.findByText('2 công ty', {}, SLOW)).toBeInTheDocument()
-  expect(cellsOf(await rowOf('Vận tải Long Bình'))).toStrictEqual(['Công ty TNHH Vận tải Long BìnhLOG-001', 'ProPro', 'Đang hoạt động', '12', ''])
-  expect(cellsOf(await rowOf('Giao nhận Phương Nam'))).toStrictEqual(['Công ty CP Giao nhận Phương NamLOG-002', 'BasicBasic', 'Đang hoạt động', '5', ''])
+  expect(cellsOf(await rowOf('Vận tải Long Bình'))).toStrictEqual(['Công ty TNHH Vận tải Long BìnhLOG-001', 'Pro', 'Đang hoạt động', '12', ''])
+  expect(cellsOf(await rowOf('Giao nhận Phương Nam'))).toStrictEqual(['Công ty CP Giao nhận Phương NamLOG-002', 'Basic', 'Đang hoạt động', '5', ''])
 })
 
 test('a first admin whose email is already taken is refused with the store message; the dialog stays open with what was typed', async () => {

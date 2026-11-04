@@ -12,7 +12,7 @@ import { userColumns, userOpenButtonId } from './user-columns'
 import { UserDetailPanel } from './UserDetailPanel'
 import type { UserAction } from './UserRowMenu'
 import { UsersSummary } from './UsersSummary'
-import type { CompanyName } from './useUsersQuery'
+import { userActivityAvailable, userDepotAvailable, type CompanyName } from './useUsersQuery'
 import { UsersTableContext } from './users-table-context'
 
 /** Bộ lọc trên URL (D-52), tiếng Việt không dấu. */
@@ -75,7 +75,10 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
 
   // Cột chỉ theo ngôn ngữ và panel đóng/mở — không theo dữ liệu: dựng lại cột là gắn lại mọi ô (users-table-context.ts)
   const panelOpen = openId !== null
-  const columns = useMemo(() => userColumns(t, { panelOpen, showCompany: platform }), [t, panelOpen, platform])
+  const columns = useMemo(
+    () => userColumns(t, { panelOpen, showCompany: platform, showDepot: userDepotAvailable, showActivity: userActivityAvailable }),
+    [t, panelOpen, platform],
+  )
   const cellContext = useMemo(
     () => ({ users, viewer, companies: companyNames, onAction, selectedId: openId, onSelect: toggle, panelId }),
     [users, viewer, companyNames, onAction, openId, toggle, panelId],

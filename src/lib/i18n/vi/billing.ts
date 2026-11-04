@@ -31,6 +31,9 @@ export const billing = {
   noPlan: {
     title: 'Công ty chưa có gói cước',
     description: 'Chọn một gói để chạy tối ưu 3D. Credit đã nạp được giữ lại khi gói hết hạn.',
+    /** Máy chủ không trả tên hay ngày của gói đã hết hạn. */
+    lapsedTitle: 'Gói cước của công ty đã hết hạn',
+    lapsedDescription: 'Chọn một gói để chạy tối ưu 3D tiếp. Số dư credit được giữ lại.',
   },
   choose: {
     title: 'Chọn gói',
@@ -51,6 +54,8 @@ export const billing = {
     confirm: 'Huỷ gói',
   },
   cancelled: 'Đã huỷ gói {plan}. Gói dùng được tới hết {date}.',
+  /** Gói miễn phí: máy chủ kích hoạt ngay, không qua thanh toán. */
+  activated: 'Đã kích hoạt gói {plan}',
   topUpDialog: {
     title: 'Nạp credit',
     description: '{price} mỗi credit. Bạn sang trang thanh toán để hoàn tất; credit chỉ được cộng khi thanh toán thành công.',
@@ -60,7 +65,7 @@ export const billing = {
   },
   history: {
     title: 'Lịch sử',
-    tabs: { credit: 'Credit', payments: 'Thanh toán' },
+    tabs: { credit: 'Credit', payments: 'Thanh toán', invoices: 'Hoá đơn' },
   },
   ledger: {
     columns: { time: 'Thời gian', type: 'Loại', amount: 'Số credit', reference: 'Tham chiếu', note: 'Ghi chú' },
@@ -73,5 +78,11 @@ export const billing = {
     purposes: { SUBSCRIBE: 'Đăng ký gói', RENEWAL: 'Gia hạn gói', TOPUP: 'Nạp credit' },
     statuses: { PENDING: 'Chờ thanh toán', SUCCESS: 'Thành công', FAILED: 'Thất bại' },
     empty: 'Chưa có thanh toán nào.',
+  },
+  /** Hoá đơn của công ty (chỉ khi nối backend). */
+  invoices: {
+    columns: { time: 'Ngày lập', number: 'Số hoá đơn', period: 'Kỳ', plan: 'Gói', amount: 'Số tiền', status: 'Trạng thái' },
+    statuses: { UNPAID: 'Chưa trả', PAID: 'Đã trả', FAILED: 'Thất bại', VOID: 'Đã huỷ' },
+    empty: 'Chưa có hoá đơn nào.',
   },
 } as const

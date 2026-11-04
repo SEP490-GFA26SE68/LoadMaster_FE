@@ -44,6 +44,8 @@ export type Formatter = {
   dayMonth(value: Date | string): string
   /** Đồng hồ 24 giờ ở mọi ngôn ngữ: "14:30" */
   time(value: Date | string): string
+  /** Kỳ tháng "YYYY-MM" của máy chủ (kỳ hoá đơn): "10/2026" · "Oct 2026"; chuỗi không đúng dạng giữ nguyên. */
+  monthYear(period: string): string
 }
 
 const CUBIC_CENTIMETERS_PER_CUBIC_METER = 1_000_000
@@ -68,6 +70,20 @@ function withoutYear(formatter: Intl.DateTimeFormat, value: Date): string {
   const joint = parts[year - 1]?.type === 'literal' ? year - 1 : year + 1
   return parts.filter((_, index) => index !== year && index !== joint).map((part) => part.value).join('')
 }
+
+/**
+ * Tháng và năm lấy từ chính mẫu ngày đầy đủ, bỏ phần ngày và dấu nối theo sau nó ("01/10/2026" → "10/2026", "Oct 1, 2026" →
+ * "Oct 2026"), cùng lý do với `withoutYear`: mẫu tháng + năm riêng của Intl cho vi-VN là "tháng 10, 2026".
+ */
+function withoutDay(formatter: Intl.DateTimeFormat, value: Date): string {
+  const parts = formatter.formatToParts(value)
+  const day = parts.findIndex((part) => part.type === 'day')
+  if (day < 0) return formatter.format(value)
+  const joint = parts[day + 1]?.type === 'literal' ? day + 1 : day - 1
+  return parts.filter((_, index) => index !== day && index !== joint).map((part) => part.value).join('')
+}
+
+const PERIOD = /^(\d{4})-(\d{2})$/
 
 /**
  * 24 giờ cho mọi ngôn ngữ (en-US mặc định là "02:30 PM"): điều phối, kho và tài xế
@@ -119,6 +135,12 @@ export function createFormatter(locale: FormatLocale): Formatter {
     date: (value) => date.format(toDate(value)),
     dayMonth: (value) => withoutYear(date, toDate(value)),
     time: (value) => time.format(toDate(value)),
+    monthYear: (period) => {
+      const match = PERIOD.exec(period.trim())
+      const month = Number(match?.[2])
+      // Giữa tháng, giờ máy: múi giờ nào cũng ra đúng tháng
+      return match && month >= 1 && month <= 12 ? withoutDay(date, new Date(Number(match[1]), month - 1, 15)) : period
+    },
   }
 }
 

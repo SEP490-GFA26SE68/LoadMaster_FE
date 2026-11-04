@@ -8,12 +8,14 @@ import type { Role } from '@/types/user'
  */
 export const PERMISSIONS = [
   'companies.manage',
+  'companyProfile.manage',
   'users.manage',
   'audit.view',
   'subscriptionPlans.manage',
   'billing.manage',
   'support.create',
   'support.handle',
+  'contacts.handle',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -61,12 +63,18 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
  * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
+ *
+ * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
+ * trò nền tảng; gửi yêu cầu không cần quyền.
+ *
+ * `companyProfile.manage` mở Thông tin công ty `/cong-ty` — Quản trị công ty xem và sửa thông tin của chính công ty mình; khác
+ * `companies.manage` (danh sách mọi công ty của Quản trị hệ thống).
  */
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view'],
-  systemManager: ['subscriptionPlans.manage'],
-  systemSupporter: ['support.handle'],
-  companyAdmin: ['users.manage', 'audit.view', 'billing.manage', 'support.create'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
+  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemSupporter: ['support.handle', 'contacts.handle'],
+  companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
   manager: [
     'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
     'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',

@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { Formatter } from '@/lib/format'
 import type { CreditTransactionType, SubscriptionStatus } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
 import { useCompanyPanelQuery } from './useSupportQuery'
 
 /** Cùng nghĩa với thẻ gói của màn gói cước: đang dùng xanh lá, đã huỷ nhưng còn hiệu lực hổ phách, hết hạn đỏ. */
@@ -56,7 +57,10 @@ export function CompanyPanel({ companyId }: { companyId: string }) {
             <div className="flex min-w-0 flex-col gap-0.5">
               <dt className="text-small text-ink-3">{t('support.page.panel.plan')}</dt>
               <dd className="m-0 font-medium text-ink-strong">
-                {panel.current ? `${panel.current.plan.name} · ${t(`common.planTiers.${panel.current.plan.tier}`)}` : t('support.page.panel.noPlan')}
+                {panel.current
+                  ? [panel.current.plan.name, tierBesideName(panel.current.plan.name, t(`common.planTiers.${panel.current.plan.tier}`))]
+                      .filter((part) => part !== null).join(' · ')
+                  : t('support.page.panel.noPlan')}
               </dd>
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">

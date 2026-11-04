@@ -2,9 +2,11 @@ import type { IsoBox } from '@/lib/isometric'
 import { stopColor } from '@/lib/stops'
 
 /**
- * Hình học của hình minh hoạ màn đăng nhập (màn không có dữ liệu, AGENTS.md mục 5): một thùng 7,2 × 2,35 × 2,4 m xếp
- * kín theo điểm giao, sâu nhất là điểm 4. Chỉ để trang trí — không phải kết quả tối ưu nào, không hiện số liệu.
- * Tách khỏi dữ liệu thuật toán giả cũ của màn So sánh phương án ở LM-051.
+ * Hình học của hình minh hoạ thùng xe `CargoArtwork` (màn đăng nhập, trang giới thiệu — màn không có dữ liệu, AGENTS.md mục 5):
+ * một thùng 7,2 × 2,35 × 2,4 m xếp kín theo điểm giao, sâu nhất là điểm 4. Chỉ để trang trí — không phải kết quả tối ưu nào, không
+ * hiện số liệu.
+ * Tách khỏi dữ liệu thuật toán giả cũ của màn So sánh phương án ở LM-051. Hộp thoại chạy tối ưu (`RunFigure`) dùng lại hình học này,
+ * bỏ màu điểm giao, mỗi khối là một phần công việc của lần chạy.
  */
 
 export const ARTWORK_CONTAINER = { length: 7.2, width: 2.35, height: 2.4 }
@@ -54,4 +56,9 @@ export function artworkBoxes(): IsoBox[] {
   })
 
   return boxes
+}
+
+/** Các khối theo trình tự xếp thật: từ vách trước ra cửa sau, lớp dưới trước lớp trên — thứ tự hiện ra của hình. */
+export function artworkBoxesInLoadingOrder(): IsoBox[] {
+  return artworkBoxes().sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y)
 }

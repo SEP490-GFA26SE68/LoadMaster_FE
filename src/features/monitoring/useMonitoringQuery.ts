@@ -1,8 +1,18 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { DeadlineRenegotiationInput, TripExceptionInput } from '@/lib/mock-db'
-import { confirmReroute, escalateTripException, renegotiateDeadline, reportTripException, requestReroute, resolveTripException } from './exceptions-api'
+import {
+  confirmReroute,
+  escalateTripException,
+  renegotiateDeadline,
+  reportTripException,
+  requestReroute,
+  resolveTripException,
+  type ExceptionReporter,
+} from './exceptions-api'
 import { fetchMonitoringBoard, getLocationHistory, reorderRunningStops, subscribeTrip } from './monitoring-api'
+
+export { useMonitoringCapabilities } from './monitoring-capabilities'
 
 /**
  * Hook Query của màn Giám sát (FE-6-10 → FE-6-12). Vị trí, ETA và sự cố đọc theo nhịp của kho ở `useTrackingQuery.ts`
@@ -40,9 +50,10 @@ function refresh(client: QueryClient) {
   return Promise.all([['trips'], ['notifications'], ['requirements'], ['dashboard']].map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 
-export function useReportExceptionMutation(tripId: string) {
+/** `from`: màn Giám sát (`board`) hay màn điểm giao của tài xế (`driver`) — xem `ExceptionReporter`. */
+export function useReportExceptionMutation(tripId: string, from: ExceptionReporter = 'board') {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (input: TripExceptionInput) => reportTripException(tripId, input), onSettled: () => refresh(client) })
+  return useMutation({ mutationFn: (input: TripExceptionInput) => reportTripException(tripId, input, from), onSettled: () => refresh(client) })
 }
 
 export function useEscalateExceptionMutation(tripId: string) {

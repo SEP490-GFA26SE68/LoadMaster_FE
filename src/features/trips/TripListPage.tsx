@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent } from '@/components/ui/Tabs'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
-import { useFormat, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { todayInVietnam } from './trip-dates'
 import { filterTripRows, needsAction, normalizeStatusFilter, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, tripTabCounts, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
@@ -15,6 +15,7 @@ import { TripListSkeleton } from './TripListSkeleton'
 import { TripListTable } from './TripListTable'
 import { TripListStats, TripListTabs } from './TripListTabs'
 import { TripListToolbar } from './TripListToolbar'
+import { useTripsCapabilities } from './trips-capabilities'
 import { useTripsQuery } from './useTripsQuery'
 
 const NO_ROWS: TripRow[] = []
@@ -23,19 +24,23 @@ const BY_DATE = 'scheduledDate'
 /**
  * Danh sách chuyến V2.3 (`ChuyenHang.jpg`; LM-053, LM-088, LM-103): đọc kho qua `useTripsQuery`. Dải trời có dòng số (cả kho) và tab
  * theo sáu trạng thái của chuyến (FE-0-05) — tab là bộ lọc `trang-thai`; thẻ bảng đè lên dải có ô tìm bỏ dấu, chip ngày chạy / xe /
- * tài xế, bảng nhóm theo ngày chạy (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52).
+ * tài xế, bảng nhóm theo ngày chạy (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52). Nhóm `trips` đọc
+ * backend: tab, bộ lọc và số đếm vẫn tính ở client trên danh sách của máy chủ; bỏ nút tạo, cột lấp đầy, tên tuyến và số "cần bạn xử lý"
+ * (`TRIPS_CAPABILITIES`).
  */
 export function TripListPage() {
   const navigate = useNavigate()
   const t = useT()
   const format = useFormat()
   const can = useCan()
-  const canCreate = can('trips.edit')
-  // "Cần bạn xử lý" là việc của người duyệt phương án (điều phối viên, FE-0-07); quản lý công ty chỉ đọc nên chỉ thấy các số thường
-  const canAct = can('plans.approve')
+  const caps = useTripsCapabilities()
+  const canCreate = caps.edit && can('trips.edit')
+  // "Cần bạn xử lý" là việc của người duyệt phương án (điều phối viên, FE-0-07); quản lý công ty chỉ đọc nên chỉ thấy các số thường.
+  // Backend chưa trả phương án: không có số nào để đếm.
+  const canAct = caps.plans && can('plans.approve')
   const query = useTripsQuery()
   const list = useListUrlState({ filters: TRIP_LIST_FILTERS, defaultSort: { id: BY_DATE, desc: true } })
-  const columns = useMemo(() => createTripColumns(t, format), [t, format])
+  const columns = useMemo(() => createTripColumns(t, format, caps), [t, format, caps])
   const trips = query.data ?? NO_ROWS
   const status = list.filters['trang-thai']
   const rows = useMemo(() => filterTripRows(trips, list.query, list.filters), [trips, list.query, list.filters])
@@ -90,12 +95,15 @@ export function TripListPage() {
         {query.isPending ? (
           <TripListSkeleton />
         ) : query.isError ? (
-          <p role="alert" className="text-body text-danger">{t('trips.list.loadError')}</p>
+          // Máy chủ từ chối (vai trò, phiên) thì nói đúng lý do của nó
+          <p role="alert" className="text-body text-danger">
+            {t('trips.list.loadError')}{caps.backend ? ` ${dataErrorMessage(query.error, t)}` : null}
+          </p>
         ) : !hasTrips ? (
           <EmptyState
             mascot="empty"
             title={t('trips.list.emptyTitle')}
-            description={t('trips.list.emptyDescription')}
+            description={t(caps.backend ? 'trips.backend.emptyDescription' : 'trips.list.emptyDescription')}
             action={canCreate ? (
               <Button variant="primary" asChild>
                 <Link to="/chuyen/moi">

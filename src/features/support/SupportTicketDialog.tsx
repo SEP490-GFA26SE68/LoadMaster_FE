@@ -14,7 +14,8 @@ import { TICKET_KINDS, type SupportTicket } from '@/lib/mock-db'
 import { ticketFormSchema, translateSupportError, type TicketFormValues } from './support-form'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
 import { TicketThread } from './TicketThread'
-import { useCreateTicketMutation, useReplyMutation, useSupportTicketsQuery } from './useSupportQuery'
+import { ticketLabel } from './ticket-view'
+import { SUPPORT_SOURCE, useCreateTicketMutation, useReplyMutation, useSupportTicketsQuery } from './useSupportQuery'
 
 /** Cỡ cảm ứng cho kho và tài xế mở hộp thoại từ nút tài khoản 56 px (AGENTS mục 5, 10). */
 const TOUCH_BUTTON = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
@@ -35,11 +36,13 @@ function TicketRow({ ticket, onOpen }: { ticket: SupportTicket; onOpen: () => vo
         <span className="flex flex-wrap items-center gap-2">
           <TicketStatusBadge status={ticket.status} />
           <TicketKindBadge kind={ticket.kind} />
-          <span className="font-mono text-caption text-ink-3">{ticket.id}</span>
+          <span className="font-mono text-caption text-ink-3">{ticketLabel(ticket)}</span>
         </span>
         <span className="font-medium text-ink-strong pointer-coarse:text-body-lg">{ticket.title}</span>
         <span className="text-small text-ink-3 pointer-coarse:text-body">
-          {t('support.mine.replies', { count: ticket.replies.length })} · {t('support.mine.updated', { time: `${format.date(ticket.updatedAt)} ${format.time(ticket.updatedAt)}` })}
+          {SUPPORT_SOURCE.replies
+            ? `${t('support.mine.replies', { count: ticket.replies.length })} · ${t('support.mine.updated', { time: `${format.date(ticket.updatedAt)} ${format.time(ticket.updatedAt)}` })}`
+            : t('support.mine.sent', { time: `${format.date(ticket.createdAt)} ${format.time(ticket.createdAt)}` })}
         </span>
       </button>
     </li>
@@ -129,7 +132,7 @@ export function SupportTicketDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent className="w-180">
-        <DialogHeader icon={LifeBuoy} title={view.kind === 'new' ? t('support.form.title') : t('support.mine.title')} description={t('support.mine.description')} />
+        <DialogHeader icon={LifeBuoy} title={view.kind === 'new' ? t('support.form.title') : t('support.mine.title')} description={t(SUPPORT_SOURCE.replies ? 'support.mine.description' : 'support.mine.descriptionStatusOnly')} />
         <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
           {view.kind === 'new' ? (
             <>
@@ -139,7 +142,7 @@ export function SupportTicketDialog({ onClose }: { onClose: () => void }) {
                 pending={create.isPending}
                 send={(values) => create.mutateAsync(values)}
                 onSent={(ticket) => {
-                  toast.success(t('support.form.sent', { id: ticket.id }))
+                  toast.success(t('support.form.sent', { id: ticketLabel(ticket) }))
                   setView({ kind: 'ticket', id: ticket.id })
                 }}
               />

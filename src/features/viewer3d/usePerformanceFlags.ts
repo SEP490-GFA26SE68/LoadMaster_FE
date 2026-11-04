@@ -3,7 +3,8 @@ import { createQualityPolicy, observeQuality, type QualityObservation } from './
 
 export type QualityTier = 'high' | 'balanced' | 'low'
 export type AnimationQuality = 'full' | 'reduced' | 'none'
-export type ExperienceMode = 'planner' | 'warehouse' | 'driver' | 'fleet'
+/** `landing`: khung 3D của trang giới thiệu công khai (`LandingStageViewer`) — chỉ xem, không thao tác. */
+export type ExperienceMode = 'planner' | 'warehouse' | 'driver' | 'fleet' | 'landing'
 
 /** Hiệu ứng chỉ thay đổi cách vẽ, không được loại bỏ trạng thái nghiệp vụ. */
 export type PerformanceFlags = {

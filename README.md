@@ -17,7 +17,7 @@ Giao diện tiếng Việt, chuyển được sang tiếng Anh ngay trong phiên
 |---|---|---|
 | Điều phối | Desktop | Đăng ký kiện và in nhãn QR, đưa yêu cầu giao vào chuyến, tạo chuyến, nhập kiện (tay hoặc CSV/.xlsx), chạy tối ưu, xem phương án 3D, chỉnh tay từng kiện, so sánh và **duyệt** |
 | Kho | Máy tính bảng | Chọn chuyến đã duyệt, xếp từng kiện theo thứ tự, báo kiện thiếu, xem vị trí kiện trong thùng bằng 3D |
-| Tài xế | Điện thoại | Chuyến của tôi, xuất phát, danh sách kiện theo điểm giao, báo sự cố, gọi khách, tổng kết chuyến |
+| Tài xế | Điện thoại | Chuyến của tôi, xuất phát, giờ đến dự kiến và hạn giao của từng điểm, danh sách kiện theo điểm giao, báo sự cố, gọi khách, hỏi lại trước khi hoàn tất điểm, chuông báo chuyến mới / xếp xong / tạm dừng / bị huỷ, tổng kết chuyến |
 | Quản lý công ty | Desktop | Lập yêu cầu giao (điểm đến, hạn, ưu tiên, kiện từ kho kiện); bảng điều khiển theo kỳ, 5 chỉ số có nguồn, 3 biểu đồ, xuất báo cáo `.xlsx`; xem chuyến và phương án (chỉ đọc) |
 | Quản trị hệ thống · Quản trị công ty | Desktop | Người dùng, phân quyền theo ma trận, khoá/mở, đặt lại mật khẩu, nhật ký hệ thống; quản trị hệ thống còn quản lý công ty (tạo công ty kèm quản trị công ty đầu tiên với mật khẩu tạm hiện một lần, sửa kho xuất phát); quản trị công ty còn xem gói cước, số dư credit và lịch sử, đăng ký, huỷ gói, nạp credit qua trang thanh toán giả lập |
 | Quản lý nền tảng | Desktop | Danh mục gói cước: thêm, sửa giá và credit, bật/tắt bán, xoá gói không còn công ty dùng |
@@ -52,6 +52,18 @@ Các tài khoản trên (trừ ba tài khoản nền tảng) thuộc Công ty TN
 vai trò công ty: `qtcongty@`, `quanly@`, `dieuphoi@`, `taixe@phuongnam.vn` và nhân viên kho `viet.lam@phuongnam.vn`.
 
 Thêm `?lang=en` vào URL để xem bản tiếng Anh.
+
+### Chạy với backend thật
+
+1. Chạy backend (repo `LoadMaster_BE`, nhánh `develop`) theo hướng dẫn của repo đó: API ở `http://localhost:8080`, Keycloak ở
+   `http://localhost:8180`.
+2. Ở Keycloak, client `loadmaster-web` của realm `loadmaster` phải bật **Direct Access Grants**: form đăng nhập của app đổi email + mật
+   khẩu lấy token ngay, không chuyển sang trang của Keycloak.
+3. Chép `.env.example` thành `.env.local` và đặt `VITE_AUTH_SOURCE=keycloak`; các giá trị khác giữ mặc định khi backend chạy ở cùng máy.
+4. `pnpm dev` rồi mở đúng `http://localhost:5173` (backend chỉ cho phép địa chỉ này).
+5. Đăng nhập bằng tài khoản do backend tạo. Tài khoản demo ở bảng trên chỉ dùng ở chế độ kho mẫu.
+
+Phần backend chưa có vẫn chạy kho mẫu (xem "Trạng thái"); `VITE_API_FEATURES` tắt riêng một nhóm khi backend của nhóm đó lỗi.
 
 ## Trạng thái
 
@@ -109,8 +121,16 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
   mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
   trợ khách hàng làm ở các bước sau.
-- **Chưa nối backend.** Dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó (`BroadcastChannel`), và mất khi tải lại mọi tab; đăng nhập,
-  phân quyền, nhật ký đều là bản giả lập ở frontend. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
+- Trang công khai cho khách chưa có tài khoản: giới thiệu `/gioi-thieu` (khách mở `/` khi chưa đăng nhập sẽ tới đây), bảng giá `/bang-gia`
+  (các gói đang bán, giá còn là giá tạm) và form liên hệ. Hỗ trợ khách hàng, quản lý nền tảng và quản trị hệ thống xử lý các yêu cầu đó ở
+  màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi chú nội bộ. Không có trang tự đăng ký: tài khoản công ty do đội
+  LoadMaster tạo.
+- **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
+  (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì form đăng nhập của app dùng Keycloak của
+  backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
+  điểm giao của tài xế, màn Giám sát đọc ghi backend thật; danh sách và Chi tiết chuyến, đội xe và loại xe chỉ đọc; `VITE_API_FEATURES` chọn
+  nhóm. Planner, tối ưu, kho xếp hàng, yêu cầu giao, bảng điều khiển vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu
+  mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
 ## Kiến trúc
@@ -123,19 +143,22 @@ src/features/<màn>         <màn>-api.ts (nơi duy nhất biết nguồn dữ l
 src/features/viewer3d      toàn bộ Three.js; một SceneCanvas dùng chung cho Planner, kho và tài xế
 ```
 
-Nối backend thật: thay thân hàm trong `features/*/*-api.ts` và `createOptimizationService`; hook và component giữ nguyên.
+Nối backend: thân hàm trong `features/*/*-api.ts` gọi `api()` (`src/lib/api-client.ts`) khi nhóm của nó bật, không thì gọi kho mẫu; hook và
+component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `createOptimizationService` cho tối ưu.
 
 ## Kiểm thử
 
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.243 test unit + DOM
-pnpm test:e2e      # Playwright: 138 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
+pnpm test          # Vitest: 2.677 test unit + DOM
+pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất (09/10/2026, CI của nhánh `developer` sau khi gộp V2.3 đợt 6–7): lint, kiểm kiểu, build, 2.243/2.243 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
+Lần chạy gần nhất ở máy (05/11/2026, nhánh `feat/demo-noi-backend` sau khi gộp #75, #77, #78, #79): lint, kiểm kiểu, build, 2.677/2.677
+unit + DOM xanh; E2E chạy các spec bị đụng tới, bộ đủ chạy ở CI. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
+unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
 

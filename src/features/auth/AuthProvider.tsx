@@ -7,30 +7,26 @@ import * as authApi from './auth-api'
 import { createKeycloakSession, type KeycloakSession } from './keycloak-session'
 
 /**
- * Phiên đăng nhập, hai nguồn (`VITE_AUTH_SOURCE`, `lib/backend-config.ts`):
+ * Phiên đăng nhập, hai nguồn (`VITE_AUTH_SOURCE`, `lib/backend-config.ts`). Cả hai đều đăng nhập bằng email và mật khẩu trên màn của
+ * app — không chuyển sang trang nào khác:
  *
- * - `mock` (mặc định): đăng nhập bằng email và mật khẩu trên kho mẫu. Phiên giữ trong `sessionStorage` để tải lại trang không bị
- *   đăng xuất. Không dùng `localStorage` và không lưu dữ liệu nghiệp vụ ở client (AGENTS.md mục 9).
- * - `keycloak`: đăng nhập ở trang của Keycloak (backend). App không giữ phiên trong `sessionStorage`: mỗi lần mở trang hỏi lại
- *   Keycloak (`status` là `restoring` cho tới khi có câu trả lời), rồi đọc hồ sơ ở backend.
+ * - `mock` (mặc định): kho mẫu kiểm mật khẩu. Phiên giữ trong `sessionStorage` để tải lại trang không bị đăng xuất. Không dùng
+ *   `localStorage` và không lưu dữ liệu nghiệp vụ ở client (AGENTS.md mục 9).
+ * - `keycloak`: đổi email và mật khẩu lấy token ở Keycloak của backend (`keycloak-session.ts`), rồi đọc hồ sơ ở backend. Mở trang thì
+ *   mở lại phiên của tab (`status` là `restoring` cho tới khi xong).
  */
 
 const SESSION_KEY = 'loadmaster.phien'
 
-/** Trang người dùng định mở trước khi bị chuyển sang Keycloak; đọc lại sau khi quay về. */
-const RETURN_KEY = 'loadmaster.sau-dang-nhap'
-
 type AuthValue = {
   user: User | null
-  /** `restoring`: đang hỏi Keycloak xem còn phiên không — chưa biết đã đăng nhập hay chưa. Chế độ kho mẫu luôn là `ready`. */
+  /** `restoring`: đang mở lại phiên Keycloak của tab — chưa biết đã đăng nhập hay chưa. Chế độ kho mẫu luôn là `ready`. */
   status: 'restoring' | 'ready'
   source: AuthSource
   /** Lỗi của lần mở lại phiên hoặc đọc hồ sơ ở backend (chỉ chế độ Keycloak); màn đăng nhập hiện câu tương ứng. */
   sessionError: unknown
-  /** Chế độ kho mẫu. */
+  /** Đăng nhập bằng email và mật khẩu — ở kho mẫu, hoặc ở Keycloak rồi đọc hồ sơ ở backend. Lỗi có mã là `AuthError`. */
   signIn: (email: string, password: string) => Promise<User>
-  /** Chế độ Keycloak: chuyển sang trang đăng nhập của Keycloak; `returnTo` là trang sẽ mở sau khi đăng nhập xong. */
-  signInWithRedirect: (returnTo?: string) => Promise<void>
   signOut: () => Promise<void>
   /** Đọc lại người dùng của phiên, ví dụ sau khi sửa hồ sơ (LM-096). */
   refreshUser: () => void
@@ -64,25 +60,20 @@ function writeStoredUser(user: User | null) {
   }
 }
 
-/** Trang định mở trước khi sang Keycloak. Lần đăng nhập kế tiếp và đăng xuất ghi đè hoặc xoá nó. */
-export function readReturnPath(): string | undefined {
+/**
+ * Hồ sơ ở backend sau khi Keycloak đã cấp phiên. Backend không nhận người này thì đóng luôn phiên Keycloak: để lại thì tab giữ một phiên
+ * không dùng được, và lần mở trang sau lại vấp đúng lỗi đó.
+ */
+async function backendUserOf(session: KeycloakSession): Promise<User> {
   try {
-    return sessionStorage.getItem(RETURN_KEY) ?? undefined
-  } catch {
-    return undefined
+    return await authApi.fetchBackendUser()
+  } catch (error) {
+    await session.logout()
+    throw error
   }
 }
 
-function rememberReturnPath(path: string | undefined) {
-  try {
-    if (path) sessionStorage.setItem(RETURN_KEY, path)
-    else sessionStorage.removeItem(RETURN_KEY)
-  } catch {
-    // Không nhớ được thì đăng nhập xong mở màn chính của vai trò.
-  }
-}
-
-/** Một phiên Keycloak cho cả app: `keycloak-js` chỉ được khởi tạo một lần mỗi lần tải trang. */
+/** Một phiên Keycloak cho cả app: mỗi lần tải trang chỉ mở lại phiên một lần. */
 let sharedSession: KeycloakSession | undefined
 
 type AuthProviderProps = {
@@ -101,14 +92,19 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
   // Vắng khi cây không có `QueryClientProvider` (vài test chỉ dựng phiên): khi đó không có cache nào để xoá
   const queryClient = use(QueryClientContext)
 
-  // Chế độ Keycloak: hỏi Keycloak một lần khi mở app; còn phiên thì đọc hồ sơ ở backend
+  // Chế độ Keycloak: mở lại phiên một lần khi mở app; còn phiên thì đọc hồ sơ ở backend
   useEffect(() => {
     if (session === null) return
     let cancelled = false
     connectApiAuth(() => session.token())
+    // Phiên hết giữa chừng (không làm mới được, tab khác đăng xuất): về màn đăng nhập, bỏ dữ liệu của người vừa thoát
+    const stopListening = session.onEnded(() => {
+      setUser(null)
+      queryClient?.clear()
+    })
     void (async () => {
       try {
-        const signedIn = (await session.start()) ? await authApi.fetchBackendUser() : null
+        const signedIn = (await session.start()) ? await backendUserOf(session) : null
         if (cancelled) return
         queryClient?.clear()
         setUser(signedIn)
@@ -120,6 +116,7 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
     })()
     return () => {
       cancelled = true
+      stopListening()
     }
   }, [session, queryClient])
 
@@ -129,28 +126,27 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
    * lúc đăng nhập: truy vấn chạy giữa hai lần đó đọc kho khi không có phiên — kho không lọc.
    */
   const signIn = useCallback(async (email: string, password: string) => {
-    if (viaKeycloak) throw new Error('Chế độ Keycloak đăng nhập bằng signInWithRedirect')
-    const signedIn = await authApi.login(email, password)
+    let signedIn: User
+    if (session === null) {
+      signedIn = await authApi.login(email, password)
+      writeStoredUser(signedIn)
+    } else {
+      await session.login(email, password)
+      signedIn = await backendUserOf(session)
+    }
+    setSessionError(null)
     queryClient?.clear()
-    writeStoredUser(signedIn)
     setUser(signedIn)
     return signedIn
-  }, [queryClient, viaKeycloak])
-
-  const signInWithRedirect = useCallback(async (returnTo?: string) => {
-    if (session === null) throw new Error('Chế độ kho mẫu đăng nhập bằng signIn')
-    rememberReturnPath(returnTo)
-    await session.login(`${window.location.origin}/dang-nhap`)
-  }, [session])
+  }, [queryClient, session])
 
   const signOut = useCallback(async () => {
     await authApi.logout()
     writeStoredUser(null)
-    rememberReturnPath(undefined)
     setUser(null)
     queryClient?.clear()
-    // Keycloak đóng phiên của nó rồi đưa trình duyệt về màn đăng nhập
-    if (session !== null) await session.logout(`${window.location.origin}/dang-nhap`)
+    // Đóng phiên ở Keycloak; RequireAuth đưa về màn đăng nhập
+    if (session !== null) await session.logout()
   }, [queryClient, session])
 
   const refreshUser = useCallback(() => {
@@ -165,8 +161,8 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
   }, [session])
 
   const value = useMemo<AuthValue>(
-    () => ({ user, status, source, sessionError, signIn, signInWithRedirect, signOut, refreshUser }),
-    [user, status, source, sessionError, signIn, signInWithRedirect, signOut, refreshUser],
+    () => ({ user, status, source, sessionError, signIn, signOut, refreshUser }),
+    [user, status, source, sessionError, signIn, signOut, refreshUser],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

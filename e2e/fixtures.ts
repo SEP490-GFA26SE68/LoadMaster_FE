@@ -54,7 +54,8 @@ export const test = base.extend<ViewerFixtures>({
   },
   login: async ({ page, hasTouch }, provide) => {
     await provide(async (route, role = 'dispatcher') => {
-      await page.goto(route)
+      // Khách mở `/` thì được đưa sang trang giới thiệu, và sau đăng nhập gốc `/` không được giữ: đăng nhập thẳng ở màn đăng nhập
+      await page.goto(route === '/' ? '/dang-nhap' : route)
       await page.getByLabel('Email', { exact: true }).fill(DEMO_EMAILS[role])
       await page.getByLabel('Mật khẩu', { exact: true }).fill(DEMO_PASSWORD)
       const submit = page.getByRole('button', { name: 'Đăng nhập', exact: true })

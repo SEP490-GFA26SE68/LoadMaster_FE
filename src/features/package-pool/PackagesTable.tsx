@@ -13,11 +13,13 @@ import {
   CLASS_FILTER, FLAG_CHOICES, FLAG_FILTER, FLAG_SLUGS, HANDLING_CLASS_SLUGS, LINK_CHOICES, LINK_FILTER, LINK_SLUGS, NO_FLAG, orderedSelection,
   type PackageFilterName, type PackageRow,
 } from './packages-list'
+import { PACKAGE_POOL_SUPPORT } from './usePackagePoolQuery'
 
 /**
  * Thẻ bảng của kho kiện (FE-3b-03): thanh tìm và ba bộ lọc (loại hàng, cờ, đã / chưa vào yêu cầu giao hay chuyến) là đầu thẻ, dải thao tác
  * trên kiện đang chọn, bảng phân trang; bấm dòng (hoặc nút mã kiện) mở panel chi tiết ở cột phải, Esc đóng và trả con trỏ về mã kiện.
- * Chọn kiện để in nhãn chỉ có với người in được nhãn (`packages.manage`).
+ * Chọn kiện để in nhãn chỉ có với người in được nhãn (`packages.manage`). Nối backend thì bộ lọc và cột không có nguồn bị bỏ
+ * (`PACKAGE_POOL_SUPPORT`).
  */
 export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedChange, openId, onOpenChange }: {
   /** Mọi kiện của kho kiện (thứ tự in nhãn, kiện đang mở). */
@@ -52,7 +54,7 @@ export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedCha
   const toggleOpen = useCallback((id: string) => (id === open ? close(id) : onOpenChange(id)), [open, close, onOpenChange])
 
   const panelOpen = open !== null
-  const columns = useMemo(() => packageColumns(t, { selectable: canManage, panelOpen }), [t, canManage, panelOpen])
+  const columns = useMemo(() => packageColumns(t, { selectable: canManage, panelOpen, support: PACKAGE_POOL_SUPPORT }), [t, canManage, panelOpen])
   const selectedIds = useMemo(() => orderedSelection(all, selected), [all, selected])
   const state = useMemo<PackageTableState>(() => {
     const change = (ids: readonly string[], checked: boolean) => onSelectedChange((current) => {
@@ -82,14 +84,14 @@ export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedCha
       kind: 'select', name: CLASS_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.handlingClass'), allLabel: t('sourcing.packages.filters.allClasses'),
       options: HANDLING_CLASSES.map((value) => ({ value: HANDLING_CLASS_SLUGS[value], label: t(`common.handlingClasses.${value}`) })),
     },
-    {
+    ...(PACKAGE_POOL_SUPPORT.flags ? [{
       kind: 'select', name: FLAG_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.flag'), allLabel: t('sourcing.packages.filters.allFlags'),
       options: FLAG_CHOICES.map((value) => ({ value: FLAG_SLUGS[value], label: value === NO_FLAG ? t('sourcing.packages.filters.noFlag') : t(`common.packageFlags.${value}`) })),
-    },
-    {
+    } satisfies FilterField<PackageFilterName>] : []),
+    ...(PACKAGE_POOL_SUPPORT.links ? [{
       kind: 'select', name: LINK_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.link'), allLabel: t('sourcing.packages.filters.allLinks'),
       options: LINK_CHOICES.map((value) => ({ value: LINK_SLUGS[value], label: t(`sourcing.packages.filters.${value}`) })),
-    },
+    } satisfies FilterField<PackageFilterName>] : []),
   ]
 
   /** Esc đóng panel, trừ khi một lớp nổi (ô chọn) đã dùng phím đó để tự đóng, hoặc con trỏ đang ở ô nhập. */
@@ -108,7 +110,7 @@ export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedCha
           className="min-h-14 border-b border-border px-4 py-2"
           query={list.query}
           onQueryChange={list.setQuery}
-          searchLabel={t('sourcing.packages.search')}
+          searchLabel={PACKAGE_POOL_SUPPORT.listDestinations ? t('sourcing.packages.search') : t('sourcing.packages.searchBackend')}
           fields={fields}
           values={list.filters}
           onValueChange={list.setFilter}

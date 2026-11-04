@@ -9,9 +9,10 @@ import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { EscalationTab } from './EscalationTab'
+import { EtaRiskToasts } from './EtaRiskWatcher'
 import { MonitoringBoard } from './MonitoringBoard'
 import { ESCALATION_TAB, INCIDENT_PARAM, LATE_PARAM, TAB_PARAM, TRIP_PARAM, type MonitoringFilter } from './monitoring-view'
-import { useMonitoringBoardQuery } from './useMonitoringQuery'
+import { useMonitoringBoardQuery, useMonitoringCapabilities } from './useMonitoringQuery'
 import { useFleetMonitoringQuery } from './useTrackingQuery'
 
 const FILTER_PARAMS: Readonly<Record<keyof MonitoringFilter, string>> = { late: LATE_PARAM, incidents: INCIDENT_PARAM }
@@ -21,14 +22,16 @@ const FILTER_PARAMS: Readonly<Record<keyof MonitoringFilter, string>> = { late: 
  * Đang vận chuyển, danh sách cạnh nó (cũng là bản thay thế bản đồ cho trình đọc màn hình) và chi tiết của chuyến đang chọn. Người có
  * `deadlines.renegotiate` (quản lý công ty) có thêm tab "Sự cố cần xử lý" (FE-6-12); người khác không có dải tab. Tab, chuyến đang chọn
  * và hai công tắc lọc nằm trên URL. Trang này chỉ đọc phần ít đổi của các chuyến: vị trí và ETA theo nhịp của kho đọc ở các thành phần
- * con, nên dải tiêu đề không vẽ lại theo từng điểm vị trí.
+ * con, nên dải tiêu đề không vẽ lại theo từng điểm vị trí. Dữ liệu từ backend: không có tab "Sự cố cần xử lý" (backend chưa có chuyển
+ * quản lý, gia hạn), và toast nguy cơ trễ hạn chỉ hiện trên màn này (`EtaRiskToasts`).
  */
 export function MonitoringPage() {
   const t = useT()
   const can = useCan()
+  const caps = useMonitoringCapabilities()
   const board = useMonitoringBoardQuery()
   const [params, setParams] = useSearchParams()
-  const canRenegotiate = can('deadlines.renegotiate')
+  const canRenegotiate = caps.escalation && can('deadlines.renegotiate')
   const tab = canRenegotiate && params.get(TAB_PARAM) === ESCALATION_TAB ? 'escalations' : 'trips'
   const filter: MonitoringFilter = { late: params.get(LATE_PARAM) === '1', incidents: params.get(INCIDENT_PARAM) === '1' }
   const trips = board.data?.trips ?? []
@@ -64,6 +67,7 @@ export function MonitoringPage() {
       </PageHero>
 
       {board.isSuccess ? <BoardSync shown={trips.map((trip) => trip.tripId).join(',')} /> : null}
+      {caps.backend ? <EtaRiskToasts /> : null}
       <div className={hasTrips ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
         {board.isPending ? (
           <div role="status" aria-label={t('monitoring.loading')} className="flex justify-center py-16"><Spinner /></div>

@@ -19,7 +19,17 @@ export type AccountGuards = {
   readonly role: AccountBlock | null
 }
 
-type Account = Pick<User, 'id' | 'role' | 'status' | 'companyId'>
+type Account = Pick<User, 'id' | 'email' | 'role' | 'status' | 'companyId'>
+
+type Viewer = Pick<User, 'id' | 'email' | 'role'>
+
+/**
+ * Tài khoản đang đăng nhập. So cả email: khi đăng nhập bằng backend mà dữ liệu còn là kho mẫu, mã người dùng của phiên là của tài khoản
+ * mẫu cùng vai trò (`userFromBackend`), còn danh sách người dùng mang mã của backend — email thì giống nhau ở cả hai.
+ */
+export function isSameAccount(user: Pick<User, 'id' | 'email'>, viewer: Pick<User, 'id' | 'email'>): boolean {
+  return user.id === viewer.id || user.email.toLowerCase() === viewer.email.toLowerCase()
+}
 
 /**
  * Chặn trước, kèm lý do, những thao tác kho sẽ từ chối (LM-092, FE-0-08; cùng luật `SELF_CHANGE_FORBIDDEN`, `LAST_ADMIN`,
@@ -28,8 +38,8 @@ type Account = Pick<User, 'id' | 'role' | 'status' | 'companyId'>
  * sách người xem thấy — kho đã lọc theo phạm vi nên đủ để đếm người quản trị của công ty đó. Đặt lại mật khẩu không bao giờ bị chặn.
  * Luật cần dữ liệu khác (tài xế còn chuyến) để kho trả lỗi.
  */
-export function accountGuards(user: Account, viewer: Pick<User, 'id' | 'role'> | null, users: readonly Account[]): AccountGuards {
-  if (viewer !== null && user.id === viewer.id) return { edit: null, lock: 'self', remove: 'self', role: 'self' }
+export function accountGuards(user: Account, viewer: Viewer | null, users: readonly Account[]): AccountGuards {
+  if (viewer !== null && isSameAccount(user, viewer)) return { edit: null, lock: 'self', remove: 'self', role: 'self' }
   const last = !isLastActiveAdmin(user, users) ? null : user.role === 'systemAdmin' ? 'lastSystemAdmin' : 'lastCompanyAdmin'
   if (viewer !== null && userScopeOf(viewer.role) === 'platform' && userScopeOf(user.role) === 'company') {
     return { edit: 'companyManaged', lock: last, remove: 'companyManaged', role: 'companyManaged' }

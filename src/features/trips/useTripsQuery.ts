@@ -1,20 +1,18 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { CargoPackage } from '@/domain/models'
 import type { DeliveryStop } from '@/lib/mock-db'
+import { deletePackage, duplicateTripPackage, fetchPackages, importPackages, savePackage } from './trip-package-lines-api'
 import { addTripStop, removeTripStop, updateTripStops, type ManualStopInput } from './trip-stops-api'
 import {
   cancelTrip,
   createTrip,
-  deletePackage,
-  duplicateTripPackage,
-  fetchPackages,
+  fetchServerTrip,
+  fetchStoreTrips,
   fetchTripActivity,
   fetchTripDetail,
   fetchTripFormOptions,
   fetchTripRevisions,
   fetchTrips,
-  importPackages,
-  savePackage,
   updateTripFrame,
   type TripFrame,
   type TripFrameChanges,
@@ -25,6 +23,11 @@ import {
 export function useTripsQuery() {
   // Trạng thái và tỷ lệ của từng dòng đổi theo mọi mutation của từng chuyến (khoá `['trips', tripId]`): đọc lại mỗi lần mở màn.
   return useQuery({ queryKey: ['trips', 'list'], queryFn: fetchTrips, staleTime: 0 })
+}
+
+/** Danh sách chuyến của kho mẫu cho hai trang tài liệu — dữ liệu seed, dù nhóm `trips` nối backend. */
+export function useStoreTripsQuery() {
+  return useQuery({ queryKey: ['trips', 'store-list'], queryFn: fetchStoreTrips, staleTime: 0 })
 }
 
 /** Xe (kèm trạng thái bảo dưỡng) và tài xế của form chuyến: đọc lại mỗi lần mở form vì Đội xe và Người dùng đổi chúng. */
@@ -69,6 +72,11 @@ export function useCancelTripMutation(tripId: string) {
 
 export function useTripDetailQuery(tripId: string) {
   return useQuery({ queryKey: ['trips', tripId, 'detail'], queryFn: () => fetchTripDetail(tripId), enabled: tripId !== '' })
+}
+
+/** Chi tiết chuyến của backend theo mã chuyến (nhóm `trips` nối backend); đọc lại mỗi lần mở vì tài xế và kho đổi trạng thái ở nơi khác. */
+export function useServerTripQuery(tripId: string) {
+  return useQuery({ queryKey: ['trips', tripId, 'server-detail'], queryFn: () => fetchServerTrip(tripId), enabled: tripId !== '', staleTime: 0 })
 }
 
 /**

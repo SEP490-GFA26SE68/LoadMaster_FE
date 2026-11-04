@@ -16,16 +16,38 @@ import type { PackageTypeInput } from '@/lib/mock-db'
 import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
-import { useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
+import {
+  PACKAGE_POOL_SUPPORT, useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation,
+} from './usePackagePoolQuery'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
 /**
- * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện): bảng loại kiện (kích thước, khối lượng, dễ vỡ,
- * hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp thoại xác nhận —
- * loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE`).
+ * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện). Nối backend thì máy chủ chưa mở danh mục
+ * loại kiện cho điều phối viên: màn Kho kiện không có lối vào, mở thẳng đường dẫn thì chỉ thấy câu lý do — không gọi máy chủ.
  */
 export function PackageTypesPage() {
+  return PACKAGE_POOL_SUPPORT.packageTypes ? <PackageTypesCatalog /> : <PackageTypesUnavailable />
+}
+
+function PackageTypesUnavailable() {
+  const t = useT()
+  return (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <PageHero title={t('sourcing.packageTypes.title')} description={t('pageHero.packageTypes')} back={{ to: '/kien-hang', label: t('sourcing.labels.back') }} />
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
+        <Banner tone="info">{t('sourcing.backend.packageTypes')}</Banner>
+      </main>
+    </div>
+  )
+}
+
+/**
+ * Bảng loại kiện (kích thước, khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa
+ * trong hộp thoại, xoá qua hộp thoại xác nhận — loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối
+ * `PACKAGE_TYPE_IN_USE`).
+ */
+function PackageTypesCatalog() {
   const t = useT()
   const canEdit = useCan()('packages.manage')
   const typesQuery = usePackageTypesQuery()

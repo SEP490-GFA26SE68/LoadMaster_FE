@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import type { RerouteProposal } from '@/lib/mock-db'
+import type { LiveRerouteProposal } from './exceptions-api'
 import { useConfirmRerouteMutation, useRequestRerouteMutation } from './useMonitoringQuery'
 
 /**
  * Hộp "Tìm tuyến khác" (FE-6-11, D-87): mock đưa ra 2–3 tuyến tới **điểm kế tiếp** từ vị trí xe — tên, quãng đường, thời gian và giờ
  * đến điểm đó — kèm nhãn **MOCK RESULT**. Chọn một tuyến thì xe mô phỏng thôi đứng chờ sự cố và giờ đến tính lại theo vị trí. Thứ tự
- * điểm giao không đổi và bản đồ vẫn vẽ đường nối thẳng: hộp nói rõ điều đó. Mỗi lần mở là một lần tìm mới.
+ * điểm giao không đổi và bản đồ vẫn vẽ đường nối thẳng: hộp nói rõ điều đó. Mỗi lần mở là một lần tìm mới. Tuyến của backend là một
+ * đường đi cơ sở nhân với các hệ số cố định (chưa phải đường đi khác thật), nên vẫn mang nhãn MOCK RESULT dù backend không báo mock.
  */
 export function RerouteDialog({ tripId, stopName, open, onOpenChange }: {
   tripId: string
@@ -45,7 +46,7 @@ function RerouteBody({ tripId, stopName, onDone }: { tripId: string; stopName: (
     search()
   }, [search])
 
-  function handleConfirm(found: RerouteProposal) {
+  function handleConfirm(found: LiveRerouteProposal) {
     const option = found.options.find((item) => item.index === chosen)
     if (!option) return
     confirm.mutate(option.index, {

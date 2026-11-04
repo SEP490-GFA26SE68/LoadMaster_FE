@@ -32,6 +32,12 @@ test('the platform form takes the three platform roles and no depot, so a blank 
   }
 })
 
+test('a company form without a depot field (the server keeps no depot) accepts a blank depot', () => {
+  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+    expect(userFormSchema('company', { depot: false }).safeParse({ ...VALID, role, depot: '' }).success, role).toBe(true)
+  }
+})
+
 test('a role outside the scope of the form is refused at the role field', () => {
   for (const role of ['systemAdmin', 'systemManager', 'systemSupporter'] as const) {
     expect(errorsOf('company', { ...VALID, role }), role).toStrictEqual(['role: admin.users.errors.roleRequired'])

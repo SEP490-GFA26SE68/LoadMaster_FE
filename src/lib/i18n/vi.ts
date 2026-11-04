@@ -16,6 +16,7 @@ import { viewer } from './vi/viewer'
 import { fields } from './vi/fields'
 import { admin } from './vi/admin'
 import { designSystem } from './vi/designSystem'
+import { apiErrors } from './vi/apiErrors'
 import { dataErrors } from './vi/dataErrors'
 import { audit } from './vi/audit'
 import { profile } from './vi/profile'
@@ -38,7 +39,11 @@ import { platform } from './vi/platform'
 import { billing } from './vi/billing'
 import { payment } from './vi/payment'
 import { companies } from './vi/companies'
+import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
+import { contacts } from './vi/contacts'
+import { landing } from './vi/landing'
+import { pricing } from './vi/pricing'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -69,6 +74,7 @@ export const vi = {
   admin,
   designSystem,
   dataErrors,
+  apiErrors,
   audit,
   profile,
   notifications,
@@ -90,5 +96,9 @@ export const vi = {
   billing,
   payment,
   companies,
+  companyProfile,
   support,
+  contacts,
+  landing,
+  pricing,
 } as const

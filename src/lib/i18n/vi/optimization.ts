@@ -59,7 +59,7 @@ export const optimization = {
     tier: 'Hạng thuật toán của gói {plan}',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — chưa có',
-    tierNote: 'Bản demo chạy EP + DBLF (mock) cho mọi hạng.',
+    tierNote: 'Hệ thống tự chọn thuật toán trong hạng của gói. Bản demo chạy EP + DBLF (mock) cho mọi hạng.',
     noPlan: 'Công ty chưa có gói cước.',
     /** Chỉ điều phối viên mở được màn này (`optimization.run`); quản trị công ty nạp credit ở màn gói cước. */
     blocked: {
@@ -141,6 +141,18 @@ export const optimization = {
     /** Tiến trình của từng phương án: số kiện đã xét trong lượt xếp của mục tiêu đó. */
     planProgress: 'Đã xét {placed} / {total} kiện',
     planWaiting: 'Chờ',
+    /** Các bước thật của lần chạy, theo thứ tự `runOptimization` làm. */
+    stagesLabel: 'Các bước của lần chạy',
+    stages: {
+      reserve: 'Giữ credit',
+      pack: 'Xếp ba phương án',
+      save: 'Lưu kết quả',
+    },
+    stageStates: {
+      done: 'đã xong',
+      current: 'đang làm',
+      pending: 'chưa tới',
+    },
     elapsed: 'Đã chạy {seconds} giây',
     cancel: 'Huỷ',
     note: 'Huỷ thì không tạo phương án nào.',

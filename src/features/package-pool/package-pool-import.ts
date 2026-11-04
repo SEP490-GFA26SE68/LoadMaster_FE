@@ -57,22 +57,31 @@ export type ImportFileError =
   | { readonly kind: 'error'; readonly code: 'BATCH_TOO_LARGE'; readonly params: { max: number; rows: number } }
   | { readonly kind: 'error'; readonly code: 'IMPORT_COLUMNS_MISSING'; readonly params: { columns: string[] } }
 
-/** Lỗi thấy được trước khi đọc file: đuôi file, dung lượng. */
-export function importFileError(file: { name: string; size: number }): ImportFileError | null {
+/** Lỗi thấy được trước khi đọc file: đuôi file, dung lượng (tối đa `maxMb`). */
+export function importFileError(file: { name: string; size: number }, maxMb = MAX_IMPORT_FILE_MB): ImportFileError | null {
   if (!/\.(csv|xlsx)$/i.test(file.name)) return { kind: 'error', code: 'UNSUPPORTED_FILE_TYPE', params: {} }
   if (file.size === 0) return { kind: 'error', code: 'EMPTY_FILE', params: {} }
-  if (file.size > MAX_IMPORT_FILE_MB * 1024 * 1024) return { kind: 'error', code: 'FILE_TOO_LARGE', params: { maxMb: MAX_IMPORT_FILE_MB } }
+  if (file.size > maxMb * 1024 * 1024) return { kind: 'error', code: 'FILE_TOO_LARGE', params: { maxMb } }
   return null
 }
 
+/**
+ * Lỗi của một dòng. `DUPLICATE_PACKAGE_CODE_IN_FILE` (trùng mã mà không biết dòng đầu) và `ROW_INVALID` (mã lỗi lạ) chỉ đến từ bản xem
+ * trước của backend.
+ */
 export type ImportRowError =
-  | { readonly code: 'PACKAGE_CODE_REQUIRED' | 'INVALID_WEIGHT' | 'DESTINATION_REQUIRED' }
+  | { readonly code: 'PACKAGE_CODE_REQUIRED' | 'INVALID_WEIGHT' | 'DESTINATION_REQUIRED' | 'DUPLICATE_PACKAGE_CODE_IN_FILE' | 'ROW_INVALID' }
   | { readonly code: 'INVALID_DIMENSION'; readonly field: 'length' | 'width' | 'height' }
   | { readonly code: 'INVALID_HANDLING_CLASS' | 'PACKAGE_TYPE_NOT_FOUND'; readonly value: string }
   | { readonly code: 'DUPLICATE_PACKAGE_CODE'; readonly firstLine: number }
 
-/** Cảnh báo không chặn nhập: mã của bên gửi đã có ở kiện `packageId` của kho kiện. */
-export type ImportRowWarning = { readonly code: 'PACKAGE_CODE_EXISTS'; readonly packageId: string }
+/**
+ * Cảnh báo không chặn nhập: mã của bên gửi đã có ở kiện `packageId` của kho kiện. Backend chỉ nói mã đã có, không nói kiện nào
+ * (`PACKAGE_CODE_EXISTS_ON_SERVER`); `ROW_WARNING` là cảnh báo lạ của backend.
+ */
+export type ImportRowWarning =
+  | { readonly code: 'PACKAGE_CODE_EXISTS'; readonly packageId: string }
+  | { readonly code: 'PACKAGE_CODE_EXISTS_ON_SERVER' | 'ROW_WARNING' }
 
 export type ImportRow = {
   readonly line: number
@@ -96,6 +105,8 @@ export type PackageImportPreview = {
   readonly valid: number
   readonly errorRows: number
   readonly warningRows: number
+  /** File đã đọc — khi kho là backend, bước xác nhận gửi lại đúng file này (backend đọc và kiểm lại). */
+  readonly file?: File
 }
 
 export type ImportContext = {

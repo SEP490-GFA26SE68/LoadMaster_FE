@@ -28,6 +28,7 @@ export const audit = {
     credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
     company: { created: 'Created a company', updated: 'Edited company information' },
     ticket: { created: 'Sent a support ticket', replied: 'Replied to a support ticket', statusChanged: 'Changed the support ticket status' },
+    contact: { received: 'A guest sent a contact request', updated: 'Updated a guest contact request' },
   },
   groups: {
     auth: 'Sign-in',
@@ -49,6 +50,7 @@ export const audit = {
     credit: 'Credits',
     company: 'Company',
     ticket: 'Support',
+    contact: 'Guest contacts',
   },
   log: {
     title: 'System log',
@@ -56,6 +58,8 @@ export const audit = {
     loading: 'Loading the log…',
     errorTitle: 'Could not load the log',
     errorDescription: 'The data store did not answer. Try again in a moment.',
+    unavailableTitle: 'The server has no activity log yet',
+    unavailableDescription: 'The LoadMaster server does not record what users do yet, so there are no events to show here.',
     retry: 'Try again',
     empty: 'No events yet.',
     noMatch: 'No event matches the filters.',
@@ -152,10 +156,13 @@ export const audit = {
       delayMinutes: 'Expected delay (min)',
       escalation: 'Reason sent up',
       route: 'Route',
-      // En-route pickup (FE-7-03 to FE-7-05)
+      // En-route pickup (FE-7-03 to FE-7-05); the trip's driver and the driver just replaced once the warehouse started loading
       pickupId: 'Pickup request',
       failedRules: 'Failed rules',
       driverId: 'Driver',
+      previousDriverId: 'Previous driver',
+      // The warehouse stages again after the trip went back to Planned (FE-6-02, FE-6-05)
+      replanReason: 'Re-staging reason',
       // Plan and credits (FE-8-01, FE-8-05)
       plan: 'Plan',
       credits: 'Credits',
@@ -163,8 +170,13 @@ export const audit = {
       // Support tickets (FE-8-07)
       ticketKind: 'Ticket type',
       ticketStatus: 'Status',
+      // Guest contact requests
+      contactType: 'Request type',
+      contactStatus: 'Status',
+      assignedTo: 'Assignee',
     },
     escalations: { NO_ROUTE: 'No feasible route', TIMEOUT: 'Not handled for over 30 minutes' },
+    replanReasons: { SHORTAGE: 'Missing package while staging', DAMAGED: 'Damaged package while loading' },
     fieldNames: {
       name: 'Trip name',
       vehicleId: 'Vehicle',
@@ -188,6 +200,9 @@ export const audit = {
       priority: 'Priority',
       note: 'Note',
       packageIds: 'Packages',
+      // Guest contact requests
+      status: 'Status',
+      assignedToId: 'Assignee',
     },
     reasons: { suspended: 'Account locked' },
     packageFields: {

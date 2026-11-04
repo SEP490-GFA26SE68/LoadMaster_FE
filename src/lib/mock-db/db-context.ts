@@ -8,6 +8,7 @@ import type { Package } from './package-model'
 import type { PickupRequest } from './pickup-model'
 import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
+import type { GuestContact } from './contact-model'
 import type { SupportTicket } from './support-model'
 import type {
   Company,
@@ -73,6 +74,9 @@ export type DbState = {
 
   // Yêu cầu hỗ trợ (FE-8-07)
   supportTickets: Map<string, SupportTicket>
+
+  /** Yêu cầu liên hệ của khách chưa có tài khoản (`ContactOfGuest`): không thuộc công ty nào. */
+  guestContacts: Map<string, GuestContact>
 }
 
 export type DbContext = {

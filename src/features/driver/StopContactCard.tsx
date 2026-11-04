@@ -1,4 +1,5 @@
 import { Navigation, Phone } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -7,9 +8,10 @@ import type { StopDelivery } from './driver-plan'
 /**
  * Điểm giao đang tới (V2.3 đợt 6): tên (Archivo), địa chỉ, người nhận và số điện thoại; dưới là hai nút phụ 56px **icon kèm chữ** — "Gọi"
  * (`tel:`, chỉ khi điểm có số — D-46) và "Chỉ đường" (mở bản đồ). Tên truy cập của nút vẫn đủ ("Gọi {tên}", "Chỉ đường tới {điểm}"). Cả hai
- * secondary: nút primary duy nhất của màn là hành động ở chân màn (mục 5).
+ * secondary: nút primary duy nhất của màn là hành động ở chân màn (mục 5). `children` nằm giữa phần chữ và hai nút — giờ đến và hạn giao
+ * của điểm (`StopEta`, FE-6-09).
  */
-export function StopContactCard({ stop }: { stop: StopDelivery }) {
+export function StopContactCard({ stop, children }: { stop: StopDelivery; children?: ReactNode }) {
   const t = useT()
   return (
     <div className="flex flex-none flex-col gap-3 rounded-lg border border-border bg-bg p-4 shadow-card">
@@ -22,6 +24,7 @@ export function StopContactCard({ stop }: { stop: StopDelivery }) {
           </span>
         ) : null}
       </div>
+      {children}
       <div className={cn('grid gap-2', stop.phone ? 'grid-cols-2' : 'grid-cols-1')}>
         {stop.phone ? (
           <Button variant="secondary" size="touch" aria-label={t('driver.call', { name: stop.contactName ?? stop.name })} asChild>

@@ -25,7 +25,7 @@ const ERRORS = {
   depotRequired: 'admin.users.errors.depotRequired',
 } as const satisfies Record<string, MessageKey>
 
-export function userFormSchema(scope: UserScope) {
+export function userFormSchema(scope: UserScope, { depot = true }: { depot?: boolean } = {}) {
   const roles = rolesInScope(scope) as readonly [Role, ...Role[]]
   return z.object({
     fullName: z.string().trim().min(1, ERRORS.fullNameRequired).max(80, ERRORS.fullNameTooLong),
@@ -41,7 +41,8 @@ export function userFormSchema(scope: UserScope) {
     // Vai trò ngoài phạm vi không có trong ô chọn; lọt vào (dữ liệu cũ) thì coi như chưa chọn
     role: z.enum(roles, { error: ERRORS.roleRequired }),
     depot: z.string().trim(),
-  }).refine((values) => scope === 'platform' || values.depot !== '', { error: ERRORS.depotRequired, path: ['depot'] })
+    // Form không có ô kho (tài khoản nền tảng, hay backend chưa lưu kho) thì không đòi kho
+  }).refine((values) => scope === 'platform' || !depot || values.depot !== '', { error: ERRORS.depotRequired, path: ['depot'] })
 }
 
 /** Dịch message của schema; message không phải key của schema thì bỏ qua. */

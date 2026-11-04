@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
 import type { CurrentSubscription, SubscriptionStatus } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
+import { BILLING_CAPABILITIES } from './billing-api'
 
 /** Gói đang dùng là xanh lá, đã huỷ nhưng còn hiệu lực là hổ phách (sắp hết), đã hết hạn là đỏ (chặn chạy tối ưu). */
 const STATUS_LOOK: Record<SubscriptionStatus, { tone: BadgeTone; dot: BadgeDot }> = {
@@ -31,6 +33,7 @@ export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscri
   const format = useFormat()
   const { subscription, plan } = current
   const look = STATUS_LOOK[subscription.status]
+  const tier = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
   return (
     <Card role="region" aria-labelledby="billing-plan">
       <CardHeader>
@@ -42,13 +45,15 @@ export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscri
       <div className="flex flex-col gap-4 p-4.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-display text-h2 leading-7 font-bold text-ink-strong font-stretch-112%">{plan.name}</span>
-          <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>
+          {tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}
           {plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
         </div>
         <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <Field label={t('billing.plan.started')}>{format.date(subscription.startedAt)}</Field>
           <Field label={t('billing.plan.expires')}>{format.date(subscription.expiresAt)}</Field>
-          <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
+          {BILLING_CAPABILITIES.autoRenew ? (
+            <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
+          ) : null}
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>

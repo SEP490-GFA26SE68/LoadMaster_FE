@@ -4,8 +4,15 @@
  */
 
 import type { VehicleConfig } from '@/domain/models'
+import { usesBackend } from '@/lib/backend-config'
 import { auditGroup, getMockDb, type AuditEvent, type AuditFilter, type AuditGroup, type Trip } from '@/lib/mock-db'
 import type { User } from '@/types/user'
+
+/**
+ * Nhật ký chỉ có ở kho mẫu. Người dùng đã nối backend (`users`) mà backend chưa có nhật ký: sự kiện của kho mẫu nói về tài khoản mẫu,
+ * không phải tài khoản thật trên màn Người dùng — màn nói backend chưa có nhật ký thay vì hiện chúng.
+ */
+export const AUDIT_LOG_AVAILABLE = !usesBackend('users')
 
 /**
  * Lớp gọi API của màn Nhật ký (LM-091, D-43) — nơi duy nhất trong màn biết về kho. Nối backend thật chỉ thay thân hàm.

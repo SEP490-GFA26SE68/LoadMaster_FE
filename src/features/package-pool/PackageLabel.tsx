@@ -6,6 +6,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { LABEL_SHEET } from './label-sheet'
 import type { PackageLabel as PackageLabelData } from './package-pool-api'
+import { PACKAGE_POOL_SUPPORT } from './usePackagePoolQuery'
 
 /** Bề rộng và chiều cao nhãn theo `em` của cỡ chữ gốc (`label-sheet.ts`): bản in gốc 4 mm, bản xem trên màn gốc 16 px. */
 const WIDTH_EM = LABEL_SHEET.labelWidthMm / LABEL_SHEET.baseMm
@@ -15,7 +16,8 @@ const HEIGHT_EM = LABEL_SHEET.labelHeightMm / LABEL_SHEET.baseMm
  * Một nhãn QR để dán lên kiện (LM-104, mẫu mới FE-3b-05): mã QR kèm mã chữ để gõ tay khi không quét được, mã của bên gửi, loại hàng,
  * kích thước (cm), khối lượng (kg), điểm đến, mã của kho kiện và công ty của kiện; kiện `FRAGILE` thêm dòng "Hàng dễ vỡ". Chữ dài
  * (mã, điểm đến) xuống dòng chứ không cắt. Góc trên có logo một màu (LM-105): in đen trắng vẫn rõ — nhãn không dùng nền màu, chỉ viền
- * và chữ. Cùng một component cho bản xem trên màn và bản in (`print`).
+ * và chữ. Cùng một component cho bản xem trên màn và bản in (`print`). Nối backend thì nhãn chỉ có chiều dài (backend không trả chiều
+ * rộng, chiều cao); kiện không có điểm đến thì không có dòng điểm đến.
  */
 export function PackageLabel({ label, print = false }: { label: PackageLabelData; print?: boolean }) {
   const t = useT()
@@ -54,17 +56,25 @@ export function PackageLabel({ label, print = false }: { label: PackageLabelData
       </div>
 
       <div className="grid grid-cols-2 gap-[0.6em] border-t border-n-900 pt-[0.5em]">
-        <Field name={t('qr.label.dimensions')}>
-          <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span>
-        </Field>
+        {PACKAGE_POOL_SUPPORT.fullSize ? (
+          <Field name={t('qr.label.dimensions')}>
+            <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span>
+          </Field>
+        ) : (
+          <Field name={t('sourcing.detail.length')}>
+            <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.length(pkg.lengthCm)}</span>
+          </Field>
+        )}
         <Field name={t('qr.label.weight')}>
           <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.weight(pkg.weightKg)}</span>
         </Field>
       </div>
 
-      <Field name={t('qr.label.destination')}>
-        <span className="text-[1em] leading-[1.25] font-semibold wrap-anywhere">{pkg.destination}</span>
-      </Field>
+      {pkg.destination === '' ? null : (
+        <Field name={t('qr.label.destination')}>
+          <span className="text-[1em] leading-[1.25] font-semibold wrap-anywhere">{pkg.destination}</span>
+        </Field>
+      )}
 
       {pkg.handlingClass === 'FRAGILE' ? (
         <p className="m-0 flex items-center justify-center gap-[0.4em] border-[0.14em] border-n-900 px-[0.6em] py-[0.35em] text-[1.3em] leading-none font-semibold">

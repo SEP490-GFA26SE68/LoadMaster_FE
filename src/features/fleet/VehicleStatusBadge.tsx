@@ -1,21 +1,22 @@
 import type { MouseEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
-import type { FleetVehicleState } from './vehicle-status'
+import type { FleetStatus, FleetVehicleState } from './vehicle-status'
 
 /**
  * Chip trạng thái xe theo ngữ pháp chấm V2.3 (Main.jpg): sẵn sàng chấm xanh lá, đang phục vụ chuyến xanh lam có quầng (đang chạy, cùng
- * tông với chuyến đang xếp / đang giao), bảo dưỡng chip xám.
+ * tông với chuyến đang xếp / đang giao), bảo dưỡng và ngừng sử dụng (chỉ backend có) chip xám — phân biệt bằng chữ.
  */
-const TONE: Record<VehicleStatus, { tone: BadgeTone; dot: BadgeDot }> = {
+const TONE: Record<FleetStatus, { tone: BadgeTone; dot: BadgeDot }> = {
   available: { tone: 'success', dot: 'solid' },
   in_use: { tone: 'azure', dot: 'halo' },
   maintenance: { tone: 'neutral', dot: 'solid' },
+  retired: { tone: 'neutral', dot: 'solid' },
 }
 
-export function VehicleStatusBadge({ status }: { status: VehicleStatus }) {
+export function VehicleStatusBadge({ status }: { status: FleetStatus }) {
   const t = useT()
   const spec = TONE[status]
   return <Badge tone={spec.tone} dot={spec.dot}>{t(`fleet.status.${status}`)}</Badge>
@@ -29,7 +30,7 @@ function stopRowClick(event: MouseEvent) {
 /**
  * Ô trạng thái ở danh sách đội xe (LM-089, V2.3): chip, dòng dưới là mã chuyến đang phục vụ (liên kết tới chuyến) kèm pha của
  * chuyến, hoặc "Từ <ngày> · <ghi chú bảo dưỡng>" (ghi chú tối đa hai dòng, đủ câu ở `title` và ở trang cấu hình xe). Xe sẵn
- * sàng không có dòng phụ.
+ * sàng không có dòng phụ. Mã chuyến chỉ có ở kho mẫu: chuyến đọc backend thì mã là chữ thường (`tripLinkable`).
  */
 export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
   const t = useT()
@@ -40,13 +41,15 @@ export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
       <VehicleStatusBadge status={state.status} />
       {state.status === 'in_use' && state.tripId ? (
         <span className="flex flex-wrap items-baseline gap-x-1.5 text-caption text-ink-3">
-          <Link
-            to={`/chuyen/${state.tripId}`}
-            onClick={stopRowClick}
-            className="rounded-sm font-mono font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            {state.tripId}
-          </Link>
+          {tripLinkable(false) ? (
+            <Link
+              to={`/chuyen/${state.tripId}`}
+              onClick={stopRowClick}
+              className="rounded-sm font-mono font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {state.tripId}
+            </Link>
+          ) : <span className="font-mono font-medium">{state.tripId}</span>}
           {state.tripPhase === 'loading' || state.tripPhase === 'loaded' || state.tripPhase === 'delivering' ? (
             <span>· {t(`fleet.tripPhase.${state.tripPhase}`)}</span>
           ) : null}

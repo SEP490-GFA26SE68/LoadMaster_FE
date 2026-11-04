@@ -1,6 +1,6 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: saveProfile, changePassword
+ *   chưa có ở BE: saveProfile, changePassword (PATCH /api/users/me, đổi mật khẩu của chính mình)
  *   isIncorrectPassword → không gọi BE (đọc mã lỗi)
  */
 

@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TemporaryPassword } from '@/lib/mock-db'
 import type { User } from '@/types/user'
+import { isSameAccount } from './account-guards'
 import type { UserFormValues } from './user-form.schema'
 import type { UserAction } from './UserRowMenu'
 import {
@@ -61,8 +62,8 @@ export function useUserActions() {
       setDialog({ kind: 'password', result, reason: 'created' })
     },
     async submitEdit(user: User, values: UserFormValues) {
-      await updateUser.mutateAsync({ id: user.id, changes: values })
-      if (user.id === currentUser?.id) refreshUser()
+      await updateUser.mutateAsync({ id: user.id, changes: values, current: user })
+      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser()
       toast.success(t('admin.users.updated', { name: values.fullName }))
       setDialog((current) => (current?.kind === 'edit' && current.user.id === user.id ? null : current))
     },

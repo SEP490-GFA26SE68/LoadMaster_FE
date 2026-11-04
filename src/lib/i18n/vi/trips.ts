@@ -858,4 +858,17 @@ export const trips = {
       notFoundDescription: 'Chuyến này không có lần chạy {run}, hoặc lần chạy đó không ra phương án nào.',
     },
   },
+  /** Danh sách và Chi tiết chuyến khi nhóm `trips` đọc backend: máy chủ mới có thông tin chuyến và điểm giao. */
+  backend: {
+    emptyDescription: 'Máy chủ chưa có chuyến nào của công ty.',
+    note: 'Chi tiết chuyến đọc từ máy chủ, mới gồm thông tin chuyến và điểm giao. Kiện, phương án xếp hàng, tiến độ kho và lịch sử của chuyến chưa có ở đây.',
+    stops: 'Điểm giao',
+    stopCount: { one: '{count} điểm giao', other: '{count} điểm giao' },
+    noStops: 'Chuyến chưa có điểm giao nào.',
+    origin: 'Kho xuất phát',
+    stopsLabel: 'Kho xuất phát rồi các điểm giao theo thứ tự đi',
+    stopStatuses: { PENDING: 'Chưa đến', ARRIVED: 'Xe đang ở điểm', COMPLETED: 'Đã giao xong' },
+    /** Giờ đến máy chủ tính từ vị trí xe (chuyến Đang vận chuyển) — không phải kết quả mock. */
+    liveEta: 'Máy chủ dự kiến đến {time} {date}',
+  },
 } as const

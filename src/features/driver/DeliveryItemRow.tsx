@@ -36,7 +36,10 @@ export function DeliveryItemRow({
 }) {
   const t = useT()
   const format = useFormat()
-  const where = t('driver.item.where', { area: t(`driver.item.area.${item.area}`), layer: t(`driver.item.layer.${item.layer}`) })
+  // Vùng, lớp và khối lượng chỉ hiện khi có (backend chưa trả chỗ xếp cho tài xế)
+  const where = item.area !== undefined && item.layer !== undefined
+    ? t('driver.item.where', { area: t(`driver.item.area.${item.area}`), layer: t(`driver.item.layer.${item.layer}`) })
+    : undefined
   const rejected = !done && verification?.manual?.status === 'MANUAL_REJECTED' ? verification.manual : undefined
 
   return (
@@ -50,16 +53,19 @@ export function DeliveryItemRow({
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-x-2">
-          <span className="font-mono text-body-lg leading-5.5 font-semibold text-text">{item.id}</span>
+          <span className="font-mono text-body-lg leading-5.5 font-semibold text-text">{item.label ?? item.id}</span>
           <span className="font-mono text-body-lg leading-5.5 text-text-3">{t('driver.item.order', { order: item.unloadingOrder })}</span>
         </div>
         <span className="text-body-lg leading-5.5 text-pretty text-text-2">
-          {item.name} · <span className="font-mono">{format.weight(item.weightKg)}</span>
+          {item.name}
+          {item.weightKg === undefined ? null : <> · <span className="font-mono">{format.weight(item.weightKg)}</span></>}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-body-lg leading-5.5 text-text-3">
-          <Package className="size-4 flex-none" strokeWidth={2} aria-hidden />
-          {where}
-        </span>
+        {where === undefined ? null : (
+          <span className="inline-flex items-center gap-1.5 text-body-lg leading-5.5 text-text-3">
+            <Package className="size-4 flex-none" strokeWidth={2} aria-hidden />
+            {where}
+          </span>
+        )}
         {done ? (
           <span className="inline-flex items-center gap-1.5 text-body-lg leading-5.5 font-medium text-badge-success-fg">
             <CircleCheck className="size-4 flex-none" strokeWidth={2} aria-hidden />

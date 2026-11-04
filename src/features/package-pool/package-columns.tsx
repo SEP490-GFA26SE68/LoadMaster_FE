@@ -88,6 +88,11 @@ function DimensionsCell({ row }: { row: PackageRow }) {
   return <span className="font-mono text-caption text-ink-1 tabular-nums">{format.dimensions(row.lengthCm, row.widthCm, row.heightCm)}</span>
 }
 
+function LengthCell({ value }: { value: number }) {
+  const format = useFormat()
+  return <span className="font-mono text-caption text-ink-1 tabular-nums">{format.length(value)}</span>
+}
+
 function WeightCell({ value }: { value: number }) {
   const format = useFormat()
   return <span className="font-mono text-caption text-ink-1 tabular-nums">{format.weight(value)}</span>
@@ -117,6 +122,7 @@ const selectHeader = () => <SelectHeader />
 const selectCell = (info: Cell<unknown>) => <SelectCell id={info.row.original.id} />
 const codeCell = (info: Cell<string>) => <CodeCell row={info.row.original} />
 const dimensionsCell = (info: Cell<unknown>) => <DimensionsCell row={info.row.original} />
+const lengthCell = (info: Cell<number>) => <LengthCell value={info.getValue()} />
 const weightCell = (info: Cell<number>) => <WeightCell value={info.getValue()} />
 const classCell = (info: Cell<PackageRow['handlingClass']>) => <HandlingClassChip handlingClass={info.getValue()} />
 const destinationCell = (info: Cell<string>) => <span className="line-clamp-2 whitespace-normal text-ink-1">{info.getValue()}</span>
@@ -125,25 +131,32 @@ const flagsCell = (info: Cell<unknown>) => <FlagsCell row={info.row.original} />
 const requirementCell = (info: Cell<unknown>) => <RequirementCell row={info.row.original} />
 const tripCell = (info: Cell<unknown>) => <TripCell row={info.row.original} />
 
+/** Cột có nguồn dữ liệu (`PACKAGE_POOL_SUPPORT`): danh sách của backend không trả chiều rộng, chiều cao, điểm đến, cờ, yêu cầu giao, chuyến. */
+export type PackageColumnSupport = { readonly fullSize: boolean; readonly listDestinations: boolean; readonly flags: boolean; readonly links: boolean }
+
 /**
  * Cột bảng kho kiện (FE-3b-03): chọn (chỉ người in được nhãn) · mã kiện của bên gửi (+ mã của kho) · kích thước · khối lượng · loại
  * hàng · điểm đến · trạng thái · cờ · yêu cầu giao · chuyến. Panel chi tiết đang mở thì bỏ bốn cột đã có trong panel (kích thước, khối
- * lượng, yêu cầu giao, chuyến) để bảng còn đủ chỗ cho mã kiện và điểm đến ở 1.366 px.
+ * lượng, yêu cầu giao, chuyến) để bảng còn đủ chỗ cho mã kiện và điểm đến ở 1.366 px. Cột không có nguồn bị bỏ (`support`); chỉ có
+ * chiều dài thì cột kích thước là cột chiều dài.
  */
-export function packageColumns(t: TFunction, { selectable, panelOpen }: { selectable: boolean; panelOpen: boolean }) {
-  const label = (key: 'code' | 'dimensions' | 'weight' | 'handlingClass' | 'destination' | 'status' | 'flags' | 'requirement' | 'trip') => t(`sourcing.packages.columns.${key}`)
+export function packageColumns(t: TFunction, { selectable, panelOpen, support }: { selectable: boolean; panelOpen: boolean; support: PackageColumnSupport }) {
+  const label = (key: 'code' | 'dimensions' | 'length' | 'weight' | 'handlingClass' | 'destination' | 'status' | 'flags' | 'requirement' | 'trip') => t(`sourcing.packages.columns.${key}`)
   return helper.columns([
     ...(selectable ? [helper.display({ id: 'select', header: selectHeader, meta: { width: '48px' } satisfies ColumnMeta, cell: selectCell })] : []),
     helper.accessor('packageCode', { id: 'code', header: label('code'), enableSorting: true, meta: { width: '178px' } satisfies ColumnMeta, cell: codeCell }),
     ...(panelOpen ? [] : [
-      helper.display({ id: 'dimensions', header: label('dimensions'), meta: { width: '156px' } satisfies ColumnMeta, cell: dimensionsCell }),
+      support.fullSize
+        ? helper.display({ id: 'dimensions', header: label('dimensions'), meta: { width: '156px' } satisfies ColumnMeta, cell: dimensionsCell })
+        : helper.accessor('lengthCm', { id: 'length', header: label('length'), enableSorting: true, meta: { width: '128px', align: 'right' } satisfies ColumnMeta, cell: lengthCell }),
       helper.accessor('weightKg', { id: 'weight', header: label('weight'), enableSorting: true, meta: { width: '128px', align: 'right' } satisfies ColumnMeta, cell: weightCell }),
     ]),
     helper.accessor('handlingClass', { header: label('handlingClass'), meta: { width: '132px' } satisfies ColumnMeta, cell: classCell }),
-    helper.accessor('destination', { header: label('destination'), enableSorting: true, cell: destinationCell }),
-    helper.accessor('status', { header: label('status'), meta: { width: '156px' } satisfies ColumnMeta, cell: statusCell }),
-    helper.display({ id: 'flags', header: label('flags'), meta: { width: '124px' } satisfies ColumnMeta, cell: flagsCell }),
-    ...(panelOpen ? [] : [
+    ...(support.listDestinations ? [helper.accessor('destination', { header: label('destination'), enableSorting: true, cell: destinationCell })] : []),
+    // Không có cột điểm đến (cột giãn của bảng) thì cột trạng thái nhận phần bề rộng còn lại
+    helper.accessor('status', { header: label('status'), meta: (support.listDestinations ? { width: '156px' } : {}) satisfies ColumnMeta, cell: statusCell }),
+    ...(support.flags ? [helper.display({ id: 'flags', header: label('flags'), meta: { width: '124px' } satisfies ColumnMeta, cell: flagsCell })] : []),
+    ...(panelOpen || !support.links ? [] : [
       helper.display({ id: 'requirement', header: label('requirement'), meta: { width: '104px' } satisfies ColumnMeta, cell: requirementCell }),
       helper.display({ id: 'trip', header: label('trip'), meta: { width: '128px' } satisfies ColumnMeta, cell: tripCell }),
     ]),

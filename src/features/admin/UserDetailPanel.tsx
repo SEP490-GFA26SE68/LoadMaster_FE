@@ -7,6 +7,7 @@ import type { AccountGuards } from './account-guards'
 import { UserDetailActions } from './UserDetailActions'
 import { LastActive, RoleLabel, UserAvatar, UserCompany, UserDepot, UserStatusBadge } from './user-look'
 import type { UserAction } from './UserRowMenu'
+import { userActivityAvailable, userDepotAvailable } from './useUsersQuery'
 
 /**
  * Panel chi tiết người dùng (V2), cột phải của tab Tài khoản: danh tính (ô chữ viết tắt vuông bo góc, tên, email, vai trò, trạng thái),
@@ -69,8 +70,8 @@ export function UserDetailPanel({ id, user, guards, company, onAction, onClose }
             {company ? (
               <Field label={t('admin.users.columns.company')}><UserCompany companyId={company.id} name={company.name} /></Field>
             ) : null}
-            <Field label={t('admin.users.columns.depot')}><UserDepot value={user.depot} /></Field>
-            <Field label={t('admin.users.columns.lastActive')}><LastActive value={user.lastActiveAt} /></Field>
+            {userDepotAvailable ? <Field label={t('admin.users.columns.depot')}><UserDepot value={user.depot} /></Field> : null}
+            {userActivityAvailable ? <Field label={t('admin.users.columns.lastActive')}><LastActive value={user.lastActiveAt} /></Field> : null}
           </dl>
         </section>
 

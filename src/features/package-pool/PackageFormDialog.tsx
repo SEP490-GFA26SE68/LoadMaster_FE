@@ -10,14 +10,15 @@ import { HANDLING_CLASSES } from '@/domain/models'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { Package } from '@/lib/mock-db'
 import { EMPTY_PACKAGE, isPackageFormError, NO_PACKAGE_TYPE, packageFormSchema, toPackageInput, type PackageFormValues } from './package-form'
-import { useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
+import { PACKAGE_POOL_SUPPORT, useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
 
 type NumberField = 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg'
 
 /**
  * "Thêm kiện" (FE-3b-03): một kiện với cùng trường của file nhập — mã của bên gửi, D × R × C (cm), khối lượng (kg), loại hàng, điểm
  * đến, loại kiện (không bắt buộc). Kiện thuộc công ty của người thêm (kho lấy từ phiên) nên không có ô chọn công ty. Lưu xong kho đã
- * cấp mã QR: `onDone` nhận kiện vừa tạo để màn mở chi tiết có mã QR. Kho từ chối thì câu lỗi hiện trong hộp thoại.
+ * cấp mã QR: `onDone` nhận kiện vừa tạo để màn mở chi tiết có mã QR. Kho từ chối thì câu lỗi hiện trong hộp thoại. Nối backend thì không
+ * có ô loại kiện (backend chưa mở danh mục loại kiện cho điều phối viên).
  */
 export function PackageFormDialog({ onClose, onDone }: {
   onClose: () => void
@@ -55,7 +56,7 @@ export function PackageFormDialog({ onClose, onDone }: {
             <Input
               label={t('sourcing.form.packageCode')}
               placeholder={t('sourcing.form.packageCodePlaceholder')}
-              hint={t('sourcing.form.packageCodeHint')}
+              hint={PACKAGE_POOL_SUPPORT.numericIds ? t('sourcing.form.packageCodeHintBackend') : t('sourcing.form.packageCodeHint')}
               className="font-mono"
               error={errorText(errors.packageCode?.message)}
               {...register('packageCode')}
@@ -79,16 +80,18 @@ export function PackageFormDialog({ onClose, onDone }: {
               error={errorText(errors.destination?.message)}
               {...register('destination')}
             />
-            <SelectField
-              control={control}
-              name="packageTypeId"
-              label={t('sourcing.form.packageType')}
-              hint={t('sourcing.form.packageTypeHint')}
-              options={[
-                { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
-                ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
-              ]}
-            />
+            {PACKAGE_POOL_SUPPORT.packageTypes ? (
+              <SelectField
+                control={control}
+                name="packageTypeId"
+                label={t('sourcing.form.packageType')}
+                hint={t('sourcing.form.packageTypeHint')}
+                options={[
+                  { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
+                  ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
+                ]}
+              />
+            ) : null}
             {create.error ? <Banner tone="danger">{dataErrorMessage(create.error, t)}</Banner> : null}
           </div>
           <DialogFooter>

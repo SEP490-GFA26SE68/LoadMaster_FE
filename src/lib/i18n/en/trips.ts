@@ -786,4 +786,15 @@ export const trips = {
       notFoundDescription: 'This trip has no run {run}, or that run produced no plan.',
     },
   },
+  backend: {
+    emptyDescription: 'The server has no trips for this company yet.',
+    note: 'Trip details come from the server and only cover the trip and its stops. Packages, load plans, warehouse progress and trip history are not available here yet.',
+    stops: 'Delivery stops',
+    stopCount: { one: '{count} delivery stop', other: '{count} delivery stops' },
+    noStops: 'This trip has no delivery stops yet.',
+    origin: 'Departure depot',
+    stopsLabel: 'Departure depot, then the delivery stops in driving order',
+    stopStatuses: { PENDING: 'Not reached', ARRIVED: 'Vehicle at stop', COMPLETED: 'Delivered' },
+    liveEta: 'Server ETA {time} {date}',
+  },
 } satisfies Dictionary<typeof source>

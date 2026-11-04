@@ -35,7 +35,7 @@ test('only ACTIVE can sign in', () => {
   expect(isActiveOnBackend('INACTIVE')).toBe(false)
 })
 
-test('identity comes from the backend; id, company and depot stay those of the sample account', () => {
+test('identity comes from the backend; id and company stay those of the sample account, its depot is dropped (the backend has none)', () => {
   const standIn: User = {
     id: 'US-0001', fullName: 'Trần Thị Hoa', email: 'dieuphoi@loadmaster.vn', phone: '0901 234 567', role: 'dispatcher', status: 'active',
     depot: 'Kho Long Bình', lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001',
@@ -46,6 +46,6 @@ test('identity comes from the backend; id, company and depot stay those of the s
   }
   expect(userFromBackend(profile, 'dispatcher', standIn)).toStrictEqual({
     id: 'US-0001', fullName: 'Nguyễn Hoài An', email: 'an@fastmove.vn', phone: '', role: 'dispatcher', status: 'active',
-    depot: 'Kho Long Bình', lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001',
+    lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001',
   })
 })

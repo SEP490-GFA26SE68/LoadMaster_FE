@@ -25,7 +25,7 @@ async function expectNotFound(page: Page, tripId: string, vehicleId: string) {
 }
 
 test('each dispatcher sees only the trips and vehicles of their company; a trip of the other company opened by URL is not found', async ({ page, browserErrors }) => {
-  await page.goto('/')
+  await page.goto('/dang-nhap')
 
   // Phương Nam: hai chuyến và hai xe của seed Phương Nam
   await signInWith(page, 'dieuphoi@phuongnam.vn')

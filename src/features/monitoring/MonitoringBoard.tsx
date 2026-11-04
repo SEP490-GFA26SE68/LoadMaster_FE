@@ -2,11 +2,11 @@ import { RouteMap } from '@/components/map'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useT } from '@/lib/i18n'
-import type { TripMonitoring } from '@/lib/mock-db'
-import type { MonitoringBoard as Board, MonitoringTrip } from './monitoring-api'
+import type { MonitoringBoard as Board, LiveMonitoring, MonitoringTrip } from './monitoring-api'
 import { MonitoringTripList } from './MonitoringTripList'
 import { MonitoringTripPanel } from './MonitoringTripPanel'
 import { matchesFilter, selectedTripId, tripSummary, type MonitoringFilter } from './monitoring-view'
+import { useMonitoringCapabilities } from './useMonitoringQuery'
 import { useFleetMonitoringQuery } from './useTrackingQuery'
 
 /**
@@ -57,10 +57,13 @@ export function MonitoringBoard({ board, filter, requestedTripId, onToggleFilter
 
 /**
  * Bản đồ các xe Đang vận chuyển: xe của mọi chuyến kèm nhãn mã chuyến và nguồn vị trí ("Mô phỏng" / "GPS"); tuyến, kho và điểm giao
- * (màu điểm giao kèm số) là của chuyến đang chọn. Vị trí mô phỏng là kết quả mock nên thẻ mang nhãn MOCK RESULT.
+ * (màu điểm giao kèm số) là của chuyến đang chọn. Vị trí mô phỏng là kết quả mock nên thẻ mang nhãn MOCK RESULT; vị trí của backend là
+ * điểm GPS máy chủ nhận, chỉ mang nhãn khi backend tự báo là kết quả mock.
  */
-function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]; fleet: readonly TripMonitoring[]; selected: MonitoringTrip | undefined }) {
+function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]; fleet: readonly LiveMonitoring[]; selected: MonitoringTrip | undefined }) {
   const t = useT()
+  const caps = useMonitoringCapabilities()
+  const mock = !caps.backend || fleet.some((live) => live.isMockResult)
   const tripOf = new Map(trips.map((trip) => [trip.tripId, trip]))
   const vehicles = fleet.flatMap((live) => {
     const trip = tripOf.get(live.tripId)
@@ -81,11 +84,15 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle as="h2">{t('monitoring.map.title')}</CardTitle>
-        <Badge shape="tag" tone="mock">MOCK RESULT</Badge>
+        {mock ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
         <CardMeta className="basis-full">{t('monitoring.map.note')}</CardMeta>
       </CardHeader>
       <CardBody className="flex flex-col gap-2.5">
-        {hasPosition ? null : <p role="status" className="m-0 text-small text-ink-2">{t('monitoring.map.noPosition', { id: selected?.tripId ?? '' })}</p>}
+        {hasPosition ? null : (
+          <p role="status" className="m-0 text-small text-ink-2">
+            {t(caps.backend ? 'monitoring.backend.noPosition' : 'monitoring.map.noPosition', { id: selected?.tripId ?? '' })}
+          </p>
+        )}
         <RouteMap
           label={t('monitoring.map.label')}
           className="h-112"

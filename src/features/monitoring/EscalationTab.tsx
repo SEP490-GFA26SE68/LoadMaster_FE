@@ -13,6 +13,7 @@ import { escalationRows, type EscalationRow } from './monitoring-view'
 import { RenegotiateDialog } from './RenegotiateDialog'
 import { ExceptionFacts } from './TripExceptionList'
 import { useMoment } from './useMoment'
+import { useMonitoringCapabilities } from './useMonitoringQuery'
 import { useFleetMonitoringQuery } from './useTrackingQuery'
 
 /**
@@ -49,6 +50,7 @@ function EscalationItem({ row, userNames, onRenegotiate }: { row: EscalationRow;
   const t = useT()
   const format = useFormat()
   const moment = useMoment()
+  const caps = useMonitoringCapabilities()
   const { exception, trip, stops } = row
   return (
     <li>
@@ -61,9 +63,11 @@ function EscalationItem({ row, userNames, onRenegotiate }: { row: EscalationRow;
         <p className="m-0 text-body text-ink-1">{exception.description}</p>
         <ExceptionFacts exception={exception} userNames={userNames} />
         <p className="m-0 text-small text-ink-2">
-          <Link to={`/chuyen/${encodeURIComponent(trip.tripId)}`} className="font-medium text-primary underline-offset-2 hover:underline focus-visible:underline">
-            {t('monitoring.escalations.trip', { id: trip.tripId })}
-          </Link>
+          {caps.openTrip ? (
+            <Link to={`/chuyen/${encodeURIComponent(trip.tripId)}`} className="font-medium text-primary underline-offset-2 hover:underline focus-visible:underline">
+              {t('monitoring.escalations.trip', { id: trip.tripId })}
+            </Link>
+          ) : <span className="font-medium text-ink-1">{t('monitoring.escalations.trip', { id: trip.tripId })}</span>}
           {' · '}{trip.name}{' · '}<VehicleName name={trip.vehicleName} />
         </p>
         {stops.length === 0 ? (

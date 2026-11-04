@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { MockDbError, type MockDbErrorCode, type MockDbErrorParams } from '@/lib/mock-db/errors'
+import { ApiError } from '@/lib/api-client'
 import { createTranslator, dataErrorMessage } from '@/lib/i18n'
 
 /** Một bộ tham số mẫu cho mỗi mã lỗi của kho — thiếu mã là lỗi kiểu. */
@@ -107,6 +108,7 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   COMPANY_INVALID: { field: 'admin.email' },
   TICKET_INVALID: { field: 'title' },
   TICKET_CLOSED: { ticketId: 'TKT-002' },
+  CONTACT_INVALID: { field: 'email' },
 }
 
 test('every data error code has a vi and en sentence with every placeholder filled', () => {
@@ -147,4 +149,26 @@ test('a record of another company is named by its id, never by the company it be
   const error = new MockDbError('FORBIDDEN_COMPANY', SAMPLES.FORBIDDEN_COMPANY)
   expect(dataErrorMessage(error, createTranslator('vi'))).toBe('TRIP-PN-001 thuộc công ty khác nên không dùng được.')
   expect(dataErrorMessage(error, createTranslator('en'))).toBe('TRIP-PN-001 belongs to another company and cannot be used.')
+})
+
+test('backend errors use the sentence of their code, never the raw server message; unknown codes fall back', () => {
+  expect(dataErrorMessage(new ApiError('EMAIL_ALREADY_EXISTS', { status: 409 }), createTranslator('vi'))).toBe('Email này đã có người dùng.')
+  expect(dataErrorMessage(new ApiError('NETWORK_ERROR'), createTranslator('en'))).toBe('Cannot reach the server. Check the network and try again.')
+  // Mã backend vừa thêm mà app chưa có câu: câu theo loại lỗi HTTP, không phải câu "có lỗi" chung
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 400 }), createTranslator('en'))).toBe(
+    'The server did not accept this action: the data is not valid or the current state does not allow it.',
+  )
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 409 }), createTranslator('vi'))).toBe(
+    'Dữ liệu bị trùng hoặc đã thay đổi trên máy chủ. Tải lại rồi thử lại.',
+  )
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 500 }), createTranslator('en'))).toBe('The server ran into an error. Try again later.')
+})
+
+test('a guest contact error names the field in the language of the screen, not by its code', () => {
+  const email = new MockDbError('CONTACT_INVALID', { field: 'email' })
+  expect(dataErrorMessage(email, createTranslator('vi'))).toBe('Mục "Email" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
+  expect(dataErrorMessage(email, createTranslator('en'))).toBe('The "Email" field of the contact request is not valid. Check it and try again.')
+  const assignee = new MockDbError('CONTACT_INVALID', { field: 'assignedToId' })
+  expect(dataErrorMessage(assignee, createTranslator('vi'))).toBe('Mục "Người nhận việc" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
+  expect(dataErrorMessage(assignee, createTranslator('en'))).toBe('The "Assignee" field of the contact request is not valid. Check it and try again.')
 })

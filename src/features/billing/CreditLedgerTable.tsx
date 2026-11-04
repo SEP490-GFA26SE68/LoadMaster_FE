@@ -38,7 +38,13 @@ function columnsOf(t: TFunction, format: Formatter) {
       meta: { align: 'right', width: '120px' } satisfies ColumnMeta,
       cell: (info) => <span className={mono}>{signed(format, info.getValue())}</span>,
     }),
-    helper.accessor('reference', { id: 'reference', header: t('billing.ledger.columns.reference'), meta: { width: '150px' } satisfies ColumnMeta, cell: (info) => <span className={mono}>{info.getValue()}</span> }),
+    helper.accessor('reference', {
+      id: 'reference',
+      header: t('billing.ledger.columns.reference'),
+      meta: { width: '150px' } satisfies ColumnMeta,
+      // Tham chiếu của máy chủ có thể là mã giao dịch dài hay UUID: cắt trong cột, đủ chữ ở title, không tràn sang cột Ghi chú
+      cell: (info) => <span className={`${mono} block truncate`} title={info.getValue()}>{info.getValue()}</span>,
+    }),
     helper.display({
       id: 'note',
       header: t('billing.ledger.columns.note'),

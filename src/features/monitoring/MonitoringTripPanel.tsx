@@ -10,30 +10,31 @@ import { useCan } from '@/features/auth/useCan'
 import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
 import { useFormat, useT } from '@/lib/i18n'
-import type { TripMonitoring } from '@/lib/mock-db'
 import { LiveLocationBar } from './LiveLocationBar'
 import { LocationHistory } from './LocationHistory'
-import type { MonitoringTrip } from './monitoring-api'
+import type { LiveMonitoring, MonitoringTrip } from './monitoring-api'
 import { DeadlineChip } from './monitoring-chips'
-import { fixedStopCount } from './monitoring-view'
+import { doneWithoutTime, fixedStopCount } from './monitoring-view'
 import { ReorderStopsDialog } from './ReorderStopsDialog'
 import { ReportExceptionDialog } from './ReportExceptionDialog'
 import { RerouteDialog } from './RerouteDialog'
 import { TripExceptionList } from './TripExceptionList'
-import { useTripChannel } from './useMonitoringQuery'
+import { useMonitoringCapabilities, useTripChannel } from './useMonitoringQuery'
 import { useMoment } from './useMoment'
 
 /**
  * Chi tiết giám sát của chuyến đang chọn (FE-6-10, FE-6-11): giờ đến dự kiến của từng điểm so với hạn, sự cố của chuyến, lịch sử vị
  * trí và các xác nhận tay chờ duyệt (thẻ của Chi tiết chuyến, dùng lại). Người có `exceptions.report` (điều phối viên) có nút chính của
  * màn — "Báo sự cố". Thành phần nghe kênh cập nhật của chuyến (`useTripChannel`) để lịch sử vị trí theo kịp xe. `memo`: lần đọc giám sát
- * mới chỉ vẽ lại phần này khi chính chuyến đang chọn có điều gì đổi.
+ * mới chỉ vẽ lại phần này khi chính chuyến đang chọn có điều gì đổi. Dữ liệu từ backend: không liên kết tới Chi tiết chuyến, không đổi
+ * thứ tự điểm, không xác nhận tay, không nhận hàng dọc đường (`useMonitoringCapabilities`).
  */
-export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, live, userNames }: { trip: MonitoringTrip; live: TripMonitoring | undefined; userNames: Readonly<Record<string, string>> }) {
+export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, live, userNames }: { trip: MonitoringTrip; live: LiveMonitoring | undefined; userNames: Readonly<Record<string, string>> }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
   const moment = useMoment()
+  const caps = useMonitoringCapabilities()
   const [reporting, setReporting] = useState(false)
   const [rerouting, setRerouting] = useState(false)
   const [reordering, setReordering] = useState(false)
@@ -43,21 +44,24 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
   const stopName = (stopNumber: number) => trip.stops.find((stop) => stop.number === stopNumber)?.name ?? ''
   // Đổi thứ tự cần ít nhất hai điểm chưa giao và chưa tới (FE-BL-03); không thì nút mờ kèm lý do
   const canReorder = trip.stops.length - fixedStopCount(trip.stops) >= 2
+  const reorderable = caps.reorderStops && can('routes.optimize')
 
   return (
     <section aria-label={t('monitoring.panel.label', { id: trip.tripId })} className="flex flex-col gap-3">
       <Card>
         <CardHeader>
-          <CardTitle as="h2"><span className="font-mono tabular-nums">{trip.tripId}</span> · {trip.name}</CardTitle>
+          <CardTitle as="h2"><span className="font-mono tabular-nums">{trip.tripId}</span>{trip.name === '' ? null : <> · {trip.name}</>}</CardTitle>
           <CardMeta><VehicleName name={trip.vehicleName} /></CardMeta>
           <CardActions className="flex-wrap">
-            <Button asChild variant="secondary" size="sm">
-              <Link to={`/chuyen/${encodeURIComponent(trip.tripId)}`}>
-                <ExternalLink strokeWidth={1.5} />
-                {t('monitoring.panel.openTrip')}
-              </Link>
-            </Button>
-            {can('routes.optimize') ? (
+            {caps.openTrip ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link to={`/chuyen/${encodeURIComponent(trip.tripId)}`}>
+                  <ExternalLink strokeWidth={1.5} />
+                  {t('monitoring.panel.openTrip')}
+                </Link>
+              </Button>
+            ) : null}
+            {reorderable ? (
               <Button
                 variant="secondary"
                 size="sm"
@@ -69,7 +73,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                 {t('monitoring.reorder.open')}
               </Button>
             ) : null}
-            {can('routes.optimize') && !canReorder ? <span id={`${trip.tripId}-reorder-reason`} className="sr-only">{t('monitoring.reorder.unavailable')}</span> : null}
+            {reorderable && !canReorder ? <span id={`${trip.tripId}-reorder-reason`} className="sr-only">{t('monitoring.reorder.unavailable')}</span> : null}
             {can('exceptions.report') ? (
               <Button onClick={() => setReporting(true)}>
                 <TriangleAlert strokeWidth={1.5} />
@@ -79,7 +83,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
           </CardActions>
         </CardHeader>
         <CardBody className="flex flex-col gap-3">
-          {live?.location ? <LiveLocationBar location={live.location} isMockResult={live.isMockResult} /> : null}
+          {live?.location ? <LiveLocationBar location={live.location} isMockResult={live.isMockResult} backend={caps.backend} /> : null}
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-160 border-collapse text-body">
               <caption className="pb-2 text-left font-display text-h3 font-[650] text-ink-strong">{t('monitoring.panel.stops.title')}</caption>
@@ -94,6 +98,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
               <tbody>
                 {trip.stops.map((stop) => {
                   const eta = etaOf.get(stop.id)
+                  const done = caps.backend && doneWithoutTime(stop, live)
                   return (
                     <tr key={stop.id} className="border-b border-line-soft last:border-b-0">
                       <th scope="row" className="py-2.5 pr-3 text-left font-medium text-ink-1">
@@ -113,18 +118,21 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                       <td className="px-3 py-2.5 text-ink-1 tabular-nums">
                         {stop.completedAt !== undefined
                           ? t('monitoring.panel.stops.completed', { time: format.time(stop.completedAt) })
-                          : eta === undefined
-                            ? t('monitoring.panel.stops.noEta')
-                            : eta.arrived ? t('monitoring.panel.stops.arrived', { time: format.time(eta.eta) }) : moment(eta.eta)}
+                          : done
+                            ? t('monitoring.backend.completed')
+                            : eta === undefined
+                              ? t('monitoring.panel.stops.noEta')
+                              : eta.arrived ? t('monitoring.panel.stops.arrived', { time: format.time(eta.eta) }) : moment(eta.eta)}
                       </td>
                       <td className="px-3 py-2.5 text-ink-1 tabular-nums">{eta?.deadline === undefined ? t('monitoring.panel.stops.noDeadline') : moment(eta.deadline)}</td>
-                      <td className="py-2.5 pl-3">{stop.completedAt === undefined && eta?.deadlineStatus !== undefined ? <DeadlineChip status={eta.deadlineStatus} /> : null}</td>
+                      <td className="py-2.5 pl-3">{stop.completedAt === undefined && !done && eta?.deadlineStatus !== undefined ? <DeadlineChip status={eta.deadlineStatus} /> : null}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
+          {caps.backend ? <p className="m-0 text-note text-ink-3">{t('monitoring.backend.deadlineNote')}</p> : null}
         </CardBody>
       </Card>
 
@@ -146,6 +154,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
               exceptions={live?.exceptions ?? []}
               userNames={userNames}
               canResolve={can('exceptions.resolve')}
+              canEscalate={caps.escalation}
               onReroute={() => setRerouting(true)}
             />
           </CardBody>
@@ -153,10 +162,10 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
         <LocationHistory tripId={trip.tripId} />
       </div>
 
-      <ManualConfirmCard tripId={trip.tripId} />
-      <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} />
+      {caps.manualConfirm ? <ManualConfirmCard tripId={trip.tripId} /> : null}
+      {caps.pickups ? <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} /> : null}
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
-      <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} />
+      {caps.reorderStops ? <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} /> : null}
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />
     </section>
   )

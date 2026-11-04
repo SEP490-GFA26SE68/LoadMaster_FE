@@ -4,11 +4,13 @@
  */
 export const support = {
   kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán' },
-  statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', CLOSED: 'Đã đóng' },
+  statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Hộp thoại của người dùng công ty. */
   mine: {
     title: 'Yêu cầu hỗ trợ',
     description: 'Gửi vấn đề kỹ thuật hoặc thanh toán cho đội hỗ trợ LoadMaster và theo dõi trả lời. Bạn chỉ thấy yêu cầu do chính bạn gửi.',
+    /** Nối backend: chưa có trao đổi, chỉ theo dõi trạng thái. */
+    descriptionStatusOnly: 'Gửi vấn đề kỹ thuật hoặc thanh toán cho đội hỗ trợ LoadMaster và theo dõi trạng thái xử lý. Danh sách chỉ gồm yêu cầu do chính bạn gửi.',
     loading: 'Đang tải yêu cầu hỗ trợ',
     retry: 'Thử lại',
     new: 'Gửi yêu cầu mới',
@@ -17,6 +19,7 @@ export const support = {
     close: 'Đóng',
     replies: { one: '{count} trả lời', other: '{count} trả lời' },
     updated: 'Cập nhật {time}',
+    sent: 'Gửi {time}',
     open: 'Mở yêu cầu {title}',
   },
   form: {
@@ -48,6 +51,8 @@ export const support = {
     closed: 'Yêu cầu đã đóng nên không thêm trả lời được.',
     closedSupport: 'Yêu cầu đã đóng. Mở lại để trả lời tiếp.',
     sentBy: 'Gửi bởi {name} lúc {time}',
+    supportNote: 'Phản hồi của đội hỗ trợ',
+    statusOnly: 'Yêu cầu này theo dõi bằng trạng thái; hệ thống chưa có trao đổi qua lại.',
     errors: { replyRequired: 'Nhập nội dung trả lời', replyTooLong: 'Tối đa {max} ký tự' },
   },
   /** Màn `/ho-tro` của Hỗ trợ khách hàng. */
@@ -59,6 +64,7 @@ export const support = {
     empty: 'Chưa có yêu cầu hỗ trợ nào.',
     noMatch: 'Không có yêu cầu khớp bộ lọc.',
     selectHint: 'Chọn một yêu cầu để xem trao đổi và thông tin công ty.',
+    selectHintStatusOnly: 'Chọn một yêu cầu để đọc nội dung và đổi trạng thái.',
     filters: {
       company: 'Công ty',
       allCompanies: 'Mọi công ty',
@@ -67,7 +73,7 @@ export const support = {
       status: 'Trạng thái',
       allStatuses: 'Mọi trạng thái',
     },
-    columns: { ticket: 'Yêu cầu', company: 'Công ty', kind: 'Loại', status: 'Trạng thái', updated: 'Cập nhật' },
+    columns: { ticket: 'Yêu cầu', company: 'Công ty', kind: 'Loại', status: 'Trạng thái', updated: 'Cập nhật', sent: 'Gửi lúc' },
     statusLabel: 'Trạng thái yêu cầu',
     statusChanged: 'Yêu cầu {id} chuyển sang {status}',
     panel: {

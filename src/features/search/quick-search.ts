@@ -1,4 +1,6 @@
+import type { HandlingClass } from '@/domain/models'
 import type { Permission } from '@/features/auth/permissions'
+import type { PackageStatus } from '@/lib/mock-db'
 import { matchesQuery, normalizeSearchText } from '@/lib/list-filter'
 import type { Role } from '@/types/user'
 
@@ -44,8 +46,21 @@ export type SearchSources = {
   readonly vehicles: readonly { readonly id: string; readonly name: string }[]
   readonly users: readonly { readonly id: string; readonly fullName: string; readonly email: string; readonly role: Role }[]
   readonly requirements: readonly { readonly id: string; readonly destinationName: string; readonly address: string }[]
-  /** Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). */
-  readonly pool: readonly { readonly id: string; readonly reference?: string; readonly qrToken: string; readonly typeName: string }[]
+  /**
+   * Kiện của kho kiện: mã của kho, mã của bên gửi, mã QR, tên loại kiện (kiện không gắn loại thì điểm đến). `query` là chữ đặt vào
+   * `/kien-hang?q=` để mở đúng kiện; vắng là mã của kho. `label` là chữ đứng đầu dòng thay mã của kho (mã của kho nối backend là số
+   * ngắn, vô nghĩa với người tìm); `status`, `handlingClass` thêm vào dòng phụ khi nguồn không có tên loại kiện hay điểm đến.
+   */
+  readonly pool: readonly {
+    readonly id: string
+    readonly label?: string
+    readonly reference?: string
+    readonly qrToken: string
+    readonly typeName: string
+    readonly query?: string
+    readonly status?: PackageStatus
+    readonly handlingClass?: HandlingClass
+  }[]
   readonly packageTypes: readonly { readonly id: string; readonly name: string }[]
 }
 
@@ -57,7 +72,14 @@ export type SearchResult =
   | (ResultBase & { readonly group: 'vehicles'; readonly name: string })
   | (ResultBase & { readonly group: 'users'; readonly name: string; readonly email: string; readonly role: Role })
   | (ResultBase & { readonly group: 'requirements'; readonly name: string; readonly detail: string })
-  | (ResultBase & { readonly group: 'pool'; readonly name: string; readonly reference?: string })
+  | (ResultBase & {
+      readonly group: 'pool'
+      readonly label?: string
+      readonly name: string
+      readonly reference?: string
+      readonly status?: PackageStatus
+      readonly handlingClass?: HandlingClass
+    })
   | (ResultBase & { readonly group: 'packageTypes'; readonly name: string })
 
 export type SearchResultGroup = { readonly group: SearchGroup; readonly results: readonly SearchResult[] }
@@ -72,7 +94,7 @@ const path = (value: string) => encodeURIComponent(value)
  * - Xe: mã, tên (tên xe gồm biển số) → chi tiết xe.
  * - Người dùng: họ tên, email, mã → danh sách người dùng lọc đúng mã.
  * - Yêu cầu giao: mã, điểm đến, địa chỉ → danh sách yêu cầu lọc đúng mã. Kho kiện: mã, mã của bên gửi, mã QR, tên loại hoặc điểm đến → kho kiện lọc
- *   đúng mã. Loại kiện: mã, tên → danh sách loại lọc đúng mã.
+ *   đúng mã (hoặc đúng `query` của nguồn). Loại kiện: mã, tên → danh sách loại lọc đúng mã.
  */
 export function searchSources(sources: SearchSources, query: string, groups: readonly SearchGroup[]): SearchResultGroup[] {
   if (normalizeSearchText(query) === '') return []
@@ -110,10 +132,10 @@ export function searchSources(sources: SearchSources, query: string, groups: rea
         })),
     pool: () =>
       sources.pool
-        .filter((pkg) => matchesQuery([pkg.id, pkg.reference ?? '', pkg.qrToken, pkg.typeName], query))
+        .filter((pkg) => matchesQuery([pkg.id, pkg.label ?? '', pkg.reference ?? '', pkg.qrToken, pkg.typeName], query))
         .map((pkg) => ({
-          group: 'pool', key: `pool:${pkg.id}`, href: `/kien-hang?q=${path(pkg.id)}`,
-          id: pkg.id, name: pkg.typeName, reference: pkg.reference,
+          group: 'pool', key: `pool:${pkg.id}`, href: `/kien-hang?q=${path(pkg.query ?? pkg.id)}`,
+          id: pkg.id, label: pkg.label, name: pkg.typeName, reference: pkg.reference, status: pkg.status, handlingClass: pkg.handlingClass,
         })),
     packageTypes: () =>
       sources.packageTypes
