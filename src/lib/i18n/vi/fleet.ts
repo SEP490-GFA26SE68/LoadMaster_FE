@@ -39,6 +39,8 @@ export const fleet = {
     available: 'Sẵn sàng',
     in_use: 'Đang phục vụ chuyến',
     maintenance: 'Bảo dưỡng',
+    /** Chỉ backend có (`RETIRED`). */
+    retired: 'Ngừng sử dụng',
   },
   /** Bốn ô số liệu trên đầu danh sách (V2). Số tính trên cả đội xe; ba ô trạng thái bấm để lọc. */
   summary: {
@@ -173,6 +175,18 @@ export const fleet = {
     openTrip: 'Xem chuyến {tripId}',
     maintenance: 'Xe đang bảo dưỡng từ {time} {date}: chưa gán được cho chuyến nào.',
     maintenanceNote: 'Ghi chú: {note}',
+    retired: 'Máy chủ ghi xe này đã ngừng sử dụng.',
+  },
+  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, chỉ điều phối viên đọc được, phần backend không trả. */
+  backend: {
+    dispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc đội xe, nên tài khoản của bạn chưa xem được xe ở đây.',
+    vehicleTypesDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc loại xe, nên tài khoản của bạn chưa xem được loại xe ở đây.',
+    sourceNote: 'Xe đọc từ máy chủ. Máy chủ chưa trả chuyến đang dùng xe hay ghi chú bảo dưỡng, nên cột trạng thái chỉ có trạng thái.',
+    readOnly: 'Cấu hình đọc từ máy chủ và chỉ xem: lòng thùng, cửa, tải trọng, vật cản và trục là của loại xe đang gắn. Máy chủ chưa có lối sửa xe hay đưa xe vào bảo dưỡng.',
+    doorUnknown: 'Loại xe này chưa khai kích thước cửa sau: ô cửa đang hiện bằng mặt cắt lòng thùng.',
+    axlesUnknown: 'Loại xe này chưa khai vị trí và tải rỗng của trục trước, trục sau, nên chưa có trục để ước lượng tải trục.',
+    noCreate: 'Máy chủ chưa có lối thêm xe từ màn này: danh sách và cấu hình xe chỉ để xem.',
+    axleNames: { front: 'Trục trước', rear: 'Trục sau' },
   },
   /** Bật/tắt bảo dưỡng (LM-089, D-53). */
   maintenance: {
