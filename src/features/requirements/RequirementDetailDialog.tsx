@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { None, PackageFlagTag, PackageStatusBadge } from '@/features/package-pool/package-look'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { RequirementRow } from './requirements-api'
 import { RequirementPriorityTag, RequirementStatusBadge } from './requirement-look'
@@ -73,7 +74,7 @@ function DetailBody({ row }: { row: RequirementRow }) {
         <Field label={t('requirements.detail.trip')}>
           {!trip ? <span className="text-ink-3">{t('requirements.notAssigned')}</span> : (
             <span className="flex flex-col">
-              {can('trips.view') ? <Link to={`/chuyen/${trip.id}`} className={LINK}>{trip.name}</Link> : trip.name}
+              {can('trips.view') && tripLinkable(false) ? <Link to={`/chuyen/${trip.id}`} className={LINK}>{trip.name}</Link> : trip.name}
               <span className="font-mono text-caption text-ink-3">
                 {row.stopNumber === undefined ? trip.id : `${trip.id} · ${t('requirements.stop', { number: row.stopNumber })}`}
               </span>

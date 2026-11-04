@@ -6,6 +6,7 @@ import { DataTable, type BaseTableFeatures, type ColumnMeta } from '@/components
 import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { VehicleName } from '@/components/VehicleName'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import type { Formatter } from '@/lib/format'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { plannerPath } from '@/lib/planner-path'
@@ -18,6 +19,8 @@ export const RECENT_TRIP_LIMIT = 10
 const helper = createColumnHelper<BaseTableFeatures, DashboardTripRow>()
 const mono = 'font-mono text-caption'
 const LINK_FOCUS = 'rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
+/** Bảng điều khiển đọc chuyến của kho mẫu: chuyến đọc backend thì mã của kho mẫu không mở được chuyến, Planner nào (`tripLinkable`). */
+const TRIP_LINKS = tripLinkable(false)
 
 /** Dòng cũng mở chi tiết khi bấm: liên kết trong ô chặn nổi bọt để không đẩy hai mục lịch sử. */
 function stop(event: { stopPropagation: () => void }) {
@@ -30,16 +33,24 @@ function createColumns(t: TFunction, format: Formatter) {
     // V2: tên tuyến đậm, mã chuyến mono ngay dưới — cả hai là một liên kết tới chi tiết chuyến (mở được bằng bàn phím)
     helper.accessor('name', {
       header: t('manager.recent.trip'),
-      cell: (info) => (
-        <Link
-          to={`/chuyen/${encodeURIComponent(info.row.original.id)}`}
-          onClick={stop}
-          className={cn('flex min-w-0 flex-col whitespace-normal text-ink-strong hover:text-primary', LINK_FOCUS)}
-        >
-          <span className="line-clamp-1 font-medium">{info.getValue()}</span>{' '}
-          <span className={cn(mono, 'text-ink-3')}>{info.row.original.id}</span>
-        </Link>
-      ),
+      cell: (info) => {
+        const label = (
+          <>
+            <span className="line-clamp-1 font-medium">{info.getValue()}</span>{' '}
+            <span className={cn(mono, 'text-ink-3')}>{info.row.original.id}</span>
+          </>
+        )
+        if (!TRIP_LINKS) return <span className="flex min-w-0 flex-col whitespace-normal text-ink-strong">{label}</span>
+        return (
+          <Link
+            to={`/chuyen/${encodeURIComponent(info.row.original.id)}`}
+            onClick={stop}
+            className={cn('flex min-w-0 flex-col whitespace-normal text-ink-strong hover:text-primary', LINK_FOCUS)}
+          >
+            {label}
+          </Link>
+        )
+      },
     }),
     helper.accessor('scheduledDate', {
       header: t('manager.recent.date'),
@@ -87,7 +98,7 @@ function createColumns(t: TFunction, format: Formatter) {
       cell: (info) => {
         const plan = info.getValue()
         // Nút phụ cỡ nhỏ (V2.3 .btn-sm) có icon khối 3D như "Xem phương án 3D": là hành động mở màn khác, không phải chữ liên kết
-        return plan ? (
+        return plan && TRIP_LINKS ? (
           <Button variant="secondary" size="sm" asChild>
             <Link to={plannerPath(plan)} onClick={stop} aria-label={t('manager.recent.openPlanFor', { name: info.row.original.name })}>
               <Box strokeWidth={1.75} aria-hidden />
@@ -131,7 +142,7 @@ export function RecentTripsTable({ trips }: { trips: readonly DashboardTripRow[]
             getRowId={(row) => row.id}
             density="roomy"
             appearance="paper"
-            onRowClick={(trip) => void navigate(`/chuyen/${encodeURIComponent(trip.id)}`)}
+            onRowClick={TRIP_LINKS ? (trip) => void navigate(`/chuyen/${encodeURIComponent(trip.id)}`) : undefined}
           />
         </div>
       </div>

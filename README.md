@@ -138,7 +138,7 @@ component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `create
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.630 test unit + DOM
+pnpm test          # Vitest: 2.665 test unit + DOM
 pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```

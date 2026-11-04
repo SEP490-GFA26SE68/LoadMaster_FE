@@ -2,6 +2,7 @@ import type { Permission } from '@/features/auth/permissions'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
 import type { AuditAction, AuditEvent, AuditTargetType } from '@/lib/mock-db'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import type { Role } from '@/types/user'
 import { paramLabel, paramValue } from './audit-params'
 import { actorInitials } from './audit-look'
@@ -113,7 +114,8 @@ function linkedTarget({ target, params }: AuditEvent, directory: AuditDirectory)
   switch (target.type) {
     case 'trip': {
       const name = directory.trips.get(id)
-      return { id, label: name ?? saved, href: name === undefined ? null : `/chuyen/${encodeURIComponent(id)}` }
+      // Nhật ký và chuông đọc chuyến của kho mẫu: chuyến đọc backend thì mã của kho mẫu không mở được Chi tiết chuyến (`tripLinkable`)
+      return { id, label: name ?? saved, href: name === undefined || !tripLinkable(false) ? null : `/chuyen/${encodeURIComponent(id)}` }
     }
     case 'vehicle': {
       const name = directory.vehicles.get(id)

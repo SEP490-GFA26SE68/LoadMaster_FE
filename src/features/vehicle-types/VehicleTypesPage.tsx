@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
+import { FleetUnavailable } from '@/features/fleet/FleetUnavailable'
+import { fleetReachable, useFleetCapabilities } from '@/features/fleet/useVehiclesQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import type { VehicleAssignmentRow, VehicleTypeRow } from './vehicle-types-api'
@@ -23,13 +25,31 @@ import {
 } from './useVehicleTypesQuery'
 
 /**
- * Loại xe `/doi-xe/loai-xe` (LM-104) — backend có CRUD thật `/api/vehicle-types`. Bảng loại xe (tên, lòng thùng D × R × C cm, tải
- * trọng kg, xe đang dùng) và bảng gắn loại cho từng xe. Người có `vehicleTypes.edit` thêm / sửa / xoá loại (loại còn gắn xe không xoá
- * được: mục Xoá mờ kèm lý do) và đổi loại của xe; người chỉ có `fleet.view` xem.
+ * Loại xe `/doi-xe/loai-xe` (LM-104). Bảng loại xe (tên, lòng thùng D × R × C cm, tải trọng kg, xe đang dùng) và bảng gắn loại cho từng
+ * xe. Người có `vehicleTypes.edit` thêm / sửa / xoá loại (loại còn gắn xe không xoá được: mục Xoá mờ kèm lý do) và đổi loại của xe; người
+ * chỉ có `fleet.view` xem. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, chỉ điều phối viên đọc được — người khác thấy một dòng lý do và
+ * màn không gọi backend.
  */
 export function VehicleTypesPage() {
   const t = useT()
-  const canEdit = useCan()('vehicleTypes.edit')
+  const can = useCan()
+  if (!fleetReachable(can)) {
+    return (
+      <FleetUnavailable
+        title={t('vehicleTypes.title')}
+        description={t('pageHero.vehicleTypes')}
+        back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
+        reason={t('fleet.backend.vehicleTypesDispatcherOnly')}
+      />
+    )
+  }
+  return <VehicleTypesCatalog />
+}
+
+function VehicleTypesCatalog() {
+  const t = useT()
+  const caps = useFleetCapabilities()
+  const canEdit = useCan()('vehicleTypes.edit') && caps.write
   const typesQuery = useVehicleTypesQuery()
   const vehiclesQuery = useVehicleAssignmentRowsQuery()
   const save = useSaveVehicleTypeMutation()
@@ -117,7 +137,12 @@ export function VehicleTypesPage() {
             action={<Button variant="secondary" onClick={() => void typesQuery.refetch()}><RotateCcw strokeWidth={1.5} />{t('tripReport.retry')}</Button>}
           />
         ) : types.length === 0 ? (
-          <EmptyState mascot="empty" title={t('vehicleTypes.empty')} description={t('vehicleTypes.emptyDescription')} action={addButton ?? undefined} />
+          <EmptyState
+            mascot="empty"
+            title={t('vehicleTypes.empty')}
+            description={caps.write ? t('vehicleTypes.emptyDescription') : t('vehicleTypes.emptyDescriptionBackend')}
+            action={addButton ?? undefined}
+          />
         ) : (
           <VehicleTypesTableContext value={context}>
             <div className="flex flex-col gap-4">
@@ -160,12 +185,13 @@ function AssignCard({ rows, loading, columns }: {
 }) {
   const t = useT()
   const format = useFormat()
+  const caps = useFleetCapabilities()
   return (
     <Card className="relative flex-none overflow-hidden">
       <CardHeader>
         <CardTitle as="h2">{t('vehicleTypes.assign.title')}</CardTitle>
         <CardMeta>{format.integer(rows.length)}</CardMeta>
-        <p className="m-0 basis-full text-small text-ink-3">{t('vehicleTypes.assign.description')}</p>
+        <p className="m-0 basis-full text-small text-ink-3">{caps.write ? t('vehicleTypes.assign.description') : t('vehicleTypes.assign.descriptionBackend')}</p>
       </CardHeader>
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>

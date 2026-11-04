@@ -2,6 +2,7 @@
  * Hàm → endpoint backend của màn Giám sát khi nhóm `monitoring` nối backend (`usesBackend('monitoring')`):
  *   fetchBoard        → GET /api/dispatcher/dashboard
  *   listFleet         → GET /api/trips/monitoring
+ *   tripMonitoring    → GET /api/trips/{id}/monitoring
  *   latestLocation    → GET /api/trips/{id}/location/latest
  *   locationHistory   → GET /api/trips/{id}/location/history
  *   reportException   → POST /api/trips/{id}/exceptions
@@ -35,6 +36,11 @@ export async function fetchBoard(): Promise<MonitoringBoard> {
 // GET /api/trips/monitoring
 export async function listFleet(): Promise<LiveMonitoring[]> {
   return ((await api().get<TripMonitoringDto[] | null>('/api/trips/monitoring')) ?? []).map(liveOf)
+}
+
+// GET /api/trips/{id}/monitoring
+export async function tripMonitoring(tripId: string): Promise<LiveMonitoring> {
+  return liveOf(await api().get<TripMonitoringDto>(`${tripPath(tripId)}/monitoring`))
 }
 
 // GET /api/trips/{id}/location/latest

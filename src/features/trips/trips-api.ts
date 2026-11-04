@@ -1,18 +1,21 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `trips` nối backend thì hàm đánh dấu (BE) gọi
+ * `trips-backend-api.ts`; lệnh ghi từ chối `NOT_SUPPORTED` (màn đã ẩn); hàm đọc khác chỉ phục vụ màn của kho mẫu.
+ *   fetchTrips                  → GET /api/trips (BE)
+ *   fetchServerTrip             → GET /api/trips?search={mã chuyến} · GET /api/trips/{id}/detail (BE)
  *   createTrip                  → POST /api/trips
- *   savePackage, importPackages nhận thêm `overrideReason` của luật phân tách hàng (cùng endpoint: `override`, `overrideReason`)
  *   updateTripFrame             → chưa có ở BE
- *   savePackage, importPackages → POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE) — dòng kiện gõ / nhập ngay trong chuyến
- *   deletePackage               → DELETE /api/trips/{id}/packages/{packageId} — bỏ cả một dòng kiện
- *   Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage — cùng hai endpoint trên, theo từng kiện): `trip-pool-api.ts`.
- *   chưa có ở BE: fetchTrips, fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip, fetchPackages,
- *   duplicateTripPackage, fetchTripRevisions
+ *   chưa có ở BE: fetchStoreTrips (trang tài liệu: luôn kho mẫu), fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip,
+ *   fetchTripRevisions
+ * Dòng kiện gõ / nhập trong chuyến (savePackage, importPackages, deletePackage…): `trip-package-lines-api.ts`.
+ * Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage): `trip-pool-api.ts`.
  * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
  * Đổi xe của chuyến Đã lập kế hoạch (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trip-vehicle-api.ts`.
  */
 
-import type { CargoPackage, VehicleConfig } from '@/domain/models'
+import type { VehicleConfig } from '@/domain/models'
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import {
   getMockDb,
   isMockDbError,
@@ -31,16 +34,32 @@ import {
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { tripRow, type TripRow } from './trip-list'
-import { duplicatePackage, stopFields, type TripStopInput } from './trip-packages'
+import { stopFields, type TripStopInput } from './trip-packages'
+import type { ServerTrip } from './server-trip'
+import * as backend from './trips-backend-api'
+
+export type { ServerTrip, ServerTripStop, ServerTripStopStatus } from './server-trip'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ ghi vào kho mẫu thay cho chuyến của backend. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /**
- * Lớp gọi API cho chuyến hàng và kiện (LM-043, LM-088). Chi tiết chuyến, điểm giao và kiện đọc/ghi qua mock repository
- * (`@/lib/mock-db`, D-06); nối backend thật chỉ thay thân hàm, hook và component giữ nguyên.
+ * Lớp gọi API cho chuyến hàng (LM-043, LM-088). Kho mẫu: chi tiết chuyến, điểm giao và kiện đọc/ghi qua mock repository
+ * (`@/lib/mock-db`, D-06). Backend: danh sách và Chi tiết chuyến cơ bản (`ServerTrip`).
  */
 
 /** Danh sách chuyến (LM-088): mỗi dòng dựng từ chuyến, xe, tài xế và revision trong kho. */
-// chưa có ở BE
+// GET /api/trips
 export async function fetchTrips(): Promise<TripRow[]> {
+  if (ON_BACKEND) return backend.listTrips()
+  return fetchStoreTrips()
+}
+
+/** Danh sách chuyến của kho mẫu dù nhóm `trips` nối backend — hai trang tài liệu (`/kieu-dang`, `/thanh-phan`) trình bày dữ liệu seed. */
+// chưa có ở BE
+export async function fetchStoreTrips(): Promise<TripRow[]> {
   const db = getMockDb()
   const [trips, vehicles, users] = await Promise.all([db.listTrips(), db.listVehicles(), db.listUsers()])
   const vehicleById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]))
@@ -52,6 +71,13 @@ export async function fetchTrips(): Promise<TripRow[]> {
     revisions[index] ?? [],
     trip.driverId === null ? undefined : userById.get(trip.driverId),
   ))
+}
+
+/** Chi tiết chuyến cơ bản của backend theo mã chuyến; mã không có trên máy chủ là `TRIP_NOT_FOUND`. Kho mẫu không có màn này. */
+// GET /api/trips?search={mã chuyến} · GET /api/trips/{id}/detail
+export function fetchServerTrip(tripId: string): Promise<ServerTrip> {
+  if (!ON_BACKEND) return unsupported()
+  return backend.tripDetail(tripId)
 }
 
 export type TripFrame = {
@@ -70,6 +96,7 @@ export type TripFrame = {
  */
 // POST /api/trips
 export async function createTrip({ name, vehicleId, departureAt, depot, driverId = null }: TripFrame): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().createTrip({ name, vehicleId, packages: [], stops: [], driverId, departureAt, depot, scheduledDate: vnDate(new Date(departureAt)) })
 }
 
@@ -91,6 +118,7 @@ export type TripFrameChanges = {
  */
 // chưa có ở BE
 export async function updateTripFrame(tripId: string, changes: TripFrameChanges): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   const db = getMockDb()
   const { stops: edited, ...frame } = changes
   const current = edited ? await db.getTrip(tripId) : undefined
@@ -139,7 +167,7 @@ export type TripDetail = {
   readonly plan: { readonly jobId: string; readonly revisionId: string } | null
 }
 
-/** Chuyến kèm xe, tài xế và trạng thái hiển thị — màn chi tiết, form sửa và màn thiết lập tối ưu cùng cần. */
+/** Chuyến kèm xe, tài xế và trạng thái hiển thị — màn chi tiết, form sửa và màn thiết lập tối ưu của kho mẫu cùng cần. */
 // chưa có ở BE
 export async function fetchTripDetail(tripId: string): Promise<TripDetail> {
   const db = getMockDb()
@@ -184,53 +212,8 @@ export async function fetchTripActivity(tripId: string): Promise<TripActivity> {
 /** Huỷ chuyến trước khi giao (D-45): kho bắt buộc lý do và ghi nhật ký. */
 // chưa có ở BE
 export async function cancelTrip(tripId: string, reason: string): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().cancelTrip(tripId, reason)
-}
-
-// chưa có ở BE
-export async function fetchPackages(tripId: string): Promise<CargoPackage[]> {
-  return (await getMockDb().getTrip(tripId)).packages
-}
-
-/** Thêm kiện mới hoặc thay kiện cùng mã; kiện đổi thì `inputVersion` tăng và revision cũ thành lỗi thời (D-31). */
-// POST /api/trips/{id}/packages (sửa kiện đang có: chưa có ở BE)
-export async function savePackage(tripId: string, pkg: CargoPackage, overrideReason?: string): Promise<Trip> {
-  const db = getMockDb()
-  const { packages } = await db.getTrip(tripId)
-  const index = packages.findIndex((item) => item.id === pkg.id)
-  const next = index === -1 ? [...packages, pkg] : packages.with(index, pkg)
-  return db.updateTrip(tripId, { packages: next, ...(overrideReason === undefined ? {} : { overrideReason }) })
-}
-
-/**
- * Nhập kiện từ file (LM-093, D-49): thêm sau các kiện đang có trong **một** lần ghi — `inputVersion` tăng một lần, kho ghi một sự kiện
- * nhật ký. Dòng lỗi đã bị bỏ ở bước xem trước; nơi gọi chỉ đưa kiện hợp lệ.
- */
-// POST /api/trips/{id}/packages
-export async function importPackages(tripId: string, imported: readonly CargoPackage[], overrideReason?: string): Promise<Trip> {
-  const db = getMockDb()
-  const { packages } = await db.getTrip(tripId)
-  return db.updateTrip(tripId, { packages: [...packages, ...imported], ...(overrideReason === undefined ? {} : { overrideReason }) })
-}
-
-// DELETE /api/trips/{id}/packages/{packageId}
-export async function deletePackage(tripId: string, packageId: string): Promise<Trip> {
-  const db = getMockDb()
-  const { packages } = await db.getTrip(tripId)
-  return db.updateTrip(tripId, { packages: packages.filter((item) => item.id !== packageId) })
-}
-
-/** Nhân bản kiện (D-33): mã mới lấy theo mã lớn nhất đang có, bản sao nằm ngay sau bản gốc. */
-// chưa có ở BE
-export async function duplicateTripPackage(tripId: string, packageId: string): Promise<CargoPackage> {
-  const db = getMockDb()
-  const { packages } = await db.getTrip(tripId)
-  const index = packages.findIndex((item) => item.id === packageId)
-  const source = packages[index]
-  if (!source) throw new Error(`Chuyến ${tripId} không có kiện ${packageId}`)
-  const copy = duplicatePackage(source, packages.map((item) => item.id))
-  await db.updateTrip(tripId, { packages: packages.toSpliced(index + 1, 0, copy) })
-  return copy
 }
 
 export type TripRevisions = { readonly trip: Trip; readonly revisions: Revision[] }

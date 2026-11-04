@@ -2,7 +2,14 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   chưa có ở BE: updateTripStops, addTripStop, removeTripStop (issue BE S4b-01 có `DeliveryStop` nhưng chưa có endpoint cho FE)
  */
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, nextStopId, type DeliveryStop, type Trip } from '@/lib/mock-db'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 import { renumberDeliveryStops, stopFields, stopRemoval, type StopRemoval } from './trip-packages'
 
 /**
@@ -13,6 +20,7 @@ import { renumberDeliveryStops, stopFields, stopRemoval, type StopRemoval } from
 /** Đổi thứ tự điểm giao: kiện được đánh số `deliveryStop` lại theo vị trí mới (LM-046). */
 // chưa có ở BE
 export async function updateTripStops(tripId: string, stops: readonly DeliveryStop[]): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   const db = getMockDb()
   const current = await db.getTrip(tripId)
   const packages = renumberDeliveryStops(current.packages, current.stops, stops)
@@ -27,6 +35,7 @@ export type ManualStopInput = Pick<DeliveryStop, 'name' | 'address' | 'phone' | 
  */
 // chưa có ở BE
 export async function addTripStop(tripId: string, input: ManualStopInput): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   const db = getMockDb()
   const current = await db.getTrip(tripId)
   const { lat, lng } = input
@@ -41,6 +50,7 @@ export async function addTripStop(tripId: string, input: ManualStopInput): Promi
 /** Xoá điểm giao; còn kiện thì không ghi gì và trả về số kiện bị ảnh hưởng để UI báo. */
 // chưa có ở BE
 export async function removeTripStop(tripId: string, stopId: string): Promise<StopRemoval> {
+  if (ON_BACKEND) return unsupported()
   const db = getMockDb()
   const current = await db.getTrip(tripId)
   const removal = stopRemoval(current.packages, current.stops, stopId)

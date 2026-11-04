@@ -10,7 +10,8 @@ export type AuthSource = 'mock' | 'keycloak'
  * Nhóm chức năng có `-api.ts` nối được backend. Thêm nhóm mới: thêm tên ở đây, `-api.ts` của nhóm hỏi `usesBackend('<tên>')`.
  * `users` người dùng · `companies` công ty, thông tin công ty · `billing` gói cước, đăng ký, credit, hoá đơn, thanh toán ·
  * `platformOps` hợp đồng, báo cáo nền tảng · `contacts` liên hệ của khách · `support` yêu cầu hỗ trợ · `packages` kho kiện ·
- * `trips` lập chuyến, tuyến · `monitoring` giám sát, bảng điều khiển · `driver` màn tài xế · `warehouse` màn kho
+ * `trips` lập chuyến, tuyến · `fleet` đội xe, loại xe · `monitoring` giám sát, bảng điều khiển · `driver` màn tài xế ·
+ * `warehouse` màn kho
  */
 export const BACKEND_FEATURES = [
   'users',
@@ -21,6 +22,7 @@ export const BACKEND_FEATURES = [
   'support',
   'packages',
   'trips',
+  'fleet',
   'monitoring',
   'driver',
   'warehouse',
