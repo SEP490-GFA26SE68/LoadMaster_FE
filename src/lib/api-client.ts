@@ -95,7 +95,8 @@ function urlOf(baseUrl: string, path: string, query: RequestOptions['query']): s
   return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}${suffix === '' ? '' : `?${suffix}`}`
 }
 
-function codeOfStatus(status: number): TransportErrorCode {
+/** Mã theo HTTP khi phong bì không có `code`; `dataErrorMessage` cũng dùng nó cho mã nghiệp vụ app chưa có câu. */
+export function codeOfStatus(status: number): TransportErrorCode {
   if (status === 401) return 'UNAUTHENTICATED'
   if (status === 403) return 'UNAUTHORIZED'
   if (status === 400 || status === 422) return 'BAD_REQUEST'
