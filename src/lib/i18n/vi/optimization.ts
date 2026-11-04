@@ -161,6 +161,18 @@ export const optimization = {
     /** Tiến trình của từng phương án: số kiện đã xét trong lượt xếp của mục tiêu đó. */
     planProgress: 'Đã xét {placed} / {total} kiện',
     planWaiting: 'Chờ',
+    /** Các bước thật của lần chạy, theo thứ tự `runOptimization` làm. */
+    stagesLabel: 'Các bước của lần chạy',
+    stages: {
+      reserve: 'Giữ credit',
+      pack: 'Xếp ba phương án',
+      save: 'Lưu kết quả',
+    },
+    stageStates: {
+      done: 'đã xong',
+      current: 'đang làm',
+      pending: 'chưa tới',
+    },
     elapsed: 'Đã chạy {seconds} giây',
     cancel: 'Huỷ',
     note: 'Huỷ thì không tạo phương án nào.',

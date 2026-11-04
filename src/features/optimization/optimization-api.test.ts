@@ -20,9 +20,11 @@ async function runInput(overrides: { simulateFailure?: boolean; signal?: AbortSi
   return { tripId: TRIP_ID, request, simulateFailure: false, ...overrides }
 }
 
-test('a saved run costs one credit for its three plans', async () => {
+test('a saved run costs one credit for its three plans, and reports its three steps in order', async () => {
   const before = (await fetchOptimizationCredit()).balance
-  const outcome = await runOptimization(await runInput())
+  const stages: string[] = []
+  const outcome = await runOptimization({ ...(await runInput()), onStage: (stage) => stages.push(stage) })
+  expect(stages).toStrictEqual(['reserve', 'pack', 'save'])
   expect(outcome.kind === 'saved' ? outcome.revisions : []).toHaveLength(3)
   expect(outcome.kind === 'saved' ? outcome.run.algorithm : null).toBe('EP_DBLF')
   expect(await fetchOptimizationCredit()).toMatchObject({ balance: before - 1, cost: 1, planName: 'Pro', algorithmTier: 'EP_DBLF_GA', block: null })
@@ -35,7 +37,10 @@ test.each([
 ])('$what is refunded: balance unchanged, one usage and one refund of the run', async ({ input, error }) => {
   const db = getMockDb()
   const before = (await fetchOptimizationCredit()).balance
-  await expect(runOptimization(await input())).rejects.toBeInstanceOf(error)
+  const stages: string[] = []
+  await expect(runOptimization({ ...(await input()), onStage: (stage) => stages.push(stage) })).rejects.toBeInstanceOf(error)
+  // Không tới bước lưu: hộp thoại không bao giờ nói "đang lưu" cho một lần chạy không có gì để lưu
+  expect(stages).toStrictEqual(['reserve', 'pack'])
   expect((await fetchOptimizationCredit()).balance).toBe(before)
   const [refund, usage] = await db.listCreditTransactions()
   expect([refund, usage]).toMatchObject([

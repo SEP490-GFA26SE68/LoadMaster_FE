@@ -34,6 +34,7 @@ import { createOptimizationService, OptimizationServiceError, type CandidateProg
 import { fetchBackendOptimizationCredit } from './optimization-credit-api'
 import { RUNNABLE_RUN_ALGORITHMS } from './optimization-source'
 import { buildRunHistory, type RunHistoryRow } from './run-history'
+import type { RunStage } from './run-progress'
 
 /**
  * Lớp dữ liệu của Thiết lập tối ưu và job (LM-047, LM-048): nơi duy nhất trong feature biết về kho và service tối ưu.
@@ -138,6 +139,8 @@ export type RunInput = {
   readonly signal?: AbortSignal
   /** Tiến trình của từng phương án ứng viên. */
   readonly onProgress?: (progress: CandidateProgress) => void
+  /** Bước đang bắt đầu: giữ credit → xếp ba phương án → lưu kết quả (hộp thoại đang chạy vẽ đúng các bước này). */
+  readonly onStage?: (stage: RunStage) => void
 }
 
 /**
@@ -162,16 +165,18 @@ export type RunOutcome =
  * không chạy, không tốn gì; kho kiểm lại bằng cùng luật khi lưu. Cả ba phương án chạy cùng thuật toán đó.
  */
 // POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
-export async function runOptimization({ tripId, request, algorithm = DEFAULT_RUN_ALGORITHM, simulateFailure, signal, onProgress }: RunInput): Promise<RunOutcome> {
+export async function runOptimization({ tripId, request, algorithm = DEFAULT_RUN_ALGORITHM, simulateFailure, signal, onProgress, onStage }: RunInput): Promise<RunOutcome> {
   // Bộ kiện ghim hỏng thì từ chối trước khi giữ credit: không chạy, không tốn gì (FE-BL-02)
   const faults = pinnedIssues(request)
   if (faults.length > 0) throw new MockDbError('PINNED_SET_INVALID', { tripId, count: faults.length, codes: [...new Set(faults.map(({ code }) => code))] })
   const db = getMockDb()
   assertRunAlgorithm(algorithm, (await db.getCurrentSubscription())?.plan.algorithmTier ?? null, RUNNABLE_RUN_ALGORITHMS)
   const service = createOptimizationService({ simulateFailure })
+  onStage?.('reserve')
   const { reference } = await db.reserveOptimizationCredit(tripId)
   let job: CandidateRun
   try {
+    onStage?.('pack')
     job = await service.optimizeCandidates(request, { signal, onProgress })
   } catch (error) {
     await db.refundOptimizationCredit(reference)
@@ -186,6 +191,7 @@ export async function runOptimization({ tripId, request, algorithm = DEFAULT_RUN
     return { kind: 'failed', result: failed.result }
   }
   try {
+    onStage?.('save')
     return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans, algorithm, creditReference: reference })) }
   } catch (error) {
     await db.refundOptimizationCredit(reference)

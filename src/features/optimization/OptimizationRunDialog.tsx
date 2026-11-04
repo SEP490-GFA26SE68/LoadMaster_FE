@@ -2,12 +2,14 @@ import { Check, LoaderCircle, Timer } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/Dialog'
-import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
+import { PLAN_LABELS } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import type { OptimizationCredit } from './optimization-api'
 import type { SetupValues } from './optimization-request'
+import { RunFigure } from './RunFigure'
+import { runProgressView, type RunProgress } from './run-progress'
+import { RunStageList } from './RunStageList'
 import { useCreditUsageText } from './useCreditUsageText'
-import type { RunProgress } from './useOptimizationSetup'
 
 /** Thiết lập của lần chạy đang chạy: đọc lại trong hộp thoại để người dùng biết mình đang chờ cái gì. */
 export type RunDialogContext = {
@@ -25,6 +27,8 @@ export type RunDialogContext = {
  * kiện service đã xét trong lượt xếp của mục tiêu đó, thanh tiến trình chung của cả job, thời gian đã chạy và giới hạn, rồi thiết lập
  * của lần chạy (chuyến · xe, thuật toán · seed, hai yêu cầu). Không có "vòng tối ưu" hay tỷ lệ lấp đầy giả lập — service mock chỉ báo số
  * kiện đã xét (AGENTS mục 6 "Không bịa số"). Tông xanh lam = đang chạy (bản mẫu dùng tím, repo không dùng tím). Đóng là huỷ cả job.
+ * Đầu thân hộp thoại: hình thùng xếp dần theo đúng phần việc đã xong (`RunFigure`, chạy vòng khi chưa có số) và các bước thật của lần
+ * chạy (`RunStageList`).
  */
 export function OptimizationRunDialog({ progress, context, onCancel }: {
   progress: RunProgress | null
@@ -43,12 +47,8 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
   }, [])
 
   const { values } = context
-  const total = progress?.total ?? context.total
-  const plans = PLAN_OBJECTIVES.map((objective) => ({ objective, placed: progress?.plans[objective]?.placed }))
-  const done = plans.filter(({ placed }) => placed !== undefined && placed >= total).length
-  const checked = plans.reduce((sum, { placed = 0 }) => sum + Math.min(placed, total), 0)
-  const workload = total * plans.length
-  const percent = workload > 0 ? Math.min(100, (checked / workload) * 100) : 0
+  const { total, plans, done, checked, workload, fraction } = runProgressView(progress, context.total)
+  const percent = (fraction ?? 0) * 100
   const onOff = (value: boolean) => (value ? t('optimization.running.on') : t('optimization.running.off'))
   const rows = [
     { label: t('optimization.running.trip'), value: <><span className="font-mono text-caption">{context.tripId}</span> · {context.vehicleName}</> },
@@ -83,6 +83,10 @@ export function OptimizationRunDialog({ progress, context, onCancel }: {
           </div>
         </div>
         <div className="px-7 pt-4 pb-5">
+          <div className="mb-4 flex items-center gap-5 rounded-md border border-line-soft bg-n-25 px-4 py-2.5">
+            <RunFigure fraction={fraction} className="h-32 w-37 flex-none" />
+            <RunStageList stage={progress?.stage ?? 'reserve'} className="min-w-0 flex-1" />
+          </div>
           <div role="progressbar" aria-label={t('optimization.running.title')} aria-valuemin={0} aria-valuemax={workload} aria-valuenow={checked}
             className="h-2.5 overflow-hidden rounded-full bg-azure-50 shadow-[inset_0_0_0_1px_var(--azure-200)]">
             <div className="h-full rounded-full bg-azure-500 transition-[width] duration-(--dur-md) ease-decelerate" style={{ width: `${percent}%` }} />
