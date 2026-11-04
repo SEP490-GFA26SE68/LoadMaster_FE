@@ -53,6 +53,18 @@ vai trò công ty: `qtcongty@`, `quanly@`, `dieuphoi@`, `taixe@phuongnam.vn` và
 
 Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
+### Chạy với backend thật
+
+1. Chạy backend (repo `LoadMaster_BE`, nhánh `develop`) theo hướng dẫn của repo đó: API ở `http://localhost:8080`, Keycloak ở
+   `http://localhost:8180`.
+2. Ở Keycloak, client `loadmaster-web` của realm `loadmaster` phải bật **Direct Access Grants**: form đăng nhập của app đổi email + mật
+   khẩu lấy token ngay, không chuyển sang trang của Keycloak.
+3. Chép `.env.example` thành `.env.local` và đặt `VITE_AUTH_SOURCE=keycloak`; các giá trị khác giữ mặc định khi backend chạy ở cùng máy.
+4. `pnpm dev` rồi mở đúng `http://localhost:5173` (backend chỉ cho phép địa chỉ này).
+5. Đăng nhập bằng tài khoản do backend tạo. Tài khoản demo ở bảng trên chỉ dùng ở chế độ kho mẫu.
+
+Phần backend chưa có vẫn chạy kho mẫu (xem "Trạng thái"); `VITE_API_FEATURES` tắt riêng một nhóm khi backend của nhóm đó lỗi.
+
 ## Trạng thái
 
 - Các vai trò nối thành một vòng khép kín trên cùng một kho dữ liệu: điều phối thêm kiện hoặc nhập file vào kho kiện, in nhãn QR, tạo đơn từ kiện của kho kiện, lập
@@ -116,8 +128,9 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 - **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
   (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì form đăng nhập của app dùng Keycloak của
   backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
-  điểm giao của tài xế, màn Giám sát đọc ghi backend thật; `VITE_API_FEATURES` chọn nhóm. Chuyến, Planner, tối ưu, kho xếp hàng, đội xe, yêu cầu
-  giao vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
+  điểm giao của tài xế, màn Giám sát đọc ghi backend thật; danh sách và Chi tiết chuyến, đội xe và loại xe chỉ đọc; `VITE_API_FEATURES` chọn
+  nhóm. Planner, tối ưu, kho xếp hàng, yêu cầu giao, bảng điều khiển vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu
+  mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
 ## Kiến trúc
@@ -138,13 +151,13 @@ component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `create
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.665 test unit + DOM
+pnpm test          # Vitest: 2.677 test unit + DOM
 pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất ở máy (04/11/2026, nhánh `feat/dang-nhap-trong-app`, đăng nhập ngay trong app): lint, kiểm kiểu, build, 2.630/2.630
-unit + DOM xanh; E2E chỉ chạy ba spec đăng nhập, hồ sơ, trang công khai (12/12), bộ đủ chưa chạy lại. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
+Lần chạy gần nhất ở máy (05/11/2026, nhánh `feat/demo-noi-backend` sau khi gộp #75, #77, #78, #79): lint, kiểm kiểu, build, 2.677/2.677
+unit + DOM xanh; E2E chạy các spec bị đụng tới, bộ đủ chạy ở CI. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo
