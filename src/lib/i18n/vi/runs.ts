@@ -1,8 +1,9 @@
 /**
  * Lần chạy tối ưu (luồng 3 Review 1, LM-104; ba phương án ứng viên mỗi lần chạy, FE-5b-05): mục tiêu của từng phương án, thuật toán đã
  * chạy, trạng thái và lý do lần chạy không ra kết quả. Mã do kho lưu (`OPTIMIZATION_OBJECTIVES`, `OPTIMIZATION_ALGORITHMS`,
- * `RUN_FAILURE_CODES`), key trùng mã. Dùng ở Thiết lập tối ưu (bảng "Lần chạy tối ưu"), So sánh phương án và nhật ký. Tên thuật toán là
- * từ vựng thuật toán — chỉ ở màn so sánh / thiết lập nâng cao; mock chạy dưới tên "EP + DBLF" nên luôn kèm chữ "(mock)".
+ * `RUN_FAILURE_CODES`), key trùng mã. Dùng ở Thiết lập tối ưu (ô chọn thuật toán, hộp thoại đang chạy, bảng "Lần chạy tối ưu"), So sánh
+ * phương án và nhật ký. Tên thuật toán là từ vựng thuật toán — chỉ ở các màn đó; mock chạy dưới tên "EP + DBLF" nên tên đó luôn kèm chữ
+ * "(mock)". Hai thuật toán kia bản demo chưa chạy được, nên không kèm.
  */
 export const runs = {
   title: 'Lần chạy tối ưu',
@@ -14,6 +15,8 @@ export const runs = {
   },
   algorithms: {
     EP_DBLF: 'EP + DBLF (mock)',
+    EP_DBLF_GA: 'EP + DBLF + GA/SA',
+    EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI Optimizer',
   },
   status: {
     COMPLETED: 'Có kết quả',

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import type { OptimizationRequest, PlanObjective } from '@/domain/models'
+import type { OptimizationAlgorithm } from '@/lib/mock-db'
 import type { OptimizationProgress } from '@/services/optimization'
 import { changeTripVehicle, fetchOptimizationCredit, fetchOptimizationSetup, runOptimization } from './optimization-api'
 
@@ -34,19 +35,19 @@ export type RunProgress = { readonly total: number; readonly plans: Partial<Reco
 
 /**
  * Một lần chạy tối ưu (LM-048; ba phương án ứng viên, FE-5b-05): mutation gọi service, giữ tiến trình của từng phương án và cho huỷ.
- * Huỷ là `abort` — worker bị `terminate`, cả ba phương án bị bỏ, không revision nào được tạo. Xong thì làm mới revision của chuyến để
- * Planner và So sánh đọc bản mới.
+ * Cả ba phương án chạy bằng thuật toán điều phối viên đã chọn (`algorithm`). Huỷ là `abort` — worker bị `terminate`, cả ba phương án bị
+ * bỏ, không revision nào được tạo. Xong thì làm mới revision của chuyến để Planner và So sánh đọc bản mới.
  */
 export function useOptimizationRun(tripId: string) {
   const client = useQueryClient()
   const controller = useRef<AbortController | null>(null)
   const [progress, setProgress] = useState<RunProgress | null>(null)
   const mutation = useMutation({
-    mutationFn: ({ request, simulateFailure }: { request: OptimizationRequest; simulateFailure: boolean }) => {
+    mutationFn: ({ request, algorithm, simulateFailure }: { request: OptimizationRequest; algorithm: OptimizationAlgorithm; simulateFailure: boolean }) => {
       controller.current = new AbortController()
       setProgress({ total: request.packages.reduce((sum, pkg) => sum + pkg.quantity, 0), plans: {} })
       return runOptimization({
-        tripId, request, simulateFailure, signal: controller.current.signal,
+        tripId, request, algorithm, simulateFailure, signal: controller.current.signal,
         onProgress: ({ objective, placed, total }) => setProgress((current) => ({ total, plans: { ...current?.plans, [objective]: { placed, total } } })),
       })
     },

@@ -1,5 +1,6 @@
 import { nextId, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
+import { checkRunAlgorithm } from './db-run-algorithm'
 import { DEFAULT_RUN_ALGORITHM, type OptimizationRun } from './source-types'
 
 type RunMethods = Pick<Review1Db, 'listOptimizationRuns' | 'recordFailedRun'>
@@ -18,7 +19,9 @@ export function runMethods(ctx: DbContext): RunMethods {
       }),
     recordFailedRun: (tripId, { failureCode, algorithm = DEFAULT_RUN_ALGORITHM }) =>
       ctx.respond(() => {
-        ctx.scope.trips.own(tripId)
+        const trip = ctx.scope.trips.own(tripId)
+        // Thuật toán gói không cho phép hoặc kho mẫu không chạy được thì không ghi lần chạy nào
+        checkRunAlgorithm(ctx, trip.companyId, algorithm)
         const run: OptimizationRun = {
           id: nextId('RUN', runs.keys()), tripId, algorithm, status: 'FAILED', at: ctx.nowIso(), by: ctx.state.session.userId, failureCode,
         }

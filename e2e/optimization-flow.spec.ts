@@ -36,13 +36,16 @@ function stored(page: Page, tripId = TRIP_ID) {
 test('one run reports the progress of three plans, saves them as three revisions of one run, opens their comparison, and one is approved in the Planner', async ({ page, login, browserErrors }) => {
   await login(SETUP)
   await expect(optimize(page)).toBeEnabled()
-  // Không còn ô chọn mục tiêu hay thuật toán: màn liệt kê ba phương án và nói tên thuật toán sẽ chạy
+  // Không có ô chọn mục tiêu: màn liệt kê ba phương án. Thuật toán chọn trong phạm vi gói (Long Bình: Pro) và bản demo chạy được
   await expect(page.getByRole('list', { name: 'Ba phương án mỗi lần chạy', exact: true }).getByRole('listitem')).toHaveText([
     /Tối đa thể tích/, /Cân bằng tải trục/, /Ít dỡ-xếp lại/,
   ])
   await page.locator('summary').filter({ hasText: 'Thiết lập nâng cao' }).click()
-  await expect(page.getByRole('radio')).toHaveCount(0)
-  await expect(page.locator('[data-run-algorithm]')).toHaveText('EP + DBLF (mock)')
+  const algorithms = page.getByRole('radiogroup', { name: 'Thuật toán', exact: true })
+  await expect(algorithms.getByRole('radio', { name: 'EP + DBLF (mock)', exact: true })).toBeChecked()
+  await expect(algorithms.getByRole('radio', { name: 'EP + DBLF + GA/SA', exact: true })).toBeDisabled()
+  await expect(algorithms.getByRole('radio', { name: 'EP + DBLF + GA/SA', exact: true })).toHaveAccessibleDescription(/Bản demo chỉ chạy EP \+ DBLF$/)
+  await expect(algorithms.getByRole('radio', { name: 'EP + DBLF + GA/SA + AI Optimizer', exact: true })).toHaveAccessibleDescription(/Cần gói Ultimate$/)
   const before = await stored(page)
 
   await optimize(page).click()

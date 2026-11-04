@@ -3,11 +3,11 @@ import { useId, useState } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
-import { fieldLabelClass } from '@/components/ui/field-styles'
 import { PLAN_LABELS, PLAN_OBJECTIVES } from '@/domain/models'
 import { useT } from '@/lib/i18n'
-import { DEFAULT_RUN_ALGORITHM } from '@/lib/mock-db'
+import type { AlgorithmChoice } from '@/lib/mock-db'
 import type { SetupValues } from './optimization-request'
+import { SetupAlgorithmField } from './SetupAlgorithmField'
 
 type Form = { form: UseFormReturn<SetupValues> }
 
@@ -61,15 +61,16 @@ export function SetupCandidateList() {
 }
 
 /**
- * Phần "Thiết lập nâng cao" gập trong `<details>` (V2.3: ô mũi tên 28 px, tiêu đề Archivo, ghi chú): tên thuật toán của lần chạy — chỉ
- * đọc, không chọn tay (FE-5b-05; hạng thuật toán theo gói nối ở FE-8-05), kèm câu nói rõ kết quả là MOCK RESULT — rồi thời gian giới hạn
- * và random seed. Có lỗi ở hai ô số thì phần này tự mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt. Giữ `<details>`/`<summary>` (E2E mở
+ * Phần "Thiết lập nâng cao" gập trong `<details>` (V2.3: ô mũi tên 28 px, tiêu đề Archivo, ghi chú): ô chọn thuật toán của lần chạy
+ * trong phạm vi gói cho phép và nguồn chạy được (`SetupAlgorithmField`; mục tiêu vẫn không chọn, FE-5b-05) — rồi thời gian giới hạn và
+ * random seed. Có lỗi ở hai ô số thì phần này tự mở, để lỗi không nằm khuất khi nút Tối ưu bị tắt. Giữ `<details>`/`<summary>` (E2E mở
  * phần này qua `summary`).
  */
-export function SetupAdvancedFields({ form }: Form) {
+export function SetupAdvancedFields({ form, choices }: Form & { choices: readonly AlgorithmChoice[] }) {
   const t = useT()
   const [open, setOpen] = useState(false)
-  const { register, formState: { errors } } = form
+  const { control, register, setValue, formState: { errors } } = form
+  const algorithm = useWatch({ control, name: 'algorithm' })
   const hasError = errors.timeLimitSeconds !== undefined || errors.randomSeed !== undefined
 
   return (
@@ -82,13 +83,8 @@ export function SetupAdvancedFields({ form }: Form) {
         <span className="text-small text-ink-3 max-md:hidden">{t('optimization.advancedHint')}</span>
       </summary>
       <div className="mt-4.5 ml-10 flex flex-col gap-5 max-sm:ml-0">
-        <dl className="m-0 flex flex-col gap-1.5">
-          <dt className={fieldLabelClass}>{t('runs.algorithm')}</dt>
-          <dd data-run-algorithm className="m-0 flex min-h-11 items-center rounded-md border border-border bg-n-25 px-3.5 text-body font-semibold text-ink-strong">
-            {t(`runs.algorithms.${DEFAULT_RUN_ALGORITHM}`)}
-          </dd>
-          <dd className="m-0 text-fine text-ink-3">{t('optimization.algorithmNote')}</dd>
-        </dl>
+        <SetupAlgorithmField choices={choices} value={algorithm}
+          onChange={(next) => setValue('algorithm', next, { shouldDirty: true, shouldTouch: true, shouldValidate: true })} />
 
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-4 max-md:col-span-6">

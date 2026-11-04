@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { validateRequest } from '@/domain/constraints'
 import { SPEC_CARTON_A, SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import type { CargoPackage } from '@/domain/models'
-import { buildOptimizationRequest, DEFAULT_SETTINGS, DEFAULT_SETUP, groupRequestIssues } from './optimization-request'
+import { buildOptimizationRequest, DEFAULT_SETTINGS, DEFAULT_SETUP, groupRequestIssues, type SetupValues } from './optimization-request'
 
 const trip = { id: 'TRIP-TEST', packages: [SPEC_CARTON_A] }
 
@@ -16,9 +16,17 @@ test('the request carries the trip packages, the chosen vehicle and the form set
   expect(DEFAULT_SETTINGS.method).toBe('MOCK')
 })
 
-test('the form carries only the Spec settings: no objective or algorithm to choose (FE-5b-05)', () => {
-  expect(Object.keys(DEFAULT_SETUP).toSorted()).toStrictEqual(['enforceLifo', 'method', 'prioritizeLowCenterOfGravity', 'randomSeed', 'timeLimitSeconds'])
+test('the form adds the run algorithm to the Spec settings, but no objective to choose (FE-5b-05)', () => {
+  expect(Object.keys(DEFAULT_SETUP).toSorted()).toStrictEqual(['algorithm', 'enforceLifo', 'method', 'prioritizeLowCenterOfGravity', 'randomSeed', 'timeLimitSeconds'])
+  expect(DEFAULT_SETUP.algorithm).toBe('EP_DBLF')
+})
+
+test('the chosen algorithm stays out of the Spec request, so the request and job id do not depend on it', () => {
   expect(buildOptimizationRequest(trip, SPEC_TRUCK_6M, DEFAULT_SETUP).settings).toStrictEqual(DEFAULT_SETTINGS)
+  const picked: SetupValues = { ...DEFAULT_SETUP, algorithm: 'EP_DBLF_GA' }
+  expect(buildOptimizationRequest(trip, SPEC_TRUCK_6M, picked).settings).toStrictEqual(DEFAULT_SETTINGS)
+  const { randomSeed: _seed, ...unseeded } = DEFAULT_SETTINGS
+  expect(buildOptimizationRequest(trip, SPEC_TRUCK_6M, unseeded).settings).toStrictEqual(unseeded)
 })
 
 test('a package with no usable orientation blocks the run and points at that package', () => {

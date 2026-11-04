@@ -11,6 +11,8 @@ export const runs = {
   },
   algorithms: {
     EP_DBLF: 'EP + DBLF (mock)',
+    EP_DBLF_GA: 'EP + DBLF + GA/SA',
+    EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI Optimizer',
   },
   status: {
     COMPLETED: 'Has a result',

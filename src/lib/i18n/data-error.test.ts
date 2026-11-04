@@ -105,6 +105,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PLAN_IN_USE: { planId: 'PLAN-002', companies: 1 },
   TOPUP_INVALID: { credits: 75 },
   CREDIT_NOT_RESERVED: { reference: 'JOB-017' },
+  ALGORITHM_NOT_ALLOWED: { algorithm: 'EP_DBLF_GA', requiredTier: 'PRO' },
+  ALGORITHM_UNAVAILABLE: { algorithm: 'EP_DBLF_GA' },
   COMPANY_INVALID: { field: 'admin.email' },
   TICKET_INVALID: { field: 'title' },
   TICKET_CLOSED: { ticketId: 'TKT-002' },
@@ -164,4 +166,14 @@ test('a guest contact error names the field in the language of the screen, not b
   const assignee = new MockDbError('CONTACT_INVALID', { field: 'assignedToId' })
   expect(dataErrorMessage(assignee, createTranslator('vi'))).toBe('Mục "Người nhận việc" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
   expect(dataErrorMessage(assignee, createTranslator('en'))).toBe('The "Assignee" field of the contact request is not valid. Check it and try again.')
+})
+
+test('an algorithm error names the algorithm and the plan it needs in the language of the screen, not by their codes', () => {
+  const notAllowed = new MockDbError('ALGORITHM_NOT_ALLOWED', { algorithm: 'EP_DBLF_GA_AI', requiredTier: 'ULTIMATE' })
+  expect(dataErrorMessage(notAllowed, createTranslator('vi'))).toBe(
+    'Gói cước của công ty chưa có thuật toán EP + DBLF + GA/SA + AI Optimizer: cần gói Ultimate. Chưa chạy và chưa dùng credit nào.',
+  )
+  expect(dataErrorMessage(new MockDbError('ALGORITHM_UNAVAILABLE', { algorithm: 'EP_DBLF_GA' }), createTranslator('en'))).toBe(
+    'The demo cannot run the EP + DBLF + GA/SA algorithm yet, only EP + DBLF. Nothing ran and no credit was used.',
+  )
 })

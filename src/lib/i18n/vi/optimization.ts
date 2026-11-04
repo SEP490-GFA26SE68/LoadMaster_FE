@@ -26,8 +26,28 @@ export const optimization = {
     AXLE_BALANCE: 'Đặt khối hàng sao cho hai nhóm trục cùng mức tải.',
     MIN_REHANDLING: 'Xếp theo vùng của từng điểm giao, ít phải dỡ ra xếp lại nhất.',
   },
-  /** Thuật toán không chọn tay: mock chạy cùng một thuật toán cho cả ba phương án. */
-  algorithmNote: 'Cả ba phương án chạy cùng thuật toán này. Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT.',
+  /** Cả ba phương án của một lần chạy dùng thuật toán điều phối viên chọn ở "Thiết lập nâng cao". */
+  algorithmNote: 'Cả ba phương án chạy cùng thuật toán đã chọn; gói cước quyết định thuật toán được dùng. Bản demo: phương án do bộ tối ưu mô phỏng tạo và mang nhãn MOCK RESULT.',
+  /**
+   * Ô chọn thuật toán của "Thiết lập nâng cao" (tên ở `runs.algorithms`): câu ngắn của từng thuật toán và lý do một dòng không chọn được
+   * — gói chưa có (`ALGORITHM_NOT_ALLOWED`, `{tier}` là tên gói) hoặc bản demo chưa chạy được (`ALGORITHM_UNAVAILABLE`). `blockedReason`
+   * là câu trên nút Tối ưu khi thuật toán đang chọn bị chặn.
+   */
+  algorithmChoice: {
+    hints: {
+      EP_DBLF: 'Đặt từng kiện vào góc trống sâu nhất, thấp nhất. Nhanh, có ở mọi gói.',
+      EP_DBLF_GA: 'Thêm GA/SA thử nhiều thứ tự xếp để lấp đầy hơn; chạy lâu hơn.',
+      EP_DBLF_GA_AI: 'Thêm AI Optimizer trên nền GA/SA.',
+    },
+    blocked: {
+      ALGORITHM_NOT_ALLOWED: 'Cần gói {tier}',
+      ALGORITHM_UNAVAILABLE: 'Bản demo chỉ chạy EP + DBLF',
+    },
+    blockedReason: {
+      ALGORITHM_NOT_ALLOWED: 'Thuật toán đã chọn cần gói {tier}.',
+      ALGORITHM_UNAVAILABLE: 'Bản demo chỉ chạy EP + DBLF: chọn EP + DBLF để chạy.',
+    },
+  },
   history: {
     description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
   },
@@ -59,7 +79,7 @@ export const optimization = {
     tier: 'Hạng thuật toán của gói {plan}',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — chưa có',
-    tierNote: 'Bản demo chạy EP + DBLF (mock) cho mọi hạng.',
+    tierNote: 'Chọn thuật toán ở Thiết lập nâng cao. Bản demo chỉ chạy EP + DBLF (mock).',
     noPlan: 'Công ty chưa có gói cước.',
     /** Chỉ điều phối viên mở được màn này (`optimization.run`); quản trị công ty nạp credit ở màn gói cước. */
     blocked: {

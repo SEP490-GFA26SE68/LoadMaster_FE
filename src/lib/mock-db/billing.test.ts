@@ -382,3 +382,63 @@ describe('credit of an optimization run', () => {
     expect(await db.listCreditTransactions()).toHaveLength(17)
   })
 })
+
+describe('algorithm of an optimization run', () => {
+  /** Ba phương án của `tripId` dựng từ phương án đã lưu đầu tiên của chuyến đó. */
+  async function runOf(db: MockDb, tripId: string) {
+    const [source] = await db.listRevisions(tripId)
+    if (!source) throw new Error(`seed phải có phương án của ${tripId}`)
+    const job = runMockCandidates(source.request, { clock: () => 0 })
+    return { tripId, request: source.request, jobId: job.jobId, plans: job.plans }
+  }
+
+  /** Revision, lần chạy, sự kiện và sổ cái của công ty đang đăng nhập: không đổi nghĩa là kho không ghi gì. */
+  async function written(db: MockDb, tripId: string) {
+    return [(await db.listRevisions(tripId)).length, (await db.listOptimizationRuns(tripId)).length, (await db.listEvents()).length, await db.listCreditTransactions()]
+  }
+
+  test('a Basic company is refused an algorithm of a higher plan with the plan it needs, before any credit is held; nothing is written', async () => {
+    const { db } = open(PHUONG_NAM_DISPATCHER)
+    const input = await runOf(db, 'TRIP-PN-001')
+    const before = await written(db, 'TRIP-PN-001')
+    await expect(db.saveOptimizationRun({ ...input, algorithm: 'EP_DBLF_GA' }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_NOT_ALLOWED', params: { algorithm: 'EP_DBLF_GA', requiredTier: 'PRO' } })
+    await expect(db.recordFailedRun('TRIP-PN-001', { failureCode: 'SERVICE_UNAVAILABLE', algorithm: 'EP_DBLF_GA_AI' }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_NOT_ALLOWED', params: { algorithm: 'EP_DBLF_GA_AI', requiredTier: 'ULTIMATE' } })
+    const [first] = input.plans
+    if (!first) throw new Error('lần chạy mock phải ra phương án')
+    await expect(db.addRevision({ tripId: 'TRIP-PN-001', request: input.request, result: first.result, run: { objective: 'MAX_VOLUME', algorithm: 'EP_DBLF_GA' } }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_NOT_ALLOWED' })
+    expect(await written(db, 'TRIP-PN-001')).toStrictEqual(before)
+    expect(await balanceOf(db)).toBe(2)
+  })
+
+  test('a Pro company may use GA/SA but the demo store cannot run it: refused before the held credit is spent, which stays held', async () => {
+    const { db } = open(LONG_BINH_DISPATCHER)
+    const input = await runOf(db, 'TRIP-012')
+    const { reference } = await db.reserveOptimizationCredit('TRIP-012')
+    const before = await written(db, 'TRIP-012')
+    await expect(db.saveOptimizationRun({ ...input, algorithm: 'EP_DBLF_GA', creditReference: reference }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_UNAVAILABLE', params: { algorithm: 'EP_DBLF_GA' } })
+    // Ultimate thì vẫn là lý do của gói, xét trước nguồn
+    await expect(db.saveOptimizationRun({ ...input, algorithm: 'EP_DBLF_GA_AI', creditReference: reference }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_NOT_ALLOWED', params: { algorithm: 'EP_DBLF_GA_AI', requiredTier: 'ULTIMATE' } })
+    await expect(db.recordFailedRun('TRIP-012', { failureCode: 'REQUEST_REJECTED', algorithm: 'EP_DBLF_GA' }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_UNAVAILABLE' })
+    expect(await written(db, 'TRIP-012')).toStrictEqual(before)
+    expect((await db.listCreditTransactions()).find((entry) => entry.reference === reference)).toMatchObject({ usageStatus: 'RESERVED' })
+
+    // EP + DBLF chạy được ở mọi gói: lần chạy ghi đúng thuật toán đã chọn và trừ credit đã giữ
+    const { run } = await db.saveOptimizationRun({ ...input, algorithm: 'EP_DBLF', creditReference: reference })
+    expect(run.algorithm).toBe('EP_DBLF')
+    expect((await db.listCreditTransactions()).find((entry) => entry.reference === reference)).toMatchObject({ usageStatus: 'DEDUCTED' })
+  })
+
+  test('an Ultimate company is told the demo cannot run the AI tier rather than to upgrade', async () => {
+    const session = open(PHUONG_NAM_DISPATCHER)
+    await switchPlan(session, PHUONG_NAM_ADMIN, ULTIMATE)
+    session.db.restoreSession(PHUONG_NAM_DISPATCHER)
+    await expect(session.db.saveOptimizationRun({ ...(await runOf(session.db, 'TRIP-PN-001')), algorithm: 'EP_DBLF_GA_AI' }))
+      .rejects.toMatchObject({ code: 'ALGORITHM_UNAVAILABLE', params: { algorithm: 'EP_DBLF_GA_AI' } })
+  })
+})

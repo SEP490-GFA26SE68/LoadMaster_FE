@@ -16,9 +16,20 @@ export function dataErrorMessage(error: unknown, t: TFunction): string {
   ) as Record<string, string | number>
   const field = fieldLabel(error, t)
   if (field !== undefined) params.field = field
+  Object.assign(params, algorithmLabels(error, t))
   // Tham số của từng mã trùng placeholder của câu cùng mã (kiểm ở data-error.test.ts); TFunction không suy được từ mã động.
   const translate = t as unknown as (key: string, values: Record<string, string | number>) => string
   return translate(`dataErrors.${error.code}`, params)
+}
+
+/** Mã nêu thuật toán và gói cần có: tham số là mã của kho, câu nhận tên thuật toán và tên gói theo ngôn ngữ đang chọn. */
+function algorithmLabels(error: MockDbError, t: TFunction): Record<string, string> {
+  if (error.code === 'ALGORITHM_NOT_ALLOWED') {
+    const { algorithm, requiredTier } = (error as MockDbError<'ALGORITHM_NOT_ALLOWED'>).params
+    return { algorithm: t(`runs.algorithms.${algorithm}`), requiredTier: t(`common.planTiers.${requiredTier}`) }
+  }
+  if (error.code === 'ALGORITHM_UNAVAILABLE') return { algorithm: t(`runs.algorithms.${(error as MockDbError<'ALGORITHM_UNAVAILABLE'>).params.algorithm}`) }
+  return {}
 }
 
 /**

@@ -1,10 +1,12 @@
 import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
+import type { PlanTier } from './billing-model'
 import type { ContactField } from './contact-model'
 import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
 import type { PickupStatus } from './pickup-model'
 import type { RequirementStoredStatus } from './requirement-model'
+import type { OptimizationAlgorithm } from './source-types'
 import type { TripPhase } from './types'
 
 /** Bộ sưu tập của kho mock. */
@@ -242,6 +244,10 @@ export type MockDbErrorParams = {
   TOPUP_INVALID: { credits: number }
   /** Trừ credit của một lần chạy chưa giữ credit (đã hoàn, hoặc mã lạ). */
   CREDIT_NOT_RESERVED: { reference: string }
+  /** Chạy tối ưu bằng thuật toán gói của công ty không có; `requiredTier` là gói thấp nhất có nó. Từ chối trước khi giữ hay trừ credit. */
+  ALGORITHM_NOT_ALLOWED: { algorithm: OptimizationAlgorithm; requiredTier: PlanTier }
+  /** Chạy tối ưu bằng thuật toán nguồn hiện tại chưa chạy được (kho mẫu chỉ chạy EP + DBLF). Từ chối trước khi giữ hay trừ credit. */
+  ALGORITHM_UNAVAILABLE: { algorithm: OptimizationAlgorithm }
 
   // Công ty và yêu cầu hỗ trợ (FE-8-06, FE-8-07)
   /** Công ty sai dữ liệu ở trường `field` (`admin.email`…): tên, địa chỉ, số điện thoại, kho xuất phát hoặc quản trị công ty đầu tiên thiếu hay không đọc được. */

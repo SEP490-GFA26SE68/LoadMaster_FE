@@ -1,9 +1,11 @@
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { CargoPackage, OptimizationRequest, PackagePlacement, VehicleConfig } from '@/domain/models'
+import { DEFAULT_RUN_ALGORITHM, type OptimizationAlgorithm } from '@/lib/mock-db'
 
 /**
- * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT). Mục tiêu và thuật
- * toán không còn là lựa chọn của người dùng (FE-5b-05, D-77): mỗi lần chạy ra ba phương án theo ba mục tiêu, thuật toán do kho ghi.
+ * Thiết lập tối ưu trên form (Spec 9.4). `method` luôn là `MOCK` (chỉ mock chạy được, kết quả mang MOCK RESULT). Mục tiêu không phải lựa
+ * chọn của người dùng (FE-5b-05): mỗi lần chạy ra ba phương án theo ba mục tiêu. Thuật toán thì điều phối viên chọn trong phạm vi gói
+ * cho phép và nguồn chạy được; nó đi cùng lần chạy (kho ghi vào `OptimizationRun`), không vào request của Spec.
  */
 export type OptimizationSettings = OptimizationRequest['settings']
 
@@ -17,10 +19,16 @@ export const DEFAULT_SETTINGS: OptimizationSettings = {
   prioritizeLowCenterOfGravity: true,
 }
 
-/** Giá trị form của màn thiết lập: đúng thiết lập Spec gửi service. */
-export type SetupValues = OptimizationSettings
+/** Giá trị form của màn thiết lập: thiết lập Spec gửi service, cộng thuật toán của lần chạy. */
+export type SetupValues = OptimizationSettings & { algorithm: OptimizationAlgorithm }
 
-export const DEFAULT_SETUP: SetupValues = DEFAULT_SETTINGS
+/** Thuật toán ở đây là của lúc chưa đọc gói; màn đặt lại theo gói khi người dùng chưa tự chọn (`defaultAlgorithm`). */
+export const DEFAULT_SETUP: SetupValues = { ...DEFAULT_SETTINGS, algorithm: DEFAULT_RUN_ALGORITHM }
+
+/** Đúng các trường Spec của thiết lập: thuật toán của form không lọt vào request, nên request và mã job không đổi theo nó. */
+function specSettings({ method, timeLimitSeconds, randomSeed, enforceLifo, prioritizeLowCenterOfGravity }: OptimizationSettings): OptimizationSettings {
+  return { method, timeLimitSeconds, ...(randomSeed === undefined ? {} : { randomSeed }), enforceLifo, prioritizeLowCenterOfGravity }
+}
 
 /** Request gửi service: xe đang chọn, kiện của chuyến (đã có `deliveryStop` theo thứ tự điểm giao, LM-046) và thiết lập. */
 export function buildOptimizationRequest(
@@ -30,7 +38,10 @@ export function buildOptimizationRequest(
   pinnedPlacements?: readonly PackagePlacement[],
 ): OptimizationRequest {
   // Kiện ghim (FE-BL-02): trường chỉ có mặt khi giữ kiện nào đó, để lần chạy thường giữ nguyên request và mã job
-  return { vehicle, packages: [...trip.packages], settings, ...(pinnedPlacements?.length ? { pinnedPlacements: [...pinnedPlacements] } : {}) }
+  return {
+    vehicle, packages: [...trip.packages], settings: specSettings(settings),
+    ...(pinnedPlacements?.length ? { pinnedPlacements: [...pinnedPlacements] } : {}),
+  }
 }
 
 /** Nhóm của `validateRequest`; danh sách kiểm tra của màn có thêm nhóm `route` (chuyến đã tối ưu tuyến) ở `setup-checklist.ts`. */

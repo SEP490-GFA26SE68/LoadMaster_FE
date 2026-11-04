@@ -2,6 +2,7 @@ import { deadlineReview, pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PlanObjective } from '@/domain/models'
 import { runCredit } from './db-billing'
 import { found, nextId, put, type DbContext } from './db-context'
+import { checkRunAlgorithm } from './db-run-algorithm'
 import { MockDbError } from './errors'
 import { tripStatus } from './operations'
 import { approvalIssues, approvedResult, isStale } from './revisions'
@@ -78,6 +79,7 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Lịch sử lần chạy (LM-104): kết quả lưu lẻ là một lần chạy một phương án
+        checkRunAlgorithm(ctx, trip.companyId, run.algorithm)
         // Phiên đăng nhập lưu kết quả cũng tốn 1 credit như một lần chạy (`runCredit`); kho không phiên thì không
         const credit = runCredit(ctx, trip)
         try {
@@ -99,6 +101,8 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         // Kiện ghim (FE-BL-02): bộ ghim hỏng thì không lưu lần chạy nào, kho không tin nơi gọi đã kiểm
         const faults = pinnedIssues(request)
         if (faults.length > 0) throw new MockDbError('PINNED_SET_INVALID', { tripId, count: faults.length, codes: [...new Set(faults.map(({ code }) => code))] })
+        // Thuật toán đã chọn: gói phải cho phép và kho mẫu phải chạy được — xét trước credit
+        checkRunAlgorithm(ctx, trip.companyId, algorithm)
         // Credit đã giữ phải còn giữ trước khi ghi gì; lưu xong thì trừ hẳn (FE-8-05, D-89)
         const credit = runCredit(ctx, trip, creditReference)
         try {
