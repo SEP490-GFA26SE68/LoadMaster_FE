@@ -21,6 +21,14 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
 export const PUBLIC_HOME = '/gioi-thieu'
 /** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
 export const PUBLIC_PRICING = '/bang-gia'
+/** Đặt mật khẩu mới bằng mã gửi qua email (chỉ khi đăng nhập bằng máy chủ); ngoài `RequireAuth`. */
+export const PASSWORD_RESET = '/quen-mat-khau'
+
+/** Trang đặt mật khẩu mới, điền sẵn email đang gõ ở màn đăng nhập hay email của hồ sơ. */
+export function passwordResetPath(email: string): string {
+  const trimmed = email.trim()
+  return trimmed === '' ? PASSWORD_RESET : `${PASSWORD_RESET}?email=${encodeURIComponent(trimmed)}`
+}
 
 /**
  * Trang mở sau khi đăng nhập. `from` là trang định vào trước khi bị chuyển tới màn đăng nhập (kèm query).

@@ -3,6 +3,7 @@ import type { titles as source } from '../vi/titles'
 
 export const titles = {
   login: 'Sign in',
+  passwordReset: 'Set a new password',
   dashboard: 'Dashboard',
   trips: 'Trips',
   trip: 'Trip {id}',

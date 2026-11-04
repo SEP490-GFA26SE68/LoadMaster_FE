@@ -14,7 +14,7 @@ import { ProfileIdentity } from './ProfileIdentity'
  * Nhân viên kho và tài xế mở màn này trên máy cảm ứng nên chữ 16px, ô nhập và nút cao 56px khi con trỏ là ngón tay.
  *
  * Đăng nhập bằng Keycloak: danh tính đọc lại từ `GET /api/users/me` mỗi lần mở màn; backend chưa có lối tự sửa hồ sơ hay đổi mật khẩu
- * nên không có hai form đó — thay bằng liên kết tới trang tài khoản của Keycloak (`AccountPasswordCard`).
+ * nên không có hai form đó — đổi mật khẩu bằng mã gửi về email, ngay trong app (`AccountPasswordCard` → `/quen-mat-khau`).
  */
 export function ProfilePage() {
   const t = useT()
@@ -35,7 +35,7 @@ export function ProfilePage() {
           <ProfileIdentity user={user} serverManaged={serverManaged} />
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             {serverManaged ? (
-              <AccountPasswordCard />
+              <AccountPasswordCard email={user.email} />
             ) : (
               <>
                 {/* `key`: đổi tài khoản trong cùng tab thì form dựng lại với dữ liệu của người mới */}
