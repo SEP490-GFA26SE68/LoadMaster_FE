@@ -4,7 +4,14 @@
  *   removeTripPackage → DELETE /api/trips/{id}/packages/{packageId}
  *   chưa có ở BE: fetchTripPoolPackages
  */
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type Package, type Trip, type TripStopTarget } from '@/lib/mock-db'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /**
  * Kiện kho kiện đưa **thẳng** vào chuyến (FE-4b-05, D-68 đường 2): điều phối viên chọn kiện Đã nhập chưa thuộc yêu cầu giao nào, gán
@@ -28,11 +35,13 @@ export type AddTripPackagesInput = { readonly packageIds: readonly string[]; rea
 /** Đưa kiện Đã nhập vào điểm giao `target` của chuyến: điểm đang có, hoặc điểm tay mới cuối tuyến. Kiện sang "Đã gán chuyến". */
 // POST /api/trips/{id}/packages
 export function addTripPackages(tripId: string, { packageIds, target, overrideReason }: AddTripPackagesInput): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().addTripPackages(tripId, packageIds, target, overrideReason === undefined ? {} : { overrideReason })
 }
 
 /** Bỏ một kiện khỏi chuyến: kiện về "Đã nhập" ở kho kiện. */
 // DELETE /api/trips/{id}/packages/{packageId}
 export function removeTripPackage(tripId: string, packageId: string): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().removeTripPackage(tripId, packageId)
 }

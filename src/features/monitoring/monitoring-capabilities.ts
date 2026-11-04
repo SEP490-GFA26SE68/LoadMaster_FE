@@ -3,8 +3,8 @@ import { usesBackend } from '@/lib/backend-config'
 /**
  * Màn Giám sát làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend có: chuyến đang vận
  * chuyển kèm điểm giao, vị trí GPS mới nhất và lịch sử vị trí, giờ đến và mức hạn backend tính, cảnh báo nguy cơ trễ, báo và xử lý sự
- * cố, tuyến thay thế. Backend chưa có — màn ẩn phần đó: liên kết tới Chi tiết chuyến (màn chuyến còn là kho mẫu, không có chuyến của
- * backend), đổi thứ tự điểm khi xe đang chạy, chuyển sự cố cho quản lý cùng tab "Sự cố cần xử lý" và gia hạn, nhận hàng dọc đường, xác
+ * cố, tuyến thay thế. Liên kết tới Chi tiết chuyến chỉ có khi màn chuyến đọc cùng nguồn (nhóm `trips` cùng bật hoặc cùng tắt) — không
+ * thì mã chuyến bên này không có ở bên kia. Backend chưa có — màn ẩn phần đó: đổi thứ tự điểm khi xe đang chạy, chuyển sự cố cho quản lý cùng tab "Sự cố cần xử lý" và gia hạn, nhận hàng dọc đường, xác
  * nhận tay chờ duyệt. Nằm riêng khỏi `monitoring-api.ts` để thành phần đọc nó không kéo theo lớp gọi API.
  */
 export type MonitoringCapabilities = {
@@ -22,7 +22,7 @@ const ON_BACKEND = usesBackend('monitoring')
 
 export const MONITORING_CAPABILITIES: MonitoringCapabilities = {
   backend: ON_BACKEND,
-  openTrip: !ON_BACKEND,
+  openTrip: ON_BACKEND === usesBackend('trips'),
   reorderStops: !ON_BACKEND,
   escalation: !ON_BACKEND,
   pickups: !ON_BACKEND,
