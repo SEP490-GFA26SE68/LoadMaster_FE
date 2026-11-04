@@ -1,6 +1,7 @@
 import { createColumnHelper, type CellContext } from '@tanstack/react-table'
 import { Link } from 'react-router'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import type { RequirementRow } from './requirements-api'
 import { REQUIREMENT_PRIORITY_ORDER, REQUIREMENT_STATUS_ORDER } from './requirement-list'
@@ -78,9 +79,12 @@ function TripCell({ row }: { row: RequirementRow }) {
   if (!row.trip) return <span className="text-ink-3">{t('requirements.notAssigned')}</span>
   return (
     <span className="flex min-w-0 flex-col whitespace-normal">
-      <Link to={`/chuyen/${row.trip.id}`} className={`line-clamp-1 font-medium text-ink-strong hover:text-primary ${FOCUS}`}>
-        {row.trip.name}
-      </Link>
+      {/* Yêu cầu giao đọc kho mẫu: chuyến đọc backend thì mã chuyến của kho mẫu không mở được chuyến nào (`tripLinkable`) */}
+      {tripLinkable(false) ? (
+        <Link to={`/chuyen/${row.trip.id}`} className={`line-clamp-1 font-medium text-ink-strong hover:text-primary ${FOCUS}`}>
+          {row.trip.name}
+        </Link>
+      ) : <span className="line-clamp-1 font-medium text-ink-strong">{row.trip.name}</span>}
       {' '}
       <span className="font-mono text-caption text-ink-3">
         {row.stopNumber === undefined ? row.trip.id : `${row.trip.id} · ${t('requirements.stop', { number: row.stopNumber })}`}

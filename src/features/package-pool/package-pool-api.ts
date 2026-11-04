@@ -14,6 +14,7 @@
 
 import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-import-template'
 import { readImportFile } from '@/features/trips/read-import-file'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { api, ApiError, isApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import {
@@ -63,10 +64,10 @@ export const PACKAGE_POOL_SUPPORT = {
   /** Nhãn mọi kiện của một chuyến (`?chuyen=`). */
   tripLabels: !ON_BACKEND,
   /**
-   * Liên kết tới chuyến của kiện. Màn chuyến chưa nối backend (cờ `trips` bật cũng chưa có thân hàm nào), nên mã chuyến của backend không
-   * mở được chuyến nào: chỉ kho mẫu có liên kết.
+   * Liên kết tới chuyến của kiện: chỉ khi kho kiện và chuyến cùng đọc kho mẫu. Kiện của backend chưa mang mã chuyến mà Chi tiết chuyến
+   * tìm được; kiện của kho mẫu không mở được Chi tiết chuyến của máy chủ (`tripLinkable`).
    */
-  tripLinks: !ON_BACKEND,
+  tripLinks: !ON_BACKEND && tripLinkable(false),
   /** Chỉ điều phối viên đọc được kho kiện (backend từ chối quản lý công ty và nhân viên kho). */
   dispatcherOnly: ON_BACKEND,
   /** Xoá kiện (chỉ backend có). */

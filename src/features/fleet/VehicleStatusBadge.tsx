@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { useFormat, useT } from '@/lib/i18n'
 import type { FleetStatus, FleetVehicleState } from './vehicle-status'
 
@@ -29,7 +30,7 @@ function stopRowClick(event: MouseEvent) {
 /**
  * Ô trạng thái ở danh sách đội xe (LM-089, V2.3): chip, dòng dưới là mã chuyến đang phục vụ (liên kết tới chuyến) kèm pha của
  * chuyến, hoặc "Từ <ngày> · <ghi chú bảo dưỡng>" (ghi chú tối đa hai dòng, đủ câu ở `title` và ở trang cấu hình xe). Xe sẵn
- * sàng không có dòng phụ.
+ * sàng không có dòng phụ. Mã chuyến chỉ có ở kho mẫu: chuyến đọc backend thì mã là chữ thường (`tripLinkable`).
  */
 export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
   const t = useT()
@@ -40,13 +41,15 @@ export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
       <VehicleStatusBadge status={state.status} />
       {state.status === 'in_use' && state.tripId ? (
         <span className="flex flex-wrap items-baseline gap-x-1.5 text-caption text-ink-3">
-          <Link
-            to={`/chuyen/${state.tripId}`}
-            onClick={stopRowClick}
-            className="rounded-sm font-mono font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            {state.tripId}
-          </Link>
+          {tripLinkable(false) ? (
+            <Link
+              to={`/chuyen/${state.tripId}`}
+              onClick={stopRowClick}
+              className="rounded-sm font-mono font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {state.tripId}
+            </Link>
+          ) : <span className="font-mono font-medium">{state.tripId}</span>}
           {state.tripPhase === 'loading' || state.tripPhase === 'loaded' || state.tripPhase === 'delivering' ? (
             <span>· {t(`fleet.tripPhase.${state.tripPhase}`)}</span>
           ) : null}

@@ -34,6 +34,15 @@ export const TRIPS_CAPABILITIES: TripsCapabilities = {
   liveMonitoring: ON_BACKEND === usesBackend('monitoring'),
 }
 
+/**
+ * Mã chuyến mà một màn đọc từ nguồn `sourceOnBackend` có mở được Chi tiết chuyến không. Chi tiết chuyến tìm chuyến ở nguồn của màn
+ * chuyến, nên khi chuyến đọc backend, mã chuyến của kho mẫu (bảng điều khiển, yêu cầu giao, nhật ký…) không mở được chuyến nào: các màn
+ * đó hiện mã dạng chữ thường, không liên kết.
+ */
+export function tripLinkable(sourceOnBackend: boolean): boolean {
+  return TRIPS_CAPABILITIES.backend === sourceOnBackend
+}
+
 /** Component đọc ở đây để ẩn phần nguồn dữ liệu chưa có (kho mẫu hay backend). */
 export function useTripsCapabilities(): TripsCapabilities {
   return TRIPS_CAPABILITIES
