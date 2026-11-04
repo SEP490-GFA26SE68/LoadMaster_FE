@@ -1,16 +1,18 @@
-import { ExternalLink } from 'lucide-react'
+import { KeyRound } from 'lucide-react'
 import { useId } from 'react'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
+import { passwordResetPath } from '@/features/auth/landing'
 import { useT } from '@/lib/i18n'
-import { accountConsoleUrl } from './profile-api'
 import { SECTION_TEXT, TOUCH_CONTROL } from './profile-styles'
 
 /**
- * Thẻ mật khẩu khi đăng nhập bằng Keycloak: app không thu mật khẩu, nên chỉ có liên kết tới trang tài khoản của Keycloak (thẻ mới) —
- * không có form đổi mật khẩu giả. Nút phụ: đây là lối sang trang khác, không phải hành động chính của màn.
+ * Thẻ mật khẩu khi đăng nhập bằng Keycloak: backend chưa có lối đổi mật khẩu bằng mật khẩu hiện tại, nên đổi mật khẩu đi qua luồng
+ * đặt mật khẩu mới bằng mã gửi về email của tài khoản — ngay trong app, không sang trang của Keycloak. Nút phụ: đây là lối sang trang
+ * khác, không phải hành động chính của màn.
  */
-export function AccountPasswordCard() {
+export function AccountPasswordCard({ email }: { email: string }) {
   const t = useT()
   const titleId = useId()
   return (
@@ -22,11 +24,10 @@ export function AccountPasswordCard() {
         </CardHeader>
         <CardBody className="p-5">
           <Button asChild variant="secondary" className={TOUCH_CONTROL}>
-            <a href={accountConsoleUrl()} target="_blank" rel="noreferrer">
-              <ExternalLink strokeWidth={1.5} aria-hidden />
-              {t('profile.account.changePassword')}{' '}
-              <span className="sr-only">{t('profile.account.newTab')}</span>
-            </a>
+            <Link to={passwordResetPath(email)}>
+              <KeyRound strokeWidth={1.5} aria-hidden />
+              {t('profile.account.changePassword')}
+            </Link>
           </Button>
         </CardBody>
       </Card>

@@ -13,9 +13,8 @@ export const profile = {
   },
   account: {
     title: 'Password',
-    description: 'Your sign-in password is managed by Keycloak. Change it on the account page, which opens in a new tab.',
+    description: 'Change your password with a code sent to the email of your account.',
     changePassword: 'Change password',
-    newTab: '(opens in a new tab)',
   },
   details: {
     title: 'Personal details',

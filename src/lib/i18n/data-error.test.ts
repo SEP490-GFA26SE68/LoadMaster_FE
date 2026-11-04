@@ -154,7 +154,14 @@ test('a record of another company is named by its id, never by the company it be
 test('backend errors use the sentence of their code, never the raw server message; unknown codes fall back', () => {
   expect(dataErrorMessage(new ApiError('EMAIL_ALREADY_EXISTS', { status: 409 }), createTranslator('vi'))).toBe('Email này đã có người dùng.')
   expect(dataErrorMessage(new ApiError('NETWORK_ERROR'), createTranslator('en'))).toBe('Cannot reach the server. Check the network and try again.')
-  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 400 }), createTranslator('en'))).toBe('Something went wrong. Try again later.')
+  // Mã backend vừa thêm mà app chưa có câu: câu theo loại lỗi HTTP, không phải câu "có lỗi" chung
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 400 }), createTranslator('en'))).toBe(
+    'The server did not accept this action: the data is not valid or the current state does not allow it.',
+  )
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 409 }), createTranslator('vi'))).toBe(
+    'Dữ liệu bị trùng hoặc đã thay đổi trên máy chủ. Tải lại rồi thử lại.',
+  )
+  expect(dataErrorMessage(new ApiError('SOMETHING_NEW', { status: 500 }), createTranslator('en'))).toBe('The server ran into an error. Try again later.')
 })
 
 test('a guest contact error names the field in the language of the screen, not by its code', () => {

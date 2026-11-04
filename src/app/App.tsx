@@ -15,6 +15,7 @@ import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title
  * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D.
  */
 const LoginPage = lazy(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const PasswordResetPage = lazy(() => import('@/features/auth/PasswordResetPage').then((m) => ({ default: m.PasswordResetPage })))
 const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const TripListPage = lazy(() => import('@/features/trips/TripListPage').then((m) => ({ default: m.TripListPage })))
 const TripFormPage = lazy(() => import('@/features/trips/TripFormPage').then((m) => ({ default: m.TripFormPage })))
@@ -98,6 +99,11 @@ export const routes: RouteObject[] = [
         path: '/dang-nhap',
         element: <RouteOutlet />,
         children: [{ index: true, element: <LoginPage />, handle: titled((t) => t('titles.login')) }],
+      },
+      {
+        path: '/quen-mat-khau',
+        element: <RouteOutlet />,
+        children: [{ index: true, element: <PasswordResetPage />, handle: titled((t) => t('titles.passwordReset')) }],
       },
 
       // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thì RequireAuth đưa sang `/gioi-thieu`.

@@ -114,7 +114,7 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
   màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi chú nội bộ. Không có trang tự đăng ký: tài khoản công ty do đội
   LoadMaster tạo.
 - **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
-  (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì đăng nhập qua Keycloak của
+  (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì form đăng nhập của app dùng Keycloak của
   backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
   điểm giao của tài xế, màn Giám sát đọc ghi backend thật; `VITE_API_FEATURES` chọn nhóm. Chuyến, Planner, tối ưu, kho xếp hàng, đội xe, yêu cầu
   giao vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu mang nhãn **MOCK RESULT**.
@@ -138,13 +138,13 @@ component giữ nguyên. Nhóm còn lại nối theo cùng lối, cộng `create
 ```bash
 pnpm lint          # oxlint
 pnpm build         # tsc -b + vite build
-pnpm test          # Vitest: 2.601 test unit + DOM
+pnpm test          # Vitest: 2.630 test unit + DOM
 pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chia bốn phần chạy song song)
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất ở máy (18/10/2026, nhánh `feat/demo-noi-backend` sau khi nối giám sát và sửa lỗi QA): lint, kiểm kiểu, build, 2.601/2.601
-unit + DOM xanh; E2E chỉ chạy các spec trang công khai (4/4), bộ đủ chưa chạy lại. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
+Lần chạy gần nhất ở máy (04/11/2026, nhánh `feat/dang-nhap-trong-app`, đăng nhập ngay trong app): lint, kiểm kiểu, build, 2.630/2.630
+unit + DOM xanh; E2E chỉ chạy ba spec đăng nhập, hồ sơ, trang công khai (12/12), bộ đủ chưa chạy lại. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 
 ## Làm việc trên repo

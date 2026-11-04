@@ -65,6 +65,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
   mũi tên, chữ vẫn là tên truy cập). Không có đăng ký, mua gói hay dùng thử: tài khoản công ty do đội LoadMaster mở sau khi khách gửi yêu cầu liên hệ.
+- **Đăng nhập luôn ở màn của app** — kho mẫu lẫn Keycloak: một form email + mật khẩu, không chuyển sang trang nào của Keycloak (mục 9 "Nối
+  backend"). Đăng nhập bằng máy chủ có thêm `/quen-mat-khau` (`PasswordResetPage`, ngoài `RequireAuth`, không đòi quyền): email → mã 6 chữ số
+  gửi qua email → mật khẩu mới; mở từ "Quên mật khẩu?" của màn đăng nhập, từ lỗi mật khẩu tạm và từ thẻ Mật khẩu của Hồ sơ (`?email=` điền
+  sẵn). Kho mẫu không gửi được mã nên chế độ kho mẫu không có liên kết đó, và mở `/quen-mat-khau` là về `/dang-nhap`.
 - **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp
   hơn thì gom vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không
   về nút menu). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
@@ -241,7 +245,6 @@ maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một ve
                            và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
-keycloak-js              — đăng nhập qua Keycloak của backend; CHỈ import (động) trong features/auth/keycloak-session.ts
 motion                   — animation 2D
 ```
 
@@ -265,7 +268,7 @@ Bản đồ (FE-4b-07): màn import `RouteMap` từ `@/components/map`, không i
 OpenStreetMap** hay nguồn gạch nào ngoài Goong (D-75: không bảo đảm thể hiện Hoàng Sa, Trường Sa). Khoá map tiles chỉ nằm ở `.env.local`
 (mẫu: `.env.example`; mọi `.env*` khác bị `.gitignore` chặn); dev, CI và test chạy không khoá. Khoá REST của Goong không bao giờ ở FE.
 
-**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác.
+**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · `keycloak-js` (chuyển sang trang đăng nhập của Keycloak; app đăng nhập ngay trên màn của mình, mục 9).
 
 ### Radix trực tiếp, không dùng shadcn CLI
 
@@ -295,7 +298,7 @@ src/
   components/map/       bản đồ dùng chung: RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl; CoordinatePicker
                         (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ — chưa có ở BE, Q-20)
   features/
-    auth/               đăng nhập, phiên, RequireAuth
+    auth/               đăng nhập, phiên, RequireAuth, đặt mật khẩu mới `/quen-mat-khau`
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
     monitoring/         vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển (`LiveLocationBar`, `EtaRiskWatcher`), màn Giám sát `/giam-sat`
                         (`MonitoringPage` → `MonitoringBoard`; hàm thuần `monitoring-view.ts`), kênh sự kiện `monitoring-events.ts`
@@ -1112,12 +1115,23 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `monitoring`. `platformOps`, `trips`, `warehouse` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend` của các
   nhóm đó cho tới khi nối (liên kết tới chuyến của Kho kiện từng mở `/chuyen/<mã backend>` không có trong kho mẫu).
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
-  `{ success, code, message, data, errors }` và đổi thất bại thành `ApiError` có mã. Màn không hiện thông điệp thô của máy chủ.
-- **Đăng nhập Keycloak** (`features/auth/keycloak-session.ts`, `keycloak-js` tải lười): app chuyển sang trang đăng nhập của Keycloak
-  (PKCE), không tự thu mật khẩu. Mở app thì hỏi Keycloak còn phiên không qua iframe ẩn (`public/silent-check-sso.html`) —
-  `useAuth().status` là `restoring` cho tới khi có câu trả lời và `RequireAuth` chưa quyết gì trong lúc đó. Hồ sơ đọc ở
-  `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` / `COMPANY_ADMIN`,
-  `MANAGER` / `COMPANY_MANAGER`). Token của realm sống 60 giây: mọi lượt gọi lấy token qua phiên để nó tự làm mới.
+  `{ success, code, message, data, errors }` và đổi thất bại thành `ApiError` có mã. Màn không hiện thông điệp thô của máy chủ. Tới Keycloak
+  chỉ `features/auth/keycloak-token-api.ts` gọi `fetch` (token, làm mới, đăng xuất).
+- **Đăng nhập Keycloak ngay trong app** (`features/auth/keycloak-session.ts`, không thư viện): form của màn đăng nhập đổi email + mật khẩu
+  lấy token ở realm (password grant trên client công khai `VITE_KEYCLOAK_CLIENT_ID` — realm phải bật **Direct Access Grants** cho client đó; realm
+  dùng chung với app mobile). Không chuyển sang trang nào của Keycloak, không PKCE, không iframe. Form urlencoded không header riêng nên trình duyệt
+  không preflight CORS. Lỗi `invalid_grant` đọc theo `error_description` của Keycloak (`GRANT_ERRORS`): sai mật khẩu (kể cả lúc bị khoá tạm vì
+  nhập sai nhiều lần) `invalid-credentials`, tài khoản tắt `account-suspended`, mật khẩu tạm `password-change-required` (màn đưa sang
+  `/quen-mat-khau`); client chưa bật direct grants `login-not-enabled`. Token truy cập chỉ trong bộ nhớ, tự làm mới khi còn dưới 20 giây (một
+  lượt làm mới cho mọi lượt gọi cùng lúc); refresh token ở `sessionStorage` của tab để tải lại trang không bị đăng xuất. Tab mới xin refresh token
+  của tab đang đăng nhập qua `BroadcastChannel` `loadmaster-auth-v1` (chờ 300 ms); đăng xuất ở một tab đóng phiên ở Keycloak và báo mọi tab;
+  phiên hết giữa chừng (`onEnded`) đưa về màn đăng nhập. `useAuth().status` là `restoring` cho tới khi mở lại phiên xong và `RequireAuth` chưa
+  quyết gì trong lúc đó. Hồ sơ đọc ở `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` /
+  `COMPANY_ADMIN`, `MANAGER` / `COMPANY_MANAGER`); 404 là tài khoản Keycloak chưa gắn người dùng nào (`account-not-linked`), 401 là máy chủ không
+  nhận token (`session-rejected`) — cả hai, và mọi lỗi khác của bước này, đóng luôn phiên Keycloak vừa mở. **Đặt mật khẩu mới**
+  (`password-reset-api.ts`): `POST /api/auth/password-reset/request` · `/verify` (trả `resetToken`) · `/reset`, công khai; máy chủ từ chối bằng
+  400 kèm mã của lý do (`OTP_INCORRECT`, `OTP_EXPIRED`, `RESET_TOKEN_INVALID`…) và `resetErrorKey` nói đúng lý do; máy chủ cũ trả 400 không mã
+  thì màn nói lý do theo bước.
 - **Khi đăng nhập bằng backend mà dữ liệu còn là kho mẫu:** kho mẫu được đặt phiên của tài khoản mẫu cùng vai trò, nên chuyến, xe,
   kiện trên màn là của Long Bình; tên, email, vai trò là của backend. Màn đăng nhập nói rõ điều này. Feature nào nối backend thì dữ
   liệu của nó đi theo token.
@@ -1128,15 +1142,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
   (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu.
   Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
-  giờ là giờ Việt Nam, `Instant` có `Z`. Backend `develop` chưa trả `code` cho lỗi nghiệp vụ: `api-client` đổi 400 (và 422) / 402 / 404 / 409 sang
-  `BAD_REQUEST`, `PAYMENT_REQUIRED`, `NOT_FOUND`, `CONFLICT`; chỗ một mã HTTP chỉ có một nghĩa thì `withBusinessCode` đổi sang mã nghiệp vụ.
-  Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`.
+  giờ là giờ Việt Nam (ngày và giờ ngăn bằng `T` hay dấu cách — `@JsonFormat("yyyy-MM-dd HH:mm:ss")`), `Instant` có `Z`. Phong bì lỗi có `code` (tên `ErrorCode` của backend) thì
+  giữ mã đó; không có `code` (backend cũ, và vài lỗi backend còn bắt riêng) thì `api-client` đổi 400 (và 422) / 402 / 404 / 409 sang
+  `BAD_REQUEST`, `PAYMENT_REQUIRED`, `NOT_FOUND`, `CONFLICT` (`codeOfStatus`); chỗ một mã HTTP chỉ có một nghĩa thì `withBusinessCode` đổi sang
+  mã nghiệp vụ — chỉ khi không có mã. Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`; mã app chưa có câu thì câu theo
+  loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
   `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
-  Nhật ký là màn trống "Máy chủ chưa có nhật ký hoạt động", chuông bỏ sự kiện tài khoản và đăng nhập; `/ho-so` chỉ đọc, đổi mật khẩu ở trang tài khoản
-  của Keycloak; `userFromBackend` không chép kho của tài khoản mẫu. Màn Công ty đọc `/api/companies`, `/api/contracts` (cột gói), `/api/users`
+  Nhật ký là màn trống "Máy chủ chưa có nhật ký hoạt động", chuông bỏ sự kiện tài khoản và đăng nhập; `/ho-so` chỉ đọc, đổi mật khẩu bằng mã qua email ở
+  `/quen-mat-khau`; `userFromBackend` không chép kho của tài khoản mẫu. Màn Công ty đọc `/api/companies`, `/api/contracts` (cột gói), `/api/users`
   (số người dùng); tạo công ty rồi tạo quản trị đầu tiên bằng `POST /api/users` (hai lượt gọi); tạm dừng / mở lại bằng `PATCH …/status`; bỏ
   địa chỉ, điện thoại, kho xuất phát. **Thông tin công ty `/cong-ty`** (`companyProfile.manage`): kho mẫu `getCompanyProfile` (công ty của
   phiên) / `updateCompanyProfile` (chỉ quản trị công ty; tên, địa chỉ, số điện thoại; ghi `company.updated { fields }`, không đổi thì không

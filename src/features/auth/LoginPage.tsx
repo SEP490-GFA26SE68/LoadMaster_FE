@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Boxes, Gauge, Layers, Lock } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
@@ -12,12 +12,12 @@ import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
-import { useLocale, useT, type MessageKey, type TFunction } from '@/lib/i18n'
+import { useT, type MessageKey, type TFunction } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
-import { landingPath, PUBLIC_HOME } from './landing'
-import { readReturnPath, useAuth } from './AuthProvider'
+import { landingPath, passwordResetPath, PUBLIC_HOME } from './landing'
+import { useAuth } from './AuthProvider'
 
 /**
  * Schema giữ key từ điển thay vì câu chữ; màn dịch lúc hiển thị, nên đổi ngôn ngữ
@@ -45,20 +45,27 @@ const AUTH_ERRORS = {
   'invalid-credentials': 'auth.login.invalidCredentials',
   'account-suspended': 'auth.login.accountSuspended',
   'role-unknown': 'auth.login.roleUnknown',
+  'password-change-required': 'auth.login.passwordChangeRequired',
+  'login-not-enabled': 'auth.login.loginNotEnabled',
+  'account-not-linked': 'auth.login.accountNotLinked',
+  'session-rejected': 'auth.login.sessionRejected',
 } as const satisfies Record<AuthErrorCode, MessageKey>
 
 /** Lỗi có mã thì hiện câu của mã; lỗi khác (mạng, máy chủ) hiện câu chung "không kết nối được". */
 const errorKeyOf = (error: unknown): ServerErrorKey => (error instanceof AuthError ? AUTH_ERRORS[error.code] : 'auth.login.serverUnreachable')
 
-function ServerError({ message }: { message: string }) {
+function ServerError({ message, children }: { message: string; children?: ReactNode }) {
   return (
-    <p
+    <div
       role="alert"
       className="flex items-start gap-2 rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg pointer-coarse:text-body-lg"
     >
       <Lock aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
-      <span>{message}</span>
-    </p>
+      <div className="flex flex-col gap-1">
+        <p>{message}</p>
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -81,8 +88,7 @@ const HIGHLIGHTS = [
  */
 export function LoginPage() {
   const t = useT()
-  const { locale } = useLocale()
-  const { user, status, source, sessionError, signIn, signInWithRedirect } = useAuth()
+  const { user, status, source, sessionError, signIn } = useAuth()
   const viaKeycloak = source === 'keycloak'
   const navigate = useNavigate()
   const location = useLocation()
@@ -96,8 +102,7 @@ export function LoginPage() {
   /** Trang người dùng định vào trước khi bị chuyển tới đây; không có (hoặc là gốc `/`) thì mở màn của vai trò. */
   const from = (location.state as { from?: string } | null)?.from
 
-  // Chế độ Keycloak: trang định vào được nhớ trước khi sang trang đăng nhập của Keycloak, vì `location.state` không sống qua lượt đó
-  if (user) return <Navigate to={landingPath(user.role, viaKeycloak ? readReturnPath() : from)} replace />
+  if (user) return <Navigate to={landingPath(user.role, from)} replace />
 
   async function onSubmit(values: FormValues) {
     setServerError(null)
@@ -109,12 +114,13 @@ export function LoginPage() {
     }
   }
 
-  /** Chế độ Keycloak: lỗi là của lần mở lại phiên, hoặc của chính lượt chuyển sang Keycloak. */
-  const ssoError = serverError ?? (sessionError === null ? null : errorKeyOf(sessionError))
+  /** Lỗi của lần đăng nhập vừa gửi; chưa gửi lần nào thì lỗi của lần mở lại phiên Keycloak khi mở trang. */
+  const shownError = serverError ?? (sessionError === null ? null : errorKeyOf(sessionError))
 
-  function onSsoSignIn() {
-    setServerError(null)
-    signInWithRedirect(from, locale).catch((error: unknown) => setServerError(errorKeyOf(error)))
+  /** Mang theo email đang gõ (ô nhập không nối state nên đọc lúc bấm). */
+  function openPasswordReset(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault()
+    void navigate(passwordResetPath(form.getValues('email')))
   }
 
   return (
@@ -147,16 +153,6 @@ export function LoginPage() {
               </div>
             </div>
 
-            {viaKeycloak ? (
-              <div className="flex flex-col gap-4">
-                <p className="text-body text-text-2 pointer-coarse:text-body-lg">{t('auth.login.sso.hint')}</p>
-                {ssoError ? <ServerError message={t(ssoError)} /> : null}
-                <Button type="button" variant="primary" block loading={status === 'restoring'} className={TOUCH_CONTROL} onClick={onSsoSignIn}>
-                  {t('auth.login.submit')}
-                </Button>
-                <p className="text-small text-text-3 pointer-coarse:text-body-lg">{t('auth.login.sso.sampleData')}</p>
-              </div>
-            ) : (
             <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <Input
                 label={t('auth.login.email')}
@@ -175,13 +171,41 @@ export function LoginPage() {
                 {...form.register('password')}
               />
 
-              {serverError ? <ServerError message={t(serverError)} /> : null}
+              {shownError ? (
+                <ServerError message={t(shownError)}>
+                  {/* Mật khẩu tạm: đặt mật khẩu mới ngay trong app, bằng mã gửi qua email */}
+                  {shownError === AUTH_ERRORS['password-change-required'] ? (
+                    <Link to={passwordResetPath(form.getValues('email'))} className="font-semibold underline underline-offset-2">
+                      {t('auth.login.setNewPassword')}
+                    </Link>
+                  ) : null}
+                </ServerError>
+              ) : null}
 
-              <Button type="submit" variant="primary" block loading={form.formState.isSubmitting} className={TOUCH_CONTROL}>
+              <Button
+                type="submit"
+                variant="primary"
+                block
+                loading={form.formState.isSubmitting || status === 'restoring'}
+                className={TOUCH_CONTROL}
+              >
                 {t('auth.login.submit')}
               </Button>
+
+              {/* Quên mật khẩu chỉ có khi đăng nhập bằng máy chủ: kho mẫu không gửi được mã qua email (D-20) */}
+              {viaKeycloak ? (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    to={passwordResetPath('')}
+                    onClick={openPasswordReset}
+                    className="self-start text-body font-medium text-primary underline-offset-2 hover:underline pointer-coarse:text-body-lg"
+                  >
+                    {t('auth.login.forgotPassword')}
+                  </Link>
+                  <p className="text-small text-text-3 pointer-coarse:text-body-lg">{t('auth.login.sso.sampleData')}</p>
+                </div>
+              ) : null}
             </form>
-            )}
           </div>
 
           {/* Tài khoản dùng thử là của kho mẫu: không có ý nghĩa khi đăng nhập bằng backend */}

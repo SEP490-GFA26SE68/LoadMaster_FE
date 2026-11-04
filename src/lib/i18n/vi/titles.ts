@@ -4,6 +4,7 @@
  */
 export const titles = {
   login: 'Đăng nhập',
+  passwordReset: 'Đặt mật khẩu mới',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
   trip: 'Chuyến {id}',

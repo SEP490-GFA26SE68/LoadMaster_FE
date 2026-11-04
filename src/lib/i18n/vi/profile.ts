@@ -11,12 +11,11 @@ export const profile = {
     // Đăng nhập bằng Keycloak: thông tin là của tài khoản trên máy chủ, backend chưa có lối tự sửa
     serverNote: 'Họ tên, email và số điện thoại là của tài khoản trên máy chủ. Quản trị viên sửa họ tên và số điện thoại ở màn Người dùng.',
   },
-  /** Đăng nhập bằng Keycloak: mật khẩu đổi ở trang tài khoản của Keycloak, app không thu mật khẩu. */
+  /** Đăng nhập bằng Keycloak: đổi mật khẩu bằng mã gửi về email (`/quen-mat-khau`), ngay trong app. */
   account: {
     title: 'Mật khẩu',
-    description: 'Mật khẩu đăng nhập do Keycloak quản lý. Đổi mật khẩu ở trang tài khoản, mở trong thẻ mới.',
+    description: 'Đổi mật khẩu bằng mã gửi về email của tài khoản.',
     changePassword: 'Đổi mật khẩu',
-    newTab: '(mở trong thẻ mới)',
   },
   details: {
     title: 'Thông tin cá nhân',

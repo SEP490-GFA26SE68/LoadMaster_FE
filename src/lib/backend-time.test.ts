@@ -15,6 +15,11 @@ test('a LocalDateTime without offset is server time, Vietnam (+07:00), whatever 
   expect(isoFromBackend('2026-10-17T04:29:00+08:00')).toBe('2026-10-16T20:29:00.000Z')
 })
 
+test('a LocalDateTime formatted with a space instead of T (@JsonFormat "yyyy-MM-dd HH:mm:ss") reads the same way', () => {
+  expect(isoFromBackend('2026-11-04 09:30:15')).toBe('2026-11-04T02:30:15.000Z')
+  expect(isoFromBackend('2026-11-04 09:30')).toBe('2026-11-04T02:30:00.000Z')
+})
+
 test('anything else is a server error, not a wrong date on screen', () => {
   for (const value of ['', '17/10/2026', '2026-10-17', '2026-13-45T99:99:00']) {
     let error: unknown = null
