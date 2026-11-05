@@ -14,7 +14,7 @@ const position = (page: Page) => status(page).evaluate((el) => [Number(el.datase
 
 test('nudging a floor package into a non load-bearing wheel arch is blocked and leaves no command', async ({ page, login, browserErrors }) => {
   await login(`${PLANNER_ROUTE}?debug&quality=low`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await waitIdle(page)
   // Kiện sàn nằm sát mép trong của hốc bánh bên trái (hốc: x 420–530, y 0–25, z 0–32): một bước Y− là chồng vào hốc.
   const picked = await page.evaluate(async (url) => {

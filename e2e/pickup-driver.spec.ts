@@ -60,7 +60,7 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
   // Cả hai kiện nhận vừa vùng đã trống nên có chỗ trong khung 3D (FE-BL-01): cạnh khung không còn danh sách "chưa có chỗ"
   await page.getByRole('button', { name: 'Xem vị trí hàng', exact: true }).tap()
   const viewer = page.getByRole('dialog', { name: 'Vị trí hàng tại điểm giao', exact: true })
-  await expect(viewer.locator('canvas')).toBeVisible()
+  await expect(viewer.locator('canvas:not(.maplibregl-canvas)')).toBeVisible()
   await expect(viewer.getByRole('region', { name: 'Kiện nhận dọc đường — chưa có chỗ trên xe', exact: true })).toHaveCount(0)
   await viewer.getByRole('button', { name: 'Đóng 3D', exact: true }).tap()
   await expect(viewer).toBeHidden()

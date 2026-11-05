@@ -33,7 +33,7 @@ test.beforeEach(async ({ context }) => {
 function animationFrames(page: Page, kind: 'loading' | 'unloading'): Promise<AnimationSample[]> {
   return page.evaluate(async ({ url, scene, kind, timeoutMs }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const store = _roots.get(document.querySelector('canvas')!)!.store
+    const store = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store
     const samples: AnimationSample[] = [], matrix = store.getState().camera.matrixWorld.clone()
     let slot = -1
     if (kind === 'loading') {
@@ -72,7 +72,7 @@ function animationFrames(page: Page, kind: 'loading' | 'unloading'): Promise<Ani
 function cameraSmoothTime(page: Page): Promise<number> {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    return (_roots.get(document.querySelector('canvas')!)!.store.getState().controls as CameraControlsImpl).smoothTime
+    return (_roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState().controls as CameraControlsImpl).smoothTime
   }, R3F_DEPS)
 }
 
@@ -81,7 +81,7 @@ const range = (values: number[]) => Math.max(...values) - Math.min(...values)
 test('truck details, loading spring, unloading fade and reduced motion all return to idle', async ({ page, login, browserErrors }, testInfo) => {
   await login(`${PLANNER_ROUTE}?debug&quality=high`, 'dispatcher'); await emulateSlowMachine(page, testInfo); await settle(page)
   await renderCameraChange(page, () => cameraPreset(page, 'Trước')); await settle(page)
-  const bounds = (await page.locator('canvas').boundingBox())!
+  const bounds = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   await page.mouse.move(bounds.x + 45, bounds.y + bounds.height / 2)
   await page.mouse.down(); await page.mouse.move(bounds.x + 165, bounds.y + bounds.height / 2, { steps: 15 }); await page.mouse.up()
   await settle(page)
@@ -124,7 +124,7 @@ test('truck details, loading spring, unloading fade and reduced motion all retur
 test('runtime quality monitor downgrades to low under sustained software-renderer load', async ({ page, login, browserErrors }, testInfo) => {
   await login(`${PLANNER_ROUTE}?debug&packages=1000`, 'dispatcher'); await emulateSlowMachine(page, testInfo); await settle(page)
   const adaptation: { initial: string; samples: ViewerMetrics[]; final?: string } = { initial: (await metrics(page)).qualityTier, samples: [] }
-  const r = (await page.locator('canvas').boundingBox())!
+  const r = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   await page.mouse.move(r.x + 40, r.y + r.height * 0.5); await page.mouse.down()
   for (let i = 0; i < 85; i++) {
     await page.mouse.move(r.x + 40 + i * 2, r.y + r.height * 0.5 + Math.sin(i / 4) * 20)
@@ -146,7 +146,7 @@ test('driver cargo view fills the phone width', { tag: '@phone' }, async ({ page
   await login('/tai-xe/diem-giao?chuyen=TRIP-010&debug&quality=balanced', 'driver'); await emulateSlowMachine(page, testInfo)
   await button(page, 'Xem vị trí hàng').click(); await settle(page)
   await attachScreenshot(page, testInfo, 'driver-phone')
-  const phone = (await page.locator('canvas').boundingBox())!
+  const phone = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   await attachJson(testInfo, 'report', { phone })
   expect(phone.width).toBe(390)
   expect(browserErrors).toStrictEqual([])

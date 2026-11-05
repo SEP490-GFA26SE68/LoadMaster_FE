@@ -25,7 +25,7 @@ async function signIn(page: Page, email: string, password: string) {
 
 test('a driver account the company administrator creates signs in with its one-time password; locked, it is refused', async ({ page, login, browserErrors }) => {
   await login('/nguoi-dung', 'companyAdmin')
-  await page.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
+  await page.getByRole('button', { name: 'Thêm nhân viên', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Thêm người dùng', exact: true })
   await form.getByRole('textbox', { name: 'Họ và tên', exact: true }).fill(NEW_DRIVER.name)
   await form.getByRole('textbox', { name: 'Số điện thoại', exact: true }).fill('0915111222')
@@ -62,6 +62,9 @@ test('a driver account the company administrator creates signs in with its one-t
     await expect(lock).toBeVisible({ timeout: 3_000 })
   }).toPass({ timeout: 30_000 })
   await lock.click()
+  // Khoá hỏi lại trước khi ghi
+  await page.getByRole('dialog', { name: `Khoá tài khoản ${NEW_DRIVER.name}?`, exact: true })
+    .getByRole('button', { name: 'Khoá tài khoản', exact: true }).click()
   await expect(page.getByText(`Đã khoá tài khoản ${NEW_DRIVER.name}`, { exact: true })).toBeVisible()
   await expect(page.getByRole('row', { name: new RegExp(NEW_DRIVER.name) })).toContainText('Đã khoá')
 

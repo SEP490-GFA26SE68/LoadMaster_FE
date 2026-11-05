@@ -15,13 +15,13 @@ const HOMES: readonly (readonly [email: string, path: string, heading: string])[
   ['nentang@loadmaster.vn', '/nen-tang/goi', 'Gói cước'],
   ['hotro@loadmaster.vn', '/ho-tro', 'Hỗ trợ khách hàng'],
   // Long Bình
-  ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Người dùng'],
+  ['qtcongty@loadmaster.vn', '/nguoi-dung', 'Nhân viên'],
   ['quanly@loadmaster.vn', '/tong-quan', 'Bảng điều khiển'],
   ['dieuphoi@loadmaster.vn', '/chuyen', 'Chuyến hàng'],
   ['kho@loadmaster.vn', '/kho', 'Chuyến cần xếp'],
   ['taixe@loadmaster.vn', '/tai-xe', 'Chuyến của tôi'],
   // Phương Nam: đủ năm vai trò công ty — `viet.lam@` là nhân viên kho (FE-0-06)
-  ['qtcongty@phuongnam.vn', '/nguoi-dung', 'Người dùng'],
+  ['qtcongty@phuongnam.vn', '/nguoi-dung', 'Nhân viên'],
   ['quanly@phuongnam.vn', '/tong-quan', 'Bảng điều khiển'],
   ['dieuphoi@phuongnam.vn', '/chuyen', 'Chuyến hàng'],
   ['viet.lam@phuongnam.vn', '/kho', 'Chuyến cần xếp'],
@@ -202,7 +202,7 @@ test('the company manager reads trips and plans without any write action; the ap
   // Planner chỉ xem, cả bản đã duyệt lẫn bản chưa duyệt REV-001: không Chỉnh sửa, không Duyệt, một dòng lý do
   for (const route of [`/chuyen/${SEED_TRIP}/phuong-an`, `/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`]) {
     await navigateInApp(page, route)
-    await page.locator('canvas').waitFor()
+    await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
     await expect(page.getByText('MOCK RESULT', { exact: true }), route).toBeVisible()
     await expect(page.locator('[data-planner-lock="readOnly"]'), route).toHaveText('Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.')
     for (const name of ['Chỉnh sửa', 'Duyệt phương án', 'Duyệt bản chỉnh']) {
@@ -222,7 +222,7 @@ test('the company manager reads trips and plans without any write action; the ap
 
 test('the dispatcher edits and approves an unapproved plan: no lock, no line about waiting for someone else (FE-0-07)', async ({ page, login, browserErrors }) => {
   await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toBeVisible()
   await expect(page.locator('[data-planner-lock]')).toHaveCount(0)

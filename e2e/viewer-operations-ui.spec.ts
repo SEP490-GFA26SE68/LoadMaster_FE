@@ -16,7 +16,7 @@ const settle = (page: Page) => settleFor(page, 650)
 
 /** Kéo xoay camera liên tục và lấy số đo khi scene đang chuyển động. */
 async function cameraMotion(page: Page) {
-  const r = (await page.locator('canvas').boundingBox())!
+  const r = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   await page.mouse.move(r.x + r.width * 0.18, r.y + r.height * 0.5)
   await page.mouse.down()
   for (let i = 1; i <= 24; i++) {
@@ -133,7 +133,7 @@ test('warehouse isolates the current package and advances after verification', a
     await getMockDb().startLoading(tripId)
   }, { db: MOCK_DB, tripId: 'TRIP-2026-0914' })
   await stageInStore(page, 'TRIP-2026-0914')
-  await navigateInApp(page, SESSION); await page.locator('canvas').waitFor(); await settle(page)
+  await navigateInApp(page, SESSION); await page.locator('canvas:not(.maplibregl-canvas)').waitFor(); await settle(page)
   expect(await page.locator('[data-experience="warehouse"]').count()).toBe(1)
   expect(await visibleCargo(page)).toStrictEqual({ 'cargo-opaque': 1, 'cargo-dim': 1 })
   await page.getByRole('combobox', { name: 'Góc nhìn thùng xe', exact: true }).selectOption('cua-sau')
@@ -159,7 +159,7 @@ test('warehouse isolates the current package and advances after verification', a
   await navigateInApp(page, '/kho')
   await navigateInApp(page, SESSION)
   await expect(page.getByRole('heading', { level: 1, name: 'PKG-006-12', exact: true })).toBeVisible()
-  await page.locator('canvas').waitFor(); await settle(page)
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor(); await settle(page)
   await button(page, 'Kiện hỏng').click()
   const damaged = page.getByRole('dialog', { name: 'Ghi PKG-006-12 là kiện hỏng?' })
   await expect(damaged).toContainText('Trong phương án không kiện nào tựa lên nó')
@@ -182,7 +182,7 @@ test.describe('touch', () => {
     // Chuyến đã xếp xong của tài xế demo (LM-087); `debug&packages` thay khung 3D bằng fixture benchmark như trước
     await login('/tai-xe/diem-giao?chuyen=TRIP-010&debug&packages=1000&quality=low', 'driver')
     await button(page, 'Xem vị trí hàng').waitFor()
-    expect(await page.locator('canvas').count()).toBe(0)
+    expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
     expect(requests.some((url) => /@react-three|three\.module|three\.core/.test(url)), 'driver 2D must not fetch Three.js').toBe(false)
     await button(page, 'Xem vị trí hàng').tap(); await settle(page)
     expect(await page.locator('[data-experience="driver"]').count()).toBe(1)
@@ -191,12 +191,12 @@ test.describe('touch', () => {
     await button(page, 'Tiến một bước').tap(); await settle(page)
     const after = await visibleCargo(page)
     expect(after['cargo-opaque'] + after['cargo-dim']).toBe(before['cargo-opaque'] + before['cargo-dim'] - 1)
-    const bounds = (await page.locator('canvas').boundingBox())!
+    const bounds = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
     expect(bounds.width >= viewport.width - 10 && bounds.height >= 192).toBeTruthy()
     const driver = { bounds, metrics: await metrics(page), scene: await sceneSnapshot(page) }
     await attachScreenshot(page, testInfo, `driver-${viewport.width}`)
     await button(page, 'Đóng 3D').tap()
-    expect(await page.locator('canvas').count()).toBe(0)
+    expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
     await button(page, 'Xuất phát').waitFor()
 
     // Tài xế không mở được Planner (403 từ LM-084): đăng xuất rồi vào lại bằng tài khoản điều phối
@@ -211,7 +211,7 @@ test.describe('touch', () => {
     await drawer.getByRole('button', { name: 'Đóng', exact: true }).tap()
     expect(await page.getByRole('dialog').count()).toBe(0)
     await attachScreenshot(page, testInfo, `planner-${viewport.width}`)
-    await attachJson(testInfo, 'report', { driver, planner: { bounds: await page.locator('canvas').boundingBox() } })
+    await attachJson(testInfo, 'report', { driver, planner: { bounds: await page.locator('canvas:not(.maplibregl-canvas)').boundingBox() } })
     expect(browserErrors).toStrictEqual([])
   })
 })

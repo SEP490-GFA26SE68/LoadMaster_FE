@@ -21,7 +21,7 @@ async function restingDrawCalls(page: Page) {
 function obstacleHits(page: Page) {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState()
     const mesh = s.scene.getObjectByName('obstacle-body') as InstancedMesh
     const matrix = s.camera.matrixWorld.clone()
     mesh.getMatrixAt(0, matrix)

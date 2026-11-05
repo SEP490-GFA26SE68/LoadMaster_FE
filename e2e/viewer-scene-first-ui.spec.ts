@@ -18,7 +18,7 @@ function shooter(page: Page, testInfo: TestInfo) {
   const shot = async (name: string, idle = true) => {
     if (idle) await settle(page)
     await attachScreenshot(page, testInfo, name, { style: '[data-viewer-performance] { visibility: hidden !important; }' })
-    scenes.push({ name, canvas: await page.locator('canvas').boundingBox(), metrics: await metrics(page) })
+    scenes.push({ name, canvas: await page.locator('canvas:not(.maplibregl-canvas)').boundingBox(), metrics: await metrics(page) })
   }
   return { shot, scenes }
 }
@@ -27,7 +27,7 @@ test('planner defaults to the scene; follow step, stop focus, unloading advisory
   const { shot, scenes } = shooter(page, testInfo)
   await login(`${PLANNER_ROUTE}?debug&quality=balanced`); await settle(page)
   expect(await page.getByRole('dialog').count()).toBe(0)
-  expect((await page.locator('canvas').boundingBox())!.width).toBeGreaterThanOrEqual(1580)
+  expect((await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!.width).toBeGreaterThanOrEqual(1580)
   // Dải vùng điểm giao là cue nghiệp vụ: có sẵn khi mở Planner (FE-5b-07); tâm khối lượng thì chỉ khi bật
   expect(await hasSceneObject(page, 'stop-zone-strips')).toBe(true)
   expect(await hasSceneObject(page, 'cargo-center-of-mass')).toBe(false)
@@ -47,7 +47,7 @@ test('planner defaults to the scene; follow step, stop focus, unloading advisory
   await button(page, 'Tiến một bước').click(); await settle(page)
   const after = await sceneSnapshot(page)
   expect(after.target).not.toStrictEqual(before.target)
-  const r = (await page.locator('canvas').boundingBox())!
+  const r = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   await page.mouse.move(r.x + r.width * 0.65, r.y + r.height * 0.5); await page.mouse.down()
   await page.mouse.move(r.x + r.width * 0.65 + 50, r.y + r.height * 0.5 + 20, { steps: 8 }); await page.mouse.up()
   await button(page, 'Tiếp tục theo bước').waitFor(); await page.keyboard.press('Escape')
@@ -88,7 +88,7 @@ test('hover and double-click focus keep the view; editor shows valid snap and ov
   await cameraPreset(page, 'Trên'); await settle(page); await waitCameraSettled(page)
   const point = await instancePoint(page, 999), cameraBefore = await sceneSnapshot(page)
   await page.mouse.move(point.x, point.y); await page.waitForTimeout(200)
-  expect(await page.locator('canvas').evaluate((el) => (el as HTMLCanvasElement).style.cursor)).toBe('pointer')
+  expect(await page.locator('canvas:not(.maplibregl-canvas)').evaluate((el) => (el as HTMLCanvasElement).style.cursor)).toBe('pointer')
   await page.mouse.dblclick(point.x, point.y); await settle(page); await waitCameraSettled(page)
   const cameraAfter = await sceneSnapshot(page)
   expect(cameraBefore.direction.every((v, i) => Math.abs(v - cameraAfter.direction[i]!) < 0.001)).toBeTruthy()
@@ -123,7 +123,7 @@ async function checkPlannerLayout(page: Page, login: (route: string) => Promise<
   const heights = await cells.evaluateAll((items) => items.map((cell) => cell.getBoundingClientRect().height))
   expect(new Set(heights).size).toBe(1)
   await shot(`09-planner-${page.viewportSize()!.width}`)
-  const canvas = (await page.locator('canvas').boundingBox())!
+  const canvas = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   for (const callout of await page.locator('[data-scene-callout]').all()) {
     const bounds = await callout.boundingBox()
     if (bounds) expect(bounds.x >= canvas.x - 1 && bounds.x + bounds.width <= canvas.x + canvas.width + 1, 'world labels stay inside the viewport').toBeTruthy()

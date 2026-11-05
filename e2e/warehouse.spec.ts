@@ -30,7 +30,7 @@ for (const device of ['desktop', 'tablet'] as const) {
   test(`${device}: approving in the Planner then opening the trip in /kho starts staging; once staged, loading starts at loadingOrder 1 of that revision`, details, async ({ page, login, browserErrors }) => {
     // Bản seed đã duyệt không có nút Duyệt (LM-094): điều phối viên duyệt lại revision nguồn chưa duyệt REV-001
     await login(`${PLANNER_ROUTE}?revision=REV-001`, 'dispatcher')
-    await page.locator('canvas').waitFor()
+    await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
     await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
     await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
     await page.waitForURL(/\/phuong-an\?revision=REV-(?!001)/)
