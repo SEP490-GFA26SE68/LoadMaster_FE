@@ -48,6 +48,7 @@ import { landing } from './en/landing'
 import { pricing } from './en/pricing'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
+import { serverPlans } from './en/serverPlans'
 import { companyWarehouses } from './en/companyWarehouses'
 import { tripWarehouse } from './en/tripWarehouse'
 import { packageStatus } from './en/packageStatus'
@@ -102,6 +103,7 @@ export const en = {
   pricing,
   warehouseCustomers,
   backendTripRoute,
+  serverPlans,
   companyWarehouses,
   tripWarehouse,
   packageStatus,

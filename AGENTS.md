@@ -29,8 +29,8 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 
 **Trạng thái hiện tại:** mặc định toàn bộ dữ liệu là mẫu. Đặt `VITE_AUTH_SOURCE=keycloak` thì đăng nhập qua Keycloak của backend, và các
 nhóm đã nối — người dùng, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn tài xế, màn Giám sát — đọc ghi
-backend thật, danh sách và Chi tiết chuyến, đội xe và loại xe chỉ đọc (`VITE_API_FEATURES` chọn nhóm); Planner, tối ưu, kho xếp hàng, yêu cầu
-giao, bảng điều khiển vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
+backend thật, chuyến (danh sách, Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh, Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ
+đọc (`VITE_API_FEATURES` chọn nhóm); kho xếp hàng, bảng điều khiển vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
 mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). Phân quyền **giả lập ở FE** (LM-084, D-41).
 
@@ -1224,9 +1224,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế,
   `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
 - **Chuyến** (`trips`; `trips-backend-api.ts`, DTO ở `trips-dto.ts`): mã chuyến (`tripCode`) là mã trên URL như Giám sát; Chi tiết chuyến tìm
-  `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. `TRIPS_CAPABILITIES` bỏ tạo, sửa, huỷ, phương án, kiện, tên tuyến; mọi lệnh
-  ghi từ chối `NOT_SUPPORTED`; màn chỉ có ở kho mẫu (Planner, Thiết lập tối ưu, So sánh, báo cáo) chuyển về Chi tiết chuyến của máy chủ
-  (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi `trips` và `monitoring` cùng nguồn.
+  `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): hộp thoại sửa
+  (`PATCH /api/trips/{id}`, chỉ gửi trường đã đổi; đổi xe, tài xế ở đây), huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE
+  …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
+  `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
+  `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
+  sánh `?lan-chay=<jobId>` (`…/plans`); Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
+  số máy chủ không trả thì bỏ: tải trục / dỡ-xếp lại / hạn của FE, thời gian chạy, kích thước kiện chưa xếp) và Duyệt bằng
+  `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện,
+  tên tuyến, chỉnh tay / ghim / chạy lại giữ ghim / đổi xe trong Planner; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
+  về Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
+  `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
   máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Tạo, sửa, xoá, gia hạn đòi

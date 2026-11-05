@@ -7,9 +7,11 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
+import { BackendLoadPlansCard } from '@/features/optimization/BackendLoadPlansCard'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
 import { BackendTripRouteCard } from './BackendTripRouteCard'
+import { BackendTripWriteActions, isEditableStatus, RemoveRequirementButton } from './BackendTripWriteActions'
 import { RealTripDetailHeader } from './TripDetailHeader'
 import { fetchBackendActiveRoutePlan, fetchBackendTripDetail, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
 
@@ -156,6 +158,10 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
     can('trips.edit') &&
     (trip.status === 'DRAFT' || trip.status === 'PLANNED') &&
     stops.length > 0
+  // Sửa, huỷ, gỡ yêu cầu giao, chạy tối ưu xếp hàng: máy chủ kiểm lại vai trò và trạng thái; màn chỉ hiện việc làm được
+  const canWrite = can('trips.edit')
+  const canRemoveRequirement = canWrite && isEditableStatus(trip.status)
+  const canOptimizeLoading = can('optimization.run') && isEditableStatus(trip.status) && stops.length > 0
 
 
   return (
@@ -178,12 +184,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
               </Button>
             )}
 
-            <Button type="button" variant="secondary" asChild>
-              <Link to={`/chuyen/${encodeURIComponent(tripId)}/toi-uu`}>
-                <PackageOpen className="size-4" />
-                {t('trips.loadingOptimization.run')}
-              </Link>
-            </Button>
+            {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
           </div>
 
 
@@ -191,6 +192,19 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
             trip={trip}
             stops={stops}
             routePlan={routePlanQuery.data ?? null}
+          />
+
+          <BackendLoadPlansCard
+            tripId={tripId}
+            tripCode={trip.tripCode}
+            action={canOptimizeLoading ? (
+              <Button type="button" variant="secondary" size="sm" asChild>
+                <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/toi-uu`}>
+                  <PackageOpen className="size-4" />
+                  {t('trips.loadingOptimization.run')}
+                </Link>
+              </Button>
+            ) : null}
           />
 
 
@@ -317,9 +331,14 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                       )}
 
                       {stop.deliveryRequirementId !== null && (
-                        <p className="mt-2 text-xs text-text-2">
-                          {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
-                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <p className="text-xs text-text-2">
+                            {t('trips.detail.requirementId')} #{stop.deliveryRequirementId}
+                          </p>
+                          {canRemoveRequirement ? (
+                            <RemoveRequirementButton tripId={tripId} requirementId={String(stop.deliveryRequirementId)} />
+                          ) : null}
+                        </div>
                       )}
 
                       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">

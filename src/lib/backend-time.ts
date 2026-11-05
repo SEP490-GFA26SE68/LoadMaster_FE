@@ -18,3 +18,16 @@ export function isoFromBackend(value: string): string {
   if (Number.isNaN(date.getTime())) throw new ApiError('SERVER_ERROR')
   return date.toISOString()
 }
+
+const VN_PARTS = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+})
+
+/** Chiều ngược của `isoFromBackend`: ISO 8601 của app → `LocalDateTime` giờ Việt Nam (`2026-10-16T18:05:00`) cho thân lệnh gửi máy chủ. */
+export function backendLocalDateTime(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) throw new ApiError('BAD_REQUEST')
+  const parts = VN_PARTS.formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}:${part('second')}`
+}
