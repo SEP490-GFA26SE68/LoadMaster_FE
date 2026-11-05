@@ -525,4 +525,8 @@ export const viewer = {
     CONSTRAINT_VIOLATED: 'Loading this package would break a constraint',
     UNKNOWN: 'Not placed, reason unknown',
   },
+  backendViewer: {
+    stepPrevious: 'Previous loading step',
+    stepNext: 'Next loading step',
+  },
 } satisfies Dictionary<typeof source>
