@@ -1206,7 +1206,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nhân viên kho thấy câu lý do (`sourcing.backend.*`), màn kho bỏ nút tra cứu và liên kết in lại nhãn (`packagePoolReachable`). Điểm đến và
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
-  vẫn là tờ A4 của app, PDF của máy chủ là nút phụ (1–200 kiện). Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó. Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — chỉ chuyến đang vận chuyển, thẻ bỏ tên tuyến, số kiện, điểm đang giao.
   Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã của kiện
