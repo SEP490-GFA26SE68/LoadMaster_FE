@@ -65,7 +65,8 @@ test('phone: unload order equals the approved revision; Three.js loads only on "
   const expected = await planUnloadOrder(page, SEED_TRIP, 1)
   expect(expected.ids.length).toBeGreaterThan(0)
   expect(await rowIds(page)).toStrictEqual(expected.ids)
-  expect(await page.locator('canvas').count()).toBe(0)
+  // Bản đồ chỉ đường (maplibre) có canvas riêng; chỉ đếm canvas của khung 3D
+  expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
   expect(requests.some((url) => /@react-three|three\.module|three\.core/.test(url)), 'driver 2D must not fetch Three.js').toBe(false)
 
   const viewCargo = page.getByRole('button', { name: 'Xem vị trí hàng', exact: true })
