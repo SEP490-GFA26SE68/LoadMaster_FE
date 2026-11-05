@@ -53,8 +53,9 @@ const headers = () => within(screen.getByRole('table')).getAllByRole('columnhead
 const csvFile = (lines: readonly string[]) =>
   new File([['package_code,length,width,height,weight,handling_class,destination,package_type', ...lines].join('\r\n')], 'kien.csv', { type: 'text/csv' })
 
-test('the dispatcher sees the pool newest first with every column; search ignores accents and the filters live on the URL', async () => {
-  const user = renderPool('dispatcher')
+// Ma trận quyền của nhánh nhóm: nhân viên kho quản lý kho kiện (`packages.manage`: thêm, nhập file, chọn kiện in nhãn, gỡ cờ)
+test('the warehouse worker sees the pool newest first with every column; search ignores accents and the filters live on the URL', async () => {
+  const user = renderPool('warehouse')
   expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   // Cột đầu là ô chọn (không chữ), rồi chín cột dữ liệu
   expect(headers().slice(1)).toStrictEqual(['Mã kiện', 'Kích thước (D × R × C)', 'Khối lượng', 'Loại hàng', 'Điểm đến', 'Trạng thái', 'Cờ', 'Yêu cầu', 'Chuyến'])
@@ -87,7 +88,9 @@ test('the dispatcher sees the pool newest first with every column; search ignore
     'Tất cả2.722', 'Đã nhập30', 'Đã gán chuyến548', 'Đã soạn280', 'Đã xếp210', 'Đang vận chuyển120', 'Đã giao1.533', 'Hoàn trả1',
   ])
   expect(screen.getByTestId('url')).toHaveTextContent('/kien-hang?gan=da-vao')
-  expect(within(screen.getByRole('row', { name: /PK-0022/ })).getByRole('link', { name: 'REQ-006' })).toHaveAttribute('href', '/yeu-cau-giao?q=REQ-006')
+  // Nhân viên kho không mở được Yêu cầu giao (`requirements.view`): mã yêu cầu là chữ, không phải liên kết
+  expect(within(screen.getByRole('row', { name: /PK-0022/ })).getByText('REQ-006')).toBeInTheDocument()
+  expect(within(screen.getByRole('row', { name: /PK-0022/ })).queryByRole('link', { name: 'REQ-006' })).toBeNull()
 })
 
 test('filters read from the URL: handling class and "not in a requirement or a trip"', async () => {
@@ -99,7 +102,7 @@ test('filters read from the URL: handling class and "not in a requirement or a t
 })
 
 test('the company manager reads the pool but gets no write button, no selection and no flag action', async () => {
-  const user = renderPool('manager')
+  const user = renderPool('companyManager')
   expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   for (const name of ['Thêm kiện', 'Nhập file']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Loại kiện' })).not.toBeInTheDocument()
@@ -118,7 +121,7 @@ test('the company manager reads the pool but gets no write button, no selection 
   expect(panel.queryByRole('link', { name: 'In nhãn QR' })).not.toBeInTheDocument()
 })
 
-test('the detail panel shows the QR code and the history the store kept; the dispatcher clears a flag and the history grows', async () => {
+test('the detail panel shows the QR code and the history the store kept; the dispatcher reads it without a flag action', async () => {
   const user = renderPool('dispatcher', '/kien-hang?co=khong-tim-thay')
   await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   // Bấm dòng mở panel; panel mở thì bảng nhường bốn cột đã có trong panel
@@ -126,7 +129,8 @@ test('the detail panel shows the QR code and the history the store kept; the dis
   const panel = within(await screen.findByRole('complementary', { name: 'Chi tiết kiện BV-VIN-2609-05' }, SLOW))
   const qr = await panel.findByRole('img', { name: /^Mã QR LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/ }, SLOW)
   expect(qr).toBeInTheDocument()
-  expect(headers().slice(1)).toStrictEqual(['Mã kiện', 'Loại hàng', 'Điểm đến', 'Trạng thái', 'Cờ'])
+  // Điều phối viên không chọn kiện (`packages.manage`): không có cột chọn
+  expect(headers()).toStrictEqual(['Mã kiện', 'Loại hàng', 'Điểm đến', 'Trạng thái', 'Cờ'])
   for (const text of ['PK-0063', '80 × 60 × 50 cm', '32 kg', 'KCN Bắc Vinh, TP. Vinh, Nghệ An', 'Không gắn loại kiện', 'Nhập file', 'Chưa vào yêu cầu giao hay chuyến']) {
     expect(panel.getByText(text)).toBeInTheDocument()
   }
@@ -135,22 +139,17 @@ test('the detail panel shows the QR code and the history the store kept; the dis
   const history = () => within(panel.getByRole('list', { name: 'Lịch sử' })).getAllByRole('listitem').map((item) => item.textContent)
   expect(history()).toStrictEqual(['Gắn cờ Không tìm thấy17:05 13/09/2026 · Nguyễn Thanh Tùng', 'Vào kho kiện: Nhập file16:20 13/09/2026 · Nguyễn Thanh Tùng'])
 
-  await user.click(panel.getByRole('button', { name: 'Gỡ cờ Không tìm thấy' }))
-  expect(await panel.findByText('Kiện không mang cờ nào.', {}, SLOW)).toBeInTheDocument()
-  expect(history()).toHaveLength(3)
-  expect(history()[0]).toMatch(/^Gỡ cờ Không tìm thấy.* · Nguyễn Thanh Tùng$/)
-  expect((await getMockDb().getPackage('PK-0063')).flags).toStrictEqual([])
-  const [event] = await getMockDb().listEvents()
-  expect(event).toMatchObject({ action: 'package.flagCleared', actorId: 'US-0001', target: { id: 'PK-0063' } })
+  // Điều phối viên không còn `packages.manage` (ma trận của nhánh nhóm): không có nút gỡ cờ; kho mẫu vẫn chỉ cho điều phối viên gỡ cờ
+  expect(panel.queryByRole('button', { name: /^Gỡ cờ/ })).not.toBeInTheDocument()
 
   // Đóng panel: bảng trả đủ cột, con trỏ về nút mã kiện
   await user.click(panel.getByRole('button', { name: 'Đóng chi tiết kiện' }))
   await waitFor(() => expect(screen.queryByRole('complementary')).not.toBeInTheDocument())
-  expect(headers()).toHaveLength(10)
+  expect(headers()).toHaveLength(9)
 })
 
 test('adding one package: the form names what is missing, then the package lands on top with its QR code shown at once', async () => {
-  const user = renderPool('dispatcher')
+  const user = renderPool('warehouse')
   await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   await user.click(screen.getByRole('button', { name: 'Thêm kiện' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Thêm kiện' }))
@@ -186,7 +185,7 @@ test('adding one package: the form names what is missing, then the package lands
 })
 
 test('importing a file: an error row disables Confirm and creates nothing; a clean file is imported in one go and selected for labels', async () => {
-  const user = renderPool('dispatcher')
+  const user = renderPool('warehouse')
   await screen.findByText('2.952 kiện trong kho kiện', {}, SLOW)
   await user.click(screen.getByRole('button', { name: 'Nhập file' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Nhập file vào kho kiện' }))

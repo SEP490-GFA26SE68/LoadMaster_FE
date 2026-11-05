@@ -5,7 +5,7 @@ import { Controller, useFieldArray, useForm, type FieldErrors } from 'react-hook
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Banner } from '@/components/Banner'
-import { CoordinatePicker, placeAddress } from '@/components/map'
+import { CoordinatePicker } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { fieldBoxClass, focusClass, FieldLabel } from '@/components/ui/field-styles'
@@ -165,7 +165,7 @@ function PointFields({ prefix, form, touch }: { prefix: 'pickup' | 'delivery'; f
             onChange={field.onChange}
             showErrors={form.formState.isSubmitted}
             onPlacePicked={(place) => {
-              if (form.getValues(`${prefix}.address`).trim() === '') form.setValue(`${prefix}.address`, placeAddress(place), { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
+              if (form.getValues(`${prefix}.address`).trim() === '') form.setValue(`${prefix}.address`, place.address, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
               if (form.getValues(`${prefix}.name`).trim() === '') form.setValue(`${prefix}.name`, place.name, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
             }}
           />

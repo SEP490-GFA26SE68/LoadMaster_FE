@@ -172,6 +172,7 @@ export const viewer = {
       COOLING_UNIT: 'Cooling unit',
       PARTITION: 'Partition',
       RESERVED_ZONE: 'Reserved zone',
+      OTHER: 'Other obstacle',
     },
     corner: 'Corner at X {x} · Y {y} · Z {z}',
     notBearing: 'Not load bearing',

@@ -1,15 +1,104 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   searchAddress → chưa có ở BE (Q-20: đề nghị endpoint tìm địa chỉ, Goong Geocoding gọi ở server — S4b-04)
+ * Hàm → endpoint backend (FE-0-09):
+ *   searchAddress  → GET /api/places/autocomplete?input=
+ *   resolveAddress → GET /api/places/detail?placeId=
+ * Không đăng nhập bằng backend (kho mẫu, test, CI): tìm trong danh sách địa danh mẫu của seed (`SEED_PLACES`), toạ độ gần đúng ở mức
+ * khu vực. Trình duyệt không bao giờ gọi Goong trực tiếp: khoá REST của Goong chỉ nằm ở server.
  */
-import { SEED_PLACES, type Place } from '@/lib/mock-db'
-import { searchPlaces } from './place-search'
 
-/**
- * Tìm địa chỉ cho ô chọn toạ độ (FE-4b-03). Chưa có backend: tìm trong danh sách địa danh mẫu của seed. Khi có backend, thân hàm gọi
- * endpoint tìm địa chỉ của **backend** (Q-20) — trình duyệt không bao giờ gọi Goong trực tiếp: khoá REST của Goong chỉ nằm ở server.
- */
-// chưa có ở BE (Q-20)
-export async function searchAddress(query: string): Promise<Place[]> {
-  return searchPlaces(SEED_PLACES, query)
+import { isAuthenticated } from '@/features/auth/auth-api'
+import { apiFetch } from '@/lib/api-client'
+import { SEED_PLACES } from '@/lib/mock-db'
+import { placeAddress, searchPlaces } from './place-search'
+
+export type AddressSuggestion = {
+  placeId: string
+  name: string
+  address: string
+  region: string
+}
+
+export type ResolvedAddress = {
+  placeId: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+}
+
+type AutocompleteResponse = {
+  success: boolean
+  data: {
+    status: string
+    predictions: {
+      place_id: string
+      description: string
+      structured_formatting?: {
+        main_text?: string
+        secondary_text?: string
+      }
+    }[]
+  }
+}
+
+type PlaceDetailResponse = {
+  success: boolean
+  data: {
+    status: string
+    result: {
+      place_id: string
+      formatted_address: string
+      geometry: { location: { lat: number; lng: number } }
+    } | null
+  }
+}
+
+// GET /api/places/autocomplete?input=
+export async function searchAddress(query: string): Promise<AddressSuggestion[]> {
+  const wanted = query.trim()
+  if (!isAuthenticated()) {
+    return searchPlaces(SEED_PLACES, wanted).map((place) => ({
+      placeId: place.id,
+      name: place.name,
+      address: placeAddress(place),
+      region: place.region,
+    }))
+  }
+  if (wanted.length < 2) return []
+
+  const response = await apiFetch<AutocompleteResponse>(`/api/places/autocomplete?input=${encodeURIComponent(wanted)}`)
+  if (response.data.status === 'ZERO_RESULTS') return []
+  if (response.data.status !== 'OK') throw new Error('Goong autocomplete failed')
+
+  return (response.data.predictions ?? [])
+    .filter((item) => Boolean(item.place_id))
+    .map((item) => ({
+      placeId: item.place_id,
+      name: item.structured_formatting?.main_text || item.description,
+      address: item.description,
+      region: item.structured_formatting?.secondary_text || '',
+    }))
+}
+
+// GET /api/places/detail?placeId=
+export async function resolveAddress(suggestion: AddressSuggestion): Promise<ResolvedAddress> {
+  if (!isAuthenticated()) {
+    const place = SEED_PLACES.find((item) => item.id === suggestion.placeId)
+    if (!place) throw new Error('Địa danh mẫu không có trong danh sách')
+    return { placeId: place.id, name: place.name, address: suggestion.address, lat: place.lat, lng: place.lng }
+  }
+
+  const response = await apiFetch<PlaceDetailResponse>(`/api/places/detail?placeId=${encodeURIComponent(suggestion.placeId)}`)
+  const result = response.data.result
+  const location = result?.geometry?.location
+  if (response.data.status !== 'OK' || !location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
+    throw new Error('Goong place detail has no valid coordinates')
+  }
+  return {
+    placeId: suggestion.placeId,
+    name: suggestion.name,
+    address: result?.formatted_address || suggestion.address,
+    lat: location.lat,
+    lng: location.lng,
+  }
 }

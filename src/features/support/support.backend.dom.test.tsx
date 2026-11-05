@@ -14,8 +14,8 @@ import { SupportPage } from './SupportPage'
 import { SupportTicketDialog } from './SupportTicketDialog'
 
 /**
- * Yêu cầu hỗ trợ khi nhóm `support` nối backend: backend chưa có trao đổi và khung công ty, nên hộp thoại của người dùng công ty và màn
- * `/ho-tro` chỉ còn nội dung yêu cầu, phản hồi của đội hỗ trợ và trạng thái. Backend giả giữ yêu cầu trong bộ nhớ của test.
+ * Yêu cầu hỗ trợ khi nhóm `support` nối backend: trao đổi ghi trong `resolutionNote`, khung công ty đọc hợp đồng và credit của công ty;
+ * ghi chú chữ thường của đội hỗ trợ vẫn hiện là phản hồi. Backend giả giữ yêu cầu trong bộ nhớ của test.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['support']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -54,6 +54,7 @@ beforeEach(() => {
     const reply = (data: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify({ success: true, message: 'ok', data }), { status }))
     if (key === 'GET /api/users/me') return reply({ ...me, fullName: 'Người xem', status: 'ACTIVE' })
     if (key === 'GET /api/support-tickets') return reply(tickets)
+    if (key === 'GET /api/contracts?companyId=1') return reply([])
     if (key === 'POST /api/support-tickets' && typeof body === 'object' && body !== null) {
       const created = { ...DISPATCHER_TICKET, ...body, id: 12, ticketCode: 'TCK-20261017-7777', status: 'OPEN', createdAt: '2026-10-17T09:00:00' }
       tickets = [created, ...tickets]
@@ -85,14 +86,14 @@ function renderAs(role: Role, ui: ReactNode, path = '/') {
   )
 }
 
-test('a dispatcher sees only the tickets they sent; a new ticket goes to the backend; there is no reply box', async () => {
+test('a dispatcher sees only the tickets they sent; a new ticket goes to the backend and can be answered', async () => {
   const user = userEvent.setup()
   renderAs('dispatcher', <SupportTicketDialog onClose={() => {}} />)
   const dialog = await screen.findByRole('dialog')
   const own = await within(dialog).findByRole('button', { name: 'Mở yêu cầu Ly thuỷ tinh dưới thùng nước' }, SLOW)
   expect(own).toHaveTextContent('TCK-20261017-4403')
-  expect(own).toHaveTextContent('Gửi 16/10/2026 18:05')
-  expect(own).not.toHaveTextContent('trả lời')
+  expect(own).toHaveTextContent('Cập nhật 16/10/2026 18:05')
+  expect(own).toHaveTextContent('0 trả lời')
   // Yêu cầu của quản trị công ty cùng công ty: backend trả về, màn không hiện
   expect(within(dialog).getAllByRole('listitem')).toHaveLength(1)
 
@@ -102,22 +103,23 @@ test('a dispatcher sees only the tickets they sent; a new ticket goes to the bac
   await user.click(within(dialog).getByRole('button', { name: 'Gửi yêu cầu' }))
   expect(await within(dialog).findByRole('heading', { name: 'QA không in được nhãn' }, SLOW)).toBeInTheDocument()
   expect(within(dialog).getByText('TCK-20261017-7777')).toBeInTheDocument()
-  expect(within(dialog).getByText('Yêu cầu này theo dõi bằng trạng thái; hệ thống chưa có trao đổi qua lại.')).toBeInTheDocument()
-  expect(within(dialog).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(dialog).getByRole('textbox', { name: 'Trả lời' })).toBeInTheDocument()
   expect(calls.find((call) => call.key === 'POST /api/support-tickets')?.body).toStrictEqual({
-    subject: 'QA không in được nhãn', description: 'Bấm In nhãn QR thì trang trắng.', category: 'SYSTEM_BUG',
+    subject: 'QA không in được nhãn', description: 'Bấm In nhãn QR thì trang trắng.', category: 'SYSTEM_BUG', priority: 'HIGH',
   })
 })
 
-test('the supporter reads every ticket, sees the note of the team, and sets Resolved; no reply box and no company panel', async () => {
+test('the supporter reads every ticket, sees the note of the team and the company panel, and sets Resolved', async () => {
   const user = userEvent.setup()
   me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
   renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=1')
   const panel = await screen.findByRole('region', { name: 'Hoá đơn tháng 10 thiếu mã số thuế' }, SLOW)
   expect(panel).toHaveTextContent('Cần xuất lại hoá đơn.')
   expect(within(panel).getByRole('region', { name: 'Phản hồi của đội hỗ trợ' })).toHaveTextContent('Đã gửi lại hoá đơn qua email.')
-  expect(within(panel).queryByRole('button', { name: 'Gửi trả lời' })).not.toBeInTheDocument()
-  expect(screen.queryByText('Thông tin công ty')).not.toBeInTheDocument()
+  expect(within(panel).getByRole('button', { name: 'Gửi trả lời' })).toBeInTheDocument()
+  const company = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
+  expect(await within(company).findByText('Công ty chưa có gói cước.', {}, SLOW)).toBeInTheDocument()
+  expect(within(company).getAllByText('Chưa đọc được')).toHaveLength(2)
   const table = screen.getByRole('table')
   expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Gửi lúc')
   expect(within(table).getAllByText('Vận tải Long Bình')).toHaveLength(2)

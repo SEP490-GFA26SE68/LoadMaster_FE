@@ -1,8 +1,11 @@
+import { agreement } from './billing-agreement'
+
 /**
  * Gói cước và credit của công ty `/goi-cuoc` (FE-8-03, D-89, D-94): quản trị công ty xem gói, số dư, lịch sử credit và thanh toán, đăng
  * ký, huỷ gói và nạp credit. Hạng gói, "Giá trị tạm", "Không giới hạn" ở `common`; trang thanh toán giả lập ở `payment`.
  */
 export const billing = {
+  agreement,
   title: 'Gói cước và credit',
   loading: 'Đang tải gói cước',
   retry: 'Thử lại',
@@ -25,6 +28,8 @@ export const billing = {
     price: 'Giá mỗi tháng',
     credits: 'Credit mỗi tháng',
     cancel: 'Huỷ gói',
+    /** Chỉ khi nối backend: tự gia hạn đúng gói đang dùng. */
+    renew: 'Gia hạn thêm một kỳ',
     expiredNote: 'Gói đã hết hạn nên chưa chạy tối ưu được. Số dư credit được giữ lại, chọn gói mới để dùng tiếp.',
     cancelledNote: 'Gói đã huỷ, dùng được tới hết {date} rồi hết hạn, không tự gia hạn.',
   },
@@ -41,6 +46,18 @@ export const billing = {
     subscribeTo: 'Đăng ký gói {name}',
     credits: '{credits} credit mỗi tháng',
     none: 'Hiện chưa có gói nào đang bán.',
+    /** Nối backend: gói hạng cao hơn gói đang dùng chỉ đổi được qua yêu cầu hỗ trợ (duyệt hợp đồng). */
+    requestUpgrade: 'Gửi yêu cầu nâng cấp',
+    requestUpgradeTo: 'Gửi yêu cầu nâng cấp lên gói {name}',
+  },
+  /** Nút trên dải tiêu đề: gửi yêu cầu hỗ trợ (nâng cấp gói, thanh toán). */
+  support: 'Yêu cầu hỗ trợ',
+  agreementCard: {
+    title: 'Thoả thuận dịch vụ',
+    signedBy: 'Ký bởi {name}',
+    deadline: 'Hạn ký {date}',
+    sign: 'Ký ngay',
+    view: 'Xem văn bản',
   },
   credit: {
     balance: 'Số dư',
@@ -56,10 +73,17 @@ export const billing = {
   cancelled: 'Đã huỷ gói {plan}. Gói dùng được tới hết {date}.',
   /** Gói miễn phí: máy chủ kích hoạt ngay, không qua thanh toán. */
   activated: 'Đã kích hoạt gói {plan}',
+  agreementSigned: 'Đã ký thoả thuận dịch vụ',
   topUpDialog: {
     title: 'Nạp credit',
     description: '{price} mỗi credit. Bạn sang trang thanh toán để hoàn tất; credit chỉ được cộng khi thanh toán thành công.',
     pack: '{credits} credit',
+    /** Chỉ khi nối backend: nạp số credit tuỳ ý trong trần số dư của hạng gói. */
+    custom: 'Số credit muốn nạp',
+    total: 'Thành tiền: {amount}',
+    cap: 'Hạng {tier}: số dư tối đa {max} credit, còn nạp được {left}.',
+    noCap: 'Hạng {tier}: không giới hạn số dư.',
+    overCap: 'Số dư sau khi nạp ({total} credit) vượt trần {max} credit của hạng {tier}.',
     cancel: 'Huỷ',
     confirm: 'Tiếp tục thanh toán',
   },

@@ -54,7 +54,7 @@ test('Ctrl+K opens the search; arrows move and wrap, Enter opens the trip; Esc r
   const input = within(dialog).getByRole('combobox', { name: 'Từ khoá tìm nhanh' })
   expect(input).toHaveFocus()
   // Điều phối viên tìm thêm kho kiện và loại kiện (màn `/kien-hang`, `/loai-kien`)
-  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến), loại kiện (mã, tên) và xe (tên, biển số).')).toBeInTheDocument()
+  expect(within(dialog).getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến) và xe (tên, biển số).')).toBeInTheDocument()
 
   // Esc đóng, con trỏ về ô đang gõ trước khi mở
   await user.keyboard('{Escape}')
@@ -107,7 +107,7 @@ test('a package code opens its trip on that package; a trip is found by a stop n
 
 test('only permitted groups: the manager does not find users and is told so', async () => {
   const user = userEvent.setup()
-  renderSearch('manager')
+  renderSearch('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   await user.keyboard('hanh.do')
   expect(await screen.findByText('Không tìm thấy kết quả cho “hanh.do”.', {}, SLOW)).toBeInTheDocument()
@@ -153,17 +153,9 @@ test.each<Role>(['systemManager', 'systemSupporter'])('the %s has nothing to sea
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('warehouse workers have nothing to search: no button, Ctrl+K does nothing', async () => {
+test('the warehouse worker manages the pool: searches pool packages and package types; shipments are no longer found (FE-0-06)', async () => {
   const user = userEvent.setup()
   renderSearch('warehouse')
-  expect(screen.queryByRole('button', { name: 'Tìm nhanh' })).not.toBeInTheDocument()
-  await user.keyboard('{Control>}k{/Control}')
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-})
-
-test('the dispatcher searches the package pool and package types; shipments are no longer found (FE-0-06)', async () => {
-  const user = userEvent.setup()
-  renderSearch('dispatcher')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   await user.keyboard('pk-0001')
   const packages = await screen.findByRole('group', { name: 'Kho kiện' }, SLOW)
@@ -184,7 +176,7 @@ test('the dispatcher searches the package pool and package types; shipments are 
 
 test('the company manager finds pool packages (read-only pool, FE-3b-03) but no package types', async () => {
   const user = userEvent.setup()
-  renderSearch('manager')
+  renderSearch('companyManager')
   await user.click(screen.getByRole('button', { name: 'Tìm nhanh' }))
   expect(screen.getByText('Tìm chuyến (mã, tên, điểm giao), kiện (mã), yêu cầu giao (mã, điểm đến, địa chỉ), kho kiện (mã, mã QR, loại kiện, điểm đến) và xe (tên, biển số).')).toBeInTheDocument()
   await user.keyboard('pk-0001')

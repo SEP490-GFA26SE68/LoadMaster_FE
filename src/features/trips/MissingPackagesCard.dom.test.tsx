@@ -93,7 +93,7 @@ test('"Bỏ kiện khỏi chuyến" asks first, then flags the package and sends
 
 test('the company manager reads the list but cannot decide: no buttons, one line saying who can', async () => {
   const { id } = await shortageTrip()
-  renderCard(id, 'manager')
+  renderCard(id, 'companyManager')
   await screen.findAllByRole('listitem', {}, SLOW)
   expect(card().queryByRole('button')).not.toBeInTheDocument()
   expect(card().getByText('Chỉ điều phối viên quyết được kiện kho báo thiếu.')).toBeInTheDocument()

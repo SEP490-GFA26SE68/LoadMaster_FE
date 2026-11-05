@@ -2,11 +2,15 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `trips` nối backend thì hàm đánh dấu (BE) gọi
  * `trips-backend-api.ts`; lệnh ghi từ chối `NOT_SUPPORTED` (màn đã ẩn); hàm đọc khác chỉ phục vụ màn của kho mẫu.
  *   fetchTrips                  → GET /api/trips (BE)
- *   fetchServerTrip             → GET /api/trips?search={mã chuyến} · GET /api/trips/{id}/detail (BE)
  *   createTrip                  → POST /api/trips
  *   updateTripFrame             → chưa có ở BE
  *   chưa có ở BE: fetchStoreTrips (trang tài liệu: luôn kho mẫu), fetchTripFormOptions, fetchTripDetail, fetchTripActivity, cancelTrip,
  *   fetchTripRevisions
+ * Nhóm `trips` nối backend còn có phần của nhóm ở `trips-backend-api.ts` (tái xuất ở đây): fetchTripsPage → GET /api/trips (phân trang),
+ * createBackendTrip → POST /api/trips, fetchTripById → GET /api/trips/{id}, fetchBackendTripDetail → GET /api/trips/{id}/detail,
+ * fetchBackendActiveRoutePlan → GET /api/trips/{id}/route-plans/active, optimizeBackendTrip → POST /api/trips/{id}/optimize-route,
+ * fetchTripVehicleConfig → GET /api/trips/{id}/vehicle-config, assignBackendRequirementToTrip → POST /api/trips/{id}/delivery-requirements/{rid},
+ * fetchTripFormOptions (BE) → GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options.
  * Dòng kiện gõ / nhập trong chuyến (savePackage, importPackages, deletePackage…): `trip-package-lines-api.ts`.
  * Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage): `trip-pool-api.ts`.
  * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
@@ -35,10 +39,32 @@ import type { TripStatus, TripSubStatus } from '@/types/trip'
 import type { User } from '@/types/user'
 import { tripRow, type TripRow } from './trip-list'
 import { stopFields, type TripStopInput } from './trip-packages'
-import type { ServerTrip } from './server-trip'
 import * as backend from './trips-backend-api'
 
-export type { ServerTrip, ServerTripStop, ServerTripStopStatus } from './server-trip'
+export {
+  assignBackendRequirementToTrip,
+  createBackendTrip,
+  fetchBackendActiveRoutePlan,
+  fetchBackendTripDetail,
+  fetchTripById,
+  fetchTripsPage,
+  fetchTripVehicleConfig,
+  optimizeBackendTrip,
+  resolveBackendTripId,
+} from './trips-backend-api'
+export type {
+  BackendActiveRoutePlan,
+  BackendRouteLeg,
+  BackendTripDetail,
+  BackendTripFrame,
+  CreatedTrip,
+  RouteOptimizationResult,
+  TripDetailApiResponse,
+  TripListPageResult,
+  TripListParams,
+  TripStopApiResponse,
+  TripVehicleConfigResponse,
+} from './trips-backend-api'
 
 const ON_BACKEND = usesBackend('trips')
 
@@ -47,7 +73,7 @@ const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPO
 
 /**
  * Lớp gọi API cho chuyến hàng (LM-043, LM-088). Kho mẫu: chi tiết chuyến, điểm giao và kiện đọc/ghi qua mock repository
- * (`@/lib/mock-db`, D-06). Backend: danh sách và Chi tiết chuyến cơ bản (`ServerTrip`).
+ * (`@/lib/mock-db`, D-06). Backend: danh sách chuyến (tìm nhanh), phần của nhóm ở `trips-backend-api.ts`.
  */
 
 /** Danh sách chuyến (LM-088): mỗi dòng dựng từ chuyến, xe, tài xế và revision trong kho. */
@@ -73,12 +99,6 @@ export async function fetchStoreTrips(): Promise<TripRow[]> {
   ))
 }
 
-/** Chi tiết chuyến cơ bản của backend theo mã chuyến; mã không có trên máy chủ là `TRIP_NOT_FOUND`. Kho mẫu không có màn này. */
-// GET /api/trips?search={mã chuyến} · GET /api/trips/{id}/detail
-export function fetchServerTrip(tripId: string): Promise<ServerTrip> {
-  if (!ON_BACKEND) return unsupported()
-  return backend.tripDetail(tripId)
-}
 
 export type TripFrame = {
   readonly name: string
@@ -131,7 +151,11 @@ export async function updateTripFrame(tripId: string, changes: TripFrameChanges)
   return db.updateTrip(tripId, { ...frame, ...(stops ? { stops } : {}) })
 }
 
-export type VehicleOption = { readonly vehicle: VehicleConfig; readonly status: VehicleStatus }
+/** Xe của ô chọn: chỉ các số form hiện ra, để backend (loại xe của xe) và kho mẫu cùng điền được. */
+export type VehicleOption = {
+  readonly vehicle: Pick<VehicleConfig, 'id' | 'name' | 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>
+  readonly status: VehicleStatus
+}
 
 /**
  * Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. `depot`:
@@ -139,8 +163,9 @@ export type VehicleOption = { readonly vehicle: VehicleConfig; readonly status: 
  */
 export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[]; readonly depot: CompanyDepot | null }
 
-// chưa có ở BE
+// GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options (BE)
 export async function fetchTripFormOptions(): Promise<TripFormOptions> {
+  if (ON_BACKEND) return backend.fetchBackendTripFormOptions()
   const db = getMockDb()
   const [vehicles, states, users, companies] = await Promise.all([db.listVehicles(), db.listVehicleStates(), db.listUsers(), db.listCompanies()])
   const statusById = new Map(states.map((state) => [state.vehicleId, state.status]))

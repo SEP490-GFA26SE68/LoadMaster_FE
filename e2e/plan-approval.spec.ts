@@ -103,7 +103,7 @@ test('changing cargo after optimisation marks the plan stale and blocks approval
 
   // Quản lý công ty đăng nhập ngay trong app (tải lại là mất lần sửa kiện): cùng thanh lỗi thời, nhưng chỉ xem — không có lối sang
   // Thiết lập tối ưu, không có nút Duyệt kể cả ở bản nguồn chưa duyệt
-  await switchUser(page, 'manager')
+  await switchUser(page, 'companyManager')
   await navigateInApp(page, SOURCE_REVISION)
   await expect(stale).toBeVisible()
   await expect(page.locator('[data-planner-lock="readOnly"]')).toBeVisible()

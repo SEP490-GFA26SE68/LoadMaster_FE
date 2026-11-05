@@ -72,17 +72,19 @@ export function companyMethods(ctx: DbContext): CompaniesDb {
   return {
     listCompanyOverview: () =>
       ctx.respond(() => {
-        assertRole(ctx, 'systemAdmin')
+        assertRole(ctx, 'systemAdmin', 'systemManager')
         const now = ctx.nowIso()
         const subscriptions = ctx.scope.platformSubscriptions.list()
         const accounts = ctx.scope.users.list()
         return ctx.scope.companies.list().map((company) => {
           const subscription = subscriptions.find((item) => item.companyId === company.id)
+          const adminUser = accounts.find((user) => user.companyId === company.id && user.role === 'companyAdmin') || null
           return {
             company,
             current: subscription ? { subscription, plan: ctx.scope.plans.read(subscription.planId) } : null,
             planStatus: subscription ? effectiveSubscriptionStatus(subscription, now) : null,
             userCount: accounts.filter((user) => user.companyId === company.id).length,
+            adminUser,
           }
         })
       }),
@@ -127,7 +129,7 @@ export function companyMethods(ctx: DbContext): CompaniesDb {
     getCompanyProfile: () =>
       ctx.respond(() => {
         const company = ctx.scope.companies.read(ctx.scope.newRecordCompany())
-        assertRole(ctx, 'companyAdmin', 'manager', 'dispatcher')
+        assertRole(ctx, 'companyAdmin', 'companyManager', 'dispatcher')
         return company
       }),
 

@@ -36,20 +36,31 @@ import {
   type CreditTransaction,
   type CurrentSubscription,
   type PaymentTransaction,
+  type PlanTier,
   type SubscriptionPlan,
 } from '@/lib/mock-db'
 import { startServerPayment, type PaymentStart } from './server-payment-api'
 
 const ON_BACKEND = usesBackend('billing')
 
-/** Giá một credit backend tính khi nạp (`CreditController.PRICE_PER_CREDIT_VND`; chưa có endpoint đọc giá). */
-const BACKEND_CREDIT_PRICE_VND = 5000
+/**
+ * Giá một credit và trần số dư cộng dồn khi nạp, theo hạng gói của công ty — như `CreditController` của backend (chưa có endpoint đọc
+ * giá): Basic 400 đ, trần 3.000; Pro 326 đ, trần 10.000; Ultimate 263 đ, không trần. Công ty chưa có gói tính như Basic.
+ */
+const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxBalance: number | null }> = {
+  BASIC: { priceVnd: 400, maxBalance: 3000 },
+  PRO: { priceVnd: 326, maxBalance: 10000 },
+  ULTIMATE: { priceVnd: 263, maxBalance: null },
+}
 
 /**
  * Phần của màn theo nguồn dữ liệu. Backend chưa có endpoint đọc giao dịch thanh toán: không có lịch sử thanh toán, nút Trả hay banner
  * thanh toán chờ; có hoá đơn mà kho mẫu không có. Kho mẫu trả bằng trang giả lập `/thanh-toan/gia-lap` (`simulation`); backend xác
  * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`). Gói trả phí của backend không bao giờ tự gia hạn (tới hạn là hết hạn, huỷ chỉ
- * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật.
+ * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật. Backend tính theo hợp đồng
+ * (`contractRenewal`): công ty tự gia hạn đúng gói đang dùng thêm một kỳ, muốn lên hạng cao hơn thì gửi yêu cầu hỗ trợ; nạp được số
+ * credit tuỳ ý trong trần của hạng (`customTopUp`; kho mẫu chỉ có gói 50 / 500); quản trị công ty dùng thử ký thoả thuận dịch vụ
+ * (`agreements`).
  */
 export const BILLING_CAPABILITIES = {
   payments: !ON_BACKEND,
@@ -57,8 +68,16 @@ export const BILLING_CAPABILITIES = {
   simulation: !ON_BACKEND,
   serverPayment: ON_BACKEND,
   autoRenew: !ON_BACKEND,
-  creditPriceVnd: ON_BACKEND ? BACKEND_CREDIT_PRICE_VND : BILLING_CONSTANTS.creditPriceVnd,
+  contractRenewal: ON_BACKEND,
+  customTopUp: ON_BACKEND,
+  agreements: ON_BACKEND,
 } as const
+
+/** Giá một credit khi nạp và trần số dư (`null`: không trần) theo hạng gói đang dùng; kho mẫu một giá, không trần. */
+export function topUpTerms(tier: PlanTier | null): { readonly priceVnd: number; readonly maxBalance: number | null } {
+  if (!ON_BACKEND) return { priceVnd: BILLING_CONSTANTS.creditPriceVnd, maxBalance: null }
+  return BACKEND_TOPUP[tier ?? 'BASIC']
+}
 
 /**
  * Gói của công ty. `current` là gói hiện tại kèm gói cước nó theo, `null` khi chưa có gói. Backend chỉ trả gói khi còn `ACTIVE`: gói đã
@@ -117,8 +136,9 @@ export async function listPlansOnSale(): Promise<SubscriptionPlan[]> {
 }
 
 /**
- * Đăng ký một gói: chỉ khi chưa có gói hoặc gói đã hết hạn (`SUBSCRIPTION_ACTIVE`; backend: `ACTIVE_SUBSCRIPTION_ALREADY_EXISTS`), gói
- * đang bán. Gói chỉ được kích hoạt khi thanh toán thành công; gói miễn phí của backend kích hoạt ngay.
+ * Đăng ký một gói đang bán. Kho mẫu: chỉ khi chưa có gói hoặc gói đã hết hạn (`SUBSCRIPTION_ACTIVE`). Backend: thêm cả gia hạn đúng gói
+ * đang dùng; đổi sang gói khác khi còn hiệu lực, hay lên hạng cao hơn sau khi hết hạn, là `ACTIVE_SUBSCRIPTION_ALREADY_EXISTS` (phải gửi
+ * yêu cầu hỗ trợ). Gói chỉ được kích hoạt khi thanh toán thành công; gói miễn phí của backend kích hoạt ngay.
  */
 // POST /api/subscription/subscribe
 export async function subscribe(planId: string): Promise<PaymentStart> {
@@ -156,7 +176,10 @@ export async function listCreditTransactions(): Promise<CreditTransaction[]> {
   return (await listCreditTransactionDtos()).map(creditTransactionOf).sort(newestFirst)
 }
 
-/** Nạp 50 hoặc 500 credit (`TOPUP_INVALID`), theo giá ở `BILLING_CAPABILITIES`. Credit chỉ được cộng khi thanh toán thành công. */
+/**
+ * Nạp credit theo giá của `topUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không vượt trần số dư của
+ * hạng. Credit chỉ được cộng khi thanh toán thành công.
+ */
 // POST /api/credits/topup
 export async function topUpCredits(credits: number): Promise<PaymentStart> {
   if (!ON_BACKEND) return { kind: 'simulation', paymentId: (await getMockDb().topUpCredits(credits)).id }

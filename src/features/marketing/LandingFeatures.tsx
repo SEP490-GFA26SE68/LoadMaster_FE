@@ -10,7 +10,7 @@ import { ZoneDiagram } from './bento/ZoneDiagram'
 import { SectionHeading } from './SectionHeading'
 
 /** Bốn vai trò cùng làm trên một phương án (tên vai trò lấy từ nhánh `roles`, icon là thiết bị của vai trò). */
-const ROLES = ['dispatcher', 'warehouse', 'driver', 'manager'] as const satisfies readonly Role[]
+const ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as const satisfies readonly Role[]
 
 const TILE_TITLE = 'm-0 font-display text-h2 font-[650] tracking-[-0.2px] font-stretch-108%'
 const TILE_TEXT = 'm-0 text-body-lg'

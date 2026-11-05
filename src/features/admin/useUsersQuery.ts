@@ -1,5 +1,5 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Company, NewUser, UserChanges } from '@/lib/mock-db'
+import type { NewUser, UserChanges } from '@/lib/mock-db'
 import type { User, UserStatus } from '@/types/user'
 import {
   USER_ACTIVITY_AVAILABLE,
@@ -12,11 +12,14 @@ import {
   resetPassword,
   setUserStatus,
   updateUser,
+  userFormRoles,
 } from './users-api'
 
 /** Màn có cột, ô kho / chi nhánh và lần hoạt động gần nhất không — backend chưa có hai trường đó (`users-api.ts`). */
 export const userDepotAvailable = USER_DEPOT_AVAILABLE
 export const userActivityAvailable = USER_ACTIVITY_AVAILABLE
+export { userFormRoles }
+export type { CompanyOption } from './users-api'
 
 /**
  * Người dùng qua TanStack Query (mục 9, LM-092) — thay `useState` + `users.mock.ts` cũ. Mọi ghi làm mới danh sách người dùng và
@@ -31,22 +34,22 @@ export function useUsersQuery() {
  * Tên công ty ít đổi nên không tự làm mới; màn Công ty (FE-8-06) vô hiệu khoá này sau mỗi lần tạo hoặc sửa.
  */
 export function useCompanyNamesQuery(enabled: boolean) {
-  return useQuery({ queryKey: ['companies'], queryFn: enabled ? fetchCompanies : skipToken, select: companyNames, staleTime: Infinity })
+  return useQuery({
+    queryKey: ['companies'],
+    queryFn: enabled ? fetchCompanies : skipToken,
+    staleTime: Infinity,
+  })
 }
 
 /**
  * Tên công ty cho cột và bộ lọc công ty của màn Người dùng: cùng nguồn với mã công ty của danh sách người dùng (backend khi nối, kho mẫu
- * khi không). Nằm dưới khoá `['users']` vì mã công ty đi theo danh sách đó; Nhật ký, Hỗ trợ vẫn đọc `useCompanyNamesQuery` của kho mẫu.
+ * khi không). Nằm dưới khoá `['users']` vì mã công ty đi theo danh sách đó; Nhật ký, Hỗ trợ đọc `useCompanyNamesQuery`.
  */
 export function useUserCompanyNamesQuery(enabled: boolean) {
   return useQuery({ queryKey: ['users', 'companies'], queryFn: enabled ? fetchUserCompanies : skipToken, staleTime: Infinity })
 }
 
 export type CompanyName = { readonly id: string; readonly name: string }
-
-function companyNames(companies: readonly Company[]): CompanyName[] {
-  return companies.map(({ id, name }) => ({ id, name }))
-}
 
 function useInvalidateUsers() {
   const client = useQueryClient()

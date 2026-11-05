@@ -37,7 +37,7 @@ const isHandler = (user: User) => user.status === 'active' && (CONTACT_HANDLER_R
 
 /**
  * Yêu cầu liên hệ của khách (`ContactOfGuest`). Gửi không cần phiên và không đi qua phạm vi công ty — form công khai. Đọc và sửa đi qua
- * `ctx.scope.guestContacts` (phiên của một công ty: `ROLE_NOT_ALLOWED`) rồi chỉ ba vai trò nền tảng. Sự kiện nhật ký không thuộc công ty
+ * `ctx.scope.guestContacts` (phiên của một công ty: `ROLE_NOT_ALLOWED`) rồi chỉ quản trị hệ thống và hỗ trợ khách hàng. Sự kiện nhật ký không thuộc công ty
  * nào (`null`): chỉ quản trị hệ thống đọc được trong nhật ký.
  */
 export function contactMethods(ctx: DbContext): ContactsDb {
@@ -61,6 +61,8 @@ export function contactMethods(ctx: DbContext): ContactsDb {
         if (!CONTACT_REQUEST_TYPES.includes(input.requestType)) throw bad('requestType')
         const phoneNumber = optional(input.phoneNumber, 'phoneNumber', CONTACT_LIMITS.phoneNumber)
         const companyName = optional(input.companyName, 'companyName', CONTACT_LIMITS.companyName)
+        const companyCode = optional(input.companyCode, 'companyCode', CONTACT_LIMITS.companyCode)
+        const taxCode = optional(input.taxCode, 'taxCode', CONTACT_LIMITS.taxCode)
         const message = optional(input.message, 'message', CONTACT_LIMITS.message)
         const interestedPlanId = optional(input.interestedPlanId, 'interestedPlanId', 40)
         if (interestedPlanId !== undefined && !ctx.scope.plans.list().some((plan) => plan.id === interestedPlanId)) throw bad('interestedPlanId')
@@ -70,6 +72,8 @@ export function contactMethods(ctx: DbContext): ContactsDb {
           email,
           ...(phoneNumber ? { phoneNumber } : {}),
           ...(companyName ? { companyName } : {}),
+          ...(companyCode ? { companyCode } : {}),
+          ...(taxCode ? { taxCode } : {}),
           ...(interestedPlanId ? { interestedPlanId } : {}),
           ...(message ? { message } : {}),
           requestType: input.requestType as ContactRequestType,

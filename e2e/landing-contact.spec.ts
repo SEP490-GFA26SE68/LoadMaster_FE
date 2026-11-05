@@ -23,7 +23,7 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   // Form liên hệ cuộn vào khung nhìn, chọn sẵn loại yêu cầu và gói vừa bấm
   await page.waitForURL(/\/gioi-thieu\?goi=PLAN-002&loai=bao-gia#lien-he$/)
   await expect(page.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster', exact: true })).toBeInViewport()
-  await expect(page.getByRole('combobox', { name: 'Bạn cần gì', exact: true })).toHaveText('Báo giá')
+  await expect(page.getByRole('combobox', { name: 'Bạn cần gì', exact: true })).toHaveText('Hỗ trợ tư vấn')
   await expect(page.getByRole('combobox', { name: 'Gói quan tâm', exact: true })).toHaveText('Pro')
   await page.getByRole('textbox', { name: 'Họ tên', exact: true }).fill('Đỗ Văn Hưng')
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill('hung.do@vantaisongtien.vn')
@@ -43,7 +43,7 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await expect(page.getByRole('heading', { level: 1, name: 'Liên hệ của khách', exact: true })).toBeVisible()
   await expect(page.getByText('4 yêu cầu · 2 mới', { exact: true })).toBeVisible()
   const row = page.getByRole('row').filter({ hasText: 'LH-004' })
-  await expect(row.getByRole('cell')).toContainText(['Đỗ Văn Hưng', 'hung.do@vantaisongtien.vn', 'Báo giá', 'Pro', 'Mới', 'Chưa ai nhận'])
+  await expect(row.getByRole('cell')).toContainText(['Đỗ Văn Hưng', 'hung.do@vantaisongtien.vn', 'Hỗ trợ tư vấn', 'Pro', 'Mới', 'Chưa ai nhận'])
 
   await row.getByRole('link', { name: 'Mở yêu cầu LH-004 của Đỗ Văn Hưng', exact: true }).click()
   await page.waitForURL(/\?lien-he=LH-004$/)
@@ -51,14 +51,12 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await expect(panel).toContainText('Đội 8 xe tải chạy miền Tây, cần báo giá gói Pro.')
   await expect(panel).toContainText('Vận tải Sông Tiền')
 
-  // Nhận việc: đổi trạng thái và giao cho chính mình — số yêu cầu mới giảm, dòng đổi theo (không dựa vào toast)
-  await panel.getByRole('combobox', { name: 'Trạng thái', exact: true }).click()
-  await page.getByRole('option', { name: 'Đang xử lý', exact: true }).click()
-  await panel.getByRole('combobox', { name: 'Người nhận việc', exact: true }).click()
-  await page.getByRole('option', { name: 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng', exact: true }).click()
-  await panel.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
+  // Nhận việc bằng "Đảm nhận": yêu cầu sang Đang xử lý, giao cho chính mình — số yêu cầu mới giảm, dòng đổi theo (không dựa vào toast)
+  await expect(panel.getByRole('combobox', { name: 'Trạng thái', exact: true })).toHaveCount(0)
+  await panel.getByRole('button', { name: 'Đảm nhận', exact: true }).click()
   await expect(page.getByText('4 yêu cầu · 1 mới', { exact: true })).toBeVisible()
-  await expect(panel.getByRole('button', { name: 'Lưu thay đổi', exact: true })).toBeDisabled()
+  await expect(panel.getByRole('button', { name: 'Đảm nhận', exact: true })).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: 'Đã giải quyết', exact: true })).toBeVisible()
   await expect(page.getByRole('row').filter({ hasText: 'LH-004' })).toContainText('Đang xử lý')
 
   expect(browserErrors).toStrictEqual([])

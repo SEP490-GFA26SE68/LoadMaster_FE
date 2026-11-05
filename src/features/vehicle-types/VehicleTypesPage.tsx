@@ -23,6 +23,8 @@ import {
   useVehicleAssignmentRowsQuery,
   useVehicleTypesQuery,
 } from './useVehicleTypesQuery'
+import { VehicleTypesPage as BackendVehicleTypesPage } from './backend/VehicleTypesPage'
+import { usesBackend } from '@/lib/backend-config'
 
 /**
  * Loại xe `/doi-xe/loai-xe` (LM-104). Bảng loại xe (tên, lòng thùng D × R × C cm, tải trọng kg, xe đang dùng) và bảng gắn loại cho từng
@@ -30,7 +32,7 @@ import {
  * chỉ có `fleet.view` xem. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, chỉ điều phối viên đọc được — người khác thấy một dòng lý do và
  * màn không gọi backend.
  */
-export function VehicleTypesPage() {
+function StoreVehicleTypesPage() {
   const t = useT()
   const can = useCan()
   if (!fleetReachable(can)) {
@@ -200,4 +202,9 @@ function AssignCard({ rows, loading, columns }: {
       )}
     </Card>
   )
+}
+
+/** Nhóm `fleet` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function VehicleTypesPage() {
+  return usesBackend('fleet') ? <BackendVehicleTypesPage /> : <StoreVehicleTypesPage />
 }

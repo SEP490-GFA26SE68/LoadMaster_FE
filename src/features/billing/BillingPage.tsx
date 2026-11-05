@@ -1,4 +1,4 @@
-import { Coins, RotateCcw } from 'lucide-react'
+import { Coins, LifeBuoy, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -9,14 +9,22 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
+import { SupportTicketDialog } from '@/features/support/SupportTicketDialog'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { PaymentTransaction, SubscriptionPlan } from '@/lib/mock-db'
+import { AgreementCard } from './AgreementCard'
 import { BalanceCard } from './BalanceCard'
+import { BILLING_CAPABILITIES } from './billing-api'
 import { BillingHistoryCard } from './BillingHistoryCard'
 import { paymentPath } from './payment-path'
 import { PlanChoiceCard } from './PlanChoiceCard'
 import { PlanSummaryCard } from './PlanSummaryCard'
+import { SignAgreementDialog } from './SignAgreementDialog'
 import { TopUpDialog } from './TopUpDialog'
+import { TrialAgreementBanner } from './TrialAgreementBanner'
+import type { SignAgreementRequest } from './agreements-api'
+import { useMyAgreementQuery, useSignAgreementMutation } from './useAgreementQuery'
+import { ViewAgreementDialog } from './ViewAgreementDialog'
 import {
   useCancelSubscriptionMutation,
   useCreditBalanceQuery,
@@ -38,6 +46,8 @@ function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTra
  * thái, số dư (gói không giới hạn: "Không giới hạn"), lịch sử phân trang (`BillingHistoryCard`); đăng ký (chỉ khi chưa có gói hoặc gói
  * hết hạn), huỷ gói, nạp credit 50 / 500. Đăng ký và nạp chỉ tạo thanh toán chờ rồi mở trang thanh toán (`useOpenPayment`: giả lập
  * với kho mẫu, trang xác nhận khi nối backend); thanh toán gia hạn đang chờ của kho mẫu có banner kèm nút Trả. Một nút chính: Nạp credit.
+ * Nối backend (`BILLING_CAPABILITIES`): gói còn hiệu lực tự gia hạn ở thẻ Gói hiện tại, lên hạng cao hơn bằng yêu cầu hỗ trợ; công ty dùng
+ * thử có banner, thẻ và hộp ký thoả thuận dịch vụ. Nút phụ "Yêu cầu hỗ trợ" trên dải tiêu đề mở hộp yêu cầu hỗ trợ.
  */
 export function BillingPage() {
   const t = useT()
@@ -52,10 +62,16 @@ export function BillingPage() {
   const cancel = useCancelSubscriptionMutation()
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
+  const [agreementDialog, setAgreementDialog] = useState<'sign' | 'view' | null>(null)
+  const agreement = useMyAgreementQuery().data ?? null
+  const sign = useSignAgreementMutation()
 
   const view = subscription.data
   const current = view?.current
   const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED')
+  // Backend: gói còn hiệu lực gia hạn đúng gói đó; gói hạng cao hơn qua yêu cầu hỗ trợ
+  const contract = BILLING_CAPABILITIES.contractRenewal && current?.subscription.status === 'ACTIVE' ? current : null
   const pending = pendingPlanPayment(payments.data ?? [])
   const pendingPlan = pending === undefined ? '' : (pending.purpose === 'RENEWAL' ? current?.plan.name : plans.data?.find((plan) => plan.id === pending.planId)?.name) ?? (pending.planId ?? '')
   const failed = subscription.isError || balance.isError
@@ -71,6 +87,16 @@ export function BillingPage() {
 
   function handleTopUp(credits: number) {
     topUp.mutate(credits, { onSuccess: (start) => openPayment(start), onError: showError })
+  }
+
+  function handleSign(request: SignAgreementRequest) {
+    sign.mutate(request, {
+      onSuccess: () => {
+        setAgreementDialog(null)
+        toast.success(t('billing.agreementSigned'))
+      },
+      onError: showError,
+    })
   }
 
   function handleCancel() {
@@ -94,10 +120,16 @@ export function BillingPage() {
         description={t('pageHero.billing')}
         actions={
           failed || loading ? null : (
-            <Button variant="primary" onClick={() => setTopUpOpen(true)}>
-              <Coins strokeWidth={1.5} />
-              {t('billing.topUp')}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="glass" onClick={() => setSupportOpen(true)}>
+                <LifeBuoy strokeWidth={1.5} />
+                {t('billing.support')}
+              </Button>
+              <Button variant="primary" onClick={() => setTopUpOpen(true)}>
+                <Coins strokeWidth={1.5} />
+                {t('billing.topUp')}
+              </Button>
+            </div>
           )
         }
       />
@@ -128,9 +160,15 @@ export function BillingPage() {
                 })}
               </Banner>
             ) : null}
+            <TrialAgreementBanner agreement={agreement} onOpenSignDialog={() => setAgreementDialog('sign')} />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               {current ? (
-                <PlanSummaryCard current={current} onCancel={() => setCancelOpen(true)} />
+                <PlanSummaryCard
+                  current={current}
+                  onCancel={() => setCancelOpen(true)}
+                  onRenew={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan) : undefined}
+                  renewPending={subscribe.isPending}
+                />
               ) : (
                 <Card>
                   <EmptyState
@@ -141,13 +179,18 @@ export function BillingPage() {
                   />
                 </Card>
               )}
-              <BalanceCard credit={balance.data} />
+              <div className="flex flex-col gap-4">
+                <BalanceCard credit={balance.data} />
+                {agreement ? <AgreementCard agreement={agreement} onSign={() => setAgreementDialog('sign')} onView={() => setAgreementDialog('view')} /> : null}
+              </div>
             </div>
-            {canSubscribe ? (
+            {canSubscribe || contract ? (
               <PlanChoiceCard
                 plans={plans.data ?? []}
                 pendingId={subscribe.isPending ? (subscribe.variables ?? null) : null}
                 onSubscribe={handleSubscribe}
+                current={contract ? { tier: contract.plan.tier } : null}
+                onRequestUpgrade={() => setSupportOpen(true)}
               />
             ) : null}
             <BillingHistoryCard />
@@ -155,7 +198,17 @@ export function BillingPage() {
         )}
       </div>
 
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} pending={topUp.isPending} onConfirm={handleTopUp} />
+      <TopUpDialog
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        pending={topUp.isPending}
+        onConfirm={handleTopUp}
+        tier={current?.plan.tier ?? null}
+        balance={balance.data?.balance ?? 0}
+      />
+      {supportOpen ? <SupportTicketDialog onClose={() => setSupportOpen(false)} /> : null}
+      <SignAgreementDialog agreement={agreement} open={agreementDialog === 'sign'} onClose={() => setAgreementDialog(null)} onSign={handleSign} isSigning={sign.isPending} />
+      <ViewAgreementDialog agreement={agreement} open={agreementDialog === 'view'} onClose={() => setAgreementDialog(null)} />
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}

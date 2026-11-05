@@ -47,8 +47,8 @@ test('a guest sends every form field without a token; the bare reply becomes the
     url: 'http://be.test/api/contact-guests',
     auth: null,
     body: {
-      fullName: 'QA Khách', email: 'qa.khach@example.com', phoneNumber: '0900000001', companyName: 'QA Vận tải',
-      interestedPlanId: 2, message: 'Cần báo giá', requestType: 'PRICING',
+      fullName: 'QA Khách', email: 'qa.khach@example.com', phoneNumber: '0900000001', companyName: 'QA Vận tải', companyCode: null,
+      taxCode: null, interestedPlanId: 2, message: 'Cần báo giá', requestType: 'PRICING',
     },
   }])
   expect(contact).toStrictEqual({
@@ -62,8 +62,8 @@ test('optional fields left empty go as null, and a plan id of the sample catalog
   reply = new Response(JSON.stringify({ ...SAVED, phoneNumber: null, companyName: null, interestedPlanId: null, interestedPlanName: null, message: null }), { status: 201 })
   const contact = await sendGuestContact({ fullName: 'QA Khách', email: 'qa.khach@example.com', interestedPlanId: 'PLAN-002', requestType: 'INQUIRY' })
   expect(calls[0]?.body).toStrictEqual({
-    fullName: 'QA Khách', email: 'qa.khach@example.com', phoneNumber: null, companyName: null, interestedPlanId: null, message: null,
-    requestType: 'INQUIRY',
+    fullName: 'QA Khách', email: 'qa.khach@example.com', phoneNumber: null, companyName: null, companyCode: null, taxCode: null,
+    interestedPlanId: null, message: null, requestType: 'INQUIRY',
   })
   expect(contact).toStrictEqual({
     id: '7', fullName: 'QA Khách', email: 'qa.khach@example.com', requestType: 'PRICING', status: 'NEW', createdAt: '2026-10-16T21:29:43.054Z',

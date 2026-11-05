@@ -8,7 +8,7 @@ const BACKEND_ROLES = [
   ['SYSTEM_MANAGER', 'systemManager'],
   ['SYSTEM_SUPPORTER', 'systemSupporter'],
   ['ADMIN', 'companyAdmin'],
-  ['MANAGER', 'manager'],
+  ['MANAGER', 'companyManager'],
   ['DISPATCHER', 'dispatcher'],
   ['WAREHOUSE_WORKER', 'warehouse'],
   ['DRIVER', 'driver'],
@@ -24,7 +24,7 @@ test('every app role is reachable from a backend role', () => {
 
 test('the two company roles are also accepted under the names of the shared spec; anything else is unknown', () => {
   expect(roleOfBackend('COMPANY_ADMIN')).toBe('companyAdmin')
-  expect(roleOfBackend('COMPANY_MANAGER')).toBe('manager')
+  expect(roleOfBackend('COMPANY_MANAGER')).toBe('companyManager')
   expect(roleOfBackend('offline_access')).toBeNull()
   expect(roleOfBackend('')).toBeNull()
 })

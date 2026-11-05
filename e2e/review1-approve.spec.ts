@@ -59,7 +59,7 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
   await expect(newestRun(page)).not.toContainText('Chờ duyệt')
 
   // Quản lý công ty: cùng phương án, chỉ xem — không Chỉnh sửa, không Duyệt, một dòng lý do; bản nguồn chưa duyệt cũng vậy
-  await switchUser(page, 'manager')
+  await switchUser(page, 'companyManager')
   for (const route of [approvedRoute, `/chuyen/${TRIP}/phuong-an?revision=${sourceRevision}`]) {
     await navigateInApp(page, route)
     await page.locator('canvas').waitFor()
@@ -70,8 +70,8 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
   await expect(page.locator('header').first()).toContainText(APPROVED_BY_DISPATCHER)
 
   // Hàng đợi duyệt đã bỏ: không còn mục điều hướng, đường dẫn cũ là màn 404
-  await navigateInApp(page, '/')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
+  await navigateInApp(page, '/tong-quan')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi'])
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])

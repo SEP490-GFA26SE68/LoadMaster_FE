@@ -5,7 +5,7 @@ import { SectionHeading } from './SectionHeading'
 
 /** Bốn bước của một chuyến hàng, mỗi bước kèm vai trò làm việc đó (ma trận quyền của ứng dụng). */
 const STEPS = [
-  { key: 'intake', roles: ['dispatcher', 'manager'] },
+  { key: 'intake', roles: ['dispatcher', 'companyManager'] },
   { key: 'plan', roles: ['dispatcher'] },
   { key: 'optimize', roles: ['dispatcher'] },
   { key: 'operate', roles: ['warehouse', 'driver', 'dispatcher'] },

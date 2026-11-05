@@ -16,7 +16,9 @@ import { useCompanyNamesQuery } from '@/features/admin/useUsersQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TICKET_KINDS, type SupportTicket, type TicketStatus } from '@/lib/mock-db'
+import { CompanyChatCard } from './CompanyChatCard'
 import { CompanyPanel } from './CompanyPanel'
+import { recentCompanyChat } from './support-chat'
 import { createTicketColumns } from './support-columns'
 import { TicketThread } from './TicketThread'
 import { ticketCompanies, ticketLabel } from './ticket-view'
@@ -49,8 +51,8 @@ function StatusSelect({ ticket, pending, onChange }: { ticket: SupportTicket; pe
  * Hỗ trợ khách hàng `/ho-tro` (FE-8-07, `support.handle`) — màn chính của vai trò. Bảng mọi yêu cầu hỗ trợ (hoạt động gần nhất trước), lọc
  * công ty, loại, trạng thái và tìm theo tiêu đề / mã / người gửi — tất cả trên URL; bấm một dòng mở cuộc trao đổi ở cột bên phải (`?ticket=`)
  * để trả lời và đổi trạng thái (kể cả mở lại yêu cầu đã đóng), kèm khung **chỉ đọc** về công ty đó: gói, số dư và 20 giao dịch credit gần nhất.
- * Màn không có nút chính ngoài "Gửi trả lời" của cuộc trao đổi. Nối backend (`SUPPORT_SOURCE`): chưa có trao đổi và khung công ty —
- * cột phải chỉ còn nội dung, phản hồi của đội hỗ trợ và ô trạng thái; tên công ty đi kèm yêu cầu.
+ * Màn không có nút chính ngoài "Gửi trả lời" của cuộc trao đổi. Nối backend (`SUPPORT_SOURCE`): trao đổi và khung công ty đọc từ máy
+ * chủ, khung công ty có thêm ô "Đổi gói nhanh" (`planAssign`); tên công ty đi kèm yêu cầu, chưa có giờ hoạt động gần nhất.
  */
 export function SupportPage() {
   const t = useT()
@@ -76,6 +78,7 @@ export function SupportPage() {
 
   const selectedId = params.get(SELECTED_PARAM)
   const selected = tickets.find((ticket) => ticket.id === selectedId)
+  const companyChat = useMemo(() => (selected ? recentCompanyChat(tickets, selected.companyId) : []), [tickets, selected])
   function select(ticket: SupportTicket) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
@@ -174,7 +177,10 @@ export function SupportPage() {
                       />
                     </div>
                   </Card>
-                  {SUPPORT_SOURCE.companyPanel ? <CompanyPanel companyId={selected.companyId} /> : null}
+                  {SUPPORT_SOURCE.companyPanel ? (
+                    <CompanyPanel companyId={selected.companyId} companyName={selected.companyName} ticketClosed={selected.status === 'CLOSED'} />
+                  ) : null}
+                  {companyChat.length > 0 ? <CompanyChatCard entries={companyChat} /> : null}
                 </>
               ) : (
                 <Card>

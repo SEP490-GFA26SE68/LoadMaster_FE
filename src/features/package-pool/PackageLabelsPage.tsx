@@ -13,6 +13,8 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { LABEL_SHEET, labelsBackTarget, labelSelection } from './label-sheet'
 import { PackageLabel } from './PackageLabel'
 import { MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT, useExportLabelsPdfMutation, usePackageLabelsQuery } from './usePackagePoolQuery'
+import { PackageLabelsPage as BackendPackageLabelsPage } from './backend/PackageLabelsPage'
+import { usesBackend } from '@/lib/backend-config'
 
 /*
  * Bản in là một tờ riêng gắn thẳng vào `<body>`: khi in, mọi thứ khác của trang (thanh điều hướng, dải trời, toast) bị ẩn và tờ nhãn
@@ -35,7 +37,7 @@ const PRINT_CSS = `
  * Nhân viên kho dùng máy tính bảng: nút cỡ cảm ứng. Nối backend: tờ nhãn vẫn dựng ở app, thêm nút phụ "Tải PDF nhãn" do backend dựng
  * (tối đa `MAX_PDF_LABELS` kiện); nhân viên kho và nhãn theo chuyến chưa có nguồn nên màn chỉ nói lý do.
  */
-export function PackageLabelsPage() {
+function StorePackageLabelsPage() {
   const t = useT()
   const can = useCan()
   const pdfLimitId = useId()
@@ -119,4 +121,9 @@ export function PackageLabelsPage() {
         : null}
     </div>
   )
+}
+
+/** Nhóm `packages` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function PackageLabelsPage() {
+  return usesBackend('packages') ? <BackendPackageLabelsPage /> : <StorePackageLabelsPage />
 }

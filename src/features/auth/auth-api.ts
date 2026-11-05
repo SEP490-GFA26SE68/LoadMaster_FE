@@ -5,6 +5,7 @@
  */
 
 import { api, isApiError } from '@/lib/api-client'
+import { backendConfig } from '@/lib/backend-config'
 import { DEMO_ACCOUNTS, getMockDb, isMockDbError } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { isActiveOnBackend, roleOfBackend, userFromBackend, type BackendUserProfile } from './backend-user'
@@ -68,7 +69,29 @@ export async function fetchBackendUser(): Promise<User> {
   if (!isActiveOnBackend(profile.status)) throw new AuthError('account-suspended')
   const standIn = getMockDb().restoreSession(DEMO_ACCOUNTS.find((account) => account.role === role)?.id ?? null)
   if (standIn === null) throw new AuthError('role-unknown')
-  return userFromBackend(profile, role, standIn)
+  const user = userFromBackend(profile, role, standIn)
+  backendIdentity = { ...user, id: String(profile.id), companyId: profile.companyId === null ? undefined : String(profile.companyId) }
+  return user
+}
+
+/**
+ * Người đăng nhập theo **mã của backend** (mã người dùng, mã công ty) cho các `-api.ts` cần biết "tôi là ai" ở máy chủ — khác người dùng
+ * của `fetchBackendUser`, vốn mang mã của tài khoản mẫu để kho mẫu chạy được. `null` khi chưa đăng nhập bằng backend.
+ */
+let backendIdentity: User | null = null
+
+export function getCachedCurrentUser(): User | null {
+  return backendIdentity
+}
+
+/** Đang đăng nhập bằng backend (`VITE_AUTH_SOURCE=keycloak` và `GET /api/users/me` đã trả người dùng). Kho mẫu luôn là `false`. */
+export function isAuthenticated(): boolean {
+  return backendConfig.authSource === 'keycloak' && backendIdentity !== null
+}
+
+/** Phiên backend đã đóng (đăng xuất, hết phiên): các `-api.ts` thôi gọi máy chủ. */
+export function forgetBackendUser(): void {
+  backendIdentity = null
 }
 
 async function readBackendProfile(): Promise<BackendUserProfile> {

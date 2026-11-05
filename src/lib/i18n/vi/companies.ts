@@ -11,7 +11,7 @@ export const companies = {
   empty: 'Chưa có công ty nào.',
   emptyDescription: 'Tạo công ty cùng quản trị công ty đầu tiên để họ bắt đầu dùng LoadMaster.',
   add: 'Tạo công ty',
-  columns: { company: 'Công ty', plan: 'Gói', planStatus: 'Trạng thái gói', users: 'Người dùng', actions: 'Thao tác' },
+  columns: { company: 'Công ty', admin: 'Quản trị viên', plan: 'Gói', planStatus: 'Trạng thái gói', users: 'Người dùng', actions: 'Thao tác' },
   noPlan: 'Chưa có gói',
   actions: 'Thao tác với {name}',
   created: 'Đã tạo công ty {name}',
@@ -68,7 +68,9 @@ export const companies = {
       users: 'Chưa đọc được người dùng: cột Người dùng để trống.',
       retry: 'Tải lại',
     },
+    tabs: { label: 'Nội dung màn Công ty', companies: 'Công ty', admins: 'Quản trị công ty' },
     menu: {
+      view: 'Xem chi tiết',
       edit: 'Sửa thông tin',
       createAdmin: 'Tạo quản trị công ty',
       suspend: 'Tạm ngưng công ty',

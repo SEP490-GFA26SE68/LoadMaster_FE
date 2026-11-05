@@ -23,6 +23,8 @@ import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
 import { useDeleteRequirementMutation, useRequirementsQuery, useUnassignRequirementMutation } from './useRequirementsQuery'
+import { RequirementsPage as BackendRequirementsPage } from './backend/RequirementsPage'
+import { usesBackend } from '@/lib/backend-config'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 
@@ -32,7 +34,7 @@ type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
  * gỡ khỏi chuyến từ menu cuối dòng. Một thẻ gồm thanh tìm / lọc (trạng thái, ưu tiên, khoảng hạn) và bảng, mặc định sắp theo hạn gần
  * nhất trước; bấm mã yêu cầu mở chi tiết. Tìm, lọc, sắp xếp giữ trên URL (D-52).
  */
-export function RequirementsPage() {
+function StoreRequirementsPage() {
   const t = useT()
   const can = useCan()
   const canEdit = can('requirements.edit')
@@ -178,4 +180,9 @@ export function RequirementsPage() {
       ) : null}
     </div>
   )
+}
+
+/** Nhóm `trips` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function RequirementsPage() {
+  return usesBackend('trips') ? <BackendRequirementsPage /> : <StoreRequirementsPage />
 }

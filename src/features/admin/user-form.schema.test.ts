@@ -20,7 +20,7 @@ test('a valid account is normalised: text trimmed, phone stored in its display f
 })
 
 test('the company form takes the five company roles, and each needs a depot; a blank one is reported at the depot field', () => {
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+  for (const role of ['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(errorsOf('company', { ...VALID, role }), role).toStrictEqual([])
     expect(errorsOf('company', { ...VALID, role, depot: '   ' }), role).toStrictEqual(['depot: admin.users.errors.depotRequired'])
   }
@@ -33,7 +33,7 @@ test('the platform form takes the three platform roles and no depot, so a blank 
 })
 
 test('a company form without a depot field (the server keeps no depot) accepts a blank depot', () => {
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+  for (const role of ['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(userFormSchema('company', { depot: false }).safeParse({ ...VALID, role, depot: '' }).success, role).toBe(true)
   }
 })
@@ -42,7 +42,7 @@ test('a role outside the scope of the form is refused at the role field', () => 
   for (const role of ['systemAdmin', 'systemManager', 'systemSupporter'] as const) {
     expect(errorsOf('company', { ...VALID, role }), role).toStrictEqual(['role: admin.users.errors.roleRequired'])
   }
-  for (const role of ['companyAdmin', 'manager', 'dispatcher', 'warehouse', 'driver'] as const) {
+  for (const role of ['companyAdmin', 'companyManager', 'dispatcher', 'warehouse', 'driver'] as const) {
     expect(errorsOf('platform', { ...VALID, role }), role).toStrictEqual(['role: admin.users.errors.roleRequired'])
   }
 })
@@ -54,4 +54,16 @@ test('every broken field is reported together, the depot included', () => {
     'phone: admin.users.errors.phoneInvalid',
     'depot: admin.users.errors.depotRequired',
   ])
+})
+
+test('with the server roles, a company admin invited by the platform needs a company; the chosen one is kept', () => {
+  const roles = ['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin'] as const
+  const schema = userFormSchema('platform', { roles })
+  const input = { ...VALID, role: 'companyAdmin' as const, companyId: '' }
+  const missing = schema.safeParse(input)
+  expect(missing.success ? [] : missing.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`)).toStrictEqual([
+    'company: admin.users.errors.companyRequired',
+  ])
+  expect(schema.parse({ ...input, companyId: '7' })).toHaveProperty('companyId', '7')
+  expect(schema.parse({ ...input, role: 'systemManager' })).not.toHaveProperty('companyId')
 })

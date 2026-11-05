@@ -194,6 +194,7 @@ export const viewer = {
       COOLING_UNIT: 'Dàn lạnh',
       PARTITION: 'Vách ngăn',
       RESERVED_ZONE: 'Vùng dành riêng',
+      OTHER: 'Vật cản khác',
     },
     corner: 'Góc tại X {x} · Y {y} · Z {z}',
     notBearing: 'Không chịu tải',

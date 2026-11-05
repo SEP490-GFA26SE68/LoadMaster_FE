@@ -109,7 +109,7 @@ test('a stop reached after its deadline is marked late on the stop, on the route
 })
 
 test('the manager reads the optimized route of the seed trip and its cargo groups, without a way to optimize', async () => {
-  renderTrip('TRIP-2026-0914', 'manager')
+  renderTrip('TRIP-2026-0914', 'companyManager')
   await screen.findByRole('region', { name: 'Sơ đồ tuyến' }, SLOW)
   expect(await route().findByText('Tuyến đã tối ưu', {}, SLOW)).toBeInTheDocument()
   expect(route().getByText('MOCK RESULT')).toBeInTheDocument()

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { AuthError } from './auth-api'
-import { createKeycloakSession, type AuthTabChannel } from './keycloak-session'
+import { createKeycloakSession, type AuthTabChannel, type RedirectPort } from './keycloak-session'
 
 /**
  * Phiên Keycloak đăng nhập ngay trong app (password grant), với Keycloak giả, `sessionStorage` giả và kênh giữa các tab giả.
@@ -30,6 +30,10 @@ function stubKeycloak(options: { account?: 'ok' | 'temporary' | 'disabled'; clie
     if (input === LOGOUT_URL) {
       live.clear()
       return Promise.resolve(new Response(null, { status: 204 }))
+    }
+    // Lượt trả về của trang đăng nhập Keycloak (dự phòng): mã chỉ dùng được với đúng code_verifier
+    if (form.grant_type === 'authorization_code') {
+      return form.code === 'kc-code' && form.code_verifier !== undefined && form.code_verifier.length >= 43 ? grant() : reply(400, { error: 'invalid_grant' })
     }
     if (options.client === 'no-direct-grants') return reply(400, { error: 'unauthorized_client', error_description: 'Client not allowed for direct access grants' })
     if (form.grant_type === 'refresh_token') {
@@ -121,6 +125,57 @@ describe('signing in on the app screen', () => {
     expect(error).toMatchObject({ code })
     expect(storage.items.size).toBe(0)
     expect(await session.token()).toBeNull()
+  })
+})
+
+describe('a realm whose client has no direct grants', () => {
+  function fakeBrowser(href: string) {
+    const port = { current: href, assigned: [] as string[], replaced: [] as string[] }
+    const redirect: RedirectPort = {
+      href: () => port.current,
+      assign: (url) => void port.assigned.push(url),
+      replace: (url) => void port.replaced.push(url),
+    }
+    return { port, redirect }
+  }
+
+  test('signing in goes to the Keycloak login page with PKCE, and the code it sends back opens the session', async () => {
+    const keycloak = stubKeycloak({ client: 'no-direct-grants' })
+    const storage = memoryStorage()
+    const before = fakeBrowser('http://localhost:5173/dang-nhap')
+    const session = createKeycloakSession(CONFIG, { storage, channel: null, now, redirect: before.redirect })
+
+    void session.login('an@fastmove.vn', 'dung-mat-khau')
+    await vi.waitFor(() => expect(before.port.assigned).toHaveLength(1))
+    const target = new URL(before.port.assigned[0] ?? '')
+    expect(target.origin + target.pathname).toBe('http://kc.test/realms/loadmaster/protocol/openid-connect/auth')
+    expect(Object.fromEntries([...target.searchParams].filter(([name]) => !['state', 'code_challenge'].includes(name)))).toStrictEqual({
+      client_id: 'loadmaster-web',
+      redirect_uri: 'http://localhost:5173/dang-nhap',
+      response_type: 'code',
+      response_mode: 'query',
+      scope: 'openid',
+      code_challenge_method: 'S256',
+      login_hint: 'an@fastmove.vn',
+    })
+    const state = target.searchParams.get('state') ?? ''
+
+    // Keycloak đưa trình duyệt về màn đăng nhập: trang tải lại, phiên mới đổi mã lấy token
+    const after = fakeBrowser(`http://localhost:5173/dang-nhap?state=${state}&session_state=s1&code=kc-code`)
+    const reloaded = createKeycloakSession(CONFIG, { storage, channel: null, now, redirect: after.redirect })
+    expect(await reloaded.start()).toBe(true)
+    expect(after.port.replaced).toStrictEqual(['/dang-nhap'])
+    expect(await reloaded.token()).toBe('access-1')
+    expect(keycloak.calls.at(-1)?.form).toMatchObject({ grant_type: 'authorization_code', code: 'kc-code', redirect_uri: 'http://localhost:5173/dang-nhap' })
+  })
+
+  test('a code that does not match the state this tab sent is dropped from the URL and opens nothing', async () => {
+    const keycloak = stubKeycloak({ client: 'no-direct-grants' })
+    const after = fakeBrowser('http://localhost:5173/dang-nhap?state=khong-phai&code=kc-code')
+    const session = createKeycloakSession(CONFIG, { storage: memoryStorage(), channel: null, now, redirect: after.redirect })
+    expect(await session.start()).toBe(false)
+    expect(after.port.replaced).toStrictEqual(['/dang-nhap'])
+    expect(keycloak.calls).toHaveLength(0)
   })
 })
 

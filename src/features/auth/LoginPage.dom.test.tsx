@@ -50,7 +50,7 @@ test.each([
   ['kho@loadmaster.vn', '/kho'],
   ['taixe@loadmaster.vn', '/tai-xe'],
   ['dieuphoi@loadmaster.vn', '/chuyen'],
-  ['quanly@loadmaster.vn', '/'],
+  ['quanly@loadmaster.vn', '/tong-quan'],
   ['quantri@loadmaster.vn', '/nen-tang/cong-ty'],
   // FE-0-03: quản trị công ty; quản lý nền tảng mở danh mục gói, hỗ trợ khách hàng mở màn hỗ trợ; tài khoản của Phương Nam
   ['qtcongty@loadmaster.vn', '/nguoi-dung'],
@@ -92,7 +92,7 @@ test('the quick sign-in box groups the demo accounts by platform and company; pi
   expect(screen.getByLabelText('Email')).toHaveValue('quanly@phuongnam.vn')
   expect(screen.getByLabelText('Mật khẩu')).toHaveValue('loadmaster')
   await user.click(screen.getByRole('button', { name: 'Đăng nhập' }))
-  expect(await screen.findByText('Đang ở /', {}, { timeout: 3000 })).toBeInTheDocument()
+  expect(await screen.findByText('Đang ở /tong-quan', {}, { timeout: 3000 })).toBeInTheDocument()
 })
 
 test('signing out and in as another role lands on that role screen, not on the page the previous user left', async () => {

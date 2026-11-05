@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { createMockDb, type MockDb, type NewGuestContact } from '@/lib/mock-db'
 
 /**
- * Yêu cầu liên hệ của khách (`ContactOfGuest`): khách chưa có tài khoản gửi từ form công khai; ba vai trò nền tảng đọc, nhận việc, đổi trạng
+ * Yêu cầu liên hệ của khách (`ContactOfGuest`): khách chưa có tài khoản gửi từ form công khai; quản trị hệ thống và hỗ trợ khách hàng đọc, nhận việc, đổi trạng
  * thái và ghi chú. Yêu cầu không thuộc công ty nào, nên phiên của một công ty không đọc được.
  */
 
@@ -65,13 +65,21 @@ test.each([
   expect((await db.listGuestContacts()).map((contact) => contact.id)).toStrictEqual(['LH-001', 'LH-002', 'LH-003'])
 })
 
-test.each([SUPPORT, PLATFORM_MANAGER, SYSTEM_ADMIN])('%s reads every request, newest first, and opens one by its code', async (userId) => {
+test.each([SUPPORT, SYSTEM_ADMIN])('%s reads every request, newest first, and opens one by its code', async (userId) => {
   const db = dbAs(userId)
   const contacts = await db.listGuestContacts()
   expect(contacts.map((contact) => [contact.id, contact.status, contact.assignedToId ?? null]))
     .toStrictEqual([['LH-001', 'NEW', null], ['LH-002', 'IN_PROGRESS', SUPPORT], ['LH-003', 'RESOLVED', SUPPORT]])
   expect((await db.getGuestContact('LH-002')).assignedToName).toBe('Tạ Thị Ngọc Ánh')
   await expect(db.getGuestContact('LH-999')).rejects.toMatchObject({ code: 'NOT_FOUND', params: { collection: 'guestContacts', id: 'LH-999' } })
+})
+
+test('the platform manager does not handle guest requests (contacts.handle, as on the backend)', async () => {
+  const db = dbAs(PLATFORM_MANAGER)
+  await expect(db.listGuestContacts()).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
+  db.restoreSession(SUPPORT)
+  await expect(db.updateGuestContact('LH-001', { assignedToId: PLATFORM_MANAGER }))
+    .rejects.toMatchObject({ code: 'CONTACT_INVALID', params: { field: 'assignedToId' } })
 })
 
 test('a company session cannot read, open or update requests', async () => {
@@ -86,17 +94,17 @@ test('a company session cannot read, open or update requests', async () => {
 test('taking a request: assign it, move it on, write a note — one event with the changed fields; no change logs nothing', async () => {
   const db = dbAs(SUPPORT)
   const before = (await db.listEvents()).length
-  const updated = await db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: PLATFORM_MANAGER, note: ' Gọi lại sáng mai ' })
-  expect(updated).toMatchObject({ status: 'IN_PROGRESS', assignedToId: PLATFORM_MANAGER, assignedToName: 'Đinh Quang Huy', note: 'Gọi lại sáng mai' })
+  const updated = await db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: SYSTEM_ADMIN, note: ' Gọi lại sáng mai ' })
+  expect(updated).toMatchObject({ status: 'IN_PROGRESS', assignedToId: SYSTEM_ADMIN, assignedToName: 'Võ Minh Khoa', note: 'Gọi lại sáng mai' })
   expect(updated.resolvedAt).toBeUndefined()
   const events = await db.listEvents()
   expect(events).toHaveLength(before + 1)
   expect(events[0]).toMatchObject({
     action: 'contact.updated', actorId: SUPPORT, companyId: null, target: { type: 'contact', id: 'LH-001' },
-    params: { fullName: 'Lê Hoàng Nam', fields: 'status,assignedToId,note', contactStatus: 'IN_PROGRESS', assignedTo: PLATFORM_MANAGER },
+    params: { fullName: 'Lê Hoàng Nam', fields: 'status,assignedToId,note', contactStatus: 'IN_PROGRESS', assignedTo: SYSTEM_ADMIN },
   })
 
-  await db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: PLATFORM_MANAGER, note: 'Gọi lại sáng mai' })
+  await db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: SYSTEM_ADMIN, note: 'Gọi lại sáng mai' })
   expect(await db.listEvents()).toHaveLength(before + 1)
 
   // Bỏ người nhận và xoá ghi chú
@@ -151,10 +159,9 @@ test('an internal note of 2000 characters is kept, surrounding spaces are not co
 
 test('a locked handler cannot be given a request: nothing changes and nothing is logged', async () => {
   const db = dbAs(SYSTEM_ADMIN)
-  await db.setUserStatus(PLATFORM_MANAGER, 'suspended')
-  db.restoreSession(SUPPORT)
+  await db.setUserStatus(SUPPORT, 'suspended')
   const before = await db.listEvents()
-  await expect(db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: PLATFORM_MANAGER }))
+  await expect(db.updateGuestContact('LH-001', { status: 'IN_PROGRESS', assignedToId: SUPPORT }))
     .rejects.toMatchObject({ code: 'CONTACT_INVALID', params: { field: 'assignedToId' } })
   const stored = await db.getGuestContact('LH-001')
   expect([stored.status, stored.assignedToId]).toStrictEqual(['NEW', undefined])

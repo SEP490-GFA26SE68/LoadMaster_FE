@@ -26,9 +26,14 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 /**
  * Gói hiện tại của công ty (FE-8-03): tên, hạng, nhãn "Giá trị tạm" khi gói mang cờ tạm, trạng thái, ngày bắt đầu và hết hạn, tự gia hạn,
  * giá và credit mỗi tháng. Gói đang dùng có nút Huỷ gói (secondary — nút chính của màn là Nạp credit); gói đã huỷ hay hết hạn nói rõ
- * hệ quả bằng một dòng.
+ * hệ quả bằng một dòng. Nối backend thì công ty tự gia hạn gói đang dùng thêm một kỳ (`onRenew`, nút phụ).
  */
-export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscription; onCancel: () => void }) {
+export function PlanSummaryCard({ current, onCancel, onRenew, renewPending = false }: {
+  current: CurrentSubscription
+  onCancel: () => void
+  onRenew?: () => void
+  renewPending?: boolean
+}) {
   const t = useT()
   const format = useFormat()
   const { subscription, plan } = current
@@ -59,9 +64,10 @@ export function PlanSummaryCard({ current, onCancel }: { current: CurrentSubscri
         </dl>
         {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
         {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
-        {subscription.status === 'ACTIVE' ? (
-          <div>
-            <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button>
+        {subscription.status === 'ACTIVE' || (onRenew && subscription.status === 'EXPIRED') ? (
+          <div className="flex flex-wrap gap-2">
+            {onRenew ? <Button variant="secondary" loading={renewPending} onClick={onRenew}>{t('billing.plan.renew')}</Button> : null}
+            {subscription.status === 'ACTIVE' ? <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button> : null}
           </div>
         ) : null}
       </div>

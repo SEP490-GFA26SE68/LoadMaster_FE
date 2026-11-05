@@ -55,8 +55,8 @@ function ActionsCell({ user }: { user: User }) {
 
 function CompanyCell({ user }: { user: User }) {
   const { companies } = useUsersTable()
-  const name = user.companyId === undefined ? undefined : companies.get(user.companyId)
-  return <UserCompany companyId={user.companyId} name={name} className="line-clamp-2 whitespace-normal" />
+  const name = user.companyId === undefined ? undefined : (companies.get(user.companyId) ?? user.companyName)
+  return <UserCompany companyId={user.companyId} companyName={name} className="line-clamp-2 whitespace-normal" />
 }
 
 function ActionsHeader() {

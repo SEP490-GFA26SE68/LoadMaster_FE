@@ -19,6 +19,8 @@ import { PackageTypeFormDialog } from './PackageTypeFormDialog'
 import {
   PACKAGE_POOL_SUPPORT, useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation,
 } from './usePackagePoolQuery'
+import { PackageTypesPage as BackendPackageTypesPage } from './backend/PackageTypesPage'
+import { usesBackend } from '@/lib/backend-config'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
@@ -26,7 +28,7 @@ type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
  * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện). Nối backend thì máy chủ chưa mở danh mục
  * loại kiện cho điều phối viên: màn Kho kiện không có lối vào, mở thẳng đường dẫn thì chỉ thấy câu lý do — không gọi máy chủ.
  */
-export function PackageTypesPage() {
+function StorePackageTypesPage() {
   return PACKAGE_POOL_SUPPORT.packageTypes ? <PackageTypesCatalog /> : <PackageTypesUnavailable />
 }
 
@@ -177,4 +179,9 @@ function PackageTypesCatalog() {
       />
     </div>
   )
+}
+
+/** Nhóm `packages` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function PackageTypesPage() {
+  return usesBackend('packages') ? <BackendPackageTypesPage /> : <StorePackageTypesPage />
 }

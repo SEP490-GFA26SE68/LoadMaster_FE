@@ -22,17 +22,17 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('tám cột vai trò theo thứ tự nền tảng → công ty, 35 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
+test('tám cột vai trò theo thứ tự nền tảng → công ty, 37 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 35 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(50)
+  // Một dòng tiêu đề, 13 dòng khu vực, 37 dòng quyền, một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(52)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(35)
+  expect(permissionRows).toHaveLength(37)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
@@ -46,7 +46,7 @@ test('tám cột vai trò theo thứ tự nền tảng → công ty, 35 dòng qu
 test('quản trị hệ thống và quản trị công ty quản lý người dùng; ba vai trò nền tảng không có quyền vận hành', () => {
   const matrix = renderMatrix()
   // Cột: quản trị hệ thống, quản lý nền tảng, hỗ trợ, quản trị công ty, quản lý, điều phối, kho, tài xế
-  expect(cellsOf(matrix, 'Tạo và quản lý công ty khách hàng')).toStrictEqual([YES, NO, NO, NO, NO, NO, NO, NO])
+  expect(cellsOf(matrix, 'Tạo và quản lý công ty khách hàng')).toStrictEqual([YES, YES, NO, NO, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Xem và sửa thông tin công ty của mình')).toStrictEqual([NO, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Quản lý người dùng')).toStrictEqual([YES, NO, NO, YES, NO, NO, NO, NO])
   expect(cellsOf(matrix, 'Xem nhật ký hệ thống')).toStrictEqual([YES, NO, NO, YES, NO, NO, NO, NO])
@@ -64,10 +64,10 @@ test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ư
   expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
   expect(cellsOf(matrix, 'Xem phương án 3D và so sánh')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
   expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
-  // Yêu cầu giao (FE-4b-02): quản lý công ty và điều phối viên xem, chỉ quản lý công ty tạo và sửa
+  // Yêu cầu giao (FE-4b-02): quản lý công ty và điều phối viên xem, chỉ điều phối viên tạo và sửa
   expect(cellsOf(matrix, 'Xem yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
-  expect(cellsOf(matrix, 'Tạo, sửa yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
-  // FE-0-06: ghi vào kho kiện, loại kiện và in nhãn theo quyền quản lý kho kiện của điều phối viên
-  expect(cellsOf(matrix, 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
-  expect(cellsOf(matrix, 'Xem kho kiện')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
+  expect(cellsOf(matrix, 'Tạo, sửa yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
+  // FE-0-06: ghi vào kho kiện, loại kiện và in nhãn theo quyền quản lý kho kiện của nhân viên kho (như backend)
+  expect(cellsOf(matrix, 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện')).toStrictEqual([NO, NO, NO, NO, NO, NO, YES, NO])
+  expect(cellsOf(matrix, 'Xem kho kiện')).toStrictEqual([NO, NO, NO, NO, YES, YES, YES, NO])
 })

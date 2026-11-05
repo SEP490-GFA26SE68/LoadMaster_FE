@@ -10,7 +10,7 @@ import { LandingStage } from './LandingStage'
 import { PUBLIC_TOUCH } from './public-chrome'
 
 /** Bốn vai trò vận hành làm việc trên cùng một phương án, theo thứ tự của chuyến hàng. */
-const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'manager'] as const
+const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as const
 
 /**
  * Phần mở đầu của trang giới thiệu, trên nền tối nối liền với đầu trang: tiêu đề, một câu mô tả, nút chính duy nhất của trang "Nhận

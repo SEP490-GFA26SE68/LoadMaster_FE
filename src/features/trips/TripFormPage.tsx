@@ -21,6 +21,8 @@ import { TripFormLockedStops } from './TripFormLockedStops'
 import { TripFormSection } from './TripFormSection'
 import { TripFormShell } from './TripFormShell'
 import { TripStopsFields } from './TripStopsFields'
+import { BackendTripFormPage } from './BackendTripFormPage'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 import { useCreateTripMutation, useTripDetailQuery, useTripFormOptionsQuery, useUpdateTripFrameMutation } from './useTripsQuery'
 
 /** Pha còn mở form sửa: lập kế hoạch sửa mọi thứ; kho đang/đã xếp chỉ còn tên, ngày giờ xuất phát, tài xế (D-45). */
@@ -32,8 +34,13 @@ const EDITABLE_PHASES: readonly TripPhase[] = ['planning', 'loading', 'loaded']
  * **không nhập điểm giao**: điểm tự sinh khi đưa yêu cầu giao vào chuyến, điểm tay và kiện thêm ở Chi tiết chuyến (D-73); form sửa chỉ
  * đổi chữ của điểm giao đang có. Nút chính nằm trên dải trời, gửi form qua thuộc tính `form`. Còn thay đổi chưa lưu mà rời trang thì
  * hỏi lại trước (LM-100).
+ * Nhóm `trips` nối backend thì màn là `BackendTripFormPage` của nhóm (chỉ tạo chuyến).
  */
 export function TripFormPage() {
+  return TRIPS_CAPABILITIES.backend ? <BackendTripFormPage /> : <StoreTripFormPage />
+}
+
+function StoreTripFormPage() {
   const { tripId = '' } = useParams()
   const t = useT()
   const detail = useTripDetailQuery(tripId)

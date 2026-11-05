@@ -78,19 +78,14 @@ function Replies({ ticket, when }: { ticket: SupportTicket; when: (iso: string) 
   )
 }
 
-/** Backend chưa có trao đổi: phản hồi một dòng của đội hỗ trợ (nếu có, chỉ đọc) và câu nói yêu cầu chỉ theo dõi bằng trạng thái. */
-function StatusOnly({ ticket }: { ticket: SupportTicket }) {
+/** Ghi chú chữ thường của đội hỗ trợ (backend ghi tay vào `resolutionNote`, không phải mảng trao đổi), chỉ đọc. */
+function SupportNote({ note }: { note: string }) {
   const t = useT()
   return (
-    <>
-      {ticket.resolutionNote === undefined ? null : (
-        <section aria-label={t('support.thread.supportNote')} className="rounded-md border border-cyan-200 bg-cyan-50 px-3.5 py-3">
-          <p className="m-0 mb-1 text-small font-medium text-ink-1 pointer-coarse:text-body">{t('support.thread.supportNote')}</p>
-          <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.resolutionNote}</p>
-        </section>
-      )}
-      <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{t('support.thread.statusOnly')}</p>
-    </>
+    <section aria-label={t('support.thread.supportNote')} className="rounded-md border border-cyan-200 bg-cyan-50 px-3.5 py-3">
+      <p className="m-0 mb-1 text-small font-medium text-ink-1 pointer-coarse:text-body">{t('support.thread.supportNote')}</p>
+      <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{note}</p>
+    </section>
   )
 }
 
@@ -98,7 +93,7 @@ function StatusOnly({ ticket }: { ticket: SupportTicket }) {
  * Cuộc trao đổi của một yêu cầu hỗ trợ (FE-8-07), dùng chung cho hộp thoại của người dùng công ty và màn `/ho-tro`: tiêu đề, loại,
  * trạng thái, nội dung yêu cầu, các lần trả lời theo thứ tự, rồi ô trả lời. Yêu cầu đã đóng không có ô trả lời mà có một câu nói lý do
  * (Hỗ trợ khách hàng mở lại bằng ô trạng thái ở màn của họ). Lần trả lời của Hỗ trợ khách hàng nền tint để người gửi nhận ra ngay.
- * Nối backend (chưa có trao đổi): không có các lần trả lời và ô trả lời — chỉ nội dung, phản hồi của đội hỗ trợ và trạng thái.
+ * Nối backend: trao đổi đọc từ `resolutionNote`; trường đó là chữ thường thì hiện như phản hồi của đội hỗ trợ, phía trên các lần trả lời.
  */
 export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
   ticket: SupportTicket
@@ -125,8 +120,9 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
         <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.description}</p>
       </section>
 
+      {ticket.resolutionNote === undefined ? null : <SupportNote note={ticket.resolutionNote} />}
       {!SUPPORT_SOURCE.replies ? (
-        <StatusOnly ticket={ticket} />
+        <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{t('support.thread.statusOnly')}</p>
       ) : (
         <>
           <Replies ticket={ticket} when={when} />

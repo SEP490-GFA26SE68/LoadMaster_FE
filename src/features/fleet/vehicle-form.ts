@@ -102,7 +102,8 @@ export function toFormValues(vehicle?: VehicleConfig): VehicleFormValues {
     doorWidthCm: vehicle.doorWidthCm,
     doorHeightCm: vehicle.doorHeightCm,
     clearanceCm: vehicle.clearanceCm,
-    obstacles: vehicle.obstacles.map((row) => ({ ...row, maxTopLoadKg: row.maxTopLoadKg ?? null })),
+    // Form chỉ khai bốn loại vật cản; loại `OTHER` (mã của máy chủ) đọc như vùng dành riêng, như `fleet-dto.ts`
+    obstacles: vehicle.obstacles.map((row) => ({ ...row, type: row.type === 'OTHER' ? 'RESERVED_ZONE' : row.type, maxTopLoadKg: row.maxTopLoadKg ?? null })),
     axles: vehicle.axles?.map((row) => ({ ...row })) ?? [],
   }
 }

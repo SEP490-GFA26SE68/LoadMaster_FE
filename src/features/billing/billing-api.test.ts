@@ -11,6 +11,7 @@ import {
   listPlansOnSale,
   subscribe,
   topUpCredits,
+  topUpTerms,
 } from './billing-api'
 
 /**
@@ -43,8 +44,17 @@ function freezeAt(iso: string) {
   vi.setSystemTime(new Date(iso))
 }
 
-test('nguồn backend: hoá đơn thay lịch sử thanh toán, giá credit 5.000 đ, xác nhận ở trang của app', () => {
-  expect(BILLING_CAPABILITIES).toStrictEqual({ payments: false, invoices: true, simulation: false, serverPayment: true, autoRenew: false, creditPriceVnd: 5000 })
+test('nguồn backend: hoá đơn thay lịch sử thanh toán, xác nhận ở trang của app, gia hạn theo hợp đồng, nạp tự do, thoả thuận', () => {
+  expect(BILLING_CAPABILITIES).toStrictEqual({
+    payments: false, invoices: true, simulation: false, serverPayment: true, autoRenew: false, contractRenewal: true, customTopUp: true, agreements: true,
+  })
+})
+
+test('giá nạp và trần số dư theo hạng như CreditController; chưa có gói tính như Basic', () => {
+  expect(topUpTerms('BASIC')).toStrictEqual({ priceVnd: 400, maxBalance: 3000 })
+  expect(topUpTerms('PRO')).toStrictEqual({ priceVnd: 326, maxBalance: 10000 })
+  expect(topUpTerms('ULTIMATE')).toStrictEqual({ priceVnd: 263, maxBalance: null })
+  expect(topUpTerms(null)).toStrictEqual({ priceVnd: 400, maxBalance: 3000 })
 })
 
 test('gói đang dùng: đọc gói hiện tại rồi gói cước của nó, giờ Việt Nam đổi sang ISO', async () => {

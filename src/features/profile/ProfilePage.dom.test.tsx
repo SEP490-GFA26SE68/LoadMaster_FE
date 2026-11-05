@@ -97,7 +97,7 @@ test('an empty name and a malformed phone are reported at their fields and nothi
 
 test('password change: wrong current password at its field, short and mismatched new passwords, then success clears the form', async () => {
   const user = userEvent.setup()
-  const account = renderProfile('manager')
+  const account = renderProfile('companyManager')
   const password = within(screen.getByRole('region', { name: 'Đổi mật khẩu' }))
   const current = password.getByLabelText('Mật khẩu hiện tại')
   const next = password.getByLabelText('Mật khẩu mới')

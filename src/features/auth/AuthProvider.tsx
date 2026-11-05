@@ -99,6 +99,7 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
     connectApiAuth(() => session.token())
     // Phiên hết giữa chừng (không làm mới được, tab khác đăng xuất): về màn đăng nhập, bỏ dữ liệu của người vừa thoát
     const stopListening = session.onEnded(() => {
+      authApi.forgetBackendUser()
       setUser(null)
       queryClient?.clear()
     })
@@ -142,6 +143,7 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
 
   const signOut = useCallback(async () => {
     await authApi.logout()
+    authApi.forgetBackendUser()
     writeStoredUser(null)
     setUser(null)
     queryClient?.clear()

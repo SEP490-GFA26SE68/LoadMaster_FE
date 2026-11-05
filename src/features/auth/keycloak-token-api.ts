@@ -3,6 +3,9 @@
  *   requestPasswordGrant → POST /realms/{realm}/protocol/openid-connect/token (grant_type=password)
  *   requestRefreshGrant  → POST /realms/{realm}/protocol/openid-connect/token (grant_type=refresh_token)
  *   endKeycloakSession   → POST /realms/{realm}/protocol/openid-connect/logout
+ *   dự phòng khi client chưa bật Direct Access Grants:
+ *   authorizationUrl     → GET  /realms/{realm}/protocol/openid-connect/auth (code + PKCE)
+ *   requestCodeGrant     → POST /realms/{realm}/protocol/openid-connect/token (grant_type=authorization_code)
  *
  * Nơi duy nhất của app gọi `fetch` tới Keycloak (backend LoadMaster đi qua `lib/api-client.ts`). Chỉ `keycloak-session.ts` dùng.
  */
@@ -106,6 +109,40 @@ export async function requestRefreshGrant(config: KeycloakConfig, refreshToken: 
   const { error } = await bodyOf(response)
   if (error === 'invalid_grant') throw new KeycloakSessionEnded()
   throw new Error(`Keycloak từ chối làm mới phiên: HTTP ${response.status}`)
+}
+
+/**
+ * Trang đăng nhập của Keycloak (authorization code + PKCE S256) — chỉ dùng khi client chưa bật Direct Access Grants
+ * (`login-not-enabled`); Keycloak trả về `redirectUri` kèm `code` và `state` trên query.
+ */
+// GET /realms/{realm}/protocol/openid-connect/auth
+export function authorizationUrl(config: KeycloakConfig, request: { redirectUri: string; state: string; codeChallenge: string; loginHint?: string }): string {
+  const query = new URLSearchParams({
+    client_id: config.clientId,
+    redirect_uri: request.redirectUri,
+    response_type: 'code',
+    response_mode: 'query',
+    scope: 'openid',
+    state: request.state,
+    code_challenge: request.codeChallenge,
+    code_challenge_method: 'S256',
+  })
+  if (request.loginHint) query.set('login_hint', request.loginHint)
+  return `${config.url}/realms/${encodeURIComponent(config.realm)}/protocol/openid-connect/auth?${query.toString()}`
+}
+
+// POST /realms/{realm}/protocol/openid-connect/token (grant_type=authorization_code)
+export async function requestCodeGrant(config: KeycloakConfig, code: string, codeVerifier: string, redirectUri: string): Promise<KeycloakTokens> {
+  const response = await post(endpoint(config, 'token'), {
+    client_id: config.clientId,
+    grant_type: 'authorization_code',
+    code,
+    code_verifier: codeVerifier,
+    redirect_uri: redirectUri,
+  })
+  if (response.ok) return tokensOf(response)
+  const { error } = await bodyOf(response)
+  throw new Error(`Keycloak từ chối mã đăng nhập: HTTP ${response.status} ${typeof error === 'string' ? error : ''}`)
 }
 
 /** Đóng phiên ở Keycloak. Không chắc được (mạng hỏng) thì thôi: phiên tự hết hạn, app đã quên token. */

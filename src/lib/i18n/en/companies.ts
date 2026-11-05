@@ -9,7 +9,7 @@ export const companies = {
   empty: 'No companies yet.',
   emptyDescription: 'Create a company together with its first company administrator so they can start using LoadMaster.',
   add: 'Create company',
-  columns: { company: 'Company', plan: 'Plan', planStatus: 'Plan status', users: 'Users', actions: 'Actions' },
+  columns: { company: 'Company', admin: 'Company admin', plan: 'Plan', planStatus: 'Plan status', users: 'Users', actions: 'Actions' },
   noPlan: 'No plan yet',
   actions: 'Actions for {name}',
   created: 'Company {name} created',
@@ -65,7 +65,9 @@ export const companies = {
       users: 'Users could not be loaded: the Users column is left empty.',
       retry: 'Reload',
     },
+    tabs: { label: 'Companies screen sections', companies: 'Companies', admins: 'Company administrators' },
     menu: {
+      view: 'View details',
       edit: 'Edit details',
       createAdmin: 'Create company administrator',
       suspend: 'Suspend company',

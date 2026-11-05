@@ -13,7 +13,7 @@ const helper = createColumnHelper<BaseTableFeatures, TripRow>()
 const mono = 'font-mono text-caption'
 
 /** Cột theo nguồn dữ liệu (`TripsCapabilities`): backend chưa trả tên các điểm giao và phương án xếp hàng. */
-export type TripColumnOptions = { readonly routeNames: boolean; readonly plans: boolean }
+export type TripColumnOptions = { readonly routeNames: boolean; readonly plans: boolean; readonly routePlan?: boolean }
 
 /** `hidden`: cột chỉ để sắp xếp — ngày chạy là dòng nhóm của bảng chứ không phải một cột (V2.3). */
 export type TripColumnMeta = ColumnMeta & { hidden?: boolean }
@@ -23,7 +23,7 @@ export type TripColumnMeta = ColumnMeta & { hidden?: boolean }
  * trạng thái, mũi tên mở. Ngày chạy là cột ẩn để sắp xếp; bảng nhóm dòng theo nó. Cột sắp xếp được khai `enableSorting`. Mã chuyến
  * là liên kết để mở chi tiết bằng bàn phím; bấm cả dòng cũng mở.
  */
-export function createTripColumns(t: TFunction, format: Formatter, { routeNames, plans }: TripColumnOptions) {
+export function createTripColumns(t: TFunction, format: Formatter, { routeNames, plans, routePlan = false }: TripColumnOptions) {
   return helper.columns([
     helper.accessor('scheduledDate', {
       header: t('trips.list.date'),
@@ -49,18 +49,20 @@ export function createTripColumns(t: TFunction, format: Formatter, { routeNames,
     helper.accessor('id', {
       header: t('trips.list.id'),
       enableSorting: true,
-      // "TRIP-2026-0914" mono 12 px cùng mũi tên sắp xếp
-      meta: { width: '136px' } satisfies TripColumnMeta,
-      cell: (info) => (
-        <Link
-          to={`/chuyen/${info.getValue()}`}
-          // Dòng cũng mở chi tiết khi bấm: chặn nổi bọt để không đẩy hai mục lịch sử
-          onClick={(event) => event.stopPropagation()}
-          className="rounded-sm font-mono text-caption text-ink-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {info.getValue()}
-        </Link>
-      ),
+      meta: { width: '176px' } satisfies TripColumnMeta,
+      cell: (info) => {
+        const trip = info.row.original
+
+        return (
+          <Link
+            to={`/chuyen/${trip.id}`}
+            onClick={(event) => event.stopPropagation()}
+            className="rounded-sm font-mono text-caption text-ink-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            {trip.tripCode ?? trip.id}
+          </Link>
+        )
+      },
     }),
     helper.accessor('vehicleName', {
       header: t('trips.list.vehicle'),
@@ -116,8 +118,38 @@ export function createTripColumns(t: TFunction, format: Formatter, { routeNames,
         )
       },
     })] : []),
+    // Máy chủ trả chuyến đã có tuyến tối ưu hay chưa (màn của nhóm); kho mẫu nói việc đó ở dòng phụ dưới chip
+    ...(routePlan ? [helper.accessor('hasActiveRoutePlan', {
+      header: t('trips.list.routeOptimization'),
+      enableSorting: true,
+      meta: {
+        width: '150px',
+      } satisfies TripColumnMeta,
+      cell: (info) => {
+        const optimized = info.getValue()
+
+        return optimized ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-caption font-medium text-emerald-700">
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-emerald-500"
+            />
+            {t('trips.list.routeOptimized')}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-caption font-medium text-slate-600">
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-slate-400"
+            />
+            {t('trips.list.routeNotOptimized')}
+          </span>
+        )
+      },
+    })] : []),
+
     helper.accessor('status', {
-      header: t('trips.list.status'),
+      header: t('trips.list.statusColumn'),
       meta: { width: '184px' } satisfies TripColumnMeta,
       // Dòng phụ (LM-104) nằm dưới chip: tiến độ kho hoặc phương án lỗi thời — hai dòng vừa hàng 56 px
       cell: (info) => (

@@ -81,7 +81,7 @@ test('nothing in transit: one read, no toast, the bell is left alone', async () 
 
 test('the manager is told when an incident is sent up, not about late risk; the dispatcher is not told about the incident they sent up themselves', async () => {
   fleet.mockResolvedValue(monitoring([], [incident('EXC-001')]))
-  const manager = renderWatcher('manager')
+  const manager = renderWatcher('companyManager')
   // chờ lần đọc đầu về tới nơi: sự cố chưa chuyển lên thì chuông không đọc lại
   await waitFor(() => expect(manager.client.getQueryData(['trips', 'monitoring'])).toBeDefined())
   expect(manager.bellRefreshes()).toBe(0)

@@ -2,6 +2,7 @@ import type { Dictionary } from '../types'
 import type { nav as source } from '../vi/nav'
 
 export const nav = {
+  customers: 'Customers',
   label: 'Main navigation',
   dashboard: 'Dashboard',
   trips: 'Trips',
@@ -14,11 +15,15 @@ export const nav = {
   requirements: 'Requirements',
   monitoring: 'Monitoring',
   plans: 'Plans',
+  subscriptionHistory: 'Subscription History',
+  trialRequests: 'Trial requests',
   billing: 'Plan and credits',
   companies: 'Companies',
   companyProfile: 'Company details',
   support: 'Support',
   supportRequests: 'Support requests',
+  changeCustomerPlan: 'Change customer plan',
+  companyWarehouses: 'Warehouses',
   contacts: 'Guest contacts',
   account: 'Account {name}',
   signOut: 'Sign out',

@@ -9,7 +9,7 @@
  *   setUserStatus     PATCH  /api/users/{id}/status
  *   deleteUser        DELETE /api/users/{id}
  *   resetPassword     POST   /api/users/{id}/reset-password
- *   chưa có ở BE: fetchCompanies (danh sách công ty của Nhật ký, Hỗ trợ — vẫn đọc kho)
+ *   fetchCompanies    GET    /api/companies/options (nhóm `companies`; tắt thì đọc kho)
  * Tên vai trò: backend đang dùng `ADMIN`, `MANAGER` cho hai vai trò công ty; sẽ đổi sang `COMPANY_ADMIN`, `COMPANY_MANAGER`.
  */
 
@@ -17,7 +17,7 @@ import { roleOfBackend } from '@/features/auth/backend-user'
 import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
-import { getMockDb, type Company, type NewUser, type TemporaryPassword, type UserChanges } from '@/lib/mock-db'
+import { getMockDb, rolesInScope, type NewUser, type TemporaryPassword, type UserChanges, type UserScope } from '@/lib/mock-db'
 import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
 import { BACKEND_ROLE_CODES, type Role, type User, type UserStatus } from '@/types/user'
 
@@ -35,6 +35,7 @@ type BackendUser = {
   readonly userRoleType: string
   readonly status: string
   readonly companyId: number | null
+  readonly companyName?: string | null
 }
 
 type BackendCompany = { readonly id: number; readonly companyName: string }
@@ -42,6 +43,10 @@ type BackendCompany = { readonly id: number; readonly companyName: string }
 type BackendTemporaryPassword = { readonly user: BackendUser; readonly temporaryPassword: string }
 
 const ON_BACKEND = usesBackend('users')
+const COMPANIES_ON_BACKEND = usesBackend('companies')
+
+/** Tên công ty của một mã — ô chọn công ty, cột và bộ lọc công ty. */
+export type CompanyOption = { readonly id: string; readonly name: string }
 
 /**
  * Kho / chi nhánh và lần hoạt động gần nhất chỉ kho mẫu có: tài khoản của backend không mang hai trường đó. Nối backend thì màn bỏ cột,
@@ -53,10 +58,21 @@ export const USER_ACTIVITY_AVAILABLE = !ON_BACKEND
 /** Màn tự lọc, sắp xếp và phân trang ở client như với kho mẫu: đọc hết các trang, mỗi trang lớn. */
 const PAGE_SIZE = 500
 
-const BACKEND_ROLE: Readonly<Record<Role, string>> = { ...BACKEND_ROLE_CODES, companyAdmin: 'ADMIN', manager: 'MANAGER' }
-
 function backendRole(role: Role): string {
-  return BACKEND_ROLE[role]
+  return BACKEND_ROLE_CODES[role]
+}
+
+/**
+ * Vai trò form mời được, theo phạm vi của người quản trị. Kho mẫu: `rolesInScope` (quản trị hệ thống chỉ ba vai trò nền tảng). Máy chủ:
+ * quản trị hệ thống mời thêm Quản trị công ty của một công ty (form có ô chọn công ty), quản trị công ty mời bốn vai trò vận hành.
+ */
+const SERVER_FORM_ROLES: Readonly<Record<UserScope, readonly Role[]>> = {
+  platform: ['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin'],
+  company: ['companyManager', 'dispatcher', 'warehouse', 'driver'],
+}
+
+export function userFormRoles(scope: UserScope): readonly Role[] {
+  return ON_BACKEND ? SERVER_FORM_ROLES[scope] : rolesInScope(scope)
 }
 
 function phoneOf(value: string | null): string {
@@ -78,6 +94,7 @@ function userOf(dto: BackendUser): User | null {
     status: dto.status === 'ACTIVE' ? 'active' : 'suspended',
     lastActiveAt: null,
     ...(dto.companyId === null ? {} : { companyId: String(dto.companyId) }),
+    ...(dto.companyName ? { companyName: dto.companyName } : {}),
   }
 }
 
@@ -105,15 +122,17 @@ export async function fetchServerUsers(): Promise<User[]> {
   return users.flatMap((dto) => userOf(dto) ?? [])
 }
 
-/** Công ty trong phạm vi của người đang đăng nhập — tên công ty cho cột và bộ lọc công ty của Nhật ký, Hỗ trợ (kho mẫu). */
-// chưa có ở BE
-export function fetchCompanies(): Promise<Company[]> {
-  return getMockDb().listCompanies()
+/** Công ty trong phạm vi của người đang đăng nhập — tên công ty cho cột và bộ lọc công ty của Nhật ký, Hỗ trợ. */
+// GET /api/companies/options
+export async function fetchCompanies(): Promise<CompanyOption[]> {
+  if (!COMPANIES_ON_BACKEND) return (await getMockDb().listCompanies()).map(({ id, name }) => ({ id, name }))
+  const companies = await api().get<BackendCompany[]>('/api/companies/options')
+  return companies.map((company) => ({ id: String(company.id), name: company.companyName }))
 }
 
 /** Tên công ty cho cột và bộ lọc công ty của màn Người dùng — cùng nguồn với mã công ty của danh sách người dùng. */
 // GET /api/companies
-export async function fetchUserCompanies(): Promise<{ id: string; name: string }[]> {
+export async function fetchUserCompanies(): Promise<CompanyOption[]> {
   if (!ON_BACKEND) return (await getMockDb().listCompanies()).map(({ id, name }) => ({ id, name }))
   const page = await api().get<{ content: BackendCompany[] }>('/api/companies', { query: { page: 0, size: PAGE_SIZE } })
   return page.content.map((company) => ({ id: String(company.id), name: company.companyName }))

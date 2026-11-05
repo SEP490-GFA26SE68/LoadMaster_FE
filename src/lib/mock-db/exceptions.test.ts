@@ -18,7 +18,7 @@ function wallClock(start: string) {
 
 const MINUTE = 60_000
 const DISPATCHER = 'US-0001'
-const MANAGER = 'US-0002'
+const COMPANYMANAGER = 'US-0002'
 const plus = (iso: string, ms: number) => new Date(Date.parse(iso) + ms).toISOString()
 const near = (actual: string | undefined, expected: string) => Math.abs(Date.parse(actual ?? '') - Date.parse(expected)) < 1000
 const TRAFFIC = { type: 'TRAFFIC' as const, description: 'Kẹt xe ở ngã tư Vũng Tàu', delayMinutes: 30 }
@@ -95,8 +95,8 @@ describe('reporting a trip incident holds the simulated vehicle for exactly the 
       await expect(db.reportTripException(tripId, { ...TRAFFIC, delayMinutes })).rejects.toMatchObject({ code: 'EXCEPTION_INVALID', params: { field: 'delayMinutes' } })
     }
     await expect(db.reportTripException('TRIP-2026-0914', TRAFFIC)).rejects.toMatchObject({ code: 'TRIP_PHASE_INVALID', params: { phase: 'planning' } })
-    db.restoreSession(MANAGER)
-    await expect(db.reportTripException(tripId, TRAFFIC)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'manager' } })
+    db.restoreSession(COMPANYMANAGER)
+    await expect(db.reportTripException(tripId, TRAFFIC)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'companyManager' } })
     // TRIP-009 đang vận chuyển, tài xế là US-0006: tài xế khác không báo được
     db.restoreSession('US-0004')
     await expect(db.reportTripException('TRIP-009', TRAFFIC)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'driver' } })
@@ -149,7 +149,7 @@ describe('an incident nobody handles for 30 minutes of the simulated clock goes 
     await expect(db.escalateTripException('TRIP-010', 'EXC-002')).rejects.toMatchObject({ code: 'EXCEPTION_STATUS_INVALID', params: { exceptionId: 'EXC-002', status: 'ESCALATED' } })
     await expect(db.resolveTripException('TRIP-010', 'EXC-001')).rejects.toMatchObject({ code: 'EXCEPTION_STATUS_INVALID', params: { status: 'RESOLVED' } })
     await expect(db.resolveTripException('TRIP-010', 'EXC-009')).rejects.toMatchObject({ code: 'NOT_FOUND', params: { collection: 'exceptions', id: 'EXC-009' } })
-    db.restoreSession(MANAGER)
+    db.restoreSession(COMPANYMANAGER)
     await expect(db.resolveTripException('TRIP-010', 'EXC-002')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
     await expect(db.escalateTripException('TRIP-010', 'EXC-002')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
 
@@ -211,7 +211,7 @@ describe('finding another route: mock options to the next stop, the stop order n
       { route: 'BYPASS', distanceKm: 10.3, durationMinutes: 12 },
       { route: 'RING_ROAD', distanceKm: 11.6, durationMinutes: 14 },
     ])
-    db.restoreSession(MANAGER)
+    db.restoreSession(COMPANYMANAGER)
     await expect(db.requestReroute(tripId)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
     await expect(db.confirmReroute(tripId, 0)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
   })
@@ -227,13 +227,13 @@ describe('the company manager contacts the customer and enters a new deadline fo
     wall.set('2026-09-16T01:21:00.000Z')
     await db.reportTripException(tripId, { type: 'ACCIDENT', description: 'Tai nạn chắn hai làn trên quốc lộ 1K', delayMinutes: 60 })
     const input = { requirementId: 'REQ-006', deadline: NEW_DEADLINE, contactNote: NOTE }
-    db.restoreSession(MANAGER)
+    db.restoreSession(COMPANYMANAGER)
     await expect(db.renegotiateDeadline(tripId, 'EXC-001', input)).rejects.toMatchObject({ code: 'EXCEPTION_STATUS_INVALID', params: { status: 'OPEN' } })
     db.restoreSession(DISPATCHER)
     await db.escalateTripException(tripId, 'EXC-001')
     await expect(db.renegotiateDeadline(tripId, 'EXC-001', input)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'dispatcher' } })
 
-    db.restoreSession(MANAGER)
+    db.restoreSession(COMPANYMANAGER)
     wall.set('2026-09-16T01:22:00.000Z')
     await expect(db.renegotiateDeadline(tripId, 'EXC-001', { ...input, contactNote: ' ' })).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
     await expect(db.renegotiateDeadline(tripId, 'EXC-001', { ...input, requirementId: 'REQ-001' })).rejects.toMatchObject({ code: 'EXCEPTION_INVALID', params: { field: 'requirementId' } })
@@ -245,14 +245,14 @@ describe('the company manager contacts the customer and enters a new deadline fo
     const exception = await db.renegotiateDeadline(tripId, 'EXC-001', input)
     expect(exception).toMatchObject({
       status: 'ESCALATED',
-      renegotiation: { requirementId: 'REQ-006', previousDeadline: DEADLINE, deadline: NEW_DEADLINE, contactNote: NOTE, at: '2026-09-16T01:22:00.000Z', by: MANAGER },
+      renegotiation: { requirementId: 'REQ-006', previousDeadline: DEADLINE, deadline: NEW_DEADLINE, contactNote: NOTE, at: '2026-09-16T01:22:00.000Z', by: COMPANYMANAGER },
     })
     expect((await db.getDeliveryRequirement('REQ-006')).deadline).toBe(NEW_DEADLINE)
     expect((await db.getTrip(tripId)).stops[0]?.deadline).toBe(NEW_DEADLINE)
     // cùng thời điểm, chưa có điểm vị trí mới: mức hạn đã theo hạn mới
     expect((await db.getTripMonitoring(tripId)).stops[0]).toMatchObject({ deadline: NEW_DEADLINE, deadlineStatus: 'OK' })
     expect((await actionsOf(db, tripId, 'exception.deadlineRenegotiated')).map(({ actorId, params }) => ({ actorId, params }))).toStrictEqual([{
-      actorId: MANAGER, params: { exceptionId: 'EXC-001', requirementId: 'REQ-006', deadline: NEW_DEADLINE, note: NOTE },
+      actorId: COMPANYMANAGER, params: { exceptionId: 'EXC-001', requirementId: 'REQ-006', deadline: NEW_DEADLINE, note: NOTE },
     }])
 
     // điều phối viên xử lý tiếp: sự cố giữ nguyên phần gia hạn

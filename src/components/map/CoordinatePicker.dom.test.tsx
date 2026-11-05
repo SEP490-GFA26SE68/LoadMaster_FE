@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { expect, test, vi } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
-import type { Place } from '@/lib/mock-db'
+import type { ResolvedAddress } from './places-api'
 import { CoordinatePicker } from './CoordinatePicker'
 import { EMPTY_COORDINATES, type CoordinateText } from './coordinates'
 
@@ -15,7 +15,7 @@ import { EMPTY_COORDINATES, type CoordinateText } from './coordinates'
 
 function Harness({ initial = EMPTY_COORDINATES, onPlacePicked, disabled, showErrors }: {
   initial?: CoordinateText
-  onPlacePicked?: (place: Place) => void
+  onPlacePicked?: (place: ResolvedAddress) => void
   disabled?: boolean
   showErrors?: boolean
 }) {
@@ -54,9 +54,9 @@ test('without WebGL and a map key there is no map: a place is picked from the sa
   await user.type(search, 'da nang')
   const options = await within(group).findAllByRole('option')
   expect(options.map((option) => option.textContent)).toStrictEqual([
-    'Đà NẵngNam Trung Bộ · Tỉnh / thành16.0544, 108.2022',
-    'Liên ChiểuĐà Nẵng · Quận / huyện16.0717, 108.15',
-    'KCN Hoà KhánhQ. Liên Chiểu, Đà Nẵng · Khu công nghiệp16.0747, 108.1506',
+    'Đà NẵngĐà Nẵng, Nam Trung Bộ',
+    'Liên ChiểuLiên Chiểu, Đà Nẵng',
+    'KCN Hoà KhánhKCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng',
   ])
   expect(search).toHaveAttribute('aria-expanded', 'true')
   expect(search).toHaveAttribute('aria-activedescendant', options[0]?.id)
@@ -69,7 +69,7 @@ test('without WebGL and a map key there is no map: a place is picked from the sa
   expect(within(group).getByRole('textbox', { name: 'Vĩ độ' })).toHaveValue('16.0747')
   expect(within(group).getByRole('textbox', { name: 'Kinh độ' })).toHaveValue('108.1506')
   expect(within(group).getByRole('status')).toHaveTextContent('Đã lấy toạ độ của KCN Hoà Khánh.')
-  expect(onPlacePicked).toHaveBeenCalledWith(expect.objectContaining({ name: 'KCN Hoà Khánh', region: 'Q. Liên Chiểu, Đà Nẵng' }))
+  expect(onPlacePicked).toHaveBeenCalledWith(expect.objectContaining({ name: 'KCN Hoà Khánh', address: 'KCN Hoà Khánh, Q. Liên Chiểu, Đà Nẵng' }))
   // Chọn xong: ô tìm trống lại, danh sách đóng, con trỏ vẫn ở ô tìm
   expect(search).toHaveValue('')
   expect(within(group).queryByRole('listbox')).toBeNull()

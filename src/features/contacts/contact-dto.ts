@@ -12,6 +12,8 @@ export type ContactOfGuestDto = {
   readonly email: string
   readonly phoneNumber: string | null
   readonly companyName: string | null
+  readonly companyCode?: string | null
+  readonly taxCode?: string | null
   readonly interestedPlanId: number | null
   readonly interestedPlanName: string | null
   readonly assignedToId: number | null
@@ -43,6 +45,8 @@ export function guestContactOf(dto: ContactOfGuestDto): GuestContact | null {
     email: dto.email,
     ...(filled(dto.phoneNumber) ? { phoneNumber: dto.phoneNumber } : {}),
     ...(filled(dto.companyName) ? { companyName: dto.companyName } : {}),
+    ...(dto.companyCode && filled(dto.companyCode) ? { companyCode: dto.companyCode } : {}),
+    ...(dto.taxCode && filled(dto.taxCode) ? { taxCode: dto.taxCode } : {}),
     ...(dto.interestedPlanId === null ? {} : { interestedPlanId: String(dto.interestedPlanId) }),
     ...(filled(dto.interestedPlanName) ? { interestedPlanName: dto.interestedPlanName } : {}),
     ...(filled(dto.message) ? { message: dto.message } : {}),
@@ -59,7 +63,7 @@ export function guestContactOf(dto: ContactOfGuestDto): GuestContact | null {
 const NUMERIC_ID = /^\d+$/
 
 /**
- * Thân `POST`: đủ bảy trường của form công khai. Mã gói của danh mục backend là số; mã của kho mẫu (`PLAN-002` — bảng giá chưa đọc
+ * Thân `POST`: đủ chín trường của form công khai. Mã gói của danh mục backend là số; mã của kho mẫu (`PLAN-002` — bảng giá chưa đọc
  * backend) thì không gửi: backend coi nó là JSON sai và từ chối cả yêu cầu (400).
  */
 export function newContactBody(input: NewGuestContact) {
@@ -69,6 +73,8 @@ export function newContactBody(input: NewGuestContact) {
     email: input.email,
     phoneNumber: input.phoneNumber ?? null,
     companyName: input.companyName ?? null,
+    companyCode: input.companyCode ?? null,
+    taxCode: input.taxCode ?? null,
     interestedPlanId: planId !== undefined && NUMERIC_ID.test(planId) ? Number(planId) : null,
     message: input.message ?? null,
     requestType: input.requestType,

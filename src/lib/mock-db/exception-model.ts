@@ -71,7 +71,8 @@ export type RerouteProposal = {
   stopId: string
   stopNumber: number
   options: RerouteChoice[]
-  isMockResult: true
+  /** `true` khi tuyến thay thế từ mock; `false` khi từ BE/Goong. */
+  isMockResult: boolean
 }
 
 /** Tuyến điều phối viên đã chọn. */

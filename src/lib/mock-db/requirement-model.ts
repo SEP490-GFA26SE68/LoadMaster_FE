@@ -22,6 +22,13 @@ export type DeliveryRequirement = {
   id: string
   /** Công ty lập yêu cầu — cũng là công ty của mọi kiện trong yêu cầu (D-64). */
   companyId: string
+  /** Khách hàng/chủ hàng gửi yêu cầu vận chuyển. */
+  customerId?: string
+  customerName?: string
+
+  /** Số kiện Dispatcher dự kiến và Warehouse đã liên kết. */
+  expectedPackageCount?: number
+  receivedPackageCount?: number
   destinationName: string
   address: string
   /** Toạ độ WGS84, độ thập phân; vắng cả hai khi chưa chọn toạ độ. */
@@ -38,12 +45,18 @@ export type DeliveryRequirement = {
    * (`TripPackageLink.requirementId`, FE-4b-04).
    */
   tripId?: string
+  tripCode?: string
   /** ISO 8601 */
   createdAt: string
   createdBy: string | null
 }
 
-export type RequirementInput = Pick<DeliveryRequirement, 'destinationName' | 'address' | 'deadline' | 'priority' | 'packageIds'> & {
+export type RequirementInput = Pick<
+  DeliveryRequirement,
+  'destinationName' | 'address' | 'deadline' | 'priority' | 'packageIds'
+> & {
+  customerId?: string
+  expectedPackageCount?: number
   lat?: number
   lng?: number
   note?: string

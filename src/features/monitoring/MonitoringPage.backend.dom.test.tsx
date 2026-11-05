@@ -115,7 +115,7 @@ test('điều phối viên xem chuyến của backend: không liên kết chuy�
 })
 
 test('quản lý công ty không có tab "Sự cố cần xử lý" khi backend chưa chuyển sự cố cho quản lý', async () => {
-  renderPage('manager')
+  renderPage('companyManager')
   expect(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW)).toBeInTheDocument()
   expect(screen.queryByRole('tablist')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Đã xử lý' })).toBeNull()

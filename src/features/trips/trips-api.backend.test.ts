@@ -9,7 +9,8 @@ import { deletePackage } from './trip-package-lines-api'
 import { addTripPackages, removeTripPackage } from './trip-pool-api'
 import { removeTripStop, updateTripStops } from './trip-stops-api'
 import { changeTripVehicle } from './trip-vehicle-api'
-import { cancelTrip, fetchServerTrip, fetchTrips, updateTripFrame } from './trips-api'
+import { cancelTrip, fetchTrips, updateTripFrame } from './trips-api'
+import { resolveBackendTripId } from './trips-backend-api'
 
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['trips']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -18,7 +19,7 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Lớp gọi API của chuyến khi nhóm `trips` nối backend: danh sách đọc hết mọi trang của `GET /api/trips` (tối đa 100 dòng mỗi trang),
- * Chi tiết chuyến tìm mã chuyến rồi đọc `/detail` theo mã số; lệnh ghi từ chối `NOT_SUPPORTED` mà không gọi mạng hay kho mẫu.
+ * mã chuyến trên URL đổi sang mã số bằng tìm kiếm; lệnh ghi từ chối `NOT_SUPPORTED` mà không gọi mạng hay kho mẫu.
  */
 const CODE = 'TRIP-20261019-7F3A'
 const ROW = {
@@ -26,14 +27,6 @@ const ROW = {
   driverName: 'Trần Văn Hùng', departureTime: '2026-10-19T06:30:00', status: 'IN_TRANSIT', stopCount: 2, packageCount: 14,
 }
 const OTHER = { ...ROW, id: 43, tripCode: `${CODE}-B`, tripName: null, vehicleId: null, vehicleName: null, licensePlate: null, driverId: null, driverName: null, departureTime: null, status: 'DRAFT', stopCount: null, packageCount: null }
-const DETAIL = {
-  trip: { ...ROW, stopCount: null, packageCount: null, originName: 'Kho Long Bình', originAddress: 'KCN Long Bình', originLatitude: 10.93, originLongitude: 106.88 },
-  stops: [
-    { id: 8, stopSequence: 2, stopName: 'Bách Hoá Xanh Dĩ An', address: 'Dĩ An', latitude: null, longitude: null, status: 'PENDING', plannedArrival: '2026-10-19 09:15:00' },
-    { id: 7, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', address: 'Biên Hoà', latitude: 10.95, longitude: 106.82, status: 'ARRIVED', plannedArrival: '2026-10-19T08:00:00', deadline: '2026-10-19T10:00:00' },
-  ],
-}
-
 let calls: FakeCall[] = []
 
 beforeEach(() => {
@@ -56,7 +49,7 @@ test('danh sách đọc hết mọi trang, 100 dòng mỗi trang, và dựng dò
   expect(rows[0]).toEqual({
     id: CODE, name: 'Biên Hoà – Dĩ An', scheduledDate: '2026-10-19', vehicleId: '5', vehicleName: 'Hino 500 · 51C-284.19', driverId: '9',
     driverName: 'Trần Văn Hùng', route: '', packageCount: 14, stopCount: 2, volumePercent: null, status: 'IN_TRANSIT', sub: null, extraSub: null,
-    phase: 'delivering',
+    phase: 'delivering', hasActiveRoutePlan: false,
   })
   // Không tên, không xe, không giờ: tên là mã chuyến, ô trống thay vì số nghĩ ra
   expect(rows[1]).toMatchObject({ id: `${CODE}-B`, name: `${CODE}-B`, scheduledDate: '', vehicleId: '', vehicleName: '', driverId: null, status: 'DRAFT', phase: 'planning' })
@@ -67,30 +60,17 @@ test('trạng thái lạ của máy chủ là lỗi, không đoán', async () =>
   await expect(fetchTrips()).rejects.toMatchObject({ code: 'SERVER_ERROR' })
 })
 
-test('Chi tiết chuyến tìm đúng mã chuyến (không phân biệt hoa thường) rồi đọc /detail theo mã số; điểm giao theo thứ tự đi', async () => {
-  calls = stubBackend({
-    'GET /api/trips': { body: envelope(page([OTHER, ROW])) },
-    'GET /api/trips/42/detail': { body: envelope(DETAIL) },
-  }).calls
-  const trip = await fetchServerTrip(CODE.toLowerCase())
-  expect(calls.map((call) => `${call.path} ${JSON.stringify(call.query)}`)).toEqual([
-    `/api/trips {"search":"${CODE.toLowerCase()}","page":"0","size":"100"}`,
-    '/api/trips/42/detail {}',
-  ])
-  expect(trip).toMatchObject({
-    id: CODE, name: 'Biên Hoà – Dĩ An', status: 'IN_TRANSIT', departureAt: '2026-10-18T23:30:00.000Z', vehicleName: 'Hino 500',
-    licensePlate: '51C-284.19', driverName: 'Trần Văn Hùng', packageCount: 14,
-    origin: { name: 'Kho Long Bình', address: 'KCN Long Bình', lat: 10.93, lng: 106.88 },
-  })
-  expect(trip.stops).toEqual([
-    { id: '7', number: 1, name: 'Co.opmart Biên Hoà', address: 'Biên Hoà', lat: 10.95, lng: 106.82, status: 'ARRIVED', plannedArrival: '2026-10-19T01:00:00.000Z', deadline: '2026-10-19T03:00:00.000Z' },
-    { id: '8', number: 2, name: 'Bách Hoá Xanh Dĩ An', address: 'Dĩ An', status: 'PENDING', plannedArrival: '2026-10-19T02:15:00.000Z' },
-  ])
+test('mã chuyến trên URL đổi sang mã số của máy chủ (không phân biệt hoa thường); mã số đi thẳng', async () => {
+  calls = stubBackend({ 'GET /api/trips': { body: envelope(page([OTHER, ROW])) } }).calls
+  await expect(resolveBackendTripId(CODE.toLowerCase())).resolves.toBe('42')
+  expect(calls.map((call) => call.query)).toEqual([{ search: CODE.toLowerCase(), page: '0', size: '100' }])
+  await expect(resolveBackendTripId('42')).resolves.toBe('42')
+  expect(calls).toHaveLength(1)
 })
 
-test('mã không có trên máy chủ (mã kho mẫu, gõ sai) là TRIP_NOT_FOUND, không gọi /detail', async () => {
+test('mã không có trên máy chủ (mã kho mẫu, gõ sai) là TRIP_NOT_FOUND', async () => {
   calls = stubBackend({ 'GET /api/trips': { body: envelope(page([OTHER])) } }).calls
-  await expect(fetchServerTrip('TRIP-2026-0914')).rejects.toMatchObject({ code: 'TRIP_NOT_FOUND' })
+  await expect(resolveBackendTripId('TRIP-2026-0914')).rejects.toMatchObject({ code: 'TRIP_NOT_FOUND' })
   expect(calls.map((call) => call.path)).toEqual(['/api/trips'])
 })
 

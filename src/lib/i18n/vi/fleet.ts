@@ -32,10 +32,19 @@ export const fleet = {
     inner: 'Lòng thùng (D × R × C)',
     payload: 'Tải tối đa',
     obstacles: 'Vật cản',
+    /** Ba cột của đội xe khi đọc máy chủ (`fleet/backend`). */
+    licensePlate: 'Biển số',
+    vehicleType: 'Loại xe',
+    company: 'Công ty',
   },
   obstacleZones: { one: '{count} vùng', other: '{count} vùng' },
   /** Trạng thái xe (D-53), key trùng `VehicleStatus`. "Đang phục vụ chuyến" gồm cả lúc xe đứng ở kho chờ xếp. */
   status: {
+    /** Mã trạng thái của máy chủ (`fleet/backend`). */
+    AVAILABLE: 'Sẵn sàng',
+    IN_TRIP: 'Đang chạy chuyến',
+    MAINTENANCE: 'Bảo dưỡng',
+    RETIRED: 'Ngừng sử dụng',
     available: 'Sẵn sàng',
     in_use: 'Đang phục vụ chuyến',
     maintenance: 'Bảo dưỡng',
@@ -85,6 +94,7 @@ export const fleet = {
     specHint: 'lòng thùng, cửa sau, tải trọng',
     obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
     axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
+    detailNotAvailable: 'Chưa đọc được thông tin chi tiết của xe này.',
   },
   preview: {
     title: 'Xem trước 3D',
@@ -99,6 +109,8 @@ export const fleet = {
       label: 'Số đang vẽ trong mô hình',
       cargoSpace: 'Lòng thùng',
       door: 'Cửa sau',
+      width: 'Rộng cửa',
+      heigh: 'Cao cửa',
       passable: 'kiện lọt tối đa {size}',
       payload: 'Tải trọng tối đa',
       payloadMissing: 'Chưa nhập',
@@ -120,6 +132,13 @@ export const fleet = {
     doorPosition: 'Vị trí cửa',
     doorPositionRear: 'Cửa sau',
     doorPositionHint: 'Bản này chỉ hỗ trợ cửa mở phía sau.',
+    /** Form xe khi nối máy chủ (`fleet/backend`): biển số và loại xe đã cấu hình. */
+    licensePlateRequired: 'Nhập biển số xe.',
+    vehicleTypeRequired: 'Chọn loại xe.',
+    licensePlate: 'Biển số xe',
+    vehicleType: 'Loại xe',
+    vehicleTypePlaceholder: 'Chọn loại xe',
+    vehicleTypeHint: 'Kích thước lòng thùng, tải trọng và vật cản sẽ được kế thừa từ loại xe đã chọn.',
   },
   obstacles: {
     add: 'Thêm vật cản',

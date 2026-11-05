@@ -1,7 +1,15 @@
 import type { Dictionary } from '../types'
 import type { platform as source } from '../vi/platform'
+import { companyAdmins } from './platform-company-admins'
+import { companyDetails } from './platform-company-details'
+import { subscriptionHistory } from './platform-subscription-history'
+import { trialRequests } from './platform-trial-requests'
 
 export const platform = {
+  companyAdmins,
+  companyDetails,
+  subscriptionHistory,
+  trialRequests,
   title: 'Subscription plans',
   count: { one: '{count} plan', other: '{count} plans' },
   loading: 'Loading plans',

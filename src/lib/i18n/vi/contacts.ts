@@ -3,7 +3,18 @@
  * màn `/lien-he-khach` và nhật ký; phần còn lại là màn `/lien-he-khach` của ba vai trò nền tảng (`features/contacts`).
  */
 export const contacts = {
-  types: { INQUIRY: 'Hỏi thông tin', DEMO_REQUEST: 'Xem demo', PRICING: 'Báo giá', CONTRACT: 'Hợp đồng', OTHER: 'Khác' },
+  types: {
+    PRICING: 'Hỗ trợ tư vấn',
+    DEMO_REQUEST: 'Đăng ký tài khoản dùng thử',
+    INQUIRY: 'Hỏi thông tin',
+    CONTRACT: 'Hợp đồng',
+    OTHER: 'Khác',
+  },
+  typeNotes: {
+    PRICING: 'Sẽ có nhân viên trực hỗ trợ tư vấn',
+    DEMO_REQUEST: 'Khách hàng sẽ được cung cấp tài khoản dùng thử qua email',
+    INQUIRY: 'Khách sẽ nhận được câu phản hồi qua email',
+  },
   statuses: { NEW: 'Mới', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Tên trường trong câu lỗi `CONTACT_INVALID` của kho (`dataErrorMessage`). */
   fields: {
@@ -11,6 +22,8 @@ export const contacts = {
     email: 'Email',
     phoneNumber: 'Số điện thoại',
     companyName: 'Tên công ty',
+    companyCode: 'Mã công ty',
+    taxCode: 'Mã số thuế',
     requestType: 'Loại yêu cầu',
     interestedPlanId: 'Gói quan tâm',
     message: 'Nội dung',
@@ -69,5 +82,32 @@ export const contacts = {
     unchanged: 'Chưa có gì thay đổi để lưu',
     handlersError: 'Chưa tải được danh sách người nhận việc. Tải lại trang để thử lại.',
     unassignUnavailable: 'Yêu cầu đã có người nhận thì chỉ đổi được sang người khác, chưa để trống lại được.',
+    companyCode: 'Mã công ty',
+    taxCode: 'Mã số thuế',
+    claim: 'Đảm nhận',
+    claimed: 'Đã nhận xử lý yêu cầu liên hệ!',
+    resolve: 'Đã giải quyết',
+    resolvedToast: 'Đã cập nhật yêu cầu thành đã giải quyết!',
+    failContact: 'Liên hệ thất bại',
+    failedToast: 'Đã cập nhật trạng thái liên hệ thất bại.',
+    saveNote: 'Lưu ghi chú',
+    noteSaved: 'Đã lưu ghi chú nội bộ thành công!',
+    trial: {
+      title: 'Yêu cầu đăng ký tài khoản dùng thử',
+      claimFirst: 'System Support không được phép duyệt trực tiếp. Hãy bấm nút "Đảm nhận" ở mục xử lý bên dưới trước khi chuyển giao cho Quản lý nền tảng.',
+      forwardHint: 'System Support không được phép duyệt trực tiếp. Hãy bấm nút "Chuyển giao cho System Manager" ở mục xử lý bên dưới để chuyển yêu cầu này sang Quản lý nền tảng.',
+      forward: 'Chuyển giao cho System Manager',
+      forwardNote: 'Chuyển Quản lý duyệt tạo tài khoản dùng thử từ yêu cầu #{id} ({name})',
+      forwarded: 'Đã chuyển đơn yêu cầu tạo tài khoản dùng thử sang System Manager thành công!',
+    },
+    reply: {
+      title: 'Phản hồi qua email cho khách',
+      subject: 'Tiêu đề email',
+      defaultSubject: 'Phản hồi yêu cầu liên hệ #{id}',
+      message: 'Nội dung phản hồi email',
+      placeholder: 'Nhập nội dung phản hồi gửi qua email tới khách hàng...',
+      send: 'Gửi email phản hồi',
+      sent: 'Đã gửi email phản hồi thành công tới {email}',
+    },
   },
 } as const

@@ -7,7 +7,8 @@ vi.mock('@/lib/backend-config', () => ({
   usesBackend: (feature: string) => feature === 'packages',
 }))
 
-test('kho kiện nối backend: quản lý công ty không có nhóm kho kiện (máy chủ trả 403), điều phối viên vẫn có', () => {
-  expect(quickSearchGroups((permission) => can('manager', permission))).toStrictEqual(['trips', 'packages', 'requirements', 'vehicles'])
-  expect(quickSearchGroups((permission) => can('dispatcher', permission))).toContain('pool')
+test('kho kiện nối backend: chỉ nhân viên kho (giữ packages.manage) có nhóm kho kiện', () => {
+  expect(quickSearchGroups((permission) => can('companyManager', permission))).toStrictEqual(['trips', 'packages', 'requirements', 'vehicles'])
+  expect(quickSearchGroups((permission) => can('dispatcher', permission))).not.toContain('pool')
+  expect(quickSearchGroups((permission) => can('warehouse', permission))).toContain('pool')
 })

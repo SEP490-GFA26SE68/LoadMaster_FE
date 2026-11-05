@@ -91,6 +91,7 @@ export function UsersPage() {
           key={editing?.id ?? 'new'}
           scope={scope}
           user={editing}
+          companies={companies.data ?? []}
           roleBlock={editing ? accountGuards(editing, currentUser, users).role : null}
           onClose={actions.close}
           onSubmit={(values) => (editing ? actions.submitEdit(editing, values) : actions.submitCreate(values))}

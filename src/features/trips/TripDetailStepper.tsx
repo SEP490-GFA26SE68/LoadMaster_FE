@@ -7,7 +7,8 @@ import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { tripProgress, type ProgressStep } from './trip-progress'
 import { useTripActivityQuery } from './useTripsQuery'
-
+import type { TripDetailApiResponse } from './trips-api'
+import { StatusBadge } from '@/components/StatusBadge'
 type Look = 'done' | 'closed' | 'final' | 'current' | 'next' | 'stale' | 'cancel' | 'pending'
 
 /** Cách vẽ một mốc: chuyến đã khép (hoàn thành, huỷ) thì mốc đã qua dịu đi, chỉ mốc cuối còn màu. */
@@ -87,9 +88,9 @@ function Step({ step, look, actor }: { step: ProgressStep; look: Look; actor: st
     ? { count: loadingCount(step, t, format), ratio: step.loading.total > 0 ? step.loading.loaded / step.loading.total : 0 }
     : step.delivery
       ? {
-          count: t('trips.progress.deliveryCount', { done: format.integer(step.delivery.done), total: format.integer(step.delivery.total) }),
-          ratio: step.delivery.total > 0 ? step.delivery.done / step.delivery.total : 0,
-        }
+        count: t('trips.progress.deliveryCount', { done: format.integer(step.delivery.done), total: format.integer(step.delivery.total) }),
+        ratio: step.delivery.total > 0 ? step.delivery.done / step.delivery.total : 0,
+      }
       : null
   const reached = look !== 'pending' && look !== 'next'
 
@@ -147,3 +148,128 @@ function loadingCount(step: ProgressStep, t: TFunction, format: Formatter): stri
     ...(loading.damaged > 0 ? [t('trips.progress.damagedCount', { count: loading.damaged })] : []),
   ].join(' · ')
 }
+
+
+const BACKEND_PROGRESS_STATUSES = [
+  'DRAFT',
+  'PLANNED',
+  'LOADING',
+  'IN_TRANSIT',
+  'DELIVERED',
+] as const
+
+type BackendProgressStatus =
+  (typeof BACKEND_PROGRESS_STATUSES)[number]
+
+export function BackendTripDetailStepper({
+  status,
+}: {
+  status: TripDetailApiResponse['status']
+}) {
+  const t = useT()
+
+  const cancelled = status === 'CANCELLED'
+
+  const currentIndex = BACKEND_PROGRESS_STATUSES.findIndex(
+    (item) => item === status,
+  )
+
+  
+const labels: Record<BackendProgressStatus, string> = {
+  DRAFT: t('trips.progress.steps.created'),
+  PLANNED: t('trips.progress.steps.approved'),
+  LOADING: t('trips.progress.steps.loading'),
+  IN_TRANSIT: t('trips.progress.steps.delivering'),
+  DELIVERED: t('trips.progress.steps.completed'),
+}
+
+
+  return (
+    <div className="w-full min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-sky-text">
+          {t('trips.progress.title')}
+        </h2>
+
+        {cancelled ? <StatusBadge status="CANCELLED" /> : null}
+      </div>
+
+      <ol
+        aria-label={t('trips.progress.title')}
+        className="m-0 flex list-none items-start overflow-x-auto px-1 pt-2 pb-3"
+      >
+        {BACKEND_PROGRESS_STATUSES.map((stepStatus, index) => {
+          const done = !cancelled && index < currentIndex
+          const current = !cancelled && index === currentIndex
+          const completed = current && status === 'DELIVERED'
+
+          const look: Look = completed
+            ? 'final'
+            : current
+              ? 'current'
+              : done
+                ? 'done'
+                : 'pending'
+
+          return (
+            <li
+              key={stepStatus}
+              className={cn(
+                'flex min-w-0 items-start',
+                index > 0 && 'flex-1',
+              )}
+            >
+              {index > 0 ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mx-3 mt-2.5 h-0.5 min-w-5 flex-1 rounded-full',
+                    connector(look),
+                  )}
+                />
+              ) : null}
+
+              <div className="flex flex-none items-start gap-2.5 whitespace-nowrap">
+                <span
+                  aria-hidden
+                  className={cn(
+                    '-mt-0.5 grid size-6 flex-none place-items-center rounded-full border-[1.5px]',
+                    DOT[look],
+                  )}
+                >
+                  {current && !completed ? (
+                    <span className="size-2 rounded-full bg-azure-50" />
+                  ) : null}
+
+                  {done || completed ? (
+                    <Check className="size-3" strokeWidth={3} />
+                  ) : null}
+                </span>
+
+                <div className="flex flex-col">
+                  <span
+                    className={cn(
+                      'text-small font-semibold',
+                      current || done
+                        ? 'text-sky-text'
+                        : 'text-cyan-50/55',
+                    )}
+                  >
+                    {labels[stepStatus]}
+                  </span>
+
+                  {current && !completed ? (
+                    <span className="mt-1 text-caption font-medium text-cyan-300">
+                      {t('trips.progress.state.current')}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
+
