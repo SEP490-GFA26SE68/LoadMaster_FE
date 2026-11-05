@@ -21,8 +21,8 @@ export type CompanyProfile =
   | { readonly source: 'mock'; readonly company: Company }
   | { readonly source: 'server'; readonly company: ServerCompany }
 
-/** Phần máy chủ lưu: tên và email thanh toán (gửi đi là `contactEmail`). */
-export type ServerCompanyProfileChanges = { readonly name: string; readonly billingEmail: string }
+/** Phần máy chủ lưu: tên, mã số thuế và email thanh toán (gửi đi là `contactEmail`). */
+export type ServerCompanyProfileChanges = { readonly name: string; readonly taxCode: string; readonly billingEmail: string }
 
 /** Thay đổi gửi đi, theo nguồn: kho mẫu lưu tên, địa chỉ, số điện thoại; máy chủ lưu tên và email thanh toán. */
 export type CompanyProfileSave =
@@ -52,7 +52,7 @@ export async function saveCompanyProfile(changes: CompanyProfileSave): Promise<C
  * đầu lưu chúng, vì GET chưa trả hai trường đó để gửi lại.
  */
 // PATCH /api/company/profile
-export async function saveServerCompanyProfile({ name, billingEmail }: ServerCompanyProfileChanges): Promise<CompanyProfile> {
-  const dto = await api().patch<CompanyDto>('/api/company/profile', { body: { companyName: name, contactEmail: billingEmail } })
+export async function saveServerCompanyProfile({ name, taxCode, billingEmail }: ServerCompanyProfileChanges): Promise<CompanyProfile> {
+  const dto = await api().patch<CompanyDto>('/api/company/profile', { body: { companyName: name, taxCode, contactEmail: billingEmail } })
   return { source: 'server', company: companyOf(dto) }
 }

@@ -8,6 +8,7 @@ export const nav = {
   driver: 'Tài xế',
   fleet: 'Đội xe',
   users: 'Người dùng',
+  employees: 'Nhân viên',
   audit: 'Nhật ký',
   // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty chỉ đọc. Yêu cầu giao (FE-4b-02): quản lý công ty lập, điều phối viên xem
   packages: 'Kho kiện',

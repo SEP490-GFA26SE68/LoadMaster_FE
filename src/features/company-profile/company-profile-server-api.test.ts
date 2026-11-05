@@ -54,18 +54,18 @@ test('missing tax code or billing email read as empty text, a status the app doe
   expect((await fetchCompanyProfile()).company).toMatchObject({ taxCode: '', billingEmail: '', status: null, createdAt: null })
 })
 
-test('saving sends only the two fields the server stores — name and billing email — and returns what the server saved', async () => {
-  reply = () => json({ ...LONG_BINH, companyName: 'QA Vận tải Long Bình', billingEmail: 'ketoan@longbinh.vn' })
-  const saved = await saveCompanyProfile({ source: 'server', name: 'QA Vận tải Long Bình', billingEmail: 'ketoan@longbinh.vn' })
+test('saving sends the fields the server stores — name, tax code and billing email — and returns what the server saved', async () => {
+  reply = () => json({ ...LONG_BINH, companyName: 'QA Vận tải Long Bình', taxCode: 'TAX-LM-002', billingEmail: 'ketoan@longbinh.vn' })
+  const saved = await saveCompanyProfile({ source: 'server', name: 'QA Vận tải Long Bình', taxCode: 'TAX-LM-002', billingEmail: 'ketoan@longbinh.vn' })
   expect(calls).toStrictEqual([
-    { method: 'PATCH', url: 'http://be.test/api/company/profile', body: { companyName: 'QA Vận tải Long Bình', contactEmail: 'ketoan@longbinh.vn' } },
+    { method: 'PATCH', url: 'http://be.test/api/company/profile', body: { companyName: 'QA Vận tải Long Bình', taxCode: 'TAX-LM-002', contactEmail: 'ketoan@longbinh.vn' } },
   ])
-  expect(saved).toMatchObject({ source: 'server', company: { name: 'QA Vận tải Long Bình', billingEmail: 'ketoan@longbinh.vn', code: 'LM-LOGISTICS' } })
+  expect(saved).toMatchObject({ source: 'server', company: { name: 'QA Vận tải Long Bình', taxCode: 'TAX-LM-002', billingEmail: 'ketoan@longbinh.vn', code: 'LM-LOGISTICS' } })
 })
 
 test('a refusal of the server is an error with a code, not the server message', async () => {
   reply = () => json({ success: false, message: 'Access Denied' }, 403)
   await expect(fetchCompanyProfile()).rejects.toMatchObject({ code: 'UNAUTHORIZED', status: 403 })
   reply = () => json({ success: false, message: 'Company not found' }, 404)
-  await expect(saveCompanyProfile({ source: 'server', name: 'QA', billingEmail: 'qa@longbinh.vn' })).rejects.toMatchObject({ code: 'NOT_FOUND', status: 404 })
+  await expect(saveCompanyProfile({ source: 'server', name: 'QA', taxCode: 'TAX-001', billingEmail: 'qa@longbinh.vn' })).rejects.toMatchObject({ code: 'NOT_FOUND', status: 404 })
 })

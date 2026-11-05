@@ -34,14 +34,18 @@ export function UsersPage() {
   const users = query.data ?? []
   // Chưa biết người xem (màn luôn nằm sau `RequireAuth`) thì theo phạm vi hẹp hơn
   const scope = currentUser ? userScopeOf(currentUser.role) : 'company'
+  const isCompany = scope === 'company'
   const companies = useUserCompanyNamesQuery(scope === 'platform')
   const { dialog } = actions
   const editing = dialog?.kind === 'edit' ? dialog.user : undefined
   // Dòng số đếm dưới tiêu đề: đếm trên danh sách kho trả cho người xem (quản trị hệ thống thấy công ty, quản trị công ty thấy kho)
   const distinct = userDistinct(users)
+  const countText = isCompany
+    ? t('admin.employees.count', { count: users.length })
+    : t('admin.users.count', { count: users.length })
   // Nối backend thì máy chủ chưa có kho của tài khoản: không đếm kho
   const heroCounts = [
-    t('admin.users.count', { count: users.length }),
+    countText,
     t('admin.users.heroCount.roles', { count: distinct.roles }),
     ...(scope === 'platform'
       ? [t('admin.users.heroCount.companies', { count: distinct.companies })]
@@ -52,18 +56,18 @@ export function UsersPage() {
     <Tabs defaultValue="accounts" className="flex min-w-0 flex-1 flex-col">
       <PageHero
         overlap
-        title={t('admin.users.title')}
+        title={isCompany ? t('admin.employees.title') : t('admin.users.title')}
         description={query.data ? heroCounts : t('pageHero.users')}
         actions={
           <Button variant="primary" onClick={actions.openCreate}>
             <Plus strokeWidth={1.5} aria-hidden />
-            {t('admin.users.form.createTitle')}
+            {isCompany ? t('admin.employees.form.createTitle') : t('admin.users.form.createTitle')}
           </Button>
         }
       >
         {/* V2.3: tab nằm trong dải trời, dưới tiêu đề */}
         <TabsList tone="sky">
-          <TabsTrigger value="accounts">{t('admin.users.tabs.accounts')}</TabsTrigger>
+          <TabsTrigger value="accounts">{isCompany ? t('admin.employees.tabs.accounts') : t('admin.users.tabs.accounts')}</TabsTrigger>
           <TabsTrigger value="permissions">{t('admin.users.tabs.permissions')}</TabsTrigger>
         </TabsList>
       </PageHero>
@@ -79,7 +83,7 @@ export function UsersPage() {
               action={<Button variant="secondary" onClick={() => void query.refetch()}>{t('admin.users.retry')}</Button>}
             />
           ) : (
-            <UsersTable users={users} viewer={currentUser} companies={companies.data} onAction={actions.handleAction} />
+            <UsersTable users={users} viewer={currentUser} companies={companies.data} scope={scope} onAction={actions.handleAction} />
           )}
         </TabsContent>
         <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
@@ -114,13 +118,26 @@ export function UsersPage() {
           onConfirm={() => actions.confirmReset(dialog.user)}
         />
       ) : null}
+      {dialog?.kind === 'lock' ? (
+        <ConfirmDialog
+          open
+          danger
+          onOpenChange={(open) => (open || actions.lockPending ? undefined : actions.close())}
+          title={isCompany ? t('admin.employees.lockConfirm.title', { name: dialog.user.fullName }) : t('admin.users.lockConfirm.title', { name: dialog.user.fullName })}
+          description={isCompany ? t('admin.employees.lockConfirm.description') : t('admin.users.lockConfirm.description')}
+          cancelLabel={t('admin.users.lockConfirm.cancel')}
+          confirmLabel={t('admin.users.lockConfirm.confirm')}
+          pending={actions.lockPending}
+          onConfirm={() => actions.confirmLock(dialog.user)}
+        />
+      ) : null}
       {dialog?.kind === 'delete' ? (
         <ConfirmDialog
           open
           danger
           onOpenChange={(open) => (open || actions.deletePending ? undefined : actions.close())}
-          title={t('admin.users.remove.title', { name: dialog.user.fullName })}
-          description={t('admin.users.remove.description')}
+          title={isCompany ? t('admin.employees.remove.title', { name: dialog.user.fullName }) : t('admin.users.remove.title', { name: dialog.user.fullName })}
+          description={isCompany ? t('admin.employees.remove.description') : t('admin.users.remove.description')}
           cancelLabel={t('admin.users.remove.cancel')}
           confirmLabel={t('admin.users.remove.confirm')}
           pending={actions.deletePending}

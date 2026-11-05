@@ -13,15 +13,16 @@ export const companyProfile = {
     taxCode: 'Mã số thuế',
     createdAt: 'Ngày tạo',
     depot: 'Kho xuất phát',
-    serverNote: 'Mã công ty, mã số thuế và trạng thái do quản trị hệ thống LoadMaster thay đổi.',
+    serverNote: 'Mã công ty và trạng thái do quản trị hệ thống LoadMaster thay đổi.',
     note: 'Mã công ty và kho xuất phát do quản trị hệ thống LoadMaster thay đổi.',
   },
   form: {
     title: 'Thông tin chung',
-    // Nối backend: máy chủ chỉ lưu tên và email thanh toán
-    serverDescription: 'Tên công ty và email thanh toán. Máy chủ chưa lưu địa chỉ hay số điện thoại của công ty.',
+    // Nối backend: máy chủ lưu tên, mã số thuế và email thanh toán
+    serverDescription: 'Tên công ty, mã số thuế và email thanh toán. Máy chủ chưa lưu địa chỉ hay số điện thoại của công ty.',
     description: 'Tên, địa chỉ và số điện thoại của công ty.',
     name: 'Tên công ty',
+    taxCode: 'Mã số thuế',
     billingEmail: 'Email thanh toán',
     address: 'Địa chỉ',
     phone: 'Số điện thoại công ty',

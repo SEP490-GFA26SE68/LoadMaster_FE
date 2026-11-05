@@ -9,10 +9,10 @@ import type { CompanyProfile, CompanyProfileSave, CompanyProfileSource } from '.
  * /api/company/profile` nhận thêm địa chỉ, số điện thoại nhưng bỏ đi, nên không có ô cho hai trường đó); kho mẫu lưu tên, địa chỉ, số điện
  * thoại. Giới hạn độ dài theo nơi lưu. Message của schema là key từ điển, cùng câu với form công ty của quản trị hệ thống.
  */
-export type CompanyProfileField = 'name' | 'billingEmail' | 'address' | 'phone'
+export type CompanyProfileField = 'name' | 'taxCode' | 'billingEmail' | 'address' | 'phone'
 
 export const PROFILE_FIELDS: Readonly<Record<CompanyProfileSource, readonly CompanyProfileField[]>> = {
-  server: ['name', 'billingEmail'],
+  server: ['name', 'taxCode', 'billingEmail'],
   mock: ['name', 'address', 'phone'],
 }
 
@@ -20,6 +20,7 @@ export type CompanyProfileInput = Record<CompanyProfileField, string>
 
 const ERRORS = {
   nameRequired: 'companies.form.errors.nameRequired',
+  taxCodeRequired: 'companies.server.form.errors.taxCodeRequired',
   addressRequired: 'companies.form.errors.addressRequired',
   phoneRequired: 'companies.form.errors.phoneRequired',
   phoneInvalid: 'companies.form.errors.phoneInvalid',
@@ -29,7 +30,7 @@ const ERRORS = {
 } as const satisfies Record<string, MessageKey>
 
 const MAX_OF: Readonly<Record<CompanyProfileSource, Partial<Record<CompanyProfileField, number>>>> = {
-  server: { name: SERVER_COMPANY_LIMITS.name, billingEmail: SERVER_COMPANY_LIMITS.billingEmail },
+  server: { name: SERVER_COMPANY_LIMITS.name, taxCode: SERVER_COMPANY_LIMITS.taxCode, billingEmail: SERVER_COMPANY_LIMITS.billingEmail },
   mock: { name: COMPANY_NAME_MAX, address: COMPANY_ADDRESS_MAX, phone: COMPANY_PHONE_MAX },
 }
 
@@ -38,6 +39,7 @@ const isEmail = (value: string) => z.email().safeParse(value).success
 /** Câu khi ô trống, rồi luật riêng của ô — chỉ xét khi ô đã có chữ và không quá dài. */
 const RULES: Readonly<Record<CompanyProfileField, { required: MessageKey; check?: (value: string) => MessageKey | null }>> = {
   name: { required: ERRORS.nameRequired },
+  taxCode: { required: ERRORS.taxCodeRequired },
   address: { required: ERRORS.addressRequired },
   phone: { required: ERRORS.phoneRequired, check: (value) => (COMPANY_PHONE.test(value) ? null : ERRORS.phoneInvalid) },
   billingEmail: { required: ERRORS.billingEmailRequired, check: (value) => (isEmail(value) ? null : ERRORS.billingEmailInvalid) },
@@ -45,7 +47,7 @@ const RULES: Readonly<Record<CompanyProfileField, { required: MessageKey; check?
 
 export function companyProfileSchema(source: CompanyProfileSource) {
   const text = z.string().trim()
-  return z.object({ name: text, billingEmail: text, address: text, phone: text }).superRefine((values, ctx) => {
+  return z.object({ name: text, taxCode: text, billingEmail: text, address: text, phone: text }).superRefine((values, ctx) => {
     for (const field of PROFILE_FIELDS[source]) {
       const value = values[field]
       const max = MAX_OF[source][field] ?? Number.POSITIVE_INFINITY
@@ -67,12 +69,12 @@ export function translateCompanyProfileError(t: TFunction, source: CompanyProfil
 
 /** Giá trị ban đầu của form: ô không thuộc nguồn để trống, không gửi đi. */
 export function companyProfileDefaults(profile: CompanyProfile): CompanyProfileInput {
-  if (profile.source === 'server') return { name: profile.company.name, billingEmail: profile.company.billingEmail, address: '', phone: '' }
-  return { name: profile.company.name, billingEmail: '', address: profile.company.address, phone: profile.company.phone }
+  if (profile.source === 'server') return { name: profile.company.name, taxCode: profile.company.taxCode, billingEmail: profile.company.billingEmail, address: '', phone: '' }
+  return { name: profile.company.name, taxCode: '', billingEmail: '', address: profile.company.address, phone: profile.company.phone }
 }
 
 export function toCompanyProfileSave(source: CompanyProfileSource, values: CompanyProfileValues): CompanyProfileSave {
   return source === 'server'
-    ? { source, name: values.name, billingEmail: values.billingEmail }
+    ? { source, name: values.name, taxCode: values.taxCode, billingEmail: values.billingEmail }
     : { source, name: values.name, address: values.address, phone: values.phone }
 }
