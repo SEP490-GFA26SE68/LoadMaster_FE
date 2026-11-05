@@ -15,7 +15,7 @@ vi.mock('@/lib/backend-config', () => ({
  */
 const TOKEN = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const PACKAGE = {
-  id: 7, orderId: null, trackingBarcode: 'QA-BARCODE-0007', actualLength: 1205, actualWeightKg: 12.5, packageCode: 'QA PK-0007', qrToken: TOKEN,
+  id: 7, orderId: null, trackingBarcode: 'QA-BARCODE-0007', actualLength: 120.5, actualWeightKg: 12.5, packageCode: 'QA PK-0007', qrToken: TOKEN,
   handlingClass: 'FRAGILE', status: 'PENDING',
 }
 
