@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '@/lib/i18n'
 import type { ViewerSceneModel } from './scene-input'
 import type { CameraPreset } from './viewer-types'
 import { SceneCanvas } from './scene/SceneCanvas'
@@ -13,6 +14,7 @@ type Props = {
  * Không chỉnh sửa, ghim kiện hoặc ghi dữ liệu Backend.
  */
 export function BackendLoadPlanViewer({ model }: Props) {
+  const t = useT()
   const flags = usePerformanceFlags(undefined, 'planner')
 
   const [cameraPreset] = useState<CameraPreset>('goc-cheo')
@@ -49,7 +51,7 @@ export function BackendLoadPlanViewer({ model }: Props) {
             onClick={() => setStep((current) => Math.max(1, current - 1))}
             disabled={step <= 1}
             className="rounded border border-white/30 px-3 py-1 disabled:opacity-40"
-            aria-label="Previous loading step"
+            aria-label={t('viewer.backendViewer.stepPrevious')}
           >
             ←
           </button>
@@ -65,7 +67,7 @@ export function BackendLoadPlanViewer({ model }: Props) {
             }
             disabled={step >= totalSteps}
             className="rounded border border-white/30 px-3 py-1 disabled:opacity-40"
-            aria-label="Next loading step"
+            aria-label={t('viewer.backendViewer.stepNext')}
           >
             →
           </button>

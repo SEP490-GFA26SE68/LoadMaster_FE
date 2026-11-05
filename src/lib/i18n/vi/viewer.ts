@@ -564,4 +564,8 @@ export const viewer = {
     CONSTRAINT_VIOLATED: 'Xếp kiện này sẽ vi phạm ràng buộc',
     UNKNOWN: 'Chưa xếp được, không rõ lý do',
   },
+  backendViewer: {
+    stepPrevious: 'Bước xếp trước',
+    stepNext: 'Bước xếp kế tiếp',
+  },
 } as const
