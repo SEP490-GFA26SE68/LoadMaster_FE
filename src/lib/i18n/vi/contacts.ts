@@ -96,8 +96,10 @@ export const contacts = {
       title: 'Yêu cầu đăng ký tài khoản dùng thử',
       claimFirst: 'Hỗ trợ khách hàng không duyệt trực tiếp đơn dùng thử. Bấm "Đảm nhận" ở mục xử lý bên dưới, rồi chuyển đơn cho Quản lý nền tảng.',
       forwardHint: 'Hỗ trợ khách hàng không duyệt trực tiếp đơn dùng thử. Bấm "Chuyển cho Quản lý nền tảng" ở mục xử lý bên dưới để đưa đơn sang màn Đơn dùng thử.',
+      manualCheckLabel: 'Bắt buộc kiểm tra thủ công thông tin doanh nghiệp và người đăng ký',
+      manualCheckHint: 'Đã đối soát Tên công ty, Mã công ty, Mã số thuế, Email và Số điện thoại trước khi chuyển giao cho Quản lý nền tảng.',
       forward: 'Chuyển cho Quản lý nền tảng',
-      forwardNote: 'Duyệt tài khoản dùng thử từ yêu cầu #{id} ({name})',
+      forwardNote: '[Đã kiểm tra thủ công] Duyệt tài khoản dùng thử từ yêu cầu #{id} ({name})',
       forwarded: 'Đã chuyển đơn dùng thử sang màn Đơn dùng thử.',
     },
     reply: {

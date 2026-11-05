@@ -95,14 +95,28 @@ test('rows come from the backend with the plan name it sends; claiming sends the
   expect(calls.some((call) => call.path.startsWith('/api/users?') || call.path.startsWith('/api/subscription'))).toBe(false)
 })
 
-test('a demo request already taken is forwarded to the platform manager as a trial request', async () => {
+test('a demo request already taken requires manual check before forwarding to the platform manager as a trial request', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=2')
   const panel = await screen.findByRole('region', { name: 'QA Khách đã giao' }, SLOW)
   expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).toBeNull()
-  await user.click(within(panel).getByRole('button', { name: 'Chuyển cho Quản lý nền tảng' }))
+
+  const forwardBtn = within(panel).getByRole('button', { name: 'Chuyển cho Quản lý nền tảng' })
+  expect(forwardBtn).toBeDisabled()
+
+  const manualCheck = within(panel).getByRole('checkbox', { name: /kiểm tra thủ công/i })
+  expect(manualCheck).not.toBeChecked()
+
+  await user.click(manualCheck)
+  expect(forwardBtn).toBeEnabled()
+
+  await user.click(forwardBtn)
 
   await waitFor(() => expect(calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests')?.body).toMatchObject({
-    contactId: 2, fullName: 'QA Khách đã giao', email: 'qa.khach@example.com', companyName: 'QA Vận tải',
+    contactId: 2,
+    fullName: 'QA Khách đã giao',
+    email: 'qa.khach@example.com',
+    companyName: 'QA Vận tải',
+    note: expect.stringContaining('[Đã kiểm tra thủ công]'),
   }))
 })

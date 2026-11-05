@@ -50,9 +50,13 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
   useEffect(() => headingRef.current?.focus(), [focusRequest])
 
   const [note, setNote] = useState(contact.note ?? '')
+  const [manualChecked, setManualChecked] = useState(false)
 
   // Bản mới của yêu cầu (người khác vừa lưu, hay chính mình vừa ghi) thay ghi chú đang hiện
-  useEffect(() => setNote(contact.note ?? ''), [contact])
+  useEffect(() => {
+    setNote(contact.note ?? '')
+    setManualChecked(false)
+  }, [contact])
 
   const forwardsTrial = contact.requestType === 'DEMO_REQUEST' && CONTACTS_SOURCE.canForwardTrial
   const isPricing = contact.requestType === 'PRICING'
@@ -88,8 +92,10 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
   }
 
   function handleForwardTrial() {
+    if (!manualChecked) return
+    const forwardNote = t('contacts.panel.trial.forwardNote', { id: contact.id, name: contact.fullName })
     forwardMutation.mutate(
-      { contact, note: t('contacts.panel.trial.forwardNote', { id: contact.id, name: contact.fullName }) },
+      { contact, note: forwardNote },
       {
         onSuccess: () => toast.success(t('contacts.panel.trial.forwarded')),
         onError: (error) => toast.error(dataErrorMessage(error, t)),
@@ -180,6 +186,21 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
             </div>
           </div>
 
+          {forwardsTrial && isClaimed ? (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-small text-ink-1">
+              <input
+                type="checkbox"
+                checked={manualChecked}
+                onChange={(e) => setManualChecked(e.target.checked)}
+                className="mt-0.5 size-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-semibold text-ink-strong">{t('contacts.panel.trial.manualCheckLabel')}</span>
+                <span className="text-caption text-ink-2">{t('contacts.panel.trial.manualCheckHint')}</span>
+              </span>
+            </label>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-2.5">
             {canClaim ? (
               <Button type="button" variant="primary" loading={claim.isPending} disabled={busy} onClick={handleClaim}>
@@ -190,7 +211,13 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
             {isClaimed ? (
               <>
                 {forwardsTrial ? (
-                  <Button type="button" variant="secondary" loading={forwardMutation.isPending} onClick={handleForwardTrial}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={forwardMutation.isPending}
+                    disabled={!manualChecked || forwardMutation.isPending}
+                    onClick={handleForwardTrial}
+                  >
                     {forwardMutation.isPending ? null : <Send aria-hidden className="size-3.5" strokeWidth={1.5} />}
                     {t('contacts.panel.trial.forward')}
                   </Button>

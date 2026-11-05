@@ -93,8 +93,10 @@ export const contacts = {
       title: 'Trial account request',
       claimFirst: 'Customer support does not approve trial requests directly. Take the request below first, then hand it over to the platform manager.',
       forwardHint: 'Customer support does not approve trial requests directly. Use "Hand over to the platform manager" below to move it to the Trial requests screen.',
+      manualCheckLabel: 'Manual verification of business and applicant details required',
+      manualCheckHint: 'Verified company name, company code, tax code, email and phone number before forwarding to the Platform Manager.',
       forward: 'Hand over to the platform manager',
-      forwardNote: 'Review a trial account from request #{id} ({name})',
+      forwardNote: '[Manually verified] Review a trial account from request #{id} ({name})',
       forwarded: 'The trial request was moved to the Trial requests screen.',
     },
     reply: {
