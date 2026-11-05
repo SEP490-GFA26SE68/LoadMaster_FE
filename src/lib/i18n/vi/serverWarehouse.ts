@@ -30,6 +30,7 @@ export const serverWarehouse = {
     positionHint: 'Đo từ góc trong cùng bên trái sàn thùng: X dọc thùng từ vách trước, Y ngang thùng, Z từ sàn lên.',
     size: 'Kích thước khi đặt',
     sizeValue: '{length} × {width} × {height} cm',
+    weight: 'Khối lượng',
     verify: 'Đối chiếu kiện',
     deviate: 'Ghi sai lệch vị trí',
     complete: 'Hoàn tất xếp hàng',

@@ -29,6 +29,7 @@ export const serverWarehouse = {
     positionHint: 'Measured from the inner left corner of the cargo floor: X along the body from the front wall, Y across, Z up from the floor.',
     size: 'Size as placed',
     sizeValue: '{length} × {width} × {height} cm',
+    weight: 'Weight',
     verify: 'Verify package',
     deviate: 'Record position deviation',
     complete: 'Finish loading',

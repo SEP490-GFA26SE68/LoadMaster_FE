@@ -21,13 +21,13 @@ const LOADED = { ...LOADING, tripId: 9, tripCode: 'TRIP-20261106-C3', departureT
 
 const step = (placementId: number, sequence: number, extra: Record<string, unknown> = {}) => ({
   placementId, packageId: placementId * 10, packageName: `Kiện ${placementId}`, packageCode: null, trackingBarcode: `LB-${placementId}`,
-  qrToken: `qr-${placementId}`, posX: 10.4, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, sequence,
+  qrToken: `qr-${placementId}`, posX: 10.4, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, weightKg: 12.5, sequence,
   stopId: 31, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', status: 'PENDING', ...extra,
 })
 
 const SESSION = {
   executionId: 1, loadPlanId: 3, tripId: 7, tripCode: 'TRIP-20261106-A1', vehicleInfo: null, licensePlate: '51C-284.19', vehicleTypeName: 'Isuzu',
-  innerLength: 600, innerWidth: 240, innerHeight: 240, doorWidth: null, doorHeight: null, totalPackages: 2, confirmedCount: 0, deviationCount: 0,
+  innerLength: 600, innerWidth: 240, innerHeight: 240, doorWidth: null, doorHeight: null, maxPayloadKg: 2500, totalPackages: 2, confirmedCount: 0, deviationCount: 0,
   pendingCount: 2, status: 'IN_PROGRESS', startedAt: '2026-11-06 10:00:00', completedAt: null,
   placements: [step(102, 2), step(101, 1)],
 }
@@ -52,7 +52,8 @@ test('mở lại phiên: GET theo chuyến, kiện theo thứ tự xếp, kết 
   stubBackend({ 'GET /api/warehouse/tasks/8': { body: envelope({ ...SESSION, tripId: 8, placements: [step(102, 2), step(101, 1, { status: 'DEVIATION' })] }) } })
   const session = await createWarehouseBackend().fetchSession('8')
   expect(session.placements.map((placement) => placement.id)).toEqual(['101', '102'])
-  expect(session.placements[0]).toMatchObject({ packageId: '1010', barcode: 'LB-101', qrToken: 'qr-101', x: 10.4, lengthCm: 60, sequence: 1, stopSequence: 1, stopName: 'Co.opmart Biên Hoà' })
+  expect(session.placements[0]).toMatchObject({ packageId: '1010', barcode: 'LB-101', qrToken: 'qr-101', x: 10.4, lengthCm: 60, weightKg: 12.5, sequence: 1, stopSequence: 1, stopName: 'Co.opmart Biên Hoà' })
+  expect(session.maxPayloadKg).toBe(2500)
   expect(session.outcomes).toEqual({ 101: 'deviation' })
   expect(session.vehicle).toBe('51C-284.19')
   // Loại xe chưa khai cửa: cửa là mặt cắt lòng thùng
@@ -116,7 +117,7 @@ test('hoàn tất khi còn kiện: mã INCOMPLETE_LOADING của máy chủ giữ
 
 const PLACEMENT: ServerPlacement = {
   id: '1', packageId: '1010', name: 'Kiện', barcode: 'LB-PK-0001', packageCode: 'DH-88', qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9',
-  x: 0, y: 0, z: 0, lengthCm: 1, widthCm: 1, heightCm: 1, rotation: 0, sequence: 1, stopSequence: 1, stopName: null,
+  x: 0, y: 0, z: 0, lengthCm: 1, widthCm: 1, heightCm: 1, rotation: 0, weightKg: null, sequence: 1, stopSequence: 1, stopName: null,
 }
 
 test('mã quét hoặc gõ khớp mã QR, mã vạch, mã của bên gửi hoặc mã kho kiện, không phân biệt hoa thường', () => {
@@ -128,16 +129,21 @@ test('mã quét hoặc gõ khớp mã QR, mã vạch, mã của bên gửi hoặ
   expect(codeMatches(PLACEMENT, '  ')).toBe(false)
 })
 
-test('khung 3D: dựng từ lòng thùng và chỗ từng kiện; thiếu lòng thùng hoặc số điểm giao thì không có khung', async () => {
+test('khung 3D: dựng từ lòng thùng, tải trọng và chỗ, khối lượng từng kiện; thiếu lòng thùng hoặc số điểm giao thì không có khung', async () => {
   stubBackend({ 'GET /api/warehouse/tasks/7': { body: envelope({ ...SESSION, placements: [step(101, 1), step(102, 2, { stopSequence: 2, stopName: 'Kho Dĩ An' })] }) } })
   const session = await createWarehouseBackend().fetchSession('7')
   const scene = serverSessionScene(session)
-  expect(scene?.model.vehicle).toMatchObject({ innerLengthCm: 600, doorWidthCm: 240 })
+  expect(scene?.model.vehicle).toMatchObject({ innerLengthCm: 600, doorWidthCm: 240, maxPayloadKg: 2500 })
   expect(scene?.model.stops.map((stop) => [stop.number, stop.name, stop.packageCount])).toEqual([[1, 'Co.opmart Biên Hoà', 1], [2, 'Kho Dĩ An', 1]])
   expect(scene?.model.isMockResult).toBe(false)
   const sceneId = scene?.sceneIdOf.get('102')
   expect(sceneId).toBe('LB-102')
-  expect(scene?.model.placementById.get(sceneId ?? '')).toMatchObject({ step: 2, stop: 2, position: { x: 10.4, y: 0, z: 0 } })
+  expect(scene?.model.placementById.get(sceneId ?? '')).toMatchObject({ step: 2, stop: 2, weightKg: 12.5, position: { x: 10.4, y: 0, z: 0 } })
+
+  // Máy chủ không trả khối lượng, tải trọng: 0, khung vẫn vẽ
+  const bare = serverSessionScene({ ...session, maxPayloadKg: null, placements: session.placements.map((item) => ({ ...item, weightKg: null })) })
+  expect(bare?.model.vehicle.maxPayloadKg).toBe(0)
+  expect(bare?.model.placementById.get(sceneId ?? '')?.weightKg).toBe(0)
 
   expect(serverSessionScene({ ...session, box: null })).toBeNull()
   expect(serverSessionScene({ ...session, placements: session.placements.map((item) => ({ ...item, stopSequence: null })) })).toBeNull()

@@ -36,6 +36,8 @@ export type PlacementStepDto = {
   readonly packedWidth: number | null
   readonly packedHeight: number | null
   readonly rotation: number | null
+  /** Khối lượng thực tế của kiện (kg), không có thì của loại kiện. */
+  readonly weightKg?: number | null
   readonly sequence: number | null
   readonly stopId?: number | null
   readonly stopSequence?: number | null
@@ -58,6 +60,8 @@ export type StartLoadingDto = {
   readonly innerHeight?: number | null
   readonly doorWidth?: number | null
   readonly doorHeight?: number | null
+  /** Tải trọng tối đa của xe (kg) theo loại xe; `null` khi xe chưa gắn loại hoặc loại chưa khai. */
+  readonly maxPayloadKg?: number | null
   readonly totalPackages: number | null
   /** `IN_PROGRESS` | `COMPLETED` của phiên xếp. */
   readonly status: string | null
@@ -100,6 +104,8 @@ export type ServerPlacement = {
   readonly widthCm: number
   readonly heightCm: number
   readonly rotation: number | null
+  /** kg; `null` khi máy chủ không trả. */
+  readonly weightKg: number | null
   readonly sequence: number
   /** Điểm giao thật của kiện (qua yêu cầu giao): số thứ tự và tên; `null` khi máy chủ không trả. */
   readonly stopSequence: number | null
@@ -123,6 +129,8 @@ export type ServerLoadingSession = {
   readonly code: string
   readonly vehicle: string
   readonly box: ServerCargoBox | null
+  /** Tải trọng tối đa của xe (kg); `null` khi máy chủ không trả. */
+  readonly maxPayloadKg: number | null
   readonly placements: readonly ServerPlacement[]
   /** Kết quả từng kiện theo máy chủ (`CONFIRMED` / `DEVIATION`); kiện chưa xử lý không có mục. */
   readonly outcomes: Readonly<Record<string, PlacementOutcome>>
@@ -168,11 +176,14 @@ export function placementOf(dto: PlacementStepDto): ServerPlacement {
     widthCm: numberOf(dto.packedWidth),
     heightCm: numberOf(dto.packedHeight),
     rotation: dto.rotation,
+    weightKg: finiteOrNull(dto.weightKg),
     sequence: numberOf(dto.sequence),
     stopSequence: typeof dto.stopSequence === 'number' ? dto.stopSequence : null,
     stopName: dto.stopName?.trim() || null,
   }
 }
+
+const finiteOrNull = (value: number | null | undefined) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null)
 
 const positive = (value: number | null | undefined): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
 
@@ -200,6 +211,7 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
     code: dto.tripCode ?? id,
     vehicle: vehicle !== '' ? vehicle : (dto.licensePlate?.trim() ?? ''),
     box: boxOf(dto),
+    maxPayloadKg: positive(dto.maxPayloadKg) ? dto.maxPayloadKg : null,
     placements: steps.map((item) => item.placement).toSorted((a, b) => a.sequence - b.sequence),
     outcomes: Object.fromEntries(steps.flatMap(({ status, placement }) => {
       const outcome = status ? OUTCOMES[status] : undefined

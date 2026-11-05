@@ -13,7 +13,7 @@ export type ServerSessionScene = {
 /**
  * Hàm thuần: phiên xếp của máy chủ thành snapshot cho khung 3D của kho — lòng thùng, cửa và chỗ từng kiện (cm) theo phương án đã duyệt.
  * `null` khi phiên không đủ dữ liệu để vẽ đúng: máy chủ không trả lòng thùng, hoặc có kiện không mang số điểm giao (màu kiện theo điểm
- * giao). Phiên không trả khối lượng kiện, tải trọng xe: hai số đó là 0 và khung kho không hiện chúng.
+ * giao). Khối lượng kiện và tải trọng xe lấy từ phiên; máy chủ không trả thì là 0 (khung kho không hiện tải trọng, như kho mẫu).
  */
 export function serverSessionScene(session: ServerLoadingSession): ServerSessionScene | null {
   const { box } = session
@@ -32,7 +32,7 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
       id: item.id,
       packageId: item.packageId ?? item.id,
       code: item.packageCode ?? item.barcode ?? item.packageId ?? item.id,
-      weightKg: 0,
+      weightKg: item.weightKg ?? 0,
       x: item.x, y: item.y, z: item.z,
       lengthCm: item.lengthCm, widthCm: item.widthCm, heightCm: item.heightCm,
       rotationType: item.rotation,
@@ -44,7 +44,7 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
   }
   const vehicle: VehicleConfig = {
     id: session.tripId, name: session.vehicle, innerLengthCm: box.innerLengthCm, innerWidthCm: box.innerWidthCm, innerHeightCm: box.innerHeightCm,
-    maxPayloadKg: 0, doorWidthCm: box.doorWidthCm, doorHeightCm: box.doorHeightCm, doorPosition: 'REAR', clearanceCm: 0, obstacles: [],
+    maxPayloadKg: session.maxPayloadKg ?? 0, doorWidthCm: box.doorWidthCm, doorHeightCm: box.doorHeightCm, doorPosition: 'REAR', clearanceCm: 0, obstacles: [],
   }
   const model = backendPlanScene({ tripCode: session.code, plan, vehicle, stops: [...stops.values()] })
   const sceneIdOf = new Map([...backendPlacementIds(plan)].map(([sceneId, placementId]) => [placementId, sceneId]))

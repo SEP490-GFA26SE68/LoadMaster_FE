@@ -25,7 +25,7 @@ let calls: FakeCall[] = []
 
 const step = (placementId: number, sequence: number, barcode: string) => ({
   placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: null, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
-  posX: 0, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, sequence,
+  posX: 0, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, weightKg: 12.5, sequence,
   stopId: 31, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', status: outcomes[placementId] ?? 'PENDING',
 })
 
@@ -104,6 +104,8 @@ test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã g
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 2' }, LOAD)
   expect(within(card).getByText('Thùng nước 1')).toBeInTheDocument()
   expect(within(card).getByText('LB-0001')).toBeInTheDocument()
+  // Khối lượng kiện của máy chủ, như thẻ kiện của kho mẫu
+  expect(within(card).getByText('Khối lượng').nextSibling).toHaveTextContent('12,5 kg')
 
   // Mã của kiện khác: không gọi máy chủ
   const wrong = await verify(user, 'LB-0002')
