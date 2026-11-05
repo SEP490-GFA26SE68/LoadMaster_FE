@@ -96,7 +96,7 @@ test('không có phiên: đăng nhập sai và khách gửi liên hệ là "Chư
       actor: 'Chưa đăng nhập',
       action: 'Khách gửi yêu cầu liên hệ',
       target: { id: 'LH-004', label: 'Đỗ Văn Hưng', href: '/lien-he-khach?lien-he=LH-004' },
-      details: 'Họ tên: Đỗ Văn Hưng · Loại yêu cầu: Báo giá',
+      details: 'Họ tên: Đỗ Văn Hưng · Loại yêu cầu: Hỗ trợ tư vấn',
     })
   expect(describe(event('vehicle.maintenanceOff', { type: 'vehicle', id: 'VEHICLE-008' }, {}, null))).toMatchObject({
     actor: 'Hệ thống',

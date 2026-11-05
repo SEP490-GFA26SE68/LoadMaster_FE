@@ -1,9 +1,18 @@
+import { companyAdmins } from './platform-company-admins'
+import { companyDetails } from './platform-company-details'
+import { subscriptionHistory } from './platform-subscription-history'
+import { trialRequests } from './platform-trial-requests'
+
 /**
  * Danh mục gói cước `/nen-tang/goi` (FE-8-02, D-90): màn của quản lý nền tảng — liệt kê, thêm, sửa, bật / tắt bán và xoá gói. Nhãn hạng
  * gói, "Giá trị tạm", "Không giới hạn" dùng chung với màn gói cước của công ty nên nằm ở `common`; tên thuật toán của gói ở
  * `optimization.credit.tiers`.
  */
 export const platform = {
+  companyAdmins,
+  companyDetails,
+  subscriptionHistory,
+  trialRequests,
   title: 'Gói cước',
   count: { one: '{count} gói', other: '{count} gói' },
   loading: 'Đang tải gói cước',

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
-import { createSupportTicket, listSupportTickets, setSupportTicketStatus } from './support-api'
+import { assignCompanyPlan, createSupportTicket, getSupportCompanyPanel, listSupportTickets, replyToSupportTicket, setSupportTicketStatus } from './support-api'
 
 /**
  * Yêu cầu hỗ trợ khi nhóm `support` nối backend. `/api/support-tickets` trả phong bì `ApiResponse`; `createdAt` là `LocalDateTime`
@@ -84,8 +84,8 @@ test('sending maps the two FE kinds to backend categories; a status change sends
   await createSupportTicket({ kind: 'BILLING', title: 'QA hoá đơn', description: 'Thiếu mã số thuế.' })
   expect(await setSupportTicketStatus('12', 'RESOLVED')).toMatchObject({ id: '12', status: 'RESOLVED' })
   expect(calls.map(({ key, body }) => ({ key, body }))).toStrictEqual([
-    { key: 'POST /api/support-tickets', body: { subject: 'QA lỗi in nhãn', description: 'Không in được.', category: 'SYSTEM_BUG' } },
-    { key: 'POST /api/support-tickets', body: { subject: 'QA hoá đơn', description: 'Thiếu mã số thuế.', category: 'BILLING' } },
+    { key: 'POST /api/support-tickets', body: { subject: 'QA lỗi in nhãn', description: 'Không in được.', category: 'SYSTEM_BUG', priority: 'HIGH' } },
+    { key: 'POST /api/support-tickets', body: { subject: 'QA hoá đơn', description: 'Thiếu mã số thuế.', category: 'BILLING', priority: 'MEDIUM' } },
     { key: 'PATCH /api/support-tickets/12', body: { status: 'RESOLVED' } },
   ])
 })
@@ -94,4 +94,87 @@ test('a role the backend does not let change a ticket gets a code the screen can
   routes = { 'PATCH /api/support-tickets/2': () => new Response(JSON.stringify({ success: false, message: 'Bạn không có quyền' }), { status: 403 }) }
   const error = await setSupportTicketStatus('2', 'CLOSED').catch((caught: unknown) => caught)
   expect(isApiError(error) && error.code).toBe('UNAUTHORIZED')
+})
+
+/** Trao đổi ghi trong `resolutionNote` (backend chưa có bảng trao đổi): mảng JSON, giờ Việt Nam `yyyy-MM-dd HH:mm:ss`. */
+const THREAD = JSON.stringify([
+  { authorId: '7', authorName: 'Nguyễn Thanh Tùng', authorRole: 'dispatcher', text: 'Tin nhắn ngày 28/10', at: '2026-10-28 09:00:00' },
+  { authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'systemSupporter', text: 'Tin nhắn ngày 29/10', at: '2026-10-29 14:30:00' },
+])
+
+test('the thread lives in resolutionNote: replies are read back with their time, and the last reply is the latest activity', async () => {
+  routes = { 'GET /api/support-tickets': envelope([{ ...OWN, resolutionNote: THREAD }]), 'GET /api/users/me': meAs(7, 'DISPATCHER') }
+  const [ticket] = await listSupportTickets()
+  expect(ticket?.resolutionNote).toBeUndefined()
+  expect(ticket?.replies.map(({ text, at, authorRole }) => ({ text, at, authorRole }))).toStrictEqual([
+    { text: 'Tin nhắn ngày 28/10', at: '2026-10-28T02:00:00.000Z', authorRole: 'dispatcher' },
+    { text: 'Tin nhắn ngày 29/10', at: '2026-10-29T07:30:00.000Z', authorRole: 'systemSupporter' },
+  ])
+  expect(ticket?.updatedAt).toBe('2026-10-29T07:30:00.000Z')
+})
+
+test('a reply re-reads the ticket, appends to the thread and keeps only the two latest active days', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-11-05T03:15:00Z'))
+  try {
+    routes = {
+      'GET /api/support-tickets': envelope([{ ...COLLEAGUE, resolutionNote: THREAD }]),
+      'GET /api/users/me': meAs(4, 'SYSTEM_SUPPORTER'),
+      'PATCH /api/support-tickets/1': () => {
+        const body = calls.at(-1)?.body as { resolutionNote: string; status?: string }
+        return envelope({ ...COLLEAGUE, status: body.status ?? COLLEAGUE.status, resolutionNote: body.resolutionNote })()
+      },
+    }
+    const updated = await replyToSupportTicket('1', '  Đã nhận, đang kiểm tra.  ')
+    const patch = calls.find((call) => call.key === 'PATCH /api/support-tickets/1')?.body as { resolutionNote: string; status?: string }
+    // Supporter trả lời yêu cầu Mở: yêu cầu sang Đang xử lý
+    expect(patch.status).toBe('IN_PROGRESS')
+    expect(JSON.parse(patch.resolutionNote)).toStrictEqual([
+      { authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'systemSupporter', text: 'Tin nhắn ngày 29/10', at: '2026-10-29 14:30:00' },
+      { authorId: '4', authorName: 'Người xem', authorRole: 'systemSupporter', text: 'Đã nhận, đang kiểm tra.', at: '2026-11-05 10:15:00' },
+    ])
+    expect(updated.replies).toHaveLength(2)
+    expect(updated.status).toBe('IN_PROGRESS')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a company user replying does not send a status', async () => {
+  routes = {
+    'GET /api/support-tickets': envelope([OWN]),
+    'GET /api/users/me': meAs(7, 'DISPATCHER'),
+    'PATCH /api/support-tickets/2': envelope(OWN),
+  }
+  await replyToSupportTicket('2', 'Cảm ơn')
+  expect(Object.keys(calls.find((call) => call.key === 'PATCH /api/support-tickets/2')?.body as object)).toStrictEqual(['resolutionNote'])
+})
+
+test('the company panel reads the contract, balance and transactions of that company; a balance that cannot be read is not shown as 0', async () => {
+  routes = {
+    'GET /api/contracts?companyId=1': envelope([
+      { id: 2, companyId: 1, companyName: 'Vận tải Long Bình', planId: 2, planName: 'Pro', planTier: 'PRO', status: 'ACTIVE', startedAt: '2026-10-01T00:00:00', expiresAt: '2099-01-01T00:00:00', autoRenew: true },
+    ]),
+    'GET /api/credits/transactions?companyId=1&page=0&size=20': envelope({ content: [
+      { id: 101, amount: 500, type: 'PURCHASE', reference: 'PAY-1', refunded: false, createdAt: '2026-10-19T10:00:00' },
+    ], last: true }),
+  }
+  const panel = await getSupportCompanyPanel('1', 'Tên kèm yêu cầu')
+  expect(panel).toStrictEqual({
+    companyName: 'Vận tải Long Bình',
+    plan: { id: '2', name: 'Pro', tier: 'PRO' },
+    planStatus: 'ACTIVE',
+    credit: null,
+    transactions: [{ id: '101', companyId: '', type: 'PURCHASE', amount: 500, reference: 'PAY-1', refunded: false, createdAt: '2026-10-19T03:00:00.000Z' }],
+  })
+})
+
+test('assigning a plan posts the contract and reads back what the backend applied', async () => {
+  routes = {
+    'POST /api/contracts': envelope({ id: 2, companyId: 1, companyName: 'Vận tải Long Bình', planId: 3, planName: 'Ultimate', planTier: 'ULTIMATE', status: 'ACTIVE', startedAt: null, expiresAt: null, autoRenew: true }),
+  }
+  expect(await assignCompanyPlan('1', '3')).toStrictEqual({
+    companyId: '1', companyName: 'Vận tải Long Bình', plan: { id: '3', name: 'Ultimate', tier: 'ULTIMATE' }, status: 'ACTIVE',
+  })
+  expect(calls.map(({ key, body }) => ({ key, body }))).toStrictEqual([{ key: 'POST /api/contracts', body: { companyId: 1, planId: 3, autoRenew: true } }])
 })

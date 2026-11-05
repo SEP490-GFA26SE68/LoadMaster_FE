@@ -46,7 +46,7 @@ const DISPATCHER = {
 
 const AS_USER: User = {
   id: '11', fullName: 'Điều phối hợp đồng', email: 'thu.contract2@loadmaster.local', phone: '0900 000 003', role: 'dispatcher',
-  status: 'active', lastActiveAt: null, companyId: '2',
+  status: 'active', lastActiveAt: null, companyId: '2', companyName: 'FastMove Transport',
 }
 
 test('danh sách: một trang lớn, kèm token; vai trò và trạng thái của backend đổi sang của FE', async () => {
@@ -74,7 +74,7 @@ test('tên công ty: trang của Spring, không có phong bì', async () => {
 
 test('tạo: gửi số điện thoại không khoảng trắng và tên vai trò hiện tại của backend; trả mật khẩu tạm', async () => {
   reply = envelope({ user: DISPATCHER, temporaryPassword: 'Tmp#12345' })
-  const result = await createUser({ fullName: 'Điều phối hợp đồng', email: 'thu.contract2@loadmaster.local', phone: '0900 000 003', role: 'manager', depot: '' })
+  const result = await createUser({ fullName: 'Điều phối hợp đồng', email: 'thu.contract2@loadmaster.local', phone: '0900 000 003', role: 'companyManager', depot: '' })
   expect(calls[0]).toMatchObject({
     method: 'POST',
     url: 'http://be.test/api/users',

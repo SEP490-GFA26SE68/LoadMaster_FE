@@ -68,7 +68,7 @@ export function UserDetailPanel({ id, user, guards, company, onAction, onClose }
             <Field label={t('admin.users.detail.id')}><span className="font-mono text-caption text-ink-1">{user.id}</span></Field>
             <Field label={t('admin.users.columns.phone')}><span className="font-mono text-caption text-ink-1">{user.phone}</span></Field>
             {company ? (
-              <Field label={t('admin.users.columns.company')}><UserCompany companyId={company.id} name={company.name} /></Field>
+              <Field label={t('admin.users.columns.company')}><UserCompany companyId={company.id} companyName={company.name} /></Field>
             ) : null}
             {userDepotAvailable ? <Field label={t('admin.users.columns.depot')}><UserDepot value={user.depot} /></Field> : null}
             {userActivityAvailable ? <Field label={t('admin.users.columns.lastActive')}><LastActive value={user.lastActiveAt} /></Field> : null}

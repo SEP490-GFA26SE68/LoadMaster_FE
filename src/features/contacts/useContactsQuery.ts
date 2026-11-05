@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { GuestContactPatch } from '@/lib/mock-db'
-import { listContactHandlers, listContactPlanNames, listGuestContacts, updateGuestContact } from './contacts-api'
+import type { GuestContact, GuestContactPatch } from '@/lib/mock-db'
+import {
+  claimGuestContact,
+  forwardContactToTrialRequest,
+  listContactHandlers,
+  listContactPlanNames,
+  listGuestContacts,
+  replyGuestContact,
+  updateGuestContact,
+} from './contacts-api'
 
 /** Việc màn làm được theo nguồn dữ liệu (kho mẫu hay backend) — component đọc ở đây, không gọi `-api.ts`. */
 export { CONTACTS_SOURCE } from './contacts-api'
@@ -10,7 +18,7 @@ export { CONTACTS_SOURCE } from './contacts-api'
  * cùng trình duyệt), người xử lý khác đổi trạng thái. Mọi lần ghi làm mới `['contacts']` và nhật ký (mỗi lần ghi thêm một sự kiện).
  */
 export function useGuestContactsQuery() {
-  return useQuery({ queryKey: ['contacts', 'list'], queryFn: listGuestContacts, staleTime: 0 })
+  return useQuery({ queryKey: ['contacts', 'list'], queryFn: () => listGuestContacts(), staleTime: 0 })
 }
 
 export function useContactHandlersQuery() {
@@ -26,5 +34,31 @@ export function useUpdateContactMutation() {
   return useMutation({
     mutationFn: ({ contactId, patch }: { contactId: string; patch: GuestContactPatch }) => updateGuestContact(contactId, patch),
     onSuccess: () => Promise.all(['contacts', 'audit'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
+  })
+}
+
+export function useClaimContactMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (contactId: string) => claimGuestContact(contactId),
+    onSuccess: () => Promise.all(['contacts', 'audit'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
+  })
+}
+
+export function useReplyContactMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ contactId, subject, message }: { contactId: string; subject: string; message: string }) =>
+      replyGuestContact(contactId, subject, message),
+    onSuccess: () => Promise.all(['contacts', 'audit'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
+  })
+}
+
+export function useForwardTrialMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ contact, note }: { contact: GuestContact; note: string }) =>
+      forwardContactToTrialRequest(contact, note),
+    onSuccess: () => Promise.all(['contacts', 'audit', 'trial-requests'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
   })
 }

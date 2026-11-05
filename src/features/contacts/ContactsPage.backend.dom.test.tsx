@@ -15,8 +15,8 @@ import { ContactsPage } from './ContactsPage'
  * backend; lưu gửi `PATCH` đúng ba trường backend nhận; backend chưa bỏ được người nhận việc nên "Chưa ai nhận" mờ khi yêu cầu đã giao.
  */
 vi.mock('@/lib/backend-config', () => ({
-  backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['contacts']), keycloak: { url: '', realm: '', clientId: '' } },
-  usesBackend: (feature: string) => feature === 'contacts',
+  backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['contacts', 'companies']), keycloak: { url: '', realm: '', clientId: '' } },
+  usesBackend: (feature: string) => feature === 'contacts' || feature === 'companies',
 }))
 
 const SLOW = { timeout: 5000 }
@@ -75,36 +75,34 @@ function renderContacts(search: string) {
   )
 }
 
-test('rows come from the backend with the plan name it sends; saving sends status, the backend id of the assignee and the note', async () => {
+test('rows come from the backend with the plan name it sends; claiming sends the status and the backend id of the viewer, the note saves alone', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=6')
   expect(await screen.findByText('2 yêu cầu · 1 mới', {}, SLOW)).toBeInTheDocument()
   const panel = await screen.findByRole('region', { name: 'QA Khách mới' }, SLOW)
   expect(panel).toHaveTextContent('Pro')
+  expect(within(panel).queryByRole('combobox')).toBeNull()
 
-  await user.click(within(panel).getByRole('combobox', { name: 'Trạng thái' }))
-  await user.click(await screen.findByRole('option', { name: 'Đang xử lý' }))
-  await user.click(within(panel).getByRole('combobox', { name: 'Người nhận việc' }))
-  // Hỗ trợ khách hàng không đọc được danh sách người dùng của backend: chỉ nhận việc cho chính mình
-  expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toStrictEqual(['Chưa ai nhận', 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng'])
-  await user.click(screen.getByRole('option', { name: 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng' }))
-  await user.type(within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' }), 'Đã gửi báo giá')
-  await user.click(within(panel).getByRole('button', { name: 'Lưu thay đổi' }))
-
+  await user.click(within(panel).getByRole('button', { name: 'Đảm nhận' }))
   await waitFor(() => expect(calls.filter((call) => call.method === 'PATCH')).toStrictEqual([
-    { method: 'PATCH', path: '/api/contact-guests/6', body: { status: 'IN_PROGRESS', assignedToId: 4, note: 'Đã gửi báo giá' } },
+    { method: 'PATCH', path: '/api/contact-guests/6', body: { status: 'IN_PROGRESS', assignedToId: 4 } },
   ]))
+  await user.type(within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' }), 'Đã gửi báo giá')
+  await user.click(within(panel).getByRole('button', { name: 'Lưu ghi chú' }))
+  await waitFor(() => expect(calls.filter((call) => call.method === 'PATCH').at(-1)).toStrictEqual(
+    { method: 'PATCH', path: '/api/contact-guests/6', body: { note: 'Đã gửi báo giá' } },
+  ))
   expect(calls.some((call) => call.path.startsWith('/api/users?') || call.path.startsWith('/api/subscription'))).toBe(false)
 })
 
-test('a request someone already took cannot go back to nobody: the option is dimmed and the field says why', async () => {
+test('a demo request already taken is forwarded to the platform manager as a trial request', async () => {
   const user = userEvent.setup()
   renderContacts('?lien-he=2')
   const panel = await screen.findByRole('region', { name: 'QA Khách đã giao' }, SLOW)
-  const assignee = within(panel).getByRole('combobox', { name: 'Người nhận việc' })
-  expect(assignee).toHaveAccessibleDescription('Yêu cầu đã có người nhận thì chỉ đổi được sang người khác, chưa để trống lại được.')
-  await user.click(assignee)
-  expect(await screen.findByRole('option', { name: 'Chưa ai nhận' })).toHaveAttribute('aria-disabled', 'true')
-  expect(screen.getByRole('option', { name: 'Đinh Quang Huy' })).toHaveAttribute('aria-disabled', 'true')
-  expect(screen.getByRole('option', { name: 'Tạ Thị Ngọc Ánh · Hỗ trợ khách hàng' })).not.toHaveAttribute('aria-disabled')
+  expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).toBeNull()
+  await user.click(within(panel).getByRole('button', { name: 'Chuyển giao cho System Manager' }))
+
+  await waitFor(() => expect(calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests')?.body).toMatchObject({
+    contactId: 2, fullName: 'QA Khách đã giao', email: 'qa.khach@example.com', companyName: 'QA Vận tải',
+  }))
 })

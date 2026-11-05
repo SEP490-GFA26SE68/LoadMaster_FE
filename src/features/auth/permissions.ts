@@ -6,6 +6,15 @@ import type { Role } from '@/types/user'
  * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (tối ưu tuyến, giám
  * sát, sự cố, nhận hàng dọc đường, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
  */
+
+/**
+ * Kho kiện:
+ * - Warehouse: xem và quản lý kiện, import Excel, quản lý loại kiện.
+ * - Dispatcher: chỉ xem và tra cứu kiện, không được thêm/sửa/xóa.
+ * - CompanyManager: xem kiện.
+ *
+ * Yêu cầu giao và lập chuyến thuộc luồng điều phối.
+ */
 export const PERMISSIONS = [
   'companies.manage',
   'companyProfile.manage',
@@ -16,6 +25,7 @@ export const PERMISSIONS = [
   'support.create',
   'support.handle',
   'contacts.handle',
+  'trialRequests.manage',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -40,6 +50,7 @@ export const PERMISSIONS = [
   'deadlines.renegotiate',
   'pickups.create',
   'pickups.approve',
+  'companyWarehouses.manage',
   'warehouse.operate',
   'driver.operate',
 ] as const
@@ -66,27 +77,68 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
  * trò nền tảng; gửi yêu cầu không cần quyền.
- *
- * `companyProfile.manage` mở Thông tin công ty `/cong-ty` — Quản trị công ty xem và sửa thông tin của chính công ty mình; khác
- * `companies.manage` (danh sách mọi công ty của Quản trị hệ thống).
  */
+
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle'],
-  systemManager: ['subscriptionPlans.manage', 'contacts.handle'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
+  systemManager: ['companies.manage', 'subscriptionPlans.manage'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
-  manager: [
-    'support.create', 'dashboard.view', 'reports.export', 'requirements.view', 'requirements.edit', 'packages.view', 'trips.view',
-    'plans.view', 'monitoring.view', 'fleet.view', 'deadlines.renegotiate',
+
+  companyManager: [
+    'support.create',
+    'dashboard.view',
+    'reports.export',
+    'requirements.view',
+    'packages.view',
+    'trips.view',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'deadlines.renegotiate',
+    'companyWarehouses.manage',
   ],
+
   dispatcher: [
-    'support.create', 'dashboard.view', 'requirements.view', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print',
-    'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
-    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
+    'support.create',
+    'dashboard.view',
+    'requirements.view',
+    'requirements.edit',
+    'packages.view',
+    'packages.lookup',
+    'labels.print',
+    'trips.view',
+    'trips.edit',
+    'routes.optimize',
+    'optimization.run',
+    'plans.approve',
+    'manualConfirm.approve',
+    'plans.view',
+    'monitoring.view',
+    'fleet.view',
+    'fleet.edit',
+    'vehicleTypes.edit',
+    'exceptions.report',
+    'exceptions.resolve',
+    'pickups.create',
     'pickups.approve',
   ],
-  warehouse: ['support.create', 'packages.lookup', 'labels.print', 'warehouse.operate'],
-  driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
+
+  warehouse: [
+    'support.create',
+    'packages.view',
+    'packages.manage',
+    'packages.lookup',
+    'labels.print',
+    'warehouse.operate',
+  ],
+
+  driver: [
+    'support.create',
+    'exceptions.report',
+    'pickups.create',
+    'driver.operate',
+  ],
 }
 
 /** Quyền của vai trò, theo thứ tự của `PERMISSIONS`. Mọi nơi đọc quyền đi qua đây hoặc `can`. */

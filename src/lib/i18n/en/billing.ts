@@ -1,7 +1,9 @@
 import type { Dictionary } from '../types'
 import type { billing as source } from '../vi/billing'
+import { agreement } from './billing-agreement'
 
 export const billing = {
+  agreement,
   title: 'Plan and credits',
   loading: 'Loading the plan',
   retry: 'Try again',
@@ -23,6 +25,7 @@ export const billing = {
     price: 'Price per month',
     credits: 'Credits per month',
     cancel: 'Cancel plan',
+    renew: 'Renew for another period',
     expiredNote: 'The plan has expired, so optimisation cannot run. The credit balance is kept; choose a new plan to continue.',
     cancelledNote: 'The plan is cancelled. It can be used until {date}, then expires and does not renew.',
   },
@@ -38,6 +41,16 @@ export const billing = {
     subscribeTo: 'Subscribe to plan {name}',
     credits: '{credits} credits per month',
     none: 'No plan is on sale right now.',
+    requestUpgrade: 'Request an upgrade',
+    requestUpgradeTo: 'Request an upgrade to plan {name}',
+  },
+  support: 'Support request',
+  agreementCard: {
+    title: 'Service agreement',
+    signedBy: 'Signed by {name}',
+    deadline: 'Sign by {date}',
+    sign: 'Sign now',
+    view: 'View document',
   },
   credit: {
     balance: 'Balance',
@@ -52,10 +65,16 @@ export const billing = {
   },
   cancelled: 'Plan {plan} cancelled. It can be used until {date}.',
   activated: 'Plan {plan} is active',
+  agreementSigned: 'Service agreement signed',
   topUpDialog: {
     title: 'Top up credits',
     description: '{price} per credit. You finish on the payment page; credits are only added when the payment succeeds.',
     pack: '{credits} credits',
+    custom: 'Credits to buy',
+    total: 'Total: {amount}',
+    cap: '{tier} tier: balance up to {max} credits, {left} more can be bought.',
+    noCap: '{tier} tier: no balance limit.',
+    overCap: 'The balance after top-up ({total} credits) exceeds the {max}-credit limit of the {tier} tier.',
     cancel: 'Cancel',
     confirm: 'Continue to payment',
   },

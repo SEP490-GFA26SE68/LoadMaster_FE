@@ -8,7 +8,7 @@ import type { RequirementRow } from './requirements-api'
 import { useRequirementsTable } from './requirements-table-context'
 
 /**
- * Menu thao tác ở cuối dòng yêu cầu giao (FE-4b-02). Ai cũng có "Xem chi tiết". Quản lý công ty: Sửa, Xoá. Điều phối viên: Đưa vào
+ * Menu thao tác ở cuối dòng yêu cầu giao (FE-4b-02). Ai cũng có "Xem chi tiết". Điều phối viên (`requirements.edit`, như backend): Sửa, Xoá, và Đưa vào
  * chuyến, hoặc Gỡ khỏi chuyến khi yêu cầu đã vào chuyến. Thao tác kho sẽ từ chối hiện mờ kèm lý do ngay dưới nhãn (AGENTS mục 5),
  * không để bấm rồi mới báo lỗi.
  */

@@ -162,7 +162,12 @@ interface FeCargoPackage extends Spec.CargoPackage {
   handlingClass?: HandlingClass;
 }
 /** FE-5b-01: giới hạn theo loại xe (D-78, D-79), kho điền khi đọc xe. */
-interface FeVehicleConfig extends Spec.VehicleConfig {
+/** Backend còn loại vật cản `OTHER` (vật cản tự khai, không thuộc bốn loại của Spec). */
+interface FeVehicleObstacle extends Omit<Spec.VehicleObstacle, 'type'> {
+  type: Spec.VehicleObstacle['type'] | 'OTHER';
+}
+interface FeVehicleConfig extends Omit<Spec.VehicleConfig, 'obstacles'> {
+  obstacles: FeVehicleObstacle[];
   frontAxleLimitKg?: number;
   rearAxleLimitKg?: number;
   maxCogOffsetRatio?: number;
@@ -209,7 +214,7 @@ test('the model types are the Spec §6 contract plus the declared backend fields
   expectTypeOf<OrientationCode>().toEqualTypeOf<Spec.OrientationCode>()
   expectTypeOf<FragilityLevel>().toEqualTypeOf<Spec.FragilityLevel>()
   expectTypeOf<VehicleConfig>().toEqualTypeOf<FeVehicleConfig>()
-  expectTypeOf<VehicleObstacle>().toEqualTypeOf<Spec.VehicleObstacle>()
+  expectTypeOf<VehicleObstacle>().toEqualTypeOf<FeVehicleObstacle>()
   expectTypeOf<VehicleAxle>().toEqualTypeOf<Spec.VehicleAxle>()
   expectTypeOf<HandlingClass>().toEqualTypeOf<'STANDARD' | 'FRAGILE' | 'REFRIGERATED' | 'HAZARDOUS' | 'HIGH_VALUE'>()
   expectTypeOf<CargoPackage>().toEqualTypeOf<FeCargoPackage>()

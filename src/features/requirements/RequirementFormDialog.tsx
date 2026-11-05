@@ -5,7 +5,7 @@ import { Controller, useForm, useWatch, type Control } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Banner } from '@/components/Banner'
-import { CoordinatePicker, placeAddress } from '@/components/map'
+import { CoordinatePicker } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
@@ -137,7 +137,7 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
                 disabled={locked}
                 showErrors={form.formState.isSubmitted}
                 onPlacePicked={(place) => {
-                  if (form.getValues('address').trim() === '') form.setValue('address', placeAddress(place), { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
+                  if (form.getValues('address').trim() === '') form.setValue('address', place.address, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
                 }}
               />
             )}

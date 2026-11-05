@@ -51,7 +51,7 @@ test('nhóm xe là xe của máy chủ, không đọc kho mẫu, mở Chi tiết
 })
 
 test('quản lý công ty không có nhóm xe khi đội xe nối backend (máy chủ trả 403)', () => {
-  expect(quickSearchGroups((permission) => roleCan('manager', permission))).not.toContain('vehicles')
+  expect(quickSearchGroups((permission) => roleCan('companyManager', permission))).not.toContain('vehicles')
 })
 
 test('máy chủ từ chối vai trò (403): nhóm xe rỗng, không lỗi', async () => {

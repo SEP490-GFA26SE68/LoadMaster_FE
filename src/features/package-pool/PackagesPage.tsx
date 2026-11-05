@@ -20,6 +20,8 @@ import {
 } from './packages-list'
 import { PackagesTable } from './PackagesTable'
 import { PACKAGE_POOL_SUPPORT, usePackagesQuery, usePackageTypesQuery } from './usePackagePoolQuery'
+import { PackagesPage as BackendPackagesPage } from './backend/PackagesPage'
+import { usesBackend } from '@/lib/backend-config'
 
 /** Tab của màn: Tất cả + các trạng thái nguồn dữ liệu có (backend không có Đã soạn, Đang vận chuyển, Hoàn trả). */
 const TABS: readonly PackageTab[] = ['all', ...PACKAGE_POOL_SUPPORT.statuses]
@@ -31,7 +33,7 @@ const TABS: readonly PackageTab[] = ['all', ...PACKAGE_POOL_SUPPORT.statuses]
  * mục Loại kiện và sang Tra cứu kiện (`packages.lookup`, FE-3b-06) là nút phụ trên dải. Kiện vừa thêm mở ngay chi tiết (đã có mã QR); kiện vừa nhập được chọn sẵn để in nhãn.
  * Nối backend: chỉ điều phối viên đọc được kiện — người khác thấy một dòng lý do, màn không gọi backend (`PACKAGE_POOL_SUPPORT`).
  */
-export function PackagesPage() {
+function StorePackagesPage() {
   const t = useT()
   const navigate = useNavigate()
   const can = useCan()
@@ -153,4 +155,9 @@ export function PackagesPage() {
       {dialog === 'import' ? <PackageImportDialog onClose={() => setDialog(null)} onDone={handleImported} /> : null}
     </Tabs>
   )
+}
+
+/** Nhóm `packages` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function PackagesPage() {
+  return usesBackend('packages') ? <BackendPackagesPage /> : <StorePackagesPage />
 }

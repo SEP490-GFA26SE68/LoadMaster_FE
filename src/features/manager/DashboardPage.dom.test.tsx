@@ -58,7 +58,7 @@ async function kpi(label: string) {
 }
 
 test('kỳ mặc định 30 ngày: KPI theo kỳ lấy từ kho, mỗi ô nói nguồn', async () => {
-  renderDashboard('manager')
+  renderDashboard('companyManager')
 
   const trips = await kpi('Chuyến hoàn thành')
   // 30 ngày tới 14/09: 12 chuyến (−27 … 0), trong đó 7 hoàn thành
@@ -77,7 +77,7 @@ test('kỳ mặc định 30 ngày: KPI theo kỳ lấy từ kho, mỗi ô nói n
 
 test('đổi kỳ: KPI tính lại ngay và kỳ nằm trên URL', async () => {
   const user = userEvent.setup()
-  renderDashboard('manager')
+  renderDashboard('companyManager')
   await kpi('Chuyến hoàn thành')
 
   await user.click(screen.getByRole('button', { name: '7 ngày' }))
@@ -99,7 +99,7 @@ test('đổi kỳ: KPI tính lại ngay và kỳ nằm trên URL', async () => {
 })
 
 test('kỳ không có chuyến: KPI bằng 0 hoặc "—", trạng thái rỗng thay biểu đồ và bảng', async () => {
-  renderDashboard('manager', '/?ky=tuy-chon&tu=2026-07-01&den=2026-07-31')
+  renderDashboard('companyManager', '/?ky=tuy-chon&tu=2026-07-01&den=2026-07-31')
 
   expect((await kpi('Chuyến hoàn thành')).getByText('/ 0 chuyến')).toBeInTheDocument()
   expect((await kpi('Lấp đầy thể tích trung bình')).getByText('—')).toBeInTheDocument()
@@ -109,7 +109,7 @@ test('kỳ không có chuyến: KPI bằng 0 hoặc "—", trạng thái rỗng 
 })
 
 test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuyến dẫn tới chi tiết và Planner', async () => {
-  renderDashboard('manager')
+  renderDashboard('companyManager')
 
   const status = await screen.findByRole('table', { name: 'Bảng số của biểu đồ Chuyến theo trạng thái' }, SLOW)
   // Sáu trạng thái của backend (FE-0-05), chỉ trạng thái có chuyến trong kỳ: chuyến chính đã lập kế hoạch; 011 kho đang xếp, 010 xếp
@@ -141,7 +141,7 @@ test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuy�
 
 test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, có lối sang Đội xe', async () => {
   const user = userEvent.setup()
-  renderDashboard('manager')
+  renderDashboard('companyManager')
 
   const card = within(await screen.findByRole('region', { name: 'Trạng thái đội xe' }, SLOW))
   expect(card.getByText('/ 8 xe đang phục vụ chuyến')).toBeInTheDocument()
@@ -159,12 +159,12 @@ test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, c
 })
 
 test('kỳ không có chuyến vẫn hiện thẻ đội xe', async () => {
-  renderDashboard('manager', '/?ky=tuy-chon&tu=2026-07-01&den=2026-07-31')
+  renderDashboard('companyManager', '/?ky=tuy-chon&tu=2026-07-01&den=2026-07-31')
   expect(await screen.findByRole('region', { name: 'Trạng thái đội xe' }, SLOW)).toHaveTextContent('/ 8 xe đang phục vụ chuyến')
 })
 
 test('một nút primary theo quyền: quản lý xuất báo cáo; điều phối tạo kế hoạch', async () => {
-  renderDashboard('manager')
+  renderDashboard('companyManager')
   const exportButton = await screen.findByRole('button', { name: 'Xuất báo cáo' }, SLOW)
   expect(exportButton).toHaveClass('text-on-primary')
   expect(screen.queryByRole('link', { name: 'Tạo kế hoạch xếp' })).not.toBeInTheDocument()

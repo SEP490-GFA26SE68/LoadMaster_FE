@@ -14,6 +14,8 @@ import type { FleetVehicle, FleetVehicleState } from './vehicle-status'
 import { VehicleForm } from './VehicleForm'
 import { VehicleStateBanner } from './VehicleStateBanner'
 import { VehicleStatusBadge } from './VehicleStatusBadge'
+import { VehicleDetailPage as BackendVehicleDetailPage } from './backend/VehicleDetailPage'
+import { usesBackend } from '@/lib/backend-config'
 
 /**
  * Trang cấu hình xe (D-17, D-38): `/doi-xe/moi` thêm xe mới, `/doi-xe/:vehicleId` sửa xe đang có.
@@ -21,7 +23,7 @@ import { VehicleStatusBadge } from './VehicleStatusBadge'
  * bảo dưỡng bằng nút phụ trên thanh tiêu đề. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, không có trang thêm xe; chỉ điều phối viên đọc
  * được xe — người khác thấy một dòng lý do và màn không gọi backend.
  */
-export function VehicleDetailPage() {
+function StoreVehicleDetailPage() {
   const t = useT()
   const can = useCan()
   const caps = useFleetCapabilities()
@@ -142,4 +144,9 @@ function ExistingVehicle({ vehicle, state }: { vehicle: FleetVehicle; state: Fle
       ) : null}
     </>
   )
+}
+
+/** Nhóm `fleet` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function VehicleDetailPage() {
+  return usesBackend('fleet') ? <BackendVehicleDetailPage /> : <StoreVehicleDetailPage />
 }

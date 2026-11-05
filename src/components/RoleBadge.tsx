@@ -19,7 +19,7 @@ export const ROLE_ICON: Readonly<Record<Role, LucideIcon>> = {
   systemManager: SlidersHorizontal,
   systemSupporter: Headset,
   companyAdmin: Building2,
-  manager: ChartColumn,
+  companyManager: ChartColumn,
   dispatcher: Monitor,
   warehouse: Tablet,
   driver: Smartphone,

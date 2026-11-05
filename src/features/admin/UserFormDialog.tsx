@@ -12,17 +12,19 @@ import {
 } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
+import { FieldMessage } from '@/components/ui/field-styles'
 import { dataErrorMessage, useT, type MessageKey } from '@/lib/i18n'
-import { rolesInScope, type UserScope } from '@/lib/mock-db'
+import type { UserScope } from '@/lib/mock-db'
 import type { Role, User } from '@/types/user'
 import type { AccountBlock } from './account-guards'
 import {
+  companyError,
   translateUserFormError,
   userFormSchema,
   type UserFormInput,
   type UserFormValues,
 } from './user-form.schema'
-import { userDepotAvailable } from './useUsersQuery'
+import { userDepotAvailable, userFormRoles, type CompanyOption } from './useUsersQuery'
 
 /** Câu mô tả dưới tiêu đề: theo thêm / sửa, tài khoản nền tảng hay công ty, và form có ô kho không. */
 const DESCRIPTION = {
@@ -42,7 +44,7 @@ const DESCRIPTION = {
 const DEFAULT_ROLE: Record<UserScope, Role> = { platform: 'systemSupporter', company: 'dispatcher' }
 
 function emptyValues(scope: UserScope): UserFormInput {
-  return { fullName: '', email: '', phone: '', role: DEFAULT_ROLE[scope], depot: '' }
+  return { fullName: '', email: '', phone: '', role: DEFAULT_ROLE[scope], depot: '', companyId: '' }
 }
 
 function toFormValues(user: User): UserFormInput {
@@ -52,6 +54,7 @@ function toFormValues(user: User): UserFormInput {
     phone: user.phone,
     role: user.role,
     depot: user.depot ?? '',
+    companyId: user.companyId ?? '',
   }
 }
 
@@ -67,12 +70,14 @@ function toFormValues(user: User): UserFormInput {
 export function UserFormDialog({
   scope,
   user,
+  companies = [],
   roleBlock = null,
   onClose,
   onSubmit,
 }: {
   scope: UserScope
   user?: User
+  companies?: CompanyOption[]
   roleBlock?: AccountBlock | null
   onClose: () => void
   onSubmit: (values: UserFormValues) => Promise<void>
@@ -84,7 +89,8 @@ export function UserFormDialog({
   const platform = scope === 'platform'
   // Tài khoản nền tảng không thuộc kho nào; nối backend thì máy chủ chưa lưu kho — cả hai không có ô kho
   const withDepot = !platform && userDepotAvailable
-  const schema = useMemo(() => userFormSchema(scope, { depot: withDepot }), [scope, withDepot])
+  const roles = userFormRoles(scope)
+  const schema = useMemo(() => userFormSchema(scope, { depot: withDepot, roles }), [scope, withDepot, roles])
 
   const form = useForm<UserFormInput, unknown, UserFormValues>({
     resolver: zodResolver(schema),
@@ -93,7 +99,10 @@ export function UserFormDialog({
 
   const errors = form.formState.errors
   const role = useWatch({ control: form.control, name: 'role' })
-  const roleOptions = rolesInScope(scope).map((value) => ({ value, label: t(`roles.${value}`) }))
+  const roleOptions = roles.map((value) => ({ value, label: t(`roles.${value}`) }))
+  // Nối backend: quản trị hệ thống mời Quản trị công ty thì chọn công ty của người đó (`userFormRoles`)
+  const needsCompany = platform && role === 'companyAdmin'
+  const companyOptions = companies.map((company) => ({ value: company.id, label: company.name }))
 
   async function handleValid(values: UserFormValues) {
     setServerError(null)
@@ -144,6 +153,13 @@ export function UserFormDialog({
                   hint={t('admin.users.form.device', { device: t(`admin.users.devices.${role}`) })}
                 />
               )}
+              {needsCompany ? (
+                <div className="col-span-2 flex flex-col gap-1.5">
+                  <SelectField required control={form.control} name="companyId" label={t('admin.users.form.company')} options={companyOptions} />
+                  {/* Lỗi của ô chọn công ty mang khoá riêng: `SelectField` in thẳng message, còn schema trả key từ điển */}
+                  <FieldMessage error={translateUserFormError(t, companyError(errors))} />
+                </div>
+              ) : null}
             </div>
 
             {serverError ? (

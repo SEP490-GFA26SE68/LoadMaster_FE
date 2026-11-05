@@ -29,7 +29,10 @@ export function ProfileIdentity({ user, serverManaged = false }: { user: User; s
   const facts = [{ label: t('profile.identity.email'), value: user.email, icon: Mail }, ...extra]
 
   return (
-    <aside aria-label={t('profile.identity.label')} className="flex min-w-0 flex-col gap-5 rounded-lg border border-border bg-bg p-5 shadow-card">
+    <aside
+      aria-label={t('profile.identity.label')}
+      className="flex min-w-0 flex-col gap-5 rounded-lg border border-border bg-bg p-5 shadow-card"
+    >
       <div className="flex min-w-0 flex-col items-start gap-3">
         <span
           aria-hidden
@@ -37,9 +40,11 @@ export function ProfileIdentity({ user, serverManaged = false }: { user: User; s
         >
           {initialsOf(user.fullName)}
         </span>
+
         <h2 className="font-display text-h2 leading-7 font-bold tracking-[-0.2px] break-words text-ink-strong font-stretch-106%">
           {user.fullName}
         </h2>
+
         <span className="pointer-coarse:[&>span]:min-h-7 pointer-coarse:[&>span]:text-body-lg">
           <RoleBadge role={user.role} />
         </span>
@@ -47,12 +52,22 @@ export function ProfileIdentity({ user, serverManaged = false }: { user: User; s
 
       <dl className="m-0 flex flex-col gap-3 border-t border-line-soft pt-4">
         {facts.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="flex min-w-0 flex-col gap-0.5">
+          <div
+            key={label}
+            className="flex min-w-0 flex-col gap-0.5"
+          >
             <dt className="flex items-center gap-1.5 text-caption text-ink-3 pointer-coarse:text-body-lg">
-              <Icon aria-hidden className="size-3.5 flex-none pointer-coarse:size-4" strokeWidth={1.5} />
+              <Icon
+                aria-hidden
+                className="size-3.5 flex-none pointer-coarse:size-4"
+                strokeWidth={1.5}
+              />
               {label}
             </dt>
-            <dd className="m-0 break-all text-ink-1">{value}</dd>
+
+            <dd className="m-0 break-all text-ink-1">
+              {value}
+            </dd>
           </div>
         ))}
       </dl>

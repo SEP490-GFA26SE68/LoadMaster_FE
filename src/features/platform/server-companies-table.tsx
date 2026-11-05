@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table'
-import { CirclePause, CirclePlay, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
+import { CirclePause, CirclePlay, Eye, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import { createContext, use, type ReactNode } from 'react'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
@@ -16,6 +16,7 @@ import type { ServerCompanyRow, ServerCompanyStatus, ServerPlanStatus } from './
 export type ServerCompaniesTableValue = {
   readonly plansLoaded: boolean
   readonly usersLoaded: boolean
+  readonly onView: (row: ServerCompanyRow) => void
   readonly onEdit: (row: ServerCompanyRow) => void
   readonly onCreateAdmin: (row: ServerCompanyRow) => void
   readonly onStatus: (row: ServerCompanyRow, next: 'ACTIVE' | 'SUSPENDED') => void
@@ -91,6 +92,13 @@ function PlanCell({ row }: { row: ServerCompanyRow }) {
   )
 }
 
+/** Trạng thái gói của công ty trên máy chủ — bảng công ty và hộp chi tiết công ty. */
+export function ServerPlanStatusBadge({ status }: { status: ServerPlanStatus | null }) {
+  const t = useT()
+  if (status === null) return <Badge>{t('companies.server.statusUnknown')}</Badge>
+  return <Badge tone={PLAN_LOOK[status].tone} dot={PLAN_LOOK[status].dot}>{t(`companies.server.planStatus.${status}`)}</Badge>
+}
+
 function PlanStatusCell({ row }: { row: ServerCompanyRow }) {
   const t = useT()
   const format = useFormat()
@@ -100,11 +108,7 @@ function PlanStatusCell({ row }: { row: ServerCompanyRow }) {
   const { status, expiresAt } = row.plan
   return (
     <span className="flex min-w-0 flex-col items-start gap-1">
-      {status === null ? (
-        <Badge>{t('companies.server.statusUnknown')}</Badge>
-      ) : (
-        <Badge tone={PLAN_LOOK[status].tone} dot={PLAN_LOOK[status].dot}>{t(`companies.server.planStatus.${status}`)}</Badge>
-      )}
+      <ServerPlanStatusBadge status={status} />
       {expiresAt === null ? null : <span className="text-caption text-ink-3">{t('companies.server.expires', { date: format.date(expiresAt) })}</span>}
     </span>
   )
@@ -142,7 +146,7 @@ function CreatedCell({ row }: { row: ServerCompanyRow }) {
 
 function ActionsCell({ row }: { row: ServerCompanyRow }) {
   const t = useT()
-  const { onEdit, onCreateAdmin, onStatus } = useServerCompaniesTable()
+  const { onView, onEdit, onCreateAdmin, onStatus } = useServerCompaniesTable()
   const { status } = row.company
   return (
     <DropdownMenu modal={false}>
@@ -152,6 +156,10 @@ function ActionsCell({ row }: { row: ServerCompanyRow }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuItem onSelect={() => onView(row)}>
+          <Eye strokeWidth={1.5} aria-hidden />
+          {t('companies.server.menu.view')}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onEdit(row)}>
           <Pencil strokeWidth={1.5} aria-hidden />
           {t('companies.server.menu.edit')}

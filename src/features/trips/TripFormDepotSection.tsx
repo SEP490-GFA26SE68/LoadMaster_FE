@@ -1,5 +1,5 @@
 import { Controller, type UseFormReturn } from 'react-hook-form'
-import { CoordinatePicker, placeAddress } from '@/components/map'
+import { CoordinatePicker } from '@/components/map'
 import { FieldMessage } from '@/components/ui/field-styles'
 import { Input } from '@/components/ui/Input'
 import { useT } from '@/lib/i18n'
@@ -42,7 +42,7 @@ export function TripFormDepotSection({ form, locked }: { form: UseFormReturn<Tri
                   disabled={locked}
                   showErrors={form.formState.isSubmitted}
                   onPlacePicked={(place) => {
-                    if (form.getValues('depot.address').trim() === '') form.setValue('depot.address', placeAddress(place), { shouldDirty: true })
+                    if (form.getValues('depot.address').trim() === '') form.setValue('depot.address', place.address, { shouldDirty: true })
                   }}
                 />
                 {/* Hai ô đều trống: không ô nào sai, lỗi "chưa chọn toạ độ" nằm ở cả nhóm */}

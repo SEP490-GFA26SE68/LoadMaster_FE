@@ -80,7 +80,7 @@ test('a guest opening any other page goes to the sign-in screen, which remembers
 
 test('signing out on the root goes to the sign-in screen, not to the landing page', async () => {
   const user = userEvent.setup()
-  signedInAs('manager')
+  signedInAs('companyManager')
   renderAt('/')
   expect(await screen.findByText('Đang ở /')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))

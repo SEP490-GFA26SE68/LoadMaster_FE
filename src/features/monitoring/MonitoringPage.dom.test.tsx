@@ -133,7 +133,7 @@ test('the dispatcher watches the trip in transit, reports an incident, takes ano
   dispatcher.unmount()
 
   // Quản lý công ty: chỉ xem ở tab chuyến, và có tab "Sự cố cần xử lý"
-  renderPage('manager')
+  renderPage('companyManager')
   const tabs = within(await screen.findByRole('tablist', { name: 'Phần của màn Giám sát' }, SLOW))
   await screen.findByRole('region', { name: 'Giám sát chuyến TRIP-009' }, SLOW)
   expect(panel().queryByRole('button', { name: 'Báo sự cố' })).not.toBeInTheDocument()

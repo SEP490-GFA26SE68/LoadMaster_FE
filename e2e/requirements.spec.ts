@@ -2,8 +2,9 @@ import { expect, test } from './fixtures'
 import { switchUser } from './spec-flow-helpers'
 
 /**
- * FE-4b-02 — yêu cầu giao trên kho in-memory của trang (không tải lại trang sau khi ghi; đổi người bằng `switchUser`): quản lý công ty
- * tạo yêu cầu từ kiện của kho kiện → điều phối viên chỉ xem, đưa yêu cầu vào chuyến nháp TRIP-014 (điểm giao tự gộp) → Chi tiết chuyến có
+ * FE-4b-02 — yêu cầu giao trên kho in-memory của trang (không tải lại trang sau khi ghi; đổi người bằng `switchUser`): điều phối viên
+ * tạo yêu cầu từ kiện của kho kiện (`requirements.edit`, như backend) → quản lý công ty chỉ xem → điều phối viên đưa yêu cầu vào chuyến
+ * nháp TRIP-014 (điểm giao tự gộp) → Chi tiết chuyến có
  * yêu cầu và card "Kiểm tra trước khi tối ưu" → kiện sang "Đã gán chuyến" ở Kho kiện. Thay kịch bản đơn hàng của LM-104 (luồng 2).
  *
  * Số kỳ vọng chép tay từ seed (`seed-sourcing.ts`, `seed-directory.ts`, `seed-trips.ts`), không tính lại theo cách app tính:
@@ -18,9 +19,9 @@ test.use({ collectConsoleErrors: true })
 /** Hạn sau hôm nay ba ngày: ở tương lai theo đồng hồ của kho (giờ thật) ở mọi múi giờ. */
 const dueDate = () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-test('the manager creates a delivery requirement; the dispatcher only reads it and puts it on a stop of a planning trip', async ({ page, login, browserErrors }) => {
+test('the dispatcher creates a delivery requirement; the manager only reads it; the dispatcher puts it on a stop of a planning trip', async ({ page, login, browserErrors }) => {
   // Đường dẫn cũ của màn Đơn hàng chuyển hướng sang màn mới (đọc trước khi ghi gì vào kho)
-  await login('/don-hang', 'manager')
+  await login('/don-hang', 'dispatcher')
   await page.waitForURL(/\/yeu-cau-giao$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Yêu cầu giao', exact: true })).toBeVisible()
   await expect(page).toHaveTitle('Yêu cầu giao · LoadMaster')
@@ -66,29 +67,31 @@ test('the manager creates a delivery requirement; the dispatcher only reads it a
   await expect(row).toContainText('Cao')
   await expect(row).toContainText('312 kg')
   await expect(page.getByText('7 yêu cầu chờ xếp chuyến', { exact: true })).toBeVisible()
-  // Quản lý công ty không đưa yêu cầu vào chuyến: menu chỉ có xem, sửa, xoá
-  await row.getByRole('button', { name: 'Thao tác với yêu cầu REQ-007', exact: true }).click()
-  await expect(page.getByRole('menuitem')).toHaveText(['Xem chi tiết', 'Sửa yêu cầu', 'Xoá yêu cầu'])
-  await page.keyboard.press('Escape')
-
-  // Điều phối viên: cùng màn, chỉ xem — không nút tạo, menu không có sửa / xoá
-  await switchUser(page, 'dispatcher')
+  // Quản lý công ty: cùng màn, chỉ xem — không nút tạo, menu chỉ có xem chi tiết
+  await switchUser(page, 'companyManager')
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL(/\/yeu-cau-giao$/)
   await expect(page.getByText('7 yêu cầu chờ xếp chuyến', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true })).toHaveCount(0)
+  await row.getByRole('button', { name: 'Thao tác với yêu cầu REQ-007', exact: true }).click()
+  await expect(page.getByRole('menuitem')).toHaveText(['Xem chi tiết'])
+  await page.keyboard.press('Escape')
   await row.getByRole('button', { name: 'Xem chi tiết yêu cầu REQ-007', exact: true }).click()
   const detail = page.getByRole('dialog', { name: 'Yêu cầu REQ-007' })
   await expect(detail).toContainText('88 Hùng Vương, P. 2, Tân An, Long An')
   await expect(detail).toContainText('Chưa có toạ độ')
-  await expect(detail).toContainText('Trần Thị Mai')
+  await expect(detail).toContainText('Nguyễn Thanh Tùng')
   await expect(detail.getByRole('table', { name: 'Kiện của yêu cầu' }).getByRole('row')).toHaveCount(7)
   await detail.getByRole('button', { name: 'Đóng', exact: true }).first().click()
   await expect(detail).toBeHidden()
 
-  // Đưa vào chuyến nháp TRIP-014 (FE-4b-04): không chọn điểm giao — điểm 1 cùng địa chỉ, cũng chưa có toạ độ, nên yêu cầu gộp vào đó
+  // Điều phối viên đưa vào chuyến nháp TRIP-014 (FE-4b-04): không chọn điểm giao — điểm 1 cùng địa chỉ, cũng chưa có toạ độ, nên yêu
+  // cầu gộp vào đó
+  await switchUser(page, 'dispatcher')
+  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
+  await page.waitForURL(/\/yeu-cau-giao$/)
   await row.getByRole('button', { name: 'Thao tác với yêu cầu REQ-007', exact: true }).click()
-  await expect(page.getByRole('menuitem')).toHaveText(['Xem chi tiết', 'Đưa vào chuyến'])
+  await expect(page.getByRole('menuitem')).toHaveText(['Xem chi tiết', 'Đưa vào chuyến', 'Sửa yêu cầu', 'Xoá yêu cầu'])
   await page.getByRole('menuitem', { name: 'Đưa vào chuyến', exact: true }).click()
   const assign = page.getByRole('dialog', { name: 'Đưa yêu cầu REQ-007 vào chuyến' })
   await assign.getByRole('combobox', { name: 'Chuyến', exact: true }).click()

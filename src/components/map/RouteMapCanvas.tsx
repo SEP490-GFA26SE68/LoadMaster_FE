@@ -52,8 +52,18 @@ function fit(map: MapLibreMap, extent: readonly GeoPoint[]) {
  * Mốc giữ theo khoá (FE-6-10): xe chạy chỉ dời mốc của nó (`setLngLat`), mốc kho và điểm giao không bị gỡ rồi gắn lại, React không
  * vẽ lại portal nào.
  * Không xoay, không nghiêng: bắc luôn ở trên. Lăn chuột chỉ phóng to khi giữ Ctrl / ⌘ để trang vẫn cuộn được qua bản đồ.
+ * Nút Maximize2: có `onExpand` thì mở bản đồ lớn (modal của `RouteMap`); không có thì canh khung nhìn toàn tuyến (`fit`).
  */
-export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMapData; onUnavailable: () => void }) {
+export default function RouteMapCanvas({
+  data,
+  onUnavailable,
+  onExpand,
+}: {
+  data: RouteMapData
+  onUnavailable: () => void
+  /** Có thì nút Maximize2 mở modal phóng lớn; không thì canh toàn tuyến. */
+  onExpand?: () => void
+}) {
   const t = useT()
   const hintId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -173,10 +183,12 @@ export default function RouteMapCanvas({ data, onUnavailable }: { data: RouteMap
       <p id={hintId} className="sr-only">{t('map.keyboardHint')}</p>
       <div className="pointer-events-none absolute top-3 right-3 flex flex-col gap-1.5">
         {([
-          ['zoomIn', Plus, () => mapRef.current?.zoomIn()],
-          ['zoomOut', Minus, () => mapRef.current?.zoomOut()],
-          ['fit', Maximize2, () => mapRef.current && fit(mapRef.current, routeExtent(dataRef.current))],
-        ] as const).map(([key, Icon, onClick]) => (
+          ['zoomIn', Plus, () => mapRef.current?.zoomIn()] as const,
+          ['zoomOut', Minus, () => mapRef.current?.zoomOut()] as const,
+          onExpand
+            ? (['expand', Maximize2, onExpand] as const)
+            : (['fit', Maximize2, () => mapRef.current && fit(mapRef.current, routeExtent(dataRef.current))] as const),
+        ]).map(([key, Icon, onClick]) => (
           <Button
             key={key}
             type="button"

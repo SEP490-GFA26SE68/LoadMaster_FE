@@ -2,7 +2,22 @@ import type { Dictionary } from '../types'
 import type { trips as source } from '../vi/trips'
 
 export const trips = {
+
+  assign: {
+    title: 'Assign delivery requirement',
+    description: 'Select a requirement with sufficient received packages.',
+    empty: 'No pending delivery requirements.',
+    packages: 'packages',
+    ready: 'Ready for assignment',
+    notReady: 'Not enough packages received',
+    confirm: 'Assign to trip',
+    success: 'Delivery requirement assigned successfully',
+  },
   list: {
+    statusColumn: 'Status',
+    routeOptimization: 'Route',
+    routeOptimized: 'Optimized',
+    routeNotOptimized: 'Not optimized',
     title: 'Trips',
     create: 'Create trip',
     createFirst: 'Create the first trip',
@@ -17,7 +32,14 @@ export const trips = {
     packages: 'Packages',
     volume: 'Fill',
     notOptimized: 'Not optimized',
-    status: 'Status',
+    status: {
+      DRAFT: 'Draft',
+      PLANNED: 'Planned',
+      LOADING: 'Loading',
+      IN_TRANSIT: 'In transit',
+      DELIVERED: 'Delivered',
+      CANCELLED: 'Cancelled',
+    },
     loadError: 'Could not load trips.',
     search: 'Search by ID, name, route, vehicle, driver',
     stops: { one: '{count} stop', other: '{count} stops' },
@@ -209,6 +231,30 @@ export const trips = {
     driverPhone: '{name} · {phone}',
   },
   detail: {
+    deadlineStatus: 'Delivery deadline status',
+    deadlineStatusValues: {
+      onTime: 'Expected on time',
+      late: 'Risk of late delivery',
+      unknown: 'Not determined'
+    },
+    stopStatus: {
+      PENDING: 'Pending',
+      ARRIVED: 'Arrived',
+      DELIVERED: 'Delivered',
+      FAILED: 'Failed',
+      SKIPPED: 'Skipped',
+    },
+
+    stopUnit: 'delivery stops',
+    deliveryStops: 'Delivery stops',
+    stopCount: 'delivery stops',
+    noStops: 'No delivery stops yet',
+    noStopsHint: 'Assign delivery requirements to create stops.',
+    unnamedStop: 'Unnamed stop',
+    requirementId: 'Delivery requirement:',
+    plannedArrival: 'Planned arrival',
+    actualArrival: 'Actual arrival',
+
     runOptimization: 'Run optimization',
     openPlan: 'View 3D plan',
     loading: 'Loading trip',
@@ -243,6 +289,14 @@ export const trips = {
     damagedTitle: { one: '{count} damaged package left at the warehouse', other: '{count} damaged packages left at the warehouse' },
     wholeStop: 'Whole stop',
     at: '{time} {date}',
+  },
+
+  optimization: {
+    run: 'Optimize route',
+    success: 'Route optimized successfully',
+  },
+  loadingOptimization: {
+    run: 'Optimize loading',
   },
   cancel: {
     title: 'Cancel trip {id}?',
@@ -796,5 +850,13 @@ export const trips = {
     stopsLabel: 'Departure depot, then the delivery stops in driving order',
     stopStatuses: { PENDING: 'Not reached', ARRIVED: 'Vehicle at stop', COMPLETED: 'Delivered' },
     liveEta: 'Server ETA {time} {date}',
+  },
+  server: {
+    operations: 'Operations',
+    tripCode: 'Trip code',
+    vehicle: 'Vehicle',
+    driver: 'Driver',
+    departure: 'Departure time',
+    depot: 'Departure depot',
   },
 } satisfies Dictionary<typeof source>

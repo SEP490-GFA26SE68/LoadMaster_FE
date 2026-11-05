@@ -1,9 +1,11 @@
 import { isoFromBackend } from '@/lib/backend-time'
 import { BACKEND_TICKET_STATUSES, type NewSupportTicket, type SupportTicket, type TicketKind } from '@/lib/mock-db'
+import { repliesOfNote } from './support-chat'
 
 /**
  * DTO của `/api/support-tickets` (entity `SupportTicket` của backend) và phép đổi sang kiểu của app. Chỉ `support-api.ts` dùng — kiểu DTO
- * không đi ra khỏi lớp API. Backend chưa có trao đổi: `replies` luôn rỗng, phản hồi của đội hỗ trợ là một trường `resolutionNote`.
+ * không đi ra khỏi lớp API. Backend chưa có bảng trao đổi: cả cuộc trao đổi là mảng JSON trong `resolutionNote` (`support-chat.ts`); trường
+ * là chữ thường (đội hỗ trợ ghi tay) thì vẫn là ghi chú `resolutionNote`.
  */
 export type SupportTicketDto = {
   readonly id: number
@@ -35,14 +37,15 @@ function kindOf(category: string): TicketKind | undefined {
 const CATEGORY_OF_KIND: Readonly<Record<TicketKind, string>> = { BILLING: 'BILLING', TECHNICAL: 'SYSTEM_BUG' }
 
 /**
- * Nhóm hay trạng thái backend mới mà FE chưa biết: không vào danh sách. Backend không có mốc hoạt động gần nhất nên `updatedAt` là lúc
- * gửi — màn nối backend hiện "Gửi lúc", không hiện "Cập nhật" (`SUPPORT_SOURCE.activityTime`).
+ * Nhóm hay trạng thái backend mới mà FE chưa biết: không vào danh sách. Backend không có mốc hoạt động gần nhất nên `updatedAt` là lần
+ * trả lời cuối, không có thì lúc gửi — màn nối backend hiện "Gửi lúc", không hiện "Cập nhật" (`SUPPORT_SOURCE.activityTime`).
  */
 export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
   const kind = kindOf(dto.category)
   const status = BACKEND_TICKET_STATUSES.find((item) => item === dto.status)
   if (kind === undefined || status === undefined) return null
   const createdAt = isoFromBackend(dto.createdAt)
+  const replies = repliesOfNote(dto.resolutionNote)
   return {
     id: String(dto.id),
     ...(filled(dto.ticketCode) ? { code: dto.ticketCode } : {}),
@@ -54,14 +57,17 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
     title: dto.subject,
     description: dto.description ?? '',
     status,
-    replies: [],
-    ...(filled(dto.resolutionNote) ? { resolutionNote: dto.resolutionNote } : {}),
+    replies: replies ?? [],
+    ...(replies === null && filled(dto.resolutionNote) ? { resolutionNote: dto.resolutionNote } : {}),
     createdAt,
-    updatedAt: createdAt,
+    updatedAt: replies?.at(-1)?.at ?? createdAt,
   }
 }
 
-/** Thân `POST`: không gửi mức ưu tiên — backend đặt Trung bình. */
+/** Mức ưu tiên backend theo loại: thanh toán Trung bình, kỹ thuật Cao. */
+const PRIORITY_OF_KIND: Readonly<Record<TicketKind, string>> = { BILLING: 'MEDIUM', TECHNICAL: 'HIGH' }
+
+/** Thân `POST`. */
 export function ticketCreateBody(input: NewSupportTicket) {
-  return { subject: input.title, description: input.description, category: CATEGORY_OF_KIND[input.kind] }
+  return { subject: input.title, description: input.description, category: CATEGORY_OF_KIND[input.kind], priority: PRIORITY_OF_KIND[input.kind] }
 }

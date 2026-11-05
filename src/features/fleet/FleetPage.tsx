@@ -16,6 +16,8 @@ import { FleetSummary } from './FleetSummary'
 import { FleetUnavailable } from './FleetUnavailable'
 import { fleetReachable, useFleetCapabilities, useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
 import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
+import { FleetPage as BackendFleetPage } from './backend/FleetPage'
+import { usesBackend } from '@/lib/backend-config'
 
 const STATUS_FILTER = 'trang-thai'
 
@@ -50,7 +52,7 @@ function FleetLegend() {
  * Bấm một dòng mở trang cấu hình xe. Nối backend (`FLEET_CAPABILITIES`): chỉ đọc, chỉ điều phối viên đọc được — người khác thấy một
  * dòng lý do và màn không gọi backend.
  */
-export function FleetPage() {
+function StoreFleetPage() {
   const t = useT()
   const can = useCan()
   if (!fleetReachable(can)) {
@@ -177,4 +179,9 @@ function FleetCatalog() {
       </div>
     </div>
   )
+}
+
+/** Nhóm `fleet` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function FleetPage() {
+  return usesBackend('fleet') ? <BackendFleetPage /> : <StoreFleetPage />
 }

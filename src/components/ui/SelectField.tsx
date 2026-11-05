@@ -26,6 +26,7 @@ export function SelectField<TValues extends FieldValues>({
   hint,
   required,
   className,
+  disabled = false,
 }: {
   control: Control<TValues>
   name: FieldPath<TValues>
@@ -36,6 +37,7 @@ export function SelectField<TValues extends FieldValues>({
   /** Dấu * sau nhãn (`aria-hidden`) và `aria-required` trên ô — như `Input required`. */
   required?: boolean
   className?: string
+  disabled?: boolean
 }) {
   const id = useId()
   const messageId = `${id}-message`
@@ -50,7 +52,7 @@ export function SelectField<TValues extends FieldValues>({
         return (
           <div className={cn('flex flex-col gap-1.5', className)}>
             <FieldLabel htmlFor={id} required={required}>{label}</FieldLabel>
-            <Select value={field.value ?? ''} onValueChange={field.onChange}>
+            <Select value={field.value ?? ''} onValueChange={field.onChange} disabled={disabled}>
               <SelectTrigger
                 id={id}
                 ref={field.ref}

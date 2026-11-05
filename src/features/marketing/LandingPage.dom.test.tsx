@@ -64,7 +64,9 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(within(screen.getByRole('region', { name: 'Cách hoạt động' })).getAllByRole('listitem')).toHaveLength(4)
   expect(screen.getByText(/đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn\.$/)).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)).toBeInTheDocument()
-  expect(screen.queryByText(/Đăng ký|Mua gói|Dùng thử/)).not.toBeInTheDocument()
+  // Không có đăng ký hay mua gói ngay trên trang: tài khoản dùng thử chỉ mở qua yêu cầu liên hệ (loại "Đăng ký tài khoản dùng thử")
+  expect(screen.queryByRole('link', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
 })
 
 test('every number on the page has a source: code constants, the plan catalogue — and no run, no result numbers', async () => {
@@ -131,7 +133,7 @@ test('the contact form needs a name and a valid email, keeps the input when send
   // Tới qua neo: tiêu đề của phần nhận focus
   expect(screen.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster' })).toHaveFocus()
   const submit = await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)
-  expect(screen.getByRole('combobox', { name: 'Bạn cần gì' })).toHaveTextContent('Báo giá')
+  expect(screen.getByRole('combobox', { name: 'Bạn cần gì' })).toHaveTextContent('Hỗ trợ tư vấn')
   expect(screen.getByRole('combobox', { name: 'Gói quan tâm' })).toHaveTextContent('Pro')
 
   await user.click(submit)

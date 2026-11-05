@@ -45,7 +45,7 @@ test('a draft trip changes its vehicle in the trip form; a reader has no way to 
 })
 
 test('the company manager sees the vehicle of a planned trip without any way to change it', async () => {
-  renderDetail(HERO, 'manager')
+  renderDetail(HERO, 'companyManager')
   const section = await vehicleSection()
   expect(section.queryByRole('button', { name: 'Đổi xe' })).toBeNull()
   expect(section.queryByRole('link', { name: 'Đổi xe' })).toBeNull()

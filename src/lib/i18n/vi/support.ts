@@ -1,8 +1,11 @@
+import { customerPlan } from './support-customer-plan'
+
 /**
  * Yêu cầu hỗ trợ (FE-8-07, D-67): hộp thoại "Yêu cầu hỗ trợ" của người dùng công ty (mở từ menu tài khoản) và màn `/ho-tro` của Hỗ trợ
  * khách hàng. Nhãn loại và trạng thái dùng chung cho cả hai và cho nhật ký (`audit.log`).
  */
 export const support = {
+  customerPlan,
   kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán' },
   statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Hộp thoại của người dùng công ty. */
@@ -86,7 +89,12 @@ export const support = {
       balance: 'Số dư credit',
       recent: 'Giao dịch credit gần nhất',
       noTransactions: 'Chưa có giao dịch credit nào.',
+      notLoaded: 'Chưa đọc được',
       loading: 'Đang tải thông tin công ty',
+    },
+    chat: {
+      title: 'Trao đổi gần đây của công ty',
+      hint: 'Hai ngày có hoạt động gần nhất',
     },
   },
 } as const

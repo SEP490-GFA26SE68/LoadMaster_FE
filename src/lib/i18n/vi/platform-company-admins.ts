@@ -1,0 +1,53 @@
+/**
+ * Tab "Quản trị công ty" của màn Công ty `/nen-tang/cong-ty` khi nối backend (`platform/CompanyAdminsTab`): bảng tài khoản Quản trị công ty
+ * của mọi công ty, hộp chi tiết và hộp sửa tài khoản. Gắn vào nhánh `platform.companyAdmins`.
+ */
+export const companyAdmins = {
+  title: 'Tài khoản quản trị công ty',
+  count: { one: '{count} tài khoản', other: '{count} tài khoản' },
+  columns: { admin: 'Quản trị công ty', company: 'Công ty', plan: 'Gói', credits: 'Số dư credit', status: 'Trạng thái' },
+  noPlan: 'Chưa có gói',
+  noCompany: 'Chưa gắn công ty',
+  status: { ACTIVE: 'Đang hoạt động', LOCKED: 'Đã khoá' },
+  filters: { status: 'Trạng thái', allStatuses: 'Mọi trạng thái' },
+  search: 'Tìm theo tên, email, công ty',
+  open: 'Xem tài khoản {name}',
+  loading: 'Đang tải tài khoản quản trị công ty',
+  retry: 'Thử lại',
+  empty: 'Chưa có tài khoản quản trị công ty nào.',
+  emptyDescription: 'Quản trị công ty tạo cùng công ty sẽ hiện ở đây.',
+  noMatch: 'Không có tài khoản khớp bộ lọc.',
+  saved: 'Đã lưu tài khoản {name}.',
+  detail: {
+    account: 'Tài khoản',
+    phone: 'Số điện thoại',
+    status: 'Trạng thái',
+    createdAt: 'Ngày tạo',
+    company: 'Công ty',
+    companyCode: 'Mã công ty',
+    taxCode: 'Mã số thuế',
+    plan: 'Gói cước',
+    planName: 'Gói',
+    planStatus: 'Trạng thái gói',
+    balance: 'Số dư credit',
+    expires: 'Hết hạn',
+    missing: 'Chưa cập nhật',
+    edit: 'Sửa tài khoản',
+    close: 'Đóng',
+  },
+  form: {
+    title: 'Sửa tài khoản {name}',
+    description: 'Email đăng nhập {email} không đổi được.',
+    fullName: 'Họ và tên',
+    phone: 'Số điện thoại',
+    status: 'Trạng thái tài khoản',
+    lockHint: 'Tài khoản đã khoá không đăng nhập được.',
+    errors: {
+      fullNameRequired: 'Nhập họ và tên.',
+      fullNameTooLong: 'Họ và tên tối đa 100 ký tự.',
+      phoneInvalid: 'Số điện thoại gồm 9 đến 15 chữ số, có thể bắt đầu bằng dấu +.',
+    },
+    cancel: 'Huỷ',
+    save: 'Lưu thay đổi',
+  },
+} as const

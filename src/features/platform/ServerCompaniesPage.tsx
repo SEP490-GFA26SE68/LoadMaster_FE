@@ -1,5 +1,6 @@
 import { Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -9,10 +10,12 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { TemporaryPasswordDialog } from '@/features/admin/TemporaryPasswordDialog'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TemporaryPassword } from '@/lib/mock-db'
-import type { ServerCompany } from './companies-server-api'
+import type { ServerCompany, ServerCompanyRow } from './companies-server-api'
+import { CompanyAdminsTab } from './CompanyAdminsTab'
 import { ServerCompanyFormDialog, type AdminFailure } from './ServerCompanyFormDialog'
 import { createServerCompanyColumns, ServerCompaniesTableContext, type ServerCompaniesTableValue } from './server-companies-table'
 import { toNewServerCompany, toServerCompanyAdmin, toServerCompanyInput, type ServerCompanyFormValues, type ServerCompanyTaken } from './server-company-form'
@@ -23,9 +26,11 @@ import {
   useServerCompanyStatusMutation,
   useUpdateServerCompanyMutation,
 } from './useCompaniesQuery'
+import { ViewCompanyDetailsDialog } from './ViewCompanyDetailsDialog'
 
 type Dialog =
   | { kind: 'create' }
+  | { kind: 'view'; row: ServerCompanyRow }
   | { kind: 'edit'; company: ServerCompany }
   | { kind: 'admin'; company: ServerCompany; failure?: AdminFailure }
   | { kind: 'status'; company: ServerCompany; next: 'ACTIVE' | 'SUSPENDED' }
@@ -36,8 +41,11 @@ type Dialog =
  * đồng), số người dùng, trạng thái, ngày tạo — backend chưa lưu địa chỉ, số điện thoại, kho xuất phát nên màn không có. Một nút chính
  * "Tạo công ty": tạo công ty rồi tạo quản trị công ty đầu tiên, hiện mật khẩu tạm một lần. Bước tạo quản trị hỏng thì hộp thoại chuyển
  * sang tạo riêng quản trị cho công ty vừa có (backend chưa xoá được công ty); công ty chưa có quản trị cũng tạo được từ menu của dòng.
- * Tạm ngưng / mở lại chỉ ghi trạng thái — hộp xác nhận nói rõ backend chưa chặn đăng nhập.
+ * Tạm ngưng / mở lại chỉ ghi trạng thái — hộp xác nhận nói rõ backend chưa chặn đăng nhập. "Xem chi tiết" của dòng mở hồ sơ, gói và thoả
+ * thuận dịch vụ (`ViewCompanyDetailsDialog`). Tab thứ hai (`?tab=quan-tri`) là tài khoản Quản trị công ty của mọi công ty (`CompanyAdminsTab`).
  */
+const ADMINS_TAB = 'quan-tri'
+
 export function ServerCompaniesPage() {
   const t = useT()
   const query = useServerCompaniesQuery()
@@ -46,6 +54,17 @@ export function ServerCompaniesPage() {
   const update = useUpdateServerCompanyMutation()
   const status = useServerCompanyStatusMutation()
   const [dialog, setDialog] = useState<Dialog | null>(null)
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === ADMINS_TAB ? 'admins' : 'companies'
+
+  function handleTab(next: string) {
+    setParams((current) => {
+      const nextParams = new URLSearchParams(current)
+      if (next === 'admins') nextParams.set('tab', ADMINS_TAB)
+      else nextParams.delete('tab')
+      return nextParams
+    }, { replace: true })
+  }
 
   const list = query.data
   const rows = useMemo(() => list?.rows ?? [], [list])
@@ -57,6 +76,7 @@ export function ServerCompaniesPage() {
   const context: ServerCompaniesTableValue = {
     plansLoaded: list?.plansLoaded ?? true,
     usersLoaded: list?.usersLoaded ?? true,
+    onView: (row) => setDialog({ kind: 'view', row }),
     onEdit: (row) => setDialog({ kind: 'edit', company: row.company }),
     onCreateAdmin: (row) => setDialog({ kind: 'admin', company: row.company }),
     onStatus: (row, next) => setDialog({ kind: 'status', company: row.company, next }),
@@ -103,17 +123,26 @@ export function ServerCompaniesPage() {
   const showTable = query.isSuccess && rows.length > 0
   const partial = list !== undefined && (!list.plansLoaded || !list.usersLoaded)
   const statusCopy = dialog?.kind === 'status' ? (dialog.next === 'SUSPENDED' ? 'suspend' : 'reactivate') : null
+  const overlap = tab === 'companies' && showTable && !partial
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <Tabs value={tab} onValueChange={handleTab} className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={showTable && !partial}
+        overlap={overlap}
         title={t('companies.title')}
         meta={query.isSuccess ? t('companies.count', { count: rows.length }) : undefined}
         description={t('pageHero.companiesServer')}
         actions={addButton}
-      />
-      <div className={showTable && !partial ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      >
+        <TabsList tone="sky" aria-label={t('companies.server.tabs.label')}>
+          <TabsTrigger value="companies">{t('companies.server.tabs.companies')}</TabsTrigger>
+          <TabsTrigger value="admins">{t('companies.server.tabs.admins')}</TabsTrigger>
+        </TabsList>
+      </PageHero>
+      <TabsContent value="admins" className="min-h-0 flex-1 overflow-auto px-shell py-6">
+        <CompanyAdminsTab />
+      </TabsContent>
+      <TabsContent value="companies" className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
         {query.isPending ? (
           <div role="status" aria-label={t('companies.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (
@@ -141,8 +170,14 @@ export function ServerCompaniesPage() {
             </ServerCompaniesTableContext>
           </div>
         )}
-      </div>
+      </TabsContent>
 
+      <ViewCompanyDetailsDialog
+        row={dialog?.kind === 'view' ? dialog.row : null}
+        plansLoaded={list?.plansLoaded ?? true}
+        onClose={() => setDialog(null)}
+        onEdit={(row) => setDialog({ kind: 'edit', company: row.company })}
+      />
       {dialog?.kind === 'create' || dialog?.kind === 'edit' || dialog?.kind === 'admin' ? (
         <ServerCompanyFormDialog
           key={dialog.kind === 'create' ? 'new' : `${dialog.kind}-${dialog.company.id}`}
@@ -166,6 +201,6 @@ export function ServerCompaniesPage() {
         onConfirm={() => (dialog?.kind === 'status' ? void handleStatus(dialog) : undefined)}
       />
       <TemporaryPasswordDialog result={dialog?.kind === 'password' ? dialog.result : undefined} reason="created" onClose={() => setDialog(null)} />
-    </div>
+    </Tabs>
   )
 }

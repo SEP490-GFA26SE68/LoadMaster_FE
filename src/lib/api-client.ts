@@ -201,3 +201,42 @@ export function api(): ApiClient {
   client ??= createApiClient({ baseUrl: backendConfig.apiUrl, accessToken: () => tokenSource() })
   return client
 }
+
+/**
+ * Lối gọi của các `-api.ts` viết theo `fetch` (nhánh nối backend của nhóm): nhận `RequestInit`, trả **nguyên thân** JSON (không mở phong
+ * bì), cùng token, giới hạn thời gian và cách đổi lỗi thành `ApiError` như `api()`. Code mới dùng `api()`.
+ */
+async function rawFetch(path: string, init: RequestInit, accept: string): Promise<Response> {
+  const token = await tokenSource()
+  const headers = new Headers(init.headers)
+  if (token !== null) headers.set('Authorization', `Bearer ${token}`)
+  if (!headers.has('Accept')) headers.set('Accept', accept)
+  if (init.body != null && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+  const onAbort = () => controller.abort()
+  init.signal?.addEventListener('abort', onAbort, { once: true })
+  try {
+    return await browserFetch(urlOf(backendConfig.apiUrl, path, undefined), { ...init, headers, signal: controller.signal })
+  } catch (error) {
+    if (init.signal?.aborted) throw error
+    throw new ApiError(controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR')
+  } finally {
+    clearTimeout(timer)
+    init.signal?.removeEventListener('abort', onAbort)
+  }
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await rawFetch(path, init, 'application/json')
+  const payload = response.status === 204 ? null : await readJson(response)
+  const envelope = envelopeOf(payload)
+  if (!response.ok || envelope?.success === false) throw failureOf(response.status, envelope)
+  return payload as T
+}
+
+export async function apiFetchBlob(path: string, init: RequestInit = {}): Promise<Blob> {
+  const response = await rawFetch(path, init, '*/*')
+  if (!response.ok) throw failureOf(response.status, envelopeOf(await readJson(response)))
+  return response.blob()
+}

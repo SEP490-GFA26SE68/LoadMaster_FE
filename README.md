@@ -43,7 +43,7 @@ Tài khoản demo — mật khẩu chung `loadmaster`, màn đăng nhập có n�
 | Quản lý nền tảng | `nentang@loadmaster.vn` | `/nen-tang/goi` |
 | Hỗ trợ khách hàng | `hotro@loadmaster.vn` | `/ho-tro` |
 | Quản trị công ty | `qtcongty@loadmaster.vn` | `/nguoi-dung` |
-| Quản lý công ty | `quanly@loadmaster.vn` | `/` |
+| Quản lý công ty | `quanly@loadmaster.vn` | `/tong-quan` |
 | Điều phối | `dieuphoi@loadmaster.vn` | `/chuyen` |
 | Kho | `kho@loadmaster.vn` | `/kho` |
 | Tài xế | `taixe@loadmaster.vn` | `/tai-xe` |
@@ -57,8 +57,8 @@ Thêm `?lang=en` vào URL để xem bản tiếng Anh.
 
 1. Chạy backend (repo `LoadMaster_BE`, nhánh `develop`) theo hướng dẫn của repo đó: API ở `http://localhost:8080`, Keycloak ở
    `http://localhost:8180`.
-2. Ở Keycloak, client `loadmaster-web` của realm `loadmaster` phải bật **Direct Access Grants**: form đăng nhập của app đổi email + mật
-   khẩu lấy token ngay, không chuyển sang trang của Keycloak.
+2. Ở Keycloak, client `loadmaster-web` của realm `loadmaster` nên bật **Direct Access Grants**: form đăng nhập của app đổi email + mật
+   khẩu lấy token ngay. Chưa bật thì app tự chuyển sang trang đăng nhập của Keycloak (PKCE) rồi quay về `/dang-nhap`.
 3. Chép `.env.example` thành `.env.local` và đặt `VITE_AUTH_SOURCE=keycloak`; các giá trị khác giữ mặc định khi backend chạy ở cùng máy.
 4. `pnpm dev` rồi mở đúng `http://localhost:5173` (backend chỉ cho phép địa chỉ này).
 5. Đăng nhập bằng tài khoản do backend tạo. Tài khoản demo ở bảng trên chỉ dùng ở chế độ kho mẫu.
@@ -129,7 +129,9 @@ Phần backend chưa có vẫn chạy kho mẫu (xem "Trạng thái"); `VITE_API
   (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì form đăng nhập của app dùng Keycloak của
   backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn
   điểm giao của tài xế, màn Giám sát đọc ghi backend thật; danh sách và Chi tiết chuyến, đội xe và loại xe chỉ đọc; `VITE_API_FEATURES` chọn
-  nhóm. Planner, tối ưu, kho xếp hàng, yêu cầu giao, bảng điều khiển vẫn là kho mẫu vì backend chưa có API dùng được. Mọi kết quả tối ưu
+  nhóm. Từ 05/11/2026 `developer` gộp cả nhánh `feat/auth-keycloak` của nhóm: chuyến (tạo, sửa, tối ưu tuyến), yêu cầu giao, kho kiện, loại
+  kiện, loại xe, kho của công ty, yêu cầu dùng thử, lịch sử gói có bản đọc ghi máy chủ ở `features/<tên>/backend/`, route chọn theo
+  `VITE_API_FEATURES`. Planner, kho xếp hàng, bảng điều khiển vẫn là kho mẫu. Mọi kết quả tối ưu
   mang nhãn **MOCK RESULT**.
 - Đơn vị toàn hệ thống là cm/kg theo Build Spec; không có chuỗi tiếng Việt cứng ngoài từ điển (có test chặn).
 
@@ -156,7 +158,7 @@ pnpm test:e2e      # Playwright: 143 test trên desktop / tablet / phone (CI chi
 pnpm test:bench    # cổng ngân sách hiệu năng của bộ kiểm ràng buộc
 ```
 
-Lần chạy gần nhất ở máy (05/11/2026, nhánh `feat/demo-noi-backend` sau khi gộp #75, #77, #78, #79): lint, kiểm kiểu, build, 2.677/2.677
+Lần chạy gần nhất ở máy (05/11/2026, nhánh `feat/gop-nhanh-nhom` sau khi gộp `feat/auth-keycloak`): lint, kiểm kiểu, build, 2.677/2.677
 unit + DOM xanh; E2E chạy các spec bị đụng tới, bộ đủ chạy ở CI. CI gần nhất (09/10/2026, nhánh `developer`): 2.243/2.243
 unit và bộ E2E 138 test xanh (`.github/workflows/ci.yml`).
 

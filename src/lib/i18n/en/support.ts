@@ -1,7 +1,9 @@
 import type { Dictionary } from '../types'
 import type { support as source } from '../vi/support'
+import { customerPlan } from './support-customer-plan'
 
 export const support = {
+  customerPlan,
   kinds: { TECHNICAL: 'Technical', BILLING: 'Billing' },
   statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   mine: {
@@ -82,7 +84,12 @@ export const support = {
       balance: 'Credit balance',
       recent: 'Latest credit transactions',
       noTransactions: 'No credit transactions yet.',
+      notLoaded: 'Could not be read',
       loading: 'Loading company information',
+    },
+    chat: {
+      title: 'Recent messages of the company',
+      hint: 'The two most recent days with activity',
     },
   },
 } as const satisfies Dictionary<typeof source>

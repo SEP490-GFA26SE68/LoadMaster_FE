@@ -11,8 +11,13 @@ import { plannerPath } from '@/lib/planner-path'
 import { dateOnly } from './trip-dates'
 import { TripActionsMenu } from './TripActionsMenu'
 import { TripDetailBanner } from './TripDetailBanner'
-import { TripDetailStepper } from './TripDetailStepper'
+import {
+  BackendTripDetailStepper,
+  TripDetailStepper,
+} from './TripDetailStepper'
 import type { TripDetail } from './trips-api'
+import { useQuery } from '@tanstack/react-query'
+import { fetchTripById } from './trips-api'
 
 /**
  * Dải trời của Chi tiết chuyến (V2.3 `ChiTietChuyen*.jpg`, LM-088, LM-103): đường dẫn "Chuyến hàng / mã", tên chuyến và chip trạng
@@ -113,5 +118,48 @@ function TripMeta({ detail }: { detail: TripDetail }) {
       <span aria-hidden>·</span>
       <span>{trip.driverId === null ? t('trips.detail.noDriver') : <>{t('trips.detail.driver')} {value(driver?.fullName ?? trip.driverId)}</>}</span>
     </span>
+  )
+}
+
+export function RealTripDetailHeader({ tripId }: { tripId: string }) {
+  const t = useT()
+
+  const query = useQuery({
+    queryKey: ['trips', tripId, 'backend-header'],
+    queryFn: () => fetchTripById(tripId),
+    enabled: tripId !== '',
+  })
+
+  const trip = query.data
+
+  return (
+    <PageHero
+      overlap={false}
+      crumbs={[
+        { label: t('trips.list.title'), to: '/chuyen' },
+        { label: trip?.tripCode ?? tripId, mono: true },
+      ]}
+      title={trip?.tripName ?? tripId}
+      description={
+        trip ? (
+          <span className="flex flex-wrap gap-x-3 gap-y-1">
+            <span>
+              {typeof trip.departureTime === 'string'
+                ? trip.departureTime.replace('T', ' ')
+                : '—'}
+            </span>
+            <span>· {trip.vehicleName} — {trip.licensePlate}</span>
+            <span>· {trip.driverName ?? t('trips.detail.noDriver')}</span>
+            <span>· {trip.originName}</span>
+          </span>
+        ) : undefined
+      }
+     >
+    {trip ? (
+      <div className="px-5 pt-3 pb-5">
+        <BackendTripDetailStepper status={trip.status} />
+      </div>
+    ) : null}
+  </PageHero>
   )
 }

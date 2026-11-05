@@ -17,6 +17,8 @@ import { TripListStats, TripListTabs } from './TripListTabs'
 import { TripListToolbar } from './TripListToolbar'
 import { useTripsCapabilities } from './trips-capabilities'
 import { useTripsQuery } from './useTripsQuery'
+import { BackendTripListPage } from './BackendTripListPage'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 
 const NO_ROWS: TripRow[] = []
 const BY_DATE = 'scheduledDate'
@@ -26,9 +28,13 @@ const BY_DATE = 'scheduledDate'
  * theo sáu trạng thái của chuyến (FE-0-05) — tab là bộ lọc `trang-thai`; thẻ bảng đè lên dải có ô tìm bỏ dấu, chip ngày chạy / xe /
  * tài xế, bảng nhóm theo ngày chạy (mặc định mới nhất trước) và phân trang. Mọi trạng thái giữ trên URL (D-52). Nhóm `trips` đọc
  * backend: tab, bộ lọc và số đếm vẫn tính ở client trên danh sách của máy chủ; bỏ nút tạo, cột lấp đầy, tên tuyến và số "cần bạn xử lý"
- * (`TRIPS_CAPABILITIES`).
+ * (`TRIPS_CAPABILITIES`). Nhóm `trips` nối backend thì màn là `BackendTripListPage` của nhóm: máy chủ phân trang, lọc, sắp xếp.
  */
 export function TripListPage() {
+  return TRIPS_CAPABILITIES.backend ? <BackendTripListPage /> : <StoreTripListPage />
+}
+
+function StoreTripListPage() {
   const navigate = useNavigate()
   const t = useT()
   const format = useFormat()

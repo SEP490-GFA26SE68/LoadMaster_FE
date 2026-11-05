@@ -40,7 +40,7 @@ function renderTrip(tripId: string, role: Role) {
 
 const stopItems = () => within(screen.getByRole('list', { name: /^Kho xuất phát rồi/ })).getAllByRole('listitem').slice(1)
 
-test.each(['dispatcher', 'manager'] as const)('a trip in transit shows the %s where the vehicle is, labelled as simulated, and arrival times from that position', async (role) => {
+test.each(['dispatcher', 'companyManager'] as const)('a trip in transit shows the %s where the vehicle is, labelled as simulated, and arrival times from that position', async (role) => {
   const { container } = renderTrip('TRIP-009', role)
   const bar = within(await screen.findByRole('status', { name: 'Vị trí xe' }, SLOW))
   expect(bar.getByText('Mô phỏng')).toBeInTheDocument()

@@ -57,7 +57,7 @@ test('the seed has three platform accounts without a company or depot, and the s
   expect(users.filter((user) => user.companyId === 'LOG-002').map((user) => [user.id, user.email, user.role])).toStrictEqual([
     ['US-0015', 'viet.lam@phuongnam.vn', 'warehouse'],
     ['US-PN-01', 'qtcongty@phuongnam.vn', 'companyAdmin'],
-    ['US-PN-02', 'quanly@phuongnam.vn', 'manager'],
+    ['US-PN-02', 'quanly@phuongnam.vn', 'companyManager'],
     ['US-PN-03', 'dieuphoi@phuongnam.vn', 'dispatcher'],
     ['US-PN-04', 'taixe@phuongnam.vn', 'driver'],
   ])
@@ -109,7 +109,7 @@ test('nobody locks, deletes or demotes themselves; a driver with open trips stay
   await expect(db.updateUser('US-0005', { role: 'systemManager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
   await db.authenticate('qtcongty@loadmaster.vn', 'loadmaster')
   await expect(db.setUserStatus('US-LB-01', 'suspended')).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
-  await expect(db.updateUser('US-LB-01', { role: 'manager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
+  await expect(db.updateUser('US-LB-01', { role: 'companyManager' })).rejects.toMatchObject({ code: 'SELF_CHANGE_FORBIDDEN' })
   await expect(db.deleteUser('US-0004')).rejects.toMatchObject({ code: 'USER_IN_USE', params: { tripIds: ['TRIP-2026-0914', 'TRIP-010'] } })
   expect((await db.setUserStatus('US-0006', 'suspended')).status).toBe('suspended')
   await db.deleteUser('US-0009')
@@ -167,7 +167,7 @@ test('a company admin manages the company roles of the own company only (FE-0-08
   // Năm vai trò công ty, kể cả một quản trị công ty nữa: tạo, sửa, khoá, đặt lại mật khẩu, xoá
   const created = await db.createUser({ ...COMPANY_USER, role: 'companyAdmin' })
   expect([created.user.id, created.user.role, created.user.companyId]).toStrictEqual(['US-0016', 'companyAdmin', 'LOG-001'])
-  expect((await db.updateUser('US-0009', { role: 'manager', depot: 'Trụ sở TP. Hồ Chí Minh' })).role).toBe('manager')
+  expect((await db.updateUser('US-0009', { role: 'companyManager', depot: 'Trụ sở TP. Hồ Chí Minh' })).role).toBe('companyManager')
   expect((await db.setUserStatus('US-0009', 'suspended')).status).toBe('suspended')
   expect((await db.resetPassword('US-0009')).user.id).toBe('US-0009')
   await db.deleteUser('US-0009')
@@ -191,7 +191,7 @@ test('each company keeps one active company admin and the platform one active sy
   // Không có phiên (test logic kho) luật vẫn giữ: không khoá, không hạ vai trò, không xoá người cuối cùng
   await db.signOut()
   await expect(db.setUserStatus(second.id, 'suspended')).rejects.toMatchObject({ code: 'LAST_ADMIN' })
-  await expect(db.updateUser(second.id, { role: 'manager' })).rejects.toMatchObject({ code: 'LAST_ADMIN' })
+  await expect(db.updateUser(second.id, { role: 'companyManager' })).rejects.toMatchObject({ code: 'LAST_ADMIN' })
   await expect(db.deleteUser(second.id)).rejects.toMatchObject({ code: 'LAST_ADMIN' })
   // Quản trị công ty đã khoá không phải "đang hoạt động cuối cùng": xoá được
   await db.deleteUser('US-LB-01')

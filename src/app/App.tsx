@@ -1,8 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, Navigate, Outlet, RouterProvider, type RouteObject } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, type RouteObject } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { Permission } from '@/features/auth/permissions'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { landingPath, PUBLIC_HOME } from '@/features/auth/landing'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
 import { StoreTripRoute } from '@/features/trips/StoreTripRoute'
@@ -25,6 +27,10 @@ const OptimizationSetupPage = lazy(() => import('@/features/optimization/Optimiz
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
 const WarehousePage = lazy(() => import('@/features/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })))
+const CompanyWarehousesPage = lazy(() =>
+  import('@/features/company-warehouses/CompanyWarehousesPage')
+    .then((m) => ({ default: m.CompanyWarehousesPage }))
+)
 const MyTripsPage = lazy(() => import('@/features/driver/MyTripsPage').then((m) => ({ default: m.MyTripsPage })))
 const DriverStopPage = lazy(() => import('@/features/driver/DriverStopPage').then((m) => ({ default: m.DriverStopPage })))
 const FleetPage = lazy(() => import('@/features/fleet/FleetPage').then((m) => ({ default: m.FleetPage })))
@@ -45,6 +51,8 @@ const CompaniesPage = lazy(() => import('@/features/platform/CompaniesPage').the
 const CompanyProfilePage = lazy(() => import('@/features/company-profile/CompanyProfilePage').then((m) => ({ default: m.CompanyProfilePage })))
 const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m) => ({ default: m.SupportPage })))
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
+const SubscriptionHistoryPage = lazy(() => import('@/features/platform/SubscriptionHistoryPage').then((m) => ({ default: m.SubscriptionHistoryPage })))
+const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
@@ -54,6 +62,22 @@ const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((
 const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
 const ComponentSheetPage = lazy(() => import('./design-system/ComponentSheetPage').then((m) => ({ default: m.ComponentSheetPage })))
+const WarehouseCustomersPage = lazy(() =>
+  import('@/features/warehouse/WarehouseCustomersPage').then(
+    (m) => ({ default: m.WarehouseCustomersPage }),
+  ),
+)
+/**
+ * Gốc `/`: người đã đăng nhập về màn chính của vai trò; khách sang trang giới thiệu, giữ query và neo. Trong lúc mở lại phiên Keycloak
+ * chưa quyết gì, để khách không bị đẩy đi rồi mới biết là đã đăng nhập.
+ */
+function RootLandingPage() {
+  const { user, status } = useAuth()
+  const { search, hash } = useLocation()
+  if (status === 'restoring') return null
+  if (user) return <Navigate to={landingPath(user.role)} replace />
+  return <Navigate to={`${PUBLIC_HOME}${search}${hash}`} replace />
+}
 
 /** Layout của mỗi nhóm route: chờ chunk của màn và đặt tiêu đề tab theo `handle` của route (LM-100). */
 function RouteOutlet() {
@@ -107,10 +131,11 @@ export const routes: RouteObject[] = [
         children: [{ index: true, element: <PasswordResetPage />, handle: titled((t) => t('titles.passwordReset')) }],
       },
 
-      // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thì RequireAuth đưa sang `/gioi-thieu`.
+      // Trang công khai: khách chưa đăng nhập mở được. Khách mở `/` thấy trang giới thiệu công khai trực tiếp.
       {
         element: <RouteOutlet />,
         children: [
+          { path: '/', element: <RootLandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
         ],
@@ -126,7 +151,10 @@ export const routes: RouteObject[] = [
               {
                 element: <RouteOutlet />,
                 children: [
-                  guarded('dashboard.view', [{ path: '/', element: <DashboardPage />, handle: titled((t) => t('titles.dashboard')) }]),
+                  guarded('dashboard.view', [
+                    { path: '/tong-quan', element: <DashboardPage />, handle: titled((t) => t('titles.dashboard')) },
+                    { path: '/dashboard', element: <Navigate to="/tong-quan" replace />, handle: titled((t) => t('titles.dashboard')) },
+                  ]),
                   guarded('trips.view', [
                     { path: '/chuyen', element: <TripListPage />, handle: titled((t) => t('titles.trips')) },
                     { path: '/chuyen/:tripId', element: <TripDetailPage />, handle: titled((t, s) => t('titles.trip', idParam(s, 'tripId'))) },
@@ -145,6 +173,13 @@ export const routes: RouteObject[] = [
                     { path: '/doi-xe', element: <FleetPage />, handle: titled((t) => t('titles.fleet')) },
                     { path: '/doi-xe/:vehicleId', element: <VehicleDetailPage />, handle: titled((t, s) => t('titles.vehicle', idParam(s, 'vehicleId'))) },
                   ]),
+                  guarded('companyWarehouses.manage', [
+                    {
+                      path: '/quan-ly-kho',
+                      element: <CompanyWarehousesPage />,
+                      handle: titled((t) => t('companyWarehouses.title')),
+                    },
+                  ]),
                   guarded('fleet.edit', [{ path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
                   guarded('users.manage', [{ path: '/nguoi-dung', element: <UsersPage />, handle: titled((t) => t('titles.users')) }]),
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
@@ -156,9 +191,14 @@ export const routes: RouteObject[] = [
                   guarded('support.handle', [{ path: '/ho-tro', element: <SupportPage />, handle: titled((t) => t('titles.support')) }]),
                   // Liên hệ của khách gửi từ trang giới thiệu: ba vai trò nền tảng
                   guarded('contacts.handle', [{ path: '/lien-he-khach', element: <ContactsPage />, handle: titled((t) => t('titles.contacts')) }]),
-                  // Danh mục gói cước: màn chính của quản lý nền tảng (FE-8-02, D-90)
-                  guarded('subscriptionPlans.manage', [{ path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) }]),
-                  // Gói cước và credit của công ty, thanh toán giả lập (kho mẫu) và xác nhận thanh toán (backend) (FE-8-03, FE-8-04): quản trị công ty
+                  // Danh mục gói cước & Lịch sử gói cước (FE-8-02)
+                  guarded('subscriptionPlans.manage', [
+                    { path: '/nen-tang/goi', element: <PlansPage />, handle: titled((t) => t('titles.subscriptionPlans')) },
+                    { path: '/nen-tang/lich-su-goi', element: <SubscriptionHistoryPage />, handle: titled((t) => t('titles.subscriptionHistory')) },
+                  ]),
+                  // Đơn yêu cầu tạo tài khoản dùng thử
+                  guarded('trialRequests.manage', [{ path: '/nen-tang/yeu-cau-dung-thu', element: <TrialRequestsPage />, handle: titled((t) => t('titles.trialRequests')) }]),
+                  // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty
                   guarded('billing.manage', [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
@@ -168,6 +208,13 @@ export const routes: RouteObject[] = [
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
                   // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty xem (`packages.view`); loại kiện là của điều phối viên
                   guarded('packages.view', [{ path: '/kien-hang', element: <PackagesPage />, handle: titled((t) => t('titles.packages')) }]),
+                  guarded('warehouse.operate', [
+                    {
+                      path: '/kho-khach-hang',
+                      element: <WarehouseCustomersPage />,
+                      handle: titled((t) => t('warehouseCustomers.title')),
+                    },
+                  ]),
                   guarded('packages.manage', [
                     { path: '/loai-kien', element: <PackageTypesPage />, handle: titled((t) => t('titles.packageTypes')) },
                   ]),

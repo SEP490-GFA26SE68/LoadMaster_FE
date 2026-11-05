@@ -64,7 +64,7 @@ export const admin = {
       systemManager: 'Máy tính',
       systemSupporter: 'Máy tính',
       companyAdmin: 'Máy tính',
-      manager: 'Máy tính / máy tính bảng',
+      companyManager: 'Máy tính / máy tính bảng',
       dispatcher: 'Máy tính',
       warehouse: 'Máy tính bảng tại kho',
       driver: 'Điện thoại',
@@ -116,6 +116,7 @@ export const admin = {
       depot: 'Kho / chi nhánh',
       depotPlaceholder: 'Kho Long Bình',
       role: 'Vai trò',
+      company: 'Công ty',
       device: 'Thiết bị chính: {device}',
       cancel: 'Huỷ',
       save: 'Lưu thay đổi',
@@ -130,6 +131,7 @@ export const admin = {
       phoneInvalid: 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0',
       roleRequired: 'Chọn vai trò',
       depotRequired: 'Nhập kho hoặc chi nhánh',
+      companyRequired: 'Vui lòng chọn công ty'
     },
     /** Hộp thoại hiện mật khẩu tạm một lần (tạo tài khoản, đặt lại mật khẩu — D-42). */
     password: {
@@ -197,6 +199,7 @@ export const admin = {
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },
       support: { create: 'Gửi yêu cầu hỗ trợ', handle: 'Xử lý yêu cầu hỗ trợ' },
       contacts: { handle: 'Xử lý yêu cầu liên hệ của khách' },
+      trialRequests: { manage: 'Duyệt yêu cầu dùng thử' },
       dashboard: { view: 'Xem bảng điều khiển' },
       reports: { export: 'Xuất báo cáo .xlsx' },
       requirements: { view: 'Xem yêu cầu giao', edit: 'Tạo, sửa yêu cầu giao' },
@@ -217,6 +220,7 @@ export const admin = {
       exceptions: { report: 'Báo sự cố chuyến', resolve: 'Xử lý sự cố chuyến' },
       deadlines: { renegotiate: 'Gia hạn giao hàng' },
       pickups: { create: 'Tạo yêu cầu nhận hàng dọc đường', approve: 'Duyệt yêu cầu nhận hàng dọc đường' },
+      companyWarehouses: { manage: 'Quản lý kho của công ty' },
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
     },
