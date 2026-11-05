@@ -89,6 +89,7 @@ export const apiErrors = {
   NO_APPROVED_LOAD_PLAN: 'The trip has no approved load plan.',
   PLAN_ALREADY_APPROVED: 'This plan is already approved.',
   PLAN_TRIP_NOT_PLANNED: 'The trip is not Planned yet — optimize the route before approving.',
+  TRIP_LOCKED: 'The trip is no longer Planned, so its plan can no longer be pinned, unpinned or rerun. Reload to see its current state.',
   PLAN_HAS_NO_PLACEMENTS: 'The plan has no placed packages and cannot be approved.',
   OPTIMIZATION_JOB_NOT_FOUND: 'The optimization run was not found.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'The optimization service is not responding. Try again later.',
@@ -110,6 +111,8 @@ export const apiErrors = {
   NO_GPS_LOCATION: 'There is no vehicle location yet.',
   TRIP_EXCEPTION_NOT_FOUND: 'The incident was not found.',
   EXCEPTION_STATUS_INVALID: 'The incident is no longer in a state that allows this action. Reload to see its current state.',
+  CONTACT_NOTE_REQUIRED: 'Record what was agreed with the customer before extending the deadline.',
+  REQUIREMENT_DEADLINE_PAST: 'The new deadline must be later than now.',
 
   SUBSCRIPTION_NOT_FOUND: 'The company has no plan yet.',
   SUBSCRIPTION_PLAN_NOT_FOUND: 'The plan was not found.',

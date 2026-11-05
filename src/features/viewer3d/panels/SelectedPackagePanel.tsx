@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Focus, Pencil, Pin, PinOff, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import type { ConstraintIssue } from '@/domain/constraints'
@@ -10,7 +10,8 @@ import type { SceneStop, ScenePlacement, SceneZone } from '@/features/viewer3d/s
 import { findAbove, findBelow, layerOf } from './placement-relations'
 import { DARK_SUBCARD, GlassChip, GlassValue, MUTED, StopMark } from './scene-ui'
 
-export type PinAction = { readonly pending: boolean; readonly onToggle: (placement: ScenePlacement) => void }
+/** Ghim / bỏ ghim kiện đang chọn. `disabledReason`: luật đang chặn — nút mờ, câu đứng dưới nút (mục 5). */
+export type PinAction = { readonly pending: boolean; readonly onToggle: (placement: ScenePlacement) => void; readonly disabledReason?: string }
 
 export type SelectedPackageProps = {
   placement: ScenePlacement | undefined
@@ -61,6 +62,7 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
   Omit<SelectedPackageProps, 'placement' | 'className'> & { placement: ScenePlacement }) {
   const format = useFormat()
   const t = useT()
+  const pinReasonId = useId()
   const cm = format.lengthValue
   const stopName = stops.find((s) => s.number === placement.stop)?.name ?? ''
   const zone = zones.find(({ id }) => id === placement.zoneId)
@@ -164,10 +166,14 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
         {onEdit ? <Button variant="glass" className="h-14 flex-auto gap-1.5 px-2.5 text-body-lg xl:h-9 xl:text-small" onClick={onEdit}><Pencil strokeWidth={1.5} />{t('viewer.hud.edit')}</Button> : null}
         {pin ? (
           <Button variant="glass" className="h-14 flex-auto gap-1.5 px-2.5 text-body-lg xl:h-9 xl:text-small" loading={pin.pending}
+            disabled={pin.disabledReason !== undefined} aria-describedby={pin.disabledReason !== undefined ? pinReasonId : undefined}
             onClick={() => pin.onToggle(placement)}>
             {pin.pending ? null : placement.pinned ? <PinOff strokeWidth={1.5} /> : <Pin strokeWidth={1.5} />}
             {t(placement.pinned ? 'viewer.editor.unpin' : 'viewer.editor.pin')}
           </Button>
+        ) : null}
+        {pin?.disabledReason !== undefined ? (
+          <p id={pinReasonId} className={cn('m-0 basis-full text-body xl:text-caption', MUTED)}>{pin.disabledReason}</p>
         ) : null}
       </div>
     </>

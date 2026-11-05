@@ -35,7 +35,8 @@ export function useTogglePinMutation(tripCode: string, planId: string) {
   return useMutation({
     mutationFn: ({ placementId, pinned }: { placementId: string; pinned: boolean }) =>
       pinned ? pinBackendPlacement(planId, placementId) : unpinBackendPlacement(planId, placementId),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['trips', tripCode, 'backend-plan'] }),
+    // Lỗi cũng đọc lại: máy chủ từ chối `TRIP_LOCKED` khi chuyến vừa rời Đã lập kế hoạch — Planner khoá theo trạng thái mới
+    onSettled: () => client.invalidateQueries({ queryKey: ['trips', tripCode, 'backend-plan'] }),
   })
 }
 
@@ -48,5 +49,7 @@ export function useRerunBackendPlanMutation(planId: string, objective: PlanObjec
       client.invalidateQueries({ queryKey: ['trips'] }),
       client.invalidateQueries({ queryKey: ['billing'] }),
     ]),
+    // Chuyến vừa rời Đã lập kế hoạch (`TRIP_LOCKED`): đọc lại để Planner khoá theo trạng thái mới
+    onError: () => client.invalidateQueries({ queryKey: ['trips'] }),
   })
 }

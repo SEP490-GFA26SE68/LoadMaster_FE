@@ -98,6 +98,7 @@ export const apiErrors = {
   NO_APPROVED_LOAD_PLAN: 'Chuyến chưa có phương án đã duyệt.',
   PLAN_ALREADY_APPROVED: 'Phương án này đã được duyệt.',
   PLAN_TRIP_NOT_PLANNED: 'Chuyến chưa ở trạng thái Đã lập kế hoạch — tối ưu tuyến trước rồi mới duyệt.',
+  TRIP_LOCKED: 'Chuyến không còn ở Đã lập kế hoạch nên không ghim, bỏ ghim hay chạy lại phương án được nữa. Tải lại để xem trạng thái mới.',
   PLAN_HAS_NO_PLACEMENTS: 'Phương án không có kiện nào được xếp, không duyệt được.',
   OPTIMIZATION_JOB_NOT_FOUND: 'Không tìm thấy lần chạy tối ưu.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
@@ -120,6 +121,8 @@ export const apiErrors = {
   NO_GPS_LOCATION: 'Chưa có vị trí nào của xe.',
   TRIP_EXCEPTION_NOT_FOUND: 'Không tìm thấy sự cố.',
   EXCEPTION_STATUS_INVALID: 'Sự cố không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
+  CONTACT_NOTE_REQUIRED: 'Ghi lại nội dung đã liên hệ khách trước khi gia hạn.',
+  REQUIREMENT_DEADLINE_PAST: 'Hạn giao mới phải ở sau thời điểm hiện tại.',
 
   // Gói cước, credit, thanh toán
   SUBSCRIPTION_NOT_FOUND: 'Công ty chưa có gói cước.',

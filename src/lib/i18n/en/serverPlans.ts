@@ -113,6 +113,7 @@ export const serverPlans = {
     approvedChip: 'Approved',
     approvedBy: 'Approved by {name}',
     draftReason: 'The trip is still a Draft: optimize the route in trip details before approving.',
+    pinDraftReason: 'The trip is still a Draft: pins and reruns are only possible once the trip is Planned.',
     emptyTitle: 'The trip has no load plan',
     emptyDescription: 'Run loading optimization in Optimization setup to get plans.',
     rerunTitle: { one: 'Rerun keeping {count} pinned package?', other: 'Rerun keeping {count} pinned packages?' },

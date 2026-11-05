@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { LoadPlan } from '@/features/optimization/load-plan-dto'
-import { connectApiAuth } from '@/lib/api-client'
-import { I18nProvider } from '@/lib/i18n'
+import { ApiError, connectApiAuth } from '@/lib/api-client'
+import { createTranslator, dataErrorMessage, I18nProvider } from '@/lib/i18n'
 import { envelope, stubBackend } from '@/test/fake-backend'
 import { sceneBox } from '@/test/scene'
 import { BackendRerunDialog } from './BackendRerunDialog'
@@ -78,12 +78,12 @@ test('máy chủ từ chối (hết credit): hộp vẫn mở, toast nói lý do
   expect(screen.getByText('Planner phương án 12')).toBeInTheDocument()
 })
 
-function renderCard(placement: ScenePlacement, onToggle: (placement: ScenePlacement) => void) {
+function renderCard(placement: ScenePlacement, onToggle: (placement: ScenePlacement) => void, disabledReason?: string) {
   render(
     <MemoryRouter>
       <I18nProvider>
         <SelectedPackagePanel placement={placement} placements={[placement]} totalSteps={1} stops={[]} tripId="TRIP-42" onFocus={() => undefined}
-          pin={{ pending: false, onToggle }} />
+          pin={{ pending: false, onToggle, disabledReason }} />
       </I18nProvider>
     </MemoryRouter>,
   )
@@ -101,4 +101,19 @@ test('kiện đã ghim: chữ "Đã ghim" và nút "Bỏ ghim"', () => {
   const card = renderCard(sceneBox('PK-0008', 0, 0, 0, { pinned: true }), vi.fn())
   expect(card.getByRole('button', { name: 'Bỏ ghim' })).toBeInTheDocument()
   expect(card.getAllByText(/Đã ghim/).length).toBeGreaterThan(0)
+})
+
+test('chuyến còn Nháp: nút "Ghim" mờ, lý do ngay dưới nút; bấm không gửi gì', async () => {
+  const onToggle = vi.fn()
+  const card = renderCard(sceneBox('PK-0007'), onToggle, 'Chuyến còn Nháp: chỉ ghim và chạy lại được khi chuyến Đã lập kế hoạch.')
+  const button = card.getByRole('button', { name: 'Ghim' })
+  expect(button).toBeDisabled()
+  expect(button).toHaveAccessibleDescription('Chuyến còn Nháp: chỉ ghim và chạy lại được khi chuyến Đã lập kế hoạch.')
+  await userEvent.click(button)
+  expect(onToggle).not.toHaveBeenCalled()
+})
+
+test('máy chủ từ chối vì chuyến đã rời Đã lập kế hoạch (409 TRIP_LOCKED): câu nói đúng lý do', () => {
+  const message = dataErrorMessage(new ApiError('TRIP_LOCKED', { status: 409 }), createTranslator('vi'))
+  expect(message).toBe('Chuyến không còn ở Đã lập kế hoạch nên không ghim, bỏ ghim hay chạy lại phương án được nữa. Tải lại để xem trạng thái mới.')
 })

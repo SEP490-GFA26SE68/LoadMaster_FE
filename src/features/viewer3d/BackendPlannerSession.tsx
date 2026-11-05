@@ -65,7 +65,8 @@ export function BackendResultSession() {
 /**
  * Một phiên Planner trên phương án của máy chủ: xem, mô phỏng xếp / dỡ, inspector, timeline và Duyệt (`POST /api/load-plans/{id}/approve`).
  * Chuyến Đã lập kế hoạch: điều phối viên (`plans.approve`) ghim / bỏ ghim kiện đang chọn ngay ở thẻ kiện — ghim lưu thẳng vào phương án
- * ở máy chủ, không qua Duyệt —, và khi có kiện ghim thì "Chạy lại giữ ghim" (`optimization.run`) ở góc dưới phải khung 3D. Không có chỉnh
+ * ở máy chủ, không qua Duyệt —, và khi có kiện ghim thì "Chạy lại giữ ghim" (`optimization.run`) ở góc dưới phải khung 3D. Chuyến còn Nháp
+ * thì hai nút đó mờ kèm lý do (máy chủ từ chối `TRIP_LOCKED` khi chuyến không Đã lập kế hoạch); pha vận hành khoá cả Planner. Không có chỉnh
  * tay hay đổi xe ở đây: máy chủ chưa nhận bản chỉnh (D-20 — không có nút giả). Kết quả của máy chủ không mang MOCK RESULT. Quản lý công ty
  * xem chỉ đọc (thiếu `plans.approve`). Phím tắt như Planner của kho mẫu.
  */
@@ -88,18 +89,20 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const phaseLock = STATUS_LOCK[source.status]
   const lock: PlannerLock | null = phaseLock ?? (can('plans.approve') ? null : 'readOnly')
   const approve = lock !== null ? null : source.status === 'DRAFT' ? 'draft' : 'ready'
-  // Ghim và chạy lại chỉ khi chuyến Đã lập kế hoạch: Nháp chưa có tuyến, pha vận hành đã khoá phương án
+  // Ghim và chạy lại chỉ khi chuyến Đã lập kế hoạch (máy chủ: `TRIP_LOCKED`): Nháp thì nút mờ kèm lý do, pha vận hành đã khoá cả Planner
   const pinnable = lock === null && source.status === 'PLANNED'
-  const canRerun = pinnable && can('optimization.run')
+  const pinBlocked = lock === null && source.status === 'DRAFT' ? t('serverPlans.planner.pinDraftReason') : undefined
+  const canRerun = (pinnable || pinBlocked !== undefined) && can('optimization.run')
   const [rerunOpen, setRerunOpen] = useState(false)
   const pinMutation = useTogglePinMutation(tripCode, plan.id)
   const placementIds = useMemo(() => backendPlacementIds(plan), [plan])
   const pinnedCount = useMemo(() => plan.placements.filter((item) => item.pinned).length, [plan])
-  const pin = pinnable ? {
+  const pin = pinnable || pinBlocked !== undefined ? {
     pending: pinMutation.isPending,
+    disabledReason: pinBlocked,
     onToggle: (placement: { id: string; pinned: boolean }) => {
       const placementId = placementIds.get(placement.id)
-      if (placementId === undefined || pinMutation.isPending) return
+      if (!pinnable || placementId === undefined || pinMutation.isPending) return
       pinMutation.mutate({ placementId, pinned: !placement.pinned }, { onError: (error) => toast.error(dataErrorMessage(error, t)) })
     },
   } : undefined
@@ -141,7 +144,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined} />
           </Suspense>
           <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
-            onRerunPinned={canRerun ? () => setRerunOpen(true) : undefined}
+            onRerunPinned={canRerun ? () => setRerunOpen(true) : undefined} rerunBlockedReason={pinBlocked}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} />
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
@@ -166,7 +169,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         onTogglePlaying={operations.togglePlaying}
         onSpeedChange={state.setSpeed}
       />
-      {canRerun ? <BackendRerunDialog tripCode={tripCode} plan={plan} pinnedCount={pinnedCount} open={rerunOpen} onOpenChange={setRerunOpen} /> : null}
+      {canRerun && pinnable ? <BackendRerunDialog tripCode={tripCode} plan={plan} pinnedCount={pinnedCount} open={rerunOpen} onOpenChange={setRerunOpen} /> : null}
     </div>
   )
 }
