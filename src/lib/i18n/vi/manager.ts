@@ -8,6 +8,8 @@ export const manager = {
   loading: 'Đang tải số liệu…',
   errorTitle: 'Không tải được số liệu',
   errorDescription: 'Kho dữ liệu không trả lời. Thử lại sau giây lát.',
+  /** Máy chủ từ chối kỳ (quá 366 ngày, hoặc hai đầu sai): nói đúng lý do thay câu lỗi chung. */
+  periodRejected: 'Máy chủ chỉ đọc được kỳ tối đa 366 ngày. Chọn kỳ ngắn hơn.',
   retry: 'Thử lại',
   /** Giá trị trống của KPI khi kỳ chưa có số để tính. */
   noValue: '—',
@@ -119,7 +121,7 @@ export const manager = {
     excelDateFormat: 'dd/mm/yyyy',
     done: 'Đã tải xuống {name}',
     failed: 'Không tạo được file báo cáo. Thử lại.',
-    sheets: { overview: 'Tổng quan', trips: 'Chuyến', vehicles: 'Theo xe' },
+    sheets: { overview: 'Tổng quan', trips: 'Chuyến', recentTrips: 'Chuyến gần đây', vehicles: 'Theo xe' },
     overview: {
       title: 'Báo cáo vận hành',
       period: 'Kỳ',

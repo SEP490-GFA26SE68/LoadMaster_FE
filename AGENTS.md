@@ -28,9 +28,10 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
 **Trạng thái hiện tại:** mặc định toàn bộ dữ liệu là mẫu. Đặt `VITE_AUTH_SOURCE=keycloak` thì đăng nhập qua Keycloak của backend, và các
-nhóm đã nối — người dùng, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn tài xế, màn Giám sát — đọc ghi
-backend thật, chuyến (danh sách, Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh, Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ
-đọc (`VITE_API_FEATURES` chọn nhóm); kho xếp hàng, bảng điều khiển vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
+nhóm đã nối — người dùng, nhật ký, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn kho xếp hàng, màn tài xế
+(cả Xuất phát), màn Giám sát, bảng điều khiển — đọc ghi backend thật, chuyến (danh sách, Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh,
+Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ đọc (`VITE_API_FEATURES` chọn nhóm); phần máy chủ chưa có thì ẩn, chuông chỉ còn
+ở vai trò mà mọi nhóm nó nói về vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
 mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). Phân quyền **giả lập ở FE** (LM-084, D-41).
 
@@ -1132,9 +1133,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`. `platformOps`, `warehouse` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
-  của các nhóm đó cho tới khi nối. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
-  `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển, yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
+  `monitoring`, `trips`, `fleet`, `warehouse`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+  của nhóm đó cho tới khi nối. Chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò nói về còn là kho mẫu
+  (`notificationsReachable`, `notifications-api.ts`); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
+  `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
   (còn đọc kho mẫu) hiện mã chuyến dạng chữ, vì Chi tiết chuyến của máy chủ không tìm được mã của kho mẫu.
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
   `{ success, code, message, data, errors }` và đổi thất bại thành `ApiError` có mã. Màn không hiện thông điệp thô của máy chủ. Tới Keycloak
@@ -1177,11 +1179,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   mã nghiệp vụ — chỉ khi không có mã. Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`; mã app chưa có câu thì câu theo
   loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
-  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
+  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
   (`useFleetCapabilities`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
-  Nhật ký là màn trống "Máy chủ chưa có nhật ký hoạt động", chuông bỏ sự kiện tài khoản và đăng nhập; `/ho-so` chỉ đọc, đổi mật khẩu bằng mã qua email ở
+  Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;
+  không tóm tắt, không sắp xếp, không liên kết đối tượng; mã hành động dịch ở nhánh `serverAudit`, mã lạ hiện nguyên mã); `/ho-so` chỉ đọc, đổi mật khẩu bằng mã qua email ở
   `/quen-mat-khau`; `userFromBackend` không chép kho của tài khoản mẫu. Màn Công ty đọc `/api/companies`, `/api/contracts` (cột gói), `/api/users`
   (số người dùng); tạo công ty rồi tạo quản trị đầu tiên bằng `POST /api/users` (hai lượt gọi); tạm dừng / mở lại bằng `PATCH …/status`; bỏ
   địa chỉ, điện thoại, kho xuất phát. **Thông tin công ty `/cong-ty`** (`companyProfile.manage`): kho mẫu `getCompanyProfile` (công ty của
@@ -1208,13 +1211,15 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
   là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó. Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
-  nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — chỉ chuyến đang vận chuyển, thẻ bỏ tên tuyến, số kiện, điểm đang giao.
+  nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển và Kho đang soạn / xếp (chuyến `LOADING`), thẻ bỏ
+  tên tuyến, số kiện, điểm đang giao. Thẻ `LOADING` có nút "Xuất phát" (`departFromList`, `POST /api/driver/trips/{id}/start`): máy chủ không
+  nói kho đã xếp xong chưa, nên nó quyết — 409 là `LOADING_NOT_COMPLETED` (toast), xong thì mở màn điểm giao.
   Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã của kiện
   (`packageOfCode`: `trackingBarcode`, mã kho kiện in ở góc nhãn, mã của bên gửi / mã QR khi backend trả; không phân biệt hoa thường; mã bên gửi
   trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`; `PackageVerify methods={['CODE']}` kèm `codeLabel` / `codeHint` riêng) →
   `POST …/packages/{id}/unload`; backend không trả kiện
   đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
-  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
+  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
   sự cố `POST|GET /api/trips/{id}/exceptions`, `POST …/exceptions/{eid}/resolve`; tuyến khác `POST …/reroute`, `POST …/reroute/{i}/confirm`. Giờ
@@ -1241,6 +1246,16 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `DELIVERY_DEMAND_MANAGE` mà máy chủ chưa giao cho vai trò nào, gỡ khỏi chuyến chưa có endpoint: một bảng `REQUIREMENT_SERVER_SUPPORT`
   (`requirements-capabilities.ts`) ẩn các nút đó, đổi cờ khi máy chủ có quyền. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu.
+- **Kho** (`warehouse`; `warehouse-backend-api.ts`, DTO ở `warehouse-dto.ts`, `WAREHOUSE_CAPABILITIES` ở `warehouse-server-api.ts`): `/kho` là
+  `ServerWarehouseTripsPage` — chuyến chờ xếp `GET /api/warehouse/tasks` cùng chuyến Đang xếp hàng `GET /api/trips?status=LOADING` — và
+  `ServerLoadingSession`: "Bắt đầu xếp hàng" `POST /api/warehouse/tasks/{tripId}/start` trả kiện theo thứ tự xếp, từng kiện đối chiếu bằng mã gõ
+  (mã vạch hoặc mã kho kiện, tab kiểm vì máy chủ không kiểm) rồi `POST /api/warehouse/placements/{id}/confirm`, hoặc ghi sai lệch vị trí
+  `…/deviation` (cm nguyên + lý do), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (400 không mã là `INCOMPLETE_LOADING`). Máy chủ chỉ
+  trả danh sách kiện lúc bắt đầu, nên phiên (kiện, kết quả từng kiện, đã xong chưa) nằm ở `sessionStorage` của tab
+  (`loadmaster.phien-xep-may-chu`); chuyến Đang xếp hàng mà tab không giữ phiên là nhóm "Đang xếp ở thiết bị khác", không có nút. Màn bản máy chủ
+  không có soạn hàng, báo thiếu, quét QR, xác nhận tay, kiện hỏng, seal, khung 3D (kho không đọc được lòng thùng, điểm giao), chuông.
+- **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
+  kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe
   `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Chỉ điều phối viên
   đọc được; vai trò khác thấy câu lý do, màn không gọi mạng (`fleetReachable`). `FLEET_CAPABILITIES` ẩn mọi lệnh ghi, chuyến đang dùng xe, ghi

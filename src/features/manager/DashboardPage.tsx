@@ -6,7 +6,9 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useCan } from '@/features/auth/useCan'
-import { useT } from '@/lib/i18n'
+import { isApiError } from '@/lib/api-client'
+import { dataErrorMessage, useT, type TFunction } from '@/lib/i18n'
+import { DASHBOARD_CAPABILITIES } from './dashboard-capabilities'
 import type { DashboardSummary } from './dashboard-summary'
 import { FleetStatusCard } from './FleetStatusCard'
 import { KpiRow } from './KpiRow'
@@ -85,7 +87,7 @@ export function DashboardPage() {
           <EmptyState
             mascot="error"
             title={t('manager.errorTitle')}
-            description={t('manager.errorDescription')}
+            description={errorDescription(query.error, t)}
             action={
               <Button variant="secondary" onClick={() => void query.refetch()}>
                 {t('manager.retry')}
@@ -135,9 +137,16 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
           <WeightByVehicleChart vehicles={summary.byVehicle} />
         </Suspense>
       </div>
-      <RecentTripsTable trips={summary.trips} />
+      <RecentTripsTable trips={summary.trips} total={summary.tripCount} />
     </>
   )
+}
+
+/** Kho mẫu: câu chung. Máy chủ: kỳ bị từ chối (quá 366 ngày) nói đúng lý do, lỗi khác theo mã (`dataErrorMessage`). */
+function errorDescription(error: unknown, t: TFunction): string {
+  if (!DASHBOARD_CAPABILITIES.backend) return t('manager.errorDescription')
+  if (isApiError(error) && (error.code === 'INVALID_INPUT' || error.code === 'BAD_REQUEST')) return t('manager.periodRejected')
+  return dataErrorMessage(error, t)
 }
 
 /** Giữ chỗ đúng khung một biểu đồ trong lúc tải chunk `recharts`, để bảng bên dưới không nhảy. */

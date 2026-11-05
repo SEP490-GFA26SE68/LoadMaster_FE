@@ -13,7 +13,7 @@ import type { AuditChange, AuditTableRow } from './audit-change'
 const helper = createColumnHelper<BaseTableFeatures, AuditTableRow>()
 
 /** Nền + chữ của năm cặp tint (AGENTS mục 4) cho ô icon trong bảng — cùng bảng màu với `KpiTile`. */
-const TINT: Record<KpiTone, string> = {
+export const TINT: Record<KpiTone, string> = {
   blue: 'bg-tint-blue text-tint-blue-fg',
   green: 'bg-tint-green text-tint-green-fg',
   amber: 'bg-tint-amber text-tint-amber-fg',
@@ -84,7 +84,7 @@ function DetailsCell({ row }: { row: AuditTableRow }) {
   )
 }
 
-function ChangeChip({ change }: { change: AuditChange }) {
+export function ChangeChip({ change }: { change: AuditChange }) {
   const t = useT()
   return (
     <span className="inline-flex items-center gap-1 rounded-sm bg-tint-slate px-1.5 align-middle font-mono text-caption text-ink-3">

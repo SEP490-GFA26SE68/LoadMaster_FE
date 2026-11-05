@@ -2,12 +2,36 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   chưa có ở BE: fetchNotifications
  * Người dùng nối backend (`users`) thì chuông bỏ sự kiện tài khoản của kho mẫu, như Nhật ký (`AUDIT_LOG_AVAILABLE`).
+ * Backend chưa có thông báo: vai trò mà nhóm dữ liệu chính của nó đã nối backend thì không có chuông (`notificationsReachable`).
  */
 
 import { AUDIT_LOG_AVAILABLE } from '@/features/admin/audit-api'
 import type { AuditDirectory } from '@/features/admin/audit-log'
+import { usesBackend, type BackendFeature } from '@/lib/backend-config'
 import { getMockDb, vnDate, type AuditEvent } from '@/lib/mock-db'
+import type { Role } from '@/types/user'
 import { notificationWindowStart, selectNotifications, withoutAccountEvents, type NotificationViewer } from './notifications'
+
+/**
+ * Nhóm dữ liệu mà thông báo của từng vai trò nói về (`NOTIFICATION_ACTIONS`): chuyến và giám sát (điều phối viên, quản lý công ty), kho,
+ * tài xế, tài khoản và credit (hai vai trò quản trị), yêu cầu hỗ trợ (mọi vai trò công ty). Chuông đọc nhật ký của kho mẫu, nên một nhóm
+ * trong đó đã nối backend thì chuông nói về dữ liệu mẫu không có trên màn: bỏ chuông.
+ */
+const BELL_SOURCES: Readonly<Record<Role, readonly BackendFeature[]>> = {
+  systemAdmin: ['users'],
+  systemManager: [],
+  systemSupporter: [],
+  companyAdmin: ['users', 'billing', 'support'],
+  companyManager: ['trips', 'monitoring', 'support'],
+  dispatcher: ['trips', 'monitoring', 'packages', 'support'],
+  warehouse: ['warehouse', 'packages', 'support'],
+  driver: ['driver', 'support'],
+}
+
+/** Chuông của vai trò còn nguồn thật không: mọi nhóm nó nói về vẫn là kho mẫu (backend chưa có thông báo). */
+export function notificationsReachable(role: Role): boolean {
+  return BELL_SOURCES[role].every((feature) => !usesBackend(feature))
+}
 
 /**
  * Lớp gọi API của chuông thông báo (LM-098) — nơi duy nhất của chuông biết về kho. Kho lọc nhật ký theo ngày, phần còn lại lọc ngay

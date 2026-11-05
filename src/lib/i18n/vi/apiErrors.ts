@@ -99,6 +99,8 @@ export const apiErrors = {
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
   INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
   TRIP_ALREADY_LOADING: 'Chuyến đã bắt đầu xếp hàng.',
+  TRIP_NOT_READY_FOR_LOADING: 'Chỉ bắt đầu xếp được chuyến Đã lập kế hoạch.',
+  LOADING_NOT_COMPLETED: 'Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.',
   LOADING_EXECUTION_NOT_FOUND: 'Không tìm thấy phiên xếp hàng của chuyến.',
   PLACEMENT_ALREADY_CONFIRMED: 'Kiện này đã được xác nhận xếp.',
   DEVIATION_ALREADY_RECORDED: 'Sai lệch của kiện này đã được ghi.',
@@ -133,4 +135,5 @@ export const apiErrors = {
 
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',
+  LOADING_SESSION_UNAVAILABLE: 'Phiên xếp này bắt đầu ở thiết bị hoặc tab khác — máy chủ chưa cho mở lại danh sách kiện của phiên.',
 } as const

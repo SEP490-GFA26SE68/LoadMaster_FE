@@ -21,6 +21,15 @@ export type DashboardData = {
 
 export type DashboardTripRow = TripFacts & { readonly vehicleName: string; readonly driverName: string | null }
 
+/**
+ * Dòng chuyến của bảng và báo cáo. Kho mẫu có đủ (`DashboardTripRow`); máy chủ chỉ có phần bắt buộc — phần tuỳ chọn vắng hẳn và màn bỏ
+ * cột của nó (`DASHBOARD_CAPABILITIES.tripDetails`, `plannerLinks`), không vẽ 0.
+ */
+export type DashboardTripView = Pick<
+  DashboardTripRow,
+  'id' | 'name' | 'scheduledDate' | 'vehicleName' | 'driverName' | 'status' | 'volumePercent'
+> & Partial<Pick<DashboardTripRow, 'sub' | 'packageCount' | 'cargoWeightKg' | 'deliveredWeightKg' | 'issueCount' | 'plan'>>
+
 export type VehicleSummary = {
   readonly vehicleId: string
   readonly vehicleName: string
@@ -48,7 +57,8 @@ export type DashboardSummary = {
   readonly vehicles: {
     readonly inUse: number
     readonly total: number
-    readonly byStatus: Readonly<Record<VehicleStatus, number>>
+    /** `retired` (Ngừng sử dụng) chỉ máy chủ có; kho mẫu không có trạng thái đó. */
+    readonly byStatus: Readonly<Record<VehicleStatus, number>> & { readonly retired?: number }
   }
   /** Mỗi ngày của kỳ một phần tử; ngày không có bản đã duyệt thì `null`. */
   readonly fillByDay: readonly { readonly date: string; readonly averagePercent: number | null; readonly planCount: number }[]
@@ -56,8 +66,8 @@ export type DashboardSummary = {
   readonly tripsByStatus: readonly { readonly status: TripStatus; readonly count: number }[]
   /** Xe có chuyến trong kỳ, khối lượng đã giao giảm dần. */
   readonly byVehicle: readonly VehicleSummary[]
-  /** Chuyến trong kỳ, ngày chạy mới nhất trước. */
-  readonly trips: readonly DashboardTripRow[]
+  /** Chuyến trong kỳ, ngày chạy mới nhất trước: kho mẫu đủ mọi chuyến, máy chủ chỉ các chuyến gần nhất (`allTrips`). */
+  readonly trips: readonly DashboardTripView[]
 }
 
 function average(values: readonly number[]): number | null {

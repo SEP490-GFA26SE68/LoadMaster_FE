@@ -13,12 +13,14 @@ import { loadingSessionPath } from './warehouse-trips'
  * nên bước đang xếp giữ nguyên. Nút thoát theo vai trò (`exitAction`): nhân viên kho về danh sách chuyến (LM-086) — từ FE-0-01 chỉ
  * nhân viên kho mở được màn này. Thanh tiến độ tính theo số kiện đã có kết quả trong kho, không theo số bước.
  */
-export function StepHeader({ step, totalSteps, recorded, tripId, label, progressLabel }: {
+export function StepHeader({ step, totalSteps, recorded, tripId, code, label, progressLabel }: {
   step: number
   totalSteps: number
   /** Kiện đã xong ở bước này: đã soạn, hoặc đã có kết quả xếp (đã xếp, hay hỏng bị bỏ lại). */
   recorded: number
   tripId: string
+  /** Mã chuyến hiện ở thanh khi khác mã trên URL (bản máy chủ: URL mang mã số). */
+  code?: string
   /** Chữ trước số; mặc định "Bước". */
   label?: string
   /** Tên của thanh tiến độ; mặc định "Tiến độ xếp hàng". */
@@ -37,7 +39,7 @@ export function StepHeader({ step, totalSteps, recorded, tripId, label, progress
           <span aria-hidden className="mx-1 h-8 w-px bg-sky-solid-border" />
           <div className="flex flex-col items-end">
             <span className="text-body-lg text-sky-text-3">{t('warehouse.header.trip')}</span>
-            <span className="font-mono text-[18px] leading-6 font-semibold tracking-[-0.01em] text-sky-text">{tripId}</span>
+            <span className="font-mono text-[18px] leading-6 font-semibold tracking-[-0.01em] text-sky-text">{code ?? tripId}</span>
           </div>
         </>
       }

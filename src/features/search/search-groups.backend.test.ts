@@ -12,3 +12,7 @@ test('kho kiện nối backend: chỉ nhân viên kho (giữ packages.manage) c�
   expect(quickSearchGroups((permission) => can('dispatcher', permission))).not.toContain('pool')
   expect(quickSearchGroups((permission) => can('warehouse', permission))).toContain('pool')
 })
+
+test('kho kiện nối backend: không còn nhóm loại kiện (chỉ có ở kho mẫu)', () => {
+  expect(quickSearchGroups((permission) => can('warehouse', permission))).not.toContain('packageTypes')
+})

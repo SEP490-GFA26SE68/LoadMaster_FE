@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { AUDIT_LOG_AVAILABLE, fetchAuditDirectory, fetchAuditEvents, type AuditLogFilter } from './audit-api'
 import { summarizeAuditLog } from './audit-summary'
 
-/** Có nhật ký để đọc không (`false` khi người dùng đã nối backend mà backend chưa có nhật ký) — chọn một lần lúc tải app. */
+/** Nhật ký của kho mẫu có dùng không (`false` khi `users` nối backend: màn đọc nhật ký máy chủ) — chọn một lần lúc tải app. */
 export const auditLogAvailable = AUDIT_LOG_AVAILABLE
 
 /**
