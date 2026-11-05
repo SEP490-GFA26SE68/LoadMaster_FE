@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { RouteMap } from '@/components/map'
+import { RouteMap, pathFromEncodedPolylines } from '@/components/map'
 import { useCan } from '@/features/auth/useCan'
 import { LiveLocationBar } from '@/features/monitoring/LiveLocationBar'
 import { useTripMonitoringQuery } from '@/features/monitoring/useTrackingQuery'
@@ -8,6 +8,7 @@ import { vnClock, type DeliveryStop, type Trip, type TripEta } from '@/lib/mock-
 import { RouteDiagram } from './RouteDiagram'
 import { RoutePlanBar } from './RoutePlanBar'
 import type { StopRow } from './trip-summary'
+import { useTripRoutePathQuery } from './useRouteQuery'
 
 /**
  * Card sơ đồ tuyến của Chi tiết chuyến cùng dữ liệu của riêng nó: giờ đến dự kiến của tuyến đã tối ưu (FE-4b-09) khi xe chưa rời kho,
@@ -42,7 +43,24 @@ export function TripRouteCard({ tripId, trip, eta, vehicleName, stops, editable,
     () => new Map((departed ? (inTransit ? monitoring?.stops ?? [] : []) : eta?.stops ?? []).map((stop) => [stop.stopId, stop])),
     [departed, inTransit, monitoring, eta],
   )
-  const mapStops = stops.flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }]))
+  const mapStops = useMemo(
+    () => stops.flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }])),
+    [stops],
+  )
+  const pathFallback = useMemo(() => ({
+    depot: { lat: trip.depot.lat, lng: trip.depot.lng },
+    stops: mapStops.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
+  }), [trip.depot.lat, trip.depot.lng, mapStops])
+  const routePathQuery = useTripRoutePathQuery(tripId, pathFallback, mapStops.length > 0)
+  const monitoringPath = useMemo(() => {
+    const legs = monitoring?.routeLegs
+    if (!legs?.length) return undefined
+    const path = pathFromEncodedPolylines(
+      [...legs].sort((a, b) => a.legSequence - b.legSequence).map((leg) => leg.polyline),
+    )
+    return path.length > 1 ? path : undefined
+  }, [monitoring?.routeLegs])
+  const path = monitoringPath ?? routePathQuery.data
   const vehicle = location
     ? { name: t('monitoring.location.vehicle', { name: vehicleName, source: t(`monitoring.location.sources.${location.source}`) }), lat: location.lat, lng: location.lng }
     : undefined
@@ -60,7 +78,14 @@ export function TripRouteCard({ tripId, trip, eta, vehicleName, stops, editable,
       map={mapStops.length > 0 ? (
         <>
           {location ? <LiveLocationBar location={location} isMockResult={monitoring?.isMockResult ?? false} /> : null}
-          <RouteMap label={t('trips.routePlan.map', { id: tripId })} className="h-64" depot={{ name: trip.depot.name, lat: trip.depot.lat, lng: trip.depot.lng }} stops={mapStops} vehicle={vehicle} />
+          <RouteMap
+            label={t('trips.routePlan.map', { id: tripId })}
+            className="h-64"
+            depot={{ name: trip.depot.name, lat: trip.depot.lat, lng: trip.depot.lng }}
+            stops={mapStops}
+            vehicle={vehicle}
+            path={path}
+          />
         </>
       ) : undefined}
       onAddStop={editable ? onAddStop : undefined}
