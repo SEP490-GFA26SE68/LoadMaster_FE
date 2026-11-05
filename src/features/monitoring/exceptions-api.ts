@@ -7,10 +7,11 @@
  *   resolveTripException → POST /api/trips/{id}/exceptions/{eid}/resolve (BE)
  *   requestReroute       → POST /api/trips/{id}/reroute (BE)
  *   confirmReroute       → POST /api/trips/{id}/reroute/{routeIndex}/confirm (BE)
- *   renegotiateDeadline  → PATCH /api/delivery-requirements/{id} (hạn mới; ghi "đã liên hệ khách": chưa có ở BE, Q-23)
+ *   renegotiateDeadline  → POST /api/trips/{id}/exceptions/{eid}/renegotiate (BE)
+ *   listRenegotiableRequirements → GET /api/delivery-requirements · GET /api/trips/{id}/detail (BE)
  *   escalateTripException → POST /api/trips/{id}/exceptions/{eid}/escalate (BE)
  */
-import { ApiError } from '@/lib/api-client'
+import { fetchTripRequirements } from '@/features/trips/trip-extras-api'
 import { usesBackend } from '@/lib/backend-config'
 import {
   getMockDb,
@@ -24,9 +25,6 @@ import * as backend from './monitoring-backend-api'
 
 const ON_BACKEND = usesBackend('monitoring')
 const DRIVER_ON_BACKEND = usesBackend('driver')
-
-/** Việc backend chưa có: màn Giám sát đã ẩn nút, lỡ gọi tới thì từ chối — không ghi vào kho mẫu thay cho chuyến của backend. */
-const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /**
  * Lớp gọi API của sự cố cấp chuyến, tuyến thay thế và gia hạn (FE-6-11, FE-6-12). Kho mẫu: sự cố nằm trong kho của tab đang mở, tuyến
@@ -87,8 +85,27 @@ export function confirmReroute(tripId: string, routeIndex: number): Promise<Trip
 }
 
 /** Quản lý công ty ghi đã liên hệ khách và nhập hạn mới cho một yêu cầu giao của chuyến có sự cố đã chuyển lên. */
-// PATCH /api/delivery-requirements/{id} (ghi "đã liên hệ khách": chưa có ở BE, Q-23)
+// POST /api/trips/{id}/exceptions/{eid}/renegotiate
 export function renegotiateDeadline(tripId: string, exceptionId: string, input: DeadlineRenegotiationInput): Promise<TripException> {
-  if (ON_BACKEND) return unsupported()
+  if (ON_BACKEND) return backend.renegotiate(tripId, exceptionId, input)
   return getMockDb().renegotiateDeadline(tripId, exceptionId, input)
+}
+
+/** Yêu cầu giao gia hạn được: còn đang giao, có hạn, và còn một điểm giao chưa hoàn tất của chuyến (`stopNumber`, từ 1). */
+export type RenegotiableRequirement = {
+  readonly id: string
+  readonly destinationName: string
+  /** ISO 8601 */
+  readonly deadline: string
+  readonly stopNumber: number
+}
+
+/** Yêu cầu giao của chuyến mà quản lý gia hạn được, theo thứ tự điểm giao rồi hạn. */
+// GET /api/delivery-requirements · GET /api/trips/{id}/detail
+export async function listRenegotiableRequirements(tripId: string): Promise<RenegotiableRequirement[]> {
+  if (ON_BACKEND) return backend.renegotiableRequirements(tripId)
+  return (await fetchTripRequirements(tripId)).flatMap(({ requirement, status, stopNumber }) =>
+    status === 'IN_TRIP' && stopNumber !== undefined
+      ? [{ id: requirement.id, destinationName: requirement.destinationName, deadline: requirement.deadline, stopNumber }]
+      : [])
 }

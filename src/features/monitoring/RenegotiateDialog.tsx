@@ -11,12 +11,11 @@ import { SelectField } from '@/components/ui/SelectField'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { deadlineIso, deadlineParts } from '@/features/requirements/requirement-form'
-import type { TripRequirement } from '@/features/trips/trip-extras-api'
-import { useTripRequirementsQuery } from '@/features/trips/useTripExtrasQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { MAX_EXCEPTION_NOTE_LENGTH } from '@/lib/mock-db'
+import type { RenegotiableRequirement } from './exceptions-api'
 import type { EscalationRow } from './monitoring-view'
-import { useRenegotiateDeadlineMutation } from './useMonitoringQuery'
+import { useRenegotiableRequirementsQuery, useRenegotiateDeadlineMutation } from './useMonitoringQuery'
 import { useMoment } from './useMoment'
 
 /** Lỗi của form là mã; component dịch qua `monitoring.renegotiate.errors`. Hạn có ở tương lai hay không do kho xét theo đồng hồ của nó. */
@@ -52,9 +51,9 @@ export function RenegotiateDialog({ row, onOpenChange }: { /** Sự cố sắp g
 
 function RenegotiateBody({ row, onDone }: { row: EscalationRow; onDone: () => void }) {
   const t = useT()
-  const query = useTripRequirementsQuery(row.trip.tripId)
-  // Yêu cầu còn đang giao và còn điểm giao trong chuyến mới gia hạn được
-  const open = (query.data ?? []).filter((item) => item.status === 'IN_TRIP' && item.stopNumber !== undefined)
+  // Yêu cầu còn đang giao và còn điểm giao chưa hoàn tất trong chuyến mới gia hạn được
+  const query = useRenegotiableRequirementsQuery(row.trip.tripId)
+  const open = query.data ?? []
   const header = (
     <DialogHeader
       icon={CalendarClock}
@@ -79,16 +78,16 @@ function RenegotiateBody({ row, onDone }: { row: EscalationRow; onDone: () => vo
   return <RenegotiateForm row={row} requirements={open} header={header} onDone={onDone} />
 }
 
-function RenegotiateForm({ row, requirements, header, onDone }: { row: EscalationRow; requirements: readonly TripRequirement[]; header: React.ReactNode; onDone: () => void }) {
+function RenegotiateForm({ row, requirements, header, onDone }: { row: EscalationRow; requirements: readonly RenegotiableRequirement[]; header: React.ReactNode; onDone: () => void }) {
   const t = useT()
   const format = useFormat()
   const renegotiate = useRenegotiateDeadlineMutation(row.trip.tripId, row.exception.id)
   // Chọn sẵn yêu cầu ở điểm xe đang tới lúc báo sự cố, không có thì yêu cầu đầu tiên
   const initial = requirements.find((item) => item.stopNumber === row.exception.stopNumber) ?? requirements[0]
-  const parts = initial ? deadlineParts(initial.requirement.deadline) : { deadlineDate: '', deadlineTime: '' }
+  const parts = initial ? deadlineParts(initial.deadline) : { deadlineDate: '', deadlineTime: '' }
   const form = useForm<RenegotiateValues>({
     resolver: zodResolver(schema),
-    defaultValues: { requirementId: initial?.requirement.id ?? '', contactNote: '', date: parts.deadlineDate, time: parts.deadlineTime },
+    defaultValues: { requirementId: initial?.id ?? '', contactNote: '', date: parts.deadlineDate, time: parts.deadlineTime },
   })
   const { errors } = form.formState
   const message = (code: string | undefined) => (isError(code) ? t(`monitoring.renegotiate.errors.${code}`, { max: MAX_EXCEPTION_NOTE_LENGTH }) : undefined)
@@ -114,9 +113,9 @@ function RenegotiateForm({ row, requirements, header, onDone }: { row: Escalatio
           name="requirementId"
           label={t('monitoring.renegotiate.requirement')}
           placeholder={t('monitoring.renegotiate.requirementPlaceholder')}
-          options={requirements.map(({ requirement, stopNumber }) => ({
-            value: requirement.id,
-            label: t('monitoring.renegotiate.requirementOption', { id: requirement.id, destination: requirement.destinationName, number: format.integer(stopNumber ?? 0) }),
+          options={requirements.map(({ id, destinationName, stopNumber }) => ({
+            value: id,
+            label: t('monitoring.renegotiate.requirementOption', { id, destination: destinationName, number: format.integer(stopNumber) }),
           }))}
           hint={<CurrentDeadline control={form.control} row={row} requirements={requirements} />}
         />
@@ -142,13 +141,13 @@ function RenegotiateForm({ row, requirements, header, onDone }: { row: Escalatio
 }
 
 /** Hạn hiện tại của yêu cầu đang chọn và giờ đến dự kiến của điểm giao của nó — con số quản lý cần khi thoả thuận hạn mới. */
-function CurrentDeadline({ control, row, requirements }: { control: Control<RenegotiateValues>; row: EscalationRow; requirements: readonly TripRequirement[] }) {
+function CurrentDeadline({ control, row, requirements }: { control: Control<RenegotiateValues>; row: EscalationRow; requirements: readonly RenegotiableRequirement[] }) {
   const t = useT()
   const moment = useMoment()
   const requirementId = useWatch({ control, name: 'requirementId' })
-  const chosen = requirements.find((item) => item.requirement.id === requirementId)
+  const chosen = requirements.find((item) => item.id === requirementId)
   if (!chosen) return null
   const eta = row.stops.find((stop) => stop.number === chosen.stopNumber)?.eta
-  const deadline = moment(chosen.requirement.deadline)
+  const deadline = moment(chosen.deadline)
   return <>{eta === undefined ? t('monitoring.renegotiate.current', { deadline }) : t('monitoring.renegotiate.currentEta', { deadline, eta: moment(eta) })}</>
 }

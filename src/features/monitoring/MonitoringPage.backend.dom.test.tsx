@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { connectApiAuth } from '@/lib/api-client'
 import { I18nProvider } from '@/lib/i18n'
-import { envelope, stubBackend, type FakeCall } from '@/test/fake-backend'
+import { envelope, page, stubBackend, type FakeCall } from '@/test/fake-backend'
 import { signedInAs } from '@/test/signed-in'
 import type { Role } from '@/types/user'
 import { MonitoringPage } from './MonitoringPage'
@@ -59,6 +59,13 @@ beforeEach(() => {
       status = 'RESOLVED'
       return { body: envelope({ ...EXCEPTION, status, resolution: { at: '2026-10-18T09:20:00', by: '4' } }) }
     },
+    'GET /api/delivery-requirements': {
+      body: envelope(page([{ id: 41, customerName: 'Bách Hoá Xanh', destination: '215 Quốc lộ 1K', deadline: '2026-10-18T10:30:00', tripId: 55, tripCode: TRIP }])),
+    },
+    'GET /api/trips/55/detail': {
+      body: envelope({ trip: { id: 55 }, stops: [{ id: 8, deliveryRequirementId: 41, stopSequence: 2, stopName: 'Bách Hoá Xanh Dĩ An', status: 'PENDING' }] }),
+    },
+    [`POST /api/trips/${TRIP}/exceptions/31/renegotiate`]: () => ({ body: envelope({ ...EXCEPTION, status, escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }) }),
     [`POST /api/trips/${TRIP}/exceptions/31/escalate`]: () => {
       status = 'ESCALATED'
       return { body: envelope({ ...EXCEPTION, status, escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }) }
@@ -129,7 +136,7 @@ test('điều phối viên chuyển sự cố cho quản lý: gọi backend, s�
   expect(panel.getAllByText('Đã chuyển quản lý').length).toBeGreaterThan(0)
 })
 
-test('quản lý công ty: không xử lý sự cố ở tab chuyến; tab "Sự cố cần xử lý" đọc sự cố máy chủ đã chuyển lên, chỉ đọc', async () => {
+test('quản lý công ty: không xử lý sự cố ở tab chuyến; tab "Sự cố cần xử lý" đọc sự cố máy chủ đã chuyển lên và gia hạn qua máy chủ', async () => {
   status = 'ESCALATED'
   const user = userEvent.setup()
   renderPage('companyManager')
@@ -138,7 +145,16 @@ test('quản lý công ty: không xử lý sự cố ở tab chuyến; tab "Sự
   await user.click(screen.getByRole('tab', { name: /Sự cố cần xử lý/ }))
   const list = within(await screen.findByRole('list', { name: 'Sự cố cần xử lý' }, SLOW))
   expect(list.getByText('Kẹt xe cầu Đồng Nai')).toBeInTheDocument()
-  expect(list.getByText('Máy chủ chưa nhận hạn mới: liên hệ khách rồi báo điều phối viên.')).toBeInTheDocument()
-  expect(list.queryByRole('button', { name: 'Nhập hạn mới' })).toBeNull()
   expect(calls.some((call) => call.method !== 'GET' && call.path.startsWith('/api/'))).toBe(false)
+
+  // Yêu cầu giao của chuyến đọc từ máy chủ: chọn sẵn yêu cầu ở điểm chưa giao, hạn hiện tại điền sẵn
+  await user.click(list.getByRole('button', { name: 'Nhập hạn mới' }))
+  const dialog = within(await screen.findByRole('dialog', {}, SLOW))
+  expect((await dialog.findAllByText(/41 · Bách Hoá Xanh Dĩ An · điểm 2/, {}, SLOW)).length).toBeGreaterThan(0)
+  await user.type(dialog.getByRole('textbox', { name: 'Đã liên hệ khách' }), 'Khách đồng ý nhận muộn')
+  await user.click(dialog.getByRole('button', { name: 'Lưu hạn mới' }))
+  await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === `/api/trips/${TRIP}/exceptions/31/renegotiate`)).toBe(true))
+  const post = calls.find((call) => call.path === `/api/trips/${TRIP}/exceptions/31/renegotiate`)
+  expect(post?.body).toEqual({ requirementId: 41, newDeadline: '2026-10-18T10:30:00', contactNote: 'Khách đồng ý nhận muộn' })
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), SLOW)
 })

@@ -25,7 +25,6 @@ import { useFleetMonitoringQuery } from './useTrackingQuery'
 export function EscalationTab({ board }: { board: MonitoringBoard }) {
   const t = useT()
   const fleet = useFleetMonitoringQuery(true).data
-  const caps = useMonitoringCapabilities()
   const [target, setTarget] = useState<EscalationRow | null>(null)
   const rows = escalationRows(board, fleet ?? [])
   if (fleet !== undefined && rows.length === 0) {
@@ -42,7 +41,7 @@ export function EscalationTab({ board }: { board: MonitoringBoard }) {
           <EscalationItem key={row.exception.id} row={row} userNames={board.userNames} onRenegotiate={setTarget} />
         ))}
       </ul>
-      {caps.renegotiate ? <RenegotiateDialog row={target} onOpenChange={(open) => { if (!open) setTarget(null) }} /> : null}
+      <RenegotiateDialog row={target} onOpenChange={(open) => { if (!open) setTarget(null) }} />
     </>
   )
 }
@@ -85,12 +84,10 @@ function EscalationItem({ row, userNames, onRenegotiate }: { row: EscalationRow;
             ))}
           </ul>
         )}
-        {caps.renegotiate ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" onClick={() => onRenegotiate(row)}>{t('monitoring.escalations.renegotiate')}</Button>
-            {exception.renegotiation ? <span className="text-small text-ink-2">{t('monitoring.escalations.waiting')}</span> : null}
-          </div>
-        ) : <p className="m-0 text-small text-ink-3">{t('monitoring.backend.renegotiateUnavailable')}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" onClick={() => onRenegotiate(row)}>{t('monitoring.escalations.renegotiate')}</Button>
+          {exception.renegotiation ? <span className="text-small text-ink-2">{t('monitoring.escalations.waiting')}</span> : null}
+        </div>
       </Card>
     </li>
   )

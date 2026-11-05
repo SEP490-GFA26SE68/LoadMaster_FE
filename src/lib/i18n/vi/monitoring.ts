@@ -202,6 +202,5 @@ export const monitoring = {
     reportDescription: 'Máy chủ ghi lại sự cố kèm số phút dự kiến chậm.',
     /** Hộp "Sự cố trên đường" của tài xế khi nhóm `driver` nối backend. */
     driverReportDescription: 'Máy chủ ghi lại sự cố kèm số phút dự kiến chậm; điều phối viên thấy sự cố ở màn Giám sát.',
-    renegotiateUnavailable: 'Máy chủ chưa nhận hạn mới: liên hệ khách rồi báo điều phối viên.',
   },
 } as const

@@ -4,6 +4,7 @@ import type { DeadlineRenegotiationInput, TripExceptionInput } from '@/lib/mock-
 import {
   confirmReroute,
   escalateTripException,
+  listRenegotiableRequirements,
   renegotiateDeadline,
   reportTripException,
   requestReroute,
@@ -74,6 +75,11 @@ export function useRequestRerouteMutation(tripId: string) {
 export function useConfirmRerouteMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: (routeIndex: number) => confirmReroute(tripId, routeIndex), onSettled: () => refresh(client) })
+}
+
+/** Yêu cầu giao của chuyến mà quản lý gia hạn được; dưới khoá chuyến nên gia hạn xong (làm mới `['trips']`) đọc lại hạn mới. */
+export function useRenegotiableRequirementsQuery(tripId: string) {
+  return useQuery({ queryKey: ['trips', tripId, 'renegotiable-requirements'], queryFn: () => listRenegotiableRequirements(tripId), staleTime: 0 })
 }
 
 export function useRenegotiateDeadlineMutation(tripId: string, exceptionId: string) {

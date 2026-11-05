@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
-import { envelope, stubBackend } from '@/test/fake-backend'
+import { envelope, page, stubBackend } from '@/test/fake-backend'
 import {
   confirmReroute,
   escalateTripException,
+  listRenegotiableRequirements,
   renegotiateDeadline,
   reportTripException,
   requestReroute,
@@ -40,7 +41,7 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 
 test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, gia hạn, nhận dọc đường, xác nhận tay; chuyển quản lý có', () => {
   expect(MONITORING_CAPABILITIES).toEqual({
-    backend: true, openTrip: false, reorderStops: false, escalation: true, renegotiate: false, pickups: false, manualConfirm: false,
+    backend: true, openTrip: false, reorderStops: false, escalation: true, pickups: false, manualConfirm: false,
   })
 })
 
@@ -172,9 +173,56 @@ test('tuyến khác: lựa chọn của máy chủ, chọn một tuyến; 404 l�
   expect(await codeOf(confirmReroute(TRIP, 3))).toBe('INVALID_REROUTE_INDEX')
 })
 
+test('yêu cầu giao gia hạn được: dòng của chuyến (mã chuyến), điểm giao chưa hoàn tất của nó theo chi tiết chuyến', async () => {
+  const { calls } = stubBackend({
+    'GET /api/delivery-requirements': {
+      body: envelope(page([
+        { id: 40, customerName: 'Co.opmart', destination: '121 Phạm Văn Thuận', deadline: '2026-10-18T09:30:00', tripId: 55, tripCode: TRIP },
+        { id: 41, customerName: 'Bách Hoá Xanh', destination: '215 Quốc lộ 1K', deadline: '2026-10-18T10:30:00', tripId: 55, tripCode: TRIP },
+        { id: 42, customerName: 'Khác', destination: 'x', deadline: '2026-10-18T11:00:00', tripId: 56, tripCode: 'TRIP-KHAC' },
+      ])),
+    },
+    'GET /api/trips/55/detail': {
+      body: envelope({
+        trip: { id: 55 },
+        stops: [
+          { id: 7, deliveryRequirementId: 40, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', status: 'COMPLETED' },
+          { id: 8, deliveryRequirementId: 41, stopSequence: 2, stopName: 'Bách Hoá Xanh Dĩ An', status: 'PENDING' },
+        ],
+      }),
+    },
+  })
+  // Điểm 1 đã giao xong nên yêu cầu 40 không gia hạn được; yêu cầu 42 thuộc chuyến khác
+  expect(await listRenegotiableRequirements(TRIP)).toEqual([
+    { id: '41', destinationName: 'Bách Hoá Xanh Dĩ An', deadline: '2026-10-18T03:30:00.000Z', stopNumber: 2 },
+  ])
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['GET /api/delivery-requirements', 'GET /api/trips/55/detail'])
+
+  // Chuyến không có yêu cầu giao nào: không đọc chi tiết chuyến
+  const empty = stubBackend({ 'GET /api/delivery-requirements': { body: envelope(page([])) } })
+  expect(await listRenegotiableRequirements(TRIP)).toEqual([])
+  expect(empty.calls).toHaveLength(1)
+})
+
+test('gia hạn: hạn mới gửi theo giờ Việt Nam không múi giờ, mã số yêu cầu; máy chủ từ chối thì giữ mã', async () => {
+  const escalated = { id: '31', tripId: TRIP, type: 'TRAFFIC', delayMinutes: 25, status: 'ESCALATED', reportedAt: '2026-10-18T09:10:00', escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }
+  const { calls } = stubBackend({ [`POST /api/trips/${TRIP}/exceptions/31/renegotiate`]: { body: envelope(escalated) } })
+  const input = { requirementId: '41', deadline: '2026-10-18T10:00:00.000Z', contactNote: 'Khách đồng ý nhận chiều nay' }
+  expect(await renegotiateDeadline(TRIP, '31', input)).toMatchObject({ id: '31', status: 'ESCALATED' })
+  expect(calls[0]?.body).toEqual({ requirementId: 41, newDeadline: '2026-10-18T17:00:00', contactNote: 'Khách đồng ý nhận chiều nay' })
+
+  for (const code of ['CONTACT_NOTE_REQUIRED', 'REQUIREMENT_DEADLINE_PAST', 'EXCEPTION_STATUS_INVALID', 'DELIVERY_REQUIREMENT_NOT_IN_TRIP']) {
+    stubBackend({ [`POST /api/trips/${TRIP}/exceptions/31/renegotiate`]: { status: 400, body: { success: false, code, message: 'x' } } })
+    expect(await codeOf(renegotiateDeadline(TRIP, '31', input))).toBe(code)
+  }
+  // Mã yêu cầu không phải mã số của máy chủ: không gọi mạng
+  const none = stubBackend({})
+  expect(await codeOf(renegotiateDeadline(TRIP, '31', { ...input, requirementId: 'REQ-001' }))).toBe('DELIVERY_REQUIREMENT_NOT_FOUND')
+  expect(none.calls).toEqual([])
+})
+
 test('việc backend chưa có bị từ chối mà không gọi mạng', async () => {
   const { calls } = stubBackend({})
-  expect(await codeOf(renegotiateDeadline(TRIP, '31', { requirementId: 'REQ-001', deadline: '2026-10-18T10:00:00.000Z', contactNote: 'Khách đồng ý' }))).toBe('NOT_SUPPORTED')
   expect(await codeOf(reorderRunningStops(TRIP, ['8', '9']))).toBe('NOT_SUPPORTED')
   expect(calls).toEqual([])
 })

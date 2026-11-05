@@ -31,7 +31,7 @@ export function MonitoringPage() {
   const caps = useMonitoringCapabilities()
   const board = useMonitoringBoardQuery()
   const [params, setParams] = useSearchParams()
-  // Tab của quản lý công ty: người giữ `deadlines.renegotiate`; gia hạn trong tab còn theo nguồn dữ liệu (`caps.renegotiate`)
+  // Tab của quản lý công ty: người giữ `deadlines.renegotiate`; kho mẫu và máy chủ đều nhận hạn mới
   const canRenegotiate = caps.escalation && can('deadlines.renegotiate')
   const tab = canRenegotiate && params.get(TAB_PARAM) === ESCALATION_TAB ? 'escalations' : 'trips'
   const filter: MonitoringFilter = { late: params.get(LATE_PARAM) === '1', incidents: params.get(INCIDENT_PARAM) === '1' }
