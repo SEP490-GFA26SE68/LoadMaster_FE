@@ -55,7 +55,7 @@ test.each<[Role, string[]]>([
   ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi']],
   ['warehouse', ['Kho', 'Kho kiện', 'Khách hàng']],
   ['driver', ['Tài xế']],
-  ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty']],
+  ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty', 'Đơn dùng thử']],
   ['systemSupporter', ['Hỗ trợ', 'Liên hệ của khách']],
   ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký', 'Liên hệ của khách', 'Đơn dùng thử']],
   ['companyAdmin', ['Người dùng', 'Nhật ký', 'Gói và credit', 'Thông tin công ty']],

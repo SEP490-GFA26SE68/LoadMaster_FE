@@ -175,7 +175,7 @@ function lastNumber(detail: string | null | undefined): number | null {
 }
 
 /** Mã lỗi dòng của backend → mã của app (màn dịch); câu `message` của backend không bao giờ hiện ra. */
-function rowErrorOf(issue: BackendRowIssue): ImportRowError {
+export function backendRowErrorOf(issue: BackendRowIssue): ImportRowError {
   const field = DIMENSION_FIELD[issue.errorCode]
   if (field !== undefined) return { code: 'INVALID_DIMENSION', field }
   switch (issue.errorCode) {
@@ -194,7 +194,7 @@ function rowErrorOf(issue: BackendRowIssue): ImportRowError {
   }
 }
 
-const rowWarningOf = (issue: BackendRowIssue): ImportRowWarning =>
+export const backendRowWarningOf = (issue: BackendRowIssue): ImportRowWarning =>
   issue.errorCode === 'IMPORT_EXISTING_CODE' ? { code: 'PACKAGE_CODE_EXISTS_ON_SERVER' } : { code: 'ROW_WARNING' }
 
 const blankRow = (line: number): ImportRow => ({
@@ -227,8 +227,8 @@ export function previewOf(result: BackendImportPreview, file: File): PackageImpo
   const lines = [...rows.values()]
     .map((row) => ({
       ...row,
-      errors: errors.filter((issue) => issue.rowIndex === row.line).map(rowErrorOf),
-      warnings: warnings.filter((issue) => issue.rowIndex === row.line).map(rowWarningOf),
+      errors: errors.filter((issue) => issue.rowIndex === row.line).map(backendRowErrorOf),
+      warnings: warnings.filter((issue) => issue.rowIndex === row.line).map(backendRowWarningOf),
     }))
     .toSorted((a, b) => a.line - b.line)
   const countRows = (issues: readonly BackendRowIssue[]) => new Set(issues.map((issue) => issue.rowIndex)).size

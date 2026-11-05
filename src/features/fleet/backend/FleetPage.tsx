@@ -76,7 +76,7 @@ export function FleetPage() {
     [t],
   )
 
-  const vehicles = vehiclesQuery.data?.data ?? []
+  const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data])
 
   const rows = useMemo(
     () => filterVehicleRows(vehicles, '', statusSlug),

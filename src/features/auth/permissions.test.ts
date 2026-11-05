@@ -8,7 +8,7 @@ import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } fr
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
-  systemManager: ['companies.manage', 'subscriptionPlans.manage'],
+  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
   companyManager: [

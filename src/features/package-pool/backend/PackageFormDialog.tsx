@@ -343,7 +343,7 @@ export function PackageFormDialog({
       shouldDirty: true,
     })
   }, [isEditing, selectedRequirementId, requirementsQuery.data, setValue])
-  const types = typesQuery.data?.data ?? []
+  const types = useMemo(() => typesQuery.data?.data ?? [], [typesQuery.data])
 
   const selectedType = useMemo(
     () => types.find((type) => type.id === selectedTypeId),
