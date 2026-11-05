@@ -9,7 +9,7 @@
  *   fetchDriverTripMonitoring → GET /api/trips/{id}/monitoring (tài xế bị 403)
  *   chỉ kho mẫu: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  *   chưa có ở BE: fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
- *   chưa có ở BE (Q-02, Q-11): arriveAtStop, confirmUnloadManually
+ *   chưa có ở BE (Q-11): confirmUnloadManually
  */
 
 import { ApiError } from '@/lib/api-client'
@@ -40,16 +40,14 @@ const ON_BACKEND = usesBackend('driver')
 
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
- * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến), điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm,
- * gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần đó: "Đã đến", quét QR (nhãn in mã QR mà điểm giao
+ * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm kiện cần dỡ, "Đã đến", dỡ một
+ * kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần đó: quét QR (nhãn in mã QR mà điểm giao
  * không trả), xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ
  * đến dự kiến và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
   readonly backend: boolean
-  /** Bước "Đã đến" trước khi dỡ; không có thì điểm đang giao luôn dỡ được. */
-  readonly arrive: boolean
   readonly qrVerify: boolean
   readonly manualConfirm: boolean
   readonly deliveryIssues: boolean
@@ -68,7 +66,6 @@ export type DriverCapabilities = {
 
 export const DRIVER_CAPABILITIES: DriverCapabilities = {
   backend: ON_BACKEND,
-  arrive: !ON_BACKEND,
   qrVerify: !ON_BACKEND,
   manualConfirm: !ON_BACKEND,
   deliveryIssues: !ON_BACKEND,
@@ -150,9 +147,9 @@ export async function startDelivery(tripId: string): Promise<void> {
 
 /** Tài xế bấm "Đã đến" ở điểm giao hiện tại: ghi giờ đến thật; từ lúc đó mới dỡ hàng được (FE-6-06). */
 // chưa có ở BE (Q-02, Q-11)
-export function arriveAtStop(tripId: string, stopNumber: number): Promise<Trip> {
-  if (ON_BACKEND) return unsupported()
-  return getMockDb().arriveAtStop(tripId, stopNumber)
+export function arriveAtStop(tripId: string, stopNumber: number): Promise<void> {
+  if (ON_BACKEND) return backend().arrive(tripId, stopNumber)
+  return getMockDb().arriveAtStop(tripId, stopNumber).then(() => undefined)
 }
 
 // chưa có ở BE

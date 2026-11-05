@@ -50,6 +50,7 @@ export const driver = {
     ready: 'The warehouse has finished loading. Press Depart when the vehicle leaves.',
     enRoute: 'On the way to stop {number}. When you get there, tap Arrived before unloading.',
     arrived: 'Arrived at stop {number} at {time}.',
+    arrivedEarlier: 'Arrival at stop {number} already reported.',
     leftOut: {
       one: '{count} package of this stop was damaged while loading and left at the warehouse: it is not on the vehicle, nothing to unload.',
       other: '{count} packages of this stop were damaged while loading and left at the warehouse: they are not on the vehicle, nothing to unload.',
@@ -268,7 +269,6 @@ export const driver = {
     noStopsDescription: 'Trip {tripId} has no delivery stop waiting.',
     completedTitle: 'Trip delivered',
     completedDescription: 'Trip {tripId}: every delivery stop is complete.',
-    atStop: 'Delivering at stop {number}: type the code on each package label as it comes off the vehicle.',
     scanDescription: 'Type the code of each package as it comes off the vehicle. Stop {number}: {done} / {total} packages unloaded.',
     codeLabel: 'Package code',
     codeHint: 'The code that starts the package row on this screen, or the warehouse code printed in the top corner of the label. Case does not matter.',
@@ -279,7 +279,7 @@ export const driver = {
     codeAmbiguous: 'Code {code} matches {count} packages of this stop. Nothing was recorded — type the code that starts the package row.',
     alreadyUnloaded: 'Package {code} was already recorded as unloaded.',
     wrongStop: 'Package {code} does not belong to the current stop. Nothing was recorded — leave it on the vehicle.',
-    departNote: 'The warehouse is loading. Tap Depart once the warehouse reports loading is done — the server refuses if it is not.',
+    departNote: 'The warehouse has not finished loading — you can depart once loading is complete.',
     depart: 'Depart',
   },
 } satisfies Dictionary<typeof source>

@@ -50,9 +50,9 @@ export function BackendDriverStop({ tripId }: { tripId: string }) {
 
 /**
  * Một điểm giao theo backend — cùng bố cục và luật cảm ứng với màn kho mẫu (`DeliveryStopView`: chữ 16 px, nút 56 px, một nút chính ở
- * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát", không "Đã đến" (điểm đang giao dỡ được ngay), không quét QR hay xác
- * nhận tay, không báo sự cố theo kiện, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự
- * kiến. Dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
+ * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát" (ở thẻ chuyến), không quét QR hay xác nhận tay, không báo sự cố theo
+ * kiện, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự kiến. "Đã đến điểm n" là nút
+ * chính trước khi dỡ; dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
  * cả chuyến nằm sau nút phụ "Thêm" (`StopMoreActions`) và gửi lên máy chủ.
  */
 function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<DriverStopScreen, { kind: 'stop' }> }) {
@@ -60,6 +60,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
   const { view, stops } = screen
   const actions = useDeliveryStop(tripId, view)
   const scan = useUnloadScan(tripId, view, stops)
+  const arrived = view.arrivedAt !== undefined || view.arrivedEarlier === true
   // Backend báo cả điểm đã dỡ (kể cả kiện dỡ trước lần mở trang này): không còn gì để đối chiếu thì đóng hộp
   if (scan.open && !scan.pending && view.verifiable === 0) scan.setOpen(false)
 
@@ -74,7 +75,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
         <StopProgress view={view} />
 
         <div className="flex flex-none flex-wrap gap-2 *:grow">
-          {view.verifiable > 0 ? (
+          {arrived && view.verifiable > 0 ? (
             <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
               <ScanLine strokeWidth={2} />
               {t('driver.scan.open')}

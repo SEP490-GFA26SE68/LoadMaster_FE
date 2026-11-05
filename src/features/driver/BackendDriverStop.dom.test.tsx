@@ -11,7 +11,7 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Màn tài xế khi nhóm `driver` nối backend: `fetch` giả trả phong bì của `DriverController`; đăng nhập vẫn là phiên kho mẫu của tài xế
- * demo (chỉ để dựng màn). Màn chỉ còn việc backend làm được: gõ mã dỡ từng kiện, hoàn tất điểm, gửi GPS.
+ * demo (chỉ để dựng màn). Màn chỉ còn việc backend làm được: báo đã đến, gõ mã dỡ từng kiện, hoàn tất điểm, gửi GPS.
  */
 type Reply = { readonly status?: number; readonly body: unknown }
 const ok = (data: unknown): Reply => ({ body: { success: true, message: 'ok', data } })
@@ -37,6 +37,8 @@ beforeEach(() => {
     'GET /api/users/me': () => ok({ id: 9 }),
     'GET /api/driver/trips': () => ok([TRIP]),
     'GET /api/driver/trips/1/current-stop': () => ok(STOP_2),
+    'POST /api/driver/stops/2/arrive': () => ok({ stopId: 2, tripId: 1, stopSequence: 2, stopName: STOP_2.stopName, status: 'ARRIVED', actualArrival: '2026-10-17T14:20:00' }),
+    'POST /api/driver/stops/3/arrive': () => ok({ stopId: 3, tripId: 1, stopSequence: 3, stopName: STOP_3.stopName, status: 'ARRIVED', actualArrival: '2026-10-17T15:05:00' }),
     'POST /api/driver/packages/11/unload': () => ok({ packageId: 11, remainingPackagesCount: 1 }),
     'POST /api/driver/packages/12/unload': () => ok({ packageId: 12, remainingPackagesCount: 0 }),
     'POST /api/driver/stops/2/complete': () => {
@@ -65,13 +67,17 @@ test('"Chuyến của tôi" đọc chuyến đang vận chuyển của backend; 
   expect(screen.queryByRole('button', { name: /Thông báo/ })).toBeNull()
 })
 
-test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi sang điểm kế tiếp; việc backend chưa có không hiện', async () => {
+test('điểm đang giao: báo đã đến, gõ mã dỡ từng kiện, hoàn tất điểm rồi sang điểm kế tiếp; việc backend chưa có không hiện', async () => {
   renderDriver('/tai-xe/diem-giao?chuyen=1')
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' })).toBeInTheDocument()
-  expect(screen.getByText('Đang giao điểm 2: gõ mã trên nhãn của từng kiện khi đưa xuống xe.')).toBeInTheDocument()
-  for (const name of ['Xuất phát', 'Đã đến điểm 2', 'Báo sự cố', 'Xem vị trí hàng']) expect(screen.queryByRole('button', { name })).toBeNull()
-  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 0')).toBeInTheDocument()
+  expect(screen.getByText('Đang tới điểm 2. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.')).toBeInTheDocument()
+  for (const name of ['Xuất phát', 'Báo sự cố', 'Xem vị trí hàng', 'Đối chiếu kiện dỡ']) expect(screen.queryByRole('button', { name })).toBeNull()
   expect(screen.getByText('Thiết bị này không có định vị: không gửi được vị trí.')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Đã đến điểm 2' }))
+  expect(await screen.findByText(/Đã đến điểm 2 lúc 14:20/)).toBeInTheDocument()
+  expect(posts).toStrictEqual(['POST /api/driver/stops/2/arrive'])
+  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 0')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeDisabled()
 
   await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' }))
@@ -83,7 +89,7 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   await userEvent.type(code, 'lb-pk-0007')
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   expect(await dialog.findByRole('status')).toHaveTextContent('Vừa dỡ LB-PK-0007 · Thùng dầu ăn 12 chai.')
-  expect(posts).toStrictEqual(['POST /api/driver/packages/11/unload?driverId=9'])
+  expect(posts.at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
   expect(await screen.findByText('Cần dỡ 2 kiện · Đã dỡ 1')).toBeInTheDocument()
 
   // Mã không khớp kiện nào của điểm: nói ngay trong hộp, không gọi backend
@@ -91,7 +97,7 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   await userEvent.type(code, 'XX-1')
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   expect(await dialog.findByRole('alert')).toHaveTextContent('Mã XX-1 không khớp kiện nào của điểm này.')
-  expect(posts).toHaveLength(1)
+  expect(posts).toHaveLength(2)
 
   // Kiện cuối của điểm: hộp tự đóng, hoàn tất được
   await userEvent.clear(code)
@@ -107,7 +113,25 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   await userEvent.click(confirm.getByRole('button', { name: 'Hoàn tất' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 3 / 3' })).toBeInTheDocument()
   expect(posts.at(-1)).toBe('POST /api/driver/stops/2/complete?driverId=9')
+  // Điểm kế tiếp: lại báo đến trước khi dỡ
+  expect(screen.getByRole('button', { name: 'Đã đến điểm 3' })).toBeInTheDocument()
   expect(screen.getByText('Cần dỡ 1 kiện · Đã dỡ 0')).toBeInTheDocument()
+})
+
+test('máy chủ báo đã đến từ trước (mở lại trang): coi như đã đến, không có giờ; lỗi khác thì toast nói lý do', async () => {
+  const { toast } = await import('sonner')
+  routes['POST /api/driver/stops/2/arrive'] = () => ({ status: 409, body: { success: false, code: 'DELIVERY_STOP_NOT_CURRENT', message: 'x' } })
+  const user = userEvent.setup()
+  renderDriver('/tai-xe/diem-giao?chuyen=1')
+  await user.click(await screen.findByRole('button', { name: 'Đã đến điểm 2' }))
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Chưa tới lượt điểm giao này — hoàn tất điểm đang giao trước.'))
+  expect(screen.getByRole('button', { name: 'Đã đến điểm 2' })).toBeInTheDocument()
+
+  routes['POST /api/driver/stops/2/arrive'] = () => ({ status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } })
+  await user.click(screen.getByRole('button', { name: 'Đã đến điểm 2' }))
+  expect(await screen.findByText('Đã báo đến điểm 2.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Đã đến điểm 2' })).toBeNull()
 })
 
 test('"Thêm" chỉ còn "Sự cố trên đường": báo sự cố gửi lên máy chủ theo mã số chuyến, tiêu đề nói mã chuyến', async () => {
@@ -141,15 +165,25 @@ test('chuyến không có trong danh sách của tài xế: nói lý do, không 
   expect(posts).toStrictEqual([])
 })
 
-const LOADING_TRIP = { ...TRIP, tripId: 4, tripCode: 'TRIP-20261106-LOAD01', status: 'LOADING' }
+const LOADING_TRIP = { ...TRIP, tripId: 4, tripCode: 'TRIP-20261106-LOAD01', status: 'LOADING', loadingCompleted: true }
 
-test('chuyến Đang xếp hàng có nút Xuất phát; máy chủ từ chối khi kho chưa xếp xong thì toast nói lý do, không đổi gì', async () => {
+test('chuyến kho chưa xếp xong: Xuất phát mờ, lý do ngay trên nút, không gọi máy chủ', async () => {
+  routes['GET /api/driver/trips'] = () => ok([{ ...LOADING_TRIP, loadingCompleted: false }])
+  renderDriver('/tai-xe')
+  expect(await screen.findByRole('heading', { level: 2, name: 'Kho đang soạn / xếp' })).toBeInTheDocument()
+  const depart = screen.getByRole('button', { name: 'Xuất phát' })
+  expect(depart).toBeDisabled()
+  expect(depart).toHaveAccessibleDescription('Kho chưa xếp xong — xuất phát được khi kho hoàn tất xếp hàng.')
+  expect(posts).toStrictEqual([])
+})
+
+test('kho đã xếp xong: chuyến ở nhóm Xếp xong, Xuất phát bật; máy chủ vẫn từ chối thì toast nói lý do, không đổi gì', async () => {
   const { toast } = await import('sonner')
   routes['GET /api/driver/trips'] = () => ok([LOADING_TRIP])
   routes['POST /api/driver/trips/4/start'] = () => ({ status: 409, body: { success: false, message: 'Loading not completed' } })
   const user = userEvent.setup()
   renderDriver('/tai-xe')
-  expect(await screen.findByRole('heading', { level: 2, name: 'Kho đang soạn / xếp' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { level: 2, name: 'Xếp xong — chờ xuất phát' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xuất phát' }))
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.'))
   expect(posts).toStrictEqual(['POST /api/driver/trips/4/start'])

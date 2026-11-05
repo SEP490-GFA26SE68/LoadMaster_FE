@@ -60,6 +60,7 @@ export const driver = {
     /** Đang vận chuyển (FE-6-06): chưa bấm "Đã đến" ở điểm đang giao, và giờ đã đến. */
     enRoute: 'Đang tới điểm {number}. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.',
     arrived: 'Đã đến điểm {number} lúc {time}.',
+    arrivedEarlier: 'Đã báo đến điểm {number}.',
     leftOut: {
       one: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
       other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
@@ -298,7 +299,6 @@ export const driver = {
     noStopsDescription: 'Chuyến {tripId} không còn điểm giao nào chờ giao.',
     completedTitle: 'Đã giao xong chuyến',
     completedDescription: 'Chuyến {tripId}: mọi điểm giao đã hoàn tất.',
-    atStop: 'Đang giao điểm {number}: gõ mã trên nhãn của từng kiện khi đưa xuống xe.',
     scanDescription: 'Gõ mã của từng kiện khi đưa xuống xe. Điểm {number}: đã dỡ {done} / {total} kiện.',
     /** Ô gõ mã của hộp đối chiếu: backend chưa trả mã QR và mã của bên gửi cho tài xế, nên chỉ nhận mã đứng đầu dòng kiện và mã của kho kiện. */
     codeLabel: 'Mã kiện',
@@ -310,8 +310,8 @@ export const driver = {
     codeAmbiguous: 'Mã {code} trùng {count} kiện của điểm này. Chưa ghi gì — gõ mã đứng đầu dòng kiện.',
     alreadyUnloaded: 'Kiện {code} đã được ghi dỡ trước đó.',
     wrongStop: 'Kiện {code} không thuộc điểm đang giao. Chưa ghi gì — để kiện lại trên xe.',
-    /** Thẻ chuyến Đang xếp hàng: máy chủ không cho biết kho đã xếp xong chưa — tài xế bấm Xuất phát, máy chủ từ chối khi kho chưa xong. */
-    departNote: 'Kho đang xếp hàng. Bấm Xuất phát khi kho báo đã xếp xong — máy chủ từ chối nếu kho chưa xong.',
+    /** Thẻ chuyến Đang xếp hàng mà kho chưa xếp xong: nút Xuất phát mờ, lý do ngay trên nút. */
+    departNote: 'Kho chưa xếp xong — xuất phát được khi kho hoàn tất xếp hàng.',
     depart: 'Xuất phát',
   },
 } as const

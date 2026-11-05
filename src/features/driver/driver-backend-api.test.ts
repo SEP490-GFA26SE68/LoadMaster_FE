@@ -79,15 +79,16 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
     { ...TRIP, tripId: 4, tripCode: null, departureTime: '2026-10-18T07:00:00', stopCount: null },
     TRIP,
     { ...TRIP, tripId: 5, status: 'DELIVERED' },
-    { ...TRIP, tripId: 6, tripCode: 'TRIP-6', status: 'LOADING' },
+    { ...TRIP, tripId: 6, tripCode: 'TRIP-6', status: 'LOADING', loadingCompleted: false },
+    { ...TRIP, tripId: 8, tripCode: 'TRIP-8', status: 'LOADING', loadingCompleted: true },
     { ...TRIP, tripId: 7, status: 'PLANNED' },
   ])
   const trips = await fetchMyTrips()
   expect(paths()).toStrictEqual(['GET /api/users/me', 'GET /api/driver/trips?driverId=9'])
   expect(calls.every((call) => call.auth === 'Bearer token-1')).toBe(true)
-  expect(trips.loaded).toStrictEqual([])
-  // Backend không nói kho đã xếp xong chưa: chuyến Đang xếp hàng ở nhóm kho đang xếp, không ở "Xếp xong"
-  expect(trips.preparing.map((row) => [row.id, row.status])).toStrictEqual([['6', 'LOADING']])
+  // Kho đã xếp xong (`loadingCompleted`): nhóm "Xếp xong — chờ xuất phát"; chưa xong: nhóm kho đang xếp
+  expect(trips.loaded.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['8', 'LOADING', { kind: 'loaded' }]])
+  expect(trips.preparing.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['6', 'LOADING', null]])
   expect(trips.recent).toStrictEqual([])
   expect(trips.inTransit.map((row) => row.id)).toStrictEqual(['1', '4'])
   expect(trips.inTransit[0]).toMatchObject({
@@ -128,6 +129,28 @@ test('màn điểm giao: điểm đang giao, kiện theo thứ tự dỡ, các �
   expect(screen.view).toMatchObject({ mode: 'delivering', arrivedAt: undefined, total: 2, unloadedCount: 0, remaining: 2, verifiable: 2, issueCount: 0, pendingConfirms: 0 })
   expect([...screen.view.completedStops]).toStrictEqual([1])
   expect(screen.stops.map((stop) => [stop.number, stop.name])).toStrictEqual([[1, ''], [2, 'Kho Bách Hoá Xanh Dĩ An'], [3, '']])
+})
+
+test('đã đến: gọi endpoint theo mã điểm, giờ đến của máy chủ vào màn; máy chủ báo đã đến từ trước thì đã đến, không có giờ', async () => {
+  onStop()
+  const driver = createDriverBackend()
+  routes['POST /api/driver/stops/2/arrive'] = ok({ stopId: 2, tripId: 1, stopSequence: 2, stopName: 'x', status: 'ARRIVED', actualArrival: '2026-10-17 14:20:00' })
+  await driver.arrive('1', 2)
+  expect(paths().at(-1)).toBe('POST /api/driver/stops/2/arrive')
+  const arrived = await driver.fetchStopScreen('1')
+  if (arrived.kind !== 'stop') throw new Error('phải là điểm đang giao')
+  expect(arrived.view.arrivedAt).toBe('2026-10-17T07:20:00.000Z')
+  expect(arrived.view.arrivedEarlier).toBeUndefined()
+
+  const reopened = createDriverBackend()
+  routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } }
+  await reopened.arrive('1', 2)
+  const earlier = await reopened.fetchStopScreen('1')
+  if (earlier.kind !== 'stop') throw new Error('phải là điểm đang giao')
+  expect(earlier.view).toMatchObject({ arrivedAt: undefined, arrivedEarlier: true })
+
+  routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_COMPLETED', message: 'x' } }
+  expect((await rejection(createDriverBackend().arrive('1', 2))).code).toBe('DELIVERY_STOP_ALREADY_COMPLETED')
 })
 
 test('màn điểm giao: chuyến không có trong danh sách của tài xế thì không đọc điểm của nó; hết điểm là noStops', async () => {
@@ -232,7 +255,7 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, arrive: false, qrVerify: false, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    backend: true, qrVerify: false, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
     departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
   })
   for (const call of [

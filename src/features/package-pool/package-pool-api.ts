@@ -59,6 +59,8 @@ export const PACKAGE_POOL_SUPPORT = {
   flags: !ON_BACKEND,
   /** Lịch sử kiện ở panel chi tiết. */
   history: !ON_BACKEND,
+  /** Nguồn của kiện (nhập file, thêm tay, trong chuyến): backend không trả. */
+  source: !ON_BACKEND,
   /** File mẫu và luật đọc file nhập là của backend: chỉ mẫu `.xlsx`, chỉ tên cột của backend, loại hàng ghi bằng mã. */
   serverTemplate: ON_BACKEND,
   /** Nhãn mọi kiện của một chuyến (`?chuyen=`). */

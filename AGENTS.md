@@ -1184,7 +1184,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
   Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;
-  không tóm tắt, không sắp xếp, không liên kết đối tượng; mã hành động dịch ở nhánh `serverAudit`, mã lạ hiện nguyên mã); `/ho-so` chỉ đọc, đổi mật khẩu bằng mã qua email ở
+  không tóm tắt, không sắp xếp, không liên kết đối tượng — cột Đối tượng ghi mã chuyến `entityCode` khi máy chủ trả, không thì mã số; mã hành động
+  dịch ở nhánh `serverAudit` (`SERVER_AUDIT_ACTIONS`, gồm `STOP_ARRIVED` và bảy mã `USER_*` của tài khoản), mã lạ hiện nguyên mã); `/ho-so` chỉ đọc, đổi mật khẩu bằng mã qua email ở
   `/quen-mat-khau`; `userFromBackend` không chép kho của tài khoản mẫu. Màn Công ty đọc `/api/companies`, `/api/contracts` (cột gói), `/api/users`
   (số người dùng); tạo công ty rồi tạo quản trị đầu tiên bằng `POST /api/users` (hai lượt gọi); tạm dừng / mở lại bằng `PATCH …/status`; bỏ
   địa chỉ, điện thoại, kho xuất phát. **Thông tin công ty `/cong-ty`** (`companyProfile.manage`): kho mẫu `getCompanyProfile` (công ty của
@@ -1210,10 +1211,14 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
   là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó. Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+  Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`).
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
-  nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển và Kho đang soạn / xếp (chuyến `LOADING`), thẻ bỏ
-  tên tuyến, số kiện, điểm đang giao. Thẻ `LOADING` có nút "Xuất phát" (`departFromList`, `POST /api/driver/trips/{id}/start`): máy chủ không
-  nói kho đã xếp xong chưa, nên nó quyết — 409 là `LOADING_NOT_COMPLETED` (toast), xong thì mở màn điểm giao.
+  nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển, Xếp xong — chờ xuất phát (`LOADING` +
+  `loadingCompleted`) và Kho đang soạn / xếp (`LOADING` chưa xong), thẻ bỏ tên tuyến, số kiện, điểm đang giao. Thẻ `LOADING` có nút "Xuất phát"
+  (`departFromList`, `POST /api/driver/trips/{id}/start`): kho chưa xếp xong thì nút mờ kèm lý do "Kho chưa xếp xong"; máy chủ vẫn từ chối thì
+  toast, xong thì mở màn điểm giao. Ở điểm đang giao, "Đã đến điểm n" (`POST /api/driver/stops/{id}/arrive`) là nút chính trước khi dỡ; máy chủ
+  không trả giờ đến ở `current-stop` nên lớp API giữ giờ đến trong lần mở trang — mở lại trang thì 409 `DELIVERY_STOP_ALREADY_ARRIVED` nghĩa là
+  đã đến (không giờ, "Đã báo đến điểm n").
   Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Dỡ là gõ mã của kiện
   (`packageOfCode`: `trackingBarcode`, mã kho kiện in ở góc nhãn, mã của bên gửi / mã QR khi backend trả; không phân biệt hoa thường; mã bên gửi
   trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`; `PackageVerify methods={['CODE']}` kèm `codeLabel` / `codeHint` riêng) →
@@ -1221,7 +1226,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
   "Sự cố trên đường" của cả chuyến: tờ "Thêm" (`StopMoreActions`) chỉ còn hàng đó, `ReportExceptionDialog touch serverRecorded` gửi
   `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển).
-  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, đã đến, quét QR, xác nhận tay, sự cố theo kiện, nhận dọc
+  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, quét QR, xác nhận tay, sự cố theo kiện, nhận dọc
   đường (`pickups`), chuông, khung 3D, giờ đến; `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
@@ -1256,13 +1261,14 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (`requirements-capabilities.ts`) ẩn các nút đó, đổi cờ khi máy chủ có quyền. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu.
 - **Kho** (`warehouse`; `warehouse-backend-api.ts`, DTO ở `warehouse-dto.ts`, `WAREHOUSE_CAPABILITIES` ở `warehouse-server-api.ts`): `/kho` là
-  `ServerWarehouseTripsPage` — chuyến chờ xếp `GET /api/warehouse/tasks` cùng chuyến Đang xếp hàng `GET /api/trips?status=LOADING` — và
-  `ServerLoadingSession`: "Bắt đầu xếp hàng" `POST /api/warehouse/tasks/{tripId}/start` trả kiện theo thứ tự xếp, từng kiện đối chiếu bằng mã gõ
-  (mã vạch hoặc mã kho kiện, tab kiểm vì máy chủ không kiểm) rồi `POST /api/warehouse/placements/{id}/confirm`, hoặc ghi sai lệch vị trí
-  `…/deviation` (cm nguyên + lý do), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (400 không mã là `INCOMPLETE_LOADING`). Máy chủ chỉ
-  trả danh sách kiện lúc bắt đầu, nên phiên (kiện, kết quả từng kiện, đã xong chưa) nằm ở `sessionStorage` của tab
-  (`loadmaster.phien-xep-may-chu`); chuyến Đang xếp hàng mà tab không giữ phiên là nhóm "Đang xếp ở thiết bị khác", không có nút. Màn bản máy chủ
-  không có soạn hàng, báo thiếu, quét QR, xác nhận tay, kiện hỏng, seal, khung 3D (kho không đọc được lòng thùng, điểm giao), chuông.
+  `ServerWarehouseTripsPage` — `GET /api/warehouse/tasks` trả chuyến chờ xếp và chuyến Đang xếp hàng kèm phiên (`executionId`,
+  `executionStatus`) — và `ServerLoadingSession`: "Bắt đầu xếp hàng" `POST /api/warehouse/tasks/{tripId}/start`, mở lại phiên đang xếp ở bất kỳ
+  thiết bị nào `GET /api/warehouse/tasks/{tripId}` (cùng dạng; phiên đọc từ máy chủ, không giữ ở tab). Phiên có lòng thùng và từng kiện
+  (kích thước, vị trí, mã QR, mã kiện, điểm giao, trạng thái): đối chiếu bằng quét QR hoặc gõ mã (mã QR, mã vạch, mã kiện — tab kiểm vì máy chủ
+  không kiểm) rồi `POST /api/warehouse/placements/{id}/confirm`, hoặc ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), xong thì
+  `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`). Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi
+  có lòng thùng và mọi kiện có điểm giao; không có khối lượng nên không có số tải. Màn bản máy chủ không có soạn hàng, báo thiếu, xác nhận tay,
+  kiện hỏng, seal, chuông.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe

@@ -3,17 +3,20 @@
  *   driverId (mã tài xế của backend) → GET /api/users/me
  *   fetchMyTrips                     → GET /api/driver/trips?driverId=
  *   fetchStopScreen                  → GET /api/driver/trips?driverId= rồi GET /api/driver/trips/{id}/current-stop
+ *   arrive                           → POST /api/driver/stops/{id}/arrive
  *   unload                           → POST /api/driver/packages/{id}/unload?driverId=
  *   completeStop                     → POST /api/driver/stops/{id}/complete?driverId=
  *   postLocation                     → POST /api/driver/location
  *   startTrip                        → POST /api/driver/trips/{id}/start
  */
 import { api, ApiError, isApiError, type ApiClient } from '@/lib/api-client'
+import { isoFromBackend } from '@/lib/backend-time'
 import {
   myTripsOf,
   packageIdsOf,
   packageOfCode,
   stopScreenOf,
+  type ArriveStopDto,
   type BackendStop,
   type CompleteStopDto,
   type ConfirmUnloadDto,
@@ -50,16 +53,18 @@ type Memory = {
   readonly unloaded: Map<string, Set<string>>
   /** Chuyến vừa giao xong, kèm mã chuyến. */
   readonly finished: Map<string, string>
+  /** Giờ "Đã đến" theo điểm (`stopId`); `null` khi máy chủ báo đã đến từ trước — điểm hiện tại không trả giờ đến. */
+  readonly arrivals: Map<string, string | null>
 }
 
-const emptyMemory = (): Memory => ({ codes: new Map(), stops: new Map(), unloaded: new Map(), finished: new Map() })
+const emptyMemory = (): Memory => ({ codes: new Map(), stops: new Map(), unloaded: new Map(), finished: new Map(), arrivals: new Map() })
 
 /** Lỗi nghiệp vụ của backend chưa kèm mã: đọc theo mã HTTP của từng endpoint. */
 const failedWith = (error: unknown, status: number) => isApiError(error) && error.status === status
 
 /**
- * Nguồn backend của màn tài xế. Điều backend chưa trả thì lớp này tự giữ trong lần mở trang: kiện nào của điểm đã dỡ, chuyến nào vừa
- * giao xong. Một lần mở trang một người đăng nhập — đăng nhập và đăng xuất Keycloak đều tải lại trang — nên mã tài xế đọc một lần. Tải lại
+ * Nguồn backend của màn tài xế. Điều backend chưa trả thì lớp này tự giữ trong lần mở trang: giờ đến điểm, kiện nào của điểm đã dỡ, chuyến
+ * nào vừa giao xong. Một lần mở trang một người đăng nhập — đăng nhập và đăng xuất Keycloak đều tải lại trang — nên mã tài xế đọc một lần. Tải lại
  * trang thì gõ lại mã các kiện đã dỡ: backend báo trùng (409) và lớp này ghi nhận lại.
  * Mọi endpoint của tài xế lọc theo `driverId` ở tham số — thiếu thì backend trả chuyến của mọi tài xế — nên không bao giờ gọi thiếu nó.
  */
@@ -132,7 +137,9 @@ export function createDriverBackend(client: () => ApiClient = api) {
       if (failedWith(error, 404)) return { kind: 'noStops', trip }
       throw error
     }
-    return { kind: 'stop', trip, ...stopScreenOf(dto, row.stopCount, unloadedAt(store, String(dto.stopId))) }
+    const stopId = String(dto.stopId)
+    const arrival = store.arrivals.has(stopId) ? store.arrivals.get(stopId) ?? null : undefined
+    return { kind: 'stop', trip, ...stopScreenOf(dto, row.stopCount, unloadedAt(store, stopId), arrival) }
   }
 
   /** Điểm hiện tại của chuyến, khi nó đúng là điểm số `stopNumber` trên màn; đọc lại nếu chưa có. */
@@ -142,6 +149,21 @@ export function createDriverBackend(client: () => ApiClient = api) {
     const dto = cached?.stopSequence === stopNumber ? cached : await currentStop(tripId)
     if (dto.stopSequence !== stopNumber) throw new ApiError('DELIVERY_STOP_NOT_FOUND')
     return dto
+  }
+
+  // POST /api/driver/stops/{id}/arrive
+  /** Báo đã đến điểm đang giao. Máy chủ đã ghi đến từ trước (409 `DELIVERY_STOP_ALREADY_ARRIVED`): coi như đã đến, không có giờ. */
+  async function arrive(tripId: string, stopNumber: number): Promise<void> {
+    const { memory: store } = await mine()
+    const dto = await stopOf(tripId, stopNumber)
+    const stopId = String(dto.stopId)
+    try {
+      const result = await client().post<ArriveStopDto>(`/api/driver/stops/${dto.stopId}/arrive`)
+      store.arrivals.set(stopId, result.actualArrival ? isoFromBackend(result.actualArrival) : null)
+    } catch (error) {
+      if (!(isApiError(error) && error.code === 'DELIVERY_STOP_ALREADY_ARRIVED')) throw error
+      store.arrivals.set(stopId, null)
+    }
   }
 
   // POST /api/driver/packages/{id}/unload?driverId=
@@ -185,11 +207,12 @@ export function createDriverBackend(client: () => ApiClient = api) {
     }
     store.stops.delete(tripId)
     store.unloaded.delete(String(dto.stopId))
+    store.arrivals.delete(String(dto.stopId))
     if (result.tripCompleted === true) store.finished.set(tripId, store.codes.get(tripId) ?? tripId)
   }
 
   // POST /api/driver/trips/{id}/start
-  /** Xuất phát: Đang xếp hàng → Đang vận chuyển. Kho chưa xếp xong thì backend trả 409 `LOADING_NOT_COMPLETED`. */
+  /** Xuất phát: Đang xếp hàng → Đang vận chuyển. Thẻ chỉ bật nút khi kho đã xếp xong; máy chủ vẫn từ chối 409 `LOADING_NOT_COMPLETED`. */
   async function startTrip(tripId: string): Promise<void> {
     await mine()
     try {
@@ -211,7 +234,7 @@ export function createDriverBackend(client: () => ApiClient = api) {
     }
   }
 
-  return { fetchMyTrips: listTrips, fetchStopScreen, unload, completeStop, postLocation, startTrip }
+  return { fetchMyTrips: listTrips, fetchStopScreen, arrive, unload, completeStop, postLocation, startTrip }
 }
 
 export type DriverBackend = ReturnType<typeof createDriverBackend>

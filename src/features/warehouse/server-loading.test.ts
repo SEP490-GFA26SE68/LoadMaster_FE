@@ -3,11 +3,11 @@ import { serverLoadingView } from './server-loading'
 import type { ServerLoadingSession, ServerPlacement } from './warehouse-server-api'
 
 const placement = (id: string, sequence: number): ServerPlacement => ({
-  id, packageId: null, name: id, barcode: null, x: 0, y: 0, z: 0, lengthCm: 1, widthCm: 1, heightCm: 1, rotation: null, sequence,
+  id, packageId: null, name: id, barcode: null, packageCode: null, qrToken: null, x: 0, y: 0, z: 0, lengthCm: 1, widthCm: 1, heightCm: 1, rotation: null, sequence, stopSequence: null, stopName: null,
 })
 
 const session = (outcomes: ServerLoadingSession['outcomes']): ServerLoadingSession => ({
-  tripId: '7', code: 'T', vehicle: '', placements: [placement('a', 1), placement('b', 2), placement('c', 3)], outcomes, completed: false,
+  tripId: '7', code: 'T', vehicle: '', box: null, placements: [placement('a', 1), placement('b', 2), placement('c', 3)], outcomes, completed: false,
 })
 
 test('kiện kế tiếp là kiện chưa có kết quả đầu tiên theo thứ tự xếp', () => {

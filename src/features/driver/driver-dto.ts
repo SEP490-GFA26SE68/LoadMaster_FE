@@ -19,6 +19,8 @@ export type DriverTripDto = {
   /** `LocalDateTime` của backend: không kèm múi giờ, là giờ Việt Nam. */
   readonly departureTime: string | null
   readonly status: string | null
+  /** Kho đã hoàn tất xếp hàng (phiên xếp `COMPLETED`): chỉ khi đó tài xế xuất phát được. */
+  readonly loadingCompleted?: boolean | null
 }
 
 export type StopPackageDto = {
@@ -47,6 +49,9 @@ export type CurrentStopDto = {
 /** `POST /api/driver/packages/{id}/unload` — `remainingPackagesCount` là số kiện của điểm còn chưa dỡ. */
 export type ConfirmUnloadDto = { readonly packageId: number; readonly remainingPackagesCount: number | null }
 
+/** `POST /api/driver/stops/{id}/arrive` — `actualArrival` là `LocalDateTime` (giờ Việt Nam). */
+export type ArriveStopDto = { readonly stopId: number; readonly actualArrival: string | null }
+
 /** `POST /api/driver/stops/{id}/complete` */
 export type CompleteStopDto = { readonly tripCompleted: boolean | null }
 
@@ -58,7 +63,10 @@ export function departureDateOf(value: string | null): string | undefined {
   return /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}/.exec(value?.trim() ?? '')?.[1]
 }
 
-/** Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. */
+/**
+ * Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. Chuyến Đang xếp hàng mà kho đã
+ * xếp xong (`loadingCompleted`) mang dòng phụ "Xếp xong — chờ xuất phát".
+ */
 export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' = 'IN_TRANSIT'): MyTripRow {
   const id = String(dto.tripId)
   return {
@@ -68,7 +76,7 @@ export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' =
     scheduledDate: departureDateOf(dto.departureTime),
     vehicleName: dto.vehicleLicensePlate ?? '',
     status,
-    sub: null,
+    sub: status === 'LOADING' && dto.loadingCompleted === true ? { kind: 'loaded' } : null,
     manualSub: null,
     stopCount: dto.stopCount ?? 0,
     packageCount: undefined,
@@ -84,14 +92,15 @@ export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' =
 const byDeparture = (a: DriverTripDto, b: DriverTripDto) => (a.departureTime ?? '').localeCompare(b.departureTime ?? '') || a.tripId - b.tripId
 
 /**
- * Chuyến của tài xế theo backend: Đang vận chuyển, và Đang xếp hàng ở nhóm "Kho đang soạn / xếp" — backend trả mọi chuyến của tài xế nhưng
- * không nói kho đã xếp xong chưa, nên chuyến Đang xếp hàng không vào nhóm "Xếp xong"; tài xế bấm Xuất phát ở thẻ, backend từ chối khi kho
- * chưa xếp xong. Chuyến khác (chưa tới kho, đã giao, đã huỷ) không hiện. Giờ xuất phát sớm trước, rồi mã chuyến.
+ * Chuyến của tài xế theo backend: Đang vận chuyển; Đang xếp hàng mà kho đã xếp xong ở nhóm "Xếp xong — chờ xuất phát" (tài xế xuất phát ở
+ * thẻ); Đang xếp hàng mà kho chưa xong ở nhóm "Kho đang soạn / xếp". Chuyến khác (chưa tới kho, đã giao, đã huỷ) không hiện. Giờ xuất phát
+ * sớm trước, rồi mã chuyến.
  */
 export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
-  const of = (status: 'IN_TRANSIT' | 'LOADING') =>
-    (dtos ?? []).filter((dto) => dto.status === status).toSorted(byDeparture).map((dto) => tripRowOf(dto, status))
-  return { inTransit: of('IN_TRANSIT'), loaded: [], preparing: of('LOADING'), recent: [] }
+  const of = (status: 'IN_TRANSIT' | 'LOADING', keep: (dto: DriverTripDto) => boolean = () => true) =>
+    (dtos ?? []).filter((dto) => dto.status === status && keep(dto)).toSorted(byDeparture).map((dto) => tripRowOf(dto, status))
+  const loaded = (dto: DriverTripDto) => dto.loadingCompleted === true
+  return { inTransit: of('IN_TRANSIT'), loaded: of('LOADING', loaded), preparing: of('LOADING', (dto) => !loaded(dto)), recent: [] }
 }
 
 type StopPackage = StopPackageDto & { readonly packageId: number }
@@ -162,11 +171,12 @@ function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
 export type BackendStop = { readonly stopId: string; readonly view: DeliveryView; readonly stops: readonly StopDelivery[] }
 
 /**
- * Màn điểm giao từ điểm hiện tại của backend. Backend chưa có bước "Đã đến" nên điểm hiện tại luôn dỡ được (`arrivedAt` vẫn trống: không
- * có giờ đến nào để nói); chưa trả kiện nào đã dỡ nên lớp gọi backend đưa vào những kiện nó đã ghi (`unloaded`); chỉ biết điểm hiện tại
- * nên các điểm khác của chuyến chỉ có số, và các điểm trước nó là đã hoàn tất (backend hoàn tất điểm theo thứ tự).
+ * Màn điểm giao từ điểm hiện tại của backend. Điểm hiện tại không trả giờ đến và kiện đã dỡ, nên lớp gọi backend đưa vào những gì nó đã
+ * ghi trong lần mở trang: `arrival` — giờ "Đã đến" (`null`: máy chủ báo đã đến từ trước, không biết giờ; vắng: chưa báo đến) — và kiện đã
+ * dỡ (`unloaded`). Chỉ biết điểm hiện tại nên các điểm khác của chuyến chỉ có số, và các điểm trước nó là đã hoàn tất (backend hoàn tất
+ * điểm theo thứ tự).
  */
-export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number, unloaded: ReadonlySet<string>): BackendStop {
+export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number, unloaded: ReadonlySet<string>, arrival?: string | null): BackendStop {
   const number = dto.stopSequence
   const items = itemsOf(dto)
   const stop: StopDelivery = { number, name: dto.stopName ?? '', address: dto.address ?? '', items, kind: 'DELIVERY' }
@@ -180,7 +190,8 @@ export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number, unloade
     view: {
       mode: 'delivering',
       stop,
-      arrivedAt: undefined,
+      arrivedAt: arrival ?? undefined,
+      ...(arrival === null ? { arrivedEarlier: true as const } : {}),
       items: progress,
       pickupItems: [],
       total: items.length,

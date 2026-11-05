@@ -1,5 +1,5 @@
 import { CheckCircle2, ScanLine } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { PackageVerify, type VerifyCode, type VerifyOutcome } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,7 @@ import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { VerifyMethod } from '@/lib/mock-db'
 import { serverLoadingView } from './server-loading'
+import { serverSessionScene } from './server-session-scene'
 import { ServerDeviationDialog } from './ServerDeviationDialog'
 import { ServerPlacementCard, ServerPlacementList } from './ServerPlacementCard'
 import { StepHeader } from './StepHeader'
@@ -15,13 +16,21 @@ import { useCompleteServerLoadingMutation, useConfirmServerPlacementMutation, us
 import { codeMatches, type ServerLoadingSession as Session } from './warehouse-server-api'
 import { WarehouseEmpty } from './WarehouseEmpty'
 
-/** Máy chủ không trả mã QR của kiện ở bước xếp và chưa có xác nhận tay: hộp đối chiếu chỉ còn gõ mã. */
-const CODE_ONLY: readonly VerifyMethod[] = ['CODE']
+/** Máy chủ chưa có xác nhận tay ở bước xếp: hộp đối chiếu có quét QR và gõ mã. */
+const LABEL_METHODS: readonly VerifyMethod[] = ['QR', 'CODE']
+
+/** Phiên không còn để mở: chuyến không ở Đang xếp hàng, hoặc máy chủ không thấy phiên xếp của chuyến. */
+const UNAVAILABLE_CODES = new Set(['TRIP_NOT_LOADING', 'LOADING_EXECUTION_NOT_FOUND'])
+
+const PositionViewer = lazy(() =>
+  import('@/features/viewer3d/PositionViewer').then((m) => ({ default: m.PositionViewer })),
+)
 
 /**
- * Phiên xếp `/kho?chuyen=<mã số>` khi nhóm `warehouse` nối backend: kiện theo thứ tự xếp của phương án đã duyệt mà máy chủ trả lúc bắt đầu.
- * Mỗi kiện: đối chiếu bằng mã gõ (tab kiểm mã khớp kiện của bước rồi máy chủ ghi đã xếp) hoặc ghi sai lệch vị trí; xong mọi kiện thì "Hoàn
- * tất xếp hàng". Không có bước soạn hàng, báo thiếu, kiện hỏng, xác nhận tay, seal, khung 3D (D-20).
+ * Phiên xếp `/kho?chuyen=<mã số>` khi nhóm `warehouse` nối backend: kiện theo thứ tự xếp của phương án đã duyệt, đọc lại từ máy chủ ở thiết
+ * bị nào cũng được. Mỗi kiện: đối chiếu bằng quét QR hoặc mã gõ (màn kiểm mã khớp kiện của bước rồi máy chủ ghi đã xếp) hoặc ghi sai lệch vị
+ * trí; xong mọi kiện thì "Hoàn tất xếp hàng". Khung 3D vị trí kiện khi máy chủ trả lòng thùng. Không có bước soạn hàng, báo thiếu, kiện
+ * hỏng, xác nhận tay, seal (D-20).
  */
 export function ServerLoadingSession({ tripId }: { tripId: string }) {
   const t = useT()
@@ -34,7 +43,7 @@ export function ServerLoadingSession({ tripId }: { tripId: string }) {
     )
   }
   if (query.isError) {
-    const unavailable = isApiError(query.error) && query.error.code === 'LOADING_SESSION_UNAVAILABLE'
+    const unavailable = isApiError(query.error) && UNAVAILABLE_CODES.has(query.error.code)
     return (
       <WarehouseEmpty
         tripId={tripId}
@@ -68,6 +77,8 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
   const [deviating, setDeviating] = useState(false)
   const [result, setResult] = useState<VerifyOutcome | null>(null)
   const current = view.current
+  const scene = useMemo(() => serverSessionScene(session), [session])
+  const sceneId = current === undefined ? undefined : scene?.sceneIdOf.get(current.id)
 
   function handleVerifyOpen(next: boolean) {
     setResult(null)
@@ -128,6 +139,19 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
               </Button>
             </ServerPlacementCard>
           )}
+          {scene !== null && current !== undefined && sceneId !== undefined ? (
+            <section aria-label={t('serverWarehouse.session.viewerLabel')} className="h-96 sm:h-120">
+              <Suspense
+                fallback={
+                  <div role="status" aria-label={t('warehouse.viewerLoading')} className="grid h-full place-items-center rounded-lg bg-canvas-1">
+                    <Spinner tone="light" />
+                  </div>
+                }
+              >
+                <PositionViewer model={scene.model} current={{ id: sceneId, step: current.sequence, stop: current.stopSequence ?? 0 }} />
+              </Suspense>
+            </section>
+          ) : null}
           <ServerPlacementList rows={view.rows} />
         </div>
       </main>
@@ -137,7 +161,7 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
           <PackageVerify
             open={verifying}
             onOpenChange={handleVerifyOpen}
-            methods={CODE_ONLY}
+            methods={LABEL_METHODS}
             codeLabel={t('serverWarehouse.session.codeLabel')}
             codeHint={t('serverWarehouse.session.codeHint')}
             title={t('serverWarehouse.session.verifyTitle', { step: view.step })}

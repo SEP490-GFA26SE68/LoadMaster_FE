@@ -4,7 +4,8 @@ import { isoFromBackend } from '@/lib/backend-time'
 /**
  * DTO của `WarehouseController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`, `PlacementStepResponse`,
  * `ConfirmPlacementResponse`, `DeviationResponse`, `CompleteLoadingResponse`) và hàm đổi sang kiểu của màn kho; chỉ
- * `warehouse-backend-api.ts` import file này. Toạ độ và kích thước là cm, gốc ở góc trong cùng bên trái sàn thùng (như phương án).
+ * `warehouse-backend-api.ts` import file này. Toạ độ, kích thước kiện và lòng thùng là cm, gốc ở góc trong cùng bên trái sàn thùng (như
+ * phương án).
  */
 
 export type WarehouseTaskDto = {
@@ -14,14 +15,20 @@ export type WarehouseTaskDto = {
   readonly totalPackages: number | null
   readonly loadPlanId: number | null
   readonly departureTime: string | null
+  /** Trạng thái chuyến: `PLANNED` (chờ xếp) hoặc `LOADING` (đã có phiên xếp). */
   readonly status: string | null
+  readonly executionId?: number | null
+  /** `IN_PROGRESS` | `COMPLETED`; vắng khi chưa bắt đầu xếp. */
+  readonly executionStatus?: string | null
 }
 
 export type PlacementStepDto = {
   readonly placementId: number
   readonly packageId: number | null
   readonly packageName: string | null
+  readonly packageCode?: string | null
   readonly trackingBarcode: string | null
+  readonly qrToken?: string | null
   readonly posX: number | null
   readonly posY: number | null
   readonly posZ: number | null
@@ -30,39 +37,40 @@ export type PlacementStepDto = {
   readonly packedHeight: number | null
   readonly rotation: number | null
   readonly sequence: number | null
+  readonly stopId?: number | null
+  readonly stopSequence?: number | null
+  readonly stopName?: string | null
+  /** `CONFIRMED` | `DEVIATION` | `PENDING`. */
+  readonly status?: string | null
 }
 
+/** Phiên xếp: `POST /api/warehouse/tasks/{tripId}/start` và `GET /api/warehouse/tasks/{tripId}` trả cùng dạng. Lòng thùng và cửa: cm. */
 export type StartLoadingDto = {
   readonly executionId: number
+  readonly loadPlanId?: number | null
   readonly tripId: number
   readonly tripCode: string | null
   readonly vehicleInfo: string | null
+  readonly licensePlate?: string | null
+  readonly vehicleTypeName?: string | null
+  readonly innerLength?: number | null
+  readonly innerWidth?: number | null
+  readonly innerHeight?: number | null
+  readonly doorWidth?: number | null
+  readonly doorHeight?: number | null
   readonly totalPackages: number | null
+  /** `IN_PROGRESS` | `COMPLETED` của phiên xếp. */
   readonly status: string | null
   readonly startedAt: string | null
+  readonly completedAt?: string | null
   readonly placements: readonly PlacementStepDto[] | null
 }
 
-export type ConfirmPlacementDto = { readonly placementId: number; readonly status: string | null }
-export type DeviationDto = { readonly placementId: number; readonly totalDeviations: number | null }
-export type CompleteLoadingDto = { readonly tripId: number; readonly totalPackages: number | null; readonly totalDeviations: number | null }
-
-/** Một dòng `TripResponse` của `GET /api/trips` — chỉ phần màn kho dùng. */
-export type LoadingTripDto = {
-  readonly id: number | string
-  readonly tripCode: string
-  readonly vehicleName?: string | null
-  readonly licensePlate?: string | null
-  readonly departureTime?: string | null
-  readonly packageCount?: number | null
-}
-
 /**
- * Chuyến ở danh sách kho theo backend: `waiting` — Đã lập kế hoạch, có phương án đã duyệt, chưa bắt đầu xếp; `loading` / `loaded` — Đang
- * xếp hàng, phiên xếp bắt đầu ở tab này (đang xếp hoặc đã xếp xong chờ xe xuất phát); `elsewhere` — Đang xếp hàng nhưng phiên bắt đầu ở thiết
- * bị hay tab khác: backend chưa cho đọc lại danh sách kiện của phiên nên tab này không làm tiếp được.
+ * Chuyến ở danh sách kho theo backend: `waiting` — Đã lập kế hoạch, có phương án đã duyệt, chưa bắt đầu xếp; `loading` — Đang xếp hàng,
+ * phiên đang dở; `loaded` — đã xếp xong, chờ tài xế xuất phát. Phiên đọc lại được ở mọi thiết bị (`GET /api/warehouse/tasks/{tripId}`).
  */
-export type ServerWarehouseStage = 'loading' | 'waiting' | 'loaded' | 'elsewhere'
+export type ServerWarehouseStage = 'loading' | 'waiting' | 'loaded'
 
 export type ServerWarehouseTrip = {
   /** Mã số của backend (trên URL `/kho?chuyen=`). */
@@ -81,6 +89,10 @@ export type ServerPlacement = {
   readonly packageId: string | null
   readonly name: string
   readonly barcode: string | null
+  /** Mã của bên gửi. */
+  readonly packageCode: string | null
+  /** Mã QR in trên nhãn. */
+  readonly qrToken: string | null
   readonly x: number
   readonly y: number
   readonly z: number
@@ -89,16 +101,30 @@ export type ServerPlacement = {
   readonly heightCm: number
   readonly rotation: number | null
   readonly sequence: number
+  /** Điểm giao thật của kiện (qua yêu cầu giao): số thứ tự và tên; `null` khi máy chủ không trả. */
+  readonly stopSequence: number | null
+  readonly stopName: string | null
 }
 
 /** Kết quả từng kiện trong phiên: đã xếp đúng chỗ, hoặc đã xếp kèm sai lệch vị trí. */
 export type PlacementOutcome = 'confirmed' | 'deviation'
 
+/** Lòng thùng và cửa xe của phiên, cm; `null` khi xe chưa gắn loại hoặc loại chưa khai lòng thùng — khi đó không có khung 3D. */
+export type ServerCargoBox = {
+  readonly innerLengthCm: number
+  readonly innerWidthCm: number
+  readonly innerHeightCm: number
+  readonly doorWidthCm: number
+  readonly doorHeightCm: number
+}
+
 export type ServerLoadingSession = {
   readonly tripId: string
   readonly code: string
   readonly vehicle: string
+  readonly box: ServerCargoBox | null
   readonly placements: readonly ServerPlacement[]
+  /** Kết quả từng kiện theo máy chủ (`CONFIRMED` / `DEVIATION`); kiện chưa xử lý không có mục. */
   readonly outcomes: Readonly<Record<string, PlacementOutcome>>
   readonly completed: boolean
 }
@@ -106,6 +132,11 @@ export type ServerLoadingSession = {
 const numberOf = (value: number | null | undefined) => {
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new ApiError('SERVER_ERROR')
   return value
+}
+
+function stageOf(dto: WarehouseTaskDto): ServerWarehouseStage {
+  if (dto.status !== 'LOADING') return 'waiting'
+  return dto.executionStatus === 'COMPLETED' ? 'loaded' : 'loading'
 }
 
 export function taskOf(dto: WarehouseTaskDto): ServerWarehouseTrip {
@@ -116,20 +147,7 @@ export function taskOf(dto: WarehouseTaskDto): ServerWarehouseTrip {
     vehicle: dto.vehicleInfo ?? '',
     departureAt: dto.departureTime ? isoFromBackend(dto.departureTime) : null,
     packageCount: dto.totalPackages ?? null,
-    stage: 'waiting',
-  }
-}
-
-export function loadingTripOf(dto: LoadingTripDto, stage: ServerWarehouseStage): ServerWarehouseTrip {
-  const name = dto.vehicleName?.trim() ?? ''
-  const plate = dto.licensePlate?.trim() ?? ''
-  return {
-    id: String(dto.id),
-    code: dto.tripCode,
-    vehicle: name.includes(plate) ? name : [name, plate].filter((part) => part !== '').join(' · '),
-    departureAt: dto.departureTime ? isoFromBackend(dto.departureTime) : null,
-    packageCount: dto.packageCount ?? null,
-    stage,
+    stage: stageOf(dto),
   }
 }
 
@@ -141,6 +159,8 @@ export function placementOf(dto: PlacementStepDto): ServerPlacement {
     packageId,
     name: dto.packageName?.trim() || barcode || packageId || String(dto.placementId),
     barcode,
+    packageCode: dto.packageCode?.trim() || null,
+    qrToken: dto.qrToken?.trim() || null,
     x: numberOf(dto.posX),
     y: numberOf(dto.posY),
     z: numberOf(dto.posZ),
@@ -149,25 +169,53 @@ export function placementOf(dto: PlacementStepDto): ServerPlacement {
     heightCm: numberOf(dto.packedHeight),
     rotation: dto.rotation,
     sequence: numberOf(dto.sequence),
+    stopSequence: typeof dto.stopSequence === 'number' ? dto.stopSequence : null,
+    stopName: dto.stopName?.trim() || null,
   }
 }
 
+const positive = (value: number | null | undefined): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
+
+function boxOf(dto: StartLoadingDto): ServerCargoBox | null {
+  const { innerLength, innerWidth, innerHeight, doorWidth, doorHeight } = dto
+  if (!positive(innerLength) || !positive(innerWidth) || !positive(innerHeight)) return null
+  // Loại xe chưa khai cửa: cửa là mặt cắt lòng thùng (như đội xe)
+  return {
+    innerLengthCm: innerLength,
+    innerWidthCm: innerWidth,
+    innerHeightCm: innerHeight,
+    doorWidthCm: positive(doorWidth) ? doorWidth : innerWidth,
+    doorHeightCm: positive(doorHeight) ? doorHeight : innerHeight,
+  }
+}
+
+const OUTCOMES: Readonly<Record<string, PlacementOutcome>> = { CONFIRMED: 'confirmed', DEVIATION: 'deviation' }
+
 export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const id = String(dto.tripId)
+  const steps = (dto.placements ?? []).map((step) => ({ status: step.status, placement: placementOf(step) }))
+  const vehicle = dto.vehicleInfo?.trim() ?? ''
   return {
     tripId: id,
     code: dto.tripCode ?? id,
-    vehicle: dto.vehicleInfo ?? '',
-    placements: (dto.placements ?? []).map(placementOf).toSorted((a, b) => a.sequence - b.sequence),
-    outcomes: {},
-    completed: false,
+    vehicle: vehicle !== '' ? vehicle : (dto.licensePlate?.trim() ?? ''),
+    box: boxOf(dto),
+    placements: steps.map((item) => item.placement).toSorted((a, b) => a.sequence - b.sequence),
+    outcomes: Object.fromEntries(steps.flatMap(({ status, placement }) => {
+      const outcome = status ? OUTCOMES[status] : undefined
+      return outcome === undefined ? [] : [[placement.id, outcome] as const]
+    })),
+    completed: dto.status === 'COMPLETED',
   }
 }
 
 const normalized = (value: string | null | undefined) => value?.trim().toLocaleUpperCase('vi') ?? ''
 
-/** Mã gõ có khớp kiện không: mã vạch của kiện hoặc mã của kho kiện, không phân biệt hoa thường. */
+/**
+ * Mã quét hoặc gõ có khớp kiện không: mã QR, mã vạch, mã của bên gửi hoặc mã của kho kiện, không phân biệt hoa thường (mã QR của máy chủ là
+ * chữ thường, máy quét hay người gõ có thể đưa chữ hoa).
+ */
 export function codeMatches(placement: ServerPlacement, code: string): boolean {
   const typed = normalized(code)
-  return typed !== '' && (typed === normalized(placement.barcode) || typed === normalized(placement.packageId))
+  return typed !== '' && [placement.qrToken, placement.barcode, placement.packageCode, placement.packageId].some((value) => typed === normalized(value))
 }

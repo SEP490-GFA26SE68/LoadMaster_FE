@@ -64,6 +64,10 @@ export const apiErrors = {
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'The delivery requirement cannot move to this status.',
   CARGO_SEGREGATION_CONFLICT: 'The trip already carries another cargo class — they cannot travel together.',
   DELIVERY_STOP_NOT_FOUND: 'The delivery stop was not found.',
+  DELIVERY_STOP_ALREADY_COMPLETED: 'This delivery stop is already complete.',
+  DELIVERY_STOP_ALREADY_ARRIVED: 'Arrival at this delivery stop was already reported.',
+  DELIVERY_STOP_NOT_CURRENT: 'This stop is not next yet — complete the current stop first.',
+  TRIP_NOT_ASSIGNED_TO_DRIVER: 'This trip is not assigned to you.',
   ROUTE_PLAN_NOT_FOUND: 'The trip has no route yet.',
   ROUTE_LEG_NOT_FOUND: 'The route leg was not found.',
   ROUTE_SUGGESTION_NOT_FOUND: 'The suggested route was not found.',
@@ -123,5 +127,5 @@ export const apiErrors = {
   CONTACT_REQUEST_NOT_FOUND: 'The contact request was not found.',
 
   EMAIL_CHANGE_UNSUPPORTED: 'The server does not support changing an account email yet.',
-  LOADING_SESSION_UNAVAILABLE: 'This loading session started on another device or tab — the server cannot reopen its package list yet.',
+  TRIP_NOT_LOADING: 'The trip is no longer Loading, so its loading session cannot be opened.',
 } satisfies Dictionary<typeof source>

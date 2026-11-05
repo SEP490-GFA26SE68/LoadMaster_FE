@@ -41,6 +41,8 @@ export type DeliveryView = {
   readonly stop: StopDelivery
   /** Giờ tài xế bấm "Đã đến" ở điểm này (ISO 8601); chưa bấm thì `undefined` — chưa dỡ, chưa hoàn tất điểm được. */
   readonly arrivedAt: string | undefined
+  /** Máy chủ báo tài xế đã báo đến điểm này từ trước (lần mở trang khác) mà không trả giờ đến: như đã đến, chỉ không có giờ. */
+  readonly arrivedEarlier?: true
   /** Kiện phải dỡ ở điểm này theo thứ tự dỡ: kiện của phương án trừ kiện hỏng bị bỏ lại kho (không có trên xe). */
   readonly items: readonly ItemProgress[]
   /**

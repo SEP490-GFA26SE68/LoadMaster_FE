@@ -1,13 +1,12 @@
 /**
  * Màn kho `/kho` khi nhóm `warehouse` nối backend: danh sách chuyến chờ xếp / đang xếp, phiên xếp theo phương án đã duyệt của máy chủ (xác
- * nhận từng kiện theo thứ tự bằng mã gõ, ghi sai lệch vị trí, hoàn tất xếp). Không có bước soạn hàng, seal, khung 3D.
+ * nhận từng kiện theo thứ tự bằng quét QR hoặc mã gõ, ghi sai lệch vị trí, hoàn tất xếp, khung 3D vị trí kiện). Không có bước soạn hàng, seal.
  */
 export const serverWarehouse = {
   groups: {
     loading: 'Đang xếp hàng',
     waiting: 'Chờ xếp',
     loaded: 'Xếp xong — chờ xuất phát',
-    elsewhere: 'Đang xếp ở thiết bị khác',
   },
   departure: 'Giờ xuất phát',
   vehicle: 'Xe',
@@ -16,7 +15,6 @@ export const serverWarehouse = {
   start: 'Bắt đầu xếp hàng',
   resume: 'Tiếp tục xếp',
   openLoaded: 'Xem chuyến đã xếp',
-  elsewhere: 'Phiên xếp bắt đầu ở thiết bị hoặc tab khác. Máy chủ chưa cho mở lại danh sách kiện của phiên — làm tiếp ở nơi đã bắt đầu.',
   emptyTitle: 'Không có chuyến cần xếp',
   emptyDescription: 'Chuyến Đã lập kế hoạch có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu xếp.',
   session: {
@@ -41,15 +39,17 @@ export const serverWarehouse = {
     noPlacements: 'Phương án đã duyệt không có kiện nào để xếp.',
     allDone: 'Đã xếp mọi kiện. Bấm Hoàn tất xếp hàng để báo tài xế xuất phát được.',
     verifyTitle: 'Đối chiếu kiện bước {step}',
-    verifyDescription: 'Gõ mã trên nhãn của kiện đang cầm. Đúng kiện thì máy chủ ghi đã xếp và màn sang kiện kế tiếp.',
+    verifyDescription: 'Quét mã QR hoặc gõ mã trên nhãn của kiện đang cầm. Đúng kiện thì máy chủ ghi đã xếp và màn sang kiện kế tiếp.',
     codeLabel: 'Mã kiện',
-    codeHint: 'Mã vạch hoặc mã kho kiện in trên nhãn. Chữ hoa hay thường đều được.',
+    codeHint: 'Mã vạch, mã của bên gửi hoặc mã kho kiện in trên nhãn. Chữ hoa hay thường đều được.',
     codeUnmatched: 'Mã {code} không phải kiện của bước này ({name}). Chưa ghi gì — xếp theo đúng thứ tự.',
     confirmed: 'Đã xếp {name}.',
     finishedTitle: 'Đã xếp xong chuyến {code}',
     finishedDescription: 'Máy chủ đã ghi xếp xong. Chuyến chờ tài xế bấm Xuất phát.',
     back: 'Về danh sách chuyến',
     unavailableTitle: 'Không mở được phiên xếp',
+    stop: 'Điểm giao',
+    viewerLabel: 'Vị trí kiện trong thùng xe',
   },
   deviation: {
     title: 'Sai lệch vị trí — bước {step}',

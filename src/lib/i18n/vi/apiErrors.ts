@@ -72,6 +72,10 @@ export const apiErrors = {
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'Yêu cầu giao không chuyển được sang trạng thái này.',
   CARGO_SEGREGATION_CONFLICT: 'Chuyến đã có loại hàng khác — không chở chung được.',
   DELIVERY_STOP_NOT_FOUND: 'Không tìm thấy điểm giao.',
+  DELIVERY_STOP_ALREADY_COMPLETED: 'Điểm giao này đã hoàn tất.',
+  DELIVERY_STOP_ALREADY_ARRIVED: 'Đã báo đến điểm giao này rồi.',
+  DELIVERY_STOP_NOT_CURRENT: 'Chưa tới lượt điểm giao này — hoàn tất điểm đang giao trước.',
+  TRIP_NOT_ASSIGNED_TO_DRIVER: 'Chuyến này không giao cho bạn.',
   ROUTE_PLAN_NOT_FOUND: 'Chuyến chưa có tuyến.',
   ROUTE_LEG_NOT_FOUND: 'Không tìm thấy chặng của tuyến.',
   ROUTE_SUGGESTION_NOT_FOUND: 'Không tìm thấy tuyến gợi ý.',
@@ -136,5 +140,5 @@ export const apiErrors = {
 
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',
-  LOADING_SESSION_UNAVAILABLE: 'Phiên xếp này bắt đầu ở thiết bị hoặc tab khác — máy chủ chưa cho mở lại danh sách kiện của phiên.',
+  TRIP_NOT_LOADING: 'Chuyến không còn ở Đang xếp hàng, không mở được phiên xếp.',
 } as const

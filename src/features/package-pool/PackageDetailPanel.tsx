@@ -117,7 +117,7 @@ function PackageFacts({ detail }: { detail: PackageDetail }) {
       {PACKAGE_POOL_SUPPORT.packageTypes ? (
         <Field label={t('sourcing.detail.packageType')} wide>{type ? `${type.name} · ${type.id}` : t('sourcing.detail.packageTypeNone')}</Field>
       ) : null}
-      <Field label={t('sourcing.detail.source')}>{t(`sourcing.detail.sources.${pkg.source}`)}</Field>
+      {PACKAGE_POOL_SUPPORT.source ? <Field label={t('sourcing.detail.source')}>{t(`sourcing.detail.sources.${pkg.source}`)}</Field> : null}
       {PACKAGE_POOL_SUPPORT.links && pkg.requirementId === undefined && pkg.tripId === undefined ? (
         <Field label={t('sourcing.packages.filters.link')}>{t('sourcing.detail.notLinked')}</Field>
       ) : null}
