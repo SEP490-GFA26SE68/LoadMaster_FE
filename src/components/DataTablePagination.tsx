@@ -5,9 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFormat, useT } from '@/lib/i18n'
 
 /** Cỡ trang chọn được ở chân bảng (D-52). `useListUrlState` chỉ nhận các cỡ này từ URL. */
-export const PAGE_SIZES = [25, 50, 100] as const
+export const PAGE_SIZES = [10, 25, 50, 100] as const
 
-export const DEFAULT_PAGE_SIZE: number = PAGE_SIZES[0]
+export const DEFAULT_PAGE_SIZE: number = 25
 
 /** Phân trang có kiểm soát: màn giữ trang và cỡ trang (thường trên URL qua `useListUrlState`). */
 export type DataTablePagination = {

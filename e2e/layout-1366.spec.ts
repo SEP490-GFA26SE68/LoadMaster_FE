@@ -111,7 +111,7 @@ const SCREENS: readonly Screen[] = [
   },
   {
     name: 'dashboard',
-    route: '/',
+    route: '/tong-quan',
     ready: async (page) => {
       await expect(page.getByRole('heading', { name: 'Chuyến trong kỳ', exact: true })).toBeVisible()
       await expect(page.getByRole('cell').filter({ hasText: /^Tuyến .+TRIP-/ }).first()).toBeVisible()
@@ -142,7 +142,7 @@ for (const size of SIZES) {
  * Mỗi màn mở bằng vai trò dùng nó (FE-0-01: không còn vai trò toàn quyền). Màn chỉ đọc kho seed nên đổi vai trò bằng cách tải lại.
  */
 const WHEEL_SCREENS: readonly (Screen & { role: Role })[] = [
-  { name: 'dashboard', role: 'dispatcher', route: '/', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
+  { name: 'dashboard', role: 'dispatcher', route: '/tong-quan', ready: async (page) => { await expect(page.getByRole('group', { name: 'Chuyến hoàn thành', exact: true })).toBeVisible() } },
   { name: 'trip-detail', role: 'dispatcher', route: '/chuyen/TRIP-2026-0914', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Kiện hàng', exact: true })).toBeVisible() } },
   { name: 'vehicle-detail', role: 'dispatcher', route: '/doi-xe/VEHICLE-002', ready: async (page) => { await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible() } },
   // FE-5b-06: màn so sánh ba phương án dài hơn một màn hình. Chờ cả dòng dữ liệu của dải trời: nó về sau các thẻ và làm vùng cuộn thấp đi
@@ -212,7 +212,7 @@ const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', r
   },
   {
     role: 'companyManager',
-    labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Monitoring', 'Fleet'] },
+    labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Monitoring', 'Fleet', 'Warehouses'] },
   },
 ]
 

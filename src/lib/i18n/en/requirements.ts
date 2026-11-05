@@ -194,4 +194,9 @@ export const requirements = {
     unassign: 'Remove requirement {id}',
     list: 'All delivery requirements',
   },
+  server: {
+    received: '{received} packages',
+    receivedOf: '{received}/{expected} packages',
+    viewTrip: 'View trip #{code}',
+  },
 } satisfies Dictionary<typeof source>

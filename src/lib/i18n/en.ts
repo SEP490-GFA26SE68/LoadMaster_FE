@@ -18,6 +18,7 @@ import { viewer } from './en/viewer'
 import { fields } from './en/fields'
 import { admin } from './en/admin'
 import { designSystem } from './en/designSystem'
+import { apiErrors } from './en/apiErrors'
 import { dataErrors } from './en/dataErrors'
 import { audit } from './en/audit'
 import { profile } from './en/profile'
@@ -40,11 +41,15 @@ import { platform } from './en/platform'
 import { billing } from './en/billing'
 import { payment } from './en/payment'
 import { companies } from './en/companies'
+import { companyProfile } from './en/companyProfile'
 import { support } from './en/support'
+import { contacts } from './en/contacts'
+import { landing } from './en/landing'
+import { pricing } from './en/pricing'
 import { warehouseCustomers } from './en/warehouseCustomers'
-import {backendTripRoute } from './en/backendTripRoute'
-import {companyWarehouses } from './en/companyWarehouses.ts'
-import { tripWarehouse } from './en/tripWarehouse.ts'
+import { backendTripRoute } from './en/backendTripRoute'
+import { companyWarehouses } from './en/companyWarehouses'
+import { tripWarehouse } from './en/tripWarehouse'
 import { packageStatus } from './en/packageStatus'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
@@ -68,6 +73,7 @@ export const en = {
   admin,
   designSystem,
   dataErrors,
+  apiErrors,
   audit,
   profile,
   notifications,
@@ -89,10 +95,14 @@ export const en = {
   billing,
   payment,
   companies,
+  companyProfile,
   support,
+  contacts,
+  landing,
+  pricing,
   warehouseCustomers,
   backendTripRoute,
   companyWarehouses,
   tripWarehouse,
-  packageStatus
+  packageStatus,
 } satisfies Dictionary<typeof vi>

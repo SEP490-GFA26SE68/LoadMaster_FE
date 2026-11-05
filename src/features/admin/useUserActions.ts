@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { TemporaryPassword } from '@/lib/mock-db'
+import { userScopeOf, type TemporaryPassword } from '@/lib/mock-db'
 import type { User } from '@/types/user'
+import { isSameAccount } from './account-guards'
 import type { UserFormValues } from './user-form.schema'
 import type { UserAction } from './UserRowMenu'
 import {
@@ -19,6 +20,7 @@ export type UserDialog =
   | { readonly kind: 'create' }
   | { readonly kind: 'edit'; readonly user: User }
   | { readonly kind: 'reset'; readonly user: User }
+  | { readonly kind: 'lock'; readonly user: User }
   | { readonly kind: 'delete'; readonly user: User }
   | { readonly kind: 'password'; readonly result: TemporaryPassword; readonly reason: 'created' | 'reset' }
 
@@ -43,13 +45,18 @@ export function useUserActions() {
     if (action === 'edit' || action === 'delete') setDialog({ kind: action, user })
     else if (action === 'resetPassword') setDialog({ kind: 'reset', user })
     else {
-      const status = user.status === 'active' ? 'suspended' : 'active'
-      mutateStatus({ id: user.id, status }, {
-        onSuccess: () => toast.success(t(status === 'suspended' ? 'admin.users.locked' : 'admin.users.unlocked', { name: user.fullName })),
-        onError: (error) => toast.error(dataErrorMessage(error, t)),
-      })
+      const isCompany = currentUser !== null && userScopeOf(currentUser.role) === 'company'
+      if (isCompany && user.status === 'active') {
+        setDialog({ kind: 'lock', user })
+      } else {
+        const status = user.status === 'active' ? 'suspended' : 'active'
+        mutateStatus({ id: user.id, status }, {
+          onSuccess: () => toast.success(t(status === 'suspended' ? 'admin.users.locked' : 'admin.users.unlocked', { name: user.fullName })),
+          onError: (error) => toast.error(dataErrorMessage(error, t)),
+        })
+      }
     }
-  }, [mutateStatus, t])
+  }, [currentUser, mutateStatus, t])
 
   return {
     dialog,
@@ -61,8 +68,8 @@ export function useUserActions() {
       setDialog({ kind: 'password', result, reason: 'created' })
     },
     async submitEdit(user: User, values: UserFormValues) {
-      await updateUser.mutateAsync({ id: user.id, changes: values })
-      if (user.id === currentUser?.id) refreshUser()
+      await updateUser.mutateAsync({ id: user.id, changes: values, current: user })
+      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser()
       toast.success(t('admin.users.updated', { name: values.fullName }))
       setDialog((current) => (current?.kind === 'edit' && current.user.id === user.id ? null : current))
     },
@@ -73,6 +80,19 @@ export function useUserActions() {
         onError: (error) => {
           toast.error(dataErrorMessage(error, t))
           setDialog((current) => (current?.kind === 'reset' && current.user.id === user.id ? null : current))
+        },
+      })
+    },
+    lockPending: setStatus.isPending,
+    confirmLock(user: User) {
+      mutateStatus({ id: user.id, status: 'suspended' }, {
+        onSuccess: () => {
+          toast.success(t('admin.users.locked', { name: user.fullName }))
+          setDialog((current) => (current?.kind === 'lock' && current.user.id === user.id ? null : current))
+        },
+        onError: (error) => {
+          toast.error(dataErrorMessage(error, t))
+          setDialog((current) => (current?.kind === 'lock' && current.user.id === user.id ? null : current))
         },
       })
     },

@@ -15,7 +15,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { ClipboardList } from 'lucide-react'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
-import { listDeliveryRequirements } from '@/features/requirements/requirements-api'
+import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
 import { assignBackendRequirementToTrip } from './trips-api'
 
 type Props = {

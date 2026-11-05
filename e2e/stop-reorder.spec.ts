@@ -74,13 +74,13 @@ test('the dispatcher moves the last stop of a running trip up, the store keeps t
   await expect(page.getByRole('heading', { level: 1, name: 'Tuyến đổi thứ tự', exact: true })).toBeVisible()
   await expect(page.getByText('Lỗi thời', { exact: false })).toHaveCount(0)
 
-  // Tài xế: điểm hiện tại là điểm đầu tiên của thứ tự mới, và chuông có thông báo
+  // Tài xế: điểm hiện tại là điểm đầu tiên của thứ tự mới, và chuông báo bằng câu của tài xế
   await switchUser(page, 'driver')
   await navigateInApp(page, `/tai-xe/diem-giao?chuyen=${tripId}`)
   await expect(page.getByRole('heading', { level: 1, name: 'Điểm 1 / 3', exact: true })).toBeVisible()
   await expect(page.getByText('Kho Thủ Dầu Một', { exact: false }).first()).toBeVisible()
   await navigateInApp(page, '/tai-xe')
   await page.getByRole('button', { name: /^Thông báo, \d+ chưa đọc$/ }).click()
-  await expect(page.getByRole('menu').getByRole('menuitem').filter({ hasText: 'Đổi thứ tự điểm giao khi xe đang chạy' })).toHaveCount(1)
+  await expect(page.getByRole('menu').getByRole('menuitem').filter({ hasText: 'Điều phối đã đổi thứ tự điểm giao — xem lại tuyến' })).toHaveCount(1)
   expect(browserErrors).toStrictEqual([])
 })

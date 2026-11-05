@@ -135,6 +135,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
   await expect(unloading).toBeHidden()
   await expect(page.getByText('Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true }).click()
+  await page.getByRole('dialog', { name: /^Hoàn tất điểm 1 — / }).getByRole('button', { name: 'Hoàn tất', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Tổng kết chuyến', exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Sự cố', exact: true })).toContainText('Hàng hỏng')
   await page.getByRole('link', { name: /Về danh sách|Chuyến của tôi/ }).first().click()
@@ -143,7 +144,7 @@ test('one working day: plan, load, deliver, report and audit a trip across the f
 
   // Quản lý: chuyến hoàn thành nằm trong kỳ 7 ngày, xuất báo cáo
   await signIn(page, 'companyManager')
-  await page.waitForURL((url) => url.pathname === '/')
+  await page.waitForURL((url) => url.pathname === '/tong-quan')
   await page.getByRole('button', { name: '7 ngày', exact: true }).click()
   await expect(page.getByRole('link', { name: new RegExp(TRIP) }).first()).toBeVisible()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Xuất báo cáo', exact: true }).click()])

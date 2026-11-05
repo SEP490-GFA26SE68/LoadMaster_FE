@@ -1,5 +1,10 @@
 
-import { apiFetch } from '@/lib/api-client'
+import { ApiError, apiFetch } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
+
+/** Kho của công ty chỉ có ở máy chủ: kho mẫu không có danh mục này, nên khi nhóm `companies` chưa nối mọi hàm từ chối `NOT_SUPPORTED` mà không gọi mạng. */
+const ON_BACKEND = usesBackend('companies')
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 export type CompanyWarehouse = {
   id: number
@@ -30,6 +35,7 @@ type ApiResponse<T> = {
 export async function fetchCompanyWarehouses(
   activeOnly = false,
 ): Promise<CompanyWarehouse[]> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse[]>>(
     `/api/company-warehouses?activeOnly=${activeOnly}`,
   )
@@ -41,6 +47,7 @@ export async function fetchCompanyWarehouses(
 export async function fetchCompanyWarehouse(
   warehouseId: number,
 ): Promise<CompanyWarehouse> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse>>(
     `/api/company-warehouses/${warehouseId}`,
   )
@@ -52,6 +59,7 @@ export async function fetchCompanyWarehouse(
 export async function createCompanyWarehouse(
   input: CompanyWarehouseInput,
 ): Promise<CompanyWarehouse> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse>>(
     '/api/company-warehouses',
     {
@@ -68,6 +76,7 @@ export async function updateCompanyWarehouse(
   warehouseId: number,
   input: CompanyWarehouseInput,
 ): Promise<CompanyWarehouse> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse>>(
     `/api/company-warehouses/${warehouseId}`,
     {
@@ -83,6 +92,7 @@ export async function updateCompanyWarehouse(
 export async function setDefaultCompanyWarehouse(
   warehouseId: number,
 ): Promise<CompanyWarehouse> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse>>(
     `/api/company-warehouses/${warehouseId}/default`,
     {
@@ -98,6 +108,7 @@ export async function setCompanyWarehouseActive(
   warehouseId: number,
   active: boolean,
 ): Promise<CompanyWarehouse> {
+  if (!ON_BACKEND) return unsupported()
   const response = await apiFetch<ApiResponse<CompanyWarehouse>>(
     `/api/company-warehouses/${warehouseId}/active?active=${active}`,
     {

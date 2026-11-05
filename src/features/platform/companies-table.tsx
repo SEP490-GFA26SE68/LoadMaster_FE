@@ -6,6 +6,7 @@ import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import type { CompanyOverview, SubscriptionStatus } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
 
 /**
  * Bảng công ty (FE-8-06). Ô có nút khai một lần ở cấp module; hàm sửa đi qua context — dựng lại mảng cột sẽ gỡ ô đang mở
@@ -43,10 +44,11 @@ function PlanCell({ row }: { row: CompanyOverview }) {
   const t = useT()
   if (row.current === null) return <span className="text-ink-3">{t('companies.noPlan')}</span>
   const { plan } = row.current
+  const tier = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
   return (
     <span className="flex min-w-0 items-center gap-2">
       <span className="font-medium text-ink-1">{plan.name}</span>
-      <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>
+      {tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}
     </span>
   )
 }

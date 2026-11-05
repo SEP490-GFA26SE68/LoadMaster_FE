@@ -28,11 +28,14 @@ export type PermissionGroupId = (typeof PERMISSION_GROUP_IDS)[number]
  */
 const PREFIX_GROUP: Readonly<Record<Prefix, PermissionGroupId>> = {
   companies: 'administration',
+  companyProfile: 'administration',
   users: 'administration',
   audit: 'administration',
   subscriptionPlans: 'billing',
   billing: 'billing',
   support: 'support',
+  contacts: 'support',
+  trialRequests: 'support',
   dashboard: 'dashboard',
   reports: 'dashboard',
   requirements: 'requirements',
@@ -49,6 +52,7 @@ const PREFIX_GROUP: Readonly<Record<Prefix, PermissionGroupId>> = {
   exceptions: 'exceptions',
   deadlines: 'exceptions',
   pickups: 'pickups',
+  companyWarehouses: 'warehouse',
   warehouse: 'warehouse',
   driver: 'driver',
 }

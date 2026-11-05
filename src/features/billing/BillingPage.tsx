@@ -1,41 +1,40 @@
 import { Coins, LifeBuoy, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import { TabCount, Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { useListUrlState } from '@/components/useListUrlState'
-import { isAuthenticated } from '@/features/auth/auth-api'
 import { SupportTicketDialog } from '@/features/support/SupportTicketDialog'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import type { PaymentTransaction } from '@/lib/mock-db'
+import type { PaymentTransaction, SubscriptionPlan } from '@/lib/mock-db'
+import { AgreementCard } from './AgreementCard'
 import { BalanceCard } from './BalanceCard'
-import { CreditLedgerTable } from './CreditLedgerTable'
-import { PaymentsTable } from './PaymentsTable'
+import { BILLING_CAPABILITIES } from './billing-api'
+import { BillingHistoryCard } from './BillingHistoryCard'
 import { paymentPath } from './payment-path'
 import { PlanChoiceCard } from './PlanChoiceCard'
 import { PlanSummaryCard } from './PlanSummaryCard'
+import { SignAgreementDialog } from './SignAgreementDialog'
 import { TopUpDialog } from './TopUpDialog'
+import { TrialAgreementBanner } from './TrialAgreementBanner'
+import type { SignAgreementRequest } from './agreements-api'
+import { useMyAgreementQuery, useSignAgreementMutation } from './useAgreementQuery'
+import { ViewAgreementDialog } from './ViewAgreementDialog'
 import {
   useCancelSubscriptionMutation,
   useCreditBalanceQuery,
-  useCreditTransactionsQuery,
   usePaymentsQuery,
   usePlansOnSaleQuery,
   useSubscribeMutation,
   useSubscriptionQuery,
   useTopUpMutation,
 } from './useBillingQuery'
-
-/** Tab lịch sử trên URL (`?lich-su=thanh-toan`); vắng là lịch sử credit. */
-const HISTORY_TAB = 'lich-su'
-const PAYMENTS_TAB = 'thanh-toan'
+import { useOpenPayment } from './useOpenPayment'
 
 /** Thanh toán của gói đang chờ trả: gia hạn trước (gói sắp hết hạn), rồi đăng ký dở. Nạp credit chờ không có banner — mỗi lần bấm Nạp là một giao dịch mới. */
 function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTransaction | undefined {
@@ -44,46 +43,60 @@ function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTra
 
 /**
  * Gói cước và credit của công ty `/goi-cuoc` (FE-8-03, D-89, D-94) — màn của quản trị công ty (`billing.manage`). Gói hiện tại và trạng
- * thái, số dư (gói không giới hạn: "Không giới hạn"), lịch sử credit và thanh toán phân trang; đăng ký (chỉ khi chưa có gói hoặc gói
- * hết hạn), huỷ gói, nạp credit 50 / 500. Đăng ký và nạp chỉ tạo thanh toán chờ rồi mở trang thanh toán giả lập (FE-8-04); thanh toán
- * gia hạn đang chờ có banner kèm nút Trả. Một nút chính: Nạp credit.
+ * thái, số dư (gói không giới hạn: "Không giới hạn"), lịch sử phân trang (`BillingHistoryCard`); đăng ký (chỉ khi chưa có gói hoặc gói
+ * hết hạn), huỷ gói, nạp credit 50 / 500. Đăng ký và nạp chỉ tạo thanh toán chờ rồi mở trang thanh toán (`useOpenPayment`: giả lập
+ * với kho mẫu, trang xác nhận khi nối backend); thanh toán gia hạn đang chờ của kho mẫu có banner kèm nút Trả. Một nút chính: Nạp credit.
+ * Nối backend (`BILLING_CAPABILITIES`): gói còn hiệu lực tự gia hạn ở thẻ Gói hiện tại, lên hạng cao hơn bằng yêu cầu hỗ trợ; công ty dùng
+ * thử có banner, thẻ và hộp ký thoả thuận dịch vụ. Nút phụ "Yêu cầu hỗ trợ" trên dải tiêu đề mở hộp yêu cầu hỗ trợ.
  */
 export function BillingPage() {
   const t = useT()
   const format = useFormat()
-  const navigate = useNavigate()
+  const openPayment = useOpenPayment()
   const subscription = useSubscriptionQuery()
   const balance = useCreditBalanceQuery()
   const plans = usePlansOnSaleQuery()
-  const transactions = useCreditTransactionsQuery()
   const payments = usePaymentsQuery()
   const subscribe = useSubscribeMutation()
   const topUp = useTopUpMutation()
   const cancel = useCancelSubscriptionMutation()
-  const list = useListUrlState<typeof HISTORY_TAB>({ filters: [HISTORY_TAB] })
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
+  const [agreementDialog, setAgreementDialog] = useState<'sign' | 'view' | null>(null)
+  const agreement = useMyAgreementQuery().data ?? null
+  const sign = useSignAgreementMutation()
 
-  const current = subscription.data
+  const view = subscription.data
+  const current = view?.current
   const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED')
+  // Backend: gói còn hiệu lực gia hạn đúng gói đó; gói hạng cao hơn qua yêu cầu hỗ trợ
+  const contract = BILLING_CAPABILITIES.contractRenewal && current?.subscription.status === 'ACTIVE' ? current : null
   const pending = pendingPlanPayment(payments.data ?? [])
   const pendingPlan = pending === undefined ? '' : (pending.purpose === 'RENEWAL' ? current?.plan.name : plans.data?.find((plan) => plan.id === pending.planId)?.name) ?? (pending.planId ?? '')
   const failed = subscription.isError || balance.isError
   const loading = !failed && (subscription.isPending || balance.isPending)
-  const tab = list.filters[HISTORY_TAB] === PAYMENTS_TAB ? 'payments' : 'credit'
-  const pagination = { pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }
 
   function showError(error: unknown) {
     toast.error(dataErrorMessage(error, t))
   }
 
-  function handleSubscribe(planId: string) {
-    subscribe.mutate(planId, { onSuccess: (payment) => void navigate(paymentPath(payment.id)), onError: showError })
+  function handleSubscribe(plan: SubscriptionPlan) {
+    subscribe.mutate(plan.id, { onSuccess: (start) => openPayment(start, plan.name), onError: showError })
   }
 
   function handleTopUp(credits: number) {
-    topUp.mutate(credits, { onSuccess: (payment) => void navigate(paymentPath(payment.id)), onError: showError })
+    topUp.mutate(credits, { onSuccess: (start) => openPayment(start), onError: showError })
+  }
+
+  function handleSign(request: SignAgreementRequest) {
+    sign.mutate(request, {
+      onSuccess: () => {
+        setAgreementDialog(null)
+        toast.success(t('billing.agreementSigned'))
+      },
+      onError: showError,
+    })
   }
 
   function handleCancel() {
@@ -108,9 +121,9 @@ export function BillingPage() {
         actions={
           failed || loading ? null : (
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" onClick={() => setSupportOpen(true)}>
+              <Button variant="glass" onClick={() => setSupportOpen(true)}>
                 <LifeBuoy strokeWidth={1.5} />
-                {t('nav.supportRequests')}
+                {t('billing.support')}
               </Button>
               <Button variant="primary" onClick={() => setTopUpOpen(true)}>
                 <Coins strokeWidth={1.5} />
@@ -147,51 +160,40 @@ export function BillingPage() {
                 })}
               </Banner>
             ) : null}
+            <TrialAgreementBanner agreement={agreement} onOpenSignDialog={() => setAgreementDialog('sign')} />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               {current ? (
                 <PlanSummaryCard
                   current={current}
                   onCancel={() => setCancelOpen(true)}
-                  onRenew={isAuthenticated() ? () => handleSubscribe(current.plan.id) : undefined}
+                  onRenew={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan) : undefined}
                   renewPending={subscribe.isPending}
                 />
               ) : (
-                <Card><EmptyState compact mascot="empty" title={t('billing.noPlan.title')} description={t('billing.noPlan.description')} /></Card>
+                <Card>
+                  <EmptyState
+                    compact
+                    mascot="empty"
+                    title={t(view?.lapsed ? 'billing.noPlan.lapsedTitle' : 'billing.noPlan.title')}
+                    description={t(view?.lapsed ? 'billing.noPlan.lapsedDescription' : 'billing.noPlan.description')}
+                  />
+                </Card>
               )}
-              <BalanceCard credit={balance.data} />
+              <div className="flex flex-col gap-4">
+                <BalanceCard credit={balance.data} />
+                {agreement ? <AgreementCard agreement={agreement} onSign={() => setAgreementDialog('sign')} onView={() => setAgreementDialog('view')} /> : null}
+              </div>
             </div>
-            {canSubscribe || (isAuthenticated() && current !== null && current.subscription.status !== 'CANCELLED') ? (
+            {canSubscribe || contract ? (
               <PlanChoiceCard
-                plans={
-                  isAuthenticated() && current !== null && current.subscription.status !== 'EXPIRED'
-                    ? (plans.data ?? []).filter((plan) => plan.id === current.plan.id || plan.priceVnd > current.plan.priceVnd)
-                    : (plans.data ?? [])
-                }
+                plans={plans.data ?? []}
                 pendingId={subscribe.isPending ? (subscribe.variables ?? null) : null}
-                currentPlanId={isAuthenticated() && current !== null ? current.plan.id : null}
-                currentPlanTier={isAuthenticated() && current !== null ? current.plan.tier : null}
-                onSubscribe={(plan) => handleSubscribe(plan.id)}
-                onRequestUpgrade={isAuthenticated() && current !== null ? () => setSupportOpen(true) : undefined}
+                onSubscribe={handleSubscribe}
+                current={contract ? { tier: contract.plan.tier } : null}
+                onRequestUpgrade={() => setSupportOpen(true)}
               />
             ) : null}
-            <Card role="region" aria-labelledby="billing-history" className="relative flex-none overflow-hidden">
-              <CardHeader className="border-b-0 pb-0">
-                <CardTitle as="h2" id="billing-history">{t('billing.history.title')}</CardTitle>
-              </CardHeader>
-              <Tabs value={tab} onValueChange={(value) => list.setFilter(HISTORY_TAB, value === 'payments' ? PAYMENTS_TAB : '')}>
-                <TabsList aria-label={t('billing.history.title')}>
-                  <TabsTrigger value="credit">{t('billing.history.tabs.credit')}<TabCount>{transactions.data?.length ?? 0}</TabCount></TabsTrigger>
-                  <TabsTrigger value="payments">{t('billing.history.tabs.payments')}<TabCount>{payments.data?.length ?? 0}</TabCount></TabsTrigger>
-                </TabsList>
-              </Tabs>
-              {transactions.isPending || payments.isPending ? (
-                <div className="flex justify-center py-8"><Spinner /></div>
-              ) : tab === 'credit' ? (
-                <CreditLedgerTable rows={transactions.data ?? []} pagination={pagination} />
-              ) : (
-                <PaymentsTable rows={payments.data ?? []} pagination={pagination} />
-              )}
-            </Card>
+            <BillingHistoryCard />
           </>
         )}
       </div>
@@ -201,10 +203,12 @@ export function BillingPage() {
         onOpenChange={setTopUpOpen}
         pending={topUp.isPending}
         onConfirm={handleTopUp}
-        tier={isAuthenticated() ? (current?.plan.tier ?? 'BASIC') : undefined}
-        currentBalance={isAuthenticated() ? (balance.data?.balance ?? 0) : undefined}
+        tier={current?.plan.tier ?? null}
+        balance={balance.data?.balance ?? 0}
       />
       {supportOpen ? <SupportTicketDialog onClose={() => setSupportOpen(false)} /> : null}
+      <SignAgreementDialog agreement={agreement} open={agreementDialog === 'sign'} onClose={() => setAgreementDialog(null)} onSign={handleSign} isSigning={sign.isPending} />
+      <ViewAgreementDialog agreement={agreement} open={agreementDialog === 'view'} onClose={() => setAgreementDialog(null)} />
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}

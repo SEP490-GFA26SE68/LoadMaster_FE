@@ -1,7 +1,19 @@
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   changeTripVehicle → POST /api/trips/{id}/change-vehicle
+ *   runOptimization   → POST /api/v1/optimization/jobs · tiến độ: WS /ws/jobs/{job_uuid} · ba phương án: GET /api/v1/optimization/jobs/{id}/plans (Q-07);
+ *                       chạy lại giữ kiện ghim (`request.pinnedPlacements`): POST /api/load-plans/{id}/rerun (kiện ghim: Q-14)
+ *                       (giữ / trừ / hoàn credit do BE làm phía server, HTTP 402 `INSUFFICIENT_CREDITS`; mock gọi thẳng kho)
+ *   fetchOptimizationCredit → GET /api/subscription/current · GET /api/credits/balance (nối khi bật nhóm `billing`: optimization-credit-api.ts)
+ *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
+ *   phần của nhóm (màn Thiết lập tối ưu khi nhóm `trips` nối backend): fetchBackendOptimizationJob → GET /api/trips/optimization-jobs/{id},
+ *   fetchBackendLoadPlans → GET /api/trips/optimization-jobs/{id}/plans
+ */
 import { apiFetch } from '@/lib/api-client'
 
 import { pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
+import { usesBackend } from '@/lib/backend-config'
 import {
   creditBlock,
   getMockDb,
@@ -18,7 +30,9 @@ import {
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
 import { createOptimizationService, OptimizationServiceError, type CandidateProgress, type CandidateRun } from '@/services/optimization'
+import { fetchBackendOptimizationCredit } from './optimization-credit-api'
 import { buildRunHistory, type RunHistoryRow } from './run-history'
+import type { RunStage } from './run-progress'
 
 /**
  * Lớp dữ liệu của Thiết lập tối ưu và job (LM-047, LM-048): nơi duy nhất trong feature biết về kho và service tối ưu.
@@ -91,10 +105,16 @@ export type OptimizationCredit = {
   readonly unlimited: boolean
   /** Vì sao chưa chạy được (gói hết hạn xét trước số dư); `null` khi chạy được. Kho kiểm lại bằng cùng luật. */
   readonly block: CreditBlock | null
+  /**
+   * Gói đã hết hạn mà nguồn không còn trả tên gói (backend chỉ trả trạng thái và số dư): thẻ vẫn nói số dư, không nói "chưa có gói".
+   * Kho mẫu luôn trả tên gói nên không đặt trường này.
+   */
+  readonly lapsed?: boolean
 }
 
 // GET /api/subscription/current · GET /api/credits/balance
 export async function fetchOptimizationCredit(): Promise<OptimizationCredit> {
+  if (usesBackend('billing')) return fetchBackendOptimizationCredit()
   const db = getMockDb()
   const [current, credit] = await Promise.all([db.getCurrentSubscription(), db.getCreditBalance()])
   return {
@@ -115,6 +135,8 @@ export type RunInput = {
   readonly signal?: AbortSignal
   /** Tiến trình của từng phương án ứng viên. */
   readonly onProgress?: (progress: CandidateProgress) => void
+  /** Bước đang bắt đầu: giữ credit → xếp ba phương án → lưu kết quả (hộp thoại đang chạy vẽ đúng các bước này). */
+  readonly onStage?: (stage: RunStage) => void
 }
 
 /**
@@ -136,15 +158,17 @@ export type RunOutcome =
  * Chạy lại giữ kiện ghim (FE-BL-02) là cùng lối này với `request.pinnedPlacements`: ba phương án, một credit, cùng quyền.
  */
 // POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
-export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress }: RunInput): Promise<RunOutcome> {
+export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, onStage }: RunInput): Promise<RunOutcome> {
   // Bộ kiện ghim hỏng thì từ chối trước khi giữ credit: không chạy, không tốn gì (FE-BL-02)
   const faults = pinnedIssues(request)
   if (faults.length > 0) throw new MockDbError('PINNED_SET_INVALID', { tripId, count: faults.length, codes: [...new Set(faults.map(({ code }) => code))] })
   const service = createOptimizationService({ simulateFailure })
   const db = getMockDb()
+  onStage?.('reserve')
   const { reference } = await db.reserveOptimizationCredit(tripId)
   let job: CandidateRun
   try {
+    onStage?.('pack')
     job = await service.optimizeCandidates(request, { signal, onProgress })
   } catch (error) {
     await db.refundOptimizationCredit(reference)
@@ -159,6 +183,7 @@ export async function runOptimization({ tripId, request, simulateFailure, signal
     return { kind: 'failed', result: failed.result }
   }
   try {
+    onStage?.('save')
     return { kind: 'saved', ...(await db.saveOptimizationRun({ tripId, request, jobId: job.jobId, plans: job.plans, creditReference: reference })) }
   } catch (error) {
     await db.refundOptimizationCredit(reference)

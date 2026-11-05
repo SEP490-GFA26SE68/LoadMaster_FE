@@ -58,9 +58,11 @@ test('shows the plan, the balance and both histories of the company', async () =
   renderBilling(LONG_BINH_ADMIN)
   await screen.findByRole('region', { name: 'Gói hiện tại' }, SLOW)
   const plan = regionOf('Gói hiện tại')
-  // Tên gói và nhãn hạng cùng ghi "Pro"
-  expect(plan.getAllByText('Pro')).toHaveLength(2)
+  // Tên gói "Pro" đã nói hạng: không kèm nhãn hạng "Pro" lần nữa
+  expect(plan.getAllByText('Pro')).toHaveLength(1)
   for (const text of ['Giá trị tạm — chờ chốt', 'Đang hoạt động', '1.490.000 ₫', '500']) expect(plan.getByText(text)).toBeInTheDocument()
+  // Kho mẫu có gia hạn thật nên vẫn ghi dòng "Tự gia hạn" (backend không có)
+  expect(plan.getByText('Tự gia hạn')).toBeInTheDocument()
   expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('486')).toBeInTheDocument()
   // Đang có gói còn hiệu lực: không có danh sách chọn gói
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()

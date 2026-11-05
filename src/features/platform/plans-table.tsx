@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Switch } from '@/components/ui/Switch'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
-import type { PlanRow } from './subscription-plans-api'
+import { PLAN_CATALOG_CAPABILITIES, type PlanRow } from './subscription-plans-api'
 
 /**
  * Bảng danh mục gói (FE-8-02). Ô có trạng thái (công tắc bán, menu thao tác) khai một lần ở cấp module; phần thay đổi (hàm thao tác, gói
@@ -30,6 +30,8 @@ function usePlansTable(): PlansTableValue {
 }
 
 const helper = createColumnHelper<BaseTableFeatures, PlanRow>()
+/** Không có công tắc bán (backend) thì lý do chặn xoá không gợi ý ngừng bán. */
+const IN_USE_REASON = PLAN_CATALOG_CAPABILITIES.saleToggle ? 'platform.inUse' : 'platform.inUseLocked'
 const mono = 'font-mono text-caption text-ink-1 tabular-nums'
 
 function PlanCell({ row }: { row: PlanRow }) {
@@ -37,7 +39,7 @@ function PlanCell({ row }: { row: PlanRow }) {
   return (
     <span className="flex min-w-0 flex-col items-start gap-1 whitespace-normal">
       <span className="line-clamp-2 font-medium text-ink-strong">{row.plan.name}</span>
-      <span className="font-mono text-caption text-ink-3">{row.plan.id}</span>
+      <span className="font-mono text-caption text-ink-3">{row.code}</span>
       {row.plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
     </span>
   )
@@ -100,7 +102,7 @@ function ActionsCell({ row }: { row: PlanRow }) {
           <Trash2 strokeWidth={1.5} aria-hidden />
           <span className="flex min-w-0 flex-col">
             <span>{t('platform.delete')}</span>
-            {inUse > 0 ? <span className="text-caption whitespace-normal text-text-3">{t('platform.inUse', { count: inUse })}</span> : null}
+            {inUse > 0 ? <span className="text-caption whitespace-normal text-text-3">{t(IN_USE_REASON, { count: inUse })}</span> : null}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -125,7 +127,9 @@ export function createPlanColumns(t: TFunction) {
       cell: (info) => <span className="text-ink-1">{t(`optimization.credit.tiers.${info.row.original.plan.algorithmTier}`)}</span>,
     }),
     helper.display({ id: 'companies', header: t('platform.columns.companies'), meta: { align: 'right', width: '130px' } satisfies ColumnMeta, cell: (info) => <CompaniesCell row={info.row.original} /> }),
-    helper.display({ id: 'onSale', header: t('platform.columns.onSale'), meta: { width: '110px' } satisfies ColumnMeta, cell: (info) => <SaleCell row={info.row.original} /> }),
+    ...(PLAN_CATALOG_CAPABILITIES.saleToggle
+      ? [helper.display({ id: 'onSale', header: t('platform.columns.onSale'), meta: { width: '110px' } satisfies ColumnMeta, cell: (info) => <SaleCell row={info.row.original} /> })]
+      : []),
     helper.display({
       id: 'actions',
       header: () => <span className="sr-only">{t('platform.columns.actions')}</span>,

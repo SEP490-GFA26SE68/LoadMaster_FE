@@ -27,6 +27,8 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'pickup.requested', 'pickup.rejected',
     // FE-8-01, FE-8-05: gói huỷ hoặc hết hạn, và credit sắp hết — quản trị công ty cần xem
     'subscription.cancelled', 'subscription.expired', 'credit.lowBalance',
+    // Khách gửi yêu cầu liên hệ: chờ người của nền tảng nhận việc
+    'contact.received',
   ] as const
   expect(toneOf(attention)).toStrictEqual(attention.map(() => 'amber'))
   expect(AUDIT_ACTIONS.filter((action) => auditActionLook(action).tone === 'amber')).toStrictEqual(

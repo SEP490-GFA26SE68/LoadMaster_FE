@@ -38,7 +38,7 @@ export const requirements = {
     priority: 'Ưu tiên',
     packages: 'Kiện',
     status: 'Trạng thái',
-    trip: 'Chuyến hàng',
+    trip: 'Chuyến',
     actions: 'Thao tác',
 
   },
@@ -201,5 +201,11 @@ export const requirements = {
     assign: 'Đưa yêu cầu vào chuyến',
     unassign: 'Gỡ yêu cầu {id}',
     list: 'Tất cả yêu cầu giao',
+  },
+  /** Bảng yêu cầu giao khi đọc ghi máy chủ (`requirements/backend`). */
+  server: {
+    received: '{received} kiện',
+    receivedOf: '{received}/{expected} kiện',
+    viewTrip: 'Xem chuyến #{code}',
   },
 } as const

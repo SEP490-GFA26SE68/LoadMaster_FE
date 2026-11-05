@@ -1,11 +1,13 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   chưa có ở BE: fetchNotifications
+ * Người dùng nối backend (`users`) thì chuông bỏ sự kiện tài khoản của kho mẫu, như Nhật ký (`AUDIT_LOG_AVAILABLE`).
  */
 
+import { AUDIT_LOG_AVAILABLE } from '@/features/admin/audit-api'
 import type { AuditDirectory } from '@/features/admin/audit-log'
 import { getMockDb, vnDate, type AuditEvent } from '@/lib/mock-db'
-import { notificationWindowStart, selectNotifications, type NotificationViewer } from './notifications'
+import { notificationWindowStart, selectNotifications, withoutAccountEvents, type NotificationViewer } from './notifications'
 
 /**
  * Lớp gọi API của chuông thông báo (LM-098) — nơi duy nhất của chuông biết về kho. Kho lọc nhật ký theo ngày, phần còn lại lọc ngay
@@ -26,7 +28,8 @@ export async function fetchNotifications(viewer: NotificationViewer, now = new D
   const db = getMockDb()
   const [events, names] = await Promise.all([db.listEvents({ from: vnDate(notificationWindowStart(now)) }), db.listAuditNames()])
   return {
-    events: selectNotifications(events, viewer, now),
+    // Lọc trước khi cắt còn 20 thông báo, để sự kiện bị bỏ không chiếm chỗ
+    events: selectNotifications(AUDIT_LOG_AVAILABLE ? events : withoutAccountEvents(events), viewer, now),
     directory: {
       trips: new Map(names.trips.map((trip) => [trip.id, trip.name])),
       users: new Map(names.users.map((user) => [user.id, user.fullName])),

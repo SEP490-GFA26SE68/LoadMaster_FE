@@ -31,6 +31,7 @@ export const audit = {
     credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
     company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },
     ticket: { created: 'Gửi yêu cầu hỗ trợ', replied: 'Trả lời yêu cầu hỗ trợ', statusChanged: 'Đổi trạng thái yêu cầu hỗ trợ' },
+    contact: { received: 'Khách gửi yêu cầu liên hệ', updated: 'Cập nhật yêu cầu liên hệ của khách' },
   } satisfies AuditActionLabels,
   groups: {
     auth: 'Đăng nhập',
@@ -52,6 +53,7 @@ export const audit = {
     credit: 'Credit',
     company: 'Công ty',
     ticket: 'Hỗ trợ',
+    contact: 'Liên hệ của khách',
   } satisfies Record<AuditGroup, string>,
   /** Màn `/nhat-ky` (LM-091): bảng, bộ lọc và cách đọc tham số của sự kiện. */
   log: {
@@ -60,6 +62,9 @@ export const audit = {
     loading: 'Đang tải nhật ký…',
     errorTitle: 'Không tải được nhật ký',
     errorDescription: 'Kho dữ liệu không trả lời. Thử lại sau giây lát.',
+    // Người dùng đã nối backend mà backend chưa có nhật ký: không hiện sự kiện của kho mẫu
+    unavailableTitle: 'Máy chủ chưa có nhật ký hoạt động',
+    unavailableDescription: 'Máy chủ LoadMaster chưa ghi lại thao tác của người dùng, nên chưa có sự kiện nào để xem ở đây.',
     retry: 'Thử lại',
     empty: 'Chưa có sự kiện nào.',
     noMatch: 'Không có sự kiện khớp bộ lọc.',
@@ -178,10 +183,13 @@ export const audit = {
       delayMinutes: 'Dự kiến chậm (phút)',
       escalation: 'Lý do chuyển',
       route: 'Tuyến',
-      // Nhận hàng dọc đường (FE-7-03 → FE-7-05)
+      // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay khi kho đã bắt đầu xếp
       pickupId: 'Yêu cầu nhận',
       failedRules: 'Luật không đạt',
       driverId: 'Tài xế',
+      previousDriverId: 'Tài xế trước',
+      // Kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch (FE-6-02, FE-6-05)
+      replanReason: 'Lý do soạn lại',
       // Gói cước và credit (FE-8-01, FE-8-05)
       plan: 'Gói cước',
       credits: 'Credit',
@@ -189,9 +197,15 @@ export const audit = {
       // Yêu cầu hỗ trợ (FE-8-07)
       ticketKind: 'Loại yêu cầu',
       ticketStatus: 'Trạng thái',
+      // Yêu cầu liên hệ của khách
+      contactType: 'Loại yêu cầu',
+      contactStatus: 'Trạng thái',
+      assignedTo: 'Người nhận việc',
     },
     /** Giá trị của tham số `escalation` (`ExceptionEscalation` của kho). */
     escalations: { NO_ROUTE: 'Không có tuyến khả thi', TIMEOUT: 'Quá 30 phút chưa xử lý' },
+    /** Giá trị của tham số `replanReason` (`ReplanReason` của kho): vì sao chuyến từng quay về Đã lập kế hoạch trước lần soạn này. */
+    replanReasons: { SHORTAGE: 'Thiếu kiện lúc soạn hàng', DAMAGED: 'Kiện hỏng lúc xếp' },
     /** Giá trị của tham số `fields`: tên trường chuyến, tài khoản hoặc yêu cầu giao đã sửa. */
     fieldNames: {
       name: 'Tên chuyến',
@@ -217,6 +231,9 @@ export const audit = {
       priority: 'Ưu tiên',
       note: 'Ghi chú',
       packageIds: 'Kiện',
+      // Yêu cầu liên hệ của khách
+      status: 'Trạng thái',
+      assignedToId: 'Người nhận việc',
     },
     /** Mã lý do đăng nhập không thành công. */
     reasons: { suspended: 'Tài khoản đã bị khoá' },

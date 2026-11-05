@@ -7,6 +7,7 @@ import { createDbContext, type DbState } from './db-context'
 import { manualConfirmMethods } from './db-manual-confirm'
 import { stagingMethods } from './db-staging'
 import { supportMethods } from './db-support'
+import { contactMethods } from './db-contacts'
 import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
@@ -28,6 +29,7 @@ import { vehicleMethods } from './db-vehicles'
 import { seededRandom } from './qr-token'
 import { seedBilling } from './seed-billing'
 import { seedSupport } from './seed-support'
+import { seedContacts } from './seed-contacts'
 import { buildSeed } from './seed'
 import { shiftSeedTimes } from './seed-shift'
 import type { MockDb, MockDbOptions } from './types'
@@ -83,6 +85,7 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     creditTransactions: new Map(billing.creditTransactions.map((transaction) => [transaction.id, transaction])),
     payments: new Map(billing.payments.map((payment) => [payment.id, payment])),
     supportTickets: new Map(seedSupport(clock.now()).map((ticket) => [ticket.id, ticket])),
+    guestContacts: new Map(seedContacts(clock.now()).map((contact) => [contact.id, contact])),
   }
   const ctx = createDbContext(state, latencyMs, clock.now, random ?? seededRandom(QR_SEED), clock.speed, clock.setSpeed)
   const db: MockDb = {
@@ -111,6 +114,7 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     ...billingMethods(ctx),
     ...companyMethods(ctx),
     ...supportMethods(ctx),
+    ...contactMethods(ctx),
   }
   return { db, state, clock }
 }

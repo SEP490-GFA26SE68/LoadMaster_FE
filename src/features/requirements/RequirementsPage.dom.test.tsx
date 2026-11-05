@@ -54,8 +54,9 @@ async function openMenu(user: UserEvent, id: string) {
   return within(await screen.findByRole('menu'))
 }
 
-test('the manager sees the requirements by nearest deadline, with filters on the URL and the create button', async () => {
-  const user = renderPage('companyManager')
+// Ma trận quyền của nhánh nhóm: `requirements.edit` (tạo, sửa, xoá yêu cầu giao) là của điều phối viên, không còn của quản lý công ty
+test('the dispatcher sees the requirements by nearest deadline, with filters on the URL and the create button', async () => {
+  const user = renderPage('dispatcher')
   expect(await screen.findByText('6 yêu cầu chờ xếp chuyến', {}, SLOW)).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: 'Yêu cầu giao' })).toBeInTheDocument()
   expect(within(screen.getByRole('table')).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
@@ -78,9 +79,9 @@ test('the manager sees the requirements by nearest deadline, with filters on the
   await waitFor(() => expect(rowIds()).toStrictEqual(['REQ-006', 'REQ-002']), SLOW)
   expect(screen.getByTestId('url')).toHaveTextContent('/yeu-cau-giao?uu-tien=cao')
 
-  // Menu của quản lý công ty: xem, sửa, xoá — không có việc của điều phối viên
+  // Menu của điều phối viên: xem, đưa vào chuyến (`trips.edit`), sửa, xoá (`requirements.edit`)
   const menu = await openMenu(user, 'REQ-002')
-  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Sửa yêu cầu', 'Xoá yêu cầu'])
+  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Đưa vào chuyến', 'Sửa yêu cầu', 'Xoá yêu cầu'])
 })
 
 test('the deadline range and the status filter read from the URL', async () => {
@@ -106,8 +107,8 @@ test('the detail shows the destination, coordinates, deadline, who made it and e
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 })
 
-test('the manager creates a requirement: errors sit at the fields, warnings do not block saving', async () => {
-  const user = renderPage('companyManager')
+test('the dispatcher creates a requirement: errors sit at the fields, warnings do not block saving', async () => {
+  const user = renderPage('dispatcher')
   await user.click(await screen.findByRole('button', { name: 'Tạo yêu cầu giao' }, SLOW))
   const dialog = within(await screen.findByRole('dialog', { name: 'Tạo yêu cầu giao' }))
   // Lọc ô chọn kiện theo điểm đến ghi trong file: ba kiện dễ vỡ đi Phú Bài còn tự do (hai kiện kia thuộc REQ-002)
@@ -162,8 +163,8 @@ test('the manager creates a requirement: errors sit at the fields, warnings do n
   expect(await getMockDb().getDeliveryRequirement('REQ-007')).toMatchObject({ address: 'KCN Phú Bài, TX. Hương Thuỷ, Thừa Thiên Huế', lat: 16.4022, lng: 107.696 })
 })
 
-test('the manager edits a pending requirement and deletes it; its packages go back to the pool', async () => {
-  const user = renderPage('companyManager')
+test('the dispatcher edits a pending requirement and deletes it; its packages go back to the pool', async () => {
+  const user = renderPage('dispatcher')
   await screen.findByText('7 yêu cầu chờ xếp chuyến', {}, SLOW)
   await user.click((await openMenu(user, 'REQ-007')).getByRole('menuitem', { name: 'Sửa yêu cầu' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Sửa yêu cầu REQ-007' }))
@@ -192,12 +193,11 @@ test('the manager edits a pending requirement and deletes it; its packages go ba
   expect((await getMockDb().getPackage('PK-0054')).requirementId).toBeUndefined()
 })
 
-test('the dispatcher only reads and puts a requirement on a planning trip; the dialog says which stop it will share or add', async () => {
+test('the dispatcher puts a requirement on a planning trip; the dialog says which stop it will share or add', async () => {
   const user = renderPage('dispatcher')
   await screen.findByText('6 yêu cầu chờ xếp chuyến', {}, SLOW)
-  expect(screen.queryByRole('button', { name: 'Tạo yêu cầu giao' })).toBeNull()
   const menu = await openMenu(user, 'REQ-006')
-  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Đưa vào chuyến'])
+  expect(menu.getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Đưa vào chuyến', 'Sửa yêu cầu', 'Xoá yêu cầu'])
   await user.click(menu.getByRole('menuitem', { name: 'Đưa vào chuyến' }))
 
   const dialog = within(await screen.findByRole('dialog', { name: 'Đưa yêu cầu REQ-006 vào chuyến' }))
@@ -221,11 +221,11 @@ test('the dispatcher only reads and puts a requirement on a planning trip; the d
   expect(row.getByText('TRIP-014 · Điểm 2')).toBeInTheDocument()
   expect(row.getByRole('link', { name: 'Tuyến Tân An – Dĩ An' })).toHaveAttribute('href', '/chuyen/TRIP-014')
   // Đã vào chuyến: menu đổi sang "Gỡ khỏi chuyến"
-  expect((await openMenu(user, 'REQ-006')).getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Gỡ khỏi chuyến'])
+  expect((await openMenu(user, 'REQ-006')).getAllByRole('menuitem').map((item) => item.textContent)).toStrictEqual(['Xem chi tiết', 'Gỡ khỏi chuyến', 'Sửa yêu cầu', 'Xoá yêu cầuChỉ làm được khi yêu cầu còn chờ xếp chuyến'])
 })
 
-test('once on a trip the manager changes only the deadline and the priority; deleting is blocked with the reason', async () => {
-  const user = renderPage('companyManager')
+test('once on a trip the dispatcher changes only the deadline and the priority; deleting is blocked with the reason', async () => {
+  const user = renderPage('dispatcher')
   await screen.findByText('5 yêu cầu chờ xếp chuyến', {}, SLOW)
   const menu = await openMenu(user, 'REQ-006')
   const remove = menu.getByRole('menuitem', { name: /^Xoá yêu cầu/ })

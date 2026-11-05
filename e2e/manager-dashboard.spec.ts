@@ -33,7 +33,7 @@ test('the manager switches to 7 days and exports a three-sheet report named afte
 
   await page.getByRole('button', { name: '7 ngày', exact: true }).click()
   await expect(trips).toContainText('1/ 5 chuyến')
-  await expect(page).toHaveURL(/\/\?ky=7-ngay$/)
+  await expect(page).toHaveURL(/\/tong-quan\?ky=7-ngay$/)
 
   const today = vnToday()
   const fileName = `bao-cao-van-hanh_${addDays(today, -6)}_${today}.xlsx`

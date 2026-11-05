@@ -1,277 +1,84 @@
-import { apiFetch } from "@/lib/api-client";
-
-import { compareText } from "@/lib/list-filter";
-import { getMockDb, type VehicleTypeAssignment } from "@/lib/mock-db";
-
 /**
- * Lớp dữ liệu loại xe (LM-104) — backend đã có CRUD thật `/api/vehicle-types` (Spring, `VehicleTypeController`); khi nối chỉ thay thân
- * các hàm ở đây. Xe gắn loại tuỳ chọn, lưu ngoài `VehicleConfig` (D-04).
+ * Hàm → endpoint backend (FE-0-09). Nhóm `fleet` nối backend (`usesBackend('fleet')`, thân hàm ở `fleet/fleet-backend-api.ts`), chỉ phần đọc:
+ *   fetchVehicleTypes          → GET /api/vehicle-types · GET /api/vehicles
+ *   fetchVehicleAssignmentRows → GET /api/vehicles
+ *   chưa dùng ở màn: saveVehicleType → POST /api/vehicle-types (tạo)
+ *   chưa có ở BE: saveVehicleType (sửa), deleteVehicleType, setVehicleType, fetchVehicleTypeAssignments
  */
 
-type PageResponse<T> = {
-  success: boolean;
-  message?: string;
-  data: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
-};
+import { readBackendAssignments, readBackendVehicleTypes } from '@/features/fleet/fleet-backend-api'
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
+import { compareText } from '@/lib/list-filter'
+import { getMockDb, type VehicleType, type VehicleTypeAssignment, type VehicleTypeInput } from '@/lib/mock-db'
 
-type VehicleTypeApi = {
-  id: number;
-  name: string;
-  innerLength: number;
-  innerWidth: number;
-  innerHeight: number;
-  doorWidth: number | null;
-  doorHeight: number | null;
-  maxPayloadKg: number;
-  frontAxleLimitKg: number | null;
-  rearAxleLimitKg: number | null;
-  frontAxleX: number | null;
-  rearAxleX: number | null;
-  emptyFrontAxleLoadKg: number | null;
-  emptyRearAxleLoadKg: number | null;
-  maxCogOffsetRatio: number;
-  hazardousCapable: boolean;
-  obstacles: VehicleTypeObstacleApi[];
-  vehicleCount: number;
-};
+/**
+ * Lớp dữ liệu loại xe (LM-104): kho mẫu, hoặc backend khi nhóm `fleet` bật — việc làm được theo nguồn ở `FLEET_CAPABILITIES`
+ * (`fleet/vehicles-api.ts`). Xe gắn loại tuỳ chọn ở kho mẫu, lưu ngoài `VehicleConfig` (D-04); ở backend mọi xe đều có loại.
+ */
 
-type VehicleTypeObstacleApi = {
-  id: number;
-  name: string;
-  type: "WHEEL_ARCH" | "COOLING_UNIT" | "PARTITION" | "RESERVED_ZONE" | "OTHER";
-  x: number;
-  y: number;
-  z: number;
-  length: number;
-  width: number;
-  height: number;
-  loadBearing: boolean;
-};
+const ON_BACKEND = usesBackend('fleet')
 
-export type VehicleType = {
-  id: string;
-  name: string;
-  cargoLengthCm: number;
-  cargoWidthCm: number;
-  cargoHeightCm: number;
-  doorWidthCm: number | null;
-  doorHeightCm: number | null;
-  payloadKg: number;
-  frontAxleLimitKg?: number;
-  rearAxleLimitKg?: number;
-  frontAxleX: number | null;
-  rearAxleX: number | null;
-  emptyFrontAxleLoadKg: number | null;
-  emptyRearAxleLoadKg: number | null;
-  maxCogOffsetRatio: number;
-  hazardousCapable: boolean;
-  obstacles: VehicleTypeObstacle[];
-  vehicleCount: number;
-};
+/** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ báo thành công giả hay ghi kho mẫu thay. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
-export type VehicleTypeObstacle = {
-  id: string;
-  name: string;
-  type: VehicleTypeObstacleApi["type"];
-  x: number;
-  y: number;
-  z: number;
-  length: number;
-  width: number;
-  height: number;
-  loadBearing: boolean;
-};
+export type VehicleRef = { readonly id: string; readonly name: string }
 
-function mapVehicleType(item: VehicleTypeApi): VehicleType {
-  return {
-    id: String(item.id),
-    name: item.name,
-    cargoLengthCm: item.innerLength,
-    cargoWidthCm: item.innerWidth,
-    cargoHeightCm: item.innerHeight,
-    doorWidthCm: item.doorWidth ?? null,
-    doorHeightCm: item.doorHeight ?? null,
-    payloadKg: item.maxPayloadKg,
-    frontAxleLimitKg: item.frontAxleLimitKg ?? undefined,
-    rearAxleLimitKg: item.rearAxleLimitKg ?? undefined,
-    frontAxleX: item.frontAxleX ?? null,
-    rearAxleX: item.rearAxleX ?? null,
-    emptyFrontAxleLoadKg: item.emptyFrontAxleLoadKg ?? null,
-    emptyRearAxleLoadKg: item.emptyRearAxleLoadKg ?? null,
-    maxCogOffsetRatio: item.maxCogOffsetRatio,
-    hazardousCapable: item.hazardousCapable,
-    obstacles: item.obstacles.map((obstacle) => ({
-      id: String(obstacle.id),
-      name: obstacle.name,
-      type: obstacle.type,
-      x: obstacle.x,
-      y: obstacle.y,
-      z: obstacle.z,
-      length: obstacle.length,
-      width: obstacle.width,
-      height: obstacle.height,
-      loadBearing: obstacle.loadBearing,
-    })),
-    vehicleCount: item.vehicleCount,
-  };
-}
-
-export type VehicleTypeObstacleInput = {
-  name: string;
-  type: "WHEEL_ARCH" | "COOLING_UNIT" | "PARTITION" | "RESERVED_ZONE" | "OTHER";
-  x: number;
-  y: number;
-  z: number;
-  length: number;
-  width: number;
-  height: number;
-  loadBearing: boolean;
-};
-
-export type VehicleTypeInput = {
-  name: string;
-  cargoLengthCm: number;
-  cargoWidthCm: number;
-  cargoHeightCm: number;
-  doorWidthCm?: number;
-  doorHeightCm?: number;
-  payloadKg: number;
-  frontAxleLimitKg?: number;
-  rearAxleLimitKg?: number;
-  frontAxleX?: number | null;
-  rearAxleX?: number | null;
-  emptyFrontAxleLoadKg?: number | null;
-  emptyRearAxleLoadKg?: number | null;
-  maxCogOffsetRatio: number;
-  hazardousCapable: boolean;
-  obstacles: VehicleTypeObstacleInput[];
-};
-
-function toCreateVehicleTypeRequest(input: VehicleTypeInput) {
-  return {
-    name: input.name,
-    innerLength: input.cargoLengthCm,
-    innerWidth: input.cargoWidthCm,
-    innerHeight: input.cargoHeightCm,
-    doorWidth: input.doorWidthCm ?? null,
-    doorHeight: input.doorHeightCm ?? null,
-    maxPayloadKg: input.payloadKg,
-    frontAxleLimitKg: input.frontAxleLimitKg ?? null,
-    rearAxleLimitKg: input.rearAxleLimitKg ?? null,
-    frontAxleX: input.frontAxleX ?? null,
-    rearAxleX: input.rearAxleX ?? null,
-    emptyFrontAxleLoadKg: input.emptyFrontAxleLoadKg ?? null,
-    emptyRearAxleLoadKg: input.emptyRearAxleLoadKg ?? null,
-    maxCogOffsetRatio: input.maxCogOffsetRatio,
-    hazardousCapable: input.hazardousCapable,
-    obstacles: input.obstacles,
-  };
-}
-
-export type VehicleRef = { readonly id: string; readonly name: string };
+/** Loại xe của màn: backend không trả công ty hay ngày tạo của loại xe, màn cũng không dùng hai trường đó. */
+export type VehicleTypeEntry = Omit<VehicleType, 'companyId' | 'createdAt'>
 
 /** Loại xe kèm các xe đang gắn (mã và tên, theo tên xe). */
-export type VehicleTypeRow = {
-  readonly type: VehicleType;
-  readonly vehicleIds: readonly string[];
-  readonly vehicles: readonly VehicleRef[];
-};
+export type VehicleTypeRow = { readonly type: VehicleTypeEntry; readonly vehicleIds: readonly string[]; readonly vehicles: readonly VehicleRef[] }
 
 /** Một xe của đội và loại đang gắn (`null` khi chưa gắn) — bảng "Gắn loại cho xe". */
-export type VehicleAssignmentRow = {
-  readonly vehicle: VehicleRef;
-  readonly vehicleTypeId: string | null;
-};
+export type VehicleAssignmentRow = { readonly vehicle: VehicleRef; readonly vehicleTypeId: string | null }
 
-// GET /api/vehicle-types (xe đang gắn loại: chưa có ở BE)
-export async function fetchVehicleTypes(
-  page = 0,
-  size = 20,
-  search?: string,
-): Promise<PageResponse<VehicleType>> {
-  const params = new URLSearchParams({
-    page: String(page),
-    size: String(size),
-  });
-
-  if (search?.trim()) {
-    params.set("search", search.trim());
-  }
-
-  const body = await apiFetch<PageResponse<VehicleTypeApi>>(
-    `/api/vehicle-types?${params.toString()}`,
-  );
-
-  return {
-    ...body,
-    data: body.data.map(mapVehicleType),
-  };
+// GET /api/vehicle-types · GET /api/vehicles
+export async function fetchVehicleTypes(): Promise<VehicleTypeRow[]> {
+  if (ON_BACKEND) return readBackendVehicleTypes()
+  const db = getMockDb()
+  const [types, assignments, vehicles] = await Promise.all([db.listVehicleTypes(), db.listVehicleTypeAssignments(), db.listVehicles()])
+  const nameOf = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name]))
+  return types.map((type) => {
+    const vehicleIds = assignments.filter((item) => item.vehicleTypeId === type.id).map((item) => item.vehicleId)
+    const refs = vehicleIds.map((id) => ({ id, name: nameOf.get(id) ?? id })).toSorted((a, b) => compareText(a.name, b.name))
+    return { type, vehicleIds, vehicles: refs }
+  })
 }
 
 // chưa có ở BE
-export function fetchVehicleTypeAssignments(): Promise<
-  VehicleTypeAssignment[]
-> {
-  return getMockDb().listVehicleTypeAssignments();
+export function fetchVehicleTypeAssignments(): Promise<VehicleTypeAssignment[]> {
+  if (ON_BACKEND) return unsupported()
+  return getMockDb().listVehicleTypeAssignments()
 }
 
 /** Mọi xe của đội (theo tên) kèm loại đang gắn. */
-// chưa có ở BE
-export async function fetchVehicleAssignmentRows(): Promise<
-  VehicleAssignmentRow[]
-> {
-  const db = getMockDb();
-  const [vehicles, assignments] = await Promise.all([
-    db.listVehicles(),
-    db.listVehicleTypeAssignments(),
-  ]);
-  const typeOf = new Map(
-    assignments.map((item) => [item.vehicleId, item.vehicleTypeId]),
-  );
+// GET /api/vehicles
+export async function fetchVehicleAssignmentRows(): Promise<VehicleAssignmentRow[]> {
+  if (ON_BACKEND) return readBackendAssignments()
+  const db = getMockDb()
+  const [vehicles, assignments] = await Promise.all([db.listVehicles(), db.listVehicleTypeAssignments()])
+  const typeOf = new Map(assignments.map((item) => [item.vehicleId, item.vehicleTypeId]))
   return vehicles
-    .map((vehicle) => ({
-      vehicle: { id: vehicle.id, name: vehicle.name },
-      vehicleTypeId: typeOf.get(vehicle.id) ?? null,
-    }))
-    .toSorted((a, b) => compareText(a.vehicle.name, b.vehicle.name));
+    .map((vehicle) => ({ vehicle: { id: vehicle.id, name: vehicle.name }, vehicleTypeId: typeOf.get(vehicle.id) ?? null }))
+    .toSorted((a, b) => compareText(a.vehicle.name, b.vehicle.name))
 }
 
 /** `id` vắng là loại mới (`VT-NNN`). Sai dữ liệu: `VEHICLE_TYPE_INVALID` kèm tên trường. */
-// POST /api/vehicle-types (tạo) · PUT /api/vehicle-types/{id} (sửa — kiểm lại phương thức khi nối)
-export async function saveVehicleType(
-  input: VehicleTypeInput,
-  id?: string,
-): Promise<VehicleType> {
-  if (id !== undefined) {
-    throw new Error("Update vehicle type API is not implemented yet");
-  }
-
-  const body = await apiFetch<{
-    success: boolean;
-    message?: string;
-    data: VehicleTypeApi;
-  }>("/api/vehicle-types", {
-    method: "POST",
-    body: JSON.stringify(toCreateVehicleTypeRequest(input)),
-  });
-
-  return mapVehicleType(body.data);
-}
-
-// DELETE /api/vehicle-types/{id}
-export function deleteVehicleType(id: string): Promise<void> {
-  return getMockDb().deleteVehicleType(id);
+// POST /api/vehicle-types (tạo, chưa dùng ở màn) · sửa: chưa có ở BE
+export function saveVehicleType(input: VehicleTypeInput, id?: string): Promise<VehicleType> {
+  if (ON_BACKEND) return unsupported()
+  return id === undefined ? getMockDb().createVehicleType(input) : getMockDb().updateVehicleType(id, input)
 }
 
 // chưa có ở BE
-export function setVehicleType(
-  vehicleId: string,
-  vehicleTypeId: string | null,
-): Promise<VehicleTypeAssignment | null> {
-  return getMockDb().setVehicleType(vehicleId, vehicleTypeId);
+export function deleteVehicleType(id: string): Promise<void> {
+  if (ON_BACKEND) return unsupported()
+  return getMockDb().deleteVehicleType(id)
+}
+
+// chưa có ở BE
+export function setVehicleType(vehicleId: string, vehicleTypeId: string | null): Promise<VehicleTypeAssignment | null> {
+  if (ON_BACKEND) return unsupported()
+  return getMockDb().setVehicleType(vehicleId, vehicleTypeId)
 }

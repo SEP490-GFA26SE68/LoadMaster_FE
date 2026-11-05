@@ -85,6 +85,12 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
   expect(await overflowingText(page)).toStrictEqual([])
   await expect(complete).toBeEnabled()
   await complete.tap()
+  // Hỏi lại trước khi hoàn tất: hai kiện nhận lên xe thành Đang vận chuyển, điểm kế tiếp là điểm giao của chúng
+  const question = page.getByRole('dialog', { name: /^Hoàn tất điểm 3 — / })
+  await expect(question.getByText('2 kiện đã nhận lên xe, được ghi Đang vận chuyển.', { exact: true })).toBeVisible()
+  await expect(question.getByText(/^Tiếp theo: điểm 4 · /)).toBeVisible()
+  await question.getByRole('button', { name: 'Hoàn tất', exact: true }).tap()
+  await expect(question).toBeHidden()
 
   // Điểm giao: hàng của phương án đã dỡ trong kho; hai kiện nhận dỡ bằng chính hộp đối chiếu rồi chuyến xong
   await expect(page.getByRole('heading', { level: 1, name: 'Điểm 4 / 4', exact: true })).toBeVisible()
@@ -102,6 +108,9 @@ test('phone: the driver reaches the pickup stop, checks both packages in, comple
   const finish = page.getByRole('button', { name: 'Hoàn tất điểm giao', exact: true })
   await expect(finish).toBeEnabled()
   await finish.tap()
+  const last = page.getByRole('dialog', { name: /^Hoàn tất điểm 4 — / })
+  await expect(last.getByText('Đây là điểm cuối: hoàn tất là giao xong chuyến.', { exact: true })).toBeVisible()
+  await last.getByRole('button', { name: 'Hoàn tất', exact: true }).tap()
   await expect(page.getByText('Đã giao xong chuyến TRIP-009', { exact: true })).toBeVisible()
 
   const final = await page.evaluate(async ({ db: dbUrl, trip, ids }) => {

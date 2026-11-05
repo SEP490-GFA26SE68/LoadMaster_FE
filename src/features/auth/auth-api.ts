@@ -1,181 +1,122 @@
-import { keycloak } from './keycloak'
-import { ROLE_FROM_BACKEND, type User } from '@/types/user'
-import { apiFetch } from '@/lib/api-client'
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
+ *   GET /api/users/me — fetchBackendUser (chế độ `VITE_AUTH_SOURCE=keycloak`; token lấy ở Keycloak bằng form của app, `keycloak-session.ts`)
+ *   chỉ kho mẫu: login, logout, restoreSession, currentSessionUser
+ */
 
-// Khởi tạo Keycloak
-let initPromise: Promise<boolean> | null = null
+import { api, isApiError } from '@/lib/api-client'
+import { backendConfig } from '@/lib/backend-config'
+import { DEMO_ACCOUNTS, getMockDb, isMockDbError } from '@/lib/mock-db'
+import type { User } from '@/types/user'
+import { isActiveOnBackend, roleOfBackend, userFromBackend, type BackendUserProfile } from './backend-user'
 
-export function initAuth(): Promise<boolean> {
-  if (!initPromise) {
-    initPromise = keycloak
-      .init({
-        onLoad: 'check-sso',
-        pkceMethod: 'S256',
-        checkLoginIframe: false,
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-        silentCheckSsoFallback: false,
-      })
-      .catch((error: unknown) => {
-        initPromise = null
-        throw error
-      })
+/**
+ * Lớp gọi API xác thực (D-42): đăng nhập, đăng xuất và phiên đi qua kho mock như qua server — kho giữ phiên để ghi người làm
+ * vào nhật ký. Nối backend thật chỉ thay thân hàm; phần còn lại của app không đổi.
+ */
+
+/**
+ * Lỗi trả về dạng mã; màn đăng nhập dịch mã sang câu theo ngôn ngữ đang chọn. Bốn mã cuối chỉ có ở chế độ Keycloak:
+ * `password-change-required` mật khẩu đúng nhưng là mật khẩu tạm · `login-not-enabled` client của realm chưa bật đăng nhập bằng mật
+ * khẩu · `account-not-linked` Keycloak nhận tài khoản nhưng máy chủ không có người dùng nào gắn với nó · `session-rejected` máy chủ
+ * không nhận token (máy chủ và app không dùng cùng một Keycloak).
+ */
+export type AuthErrorCode =
+  | 'invalid-credentials'
+  | 'account-suspended'
+  | 'role-unknown'
+  | 'password-change-required'
+  | 'login-not-enabled'
+  | 'account-not-linked'
+  | 'session-rejected'
+
+export class AuthError extends Error {
+  readonly code: AuthErrorCode
+
+  constructor(code: AuthErrorCode) {
+    super(code)
+    this.name = 'AuthError'
+    this.code = code
   }
-
-  return initPromise
 }
 
-
-// Đăng nhập qua Keycloak — AuthProvider truyền redirectUri khi người dùng bấm đăng nhập
-export async function login(redirectUri?: string): Promise<void> {
-  await keycloak.login({
-    redirectUri: redirectUri ?? `${window.location.origin}/`,
-  })
+// chưa có ở BE
+export async function login(email: string, password: string): Promise<User> {
+  try {
+    return await getMockDb().authenticate(email, password)
+  } catch (error) {
+    // Một mã chung cho sai email và sai mật khẩu, không tiết lộ email nào có thật
+    if (isMockDbError(error) && error.code === 'INVALID_CREDENTIALS') throw new AuthError('invalid-credentials')
+    if (isMockDbError(error) && error.code === 'ACCOUNT_SUSPENDED') throw new AuthError('account-suspended')
+    throw error
+  }
 }
 
-// Đăng xuất qua Keycloak
+// chưa có ở BE
 export async function logout(): Promise<void> {
-  await keycloak.logout({
-    redirectUri: `${window.location.origin}/dang-nhap`,
-  });
+  await getMockDb().signOut()
 }
 
-// Lấy access token
-export function getAccessToken(): string | undefined {
-  return keycloak.token;
+/**
+ * Người đang đăng nhập ở backend, sau khi Keycloak đã cấp phiên. Dữ liệu vận hành của app còn là kho mẫu, nên kho mẫu được đặt phiên
+ * của tài khoản mẫu cùng vai trò — danh tính hiện trên màn là của backend (`userFromBackend`).
+ */
+// GET /api/users/me
+export async function fetchBackendUser(): Promise<User> {
+  const profile = await readBackendProfile()
+  const role = roleOfBackend(profile.userRoleType)
+  if (role === null) throw new AuthError('role-unknown')
+  if (!isActiveOnBackend(profile.status)) throw new AuthError('account-suspended')
+  const standIn = getMockDb().restoreSession(DEMO_ACCOUNTS.find((account) => account.role === role)?.id ?? null)
+  if (standIn === null) throw new AuthError('role-unknown')
+  const user = userFromBackend(profile, role, standIn)
+  backendIdentity = { ...user, id: String(profile.id), companyId: profile.companyId === null ? undefined : String(profile.companyId) }
+  return user
 }
 
-// Kiểm tra xác thực
+/**
+ * Người đăng nhập theo **mã của backend** (mã người dùng, mã công ty) cho các `-api.ts` cần biết "tôi là ai" ở máy chủ — khác người dùng
+ * của `fetchBackendUser`, vốn mang mã của tài khoản mẫu để kho mẫu chạy được. `null` khi chưa đăng nhập bằng backend.
+ */
+let backendIdentity: User | null = null
+
+export function getCachedCurrentUser(): User | null {
+  return backendIdentity
+}
+
+/** Đang đăng nhập bằng backend (`VITE_AUTH_SOURCE=keycloak` và `GET /api/users/me` đã trả người dùng). Kho mẫu luôn là `false`. */
 export function isAuthenticated(): boolean {
-  return Boolean(keycloak.authenticated);
+  return backendConfig.authSource === 'keycloak' && backendIdentity !== null
 }
 
-// Response từ backend
-type UserProfileApiResponse = {
-  success: boolean;
-  data: {
-    id: number;
-    keycloakId: string;
-    username: string;
-    email: string;
-    fullName: string;
-    phoneNumber: string | null;
-    companyId: number | null;
-    userRoleType:
-      | "SYSTEM_ADMIN"
-      | "SYSTEM_MANAGER"
-      | "SYSTEM_SUPPORTER"
-      | "ADMIN"
-      | "MANAGER"
-      | "DISPATCHER"
-      | "WAREHOUSE_WORKER"
-      | "DRIVER";
-    status: "ACTIVE" | "LOCKED";
-  };
-};
-
-// Lấy thông tin người dùng từ backend thật
-export async function getCurrentUser(): Promise<User> {
-  const body = await apiFetch<UserProfileApiResponse>("/api/users/me");
-
-  return mapUser(body.data);
+/** Phiên backend đã đóng (đăng xuất, hết phiên): các `-api.ts` thôi gọi máy chủ. */
+export function forgetBackendUser(): void {
+  backendIdentity = null
 }
 
-type ApiResponse<T = unknown> = {
-  success: boolean;
-  message?: string;
-  data?: T;
-};
-
-type VerifyOtpResponse = {
-  resetToken: string;
-};
-
-// Xác thực mã OTP
-export async function verifyPasswordResetOtp(
-  email: string,
-  otp: string,
-): Promise<string> {
-  const response = await fetch(
-    "http://localhost:8080/api/auth/password-reset/verify",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, otp }),
-    },
-  );
-
-  const body = (await response.json()) as ApiResponse<VerifyOtpResponse>;
-
-  if (!response.ok) {
-    throw new Error(body.message ?? "OTP không hợp lệ");
-  }
-
-  if (!body.data?.resetToken) {
-    throw new Error("Không nhận được reset token");
-  }
-
-  return body.data.resetToken;
-}
-
-// Yêu cầu đặt lại mật khẩu
-export async function requestPasswordReset(email: string): Promise<void> {
-  const response = await fetch(
-    "http://localhost:8080/api/auth/password-reset/request",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    },
-  );
-
-  const body = (await response.json()) as ApiResponse;
-
-  if (!response.ok) {
-    throw new Error(body.message ?? "Failed to request password reset");
+async function readBackendProfile(): Promise<BackendUserProfile> {
+  try {
+    return await api().get<BackendUserProfile>('/api/users/me')
+  } catch (error) {
+    // Backend tìm người dùng theo `sub` của token (`users.keycloak_id`): không có là tài khoản Keycloak chưa gắn với ai
+    // Theo mã HTTP: backend `develop` chưa trả `code` thống nhất cho hai lỗi này
+    if (isApiError(error) && (error.status === 404 || error.code === 'USER_PROFILE_NOT_FOUND')) throw new AuthError('account-not-linked')
+    if (isApiError(error) && error.status === 401) throw new AuthError('session-rejected')
+    throw error
   }
 }
 
-// Đặt lại mật khẩu
-export async function resetPassword(
-  resetToken: string,
-  newPassword: string,
-): Promise<void> {
-  const response = await fetch(
-    "http://localhost:8080/api/auth/password-reset/reset",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        resetToken,
-        newPassword,
-      }),
-    },
-  );
-
-  const body = (await response.json()) as ApiResponse;
-
-  if (!response.ok) {
-    throw new Error(body.message ?? "Không thể đặt lại mật khẩu");
-  }
+/**
+ * Phiên có sẵn khi mở trang (như cookie): trả người dùng hiện tại của kho, `null` khi tài khoản không còn hoặc đã bị khoá.
+ * Đồng bộ vì chạy lúc khởi tạo `AuthProvider`.
+ */
+// chưa có ở BE
+export function restoreSession(userId: string | null): User | null {
+  return getMockDb().restoreSession(userId)
 }
 
-// Chuyển đổi user backend sang frontend
-function mapUser(data: UserProfileApiResponse["data"]): User {
-  return {
-    id: String(data.id),
-    fullName: data.fullName,
-    email: data.email,
-    phone: data.phoneNumber ?? "",
-    role: ROLE_FROM_BACKEND[data.userRoleType],
-    status: data.status === "ACTIVE" ? "active" : "suspended",
-    companyId: data.companyId != null ? String(data.companyId) : undefined,
-    depot: undefined,
-    lastActiveAt: null,
-  };
+/** Người dùng của phiên, đọc lại sau khi sửa hồ sơ. */
+// chưa có ở BE
+export function currentSessionUser(): User | null {
+  return getMockDb().sessionUser()
 }

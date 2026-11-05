@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Lock, Save } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -21,9 +21,10 @@ import { TripFormLockedStops } from './TripFormLockedStops'
 import { TripFormSection } from './TripFormSection'
 import { TripFormShell } from './TripFormShell'
 import { TripStopsFields } from './TripStopsFields'
+import { BackendTripFormPage } from './BackendTripFormPage'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 import { useCreateTripMutation, useTripDetailQuery, useTripFormOptionsQuery, useUpdateTripFrameMutation } from './useTripsQuery'
-import { useCompanyWarehousesQuery } from
-  '@/features/company-warehouses/useCompanyWarehousesQuery'
+
 /** Pha còn mở form sửa: lập kế hoạch sửa mọi thứ; kho đang/đã xếp chỉ còn tên, ngày giờ xuất phát, tài xế (D-45). */
 const EDITABLE_PHASES: readonly TripPhase[] = ['planning', 'loading', 'loaded']
 
@@ -33,8 +34,13 @@ const EDITABLE_PHASES: readonly TripPhase[] = ['planning', 'loading', 'loaded']
  * **không nhập điểm giao**: điểm tự sinh khi đưa yêu cầu giao vào chuyến, điểm tay và kiện thêm ở Chi tiết chuyến (D-73); form sửa chỉ
  * đổi chữ của điểm giao đang có. Nút chính nằm trên dải trời, gửi form qua thuộc tính `form`. Còn thay đổi chưa lưu mà rời trang thì
  * hỏi lại trước (LM-100).
+ * Nhóm `trips` nối backend thì màn là `BackendTripFormPage` của nhóm (chỉ tạo chuyến).
  */
 export function TripFormPage() {
+  return TRIPS_CAPABILITIES.backend ? <BackendTripFormPage /> : <StoreTripFormPage />
+}
+
+function StoreTripFormPage() {
   const { tripId = '' } = useParams()
   const t = useT()
   const detail = useTripDetailQuery(tripId)
@@ -68,9 +74,6 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
   const formId = useId()
   const navigate = useNavigate()
   const options = useTripFormOptionsQuery()
-  const warehousesQuery = useCompanyWarehousesQuery(true)
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('')
-
   const create = useCreateTripMutation()
   const update = useUpdateTripFrameMutation(existing?.id ?? '')
   const schema = useMemo(() => createTripFormSchema(t), [t])
@@ -93,80 +96,18 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
     if (savedPath !== null) void navigate(savedPath)
   }, [savedPath, navigate])
 
-
-
-  const warehouses = warehousesQuery.data ?? []
-
-  const applyWarehouse = useCallback(
-    (warehouseId: string) => {
-      const warehouse = warehouses.find(
-        (item) => String(item.id) === warehouseId,
-      )
-
-      if (
-        !warehouse ||
-        warehouse.latitude === null ||
-        warehouse.longitude === null
-      ) {
-        return
-      }
-
-      form.setValue(
-        'depot',
-        depotFormValues({
-          name: warehouse.warehouseName,
-          address: warehouse.address,
-          lat: warehouse.latitude,
-          lng: warehouse.longitude,
-        }),
-        {
-          shouldDirty: false,
-          shouldValidate: true,
-        },
-      )
-
-      setSelectedWarehouseId(warehouseId)
-    },
-    [warehouses, form],
-  )
-
+  // Chuyến mới xuất phát từ kho của công ty (D-76): điền khi kho tải xong, trừ khi người dùng đã tự nhập kho đi
+  const companyDepot = options.data?.depot
   useEffect(() => {
-    if (
-      existing ||
-      selectedWarehouseId !== '' ||
-      warehousesQuery.isPending
-    ) {
-      return
-    }
-
-    const defaultWarehouse = warehouses.find(
-      (warehouse) =>
-        warehouse.isDefault &&
-        warehouse.isActive &&
-        warehouse.latitude !== null &&
-        warehouse.longitude !== null,
-    )
-
-    if (defaultWarehouse) {
-      applyWarehouse(String(defaultWarehouse.id))
-    }
-  }, [
-    existing,
-    selectedWarehouseId,
-    warehousesQuery.isPending,
-    warehouses,
-    applyWarehouse,
-  ])
-
-
-
-
+    if (existing || !companyDepot || form.getFieldState('depot').isDirty) return
+    form.resetField('depot', { defaultValue: depotFormValues(companyDepot) })
+  }, [existing, companyDepot, form])
 
   function handleSubmit(values: TripFormValues) {
     const onError = (error: unknown) => toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) })
     const driverId = driverIdOf(values.driverId)
     const departureAt = departureAtOf(values)
-    const onSuccess = (trip: { id: string }, message: string) => {
+    const onSuccess = (trip: Trip, message: string) => {
       toast.success(message)
       setSavedPath(`/chuyen/${trip.id}`)
     }
@@ -178,25 +119,11 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
       })
       return
     }
-    if (!selectedWarehouseId) {
-      toast.error(t('tripWarehouse.placeholder'))
-      return
-    }
-
-    create.mutate({
-      name: values.name,
-      vehicleId: values.vehicleId,
-      departureAt,
-      originWarehouseId: selectedWarehouseId,
-      driverId,
-    }, {
-      onSuccess: (trip) =>
-        onSuccess(trip, t('trips.create.created', { id: trip.id })),
+    create.mutate({ name: values.name, vehicleId: values.vehicleId, departureAt, depot: depotOf(values.depot), driverId }, {
+      onSuccess: (trip) => onSuccess(trip, t('trips.create.created', { id: trip.id })),
       onError,
     })
   }
-
-
 
   const actions = (
     <>
@@ -219,14 +146,7 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
               <Banner tone="info" icon={Lock} className="mx-7 mt-5.5 max-sm:mx-4">{t('trips.create.lockedHint')}</Banner>
             ) : null}
             <TripFormInfoSection form={form} vehicles={choices.vehicles} drivers={choices.drivers} selected={selected} locked={locked} />
-            <TripFormDepotSection
-              form={form}
-              locked={locked}
-              warehouses={warehouses}
-              loading={warehousesQuery.isPending}
-              selectedWarehouseId={selectedWarehouseId}
-              onWarehouseChange={applyWarehouse}
-            />
+            <TripFormDepotSection form={form} locked={locked} />
             {existing ? (
               <TripFormSection
                 number={3}

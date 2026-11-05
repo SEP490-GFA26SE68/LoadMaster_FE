@@ -1,33 +1,32 @@
-
-import { Building2, Lock, Mail } from 'lucide-react'
+import { Building2, Lock, Mail, Phone } from 'lucide-react'
 import { RoleBadge } from '@/components/RoleBadge'
 import { useT } from '@/lib/i18n'
+import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
 import { initialsOf, type User } from '@/types/user'
 
-/**
- * Thẻ nhận diện của Hồ sơ (V2.3).
- * Hiển thị họ tên, vai trò, email và kho trực thuộc.
- * Các thông tin này chỉ quản trị viên mới có thể thay đổi.
- */
-export function ProfileIdentity({ user }: { user: User }) {
-  const t = useT()
+/** Số điện thoại của máy chủ là chữ số liền ("0901234567"): hiện theo dạng của app khi đúng 10 số, còn lại giữ nguyên. */
+function phoneText(phone: string): string {
+  const digits = phoneDigits(phone)
+  return PHONE_PATTERN.test(digits) ? formatPhone(digits) : phone.trim()
+}
 
-  const facts = [
-    {
-      label: t('profile.identity.email'),
-      value: user.email,
-      icon: Mail,
-    },
-    ...(user.depot
-      ? [
-          {
-            label: t('profile.identity.depot'),
-            value: user.depot,
-            icon: Building2,
-          },
-        ]
-      : []),
-  ]
+/**
+ * Thẻ nhận diện của Hồ sơ (V2.3 `HoSo.jpg`): chữ viết tắt trong ô vuông bo góc (ảnh đại diện trong nội dung là ô vuông, hình tròn chỉ ở
+ * nút tài khoản), họ tên Archivo, nhãn vai trò, rồi những thông tin chỉ quản trị viên đổi được (email, kho trực thuộc) kèm icon và câu
+ * ghi chú. Email chỉ hiện ở đây — form bên cạnh không lặp lại. Không thêm lần đăng nhập, thiết bị hay xác thực hai bước: kho không
+ * có nguồn cho chúng. Tên đọc từ người dùng của phiên, nên đổi theo sau khi lưu chứ không theo từng phím gõ.
+ *
+ * `serverManaged` (đăng nhập bằng Keycloak): thông tin là của tài khoản trên máy chủ — thêm số điện thoại, bỏ kho trực thuộc (backend chưa
+ * có kho; giá trị đang có là của tài khoản mẫu đứng thay) và ghi chú nói ai sửa được gì.
+ */
+export function ProfileIdentity({ user, serverManaged = false }: { user: User; serverManaged?: boolean }) {
+  const t = useT()
+  const phone = phoneText(user.phone)
+  // Người dùng nền tảng không thuộc kho nào (FE-0-03): không có dòng kho thay vì một dòng trống
+  const extra = serverManaged
+    ? (phone ? [{ label: t('profile.identity.phone'), value: phone, icon: Phone }] : [])
+    : (user.depot ? [{ label: t('profile.identity.depot'), value: user.depot, icon: Building2 }] : [])
+  const facts = [{ label: t('profile.identity.email'), value: user.email, icon: Mail }, ...extra]
 
   return (
     <aside
@@ -74,12 +73,8 @@ export function ProfileIdentity({ user }: { user: User }) {
       </dl>
 
       <p className="flex items-start gap-2.5 rounded-md border border-line-soft bg-surface px-3 py-2.5 text-small text-ink-2 pointer-coarse:text-body-lg">
-        <Lock
-          aria-hidden
-          className="mt-0.5 size-4 flex-none text-ink-3"
-          strokeWidth={1.5}
-        />
-        <span>{t('profile.identity.note')}</span>
+        <Lock aria-hidden className="mt-0.5 size-4 flex-none text-ink-3" strokeWidth={1.5} />
+        <span>{serverManaged ? t('profile.identity.serverNote') : t('profile.identity.note')}</span>
       </p>
     </aside>
   )

@@ -1,44 +1,45 @@
 /**
- * Hàm → endpoint backend (FE-0-09, issue BE S6-04 → S6-07, S6-10); nối backend chỉ thay thân hàm.
- *   postDriverLocation   → POST /api/driver/location
- *   getLatestLocation    → GET /api/trips/{id}/location/latest
- *   getLocationHistory   → GET /api/trips/{id}/location/history
- *   getTripMonitoring    → GET /api/trips/{id}/monitoring
- *   listTripMonitoring   → GET /api/trips/monitoring
- *   fetchMonitoringBoard → GET /api/dispatcher/dashboard
- *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08) — tạm thời in-memory sau mỗi lần poll
- *   chưa có ở BE: reorderRunningStops, setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
- *
- * Bật BE thật: `VITE_USE_REAL_MONITORING=true` trong `.env` (cần Keycloak + LoadMasterService).
- * Mặc định / CI / DOM test: vẫn dùng mock-db (seed TRIP-009).
+ * Hàm → endpoint backend (FE-0-09, issue BE S6-04 → S6-07, S6-10). Nhóm `monitoring` nối backend thì hàm đánh dấu (BE) gọi
+ * `monitoring-backend-api.ts`; hàm khác vẫn là kho mẫu.
+ *   postDriverLocation   → POST /api/driver/location (màn tài xế của kho mẫu; nhóm `driver` gửi vị trí ở `driver-backend-api.ts`)
+ *   getLatestLocation    → GET /api/trips/{id}/location/latest (BE)
+ *   getLocationHistory   → GET /api/trips/{id}/location/history (BE)
+ *   getTripMonitoring    → GET /api/trips/{id}/monitoring (BE khi nhóm `trips` cũng nối backend: mã chuyến của Chi tiết chuyến là của máy chủ)
+ *   listTripMonitoring   → GET /api/trips/monitoring (BE)
+ *   fetchMonitoringBoard → GET /api/dispatcher/dashboard (BE)
+ *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
+ *   chưa có ở BE: reorderRunningStops (Luồng BE mục 13 "Dynamic stop reordering" chưa có endpoint), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
-import { api } from '@/lib/api-client'
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorder, type TripMonitoring } from '@/lib/mock-db'
+import * as backend from './monitoring-backend-api'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
-function useRealMonitoring(): boolean {
-  return import.meta.env.VITE_USE_REAL_MONITORING === 'true'
-}
+const ON_BACKEND = usesBackend('monitoring')
+/** Chi tiết chuyến đọc giám sát theo mã chuyến của chính nó: chỉ hỏi máy chủ khi chuyến cũng là của máy chủ. */
+const TRIP_ON_BACKEND = ON_BACKEND && usesBackend('trips')
+
+/** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ ghi vào kho mẫu thay cho chuyến của backend. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
+
+/** Giám sát một chuyến như màn đọc: kho mẫu luôn là kết quả mock; backend tính giờ đến từ vị trí GPS (`isMockResult: false`). */
+export type LiveMonitoring = Omit<TripMonitoring, 'isMockResult'> & { readonly isMockResult: boolean }
+
+/**
+ * Lớp gọi API của giám sát (FE-6-08 → FE-6-10): vị trí xe và ETA trực tiếp của chuyến Đang vận chuyển. Kho mẫu: vị trí là xe mô phỏng
+ * của kho (nguồn `SIMULATED`), ETA là kết quả mock — và chỉ nằm trong kho của tab đang mở.
+ */
 
 /** Điện thoại tài xế gửi vị trí GPS thật của chuyến đang chạy. */
 // POST /api/driver/location
-export async function postDriverLocation(tripId: string, location: DriverLocationInput): Promise<LocationPoint> {
-  if (!useRealMonitoring()) {
-    return getMockDb().postDriverLocation(tripId, location)
-  }
-  return api().post<LocationPoint>('/api/driver/location', {
-    body: {
-      tripId,
-      lat: location.lat,
-      lng: location.lng,
-      speedKmh: location.speedKmh ?? 0,
-      heading: location.heading ?? 0,
-    },
-  })
+export function postDriverLocation(tripId: string, location: DriverLocationInput): Promise<LocationPoint> {
+  return getMockDb().postDriverLocation(tripId, location)
 }
 
 /**
- * Tài xế bật / tắt "Dùng GPS thật" (FE-6-13): chỉ có nghĩa khi chưa có máy chủ — backend nhận thẳng điểm GPS.
+ * Tài xế bật / tắt "Dùng GPS thật" (FE-6-13): bật thì đồng hồ mô phỏng của tab chạy theo giờ thật, tắt thì xe mô phỏng ghi tiếp. Chỉ
+ * có nghĩa khi chưa có máy chủ — backend nhận thẳng điểm GPS, không có đồng hồ mô phỏng.
  */
 // chưa có ở BE
 export function setDriverGps(tripId: string, enabled: boolean): Promise<boolean> {
@@ -47,56 +48,52 @@ export function setDriverGps(tripId: string, enabled: boolean): Promise<boolean>
 
 /** Vị trí mới nhất của xe; `null` khi xe chưa xuất phát hoặc chưa có vị trí. */
 // GET /api/trips/{id}/location/latest
-export async function getLatestLocation(tripId: string): Promise<LocationPoint | null> {
-  if (!useRealMonitoring()) {
-    return getMockDb().getLatestLocation(tripId)
-  }
-  return api().get<LocationPoint | null>(`/api/trips/${encodeURIComponent(tripId)}/location/latest`)
+export function getLatestLocation(tripId: string): Promise<LocationPoint | null> {
+  if (ON_BACKEND) return backend.latestLocation(tripId)
+  return getMockDb().getLatestLocation(tripId)
 }
 
 /** Lịch sử vị trí của chuyến, cũ trước. */
 // GET /api/trips/{id}/location/history
-export async function getLocationHistory(tripId: string): Promise<LocationPoint[]> {
-  if (!useRealMonitoring()) {
-    return getMockDb().getLocationHistory(tripId)
-  }
-  return api().get<LocationPoint[]>(`/api/trips/${encodeURIComponent(tripId)}/location/history`)
+export function getLocationHistory(tripId: string): Promise<LocationPoint[]> {
+  if (ON_BACKEND) return backend.locationHistory(tripId)
+  return getMockDb().getLocationHistory(tripId)
 }
 
 /** Vị trí mới nhất, ETA trực tiếp từng điểm chưa hoàn tất, cảnh báo nguy cơ trễ và sự cố của một chuyến. */
 // GET /api/trips/{id}/monitoring
-export async function getTripMonitoring(tripId: string): Promise<TripMonitoring> {
-  const monitoring = useRealMonitoring()
-    ? await api().get<TripMonitoring>(`/api/trips/${encodeURIComponent(tripId)}/monitoring`)
-    : await getMockDb().getTripMonitoring(tripId)
+export async function getTripMonitoring(tripId: string): Promise<LiveMonitoring> {
+  const monitoring = TRIP_ON_BACKEND ? await backend.tripMonitoring(tripId) : await getMockDb().getTripMonitoring(tripId)
   publish(monitoring)
   return monitoring
 }
 
 /** Giám sát mọi chuyến Đang vận chuyển của công ty — màn đang mở gọi lại theo `refreshMs` thay cho kênh đẩy của backend. */
 // GET /api/trips/monitoring
-export async function listTripMonitoring(): Promise<TripMonitoring[]> {
-  const fleet = useRealMonitoring()
-    ? await api().get<TripMonitoring[]>('/api/trips/monitoring')
-    : await getMockDb().listTripMonitoring()
+export async function listTripMonitoring(): Promise<LiveMonitoring[]> {
+  const fleet: LiveMonitoring[] = ON_BACKEND ? await backend.listFleet() : await getMockDb().listTripMonitoring()
   publishFleet(fleet)
   return fleet
 }
 
 /**
- * Nghe sự kiện giám sát của một chuyến; trả hàm thôi nghe.
- * BE chưa có WebSocket: sự kiện in-memory sau mỗi lần poll monitoring.
+ * Nghe sự kiện giám sát của một chuyến (vị trí mới, ETA mới, cảnh báo nguy cơ trễ, sự cố, chuyến kết thúc); trả hàm thôi nghe. Chưa
+ * có WebSocket: sự kiện trong bộ nhớ, phát sau mỗi lần đọc giám sát ở trên trả về điều gì mới — với backend cũng vậy, sự kiện chỉ là
+ * phần khác giữa hai lần đọc dữ liệu của backend.
  */
-// WebSocket /ws/trips/{tripId}/monitoring (Q-08) — chưa implement; poll refreshMs
+// WebSocket /ws/trips/{tripId}/monitoring (Q-08)
 export function subscribeTrip(tripId: string, onEvent: (event: TripMonitoringEvent) => void): () => void {
   return subscribe(tripId, onEvent)
 }
 
 /**
- * Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03, D-87).
+ * Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03, D-87). Kho kiểm lại khả năng dỡ của phương án như đã xếp; không đạt
+ * thì từ chối `STOP_ORDER_BLOCKS_CARGO` kèm kiện bị chắn và không đổi gì. Đạt thì áp dụng: giờ đến, mức hạn tính lại, xe đi tiếp từ chỗ
+ * đang đứng tới điểm kế tiếp mới, tài xế nhận thông báo.
  */
 // chưa có ở BE
 export function reorderRunningStops(tripId: string, orderedStopIds: string[]): Promise<StopReorder> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().reorderRunningStops(tripId, orderedStopIds)
 }
 
@@ -120,7 +117,8 @@ export type MonitoringTrip = {
   readonly vehicleName: string
   /** `null` khi chuyến chưa gán tài xế, hoặc kho không còn tài khoản đó. */
   readonly driverName: string | null
-  readonly depot: { readonly name: string; readonly lat: number; readonly lng: number }
+  /** Vắng khi backend không có toạ độ kho thật của tuyến; kho mẫu luôn có. */
+  readonly depot?: { readonly name: string; readonly lat: number; readonly lng: number }
   readonly stops: readonly MonitoringStop[]
 }
 
@@ -134,9 +132,7 @@ export type MonitoringBoard = {
 /** Bảng giám sát: các chuyến Đang vận chuyển kèm tên xe, tài xế và điểm giao. Vị trí và ETA đọc riêng (`listTripMonitoring`). */
 // GET /api/dispatcher/dashboard
 export async function fetchMonitoringBoard(): Promise<MonitoringBoard> {
-  if (useRealMonitoring()) {
-    return api().get<MonitoringBoard>('/api/dispatcher/dashboard')
-  }
+  if (ON_BACKEND) return backend.fetchBoard()
   const db = getMockDb()
   const [trips, vehicles, names] = await Promise.all([db.listTrips(), db.listVehicles(), db.listAuditNames()])
   const vehicleNames = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle.name]))

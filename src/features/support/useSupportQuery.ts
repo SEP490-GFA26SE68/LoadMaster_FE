@@ -4,41 +4,42 @@ import {
   assignCompanyPlan,
   createSupportTicket,
   getSupportCompanyPanel,
-  listAllCompanyContracts,
+  listCompanyContracts,
   listSupportTickets,
   replyToSupportTicket,
   setSupportTicketStatus,
 } from './support-api'
 
+/** Việc màn làm được theo nguồn dữ liệu (kho mẫu hay backend) — component đọc ở đây, không gọi `-api.ts`. */
+export { SUPPORT_SOURCE } from './support-api'
+export type { CompanyContract, SupportPanel, SupportPanelPlan } from './support-api'
+
 /**
- * Hook Query của yêu cầu hỗ trợ (FE-8-07). Khoá `['support', 'tickets']` và `['support', 'panel', mã công ty]`, `staleTime: 0` — yêu cầu
- * đổi ở màn của người kia. Danh sách theo phiên của người đăng nhập; `AuthProvider` xoá cache khi đổi người. Mọi lần ghi làm mới cả
- * `['support']`, nhật ký và chuông (người gửi nhận thông báo khi có trả lời).
+ * Hook Query của yêu cầu hỗ trợ (FE-8-07). Khoá `['support', 'tickets']`, `['support', 'panel', mã công ty]` và `['support', 'contracts']`,
+ * `staleTime: 0` — yêu cầu đổi ở màn của người kia. Danh sách theo phiên của người đăng nhập; `AuthProvider` xoá cache khi đổi người.
+ * Mọi lần ghi làm mới cả `['support']`, gói cước, nhật ký và chuông (người gửi nhận thông báo khi có trả lời).
  */
 export function useSupportTicketsQuery() {
   return useQuery({ queryKey: ['support', 'tickets'], queryFn: listSupportTickets, staleTime: 0 })
 }
 
 /** Khung công ty của Hỗ trợ khách hàng; chưa chọn yêu cầu nào (`companyId` vắng) thì không đọc gì. */
-export function useCompanyPanelQuery(companyId: string | undefined) {
+export function useCompanyPanelQuery(companyId: string | undefined, companyName?: string) {
   return useQuery({
     queryKey: ['support', 'panel', companyId],
-    queryFn: companyId === undefined ? skipToken : () => getSupportCompanyPanel(companyId),
+    queryFn: companyId === undefined ? skipToken : () => getSupportCompanyPanel(companyId, companyName),
     staleTime: 0,
   })
 }
 
-export function useAllCompanyContractsQuery(enabled = true) {
-  return useQuery({
-    queryKey: ['support', 'contracts'],
-    queryFn: enabled ? listAllCompanyContracts : skipToken,
-    staleTime: 0,
-  })
+/** Hợp đồng gói của mọi công ty, cho hộp thoại đổi gói (chỉ khi `SUPPORT_SOURCE.planAssign`). */
+export function useCompanyContractsQuery(enabled = true) {
+  return useQuery({ queryKey: ['support', 'contracts'], queryFn: enabled ? listCompanyContracts : skipToken, staleTime: 0 })
 }
 
 function useRefreshSupport() {
   const client = useQueryClient()
-  return () => Promise.all(['support', 'billing', 'audit', 'notifications'].map((key) => client.invalidateQueries({ queryKey: [key] })))
+  return () => Promise.all(['support', 'billing', 'companies', 'audit', 'notifications'].map((key) => client.invalidateQueries({ queryKey: [key] })))
 }
 
 export function useCreateTicketMutation() {
@@ -63,4 +64,3 @@ export function useAssignCompanyPlanMutation() {
     onSuccess: refresh,
   })
 }
-

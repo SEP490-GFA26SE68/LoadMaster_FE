@@ -194,6 +194,7 @@ export const viewer = {
       COOLING_UNIT: 'Dàn lạnh',
       PARTITION: 'Vách ngăn',
       RESERVED_ZONE: 'Vùng dành riêng',
+      OTHER: 'Vật cản khác',
     },
     corner: 'Góc tại X {x} · Y {y} · Z {z}',
     notBearing: 'Không chịu tải',
@@ -562,5 +563,9 @@ export const viewer = {
     LIFO_VIOLATION: 'Vi phạm thứ tự dỡ theo điểm giao',
     CONSTRAINT_VIOLATED: 'Xếp kiện này sẽ vi phạm ràng buộc',
     UNKNOWN: 'Chưa xếp được, không rõ lý do',
+  },
+  backendViewer: {
+    stepPrevious: 'Bước xếp trước',
+    stepNext: 'Bước xếp kế tiếp',
   },
 } as const

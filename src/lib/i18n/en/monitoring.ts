@@ -179,4 +179,11 @@ export const monitoring = {
     submit: 'Save new deadline',
     done: 'New deadline entered for {requirementId}',
   },
+  backend: {
+    basis: 'Arrival times are calculated by the server from the latest vehicle position, leg by leg to the stops not yet delivered, without dwell time at each stop.',
+    noPosition: 'The server has not received any position for trip {id} yet.',
+    deadlineNote: 'The deadline here is the planned arrival time of the route — the server does not return the delivery requirement deadline yet.',
+    completed: 'Delivered',
+    reportDescription: 'The server records the incident with the expected delay in minutes.',
+  },
 } satisfies Dictionary<typeof source>

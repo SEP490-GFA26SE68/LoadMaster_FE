@@ -1,15 +1,19 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { Banner } from '@/components/Banner'
 import { HandlingClassChip } from '@/components/HandlingClassChip'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
+import { useCan } from '@/features/auth/useCan'
 import { None, PackageFlagTag, PackageStatusBadge } from '@/features/package-pool/package-look'
+import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { RequirementRow } from './requirements-api'
 import { RequirementPriorityTag, RequirementStatusBadge } from './requirement-look'
 import { useRequirementQuery } from './useRequirementsQuery'
 
+const LINK = 'rounded-sm font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
 /**
  * Chi tiết một yêu cầu giao (FE-4b-02), chỉ đọc — quản lý công ty và điều phối viên cùng xem: điểm đến, địa chỉ, toạ độ, hạn, ưu tiên,
@@ -49,7 +53,8 @@ function Detail({ requirementId, onClose }: { requirementId: string; onClose: ()
 function DetailBody({ row }: { row: RequirementRow }) {
   const t = useT()
   const format = useFormat()
-  const { requirement } = row
+  const can = useCan()
+  const { requirement, trip } = row
   const dateTime = (value: string) => t('requirements.detail.dateTime', { time: format.time(value), date: format.date(value) })
 
   return (
@@ -65,6 +70,16 @@ function DetailBody({ row }: { row: RequirementRow }) {
           {requirement.lat === undefined || requirement.lng === undefined
             ? <span className="text-ink-3">{t('requirements.detail.noCoordinates')}</span>
             : <span className="font-mono text-caption tabular-nums">{requirement.lat.toFixed(4)}, {requirement.lng.toFixed(4)}</span>}
+        </Field>
+        <Field label={t('requirements.detail.trip')}>
+          {!trip ? <span className="text-ink-3">{t('requirements.notAssigned')}</span> : (
+            <span className="flex flex-col">
+              {can('trips.view') && tripLinkable(false) ? <Link to={`/chuyen/${trip.id}`} className={LINK}>{trip.name}</Link> : trip.name}
+              <span className="font-mono text-caption text-ink-3">
+                {row.stopNumber === undefined ? trip.id : `${trip.id} · ${t('requirements.stop', { number: row.stopNumber })}`}
+              </span>
+            </span>
+          )}
         </Field>
         <Field label={t('requirements.detail.createdBy')}>{row.createdByName ?? requirement.createdBy ?? <None />}</Field>
         <Field label={t('requirements.detail.note')} wide>
@@ -106,11 +121,8 @@ function DetailBody({ row }: { row: RequirementRow }) {
                   <td className="px-3 py-2 text-ink-1">{pkg.destination}</td>
                   <td className="px-3 py-2">
                     <span className="flex flex-wrap items-center gap-1.5">
-
-                      <span className="text-caption font-medium">
-                        {t(`packageStatus.${pkg.status}`)}
-                      </span>
-
+                      <PackageStatusBadge status={pkg.status} />
+                      {pkg.flags.map((flag) => <PackageFlagTag key={flag} flag={flag} />)}
                     </span>
                   </td>
                 </tr>

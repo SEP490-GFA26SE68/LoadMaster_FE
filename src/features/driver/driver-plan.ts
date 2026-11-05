@@ -13,12 +13,16 @@ export type DeliveryItem = {
   /** `packageInstanceId` */
   readonly id: string
   readonly packageId: string
+  /** Mã in trên nhãn, hiện thay `id` ở dòng kiện; vắng là `id` (kho mẫu). */
+  readonly label?: string
   readonly name: string
-  readonly weightKg: number
+  /** Vắng khi backend không có khối lượng của kiện. */
+  readonly weightKg?: number
   /** `unloadingOrder` của kết quả */
   readonly unloadingOrder: number
-  readonly area: DeliveryArea
-  readonly layer: DeliveryLayer
+  /** Vùng và lớp của kiện trong thùng — chỉ có khi đọc được phương án (kho mẫu); backend chưa trả chỗ xếp cho tài xế. */
+  readonly area?: DeliveryArea
+  readonly layer?: DeliveryLayer
 }
 
 export type StopDelivery = {

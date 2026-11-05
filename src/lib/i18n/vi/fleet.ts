@@ -32,6 +32,7 @@ export const fleet = {
     inner: 'Lòng thùng (D × R × C)',
     payload: 'Tải tối đa',
     obstacles: 'Vật cản',
+    /** Ba cột của đội xe khi đọc máy chủ (`fleet/backend`). */
     licensePlate: 'Biển số',
     vehicleType: 'Loại xe',
     company: 'Công ty',
@@ -39,10 +40,16 @@ export const fleet = {
   obstacleZones: { one: '{count} vùng', other: '{count} vùng' },
   /** Trạng thái xe (D-53), key trùng `VehicleStatus`. "Đang phục vụ chuyến" gồm cả lúc xe đứng ở kho chờ xếp. */
   status: {
+    /** Mã trạng thái của máy chủ (`fleet/backend`). */
     AVAILABLE: 'Sẵn sàng',
     IN_TRIP: 'Đang chạy chuyến',
     MAINTENANCE: 'Bảo dưỡng',
     RETIRED: 'Ngừng sử dụng',
+    available: 'Sẵn sàng',
+    in_use: 'Đang phục vụ chuyến',
+    maintenance: 'Bảo dưỡng',
+    /** Chỉ backend có (`RETIRED`). */
+    retired: 'Ngừng sử dụng',
   },
   /** Bốn ô số liệu trên đầu danh sách (V2). Số tính trên cả đội xe; ba ô trạng thái bấm để lọc. */
   summary: {
@@ -68,7 +75,7 @@ export const fleet = {
   },
   detail: {
     newTitle: 'Thêm xe',
-    newDescription: 'Khai báo thông tin xe và chọn loại xe đã được cấu hình sẵn.',
+    newDescription: 'Khai báo kích thước lòng thùng, tải trọng và vật cản để chạy tối ưu cho chuyến.',
     facts: 'Lòng thùng {inner} · tải tối đa {payload} · cửa {door}',
     back: 'Quay lại đội xe',
     save: 'Lưu',
@@ -81,14 +88,13 @@ export const fleet = {
     saveFailed: 'Không lưu được xe. Thử lại.',
     inUse: 'Xe đang được dùng ở chuyến {trips}, không xoá được.',
     deleteFailed: 'Không xoá được xe. Thử lại.',
-    specTitle: 'Thông tin phương tiện',
+    specTitle: 'Kích thước và tải trọng',
     obstaclesTitle: 'Vật cản trong thùng',
     axlesTitle: 'Trục xe',
-    specHint: 'Tên xe, biển số và loại xe',
+    specHint: 'lòng thùng, cửa sau, tải trọng',
     obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
     axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
-    detailNotAvailable:
-      'Vehicle details are not connected yet.',
+    detailNotAvailable: 'Chưa đọc được thông tin chi tiết của xe này.',
   },
   preview: {
     title: 'Xem trước 3D',
@@ -126,13 +132,13 @@ export const fleet = {
     doorPosition: 'Vị trí cửa',
     doorPositionRear: 'Cửa sau',
     doorPositionHint: 'Bản này chỉ hỗ trợ cửa mở phía sau.',
+    /** Form xe khi nối máy chủ (`fleet/backend`): biển số và loại xe đã cấu hình. */
     licensePlateRequired: 'Nhập biển số xe.',
     vehicleTypeRequired: 'Chọn loại xe.',
     licensePlate: 'Biển số xe',
     vehicleType: 'Loại xe',
     vehicleTypePlaceholder: 'Chọn loại xe',
-    vehicleTypeHint:
-      'Kích thước lòng thùng, tải trọng và vật cản sẽ được kế thừa từ loại xe đã chọn.',
+    vehicleTypeHint: 'Kích thước lòng thùng, tải trọng và vật cản sẽ được kế thừa từ loại xe đã chọn.',
   },
   obstacles: {
     add: 'Thêm vật cản',
@@ -188,6 +194,18 @@ export const fleet = {
     openTrip: 'Xem chuyến {tripId}',
     maintenance: 'Xe đang bảo dưỡng từ {time} {date}: chưa gán được cho chuyến nào.',
     maintenanceNote: 'Ghi chú: {note}',
+    retired: 'Máy chủ ghi xe này đã ngừng sử dụng.',
+  },
+  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, chỉ điều phối viên đọc được, phần backend không trả. */
+  backend: {
+    dispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc đội xe, nên tài khoản của bạn chưa xem được xe ở đây.',
+    vehicleTypesDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc loại xe, nên tài khoản của bạn chưa xem được loại xe ở đây.',
+    sourceNote: 'Xe đọc từ máy chủ. Máy chủ chưa trả chuyến đang dùng xe hay ghi chú bảo dưỡng, nên cột trạng thái chỉ có trạng thái.',
+    readOnly: 'Cấu hình đọc từ máy chủ và chỉ xem: lòng thùng, cửa, tải trọng, vật cản và trục là của loại xe đang gắn. Máy chủ chưa có lối sửa xe hay đưa xe vào bảo dưỡng.',
+    doorUnknown: 'Loại xe này chưa khai kích thước cửa sau: ô cửa đang hiện bằng mặt cắt lòng thùng.',
+    axlesUnknown: 'Loại xe này chưa khai vị trí và tải rỗng của trục trước, trục sau, nên chưa có trục để ước lượng tải trục.',
+    noCreate: 'Máy chủ chưa có lối thêm xe từ màn này: danh sách và cấu hình xe chỉ để xem.',
+    axleNames: { front: 'Trục trước', rear: 'Trục sau' },
   },
   /** Bật/tắt bảo dưỡng (LM-089, D-53). */
   maintenance: {

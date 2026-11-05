@@ -12,28 +12,39 @@ import {
 } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { FieldMessage } from '@/components/ui/field-styles'
+import { dataErrorMessage, useT, type MessageKey } from '@/lib/i18n'
 import type { UserScope } from '@/lib/mock-db'
 import type { Role, User } from '@/types/user'
 import type { AccountBlock } from './account-guards'
 import {
+  companyError,
   translateUserFormError,
   userFormSchema,
   type UserFormInput,
   type UserFormValues,
 } from './user-form.schema'
+import { userDepotAvailable, userFormRoles, type CompanyOption } from './useUsersQuery'
+
+/** Câu mô tả dưới tiêu đề: theo thêm / sửa, tài khoản nền tảng hay công ty, và form có ô kho không. */
+const DESCRIPTION = {
+  create: {
+    platform: 'admin.users.form.createDescriptionPlatform',
+    company: 'admin.users.form.createDescription',
+    companyNoDepot: 'admin.users.form.createDescription',
+  },
+  edit: {
+    platform: 'admin.users.form.editDescriptionPlatform',
+    company: 'admin.users.form.editDescription',
+    companyNoDepot: 'admin.users.form.editDescriptionNoDepot',
+  },
+} as const satisfies Record<'create' | 'edit', Record<'platform' | 'company' | 'companyNoDepot', MessageKey>>
 
 /** Vai trò chọn sẵn của form thêm mới, theo phạm vi của người quản trị. */
 const DEFAULT_ROLE: Record<UserScope, Role> = { platform: 'systemSupporter', company: 'dispatcher' }
 
 function emptyValues(scope: UserScope): UserFormInput {
-  return {
-    fullName: '',
-    email: '',
-    phone: '',
-    role: DEFAULT_ROLE[scope],
-    depot: '',
-  }
+  return { fullName: '', email: '', phone: '', role: DEFAULT_ROLE[scope], depot: '', companyId: '' }
 }
 
 function toFormValues(user: User): UserFormInput {
@@ -43,10 +54,9 @@ function toFormValues(user: User): UserFormInput {
     phone: user.phone,
     role: user.role,
     depot: user.depot ?? '',
+    companyId: user.companyId ?? '',
   }
 }
-
-
 
 /**
  * Thêm hoặc sửa người dùng. Truyền `user` để sửa, bỏ trống để thêm mới. Nơi gọi chỉ gắn hộp thoại khi mở (kèm `key` theo người
@@ -60,12 +70,14 @@ function toFormValues(user: User): UserFormInput {
 export function UserFormDialog({
   scope,
   user,
+  companies = [],
   roleBlock = null,
   onClose,
   onSubmit,
 }: {
   scope: UserScope
   user?: User
+  companies?: CompanyOption[]
   roleBlock?: AccountBlock | null
   onClose: () => void
   onSubmit: (values: UserFormValues) => Promise<void>
@@ -75,7 +87,10 @@ export function UserFormDialog({
   const [serverError, setServerError] = useState<unknown>(null)
 
   const platform = scope === 'platform'
-  const schema = useMemo(() => userFormSchema(scope), [scope])
+  // Tài khoản nền tảng không thuộc kho nào; nối backend thì máy chủ chưa lưu kho — cả hai không có ô kho
+  const withDepot = !platform && userDepotAvailable
+  const roles = userFormRoles(scope)
+  const schema = useMemo(() => userFormSchema(scope, { depot: withDepot, roles }), [scope, withDepot, roles])
 
   const form = useForm<UserFormInput, unknown, UserFormValues>({
     resolver: zodResolver(schema),
@@ -84,24 +99,11 @@ export function UserFormDialog({
 
   const errors = form.formState.errors
   const role = useWatch({ control: form.control, name: 'role' })
-  const allowedRoles: Role[] = platform
-    ? [
-      'systemAdmin',
-      'systemManager',
-      'systemSupporter',
-    ]
-    : [
-      'companyAdmin',
-      'companyManager',
-      'dispatcher',
-      'warehouse',
-      'driver',
-    ]
+  const roleOptions = roles.map((value) => ({ value, label: t(`roles.${value}`) }))
+  // Nối backend: quản trị hệ thống mời Quản trị công ty thì chọn công ty của người đó (`userFormRoles`)
+  const needsCompany = platform && role === 'companyAdmin'
+  const companyOptions = companies.map((company) => ({ value: company.id, label: company.name }))
 
-  const roleOptions = allowedRoles.map((value) => ({
-    value,
-    label: t(`roles.${value}`),
-  }))
   async function handleValid(values: UserFormValues) {
     setServerError(null)
     try {
@@ -118,14 +120,14 @@ export function UserFormDialog({
           <DialogHeader
             icon={isEdit ? UserPen : UserPlus}
             title={isEdit ? t('admin.users.form.editTitle') : t('admin.users.form.createTitle')}
-            description={t(`admin.users.form.${isEdit ? 'editDescription' : 'createDescription'}${platform ? 'Platform' : ''}`)}
+            description={t(DESCRIPTION[isEdit ? 'edit' : 'create'][platform ? 'platform' : withDepot ? 'company' : 'companyNoDepot'])}
           />
           <div className="flex flex-col gap-5 px-7 pt-5 pb-6">
             <div className="grid grid-cols-2 gap-4">
               <Input required label={t('admin.users.form.fullName')} placeholder={t('admin.users.form.fullNamePlaceholder')} error={translateUserFormError(t, errors.fullName?.message)} {...form.register('fullName')} />
               <Input required label={t('admin.users.form.phone')} placeholder="0901 234 567" className="font-mono" error={translateUserFormError(t, errors.phone?.message)} {...form.register('phone')} />
               <Input required label={t('admin.users.form.email')} type="email" placeholder={t('admin.users.form.emailPlaceholder')} error={translateUserFormError(t, errors.email?.message)} {...form.register('email')} />
-              {platform ? null : (
+              {withDepot ? (
                 <Input
                   required
                   label={t('admin.users.form.depot')}
@@ -133,7 +135,7 @@ export function UserFormDialog({
                   error={translateUserFormError(t, errors.depot?.message)}
                   {...form.register('depot')}
                 />
-              )}
+              ) : null}
               {roleBlock ? (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-body font-medium text-text">{t('admin.users.form.role')}</span>
@@ -151,6 +153,13 @@ export function UserFormDialog({
                   hint={t('admin.users.form.device', { device: t(`admin.users.devices.${role}`) })}
                 />
               )}
+              {needsCompany ? (
+                <div className="col-span-2 flex flex-col gap-1.5">
+                  <SelectField required control={form.control} name="companyId" label={t('admin.users.form.company')} options={companyOptions} />
+                  {/* Lỗi của ô chọn công ty mang khoá riêng: `SelectField` in thẳng message, còn schema trả key từ điển */}
+                  <FieldMessage error={translateUserFormError(t, companyError(errors))} />
+                </div>
+              ) : null}
             </div>
 
             {serverError ? (

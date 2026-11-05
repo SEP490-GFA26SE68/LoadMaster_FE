@@ -1,6 +1,7 @@
 import { gt } from '@/domain/geometry'
 import { HANDLING_CLASSES, type HandlingClass } from '@/domain/models'
 import { cellText, isBlankRow, parseDecimal, type ImportCell } from '@/features/trips/import-cells'
+import type { TFunction } from '@/lib/i18n'
 import { normalizeSearchText } from '@/lib/list-filter'
 import type { Package, PackageInput, PackageType } from '@/lib/mock-db'
 
@@ -10,65 +11,23 @@ import type { Package, PackageInput, PackageType } from '@/lib/mock-db'
  * vị), không theo vị trí. Đơn vị trong file là cm / kg. Số dòng là số dòng khi mở file bằng Excel (đếm từ 1, tiêu đề là dòng 1).
  * Có một dòng lỗi thì `importInputs` trả `null`: không dòng nào được ghi.
  */
-export const IMPORT_COLUMNS = [
-  'package_code',
-  'package_name',
-  'length',
-  'width',
-  'height',
-  'weight',
-  'quantity',
-  'destination',
-  'orientation',
-  'upright_only',
-  'fragility_level',
-  'stackable',
-  'max_top_load',
-  'max_layers',
-  'min_support_ratio',
-  'priority',
-  'must_load',
-  'group',
-  'note',
-  'handling_class',
-  'package_type',
-] as const
-
+export const IMPORT_COLUMNS = ['package_code', 'length', 'width', 'height', 'weight', 'handling_class', 'destination', 'package_type'] as const
 export type ImportColumn = (typeof IMPORT_COLUMNS)[number]
-const OPTIONAL_COLUMNS: readonly ImportColumn[] = []
+const OPTIONAL_COLUMNS: readonly ImportColumn[] = ['package_type']
+
 export const MAX_IMPORT_FILE_MB = 10
 export const MAX_IMPORT_ROWS = 1000
 
 /** Tiêu đề nhận được của từng cột, đã bỏ dấu, chữ thường, `_` thành dấu cách và bỏ phần đơn vị trong ngoặc. */
-const HEADER_ALIASES: Readonly<
-  Record<ImportColumn, readonly string[]>
-> = {
+const HEADER_ALIASES: Readonly<Record<ImportColumn, readonly string[]>> = {
   package_code: ['package code', 'ma kien', 'ma kien hang'],
-  package_name: ['package name', 'ten kien'],
   length: ['length', 'dai', 'chieu dai'],
   width: ['width', 'rong', 'chieu rong'],
   height: ['height', 'cao', 'chieu cao'],
   weight: ['weight', 'khoi luong', 'can nang'],
-  quantity: ['quantity', 'so luong'],
-  destination: ['destination', 'diem den', 'diem giao'],
-  orientation: ['orientation', 'huong dat'],
-  upright_only: ['upright only', 'giu thang dung'],
-  fragility_level: ['fragility level', 'muc de vo'],
-  stackable: ['stackable', 'cho xep chong'],
-  max_top_load: ['max top load', 'tai tren toi da'],
-  max_layers: ['max layers', 'so tang toi da'],
-  min_support_ratio: ['min support ratio', 'ty le do day'],
-  priority: ['priority', 'do uu tien'],
-  must_load: ['must load', 'bat buoc xep'],
-  group: ['group', 'nhom'],
-  note: ['note', 'ghi chu'],
   handling_class: ['handling class', 'loai hang'],
-  package_type: [
-    'package type',
-    'loai kien',
-    'ma loai kien',
-    'package type code',
-  ],
+  destination: ['destination', 'diem den'],
+  package_type: ['package type', 'loai kien'],
 }
 
 const CLASS_ALIASES: Readonly<Record<HandlingClass, readonly string[]>> = {
@@ -98,45 +57,31 @@ export type ImportFileError =
   | { readonly kind: 'error'; readonly code: 'BATCH_TOO_LARGE'; readonly params: { max: number; rows: number } }
   | { readonly kind: 'error'; readonly code: 'IMPORT_COLUMNS_MISSING'; readonly params: { columns: string[] } }
 
-/** Lỗi thấy được trước khi đọc file: đuôi file, dung lượng. */
-export function importFileError(
-  file: { name: string; size: number }
-): ImportFileError | null {
-  if (!/\.xlsx$/i.test(file.name)) {
-    return {
-      kind: 'error',
-      code: 'UNSUPPORTED_FILE_TYPE',
-      params: {},
-    }
-  }
-
-  if (file.size === 0) {
-    return {
-      kind: 'error',
-      code: 'EMPTY_FILE',
-      params: {},
-    }
-  }
-
-  if (file.size > MAX_IMPORT_FILE_MB * 1024 * 1024) {
-    return {
-      kind: 'error',
-      code: 'FILE_TOO_LARGE',
-      params: { maxMb: MAX_IMPORT_FILE_MB },
-    }
-  }
-
+/** Lỗi thấy được trước khi đọc file: đuôi file, dung lượng (tối đa `maxMb`). */
+export function importFileError(file: { name: string; size: number }, maxMb = MAX_IMPORT_FILE_MB): ImportFileError | null {
+  if (!/\.(csv|xlsx)$/i.test(file.name)) return { kind: 'error', code: 'UNSUPPORTED_FILE_TYPE', params: {} }
+  if (file.size === 0) return { kind: 'error', code: 'EMPTY_FILE', params: {} }
+  if (file.size > maxMb * 1024 * 1024) return { kind: 'error', code: 'FILE_TOO_LARGE', params: { maxMb } }
   return null
 }
 
+/**
+ * Lỗi của một dòng. `DUPLICATE_PACKAGE_CODE_IN_FILE` (trùng mã mà không biết dòng đầu) và `ROW_INVALID` (mã lỗi lạ) chỉ đến từ bản xem
+ * trước của backend.
+ */
 export type ImportRowError =
-  | { readonly code: 'PACKAGE_CODE_REQUIRED' | 'INVALID_WEIGHT' | 'DESTINATION_REQUIRED' }
+  | { readonly code: 'PACKAGE_CODE_REQUIRED' | 'INVALID_WEIGHT' | 'DESTINATION_REQUIRED' | 'DUPLICATE_PACKAGE_CODE_IN_FILE' | 'ROW_INVALID' }
   | { readonly code: 'INVALID_DIMENSION'; readonly field: 'length' | 'width' | 'height' }
   | { readonly code: 'INVALID_HANDLING_CLASS' | 'PACKAGE_TYPE_NOT_FOUND'; readonly value: string }
   | { readonly code: 'DUPLICATE_PACKAGE_CODE'; readonly firstLine: number }
 
-/** Cảnh báo không chặn nhập: mã của bên gửi đã có ở kiện `packageId` của kho kiện. */
-export type ImportRowWarning = { readonly code: 'PACKAGE_CODE_EXISTS'; readonly packageId: string }
+/**
+ * Cảnh báo không chặn nhập: mã của bên gửi đã có ở kiện `packageId` của kho kiện. Backend chỉ nói mã đã có, không nói kiện nào
+ * (`PACKAGE_CODE_EXISTS_ON_SERVER`); `ROW_WARNING` là cảnh báo lạ của backend.
+ */
+export type ImportRowWarning =
+  | { readonly code: 'PACKAGE_CODE_EXISTS'; readonly packageId: string }
+  | { readonly code: 'PACKAGE_CODE_EXISTS_ON_SERVER' | 'ROW_WARNING' }
 
 export type ImportRow = {
   readonly line: number
@@ -160,6 +105,8 @@ export type PackageImportPreview = {
   readonly valid: number
   readonly errorRows: number
   readonly warningRows: number
+  /** File đã đọc — khi kho là backend, bước xác nhận gửi lại đúng file này (backend đọc và kiểm lại). */
+  readonly file?: File
 }
 
 export type ImportContext = {
@@ -252,4 +199,10 @@ export function importInputs(preview: PackageImportPreview): PackageInput[] | nu
  * File mẫu: tiêu đề theo ngôn ngữ đang chọn (kích thước, khối lượng ghi đơn vị) và hai dòng ví dụ — loại hàng viết bằng mã của
  * backend, cột loại kiện để trống — nên nhập nguyên file mẫu ra hai kiện hợp lệ.
  */
-
+export function importTemplateRows(t: TFunction): (string | number)[][] {
+  return [
+    IMPORT_COLUMNS.map((column) => t(`sourcing.import.header.${column}`)),
+    [t('sourcing.import.sample.firstCode'), 60, 40, 40, 18, 'STANDARD', t('sourcing.import.sample.firstDestination'), ''],
+    [t('sourcing.import.sample.secondCode'), 50, 40, 30, 9.5, 'FRAGILE', t('sourcing.import.sample.secondDestination'), ''],
+  ]
+}

@@ -3,10 +3,7 @@ import type { titles as source } from '../vi/titles'
 
 export const titles = {
   login: 'Sign in',
-  forgotPassword: 'Forgot password',
-  verifyOtp: 'Verify OTP',
-  resetPassword: 'Reset password',
-  resetPasswordSuccess: 'Password changed',
+  passwordReset: 'Set a new password',
   dashboard: 'Dashboard',
   trips: 'Trips',
   trip: 'Trip {id}',
@@ -39,8 +36,15 @@ export const titles = {
   vehicleTypes: 'Vehicle types',
   tripReport: 'Trip report {id}',
   subscriptionPlans: 'Subscription plans',
+  subscriptionHistory: 'Subscription History',
+  trialRequests: 'Trial account requests',
   billing: 'Plan and credits',
   payment: 'Simulated payment',
+  paymentResult: 'Confirm payment',
   companies: 'Companies',
+  companyProfile: 'Company details',
   support: 'Customer support',
+  landing: 'About',
+  pricing: 'Pricing',
+  contacts: 'Guest contacts',
 } satisfies Dictionary<typeof source>

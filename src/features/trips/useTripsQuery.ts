@@ -1,29 +1,27 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { CargoPackage } from '@/domain/models'
 import type { DeliveryStop } from '@/lib/mock-db'
+import { deletePackage, duplicateTripPackage, fetchPackages, importPackages, savePackage } from './trip-package-lines-api'
 import { addTripStop, removeTripStop, updateTripStops, type ManualStopInput } from './trip-stops-api'
 import {
   cancelTrip,
+  createBackendTrip,
   createTrip,
-  deletePackage,
-  duplicateTripPackage,
-  fetchPackages,
+  fetchStoreTrips,
   fetchTripActivity,
   fetchTripDetail,
   fetchTripFormOptions,
   fetchTripRevisions,
   fetchTrips,
   fetchTripsPage,
-  importPackages,
-  savePackage,
+  optimizeBackendTrip,
   updateTripFrame,
+  type BackendTripFrame,
   type TripFrame,
   type TripFrameChanges,
-  type TripListParams,
   type TripListPageResult,
+  type TripListParams,
 } from './trips-api'
-
-import { optimizeBackendTrip } from './trips-api'
 
 /** Chuyến và kiện qua TanStack Query — component không gọi API trực tiếp (mục 9). */
 
@@ -31,8 +29,30 @@ export function useTripsQuery() {
   // Trạng thái và tỷ lệ của từng dòng đổi theo mọi mutation của từng chuyến (khoá `['trips', tripId]`): đọc lại mỗi lần mở màn.
   return useQuery({ queryKey: ['trips', 'list'], queryFn: fetchTrips, staleTime: 0 })
 }
-/** Danh sách chuyến lấy từ PostgreSQL, phân trang tại Backend. */
-/** Danh sách chuyến từ PostgreSQL: phân trang, tìm kiếm, lọc và sắp xếp tại Backend. */
+
+/** Danh sách chuyến của kho mẫu cho hai trang tài liệu — dữ liệu seed, dù nhóm `trips` nối backend. */
+export function useStoreTripsQuery() {
+  return useQuery({ queryKey: ['trips', 'store-list'], queryFn: fetchStoreTrips, staleTime: 0 })
+}
+
+/** Xe (kèm trạng thái bảo dưỡng) và tài xế của form chuyến: đọc lại mỗi lần mở form vì Đội xe và Người dùng đổi chúng. */
+export function useTripFormOptionsQuery() {
+  return useQuery({ queryKey: ['trips', 'form-options'], queryFn: fetchTripFormOptions, staleTime: 0 })
+}
+
+/** Tạo chuyến: làm mới danh sách chuyến và bảng điều khiển. */
+export function useCreateTripMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (frame: TripFrame) => createTrip(frame),
+    onSuccess: () => Promise.all([
+      client.invalidateQueries({ queryKey: ['trips'] }),
+      client.invalidateQueries({ queryKey: ['dashboard'] }),
+    ]),
+  })
+}
+
+/** Danh sách chuyến của máy chủ: phân trang, tìm kiếm, lọc và sắp xếp tại backend (màn của nhóm khi nhóm `trips` nối backend). */
 export function useTripsPageQuery(params: TripListParams) {
   return useQuery<TripListPageResult>({
     queryKey: [
@@ -55,16 +75,12 @@ export function useTripsPageQuery(params: TripListParams) {
     staleTime: 0,
   })
 }
-/** Xe (kèm trạng thái bảo dưỡng) và tài xế của form chuyến: đọc lại mỗi lần mở form vì Đội xe và Người dùng đổi chúng. */
-export function useTripFormOptionsQuery() {
-  return useQuery({ queryKey: ['trips', 'form-options'], queryFn: fetchTripFormOptions, staleTime: 0 })
-}
 
-/** Tạo chuyến: làm mới danh sách chuyến và bảng điều khiển. */
-export function useCreateTripMutation() {
+/** Tạo chuyến trên máy chủ (màn của nhóm): làm mới danh sách chuyến và bảng điều khiển. */
+export function useCreateBackendTripMutation() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (frame: TripFrame) => createTrip(frame),
+    mutationFn: (frame: BackendTripFrame) => createBackendTrip(frame),
     onSuccess: () => Promise.all([
       client.invalidateQueries({ queryKey: ['trips'] }),
       client.invalidateQueries({ queryKey: ['dashboard'] }),
@@ -72,23 +88,14 @@ export function useCreateTripMutation() {
   })
 }
 
-
-export function useOptimizeBackendTripMutation(
-  tripId: string,
-) {
-  const queryClient = useQueryClient()
-
+/** Tối ưu tuyến trên máy chủ. */
+export function useOptimizeBackendTripMutation(tripId: string) {
+  const client = useQueryClient()
   return useMutation({
     mutationFn: () => optimizeBackendTrip(tripId),
-
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['trips', tripId],
-      })
-    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ['trips', tripId] }),
   })
 }
-
 
 export function useUpdateTripFrameMutation(tripId: string) {
   const client = useQueryClient()
@@ -116,6 +123,7 @@ export function useCancelTripMutation(tripId: string) {
 export function useTripDetailQuery(tripId: string) {
   return useQuery({ queryKey: ['trips', tripId, 'detail'], queryFn: () => fetchTripDetail(tripId), enabled: tripId !== '' })
 }
+
 
 /**
  * Revision, nhật ký, người dùng cho thẻ Tiến trình. Kho và tài xế ghi tiến độ ở màn khác (không qua hook của màn này), nên đọc lại

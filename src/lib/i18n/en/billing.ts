@@ -1,7 +1,9 @@
 import type { Dictionary } from '../types'
 import type { billing as source } from '../vi/billing'
+import { agreement } from './billing-agreement'
 
 export const billing = {
+  agreement,
   title: 'Plan and credits',
   loading: 'Loading the plan',
   retry: 'Try again',
@@ -23,12 +25,15 @@ export const billing = {
     price: 'Price per month',
     credits: 'Credits per month',
     cancel: 'Cancel plan',
+    renew: 'Renew for another period',
     expiredNote: 'The plan has expired, so optimisation cannot run. The credit balance is kept; choose a new plan to continue.',
     cancelledNote: 'The plan is cancelled. It can be used until {date}, then expires and does not renew.',
   },
   noPlan: {
     title: 'The company has no plan yet',
     description: 'Choose a plan to run 3D optimisation. Credits you top up are kept when a plan expires.',
+    lapsedTitle: 'The company’s plan has expired',
+    lapsedDescription: 'Choose a plan to run 3D optimisation again. The credit balance is kept.',
   },
   choose: {
     title: 'Choose a plan',
@@ -36,6 +41,16 @@ export const billing = {
     subscribeTo: 'Subscribe to plan {name}',
     credits: '{credits} credits per month',
     none: 'No plan is on sale right now.',
+    requestUpgrade: 'Request an upgrade',
+    requestUpgradeTo: 'Request an upgrade to plan {name}',
+  },
+  support: 'Support request',
+  agreementCard: {
+    title: 'Service agreement',
+    signedBy: 'Signed by {name}',
+    deadline: 'Sign by {date}',
+    sign: 'Sign now',
+    view: 'View document',
   },
   credit: {
     balance: 'Balance',
@@ -49,16 +64,23 @@ export const billing = {
     confirm: 'Cancel plan',
   },
   cancelled: 'Plan {plan} cancelled. It can be used until {date}.',
+  activated: 'Plan {plan} is active',
+  agreementSigned: 'Service agreement signed',
   topUpDialog: {
     title: 'Top up credits',
     description: '{price} per credit. You finish on the payment page; credits are only added when the payment succeeds.',
     pack: '{credits} credits',
+    custom: 'Credits to buy',
+    total: 'Total: {amount}',
+    cap: '{tier} tier: balance up to {max} credits, {left} more can be bought.',
+    noCap: '{tier} tier: no balance limit.',
+    overCap: 'The balance after top-up ({total} credits) exceeds the {max}-credit limit of the {tier} tier.',
     cancel: 'Cancel',
     confirm: 'Continue to payment',
   },
   history: {
     title: 'History',
-    tabs: { credit: 'Credits', payments: 'Payments' },
+    tabs: { credit: 'Credits', payments: 'Payments', invoices: 'Invoices' },
   },
   ledger: {
     columns: { time: 'Time', type: 'Type', amount: 'Credits', reference: 'Reference', note: 'Note' },
@@ -71,5 +93,10 @@ export const billing = {
     purposes: { SUBSCRIBE: 'Subscribe to a plan', RENEWAL: 'Plan renewal', TOPUP: 'Credit top-up' },
     statuses: { PENDING: 'Awaiting payment', SUCCESS: 'Succeeded', FAILED: 'Failed' },
     empty: 'No payments yet.',
+  },
+  invoices: {
+    columns: { time: 'Issued', number: 'Invoice', period: 'Period', plan: 'Plan', amount: 'Amount', status: 'Status' },
+    statuses: { UNPAID: 'Unpaid', PAID: 'Paid', FAILED: 'Failed', VOID: 'Void' },
+    empty: 'No invoices yet.',
   },
 } satisfies Dictionary<typeof source>

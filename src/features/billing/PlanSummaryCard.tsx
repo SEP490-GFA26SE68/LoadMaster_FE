@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
 import type { CurrentSubscription, SubscriptionStatus } from '@/lib/mock-db'
+import { tierBesideName } from '@/lib/plan-tier'
+import { BILLING_CAPABILITIES } from './billing-api'
 
 /** Gói đang dùng là xanh lá, đã huỷ nhưng còn hiệu lực là hổ phách (sắp hết), đã hết hạn là đỏ (chặn chạy tối ưu). */
 const STATUS_LOOK: Record<SubscriptionStatus, { tone: BadgeTone; dot: BadgeDot }> = {
@@ -23,15 +25,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Gói hiện tại của công ty (FE-8-03): tên, hạng, nhãn "Giá trị tạm" khi gói mang cờ tạm, trạng thái, ngày bắt đầu và hết hạn, tự gia hạn,
- * giá và credit mỗi tháng; gói đã huỷ hay hết hạn nói rõ
- * hệ quả bằng một dòng.
+ * giá và credit mỗi tháng. Gói đang dùng có nút Huỷ gói (secondary — nút chính của màn là Nạp credit); gói đã huỷ hay hết hạn nói rõ
+ * hệ quả bằng một dòng. Nối backend thì công ty tự gia hạn gói đang dùng thêm một kỳ (`onRenew`, nút phụ).
  */
-export function PlanSummaryCard({
-  current,
-  onCancel,
-  onRenew,
-  renewPending = false,
-}: {
+export function PlanSummaryCard({ current, onCancel, onRenew, renewPending = false }: {
   current: CurrentSubscription
   onCancel: () => void
   onRenew?: () => void
@@ -41,6 +38,7 @@ export function PlanSummaryCard({
   const format = useFormat()
   const { subscription, plan } = current
   const look = STATUS_LOOK[subscription.status]
+  const tier = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
   return (
     <Card role="region" aria-labelledby="billing-plan">
       <CardHeader>
@@ -52,21 +50,24 @@ export function PlanSummaryCard({
       <div className="flex flex-col gap-4 p-4.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-display text-h2 leading-7 font-bold text-ink-strong font-stretch-112%">{plan.name}</span>
-          <Badge tone="cyan" shape="tag">{t(`common.planTiers.${plan.tier}`)}</Badge>
+          {tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}
           {plan.provisional ? <Badge shape="tag" tone="warning" outlined>{t('common.provisionalPlan')}</Badge> : null}
         </div>
-        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <Field label={t('billing.plan.started')}>{format.date(subscription.startedAt)}</Field>
           <Field label={t('billing.plan.expires')}>{format.date(subscription.expiresAt)}</Field>
+          {BILLING_CAPABILITIES.autoRenew ? (
+            <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
+          ) : null}
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>
+        {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
         {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
-        {(subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && onRenew ? (
-          <div className="flex flex-wrap gap-2.5">
-            <Button variant="primary" loading={renewPending} onClick={onRenew}>
-              Gia hạn thêm 1 tháng
-            </Button>
+        {subscription.status === 'ACTIVE' || (onRenew && subscription.status === 'EXPIRED') ? (
+          <div className="flex flex-wrap gap-2">
+            {onRenew ? <Button variant="secondary" loading={renewPending} onClick={onRenew}>{t('billing.plan.renew')}</Button> : null}
+            {subscription.status === 'ACTIVE' ? <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button> : null}
           </div>
         ) : null}
       </div>

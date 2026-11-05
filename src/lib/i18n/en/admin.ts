@@ -2,6 +2,37 @@ import type { Dictionary } from '../types'
 import type { admin as source } from '../vi/admin'
 
 export const admin = {
+  employees: {
+    title: 'Employees',
+    count: { one: '{count} employee', other: '{count} employees' },
+    tabs: { accounts: 'Employees', permissions: 'Permission matrix' },
+    summary: {
+      total: 'Total employees',
+      totalNote: 'All roles, including locked employees',
+    },
+    search: 'Search by name, email, phone, ID',
+    empty: 'No employees yet.',
+    noMatch: 'No matching employees found.',
+    columns: {
+      user: 'Employee',
+    },
+    detail: {
+      region: 'Employee details for {name}',
+    },
+    form: {
+      createTitle: 'Add employee',
+      editTitle: 'Edit employee',
+      create: 'Add employee',
+    },
+    remove: {
+      title: 'Delete employee {name}?',
+      description: 'The employee will permanently lose login access. This action cannot be undone.',
+    },
+    lockConfirm: {
+      title: 'Lock account {name}?',
+      description: 'This employee will not be able to log in to the system until unlocked.',
+    },
+  },
   users: {
     title: 'Users',
     count: { one: '{count} account', other: '{count} accounts' },
@@ -10,6 +41,7 @@ export const admin = {
       depots: { one: '{count} depot / branch', other: '{count} depots / branches' },
       companies: { one: '{count} company', other: '{count} companies' },
     },
+    ownerBadge: 'Company Owner (You)',
     neverSignedIn: 'Never signed in',
     noDepot: 'No warehouse or branch',
     platformAccount: 'Platform',
@@ -79,10 +111,11 @@ export const admin = {
       actions: 'Actions',
     },
     blocked: {
-      self:'Not available for the account you are signed in with',
+      self: 'Not available for the account you are signed in with',
       lastSystemAdmin: 'The platform needs at least one active system administrator',
       lastCompanyAdmin: 'The company needs at least one active company administrator',
       companyManaged: 'Company staff are managed by the administrator of that company',
+      profileOnly: 'Update via your Profile page',
     },
     form: {
       createTitle: 'Add user',
@@ -90,16 +123,17 @@ export const admin = {
       createDescription: 'The system issues a temporary password and shows it only once after the account is created.',
       createDescriptionPlatform: 'A platform account, not part of any company. The system issues a temporary password and shows it only once after the account is created.',
       editDescription: 'Edit the contact details, warehouse and role of the account.',
+      editDescriptionNoDepot: 'Edit the contact details and role of the account.',
       editDescriptionPlatform: 'Edit the contact details and role of the platform account.',
       fullName: 'Full name',
-      fullNamePlaceholder: 'Nguyễn Thanh Tùng',
+      fullNamePlaceholder: 'Alex Smith',
       phone: 'Phone number',
       email: 'Email',
       emailPlaceholder: 'name@loadmaster.vn',
       depot: 'Warehouse / branch',
-      depotPlaceholder: 'Kho Long Bình',
+      depotPlaceholder: 'Central Warehouse',
       role: 'Role',
-      company: 'Công ty',
+      company: 'Company',
       device: 'Main device: {device}',
       cancel: 'Cancel',
       save: 'Save changes',
@@ -138,6 +172,12 @@ export const admin = {
       confirm: 'Delete account',
       cancel: 'Cancel',
     },
+    lockConfirm: {
+      title: 'Lock account {name}?',
+      description: 'This account will not be able to log in to the system until unlocked.',
+      confirm: 'Lock account',
+      cancel: 'Cancel',
+    },
   },
   permissions: {
     description: 'Read-only, built from the permission settings of the system. Screens and buttons of missing permissions are hidden. Some permissions belong to screens this version does not have yet.',
@@ -152,7 +192,7 @@ export const admin = {
     groups: {
       administration: 'Companies, users and log',
       billing: 'Plans and credits',
-      support: 'Customer support',
+      support: 'Customer support and guest contacts',
       dashboard: 'Dashboard and reports',
       requirements: 'Delivery requirements',
       packages: 'Package pool and QR labels',
@@ -166,11 +206,14 @@ export const admin = {
     },
     labels: {
       companies: { manage: 'Create and manage customer companies' },
+      companyProfile: { manage: 'View and edit your own company details' },
       users: { manage: 'Manage users' },
       audit: { view: 'View the system log' },
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },
       billing: { manage: 'Buy plans, top up credits, view transactions' },
       support: { create: 'Send support requests', handle: 'Handle support requests' },
+      contacts: { handle: 'Handle guest contact requests' },
+      trialRequests: { manage: 'Review trial requests' },
       dashboard: { view: 'View the dashboard' },
       reports: { export: 'Export .xlsx reports' },
       requirements: { view: 'View delivery requirements', edit: 'Create and edit delivery requirements' },
@@ -191,6 +234,7 @@ export const admin = {
       exceptions: { report: 'Report trip incidents', resolve: 'Resolve trip incidents' },
       deadlines: { renegotiate: 'Extend delivery deadlines' },
       pickups: { create: 'Create en-route pickup requests', approve: 'Approve en-route pickup requests' },
+      companyWarehouses: { manage: 'Manage company warehouses' },
       warehouse: { operate: 'Load at the warehouse' },
       driver: { operate: 'Deliver' },
     },

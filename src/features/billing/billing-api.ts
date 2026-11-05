@@ -1,371 +1,213 @@
-import { isAuthenticated } from '@/features/auth/auth-api'
-import { apiFetch } from '@/lib/api-client'
+/**
+ * Hàm → endpoint backend (FE-0-09). Bật nhóm `billing` (`usesBackend('billing')`) thì đọc ghi backend; tắt thì kho mẫu như cũ.
+ *   getSubscriptionView     → GET /api/subscription/current (+ GET /api/subscription/plans/{id} khi gói còn hiệu lực)
+ *   listPlansOnSale         → GET /api/subscription/plans (backend chỉ trả gói đang bán)
+ *   subscribe               → POST /api/subscription/subscribe (trả URL thanh toán)
+ *   cancelSubscription      → POST /api/subscription/cancel, rồi đọc lại gói
+ *   getCreditBalance        → GET /api/credits/balance
+ *   listCreditTransactions  → GET /api/credits/transactions (đọc hết các trang; FE phân trang trên danh sách đã đọc)
+ *   topUpCredits            → POST /api/credits/topup (trả URL thanh toán)
+ *   listInvoices            → GET /api/company/invoices (kho mẫu không có hoá đơn)
+ *   chưa có ở BE: listPayments
+ * Có backend thì đăng ký và nạp đi qua cổng thử của backend và trang xác nhận `/thanh-toan/ket-qua` (`server-payment-api.ts`); trang
+ * thanh toán giả lập (`payment-api.ts`) chỉ dùng với kho mẫu.
+ */
+
+import { api, ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
+import {
+  creditBalanceOf,
+  creditTransactionOf,
+  fromBackendLocalDateTime,
+  getCreditBalanceDto,
+  getCurrentSubscriptionDto,
+  getPlanDto,
+  listActivePlans,
+  listCreditTransactionDtos,
+  planFromDto,
+  subscriptionStatusOf,
+  withBusinessCode,
+} from '@/lib/billing-backend-api'
 import {
   BILLING_CONSTANTS,
   getMockDb,
-  type AlgorithmTier,
   type CompanySubscription,
   type CreditBalance,
   type CreditTransaction,
-  type CreditTransactionType,
   type CurrentSubscription,
   type PaymentTransaction,
-  type SubscriptionPlan,
-  type SubscriptionStatus,
   type PlanTier,
+  type SubscriptionPlan,
 } from '@/lib/mock-db'
-import { TIER_ALGORITHM, TIER_FEATURES } from '@/lib/mock-db/billing-model'
+import { startServerPayment, type PaymentStart } from './server-payment-api'
 
-type ApiResponse<T> = {
-  success: boolean
-  message?: string
-  data: T
+const ON_BACKEND = usesBackend('billing')
+
+/**
+ * Giá một credit và trần số dư cộng dồn khi nạp, theo hạng gói của công ty — như `CreditController` của backend (chưa có endpoint đọc
+ * giá): Basic 400 đ, trần 3.000; Pro 326 đ, trần 10.000; Ultimate 263 đ, không trần. Công ty chưa có gói tính như Basic.
+ */
+const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxBalance: number | null }> = {
+  BASIC: { priceVnd: 400, maxBalance: 3000 },
+  PRO: { priceVnd: 326, maxBalance: 10000 },
+  ULTIMATE: { priceVnd: 263, maxBalance: null },
 }
 
-export type SubscriptionPlanApi = {
-  id: number
-  planCode: string
-  name: string
-  priceVnd: number
-  tier: PlanTier
-  monthlyCredits: number | null
-  algorithmTier?: AlgorithmTier | null
-  features?: string | null
-  billingCycle?: 'MONTHLY' | 'YEARLY' | null
-  active?: boolean | null
-  activeCompanyCount?: number
+/**
+ * Phần của màn theo nguồn dữ liệu. Backend chưa có endpoint đọc giao dịch thanh toán: không có lịch sử thanh toán, nút Trả hay banner
+ * thanh toán chờ; có hoá đơn mà kho mẫu không có. Kho mẫu trả bằng trang giả lập `/thanh-toan/gia-lap` (`simulation`); backend xác
+ * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`). Gói trả phí của backend không bao giờ tự gia hạn (tới hạn là hết hạn, huỷ chỉ
+ * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật. Backend tính theo hợp đồng
+ * (`contractRenewal`): công ty tự gia hạn đúng gói đang dùng thêm một kỳ, muốn lên hạng cao hơn thì gửi yêu cầu hỗ trợ; nạp được số
+ * credit tuỳ ý trong trần của hạng (`customTopUp`; kho mẫu chỉ có gói 50 / 500); quản trị công ty dùng thử ký thoả thuận dịch vụ
+ * (`agreements`).
+ */
+export const BILLING_CAPABILITIES = {
+  payments: !ON_BACKEND,
+  invoices: ON_BACKEND,
+  simulation: !ON_BACKEND,
+  serverPayment: ON_BACKEND,
+  autoRenew: !ON_BACKEND,
+  contractRenewal: ON_BACKEND,
+  customTopUp: ON_BACKEND,
+  agreements: ON_BACKEND,
+} as const
+
+/** Giá một credit khi nạp và trần số dư (`null`: không trần) theo hạng gói đang dùng; kho mẫu một giá, không trần. */
+export function topUpTerms(tier: PlanTier | null): { readonly priceVnd: number; readonly maxBalance: number | null } {
+  if (!ON_BACKEND) return { priceVnd: BILLING_CONSTANTS.creditPriceVnd, maxBalance: null }
+  return BACKEND_TOPUP[tier ?? 'BASIC']
 }
 
-type SubscriptionCurrentApi = {
-  subscriptionId: number | null
-  planId: number | null
-  planName: string | null
-  tier: PlanTier | null
-  status: SubscriptionStatus | null
-  startedAt: string | null
-  expiresAt: string | null
-  autoRenew: boolean | null
-  creditsBalance: number | null
-  creditsMonthlyGrant: number | null
-  algorithmTier: AlgorithmTier | null
+/**
+ * Gói của công ty. `current` là gói hiện tại kèm gói cước nó theo, `null` khi chưa có gói. Backend chỉ trả gói khi còn `ACTIVE`: gói đã
+ * hết hạn không có tên hay ngày, chỉ còn `lapsed` để màn nói "đã hết hạn" thay vì "chưa có gói".
+ */
+export type SubscriptionView = { readonly current: CurrentSubscription | null; readonly lapsed: boolean }
+
+/** Hoá đơn của công ty (chỉ có ở backend). */
+export type InvoiceStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'VOID'
+export type Invoice = {
+  readonly id: string
+  readonly number: string
+  readonly planName: string
+  readonly amountVnd: number
+  readonly status: InvoiceStatus
+  /** Kỳ tính tiền như backend ghi (`2026-10`). */
+  readonly period: string
+  readonly createdAt: string
 }
 
-type CreditBalanceApi = {
-  companyId: number
-  balance: number
-  isUnlimited: boolean
+/** `InvoiceResponse`; `paidAt` của backend là hạn trả chứ không phải lúc trả nên không đọc. */
+type InvoiceDto = {
+  readonly id: number
+  readonly invoiceNumber: string | null
+  readonly planName: string | null
+  readonly amount: number | string | null
+  readonly status: InvoiceStatus | null
+  readonly billingPeriod: string | null
+  readonly createdAt: string | null
 }
 
-type CreditTransactionApi = {
-  id: number
-  amount: number
-  type: CreditTransactionType
-  reference: string | null
-  refunded: boolean | null
-  createdAt: string
-}
-
-type PageApi<T> = {
-  content: T[]
-}
-
-type PaymentUrlApi = {
-  id: number
-  transactionId: string
-  paymentUrl: string | null
-  status: string
-}
-
-export type StoredBackendPayment = {
-  payment: PaymentTransaction
-  planName: string | null
-  paymentUrl: string | null
-}
-
-const STORAGE_KEY = 'loadmaster.backend.payments'
-let memoryPayments: StoredBackendPayment[] = []
-
-function readStoredPayments(): StoredBackendPayment[] {
-  if (typeof sessionStorage === 'undefined') return memoryPayments
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
-    if (!raw) return memoryPayments
-    const parsed = JSON.parse(raw) as StoredBackendPayment[]
-    memoryPayments = parsed
-    return parsed
-  } catch {
-    return memoryPayments
-  }
-}
-
-export function writeStoredPayments(items: StoredBackendPayment[]): void {
-  memoryPayments = items
-  if (typeof sessionStorage !== 'undefined') {
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-    } catch {
-      // ignore storage quota errors
-    }
-  }
-}
-
-export function upsertStoredPayment(entry: StoredBackendPayment): PaymentTransaction {
-  const current = readStoredPayments().filter((item) => item.payment.id !== entry.payment.id)
-  const next = [entry, ...current]
-  writeStoredPayments(next)
-  return entry.payment
-}
-
-export function findStoredPayment(paymentId: string): StoredBackendPayment | undefined {
-  return readStoredPayments().find((item) => item.payment.id === paymentId)
-}
-
-function parseFeatures(raw: string | null | undefined, tier: PlanTier): string[] {
-  if (!raw || !raw.trim()) return [...TIER_FEATURES[tier]]
-  const trimmed = raw.trim()
-  if (trimmed.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) return parsed.map(String)
-    } catch {
-      // fallback below
-    }
-  }
-  const codes = trimmed.split(',').map((item) => item.trim()).filter(Boolean)
-  const validCodes = new Set<string>([
-    ...TIER_FEATURES.BASIC,
-    ...TIER_FEATURES.PRO,
-    ...TIER_FEATURES.ULTIMATE,
-  ])
-  if (codes.length > 0 && codes.every((c) => validCodes.has(c))) {
-    return codes
-  }
-  return [...TIER_FEATURES[tier]]
-}
-
-export function mapSubscriptionPlanApi(item: SubscriptionPlanApi): SubscriptionPlan {
-  const tier = item.tier ?? 'BASIC'
-  return {
-    id: String(item.id),
-    name: item.name,
-    tier,
-    priceVnd: Number(item.priceVnd ?? 0),
-    monthlyCredits: item.monthlyCredits ?? null,
-    algorithmTier: item.algorithmTier ?? TIER_ALGORITHM[tier],
-    features: parseFeatures(item.features, tier),
-    active: item.active ?? true,
-    provisional: false,
-  }
-}
-
-function toIsoString(dateStr: string | null | undefined): string {
-  if (!dateStr) return new Date().toISOString()
-  const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : `${dateStr}Z`
-  const parsed = Date.parse(normalized)
-  return Number.isNaN(parsed) ? new Date().toISOString() : new Date(parsed).toISOString()
-}
-
-// GET /api/subscription/current
-export async function getCurrentSubscription(): Promise<CurrentSubscription | null> {
-  if (!isAuthenticated()) {
-    return getMockDb().getCurrentSubscription()
-  }
-
-  const [subRes, plans] = await Promise.all([
-    apiFetch<ApiResponse<SubscriptionCurrentApi>>('/api/subscription/current'),
-    listPlansOnSale(),
-  ])
-
-  const data = subRes.data
-  if (!data || data.subscriptionId == null || data.status == null) {
-    return null
-  }
-
-  const tier: PlanTier = data.tier ?? 'BASIC'
-  const matchedPlan =
-    plans.find((p) => p.id === String(data.planId)) ??
-    ({
-      id: String(data.planId ?? '1'),
-      name: data.planName ?? tier,
-      tier,
-      priceVnd: 0,
-      monthlyCredits: data.creditsMonthlyGrant ?? 0,
-      algorithmTier: data.algorithmTier ?? TIER_ALGORITHM[tier],
-      features: [...TIER_FEATURES[tier]],
-      active: true,
-      provisional: false,
-    } satisfies SubscriptionPlan)
-
-  const effectiveStatus: SubscriptionStatus =
-    (data.status as string) === 'TRIAL' ? 'ACTIVE' : data.status
-
+// GET /api/subscription/current, rồi GET /api/subscription/plans/{id}
+export async function getSubscriptionView(): Promise<SubscriptionView> {
+  if (!ON_BACKEND) return { current: await getMockDb().getCurrentSubscription(), lapsed: false }
+  const dto = await getCurrentSubscriptionDto()
+  const status = subscriptionStatusOf(dto, new Date().toISOString())
+  if (status === null || dto.planId === null) return { current: null, lapsed: status === 'EXPIRED' }
+  const planId = String(dto.planId)
   const subscription: CompanySubscription = {
-    id: String(data.subscriptionId),
-    companyId: '1',
-    planId: matchedPlan.id,
-    status: effectiveStatus,
-    startedAt: toIsoString(data.startedAt),
-    expiresAt: toIsoString(data.expiresAt),
-    autoRenew: Boolean(data.autoRenew ?? true),
+    id: String(dto.subscriptionId ?? ''),
+    companyId: '',
+    planId,
+    status,
+    startedAt: fromBackendLocalDateTime(dto.startedAt) ?? '',
+    expiresAt: fromBackendLocalDateTime(dto.expiresAt) ?? '',
+    autoRenew: dto.autoRenew === true,
   }
-
-  return {
-    subscription,
-    plan: matchedPlan,
-  }
+  return { current: { subscription, plan: planFromDto(await getPlanDto(planId)) }, lapsed: false }
 }
 
+/** Gói đang bán, theo thứ tự hạng — các gói công ty chọn khi chưa có gói hoặc gói đã hết hạn. */
 // GET /api/subscription/plans
 export async function listPlansOnSale(): Promise<SubscriptionPlan[]> {
-  if (!isAuthenticated()) {
-    return (await getMockDb().listSubscriptionPlans()).filter((plan) => plan.active)
-  }
-
-  const items = await apiFetch<SubscriptionPlanApi[]>('/api/subscription/plans')
-  return items.map(mapSubscriptionPlanApi).filter((plan) => plan.active)
+  if (ON_BACKEND) return listActivePlans()
+  return (await getMockDb().listSubscriptionPlans()).filter((plan) => plan.active)
 }
 
+/**
+ * Đăng ký một gói đang bán. Kho mẫu: chỉ khi chưa có gói hoặc gói đã hết hạn (`SUBSCRIPTION_ACTIVE`). Backend: thêm cả gia hạn đúng gói
+ * đang dùng; đổi sang gói khác khi còn hiệu lực, hay lên hạng cao hơn sau khi hết hạn, là `ACTIVE_SUBSCRIPTION_ALREADY_EXISTS` (phải gửi
+ * yêu cầu hỗ trợ). Gói chỉ được kích hoạt khi thanh toán thành công; gói miễn phí của backend kích hoạt ngay.
+ */
 // POST /api/subscription/subscribe
-export async function subscribe(planId: string): Promise<PaymentTransaction> {
-  if (!isAuthenticated()) {
-    return getMockDb().subscribeToPlan(planId)
-  }
-
-  const plans = await listPlansOnSale()
-  const plan = plans.find((p) => p.id === planId)
-
-  const body = await apiFetch<ApiResponse<PaymentUrlApi>>('/api/subscription/subscribe', {
-    method: 'POST',
-    body: JSON.stringify({
-      planId: Number(planId),
-      gateway: 'VNPAY',
-    }),
-  })
-
-  const now = new Date().toISOString()
-  const txnId = body.data.transactionId ?? `VNPAY_${body.data.id ?? Date.now()}`
-  const payment: PaymentTransaction = {
-    id: txnId,
-    companyId: '1',
-    purpose: 'SUBSCRIBE',
-    amountVnd: plan?.priceVnd ?? 0,
-    status: body.data.status === 'ACTIVE' ? 'SUCCESS' : 'PENDING',
-    planId,
-    credits: plan?.monthlyCredits ?? null,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  return upsertStoredPayment({
-    payment,
-    planName: plan?.name ?? null,
-    paymentUrl: body.data.paymentUrl ?? `/api/payment/mock-checkout?txnRef=${txnId}`,
+export async function subscribe(planId: string): Promise<PaymentStart> {
+  if (!ON_BACKEND) return { kind: 'simulation', paymentId: (await getMockDb().subscribeToPlan(planId)).id }
+  return startServerPayment('/api/subscription/subscribe', { planId: Number(planId) }, 'SUBSCRIBE', {
+    CONFLICT: 'ACTIVE_SUBSCRIPTION_ALREADY_EXISTS',
+    NOT_FOUND: 'SUBSCRIPTION_PLAN_NOT_FOUND',
   })
 }
 
-// POST /api/subscription/cancel
+/** Huỷ gói: còn hiệu lực tới hết kỳ, không tự gia hạn. Gói không còn đang dùng: `SUBSCRIPTION_STATUS_INVALID` (backend: `NO_ACTIVE_SUBSCRIPTION`). */
+// POST /api/subscription/cancel, rồi GET /api/subscription/current
 export async function cancelSubscription(): Promise<CompanySubscription> {
-  if (!isAuthenticated()) {
-    return getMockDb().cancelSubscription()
-  }
-
-  const currentBefore = await getCurrentSubscription()
-  await apiFetch<ApiResponse<void>>('/api/subscription/cancel', {
-    method: 'POST',
-  })
-
-  const now = new Date().toISOString()
-  return {
-    id: currentBefore?.subscription.id ?? '1',
-    companyId: currentBefore?.subscription.companyId ?? '1',
-    planId: currentBefore?.subscription.planId ?? '1',
-    status: 'CANCELLED',
-    startedAt: currentBefore?.subscription.startedAt ?? now,
-    expiresAt: currentBefore?.subscription.expiresAt ?? now,
-    autoRenew: false,
-    cancelledAt: now,
-  }
+  if (!ON_BACKEND) return getMockDb().cancelSubscription()
+  await withBusinessCode(api().post<null>('/api/subscription/cancel'), { NOT_FOUND: 'NO_ACTIVE_SUBSCRIPTION' })
+  const { current } = await getSubscriptionView()
+  if (current === null) throw new ApiError('NO_ACTIVE_SUBSCRIPTION')
+  return current.subscription
 }
 
 // GET /api/credits/balance
 export async function getCreditBalance(): Promise<CreditBalance> {
-  if (!isAuthenticated()) {
-    return getMockDb().getCreditBalance()
-  }
-
-  const body = await apiFetch<ApiResponse<CreditBalanceApi>>('/api/credits/balance')
-  return {
-    balance: body.data.balance ?? 0,
-    unlimited: Boolean(body.data.isUnlimited),
-  }
+  return ON_BACKEND ? creditBalanceOf(await getCreditBalanceDto()) : getMockDb().getCreditBalance()
 }
 
+/** Mới nhất trước, cùng lúc thì mã lớn hơn trước. */
+function newestFirst(a: CreditTransaction, b: CreditTransaction): number {
+  return Date.parse(b.createdAt) - Date.parse(a.createdAt) || Number(b.id) - Number(a.id)
+}
+
+/** Sổ cái credit của công ty, mới nhất trước. */
 // GET /api/credits/transactions
 export async function listCreditTransactions(): Promise<CreditTransaction[]> {
-  if (!isAuthenticated()) {
-    return getMockDb().listCreditTransactions()
-  }
-
-  const body = await apiFetch<ApiResponse<PageApi<CreditTransactionApi>>>(
-    '/api/credits/transactions?page=0&size=100',
-  )
-  const items = body.data?.content ?? []
-  return items.map((item) => ({
-    id: String(item.id),
-    companyId: '1',
-    type: item.type,
-    amount: item.amount,
-    reference: item.reference ?? '',
-    refunded: Boolean(item.refunded),
-    ...(item.type === 'USAGE'
-      ? { usageStatus: item.refunded ? ('REFUNDED' as const) : ('DEDUCTED' as const) }
-      : {}),
-    createdAt: toIsoString(item.createdAt),
-  }))
+  if (!ON_BACKEND) return getMockDb().listCreditTransactions()
+  return (await listCreditTransactionDtos()).map(creditTransactionOf).sort(newestFirst)
 }
 
+/**
+ * Nạp credit theo giá của `topUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không vượt trần số dư của
+ * hạng. Credit chỉ được cộng khi thanh toán thành công.
+ */
 // POST /api/credits/topup
-export async function topUpCredits(credits: number): Promise<PaymentTransaction> {
-  if (!isAuthenticated()) {
-    return getMockDb().topUpCredits(credits)
-  }
-
-  const currentSub = await getCurrentSubscription().catch(() => null)
-  const tier = currentSub?.plan.tier ?? 'BASIC'
-  const unitPrice = tier === 'ULTIMATE' ? 263 : tier === 'PRO' ? 326 : 400
-
-  const body = await apiFetch<ApiResponse<PaymentUrlApi>>('/api/credits/topup', {
-    method: 'POST',
-    body: JSON.stringify({
-      credits,
-      gateway: 'VNPAY',
-    }),
-  })
-
-  const now = new Date().toISOString()
-  const txnId = body.data.transactionId ?? `VNPAY_${body.data.id ?? Date.now()}`
-  const payment: PaymentTransaction = {
-    id: txnId,
-    companyId: '1',
-    purpose: 'TOPUP',
-    amountVnd: credits * unitPrice,
-    status: 'PENDING',
-    credits,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  return upsertStoredPayment({
-    payment,
-    planName: null,
-    paymentUrl: body.data.paymentUrl ?? `/api/payment/mock-checkout?txnRef=${txnId}`,
-  })
+export async function topUpCredits(credits: number): Promise<PaymentStart> {
+  if (!ON_BACKEND) return { kind: 'simulation', paymentId: (await getMockDb().topUpCredits(credits)).id }
+  return startServerPayment('/api/credits/topup', { credits }, 'TOPUP')
 }
 
-export async function listPayments(): Promise<PaymentTransaction[]> {
-  if (!isAuthenticated()) {
-    return getMockDb().listPayments()
-  }
+/** Thanh toán của công ty, mới nhất trước. */
+// chưa có ở BE
+export function listPayments(): Promise<PaymentTransaction[]> {
+  return getMockDb().listPayments()
+}
 
-  return readStoredPayments().map((item) => item.payment)
+function invoiceOf(dto: InvoiceDto): Invoice {
+  return {
+    id: String(dto.id),
+    number: dto.invoiceNumber ?? String(dto.id),
+    planName: dto.planName ?? '',
+    amountVnd: Math.round(Number(dto.amount ?? 0)),
+    status: dto.status ?? 'UNPAID',
+    period: dto.billingPeriod ?? '',
+    createdAt: fromBackendLocalDateTime(dto.createdAt) ?? '',
+  }
+}
+
+/** Hoá đơn của công ty, mới nhất trước; kho mẫu không có hoá đơn. */
+// GET /api/company/invoices
+export async function listInvoices(): Promise<Invoice[]> {
+  if (!ON_BACKEND) return []
+  const rows = await api().get<InvoiceDto[] | null>('/api/company/invoices')
+  return (rows ?? []).map(invoiceOf).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || Number(b.id) - Number(a.id))
 }

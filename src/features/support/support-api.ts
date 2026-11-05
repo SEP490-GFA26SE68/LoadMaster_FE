@@ -1,361 +1,162 @@
-import { isAuthenticated } from '@/features/auth/auth-api'
-import { apiFetch } from '@/lib/api-client'
+/**
+ * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `support` nối backend thì gọi backend, không thì gọi kho mẫu:
+ *   listSupportTickets       → GET /api/support-tickets (+ GET /api/users/me)
+ *   createSupportTicket      → POST /api/support-tickets
+ *   replyToSupportTicket     → GET /api/support-tickets, rồi PATCH /api/support-tickets/{id} (trao đổi ghi trong `resolutionNote`, Q-18)
+ *   setSupportTicketStatus   → PATCH /api/support-tickets/{id}
+ *   getSupportCompanyPanel   → GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
+ *   listCompanyContracts     → GET /api/contracts (chỉ backend)
+ *   assignCompanyPlan        → POST /api/contracts (chỉ backend)
+ */
+
+import { fetchBackendMe } from '@/features/auth/me-api'
+import { api, ApiError } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
+import { usesBackend } from '@/lib/backend-config'
 import {
+  CREDIT_TRANSACTIONS_PATH,
+  creditBalanceOf,
+  creditTransactionOf,
+  type CreditBalanceDto,
+  type CreditTransactionDto,
+} from '@/lib/billing-backend-api'
+import {
+  BACKEND_TICKET_STATUSES,
   getMockDb,
-  type AlgorithmTier,
+  SUPPORT_PANEL_TRANSACTIONS,
+  TICKET_STATUSES,
   type NewSupportTicket,
-  type PlanTier,
-  type SubscriptionStatus,
-  type SupportCompanyPanel,
   type SupportTicket,
-  type TicketKind,
-  type TicketReply,
   type TicketStatus,
 } from '@/lib/mock-db'
+import { isPlatformRole } from '@/types/user'
+import { noteOfReplies } from './support-chat'
+import { ticketCreateBody, ticketOf, type SupportTicketDto } from './support-dto'
+import { contractOf, latestContracts, panelOfMock, type CompanyContract, type ContractDto, type SupportPanel } from './support-panel-dto'
+import { ticketsToDisplay } from './ticket-view'
 
-type ApiResponse<T> = {
-  success: boolean
-  message?: string
-  data: T
+export type { CompanyContract, SupportPanel, SupportPanelPlan } from './support-panel-dto'
+
+const ON_BACKEND = usesBackend('support')
+
+/**
+ * Việc màn làm được theo nguồn dữ liệu. Backend không có mốc hoạt động gần nhất (`activityTime`); tên công ty đi kèm yêu cầu thay cho
+ * danh bạ công ty của kho mẫu (`companyDirectory`); có thêm trạng thái Đã giải quyết (`statuses`); Hỗ trợ khách hàng đổi gói cho công ty
+ * khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó). Trao đổi và khung công ty có ở cả hai nguồn.
+ */
+export const SUPPORT_SOURCE: {
+  readonly replies: boolean
+  readonly companyPanel: boolean
+  readonly activityTime: boolean
+  readonly companyDirectory: boolean
+  readonly planAssign: boolean
+  readonly statuses: readonly TicketStatus[]
+} = {
+  replies: true,
+  companyPanel: true,
+  activityTime: !ON_BACKEND,
+  companyDirectory: !ON_BACKEND,
+  planAssign: ON_BACKEND,
+  statuses: ON_BACKEND ? BACKEND_TICKET_STATUSES : TICKET_STATUSES,
 }
 
-type SupportTicketApi = {
-  id: number
-  ticketCode: string | null
-  subject: string
-  description: string | null
-  category: 'BILLING' | 'ALGORITHM_ERROR' | 'SYSTEM_BUG'
-  priority: 'MEDIUM' | 'HIGH'
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
-  requesterId: number | null
-  requesterName: string | null
-  requesterEmail: string | null
-  companyId: number | null
-  companyName: string | null
-  assignedToId: number | null
-  assignedToName: string | null
-  resolutionNote: string | null
-  createdAt: string | number[] | null
-  resolvedAt: string | number | number[] | null
+function requiredTicketOf(dto: SupportTicketDto): SupportTicket {
+  const ticket = ticketOf(dto)
+  if (ticket === null) throw new ApiError('SERVER_ERROR')
+  return ticket
 }
 
-type ContractApi = {
-  id: number
-  companyId: number
-  companyCode: string | null
-  companyName: string | null
-  planId: number | null
-  planCode: string | null
-  planName: string | null
-  planTier: PlanTier | null
-  price: number | null
-  billingCycle: 'MONTHLY' | 'YEARLY' | null
-  status: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | null
-  startedAt: string | number[] | null
-  expiresAt: string | number[] | null
-  autoRenew: boolean | null
-}
-
-const ticketDbIdByCode = new Map<string, number>()
-const ticketCacheByCode = new Map<string, SupportTicket>()
-
-function toIsoString(val: string | number | number[] | null | undefined): string {
-  if (!val) return new Date().toISOString()
-  if (typeof val === 'number') {
-    const ms = val < 10_000_000_000 ? val * 1000 : val
-    return new Date(ms).toISOString()
-  }
-  if (Array.isArray(val)) {
-    const [y = 2026, m = 1, d = 1, hh = 0, mm = 0, ss = 0] = val
-    return new Date(y, m - 1, d, hh, mm, ss).toISOString()
-  }
-  const parsed = new Date(val)
-  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString()
-}
-
-function parseReplies(item: SupportTicketApi): TicketReply[] {
-  const note = item.resolutionNote?.trim()
-  if (!note) return []
-  if (note.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(note) as TicketReply[]
-      if (Array.isArray(parsed)) return parsed
-    } catch {
-      // fallback to single reply
-    }
-  }
-  return [
-    {
-      authorId: String(item.assignedToId ?? '3'),
-      authorName: item.assignedToName ?? 'Quản lý Hệ thống',
-      authorRole: 'systemSupporter',
-      text: note,
-      at: toIsoString(item.resolvedAt ?? item.createdAt),
-    },
-  ]
-}
-
-function mapTicketApi(item: SupportTicketApi): SupportTicket {
-  const code = item.ticketCode ?? `TCK-${item.id}`
-  ticketDbIdByCode.set(code, item.id)
-
-  const kind: TicketKind = item.category === 'BILLING' ? 'BILLING' : 'TECHNICAL'
-  const status: TicketStatus =
-    item.status === 'RESOLVED' || item.status === 'CLOSED'
-      ? 'CLOSED'
-      : item.status === 'IN_PROGRESS'
-        ? 'IN_PROGRESS'
-        : 'OPEN'
-  const createdAt = toIsoString(item.createdAt)
-  const replies = parseReplies(item)
-  const updatedAt = replies.at(-1)?.at ?? (item.resolvedAt ? toIsoString(item.resolvedAt) : createdAt)
-
-  const mapped: SupportTicket = {
-    id: code,
-    companyId: String(item.companyId ?? '1'),
-    senderId: String(item.requesterId ?? '1'),
-    senderName: item.requesterName ?? item.requesterEmail ?? 'Người dùng công ty',
-    kind,
-    title: item.subject,
-    description: item.description ?? '',
-    status,
-    replies,
-    createdAt,
-    updatedAt,
-  }
-  ticketCacheByCode.set(code, mapped)
-  return mapped
-}
-
-async function resolveDbId(ticketId: string): Promise<number> {
-  const cached = ticketDbIdByCode.get(ticketId)
-  if (cached !== undefined) return cached
-  const numeric = Number(ticketId)
-  if (!Number.isNaN(numeric) && numeric > 0) return numeric
-  await listSupportTickets()
-  return ticketDbIdByCode.get(ticketId) ?? 1
-}
-
+/**
+ * Yêu cầu hỗ trợ màn vẽ, mới nhất trước: Hỗ trợ khách hàng thấy mọi yêu cầu, người khác chỉ thấy yêu cầu do mình gửi. Kho mẫu chặn thật
+ * (vai trò nền tảng khác: `ROLE_NOT_ALLOWED`); backend thì chưa — nó trả mọi yêu cầu của công ty cho mọi người của công ty — nên khi nối
+ * backend ở đây chỉ chọn yêu cầu để vẽ (`ticketsToDisplay`): bộ lọc hiển thị, không phải lớp bảo mật.
+ */
 // GET /api/support-tickets
 export async function listSupportTickets(): Promise<SupportTicket[]> {
-  if (!isAuthenticated()) {
-    return getMockDb().listSupportTickets()
-  }
-
-  const body = await apiFetch<ApiResponse<SupportTicketApi[]>>('/api/support-tickets')
-  return (body.data ?? []).map(mapTicketApi)
+  if (!ON_BACKEND) return getMockDb().listSupportTickets()
+  const [dtos, viewer] = await Promise.all([api().get<SupportTicketDto[]>('/api/support-tickets'), fetchBackendMe()])
+  return ticketsToDisplay(dtos.flatMap((dto) => ticketOf(dto) ?? []), viewer)
 }
 
+/** Người của công ty gửi yêu cầu kỹ thuật hoặc thanh toán; trạng thái Mở. Kho mẫu cấp mã `TKT-NNN`, backend cấp `TCK-…`. */
 // POST /api/support-tickets
 export async function createSupportTicket(input: NewSupportTicket): Promise<SupportTicket> {
-  if (!isAuthenticated()) {
-    return getMockDb().createSupportTicket(input)
-  }
-
-  const body = await apiFetch<ApiResponse<SupportTicketApi>>('/api/support-tickets', {
-    method: 'POST',
-    body: JSON.stringify({
-      subject: input.title,
-      description: input.description,
-      category: input.kind === 'BILLING' ? 'BILLING' : 'SYSTEM_BUG',
-      priority: input.kind === 'BILLING' ? 'MEDIUM' : 'HIGH',
-    }),
-  })
-  return mapTicketApi(body.data)
+  if (!ON_BACKEND) return getMockDb().createSupportTicket(input)
+  return requiredTicketOf(await api().post<SupportTicketDto>('/api/support-tickets', { body: ticketCreateBody(input) }))
 }
 
-// PATCH /api/support-tickets/:id
+/**
+ * Người gửi hoặc Hỗ trợ khách hàng trả lời. Kho mẫu: yêu cầu đã đóng là `TICKET_CLOSED`. Backend: đọc lại yêu cầu ngay trước khi ghi
+ * (không ghi đè lần trả lời người kia vừa gửi), nối lần trả lời rồi ghi cả trao đổi vào `resolutionNote`; tài khoản nền tảng trả lời yêu
+ * cầu Mở thì yêu cầu sang Đang xử lý, như kho mẫu.
+ */
+// GET /api/support-tickets, rồi PATCH /api/support-tickets/{id}
 export async function replyToSupportTicket(ticketId: string, text: string): Promise<SupportTicket> {
-  if (!isAuthenticated()) {
-    return getMockDb().replyToSupportTicket(ticketId, text)
+  if (!ON_BACKEND) return getMockDb().replyToSupportTicket(ticketId, text)
+  const [dtos, me] = await Promise.all([api().get<SupportTicketDto[]>('/api/support-tickets'), fetchBackendMe()])
+  const dto = dtos.find((item) => String(item.id) === ticketId)
+  const ticket = dto === undefined ? null : ticketOf(dto)
+  if (ticket === null) throw new ApiError('NOT_FOUND')
+  if (me.role === null) throw new ApiError('UNAUTHORIZED')
+  const reply = { authorId: me.id, authorName: me.fullName, authorRole: me.role, text: text.trim(), at: new Date().toISOString() }
+  const body = {
+    ...(isPlatformRole(me.role) && ticket.status === 'OPEN' ? { status: 'IN_PROGRESS' } : {}),
+    resolutionNote: noteOfReplies([...ticket.replies, reply]),
   }
-
-  const dbId = await resolveDbId(ticketId)
-  const existing = ticketCacheByCode.get(ticketId)
-  const nextStatus = existing?.status === 'OPEN' ? 'IN_PROGRESS' : existing?.status ?? 'IN_PROGRESS'
-
-  const body = await apiFetch<ApiResponse<SupportTicketApi>>(`/api/support-tickets/${dbId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      status: nextStatus,
-      resolutionNote: text,
-    }),
-  })
-  return mapTicketApi(body.data)
+  return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body }))
 }
 
-// PATCH /api/support-tickets/:id
+/** Hỗ trợ khách hàng đổi trạng thái, kể cả mở lại yêu cầu đã đóng. */
+// PATCH /api/support-tickets/{id}
 export async function setSupportTicketStatus(ticketId: string, status: TicketStatus): Promise<SupportTicket> {
-  if (!isAuthenticated()) {
-    return getMockDb().setSupportTicketStatus(ticketId, status)
-  }
-
-  const dbId = await resolveDbId(ticketId)
-  const body = await apiFetch<ApiResponse<SupportTicketApi>>(`/api/support-tickets/${dbId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      status,
-    }),
-  })
-  return mapTicketApi(body.data)
+  if (!ON_BACKEND) return getMockDb().setSupportTicketStatus(ticketId, status)
+  return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body: { status } }))
 }
 
-const TIER_ALGORITHM: Record<PlanTier, AlgorithmTier> = {
-  BASIC: 'EP_DBLF',
-  PRO: 'EP_DBLF_GA',
-  ULTIMATE: 'EP_DBLF_GA_AI',
-}
-
-type CreditBalanceSupportApi = {
-  companyId: number
-  balance: number
-  isUnlimited: boolean
-}
-
-type CreditTransactionSupportApi = {
-  id: number
-  amount: number
-  type: 'MONTHLY_GRANT' | 'PURCHASE' | 'USAGE' | 'REFUND'
-  reference: string | null
-  createdAt: string | number[]
-}
-
-// GET /api/contracts?companyId=... + /api/credits/balance?companyId=... + /api/credits/transactions?companyId=...
-export async function getSupportCompanyPanel(companyId: string): Promise<SupportCompanyPanel> {
-  if (!isAuthenticated()) {
-    return getMockDb().getSupportCompanyPanel(companyId)
-  }
-
+async function orNull<T>(promise: Promise<T>): Promise<T | null> {
   try {
-    const encodedId = encodeURIComponent(companyId)
-    const [contracts, balanceRes, txRes] = await Promise.all([
-      apiFetch<ContractApi[]>(`/api/contracts?companyId=${encodedId}`),
-      apiFetch<ApiResponse<CreditBalanceSupportApi>>(`/api/credits/balance?companyId=${encodedId}`).catch(() => null),
-      apiFetch<ApiResponse<{ content: CreditTransactionSupportApi[] }>>(
-        `/api/credits/transactions?companyId=${encodedId}&size=20`,
-      ).catch(() => null),
-    ])
-
-    const contract = contracts?.[0]
-    const realBalance = balanceRes?.data?.balance
-    const realTransactions = (txRes?.data?.content ?? []).map((tx) => ({
-      id: String(tx.id),
-      companyId: String(companyId),
-      amount: Number(tx.amount),
-      type: tx.type,
-      reference: tx.reference,
-      createdAt: toIsoString(tx.createdAt),
-    }))
-
-    if (!contract) {
-      return {
-        company: {
-          id: companyId,
-          name: `Công ty #${companyId}`,
-          taxCode: '',
-          address: '',
-          contactEmail: '',
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString(),
-        },
-        current: null,
-        planStatus: null,
-        credit: { balance: realBalance ?? 0, unlimited: false },
-        transactions: realTransactions,
-      }
-    }
-
-    const tier: PlanTier = contract.planTier ?? 'BASIC'
-    const status: SubscriptionStatus =
-      contract.status === 'TRIAL' || contract.status == null ? 'ACTIVE' : contract.status
-    const monthlyCredits = tier === 'ULTIMATE' ? 30000 : tier === 'PRO' ? 10000 : 3000
-
-    return {
-      company: {
-        id: String(contract.companyId),
-        name: contract.companyName ?? `Công ty #${contract.companyId}`,
-        taxCode: contract.companyCode ?? '',
-        address: '',
-        contactEmail: '',
-        status: 'ACTIVE',
-        createdAt: toIsoString(contract.startedAt),
-      },
-      current: contract.planId
-        ? {
-            subscription: {
-              id: String(contract.id),
-              companyId: String(contract.companyId),
-              planId: String(contract.planId),
-              status,
-              startedAt: toIsoString(contract.startedAt),
-              expiresAt: toIsoString(contract.expiresAt),
-              autoRenew: Boolean(contract.autoRenew ?? true),
-            },
-            plan: {
-              id: String(contract.planId),
-              name: contract.planName ?? tier,
-              tier,
-              priceVnd: Number(contract.price ?? 0),
-              monthlyCredits,
-              algorithmTier: TIER_ALGORITHM[tier],
-              features: [],
-              active: true,
-              provisional: false,
-            },
-          }
-        : null,
-      planStatus: status,
-      credit: {
-        balance: realBalance !== undefined ? realBalance : status === 'ACTIVE' ? monthlyCredits : 0,
-        unlimited: Boolean(balanceRes?.data?.isUnlimited ?? false),
-      },
-      transactions: realTransactions,
-    }
+    return await promise
   } catch {
-    return {
-      company: {
-        id: companyId,
-        name: `Công ty #${companyId}`,
-        taxCode: '',
-        address: '',
-        contactEmail: '',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString(),
-      },
-      current: null,
-      planStatus: null,
-      credit: { balance: 0, unlimited: false },
-      transactions: [],
-    }
+    return null
   }
 }
 
-export type CompanyContractSummary = {
-  id: number
-  companyId: number
-  companyName: string | null
-  planId: number | null
-  planName: string | null
-  planTier: PlanTier | null
-  price: number | null
-  status: SubscriptionStatus | 'TRIAL' | null
-  expiresAt: string | null
+/**
+ * Gói, số dư và 20 giao dịch credit gần nhất của công ty — khung bên cạnh màn hỗ trợ. Backend: tên công ty theo hợp đồng, không có hợp
+ * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch đọc hỏng thì là `null`.
+ */
+// GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
+export async function getSupportCompanyPanel(companyId: string, companyName?: string): Promise<SupportPanel> {
+  if (!ON_BACKEND) return panelOfMock(await getMockDb().getSupportCompanyPanel(companyId))
+  const query = { companyId }
+  const [contracts, balance, transactions] = await Promise.all([
+    api().get<ContractDto[] | null>('/api/contracts', { query }),
+    orNull(api().get<CreditBalanceDto>('/api/credits/balance', { query })),
+    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1 })),
+  ])
+  const dto = latestContracts((contracts ?? []).filter((item) => String(item.companyId) === companyId))[0]
+  const contract = dto === undefined ? null : contractOf(dto, new Date().toISOString())
+  return {
+    companyName: contract?.companyName ?? companyName ?? companyId,
+    plan: contract?.plan ?? null,
+    planStatus: contract?.status ?? null,
+    credit: balance === null ? null : creditBalanceOf(balance),
+    transactions: transactions === null ? null : transactions.map(creditTransactionOf),
+  }
 }
 
+/** Hợp đồng gói hiện tại của mọi công ty — hộp thoại đổi gói cho khách. Kho mẫu không có lệnh đổi gói nên không đọc gì. */
 // GET /api/contracts
-export async function listAllCompanyContracts(): Promise<CompanyContractSummary[]> {
-  if (!isAuthenticated()) return []
-  return apiFetch<CompanyContractSummary[]>('/api/contracts')
+export async function listCompanyContracts(): Promise<CompanyContract[]> {
+  if (!ON_BACKEND) return []
+  const now = new Date().toISOString()
+  return latestContracts((await api().get<ContractDto[] | null>('/api/contracts')) ?? []).map((dto) => contractOf(dto, now))
 }
 
-// POST /api/contracts — SystemSupporter đổi/kích hoạt gói cho công ty khách hàng ngay lập tức
-export async function assignCompanyPlan(companyId: string, planId: string): Promise<CompanyContractSummary> {
-  return apiFetch<CompanyContractSummary>('/api/contracts', {
-    method: 'POST',
-    body: JSON.stringify({
-      companyId: Number(companyId),
-      planId: Number(planId),
-      autoRenew: true,
-    }),
-  })
+/** Hỗ trợ khách hàng áp ngay một gói cho công ty khách (tự gia hạn). Chỉ backend: kho mẫu đổi gói qua thanh toán của quản trị công ty. */
+// POST /api/contracts
+export async function assignCompanyPlan(companyId: string, planId: string): Promise<CompanyContract> {
+  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
+  const body = { companyId: Number(companyId), planId: Number(planId), autoRenew: true }
+  return contractOf(await api().post<ContractDto>('/api/contracts', { body }), new Date().toISOString())
 }

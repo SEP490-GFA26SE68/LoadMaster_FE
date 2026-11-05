@@ -41,9 +41,11 @@ export function isActiveOnBackend(status: string): boolean {
 
 /**
  * Người dùng của app khi đăng nhập bằng backend mà dữ liệu vận hành còn là kho mẫu: **danh tính** (tên, email, số điện thoại, vai trò)
- * lấy từ backend; **mã người dùng, công ty và kho** là của tài khoản mẫu cùng vai trò (`standIn`), vì chuyến, xe, kiện của kho mẫu gắn
- * với các mã đó. Khi một feature nối backend thật, dữ liệu của nó đến theo token, không theo `standIn`.
+ * lấy từ backend; **mã người dùng và công ty** là của tài khoản mẫu cùng vai trò (`standIn`), vì chuyến, xe, kiện của kho mẫu gắn với
+ * các mã đó. Kho / chi nhánh của tài khoản mẫu bị bỏ: backend không có trường đó, menu tài khoản không hiện kho của người khác. Khi một
+ * feature nối backend thật, dữ liệu của nó đến theo token, không theo `standIn`.
  */
 export function userFromBackend(profile: BackendUserProfile, role: Role, standIn: User): User {
-  return { ...standIn, role, fullName: profile.fullName, email: profile.email, phone: profile.phoneNumber ?? '', status: 'active' }
+  const { depot: _sampleDepot, ...sample } = standIn
+  return { ...sample, role, fullName: profile.fullName, email: profile.email, phone: profile.phoneNumber ?? '', status: 'active' }
 }

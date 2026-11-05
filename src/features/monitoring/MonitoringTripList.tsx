@@ -5,9 +5,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
-import type { TripMonitoring } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
-import type { MonitoringTrip } from './monitoring-api'
+import type { LiveMonitoring, MonitoringTrip } from './monitoring-api'
 import { DeadlineChip, SourceTag } from './monitoring-chips'
 import { tripSummary, type MonitoringFilter } from './monitoring-view'
 
@@ -17,7 +16,7 @@ import { tripSummary, type MonitoringFilter } from './monitoring-view'
  * của từng loại. Chọn một dòng là chọn chuyến của bản đồ và của phần chi tiết bên dưới.
  */
 export function MonitoringTripList({ liveOf, visible, counts, filter, onToggle, onClear, selectedId, onSelect }: {
-  liveOf: (tripId: string) => TripMonitoring | undefined
+  liveOf: (tripId: string) => LiveMonitoring | undefined
   /** Chuyến qua bộ lọc, theo thứ tự của bảng giám sát. */
   visible: readonly MonitoringTrip[]
   counts: { late: number; incidents: number }
@@ -75,7 +74,7 @@ export function MonitoringTripList({ liveOf, visible, counts, filter, onToggle, 
 /** Một chuyến của danh sách. `memo`: lần đọc giám sát mới chỉ vẽ lại dòng của chuyến có điều gì đổi. */
 const TripRow = memo(function TripRow({ trip, live, selected, onSelect }: {
   trip: MonitoringTrip
-  live: TripMonitoring | undefined
+  live: LiveMonitoring | undefined
   selected: boolean
   onSelect: (tripId: string) => void
 }) {
@@ -99,11 +98,10 @@ const TripRow = memo(function TripRow({ trip, live, selected, onSelect }: {
       >
         <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="font-mono text-small font-medium text-ink-2 tabular-nums">{trip.tripId}</span>
-          <span className="font-semibold text-ink-strong">{trip.name}</span>
+          {trip.name === '' ? null : <span className="font-semibold text-ink-strong">{trip.name}</span>}
         </span>
         <span className="text-small text-ink-2">
-          <VehicleName name={trip.vehicleName} />
-          {' · '}
+          {trip.vehicleName === '' ? null : <><VehicleName name={trip.vehicleName} />{' · '}</>}
           {trip.driverName === null ? t('monitoring.list.noDriver') : t('monitoring.list.driver', { name: trip.driverName })}
         </span>
         <span className="text-small text-ink-1">

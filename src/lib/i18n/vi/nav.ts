@@ -8,6 +8,7 @@ export const nav = {
   driver: 'Tài xế',
   fleet: 'Đội xe',
   users: 'Người dùng',
+  employees: 'Nhân viên',
   audit: 'Nhật ký',
   // Kho kiện (FE-3b-03): điều phối viên quản lý, quản lý công ty chỉ đọc. Yêu cầu giao (FE-4b-02): quản lý công ty lập, điều phối viên xem
   packages: 'Kho kiện',
@@ -16,11 +17,20 @@ export const nav = {
   monitoring: 'Giám sát',
   // Gói cước (FE-8-02, FE-8-03): quản lý nền tảng quản lý danh mục gói, quản trị công ty xem gói và credit của công ty
   plans: 'Gói cước',
+  subscriptionHistory: 'Lịch sử gói cước',
+  trialRequests: 'Đơn dùng thử',
   billing: 'Gói và credit',
   // Công ty (FE-8-06): quản trị hệ thống. Hỗ trợ (FE-8-07): Hỗ trợ khách hàng; mục menu tài khoản của người dùng công ty
   companies: 'Công ty',
+  // Thông tin công ty của chính mình: quản trị công ty
+  companyProfile: 'Thông tin công ty',
   support: 'Hỗ trợ',
   supportRequests: 'Yêu cầu hỗ trợ',
+  changeCustomerPlan: 'Đổi gói khách hàng',
+  // Kho của công ty (`/quan-ly-kho`): quản lý công ty. Nhãn ngắn để thanh vừa 1.366 px; tiêu đề màn vẫn là companyWarehouses.title
+  companyWarehouses: 'Kho bãi',
+  // Liên hệ của khách: yêu cầu khách chưa có tài khoản gửi từ trang giới thiệu; quản trị hệ thống và hỗ trợ khách hàng
+  contacts: 'Liên hệ của khách',
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

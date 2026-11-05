@@ -15,6 +15,18 @@ async function markerSpread(markers: Locator) {
   return Math.max(...boxes.map((box) => Math.hypot(box.x - first.x, box.y - first.y)))
 }
 
+/** Độ giãn sau khi hoạt ảnh phóng đã dừng: lấy mẫu giữa chừng thì phím kế tiếp so với một mốc còn đang lớn dần (máy CI chậm). */
+async function settledSpread(markers: Locator) {
+  let last = -1
+  await expect.poll(async () => {
+    const now = Math.round(await markerSpread(markers))
+    const same = now === last
+    last = now
+    return same
+  }, { intervals: [300] }).toBe(true)
+  return last
+}
+
 test('the route map mounts without a map key: canvas, depot and stop markers, keyboard zoom, no tile requests', async ({ page, browserErrors }) => {
   const external: string[] = []
   page.on('request', (request) => {
@@ -54,17 +66,8 @@ test('the route map mounts without a map key: canvas, depot and stop markers, ke
   await region.getByRole('button', { name: 'Phóng to', exact: true }).focus()
   await page.keyboard.press('Enter')
   await expect.poll(() => markerSpread(markers)).toBeGreaterThan(fitted * 1.5)
-  // Đọc độ giãn sau khi hoạt ảnh phóng đã dừng: lấy mẫu giữa chừng thì phím kế tiếp so với một mốc còn đang lớn dần (máy CI chậm)
-  const settled = async () => {
-    let last = -1
-    await expect.poll(async () => {
-      const now = Math.round(await markerSpread(markers))
-      const same = now === last
-      last = now
-      return same
-    }, { intervals: [300] }).toBe(true)
-    return last
-  }
+
+  const settled = () => settledSpread(markers)
   const zoomed = await settled()
   await canvas.focus()
   await page.keyboard.press('+')
@@ -74,8 +77,22 @@ test('the route map mounts without a map key: canvas, depot and stop markers, ke
   await settled()
   await page.keyboard.press('-')
   await expect.poll(() => markerSpread(markers)).toBeLessThan(zoomed)
-  await region.getByRole('button', { name: 'Xem toàn tuyến', exact: true }).click()
-  await expect.poll(async () => Math.round(await markerSpread(markers))).toBe(Math.round(fitted))
+  // Bản đồ nhúng mở hộp thoại bản đồ lớn; nút "Xem toàn tuyến" nằm trên bản đồ của hộp thoại
+  await expect(region.getByRole('button', { name: 'Xem toàn tuyến', exact: true })).toHaveCount(0)
+  await region.getByRole('button', { name: 'Phóng lớn bản đồ', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Bản đồ tuyến', exact: true })
+  const large = dialog.getByRole('region', { name: 'Bản đồ phóng lớn: Bản đồ tuyến TRIP-2026-0914', exact: true })
+  const largeMarkers = large.locator('.maplibregl-marker')
+  await expect(large.locator('canvas.maplibregl-canvas')).toBeVisible()
+  await expect(largeMarkers).toHaveCount(5)
+  const largeFitted = Math.round(await settledSpread(largeMarkers))
+  await large.getByRole('button', { name: 'Phóng to', exact: true }).click()
+  await expect.poll(() => markerSpread(largeMarkers)).toBeGreaterThan(largeFitted * 1.5)
+  await settledSpread(largeMarkers)
+  await large.getByRole('button', { name: 'Xem toàn tuyến', exact: true }).click()
+  await expect.poll(async () => Math.round(await markerSpread(largeMarkers))).toBe(largeFitted)
+  await dialog.getByRole('button', { name: 'Đóng', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
 
   expect(external).toStrictEqual([])
   expect(browserErrors).toStrictEqual([])

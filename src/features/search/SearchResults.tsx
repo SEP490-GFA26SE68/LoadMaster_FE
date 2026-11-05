@@ -1,5 +1,5 @@
 import { ClipboardList, Package, Shapes, Truck, UserRound, Warehouse, type LucideIcon } from 'lucide-react'
-import { useId, type ReactNode } from 'react'
+import { Fragment, useId, type ReactNode } from 'react'
 import { useT, type TFunction } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { highlightParts, type SearchGroup, type SearchResult, type SearchResultGroup } from './quick-search'
@@ -122,8 +122,9 @@ function titleOf(result: SearchResult, mark: (text: string) => ReactNode): React
     case 'packageTypes':
       return mark(result.name)
     case 'packages':
-    case 'pool':
       return <span className="font-mono text-body font-medium">{mark(result.id)}</span>
+    case 'pool':
+      return <span className="font-mono text-body font-medium">{mark(result.label ?? result.id)}</span>
     case 'vehicles': {
       // Tên xe gồm biển số ("Isuzu NQR 550 · 51C-284.19"): biển số là mã, chữ mono
       const cut = result.name.lastIndexOf(' · ')
@@ -146,8 +147,16 @@ function detailOf(result: SearchResult, mark: (text: string) => ReactNode, t: TF
       return <span className={CODE}>{mark(result.id)}</span>
     case 'requirements':
       return <><span className={CODE}>{mark(result.id)}</span> · {mark(result.detail)}</>
-    case 'pool':
-      return <>{mark(result.name)}{result.reference ? <> · <span className={CODE}>{mark(result.reference)}</span></> : null}</>
+    case 'pool': {
+      // Dòng phụ: tên loại kiện / điểm đến, trạng thái, loại hàng (khi nguồn có), rồi mã của bên gửi
+      const parts: ReactNode[] = [
+        ...(result.name ? [mark(result.name)] : []),
+        ...(result.status ? [t(`common.packageStatuses.${result.status}`)] : []),
+        ...(result.handlingClass ? [t(`common.handlingClasses.${result.handlingClass}`)] : []),
+        ...(result.reference ? [<span key="reference" className={CODE}>{mark(result.reference)}</span>] : []),
+      ]
+      return parts.map((part, index) => <Fragment key={index}>{index > 0 ? ' · ' : null}{part}</Fragment>)
+    }
     case 'packages':
       return <><span className={CODE}>{result.tripId}</span> · {result.tripName}</>
     case 'users':

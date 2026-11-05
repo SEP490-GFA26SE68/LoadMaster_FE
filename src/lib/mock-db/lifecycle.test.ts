@@ -36,7 +36,7 @@ test('the warehouse starts the latest approved plan, stages then loads every pac
   const loaded = await db.completeLoading(TRIP)
   expect(loaded.phase).toBe('loaded')
   const [completed] = await db.listEvents({ targetId: TRIP })
-  expect([completed?.action, completed?.params, completed?.actorId]).toStrictEqual(['loading.completed', { loaded: 132, damaged: 0 }, 'US-0003'])
+  expect([completed?.action, completed?.params, completed?.actorId]).toStrictEqual(['loading.completed', { loaded: 132, damaged: 0, driverId: 'US-0004' }, 'US-0003'])
   expect([tripStatus(loaded), tripSubStatus(loaded, revisions)]).toStrictEqual(['LOADING', { kind: 'loaded' }])
 })
 

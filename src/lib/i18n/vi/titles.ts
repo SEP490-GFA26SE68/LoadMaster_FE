@@ -4,10 +4,7 @@
  */
 export const titles = {
   login: 'Đăng nhập',
-  forgotPassword: 'Quên mật khẩu',
-  verifyOtp: 'Xác thực OTP',
-  resetPassword: 'Đặt lại mật khẩu',
-  resetPasswordSuccess: 'Đổi mật khẩu thành công',
+  passwordReset: 'Đặt mật khẩu mới',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
   trip: 'Chuyến {id}',
@@ -43,9 +40,17 @@ export const titles = {
   tripReport: 'Báo cáo chuyến {id}',
   // FE-8-02 → FE-8-04
   subscriptionPlans: 'Gói cước',
+  subscriptionHistory: 'Lịch sử gói cước',
+  trialRequests: 'Đơn yêu cầu tạo tài khoản dùng thử',
   billing: 'Gói cước và credit',
   payment: 'Thanh toán giả lập',
+  paymentResult: 'Xác nhận thanh toán',
   // FE-8-06, FE-8-07
   companies: 'Công ty',
+  companyProfile: 'Thông tin công ty',
   support: 'Hỗ trợ khách hàng',
+  // Trang công khai và màn liên hệ của khách
+  landing: 'Giới thiệu',
+  pricing: 'Bảng giá',
+  contacts: 'Liên hệ của khách',
 } as const

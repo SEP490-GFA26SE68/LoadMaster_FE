@@ -6,10 +6,10 @@ import { accountGuards, toggleLockBlock, type AccountGuards } from './account-gu
  * Thao tác bị chặn trước khi gửi kho, kèm lý do (LM-092, FE-0-08): tự khoá/xoá/đổi vai trò mình; người quản trị đang hoạt động cuối
  * cùng của nền tảng hoặc của một công ty; quản trị hệ thống không sửa, không xoá nhân sự công ty. Tài khoản lấy từ seed (`seed-users.ts`).
  */
-type Account = Pick<User, 'id' | 'role' | 'status' | 'companyId'>
+type Account = Pick<User, 'id' | 'email' | 'role' | 'status' | 'companyId'>
 
 const account = (id: string, role: User['role'], companyId?: string, status: User['status'] = 'active'): Account =>
-  ({ id, role, status, ...(companyId === undefined ? {} : { companyId }) })
+  ({ id, email: `${id.toLowerCase()}@loadmaster.vn`, role, status, ...(companyId === undefined ? {} : { companyId }) })
 
 const SYSTEM_ADMIN = account('US-0005', 'systemAdmin')
 const SUPPORTER = account('US-NT-02', 'systemSupporter')
@@ -22,8 +22,8 @@ const LONG_BINH = [LB_ADMIN, LB_DRIVER]
 const NONE: AccountGuards = { edit: null, lock: null, remove: null, role: null }
 const all = (block: NonNullable<AccountGuards['lock']>): AccountGuards => ({ edit: block, lock: block, remove: block, role: block })
 
-test('chính mình: sửa thông tin được; không khoá, không xoá, không đổi vai trò', () => {
-  expect(accountGuards(LB_ADMIN, LB_ADMIN, LONG_BINH)).toStrictEqual({ edit: null, lock: 'self', remove: 'self', role: 'self' })
+test('chính mình: quản trị công ty không sửa trong danh sách (chỉ qua trang hồ sơ); không khoá, không xoá, không đổi vai trò', () => {
+  expect(accountGuards(LB_ADMIN, LB_ADMIN, LONG_BINH)).toStrictEqual({ edit: 'profileOnly', lock: 'self', remove: 'self', role: 'self' })
   expect(accountGuards(SYSTEM_ADMIN, SYSTEM_ADMIN, EVERYONE)).toStrictEqual({ edit: null, lock: 'self', remove: 'self', role: 'self' })
 })
 
