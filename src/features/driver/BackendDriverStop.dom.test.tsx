@@ -110,3 +110,32 @@ test('chuyến không có trong danh sách của tài xế: nói lý do, không 
   expect(await screen.findByText('Chuyến không đang vận chuyển')).toBeInTheDocument()
   expect(posts).toStrictEqual([])
 })
+
+const LOADING_TRIP = { ...TRIP, tripId: 4, tripCode: 'TRIP-20261106-LOAD01', status: 'LOADING' }
+
+test('chuyến Đang xếp hàng có nút Xuất phát; máy chủ từ chối khi kho chưa xếp xong thì toast nói lý do, không đổi gì', async () => {
+  const { toast } = await import('sonner')
+  routes['GET /api/driver/trips'] = () => ok([LOADING_TRIP])
+  routes['POST /api/driver/trips/4/start'] = () => ({ status: 409, body: { success: false, message: 'Loading not completed' } })
+  const user = userEvent.setup()
+  renderDriver('/tai-xe')
+  expect(await screen.findByRole('heading', { level: 2, name: 'Kho đang soạn / xếp' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Xuất phát' }))
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.'))
+  expect(posts).toStrictEqual(['POST /api/driver/trips/4/start'])
+  expect(screen.getByRole('button', { name: 'Xuất phát' })).toBeInTheDocument()
+})
+
+test('Xuất phát được thì mở màn điểm giao của chuyến', async () => {
+  routes['GET /api/driver/trips'] = () => ok([LOADING_TRIP])
+  routes['POST /api/driver/trips/4/start'] = () => {
+    routes['GET /api/driver/trips'] = () => ok([{ ...LOADING_TRIP, status: 'IN_TRANSIT' }])
+    routes['GET /api/driver/trips/4/current-stop'] = () => ok(STOP_2)
+    return ok({ tripId: 4, status: 'IN_TRANSIT' })
+  }
+  const user = userEvent.setup()
+  renderDriver('/tai-xe')
+  await user.click(await screen.findByRole('button', { name: 'Xuất phát' }))
+  await waitFor(() => expect(posts).toStrictEqual(['POST /api/driver/trips/4/start']))
+  expect((await screen.findAllByText('Kho Bách Hoá Xanh Dĩ An', undefined, { timeout: 4000 })).length).toBeGreaterThan(0)
+})

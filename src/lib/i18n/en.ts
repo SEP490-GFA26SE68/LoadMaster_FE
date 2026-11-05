@@ -52,6 +52,8 @@ import { serverPlans } from './en/serverPlans'
 import { companyWarehouses } from './en/companyWarehouses'
 import { tripWarehouse } from './en/tripWarehouse'
 import { packageStatus } from './en/packageStatus'
+import { serverAudit } from './en/serverAudit'
+import { serverWarehouse } from './en/serverWarehouse'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -107,4 +109,6 @@ export const en = {
   companyWarehouses,
   tripWarehouse,
   packageStatus,
+  serverAudit,
+  serverWarehouse,
 } satisfies Dictionary<typeof vi>

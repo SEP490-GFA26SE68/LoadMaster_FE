@@ -90,6 +90,8 @@ export const apiErrors = {
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'The optimization service is not responding. Try again later.',
   INSUFFICIENT_CREDITS: 'Out of credits — contact your company admin.',
   TRIP_ALREADY_LOADING: 'Loading has already started for this trip.',
+  TRIP_NOT_READY_FOR_LOADING: 'Only a Planned trip can start loading.',
+  LOADING_NOT_COMPLETED: 'The warehouse has not finished loading this trip yet, so it cannot depart.',
   LOADING_EXECUTION_NOT_FOUND: 'The loading session of this trip was not found.',
   PLACEMENT_ALREADY_CONFIRMED: 'This package is already confirmed as loaded.',
   DEVIATION_ALREADY_RECORDED: 'A deviation is already recorded for this package.',
@@ -120,4 +122,5 @@ export const apiErrors = {
   CONTACT_REQUEST_NOT_FOUND: 'The contact request was not found.',
 
   EMAIL_CHANGE_UNSUPPORTED: 'The server does not support changing an account email yet.',
+  LOADING_SESSION_UNAVAILABLE: 'This loading session started on another device or tab — the server cannot reopen its package list yet.',
 } satisfies Dictionary<typeof source>

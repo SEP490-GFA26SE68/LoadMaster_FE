@@ -6,6 +6,7 @@
  *   unload                           → POST /api/driver/packages/{id}/unload?driverId=
  *   completeStop                     → POST /api/driver/stops/{id}/complete?driverId=
  *   postLocation                     → POST /api/driver/location
+ *   startTrip                        → POST /api/driver/trips/{id}/start
  */
 import { api, ApiError, isApiError, type ApiClient } from '@/lib/api-client'
 import {
@@ -187,6 +188,18 @@ export function createDriverBackend(client: () => ApiClient = api) {
     if (result.tripCompleted === true) store.finished.set(tripId, store.codes.get(tripId) ?? tripId)
   }
 
+  // POST /api/driver/trips/{id}/start
+  /** Xuất phát: Đang xếp hàng → Đang vận chuyển. Kho chưa xếp xong thì backend trả 409 `LOADING_NOT_COMPLETED`. */
+  async function startTrip(tripId: string): Promise<void> {
+    await mine()
+    try {
+      await client().post<DriverTripDto>(`/api/driver/trips/${encodeURIComponent(tripId)}/start`)
+    } catch (error) {
+      if (isApiError(error) && error.code === 'CONFLICT') throw new ApiError('LOADING_NOT_COMPLETED', { status: 409 })
+      throw error
+    }
+  }
+
   // POST /api/driver/location
   async function postLocation(tripId: string, location: { readonly lat: number; readonly lng: number; readonly speedKmh?: number; readonly heading?: number }): Promise<{ readonly recordedAt: string }> {
     try {
@@ -198,7 +211,7 @@ export function createDriverBackend(client: () => ApiClient = api) {
     }
   }
 
-  return { fetchMyTrips: listTrips, fetchStopScreen, unload, completeStop, postLocation }
+  return { fetchMyTrips: listTrips, fetchStopScreen, unload, completeStop, postLocation, startTrip }
 }
 
 export type DriverBackend = ReturnType<typeof createDriverBackend>

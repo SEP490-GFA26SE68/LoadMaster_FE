@@ -74,17 +74,20 @@ async function rejection(promise: Promise<unknown>) {
   return error
 }
 
-test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, chỉ chuyến đang vận chuyển, giờ xuất phát sớm trước', async () => {
+test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đang vận chuyển và đang xếp hàng, giờ xuất phát sớm trước', async () => {
   routes['GET /api/driver/trips'] = ok([
     { ...TRIP, tripId: 4, tripCode: null, departureTime: '2026-10-18T07:00:00', stopCount: null },
     TRIP,
     { ...TRIP, tripId: 5, status: 'DELIVERED' },
+    { ...TRIP, tripId: 6, tripCode: 'TRIP-6', status: 'LOADING' },
+    { ...TRIP, tripId: 7, status: 'PLANNED' },
   ])
   const trips = await fetchMyTrips()
   expect(paths()).toStrictEqual(['GET /api/users/me', 'GET /api/driver/trips?driverId=9'])
   expect(calls.every((call) => call.auth === 'Bearer token-1')).toBe(true)
   expect(trips.loaded).toStrictEqual([])
-  expect(trips.preparing).toStrictEqual([])
+  // Backend không nói kho đã xếp xong chưa: chuyến Đang xếp hàng ở nhóm kho đang xếp, không ở "Xếp xong"
+  expect(trips.preparing.map((row) => [row.id, row.status])).toStrictEqual([['6', 'LOADING']])
   expect(trips.recent).toStrictEqual([])
   expect(trips.inTransit.map((row) => row.id)).toStrictEqual(['1', '4'])
   expect(trips.inTransit[0]).toMatchObject({
@@ -229,18 +232,28 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, arrive: false, qrVerify: false, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false, simulatedPosition: false,
+    backend: true, arrive: false, qrVerify: false, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    departFromList: true, simulatedPosition: false,
   })
   for (const call of [
     () => fetchDriverTrip('1'),
     () => fetchDriverTripMonitoring('1'),
     () => fetchDriverTripLabels('1'),
-    () => startDelivery('1'),
     () => confirmUnloadManually('1', 2, { packageInstanceId: '11', reason: 'LABEL_DAMAGED' }),
   ]) {
     expect((await rejection(call())).code).toBe('NOT_SUPPORTED')
   }
   expect(calls).toStrictEqual([])
+})
+
+test('xuất phát: gọi endpoint của tài xế; 409 không kèm mã là kho chưa xếp xong', async () => {
+  routes['POST /api/driver/trips/6/start'] = ok({ ...TRIP, tripId: 6, status: 'IN_TRANSIT' })
+  await startDelivery('6')
+  expect(paths().at(-1)).toBe('POST /api/driver/trips/6/start')
+  routes['POST /api/driver/trips/6/start'] = { status: 409, body: { success: false, code: 'LOADING_NOT_COMPLETED', message: 'Kho chưa xếp xong' } }
+  expect((await rejection(startDelivery('6'))).code).toBe('LOADING_NOT_COMPLETED')
+  routes['POST /api/driver/trips/6/start'] = fail(409, 'xung đột')
+  expect((await rejection(startDelivery('6'))).code).toBe('LOADING_NOT_COMPLETED')
 })
 
 test('hoàn tất điểm qua lớp API của màn: gọi backend, không đọc kho mẫu', async () => {

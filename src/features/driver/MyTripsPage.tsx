@@ -85,7 +85,8 @@ function TripGroups() {
     )
   }
   // Một nút primary mỗi màn (mục 5): chuyến nên làm trước — đang giao dở, không thì chuyến đã xếp xong sớm nhất
-  const primaryId = (trips.inTransit[0] ?? trips.loaded[0])?.id
+  // Backend: chuyến Đang xếp hàng xuất phát ở thẻ (`departFromList`) nên cũng là việc kế tiếp
+  const primaryId = (trips.inTransit[0] ?? trips.loaded[0] ?? (caps.departFromList ? trips.preparing[0] : undefined))?.id
   return (
     <div className="flex flex-col gap-6">
       {primaryId === undefined ? <p className="m-0 text-ink-2">{t('driver.list.noReady')}</p> : null}

@@ -59,7 +59,7 @@ export function departureDateOf(value: string | null): string | undefined {
 }
 
 /** Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. */
-export function tripRowOf(dto: DriverTripDto): MyTripRow {
+export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' = 'IN_TRANSIT'): MyTripRow {
   const id = String(dto.tripId)
   return {
     id,
@@ -67,7 +67,7 @@ export function tripRowOf(dto: DriverTripDto): MyTripRow {
     name: undefined,
     scheduledDate: departureDateOf(dto.departureTime),
     vehicleName: dto.vehicleLicensePlate ?? '',
-    status: 'IN_TRANSIT',
+    status,
     sub: null,
     manualSub: null,
     stopCount: dto.stopCount ?? 0,
@@ -81,13 +81,17 @@ export function tripRowOf(dto: DriverTripDto): MyTripRow {
   }
 }
 
-/** Danh sách của backend chỉ có chuyến đang vận chuyển: các nhóm khác rỗng. Giờ xuất phát sớm trước, rồi mã chuyến. */
+const byDeparture = (a: DriverTripDto, b: DriverTripDto) => (a.departureTime ?? '').localeCompare(b.departureTime ?? '') || a.tripId - b.tripId
+
+/**
+ * Chuyến của tài xế theo backend: Đang vận chuyển, và Đang xếp hàng ở nhóm "Kho đang soạn / xếp" — backend trả mọi chuyến của tài xế nhưng
+ * không nói kho đã xếp xong chưa, nên chuyến Đang xếp hàng không vào nhóm "Xếp xong"; tài xế bấm Xuất phát ở thẻ, backend từ chối khi kho
+ * chưa xếp xong. Chuyến khác (chưa tới kho, đã giao, đã huỷ) không hiện. Giờ xuất phát sớm trước, rồi mã chuyến.
+ */
 export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
-  const inTransit = (dtos ?? [])
-    .filter((dto) => dto.status === 'IN_TRANSIT')
-    .toSorted((a, b) => (a.departureTime ?? '').localeCompare(b.departureTime ?? '') || a.tripId - b.tripId)
-    .map(tripRowOf)
-  return { inTransit, loaded: [], preparing: [], recent: [] }
+  const of = (status: 'IN_TRANSIT' | 'LOADING') =>
+    (dtos ?? []).filter((dto) => dto.status === status).toSorted(byDeparture).map((dto) => tripRowOf(dto, status))
+  return { inTransit: of('IN_TRANSIT'), loaded: [], preparing: of('LOADING'), recent: [] }
 }
 
 type StopPackage = StopPackageDto & { readonly packageId: number }

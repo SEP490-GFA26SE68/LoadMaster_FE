@@ -9,8 +9,8 @@ import { auditGroup, getMockDb, type AuditEvent, type AuditFilter, type AuditGro
 import type { User } from '@/types/user'
 
 /**
- * Nhật ký chỉ có ở kho mẫu. Người dùng đã nối backend (`users`) mà backend chưa có nhật ký: sự kiện của kho mẫu nói về tài khoản mẫu,
- * không phải tài khoản thật trên màn Người dùng — màn nói backend chưa có nhật ký thay vì hiện chúng.
+ * Nhật ký của kho mẫu. Người dùng đã nối backend (`users`): sự kiện của kho mẫu nói về tài khoản mẫu, không phải tài khoản thật —
+ * màn đọc nhật ký máy chủ (`audit-backend-api.ts`, `GET /api/audit-logs`), chuông bỏ sự kiện tài khoản.
  */
 export const AUDIT_LOG_AVAILABLE = !usesBackend('users')
 

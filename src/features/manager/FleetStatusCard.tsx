@@ -1,19 +1,22 @@
-import { ArrowRight, CircleCheck, Truck, Wrench, type LucideIcon } from 'lucide-react'
+import { ArrowRight, CircleCheck, CircleOff, Truck, Wrench, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
-import { VEHICLE_STATUSES } from '@/features/fleet/vehicle-status'
+import { FLEET_STATUSES, type FleetStatus } from '@/features/fleet/vehicle-status'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import type { DashboardSummary } from './dashboard-summary'
 
-/** Icon và tint như ô trạng thái ở màn Đội xe (mục 4): sẵn sàng → xanh lá, vận hành → xanh dương, cần chú ý → hổ phách. */
-const STATUS_GLYPH: Record<VehicleStatus, { icon: LucideIcon; tint: string }> = {
+/**
+ * Icon và tint như ô trạng thái ở màn Đội xe (mục 4): sẵn sàng → xanh lá, vận hành → xanh dương, cần chú ý → hổ phách, ngừng sử dụng
+ * (chỉ máy chủ có) → slate ngữ cảnh.
+ */
+const STATUS_GLYPH: Record<FleetStatus, { icon: LucideIcon; tint: string }> = {
   available: { icon: CircleCheck, tint: 'bg-tint-green text-tint-green-fg' },
   in_use: { icon: Truck, tint: 'bg-tint-blue text-tint-blue-fg' },
   maintenance: { icon: Wrench, tint: 'bg-tint-amber text-tint-amber-fg' },
+  retired: { icon: CircleOff, tint: 'bg-tint-slate text-tint-slate-fg' },
 }
 
 /**
@@ -34,14 +37,17 @@ export function FleetStatusCard({ vehicles, className }: { vehicles: DashboardSu
         <span className="text-body text-ink-2">{t('manager.fleet.ratio', { total: format.integer(vehicles.total) })}</span>
       </p>
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-        {VEHICLE_STATUSES.map((status) => {
+        {FLEET_STATUSES.map((status) => {
+          // Trạng thái nguồn dữ liệu không có (Ngừng sử dụng ở kho mẫu) thì không có dòng, không vẽ 0
+          const count = vehicles.byStatus[status]
+          if (count === undefined) return null
           const { icon: Icon, tint } = STATUS_GLYPH[status]
           return (
             <li key={status} className="flex items-center gap-3 text-body text-ink-2">
               <span aria-hidden className={cn('grid size-7 flex-none place-items-center rounded-md', tint)}>
                 <Icon className="size-4" strokeWidth={1.5} />
               </span>
-              <span className="min-w-6 font-semibold text-ink-strong tabular-nums">{format.integer(vehicles.byStatus[status])}</span>
+              <span className="min-w-6 font-semibold text-ink-strong tabular-nums">{format.integer(count)}</span>
               <span>{t(`fleet.status.${status}`)}</span>
             </li>
           )

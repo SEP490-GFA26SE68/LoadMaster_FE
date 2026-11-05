@@ -1,11 +1,13 @@
 import { Clock, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
+import { DepartButton } from './DepartButton'
 import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import { myTripGroup, type MyTripRow } from './my-trips'
 import { MyTripStops } from './MyTripStops'
+import { useDriverCapabilities } from './useDriverQueries'
 
 /** Mở một chuyến ở màn điểm giao (hoặc tổng kết nếu đã hoàn thành). */
 export function driverTripPath(tripId: string): string {
@@ -24,7 +26,10 @@ const SUB_TOUCH = 'h-8 px-3 text-body-lg'
 export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?: boolean }) {
   const t = useT()
   const format = useFormat()
+  const caps = useDriverCapabilities()
   const preparing = myTripGroup(row) === 'preparing'
+  // Backend: chuyến Đang xếp hàng xuất phát ngay ở thẻ — máy chủ không nói kho đã xếp xong chưa và không mở màn điểm giao trước khi xe chạy
+  const departs = caps.departFromList && row.status === 'LOADING'
   // Ngày chạy · số điểm · số kiện — phần nào backend chưa trả thì bỏ, không điền số thay
   const facts = [
     row.scheduledDate === undefined ? null : format.date(calendarDate(row.scheduledDate)),
@@ -60,7 +65,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
       {preparing ? (
         <p className="m-0 flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-ink-2">
           <Clock className="mt-0.5 size-5 flex-none" strokeWidth={1.5} aria-hidden />
-          {t('driver.list.waitingLoading')}
+          {t(departs ? 'driver.backend.departNote' : 'driver.list.waitingLoading')}
         </p>
       ) : null}
       {row.status === 'DELIVERED' && row.completedAt ? (
@@ -70,13 +75,15 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
         </p>
       ) : null}
 
-      <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" block>
-        <Link to={driverTripPath(row.id)}>
-          {preparing ? t('driver.list.preview')
-            : row.status === 'IN_TRANSIT' ? t('driver.list.resume')
-            : row.status === 'DELIVERED' ? t('driver.list.viewSummary') : t('driver.list.open')}
-        </Link>
-      </Button>
+      {departs ? <DepartButton tripId={row.id} href={driverTripPath(row.id)} primary={primary} /> : (
+        <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" block>
+          <Link to={driverTripPath(row.id)}>
+            {preparing ? t('driver.list.preview')
+              : row.status === 'IN_TRANSIT' ? t('driver.list.resume')
+              : row.status === 'DELIVERED' ? t('driver.list.viewSummary') : t('driver.list.open')}
+          </Link>
+        </Button>
+      )}
     </li>
   )
 }
