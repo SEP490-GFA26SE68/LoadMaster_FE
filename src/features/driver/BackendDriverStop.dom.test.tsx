@@ -28,9 +28,11 @@ const STOP_3 = { stopId: 3, stopSequence: 3, stopName: 'Siêu thị Co.opmart Bi
 
 let routes: Record<string, () => Reply> = {}
 let posts: string[] = []
+let lastBody: unknown
 
 beforeEach(() => {
   posts = []
+  lastBody = undefined
   routes = {
     'GET /api/users/me': () => ok({ id: 9 }),
     'GET /api/driver/trips': () => ok([TRIP]),
@@ -45,7 +47,10 @@ beforeEach(() => {
   vi.stubGlobal('fetch', (input: string, init: RequestInit) => {
     const url = new URL(input)
     const key = `${init.method ?? 'GET'} ${url.pathname}`
-    if (init.method === 'POST') posts.push(`${key}${url.search}`)
+    if (init.method === 'POST') {
+      posts.push(`${key}${url.search}`)
+      lastBody = typeof init.body === 'string' ? JSON.parse(init.body) : undefined
+    }
     const reply = routes[key]?.() ?? { status: 500, body: { success: false, message: 'không có route giả' } }
     return Promise.resolve({ ok: (reply.status ?? 200) < 400, status: reply.status ?? 200, text: () => Promise.resolve(JSON.stringify(reply.body)) })
   })
@@ -64,7 +69,7 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   renderDriver('/tai-xe/diem-giao?chuyen=1')
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' })).toBeInTheDocument()
   expect(screen.getByText('Đang giao điểm 2: gõ mã trên nhãn của từng kiện khi đưa xuống xe.')).toBeInTheDocument()
-  for (const name of ['Xuất phát', 'Đã đến điểm 2', 'Báo sự cố', 'Thêm', 'Xem vị trí hàng']) expect(screen.queryByRole('button', { name })).toBeNull()
+  for (const name of ['Xuất phát', 'Đã đến điểm 2', 'Báo sự cố', 'Xem vị trí hàng']) expect(screen.queryByRole('button', { name })).toBeNull()
   expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 0')).toBeInTheDocument()
   expect(screen.getByText('Thiết bị này không có định vị: không gửi được vị trí.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeDisabled()
@@ -103,6 +108,31 @@ test('điểm đang giao: gõ mã dỡ từng kiện, hoàn tất điểm rồi 
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 3 / 3' })).toBeInTheDocument()
   expect(posts.at(-1)).toBe('POST /api/driver/stops/2/complete?driverId=9')
   expect(screen.getByText('Cần dỡ 1 kiện · Đã dỡ 0')).toBeInTheDocument()
+})
+
+test('"Thêm" chỉ còn "Sự cố trên đường": báo sự cố gửi lên máy chủ theo mã số chuyến, tiêu đề nói mã chuyến', async () => {
+  const { toast } = await import('sonner')
+  routes['POST /api/driver/trips/1/exceptions'] = () => ok({
+    id: 'EXC-7', tripId: '1', type: 'TRAFFIC', description: 'Kẹt xe cầu Đồng Nai', delayMinutes: 25, status: 'OPEN', reportedAt: '2026-10-17T14:05:00',
+  })
+  const user = userEvent.setup()
+  renderDriver('/tai-xe/diem-giao?chuyen=1')
+  await user.click(await screen.findByRole('button', { name: 'Thêm' }))
+  const sheet = within(await screen.findByRole('dialog', { name: 'Thêm thao tác' }))
+  expect(sheet.queryByRole('button', { name: 'Nhận hàng dọc đường' })).toBeNull()
+  await user.click(sheet.getByRole('button', { name: 'Sự cố trên đường' }))
+
+  const dialog = within(await screen.findByRole('dialog', { name: 'Báo sự cố chuyến TRIP-20261017-94EE14F0' }))
+  expect(dialog.getByText(/Máy chủ ghi lại sự cố/)).toBeInTheDocument()
+  await user.click(dialog.getByRole('radio', { name: 'Tắc đường' }))
+  await user.type(dialog.getByRole('textbox', { name: 'Mô tả' }), 'Kẹt xe cầu Đồng Nai')
+  await user.type(dialog.getByRole('textbox', { name: 'Số phút dự kiến chậm' }), '25')
+  await user.click(dialog.getByRole('button', { name: 'Báo sự cố' }))
+
+  await waitFor(() => expect(posts).toStrictEqual(['POST /api/driver/trips/1/exceptions']))
+  expect(lastBody).toStrictEqual({ type: 'TRAFFIC', description: 'Kẹt xe cầu Đồng Nai', delayMinutes: 25 })
+  await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Đã báo sự cố EXC-7'))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 })
 
 test('chuyến không có trong danh sách của tài xế: nói lý do, không đọc điểm của nó', async () => {

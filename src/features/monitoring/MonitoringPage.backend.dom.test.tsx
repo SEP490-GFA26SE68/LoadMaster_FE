@@ -59,6 +59,10 @@ beforeEach(() => {
       status = 'RESOLVED'
       return { body: envelope({ ...EXCEPTION, status, resolution: { at: '2026-10-18T09:20:00', by: '4' } }) }
     },
+    [`POST /api/trips/${TRIP}/exceptions/31/escalate`]: () => {
+      status = 'ESCALATED'
+      return { body: envelope({ ...EXCEPTION, status, escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }) }
+    },
   }).calls
 })
 
@@ -83,7 +87,7 @@ function renderPage(role: Role) {
 
 const SLOW = { timeout: 8000 }
 
-test('điều phối viên xem chuyến của backend: không liên kết chuyến, không đổi thứ tự điểm, không chuyển quản lý; xử lý sự cố gọi backend', async () => {
+test('điều phối viên xem chuyến của backend: không liên kết chuyến, không đổi thứ tự điểm; xử lý sự cố gọi backend', async () => {
   const user = userEvent.setup()
   renderPage('dispatcher')
   const panel = within(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW))
@@ -100,7 +104,7 @@ test('điều phối viên xem chuyến của backend: không liên kết chuy�
   expect(screen.queryAllByText('MOCK RESULT')).toHaveLength(0)
 
   expect(await panel.findByRole('button', { name: 'Tìm tuyến khác' })).toBeInTheDocument()
-  expect(panel.queryByRole('button', { name: 'Không có tuyến khả thi — chuyển quản lý' })).toBeNull()
+  expect(panel.getByRole('button', { name: 'Không có tuyến khả thi — chuyển quản lý' })).toBeInTheDocument()
   await user.click(panel.getByRole('button', { name: 'Đã xử lý' }))
   await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === `/api/trips/${TRIP}/exceptions/31/resolve`)).toBe(true))
   await waitFor(() => expect(panel.queryByRole('button', { name: 'Đã xử lý' })).toBeNull())
@@ -115,9 +119,26 @@ test('điều phối viên xem chuyến của backend: không liên kết chuy�
   ].sort())
 })
 
-test('quản lý công ty không có tab "Sự cố cần xử lý" khi backend chưa chuyển sự cố cho quản lý', async () => {
+test('điều phối viên chuyển sự cố cho quản lý: gọi backend, sự cố thành Đã chuyển quản lý', async () => {
+  const user = userEvent.setup()
+  renderPage('dispatcher')
+  const panel = within(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW))
+  await user.click(await panel.findByRole('button', { name: 'Không có tuyến khả thi — chuyển quản lý' }))
+  await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === `/api/trips/${TRIP}/exceptions/31/escalate`)).toBe(true))
+  await waitFor(() => expect(panel.queryByRole('button', { name: 'Không có tuyến khả thi — chuyển quản lý' })).toBeNull(), SLOW)
+  expect(panel.getAllByText('Đã chuyển quản lý').length).toBeGreaterThan(0)
+})
+
+test('quản lý công ty: không xử lý sự cố ở tab chuyến; tab "Sự cố cần xử lý" đọc sự cố máy chủ đã chuyển lên, chỉ đọc', async () => {
+  status = 'ESCALATED'
+  const user = userEvent.setup()
   renderPage('companyManager')
   expect(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW)).toBeInTheDocument()
-  expect(screen.queryByRole('tablist')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Đã xử lý' })).toBeNull()
+  await user.click(screen.getByRole('tab', { name: /Sự cố cần xử lý/ }))
+  const list = within(await screen.findByRole('list', { name: 'Sự cố cần xử lý' }, SLOW))
+  expect(list.getByText('Kẹt xe cầu Đồng Nai')).toBeInTheDocument()
+  expect(list.getByText('Máy chủ chưa nhận hạn mới: liên hệ khách rồi báo điều phối viên.')).toBeInTheDocument()
+  expect(list.queryByRole('button', { name: 'Nhập hạn mới' })).toBeNull()
+  expect(calls.some((call) => call.method !== 'GET' && call.path.startsWith('/api/'))).toBe(false)
 })

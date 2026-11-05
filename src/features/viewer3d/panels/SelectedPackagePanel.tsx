@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Focus, Pencil, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Focus, Pencil, Pin, PinOff, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 import type { SceneStop, ScenePlacement, SceneZone } from '@/features/viewer3d/scene-input'
 import { findAbove, findBelow, layerOf } from './placement-relations'
 import { DARK_SUBCARD, GlassChip, GlassValue, MUTED, StopMark } from './scene-ui'
+
+export type PinAction = { readonly pending: boolean; readonly onToggle: (placement: ScenePlacement) => void }
 
 export type SelectedPackageProps = {
   placement: ScenePlacement | undefined
@@ -27,6 +29,11 @@ export type SelectedPackageProps = {
   /** Thẻ nổi trên khung 3D: mã kiện là nút mở hộp thông tin ở tab Kiện (tên truy cập "Chọn kiện") */
   onPick?: () => void
   onEdit?: () => void
+  /**
+   * Ghim / bỏ ghim ngay ở chế độ Xem (Planner bản máy chủ: ghim lưu thẳng vào phương án, không qua chỉnh tay). Vắng thì không có nút —
+   * Planner kho mẫu ghim trong chế độ Chỉnh sửa.
+   */
+  pin?: PinAction
   onFocus: () => void
   className?: string
 }
@@ -50,7 +57,7 @@ export function SelectedPackagePanel({ placement, onClose, onPick, className, ..
   )
 }
 
-function PackageDetails({ placement, placements, orientationRules, totalSteps, stops, zones = [], tripId, issues = [], onClose, onPick, onEdit, onFocus }:
+function PackageDetails({ placement, placements, orientationRules, totalSteps, stops, zones = [], tripId, issues = [], onClose, onPick, onEdit, pin, onFocus }:
   Omit<SelectedPackageProps, 'placement' | 'className'> & { placement: ScenePlacement }) {
   const format = useFormat()
   const t = useT()
@@ -155,6 +162,13 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
       <div className="flex flex-none flex-wrap gap-2 px-4 pt-2 pb-4">
         <Button variant="glass" className="h-14 flex-auto gap-1.5 px-2.5 text-body-lg xl:h-9 xl:text-small" onClick={onFocus}><Focus strokeWidth={1.5} />{t('viewer.hud.focus')}</Button>
         {onEdit ? <Button variant="glass" className="h-14 flex-auto gap-1.5 px-2.5 text-body-lg xl:h-9 xl:text-small" onClick={onEdit}><Pencil strokeWidth={1.5} />{t('viewer.hud.edit')}</Button> : null}
+        {pin ? (
+          <Button variant="glass" className="h-14 flex-auto gap-1.5 px-2.5 text-body-lg xl:h-9 xl:text-small" loading={pin.pending}
+            onClick={() => pin.onToggle(placement)}>
+            {pin.pending ? null : placement.pinned ? <PinOff strokeWidth={1.5} /> : <Pin strokeWidth={1.5} />}
+            {t(placement.pinned ? 'viewer.editor.unpin' : 'viewer.editor.pin')}
+          </Button>
+        ) : null}
       </div>
     </>
   )

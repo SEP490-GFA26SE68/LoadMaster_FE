@@ -105,6 +105,7 @@ export const apiErrors = {
   GPS_TRIP_NOT_IN_TRANSIT: 'The trip is not in transit.',
   NO_GPS_LOCATION: 'There is no vehicle location yet.',
   TRIP_EXCEPTION_NOT_FOUND: 'The incident was not found.',
+  EXCEPTION_STATUS_INVALID: 'The incident is no longer in a state that allows this action. Reload to see its current state.',
 
   SUBSCRIPTION_NOT_FOUND: 'The company has no plan yet.',
   SUBSCRIPTION_PLAN_NOT_FOUND: 'The plan was not found.',

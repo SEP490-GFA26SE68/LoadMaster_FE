@@ -40,10 +40,10 @@ const ON_BACKEND = usesBackend('driver')
 
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
- * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến), điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại. Backend chưa có — màn
- * ẩn phần đó: "Đã đến", quét QR (nhãn in mã QR mà điểm giao không trả), xác nhận tay, sự cố theo kiện và khách từ chối, sự cố
- * trên đường, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến và hạn giao, thông báo, tổng kết
- * chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
+ * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến), điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm,
+ * gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần đó: "Đã đến", quét QR (nhãn in mã QR mà điểm giao
+ * không trả), xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ
+ * đến dự kiến và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
@@ -60,6 +60,10 @@ export type DriverCapabilities = {
   readonly departFromList: boolean
   /** GPS tắt thì vị trí xe về mô phỏng, và vị trí chỉ nằm trong trình duyệt này. */
   readonly simulatedPosition: boolean
+  /** "Sự cố trên đường" ở tờ "Thêm" của màn điểm giao (sự cố của cả xe, kèm số phút chậm). */
+  readonly tripExceptions: boolean
+  /** "Nhận hàng dọc đường" ở tờ "Thêm". */
+  readonly pickups: boolean
 }
 
 export const DRIVER_CAPABILITIES: DriverCapabilities = {
@@ -72,6 +76,8 @@ export const DRIVER_CAPABILITIES: DriverCapabilities = {
   upcomingTrips: !ON_BACKEND,
   departFromList: ON_BACKEND,
   simulatedPosition: !ON_BACKEND,
+  tripExceptions: true,
+  pickups: !ON_BACKEND,
 }
 
 let backendSource: DriverBackend | null = null

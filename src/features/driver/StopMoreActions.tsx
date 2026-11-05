@@ -7,6 +7,7 @@ import { ReportExceptionDialog } from '@/features/monitoring/ReportExceptionDial
 import { PickupRequestDialog } from '@/features/pickups/PickupRequestDialog'
 import type { StopRef } from '@/features/pickups/pickup-stops'
 import { useT } from '@/lib/i18n'
+import { useDriverCapabilities } from './useDriverQueries'
 
 type Panel = 'menu' | 'exception' | 'pickup' | null
 
@@ -15,13 +16,16 @@ type Panel = 'menu' | 'exception' | 'pickup' | null
  * từ đáy — "Sự cố trên đường" (`exceptions.report`, FE-6-11: sự cố của cả xe, kèm số phút chậm; khác "Báo sự cố" của từng kiện) và "Nhận
  * hàng dọc đường" (`pickups.create`, FE-7-03). Mỗi hàng giữ nguyên quyền của nó và mở đúng hộp thoại cũ (cỡ cảm ứng); không có quyền nào
  * thì không vẽ nút. Chỉ còn một việc thì vẫn qua tờ này (một hàng). Trạng thái "đang mở gì" nằm ở đây để tờ đóng lại rồi hộp thoại mới mở.
+ * Mỗi hàng còn theo nguồn dữ liệu (`DRIVER_CAPABILITIES`): nối backend thì chỉ còn "Sự cố trên đường"; `tripLabel` là mã chuyến hiện trên
+ * tiêu đề hộp thoại khi `tripId` là mã số của máy chủ.
  */
-export function StopMoreActions({ tripId, stops }: { tripId: string; stops: readonly StopRef[] }) {
+export function StopMoreActions({ tripId, tripLabel, stops }: { tripId: string; tripLabel?: string; stops: readonly StopRef[] }) {
   const t = useT()
   const can = useCan()
+  const caps = useDriverCapabilities()
   const [panel, setPanel] = useState<Panel>(null)
-  const canException = can('exceptions.report')
-  const canPickup = can('pickups.create')
+  const canException = can('exceptions.report') && caps.tripExceptions
+  const canPickup = can('pickups.create') && caps.pickups
   if (!canException && !canPickup) return null
   const close = (open: boolean) => { if (!open) setPanel(null) }
   return (
@@ -42,7 +46,9 @@ export function StopMoreActions({ tripId, stops }: { tripId: string; stops: read
           </ul>
         </DialogContent>
       </Dialog>
-      {canException ? <ReportExceptionDialog tripId={tripId} open={panel === 'exception'} onOpenChange={close} touch /> : null}
+      {canException ? (
+        <ReportExceptionDialog tripId={tripId} tripLabel={tripLabel} open={panel === 'exception'} onOpenChange={close} touch serverRecorded={caps.backend} />
+      ) : null}
       {canPickup ? <PickupRequestDialog tripId={tripId} stops={stops} open={panel === 'pickup'} onOpenChange={close} touch /> : null}
     </>
   )

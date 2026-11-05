@@ -8,6 +8,8 @@
  *   reportException   → POST /api/trips/{id}/exceptions
  *   listExceptions    → GET /api/trips/{id}/exceptions
  *   resolveException  → POST /api/trips/{id}/exceptions/{eid}/resolve
+ *   escalateException → POST /api/trips/{id}/exceptions/{eid}/escalate
+ *   reportDriverException → POST /api/driver/trips/{id}/exceptions (nhóm `driver`)
  *   proposeReroute    → POST /api/trips/{id}/reroute
  *   confirmReroute    → POST /api/trips/{id}/reroute/{routeIndex}/confirm
  */
@@ -93,4 +95,22 @@ export async function confirmReroute(tripId: string, routeIndex: number): Promis
   const reroute = rerouteOf(await withBusinessCode(request, { BAD_REQUEST: 'INVALID_REROUTE_INDEX' }))
   if (!reroute) throw new ApiError('SERVER_ERROR')
   return reroute
+}
+
+/** Điều phối viên: không có tuyến khả thi, chuyển sự cố còn mở cho quản lý. Sự cố đã chuyển hay đã xử lý: 409 `EXCEPTION_STATUS_INVALID`. */
+// POST /api/trips/{id}/exceptions/{eid}/escalate
+export async function escalateException(tripId: string, exceptionId: string): Promise<TripException> {
+  const request = api().post<TripExceptionDto>(`${tripPath(tripId)}/exceptions/${encodeURIComponent(exceptionId)}/escalate`)
+  return exceptionOf(await withBusinessCode(request, { NOT_FOUND: 'TRIP_EXCEPTION_NOT_FOUND' }))
+}
+
+/**
+ * Tài xế báo sự cố trên đường của chuyến mình (nhóm `driver` nối backend; `tripId` là mã số chuyến của "Chuyến của tôi"). Cùng thân và
+ * phản hồi với lối của điều phối viên; 400 là chuyến không còn đang vận chuyển.
+ */
+// POST /api/driver/trips/{id}/exceptions
+export async function reportDriverException(tripId: string, input: TripExceptionInput): Promise<TripException> {
+  const body = { type: input.type, description: input.description, delayMinutes: input.delayMinutes }
+  const request = api().post<TripExceptionDto>(`/api/driver/trips/${encodeURIComponent(tripId)}/exceptions`, { body })
+  return exceptionOf(await withBusinessCode(request, { BAD_REQUEST: 'GPS_TRIP_NOT_IN_TRANSIT' }))
 }

@@ -1,13 +1,14 @@
 /**
  * Hàm → endpoint backend (FE-0-09, issue BE S6-03, S6-08, S6-09, S4b-02). Nhóm `monitoring` nối backend thì hàm đánh dấu (BE) gọi
  * `monitoring-backend-api.ts`; hàm khác vẫn là kho mẫu.
- *   reportTripException  → POST /api/trips/{id}/exceptions (BE khi báo từ màn Giám sát; màn tài xế của kho mẫu vẫn là kho mẫu)
+ *   reportTripException  → POST /api/trips/{id}/exceptions (BE khi báo từ màn Giám sát) · POST /api/driver/trips/{id}/exceptions
+ *                          (BE khi tài xế báo và nhóm `driver` nối backend)
  *   listTripExceptions   → GET /api/trips/{id}/exceptions (BE)
  *   resolveTripException → POST /api/trips/{id}/exceptions/{eid}/resolve (BE)
  *   requestReroute       → POST /api/trips/{id}/reroute (BE)
  *   confirmReroute       → POST /api/trips/{id}/reroute/{routeIndex}/confirm (BE)
  *   renegotiateDeadline  → PATCH /api/delivery-requirements/{id} (hạn mới; ghi "đã liên hệ khách": chưa có ở BE, Q-23)
- *   chưa có ở BE: escalateTripException
+ *   escalateTripException → POST /api/trips/{id}/exceptions/{eid}/escalate (BE)
  */
 import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
@@ -22,6 +23,7 @@ import {
 import * as backend from './monitoring-backend-api'
 
 const ON_BACKEND = usesBackend('monitoring')
+const DRIVER_ON_BACKEND = usesBackend('driver')
 
 /** Việc backend chưa có: màn Giám sát đã ẩn nút, lỡ gọi tới thì từ chối — không ghi vào kho mẫu thay cho chuyến của backend. */
 const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
@@ -35,15 +37,17 @@ const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPO
 export type LiveRerouteProposal = Omit<RerouteProposal, 'isMockResult'> & { readonly isMockResult: boolean }
 
 /**
- * Ai báo sự cố: màn Giám sát (`board`) đọc chuyến từ nguồn của nhóm `monitoring`; màn điểm giao của tài xế (`driver`) chỉ mở hộp báo
- * sự cố khi chạy trên kho mẫu, nên luôn ghi vào kho mẫu.
+ * Ai báo sự cố: màn Giám sát (`board`) đọc chuyến từ nguồn của nhóm `monitoring`; màn điểm giao của tài xế (`driver`) đọc chuyến từ
+ * nguồn của nhóm `driver` (mã số chuyến của máy chủ khi nhóm đó nối backend).
  */
 export type ExceptionReporter = 'board' | 'driver'
 
 /** Điều phối viên hoặc tài xế báo sự cố của chuyến Đang vận chuyển, kèm số phút dự kiến chậm. */
-// POST /api/trips/{id}/exceptions
+// POST /api/trips/{id}/exceptions · POST /api/driver/trips/{id}/exceptions
 export function reportTripException(tripId: string, input: TripExceptionInput, from: ExceptionReporter = 'board'): Promise<TripException> {
-  if (ON_BACKEND && from === 'board') return backend.reportException(tripId, input)
+  if (from === 'driver' ? DRIVER_ON_BACKEND : ON_BACKEND) {
+    return from === 'driver' ? backend.reportDriverException(tripId, input) : backend.reportException(tripId, input)
+  }
   return getMockDb().reportTripException(tripId, input)
 }
 
@@ -62,9 +66,9 @@ export function resolveTripException(tripId: string, exceptionId: string, note?:
 }
 
 /** Điều phối viên: không có tuyến khả thi, chuyển sự cố cho quản lý công ty. */
-// chưa có ở BE
+// POST /api/trips/{id}/exceptions/{eid}/escalate
 export function escalateTripException(tripId: string, exceptionId: string): Promise<TripException> {
-  if (ON_BACKEND) return unsupported()
+  if (ON_BACKEND) return backend.escalateException(tripId, exceptionId)
   return getMockDb().escalateTripException(tripId, exceptionId)
 }
 

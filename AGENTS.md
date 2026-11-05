@@ -1219,15 +1219,20 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`; `PackageVerify methods={['CODE']}` kèm `codeLabel` / `codeHint` riêng) →
   `POST …/packages/{id}/unload`; backend không trả kiện
   đã dỡ nên lớp API giữ trong lần mở trang (409 là đã dỡ). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`.
-  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, đã đến, quét QR, xác nhận tay, sự cố, nhận dọc đường, chuông, khung 3D, giờ đến.
+  "Sự cố trên đường" của cả chuyến: tờ "Thêm" (`StopMoreActions`) chỉ còn hàng đó, `ReportExceptionDialog touch serverRecorded` gửi
+  `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển).
+  `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, đã đến, quét QR, xác nhận tay, sự cố theo kiện, nhận dọc
+  đường (`pickups`), chuông, khung 3D, giờ đến; `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
-  sự cố `POST|GET /api/trips/{id}/exceptions`, `POST …/exceptions/{eid}/resolve`; tuyến khác `POST …/reroute`, `POST …/reroute/{i}/confirm`. Giờ
+  sự cố `POST|GET /api/trips/{id}/exceptions`, `POST …/exceptions/{eid}/resolve`, chuyển quản lý `POST …/exceptions/{eid}/escalate`
+  (điều phối viên, máy chủ ghi lý do `NO_ROUTE`); tuyến khác `POST …/reroute`, `POST …/reroute/{i}/confirm`. Giờ
   đến do máy chủ tính không mang MOCK RESULT; tuyến thay thế vẫn mang (hệ số cố định). Hạn trên màn là giờ đến kế hoạch của tuyến; điểm không
-  còn trong giờ đến của máy chủ đọc là "Đã giao xong". `MONITORING_CAPABILITIES` ẩn mở chuyến (trừ khi `trips` cũng nối), đổi thứ tự điểm, chuyển quản lý / tab "Sự cố cần
-  xử lý" / gia hạn, nhận dọc đường, xác nhận tay; hàm của chúng từ chối `NOT_SUPPORTED`. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
-  đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế,
-  `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
+  còn trong giờ đến của máy chủ đọc là "Đã giao xong". Tab "Sự cố cần xử lý" của quản lý công ty đọc sự cố `ESCALATED` của
+  máy chủ và **chỉ đọc**: mỗi dòng một câu "Máy chủ chưa nhận hạn mới…" thay nút "Nhập hạn mới" (`renegotiate`). `MONITORING_CAPABILITIES` ẩn
+  mở chuyến (trừ khi `trips` cũng nối), đổi thứ tự điểm, gia hạn, nhận dọc đường, xác nhận tay; hàm của chúng từ chối `NOT_SUPPORTED`. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
+  đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế theo nguồn
+  của nhóm `driver` (mục Tài xế); `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
 - **Chuyến** (`trips`; `trips-backend-api.ts`, DTO ở `trips-dto.ts`): mã chuyến (`tripCode`) là mã trên URL như Giám sát; Chi tiết chuyến tìm
   `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): hộp thoại sửa
   (`PATCH /api/trips/{id}`, chỉ gửi trường đã đổi; đổi xe, tài xế ở đây), huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE
@@ -1236,8 +1241,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`); Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
   số máy chủ không trả thì bỏ: tải trục / dỡ-xếp lại / hạn của FE, thời gian chạy, kích thước kiện chưa xếp) và Duyệt bằng
-  `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện,
-  tên tuyến, chỉnh tay / ghim / chạy lại giữ ghim / đổi xe trong Planner; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
+  `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Cùng điều kiện đó, thẻ kiện đang chọn có nút "Ghim" / "Bỏ
+  ghim" (`POST /api/load-plans/{id}/pin` với mã số chỗ xếp của máy chủ — `backendPlacementIds` —, `DELETE …/pin/{placementId}`): máy chủ lưu
+  ngay, không qua "Duyệt bản chỉnh". "Chạy lại giữ ghim" (`PinnedRerun`, thêm `optimization.run`) mở `BackendRerunDialog` →
+  `POST …/rerun` (`timeLimitSec` 10 cho vừa giới hạn chờ của `api()`, mục tiêu của phương án đang xem): máy chủ trừ credit, chạy đồng bộ và
+  lưu **một** phương án mới chưa duyệt, nên màn mở chính phương án đó trong Planner (`?revision=`), không mở So sánh; FE không tính credit.
+  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến, chỉnh tay / đổi xe trong Planner; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
   về Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ

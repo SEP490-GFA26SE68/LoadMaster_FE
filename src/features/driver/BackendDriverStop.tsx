@@ -11,6 +11,7 @@ import { DriverNotice } from './DriverNotice'
 import { DriverStopHeader } from './DriverStopHeader'
 import { StopContactCard } from './StopContactCard'
 import { StopFooter } from './StopFooter'
+import { StopMoreActions } from './StopMoreActions'
 import { StopNotices } from './StopNotices'
 import { StopProgress } from './StopProgress'
 import { useDeliveryStop } from './useDeliveryStop'
@@ -50,8 +51,9 @@ export function BackendDriverStop({ tripId }: { tripId: string }) {
 /**
  * Một điểm giao theo backend — cùng bố cục và luật cảm ứng với màn kho mẫu (`DeliveryStopView`: chữ 16 px, nút 56 px, một nút chính ở
  * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát", không "Đã đến" (điểm đang giao dỡ được ngay), không quét QR hay xác
- * nhận tay, không báo sự cố theo kiện hay sự cố trên đường, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp),
- * không giờ đến dự kiến. Dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend.
+ * nhận tay, không báo sự cố theo kiện, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự
+ * kiến. Dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
+ * cả chuyến nằm sau nút phụ "Thêm" (`StopMoreActions`) và gửi lên máy chủ.
  */
 function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<DriverStopScreen, { kind: 'stop' }> }) {
   const t = useT()
@@ -71,12 +73,15 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
         <StopContactCard stop={view.stop} />
         <StopProgress view={view} />
 
-        {view.verifiable > 0 ? (
-          <Button variant="secondary" size="touch" className="w-full flex-none" onClick={() => scan.setOpen(true)}>
-            <ScanLine strokeWidth={2} />
-            {t('driver.scan.open')}
-          </Button>
-        ) : null}
+        <div className="flex flex-none flex-wrap gap-2 *:grow">
+          {view.verifiable > 0 ? (
+            <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
+              <ScanLine strokeWidth={2} />
+              {t('driver.scan.open')}
+            </Button>
+          ) : null}
+          <StopMoreActions tripId={tripId} tripLabel={screen.trip.code} stops={[]} />
+        </div>
 
         {view.items.length > 0 ? (
           <ul aria-label={view.stop.name} className="m-0 flex flex-none list-none flex-col overflow-hidden rounded-lg border border-border bg-bg p-0 shadow-card">

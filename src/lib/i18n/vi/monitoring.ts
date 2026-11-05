@@ -200,5 +200,8 @@ export const monitoring = {
     deadlineNote: 'Hạn ở đây là giờ đến theo kế hoạch của tuyến — máy chủ chưa trả hạn giao của yêu cầu giao.',
     completed: 'Đã giao xong',
     reportDescription: 'Máy chủ ghi lại sự cố kèm số phút dự kiến chậm.',
+    /** Hộp "Sự cố trên đường" của tài xế khi nhóm `driver` nối backend. */
+    driverReportDescription: 'Máy chủ ghi lại sự cố kèm số phút dự kiến chậm; điều phối viên thấy sự cố ở màn Giám sát.',
+    renegotiateUnavailable: 'Máy chủ chưa nhận hạn mới: liên hệ khách rồi báo điều phối viên.',
   },
 } as const

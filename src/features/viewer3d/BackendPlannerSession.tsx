@@ -1,14 +1,16 @@
 import { TriangleAlert } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import type { PlannerLock } from './approval/planner-access'
-import { backendPlanScene } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene } from './backend-plan-scene'
 import { BackendPlannerActions } from './BackendPlannerActions'
+import { BackendRerunDialog } from './BackendRerunDialog'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
 import { useManualEditor } from './editor/useManualEditor'
@@ -20,7 +22,7 @@ import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
 import { WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
 import { Timeline } from './Timeline'
-import { useBackendPlanQuery } from './useBackendPlanQuery'
+import { useBackendPlanQuery, useTogglePinMutation } from './useBackendPlanQuery'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
 import type { BackendPlanSource } from './viewer-backend-api'
@@ -62,8 +64,10 @@ export function BackendResultSession() {
 
 /**
  * Một phiên Planner trên phương án của máy chủ: xem, mô phỏng xếp / dỡ, inspector, timeline và Duyệt (`POST /api/load-plans/{id}/approve`).
- * Không có chỉnh tay, ghim, chạy lại giữ ghim hay đổi xe ở đây: máy chủ chưa nhận bản chỉnh (D-20 — không có nút giả). Kết quả của máy chủ
- * không mang MOCK RESULT. Quản lý công ty xem chỉ đọc (thiếu `plans.approve`). Phím tắt như Planner của kho mẫu.
+ * Chuyến Đã lập kế hoạch: điều phối viên (`plans.approve`) ghim / bỏ ghim kiện đang chọn ngay ở thẻ kiện — ghim lưu thẳng vào phương án
+ * ở máy chủ, không qua Duyệt —, và khi có kiện ghim thì "Chạy lại giữ ghim" (`optimization.run`) ở góc dưới phải khung 3D. Không có chỉnh
+ * tay hay đổi xe ở đây: máy chủ chưa nhận bản chỉnh (D-20 — không có nút giả). Kết quả của máy chủ không mang MOCK RESULT. Quản lý công ty
+ * xem chỉ đọc (thiếu `plans.approve`). Phím tắt như Planner của kho mẫu.
  */
 function BackendPlannerSession({ tripCode, source }: { tripCode: string; source: BackendPlanSource & { plan: NonNullable<BackendPlanSource['plan']> } }) {
   const [searchParams] = useSearchParams()
@@ -84,6 +88,21 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const phaseLock = STATUS_LOCK[source.status]
   const lock: PlannerLock | null = phaseLock ?? (can('plans.approve') ? null : 'readOnly')
   const approve = lock !== null ? null : source.status === 'DRAFT' ? 'draft' : 'ready'
+  // Ghim và chạy lại chỉ khi chuyến Đã lập kế hoạch: Nháp chưa có tuyến, pha vận hành đã khoá phương án
+  const pinnable = lock === null && source.status === 'PLANNED'
+  const canRerun = pinnable && can('optimization.run')
+  const [rerunOpen, setRerunOpen] = useState(false)
+  const pinMutation = useTogglePinMutation(tripCode, plan.id)
+  const placementIds = useMemo(() => backendPlacementIds(plan), [plan])
+  const pinnedCount = useMemo(() => plan.placements.filter((item) => item.pinned).length, [plan])
+  const pin = pinnable ? {
+    pending: pinMutation.isPending,
+    onToggle: (placement: { id: string; pinned: boolean }) => {
+      const placementId = placementIds.get(placement.id)
+      if (placementId === undefined || pinMutation.isPending) return
+      pinMutation.mutate({ placementId, pinned: !placement.pinned }, { onError: (error) => toast.error(dataErrorMessage(error, t)) })
+    },
+  } : undefined
 
   const { togglePlaying, stepForward, stepBackward, goToStart, follow, current, setFollow } = operations
   const { followPlacement } = editor
@@ -122,11 +141,12 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined} />
           </Suspense>
           <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
+            onRerunPinned={canRerun ? () => setRerunOpen(true) : undefined}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} />
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
         </div>
-        <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={[]}
+        <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={[]} pin={pin}
           onFocus={editor.focusSelected} onSelect={(p) => { state.select(p.id); operations.pauseFollow(); editor.focusPlacement(p) }}
           tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} />
       </div>
@@ -146,6 +166,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         onTogglePlaying={operations.togglePlaying}
         onSpeedChange={state.setSpeed}
       />
+      {canRerun ? <BackendRerunDialog tripCode={tripCode} plan={plan} pinnedCount={pinnedCount} open={rerunOpen} onOpenChange={setRerunOpen} /> : null}
     </div>
   )
 }

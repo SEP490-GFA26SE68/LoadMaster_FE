@@ -185,5 +185,7 @@ export const monitoring = {
     deadlineNote: 'The deadline here is the planned arrival time of the route — the server does not return the delivery requirement deadline yet.',
     completed: 'Delivered',
     reportDescription: 'The server records the incident with the expected delay in minutes.',
+    driverReportDescription: 'The server records the incident with the expected delay in minutes; the dispatcher sees it on the Monitoring screen.',
+    renegotiateUnavailable: 'The server does not take a new deadline yet: contact the customer, then tell the dispatcher.',
   },
 } satisfies Dictionary<typeof source>

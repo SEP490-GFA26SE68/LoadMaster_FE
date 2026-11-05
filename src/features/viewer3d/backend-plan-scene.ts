@@ -83,6 +83,22 @@ function metricsOf(plan: LoadPlan, vehicle: VehicleConfig): OptimizationResult['
   }
 }
 
+/**
+ * Mã của từng placement trên khung 3D theo thứ tự `plan.placements`: nhãn kiện đọc mã của placement, nên dùng mã kiện khi nó duy nhất
+ * trong phương án, không thì mã placement của máy chủ.
+ */
+function sceneIdsOf(plan: LoadPlan): string[] {
+  const codeCount = new Map<string, number>()
+  for (const item of plan.placements) codeCount.set(item.code, (codeCount.get(item.code) ?? 0) + 1)
+  return plan.placements.map((item) => (item.code !== '' && codeCount.get(item.code) === 1 ? item.code : item.id))
+}
+
+/** Mã trên khung 3D → mã số placement của máy chủ (để ghim / bỏ ghim kiện đang chọn). */
+export function backendPlacementIds(plan: LoadPlan): ReadonlyMap<string, string> {
+  const sceneIds = sceneIdsOf(plan)
+  return new Map(plan.placements.map((item, index) => [sceneIds[index] ?? item.id, item.id]))
+}
+
 export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
   /** Mã chuyến trên URL. */
   tripCode: string
@@ -92,14 +108,11 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
 }): ViewerSceneModel {
   const ordered = [...stops].sort((a, b) => a.sequence - b.sequence)
   const sequenceById = new Map(ordered.map((stop) => [stop.id, stop.sequence]))
-  // Nhãn kiện trên khung 3D đọc mã của placement: dùng mã kiện khi nó duy nhất trong phương án, không thì mã placement của máy chủ.
-  const codeCount = new Map<string, number>()
-  for (const item of plan.placements) codeCount.set(item.code, (codeCount.get(item.code) ?? 0) + 1)
-  const sceneIdOf = (item: (typeof plan.placements)[number]) => (item.code !== '' && codeCount.get(item.code) === 1 ? item.code : item.id)
-  const placements = plan.placements.map((item): ScenePlacement => {
+  const sceneIds = sceneIdsOf(plan)
+  const placements = plan.placements.map((item, index): ScenePlacement => {
     const orientation = orientationOf(item.rotationType)
     return Object.freeze({
-      id: sceneIdOf(item),
+      id: sceneIds[index] ?? item.id,
       packageId: item.packageId,
       name: item.code,
       stop: stopNumberOf(item, sequenceById),

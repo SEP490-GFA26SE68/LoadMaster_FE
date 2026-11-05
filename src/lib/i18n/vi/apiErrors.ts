@@ -115,6 +115,7 @@ export const apiErrors = {
   GPS_TRIP_NOT_IN_TRANSIT: 'Chuyến không ở trạng thái đang vận chuyển.',
   NO_GPS_LOCATION: 'Chưa có vị trí nào của xe.',
   TRIP_EXCEPTION_NOT_FOUND: 'Không tìm thấy sự cố.',
+  EXCEPTION_STATUS_INVALID: 'Sự cố không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
 
   // Gói cước, credit, thanh toán
   SUBSCRIPTION_NOT_FOUND: 'Công ty chưa có gói cước.',

@@ -115,5 +115,9 @@ export const serverPlans = {
     draftReason: 'The trip is still a Draft: optimize the route in trip details before approving.',
     emptyTitle: 'The trip has no load plan',
     emptyDescription: 'Run loading optimization in Optimization setup to get plans.',
+    rerunTitle: { one: 'Rerun keeping {count} pinned package?', other: 'Rerun keeping {count} pinned packages?' },
+    rerunDescription: 'The server keeps the pinned packages in place, repacks the rest around them and saves a new, unapproved plan. A rerun uses 1 credit.',
+    rerunConfirm: 'Rerun',
+    rerunDone: 'A new plan is ready',
   },
 } satisfies Dictionary<typeof source>

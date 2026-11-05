@@ -3,7 +3,7 @@ import { ORIENTATION_CODES, orientDimensions } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
 import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
 import { isApiError } from '@/lib/api-client'
-import { backendPlanScene, baseDimensionsOf, orientationOf } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf } from './backend-plan-scene'
 
 const VEHICLE: VehicleConfig = {
   id: '7', name: 'Xe tải 1,5 tấn', innerLengthCm: 400, innerWidthCm: 200, innerHeightCm: 200, maxPayloadKg: 1500,
@@ -69,5 +69,15 @@ describe('backendPlanScene', () => {
       plan: plan({ unplaced: [{ packageId: '302', code: 'PK-302', reason: 'OVER_WEIGHT' }, { packageId: '303', code: 'PK-303', reason: 'LẠ' }] }),
     })
     expect(scene.unplaced.map((item) => [item.name, item.reasonCode, item.detailUnknown])).toEqual([['PK-302', 'OVER_PAYLOAD', true], ['PK-303', 'UNKNOWN', true]])
+  })
+})
+
+describe('backendPlacementIds', () => {
+  test('mã trên khung 3D (mã kiện khi duy nhất, không thì mã chỗ xếp) dẫn về đúng mã chỗ xếp của máy chủ để ghim', () => {
+    const twin = plan({ placements: [placement(), placement({ id: '12', packageId: '302', code: 'PK-302' }), placement({ id: '13', packageId: '303', code: 'PK-302' })] })
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: twin, vehicle: VEHICLE, stops: STOPS })
+    const ids = backendPlacementIds(twin)
+    expect(scene.placements.map((item) => ids.get(item.id))).toEqual(['11', '12', '13'])
+    expect([...ids.keys()]).toEqual(['PK-301', '12', '13'])
   })
 })

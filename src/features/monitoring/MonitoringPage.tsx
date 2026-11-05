@@ -22,8 +22,8 @@ const FILTER_PARAMS: Readonly<Record<keyof MonitoringFilter, string>> = { late: 
  * Đang vận chuyển, danh sách cạnh nó (cũng là bản thay thế bản đồ cho trình đọc màn hình) và chi tiết của chuyến đang chọn. Người có
  * `deadlines.renegotiate` (quản lý công ty) có thêm tab "Sự cố cần xử lý" (FE-6-12); người khác không có dải tab. Tab, chuyến đang chọn
  * và hai công tắc lọc nằm trên URL. Trang này chỉ đọc phần ít đổi của các chuyến: vị trí và ETA theo nhịp của kho đọc ở các thành phần
- * con, nên dải tiêu đề không vẽ lại theo từng điểm vị trí. Dữ liệu từ backend: không có tab "Sự cố cần xử lý" (backend chưa có chuyển
- * quản lý, gia hạn), và toast nguy cơ trễ hạn chỉ hiện trên màn này (`EtaRiskToasts`).
+ * con, nên dải tiêu đề không vẽ lại theo từng điểm vị trí. Dữ liệu từ backend: tab "Sự cố cần xử lý" chỉ đọc (máy chủ chưa có gia
+ * hạn), và toast nguy cơ trễ hạn chỉ hiện trên màn này (`EtaRiskToasts`).
  */
 export function MonitoringPage() {
   const t = useT()
@@ -31,6 +31,7 @@ export function MonitoringPage() {
   const caps = useMonitoringCapabilities()
   const board = useMonitoringBoardQuery()
   const [params, setParams] = useSearchParams()
+  // Tab của quản lý công ty: người giữ `deadlines.renegotiate`; gia hạn trong tab còn theo nguồn dữ liệu (`caps.renegotiate`)
   const canRenegotiate = caps.escalation && can('deadlines.renegotiate')
   const tab = canRenegotiate && params.get(TAB_PARAM) === ESCALATION_TAB ? 'escalations' : 'trips'
   const filter: MonitoringFilter = { late: params.get(LATE_PARAM) === '1', incidents: params.get(INCIDENT_PARAM) === '1' }

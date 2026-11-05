@@ -95,6 +95,17 @@ export type TripLoadPlansDto = {
   readonly plans?: readonly LoadPlanDto[] | null
 }
 
+/**
+ * `LoadPlanResponse` của `POST /api/load-plans/{id}/rerun`: **một** phương án mới (phiên bản kế tiếp của phương án nguồn, không nhãn A · B · C),
+ * máy chủ chạy xong mới trả lời.
+ */
+export type RerunPlanDto = {
+  readonly id: number
+  readonly jobUuid?: string | null
+  readonly version?: number | null
+  readonly parentPlanId?: number | null
+}
+
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
 export const JOB_STATUSES = ['PENDING', 'RUNNING', 'COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]

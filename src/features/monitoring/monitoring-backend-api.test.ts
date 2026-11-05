@@ -10,6 +10,7 @@ import {
   resolveTripException,
 } from './exceptions-api'
 import { fetchMonitoringBoard, getLatestLocation, getLocationHistory, listTripMonitoring, reorderRunningStops } from './monitoring-api'
+import { reportDriverException } from './monitoring-backend-api'
 import { MONITORING_CAPABILITIES } from './monitoring-capabilities'
 
 /**
@@ -37,9 +38,9 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
   return isApiError(error) ? error.code : 'NO_ERROR'
 }
 
-test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, chuyển quản lý, nhận dọc đường, xác nhận tay', () => {
+test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, gia hạn, nhận dọc đường, xác nhận tay; chuyển quản lý có', () => {
   expect(MONITORING_CAPABILITIES).toEqual({
-    backend: true, openTrip: false, reorderStops: false, escalation: false, pickups: false, manualConfirm: false,
+    backend: true, openTrip: false, reorderStops: false, escalation: true, renegotiate: false, pickups: false, manualConfirm: false,
   })
 })
 
@@ -126,6 +127,30 @@ test('đánh dấu đã xử lý gửi ghi chú; 404 là sự cố không còn',
   expect(await codeOf(resolveTripException(TRIP, '31'))).toBe('TRIP_EXCEPTION_NOT_FOUND')
 })
 
+test('chuyển quản lý: không thân; 404 là sự cố không còn, 409 là sự cố đã chuyển hoặc đã xử lý', async () => {
+  const escalated = {
+    id: '31', tripId: TRIP, type: 'TRAFFIC', status: 'ESCALATED', reportedAt: '2026-10-18T09:10:00',
+    escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:20:00', by: '4' },
+  }
+  const { calls } = stubBackend({ [`POST /api/trips/${TRIP}/exceptions/31/escalate`]: { body: envelope(escalated) } })
+  expect(await escalateTripException(TRIP, '31')).toMatchObject({ status: 'ESCALATED', escalation: { reason: 'NO_ROUTE', at: '2026-10-18T02:20:00.000Z', by: '4' } })
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`POST /api/trips/${TRIP}/exceptions/31/escalate`])
+
+  stubBackend({ [`POST /api/trips/${TRIP}/exceptions/31/escalate`]: fail(404), [`POST /api/trips/${TRIP}/exceptions/32/escalate`]: fail(409) })
+  expect(await codeOf(escalateTripException(TRIP, '31'))).toBe('TRIP_EXCEPTION_NOT_FOUND')
+  expect(await codeOf(escalateTripException(TRIP, '32'))).toBe('CONFLICT')
+})
+
+test('tài xế báo sự cố qua endpoint của tài xế theo mã số chuyến; 400 là chuyến không còn đang vận chuyển', async () => {
+  const exception = { id: '40', tripId: '1', type: 'VEHICLE_BREAKDOWN', description: 'Xịt lốp', delayMinutes: 40, status: 'OPEN', reportedAt: '2026-10-18T09:30:00' }
+  const { calls } = stubBackend({ 'POST /api/driver/trips/1/exceptions': { body: envelope(exception) } })
+  expect(await reportDriverException('1', { type: 'VEHICLE_BREAKDOWN', description: 'Xịt lốp', delayMinutes: 40 })).toMatchObject({ id: '40', status: 'OPEN', delayMinutes: 40 })
+  expect(calls[0]?.body).toEqual({ type: 'VEHICLE_BREAKDOWN', description: 'Xịt lốp', delayMinutes: 40 })
+
+  stubBackend({ 'POST /api/driver/trips/1/exceptions': fail(400) })
+  expect(await codeOf(reportDriverException('1', { type: 'OTHER', description: 'Khác', delayMinutes: 0 }))).toBe('GPS_TRIP_NOT_IN_TRANSIT')
+})
+
 test('loại sự cố ngoài hợp đồng là lỗi của máy chủ', async () => {
   stubBackend({ [`POST /api/trips/${TRIP}/exceptions/31/resolve`]: { body: envelope({ id: '31', type: 'FLOOD', status: 'RESOLVED', reportedAt: '2026-10-18T09:10:00' }) } })
   expect(await codeOf(resolveTripException(TRIP, '31'))).toBe('SERVER_ERROR')
@@ -149,7 +174,6 @@ test('tuyến khác: lựa chọn của máy chủ, chọn một tuyến; 404 l�
 
 test('việc backend chưa có bị từ chối mà không gọi mạng', async () => {
   const { calls } = stubBackend({})
-  expect(await codeOf(escalateTripException(TRIP, '31'))).toBe('NOT_SUPPORTED')
   expect(await codeOf(renegotiateDeadline(TRIP, '31', { requirementId: 'REQ-001', deadline: '2026-10-18T10:00:00.000Z', contactNote: 'Khách đồng ý' }))).toBe('NOT_SUPPORTED')
   expect(await codeOf(reorderRunningStops(TRIP, ['8', '9']))).toBe('NOT_SUPPORTED')
   expect(calls).toEqual([])
