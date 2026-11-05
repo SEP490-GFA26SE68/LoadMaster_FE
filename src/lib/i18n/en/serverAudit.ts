@@ -12,6 +12,7 @@ export const serverAudit = {
     TRIP_REQUIREMENT_REMOVED: 'Delivery requirement removed from trip',
     TRIP_STATUS_TRANSITION: 'Trip status changed',
     ROUTE_OPTIMIZED: 'Route optimized',
+    PLAN_APPROVED: 'Load plan approved',
     RERUN_OPTIMIZATION: 'Optimization re-run keeping pins',
     PIN_PLACEMENT: 'Package pinned',
     UNPIN_PLACEMENT: 'Package unpinned',
@@ -35,6 +36,7 @@ export const serverAudit = {
     PlacementConfirmation: 'Placement confirmation',
     Deviation: 'Placement deviation',
     LoadingExecution: 'Loading session',
+    LOAD_PLAN: 'Load plan',
   },
   fields: {
     tripName: 'Trip name',

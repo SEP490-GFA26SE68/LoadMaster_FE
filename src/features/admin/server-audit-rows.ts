@@ -11,7 +11,7 @@ import { actorInitials } from './audit-look'
 
 /** Mã hành động máy chủ đang ghi (`actionType`), theo thứ tự của ô lọc "Hành động". */
 export const SERVER_AUDIT_ACTIONS = [
-  'TRIP_UPDATED', 'TRIP_STATUS_TRANSITION', 'TRIP_CANCELLED', 'TRIP_REQUIREMENT_REMOVED', 'ROUTE_OPTIMIZED', 'RERUN_OPTIMIZATION',
+  'TRIP_UPDATED', 'TRIP_STATUS_TRANSITION', 'TRIP_CANCELLED', 'TRIP_REQUIREMENT_REMOVED', 'ROUTE_OPTIMIZED', 'PLAN_APPROVED', 'RERUN_OPTIMIZATION',
   'PIN_PLACEMENT', 'UNPIN_PLACEMENT', 'WAREHOUSE_CONFIRM', 'DEVIATION_RECORDED', 'LOADING_COMPLETED', 'DRIVER_UNLOAD', 'STOP_COMPLETED',
   'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED',
 ] as const
@@ -19,7 +19,7 @@ export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
-  'Deviation', 'LoadingExecution',
+  'Deviation', 'LoadingExecution', 'LOAD_PLAN',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
@@ -35,6 +35,7 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   TRIP_CANCELLED: { icon: Route, tone: 'amber' },
   TRIP_REQUIREMENT_REMOVED: { icon: ClipboardList, tone: 'blue' },
   ROUTE_OPTIMIZED: { icon: Route, tone: 'azure' },
+  PLAN_APPROVED: { icon: Boxes, tone: 'green' },
   RERUN_OPTIMIZATION: { icon: Boxes, tone: 'azure' },
   PIN_PLACEMENT: { icon: Pin, tone: 'blue' },
   UNPIN_PLACEMENT: { icon: PinOff, tone: 'blue' },

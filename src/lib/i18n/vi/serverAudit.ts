@@ -14,6 +14,7 @@ export const serverAudit = {
     TRIP_REQUIREMENT_REMOVED: 'Gỡ yêu cầu giao khỏi chuyến',
     TRIP_STATUS_TRANSITION: 'Đổi trạng thái chuyến',
     ROUTE_OPTIMIZED: 'Tối ưu tuyến',
+    PLAN_APPROVED: 'Duyệt phương án xếp',
     RERUN_OPTIMIZATION: 'Chạy lại tối ưu giữ ghim',
     PIN_PLACEMENT: 'Ghim kiện',
     UNPIN_PLACEMENT: 'Bỏ ghim kiện',
@@ -38,6 +39,7 @@ export const serverAudit = {
     PlacementConfirmation: 'Xác nhận vị trí kiện',
     Deviation: 'Sai lệch vị trí',
     LoadingExecution: 'Phiên xếp hàng',
+    LOAD_PLAN: 'Phương án xếp',
   },
   /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
   fields: {
