@@ -92,10 +92,14 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
 }): ViewerSceneModel {
   const ordered = [...stops].sort((a, b) => a.sequence - b.sequence)
   const sequenceById = new Map(ordered.map((stop) => [stop.id, stop.sequence]))
+  // Nhãn kiện trên khung 3D đọc mã của placement: dùng mã kiện khi nó duy nhất trong phương án, không thì mã placement của máy chủ.
+  const codeCount = new Map<string, number>()
+  for (const item of plan.placements) codeCount.set(item.code, (codeCount.get(item.code) ?? 0) + 1)
+  const sceneIdOf = (item: (typeof plan.placements)[number]) => (item.code !== '' && codeCount.get(item.code) === 1 ? item.code : item.id)
   const placements = plan.placements.map((item): ScenePlacement => {
     const orientation = orientationOf(item.rotationType)
     return Object.freeze({
-      id: item.id,
+      id: sceneIdOf(item),
       packageId: item.packageId,
       name: item.code,
       stop: stopNumberOf(item, sequenceById),

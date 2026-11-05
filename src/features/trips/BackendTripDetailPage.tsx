@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { BackendLoadPlansCard } from '@/features/optimization/BackendLoadPlansCard'
-import { dataErrorMessage, useT } from '@/lib/i18n'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
+import { backendDateTimeText } from './backend-date-text'
 import { BackendTripRouteCard } from './BackendTripRouteCard'
 import { BackendTripWriteActions, isEditableStatus, RemoveRequirementButton } from './BackendTripWriteActions'
 import { RealTripDetailHeader } from './TripDetailHeader'
@@ -87,6 +88,7 @@ function getStopStatusKey(status: string) {
 
 function BackendTripDetail({ tripId }: { tripId: string }) {
   const t = useT()
+  const format = useFormat()
   const can = useCan()
 
   const [assigning, setAssigning] = useState(false)
@@ -246,7 +248,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
               <div className="rounded-lg bg-slate-50 p-3">
                 <dt className="mb-1 text-xs text-text-2">{t('trips.server.departure')}</dt>
                 <dd className="text-sm font-medium tabular-nums">
-                  {trip.departureTime?.replace('T', ' ') ?? '—'}
+                  {backendDateTimeText(trip.departureTime, format)}
                 </dd>
               </div>
 
@@ -347,7 +349,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                             {t('trips.detail.plannedArrival')}:
                           </span>{' '}
                           <span className="font-medium">
-                            {stop.plannedArrival?.replace('T', ' ') ?? '—'}
+                            {backendDateTimeText(stop.plannedArrival, format)}
                           </span>
                         </div>
 
@@ -356,7 +358,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                             {t('trips.detail.actualArrival')}:
                           </span>{' '}
                           <span className="font-medium">
-                            {stop.actualArrival?.replace('T', ' ') ?? '—'}
+                            {backendDateTimeText(stop.actualArrival, format)}
                           </span>
                         </div>
                       </div>

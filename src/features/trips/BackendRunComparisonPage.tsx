@@ -25,6 +25,11 @@ const BEST: Readonly<Record<BestKey, { value: (plan: LoadPlan) => number | null;
  * Phương án có giá trị tốt nhất của một chỉ số: chỉ khi mọi phương án có số và không bằng nhau hết; hoà thì mọi phương án hoà. Đánh dấu
  * trung tính (in đậm + nhãn "Tốt nhất"), như màn so sánh của kho mẫu.
  */
+/** Mã thuật toán máy chủ ghi → tên đọc được; mã lạ giữ nguyên. */
+function algorithmLabel(code: string, t: ReturnType<typeof useT>): string {
+  return code === 'EP_DBLF' || code === 'EP_DBLF_GA' || code === 'EP_DBLF_GA_AI' ? t(`optimization.credit.tiers.${code}`) : code
+}
+
 export function bestPlanIds(plans: readonly LoadPlan[], key: BestKey): ReadonlySet<string> {
   const { value, higher } = BEST[key]
   const values = plans.map(value)
@@ -91,7 +96,7 @@ function PlanCard({ plan, plans, tripParam }: { plan: LoadPlan; plans: readonly 
         {plan.rehandlingCount === null ? null : <Metric label={t('serverPlans.compare.metrics.rehandling')} best={best('rehandling')}>{format.integer(plan.rehandlingCount)}</Metric>}
         <Metric label={t('serverPlans.compare.metrics.unplaced')} best={best('unplaced')}>{format.integer(plan.unplaced.length)}</Metric>
         {plan.computationMs === null ? null : <Metric label={t('serverPlans.compare.metrics.computation')}>{t('serverPlans.job.computationValue', { ms: format.integer(plan.computationMs) })}</Metric>}
-        {plan.algorithmName === null ? null : <Metric label={t('serverPlans.compare.metrics.algorithm')}>{plan.algorithmName}</Metric>}
+        {plan.algorithmName === null ? null : <Metric label={t('serverPlans.compare.metrics.algorithm')}>{algorithmLabel(plan.algorithmName, t)}</Metric>}
       </dl>
       <Button variant="secondary" className="mt-auto" asChild>
         <Link to={`/chuyen/${encodeURIComponent(tripParam)}/phuong-an?revision=${encodeURIComponent(plan.id)}`}>
