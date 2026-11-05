@@ -19,10 +19,10 @@ import { useDriverStopScreenQuery } from './useDriverQueries'
 import { useUnloadScan } from './useUnloadScan'
 
 /**
- * Backend chưa trả mã QR của kiện cho tài xế và chưa có xác nhận tay: hộp đối chiếu chỉ còn gõ mã — mã đứng đầu dòng kiện hoặc mã của kho
- * kiện (`packageOfCode`), nên ô gõ mã có nhãn và gợi ý riêng.
+ * Máy chủ trả mã QR của từng kiện nên tài xế quét được nhãn; chưa có xác nhận tay nên hộp đối chiếu có quét và gõ mã — mã QR, mã đứng đầu
+ * dòng kiện hoặc mã của kho kiện (`packageOfCode`), nên ô gõ mã có nhãn và gợi ý riêng.
  */
-const CODE_ONLY: readonly VerifyMethod[] = ['CODE']
+const LABEL_METHODS: readonly VerifyMethod[] = ['QR', 'CODE']
 
 /**
  * Màn điểm giao `/tai-xe/diem-giao?chuyen=<mã số>` khi nhóm tài xế nối backend: điểm đang giao của chuyến lấy từ backend (điểm chưa
@@ -50,9 +50,9 @@ export function BackendDriverStop({ tripId }: { tripId: string }) {
 
 /**
  * Một điểm giao theo backend — cùng bố cục và luật cảm ứng với màn kho mẫu (`DeliveryStopView`: chữ 16 px, nút 56 px, một nút chính ở
- * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát" (ở thẻ chuyến), không quét QR hay xác nhận tay, không báo sự cố theo
- * kiện, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự kiến. "Đã đến điểm n" là nút
- * chính trước khi dỡ; dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
+ * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát" (ở thẻ chuyến), không xác nhận tay, không báo sự cố theo kiện,
+ * không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự kiến. "Đã đến điểm n" là nút chính
+ * trước khi dỡ; giờ đến và kiện đã dỡ đọc từ máy chủ; dỡ: quét nhãn QR hoặc gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
  * cả chuyến nằm sau nút phụ "Thêm" (`StopMoreActions`) và gửi lên máy chủ.
  */
 function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<DriverStopScreen, { kind: 'stop' }> }) {
@@ -102,7 +102,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
       <PackageVerify
         open={scan.open}
         onOpenChange={scan.setOpen}
-        methods={CODE_ONLY}
+        methods={LABEL_METHODS}
         codeLabel={t('driver.backend.codeLabel')}
         codeHint={t('driver.backend.codeHint')}
         title={t('driver.scan.title', { number: view.stop.number })}

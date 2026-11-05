@@ -11,38 +11,69 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Màn tài xế khi nhóm `driver` nối backend: `fetch` giả trả phong bì của `DriverController`; đăng nhập vẫn là phiên kho mẫu của tài xế
- * demo (chỉ để dựng màn). Màn chỉ còn việc backend làm được: báo đã đến, gõ mã dỡ từng kiện, hoàn tất điểm, gửi GPS.
+ * demo (chỉ để dựng màn). Màn chỉ còn việc backend làm được: báo đã đến, quét hoặc gõ mã dỡ từng kiện, hoàn tất điểm, gửi GPS. Máy chủ giả
+ * giữ giờ đến và kiện đã dỡ, trả lại ở `current-stop` như máy chủ thật.
  */
 type Reply = { readonly status?: number; readonly body: unknown }
 const ok = (data: unknown): Reply => ({ body: { success: true, message: 'ok', data } })
 
 const TRIP = { tripId: 1, tripCode: 'TRIP-20261017-94EE14F0', vehicleLicensePlate: '51C-284.19', stopCount: 3, departureTime: '2026-10-17T13:37:59', status: 'IN_TRANSIT' }
-const STOP_2 = {
+type StopPackage = { readonly packageId: number } & Readonly<Record<string, unknown>>
+type Stop = { readonly stopId: number; readonly stopSequence: number; readonly stopName: string; readonly address: string; readonly packages: readonly StopPackage[] }
+
+const STOP_2: Stop = {
   stopId: 2, stopSequence: 2, stopName: 'Kho Bách Hoá Xanh Dĩ An', address: '215 Quốc lộ 1K, Dĩ An',
   packages: [
-    { packageId: 11, packageName: 'Thùng dầu ăn 12 chai', trackingBarcode: 'LB-PK-0007', weight: 12, unloadOrder: 1 },
-    { packageId: 12, packageName: 'Thùng nước mắm 6 chai', trackingBarcode: 'LB-PK-0008', weight: 9.5, unloadOrder: 2 },
+    { packageId: 11, packageName: 'Thùng dầu ăn 12 chai', trackingBarcode: 'LB-PK-0007', qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9', weight: 12, unloadOrder: 1 },
+    { packageId: 12, packageName: 'Thùng nước mắm 6 chai', trackingBarcode: 'LB-PK-0008', qrToken: 'a1c120f2-63ab-4bf5-f710-d0596d9abe1c', weight: 9.5, unloadOrder: 2 },
   ],
 }
-const STOP_3 = { stopId: 3, stopSequence: 3, stopName: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, Biên Hoà', packages: [STOP_2.packages[0]] }
+const STOP_3: Stop = {
+  stopId: 3, stopSequence: 3, stopName: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, Biên Hoà',
+  packages: [{ packageId: 13, packageName: 'Thùng mì', trackingBarcode: 'LB-PK-0009', weight: 5, unloadOrder: 1 }],
+}
 
 let routes: Record<string, () => Reply> = {}
 let posts: string[] = []
 let lastBody: unknown
+/** Máy chủ giả: giờ đến theo điểm và kiện đã dỡ — `current-stop` trả lại đúng như vậy, kể cả sau khi tải lại trang. */
+let arrivals: Map<number, string>
+let unloaded: Set<number>
+let current: Stop
+
+const stopReply = (stop: Stop) => ok({
+  ...stop,
+  status: arrivals.has(stop.stopId) ? 'ARRIVED' : 'PENDING',
+  actualArrival: arrivals.get(stop.stopId) ?? null,
+  packages: stop.packages.map((pkg) => ({ ...pkg, unloaded: unloaded.has(pkg.packageId) })),
+})
+
+const arrive = (stop: Stop, at: string) => () => {
+  arrivals.set(stop.stopId, at)
+  return ok({ stopId: stop.stopId, tripId: 1, stopSequence: stop.stopSequence, stopName: stop.stopName, status: 'ARRIVED', actualArrival: at })
+}
+
+const unload = (packageId: number, remaining: number) => () => {
+  unloaded.add(packageId)
+  return ok({ packageId, remainingPackagesCount: remaining })
+}
 
 beforeEach(() => {
   posts = []
   lastBody = undefined
+  arrivals = new Map()
+  unloaded = new Set()
+  current = STOP_2
   routes = {
     'GET /api/users/me': () => ok({ id: 9 }),
     'GET /api/driver/trips': () => ok([TRIP]),
-    'GET /api/driver/trips/1/current-stop': () => ok(STOP_2),
-    'POST /api/driver/stops/2/arrive': () => ok({ stopId: 2, tripId: 1, stopSequence: 2, stopName: STOP_2.stopName, status: 'ARRIVED', actualArrival: '2026-10-17T14:20:00' }),
-    'POST /api/driver/stops/3/arrive': () => ok({ stopId: 3, tripId: 1, stopSequence: 3, stopName: STOP_3.stopName, status: 'ARRIVED', actualArrival: '2026-10-17T15:05:00' }),
-    'POST /api/driver/packages/11/unload': () => ok({ packageId: 11, remainingPackagesCount: 1 }),
-    'POST /api/driver/packages/12/unload': () => ok({ packageId: 12, remainingPackagesCount: 0 }),
+    'GET /api/driver/trips/1/current-stop': () => stopReply(current),
+    'POST /api/driver/stops/2/arrive': arrive(STOP_2, '2026-10-17T14:20:00'),
+    'POST /api/driver/stops/3/arrive': arrive(STOP_3, '2026-10-17T15:05:00'),
+    'POST /api/driver/packages/11/unload': unload(11, 1),
+    'POST /api/driver/packages/12/unload': unload(12, 0),
     'POST /api/driver/stops/2/complete': () => {
-      routes['GET /api/driver/trips/1/current-stop'] = () => ok(STOP_3)
+      current = STOP_3
       return ok({ stopId: 2, tripCompleted: false, nextStopId: 3 })
     },
   }
@@ -67,7 +98,7 @@ test('"Chuyến của tôi" đọc chuyến đang vận chuyển của backend; 
   expect(screen.queryByRole('button', { name: /Thông báo/ })).toBeNull()
 })
 
-test('điểm đang giao: báo đã đến, gõ mã dỡ từng kiện, hoàn tất điểm rồi sang điểm kế tiếp; việc backend chưa có không hiện', async () => {
+test('điểm đang giao: báo đã đến, quét hoặc gõ mã dỡ từng kiện, hoàn tất điểm rồi sang điểm kế tiếp; việc backend chưa có không hiện', async () => {
   renderDriver('/tai-xe/diem-giao?chuyen=1')
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 2 / 3' })).toBeInTheDocument()
   expect(screen.getByText('Đang tới điểm 2. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.')).toBeInTheDocument()
@@ -82,10 +113,11 @@ test('điểm đang giao: báo đã đến, gõ mã dỡ từng kiện, hoàn t�
 
   await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 2' }))
-  expect(dialog.queryByRole('tablist')).toBeNull()
-  // Nhãn và gợi ý nói đúng mã gõ được: dữ liệu điểm của máy chủ chưa có mã QR hay mã bên gửi
+  // Quét QR và gõ mã; chưa có xác nhận tay. Không có camera (jsdom) thì hộp mở ở gõ mã
+  expect(dialog.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Quét QR', 'Gõ mã'])
+  expect(dialog.getByRole('tab', { name: 'Gõ mã' })).toHaveAttribute('aria-selected', 'true')
   const code = dialog.getByRole('textbox', { name: 'Mã kiện' })
-  expect(dialog.getByText(/Mã đứng đầu dòng kiện trên màn này/)).toBeInTheDocument()
+  expect(dialog.getByText(/Mã QR in dưới hình, mã đứng đầu dòng kiện trên màn này/)).toBeInTheDocument()
   await userEvent.type(code, 'lb-pk-0007')
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   expect(await dialog.findByRole('status')).toHaveTextContent('Vừa dỡ LB-PK-0007 · Thùng dầu ăn 12 chai.')
@@ -99,9 +131,9 @@ test('điểm đang giao: báo đã đến, gõ mã dỡ từng kiện, hoàn t�
   expect(await dialog.findByRole('alert')).toHaveTextContent('Mã XX-1 không khớp kiện nào của điểm này.')
   expect(posts).toHaveLength(2)
 
-  // Kiện cuối của điểm: hộp tự đóng, hoàn tất được
+  // Kiện cuối của điểm, bằng mã QR in dưới hình (máy chủ trả chữ thường): hộp tự đóng, hoàn tất được
   await userEvent.clear(code)
-  await userEvent.type(code, 'LB-PK-0008')
+  await userEvent.type(code, 'A1C120F2-63AB-4BF5-F710-D0596D9ABE1C')
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   const complete = screen.getByRole('button', { name: 'Hoàn tất điểm giao' })
@@ -118,7 +150,17 @@ test('điểm đang giao: báo đã đến, gõ mã dỡ từng kiện, hoàn t�
   expect(screen.getByText('Cần dỡ 1 kiện · Đã dỡ 0')).toBeInTheDocument()
 })
 
-test('máy chủ báo đã đến từ trước (mở lại trang): coi như đã đến, không có giờ; lỗi khác thì toast nói lý do', async () => {
+test('tải lại trang: giờ đến và kiện đã dỡ đọc từ máy chủ, không phải gõ lại', async () => {
+  arrivals.set(2, '2026-10-17T14:20:00')
+  unloaded.add(11)
+  renderDriver('/tai-xe/diem-giao?chuyen=1')
+  expect(await screen.findByText(/Đã đến điểm 2 lúc 14:20/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Đã đến điểm 2' })).toBeNull()
+  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 1')).toBeInTheDocument()
+  expect(posts).toStrictEqual([])
+})
+
+test('máy chủ báo đã đến từ trước (báo ở máy khác): coi như đã đến, giờ đến đọc lại từ máy chủ; lỗi khác thì toast nói lý do', async () => {
   const { toast } = await import('sonner')
   routes['POST /api/driver/stops/2/arrive'] = () => ({ status: 409, body: { success: false, code: 'DELIVERY_STOP_NOT_CURRENT', message: 'x' } })
   const user = userEvent.setup()
@@ -127,9 +169,12 @@ test('máy chủ báo đã đến từ trước (mở lại trang): coi như đ�
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Chưa tới lượt điểm giao này — hoàn tất điểm đang giao trước.'))
   expect(screen.getByRole('button', { name: 'Đã đến điểm 2' })).toBeInTheDocument()
 
-  routes['POST /api/driver/stops/2/arrive'] = () => ({ status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } })
+  routes['POST /api/driver/stops/2/arrive'] = () => {
+    arrivals.set(2, '2026-10-17T14:12:00')
+    return { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } }
+  }
   await user.click(screen.getByRole('button', { name: 'Đã đến điểm 2' }))
-  expect(await screen.findByText('Đã báo đến điểm 2.')).toBeInTheDocument()
+  expect(await screen.findByText(/Đã đến điểm 2 lúc 14:12/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Đã đến điểm 2' })).toBeNull()
 })

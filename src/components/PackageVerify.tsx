@@ -164,7 +164,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
  * Hộp không biết kiện "đúng" là kiện nào: nơi gọi gửi mã / kiện đã chọn cho kho và trả kết quả về qua `result`. Nút 56 px, chữ 16 px;
  * kết quả là vùng `status` / `alert` nên trình đọc màn hình đọc được. Dưới 768 px hộp là tờ trượt từ đáy (V2.3 đợt 6). Mỗi lần mở là một thân mới: về mức đầu, ô nhập trống. Khi camera
  * chạy, con trỏ đứng ở hộp thoại để bàn phím ảo không che khung hình; không có camera thì hộp mở ở mức 2 và con trỏ vào ô gõ mã.
- * Nơi gọi chưa làm được mọi mức (tài xế khi nối backend: chỉ gõ mã) truyền `methods`: mức không có trong đó không hiện.
+ * Nơi gọi chưa làm được mọi mức (tài xế khi nối backend: quét và gõ mã, chưa có xác nhận tay) truyền `methods`: mức không có trong đó không hiện.
  */
 export function PackageVerify({ open, onOpenChange, ...body }: PackageVerifyProps) {
   const contentRef = useRef<HTMLDivElement>(null)

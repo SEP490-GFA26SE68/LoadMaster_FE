@@ -1,3 +1,4 @@
+import { isoFromBackend } from '@/lib/backend-time'
 import type { DeliveryView, ItemProgress } from './delivery-progress'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 import type { MyTripRow, MyTrips } from './my-trips'
@@ -27,14 +28,15 @@ export type StopPackageDto = {
   readonly packageId: number | null
   readonly packageName: string | null
   readonly trackingBarcode: string | null
-  /**
-   * Mã của bên gửi và mã QR in trên nhãn: `StopPackageResponse` của backend chưa trả hai trường này (chỉ có mã vạch) — trả thì tài xế gõ
-   * được chúng.
-   */
+  /** Mã của bên gửi và mã QR in trên nhãn — tài xế quét hoặc gõ được cả hai. */
   readonly packageCode?: string | null
   readonly qrToken?: string | null
   readonly weight: number | null
   readonly unloadOrder: number | null
+  /** Kiện đã dỡ ở điểm này (máy chủ đọc từ các lần xác nhận dỡ): tải lại trang vẫn đúng. */
+  readonly unloaded?: boolean | null
+  /** `LocalDateTime` (giờ Việt Nam) lúc dỡ; `null` khi chưa dỡ. */
+  readonly unloadedAt?: string | null
 }
 
 /** `GET /api/driver/trips/{id}/current-stop` — điểm chưa hoàn tất đầu tiên và kiện của điểm đó theo thứ tự dỡ. */
@@ -43,6 +45,10 @@ export type CurrentStopDto = {
   readonly stopSequence: number
   readonly stopName: string | null
   readonly address: string | null
+  /** `PENDING`, `ARRIVED` hoặc `COMPLETED`. */
+  readonly status?: string | null
+  /** Giờ đến thật (`LocalDateTime`, giờ Việt Nam); `null` khi chưa báo đến. */
+  readonly actualArrival?: string | null
   readonly packages: readonly StopPackageDto[] | null
 }
 
@@ -141,7 +147,8 @@ function matchOf(found: readonly StopPackage[], packages: readonly StopPackage[]
 /**
  * Kiện của điểm ứng với mã tài xế gõ (bỏ khoảng trắng hai đầu, không phân biệt hoa thường), như `resolveVerifyCode` của kho mẫu: trước hết
  * các mã riêng của một kiện — mã QR, mã vạch, mã của kho kiện —; không khớp thì mã của bên gửi, chỉ nhận khi đúng một kiện của điểm mang
- * nó. Backend chưa trả mã QR và mã của bên gửi cho tài xế (`StopPackageDto`): khi thiếu, chỉ còn mã vạch và mã của kho kiện.
+ * nó. Mã QR quét bằng camera hay gõ tay đều so không phân biệt hoa thường (mã QR của máy chủ là chữ thường); máy chủ không trả mã QR, mã
+ * của bên gửi thì chỉ còn mã vạch và mã của kho kiện.
  */
 export function packageOfCode(dto: CurrentStopDto, code: string): StopCodeMatch {
   const wanted = normalized(code)
@@ -152,9 +159,14 @@ export function packageOfCode(dto: CurrentStopDto, code: string): StopCodeMatch 
   return matchOf(byOwnCode, packages) ?? matchOf(bySenderCode, packages) ?? { kind: 'unknown' }
 }
 
-/** Mã kiện (dạng chuỗi) của mọi kiện của điểm, bỏ dòng backend trả không kèm kiện. */
-export function packageIdsOf(dto: CurrentStopDto): string[] {
-  return stopPackagesOf(dto).map((pkg) => String(pkg.packageId))
+/** Kiện `packageId` của điểm đã dỡ theo lần đọc gần nhất của máy chủ. */
+export function isUnloaded(dto: CurrentStopDto, packageId: number): boolean {
+  return (dto.packages ?? []).some((pkg) => pkg.packageId === packageId && pkg.unloaded === true)
+}
+
+/** Điểm sau khi máy chủ nhận lệnh dỡ kiện `packageId` — giữ tới lần đọc lại kế tiếp. */
+export function withUnloaded(dto: CurrentStopDto, packageId: number): CurrentStopDto {
+  return { ...dto, packages: (dto.packages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, unloaded: true } : pkg)) }
 }
 
 function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
@@ -170,15 +182,22 @@ function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
 /** Điểm hiện tại của backend ở dạng màn điểm giao dùng: số điểm, kiện còn phải dỡ, và các điểm của chuyến (chỉ điểm hiện tại có tên). */
 export type BackendStop = { readonly stopId: string; readonly view: DeliveryView; readonly stops: readonly StopDelivery[] }
 
+/** Giờ đến của điểm: giờ máy chủ ghi; điểm `ARRIVED` mà không kèm giờ thì "đã báo đến" không giờ; còn lại là chưa đến. */
+function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt' | 'arrivedEarlier'> {
+  const arrivedAt = dto.actualArrival ? isoFromBackend(dto.actualArrival) : undefined
+  if (arrivedAt !== undefined) return { arrivedAt }
+  return dto.status === 'ARRIVED' ? { arrivedAt: undefined, arrivedEarlier: true } : { arrivedAt: undefined }
+}
+
 /**
- * Màn điểm giao từ điểm hiện tại của backend. Điểm hiện tại không trả giờ đến và kiện đã dỡ, nên lớp gọi backend đưa vào những gì nó đã
- * ghi trong lần mở trang: `arrival` — giờ "Đã đến" (`null`: máy chủ báo đã đến từ trước, không biết giờ; vắng: chưa báo đến) — và kiện đã
- * dỡ (`unloaded`). Chỉ biết điểm hiện tại nên các điểm khác của chuyến chỉ có số, và các điểm trước nó là đã hoàn tất (backend hoàn tất
- * điểm theo thứ tự).
+ * Màn điểm giao từ điểm hiện tại của backend: giờ đến và kiện đã dỡ đọc từ máy chủ (`actualArrival`, `packages[].unloaded`), nên tải lại
+ * trang hay mở ở máy khác vẫn đúng. Chỉ biết điểm hiện tại nên các điểm khác của chuyến chỉ có số, và các điểm trước nó là đã hoàn tất
+ * (backend hoàn tất điểm theo thứ tự).
  */
-export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number, unloaded: ReadonlySet<string>, arrival?: string | null): BackendStop {
+export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): BackendStop {
   const number = dto.stopSequence
   const items = itemsOf(dto)
+  const unloaded = new Set(stopPackagesOf(dto).filter((pkg) => pkg.unloaded === true).map((pkg) => String(pkg.packageId)))
   const stop: StopDelivery = { number, name: dto.stopName ?? '', address: dto.address ?? '', items, kind: 'DELIVERY' }
   const stops = Array.from({ length: Math.max(tripStopCount, number) }, (_, index): StopDelivery =>
     index + 1 === number ? stop : { number: index + 1, name: '', address: '', items: [], kind: 'DELIVERY' })
@@ -190,8 +209,7 @@ export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number, unloade
     view: {
       mode: 'delivering',
       stop,
-      arrivedAt: arrival ?? undefined,
-      ...(arrival === null ? { arrivedEarlier: true as const } : {}),
+      ...arrivalOf(dto),
       items: progress,
       pickupItems: [],
       total: items.length,

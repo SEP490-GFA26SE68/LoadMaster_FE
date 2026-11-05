@@ -299,10 +299,10 @@ export const driver = {
     noStopsDescription: 'Chuyến {tripId} không còn điểm giao nào chờ giao.',
     completedTitle: 'Đã giao xong chuyến',
     completedDescription: 'Chuyến {tripId}: mọi điểm giao đã hoàn tất.',
-    scanDescription: 'Gõ mã của từng kiện khi đưa xuống xe. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    scanDescription: 'Quét nhãn QR của từng kiện khi đưa xuống xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã dỡ {done} / {total} kiện.',
     /** Ô gõ mã của hộp đối chiếu: backend chưa trả mã QR và mã của bên gửi cho tài xế, nên chỉ nhận mã đứng đầu dòng kiện và mã của kho kiện. */
     codeLabel: 'Mã kiện',
-    codeHint: 'Mã đứng đầu dòng kiện trên màn này, hoặc mã của kho kiện in ở góc trên nhãn. Chữ hoa hay thường đều được.',
+    codeHint: 'Mã QR in dưới hình, mã đứng đầu dòng kiện trên màn này, hoặc mã của kho kiện in ở góc trên nhãn. Chữ hoa hay thường đều được.',
     summary: 'Cần dỡ {total} kiện · Đã dỡ {done}',
     remaining: { one: 'Còn {count} kiện chưa dỡ', other: 'Còn {count} kiện chưa dỡ' },
     allUnloaded: 'Đã dỡ mọi kiện của điểm này.',

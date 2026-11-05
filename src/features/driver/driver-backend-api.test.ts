@@ -131,23 +131,30 @@ test('màn điểm giao: điểm đang giao, kiện theo thứ tự dỡ, các �
   expect(screen.stops.map((stop) => [stop.number, stop.name])).toStrictEqual([[1, ''], [2, 'Kho Bách Hoá Xanh Dĩ An'], [3, '']])
 })
 
-test('đã đến: gọi endpoint theo mã điểm, giờ đến của máy chủ vào màn; máy chủ báo đã đến từ trước thì đã đến, không có giờ', async () => {
+test('đã đến: gọi endpoint theo mã điểm; giờ đến đọc từ điểm hiện tại của máy chủ, tải lại trang vẫn còn', async () => {
   onStop()
   const driver = createDriverBackend()
   routes['POST /api/driver/stops/2/arrive'] = ok({ stopId: 2, tripId: 1, stopSequence: 2, stopName: 'x', status: 'ARRIVED', actualArrival: '2026-10-17 14:20:00' })
   await driver.arrive('1', 2)
   expect(paths().at(-1)).toBe('POST /api/driver/stops/2/arrive')
-  const arrived = await driver.fetchStopScreen('1')
+  routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, status: 'ARRIVED', actualArrival: '2026-10-17 14:20:00' })
+  // Lần mở trang mới (không còn gì trong bộ nhớ) vẫn thấy giờ đến của máy chủ
+  const arrived = await createDriverBackend().fetchStopScreen('1')
   if (arrived.kind !== 'stop') throw new Error('phải là điểm đang giao')
   expect(arrived.view.arrivedAt).toBe('2026-10-17T07:20:00.000Z')
   expect(arrived.view.arrivedEarlier).toBeUndefined()
 
-  const reopened = createDriverBackend()
+  // Đã báo đến ở máy khác: 409 coi như đã đến
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } }
-  await reopened.arrive('1', 2)
-  const earlier = await reopened.fetchStopScreen('1')
+  await expect(createDriverBackend().arrive('1', 2)).resolves.toBeUndefined()
+  // Điểm đã đến mà máy chủ không kèm giờ: đã báo đến, không giờ; chưa đến thì không có gì
+  routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, status: 'ARRIVED', actualArrival: null })
+  const earlier = await createDriverBackend().fetchStopScreen('1')
   if (earlier.kind !== 'stop') throw new Error('phải là điểm đang giao')
   expect(earlier.view).toMatchObject({ arrivedAt: undefined, arrivedEarlier: true })
+  routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, actualArrival: null })
+  const pending = await createDriverBackend().fetchStopScreen('1')
+  expect(pending.kind === 'stop' && [pending.view.arrivedAt, pending.view.arrivedEarlier]).toStrictEqual([undefined, undefined])
 
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_COMPLETED', message: 'x' } }
   expect((await rejection(createDriverBackend().arrive('1', 2))).code).toBe('DELIVERY_STOP_ALREADY_COMPLETED')
@@ -161,16 +168,40 @@ test('màn điểm giao: chuyến không có trong danh sách của tài xế th
   expect(await createDriverBackend().fetchStopScreen('1')).toStrictEqual({ kind: 'noStops', trip: { id: '1', code: 'TRIP-20261017-94EE14F0' } })
 })
 
-test('dỡ: mã gõ khớp mã trên nhãn (không phân biệt hoa thường), gửi kèm driverId; dòng kiện thành đã dỡ', async () => {
+test('dỡ: mã gõ khớp mã trên nhãn (không phân biệt hoa thường), gửi kèm driverId; kiện đã dỡ đọc từ máy chủ', async () => {
   onStop()
   const driver = createDriverBackend()
   await driver.fetchStopScreen('1')
   routes['POST /api/driver/packages/11/unload'] = ok({ packageId: 11, trackingBarcode: 'LB-PK-0007', stopId: 2, remainingPackagesCount: 1 })
   expect(await driver.unload('1', { stopNumber: 2, code: '  lb-pk-0007 ' })).toStrictEqual({ packageInstanceId: '11' })
   expect(paths().at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
-  const screen = await driver.fetchStopScreen('1')
+  routes['GET /api/driver/trips/1/current-stop'] = ok({
+    ...STOP,
+    packages: [{ ...STOP.packages[0], unloaded: true, unloadedAt: '2026-10-17 14:25:00' }, { ...STOP.packages[1], unloaded: false }, STOP.packages[2]],
+  })
+  // Tải lại trang: máy chủ vẫn nói kiện nào đã dỡ
+  const screen = await createDriverBackend().fetchStopScreen('1')
   expect(screen.kind === 'stop' && screen.view.items.map((entry) => entry.unloaded)).toStrictEqual([true, false])
-  expect(screen.kind === 'stop' && screen.view.remaining).toBe(1)
+  expect(screen.kind === 'stop' && [screen.view.unloadedCount, screen.view.remaining, screen.view.verifiable]).toStrictEqual([1, 1, 1])
+})
+
+test('dỡ: quét mã QR của máy chủ (chữ thường) khớp cả khi đọc ra chữ hoa; kiện máy chủ báo đã dỡ thì không gọi lại', async () => {
+  routes['GET /api/driver/trips'] = ok([TRIP])
+  routes['GET /api/driver/trips/1/current-stop'] = ok({
+    ...STOP,
+    packages: [
+      { ...STOP.packages[0], qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9', unloaded: true },
+      { ...STOP.packages[1], qrToken: 'a1c120f2-63ab-4bf5-f710-d0596d9abe1c', unloaded: false },
+    ],
+  })
+  const driver = createDriverBackend()
+  await driver.fetchStopScreen('1')
+  const before = calls.length
+  expect(await rejection(driver.unload('1', { stopNumber: 2, code: '63abd059-f710-4bf5-abe1-a1c120f2c6d9' }))).toMatchObject({ code: 'DUPLICATE_UNLOAD', params: { code: 'LB-PK-0007' } })
+  expect(calls).toHaveLength(before)
+  routes['POST /api/driver/packages/12/unload'] = ok({ packageId: 12, stopId: 2, remainingPackagesCount: 0 })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'A1C120F2-63AB-4BF5-F710-D0596D9ABE1C' })).toStrictEqual({ packageInstanceId: '12' })
+  expect(paths().at(-1)).toBe('POST /api/driver/packages/12/unload?driverId=9')
 })
 
 test('dỡ: mã không khớp, trùng nhiều kiện hoặc kiện đã ghi thì không gọi backend', async () => {
@@ -210,7 +241,7 @@ test('dỡ: backend trả mã của bên gửi thì gõ được mã đó; mã t
   expect(calls).toHaveLength(sent)
 })
 
-test('dỡ: 409 là kiện đã dỡ từ trước — ghi nhận lại; 400 là kiện không thuộc điểm; còn 0 kiện là cả điểm đã dỡ', async () => {
+test('dỡ: 409 là kiện đã dỡ ở máy khác; 400 là kiện không thuộc điểm', async () => {
   onStop()
   const driver = createDriverBackend()
   await driver.fetchStopScreen('1')
@@ -218,12 +249,6 @@ test('dỡ: 409 là kiện đã dỡ từ trước — ghi nhận lại; 400 là
   expect(await rejection(driver.unload('1', { stopNumber: 2, code: 'LB-PK-0007' }))).toMatchObject({ code: 'DUPLICATE_UNLOAD', status: 409, params: { code: 'LB-PK-0007' } })
   routes['POST /api/driver/packages/12/unload'] = fail(400, 'Kiện hàng thuộc điểm dừng sau')
   expect(await rejection(driver.unload('1', { stopNumber: 2, code: '12' }))).toMatchObject({ code: 'WRONG_DELIVERY_STOP', status: 400 })
-  let screen = await driver.fetchStopScreen('1')
-  expect(screen.kind === 'stop' && screen.view.items.map((entry) => entry.unloaded)).toStrictEqual([true, false])
-  routes['POST /api/driver/packages/12/unload'] = ok({ packageId: 12, stopId: 2, remainingPackagesCount: 0 })
-  await driver.unload('1', { stopNumber: 2, code: '12' })
-  screen = await driver.fetchStopScreen('1')
-  expect(screen.kind === 'stop' && screen.view.remaining).toBe(0)
 })
 
 test('hoàn tất điểm: theo mã điểm của backend; 400 là còn kiện chưa dỡ; điểm cuối thì chuyến thành đã giao xong', async () => {
@@ -255,7 +280,7 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, qrVerify: false, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    backend: true, qrVerify: true, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
     departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
   })
   for (const call of [

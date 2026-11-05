@@ -40,10 +40,10 @@ const ON_BACKEND = usesBackend('driver')
 
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
- * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm kiện cần dỡ, "Đã đến", dỡ một
- * kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần đó: quét QR (nhãn in mã QR mà điểm giao
- * không trả), xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ
- * đến dự kiến và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
+ * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm giờ đến và kiện cần dỡ, "Đã đến",
+ * dỡ một kiện bằng quét QR hoặc mã gõ, hoàn tất điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần
+ * đó: xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến
+ * và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
@@ -66,7 +66,7 @@ export type DriverCapabilities = {
 
 export const DRIVER_CAPABILITIES: DriverCapabilities = {
   backend: ON_BACKEND,
-  qrVerify: !ON_BACKEND,
+  qrVerify: true,
   manualConfirm: !ON_BACKEND,
   deliveryIssues: !ON_BACKEND,
   notifications: !ON_BACKEND,
@@ -188,7 +188,7 @@ export type UnloadVerifyInput = { readonly stopNumber: number; readonly method: 
 
 /**
  * Đối chiếu kiện ở điểm giao hiện tại bằng nhãn — mức 1 và 2: ghi "đã dỡ" và cách đối chiếu. Kiện của điểm khác: `QR_WRONG_STOP` (kèm
- * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: chỉ mã gõ, khớp mã của một kiện của điểm
+ * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: mã quét hoặc gõ khớp mã của một kiện của điểm
  * (`packageOfCode`; `UNLOAD_CODE_UNMATCHED` khi không khớp, `UNLOAD_CODE_AMBIGUOUS` khi mã của bên gửi trùng nhiều kiện, `DUPLICATE_UNLOAD`
  * khi đã dỡ, `WRONG_DELIVERY_STOP` khi backend từ chối điểm).
  */
