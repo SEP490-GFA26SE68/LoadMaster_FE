@@ -10,6 +10,7 @@ export const nav = {
   driver: 'Driver',
   fleet: 'Fleet',
   users: 'Users',
+  employees: 'Employees',
   audit: 'Log',
   packages: 'Package pool',
   requirements: 'Requirements',

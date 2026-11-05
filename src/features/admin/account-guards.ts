@@ -7,7 +7,7 @@ import type { User } from '@/types/user'
  * - `lastSystemAdmin` / `lastCompanyAdmin`: người quản trị đang hoạt động cuối cùng của nền tảng / của công ty đó.
  * - `companyManaged`: nhân sự công ty, người xem là quản trị hệ thống — sửa và xoá là việc của quản trị công ty đó.
  */
-export type AccountBlock = 'self' | 'lastSystemAdmin' | 'lastCompanyAdmin' | 'companyManaged'
+export type AccountBlock = 'self' | 'lastSystemAdmin' | 'lastCompanyAdmin' | 'companyManaged' | 'profileOnly'
 
 export type AccountGuards = {
   /** Mở form sửa thông tin. */
@@ -39,7 +39,14 @@ export function isSameAccount(user: Pick<User, 'id' | 'email'>, viewer: Pick<Use
  * Luật cần dữ liệu khác (tài xế còn chuyến) để kho trả lỗi.
  */
 export function accountGuards(user: Account, viewer: Viewer | null, users: readonly Account[]): AccountGuards {
-  if (viewer !== null && isSameAccount(user, viewer)) return { edit: null, lock: 'self', remove: 'self', role: 'self' }
+  if (viewer !== null && isSameAccount(user, viewer)) {
+    return {
+      edit: viewer.role === 'companyAdmin' ? 'profileOnly' : null,
+      lock: 'self',
+      remove: 'self',
+      role: 'self',
+    }
+  }
   const last = !isLastActiveAdmin(user, users) ? null : user.role === 'systemAdmin' ? 'lastSystemAdmin' : 'lastCompanyAdmin'
   if (viewer !== null && userScopeOf(viewer.role) === 'platform' && userScopeOf(user.role) === 'company') {
     return { edit: 'companyManaged', lock: last, remove: 'companyManaged', role: 'companyManaged' }

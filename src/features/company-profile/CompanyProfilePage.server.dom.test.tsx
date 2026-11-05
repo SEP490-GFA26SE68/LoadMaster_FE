@@ -36,7 +36,12 @@ function backend(method: string, url: string, body: Record<string, unknown> | un
   if (method === 'PATCH') {
     patches.push(body)
     if (refusePatch) return json({ success: false, message: 'Access Denied' }, 403)
-    company = { ...company, companyName: String(body?.companyName), billingEmail: String(body?.contactEmail) }
+    company = {
+      ...company,
+      companyName: String(body?.companyName),
+      taxCode: String(body?.taxCode ?? company.taxCode),
+      billingEmail: String(body?.contactEmail),
+    }
     return json(company)
   }
   throw new Error(`Backend giả không có ${method} ${url}`)
@@ -75,23 +80,24 @@ function renderPage() {
 
 const factsOf = (identity: HTMLElement) => [...identity.querySelectorAll('dt, dd')].map((cell) => cell.textContent)
 
-test('code, tax code, status and creation date are read only; only name and billing email have a field — no address, no phone', async () => {
+test('code and status are read only; name, tax code and billing email have a field — no address, no phone', async () => {
   renderPage()
   const identity = await screen.findByRole('complementary', { name: 'Công ty' }, SLOW)
   expect(within(identity).getByRole('heading', { level: 2, name: 'Vận tải Long Bình' })).toBeInTheDocument()
   expect(within(identity).getByText('Đang hoạt động')).toBeInTheDocument()
   expect(factsOf(identity)).toStrictEqual(['Mã công ty', 'LM-LOGISTICS', 'Mã số thuế', 'TAX-LM-001', 'Ngày tạo', '17/10/2026'])
-  expect(identity).toHaveTextContent('Mã công ty, mã số thuế và trạng thái do quản trị hệ thống LoadMaster thay đổi.')
+  expect(identity).toHaveTextContent('Mã công ty và trạng thái do quản trị hệ thống LoadMaster thay đổi.')
 
   const form = within(screen.getByRole('region', { name: 'Thông tin chung' }))
-  expect(form.getByText('Tên công ty và email thanh toán. Máy chủ chưa lưu địa chỉ hay số điện thoại của công ty.')).toBeInTheDocument()
-  expect(form.getAllByRole('textbox').map((field) => field.getAttribute('name'))).toStrictEqual(['name', 'billingEmail'])
+  expect(form.getByText('Tên công ty, mã số thuế và email thanh toán. Máy chủ chưa lưu địa chỉ hay số điện thoại của công ty.')).toBeInTheDocument()
+  expect(form.getAllByRole('textbox').map((field) => field.getAttribute('name'))).toStrictEqual(['name', 'taxCode', 'billingEmail'])
   expect(form.getByRole('textbox', { name: 'Tên công ty' })).toHaveValue('Vận tải Long Bình')
+  expect(form.getByRole('textbox', { name: 'Mã số thuế' })).toHaveValue('TAX-LM-001')
   expect(form.getByRole('textbox', { name: 'Email thanh toán' })).toHaveValue('qtcongty@loadmaster.vn')
   expect(form.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled()
 })
 
-test('saving sends the name and the billing email only, and the screen shows what the server saved', async () => {
+test('saving sends the name, tax code and the billing email, and the screen shows what the server saved', async () => {
   const user = userEvent.setup()
   renderPage()
   const form = within(await screen.findByRole('region', { name: 'Thông tin chung' }, SLOW))
@@ -101,7 +107,7 @@ test('saving sends the name and the billing email only, and the screen shows wha
   await user.click(form.getByRole('button', { name: 'Lưu thay đổi' }))
 
   expect(await screen.findByText('Đã lưu thông tin công ty', {}, SLOW)).toBeInTheDocument()
-  expect(patches).toStrictEqual([{ companyName: 'Vận tải Long Bình', contactEmail: 'ketoan@longbinh.vn' }])
+  expect(patches).toStrictEqual([{ companyName: 'Vận tải Long Bình', taxCode: 'TAX-LM-001', contactEmail: 'ketoan@longbinh.vn' }])
   expect(email).toHaveValue('ketoan@longbinh.vn')
   expect(form.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled()
 })
@@ -121,7 +127,7 @@ test('a malformed billing email is refused before anything is sent; a refusal of
   await user.type(email, 'longbinh.vn')
   await user.click(form.getByRole('button', { name: 'Lưu thay đổi' }))
   expect(await form.findByRole('alert', {}, SLOW)).toHaveTextContent('Bạn không có quyền thực hiện thao tác này.')
-  expect(patches).toStrictEqual([{ companyName: 'Vận tải Long Bình', contactEmail: 'ketoan@longbinh.vn' }])
+  expect(patches).toStrictEqual([{ companyName: 'Vận tải Long Bình', taxCode: 'TAX-LM-001', contactEmail: 'ketoan@longbinh.vn' }])
   expect(email).toHaveValue('ketoan@longbinh.vn')
   expect(screen.queryByText('Đã lưu thông tin công ty')).not.toBeInTheDocument()
 })

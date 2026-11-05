@@ -34,6 +34,12 @@ test('opens the backend envelope and returns its data, sending the session token
   expect(calls[0]?.init.headers).toMatchObject({ Authorization: 'Bearer TOKEN', Accept: 'application/json' })
 })
 
+test('keeps pagination metadata from a backend PageResponse', async () => {
+  const page = { success: true, data: [{ id: 7 }], page: 1, size: 20, totalElements: 21, totalPages: 2, last: true }
+  const { client } = clientWith(respond(200, page))
+  await expect(client.get('/api/users')).resolves.toStrictEqual(page)
+})
+
 test('sends a JSON body; without a session there is no Authorization header', async () => {
   const { client, calls } = clientWith(respond(200, { success: true, data: null }), null)
   await client.post('/api/users', { body: { email: 'a@b.vn' } })

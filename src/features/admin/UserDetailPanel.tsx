@@ -1,7 +1,9 @@
 import { Check, X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { Badge } from '@/components/ui/Badge'
 import { permissionsOf } from '@/features/auth/permissions'
 import { useT } from '@/lib/i18n'
+import type { UserScope } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import type { AccountGuards } from './account-guards'
 import { UserDetailActions } from './UserDetailActions'
@@ -15,12 +17,13 @@ import { userActivityAvailable, userDepotAvailable } from './useUsersQuery'
  * Nền đặc, viền 1 px, không bóng — inspector là bề mặt đọc lâu, không dùng kính (AGENTS mục 5).
  * Mở hoặc đổi người thì con trỏ về tiêu đề panel (trình đọc màn hình đọc tên; dưới 1.280 px panel nằm dưới bảng nên cũng cuộn tới).
  */
-export function UserDetailPanel({ id, user, guards, company, onAction, onClose }: {
+export function UserDetailPanel({ id, user, guards, company, scope, onAction, onClose }: {
   id: string
   user: User
   guards: AccountGuards
   /** Công ty của người dùng — chỉ truyền khi người xem là quản trị hệ thống (FE-0-08); `name` vắng khi kho chưa trả tên. */
   company?: { readonly id: string | undefined; readonly name: string | undefined }
+  scope?: UserScope
   onAction: (action: UserAction, user: User) => void
   onClose: () => void
 }) {
@@ -36,15 +39,22 @@ export function UserDetailPanel({ id, user, guards, company, onAction, onClose }
   return (
     <aside
       id={id}
-      aria-label={t('admin.users.detail.region', { name: user.fullName })}
+      aria-label={scope === 'company' ? t('admin.employees.detail.region', { name: user.fullName }) : t('admin.users.detail.region', { name: user.fullName })}
       className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-bg xl:sticky xl:top-0 xl:max-h-[calc(100dvh-217px)]"
     >
       <header className="flex flex-none items-start gap-3 border-b border-border py-4 pr-2 pl-4">
         <UserAvatar fullName={user.fullName} status={user.status} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <h2 ref={titleRef} id={titleId} tabIndex={-1} className="rounded-sm text-h3 font-semibold text-ink-strong outline-none">
-            {user.fullName}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 ref={titleRef} id={titleId} tabIndex={-1} className="rounded-sm text-h3 font-semibold text-ink-strong outline-none">
+              {user.fullName}
+            </h2>
+            {guards.edit === 'profileOnly' ? (
+              <Badge tone="cyan" shape="tag">
+                {t('admin.users.ownerBadge')}
+              </Badge>
+            ) : null}
+          </div>
           <span className="max-w-full font-mono text-caption text-ink-3 wrap-anywhere">{user.email}</span>
           <span className="mt-1 flex flex-wrap items-center gap-2">
             <RoleLabel role={user.role} />

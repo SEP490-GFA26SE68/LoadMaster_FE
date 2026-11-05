@@ -22,8 +22,8 @@ const LONG_BINH = [LB_ADMIN, LB_DRIVER]
 const NONE: AccountGuards = { edit: null, lock: null, remove: null, role: null }
 const all = (block: NonNullable<AccountGuards['lock']>): AccountGuards => ({ edit: block, lock: block, remove: block, role: block })
 
-test('chính mình: sửa thông tin được; không khoá, không xoá, không đổi vai trò', () => {
-  expect(accountGuards(LB_ADMIN, LB_ADMIN, LONG_BINH)).toStrictEqual({ edit: null, lock: 'self', remove: 'self', role: 'self' })
+test('chính mình: quản trị công ty không sửa trong danh sách (chỉ qua trang hồ sơ); không khoá, không xoá, không đổi vai trò', () => {
+  expect(accountGuards(LB_ADMIN, LB_ADMIN, LONG_BINH)).toStrictEqual({ edit: 'profileOnly', lock: 'self', remove: 'self', role: 'self' })
   expect(accountGuards(SYSTEM_ADMIN, SYSTEM_ADMIN, EVERYONE)).toStrictEqual({ edit: null, lock: 'self', remove: 'self', role: 'self' })
 })
 

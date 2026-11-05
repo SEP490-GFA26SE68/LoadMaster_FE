@@ -1,8 +1,10 @@
 import { createColumnHelper, type CellContext } from '@tanstack/react-table'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
+import { Badge } from '@/components/ui/Badge'
 import { useT, type TFunction } from '@/lib/i18n'
+import type { UserScope } from '@/lib/mock-db'
 import type { User } from '@/types/user'
-import { accountGuards } from './account-guards'
+import { accountGuards, isSameAccount } from './account-guards'
 import { LastActive, RoleLabel, UserAvatar, UserCompany, UserDepot, UserStatusBadge } from './user-look'
 import { UserRowMenu } from './UserRowMenu'
 import { useUsersTable } from './users-table-context'
@@ -21,8 +23,10 @@ export function userOpenButtonId(userId: string) {
  */
 
 function NameCell({ user }: { user: User }) {
-  const { selectedId, onSelect, panelId } = useUsersTable()
+  const t = useT()
+  const { selectedId, onSelect, panelId, viewer } = useUsersTable()
   const selected = user.id === selectedId
+  const isOwner = viewer !== null && isSameAccount(user, viewer) && viewer.role === 'companyAdmin'
   return (
     <span className="relative flex min-w-0 items-center gap-2.5">
       {/* Dòng đang mở panel: thanh cyan ở mép trái, cao bằng dòng (`spacious` 72 px, lề ô 14 px), ngoài nền cyan của dòng */}
@@ -30,16 +34,23 @@ function NameCell({ user }: { user: User }) {
       <UserAvatar fullName={user.fullName} status={user.status} />
       <span className="flex min-w-0 flex-col items-start whitespace-normal">
         {/* Dòng mở panel bằng chuột; nút ở tên cho bàn phím (AGENTS mục 10). Chặn nổi bọt để dòng không bật/tắt lần hai. */}
-        <button
-          type="button"
-          id={userOpenButtonId(user.id)}
-          aria-pressed={selected}
-          aria-controls={selected ? panelId : undefined}
-          onClick={(event) => { event.stopPropagation(); onSelect(user) }}
-          className="cursor-pointer rounded-sm text-left font-medium text-ink-strong hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          <span className="line-clamp-2">{user.fullName}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            id={userOpenButtonId(user.id)}
+            aria-pressed={selected}
+            aria-controls={selected ? panelId : undefined}
+            onClick={(event) => { event.stopPropagation(); onSelect(user) }}
+            className="cursor-pointer rounded-sm text-left font-medium text-ink-strong hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <span className="line-clamp-2">{user.fullName}</span>
+          </button>
+          {isOwner ? (
+            <Badge tone="cyan" shape="tag">
+              {t('admin.users.ownerBadge')}
+            </Badge>
+          ) : null}
+        </div>
         {/* Khoảng trắng không hiện trong flex nhưng tách tên và email trong tên truy cập của dòng */}
         {' '}
         <span className="max-w-full font-mono text-caption text-ink-3 wrap-anywhere">{user.email}</span>
@@ -85,10 +96,20 @@ const actionsCell = (info: Cell<unknown>) => <ActionsCell user={info.row.origina
  */
 export function userColumns(
   t: TFunction,
-  { panelOpen, showCompany, showDepot = true, showActivity = true }: { panelOpen: boolean; showCompany: boolean; showDepot?: boolean; showActivity?: boolean },
+  { panelOpen, showCompany, showDepot = true, showActivity = true, scope }: {
+    panelOpen: boolean
+    showCompany: boolean
+    showDepot?: boolean
+    showActivity?: boolean
+    scope?: UserScope
+  },
 ) {
   return helper.columns([
-    helper.accessor('fullName', { header: t('admin.users.columns.user'), enableSorting: true, cell: nameCell }),
+    helper.accessor('fullName', {
+      header: scope === 'company' ? t('admin.employees.columns.user') : t('admin.users.columns.user'),
+      enableSorting: true,
+      cell: nameCell,
+    }),
     ...(panelOpen ? [] : [helper.accessor('phone', {
       header: t('admin.users.columns.phone'),
       meta: { width: '136px' } satisfies ColumnMeta,
