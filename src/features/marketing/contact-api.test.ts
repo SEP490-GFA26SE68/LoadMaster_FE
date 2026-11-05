@@ -75,3 +75,20 @@ test('a refusal of the backend arrives as a code the form can translate', async 
   const error = await sendGuestContact({ fullName: 'QA Khách', email: 'sai', requestType: 'OTHER' }).catch((caught: unknown) => caught)
   expect(isApiError(error) && error.code).toBe('BAD_REQUEST')
 })
+
+test('a guest sending companyCode and taxCode has them included in the backend POST body', async () => {
+  reply = new Response(JSON.stringify({ ...SAVED, companyCode: 'VT-QA', taxCode: '0399999999' }), { status: 201 })
+  const contact = await sendGuestContact({
+    fullName: 'QA Khách', email: 'qa.khach@example.com', companyName: 'QA Vận tải',
+    companyCode: 'VT-QA', taxCode: '0399999999', requestType: 'DEMO_REQUEST',
+  })
+  expect(calls[0]?.body).toMatchObject({
+    companyCode: 'VT-QA',
+    taxCode: '0399999999',
+    requestType: 'DEMO_REQUEST',
+  })
+  expect(contact).toMatchObject({
+    companyCode: 'VT-QA',
+    taxCode: '0399999999',
+  })
+})

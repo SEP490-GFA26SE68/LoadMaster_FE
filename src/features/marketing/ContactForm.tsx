@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { CONTACT_REQUEST_TYPES, type GuestContact, type SubscriptionPlan } from '@/lib/mock-db'
 import { contactFormSchema, NO_PLAN, toNewContact, translateContactError, type ContactFormValues } from './contact-form'
 import { PUBLIC_TOUCH } from './public-chrome'
@@ -80,6 +81,22 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
         className={PUBLIC_TOUCH}
         error={translateContactError(t, errors.companyName?.message)}
         {...form.register('companyName')}
+      />
+      <Input
+        label={t('landing.contact.form.companyCode')}
+        placeholder={t('landing.contact.form.companyCodePlaceholder')}
+        autoComplete="off"
+        className={cn(PUBLIC_TOUCH, 'font-mono uppercase')}
+        error={translateContactError(t, errors.companyCode?.message)}
+        {...form.register('companyCode')}
+      />
+      <Input
+        label={t('landing.contact.form.taxCode')}
+        placeholder={t('landing.contact.form.taxCodePlaceholder')}
+        autoComplete="off"
+        className={cn(PUBLIC_TOUCH, 'font-mono')}
+        error={translateContactError(t, errors.taxCode?.message)}
+        {...form.register('taxCode')}
       />
       <SelectField
         control={form.control}

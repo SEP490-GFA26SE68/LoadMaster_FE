@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { CONTACT_LIMITS, createMockDb } from '@/lib/mock-db'
-import { contactDefaults, contactFormSchema, NO_PLAN, type ContactFormValues } from './contact-form'
+import { contactDefaults, contactFormSchema, NO_PLAN, toNewContact, type ContactFormValues } from './contact-form'
 
 /**
  * Luật của form liên hệ công khai: cùng giới hạn độ dài và luật email với kho (`contacts.test.ts` kiểm phía kho), và giá trị chọn sẵn từ
@@ -11,6 +11,8 @@ const VALID: ContactFormValues = {
   email: 'ha.le@vantaimientay.vn',
   phoneNumber: '',
   companyName: '',
+  companyCode: '',
+  taxCode: '',
   requestType: 'INQUIRY',
   planId: NO_PLAN,
   message: '',
@@ -23,13 +25,23 @@ function errorOf(field: keyof ContactFormValues, value: string): string | undefi
 }
 
 /** Ô có giới hạn độ dài và số ký tự tối đa đã thống nhất với kho. */
-const MAX_LENGTH = { fullName: 150, email: 150, phoneNumber: 30, companyName: 200, message: 2000 } as const
+const MAX_LENGTH = {
+  fullName: 150,
+  email: 150,
+  phoneNumber: 30,
+  companyName: 200,
+  companyCode: 50,
+  taxCode: 50,
+  message: 2000,
+} as const
 
 const LIMITS: readonly [keyof typeof MAX_LENGTH, number, (length: number) => string, string][] = [
   ['fullName', CONTACT_LIMITS.fullName, (length) => 'a'.repeat(length), 'fullNameTooLong'],
   ['email', CONTACT_LIMITS.email, (length) => `${'k'.repeat(length - 5)}@a.vn`, 'emailTooLong'],
   ['phoneNumber', CONTACT_LIMITS.phoneNumber, (length) => '9'.repeat(length), 'phoneTooLong'],
   ['companyName', CONTACT_LIMITS.companyName, (length) => 'c'.repeat(length), 'companyTooLong'],
+  ['companyCode', CONTACT_LIMITS.companyCode, (length) => 'C'.repeat(length), 'companyCodeTooLong'],
+  ['taxCode', CONTACT_LIMITS.taxCode, (length) => 'T'.repeat(length), 'taxCodeTooLong'],
   ['message', CONTACT_LIMITS.message, (length) => 'm'.repeat(length), 'messageTooLong'],
 ]
 
@@ -64,4 +76,22 @@ test('the plan and request type come from the URL only when they are known and o
   // Gói đã ngừng bán không chọn sẵn được
   const retired = plans.map((plan) => (plan.id === 'PLAN-001' ? { ...plan, active: false } : plan))
   expect(pick('goi=PLAN-001&loai=bao-gia', retired)).toStrictEqual([NO_PLAN, 'PRICING'])
+})
+
+test('toNewContact preserves companyCode and taxCode when provided', () => {
+  const result = toNewContact({
+    ...VALID,
+    companyName: 'Công ty Vận tải Miền Tây',
+    companyCode: 'VT-MT',
+    taxCode: '0312345678',
+    requestType: 'DEMO_REQUEST',
+  })
+  expect(result).toMatchObject({
+    fullName: 'Lê Thu Hà',
+    email: 'ha.le@vantaimientay.vn',
+    companyName: 'Công ty Vận tải Miền Tây',
+    companyCode: 'VT-MT',
+    taxCode: '0312345678',
+    requestType: 'DEMO_REQUEST',
+  })
 })

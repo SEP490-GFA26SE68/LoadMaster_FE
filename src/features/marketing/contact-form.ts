@@ -30,6 +30,8 @@ const ERRORS = {
   emailTooLong: 'landing.contact.form.errors.emailTooLong',
   phoneTooLong: 'landing.contact.form.errors.phoneTooLong',
   companyTooLong: 'landing.contact.form.errors.companyTooLong',
+  companyCodeTooLong: 'landing.contact.form.errors.companyCodeTooLong',
+  taxCodeTooLong: 'landing.contact.form.errors.taxCodeTooLong',
   messageTooLong: 'landing.contact.form.errors.messageTooLong',
 } as const satisfies Record<string, MessageKey>
 
@@ -39,6 +41,8 @@ export const contactFormSchema = z.object({
   email: z.string().trim().min(1, ERRORS.emailRequired).max(CONTACT_LIMITS.email, ERRORS.emailTooLong).refine(isContactEmail, ERRORS.emailInvalid),
   phoneNumber: z.string().trim().max(CONTACT_LIMITS.phoneNumber, ERRORS.phoneTooLong),
   companyName: z.string().trim().max(CONTACT_LIMITS.companyName, ERRORS.companyTooLong),
+  companyCode: z.string().trim().max(CONTACT_LIMITS.companyCode, ERRORS.companyCodeTooLong),
+  taxCode: z.string().trim().max(CONTACT_LIMITS.taxCode, ERRORS.taxCodeTooLong),
   requestType: z.enum(CONTACT_REQUEST_TYPES),
   planId: z.string(),
   message: z.string().trim().max(CONTACT_LIMITS.message, ERRORS.messageTooLong),
@@ -56,6 +60,8 @@ export function contactDefaults(search: URLSearchParams, plans: readonly Subscri
     email: '',
     phoneNumber: '',
     companyName: '',
+    companyCode: '',
+    taxCode: '',
     requestType: contactTypeFromSlug(search.get('loai')) ?? 'INQUIRY',
     planId: plans.find((plan) => plan.id === planId && plan.active)?.id ?? NO_PLAN,
     message: '',
@@ -70,6 +76,8 @@ export function toNewContact(values: ContactFormValues): NewGuestContact {
     requestType: values.requestType,
     ...(values.phoneNumber ? { phoneNumber: values.phoneNumber } : {}),
     ...(values.companyName ? { companyName: values.companyName } : {}),
+    ...(values.companyCode ? { companyCode: values.companyCode } : {}),
+    ...(values.taxCode ? { taxCode: values.taxCode } : {}),
     ...(values.planId === NO_PLAN ? {} : { interestedPlanId: values.planId }),
     ...(values.message ? { message: values.message } : {}),
   }
@@ -94,6 +102,8 @@ export function translateContactError(t: TFunction, message: string | undefined)
     case ERRORS.emailTooLong: return t(ERRORS.emailTooLong, { max: CONTACT_LIMITS.email })
     case ERRORS.phoneTooLong: return t(ERRORS.phoneTooLong, { max: CONTACT_LIMITS.phoneNumber })
     case ERRORS.companyTooLong: return t(ERRORS.companyTooLong, { max: CONTACT_LIMITS.companyName })
+    case ERRORS.companyCodeTooLong: return t(ERRORS.companyCodeTooLong, { max: CONTACT_LIMITS.companyCode })
+    case ERRORS.taxCodeTooLong: return t(ERRORS.taxCodeTooLong, { max: CONTACT_LIMITS.taxCode })
     case ERRORS.messageTooLong: return t(ERRORS.messageTooLong, { max: CONTACT_LIMITS.message })
     default: return undefined
   }
