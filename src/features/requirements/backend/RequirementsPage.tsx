@@ -22,8 +22,9 @@ import { RequirementDetailDialog } from './RequirementDetailDialog'
 import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
-import { useDeleteRequirementMutation, useRequirementsQuery, useUnassignRequirementMutation } from './useRequirementsQuery'
+import { useDeleteRequirementMutation, useRequirementsQuery } from './useRequirementsQuery'
 import { useNavigate } from 'react-router'
+import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
@@ -38,10 +39,11 @@ export function RequirementsPage() {
   const t = useT()
   const can = useCan()
   const navigate = useNavigate()
+  // Tạo, sửa, xoá chờ máy chủ giao quyền (`REQUIREMENT_SERVER_SUPPORT.manage`): điều phối viên vẫn thêm được toạ độ còn thiếu
   const canEdit = can('requirements.edit')
+  const canManage = canEdit && REQUIREMENT_SERVER_SUPPORT.manage
   const canAssign = can('trips.edit')
   const query = useRequirementsQuery()
-  const unassign = useUnassignRequirementMutation()
   const remove = useDeleteRequirementMutation()
   const list = useListUrlState({ filters: REQUIREMENT_FILTERS, defaultSort: { id: 'deadline', desc: false } })
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -74,19 +76,9 @@ export function RequirementsPage() {
         setDeleting(row)
       } else if (action === 'assign') {
         setAssigning(id)
-      } else if (action === 'unassign') {
-        unassign.mutate(id, {
-          onSuccess: () =>
-            toast.success(
-              t('requirements.assign.unassigned', { id }),
-            ),
-          onError: (error) =>
-            toast.error(dataErrorMessage(error, t)),
-        })
       }
-
     },
-  }), [canEdit, canAssign, unassign, t, navigate])
+  }), [canEdit, canAssign, navigate])
 
   const fields: FilterField<RequirementFilterName>[] = [
     { kind: 'select', name: STATUS_FILTER, label: t('requirements.filters.status'), options: REQUIREMENT_STATUS_ORDER.map((value) => ({ value: REQUIREMENT_STATUS_SLUGS[value], label: t(`requirements.status.${value}`) })) },
@@ -104,7 +96,7 @@ export function RequirementsPage() {
     })
   }
 
-  const createButton = canEdit ? (
+  const createButton = canManage ? (
     <Button onClick={() => setEditing({ kind: 'create' })}>
       <Plus strokeWidth={1.5} />
       {t('requirements.add')}
@@ -130,7 +122,7 @@ export function RequirementsPage() {
           <EmptyState
             mascot="empty"
             title={t('requirements.empty')}
-            description={canEdit ? t('requirements.emptyDescription') : t('requirements.emptyReadOnly')}
+            description={canManage ? t('requirements.emptyDescription') : t('requirements.emptyReadOnly')}
             action={createButton ?? undefined}
           />
         ) : (

@@ -1227,6 +1227,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. `TRIPS_CAPABILITIES` bỏ tạo, sửa, huỷ, phương án, kiện, tên tuyến; mọi lệnh
   ghi từ chối `NOT_SUPPORTED`; màn chỉ có ở kho mẫu (Planner, Thiết lập tối ưu, So sánh, báo cáo) chuyển về Chi tiết chuyến của máy chủ
   (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi `trips` và `monitoring` cùng nguồn.
+- **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
+  chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
+  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Tạo, sửa, xoá, gia hạn đòi
+  `DELIVERY_DEMAND_MANAGE` mà máy chủ chưa giao cho vai trò nào, gỡ khỏi chuyến chưa có endpoint: một bảng `REQUIREMENT_SERVER_SUPPORT`
+  (`requirements-capabilities.ts`) ẩn các nút đó, đổi cờ khi máy chủ có quyền. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
+  nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe
   `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Chỉ điều phối viên
   đọc được; vai trò khác thấy câu lý do, màn không gọi mạng (`fleetReachable`). `FLEET_CAPABILITIES` ẩn mọi lệnh ghi, chuyến đang dùng xe, ghi

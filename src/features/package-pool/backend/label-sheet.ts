@@ -1,4 +1,4 @@
-import type { LabelSelection } from './package-pool-api'
+import type { LabelSelection } from '../package-labels-api'
 import { lookupPath } from './packages-list'
 
 /**

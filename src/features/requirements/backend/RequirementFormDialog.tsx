@@ -37,6 +37,7 @@ import {
   updateRequirementSchedule,
   type RequirementRow,
 } from './requirements-api'
+import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
 import {
   deadlineVietnamLocal,
@@ -198,12 +199,15 @@ function RequirementForm({
     ? tripQuery.data?.status
     : undefined
 
+  // Hạn, ưu tiên và gia hạn đòi `DELIVERY_DEMAND_MANAGE` ở máy chủ: chờ quyền (`REQUIREMENT_SERVER_SUPPORT.manage`)
   const canEditSchedule =
+    REQUIREMENT_SERVER_SUPPORT.manage &&
     current !== undefined &&
     current.tripId !== undefined &&
     (tripStatus === 'DRAFT' || tripStatus === 'PLANNED')
 
   const canExtendDeadline =
+    REQUIREMENT_SERVER_SUPPORT.manage &&
     current !== undefined &&
     current.tripId !== undefined &&
     tripStatus === 'IN_TRANSIT'
@@ -353,9 +357,10 @@ function RequirementForm({
     })
 
   const locked =
-    current !== undefined &&
-    (current.status !== 'PENDING' ||
-      current.tripId !== undefined)
+    !REQUIREMENT_SERVER_SUPPORT.manage ||
+    (current !== undefined &&
+      (current.status !== 'PENDING' ||
+        current.tripId !== undefined))
 
   const hasReceivedPackages =
     current !== undefined &&
@@ -581,7 +586,7 @@ function RequirementForm({
       <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-5 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:grid-cols-2 lg:gap-6">
         {locked ? (
           <Banner tone="info" className="md:col-span-2">
-            {t('requirements.form.lockedNote')}
+            {REQUIREMENT_SERVER_SUPPORT.manage ? t('requirements.form.lockedNote') : t('requirements.server.manageUnavailable')}
           </Banner>
         ) : null}
 
