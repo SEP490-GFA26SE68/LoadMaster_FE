@@ -23,6 +23,7 @@ import { useSaveCompanyProfileMutation } from './useCompanyProfileQuery'
 /** Ô của từng trường: nhãn, kiểu nhập; `wide` chiếm cả hàng. */
 const INPUTS: Readonly<Record<CompanyProfileField, { label: MessageKey; wide?: boolean } & Pick<ComponentProps<'input'>, 'type' | 'inputMode' | 'autoComplete'>>> = {
   name: { label: 'companyProfile.form.name', autoComplete: 'organization', wide: true },
+  taxCode: { label: 'companyProfile.form.taxCode', autoComplete: 'off' },
   billingEmail: { label: 'companyProfile.form.billingEmail', type: 'email', inputMode: 'email', autoComplete: 'email' },
   address: { label: 'companyProfile.form.address', autoComplete: 'street-address', wide: true },
   phone: { label: 'companyProfile.form.phone', type: 'tel', inputMode: 'tel', autoComplete: 'tel' },
@@ -79,7 +80,7 @@ export function CompanyProfileForm({ profile }: { profile: CompanyProfile }) {
                       label={t(label)}
                       required
                       {...input}
-                      className={cn(field === 'phone' && 'font-mono')}
+                      className={cn((field === 'phone' || field === 'taxCode') && 'font-mono')}
                       error={translateCompanyProfileError(t, source, field, errors[field]?.message)}
                       {...form.register(field)}
                     />
