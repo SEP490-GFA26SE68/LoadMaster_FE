@@ -7,7 +7,7 @@ import { matchesQuery } from '@/lib/list-filter'
 import { rolesInScope, userScopeOf } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { ROLES, USER_STATUSES, type User } from '@/types/user'
-import { accountGuards } from './account-guards'
+import { accountGuards, isSameAccount } from './account-guards'
 import { userColumns, userOpenButtonId } from './user-columns'
 import { UserDetailPanel } from './UserDetailPanel'
 import type { UserAction } from './UserRowMenu'
@@ -147,6 +147,11 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
               appearance="paper"
               onRowClick={toggle}
               isRowSelected={(user) => user.id === openId}
+              getRowClassName={(user) =>
+                viewer !== null && isSameAccount(user, viewer) && viewer.role === 'companyAdmin'
+                  ? 'bg-cyan-50/50 dark:bg-cyan-950/20'
+                  : undefined
+              }
               sorting={list.sorting}
               onSortingChange={list.setSorting}
               pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}

@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { Badge } from '@/components/ui/Badge'
 import { permissionsOf } from '@/features/auth/permissions'
 import { useT } from '@/lib/i18n'
 import type { User } from '@/types/user'
@@ -42,9 +43,16 @@ export function UserDetailPanel({ id, user, guards, company, onAction, onClose }
       <header className="flex flex-none items-start gap-3 border-b border-border py-4 pr-2 pl-4">
         <UserAvatar fullName={user.fullName} status={user.status} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <h2 ref={titleRef} id={titleId} tabIndex={-1} className="rounded-sm text-h3 font-semibold text-ink-strong outline-none">
-            {user.fullName}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 ref={titleRef} id={titleId} tabIndex={-1} className="rounded-sm text-h3 font-semibold text-ink-strong outline-none">
+              {user.fullName}
+            </h2>
+            {guards.edit === 'profileOnly' ? (
+              <Badge tone="cyan" shape="tag">
+                {t('admin.users.ownerBadge')}
+              </Badge>
+            ) : null}
+          </div>
           <span className="max-w-full font-mono text-caption text-ink-3 wrap-anywhere">{user.email}</span>
           <span className="mt-1 flex flex-wrap items-center gap-2">
             <RoleLabel role={user.role} />

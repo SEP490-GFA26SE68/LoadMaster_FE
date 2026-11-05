@@ -13,6 +13,7 @@ export const admin = {
       depots: { one: '{count} kho / chi nhánh', other: '{count} kho / chi nhánh' },
       companies: { one: '{count} công ty', other: '{count} công ty' },
     },
+    ownerBadge: 'Chủ công ty (Bạn)',
     neverSignedIn: 'Chưa đăng nhập',
     /** Người dùng nền tảng không thuộc kho nào (FE-0-03): chữ thay cho ô kho ở bảng và panel chi tiết. */
     noDepot: 'Không thuộc kho nào',
@@ -97,6 +98,7 @@ export const admin = {
       lastSystemAdmin: 'Nền tảng cần ít nhất một quản trị hệ thống đang hoạt động',
       lastCompanyAdmin: 'Công ty cần ít nhất một quản trị công ty đang hoạt động',
       companyManaged: 'Nhân sự công ty do quản trị công ty đó quản lý',
+      profileOnly: 'Chỉ cập nhật qua trang Hồ sơ cá nhân',
     },
     form: {
       createTitle: 'Thêm người dùng',

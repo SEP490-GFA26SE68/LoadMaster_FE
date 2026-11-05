@@ -88,23 +88,31 @@ test('tham số công ty trên URL không mở được người của công ty 
   expect(screen.queryByRole('button', { name: 'Xoá lọc' })).toBeNull()
 })
 
-test('tài khoản đang đăng nhập — cũng là quản trị công ty duy nhất: không khoá, không xoá được, lý do ngay trong menu', async () => {
+test('tài khoản đang đăng nhập — chủ công ty: nổi bật nhãn Chủ công ty, không sửa/khoá/xoá trong danh sách, lý do ngay trong menu', async () => {
   const user = userEvent.setup()
   renderUsers()
+  const row = await rowOf('Dương Thị Kim Oanh')
+  expect(within(row).getByText('Chủ công ty (Bạn)')).toBeInTheDocument()
+
   const menu = await openMenu(user, 'Dương Thị Kim Oanh')
+  const edit = within(menu).getByRole('menuitem', { name: /^Sửa thông tin/ })
+  expect(edit).toHaveAttribute('aria-disabled', 'true')
+  expect(edit).toHaveTextContent('Chỉ cập nhật qua trang Hồ sơ cá nhân')
+
   const lock = within(menu).getByRole('menuitem', { name: /^Khoá tài khoản/ })
   expect(lock).toHaveAttribute('aria-disabled', 'true')
   expect(lock).toHaveTextContent('Không áp dụng cho tài khoản bạn đang đăng nhập')
+
   expect(within(menu).getByRole('menuitem', { name: /^Xoá tài khoản/ })).toHaveAttribute('aria-disabled', 'true')
   await user.keyboard('{Escape}')
 
-  // Sửa chính mình: vai trò chỉ xem kèm lý do, không phải ô chọn
-  await user.click(within(await openMenu(user, 'Dương Thị Kim Oanh')).getByRole('menuitem', { name: 'Sửa thông tin' }))
-  const form = await screen.findByRole('dialog', { name: 'Sửa người dùng' })
-  expect(within(form).queryByRole('combobox', { name: 'Vai trò' })).toBeNull()
-  expect(within(form).getByText('Quản trị công ty')).toBeInTheDocument()
-  expect(within(form).getByText('Không áp dụng cho tài khoản bạn đang đăng nhập')).toBeInTheDocument()
-  await user.click(within(form).getByRole('button', { name: 'Huỷ' }))
+  // Mở panel chi tiết: cũng hiện huy hiệu Chủ công ty và nút Sửa thông tin bị chặn
+  await user.click(within(row).getByRole('button', { name: 'Dương Thị Kim Oanh' }))
+  const panel = await screen.findByRole('complementary', { name: 'Chi tiết tài khoản Dương Thị Kim Oanh' })
+  expect(within(panel).getByText('Chủ công ty (Bạn)')).toBeInTheDocument()
+  const editButton = within(panel).getByRole('button', { name: 'Sửa thông tin' })
+  expect(editButton).toBeDisabled()
+  expect(within(panel).getByText('Chỉ cập nhật qua trang Hồ sơ cá nhân')).toBeInTheDocument()
 })
 
 test('tạo tài khoản: chỉ năm vai trò công ty; người mới thuộc công ty của quản trị và đăng nhập được bằng mật khẩu tạm', async () => {

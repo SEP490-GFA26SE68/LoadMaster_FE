@@ -10,6 +10,7 @@ export const admin = {
       depots: { one: '{count} depot / branch', other: '{count} depots / branches' },
       companies: { one: '{count} company', other: '{count} companies' },
     },
+    ownerBadge: 'Company Owner (You)',
     neverSignedIn: 'Never signed in',
     noDepot: 'No warehouse or branch',
     platformAccount: 'Platform',
@@ -79,10 +80,11 @@ export const admin = {
       actions: 'Actions',
     },
     blocked: {
-      self:'Not available for the account you are signed in with',
+      self: 'Not available for the account you are signed in with',
       lastSystemAdmin: 'The platform needs at least one active system administrator',
       lastCompanyAdmin: 'The company needs at least one active company administrator',
       companyManaged: 'Company staff are managed by the administrator of that company',
+      profileOnly: 'Update via your Profile page',
     },
     form: {
       createTitle: 'Add user',

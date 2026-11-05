@@ -86,6 +86,8 @@ type DataTableProps<TData extends RowData> = SortingProps & {
   getRowId?: (row: TData) => string
   /** Đánh dấu hàng đang chọn — nền primary-bg */
   isRowSelected?: (row: TData) => boolean
+  /** Thêm class tuỳ chỉnh cho từng dòng (ví dụ: làm nổi bật tài khoản chủ công ty). */
+  getRowClassName?: (row: TData) => string | undefined | false
   /** Bảng rỗng vì chưa có dữ liệu. */
   emptyMessage?: string
   /** Phân trang ở chân bảng: 25/50/100 dòng, "x–y / n", trước/sau. Vắng thì hiện mọi dòng. */
@@ -113,6 +115,7 @@ export function DataTable<TData extends RowData>({
   onRowClick,
   getRowId,
   isRowSelected,
+  getRowClassName,
   emptyMessage,
   sorting,
   onSortingChange,
@@ -246,6 +249,7 @@ export function DataTable<TData extends RowData>({
                   rowHeight,
                   selected ? 'bg-primary-bg' : 'hover:bg-surface',
                   onRowClick && 'cursor-pointer',
+                  getRowClassName?.(row.original),
                 )}
               >
                 {row.getAllCells().map((cell) => {
