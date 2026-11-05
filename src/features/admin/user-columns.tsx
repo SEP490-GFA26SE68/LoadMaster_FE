@@ -2,6 +2,7 @@ import { createColumnHelper, type CellContext } from '@tanstack/react-table'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { useT, type TFunction } from '@/lib/i18n'
+import type { UserScope } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { accountGuards, isSameAccount } from './account-guards'
 import { LastActive, RoleLabel, UserAvatar, UserCompany, UserDepot, UserStatusBadge } from './user-look'
@@ -95,10 +96,20 @@ const actionsCell = (info: Cell<unknown>) => <ActionsCell user={info.row.origina
  */
 export function userColumns(
   t: TFunction,
-  { panelOpen, showCompany, showDepot = true, showActivity = true }: { panelOpen: boolean; showCompany: boolean; showDepot?: boolean; showActivity?: boolean },
+  { panelOpen, showCompany, showDepot = true, showActivity = true, scope }: {
+    panelOpen: boolean
+    showCompany: boolean
+    showDepot?: boolean
+    showActivity?: boolean
+    scope?: UserScope
+  },
 ) {
   return helper.columns([
-    helper.accessor('fullName', { header: t('admin.users.columns.user'), enableSorting: true, cell: nameCell }),
+    helper.accessor('fullName', {
+      header: scope === 'company' ? t('admin.employees.columns.user') : t('admin.users.columns.user'),
+      enableSorting: true,
+      cell: nameCell,
+    }),
     ...(panelOpen ? [] : [helper.accessor('phone', {
       header: t('admin.users.columns.phone'),
       meta: { width: '136px' } satisfies ColumnMeta,

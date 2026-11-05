@@ -4,6 +4,37 @@
  * công ty), quản trị công ty chỉ thấy người của công ty mình.
  */
 export const admin = {
+  employees: {
+    title: 'Nhân viên',
+    count: { one: '{count} nhân viên', other: '{count} nhân viên' },
+    tabs: { accounts: 'Nhân viên', permissions: 'Ma trận quyền' },
+    summary: {
+      total: 'Tổng nhân viên',
+      totalNote: 'Mọi vai trò, kể cả nhân viên đã khoá',
+    },
+    search: 'Tìm theo tên, email, số điện thoại, mã',
+    empty: 'Chưa có nhân viên nào.',
+    noMatch: 'Không có nhân viên khớp bộ lọc.',
+    columns: {
+      user: 'Nhân viên',
+    },
+    detail: {
+      region: 'Chi tiết nhân viên {name}',
+    },
+    form: {
+      createTitle: 'Thêm nhân viên',
+      editTitle: 'Sửa nhân viên',
+      create: 'Thêm nhân viên',
+    },
+    remove: {
+      title: 'Xoá nhân viên {name}?',
+      description: 'Nhân viên sẽ mất quyền đăng nhập vĩnh viễn. Hành động này không thể hoàn tác.',
+    },
+    lockConfirm: {
+      title: 'Khoá tài khoản {name}?',
+      description: 'Nhân viên này sẽ không thể đăng nhập vào hệ thống cho tới khi được mở khoá.',
+    },
+  },
   users: {
     title: 'Người dùng',
     count: { one: '{count} tài khoản', other: '{count} tài khoản' },
@@ -156,6 +187,12 @@ export const admin = {
       title: 'Xoá tài khoản {name}?',
       description: 'Tài khoản bị xoá khỏi hệ thống và không đăng nhập được nữa. Nhật ký vẫn giữ các thao tác người này đã làm.',
       confirm: 'Xoá tài khoản',
+      cancel: 'Huỷ',
+    },
+    lockConfirm: {
+      title: 'Khoá tài khoản {name}?',
+      description: 'Tài khoản này sẽ không thể đăng nhập vào hệ thống cho tới khi được mở khoá.',
+      confirm: 'Khoá tài khoản',
       cancel: 'Huỷ',
     },
   },

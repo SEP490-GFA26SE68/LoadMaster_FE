@@ -4,7 +4,7 @@ import { FilterBar, type FilterField } from '@/components/FilterBar'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
-import { rolesInScope, userScopeOf } from '@/lib/mock-db'
+import { rolesInScope, userScopeOf, type UserScope } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { ROLES, USER_STATUSES, type User } from '@/types/user'
 import { accountGuards, isSameAccount } from './account-guards'
@@ -39,15 +39,17 @@ const NO_COMPANIES: readonly CompanyName[] = []
  * công ty (`cong-ty` trên URL, hàng lọc thứ hai); quản trị công ty chỉ thấy người của công ty mình, bộ lọc vai trò chỉ còn vai trò
  * công ty.
  */
-export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }: {
+export function UsersTable({ users, viewer, companies = NO_COMPANIES, scope, onAction }: {
   users: readonly User[]
   viewer: User | null
   /** Tên các công ty; chỉ truyền khi người xem là quản trị hệ thống. */
   companies?: readonly CompanyName[]
+  scope?: UserScope
   onAction: (action: UserAction, user: User) => void
 }) {
   const t = useT()
   const panelId = useId()
+  const isCompany = scope === 'company'
   const platform = viewer !== null && userScopeOf(viewer.role) === 'platform'
   const list = useListUrlState<UsersFilter>({
     filters: platform ? PLATFORM_FILTERS : FILTERS,
@@ -76,8 +78,8 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
   // Cột chỉ theo ngôn ngữ và panel đóng/mở — không theo dữ liệu: dựng lại cột là gắn lại mọi ô (users-table-context.ts)
   const panelOpen = openId !== null
   const columns = useMemo(
-    () => userColumns(t, { panelOpen, showCompany: platform, showDepot: userDepotAvailable, showActivity: userActivityAvailable }),
-    [t, panelOpen, platform],
+    () => userColumns(t, { panelOpen, showCompany: platform, showDepot: userDepotAvailable, showActivity: userActivityAvailable, scope }),
+    [t, panelOpen, platform, scope],
   )
   const cellContext = useMemo(
     () => ({ users, viewer, companies: companyNames, onAction, selectedId: openId, onSelect: toggle, panelId }),
@@ -117,7 +119,7 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
 
   return (
     <div className="flex flex-col gap-4">
-      <UsersSummary users={users} status={status} onStatusChange={(value) => list.setFilter(STATUS_FILTER, value)} />
+      <UsersSummary users={users} scope={scope} status={status} onStatusChange={(value) => list.setFilter(STATUS_FILTER, value)} />
       {/* items-start để panel dính (sticky) được trong vùng cuộn của tab. Panel 304 px: ở 1.366 px bảng còn ~990 px — đủ cho mọi cột
           trừ Điện thoại (ẩn khi panel mở) mà email seed không bị bẻ dòng. Dưới 1.280 px panel xuống dưới bảng. */}
       <div
@@ -132,7 +134,7 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
             className="min-h-14 border-b border-border px-4 py-2"
             query={list.query}
             onQueryChange={list.setQuery}
-            searchLabel={t('admin.users.search')}
+            searchLabel={isCompany ? t('admin.employees.search') : t('admin.users.search')}
             fields={fields}
             values={list.filters}
             onValueChange={list.setFilter}
@@ -155,10 +157,10 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
               sorting={list.sorting}
               onSortingChange={list.setSorting}
               pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
-              emptyMessage={t('admin.users.empty')}
+              emptyMessage={isCompany ? t('admin.employees.empty') : t('admin.users.empty')}
               isFiltering={list.isFiltering}
               onClearFilters={list.clearAll}
-              noMatchMessage={t('admin.users.noMatch')}
+              noMatchMessage={isCompany ? t('admin.employees.noMatch') : t('admin.users.noMatch')}
             />
           </UsersTableContext>
         </section>
@@ -169,6 +171,7 @@ export function UsersTable({ users, viewer, companies = NO_COMPANIES, onAction }
             user={selected}
             guards={accountGuards(selected, viewer, users)}
             company={platform ? { id: selected.companyId, name: selected.companyId === undefined ? undefined : companyNames.get(selected.companyId) } : undefined}
+            scope={scope}
             onAction={onAction}
             onClose={() => close(selected.id)}
           />

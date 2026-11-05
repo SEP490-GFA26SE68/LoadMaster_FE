@@ -2,6 +2,37 @@ import type { Dictionary } from '../types'
 import type { admin as source } from '../vi/admin'
 
 export const admin = {
+  employees: {
+    title: 'Employees',
+    count: { one: '{count} employee', other: '{count} employees' },
+    tabs: { accounts: 'Employees', permissions: 'Permission matrix' },
+    summary: {
+      total: 'Total employees',
+      totalNote: 'All roles, including locked employees',
+    },
+    search: 'Search by name, email, phone, ID',
+    empty: 'No employees yet.',
+    noMatch: 'No matching employees found.',
+    columns: {
+      user: 'Employee',
+    },
+    detail: {
+      region: 'Employee details for {name}',
+    },
+    form: {
+      createTitle: 'Add employee',
+      editTitle: 'Edit employee',
+      create: 'Add employee',
+    },
+    remove: {
+      title: 'Delete employee {name}?',
+      description: 'The employee will permanently lose login access. This action cannot be undone.',
+    },
+    lockConfirm: {
+      title: 'Lock account {name}?',
+      description: 'This employee will not be able to log in to the system until unlocked.',
+    },
+  },
   users: {
     title: 'Users',
     count: { one: '{count} account', other: '{count} accounts' },
@@ -139,6 +170,12 @@ export const admin = {
       title: 'Delete the account of {name}?',
       description: 'The account is removed and can no longer sign in. The log keeps what this person did.',
       confirm: 'Delete account',
+      cancel: 'Cancel',
+    },
+    lockConfirm: {
+      title: 'Lock account {name}?',
+      description: 'This account will not be able to log in to the system until unlocked.',
+      confirm: 'Lock account',
       cancel: 'Cancel',
     },
   },
