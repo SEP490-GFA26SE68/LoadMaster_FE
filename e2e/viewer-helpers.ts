@@ -33,7 +33,7 @@ export type VisibleCargo = { 'cargo-opaque': number; 'cargo-dim': number; 'cargo
 export function sceneSnapshot(page: Page): Promise<SceneSnapshot> {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState()
     const controls = s.controls as CameraControlsImpl
     const proxy = s.scene.getObjectByName('editor-proxy')
     const instances: SceneSnapshot['instances'] = []
@@ -54,7 +54,7 @@ export function sceneSnapshot(page: Page): Promise<SceneSnapshot> {
 export function proxyPoint(page: Page, deltaCm: Vector3Tuple = [0, 0, 0]): Promise<ScreenPoint> {
   return page.evaluate(async ({ url, delta }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const canvas = document.querySelector('canvas')!
+    const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')!
     const s = _roots.get(canvas)!.store.getState()
     const proxy = s.scene.getObjectByName('editor-proxy')!
     const position = proxy.getWorldPosition(proxy.position.clone())
@@ -147,7 +147,7 @@ export async function waitDemandIdle(page: Page, quietMs = 1_000) {
     await new Promise<void>((resolve, reject) => {
       let since = performance.now(), quietSince = since, drawn = 0
       const ask = (deadline: IdleDeadline) => {
-        const now = performance.now(), canvas = document.querySelector('canvas')
+        const now = performance.now(), canvas = document.querySelector('canvas:not(.maplibregl-canvas)')
         const s = canvas ? _roots.get(canvas)?.store.getState() : undefined
         const frame = s?.gl ? s.gl.info.render.frame : 0
         // Frame đầu vừa ra: tính giờ lại, phần chờ màn dựng xong không ăn vào phần chờ loop dừng
@@ -167,7 +167,7 @@ export async function waitDemandIdle(page: Page, quietMs = 1_000) {
 export function drawnFrames(page: Page): Promise<number> {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    return _roots.get(document.querySelector('canvas')!)!.store.getState().gl.info.render.frame
+    return _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState().gl.info.render.frame
   }, R3F_DEPS)
 }
 
@@ -181,7 +181,7 @@ export function drawnFrames(page: Page): Promise<number> {
 export async function waitCameraSettled(page: Page) {
   await page.evaluate(async ({ url, timeoutMs }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const store = _roots.get(document.querySelector('canvas')!)!.store
+    const store = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store
     const started = performance.now()
     await new Promise<void>((resolve, reject) => {
       let previous = '', stableTicks = 0, ticks = 0
@@ -204,7 +204,7 @@ export async function waitCameraSettled(page: Page) {
 function cameraGoal(page: Page): Promise<number[]> {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState(), controls = s.controls as CameraControlsImpl
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState(), controls = s.controls as CameraControlsImpl
     return [...controls.getPosition(s.camera.position.clone(), true).toArray(), ...controls.getTarget(s.camera.position.clone(), true).toArray()]
   }, R3F_DEPS)
 }
@@ -220,7 +220,7 @@ export async function renderCameraChange(page: Page, action: () => Promise<unkno
   await action()
   await page.evaluate(async ({ url, previous, timeoutMs }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const store = _roots.get(document.querySelector('canvas')!)!.store
+    const store = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store
     const started = performance.now()
     await new Promise<void>((resolve, reject) => {
       const tick = () => {
@@ -249,7 +249,7 @@ export function metrics(page: Page): Promise<ViewerMetrics> {
 export function visibleCargo(page: Page): Promise<VisibleCargo> {
   return page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState()
     const result: Record<string, number> = {}
     for (const name of ['cargo-opaque', 'cargo-dim', 'cargo-hull']) {
       const mesh = s.scene.getObjectByName(name) as InstancedMesh | undefined
@@ -267,7 +267,7 @@ export function visibleCargo(page: Page): Promise<VisibleCargo> {
 export function instancePoint(page: Page, index: number, name = 'cargo-opaque'): Promise<ScreenPoint> {
   return page.evaluate(async ({ url, index, name }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const canvas = document.querySelector('canvas')!
+    const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')!
     const s = _roots.get(canvas)!.store.getState()
     const mesh = s.scene.getObjectByName(name) as InstancedMesh, matrix = s.camera.matrixWorld.clone()
     mesh.getMatrixAt(index, matrix)
@@ -280,7 +280,7 @@ export function instancePoint(page: Page, index: number, name = 'cargo-opaque'):
 export function hasSceneObject(page: Page, name: string): Promise<boolean> {
   return page.evaluate(async ({ url, name }) => {
     const { _roots } = (await import(url)) as R3FModule
-    return Boolean(_roots.get(document.querySelector('canvas')!)!.store.getState().scene.getObjectByName(name))
+    return Boolean(_roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState().scene.getObjectByName(name))
   }, { url: R3F_DEPS, name })
 }
 

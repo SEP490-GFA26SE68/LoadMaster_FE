@@ -113,7 +113,7 @@ for (const device of ['desktop', 'tablet'] as const) {
       // §15 "Rotate, zoom, pan và reset camera hoạt động"
       await waitCameraSettled(page)
       const initial = await sceneSnapshot(page)
-      const canvas = (await page.locator('canvas').boundingBox())!
+      const canvas = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
       const centre = { x: canvas.x + canvas.width * 0.6, y: canvas.y + canvas.height * 0.5 }
       await renderCameraChange(page, async () => {
         await page.mouse.move(centre.x, centre.y)

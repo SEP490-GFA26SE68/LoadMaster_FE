@@ -65,7 +65,7 @@ test('phone: unload order equals the approved revision; Three.js loads only on "
   const expected = await planUnloadOrder(page, SEED_TRIP, 1)
   expect(expected.ids.length).toBeGreaterThan(0)
   expect(await rowIds(page)).toStrictEqual(expected.ids)
-  expect(await page.locator('canvas').count()).toBe(0)
+  expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
   expect(requests.some((url) => /@react-three|three\.module|three\.core/.test(url)), 'driver 2D must not fetch Three.js').toBe(false)
 
   const viewCargo = page.getByRole('button', { name: 'Xem vị trí hàng', exact: true })
@@ -137,7 +137,7 @@ test('phone: the driver screens run in English and switching language mid-delive
 test('a newly approved revision reaches the driver screen once the warehouse stages by it, without reload', async ({ page, login, browserErrors }) => {
   // Bản seed đã duyệt không có nút Duyệt (LM-094): điều phối viên duyệt lại revision nguồn chưa duyệt REV-001
   await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()

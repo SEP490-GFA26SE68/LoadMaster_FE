@@ -28,7 +28,7 @@ function revisionCount(page: Page) {
 
 test('approving the seed source revision creates a new approved revision and reopens it', async ({ page, login, browserErrors }) => {
   await login(PLANNER, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
   // Người duyệt do kho ghi vào revision đã duyệt (`approvedBy`), kể cả bản seed
@@ -144,7 +144,7 @@ test('a plan with a must-load line left behind and an overloaded axle names both
     return revision.id
   }, MOCK_DB)
   await navigateInApp(page, `/chuyen/TRIP-012/phuong-an?revision=${revisionId}`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
 
   const reason = 'Chưa duyệt được: 1 dòng kiện bắt buộc chưa xếp đủ và tải trục vượt giới hạn.'
   const approve = page.getByRole('button', { name: 'Duyệt phương án', exact: true })
@@ -196,7 +196,7 @@ test('a stop expected to miss its deadline must be confirmed before approval; a 
   }, { url: MOCK_DB, id: tripId })
 
   await navigateInApp(page, `/chuyen/${tripId}/phuong-an`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   const review = page.getByRole('dialog', { name: 'Duyệt phương án này?' })
   await expect(review).toContainText('Không có lỗi chặn duyệt')
@@ -236,7 +236,7 @@ test('a stop expected to miss its deadline must be confirmed before approval; a 
     await db.updateDeliveryRequirement('REQ-006', { deadline: new Date(Date.parse(eta) + 10 * 60_000).toISOString() })
   }, { url: MOCK_DB, id: tripId })
   await navigateInApp(page, `/chuyen/${tripId}/phuong-an?revision=${sourceId}`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await expect(review).toContainText('1 điểm giao sát hạn (không chặn duyệt).')
   await expect(review).toContainText(`Điểm 1 · ${stopName}`)
@@ -248,7 +248,7 @@ test('a stop expected to miss its deadline must be confirmed before approval; a 
 
 test('changing the vehicle from the Planner and from trip detail offers only ready vehicles that take the cargo and makes the plan stale (FE-5b-08)', async ({ page, login, browserErrors }) => {
   await login(PLANNER, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toHaveCount(0)
   // Nút phụ ở góc khung 3D, không nằm trên thanh trên (hàng điều khiển không còn chỗ, `planner-compact`)
   await expect(page.locator('header').first().getByRole('button', { name: 'Đổi xe', exact: true })).toHaveCount(0)

@@ -32,7 +32,7 @@ test('compare plans: every revision column is MOCK RESULT and the chosen one ope
 
   await page.getByRole('link', { name: 'Mở REV-001 trong 3D', exact: true }).click()
   await page.waitForURL(`/chuyen/${TRIP_ID}/phuong-an?revision=REV-001`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   const header = page.locator('header').first()
   await expect(header).toContainText('MOCK RESULT')
   // REV-001 chưa duyệt: Planner mở đúng bản đó (bản đã duyệt REV-002 không có nút Duyệt)
@@ -88,7 +88,7 @@ test('compare the three candidate plans of a run: deadlines once, cards A, B, C 
   // Mở phương án A trong Planner: đúng bản đó, chưa duyệt nên có nút Duyệt
   await page.getByRole('link', { name: 'Mở phương án A trong Planner', exact: true }).click()
   await page.waitForURL(`/chuyen/${TRIP_ID}/phuong-an?revision=REV-001-A`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await expect(page.locator('header').first()).toContainText('MOCK RESULT')
   await expect(page.getByRole('button', { name: 'Duyệt phương án', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])

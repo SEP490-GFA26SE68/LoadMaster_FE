@@ -15,7 +15,7 @@ test('reduced motion draws a camera preset change without a manual frame request
   // Ghi hướng nhìn của camera tại đúng lúc renderer vẽ; chỉ quan sát, không xin frame.
   const drawnBefore = await page.evaluate(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState()
     const gl = s.gl, render = gl.render.bind(gl)
     const record = (camera: typeof s.camera) => {
       // Hướng từ quaternion: matrixWorld của camera chỉ được cập nhật bên trong render.
