@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT, type TFunction } from '@/lib/i18n'
+import { backendRowErrorOf, backendRowWarningOf } from '../package-pool-dto'
+import { rowIssueText } from '../PackageImportPreview'
 import { MAX_IMPORT_FILE_MB, MAX_IMPORT_ROWS } from './package-pool-import'
 import {
   useConfirmPackageImportMutation,
@@ -15,7 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
 import { SelectField } from '@/components/ui/SelectField'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 const IMPORT_FIELDS = [
   'packageCode', 'packageName', 'lengthCm', 'widthCm', 'heightCm', 'weightKg', 'quantity', 'handlingClass', 'destination',
@@ -55,7 +57,7 @@ export function PackageImportDialog({
     queryFn: listDeliveryRequirements,
   })
 
-  const deliveryRequirementId = requirementForm.watch('deliveryRequirementId')
+  const deliveryRequirementId = useWatch({ control: requirementForm.control, name: 'deliveryRequirementId' })
 
   const availableRequirements = (requirementsQuery.data ?? [])
     .map((row) => row.requirement)
@@ -282,7 +284,7 @@ export function PackageImportDialog({
                   {t('sourcing.import.rowErrorDetail', {
                     row: issue.rowIndex,
                     field: formatImportFieldLabel(issue.field, t),
-                    message: issue.message,
+                    message: rowIssueText(backendRowErrorOf(issue), t),
                   })}
                 </Banner>
               ))}
@@ -295,7 +297,7 @@ export function PackageImportDialog({
                   {t('sourcing.import.rowWarningDetail', {
                     row: issue.rowIndex,
                     field: formatImportFieldLabel(issue.field, t),
-                    message: issue.message,
+                    message: rowIssueText(backendRowWarningOf(issue), t),
                   })}
                 </Banner>
               ))}

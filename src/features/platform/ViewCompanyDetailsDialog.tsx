@@ -53,9 +53,9 @@ function CompanySection({ row }: { row: ServerCompanyRow }) {
     <FactSection title={t('platform.companyDetails.company.title')}>
       <Facts
         items={[
-          [t('platform.companyDetails.company.taxCode'), company.taxCode ? <span className="font-mono">{company.taxCode}</span> : missing],
+          [t('platform.companyDetails.company.taxCode'), company.taxCode ? <span key="fact-56" className="font-mono">{company.taxCode}</span> : missing],
           [t('platform.companyDetails.company.billingEmail'), company.billingEmail || missing],
-          [t('platform.companyDetails.company.status'), <ServerCompanyStatusBadge status={company.status} />],
+          [t('platform.companyDetails.company.status'), <ServerCompanyStatusBadge key="fact-58" status={company.status} />],
           [t('platform.companyDetails.company.createdAt'), company.createdAt ? format.date(company.createdAt) : missing],
         ]}
       />
@@ -83,9 +83,9 @@ function PlanSection({ row, plansLoaded }: { row: ServerCompanyRow; plansLoaded:
         items={[
           [
             t('platform.companyDetails.plan.name'),
-            <span className="flex flex-wrap items-center gap-2">{plan.name}{tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}</span>,
+            <span key="fact-86" className="flex flex-wrap items-center gap-2">{plan.name}{tier === null ? null : <Badge tone="cyan" shape="tag">{tier}</Badge>}</span>,
           ],
-          [t('platform.companyDetails.plan.status'), <ServerPlanStatusBadge status={plan.status} />],
+          [t('platform.companyDetails.plan.status'), <ServerPlanStatusBadge key="fact-88" status={plan.status} />],
           [t('platform.companyDetails.plan.expires'), plan.expiresAt ? format.date(plan.expiresAt) : '—'],
           users,
         ]}

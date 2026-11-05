@@ -75,13 +75,14 @@ export type Permission = (typeof PERMISSIONS)[number]
  * Quản trị hệ thống chỉ lo công ty, người dùng và nhật ký: ba vai trò nền tảng không có quyền vận hành nào. Quản trị hệ thống và Quản
  * trị công ty cùng có `users.manage`, `audit.view` — phạm vi (toàn hệ thống / trong công ty) do FE-0-08 thêm.
  *
- * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho cả ba vai
- * trò nền tảng; gửi yêu cầu không cần quyền.
+ * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho Hỗ trợ
+ * khách hàng và Quản trị hệ thống; gửi yêu cầu không cần quyền. `trialRequests.manage` mở Đơn dùng thử `/nen-tang/yeu-cau-dung-thu` cho
+ * Quản lý nền tảng và Quản trị hệ thống, như `TrialAccountRequestController` của backend; Hỗ trợ khách hàng chỉ chuyển đơn sang đó.
  */
 
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
-  systemManager: ['companies.manage', 'subscriptionPlans.manage'],
+  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
 

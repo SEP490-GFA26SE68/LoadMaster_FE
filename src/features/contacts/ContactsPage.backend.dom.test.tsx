@@ -100,7 +100,7 @@ test('a demo request already taken is forwarded to the platform manager as a tri
   renderContacts('?lien-he=2')
   const panel = await screen.findByRole('region', { name: 'QA Khách đã giao' }, SLOW)
   expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).toBeNull()
-  await user.click(within(panel).getByRole('button', { name: 'Chuyển giao cho System Manager' }))
+  await user.click(within(panel).getByRole('button', { name: 'Chuyển cho Quản lý nền tảng' }))
 
   await waitFor(() => expect(calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests')?.body).toMatchObject({
     contactId: 2, fullName: 'QA Khách đã giao', email: 'qa.khach@example.com', companyName: 'QA Vận tải',

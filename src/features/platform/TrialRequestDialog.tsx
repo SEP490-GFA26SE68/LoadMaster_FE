@@ -77,8 +77,8 @@ function TrialRequestDetail({ request, onApprove, onReject }: { request: TrialRe
         <FactSection title={t('platform.trialRequests.detail.applicant')}>
           <Facts
             items={[
-              [t('platform.trialRequests.detail.email'), <span className="break-all">{request.email}</span>],
-              [t('platform.trialRequests.detail.phone'), request.phoneNumber ? <span className="font-mono">{request.phoneNumber}</span> : missing],
+              [t('platform.trialRequests.detail.email'), <span key="fact-80" className="break-all">{request.email}</span>],
+              [t('platform.trialRequests.detail.phone'), request.phoneNumber ? <span key="fact-81" className="font-mono">{request.phoneNumber}</span> : missing],
               [t('platform.trialRequests.detail.plan'), request.interestedPlanName ?? t('platform.trialRequests.noPlan')],
             ]}
           />
@@ -87,20 +87,20 @@ function TrialRequestDetail({ request, onApprove, onReject }: { request: TrialRe
           <Facts
             items={[
               [t('platform.trialRequests.detail.companyName'), request.companyName ?? missing],
-              [t('platform.trialRequests.detail.taxCode'), request.taxCode ? <span className="font-mono">{request.taxCode}</span> : missing],
+              [t('platform.trialRequests.detail.taxCode'), request.taxCode ? <span key="fact-90" className="font-mono">{request.taxCode}</span> : missing],
             ]}
           />
         </FactSection>
         <FactSection title={t('platform.trialRequests.detail.result')}>
           <Facts
             items={[
-              [t('platform.trialRequests.detail.status'), <TrialStatusBadge status={request.status} />],
+              [t('platform.trialRequests.detail.status'), <TrialStatusBadge key="fact-97" status={request.status} />],
               ...(pending ? [] : [
                 [t('platform.trialRequests.detail.resolvedBy'), request.approvedByName ?? '—'] as const,
                 [t('platform.trialRequests.detail.resolvedAt'), when(request.resolvedAt)] as const,
               ]),
               ...(request.createdCompanyName ? [[t('platform.trialRequests.detail.createdCompany'), request.createdCompanyName] as const] : []),
-              ...(request.note ? [[t('platform.trialRequests.detail.note'), <span className="whitespace-pre-wrap">{request.note}</span>] as const] : []),
+              ...(request.note ? [[t('platform.trialRequests.detail.note'), <span key="fact-103" className="whitespace-pre-wrap">{request.note}</span>] as const] : []),
             ]}
           />
         </FactSection>

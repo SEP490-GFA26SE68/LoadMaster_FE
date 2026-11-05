@@ -38,8 +38,8 @@ export function ViewAdminDialog({ admin, onClose, onEdit }: { admin: CompanyAdmi
               <FactSection title={t('platform.companyAdmins.detail.account')}>
                 <Facts
                   items={[
-                    [t('platform.companyAdmins.detail.status'), <CompanyAdminStatusBadge status={admin.status} />],
-                    [t('platform.companyAdmins.detail.phone'), admin.phoneNumber ? <span className="font-mono">{admin.phoneNumber}</span> : missing],
+                    [t('platform.companyAdmins.detail.status'), <CompanyAdminStatusBadge key="fact-41" status={admin.status} />],
+                    [t('platform.companyAdmins.detail.phone'), admin.phoneNumber ? <span key="fact-42" className="font-mono">{admin.phoneNumber}</span> : missing],
                     [t('platform.companyAdmins.detail.createdAt'), admin.createdAt ? format.date(admin.createdAt) : '—'],
                   ]}
                 />
@@ -48,8 +48,8 @@ export function ViewAdminDialog({ admin, onClose, onEdit }: { admin: CompanyAdmi
                 <Facts
                   items={[
                     [t('platform.companyAdmins.detail.company'), admin.companyName ?? t('platform.companyAdmins.noCompany')],
-                    [t('platform.companyAdmins.detail.companyCode'), admin.companyCode ? <span className="font-mono">{admin.companyCode}</span> : '—'],
-                    [t('platform.companyAdmins.detail.taxCode'), admin.taxCode ? <span className="font-mono">{admin.taxCode}</span> : missing],
+                    [t('platform.companyAdmins.detail.companyCode'), admin.companyCode ? <span key="fact-51" className="font-mono">{admin.companyCode}</span> : '—'],
+                    [t('platform.companyAdmins.detail.taxCode'), admin.taxCode ? <span key="fact-52" className="font-mono">{admin.taxCode}</span> : missing],
                   ]}
                 />
               </FactSection>
@@ -60,9 +60,9 @@ export function ViewAdminDialog({ admin, onClose, onEdit }: { admin: CompanyAdmi
                   <Facts
                     items={[
                       [t('platform.companyAdmins.detail.planName'), admin.planName],
-                      [t('platform.companyAdmins.detail.planStatus'), <ServerPlanStatusBadge status={planStatusOf(admin.subscriptionStatus)} />],
+                      [t('platform.companyAdmins.detail.planStatus'), <ServerPlanStatusBadge key="fact-63" status={planStatusOf(admin.subscriptionStatus)} />],
                       [t('platform.companyAdmins.detail.expires'), admin.subscriptionExpiresAt ? format.date(admin.subscriptionExpiresAt) : '—'],
-                      [t('platform.companyAdmins.detail.balance'), admin.creditBalance === null ? '—' : <span className="font-mono tabular-nums">{format.integer(admin.creditBalance)}</span>],
+                      [t('platform.companyAdmins.detail.balance'), admin.creditBalance === null ? '—' : <span key="fact-65" className="font-mono tabular-nums">{format.integer(admin.creditBalance)}</span>],
                     ]}
                   />
                 )}

@@ -43,7 +43,7 @@ export function PackageTypesPage() {
   )
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<PackageTypeRow | null>(null)
-  const rows = typesQuery.data?.data ?? []
+  const rows = useMemo(() => typesQuery.data?.data ?? [], [typesQuery.data])
   const visible = useMemo(() => rows.filter((row) => matchesQuery([row.name, row.id], list.query)), [rows, list.query])
   const columns = useMemo(() => packageTypeColumns(t, canEdit), [t, canEdit])
   const actions = useMemo(() => ({ onEdit: (row: PackageTypeRow) => setEditing({ kind: 'edit', row }), onDelete: setDeleting }), [])

@@ -100,10 +100,10 @@ test('supporter can click "Đảm nhận" on a new contact to assign themselves 
   // Không có nút Hủy cho contact
   expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
 
-  // Chưa đảm nhận thì CHƯA ĐƯỢC có các nút "Đã giải quyết", "Liên hệ thất bại", "Chuyển giao cho System Manager"
+  // Chưa đảm nhận thì CHƯA ĐƯỢC có các nút "Đã giải quyết", "Liên hệ thất bại", "Chuyển cho Quản lý nền tảng"
   expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: 'Liên hệ thất bại' })).not.toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: /Chuyển giao cho System Manager/i })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: /Chuyển cho Quản lý nền tảng/i })).not.toBeInTheDocument()
 
   // Nút "Đảm nhận"
   const claimBtn = within(panel).getByRole('button', { name: 'Đảm nhận' })
@@ -167,7 +167,7 @@ test('sample data has no trial requests: a demo request in progress is resolved 
 
   // LH-002 là DEMO_REQUEST: kho mẫu không có yêu cầu dùng thử nên không chuyển cho quản lý nền tảng được
   expect(within(panel).getByRole('button', { name: 'Đã giải quyết' })).toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: 'Chuyển giao cho System Manager' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Chuyển cho Quản lý nền tảng' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
 })
 

@@ -54,8 +54,8 @@ function AgreementFacts({ agreement }: { agreement: CompanyAgreement }) {
   const when = useWhen()
   const [viewing, setViewing] = useState(false)
   const facts: Fact[] = [
-    [t('platform.companyDetails.agreement.status'), <AgreementBadge agreement={agreement} />],
-    [t('platform.companyDetails.agreement.code'), <span className="font-mono">{agreement.agreementCode}</span>],
+    [t('platform.companyDetails.agreement.status'), <AgreementBadge key="fact-57" agreement={agreement} />],
+    [t('platform.companyDetails.agreement.code'), <span key="fact-58" className="font-mono">{agreement.agreementCode}</span>],
     [t('platform.companyDetails.agreement.deadline'), when(agreement.deadlineAt)],
   ]
   if (agreement.status === 'SIGNED') {

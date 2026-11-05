@@ -97,7 +97,7 @@ function TripForm({ existing, status, sub }: { existing?: Trip; status?: TripSta
 
 
 
-  const warehouses = warehousesQuery.data ?? []
+  const warehouses = useMemo(() => warehousesQuery.data ?? [], [warehousesQuery.data])
 
   const applyWarehouse = useCallback(
     (warehouseId: string) => {

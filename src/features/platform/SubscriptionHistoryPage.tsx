@@ -132,15 +132,15 @@ function ContractDialog({ contract, onClose }: { contract: SubscriptionContract 
                 <Facts
                   items={[
                     [t('platform.subscriptionHistory.detail.planName'), (
-                      <span className="flex flex-wrap items-center gap-2">
+                      <span key="fact-135" className="flex flex-wrap items-center gap-2">
                         {contract.planName}
                         {contract.planTier ? <Badge tone="cyan" shape="tag">{contract.planTier}</Badge> : null}
                       </span>
                     )],
-                    [t('platform.subscriptionHistory.detail.price'), <ContractPrice contract={contract} />],
+                    [t('platform.subscriptionHistory.detail.price'), <ContractPrice key="fact-140" contract={contract} />],
                     [t('platform.subscriptionHistory.detail.cycle'), contract.billingCycle ? t(`platform.subscriptionHistory.detail.cycles.${contract.billingCycle}`) : '—'],
                     [t('platform.subscriptionHistory.detail.credits'), credits(contract)],
-                    [t('platform.subscriptionHistory.detail.status'), <ContractStatusBadge status={contract.status} />],
+                    [t('platform.subscriptionHistory.detail.status'), <ContractStatusBadge key="fact-143" status={contract.status} />],
                   ]}
                 />
               </FactSection>
@@ -156,10 +156,10 @@ function ContractDialog({ contract, onClose }: { contract: SubscriptionContract 
               <FactSection title={t('platform.subscriptionHistory.detail.company')}>
                 <Facts
                   items={[
-                    [t('platform.subscriptionHistory.detail.companyCode'), contract.companyCode ? <span className="font-mono">{contract.companyCode}</span> : '—'],
+                    [t('platform.subscriptionHistory.detail.companyCode'), contract.companyCode ? <span key="fact-159" className="font-mono">{contract.companyCode}</span> : '—'],
                     [t('platform.subscriptionHistory.detail.admin'), contract.adminName ?? '—'],
                     [t('platform.subscriptionHistory.detail.email'), contract.adminEmail ?? '—'],
-                    [t('platform.subscriptionHistory.detail.phone'), contract.adminPhone ? <span className="font-mono">{contract.adminPhone}</span> : '—'],
+                    [t('platform.subscriptionHistory.detail.phone'), contract.adminPhone ? <span key="fact-162" className="font-mono">{contract.adminPhone}</span> : '—'],
                   ]}
                 />
               </FactSection>
