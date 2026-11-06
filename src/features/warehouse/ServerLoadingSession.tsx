@@ -1,23 +1,29 @@
-import { CheckCircle2, ScanLine } from 'lucide-react'
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { CheckCircle2, PackageX, ScanLine, TriangleAlert } from 'lucide-react'
+import { lazy, Suspense, useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { PackageVerify, type VerifyCode, type VerifyOutcome } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { VerifyMethod } from '@/lib/mock-db'
-import { serverLoadingView } from './server-loading'
+import type { ManualConfirmInput } from '@/lib/mock-db'
+import { DamagedPackageDialog } from './DamagedPackageDialog'
+import { placementLabel, restingCount, serverLoadingView } from './server-loading'
 import { serverSessionScene } from './server-session-scene'
 import { ServerDeviationDialog } from './ServerDeviationDialog'
+import { ServerLoadingFinished } from './ServerLoadingFinished'
 import { ServerPlacementCard, ServerPlacementList } from './ServerPlacementCard'
+import { ServerStagingStep } from './ServerStagingStep'
 import { StepHeader } from './StepHeader'
-import { useCompleteServerLoadingMutation, useConfirmServerPlacementMutation, useServerLoadingSessionQuery } from './useServerWarehouseQuery'
+import {
+  useCompleteServerLoadingMutation,
+  useConfirmServerPlacementManuallyMutation,
+  useConfirmServerPlacementMutation,
+  useReportServerDamagedMutation,
+  useServerLoadingSessionQuery,
+} from './useServerWarehouseQuery'
 import { codeMatches, type ServerLoadingSession as Session } from './warehouse-server-api'
 import { WarehouseEmpty } from './WarehouseEmpty'
-
-/** Máy chủ chưa có xác nhận tay ở bước xếp: hộp đối chiếu có quét QR và gõ mã. */
-const LABEL_METHODS: readonly VerifyMethod[] = ['QR', 'CODE']
 
 /** Phiên không còn để mở: chuyến không ở Đang xếp hàng, hoặc máy chủ không thấy phiên xếp của chuyến. */
 const UNAVAILABLE_CODES = new Set(['TRIP_NOT_LOADING', 'LOADING_EXECUTION_NOT_FOUND'])
@@ -28,9 +34,9 @@ const PositionViewer = lazy(() =>
 
 /**
  * Phiên xếp `/kho?chuyen=<mã số>` khi nhóm `warehouse` nối backend: kiện theo thứ tự xếp của phương án đã duyệt, đọc lại từ máy chủ ở thiết
- * bị nào cũng được. Mỗi kiện: đối chiếu bằng quét QR hoặc mã gõ (màn kiểm mã khớp kiện của bước rồi máy chủ ghi đã xếp) hoặc ghi sai lệch vị
- * trí; xong mọi kiện thì "Hoàn tất xếp hàng". Khung 3D vị trí kiện khi máy chủ trả lòng thùng. Không có bước soạn hàng, báo thiếu, kiện
- * hỏng, xác nhận tay, seal (D-20).
+ * bị nào cũng được. Phiên có bước soạn hàng thì soạn đủ trước (`ServerStagingStep`). Mỗi kiện: đối chiếu bằng quét QR hoặc mã gõ (màn kiểm
+ * mã khớp kiện của bước rồi máy chủ ghi đã xếp), xác nhận tay chờ điều phối viên duyệt, ghi sai lệch vị trí, hoặc "Kiện hỏng"; xong mọi kiện
+ * và không còn xác nhận tay chờ duyệt thì "Hoàn tất xếp hàng", rồi ghi số seal. Khung 3D vị trí kiện khi máy chủ trả lòng thùng.
  */
 export function ServerLoadingSession({ tripId }: { tripId: string }) {
   const t = useT()
@@ -54,17 +60,8 @@ export function ServerLoadingSession({ tripId }: { tripId: string }) {
     )
   }
   const session = query.data
-  if (session.completed) {
-    return (
-      <WarehouseEmpty
-        tripId={tripId}
-        label={session.code}
-        mascot="done"
-        title={t('serverWarehouse.session.finishedTitle', { code: session.code })}
-        description={t('serverWarehouse.session.finishedDescription')}
-      />
-    )
-  }
+  if (session.completed) return <ServerLoadingFinished tripId={tripId} session={session} />
+  if (!session.stagingComplete) return <ServerStagingStep tripId={tripId} session={session} />
   return <SessionView tripId={tripId} session={session} />
 }
 
@@ -73,8 +70,12 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
   const view = serverLoadingView(session)
   const confirm = useConfirmServerPlacementMutation(tripId)
   const complete = useCompleteServerLoadingMutation(tripId)
+  const manual = useConfirmServerPlacementManuallyMutation(tripId)
+  const damaged = useReportServerDamagedMutation(tripId)
+  const blockedId = useId()
   const [verifying, setVerifying] = useState(false)
   const [deviating, setDeviating] = useState(false)
+  const [reportingDamage, setReportingDamage] = useState(false)
   const [result, setResult] = useState<VerifyOutcome | null>(null)
   const current = view.current
   const scene = useMemo(() => serverSessionScene(session), [session])
@@ -98,12 +99,39 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
     })
   }
 
+  function handleManual({ reason, note }: ManualConfirmInput) {
+    if (current === undefined) return
+    const label = placementLabel(current)
+    manual.mutate({ placementId: current.id, input: { reason, note } }, {
+      onSuccess: () => {
+        setVerifying(false)
+        toast.warning(t('warehouse.scan.manualRecorded', { id: label }), { description: t('warehouse.scan.manualRecordedDescription') })
+      },
+      onError: (error) => setResult({ tone: 'error', message: dataErrorMessage(error, t) }),
+    })
+  }
+
+  function handleDamaged() {
+    if (current === undefined) return
+    const label = placementLabel(current)
+    damaged.mutate(current.id, {
+      onSuccess: (outcome) => {
+        setReportingDamage(false)
+        if (outcome.outcome === 'replanned') toast.warning(t('warehouse.damaged.replan', { id: label }), { description: t('warehouse.damaged.replanDescription') })
+        else toast.warning(t('warehouse.damaged.recorded', { id: label }), { description: t('warehouse.damaged.recordedDescription') })
+      },
+      onError: (error) => toast.error(dataErrorMessage(error, t)),
+    })
+  }
+
   function handleComplete() {
     complete.mutate(undefined, { onError: (error) => toast.error(dataErrorMessage(error, t)) })
   }
 
   // Kiện cuối đã có kết quả: không còn gì để đối chiếu
   if (verifying && current === undefined) setVerifying(false)
+  if (reportingDamage && current === undefined) setReportingDamage(false)
+  const blocked = session.pendingManual > 0
 
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
@@ -124,18 +152,44 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
                 <CheckCircle2 className="mt-0.5 size-6 flex-none text-success" strokeWidth={1.5} aria-hidden />
                 {t(view.total === 0 ? 'serverWarehouse.session.noPlacements' : 'serverWarehouse.session.allDone')}
               </p>
-              <Button variant="primary" size="touch" className="h-16 w-full" loading={complete.isPending} onClick={handleComplete}>
+              {blocked ? (
+                <p id={blockedId} className="m-0 flex items-start gap-3 font-medium text-badge-warning-fg">
+                  <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
+                  {t('serverWarehouse.session.manualBlocked', { count: session.pendingManual })}
+                </p>
+              ) : null}
+              <Button
+                variant="primary"
+                size="touch"
+                className="h-16 w-full"
+                loading={complete.isPending}
+                disabled={blocked}
+                aria-describedby={blocked ? blockedId : undefined}
+                onClick={handleComplete}
+              >
                 {t('serverWarehouse.session.complete')}
               </Button>
             </div>
           ) : (
             <ServerPlacementCard placement={current} step={view.step} total={view.total}>
+              {view.currentRejected === null ? null : (
+                <p role="status" className="m-0 flex items-start gap-3 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
+                  <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
+                  {view.currentRejected.rejectReason
+                    ? t('serverWarehouse.session.manualRejected', { reason: view.currentRejected.rejectReason })
+                    : t('serverWarehouse.session.manualRejectedNoReason')}
+                </p>
+              )}
               <Button variant="primary" size="touch" className="h-16 w-full" onClick={() => handleVerifyOpen(true)}>
                 <ScanLine strokeWidth={2} />
                 {t('serverWarehouse.session.verify')}
               </Button>
               <Button variant="secondary" size="touch" className="w-full" onClick={() => setDeviating(true)}>
                 {t('serverWarehouse.session.deviate')}
+              </Button>
+              <Button variant="secondary" size="touch" className="w-full" disabled={damaged.isPending} onClick={() => setReportingDamage(true)}>
+                <PackageX strokeWidth={2} />
+                {t('warehouse.damaged.open')}
               </Button>
             </ServerPlacementCard>
           )}
@@ -161,16 +215,27 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
           <PackageVerify
             open={verifying}
             onOpenChange={handleVerifyOpen}
-            methods={LABEL_METHODS}
             codeLabel={t('serverWarehouse.session.codeLabel')}
             codeHint={t('serverWarehouse.session.codeHint')}
             title={t('serverWarehouse.session.verifyTitle', { step: view.step })}
             description={t('serverWarehouse.session.verifyDescription')}
             onVerify={handleVerify}
-            candidates={[]}
-            onManual={() => undefined}
+            candidates={[{
+              packageInstanceId: current.id,
+              label: placementLabel(current),
+              name: current.name,
+              description: current.stopSequence === null ? undefined : t('common.stop', { number: current.stopSequence }),
+            }]}
+            onManual={handleManual}
             result={result}
-            pending={confirm.isPending}
+            pending={confirm.isPending || manual.isPending}
+          />
+          <DamagedPackageDialog
+            placement={reportingDamage ? { id: placementLabel(current), name: current.name, stop: current.stopSequence } : null}
+            resting={restingCount(session, current)}
+            onOpenChange={setReportingDamage}
+            onConfirm={handleDamaged}
+            pending={damaged.isPending}
           />
           <ServerDeviationDialog key={current.id} tripId={tripId} placement={current} step={view.step} open={deviating} onOpenChange={setDeviating} />
         </>

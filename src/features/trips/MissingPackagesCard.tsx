@@ -18,22 +18,23 @@ import { useResolveShortageMutation, useStagingShortagesQuery } from './useShort
  * nó thành giao thiếu, phương án lỗi thời và phải tối ưu lại, duyệt lại. Người chỉ xem (quản lý công ty) thấy danh sách và một dòng lý
  * do. Không còn báo thiếu nào thì thẻ không hiện.
  *
- * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó (mục 5: một nút chính mỗi màn).
+ * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó (mục 5: một nút chính mỗi màn). `server`: báo thiếu của máy chủ (Chi tiết chuyến
+ * của máy chủ khi luồng kho nối backend), mã đứng đầu dòng là mã in trên nhãn.
  */
-export function MissingPackagesCard({ tripId }: { tripId: string }) {
+export function MissingPackagesCard({ tripId, server = false }: { tripId: string; server?: boolean }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
   const titleId = useId()
-  const query = useStagingShortagesQuery(tripId)
-  const resolve = useResolveShortageMutation(tripId)
+  const query = useStagingShortagesQuery(tripId, server)
+  const resolve = useResolveShortageMutation(tripId, server)
   const [dropping, setDropping] = useState<ShortageRow | null>(null)
   const rows = query.data ?? []
   if (rows.length === 0) return null
   const canDecide = can('trips.edit')
 
   function decide(row: ShortageRow, decision: ShortageDecision) {
-    resolve.mutate({ packageInstanceId: row.packageInstanceId, decision }, {
+    resolve.mutate({ row, decision }, {
       onSuccess: () => {
         setDropping(null)
         if (decision === 'DROP') toast.success(t('trips.shortages.dropped', { id: row.packageInstanceId }), { description: t('trips.shortages.droppedDescription') })
@@ -52,12 +53,12 @@ export function MissingPackagesCard({ tripId }: { tripId: string }) {
       </CardHeader>
       <ul className="flex flex-col divide-y divide-line-soft">
         {rows.map((row) => (
-          <li key={row.packageInstanceId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4.5 py-3">
+          <li key={row.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4.5 py-3">
             <div className="flex min-w-0 flex-1 basis-80 flex-col gap-0.5">
               <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                 <span className="font-mono text-body font-semibold text-ink-strong">{row.packageInstanceId}</span>
                 <span className="text-body text-ink-1">{row.packageName}</span>
-                <span className="text-small text-ink-2">{t('common.stop', { number: row.stopNumber })}</span>
+                {row.stopNumber === null ? null : <span className="text-small text-ink-2">{t('common.stop', { number: row.stopNumber })}</span>}
               </span>
               <span className="text-small text-ink-2">
                 {t('trips.shortages.reportedBy', {

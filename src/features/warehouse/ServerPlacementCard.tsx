@@ -2,7 +2,7 @@ import { useId, type ReactNode } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { ServerPlacementState } from './server-loading'
+import type { ServerLoadingRow } from './server-loading'
 import type { ServerPlacement } from './warehouse-server-api'
 
 /**
@@ -51,10 +51,10 @@ export function ServerPlacementCard({ placement, step, total, children }: {
   )
 }
 
-const OUTCOME_TONE = { confirmed: 'success', deviation: 'warning', current: 'azure', pending: 'neutral' } as const
+const OUTCOME_TONE = { confirmed: 'success', deviation: 'warning', damaged: 'danger', current: 'azure', pending: 'neutral' } as const
 
 /** Thứ tự xếp của phiên kèm trạng thái từng kiện (chữ, không chỉ màu). */
-export function ServerPlacementList({ rows }: { rows: readonly { placement: ServerPlacement; state: ServerPlacementState }[] }) {
+export function ServerPlacementList({ rows }: { rows: readonly ServerLoadingRow[] }) {
   const t = useT()
   const id = useId()
   if (rows.length === 0) return null
@@ -62,14 +62,17 @@ export function ServerPlacementList({ rows }: { rows: readonly { placement: Serv
     <section aria-labelledby={id} className="flex flex-col gap-3 rounded-lg border border-border bg-bg p-5 shadow-card">
       <h2 id={id} className="m-0 font-display text-h3 font-bold text-ink-strong">{t('serverWarehouse.session.list')}</h2>
       <ol aria-labelledby={id} className="m-0 flex list-none flex-col p-0">
-        {rows.map(({ placement, state }, index) => (
+        {rows.map(({ placement, state, manualPending }, index) => (
           <li
             key={placement.id}
             aria-current={state === 'current' ? 'step' : undefined}
             className={cn('flex min-h-14 items-center gap-3 border-b border-line-soft py-2 last:border-b-0', state === 'current' && 'font-semibold')}
           >
             <span className="w-16 flex-none font-mono text-ink-3 tabular-nums">{t('serverWarehouse.session.stepLabel', { step: index + 1 })}</span>
-            <span className="min-w-0 flex-1 line-clamp-2 text-ink-1">{placement.name}</span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="line-clamp-2 text-ink-1">{placement.name}</span>
+              {manualPending ? <span className="font-medium text-badge-warning-fg">{t('serverWarehouse.session.manualPending')}</span> : null}
+            </span>
             <Badge tone={OUTCOME_TONE[state]} className="flex-none text-body-lg">{t(`serverWarehouse.session.outcomes.${state}`)}</Badge>
           </li>
         ))}

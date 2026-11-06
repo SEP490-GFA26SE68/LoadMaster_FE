@@ -87,7 +87,7 @@ test('danh sách: chờ xếp có nút bắt đầu; chuyến bắt đầu xếp
   expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Đang xếp hàng', 'Chờ xếp'])
   expect(screen.queryByRole('button', { name: /Thông báo/ })).not.toBeInTheDocument()
   const other = within(screen.getByRole('heading', { level: 3, name: OTHER.tripCode }).closest('li') as HTMLElement)
-  await user.click(other.getByRole('link', { name: 'Tiếp tục xếp' }))
+  await user.click(other.getByRole('link', { name: 'Tiếp tục soạn / xếp' }))
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 1' }, LOAD)
   expect(within(card).getByText('LB-0901')).toBeInTheDocument()
   expect(within(card).getByText('1 · Co.opmart Biên Hoà')).toBeInTheDocument()
@@ -99,7 +99,7 @@ test('danh sách: chờ xếp có nút bắt đầu; chuyến bắt đầu xếp
 test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã gõ → hoàn tất', async () => {
   const user = userEvent.setup()
   renderWarehouse('/kho')
-  await user.click(await screen.findByRole('button', { name: 'Bắt đầu xếp hàng' }, LOAD))
+  await user.click(await screen.findByRole('button', { name: 'Bắt đầu soạn hàng' }, LOAD))
 
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 2' }, LOAD)
   expect(within(card).getByText('Thùng nước 1')).toBeInTheDocument()
@@ -130,4 +130,17 @@ test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã g
     '/api/warehouse/placements/102/confirm',
     '/api/warehouse/tasks/7/complete',
   ])
+})
+
+test('danh sách: chuyến quay về lập kế hoạch vì thiếu kiện nằm ở nhóm chờ điều phối tối ưu lại, không có nút', async () => {
+  const stale = { ...TASK, tripId: 11, tripCode: 'TRIP-20261106-D4', totalPackages: null, loadPlanId: null, status: 'DRAFT', awaitingReplan: true, replanReason: 'STAGING_SHORTAGE' }
+  calls = stubBackend({ 'GET /api/warehouse/tasks': () => ({ body: envelope([TASK, stale]) }) }).calls
+  renderWarehouse('/kho')
+  await screen.findByRole('heading', { level: 2, name: 'Chờ điều phối tối ưu lại' }, LOAD)
+  expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Chờ xếp', 'Chờ điều phối tối ưu lại'])
+  const card = within(screen.getByRole('heading', { level: 3, name: stale.tripCode }).closest('li') as HTMLElement)
+  expect(card.getByText(/Điều phối viên đã bỏ kiện kho báo thiếu/)).toBeInTheDocument()
+  expect(card.queryByRole('button')).not.toBeInTheDocument()
+  expect(card.queryByRole('link')).not.toBeInTheDocument()
+  expect(calls.find((call) => call.path === '/api/warehouse/tasks')?.query).toEqual({ includeAwaitingReplan: 'true' })
 })

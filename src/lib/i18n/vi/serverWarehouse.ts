@@ -1,19 +1,26 @@
 /**
- * Màn kho `/kho` khi nhóm `warehouse` nối backend: danh sách chuyến chờ xếp / đang xếp, phiên xếp theo phương án đã duyệt của máy chủ (xác
- * nhận từng kiện theo thứ tự bằng quét QR hoặc mã gõ, ghi sai lệch vị trí, hoàn tất xếp, khung 3D vị trí kiện). Không có bước soạn hàng, seal.
+ * Màn kho `/kho` khi nhóm `warehouse` nối backend: danh sách chuyến chờ xếp / đang xếp, phiên xếp theo phương án đã duyệt của máy chủ (soạn
+ * hàng và báo thiếu, đối chiếu từng kiện theo thứ tự bằng quét QR, mã gõ hoặc xác nhận tay, ghi sai lệch vị trí, kiện hỏng, hoàn tất xếp, số
+ * seal, khung 3D vị trí kiện).
  */
 export const serverWarehouse = {
   groups: {
     loading: 'Đang xếp hàng',
     waiting: 'Chờ xếp',
     loaded: 'Xếp xong — chờ xuất phát',
+    stale: 'Chờ điều phối tối ưu lại',
+  },
+  replan: {
+    shortage: 'Điều phối viên đã bỏ kiện kho báo thiếu. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
+    damaged: 'Kho báo kiện hỏng có kiện tựa lên. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
+    unknown: 'Phiên xếp đã dừng. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
   },
   departure: 'Giờ xuất phát',
   vehicle: 'Xe',
   packages: 'Số kiện',
   unknown: '—',
-  start: 'Bắt đầu xếp hàng',
-  resume: 'Tiếp tục xếp',
+  start: 'Bắt đầu soạn hàng',
+  resume: 'Tiếp tục soạn / xếp',
   openLoaded: 'Xem chuyến đã xếp',
   emptyTitle: 'Không có chuyến cần xếp',
   emptyDescription: 'Chuyến Đã lập kế hoạch có phương án đã duyệt sẽ hiện ở đây để kho bắt đầu xếp.',
@@ -36,7 +43,14 @@ export const serverWarehouse = {
     complete: 'Hoàn tất xếp hàng',
     list: 'Thứ tự xếp',
     stepLabel: 'Bước {step}',
-    outcomes: { confirmed: 'Đã xếp', deviation: 'Đã xếp · lệch vị trí', current: 'Đang xếp', pending: 'Chưa xếp' },
+    outcomes: { confirmed: 'Đã xếp', deviation: 'Đã xếp · lệch vị trí', current: 'Đang xếp', pending: 'Chưa xếp', damaged: 'Hỏng · bỏ lại kho' },
+    manualPending: 'Xác nhận tay — chờ điều phối viên duyệt',
+    manualBlocked: {
+      one: 'Còn {count} xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
+      other: 'Còn {count} xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
+    },
+    manualRejected: 'Điều phối viên từ chối xác nhận tay của kiện này: {reason}. Đối chiếu lại kiện bằng nhãn.',
+    manualRejectedNoReason: 'Điều phối viên từ chối xác nhận tay của kiện này. Đối chiếu lại kiện bằng nhãn.',
     noPlacements: 'Phương án đã duyệt không có kiện nào để xếp.',
     allDone: 'Đã xếp mọi kiện. Bấm Hoàn tất xếp hàng để báo tài xế xuất phát được.',
     verifyTitle: 'Đối chiếu kiện bước {step}',
@@ -47,10 +61,22 @@ export const serverWarehouse = {
     confirmed: 'Đã xếp {name}.',
     finishedTitle: 'Đã xếp xong chuyến {code}',
     finishedDescription: 'Máy chủ đã ghi xếp xong. Chuyến chờ tài xế bấm Xuất phát.',
+    finishedDamaged: { one: 'Đã bỏ lại {count} kiện hỏng ở kho.', other: 'Đã bỏ lại {count} kiện hỏng ở kho.' },
     back: 'Về danh sách chuyến',
     unavailableTitle: 'Không mở được phiên xếp',
     stop: 'Điểm giao',
     viewerLabel: 'Vị trí kiện trong thùng xe',
+  },
+  staging: {
+    codeUnknown: 'Mã {code} không phải kiện của chuyến này. Chưa ghi gì.',
+    manualDescription: 'Kiện chỉ tính là đã soạn khi điều phối viên duyệt ở Chi tiết chuyến; bị từ chối thì đối chiếu lại bằng nhãn.',
+    manualPending: 'Xác nhận tay chờ điều phối viên duyệt — chưa tính là đã soạn.',
+    manualPendingBanner: {
+      one: '{count} kiện xác nhận tay chờ điều phối viên duyệt. Soạn tiếp các kiện còn lại.',
+      other: '{count} kiện xác nhận tay chờ điều phối viên duyệt. Soạn tiếp các kiện còn lại.',
+    },
+    rejected: 'Điều phối viên từ chối xác nhận tay: {reason}. Đối chiếu lại bằng nhãn.',
+    keepSearching: 'Điều phối viên yêu cầu tìm tiếp kiện này.',
   },
   deviation: {
     title: 'Sai lệch vị trí — bước {step}',
