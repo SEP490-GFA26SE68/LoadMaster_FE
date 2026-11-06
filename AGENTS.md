@@ -30,8 +30,8 @@ Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI servi
 **Trạng thái hiện tại:** mặc định toàn bộ dữ liệu là mẫu. Đặt `VITE_AUTH_SOURCE=keycloak` thì đăng nhập qua Keycloak của backend, và các
 nhóm đã nối — người dùng, nhật ký, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn kho xếp hàng, màn tài xế
 (cả Xuất phát), màn Giám sát, bảng điều khiển — đọc ghi backend thật, chuyến (danh sách, Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh,
-Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ đọc (`VITE_API_FEATURES` chọn nhóm); phần máy chủ chưa có thì ẩn, chuông chỉ còn
-ở vai trò mà mọi nhóm nó nói về vẫn là kho mẫu (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
+Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ đọc (`VITE_API_FEATURES` chọn nhóm); phần máy chủ chưa có thì ẩn, chuông đọc
+máy chủ khi nhóm `notifications` nối (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
 mọi tab là về seed) và không thay backend (trình duyệt hay máy khác không thấy gì). Phân quyền **giả lập ở FE** (LM-084, D-41).
 
@@ -188,7 +188,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 **Chuông thông báo theo vai trò**
 
 `NOTIFICATION_ACTIONS` quyết định ai nhận gì; vai trò không có nguồn nào (quản lý nền tảng, hỗ trợ khách hàng) không có chuông; sự kiện của
-luồng mới thêm ở issue của luồng đó.
+luồng mới thêm ở issue của luồng đó. Các ý dưới đây là chuông của kho mẫu; nhóm `notifications` nối backend thì chuông đọc máy chủ theo
+cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
 
 - Điều phối viên: đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành,
   chuyến bị huỷ, xác nhận tay mới gửi (`manualConfirm.requested`), `pickup.requested`, tài xế báo sự cố (`exception.reported`), kho tự chuyển sự cố
@@ -1141,9 +1142,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`, `warehouse`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
-  của nhóm đó cho tới khi nối. Chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò nói về còn là kho mẫu
-  (`notificationsReachable`, `notifications-api.ts`); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+  của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
+  nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
   (còn đọc kho mẫu) hiện mã chuyến dạng chữ, vì Chi tiết chuyến của máy chủ không tìm được mã của kho mẫu.
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
@@ -1253,7 +1254,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   tay ở điểm nhận — máy chủ chưa có) → `POST /api/driver/pickup-packages/{id}/pick` (409 `PICKUP_PACKAGE_ALREADY_PICKED`), hoàn tất điểm nhận khi
   mọi kiện đã lên xe (`PICKUP_STOP_INCOMPLETE`); kiện nhận giao ở điểm sau nằm trong `packages` của điểm đó và dỡ như kiện thường. Hộp "Nhận hàng
   dọc đường" của tờ "Thêm" gọi tên điểm theo mã điểm của `GET /api/driver/trips/{id}/stops` (`stopId`). `DRIVER_CAPABILITIES`
-  (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông, vị trí xe mô phỏng; nhận dọc đường (`pickups`) chỉ khi
+  (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông (trừ khi `notifications` nối), vị trí xe mô phỏng; nhận dọc đường (`pickups`) chỉ khi
   nhóm `trips` cùng nguồn; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
@@ -1306,9 +1307,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (máy chủ từ chối 409 `TRIP_LOCKED`, câu ở `apiErrors`): chuyến còn Nháp thì nút "Ghim" và "Chạy lại giữ ghim" mờ kèm lý do
   (`serverPlans.planner.pinDraftReason`), pha vận hành khoá cả Planner. Thẻ kiện đang chọn có nút "Ghim" / "Bỏ
   ghim" (`POST /api/load-plans/{id}/pin` với mã số chỗ xếp của máy chủ — `backendPlacementIds` —, `DELETE …/pin/{placementId}`): máy chủ lưu
-  ngay, không qua "Duyệt bản chỉnh". "Chạy lại giữ ghim" (`PinnedRerun`, thêm `optimization.run`) mở `BackendRerunDialog` →
-  `POST …/rerun` (`timeLimitSec` 10 cho vừa giới hạn chờ của `api()`, mục tiêu của phương án đang xem): máy chủ trừ credit, chạy đồng bộ và
-  lưu **một** phương án mới chưa duyệt, nên màn mở chính phương án đó trong Planner (`?revision=`), không mở So sánh; FE không tính credit.
+  ngay, không qua "Duyệt bản chỉnh". "Chạy lại giữ ghim" (`PinnedRerun`, thêm `optimization.run`) là **lần chạy ba phương án**, như kho mẫu: mở
+  `/chuyen/:mã chuyến/toi-uu?giu-ghim=<mã phương án>`; Thiết lập tối ưu có thẻ "Giữ kiện đã ghim" (`BackendPinsCard`, công tắc bật sẵn, số kiện
+  ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, một credit, ba phương án A · B · C
+  giữ đúng chỗ các kiện ghim; máy chủ trả `pinnedCount` (hộp chạy ghi "Giữ N kiện đã ghim"), bộ ghim không đứng vững là 400
+  `PINNED_SET_INVALID` trước khi chạy, không trừ credit. Không dùng `POST /api/load-plans/{id}/rerun` (một phương án, chạy đồng bộ).
   `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
   về Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
@@ -1341,7 +1344,18 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   hoạch, phương án lỗi thời) và duyệt / từ chối xác nhận tay của kho ở cùng thẻ `ManualConfirmCard` với tài xế (`step` `STAGING` / `LOADING`).
   Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện
   (`placements[].weightKg`) và tải trọng xe (`maxPayloadKg`) vào khung, thẻ kiện cần xếp hiện khối lượng như kho mẫu (không có tổng tải; máy chủ
-  không trả thì bỏ dòng). Máy chủ chưa có chuông.
+  không trả thì bỏ dòng). Chuông `variant="touch"` chỉ khi `notifications` nối (`WAREHOUSE_CAPABILITIES.notifications`).
+- **Chuông thông báo** (`notifications`; `notifications-api.ts`, DTO ở `notifications-dto.ts`, dòng ở `server-notifications.ts`): máy chủ dựng
+  thông báo **lúc đọc** từ nhật ký của công ty (7 ngày, 20 dòng), lọc theo vai trò và người (tài xế: chuyến nêu `driverId` của mình; người
+  gửi xác nhận tay, yêu cầu hỗ trợ: `requestedBy`), không gồm việc chính mình làm; "đã đọc" lưu ở máy chủ. `GET /api/notifications`,
+  `POST /api/notifications/read` (`{ ids }`, trả lại danh sách); đọc lại bằng `refetchInterval` 60 giây của Query. Câu dịch từ mã + tham số như
+  Nhật ký máy chủ (`serverAudit`); câu của tài xế theo `notifications.driver.*`. Chuông hiện ở mọi vai trò có nguồn (`BELL_SOURCES`) — kể cả nút
+  56 px của `/kho`, `/tai-xe` bản máy chủ; mã viewer là mã của **backend** (`getCachedCurrentUser`). Liên kết: chuyến tới `/chuyen/<mã chuyến>`
+  khi `tripLinkable` và `trips.view`, kho `/kho?chuyen=<mã số>`, tài xế `/tai-xe/diem-giao?chuyen=<mã số>` (trừ chuyến đã đổi tài xế khỏi mình),
+  `CREDIT_LOW_BALANCE` tới `/goi-cuoc` khi có `billing.manage`. Máy chủ có nguồn cho: tài khoản (`USER_*`), duyệt phương án, xếp xong, sự cố
+  giao, nguy cơ trễ hạn, hoàn thành / huỷ / đổi trạng thái / đổi tài xế của chuyến, xác nhận tay gửi / bị từ chối, sự cố cấp chuyến báo / chuyển
+  quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit. Chưa có nguồn nên không có ở chuông máy chủ: kho báo thiếu / kiện hỏng / quyết định
+  báo thiếu, tìm thấy kiện, đăng nhập sai, đổi thứ tự điểm, nhận hàng dọc đường.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe

@@ -13,7 +13,7 @@ export function useTripLoadPlansQuery(tripId: string) {
 export function useStartLoadingOptimizationMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: () => startLoadingOptimization(tripId),
+    mutationFn: (keepPinsFromPlanId?: string) => startLoadingOptimization(tripId, keepPinsFromPlanId),
     onSuccess: () => client.invalidateQueries({ queryKey: ['billing'] }),
   })
 }

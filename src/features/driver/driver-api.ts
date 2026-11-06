@@ -48,7 +48,7 @@ const ON_BACKEND = usesBackend('driver')
  * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm giờ đến và kiện cần dỡ, "Đã đến",
  * dỡ một kiện bằng quét QR, mã gõ hoặc xác nhận tay (chờ điều phối viên duyệt), sự cố theo kiện kèm khách từ chối, hoàn tất điểm, vị trí
  * hàng 3D (phương án kho đã xếp), giờ đến dự kiến và hạn giao của các điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến), nhận
- * hàng dọc đường (gửi yêu cầu, điểm nhận, giao kiện nhận). Backend chưa có — màn ẩn phần đó: thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
+ * hàng dọc đường (gửi yêu cầu, điểm nhận, giao kiện nhận). Chuông đọc máy chủ khi nhóm `notifications` nối backend. Backend chưa có — màn ẩn phần đó: tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
@@ -77,7 +77,8 @@ export const DRIVER_CAPABILITIES: DriverCapabilities = {
   qrVerify: true,
   manualConfirm: true,
   deliveryIssues: true,
-  notifications: !ON_BACKEND,
+  // Chuông bản máy chủ khi nhóm `notifications` cũng nối backend (`GET /api/notifications`)
+  notifications: !ON_BACKEND || usesBackend('notifications'),
   upcomingTrips: !ON_BACKEND,
   departFromList: ON_BACKEND,
   simulatedPosition: !ON_BACKEND,

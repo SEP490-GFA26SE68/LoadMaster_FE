@@ -43,6 +43,9 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
               <dd className="font-mono tabular-nums">{t('serverPlans.job.computationValue', { ms: format.integer(job.computationMs) })}</dd>
             </>}
           </dl>
+          {job?.pinnedCount != null && job.pinnedCount > 0 ? (
+            <p className="text-small text-ink-2">{t('serverPlans.job.pinned', { count: job.pinnedCount })}</p>
+          ) : null}
           {finished && job?.packedPlanCount != null && job.packedPlanCount > 0 ? (
             <p className="text-small text-ink-2">{t('serverPlans.job.plans', { count: job.packedPlanCount })}</p>
           ) : null}
