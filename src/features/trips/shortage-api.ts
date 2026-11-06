@@ -19,11 +19,14 @@ const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPO
 
 /** Một kiện kho đang báo thiếu, kèm tên kiện và tên người báo để đọc. */
 export type ShortageRow = {
+  /** Mã của báo thiếu: kho mẫu là mã instance của kiện, máy chủ là mã số của báo thiếu. */
+  readonly id: string
   readonly packageInstanceId: string
   readonly packageName: string
   /** Mã kiện của bên gửi. */
   readonly packageCode: string
-  readonly stopNumber: number
+  /** `null` khi máy chủ không trả điểm giao của kiện. */
+  readonly stopNumber: number | null
   /** ISO 8601 */
   readonly at: string
   /** Họ tên người báo; `null` khi kho không còn tài khoản đó, hoặc báo thiếu ghi khi không có phiên. */
@@ -43,6 +46,7 @@ export async function fetchStagingShortages(tripId: string): Promise<ShortageRow
   return shortages.map((shortage) => {
     const label = labelOf.get(shortage.packageInstanceId)
     return {
+      id: shortage.packageInstanceId,
       packageInstanceId: shortage.packageInstanceId,
       packageName: label?.name ?? '',
       packageCode: label?.packageCode ?? shortage.packageInstanceId,

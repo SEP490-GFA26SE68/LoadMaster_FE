@@ -111,6 +111,14 @@ export const apiErrors = {
   DEVIATION_ALREADY_RECORDED: 'Sai lệch của kiện này đã được ghi.',
   INVALID_SEQUENCE_ORDER: 'Chưa tới lượt kiện này — xếp theo đúng thứ tự.',
   INCOMPLETE_LOADING: 'Còn kiện chưa xếp, chưa hoàn tất được.',
+  STAGING_INCOMPLETE: 'Chưa soạn đủ hàng vào khu chờ, hoặc còn kiện báo thiếu chờ điều phối viên quyết — chưa xếp được.',
+  PACKAGE_NOT_IN_LOADING_PLAN: 'Kiện này không thuộc phương án đang xếp của chuyến.',
+  PACKAGE_ALREADY_STAGED: 'Kiện này đã soạn rồi.',
+  STAGING_SHORTAGE_NOT_FOUND: 'Không tìm thấy báo thiếu này.',
+  STAGING_SHORTAGE_NOT_OPEN: 'Báo thiếu này đã được quyết, hoặc chuyến không còn ở bước xếp hàng.',
+  LOADING_MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
+  SEAL_INVALID: 'Số seal cần từ 1 đến 32 ký tự.',
+  SEAL_NOT_ALLOWED: 'Chỉ ghi được số seal khi đã xếp xong và xe chưa xuất phát.',
 
   // Giao hàng, giám sát
   NO_PENDING_DELIVERY_STOP: 'Chuyến không còn điểm giao nào chờ giao.',

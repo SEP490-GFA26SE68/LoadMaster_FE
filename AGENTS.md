@@ -1286,14 +1286,24 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu.
 - **Kho** (`warehouse`; `warehouse-backend-api.ts`, DTO ở `warehouse-dto.ts`, `WAREHOUSE_CAPABILITIES` ở `warehouse-server-api.ts`): `/kho` là
   `ServerWarehouseTripsPage` — `GET /api/warehouse/tasks` trả chuyến chờ xếp và chuyến Đang xếp hàng kèm phiên (`executionId`,
-  `executionStatus`) — và `ServerLoadingSession`: "Bắt đầu xếp hàng" `POST /api/warehouse/tasks/{tripId}/start`, mở lại phiên đang xếp ở bất kỳ
-  thiết bị nào `GET /api/warehouse/tasks/{tripId}` (cùng dạng; phiên đọc từ máy chủ, không giữ ở tab). Phiên có lòng thùng và từng kiện
-  (kích thước, vị trí, mã QR, mã kiện, điểm giao, trạng thái): đối chiếu bằng quét QR hoặc gõ mã (mã QR, mã vạch, mã kiện — tab kiểm vì máy chủ
-  không kiểm) rồi `POST /api/warehouse/placements/{id}/confirm`, hoặc ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), xong thì
-  `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`). Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi
-  có lòng thùng và mọi kiện có điểm giao; khối lượng kiện (`placements[].weightKg`) và tải trọng xe (`maxPayloadKg`) vào khung, thẻ kiện cần
-  xếp hiện khối lượng như kho mẫu (không có tổng tải; máy chủ không trả thì bỏ dòng). Màn bản máy chủ không có soạn hàng, báo thiếu, xác nhận tay,
-  kiện hỏng, seal, chuông.
+  `executionStatus`) — và `ServerLoadingSession`: "Bắt đầu soạn hàng" `POST /api/warehouse/tasks/{tripId}/start` gửi `{ staging: true }` (bước soạn
+  là tuỳ chọn ở máy chủ: app di động không gửi thì phiên không có bước soạn — `stagingRequired` vắng là đã soạn đủ), mở lại phiên ở bất kỳ thiết
+  bị nào `GET /api/warehouse/tasks/{tripId}` (cùng dạng; phiên đọc từ máy chủ, không giữ ở tab). Phiên có lòng thùng và từng kiện (kích thước,
+  vị trí, mã QR, mã kiện, điểm giao, trạng thái, đã soạn, báo thiếu, xác nhận tay), số xác nhận tay chờ và số seal. **Soạn hàng**
+  (`ServerStagingStep`, như `StagingStepPage`): đối chiếu không cần thứ tự `POST …/tasks/{tripId}/staging/packages/{packageId}/confirm` (quét lại
+  là `alreadyStaged`, không ghi), xác nhận tay `…/manual`, "Báo thiếu" `…/shortage`; soạn đủ thì màn tự sang bước xếp (`STAGING_INCOMPLETE`).
+  **Xếp**: đối chiếu bằng quét QR hoặc gõ mã (mã QR, mã vạch, mã kiện — tab kiểm vì máy chủ không kiểm) rồi
+  `POST /api/warehouse/placements/{id}/confirm`, xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
+  `…/damaged` (không kiện nào tựa lên thì bỏ lại kho — trạng thái `DAMAGED` —, có thì chuyến về Đã lập kế hoạch; số kiện tựa lên trên hộp
+  thoại đếm như máy chủ, `restingCount`), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`; còn xác nhận tay chờ:
+  nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong ghi / đổi số seal `POST …/tasks/{tripId}/seal` tới lúc xe rời kho
+  (`ServerLoadingFinished`). Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
+  `shortage-backend-api.ts`: `GET /api/trips/{id}/staging-shortages`, `POST …/{shortageId}/resolve` — tìm tiếp, hoặc bỏ kiện: chuyến về Đã lập kế
+  hoạch, phương án lỗi thời) và duyệt / từ chối xác nhận tay của kho ở cùng thẻ `ManualConfirmCard` với tài xế (`step` `STAGING` / `LOADING`).
+  Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện
+  (`placements[].weightKg`) và tải trọng xe (`maxPayloadKg`) vào khung, thẻ kiện cần xếp hiện khối lượng như kho mẫu (không có tổng tải; máy chủ
+  không trả thì bỏ dòng). Máy chủ chưa có: cờ "Không tìm thấy" / "Hư hỏng" trên kiện, yêu cầu giao "giao thiếu", nhóm "Chờ điều phối tối ưu lại"
+  ở danh sách kho, chuông.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe

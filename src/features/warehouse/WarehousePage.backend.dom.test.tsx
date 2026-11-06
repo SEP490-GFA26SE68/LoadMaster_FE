@@ -87,7 +87,7 @@ test('danh sách: chờ xếp có nút bắt đầu; chuyến bắt đầu xếp
   expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Đang xếp hàng', 'Chờ xếp'])
   expect(screen.queryByRole('button', { name: /Thông báo/ })).not.toBeInTheDocument()
   const other = within(screen.getByRole('heading', { level: 3, name: OTHER.tripCode }).closest('li') as HTMLElement)
-  await user.click(other.getByRole('link', { name: 'Tiếp tục xếp' }))
+  await user.click(other.getByRole('link', { name: 'Tiếp tục soạn / xếp' }))
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 1' }, LOAD)
   expect(within(card).getByText('LB-0901')).toBeInTheDocument()
   expect(within(card).getByText('1 · Co.opmart Biên Hoà')).toBeInTheDocument()
@@ -99,7 +99,7 @@ test('danh sách: chờ xếp có nút bắt đầu; chuyến bắt đầu xếp
 test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã gõ → hoàn tất', async () => {
   const user = userEvent.setup()
   renderWarehouse('/kho')
-  await user.click(await screen.findByRole('button', { name: 'Bắt đầu xếp hàng' }, LOAD))
+  await user.click(await screen.findByRole('button', { name: 'Bắt đầu soạn hàng' }, LOAD))
 
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 2' }, LOAD)
   expect(within(card).getByText('Thùng nước 1')).toBeInTheDocument()

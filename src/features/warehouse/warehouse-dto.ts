@@ -2,8 +2,8 @@ import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
 
 /**
- * DTO của `WarehouseController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`, `PlacementStepResponse`,
- * `ConfirmPlacementResponse`, `DeviationResponse`, `CompleteLoadingResponse`) và hàm đổi sang kiểu của màn kho; chỉ
+ * DTO của `WarehouseController` và `WarehouseStagingController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`,
+ * `PlacementStepResponse`, `StagingResponse`, `StagingShortageResponse`, `DamageResponse`, `SealResponse`) và hàm đổi sang kiểu của màn kho; chỉ
  * `warehouse-backend-api.ts` import file này. Toạ độ, kích thước kiện và lòng thùng là cm, gốc ở góc trong cùng bên trái sàn thùng (như
  * phương án).
  */
@@ -42,8 +42,16 @@ export type PlacementStepDto = {
   readonly stopId?: number | null
   readonly stopSequence?: number | null
   readonly stopName?: string | null
-  /** `CONFIRMED` | `DEVIATION` | `PENDING`. */
+  /** `CONFIRMED` | `DEVIATION` | `DAMAGED` (kiện hỏng bỏ lại kho) | `PENDING`. */
   readonly status?: string | null
+  /** Kiện đã vào khu chờ (bước soạn hàng); vắng ở máy chủ cũ. */
+  readonly staged?: boolean | null
+  /** Báo thiếu còn hiệu lực của kiện: `OPEN` (chờ điều phối viên) | `KEEP_SEARCHING` (điều phối viên bảo tìm tiếp). */
+  readonly shortageStatus?: string | null
+  /** Xác nhận tay mới nhất của kho với kiện: `PENDING` | `APPROVED` | `REJECTED`, bước `STAGING` | `LOADING`. */
+  readonly manualStatus?: string | null
+  readonly manualStep?: string | null
+  readonly manualRejectReason?: string | null
 }
 
 /** Phiên xếp: `POST /api/warehouse/tasks/{tripId}/start` và `GET /api/warehouse/tasks/{tripId}` trả cùng dạng. Lòng thùng và cửa: cm. */
@@ -68,6 +76,25 @@ export type StartLoadingDto = {
   readonly startedAt: string | null
   readonly completedAt?: string | null
   readonly placements: readonly PlacementStepDto[] | null
+  /** Phiên có bước soạn hàng (bắt đầu kèm `staging: true`); vắng ở máy chủ cũ và phiên của app di động. */
+  readonly stagingRequired?: boolean | null
+  readonly stagingComplete?: boolean | null
+  readonly pendingManualCount?: number | null
+  readonly sealNumber?: string | null
+  readonly sealedAt?: string | null
+  readonly sealedByName?: string | null
+}
+
+/** `POST …/staging/packages/{packageId}/confirm` và `…/manual`. */
+export type StagingDto = {
+  readonly alreadyStaged?: boolean | null
+  readonly stagingComplete?: boolean | null
+}
+
+/** `POST /api/warehouse/placements/{id}/damaged`: `LEFT_OUT` — kiện bỏ lại kho, xếp tiếp; `REPLANNED` — chuyến về Đã lập kế hoạch. */
+export type DamageDto = {
+  readonly outcome: string | null
+  readonly restingCount?: number | null
 }
 
 /**
@@ -112,8 +139,26 @@ export type ServerPlacement = {
   readonly stopName: string | null
 }
 
-/** Kết quả từng kiện trong phiên: đã xếp đúng chỗ, hoặc đã xếp kèm sai lệch vị trí. */
-export type PlacementOutcome = 'confirmed' | 'deviation'
+/** Kết quả từng kiện trong phiên: đã xếp đúng chỗ, đã xếp kèm sai lệch vị trí, hoặc kiện hỏng bị bỏ lại kho. */
+export type PlacementOutcome = 'confirmed' | 'deviation' | 'damaged'
+
+/** Xác nhận tay mới nhất của kho với một kiện (bước soạn hoặc xếp). */
+export type ServerManualState = {
+  readonly status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  readonly step: 'STAGING' | 'LOADING'
+  readonly rejectReason: string | null
+}
+
+/** Tiến độ soạn hàng của một kiện: đã vào khu chờ, báo thiếu còn hiệu lực, xác nhận tay mới nhất. */
+export type ServerStagingState = {
+  readonly staged: boolean
+  /** `open` — chờ điều phối viên quyết; `keepSearching` — điều phối viên bảo kho tìm tiếp. */
+  readonly shortage: 'open' | 'keepSearching' | null
+  readonly manual: ServerManualState | null
+}
+
+/** Số seal đã ghi sau khi xếp xong. */
+export type ServerSeal = { readonly number: string; readonly at: string | null; readonly byName: string | null }
 
 /** Lòng thùng và cửa xe của phiên, cm; `null` khi xe chưa gắn loại hoặc loại chưa khai lòng thùng — khi đó không có khung 3D. */
 export type ServerCargoBox = {
@@ -132,8 +177,17 @@ export type ServerLoadingSession = {
   /** Tải trọng tối đa của xe (kg); `null` khi máy chủ không trả. */
   readonly maxPayloadKg: number | null
   readonly placements: readonly ServerPlacement[]
-  /** Kết quả từng kiện theo máy chủ (`CONFIRMED` / `DEVIATION`); kiện chưa xử lý không có mục. */
+  /** Kết quả từng kiện theo máy chủ (`CONFIRMED` / `DEVIATION` / `DAMAGED`); kiện chưa xử lý không có mục. */
   readonly outcomes: Readonly<Record<string, PlacementOutcome>>
+  /** Tiến độ soạn và xác nhận tay theo mã vị trí của kiện. */
+  readonly staging: Readonly<Record<string, ServerStagingState>>
+  /** Phiên có bước soạn hàng. */
+  readonly stagingRequired: boolean
+  /** Soạn đủ: mọi kiện đã vào khu chờ và không còn báo thiếu chờ quyết. Phiên không có bước soạn luôn đủ. */
+  readonly stagingComplete: boolean
+  /** Xác nhận tay của kho còn chờ điều phối viên duyệt: còn thì chưa hoàn tất xếp được. */
+  readonly pendingManual: number
+  readonly seal: ServerSeal | null
   readonly completed: boolean
 }
 
@@ -200,11 +254,36 @@ function boxOf(dto: StartLoadingDto): ServerCargoBox | null {
   }
 }
 
-const OUTCOMES: Readonly<Record<string, PlacementOutcome>> = { CONFIRMED: 'confirmed', DEVIATION: 'deviation' }
+const OUTCOMES: Readonly<Record<string, PlacementOutcome>> = { CONFIRMED: 'confirmed', DEVIATION: 'deviation', DAMAGED: 'damaged' }
+
+const MANUAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const
+const MANUAL_STEPS = ['STAGING', 'LOADING'] as const
+
+function manualOf(dto: PlacementStepDto): ServerManualState | null {
+  const status = MANUAL_STATUSES.find((value) => value === dto.manualStatus)
+  const step = MANUAL_STEPS.find((value) => value === dto.manualStep)
+  if (status === undefined || step === undefined) return null
+  return { status, step, rejectReason: dto.manualRejectReason?.trim() || null }
+}
+
+function stagingOf(dto: PlacementStepDto): ServerStagingState {
+  const shortage = dto.shortageStatus === 'OPEN' ? 'open' : dto.shortageStatus === 'KEEP_SEARCHING' ? 'keepSearching' : null
+  return { staged: dto.staged === true, shortage, manual: manualOf(dto) }
+}
+
+function sealOf(dto: StartLoadingDto): ServerSeal | null {
+  const number = dto.sealNumber?.trim()
+  if (!number) return null
+  return { number, at: dto.sealedAt ? isoFromBackend(dto.sealedAt) : null, byName: dto.sealedByName?.trim() || null }
+}
 
 export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const id = String(dto.tripId)
-  const steps = (dto.placements ?? []).map((step) => ({ status: step.status, placement: placementOf(step) }))
+  const steps = (dto.placements ?? []).map((step) => ({ status: step.status, placement: placementOf(step), staging: stagingOf(step) }))
+  const staging = Object.fromEntries(steps.map((item) => [item.placement.id, item.staging] as const))
+  const stagingRequired = dto.stagingRequired === true
+  const pendingManual = typeof dto.pendingManualCount === 'number' ? dto.pendingManualCount
+    : steps.filter((item) => item.staging.manual?.status === 'PENDING').length
   const vehicle = dto.vehicleInfo?.trim() ?? ''
   return {
     tripId: id,
@@ -217,6 +296,11 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
       const outcome = status ? OUTCOMES[status] : undefined
       return outcome === undefined ? [] : [[placement.id, outcome] as const]
     })),
+    staging,
+    stagingRequired,
+    stagingComplete: !stagingRequired || dto.stagingComplete === true,
+    pendingManual,
+    seal: sealOf(dto),
     completed: dto.status === 'COMPLETED',
   }
 }
