@@ -120,7 +120,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
         ) : null}
 
         <TabsContent value="CODE" className="outline-none">
-          <form noValidate className="flex flex-col gap-3" onSubmit={form.handleSubmit(({ code }) => submitCode({ method: 'CODE', code }))}>
+          <form noValidate className="flex flex-col gap-3" onSubmit={(event) => void form.handleSubmit(({ code }) => submitCode({ method: 'CODE', code }))(event)}>
             <div className="flex flex-col gap-1.5">
               <label htmlFor={codeId} className="font-medium">{codeLabel ?? t('qr.verify.codeLabel')}</label>
               <input
