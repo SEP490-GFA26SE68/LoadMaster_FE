@@ -64,6 +64,10 @@ export const apiErrors = {
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'The delivery requirement cannot move to this status.',
   CARGO_SEGREGATION_CONFLICT: 'The trip already carries another cargo class — they cannot travel together.',
   DELIVERY_STOP_NOT_FOUND: 'The delivery stop was not found.',
+  DELIVERY_STOP_ALREADY_COMPLETED: 'This delivery stop is already complete.',
+  DELIVERY_STOP_ALREADY_ARRIVED: 'Arrival at this delivery stop was already reported.',
+  DELIVERY_STOP_NOT_CURRENT: 'This stop is not next yet — complete the current stop first.',
+  TRIP_NOT_ASSIGNED_TO_DRIVER: 'This trip is not assigned to you.',
   ROUTE_PLAN_NOT_FOUND: 'The trip has no route yet.',
   ROUTE_LEG_NOT_FOUND: 'The route leg was not found.',
   ROUTE_SUGGESTION_NOT_FOUND: 'The suggested route was not found.',
@@ -85,6 +89,7 @@ export const apiErrors = {
   NO_APPROVED_LOAD_PLAN: 'The trip has no approved load plan.',
   PLAN_ALREADY_APPROVED: 'This plan is already approved.',
   PLAN_TRIP_NOT_PLANNED: 'The trip is not Planned yet — optimize the route before approving.',
+  TRIP_LOCKED: 'The trip is no longer Planned, so its plan can no longer be pinned, unpinned or rerun. Reload to see its current state.',
   PLAN_HAS_NO_PLACEMENTS: 'The plan has no placed packages and cannot be approved.',
   OPTIMIZATION_JOB_NOT_FOUND: 'The optimization run was not found.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'The optimization service is not responding. Try again later.',
@@ -105,6 +110,9 @@ export const apiErrors = {
   GPS_TRIP_NOT_IN_TRANSIT: 'The trip is not in transit.',
   NO_GPS_LOCATION: 'There is no vehicle location yet.',
   TRIP_EXCEPTION_NOT_FOUND: 'The incident was not found.',
+  EXCEPTION_STATUS_INVALID: 'The incident is no longer in a state that allows this action. Reload to see its current state.',
+  CONTACT_NOTE_REQUIRED: 'Record what was agreed with the customer before extending the deadline.',
+  REQUIREMENT_DEADLINE_PAST: 'The new deadline must be later than now.',
 
   SUBSCRIPTION_NOT_FOUND: 'The company has no plan yet.',
   SUBSCRIPTION_PLAN_NOT_FOUND: 'The plan was not found.',
@@ -122,5 +130,5 @@ export const apiErrors = {
   CONTACT_REQUEST_NOT_FOUND: 'The contact request was not found.',
 
   EMAIL_CHANGE_UNSUPPORTED: 'The server does not support changing an account email yet.',
-  LOADING_SESSION_UNAVAILABLE: 'This loading session started on another device or tab — the server cannot reopen its package list yet.',
+  TRIP_NOT_LOADING: 'The trip is no longer Loading, so its loading session cannot be opened.',
 } satisfies Dictionary<typeof source>

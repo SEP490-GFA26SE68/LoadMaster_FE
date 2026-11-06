@@ -12,6 +12,8 @@ export type AuditLogDto = {
   readonly actionType: string | null
   readonly entityName: string | null
   readonly entityId: string | null
+  /** Mã chuyến (`TRIP-…`) khi bản ghi nói về một chuyến, điểm giao hay phương án của chuyến; máy chủ cũ không trả. */
+  readonly entityCode?: string | null
   readonly userId: number | null
   readonly userName: string | null
   readonly userRole: string | null
@@ -43,6 +45,8 @@ export type ServerAuditEntry = {
   readonly actionType: string
   readonly entityName: string | null
   readonly entityId: string | null
+  /** Mã chuyến của đối tượng (`TRIP-…`); `null` khi bản ghi không gắn chuyến nào. */
+  readonly entityCode: string | null
   /** `null`: hệ thống tự ghi (không có người làm). */
   readonly actorId: string | null
   readonly actorName: string | null
@@ -76,6 +80,7 @@ export function auditEntryOf(dto: AuditLogDto): ServerAuditEntry {
     actionType: dto.actionType ?? '',
     entityName: dto.entityName,
     entityId: dto.entityId,
+    entityCode: dto.entityCode ?? null,
     actorId: dto.userId === null ? null : String(dto.userId),
     actorName: dto.userName,
     actorRole: dto.userRole === null ? null : roleOfBackend(dto.userRole),

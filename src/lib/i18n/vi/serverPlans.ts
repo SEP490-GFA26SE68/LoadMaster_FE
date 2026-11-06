@@ -114,7 +114,12 @@ export const serverPlans = {
     approvedChip: 'Đã duyệt',
     approvedBy: 'Duyệt bởi {name}',
     draftReason: 'Chuyến còn Nháp: tối ưu tuyến ở Chi tiết chuyến rồi mới duyệt được.',
+    pinDraftReason: 'Chuyến còn Nháp: chỉ ghim và chạy lại được khi chuyến Đã lập kế hoạch.',
     emptyTitle: 'Chuyến chưa có phương án xếp',
     emptyDescription: 'Chạy tối ưu xếp hàng ở Thiết lập tối ưu để có phương án.',
+    rerunTitle: { one: 'Chạy lại giữ {count} kiện đã ghim?', other: 'Chạy lại giữ {count} kiện đã ghim?' },
+    rerunDescription: 'Máy chủ giữ nguyên chỗ các kiện đã ghim, xếp lại các kiện còn lại quanh chúng và lưu thành một phương án mới chưa duyệt. Lần chạy lại dùng 1 credit.',
+    rerunConfirm: 'Chạy lại',
+    rerunDone: 'Đã có phương án mới',
   },
 } as const

@@ -6,8 +6,9 @@ import type { ServerPlacementState } from './server-loading'
 import type { ServerPlacement } from './warehouse-server-api'
 
 /**
- * Thẻ kiện cần xếp của phiên bản máy chủ: tên, mã vạch, mã kho kiện, vị trí đặt và kích thước khi đặt (cm) bằng số — máy chủ không cho kho
- * đọc lòng thùng nên không có khung 3D. Nút của bước truyền làm `children`.
+ * Thẻ kiện cần xếp của phiên bản máy chủ: tên, mã vạch, mã kho kiện, điểm giao, kích thước khi đặt (cm), khối lượng (kg, khi máy chủ trả —
+ * như thẻ kiện của kho mẫu) và vị trí đặt bằng số — khung 3D
+ * (khi máy chủ trả lòng thùng) nằm dưới thẻ. Nút của bước truyền làm `children`.
  */
 export function ServerPlacementCard({ placement, step, total, children }: {
   placement: ServerPlacement
@@ -28,9 +29,15 @@ export function ServerPlacementCard({ placement, step, total, children }: {
         <Fact label={t('serverWarehouse.session.name')}>{placement.name}</Fact>
         <Fact label={t('serverWarehouse.session.barcode')} mono>{placement.barcode || t('serverWarehouse.unknown')}</Fact>
         <Fact label={t('serverWarehouse.session.packageId')} mono>{placement.packageId}</Fact>
+        {placement.stopSequence === null ? null : (
+          <Fact label={t('serverWarehouse.session.stop')}>
+            {placement.stopName ? `${placement.stopSequence} · ${placement.stopName}` : placement.stopSequence}
+          </Fact>
+        )}
         <Fact label={t('serverWarehouse.session.size')} mono>
           {t('serverWarehouse.session.sizeValue', { length: cm(placement.lengthCm), width: cm(placement.widthCm), height: cm(placement.heightCm) })}
         </Fact>
+        {placement.weightKg === null ? null : <Fact label={t('serverWarehouse.session.weight')} mono>{format.weight(placement.weightKg)}</Fact>}
         <div className="flex min-w-0 flex-col gap-0.5 sm:col-span-2">
           <dt className="text-ink-3">{t('serverWarehouse.session.position')}</dt>
           <dd className="m-0 font-mono text-[18px] leading-7 font-semibold text-ink-strong tabular-nums">

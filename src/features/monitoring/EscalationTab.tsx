@@ -20,7 +20,7 @@ import { useFleetMonitoringQuery } from './useTrackingQuery'
  * Tab "Sự cố cần xử lý" của quản lý công ty (FE-6-12, D-66): sự cố điều phối viên đã chuyển lên hoặc kho tự chuyển sau 30 phút — sự cố,
  * chuyến, các điểm chưa giao có hạn kèm giờ đến dự kiến, hạn và mức hạn. Mỗi dòng một nút phụ "Nhập hạn mới" mở hộp liên hệ khách; các
  * dòng ngang hàng nhau nên tab không có nút chính. Sự cố đã nhập hạn mới ở lại danh sách, kèm câu chờ điều phối viên xử lý tiếp, tới
- * khi điều phối viên đánh dấu đã xử lý.
+ * khi điều phối viên đánh dấu đã xử lý. Dữ liệu từ backend: tab chỉ đọc (máy chủ chưa nhận hạn mới), mỗi dòng một câu nói vậy thay nút.
  */
 export function EscalationTab({ board }: { board: MonitoringBoard }) {
   const t = useT()

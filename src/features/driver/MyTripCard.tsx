@@ -1,4 +1,5 @@
 import { Clock, TriangleAlert } from 'lucide-react'
+import { useId } from 'react'
 import { Link } from 'react-router'
 import { DepartButton } from './DepartButton'
 import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
@@ -28,7 +29,8 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
   const format = useFormat()
   const caps = useDriverCapabilities()
   const preparing = myTripGroup(row) === 'preparing'
-  // Backend: chuyến Đang xếp hàng xuất phát ngay ở thẻ — máy chủ không nói kho đã xếp xong chưa và không mở màn điểm giao trước khi xe chạy
+  const blockedId = useId()
+  // Backend: chuyến Đang xếp hàng xuất phát ngay ở thẻ — máy chủ không mở màn điểm giao trước khi xe chạy; nút bật khi kho đã xếp xong
   const departs = caps.departFromList && row.status === 'LOADING'
   // Ngày chạy · số điểm · số kiện — phần nào backend chưa trả thì bỏ, không điền số thay
   const facts = [
@@ -63,7 +65,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
         </p>
       ) : null}
       {preparing ? (
-        <p className="m-0 flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-ink-2">
+        <p id={departs ? blockedId : undefined} className="m-0 flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-ink-2">
           <Clock className="mt-0.5 size-5 flex-none" strokeWidth={1.5} aria-hidden />
           {t(departs ? 'driver.backend.departNote' : 'driver.list.waitingLoading')}
         </p>
@@ -75,7 +77,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
         </p>
       ) : null}
 
-      {departs ? <DepartButton tripId={row.id} href={driverTripPath(row.id)} primary={primary} /> : (
+      {departs ? <DepartButton tripId={row.id} href={driverTripPath(row.id)} primary={primary} blockedBy={preparing ? blockedId : undefined} /> : (
         <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" block>
           <Link to={driverTripPath(row.id)}>
             {preparing ? t('driver.list.preview')

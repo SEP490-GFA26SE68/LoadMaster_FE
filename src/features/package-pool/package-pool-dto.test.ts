@@ -11,11 +11,11 @@ const IMPORTED = {
   packageCode: '', qrToken: '7086df89-979c-4813-bfd0-eea152332f55', handlingClass: null, status: 'PLANNED',
 }
 
-test('kiện của backend: kích thước cm (số hoặc chuỗi), nguồn theo mã vạch, trường backend không có để trống', () => {
+test('kiện của backend: kích thước cm (số hoặc chuỗi), trường backend không có để trống', () => {
   expect(packageOf(MANUAL)).toEqual({
     id: '1', companyId: '', packageCode: 'QA PK-0001', qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9',
     lengthCm: 120.5, widthCm: 0, heightCm: 0, weightKg: 12.5, handlingClass: 'FRAGILE', destination: '',
-    status: 'IMPORTED', flags: [], source: 'MANUAL', createdAt: '', createdBy: null, history: [],
+    status: 'IMPORTED', flags: [], source: 'IMPORT', createdAt: '', createdBy: null, history: [],
   })
   expect(packageOf(IMPORTED)).toMatchObject({ id: '4', packageCode: '4', lengthCm: 50, weightKg: 3, handlingClass: 'STANDARD', status: 'ASSIGNED', source: 'IMPORT' })
   expect(packageOf({ ...MANUAL, actualWidth: 80, actualHeight: 60, destination: ' Kho Biên Hoà ' })).toMatchObject({ widthCm: 80, heightCm: 60, destination: 'Kho Biên Hoà' })

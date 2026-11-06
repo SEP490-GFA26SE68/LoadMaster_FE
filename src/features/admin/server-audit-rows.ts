@@ -1,4 +1,8 @@
-import { Boxes, ClipboardList, MapPin, Package, Pin, PinOff, QrCode, Route, ScrollText, TriangleAlert, type LucideIcon } from 'lucide-react'
+import {
+  Boxes, ClipboardList, KeyRound, Lock, LockOpen, MapPin, Package, Pin, PinOff, QrCode, Route, ScrollText, TriangleAlert, UserCog, UserMinus,
+  UserPen, UserPlus, type LucideIcon,
+} from 'lucide-react'
+import { roleOfBackend } from '@/features/auth/backend-user'
 import type { KpiTone } from '@/components/KpiTile'
 import { isoFromBackend } from '@/lib/backend-time'
 import type { Formatter } from '@/lib/format'
@@ -13,18 +17,23 @@ import { actorInitials } from './audit-look'
 export const SERVER_AUDIT_ACTIONS = [
   'TRIP_UPDATED', 'TRIP_STATUS_TRANSITION', 'TRIP_CANCELLED', 'TRIP_REQUIREMENT_REMOVED', 'ROUTE_OPTIMIZED', 'PLAN_APPROVED', 'RERUN_OPTIMIZATION',
   'PIN_PLACEMENT', 'UNPIN_PLACEMENT', 'WAREHOUSE_CONFIRM', 'DEVIATION_RECORDED', 'LOADING_COMPLETED', 'DRIVER_UNLOAD', 'STOP_COMPLETED',
-  'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED',
+  'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED', 'STOP_ARRIVED', 'USER_CREATED', 'USER_UPDATED', 'USER_LOCKED',
+  'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
-  'Deviation', 'LoadingExecution', 'LOAD_PLAN',
+  'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
 const TRIP_FIELDS = ['tripName', 'departureTime', 'originWarehouseId', 'vehicleId', 'driverId'] as const
 type TripField = (typeof TRIP_FIELDS)[number]
+/** Trường của bản ghi tài khoản (`entityName` `User`); máy chủ không bao giờ ghi mật khẩu. */
+const USER_FIELDS = ['email', 'fullName', 'phoneNumber', 'role', 'status', 'companyId'] as const
+type UserField = (typeof USER_FIELDS)[number]
+const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'LOCKED'] as const
 
 const isOneOf = <T extends string>(list: readonly T[], value: string): value is T => (list as readonly string[]).includes(value)
 
@@ -47,9 +56,17 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   TRIP_COMPLETED: { icon: MapPin, tone: 'green' },
   PACKAGE_IMPORT_CONFIRMED: { icon: QrCode, tone: 'blue' },
   DELIVERY_DEADLINE_EXTENDED: { icon: ClipboardList, tone: 'amber' },
+  STOP_ARRIVED: { icon: MapPin, tone: 'blue' },
+  USER_CREATED: { icon: UserPlus, tone: 'blue' },
+  USER_UPDATED: { icon: UserPen, tone: 'blue' },
+  USER_LOCKED: { icon: Lock, tone: 'amber' },
+  USER_UNLOCKED: { icon: LockOpen, tone: 'green' },
+  USER_STATUS_CHANGED: { icon: UserCog, tone: 'blue' },
+  USER_PASSWORD_RESET: { icon: KeyRound, tone: 'blue' },
+  USER_DELETED: { icon: UserMinus, tone: 'amber' },
 }
 
-/** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số, không phải mã trên URL. */
+/** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số và mã chuyến, màn chỉ ghi chữ. */
 export type ServerAuditRow = {
   readonly id: string
   readonly at: string
@@ -61,7 +78,7 @@ export type ServerAuditRow = {
   readonly icon: LucideIcon
   readonly tone: KpiTone
   readonly target: string
-  /** `#42` khi máy chủ trả mã số; vắng với mã không đọc được (`batch`). */
+  /** Mã chuyến (`TRIP-…`) khi máy chủ trả; không thì `#42` theo mã số; vắng với mã không đọc được (`batch`). */
   readonly targetRef: string | null
   readonly company: string
   readonly details: string
@@ -72,9 +89,20 @@ export function serverActionLabel(code: string, t: TFunction): string {
   return isOneOf(SERVER_AUDIT_ACTIONS, code) ? t(`serverAudit.actions.${code}`) : code
 }
 
-function statusLabel(value: string | number | boolean | undefined, t: TFunction): string {
+function statusLabel(value: string | number | boolean | undefined, t: TFunction, account: boolean): string {
   if (typeof value !== 'string') return ''
+  if (account) return isOneOf(USER_STATUSES, value) ? t(`serverAudit.userStatuses.${value}`) : value
   return isOneOf(TRIP_STATUSES, value) ? t(`status.${value}`) : value
+}
+
+function changedKeys(before: ServerAuditEntry['before'], after: ServerAuditEntry['after']): string[] {
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => before[key] !== after[key])
+}
+
+function roleLabel(value: string | number | boolean | undefined, t: TFunction): string | null {
+  if (typeof value !== 'string') return null
+  const role = roleOfBackend(value)
+  return role === null ? value : t(`roles.${role}`)
 }
 
 function deadlineLabel(value: string | number | boolean | undefined, format: Formatter): string {
@@ -89,15 +117,37 @@ function deadlineLabel(value: string | number | boolean | undefined, format: For
 
 /**
  * Cột Chi tiết: tóm tắt ngắn từ giá trị trước / sau — trạng thái và hạn giao thành chip "trước → sau", sửa chuyến chỉ nêu tên trường
- * đã đổi (giá trị là mã số), lý do người dùng nhập giữ nguyên; phần còn lại (cả phương án tuyến của `ROUTE_OPTIMIZED`) không hiện.
+ * đã đổi (giá trị là mã số), lý do người dùng nhập giữ nguyên. Tối ưu tuyến nêu số điểm, km, phút, số điểm trễ hạn; tài khoản nêu tên và
+ * vai trò khi tạo, tên trường khi sửa, trạng thái "trước → sau" khi khoá, mở khoá, xoá.
  */
 function summarize(entry: ServerAuditEntry, t: TFunction, format: Formatter): { details: string; change: AuditChange | null } {
   const { before, after } = entry
+  const account = entry.entityName === 'User'
   const parts: string[] = []
   if (entry.actionType === 'TRIP_UPDATED') {
-    const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => before[key] !== after[key])
-    const fields = keys.map((key) => (isOneOf<TripField>(TRIP_FIELDS, key) ? t(`serverAudit.fields.${key}`) : key))
+    const fields = changedKeys(before, after).map((key) => (isOneOf<TripField>(TRIP_FIELDS, key) ? t(`serverAudit.fields.${key}`) : key))
     if (fields.length > 0) parts.push(t('serverAudit.details.changed', { fields: format.list(fields) }))
+  }
+  if (entry.actionType === 'USER_CREATED') {
+    const name = typeof after.fullName === 'string' && after.fullName.trim() !== '' ? after.fullName.trim() : after.email
+    if (typeof name === 'string') parts.push(t('serverAudit.details.account', { name }))
+    const role = roleLabel(after.role, t)
+    if (role !== null) parts.push(role)
+  } else if (entry.actionType === 'USER_UPDATED') {
+    const fields = changedKeys(before, after).filter((key) => key !== 'status')
+      .map((key) => (isOneOf<UserField>(USER_FIELDS, key) ? t(`serverAudit.userFields.${key}`) : key))
+    if (fields.length > 0) parts.push(t('serverAudit.details.changed', { fields: format.list(fields) }))
+  }
+  if (entry.actionType === 'ROUTE_OPTIMIZED') {
+    if (typeof after.stopCount === 'number') parts.push(t('serverAudit.details.stops', { count: after.stopCount }))
+    if (typeof after.distanceKm === 'number') parts.push(t('serverAudit.details.distance', { km: format.decimal(after.distanceKm) }))
+    if (typeof after.durationMinutes === 'number') parts.push(t('serverAudit.details.duration', { minutes: format.integer(after.durationMinutes) }))
+    if (typeof after.deadlineMissedCount === 'number' && after.deadlineMissedCount > 0) {
+      parts.push(t('serverAudit.details.lateStops', { count: after.deadlineMissedCount }))
+    }
+  }
+  if (typeof after.stopSequence === 'number' && after.stopSequence > 0) {
+    parts.push(t('serverAudit.details.stop', { number: format.integer(after.stopSequence) }))
   }
   if (typeof after.version === 'number') parts.push(t('serverAudit.details.version', { version: format.integer(after.version) }))
   if (typeof after.pinnedCount === 'number') parts.push(t('serverAudit.details.pinned', { count: after.pinnedCount }))
@@ -109,8 +159,11 @@ function summarize(entry: ServerAuditEntry, t: TFunction, format: Formatter): { 
   const rest = parts.join(' · ')
 
   let change: AuditChange | null = null
-  if (before.status !== undefined || after.status !== undefined) {
-    change = { rest, field: t('serverAudit.details.status'), before: statusLabel(before.status, t), after: statusLabel(after.status, t) }
+  // Tài khoản mới: trạng thái ban đầu không phải một lần đổi
+  if (entry.actionType !== 'USER_CREATED' && (before.status !== undefined || after.status !== undefined)) {
+    change = {
+      rest, field: t('serverAudit.details.status'), before: statusLabel(before.status, t, account), after: statusLabel(after.status, t, account),
+    }
   } else if (entry.actionType === 'DELIVERY_DEADLINE_EXTENDED') {
     change = { rest, field: t('serverAudit.details.deadline'), before: deadlineLabel(before.deadline, format), after: deadlineLabel(after.deadline, format) }
   }
@@ -131,7 +184,7 @@ export function serverAuditRow(entry: ServerAuditEntry, t: TFunction, format: Fo
     icon: look.icon,
     tone: look.tone,
     target: isOneOf<ServerAuditEntity>(ENTITIES, entity) ? t(`serverAudit.entities.${entity}`) : entity,
-    targetRef: entry.entityId !== null && /^\d+$/.test(entry.entityId) ? `#${entry.entityId}` : null,
+    targetRef: entry.entityCode ?? (entry.entityId !== null && /^\d+$/.test(entry.entityId) ? `#${entry.entityId}` : null),
     company: entry.companyName ?? t('audit.log.platform'),
     ...summarize(entry, t, format),
   }

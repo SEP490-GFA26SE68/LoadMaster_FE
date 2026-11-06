@@ -72,6 +72,10 @@ export const apiErrors = {
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'Yêu cầu giao không chuyển được sang trạng thái này.',
   CARGO_SEGREGATION_CONFLICT: 'Chuyến đã có loại hàng khác — không chở chung được.',
   DELIVERY_STOP_NOT_FOUND: 'Không tìm thấy điểm giao.',
+  DELIVERY_STOP_ALREADY_COMPLETED: 'Điểm giao này đã hoàn tất.',
+  DELIVERY_STOP_ALREADY_ARRIVED: 'Đã báo đến điểm giao này rồi.',
+  DELIVERY_STOP_NOT_CURRENT: 'Chưa tới lượt điểm giao này — hoàn tất điểm đang giao trước.',
+  TRIP_NOT_ASSIGNED_TO_DRIVER: 'Chuyến này không giao cho bạn.',
   ROUTE_PLAN_NOT_FOUND: 'Chuyến chưa có tuyến.',
   ROUTE_LEG_NOT_FOUND: 'Không tìm thấy chặng của tuyến.',
   ROUTE_SUGGESTION_NOT_FOUND: 'Không tìm thấy tuyến gợi ý.',
@@ -94,6 +98,7 @@ export const apiErrors = {
   NO_APPROVED_LOAD_PLAN: 'Chuyến chưa có phương án đã duyệt.',
   PLAN_ALREADY_APPROVED: 'Phương án này đã được duyệt.',
   PLAN_TRIP_NOT_PLANNED: 'Chuyến chưa ở trạng thái Đã lập kế hoạch — tối ưu tuyến trước rồi mới duyệt.',
+  TRIP_LOCKED: 'Chuyến không còn ở Đã lập kế hoạch nên không ghim, bỏ ghim hay chạy lại phương án được nữa. Tải lại để xem trạng thái mới.',
   PLAN_HAS_NO_PLACEMENTS: 'Phương án không có kiện nào được xếp, không duyệt được.',
   OPTIMIZATION_JOB_NOT_FOUND: 'Không tìm thấy lần chạy tối ưu.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
@@ -115,6 +120,9 @@ export const apiErrors = {
   GPS_TRIP_NOT_IN_TRANSIT: 'Chuyến không ở trạng thái đang vận chuyển.',
   NO_GPS_LOCATION: 'Chưa có vị trí nào của xe.',
   TRIP_EXCEPTION_NOT_FOUND: 'Không tìm thấy sự cố.',
+  EXCEPTION_STATUS_INVALID: 'Sự cố không còn ở trạng thái làm được thao tác này. Tải lại để xem trạng thái mới.',
+  CONTACT_NOTE_REQUIRED: 'Ghi lại nội dung đã liên hệ khách trước khi gia hạn.',
+  REQUIREMENT_DEADLINE_PAST: 'Hạn giao mới phải ở sau thời điểm hiện tại.',
 
   // Gói cước, credit, thanh toán
   SUBSCRIPTION_NOT_FOUND: 'Công ty chưa có gói cước.',
@@ -135,5 +143,5 @@ export const apiErrors = {
 
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',
-  LOADING_SESSION_UNAVAILABLE: 'Phiên xếp này bắt đầu ở thiết bị hoặc tab khác — máy chủ chưa cho mở lại danh sách kiện của phiên.',
+  TRIP_NOT_LOADING: 'Chuyến không còn ở Đang xếp hàng, không mở được phiên xếp.',
 } as const

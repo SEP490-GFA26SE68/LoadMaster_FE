@@ -25,13 +25,29 @@ const USERS = [
 ]
 
 const ROWS = [
-  serverAuditLog(),
+  serverAuditLog({ entityCode: 'TRIP-20261104-A1' }),
   serverAuditLog({
     id: 502, actionType: 'TRIP_UPDATED', oldValues: { tripName: 'Tuyến cũ', vehicleId: '3' }, newValues: { tripName: 'Tuyến mới', vehicleId: '4' },
   }),
   serverAuditLog({
     id: 503, actionType: 'ROUTE_OPTIMIZED', userId: null, userName: null, userRole: null, oldValues: null,
-    newValues: { totalKm: 42.5, stops: [{ id: 1 }], summary: 'tuyến dài rất nhiều chữ' },
+    newValues: { stopCount: 4, distanceKm: 42.5, durationMinutes: 95, deadlineMissedCount: 1, routePlanId: 12, planVersion: 2, stops: [{ id: 1 }],
+      summary: 'tuyến dài rất nhiều chữ' },
+  }),
+  serverAuditLog({
+    id: 505, actionType: 'STOP_ARRIVED', entityName: 'DeliveryStop', entityId: '31', entityCode: 'TRIP-20261104-B2', userRole: 'DRIVER',
+    oldValues: null, newValues: { stopId: 31, tripId: 43, stopSequence: 2, actualArrival: '2026-11-04T09:20:00' },
+  }),
+  serverAuditLog({
+    id: 506, actionType: 'USER_CREATED', entityName: 'User', entityId: '88', oldValues: null,
+    newValues: { email: 'lan.tran@longbinh.vn', fullName: 'Trần Thị Lan', role: 'WAREHOUSE_WORKER', status: 'ACTIVE', companyId: 1 },
+  }),
+  serverAuditLog({
+    id: 507, actionType: 'USER_UPDATED', entityName: 'User', entityId: '88', oldValues: { fullName: 'Trần Lan', phoneNumber: '0901' },
+    newValues: { fullName: 'Trần Thị Lan', phoneNumber: '0902' },
+  }),
+  serverAuditLog({
+    id: 508, actionType: 'USER_LOCKED', entityName: 'User', entityId: '88', oldValues: { status: 'ACTIVE' }, newValues: { status: 'LOCKED' },
   }),
   serverAuditLog({ id: 504, actionType: 'WAREHOUSE_REOPENED', entityName: 'Warehouse', entityId: 'batch', oldValues: null, newValues: null }),
 ]
@@ -84,11 +100,27 @@ test('bảng là bản ghi của máy chủ: hành động dịch theo mã, mã 
   expect(table.getByText('Trước: Đã lập kế hoạch · Sau: Đang xếp hàng')).toBeInTheDocument()
   expect(table.getByText('Đã đổi: Tên chuyến và Xe')).toBeInTheDocument()
   expect(table.queryByText(/tuyến dài rất nhiều chữ/)).not.toBeInTheDocument()
+  // Tối ưu tuyến: tóm tắt gọn của máy chủ; đã đến điểm: số điểm
+  expect(table.getByText('4 điểm giao · 42,5 km · 95 phút · 1 điểm trễ hạn dự kiến')).toBeInTheDocument()
+  expect(table.getByText('Tài xế đã đến điểm giao')).toBeInTheDocument()
+  expect(table.getByText('Điểm 2')).toBeInTheDocument()
+  // Tài khoản: tạo nêu tên và vai trò, sửa nêu tên trường, khoá là trạng thái trước → sau
+  expect(table.getByText('Tạo tài khoản')).toBeInTheDocument()
+  expect(table.getByText('Tài khoản Trần Thị Lan · Nhân viên kho')).toBeInTheDocument()
+  expect(table.getByText('Đã đổi: Họ tên và Số điện thoại')).toBeInTheDocument()
+  expect(table.getByText('Khoá tài khoản')).toBeInTheDocument()
+  expect(table.getByText('Trước: Đang hoạt động · Sau: Đã khoá')).toBeInTheDocument()
+  // Đối tượng gắn chuyến ghi mã chuyến thay mã số
+  expect(table.getByText('TRIP-20261104-A1')).toBeInTheDocument()
+  expect(table.getByText('TRIP-20261104-B2')).toBeInTheDocument()
+  // Bản ghi không kèm mã chuyến vẫn ghi mã số
+  expect(table.getAllByText('#42')).toHaveLength(2)
+  expect(table.getAllByText('#88')).toHaveLength(3)
   // Người làm: tên + vai trò của app; bản ghi không có người làm là của hệ thống
   expect(table.getAllByText('Phạm Minh Khôi').length).toBeGreaterThan(0)
   expect(table.getAllByText('Điều phối viên').length).toBeGreaterThan(0)
   expect(table.getByText('Hệ thống')).toBeInTheDocument()
-  // Đối tượng là chữ, không liên kết (máy chủ chỉ trả mã số)
+  // Đối tượng là chữ, không liên kết
   expect(table.getAllByText('Chuyến').length).toBeGreaterThan(0)
   expect(table.queryByRole('link')).not.toBeInTheDocument()
   // Quản trị công ty: không cột Công ty; trang đầu, 50 dòng

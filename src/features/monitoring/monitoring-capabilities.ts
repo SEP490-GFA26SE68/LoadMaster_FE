@@ -2,17 +2,19 @@ import { usesBackend } from '@/lib/backend-config'
 
 /**
  * Màn Giám sát làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend có: chuyến đang vận
- * chuyển kèm điểm giao, vị trí GPS mới nhất và lịch sử vị trí, giờ đến và mức hạn backend tính, cảnh báo nguy cơ trễ, báo và xử lý sự
- * cố, tuyến thay thế. Liên kết tới Chi tiết chuyến chỉ có khi màn chuyến đọc cùng nguồn (nhóm `trips` cùng bật hoặc cùng tắt) — không
- * thì mã chuyến bên này không có ở bên kia. Backend chưa có — màn ẩn phần đó: đổi thứ tự điểm khi xe đang chạy, chuyển sự cố cho quản lý cùng tab "Sự cố cần xử lý" và gia hạn, nhận hàng dọc đường, xác
- * nhận tay chờ duyệt. Nằm riêng khỏi `monitoring-api.ts` để thành phần đọc nó không kéo theo lớp gọi API.
+ * chuyển kèm điểm giao, vị trí GPS mới nhất và lịch sử vị trí, giờ đến và mức hạn backend tính, cảnh báo nguy cơ trễ, báo, chuyển quản lý
+ * và xử lý sự cố (máy chủ cũng tự chuyển sự cố mở quá 30 phút), tuyến thay thế, và tab "Sự cố cần xử lý" của quản lý công ty (đọc sự cố
+ * `ESCALATED` trong giám sát đội xe) kèm gia hạn — nhập hạn mới cho một yêu cầu giao của chuyến. Liên kết tới Chi tiết chuyến chỉ có khi
+ * màn chuyến đọc cùng nguồn (nhóm `trips` cùng bật hoặc cùng tắt) — không thì mã chuyến bên này không có ở bên kia. Backend chưa có — màn
+ * ẩn phần đó: đổi thứ tự điểm khi xe đang chạy, nhận hàng dọc đường, xác nhận tay chờ duyệt. Nằm riêng khỏi `monitoring-api.ts` để thành
+ * phần đọc nó không kéo theo lớp gọi API.
  */
 export type MonitoringCapabilities = {
   /** Dữ liệu từ backend: giờ đến do máy chủ tính, vị trí là điểm GPS máy chủ nhận. */
   readonly backend: boolean
   readonly openTrip: boolean
   readonly reorderStops: boolean
-  /** Chuyển sự cố cho quản lý, tab "Sự cố cần xử lý" và gia hạn của quản lý công ty. */
+  /** Điều phối viên chuyển sự cố còn mở cho quản lý; tab "Sự cố cần xử lý" của quản lý công ty. */
   readonly escalation: boolean
   readonly pickups: boolean
   readonly manualConfirm: boolean
@@ -24,7 +26,7 @@ export const MONITORING_CAPABILITIES: MonitoringCapabilities = {
   backend: ON_BACKEND,
   openTrip: ON_BACKEND === usesBackend('trips'),
   reorderStops: !ON_BACKEND,
-  escalation: !ON_BACKEND,
+  escalation: true,
   pickups: !ON_BACKEND,
   manualConfirm: !ON_BACKEND,
 }

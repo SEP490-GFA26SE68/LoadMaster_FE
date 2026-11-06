@@ -9,7 +9,7 @@
  *   fetchDriverTripMonitoring → GET /api/trips/{id}/monitoring (tài xế bị 403)
  *   chỉ kho mẫu: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  *   chưa có ở BE: fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
- *   chưa có ở BE (Q-02, Q-11): arriveAtStop, confirmUnloadManually
+ *   chưa có ở BE (Q-11): confirmUnloadManually
  */
 
 import { ApiError } from '@/lib/api-client'
@@ -40,16 +40,14 @@ const ON_BACKEND = usesBackend('driver')
 
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
- * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến), điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại. Backend chưa có — màn
- * ẩn phần đó: "Đã đến", quét QR (nhãn in mã QR mà điểm giao không trả), xác nhận tay, sự cố theo kiện và khách từ chối, sự cố
- * trên đường, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến và hạn giao, thông báo, tổng kết
- * chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
+ * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm giờ đến và kiện cần dỡ, "Đã đến",
+ * dỡ một kiện bằng quét QR hoặc mã gõ, hoàn tất điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần
+ * đó: xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến
+ * và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
   readonly backend: boolean
-  /** Bước "Đã đến" trước khi dỡ; không có thì điểm đang giao luôn dỡ được. */
-  readonly arrive: boolean
   readonly qrVerify: boolean
   readonly manualConfirm: boolean
   readonly deliveryIssues: boolean
@@ -60,18 +58,23 @@ export type DriverCapabilities = {
   readonly departFromList: boolean
   /** GPS tắt thì vị trí xe về mô phỏng, và vị trí chỉ nằm trong trình duyệt này. */
   readonly simulatedPosition: boolean
+  /** "Sự cố trên đường" ở tờ "Thêm" của màn điểm giao (sự cố của cả xe, kèm số phút chậm). */
+  readonly tripExceptions: boolean
+  /** "Nhận hàng dọc đường" ở tờ "Thêm". */
+  readonly pickups: boolean
 }
 
 export const DRIVER_CAPABILITIES: DriverCapabilities = {
   backend: ON_BACKEND,
-  arrive: !ON_BACKEND,
-  qrVerify: !ON_BACKEND,
+  qrVerify: true,
   manualConfirm: !ON_BACKEND,
   deliveryIssues: !ON_BACKEND,
   notifications: !ON_BACKEND,
   upcomingTrips: !ON_BACKEND,
   departFromList: ON_BACKEND,
   simulatedPosition: !ON_BACKEND,
+  tripExceptions: true,
+  pickups: !ON_BACKEND,
 }
 
 let backendSource: DriverBackend | null = null
@@ -144,9 +147,9 @@ export async function startDelivery(tripId: string): Promise<void> {
 
 /** Tài xế bấm "Đã đến" ở điểm giao hiện tại: ghi giờ đến thật; từ lúc đó mới dỡ hàng được (FE-6-06). */
 // chưa có ở BE (Q-02, Q-11)
-export function arriveAtStop(tripId: string, stopNumber: number): Promise<Trip> {
-  if (ON_BACKEND) return unsupported()
-  return getMockDb().arriveAtStop(tripId, stopNumber)
+export function arriveAtStop(tripId: string, stopNumber: number): Promise<void> {
+  if (ON_BACKEND) return backend().arrive(tripId, stopNumber)
+  return getMockDb().arriveAtStop(tripId, stopNumber).then(() => undefined)
 }
 
 // chưa có ở BE
@@ -185,7 +188,7 @@ export type UnloadVerifyInput = { readonly stopNumber: number; readonly method: 
 
 /**
  * Đối chiếu kiện ở điểm giao hiện tại bằng nhãn — mức 1 và 2: ghi "đã dỡ" và cách đối chiếu. Kiện của điểm khác: `QR_WRONG_STOP` (kèm
- * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: chỉ mã gõ, khớp mã của một kiện của điểm
+ * số điểm của kiện); mã của bên gửi trùng nhiều kiện: `PACKAGE_CODE_AMBIGUOUS`. Backend: mã quét hoặc gõ khớp mã của một kiện của điểm
  * (`packageOfCode`; `UNLOAD_CODE_UNMATCHED` khi không khớp, `UNLOAD_CODE_AMBIGUOUS` khi mã của bên gửi trùng nhiều kiện, `DUPLICATE_UNLOAD`
  * khi đã dỡ, `WRONG_DELIVERY_STOP` khi backend từ chối điểm).
  */

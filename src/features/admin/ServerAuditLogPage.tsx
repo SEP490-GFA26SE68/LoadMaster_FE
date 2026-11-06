@@ -31,7 +31,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 /**
  * Nhật ký `/nhat-ky` khi nhóm `users` nối backend (`GET /api/audit-logs`). Máy chủ quyết phạm vi (quản trị công ty chỉ đọc công ty
  * mình), sắp mới nhất trước và phân trang: màn chỉ đọc một trang, không cột nào sắp xếp được, số đếm là tổng của máy chủ. Không có ba ô
- * tóm tắt của bản kho mẫu (máy chủ không trả số đó) và không có liên kết tới đối tượng (máy chủ chỉ trả mã số, không phải mã trên URL).
+ * tóm tắt của bản kho mẫu (máy chủ không trả số đó) và không có liên kết tới đối tượng: cột Đối tượng ghi mã chuyến khi máy chủ trả (`entityCode`), không thì mã số.
  */
 export function ServerAuditLogPage() {
   const t = useT()

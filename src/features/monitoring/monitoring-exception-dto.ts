@@ -9,7 +9,7 @@ import {
   type TripException,
   type TripReroute,
 } from '@/lib/mock-db'
-import type { LiveRerouteProposal } from './exceptions-api'
+import type { LiveRerouteProposal, RenegotiableRequirement } from './exceptions-api'
 
 /**
  * DTO sự cố cấp chuyến và tuyến thay thế của `MonitoringController` backend, cùng hàm đổi sang kiểu của màn; chỉ `monitoring-dto.ts` và
@@ -109,4 +109,43 @@ export function proposalOf(dto: RerouteProposalDto): LiveRerouteProposal {
     options: (dto.options ?? []).map(choiceOf),
     isMockResult: dto.isMockResult === true,
   }
+}
+
+/** Một dòng `GET /api/delivery-requirements` (`DeliveryRequirementResponse`), chỉ các trường gia hạn cần. */
+export type DeliveryRequirementDto = {
+  readonly id: number | string
+  readonly customerName?: string | null
+  readonly destination?: string | null
+  readonly deadline?: string | null
+  readonly tripId?: number | string | null
+  readonly tripCode?: string | null
+}
+
+/** `GET /api/trips/{id}/detail` (`TripDetailResponse`): điểm giao của chuyến kèm yêu cầu giao của từng điểm. */
+export type TripDetailDto = {
+  readonly stops?: readonly {
+    readonly deliveryRequirementId?: number | string | null
+    readonly stopSequence?: number | null
+    readonly stopName?: string | null
+    readonly status?: string | null
+  }[] | null
+}
+
+/**
+ * Yêu cầu giao của chuyến còn gia hạn được: có hạn và còn một điểm giao chưa hoàn tất trong chuyến (số điểm là `stopSequence`, như số điểm
+ * của bảng giám sát). Tên là tên điểm giao, không có thì tên khách rồi địa chỉ.
+ */
+export function renegotiableOf(requirements: readonly DeliveryRequirementDto[], detail: TripDetailDto): RenegotiableRequirement[] {
+  const stops = detail.stops ?? []
+  return requirements.flatMap((dto) => {
+    const stop = stops.find((item) => item.deliveryRequirementId != null && String(item.deliveryRequirementId) === String(dto.id)
+      && item.status !== 'COMPLETED' && typeof item.stopSequence === 'number')
+    if (!stop || typeof stop.stopSequence !== 'number' || !dto.deadline) return []
+    return [{
+      id: String(dto.id),
+      destinationName: stop.stopName || dto.customerName || dto.destination || '',
+      deadline: isoFromBackend(dto.deadline),
+      stopNumber: stop.stopSequence,
+    }]
+  }).toSorted((a, b) => a.stopNumber - b.stopNumber || Date.parse(a.deadline) - Date.parse(b.deadline))
 }

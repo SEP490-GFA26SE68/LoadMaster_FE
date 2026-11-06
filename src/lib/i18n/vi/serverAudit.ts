@@ -26,6 +26,14 @@ export const serverAudit = {
     TRIP_COMPLETED: 'Chuyến hoàn thành',
     PACKAGE_IMPORT_CONFIRMED: 'Xác nhận nhập kiện',
     DELIVERY_DEADLINE_EXTENDED: 'Gia hạn giao',
+    STOP_ARRIVED: 'Tài xế đã đến điểm giao',
+    USER_CREATED: 'Tạo tài khoản',
+    USER_UPDATED: 'Sửa tài khoản',
+    USER_LOCKED: 'Khoá tài khoản',
+    USER_UNLOCKED: 'Mở khoá tài khoản',
+    USER_STATUS_CHANGED: 'Đổi trạng thái tài khoản',
+    USER_PASSWORD_RESET: 'Đặt lại mật khẩu',
+    USER_DELETED: 'Xoá tài khoản',
   },
   /** Mã `entityName` của máy chủ. */
   entities: {
@@ -40,6 +48,7 @@ export const serverAudit = {
     Deviation: 'Sai lệch vị trí',
     LoadingExecution: 'Phiên xếp hàng',
     LOAD_PLAN: 'Phương án xếp',
+    User: 'Tài khoản',
   },
   /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
   fields: {
@@ -48,6 +57,21 @@ export const serverAudit = {
     originWarehouseId: 'Kho xuất phát',
     vehicleId: 'Xe',
     driverId: 'Tài xế',
+  },
+  /** Trường của bản ghi tài khoản (`USER_UPDATED`): chỉ nêu tên trường đã đổi. */
+  userFields: {
+    email: 'Email',
+    fullName: 'Họ tên',
+    phoneNumber: 'Số điện thoại',
+    role: 'Vai trò',
+    status: 'Trạng thái',
+    companyId: 'Công ty',
+  },
+  /** Trạng thái tài khoản của máy chủ. */
+  userStatuses: {
+    ACTIVE: 'Đang hoạt động',
+    INACTIVE: 'Ngừng hoạt động',
+    LOCKED: 'Đã khoá',
   },
   details: {
     status: 'Trạng thái',
@@ -58,5 +82,11 @@ export const serverAudit = {
     pinned: { one: 'Giữ {count} kiện đã ghim', other: 'Giữ {count} kiện đã ghim' },
     imported: { one: 'Nhập {count} kiện', other: 'Nhập {count} kiện' },
     version: 'Phiên bản {version}',
+    account: 'Tài khoản {name}',
+    stop: 'Điểm {number}',
+    stops: { one: '{count} điểm giao', other: '{count} điểm giao' },
+    distance: '{km} km',
+    duration: '{minutes} phút',
+    lateStops: { one: '{count} điểm trễ hạn dự kiến', other: '{count} điểm trễ hạn dự kiến' },
   },
 } as const

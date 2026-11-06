@@ -1,7 +1,7 @@
 /**
  * Hàm → endpoint backend của màn kho bản máy chủ (nhóm `warehouse`, thân hàm ở `warehouse-backend-api.ts`):
- *   fetchServerWarehouseTrips → GET /api/warehouse/tasks và GET /api/trips?status=LOADING
- *   fetchServerLoadingSession → (phiên giữ ở tab — backend chưa có lối đọc lại)
+ *   fetchServerWarehouseTrips → GET /api/warehouse/tasks
+ *   fetchServerLoadingSession → GET /api/warehouse/tasks/{tripId}
  *   startServerLoading        → POST /api/warehouse/tasks/{tripId}/start
  *   confirmServerPlacement    → POST /api/warehouse/placements/{id}/confirm
  *   recordServerDeviation     → POST /api/warehouse/placements/{id}/deviation
@@ -17,16 +17,16 @@ import {
   type WarehouseBackend,
 } from './warehouse-backend-api'
 
-export type { DeviationInput, ServerLoadingSession, ServerPlacement, ServerWarehouseStage, ServerWarehouseTrip } from './warehouse-backend-api'
+export type { DeviationInput, ServerCargoBox, ServerLoadingSession, ServerPlacement, ServerWarehouseStage, ServerWarehouseTrip } from './warehouse-backend-api'
 export { codeMatches } from './warehouse-backend-api'
 
 const ON_BACKEND = usesBackend('warehouse')
 
 /**
  * Màn kho làm được gì với nguồn dữ liệu đang dùng (D-20). Kho mẫu: soạn hàng, báo thiếu, đối chiếu ba mức, kiện hỏng, seal, khung 3D vị trí
- * kiện, chuông. Backend: danh sách chuyến chờ xếp và đang xếp, bắt đầu xếp theo phương án đã duyệt, xác nhận từng kiện theo thứ tự (gõ mã),
- * ghi sai lệch vị trí, hoàn tất xếp. Backend chưa có — màn bản máy chủ không vẽ: soạn hàng và báo thiếu, quét QR (bước xếp không trả mã QR),
- * xác nhận tay, kiện hỏng làm chuyến quay về, số seal, khung 3D (kho không đọc được kích thước thùng xe và điểm giao), thông báo.
+ * kiện, chuông. Backend: danh sách chuyến chờ xếp, đang xếp và đã xếp xong, bắt đầu xếp theo phương án đã duyệt, mở lại phiên ở mọi thiết
+ * bị, đối chiếu từng kiện theo thứ tự (quét QR hoặc gõ mã), ghi sai lệch vị trí, hoàn tất xếp, khung 3D vị trí kiện khi máy chủ trả lòng
+ * thùng. Backend chưa có — màn bản máy chủ không vẽ: soạn hàng và báo thiếu, xác nhận tay, kiện hỏng làm chuyến quay về, số seal, thông báo.
  */
 export type WarehouseCapabilities = {
   /** Màn `/kho` là bản máy chủ (`ServerWarehouseTripsPage`, `ServerLoadingSession`). */
@@ -42,12 +42,12 @@ const backend = (): WarehouseBackend => (source ??= createWarehouseBackend())
 /** Kho mẫu không có các hàm này: màn kho mẫu dùng `warehouse-api.ts`. */
 const mockOnly = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
-// GET /api/warehouse/tasks · GET /api/trips?status=LOADING
+// GET /api/warehouse/tasks
 export function fetchServerWarehouseTrips(): Promise<ServerWarehouseTrip[]> {
   return ON_BACKEND ? backend().fetchTrips() : mockOnly()
 }
 
-// chưa có ở BE: đọc lại phiên đang xếp
+// GET /api/warehouse/tasks/{tripId}
 export function fetchServerLoadingSession(tripId: string): Promise<ServerLoadingSession> {
   return ON_BACKEND ? backend().fetchSession(tripId) : mockOnly()
 }

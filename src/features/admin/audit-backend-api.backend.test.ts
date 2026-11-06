@@ -22,7 +22,9 @@ afterEach(() => {
 })
 
 test('đọc một trang theo bộ lọc, tổng là của máy chủ', async () => {
-  const backend = stubBackend({ 'GET /api/audit-logs': { body: auditPage([serverAuditLog()], { page: 2, totalElements: 137 }) } })
+  const backend = stubBackend({
+    'GET /api/audit-logs': { body: auditPage([serverAuditLog({ entityCode: 'TRIP-20261104-A1' }), serverAuditLog({ id: 502 })], { page: 2, totalElements: 137 }) },
+  })
   const result = await fetchServerAuditLog({
     page: 2, size: 50, from: '2026-11-01', to: '2026-11-05', actionType: 'TRIP_CANCELLED', userId: '7', companyId: 'platform', q: 'huỷ',
   })
@@ -31,11 +33,13 @@ test('đọc một trang theo bộ lọc, tổng là của máy chủ', async ()
     page: '2', size: '50', from: '2026-11-01', to: '2026-11-05', actionType: 'TRIP_CANCELLED', userId: '7', companyId: 'platform', q: 'huỷ',
   }]])
   expect(result.total).toBe(137)
-  expect(result.entries).toStrictEqual([{
-    id: '501', at: '2026-11-04T02:15:00.000Z', actionType: 'TRIP_STATUS_TRANSITION', entityName: 'Trip', entityId: '42', actorId: '7',
-    actorName: 'Phạm Minh Khôi', actorRole: 'dispatcher', companyName: 'Vận tải Long Bình',
+  expect(result.entries[0]).toStrictEqual({
+    id: '501', at: '2026-11-04T02:15:00.000Z', actionType: 'TRIP_STATUS_TRANSITION', entityName: 'Trip', entityId: '42',
+    entityCode: 'TRIP-20261104-A1', actorId: '7', actorName: 'Phạm Minh Khôi', actorRole: 'dispatcher', companyName: 'Vận tải Long Bình',
     before: { status: 'PLANNED' }, after: { status: 'LOADING' },
-  }])
+  })
+  // Máy chủ cũ không trả mã chuyến
+  expect(result.entries[1]?.entityCode).toBeNull()
 })
 
 test('bản ghi của hệ thống; giá trị lồng nhau bị bỏ', async () => {

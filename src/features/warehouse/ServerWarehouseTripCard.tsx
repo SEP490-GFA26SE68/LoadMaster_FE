@@ -1,4 +1,3 @@
-import { Info } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -12,8 +11,8 @@ import { loadingSessionPath } from './warehouse-trips'
 
 /**
  * Một chuyến ở danh sách kho bản máy chủ: mã chuyến, trạng thái, giờ xuất phát, xe, số kiện và một nút 56 px theo nhóm — "Bắt đầu xếp hàng"
- * (chờ xếp: máy chủ chuyển chuyến sang Đang xếp hàng và trả danh sách kiện), "Tiếp tục xếp", "Xem chuyến đã xếp". Chuyến đang xếp ở nơi khác
- * không có nút, chỉ nói lý do. Máy chủ không trả tên tuyến, tiến độ, seal: không vẽ.
+ * (chờ xếp: máy chủ chuyển chuyến sang Đang xếp hàng và trả danh sách kiện), "Tiếp tục xếp" (mở lại phiên của máy chủ, ở
+ * thiết bị nào cũng được), "Xem chuyến đã xếp". Máy chủ không trả tên tuyến, tiến độ, seal: không vẽ.
  */
 export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouseTrip; primary: boolean }) {
   const t = useT()
@@ -34,22 +33,14 @@ export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouse
             <span className="font-mono">{row.packageCount === null ? t('serverWarehouse.unknown') : format.integer(row.packageCount)}</span>
           </Fact>
         </dl>
-        {row.stage === 'elsewhere' ? (
-          <p className="m-0 flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-ink-2">
-            <Info className="mt-0.5 size-5 flex-none" strokeWidth={1.5} aria-hidden />
-            {t('serverWarehouse.elsewhere')}
-          </p>
-        ) : null}
       </div>
-      {row.stage === 'elsewhere' ? null : (
-        <div className="flex flex-none flex-col md:w-72">
-          {row.stage === 'waiting' ? <StartButton tripId={row.id} primary={primary} /> : (
-            <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className={primary ? 'h-16 w-full' : 'w-full'}>
-              <Link to={loadingSessionPath(row.id)}>{t(row.stage === 'loading' ? 'serverWarehouse.resume' : 'serverWarehouse.openLoaded')}</Link>
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="flex flex-none flex-col md:w-72">
+        {row.stage === 'waiting' ? <StartButton tripId={row.id} primary={primary} /> : (
+          <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className={primary ? 'h-16 w-full' : 'w-full'}>
+            <Link to={loadingSessionPath(row.id)}>{t(row.stage === 'loading' ? 'serverWarehouse.resume' : 'serverWarehouse.openLoaded')}</Link>
+          </Button>
+        )}
+      </div>
     </li>
   )
 }

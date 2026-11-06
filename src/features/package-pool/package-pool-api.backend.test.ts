@@ -72,7 +72,7 @@ const scanOf = (dto: typeof MANUAL | typeof IMPORTED, extra: object = {}) => env
 test('danh sách: đọc mọi trang theo mã tăng dần, mm thành cm, bỏ kiện đã huỷ', async () => {
   routes['GET /api/packages'] = (call) => (call.query.page === '0' ? { body: page([MANUAL, { ...MANUAL, id: 2, status: 'CANCELLED' }], false) } : { body: page([IMPORTED]) })
   const packages = await fetchPackages()
-  expect(packages.map((pkg) => [pkg.id, pkg.lengthCm, pkg.status, pkg.source])).toEqual([['1', 120.5, 'IMPORTED', 'MANUAL'], ['3', 50, 'ASSIGNED', 'IMPORT']])
+  expect(packages.map((pkg) => [pkg.id, pkg.lengthCm, pkg.status, pkg.source])).toEqual([['1', 120.5, 'IMPORTED', 'IMPORT'], ['3', 50, 'ASSIGNED', 'IMPORT']])
   expect(calls.map((call) => call.query)).toEqual([{ sort: 'id,asc', page: '0', size: '200' }, { sort: 'id,asc', page: '1', size: '200' }])
   expect(calls[0]?.auth).toBe('Bearer token-1')
 })

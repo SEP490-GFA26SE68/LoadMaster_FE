@@ -24,7 +24,7 @@ export function useServerWarehouseTripsQuery() {
   return useQuery({ queryKey: ['warehouse', 'server', 'trips'], queryFn: fetchServerWarehouseTrips, staleTime: 0 })
 }
 
-/** Phiên xếp tab này đang giữ; `retry: false` — phiên không có ở tab này thì đọc lại cũng không có. */
+/** Phiên xếp của chuyến, đọc lại từ máy chủ ở thiết bị nào cũng được; `retry: false` — chuyến không còn đang xếp thì đọc lại vẫn vậy. */
 export function useServerLoadingSessionQuery(tripId: string) {
   return useQuery({ queryKey: sessionKey(tripId), queryFn: () => fetchServerLoadingSession(tripId), staleTime: 0, retry: false })
 }

@@ -95,7 +95,8 @@ function handlingClassOf(value: string | null | undefined): HandlingClass {
 /**
  * Kiện của app từ kiện của backend; trạng thái lạ (`CANCELLED`) trả `null`. Backend không có cờ, lịch sử, loại kiện, yêu cầu giao hay
  * người tạo của app nên các trường đó rỗng; danh sách không trả chiều rộng, chiều cao và điểm đến (0 và chuỗi rỗng — màn ẩn chúng).
- * Mã của bên gửi để trống thì lấy mã của kho; kiện có `trackingBarcode` là kiện thêm tay (chỉ `POST /api/packages` ghi trường đó).
+ * Mã của bên gửi để trống thì lấy mã của kho. Backend không trả nguồn của kiện (mọi kiện — thêm tay, thêm loạt, nhập file — đều có
+ * `trackingBarcode`), nên `source` chỉ để đủ kiểu: màn không hiện nguồn khi nối backend (`PACKAGE_POOL_SUPPORT.source`).
  */
 export function packageOf(dto: BackendPackage): Package | null {
   const status: PackageStatus | undefined = STATUS_OF[dto.status ?? '']
@@ -114,7 +115,7 @@ export function packageOf(dto: BackendPackage): Package | null {
     destination: dto.destination?.trim() ?? '',
     status,
     flags: [],
-    source: dto.trackingBarcode ? 'MANUAL' : 'IMPORT',
+    source: 'IMPORT',
     createdAt: '',
     createdBy: null,
     history: [],

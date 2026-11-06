@@ -11,6 +11,7 @@ import { DriverNotice } from './DriverNotice'
 import { DriverStopHeader } from './DriverStopHeader'
 import { StopContactCard } from './StopContactCard'
 import { StopFooter } from './StopFooter'
+import { StopMoreActions } from './StopMoreActions'
 import { StopNotices } from './StopNotices'
 import { StopProgress } from './StopProgress'
 import { useDeliveryStop } from './useDeliveryStop'
@@ -18,10 +19,10 @@ import { useDriverStopScreenQuery } from './useDriverQueries'
 import { useUnloadScan } from './useUnloadScan'
 
 /**
- * Backend chưa trả mã QR của kiện cho tài xế và chưa có xác nhận tay: hộp đối chiếu chỉ còn gõ mã — mã đứng đầu dòng kiện hoặc mã của kho
- * kiện (`packageOfCode`), nên ô gõ mã có nhãn và gợi ý riêng.
+ * Máy chủ trả mã QR của từng kiện nên tài xế quét được nhãn; chưa có xác nhận tay nên hộp đối chiếu có quét và gõ mã — mã QR, mã đứng đầu
+ * dòng kiện hoặc mã của kho kiện (`packageOfCode`), nên ô gõ mã có nhãn và gợi ý riêng.
  */
-const CODE_ONLY: readonly VerifyMethod[] = ['CODE']
+const LABEL_METHODS: readonly VerifyMethod[] = ['QR', 'CODE']
 
 /**
  * Màn điểm giao `/tai-xe/diem-giao?chuyen=<mã số>` khi nhóm tài xế nối backend: điểm đang giao của chuyến lấy từ backend (điểm chưa
@@ -49,15 +50,17 @@ export function BackendDriverStop({ tripId }: { tripId: string }) {
 
 /**
  * Một điểm giao theo backend — cùng bố cục và luật cảm ứng với màn kho mẫu (`DeliveryStopView`: chữ 16 px, nút 56 px, một nút chính ở
- * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát", không "Đã đến" (điểm đang giao dỡ được ngay), không quét QR hay xác
- * nhận tay, không báo sự cố theo kiện hay sự cố trên đường, không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp),
- * không giờ đến dự kiến. Dỡ: gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend.
+ * chân màn), bỏ những phần backend chưa có (D-20): không "Xuất phát" (ở thẻ chuyến), không xác nhận tay, không báo sự cố theo kiện,
+ * không nhận hàng dọc đường, không khung 3D vị trí hàng (backend chưa trả chỗ xếp), không giờ đến dự kiến. "Đã đến điểm n" là nút chính
+ * trước khi dỡ; giờ đến và kiện đã dỡ đọc từ máy chủ; dỡ: quét nhãn QR hoặc gõ mã in trên nhãn từng kiện; hoàn tất điểm khi mọi kiện đã dỡ, rồi màn sang điểm kế tiếp của backend. "Sự cố trên đường" của
+ * cả chuyến nằm sau nút phụ "Thêm" (`StopMoreActions`) và gửi lên máy chủ.
  */
 function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<DriverStopScreen, { kind: 'stop' }> }) {
   const t = useT()
   const { view, stops } = screen
   const actions = useDeliveryStop(tripId, view)
   const scan = useUnloadScan(tripId, view, stops)
+  const arrived = view.arrivedAt !== undefined || view.arrivedEarlier === true
   // Backend báo cả điểm đã dỡ (kể cả kiện dỡ trước lần mở trang này): không còn gì để đối chiếu thì đóng hộp
   if (scan.open && !scan.pending && view.verifiable === 0) scan.setOpen(false)
 
@@ -71,12 +74,15 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
         <StopContactCard stop={view.stop} />
         <StopProgress view={view} />
 
-        {view.verifiable > 0 ? (
-          <Button variant="secondary" size="touch" className="w-full flex-none" onClick={() => scan.setOpen(true)}>
-            <ScanLine strokeWidth={2} />
-            {t('driver.scan.open')}
-          </Button>
-        ) : null}
+        <div className="flex flex-none flex-wrap gap-2 *:grow">
+          {arrived && view.verifiable > 0 ? (
+            <Button variant="secondary" size="touch" className="basis-full" onClick={() => scan.setOpen(true)}>
+              <ScanLine strokeWidth={2} />
+              {t('driver.scan.open')}
+            </Button>
+          ) : null}
+          <StopMoreActions tripId={tripId} tripLabel={screen.trip.code} stops={[]} />
+        </div>
 
         {view.items.length > 0 ? (
           <ul aria-label={view.stop.name} className="m-0 flex flex-none list-none flex-col overflow-hidden rounded-lg border border-border bg-bg p-0 shadow-card">
@@ -96,7 +102,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
       <PackageVerify
         open={scan.open}
         onOpenChange={scan.setOpen}
-        methods={CODE_ONLY}
+        methods={LABEL_METHODS}
         codeLabel={t('driver.backend.codeLabel')}
         codeHint={t('driver.backend.codeHint')}
         title={t('driver.scan.title', { number: view.stop.number })}
