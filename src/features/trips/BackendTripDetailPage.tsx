@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { BackendLoadPlansCard } from '@/features/optimization/BackendLoadPlansCard'
+import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
+import { serverTripPhase } from '@/features/pickups/pickup-stops'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog'
 import { backendDateTimeText } from './backend-date-text'
@@ -216,6 +218,11 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
             ) : null}
           />
 
+          <PickupRequestsCard
+            tripId={trip.tripCode}
+            phase={serverTripPhase(trip.status)}
+            stops={stops.toSorted((a, b) => a.stopSequence - b.stopSequence).map((stop) => ({ id: String(stop.id), name: stop.stopName ?? stop.address ?? '' }))}
+          />
 
 
           <section className="rounded-xl border border-border bg-bg p-4 shadow-sm sm:p-5">

@@ -1,5 +1,5 @@
 import { isoFromBackend } from '@/lib/backend-time'
-import type { DeliveryView } from './delivery-progress'
+import type { DeliveryView, PickupItemProgress } from './delivery-progress'
 import { itemProgressOf } from './driver-item-progress'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 import { RECENT_LIMIT, type MyTripRow, type MyTrips } from './my-trips'
@@ -49,6 +49,10 @@ export type StopPackageDto = {
   readonly manualReason?: string | null
   /** Lý do điều phối viên ghi khi từ chối xác nhận tay. */
   readonly manualRejectReason?: string | null
+  /** Kiện nhận dọc đường: yêu cầu nhận của kiện (ở điểm nhận, và ở điểm giao của kiện đó). */
+  readonly pickupRequestId?: number | null
+  /** Điểm nhận: kiện đã đối chiếu lên xe chưa. */
+  readonly picked?: boolean | null
 }
 
 /** `GET /api/driver/trips/{id}/current-stop` — điểm chưa hoàn tất đầu tiên và kiện của điểm đó theo thứ tự dỡ. */
@@ -62,6 +66,10 @@ export type CurrentStopDto = {
   /** Giờ đến thật (`LocalDateTime`, giờ Việt Nam); `null` khi chưa báo đến. */
   readonly actualArrival?: string | null
   readonly packages: readonly StopPackageDto[] | null
+  /** `DELIVERY` hoặc `PICKUP` (điểm nhận dọc đường chèn lúc duyệt); máy chủ cũ không trả thì là điểm giao. */
+  readonly stopType?: string | null
+  /** Điểm nhận: kiện phải đối chiếu lên xe (của các yêu cầu đã duyệt ở điểm này); điểm giao: rỗng. */
+  readonly pickupPackages?: readonly StopPackageDto[] | null
 }
 
 /** `POST /api/driver/packages/{id}/unload` — `remainingPackagesCount` là số kiện của điểm còn chưa dỡ. */
@@ -125,9 +133,18 @@ export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
 
 type StopPackage = StopPackageDto & { readonly packageId: number }
 
-/** Kiện của điểm, bỏ dòng backend trả không kèm kiện. */
-const stopPackagesOf = (dto: CurrentStopDto): StopPackage[] =>
-  (dto.packages ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [{ ...pkg, packageId: pkg.packageId }]))
+/** Bỏ dòng backend trả không kèm kiện. */
+const withId = (rows: readonly StopPackageDto[] | null | undefined): StopPackage[] =>
+  (rows ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [{ ...pkg, packageId: pkg.packageId }]))
+
+/** Điểm nhận dọc đường: việc ở đây là đối chiếu kiện nhận lên xe, không dỡ kiện nào. */
+const isPickupStop = (dto: CurrentStopDto): boolean => dto.stopType === 'PICKUP'
+
+/** Kiện nhận phải đối chiếu lên xe ở điểm này (chỉ điểm nhận có). */
+const pickupPackagesOf = (dto: CurrentStopDto): StopPackage[] => (isPickupStop(dto) ? withId(dto.pickupPackages) : [])
+
+/** Kiện đối chiếu được ở điểm: kiện cần dỡ và kiện nhận lên xe. */
+const stopPackagesOf = (dto: CurrentStopDto): StopPackage[] => [...withId(dto.packages), ...pickupPackagesOf(dto)]
 
 /** Mã so được: bỏ khoảng trắng hai đầu, không phân biệt hoa thường. */
 const normalized = (value: string | null | undefined) => value?.trim().toLocaleUpperCase('vi') ?? ''
@@ -173,14 +190,39 @@ export function packageOfCode(dto: CurrentStopDto, code: string): StopCodeMatch 
   return matchOf(byOwnCode, packages) ?? matchOf(bySenderCode, packages) ?? { kind: 'unknown' }
 }
 
-/** Kiện `packageId` của điểm đã dỡ theo lần đọc gần nhất của máy chủ. */
-export function isUnloaded(dto: CurrentStopDto, packageId: number): boolean {
-  return (dto.packages ?? []).some((pkg) => pkg.packageId === packageId && pkg.unloaded === true)
+/** Kiện `packageId` là kiện nhận phải đối chiếu lên xe ở điểm nhận này (không phải kiện cần dỡ). */
+export function isPickupPackage(dto: CurrentStopDto, packageId: number): boolean {
+  return pickupPackagesOf(dto).some((pkg) => pkg.packageId === packageId)
 }
 
-/** Điểm sau khi máy chủ nhận lệnh dỡ kiện `packageId` — giữ tới lần đọc lại kế tiếp. */
+/** Kiện `packageId` của điểm đã xong theo lần đọc gần nhất của máy chủ: đã dỡ, hoặc — kiện nhận ở điểm nhận — đã lên xe. */
+export function isUnloaded(dto: CurrentStopDto, packageId: number): boolean {
+  return (dto.packages ?? []).some((pkg) => pkg.packageId === packageId && pkg.unloaded === true)
+    || pickupPackagesOf(dto).some((pkg) => pkg.packageId === packageId && pkg.picked === true)
+}
+
+/** Điểm sau khi máy chủ nhận lệnh dỡ (hoặc nhận lên xe) kiện `packageId` — giữ tới lần đọc lại kế tiếp. */
 export function withUnloaded(dto: CurrentStopDto, packageId: number): CurrentStopDto {
-  return { ...dto, packages: (dto.packages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, unloaded: true } : pkg)) }
+  return {
+    ...dto,
+    packages: (dto.packages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, unloaded: true } : pkg)),
+    pickupPackages: (dto.pickupPackages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, picked: true } : pkg)),
+  }
+}
+
+/** Kiện nhận của điểm nhận ở dạng màn dùng: tên là mã của bên gửi, xong khi đã lên xe. */
+function pickupItemsOf(dto: CurrentStopDto): PickupItemProgress[] {
+  return pickupPackagesOf(dto).map((pkg) => ({
+    item: {
+      id: String(pkg.packageId),
+      name: pkg.packageName ?? pkg.packageCode ?? String(pkg.packageId),
+      weightKg: pkg.weight ?? 0,
+      requestId: pkg.pickupRequestId === null || pkg.pickupRequestId === undefined ? '' : String(pkg.pickupRequestId),
+      role: 'pick',
+    },
+    done: pkg.picked === true,
+    verification: undefined,
+  }))
 }
 
 function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
@@ -212,16 +254,25 @@ function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt'> {
 export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): BackendStop {
   const number = dto.stopSequence
   const items = itemsOf(dto)
-  const packageById = new Map(stopPackagesOf(dto).map((pkg) => [String(pkg.packageId), pkg]))
-  const stop: StopDelivery = { number, name: dto.stopName ?? '', address: dto.address ?? '', items, kind: 'DELIVERY' }
+  const packageById = new Map(withId(dto.packages).map((pkg) => [String(pkg.packageId), pkg]))
+  const pickupItems = pickupItemsOf(dto)
+  const stop: StopDelivery = {
+    number,
+    name: dto.stopName ?? '',
+    address: dto.address ?? '',
+    items,
+    kind: isPickupStop(dto) ? 'PICKUP' : 'DELIVERY',
+    pickupItems: pickupItems.map((entry) => entry.item),
+  }
   const stops = Array.from({ length: Math.max(tripStopCount, number) }, (_, index): StopDelivery =>
     index + 1 === number ? stop : { number: index + 1, name: '', address: '', items: [], kind: 'DELIVERY' })
   const progress = items.map((item) => itemProgressOf(item, packageById.get(item.id), number))
-  const unloadedCount = progress.filter((entry) => entry.unloaded).length
+  const pickupWaiting = pickupItems.filter((entry) => !entry.done).length
+  const unloadedCount = progress.filter((entry) => entry.unloaded).length + pickupItems.length - pickupWaiting
   const issueCount = progress.filter((entry) => entry.issue !== undefined).length
   // Kiện chưa dỡ mà đã báo sự cố không phải dỡ (máy chủ hoàn tất điểm thì kiện đó là hoàn trả)
-  const remaining = progress.filter((entry) => !entry.unloaded && entry.issue === undefined).length
-  const verifiable = progress.filter((entry) => !entry.unloaded && !entry.returned).length
+  const remaining = progress.filter((entry) => !entry.unloaded && entry.issue === undefined).length + pickupWaiting
+  const verifiable = progress.filter((entry) => !entry.unloaded && !entry.returned).length + pickupWaiting
   const pendingConfirms = progress.filter((entry) => entry.unloaded && entry.verification?.manual?.status === 'MANUAL_PENDING').length
   return {
     stopId: String(dto.stopId),
@@ -231,8 +282,8 @@ export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): Backen
       stop,
       ...arrivalOf(dto),
       items: progress,
-      pickupItems: [],
-      total: items.length,
+      pickupItems,
+      total: items.length + pickupItems.length,
       leftAtWarehouse: [],
       unloadedCount,
       issueCount,

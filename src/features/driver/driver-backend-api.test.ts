@@ -309,3 +309,41 @@ test('hoàn tất điểm qua lớp API của màn: gọi backend, không đọc
   await completeStop('1', 2)
   expect(paths().slice(-2)).toStrictEqual(['GET /api/driver/trips/1/current-stop', 'POST /api/driver/stops/2/complete?driverId=9'])
 })
+
+const PICKUP_STOP = {
+  stopId: 40, tripId: 1, stopSequence: 2, stopName: 'Kho Linh Trung', address: 'Linh Trung, Thủ Đức', status: 'ARRIVED',
+  actualArrival: '2026-10-17T14:00:00', stopType: 'PICKUP', packages: [],
+  pickupPackages: [
+    { packageId: 500, packageName: 'SHIP-9', packageCode: 'SHIP-9', trackingBarcode: 'SHIP-9', qrToken: 'qr-500', weight: 10, unloadOrder: 1, pickupRequestId: 7, picked: false },
+    { packageId: 501, packageName: 'SHIP-10', packageCode: 'SHIP-10', trackingBarcode: 'SHIP-10', qrToken: 'qr-501', weight: 4, unloadOrder: 2, pickupRequestId: 7, picked: true },
+  ],
+}
+
+test('điểm nhận dọc đường: kiện nhận là việc của điểm, quét mã gọi endpoint nhận lên xe, kiện đã lên xe không gọi lại', async () => {
+  routes['GET /api/driver/trips'] = ok([TRIP])
+  routes['GET /api/driver/trips/1/current-stop'] = ok(PICKUP_STOP)
+  const driver = createDriverBackend()
+  const screen = await driver.fetchStopScreen('1')
+  if (screen.kind !== 'stop') throw new Error('phải là điểm đang giao')
+  expect(screen.view.stop.kind).toBe('PICKUP')
+  expect(screen.view.items).toStrictEqual([])
+  expect(screen.view.pickupItems.map(({ item, done }) => [item.id, item.name, item.requestId, item.role, done])).toStrictEqual([
+    ['500', 'SHIP-9', '7', 'pick', false],
+    ['501', 'SHIP-10', '7', 'pick', true],
+  ])
+  expect(screen.view).toMatchObject({ total: 2, unloadedCount: 1, remaining: 1, verifiable: 1 })
+
+  routes['POST /api/driver/pickup-packages/500/pick'] = ok({ id: 7, status: 'APPROVED' })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'QR-500' })).toStrictEqual({ packageInstanceId: '500' })
+  expect(paths().at(-1)).toBe('POST /api/driver/pickup-packages/500/pick')
+  const count = calls.length
+  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'qr-500' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
+  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'SHIP-10' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
+  expect(calls).toHaveLength(count)
+})
+
+test('điểm giao thường: máy chủ cũ không trả loại điểm thì là điểm giao, không có kiện nhận', async () => {
+  onStop()
+  const screen = await createDriverBackend().fetchStopScreen('1')
+  expect(screen.kind === 'stop' && [screen.view.stop.kind, screen.view.pickupItems.length]).toStrictEqual(['DELIVERY', 0])
+})
