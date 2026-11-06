@@ -6,6 +6,7 @@ import {
   matchesOrientation,
   nextOrientation,
   orientDimensions,
+  previousOrientation,
   UPRIGHT_ORIENTATIONS,
 } from '@/domain/geometry'
 
@@ -85,4 +86,13 @@ test('a placed size off only by floating-point drift still matches its orientati
   const spanned = { ...SPEC_CARTON_A_PLACEMENT, placedLengthCm: 221.1 - 100.4 }
   const short = { ...SPEC_CARTON_A_PLACEMENT, placedLengthCm: 120.6 }
   expect([matchesOrientation(spanned, carton), matchesOrientation(short, carton)]).toStrictEqual([true, false])
+})
+
+test('turning back walks the allowed orientations in reverse and still skips one that changes nothing', () => {
+  const squareBase = { ...SPEC_CARTON_A, lengthCm: 60, keepUpright: false, allowedOrientations: ['LWH', 'WLH', 'HLW'] as const }
+  expect([previousOrientation(squareBase, 'HLW'), previousOrientation(squareBase, 'WLH')]).toStrictEqual(['WLH', 'HLW'])
+})
+
+test('turning back from an orientation the package does not allow starts at its last allowed one', () => {
+  expect(previousOrientation(SPEC_CARTON_A, 'HLW')).toBe('WLH')
 })

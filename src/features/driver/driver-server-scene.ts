@@ -65,7 +65,7 @@ export function driverServerScene(plan: DriverLoadedPlan): DriverServerScene | n
   const loadPlan: LoadPlan = {
     id: plan.planId, tripId: plan.tripId, jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
     volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
-    rearAxleLoadKg: null, rehandlingCount: null, unplaced: [], manuallyEdited: false, stale: false,
+    rearAxleLoadKg: null, rehandlingCount: null, unplaced: [], manuallyEdited: false, stale: false, stopZones: null,
     placements: plan.placements.map((item) => ({
       id: item.id,
       packageId: item.packageId,

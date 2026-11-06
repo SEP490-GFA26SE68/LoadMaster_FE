@@ -18,7 +18,7 @@ vi.mock('@/lib/backend-config', () => ({
 const PLAN: LoadPlan = {
   id: '12', tripId: '42', jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
   volumePercent: 60, payloadPercent: null, approved: true, approvedByName: 'Lê Minh Châu', centerOfGravityCm: null, frontAxleLoadKg: null,
-  rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [], unplaced: [],
+  rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, stopZones: null, placements: [], unplaced: [],
 }
 
 function renderActions(plan: LoadPlan, approve: 'ready' | 'draft' | 'stale' | null, edits?: BackendEditsAction) {

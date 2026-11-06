@@ -27,7 +27,7 @@ export function EditorControls({ state, editor }: { state: LoadPlanViewerState; 
   return <div className="flex flex-col gap-4 text-body-lg xl:text-small">
     <div className="flex gap-2">
       <Button variant="glass" className={cn(CONTROL, 'flex-1')} onClick={editor.focusSelected}><Focus strokeWidth={1.5} />{t('viewer.editor.focus')}</Button>
-      <Button variant="glass" className={CONTROL} onClick={editor.togglePin}>
+      <Button variant="glass" className={CONTROL} aria-keyshortcuts="P" onClick={editor.togglePin}>
         {p.pinned ? <PinOff strokeWidth={1.5} /> : <Pin strokeWidth={1.5} />}{p.pinned ? t('viewer.editor.unpin') : t('viewer.editor.pin')}
       </Button>
     </div>

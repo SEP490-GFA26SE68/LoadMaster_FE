@@ -23,8 +23,8 @@ function Card({ title, mock, children }: { title: string; mock: boolean; childre
 
 /**
  * Số lần dỡ-xếp lại ở hộp Chi tiết (FE-5b-07, D-79): số kiện nằm ngoài vùng của điểm giao mình trong **bản đang xem, kể cả đang chỉnh
- * tay** — cùng luật với `rehandlingCount` của kết quả. Vùng là của mock nên số mang MOCK RESULT. Phương án không chia vùng thì chỉ có
- * một câu nói vì sao chưa tính, không có số.
+ * tay** — cùng luật với `rehandlingCount` của kết quả (mock và máy chủ). Vùng của mock thì số mang MOCK RESULT, vùng máy chủ trả thì
+ * không. Phương án không chia vùng thì chỉ có một câu nói vì sao chưa tính, không có số.
  */
 export function RehandlingPanel({ zones, placements, isMockResult }: {
   zones: readonly SceneZone[]
