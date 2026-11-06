@@ -138,6 +138,7 @@ export const apiErrors = {
   MANUAL_EDIT_OVERLAP: 'A package overlaps another package or an obstacle.',
   MANUAL_EDIT_UNSUPPORTED: 'A package lacks support underneath (at least 70% of its base is needed).',
   MANUAL_EDIT_AXLE_OVERLOAD: 'The edits overload an axle group.',
+  MANUAL_EDIT_ROTATION_NOT_ALLOWED: 'The package type does not allow turning this package that way.',
 
   DELIVERY_STOP_NOT_ARRIVED: 'This stop is not marked as arrived yet. Tap "Arrived at stop" before unloading or reporting an issue.',
   DELIVERY_ISSUE_NOTE_REQUIRED: 'An "Other" issue needs a note.',

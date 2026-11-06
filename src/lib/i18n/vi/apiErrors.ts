@@ -152,6 +152,7 @@ export const apiErrors = {
   MANUAL_EDIT_OVERLAP: 'Có kiện chồng lên kiện khác hoặc lên vật cản.',
   MANUAL_EDIT_UNSUPPORTED: 'Có kiện không đủ chỗ đỡ bên dưới (cần ít nhất 70% mặt đáy).',
   MANUAL_EDIT_AXLE_OVERLOAD: 'Bản chỉnh làm một nhóm trục vượt giới hạn.',
+  MANUAL_EDIT_ROTATION_NOT_ALLOWED: 'Loại kiện không cho xoay kiện theo hướng này.',
 
   // Tài xế: sự cố theo kiện, xác nhận tay khi dỡ, vị trí hàng
   DELIVERY_STOP_NOT_ARRIVED: 'Chưa báo đã đến điểm này. Bấm "Đã đến điểm" trước khi dỡ hoặc báo sự cố.',

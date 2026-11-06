@@ -52,6 +52,8 @@ export type PlacementDto = {
   readonly stopId?: number | null
   readonly stopName?: string | null
   readonly stopSequence?: number | null
+  /** Mã hướng (0..5) kiện được nhận khi chỉnh tay theo loại kiện; máy chủ cũ không trả. */
+  readonly allowedRotations?: readonly number[] | null
 }
 
 export type UnplacedDto = {
@@ -150,6 +152,11 @@ export type LoadPlacement = {
   readonly pinned: boolean
   readonly stopId: string | null
   readonly stopSequence: number | null
+  /**
+   * Mã `rotation_type` kiện được nhận khi chỉnh tay (theo loại kiện, như dịch vụ tối ưu đọc), gồm hướng đang xếp; vắng khi máy chủ
+   * không trả — chỉnh tay giữ nguyên hướng.
+   */
+  readonly allowedRotations?: readonly number[]
 }
 
 export type LoadUnplaced = {
@@ -246,6 +253,9 @@ function placementOf(dto: PlacementDto): LoadPlacement {
     pinned: dto.pinned === true,
     stopId: dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId),
     stopSequence: dto.stopSequence ?? null,
+    ...(dto.allowedRotations
+      ? { allowedRotations: dto.allowedRotations.filter((code) => Number.isInteger(code) && code >= 0 && code <= 5) }
+      : {}),
   }
 }
 

@@ -63,6 +63,21 @@ describe('backendPlanScene', () => {
     expect(scene.metrics).not.toHaveProperty('centerOfGravityCm')
   })
 
+  test('hướng đặt được phép theo `allowedRotations` của máy chủ, luôn gồm hướng đang xếp; máy chủ không trả thì chỉ hướng đang xếp', () => {
+    const scene = backendPlanScene({
+      tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
+      plan: plan({ placements: [
+        placement({ allowedRotations: [1, 0] }),
+        placement({ id: '12', code: 'PK-302', rotationType: 3, allowedRotations: [0] }),
+        placement({ id: '13', code: 'PK-303', rotationType: 1 }),
+      ] }),
+    })
+    expect(scene.orientationRulesById.get('PK-301')?.allowedOrientations).toEqual(['LWH', 'WLH'])
+    expect(scene.orientationRulesById.get('PK-302')?.allowedOrientations).toEqual(['LWH', 'WHL'])
+    expect(scene.orientationRulesById.get('PK-303')?.allowedOrientations).toEqual(['WLH'])
+    expect(scene.engineInput?.instances?.map(({ allowedOrientations }) => allowedOrientations)).toEqual([['LWH', 'WLH'], ['LWH', 'WHL'], ['WLH']])
+  })
+
   test('kiện chưa xếp chỉ có mã và lý do; lý do lạ là UNKNOWN', () => {
     const scene = backendPlanScene({
       tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,

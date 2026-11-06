@@ -10,7 +10,7 @@ import type { ScenePlacement, SceneStop, SceneUnplaced, ViewerSceneModel } from 
 /**
  * Phương án của máy chủ (`LoadPlanDetailResponse`, đã đổi ở `load-plan-dto.ts`) thành snapshot của engine 3D — hàm thuần. Cm giữ nguyên;
  * kết quả của máy chủ không mang MOCK RESULT. Đầu vào constraint engine dựng từ chính các kiện đã xếp (mỗi chỗ xếp một instance mang mã
- * của khung 3D, hướng đặt giữ nguyên, có thể xếp chồng, diện tích tựa tối thiểu mặc định) để Planner chỉnh tay và kiểm trước khi gửi
+ * của khung 3D, hướng đặt được phép theo `allowedRotations` của máy chủ, có thể xếp chồng, diện tích tựa tối thiểu mặc định) để Planner chỉnh tay và kiểm trước khi gửi
  * "Duyệt bản chỉnh" — máy chủ kiểm lại. Máy chủ không trả thứ tự dỡ (Planner dùng thứ tự gợi ý, có ghi rõ), độ dễ vỡ, bao bì, vùng điểm giao; số máy chủ không trả thì vắng.
  */
 
@@ -110,15 +110,27 @@ export function backendPlacementIds(plan: LoadPlan): ReadonlyMap<string, string>
   return new Map(plan.placements.map((item, index) => [sceneIds[index] ?? item.id, item.id]))
 }
 
-/** Mỗi chỗ xếp của máy chủ một instance: máy chủ không trả luật xếp chồng hay hướng đặt của kiện, nên engine chỉ kiểm hình học. */
-function engineInputOf(placements: readonly ScenePlacement[], vehicle: VehicleConfig): ConstraintEngineInput {
+/**
+ * Hướng đặt kiện được nhận khi chỉnh tay: các mã `allowedRotations` máy chủ trả (theo loại kiện), luôn gồm hướng đang xếp; máy chủ không
+ * trả thì chỉ hướng đang xếp. Theo thứ tự mã của dịch vụ tối ưu.
+ */
+function allowedOrientationsOf(item: LoadPlacement, current: OrientationCode): OrientationCode[] {
+  const codes = new Set([...(item.allowedRotations ?? []).map(orientationOf), current])
+  return Object.values(ROTATIONS).filter((code) => codes.has(code))
+}
+
+/**
+ * Mỗi chỗ xếp của máy chủ một instance: máy chủ không trả luật xếp chồng của kiện, nên engine kiểm hình học và hướng đặt được phép.
+ */
+function engineInputOf(placements: readonly ScenePlacement[], vehicle: VehicleConfig,
+  allowedById: ReadonlyMap<string, readonly OrientationCode[]>): ConstraintEngineInput {
   const instances = placements.map((item): PackageInstance => {
     const base = baseDimensionsOf(item, item.orientation)
     return {
       packageInstanceId: item.id,
       ...base,
       weightKg: item.weightKg,
-      allowedOrientations: [item.orientation],
+      allowedOrientations: [...(allowedById.get(item.id) ?? [item.orientation])],
       keepUpright: false,
       fragilityLevel: 'NONE',
       stackable: true,
@@ -156,6 +168,8 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
   const ordered = [...stops].sort((a, b) => a.sequence - b.sequence)
   const sequenceById = new Map(ordered.map((stop) => [stop.id, stop.sequence]))
   const sceneIds = sceneIdsOf(plan)
+  const allowedById = new Map(plan.placements.map((item, index) =>
+    [sceneIds[index] ?? item.id, Object.freeze(allowedOrientationsOf(item, orientationOf(item.rotationType)))] as const))
   const placements = plan.placements.map((item, index): ScenePlacement => {
     const orientation = orientationOf(item.rotationType)
     return Object.freeze({
@@ -211,10 +225,12 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
     unplaced: Object.freeze(unplaced),
     placementById: new Map(placements.map((item) => [item.id, item])),
     baseDimensionsById: new Map(placements.map((item) => [item.id, Object.freeze(baseDimensionsOf(item, item.orientation))])),
-    orientationRulesById: new Map(placements.map((item) => [item.id, Object.freeze({ allowedOrientations: [item.orientation], keepUpright: false })])),
+    orientationRulesById: new Map(placements.map((item) => [item.id, Object.freeze({
+      allowedOrientations: allowedById.get(item.id) ?? [item.orientation], keepUpright: false,
+    })])),
     isMockResult: false,
     ordersRecomputed: false,
-    engineInput: engineInputOf(placements, vehicle),
+    engineInput: engineInputOf(placements, vehicle, allowedById),
     metrics,
     revision: Object.freeze({
       id: plan.id,

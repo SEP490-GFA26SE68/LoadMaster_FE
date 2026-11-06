@@ -35,10 +35,14 @@ export function EditorProxy({ placement, state, editor }: {
   const get = useThree((s) => s.get)
   const invalidate = useThree((s) => s.invalidate)
   const labels = useRef<Partial<Record<LabelTone, HTMLSpanElement | null>>>({})
+  const reason = useRef<HTMLSpanElement>(null)
   const colorFor = (result: GeometryResult) => {
     // Nhãn neo đổi theo tư thế ngay trong lúc kéo: chỉ bật/tắt DOM, không qua React (mục 7).
     const tone = toneOf(result)
     for (const key of LABEL_TONES) { const el = labels.current[key]; if (el) el.style.display = key === tone ? '' : 'none' }
+    // Lý do không đặt được nằm ngay cạnh kiện, không chỉ ở HUD góc khung: câu đầu tiên của constraint engine (đã dịch)
+    const text = tone === 'bad' ? result.errors[0] ?? '' : ''
+    if (reason.current && reason.current.textContent !== text) reason.current.textContent = text
     return readToken(tone === 'bad' ? '--danger' : tone === 'warn' ? '--warning' : '--success')
   }
 
@@ -116,8 +120,11 @@ export function EditorProxy({ placement, state, editor }: {
       const axes = axis ? [axis] : PLANE_AXES[editor.plane]
       const snapped = editor.snapping ? snapPosition(placement, requested, state.placements, state.sceneModel.vehicle, axes, home)
         : { position: requested, sources: [], targets: [] }
-      candidate = { ...placement, position: snapped.position }
       moved = true
+      // Con trỏ chạy trong cùng một ô hút: tư thế không đổi, không kiểm lại và không vẽ lại
+      const same = candidate.position.x === snapped.position.x && candidate.position.y === snapped.position.y && candidate.position.z === snapped.position.z
+      if (same && candidate !== placement) return
+      candidate = { ...placement, position: snapped.position }
       const result = editor.inspect(candidate)
       object!.position.set(...boxCenter(candidate))
       material.current?.color.set(colorFor(result))
@@ -180,7 +187,9 @@ export function EditorProxy({ placement, state, editor }: {
       <SceneCallout position={[0, toScene(placement.heightCm) / 2, 0]} offset={[-130, -96]} width={190} anchor>
         {LABEL_TONES.map((tone) => <span key={tone} ref={(el) => { labels.current[tone] = el }} className="inline-block" style={{ display: 'none' }}>
           <SceneTag tone={tone} code={placement.id}
-            title={t(tone === 'bad' ? 'viewer.selectionLabel.cannotPlace' : 'viewer.selectionLabel.selected', { stop: placement.stop })} />
+            title={t(tone === 'bad' ? 'viewer.selectionLabel.cannotPlace' : 'viewer.selectionLabel.selected', { stop: placement.stop })}>
+            {tone === 'bad' ? <span ref={reason} data-editor-reason className="line-clamp-3 max-w-[11rem] whitespace-normal text-red-200 empty:hidden" /> : null}
+          </SceneTag>
         </span>)}
       </SceneCallout>
     </group>

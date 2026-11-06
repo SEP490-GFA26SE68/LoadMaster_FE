@@ -43,6 +43,17 @@ test('dời kiện vào chỗ trống: một chỉnh sửa theo mã số chỗ x
   expect(approval?.pinnedPlacementIds).toBeUndefined()
 })
 
+test('xoay kiện sang hướng loại kiện cho phép: gửi mã hướng của máy chủ, kích thước theo kích thước gốc', () => {
+  const source = plan([placement('11', 'PK-1', 0, { allowedRotations: [0, 1] }), placement('12', 'PK-2', 200)])
+  const model = backendPlanScene({ tripCode: 'TRIP-1', plan: source, vehicle: VEHICLE, stops: STOPS })
+  const draft = patchPlacement(model, createViewerDraft(), 'PK-1', { orientation: 'WLH' })
+  const { placements } = resolveEffectiveScene(model, draft)
+  const approval = backendEditApproval(model, placements, draft, backendPlacementIds(source), baselineErrorKeys(model))
+  expect(approval?.edits).toEqual([{ placementId: '11', x: 0, y: 0, z: 0, rotationType: 1 }])
+  expect(placements[0]).toMatchObject({ lengthCm: 50, widthCm: 100, heightCm: 40 })
+  expect(approval?.errors).toEqual([])
+})
+
 test('dời kiện chồng lên kiện khác: lỗi chồng lấn mới chặn gửi', () => {
   const approval = approvalAfterMove(plan([placement('11', 'PK-1', 0), placement('12', 'PK-2', 100)]), 'PK-2', { x: 50, y: 0, z: 0 })
   expect(approval?.errors.map(({ code }) => code)).toContain('OVERLAP')

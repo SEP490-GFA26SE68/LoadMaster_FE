@@ -31,10 +31,10 @@ export function EditorToolbar({ state, editor, onModeChange = editor.setMode }: 
         ]} />
       {editor.mode === 'edit' ? <>
         <span aria-hidden className={DIVIDER} />
-        <Button variant="glass" aria-label={t('viewer.editor.undo')} disabled={!state.canUndo || dragging} onClick={editor.undo} className={history}>
+        <Button variant="glass" aria-keyshortcuts="Control+Z Meta+Z" aria-label={t('viewer.editor.undo')} disabled={!state.canUndo || dragging} onClick={editor.undo} className={history}>
           <Undo2 strokeWidth={1.5} /><span className="hidden lg:inline">{t('viewer.editor.undo')}</span>
         </Button>
-        <Button variant="glass" aria-label={t('viewer.editor.redo')} disabled={!state.canRedo || dragging} onClick={editor.redo} className={history}>
+        <Button variant="glass" aria-keyshortcuts="Control+Y Meta+Y Control+Shift+Z Meta+Shift+Z" aria-label={t('viewer.editor.redo')} disabled={!state.canRedo || dragging} onClick={editor.redo} className={history}>
           <Redo2 strokeWidth={1.5} /><span className="hidden lg:inline">{t('viewer.editor.redo')}</span>
         </Button>
       </> : null}

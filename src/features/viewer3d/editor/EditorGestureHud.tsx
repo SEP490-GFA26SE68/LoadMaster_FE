@@ -1,16 +1,18 @@
 import { Fragment, useEffect, useRef } from 'react'
 import { Keyboard } from 'lucide-react'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
-import { useT } from '@/lib/i18n'
+import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DARK_SCOPE, GLASS_PANEL, MUTED } from '../panels/scene-ui'
 import { formatSnapSource } from './snapping'
+import { LARGE_NUDGE_CM } from './shortcuts'
 import type { ManualEditor } from './useManualEditor'
 
-/** Phím tắt của editor: phím (chữ trên nắp phím) → việc; `lead` đứng trước phím ("thêm Shift: làm lại"). */
+/** Phím tắt của editor (`shortcuts.ts`): phím (chữ trên nắp phím) → việc; `lead` đứng trước phím ("thêm Shift: bước 10 cm"). */
 const SHORTCUTS = [
-  { key: 'arrows', action: 'arrowsAction' }, { key: 'pageKeys', action: 'pageAction' }, { key: 'rotateKey', action: 'rotateAction' },
-  { key: 'escKey', action: 'escAction' }, { key: 'undoKey', action: 'undoAction' }, { lead: 'redoLead', key: 'shiftKey', action: 'redoAction' },
+  { key: 'arrows', action: 'arrowsAction' }, { key: 'pageKeys', action: 'pageAction' }, { lead: 'stepLead', key: 'shiftKey', action: 'stepAction' },
+  { key: 'rotateKey', action: 'rotateAction' }, { key: 'rotateBackKey', action: 'rotateBackAction' }, { key: 'pinKey', action: 'pinAction' },
+  { key: 'escKey', action: 'escAction' }, { key: 'undoKey', action: 'undoAction' }, { key: 'redoKey', action: 'redoAction' },
 ] as const
 
 /**
@@ -20,6 +22,7 @@ const SHORTCUTS = [
  */
 export function EditorGestureHud({ placement, editor }: { placement: ScenePlacement; editor: ManualEditor }) {
   const t = useT()
+  const step = useFormat().length(LARGE_NUDGE_CM)
   const chip = useRef<HTMLSpanElement>(null), line = useRef<HTMLSpanElement>(null), snap = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     function update() {
@@ -54,7 +57,7 @@ export function EditorGestureHud({ placement, editor }: { placement: ScenePlacem
           {index > 0 ? <span aria-hidden className="opacity-60">·</span> : null}
           {'lead' in item ? <span>{t(`viewer.editor.shortcuts.${item.lead}`)}</span> : null}
           <kbd className="rounded-xs border border-sky-glass-border bg-sky-glass px-1.5 py-0.5 font-sans text-micro font-semibold text-glass-dark-text">{t(`viewer.editor.shortcuts.${item.key}`)}</kbd>
-          <span>{t(`viewer.editor.shortcuts.${item.action}`)}</span>
+          <span>{t(`viewer.editor.shortcuts.${item.action}`, { step })}</span>
         </Fragment>)}
       </span>
     </span>

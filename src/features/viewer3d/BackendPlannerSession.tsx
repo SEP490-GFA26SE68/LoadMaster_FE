@@ -70,7 +70,7 @@ export function BackendResultSession() {
 /**
  * Một phiên Planner trên phương án của máy chủ: xem, mô phỏng xếp / dỡ, inspector, timeline và Duyệt (`POST /api/load-plans/{id}/approve`).
  * Chuyến Đã lập kế hoạch: điều phối viên (`plans.approve`) ghim / bỏ ghim kiện đang chọn ngay ở thẻ kiện — ghim lưu thẳng vào phương án
- * ở máy chủ, không qua Duyệt —, chỉnh tay (dời kiện; hướng đặt giữ nguyên vì máy chủ không trả hướng đặt được phép của kiện) rồi "Duyệt bản
+ * ở máy chủ, không qua Duyệt —, chỉnh tay (dời và xoay kiện; hướng xoay được là `allowedRotations` máy chủ trả theo loại kiện) rồi "Duyệt bản
  * chỉnh" (`POST /api/load-plans/{id}/approve-edits`: máy chủ kiểm lại và lưu một bản duyệt mới đánh dấu chỉnh tay), "Chạy lại giữ ghim"
  * (`optimization.run`) và "Đổi xe" (`trips.edit`) ở góc dưới phải khung 3D. Chuyến còn Nháp thì ghim và chạy lại mờ kèm lý do (máy chủ
  * từ chối `TRIP_LOCKED`); pha vận hành khoá cả Planner. Phương án lỗi thời (máy chủ `stale`: đổi xe, đổi kiện của chuyến) có thanh cảnh báo,

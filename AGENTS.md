@@ -1004,6 +1004,13 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Kéo dùng pointer capture, ref và cập nhật Three imperative; chỉ commit một lệnh khi thả hợp lệ. Trong gesture tạm ngưng camera và raycast instances, khôi phục khi thả/hủy/unmount. Không đưa pointer position qua React mỗi frame.
 - Snapping dùng cm trong `viewer3d/editor`: lưới 5 cm, ngưỡng hút 2 cm, hút cả mặt vật cản chịu tải (không hút vật cản không chịu tải), so qua `eq/lt/gt`, vị trí commit qua `roundCm`. Nút nudge đi đúng 1/5/10 cm (mặc định 1); snapping dùng khi kéo hoặc bấm Căn vị trí. Xoay chỉ vòng qua `effectiveOrientations` của kiện (6 mã Spec `LWH … HWL`, tôn trọng `keepUpright`), không xoay quaternion tự do.
 - Tính hợp lệ (LM-035) khi kéo/thả/xoay/nudge/căn/khôi phục do constraint engine của domain quyết định (`editor/editor-engine.ts`, dựng một lần mỗi snapshot, `sync` theo placement hiệu lực trước mỗi lần kiểm nên undo/redo/reset không lệch): issue `error` dính tới kiện (chủ thể hoặc `relatedIds`) chặn commit, `warning` vẫn commit; câu qua `formatIssue`. Issue toàn phương án (trọng tâm, và tải trục `AXLE_OVERLOAD` — FE-5b-03) không chặn thao tác; `AXLE_OVERLOAD` chặn ở bước Duyệt.
+- **Phím tắt** ở chế độ Chỉnh sửa (`editor/shortcuts.ts`, thuần, `editorShortcut`; cùng một bộ cho Planner kho mẫu và Planner máy chủ): mũi
+  tên dời X/Y, Page Up/Down dời Z theo bước đang chọn, giữ Shift là bước lớn `LARGE_NUDGE_CM` (10 cm); R xoay sang hướng được phép kế tiếp,
+  Shift + R hướng trước (`previousOrientation`); P ghim / bỏ ghim; Ctrl/Cmd + Z hoàn tác, Ctrl/Cmd + Y hoặc Ctrl/Cmd + Shift + Z làm lại; Esc
+  huỷ cú kéo đang dở, không thì thoát tập trung, rồi bỏ chọn kiện. Không bắt phím khi con trỏ ở ô nhập, hộp thoại, menu, listbox. HUD góc khung
+  (từ 1.280 px) liệt kê đủ các phím, hẹp hơn là câu `viewer.editor.keyboard` trong panel; nút Hoàn tác / Làm lại / Ghim mang
+  `aria-keyshortcuts`. Lý do không đặt được (câu đầu của constraint engine) hiện ngay trên nhãn neo của kiện lúc kéo, ghi thẳng vào DOM;
+  khung nét đứt "Vị trí gốc" (`EditorSpatialFeedback`) chỉ chỗ cũ của kiện khi đã dời. Con trỏ chạy trong cùng một ô hút thì không kiểm lại.
 - Lịch sử giữ patch trước/sau theo ID, tối đa 200 lệnh, không snapshot placements mỗi lần di chuột. Ghim khóa move/rotate cho đến khi bỏ ghim; ghim **lưu cùng phương án** (FE-BL-02) qua Duyệt (`PackagePlacement.pinned`, mục 9) — ghim hay bỏ ghim kiện là chỉnh sửa cần "Duyệt bản chỉnh" dù không dời kiện nào, nhưng không phải "chỉnh tay" (`manuallyEdited`, nhãn "Đã chỉnh tay" chỉ theo dời / xoay). Reset mọi chỉnh sửa cần dialog; reset riêng bị chặn nếu vị trí gốc đang bị kiện khác chiếm.
 - Không tạo placement từ UnplacedPackage, không lưu draft qua phiên/trang và không coi kiểm tra frontend là kết quả tối ưu authoritative.
 - **Tay kéo theo trục** (LM-108): ba mũi tên X/Y/Z trên kiện đang chọn (`EditorAxisHandles`, số mesh cố định, vùng nắm
@@ -1262,10 +1269,13 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT) và Duyệt bằng
   `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Phương án máy chủ đánh dấu `stale` (đổi xe, đưa / gỡ yêu cầu
   giao) có thanh lỗi thời, nút Duyệt mờ kèm lý do, không chỉnh tay; máy chủ từ chối `PLAN_STALE`. **Chỉnh tay** (`plans.approve`, chuyến Đã lập
-  kế hoạch, chưa lỗi thời): constraint engine dựng từ chính các chỗ xếp (`engineInputOf`: mỗi chỗ xếp một instance, hướng đặt giữ nguyên vì
-  máy chủ không trả hướng đặt được phép); "Duyệt bản chỉnh" chỉ chặn lỗi ràng buộc **mới** do bản chỉnh gây ra (`backend-edit-approval.ts`)
+  kế hoạch, chưa lỗi thời): constraint engine dựng từ chính các chỗ xếp (`engineInputOf`: mỗi chỗ xếp một instance; hướng xoay được là
+  `allowedRotations` máy chủ trả cho từng chỗ xếp theo cờ xoay của loại kiện, luôn gồm hướng đang dùng — không có loại kiện thì không xoay);
+  "Duyệt bản chỉnh" chỉ chặn lỗi ràng buộc **mới** do bản chỉnh gây ra (`backend-edit-approval.ts`)
   rồi gửi `POST /api/load-plans/{id}/approve-edits` (`placements[{placementId, posX, posY, posZ, rotationType}]`, `pinnedPlacementIds` chỉ khi
-  đổi ghim): máy chủ kiểm lại (lòng thùng, chồng lấn, chỗ đỡ ≥ 70 %, tải trục — `MANUAL_EDIT_*`) và lưu một bản duyệt mới `manuallyEdited`,
+  đổi ghim): máy chủ kiểm lại (hướng xoay — `MANUAL_EDIT_ROTATION_NOT_ALLOWED`, kích thước xếp tính lại từ kích thước thật của kiện —, lòng thùng,
+  chồng lấn, chỗ đỡ ≥ 70 %, tải trục — `MANUAL_EDIT_*`), tính lại trọng tâm, tải trục và số dỡ-xếp lại (tâm kiện theo X nằm ngoài vùng điểm
+  giao của mình; vùng dựng lại như dịch vụ tối ưu, thiếu dữ liệu thì để trống) và lưu một bản duyệt mới `manuallyEdited`,
   màn mở bản đó (`?revision=`). **Đổi xe** ở góc khung 3D (`trips.edit`, chuyến Đã lập kế hoạch) dùng `ChangeVehicleDialog` với
   `GET /api/trips/{id}/vehicle-choices` (xe kèm lý do cùng mã với `vehicleFit`) và `PATCH /api/trips/{id}` (`trip-vehicle-backend-api.ts`).
   Ghim, bỏ ghim, chạy lại cũng chỉ khi chuyến Đã lập kế hoạch
