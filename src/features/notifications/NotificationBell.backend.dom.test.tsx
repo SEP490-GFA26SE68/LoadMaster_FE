@@ -117,6 +117,64 @@ test('tài xế: chuyến mới nói bằng câu của tài xế và mở màn �
   expect(released).not.toHaveAttribute('href')
 })
 
+test('điều phối viên: yêu cầu nhận dọc đường của tài xế mở Chi tiết chuyến; xếp xong, hoàn thành, xác nhận tay không hiện mã thô', async () => {
+  stubBackend({
+    'GET /api/notifications': {
+      body: list([
+        notification({
+          id: 900, actionType: 'PICKUP_REQUESTED', entityName: 'PickupRequest', entityId: '5',
+          newValues: { status: 'VALIDATED', packages: 2, pickupId: 5, tripId: 42 },
+        }),
+        notification({
+          id: 901, actionType: 'LOADING_COMPLETED', entityName: 'LoadingExecution', actorName: 'Lê Văn Kho', actorRole: 'WAREHOUSE_WORKER',
+          newValues: { tripId: 42, status: 'COMPLETED', tripStatus: 'LOADING', driverId: 31 },
+        }),
+        notification({ id: 902, actionType: 'TRIP_COMPLETED', entityName: 'Trip', newValues: { tripId: 42, status: 'DELIVERED' } }),
+        notification({
+          id: 903, actionType: 'MANUAL_CONFIRM_REQUESTED', entityName: 'ManualUnloadConfirmation',
+          newValues: { tripId: 42, packageId: 3, reason: 'LABEL_DAMAGED' },
+        }),
+      ]),
+    },
+  })
+  renderBell('dispatcher')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Thông báo, 4 chưa đọc' }))
+  const menu = await screen.findByRole('menu')
+  const pickup = within(menu).getByRole('menuitem', { name: /Gửi yêu cầu nhận hàng dọc đường/ })
+  expect(pickup).toHaveAttribute('href', '/chuyen/TRIP-20261106-A1')
+  expect(pickup).toHaveTextContent('2 kiện nhận dọc đường · Đạt đủ mười luật')
+  expect(within(menu).getByRole('menuitem', { name: /Tài xế xác nhận tay kiện dỡ/ })).toHaveTextContent('Lý do: Nhãn rách / mất')
+  expect(menu).not.toHaveTextContent(/COMPLETED|LABEL_DAMAGED|VALIDATED|— →/)
+})
+
+test('tài xế: duyệt / từ chối nhận dọc đường nói bằng câu của tài xế và mở màn điểm giao', async () => {
+  stubBackend({
+    'GET /api/notifications': {
+      body: list([
+        notification({
+          id: 910, actionType: 'PICKUP_APPROVED', entityName: 'PickupRequest', entityId: '5', actorName: 'Điều phối', actorRole: 'DISPATCHER',
+          newValues: { placed: 2, unplaced: 1, overridden: true, driverId: 31, pickupStopId: 8, deliveryStopId: 9, pickupId: 5, tripId: 42 },
+        }),
+        notification({
+          id: 911, actionType: 'PICKUP_REJECTED', entityName: 'PickupRequest', entityId: '6', actorName: 'Điều phối', actorRole: 'DISPATCHER',
+          newValues: { reason: 'Xe đã đầy', driverId: 31, pickupId: 6, tripId: 42 },
+        }),
+      ]),
+    },
+  })
+  renderBell('driver', 'touch')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Thông báo, 2 chưa đọc' }))
+  const menu = await screen.findByRole('menu')
+  const approved = within(menu).getByRole('menuitem', { name: /Điều phối đã duyệt nhận hàng dọc đường/ })
+  expect(approved).toHaveAttribute('href', '/tai-xe/diem-giao?chuyen=42')
+  expect(approved).toHaveTextContent('3 kiện nhận dọc đường · 1 kiện chưa có chỗ trên xe')
+  expect(approved).not.toHaveTextContent('Duyệt vượt luật')
+  const rejected = within(menu).getByRole('menuitem', { name: /Yêu cầu nhận hàng dọc đường bị từ chối/ })
+  expect(rejected).toHaveTextContent('Lý do: Xe đã đầy')
+})
+
 test('nhân viên kho: chuyến bị huỷ lúc đang xếp mở phiên xếp bản máy chủ', async () => {
   stubBackend({
     'GET /api/notifications': {

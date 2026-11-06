@@ -1354,8 +1354,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   khi `tripLinkable` và `trips.view`, kho `/kho?chuyen=<mã số>`, tài xế `/tai-xe/diem-giao?chuyen=<mã số>` (trừ chuyến đã đổi tài xế khỏi mình),
   `CREDIT_LOW_BALANCE` tới `/goi-cuoc` khi có `billing.manage`. Máy chủ có nguồn cho: tài khoản (`USER_*`), duyệt phương án, xếp xong, sự cố
   giao, nguy cơ trễ hạn, hoàn thành / huỷ / đổi trạng thái / đổi tài xế của chuyến, xác nhận tay gửi / bị từ chối, sự cố cấp chuyến báo / chuyển
-  quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit. Chưa có nguồn nên không có ở chuông máy chủ: kho báo thiếu / kiện hỏng / quyết định
-  báo thiếu, tìm thấy kiện, đăng nhập sai, đổi thứ tự điểm, nhận hàng dọc đường.
+  quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit, nhận hàng dọc đường (điều phối viên: yêu cầu mới gửi `PICKUP_REQUESTED`; tài xế
+  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định). Chưa có nguồn nên không có ở chuông máy
+  chủ: kho báo thiếu / kiện hỏng / quyết định báo thiếu, tìm thấy kiện, đăng nhập sai, đổi thứ tự điểm. Chi tiết (`server-audit-parts.ts`, dùng
+  chung với Nhật ký máy chủ) chỉ hiện mã đã có nhãn trong từ điển — mã lạ bị bỏ, không hiện mã thô; chip trạng thái "trước → sau" chỉ khi cả hai
+  phía có nhãn.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe

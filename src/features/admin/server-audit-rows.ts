@@ -1,6 +1,6 @@
 import {
-  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, Pin, PinOff, QrCode, Route, ScrollText, Timer, TriangleAlert,
-  UserCog, UserMinus, UserPen, UserPlus, type LucideIcon,
+  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, PackagePlus, Pin, PinOff, QrCode, Route, ScrollText, Timer,
+  TriangleAlert, UserCog, UserMinus, UserPen, UserPlus, type LucideIcon,
 } from 'lucide-react'
 import { roleOfBackend } from '@/features/auth/backend-user'
 import type { KpiTone } from '@/components/KpiTile'
@@ -12,6 +12,7 @@ import type { Role } from '@/types/user'
 import type { ServerAuditEntry } from './audit-backend-api'
 import type { AuditChange } from './audit-change'
 import { actorInitials } from './audit-look'
+import { notificationParts, pickupParts, positive, reasonPart } from './server-audit-parts'
 
 /** Mã hành động máy chủ đang ghi (`actionType`), theo thứ tự của ô lọc "Hành động". */
 export const SERVER_AUDIT_ACTIONS = [
@@ -20,13 +21,15 @@ export const SERVER_AUDIT_ACTIONS = [
   'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED', 'STOP_ARRIVED', 'USER_CREATED', 'USER_UPDATED', 'USER_LOCKED',
   'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED', 'DELIVERY_ISSUE_REPORTED', 'MANUAL_CONFIRM_REQUESTED',
   'MANUAL_CONFIRM_APPROVED', 'MANUAL_CONFIRM_REJECTED', 'TRIP_EXCEPTION_REPORTED', 'TRIP_EXCEPTION_ESCALATED', 'DEADLINE_RENEGOTIATED',
-  'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED',
+  'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED', 'PICKUP_APPROVED', 'PICKUP_REJECTED',
+  'PICKUP_LOADED', 'PICKUP_DELIVERED',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
   'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User', 'DeliveryIssue', 'ManualUnloadConfirmation', 'TripException', 'Company', 'SupportTicket',
+  'PickupRequest',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
@@ -36,10 +39,6 @@ type TripField = (typeof TRIP_FIELDS)[number]
 const USER_FIELDS = ['email', 'fullName', 'phoneNumber', 'role', 'status', 'companyId'] as const
 type UserField = (typeof USER_FIELDS)[number]
 const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'LOCKED'] as const
-const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const
-const ESCALATION_REASONS = ['NO_ROUTE', 'TIMEOUT'] as const
-const EXCEPTION_TYPES = ['TRAFFIC', 'ACCIDENT', 'ROAD_CONSTRUCTION', 'VEHICLE_BREAKDOWN', 'OTHER'] as const
-const DEADLINE_STATUSES = ['OK', 'AT_RISK', 'MISSED'] as const
 
 const isOneOf = <T extends string>(list: readonly T[], value: string): value is T => (list as readonly string[]).includes(value)
 
@@ -80,6 +79,11 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   DELIVERY_ETA_RISK: { icon: Timer, tone: 'amber' },
   CREDIT_LOW_BALANCE: { icon: Coins, tone: 'amber' },
   SUPPORT_TICKET_UPDATED: { icon: LifeBuoy, tone: 'blue' },
+  PICKUP_REQUESTED: { icon: PackagePlus, tone: 'amber' },
+  PICKUP_APPROVED: { icon: PackagePlus, tone: 'green' },
+  PICKUP_REJECTED: { icon: PackagePlus, tone: 'amber' },
+  PICKUP_LOADED: { icon: PackagePlus, tone: 'blue' },
+  PICKUP_DELIVERED: { icon: PackagePlus, tone: 'green' },
 }
 
 /** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số và mã chuyến, màn chỉ ghi chữ. */
@@ -105,10 +109,11 @@ export function serverActionLabel(code: string, t: TFunction): string {
   return isOneOf(SERVER_AUDIT_ACTIONS, code) ? t(`serverAudit.actions.${code}`) : code
 }
 
+/** Nhãn trạng thái; mã không có nhãn (trạng thái phiên xếp `COMPLETED`…) là chuỗi rỗng — không hiện mã thô. */
 function statusLabel(value: string | number | boolean | undefined, t: TFunction, account: boolean): string {
   if (typeof value !== 'string') return ''
-  if (account) return isOneOf(USER_STATUSES, value) ? t(`serverAudit.userStatuses.${value}`) : value
-  return isOneOf(TRIP_STATUSES, value) ? t(`status.${value}`) : value
+  if (account) return isOneOf(USER_STATUSES, value) ? t(`serverAudit.userStatuses.${value}`) : ''
+  return isOneOf(TRIP_STATUSES, value) ? t(`status.${value}`) : ''
 }
 
 function changedKeys(before: ServerAuditEntry['before'], after: ServerAuditEntry['after']): string[] {
@@ -131,33 +136,11 @@ function deadlineLabel(value: string | number | boolean | undefined, format: For
   }
 }
 
-/** Tài khoản mới: trạng thái ban đầu không phải một lần đổi; yêu cầu hỗ trợ nêu trạng thái bằng chữ (`notificationParts`). */
-const NO_STATUS_CHIP: ReadonlySet<string> = new Set(['USER_CREATED', 'SUPPORT_TICKET_UPDATED'])
-
 /**
- * Chi tiết của các việc mà chuông thông báo báo (sự cố trên đường, nguy cơ trễ hạn, sắp hết credit, yêu cầu hỗ trợ): loại sự cố, số
- * phút chậm, điểm giao, mức hạn, số dư, mã và trạng thái yêu cầu — mã dịch qua từ điển, mã lạ bỏ qua.
+ * Tài khoản mới: trạng thái ban đầu không phải một lần đổi; yêu cầu hỗ trợ và yêu cầu nhận dọc đường nêu trạng thái bằng chữ
+ * (`notificationParts`, `pickupParts`).
  */
-function notificationParts({ actionType, after }: ServerAuditEntry, t: TFunction, format: Formatter): string[] {
-  const parts: string[] = []
-  if (actionType === 'TRIP_EXCEPTION_REPORTED' && typeof after.type === 'string' && isOneOf(EXCEPTION_TYPES, after.type)) {
-    parts.push(t(`common.tripExceptionTypes.${after.type}`))
-  }
-  if (typeof after.stopNumber === 'number' && after.stopNumber > 0) parts.push(t('serverAudit.details.stop', { number: format.integer(after.stopNumber) }))
-  if (typeof after.delayMinutes === 'number' && after.delayMinutes > 0) {
-    parts.push(t('serverAudit.details.delay', { minutes: format.integer(after.delayMinutes) }))
-  }
-  if (actionType === 'DELIVERY_ETA_RISK' && typeof after.deadlineStatus === 'string' && isOneOf(DEADLINE_STATUSES, after.deadlineStatus)) {
-    parts.push(t(`common.deadlineStatuses.${after.deadlineStatus}`))
-  }
-  if (actionType === 'CREDIT_LOW_BALANCE' && typeof after.balance === 'number') parts.push(t('serverAudit.details.balance', { count: after.balance }))
-  if (actionType === 'SUPPORT_TICKET_UPDATED') {
-    if (typeof after.ticketCode === 'string') parts.push(t('serverAudit.details.ticket', { code: after.ticketCode }))
-    if (after.replied === true) parts.push(t('serverAudit.details.replied'))
-    if (typeof after.status === 'string' && isOneOf(TICKET_STATUSES, after.status)) parts.push(t(`serverAudit.ticketStatuses.${after.status}`))
-  }
-  return parts
-}
+const NO_STATUS_CHIP: ReadonlySet<string> = new Set(['USER_CREATED', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED'])
 
 /**
  * Cột Chi tiết: tóm tắt ngắn từ giá trị trước / sau — trạng thái và hạn giao thành chip "trước → sau", sửa chuyến chỉ nêu tên trường
@@ -194,22 +177,22 @@ function summarize(entry: ServerAuditEntry, t: TFunction, format: Formatter): { 
     parts.push(t('serverAudit.details.stop', { number: format.integer(after.stopSequence) }))
   }
   if (typeof after.version === 'number') parts.push(t('serverAudit.details.version', { version: format.integer(after.version) }))
-  if (typeof after.pinnedCount === 'number') parts.push(t('serverAudit.details.pinned', { count: after.pinnedCount }))
+  if (positive(after.pinnedCount)) parts.push(t('serverAudit.details.pinned', { count: after.pinnedCount }))
   if (typeof after.totalImported === 'number') parts.push(t('serverAudit.details.imported', { count: after.totalImported }))
   if (typeof after.loadedPackages === 'number' && after.loadedPackages > 0) {
     parts.push(t('serverAudit.details.loaded', { count: after.loadedPackages }))
   }
-  parts.push(...notificationParts(entry, t, format))
-  const escalation = entry.actionType === 'TRIP_EXCEPTION_ESCALATED' && typeof after.reason === 'string' && isOneOf(ESCALATION_REASONS, after.reason)
-  if (escalation) parts.push(t(`serverAudit.escalationReasons.${after.reason as (typeof ESCALATION_REASONS)[number]}`))
-  else if (typeof after.reason === 'string' && after.reason.trim() !== '') parts.push(t('serverAudit.details.reason', { reason: after.reason.trim() }))
+  parts.push(...notificationParts(entry, t, format), ...pickupParts(entry, t))
+  const reason = reasonPart(entry, t)
+  if (reason !== null) parts.push(reason)
   const rest = parts.join(' · ')
 
   let change: AuditChange | null = null
-  if (!NO_STATUS_CHIP.has(entry.actionType) && (before.status !== undefined || after.status !== undefined)) {
-    change = {
-      rest, field: t('serverAudit.details.status'), before: statusLabel(before.status, t, account), after: statusLabel(after.status, t, account),
-    }
+  // Chip "trước → sau" chỉ khi cả hai phía có nhãn: không có giá trị cũ (chuyến hoàn thành) hay mã không có nhãn thì không vẽ
+  const statusBefore = statusLabel(before.status, t, account)
+  const statusAfter = statusLabel(after.status, t, account)
+  if (!NO_STATUS_CHIP.has(entry.actionType) && statusBefore !== '' && statusAfter !== '') {
+    change = { rest, field: t('serverAudit.details.status'), before: statusBefore, after: statusAfter }
   } else if (entry.actionType === 'DELIVERY_DEADLINE_EXTENDED') {
     change = { rest, field: t('serverAudit.details.deadline'), before: deadlineLabel(before.deadline, format), after: deadlineLabel(after.deadline, format) }
   } else if (entry.actionType === 'DEADLINE_RENEGOTIATED') {
