@@ -161,4 +161,15 @@ export const apiErrors = {
   MANUAL_CONFIRM_NOT_FOUND: 'Không tìm thấy xác nhận tay này.',
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này đã được xử lý, hoặc chuyến không còn đang vận chuyển.',
   NO_LOADED_PLAN: 'Chuyến chưa có phương án kho đã xếp.',
+  // Nhận hàng dọc đường (yêu cầu nhận, điểm nhận của tài xế)
+  PICKUP_REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu nhận hàng này.',
+  PICKUP_INVALID: 'Thông tin yêu cầu nhận hàng chưa hợp lệ — kiểm lại điểm nhận, điểm giao, hạn và các kiện.',
+  PICKUP_PACKAGES_REQUIRED: 'Yêu cầu nhận hàng cần ít nhất một kiện.',
+  PICKUP_TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển nên không nhận hàng dọc đường được.',
+  INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận hàng đã được xử lý. Tải lại để xem trạng thái mới.',
+  PICKUP_ROUTE_UNAVAILABLE: 'Chưa kiểm được luật nhận hàng: chuyến còn điểm chưa có toạ độ, hoặc chưa có vị trí xe.',
+  PICKUP_REASON_REQUIRED: 'Còn luật chưa đạt — cần ghi lý do để duyệt vượt luật.',
+  PICKUP_PACKAGE_NOT_AT_STOP: 'Kiện này không phải kiện nhận ở điểm hiện tại.',
+  PICKUP_PACKAGE_ALREADY_PICKED: 'Kiện này đã được nhận lên xe.',
+  PICKUP_STOP_INCOMPLETE: 'Còn kiện nhận chưa đối chiếu lên xe — chưa hoàn tất điểm nhận được.',
 } as const

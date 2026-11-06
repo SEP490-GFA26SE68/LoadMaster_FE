@@ -3,6 +3,8 @@ import type { EtaSource, StopListTimings, StopTiming } from './stop-timing'
 
 /** Một điểm của chuyến tài xế theo máy chủ (`GET /api/driver/trips/{id}/stops`); mọi mốc giờ là ISO 8601. */
 export type ServerTripStop = {
+  /** Mã số điểm của máy chủ (tham số luật nhận hàng dọc đường nêu điểm bằng mã này); máy chủ cũ không trả. */
+  readonly id?: string
   readonly number: number
   readonly name: string
   readonly address: string

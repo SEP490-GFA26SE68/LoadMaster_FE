@@ -1231,12 +1231,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (`serverStopTiming`: đã đến → giờ đến thật, kịp / trễ hạn; chưa đến → giờ đến theo GPS, không có GPS thì giờ kế hoạch), đọc lại theo
   `refreshMs`, **không** MOCK RESULT. "Xem vị trí hàng" vẽ phương án kho đã xếp `GET /api/driver/trips/{id}/load-plan` (`driverServerScene`: thứ
   tự dỡ của máy chủ, kiện đã dỡ mờ như đã gỡ); thiếu lòng thùng, kiện thiếu điểm giao hay chưa có phương án đã xếp (`NO_LOADED_PLAN`) thì
-  không có nút. "Sự cố trên đường" của cả chuyến: tờ "Thêm" (`StopMoreActions`) chỉ còn hàng đó, `ReportExceptionDialog touch serverRecorded` gửi
+  không có nút. "Sự cố trên đường" của cả chuyến: hàng đầu của tờ "Thêm" (`StopMoreActions`), `ReportExceptionDialog touch serverRecorded` gửi
   `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển). Điều phối viên
   duyệt / từ chối xác nhận tay ở thẻ `ManualConfirmCard server` của Chi tiết chuyến máy chủ và của Giám sát (`manual-confirm-backend-api.ts`:
   `GET /api/trips/{id}/manual-confirmations`, `POST …/{cid}/approve`, `POST …/{cid}/reject` — `{id}` là mã số hoặc mã chuyến; quản lý công ty chỉ
-  xem). `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, nhận dọc đường (`pickups`), chuông, nhóm Đã giao gần đây,
-  vị trí xe mô phỏng; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
+  xem). **Điểm nhận dọc đường** (máy chủ chèn lúc duyệt yêu cầu nhận): `current-stop` mang `stopType` (`DELIVERY` | `PICKUP`) và
+  `pickupPackages` (kiện của các yêu cầu đã duyệt ở điểm, `picked`); màn đối chiếu từng kiện lên xe bằng quét QR hoặc gõ mã (không có xác nhận
+  tay ở điểm nhận — máy chủ chưa có) → `POST /api/driver/pickup-packages/{id}/pick` (409 `PICKUP_PACKAGE_ALREADY_PICKED`), hoàn tất điểm nhận khi
+  mọi kiện đã lên xe (`PICKUP_STOP_INCOMPLETE`); kiện nhận giao ở điểm sau nằm trong `packages` của điểm đó và dỡ như kiện thường. Hộp "Nhận hàng
+  dọc đường" của tờ "Thêm" gọi tên điểm theo mã điểm của `GET /api/driver/trips/{id}/stops` (`stopId`). `DRIVER_CAPABILITIES`
+  (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông, nhóm Đã giao gần đây, vị trí xe mô phỏng; nhận dọc đường (`pickups`) chỉ khi
+  nhóm `trips` cùng nguồn; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
   sự cố `POST|GET /api/trips/{id}/exceptions`, `POST …/exceptions/{eid}/resolve`, chuyển quản lý `POST …/exceptions/{eid}/escalate`
@@ -1247,10 +1252,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   ghép điểm giao của `GET /api/trips/{id}/detail` (chỉ yêu cầu còn điểm chưa hoàn tất; `listRenegotiableRequirements`), rồi gửi
   `POST …/exceptions/{eid}/renegotiate` (`requirementId` mã số, `newDeadline` giờ Việt Nam không múi giờ, `contactNote`; quản lý công ty, sự cố
   `ESCALATED`). Phản hồi không mang lần gia hạn nên dòng không có câu "Đã nhập hạn mới — chờ điều phối viên…". `MONITORING_CAPABILITIES` ẩn
-  mở chuyến (trừ khi `trips` cũng nối), đổi thứ tự điểm, nhận dọc đường; hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
+  mở chuyến và thẻ yêu cầu nhận dọc đường (trừ khi `trips` cùng nguồn), đổi thứ tự điểm; hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
   đang chọn là bản máy chủ khi nhóm `driver` cũng nối (mục Tài xế), không thì không có. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
   đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế theo nguồn
   của nhóm `driver` (mục Tài xế); `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
+- **Nhận hàng dọc đường** (theo nhóm `trips`, `PICKUPS_ON_BACKEND`; `pickups-api.ts`, DTO ở `pickups-dto.ts`): `GET|POST
+  /api/trips/{id}/pickup-requests`, `GET …/{pid}`, `POST …/{pid}/validate`, `POST …/{pid}/approve` (`overrideReason`), `POST …/{pid}/reject`
+  (`reason`) — `{id}` là mã số hoặc mã chuyến, màn dùng mã chuyến. Mười luật tính **ở máy chủ** lúc tạo, kiểm lại và duyệt (luật 4–7 và 10 xếp
+  thật kiện nhận vào chỗ trống của thùng, không dời kiện đang chở); mã luật dùng chung bảng `PICKUP_RULE_CODES` (mã lạ bị bỏ), tham số giờ đổi
+  sang ISO, tham số điểm là mã số điểm của máy chủ. Duyệt tạo kiện kho kiện kèm mã QR (mã số của máy chủ — trang in nhãn của máy chủ đọc mã
+  số), chèn điểm nhận và điểm giao sau điểm hiện tại, lưu chỗ xếp (`layout`). Thẻ `PickupRequestsCard` ở Chi tiết chuyến máy chủ (pha theo
+  `serverTripPhase`) và ở Giám sát khi `monitoring` cùng nguồn; tài xế ở mục Tài xế.
 - **Chuyến** (`trips`; `trips-backend-api.ts`, DTO ở `trips-dto.ts`): mã chuyến (`tripCode`) là mã trên URL như Giám sát; Chi tiết chuyến tìm
   `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): hộp thoại sửa
   (`PATCH /api/trips/{id}`, chỉ gửi trường đã đổi; đổi xe, tài xế ở đây), huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE
