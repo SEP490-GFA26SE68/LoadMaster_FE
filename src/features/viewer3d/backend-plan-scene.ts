@@ -1,17 +1,20 @@
 import { roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
 import type { PackageInstance } from '@/domain/cargo'
 import { deadlineStatus } from '@/domain/routing'
+import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
 import { DEFAULT_MIN_SUPPORT_RATIO, type ConstraintEngineInput } from '@/domain/constraints'
 import type { OptimizationResult, PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
 import { ApiError } from '@/lib/api-client'
-import type { ScenePlacement, SceneStop, SceneUnplaced, ViewerSceneModel } from './scene-types'
+import type { ScenePlacement, SceneStop, SceneUnplaced, SceneZone, ViewerSceneModel } from './scene-types'
 
 /**
  * Phương án của máy chủ (`LoadPlanDetailResponse`, đã đổi ở `load-plan-dto.ts`) thành snapshot của engine 3D — hàm thuần. Cm giữ nguyên;
  * kết quả của máy chủ không mang MOCK RESULT. Đầu vào constraint engine dựng từ chính các kiện đã xếp (mỗi chỗ xếp một instance mang mã
  * của khung 3D, hướng đặt được phép theo `allowedRotations` của máy chủ, có thể xếp chồng, diện tích tựa tối thiểu mặc định) để Planner chỉnh tay và kiểm trước khi gửi
- * "Duyệt bản chỉnh" — máy chủ kiểm lại. Máy chủ không trả thứ tự dỡ (Planner dùng thứ tự gợi ý, có ghi rõ), độ dễ vỡ, bao bì, vùng điểm giao; số máy chủ không trả thì vắng.
+ * "Duyệt bản chỉnh" — máy chủ kiểm lại. Máy chủ không trả thứ tự dỡ (Planner dùng thứ tự gợi ý, có ghi rõ), độ dễ vỡ, bao bì; số máy chủ không trả thì vắng.
+ * Vùng điểm giao có khi máy chủ trả `stopZones`: vùng của kiện và kiện nằm ngoài vùng tính bằng `locateInZones` của domain — cùng luật
+ * tâm theo X với số dỡ-xếp lại của máy chủ —, nên dải vùng, nhãn "Ngoài vùng" và số dỡ-xếp lại theo được cả bản đang chỉnh tay.
  */
 
 /** Điểm giao của chuyến theo máy chủ (`TripStopResponse`). */
@@ -64,6 +67,29 @@ function stopNumberOf(placement: LoadPlacement, sequenceById: ReadonlyMap<string
   const number = placement.stopSequence ?? (placement.stopId === null ? undefined : sequenceById.get(placement.stopId))
   if (number === undefined || number < 1) throw new ApiError('SERVER_ERROR')
   return number
+}
+
+/**
+ * Vùng của máy chủ thành vùng của scene (số điểm giao theo thứ tự của chuyến). Vùng không gắn được với điểm giao nào thì không có
+ * vùng nào: không vẽ nửa bộ.
+ */
+function zonesOf(plan: LoadPlan, sequenceById: ReadonlyMap<string, number>, nameByNumber: ReadonlyMap<number, string>): SceneZone[] {
+  if (plan.stopZones === null) return []
+  const zones: StopZone[] = []
+  for (const zone of plan.stopZones) {
+    const number = zone.stopSequence ?? (zone.stopId === null ? undefined : sequenceById.get(zone.stopId))
+    if (number === undefined || number < 1) return []
+    zones.push({ id: zone.id, stopId: number, startXCm: zone.startXCm, endXCm: zone.endXCm })
+  }
+  return zones.map((zone) => Object.freeze({
+    ...zone, name: nameByNumber.get(zone.stopId) ?? '', sharePercent: zoneSharePercent(zones, zone),
+  }))
+}
+
+/** Vùng chứa tâm kiện theo X và kiện có nằm ngoài vùng của điểm mình không (như `zoneFields` của phương án mock). */
+function zoneOf(zones: readonly StopZone[], item: LoadPlacement, stop: number): Pick<ScenePlacement, 'zoneId' | 'outOfZone'> {
+  const { zoneId, rehandled } = locateInZones(zones, { xCm: item.x, lengthCm: item.lengthCm }, stop)
+  return { ...(zoneId === undefined ? {} : { zoneId }), outOfZone: rehandled }
 }
 
 const volumeOf = (item: { lengthCm: number; widthCm: number; heightCm: number }) => item.lengthCm * item.widthCm * item.heightCm
@@ -168,20 +194,23 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
   const ordered = [...stops].sort((a, b) => a.sequence - b.sequence)
   const sequenceById = new Map(ordered.map((stop) => [stop.id, stop.sequence]))
   const sceneIds = sceneIdsOf(plan)
+  const zones = zonesOf(plan, sequenceById, new Map(ordered.map((stop) => [stop.sequence, stop.name])))
   const allowedById = new Map(plan.placements.map((item, index) =>
     [sceneIds[index] ?? item.id, Object.freeze(allowedOrientationsOf(item, orientationOf(item.rotationType)))] as const))
   const placements = plan.placements.map((item, index): ScenePlacement => {
     const orientation = orientationOf(item.rotationType)
+    const stop = stopNumberOf(item, sequenceById)
+    const position = Object.freeze({ x: item.x, y: item.y, z: item.z })
     return Object.freeze({
       id: sceneIds[index] ?? item.id,
       packageId: item.packageId,
       name: item.code,
-      stop: stopNumberOf(item, sequenceById),
+      stop,
       lengthCm: item.lengthCm,
       widthCm: item.widthCm,
       heightCm: item.heightCm,
       weightKg: item.weightKg,
-      position: Object.freeze({ x: item.x, y: item.y, z: item.z }),
+      position,
       step: item.step,
       unloadingOrder: 0,
       orientation,
@@ -192,7 +221,7 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       pinned: item.pinned,
       supportRatio: 1,
       constraintWarnings: Object.freeze([]),
-      outOfZone: false,
+      ...zoneOf(zones, item, stop),
     })
   })
   const unplaced = plan.unplaced.map((item): SceneUnplaced => Object.freeze({
@@ -220,7 +249,7 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       ...(stop.plannedArrival ? { eta: stop.plannedArrival } : {}),
       ...(stop.plannedArrival && stop.deadline ? { deadlineStatus: deadlineStatus(stop.plannedArrival, stop.deadline) } : {}),
     }))),
-    zones: Object.freeze([]),
+    zones: Object.freeze(zones),
     placements: Object.freeze(placements),
     unplaced: Object.freeze(unplaced),
     placementById: new Map(placements.map((item) => [item.id, item])),

@@ -102,9 +102,23 @@ export function EditorProxy({ placement, state, editor }: {
     canvas.style.setProperty('cursor', 'grabbing')
     editor.preview.publish({ id: placement.id, position: placement.position, result: editor.inspect(placement), sources: [], dragging: true }, true)
 
+    // Chuột báo nhiều lần di chuyển mỗi khung hình: chỉ lần mới nhất được hút, kiểm và vẽ, mỗi khung hình một lần. Thả tay xử lý ngay lần
+    // còn chờ rồi mới commit, nên vị trí commit luôn là vị trí cuối của con trỏ.
+    let pending: { clientX: number; clientY: number } | null = null
+    let frame = 0
     function handleMove(e: PointerEvent) {
       if (e.pointerId !== pointerId) return
       e.preventDefault()
+      pending = { clientX: e.clientX, clientY: e.clientY }
+      if (frame === 0) frame = requestAnimationFrame(flushMove)
+    }
+    function flushMove() {
+      frame = 0
+      const e = pending
+      pending = null
+      if (e) applyMove(e)
+    }
+    function applyMove(e: { clientX: number; clientY: number }) {
       const rect = canvas.getBoundingClientRect()
       pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1)
       raycaster.setFromCamera(pointer, camera)
@@ -133,6 +147,10 @@ export function EditorProxy({ placement, state, editor }: {
     }
     function finish(commit: boolean) {
       cancel.current = null
+      if (frame !== 0) cancelAnimationFrame(frame)
+      frame = 0
+      if (commit && pending) applyMove(pending)
+      pending = null
       // A synthetic click follows pointerup even after a long drag. Do not let it
       // select an occluder under an invalid ghost when that ghost returns home.
       if (moved) {

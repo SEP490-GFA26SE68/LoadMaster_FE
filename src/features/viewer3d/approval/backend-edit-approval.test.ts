@@ -23,7 +23,7 @@ const plan = (placements: LoadPlacement[], over: Partial<LoadPlan> = {}): LoadPl
   id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', computationMs: null,
   name: null, volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null,
   frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false,
-  placements, unplaced: [], ...over,
+  placements, unplaced: [], stopZones: null, ...over,
 })
 
 const STOPS = [{ id: '91', sequence: 1, name: 'Cửa hàng Thủ Đức', deadline: null }]

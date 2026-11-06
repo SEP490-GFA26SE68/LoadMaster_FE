@@ -68,6 +68,16 @@ export type UnplacedDto = {
   readonly weightKg?: Decimal | null
 }
 
+/** `StopZoneResponse`: vùng theo điểm giao dọc trục X, cm. */
+export type StopZoneDto = {
+  readonly id: string
+  readonly stopId?: number | null
+  readonly stopSequence?: number | null
+  readonly startXCm?: Decimal | null
+  readonly endXCm?: Decimal | null
+  readonly volumeRatio?: Decimal | null
+}
+
 /** `LoadPlanDetailResponse`. */
 export type LoadPlanDto = {
   readonly id: number
@@ -97,6 +107,8 @@ export type LoadPlanDto = {
   readonly stale?: boolean | null
   readonly placements?: readonly PlacementDto[] | null
   readonly unplaced?: readonly UnplacedDto[] | null
+  /** Vùng theo điểm giao; máy chủ chỉ trả khi vùng dựng lại cho ra đúng `rehandlingCount` đã lưu. */
+  readonly stopZones?: readonly StopZoneDto[] | null
 }
 
 /** `TripLoadPlansResponse`: cũ trước mới sau. */
@@ -168,6 +180,15 @@ export type LoadUnplaced = {
   readonly weightKg: number | null
 }
 
+/** Vùng theo điểm giao của phương án (cm), theo thứ tự điểm giao của máy chủ. */
+export type LoadStopZone = {
+  readonly id: string
+  readonly stopId: string | null
+  readonly stopSequence: number | null
+  readonly startXCm: number
+  readonly endXCm: number
+}
+
 /** Một phương án của máy chủ. Số máy chủ không trả là `null` — màn bỏ phần đó, không vẽ 0. */
 export type LoadPlan = {
   readonly id: string
@@ -190,6 +211,8 @@ export type LoadPlan = {
   readonly stale: boolean
   readonly placements: readonly LoadPlacement[]
   readonly unplaced: readonly LoadUnplaced[]
+  /** `null` khi máy chủ không trả vùng (hoặc trả vùng thiếu mốc): Planner không có dải vùng, không đếm dỡ-xếp lại. */
+  readonly stopZones: readonly LoadStopZone[] | null
 }
 
 export type TripLoadPlans = { readonly approvedPlanId: string | null; readonly plans: readonly LoadPlan[] }
@@ -273,6 +296,20 @@ function unplacedOf(dto: UnplacedDto): LoadUnplaced {
   }
 }
 
+/** Vùng thiếu mốc hay không gắn được với điểm giao nào thì bỏ cả bộ vùng: không vẽ nửa bộ. */
+function stopZonesOf(dtos: readonly StopZoneDto[] | null | undefined): LoadStopZone[] | null {
+  if (!dtos || dtos.length === 0) return null
+  const zones: LoadStopZone[] = []
+  for (const dto of dtos) {
+    const [startXCm, endXCm] = [numberOf(dto.startXCm), numberOf(dto.endXCm)]
+    const stopId = dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId)
+    const stopSequence = dto.stopSequence ?? null
+    if (startXCm === null || endXCm === null || endXCm < startXCm || (stopId === null && stopSequence === null)) return null
+    zones.push({ id: String(dto.id), stopId, stopSequence, startXCm: roundCm(startXCm), endXCm: roundCm(endXCm) })
+  }
+  return zones
+}
+
 export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
   const objective = PLAN_OBJECTIVES.find((item) => item === dto.objective) ?? null
   const label = LABELS.find((item) => item === dto.candidateLabel) ?? null
@@ -298,6 +335,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     stale: dto.stale === true,
     placements: (dto.placements ?? []).map(placementOf),
     unplaced: (dto.unplaced ?? []).map(unplacedOf),
+    stopZones: stopZonesOf(dto.stopZones),
   }
 }
 
