@@ -29,7 +29,7 @@ export function StopFooter({ view, stops, actions, scanPending }: StopFooterProp
   const [asking, setAsking] = useState<number | null>(null)
   if (view.mode === 'preview') return null
   const pickupStop = view.stop.kind === 'PICKUP'
-  const arrived = view.arrivedAt !== undefined || view.arrivedEarlier === true
+  const arrived = view.arrivedAt !== undefined
   const completable = arrived && view.remaining === 0 && view.pendingConfirms === 0 && !scanPending
   const asked = completable && asking === view.stop.number
   // Hộp đã tự đóng: quên câu hỏi, để hộp không tự mở lại khi điểm hoàn tất được trở lại

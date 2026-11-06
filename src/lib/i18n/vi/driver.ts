@@ -60,7 +60,6 @@ export const driver = {
     /** Đang vận chuyển (FE-6-06): chưa bấm "Đã đến" ở điểm đang giao, và giờ đã đến. */
     enRoute: 'Đang tới điểm {number}. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.',
     arrived: 'Đã đến điểm {number} lúc {time}.',
-    arrivedEarlier: 'Đã báo đến điểm {number}.',
     leftOut: {
       one: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
       other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',

@@ -50,7 +50,6 @@ export const driver = {
     ready: 'The warehouse has finished loading. Press Depart when the vehicle leaves.',
     enRoute: 'On the way to stop {number}. When you get there, tap Arrived before unloading.',
     arrived: 'Arrived at stop {number} at {time}.',
-    arrivedEarlier: 'Arrival at stop {number} already reported.',
     leftOut: {
       one: '{count} package of this stop was damaged while loading and left at the warehouse: it is not on the vehicle, nothing to unload.',
       other: '{count} packages of this stop were damaged while loading and left at the warehouse: they are not on the vehicle, nothing to unload.',

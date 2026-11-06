@@ -192,11 +192,12 @@ function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
 /** Điểm hiện tại của backend ở dạng màn điểm giao dùng: số điểm, kiện còn phải dỡ, và các điểm của chuyến (chỉ điểm hiện tại có tên). */
 export type BackendStop = { readonly stopId: string; readonly view: DeliveryView; readonly stops: readonly StopDelivery[] }
 
-/** Giờ đến của điểm: giờ máy chủ ghi; điểm `ARRIVED` mà không kèm giờ thì "đã báo đến" không giờ; còn lại là chưa đến. */
-function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt' | 'arrivedEarlier'> {
-  const arrivedAt = dto.actualArrival ? isoFromBackend(dto.actualArrival) : undefined
-  if (arrivedAt !== undefined) return { arrivedAt }
-  return dto.status === 'ARRIVED' ? { arrivedAt: undefined, arrivedEarlier: true } : { arrivedAt: undefined }
+/**
+ * Giờ đến của điểm: chỉ giờ máy chủ ghi khi tài xế bấm "Đã đến". Máy chủ đòi giờ đó mới cho dỡ, nên trạng thái `ARRIVED` không kèm giờ vẫn là
+ * chưa đến.
+ */
+function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt'> {
+  return { arrivedAt: dto.actualArrival ? isoFromBackend(dto.actualArrival) : undefined }
 }
 
 /**

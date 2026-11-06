@@ -59,7 +59,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
   const actions = useDeliveryStop(tripId, view)
   const scan = useUnloadScan(tripId, view, stops)
   const [issueOpen, setIssueOpen] = useState(false)
-  const arrived = view.arrivedAt !== undefined || view.arrivedEarlier === true
+  const arrived = view.arrivedAt !== undefined
   // Backend báo cả điểm đã dỡ (kể cả kiện dỡ trước lần mở trang này): không còn gì để đối chiếu thì đóng hộp
   if (scan.open && !scan.pending && view.verifiable === 0) scan.setOpen(false)
 
