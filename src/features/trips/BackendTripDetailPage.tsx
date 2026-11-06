@@ -13,6 +13,8 @@ import { BackendRequirementAssignDialog } from './BackendRequirementAssignDialog
 import { backendDateTimeText } from './backend-date-text'
 import { BackendTripRouteCard } from './BackendTripRouteCard'
 import { BackendTripWriteActions, isEditableStatus, RemoveRequirementButton } from './BackendTripWriteActions'
+import { SERVER_MANUAL_CONFIRMS } from './manual-confirm-backend-api'
+import { ManualConfirmCard } from './ManualConfirmCard'
 import { RealTripDetailHeader } from './TripDetailHeader'
 import { fetchBackendActiveRoutePlan, fetchBackendTripDetail, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
 
@@ -189,6 +191,8 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
             {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
           </div>
 
+
+          {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server /> : null}
 
           <BackendTripRouteCard
             trip={trip}

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
 import {
   completeStop,
-  confirmUnloadManually,
   DRIVER_CAPABILITIES,
   fetchDriverTrip,
   fetchDriverTripLabels,
@@ -280,14 +279,13 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, qrVerify: true, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    backend: true, qrVerify: true, manualConfirm: true, deliveryIssues: true, notifications: false, upcomingTrips: false,
     departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
   })
   for (const call of [
     () => fetchDriverTrip('1'),
     () => fetchDriverTripMonitoring('1'),
     () => fetchDriverTripLabels('1'),
-    () => confirmUnloadManually('1', 2, { packageInstanceId: '11', reason: 'LABEL_DAMAGED' }),
   ]) {
     expect((await rejection(call())).code).toBe('NOT_SUPPORTED')
   }

@@ -17,16 +17,17 @@ import { useApproveManualConfirmMutation, useManualConfirmationsQuery, useReject
  * và một dòng lý do, không có nút. Còn dòng nào ở đây thì kho chưa xong xếp, tài xế chưa hoàn tất điểm được. Không còn xác nhận nào
  * chờ thì thẻ không hiện.
  *
- * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó, và các dòng ngang hàng nhau (mục 5: một nút chính mỗi màn).
+ * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó, và các dòng ngang hàng nhau (mục 5: một nút chính mỗi màn). `server`: xác nhận
+ * tay khi dỡ của máy chủ (Chi tiết chuyến của máy chủ khi luồng tài xế nối backend), mã đứng đầu dòng là mã in trên nhãn.
  */
-export function ManualConfirmCard({ tripId }: { tripId: string }) {
+export function ManualConfirmCard({ tripId, server = false }: { tripId: string; server?: boolean }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
   const titleId = useId()
-  const query = useManualConfirmationsQuery(tripId)
-  const approve = useApproveManualConfirmMutation(tripId)
-  const reject = useRejectManualConfirmMutation(tripId)
+  const query = useManualConfirmationsQuery(tripId, server)
+  const approve = useApproveManualConfirmMutation(tripId, server)
+  const reject = useRejectManualConfirmMutation(tripId, server)
   const [rejecting, setRejecting] = useState<ManualConfirmRow | null>(null)
   const rows = query.data ?? []
   if (rows.length === 0) return null

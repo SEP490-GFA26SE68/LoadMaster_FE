@@ -144,4 +144,13 @@ export const apiErrors = {
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',
   TRIP_NOT_LOADING: 'Chuyến không còn ở Đang xếp hàng, không mở được phiên xếp.',
+
+  // Tài xế: sự cố theo kiện, xác nhận tay khi dỡ, vị trí hàng
+  DELIVERY_STOP_NOT_ARRIVED: 'Chưa báo đã đến điểm này. Bấm "Đã đến điểm" trước khi dỡ hoặc báo sự cố.',
+  DELIVERY_ISSUE_NOTE_REQUIRED: 'Sự cố loại "Khác" cần ghi chú.',
+  MANUAL_CONFIRM_NOTE_REQUIRED: 'Lý do "Khác" cần ghi chú.',
+  MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất điểm được.',
+  MANUAL_CONFIRM_NOT_FOUND: 'Không tìm thấy xác nhận tay này.',
+  MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này đã được xử lý, hoặc chuyến không còn đang vận chuyển.',
+  NO_LOADED_PLAN: 'Chuyến chưa có phương án kho đã xếp.',
 } as const

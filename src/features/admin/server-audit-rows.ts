@@ -18,13 +18,14 @@ export const SERVER_AUDIT_ACTIONS = [
   'TRIP_UPDATED', 'TRIP_STATUS_TRANSITION', 'TRIP_CANCELLED', 'TRIP_REQUIREMENT_REMOVED', 'ROUTE_OPTIMIZED', 'PLAN_APPROVED', 'RERUN_OPTIMIZATION',
   'PIN_PLACEMENT', 'UNPIN_PLACEMENT', 'WAREHOUSE_CONFIRM', 'DEVIATION_RECORDED', 'LOADING_COMPLETED', 'DRIVER_UNLOAD', 'STOP_COMPLETED',
   'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED', 'STOP_ARRIVED', 'USER_CREATED', 'USER_UPDATED', 'USER_LOCKED',
-  'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED',
+  'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED', 'DELIVERY_ISSUE_REPORTED', 'MANUAL_CONFIRM_REQUESTED',
+  'MANUAL_CONFIRM_APPROVED', 'MANUAL_CONFIRM_REJECTED',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
-  'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User',
+  'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User', 'DeliveryIssue', 'ManualUnloadConfirmation',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
@@ -64,6 +65,10 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   USER_STATUS_CHANGED: { icon: UserCog, tone: 'blue' },
   USER_PASSWORD_RESET: { icon: KeyRound, tone: 'blue' },
   USER_DELETED: { icon: UserMinus, tone: 'amber' },
+  DELIVERY_ISSUE_REPORTED: { icon: TriangleAlert, tone: 'amber' },
+  MANUAL_CONFIRM_REQUESTED: { icon: QrCode, tone: 'amber' },
+  MANUAL_CONFIRM_APPROVED: { icon: QrCode, tone: 'green' },
+  MANUAL_CONFIRM_REJECTED: { icon: QrCode, tone: 'amber' },
 }
 
 /** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số và mã chuyến, màn chỉ ghi chữ. */

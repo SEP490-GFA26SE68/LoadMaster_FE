@@ -303,9 +303,6 @@ export const driver = {
     /** Ô gõ mã của hộp đối chiếu: backend chưa trả mã QR và mã của bên gửi cho tài xế, nên chỉ nhận mã đứng đầu dòng kiện và mã của kho kiện. */
     codeLabel: 'Mã kiện',
     codeHint: 'Mã QR in dưới hình, mã đứng đầu dòng kiện trên màn này, hoặc mã của kho kiện in ở góc trên nhãn. Chữ hoa hay thường đều được.',
-    summary: 'Cần dỡ {total} kiện · Đã dỡ {done}',
-    remaining: { one: 'Còn {count} kiện chưa dỡ', other: 'Còn {count} kiện chưa dỡ' },
-    allUnloaded: 'Đã dỡ mọi kiện của điểm này.',
     codeUnmatched: 'Mã {code} không khớp kiện nào của điểm này. Chưa ghi gì — kiểm tra lại mã trên nhãn.',
     codeAmbiguous: 'Mã {code} trùng {count} kiện của điểm này. Chưa ghi gì — gõ mã đứng đầu dòng kiện.',
     alreadyUnloaded: 'Kiện {code} đã được ghi dỡ trước đó.',

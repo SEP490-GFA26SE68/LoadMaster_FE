@@ -8,6 +8,10 @@
  *   completeStop                     → POST /api/driver/stops/{id}/complete?driverId=
  *   postLocation                     → POST /api/driver/location
  *   startTrip                        → POST /api/driver/trips/{id}/start
+ *   reportIssue                      → POST /api/driver/packages/{id}/issues
+ *   manualUnload                     → POST /api/driver/packages/{id}/manual-unload
+ *   fetchLoadPlan                    → GET /api/driver/trips/{id}/load-plan
+ *   fetchStopTimes                   → GET /api/driver/trips/{id}/stops
  */
 import { api, ApiError, isApiError, type ApiClient } from '@/lib/api-client'
 import {
@@ -25,6 +29,7 @@ import {
   type LocationPointDto,
   type UserMeDto,
 } from './driver-dto'
+import { createDeliveryBackend } from './driver-delivery-backend-api'
 import type { MyTrips } from './my-trips'
 
 /** Chuyến mở ở màn điểm giao: mã số của backend (trên route) và mã chuyến hiện trên màn. */
@@ -213,7 +218,9 @@ export function createDriverBackend(client: () => ApiClient = api) {
     }
   }
 
-  return { fetchMyTrips: listTrips, fetchStopScreen, arrive, unload, completeStop, postLocation, startTrip }
+  const delivery = createDeliveryBackend({ client, ready: async () => { await mine() }, stopOf, forget: (tripId) => memory.stops.delete(tripId) })
+
+  return { fetchMyTrips: listTrips, fetchStopScreen, arrive, unload, completeStop, postLocation, startTrip, ...delivery }
 }
 
 export type DriverBackend = ReturnType<typeof createDriverBackend>
