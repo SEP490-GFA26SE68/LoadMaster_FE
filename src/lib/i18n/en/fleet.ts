@@ -40,6 +40,7 @@ export const fleet = {
     IN_TRIP: 'In trip',
     MAINTENANCE: 'Maintenance',
     RETIRED: 'Retired',
+    unknown: 'Unknown status',
   },
   summary: {
     total: 'Vehicles in the fleet',

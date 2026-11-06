@@ -180,9 +180,6 @@ export function adaptBackendVehicle(
     throw new Error('Vehicle door dimensions are missing')
   }
 
-  if (config.obstacles.some((obstacle) => obstacle.type === 'OTHER')) {
-    throw new Error('Unsupported vehicle obstacle type: OTHER')
-  }
 
   return {
     id: String(config.vehicleId),
@@ -207,9 +204,6 @@ export function adaptBackendVehicle(
     maxCogOffsetRatio: config.maxCogOffsetRatio,
 
     obstacles: config.obstacles.map((obstacle) => {
-      if (obstacle.type === 'OTHER') {
-        throw new Error('Unsupported obstacle type: OTHER')
-      }
 
       return {
         id: String(obstacle.id),

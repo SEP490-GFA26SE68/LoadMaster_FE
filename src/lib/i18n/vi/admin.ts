@@ -187,6 +187,7 @@ export const admin = {
       pickups: 'Nhận hàng dọc đường',
       warehouse: 'Kho',
       driver: 'Tài xế',
+      companyWarehouses: 'Kho công ty',
     },
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },
@@ -217,6 +218,7 @@ export const admin = {
       pickups: { create: 'Tạo yêu cầu nhận hàng dọc đường', approve: 'Duyệt yêu cầu nhận hàng dọc đường' },
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
+      companyWarehouses: { manage: 'Quản lý kho công ty' },
     },
   },
 } as const

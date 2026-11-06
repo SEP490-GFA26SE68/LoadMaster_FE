@@ -121,6 +121,7 @@ function urlOf(path: string, query?: Readonly<Record<string, QueryValue>>): stri
 
 async function fetchAuthorized(path: string, init: RequestInit = {}, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Response> {
   const token = await getValidAccessToken()
+  init.signal?.throwIfAborted()
   const headers = new Headers(init.headers)
   headers.set('Authorization', `Bearer ${token}`)
   headers.set('Accept', headers.get('Accept') ?? 'application/json')

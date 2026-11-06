@@ -163,6 +163,7 @@ export const admin = {
       pickups: 'Pickups along the route',
       warehouse: 'Warehouse',
       driver: 'Driver',
+      companyWarehouses: 'Company warehouses',
     },
     labels: {
       companies: { manage: 'Create and manage customer companies' },
@@ -193,6 +194,7 @@ export const admin = {
       pickups: { create: 'Create en-route pickup requests', approve: 'Approve en-route pickup requests' },
       warehouse: { operate: 'Load at the warehouse' },
       driver: { operate: 'Deliver' },
+      companyWarehouses: { manage: 'Manage company warehouses' },
     },
   },
 } satisfies Dictionary<typeof source>

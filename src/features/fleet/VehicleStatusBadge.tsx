@@ -45,36 +45,34 @@ const TONE: Record<
   },
 }
 
-export function VehicleStatusBadge({
-  status,
-}: {
-  status: VehicleStatus
-}) {
+/** Accept both vehicle data sources at this display boundary; unknown is never "available". */
+function displayStatus(status: unknown): VehicleStatus | null {
+  switch (status) {
+    case 'available': return 'AVAILABLE'
+    case 'in_use': return 'IN_TRIP'
+    case 'maintenance': return 'MAINTENANCE'
+    case 'AVAILABLE':
+    case 'IN_TRIP':
+    case 'MAINTENANCE':
+    case 'RETIRED': return status
+    default: return null
+  }
+}
+
+export function VehicleStatusBadge({ status }: { status?: unknown }) {
   const t = useT()
-  const spec = TONE[status]
+  const normalized = displayStatus(status)
+  const spec = normalized === null ? null : TONE[normalized]
 
   return (
-    <Badge
-      tone={spec.tone}
-      dot={spec.dot}
-    >
-      {t(`fleet.status.${status}`)}
+    <Badge tone={spec?.tone ?? 'neutral'} dot={spec?.dot ?? 'ring'}>
+      {normalized === null ? t('fleet.status.unknown') : t(`fleet.status.${normalized}`)}
     </Badge>
   )
 }
 
-/**
- * Ô trạng thái trong bảng đội xe.
- *
- * Hiện BE chỉ trả trạng thái xe,
- * chưa trả mã chuyến đang chạy hoặc
- * chi tiết lịch sử bảo dưỡng.
- */
-export function VehicleStatusCell({
-  status,
-}: {
-  status: VehicleStatus
-}) {
+/** Display-only cell; validation never changes the vehicle or optimization job state. */
+export function VehicleStatusCell({ status }: { status?: unknown }) {
   return (
     <span className="flex min-w-0 flex-col items-start gap-1 whitespace-normal">
       <VehicleStatusBadge status={status} />

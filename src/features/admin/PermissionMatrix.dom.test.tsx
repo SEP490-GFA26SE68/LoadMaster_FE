@@ -22,20 +22,20 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('tám cột vai trò theo thứ tự nền tảng → công ty, 33 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
+test('tám cột vai trò theo thứ tự nền tảng → công ty, 34 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 33 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(48)
+  // Một dòng tiêu đề, 14 dòng khu vực, 34 dòng quyền, một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(50)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(33)
+  expect(permissionRows).toHaveLength(34)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
-  expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
+  expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Quản lý kho công tycompanyWarehouses.manage'])
   expect(labels.filter((label) => /packages\.register|shipments\.|receiving\.|orders\./.test(label ?? ''))).toStrictEqual([])
   // Quyền của màn chưa làm vẫn có dòng và nhãn
   expect(labels).toContain('Xem giám sát chuyến đang chạymonitoring.view')
@@ -63,10 +63,18 @@ test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ư
   expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
   expect(cellsOf(matrix, 'Xem phương án 3D và so sánh')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
   expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
-  // Yêu cầu giao (FE-4b-02): quản lý công ty và điều phối viên xem, chỉ quản lý công ty tạo và sửa
+  // Existing ROLE_PERMISSIONS: both view requirements; only the dispatcher edits them.
   expect(cellsOf(matrix, 'Xem yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
-  expect(cellsOf(matrix, 'Tạo, sửa yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
-  // FE-0-06: ghi vào kho kiện, loại kiện và in nhãn theo quyền quản lý kho kiện của điều phối viên
-  expect(cellsOf(matrix, 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
-  expect(cellsOf(matrix, 'Xem kho kiện')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
+  expect(cellsOf(matrix, 'Tạo, sửa yêu cầu giao')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
+  // Existing ROLE_PERMISSIONS: warehouse manages packages; dispatcher reads them.
+  expect(cellsOf(matrix, 'Nhập file, thêm kiện, loại kiện, gỡ cờ kiện')).toStrictEqual([NO, NO, NO, NO, NO, NO, YES, NO])
+  expect(cellsOf(matrix, 'Xem kho kiện')).toStrictEqual([NO, NO, NO, NO, YES, YES, YES, NO])
+})
+
+test('company warehouses are displayed without granting permission to other roles', () => {
+  const matrix = renderMatrix()
+  expect(screen.getByText('Kho công ty')).toBeInTheDocument()
+  expect(cellsOf(matrix, 'Quản lý kho công ty')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
+  expect(cellsOf(matrix, 'Chạy tối ưu')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
+  expect(cellsOf(matrix, 'Chỉnh sửa và duyệt phương án')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
 })

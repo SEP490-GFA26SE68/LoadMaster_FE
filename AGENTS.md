@@ -1304,6 +1304,12 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts` (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua
   `e2e/operations-helpers.ts`. Seed: mọi chuyến đã ở kho đều soạn đủ và mọi kiện đều đối chiếu bằng quét; điểm đã tới có `arrivedAt`.
 
+### INITIAL optimization request identity (step 2A)
+
+- Numeric backend trips use one `crypto.randomUUID()` per explicit INITIAL action. Persist the action before POST and keep its key/request snapshot for uncertain responses, network errors and 409; never rotate a key on failure.
+- `Idempotency-Key` is sent by `createBackendOptimizationJob`. Once `job_id` is known, retry only reads that job. A new action needs a confirmed terminal status and a deliberate user click.
+- Session action metadata and backend query keys are scoped by user/company/trip; never store access tokens. Invalid/unavailable session storage blocks new POSTs rather than forgetting an unresolved action.
+
 ### Dữ liệu dùng chung và tối ưu
 
 - Dữ liệu đi qua nhiều màn (xe, chuyến, kiện, revision kết quả) nằm trong **mock repository in-memory** (`src/lib/mock-db/`, D-06) →

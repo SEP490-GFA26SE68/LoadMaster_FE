@@ -29,6 +29,54 @@ export const optimization = {
   history: {
     description: 'Every run of this trip, including runs without a result.',
   },
+
+
+  "backend": {
+    /** INITIAL action: retry never rotates the request key. */
+    action: {
+      retry: 'Retry the current request',
+      checkStatus: 'Check status again',
+      uncertain: 'We cannot confirm whether this request has started. Keep this run and retry safely; once a run ID is available, only check its status.',
+      conflict: 'This request does not match the saved run. Do not start a new run. Retry the current request or ask your administrator to check it.',
+      storage: 'This browser could not safely save or restore the request. Check storage permissions and reload before continuing.',
+      accountRequired: 'Sign in with a company account to run optimization.',
+    },
+
+    "runNew": "Run New Loading Optimization",
+    "missingJobId": "Optimization job ID was not returned",
+    "jobCreated": "New optimization job created",
+    "createFailed": "Unable to create optimization job",
+    "status": "Status",
+    "starting": "Starting...",
+    "noJobSelected": "Trip #{tripId}: No optimization job selected",
+    "statusFailed": "Unable to load optimization job status",
+    "jobFailed": "Optimization job failed or was cancelled",
+    "running": "Optimizing cargo loading...",
+    "plansFailed": "Unable to load optimization plans",
+    "sceneFailed": "Unable to render the 3D scene",
+    "noPlans": "No loading plans available",
+    "jobId": "Job ID",
+    "loadPlanId": "Load Plan ID",
+    "packages": "Packages",
+    "volumeUtilization": "Volume utilization",
+    "weightUtilization": "Weight utilization",
+    "placementsReturned": "Placements returned",
+    "jobStatus": {
+      "SUCCESS": "Finished (legacy status)",
+      "PARTIAL": "Partially packed",
+      "NO_SOLUTION": "No feasible plan",
+      "TIMEOUT": "Time limit exceeded",
+      "PENDING": "Pending",
+      "QUEUED": "Queued",
+      "RUNNING": "Running",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "UNKNOWN": "Unknown"
+    }
+  },
+
+
   pins: {
     title: 'Keep pinned packages',
     switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
