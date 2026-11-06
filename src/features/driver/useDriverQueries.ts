@@ -7,7 +7,9 @@ import {
   confirmUnloadByQr,
   confirmUnloadManually,
   DRIVER_CAPABILITIES,
+  fetchDriverLoadPlan,
   fetchDriverStopScreen,
+  fetchDriverStopTimes,
   fetchDriverTripLabels,
   fetchDriverTripMonitoring,
   fetchDriverTrip,
@@ -111,5 +113,23 @@ export function useConfirmUnloadManuallyMutation(tripId: string) {
   return useMutation({
     mutationFn: ({ stopNumber, input }: { stopNumber: number; input: ManualConfirmInput }) => confirmUnloadManually(tripId, stopNumber, input),
     onSettled: () => refreshAfterWrite(client),
+  })
+}
+
+// Nguồn backend: phương án đã xếp và giờ đến các điểm (kho mẫu đọc cả hai từ `useDriverTripQuery`)
+
+/** Phương án kho đã xếp cho khung 3D "Xem vị trí hàng": dưới khoá chuyến nên mỗi lần dỡ đọc lại kiện còn trên xe. */
+export function useDriverLoadPlanQuery(tripId: string) {
+  return useQuery({ queryKey: [...tripKey(tripId), 'load-plan'], queryFn: () => fetchDriverLoadPlan(tripId), enabled: DRIVER_CAPABILITIES.backend && tripId !== '', staleTime: 0 })
+}
+
+/** Giờ đến và hạn giao các điểm theo máy chủ; đọc lại theo `refreshMs` máy chủ trả khi chuyến Đang vận chuyển, không thì hết nhịp. */
+export function useDriverStopTimesQuery(tripId: string) {
+  return useQuery({
+    queryKey: [...tripKey(tripId), 'stop-times'],
+    queryFn: () => fetchDriverStopTimes(tripId),
+    enabled: DRIVER_CAPABILITIES.backend && tripId !== '',
+    staleTime: 0,
+    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
   })
 }

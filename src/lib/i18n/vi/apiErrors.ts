@@ -152,4 +152,13 @@ export const apiErrors = {
   MANUAL_EDIT_OVERLAP: 'Có kiện chồng lên kiện khác hoặc lên vật cản.',
   MANUAL_EDIT_UNSUPPORTED: 'Có kiện không đủ chỗ đỡ bên dưới (cần ít nhất 70% mặt đáy).',
   MANUAL_EDIT_AXLE_OVERLOAD: 'Bản chỉnh làm một nhóm trục vượt giới hạn.',
+
+  // Tài xế: sự cố theo kiện, xác nhận tay khi dỡ, vị trí hàng
+  DELIVERY_STOP_NOT_ARRIVED: 'Chưa báo đã đến điểm này. Bấm "Đã đến điểm" trước khi dỡ hoặc báo sự cố.',
+  DELIVERY_ISSUE_NOTE_REQUIRED: 'Sự cố loại "Khác" cần ghi chú.',
+  MANUAL_CONFIRM_NOTE_REQUIRED: 'Lý do "Khác" cần ghi chú.',
+  MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất điểm được.',
+  MANUAL_CONFIRM_NOT_FOUND: 'Không tìm thấy xác nhận tay này.',
+  MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này đã được xử lý, hoặc chuyến không còn đang vận chuyển.',
+  NO_LOADED_PLAN: 'Chuyến chưa có phương án kho đã xếp.',
 } as const

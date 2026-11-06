@@ -70,7 +70,7 @@ function IssueForm({ stopNumber, items, pending, onSubmit }: IssueFormProps) {
             className="h-14 w-full rounded-md border border-line-strong bg-bg px-3 font-mono text-body-lg outline-none focus-visible:border-cyan-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             {...form.register('packageInstanceId')}
           >
-            {items.map(({ item }) => <option key={item.id} value={item.id}>{item.id} · {item.name}</option>)}
+            {items.map(({ item }) => <option key={item.id} value={item.id}>{item.label ?? item.id} · {item.name}</option>)}
           </select>
           {packageError ? <span className="text-danger">{packageError}</span> : null}
         </div>

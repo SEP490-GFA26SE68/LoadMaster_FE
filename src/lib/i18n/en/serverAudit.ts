@@ -32,6 +32,10 @@ export const serverAudit = {
     USER_STATUS_CHANGED: 'Account status changed',
     USER_PASSWORD_RESET: 'Password reset',
     USER_DELETED: 'Account deleted',
+    DELIVERY_ISSUE_REPORTED: 'Driver reported a package issue',
+    MANUAL_CONFIRM_REQUESTED: 'Driver confirmed an unload manually',
+    MANUAL_CONFIRM_APPROVED: 'Manual confirmation approved',
+    MANUAL_CONFIRM_REJECTED: 'Manual confirmation rejected',
   },
   entities: {
     Trip: 'Trip',
@@ -46,6 +50,8 @@ export const serverAudit = {
     LoadingExecution: 'Loading session',
     LOAD_PLAN: 'Load plan',
     User: 'Account',
+    DeliveryIssue: 'Package issue',
+    ManualUnloadConfirmation: 'Manual unload confirmation',
   },
   fields: {
     tripName: 'Trip name',

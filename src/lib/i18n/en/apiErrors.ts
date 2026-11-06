@@ -138,4 +138,12 @@ export const apiErrors = {
   MANUAL_EDIT_OVERLAP: 'A package overlaps another package or an obstacle.',
   MANUAL_EDIT_UNSUPPORTED: 'A package lacks support underneath (at least 70% of its base is needed).',
   MANUAL_EDIT_AXLE_OVERLOAD: 'The edits overload an axle group.',
+
+  DELIVERY_STOP_NOT_ARRIVED: 'This stop is not marked as arrived yet. Tap "Arrived at stop" before unloading or reporting an issue.',
+  DELIVERY_ISSUE_NOTE_REQUIRED: 'An "Other" issue needs a note.',
+  MANUAL_CONFIRM_NOTE_REQUIRED: 'The "Other" reason needs a note.',
+  MANUAL_CONFIRM_PENDING: 'A manual confirmation is still waiting for the dispatcher — the stop cannot be completed yet.',
+  MANUAL_CONFIRM_NOT_FOUND: 'This manual confirmation was not found.',
+  MANUAL_CONFIRM_NOT_PENDING: 'This manual confirmation was already handled, or the trip is no longer in transit.',
+  NO_LOADED_PLAN: 'The trip has no plan loaded by the warehouse yet.',
 } satisfies Dictionary<typeof source>

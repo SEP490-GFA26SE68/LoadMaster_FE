@@ -1,5 +1,6 @@
 import { isoFromBackend } from '@/lib/backend-time'
-import type { DeliveryView, ItemProgress } from './delivery-progress'
+import type { DeliveryView } from './delivery-progress'
+import { itemProgressOf } from './driver-item-progress'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
 import type { MyTripRow, MyTrips } from './my-trips'
 
@@ -37,6 +38,15 @@ export type StopPackageDto = {
   readonly unloaded?: boolean | null
   /** `LocalDateTime` (giờ Việt Nam) lúc dỡ; `null` khi chưa dỡ. */
   readonly unloadedAt?: string | null
+  /** Sự cố mới nhất tài xế báo cho kiện ở điểm này: `DAMAGED`, `MISSING`, `REFUSED`, `OTHER`. */
+  readonly issueKind?: string | null
+  readonly issueNote?: string | null
+  /** Xác nhận tay mới nhất của kiện ở điểm này: `PENDING`, `APPROVED`, `REJECTED`. */
+  readonly manualStatus?: string | null
+  /** Lý do tài xế chọn khi xác nhận tay: `LABEL_DAMAGED`, `QR_UNREADABLE`, `OTHER`. */
+  readonly manualReason?: string | null
+  /** Lý do điều phối viên ghi khi từ chối xác nhận tay. */
+  readonly manualRejectReason?: string | null
 }
 
 /** `GET /api/driver/trips/{id}/current-stop` — điểm chưa hoàn tất đầu tiên và kiện của điểm đó theo thứ tự dỡ. */
@@ -197,12 +207,17 @@ function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt' | 'arriv
 export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): BackendStop {
   const number = dto.stopSequence
   const items = itemsOf(dto)
-  const unloaded = new Set(stopPackagesOf(dto).filter((pkg) => pkg.unloaded === true).map((pkg) => String(pkg.packageId)))
+  const packageById = new Map(stopPackagesOf(dto).map((pkg) => [String(pkg.packageId), pkg]))
   const stop: StopDelivery = { number, name: dto.stopName ?? '', address: dto.address ?? '', items, kind: 'DELIVERY' }
   const stops = Array.from({ length: Math.max(tripStopCount, number) }, (_, index): StopDelivery =>
     index + 1 === number ? stop : { number: index + 1, name: '', address: '', items: [], kind: 'DELIVERY' })
-  const progress = items.map((item): ItemProgress => ({ item, unloaded: unloaded.has(item.id), issue: undefined, returned: false, verification: undefined }))
+  const progress = items.map((item) => itemProgressOf(item, packageById.get(item.id), number))
   const unloadedCount = progress.filter((entry) => entry.unloaded).length
+  const issueCount = progress.filter((entry) => entry.issue !== undefined).length
+  // Kiện chưa dỡ mà đã báo sự cố không phải dỡ (máy chủ hoàn tất điểm thì kiện đó là hoàn trả)
+  const remaining = progress.filter((entry) => !entry.unloaded && entry.issue === undefined).length
+  const verifiable = progress.filter((entry) => !entry.unloaded && !entry.returned).length
+  const pendingConfirms = progress.filter((entry) => entry.unloaded && entry.verification?.manual?.status === 'MANUAL_PENDING').length
   return {
     stopId: String(dto.stopId),
     stops,
@@ -215,10 +230,10 @@ export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): Backen
       total: items.length,
       leftAtWarehouse: [],
       unloadedCount,
-      issueCount: 0,
-      remaining: items.length - unloadedCount,
-      verifiable: items.length - unloadedCount,
-      pendingConfirms: 0,
+      issueCount,
+      remaining,
+      verifiable,
+      pendingConfirms,
       completedStops: new Set(Array.from({ length: number - 1 }, (_, index) => index + 1)),
     },
   }
