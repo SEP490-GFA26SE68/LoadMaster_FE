@@ -131,3 +131,16 @@ test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã g
     '/api/warehouse/tasks/7/complete',
   ])
 })
+
+test('danh sách: chuyến quay về lập kế hoạch vì thiếu kiện nằm ở nhóm chờ điều phối tối ưu lại, không có nút', async () => {
+  const stale = { ...TASK, tripId: 11, tripCode: 'TRIP-20261106-D4', totalPackages: null, loadPlanId: null, status: 'DRAFT', awaitingReplan: true, replanReason: 'STAGING_SHORTAGE' }
+  calls = stubBackend({ 'GET /api/warehouse/tasks': () => ({ body: envelope([TASK, stale]) }) }).calls
+  renderWarehouse('/kho')
+  await screen.findByRole('heading', { level: 2, name: 'Chờ điều phối tối ưu lại' }, LOAD)
+  expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Chờ xếp', 'Chờ điều phối tối ưu lại'])
+  const card = within(screen.getByRole('heading', { level: 3, name: stale.tripCode }).closest('li') as HTMLElement)
+  expect(card.getByText(/Điều phối viên đã bỏ kiện kho báo thiếu/)).toBeInTheDocument()
+  expect(card.queryByRole('button')).not.toBeInTheDocument()
+  expect(card.queryByRole('link')).not.toBeInTheDocument()
+  expect(calls.find((call) => call.path === '/api/warehouse/tasks')?.query).toEqual({ includeAwaitingReplan: 'true' })
+})

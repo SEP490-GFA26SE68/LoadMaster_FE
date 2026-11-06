@@ -55,6 +55,8 @@ export type ServerStagingRow = {
   readonly shortage: ServerStagingState['shortage']
   /** Lý do điều phối viên từ chối xác nhận tay bước soạn của kiện, khi có. */
   readonly rejectReason: string | null
+  /** Kho đã gửi xác nhận tay bước soạn, chờ điều phối viên duyệt: chưa tính là đã soạn. */
+  readonly manualPending: boolean
 }
 
 export type ServerStagingView = {
@@ -65,6 +67,8 @@ export type ServerStagingView = {
   readonly pending: readonly ServerStagingRow[]
   /** Kiện đang báo thiếu chờ điều phối viên quyết. */
   readonly openShortages: number
+  /** Kiện có xác nhận tay bước soạn chờ điều phối viên duyệt. */
+  readonly manualPending: number
 }
 
 /** Hàm thuần: tiến độ soạn hàng của phiên — soạn không cần thứ tự, nên chỉ đếm và liệt kê kiện chưa soạn. */
@@ -73,14 +77,20 @@ export function serverStagingView(session: ServerLoadingSession): ServerStagingV
   const pending = placements.flatMap((placement) => {
     const state = stagingOf(session, placement)
     if (state.staged) return []
-    const rejected = state.manual?.step === 'STAGING' && state.manual.status === 'REJECTED'
-    return [{ placement, shortage: state.shortage, rejectReason: rejected ? (state.manual?.rejectReason ?? null) : null }]
+    const manual = state.manual?.step === 'STAGING' ? state.manual : null
+    return [{
+      placement,
+      shortage: state.shortage,
+      rejectReason: manual?.status === 'REJECTED' ? (manual.rejectReason ?? null) : null,
+      manualPending: manual?.status === 'PENDING',
+    }]
   })
   return {
     total: placements.length,
     staged: placements.length - pending.length,
     pending,
     openShortages: pending.filter((row) => row.shortage === 'open').length,
+    manualPending: pending.filter((row) => row.manualPending).length,
   }
 }
 

@@ -8,6 +8,12 @@ export const serverWarehouse = {
     loading: 'Đang xếp hàng',
     waiting: 'Chờ xếp',
     loaded: 'Xếp xong — chờ xuất phát',
+    stale: 'Chờ điều phối tối ưu lại',
+  },
+  replan: {
+    shortage: 'Điều phối viên đã bỏ kiện kho báo thiếu. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
+    damaged: 'Kho báo kiện hỏng có kiện tựa lên. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
+    unknown: 'Phiên xếp đã dừng. Chờ điều phối viên tối ưu lại và duyệt phương án mới rồi mới soạn lại.',
   },
   departure: 'Giờ xuất phát',
   vehicle: 'Xe',
@@ -63,7 +69,12 @@ export const serverWarehouse = {
   },
   staging: {
     codeUnknown: 'Mã {code} không phải kiện của chuyến này. Chưa ghi gì.',
-    manualDescription: 'Kiện tính là đã xong ở bước này. Điều phối viên duyệt hoặc từ chối ở Chi tiết chuyến.',
+    manualDescription: 'Kiện chỉ tính là đã soạn khi điều phối viên duyệt ở Chi tiết chuyến; bị từ chối thì đối chiếu lại bằng nhãn.',
+    manualPending: 'Xác nhận tay chờ điều phối viên duyệt — chưa tính là đã soạn.',
+    manualPendingBanner: {
+      one: '{count} kiện xác nhận tay chờ điều phối viên duyệt. Soạn tiếp các kiện còn lại.',
+      other: '{count} kiện xác nhận tay chờ điều phối viên duyệt. Soạn tiếp các kiện còn lại.',
+    },
     rejected: 'Điều phối viên từ chối xác nhận tay: {reason}. Đối chiếu lại bằng nhãn.',
     keepSearching: 'Điều phối viên yêu cầu tìm tiếp kiện này.',
   },

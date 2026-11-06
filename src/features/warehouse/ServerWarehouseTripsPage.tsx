@@ -17,14 +17,14 @@ import { ServerWarehouseTripCard } from './ServerWarehouseTripCard'
 import { useServerWarehouseTripsQuery } from './useServerWarehouseQuery'
 import type { ServerWarehouseStage, ServerWarehouseTrip } from './warehouse-server-api'
 
-const STAGES: readonly ServerWarehouseStage[] = ['loading', 'waiting', 'loaded']
+const STAGES: readonly ServerWarehouseStage[] = ['loading', 'waiting', 'loaded', 'stale']
 
 /** Trạng thái rỗng nằm trong card trắng, chữ 16px như phần còn lại của màn tablet. */
 const TOUCH_EMPTY = 'mx-auto w-full max-w-160 [&_span+span]:text-body-lg'
 
 /**
  * Màn chính của nhân viên kho khi nhóm `warehouse` nối backend: chuyến chờ xếp và chuyến Đang xếp hàng của công ty (`GET /api/warehouse/tasks`),
- * chia nhóm Đang xếp hàng · Chờ xếp · Xếp xong — chờ xuất phát. Cùng thanh dải trời, nút 56 px, chữ 16 px với
+ * chia nhóm Đang xếp hàng · Chờ xếp · Xếp xong — chờ xuất phát · Chờ điều phối tối ưu lại (phiên dừng vì kiện thiếu / hỏng, chỉ xem). Cùng thanh dải trời, nút 56 px, chữ 16 px với
  * bản kho mẫu; không có chuông (backend chưa có thông báo cho kho).
  */
 export function ServerWarehouseTripsPage() {

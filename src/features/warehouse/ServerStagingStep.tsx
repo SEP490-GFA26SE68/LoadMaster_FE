@@ -93,6 +93,12 @@ export function ServerStagingStep({ tripId, session }: { tripId: string; session
           {t('warehouse.staging.shortages', { count: view.openShortages })}
         </p>
       ) : null}
+      {view.manualPending > 0 ? (
+        <p role="status" className="m-0 mx-3 mt-3 flex flex-none items-start gap-3 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-4 py-3 font-medium text-badge-warning-fg">
+          <Hourglass className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
+          {t('serverWarehouse.staging.manualPendingBanner', { count: view.manualPending })}
+        </p>
+      ) : null}
 
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
         <div className="flex flex-col gap-1">
@@ -157,7 +163,12 @@ function StagingRow({ row, disabled, onReport }: { row: ServerStagingRow; disabl
       {placement.stopSequence === null ? null : (
         <StopChip stop={placement.stopSequence} label={t('common.stop', { number: placement.stopSequence })} name={placement.stopName ?? undefined} className="flex-none" />
       )}
-      {row.shortage === 'open' ? (
+      {row.manualPending ? (
+        <span className="inline-flex min-h-14 max-w-80 items-center gap-2 text-pretty font-medium text-badge-warning-fg">
+          <Hourglass className="size-5 flex-none" strokeWidth={2} aria-hidden />
+          {t('serverWarehouse.staging.manualPending')}
+        </span>
+      ) : row.shortage === 'open' ? (
         <span className="inline-flex min-h-14 items-center gap-2 font-medium text-badge-warning-fg">
           <Hourglass className="size-5 flex-none" strokeWidth={2} aria-hidden />
           {t('warehouse.staging.reported')}

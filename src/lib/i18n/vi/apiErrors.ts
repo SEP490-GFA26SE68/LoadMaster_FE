@@ -119,6 +119,8 @@ export const apiErrors = {
   LOADING_MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
   SEAL_INVALID: 'Số seal cần từ 1 đến 32 ký tự.',
   SEAL_NOT_ALLOWED: 'Chỉ ghi được số seal khi đã xếp xong và xe chưa xuất phát.',
+  PACKAGE_FLAGGED: 'Kiện đang mang cờ không tìm thấy hoặc hư hỏng — gỡ cờ trước khi đưa kiện vào chuyến.',
+  PACKAGE_NOT_FLAGGED: 'Kiện không mang cờ nào để gỡ.',
 
   // Giao hàng, giám sát
   NO_PENDING_DELIVERY_STOP: 'Chuyến không còn điểm giao nào chờ giao.',

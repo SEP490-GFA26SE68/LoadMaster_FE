@@ -105,7 +105,7 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
     manual.mutate({ placementId: current.id, input: { reason, note } }, {
       onSuccess: () => {
         setVerifying(false)
-        toast.warning(t('warehouse.staging.manualRecorded', { id: label }), { description: t('serverWarehouse.staging.manualDescription') })
+        toast.warning(t('warehouse.scan.manualRecorded', { id: label }), { description: t('warehouse.scan.manualRecordedDescription') })
       },
       onError: (error) => setResult({ tone: 'error', message: dataErrorMessage(error, t) }),
     })

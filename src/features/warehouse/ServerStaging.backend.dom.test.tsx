@@ -135,6 +135,18 @@ test('soạn hàng: đối chiếu bằng mã gõ không cần thứ tự, báo 
   expect(calls.find((call) => call.method === 'POST')?.body).toEqual({ method: 'CODE' })
 })
 
+test('soạn hàng: xác nhận tay chờ điều phối viên duyệt chưa tính là đã soạn, bước soạn chưa xong', async () => {
+  rows = { 101: { status: 'PENDING', staged: true }, 102: { status: 'PENDING', staged: false, manualStatus: 'PENDING', manualStep: 'STAGING' } }
+  renderWarehouse('/kho?chuyen=7')
+  await screen.findByRole('heading', { level: 1, name: 'Kiện chưa soạn (1)' }, LOAD)
+  expect(screen.getByText('1 kiện xác nhận tay chờ điều phối viên duyệt. Soạn tiếp các kiện còn lại.')).toBeInTheDocument()
+  const list = within(screen.getByRole('list', { name: 'Kiện chưa soạn' }))
+  expect(list.getByText('Xác nhận tay chờ điều phối viên duyệt — chưa tính là đã soạn.')).toBeInTheDocument()
+  expect(list.queryByRole('button', { name: 'Báo thiếu' })).not.toBeInTheDocument()
+  // Chưa sang bước xếp
+  expect(screen.queryByRole('region', { name: /Kiện cần xếp/ })).not.toBeInTheDocument()
+})
+
 test('xếp: xác nhận tay gửi điều phối viên, kiện hỏng bỏ lại kho; còn xác nhận tay chờ duyệt thì chưa hoàn tất được', async () => {
   rows = { 101: { status: 'PENDING', staged: true }, 102: { status: 'PENDING', staged: true } }
   const user = userEvent.setup()

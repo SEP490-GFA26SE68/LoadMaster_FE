@@ -3,7 +3,7 @@ import { connectApiAuth } from '@/lib/api-client'
 import { getMockDb } from '@/lib/mock-db'
 import { envelope, page, stubBackend } from '@/test/fake-backend'
 import { fetchSearchSources } from '@/features/search/search-api'
-import { assignRequirementToTrip, fetchAssignableTrips, updateDeliveryRequirement } from './requirements-api'
+import { assignRequirementToTrip, fetchAssignableTrips, listDeliveryRequirements, updateDeliveryRequirement } from './requirements-api'
 
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['trips']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -61,4 +61,13 @@ test('tìm nhanh đọc yêu cầu giao của máy chủ, không đọc kho mẫ
   const sources = await fetchSearchSources(['requirements'])
   expect(sources.requirements).toEqual([{ id: '41', destinationName: '12 Lê Lợi, Quận 1', address: '12 Lê Lợi, Quận 1' }])
   expect(listMock).not.toHaveBeenCalled()
+})
+
+test('yêu cầu còn trong chuyến mà kho đã bỏ kiện của nó (thiếu, hỏng) đọc là giao thiếu; đã về chờ đưa vào chuyến thì không', async () => {
+  const inTrip = { ...REQUIREMENT, id: 42, status: 'ASSIGNED', tripId: 17, tripCode: 'TRIP-20261106-017', droppedPackageCount: 1, shortDelivered: true }
+  const released = { ...REQUIREMENT, id: 43, droppedPackageCount: 2, shortDelivered: true }
+  const intact = { ...REQUIREMENT, id: 44, status: 'ASSIGNED', tripId: 17, tripCode: 'TRIP-20261106-017', droppedPackageCount: 0, shortDelivered: false }
+  stubBackend({ 'GET /api/delivery-requirements': { body: { success: true, data: [inTrip, released, intact], page: 0, size: 100, totalElements: 3, totalPages: 1, last: true } } })
+  const rows = await listDeliveryRequirements()
+  expect(rows.map((row) => [row.requirement.id, row.status])).toEqual([['42', 'PARTIAL'], ['43', 'PENDING'], ['44', 'ASSIGNED']])
 })

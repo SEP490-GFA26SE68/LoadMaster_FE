@@ -20,6 +20,10 @@ export type WarehouseTaskDto = {
   readonly executionId?: number | null
   /** `IN_PROGRESS` | `COMPLETED`; vắng khi chưa bắt đầu xếp. */
   readonly executionStatus?: string | null
+  /** Chỉ khi gọi kèm `includeAwaitingReplan=true`: phiên xếp dừng vì kiện thiếu / hỏng, chờ điều phối viên duyệt phương án mới. */
+  readonly awaitingReplan?: boolean | null
+  /** `STAGING_SHORTAGE` | `DAMAGED_PACKAGE`, đi cùng `awaitingReplan`. */
+  readonly replanReason?: string | null
 }
 
 export type PlacementStepDto = {
@@ -99,9 +103,13 @@ export type DamageDto = {
 
 /**
  * Chuyến ở danh sách kho theo backend: `waiting` — Đã lập kế hoạch, có phương án đã duyệt, chưa bắt đầu xếp; `loading` — Đang xếp hàng,
- * phiên đang dở; `loaded` — đã xếp xong, chờ tài xế xuất phát. Phiên đọc lại được ở mọi thiết bị (`GET /api/warehouse/tasks/{tripId}`).
+ * phiên đang dở; `loaded` — đã xếp xong, chờ tài xế xuất phát; `stale` — phiên dừng vì kiện thiếu / hỏng, chờ điều phối viên tối ưu lại (kho chỉ
+ * xem). Phiên đọc lại được ở mọi thiết bị (`GET /api/warehouse/tasks/{tripId}`).
  */
-export type ServerWarehouseStage = 'loading' | 'waiting' | 'loaded'
+export type ServerWarehouseStage = 'loading' | 'waiting' | 'loaded' | 'stale'
+
+/** Vì sao chuyến chờ điều phối tối ưu lại: kiện thiếu bị bỏ lúc soạn, hoặc kiện hỏng có kiện tựa lên. */
+export type ServerReplanReason = 'shortage' | 'damaged'
 
 export type ServerWarehouseTrip = {
   /** Mã số của backend (trên URL `/kho?chuyen=`). */
@@ -112,6 +120,10 @@ export type ServerWarehouseTrip = {
   readonly departureAt: string | null
   readonly packageCount: number | null
   readonly stage: ServerWarehouseStage
+  /** Trạng thái chuyến của máy chủ (bỏ yêu cầu giao vừa hết kiện đưa chuyến chờ tối ưu lại về Nháp). */
+  readonly status: 'DRAFT' | 'PLANNED' | 'LOADING'
+  /** Chỉ với `stale`; `null` khi máy chủ trả lý do lạ. */
+  readonly replanReason: ServerReplanReason | null
 }
 
 /** Một kiện của phiên xếp, theo thứ tự xếp của phương án đã duyệt. */
@@ -197,6 +209,7 @@ const numberOf = (value: number | null | undefined) => {
 }
 
 function stageOf(dto: WarehouseTaskDto): ServerWarehouseStage {
+  if (dto.awaitingReplan === true) return 'stale'
   if (dto.status !== 'LOADING') return 'waiting'
   return dto.executionStatus === 'COMPLETED' ? 'loaded' : 'loading'
 }
@@ -210,6 +223,10 @@ export function taskOf(dto: WarehouseTaskDto): ServerWarehouseTrip {
     departureAt: dto.departureTime ? isoFromBackend(dto.departureTime) : null,
     packageCount: dto.totalPackages ?? null,
     stage: stageOf(dto),
+    status: dto.status === 'LOADING' ? 'LOADING' : dto.status === 'DRAFT' ? 'DRAFT' : 'PLANNED',
+    replanReason: dto.awaitingReplan !== true ? null
+      : dto.replanReason === 'STAGING_SHORTAGE' ? 'shortage'
+        : dto.replanReason === 'DAMAGED_PACKAGE' ? 'damaged' : null,
   }
 }
 

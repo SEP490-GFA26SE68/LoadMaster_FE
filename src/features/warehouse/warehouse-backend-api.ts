@@ -1,6 +1,6 @@
 /**
  * Hàm → endpoint backend của màn kho khi nhóm `warehouse` nối backend (`usesBackend('warehouse')`):
- *   fetchTrips   → GET /api/warehouse/tasks
+ *   fetchTrips   → GET /api/warehouse/tasks?includeAwaitingReplan=true
  *   fetchSession → GET /api/warehouse/tasks/{tripId}
  *   start        → POST /api/warehouse/tasks/{tripId}/start
  *   confirm      → POST /api/warehouse/placements/{id}/confirm
@@ -57,9 +57,9 @@ const stagingPath = (tripId: string, packageId: string) => `${tripPath(tripId)}/
  * ở mọi thiết bị kèm kết quả từng kiện. Sau mỗi lần ghi lớp này đọc lại phiên, nên màn luôn vẽ đúng điều máy chủ đã ghi.
  */
 export function createWarehouseBackend(client: () => ApiClient = api) {
-  // GET /api/warehouse/tasks
+  // GET /api/warehouse/tasks?includeAwaitingReplan=true — thêm chuyến chờ điều phối tối ưu lại (`awaitingReplan`)
   async function fetchTrips(): Promise<ServerWarehouseTrip[]> {
-    const tasks = await client().get<readonly WarehouseTaskDto[] | null>('/api/warehouse/tasks')
+    const tasks = await client().get<readonly WarehouseTaskDto[] | null>('/api/warehouse/tasks?includeAwaitingReplan=true')
     const byDeparture = (a: ServerWarehouseTrip, b: ServerWarehouseTrip) => (a.departureAt ?? '').localeCompare(b.departureAt ?? '') || a.code.localeCompare(b.code)
     return (tasks ?? []).map(taskOf).toSorted(byDeparture)
   }
@@ -122,7 +122,7 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     return { session: await fetchSession(tripId), alreadyStaged: result?.alreadyStaged === true }
   }
 
-  // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/manual — kiện tính là đã soạn, xác nhận chờ điều phối viên duyệt
+  // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/manual — chưa tính là đã soạn tới khi điều phối viên duyệt
   async function stageManually(tripId: string, packageId: string, input: ServerManualInput): Promise<ServerLoadingSession> {
     await client().post(`${stagingPath(tripId, packageId)}/manual`, { body: manualBody(input) })
     return fetchSession(tripId)

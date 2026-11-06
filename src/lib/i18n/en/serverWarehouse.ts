@@ -6,6 +6,12 @@ export const serverWarehouse = {
     loading: 'Loading',
     waiting: 'Waiting to load',
     loaded: 'Loaded — waiting to depart',
+    stale: 'Waiting for the dispatcher to re-optimize',
+  },
+  replan: {
+    shortage: 'The dispatcher dropped a package the warehouse reported missing. Wait for a new plan to be optimized and approved before staging again.',
+    damaged: 'The warehouse reported a damaged package with others resting on it. Wait for a new plan to be optimized and approved before staging again.',
+    unknown: 'The loading session was stopped. Wait for a new plan to be optimized and approved before staging again.',
   },
   departure: 'Departure',
   vehicle: 'Vehicle',
@@ -61,7 +67,12 @@ export const serverWarehouse = {
   },
   staging: {
     codeUnknown: 'Code {code} is not a package of this trip. Nothing was recorded.',
-    manualDescription: 'The package counts as done for this step. The dispatcher approves or rejects it on the trip detail.',
+    manualDescription: 'The package counts as staged only once the dispatcher approves it on the trip detail; if rejected, verify it by its label again.',
+    manualPending: 'Manual confirmation waiting for the dispatcher — not counted as staged yet.',
+    manualPendingBanner: {
+      one: '{count} manual confirmation waiting for the dispatcher. Keep staging the rest.',
+      other: '{count} manual confirmations waiting for the dispatcher. Keep staging the rest.',
+    },
     rejected: 'The dispatcher rejected the manual confirmation: {reason}. Verify it by its label again.',
     keepSearching: 'The dispatcher asked to keep searching for this package.',
   },
