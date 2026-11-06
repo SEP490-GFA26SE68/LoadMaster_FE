@@ -25,6 +25,7 @@ import {
   operationHrefs,
   type NotificationViewer,
 } from './notifications'
+import { notificationsReachable } from './notifications-api'
 import { NotificationItem } from './NotificationItem'
 import { markNotificationsRead, useReadNotifications } from './read-state'
 import { useNotificationsQuery } from './useNotificationsQuery'
@@ -82,7 +83,7 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
   }, [feed, t, format, can, viewerId, role])
   const touch = variant === 'touch'
   const sky = touch && tone === 'sky'
-  if (!user || !hasNotifications(user.role)) return null
+  if (!user || !hasNotifications(user.role) || !notificationsReachable(user.role)) return null
 
   const userId = user.id
   const unreadCount = rows.filter((row) => !read.has(row.id)).length

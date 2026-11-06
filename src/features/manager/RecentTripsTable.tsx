@@ -6,29 +6,33 @@ import { DataTable, type BaseTableFeatures, type ColumnMeta } from '@/components
 import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { VehicleName } from '@/components/VehicleName'
-import { tripLinkable } from '@/features/trips/trips-capabilities'
 import type { Formatter } from '@/lib/format'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { plannerPath } from '@/lib/planner-path'
 import { cn } from '@/lib/utils'
-import type { DashboardTripRow } from './dashboard-summary'
+import { DASHBOARD_CAPABILITIES, type DashboardCapabilities } from './dashboard-capabilities'
+import type { DashboardTripView } from './dashboard-summary'
 
-/** Số chuyến hiện trong bảng; báo cáo .xlsx có đủ mọi chuyến của kỳ. */
+/** Số chuyến hiện trong bảng; báo cáo .xlsx có đủ mọi chuyến của kỳ (kho mẫu). Máy chủ cũng trả đúng chừng ấy chuyến gần nhất. */
 export const RECENT_TRIP_LIMIT = 10
 
-const helper = createColumnHelper<BaseTableFeatures, DashboardTripRow>()
+const helper = createColumnHelper<BaseTableFeatures, DashboardTripView>()
 const mono = 'font-mono text-caption'
 const LINK_FOCUS = 'rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-/** Bảng điều khiển đọc chuyến của kho mẫu: chuyến đọc backend thì mã của kho mẫu không mở được chuyến, Planner nào (`tripLinkable`). */
-const TRIP_LINKS = tripLinkable(false)
+
+const tripPath = (id: string) => `/chuyen/${encodeURIComponent(id)}`
 
 /** Dòng cũng mở chi tiết khi bấm: liên kết trong ô chặn nổi bọt để không đẩy hai mục lịch sử. */
 function stop(event: { stopPropagation: () => void }) {
   event.stopPropagation()
 }
 
-/** Tiêu đề, nhãn trạng thái và số theo ngôn ngữ đang chọn, nên dựng trong component. */
-function createColumns(t: TFunction, format: Formatter) {
+/**
+ * Tiêu đề, nhãn trạng thái và số theo ngôn ngữ đang chọn, nên dựng trong component. Cột máy chủ không trả (kiện, đã giao, dòng phụ,
+ * phương án) bỏ hẳn theo `capabilities`, không vẽ ô trống. Mã chuyến chỉ là liên kết khi bảng đọc chuyến cùng nguồn với màn chuyến.
+ */
+function createColumns(t: TFunction, format: Formatter, capabilities: DashboardCapabilities) {
+  const { tripDetails, tripLinks, plannerLinks } = capabilities
   return helper.columns([
     // V2: tên tuyến đậm, mã chuyến mono ngay dưới — cả hai là một liên kết tới chi tiết chuyến (mở được bằng bàn phím)
     helper.accessor('name', {
@@ -40,10 +44,10 @@ function createColumns(t: TFunction, format: Formatter) {
             <span className={cn(mono, 'text-ink-3')}>{info.row.original.id}</span>
           </>
         )
-        if (!TRIP_LINKS) return <span className="flex min-w-0 flex-col whitespace-normal text-ink-strong">{label}</span>
+        if (!tripLinks) return <span className="flex min-w-0 flex-col whitespace-normal text-ink-strong">{label}</span>
         return (
           <Link
-            to={`/chuyen/${encodeURIComponent(info.row.original.id)}`}
+            to={tripPath(info.row.original.id)}
             onClick={stop}
             className={cn('flex min-w-0 flex-col whitespace-normal text-ink-strong hover:text-primary', LINK_FOCUS)}
           >
@@ -70,15 +74,15 @@ function createColumns(t: TFunction, format: Formatter) {
       cell: (info) => (
         <span className="flex flex-col items-start gap-1">
           <StatusBadge status={info.getValue()} />
-          <TripSubStatusTag sub={info.row.original.sub} />
+          {tripDetails ? <TripSubStatusTag sub={info.row.original.sub ?? null} /> : null}
         </span>
       ),
     }),
-    helper.accessor('packageCount', {
+    ...(tripDetails ? [helper.accessor('packageCount', {
       header: t('manager.recent.packages'),
       meta: { align: 'right', width: '80px' } satisfies ColumnMeta,
-      cell: (info) => <span className={mono}>{format.integer(info.getValue())}</span>,
-    }),
+      cell: (info) => <span className={mono}>{format.integer(info.getValue() ?? 0)}</span>,
+    })] : []),
     helper.accessor('volumePercent', {
       header: t('manager.recent.volume'),
       meta: { align: 'right', width: '92px' } satisfies ColumnMeta,
@@ -87,18 +91,21 @@ function createColumns(t: TFunction, format: Formatter) {
         return <span className={mono}>{value === null ? t('manager.noValue') : format.percent(value)}</span>
       },
     }),
-    helper.accessor('deliveredWeightKg', {
+    ...(tripDetails ? [helper.accessor('deliveredWeightKg', {
       header: t('manager.recent.delivered'),
       meta: { align: 'right', width: '112px' } satisfies ColumnMeta,
-      cell: (info) => <span className={mono}>{info.getValue() > 0 ? format.weight(info.getValue()) : t('manager.noValue')}</span>,
-    }),
-    helper.accessor('plan', {
+      cell: (info) => {
+        const value = info.getValue() ?? 0
+        return <span className={mono}>{value > 0 ? format.weight(value) : t('manager.noValue')}</span>
+      },
+    })] : []),
+    ...(plannerLinks ? [helper.accessor('plan', {
       header: t('manager.recent.plan'),
       meta: { width: '164px' } satisfies ColumnMeta,
       cell: (info) => {
         const plan = info.getValue()
         // Nút phụ cỡ nhỏ (V2.3 .btn-sm) có icon khối 3D như "Xem phương án 3D": là hành động mở màn khác, không phải chữ liên kết
-        return plan && TRIP_LINKS ? (
+        return plan ? (
           <Button variant="secondary" size="sm" asChild>
             <Link to={plannerPath(plan)} onClick={stop} aria-label={t('manager.recent.openPlanFor', { name: info.row.original.name })}>
               <Box strokeWidth={1.75} aria-hidden />
@@ -107,20 +114,24 @@ function createColumns(t: TFunction, format: Formatter) {
           </Button>
         ) : null
       },
-    }),
+    })] : []),
   ])
 }
 
 /**
  * Chuyến có ngày chạy gần nhất trong kỳ (V2): một thẻ gồm tiêu đề, số chuyến của kỳ và bảng kiểu `paper`. Bấm dòng hay tên mở chi
- * tiết chuyến, cột cuối mở phương án trong Planner.
+ * tiết chuyến, cột cuối mở phương án trong Planner. `total` là số chuyến của cả kỳ (máy chủ chỉ trả các chuyến gần nhất).
  */
-export function RecentTripsTable({ trips }: { trips: readonly DashboardTripRow[] }) {
+export function RecentTripsTable({ trips, total = trips.length, capabilities = DASHBOARD_CAPABILITIES }: {
+  trips: readonly DashboardTripView[]
+  total?: number
+  capabilities?: DashboardCapabilities
+}) {
   const t = useT()
   const format = useFormat()
   const navigate = useNavigate()
   const titleId = useId()
-  const columns = useMemo(() => createColumns(t, format), [t, format])
+  const columns = useMemo(() => createColumns(t, format, capabilities), [t, format, capabilities])
   const rows = useMemo(() => trips.slice(0, RECENT_TRIP_LIMIT), [trips])
 
   return (
@@ -131,7 +142,7 @@ export function RecentTripsTable({ trips }: { trips: readonly DashboardTripRow[]
           <h2 id={titleId} className="text-h3 font-semibold text-ink-strong">{t('manager.recent.title')}</h2>
           <p className="text-caption text-ink-3">{t('manager.recent.subtitle', { count: RECENT_TRIP_LIMIT })}</p>
         </div>
-        <span className="flex-none text-body text-ink-2 tabular-nums">{t('manager.recent.count', { count: trips.length })}</span>
+        <span className="flex-none text-body text-ink-2 tabular-nums">{t('manager.recent.count', { count: total })}</span>
       </div>
       {/* Khung hẹp hơn bảng (tablet) thì cuộn ngang trong khung, không bóp cột */}
       <div className="relative overflow-x-auto border-t border-border">
@@ -142,7 +153,7 @@ export function RecentTripsTable({ trips }: { trips: readonly DashboardTripRow[]
             getRowId={(row) => row.id}
             density="roomy"
             appearance="paper"
-            onRowClick={TRIP_LINKS ? (trip) => void navigate(`/chuyen/${encodeURIComponent(trip.id)}`) : undefined}
+            onRowClick={capabilities.tripLinks ? (trip) => void navigate(tripPath(trip.id)) : undefined}
           />
         </div>
       </div>

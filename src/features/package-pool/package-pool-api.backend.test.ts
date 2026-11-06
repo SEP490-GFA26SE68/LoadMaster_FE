@@ -60,10 +60,10 @@ const page = (content: unknown[], last = true) => ({ content, last, number: 0, t
 const TOKEN_1 = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const TOKEN_3 = '301a4619-a65b-4540-8d12-2f7060b268d5'
 const MANUAL = {
-  id: 1, orderId: null, packageTypeId: null, trackingBarcode: 'QA-BARCODE-0001', actualLength: 1205, actualWeightKg: 12.5, isPinned: false,
+  id: 1, orderId: null, packageTypeId: null, trackingBarcode: 'QA-BARCODE-0001', actualLength: 120.5, actualWeightKg: 12.5, isPinned: false,
   packageCode: 'QA PK-0001', qrToken: TOKEN_1, handlingClass: 'FRAGILE', status: 'PENDING',
 }
-const IMPORTED = { ...MANUAL, id: 3, orderId: 1, trackingBarcode: null, actualLength: 500, actualWeightKg: '3.00', packageCode: 'HK-7', qrToken: TOKEN_3, handlingClass: null, status: 'PLANNED' }
+const IMPORTED = { ...MANUAL, id: 3, orderId: 1, trackingBarcode: null, actualLength: 50, actualWeightKg: '3.00', packageCode: 'HK-7', qrToken: TOKEN_3, handlingClass: null, status: 'PLANNED' }
 const scanOf = (dto: typeof MANUAL | typeof IMPORTED, extra: object = {}) => envelope({
   id: dto.id, packageCode: dto.packageCode, qrToken: dto.qrToken, handlingClass: dto.handlingClass ?? 'STANDARD', actualWeightKg: dto.actualWeightKg,
   status: dto.status, orderId: dto.orderId, trip: null, stop: null, destination: `Kho ${dto.id}`, ...extra,
@@ -82,7 +82,7 @@ test('thêm kiện: cm thành mm, mã vạch ngẫu nhiên, trả kiện vừa t
   const created = await createPackage({ packageCode: ' HK-9 ', lengthCm: 120.5, widthCm: 80, heightCm: 60, weightKg: 12.5, handlingClass: 'FRAGILE', destination: ' Kho A ' })
   expect(created).toMatchObject({ id: '9', packageCode: 'HK-9', status: 'IMPORTED', qrToken: TOKEN_1 })
   expect(calls[0]?.body).toEqual({
-    trackingBarcode: expect.stringMatching(/^[0-9a-f-]{36}$/), packageCode: 'HK-9', actualLength: 1205, actualWidth: 800, actualHeight: 600,
+    trackingBarcode: expect.stringMatching(/^[0-9a-f-]{36}$/), packageCode: 'HK-9', actualLength: 120.5, actualWidth: 80, actualHeight: 60,
     actualWeightKg: 12.5, handlingClass: 'FRAGILE', destination: 'Kho A',
   })
 })

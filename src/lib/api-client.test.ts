@@ -34,10 +34,10 @@ test('opens the backend envelope and returns its data, sending the session token
   expect(calls[0]?.init.headers).toMatchObject({ Authorization: 'Bearer TOKEN', Accept: 'application/json' })
 })
 
-test('keeps pagination metadata from a backend PageResponse', async () => {
+test('getRaw keeps the whole PageResponse; get returns only its data', async () => {
   const page = { success: true, data: [{ id: 7 }], page: 1, size: 20, totalElements: 21, totalPages: 2, last: true }
-  const { client } = clientWith(respond(200, page))
-  await expect(client.get('/api/users')).resolves.toStrictEqual(page)
+  await expect(clientWith(respond(200, page)).client.getRaw('/api/users')).resolves.toStrictEqual(page)
+  await expect(clientWith(respond(200, page)).client.get('/api/users')).resolves.toStrictEqual([{ id: 7 }])
 })
 
 test('sends a JSON body; without a session there is no Authorization header', async () => {

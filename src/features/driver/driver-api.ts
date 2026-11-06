@@ -5,10 +5,11 @@
  *   confirmUnloadByQr     → POST /api/driver/packages/{id}/unload (chỉ gõ mã)
  *   completeStop          → POST /api/driver/stops/{id}/complete
  *   postDriverLocation    → POST /api/driver/location
+ *   startDelivery         → POST /api/driver/trips/{id}/start
  *   fetchDriverTripMonitoring → GET /api/trips/{id}/monitoring (tài xế bị 403)
  *   chỉ kho mẫu: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  *   chưa có ở BE: fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
- *   chưa có ở BE (Q-02, Q-11): startDelivery, arriveAtStop, confirmUnloadManually
+ *   chưa có ở BE (Q-02, Q-11): arriveAtStop, confirmUnloadManually
  */
 
 import { ApiError } from '@/lib/api-client'
@@ -39,10 +40,10 @@ const ON_BACKEND = usesBackend('driver')
 
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
- * chuyển của tài xế, điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại. Backend chưa có — màn
- * ẩn phần đó: xuất phát, "Đã đến", quét QR (nhãn in mã QR mà điểm giao không trả), xác nhận tay, sự cố theo kiện và khách từ chối, sự cố
+ * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến), điểm đang giao kèm kiện cần dỡ, dỡ một kiện bằng mã gõ, hoàn tất điểm, gửi vị trí điện thoại. Backend chưa có — màn
+ * ẩn phần đó: "Đã đến", quét QR (nhãn in mã QR mà điểm giao không trả), xác nhận tay, sự cố theo kiện và khách từ chối, sự cố
  * trên đường, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến và hạn giao, thông báo, tổng kết
- * chuyến, chuyến chưa xuất phát hoặc đã giao, vị trí xe mô phỏng.
+ * chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
@@ -55,6 +56,8 @@ export type DriverCapabilities = {
   readonly notifications: boolean
   /** Nhóm "Xếp xong — chờ xuất phát", "Kho đang soạn / xếp", "Đã giao gần đây". */
   readonly upcomingTrips: boolean
+  /** Xuất phát ở thẻ chuyến Đang xếp hàng của "Chuyến của tôi": backend không mở màn điểm giao trước khi xe chạy. */
+  readonly departFromList: boolean
   /** GPS tắt thì vị trí xe về mô phỏng, và vị trí chỉ nằm trong trình duyệt này. */
   readonly simulatedPosition: boolean
 }
@@ -67,6 +70,7 @@ export const DRIVER_CAPABILITIES: DriverCapabilities = {
   deliveryIssues: !ON_BACKEND,
   notifications: !ON_BACKEND,
   upcomingTrips: !ON_BACKEND,
+  departFromList: ON_BACKEND,
   simulatedPosition: !ON_BACKEND,
 }
 
@@ -132,10 +136,10 @@ export async function fetchDriverTripMonitoring(tripId: string): Promise<TripMon
 }
 
 /** Tài xế bấm Xuất phát: `loaded` → `delivering`, kiện sang `IN_TRANSIT` (D-84). Chỉ khi kho đã xếp xong. */
-// chưa có ở BE (Q-11)
-export function startDelivery(tripId: string): Promise<Trip> {
-  if (ON_BACKEND) return unsupported()
-  return getMockDb().startDelivery(tripId)
+// POST /api/driver/trips/{id}/start
+export async function startDelivery(tripId: string): Promise<void> {
+  if (ON_BACKEND) return backend().startTrip(tripId)
+  await getMockDb().startDelivery(tripId)
 }
 
 /** Tài xế bấm "Đã đến" ở điểm giao hiện tại: ghi giờ đến thật; từ lúc đó mới dỡ hàng được (FE-6-06). */

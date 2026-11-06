@@ -154,6 +154,6 @@ export function auditActionLook(action: AuditAction): { icon: LucideIcon; tone: 
  * Chuẩn hoá NFC trước để chữ có dấu rời vẫn là một ký tự.
  */
 export function actorInitials(fullName: string): string {
-  const words = fullName.normalize('NFC').trim().split(/\s+/).filter((word) => word !== '')
+  const words = fullName.normalize('NFC').trim().split(/\s+/).filter((word) => /^\p{L}/u.test(word))
   return words.slice(-2).map((word) => [...word][0] ?? '').join('').toLocaleUpperCase('vi')
 }

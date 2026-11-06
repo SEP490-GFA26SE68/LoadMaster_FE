@@ -5,10 +5,8 @@ import {
   createDeliveryRequirement,
   deleteDeliveryRequirement,
   fetchAssignableTrips,
-  fetchSelectablePackages,
   getDeliveryRequirement,
   listDeliveryRequirements,
-  unassignRequirementFromTrip,
   updateDeliveryRequirement,
   type AssignRequirementInput,
 } from './requirements-api'
@@ -25,10 +23,6 @@ export function useRequirementsQuery() {
 
 export function useRequirementQuery(id: string) {
   return useQuery({ queryKey: ['requirements', 'one', id], queryFn: () => getDeliveryRequirement(id), enabled: id !== '', staleTime: 0 })
-}
-
-export function useSelectablePackagesQuery() {
-  return useQuery({ queryKey: ['requirements', 'selectable'], queryFn: fetchSelectablePackages, staleTime: 0 })
 }
 
 export function useAssignableTripsQuery() {
@@ -60,9 +54,4 @@ export function useDeleteRequirementMutation() {
 export function useAssignRequirementMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: AssignRequirementInput) => assignRequirementToTrip(input), onSuccess: () => refreshRequirements(client, true) })
-}
-
-export function useUnassignRequirementMutation() {
-  const client = useQueryClient()
-  return useMutation({ mutationFn: (requirementId: string) => unassignRequirementFromTrip(requirementId), onSuccess: () => refreshRequirements(client, true) })
 }

@@ -6,20 +6,18 @@ import type { ImportRow, ImportRowError, ImportRowWarning, PackageImportPreview 
 
 /**
  * DTO kho kiện của backend và phép đổi sang kiểu của app (FE-0-09). Chỉ các file `-api` của kho kiện dùng file này: kiểu DTO không đi ra
- * khỏi lớp `-api`. Backend lưu kích thước kiện bằng **mm nguyên**, app dùng cm (D-03) — phép đổi mm ↔ cm của kho kiện chỉ nằm ở đây.
- * File nhập ghi cm, backend tự đổi, nên bản xem trước vẫn là cm. Hàm thuần, không gọi mạng.
+ * khỏi lớp `-api`. Backend lưu kích thước kiện bằng **cm** (`numeric(10,2)`, cùng đơn vị với file nhập), như app (D-03): chỉ làm tròn tại
+ * biên. Hàm thuần, không gọi mạng.
  */
 
-const MM_PER_CM = 10
-
-/** Một kiện theo `PackageResponse` của backend (danh sách, đọc một kiện, tạo kiện). Kích thước là mm. */
+/** Một kiện theo `PackageResponse` của backend (danh sách, đọc một kiện, tạo kiện). Kích thước là cm. */
 export type BackendPackage = {
   readonly id: number
   readonly orderId?: number | null
   readonly trackingBarcode?: string | null
-  readonly actualLength?: number | null
-  readonly actualWidth?: number | null
-  readonly actualHeight?: number | null
+  readonly actualLength?: number | string | null
+  readonly actualWidth?: number | string | null
+  readonly actualHeight?: number | string | null
   readonly actualWeightKg?: number | string | null
   readonly packageCode?: string | null
   readonly qrToken?: string | null
@@ -42,7 +40,7 @@ export type BackendPackageScan = {
   readonly destination?: string | null
 }
 
-/** Thân `POST /api/packages`: kích thước mm nguyên. */
+/** Thân `POST /api/packages`: kích thước cm. */
 export type BackendPackageRequest = {
   readonly trackingBarcode: string
   readonly packageCode?: string
@@ -83,8 +81,7 @@ export type BackendImportConfirm = { readonly totalImported: number; readonly pa
 const STATUS_OF: Readonly<Record<string, PackageStatus>> = { PENDING: 'IMPORTED', PLANNED: 'ASSIGNED', LOADED: 'LOADED', DELIVERED: 'DELIVERED' }
 
 const absent = (value: unknown): value is null | undefined => value === null || value === undefined
-const cmOfMm = (mm: number | null | undefined) => (absent(mm) ? 0 : roundCm(mm / MM_PER_CM))
-const mmOfCm = (cm: number) => Math.round(roundCm(cm) * MM_PER_CM)
+const cmOf = (cm: number | string | null | undefined) => (absent(cm) ? 0 : roundCm(Number(cm)))
 const kgOf = (kg: number | string | null | undefined) => (absent(kg) ? 0 : roundKg(Number(kg)))
 const cmOrNull = (cm: number | string | null | undefined) => (absent(cm) ? null : roundCm(Number(cm)))
 const kgOrNull = (kg: number | string | null | undefined) => (absent(kg) ? null : roundKg(Number(kg)))
@@ -109,9 +106,9 @@ export function packageOf(dto: BackendPackage): Package | null {
     companyId: '',
     packageCode: dto.packageCode?.trim() || id,
     qrToken: dto.qrToken ?? '',
-    lengthCm: cmOfMm(dto.actualLength),
-    widthCm: cmOfMm(dto.actualWidth),
-    heightCm: cmOfMm(dto.actualHeight),
+    lengthCm: cmOf(dto.actualLength),
+    widthCm: cmOf(dto.actualWidth),
+    heightCm: cmOf(dto.actualHeight),
     weightKg: kgOf(dto.actualWeightKg),
     handlingClass: handlingClassOf(dto.handlingClass),
     destination: dto.destination?.trim() ?? '',
@@ -134,15 +131,15 @@ export function lookupOf(scan: BackendPackageScan): PackageLookup | null {
   return { package: trip ? { ...pkg, tripId: trip.id } : pkg, type: undefined, trip, stop }
 }
 
-/** Thân tạo kiện: cm → mm nguyên. `trackingBarcode` do nơi gọi cấp (backend bắt buộc và không cho trùng). */
+/** Thân tạo kiện (cm). `trackingBarcode` do nơi gọi cấp (backend bắt buộc và không cho trùng). */
 export function packageRequestOf(input: PackageInput, trackingBarcode: string): BackendPackageRequest {
   const code = input.packageCode?.trim()
   return {
     trackingBarcode,
     ...(code ? { packageCode: code } : {}),
-    actualLength: mmOfCm(input.lengthCm),
-    actualWidth: mmOfCm(input.widthCm),
-    actualHeight: mmOfCm(input.heightCm),
+    actualLength: roundCm(input.lengthCm),
+    actualWidth: roundCm(input.widthCm),
+    actualHeight: roundCm(input.heightCm),
     actualWeightKg: roundKg(input.weightKg),
     handlingClass: input.handlingClass,
     destination: input.destination.trim(),

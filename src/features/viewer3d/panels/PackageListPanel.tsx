@@ -52,12 +52,16 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
           <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
             {shownUnplaced.map((item) => (
               <li key={item.id} className="flex gap-2.5 rounded-md border border-dashed border-amber-500/45 p-2.5">
-                <StopMark stop={item.stop} />
+                {item.detailUnknown ? null : <StopMark stop={item.stop} />}
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <Link to={`/chuyen/${tripId}?kien=${encodeURIComponent(item.packageId)}`} className="font-mono font-medium text-cyan-200">{item.id}</Link>
-                  <span className={cn('font-mono text-caption', MUTED)}>
-                    {format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}
-                  </span>
+                  {item.detailUnknown ? <span className="font-mono font-medium text-cyan-200">{item.name}</span> : (
+                    <Link to={`/chuyen/${tripId}?kien=${encodeURIComponent(item.packageId)}`} className="font-mono font-medium text-cyan-200">{item.id}</Link>
+                  )}
+                  {item.detailUnknown ? null : (
+                    <span className={cn('font-mono text-caption', MUTED)}>
+                      {format.dimensions(item.lengthCm, item.widthCm, item.heightCm)} · {format.weight(item.weightKg)}
+                    </span>
+                  )}
                   <span className="text-caption text-amber-200">{t(`viewer.unplacedReasons.${item.reasonCode ?? 'UNKNOWN'}`)}</span>
                   {/* `CONSTRAINT_VIOLATED` (FE-5b-04): ràng buộc nào chặn, bằng chính câu của ràng buộc đó */}
                   {item.violatedConstraints?.length ? (

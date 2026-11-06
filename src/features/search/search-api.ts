@@ -1,11 +1,14 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
  *   chưa có ở BE: fetchSearchSources (kho kiện và loại kiện đọc qua `package-pool-api.ts`: GET /api/packages khi nối nhóm packages;
- *   chuyến đọc qua `trips-api.ts`: GET /api/trips khi nối nhóm trips; xe đọc qua `vehicles-api.ts`: GET /api/vehicles khi nối nhóm fleet)
+ *   chuyến đọc qua `trips-api.ts`: GET /api/trips khi nối nhóm trips; xe đọc qua `vehicles-api.ts`: GET /api/vehicles khi nối nhóm fleet;
+ *   người dùng qua `users-api.ts`: GET /api/users khi nối nhóm users; yêu cầu giao: GET /api/delivery-requirements khi nối nhóm trips)
  */
 
+import { fetchUsers } from '@/features/admin/users-api'
 import { fetchVehicles } from '@/features/fleet/vehicles-api'
 import { fetchPackages, fetchPackageTypes } from '@/features/package-pool/package-pool-api'
+import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
 import { fetchTrips } from '@/features/trips/trips-api'
 import { isApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
@@ -15,6 +18,18 @@ import type { SearchGroup, SearchSources } from './quick-search'
 const POOL_ON_BACKEND = usesBackend('packages')
 const TRIPS_ON_BACKEND = usesBackend('trips')
 const FLEET_ON_BACKEND = usesBackend('fleet')
+/** Màn Yêu cầu giao chọn bản máy chủ theo nhóm `trips` (`RequirementsPage`): tìm nhanh đọc cùng nguồn với màn. */
+const REQUIREMENTS_ON_BACKEND = usesBackend('trips')
+
+/** Yêu cầu giao của máy chủ: tên điểm đến là địa chỉ (máy chủ chưa lưu tên riêng); máy chủ từ chối (403) thì nhóm không có kết quả. */
+async function backendRequirements(): Promise<SearchSources['requirements']> {
+  try {
+    return (await listDeliveryRequirements()).map(({ requirement: { id, destinationName, address } }) => ({ id, destinationName, address }))
+  } catch (error) {
+    if (isApiError(error) && error.status === 403) return []
+    throw error
+  }
+}
 
 /** Kiện của kho kiện, kho mẫu: dòng phụ là tên loại kiện, kiện không gắn loại thì điểm đến; mở ở Kho kiện theo mã của kho. */
 function mockPool(packages: readonly Package[], types: readonly PackageType[]): SearchSources['pool'] {
@@ -87,8 +102,9 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     !TRIPS_ON_BACKEND && (wants('trips') || wants('packages')) ? db.listTrips() : [],
     TRIPS_ON_BACKEND && wants('trips') ? backendTrips() : null,
     !wants('vehicles') ? [] : FLEET_ON_BACKEND ? backendVehicles() : db.listVehicles(),
-    wants('users') ? db.listUsers() : [],
-    wants('requirements') ? db.listDeliveryRequirements() : [],
+    // Người dùng đi theo nguồn của màn Người dùng (`users-api.ts`: GET /api/users khi nối nhóm users)
+    wants('users') ? fetchUsers() : [],
+    !wants('requirements') ? [] : REQUIREMENTS_ON_BACKEND ? backendRequirements() : db.listDeliveryRequirements(),
     wants('pool') && !POOL_ON_BACKEND ? fetchPackages() : [],
     sourcing ? fetchPackageTypes() : [],
   ])

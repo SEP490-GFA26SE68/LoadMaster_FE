@@ -183,16 +183,4 @@ export const optimization = {
     other: 'Kết quả một phần: {count} kiện chưa xếp.',
   },
   done: 'Đã tối ưu xong ba phương án; đang mở màn so sánh.',
-  /** Bản nối backend (`BackendOptimizationSetupPage`): phương án xếp hàng máy chủ đã tính cho chuyến, xem trên khung 3D. */
-  backend: {
-    noJob: 'Chuyến #{trip} chưa có lần tối ưu nào trên máy chủ.',
-    job: 'Lần tối ưu {id}',
-    planId: 'Mã phương án: {id}',
-    packages: 'Số kiện đã xếp: {count}',
-    volume: 'Lấp đầy thể tích: {value}',
-    weight: 'Lấp đầy tải trọng: {value}',
-    placements: 'Số vị trí máy chủ trả về: {count}',
-    noPlan: 'Máy chủ chưa trả phương án xếp hàng nào cho lần tối ưu này.',
-    vehicleMismatch: 'Xe trong cấu hình máy chủ trả về không phải xe của chuyến, nên chưa vẽ được phương án.',
-  },
 } as const

@@ -52,7 +52,7 @@ export const driver = {
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
     /** Dữ liệu từ backend: backend chỉ trả chuyến đang vận chuyển. */
-    emptyDescriptionInTransit: 'Chuyến đang vận chuyển của bạn sẽ hiện ở đây.',
+    emptyDescriptionInTransit: 'Chuyến đang xếp hàng và đang vận chuyển của bạn sẽ hiện ở đây.',
   },
   notice: {
     preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.',
@@ -310,5 +310,8 @@ export const driver = {
     codeAmbiguous: 'Mã {code} trùng {count} kiện của điểm này. Chưa ghi gì — gõ mã đứng đầu dòng kiện.',
     alreadyUnloaded: 'Kiện {code} đã được ghi dỡ trước đó.',
     wrongStop: 'Kiện {code} không thuộc điểm đang giao. Chưa ghi gì — để kiện lại trên xe.',
+    /** Thẻ chuyến Đang xếp hàng: máy chủ không cho biết kho đã xếp xong chưa — tài xế bấm Xuất phát, máy chủ từ chối khi kho chưa xong. */
+    departNote: 'Kho đang xếp hàng. Bấm Xuất phát khi kho báo đã xếp xong — máy chủ từ chối nếu kho chưa xong.',
+    depart: 'Xuất phát',
   },
 } as const

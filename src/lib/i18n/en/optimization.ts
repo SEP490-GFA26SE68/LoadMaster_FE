@@ -171,15 +171,4 @@ export const optimization = {
     other: 'Partial result: {count} packages not placed.',
   },
   done: 'All three plans are ready; opening the comparison.',
-  backend: {
-    noJob: 'Trip #{trip} has no optimization run on the server yet.',
-    job: 'Optimization run {id}',
-    planId: 'Plan ID: {id}',
-    packages: 'Packages placed: {count}',
-    volume: 'Volume used: {value}',
-    weight: 'Payload used: {value}',
-    placements: 'Placements returned by the server: {count}',
-    noPlan: 'The server has not returned a load plan for this run yet.',
-    vehicleMismatch: 'The vehicle in the server configuration is not the trip vehicle, so the plan cannot be drawn yet.',
-  },
 } satisfies Dictionary<typeof source>

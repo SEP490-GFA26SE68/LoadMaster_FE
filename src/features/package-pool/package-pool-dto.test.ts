@@ -1,24 +1,24 @@
 import { expect, test } from 'vitest'
 import { isBackendQrToken, lookupOf, packageOf, packageRequestOf, previewOf, toBackendToken } from './package-pool-dto'
 
-// Mẫu JSON chép từ backend local (17/10/2026): kiện thêm tay, kiện nhập file, bản xem trước có dòng lỗi.
+// Mẫu JSON theo dạng của backend: kiện thêm tay, kiện nhập file, bản xem trước có dòng lỗi. Kích thước là cm (`numeric(10,2)`).
 const MANUAL = {
-  id: 1, orderId: null, packageTypeId: null, trackingBarcode: 'QA-BARCODE-0001', actualLength: 1205, actualWeightKg: 12.5, isPinned: false,
+  id: 1, orderId: null, packageTypeId: null, trackingBarcode: 'QA-BARCODE-0001', actualLength: 120.5, actualWeightKg: 12.5, isPinned: false,
   packageCode: 'QA PK-0001', qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9', handlingClass: 'FRAGILE', status: 'PENDING',
 }
 const IMPORTED = {
-  id: 4, orderId: 1, packageTypeId: null, trackingBarcode: null, actualLength: 500, actualWeightKg: '3.00', isPinned: false,
+  id: 4, orderId: 1, packageTypeId: null, trackingBarcode: null, actualLength: '50.00', actualWeightKg: '3.00', isPinned: false,
   packageCode: '', qrToken: '7086df89-979c-4813-bfd0-eea152332f55', handlingClass: null, status: 'PLANNED',
 }
 
-test('kiện của backend: mm thành cm, nguồn theo mã vạch, trường backend không có để trống', () => {
+test('kiện của backend: kích thước cm (số hoặc chuỗi), nguồn theo mã vạch, trường backend không có để trống', () => {
   expect(packageOf(MANUAL)).toEqual({
     id: '1', companyId: '', packageCode: 'QA PK-0001', qrToken: '63abd059-f710-4bf5-abe1-a1c120f2c6d9',
     lengthCm: 120.5, widthCm: 0, heightCm: 0, weightKg: 12.5, handlingClass: 'FRAGILE', destination: '',
     status: 'IMPORTED', flags: [], source: 'MANUAL', createdAt: '', createdBy: null, history: [],
   })
   expect(packageOf(IMPORTED)).toMatchObject({ id: '4', packageCode: '4', lengthCm: 50, weightKg: 3, handlingClass: 'STANDARD', status: 'ASSIGNED', source: 'IMPORT' })
-  expect(packageOf({ ...MANUAL, actualWidth: 800, actualHeight: 600, destination: ' Kho Biên Hoà ' })).toMatchObject({ widthCm: 80, heightCm: 60, destination: 'Kho Biên Hoà' })
+  expect(packageOf({ ...MANUAL, actualWidth: 80, actualHeight: 60, destination: ' Kho Biên Hoà ' })).toMatchObject({ widthCm: 80, heightCm: 60, destination: 'Kho Biên Hoà' })
 })
 
 test('trạng thái của backend: bốn trạng thái có ở app, kiện đã huỷ và trạng thái lạ bị bỏ', () => {
@@ -26,10 +26,10 @@ test('trạng thái của backend: bốn trạng thái có ở app, kiện đã 
   expect(['PENDING', 'PLANNED', 'LOADED', 'DELIVERED', 'CANCELLED', 'LOST'].map(status)).toEqual(['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', null, null])
 })
 
-test('thân tạo kiện: cm thành mm nguyên, mã của bên gửi để trống thì không gửi', () => {
+test('thân tạo kiện: cm làm tròn 0,1 cm, mã của bên gửi để trống thì không gửi', () => {
   const input = { packageCode: '  ', lengthCm: 120.5, widthCm: 80, heightCm: 60.04, weightKg: 12.5, handlingClass: 'FRAGILE' as const, destination: ' Kho A ' }
   expect(packageRequestOf(input, 'B-1')).toEqual({
-    trackingBarcode: 'B-1', actualLength: 1205, actualWidth: 800, actualHeight: 600, actualWeightKg: 12.5, handlingClass: 'FRAGILE', destination: 'Kho A',
+    trackingBarcode: 'B-1', actualLength: 120.5, actualWidth: 80, actualHeight: 60, actualWeightKg: 12.5, handlingClass: 'FRAGILE', destination: 'Kho A',
   })
   expect(packageRequestOf({ ...input, packageCode: ' HK-1 ' }, 'B-2')).toMatchObject({ packageCode: 'HK-1' })
 })

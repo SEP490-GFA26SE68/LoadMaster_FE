@@ -1,0 +1,62 @@
+/**
+ * Màn Nhật ký `/nhat-ky` khi nhóm `users` nối backend (`GET /api/audit-logs`): nhãn mã hành động và tên đối tượng của máy chủ, tên
+ * trường của bản ghi sửa chuyến, câu tóm tắt cột Chi tiết. Mã hành động lạ hiện nguyên mã, không qua đây.
+ */
+export const serverAudit = {
+  search: 'Tìm theo hành động, đối tượng, người làm',
+  action: 'Hành động',
+  allActions: 'Mọi hành động',
+  errorDescription: 'Máy chủ không trả lời. Thử lại sau giây lát.',
+  /** Mã `actionType` của máy chủ. */
+  actions: {
+    TRIP_UPDATED: 'Sửa chuyến',
+    TRIP_CANCELLED: 'Huỷ chuyến',
+    TRIP_REQUIREMENT_REMOVED: 'Gỡ yêu cầu giao khỏi chuyến',
+    TRIP_STATUS_TRANSITION: 'Đổi trạng thái chuyến',
+    ROUTE_OPTIMIZED: 'Tối ưu tuyến',
+    PLAN_APPROVED: 'Duyệt phương án xếp',
+    RERUN_OPTIMIZATION: 'Chạy lại tối ưu giữ ghim',
+    PIN_PLACEMENT: 'Ghim kiện',
+    UNPIN_PLACEMENT: 'Bỏ ghim kiện',
+    WAREHOUSE_CONFIRM: 'Kho xác nhận vị trí kiện',
+    DEVIATION_RECORDED: 'Ghi sai lệch vị trí kiện',
+    LOADING_COMPLETED: 'Xếp hàng xong',
+    DRIVER_UNLOAD: 'Tài xế dỡ kiện',
+    STOP_COMPLETED: 'Hoàn tất điểm giao',
+    TRIP_COMPLETED: 'Chuyến hoàn thành',
+    PACKAGE_IMPORT_CONFIRMED: 'Xác nhận nhập kiện',
+    DELIVERY_DEADLINE_EXTENDED: 'Gia hạn giao',
+  },
+  /** Mã `entityName` của máy chủ. */
+  entities: {
+    Trip: 'Chuyến',
+    DeliveryStop: 'Điểm giao',
+    UnloadConfirmation: 'Lần dỡ kiện',
+    PACKAGE: 'Lô kiện nhập',
+    LoadPlan: 'Phương án xếp',
+    PackagePlacement: 'Vị trí kiện',
+    DeliveryRequirement: 'Yêu cầu giao',
+    PlacementConfirmation: 'Xác nhận vị trí kiện',
+    Deviation: 'Sai lệch vị trí',
+    LoadingExecution: 'Phiên xếp hàng',
+    LOAD_PLAN: 'Phương án xếp',
+  },
+  /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
+  fields: {
+    tripName: 'Tên chuyến',
+    departureTime: 'Giờ xuất phát',
+    originWarehouseId: 'Kho xuất phát',
+    vehicleId: 'Xe',
+    driverId: 'Tài xế',
+  },
+  details: {
+    status: 'Trạng thái',
+    deadline: 'Hạn giao',
+    changed: 'Đã đổi: {fields}',
+    reason: 'Lý do: {reason}',
+    loaded: { one: '{count} kiện đã lên xe', other: '{count} kiện đã lên xe' },
+    pinned: { one: 'Giữ {count} kiện đã ghim', other: 'Giữ {count} kiện đã ghim' },
+    imported: { one: 'Nhập {count} kiện', other: 'Nhập {count} kiện' },
+    version: 'Phiên bản {version}',
+  },
+} as const

@@ -31,7 +31,8 @@ export function PlanMetricsPanel({ metrics }: { metrics: OptimizationResult['met
         {metrics.frontAxleLoadKg === undefined ? null : <Row label={t('viewer.plan.metrics.frontAxleLoad')}>{format.weight(metrics.frontAxleLoadKg)}</Row>}
         {metrics.rearAxleLoadKg === undefined ? null : <Row label={t('viewer.plan.metrics.rearAxleLoad')}>{format.weight(metrics.rearAxleLoadKg)}</Row>}
         {metrics.rehandlingCount === undefined ? null : <Row label={t('viewer.plan.metrics.rehandlingCount')}>{format.integer(metrics.rehandlingCount)}</Row>}
-        <Row label={t('viewer.plan.metrics.runtime')}>{t('viewer.plan.metrics.runtimeValue', { ms: format.integer(metrics.runtimeMs) })}</Row>
+        {/* Máy chủ không báo thời gian chạy thì `runtimeMs` là NaN (`backend-plan-scene.ts`): không vẽ số */}
+        {Number.isFinite(metrics.runtimeMs) ? <Row label={t('viewer.plan.metrics.runtime')}>{t('viewer.plan.metrics.runtimeValue', { ms: format.integer(metrics.runtimeMs) })}</Row> : null}
       </dl>
     </section>
   )

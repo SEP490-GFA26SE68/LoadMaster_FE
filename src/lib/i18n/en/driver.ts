@@ -43,7 +43,7 @@ export const driver = {
     stopsLabel: 'Stops of trip {tripId}',
     emptyTitle: 'No trips yet',
     emptyDescription: 'Trips a dispatcher assigns to you appear here.',
-    emptyDescriptionInTransit: 'Your trips in transit appear here.',
+    emptyDescriptionInTransit: 'Your trips being loaded and in transit appear here.',
   },
   notice: {
     preview: 'The warehouse has not finished loading this trip: you can look ahead, but you cannot depart yet.',
@@ -279,5 +279,7 @@ export const driver = {
     codeAmbiguous: 'Code {code} matches {count} packages of this stop. Nothing was recorded — type the code that starts the package row.',
     alreadyUnloaded: 'Package {code} was already recorded as unloaded.',
     wrongStop: 'Package {code} does not belong to the current stop. Nothing was recorded — leave it on the vehicle.',
+    departNote: 'The warehouse is loading. Tap Depart once the warehouse reports loading is done — the server refuses if it is not.',
+    depart: 'Depart',
   },
 } satisfies Dictionary<typeof source>

@@ -19,7 +19,7 @@ async function expectNotFound(page: Page, tripId: string, vehicleId: string) {
   await expect(page.getByRole('link', { name: 'Về danh sách chuyến', exact: true })).toBeVisible()
   await navigateInApp(page, `/chuyen/${tripId}/phuong-an`)
   await expect(page.getByText(`Không tìm thấy chuyến ${tripId}.`, { exact: true })).toBeVisible()
-  await expect(page.locator('canvas')).toHaveCount(0)
+  await expect(page.locator('canvas:not(.maplibregl-canvas)')).toHaveCount(0)
   await navigateInApp(page, `/doi-xe/${vehicleId}`)
   await expect(page.getByText(`Không tìm thấy xe ${vehicleId}.`, { exact: true })).toBeVisible()
 }

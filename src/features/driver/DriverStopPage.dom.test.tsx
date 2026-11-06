@@ -52,7 +52,7 @@ test('a trip the warehouse is staging: preview of stop 1 in the approved unloadi
   expect(expected).toHaveLength(38)
   expect(rowIds(container)).toStrictEqual(expected)
   // Dòng kiện chỉ hiện trạng thái: không có nút đánh dấu tay (FE-6-06)
-  expect(within(screen.getByRole('list')).queryByRole('button')).not.toBeInTheDocument()
+  expect(container.querySelector('li[data-package-id]')?.closest('ul, ol')?.querySelector('button')).toBeNull()
   expect(screen.getByRole('link', { name: 'Gọi Chị Hương' })).toHaveAttribute('href', 'tel:02837751122')
   expect(screen.getByText('Chị Hương · 0283 775 1122')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Chỉ đường tới Công ty TNHH Thực phẩm Sài Gòn' })).toBeInTheDocument()

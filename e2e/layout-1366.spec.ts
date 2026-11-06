@@ -53,7 +53,7 @@ const SCREENS: readonly Screen[] = [
     ready: async (page) => {
       await expect(page.getByRole('heading', { name: 'Vật cản trong thùng', exact: true })).toBeVisible()
       await expect(page.getByLabel('Loại OBS-002', { exact: true })).toBeVisible()
-      await expect(page.locator('canvas')).toBeVisible()
+      await expect(page.locator('canvas:not(.maplibregl-canvas)')).toBeVisible()
     },
   },
   {
@@ -89,7 +89,7 @@ const SCREENS: readonly Screen[] = [
     route: PLANNER_ROUTE,
     ready: async (page) => {
       await expect(page.getByRole('button', { name: 'Chỉnh sửa', exact: true })).toBeVisible()
-      await expect(page.locator('canvas')).toBeVisible()
+      await expect(page.locator('canvas:not(.maplibregl-canvas)')).toBeVisible()
     },
   },
   {

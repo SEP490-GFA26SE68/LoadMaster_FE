@@ -1,122 +1,107 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { PackageOpen } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { toast } from 'sonner'
+import { Banner } from '@/components/Banner'
+import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import { fetchPackage } from '@/features/package-pool/backend/packages-api'
-import { resolveBackendTripId } from '@/features/trips/trips-backend-api'
-import { fetchBackendTripDetail, fetchTripVehicleConfig } from '@/features/trips/trips-api'
-import { BackendLoadPlanViewer } from '@/features/viewer3d/BackendLoadPlanViewer'
-import { adaptBackendScene, adaptBackendVehicle } from '@/features/viewer3d/backend-scene-adapter'
-import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import { fetchBackendLoadPlans } from './optimization-api'
-
-/** Lý do chưa vẽ được phương án của máy chủ: câu ở `optimization.backend`, không phải lỗi mạng. */
-class BackendSceneError extends Error {
-  readonly reason: 'noPlan' | 'vehicleMismatch'
-
-  constructor(reason: 'noPlan' | 'vehicleMismatch') {
-    super(reason)
-    this.reason = reason
-  }
-}
+import { fetchBackendTripDetail, resolveBackendTripId } from '@/features/trips/trips-api'
+import { dataErrorMessage, useT } from '@/lib/i18n'
+import { BackendLoadPlansCard } from './BackendLoadPlansCard'
+import { BackendRunDialog } from './BackendRunDialog'
+import { useOptimizationJobQuery, useStartLoadingOptimizationMutation } from './useLoadPlansQuery'
 
 /** Mã trên URL có thể là mã chuyến (liên kết từ Giám sát, nhật ký): đổi sang mã số của máy chủ trước. */
 export function BackendOptimizationSetupRoute() {
   const { tripId = '' } = useParams()
-  const resolved = useQuery({ queryKey: ['trips', 'backend-id', tripId], queryFn: () => resolveBackendTripId(tripId), staleTime: Infinity })
-  if (resolved.data === undefined) {
-    return (
-      <div className="grid flex-1 place-items-center">
-        <Spinner />
-      </div>
-    )
-  }
+  const t = useT()
+  const resolved = useQuery({ queryKey: ['trips', tripId, 'backend-id'], queryFn: () => resolveBackendTripId(tripId), staleTime: Infinity })
+  if (resolved.isError) return <p role="alert" className="px-shell py-8 text-body text-danger">{dataErrorMessage(resolved.error, t)}</p>
+  if (resolved.data === undefined) return <div className="grid flex-1 place-items-center"><Spinner /></div>
   return <BackendOptimizationSetupPage tripId={resolved.data} />
 }
 
 /**
- * Bản nối backend của Thiết lập tối ưu (nhóm `trips`): phương án xếp hàng máy chủ đã tính cho chuyến, xem trên khung 3D. Còn là khung
- * thử kết nối — chưa có lối chạy tối ưu và chọn lần tối ưu: chỉ chuyến #3 có mã lần tối ưu cố định.
+ * Thiết lập tối ưu khi nhóm `trips` nối backend: một nút chính "Chạy tối ưu" gửi một lần chạy (`POST /api/trips/{id}/optimize-loading`,
+ * một credit, ba phương án), hộp thoại đọc lại trạng thái job tới khi xong, rồi mở màn So sánh của lần chạy đó. Bên dưới là các lần chạy
+ * trước của chuyến. Không chọn mục tiêu hay thuật toán (D-77): máy chủ chọn theo gói. `tripId` là mã số của máy chủ.
  */
 function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const t = useT()
-  const format = useFormat()
+  const navigate = useNavigate()
+  const client = useQueryClient()
+  const reasonId = useId()
+  const detail = useQuery({ queryKey: ['trips', tripId, 'backend-detail'], queryFn: () => fetchBackendTripDetail(tripId) })
+  const start = useStartLoadingOptimizationMutation(tripId)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const job = useOptimizationJobQuery(jobId)
+  const tripCode = detail.data?.trip.tripCode ?? tripId
+  const finished = job.data?.finished === true
+  const hasPlans = job.data?.status === 'COMPLETED' || job.data?.status === 'PARTIAL'
 
-  // Job đã hoàn thành của Trip 3, chỉ dùng để kiểm thử kết nối.
-  const jobId = tripId === '3' ? 'c429898c-0b02-4cf5-ad66-d476bb2c505c' : null
+  // Job xong: phương án mới nằm dưới khoá của chuyến. Có phương án và hộp thoại còn mở thì mở ngay các phương án của lần chạy để so sánh
+  useEffect(() => {
+    if (!finished || jobId === null) return
+    void client.invalidateQueries({ queryKey: ['trips', tripId] })
+    void client.invalidateQueries({ queryKey: ['billing'] })
+    if (hasPlans && dialogOpen) void navigate(`/chuyen/${encodeURIComponent(tripCode)}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`)
+  }, [finished, hasPlans, jobId, tripId, tripCode, dialogOpen, client, navigate])
 
-  const plansQuery = useQuery({
-    queryKey: ['backend', 'optimization-plans', tripId, jobId],
-    queryFn: () => fetchBackendLoadPlans(jobId!),
-    enabled: jobId !== null,
-  })
-  const sceneQuery = useQuery({
-    queryKey: ['backend', 'optimization-scene', tripId, jobId],
-    enabled: jobId !== null && plansQuery.isSuccess,
-    queryFn: async () => {
-      const plan = plansQuery.data?.[0]
-      if (!plan) throw new BackendSceneError('noPlan')
+  if (detail.isPending) return <div className="grid flex-1 place-items-center"><Spinner /></div>
+  if (detail.isError) return <p role="alert" className="px-shell py-8 text-body text-danger">{dataErrorMessage(detail.error, t)}</p>
 
-      const [tripDetail, vehicleConfigResponse, packages] = await Promise.all([
-        fetchBackendTripDetail(tripId),
-        fetchTripVehicleConfig(tripId),
-        Promise.all(plan.placements.map((placement) => fetchPackage(String(placement.package_id)))),
-      ])
-      if (String(vehicleConfigResponse.vehicleId) !== String(tripDetail.trip.vehicleId)) throw new BackendSceneError('vehicleMismatch')
+  const { trip, stops } = detail.data
+  const editable = trip.status === 'DRAFT' || trip.status === 'PLANNED'
+  const blocked = !editable ? t('serverPlans.setup.locked') : stops.length === 0 ? t('serverPlans.setup.noStops') : null
+  const running = jobId !== null && !finished && !job.isError
+  const tripPath = `/chuyen/${encodeURIComponent(trip.tripCode)}`
 
-      return adaptBackendScene(tripId, tripDetail, adaptBackendVehicle(vehicleConfigResponse), plan, packages)
-    },
-  })
-
-  const plans = plansQuery.data ?? []
-  const sceneError = sceneQuery.error instanceof BackendSceneError
-    ? t(`optimization.backend.${sceneQuery.error.reason}`)
-    : dataErrorMessage(sceneQuery.error, t)
+  function handleRun() {
+    start.mutate(undefined, {
+      onSuccess: ({ jobId: started }) => {
+        setJobId(started)
+        setDialogOpen(true)
+      },
+      onError: (error) => toast.error(dataErrorMessage(error, t)),
+    })
+  }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-4 px-shell py-6">
-      <Button variant="secondary" asChild>
-        <Link to={`/chuyen/${encodeURIComponent(tripId)}`}>{t('optimization.back')}</Link>
-      </Button>
-
-      <Card className="p-6">
-        <h2 className="font-display text-h3 font-semibold">{t('trips.loadingOptimization.run')}</h2>
-
-        {jobId === null ? (
-          <p className="mt-3 text-body">{t('optimization.backend.noJob', { trip: tripId })}</p>
-        ) : plansQuery.isPending ? (
-          <div className="mt-4">
-            <Spinner />
-          </div>
-        ) : plansQuery.isError ? (
-          <p role="alert" className="mt-3 text-body text-danger">{dataErrorMessage(plansQuery.error, t)}</p>
-        ) : (
-          <div className="mt-4 space-y-3 text-body">
-            <p>{t('optimization.backend.job', { id: jobId })}</p>
-
-            {plans.map((plan) => (
-              <div key={plan.id} className="rounded-lg border border-border p-4">
-                <p className="font-medium">{plan.plan_name}</p>
-                <p>{t('optimization.backend.planId', { id: plan.id })}</p>
-                <p>{t('optimization.backend.packages', { count: format.integer(plan.packed_items_count) })}</p>
-                <p>{t('optimization.backend.volume', { value: format.percent((plan.volume_utilization ?? 0) * 100) })}</p>
-                <p>{t('optimization.backend.weight', { value: format.percent((plan.weight_utilization ?? 0) * 100) })}</p>
-                <p>{t('optimization.backend.placements', { count: format.integer(plan.placements.length) })}</p>
-              </div>
-            ))}
-            {sceneQuery.isPending ? (
-              <div role="status" className="py-6">
-                <Spinner />
-              </div>
-            ) : sceneQuery.isError ? (
-              <p role="alert" className="text-danger">{sceneError}</p>
-            ) : sceneQuery.data ? (
-              <BackendLoadPlanViewer key={`${tripId}-${plans[0]?.id}`} model={sceneQuery.data} />
-            ) : null}
-          </div>
-        )}
-      </Card>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <PageHero
+        title={t('serverPlans.setup.title')}
+        crumbs={[{ label: t('nav.trips'), to: '/chuyen' }, { label: trip.tripCode, to: tripPath, mono: true }]}
+        description={t('serverPlans.setup.description')}
+        actions={
+          <Button type="button" loading={start.isPending} disabled={blocked !== null || running} aria-describedby={blocked ? reasonId : undefined}
+            onClick={handleRun}>
+            <PackageOpen className="size-4" aria-hidden />{t('serverPlans.setup.run')}
+          </Button>
+        }
+      />
+      <div className="min-h-0 flex-1 overflow-y-auto px-shell py-6">
+        <div className="flex flex-col gap-4">
+          {blocked ? (
+            <Banner tone="warning" action={<Button variant="secondary" size="sm" asChild><Link to={tripPath}>{t('serverPlans.setup.backToTrip')}</Link></Button>}>
+              <span id={reasonId}>{blocked}</span>
+            </Banner>
+          ) : null}
+          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} />
+        </div>
+      </div>
+      {jobId !== null ? (
+        <BackendRunDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          jobId={jobId}
+          job={job.data ?? null}
+          error={job.isError ? job.error : null}
+          compareTo={`${tripPath}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`}
+        />
+      ) : null}
     </div>
   )
 }

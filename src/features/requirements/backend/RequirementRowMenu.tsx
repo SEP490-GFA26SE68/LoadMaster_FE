@@ -14,8 +14,12 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { RequirementRow } from './requirements-api'
 import { useRequirementsTable } from './requirements-table-context'
+import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
 /**
+ * Menu thao tác ở cuối dòng yêu cầu giao khi đọc máy chủ. Máy chủ chưa cho sửa, xoá, gỡ khỏi chuyến (`REQUIREMENT_SERVER_SUPPORT`):
+ * "Sửa" chỉ còn khi yêu cầu thiếu toạ độ (form chỉ lưu toạ độ), "Xoá" và "Gỡ khỏi chuyến" không hiện.
+ *
  * Menu thao tác ở cuối dòng yêu cầu giao (FE-4b-02). Ai cũng có "Xem chi tiết". Quản lý công ty: Sửa, Xoá. Điều phối viên: Đưa vào
  * chuyến, hoặc Gỡ khỏi chuyến khi yêu cầu đã vào chuyến. Thao tác kho sẽ từ chối hiện mờ kèm lý do ngay dưới nhãn (AGENTS mục 5),
  * không để bấm rồi mới báo lỗi.
@@ -27,6 +31,8 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
   const pending = status === 'PENDING'
   const onlyPending = pending ? null : t('requirements.menu.onlyPending')
   const unassignBlock = status === 'ASSIGNED' && row.trip?.phase === 'planning' ? null : t('requirements.menu.tripLocked')
+  const { manage, unassign } = REQUIREMENT_SERVER_SUPPORT
+  const canOpenForm = canEdit && (manage || row.requirement.lat === undefined)
 
   return (
     <DropdownMenu modal={false}>
@@ -54,13 +60,15 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
         {canAssign ? (
           pending ? (
             <MenuAction icon={<Link2 strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.assign')} block={null} onSelect={() => onAction('assign', row)} />
-          ) : (
+          ) : unassign ? (
             <MenuAction icon={<Link2Off strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.unassign')} block={unassignBlock} onSelect={() => onAction('unassign', row)} />
-          )
+          ) : null
         ) : null}
-        {canEdit ? (
+        {canOpenForm ? (
+          <MenuAction icon={<Pencil strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.edit')} block={row.closed ? t('requirements.menu.closed') : null} onSelect={() => onAction('edit', row)} />
+        ) : null}
+        {canEdit && manage ? (
           <>
-            <MenuAction icon={<Pencil strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.edit')} block={row.closed ? t('requirements.menu.closed') : null} onSelect={() => onAction('edit', row)} />
             <DropdownMenuSeparator />
             <MenuAction icon={<Trash2 strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.delete')} block={onlyPending} danger onSelect={() => onAction('delete', row)} />
           </>

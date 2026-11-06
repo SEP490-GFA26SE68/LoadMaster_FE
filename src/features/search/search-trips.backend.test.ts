@@ -23,7 +23,11 @@ let status = 200
 beforeEach(() => {
   status = 200
   connectApiAuth(() => Promise.resolve('token-1'))
-  stubBackend({ 'GET /api/trips': () => (status === 200 ? { body: envelope(page([ROW])) } : { status, body: { success: false, message: 'Access Denied' } }) })
+  stubBackend({
+    'GET /api/trips': () => (status === 200 ? { body: envelope(page([ROW])) } : { status, body: { success: false, message: 'Access Denied' } }),
+    // Yêu cầu giao đọc cùng nhóm trips: máy chủ chưa có yêu cầu nào
+    'GET /api/delivery-requirements': { body: { success: true, data: [], page: 0, size: 100, totalElements: 0, totalPages: 0, last: true } },
+  })
 })
 
 afterEach(() => {

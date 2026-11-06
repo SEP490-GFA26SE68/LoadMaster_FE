@@ -3,18 +3,17 @@ import { usesBackend } from '@/lib/backend-config'
 
 
 import { roundKg } from '@/domain/geometry'
-import {
-  getMockDb,
-  isSelectablePackage,
-  type DeliveryRequirement,
-  type DeliveryStop,
-  type Package,
-  type PackageType,
-  type RequirementChanges,
-  type RequirementInput,
-  type RequirementStatus,
-  type Trip,
+import type {
+  DeliveryRequirement,
+  PackageType,
+  RequirementChanges,
+  RequirementInput,
+  RequirementStatus,
+  Trip,
 } from '@/lib/mock-db'
+import { fetchAllPages } from '@/lib/api-page'
+import { assignBackendRequirementToTrip, type TripStopApiResponse } from '@/features/trips/trips-backend-api'
+import { tripRowOf, type TripDto } from '@/features/trips/trips-dto'
 
 import {
   fetchPackage,
@@ -180,50 +179,6 @@ export type RequirementPackage = {
 }
 
 
-function withType(
-  pkg: Package,
-  typeById: ReadonlyMap<string, PackageType>,
-): RequirementPackage {
-  return {
-    package: {
-      id: pkg.id,
-      packageCode: pkg.packageCode,
-      lengthCm: pkg.lengthCm,
-      widthCm: pkg.widthCm,
-      heightCm: pkg.heightCm,
-      weightKg: pkg.weightKg,
-      handlingClass: pkg.handlingClass,
-      destination: pkg.destination,
-      status: mockPackageStatusLabel(pkg.status),
-    },
-    type: pkg.packageTypeId === undefined
-      ? undefined
-      : typeById.get(pkg.packageTypeId),
-  }
-}
-
-
-function mockPackageStatusLabel(
-  status: Package['status'],
-): CargoPackage['status'] {
-  switch (status) {
-    case 'IMPORTED':
-      return 'PENDING'
-    case 'ASSIGNED':
-    case 'STAGED':
-      return 'PLANNED'
-    case 'LOADED':
-    case 'IN_TRANSIT':
-      return 'LOADED'
-    case 'DELIVERED':
-      return 'DELIVERED'
-    case 'RETURNED':
-      return 'CANCELLED'
-  }
-}
-
-
-
 /** Một yêu cầu kèm kiện (kèm loại kiện nếu kiện gắn loại), trạng thái hiển thị, tổng khối lượng, chuyến đang chở và người lập. */
 export type RequirementRow = {
   readonly requirement: DeliveryRequirement
@@ -239,18 +194,6 @@ export type RequirementRow = {
   /** `null`: kho không ghi người lập, hoặc tài khoản đã xoá. */
   readonly createdByName: string | null
 }
-
-async function requirementContext() {
-  const db = getMockDb()
-  const [packages, types, trips, users] = await Promise.all([db.listPackages(), db.listPackageTypes(), db.listTrips(), db.listUsers()])
-  return {
-    packageById: new Map(packages.map((pkg) => [pkg.id, pkg])),
-    typeById: new Map(types.map((type) => [type.id, type])),
-    tripById: new Map(trips.map((trip) => [trip.id, trip])),
-    nameById: new Map(users.map((user) => [user.id, user.fullName])),
-  }
-}
-
 
 // GET /api/delivery-requirements
 export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
@@ -352,17 +295,35 @@ export async function createDeliveryRequirement(
   return requirementFromApi(response.data)
 }
 
+/**
+ * Sửa yêu cầu còn chờ xếp chuyến: chỉ gửi trường có giá trị (máy chủ bỏ qua trường vắng). Máy chủ đòi `DELIVERY_DEMAND_MANAGE` mà chưa
+ * vai trò nào có, nên màn chưa gọi tới đây (`REQUIREMENT_SERVER_SUPPORT.manage`).
+ */
 // PATCH /api/delivery-requirements/{id}
-export function updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement> {
-  return getMockDb().updateDeliveryRequirement(id, changes)
+export async function updateDeliveryRequirement(id: string, changes: RequirementChanges): Promise<DeliveryRequirement> {
+  const customerId = changes.customerId === undefined ? undefined : Number(changes.customerId)
+  const body = {
+    ...(customerId !== undefined && Number.isSafeInteger(customerId) && customerId > 0 ? { customerId } : {}),
+    ...(changes.address === undefined ? {} : { destination: changes.address.trim() }),
+    ...(typeof changes.lat === 'number' && typeof changes.lng === 'number' ? { destinationLat: changes.lat, destinationLng: changes.lng } : {}),
+    ...(changes.deadline === undefined ? {} : { deadline: toVietnamLocalDateTime(changes.deadline) }),
+    ...(changes.priority === undefined ? {} : { priority: changes.priority }),
+    ...(changes.expectedPackageCount === undefined ? {} : { expectedPackageCount: changes.expectedPackageCount }),
+    ...(changes.note === undefined ? {} : { note: changes.note.trim() }),
+  }
+  const response = await apiFetch<RequirementDetailApi>(`/api/delivery-requirements/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+  return requirementFromApi(response.data)
 }
-
 
 export type RequirementCoordinatesInput = {
   destinationLat: number
   destinationLng: number
 }
 
+// PATCH /api/delivery-requirements/{id}/coordinates
 export async function updateRequirementCoordinates(
   id: string,
   input: RequirementCoordinatesInput,
@@ -389,6 +350,7 @@ export type UpdateRequirementScheduleInput = {
  * Sửa hạn giao và ưu tiên khi Trip còn DRAFT/PLANNED.
  * Không gửi các trường khách hàng, địa chỉ hay kiện hàng.
  */
+// PATCH /api/delivery-requirements/{id}
 export async function updateRequirementSchedule(
   id: string,
   input: UpdateRequirementScheduleInput,
@@ -416,6 +378,7 @@ export type ExtendRequirementDeadlineInput = {
  * Gia hạn khi Trip đang IN_TRANSIT.
  * Backend kiểm tra quyền, deadline và ghi Audit Log.
  */
+// PATCH /api/delivery-requirements/{id}/extend-deadline
 export async function extendRequirementDeadline(
   id: string,
   input: ExtendRequirementDeadlineInput,
@@ -436,7 +399,6 @@ export async function extendRequirementDeadline(
 
 
 // DELETE /api/delivery-requirements/{id}
-// DELETE /api/delivery-requirements/{id}
 export async function deleteDeliveryRequirement(
   id: string,
 ): Promise<void> {
@@ -448,34 +410,28 @@ export async function deleteDeliveryRequirement(
   )
 }
 
-/** Kiện chọn được cho yêu cầu mới: còn ở kho kiện (`IMPORTED`), không cờ, chưa thuộc yêu cầu nào. Mới nhất trước, như bảng kho kiện. */
-// chưa có ở BE
-export async function fetchSelectablePackages(): Promise<RequirementPackage[]> {
-  const context = await requirementContext()
-  return [...context.packageById.values()].filter(isSelectablePackage).map((pkg) => withType(pkg, context.typeById)).toReversed()
-}
+/**
+ * Chuyến nhận được yêu cầu: máy chủ chỉ gắn yêu cầu vào chuyến Nháp. `id` là mã số của máy chủ (đường dẫn gắn yêu cầu), `code` là mã
+ * chuyến hiện trên màn. Danh sách không có điểm giao: máy chủ tự sinh hoặc gộp điểm giao khi gắn, màn không đoán trước.
+ */
+export type AssignableTrip = Pick<Trip, 'id' | 'name' | 'scheduledDate' | 'vehicleId'> & { readonly code: string }
 
-/** Chuyến nhận được yêu cầu: đang lập kế hoạch (Nháp / Đã lập kế hoạch, kho chưa xếp), kèm điểm giao để nói trước yêu cầu sẽ gộp vào điểm nào. */
-export type AssignableTrip = Pick<Trip, 'id' | 'name' | 'scheduledDate' | 'vehicleId'> & { readonly stops: readonly DeliveryStop[] }
-
-// chưa có ở BE
+// GET /api/trips?status=DRAFT
 export async function fetchAssignableTrips(): Promise<AssignableTrip[]> {
-  const trips = await getMockDb().listTrips()
-  return trips
-    .filter((trip) => trip.phase === 'planning')
-    .map(({ id, name, scheduledDate, vehicleId, stops }) => ({ id, name, scheduledDate, vehicleId, stops }))
+  const rows = await fetchAllPages<TripDto>('/api/trips', { query: { status: 'DRAFT' }, size: 100 })
+  return rows.map((dto) => {
+    const row = tripRowOf(dto)
+    return { id: String(dto.id), code: row.id, name: row.name, scheduledDate: row.scheduledDate, vehicleId: row.vehicleId }
+  })
 }
 
-/** `overrideReason`: lý do vượt luật "một chuyến một loại hàng" khi yêu cầu mang kiện khác loại hàng của chuyến (FE-4b-06, D-74). */
-export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string; readonly overrideReason?: string }
+/** `tripId` là mã số của máy chủ (`AssignableTrip.id`). */
+export type AssignRequirementInput = { readonly requirementId: string; readonly tripId: string }
 
-/** Đưa cả yêu cầu vào chuyến: điểm giao tự sinh theo địa chỉ và toạ độ của yêu cầu, trùng điểm đang có thì gộp (FE-4b-04, D-73). */
-// chưa có ở BE (BE có POST /api/trips/{id}/packages theo từng kiện)
-export function assignRequirementToTrip({ requirementId, tripId, overrideReason }: AssignRequirementInput): Promise<{ requirement: DeliveryRequirement; trip: Trip }> {
-  return getMockDb().assignDeliveryRequirement(requirementId, tripId, overrideReason === undefined ? {} : { overrideReason })
-}
-
-// chưa có ở BE
-export function unassignRequirementFromTrip(requirementId: string): Promise<DeliveryRequirement> {
-  return getMockDb().unassignDeliveryRequirement(requirementId)
+/**
+ * Gắn cả yêu cầu vào chuyến Nháp: máy chủ kiểm yêu cầu còn chờ và đã nhận đủ kiện, rồi tự sinh (hoặc gộp) điểm giao — trả điểm giao đó.
+ */
+// POST /api/trips/{tripId}/delivery-requirements/{requirementId}
+export function assignRequirementToTrip({ requirementId, tripId }: AssignRequirementInput): Promise<TripStopApiResponse> {
+  return assignBackendRequirementToTrip(tripId, requirementId)
 }
