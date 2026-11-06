@@ -3,9 +3,16 @@
  *   changeTripVehicle   → POST /api/trips/{id}/change-vehicle
  *   chưa có ở BE: fetchVehicleChoices
  */
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { vehicleFit, type VehicleFit } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import { getMockDb, type Trip, type VehicleStatus } from '@/lib/mock-db'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /** Một xe của công ty trong hộp thoại Đổi xe: trạng thái, và xe có chở được hàng của chuyến không (`vehicleFit`). */
 export type VehicleChoice = {
@@ -60,5 +67,6 @@ export async function fetchVehicleChoices(tripId: string): Promise<VehicleChoice
  */
 // POST /api/trips/{id}/change-vehicle
 export function changeTripVehicle(tripId: string, vehicleId: string): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().changeTripVehicle(tripId, vehicleId)
 }

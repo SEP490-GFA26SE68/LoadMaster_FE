@@ -104,9 +104,9 @@ export function packageMethods(ctx: DbContext): PackageMethods {
    * Gỡ cờ là việc của điều phối viên; nhân viên kho chỉ gỡ cờ "Không tìm thấy" bằng cách quét thấy lại kiện (D-92). Kho không có phiên
    * (test logic kho) thì không xét vai trò.
    */
-  function assertRole(role: Role) {
+  function assertRole(...roles: Role[]) {
     const user = state.session.userId === null ? undefined : state.users.get(state.session.userId)
-    if (user !== undefined && user.role !== role) throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
+    if (user !== undefined && !roles.includes(user.role)) throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
   }
 
   /** Kiện của công ty khớp mã QR; mã của kiện công ty khác cũng là "không khớp kiện nào": không lộ là mã đó có thật. */
@@ -166,7 +166,7 @@ export function packageMethods(ctx: DbContext): PackageMethods {
     clearPackageFlag: (id, flag: PackageFlag) =>
       ctx.respond(() => {
         const current = scope.own(id)
-        assertRole('dispatcher')
+        assertRole('dispatcher', 'warehouse')
         if (!current.flags.includes(flag)) throw new MockDbError('PACKAGE_FLAG_NOT_SET', { packageId: id, flag })
         ctx.log('package.flagCleared', { type: 'package', id }, { flag })
         return clearFlag(current, flag)

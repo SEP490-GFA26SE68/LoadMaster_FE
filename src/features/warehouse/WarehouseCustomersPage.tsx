@@ -4,8 +4,8 @@ import { Building2, ChevronDown, ChevronRight } from 'lucide-react'
 import {
     listDeliveryRequirements,
     type RequirementRow,
-} from '@/features/requirements/requirements-api'
-import { useT } from '@/lib/i18n'
+} from '@/features/requirements/backend/requirements-api'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 export function WarehouseCustomersPage() {
     const STATUS_KEYS = {
         PENDING: 'warehouseCustomers.status.PENDING',
@@ -27,9 +27,8 @@ export function WarehouseCustomersPage() {
                 if (active) setRows(result)
             } catch (err) {
                 if (active) {
-                    setError(
-                        err instanceof Error ? err.message : t('warehouseCustomers.loadError'),
-                    )
+                    // Không hiện thông điệp thô của máy chủ: câu theo mã lỗi (`dataErrorMessage`)
+                    setError(dataErrorMessage(err, t))
                 }
             } finally {
                 if (active) setLoading(false)
@@ -209,7 +208,7 @@ export function WarehouseCustomersPage() {
                                                                 : remaining === 0
                                                                     ? t('warehouseCustomers.complete')
                                                                     : t('warehouseCustomers.remaining', {
-                                                                        count: remaining,
+                                                                        count: remaining ?? 0,
                                                                     })}
                                                     </p>
                                                 </div>

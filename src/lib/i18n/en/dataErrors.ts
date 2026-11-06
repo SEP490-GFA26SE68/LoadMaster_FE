@@ -109,5 +109,6 @@ export const dataErrors = {
   COMPANY_INVALID: 'The company information is not valid: it needs a name, address, phone number, a departure depot with coordinates, and the name, email and phone number of the first company administrator.',
   TICKET_INVALID: 'The support ticket is not valid: it needs a type, a title and a description, none empty or too long.',
   TICKET_CLOSED: 'This support ticket is closed — ask customer support to reopen it to continue the conversation.',
+  CONTACT_INVALID: 'The "{field}" field of the contact request is not valid. Check it and try again.',
   UNKNOWN: 'Something went wrong. Try again later.',
 } satisfies Dictionary<typeof source>

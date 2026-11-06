@@ -7,6 +7,7 @@ export const manager = {
   loading: 'Loading figures…',
   errorTitle: 'Could not load the figures',
   errorDescription: 'The data store did not answer. Try again in a moment.',
+  periodRejected: 'The server reads at most 366 days at a time. Pick a shorter period.',
   retry: 'Try again',
   noValue: '—',
   dateTime: '{date} {time}',
@@ -105,7 +106,7 @@ export const manager = {
     excelDateFormat: 'mmm d, yyyy',
     done: 'Downloaded {name}',
     failed: 'Could not create the report file. Try again.',
-    sheets: { overview: 'Overview', trips: 'Trips', vehicles: 'By vehicle' },
+    sheets: { overview: 'Overview', trips: 'Trips', recentTrips: 'Recent trips', vehicles: 'By vehicle' },
     overview: {
       title: 'Operations report',
       period: 'Period',

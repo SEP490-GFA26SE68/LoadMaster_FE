@@ -4,7 +4,7 @@ import { MOCK_DB, navigateInApp, SEED_TRIP } from './spec-flow-helpers'
 
 /** Planner không bật `?debug` nên không có cờ nghỉ: chờ canvas rồi cho scene dừng vẽ. */
 async function settleScene(page: Page) {
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.waitForTimeout(1_500)
 }
 
@@ -146,7 +146,7 @@ for (const viewport of VIEWPORTS) {
     await check(page, testInfo, `${viewport.name}-plan-candidates`, allowed, { layout: !phone })
     await page.getByRole('link', { name: 'Open plan C in the Planner', exact: true }).click()
     await page.waitForURL(/\/phuong-an\?revision=REV-\d+$/, { timeout: 60_000 })
-    await page.locator('canvas').waitFor()
+    await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
     await settleScene(page)
     await expect(page.locator('header').first()).toContainText('MOCK RESULT')
     // Toast "đã tối ưu" nằm dưới thanh tiêu đề (LM-101) và tự tắt: chờ nó đi rồi mới chụp, không bấm nút đóng.
@@ -186,6 +186,27 @@ for (const viewport of VIEWPORTS) {
       await check(page, testInfo, `${viewport.name}-planner-editor`, allowed)
     }
 
+    expect(browserErrors).toStrictEqual([])
+  })
+}
+
+/**
+ * Hai trang công khai bằng `?lang=en`, khách chưa đăng nhập: không còn chữ tiếng Việt, không tràn chữ, không cuộn ngang — kể cả ở 390 px
+ * (khách mở trang giới thiệu trên điện thoại). Trang không có dữ liệu riêng nào ngoài tên ngôn ngữ trong nút chuyển.
+ */
+for (const viewport of VIEWPORTS) {
+  test(`${viewport.name}: landing and pricing pages in English`, async ({ page, browserErrors }, testInfo) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await page.goto('/gioi-thieu?lang=en')
+    await expect(page.getByRole('heading', { level: 1, name: 'Make the most of every truck, unload in the right order, follow it to the last stop.', exact: true }))
+      .toBeVisible()
+    await expect(page.getByRole('button', { name: 'Send request', exact: true })).toBeVisible()
+    await check(page, testInfo, `${viewport.name}-landing`, DATA_NAMES)
+
+    await page.getByRole('main').getByRole('link', { name: 'See pricing', exact: true }).click()
+    await page.waitForURL((url) => url.pathname === '/bang-gia')
+    await expect(page.getByRole('heading', { level: 2, name: 'Ultimate', exact: true })).toBeVisible()
+    await check(page, testInfo, `${viewport.name}-pricing`, DATA_NAMES)
     expect(browserErrors).toStrictEqual([])
   })
 }

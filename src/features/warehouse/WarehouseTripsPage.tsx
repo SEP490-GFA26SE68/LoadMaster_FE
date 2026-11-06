@@ -12,6 +12,7 @@ import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { useCan } from '@/features/auth/useCan'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useWarehouseTripsQuery } from './useWarehouseQueries'
 import { warehouseGroups, type WarehouseStage, type WarehouseTripRow } from './warehouse-trips'
@@ -37,7 +38,7 @@ export function WarehouseTripsPage() {
         trailing={
           <>
             {/* Tra cứu kiện (FE-3b-06): nút phụ 56 px; dưới 1.024 px chỉ còn icon để tiêu đề không bị cắt, tên ở `aria-label` */}
-            {can('packages.lookup') ? (
+            {can('packages.lookup') && packagePoolReachable(can) ? (
               <Button asChild variant="skySolid" size="touch" className="flex-none max-lg:w-14 max-lg:px-0">
                 <Link to="/tra-cuu-kien" aria-label={t('warehouse.list.lookup')}>
                   <ScanLine strokeWidth={1.5} />

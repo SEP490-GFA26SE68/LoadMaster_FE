@@ -75,7 +75,7 @@ async function nudgeOnePackage(page: Page) {
 test('an approved plan shows when it was approved; one edited package turns it into "Duyệt bản chỉnh"', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
   await login(PLANNER_ROUTE, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
 
   await expect(header(page)).toContainText(APPROVED_AT)
   await expect(button(page, 'Duyệt phương án')).toHaveCount(0)
@@ -129,7 +129,7 @@ test('a plan awaiting approval keeps "Duyệt phương án" on the one control r
   await page.setViewportSize({ width: 1366, height: 768 })
   // Seed TRIP-012: đã tối ưu, chưa duyệt
   await login('/chuyen/TRIP-012/phuong-an', 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
 
   await expect(button(page, 'Duyệt phương án')).toBeVisible()
   await expect(header(page)).not.toContainText(APPROVED_AT)
@@ -143,7 +143,7 @@ test('a plan awaiting approval keeps "Duyệt phương án" on the one control r
 test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason with the warehouse progress (V2.3)', async ({ page, login, browserErrors }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 })
   await login('/chuyen/TRIP-011/phuong-an')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
 
   // V2.3 Planner3DKhoa: lý do khoá, câu giải thích và dòng tiến độ kho lấy từ kho (seed TRIP-011: 110 / 280 kiện)
   const lock = page.locator('[data-planner-lock="loading"]')
@@ -160,7 +160,7 @@ test('a trip being loaded opens its plan locked: no Edit, no Approve, one reason
 
 test('tablet keeps two 56 px control rows; the company companyManager reads the plan with one reason and no actions (FE-0-07)', { tag: '@tablet' }, async ({ page, login, browserErrors }, testInfo) => {
   await login(PLANNER_ROUTE, 'companyManager')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   const toolbar = page.locator('[data-workspace-toolbar]')
   await expect(toolbar).toBeVisible()
   expect((await toolbar.getByRole('combobox', { name: 'Góc nhìn', exact: true }).boundingBox())!.height).toBe(56)

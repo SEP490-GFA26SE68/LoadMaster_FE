@@ -14,6 +14,8 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
+      // Test luôn chạy trên kho mẫu, kể cả khi `.env.local` của máy dev đang bật chế độ keycloak để chạy với backend
+      env: { VITE_AUTH_SOURCE: 'mock' },
       projects: [
         {
           extends: true,

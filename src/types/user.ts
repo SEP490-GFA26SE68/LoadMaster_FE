@@ -82,11 +82,12 @@ export type User = {
   companyName?: string
 }
 
+/** Chữ đầu của hai từ cuối trong tên; bỏ qua từ không bắt đầu bằng chữ cái ("(demo)", "-"). */
 export function initialsOf(fullName: string): string {
   const parts = fullName
     .trim()
     .split(/\s+/)
-    .filter(Boolean)
+    .filter((part) => /^\p{L}/u.test(part))
 
   const picked = parts.slice(-2)
 

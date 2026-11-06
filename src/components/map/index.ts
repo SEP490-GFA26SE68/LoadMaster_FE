@@ -5,3 +5,4 @@ export type { RouteMapData, RouteMapPlace, RouteMapStop, RouteMapVehicle } from 
 export { CoordinatePicker } from './CoordinatePicker'
 export { coordinateText, EMPTY_COORDINATES, formatCoordinate, parseCoordinates, type CoordinateError, type Coordinates, type CoordinateText, type ParsedCoordinates } from './coordinates'
 export { placeAddress } from './place-search'
+export { decodePolyline, encodePolyline, pathFromEncodedPolylines } from './polyline'

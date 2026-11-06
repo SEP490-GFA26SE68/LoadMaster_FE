@@ -13,16 +13,22 @@ import type { Company, CompanyOverview, TemporaryPassword } from '@/lib/mock-db'
 import { toCompanyInfo, toNewCompany } from './company-form'
 import { CompanyFormDialog } from './CompanyFormDialog'
 import { CompaniesTableContext, createCompanyColumns, type CompaniesTableValue } from './companies-table'
-import { useCompaniesQuery, useCreateCompanyMutation, useUpdateCompanyMutation } from './useCompaniesQuery'
+import { ServerCompaniesPage } from './ServerCompaniesPage'
+import { companiesOnServer, useCompaniesQuery, useCreateCompanyMutation, useUpdateCompanyMutation } from './useCompaniesQuery'
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; company: Company } | { kind: 'password'; result: TemporaryPassword }
+
+/** Bản nối backend có cột khác (mã số thuế, email thanh toán, trạng thái công ty; không có kho xuất phát) nên là màn riêng. */
+export function CompaniesPage() {
+  return companiesOnServer ? <ServerCompaniesPage /> : <MockCompaniesPage />
+}
 
 /**
  * Công ty `/nen-tang/cong-ty` (FE-8-06, D-65) — màn chính của quản trị hệ thống (`companies.manage`). Bảng công ty: tên, gói, trạng thái
  * gói, số người dùng; sửa thông tin và kho xuất phát ở `CompanyFormDialog`. Một nút chính: "Tạo công ty" — tạo công ty chưa có gói cùng
  * Quản trị công ty đầu tiên, rồi hiện mật khẩu tạm của tài khoản đó đúng một lần (`TemporaryPasswordDialog`, như màn Người dùng).
  */
-export function CompaniesPage() {
+function MockCompaniesPage() {
   const t = useT()
   const query = useCompaniesQuery()
   const create = useCreateCompanyMutation()

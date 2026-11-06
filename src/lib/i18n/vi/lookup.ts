@@ -10,6 +10,8 @@ export const lookup = {
   scanDescription: 'Đưa nhãn dán trên kiện vào khung hình, hoặc nhập mã in dưới hình QR.',
   codeLabel: 'Mã QR hoặc mã kiện của bên gửi',
   codePlaceholder: 'VD: LM-7K3F-9XQ2-M4TD hoặc HK-DNG-2609-01',
+  /** Khi kho kiện đọc từ máy chủ: mã QR là chuỗi dài của máy chủ, không theo mẫu `LM-…`. */
+  codePlaceholderBackend: 'VD: mã in dưới hình QR, hoặc HK-DNG-2609-01',
   codeHint: 'Gõ đủ cả mã như in trên nhãn; chữ hoa hay thường đều được.',
   codeRequired: 'Nhập mã trước khi tra cứu.',
   submit: 'Tra cứu',

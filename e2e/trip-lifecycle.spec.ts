@@ -120,8 +120,9 @@ test('one tab: cancelling a trip the warehouse is loading tells the warehouse to
     const inTransit = await getMockDb().cancelTrip('TRIP-009', 'Xe hỏng').then(() => 'cancelled', (error: { code?: string }) => error.code)
     return { action: event?.action, params: event?.params, statuses, inTransit }
   }, MOCK_DB)
+  // Chuyến đã hiện ở "Chuyến của tôi" của tài xế Đặng Hoài Nam (US-0007): sự kiện nêu tài xế để chuông của anh báo chuyến bị huỷ
   expect(store).toStrictEqual({
-    action: 'trip.cancelled', params: { reason: 'Xe hỏng máy lạnh', loaded: 110 }, statuses: ['IMPORTED'], inTransit: 'INVALID_TRIP_STATUS_TRANSITION',
+    action: 'trip.cancelled', params: { reason: 'Xe hỏng máy lạnh', loaded: 110, driverId: 'US-0007' }, statuses: ['IMPORTED'], inTransit: 'INVALID_TRIP_STATUS_TRANSITION',
   })
   // Chuyến đang vận chuyển chưa có sự cố cấp chuyến nào: hộp thoại nói vì sao chưa huỷ được, nút huỷ mờ
   await navigateInApp(page, '/chuyen/TRIP-009')

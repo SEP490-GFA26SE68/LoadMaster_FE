@@ -1,4 +1,4 @@
-import { Languages } from 'lucide-react'
+import { Globe } from 'lucide-react'
 import { LOCALE_NAMES, LOCALES, useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -31,7 +31,7 @@ export function LanguageSwitch({ orientation = 'horizontal', size = 'md', tone =
       aria-label={t('language.label')}
       className={cn('flex items-center', vertical ? 'flex-col gap-1' : 'gap-2', className)}
     >
-      <Languages className={cn(sky ? 'text-sky-text-3' : 'text-text-3', size === 'touch' ? 'size-6' : 'size-5')} strokeWidth={1.5} aria-hidden />
+      <Globe className={cn(sky ? 'text-sky-text-3' : 'text-text-3', size === 'touch' ? 'size-6' : 'size-5')} strokeWidth={1.5} aria-hidden />
       <div
         className={cn(
           'flex gap-0.5 rounded-md border p-0.5 font-semibold',

@@ -409,7 +409,7 @@ export const trips = {
     open: 'Nhập từ file',
     title: 'Nhập kiện từ file',
     description: 'Mỗi dòng một kiện, dòng đầu là tiêu đề cột như file mẫu (tiếng Việt, tiếng Anh hoặc tên trường). Kiện nhập được thêm sau các kiện đang có.',
-    choose: 'Chọn file .xlsx ',
+    choose: 'Chọn file .csv hoặc .xlsx',
     chooseAnother: 'Chọn file khác',
     fileInput: 'File kiện (.csv, .xlsx)',
     templateCsv: 'Tải mẫu .csv',
@@ -910,5 +910,27 @@ export const trips = {
       notFoundTitle: 'Không tìm thấy lần chạy',
       notFoundDescription: 'Chuyến này không có lần chạy {run}, hoặc lần chạy đó không ra phương án nào.',
     },
+  },
+  /** Danh sách và Chi tiết chuyến khi nhóm `trips` đọc backend: máy chủ mới có thông tin chuyến và điểm giao. */
+  backend: {
+    emptyDescription: 'Máy chủ chưa có chuyến nào của công ty.',
+    note: 'Chi tiết chuyến đọc từ máy chủ, mới gồm thông tin chuyến và điểm giao. Kiện, phương án xếp hàng, tiến độ kho và lịch sử của chuyến chưa có ở đây.',
+    stops: 'Điểm giao',
+    stopCount: { one: '{count} điểm giao', other: '{count} điểm giao' },
+    noStops: 'Chuyến chưa có điểm giao nào.',
+    origin: 'Kho xuất phát',
+    stopsLabel: 'Kho xuất phát rồi các điểm giao theo thứ tự đi',
+    stopStatuses: { PENDING: 'Chưa đến', ARRIVED: 'Xe đang ở điểm', COMPLETED: 'Đã giao xong' },
+    /** Giờ đến máy chủ tính từ vị trí xe (chuyến Đang vận chuyển) — không phải kết quả mock. */
+    liveEta: 'Máy chủ dự kiến đến {time} {date}',
+  },
+  /** Chi tiết chuyến của máy chủ (`BackendTripDetailPage`): thẻ thông tin vận hành. */
+  server: {
+    operations: 'Thông tin vận hành',
+    tripCode: 'Mã chuyến',
+    vehicle: 'Xe vận chuyển',
+    driver: 'Tài xế',
+    departure: 'Giờ xuất phát',
+    depot: 'Kho xuất phát',
   },
 } as const

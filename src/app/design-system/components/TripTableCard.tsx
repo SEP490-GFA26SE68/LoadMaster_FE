@@ -61,7 +61,7 @@ function createColumns(t: TFunction, format: Formatter) {
       },
     }),
     helper.accessor('status', {
-      header: t('trips.list.status'),
+      header: t('trips.list.statusColumn'),
       meta: { width: '180px' } satisfies ColumnMeta,
       cell: (info) => <StatusBadge status={info.getValue()} />,
     }),

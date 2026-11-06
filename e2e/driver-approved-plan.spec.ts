@@ -35,17 +35,37 @@ function rowIds(page: Page) {
   return page.locator('li[data-package-id]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-package-id')))
 }
 
+/**
+ * Nhân viên kho demo (US-0003) bắt đầu soạn hàng `tripId` ngay trong kho của trang, rồi trả phiên cho tài xế demo (US-0004): chuyến còn
+ * lập kế hoạch chỉ hiện với tài xế từ lúc kho bắt đầu soạn hàng (FE-6-01). Màn đang mở không tự đọc lại.
+ */
+function startStagingInStore(page: Page, tripId: string) {
+  return page.evaluate(async ({ url, tripId }) => {
+    const { getMockDb } = (await import(url)) as typeof import('@/lib/mock-db')
+    const db = getMockDb()
+    db.restoreSession('US-0003')
+    try {
+      await db.startLoading(tripId)
+    } finally {
+      db.restoreSession('US-0004')
+    }
+  }, { url: MOCK_DB, tripId })
+}
+
 test('phone: unload order equals the approved revision; Three.js loads only on "Xem vị trí hàng"', { tag: '@phone' }, async ({ page, login, browserErrors }) => {
   const requests: string[] = []
   page.on('request', (request) => requests.push(request.url()))
-  // Chuyến chính kho chưa xếp: tài xế xem trước điểm 1 theo bản duyệt
-  await login(`${DRIVER}?chuyen=${SEED_TRIP}`, 'driver')
+  // Kho vừa bắt đầu soạn hàng chuyến chính: tài xế xem trước điểm 1 theo bản duyệt kho đang làm theo
+  await login('/tai-xe', 'driver')
+  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến của tôi', exact: true })).toBeVisible()
+  await startStagingInStore(page, SEED_TRIP)
+  await navigateInApp(page, `${DRIVER}?chuyen=${SEED_TRIP}`)
   await expect(page.getByRole('heading', { name: 'Điểm 1 / 4', exact: true })).toBeVisible()
 
   const expected = await planUnloadOrder(page, SEED_TRIP, 1)
   expect(expected.ids.length).toBeGreaterThan(0)
   expect(await rowIds(page)).toStrictEqual(expected.ids)
-  expect(await page.locator('canvas').count()).toBe(0)
+  expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
   expect(requests.some((url) => /@react-three|three\.module|three\.core/.test(url)), 'driver 2D must not fetch Three.js').toBe(false)
 
   const viewCargo = page.getByRole('button', { name: 'Xem vị trí hàng', exact: true })
@@ -86,6 +106,10 @@ test('phone: the driver screens run in English and switching language mid-delive
 
   // FE-6-06: xuất phát, bấm "Đã đến" rồi mới dỡ — dỡ bằng hộp đối chiếu (gõ mã của bên gửi), không có nút đánh dấu tay
   await page.getByRole('button', { name: 'Depart', exact: true }).tap()
+  // Thẻ liên hệ: giờ đến dự kiến tính từ vị trí xe mô phỏng, nói bằng tiếng Anh; điểm không có hạn
+  await expect(page.getByText(/^From the simulated vehicle position/)).toBeVisible()
+  await expect(page.getByText('Expected arrival', { exact: true })).toBeVisible()
+  await expect(page.getByText('No deadline', { exact: true })).toBeVisible()
   const arrive = page.getByRole('button', { name: 'Arrived at stop 1', exact: true })
   expect(await heightOf(arrive)).toBeGreaterThanOrEqual(56)
   expect(await overflowingText(page)).toStrictEqual([])
@@ -110,17 +134,19 @@ test('phone: the driver screens run in English and switching language mid-delive
   expect(browserErrors).toStrictEqual([])
 })
 
-test('a newly approved revision reaches the driver screen without reload', async ({ page, login, browserErrors }) => {
+test('a newly approved revision reaches the driver screen once the warehouse stages by it, without reload', async ({ page, login, browserErrors }) => {
   // Bản seed đã duyệt không có nút Duyệt (LM-094): điều phối viên duyệt lại revision nguồn chưa duyệt REV-001
   await login(`/chuyen/${SEED_TRIP}/phuong-an?revision=REV-001`, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(page.getByText('Đã duyệt phương án.')).toBeVisible()
   await page.waitForURL(/\/phuong-an\?revision=REV-(?!001)/)
 
-  // Tài xế của chuyến (tài khoản demo) đăng nhập ngay trong app: tải lại trang là mất bản vừa duyệt
+  // Tài xế của chuyến (tài khoản demo) đăng nhập ngay trong app: tải lại trang là mất bản vừa duyệt. Kho bắt đầu soạn hàng theo bản
+  // vừa duyệt — chuyến còn lập kế hoạch thì màn của tài xế chưa xem trước phương án nào
   await switchUser(page, 'driver')
+  await startStagingInStore(page, SEED_TRIP)
   await navigateInApp(page, `${DRIVER}?chuyen=${SEED_TRIP}`)
   await expect(page.getByRole('heading', { name: 'Điểm 1 / 4', exact: true })).toBeVisible()
   const expected = await planUnloadOrder(page, SEED_TRIP, 1)

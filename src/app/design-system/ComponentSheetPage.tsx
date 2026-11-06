@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DEFAULT_PERIOD, type PeriodPreset } from '@/features/manager/dashboard-period'
-import { useTripsQuery } from '@/features/trips/useTripsQuery'
+import { useStoreTripsQuery } from '@/features/trips/useTripsQuery'
 import { useT } from '@/lib/i18n'
 import { BannersCard } from './components/BannersCard'
 import { BrandCard } from './components/BrandCard'
@@ -31,7 +31,7 @@ const column = 'flex min-w-0 flex-col gap-4'
 export function ComponentSheetPage() {
   const t = useT()
   const sample = useSheetSampleQuery().data
-  const rows = useTripsQuery().data
+  const rows = useStoreTripsQuery().data
   const [period, setPeriod] = useState<PeriodPreset>(DEFAULT_PERIOD)
 
   return (

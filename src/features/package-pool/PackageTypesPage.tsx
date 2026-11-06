@@ -12,46 +12,68 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
+import type { PackageTypeInput } from '@/lib/mock-db'
 import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
-import { useDeletePackageTypeMutation, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
-import type { PackageTypeInput } from './package-types-api'
+import {
+  PACKAGE_POOL_SUPPORT, useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation,
+} from './usePackagePoolQuery'
+import { PackageTypesPage as BackendPackageTypesPage } from './backend/PackageTypesPage'
+import { usesBackend } from '@/lib/backend-config'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
 /**
- * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện): bảng loại kiện (kích thước, khối lượng, dễ vỡ,
- * hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa trong hộp thoại, xoá qua hộp thoại xác nhận —
- * loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối `PACKAGE_TYPE_IN_USE`).
+ * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện). Nối backend thì máy chủ chưa mở danh mục
+ * loại kiện cho điều phối viên: màn Kho kiện không có lối vào, mở thẳng đường dẫn thì chỉ thấy câu lý do — không gọi máy chủ.
  */
-export function PackageTypesPage() {
+function StorePackageTypesPage() {
+  return PACKAGE_POOL_SUPPORT.packageTypes ? <PackageTypesCatalog /> : <PackageTypesUnavailable />
+}
+
+function PackageTypesUnavailable() {
+  const t = useT()
+  return (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <PageHero title={t('sourcing.packageTypes.title')} description={t('pageHero.packageTypes')} back={{ to: '/kien-hang', label: t('sourcing.labels.back') }} />
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
+        <Banner tone="info">{t('sourcing.backend.packageTypes')}</Banner>
+      </main>
+    </div>
+  )
+}
+
+/**
+ * Bảng loại kiện (kích thước, khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa
+ * trong hộp thoại, xoá qua hộp thoại xác nhận — loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối
+ * `PACKAGE_TYPE_IN_USE`).
+ */
+function PackageTypesCatalog() {
   const t = useT()
   const canEdit = useCan()('packages.manage')
+  const typesQuery = usePackageTypesQuery()
+  const packagesQuery = usePackagesQuery()
   const save = useSavePackageTypeMutation()
   const remove = useDeletePackageTypeMutation()
-  const list = useListUrlState({
-    defaultSort: {
-      id: 'name',
-      desc: false,
-    },
-  })
-
-  const typesQuery = usePackageTypesQuery(
-    list.pageIndex,
-    list.pageSize,
-  )
+  const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<PackageTypeRow | null>(null)
-  const rows = typesQuery.data?.data ?? []
+
+  const rows = useMemo<PackageTypeRow[]>(() => {
+    const usage = new Map<string, number>()
+    for (const pkg of packagesQuery.data ?? []) {
+      if (pkg.packageTypeId !== undefined) usage.set(pkg.packageTypeId, (usage.get(pkg.packageTypeId) ?? 0) + 1)
+    }
+    return (typesQuery.data ?? []).map((type) => ({ ...type, usage: usage.get(type.id) ?? 0 }))
+  }, [typesQuery.data, packagesQuery.data])
   const visible = useMemo(() => rows.filter((row) => matchesQuery([row.name, row.id], list.query)), [rows, list.query])
   const columns = useMemo(() => packageTypeColumns(t, canEdit), [t, canEdit])
   const actions = useMemo(() => ({ onEdit: (row: PackageTypeRow) => setEditing({ kind: 'edit', row }), onDelete: setDeleting }), [])
 
-  const pending = typesQuery.isPending
-  const error = typesQuery.error
-  const totalElements = typesQuery.data?.totalElements ?? 0
-  const hasRows = totalElements > 0
+  const pending = typesQuery.isPending || packagesQuery.isPending
+  const error = typesQuery.error ?? packagesQuery.error
+  const hasRows = rows.length > 0
   const overlap = pending || (!error && hasRows)
 
   async function handleSubmit(input: PackageTypeInput) {
@@ -83,16 +105,10 @@ export function PackageTypesPage() {
       <PageHero
         overlap={overlap}
         title={t('sourcing.packageTypes.title')}
-        meta={
-          typesQuery.isSuccess
-            ? t('sourcing.packageTypes.count', {
-              count: typesQuery.data.totalElements,
-            })
-            : undefined
-        }
+        meta={typesQuery.isSuccess ? t('sourcing.packageTypes.count', { count: rows.length }) : undefined}
         description={t('pageHero.packageTypes')}
         back={{ to: '/kien-hang', label: t('sourcing.labels.back') }}
-        actions={addButton}
+        actions={hasRows ? addButton : null}
       />
       <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
         {pending ? (
@@ -121,14 +137,6 @@ export function PackageTypesPage() {
                       getRowId={(row) => row.id}
                       density="roomy"
                       appearance="paper"
-                      serverPagination
-                      totalRows={typesQuery.data?.totalElements ?? 0}
-                      pagination={{
-                        pageIndex: list.pageIndex,
-                        pageSize: list.pageSize,
-                        onPageChange: list.setPage,
-                        onPageSizeChange: list.setPageSize,
-                      }}
                       sorting={list.sorting}
                       onSortingChange={list.setSorting}
                       isFiltering={list.isFiltering}
@@ -171,4 +179,9 @@ export function PackageTypesPage() {
       />
     </div>
   )
+}
+
+/** Nhóm `packages` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function PackageTypesPage() {
+  return usesBackend('packages') ? <BackendPackageTypesPage /> : <StorePackageTypesPage />
 }

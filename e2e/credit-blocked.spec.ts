@@ -10,7 +10,7 @@ test.use({ collectConsoleErrors: true })
 const SETUP = '/chuyen/TRIP-PN-001/toi-uu'
 
 test('a Phương Nam dispatcher spends the last two credits and then sees Optimize dimmed with the reason', async ({ page, browserErrors }) => {
-  await page.goto('/')
+  await page.goto('/dang-nhap')
   await signInWith(page, 'dieuphoi@phuongnam.vn')
   await navigateInApp(page, SETUP)
 

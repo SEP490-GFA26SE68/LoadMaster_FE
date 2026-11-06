@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from '../operations/useOperations'
 import { MassCard, OperationsPanel, UnloadingPanel } from '../operations/OperationsPanel'
-import { SelectedPackagePanel } from './SelectedPackagePanel'
+import { SelectedPackagePanel, type PinAction } from './SelectedPackagePanel'
 import { PackageListPanel } from './PackageListPanel'
 import { PlanMetricsPanel } from './PlanMetricsPanel'
 import { SlicePanel } from '../overlays/SlicePanel'
@@ -26,6 +26,8 @@ type InspectorProps = {
   issues: readonly ConstraintIssue[]
   /** Vắng khi người xem không được chỉnh phương án (D-41) hoặc chuyến đã khoá: ẩn nút Chỉnh sửa. */
   onEdit?: () => void; onFocus: () => void; onSelect: (p: ScenePlacement) => void
+  /** Ghim / bỏ ghim kiện đang chọn ở chế độ Xem (Planner bản máy chủ); vắng thì thẻ kiện không có nút ghim. */
+  pin?: PinAction
   tab: InspectorTab | null; onTab: (tab: InspectorTab) => void; onClose: () => void
 }
 
@@ -43,7 +45,7 @@ export function SceneInspector(props: InspectorProps) {
   </>
 }
 
-function FloatingColumn({ state, operations, tripId, issues, onEdit, onFocus, onSelect, onTab }: InspectorProps) {
+function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocus, onSelect, onTab }: InspectorProps) {
   const selected = state.selected
   const editBlocker = onEdit ? (p: ScenePlacement) => { state.select(p.id); onEdit() } : undefined
   return <div className={cn('pointer-events-none absolute top-3 right-3 bottom-16 z-10 hidden w-83 flex-col gap-3 xl:flex', DARK_SCOPE)}>
@@ -52,14 +54,14 @@ function FloatingColumn({ state, operations, tripId, issues, onEdit, onFocus, on
       <SelectedPackagePanel className={cn('pointer-events-auto', GLASS_PANEL)} placement={selected} placements={state.placements}
         totalSteps={state.totalSteps} stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues}
         orientationRules={selected ? state.sceneModel.orientationRulesById.get(selected.id) : undefined}
-        onPick={() => onTab('package')} onEdit={onEdit} onFocus={onFocus} />
+        onPick={() => onTab('package')} onEdit={onEdit} pin={pin} onFocus={onFocus} />
     ) : (
       <div className="pointer-events-auto flex min-h-0"><UnloadingPanel state={state} operations={operations} onSelect={onSelect} onEdit={editBlocker} /></div>
     )}
   </div>
 }
 
-function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, onFocus, onSelect, tab, onTab, onClose }: InspectorProps) {
+function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, pin, onFocus, onSelect, tab, onTab, onClose }: InspectorProps) {
   const t = useT()
   const metrics = state.sceneModel.metrics
   const tabs: { value: InspectorTab; label: string }[] = [
@@ -95,7 +97,7 @@ function InspectorDialog({ state, operations, tripId, colorContext, issues, onEd
             <SelectedPackagePanel placement={state.selected} placements={state.placements} totalSteps={state.totalSteps}
               orientationRules={state.selected ? state.sceneModel.orientationRulesById.get(state.selected.id) : undefined}
               stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues} onClose={() => state.select(null)}
-              onEdit={onEdit ? () => { onClose(); onEdit() } : undefined} onFocus={() => { onClose(); onFocus() }} />
+              onEdit={onEdit ? () => { onClose(); onEdit() } : undefined} pin={pin} onFocus={() => { onClose(); onFocus() }} />
           </> : null}
           {tab === 'display' ? <div className="flex flex-col gap-3 p-4 text-body-lg xl:text-body">
             <h2 className="font-display font-[650] text-sky-text">{t('viewer.inspector.layers')}</h2>

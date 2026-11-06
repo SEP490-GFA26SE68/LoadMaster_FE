@@ -11,7 +11,7 @@ import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { MY_TRIP_GROUPS } from './my-trips'
 import { MyTripCard } from './MyTripCard'
-import { useMyTripsQuery } from './useDriverQueries'
+import { useDriverCapabilities, useMyTripsQuery } from './useDriverQueries'
 
 /**
  * "Chuyến của tôi" `/tai-xe` (LM-087, D-46) — màn chính của tài xế: chuyến gán cho mình (từ FE-0-01 chỉ tài xế mở được) chia nhóm theo
@@ -23,6 +23,7 @@ import { useMyTripsQuery } from './useDriverQueries'
 export function MyTripsPage() {
   const t = useT()
   const format = useFormat()
+  const caps = useDriverCapabilities()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
       {/* Dải trời với điều khiển đặc 56 px (V2.3 đợt 6): dưới 480 px tiêu đề xuống hàng riêng */}
@@ -32,7 +33,8 @@ export function MyTripsPage() {
         trailing={
           <>
             <LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />
-            <NotificationBell variant="touch" tone="sky" />
+            {/* Backend chưa có thông báo cho tài xế: không có chuông (D-20) */}
+            {caps.notifications ? <NotificationBell variant="touch" tone="sky" /> : null}
             <AccountMenu tone="sky" />
           </>
         }
@@ -51,6 +53,7 @@ export function MyTripsPage() {
 
 function TripGroups() {
   const t = useT()
+  const caps = useDriverCapabilities()
   const query = useMyTripsQuery()
   if (query.isPending) {
     return <div role="status" aria-label={t('driver.loading')} className="grid h-full place-items-center"><Spinner /></div>
@@ -72,7 +75,12 @@ function TripGroups() {
   if (MY_TRIP_GROUPS.every((group) => trips[group].length === 0)) {
     return (
       <Card>
-        <EmptyState mascot="driverWaiting" className="[&_span]:text-body-lg" title={t('driver.list.emptyTitle')} description={t('driver.list.emptyDescription')} />
+        <EmptyState
+          mascot="driverWaiting"
+          className="[&_span]:text-body-lg"
+          title={t('driver.list.emptyTitle')}
+          description={t(caps.upcomingTrips ? 'driver.list.emptyDescription' : 'driver.list.emptyDescriptionInTransit')}
+        />
       </Card>
     )
   }

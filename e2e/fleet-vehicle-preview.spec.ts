@@ -25,7 +25,7 @@ async function startFitCounter(page: Page) {
     // Canvas có thể vừa được dựng lại: chờ đúng root của canvas đang có mặt, đừng tin cái đã đọc trước đó
     const store = await new Promise<NonNullable<ReturnType<R3FModule['_roots']['get']>>['store']>((resolve) => {
       const wait = () => {
-        const canvas = document.querySelector('canvas')
+        const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')
         const root = canvas ? _roots.get(canvas) : undefined
         if (root) resolve(root.store); else requestAnimationFrame(wait)
       }
@@ -51,7 +51,7 @@ const fitCount = (page: Page) => page.evaluate(() => (window as unknown as FitCo
 function obstacleColor(page: Page, index: number) {
   return page.evaluate(async ({ url, index }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const s = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    const s = _roots.get(document.querySelector('canvas:not(.maplibregl-canvas)')!)!.store.getState()
     const mesh = s.scene.getObjectByName('obstacle-body') as InstancedMesh<BufferGeometry, MeshStandardMaterial>
     // Mượn một `Color` từ vật liệu để không phải nạp riêng module three
     const color = mesh.material.color.clone()
@@ -62,10 +62,10 @@ function obstacleColor(page: Page, index: number) {
 
 async function openPreview(page: Page, login: (route: string) => Promise<void>, route = ROUTE) {
   await login(route)
-  await expect(page.locator('canvas')).toBeVisible()
+  await expect(page.locator('canvas:not(.maplibregl-canvas)')).toBeVisible()
   await page.waitForFunction(async (url) => {
     const { _roots } = (await import(url)) as R3FModule
-    const canvas = document.querySelector('canvas')
+    const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')
     return Boolean(canvas && _roots.get(canvas)?.store.getState().controls)
   }, R3F_DEPS)
   await waitCameraSettled(page)
@@ -82,7 +82,7 @@ test('the fleet list does not request the Three.js chunk; opening a vehicle does
 
   // Đối chứng: cùng bộ lọc bắt được chunk khi mở form xe, nên kết quả rỗng ở trên không phải do lọc sai
   await page.getByText('Hyundai HD210 · 60C-446.32').click()
-  await expect(page.locator('canvas')).toBeVisible()
+  await expect(page.locator('canvas:not(.maplibregl-canvas)')).toBeVisible()
   expect(requests.some((url) => THREE_REQUEST.test(url))).toBe(true)
   expect(browserErrors).toEqual([])
 })

@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT } from '@/lib/i18n'
 import { plannerPath } from '@/lib/planner-path'
+import { BackendRunComparisonPage } from './BackendRunComparisonPage'
 import { CandidateComparison } from './CandidateComparison'
 import { ComparisonMatrix } from './ComparisonMatrix'
 import { Highlight } from './ComparisonRows'
 import { PlanCompareEmpty } from './PlanCompareEmpty'
 import { PlanCompareHero } from './PlanCompareHero'
 import { bestValues, defaultRevisionId, revisionCards, type RevisionCardModel } from './revision-comparison'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 import { useRunComparisonQuery } from './usePlanCompareQuery'
 import { useTripDetailQuery, useTripRevisionsQuery } from './useTripsQuery'
 
@@ -20,9 +22,14 @@ const RUN_PARAM = 'lan-chay'
 /**
  * So sánh phương án `/chuyen/:tripId/so-sanh`. Có `?lan-chay=<mã lần chạy>` (FE-5b-06, D-77) thì là ba phương án ứng viên của lần chạy
  * đó — mức hạn các điểm một lần phía trên, ba thẻ A · B · C (`CandidateComparison`); màn Thiết lập tối ưu mở thẳng vào đây khi chạy xong.
- * Không có thì là các revision đã lưu của chuyến như D-37 (`RevisionComparison`).
+ * Không có thì là các revision đã lưu của chuyến như D-37 (`RevisionComparison`). Nhóm `trips` nối backend thì là các phương án của
+ * máy chủ (`BackendRunComparisonPage`).
  */
 export function PlanComparisonPage() {
+  return TRIPS_CAPABILITIES.backend ? <BackendRunComparisonPage /> : <StorePlanComparisonPage />
+}
+
+function StorePlanComparisonPage() {
   const { tripId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const runId = searchParams.get(RUN_PARAM)

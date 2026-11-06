@@ -63,7 +63,7 @@ export function tripRow(
     packageCount: expandPackages(trip.packages).instances.length,
     stopCount: trip.stops.length,
     volumePercent: shown ? shown.result.metrics.volumeUtilizationPercent : null,
-    hasActiveRoutePlan: false,
+    hasActiveRoutePlan: trip.routePlan !== undefined,
     status: tripStatus(trip),
     sub: tripSubStatus(trip, revisions),
     extraSub: tripRouteSubStatus(trip) ?? tripManualSubStatus(trip),

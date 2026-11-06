@@ -1,7 +1,15 @@
 import type { Dictionary } from '../types'
 import type { platform as source } from '../vi/platform'
+import { companyAdmins } from './platform-company-admins'
+import { companyDetails } from './platform-company-details'
+import { subscriptionHistory } from './platform-subscription-history'
+import { trialRequests } from './platform-trial-requests'
 
 export const platform = {
+  companyAdmins,
+  companyDetails,
+  subscriptionHistory,
+  trialRequests,
   title: 'Subscription plans',
   count: { one: '{count} plan', other: '{count} plans' },
   loading: 'Loading plans',
@@ -24,6 +32,8 @@ export const platform = {
   edit: 'Edit',
   delete: 'Delete',
   inUse: { one: '{count} company is still on it — stop selling it instead of deleting', other: '{count} companies are still on it — stop selling it instead of deleting' },
+  inUseLocked: { one: '{count} company is still on it, so it cannot be deleted yet', other: '{count} companies are still on it, so it cannot be deleted yet' },
+  allTiersTaken: 'Every tier already has a plan. Edit an existing plan, or delete one no company uses to add another.',
   saleOn: 'Plan {name} is now on sale',
   saleOff: 'Plan {name} is no longer on sale',
   created: 'Plan {name} added',
@@ -46,6 +56,7 @@ export const platform = {
     price: 'Price per month',
     credits: 'Credits per month',
     unlimited: 'Unlimited credits',
+    unlimitedByTier: 'The Ultimate tier always has unlimited credits.',
     onSale: 'Put on sale now',
     onSaleHint: 'Each tier has only one plan on sale.',
     renewalNote: 'The new price and credits apply from each company’s next renewal. The current period stays as it is.',
@@ -55,6 +66,7 @@ export const platform = {
       tier: 'Choose the tier of the plan.',
       price: 'The price is a whole number of dong, 0 or more.',
       credits: 'Credits per month is a whole number above 0, or choose unlimited.',
+      creditsPositive: 'Credits per month is a whole number above 0.',
     },
     cancel: 'Cancel',
     create: 'Add plan',

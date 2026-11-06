@@ -1,9 +1,18 @@
+import { companyAdmins } from './platform-company-admins'
+import { companyDetails } from './platform-company-details'
+import { subscriptionHistory } from './platform-subscription-history'
+import { trialRequests } from './platform-trial-requests'
+
 /**
  * Danh mục gói cước `/nen-tang/goi` (FE-8-02, D-90): màn của quản lý nền tảng — liệt kê, thêm, sửa, bật / tắt bán và xoá gói. Nhãn hạng
  * gói, "Giá trị tạm", "Không giới hạn" dùng chung với màn gói cước của công ty nên nằm ở `common`; tên thuật toán của gói ở
  * `optimization.credit.tiers`.
  */
 export const platform = {
+  companyAdmins,
+  companyDetails,
+  subscriptionHistory,
+  trialRequests,
   title: 'Gói cước',
   count: { one: '{count} gói', other: '{count} gói' },
   loading: 'Đang tải gói cước',
@@ -26,6 +35,9 @@ export const platform = {
   edit: 'Sửa',
   delete: 'Xoá',
   inUse: { one: 'Còn {count} công ty đang dùng, ngừng bán thay vì xoá', other: 'Còn {count} công ty đang dùng, ngừng bán thay vì xoá' },
+  /** Nối backend: không có công tắc bán. */
+  inUseLocked: { one: 'Còn {count} công ty đang dùng nên chưa xoá được', other: 'Còn {count} công ty đang dùng nên chưa xoá được' },
+  allTiersTaken: 'Hạng nào cũng đã có gói. Sửa gói đang có, hoặc xoá gói không còn công ty dùng để thêm gói khác.',
   saleOn: 'Đã mở bán gói {name}',
   saleOff: 'Đã ngừng bán gói {name}',
   created: 'Đã thêm gói {name}',
@@ -48,6 +60,7 @@ export const platform = {
     price: 'Giá mỗi tháng',
     credits: 'Credit mỗi tháng',
     unlimited: 'Không giới hạn credit',
+    unlimitedByTier: 'Hạng Ultimate luôn không giới hạn credit.',
     onSale: 'Mở bán ngay',
     onSaleHint: 'Mỗi hạng chỉ có một gói đang bán.',
     renewalNote: 'Giá và credit mới áp dụng từ kỳ gia hạn kế tiếp của từng công ty. Kỳ đang chạy giữ nguyên.',
@@ -57,6 +70,7 @@ export const platform = {
       tier: 'Chọn hạng của gói.',
       price: 'Giá là số nguyên đồng, từ 0 trở lên.',
       credits: 'Credit mỗi tháng là số nguyên lớn hơn 0, hoặc chọn không giới hạn.',
+      creditsPositive: 'Credit mỗi tháng là số nguyên lớn hơn 0.',
     },
     cancel: 'Huỷ',
     create: 'Thêm gói',

@@ -6,13 +6,22 @@ import {
   completeStop,
   confirmUnloadByQr,
   confirmUnloadManually,
+  DRIVER_CAPABILITIES,
+  fetchDriverStopScreen,
   fetchDriverTripLabels,
+  fetchDriverTripMonitoring,
   fetchDriverTrip,
   fetchMyTrips,
   reportDeliveryIssue,
   startDelivery,
+  type DriverCapabilities,
   type UnloadVerifyInput,
 } from './driver-api'
+
+/** Màn tài xế làm được gì với nguồn dữ liệu đang dùng (kho mẫu hay backend): component đọc ở đây để ẩn phần chưa có (D-20). */
+export function useDriverCapabilities(): DriverCapabilities {
+  return DRIVER_CAPABILITIES
+}
 
 /**
  * Dữ liệu màn tài xế qua TanStack Query — component không gọi `driver-api.ts` trực tiếp (mục 9). Khoá nằm dưới `['trips']` nên mọi
@@ -30,6 +39,26 @@ function tripKey(tripId: string) {
 
 export function useDriverTripQuery(tripId: string) {
   return useQuery({ queryKey: tripKey(tripId), queryFn: () => fetchDriverTrip(tripId), staleTime: 0 })
+}
+
+/** Màn điểm giao theo backend: dưới `['trips']` nên mỗi lần dỡ, hoàn tất điểm (`refreshAfterWrite`) đọc lại điểm đang giao. */
+export function useDriverStopScreenQuery(tripId: string) {
+  return useQuery({ queryKey: [...tripKey(tripId), 'stop-screen'], queryFn: () => fetchDriverStopScreen(tripId), staleTime: 0 })
+}
+
+/**
+ * Vị trí xe và giờ đến dự kiến trực tiếp của chuyến Đang vận chuyển (FE-6-09). Đọc lại theo `refreshMs` kho trả — lúc có điểm vị trí kế
+ * tiếp; chuyến hết chạy thì `refreshMs` là `null`, hết nhịp. `enabled` tắt khi màn không cần (chưa xuất phát, chưa có tuyến, đã đến điểm):
+ * không có hẹn giờ riêng, gỡ màn là hết nhịp.
+ */
+export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...tripKey(tripId), 'monitoring'],
+    queryFn: () => fetchDriverTripMonitoring(tripId),
+    enabled,
+    staleTime: 0,
+    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
+  })
 }
 
 /** Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). */
@@ -66,7 +95,8 @@ export function useCompleteStopMutation(tripId: string) {
 export function useDriverTripLabelsQuery(tripId: string) {
   // Ngoài khoá `['trips']`: nhãn không đổi khi đang giao (chuyến đã khoá), mỗi lần ghi dỡ không phải đọc lại — và lượt ghi không phải
   // chờ lần đọc lại đó trước khi xong
-  return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' })
+  // Backend chưa có nhãn của chuyến cho tài xế: chỉ kho mẫu đọc
+  return useQuery({ queryKey: ['driver', 'labels', tripId], queryFn: () => fetchDriverTripLabels(tripId), enabled: tripId !== '' && !DRIVER_CAPABILITIES.backend })
 }
 
 /** Đối chiếu bằng nhãn (quét hoặc gõ mã) để ghi dỡ một kiện ở điểm `stopNumber` (điểm hiện tại). Trả mã instance vừa ghi. */

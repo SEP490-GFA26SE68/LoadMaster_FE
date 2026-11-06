@@ -9,6 +9,7 @@ export const lookup = {
   scanDescription: 'Hold the label on the package in the frame, or type the code printed under the QR image.',
   codeLabel: 'QR code or sender package code',
   codePlaceholder: 'E.g. LM-7K3F-9XQ2-M4TD or HK-DNG-2609-01',
+  codePlaceholderBackend: 'E.g. the code under the QR image, or HK-DNG-2609-01',
   codeHint: 'Type the whole code as printed on the label; case does not matter.',
   codeRequired: 'Enter a code before looking it up.',
   submit: 'Look up',

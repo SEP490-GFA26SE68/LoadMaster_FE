@@ -9,7 +9,7 @@ const selectedPanel = (page: Page) => page.getByRole('complementary', { name: 'K
 /** Lượt đầu vào route qua form đăng nhập (app quay lại đúng route), các lượt sau điều hướng thẳng. */
 async function openViewer(page: Page, route: string, login?: (route: string) => Promise<void>) {
   await (login ? login(route) : page.goto(route))
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await waitIdle(page)
 }
 
@@ -115,7 +115,7 @@ test('explicit quality tiers are honoured, including under reduced motion', asyn
 test('benchmark fixture requires debug; warehouse camera, next step and driver 2D route still work', async ({ page, login, browserErrors }, testInfo) => {
   // Mỗi màn do vai trò của nó mở (FE-0-01); mỗi lượt là một lần tải trang — kho mới — nên đổi vai trò bằng cách bỏ phiên của tab
   await login(`${PLANNER_ROUTE}?packages=1000`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   expect(await page.locator('[data-viewer-performance]').count()).toBe(0)
   expect(await page.locator('header').innerText()).toMatch(/132/)
 
@@ -128,7 +128,7 @@ test('benchmark fixture requires debug; warehouse camera, next step and driver 2
   }, { db: MOCK_DB, tripId: 'TRIP-2026-0914' })
   await stageInStore(page, 'TRIP-2026-0914')
   await navigateInApp(page, '/kho?chuyen=TRIP-2026-0914')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('combobox', { name: 'Góc nhìn thùng xe', exact: true }).selectOption('cua-sau')
   await page.waitForTimeout(1000)
   await attachScreenshot(page, testInfo, 'warehouse')
@@ -146,6 +146,6 @@ test('benchmark fixture requires debug; warehouse camera, next step and driver 2
   await page.evaluate(() => sessionStorage.clear())
   await login('/tai-xe/diem-giao?chuyen=TRIP-010', 'driver')
   await page.getByRole('button', { name: 'Xuất phát', exact: true }).waitFor()
-  expect(await page.locator('canvas').count()).toBe(0)
+  expect(await page.locator('canvas:not(.maplibregl-canvas)').count()).toBe(0)
   expect(browserErrors).toStrictEqual([])
 })

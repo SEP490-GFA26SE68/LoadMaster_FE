@@ -15,7 +15,16 @@ export {
   type RouteStopInput,
   type RouteStopResult,
 } from './eta'
+export {
+  GUIDANCE_PASSED_METERS,
+  nextGuidance,
+  parseGuidanceSteps,
+  remainingTo,
+  type GuidanceStep,
+  type NextGuidance,
+} from './guidance'
 export { EARTH_RADIUS_KM, haversineKm, type GeoPoint } from './haversine'
+export { decodePolyline, encodePolyline, pathFromEncodedPolylines } from './polyline'
 export { REROUTE_CONSTANTS, REROUTE_ROUTES, rerouteOptions, type RerouteOption, type RerouteRoute } from './reroute'
 export {
   delaysAfterReroute,

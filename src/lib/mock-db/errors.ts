@@ -1,5 +1,6 @@
 import type { HandlingClass } from '@/domain/models'
 import type { Role } from '@/types/user'
+import type { ContactField } from './contact-model'
 import type { TripExceptionStatus } from './exception-model'
 import type { PackageFlag, PackageStatus } from './package-model'
 import type { PickupStatus } from './pickup-model'
@@ -30,6 +31,8 @@ export type MockDbCollection =
   | 'payments'
   // FE-8-07
   | 'supportTickets'
+  // Yêu cầu liên hệ của khách
+  | 'guestContacts'
 
 /**
  * Tham số theo từng mã lỗi của kho. Kho chỉ trả mã + tham số, không trả câu hiển thị: UI dịch mã theo ngôn ngữ (D-28).
@@ -247,6 +250,8 @@ export type MockDbErrorParams = {
   TICKET_INVALID: { field: string }
   /** Trả lời yêu cầu đã đóng: Hỗ trợ khách hàng mở lại (đổi trạng thái) trước. */
   TICKET_CLOSED: { ticketId: string }
+  /** Yêu cầu liên hệ của khách sai ở trường `field`: họ tên, email, loại yêu cầu bắt buộc; độ dài; gói quan tâm không có; trạng thái lạ; người nhận việc không phải người xử lý đang hoạt động. */
+  CONTACT_INVALID: { field: ContactField }
 
   // Sự cố cấp chuyến và tuyến thay thế (FE-6-11, FE-6-12)
   /** Sự cố sai ở trường `field`: loại lạ, thiếu mô tả, số phút chậm ngoài khoảng; gia hạn: yêu cầu giao không thuộc chuyến, hạn không đọc được. */

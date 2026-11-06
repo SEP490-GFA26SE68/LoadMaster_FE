@@ -76,7 +76,7 @@ test('one run reports the progress of three plans, saves them as three revisions
   // Mở phương án B trong Planner rồi duyệt: Duyệt tạo revision đã duyệt mới
   await page.getByRole('link', { name: 'Mở phương án B trong Planner', exact: true }).click()
   await page.waitForURL(`/chuyen/${TRIP_ID}/phuong-an?revision=REV-029`)
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await page.getByRole('button', { name: 'Duyệt phương án', exact: true }).click()
   await page.getByRole('dialog', { name: 'Duyệt phương án này?' }).getByRole('button', { name: 'Duyệt', exact: true }).click()
   await waitForOtherRevision(page, 'REV-029')

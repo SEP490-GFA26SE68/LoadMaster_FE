@@ -7,10 +7,12 @@ import { loadTrip } from '@/test/trip-flow'
 import { LOAD, renderDriver } from './driver-test-utils'
 import { GPS_SEND_INTERVAL_MS, locationInput } from './useDeviceLocation'
 
+// Bản đồ chỉ đường của màn điểm giao tự theo dõi vị trí: tách ra để chỉ đếm theo dõi của công tắc GPS.
+vi.mock('./DriverNavigation', () => ({ DriverNavigation: () => null }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 
 /**
- * "Dùng GPS thật" trên màn điểm giao (FE-6-13): `navigator.geolocation` giả, còn lại là kho dùng chung → `monitoring-api.ts` → hook →
+ * "Dùng GPS thật" trên màn điểm giao (FE-6-13): `navigator.geolocation` giả, còn lại là kho dùng chung → `driver-api.ts` → hook →
  * màn. Nhịp 30 giây không chờ thật: hàm của `setInterval` 30 giây được giữ lại và gọi tay.
  */
 const SWITCH = { name: 'Dùng GPS thật' }

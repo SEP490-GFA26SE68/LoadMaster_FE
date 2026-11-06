@@ -7,7 +7,8 @@ import { useCreditUsageText } from './useCreditUsageText'
 /**
  * Thẻ "Credit" ở cột phải Thiết lập tối ưu (FE-8-05): một lần chạy tốn bao nhiêu và còn bao nhiêu (số dư hiện tại), hạng thuật toán của
  * gói (Ultimate thêm "AI Optimizer — chưa có"). Bị chặn — hết credit, gói hết hạn — thì dòng credit mờ đi và lý do hiện ngay tại đây
- * (cũng nằm trên nút Tối ưu), không để bấm rồi mới báo lỗi. Mock chạy EP + DBLF cho mọi hạng nên thẻ nói rõ.
+ * (cũng nằm trên nút Tối ưu), không để bấm rồi mới báo lỗi. Mock chạy EP + DBLF cho mọi hạng nên thẻ nói rõ. Gói đã hết hạn mà nguồn
+ * không còn trả tên gói (`lapsed`, backend) vẫn nói số dư thay cho "chưa có gói".
  */
 export function SetupCreditPanel({ credit }: { credit: OptimizationCredit | undefined }) {
   const t = useT()
@@ -17,7 +18,7 @@ export function SetupCreditPanel({ credit }: { credit: OptimizationCredit | unde
     <Card role="region" aria-labelledby="setup-credit" className="px-4.5 py-4">
       <h2 id="setup-credit" className="font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{t('optimization.credit.title')}</h2>
       <p data-credit-usage className={cn('mt-2 text-body font-semibold tabular-nums', credit.block ? 'text-text-disabled' : 'text-ink-strong')}>
-        {credit.planName === null ? t('optimization.credit.noPlan') : usageText(credit)}
+        {credit.planName === null && credit.lapsed !== true ? t('optimization.credit.noPlan') : usageText(credit)}
       </p>
       {credit.block ? <p role="alert" className="mt-1 text-small font-semibold text-warning">{t(`optimization.credit.blocked.${credit.block}`)}</p> : null}
       {credit.planName !== null && credit.algorithmTier !== null ? (

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { postDriverLocation, setDriverGps } from '@/features/monitoring/monitoring-api'
+import { postDriverLocation, setDriverGps } from './driver-api'
 import type { DriverLocationInput } from '@/lib/mock-db'
 
 /** Nhịp gửi vị trí của điện thoại tài xế: 30 giây, bằng nhịp ghi vị trí của kho. */

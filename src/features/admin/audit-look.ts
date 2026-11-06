@@ -17,6 +17,7 @@ import {
   Wallet,
   Building2,
   LifeBuoy,
+  Mail,
   Coins,
   type LucideIcon,
 } from 'lucide-react'
@@ -44,6 +45,7 @@ const GROUP_ICON: Record<AuditGroup, LucideIcon> = {
   credit: Coins,
   company: Building2,
   ticket: LifeBuoy,
+  contact: Mail,
 }
 
 /**
@@ -137,6 +139,9 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'ticket.created': 'blue',
   'ticket.replied': 'blue',
   'ticket.statusChanged': 'green',
+  // Khách mới gửi là việc chờ người nhận; cập nhật là việc vận hành
+  'contact.received': 'amber',
+  'contact.updated': 'blue',
 }
 
 /** Icon (theo nhóm) và tint (theo nghĩa) của một mã hành động nhật ký. */
@@ -149,6 +154,6 @@ export function auditActionLook(action: AuditAction): { icon: LucideIcon; tone: 
  * Chuẩn hoá NFC trước để chữ có dấu rời vẫn là một ký tự.
  */
 export function actorInitials(fullName: string): string {
-  const words = fullName.normalize('NFC').trim().split(/\s+/).filter((word) => word !== '')
+  const words = fullName.normalize('NFC').trim().split(/\s+/).filter((word) => /^\p{L}/u.test(word))
   return words.slice(-2).map((word) => [...word][0] ?? '').join('').toLocaleUpperCase('vi')
 }

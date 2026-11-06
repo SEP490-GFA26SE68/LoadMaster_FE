@@ -3,10 +3,12 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { PackageFlagTag, PackageStatusBadge } from './package-look'
 import type { PackageLookup } from './package-pool-api'
+import { PACKAGE_POOL_SUPPORT } from './usePackagePoolQuery'
 
 /**
  * Nhiều kiện trùng mã của bên gửi (FE-3b-06): mỗi kiện một dòng bấm được — mã của kho, điểm đến, trạng thái, cờ và chuyến — để chọn
- * đúng kiện. Kho trả mới nhất trước. `touch`: dòng cao từ 56 px, chữ 16 px.
+ * đúng kiện. Kho trả mới nhất trước. `touch`: dòng cao từ 56 px, chữ 16 px. Nối backend thì chuyến ghi bằng tên (mã chuyến của backend
+ * là số).
  */
 export function PackageLookupList({ code, items, touch, onPick }: {
   code: string
@@ -39,7 +41,7 @@ export function PackageLookupList({ code, items, touch, onPick }: {
             >
               <span className="font-mono font-semibold text-ink-strong tabular-nums">{pkg.id}</span>
               <span className="min-w-40 flex-1 text-ink-1">{pkg.destination}</span>
-              {trip ? <span className="font-mono text-ink-2 tabular-nums">{trip.id}</span> : null}
+              {trip ? <span className="font-mono text-ink-2 tabular-nums">{PACKAGE_POOL_SUPPORT.numericIds ? trip.name : trip.id}</span> : null}
               <span className="flex flex-wrap items-center gap-2">
                 <PackageStatusBadge status={pkg.status} className={chip} />
                 {pkg.flags.map((flag) => <PackageFlagTag key={flag} flag={flag} className={touch ? 'h-8 px-2.5 text-body-lg' : undefined} />)}

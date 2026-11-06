@@ -8,6 +8,13 @@ export const profile = {
     email: 'Email',
     depot: 'Depot',
     note: 'Your email, role and depot are changed by an administrator.',
+    phone: 'Phone number',
+    serverNote: 'Your name, email and phone number belong to your account on the server. An administrator edits the name and phone number on the Users screen.',
+  },
+  account: {
+    title: 'Password',
+    description: 'Change your password with a code sent to the email of your account.',
+    changePassword: 'Change password',
   },
   details: {
     title: 'Personal details',

@@ -3,7 +3,8 @@ import { roundKg } from '@/domain/geometry'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
 import { tripSubStatusLabel } from '@/lib/trip-sub-status'
-import type { DashboardSummary } from './dashboard-summary'
+import { DASHBOARD_CAPABILITIES, type DashboardCapabilities } from './dashboard-capabilities'
+import type { DashboardSummary, DashboardTripView } from './dashboard-summary'
 
 /**
  * Nội dung báo cáo .xlsx của bảng điều khiển (LM-090, D-48): ba sheet Tổng quan, Chuyến, Theo xe dựng từ đúng
@@ -25,24 +26,47 @@ const TRIP_COLUMNS = [
   'id', 'name', 'date', 'vehicle', 'driver', 'status', 'statusDetail', 'packages', 'cargoWeight', 'volume', 'delivered', 'issues',
 ] as const
 
-const bold = (value: string): Cell => ({ value, fontWeight: 'bold' })
-const numberCell = (value: number | null, format: string): Cell => (value === null ? null : { value, format })
+type TripColumn = (typeof TRIP_COLUMNS)[number]
 
-export function reportSheets(summary: DashboardSummary, t: TFunction, format: Formatter, exportedAt: Date): ReportSheet[] {
+const TRIP_WIDTHS: Readonly<Record<TripColumn, number>> = {
+  id: 14, name: 42, date: 14, vehicle: 34, driver: 24, status: 16, statusDetail: 28, packages: 10, cargoWeight: 20, volume: 28,
+  delivered: 22, issues: 12,
+}
+
+/** Cột chỉ kho mẫu có (`DASHBOARD_CAPABILITIES.tripDetails`): máy chủ không trả thì sheet bỏ hẳn cột, không để ô trống. */
+const DETAIL_COLUMNS: ReadonlySet<TripColumn> = new Set(['statusDetail', 'packages', 'cargoWeight', 'delivered', 'issues'])
+
+const bold = (value: string): Cell => ({ value, fontWeight: 'bold' })
+const numberCell = (value: number | null | undefined, format: string): Cell => (value === null || value === undefined ? null : { value, format })
+const kgCell = (value: number | undefined): Cell => numberCell(value === undefined ? undefined : roundKg(value), KG)
+
+export function reportSheets(
+  summary: DashboardSummary,
+  t: TFunction,
+  format: Formatter,
+  exportedAt: Date,
+  capabilities: Pick<DashboardCapabilities, 'tripDetails' | 'allTrips'> = DASHBOARD_CAPABILITIES,
+): ReportSheet[] {
   const dateCell = (date: string): Cell => ({ value: new Date(`${date}T00:00:00.000Z`), format: t('manager.export.excelDateFormat') })
+  const columns = TRIP_COLUMNS.filter((key) => capabilities.tripDetails || !DETAIL_COLUMNS.has(key))
+  const cellOf = (row: DashboardTripView): Record<TripColumn, Cell> => ({
+    id: row.id, name: row.name, date: dateCell(row.scheduledDate), vehicle: row.vehicleName, driver: row.driverName,
+    status: t(`status.${row.status}`), statusDetail: row.sub ? tripSubStatusLabel(row.sub, t, format) : null,
+    packages: numberCell(row.packageCount, COUNT), cargoWeight: kgCell(row.cargoWeightKg), volume: numberCell(row.volumePercent, PERCENT),
+    delivered: kgCell(row.deliveredWeightKg), issues: numberCell(row.issueCount, COUNT),
+  })
   return [
     { sheet: t('manager.export.sheets.overview'), columns: [{ width: 32 }, { width: 24 }, { width: 10 }, { width: 70 }], data: overview(summary, t, format, exportedAt) },
     {
-      sheet: t('manager.export.sheets.trips'),
-      columns: [14, 42, 14, 34, 24, 16, 28, 10, 20, 28, 22, 12].map((width) => ({ width })),
+      // Máy chủ chỉ trả các chuyến gần nhất: sheet mang tên đó, không giả là đủ mọi chuyến của kỳ
+      sheet: t(capabilities.allTrips ? 'manager.export.sheets.trips' : 'manager.export.sheets.recentTrips'),
+      columns: columns.map((key) => ({ width: TRIP_WIDTHS[key] })),
       data: [
-        TRIP_COLUMNS.map((key) => bold(t(`manager.export.trips.${key}`))),
-        ...summary.trips.map((row): Row => [
-          row.id, row.name, dateCell(row.scheduledDate), row.vehicleName, row.driverName, t(`status.${row.status}`),
-          row.sub ? tripSubStatusLabel(row.sub, t, format) : null,
-          numberCell(row.packageCount, COUNT), numberCell(roundKg(row.cargoWeightKg), KG), numberCell(row.volumePercent, PERCENT),
-          numberCell(roundKg(row.deliveredWeightKg), KG), numberCell(row.issueCount, COUNT),
-        ]),
+        columns.map((key) => bold(t(`manager.export.trips.${key}`))),
+        ...summary.trips.map((row): Row => {
+          const cells = cellOf(row)
+          return columns.map((key) => cells[key])
+        }),
       ],
     },
     {

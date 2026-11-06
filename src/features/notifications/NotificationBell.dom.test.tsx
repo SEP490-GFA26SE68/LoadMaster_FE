@@ -91,12 +91,12 @@ test('the dispatcher sees what others did in the last seven days; opening one ma
     { text: ['Hoàn thành chuyến', 'Tuyến Biên Hoà – Thủ Đức – Bình Thạnh – Q.3 · TRIP-008'], at: '2026-09-11T06:50:30.000Z', unread: true, href: '/chuyen/TRIP-008' },
     { text: ['Xếp xong', 'Tuyến Biên Hoà – Thủ Đức – Bình Thạnh – Q.3 · TRIP-008'], at: '2026-09-11T01:50:30.000Z', unread: true, href: '/chuyen/TRIP-008' },
   ])
-  // Dòng thứ ba: người làm và chi tiết đúng như nhật ký ghi
+  // Dòng thứ ba: người làm và chi tiết đúng như nhật ký ghi — xếp xong nêu tài xế của chuyến (chuông của tài xế đọc tham số đó)
   expect(menuItems().map((item) => part(item, 'meta'))).toStrictEqual([
-    'Lê Văn Hải · Đã lên xe: 210 · Hỏng, bỏ lại kho: 0',
-    'Lê Văn Hải · Đã lên xe: 160 · Hỏng, bỏ lại kho: 0',
+    'Lê Văn Hải · Đã lên xe: 210 · Hỏng, bỏ lại kho: 0 · Tài xế: Phạm Quốc Dũng',
+    'Lê Văn Hải · Đã lên xe: 160 · Hỏng, bỏ lại kho: 0 · Tài xế: Ngô Văn Bảo',
     'Đặng Hoài Nam · Số điểm giao: 4 · Sự cố: 0',
-    'Đỗ Thị Hạnh · Đã lên xe: 400 · Hỏng, bỏ lại kho: 0',
+    'Đỗ Thị Hạnh · Đã lên xe: 400 · Hỏng, bỏ lại kho: 0 · Tài xế: Đặng Hoài Nam',
   ])
   expect(within(screen.getByRole('menu')).getByText('4 chưa đọc')).toBeInTheDocument()
   expect(screen.getByText('Sự kiện 7 ngày gần nhất, không gồm việc bạn làm.')).toBeInTheDocument()

@@ -11,7 +11,17 @@ export const driver = {
   toTrips: 'Về danh sách chuyến',
   cancelledTitle: 'Chuyến đã huỷ',
   cancelledDescription: 'Chuyến {tripId} đã huỷ: {reason}',
-  stale: 'Phương án đã duyệt này đã lỗi thời — xe hoặc kiện của chuyến đổi sau khi tối ưu. Hỏi điều phối viên trước khi dỡ.',
+  /**
+   * Chuyến ở Đã lập kế hoạch chưa hiện ở "Chuyến của tôi" (FE-6-01): màn chuyến chỉ nói lý do, không xem trước phương án còn có thể đổi.
+   * `replan`: chuyến đang xếp vừa quay về Đã lập kế hoạch (FE-6-02, FE-6-05), theo lý do kho ghi — tới khi kho soạn lại hàng.
+   */
+  planningTitle: 'Kho chưa soạn hàng chuyến này',
+  planningDescription: 'Chuyến {tripId} còn đang lập kế hoạch. Khi kho bắt đầu soạn hàng, chuyến hiện ở "Chuyến của tôi".',
+  replan: {
+    title: 'Chuyến tạm dừng',
+    DAMAGED: 'Kho báo một kiện của chuyến {tripId} bị hỏng lúc xếp nên chuyến quay về lập kế hoạch. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+    SHORTAGE: 'Kho không tìm thấy một kiện của chuyến {tripId} lúc soạn hàng, điều phối đã bỏ kiện đó khỏi chuyến. Điều phối lập lại phương án rồi kho soạn lại hàng; khi đó chuyến hiện lại ở "Chuyến của tôi".',
+  },
   exit: 'Thoát màn hình tài xế',
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
@@ -41,6 +51,8 @@ export const driver = {
     stopsLabel: 'Các điểm của chuyến {tripId}',
     emptyTitle: 'Chưa có chuyến nào',
     emptyDescription: 'Chuyến điều phối viên giao cho bạn sẽ hiện ở đây.',
+    /** Dữ liệu từ backend: backend chỉ trả chuyến đang vận chuyển. */
+    emptyDescriptionInTransit: 'Chuyến đang xếp hàng và đang vận chuyển của bạn sẽ hiện ở đây.',
   },
   notice: {
     preview: 'Kho chưa xếp xong chuyến này: bạn xem trước được, chưa xuất phát được.',
@@ -48,6 +60,7 @@ export const driver = {
     /** Đang vận chuyển (FE-6-06): chưa bấm "Đã đến" ở điểm đang giao, và giờ đã đến. */
     enRoute: 'Đang tới điểm {number}. Đến nơi thì bấm Đã đến rồi mới dỡ hàng.',
     arrived: 'Đã đến điểm {number} lúc {time}.',
+    arrivedEarlier: 'Đã báo đến điểm {number}.',
     leftOut: {
       one: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
       other: '{count} kiện của điểm này hỏng lúc xếp, đã bỏ lại kho: không có trên xe, không cần dỡ.',
@@ -67,6 +80,15 @@ export const driver = {
       unsupported: 'Thiết bị này không có định vị: vị trí xe là mô phỏng.',
       error: 'Không gửi được vị trí: vị trí xe về mô phỏng. {message}',
     },
+    /** Dữ liệu từ backend: không có xe mô phỏng — tắt GPS là thôi gửi vị trí. */
+    serverNote: 'Bật để gửi vị trí của điện thoại lên máy chủ cho chuyến này.',
+    stoppedServer: {
+      user: 'Đã tắt GPS thật: không gửi vị trí nữa.',
+      denied: 'Trình duyệt không cho dùng vị trí: chưa gửi được vị trí. Cấp quyền vị trí cho trang rồi bật lại.',
+      lost: 'Mất tín hiệu GPS: đã thôi gửi vị trí. Bật lại khi có tín hiệu.',
+      unsupported: 'Thiết bị này không có định vị: không gửi được vị trí.',
+      error: 'Không gửi được vị trí: đã thôi gửi. {message}',
+    },
   },
   start: 'Xuất phát',
   arrive: 'Đã đến điểm {number}',
@@ -76,6 +98,32 @@ export const driver = {
   directionsLabel: 'Chỉ đường',
   directions: 'Chỉ đường tới {name}',
   call: 'Gọi {name}',
+  /** Chỉ đường trong app (Goong), không mở Google Maps. */
+  guidance: {
+    title: 'Chỉ đường',
+    map: 'Tuyến tới {name}',
+    version: 'Tuyến phiên bản {version}',
+    next: 'Còn {distance} · {instruction}',
+    arrived: 'Đã đến điểm',
+    fallback: 'Đi tới {name}',
+    meters: '{count} m',
+    km: '{count} km',
+    maneuvers: {
+      'turn-right': 'Rẽ phải',
+      'turn-left': 'Rẽ trái',
+      straight: 'Đi thẳng',
+      'uturn-right': 'Quay đầu',
+      'uturn-left': 'Quay đầu',
+      arrive: 'Đến nơi',
+      'ramp-right': 'Vào đường nhánh bên phải',
+      'ramp-left': 'Vào đường nhánh bên trái',
+      'merge': 'Nhập làn',
+      'fork-right': 'Rẽ nhánh phải',
+      'fork-left': 'Rẽ nhánh trái',
+      'roundabout-right': 'Vào vòng xuyến',
+      'roundabout-left': 'Vào vòng xuyến',
+    },
+  },
   contact: '{name} · {phone}',
   summary: 'Cần dỡ {total} kiện · Đã dỡ {done} · Sự cố {issues}',
   progress: 'Tiến độ dỡ hàng',
@@ -84,6 +132,36 @@ export const driver = {
   remaining: { one: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố', other: 'Còn {count} kiện chưa dỡ hoặc chưa báo sự cố' },
   allHandled: 'Mọi kiện của điểm này đã dỡ hoặc đã báo sự cố.',
   complete: 'Hoàn tất điểm giao',
+  /** Hộp hỏi lại trước khi hoàn tất điểm giao hoặc điểm nhận: số kiện lấy từ tiến độ của điểm trên màn. */
+  completeConfirm: {
+    title: 'Hoàn tất điểm {number} — {name}?',
+    description: 'Hoàn tất rồi thì không mở lại được điểm này.',
+    delivered: { one: '{count} kiện đã dỡ được ghi Đã giao.', other: '{count} kiện đã dỡ được ghi Đã giao.' },
+    returned: { one: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:', other: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:' },
+    issues: { one: 'Đã báo sự cố cho {count} kiện ở điểm này.', other: 'Đã báo sự cố cho {count} kiện ở điểm này.' },
+    picked: { one: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.', other: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.' },
+    next: 'Tiếp theo: điểm {number} · {name}.',
+    /** Backend chỉ trả tên của điểm đang giao. */
+    nextNumber: 'Tiếp theo: điểm {number}.',
+    last: 'Đây là điểm cuối: hoàn tất là giao xong chuyến.',
+    confirm: 'Hoàn tất',
+    cancel: 'Quay lại',
+  },
+  /**
+   * Giờ đến và hạn giao (FE-6-09): ở thẻ liên hệ của điểm đang giao và ở dòng từng điểm của hai danh sách điểm ("Chuyến của tôi", danh sách
+   * điểm ở màn điểm giao) — dự kiến theo vị trí xe hoặc theo tuyến, giờ đến thật, hạn.
+   */
+  timing: {
+    expected: 'Dự kiến đến',
+    /** Nhãn ngắn trước giờ ở dòng của một điểm trong danh sách điểm: "Dự kiến 08:15". */
+    expectedShort: 'Dự kiến',
+    arrived: 'Đã đến',
+    deadline: 'Hạn giao',
+    noDeadline: 'Không có hạn',
+    /** Giờ kèm ngày khi không phải hôm nay. */
+    dated: '{time} · {date}',
+    sources: { PLAN: 'Theo kế hoạch tuyến', SIMULATED: 'Theo vị trí xe mô phỏng', GPS: 'Theo vị trí GPS của xe' },
+  },
   item: {
     order: 'Dỡ thứ {order}',
     where: '{area}, {layer}',
@@ -209,5 +287,31 @@ export const driver = {
     selected: '{id} · Điểm {stop} · {orientation}',
     backToCurrent: 'Quay lại kiện cần dỡ',
     skipStep: 'Bỏ qua bước trong mô phỏng',
+  },
+  /**
+   * Màn điểm giao khi dữ liệu từ backend (`BackendDriverStop`): điểm đang giao luôn dỡ được (backend chưa có bước "Đã đến"), dỡ bằng mã
+   * gõ trên nhãn, không có sự cố theo kiện — và vì sao không mở được chuyến.
+   */
+  backend: {
+    notInTransitTitle: 'Chuyến không đang vận chuyển',
+    notInTransitDescription: 'Chuyến này không có trong các chuyến đang vận chuyển của bạn.',
+    noStopsTitle: 'Không còn điểm nào cần giao',
+    noStopsDescription: 'Chuyến {tripId} không còn điểm giao nào chờ giao.',
+    completedTitle: 'Đã giao xong chuyến',
+    completedDescription: 'Chuyến {tripId}: mọi điểm giao đã hoàn tất.',
+    scanDescription: 'Quét nhãn QR của từng kiện khi đưa xuống xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã dỡ {done} / {total} kiện.',
+    /** Ô gõ mã của hộp đối chiếu: backend chưa trả mã QR và mã của bên gửi cho tài xế, nên chỉ nhận mã đứng đầu dòng kiện và mã của kho kiện. */
+    codeLabel: 'Mã kiện',
+    codeHint: 'Mã QR in dưới hình, mã đứng đầu dòng kiện trên màn này, hoặc mã của kho kiện in ở góc trên nhãn. Chữ hoa hay thường đều được.',
+    summary: 'Cần dỡ {total} kiện · Đã dỡ {done}',
+    remaining: { one: 'Còn {count} kiện chưa dỡ', other: 'Còn {count} kiện chưa dỡ' },
+    allUnloaded: 'Đã dỡ mọi kiện của điểm này.',
+    codeUnmatched: 'Mã {code} không khớp kiện nào của điểm này. Chưa ghi gì — kiểm tra lại mã trên nhãn.',
+    codeAmbiguous: 'Mã {code} trùng {count} kiện của điểm này. Chưa ghi gì — gõ mã đứng đầu dòng kiện.',
+    alreadyUnloaded: 'Kiện {code} đã được ghi dỡ trước đó.',
+    wrongStop: 'Kiện {code} không thuộc điểm đang giao. Chưa ghi gì — để kiện lại trên xe.',
+    /** Thẻ chuyến Đang xếp hàng mà kho chưa xếp xong: nút Xuất phát mờ, lý do ngay trên nút. */
+    departNote: 'Kho chưa xếp xong — xuất phát được khi kho hoàn tất xếp hàng.',
+    depart: 'Xuất phát',
   },
 } as const

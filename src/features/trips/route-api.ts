@@ -3,7 +3,14 @@
  *   optimizeTripRoute → POST /api/trips/{id}/optimize-route
  *   getTripEta        → GET /api/trips/{id}/eta
  */
+import { ApiError } from '@/lib/api-client'
+import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, type Trip, type TripEta } from '@/lib/mock-db'
+
+const ON_BACKEND = usesBackend('trips')
+
+/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
+const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /**
  * Tối ưu tuyến của chuyến (FE-4b-09, D-76). Chưa có backend: kho chạy mock `@/domain/routing` — kết quả là MOCK RESULT, không tốn
@@ -14,6 +21,7 @@ import { getMockDb, type Trip, type TripEta } from '@/lib/mock-db'
 /** Xếp thứ tự điểm giao, tính giờ đến dự kiến và mức hạn; chuyến Nháp thành Đã lập kế hoạch. Thiếu toạ độ: `MISSING_STOP_COORDINATES`. */
 // POST /api/trips/{id}/optimize-route
 export function optimizeTripRoute(tripId: string): Promise<Trip> {
+  if (ON_BACKEND) return unsupported()
   return getMockDb().optimizeTripRoute(tripId)
 }
 

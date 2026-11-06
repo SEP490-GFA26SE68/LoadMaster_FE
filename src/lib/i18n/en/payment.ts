@@ -35,4 +35,17 @@ export const payment = {
     FAILED: 'The payment did not go through, the balance is unchanged',
     CANCELLED: 'Payment cancelled, the balance is unchanged',
   },
+  server: {
+    title: 'Confirm payment',
+    loading: 'Confirming with the server',
+    notice: 'The server uses a test payment gateway: there is no real gateway and no money is taken.',
+    purposes: { SUBSCRIBE: 'Subscribe to a plan', TOPUP: 'Credit top-up' },
+    hint: 'Confirm so the server records a successful payment: the plan is activated or the credits are added, exactly once. The result is read back from the server.',
+    confirm: 'Confirm payment',
+    cancel: 'Cancel',
+    cancelled: 'Not paid — the plan and balance are unchanged',
+    notConfirmed: 'The server has not recorded this payment (gateway code {code}). The plan and balance are unchanged.',
+    retry: 'Try again',
+    notFound: 'The link is missing the transaction code or the payment type.',
+  },
 } satisfies Dictionary<typeof source>

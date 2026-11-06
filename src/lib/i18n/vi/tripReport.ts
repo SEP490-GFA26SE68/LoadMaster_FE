@@ -71,9 +71,6 @@ export const tripReport = {
     /** Chuyến chưa tối ưu tuyến: không có giờ đến dự kiến. */
     noEta: 'Chưa có',
     noDeadline: 'Không có hạn',
-    /** Giờ đến thật so với hạn giao của điểm. */
-    onTime: 'Đến kịp hạn',
-    late: 'Đến trễ hạn',
   },
   /** Số kiện theo cách đối chiếu có hiệu lực ở từng bước (FE-6-03). */
   verify: {

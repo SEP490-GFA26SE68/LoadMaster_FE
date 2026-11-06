@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { Navigate, useSearchParams } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
+import { BackendDriverStop } from './BackendDriverStop'
 import { DeliveryStopView } from './DeliveryStopView'
 import { DriverNotice } from './DriverNotice'
 import { TripSummary } from './TripSummary'
-import { useDriverTripQuery } from './useDriverQueries'
+import { useDriverCapabilities, useDriverTripQuery } from './useDriverQueries'
 
 /**
  * Một chuyến của tài xế `/tai-xe/diem-giao?chuyen=<mã>` (LM-087). Không có `?chuyen` thì về "Chuyến của tôi" `/tai-xe`.
@@ -13,14 +14,18 @@ import { useDriverTripQuery } from './useDriverQueries'
  */
 export function DriverStopPage() {
   const [search] = useSearchParams()
+  const caps = useDriverCapabilities()
   const tripId = search.get('chuyen')
   if (!tripId) return <Navigate to="/tai-xe" replace />
+  // Nối backend: màn điểm giao dựng từ điểm đang giao của backend, không từ chuyến và phương án của kho mẫu
+  if (caps.backend) return <BackendDriverStop key={tripId} tripId={tripId} />
   return <DriverTripScreen key={tripId} tripId={tripId} />
 }
 
 /**
- * Theo pha chuyến trong kho (D-45): đã hoàn thành → tổng kết; kho chưa xếp xong, đã xếp xong hoặc đang giao → màn điểm giao (xem trước,
- * bắt đầu giao, giao); chưa có bản duyệt, đã huỷ hoặc không phải chuyến của tài xế này → nói lý do.
+ * Theo pha chuyến trong kho (D-45): đã hoàn thành → tổng kết; kho đang soạn / xếp, đã xếp xong hoặc đang giao → màn điểm giao (xem trước,
+ * bắt đầu giao, giao); chưa có bản duyệt, còn lập kế hoạch (kể cả chuyến đang xếp vừa quay về — tạm dừng), đã huỷ hoặc không phải chuyến
+ * của tài xế này → nói lý do. Chuyến còn lập kế hoạch chưa hiện ở "Chuyến của tôi" (FE-6-01) nên không xem trước phương án còn có thể đổi.
  */
 function DriverTripScreen({ tripId }: { tripId: string }) {
   const t = useT()
@@ -41,6 +46,11 @@ function DriverTripScreen({ tripId }: { tripId: string }) {
     return <DriverNotice mascot="error" title={t('driver.cancelledTitle')} description={t('driver.cancelledDescription', { tripId, reason: trip.cancellation?.reason ?? '' })} />
   }
   if (!plan) return <DriverNotice title={t('driver.emptyTitle')} description={t('driver.emptyTripDescription', { tripId })} />
+  if (trip.phase === 'planning') {
+    return trip.replan === undefined
+      ? <DriverNotice title={t('driver.planningTitle')} description={t('driver.planningDescription', { tripId })} />
+      : <DriverNotice title={t('driver.replan.title')} description={t(`driver.replan.${trip.replan.reason}`, { tripId })} />
+  }
   if (trip.phase === 'completed') return <TripSummary trip={trip} plan={plan} />
   return <DeliveryStopView trip={trip} plan={plan} pickup={pickup} />
 }

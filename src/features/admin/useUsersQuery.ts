@@ -1,7 +1,25 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { NewUser, UserChanges } from '@/lib/mock-db'
-import type { UserStatus } from '@/types/user'
-import { createUser, deleteUser, fetchCompanies, fetchUsers, resetPassword, setUserStatus, updateUser } from './users-api'
+import type { User, UserStatus } from '@/types/user'
+import {
+  USER_ACTIVITY_AVAILABLE,
+  USER_DEPOT_AVAILABLE,
+  createUser,
+  deleteUser,
+  fetchCompanies,
+  fetchUserCompanies,
+  fetchUsers,
+  resetPassword,
+  setUserStatus,
+  updateUser,
+  userFormRoles,
+} from './users-api'
+
+/** Màn có cột, ô kho / chi nhánh và lần hoạt động gần nhất không — backend chưa có hai trường đó (`users-api.ts`). */
+export const userDepotAvailable = USER_DEPOT_AVAILABLE
+export const userActivityAvailable = USER_ACTIVITY_AVAILABLE
+export { userFormRoles }
+export type { CompanyOption } from './users-api'
 
 /**
  * Người dùng qua TanStack Query (mục 9, LM-092) — thay `useState` + `users.mock.ts` cũ. Mọi ghi làm mới danh sách người dùng và
@@ -23,9 +41,15 @@ export function useCompanyNamesQuery(enabled: boolean) {
   })
 }
 
+/**
+ * Tên công ty cho cột và bộ lọc công ty của màn Người dùng: cùng nguồn với mã công ty của danh sách người dùng (backend khi nối, kho mẫu
+ * khi không). Nằm dưới khoá `['users']` vì mã công ty đi theo danh sách đó; Nhật ký, Hỗ trợ đọc `useCompanyNamesQuery`.
+ */
+export function useUserCompanyNamesQuery(enabled: boolean) {
+  return useQuery({ queryKey: ['users', 'companies'], queryFn: enabled ? fetchUserCompanies : skipToken, staleTime: Infinity })
+}
+
 export type CompanyName = { readonly id: string; readonly name: string }
-
-
 
 function useInvalidateUsers() {
   const client = useQueryClient()
@@ -43,7 +67,7 @@ export function useCreateUserMutation() {
 export function useUpdateUserMutation() {
   const invalidate = useInvalidateUsers()
   return useMutation({
-    mutationFn: ({ id, changes }: { id: string; changes: UserChanges }) => updateUser(id, changes),
+    mutationFn: ({ id, changes, current }: { id: string; changes: UserChanges; current: User }) => updateUser(id, changes, current),
     onSuccess: invalidate,
   })
 }

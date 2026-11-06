@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { CoordinatePicker, EMPTY_COORDINATES, parseCoordinates, placeAddress } from '@/components/map'
+import { CoordinatePicker, EMPTY_COORDINATES, parseCoordinates } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
@@ -91,7 +91,7 @@ function StopForm({ tripId, onClose }: { tripId: string; onClose: () => void }) 
               onChange={field.onChange}
               showErrors={form.formState.isSubmitted}
               onPlacePicked={(place) => {
-                if (form.getValues('address').trim() === '') form.setValue('address', placeAddress(place), { shouldDirty: true })
+                if (form.getValues('address').trim() === '') form.setValue('address', place.address, { shouldDirty: true })
               }}
             />
           )}

@@ -69,13 +69,35 @@ test('mã trong tham số được dịch: tên trường, loại sự cố, vai
   expect(describe(locked).details).toBe('Email: loc.truong@loadmaster.vn · Lý do: Tài khoản đã bị khoá')
 })
 
-test('không có phiên: đăng nhập sai là "Chưa đăng nhập", việc khác là "Hệ thống"; email lạ không có liên kết', () => {
+test('đổi tài xế khi kho đã bắt đầu xếp: tài xế mới và tài xế trước đọc bằng tên, tài khoản đã xoá ghi mã', () => {
+  const changed = event('trip.updated', { type: 'trip', id: 'TRIP-004' }, { fields: 'driverId', driverId: 'US-0010', previousDriverId: 'US-0099' })
+  expect(describe(changed).details).toBe('Trường đã sửa: Tài xế · Tài xế: Trương Văn Lộc · Tài xế trước: Tài khoản đã xoá (US-0099)')
+  expect(describe(changed, en).details).toBe('Fields changed: Driver · Driver: Trương Văn Lộc · Previous driver: Deleted account (US-0099)')
+})
+
+test('kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch: lý do lần quay về là mã của kho, đọc theo ngôn ngữ', () => {
+  const restarted = event('loading.started', { type: 'trip', id: 'TRIP-004' }, { revisionId: 'REV-031', replanReason: 'SHORTAGE', driverId: 'US-0010' })
+  expect(describe(restarted).details).toBe('Phương án: REV-031 · Lý do soạn lại: Thiếu kiện lúc soạn hàng · Tài xế: Trương Văn Lộc')
+  expect(describe(restarted, en).details).toBe('Plan: REV-031 · Re-staging reason: Missing package while staging · Driver: Trương Văn Lộc')
+  const afterDamage = event('loading.started', { type: 'trip', id: 'TRIP-004' }, { revisionId: 'REV-031', replanReason: 'DAMAGED' }, 'US-0003')
+  expect([describe(afterDamage).details, describe(afterDamage, en).details])
+    .toStrictEqual(['Phương án: REV-031 · Lý do soạn lại: Kiện hỏng lúc xếp', 'Plan: REV-031 · Re-staging reason: Damaged package while loading'])
+})
+
+test('không có phiên: đăng nhập sai và khách gửi liên hệ là "Chưa đăng nhập", việc khác là "Hệ thống"; email lạ không có liên kết', () => {
   const failed = event('auth.signInFailed', { type: 'user', id: 'khong.co@loadmaster.vn' }, { email: 'khong.co@loadmaster.vn' }, null)
   expect(describe(failed)).toMatchObject({
     actor: 'Chưa đăng nhập',
     action: 'Đăng nhập không thành công',
     target: { id: 'khong.co@loadmaster.vn', label: null, href: null },
   })
+  expect(describe(event('contact.received', { type: 'contact', id: 'LH-004' }, { fullName: 'Đỗ Văn Hưng', contactType: 'PRICING' }, null)))
+    .toMatchObject({
+      actor: 'Chưa đăng nhập',
+      action: 'Khách gửi yêu cầu liên hệ',
+      target: { id: 'LH-004', label: 'Đỗ Văn Hưng', href: '/lien-he-khach?lien-he=LH-004' },
+      details: 'Họ tên: Đỗ Văn Hưng · Loại yêu cầu: Hỗ trợ tư vấn',
+    })
   expect(describe(event('vehicle.maintenanceOff', { type: 'vehicle', id: 'VEHICLE-008' }, {}, null))).toMatchObject({
     actor: 'Hệ thống',
     target: { label: 'Hyundai Mighty EX8 · 50H-118.29', href: '/doi-xe/VEHICLE-008' },
@@ -159,4 +181,26 @@ test('một đợt thêm kiện vào kho kiện: số kiện, loại kiện và 
   const cleared = event('package.flagCleared', { type: 'package', id: 'PK-0063' }, { flag: 'NOT_FOUND' })
   expect(describe(cleared)).toMatchObject({ action: 'Gỡ cờ kiện', details: 'Cờ: Không tìm thấy' })
   expect(describe(cleared, en)).toMatchObject({ action: 'Cleared package flag', details: 'Flag: Not found' })
+})
+
+test('cập nhật yêu cầu liên hệ của khách: trường đã sửa, trạng thái mới và tên người nhận việc; người nhận đã xoá vẫn đọc được', () => {
+  const directory: AuditDirectory = { ...DIRECTORY, users: new Map([...DIRECTORY.users, ['US-NT-02', 'Tạ Thị Ngọc Ánh']]) }
+  const updated = event(
+    'contact.updated',
+    { type: 'contact', id: 'LH-002' },
+    { fullName: 'Phạm Quốc Bảo', fields: 'status,assignedToId,note', contactStatus: 'IN_PROGRESS', assignedTo: 'US-NT-02' },
+    'US-0001',
+  )
+  expect(describeEvent(updated, directory, vi.t, vi.format, canOpenAll)).toMatchObject({
+    action: 'Cập nhật yêu cầu liên hệ của khách',
+    target: { id: 'LH-002', label: 'Phạm Quốc Bảo', href: '/lien-he-khach?lien-he=LH-002' },
+    details: 'Họ tên: Phạm Quốc Bảo · Trường đã sửa: Trạng thái, Người nhận việc và Ghi chú · Trạng thái: Đang xử lý · Người nhận việc: Tạ Thị Ngọc Ánh',
+  })
+  expect(describeEvent(updated, directory, en.t, en.format, canOpenAll).details)
+    .toBe('Full name: Phạm Quốc Bảo · Fields changed: Status, Assignee, and Note · Status: In progress · Assignee: Tạ Thị Ngọc Ánh')
+  // Chỉ sửa ghi chú: không có trạng thái hay người nhận trong tham số
+  const noted = event('contact.updated', { type: 'contact', id: 'LH-002' }, { fullName: 'Phạm Quốc Bảo', fields: 'note' })
+  expect(describe(noted).details).toBe('Họ tên: Phạm Quốc Bảo · Trường đã sửa: Ghi chú')
+  expect(describe({ ...updated, params: { ...updated.params, assignedTo: 'US-NT-09' } }).details)
+    .toContain('Người nhận việc: Tài khoản đã xoá (US-NT-09)')
 })

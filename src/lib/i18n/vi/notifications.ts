@@ -32,4 +32,22 @@ export const notifications = {
   },
   /** Toast khi một sự cố cấp chuyến được chuyển lên quản lý công ty (FE-6-11) — người nhận thông báo đó ở chuông thấy. */
   exceptionEscalated: 'Chuyến {tripId}: sự cố {type} đã chuyển quản lý',
+  /**
+   * Chuông của tài xế: câu thay nhãn hành động của nhật ký cho sự kiện về chuyến của chính họ (`DriverNotice`). Chuyến hiện ở "Chuyến của
+   * tôi" từ lúc kho bắt đầu soạn hàng, nên đó là lúc tài xế có chuyến mới; chuyến đang xếp quay về Đã lập kế hoạch là chuyến tạm dừng, kho
+   * bắt đầu lại là soạn lại.
+   */
+  driver: {
+    loadingStarted: 'Chuyến mới: kho đang soạn hàng',
+    loadingRestarted: 'Kho đang soạn lại hàng cho chuyến',
+    loadingCompleted: 'Xếp xong — chờ bạn xuất phát',
+    replanDamaged: 'Chuyến tạm dừng: kho báo kiện hỏng, chờ điều phối lập lại phương án',
+    replanShortage: 'Chuyến tạm dừng: thiếu kiện, chờ điều phối lập lại phương án',
+    cancelled: 'Chuyến đã huỷ',
+    assigned: 'Chuyến mới: bạn được giao chuyến này',
+    unassigned: 'Bạn không còn chạy chuyến này',
+    pickupApproved: 'Điều phối đã duyệt nhận hàng dọc đường — tuyến có thêm điểm nhận',
+    pickupRejected: 'Yêu cầu nhận hàng dọc đường bị từ chối',
+    stopsReordered: 'Điều phối đã đổi thứ tự điểm giao — xem lại tuyến',
+  },
 } as const

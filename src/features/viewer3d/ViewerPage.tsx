@@ -2,9 +2,11 @@ import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { TRIPS_CAPABILITIES } from '@/features/trips/trips-capabilities'
 import { useT } from '@/lib/i18n'
 import { benchmarkCountFromSearch, benchmarkStopCountFromSearch, createBenchmarkInput, type BenchmarkCount, type BenchmarkStopCount } from './benchmark.mock'
 import { benchmarkObstacleCountFromSearch, withBenchmarkObstacles, type BenchmarkObstacleCount } from './benchmark-obstacles.mock'
+import { BackendResultSession } from './BackendPlannerSession'
 import { adaptResult } from './scene-input'
 import { usePlanSourceQuery } from './usePlanSourceQuery'
 import type { PlanSource } from './viewer-api'
@@ -13,14 +15,15 @@ import { ViewerSkeleton } from './ViewerSkeleton'
 
 /**
  * Xem phương án 3D — toàn màn, không có nav rail (theo bản design). Trang này chỉ chọn nguồn dữ liệu:
- * revision đã lưu của chuyến (LM-030, LM-049) hoặc fixture benchmark khi `?debug&packages=N`.
+ * revision đã lưu của chuyến (LM-030, LM-049), phương án của máy chủ khi nhóm `trips` nối backend, hoặc fixture benchmark khi
+ * `?debug&packages=N`.
  */
 export function ViewerPage() {
   const [searchParams] = useSearchParams()
   const count = benchmarkCountFromSearch(searchParams.toString())
   const obstacles = benchmarkObstacleCountFromSearch(searchParams.toString()) ?? 0
   const stops = benchmarkStopCountFromSearch(searchParams.toString())
-  return count ? <BenchmarkSession count={count} obstacles={obstacles} stops={stops} /> : <ResultSession />
+  return count ? <BenchmarkSession count={count} obstacles={obstacles} stops={stops} /> : TRIPS_CAPABILITIES.backend ? <BackendResultSession /> : <ResultSession />
 }
 
 /** `?debug&packages=N[&obstacles=0|1|20][&stops=1|4|8]`: fixture renderer, không đọc kho; `stops` thêm vùng theo điểm giao (FE-5b-07). */

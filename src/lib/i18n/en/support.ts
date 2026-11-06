@@ -1,12 +1,15 @@
 import type { Dictionary } from '../types'
 import type { support as source } from '../vi/support'
+import { customerPlan } from './support-customer-plan'
 
 export const support = {
+  customerPlan,
   kinds: { TECHNICAL: 'Technical', BILLING: 'Billing' },
-  statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', CLOSED: 'Closed' },
+  statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   mine: {
     title: 'Support requests',
     description: 'Send a technical or billing problem to the LoadMaster support team and follow the replies. You only see the requests you sent.',
+    descriptionStatusOnly: 'Send a technical or billing problem to the LoadMaster support team and follow its status. The list only has the requests you sent.',
     loading: 'Loading support requests',
     retry: 'Try again',
     new: 'Send a new request',
@@ -15,6 +18,7 @@ export const support = {
     close: 'Close',
     replies: { one: '{count} reply', other: '{count} replies' },
     updated: 'Updated {time}',
+    sent: 'Sent {time}',
     open: 'Open request {title}',
   },
   form: {
@@ -46,6 +50,8 @@ export const support = {
     closed: 'This request is closed, so no more replies can be added.',
     closedSupport: 'This request is closed. Reopen it to reply again.',
     sentBy: 'Sent by {name} at {time}',
+    supportNote: 'Note from the support team',
+    statusOnly: 'This request is followed by its status; replies are not available yet.',
     errors: { replyRequired: 'Enter the reply', replyTooLong: 'At most {max} characters' },
   },
   page: {
@@ -56,6 +62,7 @@ export const support = {
     empty: 'No support requests yet.',
     noMatch: 'No request matches the filters.',
     selectHint: 'Select a request to see the conversation and the company information.',
+    selectHintStatusOnly: 'Select a request to read it and change its status.',
     filters: {
       company: 'Company',
       allCompanies: 'All companies',
@@ -64,7 +71,7 @@ export const support = {
       status: 'Status',
       allStatuses: 'All statuses',
     },
-    columns: { ticket: 'Request', company: 'Company', kind: 'Type', status: 'Status', updated: 'Updated' },
+    columns: { ticket: 'Request', company: 'Company', kind: 'Type', status: 'Status', updated: 'Updated', sent: 'Sent' },
     statusLabel: 'Request status',
     statusChanged: 'Request {id} is now {status}',
     panel: {
@@ -77,7 +84,12 @@ export const support = {
       balance: 'Credit balance',
       recent: 'Latest credit transactions',
       noTransactions: 'No credit transactions yet.',
+      notLoaded: 'Could not be read',
       loading: 'Loading company information',
+    },
+    chat: {
+      title: 'Recent messages of the company',
+      hint: 'The two most recent days with activity',
     },
   },
 } as const satisfies Dictionary<typeof source>

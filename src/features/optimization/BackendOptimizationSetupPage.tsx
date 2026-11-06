@@ -1,230 +1,107 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { PackageOpen } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { toast } from 'sonner'
+import { Banner } from '@/components/Banner'
+import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import { useCurrentUser } from '@/features/auth/AuthProvider'
-import { fetchBackendTripDetail, fetchTripVehicleConfig } from '@/features/trips/trips-api'
-import { fetchPackage } from '@/features/package-pool/packages-api'
-import { adaptBackendScene, adaptBackendVehicle } from '@/features/viewer3d/backend-scene-adapter'
-import { BackendLoadPlanViewer } from '@/features/viewer3d/BackendLoadPlanViewer'
-import { useT } from '@/lib/i18n'
-import { fetchBackendOptimizationJob, fetchBackendLoadPlans } from './optimization-api'
-import { isOptimizationTerminal, type OptimizationActionScope } from './initial-optimization-action'
-import { canFetchOptimizationPlans, getBackendJobStatusKey } from './backend-job-status'
-import { useInitialOptimizationAction } from './useInitialOptimizationAction'
+import { fetchBackendTripDetail, resolveBackendTripId } from '@/features/trips/trips-api'
+import { dataErrorMessage, useT } from '@/lib/i18n'
+import { BackendLoadPlansCard } from './BackendLoadPlansCard'
+import { BackendRunDialog } from './BackendRunDialog'
+import { useOptimizationJobQuery, useStartLoadingOptimizationMutation } from './useLoadPlansQuery'
 
-export function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
-  const user = useCurrentUser()
+/** Mã trên URL có thể là mã chuyến (liên kết từ Giám sát, nhật ký): đổi sang mã số của máy chủ trước. */
+export function BackendOptimizationSetupRoute() {
+  const { tripId = '' } = useParams()
   const t = useT()
-  if (!user.companyId) return <p role="alert">{t('optimization.backend.action.accountRequired')}</p>
-  const scope = { userId: user.id, companyId: user.companyId, tripId }
-  return <BackendOptimizationSession key={JSON.stringify(scope)} tripId={tripId} scope={scope} />
+  const resolved = useQuery({ queryKey: ['trips', tripId, 'backend-id'], queryFn: () => resolveBackendTripId(tripId), staleTime: Infinity })
+  if (resolved.isError) return <p role="alert" className="px-shell py-8 text-body text-danger">{dataErrorMessage(resolved.error, t)}</p>
+  if (resolved.data === undefined) return <div className="grid flex-1 place-items-center"><Spinner /></div>
+  return <BackendOptimizationSetupPage tripId={resolved.data} />
 }
 
-function BackendOptimizationSession({
-  tripId, scope,
-}: {
-  tripId: string
-  scope: OptimizationActionScope
-}) {
+/**
+ * Thiết lập tối ưu khi nhóm `trips` nối backend: một nút chính "Chạy tối ưu" gửi một lần chạy (`POST /api/trips/{id}/optimize-loading`,
+ * một credit, ba phương án), hộp thoại đọc lại trạng thái job tới khi xong, rồi mở màn So sánh của lần chạy đó. Bên dưới là các lần chạy
+ * trước của chuyến. Không chọn mục tiêu hay thuật toán (D-77): máy chủ chọn theo gói. `tripId` là mã số của máy chủ.
+ */
+function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const t = useT()
-  const createJob = useInitialOptimizationAction(scope)
-  const jobId = createJob.action?.jobId ?? null
-  const statusQuery = useQuery({
-    queryKey: ['backend', scope.userId, scope.companyId, 'optimization-job', jobId],
-    queryFn: () => fetchBackendOptimizationJob(jobId!),
-    enabled: jobId !== null,
-    refetchInterval: (query) => {
-      if (query.state.status === 'error') {
-        return false
-      }
-      const status = query.state.data?.status?.toUpperCase()
-      if (isOptimizationTerminal(status)) {
-        return false
-      }
-      return 2000
-    },
-  })
-  const jobStatus = statusQuery.data?.status?.toUpperCase()
-  const jobHasPossiblePlan = canFetchOptimizationPlans(jobStatus)
-  const jobFailed =
-    jobStatus === 'FAILED' ||
-    jobStatus === 'CANCELLED'
-  const resolvedJobId = isOptimizationTerminal(jobStatus) ? jobId : null
-  const canStartNew = !createJob.action || resolvedJobId !== null
-  const actionNotice = createJob.notice === 'uncertain' && resolvedJobId ? null : createJob.notice
-  const plansQuery = useQuery({
-    queryKey: ['backend', scope.userId, scope.companyId, 'optimization-plans', tripId, jobId],
-    queryFn: () => fetchBackendLoadPlans(jobId!),
-    enabled: jobId !== null && jobHasPossiblePlan,
-  })
-  const sceneQuery = useQuery({
-    queryKey: ['backend', scope.userId, scope.companyId, 'optimization-scene', tripId, jobId],
-    enabled: jobId !== null && plansQuery.isSuccess && plansQuery.data.length > 0,
-    queryFn: async () => {
-      const plan = plansQuery.data?.[0]
-      if (!plan) {
-        throw new Error('No load plan found')
-      }
-      const [tripDetail, vehicleConfigResponse, packages] =
-        await Promise.all([
-          fetchBackendTripDetail(tripId),
-          fetchTripVehicleConfig(tripId),
-          Promise.all(
-            plan.placements.map((placement) =>
-              fetchPackage(String(placement.package_id)),
-            ),
-          ),
-        ])
-      if (
-        String(vehicleConfigResponse.vehicleId) !==
-        String(tripDetail.trip.vehicleId)
-      ) {
-        throw new Error('Trip vehicle configuration mismatch')
-      }
-      const vehicleConfig = adaptBackendVehicle(
-        vehicleConfigResponse,
-      )
-      return adaptBackendScene(
-        tripId,
-        tripDetail,
-        vehicleConfig,
-        plan,
-        packages,
-      )
-    },
-  })
-  const plans = plansQuery.data ?? []
+  const navigate = useNavigate()
+  const client = useQueryClient()
+  const reasonId = useId()
+  const detail = useQuery({ queryKey: ['trips', tripId, 'backend-detail'], queryFn: () => fetchBackendTripDetail(tripId) })
+  const start = useStartLoadingOptimizationMutation(tripId)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const job = useOptimizationJobQuery(jobId)
+  const tripCode = detail.data?.trip.tripCode ?? tripId
+  const finished = job.data?.finished === true
+  const hasPlans = job.data?.status === 'COMPLETED' || job.data?.status === 'PARTIAL'
+
+  // Job xong: phương án mới nằm dưới khoá của chuyến. Có phương án và hộp thoại còn mở thì mở ngay các phương án của lần chạy để so sánh
+  useEffect(() => {
+    if (!finished || jobId === null) return
+    void client.invalidateQueries({ queryKey: ['trips', tripId] })
+    void client.invalidateQueries({ queryKey: ['billing'] })
+    if (hasPlans && dialogOpen) void navigate(`/chuyen/${encodeURIComponent(tripCode)}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`)
+  }, [finished, hasPlans, jobId, tripId, tripCode, dialogOpen, client, navigate])
+
+  if (detail.isPending) return <div className="grid flex-1 place-items-center"><Spinner /></div>
+  if (detail.isError) return <p role="alert" className="px-shell py-8 text-body text-danger">{dataErrorMessage(detail.error, t)}</p>
+
+  const { trip, stops } = detail.data
+  const editable = trip.status === 'DRAFT' || trip.status === 'PLANNED'
+  const blocked = !editable ? t('serverPlans.setup.locked') : stops.length === 0 ? t('serverPlans.setup.noStops') : null
+  const running = jobId !== null && !finished && !job.isError
+  const tripPath = `/chuyen/${encodeURIComponent(trip.tripCode)}`
+
+  function handleRun() {
+    start.mutate(undefined, {
+      onSuccess: ({ jobId: started }) => {
+        setJobId(started)
+        setDialogOpen(true)
+      },
+      onError: (error) => toast.error(dataErrorMessage(error, t)),
+    })
+  }
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-4 px-shell py-6">
-      <Button variant="secondary" asChild>
-        <Link to={`/chuyen/${encodeURIComponent(tripId)}`}>
-          {t('optimization.back')}
-        </Link>
-      </Button>
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold">
-          {t('trips.loadingOptimization.run')}
-        </h2>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            loading={createJob.isPending}
-            disabled={createJob.isPending || !canStartNew || createJob.notice === 'storage'}
-            onClick={() => createJob.handleStartNew(resolvedJobId)}
-          >
-            {t('optimization.backend.runNew')}
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <PageHero
+        title={t('serverPlans.setup.title')}
+        crumbs={[{ label: t('nav.trips'), to: '/chuyen' }, { label: trip.tripCode, to: tripPath, mono: true }]}
+        description={t('serverPlans.setup.description')}
+        actions={
+          <Button type="button" loading={start.isPending} disabled={blocked !== null || running} aria-describedby={blocked ? reasonId : undefined}
+            onClick={handleRun}>
+            <PackageOpen className="size-4" aria-hidden />{t('serverPlans.setup.run')}
           </Button>
-          {createJob.action && !resolvedJobId && (
-            <Button variant="secondary" disabled={createJob.isPending || createJob.notice === 'storage'}
-              onClick={() => jobId ? void statusQuery.refetch() : createJob.handleRetry()}>
-              {t(jobId ? 'optimization.backend.action.checkStatus' : 'optimization.backend.action.retry')}
-            </Button>
-          )}
-          {jobId && (
-            <span className="text-sm text-text-2">
-              {t('optimization.backend.status')}:{' '}
-              {jobStatus
-                ? t(getBackendJobStatusKey(jobStatus))
-                : t('optimization.backend.starting')}
-            </span>
-          )}
+        }
+      />
+      <div className="min-h-0 flex-1 overflow-y-auto px-shell py-6">
+        <div className="flex flex-col gap-4">
+          {blocked ? (
+            <Banner tone="warning" action={<Button variant="secondary" size="sm" asChild><Link to={tripPath}>{t('serverPlans.setup.backToTrip')}</Link></Button>}>
+              <span id={reasonId}>{blocked}</span>
+            </Banner>
+          ) : null}
+          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} />
         </div>
-        {actionNotice && (
-          <p role="alert" className="mt-3 text-sm text-text-2">
-            {t(`optimization.backend.action.${actionNotice}`)}
-          </p>
-        )}
-        {jobId === null ? (
-          <p className="mt-3 text-sm text-text-2">
-            {t('optimization.backend.noJobSelected', { tripId })}
-          </p>
-        ) : statusQuery.isError ? (
-          <p role="alert" className="mt-3 text-sm text-red-500">
-            {t('optimization.backend.statusFailed')}
-          </p>
-        ) : jobFailed ? (
-          <p role="alert" className="mt-3 text-sm text-red-500">
-            {t('optimization.backend.jobFailed')}
-          </p>
-        ) : isOptimizationTerminal(jobStatus) && !jobHasPossiblePlan ? (
-          <p role="status" className="mt-3 text-sm text-text-2">
-            {t(getBackendJobStatusKey(jobStatus))}
-          </p>
-        ) : !jobHasPossiblePlan ? (
-          <div className="mt-4 flex items-center gap-3">
-            <Spinner />
-            <p className="text-sm text-text-2">
-              {t('optimization.backend.running')}
-            </p>
-          </div>
-        ) : plansQuery.isPending ? (
-          <div className="mt-4">
-            <Spinner />
-          </div>
-        ) : plansQuery.isError ? (
-          <p role="alert" className="mt-3 text-sm text-red-500">
-            {t('optimization.backend.plansFailed')}
-          </p>
-        ) : (
-          <div className="mt-4 space-y-3">
-            <p>
-              {t('optimization.backend.jobId')}: {jobId}
-            </p>
-            {plans.length === 0 && (
-              <p className="text-sm text-text-2">
-                {t('optimization.backend.noPlans')}
-              </p>
-            )}
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                className="rounded-lg border p-4"
-              >
-                <p className="font-medium">
-                  {plan.plan_name}
-                </p>
-                <p>
-                  {t('optimization.backend.loadPlanId')}: {plan.id}
-                </p>
-                <p>
-                  {t('optimization.backend.packages')}:{' '}
-                  {plan.packed_items_count}
-                </p>
-                <p>
-                  {t('optimization.backend.volumeUtilization')}:{' '}
-                  {((plan.volume_utilization ?? 0) * 100).toFixed(2)}%
-                </p>
-                <p>
-                  {t('optimization.backend.weightUtilization')}:{' '}
-                  {((plan.weight_utilization ?? 0) * 100).toFixed(2)}%
-                </p>
-                <p>
-                  {t('optimization.backend.placementsReturned')}:{' '}
-                  {plan.placements.length}
-                </p>
-              </div>
-            ))}
-            {plans.length > 0 && (
-              sceneQuery.isPending ? (
-                <div role="status" className="py-6">
-                  <Spinner />
-                </div>
-              ) : sceneQuery.isError ? (
-                <p role="alert" className="text-sm text-red-500">
-                  {t('optimization.backend.sceneFailed')}
-                </p>
-              ) : sceneQuery.data ? (
-                <BackendLoadPlanViewer
-                  key={`${tripId}-${plans[0]?.id}`}
-                  model={sceneQuery.data}
-                />
-              ) : null
-            )}
-          </div>
-        )}
-      </Card>
+      </div>
+      {jobId !== null ? (
+        <BackendRunDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          jobId={jobId}
+          job={job.data ?? null}
+          error={job.isError ? job.error : null}
+          compareTo={`${tripPath}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`}
+        />
+      ) : null}
     </div>
   )
 }

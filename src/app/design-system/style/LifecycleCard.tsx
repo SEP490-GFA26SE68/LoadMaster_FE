@@ -1,7 +1,7 @@
 import { StatusBadge, TripSubStatusTag } from '@/components/StatusBadge'
 import { UserStatusBadge } from '@/features/admin/user-look'
 import { VehicleStatusBadge } from '@/features/fleet/VehicleStatusBadge'
-import { useTripsQuery } from '@/features/trips/useTripsQuery'
+import { useStoreTripsQuery } from '@/features/trips/useTripsQuery'
 import { useT } from '@/lib/i18n'
 import { STOP_COUNT, stopColor, stopForeground } from '@/lib/stops'
 import { TRIP_STATUSES, type TripSubStatus } from '@/types/trip'
@@ -19,7 +19,7 @@ const STOPS = Array.from({ length: STOP_COUNT }, (_, index) => index + 1)
  */
 export function LifecycleCard() {
   const t = useT()
-  const rows = useTripsQuery().data
+  const rows = useStoreTripsQuery().data
   const subs = SUB_ORDER.flatMap((kind) => {
     const sub = rows?.find((row) => row.sub?.kind === kind)?.sub
     return sub ? [sub] : []

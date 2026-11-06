@@ -1,6 +1,7 @@
 import { UserCheck, UserX, Users, type LucideIcon } from 'lucide-react'
 import { KpiTile, type KpiTone } from '@/components/KpiTile'
 import { useFormat, useT } from '@/lib/i18n'
+import type { UserScope } from '@/lib/mock-db'
 import { USER_STATUSES, type User, type UserStatus } from '@/types/user'
 import { userSummary } from './user-summary'
 
@@ -15,23 +16,25 @@ const STATUS_TILE: Record<UserStatus, { icon: LucideIcon; tone: KpiTone }> = {
  * (không theo ô tìm). Hai ô trạng thái là công tắc lọc: bấm thì lọc theo trạng thái đó, bấm lại ô đang lọc thì bỏ lọc — đi qua
  * cùng bộ lọc `trang-thai` trên URL với ô chọn trạng thái, nên hai nơi luôn khớp nhau (như Đội xe).
  */
-export function UsersSummary({ users, status, onStatusChange }: {
+export function UsersSummary({ users, status, scope, onStatusChange }: {
   users: readonly User[]
   status: string
+  scope?: UserScope
   onStatusChange: (status: string) => void
 }) {
   const t = useT()
   const format = useFormat()
   const summary = userSummary(users)
+  const isCompany = scope === 'company'
 
   return (
     <div className="grid flex-none grid-cols-1 gap-3 md:grid-cols-3">
       <KpiTile
         icon={Users}
         tone="slate"
-        label={t('admin.users.summary.total')}
+        label={isCompany ? t('admin.employees.summary.total') : t('admin.users.summary.total')}
         value={format.integer(summary.total)}
-        note={t('admin.users.summary.totalNote')}
+        note={isCompany ? t('admin.employees.summary.totalNote') : t('admin.users.summary.totalNote')}
       />
       {USER_STATUSES.map((value) => {
         const pressed = status === value

@@ -17,6 +17,7 @@ import {
 } from './TripDetailStepper'
 import type { TripDetail } from './trips-api'
 import { useQuery } from '@tanstack/react-query'
+import { backendDateTimeText } from './backend-date-text'
 import { fetchTripById } from './trips-api'
 
 /**
@@ -123,6 +124,7 @@ function TripMeta({ detail }: { detail: TripDetail }) {
 
 export function RealTripDetailHeader({ tripId }: { tripId: string }) {
   const t = useT()
+  const format = useFormat()
 
   const query = useQuery({
     queryKey: ['trips', tripId, 'backend-header'],
@@ -144,9 +146,7 @@ export function RealTripDetailHeader({ tripId }: { tripId: string }) {
         trip ? (
           <span className="flex flex-wrap gap-x-3 gap-y-1">
             <span>
-              {typeof trip.departureTime === 'string'
-                ? trip.departureTime.replace('T', ' ')
-                : '—'}
+              {backendDateTimeText(trip.departureTime, format)}
             </span>
             <span>· {trip.vehicleName} — {trip.licensePlate}</span>
             <span>· {trip.driverName ?? t('trips.detail.noDriver')}</span>

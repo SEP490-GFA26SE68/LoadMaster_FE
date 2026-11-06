@@ -172,6 +172,7 @@ export const viewer = {
       COOLING_UNIT: 'Cooling unit',
       PARTITION: 'Partition',
       RESERVED_ZONE: 'Reserved zone',
+      OTHER: 'Other obstacle',
     },
     corner: 'Corner at X {x} · Y {y} · Z {z}',
     notBearing: 'Not load bearing',
@@ -523,5 +524,9 @@ export const viewer = {
     LIFO_VIOLATION: 'Breaks the delivery unloading order',
     CONSTRAINT_VIOLATED: 'Loading this package would break a constraint',
     UNKNOWN: 'Not placed, reason unknown',
+  },
+  backendViewer: {
+    stepPrevious: 'Previous loading step',
+    stepNext: 'Next loading step',
   },
 } satisfies Dictionary<typeof source>

@@ -1,5 +1,6 @@
 import type { CargoPackage } from '@/domain/models'
 import { sameData } from './db-context'
+import { isKnownToDriver } from './operations'
 import type { Trip, TripChanges } from './types'
 
 /** Trường của chuyến có một giá trị đơn, ghi được "trước → sau". */
@@ -28,6 +29,20 @@ export function tripChangeParams(current: Trip, next: Trip, changed: readonly (k
     return { before: current[key] ?? '', after: next[key] ?? '' }
   }
   return {}
+}
+
+/**
+ * Đổi tài xế khi tài xế đã biết chuyến (`isKnownToDriver`: kho đang soạn / xếp — FE-6-01 —, hoặc chuyến tạm dừng sau lần quay về Đã lập
+ * kế hoạch): tài xế mới (`driverId`) và tài xế vừa bị thay (`previousDriverId`) của sự kiện `trip.updated`, để chuông báo người mới có
+ * chuyến và người cũ thôi chuyến đó. Lúc còn lập kế hoạch lần đầu chưa tài xế nào thấy chuyến: không có tham số nào (lần đổi vẫn nằm ở
+ * `fields` và trước → sau như mọi trường khác).
+ */
+export function driverChangeParams(current: Trip, next: Trip, changed: readonly (keyof TripChanges)[]): Params {
+  if (!changed.includes('driverId') || !isKnownToDriver(current)) return {}
+  return {
+    ...(next.driverId === null ? {} : { driverId: next.driverId }),
+    ...(current.driverId === null ? {} : { previousDriverId: current.driverId }),
+  }
 }
 
 function packageChange(before: readonly CargoPackage[], after: readonly CargoPackage[]): Params {

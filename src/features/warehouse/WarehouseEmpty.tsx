@@ -19,8 +19,10 @@ import { loadingSessionPath } from './warehouse-trips'
  * (`KhoChoDuyetLai.jpg`): thanh dải trời với mã chuyến, Lumo nằm trong card trắng. `showTrip`: chuyến chờ duyệt lại kèm hàng thông tin
  * (tuyến · ngày · xe · số kiện) và dòng phụ ở thanh — đọc từ danh sách chuyến của kho nếu có chuyến đó, không thì bỏ qua.
  */
-export function WarehouseEmpty({ tripId, mascot = 'warehouseWaiting', title, description, action, showTrip = false }: {
+export function WarehouseEmpty({ tripId, label, mascot = 'warehouseWaiting', title, description, action, showTrip = false }: {
   tripId: string
+  /** Chữ ở thanh trên thay mã trên URL — bản máy chủ: mã chuyến, không phải mã số. */
+  label?: string
   /** Lumo (LM-105): chờ việc (mặc định — chưa có bản duyệt, chờ duyệt lại) hoặc `error` (lỗi tải, chuyến đã huỷ). */
   mascot?: LumoPose
   title: string
@@ -33,7 +35,7 @@ export function WarehouseEmpty({ tripId, mascot = 'warehouseWaiting', title, des
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
       <TouchTopBar leading={<ExitIconButton tone="sky" screenHome={loadingSessionPath(tripId)} contextual={`/chuyen/${tripId}`} label={t('warehouse.header.exit')} iconClassName="size-7" />}>
-        <span className="min-w-0 truncate font-mono text-[18px] leading-6 font-semibold text-sky-text">{tripId}</span>
+        <span className="min-w-0 truncate font-mono text-[18px] leading-6 font-semibold text-sky-text">{label ?? tripId}</span>
         {showTrip ? <TripBarTag tripId={tripId} /> : null}
       </TouchTopBar>
       <main className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-4 sm:p-6">

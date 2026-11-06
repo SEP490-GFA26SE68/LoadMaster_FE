@@ -21,13 +21,15 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai nút đó: nhãn kiện đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột
  * nổi bên phải nên không bị nó che.
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
   /** Mở hộp thoại Đổi xe; vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
   onChangeVehicle?: () => void
   /** Mở Thiết lập tối ưu để chạy lại giữ kiện đã ghim (FE-BL-02); vắng khi người xem không chạy tối ưu được hoặc chuyến đã sang pha vận hành. */
   onRerunPinned?: () => void
+  /** Lý do "Chạy lại giữ ghim" đang bị chặn (nút mờ, câu đứng cạnh); vắng là chạy được. */
+  rerunBlockedReason?: string
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const stops = state.sceneModel.stops
@@ -98,7 +100,7 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
         {onEdit ? <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.edit')} disabled={!state.selected} onClick={onEdit}><Pencil strokeWidth={1.5} /></Button> : null}
       </div>
       <div className="ml-auto flex shrink-0 items-end gap-2">
-        {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} onRerun={onRerunPinned} /> : null}
+        {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} blockedReason={rerunBlockedReason} onRerun={onRerunPinned} /> : null}
         {onChangeVehicle ? (
           <Button variant="glass" className="pointer-events-auto hidden size-14 shrink-0 p-0 glass-dark md:flex xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.plan.changeVehicle')} onClick={onChangeVehicle}>
             <Truck strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.plan.changeVehicle')}</span>

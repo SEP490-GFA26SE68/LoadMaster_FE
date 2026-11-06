@@ -40,7 +40,7 @@ test('the system admin creates a company with its first admin, who then signs in
   await signOutInApp(page)
   await signInWith(page, 'ha.ho@bienho.vn', password)
   await page.waitForURL((url) => url.pathname === '/nguoi-dung')
-  await expect(page.getByRole('heading', { level: 1, name: 'Người dùng', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Nhân viên', exact: true })).toBeVisible()
   await expect(page.getByRole('row')).toHaveCount(2)
   await expect(page.getByRole('row', { name: /Hồ Thị Thu Hà/ })).toContainText('ha.ho@bienho.vn')
   await navigateInApp(page, '/goi-cuoc')

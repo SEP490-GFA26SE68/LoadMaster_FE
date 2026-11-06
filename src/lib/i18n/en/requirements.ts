@@ -194,4 +194,12 @@ export const requirements = {
     unassign: 'Remove requirement {id}',
     list: 'All delivery requirements',
   },
+  server: {
+    received: '{received} packages',
+    receivedOf: '{received}/{expected} packages',
+    viewTrip: 'View trip #{code}',
+    assignDescription: 'The server only accepts requirements on Draft trips and creates or merges the delivery stop from the requirement address.',
+    noDraftTrips: 'No Draft trip is available to take this requirement.',
+    manageUnavailable: 'The server does not allow editing delivery requirements yet: only missing coordinates can be added here.',
+  },
 } satisfies Dictionary<typeof source>

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState, } from 'react'
-import { useForm, useWatch, } from 'react-hook-form'
-import { Link, useNavigate, useParams, useSearchParams, } from 'react-router'
+import { useMemo, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { TripLockBanner } from '@/components/TripLockBanner'
@@ -29,8 +29,8 @@ import { SetupLimitsPanel } from './SetupLimitsPanel'
 import { SetupAdvancedFields, SetupCandidateList, SetupRequirementFields } from './SetupSettingsFields'
 import { useOptimizationCreditQuery, useOptimizationRun, useOptimizationSetupQuery } from './useOptimizationSetup'
 
-
-import { BackendOptimizationSetupPage } from './BackendOptimizationSetupPage'
+import { TRIPS_CAPABILITIES } from '@/features/trips/trips-capabilities'
+import { BackendOptimizationSetupRoute } from './BackendOptimizationSetupPage'
 
 /**
  * Thiết lập tối ưu (LM-047) và chạy job (LM-048), giao diện V2.3 (LM-106): dải trời có đường dẫn, chip trạng thái, dòng dữ liệu chuyến
@@ -197,13 +197,7 @@ function MockOptimizationSetupPage() {
   )
 }
 
-
+/** Nhóm `trips` nối backend thì màn là bản của nhóm: phương án xếp hàng của máy chủ trên khung 3D; không thì là kho mẫu. */
 export function OptimizationSetupPage() {
-  const { tripId = '' } = useParams()
-
-  if (/^[1-9]\d*$/.test(tripId)) {
-    return <BackendOptimizationSetupPage tripId={tripId} />
-  }
-
-  return <MockOptimizationSetupPage />
+  return TRIPS_CAPABILITIES.backend ? <BackendOptimizationSetupRoute /> : <MockOptimizationSetupPage />
 }

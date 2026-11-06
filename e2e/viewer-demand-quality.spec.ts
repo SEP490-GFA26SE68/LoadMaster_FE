@@ -35,7 +35,7 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
   await waitDemandIdle(page)
   await waitIdle(page)
   expect((await metrics(page)).dpr).toBe(EXPECTED_DPR[INITIAL_TIER])
-  report.environment = await page.locator('canvas').evaluate((canvas) => {
+  report.environment = await page.locator('canvas:not(.maplibregl-canvas)').evaluate((canvas) => {
     const gl = (canvas as HTMLCanvasElement).getContext('webgl2')
     const extension = gl?.getExtension('WEBGL_debug_renderer_info')
     return {
@@ -44,7 +44,7 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
       renderer: gl && extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) as string : 'unavailable',
     }
   })
-  const bounds = await page.locator('canvas').boundingBox()
+  const bounds = await page.locator('canvas:not(.maplibregl-canvas)').boundingBox()
   expect(bounds).toBeTruthy()
   const cx = bounds!.x + bounds!.width / 2
   const cy = bounds!.y + bounds!.height / 2

@@ -105,6 +105,9 @@ export const AUDIT_ACTIONS = [
   'ticket.created',
   'ticket.replied',
   'ticket.statusChanged',
+  // Yêu cầu liên hệ của khách chưa có tài khoản: không thuộc công ty nào
+  'contact.received',
+  'contact.updated',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -128,6 +131,8 @@ export type AuditTargetType =
   | 'company'
   // FE-8-07
   | 'ticket'
+  // Yêu cầu liên hệ của khách
+  | 'contact'
 
 export type AuditEvent = {
   /** `EV-NNNNNN`, tăng theo thứ tự ghi. */

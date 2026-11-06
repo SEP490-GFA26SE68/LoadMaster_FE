@@ -10,7 +10,8 @@ import { useT } from '@/lib/i18n'
 import { DRIVER_TRIP_SCREEN } from './DriverStopHeader'
 
 /**
- * Chuyến mở bằng URL mà không giao được (LM-087): chưa có bản duyệt, đã huỷ, không phải chuyến của tài xế này, hoặc không tải được.
+ * Chuyến mở bằng URL mà không giao được (LM-087): chưa có bản duyệt, còn lập kế hoạch (kể cả chuyến tạm dừng vì quay về Đã lập kế
+ * hoạch), đã huỷ, không phải chuyến của tài xế này, hoặc không tải được.
  * Nói rõ lý do, có lối về danh sách chuyến 56px nhìn thấy được (mục 10). Không dựng phương án giả.
  */
 /** `mascot` (LM-105): tài xế chờ việc (mặc định) hoặc `error` (lỗi tải, chuyến đã huỷ). */

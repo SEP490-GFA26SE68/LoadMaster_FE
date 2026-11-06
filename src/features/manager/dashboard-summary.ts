@@ -1,7 +1,6 @@
 import { roundKg } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
-import type { VehicleState } from '@/lib/mock-db'
-import type { VehicleStatus } from '@/features/fleet/vehicles-api'
+import type { VehicleState, VehicleStatus } from '@/lib/mock-db'
 import { compareText } from '@/lib/list-filter'
 import { TRIP_STATUSES, type TripStatus } from '@/types/trip'
 import type { User } from '@/types/user'
@@ -21,6 +20,15 @@ export type DashboardData = {
 }
 
 export type DashboardTripRow = TripFacts & { readonly vehicleName: string; readonly driverName: string | null }
+
+/**
+ * Dòng chuyến của bảng và báo cáo. Kho mẫu có đủ (`DashboardTripRow`); máy chủ chỉ có phần bắt buộc — phần tuỳ chọn vắng hẳn và màn bỏ
+ * cột của nó (`DASHBOARD_CAPABILITIES.tripDetails`, `plannerLinks`), không vẽ 0.
+ */
+export type DashboardTripView = Pick<
+  DashboardTripRow,
+  'id' | 'name' | 'scheduledDate' | 'vehicleName' | 'driverName' | 'status' | 'volumePercent'
+> & Partial<Pick<DashboardTripRow, 'sub' | 'packageCount' | 'cargoWeightKg' | 'deliveredWeightKg' | 'issueCount' | 'plan'>>
 
 export type VehicleSummary = {
   readonly vehicleId: string
@@ -49,7 +57,8 @@ export type DashboardSummary = {
   readonly vehicles: {
     readonly inUse: number
     readonly total: number
-    readonly byStatus: Readonly<Record<VehicleStatus, number>>
+    /** `retired` (Ngừng sử dụng) chỉ máy chủ có; kho mẫu không có trạng thái đó. */
+    readonly byStatus: Readonly<Record<VehicleStatus, number>> & { readonly retired?: number }
   }
   /** Mỗi ngày của kỳ một phần tử; ngày không có bản đã duyệt thì `null`. */
   readonly fillByDay: readonly { readonly date: string; readonly averagePercent: number | null; readonly planCount: number }[]
@@ -57,8 +66,8 @@ export type DashboardSummary = {
   readonly tripsByStatus: readonly { readonly status: TripStatus; readonly count: number }[]
   /** Xe có chuyến trong kỳ, khối lượng đã giao giảm dần. */
   readonly byVehicle: readonly VehicleSummary[]
-  /** Chuyến trong kỳ, ngày chạy mới nhất trước. */
-  readonly trips: readonly DashboardTripRow[]
+  /** Chuyến trong kỳ, ngày chạy mới nhất trước: kho mẫu đủ mọi chuyến, máy chủ chỉ các chuyến gần nhất (`allTrips`). */
+  readonly trips: readonly DashboardTripView[]
 }
 
 function average(values: readonly number[]): number | null {
@@ -121,44 +130,12 @@ export function summarizeDashboard(data: DashboardData, period: DateRange): Dash
  * Xe theo trạng thái, cùng luật với màn Đội xe (`vehicleRows`): xe không có trong danh sách trạng thái là Sẵn sàng. Đếm trên
  * danh sách xe, nên trạng thái của xe đã xoá không được tính.
  */
-
-function summarizeFleet(
-  data: DashboardData,
-): DashboardSummary['vehicles'] {
-  // Dashboard hiện vẫn lấy trạng thái xe từ mock-db.
-  // Chuyển sang enum Backend trước khi thống kê.
-  const statusMap: Record<VehicleState['status'], VehicleStatus> = {
-    available: 'AVAILABLE',
-    in_use: 'IN_TRIP',
-    maintenance: 'MAINTENANCE',
-  }
-
-  const statusOf = new Map(
-    data.vehicleStates.map((state) => [
-      state.vehicleId,
-      statusMap[state.status],
-    ]),
-  )
-
-  const byStatus: Record<VehicleStatus, number> = {
-    AVAILABLE: 0,
-    IN_TRIP: 0,
-    MAINTENANCE: 0,
-    RETIRED: 0,
-  }
-
-  for (const vehicle of data.vehicles) {
-    const status = statusOf.get(vehicle.id) ?? 'AVAILABLE'
-    byStatus[status] += 1
-  }
-
-  return {
-    inUse: byStatus.IN_TRIP,
-    total: data.vehicles.length,
-    byStatus,
-  }
+function summarizeFleet(data: DashboardData): DashboardSummary['vehicles'] {
+  const statusOf = new Map(data.vehicleStates.map((state) => [state.vehicleId, state.status]))
+  const byStatus: Record<VehicleStatus, number> = { available: 0, in_use: 0, maintenance: 0 }
+  for (const vehicle of data.vehicles) byStatus[statusOf.get(vehicle.id) ?? 'available'] += 1
+  return { inUse: byStatus.in_use, total: data.vehicles.length, byStatus }
 }
-
 
 function summarizeVehicles(rows: readonly DashboardTripRow[]): VehicleSummary[] {
   const byVehicle = new Map<string, DashboardTripRow[]>()

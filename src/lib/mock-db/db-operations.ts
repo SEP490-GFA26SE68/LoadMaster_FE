@@ -4,7 +4,7 @@ import { departTripRequirements } from './db-requirement-trips'
 import { pickupDone, pickupDutiesAt, settlePickupStop } from './db-pickup-progress'
 import { labelsOf } from './db-scans'
 import { MockDbError } from './errors'
-import { latestApproved, leftOutIds, loadingRemaining, plannedStops, stagingRemaining, stopItemIds } from './operations'
+import { driverParam, latestApproved, leftOutIds, loadingRemaining, plannedStops, stagingRemaining, stopItemIds } from './operations'
 import { isStale } from './revisions'
 import type { DeliveryProgress, LoadingProgress, MockDb, Revision, StopProgress, Trip, TripPhase } from './types'
 import { pendingManualConfirms, withoutPendingConfirm, type VerifyContext } from './verify-model'
@@ -79,7 +79,9 @@ export function operationMethods(ctx: DbContext): OperationMethods {
           .filter((label) => planned.has(label.packageInstanceId) && ctx.state.packages.get(label.poolPackageId)?.status === 'STAGED')
           .map((label) => label.packageInstanceId)
         const loading: LoadingProgress = { revisionId: approved.id, startedAt: ctx.nowIso(), startedBy: ctx.state.session.userId, stagedIds, steps: [] }
-        ctx.log('loading.started', { type: 'trip', id: tripId }, { revisionId: approved.id })
+        // Soạn lại sau khi chuyến quay về Đã lập kế hoạch: sự kiện nói lý do lần trước (`replanReason`) để chuông của tài xế báo "soạn lại"
+        const restart: Record<string, string> = trip.replan === undefined ? {} : { replanReason: trip.replan.reason }
+        ctx.log('loading.started', { type: 'trip', id: tripId }, { revisionId: approved.id, ...restart, ...driverParam(trip) })
         const { replan: _replan, ...rest } = trip
         return put(trips, { ...rest, phase: 'loading', loading })
       }),
@@ -94,7 +96,7 @@ export function operationMethods(ctx: DbContext): OperationMethods {
         assertNoPendingConfirm(trip, ['STAGING', 'LOADING'])
         const loading = loadingOf(trip)
         const damaged = leftOutIds(trip).size
-        ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - damaged, damaged })
+        ctx.log('loading.completed', { type: 'trip', id: tripId }, { loaded: loading.steps.length - damaged, damaged, ...driverParam(trip) })
         settleLoadedPackages(ctx, trip)
         return put(trips, { ...trip, phase: 'loaded', loading: { ...loading, completedAt: ctx.nowIso() } })
       }),

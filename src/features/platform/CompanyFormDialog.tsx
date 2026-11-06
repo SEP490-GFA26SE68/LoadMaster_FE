@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Building2 } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { CoordinatePicker, placeAddress } from '@/components/map'
+import { CoordinatePicker } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { FieldMessage } from '@/components/ui/field-styles'
@@ -85,7 +85,7 @@ export function CompanyFormDialog({ company, onClose, onSubmit }: {
                       onChange={(next) => { field.onChange(next); field.onBlur() }}
                       showErrors={isSubmitted}
                       onPlacePicked={(place) => {
-                        if (form.getValues('depotAddress').trim() === '') form.setValue('depotAddress', placeAddress(place), { shouldDirty: true })
+                        if (form.getValues('depotAddress').trim() === '') form.setValue('depotAddress', place.address, { shouldDirty: true })
                       }}
                     />
                     {/* Hai ô đều trống: không ô nào sai, lỗi "chưa chọn toạ độ" nằm ở cả nhóm */}

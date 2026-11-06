@@ -7,10 +7,10 @@ import { stopDemandsOf } from './db-trip-lines'
 import { syncTripPool } from './db-trip-packages'
 import { settleSegregation } from './db-trip-segregation'
 import { MockDbError } from './errors'
-import { canCancelTrip, tripStatus } from './operations'
+import { canCancelTrip, driverParam, isKnownToDriver, tripStatus } from './operations'
 import { isValidCoordinate } from './requirement-model'
 import type { CompanyDepot } from './source-types'
-import { tripChangeParams } from './trip-changes'
+import { driverChangeParams, tripChangeParams } from './trip-changes'
 import { withFreshRoute } from './trip-route'
 import { withStopDemands } from './trip-stops'
 import type { MockDb, Trip, TripChanges } from './types'
@@ -131,7 +131,8 @@ export function tripMethods(ctx: DbContext): TripMethods {
         const logged = changed.filter((field) => !(dateOnly && field === 'departureAt'))
         // Kho xuất phát của chuyến ghi tên trường riêng: `depot` trong nhật ký là kho / chi nhánh của một tài khoản
         const fields = logged.map((field) => (field === 'depot' ? 'departureDepot' : field)).join(',')
-        ctx.log('trip.updated', { type: 'trip', id }, { fields, ...tripChangeParams(current, next, logged) })
+        // Đổi tài xế khi kho đã bắt đầu xếp: sự kiện nêu tài xế mới và tài xế cũ để chuông báo cả hai
+        ctx.log('trip.updated', { type: 'trip', id }, { fields, ...tripChangeParams(current, next, logged), ...driverChangeParams(current, next, changed) })
         const stored = put(trips, next)
         // Dòng kiện và điểm giao chỉ đổi được khi chuyến còn lập kế hoạch: kiện kho kiện của chuyến đổi theo (FE-3b-07)
         if (changed.includes('packages') || changed.includes('stops')) syncTripPool(ctx, stored)
@@ -146,15 +147,18 @@ export function tripMethods(ctx: DbContext): TripMethods {
         }
         const trimmed = reason.trim()
         if (trimmed === '') throw new MockDbError('REASON_REQUIRED', {})
+        // Tài xế được báo khi đã biết chuyến: kho đã bắt đầu xếp, hoặc chuyến đang tạm dừng sau lần quay về Đã lập kế hoạch; huỷ lúc còn
+        // lập kế hoạch lần đầu thì không
+        const driver = isKnownToDriver(current) ? driverParam(current) : {}
         if (current.phase === 'delivering') {
           // Vị trí xe ghi bù tới lúc huỷ; kiện chưa giao thành Hoàn trả và ở lại chuyến — yêu cầu giao của chúng đọc là giao thiếu
           advanceTracking(ctx, current)
           const returned = returnUndeliveredPackages(ctx, current)
-          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, returned })
+          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, returned, ...driver })
         } else {
           // Huỷ lúc Đang xếp hàng: `loaded` là số kiện đã lên xe — kho được báo dỡ phần đã xếp
           const loaded = current.loading?.steps.filter((step) => step.outcome === 'loaded').length
-          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, ...(loaded === undefined ? {} : { loaded }) })
+          ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, ...(loaded === undefined ? {} : { loaded }), ...driver })
           // Huỷ trước khi xe chạy (D-91): kiện về kho kiện, yêu cầu giao về "chờ xếp chuyến"
           releaseTripPackages(ctx, current)
           releaseTripRequirements(ctx, current)

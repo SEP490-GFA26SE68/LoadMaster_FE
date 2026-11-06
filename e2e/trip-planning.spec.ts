@@ -1,9 +1,8 @@
 import { expect, test } from './fixtures'
-import { switchUser } from './spec-flow-helpers'
 
 /**
- * FE-4b-03 → FE-4b-05 — lập chuyến trên kho in-memory của trang (không tải lại trang sau khi ghi; đổi người bằng `switchUser`):
- * quản lý công ty tạo yêu cầu giao, lấy toạ độ từ danh sách địa danh mẫu → điều phối viên tạo chuyến có giờ xuất phát và kho đi, không
+ * FE-4b-03 → FE-4b-05 — lập chuyến trên kho in-memory của trang (không tải lại trang sau khi ghi):
+ * điều phối viên tạo yêu cầu giao (`requirements.edit`, như backend), lấy toạ độ từ danh sách địa danh mẫu → tạo chuyến có giờ xuất phát và kho đi, không
  * nhập điểm giao → đưa hai yêu cầu cùng nơi vào chuyến: điểm giao tự sinh và gộp → đưa kiện Đã nhập thẳng vào một điểm giao tay →
  * gỡ yêu cầu: điểm tự sinh hết kiện tự mất, điểm tay ở lại.
  *
@@ -19,8 +18,8 @@ const dueDate = () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString
 test('stops are generated and merged from delivery requirements; loose pool packages go on a hand-added stop', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
 
-  // Quản lý công ty: yêu cầu mới tới KCN Hoà Khánh, toạ độ lấy từ danh sách địa danh mẫu (FE-4b-03)
-  await login('/yeu-cau-giao', 'companyManager')
+  // Điều phối viên: yêu cầu mới tới KCN Hoà Khánh, toạ độ lấy từ danh sách địa danh mẫu (FE-4b-03)
+  await login('/yeu-cau-giao', 'dispatcher')
   await page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Tạo yêu cầu giao' })
   await form.getByRole('textbox', { name: 'Tên điểm đến', exact: true }).fill('Xưởng Hoà Khánh')
@@ -43,8 +42,7 @@ test('stops are generated and merged from delivery requirements; loose pool pack
   await expect(form).toBeHidden()
   await expect(page.getByRole('row', { name: /REQ-007/ })).toContainText('Xưởng Hoà Khánh')
 
-  // Điều phối viên: tạo chuyến — giờ xuất phát, kho đi mặc định của công ty, không có ô điểm giao (FE-4b-04)
-  await switchUser(page, 'dispatcher')
+  // Tạo chuyến — giờ xuất phát, kho đi mặc định của công ty, không có ô điểm giao (FE-4b-04)
   await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
   await page.getByRole('link', { name: 'Tạo chuyến', exact: true }).first().click()
   await page.waitForURL(/\/chuyen\/moi$/)

@@ -73,7 +73,7 @@ export async function waitSceneReady(page: Page) {
     const started = performance.now()
     await new Promise<void>((resolve, reject) => {
       const tick = () => {
-        const canvas = document.querySelector('canvas')
+        const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')
         if (canvas && _roots.get(canvas)?.store.getState().controls) resolve()
         else if (performance.now() - started > 30_000) reject(new Error('scene was not ready within 30 s'))
         else requestAnimationFrame(tick)
@@ -153,7 +153,7 @@ export async function optimizeAndOpenPlanner(page: Page, label: 'A' | 'B' | 'C' 
   await optimizeAndCompare(page)
   await page.getByRole('link', { name: `Mở phương án ${label} trong Planner`, exact: true }).click()
   await page.waitForURL(/\/phuong-an\?revision=REV-\d+$/, { timeout: 60_000 })
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
 }
 
 /**

@@ -30,6 +30,8 @@ test('the demo driver sees only their trips, grouped by status (FE-6-01): the lo
       { number: 2, name: 'MM Mega Market An Phú', kind: 'DELIVERY', packageCount: 45, done: false },
       { number: 3, name: 'Circle K Phan Xích Long', kind: 'DELIVERY', packageCount: 45, done: false },
     ],
+    // Nguồn giờ của từng điểm trong thẻ: chính chuyến, đã tối ưu tuyến
+    schedule: expect.objectContaining({ id: 'TRIP-010', routePlan: expect.objectContaining({ isMockResult: true }) }),
   }])
   // TRIP-2026-0914 (Đã lập kế hoạch, đã duyệt, kho chưa bắt đầu) cũng gán cho tài xế này nhưng không còn hiện
   expect([groups.inTransit, groups.preparing]).toStrictEqual([[], []])

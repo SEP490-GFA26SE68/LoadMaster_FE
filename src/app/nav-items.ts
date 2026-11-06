@@ -1,4 +1,4 @@
-import { Box, Building2, ClipboardList, CreditCard, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
+import { Box, Building2, ClipboardList, CreditCard, Inbox, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
@@ -18,7 +18,7 @@ export type NavScreen = {
  * thêm một dòng ở đây và mã của nó vào `NAV_ITEMS` của vai trò, trong chính issue làm màn đó.
  */
 export const NAV_SCREENS = {
-  dashboard: { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+  dashboard: { to: '/tong-quan', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   trips: { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
   // Giám sát chuyến Đang vận chuyển (FE-6-10)
   monitoring: { to: '/giam-sat', labelKey: 'nav.monitoring', icon: MapPinned, permission: 'monitoring.view' },
@@ -36,17 +36,25 @@ export const NAV_SCREENS = {
   fleet: { to: '/doi-xe', labelKey: 'nav.fleet', icon: Warehouse, permission: 'fleet.view' },
   companyWarehouses: {
     to: '/quan-ly-kho',
-    labelKey: 'companyWarehouses.title',
+    labelKey: 'nav.companyWarehouses',
     icon: Warehouse,
     permission: 'companyWarehouses.manage',
   },
   // Công ty: quản trị hệ thống (FE-8-06)
   companies: { to: '/nen-tang/cong-ty', labelKey: 'nav.companies', icon: Building2, permission: 'companies.manage' },
+  // Thông tin công ty của chính mình: quản trị công ty
+  companyProfile: { to: '/cong-ty', labelKey: 'nav.companyProfile', icon: Building2, permission: 'companyProfile.manage' },
   // Hỗ trợ: Hỗ trợ khách hàng (FE-8-07)
   support: { to: '/ho-tro', labelKey: 'nav.support', icon: LifeBuoy, permission: 'support.handle' },
+  // Liên hệ của khách gửi từ trang giới thiệu công khai: ba vai trò nền tảng
+  contacts: { to: '/lien-he-khach', labelKey: 'nav.contacts', icon: Inbox, permission: 'contacts.handle' },
   users: { to: '/nguoi-dung', labelKey: 'nav.users', icon: Users, permission: 'users.manage' },
   // Gói cước: quản lý nền tảng quản lý danh mục gói (FE-8-02); quản trị công ty xem gói và credit của công ty (FE-8-03)
   plans: { to: '/nen-tang/goi', labelKey: 'nav.plans', icon: Layers, permission: 'subscriptionPlans.manage' },
+  // Lịch sử gói cước đã thêm/kích hoạt
+  subscriptionHistory: { to: '/nen-tang/lich-su-goi', labelKey: 'nav.subscriptionHistory', icon: ScrollText, permission: 'subscriptionPlans.manage' },
+  // Đơn yêu cầu tạo tài khoản dùng thử
+  trialRequests: { to: '/nen-tang/yeu-cau-dung-thu', labelKey: 'nav.trialRequests', icon: ClipboardList, permission: 'trialRequests.manage' },
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
   audit: { to: '/nhat-ky', labelKey: 'nav.audit', icon: ScrollText, permission: 'audit.view' },
   warehouse: { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
@@ -59,19 +67,18 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * Mục điều hướng của từng vai trò, theo thứ tự của vai trò đó (FE-0-04): màn chính của vai trò đứng đầu. Danh sách là phần chọn lọc
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
- * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký. Quản trị công ty: Người dùng · Nhật ký · Gói và credit (FE-8-03). Quản lý nền tảng: Gói cước (FE-8-02). Hỗ trợ khách hàng: Hỗ trợ (FE-8-07).
- * - Quản lý công ty lập yêu cầu giao (FE-4b-02) và xem kho kiện chỉ đọc (FE-3b-03); điều phối viên xem yêu cầu giao để đưa vào chuyến.
- * - Giám sát (FE-6-10) đứng ngay sau Chuyến hàng ở cả hai vai trò: chuyến đang chạy là việc kế tiếp của chuyến đã lập.
- * - Nhân viên kho, tài xế làm việc ở màn toàn màn hình; thanh này chỉ hiện với họ ở màn hồ sơ, mục duy nhất đưa về màn của mình.
+ * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký ·
+ *   Gói và credit (FE-8-03) · Thông tin công ty.
+ *   Quản lý nền tảng: Gói cước (FE-8-02) · Lịch sử gói · Công ty · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['companies', 'users', 'audit'],
-  systemManager: ['plans'],
-  systemSupporter: ['support'],
-  companyAdmin: ['users', 'audit', 'billing'],
-  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet','companyWarehouses'],
+  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests'],
+  systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests'],
+  systemSupporter: ['support', 'contacts'],
+  companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
+  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet', 'companyWarehouses'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
-  warehouse: ['packages', 'warehouseCustomers', 'warehouse'],
+  warehouse: ['warehouse', 'packages', 'warehouseCustomers'],
   driver: ['driver'],
 }
 
@@ -86,5 +93,5 @@ export function navItemsFor(role: Role): readonly NavScreen[] {
 
 /** Đích của logo: bảng điều khiển khi vai trò xem được, không thì màn chính của vai trò — không bao giờ là màn 403. */
 export function logoPath(role: Role | undefined): string {
-  return role === undefined || can(role, 'dashboard.view') ? '/' : ROLE_HOME[role]
+  return role === undefined || can(role, 'dashboard.view') ? '/tong-quan' : ROLE_HOME[role]
 }

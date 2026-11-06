@@ -45,7 +45,7 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
 
   // Điều phối viên tự duyệt phương án B vừa tối ưu: mở đúng bản đó từ lịch sử lần chạy, Duyệt tạo revision đã duyệt mới và mở nó
   await newestRun(page).getByRole('link', { name: /^Mở phương án REV-\d+ trong Planner$/ }).nth(1).click()
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   const sourceRevision = new URL(page.url()).searchParams.get('revision')
   expect(sourceRevision).toMatch(/^REV-\d+$/)
   await button(page, 'Duyệt phương án').click()
@@ -62,7 +62,7 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
   await switchUser(page, 'companyManager')
   for (const route of [approvedRoute, `/chuyen/${TRIP}/phuong-an?revision=${sourceRevision}`]) {
     await navigateInApp(page, route)
-    await page.locator('canvas').waitFor()
+    await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
     await expect(page.locator('[data-planner-lock="readOnly"]'), route).toHaveText('Chỉ xem: chỉ điều phối viên chỉnh sửa và duyệt phương án.')
     for (const name of ['Chỉnh sửa', 'Duyệt phương án', 'Duyệt bản chỉnh']) await expect(button(page, name), `${route}: ${name}`).toHaveCount(0)
   }
@@ -70,8 +70,8 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
   await expect(page.locator('header').first()).toContainText(APPROVED_BY_DISPATCHER)
 
   // Hàng đợi duyệt đã bỏ: không còn mục điều hướng, đường dẫn cũ là màn 404
-  await navigateInApp(page, '/')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe'])
+  await navigateInApp(page, '/tong-quan')
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi'])
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])

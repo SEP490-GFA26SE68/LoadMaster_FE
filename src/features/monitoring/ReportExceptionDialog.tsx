@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { MAX_EXCEPTION_DELAY_MINUTES, MAX_EXCEPTION_NOTE_LENGTH, TRIP_EXCEPTION_TYPES } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
-import { useReportExceptionMutation } from './useMonitoringQuery'
+import { useMonitoringCapabilities, useReportExceptionMutation } from './useMonitoringQuery'
 
 /** Lỗi của form là mã; component dịch qua `monitoring.reportDialog.errors`. */
 const schema = z.object({
@@ -27,23 +27,27 @@ const isError = (code: string | undefined): code is (typeof ERRORS)[number] => E
 /**
  * Hộp "Báo sự cố" của một chuyến Đang vận chuyển (FE-6-11, D-87): loại (5 loại, nhãn ở `common.tripExceptionTypes`), mô tả và số phút
  * dự kiến chậm. Dùng ở màn Giám sát (điều phối viên) và ở màn điểm giao của tài xế (`touch`: chữ 16 px, ô và nút 56 px, dưới 768 px là tờ trượt từ đáy). Form dựng lại
- * mỗi lần mở.
+ * mỗi lần mở. Bản `touch` theo nguồn của nhóm `driver` (`serverRecorded`: máy chủ ghi, câu mô tả không nói tới xe mô phỏng), bản của
+ * màn Giám sát theo nguồn của nhóm `monitoring`. `tripLabel` là mã chuyến hiện trên tiêu đề khi `tripId` là mã số của máy chủ.
  */
-export function ReportExceptionDialog({ tripId, open, onOpenChange, touch = false }: { tripId: string; open: boolean; onOpenChange: (open: boolean) => void; touch?: boolean }) {
+export function ReportExceptionDialog({ tripId, tripLabel, open, onOpenChange, touch = false, serverRecorded = false }: {
+  tripId: string; tripLabel?: string; open: boolean; onOpenChange: (open: boolean) => void; touch?: boolean; serverRecorded?: boolean
+}) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
         <DialogContent sheet={touch} className="w-[min(34rem,calc(100vw-3rem))]">
-          <ReportForm tripId={tripId} touch={touch} onDone={() => onOpenChange(false)} />
+          <ReportForm tripId={tripId} tripLabel={tripLabel ?? tripId} touch={touch} serverRecorded={serverRecorded} onDone={() => onOpenChange(false)} />
         </DialogContent>
       ) : null}
     </Dialog>
   )
 }
 
-function ReportForm({ tripId, touch, onDone }: { tripId: string; touch: boolean; onDone: () => void }) {
+function ReportForm({ tripId, tripLabel, touch, serverRecorded, onDone }: { tripId: string; tripLabel: string; touch: boolean; serverRecorded: boolean; onDone: () => void }) {
   const t = useT()
-  const report = useReportExceptionMutation(tripId)
+  const caps = useMonitoringCapabilities()
+  const report = useReportExceptionMutation(tripId, touch ? 'driver' : 'board')
   const form = useForm<ReportInput, unknown, ReportValues>({ resolver: zodResolver(schema), defaultValues: { description: '', delayMinutes: '' } })
   const { errors } = form.formState
   const message = (code: string | undefined) => (isError(code) ? t(`monitoring.reportDialog.errors.${code}`, { max: code === 'delayInvalid' ? MAX_EXCEPTION_DELAY_MINUTES : MAX_EXCEPTION_NOTE_LENGTH }) : undefined)
@@ -62,7 +66,14 @@ function ReportForm({ tripId, touch, onDone }: { tripId: string; touch: boolean;
 
   return (
     <form noValidate className={touch ? 'text-body-lg' : undefined} onSubmit={form.handleSubmit(handleReport)}>
-      <DialogHeader icon={TriangleAlert} tone="warning" title={t('monitoring.reportDialog.title', { id: tripId })} description={t('monitoring.reportDialog.description')} />
+      <DialogHeader
+        icon={TriangleAlert}
+        tone="warning"
+        title={t('monitoring.reportDialog.title', { id: tripLabel })}
+        description={t(touch
+          ? serverRecorded ? 'monitoring.backend.driverReportDescription' : 'monitoring.reportDialog.description'
+          : caps.backend ? 'monitoring.backend.reportDescription' : 'monitoring.reportDialog.description')}
+      />
       <div className="flex flex-col gap-4 px-7 py-5 max-sm:px-5">
         <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0" aria-invalid={typeError ? true : undefined}>
           <legend className="mb-1.5 p-0 text-small font-semibold text-ink-2">{t('monitoring.reportDialog.type')}</legend>

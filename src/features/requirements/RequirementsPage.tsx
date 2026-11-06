@@ -23,8 +23,8 @@ import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
 import { useDeleteRequirementMutation, useRequirementsQuery, useUnassignRequirementMutation } from './useRequirementsQuery'
-import { useNavigate } from 'react-router'
-
+import { RequirementsPage as BackendRequirementsPage } from './backend/RequirementsPage'
+import { usesBackend } from '@/lib/backend-config'
 
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 
@@ -34,10 +34,9 @@ type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
  * gỡ khỏi chuyến từ menu cuối dòng. Một thẻ gồm thanh tìm / lọc (trạng thái, ưu tiên, khoảng hạn) và bảng, mặc định sắp theo hạn gần
  * nhất trước; bấm mã yêu cầu mở chi tiết. Tìm, lọc, sắp xếp giữ trên URL (D-52).
  */
-export function RequirementsPage() {
+function StoreRequirementsPage() {
   const t = useT()
   const can = useCan()
-  const navigate = useNavigate()
   const canEdit = can('requirements.edit')
   const canAssign = can('trips.edit')
   const query = useRequirementsQuery()
@@ -59,34 +58,18 @@ export function RequirementsPage() {
     canAssign,
     onAction: (action: RequirementAction, row: RequirementRow) => {
       const { id } = row.requirement
-
-      if (action === 'view') {
-        setViewing(id)
-      } else if (action === 'viewTrip') {
-        const tripId = row.requirement.tripId
-
-        if (tripId) {
-          navigate(`/chuyen/${encodeURIComponent(tripId)}`)
-        }
-      } else if (action === 'edit') {
-        setEditing({ kind: 'edit', row })
-      } else if (action === 'delete') {
-        setDeleting(row)
-      } else if (action === 'assign') {
-        setAssigning(id)
-      } else if (action === 'unassign') {
+      if (action === 'view') setViewing(id)
+      else if (action === 'edit') setEditing({ kind: 'edit', row })
+      else if (action === 'delete') setDeleting(row)
+      else if (action === 'assign') setAssigning(id)
+      else {
         unassign.mutate(id, {
-          onSuccess: () =>
-            toast.success(
-              t('requirements.assign.unassigned', { id }),
-            ),
-          onError: (error) =>
-            toast.error(dataErrorMessage(error, t)),
+          onSuccess: () => toast.success(t('requirements.assign.unassigned', { id })),
+          onError: (error) => toast.error(dataErrorMessage(error, t)),
         })
       }
-
     },
-  }), [canEdit, canAssign, unassign, t, navigate])
+  }), [canEdit, canAssign, unassign, t])
 
   const fields: FilterField<RequirementFilterName>[] = [
     { kind: 'select', name: STATUS_FILTER, label: t('requirements.filters.status'), options: REQUIREMENT_STATUS_ORDER.map((value) => ({ value: REQUIREMENT_STATUS_SLUGS[value], label: t(`requirements.status.${value}`) })) },
@@ -197,4 +180,9 @@ export function RequirementsPage() {
       ) : null}
     </div>
   )
+}
+
+/** Nhóm `trips` nối backend thì màn là bản của nhóm phát triển (`./backend`), đọc ghi máy chủ; không thì là kho mẫu. */
+export function RequirementsPage() {
+  return usesBackend('trips') ? <BackendRequirementsPage /> : <StoreRequirementsPage />
 }

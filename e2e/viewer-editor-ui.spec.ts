@@ -159,7 +159,7 @@ test('touch editing uses 56px controls, a full-width scene and captured touch dr
   await button(page, 'Hoàn tác').tap()
   const nudgeBounds = (await nudge.boundingBox())!
   expect(nudgeBounds.height >= 56 && nudgeBounds.width >= 56).toBeTruthy()
-  const sceneBounds = (await page.locator('canvas').boundingBox())!
+  const sceneBounds = (await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!
   expect(sceneBounds.width >= viewport.width - 20 && sceneBounds.height >= 192).toBeTruthy()
   if (testInfo.project.name === 'tablet') {
     await cameraPreset(page, 'Trên')

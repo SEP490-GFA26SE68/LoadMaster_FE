@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { getMockDb } from '@/lib/mock-db'
 import { unloadStop } from '@/test/trip-flow'
-import { LOAD, renderDriver } from './driver-test-utils'
+import { completeStop, LOAD, renderDriver } from './driver-test-utils'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 
@@ -81,7 +81,11 @@ test('the pickup stop is named in the stop list with its own icon and words, the
   expect(list.getAllByText('Đã nhận · gõ mã')).toHaveLength(2)
   expect((await db.getPackage(first.id)).status).toBe('LOADED')
 
-  await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất điểm nhận' }))
+  // Hộp hỏi lại nói hai kiện sẽ lên xe và điểm kế tiếp là điểm giao của chúng
+  await completeStop('Hoàn tất điểm nhận', (dialog) => {
+    expect(within(dialog).getByText('2 kiện đã nhận lên xe, được ghi Đang vận chuyển.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tiếp theo: điểm 4 · Bếp ăn công nghiệp KCN Sóng Thần.')).toBeInTheDocument()
+  })
   expect(await screen.findByRole('heading', { level: 1, name: 'Điểm 4 / 4' }, LOAD)).toBeInTheDocument()
   expect((await db.getPackage(first.id)).status).toBe('IN_TRANSIT')
   expect(await db.getPickupRequest(TRIP, 'PKR-002')).toMatchObject({ status: 'LOADED' })

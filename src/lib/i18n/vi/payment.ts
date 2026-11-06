@@ -36,4 +36,18 @@ export const payment = {
     FAILED: 'Thanh toán không thành công, số dư không đổi',
     CANCELLED: 'Đã huỷ thanh toán, số dư không đổi',
   },
+  /** Trang xác nhận `/thanh-toan/ket-qua` khi nối backend: cổng thanh toán thử của máy chủ, kết quả đọc lại từ máy chủ. */
+  server: {
+    title: 'Xác nhận thanh toán',
+    loading: 'Đang xác nhận với máy chủ',
+    notice: 'Máy chủ đang dùng cổng thanh toán thử: không có cổng thật và không có tiền nào bị trừ.',
+    purposes: { SUBSCRIBE: 'Đăng ký gói', TOPUP: 'Nạp credit' },
+    hint: 'Xác nhận để máy chủ ghi nhận thanh toán thành công: gói được kích hoạt hoặc credit được cộng, đúng một lần. Kết quả đọc lại từ máy chủ.',
+    confirm: 'Xác nhận thanh toán',
+    cancel: 'Huỷ',
+    cancelled: 'Chưa thanh toán — gói và số dư không đổi',
+    notConfirmed: 'Máy chủ chưa ghi nhận thanh toán này (mã cổng {code}). Gói và số dư không đổi.',
+    retry: 'Thử lại',
+    notFound: 'Đường dẫn thiếu mã giao dịch hoặc loại thanh toán.',
+  },
 } as const

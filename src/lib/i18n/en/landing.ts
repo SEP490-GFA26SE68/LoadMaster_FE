@@ -1,0 +1,213 @@
+import type { Dictionary } from '../types'
+import type { landing as source } from '../vi/landing'
+
+export const landing = {
+  skipToContent: 'Skip to main content',
+  header: {
+    nav: 'Site sections',
+    menu: 'Site menu',
+    features: 'Features',
+    how: 'How it works',
+    pricing: 'Pricing',
+    contact: 'Contact',
+    signIn: 'Sign in',
+    openApp: 'Open the app',
+    home: 'LoadMaster home',
+  },
+  hero: {
+    eyebrow: '3D load planning for transport companies',
+    title: 'Make the most of every truck, unload in the right order, follow it to the last stop.',
+    lede: 'LoadMaster helps dispatchers build trips and optimize routes and 3D load plans. The warehouse loads and the driver unloads from the same approved plan.',
+    cta: 'Talk to us',
+    pricing: 'See pricing',
+    artworkLabel: 'A truck body being loaded in unloading order',
+    roles: 'One plan for all four roles',
+  },
+  stage: {
+    title: 'Sample 6 m body',
+    caption: 'A sample trip of {count} packages for {stops} stops, planned by the simulated optimizer right in your browser, then loaded box by box in order. Cargo for the last stop sits deepest, cargo for the first stop by the door.',
+    artworkCaption: 'Illustration: cargo for the last stop sits deepest, cargo for the first stop by the door — at each stop you take that stop’s cargo.',
+    preparing: 'Planning the sample trip…',
+    views: 'View',
+    view: {
+      overview: 'Overview',
+      zones: 'Stop zones',
+      door: 'Rear door',
+    },
+    replay: 'Load again',
+    replayLabel: 'Load the truck again from empty',
+    legend: 'Package colour by delivery stop',
+    stop: 'Stop {number}',
+    readout: {
+      title: 'Result of this run',
+      placed: 'Packages placed',
+      placedValue: '{placed} / {total}',
+      volume: 'Volume used',
+      payload: 'Payload used',
+      rehandling: 'Re-handling',
+      runtime: 'Planning time',
+      runtimeValue: '{ms} ms',
+    },
+  },
+  sample: {
+    stop1: 'Supermarket',
+    stop2: 'Convenience store',
+    stop3: 'Distributor',
+    stop4: 'Grocery wholesaler',
+  },
+  facts: {
+    title: 'Numbers you can check',
+    lede: 'Every number below comes straight from the app’s source code or from its own measurements — none of them is a guess.',
+    orientations: {
+      label: 'orientations tried for every package',
+      source: 'Packages that must stay upright use two; an orientation that does not fit through the door is ruled out.',
+    },
+    plans: {
+      label: 'plans from every optimization run',
+      source: 'Most volume, balanced axle load, least re-handling — compared side by side, then one is approved.',
+    },
+    precision: {
+      label: 'rounding step for dimensions',
+      source: 'Weight is rounded to {kg}; two packages that only touch are never reported as overlapping because of rounding.',
+    },
+    speed: {
+      value: '< {seconds} s',
+      label: 'to place {count} packages, all three plans',
+      source: 'Performance gate of the simulated optimizer, measured on a development machine.',
+    },
+    pickup: {
+      label: 'rules checked before an on-the-way pickup',
+      source: 'Payload, axle load, centre of gravity, free space in the body, unloading order, deadlines…',
+    },
+    roles: {
+      label: 'roles, each seeing only its own work',
+      source: 'Three platform roles and five roles for the transport company.',
+    },
+  },
+  features: {
+    title: 'Key features',
+    lede: 'One system for the whole trip: from receiving the packages to finishing the last stop.',
+    loading: {
+      title: '3D loading by delivery stop',
+      text: 'Cargo for the last stop sits deepest and cargo for the first stop sits by the door: at each stop you take that stop’s cargo. View, rotate and adjust the plan in 3D.',
+    },
+    zones: {
+      door: 'Rear door',
+      zone: 'Zone {number}',
+    },
+    plans: {
+      title: 'Three plans, one run',
+      text: 'Every run gives three plans for three goals. Compare them side by side, adjust by hand if needed, then approve one.',
+    },
+    route: {
+      title: 'Route optimization and monitoring',
+      text: 'Optimize the order of stops, compare estimated arrival times with delivery deadlines, see the vehicle on the map and incidents on the road.',
+      depot: 'Depot',
+    },
+    verify: {
+      title: 'Three-level package check',
+      text: 'Every package is checked while staging, loading and unloading. A torn or missing label does not stop the work: it waits for the dispatcher’s approval.',
+      levels: {
+        qr: 'Scan the QR code',
+        code: 'Type the code',
+        manual: 'Confirm by hand',
+      },
+    },
+    pickup: {
+      title: 'Pickups on the way',
+      text: 'A truck on the road can still take more cargo: ten rules are checked before approval, and new packages go into free space without moving anything already on board.',
+    },
+    roles: {
+      title: 'The right screen for every role',
+      text: 'The same plan goes through four roles, each working on their own device.',
+    },
+    roleList: {
+      dispatcher: 'Builds trips, runs the optimization, compares and approves plans.',
+      warehouse: 'Stages and loads each package on a tablet, checked by QR code.',
+      driver: 'Delivers stop by stop on a phone and sees where the cargo sits in the truck.',
+      companyManager: 'Creates delivery requirements, follows the dashboard and exports reports.',
+    },
+  },
+  how: {
+    title: 'How it works',
+    lede: 'The four steps of a trip in LoadMaster.',
+    step: 'Step {number}',
+    who: 'Done by',
+    steps: {
+      intake: {
+        title: 'Packages and delivery requirements',
+        text: 'Import packages from a file or add them by hand and print QR labels. The manager creates delivery requirements with a destination and a deadline.',
+      },
+      plan: {
+        title: 'Build the trip, optimize the route',
+        text: 'The dispatcher adds requirements to a trip, picks a vehicle and optimizes the order of stops.',
+      },
+      optimize: {
+        title: 'Load in 3D, compare, approve',
+        text: 'One run gives three plans for three goals. Compare them, adjust by hand if needed, then approve.',
+      },
+      operate: {
+        title: 'Stage, load, deliver, monitor',
+        text: 'The warehouse checks each package while staging and loading, the driver delivers stop by stop, the dispatcher monitors vehicles and handles incidents.',
+      },
+    },
+  },
+  plans: {
+    title: 'Plans',
+    lede: 'Choose by the number of 3D optimization runs a month. Route optimization uses no credits.',
+    credit: 'One 3D optimization run uses 1 credit and gives all three plans.',
+    credits: '{count} credits a month',
+    compare: 'Compare the plans',
+    loading: 'Loading the plans',
+    error: 'The plans could not be loaded. The pricing page has the details of every plan.',
+  },
+  contact: {
+    title: 'Contact LoadMaster',
+    lede: 'Leave your details and the LoadMaster team will get back to you about the plan and setup that fit your fleet.',
+    signUpNote: 'Company accounts are created by the LoadMaster team after talking with you.',
+    loading: 'Loading the contact form',
+    next: {
+      title: 'After you send it',
+      reply: 'The LoadMaster team reads your request and replies to the email you left.',
+      talk: 'We talk about your fleet, your usual routes and the plan that fits.',
+    },
+    form: {
+      fullName: 'Full name',
+      email: 'Email',
+      emailPlaceholder: 'name@company.com',
+      phone: 'Phone number',
+      company: 'Company name',
+      type: 'What do you need',
+      plan: 'Plan of interest',
+      noPlan: 'No plan chosen',
+      message: 'Message',
+      messagePlaceholder: 'Number of vehicles, usual routes, what you would like to know.',
+      submit: 'Send request',
+      errors: {
+        fullNameRequired: 'Enter your full name',
+        fullNameTooLong: 'The name can be at most {max} characters',
+        emailRequired: 'Enter your email',
+        emailInvalid: 'This email is not valid',
+        emailTooLong: 'The email can be at most {max} characters',
+        phoneTooLong: 'The phone number can be at most {max} characters',
+        companyTooLong: 'The company name can be at most {max} characters',
+        messageTooLong: 'The message can be at most {max} characters',
+      },
+    },
+    sent: {
+      title: 'Request {id} received',
+      text: 'The LoadMaster team will get back to you at the email you entered.',
+      again: 'Send another request',
+    },
+  },
+  footer: {
+    nav: 'Footer links',
+    product: 'Product',
+    account: 'Account',
+    landing: 'About',
+    pricing: 'Pricing',
+    contact: 'Contact',
+    signIn: 'Sign in',
+    note: 'This is a demo: the data in the app is sample data, and optimization results come from the simulated optimizer and always carry the MOCK RESULT label.',
+  },
+} satisfies Dictionary<typeof source>

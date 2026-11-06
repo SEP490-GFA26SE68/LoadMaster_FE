@@ -24,7 +24,7 @@ async function select(page: Page, id: string) {
 test('the dispatcher edits by hand: pulling the bottom package out drops the one on top, undo lifts it back, "Approve edits" approves the edited plan', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
   await login(PLANNER_ROUTE, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   // Bản đã duyệt không có nút chính nào cho tới khi dời kiện
   await button(page, 'Chỉnh sửa').click()
   await expect(button(page, 'Duyệt bản chỉnh')).toHaveCount(0)
@@ -74,7 +74,7 @@ test('the dispatcher edits by hand: pulling the bottom package out drops the one
 function handlePoint(page: Page, axis: 'x' | 'y' | 'z', deltaCm: [number, number, number] = [0, 0, 0]) {
   return page.evaluate(async ({ url, name, delta }) => {
     const { _roots } = (await import(url)) as R3FModule
-    const canvas = document.querySelector('canvas')!
+    const canvas = document.querySelector('canvas:not(.maplibregl-canvas)')!
     const s = _roots.get(canvas)!.store.getState()
     const handle = s.scene.getObjectByName(name)!
     const position = handle.getWorldPosition(handle.position.clone())
@@ -90,7 +90,7 @@ function handlePoint(page: Page, axis: 'x' | 'y' | 'z', deltaCm: [number, number
 test('grabbing the Z arrow lifts the package straight up only, and dragging it back down snaps it home (LM-108)', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
   await login(PLANNER_ROUTE, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await button(page, 'Chỉnh sửa').click()
   // PKG-004-13: nóc ở 200 cm, phía trên trống tới trần 240 cm, không kiện nào tựa lên nó (nâng lên không kéo theo kiện khác)
   await select(page, 'PKG-004-13')

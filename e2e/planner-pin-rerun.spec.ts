@@ -30,7 +30,7 @@ function placementsOf(page: Page, revisionIds: readonly string[]) {
 test('a pinned package is saved with the approved plan and keeps its place in all three plans of the next run', async ({ page, login, browserErrors }) => {
   test.setTimeout(3 * 60_000)
   await login(PLANNER_ROUTE, 'dispatcher')
-  await page.locator('canvas').waitFor()
+  await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   // Chưa ghim kiện nào: không có nhãn kiện đã ghim và không có nút chạy lại giữ ghim
   await expect(button(page, 'Chạy lại giữ ghim')).toHaveCount(0)
   const [original] = await placementsOf(page, [])

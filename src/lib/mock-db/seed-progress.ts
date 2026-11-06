@@ -69,19 +69,22 @@ export function seedLoading(spec: TripSpec, today: string, approved: Revision, e
     return { packageInstanceId, outcome: 'loaded' as const, at, via: 'qr' as const }
   })
   const target = { type: 'trip' as const, id: spec.id }
-  events.push({ at: startedAt, actorId: spec.warehouseId, action: 'loading.started', target, params: { revisionId: approved.id } })
+  // Như `startLoading` / `completeLoading`: sự kiện nêu tài xế của chuyến để chuông của tài xế báo đúng người
+  const driver: Record<string, string> = spec.driverId === null ? {} : { driverId: spec.driverId }
+  events.push({ at: startedAt, actorId: spec.warehouseId, action: 'loading.started', target, params: { revisionId: approved.id, ...driver } })
   for (const step of steps.filter((item) => item.outcome === 'damaged')) {
     if (restingOnIds(approved.result.placements, step.packageInstanceId).length > 0) {
       throw new Error(`Chuyến seed ${spec.id}: kiện hỏng ${step.packageInstanceId} có kiện tựa lên trong phương án — chọn bước khác`)
     }
-    // Kiện thêm ngay trong chuyến mang mã của bên gửi bằng mã instance (FE-3b-07)
+    // Kiện thêm ngay trong chuyến mang mã của bên gửi bằng mã instance (FE-3b-07). Như `reportDamagedPackage`: kiện bị bỏ lại kho, kho
+    // xếp tiếp — chuyến không đổi gì với tài xế nên sự kiện không nêu tài xế
     events.push({ at: step.at, actorId: spec.warehouseId, action: 'loading.damaged', target, params: { packageInstanceId: step.packageInstanceId, packageCode: step.packageInstanceId } })
   }
   const base = { revisionId: approved.id, startedAt, startedBy: spec.warehouseId, stagedIds: sequence, steps }
   if (spec.outcome === 'loading') return { loading: base, verifications: verify.entries }
   const completedAt = addSeconds(loadingFrom, (steps.length + 1) * STEP_SECONDS)
   const damaged = steps.filter((step) => step.outcome === 'damaged').length
-  events.push({ at: completedAt, actorId: spec.warehouseId, action: 'loading.completed', target, params: { loaded: steps.length - damaged, damaged } })
+  events.push({ at: completedAt, actorId: spec.warehouseId, action: 'loading.completed', target, params: { loaded: steps.length - damaged, damaged, ...driver } })
   return { loading: { ...base, completedAt }, verifications: verify.entries }
 }
 

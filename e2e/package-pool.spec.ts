@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures'
 
 /**
- * Kho kiện `/kien-hang` của điều phối viên (FE-3b-03, FE-3b-02): thêm loại kiện → thêm một kiện gắn loại đó (mã QR có ngay) → in nhãn;
+ * Kho kiện `/kien-hang` của nhân viên kho (packages.manage, như backend; FE-3b-03, FE-3b-02): thêm loại kiện → thêm một kiện gắn loại đó (mã QR có ngay) → in nhãn;
  * nhập file `.csv` có xem trước; tải file mẫu. Kho nằm trong bộ nhớ trang nên mọi bước đi bằng liên kết trong app, không tải lại trang.
  * Seed neo 14/09/2026: 8 loại kiện (`PT-001…008`), kho kiện Long Bình 2.951 kiện — 88 kiện `PK-0001…0088` đều "Đã nhập" đứng đầu bảng,
  * rồi 2.863 kiện nhập tay của 15 chuyến seed (`PK-T…`, FE-3b-07) mang trạng thái theo tiến độ chuyến.
@@ -9,9 +9,9 @@ import { expect, test } from './fixtures'
 const HEADER = 'package_code,length,width,height,weight,handling_class,destination,package_type'
 const csv = (lines: readonly string[]) => ({ name: 'kien.csv', mimeType: 'text/csv', buffer: Buffer.from([HEADER, ...lines].join('\r\n'), 'utf8') })
 
-test('the dispatcher adds a package type, adds a package that gets its QR code at once and prints its label', async ({ page, login, browserErrors }) => {
+test('the warehouse worker adds a package type, adds a package that gets its QR code at once and prints its label', async ({ page, login, browserErrors }) => {
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
-  await login('/loai-kien', 'dispatcher')
+  await login('/loai-kien', 'warehouse')
   await expect(page.getByRole('heading', { level: 1, name: 'Loại kiện', exact: true })).toBeVisible()
 
   // 1. Loại kiện mới
@@ -64,7 +64,7 @@ test('the dispatcher adds a package type, adds a package that gets its QR code a
   const panel = page.getByRole('complementary', { name: 'Chi tiết kiện NM-DNG-0914-01' })
   await expect(panel.getByRole('img', { name: /^Mã QR LM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/ })).toBeVisible()
   await expect(panel).toContainText('Thùng nước mắm 12 chai · PT-009')
-  await expect(panel.getByRole('list', { name: 'Lịch sử' }).getByRole('listitem')).toHaveText([/^Vào kho kiện: Thêm lẻ.*Nguyễn Thanh Tùng$/])
+  await expect(panel.getByRole('list', { name: 'Lịch sử' }).getByRole('listitem')).toHaveText([/^Vào kho kiện: Thêm lẻ.*Lê Văn Hải$/])
   const row = page.getByRole('row', { name: /PK-0089/ })
   await expect(row).toContainText('NM-DNG-0914-01')
   await expect(row).toContainText('Đã nhập')
@@ -93,7 +93,7 @@ test('the dispatcher adds a package type, adds a package that gets its QR code a
   await labelsHero.getByRole('link', { name: 'Về kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
   const poolHero = page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true }).locator('xpath=ancestor::header[1]')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
+  await expect(nav.getByRole('link')).toHaveText(['Kho', 'Kho kiện', 'Khách hàng'])
   await poolHero.getByRole('link', { name: 'Loại kiện', exact: true }).click()
   await page.waitForURL(/\/loai-kien$/)
   await expect(page.getByRole('button', { name: /^Xoá Thùng nước mắm 12 chai\. Còn 1 kiện dùng loại này/ })).toHaveAttribute('aria-disabled', 'true')
@@ -104,7 +104,7 @@ test('the dispatcher adds a package type, adds a package that gets its QR code a
 })
 
 test('importing a file: an error row blocks the whole file, a clean file is imported in one go; both templates download', async ({ page, login, browserErrors }) => {
-  await login('/kien-hang', 'dispatcher')
+  await login('/kien-hang', 'warehouse')
   await expect(page.getByText('2.951 kiện trong kho kiện', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Nhập file', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nhập file vào kho kiện' })
@@ -144,7 +144,7 @@ test('importing a file: an error row blocks the whole file, a clean file is impo
 })
 
 test('a package type still used by the company cannot be deleted, and the reason is shown on the spot', async ({ page, login, browserErrors }) => {
-  await login('/loai-kien', 'dispatcher')
+  await login('/loai-kien', 'warehouse')
   const blocked = page.getByRole('button', { name: /^Xoá Thùng nước suối 24 chai\. Còn 12 kiện dùng loại này/ })
   await expect(blocked).toHaveAttribute('aria-disabled', 'true')
   // Loại chưa có kiện nào thì xoá được sau khi xác nhận

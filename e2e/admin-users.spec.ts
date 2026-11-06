@@ -25,7 +25,7 @@ async function signIn(page: Page, email: string, password: string) {
 
 test('a driver account the company administrator creates signs in with its one-time password; locked, it is refused', async ({ page, login, browserErrors }) => {
   await login('/nguoi-dung', 'companyAdmin')
-  await page.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
+  await page.getByRole('button', { name: 'Thêm nhân viên', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Thêm người dùng', exact: true })
   await form.getByRole('textbox', { name: 'Họ và tên', exact: true }).fill(NEW_DRIVER.name)
   await form.getByRole('textbox', { name: 'Số điện thoại', exact: true }).fill('0915111222')
@@ -62,6 +62,9 @@ test('a driver account the company administrator creates signs in with its one-t
     await expect(lock).toBeVisible({ timeout: 3_000 })
   }).toPass({ timeout: 30_000 })
   await lock.click()
+  // Khoá hỏi lại trước khi ghi
+  await page.getByRole('dialog', { name: `Khoá tài khoản ${NEW_DRIVER.name}?`, exact: true })
+    .getByRole('button', { name: 'Khoá tài khoản', exact: true }).click()
   await expect(page.getByText(`Đã khoá tài khoản ${NEW_DRIVER.name}`, { exact: true })).toBeVisible()
   await expect(page.getByRole('row', { name: new RegExp(NEW_DRIVER.name) })).toContainText('Đã khoá')
 
@@ -146,7 +149,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
 })
 
 /**
- * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 33 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
+ * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 37 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
  * xuống tối đa hai dòng và không tràn sang cột bên, nhãn quyền không bị cắt ở dòng cuối. Kiểm cả bản tiếng Anh (tên vai trò dài hơn).
  */
 for (const lang of ['vi', 'en'] as const) {
@@ -157,7 +160,8 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(9)
-    await expect(matrix.getByRole('row')).toHaveCount(48)
+    // Một dòng tiêu đề, 13 dòng khu vực, 37 dòng quyền, một dòng tổng
+    await expect(matrix.getByRole('row')).toHaveCount(52)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!

@@ -1,6 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { fetchAuditDirectory, fetchAuditEvents, type AuditLogFilter } from './audit-api'
+import { AUDIT_LOG_AVAILABLE, fetchAuditDirectory, fetchAuditEvents, type AuditLogFilter } from './audit-api'
 import { summarizeAuditLog } from './audit-summary'
+
+/** Nhật ký của kho mẫu có dùng không (`false` khi `users` nối backend: màn đọc nhật ký máy chủ) — chọn một lần lúc tải app. */
+export const auditLogAvailable = AUDIT_LOG_AVAILABLE
 
 /**
  * Nhật ký qua TanStack Query (mục 9). Đổi bộ lọc giữ bảng cũ trong lúc đọc lại (`keepPreviousData`) nên không nhấp nháy.

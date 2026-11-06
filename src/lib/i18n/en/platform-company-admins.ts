@@ -1,0 +1,53 @@
+import type { Dictionary } from '../types'
+import type { companyAdmins as source } from '../vi/platform-company-admins'
+
+/** Company administrators tab of the Companies screen on the server (`platform/CompanyAdminsTab`). */
+export const companyAdmins = {
+  title: 'Company administrator accounts',
+  count: { one: '{count} account', other: '{count} accounts' },
+  columns: { admin: 'Company administrator', company: 'Company', plan: 'Plan', credits: 'Credit balance', status: 'Status' },
+  noPlan: 'No plan',
+  noCompany: 'No company linked',
+  status: { ACTIVE: 'Active', LOCKED: 'Locked' },
+  filters: { status: 'Status', allStatuses: 'All statuses' },
+  search: 'Search by name, email, company',
+  open: 'View account {name}',
+  loading: 'Loading company administrators',
+  retry: 'Try again',
+  empty: 'No company administrator accounts yet.',
+  emptyDescription: 'Administrators created with a company appear here.',
+  noMatch: 'No accounts match the filters.',
+  saved: 'Saved account {name}.',
+  detail: {
+    account: 'Account',
+    phone: 'Phone',
+    status: 'Status',
+    createdAt: 'Created',
+    company: 'Company',
+    companyCode: 'Company code',
+    taxCode: 'Tax code',
+    plan: 'Subscription plan',
+    planName: 'Plan',
+    planStatus: 'Plan status',
+    balance: 'Credit balance',
+    expires: 'Expires',
+    missing: 'Not provided',
+    edit: 'Edit account',
+    close: 'Close',
+  },
+  form: {
+    title: 'Edit account {name}',
+    description: 'The sign-in email {email} cannot be changed.',
+    fullName: 'Full name',
+    phone: 'Phone',
+    status: 'Account status',
+    lockHint: 'A locked account cannot sign in.',
+    errors: {
+      fullNameRequired: 'Enter the full name.',
+      fullNameTooLong: 'Full name is at most 100 characters.',
+      phoneInvalid: 'Phone is 9 to 15 digits and may start with +.',
+    },
+    cancel: 'Cancel',
+    save: 'Save changes',
+  },
+} satisfies Dictionary<typeof source>

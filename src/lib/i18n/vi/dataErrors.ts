@@ -122,6 +122,7 @@ export const dataErrors = {
   COMPANY_INVALID: 'Thông tin công ty chưa hợp lệ: cần tên, địa chỉ, số điện thoại, kho xuất phát có toạ độ, và họ tên, email, số điện thoại của quản trị công ty đầu tiên.',
   TICKET_INVALID: 'Yêu cầu hỗ trợ chưa hợp lệ: cần loại, tiêu đề và nội dung, không để trống hay quá dài.',
   TICKET_CLOSED: 'Yêu cầu hỗ trợ này đã đóng — nhờ Hỗ trợ khách hàng mở lại nếu cần trao đổi tiếp.',
+  CONTACT_INVALID: 'Mục "{field}" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.',
   /** Lỗi không phải của kho (mất mạng, lỗi lập trình). */
   UNKNOWN: 'Có lỗi xảy ra. Thử lại sau.',
 } as const satisfies Record<MockDbErrorCode | 'UNKNOWN', string>

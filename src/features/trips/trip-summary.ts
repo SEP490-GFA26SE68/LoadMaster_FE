@@ -19,7 +19,10 @@ export type CargoSummary = {
 
 const percentOf = (value: number, total: number) => (total > 0 ? (value / total) * 100 : 0)
 
-export function cargoSummary(packages: readonly CargoPackage[], vehicle: VehicleConfig): CargoSummary {
+export function cargoSummary(
+  packages: readonly CargoPackage[],
+  vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>,
+): CargoSummary {
   const volumeCm3 = packages.reduce((sum, p) => sum + p.lengthCm * p.widthCm * p.heightCm * p.quantity, 0)
   const weightKg = roundKg(packages.reduce((sum, p) => sum + p.weightKg * p.quantity, 0))
   const vehicleVolumeCm3 = vehicle.innerLengthCm * vehicle.innerWidthCm * vehicle.innerHeightCm

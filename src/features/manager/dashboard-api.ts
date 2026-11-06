@@ -1,6 +1,7 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchDashboardData
+ * Hàm → endpoint backend (FE-0-09). Kho mẫu đọc dữ liệu thô rồi tính trên máy; nhóm `monitoring` nối backend thì màn đọc số máy chủ
+ * đã tính ở `dashboard-backend-api.ts` (`GET /api/manager/dashboard`), hook chọn nguồn (`DASHBOARD_CAPABILITIES`).
+ *   kho mẫu: fetchDashboardData
  */
 
 import { getMockDb, vnDate } from '@/lib/mock-db'

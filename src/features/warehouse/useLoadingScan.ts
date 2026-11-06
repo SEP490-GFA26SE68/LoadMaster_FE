@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { VerifyCandidate, VerifyCode, VerifyOutcome } from '@/components/PackageVerify'
 import { useCan } from '@/features/auth/useCan'
 import { loadingLabelPath } from '@/features/package-pool/packages-list'
+import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { dataErrorMessage, useT, type TFunction } from '@/lib/i18n'
 import { isMockDbError, type ManualConfirmInput, type MockDbError } from '@/lib/mock-db'
@@ -40,7 +41,7 @@ export function useLoadingScan({ tripId, pending, onConfirmed }: {
 
   // Xếp theo thứ tự: chỉ kiện của bước hiện tại xác nhận tay được
   const [current] = pending
-  const canPrint = can('labels.print')
+  const canPrint = can('labels.print') && packagePoolReachable(can)
   const candidates = useMemo((): VerifyCandidate[] => {
     if (!current) return []
     const poolPackageId = labelById.get(current.id)?.poolPackageId

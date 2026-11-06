@@ -194,9 +194,9 @@ test('a flagged package cannot go into a requirement or a trip until the dispatc
   await expect(db.assignDeliveryRequirement('REQ-006', 'TRIP-014')).rejects.toMatchObject({ code: 'PACKAGE_FLAGGED', params: { packageId: 'PK-0013', flag: 'DAMAGED' } })
   expect((await db.getTrip('TRIP-014')).packages.map((pkg) => pkg.id)).toStrictEqual(['PKG-001', 'PKG-002', 'PKG-003'])
 
-  // Nhân viên kho không gỡ được cờ; điều phối viên gỡ, nhật ký ghi người gỡ
-  db.restoreSession('US-0003')
-  await expect(db.clearPackageFlag('PK-0013', 'DAMAGED')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'warehouse' } })
+  // Tài xế không gỡ được cờ; điều phối viên (hoặc nhân viên kho) gỡ, nhật ký ghi người gỡ
+  db.restoreSession('US-0004')
+  await expect(db.clearPackageFlag('PK-0013', 'DAMAGED')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED', params: { role: 'driver' } })
   db.restoreSession('US-0001')
   await expect(db.clearPackageFlag('PK-0013', 'NOT_FOUND')).rejects.toMatchObject({ code: 'PACKAGE_FLAG_NOT_SET', params: { packageId: 'PK-0013', flag: 'NOT_FOUND' } })
   expect((await db.clearPackageFlag('PK-0013', 'DAMAGED')).flags).toStrictEqual([])

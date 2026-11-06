@@ -7,6 +7,15 @@ export const profile = {
     email: 'Email',
     depot: 'Kho trực thuộc',
     note: 'Email, vai trò và kho trực thuộc do quản trị viên thay đổi.',
+    phone: 'Số điện thoại',
+    // Đăng nhập bằng Keycloak: thông tin là của tài khoản trên máy chủ, backend chưa có lối tự sửa
+    serverNote: 'Họ tên, email và số điện thoại là của tài khoản trên máy chủ. Quản trị viên sửa họ tên và số điện thoại ở màn Người dùng.',
+  },
+  /** Đăng nhập bằng Keycloak: đổi mật khẩu bằng mã gửi về email (`/quen-mat-khau`), ngay trong app. */
+  account: {
+    title: 'Mật khẩu',
+    description: 'Đổi mật khẩu bằng mã gửi về email của tài khoản.',
+    changePassword: 'Đổi mật khẩu',
   },
   details: {
     title: 'Thông tin cá nhân',
