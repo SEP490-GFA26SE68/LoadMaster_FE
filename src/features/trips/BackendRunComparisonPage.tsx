@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Box } from 'lucide-react'
+import { Box, Pin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageHero } from '@/components/PageHero'
@@ -67,8 +67,20 @@ export function BackendRunComparisonPage() {
         {loading ? <div role="status" className="grid place-items-center py-12"><Spinner /></div>
           : error ? <p role="alert" className="text-body text-danger">{dataErrorMessage(error, t)}</p>
             : (plans.data ?? []).length === 0 ? <p className="text-body text-ink-2">{t('serverPlans.compare.empty')}</p>
-              : <div className="grid gap-4 lg:grid-cols-3">{(plans.data ?? []).map((plan) => <PlanCard key={plan.id} plan={plan} plans={plans.data ?? []} tripParam={tripParam} />)}</div>}
+              : <RunPlans plans={plans.data ?? []} tripParam={tripParam} />}
       </div>
+    </div>
+  )
+}
+
+/** Ba thẻ của lần chạy; lần chạy giữ ghim (mọi phương án cùng giữ các kiện đó) có một dòng nói số kiện giữ nguyên chỗ. */
+function RunPlans({ plans, tripParam }: { plans: readonly LoadPlan[]; tripParam: string }) {
+  const t = useT()
+  const pinned = plans[0]?.placements.filter((placement) => placement.pinned).length ?? 0
+  return (
+    <div className="flex flex-col gap-4">
+      {pinned > 0 ? <p data-run-pinned className="flex items-center gap-1.5 text-small text-ink-2"><Pin className="size-4" strokeWidth={1.5} aria-hidden />{t('trips.compare.candidates.pinned', { count: pinned })}</p> : null}
+      <div className="grid gap-4 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} plans={plans} tripParam={tripParam} />)}</div>
     </div>
   )
 }
