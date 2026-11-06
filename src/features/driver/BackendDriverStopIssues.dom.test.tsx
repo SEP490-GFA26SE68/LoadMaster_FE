@@ -25,6 +25,7 @@ const PACKAGES = [
 
 let routes: Record<string, () => Reply> = {}
 let posts: [string, unknown][] = []
+let gets: string[] = []
 let unloaded: Set<number>
 let issues: Map<number, { kind: string; note: string }>
 let manuals: Map<number, { status: string; reason: string }>
@@ -45,6 +46,7 @@ const currentStop = () => ok({
 
 beforeEach(() => {
   posts = []
+  gets = []
   unloaded = new Set()
   issues = new Map()
   manuals = new Map()
@@ -58,6 +60,7 @@ beforeEach(() => {
     const key = `${init.method ?? 'GET'} ${url.pathname}`
     const body: unknown = typeof init.body === 'string' ? JSON.parse(init.body) : undefined
     if (init.method === 'POST') posts.push([url.pathname, body])
+    if ((init.method ?? 'GET') === 'GET') gets.push(url.pathname)
     const reply = routes[key]?.() ?? { status: 500, body: { success: false, message: 'không có route giả' } }
     return Promise.resolve({ ok: (reply.status ?? 200) < 400, status: reply.status ?? 200, text: () => Promise.resolve(JSON.stringify(reply.body)) })
   })
@@ -149,4 +152,25 @@ test('xác nhận tay: gửi lý do lên máy chủ; kiện ghi đã dỡ chờ 
   const complete = screen.getByRole('button', { name: 'Hoàn tất điểm giao' })
   await waitFor(() => expect(complete).toHaveAccessibleDescription('Còn 1 xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm giao được.'))
   expect(complete).toBeDisabled()
+})
+
+test('hoàn tất điểm cuối không đọc lại phương án đã xếp: chuyến đã giao xong, máy chủ không còn trả phương án', async () => {
+  const user = userEvent.setup()
+  unloaded = new Set([11, 12])
+  let completed = false
+  routes['GET /api/driver/trips/1/load-plan'] = () => (completed ? { status: 404, body: { success: false, code: 'NO_LOADED_PLAN', message: 'x' } } : ok({
+    tripId: 1, tripCode: TRIP.tripCode, loadPlanId: 40, licensePlate: '51C-284.19', innerLength: 600, innerWidth: 240, innerHeight: 240, doorWidth: 230, doorHeight: 220, maxPayloadKg: 5000,
+    stops: [{ stopId: 2, stopSequence: 2, stopName: 'Kho Bách Hoá Xanh Dĩ An', status: 'ARRIVED' }],
+    placements: [{ placementId: 501, packageId: 11, packageCode: null, trackingBarcode: 'LB-PK-0007', posX: 0, posY: 0, posZ: 0, packedLength: 100, packedWidth: 80, packedHeight: 60, rotation: 0, weightKg: 12, stepSequence: 1, unloadOrder: 1, stopSequence: 2, unloaded: true }],
+  }))
+  routes['POST /api/driver/stops/2/complete'] = () => { completed = true; return ok({ stopId: 2, deliveredCount: 2, returnedCount: 0, tripCompleted: true, tripStatus: 'DELIVERED' }) }
+  routes['GET /api/driver/trips'] = () => ok([{ ...TRIP, status: completed ? 'DELIVERED' : 'IN_TRANSIT' }])
+  renderDriver('/tai-xe/diem-giao?chuyen=1')
+  await screen.findByRole('button', { name: 'Xem vị trí hàng' })
+  const before = gets.filter((path) => path.endsWith('/load-plan')).length
+  await user.click(screen.getByRole('button', { name: 'Hoàn tất điểm giao' }))
+  await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Hoàn tất' }))
+  await waitFor(() => expect(posts.map(([path]) => path)).toContain('/api/driver/stops/2/complete'))
+  expect(await screen.findByText('Đã giao xong chuyến')).toBeInTheDocument()
+  expect(gets.filter((path) => path.endsWith('/load-plan')).length).toBe(before)
 })

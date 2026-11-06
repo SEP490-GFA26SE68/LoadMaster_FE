@@ -1214,28 +1214,30 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`).
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển, Xếp xong — chờ xuất phát (`LOADING` +
-  `loadingCompleted`) và Kho đang soạn / xếp (`LOADING` chưa xong), thẻ bỏ tên tuyến, số kiện, điểm đang giao. Thẻ `LOADING` có nút "Xuất phát"
+  `loadingCompleted`), Kho đang soạn / xếp (`LOADING` chưa xong) và Đã giao gần đây (`DELIVERED`, 5 chuyến theo `completedAt` — giờ hoàn tất điểm
+  cuối, chuyến cũ là giờ đến điểm cuối), thẻ bỏ tên tuyến, số kiện, điểm đang giao. Thẻ `LOADING` có nút "Xuất phát"
   (`departFromList`, `POST /api/driver/trips/{id}/start`): kho chưa xếp xong thì nút mờ kèm lý do "Kho chưa xếp xong"; máy chủ vẫn từ chối thì
   toast, xong thì mở màn điểm giao. Ở điểm đang giao, "Đã đến điểm n" (`POST /api/driver/stops/{id}/arrive`) là nút chính trước khi dỡ.
   Màn điểm giao `BackendDriverStop` đọc danh sách trước rồi mới `current-stop`: chỉ mở chuyến có trong danh sách của mình. Giờ đến
   (`actualArrival`) và kiện đã dỡ (`unloaded`, `unloadedAt`) **đọc từ máy chủ** ở `current-stop`, nên tải lại trang hay đổi máy vẫn đúng; 409
-  `DELIVERY_STOP_ALREADY_ARRIVED` là đã đến (đọc lại giờ đến của máy chủ). Dỡ qua hộp đối chiếu đủ ba mức: quét QR hoặc gõ mã của kiện
+  `DELIVERY_STOP_ALREADY_ARRIVED` là đã đến (đọc lại giờ đến của máy chủ). Chỉ giờ đến là "đã đến": `ARRIVED` không kèm giờ vẫn là chưa đến
+  (máy chủ đòi giờ đến mới cho dỡ), và hoàn tất một điểm để điểm kế tiếp ở `PENDING`. Dỡ qua hộp đối chiếu đủ ba mức: quét QR hoặc gõ mã của kiện
   (`codeLabel` / `codeHint` riêng; `packageOfCode`: `qrToken`, `packageCode`, `trackingBarcode`, mã kho kiện in ở góc nhãn; không phân biệt hoa
   thường; mã bên gửi trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`) → `POST …/packages/{id}/unload` (kiện máy chủ báo đã dỡ thì không gọi;
   409 là đã dỡ), hoặc **xác nhận tay** kèm lý do `POST /api/driver/packages/{id}/manual-unload` — kiện ghi đã dỡ chờ điều phối viên duyệt, còn chờ
   thì nút hoàn tất mờ kèm lý do và máy chủ từ chối `MANUAL_CONFIRM_PENDING`; bị từ chối thì kiện về chưa dỡ kèm lý do. "Báo sự cố" theo kiện
-  `POST /api/driver/packages/{id}/issues` (`kind` viết hoa); khách từ chối thì kiện ở lại xe và thành hoàn trả khi hoàn tất điểm. Sự cố, trạng
+  `POST /api/driver/packages/{id}/issues` (`kind` viết hoa); khách từ chối thì kiện ở lại xe và thành hoàn trả (`RETURNED`) khi hoàn tất điểm. Sự cố, trạng
   thái và lý do xác nhận tay của từng kiện đọc lại ở `current-stop`. Kiện của máy chủ có mã nội bộ là số: dòng kiện, ô chọn kiện, toast nói mã in
   trên nhãn (`item.label`). Hoàn tất `POST …/stops/{id}/complete`; GPS `POST /api/driver/location`. Giờ đến và hạn giao (thẻ liên hệ
   `ServerStopEta`, danh sách điểm của thẻ chuyến Đang vận chuyển / Xếp xong `ServerMyTripStops`) đọc `GET /api/driver/trips/{id}/stops`
   (`serverStopTiming`: đã đến → giờ đến thật, kịp / trễ hạn; chưa đến → giờ đến theo GPS, không có GPS thì giờ kế hoạch), đọc lại theo
   `refreshMs`, **không** MOCK RESULT. "Xem vị trí hàng" vẽ phương án kho đã xếp `GET /api/driver/trips/{id}/load-plan` (`driverServerScene`: thứ
   tự dỡ của máy chủ, kiện đã dỡ mờ như đã gỡ); thiếu lòng thùng, kiện thiếu điểm giao hay chưa có phương án đã xếp (`NO_LOADED_PLAN`) thì
-  không có nút. "Sự cố trên đường" của cả chuyến: tờ "Thêm" (`StopMoreActions`) chỉ còn hàng đó, `ReportExceptionDialog touch serverRecorded` gửi
+  không có nút. Hoàn tất điểm không đọc lại phương án đó (kiện trên xe chỉ đổi khi dỡ; chuyến vừa giao xong thì máy chủ không còn trả nó). "Sự cố trên đường" của cả chuyến: tờ "Thêm" (`StopMoreActions`) chỉ còn hàng đó, `ReportExceptionDialog touch serverRecorded` gửi
   `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển). Điều phối viên
   duyệt / từ chối xác nhận tay ở thẻ `ManualConfirmCard server` của Chi tiết chuyến máy chủ và của Giám sát (`manual-confirm-backend-api.ts`:
   `GET /api/trips/{id}/manual-confirmations`, `POST …/{cid}/approve`, `POST …/{cid}/reject` — `{id}` là mã số hoặc mã chuyến; quản lý công ty chỉ
-  xem). `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, nhận dọc đường (`pickups`), chuông, nhóm Đã giao gần đây,
+  xem). `DRIVER_CAPABILITIES` (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, nhận dọc đường (`pickups`), chuông,
   vị trí xe mô phỏng; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;

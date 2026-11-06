@@ -77,7 +77,9 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
   routes['GET /api/driver/trips'] = ok([
     { ...TRIP, tripId: 4, tripCode: null, departureTime: '2026-10-18T07:00:00', stopCount: null },
     TRIP,
-    { ...TRIP, tripId: 5, status: 'DELIVERED' },
+    { ...TRIP, tripId: 5, status: 'DELIVERED', completedAt: '2026-10-16T17:05:00' },
+    { ...TRIP, tripId: 9, status: 'DELIVERED', completedAt: '2026-10-17T09:30:00' },
+    { ...TRIP, tripId: 10, status: 'CANCELLED' },
     { ...TRIP, tripId: 6, tripCode: 'TRIP-6', status: 'LOADING', loadingCompleted: false },
     { ...TRIP, tripId: 8, tripCode: 'TRIP-8', status: 'LOADING', loadingCompleted: true },
     { ...TRIP, tripId: 7, status: 'PLANNED' },
@@ -88,7 +90,11 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
   // Kho đã xếp xong (`loadingCompleted`): nhóm "Xếp xong — chờ xuất phát"; chưa xong: nhóm kho đang xếp
   expect(trips.loaded.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['8', 'LOADING', { kind: 'loaded' }]])
   expect(trips.preparing.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['6', 'LOADING', null]])
-  expect(trips.recent).toStrictEqual([])
+  // Đã giao: giao xong gần nhất trước, giờ giao xong theo giờ Việt Nam; chuyến đã huỷ không hiện
+  expect(trips.recent.map((row) => [row.id, row.status, row.completedAt])).toStrictEqual([
+    ['9', 'DELIVERED', '2026-10-17T02:30:00.000Z'],
+    ['5', 'DELIVERED', '2026-10-16T10:05:00.000Z'],
+  ])
   expect(trips.inTransit.map((row) => row.id)).toStrictEqual(['1', '4'])
   expect(trips.inTransit[0]).toMatchObject({
     id: '1', code: 'TRIP-20261017-94EE14F0', scheduledDate: '2026-10-17', vehicleName: '51C-284.19', status: 'IN_TRANSIT', stopCount: 3, stops: [],
