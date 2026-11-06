@@ -12,7 +12,6 @@ import { backendEditApproval, baselineErrorKeys } from './approval/backend-edit-
 import type { PlannerLock } from './approval/planner-access'
 import { backendPlacementIds, backendPlanScene } from './backend-plan-scene'
 import { BackendPlannerActions } from './BackendPlannerActions'
-import { BackendRerunDialog } from './BackendRerunDialog'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
 import { EditorGestureHud } from './editor/EditorGestureHud'
@@ -102,7 +101,8 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const pinnable = lock === null && source.status === 'PLANNED'
   const pinBlocked = lock === null && source.status === 'DRAFT' ? t('serverPlans.planner.pinDraftReason') : undefined
   const canRerun = (pinnable || pinBlocked !== undefined) && can('optimization.run')
-  const [rerunOpen, setRerunOpen] = useState(false)
+  // Chạy lại giữ ghim là một lần chạy ba phương án (một credit) ở Thiết lập tối ưu, giữ ghim của phương án đang xem
+  const keepPinsPath = `/chuyen/${encodeURIComponent(tripCode)}/toi-uu?giu-ghim=${encodeURIComponent(plan.id)}`
   // Chỉnh tay và Duyệt bản chỉnh: chuyến Đã lập kế hoạch, phương án chưa lỗi thời (máy chủ: `PLAN_TRIP_NOT_PLANNED`, `PLAN_STALE`)
   const editable = pinnable && !stale
   const handleEdit = editable ? () => handleModeChange('edit') : undefined
@@ -114,7 +114,6 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const baseline = useMemo(() => baselineErrorKeys(model), [model])
   const editApproval = useMemo(() => editable ? backendEditApproval(model, state.placements, state.draft, placementIds, baseline) : null,
     [editable, model, state.placements, state.draft, placementIds, baseline])
-  const pinnedCount = useMemo(() => plan.placements.filter((item) => item.pinned).length, [plan])
   const pin = pinnable || pinBlocked !== undefined ? {
     pending: pinMutation.isPending,
     disabledReason: pinBlocked,
@@ -190,7 +189,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
           </Suspense>
           {editing ? null : <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
             onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined}
-            onRerunPinned={canRerun ? () => setRerunOpen(true) : undefined} rerunBlockedReason={pinBlocked}
+            onRerunPinned={canRerun ? () => void navigate(keepPinsPath) : undefined} rerunBlockedReason={pinBlocked}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} />}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
@@ -218,7 +217,6 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         onTogglePlaying={operations.togglePlaying}
         onSpeedChange={state.setSpeed}
       />}
-      {canRerun && pinnable ? <BackendRerunDialog tripCode={tripCode} plan={plan} pinnedCount={pinnedCount} open={rerunOpen} onOpenChange={setRerunOpen} /> : null}
       {canChangeVehicle ? <ChangeVehicleDialog tripId={tripCode} open={vehicleOpen} onOpenChange={setVehicleOpen} /> : null}
     </div>
   )

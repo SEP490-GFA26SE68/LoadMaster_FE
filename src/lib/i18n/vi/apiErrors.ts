@@ -103,6 +103,7 @@ export const apiErrors = {
   OPTIMIZATION_JOB_NOT_FOUND: 'Không tìm thấy lần chạy tối ưu.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
   INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  PINNED_SET_INVALID: 'Kiện đã ghim không đứng vững (ra ngoài thùng, chồng nhau, lơ lửng hoặc vượt tải): chưa chạy và không trừ credit. Bỏ ghim kiện đó ở Planner hoặc tắt giữ ghim.',
   TRIP_ALREADY_LOADING: 'Chuyến đã bắt đầu xếp hàng.',
   TRIP_NOT_READY_FOR_LOADING: 'Chỉ bắt đầu xếp được chuyến Đã lập kế hoạch.',
   LOADING_NOT_COMPLETED: 'Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.',

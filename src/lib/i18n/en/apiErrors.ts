@@ -94,6 +94,7 @@ export const apiErrors = {
   OPTIMIZATION_JOB_NOT_FOUND: 'The optimization run was not found.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'The optimization service is not responding. Try again later.',
   INSUFFICIENT_CREDITS: 'Out of credits — contact your company admin.',
+  PINNED_SET_INVALID: 'The pinned packages cannot stand on their own (outside the cargo box, overlapping, floating or overloaded): nothing ran and no credit was charged. Unpin that package in the Planner or turn off keeping pins.',
   TRIP_ALREADY_LOADING: 'Loading has already started for this trip.',
   TRIP_NOT_READY_FOR_LOADING: 'Only a Planned trip can start loading.',
   LOADING_NOT_COMPLETED: 'The warehouse has not finished loading this trip yet, so it cannot depart.',

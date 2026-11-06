@@ -36,9 +36,17 @@ test('chạy tối ưu gửi một lần chạy và đọc trạng thái job t�
     'POST /api/trips/42/optimize-loading': { body: envelope({ jobId: 'job-1', tripId: 42 }) },
     'GET /api/trips/optimization-jobs/job-1': { body: envelope({ jobId: 'job-1', status: 'NO_SOLUTION', computationMs: 1200, packedPlanCount: 0 }) },
   })
-  await expect(startLoadingOptimization('42')).resolves.toEqual({ jobId: 'job-1' })
+  await expect(startLoadingOptimization('42')).resolves.toEqual({ jobId: 'job-1', pinnedCount: 0 })
   await expect(fetchOptimizationJob('job-1')).resolves.toMatchObject({ status: 'NO_SOLUTION', finished: true, computationMs: 1200, packedPlanCount: 0 })
   expect(backend.calls.map((call) => `${call.method} ${call.path}`)).toEqual(['POST /api/trips/42/optimize-loading', 'GET /api/trips/optimization-jobs/job-1'])
+})
+
+test('giữ ghim gửi mã số phương án nguồn và đọc số kiện đã ghim máy chủ giữ', async () => {
+  const backend = stubBackend({
+    'POST /api/trips/42/optimize-loading': { body: envelope({ jobId: 'job-2', tripId: 42, pinnedCount: 3 }) },
+  })
+  await expect(startLoadingOptimization('42', '12')).resolves.toEqual({ jobId: 'job-2', pinnedCount: 3 })
+  expect(backend.calls.map((call) => call.body)).toEqual([{ keepPinsFromPlanId: 12 }])
 })
 
 test('trạng thái cũ TIMEOUT đọc là FAILED; job đang chạy chưa xong', async () => {

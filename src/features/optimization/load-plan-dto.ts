@@ -19,6 +19,8 @@ export type OptimizationStartDto = {
   readonly jobId: string
   readonly tripId?: number | null
   readonly subscriptionTier?: string | null
+  /** Số kiện đã ghim lần chạy giữ nguyên (0 khi không giữ ghim); máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
 }
 
 /** `GET /api/trips/optimization-jobs/{jobId}`. */
@@ -32,6 +34,8 @@ export type OptimizationJobDto = {
   readonly computationMs?: number | null
   readonly createdAt?: string | null
   readonly packedPlanCount?: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
 }
 
 export type PlacementDto = {
@@ -118,17 +122,6 @@ export type TripLoadPlansDto = {
   readonly plans?: readonly LoadPlanDto[] | null
 }
 
-/**
- * `LoadPlanResponse` của `POST /api/load-plans/{id}/rerun`: **một** phương án mới (phiên bản kế tiếp của phương án nguồn, không nhãn A · B · C),
- * máy chủ chạy xong mới trả lời.
- */
-export type RerunPlanDto = {
-  readonly id: number
-  readonly jobUuid?: string | null
-  readonly version?: number | null
-  readonly parentPlanId?: number | null
-}
-
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
 export const JOB_STATUSES = ['PENDING', 'RUNNING', 'COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
@@ -142,6 +135,8 @@ export type OptimizationJob = {
   readonly finished: boolean
   /** Số phương án đã lưu; vắng khi máy chủ chưa trả. */
   readonly packedPlanCount: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; `null` khi máy chủ không trả. */
+  readonly pinnedCount: number | null
   readonly computationMs: number | null
   readonly createdAt: string | null
 }
@@ -251,6 +246,7 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     status,
     finished: FINISHED_JOB_STATUSES.has(status),
     packedPlanCount: dto.packedPlanCount ?? null,
+    pinnedCount: dto.pinnedCount ?? null,
     computationMs: dto.computationMs ?? null,
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
   }

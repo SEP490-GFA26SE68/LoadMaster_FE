@@ -6,13 +6,12 @@
  *   approveBackendEdits     → POST /api/load-plans/{id}/approve-edits
  *   pinBackendPlacement     → POST /api/load-plans/{id}/pin
  *   unpinBackendPlacement   → DELETE /api/load-plans/{id}/pin/{placementId}
- *   rerunBackendLoadPlan    → POST /api/load-plans/{id}/rerun
  * Mã chuyến trên URL đổi sang mã số của máy chủ qua `resolveBackendTripId`.
  */
 
-import type { PlanObjective, VehicleConfig } from '@/domain/models'
+import type { VehicleConfig } from '@/domain/models'
 import { configVehicleOf, type BackendVehicleConfig } from '@/features/fleet/fleet-dto'
-import { loadPlanOf, type LoadPlan, type LoadPlanDto, type RerunPlanDto } from '@/features/optimization/load-plan-dto'
+import { loadPlanOf, type LoadPlan, type LoadPlanDto } from '@/features/optimization/load-plan-dto'
 import { fetchTripLoadPlans } from '@/features/optimization/load-plans-backend-api'
 import { fetchBackendTripDetail, resolveBackendTripId, type TripDetailApiResponse } from '@/features/trips/trips-api'
 import { api } from '@/lib/api-client'
@@ -113,28 +112,4 @@ export async function pinBackendPlacement(planId: string, placementId: string): 
 // DELETE /api/load-plans/{id}/pin/{placementId}
 export async function unpinBackendPlacement(planId: string, placementId: string): Promise<void> {
   await api().delete(`${planPath(planId)}/pin/${encodeURIComponent(placementId)}`)
-}
-
-/**
- * Giới hạn thời gian của lần chạy lại, giây. Máy chủ chạy xong mới trả lời, nên giới hạn phải nằm trong thời gian chờ của lớp gọi API
- * (15 giây); máy chủ mặc định 60 giây.
- */
-export const RERUN_TIME_LIMIT_SEC = 10
-
-export type RerunResult = {
-  /** Mã số của phương án mới. */
-  readonly planId: string
-  readonly jobId: string | null
-}
-
-/**
- * Chạy lại tối ưu giữ các kiện đã ghim của phương án `planId`: máy chủ trừ 1 credit (hết credit: 402 `INSUFFICIENT_CREDITS`; dịch vụ tối ưu
- * lỗi thì hoàn), rồi lưu **một** phương án mới chưa duyệt. `objective` giữ mục tiêu của phương án nguồn; vắng thì máy chủ dùng mục tiêu của
- * lần chạy cũ.
- */
-// POST /api/load-plans/{id}/rerun
-export async function rerunBackendLoadPlan(planId: string, objective: PlanObjective | null): Promise<RerunResult> {
-  const body = { timeLimitSec: RERUN_TIME_LIMIT_SEC, ...(objective === null ? {} : { objective }) }
-  const plan = await api().post<RerunPlanDto>(`${planPath(planId)}/rerun`, { body })
-  return { planId: String(plan.id), jobId: plan.jobUuid ?? null }
 }
