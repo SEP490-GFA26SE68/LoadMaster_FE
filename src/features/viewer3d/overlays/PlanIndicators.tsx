@@ -48,14 +48,15 @@ export function RehandlingPanel({ zones, placements, isMockResult }: {
 
 /**
  * Mức hạn của từng điểm giao ở hộp Chi tiết (FE-5b-07): giờ đến dự kiến và mức hạn theo tuyến đã tối ưu của chuyến (kết quả của mock
- * tối ưu tuyến). Điểm không có hạn ghi rõ là không có hạn; chuyến chưa tối ưu tuyến thì chỉ có một câu, không có giờ nào.
+ * tối ưu tuyến, kèm MOCK RESULT; `mock={false}` khi giờ đến do máy chủ tính). Điểm không có hạn ghi rõ là không có hạn; chuyến chưa tối
+ * ưu tuyến thì chỉ có một câu, không có giờ nào.
  */
-export function DeadlinePanel({ stops }: { stops: readonly SceneStop[] }) {
+export function DeadlinePanel({ stops, mock = true }: { stops: readonly SceneStop[]; mock?: boolean }) {
   const t = useT()
   const format = useFormat()
   const routed = stops.some((stop) => stop.eta !== undefined)
   return (
-    <Card title={t('viewer.deadlines.title')} mock={routed}>
+    <Card title={t('viewer.deadlines.title')} mock={routed && mock}>
       {routed ? (
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {stops.map((stop) => (

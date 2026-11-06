@@ -59,7 +59,7 @@ test('phương án của một lần chạy theo thứ tự A · B · C, kèm m�
   const [first] = plans
   expect(first).toMatchObject({ volumePercent: 62.5, payloadPercent: null, frontAxleLoadKg: null, centerOfGravityCm: null, rehandlingCount: 2, computationMs: 840 })
   expect(first?.placements[0]).toMatchObject({ code: 'PK-301', weightKg: 20.5, lengthCm: 100, rotationType: 1, stopId: '91', stopSequence: 1 })
-  expect(first?.unplaced).toEqual([{ packageId: '302', code: 'BC-302', reason: 'OUT_OF_SPACE' }])
+  expect(first?.unplaced).toEqual([{ packageId: '302', code: 'BC-302', reason: 'OUT_OF_SPACE', size: null, weightKg: null }])
 })
 
 test('phương án của chuyến kèm phương án đã duyệt; Duyệt gọi endpoint của phương án', async () => {

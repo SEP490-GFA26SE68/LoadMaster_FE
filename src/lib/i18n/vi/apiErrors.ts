@@ -144,4 +144,12 @@ export const apiErrors = {
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',
   TRIP_NOT_LOADING: 'Chuyến không còn ở Đang xếp hàng, không mở được phiên xếp.',
+
+  // Phương án: lỗi thời và duyệt bản chỉnh tay
+  PLAN_STALE: 'Phương án đã lỗi thời vì xe hoặc kiện của chuyến đã đổi: tối ưu lại rồi mới duyệt được.',
+  MANUAL_EDIT_INVALID: 'Bản chỉnh không hợp lệ: có kiện không thuộc phương án, hướng đặt không được phép, kiện đã ghim bị dời hoặc không có gì thay đổi.',
+  MANUAL_EDIT_OUT_OF_BOUNDS: 'Có kiện nằm ra ngoài lòng thùng.',
+  MANUAL_EDIT_OVERLAP: 'Có kiện chồng lên kiện khác hoặc lên vật cản.',
+  MANUAL_EDIT_UNSUPPORTED: 'Có kiện không đủ chỗ đỡ bên dưới (cần ít nhất 70% mặt đáy).',
+  MANUAL_EDIT_AXLE_OVERLOAD: 'Bản chỉnh làm một nhóm trục vượt giới hạn.',
 } as const

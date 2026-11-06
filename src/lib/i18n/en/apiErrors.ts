@@ -131,4 +131,11 @@ export const apiErrors = {
 
   EMAIL_CHANGE_UNSUPPORTED: 'The server does not support changing an account email yet.',
   TRIP_NOT_LOADING: 'The trip is no longer Loading, so its loading session cannot be opened.',
+
+  PLAN_STALE: 'The plan is outdated because the trip’s vehicle or packages changed: optimize again before approving.',
+  MANUAL_EDIT_INVALID: 'The edits are invalid: a package is not in the plan, an orientation is not allowed, a pinned package was moved, or nothing changed.',
+  MANUAL_EDIT_OUT_OF_BOUNDS: 'A package lies outside the cargo space.',
+  MANUAL_EDIT_OVERLAP: 'A package overlaps another package or an obstacle.',
+  MANUAL_EDIT_UNSUPPORTED: 'A package lacks support underneath (at least 70% of its base is needed).',
+  MANUAL_EDIT_AXLE_OVERLOAD: 'The edits overload an axle group.',
 } satisfies Dictionary<typeof source>

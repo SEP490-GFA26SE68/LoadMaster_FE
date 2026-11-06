@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PlanObjective } from '@/domain/models'
 import {
+  approveBackendEdits,
   approveBackendLoadPlan,
   fetchBackendPlanSource,
   pinBackendPlacement,
   rerunBackendLoadPlan,
   unpinBackendPlacement,
+  type BackendPlacementEdit,
 } from './viewer-backend-api'
 
 /** Nguồn của Planner bản máy chủ, dưới khoá của chuyến: duyệt, sửa chuyến hay chạy lại tối ưu đều làm mới nó. */
@@ -22,6 +24,19 @@ export function useApproveBackendPlanMutation() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (planId: string) => approveBackendLoadPlan(planId),
+    onSuccess: () => Promise.all([
+      client.invalidateQueries({ queryKey: ['trips'] }),
+      client.invalidateQueries({ queryKey: ['dashboard'] }),
+    ]),
+  })
+}
+
+/** Duyệt bản chỉnh tay: máy chủ lưu một bản duyệt mới, nên làm mới mọi khoá của chuyến. */
+export function useApproveBackendEditsMutation(planId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ edits, pinnedPlacementIds }: { edits: readonly BackendPlacementEdit[]; pinnedPlacementIds?: readonly string[] }) =>
+      approveBackendEdits(planId, edits, pinnedPlacementIds),
     onSuccess: () => Promise.all([
       client.invalidateQueries({ queryKey: ['trips'] }),
       client.invalidateQueries({ queryKey: ['dashboard'] }),

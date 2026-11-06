@@ -1,4 +1,4 @@
-import { expandPackages } from '@/domain/cargo'
+import { expandPackages, type PackageInstance } from '@/domain/cargo'
 import { axleLoadsOf, cargoMass, checkAxleLoads, checkCenterOfGravity } from '@/domain/metrics'
 import {
   obstacleToBox,
@@ -20,6 +20,11 @@ export type ConstraintEngineInput = {
   readonly packages: readonly CargoPackage[]
   readonly placements: readonly PackagePlacement[]
   readonly settings: Pick<OptimizationRequest['settings'], 'enforceLifo'>
+  /**
+   * Instance đã mở rộng sẵn, thay cho mở rộng `packages`: phương án của máy chủ đặt mã chỗ xếp làm mã instance, không theo dạng
+   * `{mã kiện}-01` của `expandPackages`. Vắng thì engine tự mở rộng `packages`.
+   */
+  readonly instances?: readonly PackageInstance[]
 }
 
 /** Ảnh chụp kết quả kiểm: không đổi khi engine đổi về sau. */
@@ -75,8 +80,8 @@ export function annotatePlacements(input: ConstraintEngineInput): PackagePlaceme
  *
  * Request phải hợp lệ trước (`validateRequest`): trùng mã instance hoặc placement không thuộc kiện nào → `throw`.
  */
-export function createConstraintEngine({ vehicle, packages, placements, settings }: ConstraintEngineInput): ConstraintEngine {
-  const expanded = expandPackages(packages)
+export function createConstraintEngine({ vehicle, packages, placements, settings, instances: given }: ConstraintEngineInput): ConstraintEngine {
+  const expanded = given ? { instances: given, issues: [] } : expandPackages(packages)
   const duplicate = expanded.issues[0]
   if (duplicate) throw new Error(`Mã instance trùng trong request: ${duplicate.packageInstanceId}`)
   const instances = new Map(expanded.instances.map((instance) => [instance.packageInstanceId, instance]))

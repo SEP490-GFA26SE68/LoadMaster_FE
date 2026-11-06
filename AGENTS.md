@@ -1247,15 +1247,24 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`); Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
-  số máy chủ không trả thì bỏ: tải trục / dỡ-xếp lại / hạn của FE, thời gian chạy, kích thước kiện chưa xếp) và Duyệt bằng
-  `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Ghim, bỏ ghim, chạy lại cũng chỉ khi chuyến Đã lập kế hoạch
+  số máy chủ không trả thì bỏ: tải trục / dỡ-xếp lại tính ở FE, thời gian chạy của bản chỉnh tay, kích thước kiện chưa xếp khi máy chủ không
+  trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT) và Duyệt bằng
+  `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Phương án máy chủ đánh dấu `stale` (đổi xe, đưa / gỡ yêu cầu
+  giao) có thanh lỗi thời, nút Duyệt mờ kèm lý do, không chỉnh tay; máy chủ từ chối `PLAN_STALE`. **Chỉnh tay** (`plans.approve`, chuyến Đã lập
+  kế hoạch, chưa lỗi thời): constraint engine dựng từ chính các chỗ xếp (`engineInputOf`: mỗi chỗ xếp một instance, hướng đặt giữ nguyên vì
+  máy chủ không trả hướng đặt được phép); "Duyệt bản chỉnh" chỉ chặn lỗi ràng buộc **mới** do bản chỉnh gây ra (`backend-edit-approval.ts`)
+  rồi gửi `POST /api/load-plans/{id}/approve-edits` (`placements[{placementId, posX, posY, posZ, rotationType}]`, `pinnedPlacementIds` chỉ khi
+  đổi ghim): máy chủ kiểm lại (lòng thùng, chồng lấn, chỗ đỡ ≥ 70 %, tải trục — `MANUAL_EDIT_*`) và lưu một bản duyệt mới `manuallyEdited`,
+  màn mở bản đó (`?revision=`). **Đổi xe** ở góc khung 3D (`trips.edit`, chuyến Đã lập kế hoạch) dùng `ChangeVehicleDialog` với
+  `GET /api/trips/{id}/vehicle-choices` (xe kèm lý do cùng mã với `vehicleFit`) và `PATCH /api/trips/{id}` (`trip-vehicle-backend-api.ts`).
+  Ghim, bỏ ghim, chạy lại cũng chỉ khi chuyến Đã lập kế hoạch
   (máy chủ từ chối 409 `TRIP_LOCKED`, câu ở `apiErrors`): chuyến còn Nháp thì nút "Ghim" và "Chạy lại giữ ghim" mờ kèm lý do
   (`serverPlans.planner.pinDraftReason`), pha vận hành khoá cả Planner. Thẻ kiện đang chọn có nút "Ghim" / "Bỏ
   ghim" (`POST /api/load-plans/{id}/pin` với mã số chỗ xếp của máy chủ — `backendPlacementIds` —, `DELETE …/pin/{placementId}`): máy chủ lưu
   ngay, không qua "Duyệt bản chỉnh". "Chạy lại giữ ghim" (`PinnedRerun`, thêm `optimization.run`) mở `BackendRerunDialog` →
   `POST …/rerun` (`timeLimitSec` 10 cho vừa giới hạn chờ của `api()`, mục tiêu của phương án đang xem): máy chủ trừ credit, chạy đồng bộ và
   lưu **một** phương án mới chưa duyệt, nên màn mở chính phương án đó trong Planner (`?revision=`), không mở So sánh; FE không tính credit.
-  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến, chỉnh tay / đổi xe trong Planner; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
+  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
   về Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ

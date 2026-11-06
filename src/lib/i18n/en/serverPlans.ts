@@ -120,5 +120,11 @@ export const serverPlans = {
     rerunDescription: 'The server keeps the pinned packages in place, repacks the rest around them and saves a new, unapproved plan. A rerun uses 1 credit.',
     rerunConfirm: 'Rerun',
     rerunDone: 'A new plan is ready',
+    approveEdits: 'Approve edits',
+    approveEditsTitle: 'Approve these edits?',
+    approveEditsDescription: 'The server rechecks the moved packages and saves them as a new approved version. The previously approved plan of the trip no longer applies.',
+    approvedEdits: 'Edits approved',
+    editsBlocked: { one: 'Cannot approve yet: the edits cause {count} constraint error.', other: 'Cannot approve yet: the edits cause {count} constraint errors.' },
+    staleReason: 'The plan is outdated: optimize again before approving.',
   },
 } satisfies Dictionary<typeof source>

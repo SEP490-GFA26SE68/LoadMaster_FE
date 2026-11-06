@@ -121,5 +121,11 @@ export const serverPlans = {
     rerunDescription: 'Máy chủ giữ nguyên chỗ các kiện đã ghim, xếp lại các kiện còn lại quanh chúng và lưu thành một phương án mới chưa duyệt. Lần chạy lại dùng 1 credit.',
     rerunConfirm: 'Chạy lại',
     rerunDone: 'Đã có phương án mới',
+    approveEdits: 'Duyệt bản chỉnh',
+    approveEditsTitle: 'Duyệt bản chỉnh này?',
+    approveEditsDescription: 'Máy chủ kiểm lại chỗ các kiện đã dời rồi lưu thành một bản duyệt mới. Phương án đã duyệt trước đó của chuyến thôi hiệu lực.',
+    approvedEdits: 'Đã duyệt bản chỉnh',
+    editsBlocked: { one: 'Chưa duyệt được: bản chỉnh gây {count} lỗi ràng buộc.', other: 'Chưa duyệt được: bản chỉnh gây {count} lỗi ràng buộc.' },
+    staleReason: 'Phương án đã lỗi thời: tối ưu lại rồi mới duyệt được.',
   },
 } as const
