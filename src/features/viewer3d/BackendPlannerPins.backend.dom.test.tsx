@@ -25,7 +25,7 @@ vi.mock('@/lib/backend-config', () => ({
 const PLAN: LoadPlan = {
   id: '12', tripId: '42', jobId: 'job-1', objective: 'AXLE_BALANCE', label: 'B', algorithmName: 'EP_DBLF', computationMs: null, name: null,
   volumePercent: 60, payloadPercent: null, approved: false, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
-  rearAxleLoadKg: null, rehandlingCount: null, placements: [], unplaced: [],
+  rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [], unplaced: [],
 }
 
 beforeEach(() => {

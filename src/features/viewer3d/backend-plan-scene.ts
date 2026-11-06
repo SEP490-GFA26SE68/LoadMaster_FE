@@ -1,13 +1,17 @@
 import { roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
-import type { OptimizationResult, UnplacedPackage, VehicleConfig } from '@/domain/models'
+import type { PackageInstance } from '@/domain/cargo'
+import { deadlineStatus } from '@/domain/routing'
+import { DEFAULT_MIN_SUPPORT_RATIO, type ConstraintEngineInput } from '@/domain/constraints'
+import type { OptimizationResult, PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
 import { ApiError } from '@/lib/api-client'
 import type { ScenePlacement, SceneStop, SceneUnplaced, ViewerSceneModel } from './scene-types'
 
 /**
  * Phương án của máy chủ (`LoadPlanDetailResponse`, đã đổi ở `load-plan-dto.ts`) thành snapshot của engine 3D — hàm thuần. Cm giữ nguyên;
- * kết quả của máy chủ không mang MOCK RESULT. Chỉ xem: không có đầu vào constraint engine nên Planner không chỉnh tay, không Duyệt bản
- * chỉnh. Máy chủ không trả thứ tự dỡ (Planner dùng thứ tự gợi ý, có ghi rõ), độ dễ vỡ, bao bì, vùng điểm giao; số máy chủ không trả thì vắng.
+ * kết quả của máy chủ không mang MOCK RESULT. Đầu vào constraint engine dựng từ chính các kiện đã xếp (mỗi chỗ xếp một instance mang mã
+ * của khung 3D, hướng đặt giữ nguyên, có thể xếp chồng, diện tích tựa tối thiểu mặc định) để Planner chỉnh tay và kiểm trước khi gửi
+ * "Duyệt bản chỉnh" — máy chủ kiểm lại. Máy chủ không trả thứ tự dỡ (Planner dùng thứ tự gợi ý, có ghi rõ), độ dễ vỡ, bao bì, vùng điểm giao; số máy chủ không trả thì vắng.
  */
 
 /** Điểm giao của chuyến theo máy chủ (`TripStopResponse`). */
@@ -17,6 +21,8 @@ export type BackendSceneStop = {
   readonly name: string
   /** ISO 8601. */
   readonly deadline: string | null
+  /** Giờ đến dự kiến của tuyến máy chủ đã tối ưu (ISO 8601); `null` khi chưa tối ưu tuyến. */
+  readonly plannedArrival?: string | null
 }
 
 /** `rotation_type` của dịch vụ tối ưu: bộ ba cạnh kiện dọc trục X, Y, Z của thùng. */
@@ -34,6 +40,11 @@ const UNPLACED_REASONS: Readonly<Record<string, UnplacedPackage['reasonCode']>> 
 
 export function orientationOf(rotationType: number | null): OrientationCode {
   return rotationType === null ? 'LWH' : ROTATIONS[rotationType] ?? 'LWH'
+}
+
+/** Chiều ngược của `orientationOf`: mã `rotation_type` của dịch vụ tối ưu. */
+export function rotationTypeOf(code: OrientationCode): number {
+  return Number(Object.entries(ROTATIONS).find(([, value]) => value === code)?.[0] ?? 0)
 }
 
 /** Chiều ngược của `orientDimensions`: kích thước danh nghĩa từ kích thước đã xoay. */
@@ -99,6 +110,42 @@ export function backendPlacementIds(plan: LoadPlan): ReadonlyMap<string, string>
   return new Map(plan.placements.map((item, index) => [sceneIds[index] ?? item.id, item.id]))
 }
 
+/** Mỗi chỗ xếp của máy chủ một instance: máy chủ không trả luật xếp chồng hay hướng đặt của kiện, nên engine chỉ kiểm hình học. */
+function engineInputOf(placements: readonly ScenePlacement[], vehicle: VehicleConfig): ConstraintEngineInput {
+  const instances = placements.map((item): PackageInstance => {
+    const base = baseDimensionsOf(item, item.orientation)
+    return {
+      packageInstanceId: item.id,
+      ...base,
+      weightKg: item.weightKg,
+      allowedOrientations: [item.orientation],
+      keepUpright: false,
+      fragilityLevel: 'NONE',
+      stackable: true,
+      maxTopLoadKg: Number.MAX_SAFE_INTEGER,
+      minSupportRatio: DEFAULT_MIN_SUPPORT_RATIO,
+      deliveryStop: item.stop,
+      priority: 0,
+      mustLoad: false,
+    }
+  })
+  const enginePlacements = placements.map((item): PackagePlacement => ({
+    packageInstanceId: item.id,
+    orientation: item.orientation,
+    xCm: item.position.x,
+    yCm: item.position.y,
+    zCm: item.position.z,
+    placedLengthCm: item.lengthCm,
+    placedWidthCm: item.widthCm,
+    placedHeightCm: item.heightCm,
+    loadingOrder: item.step,
+    unloadingOrder: 0,
+    supportRatio: 1,
+    constraintWarnings: [],
+  }))
+  return Object.freeze({ vehicle, packages: [], instances, placements: enginePlacements, settings: { enforceLifo: false } })
+}
+
 export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
   /** Mã chuyến trên URL. */
   tripCode: string
@@ -139,12 +186,12 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
     packageId: item.packageId,
     name: item.code,
     stop: 0,
-    lengthCm: 0,
-    widthCm: 0,
-    heightCm: 0,
-    weightKg: 0,
+    lengthCm: item.size?.lengthCm ?? 0,
+    widthCm: item.size?.widthCm ?? 0,
+    heightCm: item.size?.heightCm ?? 0,
+    weightKg: item.weightKg ?? 0,
     reasonCode: (item.reason === null ? undefined : UNPLACED_REASONS[item.reason]) ?? 'UNKNOWN',
-    detailUnknown: true,
+    ...(item.size === null || item.weightKg === null ? { detailUnknown: true } : {}),
   }))
   const metrics = metricsOf(plan, vehicle)
   return Object.freeze({
@@ -156,6 +203,8 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       name: stop.name,
       packageCount: placements.filter((item) => item.stop === stop.sequence).length,
       ...(stop.deadline === null ? {} : { deadline: stop.deadline }),
+      ...(stop.plannedArrival ? { eta: stop.plannedArrival } : {}),
+      ...(stop.plannedArrival && stop.deadline ? { deadlineStatus: deadlineStatus(stop.plannedArrival, stop.deadline) } : {}),
     }))),
     zones: Object.freeze([]),
     placements: Object.freeze(placements),
@@ -165,7 +214,7 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
     orientationRulesById: new Map(placements.map((item) => [item.id, Object.freeze({ allowedOrientations: [item.orientation], keepUpright: false })])),
     isMockResult: false,
     ordersRecomputed: false,
-    engineInput: null,
+    engineInput: engineInputOf(placements, vehicle),
     metrics,
     revision: Object.freeze({
       id: plan.id,
@@ -173,8 +222,8 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       method: plan.algorithmName ?? '',
       approved: plan.approved,
       approvedAt: null,
-      manuallyEdited: false,
-      stale: false,
+      manuallyEdited: plan.manuallyEdited,
+      stale: plan.stale,
     }),
   })
 }

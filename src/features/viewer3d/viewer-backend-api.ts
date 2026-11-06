@@ -3,6 +3,7 @@
  *   fetchBackendPlanSource  → GET /api/trips?search= · GET /api/trips/{id}/detail · GET /api/trips/{id}/vehicle-config ·
  *                             GET /api/trips/{id}/load-plans
  *   approveBackendLoadPlan  → POST /api/load-plans/{id}/approve
+ *   approveBackendEdits     → POST /api/load-plans/{id}/approve-edits
  *   pinBackendPlacement     → POST /api/load-plans/{id}/pin
  *   unpinBackendPlacement   → DELETE /api/load-plans/{id}/pin/{placementId}
  *   rerunBackendLoadPlan    → POST /api/load-plans/{id}/rerun
@@ -53,6 +54,7 @@ export async function fetchBackendPlanSource(tripCode: string, planId?: string):
       sequence: stop.stopSequence,
       name: stop.stopName?.trim() || stop.address?.trim() || String(stop.stopSequence),
       deadline: stop.deadline ? isoFromBackend(stop.deadline) : null,
+      plannedArrival: stop.plannedArrival ? isoFromBackend(stop.plannedArrival) : null,
     })),
     plan: plan ?? null,
   }
@@ -65,6 +67,39 @@ export async function approveBackendLoadPlan(planId: string): Promise<LoadPlan> 
 }
 
 const planPath = (planId: string) => `/api/load-plans/${encodeURIComponent(planId)}`
+
+/** Một kiện đã dời / xoay của bản chỉnh tay: mã số placement của máy chủ, toạ độ cm, mã hướng 0..5 của dịch vụ tối ưu. */
+export type BackendPlacementEdit = {
+  readonly placementId: string
+  readonly x: number
+  readonly y: number
+  readonly z: number
+  readonly rotationType: number
+}
+
+/**
+ * Duyệt bản chỉnh tay: máy chủ kiểm lại cách xếp (trong lòng thùng, không chồng lấn, có chỗ đỡ, tải trục, hướng xoay theo loại kiện) rồi lưu
+ * thành bản duyệt **mới** đánh dấu chỉnh tay; phương án nguồn giữ nguyên. Từ chối bằng `MANUAL_EDIT_*`, `PLAN_STALE`, `PLAN_TRIP_NOT_PLANNED`.
+ * `pinnedPlacementIds` vắng là giữ ghim của phương án nguồn.
+ */
+// POST /api/load-plans/{id}/approve-edits
+export async function approveBackendEdits(
+  planId: string,
+  edits: readonly BackendPlacementEdit[],
+  pinnedPlacementIds?: readonly string[],
+): Promise<LoadPlan> {
+  const body = {
+    placements: edits.map((edit) => ({
+      placementId: Number(edit.placementId),
+      posX: edit.x,
+      posY: edit.y,
+      posZ: edit.z,
+      rotationType: edit.rotationType,
+    })),
+    ...(pinnedPlacementIds === undefined ? {} : { pinnedPlacementIds: pinnedPlacementIds.map(Number) }),
+  }
+  return loadPlanOf(await api().post<LoadPlanDto>(`${planPath(planId)}/approve-edits`, { body }))
+}
 
 /**
  * Ghim một kiện của phương án (lưu ngay ở máy chủ, không qua Duyệt): lần chạy lại giữ nguyên chỗ và hướng của nó. `placementId` là mã số

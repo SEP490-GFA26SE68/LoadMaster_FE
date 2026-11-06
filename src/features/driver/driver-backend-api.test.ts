@@ -2,7 +2,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
 import {
   completeStop,
-  confirmUnloadManually,
   DRIVER_CAPABILITIES,
   fetchDriverTrip,
   fetchDriverTripLabels,
@@ -142,19 +141,14 @@ test('đã đến: gọi endpoint theo mã điểm; giờ đến đọc từ đi
   const arrived = await createDriverBackend().fetchStopScreen('1')
   if (arrived.kind !== 'stop') throw new Error('phải là điểm đang giao')
   expect(arrived.view.arrivedAt).toBe('2026-10-17T07:20:00.000Z')
-  expect(arrived.view.arrivedEarlier).toBeUndefined()
 
   // Đã báo đến ở máy khác: 409 coi như đã đến
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } }
   await expect(createDriverBackend().arrive('1', 2)).resolves.toBeUndefined()
-  // Điểm đã đến mà máy chủ không kèm giờ: đã báo đến, không giờ; chưa đến thì không có gì
+  // Trạng thái ARRIVED mà máy chủ không kèm giờ đến vẫn là chưa đến: máy chủ đòi giờ đến mới cho dỡ
   routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, status: 'ARRIVED', actualArrival: null })
   const earlier = await createDriverBackend().fetchStopScreen('1')
-  if (earlier.kind !== 'stop') throw new Error('phải là điểm đang giao')
-  expect(earlier.view).toMatchObject({ arrivedAt: undefined, arrivedEarlier: true })
-  routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, actualArrival: null })
-  const pending = await createDriverBackend().fetchStopScreen('1')
-  expect(pending.kind === 'stop' && [pending.view.arrivedAt, pending.view.arrivedEarlier]).toStrictEqual([undefined, undefined])
+  expect(earlier.kind === 'stop' && earlier.view.arrivedAt).toBeUndefined()
 
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_COMPLETED', message: 'x' } }
   expect((await rejection(createDriverBackend().arrive('1', 2))).code).toBe('DELIVERY_STOP_ALREADY_COMPLETED')
@@ -280,14 +274,13 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, qrVerify: true, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    backend: true, qrVerify: true, manualConfirm: true, deliveryIssues: true, notifications: false, upcomingTrips: false,
     departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
   })
   for (const call of [
     () => fetchDriverTrip('1'),
     () => fetchDriverTripMonitoring('1'),
     () => fetchDriverTripLabels('1'),
-    () => confirmUnloadManually('1', 2, { packageInstanceId: '11', reason: 'LABEL_DAMAGED' }),
   ]) {
     expect((await rejection(call())).code).toBe('NOT_SUPPORTED')
   }

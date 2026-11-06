@@ -18,7 +18,7 @@ const placement = (over: Partial<LoadPlacement> = {}): LoadPlacement => ({
 const plan = (over: Partial<LoadPlan> = {}): LoadPlan => ({
   id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', computationMs: null,
   name: null, volumePercent: null, payloadPercent: 12.5, approved: false, approvedByName: null, centerOfGravityCm: null,
-  frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, placements: [placement()], unplaced: [], ...over,
+  frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [placement()], unplaced: [], ...over,
 })
 
 const STOPS = [
@@ -43,7 +43,7 @@ describe('backendPlanScene', () => {
     expect(scene.stops[0]?.deadline).toBe('2026-11-06T03:00:00.000Z')
     expect(scene.placements[0]?.stop).toBe(1)
     expect(scene.isMockResult).toBe(false)
-    expect(scene.engineInput).toBeNull()
+    expect(scene.engineInput?.instances?.map(({ packageInstanceId }) => packageInstanceId)).toEqual(['PK-301'])
   })
 
   test('kiện thuộc điểm không có trong chuyến là lỗi dữ liệu của máy chủ', () => {
@@ -66,7 +66,7 @@ describe('backendPlanScene', () => {
   test('kiện chưa xếp chỉ có mã và lý do; lý do lạ là UNKNOWN', () => {
     const scene = backendPlanScene({
       tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
-      plan: plan({ unplaced: [{ packageId: '302', code: 'PK-302', reason: 'OVER_WEIGHT' }, { packageId: '303', code: 'PK-303', reason: 'LẠ' }] }),
+      plan: plan({ unplaced: [{ packageId: '302', code: 'PK-302', reason: 'OVER_WEIGHT', size: null, weightKg: null }, { packageId: '303', code: 'PK-303', reason: 'LẠ', size: null, weightKg: null }] }),
     })
     expect(scene.unplaced.map((item) => [item.name, item.reasonCode, item.detailUnknown])).toEqual([['PK-302', 'OVER_PAYLOAD', true], ['PK-303', 'UNKNOWN', true]])
   })
@@ -79,5 +79,14 @@ describe('backendPlacementIds', () => {
     const ids = backendPlacementIds(twin)
     expect(scene.placements.map((item) => ids.get(item.id))).toEqual(['11', '12', '13'])
     expect([...ids.keys()]).toEqual(['PK-301', '12', '13'])
+  })
+
+  test('giờ đến dự kiến của tuyến máy chủ cho mức hạn từng điểm; điểm chưa có giờ đến thì không có mức hạn', () => {
+    const stops = [
+      { id: '91', sequence: 1, name: 'Cửa hàng Thủ Đức', deadline: '2026-11-06T03:00:00.000Z', plannedArrival: '2026-11-06T02:50:00.000Z' },
+      { id: '92', sequence: 2, name: 'Kho Biên Hoà', deadline: '2026-11-06T04:00:00.000Z', plannedArrival: null },
+    ]
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: plan(), vehicle: VEHICLE, stops })
+    expect(scene.stops.map((stop) => [stop.eta, stop.deadlineStatus])).toEqual([['2026-11-06T02:50:00.000Z', 'AT_RISK'], [undefined, undefined]])
   })
 })

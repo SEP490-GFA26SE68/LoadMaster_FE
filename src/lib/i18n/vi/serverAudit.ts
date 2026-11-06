@@ -34,6 +34,10 @@ export const serverAudit = {
     USER_STATUS_CHANGED: 'Đổi trạng thái tài khoản',
     USER_PASSWORD_RESET: 'Đặt lại mật khẩu',
     USER_DELETED: 'Xoá tài khoản',
+    DELIVERY_ISSUE_REPORTED: 'Tài xế báo sự cố kiện',
+    MANUAL_CONFIRM_REQUESTED: 'Tài xế xác nhận tay kiện dỡ',
+    MANUAL_CONFIRM_APPROVED: 'Duyệt xác nhận tay',
+    MANUAL_CONFIRM_REJECTED: 'Từ chối xác nhận tay',
   },
   /** Mã `entityName` của máy chủ. */
   entities: {
@@ -49,6 +53,8 @@ export const serverAudit = {
     LoadingExecution: 'Phiên xếp hàng',
     LOAD_PLAN: 'Phương án xếp',
     User: 'Tài khoản',
+    DeliveryIssue: 'Sự cố kiện',
+    ManualUnloadConfirmation: 'Xác nhận tay khi dỡ',
   },
   /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
   fields: {

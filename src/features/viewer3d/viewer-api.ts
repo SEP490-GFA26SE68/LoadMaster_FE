@@ -4,7 +4,7 @@
  *   approveLoadPlan     → POST /api/load-plans/{id}/approve (`force`; FastAPI đang có: POST /api/v1/load-plans/{id}/approve);
  *                         ghim: POST /api/load-plans/{id}/pin · DELETE /api/load-plans/{id}/pin/{placementId} (mock gửi cả tập ghim cùng lần Duyệt)
  *   chưa có ở BE: fetchPlanApproval
- * Đổi xe của chuyến từ Planner (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trips/trip-vehicle-api.ts`.
+ * Đổi xe của chuyến từ Planner (changeTripVehicle → PATCH /api/trips/{id}): `trips/trip-vehicle-api.ts`.
  */
 
 import type { PlacementPatch } from '@/domain/constraints'

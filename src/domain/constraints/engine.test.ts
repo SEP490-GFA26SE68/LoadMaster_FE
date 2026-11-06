@@ -99,3 +99,13 @@ test('an upright-only carton laid down is not allowed, and sizes that do not fol
     { code: 'ORIENTATION_MISMATCH', severity: 'error', packageInstanceId: 'PKG-001-02', params: { orientation: 'WLH' } },
   ])
 })
+
+test('pre-expanded instances let placements use their own ids instead of `{package}-01`', () => {
+  const { id: _id, name: _name, quantity: _quantity, groupId: _groupId, notes: _notes, ...rest } = SPEC_CARTON_A
+  const instances = ['P-17', 'P-18'].map((packageInstanceId) => ({ ...rest, packageInstanceId }))
+  const placements = cartonsAt(240, 300).map((placement, index) => ({ ...placement, packageInstanceId: instances[index]?.packageInstanceId ?? '' }))
+  const { issues } = createConstraintEngine({ vehicle: SPEC_TRUCK_6M, packages: [], instances, placements, settings: { enforceLifo: false } }).evaluateAll()
+  expect(issues.filter(({ code }) => code === 'OVERLAP')).toStrictEqual([
+    { code: 'OVERLAP', severity: 'error', packageInstanceId: 'P-18', relatedIds: ['P-17'], params: {} },
+  ])
+})

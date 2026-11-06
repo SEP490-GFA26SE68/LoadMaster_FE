@@ -17,15 +17,12 @@ export function StopNotices({ view }: { view: DeliveryView }) {
   const leftOut = view.leftAtWarehouse.length
   return (
     <>
-      <Banner tone="info" icon={view.arrivedAt === undefined && !view.arrivedEarlier ? undefined : MapPinCheck} className={TEXT}>
+      <Banner tone="info" icon={view.arrivedAt === undefined ? undefined : MapPinCheck} className={TEXT}>
         {view.mode !== 'delivering'
           ? t(view.mode === 'preview' ? 'driver.notice.preview' : 'driver.notice.ready')
-          // Máy chủ báo đã đến từ trước mà không trả giờ: nói đã đến, không có giờ
-          : view.arrivedEarlier
-            ? t('driver.notice.arrivedEarlier', { number: view.stop.number })
-            : view.arrivedAt === undefined
-              ? t('driver.notice.enRoute', { number: view.stop.number })
-              : t('driver.notice.arrived', { number: view.stop.number, time: format.time(view.arrivedAt) })}
+          : view.arrivedAt === undefined
+            ? t('driver.notice.enRoute', { number: view.stop.number })
+            : t('driver.notice.arrived', { number: view.stop.number, time: format.time(view.arrivedAt) })}
       </Banner>
       {leftOut > 0 ? <Banner tone="warning" className={TEXT}>{t('driver.notice.leftOut', { count: leftOut })}</Banner> : null}
       {view.stop.kind === 'PICKUP' ? (

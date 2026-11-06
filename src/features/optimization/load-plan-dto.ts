@@ -59,6 +59,11 @@ export type UnplacedDto = {
   readonly packageCode?: string | null
   readonly trackingBarcode?: string | null
   readonly reason?: string | null
+  /** Kích thước (cm) và khối lượng (kg) của kiện; máy chủ cũ không trả. */
+  readonly lengthCm?: Decimal | null
+  readonly widthCm?: Decimal | null
+  readonly heightCm?: Decimal | null
+  readonly weightKg?: Decimal | null
 }
 
 /** `LoadPlanDetailResponse`. */
@@ -84,6 +89,10 @@ export type LoadPlanDto = {
   readonly frontAxleLoad?: Decimal | null
   readonly rearAxleLoad?: Decimal | null
   readonly rehandlingCount?: number | null
+  /** Bản duyệt dựng từ bản chỉnh tay (`POST /api/load-plans/{id}/approve-edits`). */
+  readonly manuallyEdited?: boolean | null
+  /** Hàng, xe hoặc điểm giao của chuyến đã đổi sau khi tối ưu: không duyệt được. */
+  readonly stale?: boolean | null
   readonly placements?: readonly PlacementDto[] | null
   readonly unplaced?: readonly UnplacedDto[] | null
 }
@@ -143,7 +152,14 @@ export type LoadPlacement = {
   readonly stopSequence: number | null
 }
 
-export type LoadUnplaced = { readonly packageId: string; readonly code: string; readonly reason: string | null }
+export type LoadUnplaced = {
+  readonly packageId: string
+  readonly code: string
+  readonly reason: string | null
+  /** Kích thước cm và khối lượng kg của kiện; `null` khi máy chủ không trả. */
+  readonly size: { readonly lengthCm: number; readonly widthCm: number; readonly heightCm: number } | null
+  readonly weightKg: number | null
+}
 
 /** Một phương án của máy chủ. Số máy chủ không trả là `null` — màn bỏ phần đó, không vẽ 0. */
 export type LoadPlan = {
@@ -163,6 +179,8 @@ export type LoadPlan = {
   readonly frontAxleLoadKg: number | null
   readonly rearAxleLoadKg: number | null
   readonly rehandlingCount: number | null
+  readonly manuallyEdited: boolean
+  readonly stale: boolean
   readonly placements: readonly LoadPlacement[]
   readonly unplaced: readonly LoadUnplaced[]
 }
@@ -231,6 +249,20 @@ function placementOf(dto: PlacementDto): LoadPlacement {
   }
 }
 
+function unplacedOf(dto: UnplacedDto): LoadUnplaced {
+  const [lengthCm, widthCm, heightCm] = [numberOf(dto.lengthCm), numberOf(dto.widthCm), numberOf(dto.heightCm)]
+  const weightKg = numberOf(dto.weightKg)
+  return {
+    packageId: String(dto.packageId),
+    code: codeOf(dto),
+    reason: dto.reason ?? null,
+    size: lengthCm === null || widthCm === null || heightCm === null
+      ? null
+      : { lengthCm: roundCm(lengthCm), widthCm: roundCm(widthCm), heightCm: roundCm(heightCm) },
+    weightKg: weightKg === null ? null : roundKg(weightKg),
+  }
+}
+
 export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
   const objective = PLAN_OBJECTIVES.find((item) => item === dto.objective) ?? null
   const label = LABELS.find((item) => item === dto.candidateLabel) ?? null
@@ -252,8 +284,10 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     frontAxleLoadKg: numberOf(dto.frontAxleLoad),
     rearAxleLoadKg: numberOf(dto.rearAxleLoad),
     rehandlingCount: dto.rehandlingCount ?? null,
+    manuallyEdited: dto.manuallyEdited === true,
+    stale: dto.stale === true,
     placements: (dto.placements ?? []).map(placementOf),
-    unplaced: (dto.unplaced ?? []).map((item) => ({ packageId: String(item.packageId), code: codeOf(item), reason: item.reason ?? null })),
+    unplaced: (dto.unplaced ?? []).map(unplacedOf),
   }
 }
 

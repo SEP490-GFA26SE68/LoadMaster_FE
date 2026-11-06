@@ -27,7 +27,7 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
   const plan: LoadPlan = {
     id: session.tripId, tripId: session.tripId, jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
     volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
-    rearAxleLoadKg: null, rehandlingCount: null, unplaced: [],
+    rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, unplaced: [],
     placements: session.placements.map((item) => ({
       id: item.id,
       packageId: item.packageId ?? item.id,

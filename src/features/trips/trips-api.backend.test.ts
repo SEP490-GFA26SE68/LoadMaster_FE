@@ -8,7 +8,6 @@ import { resolveStagingShortage } from './shortage-api'
 import { deletePackage } from './trip-package-lines-api'
 import { addTripPackages, removeTripPackage } from './trip-pool-api'
 import { removeTripStop, updateTripStops } from './trip-stops-api'
-import { changeTripVehicle } from './trip-vehicle-api'
 import { cancelTrip, fetchTrips, updateTripFrame } from './trips-api'
 import { resolveBackendTripId } from './trips-backend-api'
 
@@ -82,7 +81,7 @@ test('máy chủ từ chối vai trò: lỗi mang mã của máy chủ để mà
 test('lệnh ghi của chuyến từ chối NOT_SUPPORTED, không gọi mạng và không ghi kho mẫu', async () => {
   calls = stubBackend({}).calls
   const db = getMockDb()
-  const writes = [vi.spyOn(db, 'updateTrip'), vi.spyOn(db, 'cancelTrip'), vi.spyOn(db, 'changeTripVehicle'), vi.spyOn(db, 'optimizeTripRoute')]
+  const writes = [vi.spyOn(db, 'updateTrip'), vi.spyOn(db, 'cancelTrip'), vi.spyOn(db, 'optimizeTripRoute')]
   const results = await Promise.allSettled([
     updateTripFrame(CODE, { name: 'Khác', departureAt: '2026-10-19T00:00:00.000Z', driverId: null }),
     cancelTrip(CODE, 'Khách huỷ'),
@@ -91,12 +90,11 @@ test('lệnh ghi của chuyến từ chối NOT_SUPPORTED, không gọi mạng v
     removeTripStop(CODE, '7'),
     addTripPackages(CODE, { packageIds: ['PK-0001'], target: { stopId: '7' } }),
     removeTripPackage(CODE, 'PK-0001'),
-    changeTripVehicle(CODE, '5'),
     optimizeTripRoute(CODE),
     overrideTripSegregation(CODE, 'Cùng khách'),
     resolveStagingShortage(CODE, 'PKG-001-01', 'DROP'),
   ])
-  expect(results.map((result) => (result.status === 'rejected' ? (result.reason as { code?: string }).code : 'fulfilled'))).toEqual(Array(11).fill('NOT_SUPPORTED'))
+  expect(results.map((result) => (result.status === 'rejected' ? (result.reason as { code?: string }).code : 'fulfilled'))).toEqual(Array(10).fill('NOT_SUPPORTED'))
   expect(calls).toEqual([])
   for (const write of writes) expect(write).not.toHaveBeenCalled()
 })

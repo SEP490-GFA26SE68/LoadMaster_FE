@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import { myTripGroup, type MyTripRow } from './my-trips'
-import { MyTripStops } from './MyTripStops'
+import { MyTripStops, ServerMyTripStops } from './MyTripStops'
 import { useDriverCapabilities } from './useDriverQueries'
 
 /** Mở một chuyến ở màn điểm giao (hoặc tổng kết nếu đã hoàn thành). */
@@ -58,6 +58,7 @@ export function MyTripCard({ row, primary = false }: { row: MyTripRow; primary?:
         <p className="m-0 font-semibold text-ink-strong">{t('driver.list.atStop', { number: row.currentStop, total: row.stopCount })}</p>
       ) : null}
       {row.stops.length > 0 ? <MyTripStops row={row} /> : null}
+      {caps.backend && (row.status === 'IN_TRANSIT' || row.sub?.kind === 'loaded') ? <ServerMyTripStops tripId={row.id} tripCode={row.code ?? row.id} /> : null}
       {row.recheck > 0 ? (
         <p className="m-0 flex items-start gap-2 rounded-lg border border-badge-danger-border bg-badge-danger-bg px-3 py-2 font-medium text-badge-danger-fg">
           <TriangleAlert className="mt-0.5 size-5 flex-none" strokeWidth={2} aria-hidden />
