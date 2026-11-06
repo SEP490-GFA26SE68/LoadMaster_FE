@@ -26,7 +26,7 @@ const ON_BACKEND = usesBackend('warehouse')
  * Màn kho làm được gì với nguồn dữ liệu đang dùng (D-20). Kho mẫu: soạn hàng, báo thiếu, đối chiếu ba mức, kiện hỏng, seal, khung 3D vị trí
  * kiện, chuông. Backend: danh sách chuyến chờ xếp, đang xếp và đã xếp xong, bắt đầu xếp theo phương án đã duyệt, mở lại phiên ở mọi thiết
  * bị, đối chiếu từng kiện theo thứ tự (quét QR hoặc gõ mã), ghi sai lệch vị trí, hoàn tất xếp, khung 3D vị trí kiện khi máy chủ trả lòng
- * thùng. Backend chưa có — màn bản máy chủ không vẽ: soạn hàng và báo thiếu, xác nhận tay, kiện hỏng làm chuyến quay về, số seal, thông báo.
+ * thùng. Backend chưa có — màn bản máy chủ không vẽ: soạn hàng và báo thiếu, xác nhận tay, kiện hỏng làm chuyến quay về, số seal. Chuông đọc máy chủ khi nhóm `notifications` nối backend.
  */
 export type WarehouseCapabilities = {
   /** Màn `/kho` là bản máy chủ (`ServerWarehouseTripsPage`, `ServerLoadingSession`). */
@@ -34,7 +34,11 @@ export type WarehouseCapabilities = {
   readonly notifications: boolean
 }
 
-export const WAREHOUSE_CAPABILITIES: WarehouseCapabilities = { backend: ON_BACKEND, notifications: !ON_BACKEND }
+export const WAREHOUSE_CAPABILITIES: WarehouseCapabilities = {
+  backend: ON_BACKEND,
+  // Chuông bản máy chủ khi nhóm `notifications` cũng nối backend (`GET /api/notifications`)
+  notifications: !ON_BACKEND || usesBackend('notifications'),
+}
 
 let source: WarehouseBackend | null = null
 const backend = (): WarehouseBackend => (source ??= createWarehouseBackend())

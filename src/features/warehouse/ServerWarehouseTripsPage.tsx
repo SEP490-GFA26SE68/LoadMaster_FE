@@ -12,9 +12,10 @@ import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { useCan } from '@/features/auth/useCan'
 import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { ServerWarehouseTripCard } from './ServerWarehouseTripCard'
-import { useServerWarehouseTripsQuery } from './useServerWarehouseQuery'
+import { useServerWarehouseTripsQuery, useWarehouseCapabilities } from './useServerWarehouseQuery'
 import type { ServerWarehouseStage, ServerWarehouseTrip } from './warehouse-server-api'
 
 const STAGES: readonly ServerWarehouseStage[] = ['loading', 'waiting', 'loaded']
@@ -31,6 +32,7 @@ export function ServerWarehouseTripsPage() {
   const t = useT()
   const format = useFormat()
   const can = useCan()
+  const caps = useWarehouseCapabilities()
   const query = useServerWarehouseTripsQuery()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
@@ -47,6 +49,7 @@ export function ServerWarehouseTripsPage() {
               </Button>
             ) : null}
             <LanguageSwitch size="touch" tone="sky" className="flex-none" />
+            {caps.notifications ? <NotificationBell variant="touch" tone="sky" /> : null}
             <AccountMenu tone="sky" />
           </>
         }

@@ -36,6 +36,12 @@ export const serverAudit = {
     MANUAL_CONFIRM_REQUESTED: 'Driver confirmed an unload manually',
     MANUAL_CONFIRM_APPROVED: 'Manual confirmation approved',
     MANUAL_CONFIRM_REJECTED: 'Manual confirmation rejected',
+    TRIP_EXCEPTION_REPORTED: 'Road incident reported',
+    TRIP_EXCEPTION_ESCALATED: 'Incident escalated to the manager',
+    DEADLINE_RENEGOTIATED: 'Manager entered a new deadline',
+    DELIVERY_ETA_RISK: 'Delivery deadline at risk',
+    CREDIT_LOW_BALANCE: 'Credits running low',
+    SUPPORT_TICKET_UPDATED: 'Customer support updated a support request',
   },
   entities: {
     Trip: 'Trip',
@@ -52,6 +58,9 @@ export const serverAudit = {
     User: 'Account',
     DeliveryIssue: 'Package issue',
     ManualUnloadConfirmation: 'Manual unload confirmation',
+    TripException: 'Road incident',
+    Company: 'Company',
+    SupportTicket: 'Support request',
   },
   fields: {
     tripName: 'Trip name',
@@ -73,6 +82,8 @@ export const serverAudit = {
     INACTIVE: 'Inactive',
     LOCKED: 'Locked',
   },
+  ticketStatuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
+  escalationReasons: { NO_ROUTE: 'No alternative route found', TIMEOUT: 'Unhandled for over 30 minutes' },
   details: {
     status: 'Status',
     deadline: 'Deadline',
@@ -88,5 +99,9 @@ export const serverAudit = {
     distance: '{km} km',
     duration: '{minutes} min',
     lateStops: { one: '{count} stop expected late', other: '{count} stops expected late' },
+    delay: '{minutes} min delay',
+    balance: { one: '{count} credit left', other: '{count} credits left' },
+    ticket: 'Request {code}',
+    replied: 'Replied',
   },
 } satisfies Dictionary<typeof source>
