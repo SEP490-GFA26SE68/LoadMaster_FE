@@ -63,7 +63,7 @@ export function driverServerScene(plan: DriverLoadedPlan): DriverServerScene | n
     if (!stops.has(sequence)) stops.set(sequence, { id: `stop-${sequence}`, sequence, name: '', deadline: null })
   }
   const loadPlan: LoadPlan = {
-    id: plan.planId, tripId: plan.tripId, jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
+    id: plan.planId, tripId: plan.tripId, jobId: null, objective: null, label: null, algorithmName: null, runAlgorithm: null, computationMs: null, name: null,
     volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
     rearAxleLoadKg: null, rehandlingCount: null, unplaced: [], manuallyEdited: false, stale: false, stopZones: null,
     placements: plan.placements.map((item) => ({

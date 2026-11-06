@@ -57,6 +57,8 @@ export const serverPlans = {
     openPlanner: 'Open in Planner',
     compare: 'Compare',
     toSetup: 'Optimize loading',
+    runAlgorithm: 'Algorithm tier of the subscription: {name}',
+    planAlgorithm: 'Algorithm that made the plan: {name}',
   },
   setup: {
     title: 'Optimize loading',
@@ -109,7 +111,24 @@ export const serverPlans = {
       rehandling: 'Rehandled packages',
       unplaced: 'Unplaced packages',
       computation: 'Computation time',
-      algorithm: 'Algorithm',
+      planAlgorithm: 'Algorithm that made the plan',
+    },
+  },
+  algorithms: {
+    runLabel: 'Algorithm tier of the subscription',
+    plan: {
+      EP_DBLF: 'EP + DBLF',
+      GA: 'GA — genetic algorithm (decoded with EP + DBLF)',
+      SA: 'SA — simulated annealing (decoded with EP + DBLF)',
+      EP_LUMO_R1_1: 'EP + DBLF, Lumo-R1.1 scoring placements',
+      LUMO_R1: 'AI · Lumo-R1',
+      LUMO_R1_1: 'AI · Lumo-R1.1',
+      LUMO_R2: 'AI · Lumo-R2 (experimental)',
+    },
+    run: {
+      EP_DBLF: 'EP + DBLF',
+      EP_DBLF_GA: 'EP + DBLF + GA/SA',
+      EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI (Lumo-R1, R1.1, R2)',
     },
   },
   planner: {

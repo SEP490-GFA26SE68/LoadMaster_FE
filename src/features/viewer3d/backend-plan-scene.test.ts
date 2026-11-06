@@ -16,7 +16,7 @@ const placement = (over: Partial<LoadPlacement> = {}): LoadPlacement => ({
 })
 
 const plan = (over: Partial<LoadPlan> = {}): LoadPlan => ({
-  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', computationMs: null,
+  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', runAlgorithm: 'EP_DBLF', computationMs: null,
   name: null, volumePercent: null, payloadPercent: 12.5, approved: false, approvedByName: null, centerOfGravityCm: null,
   frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [placement()], unplaced: [], stopZones: null, ...over,
 })

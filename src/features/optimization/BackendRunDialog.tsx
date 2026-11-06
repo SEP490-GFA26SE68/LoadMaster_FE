@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { OptimizationJob } from './load-plan-dto'
 import { RunFigure } from './RunFigure'
+import { runAlgorithmLabel } from './server-algorithms'
 
 /**
  * Hộp thoại một lần chạy tối ưu của máy chủ. Máy chủ chỉ báo trạng thái job — không báo số kiện đã xét — nên hình là dải khối chạy vòng
@@ -41,6 +42,10 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
             {job?.computationMs == null ? null : <>
               <dt className="text-ink-3">{t('serverPlans.job.computation')}</dt>
               <dd className="font-mono tabular-nums">{t('serverPlans.job.computationValue', { ms: format.integer(job.computationMs) })}</dd>
+            </>}
+            {job?.runAlgorithm == null ? null : <>
+              <dt className="text-ink-3">{t('serverPlans.algorithms.runLabel')}</dt>
+              <dd data-run-algorithm>{runAlgorithmLabel(job.runAlgorithm, t)}</dd>
             </>}
           </dl>
           {job?.pinnedCount != null && job.pinnedCount > 0 ? (

@@ -58,6 +58,8 @@ export const serverPlans = {
     openPlanner: 'Mở trong Planner',
     compare: 'So sánh',
     toSetup: 'Tối ưu xếp hàng',
+    runAlgorithm: 'Thuật toán của gói: {name}',
+    planAlgorithm: 'Thuật toán tạo phương án: {name}',
   },
   setup: {
     title: 'Tối ưu xếp hàng',
@@ -110,7 +112,28 @@ export const serverPlans = {
       rehandling: 'Kiện dỡ-xếp lại',
       unplaced: 'Kiện chưa xếp',
       computation: 'Thời gian tính',
-      algorithm: 'Thuật toán',
+      planAlgorithm: 'Thuật toán tạo phương án',
+    },
+  },
+  /**
+   * Tên thuật toán máy chủ ghi: `plan` là thuật toán đã tạo ra một phương án, `run` là thuật toán của lần chạy — hạng của gói. Chỉ màn So
+   * sánh, bảng lần chạy và hộp chạy của Thiết lập tối ưu dùng (từ vựng thuật toán). Mã lạ hiện nguyên mã.
+   */
+  algorithms: {
+    runLabel: 'Thuật toán của gói',
+    plan: {
+      EP_DBLF: 'EP + DBLF',
+      GA: 'GA — giải thuật di truyền (giải mã bằng EP + DBLF)',
+      SA: 'SA — mô phỏng luyện kim (giải mã bằng EP + DBLF)',
+      EP_LUMO_R1_1: 'EP + DBLF, Lumo-R1.1 chấm điểm chỗ đặt',
+      LUMO_R1: 'AI · Lumo-R1',
+      LUMO_R1_1: 'AI · Lumo-R1.1',
+      LUMO_R2: 'AI · Lumo-R2 (bản thử nghiệm)',
+    },
+    run: {
+      EP_DBLF: 'EP + DBLF',
+      EP_DBLF_GA: 'EP + DBLF + GA/SA',
+      EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI (Lumo-R1, R1.1, R2)',
     },
   },
   planner: {

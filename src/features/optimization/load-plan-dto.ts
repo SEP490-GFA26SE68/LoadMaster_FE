@@ -36,6 +36,8 @@ export type OptimizationJobDto = {
   readonly packedPlanCount?: number | null
   /** Số kiện đã ghim lần chạy giữ nguyên; máy chủ cũ không trả. */
   readonly pinnedCount?: number | null
+  /** Thuật toán của lần chạy — hạng của gói (`EP_DBLF`, `EP_DBLF_GA`, `EP_DBLF_GA_AI`); máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
 }
 
 export type PlacementDto = {
@@ -90,7 +92,10 @@ export type LoadPlanDto = {
   readonly objective?: string | null
   /** Hợp đồng đích: `A` · `B` · `C` theo mục tiêu; phương án cũ `null`. */
   readonly candidateLabel?: string | null
+  /** Thuật toán đã tạo ra phương án (`EP_DBLF`, `GA`, `SA`, `EP_LUMO_R1_1`, `LUMO_R1`…); phương án cũ: thuật toán của lần chạy. */
   readonly algorithmName?: string | null
+  /** Thuật toán của lần chạy — hạng của gói; máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
   readonly computationMs?: number | null
   readonly planName?: string | null
   readonly version?: number | null
@@ -139,6 +144,8 @@ export type OptimizationJob = {
   readonly pinnedCount: number | null
   readonly computationMs: number | null
   readonly createdAt: string | null
+  /** Thuật toán của lần chạy (hạng của gói); `null` khi máy chủ không trả. */
+  readonly runAlgorithm: string | null
 }
 
 export type LoadPlacement = {
@@ -191,7 +198,9 @@ export type LoadPlan = {
   readonly jobId: string | null
   readonly objective: PlanObjective | null
   readonly label: PlanLabel | null
+  /** Thuật toán đã tạo ra phương án; `runAlgorithm` là thuật toán của lần chạy (hạng của gói). */
   readonly algorithmName: string | null
+  readonly runAlgorithm: string | null
   readonly computationMs: number | null
   readonly name: string | null
   readonly volumePercent: number | null
@@ -249,6 +258,7 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     pinnedCount: dto.pinnedCount ?? null,
     computationMs: dto.computationMs ?? null,
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
   }
 }
 
@@ -317,6 +327,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     objective,
     label,
     algorithmName: dto.algorithmName?.trim() || null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
     computationMs: dto.computationMs ?? null,
     name: dto.planName?.trim() || null,
     volumePercent: percentOf(dto.volumeUtilization),

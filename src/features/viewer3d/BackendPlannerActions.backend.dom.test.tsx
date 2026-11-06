@@ -16,7 +16,7 @@ vi.mock('@/lib/backend-config', () => ({
 
 /** Nút Duyệt của Planner bản máy chủ: phương án lỗi thời mờ kèm lý do; draft có chỉnh sửa thì nút chính là "Duyệt bản chỉnh". */
 const PLAN: LoadPlan = {
-  id: '12', tripId: '42', jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
+  id: '12', tripId: '42', jobId: null, objective: null, label: null, algorithmName: null, runAlgorithm: null, computationMs: null, name: null,
   volumePercent: 60, payloadPercent: null, approved: true, approvedByName: 'Lê Minh Châu', centerOfGravityCm: null, frontAxleLoadKg: null,
   rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, stopZones: null, placements: [], unplaced: [],
 }

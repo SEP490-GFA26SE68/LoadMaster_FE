@@ -1283,7 +1283,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
   `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
-  sánh `?lan-chay=<jobId>` (`…/plans`); Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
+  sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
+  `EP_LUMO_R1_1`, `LUMO_R1`, `LUMO_R1_1`, `LUMO_R2`; phương án cũ là mã của job) — và `runAlgorithm`, hạng của gói ghi ở job (job cũng trả
+  `runAlgorithm`); tên đọc được ở `server-algorithms.ts` (nhánh `serverPlans.algorithms`, mã lạ hiện nguyên mã, không "(mock)") và chỉ hiện
+  ở thẻ lần chạy + từng thẻ của So sánh, bảng lần chạy (`showAlgorithms`) và hộp chạy của Thiết lập tối ưu. Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
   số máy chủ không trả thì bỏ: tải trục tính ở FE, thời gian chạy của bản chỉnh tay, kích thước kiện chưa xếp khi máy chủ không
   trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT) và Duyệt bằng
   `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Phương án máy chủ đánh dấu `stale` (đổi xe, đưa / gỡ yêu cầu

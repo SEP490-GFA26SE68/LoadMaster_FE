@@ -98,7 +98,7 @@ function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
             </Banner>
           ) : null}
           {keepFrom !== null && plans.data !== undefined ? <BackendPinsCard count={pinnedCount} keep={keepPins} onKeepChange={setKeepPins} /> : null}
-          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} />
+          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} showAlgorithms />
         </div>
       </div>
       {jobId !== null ? (
