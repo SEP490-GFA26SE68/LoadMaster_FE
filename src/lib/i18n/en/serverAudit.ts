@@ -42,6 +42,11 @@ export const serverAudit = {
     DELIVERY_ETA_RISK: 'Delivery deadline at risk',
     CREDIT_LOW_BALANCE: 'Credits running low',
     SUPPORT_TICKET_UPDATED: 'Customer support updated a support request',
+    PICKUP_REQUESTED: 'Sent an en-route pickup request',
+    PICKUP_APPROVED: 'Approved an en-route pickup request',
+    PICKUP_REJECTED: 'Rejected an en-route pickup request',
+    PICKUP_LOADED: 'Loaded en-route pickup packages',
+    PICKUP_DELIVERED: 'Delivered en-route pickup packages',
   },
   entities: {
     Trip: 'Trip',
@@ -61,6 +66,7 @@ export const serverAudit = {
     TripException: 'Road incident',
     Company: 'Company',
     SupportTicket: 'Support request',
+    PickupRequest: 'En-route pickup request',
   },
   fields: {
     tripName: 'Trip name',
@@ -84,6 +90,8 @@ export const serverAudit = {
   },
   ticketStatuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   escalationReasons: { NO_ROUTE: 'No alternative route found', TIMEOUT: 'Unhandled for over 30 minutes' },
+  /** Ten-rule result when an en-route pickup is requested (`PICKUP_REQUESTED`). */
+  pickupChecks: { VALIDATED: 'Passed all ten rules', PENDING: 'Some rules not met' },
   details: {
     status: 'Status',
     deadline: 'Deadline',
@@ -103,5 +111,8 @@ export const serverAudit = {
     balance: { one: '{count} credit left', other: '{count} credits left' },
     ticket: 'Request {code}',
     replied: 'Replied',
+    pickupPackages: { one: '{count} en-route package', other: '{count} en-route packages' },
+    pickupUnplaced: { one: '{count} package without a spot on the truck', other: '{count} packages without a spot on the truck' },
+    pickupOverridden: 'Approved over the rules',
   },
 } satisfies Dictionary<typeof source>

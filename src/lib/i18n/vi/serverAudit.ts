@@ -44,6 +44,11 @@ export const serverAudit = {
     DELIVERY_ETA_RISK: 'Nguy cơ trễ hạn giao',
     CREDIT_LOW_BALANCE: 'Sắp hết credit',
     SUPPORT_TICKET_UPDATED: 'Hỗ trợ khách hàng cập nhật yêu cầu hỗ trợ',
+    PICKUP_REQUESTED: 'Gửi yêu cầu nhận hàng dọc đường',
+    PICKUP_APPROVED: 'Duyệt yêu cầu nhận hàng dọc đường',
+    PICKUP_REJECTED: 'Từ chối yêu cầu nhận hàng dọc đường',
+    PICKUP_LOADED: 'Nhận hàng dọc đường lên xe',
+    PICKUP_DELIVERED: 'Giao hàng nhận dọc đường',
   },
   /** Mã `entityName` của máy chủ. */
   entities: {
@@ -64,6 +69,7 @@ export const serverAudit = {
     TripException: 'Sự cố trên đường',
     Company: 'Công ty',
     SupportTicket: 'Yêu cầu hỗ trợ',
+    PickupRequest: 'Yêu cầu nhận dọc đường',
   },
   /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
   fields: {
@@ -92,6 +98,8 @@ export const serverAudit = {
   ticketStatuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Vì sao sự cố lên quản lý (`TRIP_EXCEPTION_ESCALATED`). */
   escalationReasons: { NO_ROUTE: 'Không tìm được tuyến khác', TIMEOUT: 'Quá 30 phút chưa xử lý' },
+  /** Kết quả mười luật khi gửi yêu cầu nhận dọc đường (`PICKUP_REQUESTED`). */
+  pickupChecks: { VALIDATED: 'Đạt đủ mười luật', PENDING: 'Có luật không đạt' },
   details: {
     status: 'Trạng thái',
     deadline: 'Hạn giao',
@@ -111,5 +119,8 @@ export const serverAudit = {
     balance: { one: 'Còn {count} credit', other: 'Còn {count} credit' },
     ticket: 'Yêu cầu {code}',
     replied: 'Đã trả lời',
+    pickupPackages: { one: '{count} kiện nhận dọc đường', other: '{count} kiện nhận dọc đường' },
+    pickupUnplaced: { one: '{count} kiện chưa có chỗ trên xe', other: '{count} kiện chưa có chỗ trên xe' },
+    pickupOverridden: 'Duyệt vượt luật',
   },
 } as const

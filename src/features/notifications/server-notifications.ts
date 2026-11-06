@@ -33,7 +33,7 @@ export type ServerLinkTargets = {
   readonly billing: boolean
 }
 
-type DriverNotice = 'loadingStarted' | 'loadingCompleted' | 'cancelled' | 'assigned' | 'unassigned'
+type DriverNotice = 'loadingStarted' | 'loadingCompleted' | 'cancelled' | 'assigned' | 'unassigned' | 'pickupApproved' | 'pickupRejected'
 
 /** Chi tiết tài xế cần ở từng câu của mình (như `DRIVER_NOTICE_PARAMS` của kho mẫu). */
 const DRIVER_NOTICE_KEYS: Readonly<Record<DriverNotice, readonly string[]>> = {
@@ -42,6 +42,9 @@ const DRIVER_NOTICE_KEYS: Readonly<Record<DriverNotice, readonly string[]>> = {
   cancelled: ['reason', 'loadedPackages'],
   assigned: [],
   unassigned: [],
+  // Số kiện phải nhận (đã có chỗ + chưa có chỗ trên xe); lý do điều phối viên nhập
+  pickupApproved: ['placed', 'unplaced'],
+  pickupRejected: ['reason'],
 }
 
 const same = (value: string | number | boolean | undefined, id: string | null) => id !== null && value !== undefined && String(value) === id
@@ -58,6 +61,10 @@ function driverNotice(item: ServerNotification, viewerId: string | null): Driver
     case 'TRIP_UPDATED':
       if (same(item.after.driverId, viewerId)) return 'assigned'
       return same(item.before.driverId, viewerId) ? 'unassigned' : null
+    case 'PICKUP_APPROVED':
+      return 'pickupApproved'
+    case 'PICKUP_REJECTED':
+      return 'pickupRejected'
     default:
       return null
   }
