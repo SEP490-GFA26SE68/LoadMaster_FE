@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ScanLine } from 'lucide-react'
-import { useId, useMemo, useRef, useState, type RefObject } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
@@ -70,6 +70,22 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
   const form = useForm<CodeValues>({ resolver: zodResolver(schema), defaultValues: { code: '' } })
   const codeError = form.formState.errors.code?.message
   const { ref: registerRef, ...codeField } = form.register('code')
+  // Mã gõ (hay máy quét mã vạch gõ rồi Enter) trong lúc lần trước còn chờ kho: xếp hàng, gửi tiếp khi lần trước xong — không mất mã nào.
+  const queued = useRef<VerifyCode[]>([])
+
+  useEffect(() => {
+    if (pending) return
+    const next = queued.current.shift()
+    if (next) onVerify(next)
+  }, [pending, onVerify])
+
+  function submitCode(input: VerifyCode) {
+    if (pending) {
+      if (!queued.current.some((entry) => entry.code === input.code)) queued.current.push(input)
+    } else onVerify(input)
+    // Chọn sẵn mã vừa gửi: gõ hay quét mã kế tiếp là thay chỗ, mã vẫn đọc được khi kho báo lỗi
+    inputRef.current?.select()
+  }
 
   // Mã sai vẫn nằm trước camera thì không gửi lại liên tục; đưa mã khác vào khung là gửi ngay.
   function handleDetected(raw: string) {
@@ -104,7 +120,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
         ) : null}
 
         <TabsContent value="CODE" className="outline-none">
-          <form noValidate className="flex flex-col gap-3" onSubmit={form.handleSubmit(({ code }) => onVerify({ method: 'CODE', code }))}>
+          <form noValidate className="flex flex-col gap-3" onSubmit={form.handleSubmit(({ code }) => submitCode({ method: 'CODE', code }))}>
             <div className="flex flex-col gap-1.5">
               <label htmlFor={codeId} className="font-medium">{codeLabel ?? t('qr.verify.codeLabel')}</label>
               <input
@@ -124,7 +140,8 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
               />
               <span id={`${codeId}-mo-ta`} className={codeError ? 'text-danger' : 'text-ink-3'}>{codeError ?? codeHint ?? t('qr.verify.codeHint')}</span>
             </div>
-            <Button type="submit" size="touch" className="self-end" loading={pending}>{t('qr.verify.codeSubmit')}</Button>
+            {/* Đang chờ kho vẫn bấm được (Enter của ô cần nút gửi không khoá): mã mới vào hàng chờ */}
+            <Button type="submit" size="touch" className="self-end" loading={pending} disabled={false}>{t('qr.verify.codeSubmit')}</Button>
           </form>
         </TabsContent>
 
