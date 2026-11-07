@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { nextOrientation, type OrientationCode } from '@/domain/geometry'
+import { nextOrientation, previousOrientation, type OrientationCode } from '@/domain/geometry'
 import type { ScenePlacement, PositionCm } from '@/features/viewer3d/scene-input'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import { orientedSize } from '@/features/viewer3d/scene-input'
@@ -9,6 +9,7 @@ import { useEditorValidation } from './useEditorValidation'
 import { createPreviewStore } from './preview-store'
 import { settleAfterMove } from './gravity'
 import { snapPosition } from './snapping'
+import { editorShortcut, LARGE_NUDGE_CM } from './shortcuts'
 
 export type DragPlane = 'xy' | 'xz' | 'yz'
 export const PLANE_AXES: Record<DragPlane, readonly Axis[]> = { xy: ['x', 'y'], xz: ['x', 'z'], yz: ['y', 'z'] }
@@ -57,9 +58,9 @@ export function useManualEditor(state: LoadPlanViewerState) {
       message: t(result.valid ? 'viewer.editor.rotated' : 'viewer.editor.rotateRejected') }, true)
     if (result.valid) state.setOrientation(selected.id, orientation)
   }
-  const nudge = (axis: Axis, direction: number) => {
+  const nudge = (axis: Axis, direction: number, stepCm = nudgeCm) => {
     if (!selected || preview.getLatest()?.dragging) return
-    commitMove(selected.id, { ...selected.position, [axis]: selected.position[axis] + direction * nudgeCm })
+    commitMove(selected.id, { ...selected.position, [axis]: selected.position[axis] + direction * stepCm })
   }
   const snap = () => {
     if (!selected || preview.getLatest()?.dragging) return
@@ -94,22 +95,26 @@ export function useManualEditor(state: LoadPlanViewerState) {
     if (mode !== 'edit') return
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target instanceof HTMLElement ? event.target : null
-      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+      // Ô nhập, hộp thoại, menu và danh sách chọn giữ phím của chúng; Esc đã huỷ một cú kéo (preventDefault) thì không bỏ chọn thêm
+      if (event.defaultPrevented || target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"], [role="listbox"]')) return
       if (preview.getLatest()?.dragging) return
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      const shortcut = editorShortcut(event)
+      if (!shortcut) return
+      if (shortcut.kind === 'undo' || shortcut.kind === 'redo') {
         event.preventDefault()
-        if (event.shiftKey) redo(); else undo()
-      } else if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-        const movement: Record<string, [Axis, number]> = {
-          ArrowRight: ['x', 1], ArrowLeft: ['x', -1], ArrowUp: ['y', 1], ArrowDown: ['y', -1],
-          PageUp: ['z', 1], PageDown: ['z', -1],
-        }
-        const move = movement[event.key]
-        if (move) { event.preventDefault(); nudge(...move) }
-        if (event.key.toLowerCase() === 'r' && selected) {
-          event.preventDefault(); rotate(nextOrientation({ ...sceneModel.baseDimensionsById.get(selected.id)!, ...sceneModel.orientationRulesById.get(selected.id)! }, selected.orientation))
-        }
+        if (shortcut.kind === 'redo') redo(); else undo()
+        return
       }
+      if (!selected) return
+      event.preventDefault()
+      if (shortcut.kind === 'nudge') nudge(shortcut.axis, shortcut.direction, shortcut.large ? LARGE_NUDGE_CM : nudgeCm)
+      else if (shortcut.kind === 'rotate') {
+        const rules = { ...sceneModel.baseDimensionsById.get(selected.id)!, ...sceneModel.orientationRulesById.get(selected.id)! }
+        rotate((shortcut.back ? previousOrientation : nextOrientation)(rules, selected.orientation))
+      } else if (shortcut.kind === 'pin') togglePin()
+      // Esc: đang tập trung vào kiện thì CameraRig trả góc nhìn trước, editor chỉ quên lần tập trung; lần Esc sau mới bỏ chọn kiện
+      else if (focus) setFocus(null)
+      else { preview.publish(null, true); state.select(null) }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)

@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { PlanObjective } from '@/domain/models'
 import {
   approveBackendEdits,
   approveBackendLoadPlan,
   fetchBackendPlanSource,
   pinBackendPlacement,
-  rerunBackendLoadPlan,
   unpinBackendPlacement,
   type BackendPlacementEdit,
 } from './viewer-backend-api'
@@ -55,16 +53,3 @@ export function useTogglePinMutation(tripCode: string, planId: string) {
   })
 }
 
-/** Chạy lại giữ ghim: một phương án mới của chuyến và một credit, nên làm mới mọi khoá của chuyến và của gói cước. */
-export function useRerunBackendPlanMutation(planId: string, objective: PlanObjective | null) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: () => rerunBackendLoadPlan(planId, objective),
-    onSuccess: () => Promise.all([
-      client.invalidateQueries({ queryKey: ['trips'] }),
-      client.invalidateQueries({ queryKey: ['billing'] }),
-    ]),
-    // Chuyến vừa rời Đã lập kế hoạch (`TRIP_LOCKED`): đọc lại để Planner khoá theo trạng thái mới
-    onError: () => client.invalidateQueries({ queryKey: ['trips'] }),
-  })
-}

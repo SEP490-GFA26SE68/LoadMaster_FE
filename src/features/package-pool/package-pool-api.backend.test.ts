@@ -194,6 +194,6 @@ test('phần backend chưa có: loại kiện rỗng, ghi loại kiện / gỡ c
   expect(calls).toEqual([])
   expect(PACKAGE_POOL_SUPPORT).toMatchObject({
     packageTypes: false, flags: false, history: false, fullSize: false, deletePackage: true, pdfLabels: true, dispatcherOnly: true, tripLinks: false,
-    numericIds: true, serverTemplate: true, tripLabels: false, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED'], maxImportMb: 1,
+    numericIds: true, serverTemplate: true, tripLabels: false, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED'], maxImportMb: 1,
   })
 })

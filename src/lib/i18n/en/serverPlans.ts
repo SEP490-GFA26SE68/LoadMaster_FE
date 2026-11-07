@@ -57,6 +57,8 @@ export const serverPlans = {
     openPlanner: 'Open in Planner',
     compare: 'Compare',
     toSetup: 'Optimize loading',
+    runAlgorithm: 'Algorithm tier of the subscription: {name}',
+    planAlgorithm: 'Algorithm that made the plan: {name}',
   },
   setup: {
     title: 'Optimize loading',
@@ -65,6 +67,13 @@ export const serverPlans = {
     locked: 'The trip is already in operation: loading can no longer be optimized.',
     noStops: 'The trip has no delivery stops: add a delivery requirement first.',
     backToTrip: 'Back to trip details',
+    pins: {
+      title: 'Keep pinned packages',
+      switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
+      on: 'The plan opened from the Planner has {count} pinned packages. The server keeps their exact position and orientation in all three plans A · B · C and packs only the rest around them. Still one credit; if the pins cannot stand on their own the server refuses before running and charges no credit.',
+      off: 'Normal run: every package is packed again from scratch.',
+      none: 'The plan opened from the Planner no longer has pinned packages: this is a normal run.',
+    },
   },
   job: {
     title: 'Optimizing loading',
@@ -73,6 +82,7 @@ export const serverPlans = {
     code: 'Run code',
     computation: 'Computation time',
     computationValue: '{ms} ms',
+    pinned: { one: 'Keeps {count} pinned package', other: 'Keeps {count} pinned packages' },
     status: {
       PENDING: 'Waiting for the optimization service to pick up the run',
       RUNNING: 'The optimization service is packing three plans',
@@ -101,7 +111,24 @@ export const serverPlans = {
       rehandling: 'Rehandled packages',
       unplaced: 'Unplaced packages',
       computation: 'Computation time',
-      algorithm: 'Algorithm',
+      planAlgorithm: 'Algorithm that made the plan',
+    },
+  },
+  algorithms: {
+    runLabel: 'Algorithm tier of the subscription',
+    plan: {
+      EP_DBLF: 'EP + DBLF',
+      GA: 'GA — genetic algorithm (decoded with EP + DBLF)',
+      SA: 'SA — simulated annealing (decoded with EP + DBLF)',
+      EP_LUMO_R1_1: 'EP + DBLF, Lumo-R1.1 scoring placements',
+      LUMO_R1: 'AI · Lumo-R1',
+      LUMO_R1_1: 'AI · Lumo-R1.1',
+      LUMO_R2: 'AI · Lumo-R2 (experimental)',
+    },
+    run: {
+      EP_DBLF: 'EP + DBLF',
+      EP_DBLF_GA: 'EP + DBLF + GA/SA',
+      EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI (Lumo-R1, R1.1, R2)',
     },
   },
   planner: {
@@ -116,10 +143,6 @@ export const serverPlans = {
     pinDraftReason: 'The trip is still a Draft: pins and reruns are only possible once the trip is Planned.',
     emptyTitle: 'The trip has no load plan',
     emptyDescription: 'Run loading optimization in Optimization setup to get plans.',
-    rerunTitle: { one: 'Rerun keeping {count} pinned package?', other: 'Rerun keeping {count} pinned packages?' },
-    rerunDescription: 'The server keeps the pinned packages in place, repacks the rest around them and saves a new, unapproved plan. A rerun uses 1 credit.',
-    rerunConfirm: 'Rerun',
-    rerunDone: 'A new plan is ready',
     approveEdits: 'Approve edits',
     approveEditsTitle: 'Approve these edits?',
     approveEditsDescription: 'The server rechecks the moved packages and saves them as a new approved version. The previously approved plan of the trip no longer applies.',

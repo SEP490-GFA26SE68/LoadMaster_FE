@@ -64,8 +64,15 @@ export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
 }
 
 /** Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). */
-function refreshAfterWrite(client: QueryClient) {
-  return Promise.all([['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey })))
+function refreshAfterWrite(client: QueryClient, except?: (key: readonly unknown[]) => boolean) {
+  return Promise.all(
+    [['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey, predicate: except ? (query) => !except(query.queryKey) : undefined })),
+  )
+}
+
+/** Khoá phương án đã xếp của khung 3D tài xế (`useDriverLoadPlanQuery`). */
+function isLoadPlanKey(key: readonly unknown[]): boolean {
+  return key.length === 5 && key[0] === 'trips' && key[1] === 'driver' && key[4] === 'load-plan'
 }
 
 export function useStartDeliveryMutation(tripId: string) {
@@ -89,7 +96,9 @@ export function useReportIssueMutation(tripId: string) {
 
 export function useCompleteStopMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (stopNumber: number) => completeStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client) })
+  // Hoàn tất điểm không đổi kiện trên xe (chỉ dỡ mới đổi), nên không đọc lại phương án đã xếp: hoàn tất điểm cuối thì chuyến đã giao xong
+  // và máy chủ không còn trả phương án — đọc lại là một lượt 404 thừa trước khi màn sang "Đã giao xong chuyến".
+  return useMutation({ mutationFn: (stopNumber: number) => completeStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client, isLoadPlanKey) })
 }
 
 // Review 1 (LM-104): quét QR khi dỡ

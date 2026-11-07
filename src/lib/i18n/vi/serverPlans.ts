@@ -58,6 +58,8 @@ export const serverPlans = {
     openPlanner: 'Mở trong Planner',
     compare: 'So sánh',
     toSetup: 'Tối ưu xếp hàng',
+    runAlgorithm: 'Thuật toán của gói: {name}',
+    planAlgorithm: 'Thuật toán tạo phương án: {name}',
   },
   setup: {
     title: 'Tối ưu xếp hàng',
@@ -66,6 +68,13 @@ export const serverPlans = {
     locked: 'Chuyến đã sang pha vận hành: không chạy tối ưu xếp hàng được nữa.',
     noStops: 'Chuyến chưa có điểm giao: đưa yêu cầu giao vào chuyến trước.',
     backToTrip: 'Về Chi tiết chuyến',
+    pins: {
+      title: 'Giữ kiện đã ghim',
+      switch: { one: 'Giữ nguyên chỗ {count} kiện đã ghim', other: 'Giữ nguyên chỗ {count} kiện đã ghim' },
+      on: 'Phương án mở từ Planner có {count} kiện đã ghim. Máy chủ giữ đúng vị trí và hướng của chúng trong cả ba phương án A · B · C, chỉ xếp các kiện còn lại quanh chúng. Vẫn một credit; bộ ghim không đứng vững thì máy chủ từ chối trước khi chạy, không trừ credit.',
+      off: 'Chạy bình thường: mọi kiện được xếp lại từ đầu.',
+      none: 'Phương án mở từ Planner không còn kiện nào đã ghim: lần chạy là bình thường.',
+    },
   },
   job: {
     title: 'Đang tối ưu xếp hàng',
@@ -74,6 +83,7 @@ export const serverPlans = {
     code: 'Mã lần chạy',
     computation: 'Thời gian tính',
     computationValue: '{ms} ms',
+    pinned: { one: 'Giữ {count} kiện đã ghim', other: 'Giữ {count} kiện đã ghim' },
     status: {
       PENDING: 'Đang chờ dịch vụ tối ưu nhận việc',
       RUNNING: 'Dịch vụ tối ưu đang xếp ba phương án',
@@ -102,7 +112,28 @@ export const serverPlans = {
       rehandling: 'Kiện dỡ-xếp lại',
       unplaced: 'Kiện chưa xếp',
       computation: 'Thời gian tính',
-      algorithm: 'Thuật toán',
+      planAlgorithm: 'Thuật toán tạo phương án',
+    },
+  },
+  /**
+   * Tên thuật toán máy chủ ghi: `plan` là thuật toán đã tạo ra một phương án, `run` là thuật toán của lần chạy — hạng của gói. Chỉ màn So
+   * sánh, bảng lần chạy và hộp chạy của Thiết lập tối ưu dùng (từ vựng thuật toán). Mã lạ hiện nguyên mã.
+   */
+  algorithms: {
+    runLabel: 'Thuật toán của gói',
+    plan: {
+      EP_DBLF: 'EP + DBLF',
+      GA: 'GA — giải thuật di truyền (giải mã bằng EP + DBLF)',
+      SA: 'SA — mô phỏng luyện kim (giải mã bằng EP + DBLF)',
+      EP_LUMO_R1_1: 'EP + DBLF, Lumo-R1.1 chấm điểm chỗ đặt',
+      LUMO_R1: 'AI · Lumo-R1',
+      LUMO_R1_1: 'AI · Lumo-R1.1',
+      LUMO_R2: 'AI · Lumo-R2 (bản thử nghiệm)',
+    },
+    run: {
+      EP_DBLF: 'EP + DBLF',
+      EP_DBLF_GA: 'EP + DBLF + GA/SA',
+      EP_DBLF_GA_AI: 'EP + DBLF + GA/SA + AI (Lumo-R1, R1.1, R2)',
     },
   },
   planner: {
@@ -117,10 +148,6 @@ export const serverPlans = {
     pinDraftReason: 'Chuyến còn Nháp: chỉ ghim và chạy lại được khi chuyến Đã lập kế hoạch.',
     emptyTitle: 'Chuyến chưa có phương án xếp',
     emptyDescription: 'Chạy tối ưu xếp hàng ở Thiết lập tối ưu để có phương án.',
-    rerunTitle: { one: 'Chạy lại giữ {count} kiện đã ghim?', other: 'Chạy lại giữ {count} kiện đã ghim?' },
-    rerunDescription: 'Máy chủ giữ nguyên chỗ các kiện đã ghim, xếp lại các kiện còn lại quanh chúng và lưu thành một phương án mới chưa duyệt. Lần chạy lại dùng 1 credit.',
-    rerunConfirm: 'Chạy lại',
-    rerunDone: 'Đã có phương án mới',
     approveEdits: 'Duyệt bản chỉnh',
     approveEditsTitle: 'Duyệt bản chỉnh này?',
     approveEditsDescription: 'Máy chủ kiểm lại chỗ các kiện đã dời rồi lưu thành một bản duyệt mới. Phương án đã duyệt trước đó của chuyến thôi hiệu lực.',

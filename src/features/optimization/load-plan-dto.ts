@@ -19,6 +19,8 @@ export type OptimizationStartDto = {
   readonly jobId: string
   readonly tripId?: number | null
   readonly subscriptionTier?: string | null
+  /** Số kiện đã ghim lần chạy giữ nguyên (0 khi không giữ ghim); máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
 }
 
 /** `GET /api/trips/optimization-jobs/{jobId}`. */
@@ -32,6 +34,10 @@ export type OptimizationJobDto = {
   readonly computationMs?: number | null
   readonly createdAt?: string | null
   readonly packedPlanCount?: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
+  /** Thuật toán của lần chạy — hạng của gói (`EP_DBLF`, `EP_DBLF_GA`, `EP_DBLF_GA_AI`); máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
 }
 
 export type PlacementDto = {
@@ -52,6 +58,8 @@ export type PlacementDto = {
   readonly stopId?: number | null
   readonly stopName?: string | null
   readonly stopSequence?: number | null
+  /** Mã hướng (0..5) kiện được nhận khi chỉnh tay theo loại kiện; máy chủ cũ không trả. */
+  readonly allowedRotations?: readonly number[] | null
 }
 
 export type UnplacedDto = {
@@ -66,6 +74,16 @@ export type UnplacedDto = {
   readonly weightKg?: Decimal | null
 }
 
+/** `StopZoneResponse`: vùng theo điểm giao dọc trục X, cm. */
+export type StopZoneDto = {
+  readonly id: string
+  readonly stopId?: number | null
+  readonly stopSequence?: number | null
+  readonly startXCm?: Decimal | null
+  readonly endXCm?: Decimal | null
+  readonly volumeRatio?: Decimal | null
+}
+
 /** `LoadPlanDetailResponse`. */
 export type LoadPlanDto = {
   readonly id: number
@@ -74,7 +92,10 @@ export type LoadPlanDto = {
   readonly objective?: string | null
   /** Hợp đồng đích: `A` · `B` · `C` theo mục tiêu; phương án cũ `null`. */
   readonly candidateLabel?: string | null
+  /** Thuật toán đã tạo ra phương án (`EP_DBLF`, `GA`, `SA`, `EP_LUMO_R1_1`, `LUMO_R1`…); phương án cũ: thuật toán của lần chạy. */
   readonly algorithmName?: string | null
+  /** Thuật toán của lần chạy — hạng của gói; máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
   readonly computationMs?: number | null
   readonly planName?: string | null
   readonly version?: number | null
@@ -95,6 +116,8 @@ export type LoadPlanDto = {
   readonly stale?: boolean | null
   readonly placements?: readonly PlacementDto[] | null
   readonly unplaced?: readonly UnplacedDto[] | null
+  /** Vùng theo điểm giao; máy chủ chỉ trả khi vùng dựng lại cho ra đúng `rehandlingCount` đã lưu. */
+  readonly stopZones?: readonly StopZoneDto[] | null
 }
 
 /** `TripLoadPlansResponse`: cũ trước mới sau. */
@@ -102,17 +125,6 @@ export type TripLoadPlansDto = {
   readonly tripId: number
   readonly approvedPlanId?: number | null
   readonly plans?: readonly LoadPlanDto[] | null
-}
-
-/**
- * `LoadPlanResponse` của `POST /api/load-plans/{id}/rerun`: **một** phương án mới (phiên bản kế tiếp của phương án nguồn, không nhãn A · B · C),
- * máy chủ chạy xong mới trả lời.
- */
-export type RerunPlanDto = {
-  readonly id: number
-  readonly jobUuid?: string | null
-  readonly version?: number | null
-  readonly parentPlanId?: number | null
 }
 
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
@@ -128,8 +140,12 @@ export type OptimizationJob = {
   readonly finished: boolean
   /** Số phương án đã lưu; vắng khi máy chủ chưa trả. */
   readonly packedPlanCount: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; `null` khi máy chủ không trả. */
+  readonly pinnedCount: number | null
   readonly computationMs: number | null
   readonly createdAt: string | null
+  /** Thuật toán của lần chạy (hạng của gói); `null` khi máy chủ không trả. */
+  readonly runAlgorithm: string | null
 }
 
 export type LoadPlacement = {
@@ -150,6 +166,11 @@ export type LoadPlacement = {
   readonly pinned: boolean
   readonly stopId: string | null
   readonly stopSequence: number | null
+  /**
+   * Mã `rotation_type` kiện được nhận khi chỉnh tay (theo loại kiện, như dịch vụ tối ưu đọc), gồm hướng đang xếp; vắng khi máy chủ
+   * không trả — chỉnh tay giữ nguyên hướng.
+   */
+  readonly allowedRotations?: readonly number[]
 }
 
 export type LoadUnplaced = {
@@ -161,6 +182,15 @@ export type LoadUnplaced = {
   readonly weightKg: number | null
 }
 
+/** Vùng theo điểm giao của phương án (cm), theo thứ tự điểm giao của máy chủ. */
+export type LoadStopZone = {
+  readonly id: string
+  readonly stopId: string | null
+  readonly stopSequence: number | null
+  readonly startXCm: number
+  readonly endXCm: number
+}
+
 /** Một phương án của máy chủ. Số máy chủ không trả là `null` — màn bỏ phần đó, không vẽ 0. */
 export type LoadPlan = {
   readonly id: string
@@ -168,7 +198,9 @@ export type LoadPlan = {
   readonly jobId: string | null
   readonly objective: PlanObjective | null
   readonly label: PlanLabel | null
+  /** Thuật toán đã tạo ra phương án; `runAlgorithm` là thuật toán của lần chạy (hạng của gói). */
   readonly algorithmName: string | null
+  readonly runAlgorithm: string | null
   readonly computationMs: number | null
   readonly name: string | null
   readonly volumePercent: number | null
@@ -183,6 +215,8 @@ export type LoadPlan = {
   readonly stale: boolean
   readonly placements: readonly LoadPlacement[]
   readonly unplaced: readonly LoadUnplaced[]
+  /** `null` khi máy chủ không trả vùng (hoặc trả vùng thiếu mốc): Planner không có dải vùng, không đếm dỡ-xếp lại. */
+  readonly stopZones: readonly LoadStopZone[] | null
 }
 
 export type TripLoadPlans = { readonly approvedPlanId: string | null; readonly plans: readonly LoadPlan[] }
@@ -221,8 +255,10 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     status,
     finished: FINISHED_JOB_STATUSES.has(status),
     packedPlanCount: dto.packedPlanCount ?? null,
+    pinnedCount: dto.pinnedCount ?? null,
     computationMs: dto.computationMs ?? null,
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
   }
 }
 
@@ -246,6 +282,9 @@ function placementOf(dto: PlacementDto): LoadPlacement {
     pinned: dto.pinned === true,
     stopId: dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId),
     stopSequence: dto.stopSequence ?? null,
+    ...(dto.allowedRotations
+      ? { allowedRotations: dto.allowedRotations.filter((code) => Number.isInteger(code) && code >= 0 && code <= 5) }
+      : {}),
   }
 }
 
@@ -263,6 +302,20 @@ function unplacedOf(dto: UnplacedDto): LoadUnplaced {
   }
 }
 
+/** Vùng thiếu mốc hay không gắn được với điểm giao nào thì bỏ cả bộ vùng: không vẽ nửa bộ. */
+function stopZonesOf(dtos: readonly StopZoneDto[] | null | undefined): LoadStopZone[] | null {
+  if (!dtos || dtos.length === 0) return null
+  const zones: LoadStopZone[] = []
+  for (const dto of dtos) {
+    const [startXCm, endXCm] = [numberOf(dto.startXCm), numberOf(dto.endXCm)]
+    const stopId = dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId)
+    const stopSequence = dto.stopSequence ?? null
+    if (startXCm === null || endXCm === null || endXCm < startXCm || (stopId === null && stopSequence === null)) return null
+    zones.push({ id: String(dto.id), stopId, stopSequence, startXCm: roundCm(startXCm), endXCm: roundCm(endXCm) })
+  }
+  return zones
+}
+
 export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
   const objective = PLAN_OBJECTIVES.find((item) => item === dto.objective) ?? null
   const label = LABELS.find((item) => item === dto.candidateLabel) ?? null
@@ -274,6 +327,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     objective,
     label,
     algorithmName: dto.algorithmName?.trim() || null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
     computationMs: dto.computationMs ?? null,
     name: dto.planName?.trim() || null,
     volumePercent: percentOf(dto.volumeUtilization),
@@ -288,6 +342,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     stale: dto.stale === true,
     placements: (dto.placements ?? []).map(placementOf),
     unplaced: (dto.unplaced ?? []).map(unplacedOf),
+    stopZones: stopZonesOf(dto.stopZones),
   }
 }
 

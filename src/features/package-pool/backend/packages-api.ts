@@ -7,6 +7,9 @@ export type PackageStatus =
   | 'DELIVERED'
   | 'CANCELLED'
 
+/** Cờ kho đặt khi bỏ kiện khỏi chuyến: thiếu lúc soạn, hỏng lúc xếp. */
+export type PackageFlag = 'NOT_FOUND' | 'DAMAGED'
+
 export type HandlingClass =
   | 'STANDARD'
   | 'FRAGILE'
@@ -33,6 +36,8 @@ export type CargoPackageApi = {
   handlingClass: HandlingClass
   destination: string
   status: PackageStatus
+  /** Máy chủ cũ không trả trường này. */
+  flag?: PackageFlag | null
   isPinned: boolean
   packageName: string | null
   note: string | null
@@ -68,6 +73,8 @@ export type CargoPackage = {
   handlingClass: HandlingClass
   destination: string
   status: PackageStatus
+  /** Cờ thiếu / hỏng; `null` là không cờ. */
+  flag: PackageFlag | null
   isPinned: boolean
   packageName: string | null
   note: string | null
@@ -164,6 +171,7 @@ function mapPackage(item: CargoPackageApi): CargoPackage {
     handlingClass: item.handlingClass,
     destination: item.destination,
     status: item.status,
+    flag: item.flag ?? null,
     isPinned: item.isPinned,
     packageName: item.packageName ?? null,
     note: item.note ?? null,
@@ -299,6 +307,20 @@ export async function updatePackage(
     {
       method: 'PUT',
       body: JSON.stringify(toRequest(input)),
+    },
+  )
+
+  return mapPackage(response.data)
+}
+
+// DELETE /api/packages/{id}/flag — điều phối viên gỡ cờ thiếu / hỏng; kiện không mang cờ: 409 `PACKAGE_NOT_FLAGGED`
+export async function clearPackageFlag(
+  id: string,
+): Promise<CargoPackage> {
+  const response = await apiFetch<ApiResponse<CargoPackageApi>>(
+    `/api/packages/${encodeURIComponent(id)}/flag`,
+    {
+      method: 'DELETE',
     },
   )
 

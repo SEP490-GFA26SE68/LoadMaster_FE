@@ -12,25 +12,27 @@ import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { useCan } from '@/features/auth/useCan'
 import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { ServerWarehouseTripCard } from './ServerWarehouseTripCard'
-import { useServerWarehouseTripsQuery } from './useServerWarehouseQuery'
+import { useServerWarehouseTripsQuery, useWarehouseCapabilities } from './useServerWarehouseQuery'
 import type { ServerWarehouseStage, ServerWarehouseTrip } from './warehouse-server-api'
 
-const STAGES: readonly ServerWarehouseStage[] = ['loading', 'waiting', 'loaded']
+const STAGES: readonly ServerWarehouseStage[] = ['loading', 'waiting', 'loaded', 'stale']
 
 /** Trạng thái rỗng nằm trong card trắng, chữ 16px như phần còn lại của màn tablet. */
 const TOUCH_EMPTY = 'mx-auto w-full max-w-160 [&_span+span]:text-body-lg'
 
 /**
  * Màn chính của nhân viên kho khi nhóm `warehouse` nối backend: chuyến chờ xếp và chuyến Đang xếp hàng của công ty (`GET /api/warehouse/tasks`),
- * chia nhóm Đang xếp hàng · Chờ xếp · Xếp xong — chờ xuất phát. Cùng thanh dải trời, nút 56 px, chữ 16 px với
+ * chia nhóm Đang xếp hàng · Chờ xếp · Xếp xong — chờ xuất phát · Chờ điều phối tối ưu lại (phiên dừng vì kiện thiếu / hỏng, chỉ xem). Cùng thanh dải trời, nút 56 px, chữ 16 px với
  * bản kho mẫu; không có chuông (backend chưa có thông báo cho kho).
  */
 export function ServerWarehouseTripsPage() {
   const t = useT()
   const format = useFormat()
   const can = useCan()
+  const caps = useWarehouseCapabilities()
   const query = useServerWarehouseTripsQuery()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
@@ -47,6 +49,7 @@ export function ServerWarehouseTripsPage() {
               </Button>
             ) : null}
             <LanguageSwitch size="touch" tone="sky" className="flex-none" />
+            {caps.notifications ? <NotificationBell variant="touch" tone="sky" /> : null}
             <AccountMenu tone="sky" />
           </>
         }

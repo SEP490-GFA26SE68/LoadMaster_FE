@@ -47,12 +47,13 @@ export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelPr
     {operations.inspectBlockers ? <BlockerPanel tone="dark" target={state.placements.find((p) => p.id === operations.semantics.inspectionId)}
       lifo={operations.semantics.lifo} onSelect={onSelect} onEdit={onEdit} /> : null}
     {operations.kind === 'unloading' ? <p className={MUTED}>{t('viewer.operations.blockers.corridor')}</p> : null}
-    {/* Tải trục và dỡ-xếp lại là ước lượng của mock tính ở FE; phương án của máy chủ có số của chính nó ở tab Chỉ số, không tính lại
-        ở đây. Mức hạn đọc giờ đến dự kiến của tuyến: máy chủ tính thì không mang MOCK RESULT */}
-    {state.sceneModel.isMockResult ? <>
-      <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={state.placements} />
-      <RehandlingPanel zones={state.sceneModel.zones} placements={state.placements} isMockResult={state.sceneModel.isMockResult} />
-    </> : null}
+    {/* Tải trục là ước lượng của mock tính ở FE; phương án của máy chủ có số của chính nó ở tab Chỉ số, không tính lại ở đây.
+        Dỡ-xếp lại đếm trên vùng của phương án: máy chủ trả vùng thì đếm như mock (cùng luật với máy chủ), không thì không có panel.
+        Mức hạn đọc giờ đến dự kiến của tuyến: máy chủ tính thì không mang MOCK RESULT */}
+    {state.sceneModel.isMockResult ? <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={state.placements} /> : null}
+    {state.sceneModel.isMockResult || state.sceneModel.zones.length > 0
+      ? <RehandlingPanel zones={state.sceneModel.zones} placements={state.placements} isMockResult={state.sceneModel.isMockResult} />
+      : null}
     <DeadlinePanel stops={state.sceneModel.stops} mock={state.sceneModel.isMockResult} />
   </div>
 }

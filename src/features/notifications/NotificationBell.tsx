@@ -1,5 +1,4 @@
 import { Bell, Check } from 'lucide-react'
-import { useMemo } from 'react'
 import { NavRailButton } from '@/components/NavRailButton'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -10,48 +9,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Spinner } from '@/components/ui/Spinner'
-import { describeLogRow, type AuditDirectory, type AuditLogRow, type CanOpen } from '@/features/admin/audit-log'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { useCan } from '@/features/auth/useCan'
-import type { Formatter } from '@/lib/format'
-import { useFormat, useT, type TFunction } from '@/lib/i18n'
-import type { AuditEvent } from '@/lib/mock-db'
+import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import {
-  driverNotice,
-  driverNoticeEvent,
-  hasNotifications,
-  NOTIFICATION_WINDOW_DAYS,
-  operationHrefs,
-  type NotificationViewer,
-} from './notifications'
+import { hasNotifications } from './notifications'
 import { notificationsReachable } from './notifications-api'
 import { NotificationItem } from './NotificationItem'
-import { markNotificationsRead, useReadNotifications } from './read-state'
-import { useNotificationsQuery } from './useNotificationsQuery'
-
-/** Những gì `describeLogRow` cần để đọc một sự kiện. */
-type RowContext = { readonly directory: AuditDirectory; readonly t: TFunction; readonly format: Formatter; readonly can: CanOpen }
-
-/**
- * Dòng của chuông là dòng nhật ký (`describeLogRow`) cộng hai việc riêng của chuông: thông báo về chuyến của tài xế nói bằng câu của tài xế
- * và chỉ kèm chi tiết họ cần (`driverNotice`); kho và tài xế mở chuyến ở màn của vai trò (`operation`, từ `operationHrefs`), vì họ không
- * mở được trang chuyến mà nhật ký dẫn tới.
- */
-function notificationRow(event: AuditEvent, viewer: NotificationViewer, operation: string | null, { directory, t, format, can }: RowContext): AuditLogRow {
-  const notice = viewer.role === 'driver' ? driverNotice(event, viewer.id) : null
-  const row = describeLogRow(notice === null ? event : driverNoticeEvent(event, notice), directory, t, format, can)
-  return {
-    ...row,
-    action: notice === null ? row.action : t(`notifications.driver.${notice}`),
-    target: { ...row.target, href: row.target.href ?? operation },
-  }
-}
+import { useBellFeed } from './useBellFeed'
 
 /**
  * Chuông thông báo trên thanh điều hướng (LM-098, D-55; V2.3 MenuToanCuc): chấm hổ phách trên icon khi có tin chưa đọc — số nằm trong
  * nhãn đọc của nút và chip cạnh tiêu đề danh sách. Danh sách (nền trắng đặc, không kính) là sự kiện nhật ký liên quan vai trò — mới
- * nhất trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại kho; "Đánh dấu đã đọc" giữ trong phiên. Vai trò
+ * nhất trước, 7 ngày, tối đa 20, không gồm việc chính mình làm. Mở chuông là đọc lại nguồn (`useBellFeed`: máy chủ hoặc kho mẫu); "Đánh dấu
+ * đã đọc" giữ ở máy chủ, hoặc trong phiên với kho mẫu. Vai trò
  * không có loại thông báo nào (quản lý nền tảng, hỗ trợ khách hàng) thì không có chuông: không hiện nút không làm gì (D-20).
  * Nguồn sự kiện của từng vai trò: `NOTIFICATION_ACTIONS`.
  *
@@ -68,32 +38,20 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
   const t = useT()
   const format = useFormat()
   const { user } = useAuth()
-  const can = useCan()
-  const query = useNotificationsQuery()
-  const read = useReadNotifications(user?.id ?? '')
-  const feed = query.data
-  const viewerId = user?.id
-  const role = user?.role
-  const rows = useMemo(() => {
-    if (!feed || viewerId === undefined || role === undefined) return []
-    const viewer = { id: viewerId, role }
-    const hrefs = operationHrefs(feed.events, viewer)
-    const context = { directory: feed.directory, t, format, can }
-    return feed.events.map((event, index) => notificationRow(event, viewer, hrefs[index] ?? null, context))
-  }, [feed, t, format, can, viewerId, role])
+  const feed = useBellFeed()
+  const { rows } = feed
   const touch = variant === 'touch'
   const sky = touch && tone === 'sky'
   if (!user || !hasNotifications(user.role) || !notificationsReachable(user.role)) return null
 
-  const userId = user.id
-  const unreadCount = rows.filter((row) => !read.has(row.id)).length
-  // "Hôm nay" theo lần đọc kho gần nhất, không theo đồng hồ lúc vẽ
-  const today = format.date(new Date(query.dataUpdatedAt))
+  const unreadCount = rows.filter((row) => feed.isUnread(row.id)).length
+  // "Hôm nay" theo lần đọc gần nhất, không theo đồng hồ lúc vẽ
+  const today = format.date(new Date(feed.updatedAt))
   const whenOf = (at: string) =>
     format.date(at) === today ? format.time(at) : t('notifications.dateTime', { time: format.time(at), date: format.dayMonth(at) })
 
   function handleOpenChange(open: boolean) {
-    if (open) void query.refetch()
+    if (open) feed.refetch()
   }
 
   return (
@@ -150,7 +108,7 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
                 onSelect={(event) => {
                   // Giữ danh sách mở để thấy mọi dòng đã chuyển sang đã đọc
                   event.preventDefault()
-                  markNotificationsRead(userId, rows.map((row) => row.id))
+                  feed.markRead(rows.map((row) => row.id))
                 }}
               >
                 <Check strokeWidth={2} aria-hidden />
@@ -161,34 +119,34 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
         </div>
 
         <div className="max-h-[min(28rem,60vh)] overflow-y-auto p-1.5">
-          {query.isPending ? (
+          {feed.isPending ? (
             <p className="flex items-center gap-2 px-3 py-6 text-body text-ink-2">
               <Spinner />
               {t('notifications.loading')}
             </p>
-          ) : query.isError ? (
+          ) : feed.isError ? (
             <>
               <p className="px-3 pt-4 pb-2 text-body text-ink-2">{t('notifications.error')}</p>
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault()
-                  void query.refetch()
+                  feed.refetch()
                 }}
               >
                 {t('notifications.retry')}
               </DropdownMenuItem>
             </>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-6 text-center text-body text-ink-2">{t('notifications.empty', { days: NOTIFICATION_WINDOW_DAYS })}</p>
+            <p className="px-3 py-6 text-center text-body text-ink-2">{t('notifications.empty', { days: feed.windowDays })}</p>
           ) : (
             <div className="flex flex-col gap-0.5">
               {rows.map((row) => (
                 <NotificationItem
                   key={row.id}
                   row={row}
-                  unread={!read.has(row.id)}
+                  unread={feed.isUnread(row.id)}
                   when={whenOf(row.at)}
-                  onSelect={() => markNotificationsRead(userId, [row.id])}
+                  onSelect={() => feed.markRead([row.id])}
                 />
               ))}
             </div>
@@ -196,7 +154,7 @@ export function NotificationBell({ variant = 'rail', tone = 'light', className }
         </div>
 
         <p className="border-t border-line-soft bg-n-25 px-4.5 pt-2.5 pb-3 text-fine text-ink-3">
-          {t('notifications.scope', { days: NOTIFICATION_WINDOW_DAYS })}
+          {t('notifications.scope', { days: feed.windowDays })}
         </p>
       </DropdownMenuContent>
     </DropdownMenu>

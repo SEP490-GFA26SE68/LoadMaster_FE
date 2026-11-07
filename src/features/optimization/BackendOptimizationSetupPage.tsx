@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PackageOpen } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { PageHero } from '@/components/PageHero'
@@ -10,8 +10,9 @@ import { Spinner } from '@/components/ui/Spinner'
 import { fetchBackendTripDetail, resolveBackendTripId } from '@/features/trips/trips-api'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { BackendLoadPlansCard } from './BackendLoadPlansCard'
+import { BackendPinsCard } from './BackendPinsCard'
 import { BackendRunDialog } from './BackendRunDialog'
-import { useOptimizationJobQuery, useStartLoadingOptimizationMutation } from './useLoadPlansQuery'
+import { useOptimizationJobQuery, useStartLoadingOptimizationMutation, useTripLoadPlansQuery } from './useLoadPlansQuery'
 
 /** Mã trên URL có thể là mã chuyến (liên kết từ Giám sát, nhật ký): đổi sang mã số của máy chủ trước. */
 export function BackendOptimizationSetupRoute() {
@@ -26,7 +27,8 @@ export function BackendOptimizationSetupRoute() {
 /**
  * Thiết lập tối ưu khi nhóm `trips` nối backend: một nút chính "Chạy tối ưu" gửi một lần chạy (`POST /api/trips/{id}/optimize-loading`,
  * một credit, ba phương án), hộp thoại đọc lại trạng thái job tới khi xong, rồi mở màn So sánh của lần chạy đó. Bên dưới là các lần chạy
- * trước của chuyến. Không chọn mục tiêu hay thuật toán (D-77): máy chủ chọn theo gói. `tripId` là mã số của máy chủ.
+ * trước của chuyến. Không chọn mục tiêu hay thuật toán (D-77): máy chủ chọn theo gói. `tripId` là mã số của máy chủ. Mở từ "Chạy lại giữ
+ * ghim" của Planner (`?giu-ghim=<mã phương án>`) thì có thẻ "Giữ kiện đã ghim": bật sẵn, lần chạy gửi `keepPinsFromPlanId` của phương án đó.
  */
 function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const t = useT()
@@ -35,6 +37,12 @@ function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const reasonId = useId()
   const detail = useQuery({ queryKey: ['trips', tripId, 'backend-detail'], queryFn: () => fetchBackendTripDetail(tripId) })
   const start = useStartLoadingOptimizationMutation(tripId)
+  const [params] = useSearchParams()
+  const keepFrom = params.get('giu-ghim')
+  const plans = useTripLoadPlansQuery(keepFrom === null ? '' : tripId)
+  const [keepPins, setKeepPins] = useState(true)
+  const pinSource = keepFrom === null ? undefined : plans.data?.plans.find((plan) => plan.id === keepFrom)
+  const pinnedCount = pinSource?.placements.filter((placement) => placement.pinned).length ?? 0
   const [jobId, setJobId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const job = useOptimizationJobQuery(jobId)
@@ -60,7 +68,7 @@ function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const tripPath = `/chuyen/${encodeURIComponent(trip.tripCode)}`
 
   function handleRun() {
-    start.mutate(undefined, {
+    start.mutate(keepPins && pinnedCount > 0 && keepFrom !== null ? keepFrom : undefined, {
       onSuccess: ({ jobId: started }) => {
         setJobId(started)
         setDialogOpen(true)
@@ -89,7 +97,8 @@ function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
               <span id={reasonId}>{blocked}</span>
             </Banner>
           ) : null}
-          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} />
+          {keepFrom !== null && plans.data !== undefined ? <BackendPinsCard count={pinnedCount} keep={keepPins} onKeepChange={setKeepPins} /> : null}
+          <BackendLoadPlansCard tripId={tripId} tripCode={trip.tripCode} showAlgorithms />
         </div>
       </div>
       {jobId !== null ? (

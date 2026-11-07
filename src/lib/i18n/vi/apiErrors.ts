@@ -103,6 +103,7 @@ export const apiErrors = {
   OPTIMIZATION_JOB_NOT_FOUND: 'Không tìm thấy lần chạy tối ưu.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
   INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  PINNED_SET_INVALID: 'Kiện đã ghim không đứng vững (ra ngoài thùng, chồng nhau, lơ lửng hoặc vượt tải): chưa chạy và không trừ credit. Bỏ ghim kiện đó ở Planner hoặc tắt giữ ghim.',
   TRIP_ALREADY_LOADING: 'Chuyến đã bắt đầu xếp hàng.',
   TRIP_NOT_READY_FOR_LOADING: 'Chỉ bắt đầu xếp được chuyến Đã lập kế hoạch.',
   LOADING_NOT_COMPLETED: 'Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.',
@@ -111,6 +112,16 @@ export const apiErrors = {
   DEVIATION_ALREADY_RECORDED: 'Sai lệch của kiện này đã được ghi.',
   INVALID_SEQUENCE_ORDER: 'Chưa tới lượt kiện này — xếp theo đúng thứ tự.',
   INCOMPLETE_LOADING: 'Còn kiện chưa xếp, chưa hoàn tất được.',
+  STAGING_INCOMPLETE: 'Chưa soạn đủ hàng vào khu chờ, hoặc còn kiện báo thiếu chờ điều phối viên quyết — chưa xếp được.',
+  PACKAGE_NOT_IN_LOADING_PLAN: 'Kiện này không thuộc phương án đang xếp của chuyến.',
+  PACKAGE_ALREADY_STAGED: 'Kiện này đã soạn rồi.',
+  STAGING_SHORTAGE_NOT_FOUND: 'Không tìm thấy báo thiếu này.',
+  STAGING_SHORTAGE_NOT_OPEN: 'Báo thiếu này đã được quyết, hoặc chuyến không còn ở bước xếp hàng.',
+  LOADING_MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
+  SEAL_INVALID: 'Số seal cần từ 1 đến 32 ký tự.',
+  SEAL_NOT_ALLOWED: 'Chỉ ghi được số seal khi đã xếp xong và xe chưa xuất phát.',
+  PACKAGE_FLAGGED: 'Kiện đang mang cờ không tìm thấy hoặc hư hỏng — gỡ cờ trước khi đưa kiện vào chuyến.',
+  PACKAGE_NOT_FLAGGED: 'Kiện không mang cờ nào để gỡ.',
 
   // Giao hàng, giám sát
   NO_PENDING_DELIVERY_STOP: 'Chuyến không còn điểm giao nào chờ giao.',
@@ -152,6 +163,7 @@ export const apiErrors = {
   MANUAL_EDIT_OVERLAP: 'Có kiện chồng lên kiện khác hoặc lên vật cản.',
   MANUAL_EDIT_UNSUPPORTED: 'Có kiện không đủ chỗ đỡ bên dưới (cần ít nhất 70% mặt đáy).',
   MANUAL_EDIT_AXLE_OVERLOAD: 'Bản chỉnh làm một nhóm trục vượt giới hạn.',
+  MANUAL_EDIT_ROTATION_NOT_ALLOWED: 'Loại kiện không cho xoay kiện theo hướng này.',
 
   // Tài xế: sự cố theo kiện, xác nhận tay khi dỡ, vị trí hàng
   DELIVERY_STOP_NOT_ARRIVED: 'Chưa báo đã đến điểm này. Bấm "Đã đến điểm" trước khi dỡ hoặc báo sự cố.',
@@ -161,4 +173,15 @@ export const apiErrors = {
   MANUAL_CONFIRM_NOT_FOUND: 'Không tìm thấy xác nhận tay này.',
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này đã được xử lý, hoặc chuyến không còn đang vận chuyển.',
   NO_LOADED_PLAN: 'Chuyến chưa có phương án kho đã xếp.',
+  // Nhận hàng dọc đường (yêu cầu nhận, điểm nhận của tài xế)
+  PICKUP_REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu nhận hàng này.',
+  PICKUP_INVALID: 'Thông tin yêu cầu nhận hàng chưa hợp lệ — kiểm lại điểm nhận, điểm giao, hạn và các kiện.',
+  PICKUP_PACKAGES_REQUIRED: 'Yêu cầu nhận hàng cần ít nhất một kiện.',
+  PICKUP_TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển nên không nhận hàng dọc đường được.',
+  INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận hàng đã được xử lý. Tải lại để xem trạng thái mới.',
+  PICKUP_ROUTE_UNAVAILABLE: 'Chưa kiểm được luật nhận hàng: chuyến còn điểm chưa có toạ độ, hoặc chưa có vị trí xe.',
+  PICKUP_REASON_REQUIRED: 'Còn luật chưa đạt — cần ghi lý do để duyệt vượt luật.',
+  PICKUP_PACKAGE_NOT_AT_STOP: 'Kiện này không phải kiện nhận ở điểm hiện tại.',
+  PICKUP_PACKAGE_ALREADY_PICKED: 'Kiện này đã được nhận lên xe.',
+  PICKUP_STOP_INCOMPLETE: 'Còn kiện nhận chưa đối chiếu lên xe — chưa hoàn tất điểm nhận được.',
 } as const

@@ -38,6 +38,17 @@ export const serverAudit = {
     MANUAL_CONFIRM_REQUESTED: 'Tài xế xác nhận tay kiện dỡ',
     MANUAL_CONFIRM_APPROVED: 'Duyệt xác nhận tay',
     MANUAL_CONFIRM_REJECTED: 'Từ chối xác nhận tay',
+    TRIP_EXCEPTION_REPORTED: 'Báo sự cố trên đường',
+    TRIP_EXCEPTION_ESCALATED: 'Sự cố chuyển lên quản lý',
+    DEADLINE_RENEGOTIATED: 'Quản lý đã nhập hạn mới',
+    DELIVERY_ETA_RISK: 'Nguy cơ trễ hạn giao',
+    CREDIT_LOW_BALANCE: 'Sắp hết credit',
+    SUPPORT_TICKET_UPDATED: 'Hỗ trợ khách hàng cập nhật yêu cầu hỗ trợ',
+    PICKUP_REQUESTED: 'Gửi yêu cầu nhận hàng dọc đường',
+    PICKUP_APPROVED: 'Duyệt yêu cầu nhận hàng dọc đường',
+    PICKUP_REJECTED: 'Từ chối yêu cầu nhận hàng dọc đường',
+    PICKUP_LOADED: 'Nhận hàng dọc đường lên xe',
+    PICKUP_DELIVERED: 'Giao hàng nhận dọc đường',
   },
   /** Mã `entityName` của máy chủ. */
   entities: {
@@ -55,6 +66,10 @@ export const serverAudit = {
     User: 'Tài khoản',
     DeliveryIssue: 'Sự cố kiện',
     ManualUnloadConfirmation: 'Xác nhận tay khi dỡ',
+    TripException: 'Sự cố trên đường',
+    Company: 'Công ty',
+    SupportTicket: 'Yêu cầu hỗ trợ',
+    PickupRequest: 'Yêu cầu nhận dọc đường',
   },
   /** Trường của bản ghi `TRIP_UPDATED`: giá trị là mã số nên chỉ nêu tên trường đã đổi. */
   fields: {
@@ -79,6 +94,12 @@ export const serverAudit = {
     INACTIVE: 'Ngừng hoạt động',
     LOCKED: 'Đã khoá',
   },
+  /** Trạng thái yêu cầu hỗ trợ của máy chủ (`SUPPORT_TICKET_UPDATED`). */
+  ticketStatuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
+  /** Vì sao sự cố lên quản lý (`TRIP_EXCEPTION_ESCALATED`). */
+  escalationReasons: { NO_ROUTE: 'Không tìm được tuyến khác', TIMEOUT: 'Quá 30 phút chưa xử lý' },
+  /** Kết quả mười luật khi gửi yêu cầu nhận dọc đường (`PICKUP_REQUESTED`). */
+  pickupChecks: { VALIDATED: 'Đạt đủ mười luật', PENDING: 'Có luật không đạt' },
   details: {
     status: 'Trạng thái',
     deadline: 'Hạn giao',
@@ -94,5 +115,12 @@ export const serverAudit = {
     distance: '{km} km',
     duration: '{minutes} phút',
     lateStops: { one: '{count} điểm trễ hạn dự kiến', other: '{count} điểm trễ hạn dự kiến' },
+    delay: 'Chậm {minutes} phút',
+    balance: { one: 'Còn {count} credit', other: 'Còn {count} credit' },
+    ticket: 'Yêu cầu {code}',
+    replied: 'Đã trả lời',
+    pickupPackages: { one: '{count} kiện nhận dọc đường', other: '{count} kiện nhận dọc đường' },
+    pickupUnplaced: { one: '{count} kiện chưa có chỗ trên xe', other: '{count} kiện chưa có chỗ trên xe' },
+    pickupOverridden: 'Duyệt vượt luật',
   },
 } as const

@@ -49,3 +49,17 @@ test('duyệt và từ chối gửi đúng đường dẫn; từ chối kèm lý
   const failure = await approveServerManualConfirmation('1', '5').then(() => null, (error: unknown) => error)
   expect(isApiError(failure) ? failure.code : failure).toBe('MANUAL_CONFIRM_NOT_PENDING')
 })
+
+test('xác nhận tay của kho mang bước soạn / xếp và không mang số điểm; máy chủ cũ không có bước là bước dỡ', async () => {
+  stubBackend({
+    'GET /api/trips/8/manual-confirmations': {
+      body: envelope([
+        { id: 5, stopSequence: 1, packageId: 21, packageCode: 'BG-21', trackingBarcode: null, packageName: 'Thùng sữa', reason: 'LABEL_DAMAGED', note: null, requestedByName: 'Kho A', requestedAt: '2026-11-06 09:00:00', step: 'STAGING', placementId: null },
+        { id: 6, stopSequence: 1, packageId: 22, packageCode: 'BG-22', trackingBarcode: null, packageName: 'Thùng mì', reason: 'QR_UNREADABLE', note: null, requestedByName: 'Kho A', requestedAt: '2026-11-06 09:05:00', step: 'LOADING', placementId: 71 },
+        { id: 7, stopSequence: 2, packageId: 23, packageCode: 'BG-23', trackingBarcode: null, packageName: 'Thùng nước', reason: 'QR_UNREADABLE', note: null, requestedByName: 'Tài xế', requestedAt: '2026-11-06 15:00:00' },
+      ]),
+    },
+  })
+  const rows = await fetchServerManualConfirmations('8')
+  expect(rows.map((row) => [row.context, row.stopNumber])).toStrictEqual([['STAGING', undefined], ['LOADING', undefined], ['UNLOADING', 2]])
+})

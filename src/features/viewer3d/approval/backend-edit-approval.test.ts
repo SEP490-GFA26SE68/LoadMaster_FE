@@ -20,10 +20,10 @@ const placement = (id: string, code: string, x: number, over: Partial<LoadPlacem
 })
 
 const plan = (placements: LoadPlacement[], over: Partial<LoadPlan> = {}): LoadPlan => ({
-  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', computationMs: null,
+  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', runAlgorithm: 'EP_DBLF', computationMs: null,
   name: null, volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null,
   frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false,
-  placements, unplaced: [], ...over,
+  placements, unplaced: [], stopZones: null, ...over,
 })
 
 const STOPS = [{ id: '91', sequence: 1, name: 'Cửa hàng Thủ Đức', deadline: null }]
@@ -41,6 +41,17 @@ test('dời kiện vào chỗ trống: một chỉnh sửa theo mã số chỗ x
   expect(approval?.errors).toEqual([])
   expect(approval?.hasEdits).toBe(true)
   expect(approval?.pinnedPlacementIds).toBeUndefined()
+})
+
+test('xoay kiện sang hướng loại kiện cho phép: gửi mã hướng của máy chủ, kích thước theo kích thước gốc', () => {
+  const source = plan([placement('11', 'PK-1', 0, { allowedRotations: [0, 1] }), placement('12', 'PK-2', 200)])
+  const model = backendPlanScene({ tripCode: 'TRIP-1', plan: source, vehicle: VEHICLE, stops: STOPS })
+  const draft = patchPlacement(model, createViewerDraft(), 'PK-1', { orientation: 'WLH' })
+  const { placements } = resolveEffectiveScene(model, draft)
+  const approval = backendEditApproval(model, placements, draft, backendPlacementIds(source), baselineErrorKeys(model))
+  expect(approval?.edits).toEqual([{ placementId: '11', x: 0, y: 0, z: 0, rotationType: 1 }])
+  expect(placements[0]).toMatchObject({ lengthCm: 50, widthCm: 100, heightCm: 40 })
+  expect(approval?.errors).toEqual([])
 })
 
 test('dời kiện chồng lên kiện khác: lỗi chồng lấn mới chặn gửi', () => {

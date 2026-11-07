@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { ORIENTATION_CODES, orientDimensions } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
-import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
+import { loadPlanOf, type LoadPlan, type LoadPlacement } from '@/features/optimization/load-plan-dto'
 import { isApiError } from '@/lib/api-client'
 import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf } from './backend-plan-scene'
 
@@ -16,9 +16,9 @@ const placement = (over: Partial<LoadPlacement> = {}): LoadPlacement => ({
 })
 
 const plan = (over: Partial<LoadPlan> = {}): LoadPlan => ({
-  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', computationMs: null,
+  id: '501', tripId: '42', jobId: 'job-1', objective: 'MAX_VOLUME', label: 'A', algorithmName: 'EP_DBLF', runAlgorithm: 'EP_DBLF', computationMs: null,
   name: null, volumePercent: null, payloadPercent: 12.5, approved: false, approvedByName: null, centerOfGravityCm: null,
-  frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [placement()], unplaced: [], ...over,
+  frontAxleLoadKg: null, rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [placement()], unplaced: [], stopZones: null, ...over,
 })
 
 const STOPS = [
@@ -63,6 +63,21 @@ describe('backendPlanScene', () => {
     expect(scene.metrics).not.toHaveProperty('centerOfGravityCm')
   })
 
+  test('hướng đặt được phép theo `allowedRotations` của máy chủ, luôn gồm hướng đang xếp; máy chủ không trả thì chỉ hướng đang xếp', () => {
+    const scene = backendPlanScene({
+      tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
+      plan: plan({ placements: [
+        placement({ allowedRotations: [1, 0] }),
+        placement({ id: '12', code: 'PK-302', rotationType: 3, allowedRotations: [0] }),
+        placement({ id: '13', code: 'PK-303', rotationType: 1 }),
+      ] }),
+    })
+    expect(scene.orientationRulesById.get('PK-301')?.allowedOrientations).toEqual(['LWH', 'WLH'])
+    expect(scene.orientationRulesById.get('PK-302')?.allowedOrientations).toEqual(['LWH', 'WHL'])
+    expect(scene.orientationRulesById.get('PK-303')?.allowedOrientations).toEqual(['WLH'])
+    expect(scene.engineInput?.instances?.map(({ allowedOrientations }) => allowedOrientations)).toEqual([['LWH', 'WLH'], ['LWH', 'WHL'], ['WLH']])
+  })
+
   test('kiện chưa xếp chỉ có mã và lý do; lý do lạ là UNKNOWN', () => {
     const scene = backendPlanScene({
       tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
@@ -88,5 +103,39 @@ describe('backendPlacementIds', () => {
     ]
     const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: plan(), vehicle: VEHICLE, stops })
     expect(scene.stops.map((stop) => [stop.eta, stop.deadlineStatus])).toEqual([['2026-11-06T02:50:00.000Z', 'AT_RISK'], [undefined, undefined]])
+  })
+
+  // Thùng 400 cm, hai điểm: vùng điểm 2 (giao sau) [0; 195], vùng điểm 1 [205; 400]. Kiện của điểm 1 ở x = 0 có tâm 50 trong vùng điểm 2.
+  const ZONED = plan({
+    rehandlingCount: 1,
+    placements: [placement(), placement({ id: '12', code: 'PK-302', x: 250, stopId: '92' })],
+    stopZones: [
+      { id: 'ZONE-91', stopId: '91', stopSequence: 1, startXCm: 205, endXCm: 400 },
+      { id: 'ZONE-92', stopId: '92', stopSequence: null, startXCm: 0, endXCm: 195 },
+    ],
+  })
+
+  test('vùng máy chủ trả thành dải vùng của scene; kiện có tâm nằm ngoài vùng của điểm mình là kiện dỡ-xếp lại', () => {
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: ZONED, vehicle: VEHICLE, stops: STOPS })
+    expect(scene.zones.map(({ id, stopId, name, sharePercent }) => [id, stopId, name, sharePercent]))
+      .toEqual([['ZONE-91', 1, 'Cửa hàng Thủ Đức', 50], ['ZONE-92', 2, 'Kho Biên Hoà', 50]])
+    expect(scene.placements.map(({ zoneId, outOfZone }) => [zoneId, outOfZone])).toEqual([['ZONE-92', true], ['ZONE-91', true]])
+  })
+
+  test('không có vùng, hay vùng không gắn được với điểm giao của chuyến: không có dải vùng, không kiện nào ngoài vùng', () => {
+    const none = backendPlanScene({ tripCode: 'TRIP-1', plan: plan(), vehicle: VEHICLE, stops: STOPS })
+    expect(none.zones).toEqual([])
+    expect(none.placements[0]?.outOfZone).toBe(false)
+    const stray = plan({ stopZones: [{ id: 'ZONE-99', stopId: '99', stopSequence: null, startXCm: 0, endXCm: 400 }] })
+    expect(backendPlanScene({ tripCode: 'TRIP-1', plan: stray, vehicle: VEHICLE, stops: STOPS }).zones).toEqual([])
+  })
+
+  test('DTO: vùng đủ mốc giữ nguyên (cm); vắng, rỗng hay thiếu mốc là không có vùng', () => {
+    const base = { id: 501, tripId: 42 }
+    expect(loadPlanOf({ ...base, stopZones: [{ id: 'ZONE-91', stopId: 91, stopSequence: 1, startXCm: '205.0', endXCm: 400, volumeRatio: 0.5 }] }).stopZones)
+      .toEqual([{ id: 'ZONE-91', stopId: '91', stopSequence: 1, startXCm: 205, endXCm: 400 }])
+    expect(loadPlanOf(base).stopZones).toBeNull()
+    expect(loadPlanOf({ ...base, stopZones: [] }).stopZones).toBeNull()
+    expect(loadPlanOf({ ...base, stopZones: [{ id: 'ZONE-91', stopId: 91, startXCm: null, endXCm: 400 }] }).stopZones).toBeNull()
   })
 })

@@ -1,12 +1,9 @@
-import { Ban, Flag, PackageCheck, PackageX, Timer, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import type { KpiTone } from '@/components/KpiTile'
 import { DropdownMenuItem } from '@/components/ui/DropdownMenu'
-import type { AuditLogRow } from '@/features/admin/audit-log'
-import { auditActionLook } from '@/features/admin/audit-look'
-import type { AuditAction } from '@/lib/mock-db'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { BellRow } from './bell-row'
 
 /** Ô icon 32px (V2.3 `.nt .ic`): nền bậc 50, icon bậc 700, viền trong bậc 200 của cùng tông. */
 const TILE: Record<KpiTone, string> = {
@@ -15,22 +12,6 @@ const TILE: Record<KpiTone, string> = {
   amber: 'bg-amber-50 text-amber-700 shadow-[inset_0_0_0_1px_var(--amber-200)]',
   azure: 'bg-azure-50 text-azure-700 shadow-[inset_0_0_0_1px_var(--azure-200)]',
   slate: 'bg-n-100 text-n-700 shadow-[inset_0_0_0_1px_var(--n-200)]',
-}
-
-/**
- * Sự kiện vận hành mà chuông báo cho điều phối và quản lý có icon riêng, rõ hơn icon nhóm của nhật ký (MenuToanCuc V2.3). "Xếp xong"
- * tông xanh lam: "đã xếp xong" là việc đang chạy, như chip trạng thái. Sự kiện khác (duyệt phương án, tài khoản của quản trị viên) theo
- * icon và tint của bảng nhật ký.
- */
-const OPERATION_LOOK: Partial<Record<AuditAction, { icon: LucideIcon; tone: KpiTone }>> = {
-  'loading.completed': { icon: PackageCheck, tone: 'azure' },
-  'loading.shortageReported': { icon: PackageX, tone: 'amber' },
-  'loading.shortageDropped': { icon: PackageX, tone: 'amber' },
-  'loading.damaged': { icon: PackageX, tone: 'amber' },
-  'delivery.issue': { icon: TriangleAlert, tone: 'amber' },
-  'delivery.etaRisk': { icon: Timer, tone: 'amber' },
-  'delivery.completed': { icon: Flag, tone: 'green' },
-  'trip.cancelled': { icon: Ban, tone: 'amber' },
 }
 
 const ITEM = cn(
@@ -45,14 +26,14 @@ const ITEM = cn(
  * (tài khoản đã xoá, email lạ khi đăng nhập sai) thì chỉ đánh dấu đã đọc.
  */
 export function NotificationItem({ row, unread, when, onSelect }: {
-  row: AuditLogRow
+  row: BellRow
   unread: boolean
   /** Giờ đã format: "14:30", hoặc kèm ngày nếu không phải hôm nay. */
   when: string
   onSelect: () => void
 }) {
   const t = useT()
-  const { icon: Icon, tone } = OPERATION_LOOK[row.actionCode] ?? auditActionLook(row.actionCode)
+  const { icon: Icon, tone } = row
   const meta = [row.actor, row.details].filter((part) => part !== '').join(' · ')
   const body = (
     <>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Box } from 'lucide-react'
+import { Box, Pin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageHero } from '@/components/PageHero'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import type { LoadPlan } from '@/features/optimization/load-plan-dto'
+import { planAlgorithmLabel, runAlgorithmLabel } from '@/features/optimization/server-algorithms'
 import { useJobPlansQuery, useTripLoadPlansQuery } from '@/features/optimization/useLoadPlansQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { resolveBackendTripId } from './trips-api'
@@ -25,11 +26,6 @@ const BEST: Readonly<Record<BestKey, { value: (plan: LoadPlan) => number | null;
  * Phương án có giá trị tốt nhất của một chỉ số: chỉ khi mọi phương án có số và không bằng nhau hết; hoà thì mọi phương án hoà. Đánh dấu
  * trung tính (in đậm + nhãn "Tốt nhất"), như màn so sánh của kho mẫu.
  */
-/** Mã thuật toán máy chủ ghi → tên đọc được; mã lạ giữ nguyên. */
-function algorithmLabel(code: string, t: ReturnType<typeof useT>): string {
-  return code === 'EP_DBLF' || code === 'EP_DBLF_GA' || code === 'EP_DBLF_GA_AI' ? t(`optimization.credit.tiers.${code}`) : code
-}
-
 export function bestPlanIds(plans: readonly LoadPlan[], key: BestKey): ReadonlySet<string> {
   const { value, higher } = BEST[key]
   const values = plans.map(value)
@@ -67,8 +63,29 @@ export function BackendRunComparisonPage() {
         {loading ? <div role="status" className="grid place-items-center py-12"><Spinner /></div>
           : error ? <p role="alert" className="text-body text-danger">{dataErrorMessage(error, t)}</p>
             : (plans.data ?? []).length === 0 ? <p className="text-body text-ink-2">{t('serverPlans.compare.empty')}</p>
-              : <div className="grid gap-4 lg:grid-cols-3">{(plans.data ?? []).map((plan) => <PlanCard key={plan.id} plan={plan} plans={plans.data ?? []} tripParam={tripParam} />)}</div>}
+              : <RunPlans plans={plans.data ?? []} tripParam={tripParam} />}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Thẻ lần chạy (thuật toán của gói — hạng máy chủ ghi cho job) rồi ba thẻ phương án; lần chạy giữ ghim (mọi phương án cùng giữ các kiện
+ * đó) có một dòng nói số kiện giữ nguyên chỗ.
+ */
+function RunPlans({ plans, tripParam }: { plans: readonly LoadPlan[]; tripParam: string }) {
+  const t = useT()
+  const pinned = plans[0]?.placements.filter((placement) => placement.pinned).length ?? 0
+  const runAlgorithm = plans.find((plan) => plan.runAlgorithm !== null)?.runAlgorithm ?? null
+  return (
+    <div className="flex flex-col gap-4">
+      {runAlgorithm === null ? null : (
+        <Card data-run-card className="px-5 py-1">
+          <dl><Metric label={t('serverPlans.algorithms.runLabel')} last>{runAlgorithmLabel(runAlgorithm, t)}</Metric></dl>
+        </Card>
+      )}
+      {pinned > 0 ? <p data-run-pinned className="flex items-center gap-1.5 text-small text-ink-2"><Pin className="size-4" strokeWidth={1.5} aria-hidden />{t('trips.compare.candidates.pinned', { count: pinned })}</p> : null}
+      <div className="grid gap-4 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} plans={plans} tripParam={tripParam} />)}</div>
     </div>
   )
 }
@@ -96,7 +113,7 @@ function PlanCard({ plan, plans, tripParam }: { plan: LoadPlan; plans: readonly 
         {plan.rehandlingCount === null ? null : <Metric label={t('serverPlans.compare.metrics.rehandling')} best={best('rehandling')}>{format.integer(plan.rehandlingCount)}</Metric>}
         <Metric label={t('serverPlans.compare.metrics.unplaced')} best={best('unplaced')}>{format.integer(plan.unplaced.length)}</Metric>
         {plan.computationMs === null ? null : <Metric label={t('serverPlans.compare.metrics.computation')}>{t('serverPlans.job.computationValue', { ms: format.integer(plan.computationMs) })}</Metric>}
-        {plan.algorithmName === null ? null : <Metric label={t('serverPlans.compare.metrics.algorithm')}>{algorithmLabel(plan.algorithmName, t)}</Metric>}
+        {plan.algorithmName === null ? null : <Metric label={t('serverPlans.compare.metrics.planAlgorithm')} text>{planAlgorithmLabel(plan.algorithmName, t)}</Metric>}
       </dl>
       <Button variant="secondary" className="mt-auto" asChild>
         <Link to={`/chuyen/${encodeURIComponent(tripParam)}/phuong-an?revision=${encodeURIComponent(plan.id)}`}>
@@ -107,12 +124,20 @@ function PlanCard({ plan, plans, tripParam }: { plan: LoadPlan; plans: readonly 
   )
 }
 
-function Metric({ label, best = false, children }: { label: string; best?: boolean; children: ReactNode }) {
+/** Một dòng chỉ số. `text`: giá trị là chữ (tên thuật toán) — không mono, căn phải, xuống dòng được. `last`: không kẻ dưới. */
+function Metric({ label, best = false, text = false, last = false, children }: {
+  label: string
+  best?: boolean
+  text?: boolean
+  last?: boolean
+  children: ReactNode
+}) {
   const t = useT()
+  const value = best ? 'flex items-center gap-2 font-mono font-semibold tabular-nums text-ink-strong' : text ? 'text-right text-ink-1' : 'font-mono tabular-nums text-ink-1'
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-line-soft py-2 text-small">
-      <dt className="text-ink-2">{label}</dt>
-      <dd className={best ? 'flex items-center gap-2 font-mono font-semibold tabular-nums text-ink-strong' : 'font-mono tabular-nums text-ink-1'}>
+    <div className={last ? 'flex items-center justify-between gap-3 py-2 text-small' : 'flex items-center justify-between gap-3 border-b border-line-soft py-2 text-small'}>
+      <dt className="shrink-0 text-ink-2">{label}</dt>
+      <dd className={value}>
         {best ? <Badge shape="tag">{t('serverPlans.compare.best')}</Badge> : null}
         {children}
       </dd>

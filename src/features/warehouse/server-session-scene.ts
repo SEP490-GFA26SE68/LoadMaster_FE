@@ -25,9 +25,9 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
     if (!stops.has(sequence)) stops.set(sequence, { id: `stop-${sequence}`, sequence, name: item.stopName ?? '', deadline: null })
   }
   const plan: LoadPlan = {
-    id: session.tripId, tripId: session.tripId, jobId: null, objective: null, label: null, algorithmName: null, computationMs: null, name: null,
+    id: session.tripId, tripId: session.tripId, jobId: null, objective: null, label: null, algorithmName: null, runAlgorithm: null, computationMs: null, name: null,
     volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
-    rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, unplaced: [],
+    rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, stopZones: null, unplaced: [],
     placements: session.placements.map((item) => ({
       id: item.id,
       packageId: item.packageId ?? item.id,

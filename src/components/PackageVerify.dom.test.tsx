@@ -158,11 +158,11 @@ test('level 3 with a single candidate has it picked; a reason without a note is 
   await vi.waitFor(() => expect(onManual).toHaveBeenCalledExactlyOnceWith({ packageInstanceId: 'PKG-002-01', reason: 'LABEL_DAMAGED' }))
 })
 
-test('the result is announced: an error as an alert, a recorded package as a status; pending blocks another submit', () => {
+test('the result is announced: an error as an alert, a recorded package as a status', () => {
   const failed = renderVerify({ result: { tone: 'error', message: 'Mã KH-778 trùng 2 kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.' }, pending: true })
   expect(failed.dialog.getByRole('alert')).toHaveTextContent('Mã KH-778 trùng 2 kiện trong chuyến — gõ mã QR in dưới hình QR của kiện.')
   expect(failed.dialog.getByRole('alert')).toHaveClass('text-body-lg')
-  expect(failed.dialog.getByRole('button', { name: /Đối chiếu mã/ })).toBeDisabled()
+  expect(failed.dialog.getByRole('button', { name: /Đối chiếu mã/ })).toHaveAttribute('aria-busy', 'true')
 })
 
 test('a recorded package is a polite status; with nothing left to confirm the manual level says so; Close asks to close', async () => {
@@ -172,4 +172,34 @@ test('a recorded package is a polite status; with nothing left to confirm the ma
   expect(dialog.getByText('Không có kiện nào để xác nhận tay ở bước này.')).toBeInTheDocument()
   await userEvent.click(dialog.getByRole('button', { name: 'Đóng' }))
   expect(onOpenChange).toHaveBeenCalledWith(false)
+})
+
+test('codes sent while the previous one is still with the store wait their turn: none is lost, each goes once, in order', async () => {
+  const onVerify = vi.fn()
+  const view = (pending: boolean) => (
+    <I18nProvider>
+      <MemoryRouter>
+        <PackageVerify open onOpenChange={vi.fn()} title="Đối chiếu kiện dỡ tại điểm 1" onVerify={onVerify} onManual={vi.fn()} candidates={CANDIDATES} pending={pending} />
+      </MemoryRouter>
+    </I18nProvider>
+  )
+  const { rerender } = render(view(false))
+  const dialog = within(screen.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' }))
+  const box = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
+  await userEvent.type(box, 'KT-A-008{Enter}')
+  expect(onVerify).toHaveBeenLastCalledWith({ method: 'CODE', code: 'KT-A-008' })
+  rerender(view(true))
+  // Máy quét kiểu bàn phím: mã mới thay mã vừa gửi (ô đã chọn sẵn) rồi Enter, trong lúc kho chưa trả lời
+  await userEvent.keyboard('KT-A-007{Enter}')
+  await userEvent.keyboard('KT-A-006{Enter}')
+  await userEvent.keyboard('KT-A-006{Enter}')
+  expect(onVerify).toHaveBeenCalledTimes(1)
+  rerender(view(false))
+  await vi.waitFor(() => expect(onVerify).toHaveBeenLastCalledWith({ method: 'CODE', code: 'KT-A-007' }))
+  rerender(view(true))
+  rerender(view(false))
+  await vi.waitFor(() => expect(onVerify).toHaveBeenLastCalledWith({ method: 'CODE', code: 'KT-A-006' }))
+  rerender(view(true))
+  rerender(view(false))
+  expect(onVerify.mock.calls.map(([input]) => input.code)).toEqual(['KT-A-008', 'KT-A-007', 'KT-A-006'])
 })

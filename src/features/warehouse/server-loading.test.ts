@@ -7,7 +7,7 @@ const placement = (id: string, sequence: number): ServerPlacement => ({
 })
 
 const session = (outcomes: ServerLoadingSession['outcomes']): ServerLoadingSession => ({
-  tripId: '7', code: 'T', vehicle: '', box: null, maxPayloadKg: null, placements: [placement('a', 1), placement('b', 2), placement('c', 3)], outcomes, completed: false,
+  tripId: '7', code: 'T', vehicle: '', box: null, maxPayloadKg: null, placements: [placement('a', 1), placement('b', 2), placement('c', 3)], outcomes, staging: {}, stagingRequired: false, stagingComplete: true, pendingManual: 0, seal: null, completed: false,
 })
 
 test('kiện kế tiếp là kiện chưa có kết quả đầu tiên theo thứ tự xếp', () => {

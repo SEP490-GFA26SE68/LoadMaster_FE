@@ -1,83 +1,22 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import type { LoadPlan } from '@/features/optimization/load-plan-dto'
-import { ApiError, connectApiAuth } from '@/lib/api-client'
+import { MemoryRouter } from 'react-router'
+import { expect, test, vi } from 'vitest'
+import { ApiError } from '@/lib/api-client'
 import { createTranslator, dataErrorMessage, I18nProvider } from '@/lib/i18n'
-import { envelope, stubBackend } from '@/test/fake-backend'
 import { sceneBox } from '@/test/scene'
-import { BackendRerunDialog } from './BackendRerunDialog'
 import { SelectedPackagePanel } from './panels/SelectedPackagePanel'
 import type { ScenePlacement } from './scene-input'
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['trips']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'trips',
 }))
 
 /**
- * Planner nối backend: ghim từ thẻ kiện đang chọn (máy chủ lưu ngay, không chờ "Duyệt bản chỉnh"), và "Chạy lại giữ ghim" — máy chủ lưu
- * một phương án mới, màn mở chính phương án đó trong Planner; lỗi của máy chủ giữ hộp mở kèm toast.
+ * Planner nối backend: ghim từ thẻ kiện đang chọn (máy chủ lưu ngay, không chờ "Duyệt bản chỉnh"). "Chạy lại giữ ghim" là lần chạy ba
+ * phương án ở Thiết lập tối ưu (`BackendOptimizationSetupPage.backend.dom.test.tsx`).
  */
-const PLAN: LoadPlan = {
-  id: '12', tripId: '42', jobId: 'job-1', objective: 'AXLE_BALANCE', label: 'B', algorithmName: 'EP_DBLF', computationMs: null, name: null,
-  volumePercent: 60, payloadPercent: null, approved: false, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
-  rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, placements: [], unplaced: [],
-}
-
-beforeEach(() => {
-  connectApiAuth(() => Promise.resolve('token-1'))
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
-
-function Planner() {
-  const [params] = useSearchParams()
-  return <p>Planner phương án {params.get('revision')}</p>
-}
-
-function renderRerun() {
-  const onOpenChange = vi.fn()
-  render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
-      <I18nProvider>
-        <MemoryRouter initialEntries={['/chuyen/TRIP-42/phuong-an?revision=12']}>
-          <Routes>
-            <Route path="/chuyen/:tripId/phuong-an" element={<><Planner /><BackendRerunDialog tripCode="TRIP-42" plan={PLAN} pinnedCount={2} open onOpenChange={onOpenChange} /></>} />
-          </Routes>
-        </MemoryRouter>
-      </I18nProvider>
-    </QueryClientProvider>,
-  )
-  return onOpenChange
-}
-
-test('chạy lại giữ ghim gửi mục tiêu của phương án đang xem rồi mở phương án mới trong Planner', async () => {
-  const { calls } = stubBackend({ 'POST /api/load-plans/12/rerun': { body: envelope({ id: 13, jobUuid: 'job-2', parentPlanId: 12 }) } })
-  const onOpenChange = renderRerun()
-  const dialog = within(await screen.findByRole('dialog', { name: 'Chạy lại giữ 2 kiện đã ghim?' }))
-  expect(dialog.getByText(/dùng 1 credit/)).toBeInTheDocument()
-  await userEvent.click(dialog.getByRole('button', { name: 'Chạy lại' }))
-  expect(await screen.findByText('Planner phương án 13')).toBeInTheDocument()
-  expect(calls[0]?.body).toEqual({ timeLimitSec: 10, objective: 'AXLE_BALANCE' })
-  expect(onOpenChange).toHaveBeenCalledWith(false)
-})
-
-test('máy chủ từ chối (hết credit): hộp vẫn mở, toast nói lý do, Planner giữ phương án cũ', async () => {
-  const { toast } = await import('sonner')
-  stubBackend({ 'POST /api/load-plans/12/rerun': { status: 402, body: { success: false, code: 'INSUFFICIENT_CREDITS', message: 'Hết credit' } } })
-  const onOpenChange = renderRerun()
-  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Chạy lại' }))
-  await waitFor(() => expect(toast.error).toHaveBeenCalled())
-  expect(onOpenChange).not.toHaveBeenCalled()
-  expect(screen.getByText('Planner phương án 12')).toBeInTheDocument()
-})
-
 function renderCard(placement: ScenePlacement, onToggle: (placement: ScenePlacement) => void, disabledReason?: string) {
   render(
     <MemoryRouter>
