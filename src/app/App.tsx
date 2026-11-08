@@ -60,6 +60,9 @@ const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPag
 const LandingPage = lazy(() => import('@/features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })))
 const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
 const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
+const TrialRegistrationPage = lazy(() => import('@/features/trial-registration/TrialRegistrationPage').then((m) => ({ default: m.TrialRegistrationPage })))
+const GuestRegistrationPage = lazy(() => import('@/features/registration/GuestRegistrationPage').then((m) => ({ default: m.GuestRegistrationPage })))
+const RegistrationSuccessPage = lazy(() => import('@/features/registration/RegistrationSuccessPage').then((m) => ({ default: m.RegistrationSuccessPage })))
 const StyleSheetPage = lazy(() => import('./design-system/StyleSheetPage').then((m) => ({ default: m.StyleSheetPage })))
 const ComponentSheetPage = lazy(() => import('./design-system/ComponentSheetPage').then((m) => ({ default: m.ComponentSheetPage })))
 const WarehouseCustomersPage = lazy(() =>
@@ -138,6 +141,9 @@ export const routes: RouteObject[] = [
           { path: '/', element: <RootLandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
+          { path: '/dang-ky-trai-nghiem', element: <TrialRegistrationPage />, handle: titled((t) => t('titles.trialRegistration')) },
+          { path: '/dang-ky', element: <GuestRegistrationPage />, handle: titled((t) => t('titles.guestRegistration')) },
+          { path: '/dang-ky-thanh-cong', element: <RegistrationSuccessPage />, handle: titled((t) => t('titles.registrationSuccess')) },
         ],
       },
 

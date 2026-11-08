@@ -69,6 +69,16 @@ export function PublicHeader() {
             className="h-10 min-w-10 sm:hidden pointer-coarse:h-14 pointer-coarse:min-w-14 pointer-coarse:text-body-lg"
             itemClassName={PUBLIC_TOUCH}
           />
+          {!user ? (
+            <>
+              <Button asChild variant="glass" className={cn(PUBLIC_TOUCH, SKY_FOCUS, 'hidden md:inline-flex border-cyan-400/30 text-cyan-200 hover:text-white')}>
+                <Link to="/dang-ky-trai-nghiem">{t('landing.header.trial')}</Link>
+              </Button>
+              <Button asChild variant="primary" className={cn(PUBLIC_TOUCH, SKY_FOCUS, 'hidden sm:inline-flex font-semibold')}>
+                <Link to="/dang-ky">{t('landing.header.registerNow')}</Link>
+              </Button>
+            </>
+          ) : null}
           <Button asChild variant="glass" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
             <Link to={user ? landingPath(user.role) : '/dang-nhap'}>
               {user ? t('landing.header.openApp') : t('landing.header.signIn')}

@@ -15,7 +15,7 @@ export const trialRequests = {
   noMatch: 'No requests match the filters.',
   search: 'Search by name, email, company, phone number',
   filters: { status: 'Status', allStatuses: 'All statuses' },
-  status: { PENDING: 'Awaiting review', APPROVED: 'Approved', REJECTED: 'Rejected' },
+  status: { PENDING: 'Awaiting Manager review', PENDING_ADMIN_CREATION: 'Awaiting Admin provisioning', APPROVED: 'Provisioned', REJECTED: 'Rejected' },
   columns: { customer: 'Customer', contact: 'Contact', plan: 'Plan of interest', createdAt: 'Sent', status: 'Status' },
   individual: 'No company given',
   noPlan: 'No plan chosen',

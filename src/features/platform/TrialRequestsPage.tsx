@@ -16,8 +16,18 @@ import { useTrialRequestsQuery } from './useTrialRequestsQuery'
 
 const STATUS_FILTER = 'trang-thai'
 const FILTERS = [STATUS_FILTER] as const
-const STATUS_SLUGS: Record<TrialRequestStatus, string> = { PENDING: 'cho-duyet', APPROVED: 'da-duyet', REJECTED: 'tu-choi' }
-const STATUS_ORDER: Record<TrialRequestStatus, number> = { PENDING: 0, APPROVED: 1, REJECTED: 2 }
+const STATUS_SLUGS: Record<TrialRequestStatus, string> = {
+  PENDING: 'cho-manager-duyet',
+  PENDING_ADMIN_CREATION: 'cho-admin-tao',
+  APPROVED: 'da-duyet',
+  REJECTED: 'tu-choi',
+}
+const STATUS_ORDER: Record<TrialRequestStatus, number> = {
+  PENDING: 0,
+  PENDING_ADMIN_CREATION: 1,
+  APPROVED: 2,
+  REJECTED: 3,
+}
 
 /** Chờ duyệt trước, rồi mới gửi trước. */
 function byStatusThenNewest(a: TrialRequest, b: TrialRequest): number {

@@ -15,7 +15,7 @@ export const trialRequests = {
   noMatch: 'Không có yêu cầu nào khớp bộ lọc.',
   search: 'Tìm theo tên, email, công ty, số điện thoại',
   filters: { status: 'Trạng thái', allStatuses: 'Mọi trạng thái' },
-  status: { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Đã từ chối' },
+  status: { PENDING: 'Chờ Manager duyệt', PENDING_ADMIN_CREATION: 'Chờ Admin tạo', APPROVED: 'Đã tạo tài khoản', REJECTED: 'Đã từ chối' },
   columns: { customer: 'Khách hàng', contact: 'Liên hệ', plan: 'Gói quan tâm', createdAt: 'Gửi lúc', status: 'Trạng thái' },
   individual: 'Chưa ghi công ty',
   noPlan: 'Chưa chọn gói',
