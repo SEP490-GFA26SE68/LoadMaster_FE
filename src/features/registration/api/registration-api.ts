@@ -74,3 +74,4 @@ export async function acceptRegistrationPolicy(data: AcceptPolicyRequest): Promi
 export async function initRegistrationPayment(data: InitPaymentRequest): Promise<PaymentLinkResponse> {
   return api().post<PaymentLinkResponse>('/api/guest-registration/init-payment', { body: data })
 }
+

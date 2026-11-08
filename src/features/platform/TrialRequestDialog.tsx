@@ -85,7 +85,7 @@ export function TrialRequestDialog({ request, onClose }: { request: TrialRequest
             onManagerApprove={() => {
               managerApprove.mutate(request.id, {
                 onSuccess: () => {
-                  toast.success(`Đã duyệt và chuyển giao đơn của ${request.fullName} sang System Admin.`)
+                  toast.success(t('platform.trialRequests.detail.managerApprovedToast', { name: request.fullName }))
                   close()
                 },
                 onError: (error) => toast.error(dataErrorMessage(error, t)),
@@ -146,27 +146,27 @@ function TrialRequestDetail({
             items={[
               [t('platform.trialRequests.detail.companyName'), request.companyName ?? missing],
               [t('platform.trialRequests.detail.taxCode'), request.taxCode ? <span key="fact-90" className="font-mono">{request.taxCode}</span> : missing],
-              ['Địa chỉ công ty', request.companyAddress ? <span key="fact-addr">{request.companyAddress}</span> : missing],
+              [t('platform.trialRequests.detail.companyAddress'), request.companyAddress ? <span key="fact-addr">{request.companyAddress}</span> : missing],
             ]}
           />
         </FactSection>
 
         {/* Thẩm định tự động sơ bộ (AI Pre-validation) */}
-        <FactSection title="Đối soát tự động (AI Pre-check)">
+        <FactSection title={t('platform.trialRequests.detail.aiPrecheck')}>
           <Facts
             items={[
               [
-                'Kết quả rà soát',
+                t('platform.trialRequests.detail.aiResult'),
                 request.aiPrecheckStatus === 'PASSED' ? (
-                  <Badge key="ai-pass" tone="success" dot="solid">Hợp lệ (Đạt kiểm tra)</Badge>
+                  <Badge key="ai-pass" tone="success" dot="solid">{t('platform.trialRequests.detail.aiPass')}</Badge>
                 ) : request.aiPrecheckStatus === 'FAILED' ? (
-                  <Badge key="ai-fail" tone="danger" dot="solid">Không hợp lệ</Badge>
+                  <Badge key="ai-fail" tone="danger" dot="solid">{t('platform.trialRequests.detail.aiFail')}</Badge>
                 ) : (
                   <span key="ai-none" className="text-ink-3">—</span>
                 ),
               ],
-              ...(request.aiPrecheckReason ? [['Chi tiết rà soát', <span key="ai-reason" className="text-body text-ink-2">{request.aiPrecheckReason}</span>] as const] : []),
-              ...(request.handledByName ? [['Người đảm nhận', <span key="handler" className="font-semibold text-primary">{request.handledByName}</span>] as const] : []),
+              ...(request.aiPrecheckReason ? [[t('platform.trialRequests.detail.aiReason'), <span key="ai-reason" className="text-body text-ink-2">{request.aiPrecheckReason}</span>] as const] : []),
+              ...(request.handledByName ? [[t('platform.trialRequests.detail.handledBy'), <span key="handler" className="font-semibold text-primary">{request.handledByName}</span>] as const] : []),
             ]}
           />
         </FactSection>
@@ -175,11 +175,11 @@ function TrialRequestDetail({
           <Facts
             items={[
               [t('platform.trialRequests.detail.status'), <TrialStatusBadge key="fact-97" status={request.status} />],
-              ...(request.managerReviewedByName ? [['Manager duyệt', request.managerReviewedByName] as const] : []),
+              ...(request.managerReviewedByName ? [[t('platform.trialRequests.detail.managerReviewedBy'), request.managerReviewedByName] as const] : []),
               ...(request.approvedByName ? [[t('platform.trialRequests.detail.resolvedBy'), request.approvedByName] as const] : []),
               ...(request.resolvedAt ? [[t('platform.trialRequests.detail.resolvedAt'), when(request.resolvedAt)] as const] : []),
               ...(request.createdCompanyName ? [[t('platform.trialRequests.detail.createdCompany'), request.createdCompanyName] as const] : []),
-              ...(request.rejectionReason ? [['Lý do từ chối', <span key="fact-rej" className="text-danger font-medium">{request.rejectionReason}</span>] as const] : []),
+              ...(request.rejectionReason ? [[t('platform.trialRequests.detail.rejectionReason'), <span key="fact-rej" className="text-danger font-medium">{request.rejectionReason}</span>] as const] : []),
               ...(request.note ? [[t('platform.trialRequests.detail.note'), <span key="fact-103" className="whitespace-pre-wrap">{request.note}</span>] as const] : []),
             ]}
           />
@@ -194,10 +194,10 @@ function TrialRequestDetail({
         {canManagerReview ? (
           <>
             <Button variant="secondary" onClick={onReject} disabled={pending}>
-              Từ chối
+              {t('platform.trialRequests.detail.reject')}
             </Button>
             <Button variant="primary" onClick={onManagerApprove} disabled={pending}>
-              Duyệt & Chuyển sang System Admin
+              {t('platform.trialRequests.detail.managerApprove')}
             </Button>
           </>
         ) : null}
@@ -211,7 +211,7 @@ function TrialRequestDetail({
               </Button>
             ) : null}
             <Button variant="primary" onClick={onApprove} disabled={pending}>
-              Tạo tài khoản & Kích hoạt
+              {t('platform.trialRequests.detail.adminApprove')}
             </Button>
           </>
         ) : null}

@@ -48,3 +48,4 @@ export async function verifyGuestTrialOtp(data: GuestTrialVerifyOtpRequest): Pro
 export async function resendGuestTrialOtp(data: GuestTrialResendOtpRequest): Promise<GuestTrialInitResponse> {
   return api().post<GuestTrialInitResponse>('/api/trial-registration/resend-otp', { body: data })
 }
+

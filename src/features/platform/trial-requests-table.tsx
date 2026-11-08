@@ -54,20 +54,22 @@ function PlanCell({ request }: { request: TrialRequest }) {
 }
 
 function PrecheckCell({ request }: { request: TrialRequest }) {
+  const t = useT()
   if (request.aiPrecheckStatus === 'PASSED') {
-    return <Badge tone="success" shape="tag">AI Đạt</Badge>
+    return <Badge tone="success" shape="tag">{t('platform.trialRequests.detail.aiPassBadge')}</Badge>
   }
   if (request.aiPrecheckStatus === 'FAILED') {
-    return <Badge tone="danger" shape="tag">AI Từ chối</Badge>
+    return <Badge tone="danger" shape="tag">{t('platform.trialRequests.detail.aiFailBadge')}</Badge>
   }
   return <span className="text-ink-3 text-caption">—</span>
 }
 
 function HandlerCell({ request }: { request: TrialRequest }) {
+  const t = useT()
   const handler = request.handledByName ?? request.approvedByName ?? request.managerReviewedByName
   if (!handler) return <span className="text-ink-3 text-caption">—</span>
-  if (handler === 'AI tự xử lý') {
-    return <Badge tone="neutral" shape="tag">AI tự xử lý</Badge>
+  if (handler.startsWith('AI') || handler === t('platform.trialRequests.detail.aiHandledBadge')) {
+    return <Badge tone="neutral" shape="tag">{t('platform.trialRequests.detail.aiHandledBadge')}</Badge>
   }
   return <span className="text-body text-ink-2">{handler}</span>
 }
@@ -87,7 +89,7 @@ export function createTrialColumns(t: TFunction) {
     column('contact', t('platform.trialRequests.columns.contact'), { width: '22%' }, ContactCell),
     column('plan', t('platform.trialRequests.columns.plan'), { width: '15%' }, PlanCell),
     column('precheck', 'AI Pre-check', { width: '100px' }, PrecheckCell),
-    column('handler', 'Đảm nhận', { width: '120px' }, HandlerCell),
+    column('handler', t('platform.trialRequests.columns.handler'), { width: '120px' }, HandlerCell),
     column('createdAt', t('platform.trialRequests.columns.createdAt'), { width: '160px' }, CreatedCell),
     column('status', t('platform.trialRequests.columns.status'), { width: '140px' }, ({ request }) => <TrialStatusBadge status={request.status} />),
   ])

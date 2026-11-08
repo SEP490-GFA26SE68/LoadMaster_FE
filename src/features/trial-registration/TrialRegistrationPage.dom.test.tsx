@@ -76,3 +76,4 @@ test('filling valid info calls init API and moves to step 2 OTP', async () => {
   expect(await screen.findByRole('heading', { level: 2, name: /2\. Xác thực Email/i })).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Nhập 6 số OTP')).toBeInTheDocument()
 })
+
