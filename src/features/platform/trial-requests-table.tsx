@@ -119,9 +119,10 @@ function ActionsCell({ request }: { request: TrialRequest }) {
   const canReview = isManager && request.status === 'PENDING'
   const canProvision = isAdmin && (request.status === 'PENDING_ADMIN_CREATION' || request.status === 'PENDING')
 
-  return (
-    <div className="flex items-center gap-1.5 whitespace-nowrap">
-      {canReview ? (
+  // Đơn có thể duyệt thì không cần hiện action "Chi tiết"
+  if (canReview) {
+    return (
+      <div className="flex items-center whitespace-nowrap">
         <Button
           type="button"
           size="sm"
@@ -130,8 +131,13 @@ function ActionsCell({ request }: { request: TrialRequest }) {
         >
           {t('platform.trialRequests.columns.reviewBtn')}
         </Button>
-      ) : null}
-      {canProvision ? (
+      </div>
+    )
+  }
+
+  if (canProvision) {
+    return (
+      <div className="flex items-center whitespace-nowrap">
         <Button
           type="button"
           size="sm"
@@ -140,7 +146,12 @@ function ActionsCell({ request }: { request: TrialRequest }) {
         >
           {t('platform.trialRequests.columns.provisionBtn')}
         </Button>
-      ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center whitespace-nowrap">
       <Button
         type="button"
         size="sm"

@@ -21,33 +21,57 @@ const message = (t: TFunction, key: string | undefined) => (key === undefined ? 
 const APPROVE_ERRORS = {
   companyNameRequired: 'platform.trialRequests.approve.errors.companyNameRequired',
   companyNameTooLong: 'platform.trialRequests.approve.errors.companyNameTooLong',
+  companyCodeRequired: 'platform.trialRequests.approve.errors.companyCodeRequired',
+  companyCodeInvalid: 'platform.trialRequests.approve.errors.companyCodeInvalid',
   taxCodeRequired: 'platform.trialRequests.approve.errors.taxCodeRequired',
   taxCodeTooLong: 'platform.trialRequests.approve.errors.taxCodeTooLong',
   trialDays: 'platform.trialRequests.approve.errors.trialDays',
+  trialCredits: 'platform.trialRequests.approve.errors.trialCredits',
   noteTooLong: 'platform.trialRequests.approve.errors.noteTooLong',
 } as const satisfies Record<string, MessageKey>
 
 const approveSchema = z.object({
   companyName: z.string().trim().min(1, APPROVE_ERRORS.companyNameRequired).max(200, APPROVE_ERRORS.companyNameTooLong),
+  companyCode: z
+    .string()
+    .trim()
+    .min(1, APPROVE_ERRORS.companyCodeRequired)
+    .max(50, APPROVE_ERRORS.companyCodeInvalid)
+    .regex(/^[A-Za-z0-9_-]{3,50}$/, APPROVE_ERRORS.companyCodeInvalid),
   taxCode: z.string().trim().min(1, APPROVE_ERRORS.taxCodeRequired).max(50, APPROVE_ERRORS.taxCodeTooLong),
   planId: z.string(),
   trialDays: z.string().trim().refine((value) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 365, APPROVE_ERRORS.trialDays),
+  trialCredits: z.string().trim().refine((value) => /^\d+$/.test(value) && Number(value) >= 0, APPROVE_ERRORS.trialCredits),
   note: z.string().trim().max(500, APPROVE_ERRORS.noteTooLong),
 })
 
 type ApproveValues = z.output<typeof approveSchema>
 
+function suggestCompanyCode(name?: string | null): string {
+  if (!name) return ''
+  const ascii = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]/g, '_')
+    .toUpperCase()
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+  return ascii.slice(0, 20)
+}
+
 /** Số ngày dùng thử mặc định khi duyệt. */
 const DEFAULT_TRIAL_DAYS = '14'
+const DEFAULT_TRIAL_CREDITS = '100'
 
 /**
- * Duyệt một yêu cầu: tên công ty và mã số thuế (điền sẵn theo yêu cầu), gói dùng thử (gói khách quan tâm nếu còn trong danh mục), số
- * ngày dùng thử, ghi chú. Chỉ gói có mã số của máy chủ mới chọn được; không đọc được danh mục thì máy chủ dùng gói mặc định của nó.
+ * Duyệt và khởi tạo tài khoản (System Admin):
+ * - Quyền quyết định gói cước, số ngày và hạn mức credits thuộc về Admin.
+ * - Chuẩn hóa mã công ty (companyCode) và mã số thuế.
+ * - Xác nhận 2 bước trước khi tạo tài khoản trên Keycloak và công ty trong DB.
  */
 export function ApproveTrialForm(props: ApproveFormProps) {
   const t = useT()
   const query = useSubscriptionPlansQuery()
-  // Chờ danh mục gói về rồi mới dựng form, để ô gói nhận giá trị mặc định đúng một lần
   if (query.isPending) {
     return <div role="status" aria-label={t('platform.trialRequests.loading')} className="flex justify-center py-16"><Spinner /></div>
   }
@@ -66,13 +90,17 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
   const t = useT()
   const [confirmValues, setConfirmValues] = useState<ApproveValues | null>(null)
   const interested = plans.find((plan) => plan.id === request.interestedPlanId)
+  const defaultCode = request.companyCode || suggestCompanyCode(request.companyName)
+
   const form = useForm<z.input<typeof approveSchema>, unknown, ApproveValues>({
     resolver: zodResolver(approveSchema),
     defaultValues: {
       companyName: request.companyName ?? '',
+      companyCode: defaultCode,
       taxCode: request.taxCode ?? '',
       planId: (interested ?? plans[0])?.id ?? '',
       trialDays: request.trialDays ? String(request.trialDays) : DEFAULT_TRIAL_DAYS,
+      trialCredits: request.trialCredits !== null && request.trialCredits !== undefined ? String(request.trialCredits) : DEFAULT_TRIAL_CREDITS,
       note: request.managerNote ?? '',
     },
   })
@@ -86,9 +114,11 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
     if (!confirmValues) return
     onSubmit({
       companyName: confirmValues.companyName,
+      companyCode: confirmValues.companyCode.toUpperCase(),
       taxCode: confirmValues.taxCode,
       planId: confirmValues.planId === '' ? undefined : Number(confirmValues.planId),
       trialDays: Number(confirmValues.trialDays),
+      trialCredits: Number(confirmValues.trialCredits),
       note: confirmValues.note === '' ? undefined : confirmValues.note,
     })
   }
@@ -104,9 +134,31 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
         />
         <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)]">
-            <Input label={t('platform.trialRequests.approve.companyName')} required error={message(t, errors.companyName?.message)} {...form.register('companyName')} />
-            <Input label={t('platform.trialRequests.approve.taxCode')} required error={message(t, errors.taxCode?.message)} {...form.register('taxCode')} />
+            <Input
+              label={t('platform.trialRequests.approve.companyName')}
+              required
+              error={message(t, errors.companyName?.message)}
+              {...form.register('companyName')}
+            />
+            <Input
+              label={t('platform.trialRequests.approve.companyCode')}
+              required
+              hint={t('platform.trialRequests.approve.companyCodeHint')}
+              error={message(t, errors.companyCode?.message)}
+              {...form.register('companyCode')}
+              onChange={(e) => {
+                form.setValue('companyCode', e.target.value.toUpperCase())
+              }}
+            />
           </div>
+
+          <Input
+            label={t('platform.trialRequests.approve.taxCode')}
+            required
+            error={message(t, errors.taxCode?.message)}
+            {...form.register('taxCode')}
+          />
+
           {plans.length === 0 ? (
             <p className="m-0 text-body text-ink-2">{t('platform.trialRequests.approve.noPlans')}</p>
           ) : (
@@ -118,22 +170,43 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
               options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
             />
           )}
-          <Input
-            label={t('platform.trialRequests.approve.trialDays')}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={365}
-            required
-            className="max-w-40"
-            error={message(t, errors.trialDays?.message)}
-            {...form.register('trialDays')}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label={t('platform.trialRequests.approve.trialDays')}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={365}
+              required
+              error={message(t, errors.trialDays?.message)}
+              {...form.register('trialDays')}
+            />
+            <Input
+              label={t('platform.trialRequests.approve.trialCredits')}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              required
+              error={message(t, errors.trialCredits?.message)}
+              {...form.register('trialCredits')}
+            />
+          </div>
+
+          <Textarea
+            label={t('platform.trialRequests.approve.note')}
+            rows={2}
+            error={message(t, errors.note?.message)}
+            {...form.register('note')}
           />
-          <Textarea label={t('platform.trialRequests.approve.note')} rows={2} error={message(t, errors.note?.message)} {...form.register('note')} />
         </div>
         <DialogFooter>
-          <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>{t('platform.trialRequests.approve.back')}</Button>
-          <Button type="submit" variant="primary" loading={pending}>{t('platform.trialRequests.approve.submit')}</Button>
+          <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>
+            {t('platform.trialRequests.approve.back')}
+          </Button>
+          <Button type="submit" variant="primary" loading={pending}>
+            {t('platform.trialRequests.approve.submit')}
+          </Button>
         </DialogFooter>
       </form>
 

@@ -109,9 +109,11 @@ export type NewTrialRequest = {
 /** `ApproveTrialAccountRequest`: để trống thì backend lấy theo yêu cầu (tên công ty, mã số thuế) hoặc mặc định của nó. */
 export type TrialApproval = {
   readonly companyName: string
+  readonly companyCode?: string
   readonly taxCode: string
   readonly planId?: number
   readonly trialDays: number
+  readonly trialCredits?: number
   readonly note?: string
 }
 
