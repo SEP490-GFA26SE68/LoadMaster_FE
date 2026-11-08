@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
 import { PublicHeader } from '@/features/marketing/PublicHeader'
+import { useT } from '@/lib/i18n'
 
 export function RegistrationSuccessPage() {
+  const t = useT()
   const [params] = useSearchParams()
   const orderCode = params.get('vnp_TxnRef') || params.get('orderCode')
 
@@ -22,10 +24,10 @@ export function RegistrationSuccessPage() {
 
             <CardHeader className="p-0 mt-5">
               <CardTitle as="h2" className="text-h1 font-bold text-ink-strong">
-                Kích Hoạt Tài Khoản Thành Công!
+                {t('guestRegistration.success.title')}
               </CardTitle>
               <p className="text-body text-ink-2 mt-2">
-                Cảm ơn bạn đã lựa chọn nền tảng tối ưu tải trọng và tuyến vận tải LoadMaster.
+                {t('guestRegistration.success.description')}
               </p>
             </CardHeader>
 
@@ -34,10 +36,10 @@ export function RegistrationSuccessPage() {
                 <div className="flex flex-col gap-2 text-small">
                   <div className="flex items-center gap-2 font-semibold text-primary">
                     <Mail className="size-4" />
-                    <span>Mật khẩu tạm đã được gửi đến email của bạn!</span>
+                    <span>{t('guestRegistration.success.tempPasswordNotice')}</span>
                   </div>
                   <p className="text-ink-2">
-                    Vui lòng kiểm tra hòm thư đến (và mục spam nếu cần) để lấy mật khẩu đăng nhập lần đầu.
+                    {t('guestRegistration.success.checkEmailPrompt')}
                   </p>
                 </div>
               </div>
@@ -46,9 +48,7 @@ export function RegistrationSuccessPage() {
                 <div className="flex items-center gap-2 text-small text-ink-strong">
                   <FileText className="size-4 text-ink-2" />
                   <span>
-                    Hóa đơn điện tử PDF kèm mã đơn hàng{' '}
-                    <strong className="font-mono">{orderCode ?? 'LM-SUCCESS'}</strong>{' '}
-                    đã được đính kèm trong email.
+                    {t('guestRegistration.success.invoiceNotice', { code: orderCode ?? 'LM-SUCCESS' })}
                   </span>
                 </div>
               </div>
@@ -58,12 +58,12 @@ export function RegistrationSuccessPage() {
               <Button asChild variant="primary" className="h-12 font-semibold">
                 <Link to="/dang-nhap">
                   <LogIn className="mr-2 size-5" />
-                  Đăng nhập ngay
+                  {t('guestRegistration.success.loginNow')}
                 </Link>
               </Button>
               <Button asChild variant="secondary" className="h-12">
                 <Link to="/gioi-thieu">
-                  Về trang giới thiệu
+                  {t('guestRegistration.success.backHome')}
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>

@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Mail, RotateCw, Send, ShieldCheck, Sparkles } from 'lucide-react'
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Gift, Mail, RotateCw, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -34,8 +34,9 @@ export function TrialRegistrationPage() {
 
   const [step, setStep] = useState<Step>('info')
   const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
 
-  // Form info state
+  // Step 1 State
   const [companyName, setCompanyName] = useState('')
   const [taxCode, setTaxCode] = useState('')
   const [companyAddress, setCompanyAddress] = useState('')
@@ -44,21 +45,14 @@ export function TrialRegistrationPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [interestedPlanId, setInterestedPlanId] = useState<string>(params.get('planId') ?? '')
   const [note, setNote] = useState('')
-
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Session state after Step 1
-  const [session, setSession] = useState<GuestTrialInitResponse | null>(null)
-
-  // OTP state
+  // Step 2 State
   const [otp, setOtp] = useState('')
-  const [cooldown, setCooldown] = useState(0)
-
-  // Result state
+  const [session, setSession] = useState<GuestTrialInitResponse | null>(null)
   const [result, setResult] = useState<GuestTrialVerifyResponse | null>(null)
 
-  // Countdown timer effect
+  // OTP cooldown ticker
   useEffect(() => {
     if (cooldown <= 0) return
     const timer = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000)
@@ -73,17 +67,17 @@ export function TrialRegistrationPage() {
 
   function validateStep1(): boolean {
     const newErrors: Record<string, string> = {}
-    if (!companyName.trim()) newErrors.companyName = 'Vui lòng nhập tên doanh nghiệp'
+    if (!companyName.trim()) newErrors.companyName = t('trialRegistration.validation.companyNameRequired')
     if (!taxCode.trim()) {
-      newErrors.taxCode = 'Vui lòng nhập mã số thuế'
+      newErrors.taxCode = t('trialRegistration.validation.taxCodeRequired')
     } else if (!TAX_CODE_REGEX.test(taxCode.trim())) {
-      newErrors.taxCode = 'Mã số thuế phải có 10 hoặc 13 chữ số (VD: 0101234567 hoặc 0101234567-001)'
+      newErrors.taxCode = t('trialRegistration.validation.taxCodeInvalid')
     }
-    if (!fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ và tên người đại diện'
+    if (!fullName.trim()) newErrors.fullName = t('trialRegistration.validation.fullNameRequired')
     if (!email.trim()) {
-      newErrors.email = 'Vui lòng nhập email nhận tài khoản'
+      newErrors.email = t('trialRegistration.validation.emailRequired')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = 'Email không đúng định dạng'
+      newErrors.email = t('trialRegistration.validation.emailInvalid')
     }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -164,14 +158,14 @@ export function TrialRegistrationPage() {
           {/* Header Card */}
           <div className="mb-8 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-caption font-medium text-cyan-400">
-              <Sparkles className="size-3.5" />
-              <span>Chương trình Dùng thử Miễn phí LoadMaster</span>
+              <Gift className="size-3.5" />
+              <span>{t('trialRegistration.badge')}</span>
             </div>
             <h1 className="mt-3 text-h1 font-bold text-ink-strong">
-              Đăng Ký Trải Nghiệm Giải Pháp
+              {t('trialRegistration.title')}
             </h1>
             <p className="mt-2 text-body text-ink-2">
-              Khám phá năng lực lập kế hoạch chất xếp hàng 3D & tối ưu lộ trình xe tải cho doanh nghiệp của bạn.
+              {t('trialRegistration.description')}
             </p>
           </div>
 
@@ -179,9 +173,9 @@ export function TrialRegistrationPage() {
             {step === 'info' && (
               <form onSubmit={handleInitSubmit}>
                 <CardHeader>
-                  <CardTitle as="h2" className="text-h2">1. Thông tin Doanh nghiệp & Người đại diện</CardTitle>
+                  <CardTitle as="h2" className="text-h2">{t('trialRegistration.step1.title')}</CardTitle>
                   <p className="text-small text-ink-2">
-                    Vui lòng cung cấp chính xác mã số thuế và email để hệ thống xác thực và cấp quyền dùng thử.
+                    {t('trialRegistration.step1.description')}
                   </p>
                 </CardHeader>
 
@@ -189,11 +183,11 @@ export function TrialRegistrationPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <label htmlFor="companyName" className="text-small font-medium text-ink-strong">
-                        Tên doanh nghiệp <span className="text-danger">*</span>
+                        {t('trialRegistration.step1.companyName')} <span className="text-danger">*</span>
                       </label>
                       <Input
                         id="companyName"
-                        placeholder="Công ty TNHH Vận tải & Logistics ABC"
+                        placeholder={t('trialRegistration.step1.companyNamePlaceholder')}
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
                         className={cn(PUBLIC_TOUCH, errors.companyName && 'border-danger')}
@@ -203,11 +197,11 @@ export function TrialRegistrationPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="taxCode" className="text-small font-medium text-ink-strong">
-                        Mã số thuế <span className="text-danger">*</span>
+                        {t('trialRegistration.step1.taxCode')} <span className="text-danger">*</span>
                       </label>
                       <Input
                         id="taxCode"
-                        placeholder="0101234567"
+                        placeholder={t('trialRegistration.step1.taxCodePlaceholder')}
                         value={taxCode}
                         onChange={(e) => setTaxCode(e.target.value)}
                         className={cn(PUBLIC_TOUCH, errors.taxCode && 'border-danger')}
@@ -215,15 +209,17 @@ export function TrialRegistrationPage() {
                       {errors.taxCode ? (
                         <span className="text-caption text-danger">{errors.taxCode}</span>
                       ) : (
-                        <span className="text-caption text-ink-3">Gồm 10 hoặc 13 chữ số</span>
+                        <span className="text-caption text-ink-3">{t('trialRegistration.step1.taxCodeHint')}</span>
                       )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="interestedPlan" className="text-small font-medium text-ink-strong">Gói muốn trải nghiệm</label>
+                      <label htmlFor="interestedPlan" className="text-small font-medium text-ink-strong">
+                        {t('trialRegistration.step1.interestedPlan')}
+                      </label>
                       <Select value={interestedPlanId} onValueChange={setInterestedPlanId}>
                         <SelectTrigger id="interestedPlan" className={PUBLIC_TOUCH}>
-                          <SelectValue placeholder="Chọn gói cước trải nghiệm" />
+                          <SelectValue placeholder={t('trialRegistration.step1.interestedPlanPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {(pricingQuery.data ?? []).map((p: SubscriptionPlan) => (
@@ -236,10 +232,12 @@ export function TrialRegistrationPage() {
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <label htmlFor="companyAddress" className="text-small font-medium text-ink-strong">Địa chỉ trụ sở</label>
+                      <label htmlFor="companyAddress" className="text-small font-medium text-ink-strong">
+                        {t('trialRegistration.step1.companyAddress')}
+                      </label>
                       <Input
                         id="companyAddress"
-                        placeholder="Số 123 Đường Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh"
+                        placeholder={t('trialRegistration.step1.companyAddressPlaceholder')}
                         value={companyAddress}
                         onChange={(e) => setCompanyAddress(e.target.value)}
                         className={PUBLIC_TOUCH}
@@ -248,11 +246,11 @@ export function TrialRegistrationPage() {
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <label htmlFor="fullName" className="text-small font-medium text-ink-strong">
-                        Họ và tên người liên hệ / quản trị <span className="text-danger">*</span>
+                        {t('trialRegistration.step1.fullName')} <span className="text-danger">*</span>
                       </label>
                       <Input
                         id="fullName"
-                        placeholder="Nguyễn Văn A"
+                        placeholder={t('trialRegistration.step1.fullNamePlaceholder')}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className={cn(PUBLIC_TOUCH, errors.fullName && 'border-danger')}
@@ -262,12 +260,12 @@ export function TrialRegistrationPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="email" className="text-small font-medium text-ink-strong">
-                        Email nhận tài khoản <span className="text-danger">*</span>
+                        {t('trialRegistration.step1.email')} <span className="text-danger">*</span>
                       </label>
                       <Input
                         id="email"
                         type="email"
-                        placeholder="admin@doanhnghiep.vn"
+                        placeholder={t('trialRegistration.step1.emailPlaceholder')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className={cn(PUBLIC_TOUCH, errors.email && 'border-danger')}
@@ -275,16 +273,18 @@ export function TrialRegistrationPage() {
                       {errors.email ? (
                         <span className="text-caption text-danger">{errors.email}</span>
                       ) : (
-                        <span className="text-caption text-ink-3">Chúng tôi sẽ gửi mã OTP qua email này</span>
+                        <span className="text-caption text-ink-3">{t('trialRegistration.step1.emailHint')}</span>
                       )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="phoneNumber" className="text-small font-medium text-ink-strong">Số điện thoại</label>
+                      <label htmlFor="phoneNumber" className="text-small font-medium text-ink-strong">
+                        {t('trialRegistration.step1.phoneNumber')}
+                      </label>
                       <Input
                         id="phoneNumber"
                         type="tel"
-                        placeholder="0912 345 678"
+                        placeholder={t('trialRegistration.step1.phoneNumberPlaceholder')}
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className={PUBLIC_TOUCH}
@@ -292,10 +292,12 @@ export function TrialRegistrationPage() {
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <label htmlFor="note" className="text-small font-medium text-ink-strong">Nhu cầu hoặc ghi chú thêm</label>
+                      <label htmlFor="note" className="text-small font-medium text-ink-strong">
+                        {t('trialRegistration.step1.note')}
+                      </label>
                       <Textarea
                         id="note"
-                        placeholder="Mô tả số lượng xe tải, loại hàng hóa hoặc các yêu cầu xếp hàng đặc thù..."
+                        placeholder={t('trialRegistration.step1.notePlaceholder')}
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         rows={3}
@@ -306,12 +308,12 @@ export function TrialRegistrationPage() {
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <Button asChild variant="ghost">
                       <Link to="/bang-gia">
-                        <ArrowLeft className="mr-1.5 size-4" /> Quay lại Bảng giá
+                        <ArrowLeft className="mr-1.5 size-4" /> {t('trialRegistration.step1.backToPricing')}
                       </Link>
                     </Button>
                     <Button type="submit" variant="primary" disabled={loading} className={cn('min-w-44', PUBLIC_TOUCH)}>
                       {loading ? <Spinner className="size-4" /> : <Send className="mr-1.5 size-4" />}
-                      Tiếp tục xác thực OTP
+                      {t('trialRegistration.step1.submit')}
                     </Button>
                   </div>
                 </div>
@@ -321,11 +323,9 @@ export function TrialRegistrationPage() {
             {step === 'otp' && (
               <form onSubmit={handleVerifyOtp}>
                 <CardHeader>
-                  <CardTitle as="h2" className="text-h2">2. Xác thực Email Người đại diện</CardTitle>
+                  <CardTitle as="h2" className="text-h2">{t('trialRegistration.step2.title')}</CardTitle>
                   <p className="text-small text-ink-2">
-                    Mã xác thực 6 chữ số đã được gửi tới{' '}
-                    <strong className="text-ink-strong">{session?.maskedEmail ?? email}</strong>.
-                    Vui lòng nhập mã để hoàn tất đơn đăng ký.
+                    {t('trialRegistration.step2.description', { email: session?.maskedEmail ?? email })}
                   </p>
                 </CardHeader>
 
@@ -336,13 +336,13 @@ export function TrialRegistrationPage() {
                     </div>
 
                     <div className="w-full max-w-xs flex flex-col gap-2">
-                      <label htmlFor="otp" className="sr-only">Mã xác thực OTP</label>
+                      <label htmlFor="otp" className="sr-only">{t('trialRegistration.step2.otpLabel')}</label>
                       <Input
                         id="otp"
                         type="text"
                         maxLength={6}
                         autoFocus
-                        placeholder="Nhập 6 số OTP"
+                        placeholder={t('trialRegistration.step2.otpPlaceholder')}
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                         className={cn('text-center font-mono text-2xl tracking-widest', PUBLIC_TOUCH)}
@@ -352,7 +352,7 @@ export function TrialRegistrationPage() {
                     <div className="text-caption text-ink-2">
                       {cooldown > 0 ? (
                         <span className="inline-flex items-center gap-1.5 text-ink-3">
-                          <Clock className="size-3.5" /> Có thể gửi lại sau {cooldown}s
+                          <Clock className="size-3.5" /> {t('trialRegistration.step2.cooldown', { seconds: cooldown })}
                         </span>
                       ) : (
                         <button
@@ -361,7 +361,7 @@ export function TrialRegistrationPage() {
                           disabled={loading}
                           className="inline-flex items-center gap-1.5 text-primary hover:underline font-medium"
                         >
-                          <RotateCw className="size-3.5" /> Gửi lại mã xác thực
+                          <RotateCw className="size-3.5" /> {t('trialRegistration.step2.resend')}
                         </button>
                       )}
                     </div>
@@ -369,7 +369,7 @@ export function TrialRegistrationPage() {
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border pt-4">
                     <Button type="button" variant="ghost" onClick={() => setStep('info')} disabled={loading}>
-                      <ArrowLeft className="mr-1.5 size-4" /> Sửa lại thông tin
+                      <ArrowLeft className="mr-1.5 size-4" /> {t('trialRegistration.step2.back')}
                     </Button>
                     <Button
                       type="submit"
@@ -378,7 +378,7 @@ export function TrialRegistrationPage() {
                       className={cn('min-w-44', PUBLIC_TOUCH)}
                     >
                       {loading ? <Spinner className="size-4" /> : <ShieldCheck className="mr-1.5 size-4" />}
-                      Xác nhận đăng ký dùng thử
+                      {t('trialRegistration.step2.submit')}
                     </Button>
                   </div>
                 </div>
@@ -391,28 +391,27 @@ export function TrialRegistrationPage() {
                   <CheckCircle2 className="size-10" />
                 </div>
                 <h2 className="mt-4 text-h2 font-bold text-ink-strong">
-                  Đăng Ký Dùng Thử Thành Công!
+                  {t('trialRegistration.success.title')}
                 </h2>
                 <p className="mt-2 max-w-md text-body text-ink-2">
-                  Hệ thống đã hoàn tất đối soát tự động sơ bộ. Yêu cầu của bạn đã được chuyển tới{' '}
-                  <strong className="text-ink-strong">System Manager</strong> để thẩm định và tiến hành cấp tài khoản quản trị.
+                  {t('trialRegistration.success.description')}
                 </p>
 
                 <div className="mt-6 w-full max-w-lg rounded-lg border border-primary/20 bg-primary/5 p-4 text-left">
                   <div className="flex flex-col gap-1 text-small text-ink-strong">
-                    <strong>Thông tin đã tiếp nhận:</strong>
-                    <span>Doanh nghiệp: {companyName}</span>
-                    <span>Mã số thuế: {taxCode}</span>
-                    <span>Email quản trị: {email}</span>
+                    <strong>{t('trialRegistration.success.receivedInfo')}</strong>
+                    <span>{t('trialRegistration.success.company', { name: companyName })}</span>
+                    <span>{t('trialRegistration.success.taxCode', { code: taxCode })}</span>
+                    <span>{t('trialRegistration.success.email', { email })}</span>
                   </div>
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
                   <Button asChild variant="primary">
-                    <Link to="/gioi-thieu">Về trang giới thiệu</Link>
+                    <Link to="/gioi-thieu">{t('trialRegistration.success.backHome')}</Link>
                   </Button>
                   <Button asChild variant="secondary">
-                    <Link to="/dang-nhap">Đến trang Đăng nhập</Link>
+                    <Link to="/dang-nhap">{t('trialRegistration.success.toLogin')}</Link>
                   </Button>
                 </div>
               </div>
@@ -424,29 +423,29 @@ export function TrialRegistrationPage() {
                   <AlertCircle className="size-10" />
                 </div>
                 <h2 className="mt-4 text-h2 font-bold text-ink-strong">
-                  Yêu Cầu Chưa Được Phê Duyệt
+                  {t('trialRegistration.rejected.title')}
                 </h2>
                 <p className="mt-2 max-w-md text-body text-ink-2">
-                  Qua quá trình đối soát thông tin tự động, hệ thống nhận thấy thông tin đăng ký của bạn chưa đủ điều kiện kích hoạt dùng thử.
+                  {t('trialRegistration.rejected.description')}
                 </p>
 
                 <div className="mt-6 w-full max-w-lg rounded-lg border border-danger/20 bg-danger/5 p-4 text-left">
                   <div className="flex flex-col gap-1 text-small text-danger">
-                    <strong>Lý do từ chối (AI Pre-check):</strong>
-                    <span>{result?.aiPrecheckReason ?? 'Thông tin mã số thuế hoặc email đã tồn tại trên hệ thống.'}</span>
+                    <strong>{t('trialRegistration.rejected.reasonHeader')}</strong>
+                    <span>{result?.aiPrecheckReason ?? t('trialRegistration.rejected.defaultReason')}</span>
                   </div>
                 </div>
 
                 <p className="mt-4 text-caption text-ink-3 max-w-md">
-                  Chi tiết lý do từ chối cũng đã được gửi đến email của bạn. Nếu có nhu cầu giải đáp thắc mắc, vui lòng gửi yêu cầu liên hệ tư vấn.
+                  {t('trialRegistration.rejected.emailNote')}
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
                   <Button type="button" variant="secondary" onClick={() => setStep('info')}>
-                    Chỉnh sửa lại thông tin
+                    {t('trialRegistration.rejected.editInfo')}
                   </Button>
                   <Button asChild variant="primary">
-                    <Link to="/gioi-thieu#lien-he">Liên hệ hỗ trợ tư vấn</Link>
+                    <Link to="/gioi-thieu#lien-he">{t('trialRegistration.rejected.contactSupport')}</Link>
                   </Button>
                 </div>
               </div>

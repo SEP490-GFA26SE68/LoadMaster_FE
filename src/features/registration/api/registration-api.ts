@@ -2,7 +2,7 @@ import { api } from '@/lib/api-client'
 
 export type GuestRegistrationInitRequest = {
   companyName: string
-  companyCode?: string
+  companyCode: string
   taxCode: string
   companyAddress?: string
   fullName: string
