@@ -33,3 +33,4 @@ describe('suggestCompanyCode', () => {
     expect(suggestCompanyCode('   ')).toBe('')
   })
 })
+

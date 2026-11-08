@@ -135,7 +135,7 @@ export const trialRequests = {
     creditsUnit: 'credits',
     companyName: 'Tên công ty',
     companyCode: 'Mã định danh công ty (viết tắt)',
-    companyCodeHint: 'Mã viết tắt (3-50 ký tự chữ hoa, số hoặc gạch dưới, VD: ABC_LOG)',
+    companyCodeHint: 'Mã định danh được hệ thống máy chủ tự động khởi tạo',
     taxCode: 'Mã số thuế',
     plan: 'Gói dùng thử',
     planHint: 'Khách quan tâm: {name}',

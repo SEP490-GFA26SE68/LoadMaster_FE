@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, UserX } from 'lucide-react'
+import { Building2, CheckCircle2, ShieldCheck, Sparkles, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -70,7 +70,8 @@ export function suggestCompanyCode(name?: string | null): string {
   const coreWords = meaningfulWords.length >= 2 ? meaningfulWords : allWords
 
   if (coreWords.length === 1) {
-    return `${coreWords[0].slice(0, 15)}_LOG`
+    const first = coreWords[0] ?? 'COMP'
+    return `${first.slice(0, 15)}_LOG`
   }
 
   if (coreWords.length === 2) {
@@ -154,7 +155,7 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
       <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
         <DialogHeader
           icon={Building2}
-          tone="primary"
+          tone="info"
           title={t('platform.trialRequests.approve.title', { name: request.fullName })}
           description={t('platform.trialRequests.approve.description', { email: request.email })}
         />
@@ -173,36 +174,15 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
                   error={message(t, errors.companyName?.message)}
                   {...form.register('companyName')}
                 />
-                <div>
-                  <div className="flex items-end gap-1.5">
-                    <div className="flex-1">
-                      <Input
-                        label={t('platform.trialRequests.approve.companyCode')}
-                        required
-                        hint={t('platform.trialRequests.approve.companyCodeHint')}
-                        error={message(t, errors.companyCode?.message)}
-                        className="font-mono font-bold tracking-wider"
-                        {...form.register('companyCode')}
-                        onChange={(e) => {
-                          form.setValue('companyCode', e.target.value.toUpperCase())
-                        }}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="mb-1 h-9.5 px-2.5 text-caption font-medium"
-                      title={t('platform.trialRequests.approve.regenCodeHint')}
-                      onClick={() => {
-                        const fresh = suggestCompanyCode(form.getValues('companyName') || request.companyName)
-                        form.setValue('companyCode', fresh, { shouldValidate: true })
-                      }}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                <Input
+                  label={t('platform.trialRequests.approve.companyCode')}
+                  required
+                  readOnly
+                  hint={t('platform.trialRequests.approve.companyCodeHint')}
+                  error={message(t, errors.companyCode?.message)}
+                  className="bg-surface-subtle cursor-not-allowed font-mono font-bold tracking-wider text-ink-1 select-none"
+                  {...form.register('companyCode')}
+                />
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
