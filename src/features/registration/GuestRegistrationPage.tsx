@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, CreditCard, FileText, Mail, RotateCw, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowLeft, Check, CreditCard, FileText, Mail, RotateCw, Send, ShieldCheck, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -265,7 +265,39 @@ export function GuestRegistrationPage() {
             ))}
           </div>
 
-          <Card className="border-border bg-bg shadow-sm">
+          <Card className="relative overflow-hidden border-border bg-bg shadow-sm">
+            {loading && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-bg/85 backdrop-blur-xs px-6 py-12 text-center animate-[lm-fade-in_180ms_ease-out]"
+              >
+                <div className="flex size-14 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400">
+                  <Spinner className="size-7 border-2 border-cyan-400 border-t-transparent" />
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <p className="text-body font-semibold text-ink-strong">
+                    {currentStep === 1
+                      ? t('guestRegistration.loading.checkingInfo')
+                      : currentStep === 2
+                        ? t('guestRegistration.loading.verifyingOtp')
+                        : currentStep === 3
+                          ? t('guestRegistration.loading.submittingPolicy')
+                          : t('guestRegistration.loading.creatingPayment')}
+                  </p>
+                  <p className="max-w-sm text-small text-ink-2">
+                    {currentStep === 1
+                      ? t('guestRegistration.loading.checkingInfoDesc')
+                      : currentStep === 2
+                        ? t('guestRegistration.loading.verifyingOtpDesc')
+                        : currentStep === 3
+                          ? t('guestRegistration.loading.submittingPolicyDesc')
+                          : t('guestRegistration.loading.creatingPaymentDesc')}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* STEP 1: INFO */}
             {currentStep === 1 && (
               <form onSubmit={handleStep1Submit}>
@@ -391,9 +423,15 @@ export function GuestRegistrationPage() {
                         <ArrowLeft className="mr-1.5 size-4" /> {t('guestRegistration.step1.backToPricing')}
                       </Link>
                     </Button>
-                    <Button type="submit" variant="primary" disabled={loading} className={cn('min-w-44', PUBLIC_TOUCH)}>
-                      {loading ? <Spinner className="size-4" /> : null}
-                      {t('guestRegistration.step1.submit')}
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      loading={loading}
+                      disabled={loading}
+                      className={cn('min-w-44', PUBLIC_TOUCH)}
+                    >
+                      {!loading && <Send className="mr-1.5 size-4" />}
+                      {loading ? t('guestRegistration.step1.submitting') : t('guestRegistration.step1.submit')}
                     </Button>
                   </div>
                 </div>
@@ -452,11 +490,12 @@ export function GuestRegistrationPage() {
                     <Button
                       type="submit"
                       variant="primary"
+                      loading={loading}
                       disabled={loading || otp.length < 6}
                       className={cn('min-w-44', PUBLIC_TOUCH)}
                     >
-                      {loading ? <Spinner className="size-4" /> : <ShieldCheck className="mr-1.5 size-4" />}
-                      {t('guestRegistration.step2.submit')}
+                      {!loading && <ShieldCheck className="mr-1.5 size-4" />}
+                      {loading ? t('guestRegistration.step2.submitting') : t('guestRegistration.step2.submit')}
                     </Button>
                   </div>
                 </div>
@@ -501,11 +540,12 @@ export function GuestRegistrationPage() {
                     <Button
                       type="submit"
                       variant="primary"
+                      loading={loading}
                       disabled={!policyAccepted || loading}
                       className={cn('min-w-44', PUBLIC_TOUCH)}
                     >
-                      {loading ? <Spinner className="size-4" /> : <FileText className="mr-1.5 size-4" />}
-                      {t('guestRegistration.step3.submit')}
+                      {!loading && <FileText className="mr-1.5 size-4" />}
+                      {loading ? t('guestRegistration.step3.submitting') : t('guestRegistration.step3.submit')}
                     </Button>
                   </div>
                 </div>
@@ -603,11 +643,12 @@ export function GuestRegistrationPage() {
                     <Button
                       type="submit"
                       variant="primary"
+                      loading={loading}
                       disabled={loading || !selectedPlanId}
                       className={cn('min-w-56 font-bold', PUBLIC_TOUCH)}
                     >
-                      {loading ? <Spinner className="size-4" /> : <CreditCard className="mr-2 size-5" />}
-                      {t('guestRegistration.step4.payVnPay')}
+                      {!loading && <CreditCard className="mr-2 size-5" />}
+                      {loading ? t('guestRegistration.step4.submitting') : t('guestRegistration.step4.payVnPay')}
                     </Button>
                   </div>
                 </div>

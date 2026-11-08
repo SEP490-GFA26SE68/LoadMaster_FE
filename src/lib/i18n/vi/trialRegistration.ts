@@ -10,7 +10,7 @@ export const trialRegistration = {
     taxCode: 'Mã số thuế',
     taxCodePlaceholder: '0101234567',
     taxCodeHint: 'Gồm 10 hoặc 13 chữ số',
-    interestedPlan: 'Gói muốn trải nghiệm',
+    interestedPlan: 'Gói trải nghiệm',
     interestedPlanPlaceholder: 'Chọn gói cước trải nghiệm',
     fixedPlanName: 'Gói Basic (Tiêu chuẩn)',
     fixedPlanBadge: 'Miễn phí 14 ngày',
@@ -28,6 +28,7 @@ export const trialRegistration = {
     notePlaceholder: 'Mô tả số lượng xe tải, loại hàng hóa hoặc các yêu cầu xếp hàng đặc thù...',
     backToPricing: 'Quay lại Bảng giá',
     submit: 'Tiếp tục xác thực OTP',
+    submitting: 'Đang kiểm tra thông tin...',
   },
   step2: {
     title: '2. Xác thực Email Người đại diện',
@@ -38,6 +39,13 @@ export const trialRegistration = {
     resend: 'Gửi lại mã xác thực',
     back: 'Sửa lại thông tin',
     submit: 'Xác nhận đăng ký dùng thử',
+    submitting: 'Đang xác thực OTP...',
+  },
+  loading: {
+    checkingInfo: 'Đang đối soát thông tin...',
+    checkingInfoDesc: 'Hệ thống đang kiểm tra tính hợp lệ của mã số thuế, email và gửi mã xác thực...',
+    verifyingOtp: 'Đang xác thực mã OTP...',
+    verifyingOtpDesc: 'Hệ thống đang kiểm tra mã xác thực và ghi nhận đơn đăng ký...',
   },
   success: {
     title: 'Đăng Ký Dùng Thử Thành Công!',

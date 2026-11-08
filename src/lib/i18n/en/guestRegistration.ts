@@ -29,6 +29,7 @@ export const guestRegistration = {
     phoneNumberPlaceholder: '0988 776 655',
     backToPricing: 'Back to Pricing',
     submit: 'Continue to OTP Verification',
+    submitting: 'Checking information...',
   },
   step2: {
     title: 'Step 2: Email Verification',
@@ -38,6 +39,7 @@ export const guestRegistration = {
     resend: 'Resend OTP',
     backToStep1: 'Back to Step 1',
     submit: 'Confirm OTP',
+    submitting: 'Verifying OTP...',
   },
   step3: {
     title: 'Step 3: SaaS Electronic Service Agreement',
@@ -50,6 +52,7 @@ export const guestRegistration = {
     policyCheckbox: 'I confirm that I am an authorized representative of {company}, and agree to all terms of service and privacy policy of LoadMaster.',
     back: 'Back',
     submit: 'Agree & Continue',
+    submitting: 'Saving agreement...',
   },
   step4: {
     title: 'Step 4: Select Plan & Pay with VNPay',
@@ -66,6 +69,17 @@ export const guestRegistration = {
     totalAmountLabel: 'Total amount:',
     backToStep3: 'Back to Step 3',
     payVnPay: 'Pay with VNPay',
+    submitting: 'Redirecting to payment...',
+  },
+  loading: {
+    checkingInfo: 'Validating company information...',
+    checkingInfoDesc: 'System is checking company code, tax code, email eligibility and sending OTP...',
+    verifyingOtp: 'Verifying OTP code...',
+    verifyingOtpDesc: 'System is validating email verification code...',
+    submittingPolicy: 'Processing policy...',
+    submittingPolicyDesc: 'System is recording agreement confirmation...',
+    creatingPayment: 'Connecting to payment gateway...',
+    creatingPaymentDesc: 'Initializing secure payment transaction...',
   },
   success: {
     title: 'Account Activated Successfully!',

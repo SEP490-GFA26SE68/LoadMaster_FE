@@ -29,6 +29,7 @@ export const guestRegistration = {
     phoneNumberPlaceholder: '0988 776 655',
     backToPricing: 'Quay lại Bảng giá',
     submit: 'Tiếp tục xác thực OTP',
+    submitting: 'Đang kiểm tra thông tin...',
   },
   step2: {
     title: 'Bước 2: Xác thực Email',
@@ -38,6 +39,7 @@ export const guestRegistration = {
     resend: 'Gửi lại mã OTP',
     backToStep1: 'Quay lại Bước 1',
     submit: 'Xác nhận OTP',
+    submitting: 'Đang xác thực OTP...',
   },
   step3: {
     title: 'Bước 3: Thỏa thuận Dịch vụ Điện tử SaaS',
@@ -50,6 +52,7 @@ export const guestRegistration = {
     policyCheckbox: 'Tôi xác nhận là đại diện hợp pháp của doanh nghiệp {company}, đồng ý với tất cả điều khoản dịch vụ và chính sách bảo mật của LoadMaster.',
     back: 'Quay lại',
     submit: 'Đồng ý & Tiếp tục',
+    submitting: 'Đang ghi nhận điều khoản...',
   },
   step4: {
     title: 'Bước 4: Chọn Gói & Thanh toán VNPay',
@@ -66,6 +69,17 @@ export const guestRegistration = {
     totalAmountLabel: 'Tổng số tiền thanh toán:',
     backToStep3: 'Quay lại Bước 3',
     payVnPay: 'Thanh toán qua VNPay',
+    submitting: 'Đang chuyển hướng thanh toán...',
+  },
+  loading: {
+    checkingInfo: 'Đang đối soát thông tin doanh nghiệp...',
+    checkingInfoDesc: 'Hệ thống đang kiểm tra tính hợp lệ của mã công ty, mã số thuế, email và gửi mã OTP...',
+    verifyingOtp: 'Đang xác thực mã OTP...',
+    verifyingOtpDesc: 'Hệ thống đang kiểm tra mã xác thực email...',
+    submittingPolicy: 'Đang xử lý điều khoản...',
+    submittingPolicyDesc: 'Hệ thống đang lưu trữ xác nhận thỏa thuận dịch vụ...',
+    creatingPayment: 'Đang kết nối cổng thanh toán...',
+    creatingPaymentDesc: 'Đang khởi tạo giao dịch thanh toán an toàn...',
   },
   success: {
     title: 'Kích Hoạt Tài Khoản Thành Công!',

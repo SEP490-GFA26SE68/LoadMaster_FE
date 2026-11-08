@@ -10,7 +10,7 @@ export const trialRegistration = {
     taxCode: 'Tax code',
     taxCodePlaceholder: '0101234567',
     taxCodeHint: '10 or 13 digits',
-    interestedPlan: 'Plan of interest',
+    interestedPlan: 'Trial plan',
     interestedPlanPlaceholder: 'Select trial plan',
     fixedPlanName: 'Basic Plan (Standard)',
     fixedPlanBadge: 'Free 14 days',
@@ -28,6 +28,7 @@ export const trialRegistration = {
     notePlaceholder: 'Describe fleet size, cargo types or special loading requirements...',
     backToPricing: 'Back to Pricing',
     submit: 'Continue to OTP Verification',
+    submitting: 'Checking information...',
   },
   step2: {
     title: '2. Representative Email Verification',
@@ -38,6 +39,13 @@ export const trialRegistration = {
     resend: 'Resend verification code',
     back: 'Edit information',
     submit: 'Confirm Trial Registration',
+    submitting: 'Verifying OTP...',
+  },
+  loading: {
+    checkingInfo: 'Validating information...',
+    checkingInfoDesc: 'System is checking tax code, email eligibility and sending verification OTP...',
+    verifyingOtp: 'Verifying OTP code...',
+    verifyingOtpDesc: 'System is verifying code and recording trial request...',
   },
   success: {
     title: 'Trial Registration Submitted Successfully!',

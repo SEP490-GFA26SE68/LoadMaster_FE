@@ -163,7 +163,31 @@ export function TrialRegistrationPage() {
             </p>
           </div>
 
-          <Card className="border-border bg-bg shadow-sm">
+          <Card className="relative overflow-hidden border-border bg-bg shadow-sm">
+            {loading && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-bg/85 backdrop-blur-xs px-6 py-12 text-center animate-[lm-fade-in_180ms_ease-out]"
+              >
+                <div className="flex size-14 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400">
+                  <Spinner className="size-7 border-2 border-cyan-400 border-t-transparent" />
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <p className="text-body font-semibold text-ink-strong">
+                    {step === 'info'
+                      ? t('trialRegistration.loading.checkingInfo')
+                      : t('trialRegistration.loading.verifyingOtp')}
+                  </p>
+                  <p className="max-w-sm text-small text-ink-2">
+                    {step === 'info'
+                      ? t('trialRegistration.loading.checkingInfoDesc')
+                      : t('trialRegistration.loading.verifyingOtpDesc')}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {step === 'info' && (
               <form onSubmit={handleInitSubmit}>
                 <CardHeader>
@@ -184,6 +208,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.companyNamePlaceholder')}
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
+                        disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.companyName && 'border-danger')}
                       />
                       {errors.companyName && <span className="text-caption text-danger">{errors.companyName}</span>}
@@ -198,6 +223,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.taxCodePlaceholder')}
                         value={taxCode}
                         onChange={(e) => setTaxCode(e.target.value)}
+                        disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.taxCode && 'border-danger')}
                       />
                       {errors.taxCode ? (
@@ -233,6 +259,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.companyAddressPlaceholder')}
                         value={companyAddress}
                         onChange={(e) => setCompanyAddress(e.target.value)}
+                        disabled={loading}
                         className={PUBLIC_TOUCH}
                       />
                     </div>
@@ -246,6 +273,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.fullNamePlaceholder')}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
+                        disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.fullName && 'border-danger')}
                       />
                       {errors.fullName && <span className="text-caption text-danger">{errors.fullName}</span>}
@@ -261,6 +289,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.emailPlaceholder')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.email && 'border-danger')}
                       />
                       {errors.email ? (
@@ -280,6 +309,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.phoneNumberPlaceholder')}
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
+                        disabled={loading}
                         className={PUBLIC_TOUCH}
                       />
                     </div>
@@ -293,6 +323,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step1.notePlaceholder')}
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
+                        disabled={loading}
                         rows={3}
                       />
                     </div>
@@ -304,9 +335,15 @@ export function TrialRegistrationPage() {
                         <ArrowLeft className="mr-1.5 size-4" /> {t('trialRegistration.step1.backToPricing')}
                       </Link>
                     </Button>
-                    <Button type="submit" variant="primary" disabled={loading} className={cn('min-w-44', PUBLIC_TOUCH)}>
-                      {loading ? <Spinner className="size-4" /> : <Send className="mr-1.5 size-4" />}
-                      {t('trialRegistration.step1.submit')}
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      loading={loading}
+                      disabled={loading}
+                      className={cn('min-w-44', PUBLIC_TOUCH)}
+                    >
+                      {!loading && <Send className="mr-1.5 size-4" />}
+                      {loading ? t('trialRegistration.step1.submitting') : t('trialRegistration.step1.submit')}
                     </Button>
                   </div>
                 </div>
@@ -338,6 +375,7 @@ export function TrialRegistrationPage() {
                         placeholder={t('trialRegistration.step2.otpPlaceholder')}
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        disabled={loading}
                         className={cn('text-center font-mono text-2xl tracking-widest', PUBLIC_TOUCH)}
                       />
                     </div>
@@ -367,11 +405,12 @@ export function TrialRegistrationPage() {
                     <Button
                       type="submit"
                       variant="primary"
+                      loading={loading}
                       disabled={loading || otp.length < 6}
                       className={cn('min-w-44', PUBLIC_TOUCH)}
                     >
-                      {loading ? <Spinner className="size-4" /> : <ShieldCheck className="mr-1.5 size-4" />}
-                      {t('trialRegistration.step2.submit')}
+                      {!loading && <ShieldCheck className="mr-1.5 size-4" />}
+                      {loading ? t('trialRegistration.step2.submitting') : t('trialRegistration.step2.submit')}
                     </Button>
                   </div>
                 </div>
