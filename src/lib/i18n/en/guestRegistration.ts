@@ -95,3 +95,4 @@ export const guestRegistration = {
     paymentLinkNotFound: 'Payment link not found.',
   },
 } as const
+

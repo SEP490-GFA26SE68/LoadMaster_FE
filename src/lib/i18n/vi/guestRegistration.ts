@@ -95,3 +95,4 @@ export const guestRegistration = {
     paymentLinkNotFound: 'Không tìm thấy liên kết thanh toán.',
   },
 } as const
+

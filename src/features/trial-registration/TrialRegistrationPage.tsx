@@ -1,11 +1,10 @@
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Gift, Mail, RotateCw, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
@@ -29,8 +28,10 @@ const TAX_CODE_REGEX = /^([0-9]{10}|[0-9]{10}-[0-9]{3}|[0-9]{13})$/
 
 export function TrialRegistrationPage() {
   const t = useT()
-  const [params] = useSearchParams()
   const pricingQuery = usePublicPlansQuery()
+  const basicPlan = pricingQuery.data?.find(
+    (p: SubscriptionPlan) => p.tier === 'BASIC' || p.name?.toLowerCase().includes('basic'),
+  )
 
   const [step, setStep] = useState<Step>('info')
   const [loading, setLoading] = useState(false)
@@ -43,7 +44,6 @@ export function TrialRegistrationPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [interestedPlanId, setInterestedPlanId] = useState<string>(params.get('planId') ?? '')
   const [note, setNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -58,12 +58,6 @@ export function TrialRegistrationPage() {
     const timer = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000)
     return () => clearInterval(timer)
   }, [cooldown])
-
-  // Set default plan if url param updates
-  useEffect(() => {
-    const p = params.get('planId')
-    if (p) setInterestedPlanId(p)
-  }, [params])
 
   function validateStep1(): boolean {
     const newErrors: Record<string, string> = {}
@@ -96,7 +90,7 @@ export function TrialRegistrationPage() {
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
         phoneNumber: phoneNumber.trim() || undefined,
-        interestedPlanId: interestedPlanId ? Number(interestedPlanId) : undefined,
+        interestedPlanId: basicPlan?.id ? Number(basicPlan.id) : undefined,
         note: note.trim() || undefined,
       })
       setSession(resp)
@@ -214,21 +208,20 @@ export function TrialRegistrationPage() {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label htmlFor="interestedPlan" className="text-small font-medium text-ink-strong">
+                      <span className="text-small font-medium text-ink-strong">
                         {t('trialRegistration.step1.interestedPlan')}
-                      </label>
-                      <Select value={interestedPlanId} onValueChange={setInterestedPlanId}>
-                        <SelectTrigger id="interestedPlan" className={PUBLIC_TOUCH}>
-                          <SelectValue placeholder={t('trialRegistration.step1.interestedPlanPlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(pricingQuery.data ?? []).map((p: SubscriptionPlan) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      </span>
+                      <div className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-bg-muted px-3 py-2 text-small">
+                        <span className="font-semibold text-ink-strong">
+                          {basicPlan?.name ?? t('trialRegistration.step1.fixedPlanName')}
+                        </span>
+                        <span className="rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-caption font-medium text-cyan-500">
+                          {t('trialRegistration.step1.fixedPlanBadge')}
+                        </span>
+                      </div>
+                      <span className="text-caption text-ink-3">
+                        {t('trialRegistration.step1.fixedPlanHint')}
+                      </span>
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">

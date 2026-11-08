@@ -12,6 +12,9 @@ export const trialRegistration = {
     taxCodeHint: 'Gồm 10 hoặc 13 chữ số',
     interestedPlan: 'Gói muốn trải nghiệm',
     interestedPlanPlaceholder: 'Chọn gói cước trải nghiệm',
+    fixedPlanName: 'Gói Basic (Tiêu chuẩn)',
+    fixedPlanBadge: 'Miễn phí 14 ngày',
+    fixedPlanHint: 'Gói mặc định dành cho chương trình trải nghiệm miễn phí',
     companyAddress: 'Địa chỉ trụ sở',
     companyAddressPlaceholder: 'Số 123 Đường Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
     fullName: 'Họ và tên người liên hệ / quản trị',
@@ -64,3 +67,4 @@ export const trialRegistration = {
     emailInvalid: 'Email không đúng định dạng',
   },
 } as const
+

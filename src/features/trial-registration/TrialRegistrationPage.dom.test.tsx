@@ -37,6 +37,8 @@ test('renders step 1 with all required fields and validates tax code format', as
 
   expect(screen.getByRole('heading', { level: 1, name: /Đăng Ký Trải Nghiệm Giải Pháp/i })).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 2, name: /1\. Thông tin Doanh nghiệp/i })).toBeInTheDocument()
+  expect(screen.getByText('Gói Basic (Tiêu chuẩn)')).toBeInTheDocument()
+  expect(screen.getByText('Miễn phí 14 ngày')).toBeInTheDocument()
 
   const user = userEvent.setup()
   const submitBtn = screen.getByRole('button', { name: /Tiếp tục xác thực OTP/i })

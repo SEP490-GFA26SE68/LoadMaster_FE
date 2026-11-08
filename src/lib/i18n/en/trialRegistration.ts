@@ -12,6 +12,9 @@ export const trialRegistration = {
     taxCodeHint: '10 or 13 digits',
     interestedPlan: 'Plan of interest',
     interestedPlanPlaceholder: 'Select trial plan',
+    fixedPlanName: 'Basic Plan (Standard)',
+    fixedPlanBadge: 'Free 14 days',
+    fixedPlanHint: 'Default plan for the free trial program',
     companyAddress: 'Headquarters address',
     companyAddressPlaceholder: '123 Nguyen Hue St, District 1, Ho Chi Minh City',
     fullName: 'Contact / Administrator full name',
@@ -64,3 +67,4 @@ export const trialRegistration = {
     emailInvalid: 'Invalid email format',
   },
 } as const
+

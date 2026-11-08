@@ -81,3 +81,4 @@ test('submitting valid step 1 form passes companyCode to initRegistration', asyn
     }),
   )
 })
+
