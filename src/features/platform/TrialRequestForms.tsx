@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, UserX } from 'lucide-react'
+import { Building2, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -47,16 +47,40 @@ const approveSchema = z.object({
 
 type ApproveValues = z.output<typeof approveSchema>
 
-function suggestCompanyCode(name?: string | null): string {
-  if (!name) return ''
-  const ascii = name
+export function suggestCompanyCode(name?: string | null): string {
+  if (!name || !name.trim()) return ''
+  // Bỏ dấu tiếng Việt và chuyển sang viết hoa
+  const clean = name
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^A-Za-z0-9]/g, '_')
     .toUpperCase()
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
-  return ascii.slice(0, 20)
+
+  // Bỏ các từ loại hình pháp lý phổ biến
+  const withoutLegal = clean
+    .replace(/\b(CONG TY|CO PHAN|TNHH|MTV|DOANH NGHIEP|TAP DOAN|CHI NHANH)\b/g, ' ')
+    .trim()
+
+  const allWords = withoutLegal.split(/[^A-Z0-9]+/).filter(Boolean)
+  if (allWords.length === 0) return 'COMP_LOG'
+
+  // Bỏ bớt từ vận tải / logistics nếu tên lõi đã đủ dài
+  const meaningfulWords = allWords.filter(
+    (w) => w !== 'VAN' && w !== 'TAI' && w !== 'LOGISTICS',
+  )
+  const coreWords = meaningfulWords.length >= 2 ? meaningfulWords : allWords
+
+  if (coreWords.length === 1) {
+    return `${coreWords[0].slice(0, 15)}_LOG`
+  }
+
+  if (coreWords.length === 2) {
+    const combined = coreWords.join('_')
+    return combined.length <= 25 ? combined : `${combined.slice(0, 20)}_LOG`
+  }
+
+  // Nếu tên lõi có từ 3 từ trở lên (VD: "Tan Cang Sai Gon" -> TCSG_LOG)
+  const acronym = coreWords.map((w) => w[0]).join('')
+  return `${acronym}_LOG`
 }
 
 /** Số ngày dùng thử mặc định khi duyệt. */
@@ -105,6 +129,8 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
     },
   })
   const { errors } = form.formState
+  const watchedDays = form.watch('trialDays')
+  const watchedCredits = form.watch('trialCredits')
 
   function handleSubmit(values: ApproveValues) {
     setConfirmValues(values)
@@ -127,78 +153,150 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
     <>
       <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
         <DialogHeader
-          icon={CheckCircle2}
-          tone="success"
+          icon={Building2}
+          tone="primary"
           title={t('platform.trialRequests.approve.title', { name: request.fullName })}
           description={t('platform.trialRequests.approve.description', { email: request.email })}
         />
-        <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)]">
-            <Input
-              label={t('platform.trialRequests.approve.companyName')}
-              required
-              error={message(t, errors.companyName?.message)}
-              {...form.register('companyName')}
-            />
-            <Input
-              label={t('platform.trialRequests.approve.companyCode')}
-              required
-              hint={t('platform.trialRequests.approve.companyCodeHint')}
-              error={message(t, errors.companyCode?.message)}
-              {...form.register('companyCode')}
-              onChange={(e) => {
-                form.setValue('companyCode', e.target.value.toUpperCase())
-              }}
-            />
+        <div className="flex max-h-[64vh] flex-col gap-4 overflow-y-auto px-7 py-5">
+          {/* Card 1: Thông tin định danh doanh nghiệp */}
+          <div className="rounded-xl border border-line-soft bg-surface p-4 shadow-xs">
+            <div className="mb-3 flex items-center gap-2 text-small font-semibold text-ink-strong">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span>{t('platform.trialRequests.approve.companySection')}</span>
+            </div>
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                <Input
+                  label={t('platform.trialRequests.approve.companyName')}
+                  required
+                  error={message(t, errors.companyName?.message)}
+                  {...form.register('companyName')}
+                />
+                <div>
+                  <div className="flex items-end gap-1.5">
+                    <div className="flex-1">
+                      <Input
+                        label={t('platform.trialRequests.approve.companyCode')}
+                        required
+                        hint={t('platform.trialRequests.approve.companyCodeHint')}
+                        error={message(t, errors.companyCode?.message)}
+                        className="font-mono font-bold tracking-wider"
+                        {...form.register('companyCode')}
+                        onChange={(e) => {
+                          form.setValue('companyCode', e.target.value.toUpperCase())
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="mb-1 h-9.5 px-2.5 text-caption font-medium"
+                      title={t('platform.trialRequests.approve.regenCodeHint')}
+                      onClick={() => {
+                        const fresh = suggestCompanyCode(form.getValues('companyName') || request.companyName)
+                        form.setValue('companyCode', fresh, { shouldValidate: true })
+                      }}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  label={t('platform.trialRequests.approve.taxCode')}
+                  required
+                  className="font-mono"
+                  error={message(t, errors.taxCode?.message)}
+                  {...form.register('taxCode')}
+                />
+                {request.companyAddress ? (
+                  <div className="flex flex-col justify-center rounded-lg bg-surface-subtle px-3 py-2 text-caption">
+                    <span className="font-medium text-ink-3">{t('platform.trialRequests.detail.companyAddress')}</span>
+                    <span className="line-clamp-2 text-ink-1">{request.companyAddress}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
 
-          <Input
-            label={t('platform.trialRequests.approve.taxCode')}
-            required
-            error={message(t, errors.taxCode?.message)}
-            {...form.register('taxCode')}
-          />
+          {/* Card 2: Cấu hình gói cước & Hạn mức dùng thử */}
+          <div className="rounded-xl border border-line-soft bg-surface p-4 shadow-xs">
+            <div className="mb-3 flex items-center gap-2 text-small font-semibold text-ink-strong">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>{t('platform.trialRequests.approve.quotaSection')}</span>
+            </div>
+            <div className="space-y-4">
+              {plans.length === 0 ? (
+                <p className="m-0 text-body text-ink-2">{t('platform.trialRequests.approve.noPlans')}</p>
+              ) : (
+                <SelectField
+                  control={form.control}
+                  name="planId"
+                  label={t('platform.trialRequests.approve.plan')}
+                  hint={request.interestedPlanName ? t('platform.trialRequests.approve.planHint', { name: request.interestedPlanName }) : undefined}
+                  options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
+                />
+              )}
 
-          {plans.length === 0 ? (
-            <p className="m-0 text-body text-ink-2">{t('platform.trialRequests.approve.noPlans')}</p>
-          ) : (
-            <SelectField
-              control={form.control}
-              name="planId"
-              label={t('platform.trialRequests.approve.plan')}
-              hint={request.interestedPlanName ? t('platform.trialRequests.approve.planHint', { name: request.interestedPlanName }) : undefined}
-              options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
-            />
-          )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label={t('platform.trialRequests.approve.trialDays')}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={365}
+                  required
+                  error={message(t, errors.trialDays?.message)}
+                  {...form.register('trialDays')}
+                />
+                <Input
+                  label={t('platform.trialRequests.approve.trialCredits')}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  required
+                  error={message(t, errors.trialCredits?.message)}
+                  {...form.register('trialCredits')}
+                />
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label={t('platform.trialRequests.approve.trialDays')}
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={365}
-              required
-              error={message(t, errors.trialDays?.message)}
-              {...form.register('trialDays')}
-            />
-            <Input
-              label={t('platform.trialRequests.approve.trialCredits')}
-              type="number"
-              inputMode="numeric"
-              min={0}
-              required
-              error={message(t, errors.trialCredits?.message)}
-              {...form.register('trialCredits')}
-            />
+              {/* Callout tóm tắt quyền lợi */}
+              <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-caption text-ink-1">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                <div>
+                  {t('platform.trialRequests.approve.quotaSummary', {
+                    email: request.email,
+                    days: watchedDays || DEFAULT_TRIAL_DAYS,
+                    credits: watchedCredits || DEFAULT_TRIAL_CREDITS,
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <Textarea
-            label={t('platform.trialRequests.approve.note')}
-            rows={2}
-            error={message(t, errors.note?.message)}
-            {...form.register('note')}
-          />
+          {/* Card 3: Ghi chú phê duyệt */}
+          <div className="space-y-3">
+            {request.managerNote ? (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5 text-caption">
+                <div className="mb-1.5 flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>{t('platform.trialRequests.approve.managerNoteQuote', { name: request.managerReviewedByName || 'System Manager' })}</span>
+                </div>
+                <p className="m-0 whitespace-pre-wrap font-medium text-ink-1">{request.managerNote}</p>
+              </div>
+            ) : null}
+
+            <Textarea
+              label={t('platform.trialRequests.approve.note')}
+              rows={2}
+              error={message(t, errors.note?.message)}
+              {...form.register('note')}
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>

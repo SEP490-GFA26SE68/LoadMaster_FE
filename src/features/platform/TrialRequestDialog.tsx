@@ -50,7 +50,7 @@ export function TrialRequestDialog({ request, initialStep = 'detail', onClose }:
 
   return (
     <Dialog open={request !== null} onOpenChange={(open) => (open || pending ? undefined : close())}>
-      <DialogContent className="w-160">
+      <DialogContent className="w-176 max-w-[92vw]">
         {request === null ? null : step === 'managerApprove' ? (
           <ManagerApproveTrialForm
             request={request}

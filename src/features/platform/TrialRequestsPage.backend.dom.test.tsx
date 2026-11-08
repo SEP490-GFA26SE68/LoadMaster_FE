@@ -5,7 +5,9 @@ import { MemoryRouter } from 'react-router'
 import { Toaster } from 'sonner'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth } from '@/lib/api-client'
+import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
+import { signedInAs } from '@/test/signed-in'
 import { envelope, stubBackend } from '@/test/fake-backend'
 import { TrialRequestsPage } from './TrialRequestsPage'
 
@@ -30,6 +32,11 @@ const PENDING = {
   id: 2, fullName: 'Lê Thị Hoa', email: 'hoa@hoalogistics.vn', phoneNumber: '0909123456', companyName: 'Hoa Logistics', taxCode: '0398765432',
   interestedPlanId: 2, interestedPlanName: 'Pro', status: 'PENDING', createdAt: '2026-10-22 08:30:00',
 }
+const AI_REJECTED = {
+  id: 3, fullName: 'Nguyễn Văn An', email: 'an@fake.vn', phoneNumber: '0912345678', companyName: 'Anpha Fake', taxCode: '0000000000',
+  interestedPlanId: 1, interestedPlanName: 'Basic', status: 'REJECTED', aiPrecheckStatus: 'FAILED', handledByName: 'AI tự xử lý',
+  createdAt: '2026-10-23 08:30:00',
+}
 const PLAN = {
   id: 2, planCode: 'PRO', name: 'Pro', priceVnd: 1490000, tier: 'PRO', monthlyCredits: 500, algorithmTier: 'EP_DBLF_GA', features: '[]',
   billingCycle: 'MONTHLY', maxVehicles: 20, maxMonthlyJobs: 500, active: true, activeCompanyCount: 0,
@@ -40,7 +47,7 @@ let backend: ReturnType<typeof stubBackend>
 beforeEach(() => {
   connectApiAuth(() => Promise.resolve('token-1'))
   backend = stubBackend({
-    'GET /api/trial-requests': { body: { success: true, data: [APPROVED, PENDING], page: 0, totalPages: 1, last: true } },
+    'GET /api/trial-requests': { body: { success: true, data: [APPROVED, PENDING, AI_REJECTED], page: 0, totalPages: 1, last: true } },
     'GET /api/subscription/plans': { body: [PLAN] },
     'POST /api/trial-requests/2/manager-approve': { body: envelope({ ...PENDING, status: 'PENDING_ADMIN_CREATION', managerReviewedByName: 'Manager Hoàng' }) },
     'POST /api/trial-requests/2/manager-reject': { body: envelope({ ...PENDING, status: 'REJECTED' }) },
@@ -55,10 +62,12 @@ function renderPage() {
   render(
     <QueryClientProvider client={client}>
       <I18nProvider>
-        <MemoryRouter initialEntries={['/nen-tang/yeu-cau-dung-thu']}>
-          <TrialRequestsPage />
-        </MemoryRouter>
-        <Toaster />
+        <AuthProvider source="mock">
+          <MemoryRouter initialEntries={['/nen-tang/yeu-cau-dung-thu']}>
+            <TrialRequestsPage />
+          </MemoryRouter>
+          <Toaster />
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>,
   )
@@ -69,9 +78,14 @@ test('pending requests first; approving sends company, tax code, plan, trial day
   renderPage()
   const table = await screen.findByRole('table', {}, SLOW)
   const rows = within(table).getAllByRole('row').slice(1)
-  expect(rows.map((row) => row.textContent)).toEqual([expect.stringContaining('Lê Thị Hoa'), expect.stringContaining('Trần Văn Bình')])
+  expect(rows.map((row) => row.textContent)).toEqual([
+    expect.stringContaining('Lê Thị Hoa'),
+    expect.stringContaining('Trần Văn Bình'),
+    expect.stringContaining('Nguyễn Văn An'),
+  ])
   expect(rows[0]).toHaveTextContent('Chờ duyệt')
   expect(rows[1]).toHaveTextContent('Đã duyệt')
+  expect(rows[2]).toHaveTextContent('Từ chối')
 
   await user.click(screen.getByRole('button', { name: 'Xem yêu cầu của Lê Thị Hoa' }))
   const dialog = await screen.findByRole('dialog')
@@ -81,7 +95,7 @@ test('pending requests first; approving sends company, tax code, plan, trial day
   const days = within(dialog).getByRole('spinbutton', { name: 'Số ngày dùng thử' })
   await user.clear(days)
   await user.type(days, '30')
-  await user.click(within(dialog).getByRole('button', { name: 'Duyệt và tạo công ty' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Khởi tạo tài khoản' }))
 
   // Double check confirmation dialog
   const confirm = await screen.findByRole('dialog', { name: 'Xác nhận tạo tài khoản doanh nghiệp' })
@@ -124,4 +138,14 @@ test('a processed request only shows its outcome, no approve or reject', async (
   expect(within(dialog).getByText('Nguyễn Thị Quản Trị')).toBeInTheDocument()
   expect(within(dialog).queryByRole('button', { name: 'Duyệt' })).toBeNull()
   expect(within(dialog).queryByRole('button', { name: 'Từ chối' })).toBeNull()
+})
+
+test('systemAdmin never sees pending requests or AI-rejected requests in trial requests table', async () => {
+  signedInAs('systemAdmin')
+  renderPage()
+  const table = await screen.findByRole('table', {}, SLOW)
+  const rows = within(table).getAllByRole('row').slice(1)
+  expect(rows.some((row) => row.textContent?.includes('Nguyễn Văn An'))).toBe(false)
+  expect(rows.some((row) => row.textContent?.includes('Lê Thị Hoa'))).toBe(false)
+  expect(rows.some((row) => row.textContent?.includes('Trần Văn Bình'))).toBe(true)
 })

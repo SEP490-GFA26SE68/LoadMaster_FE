@@ -52,10 +52,18 @@ export function TrialRequestsPage() {
     setOpenedState({ request, step })
   }, [])
 
-  // System Admin chỉ được xem các đơn đã được duyệt của System Manager (khác PENDING)
+  // System Admin chỉ được xem các đơn đã được duyệt của System Manager:
+  // 1. Không hiển thị các đơn PENDING (chưa duyệt của Manager)
+  // 2. Không hiển thị các đơn bị AI từ chối (aiPrecheckStatus === 'FAILED' hoặc handledByName có chứa 'AI')
   const all = useMemo(() => {
     const listData = query.data ?? []
-    const filtered = isAdmin ? listData.filter((r) => r.status !== 'PENDING') : listData
+    const filtered = isAdmin
+      ? listData.filter((r) => {
+          if (r.status === 'PENDING') return false
+          if (r.aiPrecheckStatus === 'FAILED' || r.handledByName?.startsWith('AI')) return false
+          return true
+        })
+      : listData
     return filtered.toSorted(byStatusThenNewest)
   }, [query.data, isAdmin])
 
