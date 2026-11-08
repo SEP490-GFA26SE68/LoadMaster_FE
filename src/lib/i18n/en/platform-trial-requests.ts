@@ -91,7 +91,7 @@ export const trialRequests = {
     unprovisioned: 'Awaiting provisioning',
     rejectionReason: 'Rejection reason',
     managerApprove: 'Approve request',
-    adminApprove: 'Provision & Activate',
+    adminApprove: 'Create account',
     aiHandledBadge: 'AI Auto-handled',
     aiPassBadge: 'AI Passed',
     aiFailBadge: 'AI Rejected',

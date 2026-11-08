@@ -117,9 +117,10 @@ function ActionsCell({ request }: { request: TrialRequest }) {
   const isAdmin = role === 'systemAdmin'
 
   const canReview = isManager && request.status === 'PENDING'
-  const canProvision = isAdmin && (request.status === 'PENDING_ADMIN_CREATION' || request.status === 'PENDING')
+  const canProvision = isAdmin && request.status === 'PENDING_ADMIN_CREATION'
 
-  // Đơn có thể duyệt thì không cần hiện action "Chi tiết"
+  // Đơn có thể duyệt/tạo thì chỉ hiện 1 nút chính ngoài bảng;
+  // Bấm nút sẽ mở màn hình thông tin chi tiết trước, từ đó người dùng mới bấm nút để vào form cấu hình và Double Check.
   if (canReview) {
     return (
       <div className="flex items-center whitespace-nowrap">
@@ -127,7 +128,7 @@ function ActionsCell({ request }: { request: TrialRequest }) {
           type="button"
           size="sm"
           variant="primary"
-          onClick={() => open?.(request, 'managerApprove')}
+          onClick={() => open?.(request, 'detail')}
         >
           {t('platform.trialRequests.columns.reviewBtn')}
         </Button>
@@ -142,7 +143,7 @@ function ActionsCell({ request }: { request: TrialRequest }) {
           type="button"
           size="sm"
           variant="primary"
-          onClick={() => open?.(request, 'approve')}
+          onClick={() => open?.(request, 'detail')}
         >
           {t('platform.trialRequests.columns.provisionBtn')}
         </Button>

@@ -7,6 +7,7 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TRIAL_REQUEST_STATUSES, TRIAL_REQUESTS_SOURCE, type TrialRequest, type TrialRequestStatus } from './trial-requests-api'
@@ -40,6 +41,9 @@ function byStatusThenNewest(a: TrialRequest, b: TrialRequest): number {
  */
 export function TrialRequestsPage() {
   const t = useT()
+  const auth = useAuthSafe()
+  const role = auth?.user?.role
+  const isAdmin = role === 'systemAdmin'
   const query = useTrialRequestsQuery()
   const list = useListUrlState<(typeof FILTERS)[number]>({ filters: FILTERS })
   const [openedState, setOpenedState] = useState<{ request: TrialRequest; step: Step } | null>(null)
@@ -48,7 +52,13 @@ export function TrialRequestsPage() {
     setOpenedState({ request, step })
   }, [])
 
-  const all = useMemo(() => (query.data ?? []).toSorted(byStatusThenNewest), [query.data])
+  // System Admin chỉ được xem các đơn đã được duyệt của System Manager (khác PENDING)
+  const all = useMemo(() => {
+    const listData = query.data ?? []
+    const filtered = isAdmin ? listData.filter((r) => r.status !== 'PENDING') : listData
+    return filtered.toSorted(byStatusThenNewest)
+  }, [query.data, isAdmin])
+
   const status = list.filters[STATUS_FILTER]
   const rows = useMemo(
     () => all.filter((request) =>
@@ -57,10 +67,26 @@ export function TrialRequestsPage() {
     [all, list.query, status],
   )
   const columns = useMemo(() => createTrialColumns(t), [t])
-  const fields: FilterField<(typeof FILTERS)[number]>[] = [{
-    kind: 'select', name: STATUS_FILTER, label: t('platform.trialRequests.filters.status'), allLabel: t('platform.trialRequests.filters.allStatuses'),
-    options: TRIAL_REQUEST_STATUSES.map((value) => ({ value: STATUS_SLUGS[value], label: t(`platform.trialRequests.status.${value}`) })),
-  }]
+
+  const availableStatuses = useMemo(
+    () => (isAdmin ? TRIAL_REQUEST_STATUSES.filter((s) => s !== 'PENDING') : TRIAL_REQUEST_STATUSES),
+    [isAdmin],
+  )
+  const fields: FilterField<(typeof FILTERS)[number]>[] = useMemo(
+    () => [
+      {
+        kind: 'select',
+        name: STATUS_FILTER,
+        label: t('platform.trialRequests.filters.status'),
+        allLabel: t('platform.trialRequests.filters.allStatuses'),
+        options: availableStatuses.map((value) => ({
+          value: STATUS_SLUGS[value],
+          label: t(`platform.trialRequests.status.${value}`),
+        })),
+      },
+    ],
+    [t, availableStatuses],
+  )
   // Mở từ dòng thì giữ bản mới nhất của yêu cầu đó (đã duyệt ở tab khác thì không còn nút Duyệt)
   const current = openedState === null ? null : (all.find((request) => request.id === openedState.request.id) ?? openedState.request)
 
