@@ -10,8 +10,9 @@ import { envelope, stubBackend } from '@/test/fake-backend'
 import { TrialRequestsPage } from './TrialRequestsPage'
 
 /**
- * Yêu cầu dùng thử khi nối backend (`companies`, danh mục gói `billing`): chờ duyệt đứng đầu, duyệt gửi tên công ty, mã số thuế, gói và số
- * ngày dùng thử; từ chối gửi lý do theo lý do chuẩn.
+ * Yêu cầu dùng thử khi nối backend (`companies`, danh mục gói `billing`):
+ * - Phân loại xử lý: System Manager thẩm định (PENDING -> PENDING_ADMIN_CREATION), System Admin tạo tài khoản (APPROVED).
+ * - Cả 2 luồng duyệt và từ chối đều có cơ chế Double Check xác nhận 2 bước.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['companies', 'billing']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -41,6 +42,8 @@ beforeEach(() => {
   backend = stubBackend({
     'GET /api/trial-requests': { body: { success: true, data: [APPROVED, PENDING], page: 0, totalPages: 1, last: true } },
     'GET /api/subscription/plans': { body: [PLAN] },
+    'POST /api/trial-requests/2/manager-approve': { body: envelope({ ...PENDING, status: 'PENDING_ADMIN_CREATION', managerReviewedByName: 'Manager Hoàng' }) },
+    'POST /api/trial-requests/2/manager-reject': { body: envelope({ ...PENDING, status: 'REJECTED' }) },
     'POST /api/trial-requests/2/approve': { body: envelope({ ...PENDING, status: 'APPROVED' }) },
     'POST /api/trial-requests/2/reject': { body: envelope({ ...PENDING, status: 'REJECTED' }) },
   })
@@ -61,7 +64,7 @@ function renderPage() {
   )
 }
 
-test('pending requests first; approving sends the company, tax code, plan and trial days', async () => {
+test('pending requests first; approving sends company, tax code, plan, trial days with double-check', async () => {
   const user = userEvent.setup()
   renderPage()
   const table = await screen.findByRole('table', {}, SLOW)
@@ -80,13 +83,18 @@ test('pending requests first; approving sends the company, tax code, plan and tr
   await user.type(days, '30')
   await user.click(within(dialog).getByRole('button', { name: 'Duyệt và tạo công ty' }))
 
+  // Double check confirmation dialog
+  const confirm = await screen.findByRole('dialog', { name: 'Xác nhận tạo tài khoản doanh nghiệp' })
+  expect(confirm).toHaveTextContent('Hoa Logistics')
+  await user.click(within(confirm).getByRole('button', { name: 'Khởi tạo tài khoản' }))
+
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   const approve = backend.calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests/2/approve')
   expect(approve?.body).toEqual({ companyName: 'Hoa Logistics', taxCode: '0398765432', planId: 2, trialDays: 30 })
   expect(await screen.findByText('Đã duyệt yêu cầu của Lê Thị Hoa.')).toBeInTheDocument()
 })
 
-test('rejecting fills the reason from the standard reason and sends it', async () => {
+test('rejecting fills reason from standard reason, shows double-check confirmation, and sends it', async () => {
   const user = userEvent.setup()
   renderPage()
   await user.click(await screen.findByRole('button', { name: 'Xem yêu cầu của Lê Thị Hoa' }, SLOW))
@@ -98,8 +106,13 @@ test('rejecting fills the reason from the standard reason and sends it', async (
   )
   await user.click(within(dialog).getByRole('button', { name: 'Từ chối yêu cầu' }))
 
+  // Double check confirmation dialog
+  const confirm = await screen.findByRole('dialog', { name: 'Xác nhận từ chối đơn dùng thử' })
+  expect(confirm).toHaveTextContent('Hoa Logistics')
+  await user.click(within(confirm).getByRole('button', { name: 'Xác nhận từ chối' }))
+
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  const reject = backend.calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests/2/reject')
+  const reject = backend.calls.find((call) => call.method === 'POST' && (call.path === '/api/trial-requests/2/reject' || call.path === '/api/trial-requests/2/manager-reject'))
   expect(reject?.body).toEqual({ reason: 'Doanh nghiệp hoặc người đại diện của bạn đã được dùng thử trước đây. Vui lòng liên hệ để đăng ký gói chính thức.' })
 })
 

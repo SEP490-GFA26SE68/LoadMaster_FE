@@ -5,6 +5,7 @@ import {
   managerApproveTrialRequest,
   managerRejectTrialRequest,
   rejectTrialRequest,
+  type ManagerApprovePayload,
   type TrialApproval,
 } from './trial-requests-api'
 
@@ -18,7 +19,11 @@ export function useTrialRequestsQuery() {
 export function useManagerApproveTrialRequestMutation() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => managerApproveTrialRequest(id),
+    mutationFn: (args: { id: string; payload?: ManagerApprovePayload } | string) => {
+      const id = typeof args === 'string' ? args : args.id
+      const payload = typeof args === 'string' ? undefined : args.payload
+      return managerApproveTrialRequest(id, payload)
+    },
     onSuccess: () => Promise.all([KEY, ['contacts']].map((queryKey) => client.invalidateQueries({ queryKey }))),
   })
 }

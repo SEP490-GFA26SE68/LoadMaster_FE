@@ -1,5 +1,5 @@
 import { RotateCcw } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
 import { FilterBar, type FilterField } from '@/components/FilterBar'
@@ -10,14 +10,14 @@ import { useListUrlState } from '@/components/useListUrlState'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TRIAL_REQUEST_STATUSES, TRIAL_REQUESTS_SOURCE, type TrialRequest, type TrialRequestStatus } from './trial-requests-api'
-import { createTrialColumns, OpenTrialContext } from './trial-requests-table'
-import { TrialRequestDialog } from './TrialRequestDialog'
+import { createTrialColumns, OpenTrialContext, type OpenTrialHandler } from './trial-requests-table'
+import { TrialRequestDialog, type Step } from './TrialRequestDialog'
 import { useTrialRequestsQuery } from './useTrialRequestsQuery'
 
 const STATUS_FILTER = 'trang-thai'
 const FILTERS = [STATUS_FILTER] as const
 const STATUS_SLUGS: Record<TrialRequestStatus, string> = {
-  PENDING: 'cho-manager-duyet',
+  PENDING: 'cho-duyet',
   PENDING_ADMIN_CREATION: 'cho-admin-tao',
   APPROVED: 'da-duyet',
   REJECTED: 'tu-choi',
@@ -42,7 +42,11 @@ export function TrialRequestsPage() {
   const t = useT()
   const query = useTrialRequestsQuery()
   const list = useListUrlState<(typeof FILTERS)[number]>({ filters: FILTERS })
-  const [opened, setOpened] = useState<TrialRequest | null>(null)
+  const [openedState, setOpenedState] = useState<{ request: TrialRequest; step: Step } | null>(null)
+
+  const handleOpen: OpenTrialHandler = useCallback((request: TrialRequest, step: Step = 'detail') => {
+    setOpenedState({ request, step })
+  }, [])
 
   const all = useMemo(() => (query.data ?? []).toSorted(byStatusThenNewest), [query.data])
   const status = list.filters[STATUS_FILTER]
@@ -58,7 +62,7 @@ export function TrialRequestsPage() {
     options: TRIAL_REQUEST_STATUSES.map((value) => ({ value: STATUS_SLUGS[value], label: t(`platform.trialRequests.status.${value}`) })),
   }]
   // Mở từ dòng thì giữ bản mới nhất của yêu cầu đó (đã duyệt ở tab khác thì không còn nút Duyệt)
-  const current = opened === null ? null : (all.find((request) => request.id === opened.id) ?? opened)
+  const current = openedState === null ? null : (all.find((request) => request.id === openedState.request.id) ?? openedState.request)
 
   let body: ReactNode
   if (!TRIAL_REQUESTS_SOURCE.available) {
@@ -89,7 +93,7 @@ export function TrialRequestsPage() {
           onValueChange={list.setFilter}
           onClear={list.clearAll}
         />
-        <OpenTrialContext value={setOpened}>
+        <OpenTrialContext value={handleOpen}>
           <DataTable
             data={rows}
             columns={columns}
@@ -115,7 +119,11 @@ export function TrialRequestsPage() {
         description={t('platform.trialRequests.description')}
       />
       <div className="min-h-0 flex-1 overflow-auto px-shell py-6">{body}</div>
-      <TrialRequestDialog request={current} onClose={() => setOpened(null)} />
+      <TrialRequestDialog
+        request={current}
+        initialStep={openedState?.step ?? 'detail'}
+        onClose={() => setOpenedState(null)}
+      />
     </div>
   )
 }

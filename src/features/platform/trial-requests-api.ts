@@ -40,8 +40,13 @@ export type TrialRequest = {
   readonly rejectionReason: string | null
   /** Ghi chú lúc duyệt, hoặc lý do lúc từ chối. */
   readonly note: string | null
+  readonly managerNote: string | null
+  readonly trialDays: number | null
+  readonly trialCredits: number | null
   readonly managerReviewedByName: string | null
+  readonly managerReviewedByEmail: string | null
   readonly approvedByName: string | null
+  readonly approvedByEmail: string | null
   readonly createdCompanyName: string | null
   readonly createdAt: string
   readonly resolvedAt: string | null
@@ -65,11 +70,26 @@ type TrialRequestDto = {
   readonly handledByName?: string | null
   readonly rejectionReason?: string | null
   readonly note?: string | null
+  readonly managerNote?: string | null
+  readonly trialDays?: number | null
+  readonly trialCredits?: number | null
   readonly managerReviewedByName?: string | null
+  readonly managerReviewedByEmail?: string | null
   readonly approvedByName?: string | null
+  readonly approvedByEmail?: string | null
   readonly createdCompanyName?: string | null
   readonly createdAt: string
   readonly resolvedAt?: string | null
+}
+
+/** `ManagerApproveTrialRequest`: System Manager thẩm định và chuẩn hóa trước khi chuyển giao System Admin. */
+export type ManagerApprovePayload = {
+  readonly companyName?: string
+  readonly companyCode?: string
+  readonly companyAddress?: string
+  readonly trialDays?: number
+  readonly trialCredits?: number
+  readonly managerNote?: string
 }
 
 /** `CreateTrialAccountRequest`: chuyển một yêu cầu liên hệ của khách thành yêu cầu dùng thử. */
@@ -121,8 +141,13 @@ function requestOf(dto: TrialRequestDto): TrialRequest {
     handledByName: dto.handledByName ?? null,
     rejectionReason: dto.rejectionReason ?? null,
     note: dto.note ?? null,
+    managerNote: dto.managerNote ?? null,
+    trialDays: dto.trialDays ?? null,
+    trialCredits: dto.trialCredits ?? null,
     managerReviewedByName: dto.managerReviewedByName ?? null,
+    managerReviewedByEmail: dto.managerReviewedByEmail ?? null,
     approvedByName: dto.approvedByName ?? null,
+    approvedByEmail: dto.approvedByEmail ?? null,
     createdCompanyName: dto.createdCompanyName ?? null,
     createdAt: timeOf(dto.createdAt),
     resolvedAt: dto.resolvedAt ? timeOf(dto.resolvedAt) : null,
@@ -142,9 +167,9 @@ export async function createTrialRequest(request: NewTrialRequest): Promise<Tria
 }
 
 // POST /api/trial-requests/{id}/manager-approve
-export async function managerApproveTrialRequest(id: string): Promise<TrialRequest> {
+export async function managerApproveTrialRequest(id: string, payload?: ManagerApprovePayload): Promise<TrialRequest> {
   if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
-  return requestOf(await api().post<TrialRequestDto>(`/api/trial-requests/${encodeURIComponent(id)}/manager-approve`))
+  return requestOf(await api().post<TrialRequestDto>(`/api/trial-requests/${encodeURIComponent(id)}/manager-approve`, { body: payload }))
 }
 
 // POST /api/trial-requests/{id}/manager-reject

@@ -3,6 +3,7 @@ import { CheckCircle2, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
@@ -63,6 +64,7 @@ type ApproveFormProps = {
 
 function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFormProps & { plans: readonly SubscriptionPlan[] }) {
   const t = useT()
+  const [confirmValues, setConfirmValues] = useState<ApproveValues | null>(null)
   const interested = plans.find((plan) => plan.id === request.interestedPlanId)
   const form = useForm<z.input<typeof approveSchema>, unknown, ApproveValues>({
     resolver: zodResolver(approveSchema),
@@ -70,64 +72,87 @@ function ApproveFields({ request, pending, onBack, onSubmit, plans }: ApproveFor
       companyName: request.companyName ?? '',
       taxCode: request.taxCode ?? '',
       planId: (interested ?? plans[0])?.id ?? '',
-      trialDays: DEFAULT_TRIAL_DAYS,
-      note: '',
+      trialDays: request.trialDays ? String(request.trialDays) : DEFAULT_TRIAL_DAYS,
+      note: request.managerNote ?? '',
     },
   })
   const { errors } = form.formState
 
   function handleSubmit(values: ApproveValues) {
+    setConfirmValues(values)
+  }
+
+  function handleConfirmed() {
+    if (!confirmValues) return
     onSubmit({
-      companyName: values.companyName,
-      taxCode: values.taxCode,
-      planId: values.planId === '' ? undefined : Number(values.planId),
-      trialDays: Number(values.trialDays),
-      note: values.note === '' ? undefined : values.note,
+      companyName: confirmValues.companyName,
+      taxCode: confirmValues.taxCode,
+      planId: confirmValues.planId === '' ? undefined : Number(confirmValues.planId),
+      trialDays: Number(confirmValues.trialDays),
+      note: confirmValues.note === '' ? undefined : confirmValues.note,
     })
   }
 
   return (
-    <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
-      <DialogHeader
-        icon={CheckCircle2}
-        tone="success"
-        title={t('platform.trialRequests.approve.title', { name: request.fullName })}
-        description={t('platform.trialRequests.approve.description', { email: request.email })}
-      />
-      <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)]">
-          <Input label={t('platform.trialRequests.approve.companyName')} required error={message(t, errors.companyName?.message)} {...form.register('companyName')} />
-          <Input label={t('platform.trialRequests.approve.taxCode')} required error={message(t, errors.taxCode?.message)} {...form.register('taxCode')} />
-        </div>
-        {plans.length === 0 ? (
-          <p className="m-0 text-body text-ink-2">{t('platform.trialRequests.approve.noPlans')}</p>
-        ) : (
-          <SelectField
-            control={form.control}
-            name="planId"
-            label={t('platform.trialRequests.approve.plan')}
-            hint={request.interestedPlanName ? t('platform.trialRequests.approve.planHint', { name: request.interestedPlanName }) : undefined}
-            options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
-          />
-        )}
-        <Input
-          label={t('platform.trialRequests.approve.trialDays')}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={365}
-          required
-          className="max-w-40"
-          error={message(t, errors.trialDays?.message)}
-          {...form.register('trialDays')}
+    <>
+      <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
+        <DialogHeader
+          icon={CheckCircle2}
+          tone="success"
+          title={t('platform.trialRequests.approve.title', { name: request.fullName })}
+          description={t('platform.trialRequests.approve.description', { email: request.email })}
         />
-        <Textarea label={t('platform.trialRequests.approve.note')} rows={2} error={message(t, errors.note?.message)} {...form.register('note')} />
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>{t('platform.trialRequests.approve.back')}</Button>
-        <Button type="submit" variant="primary" loading={pending}>{t('platform.trialRequests.approve.submit')}</Button>
-      </DialogFooter>
-    </form>
+        <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)]">
+            <Input label={t('platform.trialRequests.approve.companyName')} required error={message(t, errors.companyName?.message)} {...form.register('companyName')} />
+            <Input label={t('platform.trialRequests.approve.taxCode')} required error={message(t, errors.taxCode?.message)} {...form.register('taxCode')} />
+          </div>
+          {plans.length === 0 ? (
+            <p className="m-0 text-body text-ink-2">{t('platform.trialRequests.approve.noPlans')}</p>
+          ) : (
+            <SelectField
+              control={form.control}
+              name="planId"
+              label={t('platform.trialRequests.approve.plan')}
+              hint={request.interestedPlanName ? t('platform.trialRequests.approve.planHint', { name: request.interestedPlanName }) : undefined}
+              options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
+            />
+          )}
+          <Input
+            label={t('platform.trialRequests.approve.trialDays')}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={365}
+            required
+            className="max-w-40"
+            error={message(t, errors.trialDays?.message)}
+            {...form.register('trialDays')}
+          />
+          <Textarea label={t('platform.trialRequests.approve.note')} rows={2} error={message(t, errors.note?.message)} {...form.register('note')} />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>{t('platform.trialRequests.approve.back')}</Button>
+          <Button type="submit" variant="primary" loading={pending}>{t('platform.trialRequests.approve.submit')}</Button>
+        </DialogFooter>
+      </form>
+
+      <ConfirmDialog
+        open={confirmValues !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmValues(null)
+        }}
+        title={t('platform.trialRequests.approve.confirmTitle')}
+        description={t('platform.trialRequests.approve.confirmMessage', {
+          company: confirmValues?.companyName ?? '',
+          email: request.email,
+        })}
+        confirmLabel={t('platform.trialRequests.approve.confirmButton')}
+        cancelLabel={t('platform.trialRequests.approve.cancelButton')}
+        pending={pending}
+        onConfirm={handleConfirmed}
+      />
+    </>
   )
 }
 
@@ -147,7 +172,7 @@ function ruleDetail(rule: RejectionRule, t: TFunction): string {
   return rule === 'OTHER' ? '' : t(`platform.trialRequests.rules.${rule}.detail`)
 }
 
-/** Từ chối một yêu cầu: chọn lý do chuẩn điền sẵn câu vào ô lý do, người duyệt sửa được; lý do bắt buộc. */
+/** Từ chối một yêu cầu: chọn lý do chuẩn điền sẵn câu vào ô lý do, người duyệt sửa được; lý do bắt buộc kèm Double Check. */
 export function RejectTrialForm({ request, pending, onBack, onSubmit }: {
   request: TrialRequest
   pending: boolean
@@ -156,6 +181,8 @@ export function RejectTrialForm({ request, pending, onBack, onSubmit }: {
 }) {
   const t = useT()
   const [rule, setRule] = useState<RejectionRule>('INVALID_TAX')
+  const [pendingReason, setPendingReason] = useState<string | null>(null)
+
   const form = useForm<z.input<typeof rejectSchema>, unknown, RejectValues>({
     resolver: zodResolver(rejectSchema),
     defaultValues: { reason: ruleDetail('INVALID_TAX', t) },
@@ -167,35 +194,59 @@ export function RejectTrialForm({ request, pending, onBack, onSubmit }: {
     form.setValue('reason', ruleDetail(next, t), { shouldDirty: true })
   }
 
+  function handleConfirmed() {
+    if (!pendingReason) return
+    onSubmit(pendingReason)
+  }
+
   return (
-    <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(values.reason))}>
-      <DialogHeader
-        icon={UserX}
-        tone="danger"
-        title={t('platform.trialRequests.reject.title', { name: request.fullName })}
-        description={t('platform.trialRequests.reject.description')}
-      />
-      <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
-        <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-          <legend className="mb-2 text-small font-semibold text-ink-2">{t('platform.trialRequests.reject.rule')}</legend>
-          <RadioGroup value={rule} onValueChange={handleRule}>
-            {REJECTION_RULES.map((item) => (
-              <RadioGroupItem key={item} value={item} label={t(`platform.trialRequests.rules.${item}.label`)} />
-            ))}
-          </RadioGroup>
-        </fieldset>
-        <Textarea
-          label={t('platform.trialRequests.reject.reason')}
-          required
-          rows={4}
-          error={message(t, form.formState.errors.reason?.message)}
-          {...form.register('reason')}
+    <>
+      <form noValidate onSubmit={form.handleSubmit((values) => setPendingReason(values.reason))}>
+        <DialogHeader
+          icon={UserX}
+          tone="danger"
+          title={t('platform.trialRequests.reject.title', { name: request.fullName })}
+          description={t('platform.trialRequests.reject.description')}
         />
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>{t('platform.trialRequests.reject.back')}</Button>
-        <Button type="submit" variant="danger" loading={pending}>{t('platform.trialRequests.reject.submit')}</Button>
-      </DialogFooter>
-    </form>
+        <div className="flex max-h-[62vh] flex-col gap-4 overflow-y-auto px-7 py-5">
+          <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
+            <legend className="mb-2 text-small font-semibold text-ink-2">{t('platform.trialRequests.reject.rule')}</legend>
+            <RadioGroup value={rule} onValueChange={handleRule}>
+              {REJECTION_RULES.map((item) => (
+                <RadioGroupItem key={item} value={item} label={t(`platform.trialRequests.rules.${item}.label`)} />
+              ))}
+            </RadioGroup>
+          </fieldset>
+          <Textarea
+            label={t('platform.trialRequests.reject.reason')}
+            required
+            rows={4}
+            error={message(t, form.formState.errors.reason?.message)}
+            {...form.register('reason')}
+          />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="secondary" disabled={pending} onClick={onBack}>{t('platform.trialRequests.reject.back')}</Button>
+          <Button type="submit" variant="danger" loading={pending}>{t('platform.trialRequests.reject.submit')}</Button>
+        </DialogFooter>
+      </form>
+
+      <ConfirmDialog
+        open={pendingReason !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingReason(null)
+        }}
+        title={t('platform.trialRequests.reject.confirmTitle')}
+        description={t('platform.trialRequests.reject.confirmMessage', {
+          company: request.companyName || request.fullName,
+          email: request.email,
+        })}
+        danger
+        confirmLabel={t('platform.trialRequests.reject.confirmButton')}
+        cancelLabel={t('platform.trialRequests.reject.cancelButton')}
+        pending={pending}
+        onConfirm={handleConfirmed}
+      />
+    </>
   )
 }
