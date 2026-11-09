@@ -34,10 +34,11 @@ const SELECTED_PARAM = 'ticket'
 function StatusSelect({ ticket, pending, onChange }: { ticket: SupportTicket; pending: boolean; onChange: (status: TicketStatus) => void }) {
   const t = useT()
   const id = useId()
+  const isDisabled = pending || ticket.status === 'CLOSED' || Boolean(ticket.lockedByOther)
   return (
     <div className="flex flex-col gap-1.5">
       <FieldLabel htmlFor={id}>{t('support.page.statusLabel')}</FieldLabel>
-      <Select value={ticket.status} disabled={pending} onValueChange={(value) => onChange(value as TicketStatus)}>
+      <Select value={ticket.status} disabled={isDisabled} onValueChange={(value) => onChange(value as TicketStatus)}>
         <SelectTrigger id={id}><SelectValue /></SelectTrigger>
         <SelectContent>
           {SUPPORT_SOURCE.statuses.map((status) => <SelectItem key={status} value={status}>{t(`support.statuses.${status}`)}</SelectItem>)}
@@ -142,6 +143,7 @@ export function SupportPage() {
                 data={rows}
                 columns={columns}
                 getRowId={(ticket) => ticket.id}
+                getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60 dark:bg-n-800/60' : undefined)}
                 density="spacious"
                 appearance="paper"
                 onRowClick={select}
@@ -156,7 +158,11 @@ export function SupportPage() {
             <aside className="flex min-w-0 flex-col gap-4">
               {selected ? (
                 <>
-                  <Card role="region" aria-label={selected.title}>
+                  <Card
+                    role="region"
+                    aria-label={selected.title}
+                    className={selected.status === 'CLOSED' ? 'border-n-300 bg-n-100/70 opacity-75 dark:bg-n-800/50' : undefined}
+                  >
                     <div className="flex flex-col gap-4 p-4.5">
                       <StatusSelect
                         ticket={selected}

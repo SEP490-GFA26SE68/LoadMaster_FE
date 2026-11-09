@@ -43,6 +43,9 @@ function TopUpForm({ pending, onConfirm, tier, balance }: TopUpProps) {
     <>
       <DialogHeader icon={Coins} title={t('billing.topUpDialog.title')} description={t('billing.topUpDialog.description', { price: format.currency(priceVnd) })} />
       <div className="flex flex-col gap-4 px-7 py-5">
+        <p className="m-0 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-small text-amber-900">
+          {t('billing.topUpDialog.monthlyResetWarning')}
+        </p>
         <RadioGroup value={pack === undefined ? '' : String(pack)} onValueChange={(value) => setCredits(Number(value))} aria-label={t('billing.topUpDialog.title')}>
           {BILLING_CONSTANTS.topUpPacks.map((item) => (
             <RadioGroupItem

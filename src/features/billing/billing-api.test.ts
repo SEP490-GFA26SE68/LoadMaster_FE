@@ -50,11 +50,11 @@ test('nguồn backend: hoá đơn thay lịch sử thanh toán, xác nhận ở 
   })
 })
 
-test('giá nạp và trần số dư theo hạng như CreditController; chưa có gói tính như Basic', () => {
-  expect(topUpTerms('BASIC')).toStrictEqual({ priceVnd: 400, maxBalance: 3000 })
-  expect(topUpTerms('PRO')).toStrictEqual({ priceVnd: 326, maxBalance: 10000 })
+test('giá nạp theo hạng như CreditController, không giới hạn trần mua lẻ; chưa có gói tính như Basic', () => {
+  expect(topUpTerms('BASIC')).toStrictEqual({ priceVnd: 400, maxBalance: null })
+  expect(topUpTerms('PRO')).toStrictEqual({ priceVnd: 326, maxBalance: null })
   expect(topUpTerms('ULTIMATE')).toStrictEqual({ priceVnd: 263, maxBalance: null })
-  expect(topUpTerms(null)).toStrictEqual({ priceVnd: 400, maxBalance: 3000 })
+  expect(topUpTerms(null)).toStrictEqual({ priceVnd: 400, maxBalance: null })
 })
 
 test('gói đang dùng: đọc gói hiện tại rồi gói cước của nó, giờ Việt Nam đổi sang ISO', async () => {

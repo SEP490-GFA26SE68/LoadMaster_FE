@@ -99,6 +99,9 @@ export const guestRegistration = {
     fullNameRequired: 'Vui lòng nhập họ và tên người đại diện',
     emailRequired: 'Vui lòng nhập email nhận tài khoản',
     emailInvalid: 'Email không hợp lệ',
+    phoneRequired: 'Vui lòng nhập số điện thoại liên hệ',
+    phoneInvalidVN: 'SĐT Việt Nam phải bắt đầu bằng 03, 05, 07, 08, 09 (10 số) hoặc +84 / 84 (theo sau là 9 số), và 8 số cuối không được trùng nhau (VD: 0911111111)',
+    phoneInvalidCountry: 'Số điện thoại không đúng định dạng của quốc gia đã chọn',
   },
   toasts: {
     otpSent: 'Mã OTP xác thực đã được gửi đến email của bạn.',

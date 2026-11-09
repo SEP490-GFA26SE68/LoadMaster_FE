@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { ApiError } from '@/lib/api-client'
 import { I18nProvider } from '@/lib/i18n'
 import { TrialRegistrationPage } from './TrialRegistrationPage'
 import * as api from './trial-registration-api'
@@ -72,10 +73,34 @@ test('filling valid info calls init API and moves to step 2 OTP', async () => {
   await user.type(screen.getByPlaceholderText('0101234567'), '0101234567')
   await user.type(screen.getByPlaceholderText('Nguyễn Văn A'), 'Nguyễn Văn B')
   await user.type(screen.getByPlaceholderText('admin@doanhnghiep.vn'), 'test@company.com')
+  await user.type(screen.getByPlaceholderText(/0988 776 655/i), '0912345678')
 
   await user.click(screen.getByRole('button', { name: /Tiếp tục xác thực OTP/i }))
 
   expect(await screen.findByRole('heading', { level: 2, name: /2\. Xác thực Email/i })).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Nhập 6 số OTP')).toBeInTheDocument()
+})
+
+test('requires phone number, strips non-digits from tax code, and shows translated error when phone number already exists in users table', async () => {
+  vi.spyOn(api, 'initGuestTrial').mockRejectedValue(new ApiError('PHONE_NUMBER_ALREADY_EXISTS', { status: 409 }))
+
+  renderPage()
+  const user = userEvent.setup()
+
+  await user.type(screen.getByPlaceholderText('Công ty TNHH Vận tải & Logistics ABC'), 'Công ty ABC')
+  const taxInput = screen.getByPlaceholderText('0101234567')
+  await user.type(taxInput, '0101abc234567')
+  expect(taxInput).toHaveValue('0101234567')
+  await user.type(screen.getByPlaceholderText('Nguyễn Văn A'), 'Nguyễn Văn B')
+  await user.type(screen.getByPlaceholderText('admin@doanhnghiep.vn'), 'test@company.com')
+
+  // Submitting without phone number shows required error
+  await user.click(screen.getByRole('button', { name: /Tiếp tục xác thực OTP/i }))
+  expect(screen.getByText('Vui lòng nhập số điện thoại liên hệ')).toBeInTheDocument()
+
+  // Submitting with existing phone number displays backend duplicate phone error on field
+  await user.type(screen.getByPlaceholderText(/0988 776 655/i), '0912345678')
+  await user.click(screen.getByRole('button', { name: /Tiếp tục xác thực OTP/i }))
+  expect(await screen.findByText('Số điện thoại này đã được sử dụng trong hệ thống.')).toBeInTheDocument()
 })
 

@@ -6,6 +6,7 @@ export type GuestTrialInitRequest = {
   companyAddress?: string
   fullName: string
   email: string
+  phoneCountry?: string
   phoneNumber?: string
   interestedPlanId?: number
   note?: string

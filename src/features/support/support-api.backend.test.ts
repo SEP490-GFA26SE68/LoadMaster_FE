@@ -46,9 +46,29 @@ test('a company user is shown only the tickets they sent (display only: the back
   routes = { 'GET /api/support-tickets': envelope([OWN, COLLEAGUE]), 'GET /api/users/me': meAs(7, 'DISPATCHER') }
   expect(await listSupportTickets()).toStrictEqual([{
     id: '2', code: 'TCK-20261017-4403', companyId: '1', companyName: 'Vận tải Long Bình', senderId: '7', senderName: 'Nguyễn Thanh Tùng',
+    assignedToId: '4', assignedToName: 'Tạ Thị Ngọc Ánh',
     kind: 'TECHNICAL', title: 'Ly thuỷ tinh dưới thùng nước', description: 'Kho phải xếp lại bằng tay.', status: 'IN_PROGRESS',
     replies: [], createdAt: '2026-10-16T11:05:00.000Z', updatedAt: '2026-10-16T11:05:00.000Z',
   }])
+})
+
+test('marks IN_PROGRESS ticket as lockedByOther when another supporter views it, but not for the assigned supporter or RESOLVED tickets', async () => {
+  routes = {
+    'GET /api/support-tickets': envelope([
+      OWN,
+      { ...COLLEAGUE, status: 'RESOLVED', assignedToId: 4, assignedToName: 'Tạ Thị Ngọc Ánh' },
+    ]),
+    'GET /api/users/me': meAs(9, 'SYSTEM_SUPPORTER'),
+  }
+  const forOtherSupporter = await listSupportTickets()
+  expect(forOtherSupporter.map((t) => ({ id: t.id, status: t.status, lockedByOther: t.lockedByOther }))).toStrictEqual([
+    { id: '2', status: 'IN_PROGRESS', lockedByOther: true },
+    { id: '1', status: 'RESOLVED', lockedByOther: undefined },
+  ])
+
+  routes = { ...routes, 'GET /api/users/me': meAs(4, 'SYSTEM_SUPPORTER') }
+  const forAssignedSupporter = await listSupportTickets()
+  expect(forAssignedSupporter[0]?.lockedByOther).toBeUndefined()
 })
 
 test('a supporter keeps every ticket; Resolved and the note of the support team come through, an unknown status does not', async () => {

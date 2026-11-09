@@ -99,6 +99,9 @@ export const guestRegistration = {
     fullNameRequired: 'Please enter representative full name',
     emailRequired: 'Please enter account email',
     emailInvalid: 'Invalid email format',
+    phoneRequired: 'Please enter contact phone number',
+    phoneInvalidVN: 'Vietnam phone number must start with 03, 05, 07, 08, 09 (10 digits) or +84 / 84 (followed by 9 digits), and the last 8 digits cannot be identical (e.g. 0911111111)',
+    phoneInvalidCountry: 'Phone number does not match the selected country format',
   },
   toasts: {
     otpSent: 'Verification OTP has been sent to your email.',

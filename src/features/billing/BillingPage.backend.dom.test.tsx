@@ -32,7 +32,9 @@ const ACTIVE: CurrentSubscriptionDto = {
 }
 const LEDGER = envelope({
   content: [
+    { id: 5, amount: 1, type: 'REFUND', reference: 'JOB-102', refunded: false, createdAt: '2026-10-12T09:15:00' },
     { id: 4, amount: 200, type: 'PURCHASE', reference: 'MOCK_09D3DE34151E4578', refunded: false, createdAt: '2026-10-10T14:21:00' },
+    { id: 3, amount: -1, type: 'USAGE', reference: 'JOB-101', refunded: false, createdAt: '2026-10-05T11:00:00' },
     { id: 2, amount: 500, type: 'MONTHLY_GRANT', reference: 'CONTRACT-1', refunded: false, createdAt: '2026-10-01T08:05:00' },
   ],
   last: true,
@@ -94,10 +96,11 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   expect(plan.queryByText('Giá trị tạm — chờ chốt')).toBeNull()
   expect(plan.queryByText('Tự gia hạn')).toBeNull()
   expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('1.200')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.')).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 
   await waitFor(() => expect(rowsOf()).toHaveLength(2), SLOW)
-  await waitFor(() => expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Credit2', 'Hoá đơn1']))
+  await waitFor(() => expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Credit2', 'Hoá đơn1', 'Trừ / Hoàn credit2']))
   expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell')[1]).toHaveTextContent('Mua')
   // Tham chiếu dài của máy chủ cắt trong cột, đủ chữ ở title
   const reference = within(rowsOf()[0] as HTMLElement).getAllByRole('cell')[3]?.firstElementChild
@@ -108,19 +111,26 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   await waitFor(() => expect(rowsOf()).toHaveLength(1))
   expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell').map((cell) => cell.textContent?.replace(/\s+/g, ' ')).slice(1))
     .toStrictEqual(['INV-1-1792203135003', '10/2026', 'Pro', '1.490.000 ₫', 'Đã trả'])
+
+  await user.click(screen.getByRole('tab', { name: /Trừ \/ Hoàn credit/ }))
+  await waitFor(() => expect(rowsOf()).toHaveLength(2))
+  expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell')[1]).toHaveTextContent('Hoàn')
+  expect(within(rowsOf()[1] as HTMLElement).getAllByRole('cell')[1]).toHaveTextContent('Dùng')
+  expect(within(rowsOf()[1] as HTMLElement).getAllByRole('cell')[4]).toHaveTextContent('Đã trừ')
 })
 
-test('topping up at the backend price opens the confirmation page with the gateway transaction code', async () => {
+test('topping up at the backend price shows monthly reset warning without cap and opens the confirmation page', async () => {
   const user = userEvent.setup()
   serve(ACTIVE, 1200)
   backend.routes['POST /api/credits/topup'] = envelope({ id: 8, transactionId: 'MOCK_TOPUP1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_TOPUP1', status: 'PENDING' })
   renderBilling()
   await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
   const dialog = await screen.findByRole('dialog')
-  // Gói Pro: 326 đ mỗi credit, số dư tối đa 10.000
+  // Gói Pro: 326 đ mỗi credit, không giới hạn trần mua lẻ, có cảnh báo qua tháng mới vẫn reset về credit ban đầu của gói
   expect(dialog).toHaveTextContent('326 ₫ mỗi credit')
   expect(dialog).toHaveTextContent('16.300 ₫')
-  expect(dialog).toHaveTextContent('còn nạp được 8.800')
+  expect(dialog).toHaveTextContent(/chỉ.*trong tháng.*qua tháng.*reset về/i)
+  expect(dialog).not.toHaveTextContent('còn nạp được')
   await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' }))
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_TOPUP1&loai=credit', {}, SLOW)).toBeInTheDocument()
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'MOCK' } })
@@ -138,21 +148,89 @@ test('an expired plan the backend no longer names: says so, offers the plans and
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 1, gateway: 'MOCK' } })
 })
 
-test('a plan still running renews itself; a higher tier is asked for through a support request', async () => {
+test('a plan still running renews itself; upgrading to a higher tier warns about credit reset to 0 and subscribes directly', async () => {
   const user = userEvent.setup()
   serve(ACTIVE, 1200)
   const ULTIMATE: PlanDto = { ...BASIC, id: 3, planCode: 'ULTIMATE', name: 'Ultimate', priceVnd: 4990000, tier: 'ULTIMATE', monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI' }
   backend.routes['GET /api/subscription/plans'] = [PRO, BASIC, ULTIMATE]
-  backend.routes['POST /api/subscription/subscribe'] = envelope({ id: 10, transactionId: 'MOCK_RENEW1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_RENEW1', status: 'PENDING' })
+  backend.routes['POST /api/subscription/subscribe'] = envelope({ id: 10, transactionId: 'MOCK_UPGRADE1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_UPGRADE1', status: 'PENDING' })
   renderBilling()
   const choose = within(await screen.findByRole('region', { name: 'Chọn gói' }, SLOW))
-  // Chỉ gói hạng cao hơn, không có nút đăng ký thẳng
-  expect(choose.getByRole('button', { name: 'Gửi yêu cầu nâng cấp lên gói Ultimate' })).toBeInTheDocument()
+  // Chỉ gói hạng cao hơn, có nút Nâng cấp trực tiếp (không còn Gửi yêu cầu nâng cấp)
+  expect(choose.queryByRole('button', { name: /Gửi yêu cầu nâng cấp/ })).toBeNull()
   expect(choose.queryByText('Basic')).toBeNull()
-  expect(choose.queryByRole('button', { name: /Đăng ký/ })).toBeNull()
-  await user.click(within(screen.getByRole('region', { name: 'Gói hiện tại' })).getByRole('button', { name: 'Gia hạn thêm một kỳ' }))
-  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_RENEW1&loai=goi', {}, SLOW)).toBeInTheDocument()
-  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 2, gateway: 'MOCK' } })
+  const upgradeBtn = choose.getByRole('button', { name: 'Nâng cấp lên gói Ultimate' })
+  expect(upgradeBtn).toBeInTheDocument()
+
+  await user.click(upgradeBtn)
+  const dialog = await screen.findByRole('dialog')
+  expect(dialog).toHaveTextContent(/đang còn 1 tháng trong gói Pro/i)
+  expect(dialog).toHaveTextContent(/số dư credit.*0|reset.*0/i)
+  await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục nâng cấp' }))
+
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_UPGRADE1&loai=goi', {}, SLOW)).toBeInTheDocument()
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 3, gateway: 'MOCK' } })
+})
+
+test('renews current plan by year from PlanSummaryCard and allows selecting yearly billing cycle in upgrade dialog', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  const ULTIMATE: PlanDto = { ...BASIC, id: 3, planCode: 'ULTIMATE', name: 'Ultimate', priceVnd: 4990000, tier: 'ULTIMATE', monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI' }
+  backend.routes['GET /api/subscription/plans'] = [PRO, BASIC, ULTIMATE]
+  backend.routes['POST /api/subscription/subscribe'] = envelope({ id: 11, transactionId: 'MOCK_YEARLY1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_YEARLY1', status: 'PENDING' })
+  renderBilling()
+
+  const planRegion = within(await screen.findByRole('region', { name: 'Gói hiện tại' }, SLOW))
+  expect(planRegion.getByText('16.390.000 ₫')).toBeInTheDocument()
+  const buttons = planRegion.getAllByRole('button').map((b) => b.textContent)
+  expect(buttons).toStrictEqual(['Gia hạn thêm một kỳ', 'Gia hạn theo năm', 'Huỷ gói'])
+
+  // 1) Bấm Nâng cấp -> mở dialog có lựa chọn Theo tháng / Theo năm
+  const choose = within(screen.getByRole('region', { name: 'Chọn gói' }))
+  await user.click(choose.getByRole('button', { name: 'Nâng cấp lên gói Ultimate' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByRole('button', { name: /Theo tháng/i })).toBeInTheDocument()
+  const yearlyBtn = within(dialog).getByRole('button', { name: /Theo năm/i })
+  await user.click(yearlyBtn)
+  expect(dialog).toHaveTextContent('59.880.000 ₫')
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }))
+
+  // 2) Bấm Gia hạn theo năm ở thẻ Gói hiện tại -> gửi billingCycle: 'YEARLY' và lưu số tiền vào sessionStorage
+  await user.click(planRegion.getByRole('button', { name: 'Gia hạn theo năm' }))
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_YEARLY1&loai=goi', {}, SLOW)).toBeInTheDocument()
+  expect(sessionStorage.getItem('lm_payment_amount_MOCK_YEARLY1')).toBe('16390000')
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
+    body: { planId: 2, billingCycle: 'YEARLY', gateway: 'MOCK' },
+  })
+})
+
+test('upgrading with yearly cycle selected sends billingCycle YEARLY', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  const ULTIMATE: PlanDto = { ...BASIC, id: 3, planCode: 'ULTIMATE', name: 'Ultimate', priceVnd: 4990000, tier: 'ULTIMATE', monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI' }
+  backend.routes['GET /api/subscription/plans'] = [PRO, BASIC, ULTIMATE]
+  backend.routes['POST /api/subscription/subscribe'] = envelope({ id: 12, transactionId: 'MOCK_UPGRADE_YR', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_UPGRADE_YR', status: 'PENDING' })
+  renderBilling()
+
+  const choose = within(await screen.findByRole('region', { name: 'Chọn gói' }, SLOW))
+  await user.click(choose.getByRole('button', { name: 'Nâng cấp lên gói Ultimate' }))
+  const dialog = await screen.findByRole('dialog')
+  await user.click(within(dialog).getByRole('button', { name: /Theo năm/i }))
+  await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục nâng cấp' }))
+
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_UPGRADE_YR&loai=goi', {}, SLOW)).toBeInTheDocument()
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
+    body: { planId: 3, billingCycle: 'YEARLY', gateway: 'MOCK' },
+  })
+})
+
+test('disables renewal buttons when current active plan has already reached 12 months from initial activation', async () => {
+  serve({ ...ACTIVE, startedAt: '2026-10-01T08:00:00', expiresAt: '2027-10-01T08:00:00' }, 1200)
+  renderBilling()
+
+  const planRegion = within(await screen.findByRole('region', { name: 'Gói hiện tại' }, SLOW))
+  expect(planRegion.getByRole('button', { name: 'Gia hạn thêm một kỳ' })).toBeDisabled()
+  expect(planRegion.getByRole('button', { name: 'Gia hạn theo năm' })).toBeDisabled()
 })
 
 test('a trial company signs its service agreement from the banner', async () => {

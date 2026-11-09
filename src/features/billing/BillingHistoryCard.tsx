@@ -12,14 +12,14 @@ import { InvoicesTable } from './InvoicesTable'
 import { PaymentsTable } from './PaymentsTable'
 import { useCreditTransactionsQuery, useInvoicesQuery, usePaymentsQuery } from './useBillingQuery'
 
-/** Tab lịch sử trên URL (`?lich-su=thanh-toan` | `hoa-don`); vắng, hoặc tab nguồn dữ liệu không có, là lịch sử credit. */
+/** Tab lịch sử trên URL (`?lich-su=thanh-toan` | `hoa-don` | `tru-hoan`); vắng, hoặc tab nguồn dữ liệu không có, là lịch sử credit. */
 const HISTORY_TAB = 'lich-su'
-type HistoryTab = 'credit' | 'payments' | 'invoices'
-const TAB_SLUGS: Readonly<Record<HistoryTab, string>> = { credit: '', payments: 'thanh-toan', invoices: 'hoa-don' }
+type HistoryTab = 'credit' | 'payments' | 'invoices' | 'usage'
+const TAB_SLUGS: Readonly<Record<HistoryTab, string>> = { credit: '', payments: 'thanh-toan', invoices: 'hoa-don', usage: 'tru-hoan' }
 const TABS: readonly HistoryTab[] = [
   'credit',
   ...(BILLING_CAPABILITIES.payments ? (['payments'] as const) : []),
-  ...(BILLING_CAPABILITIES.invoices ? (['invoices'] as const) : []),
+  ...(BILLING_CAPABILITIES.invoices ? (['invoices', 'usage'] as const) : []),
 ]
 
 const tabOf = (slug: string): HistoryTab => TABS.find((tab) => tab !== 'credit' && TAB_SLUGS[tab] === slug) ?? 'credit'
@@ -27,7 +27,7 @@ const isHistoryTab = (value: string): value is HistoryTab => TABS.some((tab) => 
 
 /**
  * Lịch sử của gói và credit (FE-8-03): sổ cái credit; thanh toán khi nguồn dữ liệu có (kho mẫu — mỗi thanh toán chờ có nút Trả); hoá
- * đơn khi nối backend. Mỗi tab phân trang qua `useListUrlState`; tab đang mở đọc lỗi thì nói lỗi kèm nút thử lại, không giả là danh sách rỗng.
+ * đơn và lịch sử trừ / hoàn credit khi nối backend. Mỗi tab phân trang qua `useListUrlState`; tab đang mở đọc lỗi thì nói lỗi kèm nút thử lại, không giả là danh sách rỗng.
  */
 export function BillingHistoryCard() {
   const t = useT()
@@ -37,11 +37,17 @@ export function BillingHistoryCard() {
   const list = useListUrlState<typeof HISTORY_TAB>({ filters: [HISTORY_TAB] })
   const tab = tabOf(list.filters[HISTORY_TAB])
   const pagination = { pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }
-  const active = { credit: transactions, payments, invoices }[tab]
+  const allTransactions = transactions.data ?? []
+  const creditRows = BILLING_CAPABILITIES.invoices
+    ? allTransactions.filter((row) => row.type !== 'USAGE' && row.type !== 'REFUND')
+    : allTransactions
+  const usageRows = allTransactions.filter((row) => row.type === 'USAGE' || row.type === 'REFUND')
+  const active = { credit: transactions, payments, invoices, usage: transactions }[tab]
   const counts: Readonly<Record<HistoryTab, number>> = {
-    credit: transactions.data?.length ?? 0,
+    credit: creditRows.length,
     payments: payments.data?.length ?? 0,
     invoices: invoices.data?.length ?? 0,
+    usage: usageRows.length,
   }
 
   return (
@@ -66,7 +72,9 @@ export function BillingHistoryCard() {
       ) : active.isPending ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : tab === 'credit' ? (
-        <CreditLedgerTable rows={transactions.data ?? []} pagination={pagination} />
+        <CreditLedgerTable rows={creditRows} pagination={pagination} />
+      ) : tab === 'usage' ? (
+        <CreditLedgerTable rows={usageRows} pagination={pagination} />
       ) : tab === 'payments' ? (
         <PaymentsTable rows={payments.data ?? []} pagination={pagination} />
       ) : (

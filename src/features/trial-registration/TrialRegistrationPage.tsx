@@ -5,12 +5,14 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { isPhoneValidForCountry, PhoneInput, type PhoneCountryCode } from '@/components/ui/PhoneInput'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
 import { PublicHeader } from '@/features/marketing/PublicHeader'
 import { PUBLIC_TOUCH } from '@/features/marketing/public-chrome'
 import { usePublicPlansQuery } from '@/features/marketing/useMarketingQuery'
+import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
@@ -43,6 +45,7 @@ export function TrialRegistrationPage() {
   const [companyAddress, setCompanyAddress] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phoneCountry, setPhoneCountry] = useState<PhoneCountryCode>('VN')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [note, setNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -73,6 +76,15 @@ export function TrialRegistrationPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = t('trialRegistration.validation.emailInvalid')
     }
+    const cleanedPhone = phoneNumber.replace(/[\s.-]/g, '')
+    if (!cleanedPhone) {
+      newErrors.phoneNumber = t('guestRegistration.validation.phoneRequired')
+    } else if (!isPhoneValidForCountry(cleanedPhone, phoneCountry)) {
+      newErrors.phoneNumber =
+        phoneCountry === 'VN'
+          ? t('guestRegistration.validation.phoneInvalidVN')
+          : t('guestRegistration.validation.phoneInvalidCountry')
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -89,7 +101,8 @@ export function TrialRegistrationPage() {
         companyAddress: companyAddress.trim() || undefined,
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneCountry,
+        phoneNumber: phoneNumber.replace(/[\s.-]/g, '') || undefined,
         interestedPlanId: basicPlan?.id ? Number(basicPlan.id) : undefined,
         note: note.trim() || undefined,
       })
@@ -98,7 +111,18 @@ export function TrialRegistrationPage() {
       setCooldown(60)
       toast.success(resp.message)
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -163,12 +187,12 @@ export function TrialRegistrationPage() {
             </p>
           </div>
 
-          <Card className="relative overflow-hidden border-border bg-bg shadow-sm">
+          <Card className="relative border-border bg-bg shadow-sm">
             {loading && (
               <div
                 role="status"
                 aria-live="polite"
-                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-bg/85 backdrop-blur-xs px-6 py-12 text-center animate-[lm-fade-in_180ms_ease-out]"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-[inherit] bg-bg/85 backdrop-blur-xs px-6 py-12 text-center animate-[lm-fade-in_180ms_ease-out]"
               >
                 <div className="flex size-14 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400">
                   <Spinner className="size-7 border-2 border-cyan-400 border-t-transparent" />
@@ -220,9 +244,13 @@ export function TrialRegistrationPage() {
                       </label>
                       <Input
                         id="taxCode"
+                        inputMode="numeric"
                         placeholder={t('trialRegistration.step1.taxCodePlaceholder')}
                         value={taxCode}
-                        onChange={(e) => setTaxCode(e.target.value)}
+                        onChange={(e) => {
+                          setTaxCode(e.target.value.replace(/[^0-9-]/g, ''))
+                          setErrors((prev) => ({ ...prev, taxCode: undefined }))
+                        }}
                         disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.taxCode && 'border-danger')}
                       />
@@ -301,17 +329,25 @@ export function TrialRegistrationPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="phoneNumber" className="text-small font-medium text-ink-strong">
-                        {t('trialRegistration.step1.phoneNumber')}
+                        {t('trialRegistration.step1.phoneNumber')} <span className="text-danger">*</span>
                       </label>
-                      <Input
+                      <PhoneInput
                         id="phoneNumber"
-                        type="tel"
-                        placeholder={t('trialRegistration.step1.phoneNumberPlaceholder')}
+                        country={phoneCountry}
+                        onCountryChange={(c) => {
+                          setPhoneCountry(c)
+                          setErrors((prev) => ({ ...prev, phoneNumber: undefined }))
+                        }}
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        onChange={(val) => {
+                          setPhoneNumber(val)
+                          setErrors((prev) => ({ ...prev, phoneNumber: undefined }))
+                        }}
                         disabled={loading}
+                        invalid={Boolean(errors.phoneNumber)}
                         className={PUBLIC_TOUCH}
                       />
+                      {errors.phoneNumber && <span className="text-caption text-danger">{errors.phoneNumber}</span>}
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">

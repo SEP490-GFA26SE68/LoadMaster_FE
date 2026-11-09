@@ -1,35 +1,52 @@
 import { ArrowLeft, Check, CreditCard, FileText, Mail, RotateCw, Send, ShieldCheck, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Input'
+import { isPhoneValidForCountry, PhoneInput, type PhoneCountryCode } from '@/components/ui/PhoneInput'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { Spinner } from '@/components/ui/Spinner'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
 import { PublicHeader } from '@/features/marketing/PublicHeader'
 import { PUBLIC_TOUCH } from '@/features/marketing/public-chrome'
 import { usePublicPlansQuery } from '@/features/marketing/useMarketingQuery'
+import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import {
   acceptRegistrationPolicy,
+  executeMockRegistrationCheckout,
   initRegistration,
   initRegistrationPayment,
   resendRegistrationOtp,
   verifyRegistrationOtp,
+  type BillingCycle,
   type GuestRegistrationSessionResponse,
 } from './api/registration-api'
 
 const TAX_CODE_REGEX = /^([0-9]{10}|[0-9]{10}-[0-9]{3}|[0-9]{13})$/
 const COMPANY_CODE_REGEX = /^[A-Za-z0-9_-]{3,50}$/
 
+const MOCK_PLAN_ID_MAP: Record<string, number> = {
+  'PLAN-BASIC': 1,
+  'PLAN-PRO': 2,
+  'PLAN-ULTIMATE': 3,
+}
+
+function resolveNumericPlanId(planId: string): number {
+  const parsed = Number(planId)
+  if (!Number.isNaN(parsed) && parsed > 0) return parsed
+  return MOCK_PLAN_ID_MAP[planId] ?? 1
+}
+
 export function GuestRegistrationPage() {
   const t = useT()
   const format = useFormat()
+  const navigate = useNavigate()
   const [params] = useSearchParams()
   const pricingQuery = usePublicPlansQuery()
 
@@ -44,6 +61,7 @@ export function GuestRegistrationPage() {
   const [companyAddress, setCompanyAddress] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phoneCountry, setPhoneCountry] = useState<PhoneCountryCode>('VN')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -56,7 +74,7 @@ export function GuestRegistrationPage() {
 
   // Step 4: Plan & Payment State
   const [selectedPlanId, setSelectedPlanId] = useState<string>(params.get('planId') ?? '')
-  const [billingCycle, setBillingCycle] = useState<'1' | '12'>('1')
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('MONTHLY')
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -94,6 +112,15 @@ export function GuestRegistrationPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = t('guestRegistration.validation.emailInvalid')
     }
+    const cleanedPhone = phoneNumber.replace(/[\s.-]/g, '')
+    if (!cleanedPhone) {
+      errs.phoneNumber = t('guestRegistration.validation.phoneRequired')
+    } else if (!isPhoneValidForCountry(cleanedPhone, phoneCountry)) {
+      errs.phoneNumber =
+        phoneCountry === 'VN'
+          ? t('guestRegistration.validation.phoneInvalidVN')
+          : t('guestRegistration.validation.phoneInvalidCountry')
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -111,14 +138,26 @@ export function GuestRegistrationPage() {
         companyAddress: companyAddress.trim() || undefined,
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneCountry,
+        phoneNumber: phoneNumber.replace(/[\s.-]/g, ''),
       })
       setSession(resp)
       setCurrentStep(2)
       setCooldown(60)
       toast.success(t('guestRegistration.toasts.otpSent'))
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -138,7 +177,18 @@ export function GuestRegistrationPage() {
       setCurrentStep(3)
       toast.success(t('guestRegistration.toasts.otpSuccess'))
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -153,7 +203,18 @@ export function GuestRegistrationPage() {
       setCooldown(60)
       toast.success(t('guestRegistration.toasts.otpResent'))
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -173,7 +234,18 @@ export function GuestRegistrationPage() {
       setCurrentStep(4)
       toast.success(t('guestRegistration.toasts.policyAccepted'))
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -187,17 +259,42 @@ export function GuestRegistrationPage() {
     try {
       const resp = await initRegistrationPayment({
         token: session.token,
-        planId: Number(selectedPlanId),
-        billingCycleMonths: Number(billingCycle),
+        planId: resolveNumericPlanId(selectedPlanId),
+        billingCycle,
       })
       if (resp.paymentUrl) {
-        toast.info(t('guestRegistration.toasts.redirectingPayment'))
-        window.location.href = resp.paymentUrl
+        if (resp.paymentUrl.includes('/api/payment/mock-checkout')) {
+          const txnRef =
+            resp.paymentRef ||
+            new URL(resp.paymentUrl, window.location.origin).searchParams.get('txnRef') ||
+            ''
+          const checkout = await executeMockRegistrationCheckout(txnRef)
+          if (checkout?.callbackResult?.RspCode === '00') {
+            toast.info(t('guestRegistration.toasts.redirectingPayment'))
+            void navigate(`/dang-ky-thanh-cong?orderCode=${encodeURIComponent(txnRef)}`)
+          } else {
+            toast.error(checkout?.callbackResult?.Message || t('guestRegistration.toasts.paymentLinkNotFound'))
+          }
+        } else {
+          toast.info(t('guestRegistration.toasts.redirectingPayment'))
+          window.location.href = resp.paymentUrl
+        }
       } else {
         toast.error(t('guestRegistration.toasts.paymentLinkNotFound'))
       }
     } catch (err) {
-      toast.error(dataErrorMessage(err, t))
+      const translated = dataErrorMessage(err, t)
+      if (isApiError(err)) {
+        const code = err.code ?? ''
+        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
+          setErrors((prev) => ({ ...prev, taxCode: translated }))
+        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
+          setErrors((prev) => ({ ...prev, email: translated }))
+        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
+          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
+        }
+      }
+      toast.error(translated)
     } finally {
       setLoading(false)
     }
@@ -205,7 +302,7 @@ export function GuestRegistrationPage() {
 
   const selectedPlan = (pricingQuery.data ?? []).find((p: SubscriptionPlan) => String(p.id) === selectedPlanId)
   const basePrice = selectedPlan?.priceVnd ?? 0
-  const totalPrice = billingCycle === '12' ? Math.round(basePrice * 12 * 0.85) : basePrice
+  const totalPrice = billingCycle === 'YEARLY' ? basePrice * 12 : basePrice
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-canvas text-ink-strong">
@@ -348,9 +445,10 @@ export function GuestRegistrationPage() {
                       </label>
                       <Input
                         id="taxCode"
+                        inputMode="numeric"
                         placeholder={t('guestRegistration.step1.taxCodePlaceholder')}
                         value={taxCode}
-                        onChange={(e) => setTaxCode(e.target.value)}
+                        onChange={(e) => setTaxCode(e.target.value.replace(/[^0-9-]/g, ''))}
                         className={cn(PUBLIC_TOUCH, errors.taxCode && 'border-danger')}
                       />
                       {errors.taxCode ? (
@@ -404,16 +502,18 @@ export function GuestRegistrationPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="phoneNumber" className="text-small font-medium text-ink-strong">
-                        {t('guestRegistration.step1.phoneNumber')}
+                        {t('guestRegistration.step1.phoneNumber')} <span className="text-danger">*</span>
                       </label>
-                      <Input
+                      <PhoneInput
                         id="phoneNumber"
-                        type="tel"
-                        placeholder={t('guestRegistration.step1.phoneNumberPlaceholder')}
+                        country={phoneCountry}
+                        onCountryChange={setPhoneCountry}
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        onChange={setPhoneNumber}
+                        invalid={Boolean(errors.phoneNumber)}
                         className={PUBLIC_TOUCH}
                       />
+                      {errors.phoneNumber && <span className="text-caption text-danger">{errors.phoneNumber}</span>}
                     </div>
                   </div>
 
@@ -602,22 +702,19 @@ export function GuestRegistrationPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         type="button"
-                        variant={billingCycle === '1' ? 'primary' : 'secondary'}
-                        onClick={() => setBillingCycle('1')}
+                        variant={billingCycle === 'MONTHLY' ? 'primary' : 'secondary'}
+                        onClick={() => setBillingCycle('MONTHLY')}
                         className="h-12"
                       >
                         {t('guestRegistration.step4.oneMonth')}
                       </Button>
                       <Button
                         type="button"
-                        variant={billingCycle === '12' ? 'primary' : 'secondary'}
-                        onClick={() => setBillingCycle('12')}
-                        className="h-12 relative"
+                        variant={billingCycle === 'YEARLY' ? 'primary' : 'secondary'}
+                        onClick={() => setBillingCycle('YEARLY')}
+                        className="h-12"
                       >
                         {t('guestRegistration.step4.oneYear')}
-                        <span className="ml-2 rounded-full bg-warning px-2 py-0.5 text-[11px] font-bold text-slate-900">
-                          {t('guestRegistration.step4.savePercent')}
-                        </span>
                       </Button>
                     </div>
                   </div>
