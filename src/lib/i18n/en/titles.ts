@@ -47,4 +47,7 @@ export const titles = {
   landing: 'About',
   pricing: 'Pricing',
   contacts: 'Guest contacts',
+  trialRegistration: 'Try for free',
+  guestRegistration: 'Get started',
+  registrationSuccess: 'Registration completed',
 } satisfies Dictionary<typeof source>

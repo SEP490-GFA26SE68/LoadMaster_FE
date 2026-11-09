@@ -16,6 +16,8 @@ export const landing = {
     contact: 'Liên hệ',
     signIn: 'Đăng nhập',
     openApp: 'Vào ứng dụng',
+    trial: 'Đăng ký trải nghiệm',
+    registerNow: 'Đăng ký dùng ngay',
     home: 'LoadMaster — trang giới thiệu',
   },
   hero: {

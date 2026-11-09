@@ -5,9 +5,10 @@ export const agreement = {
   code: 'Code {code}',
   company: 'Company: {name}',
   banner: {
-    expiredTitle: 'The agreement was not signed in time — the company account is suspended',
-    expiredBody: 'The 72 hours to sign the trial service agreement have passed. Contact the platform administrator or customer support to unlock the account.',
+    expiredTitle: 'The agreement was not signed in time — the account is flagged and restricted',
+    expiredBody: 'The 72 hours to sign the trial service agreement have passed. Operations are restricted and account will be deleted after 30 days. Please sign the agreement to unlock.',
     signNow: 'Sign the agreement',
+    signToUnlock: 'Sign agreement to unlock',
     pendingTitle: 'The trial service agreement needs signing',
     hoursLeft: '{hours} hours left',
     pendingBody: 'The agreement must be signed within 3 days of the account being activated. Past that, the company account locks itself even if the trial is still running.',

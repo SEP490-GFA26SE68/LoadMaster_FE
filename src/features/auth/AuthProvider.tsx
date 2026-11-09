@@ -176,6 +176,11 @@ export function useAuth(): AuthValue {
   return value
 }
 
+/** Đọc AuthContext an toàn, trả về null nếu nằm ngoài <AuthProvider> (ví dụ trong unit test). */
+export function useAuthSafe(): AuthValue | null {
+  return use(AuthContext)
+}
+
 /** Người dùng hiện tại, ném lỗi nếu gọi ở màn chưa qua RequireAuth. */
 export function useCurrentUser(): User {
   const { user } = useAuth()

@@ -10,7 +10,13 @@ export function ticketsToDisplay(
   tickets: readonly SupportTicket[],
   viewer: { readonly id: string; readonly role: Role | null },
 ): SupportTicket[] {
-  if (viewer.role === 'systemSupporter') return [...tickets]
+  if (viewer.role === 'systemSupporter') {
+    return tickets.map((ticket) => (
+      ticket.status === 'IN_PROGRESS' && ticket.assignedToId !== undefined && ticket.assignedToId !== viewer.id
+        ? { ...ticket, lockedByOther: true }
+        : ticket
+    ))
+  }
   return tickets.filter((ticket) => ticket.senderId === viewer.id)
 }
 

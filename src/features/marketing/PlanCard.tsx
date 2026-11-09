@@ -68,12 +68,25 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
         </ul>
       </div>
 
-      <Button asChild variant="secondary" className={cn('mt-auto w-full', PUBLIC_TOUCH)}>
-        <Link to={contactPath({ planId: plan.id, type: 'PRICING' })}>
-          {t('pricing.contactPlan')}{' '}
-          <span className="sr-only">{t('pricing.contactPlanName', { name: plan.name })}</span>
-        </Link>
-      </Button>
+      <div className="mt-auto flex flex-col gap-2 pt-2">
+        <Button asChild variant="primary" className={cn('w-full font-semibold', PUBLIC_TOUCH)}>
+          <Link to={`/dang-ky?planId=${encodeURIComponent(plan.id)}`}>
+            {t('landing.header.registerNow')}
+          </Link>
+        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button asChild variant="secondary" className={cn('w-full text-caption sm:text-body', PUBLIC_TOUCH)}>
+            <Link to={`/dang-ky-trai-nghiem?planId=${encodeURIComponent(plan.id)}`}>
+              {t('landing.header.trial')}
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className={cn('w-full text-caption sm:text-body', PUBLIC_TOUCH)}>
+            <Link to={contactPath({ planId: plan.id, type: 'PRICING' })}>
+              {t('pricing.contactPlan')}
+            </Link>
+          </Button>
+        </div>
+      </div>
     </Card>
   )
 }

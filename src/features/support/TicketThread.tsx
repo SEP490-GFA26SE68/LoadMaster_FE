@@ -114,6 +114,9 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
         </div>
         <h3 className="m-0 font-display text-h3 leading-6 font-semibold text-ink-strong pointer-coarse:text-body-lg">{ticket.title}</h3>
         <p className="m-0 text-small text-ink-3">{t('support.thread.sentBy', { name: ticket.senderName, time: when(ticket.createdAt) })}</p>
+        {ticket.status === 'IN_PROGRESS' && ticket.assignedToName ? (
+          <p className="m-0 text-caption font-medium text-cyan-700">{t('support.thread.assignedTo', { name: ticket.assignedToName })}</p>
+        ) : null}
       </div>
 
       <section aria-label={t('support.thread.body')} className="rounded-md border border-line-soft bg-n-25 px-3.5 py-3">
@@ -127,7 +130,20 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
         <>
           <Replies ticket={ticket} when={when} />
           {ticket.status === 'CLOSED' ? (
-            <p className="m-0 text-small text-ink-2 pointer-coarse:text-body">{viewerIsSupport ? t('support.thread.closedSupport') : t('support.thread.closed')}</p>
+            viewerIsSupport ? (
+              <p className="m-0 rounded-md border border-n-300 bg-n-100 px-3.5 py-2.5 text-small text-ink-2 pointer-coarse:text-body">
+                {t('support.thread.closedSupport')}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1 rounded-md border border-n-300 bg-n-100 px-3.5 py-2.5">
+                <p className="m-0 text-small font-medium text-ink-2 pointer-coarse:text-body">{t('support.thread.closed')}</p>
+                <p className="m-0 text-caption text-ink-3">{t('support.thread.closedHint')}</p>
+              </div>
+            )
+          ) : viewerIsSupport && ticket.lockedByOther ? (
+            <p role="status" className="m-0 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-small text-amber-800 pointer-coarse:text-body">
+              {t('support.thread.lockedByOther', { name: ticket.assignedToName ?? ticket.assignedToId ?? '' })}
+            </p>
           ) : (
             <ReplyForm key={ticket.id} onReply={onReply} pending={pending} />
           )}

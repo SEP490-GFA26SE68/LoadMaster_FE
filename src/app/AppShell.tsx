@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router'
+import { TrialAgreementNotifier } from '@/features/billing/TrialAgreementNotifier'
 import { NavRail } from './NavRail'
 
 /**
@@ -15,6 +16,7 @@ export function AppShell() {
   return (
     <div className="app-shell flex h-dvh flex-col overflow-hidden bg-app">
       <NavRail />
+      <TrialAgreementNotifier />
       <div className="relative flex min-h-0 min-w-0 flex-1">
         <Outlet />
       </div>

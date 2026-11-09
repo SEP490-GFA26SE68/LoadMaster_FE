@@ -40,6 +40,12 @@ export type SupportTicket = {
   senderId: string
   /** Tên người gửi chụp lúc gửi, như `TicketReply.authorName`. */
   senderName: string
+  /** Mã nhân viên hỗ trợ đang giữ khoá xử lý yêu cầu (khi `IN_PROGRESS`). */
+  assignedToId?: string
+  /** Tên nhân viên hỗ trợ đang giữ khoá xử lý yêu cầu. */
+  assignedToName?: string
+  /** `true` khi người xem là nhân viên hỗ trợ khác với người đang giữ khoá `IN_PROGRESS`. */
+  lockedByOther?: boolean
   kind: TicketKind
   title: string
   description: string

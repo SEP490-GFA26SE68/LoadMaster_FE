@@ -19,6 +19,8 @@ export type SupportTicketDto = {
   readonly requesterEmail: string | null
   readonly companyId: number | null
   readonly companyName: string | null
+  readonly assignedToId?: number | null
+  readonly assignedToName?: string | null
   readonly resolutionNote: string | null
   /** `LocalDateTime` không múi giờ (giờ của máy chủ), khác `resolvedAt` là `Instant`. */
   readonly createdAt: string
@@ -53,6 +55,8 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
     ...(filled(dto.companyName) ? { companyName: dto.companyName } : {}),
     senderId: dto.requesterId === null ? '' : String(dto.requesterId),
     senderName: dto.requesterName ?? dto.requesterEmail ?? '',
+    ...(dto.status === 'IN_PROGRESS' && dto.assignedToId !== null && dto.assignedToId !== undefined ? { assignedToId: String(dto.assignedToId) } : {}),
+    ...(dto.status === 'IN_PROGRESS' && filled(dto.assignedToName ?? null) ? { assignedToName: dto.assignedToName! } : {}),
     kind,
     title: dto.subject,
     description: dto.description ?? '',

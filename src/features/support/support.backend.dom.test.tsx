@@ -109,7 +109,7 @@ test('a dispatcher sees only the tickets they sent; a new ticket goes to the bac
   })
 })
 
-test('the supporter reads every ticket, sees the note of the team and the company panel, and sets Resolved', async () => {
+test('the supporter reads every ticket, sees the note of the team without the company panel, and sets Resolved', async () => {
   const user = userEvent.setup()
   me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
   renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=1')
@@ -117,9 +117,7 @@ test('the supporter reads every ticket, sees the note of the team and the compan
   expect(panel).toHaveTextContent('Cần xuất lại hoá đơn.')
   expect(within(panel).getByRole('region', { name: 'Phản hồi của đội hỗ trợ' })).toHaveTextContent('Đã gửi lại hoá đơn qua email.')
   expect(within(panel).getByRole('button', { name: 'Gửi trả lời' })).toBeInTheDocument()
-  const company = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
-  expect(await within(company).findByText('Công ty chưa có gói cước.', {}, SLOW)).toBeInTheDocument()
-  expect(within(company).getAllByText('Chưa đọc được')).toHaveLength(2)
+  expect(screen.queryByRole('region', { name: 'Thông tin công ty' })).toBeNull()
   const table = screen.getByRole('table')
   expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Gửi lúc')
   expect(within(table).getAllByText('Vận tải Long Bình')).toHaveLength(2)
@@ -131,4 +129,38 @@ test('the supporter reads every ticket, sees the note of the team and the compan
     { key: 'PATCH /api/support-tickets/1', body: { status: 'RESOLVED' } },
   ]))
   expect(await screen.findByText('Yêu cầu TCK-20261017-2258 chuyển sang Đã giải quyết', {}, SLOW)).toBeInTheDocument()
+})
+
+test('locks IN_PROGRESS ticket for a second supporter so they cannot change status or reply', async () => {
+  tickets = [
+    {
+      ...DISPATCHER_TICKET,
+      status: 'IN_PROGRESS',
+      assignedToId: 4,
+      assignedToName: 'Tạ Thị Ngọc Ánh',
+    },
+  ]
+  me = { id: 9, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=2')
+
+  const panel = await screen.findByRole('region', { name: 'Ly thuỷ tinh dưới thùng nước' }, SLOW)
+  expect(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
+  expect(within(panel).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(panel).getByText(/Đang được xử lý bởi Tạ Thị Ngọc Ánh/i)).toBeInTheDocument()
+})
+
+test('a CLOSED ticket is dimmed and strictly read-only for both supporter and client', async () => {
+  tickets = [
+    {
+      ...DISPATCHER_TICKET,
+      status: 'CLOSED',
+    },
+  ]
+  me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=2')
+
+  const panel = await screen.findByRole('region', { name: 'Ly thuỷ tinh dưới thùng nước' }, SLOW)
+  expect(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
+  expect(within(panel).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(panel).getByText(/Phiếu hỗ trợ đã đóng \(chỉ đọc\)/i)).toBeInTheDocument()
 })

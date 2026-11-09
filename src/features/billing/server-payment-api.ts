@@ -20,14 +20,20 @@ export type PaymentStart =
   /** Kho mẫu: trang thanh toán giả lập của app. */
   | { readonly kind: 'simulation'; readonly paymentId: string }
   /** Cổng thử của backend: trang xác nhận của app. */
-  | { readonly kind: 'confirm'; readonly reference: string; readonly purpose: ServerPaymentPurpose }
+  | { readonly kind: 'confirm'; readonly reference: string; readonly purpose: ServerPaymentPurpose; readonly amountVnd?: number }
   /** Cổng thật: chuyển hẳn sang trang của cổng. */
   | { readonly kind: 'redirect'; readonly url: string }
   /** Gói miễn phí: backend kích hoạt ngay, không có thanh toán. */
   | { readonly kind: 'activated' }
 
 /** `PaymentUrlResponse`: `id` là mã thanh toán của backend, `transactionId` là mã giao dịch gửi cổng (`MOCK_…`). */
-type PaymentUrlDto = { readonly paymentUrl: string | null; readonly transactionId: string | null; readonly id: number | null; readonly status: string | null }
+type PaymentUrlDto = {
+  readonly paymentUrl: string | null
+  readonly transactionId: string | null
+  readonly id: number | null
+  readonly status: string | null
+  readonly amountVnd?: number | string | null
+}
 
 function referenceOf(url: string, transactionId: string | null): string {
   if (transactionId !== null && transactionId !== '') return transactionId
@@ -39,7 +45,15 @@ export function paymentStartOf(dto: PaymentUrlDto | null, purpose: ServerPayment
   if (url === '' && dto?.status === 'ACTIVE') return { kind: 'activated' }
   if (url.includes(MOCK_CHECKOUT_PATH)) {
     const reference = referenceOf(url, dto?.transactionId ?? null)
-    if (reference !== '') return { kind: 'confirm', reference, purpose }
+    const amountVnd = dto?.amountVnd !== undefined && dto?.amountVnd !== null ? Math.round(Number(dto.amountVnd)) : 0
+    if (reference !== '') {
+      return {
+        kind: 'confirm',
+        reference,
+        purpose,
+        ...(amountVnd > 0 ? { amountVnd } : {}),
+      }
+    }
   } else if (/^https?:\/\//i.test(url)) {
     return { kind: 'redirect', url }
   }

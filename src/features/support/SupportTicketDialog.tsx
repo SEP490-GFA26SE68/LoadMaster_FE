@@ -25,13 +25,16 @@ type View = { kind: 'list' } | { kind: 'new' } | { kind: 'ticket'; id: string }
 function TicketRow({ ticket, onOpen }: { ticket: SupportTicket; onOpen: () => void }) {
   const t = useT()
   const format = useFormat()
+  const isClosed = ticket.status === 'CLOSED'
   return (
     <li>
       <button
         type="button"
         aria-label={t('support.mine.open', { title: ticket.title })}
         onClick={onOpen}
-        className="flex w-full min-w-0 flex-col gap-1.5 rounded-md border border-border bg-bg px-3.5 py-3 text-left transition-colors duration-(--dur-fast) ease-standard hover:border-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary pointer-coarse:py-4"
+        className={`flex w-full min-w-0 flex-col gap-1.5 rounded-md border px-3.5 py-3 text-left transition-colors duration-(--dur-fast) ease-standard hover:border-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary pointer-coarse:py-4 ${
+          isClosed ? 'border-n-300 bg-n-100/80 opacity-65' : 'border-border bg-bg'
+        }`}
       >
         <span className="flex flex-wrap items-center gap-2">
           <TicketStatusBadge status={ticket.status} />

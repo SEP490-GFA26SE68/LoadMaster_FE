@@ -43,6 +43,16 @@ export function PublicNavMenu({ className }: { className?: string }) {
             </Link>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuItem asChild className={PUBLIC_TOUCH} onSelect={() => { navigated.current = true }}>
+          <Link to="/dang-ky-trai-nghiem" className="text-cyan-400 font-medium">
+            {t('landing.header.trial')}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className={PUBLIC_TOUCH} onSelect={() => { navigated.current = true }}>
+          <Link to="/dang-ky" className="font-semibold text-primary">
+            {t('landing.header.registerNow')}
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

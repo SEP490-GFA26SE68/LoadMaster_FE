@@ -48,8 +48,8 @@ const ON_BACKEND = usesBackend('billing')
  * giá): Basic 400 đ, trần 3.000; Pro 326 đ, trần 10.000; Ultimate 263 đ, không trần. Công ty chưa có gói tính như Basic.
  */
 const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxBalance: number | null }> = {
-  BASIC: { priceVnd: 400, maxBalance: 3000 },
-  PRO: { priceVnd: 326, maxBalance: 10000 },
+  BASIC: { priceVnd: 400, maxBalance: null },
+  PRO: { priceVnd: 326, maxBalance: null },
   ULTIMATE: { priceVnd: 263, maxBalance: null },
 }
 
@@ -141,9 +141,10 @@ export async function listPlansOnSale(): Promise<SubscriptionPlan[]> {
  * yêu cầu hỗ trợ). Gói chỉ được kích hoạt khi thanh toán thành công; gói miễn phí của backend kích hoạt ngay.
  */
 // POST /api/subscription/subscribe
-export async function subscribe(planId: string): Promise<PaymentStart> {
+export async function subscribe(planId: string, billingCycle?: 'MONTHLY' | 'YEARLY'): Promise<PaymentStart> {
   if (!ON_BACKEND) return { kind: 'simulation', paymentId: (await getMockDb().subscribeToPlan(planId)).id }
-  return startServerPayment('/api/subscription/subscribe', { planId: Number(planId) }, 'SUBSCRIBE', {
+  const body = billingCycle === 'YEARLY' ? { planId: Number(planId), billingCycle: 'YEARLY' } : { planId: Number(planId) }
+  return startServerPayment('/api/subscription/subscribe', body, 'SUBSCRIBE', {
     CONFLICT: 'ACTIVE_SUBSCRIPTION_ALREADY_EXISTS',
     NOT_FOUND: 'SUBSCRIPTION_PLAN_NOT_FOUND',
   })

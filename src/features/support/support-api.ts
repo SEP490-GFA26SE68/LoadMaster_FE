@@ -53,10 +53,10 @@ export const SUPPORT_SOURCE: {
   readonly statuses: readonly TicketStatus[]
 } = {
   replies: true,
-  companyPanel: true,
+  companyPanel: false,
   activityTime: !ON_BACKEND,
   companyDirectory: !ON_BACKEND,
-  planAssign: ON_BACKEND,
+  planAssign: false,
   statuses: ON_BACKEND ? BACKEND_TICKET_STATUSES : TICKET_STATUSES,
 }
 

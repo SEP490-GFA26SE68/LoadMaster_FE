@@ -33,6 +33,22 @@ test('only ACTIVE can sign in', () => {
   expect(isActiveOnBackend('ACTIVE')).toBe(true)
   expect(isActiveOnBackend('LOCKED')).toBe(false)
   expect(isActiveOnBackend('INACTIVE')).toBe(false)
+  expect(isActiveOnBackend('FLAGGED')).toBe(false)
+})
+
+test('FLAGGED user from backend receives status flagged', () => {
+  const standIn: User = {
+    id: 'US-0002', fullName: 'Sample Admin', email: 'admin@trial.vn', phone: '0901 000 000', role: 'companyAdmin', status: 'active',
+    lastActiveAt: null, companyId: 'LOG-002',
+  }
+  const profile: BackendUserProfile = {
+    id: 7, keycloakId: 'kc-7', username: 'admin@trial.vn', email: 'admin@trial.vn', fullName: 'Trial Admin', phoneNumber: '0912345678', companyId: 3,
+    userRoleType: 'ADMIN', status: 'FLAGGED',
+  }
+  expect(userFromBackend(profile, 'companyAdmin', standIn)).toMatchObject({
+    fullName: 'Trial Admin',
+    status: 'flagged',
+  })
 })
 
 test('identity comes from the backend; id and company stay those of the sample account, its depot is dropped (the backend has none)', () => {

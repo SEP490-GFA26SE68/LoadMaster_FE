@@ -82,6 +82,7 @@ export const admin = {
     status: {
       active: 'Active',
       suspended: 'Locked',
+      flagged: 'Flagged',
     },
     devices: {
       systemAdmin: 'Computer',

@@ -30,6 +30,7 @@ function PaymentResult() {
   const [params] = useSearchParams()
   const reference = params.get(PAYMENT_REFERENCE_PARAM) ?? ''
   const purpose = paymentPurposeOf(params.get(PAYMENT_KIND_PARAM))
+  const storedAmount = reference === '' ? 0 : Number(sessionStorage.getItem(`lm_payment_amount_${reference}`) ?? 0)
   const confirm = useConfirmServerPaymentMutation()
   const outcome = confirm.data
 
@@ -68,6 +69,11 @@ function PaymentResult() {
               <Banner tone="info">{t('payment.server.notice')}</Banner>
               <dl className="m-0 flex flex-col">
                 <CheckoutRow label={t('payment.description')}>{t(`payment.server.purposes.${purpose}`)}</CheckoutRow>
+                {storedAmount > 0 ? (
+                  <CheckoutRow label={t('billing.payments.columns.amount')}>
+                    <span className="font-semibold text-ink-strong tabular-nums">{format.currency(storedAmount)}</span>
+                  </CheckoutRow>
+                ) : null}
                 <CheckoutRow label={t('payment.code')}><span className="font-mono text-body break-all tabular-nums">{reference}</span></CheckoutRow>
               </dl>
               <div role="status" aria-live="polite">

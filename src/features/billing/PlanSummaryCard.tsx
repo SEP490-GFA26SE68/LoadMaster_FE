@@ -28,17 +28,38 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
  * giá và credit mỗi tháng. Gói đang dùng có nút Huỷ gói (secondary — nút chính của màn là Nạp credit); gói đã huỷ hay hết hạn nói rõ
  * hệ quả bằng một dòng. Nối backend thì công ty tự gia hạn gói đang dùng thêm một kỳ (`onRenew`, nút phụ).
  */
-export function PlanSummaryCard({ current, onCancel, onRenew, renewPending = false }: {
+export function purchasedMonthsOf(startedAt: string, expiresAt: string): number {
+  const start = new Date(startedAt)
+  const end = new Date(expiresAt)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1
+  const months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth())
+  if (months > 0) return months
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / (30 * 86_400_000)))
+}
+
+export function PlanSummaryCard({
+  current,
+  onCancel,
+  onRenew,
+  renewPending = false,
+  onRenewYear,
+  renewYearPending = false,
+}: {
   current: CurrentSubscription
   onCancel: () => void
   onRenew?: () => void
   renewPending?: boolean
+  onRenewYear?: () => void
+  renewYearPending?: boolean
 }) {
   const t = useT()
   const format = useFormat()
   const { subscription, plan } = current
   const look = STATUS_LOOK[subscription.status]
   const tier = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
+  const purchasedMonths = purchasedMonthsOf(subscription.startedAt, subscription.expiresAt)
+  const remainingToYear = Math.max(0, 12 - purchasedMonths)
+  const atMaxYearCap = subscription.status === 'ACTIVE' && remainingToYear <= 0
   return (
     <Card role="region" aria-labelledby="billing-plan">
       <CardHeader>
@@ -60,13 +81,17 @@ export function PlanSummaryCard({ current, onCancel, onRenew, renewPending = fal
             <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
           ) : null}
           <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
+          {BILLING_CAPABILITIES.contractRenewal && subscription.status === 'ACTIVE' && remainingToYear > 0 ? (
+            <Field label={t('billing.plan.yearlyPrice')}>{format.currency(plan.priceVnd * remainingToYear)}</Field>
+          ) : null}
           <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
         </dl>
         {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
         {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
         {subscription.status === 'ACTIVE' || (onRenew && subscription.status === 'EXPIRED') ? (
           <div className="flex flex-wrap gap-2">
-            {onRenew ? <Button variant="secondary" loading={renewPending} onClick={onRenew}>{t('billing.plan.renew')}</Button> : null}
+            {onRenew ? <Button variant="secondary" disabled={atMaxYearCap} loading={renewPending} onClick={onRenew}>{t('billing.plan.renew')}</Button> : null}
+            {onRenewYear ? <Button variant="secondary" disabled={atMaxYearCap} loading={renewYearPending} onClick={onRenewYear}>{t('billing.plan.renewYear')}</Button> : null}
             {subscription.status === 'ACTIVE' ? <Button variant="secondary" onClick={onCancel}>{t('billing.plan.cancel')}</Button> : null}
           </div>
         ) : null}

@@ -87,3 +87,11 @@ test('a link without a known type shows not found', () => {
   expect(screen.getByText('Không tìm thấy giao dịch')).toBeInTheDocument()
   expect(screen.getByText('Đường dẫn thiếu mã giao dịch hoặc loại thanh toán.')).toBeInTheDocument()
 })
+
+test('shows payment amount on the confirmation page when stored for the transaction reference', () => {
+  sessionStorage.setItem('lm_payment_amount_MOCK_YEAR1', '16390000')
+  renderResult('?ma=MOCK_YEAR1&loai=goi')
+  expect(screen.getByText('Số tiền')).toBeInTheDocument()
+  expect(screen.getByText('16.390.000 ₫')).toBeInTheDocument()
+  sessionStorage.removeItem('lm_payment_amount_MOCK_YEAR1')
+})

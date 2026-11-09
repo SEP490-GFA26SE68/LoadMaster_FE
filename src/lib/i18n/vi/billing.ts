@@ -26,10 +26,12 @@ export const billing = {
     autoRenewOn: 'Bật',
     autoRenewOff: 'Tắt',
     price: 'Giá mỗi tháng',
+    yearlyPrice: 'Giá gia hạn năm',
     credits: 'Credit mỗi tháng',
     cancel: 'Huỷ gói',
     /** Chỉ khi nối backend: tự gia hạn đúng gói đang dùng. */
     renew: 'Gia hạn thêm một kỳ',
+    renewYear: 'Gia hạn theo năm',
     expiredNote: 'Gói đã hết hạn nên chưa chạy tối ưu được. Số dư credit được giữ lại, chọn gói mới để dùng tiếp.',
     cancelledNote: 'Gói đã huỷ, dùng được tới hết {date} rồi hết hạn, không tự gia hạn.',
   },
@@ -44,11 +46,22 @@ export const billing = {
     title: 'Chọn gói',
     subscribe: 'Đăng ký',
     subscribeTo: 'Đăng ký gói {name}',
+    upgrade: 'Nâng cấp',
+    upgradeTo: 'Nâng cấp lên gói {name}',
     credits: '{credits} credit mỗi tháng',
     none: 'Hiện chưa có gói nào đang bán.',
-    /** Nối backend: gói hạng cao hơn gói đang dùng chỉ đổi được qua yêu cầu hỗ trợ (duyệt hợp đồng). */
     requestUpgrade: 'Gửi yêu cầu nâng cấp',
     requestUpgradeTo: 'Gửi yêu cầu nâng cấp lên gói {name}',
+  },
+  upgradeDialog: {
+    title: 'Nâng cấp lên gói {plan}?',
+    description: 'Cảnh báo: Bạn đang còn {months} tháng trong gói {currentPlan}. Bạn có chắc chắn muốn đổi sang gói {plan} không? Số dư credit hiện tại đang còn dư sẽ được reset về 0, không quy đổi hay cộng dồn. Sau khi thanh toán thành công, công ty sẽ nhận định mức credit của gói {plan} và bắt đầu chu kỳ mới.',
+    cycleLabel: 'Chọn chu kỳ thanh toán',
+    monthly: 'Theo tháng (1 tháng)',
+    yearly: 'Theo năm (12 tháng)',
+    total: 'Tổng thanh toán: {amount}',
+    cancel: 'Huỷ',
+    confirm: 'Tiếp tục nâng cấp',
   },
   /** Nút trên dải tiêu đề: gửi yêu cầu hỗ trợ (nâng cấp gói, thanh toán). */
   support: 'Yêu cầu hỗ trợ',
@@ -61,7 +74,7 @@ export const billing = {
   },
   credit: {
     balance: 'Số dư',
-    note: 'Mỗi lần chạy tối ưu 3D dùng 1 credit; gói không giới hạn dùng 0.',
+    note: 'Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.',
     unlimitedNote: 'Gói không giới hạn nên số dư không bị trừ khi chạy tối ưu.',
   },
   cancelDialog: {
@@ -77,6 +90,7 @@ export const billing = {
   topUpDialog: {
     title: 'Nạp credit',
     description: '{price} mỗi credit. Bạn sang trang thanh toán để hoàn tất; credit chỉ được cộng khi thanh toán thành công.',
+    monthlyResetWarning: 'Cảnh báo: Credit mua lẻ chỉ xài trong tháng hiện tại, qua tháng mới vẫn sẽ reset về định mức credit ban đầu của gói bạn đã mua.',
     pack: '{credits} credit',
     /** Chỉ khi nối backend: nạp số credit tuỳ ý trong trần số dư của hạng gói. */
     custom: 'Số credit muốn nạp',
@@ -89,7 +103,7 @@ export const billing = {
   },
   history: {
     title: 'Lịch sử',
-    tabs: { credit: 'Credit', payments: 'Thanh toán', invoices: 'Hoá đơn' },
+    tabs: { credit: 'Credit', payments: 'Thanh toán', invoices: 'Hoá đơn', usage: 'Trừ / Hoàn credit' },
   },
   ledger: {
     columns: { time: 'Thời gian', type: 'Loại', amount: 'Số credit', reference: 'Tham chiếu', note: 'Ghi chú' },

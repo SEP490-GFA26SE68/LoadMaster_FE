@@ -14,11 +14,11 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { PaymentTransaction, SubscriptionPlan } from '@/lib/mock-db'
 import { AgreementCard } from './AgreementCard'
 import { BalanceCard } from './BalanceCard'
-import { BILLING_CAPABILITIES } from './billing-api'
+import { BILLING_CAPABILITIES, topUpTerms } from './billing-api'
 import { BillingHistoryCard } from './BillingHistoryCard'
 import { paymentPath } from './payment-path'
 import { PlanChoiceCard } from './PlanChoiceCard'
-import { PlanSummaryCard } from './PlanSummaryCard'
+import { PlanSummaryCard, purchasedMonthsOf } from './PlanSummaryCard'
 import { SignAgreementDialog } from './SignAgreementDialog'
 import { TopUpDialog } from './TopUpDialog'
 import { TrialAgreementBanner } from './TrialAgreementBanner'
@@ -39,6 +39,21 @@ import { useOpenPayment } from './useOpenPayment'
 /** Thanh toán của gói đang chờ trả: gia hạn trước (gói sắp hết hạn), rồi đăng ký dở. Nạp credit chờ không có banner — mỗi lần bấm Nạp là một giao dịch mới. */
 function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTransaction | undefined {
   return payments.find((item) => item.status === 'PENDING' && item.purpose === 'RENEWAL') ?? payments.find((item) => item.status === 'PENDING' && item.purpose === 'SUBSCRIBE')
+}
+
+function remainingMonthsOf(startedAt: string, expiresAt: string): number {
+  const end = new Date(expiresAt)
+  const nowMs = Date.now()
+  if (Number.isNaN(end.getTime()) || end.getTime() <= nowMs) return 0
+  const now = new Date(nowMs)
+  const monthsFromNow = (end.getUTCFullYear() - now.getUTCFullYear()) * 12 + (end.getUTCMonth() - now.getUTCMonth())
+  if (monthsFromNow > 0) return monthsFromNow
+  const start = new Date(startedAt)
+  if (!Number.isNaN(start.getTime())) {
+    const totalMonths = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth())
+    if (totalMonths > 0) return totalMonths
+  }
+  return Math.max(1, Math.ceil((end.getTime() - nowMs) / (30 * 86_400_000)))
 }
 
 /**
@@ -63,6 +78,8 @@ export function BillingPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
+  const [upgradePlan, setUpgradePlan] = useState<SubscriptionPlan | null>(null)
+  const [upgradeCycle, setUpgradeCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY')
   const [agreementDialog, setAgreementDialog] = useState<'sign' | 'view' | null>(null)
   const agreement = useMyAgreementQuery().data ?? null
   const sign = useSignAgreementMutation()
@@ -81,12 +98,47 @@ export function BillingPage() {
     toast.error(dataErrorMessage(error, t))
   }
 
-  function handleSubscribe(plan: SubscriptionPlan) {
-    subscribe.mutate(plan.id, { onSuccess: (start) => openPayment(start, plan.name), onError: showError })
+  function handleSubscribe(plan: SubscriptionPlan, billingCycle?: 'MONTHLY' | 'YEARLY') {
+    const arg = billingCycle === 'YEARLY' ? { planId: plan.id, billingCycle: 'YEARLY' as const } : plan.id
+    const months =
+      billingCycle === 'YEARLY'
+        ? contract !== null && contract.plan.id === plan.id
+          ? Math.max(1, 12 - purchasedMonthsOf(contract.subscription.startedAt, contract.subscription.expiresAt))
+          : 12
+        : 1
+    const amountVnd = plan.priceVnd * months
+    subscribe.mutate(arg, { onSuccess: (start) => openPayment(start, plan.name, amountVnd), onError: showError })
+  }
+
+  function handleChoosePlan(plan: SubscriptionPlan) {
+    if (contract !== null) {
+      setUpgradeCycle('MONTHLY')
+      setUpgradePlan(plan)
+      return
+    }
+    handleSubscribe(plan)
+  }
+
+  function handleConfirmUpgrade() {
+    if (!upgradePlan) return
+    const target = upgradePlan
+    const arg = upgradeCycle === 'YEARLY' ? { planId: target.id, billingCycle: 'YEARLY' as const } : target.id
+    const amountVnd = upgradeCycle === 'YEARLY' ? target.priceVnd * 12 : target.priceVnd
+    subscribe.mutate(arg, {
+      onSuccess: (start) => {
+        setUpgradePlan(null)
+        openPayment(start, target.name, amountVnd)
+      },
+      onError: (error) => {
+        setUpgradePlan(null)
+        showError(error)
+      },
+    })
   }
 
   function handleTopUp(credits: number) {
-    topUp.mutate(credits, { onSuccess: (start) => openPayment(start), onError: showError })
+    const amountVnd = credits * topUpTerms(current?.plan.tier ?? null).priceVnd
+    topUp.mutate(credits, { onSuccess: (start) => openPayment(start, '', amountVnd), onError: showError })
   }
 
   function handleSign(request: SignAgreementRequest) {
@@ -166,8 +218,23 @@ export function BillingPage() {
                 <PlanSummaryCard
                   current={current}
                   onCancel={() => setCancelOpen(true)}
-                  onRenew={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan) : undefined}
-                  renewPending={subscribe.isPending}
+                  onRenew={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan, 'MONTHLY') : undefined}
+                  renewPending={
+                    subscribe.isPending &&
+                    (subscribe.variables === current.plan.id ||
+                      (typeof subscribe.variables === 'object' &&
+                        subscribe.variables !== null &&
+                        subscribe.variables.planId === current.plan.id &&
+                        subscribe.variables.billingCycle !== 'YEARLY'))
+                  }
+                  onRenewYear={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan, 'YEARLY') : undefined}
+                  renewYearPending={
+                    subscribe.isPending &&
+                    typeof subscribe.variables === 'object' &&
+                    subscribe.variables !== null &&
+                    subscribe.variables.planId === current.plan.id &&
+                    subscribe.variables.billingCycle === 'YEARLY'
+                  }
                 />
               ) : (
                 <Card>
@@ -187,10 +254,15 @@ export function BillingPage() {
             {canSubscribe || contract ? (
               <PlanChoiceCard
                 plans={plans.data ?? []}
-                pendingId={subscribe.isPending ? (subscribe.variables ?? null) : null}
-                onSubscribe={handleSubscribe}
+                pendingId={
+                  subscribe.isPending
+                    ? typeof subscribe.variables === 'string'
+                      ? subscribe.variables
+                      : (subscribe.variables?.planId ?? null)
+                    : null
+                }
+                onSubscribe={handleChoosePlan}
                 current={contract ? { tier: contract.plan.tier } : null}
-                onRequestUpgrade={() => setSupportOpen(true)}
               />
             ) : null}
             <BillingHistoryCard />
@@ -209,6 +281,59 @@ export function BillingPage() {
       {supportOpen ? <SupportTicketDialog onClose={() => setSupportOpen(false)} /> : null}
       <SignAgreementDialog agreement={agreement} open={agreementDialog === 'sign'} onClose={() => setAgreementDialog(null)} onSign={handleSign} isSigning={sign.isPending} />
       <ViewAgreementDialog agreement={agreement} open={agreementDialog === 'view'} onClose={() => setAgreementDialog(null)} />
+      <ConfirmDialog
+        open={upgradePlan !== null}
+        onOpenChange={(open) => { if (!open) setUpgradePlan(null) }}
+        title={t('billing.upgradeDialog.title', { plan: upgradePlan?.name ?? '' })}
+        description={t('billing.upgradeDialog.description', {
+          plan: upgradePlan?.name ?? '',
+          currentPlan: current?.plan.name ?? '',
+          months: current ? remainingMonthsOf(current.subscription.startedAt, current.subscription.expiresAt) : 0,
+        })}
+        cancelLabel={t('billing.upgradeDialog.cancel')}
+        confirmLabel={t('billing.upgradeDialog.confirm')}
+        pending={subscribe.isPending}
+        onConfirm={handleConfirmUpgrade}
+      >
+        {upgradePlan ? (
+          <div className="flex flex-col gap-3 px-6 pb-5">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-small font-medium text-ink-2">{t('billing.upgradeDialog.cycleLabel')}</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUpgradeCycle('MONTHLY')}
+                  className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition ${
+                    upgradeCycle === 'MONTHLY'
+                      ? 'border-cyan-500 bg-cyan-50/60 text-ink-strong ring-1 ring-cyan-500'
+                      : 'border-line bg-surface text-ink-2 hover:border-ink-3'
+                  }`}
+                >
+                  <span className="text-small font-semibold">{t('billing.upgradeDialog.monthly')}</span>
+                  <span className="text-caption text-ink-3 tabular-nums">{format.currency(upgradePlan.priceVnd)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUpgradeCycle('YEARLY')}
+                  className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition ${
+                    upgradeCycle === 'YEARLY'
+                      ? 'border-cyan-500 bg-cyan-50/60 text-ink-strong ring-1 ring-cyan-500'
+                      : 'border-line bg-surface text-ink-2 hover:border-ink-3'
+                  }`}
+                >
+                  <span className="text-small font-semibold">{t('billing.upgradeDialog.yearly')}</span>
+                  <span className="text-caption text-ink-3 tabular-nums">{format.currency(upgradePlan.priceVnd * 12)}</span>
+                </button>
+              </div>
+            </div>
+            <p className="m-0 text-small font-medium text-ink-strong tabular-nums">
+              {t('billing.upgradeDialog.total', {
+                amount: format.currency(upgradeCycle === 'YEARLY' ? upgradePlan.priceVnd * 12 : upgradePlan.priceVnd),
+              })}
+            </p>
+          </div>
+        ) : null}
+      </ConfirmDialog>
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
