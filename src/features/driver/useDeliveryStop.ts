@@ -3,6 +3,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { DeliveryView } from './delivery-progress'
 import type { IssueFormValues } from './issue-form.schema'
 import { useArriveMutation, useCompleteStopMutation, useReportIssueMutation, useStartDeliveryMutation } from './useDriverQueries'
+import { labelOf } from './useUnloadScan'
 
 /**
  * Thao tác của tài xế ở điểm giao (LM-087, FE-6-06), ghi thẳng vào kho (D-47): xuất phát, "Đã đến", báo sự cố, hoàn tất điểm (sau hộp
@@ -36,7 +37,7 @@ export function useDeliveryStop(tripId: string, view: DeliveryView | undefined) 
     if (!view) return false
     try {
       await report.mutateAsync({ stopNumber: view.stop.number, packageInstanceId, kind, note })
-      if (kind === 'refused') toast.warning(t('driver.issue.refusedRecorded', { id: packageInstanceId }), { description: t('driver.issue.refusedRecordedDescription') })
+      if (kind === 'refused') toast.warning(t('driver.issue.refusedRecorded', { id: labelOf(view, packageInstanceId) }), { description: t('driver.issue.refusedRecordedDescription') })
       return true
     } catch (error) {
       showError(error)

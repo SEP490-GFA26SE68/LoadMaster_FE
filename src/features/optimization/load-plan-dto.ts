@@ -19,6 +19,8 @@ export type OptimizationStartDto = {
   readonly jobId: string
   readonly tripId?: number | null
   readonly subscriptionTier?: string | null
+  /** Số kiện đã ghim lần chạy giữ nguyên (0 khi không giữ ghim); máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
 }
 
 /** `GET /api/trips/optimization-jobs/{jobId}`. */
@@ -32,6 +34,10 @@ export type OptimizationJobDto = {
   readonly computationMs?: number | null
   readonly createdAt?: string | null
   readonly packedPlanCount?: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; máy chủ cũ không trả. */
+  readonly pinnedCount?: number | null
+  /** Thuật toán của lần chạy — hạng của gói (`EP_DBLF`, `EP_DBLF_GA`, `EP_DBLF_GA_AI`); máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
 }
 
 export type PlacementDto = {
@@ -52,6 +58,8 @@ export type PlacementDto = {
   readonly stopId?: number | null
   readonly stopName?: string | null
   readonly stopSequence?: number | null
+  /** Mã hướng (0..5) kiện được nhận khi chỉnh tay theo loại kiện; máy chủ cũ không trả. */
+  readonly allowedRotations?: readonly number[] | null
 }
 
 export type UnplacedDto = {
@@ -59,6 +67,21 @@ export type UnplacedDto = {
   readonly packageCode?: string | null
   readonly trackingBarcode?: string | null
   readonly reason?: string | null
+  /** Kích thước (cm) và khối lượng (kg) của kiện; máy chủ cũ không trả. */
+  readonly lengthCm?: Decimal | null
+  readonly widthCm?: Decimal | null
+  readonly heightCm?: Decimal | null
+  readonly weightKg?: Decimal | null
+}
+
+/** `StopZoneResponse`: vùng theo điểm giao dọc trục X, cm. */
+export type StopZoneDto = {
+  readonly id: string
+  readonly stopId?: number | null
+  readonly stopSequence?: number | null
+  readonly startXCm?: Decimal | null
+  readonly endXCm?: Decimal | null
+  readonly volumeRatio?: Decimal | null
 }
 
 /** `LoadPlanDetailResponse`. */
@@ -69,7 +92,10 @@ export type LoadPlanDto = {
   readonly objective?: string | null
   /** Hợp đồng đích: `A` · `B` · `C` theo mục tiêu; phương án cũ `null`. */
   readonly candidateLabel?: string | null
+  /** Thuật toán đã tạo ra phương án (`EP_DBLF`, `GA`, `SA`, `EP_LUMO_R1_1`, `LUMO_R1`…); phương án cũ: thuật toán của lần chạy. */
   readonly algorithmName?: string | null
+  /** Thuật toán của lần chạy — hạng của gói; máy chủ cũ không trả. */
+  readonly runAlgorithm?: string | null
   readonly computationMs?: number | null
   readonly planName?: string | null
   readonly version?: number | null
@@ -84,8 +110,14 @@ export type LoadPlanDto = {
   readonly frontAxleLoad?: Decimal | null
   readonly rearAxleLoad?: Decimal | null
   readonly rehandlingCount?: number | null
+  /** Bản duyệt dựng từ bản chỉnh tay (`POST /api/load-plans/{id}/approve-edits`). */
+  readonly manuallyEdited?: boolean | null
+  /** Hàng, xe hoặc điểm giao của chuyến đã đổi sau khi tối ưu: không duyệt được. */
+  readonly stale?: boolean | null
   readonly placements?: readonly PlacementDto[] | null
   readonly unplaced?: readonly UnplacedDto[] | null
+  /** Vùng theo điểm giao; máy chủ chỉ trả khi vùng dựng lại cho ra đúng `rehandlingCount` đã lưu. */
+  readonly stopZones?: readonly StopZoneDto[] | null
 }
 
 /** `TripLoadPlansResponse`: cũ trước mới sau. */
@@ -93,17 +125,6 @@ export type TripLoadPlansDto = {
   readonly tripId: number
   readonly approvedPlanId?: number | null
   readonly plans?: readonly LoadPlanDto[] | null
-}
-
-/**
- * `LoadPlanResponse` của `POST /api/load-plans/{id}/rerun`: **một** phương án mới (phiên bản kế tiếp của phương án nguồn, không nhãn A · B · C),
- * máy chủ chạy xong mới trả lời.
- */
-export type RerunPlanDto = {
-  readonly id: number
-  readonly jobUuid?: string | null
-  readonly version?: number | null
-  readonly parentPlanId?: number | null
 }
 
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
@@ -119,8 +140,12 @@ export type OptimizationJob = {
   readonly finished: boolean
   /** Số phương án đã lưu; vắng khi máy chủ chưa trả. */
   readonly packedPlanCount: number | null
+  /** Số kiện đã ghim lần chạy giữ nguyên; `null` khi máy chủ không trả. */
+  readonly pinnedCount: number | null
   readonly computationMs: number | null
   readonly createdAt: string | null
+  /** Thuật toán của lần chạy (hạng của gói); `null` khi máy chủ không trả. */
+  readonly runAlgorithm: string | null
 }
 
 export type LoadPlacement = {
@@ -141,9 +166,30 @@ export type LoadPlacement = {
   readonly pinned: boolean
   readonly stopId: string | null
   readonly stopSequence: number | null
+  /**
+   * Mã `rotation_type` kiện được nhận khi chỉnh tay (theo loại kiện, như dịch vụ tối ưu đọc), gồm hướng đang xếp; vắng khi máy chủ
+   * không trả — chỉnh tay giữ nguyên hướng.
+   */
+  readonly allowedRotations?: readonly number[]
 }
 
-export type LoadUnplaced = { readonly packageId: string; readonly code: string; readonly reason: string | null }
+export type LoadUnplaced = {
+  readonly packageId: string
+  readonly code: string
+  readonly reason: string | null
+  /** Kích thước cm và khối lượng kg của kiện; `null` khi máy chủ không trả. */
+  readonly size: { readonly lengthCm: number; readonly widthCm: number; readonly heightCm: number } | null
+  readonly weightKg: number | null
+}
+
+/** Vùng theo điểm giao của phương án (cm), theo thứ tự điểm giao của máy chủ. */
+export type LoadStopZone = {
+  readonly id: string
+  readonly stopId: string | null
+  readonly stopSequence: number | null
+  readonly startXCm: number
+  readonly endXCm: number
+}
 
 /** Một phương án của máy chủ. Số máy chủ không trả là `null` — màn bỏ phần đó, không vẽ 0. */
 export type LoadPlan = {
@@ -152,7 +198,9 @@ export type LoadPlan = {
   readonly jobId: string | null
   readonly objective: PlanObjective | null
   readonly label: PlanLabel | null
+  /** Thuật toán đã tạo ra phương án; `runAlgorithm` là thuật toán của lần chạy (hạng của gói). */
   readonly algorithmName: string | null
+  readonly runAlgorithm: string | null
   readonly computationMs: number | null
   readonly name: string | null
   readonly volumePercent: number | null
@@ -163,8 +211,12 @@ export type LoadPlan = {
   readonly frontAxleLoadKg: number | null
   readonly rearAxleLoadKg: number | null
   readonly rehandlingCount: number | null
+  readonly manuallyEdited: boolean
+  readonly stale: boolean
   readonly placements: readonly LoadPlacement[]
   readonly unplaced: readonly LoadUnplaced[]
+  /** `null` khi máy chủ không trả vùng (hoặc trả vùng thiếu mốc): Planner không có dải vùng, không đếm dỡ-xếp lại. */
+  readonly stopZones: readonly LoadStopZone[] | null
 }
 
 export type TripLoadPlans = { readonly approvedPlanId: string | null; readonly plans: readonly LoadPlan[] }
@@ -203,8 +255,10 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     status,
     finished: FINISHED_JOB_STATUSES.has(status),
     packedPlanCount: dto.packedPlanCount ?? null,
+    pinnedCount: dto.pinnedCount ?? null,
     computationMs: dto.computationMs ?? null,
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
   }
 }
 
@@ -228,7 +282,38 @@ function placementOf(dto: PlacementDto): LoadPlacement {
     pinned: dto.pinned === true,
     stopId: dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId),
     stopSequence: dto.stopSequence ?? null,
+    ...(dto.allowedRotations
+      ? { allowedRotations: dto.allowedRotations.filter((code) => Number.isInteger(code) && code >= 0 && code <= 5) }
+      : {}),
   }
+}
+
+function unplacedOf(dto: UnplacedDto): LoadUnplaced {
+  const [lengthCm, widthCm, heightCm] = [numberOf(dto.lengthCm), numberOf(dto.widthCm), numberOf(dto.heightCm)]
+  const weightKg = numberOf(dto.weightKg)
+  return {
+    packageId: String(dto.packageId),
+    code: codeOf(dto),
+    reason: dto.reason ?? null,
+    size: lengthCm === null || widthCm === null || heightCm === null
+      ? null
+      : { lengthCm: roundCm(lengthCm), widthCm: roundCm(widthCm), heightCm: roundCm(heightCm) },
+    weightKg: weightKg === null ? null : roundKg(weightKg),
+  }
+}
+
+/** Vùng thiếu mốc hay không gắn được với điểm giao nào thì bỏ cả bộ vùng: không vẽ nửa bộ. */
+function stopZonesOf(dtos: readonly StopZoneDto[] | null | undefined): LoadStopZone[] | null {
+  if (!dtos || dtos.length === 0) return null
+  const zones: LoadStopZone[] = []
+  for (const dto of dtos) {
+    const [startXCm, endXCm] = [numberOf(dto.startXCm), numberOf(dto.endXCm)]
+    const stopId = dto.stopId === null || dto.stopId === undefined ? null : String(dto.stopId)
+    const stopSequence = dto.stopSequence ?? null
+    if (startXCm === null || endXCm === null || endXCm < startXCm || (stopId === null && stopSequence === null)) return null
+    zones.push({ id: String(dto.id), stopId, stopSequence, startXCm: roundCm(startXCm), endXCm: roundCm(endXCm) })
+  }
+  return zones
 }
 
 export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
@@ -242,6 +327,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     objective,
     label,
     algorithmName: dto.algorithmName?.trim() || null,
+    runAlgorithm: dto.runAlgorithm?.trim() || null,
     computationMs: dto.computationMs ?? null,
     name: dto.planName?.trim() || null,
     volumePercent: percentOf(dto.volumeUtilization),
@@ -252,8 +338,11 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     frontAxleLoadKg: numberOf(dto.frontAxleLoad),
     rearAxleLoadKg: numberOf(dto.rearAxleLoad),
     rehandlingCount: dto.rehandlingCount ?? null,
+    manuallyEdited: dto.manuallyEdited === true,
+    stale: dto.stale === true,
     placements: (dto.placements ?? []).map(placementOf),
-    unplaced: (dto.unplaced ?? []).map((item) => ({ packageId: String(item.packageId), code: codeOf(item), reason: item.reason ?? null })),
+    unplaced: (dto.unplaced ?? []).map(unplacedOf),
+    stopZones: stopZonesOf(dto.stopZones),
   }
 }
 

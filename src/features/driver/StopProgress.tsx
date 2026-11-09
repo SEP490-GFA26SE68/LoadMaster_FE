@@ -1,7 +1,6 @@
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { DeliveryView } from './delivery-progress'
-import { useDriverCapabilities } from './useDriverQueries'
 
 /**
  * Dòng "Cần dỡ N kiện · Đã dỡ … · Sự cố …" kèm thước tiến độ dày 12px (V2.3 đợt 6): xanh lá khi đủ 100 % (màu chỉ nhấn thêm — con số và
@@ -9,7 +8,6 @@ import { useDriverCapabilities } from './useDriverQueries'
  */
 export function StopProgress({ view }: { view: DeliveryView }) {
   const t = useT()
-  const caps = useDriverCapabilities()
   const pickupStop = view.stop.kind === 'PICKUP'
   const handled = view.total - view.remaining
   const percent = view.total === 0 ? 100 : Math.round((handled / view.total) * 100)
@@ -19,10 +17,7 @@ export function StopProgress({ view }: { view: DeliveryView }) {
         <span aria-live="polite" aria-atomic="true" className="font-semibold text-ink-strong">
           {pickupStop
             ? t('driver.pickup.summary', { total: view.total, done: view.unloadedCount })
-            // Backend chưa nhận sự cố theo kiện: không nói "Sự cố 0"
-            : caps.deliveryIssues
-              ? t('driver.summary', { total: view.total, done: view.unloadedCount, issues: view.issueCount })
-              : t('driver.backend.summary', { total: view.total, done: view.unloadedCount })}
+            : t('driver.summary', { total: view.total, done: view.unloadedCount, issues: view.issueCount })}
         </span>
         <span className="font-display font-[650] tabular-nums text-ink-2">{percent}%</span>
       </div>

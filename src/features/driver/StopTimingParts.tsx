@@ -53,16 +53,16 @@ export function TimingChip({ timing }: { timing: Pick<StopTiming, 'arrival' | 'e
 
 /**
  * Nguồn của giờ đến dự kiến kèm MOCK RESULT (giờ đến là ước lượng của mock): một dòng cho cả thẻ hay cả danh sách. Không có giờ dự kiến nào
- * thì không có dòng.
+ * thì không có dòng. Giờ máy chủ tính (`mock={false}`) không kèm MOCK RESULT.
  */
-export function EtaSourceLine({ sources, className }: { sources: readonly EtaSource[]; className?: string }) {
+export function EtaSourceLine({ sources, className, mock = true }: { sources: readonly EtaSource[]; className?: string; mock?: boolean }) {
   const t = useT()
   const format = useFormat()
   if (sources.length === 0) return null
   return (
     <p className={cn('m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-3', className)}>
       {format.list(sources.map((source) => t(`driver.timing.sources.${source}`)))}
-      <Badge shape="tag" tone="mock" className={TOUCH_CHIP}>MOCK RESULT</Badge>
+      {mock ? <Badge shape="tag" tone="mock" className={TOUCH_CHIP}>MOCK RESULT</Badge> : null}
     </p>
   )
 }

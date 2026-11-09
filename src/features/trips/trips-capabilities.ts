@@ -4,10 +4,10 @@ import { usesBackend } from '@/lib/backend-config'
  * Màn chuyến làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend có: danh sách chuyến (mã,
  * tên, trạng thái, giờ xuất phát, xe, tài xế, số điểm, số kiện), Chi tiết chuyến (kho xuất phát, điểm giao kèm giờ đến dự kiến và hạn,
  * tối ưu tuyến), tạo chuyến, sửa (tên, giờ xuất phát, xe, tài xế, kho xuất phát) và huỷ chuyến bằng hộp thoại của Chi tiết chuyến, gỡ yêu
- * cầu giao khỏi chuyến, và phương án xếp hàng của máy chủ ở Thiết lập tối ưu, So sánh, Planner (xem, Duyệt) — các màn đó tự chọn bản theo
+ * cầu giao khỏi chuyến, và phương án xếp hàng của máy chủ ở Thiết lập tối ưu, So sánh, Planner (xem, Duyệt, chỉnh tay và "Duyệt bản
+ * chỉnh", ghim, chạy lại giữ ghim, đổi xe, phương án lỗi thời) — các màn đó tự chọn bản theo
  * `backend`. Backend chưa trả — màn ẩn phần đó, không gọi kho mẫu bằng mã chuyến của máy chủ: form sửa chuyến, kiện và kiện kho kiện của
- * chuyến, phương án trên danh sách chuyến (lấp đầy, dòng phụ chờ duyệt / đã duyệt / lỗi thời), chỉnh tay / ghim / chạy lại giữ ghim / đổi
- * xe trong Planner; tiến độ kho, xác nhận tay, kiện báo thiếu, phân nhóm hàng, nhận hàng dọc đường, tiến trình, báo cáo chuyến. Nằm riêng
+ * chuyến, phương án trên danh sách chuyến (lấp đầy, dòng phụ chờ duyệt / đã duyệt / lỗi thời); tiến độ kho, xác nhận tay, kiện báo thiếu, phân nhóm hàng, nhận hàng dọc đường, tiến trình, báo cáo chuyến. Nằm riêng
  * khỏi `trips-api.ts` để thành phần đọc nó không kéo theo lớp gọi API.
  */
 export type TripsCapabilities = {

@@ -78,7 +78,7 @@ export type BackendImportPreview = {
 export type BackendImportConfirm = { readonly totalImported: number; readonly packageIds: readonly number[] }
 
 /** Trạng thái của backend → của app. `CANCELLED` (kiện đã huỷ) không có ở kho kiện của app nên không có dòng nào. */
-const STATUS_OF: Readonly<Record<string, PackageStatus>> = { PENDING: 'IMPORTED', PLANNED: 'ASSIGNED', LOADED: 'LOADED', DELIVERED: 'DELIVERED' }
+const STATUS_OF: Readonly<Record<string, PackageStatus>> = { PENDING: 'IMPORTED', PLANNED: 'ASSIGNED', LOADED: 'LOADED', DELIVERED: 'DELIVERED', RETURNED: 'RETURNED' }
 
 const absent = (value: unknown): value is null | undefined => value === null || value === undefined
 const cmOf = (cm: number | string | null | undefined) => (absent(cm) ? 0 : roundCm(Number(cm)))

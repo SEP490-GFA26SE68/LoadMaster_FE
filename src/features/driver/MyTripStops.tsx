@@ -1,10 +1,11 @@
 import { CircleCheck } from 'lucide-react'
 import { StopDot } from '@/components/StopChip'
 import { useT } from '@/lib/i18n'
-import type { MyTripRow } from './my-trips'
-import { stopListTimings } from './stop-timing'
+import type { MyTripRow, MyTripStop } from './my-trips'
+import { serverStopListTimings } from './server-stop-timing'
+import { stopListTimings, type StopListTimings } from './stop-timing'
 import { EtaSourceLine, StopListTime } from './StopTimingParts'
-import { useDriverTripMonitoringQuery } from './useDriverQueries'
+import { useDriverStopTimesQuery, useDriverTripMonitoringQuery } from './useDriverQueries'
 
 /**
  * Các điểm của chuyến trong thẻ "Chuyến của tôi" (V2.3 đợt 6; chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát): mỗi điểm một dòng
@@ -16,15 +17,34 @@ import { useDriverTripMonitoringQuery } from './useDriverQueries'
  * điểm có hạn. Dưới danh sách một dòng nguồn kèm MOCK RESULT. Chuyến chưa tối ưu tuyến thì không có giờ nào.
  */
 export function MyTripStops({ row }: { row: Pick<MyTripRow, 'id' | 'status' | 'stops' | 'schedule'> }) {
-  const t = useT()
   const delivering = row.status === 'IN_TRANSIT'
   const live = useDriverTripMonitoringQuery(row.id, delivering && row.schedule.routePlan !== undefined)
-  const { byStop, sources } = stopListTimings(row.schedule, delivering ? live.data : undefined)
+  return <MyTripStopList tripId={row.id} stops={row.stops} timings={stopListTimings(row.schedule, delivering ? live.data : undefined)} />
+}
+
+/**
+ * Cùng danh sách theo máy chủ (`GET /api/driver/trips/{id}/stops`): tên, số kiện của điểm, đã hoàn tất, giờ đến kế hoạch / thật / dự kiến từ
+ * GPS và hạn giao — giờ máy chủ tính nên không kèm MOCK RESULT. Máy chủ chưa trả gì (đang đọc, lỗi) thì không có danh sách.
+ */
+export function ServerMyTripStops({ tripId, tripCode }: { tripId: string; tripCode: string }) {
+  const query = useDriverStopTimesQuery(tripId)
+  if (!query.data || query.data.stops.length === 0) return null
+  const stops = query.data.stops.map((stop): MyTripStop => ({ number: stop.number, name: stop.name, kind: 'DELIVERY', packageCount: stop.packageCount, done: stop.done }))
+  return <MyTripStopList tripId={tripCode} stops={stops} timings={serverStopListTimings(query.data)} mock={false} />
+}
+
+function MyTripStopList({ tripId, stops, timings, mock = true }: {
+  tripId: string
+  stops: readonly MyTripStop[]
+  timings: StopListTimings
+  mock?: boolean
+}) {
+  const t = useT()
   return (
     <>
-      <ol aria-label={t('driver.list.stopsLabel', { tripId: row.id })} className="m-0 flex list-none flex-col border-t border-line-soft p-0">
-        {row.stops.map((stop) => {
-          const timing = byStop.get(stop.number)
+      <ol aria-label={t('driver.list.stopsLabel', { tripId })} className="m-0 flex list-none flex-col border-t border-line-soft p-0">
+        {stops.map((stop) => {
+          const timing = timings.byStop.get(stop.number)
           return (
             <li
               key={stop.number}
@@ -50,7 +70,7 @@ export function MyTripStops({ row }: { row: Pick<MyTripRow, 'id' | 'status' | 's
           )
         })}
       </ol>
-      <EtaSourceLine sources={sources} />
+      <EtaSourceLine sources={timings.sources} mock={mock} />
     </>
   )
 }

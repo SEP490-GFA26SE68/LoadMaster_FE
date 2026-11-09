@@ -13,7 +13,7 @@ import { StopChip } from '@/components/StopChip'
  */
 export function DamagedPackageDialog({ placement, resting, onOpenChange, onConfirm, pending }: {
   /** Kiện đang hỏi; `null` là hộp đóng. */
-  placement: Pick<ScenePlacement, 'id' | 'name' | 'stop'> | null
+  placement: (Pick<ScenePlacement, 'id' | 'name'> & { readonly stop: number | null }) | null
   resting: number
   onOpenChange: (open: boolean) => void
   onConfirm: (id: string) => void
@@ -34,7 +34,7 @@ export function DamagedPackageDialog({ placement, resting, onOpenChange, onConfi
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-7 pt-4 pb-6">
             <span className="font-mono text-body-lg font-semibold text-ink-strong">{placement.id}</span>
             <span className="text-body-lg text-ink-2">{placement.name}</span>
-            <StopChip stop={placement.stop} label={t('common.stop', { number: placement.stop })} />
+            {placement.stop === null ? null : <StopChip stop={placement.stop} label={t('common.stop', { number: placement.stop })} />}
           </div>
           <DialogFooter>
             <DialogClose asChild>

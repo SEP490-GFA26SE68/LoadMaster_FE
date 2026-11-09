@@ -11,7 +11,7 @@ export type AuthSource = 'mock' | 'keycloak'
  * `users` người dùng · `companies` công ty, thông tin công ty · `billing` gói cước, đăng ký, credit, hoá đơn, thanh toán ·
  * `platformOps` hợp đồng, báo cáo nền tảng · `contacts` liên hệ của khách · `support` yêu cầu hỗ trợ · `packages` kho kiện ·
  * `trips` lập chuyến, tuyến · `fleet` đội xe, loại xe · `monitoring` giám sát, bảng điều khiển · `driver` màn tài xế ·
- * `warehouse` màn kho
+ * `warehouse` màn kho · `notifications` chuông thông báo
  */
 export const BACKEND_FEATURES = [
   'users',
@@ -26,6 +26,7 @@ export const BACKEND_FEATURES = [
   'monitoring',
   'driver',
   'warehouse',
+  'notifications',
 ] as const
 
 export type BackendFeature = (typeof BACKEND_FEATURES)[number]

@@ -46,6 +46,17 @@ test('danh sách: một lượt gọi tasks; trạng thái chuyến và phiên q
   expect(rows.map((row) => [row.id, row.stage])).toEqual([['9', 'loaded'], ['8', 'loading'], ['7', 'waiting']])
   expect(rows[2]).toMatchObject({ code: 'TRIP-20261106-A1', vehicle: 'Isuzu 51C-284.19', packageCount: 2, departureAt: '2026-11-06T07:30:00.000Z' })
   expect(calls.map((call) => call.path)).toEqual(['/api/warehouse/tasks'])
+  expect(calls[0]?.query).toEqual({ includeAwaitingReplan: 'true' })
+})
+
+test('danh sách: chuyến chờ điều phối tối ưu lại thành nhóm riêng kèm lý do', async () => {
+  const stale = { ...TASK, tripId: 11, tripCode: 'TRIP-11', totalPackages: null, loadPlanId: null, status: 'DRAFT', awaitingReplan: true, replanReason: 'STAGING_SHORTAGE' }
+  const damaged = { ...stale, tripId: 12, tripCode: 'TRIP-12', status: 'PLANNED', replanReason: 'DAMAGED_PACKAGE' }
+  stubBackend({ 'GET /api/warehouse/tasks': { body: envelope([TASK, stale, damaged]) } })
+  const rows = await createWarehouseBackend().fetchTrips()
+  expect(rows.find((row) => row.id === '11')).toMatchObject({ stage: 'stale', status: 'DRAFT', replanReason: 'shortage', packageCount: null })
+  expect(rows.find((row) => row.id === '12')).toMatchObject({ stage: 'stale', status: 'PLANNED', replanReason: 'damaged' })
+  expect(rows.find((row) => row.id === '7')).toMatchObject({ stage: 'waiting', replanReason: null })
 })
 
 test('mở lại phiên: GET theo chuyến, kiện theo thứ tự xếp, kết quả từng kiện và lòng thùng theo máy chủ', async () => {

@@ -75,7 +75,15 @@ function sameDimensions(a: PlacedDimensions, b: PlacedDimensions): boolean {
  * Không còn hướng nào đổi được kích thước thì trả lại chính hướng hiện tại.
  */
 export function nextOrientation(pkg: PackageDimensions & OrientationRules, current: OrientationCode): OrientationCode {
-  const options = effectiveOrientations(pkg)
+  return turn(pkg, current, effectiveOrientations(pkg))
+}
+
+/** Như `nextOrientation` nhưng vòng ngược (Shift + R của editor); hướng hiện tại không thuộc danh sách thì bắt đầu từ hướng cuối. */
+export function previousOrientation(pkg: PackageDimensions & OrientationRules, current: OrientationCode): OrientationCode {
+  return turn(pkg, current, [...effectiveOrientations(pkg)].reverse())
+}
+
+function turn(pkg: PackageDimensions, current: OrientationCode, options: readonly OrientationCode[]): OrientationCode {
   const after = options.indexOf(current) + 1
   const currentSize = orientDimensions(pkg, current)
   const cycle = [...options.slice(after), ...options.slice(0, after)]

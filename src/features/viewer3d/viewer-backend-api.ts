@@ -3,15 +3,15 @@
  *   fetchBackendPlanSource  → GET /api/trips?search= · GET /api/trips/{id}/detail · GET /api/trips/{id}/vehicle-config ·
  *                             GET /api/trips/{id}/load-plans
  *   approveBackendLoadPlan  → POST /api/load-plans/{id}/approve
+ *   approveBackendEdits     → POST /api/load-plans/{id}/approve-edits
  *   pinBackendPlacement     → POST /api/load-plans/{id}/pin
  *   unpinBackendPlacement   → DELETE /api/load-plans/{id}/pin/{placementId}
- *   rerunBackendLoadPlan    → POST /api/load-plans/{id}/rerun
  * Mã chuyến trên URL đổi sang mã số của máy chủ qua `resolveBackendTripId`.
  */
 
-import type { PlanObjective, VehicleConfig } from '@/domain/models'
+import type { VehicleConfig } from '@/domain/models'
 import { configVehicleOf, type BackendVehicleConfig } from '@/features/fleet/fleet-dto'
-import { loadPlanOf, type LoadPlan, type LoadPlanDto, type RerunPlanDto } from '@/features/optimization/load-plan-dto'
+import { loadPlanOf, type LoadPlan, type LoadPlanDto } from '@/features/optimization/load-plan-dto'
 import { fetchTripLoadPlans } from '@/features/optimization/load-plans-backend-api'
 import { fetchBackendTripDetail, resolveBackendTripId, type TripDetailApiResponse } from '@/features/trips/trips-api'
 import { api } from '@/lib/api-client'
@@ -53,6 +53,7 @@ export async function fetchBackendPlanSource(tripCode: string, planId?: string):
       sequence: stop.stopSequence,
       name: stop.stopName?.trim() || stop.address?.trim() || String(stop.stopSequence),
       deadline: stop.deadline ? isoFromBackend(stop.deadline) : null,
+      plannedArrival: stop.plannedArrival ? isoFromBackend(stop.plannedArrival) : null,
     })),
     plan: plan ?? null,
   }
@@ -66,6 +67,39 @@ export async function approveBackendLoadPlan(planId: string): Promise<LoadPlan> 
 
 const planPath = (planId: string) => `/api/load-plans/${encodeURIComponent(planId)}`
 
+/** Một kiện đã dời / xoay của bản chỉnh tay: mã số placement của máy chủ, toạ độ cm, mã hướng 0..5 của dịch vụ tối ưu. */
+export type BackendPlacementEdit = {
+  readonly placementId: string
+  readonly x: number
+  readonly y: number
+  readonly z: number
+  readonly rotationType: number
+}
+
+/**
+ * Duyệt bản chỉnh tay: máy chủ kiểm lại cách xếp (trong lòng thùng, không chồng lấn, có chỗ đỡ, tải trục, hướng xoay theo loại kiện) rồi lưu
+ * thành bản duyệt **mới** đánh dấu chỉnh tay; phương án nguồn giữ nguyên. Từ chối bằng `MANUAL_EDIT_*`, `PLAN_STALE`, `PLAN_TRIP_NOT_PLANNED`.
+ * `pinnedPlacementIds` vắng là giữ ghim của phương án nguồn.
+ */
+// POST /api/load-plans/{id}/approve-edits
+export async function approveBackendEdits(
+  planId: string,
+  edits: readonly BackendPlacementEdit[],
+  pinnedPlacementIds?: readonly string[],
+): Promise<LoadPlan> {
+  const body = {
+    placements: edits.map((edit) => ({
+      placementId: Number(edit.placementId),
+      posX: edit.x,
+      posY: edit.y,
+      posZ: edit.z,
+      rotationType: edit.rotationType,
+    })),
+    ...(pinnedPlacementIds === undefined ? {} : { pinnedPlacementIds: pinnedPlacementIds.map(Number) }),
+  }
+  return loadPlanOf(await api().post<LoadPlanDto>(`${planPath(planId)}/approve-edits`, { body }))
+}
+
 /**
  * Ghim một kiện của phương án (lưu ngay ở máy chủ, không qua Duyệt): lần chạy lại giữ nguyên chỗ và hướng của nó. `placementId` là mã số
  * placement của máy chủ (`LoadPlacement.id`). Máy chủ trả placement vừa ghim; màn đọc lại phương án nên không dùng nó.
@@ -78,28 +112,4 @@ export async function pinBackendPlacement(planId: string, placementId: string): 
 // DELETE /api/load-plans/{id}/pin/{placementId}
 export async function unpinBackendPlacement(planId: string, placementId: string): Promise<void> {
   await api().delete(`${planPath(planId)}/pin/${encodeURIComponent(placementId)}`)
-}
-
-/**
- * Giới hạn thời gian của lần chạy lại, giây. Máy chủ chạy xong mới trả lời, nên giới hạn phải nằm trong thời gian chờ của lớp gọi API
- * (15 giây); máy chủ mặc định 60 giây.
- */
-export const RERUN_TIME_LIMIT_SEC = 10
-
-export type RerunResult = {
-  /** Mã số của phương án mới. */
-  readonly planId: string
-  readonly jobId: string | null
-}
-
-/**
- * Chạy lại tối ưu giữ các kiện đã ghim của phương án `planId`: máy chủ trừ 1 credit (hết credit: 402 `INSUFFICIENT_CREDITS`; dịch vụ tối ưu
- * lỗi thì hoàn), rồi lưu **một** phương án mới chưa duyệt. `objective` giữ mục tiêu của phương án nguồn; vắng thì máy chủ dùng mục tiêu của
- * lần chạy cũ.
- */
-// POST /api/load-plans/{id}/rerun
-export async function rerunBackendLoadPlan(planId: string, objective: PlanObjective | null): Promise<RerunResult> {
-  const body = { timeLimitSec: RERUN_TIME_LIMIT_SEC, ...(objective === null ? {} : { objective }) }
-  const plan = await api().post<RerunPlanDto>(`${planPath(planId)}/rerun`, { body })
-  return { planId: String(plan.id), jobId: plan.jobUuid ?? null }
 }

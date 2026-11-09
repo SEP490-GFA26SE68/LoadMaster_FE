@@ -108,13 +108,13 @@ test('điểm đang giao: báo đã đến, quét hoặc gõ mã dỡ từng ki�
   await userEvent.click(screen.getByRole('button', { name: 'Đã đến điểm 2' }))
   expect(await screen.findByText(/Đã đến điểm 2 lúc 14:20/)).toBeInTheDocument()
   expect(posts).toStrictEqual(['POST /api/driver/stops/2/arrive'])
-  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 0')).toBeInTheDocument()
+  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 0 · Sự cố 0')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Hoàn tất điểm giao' })).toBeDisabled()
 
   await userEvent.click(screen.getByRole('button', { name: 'Đối chiếu kiện dỡ' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 2' }))
-  // Quét QR và gõ mã; chưa có xác nhận tay. Không có camera (jsdom) thì hộp mở ở gõ mã
-  expect(dialog.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Quét QR', 'Gõ mã'])
+  // Đủ ba mức. Không có camera (jsdom) thì hộp mở ở gõ mã
+  expect(dialog.getAllByRole('tab').map((tab) => tab.textContent)).toStrictEqual(['Quét QR', 'Gõ mã', 'Xác nhận tay'])
   expect(dialog.getByRole('tab', { name: 'Gõ mã' })).toHaveAttribute('aria-selected', 'true')
   const code = dialog.getByRole('textbox', { name: 'Mã kiện' })
   expect(dialog.getByText(/Mã QR in dưới hình, mã đứng đầu dòng kiện trên màn này/)).toBeInTheDocument()
@@ -122,7 +122,7 @@ test('điểm đang giao: báo đã đến, quét hoặc gõ mã dỡ từng ki�
   await userEvent.click(dialog.getByRole('button', { name: 'Đối chiếu mã' }))
   expect(await dialog.findByRole('status')).toHaveTextContent('Vừa dỡ LB-PK-0007 · Thùng dầu ăn 12 chai.')
   expect(posts.at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
-  expect(await screen.findByText('Cần dỡ 2 kiện · Đã dỡ 1')).toBeInTheDocument()
+  expect(await screen.findByText('Cần dỡ 2 kiện · Đã dỡ 1 · Sự cố 0')).toBeInTheDocument()
 
   // Mã không khớp kiện nào của điểm: nói ngay trong hộp, không gọi backend
   await userEvent.clear(code)
@@ -147,7 +147,7 @@ test('điểm đang giao: báo đã đến, quét hoặc gõ mã dỡ từng ki�
   expect(posts.at(-1)).toBe('POST /api/driver/stops/2/complete?driverId=9')
   // Điểm kế tiếp: lại báo đến trước khi dỡ
   expect(screen.getByRole('button', { name: 'Đã đến điểm 3' })).toBeInTheDocument()
-  expect(screen.getByText('Cần dỡ 1 kiện · Đã dỡ 0')).toBeInTheDocument()
+  expect(screen.getByText('Cần dỡ 1 kiện · Đã dỡ 0 · Sự cố 0')).toBeInTheDocument()
 })
 
 test('tải lại trang: giờ đến và kiện đã dỡ đọc từ máy chủ, không phải gõ lại', async () => {
@@ -156,7 +156,7 @@ test('tải lại trang: giờ đến và kiện đã dỡ đọc từ máy ch�
   renderDriver('/tai-xe/diem-giao?chuyen=1')
   expect(await screen.findByText(/Đã đến điểm 2 lúc 14:20/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Đã đến điểm 2' })).toBeNull()
-  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 1')).toBeInTheDocument()
+  expect(screen.getByText('Cần dỡ 2 kiện · Đã dỡ 1 · Sự cố 0')).toBeInTheDocument()
   expect(posts).toStrictEqual([])
 })
 

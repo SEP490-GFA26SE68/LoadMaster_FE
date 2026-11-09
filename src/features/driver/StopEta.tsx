@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
 import type { Trip } from '@/lib/mock-db'
-import { stopTiming } from './stop-timing'
+import { stopTiming, type StopTiming } from './stop-timing'
 import { EtaSourceLine, Time, TimingChip, useMoment } from './StopTimingParts'
 import { useDriverTripMonitoringQuery } from './useDriverQueries'
 
@@ -19,12 +19,18 @@ export function StopEta({ trip, stopNumber, arrivedAt, delivering }: {
   /** Chuyến Đang vận chuyển: giờ đến dự kiến tính từ vị trí xe. */
   delivering: boolean
 }) {
+  const live = useDriverTripMonitoringQuery(trip.id, delivering && arrivedAt === undefined && trip.routePlan !== undefined)
+  return <StopTimingFacts timing={stopTiming(trip, stopNumber, arrivedAt, delivering ? live.data : undefined)} />
+}
+
+/**
+ * Phần hiển thị giờ đến và hạn giao của một điểm, dùng chung cho kho mẫu (`StopEta`) và máy chủ (`ServerStopEta`). `mock`: giờ dự kiến là
+ * ước lượng của mock nên kèm MOCK RESULT; giờ máy chủ tính thì không.
+ */
+export function StopTimingFacts({ timing, mock = true }: { timing: StopTiming; mock?: boolean }) {
   const t = useT()
   const moment = useMoment()
-  const live = useDriverTripMonitoringQuery(trip.id, delivering && arrivedAt === undefined && trip.routePlan !== undefined)
-  const timing = stopTiming(trip, stopNumber, arrivedAt, delivering ? live.data : undefined)
   const { deadline, arrival, expected } = timing
-
   return (
     <div className="flex flex-col gap-2 border-t border-line-soft pt-3">
       <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
@@ -35,7 +41,7 @@ export function StopEta({ trip, stopNumber, arrivedAt, delivering }: {
           <TimingChip timing={timing} />
         </Fact>
       </dl>
-      <EtaSourceLine sources={!arrival && expected ? [expected.source] : []} />
+      <EtaSourceLine sources={!arrival && expected ? [expected.source] : []} mock={mock} />
     </div>
   )
 }

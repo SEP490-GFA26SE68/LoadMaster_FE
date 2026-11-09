@@ -1,18 +1,15 @@
 /**
  * Hàm → endpoint backend (FE-0-09, issue BE S6-01); nối backend chỉ thay thân hàm.
- *   changeTripVehicle   → POST /api/trips/{id}/change-vehicle
- *   chưa có ở BE: fetchVehicleChoices
+ *   fetchVehicleChoices → GET /api/trips/{id}/vehicle-choices (máy chủ: `trip-vehicle-backend-api.ts`)
+ *   changeTripVehicle   → PATCH /api/trips/{id}
  */
-import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import { vehicleFit, type VehicleFit } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
-import { getMockDb, type Trip, type VehicleStatus } from '@/lib/mock-db'
+import { getMockDb, type VehicleStatus } from '@/lib/mock-db'
+import { changeBackendTripVehicle, fetchBackendVehicleChoices } from './trip-vehicle-backend-api'
 
 const ON_BACKEND = usesBackend('trips')
-
-/** Nhóm `trips` nối backend: backend chưa có việc này, màn đã ẩn nút — lỡ gọi tới thì từ chối, không ghi vào kho mẫu. */
-const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /** Một xe của công ty trong hộp thoại Đổi xe: trạng thái, và xe có chở được hàng của chuyến không (`vehicleFit`). */
 export type VehicleChoice = {
@@ -35,8 +32,9 @@ export type VehicleChoices = {
 }
 
 /** Xe của công ty kèm lý do chọn được / không chọn được cho chuyến: kết quả `vehicleFit` trên hàng hiện có của chuyến. */
-// chưa có ở BE
+// GET /api/trips/{id}/vehicle-choices
 export async function fetchVehicleChoices(tripId: string): Promise<VehicleChoices> {
+  if (ON_BACKEND) return fetchBackendVehicleChoices(tripId)
   const db = getMockDb()
   const [trip, vehicles, states] = await Promise.all([db.getTrip(tripId), db.listVehicles(), db.listVehicleStates()])
   const stateById = new Map(states.map((state) => [state.vehicleId, state]))
@@ -65,8 +63,8 @@ export async function fetchVehicleChoices(tripId: string): Promise<VehicleChoice
  * Đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80): kho kiểm lại xe sẵn sàng và chở được hàng; đổi xong phương án hiện tại lỗi
  * thời, tuyến giữ nguyên.
  */
-// POST /api/trips/{id}/change-vehicle
-export function changeTripVehicle(tripId: string, vehicleId: string): Promise<Trip> {
-  if (ON_BACKEND) return unsupported()
-  return getMockDb().changeTripVehicle(tripId, vehicleId)
+// PATCH /api/trips/{id}
+export async function changeTripVehicle(tripId: string, vehicleId: string): Promise<void> {
+  if (ON_BACKEND) return changeBackendTripVehicle(tripId, vehicleId)
+  await getMockDb().changeTripVehicle(tripId, vehicleId)
 }

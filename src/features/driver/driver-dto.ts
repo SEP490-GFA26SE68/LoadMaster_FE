@@ -1,7 +1,8 @@
 import { isoFromBackend } from '@/lib/backend-time'
-import type { DeliveryView, ItemProgress } from './delivery-progress'
+import type { DeliveryView, PickupItemProgress } from './delivery-progress'
+import { itemProgressOf } from './driver-item-progress'
 import type { DeliveryItem, StopDelivery } from './driver-plan'
-import type { MyTripRow, MyTrips } from './my-trips'
+import { RECENT_LIMIT, type MyTripRow, type MyTrips } from './my-trips'
 
 /*
  * Dữ liệu backend trả cho tài xế (`/api/driver/**`) và cách đổi sang kiểu của màn tài xế. Chỉ `driver-backend-api.ts` import file này:
@@ -22,6 +23,8 @@ export type DriverTripDto = {
   readonly status: string | null
   /** Kho đã hoàn tất xếp hàng (phiên xếp `COMPLETED`): chỉ khi đó tài xế xuất phát được. */
   readonly loadingCompleted?: boolean | null
+  /** Giờ giao xong chuyến `DELIVERED` (`LocalDateTime`, giờ Việt Nam); chuyến chưa giao xong: null. */
+  readonly completedAt?: string | null
 }
 
 export type StopPackageDto = {
@@ -37,6 +40,19 @@ export type StopPackageDto = {
   readonly unloaded?: boolean | null
   /** `LocalDateTime` (giờ Việt Nam) lúc dỡ; `null` khi chưa dỡ. */
   readonly unloadedAt?: string | null
+  /** Sự cố mới nhất tài xế báo cho kiện ở điểm này: `DAMAGED`, `MISSING`, `REFUSED`, `OTHER`. */
+  readonly issueKind?: string | null
+  readonly issueNote?: string | null
+  /** Xác nhận tay mới nhất của kiện ở điểm này: `PENDING`, `APPROVED`, `REJECTED`. */
+  readonly manualStatus?: string | null
+  /** Lý do tài xế chọn khi xác nhận tay: `LABEL_DAMAGED`, `QR_UNREADABLE`, `OTHER`. */
+  readonly manualReason?: string | null
+  /** Lý do điều phối viên ghi khi từ chối xác nhận tay. */
+  readonly manualRejectReason?: string | null
+  /** Kiện nhận dọc đường: yêu cầu nhận của kiện (ở điểm nhận, và ở điểm giao của kiện đó). */
+  readonly pickupRequestId?: number | null
+  /** Điểm nhận: kiện đã đối chiếu lên xe chưa. */
+  readonly picked?: boolean | null
 }
 
 /** `GET /api/driver/trips/{id}/current-stop` — điểm chưa hoàn tất đầu tiên và kiện của điểm đó theo thứ tự dỡ. */
@@ -50,6 +66,10 @@ export type CurrentStopDto = {
   /** Giờ đến thật (`LocalDateTime`, giờ Việt Nam); `null` khi chưa báo đến. */
   readonly actualArrival?: string | null
   readonly packages: readonly StopPackageDto[] | null
+  /** `DELIVERY` hoặc `PICKUP` (điểm nhận dọc đường chèn lúc duyệt); máy chủ cũ không trả thì là điểm giao. */
+  readonly stopType?: string | null
+  /** Điểm nhận: kiện phải đối chiếu lên xe (của các yêu cầu đã duyệt ở điểm này); điểm giao: rỗng. */
+  readonly pickupPackages?: readonly StopPackageDto[] | null
 }
 
 /** `POST /api/driver/packages/{id}/unload` — `remainingPackagesCount` là số kiện của điểm còn chưa dỡ. */
@@ -73,7 +93,7 @@ export function departureDateOf(value: string | null): string | undefined {
  * Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. Chuyến Đang xếp hàng mà kho đã
  * xếp xong (`loadingCompleted`) mang dòng phụ "Xếp xong — chờ xuất phát".
  */
-export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' = 'IN_TRANSIT'): MyTripRow {
+export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' | 'DELIVERED' = 'IN_TRANSIT'): MyTripRow {
   const id = String(dto.tripId)
   return {
     id,
@@ -87,7 +107,7 @@ export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' =
     stopCount: dto.stopCount ?? 0,
     packageCount: undefined,
     currentStop: undefined,
-    completedAt: undefined,
+    completedAt: status === 'DELIVERED' && dto.completedAt ? isoFromBackend(dto.completedAt) : undefined,
     issueCount: 0,
     recheck: 0,
     stops: [],
@@ -99,21 +119,32 @@ const byDeparture = (a: DriverTripDto, b: DriverTripDto) => (a.departureTime ?? 
 
 /**
  * Chuyến của tài xế theo backend: Đang vận chuyển; Đang xếp hàng mà kho đã xếp xong ở nhóm "Xếp xong — chờ xuất phát" (tài xế xuất phát ở
- * thẻ); Đang xếp hàng mà kho chưa xong ở nhóm "Kho đang soạn / xếp". Chuyến khác (chưa tới kho, đã giao, đã huỷ) không hiện. Giờ xuất phát
- * sớm trước, rồi mã chuyến.
+ * thẻ); Đang xếp hàng mà kho chưa xong ở nhóm "Kho đang soạn / xếp"; Đã giao ở "Đã giao gần đây" (`RECENT_LIMIT` chuyến giao xong gần nhất,
+ * như kho mẫu). Chuyến chưa tới kho và chuyến đã huỷ không hiện. Ba nhóm đầu: giờ xuất phát sớm trước, rồi mã chuyến.
  */
 export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
   const of = (status: 'IN_TRANSIT' | 'LOADING', keep: (dto: DriverTripDto) => boolean = () => true) =>
     (dtos ?? []).filter((dto) => dto.status === status && keep(dto)).toSorted(byDeparture).map((dto) => tripRowOf(dto, status))
   const loaded = (dto: DriverTripDto) => dto.loadingCompleted === true
-  return { inTransit: of('IN_TRANSIT'), loaded: of('LOADING', loaded), preparing: of('LOADING', (dto) => !loaded(dto)), recent: [] }
+  const recent = (dtos ?? []).filter((dto) => dto.status === 'DELIVERED').map((dto) => tripRowOf(dto, 'DELIVERED'))
+    .toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT)
+  return { inTransit: of('IN_TRANSIT'), loaded: of('LOADING', loaded), preparing: of('LOADING', (dto) => !loaded(dto)), recent }
 }
 
 type StopPackage = StopPackageDto & { readonly packageId: number }
 
-/** Kiện của điểm, bỏ dòng backend trả không kèm kiện. */
-const stopPackagesOf = (dto: CurrentStopDto): StopPackage[] =>
-  (dto.packages ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [{ ...pkg, packageId: pkg.packageId }]))
+/** Bỏ dòng backend trả không kèm kiện. */
+const withId = (rows: readonly StopPackageDto[] | null | undefined): StopPackage[] =>
+  (rows ?? []).flatMap((pkg) => (pkg.packageId === null ? [] : [{ ...pkg, packageId: pkg.packageId }]))
+
+/** Điểm nhận dọc đường: việc ở đây là đối chiếu kiện nhận lên xe, không dỡ kiện nào. */
+const isPickupStop = (dto: CurrentStopDto): boolean => dto.stopType === 'PICKUP'
+
+/** Kiện nhận phải đối chiếu lên xe ở điểm này (chỉ điểm nhận có). */
+const pickupPackagesOf = (dto: CurrentStopDto): StopPackage[] => (isPickupStop(dto) ? withId(dto.pickupPackages) : [])
+
+/** Kiện đối chiếu được ở điểm: kiện cần dỡ và kiện nhận lên xe. */
+const stopPackagesOf = (dto: CurrentStopDto): StopPackage[] => [...withId(dto.packages), ...pickupPackagesOf(dto)]
 
 /** Mã so được: bỏ khoảng trắng hai đầu, không phân biệt hoa thường. */
 const normalized = (value: string | null | undefined) => value?.trim().toLocaleUpperCase('vi') ?? ''
@@ -159,14 +190,39 @@ export function packageOfCode(dto: CurrentStopDto, code: string): StopCodeMatch 
   return matchOf(byOwnCode, packages) ?? matchOf(bySenderCode, packages) ?? { kind: 'unknown' }
 }
 
-/** Kiện `packageId` của điểm đã dỡ theo lần đọc gần nhất của máy chủ. */
-export function isUnloaded(dto: CurrentStopDto, packageId: number): boolean {
-  return (dto.packages ?? []).some((pkg) => pkg.packageId === packageId && pkg.unloaded === true)
+/** Kiện `packageId` là kiện nhận phải đối chiếu lên xe ở điểm nhận này (không phải kiện cần dỡ). */
+export function isPickupPackage(dto: CurrentStopDto, packageId: number): boolean {
+  return pickupPackagesOf(dto).some((pkg) => pkg.packageId === packageId)
 }
 
-/** Điểm sau khi máy chủ nhận lệnh dỡ kiện `packageId` — giữ tới lần đọc lại kế tiếp. */
+/** Kiện `packageId` của điểm đã xong theo lần đọc gần nhất của máy chủ: đã dỡ, hoặc — kiện nhận ở điểm nhận — đã lên xe. */
+export function isUnloaded(dto: CurrentStopDto, packageId: number): boolean {
+  return (dto.packages ?? []).some((pkg) => pkg.packageId === packageId && pkg.unloaded === true)
+    || pickupPackagesOf(dto).some((pkg) => pkg.packageId === packageId && pkg.picked === true)
+}
+
+/** Điểm sau khi máy chủ nhận lệnh dỡ (hoặc nhận lên xe) kiện `packageId` — giữ tới lần đọc lại kế tiếp. */
 export function withUnloaded(dto: CurrentStopDto, packageId: number): CurrentStopDto {
-  return { ...dto, packages: (dto.packages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, unloaded: true } : pkg)) }
+  return {
+    ...dto,
+    packages: (dto.packages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, unloaded: true } : pkg)),
+    pickupPackages: (dto.pickupPackages ?? []).map((pkg) => (pkg.packageId === packageId ? { ...pkg, picked: true } : pkg)),
+  }
+}
+
+/** Kiện nhận của điểm nhận ở dạng màn dùng: tên là mã của bên gửi, xong khi đã lên xe. */
+function pickupItemsOf(dto: CurrentStopDto): PickupItemProgress[] {
+  return pickupPackagesOf(dto).map((pkg) => ({
+    item: {
+      id: String(pkg.packageId),
+      name: pkg.packageName ?? pkg.packageCode ?? String(pkg.packageId),
+      weightKg: pkg.weight ?? 0,
+      requestId: pkg.pickupRequestId === null || pkg.pickupRequestId === undefined ? '' : String(pkg.pickupRequestId),
+      role: 'pick',
+    },
+    done: pkg.picked === true,
+    verification: undefined,
+  }))
 }
 
 function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
@@ -182,11 +238,12 @@ function itemsOf(dto: CurrentStopDto): DeliveryItem[] {
 /** Điểm hiện tại của backend ở dạng màn điểm giao dùng: số điểm, kiện còn phải dỡ, và các điểm của chuyến (chỉ điểm hiện tại có tên). */
 export type BackendStop = { readonly stopId: string; readonly view: DeliveryView; readonly stops: readonly StopDelivery[] }
 
-/** Giờ đến của điểm: giờ máy chủ ghi; điểm `ARRIVED` mà không kèm giờ thì "đã báo đến" không giờ; còn lại là chưa đến. */
-function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt' | 'arrivedEarlier'> {
-  const arrivedAt = dto.actualArrival ? isoFromBackend(dto.actualArrival) : undefined
-  if (arrivedAt !== undefined) return { arrivedAt }
-  return dto.status === 'ARRIVED' ? { arrivedAt: undefined, arrivedEarlier: true } : { arrivedAt: undefined }
+/**
+ * Giờ đến của điểm: chỉ giờ máy chủ ghi khi tài xế bấm "Đã đến". Máy chủ đòi giờ đó mới cho dỡ, nên trạng thái `ARRIVED` không kèm giờ vẫn là
+ * chưa đến.
+ */
+function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt'> {
+  return { arrivedAt: dto.actualArrival ? isoFromBackend(dto.actualArrival) : undefined }
 }
 
 /**
@@ -197,12 +254,26 @@ function arrivalOf(dto: CurrentStopDto): Pick<DeliveryView, 'arrivedAt' | 'arriv
 export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): BackendStop {
   const number = dto.stopSequence
   const items = itemsOf(dto)
-  const unloaded = new Set(stopPackagesOf(dto).filter((pkg) => pkg.unloaded === true).map((pkg) => String(pkg.packageId)))
-  const stop: StopDelivery = { number, name: dto.stopName ?? '', address: dto.address ?? '', items, kind: 'DELIVERY' }
+  const packageById = new Map(withId(dto.packages).map((pkg) => [String(pkg.packageId), pkg]))
+  const pickupItems = pickupItemsOf(dto)
+  const stop: StopDelivery = {
+    number,
+    name: dto.stopName ?? '',
+    address: dto.address ?? '',
+    items,
+    kind: isPickupStop(dto) ? 'PICKUP' : 'DELIVERY',
+    pickupItems: pickupItems.map((entry) => entry.item),
+  }
   const stops = Array.from({ length: Math.max(tripStopCount, number) }, (_, index): StopDelivery =>
     index + 1 === number ? stop : { number: index + 1, name: '', address: '', items: [], kind: 'DELIVERY' })
-  const progress = items.map((item): ItemProgress => ({ item, unloaded: unloaded.has(item.id), issue: undefined, returned: false, verification: undefined }))
-  const unloadedCount = progress.filter((entry) => entry.unloaded).length
+  const progress = items.map((item) => itemProgressOf(item, packageById.get(item.id), number))
+  const pickupWaiting = pickupItems.filter((entry) => !entry.done).length
+  const unloadedCount = progress.filter((entry) => entry.unloaded).length + pickupItems.length - pickupWaiting
+  const issueCount = progress.filter((entry) => entry.issue !== undefined).length
+  // Kiện chưa dỡ mà đã báo sự cố không phải dỡ (máy chủ hoàn tất điểm thì kiện đó là hoàn trả)
+  const remaining = progress.filter((entry) => !entry.unloaded && entry.issue === undefined).length + pickupWaiting
+  const verifiable = progress.filter((entry) => !entry.unloaded && !entry.returned).length + pickupWaiting
+  const pendingConfirms = progress.filter((entry) => entry.unloaded && entry.verification?.manual?.status === 'MANUAL_PENDING').length
   return {
     stopId: String(dto.stopId),
     stops,
@@ -211,14 +282,14 @@ export function stopScreenOf(dto: CurrentStopDto, tripStopCount: number): Backen
       stop,
       ...arrivalOf(dto),
       items: progress,
-      pickupItems: [],
-      total: items.length,
+      pickupItems,
+      total: items.length + pickupItems.length,
       leftAtWarehouse: [],
       unloadedCount,
-      issueCount: 0,
-      remaining: items.length - unloadedCount,
-      verifiable: items.length - unloadedCount,
-      pendingConfirms: 0,
+      issueCount,
+      remaining,
+      verifiable,
+      pendingConfirms,
       completedStops: new Set(Array.from({ length: number - 1 }, (_, index) => index + 1)),
     },
   }

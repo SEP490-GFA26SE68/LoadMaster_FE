@@ -2,7 +2,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
 import {
   completeStop,
-  confirmUnloadManually,
   DRIVER_CAPABILITIES,
   fetchDriverTrip,
   fetchDriverTripLabels,
@@ -78,7 +77,9 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
   routes['GET /api/driver/trips'] = ok([
     { ...TRIP, tripId: 4, tripCode: null, departureTime: '2026-10-18T07:00:00', stopCount: null },
     TRIP,
-    { ...TRIP, tripId: 5, status: 'DELIVERED' },
+    { ...TRIP, tripId: 5, status: 'DELIVERED', completedAt: '2026-10-16T17:05:00' },
+    { ...TRIP, tripId: 9, status: 'DELIVERED', completedAt: '2026-10-17T09:30:00' },
+    { ...TRIP, tripId: 10, status: 'CANCELLED' },
     { ...TRIP, tripId: 6, tripCode: 'TRIP-6', status: 'LOADING', loadingCompleted: false },
     { ...TRIP, tripId: 8, tripCode: 'TRIP-8', status: 'LOADING', loadingCompleted: true },
     { ...TRIP, tripId: 7, status: 'PLANNED' },
@@ -89,7 +90,11 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
   // Kho đã xếp xong (`loadingCompleted`): nhóm "Xếp xong — chờ xuất phát"; chưa xong: nhóm kho đang xếp
   expect(trips.loaded.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['8', 'LOADING', { kind: 'loaded' }]])
   expect(trips.preparing.map((row) => [row.id, row.status, row.sub])).toStrictEqual([['6', 'LOADING', null]])
-  expect(trips.recent).toStrictEqual([])
+  // Đã giao: giao xong gần nhất trước, giờ giao xong theo giờ Việt Nam; chuyến đã huỷ không hiện
+  expect(trips.recent.map((row) => [row.id, row.status, row.completedAt])).toStrictEqual([
+    ['9', 'DELIVERED', '2026-10-17T02:30:00.000Z'],
+    ['5', 'DELIVERED', '2026-10-16T10:05:00.000Z'],
+  ])
   expect(trips.inTransit.map((row) => row.id)).toStrictEqual(['1', '4'])
   expect(trips.inTransit[0]).toMatchObject({
     id: '1', code: 'TRIP-20261017-94EE14F0', scheduledDate: '2026-10-17', vehicleName: '51C-284.19', status: 'IN_TRANSIT', stopCount: 3, stops: [],
@@ -142,19 +147,14 @@ test('đã đến: gọi endpoint theo mã điểm; giờ đến đọc từ đi
   const arrived = await createDriverBackend().fetchStopScreen('1')
   if (arrived.kind !== 'stop') throw new Error('phải là điểm đang giao')
   expect(arrived.view.arrivedAt).toBe('2026-10-17T07:20:00.000Z')
-  expect(arrived.view.arrivedEarlier).toBeUndefined()
 
   // Đã báo đến ở máy khác: 409 coi như đã đến
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_ARRIVED', message: 'x' } }
   await expect(createDriverBackend().arrive('1', 2)).resolves.toBeUndefined()
-  // Điểm đã đến mà máy chủ không kèm giờ: đã báo đến, không giờ; chưa đến thì không có gì
+  // Trạng thái ARRIVED mà máy chủ không kèm giờ đến vẫn là chưa đến: máy chủ đòi giờ đến mới cho dỡ
   routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, status: 'ARRIVED', actualArrival: null })
   const earlier = await createDriverBackend().fetchStopScreen('1')
-  if (earlier.kind !== 'stop') throw new Error('phải là điểm đang giao')
-  expect(earlier.view).toMatchObject({ arrivedAt: undefined, arrivedEarlier: true })
-  routes['GET /api/driver/trips/1/current-stop'] = ok({ ...STOP, actualArrival: null })
-  const pending = await createDriverBackend().fetchStopScreen('1')
-  expect(pending.kind === 'stop' && [pending.view.arrivedAt, pending.view.arrivedEarlier]).toStrictEqual([undefined, undefined])
+  expect(earlier.kind === 'stop' && earlier.view.arrivedAt).toBeUndefined()
 
   routes['POST /api/driver/stops/2/arrive'] = { status: 409, body: { success: false, code: 'DELIVERY_STOP_ALREADY_COMPLETED', message: 'x' } }
   expect((await rejection(createDriverBackend().arrive('1', 2))).code).toBe('DELIVERY_STOP_ALREADY_COMPLETED')
@@ -280,14 +280,13 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
-    backend: true, qrVerify: true, manualConfirm: false, deliveryIssues: false, notifications: false, upcomingTrips: false,
+    backend: true, qrVerify: true, manualConfirm: true, deliveryIssues: true, notifications: false, upcomingTrips: false,
     departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
   })
   for (const call of [
     () => fetchDriverTrip('1'),
     () => fetchDriverTripMonitoring('1'),
     () => fetchDriverTripLabels('1'),
-    () => confirmUnloadManually('1', 2, { packageInstanceId: '11', reason: 'LABEL_DAMAGED' }),
   ]) {
     expect((await rejection(call())).code).toBe('NOT_SUPPORTED')
   }
@@ -309,4 +308,42 @@ test('hoàn tất điểm qua lớp API của màn: gọi backend, không đọc
   routes['POST /api/driver/stops/2/complete'] = ok({ stopId: 2, tripCompleted: false, nextStopId: 3 })
   await completeStop('1', 2)
   expect(paths().slice(-2)).toStrictEqual(['GET /api/driver/trips/1/current-stop', 'POST /api/driver/stops/2/complete?driverId=9'])
+})
+
+const PICKUP_STOP = {
+  stopId: 40, tripId: 1, stopSequence: 2, stopName: 'Kho Linh Trung', address: 'Linh Trung, Thủ Đức', status: 'ARRIVED',
+  actualArrival: '2026-10-17T14:00:00', stopType: 'PICKUP', packages: [],
+  pickupPackages: [
+    { packageId: 500, packageName: 'SHIP-9', packageCode: 'SHIP-9', trackingBarcode: 'SHIP-9', qrToken: 'qr-500', weight: 10, unloadOrder: 1, pickupRequestId: 7, picked: false },
+    { packageId: 501, packageName: 'SHIP-10', packageCode: 'SHIP-10', trackingBarcode: 'SHIP-10', qrToken: 'qr-501', weight: 4, unloadOrder: 2, pickupRequestId: 7, picked: true },
+  ],
+}
+
+test('điểm nhận dọc đường: kiện nhận là việc của điểm, quét mã gọi endpoint nhận lên xe, kiện đã lên xe không gọi lại', async () => {
+  routes['GET /api/driver/trips'] = ok([TRIP])
+  routes['GET /api/driver/trips/1/current-stop'] = ok(PICKUP_STOP)
+  const driver = createDriverBackend()
+  const screen = await driver.fetchStopScreen('1')
+  if (screen.kind !== 'stop') throw new Error('phải là điểm đang giao')
+  expect(screen.view.stop.kind).toBe('PICKUP')
+  expect(screen.view.items).toStrictEqual([])
+  expect(screen.view.pickupItems.map(({ item, done }) => [item.id, item.name, item.requestId, item.role, done])).toStrictEqual([
+    ['500', 'SHIP-9', '7', 'pick', false],
+    ['501', 'SHIP-10', '7', 'pick', true],
+  ])
+  expect(screen.view).toMatchObject({ total: 2, unloadedCount: 1, remaining: 1, verifiable: 1 })
+
+  routes['POST /api/driver/pickup-packages/500/pick'] = ok({ id: 7, status: 'APPROVED' })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'QR-500' })).toStrictEqual({ packageInstanceId: '500' })
+  expect(paths().at(-1)).toBe('POST /api/driver/pickup-packages/500/pick')
+  const count = calls.length
+  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'qr-500' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
+  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'SHIP-10' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
+  expect(calls).toHaveLength(count)
+})
+
+test('điểm giao thường: máy chủ cũ không trả loại điểm thì là điểm giao, không có kiện nhận', async () => {
+  onStop()
+  const screen = await createDriverBackend().fetchStopScreen('1')
+  expect(screen.kind === 'stop' && [screen.view.stop.kind, screen.view.pickupItems.length]).toStrictEqual(['DELIVERY', 0])
 })

@@ -23,8 +23,8 @@ function Card({ title, mock, children }: { title: string; mock: boolean; childre
 
 /**
  * Số lần dỡ-xếp lại ở hộp Chi tiết (FE-5b-07, D-79): số kiện nằm ngoài vùng của điểm giao mình trong **bản đang xem, kể cả đang chỉnh
- * tay** — cùng luật với `rehandlingCount` của kết quả. Vùng là của mock nên số mang MOCK RESULT. Phương án không chia vùng thì chỉ có
- * một câu nói vì sao chưa tính, không có số.
+ * tay** — cùng luật với `rehandlingCount` của kết quả (mock và máy chủ). Vùng của mock thì số mang MOCK RESULT, vùng máy chủ trả thì
+ * không. Phương án không chia vùng thì chỉ có một câu nói vì sao chưa tính, không có số.
  */
 export function RehandlingPanel({ zones, placements, isMockResult }: {
   zones: readonly SceneZone[]
@@ -48,14 +48,15 @@ export function RehandlingPanel({ zones, placements, isMockResult }: {
 
 /**
  * Mức hạn của từng điểm giao ở hộp Chi tiết (FE-5b-07): giờ đến dự kiến và mức hạn theo tuyến đã tối ưu của chuyến (kết quả của mock
- * tối ưu tuyến). Điểm không có hạn ghi rõ là không có hạn; chuyến chưa tối ưu tuyến thì chỉ có một câu, không có giờ nào.
+ * tối ưu tuyến, kèm MOCK RESULT; `mock={false}` khi giờ đến do máy chủ tính). Điểm không có hạn ghi rõ là không có hạn; chuyến chưa tối
+ * ưu tuyến thì chỉ có một câu, không có giờ nào.
  */
-export function DeadlinePanel({ stops }: { stops: readonly SceneStop[] }) {
+export function DeadlinePanel({ stops, mock = true }: { stops: readonly SceneStop[]; mock?: boolean }) {
   const t = useT()
   const format = useFormat()
   const routed = stops.some((stop) => stop.eta !== undefined)
   return (
-    <Card title={t('viewer.deadlines.title')} mock={routed}>
+    <Card title={t('viewer.deadlines.title')} mock={routed && mock}>
       {routed ? (
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {stops.map((stop) => (

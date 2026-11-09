@@ -8,8 +8,11 @@
  *   startDelivery         → POST /api/driver/trips/{id}/start
  *   fetchDriverTripMonitoring → GET /api/trips/{id}/monitoring (tài xế bị 403)
  *   chỉ kho mẫu: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
- *   chưa có ở BE: fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), reportDeliveryIssue, fetchDriverTripLabels
- *   chưa có ở BE (Q-11): confirmUnloadManually
+ *   reportDeliveryIssue   → POST /api/driver/packages/{id}/issues
+ *   confirmUnloadManually → POST /api/driver/packages/{id}/manual-unload
+ *   fetchDriverLoadPlan   → GET /api/driver/trips/{id}/load-plan (chỉ backend)
+ *   fetchDriverStopTimes  → GET /api/driver/trips/{id}/stops (chỉ backend)
+ *   chưa có ở BE: fetchDriverTrip (đọc thêm yêu cầu và kiện nhận dọc đường, FE-7-05), fetchDriverTripLabels
  */
 
 import { ApiError } from '@/lib/api-client'
@@ -32,6 +35,8 @@ import {
 } from '@/lib/mock-db'
 import type { User } from '@/types/user'
 import { createDriverBackend, type DriverBackend, type DriverStopScreen } from './driver-backend-api'
+import type { DriverLoadedPlan } from './driver-server-scene'
+import type { ServerTripStops } from './server-stop-timing'
 import { driverPlan, isVisibleTo, myTrips, type MyTrips } from './my-trips'
 
 export type { DriverStopScreen } from './driver-backend-api'
@@ -41,9 +46,9 @@ const ON_BACKEND = usesBackend('driver')
 /**
  * Màn tài xế làm được gì với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend hiện có: chuyến đang vận
  * chuyển và đang xếp hàng của tài xế, xuất phát (ở thẻ chuyến, khi kho đã xếp xong), điểm đang giao kèm giờ đến và kiện cần dỡ, "Đã đến",
- * dỡ một kiện bằng quét QR hoặc mã gõ, hoàn tất điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến). Backend chưa có — màn ẩn phần
- * đó: xác nhận tay, sự cố theo kiện và khách từ chối, nhận hàng dọc đường, vị trí hàng 3D (tài xế chưa đọc được phương án), giờ đến dự kiến
- * và hạn giao, thông báo, tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
+ * dỡ một kiện bằng quét QR, mã gõ hoặc xác nhận tay (chờ điều phối viên duyệt), sự cố theo kiện kèm khách từ chối, hoàn tất điểm, vị trí
+ * hàng 3D (phương án kho đã xếp), giờ đến dự kiến và hạn giao của các điểm, gửi vị trí điện thoại, sự cố trên đường (cấp chuyến), nhận
+ * hàng dọc đường (gửi yêu cầu, điểm nhận, giao kiện nhận). Chuông đọc máy chủ khi nhóm `notifications` nối backend. Backend chưa có — màn ẩn phần đó: tổng kết chuyến, chuyến chưa tới kho hoặc đã giao, vị trí xe mô phỏng.
  */
 export type DriverCapabilities = {
   /** Dữ liệu từ backend: màn điểm giao là `BackendDriverStop`, chỉ dựng phần backend làm được. */
@@ -60,21 +65,25 @@ export type DriverCapabilities = {
   readonly simulatedPosition: boolean
   /** "Sự cố trên đường" ở tờ "Thêm" của màn điểm giao (sự cố của cả xe, kèm số phút chậm). */
   readonly tripExceptions: boolean
-  /** "Nhận hàng dọc đường" ở tờ "Thêm". */
+  /**
+   * "Nhận hàng dọc đường" ở tờ "Thêm", điểm nhận và kiện nhận. Yêu cầu nhận đi theo nhóm `trips` (`PICKUPS_ON_BACKEND`): chỉ có khi hai
+   * nhóm cùng nguồn, không thì mã chuyến bên này không có ở bên kia.
+   */
   readonly pickups: boolean
 }
 
 export const DRIVER_CAPABILITIES: DriverCapabilities = {
   backend: ON_BACKEND,
   qrVerify: true,
-  manualConfirm: !ON_BACKEND,
-  deliveryIssues: !ON_BACKEND,
-  notifications: !ON_BACKEND,
+  manualConfirm: true,
+  deliveryIssues: true,
+  // Chuông bản máy chủ khi nhóm `notifications` cũng nối backend (`GET /api/notifications`)
+  notifications: !ON_BACKEND || usesBackend('notifications'),
   upcomingTrips: !ON_BACKEND,
   departFromList: ON_BACKEND,
   simulatedPosition: !ON_BACKEND,
   tripExceptions: true,
-  pickups: !ON_BACKEND,
+  pickups: ON_BACKEND === usesBackend('trips'),
 }
 
 let backendSource: DriverBackend | null = null
@@ -152,10 +161,23 @@ export function arriveAtStop(tripId: string, stopNumber: number): Promise<void> 
   return getMockDb().arriveAtStop(tripId, stopNumber).then(() => undefined)
 }
 
-// chưa có ở BE
-export function reportDeliveryIssue(tripId: string, issue: DeliveryIssueInput): Promise<Trip> {
-  if (ON_BACKEND) return unsupported()
-  return getMockDb().reportDeliveryIssue(tripId, issue)
+/** Sự cố theo kiện ở điểm đang giao; khách từ chối thì kiện ở lại xe và thành Hoàn trả khi hoàn tất điểm. */
+// POST /api/driver/packages/{id}/issues
+export function reportDeliveryIssue(tripId: string, issue: DeliveryIssueInput): Promise<void> {
+  if (ON_BACKEND) return backend().reportIssue(tripId, issue)
+  return getMockDb().reportDeliveryIssue(tripId, issue).then(() => undefined)
+}
+
+/** Phương án kho đã xếp lên xe, cho khung 3D "Xem vị trí hàng" (kho mẫu đọc phương án qua `fetchDriverTrip`). */
+// GET /api/driver/trips/{id}/load-plan
+export function fetchDriverLoadPlan(tripId: string): Promise<DriverLoadedPlan> {
+  return ON_BACKEND ? backend().fetchLoadPlan(tripId) : unsupported()
+}
+
+/** Giờ đến kế hoạch, giờ đến thật, hạn giao và giờ đến dự kiến từ GPS của các điểm (kho mẫu tính ở `stop-timing.ts`). */
+// GET /api/driver/trips/{id}/stops
+export function fetchDriverStopTimes(tripId: string): Promise<ServerTripStops> {
+  return ON_BACKEND ? backend().fetchStopTimes(tripId) : unsupported()
 }
 
 /** Hoàn tất điểm giao: kiện đã dỡ thành Đã giao, kiện ở lại xe thành Hoàn trả; điểm cuối chuyển chuyến sang `completed`. */
@@ -202,9 +224,9 @@ export function confirmUnloadByQr(tripId: string, { stopNumber, method, code }: 
 export type UnloadRecorded = Pick<ScanResult<Trip>, 'packageInstanceId'>
 
 /** Xác nhận tay một kiện ở điểm giao hiện tại — mức 3 (D-83): ghi "đã dỡ" kèm xác nhận tay chờ điều phối viên duyệt. */
-// chưa có ở BE (Q-11)
-export function confirmUnloadManually(tripId: string, stopNumber: number, input: ManualConfirmInput): Promise<ScanResult<Trip>> {
-  if (ON_BACKEND) return unsupported()
+// POST /api/driver/packages/{id}/manual-unload
+export function confirmUnloadManually(tripId: string, stopNumber: number, input: ManualConfirmInput): Promise<UnloadRecorded> {
+  if (ON_BACKEND) return backend().manualUnload(tripId, stopNumber, input)
   return getMockDb().confirmUnloadManually(tripId, stopNumber, input)
 }
 

@@ -1,16 +1,23 @@
 /**
- * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchNotifications
- * Người dùng nối backend (`users`) thì chuông bỏ sự kiện tài khoản của kho mẫu, như Nhật ký (`AUDIT_LOG_AVAILABLE`).
- * Backend chưa có thông báo: vai trò mà nhóm dữ liệu chính của nó đã nối backend thì không có chuông (`notificationsReachable`).
+ * Hàm → endpoint backend (FE-0-09):
+ *   fetchServerNotifications → GET /api/notifications
+ *   markServerNotificationsRead → POST /api/notifications/read
+ *   fetchNotifications (kho mẫu) → chưa có ở BE
+ * Nhóm `notifications` nối backend thì chuông đọc máy chủ (máy chủ lọc theo vai trò, công ty, người xem và giữ đã đọc). Không thì chuông
+ * đọc nhật ký kho mẫu: người dùng nối backend (`users`) thì bỏ sự kiện tài khoản của kho mẫu, như Nhật ký (`AUDIT_LOG_AVAILABLE`); vai trò mà
+ * nhóm dữ liệu chính của nó đã nối backend thì không có chuông (`notificationsReachable`).
  */
 
 import { AUDIT_LOG_AVAILABLE } from '@/features/admin/audit-api'
 import type { AuditDirectory } from '@/features/admin/audit-log'
+import { getCachedCurrentUser } from '@/features/auth/auth-api'
+import { api } from '@/lib/api-client'
 import { usesBackend, type BackendFeature } from '@/lib/backend-config'
 import { getMockDb, vnDate, type AuditEvent } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
+import { notificationFeedOf, type NotificationListDto } from './notifications-dto'
 import { notificationWindowStart, selectNotifications, withoutAccountEvents, type NotificationViewer } from './notifications'
+import type { ServerNotificationFeed } from './server-notifications'
 
 /**
  * Nhóm dữ liệu mà thông báo của từng vai trò nói về (`NOTIFICATION_ACTIONS`): chuyến và giám sát (điều phối viên, quản lý công ty), kho,
@@ -28,9 +35,33 @@ const BELL_SOURCES: Readonly<Record<Role, readonly BackendFeature[]>> = {
   driver: ['driver', 'support'],
 }
 
-/** Chuông của vai trò còn nguồn thật không: mọi nhóm nó nói về vẫn là kho mẫu (backend chưa có thông báo). */
+/** Chuông đọc thông báo của máy chủ (nhóm `notifications` nối backend). */
+export function serverNotifications(): boolean {
+  return usesBackend('notifications')
+}
+
+/**
+ * Chuông của vai trò có nguồn thật không. Máy chủ: mọi vai trò có loại thông báo (quản lý nền tảng, hỗ trợ khách hàng không có — xem
+ * `hasNotifications`). Kho mẫu: mọi nhóm vai trò đó nói về vẫn là kho mẫu.
+ */
 export function notificationsReachable(role: Role): boolean {
+  if (serverNotifications()) return BELL_SOURCES[role].length > 0
   return BELL_SOURCES[role].every((feature) => !usesBackend(feature))
+}
+
+const viewerOnServer = () => getCachedCurrentUser()?.id ?? null
+
+/** Thông báo 7 ngày gần nhất của người đang đăng nhập (tối đa 20, mới nhất trước), kèm đã đọc. */
+// GET /api/notifications
+export async function fetchServerNotifications(): Promise<ServerNotificationFeed> {
+  return notificationFeedOf(await api().get<NotificationListDto | null>('/api/notifications'), viewerOnServer())
+}
+
+/** Đánh dấu đã đọc theo mã dòng nhật ký; máy chủ trả lại danh sách mới. */
+// POST /api/notifications/read
+export async function markServerNotificationsRead(ids: readonly string[]): Promise<ServerNotificationFeed> {
+  const body = { ids: ids.map(Number).filter((id) => Number.isInteger(id)) }
+  return notificationFeedOf(await api().post<NotificationListDto | null>('/api/notifications/read', { body }), viewerOnServer())
 }
 
 /**
@@ -61,4 +92,9 @@ export async function fetchNotifications(viewer: NotificationViewer, now = new D
       vehicles: new Map(),
     },
   }
+}
+
+/** Màn nào đọc máy chủ — thông báo của máy chủ chỉ dẫn tới màn cùng nguồn (quyền xem do nơi gọi xét). */
+export function serverScreens(): { readonly warehouse: boolean; readonly driver: boolean; readonly billing: boolean } {
+  return { warehouse: usesBackend('warehouse'), driver: usesBackend('driver'), billing: usesBackend('billing') }
 }

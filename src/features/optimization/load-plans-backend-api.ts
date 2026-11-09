@@ -25,11 +25,18 @@ import {
 const tripPath = (tripId: string) => `/api/trips/${encodeURIComponent(tripId)}`
 const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`
 
-/** Gửi một lần chạy (một credit, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. */
+/**
+ * Gửi một lần chạy (một credit, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. `keepPinsFromPlanId`: giữ nguyên
+ * các kiện đã ghim của phương án đó (cùng chuyến) trong cả ba phương án; bộ ghim không đứng vững là 400 `PINNED_SET_INVALID` trước khi chạy,
+ * không trừ credit.
+ */
 // POST /api/trips/{tripId}/optimize-loading
-export async function startLoadingOptimization(tripId: string): Promise<{ readonly jobId: string }> {
-  const started = await api().post<OptimizationStartDto>(`${tripPath(tripId)}/optimize-loading`)
-  return { jobId: started.jobId }
+export async function startLoadingOptimization(
+  tripId: string, keepPinsFromPlanId?: string,
+): Promise<{ readonly jobId: string; readonly pinnedCount: number }> {
+  const body = keepPinsFromPlanId === undefined ? undefined : { keepPinsFromPlanId: Number(keepPinsFromPlanId) }
+  const started = await api().post<OptimizationStartDto>(`${tripPath(tripId)}/optimize-loading`, body === undefined ? undefined : { body })
+  return { jobId: started.jobId, pinnedCount: started.pinnedCount ?? 0 }
 }
 
 // GET /api/trips/optimization-jobs/{jobId}

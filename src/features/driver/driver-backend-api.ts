@@ -5,13 +5,19 @@
  *   fetchStopScreen                  → GET /api/driver/trips?driverId= rồi GET /api/driver/trips/{id}/current-stop
  *   arrive                           → POST /api/driver/stops/{id}/arrive
  *   unload                           → POST /api/driver/packages/{id}/unload?driverId=
+ *                                      (điểm nhận: POST /api/driver/pickup-packages/{id}/pick)
  *   completeStop                     → POST /api/driver/stops/{id}/complete?driverId=
  *   postLocation                     → POST /api/driver/location
  *   startTrip                        → POST /api/driver/trips/{id}/start
+ *   reportIssue                      → POST /api/driver/packages/{id}/issues
+ *   manualUnload                     → POST /api/driver/packages/{id}/manual-unload
+ *   fetchLoadPlan                    → GET /api/driver/trips/{id}/load-plan
+ *   fetchStopTimes                   → GET /api/driver/trips/{id}/stops
  */
 import { api, ApiError, isApiError, type ApiClient } from '@/lib/api-client'
 import {
   myTripsOf,
+  isPickupPackage,
   isUnloaded,
   packageOfCode,
   stopScreenOf,
@@ -25,6 +31,7 @@ import {
   type LocationPointDto,
   type UserMeDto,
 } from './driver-dto'
+import { createDeliveryBackend } from './driver-delivery-backend-api'
 import type { MyTrips } from './my-trips'
 
 /** Chuyến mở ở màn điểm giao: mã số của backend (trên route) và mã chuyến hiện trên màn. */
@@ -161,6 +168,13 @@ export function createDriverBackend(client: () => ApiClient = api) {
     if (pkg.kind === 'unknown') throw new ApiError('UNLOAD_CODE_UNMATCHED', { params: { code: code.trim() } })
     if (pkg.kind === 'ambiguous') throw new ApiError('UNLOAD_CODE_AMBIGUOUS', { params: { code: code.trim(), count: pkg.count } })
     const packageInstanceId = String(pkg.packageId)
+    if (isPickupPackage(dto, pkg.packageId)) {
+      // Điểm nhận dọc đường: kiện đối chiếu lên xe; máy chủ trả mã của lý do (đã lên xe, không phải điểm nhận của kiện…)
+      if (isUnloaded(dto, pkg.packageId)) throw new ApiError('PICKUP_PACKAGE_ALREADY_PICKED', { status: 409 })
+      await client().post<unknown>(`/api/driver/pickup-packages/${pkg.packageId}/pick`)
+      store.stops.set(tripId, withUnloaded(dto, pkg.packageId))
+      return { packageInstanceId }
+    }
     if (isUnloaded(dto, pkg.packageId)) throw new ApiError('DUPLICATE_UNLOAD', { params: { code: pkg.label } })
     try {
       await client().post<ConfirmUnloadDto>(`/api/driver/packages/${pkg.packageId}/unload`, { query: { driverId: id } })
@@ -213,7 +227,9 @@ export function createDriverBackend(client: () => ApiClient = api) {
     }
   }
 
-  return { fetchMyTrips: listTrips, fetchStopScreen, arrive, unload, completeStop, postLocation, startTrip }
+  const delivery = createDeliveryBackend({ client, ready: async () => { await mine() }, stopOf, forget: (tripId) => memory.stops.delete(tripId) })
+
+  return { fetchMyTrips: listTrips, fetchStopScreen, arrive, unload, completeStop, postLocation, startTrip, ...delivery }
 }
 
 export type DriverBackend = ReturnType<typeof createDriverBackend>

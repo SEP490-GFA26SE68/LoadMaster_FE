@@ -4,11 +4,18 @@ import {
   confirmServerPlacement,
   fetchServerLoadingSession,
   fetchServerWarehouseTrips,
+  confirmServerPlacementManually,
   recordServerDeviation,
+  recordServerSeal,
+  reportServerDamaged,
+  reportServerShortage,
+  stageServerPackage,
+  stageServerPackageManually,
   startServerLoading,
   WAREHOUSE_CAPABILITIES,
   type DeviationInput,
   type ServerLoadingSession,
+  type ServerManualInput,
   type WarehouseCapabilities,
 } from './warehouse-server-api'
 
@@ -32,7 +39,8 @@ export function useServerLoadingSessionQuery(tripId: string) {
 /** Ghi của kho đổi trạng thái chuyến ở mọi màn đã đọc nó. Phiên mới đặt thẳng vào cache: không phải đọc lại. */
 function settle(client: QueryClient, tripId: string, session: ServerLoadingSession | undefined) {
   if (session !== undefined) client.setQueryData(sessionKey(tripId), session)
-  return Promise.all([['warehouse', 'server', 'trips'], ['trips'], ['dashboard']].map((queryKey) => client.invalidateQueries({ queryKey })))
+  const keys = [['warehouse', 'server', 'trips'], ['trips'], ['dashboard'], ...(session === undefined ? [sessionKey(tripId)] : [])]
+  return Promise.all(keys.map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 
 export function useStartServerLoadingMutation(tripId: string) {
@@ -59,4 +67,51 @@ export function useRecordServerDeviationMutation(tripId: string) {
 export function useCompleteServerLoadingMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: () => completeServerLoading(tripId), onSuccess: (session) => settle(client, tripId, session) })
+}
+
+/** Soạn một kiện bằng nhãn (quét hoặc gõ mã). */
+export function useStageServerPackageMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ packageId, method }: { packageId: string; method: 'QR' | 'CODE' }) => stageServerPackage(tripId, packageId, method),
+    onSuccess: (result) => settle(client, tripId, result.session),
+  })
+}
+
+export function useStageServerPackageManuallyMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ packageId, input }: { packageId: string; input: ServerManualInput }) => stageServerPackageManually(tripId, packageId, input),
+    onSuccess: (session) => settle(client, tripId, session),
+  })
+}
+
+export function useReportServerShortageMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (packageId: string) => reportServerShortage(tripId, packageId),
+    onSuccess: (session) => settle(client, tripId, session),
+  })
+}
+
+export function useConfirmServerPlacementManuallyMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ placementId, input }: { placementId: string; input: ServerManualInput }) => confirmServerPlacementManually(tripId, placementId, input),
+    onSuccess: (session) => settle(client, tripId, session),
+  })
+}
+
+/** Kiện hỏng: chuyến về Đã lập kế hoạch thì không còn phiên — đọc lại phiên để màn nói điều đó. */
+export function useReportServerDamagedMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (placementId: string) => reportServerDamaged(tripId, placementId),
+    onSuccess: (result) => settle(client, tripId, result.outcome === 'leftOut' ? result.session : undefined),
+  })
+}
+
+export function useRecordServerSealMutation(tripId: string) {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (sealNumber: string) => recordServerSeal(tripId, sealNumber), onSuccess: (session) => settle(client, tripId, session) })
 }

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
+import { PackageFlagSection } from './PackageFlagSection'
 import { PackageFormDialog } from './PackageFormDialog'
 
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
@@ -129,6 +130,8 @@ export function PackageDetailPanel({
               size={160}
             />
           </div>
+
+          <PackageFlagSection titleId={titleId} pkg={pkg} code={displayCode} />
 
           <section
             aria-labelledby={`${titleId}-info`}

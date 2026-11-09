@@ -12,6 +12,8 @@ import { MANUAL_CONFIRM_REASONS, MAX_MANUAL_NOTE_LENGTH, type ManualConfirmInput
 /** Một kiện chọn được ở mức 3 của `PackageVerify`. */
 export type VerifyCandidate = {
   readonly packageInstanceId: string
+  /** Mã in trên nhãn, hiện thay `packageInstanceId` (kiện của máy chủ có mã nội bộ là số); vắng là `packageInstanceId`. */
+  readonly label?: string
   readonly name: string
   /** Dòng phụ dưới tên: điểm giao, thứ tự dỡ… */
   readonly description?: string
@@ -83,7 +85,7 @@ export function PackageVerifyManual({ candidates, pending, onSubmit }: {
             <label key={candidate.packageInstanceId} className={OPTION}>
               <input type="radio" value={candidate.packageInstanceId} className={RADIO} {...form.register('packageInstanceId')} />
               <span className="flex min-w-0 flex-col">
-                <span className="font-mono font-semibold">{candidate.packageInstanceId}</span>
+                <span className="font-mono font-semibold">{candidate.label ?? candidate.packageInstanceId}</span>
                 <span className="text-text-2">{[candidate.name, candidate.description].filter(Boolean).join(' · ')}</span>
               </span>
             </label>

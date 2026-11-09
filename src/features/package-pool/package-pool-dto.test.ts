@@ -48,6 +48,8 @@ test('kết quả quét: chuyến và điểm giao của đơn hàng, điểm đ
   expect(loose?.stop).toBeUndefined()
   expect(loose?.package).not.toHaveProperty('tripId')
   expect(lookupOf({ ...scan, status: 'CANCELLED' })).toBeNull()
+  // Kiện khách từ chối, chở về kho khi tài xế hoàn tất điểm
+  expect(lookupOf({ ...scan, status: 'RETURNED' })?.package.status).toBe('RETURNED')
 })
 
 test('mã QR của backend: UUID viết hoa đổi về chữ thường, mã khác giữ nguyên', () => {

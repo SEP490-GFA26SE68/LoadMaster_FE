@@ -34,6 +34,9 @@ type DeliveryRequirementApi = {
   deadline: string
   priority: DeliveryRequirement['priority']
   status: DeliveryRequirement['status']
+  /** Kho đã bỏ kiện của yêu cầu khỏi chuyến (thiếu, hỏng); máy chủ cũ không trả. */
+  droppedPackageCount?: number | null
+  shortDelivered?: boolean | null
   expectedPackageCount: number | null
   receivedPackageCount: number
   packageIds: number[]
@@ -133,7 +136,8 @@ function requirementRowFromApi(
 
   return {
     requirement,
-    status: requirement.status,
+    // Kho bỏ kiện của yêu cầu khỏi chuyến (thiếu, hỏng) mà yêu cầu vẫn trong chuyến: giao thiếu (D-92, suy lúc đọc)
+    status: api.shortDelivered === true && requirement.tripId !== undefined ? 'PARTIAL' : requirement.status,
     closed: false,
     packages: [],
     totalKg: 0,

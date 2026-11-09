@@ -9,6 +9,7 @@ import { useObstacleText } from '../overlays/useObstacleText'
 import { DARK_SCOPE, DARK_SUBCARD, GlassChip, MUTED, StopMark, type GlassChipTone } from '../panels/scene-ui'
 import { EditorControls } from './EditorControls'
 import { formatSnapSource } from './snapping'
+import { LARGE_NUDGE_CM } from './shortcuts'
 import type { ManualEditor } from './useManualEditor'
 
 const STATUS = {
@@ -75,7 +76,7 @@ export function EditorPanel({ state, editor }: { state: LoadPlanViewerState; edi
       <fieldset disabled={dragging} className={cn('flex-none transition-opacity duration-(--dur-fast)', dragging && 'opacity-45')}>
         <EditorControls state={state} editor={editor} />
       </fieldset>
-      <p className={cn('xl:hidden', MUTED)}>{t('viewer.editor.keyboard')}</p>
+      <p className={cn('xl:hidden', MUTED)}>{t('viewer.editor.keyboard', { step: format.length(LARGE_NUDGE_CM) })}</p>
       <p className={cn('xl:text-caption', MUTED)}>{t('viewer.editor.disclaimer')}</p>
     </div>
     <div className="flex-none border-t border-glass-dark-border px-4 pt-3 pb-3.5">

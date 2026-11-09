@@ -14,7 +14,7 @@
  * Dòng kiện gõ / nhập trong chuyến (savePackage, importPackages, deletePackage…): `trip-package-lines-api.ts`.
  * Kiện kho kiện đưa thẳng vào chuyến (addTripPackages, removeTripPackage): `trip-pool-api.ts`.
  * Điểm giao của chuyến (đổi thứ tự, thêm điểm tay, xoá): `trip-stops-api.ts`.
- * Đổi xe của chuyến Đã lập kế hoạch (changeTripVehicle → POST /api/trips/{id}/change-vehicle): `trip-vehicle-api.ts`.
+ * Đổi xe của chuyến Đã lập kế hoạch (changeTripVehicle → PATCH /api/trips/{id}): `trip-vehicle-api.ts`.
  */
 
 import type { VehicleConfig } from '@/domain/models'

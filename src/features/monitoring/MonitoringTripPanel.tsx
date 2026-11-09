@@ -9,6 +9,7 @@ import { Card, CardActions, CardBody, CardHeader, CardMeta, CardTitle } from '@/
 import { useCan } from '@/features/auth/useCan'
 import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
+import { SERVER_MANUAL_CONFIRMS } from '@/features/trips/manual-confirm-backend-api'
 import { useFormat, useT } from '@/lib/i18n'
 import { LiveLocationBar } from './LiveLocationBar'
 import { LocationHistory } from './LocationHistory'
@@ -162,7 +163,8 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
         <LocationHistory tripId={trip.tripId} />
       </div>
 
-      {caps.manualConfirm ? <ManualConfirmCard tripId={trip.tripId} /> : null}
+      {/* Luồng tài xế nối backend: xác nhận tay khi dỡ nằm ở máy chủ (máy chủ nhận cả mã chuyến) */}
+      {caps.manualConfirm ? <ManualConfirmCard tripId={trip.tripId} /> : caps.backend && SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={trip.tripId} server /> : null}
       {caps.pickups ? <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} /> : null}
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
       {caps.reorderStops ? <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} /> : null}

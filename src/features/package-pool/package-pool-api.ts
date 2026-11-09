@@ -38,8 +38,8 @@ const ON_BACKEND = usesBackend('packages')
 /** Multipart lớn nhất backend nhận khi chưa cấu hình giới hạn (mặc định của Spring Boot); quá cỡ thì backend trả lỗi máy chủ. */
 const BACKEND_UPLOAD_MB = 1
 
-/** Bốn trạng thái kiện của backend, theo tên của app (backend không có Đã soạn, Đang vận chuyển, Hoàn trả). */
-const BACKEND_STATUSES: readonly PackageStatus[] = ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED']
+/** Năm trạng thái kiện của backend, theo tên của app (backend không có Đã soạn, Đang vận chuyển). */
+const BACKEND_STATUSES: readonly PackageStatus[] = ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED']
 
 /**
  * Việc kho kiện làm được với nguồn dữ liệu đang dùng. Kho mẫu làm hết; backend thiếu trường và quyền — danh sách không trả chiều rộng,

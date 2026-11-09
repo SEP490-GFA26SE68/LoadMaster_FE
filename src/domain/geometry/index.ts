@@ -8,6 +8,7 @@ export {
   matchesOrientation,
   nextOrientation,
   orientDimensions,
+  previousOrientation,
   ORIENTATION_CODES,
   UPRIGHT_ORIENTATIONS,
   type OrientationCode,

@@ -7,7 +7,9 @@ import {
   confirmUnloadByQr,
   confirmUnloadManually,
   DRIVER_CAPABILITIES,
+  fetchDriverLoadPlan,
   fetchDriverStopScreen,
+  fetchDriverStopTimes,
   fetchDriverTripLabels,
   fetchDriverTripMonitoring,
   fetchDriverTrip,
@@ -62,8 +64,15 @@ export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
 }
 
 /** Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). */
-function refreshAfterWrite(client: QueryClient) {
-  return Promise.all([['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey })))
+function refreshAfterWrite(client: QueryClient, except?: (key: readonly unknown[]) => boolean) {
+  return Promise.all(
+    [['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey, predicate: except ? (query) => !except(query.queryKey) : undefined })),
+  )
+}
+
+/** Khoá phương án đã xếp của khung 3D tài xế (`useDriverLoadPlanQuery`). */
+function isLoadPlanKey(key: readonly unknown[]): boolean {
+  return key.length === 5 && key[0] === 'trips' && key[1] === 'driver' && key[4] === 'load-plan'
 }
 
 export function useStartDeliveryMutation(tripId: string) {
@@ -87,7 +96,9 @@ export function useReportIssueMutation(tripId: string) {
 
 export function useCompleteStopMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (stopNumber: number) => completeStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client) })
+  // Hoàn tất điểm không đổi kiện trên xe (chỉ dỡ mới đổi), nên không đọc lại phương án đã xếp: hoàn tất điểm cuối thì chuyến đã giao xong
+  // và máy chủ không còn trả phương án — đọc lại là một lượt 404 thừa trước khi màn sang "Đã giao xong chuyến".
+  return useMutation({ mutationFn: (stopNumber: number) => completeStop(tripId, stopNumber), onSettled: () => refreshAfterWrite(client, isLoadPlanKey) })
 }
 
 // Review 1 (LM-104): quét QR khi dỡ
@@ -111,5 +122,23 @@ export function useConfirmUnloadManuallyMutation(tripId: string) {
   return useMutation({
     mutationFn: ({ stopNumber, input }: { stopNumber: number; input: ManualConfirmInput }) => confirmUnloadManually(tripId, stopNumber, input),
     onSettled: () => refreshAfterWrite(client),
+  })
+}
+
+// Nguồn backend: phương án đã xếp và giờ đến các điểm (kho mẫu đọc cả hai từ `useDriverTripQuery`)
+
+/** Phương án kho đã xếp cho khung 3D "Xem vị trí hàng": dưới khoá chuyến nên mỗi lần dỡ đọc lại kiện còn trên xe. */
+export function useDriverLoadPlanQuery(tripId: string) {
+  return useQuery({ queryKey: [...tripKey(tripId), 'load-plan'], queryFn: () => fetchDriverLoadPlan(tripId), enabled: DRIVER_CAPABILITIES.backend && tripId !== '', staleTime: 0 })
+}
+
+/** Giờ đến và hạn giao các điểm theo máy chủ; đọc lại theo `refreshMs` máy chủ trả khi chuyến Đang vận chuyển, không thì hết nhịp. */
+export function useDriverStopTimesQuery(tripId: string) {
+  return useQuery({
+    queryKey: [...tripKey(tripId), 'stop-times'],
+    queryFn: () => fetchDriverStopTimes(tripId),
+    enabled: DRIVER_CAPABILITIES.backend && tripId !== '',
+    staleTime: 0,
+    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
   })
 }

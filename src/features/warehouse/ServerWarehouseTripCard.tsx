@@ -12,7 +12,7 @@ import { loadingSessionPath } from './warehouse-trips'
 /**
  * Một chuyến ở danh sách kho bản máy chủ: mã chuyến, trạng thái, giờ xuất phát, xe, số kiện và một nút 56 px theo nhóm — "Bắt đầu xếp hàng"
  * (chờ xếp: máy chủ chuyển chuyến sang Đang xếp hàng và trả danh sách kiện), "Tiếp tục xếp" (mở lại phiên của máy chủ, ở
- * thiết bị nào cũng được), "Xem chuyến đã xếp". Máy chủ không trả tên tuyến, tiến độ, seal: không vẽ.
+ * thiết bị nào cũng được), "Xem chuyến đã xếp"; chuyến chờ điều phối tối ưu lại chỉ có một dòng lý do, không nút. Máy chủ không trả tên tuyến, tiến độ, seal: không vẽ.
  */
 export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouseTrip; primary: boolean }) {
   const t = useT()
@@ -22,8 +22,11 @@ export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouse
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h3 className="font-mono text-[18px] leading-6 font-semibold text-ink-1">{row.code}</h3>
-          <StatusBadge status={row.stage === 'waiting' ? 'PLANNED' : 'LOADING'} className="h-8 px-3 text-body-lg" />
+          <StatusBadge status={row.status} className="h-8 px-3 text-body-lg" />
         </div>
+        {row.stage === 'stale' ? (
+          <p className="m-0 text-pretty font-medium text-badge-warning-fg">{t(`serverWarehouse.replan.${row.replanReason ?? 'unknown'}`)}</p>
+        ) : null}
         <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2 lg:grid-cols-[1fr_2fr_0.8fr]">
           <Fact label={t('serverWarehouse.departure')}>
             {row.departureAt === null ? t('serverWarehouse.unknown') : `${format.time(row.departureAt)} · ${format.date(row.departureAt)}`}
@@ -34,13 +37,15 @@ export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouse
           </Fact>
         </dl>
       </div>
-      <div className="flex flex-none flex-col md:w-72">
-        {row.stage === 'waiting' ? <StartButton tripId={row.id} primary={primary} /> : (
-          <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className={primary ? 'h-16 w-full' : 'w-full'}>
-            <Link to={loadingSessionPath(row.id)}>{t(row.stage === 'loading' ? 'serverWarehouse.resume' : 'serverWarehouse.openLoaded')}</Link>
-          </Button>
-        )}
-      </div>
+      {row.stage === 'stale' ? null : (
+        <div className="flex flex-none flex-col md:w-72">
+          {row.stage === 'waiting' ? <StartButton tripId={row.id} primary={primary} /> : (
+            <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className={primary ? 'h-16 w-full' : 'w-full'}>
+              <Link to={loadingSessionPath(row.id)}>{t(row.stage === 'loading' ? 'serverWarehouse.resume' : 'serverWarehouse.openLoaded')}</Link>
+            </Button>
+          )}
+        </div>
+      )}
     </li>
   )
 }

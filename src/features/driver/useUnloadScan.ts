@@ -28,7 +28,7 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
   const candidates = useMemo(
     () => [
       ...(view?.items ?? []).flatMap(({ item, unloaded, returned }): VerifyCandidate[] =>
-        unloaded || returned ? [] : [{ packageInstanceId: item.id, name: item.name, description: t('driver.item.order', { order: item.unloadingOrder }) }]),
+        unloaded || returned ? [] : [{ packageInstanceId: item.id, ...(item.label ? { label: item.label } : {}), name: item.name, description: t('driver.item.order', { order: item.unloadingOrder }) }]),
       ...(view?.pickupItems ?? []).flatMap(({ item, done }): VerifyCandidate[] =>
         done ? [] : [{ packageInstanceId: item.id, name: item.name, description: t('driver.pickup.candidate', { request: item.requestId }) }]),
     ],
@@ -76,7 +76,7 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
     setResult(null)
     manual.mutate({ stopNumber: view.stop.number, input }, {
       onSuccess: ({ packageInstanceId }) => {
-        toast.warning(t('driver.scan.manualRecorded', { id: packageInstanceId }), { description: t('driver.scan.manualRecordedDescription') })
+        toast.warning(t('driver.scan.manualRecorded', { id: labelOf(view, packageInstanceId) }), { description: t('driver.scan.manualRecordedDescription') })
         recorded(packageInstanceId, waiting)
       },
       onError: showError,
@@ -84,6 +84,11 @@ export function useUnloadScan(tripId: string, view: DeliveryView | undefined, st
   }
 
   return { open, setOpen: setOpenState, candidates, result, pending: scan.isPending || manual.isPending, handleVerify, handleManual }
+}
+
+/** Mã in trên nhãn của kiện `id` ở điểm đang giao (kiện của máy chủ có mã nội bộ là số); không có thì chính `id`. */
+export function labelOf(view: DeliveryView | undefined, id: string): string {
+  return view?.items.find((entry) => entry.item.id === id)?.item.label ?? id
 }
 
 /** Lỗi của backend khi dỡ: câu riêng kèm mã kiện tài xế đã gõ (`params.code`). */

@@ -7,6 +7,7 @@ import {
   createPackages as createCargoPackages,
   updatePackage as updateCargoPackage,
   deletePackage as deleteCargoPackage,
+  clearPackageFlag,
   type CargoPackageInput,
 } from './packages-api'
 import {
@@ -266,6 +267,21 @@ export function useUpdateCargoPackageMutation() {
       await client.invalidateQueries({
         queryKey: CARGO_PACKAGES_KEY,
       })
+    },
+  })
+}
+
+/**
+ * Điều phối viên gỡ cờ thiếu / hỏng của kiện: kiện lại vào được yêu cầu giao, chuyến; yêu cầu giao đọc lại (giao thiếu).
+ */
+export function useClearPackageFlagMutation() {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => clearPackageFlag(id),
+
+    onSuccess: async () => {
+      await Promise.all([CARGO_PACKAGES_KEY, PACKAGE_POOL_KEY, ['requirements']].map((queryKey) => client.invalidateQueries({ queryKey })))
     },
   })
 }
