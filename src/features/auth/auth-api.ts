@@ -66,7 +66,7 @@ export async function fetchBackendUser(): Promise<User> {
   const profile = await readBackendProfile()
   const role = roleOfBackend(profile.userRoleType)
   if (role === null) throw new AuthError('role-unknown')
-  if (!isActiveOnBackend(profile.status)) throw new AuthError('account-suspended')
+  if (!isActiveOnBackend(profile.status) && profile.status !== 'FLAGGED') throw new AuthError('account-suspended')
   const standIn = getMockDb().restoreSession(DEMO_ACCOUNTS.find((account) => account.role === role)?.id ?? null)
   if (standIn === null) throw new AuthError('role-unknown')
   const user = userFromBackend(profile, role, standIn)
