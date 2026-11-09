@@ -255,6 +255,7 @@ test('a trial company signs its service agreement from the banner', async () => 
   await user.type(within(dialog).getByRole('textbox', { name: 'Số điện thoại' }), '0901234567')
   await user.click(within(dialog).getByRole('checkbox'))
   await user.click(within(dialog).getByRole('button', { name: 'Ký thoả thuận' }))
+  await user.click(await screen.findByRole('button', { name: 'Tôi xác nhận ký' }))
   expect(await screen.findByText('Đã ký thoả thuận dịch vụ', {}, SLOW)).toBeInTheDocument()
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
     url: 'http://be.test/api/agreements/sign',

@@ -8,13 +8,15 @@ import { initialsOf, type Role, type UserStatus } from '@/types/user'
 const THUMB: Record<UserStatus, string> = {
   active: 'bg-tint-blue text-tint-blue-fg',
   suspended: 'bg-tint-amber text-tint-amber-fg',
+  flagged: 'bg-tint-rose text-tint-rose-fg',
 }
 
 /** Chip trạng thái theo ngữ pháp chấm V2.3 (Main.jpg): đang hoạt động chấm xanh lá; đã khoá chip xám chấm xám — khoá là một trạng
  * thái của tài khoản, không phải cảnh báo. */
-const STATUS_BADGE: Record<UserStatus, { tone: 'success' | 'neutral'; dot: true }> = {
+const STATUS_BADGE: Record<UserStatus, { tone: 'success' | 'neutral' | 'danger'; dot: true }> = {
   active: { tone: 'success', dot: true },
   suspended: { tone: 'neutral', dot: true },
+  flagged: { tone: 'danger', dot: true },
 }
 
 /**

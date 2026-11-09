@@ -2,11 +2,13 @@ import { UserCheck, UserX, Users, type LucideIcon } from 'lucide-react'
 import { KpiTile, type KpiTone } from '@/components/KpiTile'
 import { useFormat, useT } from '@/lib/i18n'
 import type { UserScope } from '@/lib/mock-db'
-import { USER_STATUSES, type User, type UserStatus } from '@/types/user'
+import type { User, UserStatus } from '@/types/user'
 import { userSummary } from './user-summary'
 
+const SUMMARY_STATUSES = ['active', 'suspended'] as const satisfies readonly UserStatus[]
+
 /** Icon và tint theo nghĩa cố định (AGENTS mục 4): sẵn sàng → xanh lá, cần chú ý → hổ phách; tổng là ngữ cảnh → slate. */
-const STATUS_TILE: Record<UserStatus, { icon: LucideIcon; tone: KpiTone }> = {
+const STATUS_TILE: Record<'active' | 'suspended', { icon: LucideIcon; tone: KpiTone }> = {
   active: { icon: UserCheck, tone: 'green' },
   suspended: { icon: UserX, tone: 'amber' },
 }
@@ -36,7 +38,7 @@ export function UsersSummary({ users, status, scope, onStatusChange }: {
         value={format.integer(summary.total)}
         note={isCompany ? t('admin.employees.summary.totalNote') : t('admin.users.summary.totalNote')}
       />
-      {USER_STATUSES.map((value) => {
+      {SUMMARY_STATUSES.map((value) => {
         const pressed = status === value
         return (
           <KpiTile
