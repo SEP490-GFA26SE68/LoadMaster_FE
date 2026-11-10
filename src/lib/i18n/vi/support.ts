@@ -6,7 +6,7 @@ import { customerPlan } from './support-customer-plan'
  */
 export const support = {
   customerPlan,
-  kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán' },
+  kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán', TRIAL_ACCOUNT_UNLOCK: 'Mở khóa dùng thử' },
   statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Hộp thoại của người dùng công ty. */
   mine: {
@@ -98,6 +98,16 @@ export const support = {
     chat: {
       title: 'Trao đổi gần đây của công ty',
       hint: 'Hai ngày có hoạt động gần nhất',
+    },
+    unlock: {
+      action: 'Mở khóa tài khoản',
+      dialogTitle: 'Mở khóa tài khoản dùng thử',
+      dialogDescription: 'Xác nhận mở khóa tài khoản cho doanh nghiệp. Hệ thống sẽ kiểm tra hạn dùng thử: nếu còn hạn sẽ gia hạn thêm 72 giờ để hoàn tất ký thỏa thuận, nếu hết hạn sẽ chuyển hướng sang trang nâng cấp gói.',
+      staffNoteLabel: 'Ghi chú xử lý (tùy chọn)',
+      staffNotePlaceholder: 'Nhập nội dung trao đổi hoặc lý do hỗ trợ mở khóa...',
+      confirm: 'Xác nhận mở khóa',
+      cancel: 'Hủy bỏ',
+      success: 'Đã mở khóa tài khoản thành công.',
     },
   },
 } as const

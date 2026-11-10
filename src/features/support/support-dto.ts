@@ -30,13 +30,18 @@ function filled(value: string | null): value is string {
   return value !== null && value.trim() !== ''
 }
 
-/** Backend có ba nhóm (`BILLING`, `ALGORITHM_ERROR`, `SYSTEM_BUG`), FE hai loại: lỗi thuật toán và lỗi hệ thống đều là Kỹ thuật. */
+/** Backend có các nhóm (`BILLING`, `ALGORITHM_ERROR`, `SYSTEM_BUG`, `TRIAL_ACCOUNT_UNLOCK`). */
 function kindOf(category: string): TicketKind | undefined {
   if (category === 'BILLING') return 'BILLING'
+  if (category === 'TRIAL_ACCOUNT_UNLOCK') return 'TRIAL_ACCOUNT_UNLOCK'
   return category === 'SYSTEM_BUG' || category === 'ALGORITHM_ERROR' ? 'TECHNICAL' : undefined
 }
 
-const CATEGORY_OF_KIND: Readonly<Record<TicketKind, string>> = { BILLING: 'BILLING', TECHNICAL: 'SYSTEM_BUG' }
+const CATEGORY_OF_KIND: Readonly<Record<TicketKind, string>> = {
+  BILLING: 'BILLING',
+  TECHNICAL: 'SYSTEM_BUG',
+  TRIAL_ACCOUNT_UNLOCK: 'TRIAL_ACCOUNT_UNLOCK',
+}
 
 /**
  * Nhóm hay trạng thái backend mới mà FE chưa biết: không vào danh sách. Backend không có mốc hoạt động gần nhất nên `updatedAt` là lần
@@ -68,8 +73,12 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
   }
 }
 
-/** Mức ưu tiên backend theo loại: thanh toán Trung bình, kỹ thuật Cao. */
-const PRIORITY_OF_KIND: Readonly<Record<TicketKind, string>> = { BILLING: 'MEDIUM', TECHNICAL: 'HIGH' }
+/** Mức ưu tiên backend theo loại: thanh toán Trung bình, kỹ thuật và mở khóa tài khoản Cao. */
+const PRIORITY_OF_KIND: Readonly<Record<TicketKind, string>> = {
+  BILLING: 'MEDIUM',
+  TECHNICAL: 'HIGH',
+  TRIAL_ACCOUNT_UNLOCK: 'HIGH',
+}
 
 /** Thân `POST`. */
 export function ticketCreateBody(input: NewSupportTicket) {

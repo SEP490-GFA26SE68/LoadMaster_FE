@@ -4,7 +4,7 @@ import { customerPlan } from './support-customer-plan'
 
 export const support = {
   customerPlan,
-  kinds: { TECHNICAL: 'Technical', BILLING: 'Billing' },
+  kinds: { TECHNICAL: 'Technical', BILLING: 'Billing', TRIAL_ACCOUNT_UNLOCK: 'Trial Account Unlock' },
   statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   mine: {
     title: 'Support requests',
@@ -93,6 +93,16 @@ export const support = {
     chat: {
       title: 'Recent messages of the company',
       hint: 'The two most recent days with activity',
+    },
+    unlock: {
+      action: 'Unlock Account',
+      dialogTitle: 'Unlock Trial Account',
+      dialogDescription: 'Confirm account unlock for the enterprise. The system checks trial validity: if valid, extends 72 hours to sign agreement; if expired, redirects to the plan upgrade page.',
+      staffNoteLabel: 'Processing note (optional)',
+      staffNotePlaceholder: 'Enter conversation details or reason for unlocking...',
+      confirm: 'Confirm Unlock',
+      cancel: 'Cancel',
+      success: 'Account unlocked successfully.',
     },
   },
 } as const satisfies Dictionary<typeof source>

@@ -160,3 +160,30 @@ export async function assignCompanyPlan(companyId: string, planId: string): Prom
   const body = { companyId: Number(companyId), planId: Number(planId), autoRenew: true }
   return contractOf(await api().post<ContractDto>('/api/contracts', { body }), new Date().toISOString())
 }
+
+export type UnlockTrialResult = {
+  userId: number
+  userEmail: string
+  trialStillValid: boolean
+  nextAction: 'SIGN_AGREEMENT' | 'UPGRADE_PLAN'
+  ticketCode: string
+  ticketStatus: string
+}
+
+/**
+ * Mở khóa tài khoản dùng thử qua phiếu hỗ trợ TRIAL_ACCOUNT_UNLOCK (POST /api/support-tickets/{id}/unlock-trial)
+ */
+export async function unlockTrialAccount(ticketId: string, staffNote?: string): Promise<UnlockTrialResult> {
+  if (!ON_BACKEND) {
+    return {
+      userId: 1,
+      userEmail: 'trial@example.com',
+      trialStillValid: true,
+      nextAction: 'SIGN_AGREEMENT',
+      ticketCode: 'TCK-MOCK',
+      ticketStatus: 'RESOLVED',
+    }
+  }
+  const query = staffNote && staffNote.trim() ? { staffNote: staffNote.trim() } : undefined
+  return api().post<UnlockTrialResult>(`/api/support-tickets/${ticketId}/unlock-trial`, { query })
+}

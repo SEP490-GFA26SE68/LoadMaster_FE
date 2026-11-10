@@ -1,6 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
@@ -95,15 +97,38 @@ function SupportNote({ note }: { note: string }) {
  * (Hỗ trợ khách hàng mở lại bằng ô trạng thái ở màn của họ). Lần trả lời của Hỗ trợ khách hàng nền tint để người gửi nhận ra ngay.
  * Nối backend: trao đổi đọc từ `resolutionNote`; trường đó là chữ thường thì hiện như phản hồi của đội hỗ trợ, phía trên các lần trả lời.
  */
-export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
+export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, pending }: {
   ticket: SupportTicket
   viewerIsSupport: boolean
   onReply: (text: string) => Promise<void>
+  onUnlockTrial?: (staffNote?: string) => Promise<void>
   pending: boolean
 }) {
   const t = useT()
   const format = useFormat()
   const when = (iso: string) => `${format.date(iso)} ${format.time(iso)}`
+  const [openUnlockDialog, setOpenUnlockDialog] = useState(false)
+  const [staffNote, setStaffNote] = useState('')
+  const [unlocking, setUnlocking] = useState(false)
+
+  const showUnlockAction =
+    viewerIsSupport &&
+    ticket.kind === 'TRIAL_ACCOUNT_UNLOCK' &&
+    ticket.status !== 'RESOLVED' &&
+    ticket.status !== 'CLOSED'
+
+  async function handleConfirmUnlock() {
+    if (!onUnlockTrial) return
+    setUnlocking(true)
+    try {
+      await onUnlockTrial(staffNote.trim() ? staffNote : undefined)
+      setOpenUnlockDialog(false)
+      setStaffNote('')
+    } finally {
+      setUnlocking(false)
+    }
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex min-w-0 flex-col gap-2">
@@ -118,6 +143,53 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, pending }: {
           <p className="m-0 text-caption font-medium text-cyan-700">{t('support.thread.assignedTo', { name: ticket.assignedToName })}</p>
         ) : null}
       </div>
+
+      {showUnlockAction ? (
+        <div className="flex flex-col gap-2.5 rounded-lg border border-amber-300 bg-amber-50/70 p-3.5 dark:border-amber-700/50 dark:bg-amber-950/30">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-medium text-amber-950 dark:text-amber-200">
+              <KeyRound className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <span>{t('support.page.unlock.action')}</span>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={pending || unlocking}
+              onClick={() => setOpenUnlockDialog(true)}
+            >
+              {t('support.page.unlock.action')}
+            </Button>
+          </div>
+          <p className="m-0 text-caption text-amber-900/80 dark:text-amber-300/80">
+            {t('support.page.unlock.dialogDescription')}
+          </p>
+
+          <ConfirmDialog
+            open={openUnlockDialog}
+            onOpenChange={setOpenUnlockDialog}
+            title={t('support.page.unlock.dialogTitle')}
+            description={t('support.page.unlock.dialogDescription')}
+            confirmLabel={t('support.page.unlock.confirm')}
+            cancelLabel={t('support.page.unlock.cancel')}
+            pending={unlocking}
+            onConfirm={handleConfirmUnlock}
+          >
+            <div className="my-3 flex flex-col gap-1.5 text-left">
+              <label htmlFor="unlock-staff-note" className="text-caption font-medium text-ink-2">
+                {t('support.page.unlock.staffNoteLabel')}
+              </label>
+              <Textarea
+                id="unlock-staff-note"
+                rows={3}
+                value={staffNote}
+                onChange={(e) => setStaffNote(e.target.value)}
+                placeholder={t('support.page.unlock.staffNotePlaceholder')}
+              />
+            </div>
+          </ConfirmDialog>
+        </div>
+      ) : null}
 
       <section aria-label={t('support.thread.body')} className="rounded-md border border-line-soft bg-n-25 px-3.5 py-3">
         <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.description}</p>
