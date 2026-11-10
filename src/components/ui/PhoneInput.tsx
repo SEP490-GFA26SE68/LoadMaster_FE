@@ -54,8 +54,8 @@ export const PHONE_COUNTRIES: readonly PhoneCountrySpec[] = [
 export function isPhoneValidForCountry(phoneNumber: string, country: PhoneCountryCode): boolean {
   const cleaned = phoneNumber.replace(/[\s.-]/g, '')
   if (!cleaned) return false
-  const spec = PHONE_COUNTRIES.find((c) => c.code === country) ?? PHONE_COUNTRIES[0]
-  if (!spec.regex.test(cleaned)) return false
+  const spec = PHONE_COUNTRIES.find((c) => c.code === country) ?? (PHONE_COUNTRIES[0] as PhoneCountrySpec)
+  if (!spec || !spec.regex.test(cleaned)) return false
   if (country === 'VN' && /^(\d)\1{7}$/.test(cleaned.slice(-8))) {
     return false
   }
@@ -162,7 +162,7 @@ export function PhoneInput({
 }: PhoneInputProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const currentSpec = PHONE_COUNTRIES.find((c) => c.code === country) ?? PHONE_COUNTRIES[0]
+  const currentSpec = (PHONE_COUNTRIES.find((c) => c.code === country) ?? PHONE_COUNTRIES[0]) as PhoneCountrySpec
 
   useEffect(() => {
     if (!open) return

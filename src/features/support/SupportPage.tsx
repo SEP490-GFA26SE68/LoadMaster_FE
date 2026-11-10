@@ -22,7 +22,13 @@ import { recentCompanyChat } from './support-chat'
 import { createTicketColumns } from './support-columns'
 import { TicketThread } from './TicketThread'
 import { ticketCompanies, ticketLabel } from './ticket-view'
-import { SUPPORT_SOURCE, useReplyMutation, useSetTicketStatusMutation, useSupportTicketsQuery } from './useSupportQuery'
+import {
+  SUPPORT_SOURCE,
+  useReplyMutation,
+  useSetTicketStatusMutation,
+  useSupportTicketsQuery,
+  useUnlockTrialMutation,
+} from './useSupportQuery'
 
 /** Bộ lọc trên URL (D-52), tiếng Việt không dấu; `ticket` là yêu cầu đang mở (cũng là đích liên kết từ nhật ký). */
 const COMPANY_FILTER = 'cong-ty'
@@ -62,6 +68,7 @@ export function SupportPage() {
   const directory = useCompanyNamesQuery(SUPPORT_SOURCE.companyDirectory)
   const reply = useReplyMutation()
   const setStatus = useSetTicketStatusMutation()
+  const unlockTrial = useUnlockTrialMutation()
   const list = useListUrlState<(typeof FILTERS)[number]>({ filters: FILTERS })
   const [params, setParams] = useSearchParams()
 
@@ -175,10 +182,18 @@ export function SupportPage() {
                       <TicketThread
                         ticket={selected}
                         viewerIsSupport
-                        pending={reply.isPending}
+                        pending={reply.isPending || unlockTrial.isPending}
                         onReply={async (text) => {
                           await reply.mutateAsync({ ticketId: selected.id, text })
                           toast.success(t('support.thread.sent'))
+                        }}
+                        onUnlockTrial={async (staffNote) => {
+                          try {
+                            await unlockTrial.mutateAsync({ ticketId: selected.id, staffNote })
+                            toast.success(t('support.page.unlock.success'))
+                          } catch (err) {
+                            toast.error(dataErrorMessage(err, t))
+                          }
                         }}
                       />
                     </div>

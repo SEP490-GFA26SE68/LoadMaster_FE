@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { TrialAgreementNotifier } from '@/features/billing/TrialAgreementNotifier'
+import { TrialAccountLockedView } from '@/features/support/TrialAccountLockedView'
 import { NavRail } from './NavRail'
 
 /**
@@ -13,6 +15,15 @@ import { NavRail } from './NavRail'
  * khối chứa, thoát khỏi vùng cuộn và kéo tài liệu dài ra — trang cuộn, đẩy thanh điều hướng khỏi màn hình.
  */
 export function AppShell() {
+  const auth = useAuthSafe()
+  const user = auth?.user
+
+  // Khi tài khoản bị gắn cờ do không ký thỏa thuận dịch vụ đúng hạn 72 giờ:
+  // Khóa toàn bộ các thanh điều hướng và trang nghiệp vụ, chỉ hiển thị giao diện tạo Support Ticket mở khóa
+  if (user?.status === 'flagged') {
+    return <TrialAccountLockedView />
+  }
+
   return (
     <div className="app-shell flex h-dvh flex-col overflow-hidden bg-app">
       <NavRail />

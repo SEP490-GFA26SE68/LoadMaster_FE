@@ -5,7 +5,7 @@ import type { Role } from '@/types/user'
  * hàng trả lời và đổi trạng thái. Kiểu và hằng số thuần — kho ghi ở `db-support.ts`, seed ở `seed-support.ts`.
  */
 
-export const TICKET_KINDS = ['TECHNICAL', 'BILLING'] as const
+export const TICKET_KINDS = ['TECHNICAL', 'BILLING', 'TRIAL_ACCOUNT_UNLOCK'] as const
 export type TicketKind = (typeof TICKET_KINDS)[number]
 
 /** Trạng thái kho mẫu ghi được (`setSupportTicketStatus` từ chối trạng thái khác: `TICKET_INVALID`). */

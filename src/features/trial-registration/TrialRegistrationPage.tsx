@@ -249,7 +249,11 @@ export function TrialRegistrationPage() {
                         value={taxCode}
                         onChange={(e) => {
                           setTaxCode(e.target.value.replace(/[^0-9-]/g, ''))
-                          setErrors((prev) => ({ ...prev, taxCode: undefined }))
+                          setErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.taxCode
+                            return next
+                          })
                         }}
                         disabled={loading}
                         className={cn(PUBLIC_TOUCH, errors.taxCode && 'border-danger')}
@@ -336,12 +340,20 @@ export function TrialRegistrationPage() {
                         country={phoneCountry}
                         onCountryChange={(c) => {
                           setPhoneCountry(c)
-                          setErrors((prev) => ({ ...prev, phoneNumber: undefined }))
+                          setErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.phoneNumber
+                            return next
+                          })
                         }}
                         value={phoneNumber}
                         onChange={(val) => {
                           setPhoneNumber(val)
-                          setErrors((prev) => ({ ...prev, phoneNumber: undefined }))
+                          setErrors((prev) => {
+                            const next = { ...prev }
+                            delete next.phoneNumber
+                            return next
+                          })
                         }}
                         disabled={loading}
                         invalid={Boolean(errors.phoneNumber)}

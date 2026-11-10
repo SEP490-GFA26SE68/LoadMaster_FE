@@ -8,6 +8,7 @@ import {
   listSupportTickets,
   replyToSupportTicket,
   setSupportTicketStatus,
+  unlockTrialAccount,
 } from './support-api'
 
 /** Việc màn làm được theo nguồn dữ liệu (kho mẫu hay backend) — component đọc ở đây, không gọi `-api.ts`. */
@@ -61,6 +62,14 @@ export function useAssignCompanyPlanMutation() {
   const refresh = useRefreshSupport()
   return useMutation({
     mutationFn: ({ companyId, planId }: { companyId: string; planId: string }) => assignCompanyPlan(companyId, planId),
+    onSuccess: refresh,
+  })
+}
+
+export function useUnlockTrialMutation() {
+  const refresh = useRefreshSupport()
+  return useMutation({
+    mutationFn: ({ ticketId, staffNote }: { ticketId: string; staffNote?: string }) => unlockTrialAccount(ticketId, staffNote),
     onSuccess: refresh,
   })
 }
