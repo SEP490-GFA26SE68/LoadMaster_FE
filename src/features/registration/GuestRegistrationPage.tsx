@@ -1,6 +1,6 @@
 import { ArrowLeft, Check, CreditCard, FileText, Mail, RotateCw, Send, ShieldCheck, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input'
 import { isPhoneValidForCountry, PhoneInput, type PhoneCountryCode } from '@/components/ui/PhoneInput'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { Spinner } from '@/components/ui/Spinner'
+import { REGISTRATION_SUCCESS } from '@/features/auth/landing'
+import { contactPath } from '@/features/marketing/contact-form'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
 import { PublicHeader } from '@/features/marketing/PublicHeader'
 import { PUBLIC_TOUCH } from '@/features/marketing/public-chrome'
@@ -17,24 +19,37 @@ import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
+import type { BillingCycle, GuestRegistrationSessionResponse } from './registration-api'
 import {
-  acceptRegistrationPolicy,
-  executeMockRegistrationCheckout,
-  initRegistration,
-  initRegistrationPayment,
-  resendRegistrationOtp,
-  verifyRegistrationOtp,
-  type BillingCycle,
-  type GuestRegistrationSessionResponse,
-} from './api/registration-api'
+  REGISTRATION_CAPABILITIES,
+  useAcceptRegistrationPolicyMutation,
+  useInitRegistrationMutation,
+  useInitRegistrationPaymentMutation,
+  useMockRegistrationCheckoutMutation,
+  useResendRegistrationOtpMutation,
+  useVerifyRegistrationOtpMutation,
+} from './useRegistrationQuery'
 
 const TAX_CODE_REGEX = /^([0-9]{10}|[0-9]{10}-[0-9]{3}|[0-9]{13})$/
 const COMPANY_CODE_REGEX = /^[A-Za-z0-9_-]{3,50}$/
+
+/** Kỳ thanh toán đang chọn: nút phụ viền cyan — màn chỉ có một nút chính (Thanh toán). */
+const SELECTED_CYCLE = 'border-primary bg-primary-bg text-primary hover:bg-primary-bg'
 
 const MOCK_PLAN_ID_MAP: Record<string, number> = {
   'PLAN-BASIC': 1,
   'PLAN-PRO': 2,
   'PLAN-ULTIMATE': 3,
+}
+
+/** Ô của bước thông tin mà mã lỗi của máy chủ nói tới — chỉ đọc mã, không đọc câu đã dịch. */
+function fieldOfError(err: unknown): 'taxCode' | 'email' | 'phoneNumber' | null {
+  if (!isApiError(err)) return null
+  const code = err.code ?? ''
+  if (code.includes('TAX_CODE')) return 'taxCode'
+  if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS') return 'email'
+  if (code.includes('PHONE')) return 'phoneNumber'
+  return null
 }
 
 function resolveNumericPlanId(planId: string): number {
@@ -43,12 +58,30 @@ function resolveNumericPlanId(planId: string): number {
   return MOCK_PLAN_ID_MAP[planId] ?? 1
 }
 
+/**
+ * Tự đăng ký trả phí `/dang-ky` (chỉ khi nối backend): thông tin công ty → OTP qua email → điều khoản → chọn gói và thanh toán → tạo
+ * tài khoản. Kho mẫu không có luồng này (`REGISTRATION_CAPABILITIES`): route chuyển về form liên hệ báo giá, giữ gói đã chọn.
+ */
 export function GuestRegistrationPage() {
+  const [params] = useSearchParams()
+  if (!REGISTRATION_CAPABILITIES.publicSignUp) {
+    return <Navigate replace to={contactPath({ planId: params.get('planId') ?? undefined, type: 'PRICING' })} />
+  }
+  return <GuestRegistrationWizard />
+}
+
+function GuestRegistrationWizard() {
   const t = useT()
   const format = useFormat()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const pricingQuery = usePublicPlansQuery()
+  const initMutation = useInitRegistrationMutation()
+  const verifyOtpMutation = useVerifyRegistrationOtpMutation()
+  const resendOtpMutation = useResendRegistrationOtpMutation()
+  const acceptPolicyMutation = useAcceptRegistrationPolicyMutation()
+  const paymentMutation = useInitRegistrationPaymentMutation()
+  const mockCheckoutMutation = useMockRegistrationCheckoutMutation()
 
   const [currentStep, setCurrentStep] = useState<number>(1)
   const [loading, setLoading] = useState(false)
@@ -93,6 +126,13 @@ export function GuestRegistrationPage() {
     }
   }, [params, pricingQuery.data, selectedPlanId])
 
+  function showError(err: unknown) {
+    const message = dataErrorMessage(err, t)
+    const field = fieldOfError(err)
+    if (field) setErrors((prev) => ({ ...prev, [field]: message }))
+    toast.error(message)
+  }
+
   function validateStep1(): boolean {
     const errs: Record<string, string> = {}
     if (!companyName.trim()) errs.companyName = t('guestRegistration.validation.companyNameRequired')
@@ -131,7 +171,7 @@ export function GuestRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await initRegistration({
+      const resp = await initMutation.mutateAsync({
         companyName: companyName.trim(),
         companyCode: companyCode.trim().toUpperCase(),
         taxCode: taxCode.trim(),
@@ -146,18 +186,7 @@ export function GuestRegistrationPage() {
       setCooldown(60)
       toast.success(t('guestRegistration.toasts.otpSent'))
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      showError(err)
     } finally {
       setLoading(false)
     }
@@ -169,7 +198,7 @@ export function GuestRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await verifyRegistrationOtp({
+      const resp = await verifyOtpMutation.mutateAsync({
         token: session.token,
         otp: otp.trim(),
       })
@@ -177,18 +206,7 @@ export function GuestRegistrationPage() {
       setCurrentStep(3)
       toast.success(t('guestRegistration.toasts.otpSuccess'))
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      showError(err)
     } finally {
       setLoading(false)
     }
@@ -199,22 +217,11 @@ export function GuestRegistrationPage() {
 
     setLoading(true)
     try {
-      await resendRegistrationOtp(session.token)
+      await resendOtpMutation.mutateAsync(session.token)
       setCooldown(60)
       toast.success(t('guestRegistration.toasts.otpResent'))
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      showError(err)
     } finally {
       setLoading(false)
     }
@@ -226,7 +233,7 @@ export function GuestRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await acceptRegistrationPolicy({
+      const resp = await acceptPolicyMutation.mutateAsync({
         token: session.token,
         accepted: true,
       })
@@ -234,18 +241,7 @@ export function GuestRegistrationPage() {
       setCurrentStep(4)
       toast.success(t('guestRegistration.toasts.policyAccepted'))
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      showError(err)
     } finally {
       setLoading(false)
     }
@@ -257,7 +253,7 @@ export function GuestRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await initRegistrationPayment({
+      const resp = await paymentMutation.mutateAsync({
         token: session.token,
         planId: resolveNumericPlanId(selectedPlanId),
         billingCycle,
@@ -268,12 +264,12 @@ export function GuestRegistrationPage() {
             resp.paymentRef ||
             new URL(resp.paymentUrl, window.location.origin).searchParams.get('txnRef') ||
             ''
-          const checkout = await executeMockRegistrationCheckout(txnRef)
+          const checkout = await mockCheckoutMutation.mutateAsync(txnRef)
           if (checkout?.callbackResult?.RspCode === '00') {
             toast.info(t('guestRegistration.toasts.redirectingPayment'))
-            void navigate(`/dang-ky-thanh-cong?orderCode=${encodeURIComponent(txnRef)}`)
+            void navigate(`${REGISTRATION_SUCCESS}?orderCode=${encodeURIComponent(txnRef)}`)
           } else {
-            toast.error(checkout?.callbackResult?.Message || t('guestRegistration.toasts.paymentLinkNotFound'))
+            toast.error(t('guestRegistration.toasts.paymentFailed'))
           }
         } else {
           toast.info(t('guestRegistration.toasts.redirectingPayment'))
@@ -283,18 +279,7 @@ export function GuestRegistrationPage() {
         toast.error(t('guestRegistration.toasts.paymentLinkNotFound'))
       }
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      showError(err)
     } finally {
       setLoading(false)
     }
@@ -305,7 +290,7 @@ export function GuestRegistrationPage() {
   const totalPrice = billingCycle === 'YEARLY' ? basePrice * 12 : basePrice
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-canvas text-ink-strong">
+    <div className="flex min-h-screen flex-col bg-app text-ink-strong">
       <PublicHeader />
 
       <main className="flex-1 px-4 py-8 md:py-12">
@@ -316,7 +301,7 @@ export function GuestRegistrationPage() {
               <Zap className="size-3.5" />
               <span>{t('guestRegistration.badge')}</span>
             </div>
-            <h1 className="mt-3 text-h1 font-bold text-ink-strong">
+            <h1 className="mt-3 font-display text-h1 font-bold text-ink-strong">
               {t('guestRegistration.title')}
             </h1>
             <p className="mt-2 text-body text-ink-2">
@@ -338,13 +323,13 @@ export function GuestRegistrationPage() {
                     className={cn(
                       'flex size-9 items-center justify-center rounded-full text-caption font-semibold transition-colors',
                       currentStep === s.num
-                        ? 'bg-primary text-white ring-4 ring-primary/20'
+                        ? 'bg-primary text-n-0 ring-4 ring-primary/20'
                         : currentStep > s.num
-                          ? 'bg-success text-white'
-                          : 'bg-muted text-ink-3',
+                          ? 'bg-success text-n-0'
+                          : 'bg-n-100 text-ink-3',
                     )}
                   >
-                    {currentStep > s.num ? <Check className="size-4 stroke-[3]" /> : s.num}
+                    {currentStep > s.num ? <Check className="size-4" strokeWidth={1.5} /> : s.num}
                   </div>
                   <span className={cn('text-caption font-medium', currentStep >= s.num ? 'text-ink-strong' : 'text-ink-3')}>
                     {s.label}
@@ -613,7 +598,7 @@ export function GuestRegistrationPage() {
                 </CardHeader>
 
                 <div className="flex flex-col gap-5 p-6 pt-0">
-                  <div className="max-h-60 overflow-y-auto rounded-md border border-line-soft bg-muted/30 p-4 text-small text-ink-2 leading-relaxed">
+                  <div className="max-h-60 overflow-y-auto rounded-md border border-line-soft bg-surface p-4 text-small text-ink-2 leading-relaxed">
                     <h4 className="font-semibold text-ink-strong mb-2">{t('guestRegistration.step3.agreementTitle')}</h4>
                     <p className="mb-2">{t('guestRegistration.step3.term1')}</p>
                     <p className="mb-2">{t('guestRegistration.step3.term2')}</p>
@@ -675,15 +660,15 @@ export function GuestRegistrationPage() {
                             'flex cursor-pointer flex-col justify-between rounded-lg border p-4 transition-all',
                             selectedPlanId === String(p.id)
                               ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                              : 'border-border hover:bg-muted/30',
+                              : 'border-border hover:bg-surface',
                           )}
                         >
                           <div>
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-ink-strong">{p.name}</span>
+                              <span className="font-semibold text-ink-strong">{p.name}</span>
                               <RadioGroupItem value={String(p.id)} id={`plan-${p.id}`} />
                             </div>
-                            <div className="mt-2 text-h3 font-bold text-primary">
+                            <div className="mt-2 font-display text-h3 font-bold text-primary">
                               {format.currency(p.priceVnd)}
                               <span className="text-caption font-normal text-ink-2">{t('guestRegistration.step4.perMonth')}</span>
                             </div>
@@ -702,17 +687,19 @@ export function GuestRegistrationPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         type="button"
-                        variant={billingCycle === 'MONTHLY' ? 'primary' : 'secondary'}
+                        variant="secondary"
+                        aria-pressed={billingCycle === 'MONTHLY'}
                         onClick={() => setBillingCycle('MONTHLY')}
-                        className="h-12"
+                        className={cn('h-12', billingCycle === 'MONTHLY' && SELECTED_CYCLE)}
                       >
                         {t('guestRegistration.step4.oneMonth')}
                       </Button>
                       <Button
                         type="button"
-                        variant={billingCycle === 'YEARLY' ? 'primary' : 'secondary'}
+                        variant="secondary"
+                        aria-pressed={billingCycle === 'YEARLY'}
                         onClick={() => setBillingCycle('YEARLY')}
-                        className="h-12"
+                        className={cn('h-12', billingCycle === 'YEARLY' && SELECTED_CYCLE)}
                       >
                         {t('guestRegistration.step4.oneYear')}
                       </Button>
@@ -720,14 +707,14 @@ export function GuestRegistrationPage() {
                   </div>
 
                   {/* Summary & Price */}
-                  <div className="rounded-lg border border-border bg-muted/20 p-4">
+                  <div className="rounded-lg border border-border bg-surface p-4">
                     <div className="flex items-baseline justify-between border-b border-border/50 pb-2">
                       <span className="text-body text-ink-2">{t('guestRegistration.step4.selectedPlanLabel')}</span>
                       <strong className="text-body text-ink-strong">{selectedPlan?.name ?? '—'}</strong>
                     </div>
                     <div className="flex items-baseline justify-between pt-3">
-                      <span className="text-h3 font-bold text-ink-strong">{t('guestRegistration.step4.totalAmountLabel')}</span>
-                      <span className="text-h2 font-extrabold text-primary tabular-nums">
+                      <span className="text-h3 font-semibold text-ink-strong">{t('guestRegistration.step4.totalAmountLabel')}</span>
+                      <span className="font-display text-h2 font-bold text-primary tabular-nums">
                         {format.currency(totalPrice)}
                       </span>
                     </div>
@@ -742,7 +729,7 @@ export function GuestRegistrationPage() {
                       variant="primary"
                       loading={loading}
                       disabled={loading || !selectedPlanId}
-                      className={cn('min-w-56 font-bold', PUBLIC_TOUCH)}
+                      className={cn('min-w-56', PUBLIC_TOUCH)}
                     >
                       {!loading && <CreditCard className="mr-2 size-5" />}
                       {loading ? t('guestRegistration.step4.submitting') : t('guestRegistration.step4.payVnPay')}
