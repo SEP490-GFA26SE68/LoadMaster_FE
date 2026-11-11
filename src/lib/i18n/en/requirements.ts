@@ -55,6 +55,7 @@ export const requirements = {
     onlyPending: 'Only while the requirement is waiting for a trip',
     closed: 'The requirement is fully delivered and can no longer be edited',
     tripLocked: 'Only before the trip starts loading',
+    hasPackages: 'The requirement holds packages: remove them in the edit form before deleting it',
     viewTrip: 'View assigned trip',
   },
   customer: {
@@ -81,7 +82,8 @@ export const requirements = {
     coordinatesSaved: 'Destination coordinates saved',
     customer: 'Customer/Shipper',
     expectedPackageCount: 'Expected packages',
-    packagesAfterReceiving: 'Warehouse staff will receive and link packages after the requirement is created.',
+    packagesAfterReceiving: 'You can leave this empty: the warehouse imports packages with the requirement when it receives them.',
+    packagesLoading: 'Loading packages from the package pool',
     receivingProgress: 'Receiving progress',
     createTitle: 'New delivery requirement',
     editTitle: 'Edit requirement {id}',
@@ -200,6 +202,5 @@ export const requirements = {
     viewTrip: 'View trip #{code}',
     assignDescription: 'The server only accepts requirements on Draft trips and creates or merges the delivery stop from the requirement address.',
     noDraftTrips: 'No Draft trip is available to take this requirement.',
-    manageUnavailable: 'The server does not allow editing delivery requirements yet: only missing coordinates can be added here.',
   },
 } satisfies Dictionary<typeof source>

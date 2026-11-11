@@ -32,8 +32,6 @@ export const platform = {
   edit: 'Edit',
   delete: 'Delete',
   inUse: { one: '{count} company is still on it — stop selling it instead of deleting', other: '{count} companies are still on it — stop selling it instead of deleting' },
-  inUseLocked: { one: '{count} company is still on it, so it cannot be deleted yet', other: '{count} companies are still on it, so it cannot be deleted yet' },
-  allTiersTaken: 'Every tier already has a plan. Edit an existing plan, or delete one no company uses to add another.',
   saleOn: 'Plan {name} is now on sale',
   saleOff: 'Plan {name} is no longer on sale',
   created: 'Plan {name} added',

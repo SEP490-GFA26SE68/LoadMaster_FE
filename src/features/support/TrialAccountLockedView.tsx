@@ -1,7 +1,9 @@
 import { ChevronDown, ChevronUp, Clock, FileSignature, HelpCircle, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { Logo } from '@/components/brand/Logo'
 import { LanguageMenu } from '@/components/LanguageMenu'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Textarea } from '@/components/ui/Textarea'
@@ -42,17 +44,17 @@ export function TrialAccountLockedView() {
   async function handleSendSupportRequest(e: React.FormEvent) {
     e.preventDefault()
     if (!supportMessage.trim()) {
-      toast.error('Vui lòng nhập nội dung cần hỗ trợ')
+      toast.error(t('support.trialLocked.reasonRequired'))
       return
     }
 
     try {
       await createTicketMutation.mutateAsync({
-        kind: 'TECHNICAL',
-        title: `Hỗ trợ kỹ thuật mở khóa tài khoản - ${user?.fullName ?? user?.email ?? ''}`,
+        kind: 'TRIAL_ACCOUNT_UNLOCK',
+        title: t('support.trialLocked.ticketTitle', { name: user?.fullName ?? user?.email ?? '' }),
         description: supportMessage.trim(),
       })
-      toast.success('Đã gửi yêu cầu hỗ trợ thành công! Nhân viên kỹ thuật sẽ liên hệ với bạn.')
+      toast.success(t('support.trialLocked.sent'))
       setSupportMessage('')
     } catch (err) {
       toast.error(dataErrorMessage(err, t))
@@ -60,48 +62,37 @@ export function TrialAccountLockedView() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg text-ink-1">
-      {/* Top bar */}
-      <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-6 shadow-xs">
+    <div className="flex min-h-dvh flex-col bg-app text-ink-1">
+      <header className="flex h-16 items-center justify-between border-b border-border bg-bg px-6">
         <div className="flex items-center gap-3">
-          <span className="font-display text-h3 font-bold tracking-tight text-primary">LoadMaster</span>
-          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-caption font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
-            Tài khoản bị khóa
-          </span>
+          <Logo size="sm" />
+          <Badge tone="danger">{t('support.trialLocked.badge')}</Badge>
         </div>
         <div className="flex items-center gap-3">
           <LanguageMenu />
           {user?.email ? (
             <span className="hidden text-caption text-ink-3 sm:inline">{user.email}</span>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => auth?.signOut?.()}
-            className="text-ink-2 hover:text-ink-1"
-          >
-            <LogOut className="mr-1.5 h-4 w-4" />
-            Đăng xuất
+          <Button type="button" variant="ghost" size="sm" onClick={() => void auth?.signOut?.()}>
+            <LogOut strokeWidth={1.5} />
+            {t('support.trialLocked.signOut')}
           </Button>
         </div>
       </header>
 
-      {/* Main Container */}
       <main className="flex flex-1 items-center justify-center p-4 sm:p-6 md:p-8">
-        <Card className="w-full max-w-2xl border-red-200 shadow-md dark:border-red-900/50">
+        <Card className="w-full max-w-2xl">
           <div className="flex flex-col gap-6 p-6 sm:p-8">
-            {/* Header Alert */}
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400">
-                <ShieldAlert className="h-6 w-6" />
+              <div className="flex size-12 flex-none items-center justify-center rounded-lg bg-red-50 text-danger">
+                <ShieldAlert className="size-6" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
                 <h1 className="m-0 font-display text-h2 font-bold text-ink-strong">
-                  Tài khoản tạm thời bị khóa do chưa hoàn tất ký thỏa thuận dịch vụ trong 72 giờ
+                  {t('support.trialLocked.title')}
                 </h1>
                 <p className="mt-2 text-body text-ink-2">
-                  Theo quy định của LoadMaster, các đơn vị dùng thử cần hoàn tất ký xác nhận thỏa thuận điện tử trong vòng 72 giờ kể từ khi kích hoạt tài khoản. Bạn có thể ký trực tiếp ngay bây giờ để hệ thống tự động mở khóa tài khoản tức thì.
+                  {t('support.trialLocked.body')}
                 </p>
               </div>
             </div>
@@ -114,7 +105,7 @@ export function TrialAccountLockedView() {
                     <FileSignature className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-body font-bold text-ink-strong">Ký thỏa thuận để mở khóa ngay</h2>
+                    <h2 className="text-body font-bold text-ink-strong">{t('support.trialLocked.signTitle')}</h2>
                     <p className="text-caption text-ink-3">Mở khóa tự động 100% — Không cần chờ nhân viên duyệt</p>
                   </div>
                 </div>
@@ -172,7 +163,7 @@ export function TrialAccountLockedView() {
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-azure-600" />
                           <span className="font-semibold text-azure-900 dark:text-azure-200">
-                            Yêu cầu hỗ trợ của bạn đang được xử lý
+                            {t('support.trialLocked.pendingTitle')}
                           </span>
                         </div>
                         <TicketStatusBadge status={pendingTicket.status} />
@@ -184,7 +175,7 @@ export function TrialAccountLockedView() {
                     <form onSubmit={handleSendSupportRequest} className="flex flex-col gap-3">
                       <div className="flex items-center gap-2 text-caption font-semibold text-ink-strong">
                         <Sparkles className="h-4 w-4 text-amber-500" />
-                        <span>Gửi thông tin cho kỹ thuật viên LoadMaster</span>
+                        <span>{t('support.trialLocked.formTitle')}</span>
                       </div>
                       <div className="flex flex-col gap-1">
                         <label htmlFor="support-message" className="text-caption font-medium text-ink-2">
@@ -218,7 +209,6 @@ export function TrialAccountLockedView() {
         </Card>
       </main>
 
-      {/* Dialog ký thỏa thuận */}
       {openSignDialog && agreement ? (
         <SignAgreementDialog
           agreement={agreement}
@@ -228,7 +218,7 @@ export function TrialAccountLockedView() {
           onSign={async (request) => {
             try {
               await signAgreementMutation.mutateAsync(request)
-              toast.success('Ký thỏa thuận thành công! Tài khoản của bạn đã được kích hoạt.')
+              toast.success(t('support.trialLocked.signed'))
               setOpenSignDialog(false)
               await auth?.refreshUser?.()
             } catch (err) {

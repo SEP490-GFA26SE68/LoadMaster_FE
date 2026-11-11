@@ -3,6 +3,7 @@
  * credit của công ty, thẻ Credit của Thiết lập tối ưu và bảng giá công khai. Kiểu DTO của backend chỉ nằm ở đây và ở `-api.ts` dùng nó;
  * hàm trả kiểu của app.
  *   listPlanDtos, listActivePlans → GET /api/subscription/plans (chỉ gói đang bán, không cần đăng nhập)
+ *   listAllPlanDtos               → GET /api/subscription/plans?paged=true (mọi gói, kể cả gói đã ngừng bán; đọc theo trang)
  *   getPlanDto                    → GET /api/subscription/plans/{id}
  *   getCurrentSubscriptionDto     → GET /api/subscription/current
  *   getCreditBalanceDto           → GET /api/credits/balance
@@ -137,6 +138,13 @@ function comparePlans(a: PlanDto, b: PlanDto): number {
 export async function listPlanDtos(client: ApiClient = api()): Promise<PlanDto[]> {
   const plans = await client.get<PlanDto[] | null>(PLANS_PATH)
   return [...(plans ?? [])].sort(comparePlans)
+}
+
+/** Mọi gói của danh mục, kể cả gói đã ngừng bán — chỉ dạng phân trang của backend trả gói ngừng bán. */
+// GET /api/subscription/plans?paged=true
+export async function listAllPlanDtos(client: ApiClient = api()): Promise<PlanDto[]> {
+  const plans = await fetchAllPages<PlanDto>(PLANS_PATH, { query: { paged: true }, size: 100 }, client)
+  return plans.sort(comparePlans)
 }
 
 // GET /api/subscription/plans

@@ -11,11 +11,13 @@ import { useRunDateText } from './trip-form-dates'
  * đề, chip trạng thái kèm dòng phụ của trạng thái (FE-0-05) và dòng dữ liệu của chuyến đang sửa (tên · ngày chạy · tiến độ xếp), hành
  * động "Huỷ" + nút chính ở phải. Vùng cuộn bắt đầu bằng card nền đặc nên dải trời kéo xuống đè (`overlap`).
  */
-export function TripFormShell({ trip, status, sub, actions, children }: {
+export function TripFormShell({ trip, status, sub, subline, actions, children }: {
   /** Chuyến đang sửa; vắng khi tạo mới. `null`: màn sửa chưa có dữ liệu (đang tải, không tìm thấy). */
   trip?: { id: string; data: Trip | null }
   status?: TripStatus
   sub?: TripSubStatus | null
+  /** Dòng dữ liệu dưới tiêu đề khi chuyến không phải bản ghi của kho mẫu (form sửa bản máy chủ). */
+  subline?: ReactNode
   actions?: ReactNode
   children?: ReactNode
 }) {
@@ -39,7 +41,7 @@ export function TripFormShell({ trip, status, sub, actions, children }: {
             <TripSubStatusTag sub={sub} />
           </span>
         ) : undefined}
-        description={trip?.data ? <EditSubline trip={trip.data} /> : t('pageHero.tripForm')}
+        description={subline ?? (trip?.data ? <EditSubline trip={trip.data} /> : t('pageHero.tripForm'))}
         actions={actions}
       />
       <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-7">{children}</div>

@@ -7,7 +7,9 @@
  *   previewPackageImport          → POST /api/packages/import/preview
  *   confirmPackageImport          → POST /api/packages/import/confirm · GET /api/packages
  *   downloadPackageImportTemplate → GET /api/packages/import/template
- *   chưa dùng được ở BE (403 với điều phối viên): fetchPackageTypes, fetchPackageType, savePackageType, deletePackageType
+ *   fetchPackageTypes             → GET /api/package-types
+ *   fetchPackageType              → GET /api/package-types/{id}
+ *   savePackageType, deletePackageType: nối backend thì màn `backend/PackageTypesPage` ghi loại kiện, không gọi hai hàm này
  *   chưa có ở BE: clearPackageFlag (cờ kiện)
  *   tra cứu kiện ở `package-lookup-api.ts`, nhãn ở `package-labels-api.ts`
  */
@@ -16,6 +18,7 @@ import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-impo
 import { readImportFile } from '@/features/trips/read-import-file'
 import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { api, ApiError, isApiError } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import {
   getMockDb, MockDbError, PACKAGE_STATUSES, type Package, type PackageFlag, type PackageHistoryEntry, type PackageInput, type PackageStatus, type PackageType,
@@ -24,6 +27,7 @@ import {
 import { listBackendPackages, readBackendPackage, scanBackendPackage } from './package-pool-backend'
 import { lookupOf, packageOf, packageRequestOf, previewOf, type BackendImportConfirm, type BackendImportPreview, type BackendPackage } from './package-pool-dto'
 import { importFileError, importInputs, MAX_IMPORT_FILE_MB, parsePackageImport, type ImportFileError, type PackageImportPreview } from './package-pool-import'
+import { packageTypeOf, type BackendPackageType } from './package-type-dto'
 
 export { isUnknownPackage, lookupPackages, reportPackageFound, scanPackage, type PackageLookup } from './package-lookup-api'
 export { exportPackageLabelsPdf, fetchPackageLabels, MAX_PDF_LABELS, type LabelSelection, type PackageLabel } from './package-labels-api'
@@ -42,13 +46,11 @@ const BACKEND_UPLOAD_MB = 1
 const BACKEND_STATUSES: readonly PackageStatus[] = ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED']
 
 /**
- * Việc kho kiện làm được với nguồn dữ liệu đang dùng. Kho mẫu làm hết; backend thiếu trường và quyền — danh sách không trả chiều rộng,
- * chiều cao, điểm đến; không có cờ, lịch sử, loại kiện dùng được, yêu cầu giao; chỉ điều phối viên được gọi. Màn ẩn phần không có
- * nguồn (D-20), không vẽ số 0 hay ô trống thay cho dữ liệu backend không có.
+ * Việc kho kiện làm được với nguồn dữ liệu đang dùng. Kho mẫu làm hết; backend thiếu trường — danh sách không trả chiều rộng, chiều cao,
+ * điểm đến; không có lịch sử. Người có `packages.view` đọc được kho kiện ở cả hai nguồn. Màn ẩn phần không có nguồn (D-20), không vẽ số 0
+ * hay ô trống thay cho dữ liệu backend không có.
  */
 export const PACKAGE_POOL_SUPPORT = {
-  /** Loại kiện: màn `/loai-kien`, ô chọn loại kiện của form, tên loại kiện trên nhãn. */
-  packageTypes: !ON_BACKEND,
   /** Đủ dài × rộng × cao của kiện. */
   fullSize: !ON_BACKEND,
   /** Điểm đến ngay trong danh sách (backend chỉ trả ở chi tiết kiện). */
@@ -70,8 +72,6 @@ export const PACKAGE_POOL_SUPPORT = {
    * tìm được; kiện của kho mẫu không mở được Chi tiết chuyến của máy chủ (`tripLinkable`).
    */
   tripLinks: !ON_BACKEND && tripLinkable(false),
-  /** Chỉ điều phối viên đọc được kho kiện (backend từ chối quản lý công ty và nhân viên kho). */
-  dispatcherOnly: ON_BACKEND,
   /** Xoá kiện (chỉ backend có). */
   deletePackage: ON_BACKEND,
   /** File PDF nhãn do backend dựng. */
@@ -87,28 +87,31 @@ export const PACKAGE_POOL_SUPPORT = {
   maxImportMb: ON_BACKEND ? BACKEND_UPLOAD_MB : MAX_IMPORT_FILE_MB,
 } as const
 
-const noPackageTypes = (name: string) => Promise.reject(new Error(`Backend chưa mở loại kiện cho điều phối viên: màn không được gọi ${name} khi nối backend.`))
+const writesOnServerPage = (name: string) => Promise.reject(new Error(`Nối backend thì màn backend/PackageTypesPage ghi loại kiện: không gọi ${name}.`))
 
-// GET /api/package-types (chưa dùng được ở BE)
-export function fetchPackageTypes(): Promise<PackageType[]> {
-  return ON_BACKEND ? Promise.resolve([]) : getMockDb().listPackageTypes()
+/** Đọc được với nhân viên kho, điều phối viên, quản lý công ty. */
+// GET /api/package-types
+export async function fetchPackageTypes(): Promise<PackageType[]> {
+  if (!ON_BACKEND) return getMockDb().listPackageTypes()
+  return (await fetchAllPages<BackendPackageType>('/api/package-types')).map(packageTypeOf)
 }
 
-// GET /api/package-types/{id} (chưa dùng được ở BE)
-export function fetchPackageType(id: string): Promise<PackageType> {
-  return ON_BACKEND ? noPackageTypes('fetchPackageType') : getMockDb().getPackageType(id)
+// GET /api/package-types/{id}
+export async function fetchPackageType(id: string): Promise<PackageType> {
+  if (!ON_BACKEND) return getMockDb().getPackageType(id)
+  return packageTypeOf(await api().get<BackendPackageType>(`/api/package-types/${encodeURIComponent(id)}`))
 }
 
 /** `id` vắng là loại mới (kho cấp mã `PT-NNN`). Dữ liệu sai: `PACKAGE_TYPE_INVALID` kèm mã issue `package.*`. */
-// POST /api/package-types · PUT /api/package-types/{id} (chưa dùng được ở BE)
+// POST /api/package-types · PUT /api/package-types/{id}
 export function savePackageType(input: PackageTypeInput, id?: string): Promise<PackageType> {
-  if (ON_BACKEND) return noPackageTypes('savePackageType')
+  if (ON_BACKEND) return writesOnServerPage('savePackageType')
   return id === undefined ? getMockDb().createPackageType(input) : getMockDb().updatePackageType(id, input)
 }
 
-// DELETE /api/package-types/{id} (chưa dùng được ở BE)
+// DELETE /api/package-types/{id}
 export function deletePackageType(id: string): Promise<void> {
-  return ON_BACKEND ? noPackageTypes('deletePackageType') : getMockDb().deletePackageType(id)
+  return ON_BACKEND ? writesOnServerPage('deletePackageType') : getMockDb().deletePackageType(id)
 }
 
 /** Mọi kiện của công ty theo phiên, cũ trước. */

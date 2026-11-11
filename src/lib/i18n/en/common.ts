@@ -51,4 +51,9 @@ export const common = {
     to: 'To date',
     clear: 'Clear filters',
   },
+  phoneInput: {
+    countryCode: 'Country code',
+    countryList: 'Select a country code',
+    countries: { VN: 'Vietnam', SG: 'Singapore', US: 'United States', JP: 'Japan', KR: 'South Korea' },
+  },
 } satisfies Dictionary<typeof source>

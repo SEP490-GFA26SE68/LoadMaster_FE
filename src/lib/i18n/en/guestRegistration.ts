@@ -110,6 +110,7 @@ export const guestRegistration = {
     policyAccepted: 'Terms of service accepted.',
     redirectingPayment: 'Redirecting to VNPay payment gateway...',
     paymentLinkNotFound: 'Payment link not found.',
+    paymentFailed: 'The payment did not go through.',
   },
 } as const
 

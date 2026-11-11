@@ -46,13 +46,12 @@ function StorePackageLabelsPage() {
   const back = labelsBackTarget(search, can)
   const touch = can('warehouse.operate')
   const chosen = selection.ids !== undefined || selection.tripId !== undefined
-  const unavailable = PACKAGE_POOL_SUPPORT.dispatcherOnly && !can('packages.manage') ? t('sourcing.backend.labelsDispatcherOnly')
-    : !PACKAGE_POOL_SUPPORT.tripLabels && selection.tripId !== undefined ? t('sourcing.backend.tripLabels') : null
+  const unavailable = !PACKAGE_POOL_SUPPORT.tripLabels && selection.tripId !== undefined ? t('sourcing.backend.tripLabels') : null
   const query = usePackageLabelsQuery(selection, { enabled: unavailable === null })
   const pdf = useExportLabelsPdfMutation()
   const labels = query.data ?? []
   const missing = selection.ids === undefined || !query.isSuccess ? 0 : selection.ids.length - labels.length
-  const withPdf = PACKAGE_POOL_SUPPORT.pdfLabels && can('packages.manage') && labels.length > 0
+  const withPdf = PACKAGE_POOL_SUPPORT.pdfLabels && can('labels.print') && labels.length > 0
   const tooMany = labels.length > MAX_PDF_LABELS
   const backLabel = back.kind === 'trip' ? t('sourcing.labels.backToTrip', { id: back.tripId })
     : back.kind === 'loading' ? t('sourcing.labels.backToLoading', { id: back.tripId })

@@ -2,7 +2,9 @@ import { Link } from 'react-router'
 import { ROLE_ICON } from '@/components/RoleBadge'
 import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
-import { PUBLIC_HOME, PUBLIC_PRICING } from '@/features/auth/landing'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
+import { PUBLIC_HOME, PUBLIC_PRICING, TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { CONTACT_ANCHOR } from './contact-form'
@@ -13,12 +15,16 @@ import { PUBLIC_TOUCH } from './public-chrome'
 const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as const
 
 /**
- * Phần mở đầu của trang giới thiệu, trên nền tối nối liền với đầu trang: tiêu đề, một câu mô tả, nút chính duy nhất của trang "Nhận
- * tư vấn" (cuộn tới form liên hệ) và nút kính "Xem bảng giá" — vòng focus `--cyan-300` như mọi điều khiển trên dải trời; bên phải (dưới,
- * khi màn hẹp) là khung 3D của chuyến mẫu (`LandingStage`).
+ * Phần mở đầu của trang giới thiệu, trên nền tối nối liền với đầu trang: tiêu đề, một câu mô tả, nút chính duy nhất của trang và nút kính
+ * "Xem bảng giá" — vòng focus `--cyan-300` như mọi điều khiển trên dải trời; bên phải (dưới, khi màn hẹp) là khung 3D của chuyến mẫu
+ * (`LandingStage`). Khi nối backend (`REGISTRATION_CAPABILITIES`) và khách chưa đăng nhập, nút chính là "Đăng ký trải nghiệm" — lối vào dễ
+ * thấy nhất của luồng dùng thử — và "Nhận tư vấn" (cuộn tới form liên hệ) lùi thành nút kính; kho mẫu không có luồng đăng ký nên nút chính
+ * vẫn là "Nhận tư vấn".
  */
 export function LandingHero() {
   const t = useT()
+  const user = useAuthSafe()?.user
+  const signUp = REGISTRATION_CAPABILITIES.publicSignUp && !user
   return (
     <section aria-labelledby="landing-title">
       <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:gap-14 xl:pt-8 xl:pb-20">
@@ -35,7 +41,12 @@ export function LandingHero() {
           </h1>
           <p className="m-0 max-w-[36em] text-intro text-sky-text-2">{t('landing.hero.lede')}</p>
           <div className="flex flex-wrap gap-3 pt-1">
-            <Button asChild variant="primary" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
+            {signUp ? (
+              <Button asChild variant="primary" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
+                <Link to={TRIAL_REGISTRATION}>{t('landing.header.trial')}</Link>
+              </Button>
+            ) : null}
+            <Button asChild variant={signUp ? 'glass' : 'primary'} size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
               <Link to={{ pathname: PUBLIC_HOME, hash: `#${CONTACT_ANCHOR}` }}>{t('landing.hero.cta')}</Link>
             </Button>
             <Button asChild variant="glass" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>

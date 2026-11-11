@@ -135,10 +135,10 @@ function SignForm({ agreement, onSign, isSigning }: { agreement: CompanyAgreemen
       <ConfirmDialog
         open={doubleCheckOpen}
         onOpenChange={setDoubleCheckOpen}
-        title="Xác nhận ký Thỏa thuận dịch vụ thử nghiệm"
-        description={`Bạn đang thực hiện ký thỏa thuận điện tử cho ${agreement.companyName}. Thỏa thuận sẽ có hiệu lực pháp lý ngay sau khi bạn xác nhận.`}
-        confirmLabel="Tôi xác nhận ký"
-        cancelLabel="Quay lại"
+        title={t('billing.agreement.sign.doubleCheck.title')}
+        description={t('billing.agreement.sign.doubleCheck.description', { company: agreement.companyName })}
+        confirmLabel={t('billing.agreement.sign.doubleCheck.confirm')}
+        cancelLabel={t('billing.agreement.sign.doubleCheck.back')}
         pending={isSigning}
         onConfirm={handleConfirmedSign}
       />

@@ -70,16 +70,28 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   nhập vẫn về `/dang-nhap` (nhớ trang đó). Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
-  mũi tên, chữ vẫn là tên truy cập). Không có đăng ký hay mua gói ở trang công khai: tài khoản công ty do đội LoadMaster mở sau khi khách gửi yêu cầu liên hệ; yêu cầu tạo
-  tài khoản dùng thử được nền tảng xử lý ở `/nen-tang/yeu-cau-dung-thu`.
+  mũi tên, chữ vẫn là tên truy cập).
+- **Đăng ký công khai** — ba route ngoài `RequireAuth`, **chỉ khi nối backend** (nhóm `registration`, `REGISTRATION_CAPABILITIES`; hằng
+  `TRIAL_REGISTRATION`, `GUEST_REGISTRATION`, `REGISTRATION_SUCCESS` ở `auth/landing.ts`): `/dang-ky-trai-nghiem` đăng ký dùng thử gói Basic
+  (thông tin công ty, mã OTP qua email, máy chủ kiểm sơ bộ rồi nền tảng duyệt ở `/nen-tang/yeu-cau-dung-thu`); `/dang-ky` tự đăng ký trả phí
+  (thông tin, OTP, điều khoản, chọn gói, thanh toán — máy chủ tạo tài khoản); `/dang-ky-thanh-cong` báo đã tạo tài khoản. Lối vào cho khách
+  chưa đăng nhập, dễ thấy nhất trước: **nút chính** của khối mở đầu `/gioi-thieu` là "Đăng ký trải nghiệm" ("Nhận tư vấn" lùi thành nút kính
+  cạnh nó); đầu trang có nút kính "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn hai mục nằm trong nút menu); màn
+  đăng nhập có hai nút phụ dưới form (`LoginSignUp`); thẻ gói có nút phụ ("Đăng ký trải nghiệm" chỉ ở gói Basic). Người đã đăng nhập không thấy
+  lối vào nào. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
+  dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
+  30 ngày sau khi hết hạn dùng thử.
 - **Đăng nhập ở màn của app** — kho mẫu lẫn Keycloak: một form email + mật khẩu (mục 9 "Nối backend"). Ngoại lệ duy nhất: client của realm
   chưa bật Direct Access Grants (`login-not-enabled`) thì app chuyển sang trang đăng nhập của Keycloak (authorization code + PKCE S256, quay về
   `/dang-nhap`, `keycloak-session.ts`). Đăng nhập bằng máy chủ có thêm `/quen-mat-khau` (`PasswordResetPage`, ngoài `RequireAuth`, không đòi quyền): email → mã 6 chữ số
   gửi qua email → mật khẩu mới; mở từ "Quên mật khẩu?" của màn đăng nhập, từ lỗi mật khẩu tạm và từ thẻ Mật khẩu của Hồ sơ (`?email=` điền
   sẵn). Kho mẫu không gửi được mã nên chế độ kho mẫu không có liên kết đó, và mở `/quen-mat-khau` là về `/dang-nhap`.
-- **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp
-  hơn thì gom vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không
-  về nút menu). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
+- **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm
+  ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
+  vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không về nút menu).
+  Đổi mốc nào ở đầu trang thì đo lại 360 → 1.440 px, vi / en, chuột / cảm ứng, khi nhóm `registration` nối backend (không điều khiển nào tràn,
+  chồng nhau hay xuống dòng). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
   qua tới nội dung chính" (chỉ hiện khi nhận focus; đưa focus vào `<main>` mà không đổi neo). Tới một phần qua neo thì tiêu đề `<h2>` của phần
   nhận focus (`useHashScroll`; neo mã hoá hỏng như `#%` coi như không có neo). Điều khiển trên dải trời của hai trang công khai và màn đăng nhập
   (nút chính, nút kính, nút về, "Đăng nhập") ghép `SKY_FOCUS` (`components/sky-focus.ts`): vòng focus `--cyan-300` thay `--primary` ngay ở
@@ -87,7 +99,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `SKY_FOCUS`, 44 px (56 px cảm ứng). Chip và nhãn nhỏ của hai trang công khai ghép `PUBLIC_TOUCH_TAG` (`public-chrome.ts`): chữ 16 px, xuống
   dòng được trên máy cảm ứng. Hình `CargoArtwork` của màn đăng nhập xếp đầy **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có
   nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
-- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he`, khung 3D chuyến mẫu,
+- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
+  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
   "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với
   Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`).
 - **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
@@ -181,9 +194,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Tìm nhanh theo vai trò** (FE-0-04): quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm chuyến, kiện, yêu cầu giao
   (`requirements.view`), kho kiện (`packages.view`), xe; điều phối viên như quản lý công ty; nhân viên kho tìm kho kiện và loại kiện
   (`packages.manage`); tài xế, quản lý nền tảng, hỗ trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ
-  gọi hàm kho mà nhóm của vai trò cần; kho kiện nối backend chỉ người giữ `packages.manage` (nhân viên kho) đọc qua lối của developer, đội xe
-  nối backend chỉ điều phối viên, nên nhóm kho kiện, nhóm xe bỏ với vai trò khác (`quickSearchGroups`,
-  `packagePoolReachable`, `fleetReachable`); chuyến nối backend thì nhóm chuyến đọc máy chủ, nhóm kiện của chuyến bỏ.
+  gọi hàm kho mà nhóm của vai trò cần; kho kiện, loại kiện và đội xe có ở cả hai nguồn nên chỉ theo quyền (`quickSearchGroups`); chuyến nối
+  backend thì nhóm chuyến đọc máy chủ, nhóm kiện của chuyến bỏ.
 
 **Chuông thông báo theo vai trò**
 
@@ -309,7 +321,7 @@ src/
                         QrCode / QrScanDialog (vẽ và quét mã QR), PackageVerify (đối chiếu kiện ba mức), CargoArtwork (thùng xe đẳng cự
                         xếp dần của màn đăng nhập, hình dự phòng của khung 3D trang giới thiệu)...
   components/map/       bản đồ dùng chung: RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl; CoordinatePicker
-                        (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ — chưa có ở BE, Q-20)
+                        (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ, qua `/api/places/*` khi nối máy chủ)
   features/
     auth/               đăng nhập, phiên, RequireAuth, đặt mật khẩu mới `/quen-mat-khau`
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -1142,9 +1154,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
-  nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
+  nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới). Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
   (còn đọc kho mẫu) hiện mã chuyến dạng chữ, vì Chi tiết chuyến của máy chủ không tìm được mã của kho mẫu.
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
@@ -1189,7 +1201,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
   `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
-  (`useFleetCapabilities`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
+  (`useFleetCapabilities`), `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
   Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;
@@ -1201,13 +1213,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phiên) / `updateCompanyProfile` (chỉ quản trị công ty; tên, địa chỉ, số điện thoại; ghi `company.updated { fields }`, không đổi thì không
   ghi); backend `GET` / `PATCH /api/company/profile` chỉ sửa tên và email nhận hoá đơn, mã, mã số thuế, trạng thái chỉ đọc.
 - **Gói cước và credit** (`billing`; `lib/billing-backend-api.ts`): backend chỉ trả gói `ACTIVE`; huỷ gói chỉ tắt `autoRenew` nên `ACTIVE` +
-  `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit; giá credit 5.000 đ (backend chưa có endpoint đọc giá).
+  `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit; giá một credit khi nạp theo hạng gói như backend — Basic 400 đ, Pro
+  326 đ, Ultimate 263 đ, chưa có gói tính như Basic — ở một hằng `BACKEND_TOPUP` (`billing-api.ts`, `topUpTerms`) vì backend chưa có endpoint đọc giá.
   `BILLING_CAPABILITIES`: kho mẫu có lịch sử thanh toán, `/thanh-toan/gia-lap`, "Tự gia hạn"; backend có hoá đơn và `/thanh-toan/ket-qua`.
   Thanh toán luôn gửi `gateway: 'MOCK'`; `paymentUrl` của backend là endpoint JSON `/api/payment/mock-checkout?txnRef=…`, không chuyển hướng:
   app mở `/thanh-toan/ket-qua?ma=<txnRef>&loai=goi|credit`, chỉ nút "Xác nhận thanh toán" gọi endpoint đó, rồi **đọc lại sự thật từ backend**
-  (nạp: sổ cái có `PURCHASE` cùng tham chiếu; đăng ký: `/api/subscription/current` là `ACTIVE`), không tin tham số URL. Danh mục gói: mỗi hạng
-  một gói đang bán (409) và backend chỉ liệt kê gói đang bán, nên không có công tắc bán; sửa là đọc rồi ghi cả bản ghi. Lần chạy tối ưu vẫn
-  là mock và trừ credit ở kho mẫu: số dư backend không giảm sau lần chạy.
+  (nạp: sổ cái có `PURCHASE` cùng tham chiếu; đăng ký: `/api/subscription/current` là `ACTIVE`), không tin tham số URL. Danh mục gói đọc mọi gói
+  kể cả gói đã ngừng bán (`GET /api/subscription/plans?paged=true`, `listAllPlanDtos`; không `paged` là chỉ gói đang bán — bảng giá công
+  khai); công tắc bán, thêm gói vào hạng nào cũng được, mỗi hạng một gói đang bán (409 `SUBSCRIPTION_TIER_ALREADY_EXISTS` khi tạo, bật bán);
+  xoá gói còn công ty đang dùng là 409 `PLAN_IN_USE`; Ultimate không có công tắc "không giới hạn" (`PLAN_CATALOG_CAPABILITIES`); sửa là đọc
+  rồi ghi cả bản ghi. Lần chạy tối ưu trừ credit ở
+  máy chủ khi nhóm `trips` nối backend; nhóm `trips` còn kho mẫu thì lần chạy là mock và trừ credit ở kho mẫu.
 - **Liên hệ của khách, yêu cầu hỗ trợ** (`contacts`, `support`): form công khai gửi `POST /api/contact-guests` không token (mã gói chỉ gửi khi
   là số của backend); `/lien-he-khach` đọc `GET /api/contact-guests`, lưu `PATCH …/{id}`; backend bỏ qua `assignedToId: null` nên "Chưa ai
   nhận" mờ kèm lý do khi đã có người nhận; hỗ trợ khách hàng không đọc được `/api/users` nên chỉ nhận việc cho chính mình. Yêu cầu hỗ trợ:
@@ -1215,11 +1231,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `SUPPORT_SOURCE` bỏ trao đổi, khung công ty, giờ cập nhật, thêm trạng thái `RESOLVED`, `resolutionNote` chỉ đọc. `ticketsToDisplay` chỉ
   chọn yêu cầu để vẽ (hỗ trợ khách hàng thấy hết, người khác chỉ yêu cầu của mình) — **bộ lọc hiển thị, không phải kiểm quyền**: quyền xem
   do backend quyết.
-- **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): `/api/packages*` chỉ điều phối viên gọi được — quản lý công ty và
-  nhân viên kho thấy câu lý do (`sourcing.backend.*`), màn kho bỏ nút tra cứu và liên kết in lại nhãn (`packagePoolReachable`). Điểm đến và
+- **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): máy chủ cho nhân viên kho, điều phối viên, quản lý công ty đọc
+  kiện và loại kiện (`GET /api/packages`, `GET /api/package-types`) — đúng ba vai trò có `packages.view` (`packagePoolReachable`); thêm, sửa, xoá,
+  nhập file kiện cho nhân viên kho và điều phối viên (nút ghi của màn vẫn theo `packages.manage`), ghi loại kiện cho nhân viên kho. Điểm đến và
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
-  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó. Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó; nhãn theo chuyến chưa có (`PACKAGE_POOL_SUPPORT.tripLabels`). Chỉ xoá kiện Đã nhập; không liên kết tới chuyến.
   Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
@@ -1278,9 +1295,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   số), chèn điểm nhận và điểm giao sau điểm hiện tại, lưu chỗ xếp (`layout`). Thẻ `PickupRequestsCard` ở Chi tiết chuyến máy chủ (pha theo
   `serverTripPhase`) và ở Giám sát khi `monitoring` cùng nguồn; tài xế ở mục Tài xế.
 - **Chuyến** (`trips`; `trips-backend-api.ts`, DTO ở `trips-dto.ts`): mã chuyến (`tripCode`) là mã trên URL như Giám sát; Chi tiết chuyến tìm
-  `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): hộp thoại sửa
-  (`PATCH /api/trips/{id}`, chỉ gửi trường đã đổi; đổi xe, tài xế ở đây), huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE
-  …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
+  `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): form sửa
+  `/chuyen/:mã/sua` (`BackendTripEditPage`, `PATCH /api/trips/{id}`: tên, ngày giờ xuất phát, xe, tài xế, kho xuất phát — chỉ gửi trường
+  đã đổi, `backend-trip-edit.ts`; máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch, trạng thái khác thấy một dòng lý do; máy chủ không trả mã
+  kho nên ô kho mặc định "Giữ kho hiện tại"), "Đổi xe" ở Chi tiết chuyến cho chuyến Đã lập kế hoạch (`ChangeVehicleDialog`, như ở Planner),
+  huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
   `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
@@ -1315,14 +1334,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, một credit, ba phương án A · B · C
   giữ đúng chỗ các kiện ghim; máy chủ trả `pinnedCount` (hộp chạy ghi "Giữ N kiện đã ghim"), bộ ghim không đứng vững là 400
   `PINNED_SET_INVALID` trước khi chạy, không trừ credit. Không dùng `POST /api/load-plans/{id}/rerun` (một phương án, chạy đồng bộ).
-  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; form sửa và báo cáo chuyển
-  về Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
+  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; báo cáo chuyến chuyển về
+  Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
-  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Tạo, sửa, xoá, gia hạn đòi
-  `DELIVERY_DEMAND_MANAGE` mà máy chủ chưa giao cho vai trò nào, gỡ khỏi chuyến chưa có endpoint: một bảng `REQUIREMENT_SERVER_SUPPORT`
-  (`requirements-capabilities.ts`) ẩn các nút đó, đổi cờ khi máy chủ có quyền. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
+  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Điều phối viên tạo, sửa,
+  xoá, gia hạn (`DELIVERY_DEMAND_MANAGE`; `requirement-writes-api.ts`) và gỡ khỏi chuyến (`DELETE /api/trips/{tripId}/delivery-requirements/{id}`;
+  chuyến đã sang pha vận hành là `TRIP_NOT_EDITABLE`) — `REQUIREMENT_SERVER_SUPPORT` bật cả hai. Form chọn kiện từ kho kiện của máy chủ
+  (`requirement-pool-api.ts`: kiện còn chờ, không cờ, chưa thuộc yêu cầu khác; để trống được), sửa chỉ gửi tập kiện khi tập đổi; máy chủ kiểm lại
+  (`PACKAGE_FLAGGED`, `PACKAGE_NOT_AVAILABLE`, `PACKAGE_IN_OTHER_REQUIREMENT`). Xoá chỉ yêu cầu còn chờ và chưa giữ kiện nào (mục Xoá mờ kèm
+  lý do). Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu. Yêu cầu còn trong chuyến mà
   kho đã bỏ kiện của nó (máy chủ trả `shortDelivered`, `droppedPackageCount`) đọc là "Giao thiếu" (`PARTIAL`, suy lúc đọc như D-92); bỏ kiện
   cuối cùng thì máy chủ gỡ yêu cầu khỏi chuyến (về `PENDING`, điểm giao không còn kiện bị xoá). Máy chủ chưa có trạng thái hoàn trả của kiện.
@@ -1365,8 +1387,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe
-  `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Chỉ điều phối viên
-  đọc được; vai trò khác thấy câu lý do, màn không gọi mạng (`fleetReachable`). `FLEET_CAPABILITIES` ẩn mọi lệnh ghi, chuyến đang dùng xe, ghi
+  `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Điều phối viên và
+  quản lý công ty đọc được (`fleet.view`, như `VEHICLES_READ` của backend). `FLEET_CAPABILITIES` ẩn mọi lệnh ghi, chuyến đang dùng xe, ghi
   chú bảo dưỡng, khoảng hở. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
   (`doorUnknown`) và trang xe nói rõ.
 
@@ -1467,7 +1489,9 @@ là **chữ** của hai ô vĩ độ / kinh độ (`CoordinateText`), đổi th�
 phẩy); form giữ một trường `{ lat, lng }` qua `Controller` và chặn lưu bằng cùng hàm đó, câu lỗi của từng ô do ô chọn toạ độ tự hiện (sau khi
 con trỏ rời nhóm ô, hoặc `showErrors` khi form đã bấm lưu). Ba lối nhập: danh sách **địa danh mẫu** (`SEED_PLACES` ở `seed-places.ts`, **toạ độ
 gần đúng ở mức khu vực**; tìm bỏ dấu `searchPlaces`, combobox + listbox), gõ tay, và bấm lên bản đồ (`CoordinatePickerMap`, chunk lười) **chỉ
-khi có `VITE_GOONG_MAPTILES_KEY` và WebGL**. Tìm địa chỉ đi qua `places-api.ts` (`searchAddress`, "chưa có ở BE", Q-20): trình duyệt không gọi Goong.
+khi có `VITE_GOONG_MAPTILES_KEY` và WebGL**. Tìm địa chỉ đi qua `places-api.ts`: kho mẫu tìm trong địa danh mẫu; đăng nhập bằng máy chủ thì `GET /api/places/autocomplete` · `/detail`
+(máy chủ gọi Goong, trình duyệt không), cho điều phối viên, quản lý công ty, tài xế, quản trị công ty và quản trị hệ thống — vai trò khác
+không có ô tìm (`addressSearchAvailable`), gõ toạ độ.
 
 **Lập chuyến** (FE-4b-04, D-73, D-76): `Trip` có `departureAt` (ISO) và `depot` (`CompanyDepot`, mặc định kho của công ty); `scheduledDate`
 luôn là ngày của `departureAt` theo giờ Việt Nam — đổi giờ xuất phát thì ngày chạy theo, chỉ đổi ngày thì giữ giờ trong ngày; hai trường không
@@ -2064,8 +2088,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tên truy cập "Liên hệ tư vấn gói Pro" bắt đầu bằng đúng chữ hiện ra) mở `/gioi-thieu?goi=<mã gói>&loai=bao-gia#lien-he` — form đọc `goi`,
   `loai` (slug ở `lib/contact-slugs.ts`, dùng chung với bộ lọc của màn) để chọn sẵn; gói lạ hoặc đã ngừng bán thì không chọn, loại lạ là "Hỏi
   thông tin". Kho từ chối thì banner `danger` ngay trên nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
-  `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu là
-  "Nhận tư vấn" ở phần mở đầu, nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
+  `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu nằm
+  ở phần mở đầu ("Nhận tư vấn", hay "Đăng ký trải nghiệm" khi nối backend), nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
   trước (lọc `trang-thai`, `loai`, tìm theo tên / email / điện thoại / công ty / mã — trên URL); bấm tên mở khung xử lý ở cột phải
   (`?lien-he=<mã>`: chi tiết, ô trạng thái, người nhận việc, ghi chú, "Lưu thay đổi" là nút chính duy nhất, mờ kèm lý do khi chưa đổi gì) và bảng
   bỏ ba cột khung đã có. **Khung chỉ gửi ô người dùng đã sửa** (`contactPatch` theo `dirtyFields`): người khác vừa lưu thì kho trả bản mới, ô chưa

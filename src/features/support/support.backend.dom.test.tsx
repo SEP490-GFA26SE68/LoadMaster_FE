@@ -121,7 +121,7 @@ test('a dispatcher sees only the tickets they sent; a new ticket goes to the bac
   })
 })
 
-test('the supporter reads every ticket, sees the note of the team without the company panel, and sets Resolved', async () => {
+test('the supporter reads every ticket, sees the note of the team and the company panel, and sets Resolved', async () => {
   const user = userEvent.setup()
   me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
   renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=1')
@@ -129,7 +129,9 @@ test('the supporter reads every ticket, sees the note of the team without the co
   expect(panel).toHaveTextContent('Cần xuất lại hoá đơn.')
   expect(within(panel).getByRole('region', { name: 'Phản hồi của đội hỗ trợ' })).toHaveTextContent('Đã gửi lại hoá đơn qua email.')
   expect(within(panel).getByRole('button', { name: 'Gửi trả lời' })).toBeInTheDocument()
-  expect(screen.queryByRole('region', { name: 'Thông tin công ty' })).toBeNull()
+  const company = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
+  expect(await within(company).findByText('Công ty chưa có gói cước.', {}, SLOW)).toBeInTheDocument()
+  expect(within(company).getAllByText('Chưa đọc được')).toHaveLength(2)
   const table = screen.getByRole('table')
   expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Gửi lúc')
   expect(within(table).getAllByText('Vận tải Long Bình')).toHaveLength(2)

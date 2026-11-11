@@ -80,18 +80,16 @@ export function PackageFormDialog({ onClose, onDone }: {
               error={errorText(errors.destination?.message)}
               {...register('destination')}
             />
-            {PACKAGE_POOL_SUPPORT.packageTypes ? (
-              <SelectField
-                control={control}
-                name="packageTypeId"
-                label={t('sourcing.form.packageType')}
-                hint={t('sourcing.form.packageTypeHint')}
-                options={[
-                  { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
-                  ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
-                ]}
-              />
-            ) : null}
+            <SelectField
+              control={control}
+              name="packageTypeId"
+              label={t('sourcing.form.packageType')}
+              hint={t('sourcing.form.packageTypeHint')}
+              options={[
+                { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
+                ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
+              ]}
+            />
             {create.error ? <Banner tone="danger">{dataErrorMessage(create.error, t)}</Banner> : null}
           </div>
           <DialogFooter>

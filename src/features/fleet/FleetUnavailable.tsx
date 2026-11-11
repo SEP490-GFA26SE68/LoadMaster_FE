@@ -2,8 +2,8 @@ import { PageHero } from '@/components/PageHero'
 import { Banner } from '@/components/Banner'
 
 /**
- * Màn Đội xe, Cấu hình xe hay Loại xe khi người xem không đọc được dữ liệu từ nguồn đang dùng (`fleetReachable`): thanh tiêu đề và một câu
- * lý do. Màn không dựng truy vấn nào, nên không gọi backend.
+ * Màn của Đội xe khi nguồn đang dùng không có việc người xem mở (trang thêm xe khi nguồn không ghi được): thanh tiêu đề và
+ * một câu lý do. Màn không dựng truy vấn nào, nên không gọi backend.
  */
 export function FleetUnavailable({ title, description, reason, back }: {
   title: string
