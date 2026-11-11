@@ -150,7 +150,7 @@ export function SupportPage() {
                 data={rows}
                 columns={columns}
                 getRowId={(ticket) => ticket.id}
-                getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60 dark:bg-n-800/60' : undefined)}
+                getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60' : undefined)}
                 density="spacious"
                 appearance="paper"
                 onRowClick={select}
@@ -168,7 +168,7 @@ export function SupportPage() {
                   <Card
                     role="region"
                     aria-label={selected.title}
-                    className={selected.status === 'CLOSED' ? 'border-n-300 bg-n-100/70 opacity-75 dark:bg-n-800/50' : undefined}
+                    className={selected.status === 'CLOSED' ? 'border-n-300 bg-n-100/70 opacity-75' : undefined}
                   >
                     <div className="flex flex-col gap-4 p-4.5">
                       <StatusSelect
