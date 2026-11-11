@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { useT, type MessageKey } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
+import { BILLING_CONSTANTS } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { contactPath } from './contact-form'
 import { PlanCard } from './PlanCard'
@@ -21,7 +22,7 @@ import { usePublicPlansQuery } from './useMarketingQuery'
  */
 const GRID_COLUMNS = ['', 'md:max-w-120', 'md:grid-cols-2', 'md:grid-cols-3'] as const
 
-const NOTES: readonly { icon: LucideIcon; key: MessageKey }[] = [
+const NOTES: readonly { icon: LucideIcon; key: 'pricing.creditNote' | 'pricing.tierNote' | 'pricing.signUpNote' }[] = [
   { icon: Coins, key: 'pricing.creditNote' },
   { icon: Info, key: 'pricing.tierNote' },
   { icon: Building2, key: 'pricing.signUpNote' },
@@ -105,7 +106,7 @@ export function PricingPage() {
           {NOTES.map(({ icon: Icon, key }) => (
             <li key={key} className="flex items-start gap-3">
               <Icon aria-hidden className="mt-0.5 size-5 flex-none text-primary" strokeWidth={1.5} />
-              {t(key)}
+              {key === 'pricing.creditNote' ? t(key, { count: BILLING_CONSTANTS.optimizationCost }) : t(key)}
             </li>
           ))}
         </ul>

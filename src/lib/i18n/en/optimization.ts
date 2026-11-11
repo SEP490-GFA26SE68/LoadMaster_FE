@@ -33,8 +33,8 @@ export const optimization = {
     title: 'Keep pinned packages',
     switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
     on: {
-      plan: 'Plan {revision} has {count} pinned packages. This run keeps their exact position and orientation and the mock packs only the other packages around them. Still three plans A · B · C, still one credit.',
-      loaded: 'The warehouse had loaded {count} packages before it met the damaged one. This run keeps their place and orientation and packs only the other packages around them — they do not have to be unloaded. Still three plans A · B · C, still one credit.',
+      plan: 'Plan {revision} has {count} pinned packages. This run keeps their exact position and orientation and the mock packs only the other packages around them. Still three plans A · B · C, still counted as one run.',
+      loaded: 'The warehouse had loaded {count} packages before it met the damaged one. This run keeps their place and orientation and packs only the other packages around them — they do not have to be unloaded. Still three plans A · B · C, still counted as one run.',
     },
     off: 'Normal run: every package is packed again from scratch.',
     blocked: {
@@ -57,7 +57,7 @@ export const optimization = {
     tierNote: 'The system picks the algorithm within your plan tier. The demo runs EP + DBLF (mock) for every tier.',
     noPlan: 'The company has no plan.',
     blocked: {
-      INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator',
+      INSUFFICIENT_CREDITS: 'Not enough credits for this run — contact your company administrator',
       SUBSCRIPTION_EXPIRED: 'The plan has expired — contact your company administrator',
     },
   },

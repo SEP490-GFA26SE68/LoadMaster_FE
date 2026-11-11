@@ -34,11 +34,11 @@ export const SEED_PLANS: readonly SubscriptionPlan[] = [
 /**
  * Công ty nào dùng gói nào, và lịch sử trước lần chạy đầu tiên của seed: gói đăng ký `leadDays` ngày trước lần chạy tối ưu đầu tiên của
  * công ty; `earlierUsage` là số lượt dùng credit **cũ hơn mọi chuyến của seed** (chuyến đã xong từ trước, không còn trong kho) — Phương
- * Nam đã dùng gần hết 100 credit của gói Basic nên số dư thấp (còn 2 sau lần chạy duy nhất của seed).
+ * Nam đã dùng gần hết 100 credit của gói Basic nên số dư thấp (còn 2 — đúng một lần chạy — sau lần chạy duy nhất của seed).
  */
 const COMPANY_PLANS = [
   { companyId: LONG_BINH, planId: 'PLAN-002', leadDays: 1, earlierUsage: 0 },
-  { companyId: PHUONG_NAM, planId: 'PLAN-001', leadDays: 20, earlierUsage: 97 },
+  { companyId: PHUONG_NAM, planId: 'PLAN-001', leadDays: 20, earlierUsage: 48 },
 ] as const
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -65,6 +65,7 @@ export function seedBilling({ runs, trips, now }: { runs: readonly OptimizationR
   const nowMs = now.getTime()
   const seed: BillingSeed = { plans: SEED_PLANS.map((plan) => structuredClone(plan)), subscriptions: [], creditAccounts: [], creditTransactions: [], payments: [] }
   const references: string[] = []
+  const cost = BILLING_CONSTANTS.optimizationCost
 
   COMPANY_PLANS.forEach(({ companyId, planId, leadDays, earlierUsage }, index) => {
     const plan = SEED_PLANS.find((item) => item.id === planId) as SubscriptionPlan
@@ -86,13 +87,13 @@ export function seedBilling({ runs, trips, now }: { runs: readonly OptimizationR
     const earlierEnd = firstRunMs - HOUR_MS
     for (let k = 1; k <= earlierUsage; k += 1) {
       const at = iso(startedMs + Math.round(((earlierEnd - startedMs) * k) / (earlierUsage + 1)))
-      rows.push({ type: 'USAGE', amount: -1, reference: nextRunReference(references), usageStatus: 'DEDUCTED', createdAt: at })
+      rows.push({ type: 'USAGE', amount: -cost, reference: nextRunReference(references), usageStatus: 'DEDUCTED', createdAt: at })
     }
     for (const run of companyRuns) {
       const reference = nextRunReference(references)
       const failed = run.status === 'FAILED'
-      rows.push({ type: 'USAGE', amount: -1, reference, usageStatus: failed ? 'REFUNDED' : 'DEDUCTED', refunded: failed, tripId: run.tripId, createdAt: run.at })
-      if (failed) rows.push({ type: 'REFUND', amount: 1, reference, tripId: run.tripId, createdAt: run.at })
+      rows.push({ type: 'USAGE', amount: -cost, reference, usageStatus: failed ? 'REFUNDED' : 'DEDUCTED', refunded: failed, tripId: run.tripId, createdAt: run.at })
+      if (failed) rows.push({ type: 'REFUND', amount: cost, reference, tripId: run.tripId, createdAt: run.at })
     }
     const sorted = rows.toSorted((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
     for (const row of sorted) {

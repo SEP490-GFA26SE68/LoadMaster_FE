@@ -124,7 +124,7 @@ test('the warehouse reports a flagged package found: the flag is cleared and the
   const flagged = (await fetchPackages()).find((pkg) => pkg.id === 'PK-0040')
   expect(flagged?.flags).toStrictEqual(['NOT_FOUND'])
   getMockDb().restoreSession('US-0003')
-  expect((await reportPackageFound(flagged?.qrToken ?? '')).flags).toStrictEqual([])
+  expect((await reportPackageFound(flagged ?? { id: '', qrToken: '' })).flags).toStrictEqual([])
   getMockDb().restoreSession('US-0001')
   expect((await getMockDb().listEvents())[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { type: 'package', id: flagged?.id } })
 })

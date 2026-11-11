@@ -4,7 +4,7 @@ import type { ServerAuditEntry } from './audit-backend-api'
 
 /**
  * Phần chi tiết của dòng nhật ký máy chủ mà chuông thông báo cũng hiện: sự cố, nguy cơ trễ hạn, credit, yêu cầu hỗ trợ, nhận hàng dọc
- * đường, lý do. Mã dịch qua từ điển; mã không có nhãn thì bỏ, không hiện mã thô. Hàm thuần, chỉ `server-audit-rows.ts` dùng.
+ * đường, báo thiếu / kiện hỏng của kho, kiện tìm thấy lại, lý do. Mã dịch qua từ điển; mã không có nhãn thì bỏ, không hiện mã thô. Hàm thuần, chỉ `server-audit-rows.ts` dùng.
  */
 
 const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const
@@ -16,6 +16,10 @@ const DELIVERY_ISSUE_KINDS = ['damaged', 'missing', 'refused', 'other'] as const
 const MANUAL_CONFIRM_REASONS = ['LABEL_DAMAGED', 'QR_UNREADABLE', 'OTHER'] as const
 /** Kết quả mười luật lúc gửi yêu cầu nhận dọc đường (`PICKUP_REQUESTED`): đạt cả mười, hoặc còn luật không đạt. */
 const PICKUP_CHECKS = ['VALIDATED', 'PENDING'] as const
+/** Quyết định của điều phối viên với kiện kho báo thiếu (`STAGING_SHORTAGE_RESOLVED`). */
+const SHORTAGE_DECISIONS = ['KEEP_SEARCHING', 'DROP'] as const
+/** Kiện hỏng lúc xếp (`LOADING_DAMAGE_REPORTED`): bỏ lại kho rồi xếp tiếp, hoặc chuyến quay về lập kế hoạch. */
+const DAMAGE_OUTCOMES = ['LEFT_OUT', 'REPLANNED'] as const
 /** Giá trị trông như mã máy (`LABEL_DAMAGED`): không có nhãn thì bỏ, không hiện mã cho người dùng. */
 const CODE_LIKE = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/
 
@@ -74,6 +78,15 @@ export function notificationParts({ actionType, after }: ServerAuditEntry, t: TF
     parts.push(t(`common.deadlineStatuses.${after.deadlineStatus}`))
   }
   if (actionType === 'CREDIT_LOW_BALANCE' && typeof after.balance === 'number') parts.push(t('serverAudit.details.balance', { count: after.balance }))
+  if (actionType === 'STAGING_SHORTAGE_RESOLVED' && typeof after.decision === 'string' && isOneOf(SHORTAGE_DECISIONS, after.decision)) {
+    parts.push(t(`serverAudit.shortageDecisions.${after.decision}`))
+  }
+  if (actionType === 'LOADING_DAMAGE_REPORTED' && typeof after.outcome === 'string' && isOneOf(DAMAGE_OUTCOMES, after.outcome)) {
+    parts.push(t(`serverAudit.damageOutcomes.${after.outcome}`))
+  }
+  if (actionType === 'PACKAGE_FOUND' && typeof after.packageCode === 'string' && after.packageCode.trim() !== '') {
+    parts.push(t('serverAudit.details.package', { code: after.packageCode.trim() }))
+  }
   if (actionType === 'SUPPORT_TICKET_UPDATED') {
     if (typeof after.ticketCode === 'string') parts.push(t('serverAudit.details.ticket', { code: after.ticketCode }))
     if (after.replied === true) parts.push(t('serverAudit.details.replied'))

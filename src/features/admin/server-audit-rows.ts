@@ -1,5 +1,6 @@
 import {
-  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, PackagePlus, Pin, PinOff, QrCode, Route, ScrollText, Timer,
+  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, PackageCheck, PackagePlus, PackageX, Pin, PinOff, QrCode, Route,
+  ScrollText, Timer,
   TriangleAlert, UserCog, UserMinus, UserPen, UserPlus, type LucideIcon,
 } from 'lucide-react'
 import { roleOfBackend } from '@/features/auth/backend-user'
@@ -23,13 +24,14 @@ export const SERVER_AUDIT_ACTIONS = [
   'MANUAL_CONFIRM_APPROVED', 'MANUAL_CONFIRM_REJECTED', 'TRIP_EXCEPTION_REPORTED', 'TRIP_EXCEPTION_ESCALATED', 'DEADLINE_RENEGOTIATED',
   'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED', 'PICKUP_APPROVED', 'PICKUP_REJECTED',
   'PICKUP_LOADED', 'PICKUP_DELIVERED', 'TRIP_STOPS_REORDERED',
+  'STAGING_SHORTAGE_REPORTED', 'STAGING_SHORTAGE_RESOLVED', 'LOADING_DAMAGE_REPORTED', 'PACKAGE_FOUND',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
   'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User', 'DeliveryIssue', 'ManualUnloadConfirmation', 'TripException', 'Company', 'SupportTicket',
-  'PickupRequest',
+  'PickupRequest', 'StagingShortage', 'LoadingDamage', 'CargoPackage',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
@@ -85,6 +87,10 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   PICKUP_LOADED: { icon: PackagePlus, tone: 'blue' },
   PICKUP_DELIVERED: { icon: PackagePlus, tone: 'green' },
   TRIP_STOPS_REORDERED: { icon: Route, tone: 'blue' },
+  STAGING_SHORTAGE_REPORTED: { icon: PackageX, tone: 'amber' },
+  STAGING_SHORTAGE_RESOLVED: { icon: PackageX, tone: 'blue' },
+  LOADING_DAMAGE_REPORTED: { icon: PackageX, tone: 'amber' },
+  PACKAGE_FOUND: { icon: PackageCheck, tone: 'green' },
 }
 
 /** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số và mã chuyến, màn chỉ ghi chữ. */

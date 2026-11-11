@@ -7,6 +7,9 @@
  *   getCreditBalance        → GET /api/credits/balance
  *   listCreditTransactions  → GET /api/credits/transactions (đọc hết các trang; FE phân trang trên danh sách đã đọc)
  *   topUpCredits            → POST /api/credits/topup (trả URL thanh toán)
+ *   getTopUpTerms           → GET /api/credits/pricing (giá một credit theo hạng gói; kho mẫu một giá)
+ *   getRenewal              → GET /api/subscription/renewal (gói gia hạn được không, thanh toán gói còn chờ; chỉ backend)
+ *   renewSubscription       → POST /api/subscription/renew (gia hạn đúng gói đang hoặc vừa dùng; trả URL thanh toán; chỉ backend)
  *   listInvoices            → GET /api/company/invoices (kho mẫu không có hoá đơn)
  *   chưa có ở BE: listPayments
  * Có backend thì đăng ký và nạp đi qua cổng thử của backend và trang xác nhận `/thanh-toan/ket-qua` (`server-payment-api.ts`); trang
@@ -20,6 +23,7 @@ import {
   creditTransactionOf,
   fromBackendLocalDateTime,
   getCreditBalanceDto,
+  getCreditPricing,
   getCurrentSubscriptionDto,
   getPlanDto,
   listActivePlans,
@@ -44,23 +48,14 @@ import { startServerPayment, type PaymentStart } from './server-payment-api'
 const ON_BACKEND = usesBackend('billing')
 
 /**
- * Giá một credit khi nạp theo hạng gói của công ty — như `CreditServiceImpl.topup` của backend (chưa có endpoint đọc giá): Basic 400 đ,
- * Pro 326 đ, Ultimate 263 đ. Backend không đặt trần số dư ở hạng nào nên `maxBalance` luôn `null`. Công ty chưa có gói tính như Basic.
- */
-const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxBalance: number | null }> = {
-  BASIC: { priceVnd: 400, maxBalance: null },
-  PRO: { priceVnd: 326, maxBalance: null },
-  ULTIMATE: { priceVnd: 263, maxBalance: null },
-}
-
-/**
  * Phần của màn theo nguồn dữ liệu. Backend chưa có endpoint đọc giao dịch thanh toán: không có lịch sử thanh toán, nút Trả hay banner
  * thanh toán chờ; có hoá đơn mà kho mẫu không có. Kho mẫu trả bằng trang giả lập `/thanh-toan/gia-lap` (`simulation`); backend xác
  * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`). Gói trả phí của backend không bao giờ tự gia hạn (tới hạn là hết hạn, huỷ chỉ
  * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật. Backend tính theo hợp đồng
  * (`contractRenewal`): công ty tự gia hạn đúng gói đang dùng thêm một kỳ, muốn lên hạng cao hơn thì gửi yêu cầu hỗ trợ; nạp được số
  * credit tuỳ ý (`customTopUp`; kho mẫu chỉ có gói 50 / 500); quản trị công ty dùng thử ký thoả thuận dịch vụ
- * (`agreements`).
+ * (`agreements`). Gói đã hết hạn (kể cả gói đã ngừng bán) gia hạn đúng gói đó, và thanh toán gói còn chờ có banner kèm nút Trả
+ * (`renewal`; kho mẫu: banner từ lịch sử thanh toán, gia hạn tự tạo thanh toán).
  */
 export const BILLING_CAPABILITIES = {
   payments: !ON_BACKEND,
@@ -69,14 +64,29 @@ export const BILLING_CAPABILITIES = {
   serverPayment: ON_BACKEND,
   autoRenew: !ON_BACKEND,
   contractRenewal: ON_BACKEND,
+  renewal: ON_BACKEND,
   customTopUp: ON_BACKEND,
   agreements: ON_BACKEND,
 } as const
 
-/** Giá một credit khi nạp và trần số dư (`null`: không trần) theo hạng gói đang dùng; kho mẫu một giá, không trần. */
-export function topUpTerms(tier: PlanTier | null): { readonly priceVnd: number; readonly maxBalance: number | null } {
-  if (!ON_BACKEND) return { priceVnd: BILLING_CONSTANTS.creditPriceVnd, maxBalance: null }
-  return BACKEND_TOPUP[tier ?? 'BASIC']
+/**
+ * Điều kiện nạp credit: giá một credit, hạng tính giá (`null`: theo gói trên màn), số credit nạp ít nhất, trần số dư (`null`: không
+ * trần) và nạp được không. Kho mẫu: một giá, không trần, luôn nạp được. Backend: bảng giá của máy chủ theo hạng gói đang dùng (chưa có
+ * gói tính như Basic); gói đã hết hạn thì không nạp được (`topUpAllowed`) — gia hạn trước.
+ */
+export type TopUpTerms = {
+  readonly tier: PlanTier | null
+  readonly priceVnd: number
+  readonly minCredits: number
+  readonly maxBalance: number | null
+  readonly allowed: boolean
+}
+
+// GET /api/credits/pricing
+export async function getTopUpTerms(): Promise<TopUpTerms> {
+  if (!ON_BACKEND) return { tier: null, priceVnd: BILLING_CONSTANTS.creditPriceVnd, minCredits: 1, maxBalance: null, allowed: true }
+  const pricing = await getCreditPricing()
+  return { tier: pricing.tier, priceVnd: pricing.priceVnd, minCredits: pricing.minTopUpCredits, maxBalance: null, allowed: pricing.topUpAllowed }
 }
 
 /**
@@ -178,7 +188,7 @@ export async function listCreditTransactions(): Promise<CreditTransaction[]> {
 }
 
 /**
- * Nạp credit theo giá của `topUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không trần số dư. Credit
+ * Nạp credit theo giá của `getTopUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không trần số dư. Credit
  * chỉ được cộng khi thanh toán thành công.
  */
 // POST /api/credits/topup
@@ -211,4 +221,74 @@ export async function listInvoices(): Promise<Invoice[]> {
   if (!ON_BACKEND) return []
   const rows = await api().get<InvoiceDto[] | null>('/api/company/invoices')
   return (rows ?? []).map(invoiceOf).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || Number(b.id) - Number(a.id))
+}
+
+/** Vì sao chưa gia hạn được (`null`: gia hạn được): chưa từng có gói, hợp đồng đã huỷ, gói dùng thử, gói còn hạn ngoài mấy ngày cuối. */
+export type RenewalBlock = 'NO_SUBSCRIPTION' | 'CANCELLED' | 'TRIAL' | 'NOT_DUE'
+
+/** Thanh toán gói (đăng ký hay gia hạn) còn chờ trả: `reference` là mã giao dịch gửi cổng thử (`MOCK_…`). */
+export type PendingPlanPayment = { readonly reference: string; readonly renewal: boolean; readonly amountVnd: number }
+
+/** Gia hạn gói của công ty theo máy chủ. `planName` là gói đang hoặc vừa dùng (`null` khi chưa từng có gói). */
+export type Renewal = {
+  readonly planName: string | null
+  readonly planOnSale: boolean
+  readonly expiresAt: string | null
+  readonly amountVnd: number
+  readonly renewable: boolean
+  readonly block: RenewalBlock | null
+  readonly windowDays: number
+  readonly pending: PendingPlanPayment | null
+}
+
+type RenewalDto = {
+  readonly planName: string | null
+  readonly planActive: boolean | null
+  readonly expiresAt: string | null
+  readonly amountVnd: number | string | null
+  readonly renewable: boolean | null
+  readonly reason: string | null
+  readonly renewalWindowDays: number | null
+  readonly pendingPayment: {
+    readonly transactionId: string | null
+    readonly orderType: string | null
+    readonly amountVnd: number | string | null
+  } | null
+}
+
+const RENEWAL_BLOCKS: readonly RenewalBlock[] = ['NO_SUBSCRIPTION', 'CANCELLED', 'TRIAL', 'NOT_DUE']
+
+function renewalOf(dto: RenewalDto): Renewal {
+  const pending = dto.pendingPayment
+  const reference = pending?.transactionId ?? ''
+  return {
+    planName: dto.planName,
+    planOnSale: dto.planActive !== false,
+    expiresAt: fromBackendLocalDateTime(dto.expiresAt),
+    amountVnd: Math.round(Number(dto.amountVnd ?? 0)),
+    renewable: dto.renewable === true,
+    block: RENEWAL_BLOCKS.find((item) => item === dto.reason) ?? null,
+    windowDays: dto.renewalWindowDays ?? 0,
+    pending:
+      pending === null || reference === ''
+        ? null
+        : { reference, renewal: pending.orderType === 'SUBSCRIPTION_RENEWAL', amountVnd: Math.round(Number(pending.amountVnd ?? 0)) },
+  }
+}
+
+/** Chỉ backend (`BILLING_CAPABILITIES.renewal`); kho mẫu đọc thanh toán chờ từ lịch sử thanh toán. */
+// GET /api/subscription/renewal
+export async function getRenewal(): Promise<Renewal> {
+  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
+  return renewalOf(await api().get<RenewalDto>('/api/subscription/renewal'))
+}
+
+/**
+ * Gia hạn đúng gói đang (hoặc vừa) dùng thêm một kỳ qua cổng thử, kể cả gói đã ngừng bán; thanh toán gia hạn còn chờ được dùng lại.
+ * Chưa tới mấy ngày cuối, hợp đồng đã huỷ, gói dùng thử: `SUBSCRIPTION_NOT_RENEWABLE`.
+ */
+// POST /api/subscription/renew
+export async function renewSubscription(): Promise<PaymentStart> {
+  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
+  return startServerPayment('/api/subscription/renew', {}, 'SUBSCRIBE', { CONFLICT: 'SUBSCRIPTION_NOT_RENEWABLE', NOT_FOUND: 'NO_ACTIVE_SUBSCRIPTION' })
 }

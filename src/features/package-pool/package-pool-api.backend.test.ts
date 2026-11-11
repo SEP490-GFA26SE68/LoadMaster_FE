@@ -144,10 +144,10 @@ test('file mẫu: tải .xlsx của backend', async () => {
   expect(calls[0]?.accept).toBe('*/*')
 })
 
-test('quét mã: mã viết hoa của ô quét đổi về chữ thường; không khớp là QR_UNKNOWN', async () => {
-  routes[`GET /api/packages/scan/${TOKEN_1}`] = { body: scanOf(MANUAL) }
+test('quét mã: mã viết hoa của ô quét đổi về chữ thường, cờ của kiện đi theo; không khớp là QR_UNKNOWN', async () => {
+  routes[`GET /api/packages/scan/${TOKEN_1}`] = { body: scanOf(MANUAL, { flag: 'NOT_FOUND' }) }
   const found = await scanPackage(TOKEN_1.toUpperCase())
-  expect(found.package).toMatchObject({ id: '1', destination: 'Kho 1' })
+  expect(found.package).toMatchObject({ id: '1', destination: 'Kho 1', flags: ['NOT_FOUND'] })
   const error = await scanPackage('00000000-0000-4000-8000-000000000000').catch((reason: unknown) => reason)
   expect(error).toBeInstanceOf(ApiError)
   expect(isUnknownPackage(error)).toBe(true)
@@ -202,13 +202,26 @@ test('loại kiện đọc từ máy chủ: cm nguyên, ba giới hạn đổi s
   expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['GET /api/package-types', 'GET /api/package-types/4'])
 })
 
-test('phần backend chưa có ở lớp này: ghi loại kiện (màn máy chủ tự ghi) / gỡ cờ / báo tìm thấy không gọi mạng', async () => {
+test('kho báo tìm thấy kiện: POST theo mã của kho, cờ gỡ xong; kiện không mang cờ là 409 PACKAGE_NOT_FLAGGED', async () => {
+  routes['POST /api/packages/1/found'] = { body: envelope({ ...MANUAL, flag: null }) }
+  expect((await reportPackageFound({ id: '1', qrToken: TOKEN_1 })).flags).toEqual([])
+  routes['POST /api/packages/3/found'] = { status: 409, body: { success: false, code: 'PACKAGE_NOT_FLAGGED', message: 'Kiện không mang cờ nào' } }
+  await expect(reportPackageFound({ id: '3', qrToken: TOKEN_3 })).rejects.toMatchObject({ code: 'PACKAGE_NOT_FLAGGED' })
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['POST /api/packages/1/found', 'POST /api/packages/3/found'])
+})
+
+test('gỡ cờ: DELETE cờ duy nhất của kiện; ở Tra cứu kiện chỉ điều phối viên (trips.edit) gỡ, như máy chủ', async () => {
+  routes['DELETE /api/packages/3/flag'] = { body: envelope({ ...IMPORTED, flag: null }) }
+  expect(await clearPackageFlag('3', 'DAMAGED')).toMatchObject({ id: '3', flags: [] })
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['DELETE /api/packages/3/flag'])
+  expect(PACKAGE_POOL_SUPPORT.flagClearer).toBe('trips.edit')
+})
+
+test('phần backend chưa có ở lớp này: ghi loại kiện (màn máy chủ tự ghi) không gọi mạng', async () => {
   await expect(savePackageType({ name: 'Thùng', lengthCm: 1, widthCm: 1, heightCm: 1, weightKg: 1 } as never)).rejects.toThrow()
-  await expect(clearPackageFlag('1', 'DAMAGED')).rejects.toThrow()
-  await expect(reportPackageFound(TOKEN_1)).rejects.toThrow()
   expect(calls).toEqual([])
   expect(PACKAGE_POOL_SUPPORT).toMatchObject({
-    flags: false, history: false, fullSize: false, deletePackage: true, pdfLabels: true, tripLinks: false,
-    numericIds: true, serverTemplate: true, tripLabels: false, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED'], maxImportMb: 1,
+    fullSize: false, deletePackage: true, pdfLabels: true, tripLinks: false,
+    numericIds: true, serverTemplate: true, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED'], maxImportMb: 1,
   })
 })

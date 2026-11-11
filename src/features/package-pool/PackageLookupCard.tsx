@@ -22,10 +22,10 @@ const TOUCH_CHIP = 'h-8 px-3 text-body-lg'
 
 /**
  * Thẻ một kiện của màn Tra cứu kiện (FE-3b-06): mã, kích thước, khối lượng, loại hàng, điểm đến, trạng thái, cờ, chuyến và điểm giao.
- * Hành động theo vai trò (`lookupActions`): ai có `labels.print` in lại nhãn; điều phối viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến;
- * nhân viên kho xác nhận đã tìm thấy kiện mang cờ "Không tìm thấy" (D-92). Nền đặc, viền 1 px — bề mặt đọc lâu. `touch`: máy tính bảng
- * của kho — nút 56 px, chữ từ 16 px. Nối backend: lượt quét của backend không trả kích thước và backend không có cờ kiện, nên thẻ
- * không có hai mục đó; "Mở trong Kho kiện" tìm theo mã QR vì mã của kho là số ngắn (`PACKAGE_POOL_SUPPORT.numericIds`).
+ * Hành động theo vai trò (`lookupActions`): ai có `labels.print` in lại nhãn; người gỡ được cờ (`PACKAGE_POOL_SUPPORT.flagClearer`) gỡ
+ * cờ; mở kiện ở Kho kiện và mở chuyến; nhân viên kho xác nhận đã tìm thấy kiện mang cờ "Không tìm thấy" (D-92). Nền đặc, viền 1 px — bề
+ * mặt đọc lâu. `touch`: máy tính bảng của kho — nút 56 px, chữ từ 16 px. Nối backend: lượt quét của backend không trả kích thước nên thẻ
+ * không có mục đó; "Mở trong Kho kiện" tìm theo mã QR vì mã của kho là số ngắn (`PACKAGE_POOL_SUPPORT.numericIds`).
  */
 export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   item: PackageLookup
@@ -40,7 +40,7 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   const format = useFormat()
   const can = useCan()
   const { package: pkg, trip, stop } = item
-  const actions = lookupActions(pkg, can)
+  const actions = lookupActions(pkg, can, PACKAGE_POOL_SUPPORT.flagClearer)
   const clear = useClearPackageFlagMutation()
   const found = useReportPackageFoundMutation()
   const size = touch ? 'touch' : 'md'
@@ -97,7 +97,7 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
           )}
         </Fact>
         {stop ? <Fact label={t('lookup.fields.stop')} touch={touch} wide>{t('lookup.fields.stopValue', { number: stop.number, name: stop.name })}</Fact> : null}
-        {PACKAGE_POOL_SUPPORT.flags && pkg.flags.length === 0 ? <Fact label={t('lookup.fields.flags')} touch={touch}>{t('lookup.fields.noFlags')}</Fact> : null}
+        {pkg.flags.length === 0 ? <Fact label={t('lookup.fields.flags')} touch={touch}>{t('lookup.fields.noFlags')}</Fact> : null}
       </dl>
 
       {pkg.flags.length > 0 ? (
@@ -105,7 +105,7 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
           {actions.confirmFound ? <p className="m-0 text-ink-1">{t('lookup.found.prompt')}</p> : <p className="m-0 text-ink-2">{t('lookup.flagNote')}</p>}
           <div className="flex flex-wrap gap-2">
             {actions.confirmFound ? (
-              <Button variant="secondary" size={size} loading={found.isPending} onClick={() => found.mutate(pkg.qrToken, { onSuccess: () => onFound(pkg.id) })}>
+              <Button variant="secondary" size={size} loading={found.isPending} onClick={() => found.mutate(pkg, { onSuccess: () => onFound(pkg.id) })}>
                 <CircleCheck strokeWidth={1.5} />{t('lookup.found.confirm')}
               </Button>
             ) : null}

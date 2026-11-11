@@ -11,7 +11,7 @@ import { signedInAs } from '@/test/signed-in'
 import { BillingPage } from './BillingPage'
 
 /**
- * Gói cước và credit của công ty (FE-8-03). Seed: Long Bình gói Pro, 486 credit, 17 giao dịch credit và một thanh toán đã trả; Phương Nam
+ * Gói cước và credit của công ty (FE-8-03). Seed: Long Bình gói Pro, 472 credit, 17 giao dịch credit và một thanh toán đã trả; Phương Nam
  * gói Basic, 2 credit. Các test dùng chung kho nên chạy theo thứ tự: xem, nạp, gói không giới hạn, rồi các việc đổi trạng thái gói
  * (đồng hồ của kho là `Date`, giả `Date` để gói tới hạn mà không chờ).
  */
@@ -63,7 +63,7 @@ test('shows the plan, the balance and both histories of the company', async () =
   for (const text of ['Giá trị tạm — chờ chốt', 'Đang hoạt động', '1.490.000 ₫', '500']) expect(plan.getByText(text)).toBeInTheDocument()
   // Kho mẫu có gia hạn thật nên vẫn ghi dòng "Tự gia hạn" (backend không có)
   expect(plan.getByText('Tự gia hạn')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('486')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('472')).toBeInTheDocument()
   // Đang có gói còn hiệu lực: không có danh sách chọn gói
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 

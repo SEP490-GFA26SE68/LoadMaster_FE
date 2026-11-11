@@ -155,6 +155,7 @@ export const sourcing = {
     history: 'History',
     historyBy: '{time} {date} · {name}',
     historyAt: '{time} {date}',
+    noHistory: 'Nothing has been recorded for this package yet.',
     panelTitle: 'Package details {code}',
     transportOrder: 'Transport order',
     noTransportOrder: 'Not assigned to a transport order',
@@ -313,7 +314,6 @@ export const sourcing = {
     pdfLimit: 'A label PDF holds at most {max} packages.',
   },
   backend: {
-    tripLabels: 'Labels by trip need the server trip data, which is not connected yet. Select packages on the Package pool screen to print labels.',
     sourceNote: 'Packages are read from the server. The server list has no width, height, destination, flags or delivery requirement yet, so the table shows the length only; open a package to see its destination and trip.',
   },
   server: {

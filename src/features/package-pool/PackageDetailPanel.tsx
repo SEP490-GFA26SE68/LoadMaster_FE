@@ -86,8 +86,8 @@ export function PackageDetailPanel({ id, packageId, onClose }: {
             <PackageFacts detail={detail} />
           </section>
 
-          {PACKAGE_POOL_SUPPORT.flags ? <PackageFlagsSection titleId={titleId} pkg={pkg} /> : null}
-          {PACKAGE_POOL_SUPPORT.history ? <PackageHistorySection titleId={titleId} history={detail.history} /> : null}
+          <PackageFlagsSection titleId={titleId} pkg={pkg} />
+          <PackageHistorySection titleId={titleId} history={detail.history} />
           {PACKAGE_POOL_SUPPORT.deletePackage && can('packages.manage') ? <PackageDeleteAction pkg={pkg} onDeleted={onClose} /> : null}
         </div>
       )}

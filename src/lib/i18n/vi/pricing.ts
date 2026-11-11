@@ -8,7 +8,10 @@ export const pricing = {
   title: 'Bảng giá',
   lede: 'Các gói khác nhau ở số credit mỗi tháng và hạng thuật toán. Mọi gói đều có tối ưu xếp hàng 3D và tối ưu tuyến.',
   cta: 'Nhận tư vấn',
-  creditNote: '1 credit là một lần chạy tối ưu xếp hàng 3D, cho ra ba phương án để so sánh. Tối ưu tuyến không tốn credit.',
+  creditNote: {
+    one: 'Một lần chạy tối ưu xếp hàng 3D dùng {count} credit và cho ra ba phương án để so sánh. Tối ưu tuyến không tốn credit.',
+    other: 'Một lần chạy tối ưu xếp hàng 3D dùng {count} credit và cho ra ba phương án để so sánh. Tối ưu tuyến không tốn credit.',
+  },
   /** Sau giá của gói: "490.000 ₫ / tháng". */
   perMonth: '/ tháng',
   credits: 'Credit mỗi tháng',

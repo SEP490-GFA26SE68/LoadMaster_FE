@@ -33,7 +33,9 @@ export type ServerLinkTargets = {
   readonly billing: boolean
 }
 
-type DriverNotice = 'loadingStarted' | 'loadingCompleted' | 'cancelled' | 'assigned' | 'unassigned' | 'pickupApproved' | 'pickupRejected' | 'stopsReordered'
+type DriverNotice =
+  | 'loadingStarted' | 'loadingCompleted' | 'cancelled' | 'assigned' | 'unassigned' | 'pickupApproved' | 'pickupRejected' | 'replanDamaged'
+  | 'replanShortage' | 'stopsReordered'
 
 /** Chi tiết tài xế cần ở từng câu của mình (như `DRIVER_NOTICE_PARAMS` của kho mẫu). */
 const DRIVER_NOTICE_KEYS: Readonly<Record<DriverNotice, readonly string[]>> = {
@@ -46,6 +48,9 @@ const DRIVER_NOTICE_KEYS: Readonly<Record<DriverNotice, readonly string[]>> = {
   pickupApproved: ['placed', 'unplaced'],
   pickupRejected: ['reason'],
   stopsReordered: [],
+  // Chuyến tạm dừng chờ lập lại phương án: câu đã nói đủ
+  replanDamaged: [],
+  replanShortage: [],
 }
 
 const same = (value: string | number | boolean | undefined, id: string | null) => id !== null && value !== undefined && String(value) === id
@@ -68,6 +73,11 @@ function driverNotice(item: ServerNotification, viewerId: string | null): Driver
       return 'pickupRejected'
     case 'TRIP_STOPS_REORDERED':
       return 'stopsReordered'
+    // Máy chủ chỉ báo tài xế khi chuyến quay về lập kế hoạch: kiện hỏng có kiện tựa lên, kiện thiếu bị bỏ khỏi chuyến
+    case 'LOADING_DAMAGE_REPORTED':
+      return item.after.outcome === 'REPLANNED' ? 'replanDamaged' : null
+    case 'STAGING_SHORTAGE_RESOLVED':
+      return item.after.decision === 'DROP' ? 'replanShortage' : null
     default:
       return null
   }

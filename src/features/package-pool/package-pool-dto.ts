@@ -1,6 +1,6 @@
 import { roundCm, roundKg } from '@/domain/geometry'
 import { HANDLING_CLASSES, type HandlingClass } from '@/domain/models'
-import type { Package, PackageInput, PackageStatus } from '@/lib/mock-db'
+import { PACKAGE_FLAGS, type Package, type PackageFlag, type PackageInput, type PackageStatus } from '@/lib/mock-db'
 import type { PackageLookup } from './package-lookup-api'
 import type { ImportRow, ImportRowError, ImportRowWarning, PackageImportPreview } from './package-pool-import'
 
@@ -24,6 +24,8 @@ export type BackendPackage = {
   readonly handlingClass?: string | null
   readonly status?: string | null
   readonly destination?: string | null
+  /** Cờ của kiện bị kho bỏ khỏi chuyến (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp); máy chủ cũ không trả. */
+  readonly flag?: string | null
 }
 
 /** Kết quả quét mã (`PackageDetailResponse`): có điểm đến, chuyến và điểm giao; không có kích thước. */
@@ -38,6 +40,7 @@ export type BackendPackageScan = {
   readonly trip?: { readonly id: number; readonly name?: string | null } | null
   readonly stop?: { readonly number?: number | null; readonly name?: string | null } | null
   readonly destination?: string | null
+  readonly flag?: string | null
 }
 
 /** Thân `POST /api/packages`: kích thước cm. */
@@ -92,9 +95,14 @@ function handlingClassOf(value: string | null | undefined): HandlingClass {
   return HANDLING_CLASSES.find((item) => item === code) ?? 'STANDARD'
 }
 
+/** Cờ của backend (một cờ mỗi kiện) → danh sách cờ của app; cờ lạ bị bỏ. */
+function flagsOf(flag: string | null | undefined): PackageFlag[] {
+  return PACKAGE_FLAGS.filter((item) => item === flag)
+}
+
 /**
- * Kiện của app từ kiện của backend; trạng thái lạ (`CANCELLED`) trả `null`. Backend không có cờ, lịch sử, loại kiện, yêu cầu giao hay
- * người tạo của app nên các trường đó rỗng; danh sách không trả chiều rộng, chiều cao và điểm đến (0 và chuỗi rỗng — màn ẩn chúng).
+ * Kiện của app từ kiện của backend; trạng thái lạ (`CANCELLED`) trả `null`. Backend không trả lịch sử, loại kiện, yêu cầu giao hay
+ * người tạo của app trong kiện nên các trường đó rỗng; danh sách không trả chiều rộng, chiều cao và điểm đến (0 và chuỗi rỗng — màn ẩn chúng).
  * Mã của bên gửi để trống thì lấy mã của kho. Backend không trả nguồn của kiện (mọi kiện — thêm tay, thêm loạt, nhập file — đều có
  * `trackingBarcode`), nên `source` chỉ để đủ kiểu: màn không hiện nguồn khi nối backend (`PACKAGE_POOL_SUPPORT.source`).
  */
@@ -114,7 +122,7 @@ export function packageOf(dto: BackendPackage): Package | null {
     handlingClass: handlingClassOf(dto.handlingClass),
     destination: dto.destination?.trim() ?? '',
     status,
-    flags: [],
+    flags: flagsOf(dto.flag),
     source: 'IMPORT',
     createdAt: '',
     createdBy: null,

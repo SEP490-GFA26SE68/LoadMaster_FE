@@ -101,7 +101,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const pinnable = lock === null && source.status === 'PLANNED'
   const pinBlocked = lock === null && source.status === 'DRAFT' ? t('serverPlans.planner.pinDraftReason') : undefined
   const canRerun = (pinnable || pinBlocked !== undefined) && can('optimization.run')
-  // Chạy lại giữ ghim là một lần chạy ba phương án (một credit) ở Thiết lập tối ưu, giữ ghim của phương án đang xem
+  // Chạy lại giữ ghim là một lần chạy ba phương án (tính một lần chạy) ở Thiết lập tối ưu, giữ ghim của phương án đang xem
   const keepPinsPath = `/chuyen/${encodeURIComponent(tripCode)}/toi-uu?giu-ghim=${encodeURIComponent(plan.id)}`
   // Chỉnh tay và Duyệt bản chỉnh: chuyến Đã lập kế hoạch, phương án chưa lỗi thời (máy chủ: `PLAN_TRIP_NOT_PLANNED`, `PLAN_STALE`)
   const editable = pinnable && !stale

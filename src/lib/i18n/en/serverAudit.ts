@@ -48,6 +48,10 @@ export const serverAudit = {
     PICKUP_LOADED: 'Loaded en-route pickup packages',
     PICKUP_DELIVERED: 'Delivered en-route pickup packages',
     TRIP_STOPS_REORDERED: 'Reordered delivery stops on a running trip',
+    STAGING_SHORTAGE_REPORTED: 'Warehouse reported a package missing while staging',
+    STAGING_SHORTAGE_RESOLVED: 'Dispatcher decided on a package reported missing',
+    LOADING_DAMAGE_REPORTED: 'Warehouse reported a damaged package while loading',
+    PACKAGE_FOUND: 'Warehouse found the package again',
   },
   entities: {
     Trip: 'Trip',
@@ -68,6 +72,9 @@ export const serverAudit = {
     Company: 'Company',
     SupportTicket: 'Support request',
     PickupRequest: 'En-route pickup request',
+    StagingShortage: 'Missing package report',
+    LoadingDamage: 'Package damaged while loading',
+    CargoPackage: 'Package',
   },
   fields: {
     tripName: 'Trip name',
@@ -93,6 +100,8 @@ export const serverAudit = {
   escalationReasons: { NO_ROUTE: 'No alternative route found', TIMEOUT: 'Unhandled for over 30 minutes' },
   /** Ten-rule result when an en-route pickup is requested (`PICKUP_REQUESTED`). */
   pickupChecks: { VALIDATED: 'Passed all ten rules', PENDING: 'Some rules not met' },
+  shortageDecisions: { KEEP_SEARCHING: 'Keep searching', DROP: 'Dropped from the trip — the trip waits for a new plan' },
+  damageOutcomes: { LEFT_OUT: 'Left at the warehouse, loading goes on', REPLANNED: 'Trip went back to planning' },
   details: {
     status: 'Status',
     deadline: 'Deadline',
@@ -115,5 +124,6 @@ export const serverAudit = {
     pickupPackages: { one: '{count} en-route package', other: '{count} en-route packages' },
     pickupUnplaced: { one: '{count} package without a spot on the truck', other: '{count} packages without a spot on the truck' },
     pickupOverridden: 'Approved over the rules',
+    package: 'Package {code}',
   },
 } satisfies Dictionary<typeof source>

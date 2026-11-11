@@ -27,6 +27,10 @@ const PRO: CurrentSubscriptionDto = {
 function serve(current: CurrentSubscriptionDto, balance: number) {
   backend.routes['GET /api/subscription/current'] = envelope(current)
   backend.routes['GET /api/credits/balance'] = envelope({ companyId: 1, balance, isUnlimited: false })
+  backend.routes['GET /api/credits/pricing'] = envelope({
+    tier: current.tier ?? 'BASIC', pricePerCreditVnd: 326, tierPrices: { BASIC: 400, PRO: 326, ULTIMATE: 263 }, optimizationCost: 2, rerunCost: 1,
+    minTopUpCredits: 1, maxTopUpCredits: null, unlimited: false, topUpAllowed: current.status === 'ACTIVE', lowBalanceThreshold: 10,
+  })
 }
 
 beforeEach(() => {
@@ -57,10 +61,20 @@ test('the balance and plan come from the backend, not from the sample store', as
   serve(PRO, 1200)
   renderSetup()
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
-  expect(await panel.findByText('Lần chạy này dùng 1 credit · còn 1.200')).toBeInTheDocument()
+  expect(await panel.findByText('Lần chạy này dùng 2 credit · còn 1.200')).toBeInTheDocument()
   expect(panel.getByText('Hạng thuật toán của gói Pro')).toBeInTheDocument()
   expect(panel.queryByRole('alert')).toBeNull()
   expect(runButton()).toBeEnabled()
+})
+
+test('one credit left is not enough for a run the server prices at two: Optimize dimmed with the reason', async () => {
+  serve(PRO, 1)
+  renderSetup()
+  const panel = within(await screen.findByRole('region', { name: 'Credit' }))
+  expect(await panel.findByRole('alert')).toHaveTextContent('Không đủ credit cho lần chạy này — liên hệ quản trị công ty')
+  expect(panel.getByText('Lần chạy này dùng 2 credit · còn 1')).toBeInTheDocument()
+  expect(runButton()).toBeDisabled()
+  expect(runButton()).toHaveAccessibleDescription('Không đủ credit cho lần chạy này — liên hệ quản trị công ty')
 })
 
 test('a plan the backend reports expired: the balance with the reason, not "no plan"; Optimize dimmed before the click', async () => {
@@ -68,7 +82,7 @@ test('a plan the backend reports expired: the balance with the reason, not "no p
   renderSetup()
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
   expect(await panel.findByRole('alert')).toHaveTextContent('Gói cước đã hết hạn — liên hệ quản trị công ty')
-  expect(panel.getByText('Lần chạy này dùng 1 credit · còn 40')).toBeInTheDocument()
+  expect(panel.getByText('Lần chạy này dùng 2 credit · còn 40')).toBeInTheDocument()
   expect(panel.queryByText('Công ty chưa có gói cước.')).toBeNull()
   expect(runButton()).toBeDisabled()
   expect(runButton()).toHaveAccessibleDescription('Gói cước đã hết hạn — liên hệ quản trị công ty')

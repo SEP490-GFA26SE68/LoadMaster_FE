@@ -166,6 +166,7 @@ export const sourcing = {
     history: 'Lịch sử',
     historyBy: '{time} {date} · {name}',
     historyAt: '{time} {date}',
+    noHistory: 'Chưa có việc nào được ghi với kiện này.',
     panelTitle: 'Chi tiết kiện {code}',
     transportOrder: 'Đơn vận chuyển',
     noTransportOrder: 'Chưa thuộc đơn vận chuyển',
@@ -328,10 +329,9 @@ export const sourcing = {
     pdfLimit: 'Mỗi file PDF nhãn tối đa {max} kiện.',
   },
   /**
-   * Khi kho kiện đọc từ máy chủ: câu cho phần máy chủ chưa có — nhãn theo chuyến chưa nối, danh sách thiếu nhiều trường.
+   * Khi kho kiện đọc từ máy chủ: câu cho phần máy chủ chưa có — danh sách thiếu nhiều trường.
    */
   backend: {
-    tripLabels: 'Nhãn theo chuyến cần dữ liệu chuyến của máy chủ, phần này chưa nối. Chọn kiện ở màn Kho kiện để in nhãn.',
     sourceNote: 'Kiện đọc từ máy chủ. Danh sách của máy chủ chưa có chiều rộng, chiều cao, điểm đến, cờ và yêu cầu giao, nên bảng chỉ có chiều dài; mở một kiện để xem điểm đến và chuyến.',
   },
   /** Màn Kho kiện khi đọc ghi máy chủ (`package-pool/backend`): nhãn, cột, trạng thái kiện của máy chủ, nhập file qua máy chủ. */
