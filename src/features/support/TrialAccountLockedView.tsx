@@ -1,4 +1,4 @@
-import { Clock, FileSignature, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, FileSignature, HelpCircle, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { LanguageMenu } from '@/components/LanguageMenu'
@@ -10,9 +10,14 @@ import { SignAgreementDialog } from '@/features/billing/SignAgreementDialog'
 import { useMyAgreementQuery, useSignAgreementMutation } from '@/features/billing/useAgreementQuery'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { SupportTicket } from '@/lib/mock-db'
-import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
+import { TicketStatusBadge } from './TicketBadges'
 import { useCreateTicketMutation, useSupportTicketsQuery } from './useSupportQuery'
 
+/**
+ * Màn hình thay thế toàn bộ ứng dụng khi tài khoản bị gắn cờ FLAGGED (quá hạn 72h chưa ký thỏa thuận).
+ * Áp dụng PHƯƠNG ÁN A (Self-Service): Cho phép người dùng ký thỏa thuận điện tử trực tiếp
+ * để tự động mở khóa phục hồi tài khoản về ACTIVE ngay tức thì, không bắt buộc qua bước duyệt ticket.
+ */
 export function TrialAccountLockedView() {
   const t = useT()
   const auth = useAuthSafe()
@@ -23,32 +28,32 @@ export function TrialAccountLockedView() {
   const myAgreementQuery = useMyAgreementQuery()
   const signAgreementMutation = useSignAgreementMutation()
 
-  const [reason, setReason] = useState('')
   const [openSignDialog, setOpenSignDialog] = useState(false)
-
-  const pendingTicket: SupportTicket | undefined = (ticketsQuery.data ?? []).find(
-    (ticket) =>
-      ticket.kind === 'TRIAL_ACCOUNT_UNLOCK' &&
-      (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'),
-  )
+  const [showHelpSection, setShowHelpSection] = useState(false)
+  const [supportMessage, setSupportMessage] = useState('')
 
   const agreement = myAgreementQuery.data ?? null
 
-  async function handleSendUnlockRequest(e: React.FormEvent) {
+  const pendingTicket: SupportTicket | undefined = (ticketsQuery.data ?? []).find(
+    (ticket) =>
+      ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS',
+  )
+
+  async function handleSendSupportRequest(e: React.FormEvent) {
     e.preventDefault()
-    if (!reason.trim()) {
-      toast.error('Vui lòng nhập lý do đề nghị mở lại tài khoản')
+    if (!supportMessage.trim()) {
+      toast.error('Vui lòng nhập nội dung cần hỗ trợ')
       return
     }
 
     try {
       await createTicketMutation.mutateAsync({
-        kind: 'TRIAL_ACCOUNT_UNLOCK',
-        title: `Yêu cầu mở khóa tài khoản dùng thử - ${user?.fullName ?? user?.email ?? ''}`,
-        description: reason.trim(),
+        kind: 'TECHNICAL',
+        title: `Hỗ trợ kỹ thuật mở khóa tài khoản - ${user?.fullName ?? user?.email ?? ''}`,
+        description: supportMessage.trim(),
       })
-      toast.success('Đã gửi yêu cầu mở khóa tài khoản thành công!')
-      setReason('')
+      toast.success('Đã gửi yêu cầu hỗ trợ thành công! Nhân viên kỹ thuật sẽ liên hệ với bạn.')
+      setSupportMessage('')
     } catch (err) {
       toast.error(dataErrorMessage(err, t))
     }
@@ -96,85 +101,119 @@ export function TrialAccountLockedView() {
                   Tài khoản tạm thời bị khóa do chưa hoàn tất ký thỏa thuận dịch vụ trong 72 giờ
                 </h1>
                 <p className="mt-2 text-body text-ink-2">
-                  Theo quy định của LoadMaster, các đơn vị dùng thử cần hoàn tất ký xác nhận thỏa thuận điện tử trong vòng 72 giờ kể từ khi kích hoạt tài khoản. Toàn bộ các API và trang nghiệp vụ đã tạm dừng.
+                  Theo quy định của LoadMaster, các đơn vị dùng thử cần hoàn tất ký xác nhận thỏa thuận điện tử trong vòng 72 giờ kể từ khi kích hoạt tài khoản. Bạn có thể ký trực tiếp ngay bây giờ để hệ thống tự động mở khóa tài khoản tức thì.
                 </p>
               </div>
             </div>
 
-            {/* Action Section */}
-            {pendingTicket ? (
-              <div className="flex flex-col gap-3 rounded-xl border border-azure-200 bg-azure-50/70 p-5 dark:border-azure-800 dark:bg-azure-950/30">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-azure-600 dark:text-azure-400" />
-                    <span className="font-semibold text-azure-900 dark:text-azure-200">
-                      Yêu cầu mở khóa của bạn đang được tiếp nhận
-                    </span>
+            {/* HERO SECTION: TỰ PHỤC VỤ KÝ THỎA THUẬN ĐỂ MỞ KHÓA NGAY */}
+            <div className="flex flex-col gap-4 rounded-xl border border-primary/40 bg-surface-subtle p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <FileSignature className="h-5 w-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <TicketStatusBadge status={pendingTicket.status} />
-                    <TicketKindBadge kind={pendingTicket.kind} />
-                  </div>
-                </div>
-                <div className="rounded-lg bg-surface p-3 text-caption">
-                  <div className="font-mono font-bold text-ink-1">{pendingTicket.code ?? pendingTicket.id}</div>
-                  <p className="mt-1 mb-0 text-ink-2 whitespace-pre-wrap">{pendingTicket.description}</p>
-                </div>
-                <p className="m-0 text-caption text-azure-800 dark:text-azure-300">
-                  Nhân viên hỗ trợ sẽ kiểm tra đơn và mở lại tài khoản của bạn trong thời gian sớm nhất.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSendUnlockRequest} className="flex flex-col gap-4 rounded-xl border border-border bg-surface-subtle p-5">
-                <div className="flex items-center gap-2 font-semibold text-ink-strong">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  <span>Gửi yêu cầu hỗ trợ mở khóa tài khoản</span>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="unlock-reason" className="text-caption font-medium text-ink-1">
-                    Lý do đề nghị mở lại tài khoản *
-                  </label>
-                  <Textarea
-                    id="unlock-reason"
-                    rows={4}
-                    required
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Ví dụ: Chúng tôi bận công tác nên chưa kịp ký thỏa thuận trong 72 giờ, kính đề nghị đội ngũ hỗ trợ mở khóa để chúng tôi ký lại..."
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    loading={createTicketMutation.isPending}
-                  >
-                    Gửi yêu cầu mở khóa
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {/* Direct sign agreement option if agreement exists */}
-            {agreement && agreement.status !== 'SIGNED' ? (
-              <div className="flex items-center justify-between rounded-lg border border-border bg-surface p-4">
-                <div className="flex items-center gap-3">
-                  <FileSignature className="h-5 w-5 text-primary" />
                   <div>
-                    <div className="text-small font-medium text-ink-strong">Ký thỏa thuận trực tuyến</div>
-                    <div className="text-caption text-ink-3">Bạn có thể hoàn tất ký trực tiếp ngay bây giờ để mở khóa ngay</div>
+                    <h2 className="text-body font-bold text-ink-strong">Ký thỏa thuận để mở khóa ngay</h2>
+                    <p className="text-caption text-ink-3">Mở khóa tự động 100% — Không cần chờ nhân viên duyệt</p>
                   </div>
                 </div>
+                <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-caption font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  Tự động kích hoạt
+                </span>
+              </div>
+
+              {agreement ? (
+                <div className="rounded-lg border border-border bg-surface p-3.5 text-small">
+                  <div className="font-semibold text-ink-strong">{agreement.title}</div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-caption text-ink-2 sm:grid-cols-2">
+                    <div>
+                      <span className="text-ink-3">Doanh nghiệp:</span> {agreement.companyName}
+                    </div>
+                    <div>
+                      <span className="text-ink-3">Mã thỏa thuận:</span> {agreement.agreementCode}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex justify-end pt-1">
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
+                  variant="primary"
+                  className="w-full sm:w-auto"
                   onClick={() => setOpenSignDialog(true)}
                 >
-                  Ký thỏa thuận ngay
+                  <FileSignature className="mr-2 h-4 w-4" />
+                  Ký thỏa thuận để mở khóa ngay
                 </Button>
               </div>
-            ) : null}
+            </div>
+
+            {/* SECONDARY / OPTIONAL: HỖ TRỢ KỸ THUẬT NẾU GẶP SỰ CỐ */}
+            <div className="border-t border-border pt-2">
+              <button
+                type="button"
+                onClick={() => setShowHelpSection((prev) => !prev)}
+                className="flex w-full items-center justify-between py-2 text-left text-small font-medium text-ink-2 hover:text-ink-1"
+              >
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-ink-3" />
+                  <span>Cần trợ giúp kỹ thuật hoặc gặp sự cố khi ký?</span>
+                </div>
+                {showHelpSection ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+
+              {showHelpSection ? (
+                <div className="mt-3 flex flex-col gap-4 rounded-xl border border-border bg-surface-subtle p-4">
+                  {pendingTicket ? (
+                    <div className="flex flex-col gap-2 rounded-lg border border-azure-200 bg-azure-50/70 p-3 text-caption dark:border-azure-800 dark:bg-azure-950/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-azure-600" />
+                          <span className="font-semibold text-azure-900 dark:text-azure-200">
+                            Yêu cầu hỗ trợ của bạn đang được xử lý
+                          </span>
+                        </div>
+                        <TicketStatusBadge status={pendingTicket.status} />
+                      </div>
+                      <div className="font-mono text-ink-2">{pendingTicket.code ?? pendingTicket.id}</div>
+                      <p className="m-0 text-ink-3 whitespace-pre-wrap">{pendingTicket.description}</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSendSupportRequest} className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-caption font-semibold text-ink-strong">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <span>Gửi thông tin cho kỹ thuật viên LoadMaster</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="support-message" className="text-caption font-medium text-ink-2">
+                          Nội dung cần hỗ trợ *
+                        </label>
+                        <Textarea
+                          id="support-message"
+                          rows={3}
+                          required
+                          value={supportMessage}
+                          onChange={(e) => setSupportMessage(e.target.value)}
+                          placeholder="Mô tả lỗi hoặc sự cố bạn gặp phải khi bấm ký..."
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          variant="secondary"
+                          size="sm"
+                          loading={createTicketMutation.isPending}
+                        >
+                          Gửi yêu cầu hỗ trợ
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
         </Card>
       </main>
@@ -191,7 +230,7 @@ export function TrialAccountLockedView() {
               await signAgreementMutation.mutateAsync(request)
               toast.success('Ký thỏa thuận thành công! Tài khoản của bạn đã được kích hoạt.')
               setOpenSignDialog(false)
-              auth?.refreshUser?.()
+              await auth?.refreshUser?.()
             } catch (err) {
               toast.error(dataErrorMessage(err, t))
             }
