@@ -132,8 +132,8 @@ export const BILLING_CONSTANTS = {
   renewalNoticeDays: 3,
   /** Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty (đề xuất, chờ nhóm xác nhận). */
   lowCreditThreshold: 10,
-  /** Credit mỗi lần chạy tối ưu 3D (D-89); ba phương án vẫn một lần. */
-  optimizationCost: 1,
+  /** Credit mỗi lần chạy tối ưu 3D (D-89, như INITIAL_OPTIMIZATION_CREDIT_COST của BE): giữ, trừ, hoàn và chặn đều theo số này; ba phương án vẫn một lần. */
+  optimizationCost: 2,
   /** Gói nạp credit và giá mỗi credit (D-89). */
   topUpPacks: [50, 500],
   creditPriceVnd: 1000,
@@ -154,7 +154,7 @@ export function creditBlock(current: CurrentSubscription | null, balance: number
   return balance < BILLING_CONSTANTS.optimizationCost ? 'INSUFFICIENT_CREDITS' : null
 }
 
-/** Credit một lần chạy tốn: 1, gói không giới hạn ghi 0 (D-89). */
+/** Credit một lần chạy tốn: `BILLING_CONSTANTS.optimizationCost`, gói không giới hạn ghi 0 (D-89). */
 export const optimizationCost = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => (isUnlimited(plan) ? 0 : BILLING_CONSTANTS.optimizationCost)
 
 /**

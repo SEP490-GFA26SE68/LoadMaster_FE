@@ -26,7 +26,7 @@ export function BackendOptimizationSetupRoute() {
 
 /**
  * Thiết lập tối ưu khi nhóm `trips` nối backend: một nút chính "Chạy tối ưu" gửi một lần chạy (`POST /api/trips/{id}/optimize-loading`,
- * một credit, ba phương án), hộp thoại đọc lại trạng thái job tới khi xong, rồi mở màn So sánh của lần chạy đó. Bên dưới là các lần chạy
+ * credit một lần chạy, ba phương án), hộp thoại đọc lại trạng thái job tới khi xong, rồi mở màn So sánh của lần chạy đó. Bên dưới là các lần chạy
  * trước của chuyến. Không chọn mục tiêu hay thuật toán (D-77): máy chủ chọn theo gói. `tripId` là mã số của máy chủ. Mở từ "Chạy lại giữ
  * ghim" của Planner (`?giu-ghim=<mã phương án>`) thì có thẻ "Giữ kiện đã ghim": bật sẵn, lần chạy gửi `keepPinsFromPlanId` của phương án đó.
  */

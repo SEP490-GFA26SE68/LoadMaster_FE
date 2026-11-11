@@ -95,7 +95,7 @@ export const dataErrors = {
   IMPORT_COLUMNS_MISSING: 'The header row is missing columns: {columns}. Download the template to see every column.',
   PACKAGE_IMPORT_INVALID: 'The file still has {errors} rows with errors, so no row can be imported.',
   // Plans and credits (FE-8-01, FE-8-05)
-  INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator.',
+  INSUFFICIENT_CREDITS: 'Not enough credits for this run — contact your company administrator.',
   SUBSCRIPTION_EXPIRED: 'The company plan has expired, so optimization cannot run — contact your company administrator.',
   SUBSCRIPTION_ACTIVE: 'The company already has a plan in effect. A new plan can only be bought once the current one has expired.',
   SUBSCRIPTION_STATUS_INVALID: 'The company has no plan in use to cancel.',

@@ -177,7 +177,7 @@ export const landing = {
   plans: {
     title: 'Gói cước',
     lede: 'Chọn theo số lần chạy tối ưu 3D mỗi tháng. Tối ưu tuyến không tốn credit.',
-    credit: 'Một lần chạy tối ưu 3D dùng 1 credit và cho ra cả ba phương án.',
+    credit: { one: 'Một lần chạy tối ưu 3D dùng {count} credit và cho ra cả ba phương án.', other: 'Một lần chạy tối ưu 3D dùng {count} credit và cho ra cả ba phương án.' },
     credits: '{count} credit mỗi tháng',
     compare: 'So sánh các gói',
     loading: 'Đang tải danh sách gói',

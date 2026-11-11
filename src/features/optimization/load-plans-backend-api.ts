@@ -26,7 +26,7 @@ const tripPath = (tripId: string) => `/api/trips/${encodeURIComponent(tripId)}`
 const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`
 
 /**
- * Gửi một lần chạy (một credit, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. `keepPinsFromPlanId`: giữ nguyên
+ * Gửi một lần chạy (credit của một lần chạy, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. `keepPinsFromPlanId`: giữ nguyên
  * các kiện đã ghim của phương án đó (cùng chuyến) trong cả ba phương án; bộ ghim không đứng vững là 400 `PINNED_SET_INVALID` trước khi chạy,
  * không trừ credit.
  */

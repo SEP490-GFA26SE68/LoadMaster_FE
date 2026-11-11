@@ -7,7 +7,7 @@ import { getMockDb } from '@/lib/mock-db'
 import { OptimizationSetupPage } from './OptimizationSetupPage'
 
 /**
- * Credit trên Thiết lập tối ưu (FE-8-05, D-89) qua kho dùng chung: dòng "Lần chạy này dùng 1 credit · còn N", hạng thuật toán của gói
+ * Credit trên Thiết lập tối ưu (FE-8-05, D-89) qua kho dùng chung: dòng "Lần chạy này dùng 2 credit · còn N", hạng thuật toán của gói
  * và hai trạng thái bị chặn — hết credit, gói hết hạn — hiện mờ kèm lý do trước khi bấm. Kho chặn thật được kiểm ở `billing.test.ts`.
  * Mỗi test mở một công ty (phiên của điều phối viên) và test cuối đẩy đồng hồ của kho — chỉ giả `Date`, kho dùng chung của file này.
  */
@@ -40,7 +40,7 @@ test('a company with credits sees what one run costs and the algorithm tier of i
   getMockDb().restoreSession('US-0001')
   renderSetup('TRIP-2026-0914')
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
-  expect(await panel.findByText('Lần chạy này dùng 1 credit · còn 486')).toBeInTheDocument()
+  expect(await panel.findByText('Lần chạy này dùng 2 credit · còn 472')).toBeInTheDocument()
   expect(panel.getByText('Hạng thuật toán của gói Pro')).toBeInTheDocument()
   expect(panel.getByText('EP + DBLF + GA/SA')).toBeInTheDocument()
   expect(panel.queryByText('AI Optimizer — chưa có')).toBeNull()
@@ -48,17 +48,17 @@ test('a company with credits sees what one run costs and the algorithm tier of i
   expect(runButton()).toBeEnabled()
 })
 
-test('with no credit left Optimize is dimmed before the click, with the dispatcher wording', async () => {
+test('with fewer credits left than one run costs Optimize is dimmed before the click, with the dispatcher wording', async () => {
   const db = getMockDb()
   db.restoreSession('US-PN-03')
-  await db.reserveOptimizationCredit('TRIP-PN-001')
+  // Phương Nam còn 2 credit — đúng một lần chạy
   await db.reserveOptimizationCredit('TRIP-PN-001')
   renderSetup('TRIP-PN-001')
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
-  expect(await panel.findByRole('alert')).toHaveTextContent('Hết credit — liên hệ quản trị công ty')
-  expect(panel.getByText('Lần chạy này dùng 1 credit · còn 0')).toBeInTheDocument()
+  expect(await panel.findByRole('alert')).toHaveTextContent('Không đủ credit cho lần chạy này — liên hệ quản trị công ty')
+  expect(panel.getByText('Lần chạy này dùng 2 credit · còn 0')).toBeInTheDocument()
   expect(runButton()).toBeDisabled()
-  expect(runButton()).toHaveAccessibleDescription('Hết credit — liên hệ quản trị công ty')
+  expect(runButton()).toHaveAccessibleDescription('Không đủ credit cho lần chạy này — liên hệ quản trị công ty')
 })
 
 test('with the plan expired Optimize is dimmed too, and the credits left are shown as they were', async () => {
@@ -71,7 +71,7 @@ test('with the plan expired Optimize is dimmed too, and the credits left are sho
   renderSetup('TRIP-2026-0914')
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
   expect(await panel.findByRole('alert')).toHaveTextContent('Gói cước đã hết hạn — liên hệ quản trị công ty')
-  expect(panel.getByText('Lần chạy này dùng 1 credit · còn 486')).toBeInTheDocument()
+  expect(panel.getByText('Lần chạy này dùng 2 credit · còn 472')).toBeInTheDocument()
   expect(runButton()).toBeDisabled()
   expect(runButton()).toHaveAccessibleDescription('Gói cước đã hết hạn — liên hệ quản trị công ty')
 })

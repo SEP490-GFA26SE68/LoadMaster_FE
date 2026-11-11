@@ -14,9 +14,9 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { PaymentTransaction, SubscriptionPlan } from '@/lib/mock-db'
 import { AgreementCard } from './AgreementCard'
 import { BalanceCard } from './BalanceCard'
-import { BILLING_CAPABILITIES, topUpTerms } from './billing-api'
+import { BILLING_CAPABILITIES, type Renewal } from './billing-api'
 import { BillingHistoryCard } from './BillingHistoryCard'
-import { paymentPath } from './payment-path'
+import { paymentPath, paymentResultPath } from './payment-path'
 import { PlanChoiceCard } from './PlanChoiceCard'
 import { PlanSummaryCard, purchasedMonthsOf } from './PlanSummaryCard'
 import { SignAgreementDialog } from './SignAgreementDialog'
@@ -30,6 +30,8 @@ import {
   useCreditBalanceQuery,
   usePaymentsQuery,
   usePlansOnSaleQuery,
+  useRenewalQuery,
+  useRenewMutation,
   useSubscribeMutation,
   useSubscriptionQuery,
   useTopUpMutation,
@@ -39,6 +41,21 @@ import { useOpenPayment } from './useOpenPayment'
 /** Thanh toán của gói đang chờ trả: gia hạn trước (gói sắp hết hạn), rồi đăng ký dở. Nạp credit chờ không có banner — mỗi lần bấm Nạp là một giao dịch mới. */
 function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTransaction | undefined {
   return payments.find((item) => item.status === 'PENDING' && item.purpose === 'RENEWAL') ?? payments.find((item) => item.status === 'PENDING' && item.purpose === 'SUBSCRIBE')
+}
+
+/** Banner thanh toán gói còn chờ: kho mẫu đọc lịch sử thanh toán, backend đọc gia hạn của máy chủ (`BILLING_CAPABILITIES.renewal`). */
+type PendingBanner = { readonly key: 'RENEWAL' | 'RENEWAL_LAPSED' | 'SUBSCRIBE'; readonly plan: string; readonly amountVnd: number; readonly date: string; readonly to: string }
+
+function serverPendingBanner(renewal: Renewal | undefined, lapsed: boolean): PendingBanner | null {
+  const pending = renewal?.pending
+  if (!renewal || !pending) return null
+  return {
+    key: !pending.renewal ? 'SUBSCRIBE' : lapsed ? 'RENEWAL_LAPSED' : 'RENEWAL',
+    plan: renewal.planName ?? '',
+    amountVnd: pending.amountVnd,
+    date: renewal.expiresAt ?? '',
+    to: paymentResultPath(pending.reference, 'SUBSCRIBE'),
+  }
 }
 
 function remainingMonthsOf(startedAt: string, expiresAt: string): number {
@@ -61,8 +78,9 @@ function remainingMonthsOf(startedAt: string, expiresAt: string): number {
  * thái, số dư (gói không giới hạn: "Không giới hạn"), lịch sử phân trang (`BillingHistoryCard`); đăng ký (chỉ khi chưa có gói hoặc gói
  * hết hạn), huỷ gói, nạp credit 50 / 500. Đăng ký và nạp chỉ tạo thanh toán chờ rồi mở trang thanh toán (`useOpenPayment`: giả lập
  * với kho mẫu, trang xác nhận khi nối backend); thanh toán gia hạn đang chờ của kho mẫu có banner kèm nút Trả. Một nút chính: Nạp credit.
- * Nối backend (`BILLING_CAPABILITIES`): gói còn hiệu lực tự gia hạn ở thẻ Gói hiện tại, lên hạng cao hơn bằng yêu cầu hỗ trợ; công ty dùng
- * thử có banner, thẻ và hộp ký thoả thuận dịch vụ. Nút phụ "Yêu cầu hỗ trợ" trên dải tiêu đề mở hộp yêu cầu hỗ trợ.
+ * Nối backend (`BILLING_CAPABILITIES`): gói còn hiệu lực tự gia hạn ở thẻ Gói hiện tại, lên hạng cao hơn bằng yêu cầu hỗ trợ; gói đã hết
+ * hạn gia hạn đúng gói đó (kể cả gói đã ngừng bán) và thanh toán gói còn chờ có banner kèm nút Trả (`renewal`); công ty dùng thử có
+ * banner, thẻ và hộp ký thoả thuận dịch vụ. Nút phụ "Yêu cầu hỗ trợ" trên dải tiêu đề mở hộp yêu cầu hỗ trợ.
  */
 export function BillingPage() {
   const t = useT()
@@ -73,6 +91,8 @@ export function BillingPage() {
   const plans = usePlansOnSaleQuery()
   const payments = usePaymentsQuery()
   const subscribe = useSubscribeMutation()
+  const renewal = useRenewalQuery()
+  const renew = useRenewMutation()
   const topUp = useTopUpMutation()
   const cancel = useCancelSubscriptionMutation()
   const [topUpOpen, setTopUpOpen] = useState(false)
@@ -91,6 +111,19 @@ export function BillingPage() {
   const contract = BILLING_CAPABILITIES.contractRenewal && current?.subscription.status === 'ACTIVE' ? current : null
   const pending = pendingPlanPayment(payments.data ?? [])
   const pendingPlan = pending === undefined ? '' : (pending.purpose === 'RENEWAL' ? current?.plan.name : plans.data?.find((plan) => plan.id === pending.planId)?.name) ?? (pending.planId ?? '')
+  const pendingBanner: PendingBanner | null = BILLING_CAPABILITIES.renewal
+    ? serverPendingBanner(renewal.data, view?.lapsed === true)
+    : pending
+      ? {
+          key: pending.purpose === 'RENEWAL' ? 'RENEWAL' : 'SUBSCRIBE',
+          plan: pendingPlan,
+          amountVnd: pending.amountVnd,
+          date: current ? current.subscription.expiresAt : '',
+          to: paymentPath(pending.id),
+        }
+      : null
+  // Backend: gói đã hết hạn gia hạn đúng gói đó, kể cả gói đã ngừng bán (máy chủ quyết có gia hạn được không)
+  const lapsedRenewal = current === null && view?.lapsed === true && renewal.data?.renewable === true && renewal.data.planName !== null ? renewal.data : null
   const failed = subscription.isError || balance.isError
   const loading = !failed && (subscription.isPending || balance.isPending)
 
@@ -136,9 +169,18 @@ export function BillingPage() {
     })
   }
 
-  function handleTopUp(credits: number) {
-    const amountVnd = credits * topUpTerms(current?.plan.tier ?? null).priceVnd
+  function handleTopUp(credits: number, amountVnd: number) {
     topUp.mutate(credits, { onSuccess: (start) => openPayment(start, '', amountVnd), onError: showError })
+  }
+
+  function handleRenew(target: Renewal) {
+    renew.mutate(undefined, { onSuccess: (start) => openPayment(start, target.planName ?? '', target.amountVnd), onError: showError })
+  }
+
+  function renewalText(target: Renewal): string {
+    const plan = target.planName ?? ''
+    const lapsed = t('billing.renewal.lapsed', { plan, date: target.expiresAt === null ? '' : format.date(target.expiresAt), amount: format.currency(target.amountVnd) })
+    return target.planOnSale ? lapsed : `${lapsed} ${t('billing.renewal.notOnSale', { plan })}`
   }
 
   function handleSign(request: SignAgreementRequest) {
@@ -196,19 +238,19 @@ export function BillingPage() {
           <div role="status" aria-label={t('billing.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : (
           <>
-            {pending ? (
+            {pendingBanner ? (
               <Banner
                 tone="warning"
                 action={
                   <Button variant="secondary" size="sm" asChild>
-                    <Link to={paymentPath(pending.id)}>{t('billing.pay')}</Link>
+                    <Link to={pendingBanner.to}>{t('billing.pay')}</Link>
                   </Button>
                 }
               >
-                {t(`billing.pending.${pending.purpose === 'RENEWAL' ? 'RENEWAL' : 'SUBSCRIBE'}`, {
-                  plan: pendingPlan,
-                  amount: format.currency(pending.amountVnd),
-                  date: current ? format.date(current.subscription.expiresAt) : '',
+                {t(`billing.pending.${pendingBanner.key}`, {
+                  plan: pendingBanner.plan,
+                  amount: format.currency(pendingBanner.amountVnd),
+                  date: pendingBanner.date === '' ? '' : format.date(pendingBanner.date),
                 })}
               </Banner>
             ) : null}
@@ -240,9 +282,18 @@ export function BillingPage() {
                 <Card>
                   <EmptyState
                     compact
+                    wide={lapsedRenewal !== null}
                     mascot="empty"
                     title={t(view?.lapsed ? 'billing.noPlan.lapsedTitle' : 'billing.noPlan.title')}
-                    description={t(view?.lapsed ? 'billing.noPlan.lapsedDescription' : 'billing.noPlan.description')}
+                    description={lapsedRenewal ? renewalText(lapsedRenewal) : t(view?.lapsed ? 'billing.noPlan.lapsedDescription' : 'billing.noPlan.description')}
+                    action={
+                      lapsedRenewal ? (
+                        <Button variant="secondary" loading={renew.isPending} disabled={lapsedRenewal.pending !== null} onClick={() => handleRenew(lapsedRenewal)}>
+                          <RotateCcw strokeWidth={1.5} />
+                          {t('billing.renewal.renew', { plan: lapsedRenewal.planName ?? '' })}
+                        </Button>
+                      ) : undefined
+                    }
                   />
                 </Card>
               )}

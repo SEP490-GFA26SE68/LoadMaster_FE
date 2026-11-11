@@ -13,6 +13,12 @@ export const billing = {
   pending: {
     RENEWAL: 'The renewal payment for plan {plan} ({amount}) is waiting. The plan expires on {date} if it is not paid.',
     SUBSCRIBE: 'The payment to subscribe to plan {plan} ({amount}) is not finished.',
+    RENEWAL_LAPSED: 'The renewal payment for plan {plan} ({amount}) is waiting. The plan expired on {date}; once paid, it is active again.',
+  },
+  renewal: {
+    lapsed: 'Plan {plan} expired on {date}. Renew this same plan ({amount} a period) or choose another plan below; the credit balance is kept.',
+    notOnSale: 'Plan {plan} is no longer on sale, but a company that uses it can still renew it.',
+    renew: 'Renew plan {plan}',
   },
   plan: {
     title: 'Current plan',
@@ -92,6 +98,8 @@ export const billing = {
     overCap: 'The balance after top-up ({total} credits) exceeds the {max}-credit limit of the {tier} tier.',
     cancel: 'Cancel',
     confirm: 'Continue to payment',
+    loading: 'Loading the credit price',
+    notAllowed: 'The plan has expired, so credits cannot be topped up. Renew or choose a new plan first.',
   },
   history: {
     title: 'History',

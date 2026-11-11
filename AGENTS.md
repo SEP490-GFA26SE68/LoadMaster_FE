@@ -1076,7 +1076,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   Ghim mới chưa Duyệt thì nút mờ kèm câu "Duyệt bản chỉnh để lưu ghim trước khi chạy lại" ngay cạnh: lần chạy lại đọc ghim từ phương án đã lưu. Bấm nút mở
   `/chuyen/:id/toi-uu?giu-ghim=<mã revision>`. Kiện ghim nhận biết bằng biểu tượng ghim **và** chữ "Đã ghim": chip ở dòng của danh sách kiện đã xếp, dòng thứ
   ba của nhãn neo kiện đang chọn, mục "Kiện đã ghim" của danh sách. **Thiết lập tối ưu** có thẻ "Giữ kiện đã ghim" (`SetupPinsCard`, trên ba mục đánh số) khi có gì để giữ —
-  kiện ghim của phương án `?giu-ghim=` hoặc `Trip.replan.keep` sau kiện hỏng (phương án thắng): công tắc bật sẵn kèm câu nói nó làm gì (vẫn ba phương án, một credit);
+  kiện ghim của phương án `?giu-ghim=` hoặc `Trip.replan.keep` sau kiện hỏng (phương án thắng): công tắc bật sẵn kèm câu nói nó làm gì (vẫn ba phương án, vẫn một lần chạy);
   bộ ghim không đứng vững thì liệt kê từng lý do bằng `formatIssue` và nút Tối ưu mờ tới khi tắt công tắc; kiện đã xếp không giữ được (`replan.blocked`) thì chỉ có
   câu nói những kiện nào và lần chạy là bình thường. `runOptimization` từ chối bộ ghim hỏng (`PINNED_SET_INVALID`) trước khi giữ credit. Lần chạy giữ ghim ghi "Giữ N kiện đã
   ghim" ở bảng lần chạy và thẻ lần chạy của màn So sánh (`OptimizationRun.pinnedCount`). Endpoint BE: ghim `POST /api/load-plans/{id}/pin`, `DELETE …/pin/{placementId}`, chạy lại `POST …/rerun`.
@@ -1213,9 +1213,15 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phiên) / `updateCompanyProfile` (chỉ quản trị công ty; tên, địa chỉ, số điện thoại; ghi `company.updated { fields }`, không đổi thì không
   ghi); backend `GET` / `PATCH /api/company/profile` chỉ sửa tên và email nhận hoá đơn, mã, mã số thuế, trạng thái chỉ đọc.
 - **Gói cước và credit** (`billing`; `lib/billing-backend-api.ts`): backend chỉ trả gói `ACTIVE`; huỷ gói chỉ tắt `autoRenew` nên `ACTIVE` +
-  `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit; giá một credit khi nạp theo hạng gói như backend — Basic 400 đ, Pro
-  326 đ, Ultimate 263 đ, chưa có gói tính như Basic — ở một hằng `BACKEND_TOPUP` (`billing-api.ts`, `topUpTerms`) vì backend chưa có endpoint đọc giá.
-  `BILLING_CAPABILITIES`: kho mẫu có lịch sử thanh toán, `/thanh-toan/gia-lap`, "Tự gia hạn"; backend có hoá đơn và `/thanh-toan/ket-qua`.
+  `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit. Giá và luật credit **đọc từ máy chủ** `GET /api/credits/pricing`
+  (`getCreditPricing`; app không giữ giá nào): hạng tính giá, giá một credit khi nạp, credit một lần tối ưu, số nạp ít nhất, gói hết hạn thì
+  không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
+  tối ưu lấy credit một lần chạy từ đó. **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
+  `NO_SUBSCRIPTION | CANCELLED | TRIAL | NOT_DUE`) và thanh toán gói đang chờ — banner kèm nút Trả mở `/thanh-toan/ket-qua`; gói đã hết hạn có
+  nút "Gia hạn gói …" (`POST /api/subscription/renew`, kể cả gói đã ngừng bán; 409 `SUBSCRIPTION_NOT_RENEWABLE`), gói còn hiệu lực vẫn gia hạn ở
+  thẻ Gói hiện tại.
+  `BILLING_CAPABILITIES`: kho mẫu có lịch sử thanh toán, `/thanh-toan/gia-lap`, "Tự gia hạn"; backend có hoá đơn, `/thanh-toan/ket-qua` và gia hạn
+  gói đã hết hạn.
   Thanh toán luôn gửi `gateway: 'MOCK'`; `paymentUrl` của backend là endpoint JSON `/api/payment/mock-checkout?txnRef=…`, không chuyển hướng:
   app mở `/thanh-toan/ket-qua?ma=<txnRef>&loai=goi|credit`, chỉ nút "Xác nhận thanh toán" gọi endpoint đó, rồi **đọc lại sự thật từ backend**
   (nạp: sổ cái có `PURCHASE` cùng tham chiếu; đăng ký: `/api/subscription/current` là `ACTIVE`), không tin tham số URL. Danh mục gói đọc mọi gói
@@ -1300,7 +1306,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   đã đổi, `backend-trip-edit.ts`; máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch, trạng thái khác thấy một dòng lý do; máy chủ không trả mã
   kho nên ô kho mặc định "Giữ kho hiện tại"), "Đổi xe" ở Chi tiết chuyến cho chuyến Đã lập kế hoạch (`ChangeVehicleDialog`, như ở Planner),
   huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
-  `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
+  `POST …/optimize-loading` (một lần chạy, trừ credit một lần theo giá máy chủ, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
   `EP_LUMO_R1_1`, `LUMO_R1`, `LUMO_R1_1`, `LUMO_R2`; phương án cũ là mã của job) — và `runAlgorithm`, hạng của gói ghi ở job (job cũng trả
@@ -1331,7 +1337,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   ghim" (`POST /api/load-plans/{id}/pin` với mã số chỗ xếp của máy chủ — `backendPlacementIds` —, `DELETE …/pin/{placementId}`): máy chủ lưu
   ngay, không qua "Duyệt bản chỉnh". "Chạy lại giữ ghim" (`PinnedRerun`, thêm `optimization.run`) là **lần chạy ba phương án**, như kho mẫu: mở
   `/chuyen/:mã chuyến/toi-uu?giu-ghim=<mã phương án>`; Thiết lập tối ưu có thẻ "Giữ kiện đã ghim" (`BackendPinsCard`, công tắc bật sẵn, số kiện
-  ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, một credit, ba phương án A · B · C
+  ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, trừ credit một lần, ba phương án A · B · C
   giữ đúng chỗ các kiện ghim; máy chủ trả `pinnedCount` (hộp chạy ghi "Giữ N kiện đã ghim"), bộ ghim không đứng vững là 400
   `PINNED_SET_INVALID` trước khi chạy, không trừ credit. Không dùng `POST /api/load-plans/{id}/rerun` (một phương án, chạy đồng bộ).
   `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; báo cáo chuyến chuyển về
@@ -1718,7 +1724,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   true`; kiện không vừa quanh chúng ở lại với lý do như thường. **Kho**: ghim lưu qua Duyệt — `approveRevision(id, patches, { force, pinned })`,
   `pinned` là mã các kiện ghim của bản duyệt, **thay hẳn** tập ghim của revision nguồn (vắng thì giữ; mã lạ là `PATCH_UNKNOWN_INSTANCE`); ghim
   không phải chỉnh tay (`manuallyEdited`) và không đổi vị trí kiện nào. `saveOptimizationRun` tự kiểm bộ ghim của request (`PINNED_SET_INVALID`,
-  trước khi giữ credit, không lưu gì) và ghi `OptimizationRun.pinnedCount`; lần chạy giữ ghim vẫn là một lần chạy ba phương án, một credit, một
+  trước khi giữ credit, không lưu gì) và ghi `OptimizationRun.pinnedCount`; lần chạy giữ ghim vẫn là một lần chạy ba phương án, credit của một lần, một
   sự kiện `optimization.saved`. **Kiện hỏng lúc xếp** làm chuyến về Đã lập kế hoạch (`db-replan.ts`) thì `Trip.replan.keep` giữ chỗ của các kiện
   kho đã xếp lên xe (`keptLoaded`, mã theo dòng kiện hiện tại: dòng của kiện hỏng bớt một nên mã đánh số lại, kiện cùng dòng giống hệt nhau nên
   kiện đã xếp thứ i nhận mã thứ i); có kiện đã xếp tựa lên kiện hỏng thì không giữ được — `replan.blocked` là các kiện đó, `keep` vắng. Kho
@@ -2000,11 +2006,13 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Credit tháng cộng dồn
   sang kỳ sau (BE chưa xác nhận, Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ: `SEED_PLANS` ở
   `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit), Phương Nam gói
-  Basic (100 credit, đã dùng gần hết: còn 2); sổ cái dựng từ các lần chạy của seed sau khi dời giờ và kỳ hiện tại bao giờ của kho (nên số dư của
+  Basic (100 credit, đã dùng gần hết: còn 2 — đúng một lần chạy); sổ cái dựng từ các lần chạy của seed sau khi dời giờ và kỳ hiện tại bao giờ của kho (nên số dư của
   seed không đổi theo ngày chạy test). Nhật ký: nhóm `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit`
   (`purchased`, `lowBalance` — hệ thống ghi), đối tượng `company` (liên kết tới `/goi-cuoc` cho người có `billing.manage`).
-  **Một lần chạy tối ưu 3D = 1 credit** (ba phương án vẫn một): `reserveOptimizationCredit(tripId)` giữ credit lúc bắt đầu (gói hết hạn hoặc chưa có
-  gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; hết credit: `INSUFFICIENT_CREDITS`; gói không giới hạn ghi `0`), `saveOptimizationRun({
+  **Một lần chạy tối ưu 3D = 2 credit** (ba phương án vẫn một lần; một hằng `BILLING_CONSTANTS.optimizationCost` cho giữ, trừ, hoàn, chặn, như
+  `INITIAL_OPTIMIZATION_CREDIT_COST` của backend; nối `billing` thì số đọc từ `GET /api/credits/pricing`): `reserveOptimizationCredit(tripId)` giữ
+  credit lúc bắt đầu (gói hết hạn hoặc chưa có gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; số dư ít hơn một lần chạy: `INSUFFICIENT_CREDITS`; gói
+  không giới hạn ghi `0`), `saveOptimizationRun({
   creditReference })` trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn
   khi lỗi hoặc huỷ. **Kho tự tính credit, không tin nơi gọi** (`runCredit`): phiên đăng nhập lưu kết quả mà không kèm mã giữ (`saveOptimizationRun`,
   `addRevision`) thì kho giữ và trừ ngay tại chỗ — hết credit hay gói hết hạn là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test
@@ -2014,8 +2022,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ
   chối, huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`,
   `staleTime: 0`, làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu
-  (`SetupCreditPanel`): "Lần chạy này dùng 1 credit · còn N" (hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì
-  dòng credit mờ + lý do "Hết credit — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi
+  (`SetupCreditPanel`): "Lần chạy này dùng 2 credit · còn N" (hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì
+  dòng credit mờ + lý do "Không đủ credit cho lần chạy này — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi
   bấm. Màn chỉ điều phối viên (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty ở `/goi-cuoc`.
 - **Danh mục gói cước `/nen-tang/goi`** (FE-8-02; `features/platform`, `subscriptionPlans.manage`, màn chính của quản lý nền tảng): bảng gói (hạng, giá
   `format.currency`, credit tháng hoặc "Không giới hạn", tên thuật toán của hạng, số công ty gắn với gói, công tắc đang bán, menu Sửa / Xoá), gói

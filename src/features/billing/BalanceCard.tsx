@@ -5,7 +5,7 @@ import type { CreditBalance } from '@/lib/mock-db'
 
 /**
  * Số dư credit của công ty (FE-8-03): gói không giới hạn ghi "Không giới hạn" thay vì số, kèm câu nói lần chạy tối ưu không trừ gì;
- * gói khác ghi cách tính (một lần chạy 3D dùng 1 credit). Số lấy từ sổ cái của kho.
+ * gói khác ghi cách tính (một lần chạy 3D dùng 2 credit). Số lấy từ sổ cái của kho.
  */
 export function BalanceCard({ credit }: { credit: CreditBalance }) {
   const t = useT()

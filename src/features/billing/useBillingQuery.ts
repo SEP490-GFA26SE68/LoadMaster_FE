@@ -3,11 +3,14 @@ import {
   BILLING_CAPABILITIES,
   cancelSubscription,
   getCreditBalance,
+  getRenewal,
   getSubscriptionView,
+  getTopUpTerms,
   listCreditTransactions,
   listInvoices,
   listPayments,
   listPlansOnSale,
+  renewSubscription,
   subscribe,
   topUpCredits,
 } from './billing-api'
@@ -47,6 +50,16 @@ export function usePlansOnSaleQuery() {
   return useQuery({ queryKey: [...KEY, 'plans-on-sale'], queryFn: listPlansOnSale, ...FRESH })
 }
 
+/** Giá nạp credit theo hạng gói (backend: bảng giá của máy chủ; kho mẫu: một giá). */
+export function useTopUpTermsQuery() {
+  return useQuery({ queryKey: [...KEY, 'top-up-terms'], queryFn: getTopUpTerms, ...FRESH })
+}
+
+/** Gói gia hạn được không và thanh toán gói còn chờ — chỉ backend (`BILLING_CAPABILITIES.renewal`). */
+export function useRenewalQuery() {
+  return useQuery({ queryKey: [...KEY, 'renewal'], queryFn: getRenewal, enabled: BILLING_CAPABILITIES.renewal, ...FRESH })
+}
+
 /** Giao dịch của trang thanh toán giả lập. */
 export function useCheckoutQuery(paymentId: string) {
   return useQuery({ queryKey: [...KEY, 'payment', paymentId], queryFn: () => fetchCheckout(paymentId), enabled: paymentId !== '', retry: false, ...FRESH })
@@ -64,6 +77,11 @@ export function useSubscribeMutation() {
     mutationFn: (arg: SubscribeArg) => (typeof arg === 'string' ? subscribe(arg) : subscribe(arg.planId, arg.billingCycle)),
     onSuccess: () => refresh(client),
   })
+}
+
+export function useRenewMutation() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: renewSubscription, onSuccess: () => refresh(client) })
 }
 
 export function useCancelSubscriptionMutation() {
