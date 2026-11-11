@@ -328,14 +328,9 @@ export const sourcing = {
     pdfLimit: 'Mỗi file PDF nhãn tối đa {max} kiện.',
   },
   /**
-   * Khi kho kiện đọc từ máy chủ: câu cho phần máy chủ chưa có — chỉ điều phối viên đọc được kiện, danh mục loại kiện chưa mở, nhãn theo
-   * chuyến chưa nối, danh sách thiếu nhiều trường.
+   * Khi kho kiện đọc từ máy chủ: câu cho phần máy chủ chưa có — nhãn theo chuyến chưa nối, danh sách thiếu nhiều trường.
    */
   backend: {
-    dispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc kho kiện, nên tài khoản của bạn chưa xem được kiện ở đây.',
-    lookupDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên tra cứu kiện, nên tài khoản của bạn chưa tra cứu được ở đây.',
-    labelsDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc kiện để in nhãn, nên tài khoản của bạn chưa in nhãn được ở đây.',
-    packageTypes: 'Máy chủ chưa mở danh mục loại kiện cho điều phối viên, nên khi nối máy chủ màn này chưa có dữ liệu.',
     tripLabels: 'Nhãn theo chuyến cần dữ liệu chuyến của máy chủ, phần này chưa nối. Chọn kiện ở màn Kho kiện để in nhãn.',
     sourceNote: 'Kiện đọc từ máy chủ. Danh sách của máy chủ chưa có chiều rộng, chiều cao, điểm đến, cờ và yêu cầu giao, nên bảng chỉ có chiều dài; mở một kiện để xem điểm đến và chuyến.',
   },

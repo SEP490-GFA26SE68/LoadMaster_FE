@@ -31,15 +31,13 @@ const TABS: readonly PackageTab[] = ['all', ...PACKAGE_POOL_SUPPORT.statuses]
  * (không nút ghi, không chọn kiện in nhãn). Dải trời có tab trạng thái kèm số (`trang-thai` trên URL); thẻ bảng đè lên dải: tìm bỏ
  * dấu, lọc loại hàng / cờ / đã-chưa vào yêu cầu giao hay chuyến, panel chi tiết. "Thêm kiện" là hành động chính; "Nhập file", lối sang danh
  * mục Loại kiện và sang Tra cứu kiện (`packages.lookup`, FE-3b-06) là nút phụ trên dải. Kiện vừa thêm mở ngay chi tiết (đã có mã QR); kiện vừa nhập được chọn sẵn để in nhãn.
- * Nối backend: chỉ điều phối viên đọc được kiện — người khác thấy một dòng lý do, màn không gọi backend (`PACKAGE_POOL_SUPPORT`).
  */
 function StorePackagesPage() {
   const t = useT()
   const navigate = useNavigate()
   const can = useCan()
   const canManage = can('packages.manage')
-  const blocked = PACKAGE_POOL_SUPPORT.dispatcherOnly && !canManage
-  const packagesQuery = usePackagesQuery({ enabled: !blocked })
+  const packagesQuery = usePackagesQuery()
   const typesQuery = usePackageTypesQuery()
   const list = useListUrlState({ filters: PACKAGE_FILTERS })
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
@@ -56,7 +54,7 @@ function StorePackagesPage() {
   const pending = packagesQuery.isPending || typesQuery.isPending
   const error = packagesQuery.error ?? typesQuery.error
   const hasRows = all.length > 0
-  const overlap = !blocked && (pending || (!error && hasRows))
+  const overlap = pending || (!error && hasRows)
 
   function handleAdded(created: Package) {
     setDialog(null)
@@ -93,14 +91,12 @@ function StorePackagesPage() {
   ) : null
   const secondary = canManage ? (
     <>
-      {PACKAGE_POOL_SUPPORT.packageTypes ? (
-        <Button variant="glass" asChild>
-          <Link to="/loai-kien">
-            <Shapes strokeWidth={1.5} />
-            {t('sourcing.packageTypes.title')}
-          </Link>
-        </Button>
-      ) : null}
+      <Button variant="glass" asChild>
+        <Link to="/loai-kien">
+          <Shapes strokeWidth={1.5} />
+          {t('sourcing.packageTypes.title')}
+        </Link>
+      </Button>
       <Button variant="glass" onClick={() => setDialog('import')}>
         <FileUp strokeWidth={1.5} />
         {t('sourcing.packages.import')}
@@ -130,9 +126,7 @@ function StorePackagesPage() {
       </PageHero>
 
       <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
-        {blocked ? (
-          <Banner tone="info">{t('sourcing.backend.dispatcherOnly')}</Banner>
-        ) : pending ? (
+        {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
         ) : error ? (
           <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>

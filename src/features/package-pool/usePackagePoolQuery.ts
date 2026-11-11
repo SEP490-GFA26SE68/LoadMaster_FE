@@ -15,7 +15,6 @@ import {
   fetchPackages,
   fetchPackageTypes,
   lookupPackages,
-  PACKAGE_POOL_SUPPORT,
   previewPackageImport,
   reportPackageFound,
   savePackageType,
@@ -27,11 +26,11 @@ import type { PackageImportPreview } from './package-pool-import'
 export { isUnknownPackage, MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT } from './package-pool-api'
 
 /**
- * Người xem đọc được kho kiện từ nguồn đang dùng: backend chỉ cho điều phối viên (`PACKAGE_POOL_SUPPORT.dispatcherOnly`), nên nút tra cứu
- * và liên kết in lại nhãn của màn kho không hiện với nhân viên kho khi kho kiện nối backend.
+ * Người xem đọc được kho kiện: `packages.view` (nhân viên kho, điều phối viên, quản lý công ty) — kho mẫu và máy chủ cho đúng ba vai trò
+ * này đọc kiện. Nút tra cứu, liên kết in lại nhãn và nhóm tìm nhanh hỏi hàm này trước khi gọi.
  */
 export function packagePoolReachable(can: (permission: Permission) => boolean): boolean {
-  return !PACKAGE_POOL_SUPPORT.dispatcherOnly || can('packages.manage')
+  return can('packages.view')
 }
 
 /**

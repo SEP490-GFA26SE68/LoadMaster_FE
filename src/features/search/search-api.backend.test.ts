@@ -11,12 +11,16 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Tìm nhanh khi kho kiện nối backend: nhóm kho kiện đọc `GET /api/packages` thay kho mẫu; dòng đầu là mã của bên gửi, dòng phụ là
- * trạng thái và loại hàng (không phải mã QR); mở kiện ở Kho kiện theo mã QR (mã của kho là số ngắn); loại kiện không có nguồn nên nhóm loại kiện rỗng; máy chủ từ chối người xem (403) thì nhóm kho kiện rỗng, không lỗi.
+ * trạng thái và loại hàng (không phải mã QR); mở kiện ở Kho kiện theo mã QR (mã của kho là số ngắn); loại kiện đọc `GET /api/package-types`; máy chủ từ chối người xem (403) thì nhóm rỗng, không lỗi.
  */
 const TOKEN = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const PACKAGE = {
   id: 7, orderId: null, trackingBarcode: 'QA-BARCODE-0007', actualLength: 120.5, actualWeightKg: 12.5, packageCode: 'QA PK-0007', qrToken: TOKEN,
   handlingClass: 'FRAGILE', status: 'PENDING',
+}
+const PACKAGE_TYPE = {
+  id: 4, companyId: 1, typeCode: 'PT-4', name: 'Thùng carton 60', length: 60, width: 40, height: 40, weightKg: 2, maxStackingWeightKg: 30,
+  isFragile: false, rotationAllowed: true,
 }
 
 let status = 200
@@ -27,9 +31,10 @@ beforeEach(() => {
   paths = []
   connectApiAuth(() => Promise.resolve('token-1'))
   vi.stubGlobal('fetch', (input: string) => {
-    paths.push(new URL(input).pathname)
+    const path = new URL(input).pathname
+    paths.push(path)
     const body = status === 200
-      ? { success: true, message: 'ok', data: { content: [PACKAGE], last: true, number: 0, totalPages: 1 } }
+      ? { success: true, message: 'ok', data: { content: [path === '/api/package-types' ? PACKAGE_TYPE : PACKAGE], last: true, number: 0, totalPages: 1 } }
       : { success: false, message: 'Access Denied' }
     return Promise.resolve(new Response(JSON.stringify(body), { status }))
   })
@@ -40,16 +45,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-test('kho kiện của tìm nhanh đọc từ backend và mở ở Kho kiện theo mã QR; loại kiện không đọc kho mẫu', async () => {
+test('kho kiện và loại kiện của tìm nhanh đọc từ backend, kiện mở ở Kho kiện theo mã QR; không đọc kho mẫu', async () => {
   const db = getMockDb()
   const listPackages = vi.spyOn(db, 'listPackages')
   const listPackageTypes = vi.spyOn(db, 'listPackageTypes')
   const sources = await fetchSearchSources(['pool', 'packageTypes'])
-  expect(paths).toEqual(['/api/packages'])
+  expect(paths.toSorted()).toEqual(['/api/package-types', '/api/packages'])
   expect(sources.pool).toEqual([
     { id: '7', label: 'QA PK-0007', qrToken: TOKEN, typeName: '', query: TOKEN, status: 'IMPORTED', handlingClass: 'FRAGILE' },
   ])
-  expect(sources.packageTypes).toEqual([])
+  expect(sources.packageTypes).toEqual([{ id: '4', name: 'Thùng carton 60' }])
   expect(listPackages).not.toHaveBeenCalled()
   expect(listPackageTypes).not.toHaveBeenCalled()
   const [group] = searchSources(sources, 'qa pk', ['pool'])
@@ -58,9 +63,10 @@ test('kho kiện của tìm nhanh đọc từ backend và mở ở Kho kiện th
 
 test('máy chủ từ chối người xem (403): nhóm kho kiện rỗng, không lỗi', async () => {
   status = 403
-  const sources = await fetchSearchSources(['pool'])
-  expect(paths).toEqual(['/api/packages'])
+  const sources = await fetchSearchSources(['pool', 'packageTypes'])
+  expect(paths.toSorted()).toEqual(['/api/package-types', '/api/packages'])
   expect(sources.pool).toEqual([])
+  expect(sources.packageTypes).toEqual([])
 })
 
 test('nhóm không cần kho kiện thì không gọi backend', async () => {
