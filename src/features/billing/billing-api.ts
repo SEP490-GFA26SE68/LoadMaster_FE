@@ -44,8 +44,8 @@ import { startServerPayment, type PaymentStart } from './server-payment-api'
 const ON_BACKEND = usesBackend('billing')
 
 /**
- * Giá một credit và trần số dư cộng dồn khi nạp, theo hạng gói của công ty — như `CreditController` của backend (chưa có endpoint đọc
- * giá): Basic 400 đ, trần 3.000; Pro 326 đ, trần 10.000; Ultimate 263 đ, không trần. Công ty chưa có gói tính như Basic.
+ * Giá một credit khi nạp theo hạng gói của công ty — như `CreditServiceImpl.topup` của backend (chưa có endpoint đọc giá): Basic 400 đ,
+ * Pro 326 đ, Ultimate 263 đ. Backend không đặt trần số dư ở hạng nào nên `maxBalance` luôn `null`. Công ty chưa có gói tính như Basic.
  */
 const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxBalance: number | null }> = {
   BASIC: { priceVnd: 400, maxBalance: null },
@@ -59,7 +59,7 @@ const BACKEND_TOPUP: Record<PlanTier, { readonly priceVnd: number; readonly maxB
  * nhận ở trang `/thanh-toan/ket-qua` (`serverPayment`). Gói trả phí của backend không bao giờ tự gia hạn (tới hạn là hết hạn, huỷ chỉ
  * tắt cờ), nên màn không ghi dòng "Tự gia hạn" (`autoRenew`) — kho mẫu có gia hạn thật. Backend tính theo hợp đồng
  * (`contractRenewal`): công ty tự gia hạn đúng gói đang dùng thêm một kỳ, muốn lên hạng cao hơn thì gửi yêu cầu hỗ trợ; nạp được số
- * credit tuỳ ý trong trần của hạng (`customTopUp`; kho mẫu chỉ có gói 50 / 500); quản trị công ty dùng thử ký thoả thuận dịch vụ
+ * credit tuỳ ý (`customTopUp`; kho mẫu chỉ có gói 50 / 500); quản trị công ty dùng thử ký thoả thuận dịch vụ
  * (`agreements`).
  */
 export const BILLING_CAPABILITIES = {
@@ -178,8 +178,8 @@ export async function listCreditTransactions(): Promise<CreditTransaction[]> {
 }
 
 /**
- * Nạp credit theo giá của `topUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không vượt trần số dư của
- * hạng. Credit chỉ được cộng khi thanh toán thành công.
+ * Nạp credit theo giá của `topUpTerms`. Kho mẫu: gói 50 hoặc 500 (`TOPUP_INVALID`). Backend: số nguyên từ 1, không trần số dư. Credit
+ * chỉ được cộng khi thanh toán thành công.
  */
 // POST /api/credits/topup
 export async function topUpCredits(credits: number): Promise<PaymentStart> {

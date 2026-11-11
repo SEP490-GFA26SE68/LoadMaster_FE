@@ -1,9 +1,11 @@
 import type { Dictionary } from '../types'
 import type { support as source } from '../vi/support'
 import { customerPlan } from './support-customer-plan'
+import { trialLocked } from './support-trial-locked'
 
 export const support = {
   customerPlan,
+  trialLocked,
   kinds: { TECHNICAL: 'Technical', BILLING: 'Billing', TRIAL_ACCOUNT_UNLOCK: 'Trial Account Unlock' },
   statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   mine: {
