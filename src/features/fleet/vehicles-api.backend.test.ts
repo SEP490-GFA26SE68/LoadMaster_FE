@@ -145,7 +145,7 @@ test('a role the server rejects gets the access error, not an empty fleet', asyn
 
 test('every write the backend does not have is rejected without a network call', async () => {
   const { calls } = stubBackend({})
-  expect(FLEET_CAPABILITIES).toStrictEqual({ write: false, stateDetails: false, clearance: false, retired: true, dispatcherOnly: true })
+  expect(FLEET_CAPABILITIES).toStrictEqual({ write: false, stateDetails: false, clearance: false, retired: true })
   for (const call of [
     () => saveVehicle({ ...CONFIG_VEHICLE }),
     () => deleteVehicle('11'),

@@ -52,6 +52,7 @@ import {
   type RequirementFormValues,
 } from './requirement-form'
 import { REQUIREMENT_PRIORITY_ORDER } from './requirement-list'
+import { RequirementPoolField } from './RequirementPoolField'
 import {
   useCreateRequirementMutation,
   useUpdateRequirementMutation,
@@ -199,7 +200,7 @@ function RequirementForm({
     ? tripQuery.data?.status
     : undefined
 
-  // Hạn, ưu tiên và gia hạn đòi `DELIVERY_DEMAND_MANAGE` ở máy chủ: chờ quyền (`REQUIREMENT_SERVER_SUPPORT.manage`)
+  // Hạn, ưu tiên và gia hạn: quyền `DELIVERY_DEMAND_MANAGE` của điều phối viên (`REQUIREMENT_SERVER_SUPPORT.manage`)
   const canEditSchedule =
     REQUIREMENT_SERVER_SUPPORT.manage &&
     current !== undefined &&
@@ -586,7 +587,7 @@ function RequirementForm({
       <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-5 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:grid-cols-2 lg:gap-6">
         {locked ? (
           <Banner tone="info" className="md:col-span-2">
-            {REQUIREMENT_SERVER_SUPPORT.manage ? t('requirements.form.lockedNote') : t('requirements.server.manageUnavailable')}
+            {t('requirements.form.lockedNote')}
           </Banner>
         ) : null}
 
@@ -814,9 +815,12 @@ function RequirementForm({
         </div>
 
         <div className="flex flex-col gap-3">
-          <Banner tone="info">
-            {t('requirements.form.packagesAfterReceiving')}
-          </Banner>
+          {locked ? null : (
+            <>
+              <RequirementPoolField control={form.control} requirementId={current?.id} />
+              <p className="text-small text-ink-3">{t('requirements.form.packagesAfterReceiving')}</p>
+            </>
+          )}
 
           {current ? (
             <div className="rounded-lg border border-border p-4">

@@ -35,9 +35,6 @@ export const platform = {
   edit: 'Sửa',
   delete: 'Xoá',
   inUse: { one: 'Còn {count} công ty đang dùng, ngừng bán thay vì xoá', other: 'Còn {count} công ty đang dùng, ngừng bán thay vì xoá' },
-  /** Nối backend: không có công tắc bán. */
-  inUseLocked: { one: 'Còn {count} công ty đang dùng nên chưa xoá được', other: 'Còn {count} công ty đang dùng nên chưa xoá được' },
-  allTiersTaken: 'Hạng nào cũng đã có gói. Sửa gói đang có, hoặc xoá gói không còn công ty dùng để thêm gói khác.',
   saleOn: 'Đã mở bán gói {name}',
   saleOff: 'Đã ngừng bán gói {name}',
   created: 'Đã thêm gói {name}',

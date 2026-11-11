@@ -24,7 +24,8 @@ const ON_BACKEND = usesBackend('fleet')
  * Việc Đội xe và Loại xe làm được với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend chỉ có phần đọc:
  * danh sách xe kèm trạng thái, cấu hình một xe (thùng hàng, vật cản, trục của loại xe), danh sách loại xe và loại của từng xe. Backend
  * chưa có — màn ẩn: thêm / sửa / xoá xe, bảo dưỡng, thêm / sửa / xoá loại xe, đổi loại của xe, chuyến đang dùng xe, ghi chú bảo dưỡng,
- * khoảng hở quanh kiện. Chỉ điều phối viên đọc được xe và loại xe (backend từ chối quản lý công ty).
+ * khoảng hở quanh kiện. Điều phối viên và quản lý công ty đọc được xe và loại xe (backend `VEHICLES_READ`, `VEHICLE_TYPES_READ`) —
+ * đúng hai vai trò có `fleet.view`, nên màn mở theo quyền đó như kho mẫu.
  */
 export type FleetCapabilities = {
   /** Thêm, sửa, xoá xe và loại xe, bảo dưỡng, đổi loại của xe. */
@@ -35,8 +36,6 @@ export type FleetCapabilities = {
   readonly clearance: boolean
   /** Trạng thái "Ngừng sử dụng" (chỉ backend có). */
   readonly retired: boolean
-  /** Chỉ điều phối viên đọc được đội xe và loại xe. */
-  readonly dispatcherOnly: boolean
 }
 
 export const FLEET_CAPABILITIES: FleetCapabilities = {
@@ -44,7 +43,6 @@ export const FLEET_CAPABILITIES: FleetCapabilities = {
   stateDetails: !ON_BACKEND,
   clearance: !ON_BACKEND,
   retired: ON_BACKEND,
-  dispatcherOnly: ON_BACKEND,
 }
 
 /** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ báo thành công giả hay ghi kho mẫu thay. */

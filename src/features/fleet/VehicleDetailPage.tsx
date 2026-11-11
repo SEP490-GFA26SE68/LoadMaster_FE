@@ -9,7 +9,7 @@ import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { FleetUnavailable } from './FleetUnavailable'
 import { MaintenanceDialog } from './MaintenanceDialog'
-import { fleetReachable, useFleetCapabilities, useVehicleMaintenanceMutation, useVehicleQuery, useVehicleStateQuery } from './useVehiclesQuery'
+import { useFleetCapabilities, useVehicleMaintenanceMutation, useVehicleQuery, useVehicleStateQuery } from './useVehiclesQuery'
 import type { FleetVehicle, FleetVehicleState } from './vehicle-status'
 import { VehicleForm } from './VehicleForm'
 import { VehicleStateBanner } from './VehicleStateBanner'
@@ -20,17 +20,14 @@ import { usesBackend } from '@/lib/backend-config'
 /**
  * Trang cấu hình xe (D-17, D-38): `/doi-xe/moi` thêm xe mới, `/doi-xe/:vehicleId` sửa xe đang có.
  * Trạng thái xe (LM-089, D-53): xe đang chạy chuyến thì form chỉ đọc kèm thông báo chuyến nào; người có quyền sửa đội xe bật/tắt
- * bảo dưỡng bằng nút phụ trên thanh tiêu đề. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, không có trang thêm xe; chỉ điều phối viên đọc
- * được xe — người khác thấy một dòng lý do và màn không gọi backend.
+ * bảo dưỡng bằng nút phụ trên thanh tiêu đề. Nguồn không cho thêm xe (`FLEET_CAPABILITIES.write`) thì không có trang thêm xe.
  */
 function StoreVehicleDetailPage() {
   const t = useT()
-  const can = useCan()
   const caps = useFleetCapabilities()
   const { vehicleId } = useParams()
   const back = { to: '/doi-xe', label: t('fleet.detail.back') }
 
-  if (!fleetReachable(can)) return <FleetUnavailable title={t('fleet.title')} back={back} reason={t('fleet.backend.dispatcherOnly')} />
   if (vehicleId === undefined) {
     return caps.write ? <VehicleForm /> : <FleetUnavailable title={t('fleet.detail.newTitle')} back={back} reason={t('fleet.backend.noCreate')} />
   }

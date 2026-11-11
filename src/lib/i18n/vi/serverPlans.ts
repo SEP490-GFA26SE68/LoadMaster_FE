@@ -1,26 +1,14 @@
 /**
- * Chuyến và phương án xếp khi nhóm `trips` nối backend: sửa / huỷ chuyến, gỡ yêu cầu giao ở Chi tiết chuyến, chạy tối ưu ở Thiết lập tối
+ * Chuyến và phương án xếp khi nhóm `trips` nối backend: form sửa chuyến, huỷ chuyến, gỡ yêu cầu giao ở Chi tiết chuyến, chạy tối ưu ở Thiết lập tối
  * ưu, thẻ "Phương án xếp hàng", màn So sánh theo lần chạy và nút Duyệt của Planner. Kết quả của máy chủ không mang MOCK RESULT.
  */
 export const serverPlans = {
   edit: {
     open: 'Sửa chuyến',
-    title: 'Sửa chuyến {code}',
     description: 'Đổi giờ xuất phát hoặc kho xuất phát thì tuyến bị bỏ và chuyến về Nháp. Đổi xe thì phương án đã duyệt thôi hiệu lực.',
-    name: 'Tên chuyến',
-    date: 'Ngày xuất phát',
-    time: 'Giờ xuất phát',
-    vehicle: 'Xe',
-    driver: 'Tài xế',
-    warehouse: 'Kho xuất phát',
     keepWarehouse: 'Giữ kho hiện tại ({name})',
-    nameRequired: 'Nhập tên chuyến',
-    tooLong: 'Tên chuyến dài quá 120 ký tự',
-    dateRequired: 'Chọn ngày xuất phát',
-    timeRequired: 'Chọn giờ xuất phát',
-    noChanges: 'Chưa đổi gì',
-    save: 'Lưu thay đổi',
-    cancel: 'Đóng',
+    noChanges: 'Chưa đổi gì nên chưa có gì để lưu.',
+    notEditable: 'Chỉ sửa được chuyến Nháp hoặc Đã lập kế hoạch: chuyến {id} đã sang xếp hàng hoặc đã kết thúc.',
     saved: 'Đã lưu chuyến {code}',
   },
   cancel: {

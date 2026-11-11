@@ -1,15 +1,27 @@
 /**
  * Hàm → endpoint backend (FE-0-09):
- *   searchAddress  → GET /api/places/autocomplete?input=
- *   resolveAddress → GET /api/places/detail?placeId=
+ *   addressSearchAvailable → (không gọi mạng)
+ *   searchAddress          → GET /api/places/autocomplete?input=
+ *   resolveAddress         → GET /api/places/detail?placeId=
  * Không đăng nhập bằng backend (kho mẫu, test, CI): tìm trong danh sách địa danh mẫu của seed (`SEED_PLACES`), toạ độ gần đúng ở mức
  * khu vực. Trình duyệt không bao giờ gọi Goong trực tiếp: khoá REST của Goong chỉ nằm ở server.
  */
 
-import { isAuthenticated } from '@/features/auth/auth-api'
+import { getCachedCurrentUser, isAuthenticated } from '@/features/auth/auth-api'
 import { apiFetch } from '@/lib/api-client'
 import { SEED_PLACES } from '@/lib/mock-db'
+import type { Role } from '@/types/user'
 import { placeAddress, searchPlaces } from './place-search'
+
+/** Vai trò máy chủ cho tìm địa chỉ (`DISPATCHER`, `MANAGER`, `DRIVER`, `ADMIN`, `SYSTEM_ADMIN`). */
+const SERVER_SEARCH_ROLES: ReadonlySet<Role> = new Set<Role>(['dispatcher', 'companyManager', 'driver', 'companyAdmin', 'systemAdmin'])
+
+/** Có ô tìm địa chỉ không: kho mẫu luôn có (địa danh mẫu); đăng nhập bằng máy chủ thì chỉ vai trò máy chủ cho tìm — vai trò khác gõ toạ độ. */
+export function addressSearchAvailable(): boolean {
+  if (!isAuthenticated()) return true
+  const user = getCachedCurrentUser()
+  return user !== null && SERVER_SEARCH_ROLES.has(user.role)
+}
 
 export type AddressSuggestion = {
   placeId: string

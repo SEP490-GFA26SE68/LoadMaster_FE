@@ -13,8 +13,7 @@ import { useT } from '@/lib/i18n'
 import { createFleetColumns } from './fleet-columns'
 import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
-import { FleetUnavailable } from './FleetUnavailable'
-import { fleetReachable, useFleetCapabilities, useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
+import { useFleetCapabilities, useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
 import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
 import { FleetPage as BackendFleetPage } from './backend/FleetPage'
 import { usesBackend } from '@/lib/backend-config'
@@ -49,19 +48,9 @@ function FleetLegend() {
  * Đội xe — danh sách xe và trạng thái (LM-040, LM-089) đọc qua TanStack Query từ kho mock dùng chung (D-06), bố cục V2:
  * bốn ô số liệu (ba ô trạng thái bấm để lọc), rồi một thẻ gồm thanh tìm/lọc và bảng.
  * Tìm bỏ dấu, lọc trạng thái, sắp xếp, phân trang; trạng thái lọc giữ trên URL (`?q=…&trang-thai=bao-duong`, D-52).
- * Bấm một dòng mở trang cấu hình xe. Nối backend (`FLEET_CAPABILITIES`): chỉ đọc, chỉ điều phối viên đọc được — người khác thấy một
- * dòng lý do và màn không gọi backend.
+ * Bấm một dòng mở trang cấu hình xe.
  */
 function StoreFleetPage() {
-  const t = useT()
-  const can = useCan()
-  if (!fleetReachable(can)) {
-    return <FleetUnavailable title={t('fleet.title')} description={t('pageHero.fleet')} reason={t('fleet.backend.dispatcherOnly')} />
-  }
-  return <FleetCatalog />
-}
-
-function FleetCatalog() {
   const t = useT()
   const navigate = useNavigate()
   const caps = useFleetCapabilities()
