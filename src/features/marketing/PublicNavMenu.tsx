@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { isCurrentLink, PUBLIC_LINKS, PUBLIC_TOUCH } from './public-chrome'
 
 /**
- * Mục của trang dưới 1.024 px: nút menu kính trên dải trời (40 px, 56 px trên máy cảm ứng) mở bốn liên kết, mỗi mục 56 px trên máy cảm
+ * Mục của trang dưới 1.024 px (máy cảm ứng: dưới 1.366 px): nút menu kính trên dải trời (40 px, 56 px trên máy cảm ứng) mở bốn liên kết, mỗi mục 56 px trên máy cảm
  * ứng; khách chưa đăng nhập thấy thêm "Đăng ký trải nghiệm" và "Đăng ký dùng ngay" khi nối backend (`REGISTRATION_CAPABILITIES`). Chọn một mục thì menu không trả focus về nút: trang đã cuộn tới phần đó và đặt focus vào tiêu đề của phần (`useHashScroll`).
  */
 export function PublicNavMenu({ className }: { className?: string }) {

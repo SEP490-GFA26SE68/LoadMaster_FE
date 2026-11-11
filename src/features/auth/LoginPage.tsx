@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
 import { landingPath, passwordResetPath, PUBLIC_HOME } from './landing'
+import { LoginSignUp } from './LoginSignUp'
 import { useAuth } from './AuthProvider'
 
 /**
@@ -206,6 +207,8 @@ export function LoginPage() {
                 </div>
               ) : null}
             </form>
+
+            <LoginSignUp controlClassName={TOUCH_CONTROL} />
           </div>
 
           {/* Tài khoản dùng thử là của kho mẫu: không có ý nghĩa khi đăng nhập bằng backend */}
