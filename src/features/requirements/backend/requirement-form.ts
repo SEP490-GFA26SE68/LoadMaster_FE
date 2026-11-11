@@ -179,8 +179,7 @@ export function validateRequirement(
     errors.priority = 'required'
   }
 
-  // Không yêu cầu packageIds ở bước tạo hoặc sửa.
-  // Warehouse liên kết kiện sau khi tiếp nhận hàng.
+  // Kiện không bắt buộc: chọn từ kho kiện, hoặc kho nhập file kèm yêu cầu sau khi tiếp nhận hàng.
 
   if (values.deadlineDate === '') {
     errors.deadlineDate = 'required'
@@ -233,7 +232,7 @@ export function toInput(
       values.deadlineTime,
     ) ?? '',
     priority: values.priority,
-    packageIds: [],
+    packageIds: [...values.packageIds],
     note: values.note.trim(),
     ...(point.kind === 'ok'
       ? { lat: point.lat, lng: point.lng }
@@ -242,8 +241,8 @@ export function toInput(
 }
 
 /**
- * Thay đổi gửi khi sửa. Yêu cầu còn chờ xếp chuyến: mọi trường; hai ô toạ độ để trống là bỏ toạ độ đang có (`null`). Yêu cầu đã vào
- * chuyến: chỉ hạn và ưu tiên (mục 7.3).
+ * Thay đổi gửi khi sửa. Yêu cầu còn chờ xếp chuyến: mọi trường, kiện chỉ khi tập kiện đổi; hai ô toạ độ để trống là bỏ toạ độ đang có
+ * (`null`). Yêu cầu đã vào chuyến: chỉ hạn và ưu tiên (mục 7.3).
  */
 export function toChanges(
   values: RequirementFormValues,
@@ -265,7 +264,14 @@ export function toChanges(
     note: input.note,
     lat: input.lat ?? null,
     lng: input.lng ?? null,
+    // Chỉ gửi tập kiện khi người lập đổi nó: gửi lại tập cũ có thể bỏ kiện kho vừa gắn vào yêu cầu
+    ...(sameIds(input.packageIds, current.packageIds) ? {} : { packageIds: input.packageIds }),
   }
+}
+
+function sameIds(next: readonly string[], current: readonly string[]): boolean {
+  const before = new Set(current)
+  return next.length === before.size && next.every((id) => before.has(id))
 }
 
 export function isFieldEditable(

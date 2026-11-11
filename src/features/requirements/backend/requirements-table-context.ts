@@ -14,7 +14,7 @@ export type RequirementAction =
  * v9 dựng ô như component: dựng lại cột là gỡ menu thao tác đang mở (AGENTS mục 5, `users-table-context.ts`).
  */
 export type RequirementsTableContextValue = {
-  /** Quản lý công ty (`requirements.edit`): tạo, sửa, xoá. */
+  /** Điều phối viên (`requirements.edit`): tạo, sửa, xoá. */
   readonly canEdit: boolean
   /** Điều phối viên (`trips.edit`): đưa vào chuyến, gỡ khỏi chuyến. */
   readonly canAssign: boolean

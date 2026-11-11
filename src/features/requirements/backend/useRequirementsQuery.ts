@@ -7,9 +7,12 @@ import {
   fetchAssignableTrips,
   getDeliveryRequirement,
   listDeliveryRequirements,
+  unassignRequirementFromTrip,
   updateDeliveryRequirement,
   type AssignRequirementInput,
+  type UnassignRequirementInput,
 } from './requirements-api'
+import { fetchRequirementPackageChoices } from './requirement-pool-api'
 
 /**
  * Hook Query của yêu cầu giao (FE-4b-02), khoá `['requirements', …]`. Trạng thái yêu cầu đổi theo chuyến và kiện (đang giao, đã giao,
@@ -23,6 +26,11 @@ export function useRequirementsQuery() {
 
 export function useRequirementQuery(id: string) {
   return useQuery({ queryKey: ['requirements', 'one', id], queryFn: () => getDeliveryRequirement(id), enabled: id !== '', staleTime: 0 })
+}
+
+/** Kiện chọn được cho form (`requirementId` vắng là form tạo mới). */
+export function useRequirementPackageChoicesQuery(requirementId: string | undefined) {
+  return useQuery({ queryKey: ['requirements', 'pool-choices', requirementId ?? ''], queryFn: () => fetchRequirementPackageChoices(requirementId), staleTime: 0 })
 }
 
 export function useAssignableTripsQuery() {
@@ -54,4 +62,10 @@ export function useDeleteRequirementMutation() {
 export function useAssignRequirementMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: AssignRequirementInput) => assignRequirementToTrip(input), onSuccess: () => refreshRequirements(client, true) })
+}
+
+/** Gỡ yêu cầu khỏi chuyến: chuyến mất điểm giao của yêu cầu, tuyến bỏ, phương án lỗi thời — làm mới cả chuyến. */
+export function useUnassignRequirementMutation() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (input: UnassignRequirementInput) => unassignRequirementFromTrip(input), onSuccess: () => refreshRequirements(client, true) })
 }

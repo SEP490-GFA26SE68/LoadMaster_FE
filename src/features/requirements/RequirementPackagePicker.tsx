@@ -9,14 +9,15 @@ import { filterPickerPackages, groupByType, selectedWeightKg } from './requireme
  * Ô chọn kiện của form yêu cầu giao (FE-4b-02): kiện còn ở kho kiện, nhóm theo loại kiện (kiện không gắn loại thì theo loại hàng); mỗi
  * nhóm có ô "chọn cả nhóm". Ô lọc trên cùng lọc nhanh theo điểm đến ghi trong file hoặc mã kiện — kiện đã chọn luôn ở lại. Dưới danh
  * sách là tổng kiện và khối lượng đã chọn. Không có kiện nào thì nói lý do: chỉ kiện đã nhập, không cờ, chưa thuộc yêu cầu nào mới
- * vào yêu cầu được. `disabled`: yêu cầu đã vào chuyến, kiện không đổi được nữa.
+ * vào yêu cầu được. `disabled`: yêu cầu đã vào chuyến, kiện không đổi được nữa. `codeOf`: mã hiện ở dòng kiện (mặc định mã của kho).
  */
-export function RequirementPackagePicker({ packages, value, onChange, error, disabled = false }: {
+export function RequirementPackagePicker({ packages, value, onChange, error, disabled = false, codeOf = (pkg) => pkg.id }: {
   packages: readonly RequirementPackage[]
   value: readonly string[]
   onChange: (next: string[]) => void
   error?: string
   disabled?: boolean
+  codeOf?: (pkg: RequirementPackage['package']) => string
 }) {
   const t = useT()
   const format = useFormat()
@@ -77,7 +78,7 @@ export function RequirementPackagePicker({ packages, value, onChange, error, dis
                             label={
                               <span className="flex flex-col">
                                 <span className="flex flex-wrap items-baseline gap-x-2">
-                                  <span className="font-mono text-caption text-ink-strong">{pkg.id}</span>
+                                  <span className="font-mono text-caption text-ink-strong">{codeOf(pkg)}</span>
                                   <span className="text-small text-ink-3">
                                     {t('requirements.form.packageMeta', { dimensions: format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm), weight: format.weight(pkg.weightKg) })}
                                   </span>

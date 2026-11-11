@@ -68,7 +68,7 @@ export const apiErrors = {
 
   TRIP_NOT_FOUND: 'The trip was not found.',
   DELIVERY_REQUIREMENT_NOT_FOUND: 'The delivery requirement was not found.',
-  DELIVERY_REQUIREMENT_NOT_PENDING: 'The delivery requirement is already on a trip and can no longer be edited.',
+  DELIVERY_REQUIREMENT_NOT_PENDING: 'Only a requirement that is waiting for a trip and holds no packages can be deleted.',
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'The delivery requirement cannot move to this status.',
   CARGO_SEGREGATION_CONFLICT: 'The trip already carries another cargo class — they cannot travel together.',
   DELIVERY_STOP_NOT_FOUND: 'The delivery stop was not found.',
@@ -121,6 +121,8 @@ export const apiErrors = {
   SEAL_NOT_ALLOWED: 'A seal number can only be recorded after loading is complete and before the truck departs.',
   PACKAGE_FLAGGED: 'The package is flagged as not found or damaged — clear the flag before adding it to a trip.',
   PACKAGE_NOT_FLAGGED: 'The package has no flag to clear.',
+  PACKAGE_NOT_AVAILABLE: 'The package is no longer waiting in the package pool, so it cannot be added to a delivery requirement.',
+  PACKAGE_IN_OTHER_REQUIREMENT: 'The package already belongs to another delivery requirement.',
 
   NO_PENDING_DELIVERY_STOP: 'The trip has no stop left to deliver.',
   DUPLICATE_UNLOAD: 'This package is already unloaded.',
