@@ -69,7 +69,7 @@ test('only the plans on sale are listed, each with its provisional tag, price, c
   expect(document.body).not.toHaveTextContent(/EP \+ DBLF|GA\/SA|mock|AI Optimizer/)
   expect(screen.getByText('Bản demo hiện tối ưu ở hạng Cơ bản cho mọi gói.')).toBeInTheDocument()
 
-  // Không đăng ký, không mua: nút chính là "Nhận tư vấn"; khách không có lối vào màn gói của công ty
+  // Kho mẫu không đăng ký, không mua (chỉ có khi nối backend): nút chính là "Nhận tư vấn"; khách không có lối vào màn gói của công ty
   expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu?loai=bao-gia#lien-he')
   expect(screen.queryByRole('link', { name: 'Quản lý gói của công ty' })).not.toBeInTheDocument()
   expect(screen.queryByText(/Đăng ký|Mua gói/)).not.toBeInTheDocument()

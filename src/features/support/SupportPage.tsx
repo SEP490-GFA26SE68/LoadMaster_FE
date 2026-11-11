@@ -22,7 +22,13 @@ import { recentCompanyChat } from './support-chat'
 import { createTicketColumns } from './support-columns'
 import { TicketThread } from './TicketThread'
 import { ticketCompanies, ticketLabel } from './ticket-view'
-import { SUPPORT_SOURCE, useReplyMutation, useSetTicketStatusMutation, useSupportTicketsQuery } from './useSupportQuery'
+import {
+  SUPPORT_SOURCE,
+  useReplyMutation,
+  useSetTicketStatusMutation,
+  useSupportTicketsQuery,
+  useUnlockTrialMutation,
+} from './useSupportQuery'
 
 /** Bộ lọc trên URL (D-52), tiếng Việt không dấu; `ticket` là yêu cầu đang mở (cũng là đích liên kết từ nhật ký). */
 const COMPANY_FILTER = 'cong-ty'
@@ -34,10 +40,11 @@ const SELECTED_PARAM = 'ticket'
 function StatusSelect({ ticket, pending, onChange }: { ticket: SupportTicket; pending: boolean; onChange: (status: TicketStatus) => void }) {
   const t = useT()
   const id = useId()
+  const isDisabled = pending || ticket.status === 'CLOSED' || Boolean(ticket.lockedByOther)
   return (
     <div className="flex flex-col gap-1.5">
       <FieldLabel htmlFor={id}>{t('support.page.statusLabel')}</FieldLabel>
-      <Select value={ticket.status} disabled={pending} onValueChange={(value) => onChange(value as TicketStatus)}>
+      <Select value={ticket.status} disabled={isDisabled} onValueChange={(value) => onChange(value as TicketStatus)}>
         <SelectTrigger id={id}><SelectValue /></SelectTrigger>
         <SelectContent>
           {SUPPORT_SOURCE.statuses.map((status) => <SelectItem key={status} value={status}>{t(`support.statuses.${status}`)}</SelectItem>)}
@@ -61,6 +68,7 @@ export function SupportPage() {
   const directory = useCompanyNamesQuery(SUPPORT_SOURCE.companyDirectory)
   const reply = useReplyMutation()
   const setStatus = useSetTicketStatusMutation()
+  const unlockTrial = useUnlockTrialMutation()
   const list = useListUrlState<(typeof FILTERS)[number]>({ filters: FILTERS })
   const [params, setParams] = useSearchParams()
 
@@ -142,6 +150,7 @@ export function SupportPage() {
                 data={rows}
                 columns={columns}
                 getRowId={(ticket) => ticket.id}
+                getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60' : undefined)}
                 density="spacious"
                 appearance="paper"
                 onRowClick={select}
@@ -156,7 +165,11 @@ export function SupportPage() {
             <aside className="flex min-w-0 flex-col gap-4">
               {selected ? (
                 <>
-                  <Card role="region" aria-label={selected.title}>
+                  <Card
+                    role="region"
+                    aria-label={selected.title}
+                    className={selected.status === 'CLOSED' ? 'border-n-300 bg-n-100/70 opacity-75' : undefined}
+                  >
                     <div className="flex flex-col gap-4 p-4.5">
                       <StatusSelect
                         ticket={selected}
@@ -169,10 +182,18 @@ export function SupportPage() {
                       <TicketThread
                         ticket={selected}
                         viewerIsSupport
-                        pending={reply.isPending}
+                        pending={reply.isPending || unlockTrial.isPending}
                         onReply={async (text) => {
                           await reply.mutateAsync({ ticketId: selected.id, text })
                           toast.success(t('support.thread.sent'))
+                        }}
+                        onUnlockTrial={async (staffNote) => {
+                          try {
+                            await unlockTrial.mutateAsync({ ticketId: selected.id, staffNote })
+                            toast.success(t('support.page.unlock.success'))
+                          } catch (err) {
+                            toast.error(dataErrorMessage(err, t))
+                          }
                         }}
                       />
                     </div>

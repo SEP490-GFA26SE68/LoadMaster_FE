@@ -89,6 +89,7 @@ export const admin = {
     status: {
       active: 'Đang hoạt động',
       suspended: 'Đã khoá',
+      flagged: 'Bị gắn cờ',
     },
     /** Thiết bị chính của từng vai trò — quyết định màn hình mặc định sau đăng nhập. */
     devices: {

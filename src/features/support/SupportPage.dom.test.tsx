@@ -80,13 +80,10 @@ test('replying starts the ticket, and its status can be changed to closed and ba
 
   await user.click(within(thread).getByRole('combobox', { name: 'Trạng thái yêu cầu' }))
   await user.click(await screen.findByRole('option', { name: 'Đã đóng' }))
-  expect(await within(thread).findByText('Yêu cầu đã đóng. Mở lại để trả lời tiếp.', {}, SLOW)).toBeInTheDocument()
+  expect(await within(thread).findByText(/Phiếu hỗ trợ đã đóng \(chỉ đọc\)/i, {}, SLOW)).toBeInTheDocument()
   expect(within(thread).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(thread).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
   expect((await rowOf('TKT-001')).textContent).toContain('Đã đóng')
-
-  await user.click(within(thread).getByRole('combobox', { name: 'Trạng thái yêu cầu' }))
-  await user.click(await screen.findByRole('option', { name: 'Mở' }))
-  expect(await within(thread).findByRole('textbox', { name: 'Trả lời' }, SLOW)).toBeInTheDocument()
 })
 
 test('the side panel shows the plan, the balance and the latest credit transactions of the company of the open ticket, read only', async () => {

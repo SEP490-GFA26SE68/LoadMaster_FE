@@ -65,6 +65,18 @@ beforeEach(() => {
       tickets = tickets.map((ticket) => (String(ticket.id) === patched[1] ? { ...ticket, ...body } : ticket))
       return reply(tickets.find((ticket) => String(ticket.id) === patched[1]))
     }
+    const unlocked = /^POST \/api\/support-tickets\/(\d+)\/unlock-trial(\?.*)?$/.exec(key)
+    if (unlocked) {
+      tickets = tickets.map((ticket) => (String(ticket.id) === unlocked[1] ? { ...ticket, status: 'RESOLVED' } : ticket))
+      return reply({
+        userId: 7,
+        userEmail: 'user@test.vn',
+        trialStillValid: true,
+        nextAction: 'SIGN_AGREEMENT',
+        ticketCode: 'TCK-20261017-9999',
+        ticketStatus: 'RESOLVED',
+      })
+    }
     return Promise.resolve(new Response('{}', { status: 404 }))
   })
 })
@@ -131,4 +143,70 @@ test('the supporter reads every ticket, sees the note of the team and the compan
     { key: 'PATCH /api/support-tickets/1', body: { status: 'RESOLVED' } },
   ]))
   expect(await screen.findByText('Yêu cầu TCK-20261017-2258 chuyển sang Đã giải quyết', {}, SLOW)).toBeInTheDocument()
+})
+
+test('locks IN_PROGRESS ticket for a second supporter so they cannot change status or reply', async () => {
+  tickets = [
+    {
+      ...DISPATCHER_TICKET,
+      status: 'IN_PROGRESS',
+      assignedToId: 4,
+      assignedToName: 'Tạ Thị Ngọc Ánh',
+    },
+  ]
+  me = { id: 9, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=2')
+
+  const panel = await screen.findByRole('region', { name: 'Ly thuỷ tinh dưới thùng nước' }, SLOW)
+  expect(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
+  expect(within(panel).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(panel).getByText(/Đang được xử lý bởi Tạ Thị Ngọc Ánh/i)).toBeInTheDocument()
+})
+
+test('a CLOSED ticket is dimmed and strictly read-only for both supporter and client', async () => {
+  tickets = [
+    {
+      ...DISPATCHER_TICKET,
+      status: 'CLOSED',
+    },
+  ]
+  me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=2')
+
+  const panel = await screen.findByRole('region', { name: 'Ly thuỷ tinh dưới thùng nước' }, SLOW)
+  expect(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
+  expect(within(panel).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
+  expect(within(panel).getByText(/Phiếu hỗ trợ đã đóng \(chỉ đọc\)/i)).toBeInTheDocument()
+})
+
+test('shows unlock trial button for TRIAL_ACCOUNT_UNLOCK ticket and unlocks it', async () => {
+  const user = userEvent.setup()
+  const UNLOCK_TICKET = {
+    ...BASE,
+    id: 99,
+    ticketCode: 'TCK-20261017-9999',
+    subject: 'Mở khóa tài khoản dùng thử',
+    description: 'Xin mở lại tài khoản để ký thỏa thuận',
+    category: 'TRIAL_ACCOUNT_UNLOCK',
+    status: 'OPEN',
+    requesterId: 5,
+    requesterName: 'Trần Văn Trial',
+    createdAt: '2026-10-18T10:00:00',
+  }
+  tickets = [UNLOCK_TICKET]
+  me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=99')
+
+  const panel = await screen.findByRole('region', { name: 'Mở khóa tài khoản dùng thử' }, SLOW)
+  const unlockBtn = within(panel).getByRole('button', { name: 'Mở khóa tài khoản' })
+  expect(unlockBtn).toBeInTheDocument()
+
+  await user.click(unlockBtn)
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText('Mở khóa tài khoản dùng thử')).toBeInTheDocument()
+
+  const confirmBtn = within(dialog).getByRole('button', { name: 'Xác nhận mở khóa' })
+  await user.click(confirmBtn)
+
+  expect(await screen.findByText('Đã mở khóa tài khoản thành công.', {}, SLOW)).toBeInTheDocument()
 })

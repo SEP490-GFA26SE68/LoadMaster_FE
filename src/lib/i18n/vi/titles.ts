@@ -53,4 +53,7 @@ export const titles = {
   landing: 'Giới thiệu',
   pricing: 'Bảng giá',
   contacts: 'Liên hệ của khách',
+  trialRegistration: 'Đăng ký trải nghiệm',
+  guestRegistration: 'Đăng ký dùng ngay',
+  registrationSuccess: 'Đăng ký thành công',
 } as const

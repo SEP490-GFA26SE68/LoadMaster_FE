@@ -21,6 +21,10 @@ export const ROLE_HOME: Readonly<Record<Role, string>> = {
 export const PUBLIC_HOME = '/gioi-thieu'
 /** Bảng giá công khai — cùng đầu trang, chân trang với trang giới thiệu. */
 export const PUBLIC_PRICING = '/bang-gia'
+/** Ba trang đăng ký công khai (chỉ khi nhóm `registration` nối backend; kho mẫu chuyển về trang giới thiệu); ngoài `RequireAuth`. */
+export const TRIAL_REGISTRATION = '/dang-ky-trai-nghiem'
+export const GUEST_REGISTRATION = '/dang-ky'
+export const REGISTRATION_SUCCESS = '/dang-ky-thanh-cong'
 /** Đặt mật khẩu mới bằng mã gửi qua email (chỉ khi đăng nhập bằng máy chủ); ngoài `RequireAuth`. */
 export const PASSWORD_RESET = '/quen-mat-khau'
 

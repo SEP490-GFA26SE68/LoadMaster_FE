@@ -22,5 +22,6 @@ export function TicketStatusBadge({ status }: { status: TicketStatus }) {
 
 export function TicketKindBadge({ kind }: { kind: TicketKind }) {
   const t = useT()
-  return <Badge shape="tag" tone={kind === 'BILLING' ? 'cyan' : 'neutral'}>{t(`support.kinds.${kind}`)}</Badge>
+  const tone = kind === 'BILLING' ? 'cyan' : kind === 'TRIAL_ACCOUNT_UNLOCK' ? 'warning' : 'neutral'
+  return <Badge shape="tag" tone={tone}>{t(`support.kinds.${kind}`)}</Badge>
 }

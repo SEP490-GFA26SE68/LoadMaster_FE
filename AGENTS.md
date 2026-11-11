@@ -70,8 +70,16 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   nhập vẫn về `/dang-nhap` (nhớ trang đó). Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
-  mũi tên, chữ vẫn là tên truy cập). Không có đăng ký hay mua gói ở trang công khai: tài khoản công ty do đội LoadMaster mở sau khi khách gửi yêu cầu liên hệ; yêu cầu tạo
-  tài khoản dùng thử được nền tảng xử lý ở `/nen-tang/yeu-cau-dung-thu`.
+  mũi tên, chữ vẫn là tên truy cập).
+- **Đăng ký công khai** — ba route ngoài `RequireAuth`, **chỉ khi nối backend** (nhóm `registration`, `REGISTRATION_CAPABILITIES`; hằng
+  `TRIAL_REGISTRATION`, `GUEST_REGISTRATION`, `REGISTRATION_SUCCESS` ở `auth/landing.ts`): `/dang-ky-trai-nghiem` đăng ký dùng thử gói Basic
+  (thông tin công ty, mã OTP qua email, máy chủ kiểm sơ bộ rồi nền tảng duyệt ở `/nen-tang/yeu-cau-dung-thu`); `/dang-ky` tự đăng ký trả phí
+  (thông tin, OTP, điều khoản, chọn gói, thanh toán — máy chủ tạo tài khoản); `/dang-ky-thanh-cong` báo đã tạo tài khoản. Lối vào cho khách
+  chưa đăng nhập: hai nút kính "Đăng ký trải nghiệm", "Đăng ký dùng ngay" ở đầu trang từ 1.280 px (hẹp hơn nằm trong nút menu) và nút phụ trên
+  thẻ gói ("Đăng ký trải nghiệm" chỉ ở gói Basic) — không nút nào là nút chính. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
+  dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
+  30 ngày sau khi hết hạn dùng thử.
 - **Đăng nhập ở màn của app** — kho mẫu lẫn Keycloak: một form email + mật khẩu (mục 9 "Nối backend"). Ngoại lệ duy nhất: client của realm
   chưa bật Direct Access Grants (`login-not-enabled`) thì app chuyển sang trang đăng nhập của Keycloak (authorization code + PKCE S256, quay về
   `/dang-nhap`, `keycloak-session.ts`). Đăng nhập bằng máy chủ có thêm `/quen-mat-khau` (`PasswordResetPage`, ngoài `RequireAuth`, không đòi quyền): email → mã 6 chữ số
@@ -1142,7 +1150,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
@@ -1189,7 +1197,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
   `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
-  (`useFleetCapabilities`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
+  (`useFleetCapabilities`), `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
   Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;

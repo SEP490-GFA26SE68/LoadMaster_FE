@@ -54,6 +54,8 @@ import { tripWarehouse } from './en/tripWarehouse'
 import { packageStatus } from './en/packageStatus'
 import { serverAudit } from './en/serverAudit'
 import { serverWarehouse } from './en/serverWarehouse'
+import { trialRegistration } from './en/trialRegistration'
+import { guestRegistration } from './en/guestRegistration'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -111,4 +113,6 @@ export const en = {
   packageStatus,
   serverAudit,
   serverWarehouse,
+  trialRegistration,
+  guestRegistration,
 } satisfies Dictionary<typeof vi>

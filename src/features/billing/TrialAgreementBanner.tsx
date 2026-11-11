@@ -10,7 +10,17 @@ export function TrialAgreementBanner({ agreement, onOpenSignDialog }: { agreemen
   if (!agreement || agreement.status === 'SIGNED') return null
   if (agreement.status === 'EXPIRED' || agreement.isExpired) {
     return (
-      <Banner tone="danger" icon={Lock} role="alert">
+      <Banner
+        tone="danger"
+        icon={Lock}
+        role="alert"
+        action={
+          <Button variant="secondary" size="sm" onClick={onOpenSignDialog}>
+            <FileSignature strokeWidth={1.5} />
+            {t('billing.agreement.banner.signToUnlock')}
+          </Button>
+        }
+      >
         <span className="flex flex-col gap-0.5">
           <span className="font-semibold">{t('billing.agreement.banner.expiredTitle')}</span>
           <span className="text-small text-ink-2">{t('billing.agreement.banner.expiredBody')}</span>

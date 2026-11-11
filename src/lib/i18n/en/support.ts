@@ -1,10 +1,12 @@
 import type { Dictionary } from '../types'
 import type { support as source } from '../vi/support'
 import { customerPlan } from './support-customer-plan'
+import { trialLocked } from './support-trial-locked'
 
 export const support = {
   customerPlan,
-  kinds: { TECHNICAL: 'Technical', BILLING: 'Billing' },
+  trialLocked,
+  kinds: { TECHNICAL: 'Technical', BILLING: 'Billing', TRIAL_ACCOUNT_UNLOCK: 'Trial Account Unlock' },
   statuses: { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' },
   mine: {
     title: 'Support requests',
@@ -48,7 +50,10 @@ export const support = {
     send: 'Send reply',
     sent: 'Reply sent',
     closed: 'This request is closed, so no more replies can be added.',
-    closedSupport: 'This request is closed. Reopen it to reply again.',
+    closedHint: 'Support ticket is closed (read-only) — please create a new request if you need further help.',
+    closedSupport: 'Support ticket is closed (read-only) — cannot reply or change status.',
+    lockedByOther: 'Currently being handled by {name} — other supporters cannot modify this ticket to prevent duplicates.',
+    assignedTo: 'Handled by: {name}',
     sentBy: 'Sent by {name} at {time}',
     supportNote: 'Note from the support team',
     statusOnly: 'This request is followed by its status; replies are not available yet.',
@@ -90,6 +95,16 @@ export const support = {
     chat: {
       title: 'Recent messages of the company',
       hint: 'The two most recent days with activity',
+    },
+    unlock: {
+      action: 'Unlock Account',
+      dialogTitle: 'Unlock Trial Account',
+      dialogDescription: 'Confirm account unlock for the enterprise. The system checks trial validity: if valid, extends 72 hours to sign agreement; if expired, redirects to the plan upgrade page.',
+      staffNoteLabel: 'Processing note (optional)',
+      staffNotePlaceholder: 'Enter conversation details or reason for unlocking...',
+      confirm: 'Confirm Unlock',
+      cancel: 'Cancel',
+      success: 'Account unlocked successfully.',
     },
   },
 } as const satisfies Dictionary<typeof source>

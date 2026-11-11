@@ -34,6 +34,14 @@ export const apiErrors = {
   COMPANY_REQUIRED: 'Vai trò của công ty cần có công ty.',
   USER_COMPANY_NOT_FOUND: 'Tài khoản của bạn chưa thuộc công ty nào.',
   TAX_CODE_ALREADY_EXISTS: 'Mã số thuế này đã thuộc một công ty khác.',
+  TAX_CODE_REQUIRED: 'Vui lòng nhập mã số thuế.',
+  INVALID_TAX_CODE_FORMAT: 'Mã số thuế không hợp lệ (chỉ được chứa chữ số, gồm 10 hoặc 13 số).',
+  PHONE_NUMBER_REQUIRED: 'Vui lòng nhập số điện thoại liên hệ.',
+  INVALID_PHONE_NUMBER: 'Số điện thoại không đúng định dạng của quốc gia đã chọn (với VN: 8 số sau không được giống hệt nhau).',
+  PHONE_NUMBER_ALREADY_EXISTS: 'Số điện thoại này đã được sử dụng trong hệ thống.',
+  INVALID_TIMESTAMP_FORMAT: 'Định dạng thời gian không hợp lệ (yêu cầu yyyy-MM-dd HH:mm:ss).',
+  RESOLVED_BEFORE_CREATED: 'Thời gian xử lý không được trước thời gian tạo.',
+  EXPIRES_BEFORE_CREATED: 'Thời gian hết hạn không được trước thời gian tạo.',
 
   // Danh mục và kiện
   CUSTOMER_NOT_FOUND: 'Không tìm thấy khách hàng.',
@@ -148,9 +156,11 @@ export const apiErrors = {
   INVALID_PAYMENT_SIGNATURE: 'Chữ ký thanh toán không hợp lệ.',
   INVOICE_NOT_FOUND: 'Không tìm thấy hoá đơn.',
 
-  // Hợp đồng, liên hệ
+  // Hợp đồng, liên hệ, hỗ trợ
   CONTRACT_NOT_FOUND: 'Không tìm thấy hợp đồng.',
   CONTACT_REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu liên hệ.',
+  SUPPORT_TICKET_LOCKED: 'Phiếu hỗ trợ này đang được xử lý bởi nhân viên khác. Bạn không thể thao tác trên phiếu này.',
+  SUPPORT_TICKET_CLOSED: 'Phiếu hỗ trợ đã đóng, chỉ có thể xem lại lịch sử. Vui lòng tạo phiếu hỗ trợ mới.',
 
   // Chỉ FE: chặn trước khi gọi vì backend chưa hỗ trợ
   EMAIL_CHANGE_UNSUPPORTED: 'Máy chủ chưa cho đổi email của tài khoản.',

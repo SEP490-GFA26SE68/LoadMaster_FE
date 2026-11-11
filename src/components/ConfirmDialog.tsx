@@ -14,6 +14,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
+  children,
   cancelLabel,
   confirmLabel,
   danger = false,
@@ -24,6 +25,7 @@ export function ConfirmDialog({
   onOpenChange: (open: boolean) => void
   title: ReactNode
   description: ReactNode
+  children?: ReactNode
   cancelLabel: string
   confirmLabel: string
   danger?: boolean
@@ -34,6 +36,7 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-120">
         <DialogHeader icon={danger ? TriangleAlert : undefined} tone="danger" title={title} description={description} className="pb-5" />
+        {children}
         <DialogFooter>
           <Button type="button" variant="secondary" disabled={pending} onClick={() => onOpenChange(false)}>
             {cancelLabel}

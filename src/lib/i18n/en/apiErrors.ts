@@ -29,6 +29,14 @@ export const apiErrors = {
   COMPANY_REQUIRED: 'Company roles need a company.',
   USER_COMPANY_NOT_FOUND: 'Your account does not belong to a company yet.',
   TAX_CODE_ALREADY_EXISTS: 'This tax code already belongs to another company.',
+  TAX_CODE_REQUIRED: 'Please enter the tax code.',
+  INVALID_TAX_CODE_FORMAT: 'Invalid tax code format (digits only, 10 or 13 digits).',
+  PHONE_NUMBER_REQUIRED: 'Please enter a contact phone number.',
+  INVALID_PHONE_NUMBER: 'Phone number does not match the selected country format (for VN: last 8 digits cannot be identical).',
+  PHONE_NUMBER_ALREADY_EXISTS: 'This phone number is already in use.',
+  INVALID_TIMESTAMP_FORMAT: 'Invalid timestamp format (expected yyyy-MM-dd HH:mm:ss).',
+  RESOLVED_BEFORE_CREATED: 'Resolved timestamp cannot be before created timestamp.',
+  EXPIRES_BEFORE_CREATED: 'Expiration timestamp cannot be before created timestamp.',
 
   CUSTOMER_NOT_FOUND: 'The customer was not found.',
   ORDER_NOT_FOUND: 'The order was not found.',
@@ -139,6 +147,8 @@ export const apiErrors = {
 
   CONTRACT_NOT_FOUND: 'The contract was not found.',
   CONTACT_REQUEST_NOT_FOUND: 'The contact request was not found.',
+  SUPPORT_TICKET_LOCKED: 'This support ticket is currently being handled by another supporter. You cannot modify it.',
+  SUPPORT_TICKET_CLOSED: 'This support ticket is closed and read-only. Please create a new support ticket.',
 
   EMAIL_CHANGE_UNSUPPORTED: 'The server does not support changing an account email yet.',
   TRIP_NOT_LOADING: 'The trip is no longer Loading, so its loading session cannot be opened.',

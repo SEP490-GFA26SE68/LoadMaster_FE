@@ -13,14 +13,13 @@ import { tierBesideName } from '@/lib/plan-tier'
  * Nối backend, gói còn hiệu lực (`current`, `BILLING_CAPABILITIES.contractRenewal`): thẻ chỉ còn các gói hạng cao hơn, mỗi gói một nút
  * "Gửi yêu cầu nâng cấp" (`onRequestUpgrade`) — backend chỉ cho đổi gói qua yêu cầu hỗ trợ; gia hạn gói đang dùng ở thẻ Gói hiện tại.
  */
-export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null, onRequestUpgrade }: {
+export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null }: {
   plans: SubscriptionPlan[]
   /** Gói đang gửi đăng ký. */
   pendingId: string | null
   onSubscribe: (plan: SubscriptionPlan) => void
   /** Gói còn hiệu lực theo hợp đồng (chỉ khi nối backend). */
   current?: { readonly tier: PlanTier } | null
-  onRequestUpgrade?: (plan: SubscriptionPlan) => void
 }) {
   const t = useT()
   const format = useFormat()
@@ -53,23 +52,15 @@ export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null, 
                     : t('billing.choose.credits', { credits: format.integer(plan.monthlyCredits) })}
                 </span>
               </span>
-              {current !== null ? (
-                onRequestUpgrade ? (
-                  <Button variant="secondary" aria-label={t('billing.choose.requestUpgradeTo', { name: plan.name })} onClick={() => onRequestUpgrade(plan)}>
-                    {t('billing.choose.requestUpgrade')}
-                  </Button>
-                ) : null
-              ) : (
-                <Button
-                  variant="secondary"
-                  loading={pendingId === plan.id}
-                  disabled={pendingId !== null && pendingId !== plan.id}
-                  aria-label={t('billing.choose.subscribeTo', { name: plan.name })}
-                  onClick={() => onSubscribe(plan)}
-                >
-                  {t('billing.choose.subscribe')}
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                loading={pendingId === plan.id}
+                disabled={pendingId !== null && pendingId !== plan.id}
+                aria-label={t(current !== null ? 'billing.choose.upgradeTo' : 'billing.choose.subscribeTo', { name: plan.name })}
+                onClick={() => onSubscribe(plan)}
+              >
+                {t(current !== null ? 'billing.choose.upgrade' : 'billing.choose.subscribe')}
+              </Button>
             </li>
           ))}
         </ul>

@@ -56,9 +56,14 @@ function refresh(client: QueryClient) {
   return Promise.all([client.invalidateQueries({ queryKey: KEY }), client.invalidateQueries({ queryKey: ['notifications'] })])
 }
 
+export type SubscribeArg = string | { readonly planId: string; readonly billingCycle?: 'MONTHLY' | 'YEARLY' }
+
 export function useSubscribeMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (planId: string) => subscribe(planId), onSuccess: () => refresh(client) })
+  return useMutation({
+    mutationFn: (arg: SubscribeArg) => (typeof arg === 'string' ? subscribe(arg) : subscribe(arg.planId, arg.billingCycle)),
+    onSuccess: () => refresh(client),
+  })
 }
 
 export function useCancelSubscriptionMutation() {

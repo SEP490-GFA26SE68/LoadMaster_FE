@@ -1,5 +1,5 @@
 import { RotateCcw } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
 import { FilterBar, type FilterField } from '@/components/FilterBar'
@@ -7,17 +7,28 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TRIAL_REQUEST_STATUSES, TRIAL_REQUESTS_SOURCE, type TrialRequest, type TrialRequestStatus } from './trial-requests-api'
-import { createTrialColumns, OpenTrialContext } from './trial-requests-table'
-import { TrialRequestDialog } from './TrialRequestDialog'
+import { createTrialColumns, OpenTrialContext, type OpenTrialHandler } from './trial-requests-table'
+import { TrialRequestDialog, type Step } from './TrialRequestDialog'
 import { useTrialRequestsQuery } from './useTrialRequestsQuery'
 
 const STATUS_FILTER = 'trang-thai'
 const FILTERS = [STATUS_FILTER] as const
-const STATUS_SLUGS: Record<TrialRequestStatus, string> = { PENDING: 'cho-duyet', APPROVED: 'da-duyet', REJECTED: 'tu-choi' }
-const STATUS_ORDER: Record<TrialRequestStatus, number> = { PENDING: 0, APPROVED: 1, REJECTED: 2 }
+const STATUS_SLUGS: Record<TrialRequestStatus, string> = {
+  PENDING: 'cho-duyet',
+  PENDING_ADMIN_CREATION: 'cho-admin-tao',
+  APPROVED: 'da-duyet',
+  REJECTED: 'tu-choi',
+}
+const STATUS_ORDER: Record<TrialRequestStatus, number> = {
+  PENDING: 0,
+  PENDING_ADMIN_CREATION: 1,
+  APPROVED: 2,
+  REJECTED: 3,
+}
 
 /** Chờ duyệt trước, rồi mới gửi trước. */
 function byStatusThenNewest(a: TrialRequest, b: TrialRequest): number {
@@ -30,11 +41,32 @@ function byStatusThenNewest(a: TrialRequest, b: TrialRequest): number {
  */
 export function TrialRequestsPage() {
   const t = useT()
+  const auth = useAuthSafe()
+  const role = auth?.user?.role
+  const isAdmin = role === 'systemAdmin'
   const query = useTrialRequestsQuery()
   const list = useListUrlState<(typeof FILTERS)[number]>({ filters: FILTERS })
-  const [opened, setOpened] = useState<TrialRequest | null>(null)
+  const [openedState, setOpenedState] = useState<{ request: TrialRequest; step: Step } | null>(null)
 
-  const all = useMemo(() => (query.data ?? []).toSorted(byStatusThenNewest), [query.data])
+  const handleOpen: OpenTrialHandler = useCallback((request: TrialRequest, step: Step = 'detail') => {
+    setOpenedState({ request, step })
+  }, [])
+
+  // System Admin chỉ được xem các đơn đã được duyệt của System Manager:
+  // 1. Không hiển thị các đơn PENDING (chưa duyệt của Manager)
+  // 2. Không hiển thị các đơn bị AI từ chối (aiPrecheckStatus === 'FAILED' hoặc handledByName có chứa 'AI')
+  const all = useMemo(() => {
+    const listData = query.data ?? []
+    const filtered = isAdmin
+      ? listData.filter((r) => {
+          if (r.status === 'PENDING') return false
+          if (r.aiPrecheckStatus === 'FAILED' || r.handledByName?.startsWith('AI')) return false
+          return true
+        })
+      : listData
+    return filtered.toSorted(byStatusThenNewest)
+  }, [query.data, isAdmin])
+
   const status = list.filters[STATUS_FILTER]
   const rows = useMemo(
     () => all.filter((request) =>
@@ -43,12 +75,28 @@ export function TrialRequestsPage() {
     [all, list.query, status],
   )
   const columns = useMemo(() => createTrialColumns(t), [t])
-  const fields: FilterField<(typeof FILTERS)[number]>[] = [{
-    kind: 'select', name: STATUS_FILTER, label: t('platform.trialRequests.filters.status'), allLabel: t('platform.trialRequests.filters.allStatuses'),
-    options: TRIAL_REQUEST_STATUSES.map((value) => ({ value: STATUS_SLUGS[value], label: t(`platform.trialRequests.status.${value}`) })),
-  }]
+
+  const availableStatuses = useMemo(
+    () => (isAdmin ? TRIAL_REQUEST_STATUSES.filter((s) => s !== 'PENDING') : TRIAL_REQUEST_STATUSES),
+    [isAdmin],
+  )
+  const fields: FilterField<(typeof FILTERS)[number]>[] = useMemo(
+    () => [
+      {
+        kind: 'select',
+        name: STATUS_FILTER,
+        label: t('platform.trialRequests.filters.status'),
+        allLabel: t('platform.trialRequests.filters.allStatuses'),
+        options: availableStatuses.map((value) => ({
+          value: STATUS_SLUGS[value],
+          label: t(`platform.trialRequests.status.${value}`),
+        })),
+      },
+    ],
+    [t, availableStatuses],
+  )
   // Mở từ dòng thì giữ bản mới nhất của yêu cầu đó (đã duyệt ở tab khác thì không còn nút Duyệt)
-  const current = opened === null ? null : (all.find((request) => request.id === opened.id) ?? opened)
+  const current = openedState === null ? null : (all.find((request) => request.id === openedState.request.id) ?? openedState.request)
 
   let body: ReactNode
   if (!TRIAL_REQUESTS_SOURCE.available) {
@@ -79,7 +127,7 @@ export function TrialRequestsPage() {
           onValueChange={list.setFilter}
           onClear={list.clearAll}
         />
-        <OpenTrialContext value={setOpened}>
+        <OpenTrialContext value={handleOpen}>
           <DataTable
             data={rows}
             columns={columns}
@@ -105,7 +153,11 @@ export function TrialRequestsPage() {
         description={t('platform.trialRequests.description')}
       />
       <div className="min-h-0 flex-1 overflow-auto px-shell py-6">{body}</div>
-      <TrialRequestDialog request={current} onClose={() => setOpened(null)} />
+      <TrialRequestDialog
+        request={current}
+        initialStep={openedState?.step ?? 'detail'}
+        onClose={() => setOpenedState(null)}
+      />
     </div>
   )
 }

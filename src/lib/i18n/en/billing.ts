@@ -23,9 +23,11 @@ export const billing = {
     autoRenewOn: 'On',
     autoRenewOff: 'Off',
     price: 'Price per month',
+    yearlyPrice: 'Yearly renewal price',
     credits: 'Credits per month',
     cancel: 'Cancel plan',
     renew: 'Renew for another period',
+    renewYear: 'Renew for a year',
     expiredNote: 'The plan has expired, so optimisation cannot run. The credit balance is kept; choose a new plan to continue.',
     cancelledNote: 'The plan is cancelled. It can be used until {date}, then expires and does not renew.',
   },
@@ -39,10 +41,22 @@ export const billing = {
     title: 'Choose a plan',
     subscribe: 'Subscribe',
     subscribeTo: 'Subscribe to plan {name}',
+    upgrade: 'Upgrade',
+    upgradeTo: 'Upgrade to plan {name}',
     credits: '{credits} credits per month',
     none: 'No plan is on sale right now.',
     requestUpgrade: 'Request an upgrade',
     requestUpgradeTo: 'Request an upgrade to plan {name}',
+  },
+  upgradeDialog: {
+    title: 'Upgrade to plan {plan}?',
+    description: 'Warning: You still have {months} month(s) remaining in plan {currentPlan}. Are you sure you want to switch to plan {plan}? Your remaining credit balance will be reset to 0 without conversion or carry-over. Once payment succeeds, your company will receive the monthly credits of plan {plan} for a new billing cycle.',
+    cycleLabel: 'Select billing cycle',
+    monthly: 'Monthly (1 month)',
+    yearly: 'Yearly (12 months)',
+    total: 'Total payment: {amount}',
+    cancel: 'Cancel',
+    confirm: 'Continue upgrade',
   },
   support: 'Support request',
   agreementCard: {
@@ -54,7 +68,7 @@ export const billing = {
   },
   credit: {
     balance: 'Balance',
-    note: 'Each 3D optimisation run uses 1 credit; the unlimited plan uses 0.',
+    note: 'Each optimisation run uses 2 credits; re-running costs 1 credit.',
     unlimitedNote: 'The plan is unlimited, so the balance is not reduced by optimisation runs.',
   },
   cancelDialog: {
@@ -69,6 +83,7 @@ export const billing = {
   topUpDialog: {
     title: 'Top up credits',
     description: '{price} per credit. You finish on the payment page; credits are only added when the payment succeeds.',
+    monthlyResetWarning: 'Warning: Top-up credits are only valid in the current billing month; when the next month starts, your balance will reset to the initial monthly credit grant of your subscribed plan.',
     pack: '{credits} credits',
     custom: 'Credits to buy',
     total: 'Total: {amount}',
@@ -80,7 +95,7 @@ export const billing = {
   },
   history: {
     title: 'History',
-    tabs: { credit: 'Credits', payments: 'Payments', invoices: 'Invoices' },
+    tabs: { credit: 'Credits', payments: 'Payments', invoices: 'Invoices', usage: 'Usage / Refunds' },
   },
   ledger: {
     columns: { time: 'Time', type: 'Type', amount: 'Credits', reference: 'Reference', note: 'Note' },

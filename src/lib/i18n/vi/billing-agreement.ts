@@ -6,9 +6,10 @@ export const agreement = {
   code: 'Mã {code}',
   company: 'Doanh nghiệp: {name}',
   banner: {
-    expiredTitle: 'Thoả thuận đã quá hạn ký — tài khoản công ty đã bị tạm khoá',
-    expiredBody: 'Hết 72 giờ để ký thoả thuận dịch vụ thử nghiệm. Liên hệ quản trị nền tảng hoặc bộ phận hỗ trợ khách hàng để mở khoá tài khoản.',
+    expiredTitle: 'Thoả thuận đã quá hạn ký — tài khoản đã bị gắn cờ và tạm khoá chức năng',
+    expiredBody: 'Đã quá 72 giờ để ký thoả thuận dịch vụ thử nghiệm. Tài khoản bị tạm khóa chức năng và sẽ bị xóa cứng sau 30 ngày. Vui lòng ký thỏa thuận ngay để mở khóa hoặc liên hệ hỗ trợ.',
     signNow: 'Ký thoả thuận',
+    signToUnlock: 'Ký thỏa thuận để mở khóa',
     pendingTitle: 'Cần ký thoả thuận dịch vụ thử nghiệm',
     hoursLeft: 'Còn {hours} giờ',
     pendingBody: 'Thoả thuận phải được ký trong 3 ngày kể từ khi tài khoản được kích hoạt. Quá hạn, tài khoản công ty tự khoá dù thời gian dùng thử vẫn còn.',
@@ -29,6 +30,13 @@ export const agreement = {
     },
     cancel: 'Huỷ',
     submit: 'Ký thoả thuận',
+    /** Bước xác nhận kép trước khi ký chính thức. */
+    doubleCheck: {
+      title: 'Xác nhận ký Thỏa thuận dịch vụ thử nghiệm',
+      description: 'Bạn đang thực hiện ký thỏa thuận điện tử cho {company}. Thỏa thuận sẽ có hiệu lực pháp lý ngay sau khi bạn xác nhận.',
+      confirm: 'Tôi xác nhận ký',
+      back: 'Quay lại',
+    },
   },
   view: {
     badgeSigned: 'Đã ký',

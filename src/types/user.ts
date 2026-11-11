@@ -61,6 +61,7 @@ export const ROLE_FROM_BACKEND = {
 export const USER_STATUSES = [
   'active',
   'suspended',
+  'flagged',
 ] as const
 
 export type UserStatus =

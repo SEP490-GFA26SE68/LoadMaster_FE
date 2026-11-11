@@ -1,4 +1,5 @@
 import { customerPlan } from './support-customer-plan'
+import { trialLocked } from './support-trial-locked'
 
 /**
  * Yêu cầu hỗ trợ (FE-8-07, D-67): hộp thoại "Yêu cầu hỗ trợ" của người dùng công ty (mở từ menu tài khoản) và màn `/ho-tro` của Hỗ trợ
@@ -6,7 +7,8 @@ import { customerPlan } from './support-customer-plan'
  */
 export const support = {
   customerPlan,
-  kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán' },
+  trialLocked,
+  kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán', TRIAL_ACCOUNT_UNLOCK: 'Mở khóa dùng thử' },
   statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Hộp thoại của người dùng công ty. */
   mine: {
@@ -52,7 +54,10 @@ export const support = {
     send: 'Gửi trả lời',
     sent: 'Đã gửi trả lời',
     closed: 'Yêu cầu đã đóng nên không thêm trả lời được.',
-    closedSupport: 'Yêu cầu đã đóng. Mở lại để trả lời tiếp.',
+    closedHint: 'Phiếu hỗ trợ đã đóng (chỉ đọc) — vui lòng tạo yêu cầu mới nếu cần hỗ trợ thêm.',
+    closedSupport: 'Phiếu hỗ trợ đã đóng (chỉ đọc) — không thể nhắn tin hay đổi trạng thái.',
+    lockedByOther: 'Đang được xử lý bởi {name} — nhân viên hỗ trợ khác không thể thao tác để tránh trùng lặp.',
+    assignedTo: 'Đang xử lý bởi: {name}',
     sentBy: 'Gửi bởi {name} lúc {time}',
     supportNote: 'Phản hồi của đội hỗ trợ',
     statusOnly: 'Yêu cầu này theo dõi bằng trạng thái; hệ thống chưa có trao đổi qua lại.',
@@ -95,6 +100,16 @@ export const support = {
     chat: {
       title: 'Trao đổi gần đây của công ty',
       hint: 'Hai ngày có hoạt động gần nhất',
+    },
+    unlock: {
+      action: 'Mở khóa tài khoản',
+      dialogTitle: 'Mở khóa tài khoản dùng thử',
+      dialogDescription: 'Xác nhận mở khóa tài khoản cho doanh nghiệp. Hệ thống sẽ kiểm tra hạn dùng thử: nếu còn hạn sẽ gia hạn thêm 72 giờ để hoàn tất ký thỏa thuận, nếu hết hạn sẽ chuyển hướng sang trang nâng cấp gói.',
+      staffNoteLabel: 'Ghi chú xử lý (tùy chọn)',
+      staffNotePlaceholder: 'Nhập nội dung trao đổi hoặc lý do hỗ trợ mở khóa...',
+      confirm: 'Xác nhận mở khóa',
+      cancel: 'Hủy bỏ',
+      success: 'Đã mở khóa tài khoản thành công.',
     },
   },
 } as const

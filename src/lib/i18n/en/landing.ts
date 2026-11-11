@@ -12,6 +12,8 @@ export const landing = {
     contact: 'Contact',
     signIn: 'Sign in',
     openApp: 'Open the app',
+    trial: 'Try for free',
+    registerNow: 'Get started',
     home: 'LoadMaster home',
   },
   hero: {

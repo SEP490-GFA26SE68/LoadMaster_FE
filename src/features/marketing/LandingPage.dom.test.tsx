@@ -64,7 +64,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(within(screen.getByRole('region', { name: 'Cách hoạt động' })).getAllByRole('listitem')).toHaveLength(4)
   expect(screen.getByText(/đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn\.$/)).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)).toBeInTheDocument()
-  // Không có đăng ký hay mua gói ngay trên trang: tài khoản dùng thử chỉ mở qua yêu cầu liên hệ (loại "Đăng ký tài khoản dùng thử")
+  // Kho mẫu không có đăng ký hay mua gói ngay trên trang (hai luồng đăng ký chỉ có khi nối backend): tài khoản dùng thử mở qua yêu cầu liên hệ
   expect(screen.queryByRole('link', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
 })
