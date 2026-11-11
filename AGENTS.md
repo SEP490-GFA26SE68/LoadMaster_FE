@@ -75,8 +75,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `TRIAL_REGISTRATION`, `GUEST_REGISTRATION`, `REGISTRATION_SUCCESS` ở `auth/landing.ts`): `/dang-ky-trai-nghiem` đăng ký dùng thử gói Basic
   (thông tin công ty, mã OTP qua email, máy chủ kiểm sơ bộ rồi nền tảng duyệt ở `/nen-tang/yeu-cau-dung-thu`); `/dang-ky` tự đăng ký trả phí
   (thông tin, OTP, điều khoản, chọn gói, thanh toán — máy chủ tạo tài khoản); `/dang-ky-thanh-cong` báo đã tạo tài khoản. Lối vào cho khách
-  chưa đăng nhập: hai nút kính "Đăng ký trải nghiệm", "Đăng ký dùng ngay" ở đầu trang từ 1.280 px (hẹp hơn nằm trong nút menu) và nút phụ trên
-  thẻ gói ("Đăng ký trải nghiệm" chỉ ở gói Basic) — không nút nào là nút chính. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  chưa đăng nhập, dễ thấy nhất trước: **nút chính** của khối mở đầu `/gioi-thieu` là "Đăng ký trải nghiệm" ("Nhận tư vấn" lùi thành nút kính
+  cạnh nó); đầu trang có nút kính "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn hai mục nằm trong nút menu); màn
+  đăng nhập có hai nút phụ dưới form (`LoginSignUp`); thẻ gói có nút phụ ("Đăng ký trải nghiệm" chỉ ở gói Basic). Người đã đăng nhập không thấy
+  lối vào nào. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
   của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
   dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
   30 ngày sau khi hết hạn dùng thử.
@@ -85,9 +87,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `/dang-nhap`, `keycloak-session.ts`). Đăng nhập bằng máy chủ có thêm `/quen-mat-khau` (`PasswordResetPage`, ngoài `RequireAuth`, không đòi quyền): email → mã 6 chữ số
   gửi qua email → mật khẩu mới; mở từ "Quên mật khẩu?" của màn đăng nhập, từ lỗi mật khẩu tạm và từ thẻ Mật khẩu của Hồ sơ (`?email=` điền
   sẵn). Kho mẫu không gửi được mã nên chế độ kho mẫu không có liên kết đó, và mở `/quen-mat-khau` là về `/dang-nhap`.
-- **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp
-  hơn thì gom vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không
-  về nút menu). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
+- **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm
+  ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
+  vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không về nút menu).
+  Đổi mốc nào ở đầu trang thì đo lại 360 → 1.440 px, vi / en, chuột / cảm ứng, khi nhóm `registration` nối backend (không điều khiển nào tràn,
+  chồng nhau hay xuống dòng). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
   qua tới nội dung chính" (chỉ hiện khi nhận focus; đưa focus vào `<main>` mà không đổi neo). Tới một phần qua neo thì tiêu đề `<h2>` của phần
   nhận focus (`useHashScroll`; neo mã hoá hỏng như `#%` coi như không có neo). Điều khiển trên dải trời của hai trang công khai và màn đăng nhập
   (nút chính, nút kính, nút về, "Đăng nhập") ghép `SKY_FOCUS` (`components/sky-focus.ts`): vòng focus `--cyan-300` thay `--primary` ngay ở
@@ -95,7 +99,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `SKY_FOCUS`, 44 px (56 px cảm ứng). Chip và nhãn nhỏ của hai trang công khai ghép `PUBLIC_TOUCH_TAG` (`public-chrome.ts`): chữ 16 px, xuống
   dòng được trên máy cảm ứng. Hình `CargoArtwork` của màn đăng nhập xếp đầy **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có
   nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
-- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he`, khung 3D chuyến mẫu,
+- **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
+  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
   "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với
   Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`).
 - **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
@@ -2072,8 +2077,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tên truy cập "Liên hệ tư vấn gói Pro" bắt đầu bằng đúng chữ hiện ra) mở `/gioi-thieu?goi=<mã gói>&loai=bao-gia#lien-he` — form đọc `goi`,
   `loai` (slug ở `lib/contact-slugs.ts`, dùng chung với bộ lọc của màn) để chọn sẵn; gói lạ hoặc đã ngừng bán thì không chọn, loại lạ là "Hỏi
   thông tin". Kho từ chối thì banner `danger` ngay trên nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
-  `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu là
-  "Nhận tư vấn" ở phần mở đầu, nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
+  `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu nằm
+  ở phần mở đầu ("Nhận tư vấn", hay "Đăng ký trải nghiệm" khi nối backend), nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
   trước (lọc `trang-thai`, `loai`, tìm theo tên / email / điện thoại / công ty / mã — trên URL); bấm tên mở khung xử lý ở cột phải
   (`?lien-he=<mã>`: chi tiết, ô trạng thái, người nhận việc, ghi chú, "Lưu thay đổi" là nút chính duy nhất, mờ kèm lý do khi chưa đổi gì) và bảng
   bỏ ba cột khung đã có. **Khung chỉ gửi ô người dùng đã sửa** (`contactPatch` theo `dirtyFields`): người khác vừa lưu thì kho trả bản mới, ô chưa

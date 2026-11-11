@@ -30,6 +30,8 @@ export const auth = {
     forgotPassword: 'Quên mật khẩu?',
     /** Liên kết về trang giới thiệu công khai `/gioi-thieu`. */
     backToLanding: 'Về trang giới thiệu',
+    /** Lối vào hai luồng đăng ký công khai dưới form (chỉ khi nhóm `registration` nối backend); chữ của hai nút ở `landing.header`. */
+    noAccount: 'Công ty bạn chưa có tài khoản LoadMaster?',
     /** Chế độ đăng nhập bằng máy chủ (`VITE_AUTH_SOURCE=keycloak`). */
     sso: {
       sampleData: 'Tài khoản lấy từ máy chủ. Chuyến, xe và kiện hàng trên màn vẫn là dữ liệu mẫu.',

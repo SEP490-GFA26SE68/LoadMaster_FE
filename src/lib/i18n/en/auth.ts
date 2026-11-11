@@ -24,6 +24,7 @@ export const auth = {
     sessionRejected: 'The server did not accept this sign-in session. Tell your system administrator.',
     forgotPassword: 'Forgot password?',
     backToLanding: 'Back to the home page',
+    noAccount: 'Your company has no LoadMaster account yet?',
     sso: {
       sampleData: 'Your account comes from the server. Trips, vehicles and packages on screen are still sample data.',
     },

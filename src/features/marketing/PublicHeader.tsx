@@ -16,11 +16,12 @@ import { PublicNavMenu } from './PublicNavMenu'
 /**
  * Đầu trang của hai trang công khai (`/gioi-thieu`, `/bang-gia`): dải trời dính trên cùng khi cuộn — logo về trang giới thiệu (vùng bấm
  * 48 px, 56 px trên máy cảm ứng), mục của trang, ngôn ngữ, và "Đăng nhập" (đã đăng nhập thì "Vào ứng dụng", mở màn chính của vai trò).
- * Mục của trang thành hàng từ 1.024 px — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom vào nút menu. Ngôn ngữ là hai nút VI | EN
- * từ 640 px, hẹp hơn là một nút mở menu (điện thoại 360 px không đủ chỗ cho hai nút 56 px cạnh "Đăng nhập" và nút menu). Khi nối
- * backend (`REGISTRATION_CAPABILITIES`), khách chưa đăng nhập có thêm hai nút kính "Đăng ký trải nghiệm", "Đăng ký dùng ngay" từ 1.280 px
- * (hẹp hơn thì nằm trong nút menu); kho mẫu không có. Không nút chính nào trên dải: nút chính là của trang. Vòng focus `--cyan-300` như mọi
- * điều khiển trên dải trời.
+ * Mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm ứng (điều khiển 56 px: hẹp hơn thì hàng mục đè lên nút ngôn
+ * ngữ), hẹp hơn thì gom vào nút menu. Ngôn ngữ là hai nút VI | EN từ 640 px, hẹp hơn là một nút mở menu (điện thoại 360 px không đủ chỗ
+ * cho hai nút 56 px cạnh "Đăng nhập" và nút menu). Khi nối backend (`REGISTRATION_CAPABILITIES`), khách chưa đăng nhập có thêm nút kính
+ * "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn thì nằm trong nút menu; nút chính của phần mở đầu trang
+ * giới thiệu cũng là "Đăng ký trải nghiệm"); kho mẫu không có. Mốc đã đo ở 360 → 1.440 px, vi / en, chuột / cảm ứng. Không nút chính nào
+ * trên dải: nút chính là của trang. Vòng focus `--cyan-300` như mọi điều khiển trên dải trời.
  */
 export function PublicHeader() {
   const t = useT()
@@ -42,7 +43,7 @@ export function PublicHeader() {
           <Logo tone="dark" size="sm" decorative className="hidden sm:inline-flex" />
         </Link>
 
-        <nav aria-label={t('landing.header.nav')} className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
+        <nav aria-label={t('landing.header.nav')} className="hidden min-w-0 flex-1 items-center gap-1 lg:pointer-fine:flex min-[1366px]:flex">
           {PUBLIC_LINKS.map((link) => {
             const current = isCurrentLink(link, pathname)
             return (
@@ -74,7 +75,7 @@ export function PublicHeader() {
           />
           {!user && REGISTRATION_CAPABILITIES.publicSignUp ? (
             <>
-              <Button asChild variant="glass" className={cn(PUBLIC_TOUCH, SKY_FOCUS, 'hidden xl:inline-flex')}>
+              <Button asChild variant="glass" className={cn(PUBLIC_TOUCH, SKY_FOCUS, 'hidden md:inline-flex')}>
                 <Link to={TRIAL_REGISTRATION}>{t('landing.header.trial')}</Link>
               </Button>
               <Button asChild variant="glass" className={cn(PUBLIC_TOUCH, SKY_FOCUS, 'hidden xl:inline-flex')}>
@@ -87,7 +88,7 @@ export function PublicHeader() {
               {user ? t('landing.header.openApp') : t('landing.header.signIn')}
             </Link>
           </Button>
-          <PublicNavMenu className="lg:hidden" />
+          <PublicNavMenu className="lg:pointer-fine:hidden min-[1366px]:hidden" />
         </div>
       </div>
     </header>
