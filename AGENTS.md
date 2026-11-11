@@ -1231,8 +1231,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   rồi ghi cả bản ghi. Lần chạy tối ưu trừ credit ở
   máy chủ khi nhóm `trips` nối backend; nhóm `trips` còn kho mẫu thì lần chạy là mock và trừ credit ở kho mẫu.
 - **Liên hệ của khách, yêu cầu hỗ trợ** (`contacts`, `support`): form công khai gửi `POST /api/contact-guests` không token (mã gói chỉ gửi khi
-  là số của backend); `/lien-he-khach` đọc `GET /api/contact-guests`, lưu `PATCH …/{id}`; backend bỏ qua `assignedToId: null` nên "Chưa ai
-  nhận" mờ kèm lý do khi đã có người nhận; hỗ trợ khách hàng không đọc được `/api/users` nên chỉ nhận việc cho chính mình. Yêu cầu hỗ trợ:
+  là số của backend); `/lien-he-khach` đọc `GET /api/contact-guests`, lưu `PATCH …/{id}` — bỏ người nhận việc là cờ `unassign: true` (máy chủ
+  bỏ qua `assignedToId: null`), người nhận ngoài hai vai trò xử lý là 400 `CONTACT_ASSIGNEE_INVALID`; người nhận việc được đọc ở
+  `GET /api/contact-guests/handlers` (quản trị hệ thống, hỗ trợ khách hàng đang hoạt động). Yêu cầu hỗ trợ:
   `GET`, `POST` (Kỹ thuật → `SYSTEM_BUG`, Thanh toán → `BILLING`; `ALGORITHM_ERROR` đọc là Kỹ thuật), `PATCH …/{id}` chỉ gửi `status`;
   trao đổi ở bảng của máy chủ: `GET` / `POST /api/support-tickets/{id}/replies` (`{ message }`, trả cả yêu cầu lẫn trao đổi; trả lời yêu cầu Đã
   giải quyết thì mở lại, đội hỗ trợ trả lời yêu cầu Mở thì sang Đang xử lý; yêu cầu Đã đóng là 409 `SUPPORT_TICKET_CLOSED`). Danh sách không
@@ -2108,7 +2109,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   sửa theo kho, ô đang sửa giữ chữ đang nhập (`reset(…, { keepDirtyValues: true })`) — lưu không ghi đè việc của người khác. Mở khung và lưu xong thì
   tiêu đề của khung nhận focus; đóng khung thì focus về liên kết tên của dòng đó. Người đang nhận việc mà tài khoản đã khoá vẫn hiện tên trong ô
   (mục mờ, không chọn lại được); danh sách người nhận việc tải lỗi thì ô có gợi ý tải lại; tên gói không đọc được thì hiện mã gói. Danh sách người
-  nhận việc (`listContactHandlers`, chỉ người đang hoạt động) chưa có ở BE. Khoá `['contacts', …]`, `staleTime: 0`; gửi và sửa làm
+  nhận việc (`listContactHandlers`, chỉ người đang hoạt động) nối backend đọc `GET /api/contact-guests/handlers`. Khoá `['contacts', …]`, `staleTime: 0`; gửi và sửa làm
   mới `['contacts']`, `['audit']`.
 
 ### Kiểm thử
