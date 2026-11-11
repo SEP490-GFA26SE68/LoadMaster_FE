@@ -49,6 +49,7 @@ export const serverAudit = {
     PICKUP_REJECTED: 'Từ chối yêu cầu nhận hàng dọc đường',
     PICKUP_LOADED: 'Nhận hàng dọc đường lên xe',
     PICKUP_DELIVERED: 'Giao hàng nhận dọc đường',
+    TRIP_STOPS_REORDERED: 'Đổi thứ tự điểm giao khi xe đang chạy',
   },
   /** Mã `entityName` của máy chủ. */
   entities: {

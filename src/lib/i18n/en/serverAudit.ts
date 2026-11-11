@@ -47,6 +47,7 @@ export const serverAudit = {
     PICKUP_REJECTED: 'Rejected an en-route pickup request',
     PICKUP_LOADED: 'Loaded en-route pickup packages',
     PICKUP_DELIVERED: 'Delivered en-route pickup packages',
+    TRIP_STOPS_REORDERED: 'Reordered delivery stops on a running trip',
   },
   entities: {
     Trip: 'Trip',

@@ -22,7 +22,7 @@ export const SERVER_AUDIT_ACTIONS = [
   'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED', 'DELIVERY_ISSUE_REPORTED', 'MANUAL_CONFIRM_REQUESTED',
   'MANUAL_CONFIRM_APPROVED', 'MANUAL_CONFIRM_REJECTED', 'TRIP_EXCEPTION_REPORTED', 'TRIP_EXCEPTION_ESCALATED', 'DEADLINE_RENEGOTIATED',
   'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED', 'PICKUP_APPROVED', 'PICKUP_REJECTED',
-  'PICKUP_LOADED', 'PICKUP_DELIVERED',
+  'PICKUP_LOADED', 'PICKUP_DELIVERED', 'TRIP_STOPS_REORDERED',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 
@@ -84,6 +84,7 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   PICKUP_REJECTED: { icon: PackagePlus, tone: 'amber' },
   PICKUP_LOADED: { icon: PackagePlus, tone: 'blue' },
   PICKUP_DELIVERED: { icon: PackagePlus, tone: 'green' },
+  TRIP_STOPS_REORDERED: { icon: Route, tone: 'blue' },
 }
 
 /** Dòng của bảng nhật ký máy chủ, chữ đã dịch. Đối tượng không có liên kết: máy chủ chỉ trả mã số và mã chuyến, màn chỉ ghi chữ. */
