@@ -59,7 +59,14 @@ export function NavRail() {
   const [supportOpen, setSupportOpen] = useState(false)
   const [customerPlanOpen, setCustomerPlanOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
-  const items = user ? navItemsFor(user.role) : []
+  let items = user ? navItemsFor(user.role) : []
+
+  // Nếu Company Admin có gói cước hết hạn: Chỉ hiển thị duy nhất mục "Gói và Credit" (/goi-cuoc)
+  if (user?.subscriptionExpired && user.role === 'companyAdmin') {
+    items = items.filter((item) => item.to === '/goi-cuoc')
+  }
+
+  const homePath = user?.subscriptionExpired && user.role === 'companyAdmin' ? '/goi-cuoc' : logoPath(user?.role)
 
   async function handleSignOut() {
     await signOut()
@@ -69,7 +76,7 @@ export function NavRail() {
   return (
     <header className="sky flex h-15 flex-none items-center gap-5 px-4 xl:gap-6 xl:px-shell">
       <Link
-        to={logoPath(user?.role)}
+        to={homePath}
         aria-label={t('nav.home')}
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >
@@ -117,6 +124,16 @@ export function NavRail() {
       ) : null}
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
+        {user?.subscriptionExpired && user.role === 'companyAdmin' && can(user.role, 'support.create') ? (
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="flex h-9 items-center gap-1.5 rounded-md border border-cyan-300/40 bg-cyan-950/50 px-3 text-small font-semibold text-sky-text transition-colors hover:bg-cyan-900/60 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          >
+            <LifeBuoy className="size-4 text-cyan-200" strokeWidth={1.75} aria-hidden />
+            <span>Yêu cầu hỗ trợ</span>
+          </button>
+        ) : null}
         {user && SUPPORT_SOURCE.planAssign && can(user.role, 'support.handle') ? (
           <button
             type="button"
@@ -127,7 +144,7 @@ export function NavRail() {
             <span>{t('nav.changeCustomerPlan')}</span>
           </button>
         ) : null}
-        <QuickSearch />
+        {!user?.subscriptionExpired ? <QuickSearch /> : null}
         <LanguageMenu />
         <NotificationBell />
         <EtaRiskWatcher />

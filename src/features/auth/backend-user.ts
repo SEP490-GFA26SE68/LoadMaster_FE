@@ -10,7 +10,9 @@ export type BackendUserProfile = {
   readonly phoneNumber: string | null
   readonly companyId: number | null
   readonly userRoleType: string
+  readonly userType?: string
   readonly status: string
+  readonly subscriptionExpired?: boolean
 }
 
 /**
@@ -48,5 +50,14 @@ export function isActiveOnBackend(status: string): boolean {
 export function userFromBackend(profile: BackendUserProfile, role: Role, standIn: User): User {
   const { depot: _sampleDepot, ...sample } = standIn
   const status = profile.status === 'FLAGGED' ? 'flagged' : 'active'
-  return { ...sample, role, fullName: profile.fullName, email: profile.email, phone: profile.phoneNumber ?? '', status }
+  return {
+    ...sample,
+    role,
+    fullName: profile.fullName,
+    email: profile.email,
+    phone: profile.phoneNumber ?? '',
+    status,
+    userType: profile.userType === 'TRIAL' ? 'TRIAL' : 'OFFICIAL',
+    subscriptionExpired: Boolean(profile.subscriptionExpired),
+  }
 }
