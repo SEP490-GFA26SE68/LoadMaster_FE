@@ -13,8 +13,8 @@ import { SEED_PLACES } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
 import { placeAddress, searchPlaces } from './place-search'
 
-/** Vai trò máy chủ cho tìm địa chỉ (`DISPATCHER`, `MANAGER`). */
-const SERVER_SEARCH_ROLES: ReadonlySet<Role> = new Set<Role>(['dispatcher', 'companyManager'])
+/** Vai trò máy chủ cho tìm địa chỉ (`DISPATCHER`, `MANAGER`, `DRIVER`, `ADMIN`, `SYSTEM_ADMIN`). */
+const SERVER_SEARCH_ROLES: ReadonlySet<Role> = new Set<Role>(['dispatcher', 'companyManager', 'driver', 'companyAdmin', 'systemAdmin'])
 
 /** Có ô tìm địa chỉ không: kho mẫu luôn có (địa danh mẫu); đăng nhập bằng máy chủ thì chỉ vai trò máy chủ cho tìm — vai trò khác gõ toạ độ. */
 export function addressSearchAvailable(): boolean {

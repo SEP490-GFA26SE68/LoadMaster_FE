@@ -17,7 +17,8 @@ vi.mock('@/features/auth/auth-api', () => ({
 
 /**
  * Tìm địa chỉ khi đăng nhập bằng máy chủ: gợi ý `GET /api/places/autocomplete`, toạ độ `GET /api/places/detail` (máy chủ gọi Goong).
- * Máy chủ chỉ cho điều phối viên và quản lý công ty tìm — vai trò khác không có ô tìm, nên không gọi máy chủ nào.
+ * Máy chủ cho điều phối viên, quản lý công ty, tài xế, quản trị công ty và quản trị hệ thống tìm — vai trò khác không có ô tìm, nên
+ * không gọi máy chủ nào.
  */
 function signIn(role: Role) {
   session.user = { id: '7', fullName: 'Lê Thị Điều Phối', email: 'dieuphoi@longbinh.vn', phone: '', role, status: 'active', lastActiveAt: null }
@@ -34,11 +35,11 @@ afterEach(() => {
 
 test('ô tìm theo vai trò máy chủ cho tìm; chưa đăng nhập bằng máy chủ thì luôn có (địa danh mẫu)', () => {
   expect(addressSearchAvailable()).toBe(true)
-  signIn('dispatcher')
-  expect(addressSearchAvailable()).toBe(true)
-  signIn('companyManager')
-  expect(addressSearchAvailable()).toBe(true)
-  for (const role of ['driver', 'warehouse', 'companyAdmin', 'systemAdmin'] as const) {
+  for (const role of ['dispatcher', 'companyManager', 'driver', 'companyAdmin', 'systemAdmin'] as const) {
+    signIn(role)
+    expect(addressSearchAvailable()).toBe(true)
+  }
+  for (const role of ['warehouse', 'systemManager', 'systemSupporter'] as const) {
     signIn(role)
     expect(addressSearchAvailable()).toBe(false)
   }

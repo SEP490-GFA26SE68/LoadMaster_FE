@@ -322,7 +322,7 @@ src/
                         QrCode / QrScanDialog (vẽ và quét mã QR), PackageVerify (đối chiếu kiện ba mức), CargoArtwork (thùng xe đẳng cự
                         xếp dần của màn đăng nhập, hình dự phòng của khung 3D trang giới thiệu)...
   components/map/       bản đồ dùng chung: RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl; CoordinatePicker
-                        (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ — chưa có ở BE, Q-20)
+                        (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ, qua `/api/places/*` khi nối máy chủ)
   features/
     auth/               đăng nhập, phiên, RequireAuth, đặt mật khẩu mới `/quen-mat-khau`
     trips/              danh sách, chi tiết, form chuyến, so sánh phương án
@@ -1487,7 +1487,8 @@ phẩy); form giữ một trường `{ lat, lng }` qua `Controller` và chặn l
 con trỏ rời nhóm ô, hoặc `showErrors` khi form đã bấm lưu). Ba lối nhập: danh sách **địa danh mẫu** (`SEED_PLACES` ở `seed-places.ts`, **toạ độ
 gần đúng ở mức khu vực**; tìm bỏ dấu `searchPlaces`, combobox + listbox), gõ tay, và bấm lên bản đồ (`CoordinatePickerMap`, chunk lười) **chỉ
 khi có `VITE_GOONG_MAPTILES_KEY` và WebGL**. Tìm địa chỉ đi qua `places-api.ts`: kho mẫu tìm trong địa danh mẫu; đăng nhập bằng máy chủ thì `GET /api/places/autocomplete` · `/detail`
-(máy chủ gọi Goong, trình duyệt không), chỉ điều phối viên và quản lý công ty — vai trò khác không có ô tìm (`addressSearchAvailable`), gõ toạ độ.
+(máy chủ gọi Goong, trình duyệt không), cho điều phối viên, quản lý công ty, tài xế, quản trị công ty và quản trị hệ thống — vai trò khác
+không có ô tìm (`addressSearchAvailable`), gõ toạ độ.
 
 **Lập chuyến** (FE-4b-04, D-73, D-76): `Trip` có `departureAt` (ISO) và `depot` (`CompanyDepot`, mặc định kho của công ty); `scheduledDate`
 luôn là ngày của `departureAt` theo giờ Việt Nam — đổi giờ xuất phát thì ngày chạy theo, chỉ đổi ngày thì giữ giờ trong ngày; hai trường không
