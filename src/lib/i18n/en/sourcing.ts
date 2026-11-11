@@ -313,10 +313,6 @@ export const sourcing = {
     pdfLimit: 'A label PDF holds at most {max} packages.',
   },
   backend: {
-    dispatcherOnly: 'The server currently lets only dispatchers read the package pool, so your account cannot see packages here yet.',
-    lookupDispatcherOnly: 'The server currently lets only dispatchers look up packages, so your account cannot look them up here yet.',
-    labelsDispatcherOnly: 'The server currently lets only dispatchers read packages for labels, so your account cannot print labels here yet.',
-    packageTypes: 'The server has not opened the package type catalog to dispatchers yet, so this screen has no data while connected to the server.',
     tripLabels: 'Labels by trip need the server trip data, which is not connected yet. Select packages on the Package pool screen to print labels.',
     sourceNote: 'Packages are read from the server. The server list has no width, height, destination, flags or delivery requirement yet, so the table shows the length only; open a package to see its destination and trip.',
   },

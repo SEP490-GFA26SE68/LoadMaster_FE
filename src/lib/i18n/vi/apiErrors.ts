@@ -76,7 +76,7 @@ export const apiErrors = {
   // Chuyến, tuyến, phân tách hàng
   TRIP_NOT_FOUND: 'Không tìm thấy chuyến.',
   DELIVERY_REQUIREMENT_NOT_FOUND: 'Không tìm thấy yêu cầu giao.',
-  DELIVERY_REQUIREMENT_NOT_PENDING: 'Yêu cầu giao đã vào chuyến, không sửa được nữa.',
+  DELIVERY_REQUIREMENT_NOT_PENDING: 'Chỉ xoá được yêu cầu còn chờ xếp chuyến và chưa giữ kiện nào.',
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'Yêu cầu giao không chuyển được sang trạng thái này.',
   CARGO_SEGREGATION_CONFLICT: 'Chuyến đã có loại hàng khác — không chở chung được.',
   DELIVERY_STOP_NOT_FOUND: 'Không tìm thấy điểm giao.',
@@ -130,6 +130,8 @@ export const apiErrors = {
   SEAL_NOT_ALLOWED: 'Chỉ ghi được số seal khi đã xếp xong và xe chưa xuất phát.',
   PACKAGE_FLAGGED: 'Kiện đang mang cờ không tìm thấy hoặc hư hỏng — gỡ cờ trước khi đưa kiện vào chuyến.',
   PACKAGE_NOT_FLAGGED: 'Kiện không mang cờ nào để gỡ.',
+  PACKAGE_NOT_AVAILABLE: 'Kiện không còn chờ ở kho kiện nên không chọn được cho yêu cầu giao.',
+  PACKAGE_IN_OTHER_REQUIREMENT: 'Kiện đã thuộc một yêu cầu giao khác.',
 
   // Giao hàng, giám sát
   NO_PENDING_DELIVERY_STOP: 'Chuyến không còn điểm giao nào chờ giao.',

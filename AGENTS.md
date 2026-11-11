@@ -194,9 +194,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Tìm nhanh theo vai trò** (FE-0-04): quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm chuyến, kiện, yêu cầu giao
   (`requirements.view`), kho kiện (`packages.view`), xe; điều phối viên như quản lý công ty; nhân viên kho tìm kho kiện và loại kiện
   (`packages.manage`); tài xế, quản lý nền tảng, hỗ trợ khách hàng không có nhóm nào nên không có nút và không bắt Ctrl+K. `search-api.ts` chỉ
-  gọi hàm kho mà nhóm của vai trò cần; kho kiện nối backend chỉ người giữ `packages.manage` (nhân viên kho) đọc qua lối của developer nên
-  nhóm kho kiện bỏ với vai trò khác (`quickSearchGroups`, `packagePoolReachable`); nhóm xe theo quyền ở cả hai nguồn; chuyến nối backend thì
-  nhóm chuyến đọc máy chủ, nhóm kiện của chuyến bỏ.
+  gọi hàm kho mà nhóm của vai trò cần; kho kiện, loại kiện và đội xe có ở cả hai nguồn nên chỉ theo quyền (`quickSearchGroups`); chuyến nối
+  backend thì nhóm chuyến đọc máy chủ, nhóm kiện của chuyến bỏ.
 
 **Chuông thông báo theo vai trò**
 
@@ -1157,7 +1156,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
   `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
-  nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
+  nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới). Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
   (còn đọc kho mẫu) hiện mã chuyến dạng chữ, vì Chi tiết chuyến của máy chủ không tìm được mã của kho mẫu.
 - **Chỉ `lib/api-client.ts` gọi `fetch` tới backend** (`api()`): gắn token của phiên, giới hạn thời gian, mở phong bì
@@ -1232,11 +1231,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `SUPPORT_SOURCE` bỏ trao đổi, khung công ty, giờ cập nhật, thêm trạng thái `RESOLVED`, `resolutionNote` chỉ đọc. `ticketsToDisplay` chỉ
   chọn yêu cầu để vẽ (hỗ trợ khách hàng thấy hết, người khác chỉ yêu cầu của mình) — **bộ lọc hiển thị, không phải kiểm quyền**: quyền xem
   do backend quyết.
-- **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): `/api/packages*` chỉ điều phối viên gọi được — quản lý công ty và
-  nhân viên kho thấy câu lý do (`sourcing.backend.*`), màn kho bỏ nút tra cứu và liên kết in lại nhãn (`packagePoolReachable`). Điểm đến và
+- **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): máy chủ cho nhân viên kho, điều phối viên, quản lý công ty đọc
+  kiện và loại kiện (`GET /api/packages`, `GET /api/package-types`) — đúng ba vai trò có `packages.view` (`packagePoolReachable`); thêm, sửa, xoá,
+  nhập file kiện cho nhân viên kho và điều phối viên (nút ghi của màn vẫn theo `packages.manage`), ghi loại kiện cho nhân viên kho. Điểm đến và
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
-  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó. Chỉ xoá kiện Đã nhập; không sửa kiện, không loại kiện, không liên kết tới chuyến.
+  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó; nhãn theo chuyến chưa có (`PACKAGE_POOL_SUPPORT.tripLabels`). Chỉ xoá kiện Đã nhập; không liên kết tới chuyến.
   Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
@@ -1339,9 +1339,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
-  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Tạo, sửa, xoá, gia hạn đòi
-  `DELIVERY_DEMAND_MANAGE` mà máy chủ chưa giao cho vai trò nào, gỡ khỏi chuyến chưa có endpoint: một bảng `REQUIREMENT_SERVER_SUPPORT`
-  (`requirements-capabilities.ts`) ẩn các nút đó, đổi cờ khi máy chủ có quyền. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
+  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Điều phối viên tạo, sửa,
+  xoá, gia hạn (`DELIVERY_DEMAND_MANAGE`; `requirement-writes-api.ts`) và gỡ khỏi chuyến (`DELETE /api/trips/{tripId}/delivery-requirements/{id}`;
+  chuyến đã sang pha vận hành là `TRIP_NOT_EDITABLE`) — `REQUIREMENT_SERVER_SUPPORT` bật cả hai. Form chọn kiện từ kho kiện của máy chủ
+  (`requirement-pool-api.ts`: kiện còn chờ, không cờ, chưa thuộc yêu cầu khác; để trống được), sửa chỉ gửi tập kiện khi tập đổi; máy chủ kiểm lại
+  (`PACKAGE_FLAGGED`, `PACKAGE_NOT_AVAILABLE`, `PACKAGE_IN_OTHER_REQUIREMENT`). Xoá chỉ yêu cầu còn chờ và chưa giữ kiện nào (mục Xoá mờ kèm
+  lý do). Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu. Yêu cầu còn trong chuyến mà
   kho đã bỏ kiện của nó (máy chủ trả `shortDelivered`, `droppedPackageCount`) đọc là "Giao thiếu" (`PARTIAL`, suy lúc đọc như D-92); bỏ kiện
   cuối cùng thì máy chủ gỡ yêu cầu khỏi chuyến (về `PENDING`, điểm giao không còn kiện bị xoá). Máy chủ chưa có trạng thái hoàn trả của kiện.

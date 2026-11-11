@@ -1,6 +1,6 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm.
- *   chưa có ở BE: fetchSearchSources (kho kiện và loại kiện đọc qua `package-pool-api.ts`: GET /api/packages khi nối nhóm packages;
+ *   chưa có ở BE: fetchSearchSources (kho kiện và loại kiện đọc qua `package-pool-api.ts`: GET /api/packages, GET /api/package-types khi nối nhóm packages;
  *   chuyến đọc qua `trips-api.ts`: GET /api/trips khi nối nhóm trips; xe đọc qua `vehicles-api.ts`: GET /api/vehicles khi nối nhóm fleet;
  *   người dùng qua `users-api.ts`: GET /api/users khi nối nhóm users; yêu cầu giao: GET /api/delivery-requirements khi nối nhóm trips)
  */
@@ -65,6 +65,16 @@ async function backendPool(): Promise<SearchSources['pool']> {
   }
 }
 
+/** Loại kiện theo nguồn của màn Loại kiện; máy chủ từ chối (403) thì nhóm không có kết quả. */
+async function packageTypeSource(): Promise<PackageType[]> {
+  try {
+    return await fetchPackageTypes()
+  } catch (error) {
+    if (isApiError(error) && error.status === 403) return []
+    throw error
+  }
+}
+
 /**
  * Chuyến của máy chủ: chỉ mã và tên — danh sách không có tên điểm giao hay kiện, nên nhóm kiện của chuyến đã bị bỏ (`quickSearchGroups`).
  * Máy chủ từ chối vai trò (403) thì nhóm không có kết quả.
@@ -97,7 +107,8 @@ async function backendVehicles(): Promise<SearchSources['vehicles']> {
 export async function fetchSearchSources(groups: readonly SearchGroup[]): Promise<SearchSources> {
   const db = getMockDb()
   const wants = (group: SearchGroup) => groups.includes(group)
-  const sourcing = !POOL_ON_BACKEND && (wants('pool') || wants('packageTypes'))
+  // Kho mẫu ghép tên loại kiện vào dòng kiện; kiện của máy chủ không mang loại kiện nên chỉ nhóm loại kiện cần đọc loại kiện
+  const sourcing = wants('packageTypes') || (!POOL_ON_BACKEND && wants('pool'))
   const [trips, serverTrips, vehicles, users, requirements, packages, packageTypes] = await Promise.all([
     !TRIPS_ON_BACKEND && (wants('trips') || wants('packages')) ? db.listTrips() : [],
     TRIPS_ON_BACKEND && wants('trips') ? backendTrips() : null,
@@ -106,7 +117,7 @@ export async function fetchSearchSources(groups: readonly SearchGroup[]): Promis
     wants('users') ? fetchUsers() : [],
     !wants('requirements') ? [] : REQUIREMENTS_ON_BACKEND ? backendRequirements() : db.listDeliveryRequirements(),
     wants('pool') && !POOL_ON_BACKEND ? fetchPackages() : [],
-    sourcing ? fetchPackageTypes() : [],
+    sourcing ? packageTypeSource() : [],
   ])
   const pool = !wants('pool') ? [] : POOL_ON_BACKEND ? await backendPool() : mockPool(packages, packageTypes)
   return {

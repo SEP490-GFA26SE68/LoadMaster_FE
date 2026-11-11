@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { ApiError, connectApiAuth } from '@/lib/api-client'
 import {
   clearPackageFlag, confirmPackageImport, createPackage, deletePoolPackage, downloadPackageImportTemplate, exportPackageLabelsPdf, fetchPackageDetail,
-  fetchPackageLabels, fetchPackages, fetchPackageTypes, isUnknownPackage, lookupPackages, PACKAGE_POOL_SUPPORT, previewPackageImport,
+  fetchPackageLabels, fetchPackages, fetchPackageType, fetchPackageTypes, isUnknownPackage, lookupPackages, PACKAGE_POOL_SUPPORT, previewPackageImport,
   reportPackageFound, savePackageType, scanPackage,
 } from './package-pool-api'
 
@@ -186,14 +186,29 @@ test('PDF nhãn: POST mã số của kiện; quá 200 kiện bị chặn trướ
   expect(calls).toHaveLength(1)
 })
 
-test('phần backend chưa có: loại kiện rỗng, ghi loại kiện / gỡ cờ / báo tìm thấy không gọi mạng', async () => {
-  expect(await fetchPackageTypes()).toEqual([])
+test('loại kiện đọc từ máy chủ: cm nguyên, ba giới hạn đổi sang trường Spec', async () => {
+  const type = {
+    id: 4, companyId: 1, typeCode: 'PT-4', name: 'Thùng dễ vỡ', length: 60, width: 40, height: 30, weightKg: '2.5', maxStackingWeightKg: 0,
+    isFragile: true, rotationAllowed: false,
+  }
+  routes['GET /api/package-types'] = { body: envelope(page([type])) }
+  routes['GET /api/package-types/4'] = { body: envelope(type) }
+  const [listed] = await fetchPackageTypes()
+  expect(listed).toMatchObject({
+    id: '4', companyId: '1', name: 'Thùng dễ vỡ', lengthCm: 60, widthCm: 40, heightCm: 30, weightKg: 2.5, maxStackWeightKg: 0, rotationAllowed: false,
+    fragile: true, stackable: false, maxTopLoadKg: 0, allowedOrientations: ['LWH'], fragilityLevel: 'HIGH', keepUpright: false,
+  })
+  expect(await fetchPackageType('4')).toEqual(listed)
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['GET /api/package-types', 'GET /api/package-types/4'])
+})
+
+test('phần backend chưa có ở lớp này: ghi loại kiện (màn máy chủ tự ghi) / gỡ cờ / báo tìm thấy không gọi mạng', async () => {
   await expect(savePackageType({ name: 'Thùng', lengthCm: 1, widthCm: 1, heightCm: 1, weightKg: 1 } as never)).rejects.toThrow()
   await expect(clearPackageFlag('1', 'DAMAGED')).rejects.toThrow()
   await expect(reportPackageFound(TOKEN_1)).rejects.toThrow()
   expect(calls).toEqual([])
   expect(PACKAGE_POOL_SUPPORT).toMatchObject({
-    packageTypes: false, flags: false, history: false, fullSize: false, deletePackage: true, pdfLabels: true, dispatcherOnly: true, tripLinks: false,
+    flags: false, history: false, fullSize: false, deletePackage: true, pdfLabels: true, tripLinks: false,
     numericIds: true, serverTemplate: true, tripLabels: false, statuses: ['IMPORTED', 'ASSIGNED', 'LOADED', 'DELIVERED', 'RETURNED'], maxImportMb: 1,
   })
 })
