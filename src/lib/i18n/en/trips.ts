@@ -853,6 +853,7 @@ export const trips = {
   },
   server: {
     operations: 'Operations',
+    cancelReason: 'The trip was cancelled. Reason: {reason}',
     tripCode: 'Trip code',
     vehicle: 'Vehicle',
     driver: 'Driver',

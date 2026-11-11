@@ -927,6 +927,7 @@ export const trips = {
   /** Chi tiết chuyến của máy chủ (`BackendTripDetailPage`): thẻ thông tin vận hành. */
   server: {
     operations: 'Thông tin vận hành',
+    cancelReason: 'Chuyến đã huỷ. Lý do: {reason}',
     tripCode: 'Mã chuyến',
     vehicle: 'Xe vận chuyển',
     driver: 'Tài xế',
