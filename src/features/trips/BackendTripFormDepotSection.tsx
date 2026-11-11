@@ -14,6 +14,8 @@ type Props = {
   loading?: boolean
   selectedWarehouseId: string
   onWarehouseChange: (warehouseId: string) => void
+  /** Chữ của dòng giá trị rỗng; form sửa dùng "Giữ kho hiện tại". */
+  placeholder?: string
 }
 
 /** Mục 2 của form chuyến (bản của nhóm): chọn kho xuất phát trong danh sách kho của công ty; tên, địa chỉ, toạ độ chỉ đọc. */
@@ -24,6 +26,7 @@ export function BackendTripFormDepotSection({
   loading = false,
   selectedWarehouseId,
   onWarehouseChange,
+  placeholder,
 }: Props) {
   const t = useT()
   const errors = form.formState.errors.depot
@@ -62,7 +65,7 @@ export function BackendTripFormDepotSection({
             className="h-10 w-full rounded-md border border-border bg-bg px-3 text-body"
           >
             <option value="">
-              {t('tripWarehouse.placeholder')}
+              {placeholder ?? t('tripWarehouse.placeholder')}
             </option>
 
             {warehouses.map((warehouse) => (
