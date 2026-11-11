@@ -108,7 +108,7 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   expect(plan.queryByText('Giá trị tạm — chờ chốt')).toBeNull()
   expect(plan.queryByText('Tự gia hạn')).toBeNull()
   expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('1.200')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('Mỗi lần chạy tối ưu dùng 2 credit, kể cả chạy lại giữ kiện đã ghim.')).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 
   await waitFor(() => expect(rowsOf()).toHaveLength(2), SLOW)

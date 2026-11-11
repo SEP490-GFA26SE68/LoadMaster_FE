@@ -1,7 +1,7 @@
 import { Coins } from 'lucide-react'
 import { KpiTile } from '@/components/KpiTile'
 import { useFormat, useT } from '@/lib/i18n'
-import type { CreditBalance } from '@/lib/mock-db'
+import { BILLING_CONSTANTS, type CreditBalance } from '@/lib/mock-db'
 
 /**
  * Số dư credit của công ty (FE-8-03): gói không giới hạn ghi "Không giới hạn" thay vì số, kèm câu nói lần chạy tối ưu không trừ gì;
@@ -14,7 +14,7 @@ export function BalanceCard({ credit }: { credit: CreditBalance }) {
     <KpiTile
       label={t('billing.credit.balance')}
       value={credit.unlimited ? t('common.unlimitedCredits') : format.integer(credit.balance)}
-      note={credit.unlimited ? t('billing.credit.unlimitedNote') : t('billing.credit.note')}
+      note={credit.unlimited ? t('billing.credit.unlimitedNote') : t('billing.credit.note', { cost: BILLING_CONSTANTS.optimizationCost })}
       icon={Coins}
       tone="blue"
     />

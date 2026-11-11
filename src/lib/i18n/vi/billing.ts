@@ -82,7 +82,7 @@ export const billing = {
   },
   credit: {
     balance: 'Số dư',
-    note: 'Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.',
+    note: 'Mỗi lần chạy tối ưu dùng {cost} credit, kể cả chạy lại giữ kiện đã ghim.',
     unlimitedNote: 'Gói không giới hạn nên số dư không bị trừ khi chạy tối ưu.',
   },
   cancelDialog: {

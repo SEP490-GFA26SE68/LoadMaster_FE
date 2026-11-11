@@ -74,7 +74,7 @@ export const billing = {
   },
   credit: {
     balance: 'Balance',
-    note: 'Each optimisation run uses 2 credits; re-running costs 1 credit.',
+    note: 'Each optimisation run uses {cost} credits, including a re-run that keeps pinned packages.',
     unlimitedNote: 'The plan is unlimited, so the balance is not reduced by optimisation runs.',
   },
   cancelDialog: {
