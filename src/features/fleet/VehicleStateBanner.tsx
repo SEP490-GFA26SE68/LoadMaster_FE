@@ -8,10 +8,9 @@ import type { FleetVehicleState } from './vehicle-status'
 /**
  * Thông báo trạng thái ở trang cấu hình xe (LM-089, V2.3 `Banner`): xe đang chạy chuyến thì nói chuyến nào và vì sao form bị khoá
  * (liên kết tới chuyến dồn phải); xe bảo dưỡng thì nói từ lúc nào và ghi chú; xe ngừng sử dụng (chỉ backend có) thì nói vậy. Xe sẵn
- * sàng, và trạng thái thiếu chuyến hay ghi chú (backend không trả), không có thông báo. Mã chuyến đang dùng xe chỉ có ở kho mẫu: chuyến
- * đọc backend thì không có liên kết (`tripLinkable`).
+ * sàng không có thông báo. Mã chuyến là liên kết khi màn chuyến đọc cùng nguồn với xe (`tripLinkable`, `serverSource`).
  */
-export function VehicleStateBanner({ state }: { state: FleetVehicleState }) {
+export function VehicleStateBanner({ state, serverSource = false }: { state: FleetVehicleState; serverSource?: boolean }) {
   const t = useT()
   const format = useFormat()
 
@@ -20,7 +19,7 @@ export function VehicleStateBanner({ state }: { state: FleetVehicleState }) {
       <Banner
         tone="info"
         icon={Lock}
-        action={tripLinkable(false) ? (
+        action={tripLinkable(serverSource) ? (
           <Link to={`/chuyen/${state.tripId}`} className="rounded-sm hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             {t('fleet.banner.openTrip', { tripId: state.tripId })}
           </Link>

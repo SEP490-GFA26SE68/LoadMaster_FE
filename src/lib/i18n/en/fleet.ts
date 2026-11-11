@@ -88,6 +88,9 @@ export const fleet = {
     obstaclesCount: { one: '{count} zone', other: '{count} zones' },
     axlesHint: 'optional, used to estimate axle load',
     detailNotAvailable: 'The details of this vehicle could not be read.',
+    edit: 'Edit vehicle',
+    cancelEdit: 'Cancel editing',
+    retiredInstead: 'Vehicle {name} is part of past trips, so it was retired instead',
   },
   preview: {
     title: '3D preview',
@@ -176,6 +179,7 @@ export const fleet = {
   remove: {
     title: 'Delete vehicle {name}?',
     description: 'The vehicle is removed from the fleet. This cannot be undone.',
+    descriptionServer: 'A vehicle that never ran a trip is deleted; one with delivered or cancelled trips is retired to keep the history.',
     cancel: 'Cancel',
     confirm: 'Delete vehicle',
   },

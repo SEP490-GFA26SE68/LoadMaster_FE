@@ -1,16 +1,24 @@
 /**
- * Hàm → endpoint backend (FE-0-09). Nhóm `fleet` nối backend (`usesBackend('fleet')`, thân hàm ở `fleet-backend-api.ts`), chỉ phần đọc:
- *   fetchVehicles      → GET /api/vehicles · GET /api/vehicle-types
- *   fetchVehicle       → GET /api/vehicles/{id}/config
- *   fetchVehicleStates → GET /api/vehicles
- *   chưa có ở BE: saveVehicle, deleteVehicle, saveVehicleMaintenance
+ * Hàm → endpoint backend (FE-0-09). Nhóm `fleet` nối backend (`usesBackend('fleet')`, thân hàm ở `fleet-backend-api.ts`):
+ *   fetchVehicles          → GET /api/vehicles · GET /api/vehicle-types
+ *   fetchVehicle           → GET /api/vehicles/{id}/config
+ *   fetchVehicleStates     → GET /api/vehicles
+ *   deleteVehicle          → DELETE /api/vehicles/{id}
+ *   saveVehicleMaintenance → POST /api/vehicles/{id}/maintenance · DELETE /api/vehicles/{id}/maintenance
+ *   saveVehicle            → màn máy chủ dùng `backend/vehicles-api.ts` (POST /api/vehicles, PUT /api/vehicles/{id})
  */
 
 import type { VehicleConfig } from '@/domain/models'
 import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
-import { getMockDb, type VehicleState } from '@/lib/mock-db'
-import { readBackendVehicle, readBackendVehicles, readBackendVehicleStates } from './fleet-backend-api'
+import { getMockDb } from '@/lib/mock-db'
+import {
+  deleteBackendVehicle,
+  readBackendVehicle,
+  readBackendVehicles,
+  readBackendVehicleStates,
+  setBackendVehicleMaintenance,
+} from './fleet-backend-api'
 import type { FleetVehicle, FleetVehicleState } from './vehicle-status'
 
 /**
@@ -21,11 +29,11 @@ import type { FleetVehicle, FleetVehicleState } from './vehicle-status'
 const ON_BACKEND = usesBackend('fleet')
 
 /**
- * Việc Đội xe và Loại xe làm được với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend chỉ có phần đọc:
- * danh sách xe kèm trạng thái, cấu hình một xe (thùng hàng, vật cản, trục của loại xe), danh sách loại xe và loại của từng xe. Backend
- * chưa có — màn ẩn: thêm / sửa / xoá xe, bảo dưỡng, thêm / sửa / xoá loại xe, đổi loại của xe, chuyến đang dùng xe, ghi chú bảo dưỡng,
- * khoảng hở quanh kiện. Điều phối viên và quản lý công ty đọc được xe và loại xe (backend `VEHICLES_READ`, `VEHICLE_TYPES_READ`) —
- * đúng hai vai trò có `fleet.view`, nên màn mở theo quyền đó như kho mẫu.
+ * Việc Đội xe và Loại xe làm được với nguồn dữ liệu đang dùng (D-20: không có nút giả). Kho mẫu làm được hết. Backend có thêm, sửa,
+ * xoá xe (xe đã có chuyến thì máy chủ chuyển Ngừng sử dụng), bảo dưỡng, thêm / sửa / xoá loại xe, đổi loại của xe, chuyến đang dùng xe
+ * và ghi chú bảo dưỡng — màn của nhóm `./backend` dùng; form xe của máy chủ chỉ có tên, biển số, loại xe vì thùng hàng là của loại xe.
+ * Backend chưa có khoảng hở quanh kiện. Điều phối viên và quản lý công ty đọc được xe và loại xe (backend `VEHICLES_READ`,
+ * `VEHICLE_TYPES_READ`) — đúng hai vai trò có `fleet.view`, nên màn mở theo quyền đó như kho mẫu.
  */
 export type FleetCapabilities = {
   /** Thêm, sửa, xoá xe và loại xe, bảo dưỡng, đổi loại của xe. */
@@ -39,8 +47,8 @@ export type FleetCapabilities = {
 }
 
 export const FLEET_CAPABILITIES: FleetCapabilities = {
-  write: !ON_BACKEND,
-  stateDetails: !ON_BACKEND,
+  write: true,
+  stateDetails: true,
   clearance: !ON_BACKEND,
   retired: ON_BACKEND,
 }
@@ -60,23 +68,25 @@ export function fetchVehicle(id: string): Promise<FleetVehicle> {
   return getMockDb().getVehicle(id)
 }
 
-/** Xe chưa có mã (`id` rỗng) là xe mới: kho cấp mã `VEHICLE-NNN` kế tiếp. */
-// chưa có ở BE
+/**
+ * Xe chưa có mã (`id` rỗng) là xe mới: kho cấp mã `VEHICLE-NNN` kế tiếp. Xe của máy chủ không mang thùng hàng riêng (thùng là của loại
+ * xe), nên form cấu hình xe của kho mẫu không ghi lên máy chủ: màn máy chủ ghi qua `backend/vehicles-api.ts`.
+ */
 export function saveVehicle(vehicle: VehicleConfig): Promise<VehicleConfig> {
   if (ON_BACKEND) return unsupported()
   const { id, ...input } = vehicle
   return id === '' ? getMockDb().createVehicle(input) : getMockDb().updateVehicle(vehicle)
 }
 
-// chưa có ở BE
+// DELETE /api/vehicles/{id}
 export function deleteVehicle(id: string): Promise<void> {
-  if (ON_BACKEND) return unsupported()
+  if (ON_BACKEND) return deleteBackendVehicle(id)
   return getMockDb().deleteVehicle(id)
 }
 
 /**
  * Trạng thái mọi xe (D-53): đang chạy suy từ chuyến `loading`…`delivering`, bảo dưỡng do người đặt. Xe đang chạy kèm pha của chuyến
- * (đọc từ danh sách chuyến, chỉ khi có xe đang chạy) để danh sách ghi chuyến đó đang ở bước nào. Backend chỉ trả trạng thái.
+ * (đọc từ danh sách chuyến, chỉ khi có xe đang chạy) để danh sách ghi chuyến đó đang ở bước nào. Backend trả kèm chuyến và pha của nó.
  */
 // GET /api/vehicles
 export async function fetchVehicleStates(): Promise<FleetVehicleState[]> {
@@ -91,9 +101,9 @@ export async function fetchVehicleStates(): Promise<FleetVehicleState[]> {
   })
 }
 
-/** Bật bảo dưỡng kèm ghi chú, hoặc tắt khi `note` là `null`. Xe đang chạy chuyến: `VEHICLE_LOCKED`. */
-// chưa có ở BE
-export function saveVehicleMaintenance(id: string, note: string | null): Promise<VehicleState> {
-  if (ON_BACKEND) return unsupported()
+/** Bật bảo dưỡng kèm ghi chú, hoặc tắt khi `note` là `null`. Xe đang chạy chuyến: `VEHICLE_LOCKED` (máy chủ: `VEHICLE_BUSY`). */
+// POST /api/vehicles/{id}/maintenance · DELETE /api/vehicles/{id}/maintenance
+export function saveVehicleMaintenance(id: string, note: string | null): Promise<FleetVehicleState> {
+  if (ON_BACKEND) return setBackendVehicleMaintenance(id, note)
   return getMockDb().setVehicleMaintenance(id, note)
 }

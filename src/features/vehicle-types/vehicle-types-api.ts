@@ -1,12 +1,14 @@
 /**
- * Hàm → endpoint backend (FE-0-09). Nhóm `fleet` nối backend (`usesBackend('fleet')`, thân hàm ở `fleet/fleet-backend-api.ts`), chỉ phần đọc:
+ * Hàm → endpoint backend (FE-0-09). Nhóm `fleet` nối backend (`usesBackend('fleet')`, thân hàm ở `fleet/fleet-backend-api.ts`):
  *   fetchVehicleTypes          → GET /api/vehicle-types · GET /api/vehicles
  *   fetchVehicleAssignmentRows → GET /api/vehicles
- *   chưa dùng ở màn: saveVehicleType → POST /api/vehicle-types (tạo)
- *   chưa có ở BE: saveVehicleType (sửa), deleteVehicleType, setVehicleType, fetchVehicleTypeAssignments
+ *   deleteVehicleType          → DELETE /api/vehicle-types/{id}
+ *   màn máy chủ ghi qua `backend/vehicle-types-api.ts` (POST, PUT /api/vehicle-types, kèm cửa và vật cản): saveVehicleType ở đây không
+ *   có cửa, vật cản nên không ghi lên máy chủ; đổi loại của xe là PUT /api/vehicles/{id} ở màn xe. setVehicleType,
+ *   fetchVehicleTypeAssignments: chưa có ở BE
  */
 
-import { readBackendAssignments, readBackendVehicleTypes } from '@/features/fleet/fleet-backend-api'
+import { deleteBackendVehicleType, readBackendAssignments, readBackendVehicleTypes } from '@/features/fleet/fleet-backend-api'
 import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import { compareText } from '@/lib/list-filter'
@@ -65,15 +67,15 @@ export async function fetchVehicleAssignmentRows(): Promise<VehicleAssignmentRow
 }
 
 /** `id` vắng là loại mới (`VT-NNN`). Sai dữ liệu: `VEHICLE_TYPE_INVALID` kèm tên trường. */
-// POST /api/vehicle-types (tạo, chưa dùng ở màn) · sửa: chưa có ở BE
+// màn máy chủ: backend/vehicle-types-api.ts
 export function saveVehicleType(input: VehicleTypeInput, id?: string): Promise<VehicleType> {
   if (ON_BACKEND) return unsupported()
   return id === undefined ? getMockDb().createVehicleType(input) : getMockDb().updateVehicleType(id, input)
 }
 
-// chưa có ở BE
+// DELETE /api/vehicle-types/{id}
 export function deleteVehicleType(id: string): Promise<void> {
-  if (ON_BACKEND) return unsupported()
+  if (ON_BACKEND) return deleteBackendVehicleType(id)
   return getMockDb().deleteVehicleType(id)
 }
 

@@ -180,4 +180,17 @@ export const apiErrors = {
   PICKUP_PACKAGE_NOT_AT_STOP: 'This package is not picked up at the current stop.',
   PICKUP_PACKAGE_ALREADY_PICKED: 'This package is already on the vehicle.',
   PICKUP_STOP_INCOMPLETE: 'Some pickup packages are not verified onto the vehicle yet — the pickup stop cannot be completed.',
+  // Fleet, vehicle types: edit, delete, maintenance
+  VEHICLE_IN_USE: 'The vehicle is still on an unfinished trip, so it cannot be deleted.',
+  VEHICLE_BUSY: 'The vehicle is serving a trip (loading or in transit), so it cannot be changed yet.',
+  VEHICLE_RETIRED: 'The vehicle is retired and read-only.',
+  VEHICLE_TYPE_IN_USE: 'Vehicles still use this type, so it cannot be deleted. Change their type first.',
+  LICENSE_PLATE_ALREADY_EXISTS: 'Another vehicle already has this licence plate.',
+  // Trip report, reordering stops while the vehicle runs
+  TRIP_REPORT_NOT_AVAILABLE: 'This trip has no report yet: only delivered trips, or trips cancelled while in transit, have one.',
+  TRIP_NOT_IN_TRANSIT: 'The trip is no longer in transit.',
+  STOP_ORDER_INVALID: 'The stop order is not valid: it must list exactly the stops of the trip, in a different order.',
+  STOP_NOT_MOVABLE: 'A stop is completed or the vehicle has reached it, so it cannot move.',
+  PICKUP_AFTER_DELIVERY: 'A pickup stop must come before the delivery stop of the same request.',
+  STOP_ORDER_BLOCKS_CARGO: 'In this order a package is fully blocked by packages delivered later and cannot be unloaded. The stop order stays as it was.',
 } satisfies Dictionary<typeof source>

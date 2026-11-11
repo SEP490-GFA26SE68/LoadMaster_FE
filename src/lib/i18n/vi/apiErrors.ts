@@ -196,4 +196,17 @@ export const apiErrors = {
   PICKUP_PACKAGE_NOT_AT_STOP: 'Kiện này không phải kiện nhận ở điểm hiện tại.',
   PICKUP_PACKAGE_ALREADY_PICKED: 'Kiện này đã được nhận lên xe.',
   PICKUP_STOP_INCOMPLETE: 'Còn kiện nhận chưa đối chiếu lên xe — chưa hoàn tất điểm nhận được.',
+  // Đội xe, loại xe: sửa, xoá, bảo dưỡng
+  VEHICLE_IN_USE: 'Xe còn gắn với chuyến chưa kết thúc nên không xoá được.',
+  VEHICLE_BUSY: 'Xe đang phục vụ chuyến (đang xếp hàng hoặc đang vận chuyển) nên chưa đổi được.',
+  VEHICLE_RETIRED: 'Xe đã ngừng sử dụng, chỉ xem được.',
+  VEHICLE_TYPE_IN_USE: 'Loại xe còn gắn với xe nên không xoá được. Đổi loại cho các xe đó trước.',
+  LICENSE_PLATE_ALREADY_EXISTS: 'Biển số này đã có ở một xe khác.',
+  // Báo cáo chuyến, đổi thứ tự điểm khi xe đang chạy
+  TRIP_REPORT_NOT_AVAILABLE: 'Chuyến chưa có báo cáo: chỉ chuyến đã giao hoặc bị huỷ lúc đang vận chuyển mới có.',
+  TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển.',
+  STOP_ORDER_INVALID: 'Thứ tự điểm giao chưa hợp lệ: phải gồm đúng các điểm của chuyến và khác thứ tự hiện tại.',
+  STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
+  PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
+  STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
 } as const
