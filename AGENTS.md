@@ -1282,8 +1282,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   máy chủ; "Nhập hạn mới" (`RenegotiateDialog`) chọn yêu cầu giao của chuyến từ `GET /api/delivery-requirements` (lọc theo mã chuyến ở FE)
   ghép điểm giao của `GET /api/trips/{id}/detail` (chỉ yêu cầu còn điểm chưa hoàn tất; `listRenegotiableRequirements`), rồi gửi
   `POST …/exceptions/{eid}/renegotiate` (`requirementId` mã số, `newDeadline` giờ Việt Nam không múi giờ, `contactNote`; quản lý công ty, sự cố
-  `ESCALATED`). Phản hồi không mang lần gia hạn nên dòng không có câu "Đã nhập hạn mới — chờ điều phối viên…". `MONITORING_CAPABILITIES` ẩn
-  mở chuyến và thẻ yêu cầu nhận dọc đường (trừ khi `trips` cùng nguồn), đổi thứ tự điểm; hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
+  `ESCALATED`). Phản hồi không mang lần gia hạn nên dòng không có câu "Đã nhập hạn mới — chờ điều phối viên…". "Đổi thứ tự điểm" gửi
+  `POST /api/trips/{id}/stops/reorder` (`{ stopIds }` mã số điểm của máy chủ; chỉ điều phối viên, chuyến Đang vận chuyển — `TRIP_NOT_IN_TRANSIT`):
+  máy chủ kiểm cùng luật với kho mẫu, kiện bị che kín là 409 `STOP_ORDER_BLOCKS_CARGO` kèm `packages` / `stopIds` cùng dạng, che một phần trả
+  ở `partial`. `MONITORING_CAPABILITIES` ẩn
+  mở chuyến và thẻ yêu cầu nhận dọc đường (trừ khi `trips` cùng nguồn); hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
   đang chọn là bản máy chủ khi nhóm `driver` cũng nối (mục Tài xế), không thì không có. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
   đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế theo nguồn
   của nhóm `driver` (mục Tài xế); `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
@@ -1299,7 +1302,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `/chuyen/:mã/sua` (`BackendTripEditPage`, `PATCH /api/trips/{id}`: tên, ngày giờ xuất phát, xe, tài xế, kho xuất phát — chỉ gửi trường
   đã đổi, `backend-trip-edit.ts`; máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch, trạng thái khác thấy một dòng lý do; máy chủ không trả mã
   kho nên ô kho mặc định "Giữ kho hiện tại"), "Đổi xe" ở Chi tiết chuyến cho chuyến Đã lập kế hoạch (`ChangeVehicleDialog`, như ở Planner),
-  huỷ kèm lý do (`POST …/cancel`), gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
+  huỷ kèm lý do (`POST …/cancel`; Chi tiết chuyến máy chủ hiện lý do huỷ), gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
   `POST …/optimize-loading` (một lần chạy, một credit, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
@@ -1334,8 +1337,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, một credit, ba phương án A · B · C
   giữ đúng chỗ các kiện ghim; máy chủ trả `pinnedCount` (hộp chạy ghi "Giữ N kiện đã ghim"), bộ ghim không đứng vững là 400
   `PINNED_SET_INVALID` trước khi chạy, không trừ credit. Không dùng `POST /api/load-plans/{id}/rerun` (một phương án, chạy đồng bộ).
-  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`; báo cáo chuyến chuyển về
-  Chi tiết chuyến của máy chủ (`StoreTripRoute`). Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
+  `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`. **Báo cáo chuyến**
+  (`ServerTripReportPage`, `server-trip-report-api.ts`): `GET /api/trips/{id}/report` (điều phối viên, quản lý công ty) cho chuyến đã giao hoặc
+  huỷ lúc đang vận chuyển (`cancelledFromStatus` của Chi tiết chuyến; khác là `TRIP_REPORT_NOT_AVAILABLE`), cùng bố cục với bản kho mẫu,
+  không MOCK RESULT (trừ tuyến thay thế), không ô "Thời gian giao" (máy chủ không ghi giờ xe rời kho), cột Hoàn tất chỉ ghi đã xong hay
+  chưa; nút "Báo cáo chuyến" ở Chi tiết chuyến máy chủ cho mọi người xem được chuyến. Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
@@ -1380,16 +1386,21 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `CREDIT_LOW_BALANCE` tới `/goi-cuoc` khi có `billing.manage`. Máy chủ có nguồn cho: tài khoản (`USER_*`), duyệt phương án, xếp xong, sự cố
   giao, nguy cơ trễ hạn, hoàn thành / huỷ / đổi trạng thái / đổi tài xế của chuyến, xác nhận tay gửi / bị từ chối, sự cố cấp chuyến báo / chuyển
   quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit, nhận hàng dọc đường (điều phối viên: yêu cầu mới gửi `PICKUP_REQUESTED`; tài xế
-  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định). Chưa có nguồn nên không có ở chuông máy
-  chủ: kho báo thiếu / kiện hỏng / quyết định báo thiếu, tìm thấy kiện, đăng nhập sai, đổi thứ tự điểm. Chi tiết (`server-audit-parts.ts`, dùng
+  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định), đổi thứ tự điểm khi xe đang chạy (`TRIP_STOPS_REORDERED`, tài xế của
+  chuyến). Chưa có nguồn nên không có ở chuông máy chủ: kho báo thiếu / kiện hỏng / quyết định báo thiếu, tìm thấy kiện, đăng nhập sai. Chi tiết (`server-audit-parts.ts`, dùng
   chung với Nhật ký máy chủ) chỉ hiện mã đã có nhãn trong từ điển — mã lạ bị bỏ, không hiện mã thô; chip trạng thái "trước → sau" chỉ khi cả hai
   phía có nhãn.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe
   `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Điều phối viên và
-  quản lý công ty đọc được (`fleet.view`, như `VEHICLES_READ` của backend). `FLEET_CAPABILITIES` ẩn mọi lệnh ghi, chuyến đang dùng xe, ghi
-  chú bảo dưỡng, khoảng hở. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
+  quản lý công ty đọc được (`fleet.view`, như `VEHICLES_READ` của backend). Ghi theo `fleet.edit` qua `fleet/backend/`, `vehicle-types/backend/`:
+  sửa xe `PUT /api/vehicles/{id}`, xoá `DELETE /api/vehicles/{id}` (xe đã chạy chuyến xong thì máy chủ cho ngừng sử dụng thay vì xoá —
+  `outcome` `RETIRED`; còn chuyến chưa xong là 409 `VEHICLE_IN_USE`), bảo dưỡng `POST|DELETE /api/vehicles/{id}/maintenance` (xe đang chạy
+  chuyến: `VEHICLE_BUSY`), sửa / xoá loại xe `PUT|DELETE /api/vehicle-types/{id}` (loại còn xe gắn: `VEHICLE_TYPE_IN_USE`, mục Xoá mờ kèm lý
+  do); sửa xe hay giới hạn của loại làm phương án của chuyến Đã lập kế hoạch lỗi thời ở máy chủ; xe ngừng sử dụng chỉ đọc. Trạng thái xe ghi
+  chuyến đang dùng và ghi chú bảo dưỡng của máy chủ. `FLEET_CAPABILITIES` (`write`, `stateDetails` bật ở cả hai nguồn) chỉ còn ẩn khoảng hở;
+  hàm ghi dạng kho mẫu (`saveVehicle`, `saveVehicleType`, `setVehicleType`) vẫn từ chối `NOT_SUPPORTED`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
   (`doorUnknown`) và trang xe nói rõ.
 
 ### Lớp dữ liệu
@@ -1495,7 +1506,7 @@ không có ô tìm (`addressSearchAvailable`), gõ toạ độ.
 
 **Lập chuyến** (FE-4b-04, D-73, D-76): `Trip` có `departureAt` (ISO) và `depot` (`CompanyDepot`, mặc định kho của công ty); `scheduledDate`
 luôn là ngày của `departureAt` theo giờ Việt Nam — đổi giờ xuất phát thì ngày chạy theo, chỉ đổi ngày thì giữ giờ trong ngày; hai trường không
-làm phương án lỗi thời; kho đang xếp còn đổi giờ, không đổi kho đi (`TRIP_INVALID` khi giờ không đọc được hoặc kho thiếu tên / toạ độ). Form
+làm phương án lỗi thời; như máy chủ, kho đã bắt đầu xếp thì không đổi gì của chuyến nữa (`TRIP_LOCKED`; `TRIP_INVALID` khi giờ không đọc được hoặc kho thiếu tên / toạ độ). Form
 chuyến nhập ngày + giờ theo giờ Việt Nam (`departureAtOf`) và **không nhập điểm giao khi tạo**; form sửa chỉ đổi chữ của điểm đang có (điểm
 tự sinh khoá tên và địa chỉ). **Điểm giao tự sinh** (`trip-stops.ts`, thuần): đưa yêu cầu vào chuyến (`assignDeliveryRequirement(requirementId,
 tripId)`) gộp vào điểm có cùng khoá `stopKey` — địa chỉ chuẩn hoá (chữ thường, bỏ dấu câu, gộp khoảng trắng, **giữ dấu tiếng Việt**) + toạ độ
@@ -1758,8 +1769,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   kèm chip trạng thái, xe chọn được đứng trước, xe không chọn được **mờ kèm lý do ngay tại dòng** (xe đang dùng, đang phục vụ chuyến nào, bảo
   dưỡng, từng lỗi `vehicleFit` — nối vào ô chọn bằng `aria-describedby`); hộp thoại nói trước việc phương án sẽ lỗi thời. Chuyến **Nháp** vẫn
   đổi xe ở form sửa chuyến ("Đổi xe" của mục Phương tiện là liên kết tới form) — `updateTrip({ vehicleId })` chưa kiểm `vehicleFit`.
-- Chi tiết chuyến chỉ cho sửa khi `can('trips.edit') && phase === 'planning'` (LM-088); form sửa chuyến mở ở `planning`, `loading`, `loaded` (hai
-  pha sau khoá xe và điểm giao). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ mục `DropdownMenu`
+- Chi tiết chuyến chỉ cho sửa khi `can('trips.edit') && phase === 'planning'` (LM-088); form sửa chuyến cũng chỉ mở ở `planning` và `updateTrip`
+  từ chối `TRIP_LOCKED` ở mọi pha khác — như máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch (D-45). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ mục `DropdownMenu`
   dùng `modal={false}` cho menu để focus về đúng hộp thoại.
 - **Pha và trạng thái chuyến** (LM-081 → LM-083, FE-0-05, FE-4b-09, D-81). Kho lưu **pha** chuyến `planning → loading → loaded → delivering →
   completed` (+ `cancelled`); `TripStatus` là 6 trạng thái của backend: `DRAFT`, `PLANNED`, `LOADING` (pha `loading`/`loaded`), `IN_TRANSIT`
@@ -1853,7 +1864,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   buộc thì đi tiếp sau khi nghỉ xong). Nhật ký `trip.stopsReordered { count, lateStops, driverId }` — chuông của tài xế **của chuyến đó**; màn
   tài xế đọc thứ tự mới từ `Trip.stops`. Màn: nút phụ "Đổi thứ tự điểm" ở đầu thẻ chuyến trên `/giam-sat` theo quyền `routes.optimize` (không
   thêm quyền mới; mờ kèm lý do khi dưới hai điểm chưa giao và chưa tới) mở `ReorderStopsDialog`: nút lên / xuống cho điểm tự do, điểm khoá hiện
-  "Đã giao xong" / "Xe đã tới"; bị từ chối vì kiện thì hộp liệt kê từng kiện kèm điểm của nó bằng chữ. Chưa có ở BE (`monitoring-api.ts`).
+  "Đã giao xong" / "Xe đã tới"; bị từ chối vì kiện thì hộp liệt kê từng kiện kèm điểm của nó bằng chữ. Máy chủ: mục "Giám sát" của "Nối backend".
 - **Màn Giám sát `/giam-sat`** (FE-6-10; `monitoring.view`): `fetchMonitoringBoard` (`['trips', 'monitoring-board']`) đọc phần ít đổi — chuyến Đang
   vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc
   theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là
