@@ -42,7 +42,7 @@ const primaryActions = (container: HTMLElement) => container.querySelectorAll('a
 
 test('a trip being loaded is locked: the banner says why, edit actions are gone, progress shows packages loaded so far', async () => {
   const { container } = renderDetail('TRIP-011')
-  expect(await screen.findByText('Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.', {}, SLOW)).toBeInTheDocument()
+  expect(await screen.findByText('Kho đang xếp hàng theo phương án đã duyệt nên chuyến đã khoá, không sửa được nữa.', {}, SLOW)).toBeInTheDocument()
   // FE-0-05: chip Đang xếp hàng, tiến độ kho là dòng phụ cạnh chip
   expect(screen.getByText(/^Đang xếp \d+ \/ 280$/).previousElementSibling).toHaveTextContent('Đang xếp hàng')
   expect(screen.queryByRole('link', { name: 'Chạy tối ưu' })).not.toBeInTheDocument()
@@ -57,9 +57,8 @@ test('a trip being loaded is locked: the banner says why, edit actions are gone,
   // FE-3b-07: kiện của chuyến là kiện kho kiện — điều phối viên in nhãn của cả chuyến, kể cả khi chuyến đã khoá
   expect(screen.getByRole('link', { name: 'In nhãn QR' })).toHaveAttribute('href', '/kien-hang/nhan?chuyen=TRIP-011')
 
-  // Banner: phần khung chuyến vẫn sửa được, dẫn tới form sửa
-  expect(screen.getByText('Vẫn sửa được tên, ngày chạy và tài xế.', { exact: false })).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Sửa thông tin chuyến' })).toHaveAttribute('href', '/chuyen/TRIP-011/sua')
+  // Như máy chủ: kho đã bắt đầu xếp thì không còn lối sửa chuyến
+  expect(screen.queryByRole('link', { name: 'Sửa thông tin chuyến' })).not.toBeInTheDocument()
 
   const plan = (await getMockDb().listRevisions('TRIP-011')).findLast((revision) => revision.approvedAt !== undefined)
   const progress = within(await screen.findByRole('list', { name: 'Tiến trình' }, SLOW))

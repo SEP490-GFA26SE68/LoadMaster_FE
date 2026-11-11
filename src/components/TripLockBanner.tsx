@@ -4,7 +4,7 @@ import type { Trip } from '@/lib/mock-db'
 import { useFormat, useT } from '@/lib/i18n'
 
 /**
- * Lý do chuyến không sửa được (D-45, LM-088): từ lúc kho bắt đầu xếp, xe, điểm giao và kiện bị khoá; chuyến đã huỷ nói thời điểm và
+ * Lý do chuyến không sửa được (D-45, LM-088): từ lúc kho bắt đầu xếp, cả chuyến bị khoá (như máy chủ); chuyến đã huỷ nói thời điểm và
  * lý do huỷ. Pha lập kế hoạch không hiện gì. Dùng ở Chi tiết chuyến và Thiết lập tối ưu.
  */
 export function TripLockBanner({ trip }: { trip: Pick<Trip, 'phase' | 'cancellation'> }) {
