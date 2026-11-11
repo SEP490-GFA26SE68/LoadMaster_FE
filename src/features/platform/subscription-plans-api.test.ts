@@ -12,7 +12,7 @@ import {
 
 /**
  * Danh mục gói nối backend (`usesBackend('billing')`): endpoint, thân gửi đi và DTO đổi sang kiểu của app. `SubscriptionPlanController`
- * trả thân trần (không phong bì); PUT thay cả gói nên luôn gửi lại đủ trường.
+ * trả thân trần (không phong bì), danh sách mọi gói là `PageResponse` khi hỏi `paged=true`; PUT thay cả gói nên luôn gửi lại đủ trường.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['billing']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -28,21 +28,28 @@ const PRO: PlanDto = {
 }
 const ULTIMATE: PlanDto = { ...PRO, id: 3, planCode: 'ULTIMATE', name: 'Ultimate', priceVnd: 3990000, tier: 'ULTIMATE', monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI', activeCompanyCount: 0 }
 
-test('backend: không có công tắc bán, credit Ultimate theo hạng, mỗi hạng một gói', () => {
-  expect(PLAN_CATALOG_CAPABILITIES).toStrictEqual({ saleToggle: false, unlimitedByTier: true, createInTakenTier: false })
+test('backend: credit Ultimate theo hạng (không có công tắc không giới hạn)', () => {
+  expect(PLAN_CATALOG_CAPABILITIES).toStrictEqual({ unlimitedByTier: true })
 })
 
-test('danh sách: số công ty dùng và mã gói của backend', async () => {
-  backend.replies = [[ULTIMATE, PRO]]
+const pageOf = (data: readonly PlanDto[], page: number, last: boolean) => ({ success: true, data, page, size: 100, totalElements: 3, totalPages: 2, last })
+
+test('danh sách: mọi gói kể cả gói đã ngừng bán, đọc hết các trang, số công ty dùng và mã gói của backend', async () => {
+  const oldPro: PlanDto = { ...PRO, id: 4, planCode: 'PRO-OLD', name: 'Pro cũ', priceVnd: 1290000, active: false, activeCompanyCount: 0 }
+  backend.replies = [pageOf([ULTIMATE, oldPro], 0, false), pageOf([PRO], 1, true)]
   const rows = await listSubscriptionPlans()
-  expect(backend.calls).toStrictEqual([{ method: 'GET', url: 'http://be.test/api/subscription/plans', body: undefined, auth: 'Bearer token-1' }])
-  expect(rows.map((row) => [row.plan.id, row.code, row.companies, row.plan.monthlyCredits])).toStrictEqual([
-    ['2', 'PRO', 1, 500],
-    ['3', 'ULTIMATE', 0, null],
+  expect(backend.calls.map((call) => [call.method, call.url, call.auth])).toStrictEqual([
+    ['GET', 'http://be.test/api/subscription/plans?paged=true&page=0&size=100', 'Bearer token-1'],
+    ['GET', 'http://be.test/api/subscription/plans?paged=true&page=1&size=100', 'Bearer token-1'],
+  ])
+  expect(rows.map((row) => [row.plan.id, row.code, row.companies, row.plan.monthlyCredits, row.plan.active])).toStrictEqual([
+    ['4', 'PRO-OLD', 0, 500, false],
+    ['2', 'PRO', 1, 500, true],
+    ['3', 'ULTIMATE', 0, null, true],
   ])
 })
 
-test('thêm: mã gói theo hạng, thuật toán và tính năng của hạng, đang bán; Ultimate gửi credit rỗng', async () => {
+test('thêm: mã gói theo hạng, thuật toán và tính năng của hạng, cờ bán theo form; Ultimate gửi credit rỗng', async () => {
   vi.spyOn(Date, 'now').mockReturnValue(1_760_000_000_000)
   backend.replies = [{ ...ULTIMATE, id: 9, planCode: 'ULTIMATE-MGJ6K3CW', name: 'QA Ultimate' }]
   const plan = await createSubscriptionPlan({ name: 'QA Ultimate', tier: 'ULTIMATE', priceVnd: 4990000, monthlyCredits: 50, active: false })
@@ -51,11 +58,17 @@ test('thêm: mã gói theo hạng, thuật toán và tính năng của hạng, �
     url: 'http://be.test/api/subscription/plans',
     body: {
       planCode: 'ULTIMATE-MGJ6K3CW', name: 'QA Ultimate', priceVnd: 4990000, tier: 'ULTIMATE', monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI',
-      features: '["OPTIMIZATION_3D","ROUTE_OPTIMIZATION","ADVANCED_ALGORITHM","UNLIMITED_CREDITS"]', billingCycle: 'MONTHLY', active: true,
+      features: '["OPTIMIZATION_3D","ROUTE_OPTIMIZATION","ADVANCED_ALGORITHM","UNLIMITED_CREDITS"]', billingCycle: 'MONTHLY', active: false,
     },
   })
   expect(plan).toMatchObject({ id: '9', name: 'QA Ultimate', monthlyCredits: null, provisional: false })
   vi.restoreAllMocks()
+})
+
+test('thêm không nói cờ bán: gói mới đang bán', async () => {
+  backend.replies = [{ ...PRO, id: 10 }]
+  await createSubscriptionPlan({ name: 'Pro 3', tier: 'PRO', priceVnd: 1, monthlyCredits: 10 })
+  expect(backend.calls[0]?.body).toMatchObject({ tier: 'PRO', monthlyCredits: 10, active: true })
 })
 
 test('thêm vào hạng đã có gói đang bán: 409 thành SUBSCRIPTION_TIER_ALREADY_EXISTS', async () => {
@@ -87,6 +100,12 @@ test('bật / tắt bán: cùng PUT với cờ active', async () => {
   backend.replies = [PRO, { ...PRO, active: false }]
   expect(await setSubscriptionPlanActive('2', false)).toMatchObject({ active: false })
   expect(backend.calls[1]).toMatchObject({ method: 'PUT', body: { planCode: 'PRO', active: false } })
+})
+
+test('mở bán khi hạng đã có gói khác đang bán: 409 thành SUBSCRIPTION_TIER_ALREADY_EXISTS', async () => {
+  backend.replies = [{ ...PRO, active: false }, failure(409)]
+  await expect(setSubscriptionPlanActive('2', true)).rejects.toMatchObject({ code: 'SUBSCRIPTION_TIER_ALREADY_EXISTS', status: 409 })
+  expect(backend.calls[1]).toMatchObject({ method: 'PUT', body: { active: true } })
 })
 
 test('xoá: 204; còn công ty dùng (409) thành PLAN_IN_USE', async () => {
