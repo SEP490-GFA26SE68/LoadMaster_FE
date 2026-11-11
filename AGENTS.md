@@ -1247,11 +1247,17 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nhập file kiện cho nhân viên kho và điều phối viên (nút ghi của màn vẫn theo `packages.manage`), ghi loại kiện cho nhân viên kho. Điểm đến và
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
-  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải file đó; nhãn theo chuyến chưa có (`PACKAGE_POOL_SUPPORT.tripLabels`). Chỉ xoá kiện Đã nhập; không liên kết tới chuyến.
+  là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải đúng file đó; `?chuyen=<mã chuyến>` là PDF mọi kiện chuyến đang giữ
+  (`GET /api/packages/export/labels/trip/{tripId}`; chuyến chưa có kiện `TRIP_HAS_NO_PACKAGES` thì trang nói rõ thay cho lỗi). Chỉ xoá kiện Đã
+  nhập; không liên kết tới chuyến.
   Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
-  (`DELETE /api/packages/{id}/flag`, không cờ là `PACKAGE_NOT_FLAGGED`).
+  (`DELETE /api/packages/{id}/flag`, không cờ là `PACKAGE_NOT_FLAGGED`). Lượt quét cũng trả cờ, nên Tra cứu kiện hiện cờ, gỡ cờ cho điều phối
+  viên (`PACKAGE_POOL_SUPPORT.flagClearer` = `trips.edit`, kho mẫu là `packages.manage`) và nhân viên kho báo tìm thấy kiện
+  `NOT_FOUND` bằng `POST /api/packages/{id}/found` (theo mã của kho). Chi tiết kiện có Lịch sử (`PackageHistorySection`): nhật ký của máy chủ
+  về kiện `GET /api/packages/{id}/history` (đối tượng là kiện hoặc sự kiện mang mã kiện, mới nhất trước, 100 dòng), câu dịch như Nhật ký máy
+  chủ (`serverAuditRow`); máy chủ không ghi lúc tạo kiện.
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển, Xếp xong — chờ xuất phát (`LOADING` +
   `loadingCompleted`), Kho đang soạn / xếp (`LOADING` chưa xong) và Đã giao gần đây (`DELIVERED`, 5 chuyến theo `completedAt` — giờ hoàn tất điểm
@@ -1391,8 +1397,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `CREDIT_LOW_BALANCE` tới `/goi-cuoc` khi có `billing.manage`. Máy chủ có nguồn cho: tài khoản (`USER_*`), duyệt phương án, xếp xong, sự cố
   giao, nguy cơ trễ hạn, hoàn thành / huỷ / đổi trạng thái / đổi tài xế của chuyến, xác nhận tay gửi / bị từ chối, sự cố cấp chuyến báo / chuyển
   quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit, nhận hàng dọc đường (điều phối viên: yêu cầu mới gửi `PICKUP_REQUESTED`; tài xế
-  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định). Chưa có nguồn nên không có ở chuông máy
-  chủ: kho báo thiếu / kiện hỏng / quyết định báo thiếu, tìm thấy kiện, đăng nhập sai, đổi thứ tự điểm. Chi tiết (`server-audit-parts.ts`, dùng
+  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định), việc của kho (điều phối viên: kho báo
+  thiếu `STAGING_SHORTAGE_REPORTED`, kiện hỏng `LOADING_DAMAGE_REPORTED`, tìm thấy kiện `PACKAGE_FOUND`; quản lý công ty: kiện hỏng và quyết định
+  bỏ kiện báo thiếu `STAGING_SHORTAGE_RESOLVED`; nhân viên kho: quyết định với kiện chính mình báo thiếu; tài xế của
+  chuyến: chỉ khi chuyến quay về lập kế hoạch — kiện hỏng có kiện tựa lên, kiện thiếu bị bỏ —, câu `notifications.driver.replanDamaged` /
+  `replanShortage`). Chưa có nguồn nên không có ở chuông máy chủ: đăng nhập sai, đổi thứ tự điểm. Chi tiết (`server-audit-parts.ts`, dùng
   chung với Nhật ký máy chủ) chỉ hiện mã đã có nhãn trong từ điển — mã lạ bị bỏ, không hiện mã thô; chip trạng thái "trước → sau" chỉ khi cả hai
   phía có nhãn.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
@@ -1603,8 +1612,9 @@ kiện.
 phân biệt hoa thường). Mã đang tra nằm trên URL (`?ma=`, kiện đã chọn `&kien=`). Một kiện: thẻ kiện;  nhiều kiện trùng mã của bên gửi: danh sách để chọn; không khớp, hoặc là kiện của công ty
 khác: "Không tìm thấy" (`QR_UNKNOWN`), không lộ dữ liệu. Hành động theo vai trò (`lookupActions`): "In lại nhãn" (`labels.print`); điều phối
 viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến; nhân viên kho **quét** thấy kiện mang cờ "Không tìm thấy" thì cờ được gỡ ngay, **gõ mã** thì thẻ
-có nút "Đã tìm thấy kiện này" — cả hai gọi `reportPackageFound` (chỉ vai trò kho, chỉ cờ `NOT_FOUND`), kho ghi sự kiện `package.found` và điều
-phối viên thấy ở chuông. "Quét mã QR" là nút chính của màn. Màn nằm trong khung ứng dụng; nhân viên kho (`warehouse.operate`) được nút, ô nhập
+có nút "Đã tìm thấy kiện này" — cả hai gọi `reportPackageFound` (chỉ vai trò kho, chỉ cờ `NOT_FOUND`; máy chủ `POST /api/packages/{id}/found`), kho
+ghi sự kiện `package.found` và điều phối viên thấy ở chuông. Nút gỡ cờ của thẻ theo `PACKAGE_POOL_SUPPORT.flagClearer`: máy chủ chỉ cho điều
+phối viên gỡ cờ. "Quét mã QR" là nút chính của màn. Màn nằm trong khung ứng dụng; nhân viên kho (`warehouse.operate`) được nút, ô nhập
 56 px, chữ từ 16 px và nút "Về màn kho" trên dải trời.
 
 **Đối chiếu kiện, soạn → xếp → giao, huỷ chuyến**

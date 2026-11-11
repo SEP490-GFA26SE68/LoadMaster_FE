@@ -1,4 +1,5 @@
-import { apiFetch } from '@/lib/api-client'
+import { auditEntryOf, type AuditLogDto, type ServerAuditEntry } from '@/features/admin/audit-dto'
+import { apiFetch, apiFetchBlob } from '@/lib/api-client'
 
 export type PackageStatus =
   | 'PENDING'
@@ -337,4 +338,31 @@ export async function deletePackage(
       method: 'DELETE',
     },
   )
+}
+
+/**
+ * Lịch sử của một kiện: nhật ký của công ty về kiện (đối tượng là kiện, hoặc sự kiện mang mã kiện — báo thiếu, kiện hỏng, tìm thấy lại…),
+ * mới nhất trước, tối đa 100 dòng. Máy chủ không ghi lúc tạo kiện nên kiện mới có thể chưa có dòng nào.
+ */
+// GET /api/packages/{id}/history
+export async function fetchPackageHistory(id: string): Promise<ServerAuditEntry[]> {
+  const response = await apiFetch<ApiResponse<AuditLogDto[]>>(`/api/packages/${encodeURIComponent(id)}/history`)
+  return response.data.map(auditEntryOf)
+}
+
+/** Kiện cần nhãn: đúng các kiện `packageIds` (mã số của máy chủ), hoặc mọi kiện chuyến `tripId` (mã chuyến hay mã số) đang giữ. */
+export type LabelsPdfSource = { readonly packageIds: readonly number[] } | { readonly tripId: string }
+
+/**
+ * File PDF nhãn máy chủ dựng, 1–200 kiện (quá số: `EXPORT_TOO_MANY_PACKAGES`). Theo chuyến: chuyến không có hay của công ty khác
+ * `TRIP_NOT_FOUND`, chưa có kiện `TRIP_HAS_NO_PACKAGES`.
+ */
+// POST /api/packages/export/labels · GET /api/packages/export/labels/trip/{tripId}
+export function fetchLabelsPdf(source: LabelsPdfSource): Promise<Blob> {
+  if ('tripId' in source) return apiFetchBlob(`/api/packages/export/labels/trip/${encodeURIComponent(source.tripId)}`)
+  return apiFetchBlob('/api/packages/export/labels', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ packageIds: source.packageIds }),
+  })
 }

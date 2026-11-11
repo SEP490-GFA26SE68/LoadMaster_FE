@@ -2,14 +2,14 @@
  * Hàm → endpoint backend (FE-0-09) của Tra cứu kiện:
  *   scanPackage        → GET /api/packages/scan/{qrToken}
  *   lookupPackages     → GET /api/packages/scan/{qrToken} · GET /api/packages?packageCode= · GET /api/packages/{id}
- *   chưa có ở BE: reportPackageFound (kho quét thấy lại kiện mang cờ — backend không có cờ kiện)
+ *   reportPackageFound → POST /api/packages/{id}/found
  */
 
-import { ApiError, isApiError } from '@/lib/api-client'
+import { api, ApiError, isApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import { getMockDb, isMockDbError, MockDbError, type Package, type PackageType } from '@/lib/mock-db'
 import { listBackendPackages, readBackendPackage, scanBackendPackage } from './package-pool-backend'
-import { isBackendQrToken, lookupOf } from './package-pool-dto'
+import { isBackendQrToken, lookupOf, packageOf, type BackendPackage } from './package-pool-dto'
 
 const ON_BACKEND = usesBackend('packages')
 
@@ -90,9 +90,14 @@ export async function lookupPackages(code: string): Promise<PackageLookup[]> {
   return withPlace(await getMockDb().lookupPackages(code))
 }
 
-/** Nhân viên kho quét thấy lại kiện mang cờ "Không tìm thấy" (D-92): gỡ cờ, kho ghi sự kiện để điều phối viên được báo. */
-// chưa có ở BE
-export function reportPackageFound(token: string): Promise<Package> {
-  if (ON_BACKEND) return Promise.reject(new Error('Backend chưa có cờ kiện: màn không được gọi reportPackageFound khi nối backend.'))
-  return getMockDb().reportPackageFound(token)
+/**
+ * Nhân viên kho quét thấy lại kiện mang cờ "Không tìm thấy" (D-92): gỡ cờ, kho ghi sự kiện để điều phối viên được báo. Kho mẫu tìm kiện
+ * theo mã QR, máy chủ theo mã của kho; kiện không mang cờ đó: `PACKAGE_FLAG_NOT_SET` / 409 `PACKAGE_NOT_FLAGGED`.
+ */
+// POST /api/packages/{id}/found
+export async function reportPackageFound(pkg: Pick<Package, 'id' | 'qrToken'>): Promise<Package> {
+  if (!ON_BACKEND) return getMockDb().reportPackageFound(pkg.qrToken)
+  const found = packageOf(await api().post<BackendPackage>(`/api/packages/${encodeURIComponent(pkg.id)}/found`))
+  if (found === null) throw new ApiError('NOT_FOUND', { status: 404 })
+  return found
 }

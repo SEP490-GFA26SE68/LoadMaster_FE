@@ -132,7 +132,7 @@ const requirementCell = (info: Cell<unknown>) => <RequirementCell row={info.row.
 const tripCell = (info: Cell<unknown>) => <TripCell row={info.row.original} />
 
 /** Cột có nguồn dữ liệu (`PACKAGE_POOL_SUPPORT`): danh sách của backend không trả chiều rộng, chiều cao, điểm đến, cờ, yêu cầu giao, chuyến. */
-export type PackageColumnSupport = { readonly fullSize: boolean; readonly listDestinations: boolean; readonly flags: boolean; readonly links: boolean }
+export type PackageColumnSupport = { readonly fullSize: boolean; readonly listDestinations: boolean; readonly links: boolean }
 
 /**
  * Cột bảng kho kiện (FE-3b-03): chọn (chỉ người in được nhãn) · mã kiện của bên gửi (+ mã của kho) · kích thước · khối lượng · loại
@@ -155,7 +155,7 @@ export function packageColumns(t: TFunction, { selectable, panelOpen, support }:
     ...(support.listDestinations ? [helper.accessor('destination', { header: label('destination'), enableSorting: true, cell: destinationCell })] : []),
     // Không có cột điểm đến (cột giãn của bảng) thì cột trạng thái nhận phần bề rộng còn lại
     helper.accessor('status', { header: label('status'), meta: (support.listDestinations ? { width: '156px' } : {}) satisfies ColumnMeta, cell: statusCell }),
-    ...(support.flags ? [helper.display({ id: 'flags', header: label('flags'), meta: { width: '124px' } satisfies ColumnMeta, cell: flagsCell })] : []),
+    helper.display({ id: 'flags', header: label('flags'), meta: { width: '124px' } satisfies ColumnMeta, cell: flagsCell }),
     ...(panelOpen || !support.links ? [] : [
       helper.display({ id: 'requirement', header: label('requirement'), meta: { width: '104px' } satisfies ColumnMeta, cell: requirementCell }),
       helper.display({ id: 'trip', header: label('trip'), meta: { width: '128px' } satisfies ColumnMeta, cell: tripCell }),

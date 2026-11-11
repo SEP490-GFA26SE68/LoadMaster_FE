@@ -62,8 +62,8 @@ export function PackageLookupPage() {
     setScanError(null)
     try {
       const item = await scan.mutateAsync(token)
-      if (touch && PACKAGE_POOL_SUPPORT.flags && item.package.flags.includes('NOT_FOUND')) {
-        await found.mutateAsync(item.package.qrToken)
+      if (touch && item.package.flags.includes('NOT_FOUND')) {
+        await found.mutateAsync(item.package)
         setFoundId(item.package.id)
       }
       setScanning(false)

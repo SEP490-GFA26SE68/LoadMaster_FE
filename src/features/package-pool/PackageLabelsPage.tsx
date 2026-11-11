@@ -34,8 +34,8 @@ const PRINT_CSS = `
  * Trang in nhãn QR `/kien-hang/nhan` (LM-104, FE-3b-05), mở theo `labels.print` — điều phối viên và nhân viên kho: nhãn của các kiện
  * trên đường dẫn (`?kien=` từ Kho kiện hay Tra cứu kiện, `?chuyen=` mọi kiện của một chuyến), nút "In nhãn" gọi hộp thoại in của trình
  * duyệt. In lại không đổi mã QR. Mã không có / không thuộc công ty thì nói rõ số bị bỏ. Nút quay lại về nơi bấm in (`labelsBackTarget`).
- * Nhân viên kho dùng máy tính bảng: nút cỡ cảm ứng. Nối backend: tờ nhãn vẫn dựng ở app, thêm nút phụ "Tải PDF nhãn" do backend dựng
- * (tối đa `MAX_PDF_LABELS` kiện); nhân viên kho và nhãn theo chuyến chưa có nguồn nên màn chỉ nói lý do.
+ * Nhân viên kho dùng máy tính bảng: nút cỡ cảm ứng. Nối backend thì màn là bản máy chủ (`./backend/PackageLabelsPage`, file PDF máy chủ
+ * dựng); nút phụ "Tải PDF nhãn" chỉ hiện khi nguồn có PDF (`PACKAGE_POOL_SUPPORT.pdfLabels`, tối đa `MAX_PDF_LABELS` kiện).
  */
 function StorePackageLabelsPage() {
   const t = useT()
@@ -46,8 +46,7 @@ function StorePackageLabelsPage() {
   const back = labelsBackTarget(search, can)
   const touch = can('warehouse.operate')
   const chosen = selection.ids !== undefined || selection.tripId !== undefined
-  const unavailable = !PACKAGE_POOL_SUPPORT.tripLabels && selection.tripId !== undefined ? t('sourcing.backend.tripLabels') : null
-  const query = usePackageLabelsQuery(selection, { enabled: unavailable === null })
+  const query = usePackageLabelsQuery(selection)
   const pdf = useExportLabelsPdfMutation()
   const labels = query.data ?? []
   const missing = selection.ids === undefined || !query.isSuccess ? 0 : selection.ids.length - labels.length
@@ -87,9 +86,7 @@ function StorePackageLabelsPage() {
         ) : null}
       />
       <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
-        {unavailable !== null ? (
-          <Banner tone="info">{unavailable}</Banner>
-        ) : query.isPending ? (
+        {query.isPending ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : query.error ? (
           <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
