@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { VehicleConfig } from '@/domain/models'
-import type { Permission } from '@/features/auth/permissions'
 import type { FleetVehicleState } from './vehicle-status'
 import {
   deleteVehicle,
@@ -21,14 +20,6 @@ import {
 /** Việc Đội xe và Loại xe làm được với nguồn dữ liệu đang dùng: màn ẩn nút ghi, cột và câu mà nguồn không có (D-20). */
 export function useFleetCapabilities(): FleetCapabilities {
   return FLEET_CAPABILITIES
-}
-
-/**
- * Người xem đọc được đội xe từ nguồn đang dùng: backend chỉ cho điều phối viên (`FLEET_CAPABILITIES.dispatcherOnly`) — quyền đó trùng
- * `fleet.edit` của app. Không đọc được thì màn nói lý do và không gọi backend.
- */
-export function fleetReachable(can: (permission: Permission) => boolean): boolean {
-  return !FLEET_CAPABILITIES.dispatcherOnly || can('fleet.edit')
 }
 
 const VEHICLES_KEY = ['vehicles'] as const

@@ -196,10 +196,8 @@ export const fleet = {
     maintenanceNote: 'Ghi chú: {note}',
     retired: 'Máy chủ ghi xe này đã ngừng sử dụng.',
   },
-  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, chỉ điều phối viên đọc được, phần backend không trả. */
+  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, phần backend không trả. */
   backend: {
-    dispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc đội xe, nên tài khoản của bạn chưa xem được xe ở đây.',
-    vehicleTypesDispatcherOnly: 'Máy chủ hiện chỉ cho điều phối viên đọc loại xe, nên tài khoản của bạn chưa xem được loại xe ở đây.',
     sourceNote: 'Xe đọc từ máy chủ. Máy chủ chưa trả chuyến đang dùng xe hay ghi chú bảo dưỡng, nên cột trạng thái chỉ có trạng thái.',
     readOnly: 'Cấu hình đọc từ máy chủ và chỉ xem: lòng thùng, cửa, tải trọng, vật cản và trục là của loại xe đang gắn. Máy chủ chưa có lối sửa xe hay đưa xe vào bảo dưỡng.',
     doorUnknown: 'Loại xe này chưa khai kích thước cửa sau: ô cửa đang hiện bằng mặt cắt lòng thùng.',

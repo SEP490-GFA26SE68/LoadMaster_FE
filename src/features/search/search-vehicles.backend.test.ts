@@ -14,7 +14,7 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Tìm nhanh khi nhóm `fleet` nối backend: nhóm xe đọc `GET /api/vehicles` (kèm loại xe để ghép) và mở Chi tiết xe theo mã của máy chủ;
- * quản lý công ty không có nhóm xe vì máy chủ chỉ cho điều phối viên đọc đội xe; máy chủ từ chối (403) thì nhóm xe rỗng, không lỗi.
+ * quản lý công ty cũng có nhóm xe vì máy chủ cho vai trò đó đọc đội xe (chỉ đọc); máy chủ từ chối (403) thì nhóm xe rỗng, không lỗi.
  */
 const TYPE = {
   id: 7, name: 'Xe tải 5 tấn thùng kín', innerLength: 620, innerWidth: 235, innerHeight: 240, doorWidth: 230, doorHeight: 230,
@@ -50,8 +50,12 @@ test('nhóm xe là xe của máy chủ, không đọc kho mẫu, mở Chi tiết
   expect(group?.results.map((result) => result.href)).toEqual(['/doi-xe/11'])
 })
 
-test('quản lý công ty không có nhóm xe khi đội xe nối backend (máy chủ trả 403)', () => {
-  expect(quickSearchGroups((permission) => roleCan('companyManager', permission))).not.toContain('vehicles')
+test('quản lý công ty có nhóm xe khi đội xe nối backend (máy chủ cho quản lý đọc xe)', () => {
+  expect(quickSearchGroups((permission) => roleCan('companyManager', permission))).toContain('vehicles')
+})
+
+test('vai trò không có quyền xem đội xe không có nhóm xe', () => {
+  expect(quickSearchGroups((permission) => roleCan('warehouse', permission))).not.toContain('vehicles')
 })
 
 test('máy chủ từ chối vai trò (403): nhóm xe rỗng, không lỗi', async () => {

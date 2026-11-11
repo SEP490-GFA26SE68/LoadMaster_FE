@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { FleetUnavailable } from '@/features/fleet/FleetUnavailable'
-import { fleetReachable, useFleetCapabilities } from '@/features/fleet/useVehiclesQuery'
+import { useFleetCapabilities } from '@/features/fleet/useVehiclesQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import type { VehicleAssignmentRow, VehicleTypeRow } from './vehicle-types-api'
@@ -29,26 +28,9 @@ import { usesBackend } from '@/lib/backend-config'
 /**
  * Loại xe `/doi-xe/loai-xe` (LM-104). Bảng loại xe (tên, lòng thùng D × R × C cm, tải trọng kg, xe đang dùng) và bảng gắn loại cho từng
  * xe. Người có `vehicleTypes.edit` thêm / sửa / xoá loại (loại còn gắn xe không xoá được: mục Xoá mờ kèm lý do) và đổi loại của xe; người
- * chỉ có `fleet.view` xem. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, chỉ điều phối viên đọc được — người khác thấy một dòng lý do và
- * màn không gọi backend.
+ * chỉ có `fleet.view` xem.
  */
 function StoreVehicleTypesPage() {
-  const t = useT()
-  const can = useCan()
-  if (!fleetReachable(can)) {
-    return (
-      <FleetUnavailable
-        title={t('vehicleTypes.title')}
-        description={t('pageHero.vehicleTypes')}
-        back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
-        reason={t('fleet.backend.vehicleTypesDispatcherOnly')}
-      />
-    )
-  }
-  return <VehicleTypesCatalog />
-}
-
-function VehicleTypesCatalog() {
   const t = useT()
   const caps = useFleetCapabilities()
   const canEdit = useCan()('vehicleTypes.edit') && caps.write
