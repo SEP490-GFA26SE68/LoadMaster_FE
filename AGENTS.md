@@ -1234,7 +1234,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   là số của backend); `/lien-he-khach` đọc `GET /api/contact-guests`, lưu `PATCH …/{id}`; backend bỏ qua `assignedToId: null` nên "Chưa ai
   nhận" mờ kèm lý do khi đã có người nhận; hỗ trợ khách hàng không đọc được `/api/users` nên chỉ nhận việc cho chính mình. Yêu cầu hỗ trợ:
   `GET`, `POST` (Kỹ thuật → `SYSTEM_BUG`, Thanh toán → `BILLING`; `ALGORITHM_ERROR` đọc là Kỹ thuật), `PATCH …/{id}` chỉ gửi `status`;
-  `SUPPORT_SOURCE` bỏ trao đổi, khung công ty, giờ cập nhật, thêm trạng thái `RESOLVED`, `resolutionNote` chỉ đọc. `ticketsToDisplay` chỉ
+  trao đổi ở bảng của máy chủ: `GET` / `POST /api/support-tickets/{id}/replies` (`{ message }`, trả cả yêu cầu lẫn trao đổi; trả lời yêu cầu Đã
+  giải quyết thì mở lại, đội hỗ trợ trả lời yêu cầu Mở thì sang Đang xử lý; yêu cầu Đã đóng là 409 `SUPPORT_TICKET_CLOSED`). Danh sách không
+  mang trao đổi nên màn đọc trao đổi riêng cho đúng các yêu cầu đang vẽ (`useTicketThreadsQuery`, `SUPPORT_SOURCE.threads`: yêu cầu của mình ở
+  hộp thoại, yêu cầu của công ty đang chọn ở `/ho-tro`); trao đổi cũ trong `resolutionNote` chỉ còn là giá trị tạm của danh sách. Giờ hoạt động
+  gần nhất là `updatedAt` của máy chủ. `SUPPORT_SOURCE` thêm trạng thái `RESOLVED`, bỏ danh bạ công ty. `ticketsToDisplay` chỉ
   chọn yêu cầu để vẽ (hỗ trợ khách hàng thấy hết, người khác chỉ yêu cầu của mình) — **bộ lọc hiển thị, không phải kiểm quyền**: quyền xem
   do backend quyết.
 - **Kho kiện** (`packages`; DTO và đổi mm ↔ cm chỉ ở `package-pool-dto.ts`): máy chủ cho nhân viên kho, điều phối viên, quản lý công ty đọc
