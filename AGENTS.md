@@ -1248,7 +1248,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   chuyến của kiện chỉ có ở `GET /api/packages/scan/{qrToken}`, mã QR phân biệt hoa thường nên luôn gửi chữ thường (`toBackendToken`). Nhập
   file qua máy chủ (xem trước, xác nhận, tối đa 1 MB, mẫu `.xlsx`; 400 không mã của bước xem trước là `IMPORT_FILE_REJECTED`); nhãn in
   là file PDF máy chủ dựng (1–200 kiện), trang nhãn chỉ xem trước và tải đúng file đó; `?chuyen=<mã chuyến>` là PDF mọi kiện chuyến đang giữ
-  (`GET /api/packages/export/labels/trip/{tripId}`; chuyến chưa có kiện `TRIP_HAS_NO_PACKAGES` thì trang nói rõ thay cho lỗi). Chỉ xoá kiện Đã
+  (`GET /api/packages/export/labels/trip/{tripId}`; chuyến chưa có kiện `TRIP_HAS_NO_PACKAGES` thì trang nói rõ thay cho lỗi; mở từ nút "In nhãn QR" của Chi tiết chuyến máy chủ theo
+  `labels.print`, chuyến chưa huỷ và đã có điểm giao). Chỉ xoá kiện Đã
   nhập; không liên kết tới chuyến.
   Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
