@@ -42,7 +42,8 @@ const ON_BACKEND = usesBackend('support')
 /**
  * Việc màn làm được theo nguồn dữ liệu. Backend không có mốc hoạt động gần nhất (`activityTime`); tên công ty đi kèm yêu cầu thay cho
  * danh bạ công ty của kho mẫu (`companyDirectory`); có thêm trạng thái Đã giải quyết (`statuses`); Hỗ trợ khách hàng đổi gói cho công ty
- * khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó). Trao đổi và khung công ty có ở cả hai nguồn.
+ * khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó) và mở khoá tài khoản dùng thử bị gắn cờ (`trialUnlock`, kho mẫu không có
+ * tài khoản dùng thử). Trao đổi và khung công ty có ở cả hai nguồn.
  */
 export const SUPPORT_SOURCE: {
   readonly replies: boolean
@@ -50,13 +51,15 @@ export const SUPPORT_SOURCE: {
   readonly activityTime: boolean
   readonly companyDirectory: boolean
   readonly planAssign: boolean
+  readonly trialUnlock: boolean
   readonly statuses: readonly TicketStatus[]
 } = {
   replies: true,
-  companyPanel: false,
+  companyPanel: true,
   activityTime: !ON_BACKEND,
   companyDirectory: !ON_BACKEND,
-  planAssign: false,
+  planAssign: ON_BACKEND,
+  trialUnlock: ON_BACKEND,
   statuses: ON_BACKEND ? BACKEND_TICKET_STATUSES : TICKET_STATUSES,
 }
 
@@ -170,20 +173,10 @@ export type UnlockTrialResult = {
   ticketStatus: string
 }
 
-/**
- * Mở khóa tài khoản dùng thử qua phiếu hỗ trợ TRIAL_ACCOUNT_UNLOCK (POST /api/support-tickets/{id}/unlock-trial)
- */
+/** Mở khoá tài khoản dùng thử từ yêu cầu `TRIAL_ACCOUNT_UNLOCK` (`SUPPORT_SOURCE.trialUnlock`); kho mẫu từ chối `NOT_SUPPORTED`. */
+// POST /api/support-tickets/{id}/unlock-trial
 export async function unlockTrialAccount(ticketId: string, staffNote?: string): Promise<UnlockTrialResult> {
-  if (!ON_BACKEND) {
-    return {
-      userId: 1,
-      userEmail: 'trial@example.com',
-      trialStillValid: true,
-      nextAction: 'SIGN_AGREEMENT',
-      ticketCode: 'TCK-MOCK',
-      ticketStatus: 'RESOLVED',
-    }
-  }
+  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
   const query = staffNote && staffNote.trim() ? { staffNote: staffNote.trim() } : undefined
   return api().post<UnlockTrialResult>(`/api/support-tickets/${ticketId}/unlock-trial`, { query })
 }

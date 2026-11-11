@@ -110,6 +110,7 @@ export const guestRegistration = {
     policyAccepted: 'Đã chấp thuận điều khoản dịch vụ.',
     redirectingPayment: 'Đang chuyển hướng sang cổng thanh toán VNPay...',
     paymentLinkNotFound: 'Không tìm thấy liên kết thanh toán.',
+    paymentFailed: 'Thanh toán chưa thành công.',
   },
 } as const
 

@@ -7,14 +7,20 @@ import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { GuestRegistrationPage } from './GuestRegistrationPage'
 import { RegistrationSuccessPage } from './RegistrationSuccessPage'
-import * as api from './api/registration-api'
+import * as api from './registration-api'
+
+/** Trang chỉ chạy khi nhóm `registration` nối backend; đăng nhập vẫn là kho mẫu. */
+vi.mock('@/lib/backend-config', () => ({
+  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['registration']), keycloak: { url: '', realm: '', clientId: '' } },
+  usesBackend: (feature: string) => feature === 'registration',
+}))
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       <I18nProvider>
-        <AuthProvider>
+        <AuthProvider source="mock">
           <MemoryRouter initialEntries={['/dang-ky']}>
             <Routes>
               <Route path="/dang-ky" element={<GuestRegistrationPage />} />
@@ -89,25 +95,25 @@ test('submitting valid step 1 form passes companyCode to initRegistration', asyn
   )
 })
 
-test('renders unified phone input with SVG country flag and rejects VN phone with 8 identical trailing digits', async () => {
+test('renders the phone input with its country code and rejects VN phone with 8 identical trailing digits', async () => {
   renderPage()
   const user = userEvent.setup()
 
-  // SVG flag for VN should be rendered in the country selector button
-  expect(screen.getByTestId('country-flag-VN')).toBeInTheDocument()
+  // Nút mã vùng hiện mã nước và mã vùng của Việt Nam
+  expect(screen.getByRole('button', { name: 'Mã vùng' })).toHaveTextContent('VN+84')
 
   // Rejects 0911111111 (8 identical trailing digits)
   await user.type(screen.getByLabelText(/Số điện thoại liên hệ/i), '0911111111')
   await user.click(screen.getByRole('button', { name: /Tiếp tục xác thực OTP/i }))
   expect(screen.getByText(/8 số cuối không được trùng nhau/i)).toBeInTheDocument()
 
-  // Clicking country selector opens dropdown with all 5 countries and SVG flags
-  await user.click(screen.getByRole('button', { name: /Country code/i }))
+  // Nút mã vùng mở danh sách năm nước, tên nước theo ngôn ngữ đang chọn
+  await user.click(screen.getByRole('button', { name: 'Mã vùng' }))
   expect(screen.getAllByRole('option')).toHaveLength(5)
-  expect(screen.getByRole('option', { name: /Japan/i })).toBeInTheDocument()
-  expect(screen.getByRole('option', { name: /South Korea/i })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: /Nhật Bản/ })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: /Hàn Quốc/ })).toBeInTheDocument()
   await user.click(screen.getByRole('option', { name: /Singapore/i }))
-  expect(screen.getByTestId('country-flag-SG')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mã vùng' })).toHaveTextContent('SG+65')
 })
 
 test('completes full 4-step registration and executes payment with BE BillingCycle enum without discount', async () => {

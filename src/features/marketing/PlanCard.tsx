@@ -7,6 +7,8 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { tierBesideName } from '@/lib/plan-tier'
+import { GUEST_REGISTRATION, TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { contactPath } from './contact-form'
 import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 
@@ -18,14 +20,17 @@ const isKnownFeature = (code: string): code is KnownFeature => (FEATURES as read
 /**
  * Thẻ một gói đang bán ở Bảng giá: tên (kèm hạng khi tên gói khác tên hạng), nhãn "Giá trị tạm — chờ chốt" khi gói mang cờ tạm, giá
  * theo tháng, credit mỗi tháng, hạng thuật toán (Cơ bản / Nâng cao — không tên thuật toán), tính năng, và nút phụ "Liên hệ tư vấn" mở
- * form liên hệ đã chọn sẵn gói; tên gói trong nút chỉ cho trình đọc màn hình, nên tên truy cập bắt đầu bằng đúng chữ hiện ra. Không nút
- * đăng ký hay mua: tài khoản công ty do đội LoadMaster mở sau khi trao đổi.
+ * form liên hệ đã chọn sẵn gói; tên gói trong nút chỉ cho trình đọc màn hình, nên tên truy cập bắt đầu bằng đúng chữ hiện ra. Khi nối
+ * backend (`REGISTRATION_CAPABILITIES`) thẻ có thêm nút phụ "Đăng ký dùng ngay" (tự đăng ký trả phí) và, chỉ ở gói Basic — gói duy nhất
+ * của chương trình dùng thử —, "Đăng ký trải nghiệm"; "Liên hệ tư vấn" lùi thành nút ghost. Kho mẫu chỉ có "Liên hệ tư vấn": tài khoản do
+ * đội LoadMaster mở sau khi trao đổi. Thẻ không có nút chính — nút chính là của trang.
  */
 export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
   const t = useT()
   const format = useFormat()
   const tierLabel = tierBesideName(plan.name, t(`common.planTiers.${plan.tier}`))
   const titleId = `plan-${plan.id}`
+  const planName = t('pricing.contactPlanName', { name: plan.name })
 
   return (
     <Card role="group" aria-labelledby={titleId} className="flex h-full flex-col gap-5 p-5 lg:p-6">
@@ -68,24 +73,35 @@ export function PlanCard({ plan }: { plan: SubscriptionPlan }) {
         </ul>
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 pt-2">
-        <Button asChild variant="primary" className={cn('w-full font-semibold', PUBLIC_TOUCH)}>
-          <Link to={`/dang-ky?planId=${encodeURIComponent(plan.id)}`}>
-            {t('landing.header.registerNow')}
+      <div className="mt-auto flex flex-col gap-2">
+        {REGISTRATION_CAPABILITIES.publicSignUp ? (
+          <>
+            <Button asChild variant="secondary" className={cn('w-full', PUBLIC_TOUCH)}>
+              <Link to={`${GUEST_REGISTRATION}?planId=${encodeURIComponent(plan.id)}`}>
+                {t('landing.header.registerNow')}{' '}
+                <span className="sr-only">{planName}</span>
+              </Link>
+            </Button>
+            {plan.tier === 'BASIC' ? (
+              <Button asChild variant="secondary" className={cn('w-full', PUBLIC_TOUCH)}>
+                <Link to={`${TRIAL_REGISTRATION}?planId=${encodeURIComponent(plan.id)}`}>
+                  {t('landing.header.trial')}{' '}
+                  <span className="sr-only">{planName}</span>
+                </Link>
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+        <Button
+          asChild
+          variant={REGISTRATION_CAPABILITIES.publicSignUp ? 'ghost' : 'secondary'}
+          className={cn('w-full', PUBLIC_TOUCH)}
+        >
+          <Link to={contactPath({ planId: plan.id, type: 'PRICING' })}>
+            {t('pricing.contactPlan')}{' '}
+            <span className="sr-only">{planName}</span>
           </Link>
         </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <Button asChild variant="secondary" className={cn('w-full text-caption sm:text-body', PUBLIC_TOUCH)}>
-            <Link to={`/dang-ky-trai-nghiem?planId=${encodeURIComponent(plan.id)}`}>
-              {t('landing.header.trial')}
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" className={cn('w-full text-caption sm:text-body', PUBLIC_TOUCH)}>
-            <Link to={contactPath({ planId: plan.id, type: 'PRICING' })}>
-              {t('pricing.contactPlan')}
-            </Link>
-          </Button>
-        </div>
       </div>
     </Card>
   )

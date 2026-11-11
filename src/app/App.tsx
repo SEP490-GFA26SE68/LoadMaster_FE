@@ -4,7 +4,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { Permission } from '@/features/auth/permissions'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { landingPath, PUBLIC_HOME } from '@/features/auth/landing'
+import { GUEST_REGISTRATION, landingPath, PUBLIC_HOME, REGISTRATION_SUCCESS, TRIAL_REGISTRATION } from '@/features/auth/landing'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
 import { StoreTripRoute } from '@/features/trips/StoreTripRoute'
@@ -141,9 +141,9 @@ export const routes: RouteObject[] = [
           { path: '/', element: <RootLandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
-          { path: '/dang-ky-trai-nghiem', element: <TrialRegistrationPage />, handle: titled((t) => t('titles.trialRegistration')) },
-          { path: '/dang-ky', element: <GuestRegistrationPage />, handle: titled((t) => t('titles.guestRegistration')) },
-          { path: '/dang-ky-thanh-cong', element: <RegistrationSuccessPage />, handle: titled((t) => t('titles.registrationSuccess')) },
+          { path: TRIAL_REGISTRATION, element: <TrialRegistrationPage />, handle: titled((t) => t('titles.trialRegistration')) },
+          { path: GUEST_REGISTRATION, element: <GuestRegistrationPage />, handle: titled((t) => t('titles.guestRegistration')) },
+          { path: REGISTRATION_SUCCESS, element: <RegistrationSuccessPage />, handle: titled((t) => t('titles.registrationSuccess')) },
         ],
       },
 

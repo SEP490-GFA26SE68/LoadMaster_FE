@@ -1,6 +1,6 @@
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Gift, Mail, RotateCw, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { isPhoneValidForCountry, PhoneInput, type PhoneCountryCode } from '@/components/ui/PhoneInput'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
+import { contactPath } from '@/features/marketing/contact-form'
 import { PublicFooter } from '@/features/marketing/PublicFooter'
 import { PublicHeader } from '@/features/marketing/PublicHeader'
 import { PUBLIC_TOUCH } from '@/features/marketing/public-chrome'
@@ -16,21 +17,46 @@ import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
+import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
+import type { GuestTrialInitResponse, GuestTrialVerifyResponse } from './trial-registration-api'
 import {
-  initGuestTrial,
-  resendGuestTrialOtp,
-  verifyGuestTrialOtp,
-  type GuestTrialInitResponse,
-  type GuestTrialVerifyResponse,
-} from './trial-registration-api'
+  useInitGuestTrialMutation,
+  useResendGuestTrialOtpMutation,
+  useVerifyGuestTrialOtpMutation,
+} from './useTrialRegistrationQuery'
 
 type Step = 'info' | 'otp' | 'success' | 'rejected'
 
 const TAX_CODE_REGEX = /^([0-9]{10}|[0-9]{10}-[0-9]{3}|[0-9]{13})$/
 
+/** Ô của bước thông tin mà mã lỗi của máy chủ nói tới — chỉ đọc mã, không đọc câu đã dịch. */
+function fieldOfError(err: unknown): 'taxCode' | 'email' | 'phoneNumber' | null {
+  if (!isApiError(err)) return null
+  const code = err.code ?? ''
+  if (code.includes('TAX_CODE')) return 'taxCode'
+  if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS') return 'email'
+  if (code.includes('PHONE')) return 'phoneNumber'
+  return null
+}
+
+/**
+ * Đăng ký trải nghiệm `/dang-ky-trai-nghiem` (chỉ khi nối backend): thông tin công ty → OTP qua email → máy chủ kiểm sơ bộ rồi chuyển
+ * đội nền tảng duyệt. Kho mẫu không có luồng này (`REGISTRATION_CAPABILITIES`): route chuyển về form liên hệ "Đăng ký tài khoản dùng thử".
+ */
 export function TrialRegistrationPage() {
+  const [params] = useSearchParams()
+  if (!REGISTRATION_CAPABILITIES.publicSignUp) {
+    return <Navigate replace to={contactPath({ planId: params.get('planId') ?? undefined, type: 'DEMO_REQUEST' })} />
+  }
+  return <TrialRegistrationForm />
+}
+
+function TrialRegistrationForm() {
   const t = useT()
   const pricingQuery = usePublicPlansQuery()
+  const initMutation = useInitGuestTrialMutation()
+  const verifyOtpMutation = useVerifyGuestTrialOtpMutation()
+  const resendOtpMutation = useResendGuestTrialOtpMutation()
   const basicPlan = pricingQuery.data?.find(
     (p: SubscriptionPlan) => p.tier === 'BASIC' || p.name?.toLowerCase().includes('basic'),
   )
@@ -95,7 +121,7 @@ export function TrialRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await initGuestTrial({
+      const resp = await initMutation.mutateAsync({
         companyName: companyName.trim(),
         taxCode: taxCode.trim(),
         companyAddress: companyAddress.trim() || undefined,
@@ -109,20 +135,12 @@ export function TrialRegistrationPage() {
       setSession(resp)
       setStep('otp')
       setCooldown(60)
-      toast.success(resp.message)
+      toast.success(t('trialRegistration.toasts.otpSent'))
     } catch (err) {
-      const translated = dataErrorMessage(err, t)
-      if (isApiError(err)) {
-        const code = err.code ?? ''
-        if (code.includes('TAX_CODE') || translated.includes('Mã số thuế')) {
-          setErrors((prev) => ({ ...prev, taxCode: translated }))
-        } else if (code.includes('EMAIL') || code === 'USER_ALREADY_EXISTS' || translated.includes('Email')) {
-          setErrors((prev) => ({ ...prev, email: translated }))
-        } else if (code.includes('PHONE') || translated.includes('Số điện thoại')) {
-          setErrors((prev) => ({ ...prev, phoneNumber: translated }))
-        }
-      }
-      toast.error(translated)
+      const message = dataErrorMessage(err, t)
+      const field = fieldOfError(err)
+      if (field) setErrors((prev) => ({ ...prev, [field]: message }))
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -134,7 +152,7 @@ export function TrialRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await verifyGuestTrialOtp({
+      const resp = await verifyOtpMutation.mutateAsync({
         token: session.token,
         otp: otp.trim(),
       })
@@ -156,10 +174,10 @@ export function TrialRegistrationPage() {
 
     setLoading(true)
     try {
-      const resp = await resendGuestTrialOtp({ token: session.token })
+      const resp = await resendOtpMutation.mutateAsync({ token: session.token })
       setSession(resp)
       setCooldown(60)
-      toast.success(resp.message)
+      toast.success(t('trialRegistration.toasts.otpResent'))
     } catch (err) {
       toast.error(dataErrorMessage(err, t))
     } finally {
@@ -168,18 +186,18 @@ export function TrialRegistrationPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-canvas text-ink-strong">
+    <div className="flex min-h-screen flex-col bg-app text-ink-strong">
       <PublicHeader />
 
       <main className="flex-1 px-4 py-8 md:py-12">
         <div className="mx-auto max-w-2xl">
           {/* Header Card */}
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-caption font-medium text-cyan-400">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-caption font-medium text-primary">
               <Gift className="size-3.5" />
               <span>{t('trialRegistration.badge')}</span>
             </div>
-            <h1 className="mt-3 text-h1 font-bold text-ink-strong">
+            <h1 className="mt-3 font-display text-h1 font-bold text-ink-strong">
               {t('trialRegistration.title')}
             </h1>
             <p className="mt-2 text-body text-ink-2">
@@ -187,15 +205,15 @@ export function TrialRegistrationPage() {
             </p>
           </div>
 
-          <Card className="relative border-border bg-bg shadow-sm">
+          <Card className="relative">
             {loading && (
               <div
                 role="status"
                 aria-live="polite"
                 className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-[inherit] bg-bg/85 backdrop-blur-xs px-6 py-12 text-center animate-[lm-fade-in_180ms_ease-out]"
               >
-                <div className="flex size-14 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400">
-                  <Spinner className="size-7 border-2 border-cyan-400 border-t-transparent" />
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary-bg text-primary">
+                  <Spinner className="size-7 border-2 border-primary border-t-transparent" />
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
                   <p className="text-body font-semibold text-ink-strong">
@@ -269,11 +287,11 @@ export function TrialRegistrationPage() {
                       <span className="text-small font-medium text-ink-strong">
                         {t('trialRegistration.step1.interestedPlan')}
                       </span>
-                      <div className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-bg-muted px-3 py-2 text-small">
+                      <div className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-surface px-3 py-2 text-small">
                         <span className="font-semibold text-ink-strong">
                           {basicPlan?.name ?? t('trialRegistration.step1.fixedPlanName')}
                         </span>
-                        <span className="rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-caption font-medium text-cyan-500">
+                        <span className="rounded-full bg-primary-bg px-2.5 py-0.5 text-caption font-medium text-primary">
                           {t('trialRegistration.step1.fixedPlanBadge')}
                         </span>
                       </div>
@@ -470,7 +488,7 @@ export function TrialRegistrationPage() {
                 <div className="flex size-16 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="size-10" />
                 </div>
-                <h2 className="mt-4 text-h2 font-bold text-ink-strong">
+                <h2 className="mt-4 font-display text-h2 font-bold text-ink-strong">
                   {t('trialRegistration.success.title')}
                 </h2>
                 <p className="mt-2 max-w-md text-body text-ink-2">
@@ -502,7 +520,7 @@ export function TrialRegistrationPage() {
                 <div className="flex size-16 items-center justify-center rounded-full bg-danger/10 text-danger">
                   <AlertCircle className="size-10" />
                 </div>
-                <h2 className="mt-4 text-h2 font-bold text-ink-strong">
+                <h2 className="mt-4 font-display text-h2 font-bold text-ink-strong">
                   {t('trialRegistration.rejected.title')}
                 </h2>
                 <p className="mt-2 max-w-md text-body text-ink-2">

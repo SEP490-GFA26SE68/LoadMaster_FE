@@ -66,6 +66,10 @@ export const trialRegistration = {
     editInfo: 'Edit Information',
     contactSupport: 'Contact Support',
   },
+  toasts: {
+    otpSent: 'A verification code has been sent to your email.',
+    otpResent: 'Verification code sent again.',
+  },
   validation: {
     companyNameRequired: 'Please enter company name',
     taxCodeRequired: 'Please enter tax code',
