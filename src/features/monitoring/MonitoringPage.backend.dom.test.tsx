@@ -25,10 +25,13 @@ const TRIP = 'TRIP-20261018-0A1B2C3D'
 const EXCEPTION = { id: '31', tripId: TRIP, type: 'TRAFFIC', description: 'Kẹt xe cầu Đồng Nai', delayMinutes: 25, reportedAt: '2026-10-18T09:10:00', reportedBy: '4' }
 
 let status = 'OPEN'
+/** Máy chủ từ chối đổi thứ tự vì kiện bị che kín lối dỡ. */
+let reorderBlocked = false
 let calls: FakeCall[] = []
 
 beforeEach(() => {
   status = 'OPEN'
+  reorderBlocked = false
   connectApiAuth(() => Promise.resolve('token-1'))
   calls = stubBackend({
     'GET /api/dispatcher/dashboard': {
@@ -66,6 +69,9 @@ beforeEach(() => {
       body: envelope({ trip: { id: 55 }, stops: [{ id: 8, deliveryRequirementId: 41, stopSequence: 2, stopName: 'Bách Hoá Xanh Dĩ An', status: 'PENDING' }] }),
     },
     [`POST /api/trips/${TRIP}/exceptions/31/renegotiate`]: () => ({ body: envelope({ ...EXCEPTION, status, escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }) }),
+    [`POST /api/trips/${TRIP}/stops/reorder`]: () => (reorderBlocked
+      ? { status: 409, body: { success: false, code: 'STOP_ORDER_BLOCKS_CARGO', message: 'x', errors: { packages: ['PK-0012'], stopIds: ['7'] } } }
+      : { body: envelope({ tripId: 55, tripCode: TRIP, stops: [{ stopId: 8, sequence: 1 }, { stopId: 7, sequence: 2 }], partial: [] }) }),
     [`POST /api/trips/${TRIP}/exceptions/31/escalate`]: () => {
       status = 'ESCALATED'
       return { body: envelope({ ...EXCEPTION, status, escalation: { reason: 'NO_ROUTE', at: '2026-10-18T09:15:00', by: '4' } }) }
@@ -94,12 +100,12 @@ function renderPage(role: Role) {
 
 const SLOW = { timeout: 8000 }
 
-test('điều phối viên xem chuyến của backend: không liên kết chuyến, không đổi thứ tự điểm; xử lý sự cố gọi backend', async () => {
+test('điều phối viên xem chuyến của backend: không liên kết chuyến; xử lý sự cố gọi backend', async () => {
   const user = userEvent.setup()
   renderPage('dispatcher')
   const panel = within(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW))
   expect(panel.queryByRole('link', { name: 'Mở chuyến' })).toBeNull()
-  expect(panel.queryByRole('button', { name: 'Đổi thứ tự điểm' })).toBeNull()
+  expect(panel.getByRole('button', { name: 'Đổi thứ tự điểm' })).toBeEnabled()
   expect(panel.getByRole('button', { name: 'Báo sự cố' })).toBeInTheDocument()
 
   // Điểm 1 không còn trong giờ đến của máy chủ: đã giao xong; điểm 2 có giờ đến và hạn theo kế hoạch của tuyến
@@ -124,6 +130,24 @@ test('điều phối viên xem chuyến của backend: không liên kết chuy�
     'GET /api/trips/monitoring',
     `POST /api/trips/${TRIP}/exceptions/31/resolve`,
   ].sort())
+})
+
+test('đổi thứ tự điểm qua máy chủ: máy chủ từ chối vì kiện bị che kín thì hộp nêu kiện và điểm; lần sau áp dụng được', async () => {
+  const user = userEvent.setup()
+  reorderBlocked = true
+  renderPage('dispatcher')
+  const panel = within(await screen.findByRole('region', { name: `Giám sát chuyến ${TRIP}` }, SLOW))
+  await user.click(panel.getByRole('button', { name: 'Đổi thứ tự điểm' }))
+  const dialog = within(await screen.findByRole('dialog'))
+  await user.click(dialog.getByRole('button', { name: 'Dời Bách Hoá Xanh Dĩ An lên' }))
+  await user.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
+  const list = await dialog.findByRole('list', { name: 'Kiện bị chắn' })
+  expect(list).toHaveTextContent('PK-0012 — điểm 1 · Co.opmart Biên Hoà')
+
+  reorderBlocked = false
+  await user.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
+  expect(await screen.findByText(`Đã đổi thứ tự điểm giao của chuyến ${TRIP}.`, undefined, SLOW)).toBeInTheDocument()
+  expect(calls.filter((call) => call.path === `/api/trips/${TRIP}/stops/reorder`).map((call) => call.body)).toEqual([{ stopIds: [8, 7] }, { stopIds: [8, 7] }])
 })
 
 test('điều phối viên chuyển sự cố cho quản lý: gọi backend, sự cố thành Đã chuyển quản lý', async () => {

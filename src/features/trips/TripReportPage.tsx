@@ -15,6 +15,8 @@ import { TripReportInfo } from './TripReportInfo'
 import { TripReportKpis } from './TripReportKpis'
 import { TripReportPrint, usePrinting } from './TripReportPrint'
 import { TripReportIssues, TripReportStops } from './TripReportTables'
+import { ServerTripReportPage } from './ServerTripReportPage'
+import { TRIPS_CAPABILITIES } from './trips-capabilities'
 import { useTripReportQuery } from './useTripExtrasQuery'
 
 /**
@@ -23,8 +25,13 @@ import { useTripReportQuery } from './useTripExtrasQuery'
  * hạn, kiện hoàn trả), thông tin chuyến (xe, tài xế, số seal, lý do chở chung khác loại hàng, mốc giờ), cách đối chiếu kiện, sự cố cấp
  * chuyến và tuyến đã đổi, xác nhận tay kèm người duyệt, sự cố giao hàng. Chuyến chưa hoàn thành vẫn mở được, kèm banner nói báo cáo
  * chưa đủ; chuyến đã huỷ có banner nói lúc huỷ và lý do. "In báo cáo" in một bản phẳng không có khung ứng dụng (`TripReportPrint`).
+ * Nhóm `trips` nối backend thì màn là `ServerTripReportPage` (báo cáo máy chủ đếm).
  */
 export function TripReportPage() {
+  return TRIPS_CAPABILITIES.backend ? <ServerTripReportPage /> : <StoreTripReportPage />
+}
+
+function StoreTripReportPage() {
   const t = useT()
   const { tripId = '' } = useParams()
   const query = useTripReportQuery(tripId)

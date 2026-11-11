@@ -84,10 +84,10 @@ export function PackagesTable({ all, rows, list, tabbed, selected, onSelectedCha
       kind: 'select', name: CLASS_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.handlingClass'), allLabel: t('sourcing.packages.filters.allClasses'),
       options: HANDLING_CLASSES.map((value) => ({ value: HANDLING_CLASS_SLUGS[value], label: t(`common.handlingClasses.${value}`) })),
     },
-    ...(PACKAGE_POOL_SUPPORT.flags ? [{
+    {
       kind: 'select', name: FLAG_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.flag'), allLabel: t('sourcing.packages.filters.allFlags'),
       options: FLAG_CHOICES.map((value) => ({ value: FLAG_SLUGS[value], label: value === NO_FLAG ? t('sourcing.packages.filters.noFlag') : t(`common.packageFlags.${value}`) })),
-    } satisfies FilterField<PackageFilterName>] : []),
+    },
     ...(PACKAGE_POOL_SUPPORT.links ? [{
       kind: 'select', name: LINK_FILTER, secondary: panelOpen, label: t('sourcing.packages.filters.link'), allLabel: t('sourcing.packages.filters.allLinks'),
       options: LINK_CHOICES.map((value) => ({ value: LINK_SLUGS[value], label: t(`sourcing.packages.filters.${value}`) })),

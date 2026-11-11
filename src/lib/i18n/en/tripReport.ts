@@ -101,4 +101,16 @@ export const tripReport = {
     wholeStop: 'Whole stop',
     none: 'The trip has no issues.',
   },
+  server: {
+    source: 'Figures counted by the server from what the warehouse and driver recorded.',
+    plannedDeparture: 'Planned departure',
+    total: 'Packages on the trip',
+    loaded: 'Loaded onto the vehicle',
+    byLabel: 'By label',
+    verifyNote: 'By label covers QR scans and typed codes. Each package counts its latest check at each step.',
+    stopDone: 'Done',
+    issuesNote: 'Package issues the driver reported at the stops',
+    cancelledInTransit: 'The trip was cancelled while in transit. Reason: {reason}',
+    cancelled: 'The trip was cancelled. Reason: {reason}',
+  },
 } satisfies Dictionary<typeof source>

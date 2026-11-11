@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { fetchServerTripReport } from './server-trip-report-api'
 import { fetchTripLabels, fetchTripReadiness, fetchTripReport, fetchTripRequirements } from './trip-extras-api'
 
 /**
@@ -16,6 +17,11 @@ export function useTripRequirementsQuery(tripId: string) {
 
 export function useTripLabelsQuery(tripId: string) {
   return useQuery({ queryKey: ['trips', tripId, 'labels'], queryFn: () => fetchTripLabels(tripId), enabled: tripId !== '' })
+}
+
+/** Báo cáo chuyến của máy chủ (nhóm `trips` nối backend); khoá riêng với bản kho mẫu vì dữ liệu khác hình. */
+export function useServerTripReportQuery(tripCode: string) {
+  return useQuery({ queryKey: ['trips', tripCode, 'server-report'], queryFn: () => fetchServerTripReport(tripCode), enabled: tripCode !== '', staleTime: 0 })
 }
 
 export function useTripReportQuery(tripId: string) {

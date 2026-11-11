@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PackageOpen, Plus, Route } from 'lucide-react'
+import { FileText, PackageOpen, Plus, Printer, Route } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { Banner } from '@/components/Banner'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
+import { tripLabelsPath } from '@/features/package-pool/backend/packages-list'
 import { BackendLoadPlansCard } from '@/features/optimization/BackendLoadPlansCard'
 import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { serverTripPhase } from '@/features/pickups/pickup-stops'
@@ -170,6 +172,10 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   const canWrite = can('trips.edit')
   const canRemoveRequirement = canWrite && isEditableStatus(trip.status)
   const canOptimizeLoading = can('optimization.run') && isEditableStatus(trip.status) && stops.length > 0
+  // Báo cáo chuyến: chuyến đã giao, hoặc bị huỷ lúc đang vận chuyển — mọi người xem được chuyến (như bản kho mẫu)
+  const canReport = trip.status === 'DELIVERED' || (trip.status === 'CANCELLED' && trip.cancelledFromStatus === 'IN_TRANSIT')
+  // Nhãn QR mọi kiện của chuyến (`GET /api/packages/export/labels/trip/{mã chuyến}`): chuyến có điểm giao là có kiện để in
+  const canPrintLabels = can('labels.print') && trip.status !== 'CANCELLED' && stops.length > 0
 
 
   return (
@@ -192,8 +198,28 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
               </Button>
             )}
 
+            {canReport ? (
+              <Button variant="secondary" asChild>
+                <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>
+                  <FileText className="size-4" aria-hidden />
+                  {t('tripReport.title')}
+                </Link>
+              </Button>
+            ) : null}
+            {canPrintLabels ? (
+              <Button variant="secondary" asChild>
+                <Link to={tripLabelsPath(trip.tripCode)}>
+                  <Printer className="size-4" aria-hidden />
+                  {t('trips.packages.printLabels')}
+                </Link>
+              </Button>
+            ) : null}
             {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
           </div>
+
+          {trip.status === 'CANCELLED' && trip.cancelReason ? (
+            <Banner tone="warning">{t('trips.server.cancelReason', { reason: trip.cancelReason })}</Banner>
+          ) : null}
 
 
           {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server /> : null}

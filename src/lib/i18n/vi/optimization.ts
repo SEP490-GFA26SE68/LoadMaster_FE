@@ -41,8 +41,8 @@ export const optimization = {
     title: 'Giữ kiện đã ghim',
     switch: { one: 'Giữ nguyên chỗ {count} kiện đã ghim', other: 'Giữ nguyên chỗ {count} kiện đã ghim' },
     on: {
-      plan: 'Phương án {revision} có {count} kiện đã ghim. Lần chạy này giữ đúng vị trí và hướng của chúng, mock chỉ xếp các kiện còn lại quanh chúng. Vẫn ba phương án A · B · C, vẫn một credit.',
-      loaded: 'Kho đã xếp {count} kiện lên xe trước khi gặp kiện hỏng. Lần chạy này giữ nguyên chỗ và hướng của chúng, chỉ xếp các kiện còn lại quanh chúng — không phải dỡ chúng ra. Vẫn ba phương án A · B · C, vẫn một credit.',
+      plan: 'Phương án {revision} có {count} kiện đã ghim. Lần chạy này giữ đúng vị trí và hướng của chúng, mock chỉ xếp các kiện còn lại quanh chúng. Vẫn ba phương án A · B · C, vẫn tính là một lần chạy.',
+      loaded: 'Kho đã xếp {count} kiện lên xe trước khi gặp kiện hỏng. Lần chạy này giữ nguyên chỗ và hướng của chúng, chỉ xếp các kiện còn lại quanh chúng — không phải dỡ chúng ra. Vẫn ba phương án A · B · C, vẫn tính là một lần chạy.',
     },
     off: 'Chạy bình thường: mọi kiện được xếp lại từ đầu.',
     blocked: {
@@ -63,7 +63,7 @@ export const optimization = {
     noPlan: 'Công ty chưa có gói cước.',
     /** Chỉ điều phối viên mở được màn này (`optimization.run`); quản trị công ty nạp credit ở màn gói cước. */
     blocked: {
-      INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty',
+      INSUFFICIENT_CREDITS: 'Không đủ credit cho lần chạy này — liên hệ quản trị công ty',
       SUBSCRIPTION_EXPIRED: 'Gói cước đã hết hạn — liên hệ quản trị công ty',
     },
   },

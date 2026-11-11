@@ -5,13 +5,15 @@ import {
   BILLING_CAPABILITIES,
   cancelSubscription,
   getCreditBalance,
+  getRenewal,
   getSubscriptionView,
+  getTopUpTerms,
   listCreditTransactions,
   listInvoices,
   listPlansOnSale,
+  renewSubscription,
   subscribe,
   topUpCredits,
-  topUpTerms,
 } from './billing-api'
 
 /**
@@ -46,15 +48,57 @@ function freezeAt(iso: string) {
 
 test('nguồn backend: hoá đơn thay lịch sử thanh toán, xác nhận ở trang của app, gia hạn theo hợp đồng, nạp tự do, thoả thuận', () => {
   expect(BILLING_CAPABILITIES).toStrictEqual({
-    payments: false, invoices: true, simulation: false, serverPayment: true, autoRenew: false, contractRenewal: true, customTopUp: true, agreements: true,
+    payments: false, invoices: true, simulation: false, serverPayment: true, autoRenew: false, contractRenewal: true, renewal: true, customTopUp: true, agreements: true,
   })
 })
 
-test('giá nạp theo hạng như CreditController, không giới hạn trần mua lẻ; chưa có gói tính như Basic', () => {
-  expect(topUpTerms('BASIC')).toStrictEqual({ priceVnd: 400, maxBalance: null })
-  expect(topUpTerms('PRO')).toStrictEqual({ priceVnd: 326, maxBalance: null })
-  expect(topUpTerms('ULTIMATE')).toStrictEqual({ priceVnd: 263, maxBalance: null })
-  expect(topUpTerms(null)).toStrictEqual({ priceVnd: 400, maxBalance: null })
+const pricing = (tier: string, price: number, topUpAllowed = true) =>
+  envelope({
+    tier, pricePerCreditVnd: price, tierPrices: { BASIC: 400, PRO: 326, ULTIMATE: 263 }, optimizationCost: 2, rerunCost: 1,
+    minTopUpCredits: 1, maxTopUpCredits: null, unlimited: false, topUpAllowed, lowBalanceThreshold: 10,
+  })
+
+test('giá nạp đọc từ bảng giá của máy chủ theo hạng gói, không trần số dư; gói hết hạn thì máy chủ không cho nạp', async () => {
+  backend.replies = [pricing('PRO', 326)]
+  expect(await getTopUpTerms()).toStrictEqual({ tier: 'PRO', priceVnd: 326, minCredits: 1, maxBalance: null, allowed: true })
+  expect(backend.calls.map((call) => `${call.method} ${call.url} ${call.auth}`)).toStrictEqual(['GET http://be.test/api/credits/pricing Bearer token-1'])
+  backend.replies = [pricing('BASIC', 400, false)]
+  expect(await getTopUpTerms()).toStrictEqual({ tier: 'BASIC', priceVnd: 400, minCredits: 1, maxBalance: null, allowed: false })
+})
+
+test('gia hạn: đọc gói vừa dùng, có gia hạn được không và thanh toán gói còn chờ; giờ Việt Nam đổi sang ISO', async () => {
+  backend.replies = [
+    envelope({
+      planId: 2, planName: 'Pro', tier: 'PRO', planActive: false, status: 'EXPIRED', expiresAt: '2026-10-10T08:00:00', amountVnd: 1490000,
+      renewable: true, reason: null, renewalWindowDays: 3,
+      pendingPayment: {
+        id: 9, transactionId: 'MOCK_42', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_42', orderType: 'SUBSCRIPTION_RENEWAL', planId: 2,
+        amountVnd: 1490000, createdAt: '2026-10-17T08:00:00',
+      },
+    }),
+  ]
+  expect(await getRenewal()).toStrictEqual({
+    planName: 'Pro', planOnSale: false, expiresAt: '2026-10-10T01:00:00.000Z', amountVnd: 1490000, renewable: true, block: null, windowDays: 3,
+    pending: { reference: 'MOCK_42', renewal: true, amountVnd: 1490000 },
+  })
+  expect(backend.calls.map((call) => `${call.method} ${call.url}`)).toStrictEqual(['GET http://be.test/api/subscription/renewal'])
+  backend.replies = [
+    envelope({
+      planId: 2, planName: 'Pro', tier: 'PRO', planActive: true, status: 'ACTIVE', expiresAt: '2026-11-01T08:00:00', amountVnd: 1490000,
+      renewable: false, reason: 'NOT_DUE', renewalWindowDays: 3, pendingPayment: null,
+    }),
+  ]
+  expect(await getRenewal()).toMatchObject({ renewable: false, block: 'NOT_DUE', pending: null })
+})
+
+test('gia hạn gửi cổng MOCK tới /renew và mở trang xác nhận; chưa tới kỳ là SUBSCRIPTION_NOT_RENEWABLE', async () => {
+  backend.replies = [envelope({ paymentUrl: 'http://be.test/api/payment/mock-checkout?txnRef=MOCK_7', transactionId: 'MOCK_7', id: 7, status: 'PENDING', amountVnd: 1490000 })]
+  expect(await renewSubscription()).toStrictEqual({ kind: 'confirm', reference: 'MOCK_7', purpose: 'SUBSCRIBE', amountVnd: 1490000 })
+  expect(backend.calls.map((call) => `${call.method} ${call.url} ${JSON.stringify(call.body)}`)).toStrictEqual([
+    'POST http://be.test/api/subscription/renew {"gateway":"MOCK"}',
+  ])
+  backend.replies = [failure(409)]
+  await expect(renewSubscription()).rejects.toMatchObject({ code: 'SUBSCRIPTION_NOT_RENEWABLE' })
 })
 
 test('gói đang dùng: đọc gói hiện tại rồi gói cước của nó, giờ Việt Nam đổi sang ISO', async () => {

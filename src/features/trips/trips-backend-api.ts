@@ -290,6 +290,9 @@ export type TripDetailApiResponse = {
   stopCount?: number | null
   packageCount?: number | null
   hasActiveRoutePlan?: boolean | null
+  /** Lý do huỷ và trạng thái lúc huỷ; chuyến huỷ trước khi máy chủ lưu hai cột này thì vắng. */
+  cancelReason?: string | null
+  cancelledFromStatus?: TripDetailApiResponse['status'] | null
 }
 
 export type CreatedTrip = {

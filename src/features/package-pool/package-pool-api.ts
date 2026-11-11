@@ -10,12 +10,13 @@
  *   fetchPackageTypes             → GET /api/package-types
  *   fetchPackageType              → GET /api/package-types/{id}
  *   savePackageType, deletePackageType: nối backend thì màn `backend/PackageTypesPage` ghi loại kiện, không gọi hai hàm này
- *   chưa có ở BE: clearPackageFlag (cờ kiện)
+ *   clearPackageFlag              → DELETE /api/packages/{id}/flag
  *   tra cứu kiện ở `package-lookup-api.ts`, nhãn ở `package-labels-api.ts`
  */
 
 import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-import-template'
 import { readImportFile } from '@/features/trips/read-import-file'
+import type { Permission } from '@/features/auth/permissions'
 import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
@@ -47,7 +48,7 @@ const BACKEND_STATUSES: readonly PackageStatus[] = ['IMPORTED', 'ASSIGNED', 'LOA
 
 /**
  * Việc kho kiện làm được với nguồn dữ liệu đang dùng. Kho mẫu làm hết; backend thiếu trường — danh sách không trả chiều rộng, chiều cao,
- * điểm đến; không có lịch sử. Người có `packages.view` đọc được kho kiện ở cả hai nguồn. Màn ẩn phần không có nguồn (D-20), không vẽ số 0
+ * điểm đến. Người có `packages.view` đọc được kho kiện ở cả hai nguồn. Màn ẩn phần không có nguồn (D-20), không vẽ số 0
  * hay ô trống thay cho dữ liệu backend không có.
  */
 export const PACKAGE_POOL_SUPPORT = {
@@ -57,16 +58,15 @@ export const PACKAGE_POOL_SUPPORT = {
   listDestinations: !ON_BACKEND,
   /** Kiện gắn yêu cầu giao và chuyến trong danh sách (cột, bộ lọc "Đã gán"). */
   links: !ON_BACKEND,
-  /** Cờ kiện (Không tìm thấy, Hỏng) và gỡ cờ. */
-  flags: !ON_BACKEND,
-  /** Lịch sử kiện ở panel chi tiết. */
-  history: !ON_BACKEND,
+  /**
+   * Quyền của người gỡ cờ kiện ở Tra cứu kiện: máy chủ chỉ cho điều phối viên (`trips.edit`, như panel chi tiết kiện của máy chủ); kho mẫu
+   * cho nhân viên kho của `packages.manage`.
+   */
+  flagClearer: (ON_BACKEND ? 'trips.edit' : 'packages.manage') satisfies Permission,
   /** Nguồn của kiện (nhập file, thêm tay, trong chuyến): backend không trả. */
   source: !ON_BACKEND,
   /** File mẫu và luật đọc file nhập là của backend: chỉ mẫu `.xlsx`, chỉ tên cột của backend, loại hàng ghi bằng mã. */
   serverTemplate: ON_BACKEND,
-  /** Nhãn mọi kiện của một chuyến (`?chuyen=`). */
-  tripLabels: !ON_BACKEND,
   /**
    * Liên kết tới chuyến của kiện: chỉ khi kho kiện và chuyến cùng đọc kho mẫu. Kiện của backend chưa mang mã chuyến mà Chi tiết chuyến
    * tìm được; kiện của kho mẫu không mở được Chi tiết chuyến của máy chủ (`tripLinkable`).
@@ -177,11 +177,16 @@ export async function deletePoolPackage(id: string): Promise<void> {
   await api().delete(`/api/packages/${encodeURIComponent(id)}`)
 }
 
-/** Gỡ cờ của kiện — chỉ điều phối viên (`ROLE_NOT_ALLOWED`); kho ghi nhật ký và lịch sử kiện. */
-// chưa có ở BE
-export function clearPackageFlag(id: string, flag: PackageFlag): Promise<Package> {
-  if (ON_BACKEND) return Promise.reject(new Error('Backend chưa có cờ kiện: màn không được gọi clearPackageFlag khi nối backend.'))
-  return getMockDb().clearPackageFlag(id, flag)
+/**
+ * Gỡ cờ của kiện; kho ghi nhật ký và lịch sử kiện. Kho mẫu: điều phối viên hoặc nhân viên kho (`ROLE_NOT_ALLOWED`). Máy chủ: chỉ điều phối
+ * viên, kiện mang một cờ nên gỡ cờ đó (kiện không mang cờ: 409 `PACKAGE_NOT_FLAGGED`).
+ */
+// DELETE /api/packages/{id}/flag
+export async function clearPackageFlag(id: string, flag: PackageFlag): Promise<Package> {
+  if (!ON_BACKEND) return getMockDb().clearPackageFlag(id, flag)
+  const cleared = packageOf(await api().delete<BackendPackage>(`/api/packages/${encodeURIComponent(id)}/flag`))
+  if (cleared === null) throw new ApiError('NOT_FOUND', { status: 404 })
+  return cleared
 }
 
 function fileError(error: ImportFileError): MockDbError {

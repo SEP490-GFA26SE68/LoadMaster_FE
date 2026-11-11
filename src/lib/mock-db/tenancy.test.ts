@@ -69,7 +69,7 @@ const LONG_BINH: Company = {
   freePackage: 'PK-0023',
   subscription: 'SUB-001',
   payment: 'PAY-001',
-  balance: 486,
+  balance: 472,
   usageReference: 'JOB-001',
   tickets: ['TKT-001'],
 }

@@ -7,6 +7,7 @@
  *   getPlanDto                    → GET /api/subscription/plans/{id}
  *   getCurrentSubscriptionDto     → GET /api/subscription/current
  *   getCreditBalanceDto           → GET /api/credits/balance
+ *   getCreditPricing              → GET /api/credits/pricing (giá nạp theo hạng, credit một lần tối ưu; quản trị, quản lý công ty, điều phối viên)
  *   listCreditTransactionDtos     → GET /api/credits/transactions (đọc theo trang)
  */
 
@@ -165,6 +166,47 @@ export function getCurrentSubscriptionDto(client: ApiClient = api()): Promise<Cu
 // GET /api/credits/balance
 export function getCreditBalanceDto(client: ApiClient = api()): Promise<CreditBalanceDto> {
   return client.get<CreditBalanceDto>('/api/credits/balance')
+}
+
+/** `CreditPricingResponse`: giá và luật credit của công ty đang gọi. Số là BigDecimal (số JSON). */
+type CreditPricingDto = {
+  readonly tier: PlanTier | null
+  readonly pricePerCreditVnd: number | string | null
+  readonly optimizationCost: number | null
+  readonly minTopUpCredits: number | null
+  readonly maxTopUpCredits: number | null
+  readonly unlimited: boolean | null
+  readonly topUpAllowed: boolean | null
+  readonly lowBalanceThreshold: number | null
+}
+
+/**
+ * Giá và luật credit máy chủ áp cho công ty: hạng tính giá (chưa có gói tính như Basic), giá một credit khi nạp, credit một lần tối ưu
+ * 3D, số credit nạp ít nhất, trần nạp một lần (`null`: không trần), nạp được không (gói đang hoạt động hoặc chưa có gói).
+ */
+export type CreditPricing = {
+  readonly tier: PlanTier
+  readonly priceVnd: number
+  readonly optimizationCost: number
+  readonly minTopUpCredits: number
+  readonly maxTopUpCredits: number | null
+  readonly unlimited: boolean
+  readonly topUpAllowed: boolean
+}
+
+// GET /api/credits/pricing
+export async function getCreditPricing(client: ApiClient = api()): Promise<CreditPricing> {
+  const dto = await client.get<CreditPricingDto>('/api/credits/pricing')
+  if (dto.optimizationCost === null || dto.pricePerCreditVnd === null) throw new ApiError('SERVER_ERROR')
+  return {
+    tier: dto.tier !== null && PLAN_TIERS.includes(dto.tier) ? dto.tier : 'BASIC',
+    priceVnd: Math.round(Number(dto.pricePerCreditVnd)),
+    optimizationCost: dto.optimizationCost,
+    minTopUpCredits: dto.minTopUpCredits ?? 1,
+    maxTopUpCredits: dto.maxTopUpCredits,
+    unlimited: dto.unlimited === true,
+    topUpAllowed: dto.topUpAllowed !== false,
+  }
 }
 
 export function creditBalanceOf(dto: CreditBalanceDto): CreditBalance {

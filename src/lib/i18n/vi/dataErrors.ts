@@ -108,7 +108,7 @@ export const dataErrors = {
   IMPORT_COLUMNS_MISSING: 'Dòng tiêu đề thiếu cột: {columns}. Tải file mẫu để xem đủ cột.',
   PACKAGE_IMPORT_INVALID: 'File còn {errors} dòng lỗi nên chưa nhập được dòng nào.',
   // Gói cước và credit (FE-8-01, FE-8-05)
-  INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  INSUFFICIENT_CREDITS: 'Không đủ credit cho lần chạy này — liên hệ quản trị công ty.',
   SUBSCRIPTION_EXPIRED: 'Gói cước của công ty đã hết hạn nên chưa chạy tối ưu được — liên hệ quản trị công ty.',
   SUBSCRIPTION_ACTIVE: 'Công ty đang có gói cước còn hiệu lực. Chỉ đăng ký gói mới khi gói hiện tại đã hết hạn.',
   SUBSCRIPTION_STATUS_INVALID: 'Công ty không có gói đang dùng để huỷ.',

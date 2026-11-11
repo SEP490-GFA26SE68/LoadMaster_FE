@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
-import { assignCompanyPlan, createSupportTicket, getSupportCompanyPanel, listSupportTickets, replyToSupportTicket, setSupportTicketStatus } from './support-api'
+import {
+  assignCompanyPlan,
+  createSupportTicket,
+  getSupportCompanyPanel,
+  getSupportTicketThread,
+  listSupportTickets,
+  replyToSupportTicket,
+  setSupportTicketStatus,
+} from './support-api'
 
 /**
  * Yêu cầu hỗ trợ khi nhóm `support` nối backend. `/api/support-tickets` trả phong bì `ApiResponse`; `createdAt` là `LocalDateTime`
@@ -116,13 +124,13 @@ test('a role the backend does not let change a ticket gets a code the screen can
   expect(isApiError(error) && error.code).toBe('UNAUTHORIZED')
 })
 
-/** Trao đổi ghi trong `resolutionNote` (backend chưa có bảng trao đổi): mảng JSON, giờ Việt Nam `yyyy-MM-dd HH:mm:ss`. */
+/** Trao đổi của bản trước ghi trong `resolutionNote`: mảng JSON, giờ Việt Nam `yyyy-MM-dd HH:mm:ss`. */
 const THREAD = JSON.stringify([
   { authorId: '7', authorName: 'Nguyễn Thanh Tùng', authorRole: 'dispatcher', text: 'Tin nhắn ngày 28/10', at: '2026-10-28 09:00:00' },
   { authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'systemSupporter', text: 'Tin nhắn ngày 29/10', at: '2026-10-29 14:30:00' },
 ])
 
-test('the thread lives in resolutionNote: replies are read back with their time, and the last reply is the latest activity', async () => {
+test('a ticket from before the reply table still lists its old thread from resolutionNote; with no updatedAt the last reply is the latest activity', async () => {
   routes = { 'GET /api/support-tickets': envelope([{ ...OWN, resolutionNote: THREAD }]), 'GET /api/users/me': meAs(7, 'DISPATCHER') }
   const [ticket] = await listSupportTickets()
   expect(ticket?.resolutionNote).toBeUndefined()
@@ -133,41 +141,50 @@ test('the thread lives in resolutionNote: replies are read back with their time,
   expect(ticket?.updatedAt).toBe('2026-10-29T07:30:00.000Z')
 })
 
-test('a reply re-reads the ticket, appends to the thread and keeps only the two latest active days', async () => {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-11-05T03:15:00Z'))
-  try {
-    routes = {
-      'GET /api/support-tickets': envelope([{ ...COLLEAGUE, resolutionNote: THREAD }]),
-      'GET /api/users/me': meAs(4, 'SYSTEM_SUPPORTER'),
-      'PATCH /api/support-tickets/1': () => {
-        const body = calls.at(-1)?.body as { resolutionNote: string; status?: string }
-        return envelope({ ...COLLEAGUE, status: body.status ?? COLLEAGUE.status, resolutionNote: body.resolutionNote })()
-      },
-    }
-    const updated = await replyToSupportTicket('1', '  Đã nhận, đang kiểm tra.  ')
-    const patch = calls.find((call) => call.key === 'PATCH /api/support-tickets/1')?.body as { resolutionNote: string; status?: string }
-    // Supporter trả lời yêu cầu Mở: yêu cầu sang Đang xử lý
-    expect(patch.status).toBe('IN_PROGRESS')
-    expect(JSON.parse(patch.resolutionNote)).toStrictEqual([
-      { authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'systemSupporter', text: 'Tin nhắn ngày 29/10', at: '2026-10-29 14:30:00' },
-      { authorId: '4', authorName: 'Người xem', authorRole: 'systemSupporter', text: 'Đã nhận, đang kiểm tra.', at: '2026-11-05 10:15:00' },
-    ])
-    expect(updated.replies).toHaveLength(2)
-    expect(updated.status).toBe('IN_PROGRESS')
-  } finally {
-    vi.useRealTimers()
-  }
+test('the latest activity is the updatedAt of the server when it sends one', async () => {
+  routes = { 'GET /api/support-tickets': envelope([{ ...OWN, resolutionNote: THREAD, updatedAt: '2026-10-30 08:00:00' }]), 'GET /api/users/me': meAs(7, 'DISPATCHER') }
+  const [ticket] = await listSupportTickets()
+  expect(ticket?.updatedAt).toBe('2026-10-30T01:00:00.000Z')
 })
 
-test('a company user replying does not send a status', async () => {
+/** Trao đổi ở bảng của máy chủ: mã vai trò của máy chủ; lần trả lời chép từ mảng cũ giữ mã vai trò của FE và không có người. */
+const SERVER_THREAD = [
+  { id: null, authorId: null, authorName: 'Nguyễn Thanh Tùng', authorRole: 'dispatcher', message: 'Tin nhắn cũ', createdAt: '2026-10-28 09:00:00' },
+  { id: 31, authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'SYSTEM_SUPPORTER', message: 'Đã nhận', createdAt: '2026-10-29 14:30:00' },
+  { id: 32, authorId: '7', authorName: 'Nguyễn Thanh Tùng', authorRole: 'GUEST', message: 'Vai trò lạ', createdAt: '2026-10-29 15:00:00' },
+]
+
+test('the thread is read from the reply table of the server: server roles become app roles, a reply of an unknown role is left out', async () => {
+  routes = { 'GET /api/support-tickets/2/replies': envelope({ ticket: { ...OWN, resolutionNote: THREAD, updatedAt: '2026-10-29 14:30:00' }, replies: SERVER_THREAD }) }
+  const ticket = await getSupportTicketThread('2')
+  expect(ticket.replies).toStrictEqual([
+    { authorId: '', authorName: 'Nguyễn Thanh Tùng', authorRole: 'dispatcher', text: 'Tin nhắn cũ', at: '2026-10-28T02:00:00.000Z' },
+    { authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'systemSupporter', text: 'Đã nhận', at: '2026-10-29T07:30:00.000Z' },
+  ])
+  expect(ticket.resolutionNote).toBeUndefined()
+  expect(ticket.updatedAt).toBe('2026-10-29T07:30:00.000Z')
+  expect(calls.map(({ key }) => key)).toStrictEqual(['GET /api/support-tickets/2/replies'])
+})
+
+test('a reply posts only its trimmed message to the reply table and reads back the whole thread with the status the server set', async () => {
   routes = {
-    'GET /api/support-tickets': envelope([OWN]),
-    'GET /api/users/me': meAs(7, 'DISPATCHER'),
-    'PATCH /api/support-tickets/2': envelope(OWN),
+    'POST /api/support-tickets/1/replies': envelope({
+      ticket: { ...COLLEAGUE, status: 'IN_PROGRESS', assignedToId: 4, updatedAt: '2026-11-05 10:15:00' },
+      replies: [{ id: 40, authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'SYSTEM_SUPPORTER', message: 'Đã nhận, đang kiểm tra.', createdAt: '2026-11-05 10:15:00' }],
+    }),
   }
-  await replyToSupportTicket('2', 'Cảm ơn')
-  expect(Object.keys(calls.find((call) => call.key === 'PATCH /api/support-tickets/2')?.body as object)).toStrictEqual(['resolutionNote'])
+  const updated = await replyToSupportTicket('1', '  Đã nhận, đang kiểm tra.  ')
+  expect(calls.map(({ key, body }) => ({ key, body }))).toStrictEqual([{ key: 'POST /api/support-tickets/1/replies', body: { message: 'Đã nhận, đang kiểm tra.' } }])
+  expect(updated).toMatchObject({ id: '1', status: 'IN_PROGRESS', updatedAt: '2026-11-05T03:15:00.000Z' })
+  expect(updated.replies.map(({ text, authorRole }) => ({ text, authorRole }))).toStrictEqual([{ text: 'Đã nhận, đang kiểm tra.', authorRole: 'systemSupporter' }])
+})
+
+test('a closed ticket refuses a reply with the code of the server', async () => {
+  routes = {
+    'POST /api/support-tickets/2/replies': () => new Response(JSON.stringify({ success: false, code: 'SUPPORT_TICKET_CLOSED', message: 'Phiếu đã đóng' }), { status: 409 }),
+  }
+  const error = await replyToSupportTicket('2', 'Còn ai không?').catch((caught: unknown) => caught)
+  expect(isApiError(error) && error.code).toBe('SUPPORT_TICKET_CLOSED')
 })
 
 test('the company panel reads the contract, balance and transactions of that company; a balance that cannot be read is not shown as 0', async () => {

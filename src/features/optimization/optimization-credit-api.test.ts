@@ -24,9 +24,14 @@ const statusOnly = (status: CurrentSubscriptionDto['status'], creditsBalance: nu
   creditsBalance, creditsMonthlyGrant: null, algorithmTier: null,
 })
 
-function serve(current: CurrentSubscriptionDto, balance: number, isUnlimited = false) {
+/** Bảng giá của máy chủ: một lần tối ưu 3D tốn `cost` credit (máy chủ hiện là 2). */
+function serve(current: CurrentSubscriptionDto, balance: number, isUnlimited = false, cost = 2) {
   backend.routes['GET /api/subscription/current'] = envelope(current)
   backend.routes['GET /api/credits/balance'] = envelope({ companyId: 1, balance, isUnlimited })
+  backend.routes['GET /api/credits/pricing'] = envelope({
+    tier: 'PRO', pricePerCreditVnd: 326, tierPrices: { BASIC: 400, PRO: 326, ULTIMATE: 263 }, optimizationCost: cost, rerunCost: 1,
+    minTopUpCredits: 1, maxTopUpCredits: null, unlimited: isUnlimited, topUpAllowed: true, lowBalanceThreshold: 10,
+  })
 }
 
 beforeEach(() => {
@@ -38,22 +43,27 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-test('an active plan with credits: one run costs 1 credit, the tier of the plan, nothing blocks; both reads carry the token', async () => {
+test('an active plan with credits: one run costs what the server pricing says, the tier of the plan, nothing blocks; every read carries the token', async () => {
   serve(PRO, 1200)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 1, balance: 1200, unlimited: false, block: null, lapsed: false,
+    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 2, balance: 1200, unlimited: false, block: null, lapsed: false,
   })
   expect(backend.calls.map((call) => `${call.method} ${call.url} ${call.auth}`).sort()).toStrictEqual([
     'GET http://be.test/api/credits/balance Bearer token-1',
+    'GET http://be.test/api/credits/pricing Bearer token-1',
     'GET http://be.test/api/subscription/current Bearer token-1',
   ])
 })
 
-test('no credit left blocks with INSUFFICIENT_CREDITS; a cancelled plan (no auto-renew) still runs until its end', async () => {
+test('a balance below the cost of one run blocks with INSUFFICIENT_CREDITS; a cancelled plan (no auto-renew) still runs until its end', async () => {
   serve(PRO, 0)
-  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 1, balance: 0, block: 'INSUFFICIENT_CREDITS' })
-  serve({ ...PRO, autoRenew: false }, 3)
-  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 1, balance: 3, block: null })
+  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 2, balance: 0, block: 'INSUFFICIENT_CREDITS' })
+  serve(PRO, 1)
+  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 2, balance: 1, block: 'INSUFFICIENT_CREDITS' })
+  serve({ ...PRO, autoRenew: false }, 2)
+  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 2, balance: 2, block: null })
+  serve(PRO, 2, false, 3)
+  expect(await fetchOptimizationCredit(), 'the app keeps no cost of its own').toMatchObject({ cost: 3, balance: 2, block: 'INSUFFICIENT_CREDITS' })
 })
 
 test('an unlimited plan costs nothing and never blocks, whatever the balance', async () => {
@@ -65,13 +75,13 @@ test('an unlimited plan costs nothing and never blocks, whatever the balance', a
 
 test('a plan past its end that the backend still calls ACTIVE is expired: it keeps its name, the run is blocked', async () => {
   serve({ ...PRO, expiresAt: '2026-10-16T08:00:00' }, 1200)
-  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 1, balance: 1200, block: 'SUBSCRIPTION_EXPIRED', lapsed: false })
+  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 2, balance: 1200, block: 'SUBSCRIPTION_EXPIRED', lapsed: false })
 })
 
 test('an expired plan the backend no longer names is lapsed: the balance stays, the run is blocked', async () => {
   serve(statusOnly('EXPIRED', 40), 40)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: null, algorithmTier: null, cost: 1, balance: 40, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: true,
+    planName: null, algorithmTier: null, cost: 2, balance: 40, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: true,
   })
 })
 

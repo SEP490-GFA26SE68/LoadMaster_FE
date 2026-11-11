@@ -78,7 +78,6 @@ const notificationRows = () => menuItems().map((item) => ({
 }))
 
 const TRIP_010 = 'Tuyến Thủ Đức – An Phú – Phú Nhuận · TRIP-010'
-const TRIP_011 = 'Tuyến Tân Bình – Q.1 – Q.7 · TRIP-011'
 
 test('the driver is told in their own words when the warehouse starts staging a trip of theirs, and the notice opens that trip', async () => {
   const user = userEvent.setup()
@@ -108,19 +107,33 @@ test('the driver is told in their own words when the warehouse starts staging a 
   expect(screen.getByRole('button', { name: 'Thông báo, 2 chưa đọc' })).toBeInTheDocument()
 })
 
-test('a driver put on a trip the warehouse is loading gets a new trip and its cancellation; the replaced driver is told the trip is gone and no notice opens it', async () => {
+test('a driver put on a trip on hold gets a new trip and its cancellation; the replaced driver is told the trip is gone and no notice opens it', async () => {
   const user = userEvent.setup()
-  // Điều phối viên đưa Ngô Văn Bảo (US-0006) vào TRIP-011 — kho đang xếp — thay Đặng Hoài Nam (US-0007), rồi huỷ chuyến
+  // Như máy chủ, kho đã bắt đầu xếp thì không đổi tài xế: chuyến hai thùng của Đặng Hoài Nam (US-0007) quay về Đã lập kế hoạch vì kiện
+  // hỏng; điều phối viên đưa Ngô Văn Bảo (US-0006) vào thay rồi huỷ chuyến
   const driver = renderTouchBell('US-0006')
-  await actAs('US-0001', driver.id, async () => {
-    await getMockDb().updateTrip('TRIP-011', { driverId: 'US-0006' })
-    await getMockDb().cancelTrip('TRIP-011', 'Xe hỏng máy lạnh')
+  const db = getMockDb()
+  const tripId = await actAs('US-0001', driver.id, async () => {
+    const { id } = await db.createTrip({ ...twoCartonTrip(), driverId: 'US-0007' })
+    await approveTwoCartons(id, true)
+    return id
   })
+  await actAs('US-0003', driver.id, async () => {
+    await db.startLoading(tripId)
+    await stageAll(db, tripId)
+    await db.reportDamagedPackage(tripId, 'PKG-001-01')
+  })
+  await actAs('US-0001', driver.id, async () => {
+    await db.updateTrip(tripId, { driverId: 'US-0006' })
+    await db.cancelTrip(tripId, 'Xe hỏng máy lạnh')
+  })
+  const trip = `Tuyến Thủ Đức – Dĩ An – Biên Hoà · ${tripId}`
   await user.click(await screen.findByRole('button', { name: /^Thông báo/ }, SLOW))
   await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Chuyến đã huỷ'), SLOW)
+  const href = `/tai-xe/diem-giao?chuyen=${tripId}`
   expect(notificationRows().slice(0, 2)).toStrictEqual([
-    { text: ['Chuyến đã huỷ', TRIP_011], meta: 'Nguyễn Thanh Tùng · Lý do: Xe hỏng máy lạnh · Đã lên xe: 110', href: '/tai-xe/diem-giao?chuyen=TRIP-011' },
-    { text: ['Chuyến mới: bạn được giao chuyến này', TRIP_011], meta: 'Nguyễn Thanh Tùng', href: '/tai-xe/diem-giao?chuyen=TRIP-011' },
+    { text: ['Chuyến đã huỷ', trip], meta: 'Nguyễn Thanh Tùng · Lý do: Xe hỏng máy lạnh', href },
+    { text: ['Chuyến mới: bạn được giao chuyến này', trip], meta: 'Nguyễn Thanh Tùng', href },
   ])
   await user.keyboard('{Escape}')
   cleanup()
@@ -129,11 +142,12 @@ test('a driver put on a trip the warehouse is loading gets a new trip and its ca
   renderTouchBell('US-0007')
   await user.click(await screen.findByRole('button', { name: /^Thông báo/ }, SLOW))
   await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Bạn không còn chạy chuyến này'), SLOW)
-  expect(notificationRows().filter((row) => row.text[1] === TRIP_011)).toStrictEqual([
-    { text: ['Bạn không còn chạy chuyến này', TRIP_011], meta: 'Nguyễn Thanh Tùng', href: null },
-    { text: ['Chuyến mới: kho đang soạn hàng', TRIP_011], meta: 'Đỗ Thị Hạnh', href: null },
+  expect(notificationRows().filter((row) => row.text[1] === trip)).toStrictEqual([
+    { text: ['Bạn không còn chạy chuyến này', trip], meta: 'Nguyễn Thanh Tùng', href: null },
+    { text: ['Chuyến tạm dừng: kho báo kiện hỏng, chờ điều phối lập lại phương án', trip], meta: 'Lê Văn Hải', href: null },
+    { text: ['Chuyến mới: kho đang soạn hàng', trip], meta: 'Lê Văn Hải', href: null },
   ])
-})
+}, 30_000)
 
 /**
  * Điều phối viên duyệt một phương án dựng tay cho mọi kiện hiện có của chuyến hai thùng (`twoCartonTrip`). `stacked`: thùng giao điểm 1

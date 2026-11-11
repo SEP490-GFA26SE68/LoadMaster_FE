@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { Permission } from '@/features/auth/permissions'
 import { downloadBlob } from '@/features/trips/download-file'
-import type { PackageFlag, PackageInput, PackageTypeInput } from '@/lib/mock-db'
+import type { Package, PackageFlag, PackageInput, PackageTypeInput } from '@/lib/mock-db'
 import {
   clearPackageFlag,
   confirmPackageImport,
@@ -69,13 +69,12 @@ export function usePackageDetailQuery(id: string | null) {
   return useQuery({ queryKey: [...PACKAGE_POOL_KEY, 'detail', id], queryFn: () => fetchPackageDetail(id ?? ''), enabled: id !== null, staleTime: 0 })
 }
 
-/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. `enabled: false` khi nguồn đang dùng không có nhãn đó. */
-export function usePackageLabelsQuery(selection: LabelSelection, { enabled = true }: { enabled?: boolean } = {}) {
+/** Nhãn để in (`/kien-hang/nhan`): các kiện đã chọn, hoặc mọi kiện của một chuyến. */
+export function usePackageLabelsQuery(selection: LabelSelection) {
   return useQuery({
     queryKey: [...PACKAGE_POOL_KEY, 'labels', selection.tripId ?? null, selection.ids ?? null],
     queryFn: () => fetchPackageLabels(selection),
     staleTime: 0,
-    enabled,
   })
 }
 
@@ -156,5 +155,5 @@ export function useScanPackageMutation() {
 /** Kho quét thấy lại kiện mang cờ "Không tìm thấy": cờ được gỡ nên kho kiện và kiện để chọn vào yêu cầu giao đều đổi. */
 export function useReportPackageFoundMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (token: string) => reportPackageFound(token), onSuccess: () => refreshPool(client) })
+  return useMutation({ mutationFn: (pkg: Pick<Package, 'id' | 'qrToken'>) => reportPackageFound(pkg), onSuccess: () => refreshPool(client) })
 }

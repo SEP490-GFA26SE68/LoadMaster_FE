@@ -95,6 +95,9 @@ export const fleet = {
     obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
     axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
     detailNotAvailable: 'Chưa đọc được thông tin chi tiết của xe này.',
+    edit: 'Sửa thông tin xe',
+    cancelEdit: 'Huỷ sửa',
+    retiredInstead: 'Xe {name} còn trong lịch sử chuyến nên đã chuyển sang Ngừng sử dụng',
   },
   preview: {
     title: 'Xem trước 3D',
@@ -185,6 +188,7 @@ export const fleet = {
   remove: {
     title: 'Xoá xe {name}?',
     description: 'Xe bị xoá khỏi đội. Không hoàn tác được.',
+    descriptionServer: 'Xe chưa chạy chuyến nào thì bị xoá hẳn; xe đã có chuyến đã giao hoặc đã huỷ thì chuyển sang Ngừng sử dụng để giữ lịch sử.',
     cancel: 'Huỷ',
     confirm: 'Xoá xe',
   },

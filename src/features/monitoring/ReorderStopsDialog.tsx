@@ -6,6 +6,7 @@ import { StopMarker } from '@/components/map'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
+import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { isMockDbError, type MockDbErrorParams } from '@/lib/mock-db'
 import type { MonitoringStop, MonitoringTrip } from './monitoring-api'
@@ -16,7 +17,7 @@ import { useReorderStopsMutation } from './useMonitoringQuery'
  * Hộp "Đổi thứ tự điểm giao" (FE-BL-03, D-87): điều phối viên đề xuất thứ tự mới cho các điểm chưa giao của chuyến đang chạy. Điểm đã
  * hoàn tất và điểm xe đã tới đứng nguyên (hiện khoá, không có nút dời). Kho kiểm lại khả năng dỡ của phương án như đã xếp: không đạt
  * thì không đổi gì và hộp nêu từng kiện bị chắn kèm điểm giao của nó, bằng chữ. Đạt thì đóng hộp; kiện bị che một phần chỉ là cảnh báo.
- * Mỗi lần mở bắt đầu từ thứ tự hiện tại.
+ * Mỗi lần mở bắt đầu từ thứ tự hiện tại. Máy chủ từ chối cùng mã, cùng tham số (mã điểm là mã số của máy chủ, như điểm của bảng).
  */
 export function ReorderStopsDialog({ trip, open, onOpenChange }: { trip: MonitoringTrip; open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
@@ -58,7 +59,7 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
   }
 
   const failure = reorder.error
-  const blocked = isMockDbError(failure) && failure.code === 'STOP_ORDER_BLOCKS_CARGO' ? (failure.params as MockDbErrorParams['STOP_ORDER_BLOCKS_CARGO']) : null
+  const blocked = blockedCargo(failure)
   const numberOf = (stopId: string) => trip.stops.findIndex((stop) => stop.id === stopId) + 1
   const nameOf = (stopId: string) => trip.stops.find((stop) => stop.id === stopId)?.name ?? stopId
 
@@ -130,4 +131,15 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
       </DialogFooter>
     </>
   )
+}
+
+type BlockedCargo = MockDbErrorParams['STOP_ORDER_BLOCKS_CARGO']
+
+/** Kiện bị che kín theo thứ tự mới — `packages` và `stopIds` song song — từ lỗi của kho mẫu hoặc của máy chủ; lỗi khác là `null`. */
+function blockedCargo(failure: unknown): Pick<BlockedCargo, 'packages' | 'stopIds'> | null {
+  if (isMockDbError(failure) && failure.code === 'STOP_ORDER_BLOCKS_CARGO') return failure.params as BlockedCargo
+  if (!isApiError(failure) || failure.code !== 'STOP_ORDER_BLOCKS_CARGO') return null
+  const { packages, stopIds } = failure.params
+  if (!Array.isArray(packages) || !Array.isArray(stopIds)) return null
+  return { packages: packages.map(String), stopIds: stopIds.map(String) }
 }

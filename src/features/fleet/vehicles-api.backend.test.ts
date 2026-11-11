@@ -6,8 +6,9 @@ import { deleteVehicle, fetchVehicle, fetchVehicles, fetchVehicleStates, FLEET_C
 
 /**
  * Đội xe và loại xe nối backend (`usesBackend('fleet')`): đọc đủ mọi trang của hai `PageResponse` trần, ghép xe với loại xe đang gắn,
- * đọc cấu hình một xe kèm trục; mọi lệnh ghi từ chối `NOT_SUPPORTED` mà không gọi mạng. DTO theo `VehicleResponse`,
- * `VehicleTypeResponse`, `TripVehicleConfigResponse` của backend.
+ * đọc cấu hình một xe kèm trục; xoá xe, bảo dưỡng, xoá loại xe gọi máy chủ; lệnh ghi theo hình của kho mẫu (form xe, form loại xe, gắn
+ * loại) từ chối `NOT_SUPPORTED` mà không gọi mạng — màn máy chủ ghi qua `backend/`. DTO theo `VehicleResponse`, `VehicleTypeResponse`,
+ * `TripVehicleConfigResponse` của backend.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['fleet']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -36,7 +37,10 @@ const VAN = {
   frontAxleLimitKg: null, rearAxleLimitKg: null, maxCogOffsetRatio: '0.1500', hazardousCapable: false, vehicleCount: 1, obstacles: [],
 }
 const HINO = { id: 11, name: 'Hino 500', licensePlate: '51C-123.45', vehicleTypeId: 7, vehicleTypeName: BOX_TRUCK.name, companyId: 1, companyName: 'Long Bình', status: 'AVAILABLE' }
-const ISUZU = { ...HINO, id: 12, name: 'Isuzu NQR', licensePlate: '60C-446.32', status: 'IN_TRIP' }
+const ISUZU = {
+  ...HINO, id: 12, name: 'Isuzu NQR', licensePlate: '60C-446.32', status: 'IN_TRIP',
+  currentTripId: 40, currentTripCode: 'TRIP-2026-0001', currentTripStatus: 'IN_TRANSIT',
+}
 const FORD = { ...HINO, id: 13, name: 'Ford Transit', licensePlate: '51D-118.63', vehicleTypeId: 8, vehicleTypeName: VAN.name, status: 'RETIRED' }
 
 /** `PageResponse` trần của backend, chia sẵn thành các trang theo tham số `page`. */
@@ -85,11 +89,11 @@ test('the fleet list reads every page of vehicles and joins each vehicle with it
   expect(vehicles[0]).not.toHaveProperty('axles')
 })
 
-test('the vehicle states come from the backend status, with no trip or maintenance note', async () => {
+test('the vehicle states come from the backend status, with the trip a running vehicle serves', async () => {
   stubBackend(ROUTES)
   expect(await fetchVehicleStates()).toStrictEqual([
     { vehicleId: '11', status: 'available' },
-    { vehicleId: '12', status: 'in_use' },
+    { vehicleId: '12', status: 'in_use', tripId: 'TRIP-2026-0001', tripPhase: 'delivering' },
     { vehicleId: '13', status: 'retired' },
   ])
 })
@@ -143,15 +147,44 @@ test('a role the server rejects gets the access error, not an empty fleet', asyn
   await expect(fetchVehicleTypes()).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
 })
 
-test('every write the backend does not have is rejected without a network call', async () => {
+test('deleting a vehicle or a vehicle type calls the server, and its refusal keeps the business code', async () => {
+  const { calls } = stubBackend({
+    'DELETE /api/vehicles/11': { body: envelope({ id: 11, outcome: 'DELETED' }) },
+    'DELETE /api/vehicles/12': { status: 409, body: { success: false, code: 'VEHICLE_IN_USE', message: 'in use' } },
+    'DELETE /api/vehicle-types/7': { status: 409, body: { success: false, code: 'VEHICLE_TYPE_IN_USE', message: 'in use' } },
+    'DELETE /api/vehicle-types/8': { body: envelope(null) },
+  })
+  await deleteVehicle('11')
+  await expect(deleteVehicle('12')).rejects.toMatchObject({ code: 'VEHICLE_IN_USE' })
+  await expect(deleteVehicleType('7')).rejects.toMatchObject({ code: 'VEHICLE_TYPE_IN_USE' })
+  await deleteVehicleType('8')
+  expect(calls.map((call) => `${call.method} ${call.path}`)).toStrictEqual([
+    'DELETE /api/vehicles/11', 'DELETE /api/vehicles/12', 'DELETE /api/vehicle-types/7', 'DELETE /api/vehicle-types/8',
+  ])
+})
+
+test('maintenance starts with a note and ends with a delete, returning the new state of the vehicle', async () => {
+  const { calls } = stubBackend({
+    'POST /api/vehicles/11/maintenance': {
+      body: envelope({ ...HINO, status: 'MAINTENANCE', maintenanceNote: ' Thay dầu ', maintenanceSince: '2026-11-10T08:30:00' }),
+    },
+    'DELETE /api/vehicles/11/maintenance': { body: envelope(HINO) },
+    'POST /api/vehicles/12/maintenance': { status: 409, body: { success: false, code: 'VEHICLE_BUSY', message: 'busy' } },
+  })
+  expect(await saveVehicleMaintenance('11', 'Thay dầu')).toStrictEqual({
+    vehicleId: '11', status: 'maintenance', maintenance: { note: 'Thay dầu', since: '2026-11-10T01:30:00.000Z' },
+  })
+  expect(calls[0]?.body).toStrictEqual({ note: 'Thay dầu' })
+  expect(await saveVehicleMaintenance('11', null)).toStrictEqual({ vehicleId: '11', status: 'available' })
+  await expect(saveVehicleMaintenance('12', 'Thay lốp')).rejects.toMatchObject({ code: 'VEHICLE_BUSY' })
+})
+
+test('the store-shaped writes stay rejected without a network call; the server screens write through backend/', async () => {
   const { calls } = stubBackend({})
-  expect(FLEET_CAPABILITIES).toStrictEqual({ write: false, stateDetails: false, clearance: false, retired: true })
+  expect(FLEET_CAPABILITIES).toStrictEqual({ write: true, stateDetails: true, clearance: false, retired: true })
   for (const call of [
     () => saveVehicle({ ...CONFIG_VEHICLE }),
-    () => deleteVehicle('11'),
-    () => saveVehicleMaintenance('11', 'Thay dầu'),
     () => saveVehicleType({ name: 'Xe mới', cargoLengthCm: 400, cargoWidthCm: 200, cargoHeightCm: 200, payloadKg: 2000, maxCogOffsetRatio: 0.15 }),
-    () => deleteVehicleType('7'),
     () => setVehicleType('11', '8'),
     () => fetchVehicleTypeAssignments(),
   ]) {

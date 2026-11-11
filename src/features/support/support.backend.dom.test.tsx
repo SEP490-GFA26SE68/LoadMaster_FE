@@ -14,8 +14,8 @@ import { SupportPage } from './SupportPage'
 import { SupportTicketDialog } from './SupportTicketDialog'
 
 /**
- * Yêu cầu hỗ trợ khi nhóm `support` nối backend: trao đổi ghi trong `resolutionNote`, khung công ty đọc hợp đồng và credit của công ty;
- * ghi chú chữ thường của đội hỗ trợ vẫn hiện là phản hồi. Backend giả giữ yêu cầu trong bộ nhớ của test.
+ * Yêu cầu hỗ trợ khi nhóm `support` nối backend: trao đổi ở bảng của máy chủ (`/api/support-tickets/{id}/replies`), khung công ty đọc hợp
+ * đồng và credit của công ty; ghi chú chữ thường của đội hỗ trợ vẫn hiện là phản hồi. Backend giả giữ yêu cầu và trao đổi trong bộ nhớ của test.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['support']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -41,11 +41,13 @@ const ADMIN_TICKET = {
 type Call = { readonly key: string; readonly body: unknown }
 let calls: Call[] = []
 let tickets: Record<string, unknown>[] = []
+let replies: Record<string, Record<string, unknown>[]> = {}
 let me: { id: number; userRoleType: string } = { id: 7, userRoleType: 'DISPATCHER' }
 
 beforeEach(() => {
   calls = []
   tickets = [DISPATCHER_TICKET, ADMIN_TICKET]
+  replies = {}
   connectApiAuth(() => Promise.resolve('token-1'))
   vi.stubGlobal('fetch', (input: string, init: RequestInit) => {
     const key = `${init.method ?? 'GET'} ${input.replace('http://be.test', '')}`
@@ -59,6 +61,16 @@ beforeEach(() => {
       const created = { ...DISPATCHER_TICKET, ...body, id: 12, ticketCode: 'TCK-20261017-7777', status: 'OPEN', createdAt: '2026-10-17T09:00:00' }
       tickets = [created, ...tickets]
       return reply(created, 201)
+    }
+    const thread = /^(GET|POST) \/api\/support-tickets\/(\d+)\/replies$/.exec(key)
+    if (thread) {
+      const id = thread[2] ?? ''
+      if (thread[1] === 'POST' && typeof body === 'object' && body !== null) {
+        const row = { id: 50, authorId: String(me.id), authorName: 'Người xem', authorRole: me.userRoleType, message: (body as { message: string }).message, createdAt: '2026-10-17 10:00:00' }
+        replies = { ...replies, [id]: [...(replies[id] ?? []), row] }
+        tickets = tickets.map((ticket) => (String(ticket.id) === id ? { ...ticket, updatedAt: '2026-10-17 10:00:00' } : ticket))
+      }
+      return reply({ ticket: tickets.find((ticket) => String(ticket.id) === id), replies: replies[id] ?? [] })
     }
     const patched = /^PATCH \/api\/support-tickets\/(\d+)$/.exec(key)
     if (patched && typeof body === 'object' && body !== null) {
@@ -121,6 +133,24 @@ test('a dispatcher sees only the tickets they sent; a new ticket goes to the bac
   })
 })
 
+test('the thread comes from the reply table of the server: the list counts it, a reply goes to the table and shows at once', async () => {
+  const user = userEvent.setup()
+  replies = { 2: [{ id: 41, authorId: '4', authorName: 'Tạ Thị Ngọc Ánh', authorRole: 'SYSTEM_SUPPORTER', message: 'Đang kiểm tra phương án.', createdAt: '2026-10-16 19:00:00' }] }
+  tickets = [{ ...DISPATCHER_TICKET, updatedAt: '2026-10-16 19:00:00' }]
+  renderAs('dispatcher', <SupportTicketDialog onClose={() => {}} />)
+  const dialog = await screen.findByRole('dialog')
+  const own = await within(dialog).findByRole('button', { name: 'Mở yêu cầu Ly thuỷ tinh dưới thùng nước' }, SLOW)
+  await waitFor(() => expect(own).toHaveTextContent('1 trả lời · Cập nhật 16/10/2026 19:00'), SLOW)
+  await user.click(own)
+  expect(await within(dialog).findByText('Đang kiểm tra phương án.', {}, SLOW)).toBeInTheDocument()
+  await user.type(within(dialog).getByRole('textbox', { name: 'Trả lời' }), 'Cảm ơn, tôi chờ.')
+  await user.click(within(dialog).getByRole('button', { name: 'Gửi trả lời' }))
+  expect(await within(dialog).findByText('Cảm ơn, tôi chờ.', {}, SLOW)).toBeInTheDocument()
+  expect(calls.filter((call) => call.key.startsWith('POST') || call.key.startsWith('PATCH'))).toStrictEqual([
+    { key: 'POST /api/support-tickets/2/replies', body: { message: 'Cảm ơn, tôi chờ.' } },
+  ])
+})
+
 test('the supporter reads every ticket, sees the note of the team and the company panel, and sets Resolved', async () => {
   const user = userEvent.setup()
   me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
@@ -133,7 +163,7 @@ test('the supporter reads every ticket, sees the note of the team and the compan
   expect(await within(company).findByText('Công ty chưa có gói cước.', {}, SLOW)).toBeInTheDocument()
   expect(within(company).getAllByText('Chưa đọc được')).toHaveLength(2)
   const table = screen.getByRole('table')
-  expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Gửi lúc')
+  expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Cập nhật')
   expect(within(table).getAllByText('Vận tải Long Bình')).toHaveLength(2)
 
   await user.click(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' }))

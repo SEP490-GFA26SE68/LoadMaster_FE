@@ -43,3 +43,9 @@ test('the warehouse reprints, opens the package in the pool, clears its flags an
   })
   expect(actionsOf('warehouse', { flags: ['DAMAGED'] })).toStrictEqual({ reprint: true, openInPool: true, openTrip: false, clearFlags: ['DAMAGED'], confirmFound: false })
 })
+
+test('on the server only the dispatcher clears flags (trips.edit): the warehouse keeps "found again" but loses the clear buttons', () => {
+  const server = (role: Role) => lookupActions(pkg({ flags: ['NOT_FOUND'] }), (permission: Permission) => can(role, permission), 'trips.edit')
+  expect(server('dispatcher')).toMatchObject({ clearFlags: ['NOT_FOUND'], confirmFound: false })
+  expect(server('warehouse')).toMatchObject({ clearFlags: [], confirmFound: true })
+})

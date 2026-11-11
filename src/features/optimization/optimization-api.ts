@@ -150,9 +150,9 @@ export type RunOutcome =
  * Lỗi service (`OptimizationServiceError`), huỷ (`AbortError` — không phương án nào được lưu) và lỗi của kho (`MockDbError`, ví dụ chuyến
  * chưa tối ưu tuyến) ném lên cho UI.
  *
- * Credit (FE-8-05, D-89): kho giữ 1 credit trước khi chạy — hết credit hoặc gói hết hạn thì ném `MockDbError` và không chạy —, trừ hẳn
+ * Credit (FE-8-05, D-89): kho giữ credit của một lần chạy (`BILLING_CONSTANTS.optimizationCost`) trước khi chạy — hết credit hoặc gói hết hạn thì ném `MockDbError` và không chạy —, trừ hẳn
  * khi lưu xong, hoàn khi service lỗi, request bị từ chối, bị huỷ, hoặc kho không lưu được. Mỗi lần chạy đúng một bộ giao dịch.
- * Chạy lại giữ kiện ghim (FE-BL-02) là cùng lối này với `request.pinnedPlacements`: ba phương án, một credit, cùng quyền.
+ * Chạy lại giữ kiện ghim (FE-BL-02) là cùng lối này với `request.pinnedPlacements`: ba phương án, một lần chạy, cùng quyền.
  */
 // POST /api/v1/optimization/jobs · WS /ws/jobs/{job_uuid} · GET /api/v1/optimization/jobs/{id}/plans (Q-07)
 export async function runOptimization({ tripId, request, simulateFailure, signal, onProgress, onStage }: RunInput): Promise<RunOutcome> {
