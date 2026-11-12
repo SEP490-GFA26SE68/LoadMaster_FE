@@ -1181,7 +1181,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nhập sai nhiều lần) `invalid-credentials`, tài khoản tắt `account-suspended`, mật khẩu tạm `password-change-required` (màn đưa sang
   `/quen-mat-khau`); client chưa bật direct grants `login-not-enabled`. Token truy cập chỉ trong bộ nhớ, tự làm mới khi còn dưới 20 giây (một
   lượt làm mới cho mọi lượt gọi cùng lúc); refresh token ở `sessionStorage` của tab để tải lại trang không bị đăng xuất. Tab mới xin refresh token
-  của tab đang đăng nhập qua `BroadcastChannel` `loadmaster-auth-v1` (chờ 300 ms); đăng xuất ở một tab đóng phiên ở Keycloak và báo mọi tab;
+  của tab đang đăng nhập qua `BroadcastChannel` `loadmaster-auth-v1` (chờ 300 ms) và chỉ nhận thư trả lời đúng mã hỏi ngẫu nhiên của nó;
+  đăng xuất ở một tab đóng phiên ở Keycloak và báo các tab **cùng mã phiên** (sinh mỗi lần đăng nhập, đi cùng refresh token, lưu ở
+  `sessionStorage`) — tab của phiên khác không đăng xuất theo;
   phiên hết giữa chừng (`onEnded`) đưa về màn đăng nhập. `useAuth().status` là `restoring` cho tới khi mở lại phiên xong và `RequireAuth` chưa
   quyết gì trong lúc đó. Hồ sơ đọc ở `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` /
   `COMPANY_ADMIN`, `MANAGER` / `COMPANY_MANAGER`); 404 là tài khoản Keycloak chưa gắn người dùng nào (`account-not-linked`), 401 là máy chủ không
