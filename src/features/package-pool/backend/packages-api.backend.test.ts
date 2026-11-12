@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth } from '@/lib/api-client'
 import { envelope, stubBackend } from '@/test/fake-backend'
+import { previewCargoPackageImport } from './package-import-api'
 import { clearPackageFlag, fetchLabelsPdf, fetchPackage, fetchPackageHistory } from './packages-api'
 
 vi.mock('@/lib/backend-config', () => ({
@@ -78,4 +79,12 @@ test('PDF nhãn: theo kiện là POST mã số, theo chuyến là GET theo mã c
     ['GET /api/packages/export/labels/trip/TRIP-2026-0914', undefined],
     ['GET /api/packages/export/labels/trip/TRIP-RONG', undefined],
   ])
+})
+
+test('xem trước file: máy chủ trả 400 không mã (file mẫu còn trống) thì báo IMPORT_FILE_REJECTED; mã riêng của máy chủ giữ nguyên', async () => {
+  const file = new File(['x'], 'kien.xlsx')
+  stubBackend({ 'POST /api/packages/import/preview': { status: 400, body: { success: false, message: 'Bad request' } } })
+  await expect(previewCargoPackageImport(file)).rejects.toMatchObject({ code: 'IMPORT_FILE_REJECTED', status: 400 })
+  stubBackend({ 'POST /api/packages/import/preview': { status: 400, body: { success: false, code: 'EMPTY_FILE', message: 'File rỗng' } } })
+  await expect(previewCargoPackageImport(file)).rejects.toMatchObject({ code: 'EMPTY_FILE' })
 })

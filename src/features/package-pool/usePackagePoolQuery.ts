@@ -7,9 +7,7 @@ import {
   confirmPackageImport,
   createPackage,
   deletePackageType,
-  deletePoolPackage,
   downloadPackageImportTemplate,
-  exportPackageLabelsPdf,
   fetchPackageDetail,
   fetchPackageLabels,
   fetchPackages,
@@ -23,7 +21,7 @@ import {
 } from './package-pool-api'
 import type { PackageImportPreview } from './package-pool-import'
 
-export { isUnknownPackage, MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT } from './package-pool-api'
+export { isUnknownPackage, PACKAGE_POOL_SUPPORT } from './package-pool-api'
 
 /**
  * Người xem đọc được kho kiện: `packages.view` (nhân viên kho, điều phối viên, quản lý công ty) — kho mẫu và máy chủ cho đúng ba vai trò
@@ -95,31 +93,6 @@ function refreshPool(client: QueryClient) {
 export function useCreatePackageMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: PackageInput) => createPackage(input), onSuccess: () => refreshPool(client) })
-}
-
-/**
- * Xoá một kiện (chỉ khi nối backend): kho kiện và kiện để chọn vào yêu cầu giao đều đổi. Chi tiết của chính kiện vừa xoá không đọc lại
- * (backend trả 404) — panel đóng khi danh sách mới về.
- */
-export function useDeletePackageMutation() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => deletePoolPackage(id),
-    onSuccess: (_data, id) => Promise.all([
-      client.invalidateQueries({ queryKey: PACKAGE_POOL_KEY, predicate: (query) => !(query.queryKey[1] === 'detail' && query.queryKey[2] === id) }),
-      client.invalidateQueries({ queryKey: PACKAGE_TYPES_KEY }),
-      client.invalidateQueries({ queryKey: ['requirements'] }),
-    ]),
-  })
-}
-
-/** Tải PDF nhãn backend dựng cho các kiện `ids` về máy dưới tên `fileName`. */
-export function useExportLabelsPdfMutation() {
-  return useMutation({
-    mutationFn: async ({ ids, fileName }: { ids: readonly string[]; fileName: string }) => {
-      downloadBlob(await exportPackageLabelsPdf(ids), fileName)
-    },
-  })
 }
 
 /** Gỡ cờ: kiện lại chọn được vào yêu cầu giao, nên làm mới cả yêu cầu giao. */

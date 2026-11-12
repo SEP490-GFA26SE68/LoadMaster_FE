@@ -1268,7 +1268,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (`GET /api/packages/export/labels/trip/{tripId}`; chuyến chưa có kiện `TRIP_HAS_NO_PACKAGES` thì trang nói rõ thay cho lỗi; mở từ nút "In nhãn QR" của Chi tiết chuyến máy chủ theo
   `labels.print`, chuyến chưa huỷ và đã có điểm giao). Chỉ xoá kiện Đã
   nhập; không liên kết tới chuyến.
-  Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
+  Nối backend thì route dựng thẳng Kho kiện, Loại kiện, In nhãn của `package-pool/backend/`; `package-pool-api.ts` chỉ còn nhánh máy chủ
+  cho tìm nhanh và Tra cứu kiện (đọc kiện, loại kiện, quét, gỡ cờ, báo tìm thấy — `PACKAGE_POOL_SUPPORT` là `fullSize`, `tripLinks`,
+  `numericIds` của Tra cứu kiện). Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện không có dòng Nguồn. Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
   (`DELETE /api/packages/{id}/flag`, không cờ là `PACKAGE_NOT_FLAGGED`). Lượt quét cũng trả cờ, nên Tra cứu kiện hiện cờ, gỡ cờ cho điều phối

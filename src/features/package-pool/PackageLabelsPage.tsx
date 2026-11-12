@@ -1,8 +1,7 @@
-import { FileDown, Printer } from 'lucide-react'
-import { useId, useMemo } from 'react'
+import { Printer } from 'lucide-react'
+import { useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router'
-import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
@@ -12,7 +11,7 @@ import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { LABEL_SHEET, labelsBackTarget, labelSelection } from './label-sheet'
 import { PackageLabel } from './PackageLabel'
-import { MAX_PDF_LABELS, PACKAGE_POOL_SUPPORT, useExportLabelsPdfMutation, usePackageLabelsQuery } from './usePackagePoolQuery'
+import { usePackageLabelsQuery } from './usePackagePoolQuery'
 import { PackageLabelsPage as BackendPackageLabelsPage } from './backend/PackageLabelsPage'
 import { usesBackend } from '@/lib/backend-config'
 
@@ -35,33 +34,22 @@ const PRINT_CSS = `
  * trên đường dẫn (`?kien=` từ Kho kiện hay Tra cứu kiện, `?chuyen=` mọi kiện của một chuyến), nút "In nhãn" gọi hộp thoại in của trình
  * duyệt. In lại không đổi mã QR. Mã không có / không thuộc công ty thì nói rõ số bị bỏ. Nút quay lại về nơi bấm in (`labelsBackTarget`).
  * Nhân viên kho dùng máy tính bảng: nút cỡ cảm ứng. Nối backend thì màn là bản máy chủ (`./backend/PackageLabelsPage`, file PDF máy chủ
- * dựng); nút phụ "Tải PDF nhãn" chỉ hiện khi nguồn có PDF (`PACKAGE_POOL_SUPPORT.pdfLabels`, tối đa `MAX_PDF_LABELS` kiện).
+ * dựng).
  */
 function StorePackageLabelsPage() {
   const t = useT()
   const can = useCan()
-  const pdfLimitId = useId()
   const [search] = useSearchParams()
   const selection = useMemo(() => labelSelection(search), [search])
   const back = labelsBackTarget(search, can)
   const touch = can('warehouse.operate')
   const chosen = selection.ids !== undefined || selection.tripId !== undefined
   const query = usePackageLabelsQuery(selection)
-  const pdf = useExportLabelsPdfMutation()
   const labels = query.data ?? []
   const missing = selection.ids === undefined || !query.isSuccess ? 0 : selection.ids.length - labels.length
-  const withPdf = PACKAGE_POOL_SUPPORT.pdfLabels && can('labels.print') && labels.length > 0
-  const tooMany = labels.length > MAX_PDF_LABELS
   const backLabel = back.kind === 'trip' ? t('sourcing.labels.backToTrip', { id: back.tripId })
     : back.kind === 'loading' ? t('sourcing.labels.backToLoading', { id: back.tripId })
     : back.kind === 'lookup' ? t('sourcing.labels.backToLookup') : t('sourcing.labels.back')
-
-  function handlePdf() {
-    pdf.mutate(
-      { ids: labels.map((label) => label.package.id), fileName: `${t('sourcing.labels.pdfFile')}.pdf` },
-      { onError: (error) => toast.error(dataErrorMessage(error, t)) },
-    )
-  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -71,18 +59,10 @@ function StorePackageLabelsPage() {
         description={t('pageHero.labels')}
         back={{ to: back.to, label: backLabel }}
         actions={labels.length > 0 ? (
-          <>
-            {withPdf ? (
-              <Button variant="glass" loading={pdf.isPending} disabled={tooMany} aria-describedby={tooMany ? pdfLimitId : undefined} onClick={handlePdf}>
-                <FileDown strokeWidth={1.5} />
-                {t('sourcing.labels.downloadPdf')}
-              </Button>
-            ) : null}
-            <Button variant="primary" size={touch ? 'touch' : 'md'} onClick={() => window.print()}>
-              <Printer strokeWidth={1.5} />
-              {t('sourcing.labels.print')}
-            </Button>
-          </>
+          <Button variant="primary" size={touch ? 'touch' : 'md'} onClick={() => window.print()}>
+            <Printer strokeWidth={1.5} />
+            {t('sourcing.labels.print')}
+          </Button>
         ) : null}
       />
       <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
@@ -99,7 +79,6 @@ function StorePackageLabelsPage() {
           <div className={touch ? 'flex flex-col gap-4 text-body-lg' : 'flex flex-col gap-4'}>
             <Banner tone="info" icon={Printer}>{t('sourcing.labels.hint')}</Banner>
             {missing > 0 ? <Banner tone="warning">{t('sourcing.labels.missing', { count: missing })}</Banner> : null}
-            {withPdf && tooMany ? <Banner tone="warning"><span id={pdfLimitId}>{t('sourcing.labels.pdfLimit', { max: MAX_PDF_LABELS })}</span></Banner> : null}
             <section aria-label={t('sourcing.labels.sheet')} className="flex flex-wrap items-start gap-4">
               {labels.map((label) => <PackageLabel key={label.package.id} label={label} />)}
             </section>
