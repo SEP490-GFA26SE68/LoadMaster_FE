@@ -7,7 +7,6 @@
 import type { VehicleFitIssue } from '@/domain/constraints'
 import { configVehicleOf, type BackendVehicleConfig } from '@/features/fleet/fleet-dto'
 import { api } from '@/lib/api-client'
-import type { VehicleStatus } from '@/lib/mock-db'
 import type { VehicleChoice, VehicleChoices } from './trip-vehicle-api'
 import { resolveBackendTripId } from './trips-backend-api'
 
@@ -53,7 +52,7 @@ function fitIssueOf(issue: BackendFitIssue): VehicleFitIssue | null {
 }
 
 /** Xe đang chạy chuyến khác là `in_use`; bảo dưỡng và ngừng dùng là `maintenance` — đều không chọn được. */
-function statusOf(choice: BackendVehicleChoice): VehicleStatus {
+function statusOf(choice: BackendVehicleChoice): VehicleChoice['status'] {
   if (choice.busyTripCode) return 'in_use'
   return choice.status === 'AVAILABLE' || choice.status === null ? 'available' : 'maintenance'
 }

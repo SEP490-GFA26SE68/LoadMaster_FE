@@ -234,6 +234,10 @@ test('đổi thứ tự điểm gửi mã số điểm của máy chủ; kiện 
   stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 409, body: { success: false, code: 'STOP_ORDER_BLOCKS_CARGO', message: 'x', errors: details } } })
   const error: unknown = await reorderRunningStops(TRIP, ['9', '8']).then(() => null, (reason: unknown) => reason)
   expect(isApiError(error) && { code: error.code, params: error.params }).toEqual({ code: 'STOP_ORDER_BLOCKS_CARGO', params: details })
+  // Thiếu toạ độ: 400 kèm mã số các điểm thiếu, hộp đổi thứ tự nêu tên từng điểm
+  stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 400, body: { success: false, code: 'MISSING_STOP_COORDINATES', message: 'x', errors: { stopIds: ['9'] } } } })
+  const missing: unknown = await reorderRunningStops(TRIP, ['9', '8']).then(() => null, (reason: unknown) => reason)
+  expect(isApiError(missing) && { code: missing.code, params: missing.params }).toEqual({ code: 'MISSING_STOP_COORDINATES', params: { stopIds: ['9'] } })
   for (const code of ['TRIP_NOT_IN_TRANSIT', 'STOP_NOT_MOVABLE', 'PICKUP_AFTER_DELIVERY']) {
     stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 409, body: { success: false, code, message: 'x' } } })
     expect(await codeOf(reorderRunningStops(TRIP, ['9', '8']))).toBe(code)

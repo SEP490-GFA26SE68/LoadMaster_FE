@@ -17,8 +17,12 @@ const SCAN_BATCH = 6
 /** Mọi kiện của công ty theo phiên, cũ trước (mã tăng dần); kiện đã huỷ bị bỏ. `packageCode` lọc đúng mã, không kể hoa thường. */
 // GET /api/packages
 export async function listBackendPackages(packageCode?: string): Promise<Package[]> {
-  const rows = await fetchAllPages<BackendPackage>('/api/packages', { query: { sort: 'id,asc', packageCode } })
-  return rows.flatMap((dto) => packageOf(dto) ?? [])
+  const rows = await fetchAllPages<BackendPackage>('/api/packages', { query: { sort: 'id,asc' } })
+  const all = rows.flatMap((dto) => packageOf(dto) ?? [])
+  // Máy chủ không lọc theo mã của bên gửi (chỉ `orderId`, `packageTypeId`): app lọc, không phân biệt hoa thường
+  if (packageCode === undefined) return all
+  const wanted = packageCode.trim().toLowerCase()
+  return all.filter((pkg) => pkg.packageCode.trim().toLowerCase() === wanted)
 }
 
 /** Một kiện theo mã của kho; kiện đã huỷ (không có ở app) là `NOT_FOUND`. */

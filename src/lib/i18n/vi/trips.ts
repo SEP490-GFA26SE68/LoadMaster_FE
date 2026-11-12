@@ -925,6 +925,8 @@ export const trips = {
   server: {
     operations: 'Thông tin vận hành',
     cancelReason: 'Chuyến đã huỷ. Lý do: {reason}',
+    /** Chuyến huỷ lúc Đang vận chuyển: số kiện chưa giao thành Hoàn trả, máy chủ ghi lúc huỷ (`cancelReturnedCount`). */
+    cancelReturned: { one: '{count} kiện chưa giao thành Hoàn trả.', other: '{count} kiện chưa giao thành Hoàn trả.' },
     tripCode: 'Mã chuyến',
     vehicle: 'Xe vận chuyển',
     driver: 'Tài xế',

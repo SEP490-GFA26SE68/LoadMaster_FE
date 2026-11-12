@@ -17,6 +17,11 @@ vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['billing']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'billing',
 }))
+// Người xem là quản trị công ty: chỉ vai trò này đọc thoả thuận dịch vụ của công ty mình
+vi.mock('@/features/auth/AuthProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/auth/AuthProvider')>()),
+  useAuthSafe: () => ({ user: { role: 'companyAdmin' } }),
+}))
 
 const backend = useFakeBackend()
 const SLOW = { timeout: 5000 }

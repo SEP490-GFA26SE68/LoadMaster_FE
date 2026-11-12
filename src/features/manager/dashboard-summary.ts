@@ -57,8 +57,7 @@ export type DashboardSummary = {
   readonly vehicles: {
     readonly inUse: number
     readonly total: number
-    /** `retired` (Ngừng sử dụng) chỉ máy chủ có; kho mẫu không có trạng thái đó. */
-    readonly byStatus: Readonly<Record<VehicleStatus, number>> & { readonly retired?: number }
+    readonly byStatus: Readonly<Record<VehicleStatus, number>>
   }
   /** Mỗi ngày của kỳ một phần tử; ngày không có bản đã duyệt thì `null`. */
   readonly fillByDay: readonly { readonly date: string; readonly averagePercent: number | null; readonly planCount: number }[]
@@ -132,7 +131,7 @@ export function summarizeDashboard(data: DashboardData, period: DateRange): Dash
  */
 function summarizeFleet(data: DashboardData): DashboardSummary['vehicles'] {
   const statusOf = new Map(data.vehicleStates.map((state) => [state.vehicleId, state.status]))
-  const byStatus: Record<VehicleStatus, number> = { available: 0, in_use: 0, maintenance: 0 }
+  const byStatus: Record<VehicleStatus, number> = { available: 0, in_use: 0, maintenance: 0, retired: 0 }
   for (const vehicle of data.vehicles) byStatus[statusOf.get(vehicle.id) ?? 'available'] += 1
   return { inUse: byStatus.in_use, total: data.vehicles.length, byStatus }
 }

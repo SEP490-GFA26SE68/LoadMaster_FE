@@ -218,7 +218,10 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
           </div>
 
           {trip.status === 'CANCELLED' && trip.cancelReason ? (
-            <Banner tone="warning">{t('trips.server.cancelReason', { reason: trip.cancelReason })}</Banner>
+            <Banner tone="warning">
+              {t('trips.server.cancelReason', { reason: trip.cancelReason })}
+              {typeof trip.cancelReturnedCount === 'number' ? <> {t('trips.server.cancelReturned', { count: trip.cancelReturnedCount })}</> : null}
+            </Banner>
           ) : null}
 
 

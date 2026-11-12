@@ -83,7 +83,7 @@ export function VehicleActions({ vehicle, onEdit }: { vehicle: Vehicle; onEdit: 
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title={t('fleet.remove.title', { name: vehicle.name })}
-        description={t('fleet.remove.descriptionServer')}
+        description={t('fleet.remove.description')}
         cancelLabel={t('fleet.remove.cancel')}
         confirmLabel={t('fleet.remove.confirm')}
         danger

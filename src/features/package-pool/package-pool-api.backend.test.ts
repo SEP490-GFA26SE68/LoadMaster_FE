@@ -156,7 +156,8 @@ test('quét mã: mã viết hoa của ô quét đổi về chữ thường, cờ
 test('tra theo mã gõ: mã QR, mã của bên gửi, mã của kho; kiện của công ty khác (403) không khớp', async () => {
   routes[`GET /api/packages/scan/${TOKEN_1}`] = { body: scanOf(MANUAL) }
   routes[`GET /api/packages/scan/${TOKEN_3}`] = { body: scanOf(IMPORTED) }
-  routes['GET /api/packages'] = (call) => ({ body: page(call.query.packageCode === 'hk-7' ? [IMPORTED] : []) })
+  // Như máy chủ thật: danh sách không lọc theo mã của bên gửi, app tự lọc
+  routes['GET /api/packages'] = { body: page([MANUAL, IMPORTED]) }
   routes['GET /api/packages/1'] = { body: MANUAL }
   routes['GET /api/packages/5'] = { status: 403, body: { success: false, message: 'Bạn không có quyền' } }
 
@@ -214,7 +215,6 @@ test('gỡ cờ: DELETE cờ duy nhất của kiện; ở Tra cứu kiện chỉ
   routes['DELETE /api/packages/3/flag'] = { body: envelope({ ...IMPORTED, flag: null }) }
   expect(await clearPackageFlag('3', 'DAMAGED')).toMatchObject({ id: '3', flags: [] })
   expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['DELETE /api/packages/3/flag'])
-  expect(PACKAGE_POOL_SUPPORT.flagClearer).toBe('trips.edit')
 })
 
 test('phần backend chưa có ở lớp này: ghi loại kiện (màn máy chủ tự ghi) không gọi mạng', async () => {

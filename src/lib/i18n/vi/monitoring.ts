@@ -138,6 +138,10 @@ export const monitoring = {
       item: 'điểm {number} · {name}',
       unchanged: 'Thứ tự điểm giữ nguyên.',
     },
+    missingCoordinates: {
+      title: 'Không đổi được: các điểm sau chưa có toạ độ',
+      list: 'Điểm chưa có toạ độ',
+    },
   },
   /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */
   reroute: {

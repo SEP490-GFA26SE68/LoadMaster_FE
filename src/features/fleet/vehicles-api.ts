@@ -42,15 +42,12 @@ export type FleetCapabilities = {
   readonly stateDetails: boolean
   /** Khoảng hở quanh kiện của xe. */
   readonly clearance: boolean
-  /** Trạng thái "Ngừng sử dụng" (chỉ backend có). */
-  readonly retired: boolean
 }
 
 export const FLEET_CAPABILITIES: FleetCapabilities = {
   write: true,
   stateDetails: true,
   clearance: !ON_BACKEND,
-  retired: ON_BACKEND,
 }
 
 /** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ báo thành công giả hay ghi kho mẫu thay. */
@@ -78,8 +75,9 @@ export function saveVehicle(vehicle: VehicleConfig): Promise<VehicleConfig> {
   return id === '' ? getMockDb().createVehicle(input) : getMockDb().updateVehicle(vehicle)
 }
 
+/** Xe từng chạy chuyến không bị xoá mà chuyển sang Ngừng sử dụng (`RETIRED`), như máy chủ; màn báo đúng kết quả. */
 // DELETE /api/vehicles/{id}
-export function deleteVehicle(id: string): Promise<void> {
+export function deleteVehicle(id: string): Promise<'DELETED' | 'RETIRED'> {
   if (ON_BACKEND) return deleteBackendVehicle(id)
   return getMockDb().deleteVehicle(id)
 }

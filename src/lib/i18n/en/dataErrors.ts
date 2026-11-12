@@ -4,6 +4,8 @@ import type { dataErrors as source } from '../vi/dataErrors'
 export const dataErrors = {
   NOT_FOUND: '{id} was not found.',
   VEHICLE_IN_USE: 'Vehicle {vehicleId} is still linked to trips {tripIds} and cannot be deleted.',
+  VEHICLE_RETIRED: 'Vehicle {vehicleId} is retired and can no longer be used or edited.',
+  MAINTENANCE_NOTE_TOO_LONG: 'The maintenance note can be at most {max} characters.',
   VEHICLE_LOCKED: 'Vehicle {vehicleId} is running trip {tripId} and cannot be edited yet.',
   VEHICLE_IN_MAINTENANCE: 'Vehicle {vehicleId} is in maintenance. Choose another vehicle.',
   REVISION_STALE: 'Plan {revisionId} is out of date: the vehicle or packages changed after it was optimized.',
@@ -11,6 +13,7 @@ export const dataErrors = {
   PATCH_UNKNOWN_INSTANCE: 'Package {packageInstanceId} is not in the plan.',
   TRIP_LOCKED: 'Trip {tripId} is already in operation and cannot be edited.',
   TRIP_INVALID: 'The trip is not valid: it needs a readable departure time, a departure depot with a name and coordinates, and named stops; coordinates, if any, need both latitude and longitude.',
+  TRIP_NOT_IN_TRANSIT: 'Trip {tripId} is no longer in transit.',
   TRIP_PHASE_INVALID: 'This action is not available in the current state of trip {tripId}.',
   NO_APPROVED_REVISION: 'Trip {tripId} has no approved plan.',
   INSTANCE_NOT_IN_PLAN: 'Package {packageInstanceId} is not in this plan or stop.',

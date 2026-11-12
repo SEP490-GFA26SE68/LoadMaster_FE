@@ -1,7 +1,7 @@
 /**
  * Hàm → endpoint backend (FE-0-09) của Tra cứu kiện:
  *   scanPackage        → GET /api/packages/scan/{qrToken}
- *   lookupPackages     → GET /api/packages/scan/{qrToken} · GET /api/packages?packageCode= · GET /api/packages/{id}
+ *   lookupPackages     → GET /api/packages/scan/{qrToken} · GET /api/packages (lọc mã ở app) · GET /api/packages/{id}
  *   reportPackageFound → POST /api/packages/{id}/found
  */
 
@@ -84,7 +84,7 @@ async function lookupOnBackend(code: string): Promise<PackageLookup[]> {
  * Tra kiện theo mã người dùng gõ: mã QR, mã của bên gửi hoặc mã của kho. Mã của bên gửi trùng nhau thì trả mọi kiện khớp, mới nhất
  * trước; không khớp kiện nào của công ty: `QR_UNKNOWN`.
  */
-// GET /api/packages/scan/{qrToken} · GET /api/packages?packageCode= · GET /api/packages/{id}
+// GET /api/packages/scan/{qrToken} · GET /api/packages · GET /api/packages/{id}
 export async function lookupPackages(code: string): Promise<PackageLookup[]> {
   if (ON_BACKEND) return lookupOnBackend(code)
   return withPlace(await getMockDb().lookupPackages(code))

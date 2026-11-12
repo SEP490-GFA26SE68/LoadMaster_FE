@@ -51,7 +51,7 @@ export function useStartServerLoadingMutation(tripId: string) {
 export function useConfirmServerPlacementMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (placementId: string) => confirmServerPlacement(tripId, placementId),
+    mutationFn: ({ placementId, method }: { placementId: string; method: 'QR' | 'CODE' }) => confirmServerPlacement(tripId, placementId, method),
     onSuccess: (session) => settle(client, tripId, session),
   })
 }

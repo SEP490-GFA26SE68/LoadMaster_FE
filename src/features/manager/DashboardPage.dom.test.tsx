@@ -139,7 +139,7 @@ test('ba biểu đồ có bảng số cho trình đọc màn hình; bảng chuy�
   expect(screen.getByRole('row', { name: /TRIP-010/ })).toHaveTextContent('Đang xếp hàngXếp xong — chờ xuất phát')
 })
 
-test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, có lối sang Đội xe', async () => {
+test('thẻ đội xe: bốn trạng thái như màn Đội xe, không theo kỳ, có lối sang Đội xe', async () => {
   const user = userEvent.setup()
   renderDashboard('companyManager')
 
@@ -147,7 +147,7 @@ test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, c
   expect(card.getByText('/ 8 xe đang phục vụ chuyến')).toBeInTheDocument()
   // Hôm nay: 003, 006, 007 đang chạy; 008 bảo dưỡng; bốn xe còn lại sẵn sàng
   expect(card.getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
-    '4Sẵn sàng', '3Đang phục vụ chuyến', '1Bảo dưỡng',
+    '4Sẵn sàng', '3Đang phục vụ chuyến', '1Bảo dưỡng', '0Ngừng sử dụng',
   ])
   expect(card.getByRole('link', { name: 'Xem đội xe' })).toHaveAttribute('href', '/doi-xe')
 
@@ -155,7 +155,7 @@ test('thẻ đội xe: ba trạng thái như màn Đội xe, không theo kỳ, c
   await user.click(screen.getByRole('button', { name: '7 ngày' }))
   expect((await kpi('Chuyến hoàn thành')).getByText('/ 5 chuyến')).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Trạng thái đội xe' })).getAllByRole('listitem').map((item) => item.textContent))
-    .toStrictEqual(['4Sẵn sàng', '3Đang phục vụ chuyến', '1Bảo dưỡng'])
+    .toStrictEqual(['4Sẵn sàng', '3Đang phục vụ chuyến', '1Bảo dưỡng', '0Ngừng sử dụng'])
 })
 
 test('kỳ không có chuyến vẫn hiện thẻ đội xe', async () => {

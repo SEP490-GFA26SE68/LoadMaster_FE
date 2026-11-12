@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { cancelBackendTrip, removeBackendRequirement, updateBackendTrip, type BackendTripChanges } from './trip-edit-backend-api'
+import { cancelBackendTrip, listBackendTripExceptions, removeBackendRequirement, updateBackendTrip, type BackendTripChanges } from './trip-edit-backend-api'
 import { fetchBackendTripDetail, resolveBackendTripId } from './trips-api'
 
 /** Mã trên URL (mã chuyến hoặc mã số) đổi sang mã số của máy chủ; cùng khoá với Chi tiết chuyến nên không tra lại. */
@@ -33,6 +33,11 @@ export function useUpdateBackendTripMutation(tripId: string) {
 export function useCancelBackendTripMutation(tripId: string) {
   const refresh = useRefresh()
   return useMutation({ mutationFn: (reason: string) => cancelBackendTrip(tripId, reason), onSuccess: refresh })
+}
+
+/** Sự cố của chuyến, đọc khi hộp huỷ chuyến Đang vận chuyển mở; luôn đọc lại vì sự cố đổi ở màn Giám sát. */
+export function useBackendTripExceptionsQuery(tripId: string, enabled: boolean) {
+  return useQuery({ queryKey: ['trips', tripId, 'backend-exceptions'], queryFn: () => listBackendTripExceptions(tripId), enabled: enabled && tripId !== '', staleTime: 0 })
 }
 
 export function useRemoveBackendRequirementMutation(tripId: string) {

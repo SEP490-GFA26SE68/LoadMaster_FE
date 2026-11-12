@@ -22,6 +22,10 @@ export const serverPlans = {
     keep: 'Keep trip',
     confirm: 'Cancel trip',
     done: 'Trip {code} cancelled',
+    inTransitDescription: 'The trip becomes Cancelled and cannot be reopened. Undelivered packages become Returned and their delivery requirements Delivered short; the driver is notified.',
+    inTransitBlocked: 'A trip in transit can only be cancelled while it has an unresolved trip exception. Report one on the Monitoring screen first.',
+    inTransitNote: 'The vehicle is on the road: undelivered packages will become Returned.',
+    doneReturned: { one: 'Trip {code} cancelled: {count} undelivered package became Returned', other: 'Trip {code} cancelled: {count} undelivered packages became Returned' },
   },
   removeRequirement: {
     open: 'Remove from trip',

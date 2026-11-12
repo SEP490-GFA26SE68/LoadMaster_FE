@@ -293,6 +293,8 @@ export type TripDetailApiResponse = {
   /** Lý do huỷ và trạng thái lúc huỷ; chuyến huỷ trước khi máy chủ lưu hai cột này thì vắng. */
   cancelReason?: string | null
   cancelledFromStatus?: TripDetailApiResponse['status'] | null
+  /** Số kiện chưa giao thành Hoàn trả khi chuyến bị huỷ lúc Đang vận chuyển; huỷ ở pha khác hoặc máy chủ cũ thì vắng. */
+  cancelReturnedCount?: number | null
 }
 
 export type CreatedTrip = {

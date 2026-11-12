@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import type { VehicleConfig } from '@/domain/models'
 import type { VehicleState } from '@/lib/mock-db'
-import { filterVehicleRows, FLEET_STATUSES, statusFromSlug, vehicleRows, VEHICLE_STATUS_SLUGS } from './vehicle-status'
+import { filterVehicleRows, statusFromSlug, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS } from './vehicle-status'
 
 /** Ba xe đủ ba trạng thái; chỉ tên và mã quan trọng cho tìm/lọc. */
 function vehicle(id: string, name: string): VehicleConfig {
@@ -36,15 +36,16 @@ test('the status filter reads the Vietnamese URL slug; an unknown slug filters n
   expect(filterVehicleRows(rows, '', 'dang-chay').map((row) => row.id)).toStrictEqual(['VEHICLE-002'])
   expect(statusFromSlug('khong-co')).toBeNull()
   expect(filterVehicleRows(rows, '', 'khong-co')).toHaveLength(3)
-  // Kho mẫu không có trạng thái ngừng sử dụng: slug đó là slug lạ, không lọc gì
-  expect(statusFromSlug('ngung-su-dung')).toBeNull()
-  expect(filterVehicleRows(rows, '', 'ngung-su-dung')).toHaveLength(3)
+  // Không xe nào ngừng sử dụng: lọc ra danh sách rỗng
+  expect(filterVehicleRows(rows, '', 'ngung-su-dung')).toHaveLength(0)
+  // Nguồn chỉ có ba trạng thái còn chạy: slug ngừng sử dụng là slug lạ, không lọc gì
+  expect(statusFromSlug('ngung-su-dung', VEHICLE_STATUSES)).toBeNull()
 })
 
-test('with the backend statuses, the retired slug filters the retired vehicles', () => {
+test('the retired slug filters the retired vehicles', () => {
   const rows = vehicleRows(VEHICLES, [...STATES, { vehicleId: 'VEHICLE-001', status: 'retired' }])
-  expect(statusFromSlug('ngung-su-dung', FLEET_STATUSES)).toBe('retired')
-  expect(filterVehicleRows(rows, '', 'ngung-su-dung', FLEET_STATUSES).map((row) => row.id)).toStrictEqual(['VEHICLE-001'])
+  expect(statusFromSlug('ngung-su-dung')).toBe('retired')
+  expect(filterVehicleRows(rows, '', 'ngung-su-dung').map((row) => row.id)).toStrictEqual(['VEHICLE-001'])
 })
 
 test('search ignores accents and matches the name, the plate, the code and the running trip', () => {

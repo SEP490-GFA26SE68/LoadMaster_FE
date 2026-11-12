@@ -1,4 +1,5 @@
 export { getMockDb, onRemoteDbChange } from './app-db'
+export { MAINTENANCE_NOTE_MAX } from './db-vehicles'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
 export { addDays, CLOCK_SPEED_PARAM, clockSpeedFrom, MAX_CLOCK_SPEED, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
 export {

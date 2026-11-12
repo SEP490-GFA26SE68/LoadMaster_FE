@@ -97,8 +97,8 @@ export function startServerLoading(tripId: string): Promise<ServerLoadingSession
 }
 
 // POST /api/warehouse/placements/{id}/confirm
-export function confirmServerPlacement(tripId: string, placementId: string): Promise<ServerLoadingSession> {
-  return ON_BACKEND ? backend().confirm(tripId, placementId) : mockOnly()
+export function confirmServerPlacement(tripId: string, placementId: string, method: 'QR' | 'CODE'): Promise<ServerLoadingSession> {
+  return ON_BACKEND ? backend().confirm(tripId, placementId, method) : mockOnly()
 }
 
 // POST /api/warehouse/placements/{id}/deviation

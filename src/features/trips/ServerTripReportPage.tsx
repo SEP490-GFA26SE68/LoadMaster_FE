@@ -1,4 +1,4 @@
-import { MapPin, PackageCheck, Printer, RotateCcw, TriangleAlert, Clock } from 'lucide-react'
+import { MapPin, PackageCheck, Printer, RotateCcw, TriangleAlert, Clock, Truck } from 'lucide-react'
 import { useParams } from 'react-router'
 import { Banner } from '@/components/Banner'
 import { Logo } from '@/components/brand/Logo'
@@ -18,8 +18,8 @@ import { useServerTripReportQuery } from './useTripExtrasQuery'
 /**
  * Báo cáo chuyến khi nhóm `trips` nối backend (`GET /api/trips/{mã chuyến}/report`): cùng bố cục với bản kho mẫu (`TripReportPage`) —
  * ô số liệu, bảng theo điểm, thông tin chuyến, đối chiếu, sự cố cấp chuyến, xác nhận tay — nhưng chỉ phần máy chủ trả và không MOCK
- * RESULT. Không có ô "Thời gian giao": máy chủ không ghi giờ xe rời kho (giờ xuất phát là giờ kế hoạch). Chuyến chưa có báo cáo (chưa
- * giao, huỷ trước khi xe chạy) là câu lỗi `TRIP_REPORT_NOT_AVAILABLE` của máy chủ.
+ * RESULT. Ô "Thời gian giao" chỉ khi máy chủ tính được (`deliveryMinutes`; chuyến cũ không ghi giờ xe rời kho thì không có ô). Chuyến
+ * chưa có báo cáo (chưa giao, huỷ trước khi xe chạy) là câu lỗi `TRIP_REPORT_NOT_AVAILABLE` của máy chủ.
  */
 export function ServerTripReportPage() {
   const t = useT()
@@ -84,6 +84,7 @@ function ReportBody({ report }: { report: ServerTripReport }) {
       {cancellation ? (
         <Banner tone="warning">
           {t(cancellation.inTransit ? 'tripReport.server.cancelledInTransit' : 'tripReport.server.cancelled', { reason: cancellation.reason || '—' })}
+          {cancellation.returned === null ? null : <> {t('trips.server.cancelReturned', { count: cancellation.returned })}</>}
         </Banner>
       ) : null}
       <ServerTripReportStops stops={report.stops} />
@@ -102,7 +103,7 @@ function ReportBody({ report }: { report: ServerTripReport }) {
   )
 }
 
-/** Bốn ô số liệu: điểm đã xong, kiện đã giao trên kiện đã xếp, sự cố giao, thời gian xếp. Thiếu số thì bỏ ô, không vẽ 0. */
+/** Ô số liệu: điểm đã xong, kiện đã giao trên kiện đã xếp, sự cố giao, thời gian xếp, thời gian giao. Thiếu số thì bỏ ô, không vẽ 0. */
 function ReportKpis({ report }: { report: ServerTripReport }) {
   const t = useT()
   const format = useFormat()
@@ -110,8 +111,9 @@ function ReportKpis({ report }: { report: ServerTripReport }) {
   const issues = report.stops.reduce((sum, stop) => sum + stop.issues, 0)
   const { packages, loading } = report
   const loadingMs = loading?.startedAt && loading.completedAt ? Date.parse(loading.completedAt) - Date.parse(loading.startedAt) : null
+  const five = report.deliveryMinutes !== null
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 print:grid-cols-4">
+    <div className={five ? 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 print:grid-cols-5' : 'grid grid-cols-2 gap-3 md:grid-cols-4 print:grid-cols-4'}>
       <KpiTile icon={MapPin} tone="blue" label={t('tripReport.kpi.stops')} value={`${format.integer(done)} / ${format.integer(report.stops.length)}`} note={t('tripReport.kpi.stopsNote')} />
       {packages ? (
         <KpiTile
@@ -136,6 +138,15 @@ function ReportKpis({ report }: { report: ServerTripReport }) {
         value={formatDuration(loadingMs, t, format)}
         note={formatTimeRange(loading?.startedAt ?? null, loading?.completedAt ?? null, t, format)}
       />
+      {report.deliveryMinutes === null ? null : (
+        <KpiTile
+          icon={Truck}
+          tone="slate"
+          label={t('tripReport.kpi.deliveryTime')}
+          value={formatDuration(report.deliveryMinutes * 60_000, t, format)}
+          note={t('tripReport.server.deliveryTimeNote')}
+        />
+      )}
     </div>
   )
 }

@@ -41,7 +41,7 @@ export type LookupActions = {
   readonly reprint: boolean
   readonly openInPool: boolean
   readonly openTrip: boolean
-  /** Cờ người xem gỡ được: ai có quyền `clearer` gỡ mọi cờ. */
+  /** Cờ người xem gỡ được: điều phối viên (`trips.edit`) gỡ mọi cờ, như máy chủ. */
   readonly clearFlags: readonly PackageFlag[]
   /** Nhân viên kho xác nhận đã tìm thấy kiện đang mang cờ "Không tìm thấy" (D-92). */
   readonly confirmFound: boolean
@@ -50,13 +50,12 @@ export type LookupActions = {
 export function lookupActions(
   pkg: Pick<Package, 'flags' | 'tripId'>,
   can: (permission: Permission) => boolean,
-  clearer: Permission = 'packages.manage',
 ): LookupActions {
   return {
     reprint: can('labels.print'),
     openInPool: can('packages.view'),
     openTrip: can('trips.view') && pkg.tripId !== undefined,
-    clearFlags: can(clearer) ? pkg.flags : [],
+    clearFlags: can('trips.edit') ? pkg.flags : [],
     confirmFound: can('warehouse.operate') && pkg.flags.includes('NOT_FOUND'),
   }
 }

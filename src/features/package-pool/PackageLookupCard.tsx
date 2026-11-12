@@ -22,7 +22,7 @@ const TOUCH_CHIP = 'h-8 px-3 text-body-lg'
 
 /**
  * Thẻ một kiện của màn Tra cứu kiện (FE-3b-06): mã, kích thước, khối lượng, loại hàng, điểm đến, trạng thái, cờ, chuyến và điểm giao.
- * Hành động theo vai trò (`lookupActions`): ai có `labels.print` in lại nhãn; người gỡ được cờ (`PACKAGE_POOL_SUPPORT.flagClearer`) gỡ
+ * Hành động theo vai trò (`lookupActions`): ai có `labels.print` in lại nhãn; điều phối viên (`trips.edit`) gỡ
  * cờ; mở kiện ở Kho kiện và mở chuyến; nhân viên kho xác nhận đã tìm thấy kiện mang cờ "Không tìm thấy" (D-92). Nền đặc, viền 1 px — bề
  * mặt đọc lâu. `touch`: máy tính bảng của kho — nút 56 px, chữ từ 16 px. Nối backend: lượt quét của backend không trả kích thước nên thẻ
  * không có mục đó; "Mở trong Kho kiện" tìm theo mã QR vì mã của kho là số ngắn (`PACKAGE_POOL_SUPPORT.numericIds`).
@@ -40,7 +40,7 @@ export function PackageLookupCard({ item, touch, justFound, onFound, onBack }: {
   const format = useFormat()
   const can = useCan()
   const { package: pkg, trip, stop } = item
-  const actions = lookupActions(pkg, can, PACKAGE_POOL_SUPPORT.flagClearer)
+  const actions = lookupActions(pkg, can)
   const clear = useClearPackageFlagMutation()
   const found = useReportPackageFoundMutation()
   const size = touch ? 'touch' : 'md'

@@ -16,7 +16,6 @@
 
 import { csvTemplateBlob, xlsxTemplateBlob } from '@/features/trips/package-import-template'
 import { readImportFile } from '@/features/trips/read-import-file'
-import type { Permission } from '@/features/auth/permissions'
 import { tripLinkable } from '@/features/trips/trips-capabilities'
 import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
@@ -58,11 +57,6 @@ export const PACKAGE_POOL_SUPPORT = {
   listDestinations: !ON_BACKEND,
   /** Kiện gắn yêu cầu giao và chuyến trong danh sách (cột, bộ lọc "Đã gán"). */
   links: !ON_BACKEND,
-  /**
-   * Quyền của người gỡ cờ kiện ở Tra cứu kiện: máy chủ chỉ cho điều phối viên (`trips.edit`, như panel chi tiết kiện của máy chủ); kho mẫu
-   * cho nhân viên kho của `packages.manage`.
-   */
-  flagClearer: (ON_BACKEND ? 'trips.edit' : 'packages.manage') satisfies Permission,
   /** Nguồn của kiện (nhập file, thêm tay, trong chuyến): backend không trả. */
   source: !ON_BACKEND,
   /** File mẫu và luật đọc file nhập là của backend: chỉ mẫu `.xlsx`, chỉ tên cột của backend, loại hàng ghi bằng mã. */

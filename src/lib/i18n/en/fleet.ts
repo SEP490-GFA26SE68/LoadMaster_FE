@@ -178,8 +178,7 @@ export const fleet = {
   },
   remove: {
     title: 'Delete vehicle {name}?',
-    description: 'The vehicle is removed from the fleet. This cannot be undone.',
-    descriptionServer: 'A vehicle that never ran a trip is deleted; one with delivered or cancelled trips is retired to keep the history.',
+    description: 'A vehicle that never ran a trip is deleted; one with delivered or cancelled trips is retired to keep the history.',
     cancel: 'Cancel',
     confirm: 'Delete vehicle',
   },
@@ -188,7 +187,7 @@ export const fleet = {
     openTrip: 'Open trip {tripId}',
     maintenance: 'In maintenance since {time} {date}: it cannot be assigned to any trip.',
     maintenanceNote: 'Note: {note}',
-    retired: 'The server marks this vehicle as retired.',
+    retired: 'This vehicle is retired: it stays in the trip history but cannot be assigned to new trips or edited.',
   },
   backend: {
     sourceNote: 'Vehicles come from the server. The server does not return the trip using a vehicle or maintenance notes yet, so the status column shows the status only.',

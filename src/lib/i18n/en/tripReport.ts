@@ -108,6 +108,8 @@ export const tripReport = {
     loaded: 'Loaded onto the vehicle',
     byLabel: 'By label',
     verifyNote: 'By label covers QR scans and typed codes. Each package counts its latest check at each step.',
+    verifyMethodsNote: 'Each package counts its latest check at each step.',
+    deliveryTimeNote: 'From the driver setting off to the last stop completed',
     stopDone: 'Done',
     issuesNote: 'Package issues the driver reported at the stops',
     cancelledInTransit: 'The trip was cancelled while in transit. Reason: {reason}',

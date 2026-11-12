@@ -82,9 +82,9 @@ export function VehicleForm({ vehicle, readOnly = false, status, actions, notice
   function handleDelete() {
     if (!vehicle) return
     remove.mutate(vehicle.id, {
-      onSuccess: () => {
+      onSuccess: (outcome) => {
         setConfirmDelete(false)
-        toast.success(t('fleet.detail.deleted', { name: vehicle.name }))
+        toast.success(t(outcome === 'RETIRED' ? 'fleet.detail.retiredInstead' : 'fleet.detail.deleted', { name: vehicle.name }))
         setDone(true)
       },
       onError: (error) => {

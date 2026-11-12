@@ -65,6 +65,36 @@ test('the server report reads by trip code and maps times, deadline levels and s
   expect(report.exceptions[0]).toMatchObject({ type: 'TRAFFIC', status: 'RESOLVED', delayMinutes: 20, resolvedAt: '2026-11-10T03:00:00.000Z' })
   expect(report.reroutes).toStrictEqual([{ stopNumber: 2, route: 'BYPASS', distanceKm: 6.5, durationMinutes: 18, confirmedAt: '2026-11-10T02:45:00.000Z' }])
   expect(report.cancellation).toBeNull()
+  // Máy chủ cũ: không thời gian giao, không giờ hoàn tất điểm, đối chiếu chỉ "bằng nhãn"
+  expect(report.deliveryMinutes).toBeNull()
+  expect(report.stops.map((stop) => stop.completedAt)).toStrictEqual([null, null])
+  expect(report.verifications.every((row) => row.qr === null && row.code === null)).toBe(true)
+})
+
+test('round 4 of the server: delivery minutes, the time each stop was completed, QR and typed codes apart, packages returned on cancel', async () => {
+  stubBackend({
+    'GET /api/trips/TRIP-2026-0045/report': {
+      body: envelope({
+        ...REPORT,
+        tripCode: 'TRIP-2026-0045',
+        status: 'CANCELLED',
+        deliveryMinutes: null,
+        cancellation: { reason: 'Xe hỏng giữa đường', fromStatus: 'IN_TRANSIT', returned: 4 },
+        stops: REPORT.stops.map((stop) => ({ ...stop, completedAt: stop.sequence === 1 ? '2026-11-10T08:20:00' : null })),
+        verificationMethods: [{ step: 'LOADING', qr: 7, code: 2, manual: 1 }, { step: 'PICKUP', qr: 1, code: 0, manual: 0 }],
+      }),
+    },
+    'GET /api/trips/TRIP-2026-0046/report': { body: envelope({ ...REPORT, tripCode: 'TRIP-2026-0046', deliveryMinutes: 280 }) },
+  })
+  const cancelled = await fetchServerTripReport('TRIP-2026-0045')
+  expect(cancelled.cancellation).toStrictEqual({ reason: 'Xe hỏng giữa đường', inTransit: true, returned: 4 })
+  expect(cancelled.deliveryMinutes).toBeNull()
+  expect(cancelled.stops.map((stop) => stop.completedAt)).toStrictEqual(['2026-11-10T01:20:00.000Z', null])
+  expect(cancelled.verifications).toStrictEqual([
+    { step: 'LOADING', label: 9, qr: 7, code: 2, manual: 1 },
+    { step: 'PICKUP', label: 1, qr: 1, code: 0, manual: 0 },
+  ])
+  expect((await fetchServerTripReport('TRIP-2026-0046')).deliveryMinutes).toBe(280)
 })
 
 test('a trip cancelled on the road keeps its reason; a trip without a report keeps the server code', async () => {
@@ -73,7 +103,7 @@ test('a trip cancelled on the road keeps its reason; a trip without a report kee
     'GET /api/trips/TRIP-2026-0044/report': { status: 409, body: { success: false, code: 'TRIP_REPORT_NOT_AVAILABLE', message: 'no report' } },
   })
   const cancelled = await fetchServerTripReport('TRIP-2026-0043')
-  expect(cancelled.cancellation).toStrictEqual({ reason: 'Xe hỏng giữa đường', inTransit: true })
+  expect(cancelled.cancellation).toStrictEqual({ reason: 'Xe hỏng giữa đường', inTransit: true, returned: null })
   expect(cancelled.loading).toBeNull()
   await expect(fetchServerTripReport('TRIP-2026-0044')).rejects.toMatchObject({ code: 'TRIP_REPORT_NOT_AVAILABLE' })
 })

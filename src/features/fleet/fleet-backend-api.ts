@@ -64,8 +64,9 @@ export async function readBackendAssignments(): Promise<VehicleAssignmentRow[]> 
 }
 
 // DELETE /api/vehicles/{id}
-export async function deleteBackendVehicle(id: string): Promise<void> {
-  await api().delete<unknown>(`/api/vehicles/${encodeURIComponent(id)}`)
+export async function deleteBackendVehicle(id: string): Promise<'DELETED' | 'RETIRED'> {
+  const result = await api().delete<{ outcome?: string } | null>(`/api/vehicles/${encodeURIComponent(id)}`)
+  return result?.outcome === 'RETIRED' ? 'RETIRED' : 'DELETED'
 }
 
 /** Bật bảo dưỡng kèm ghi chú, hoặc tắt khi `note` là `null`; trả trạng thái mới của xe. */

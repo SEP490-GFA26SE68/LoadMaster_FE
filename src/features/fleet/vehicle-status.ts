@@ -2,13 +2,13 @@ import type { VehicleConfig } from '@/domain/models'
 import { matchesQuery } from '@/lib/list-filter'
 import type { TripPhase, VehicleState, VehicleStatus } from '@/lib/mock-db'
 
-/** Thứ tự hiển thị và thứ tự khi sắp xếp theo trạng thái: sẵn sàng trước, bảo dưỡng sau cùng. */
+/** Ba trạng thái còn chạy được, theo thứ tự hiển thị: sẵn sàng trước, bảo dưỡng sau — ba ô số liệu của Đội xe. */
 export const VEHICLE_STATUSES = ['available', 'in_use', 'maintenance'] as const satisfies readonly VehicleStatus[]
 
-/** Trạng thái xe của Đội xe: ba trạng thái của kho mẫu, và "Ngừng sử dụng" chỉ backend có (`RETIRED`). */
-export type FleetStatus = VehicleStatus | 'retired'
+/** Trạng thái xe của Đội xe: ba trạng thái trên và "Ngừng sử dụng" (xe từng chạy chuyến bị xoá — kho mẫu và máy chủ `RETIRED`). */
+export type FleetStatus = VehicleStatus
 
-/** Mọi trạng thái của Đội xe theo thứ tự hiển thị; kho mẫu chỉ dùng `VEHICLE_STATUSES`. */
+/** Mọi trạng thái của Đội xe theo thứ tự hiển thị và sắp xếp. */
 export const FLEET_STATUSES = [...VEHICLE_STATUSES, 'retired'] as const satisfies readonly FleetStatus[]
 
 /** Giá trị bộ lọc `trang-thai` trên URL, tiếng Việt không dấu như mọi tham số của màn danh sách (D-52). */
@@ -32,7 +32,7 @@ export type FleetVehicle = VehicleConfig & { readonly doorUnknown?: true }
 export type VehicleRow = VehicleConfig & { readonly state: FleetVehicleState }
 
 /** Slug lạ, hoặc của trạng thái mà nguồn dữ liệu không có (`statuses`), là không lọc. */
-export function statusFromSlug(slug: string, statuses: readonly FleetStatus[] = VEHICLE_STATUSES): FleetStatus | null {
+export function statusFromSlug(slug: string, statuses: readonly FleetStatus[] = FLEET_STATUSES): FleetStatus | null {
   return statuses.find((status) => VEHICLE_STATUS_SLUGS[status] === slug) ?? null
 }
 
@@ -60,7 +60,7 @@ export function filterVehicleRows(
   rows: readonly VehicleRow[],
   query: string,
   statusSlug: string,
-  statuses: readonly FleetStatus[] = VEHICLE_STATUSES,
+  statuses: readonly FleetStatus[] = FLEET_STATUSES,
 ): VehicleRow[] {
   const status = statusFromSlug(statusSlug, statuses)
   return rows.filter((row) => (status === null || row.state.status === status)
