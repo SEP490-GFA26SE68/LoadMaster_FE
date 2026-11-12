@@ -272,14 +272,13 @@ maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một ve
                            và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
-motion                   — animation 2D
 ```
 
 Riêng cho 3D viewer (chỉ trong `src/features/viewer3d`):
 
 ```
 three  ·  @react-three/fiber  ·  @react-three/drei
-@react-three/postprocessing  ·  @react-spring/three
+@react-spring/three
 camera-controls (qua drei)
 ```
 
@@ -295,13 +294,13 @@ Bản đồ (FE-4b-07): màn import `RouteMap` từ `@/components/map`, không i
 OpenStreetMap** hay nguồn gạch nào ngoài Goong (D-75: không bảo đảm thể hiện Hoàng Sa, Trường Sa). Khoá map tiles chỉ nằm ở `.env.local`
 (mẫu: `.env.example`; mọi `.env*` khác bị `.gitignore` chặn); dev, CI và test chạy không khoá. Khoá REST của Goong không bao giờ ở FE.
 
-**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · `keycloak-js` (chuyển sang trang đăng nhập của Keycloak; app đăng nhập ngay trên màn của mình, mục 9).
+**Không dùng:** `@react-three/postprocessing` (chưa hiệu ứng nào cần; cờ `postprocessing` của `usePerformanceFlags` luôn tắt) · `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · `keycloak-js` (chuyển sang trang đăng nhập của Keycloak; app đăng nhập ngay trên màn của mình, mục 9).
 
 ### Radix trực tiếp, không dùng shadcn CLI
 
 shadcn bản hiện tại sinh code trên **Base UI** chứ không phải Radix, và variant mặc định của nó lệch spec design (nút `h-8` thay vì 40/56px,
 `active:translate-y-px` vi phạm luật hover ở mục 5, `disabled:opacity-50` thay vì nền `--border`). Nên: cài thẳng `@radix-ui/react-*` cho phần cần
-hành vi và khả năng truy cập (Select, Dialog, DropdownMenu, Checkbox, Switch, RadioGroup, Tabs, Tooltip, ScrollArea, Separator, Slot), rồi **tự
+hành vi và khả năng truy cập (Select, Dialog, DropdownMenu, Checkbox, Switch, RadioGroup, Tabs, Tooltip, Slot), rồi **tự
 viết lớp giao diện** trong `components/ui/`. Không chạy `shadcn add`.
 
 ### TanStack Table v9
@@ -974,7 +973,8 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Nền Canvas luôn tối, kể cả khi phần còn lại của app sáng.
 - Target chức năng/performance là 1.000 placements với draw calls dưới 100, số mesh/nhãn không tăng tuyến tính theo cargo. Mục tiêu thiết bị thật: desktop hướng tới 60 FPS, tablet 45–60 FPS, phone khoảng ≥30 FPS bằng quality adaptation. Số đo SwiftShader không phải cam kết FPS trên thiết bị thật. Thêm `?debug` để đo trước khi thêm hiệu ứng.
 - Mọi hiệu ứng nâng cao (post-processing, shadow, AO) phải có cờ tắt được trong `usePerformanceFlags`. Ba tier `high / balanced / low` điều khiển DPR, bóng, viền chung, trang trí, bề mặt cargo và animation; viền kiện đang chọn luôn được giữ. Runtime bỏ qua idle, hạ tier sau 3 mẫu chậm (>28 ms), nâng sau 8 mẫu nhanh (<18 ms), cooldown 12 giây. Debug quality override khóa tier để đo lặp lại.
-- Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng `motion`.
+- Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng CSS (transition, keyframes theo token `--dur-*`,
+  `--ease-*`); chỉ thêm thư viện animation 2D khi CSS không làm được.
 - Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`; FE-5b-07). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
 - Canvas phải có `touch-action: none` (đã đặt toàn cục trong `index.css`). Thiếu nó thì trên máy tính bảng kéo ngón tay sẽ cuộn trang thay vì xoay mô hình — lỗi chỉ lộ khi chạm tay, dùng chuột không thấy.
 - Ba lưu ý về camera: `fitToBox` của camera-controls **xoay camera** về nhìn thẳng mặt gần nhất nên làm mất góc chéo — dùng phép chiếu các góc bao theo preset và tỉ lệ khung; bounding sphere theo chiều dài làm góc cửa sau trên phone quá nhỏ. Resize panel giữ góc người dùng đang xoay. Vách thùng dùng mặt đơn pháp tuyến hướng vào trong để vách gần camera tự biến mất. `PCFSoftShadowMap` đã bị gỡ khỏi three r186, dùng `shadows="percentage"`.
