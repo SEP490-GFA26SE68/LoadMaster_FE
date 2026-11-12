@@ -5,6 +5,9 @@ import { useFormat, useT } from '@/lib/i18n'
 import type { ReadyPreview } from './package-import'
 import { createErrorColumns, createValidColumns } from './package-import-preview-columns'
 
+/** Khoá dòng của hai bảng: số dòng trong file, luôn duy nhất — mã kiện thì có thể trùng (`DUPLICATE_IN_FILE`). */
+const fileLineId = ({ row }: { row: number }) => String(row)
+
 /** Số dòng hợp lệ vẽ ra bảng xem trước; phần còn lại chỉ đếm. */
 const VALID_ROWS_SHOWN = 50
 
@@ -47,7 +50,7 @@ export function PackageImportPreview({ preview }: { preview: ReadyPreview }) {
           </h3>
           {/* V2.3: khung viền đỏ, tiêu đề cột nền đỏ nhạt */}
           <div className="relative max-h-56 overflow-auto rounded-md border border-red-200 [&_thead_th]:bg-red-50 [&_thead_th]:text-ink-2 [&_tbody_tr:last-child>td]:border-b-0">
-            <DataTable data={invalidRows} columns={errorColumns} cellPadding="tight" />
+            <DataTable data={invalidRows} columns={errorColumns} cellPadding="tight" getRowId={fileLineId} />
           </div>
         </section>
       ) : null}
@@ -59,7 +62,7 @@ export function PackageImportPreview({ preview }: { preview: ReadyPreview }) {
             {t('trips.import.validTitle', { count: preview.valid.length })}
           </h3>
           <div className="relative max-h-56 overflow-auto rounded-md border border-border [&_tbody_tr:last-child>td]:border-b-0">
-            <DataTable data={validRows} columns={validColumns} cellPadding="tight" />
+            <DataTable data={validRows} columns={validColumns} cellPadding="tight" getRowId={fileLineId} />
           </div>
           {hiddenValid > 0 ? <p className="text-fine text-ink-3">{t('trips.import.moreRows', { count: hiddenValid })}</p> : null}
         </section>

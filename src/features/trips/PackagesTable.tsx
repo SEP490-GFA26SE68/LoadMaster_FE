@@ -121,6 +121,8 @@ export function PackagesTable({ packages, vehicle, stops, selectedId, onSelect, 
       {/* Khung cuộn ngang khi cột giữa hẹp hơn tổng cột cố định; relative vì ô ẩn định vị tuyệt đối (AGENTS mục 5) */}
       <div className={`relative overflow-x-auto ${SELECTED_ACCENT}`}>
         <div className="min-w-180">
+          {/* Không `getRowId`: mã dòng kiện có thể trùng khi dữ liệu còn lỗi (`DUPLICATE_INSTANCE_ID` — bảng này là nơi báo lỗi đó) và
+              ô không giữ trạng thái (không menu, không ô nhập), nên khoá theo vị trí không làm thao tác chạy nhầm dòng (AGENTS mục 5). */}
           <DataTable data={visible} columns={columns} density="roomy" appearance="paper" onRowClick={onSelect}
             isRowSelected={(row) => row.id === selectedId} />
         </div>
