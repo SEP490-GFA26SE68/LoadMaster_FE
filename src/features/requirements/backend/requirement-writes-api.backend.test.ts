@@ -45,7 +45,7 @@ test('tạo yêu cầu gửi khách, điểm đến, toạ độ, hạn giờ Vi
     customerId: 9, destination: '12 Lê Lợi, Quận 1', destinationLat: 10.77, destinationLng: 106.7, deadline: '2026-11-20T17:00:00', priority: 'HIGH',
     expectedPackageCount: 2, note: null, packageIds: [5, 6],
   })
-  expect(saved).toMatchObject({ id: '41', packageIds: ['5', '6'], deadline: '2026-11-20T17:00:00+07:00', customerName: 'Điện máy Xanh' })
+  expect(saved).toMatchObject({ id: '41', packageIds: ['5', '6'], deadline: '2026-11-20T10:00:00.000Z', customerName: 'Điện máy Xanh' })
   expect(createMock).not.toHaveBeenCalled()
 })
 

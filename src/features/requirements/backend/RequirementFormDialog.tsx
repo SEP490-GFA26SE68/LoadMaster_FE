@@ -57,6 +57,7 @@ import {
   useCreateRequirementMutation,
   useUpdateRequirementMutation,
 } from './useRequirementsQuery'
+import { backendTimeMs } from '@/lib/backend-time'
 
 const MAX_OF: Partial<
   Record<keyof RequirementFormValues, number>
@@ -473,7 +474,7 @@ function RequirementForm({
     }
 
     // Spring Boot LocalDateTime sử dụng giờ Việt Nam.
-    const deadlineMs = Date.parse(`${deadline}+07:00`)
+    const deadlineMs = backendTimeMs(deadline)
 
     if (
       !Number.isFinite(deadlineMs) ||
@@ -525,7 +526,7 @@ function RequirementForm({
 
     if (!newDeadline) return
 
-    const newDeadlineMs = Date.parse(`${newDeadline}+07:00`)
+    const newDeadlineMs = backendTimeMs(newDeadline)
     const previousDeadlineMs = Date.parse(current.deadline)
 
     if (newDeadlineMs <= previousDeadlineMs) {

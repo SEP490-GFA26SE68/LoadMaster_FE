@@ -31,3 +31,15 @@ export function backendLocalDateTime(iso: string): string {
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? ''
   return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}:${part('second')}`
 }
+
+/**
+ * Mốc giờ backend → mili giây, `NaN` khi không đọc được — cho phép so sánh (trễ hạn, hạn mới sau hạn cũ) không muốn ném lỗi. Không tự
+ * nối `+07:00` vào chuỗi của máy chủ: Safari trả `NaN` cho dạng có dấu cách hay thiếu giây, `isoFromBackend` đọc đủ mọi dạng.
+ */
+export function backendTimeMs(value: string): number {
+  try {
+    return Date.parse(isoFromBackend(value))
+  } catch {
+    return Number.NaN
+  }
+}

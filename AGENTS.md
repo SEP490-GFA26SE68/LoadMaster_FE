@@ -1199,7 +1199,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
   (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu.
   Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
-  giờ là giờ Việt Nam (ngày và giờ ngăn bằng `T` hay dấu cách — `@JsonFormat("yyyy-MM-dd HH:mm:ss")`), `Instant` có `Z`. Phong bì lỗi có `code` (tên `ErrorCode` của backend) thì
+  giờ là giờ Việt Nam (ngày và giờ ngăn bằng `T` hay dấu cách — `@JsonFormat("yyyy-MM-dd HH:mm:ss")`), `Instant` có `Z`; so sánh mốc giờ bằng `backendTimeMs` (`NaN` khi không đọc được) — không tự nối `+07:00` vào chuỗi của máy chủ
+  (Safari đọc ra `NaN` với dạng có dấu cách hay thiếu giây). Phong bì lỗi có `code` (tên `ErrorCode` của backend) thì
   giữ mã đó; không có `code` (backend cũ, và vài lỗi backend còn bắt riêng) thì `api-client` đổi 400 (và 422) / 402 / 404 / 409 sang
   `BAD_REQUEST`, `PAYMENT_REQUIRED`, `NOT_FOUND`, `CONFLICT` (`codeOfStatus`); chỗ một mã HTTP chỉ có một nghĩa thì `withBusinessCode` đổi sang
   mã nghiệp vụ — chỉ khi không có mã. Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`; mã app chưa có câu thì câu theo

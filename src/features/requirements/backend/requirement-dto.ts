@@ -1,4 +1,5 @@
 import type { DeliveryRequirement } from '@/lib/mock-db'
+import { isoFromBackend } from '@/lib/backend-time'
 
 /**
  * DTO yêu cầu giao của backend và phép đổi sang kiểu của app. Chỉ các file `-api` của yêu cầu giao import file này: kiểu DTO không đi ra
@@ -31,7 +32,7 @@ export type DeliveryRequirementApi = {
 
 /** Mốc giờ Việt Nam không múi giờ của backend → ISO có múi giờ. */
 export function vietnamIso(value: string): string {
-  return /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}+07:00`
+  return isoFromBackend(value)
 }
 
 /** Thời điểm ISO → `LocalDateTime` theo giờ Việt Nam mà Spring nhận (`yyyy-MM-ddTHH:mm:00`). */
