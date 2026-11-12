@@ -44,9 +44,9 @@ test('lists the plans with tier, price, credits, algorithm, companies and the pr
   await screen.findByRole('table', {}, SLOW)
   expect(screen.getByText('3 gói')).toBeInTheDocument()
   const cells = (name: string) => rowOf(name).then((row) => within(row).getAllByRole('cell').map((cell) => cell.textContent))
-  expect(await cells('Basic')).toStrictEqual(['BasicPLAN-001Giá trị tạm — chờ chốt', 'Basic', '490.000 ₫ / tháng', '100', 'EP + DBLF', '1', '', ''])
-  expect(await cells('Pro')).toStrictEqual(['ProPLAN-002Giá trị tạm — chờ chốt', 'Pro', '1.490.000 ₫ / tháng', '500', 'EP + DBLF + GA/SA', '1', '', ''])
-  expect(await cells('Ultimate')).toStrictEqual(['UltimatePLAN-003Giá trị tạm — chờ chốt', 'Ultimate', '3.990.000 ₫ / tháng', 'Không giới hạn', 'EP + DBLF + GA/SA', '0', '', ''])
+  expect(await cells('Basic')).toStrictEqual(['BasicPLAN-001Giá trị tạm — chờ chốt', 'Basic', '1.200.000 ₫ / tháng', '3.000', 'EP + DBLF', '1', '', ''])
+  expect(await cells('Pro')).toStrictEqual(['ProPLAN-002Giá trị tạm — chờ chốt', 'Pro', '3.500.000 ₫ / tháng', '10.000', 'EP + DBLF + GA/SA', '1', '', ''])
+  expect(await cells('Ultimate')).toStrictEqual(['UltimatePLAN-003Giá trị tạm — chờ chốt', 'Ultimate', '7.900.000 ₫ / tháng', 'Không giới hạn', 'EP + DBLF + GA/SA', '0', '', ''])
   expect(screen.getAllByRole('switch').map((item) => item.getAttribute('aria-checked'))).toStrictEqual(['true', 'true', 'true'])
 })
 

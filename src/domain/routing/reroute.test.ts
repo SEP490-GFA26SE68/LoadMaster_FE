@@ -15,29 +15,30 @@ const T0 = Date.parse('2026-09-14T01:00:00.000Z')
 const MINUTE = 60_000
 const at = (offsetMs: number) => new Date(T0 + offsetMs).toISOString()
 
-test('the constants of the mock: a bypass 15 % longer, a ring road 30 % longer, an expressway 50 % longer at 70 km/h for legs from 15 km', () => {
+test('the constants of the mock: a bypass 15 % longer at 50 km/h, a ring road 30 % longer at 55 km/h, an expressway 50 % longer at 80 km/h for legs from 15 km', () => {
   expect(REROUTE_CONSTANTS).toStrictEqual({
     BYPASS: { distancePercent: 115, speedKmh: 50 },
-    RING_ROAD: { distancePercent: 130, speedKmh: 50 },
-    HIGHWAY: { distancePercent: 150, speedKmh: 70 },
+    RING_ROAD: { distancePercent: 130, speedKmh: 55 },
+    HIGHWAY: { distancePercent: 150, speedKmh: 80 },
     HIGHWAY_MIN_KM: 15,
   })
 })
 
 test('a long leg gets three options, each with its distance, time, extra time over the straight line and arrival', () => {
-  // 28,444787 × 1,15 = 32,71 km · 2.048.025 × 1,15 = 2.355.228,75 ms; × 1,3 = 36,98 km · 2.662.432,5 ms; × 1,5 = 42,67 km · × 15/14 = 2.194.312,5 ms
+  // 28,444787 × 1,15 = 32,71 km · 2.048.025 × 1,15 = 2.355.228,75 ms; × 1,3 = 36,98 km · × 1,3 × 50/55 = 2.420.393,18 ms;
+  // × 1,5 = 42,67 km · × 1,5 × 50/80 = 1.920.023,44 ms — cao tốc nhanh hơn đường nối thẳng nên extraMs âm
   expect(rerouteOptions(A, B, at(0))).toStrictEqual([
     { route: 'BYPASS', distanceKm: 32.7, durationMinutes: 39, extraMs: 307_204, eta: at(2_355_229) },
-    { route: 'RING_ROAD', distanceKm: 37, durationMinutes: 44, extraMs: 614_408, eta: at(2_662_433) },
-    { route: 'HIGHWAY', distanceKm: 42.7, durationMinutes: 37, extraMs: 146_288, eta: at(2_194_313) },
+    { route: 'RING_ROAD', distanceKm: 37, durationMinutes: 40, extraMs: 372_368, eta: at(2_420_393) },
+    { route: 'HIGHWAY', distanceKm: 42.7, durationMinutes: 32, extraMs: -128_002, eta: at(1_920_023) },
   ])
 })
 
 test('a leg shorter than 15 km has no expressway option', () => {
-  // 14,455340 × 1,15 = 16,62 km · 1.040.785 × 1,15 = 1.196.902,75 ms; × 1,3 = 18,79 km · 1.353.020,5 ms
+  // 14,455340 × 1,15 = 16,62 km · 1.040.785 × 1,15 = 1.196.902,75 ms; × 1,3 = 18,79 km · × 1,3 × 50/55 = 1.230.018,64 ms
   expect(rerouteOptions(DEPOT, C, at(10 * MINUTE))).toStrictEqual([
     { route: 'BYPASS', distanceKm: 16.6, durationMinutes: 20, extraMs: 156_118, eta: at(10 * MINUTE + 1_196_903) },
-    { route: 'RING_ROAD', distanceKm: 18.8, durationMinutes: 23, extraMs: 312_236, eta: at(10 * MINUTE + 1_353_021) },
+    { route: 'RING_ROAD', distanceKm: 18.8, durationMinutes: 21, extraMs: 189_234, eta: at(10 * MINUTE + 1_230_019) },
   ])
 })
 

@@ -98,7 +98,7 @@ test('without a session a ticket cannot be sent or answered: it needs an author'
 test('the support panel of a company: its plan, balance and at most the twenty latest credit transactions, newest first', async () => {
   const db = dbAs(SUPPORT)
   const longBinh = await db.getSupportCompanyPanel('LOG-001')
-  expect([longBinh.company.id, longBinh.current?.plan.name, longBinh.planStatus, longBinh.credit]).toStrictEqual(['LOG-001', 'Pro', 'ACTIVE', { balance: 472, unlimited: false }])
+  expect([longBinh.company.id, longBinh.current?.plan.name, longBinh.planStatus, longBinh.credit]).toStrictEqual(['LOG-001', 'Pro', 'ACTIVE', { balance: 9_972, unlimited: false }])
   expect(longBinh.transactions).toHaveLength(17)
   expect(new Set(longBinh.transactions.map((item) => item.companyId))).toStrictEqual(new Set(['LOG-001']))
   expect(longBinh.transactions.map((item) => item.createdAt)).toStrictEqual(longBinh.transactions.map((item) => item.createdAt).toSorted().toReversed())

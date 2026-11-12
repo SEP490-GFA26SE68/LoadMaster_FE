@@ -231,7 +231,7 @@ cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
   kiện đã lên xe (xếp xong, huỷ), lý do huỷ, số kiện hoàn trả, số kiện phải nhận dọc đường, lý do yêu cầu nhận bị từ chối, số điểm trễ hạn dự
   kiến theo thứ tự mới. Vai trò khác vẫn nhận đúng những gì đã nhận; nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước" / "Lý do soạn lại".
 - Quản trị hệ thống, quản trị công ty: việc trên tài khoản và đăng nhập sai. Quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`,
-  sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới `BILLING_CONSTANTS.lowCreditThreshold` — đề xuất, chờ nhóm xác nhận): bấm
+  sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `lowCreditThreshold` — 25 % credit tháng của gói, làm tròn lên; gói không giới hạn không báo): bấm
   mở `/goi-cuoc`; đối tượng `company` của sự kiện là liên kết tới đó cho người có `billing.manage`, nhật ký cũng vậy.
 - Mọi vai trò công ty: **trả lời yêu cầu hỗ trợ của chính mình** (`ticket.replied`, lọc theo người gửi — tham số `requestedBy`).
 - Chuông không tự lọc theo công ty — kho lọc: quản trị công ty chỉ nhận sự kiện tài khoản của công ty mình (kể cả việc quản trị hệ thống làm
@@ -962,7 +962,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
   (chưa khai, chỉ một trục, các trục trùng vị trí) thì **không có số nào**: ô Tải trục nói vì sao chưa tính, metrics của kết quả không
   có `frontAxleLoadKg` / `rearAxleLoadKg`, và không có kiểm `AXLE_OVERLOAD`. Trục minh hoạ mà khung gầm 3D vẽ khi xe không khai trục
-  **không** được đưa vào phép tính. Xe mẫu của seed khai hai trục bằng **số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất** (mục 9, `twoAxles` ở `seed-vehicles.ts`); số tải trục trên màn vẫn truy được về các trục đó và vẫn mang MOCK RESULT.
+  **không** được đưa vào phép tính. Xe mẫu của seed khai hai trục bằng **số theo cỡ xe đã được nhóm xác nhận** (mục 9, `twoAxles` ở `seed-vehicles.ts`); số tải trục trên màn vẫn truy được về các trục đó và vẫn mang MOCK RESULT.
 
 ## 7. Quy tắc riêng cho 3D
 
@@ -1043,7 +1043,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò. Scene của tài xế còn nhận kiện nhận dọc đường đã có chỗ (`withPickupPlacements`, `viewer3d/scene-pickups.ts`): cùng InstancedMesh với kiện thường, không mesh hay draw call mới (FE-BL-01).
 - Loading (LM-036) lấy `placement.step` (= `loadingOrder`); unloading lấy `unloadingOrder` của kết quả qua `unloadSequence` (`operations/unloading.ts`), nhãn "Thứ tự dỡ" không kèm "gợi ý"; revision `ordersRecomputed` hiện thêm câu "tính lại ở FE". Màn tài xế (LM-061) dùng `unloadingOrder` của revision đã duyệt cho cả danh sách kiện của điểm giao lẫn mô phỏng, không có chữ "gợi ý". Thứ tự suy ra (stop tăng, cao trước, gần cửa trước, nhãn "gợi ý") chỉ là dự phòng khi kết quả thiếu `unloadingOrder`. Stop-order consistency không chứng minh unload accessibility.
 - Blocker là `lifoIssues` của domain qua `createLifoIndex`: chỉ kiện giao **muộn hơn** nằm hẳn sau mặt sau; kiện đã dỡ/đang ẩn gỡ khỏi lưới (`grid.remove`), tua lùi thì thêm lại; kiện chắn sắp theo x trước khi callout. `LIFO_BLOCKED` (che kín 100% mặt sau là vi phạm) dừng mô phỏng và giữ target; `LIFO_PARTIAL` (che một phần, cảnh báo) chỉ đánh dấu (D-26). Duyệt đếm hai mã này, không khẳng định dỡ được thực tế. Không tính người, xe nâng, clearance hay xoay lúc dỡ. Riêng hình ảnh dỡ (`UnloadMotion`) dùng `corridor` — mọi kiện còn lại trên hành lang thẳng, bất kể điểm giao — để không trượt xuyên kiện. Fixture benchmark có đúng một cặp kiện đổi điểm giao tạo ca `LIFO_BLOCKED` cho browser suite; seed đã duyệt không có ca LIFO.
-- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. **Tải trục** (FE-5b-03, D-78): `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. Xe mẫu của seed khai hai trục (số ước lượng, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính; phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
+- CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. **Tải trục** (FE-5b-03, D-78): `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. Xe mẫu của seed khai hai trục (số đã xác nhận, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính; phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
 - Chi tiết xe gộp geometry theo vật liệu; mọi bánh (bánh đôi cầu sau) dùng một InstancedMesh, một draw. Khung gầm chi tiết (`scene/truck-chassis.ts`) gộp vào cùng hình học màu theo đỉnh của `vehicle-details` — không thêm draw call. Camera xoay được xuống dưới gầm (`maxPolarAngle` gần π) và có góc nhìn "Gầm xe" (`gam-xe`, tâm nhìn hạ xuống khung sườn); đèn yếu từ dưới giữ khung gầm không đen. Màn kho không có góc gầm xe. Cargo dùng atlas trung tính chung cho carton/pallet/crate qua thuộc tính instance, không phải nhãn hướng đặt. Low tắt chi tiết phụ; không tắt cues nghiệp vụ. Khi gặp `LIFO_BLOCKED`, playback dỡ tạm dừng và giữ target. Kiện còn vật trên hành lang thẳng (người dùng bỏ qua bước, hoặc bị che một phần) mờ tại chỗ; không dịch chuyển xuyên kiện khác. Reduced motion không dịch chuyển lớn; hoàn tất phải trở lại idle.
 - Timeline dùng ô cao bằng nhau, 8–64 bins theo chiều rộng, slider giữ toàn bộ bước.
 - **Dải vùng điểm giao** (FE-5b-07, D-79). Planner vẽ các vùng của phương án (`result.stopZones` → `ViewerSceneModel.zones`, theo thứ tự giao, vùng đầu sát cửa) thành dải trên sàn thùng theo màu điểm giao: `operations/ZoneStrips.tsx`, hình học thuần ở `operations/stop-map.ts` (`zoneStrips`: mỗi vùng một hình chữ nhật từ `startXCm` tới `endXCm`, lùi 2 cm khỏi hai vách, cao 0,4 cm trên sàn; khoảng đệm để trống; nằm hoàn toàn trong mép sàn, depth test bình thường, không đặt dải trên thân, gầm hay bên ngoài xe). Mọi vùng nằm trong **một** mesh tô màu theo đỉnh: **đúng một draw call dù phương án có 1 hay 8 điểm giao** (`e2e/viewer-zones.spec.ts` đo bằng `?debug&packages=1000&stops=1|4|8`: số draw call không đổi theo số điểm giao; tắt dải vùng bớt đúng một). Mỗi vùng có một nhãn DOM neo ở mép sàn: số điểm kèm màu, tên điểm, tỷ lệ thể tích hàng của điểm đó (%) — màu luôn đi kèm số và tên. Nhãn không đè nhau và không đè nhãn "Cửa sau": mỗi khung hình được vẽ, `ZoneStrips` chiếu điểm neo ra màn rồi đẩy nhãn bị chạm xuống dưới nhãn đã đặt, ghi thẳng vào DOM và chỉ ghi khi đổi; số nhãn bằng số điểm giao, không theo số kiện. Dải vùng **bật sẵn** khi mở Planner (cue nghiệp vụ: tier `low` vẫn vẽ), tắt / bật ở hộp Hiển thị ("Ẩn / Hiện dải vùng điểm giao", `operations.showZones`); phương án không chia vùng thì không có nút đó. Kho và tài xế không truyền `zones` cho `SceneCanvas` nên không có dải.
@@ -1574,7 +1574,7 @@ kiện có ô "Loại hàng" — chỉ ghi vào kiện khi người dùng chọn
 **Phân tách hàng — một chuyến một loại hàng** (FE-4b-06, D-74). Luật thuần ở `domain/constraints/segregation.ts`: `segregation(dòng kiện, xe)`
 trả loại đang khoá (loại của dòng kiện đầu tiên; dòng không ghi loại là `STANDARD`; chuyến rỗng là `null` — khoá tự tính lại), nhóm theo loại,
 xung đột (mọi dòng khác loại đang khoá) và cảnh báo xe `HAZARDOUS_VEHICLE_REQUIRED` (có hàng nguy hiểm) · `REFRIGERATION_MISSING` (có hàng
-lạnh mà xe không có vật cản `COOLING_UNIT` — đề xuất D-74, chờ nhóm xác nhận); `addedConflicts` so trước / sau. Kho kiểm **ở mọi lối kiện vào
+lạnh mà xe không có vật cản `COOLING_UNIT` — D-74, đã xác nhận); `addedConflicts` so trước / sau. Kho kiểm **ở mọi lối kiện vào
 chuyến** qua một hàm `settleSegregation` (`db-trip-segregation.ts`), gọi trước khi ghi: đưa yêu cầu giao vào chuyến, đưa kiện kho kiện thẳng
 vào chuyến, gõ / nhập / sửa / nhân bản dòng kiện (`updateTrip`), tạo chuyến có sẵn kiện. Có xung đột **mới** mà chuyến chưa có lý do và nơi gọi
 không đưa lý do: `CARGO_SEGREGATION_CONFLICT { tripId, lockedClass, packages }` (mã của bên gửi với kiện kho kiện, mã dòng với kiện gõ tay),
@@ -1853,7 +1853,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   giữ **mã số** (`REV-001`), hai phương án kia mang mã kèm nhãn (`REV-001-A`, `REV-001-B`; Phương Nam `REV-PN-001-A`…), dạng mà `nextId` không
   tính; thứ tự ghi A, B, C rồi bản duyệt (`listRevisions` của chuyến chính: `REV-001-A`, `REV-001-B`, `REV-001`, `REV-002`). Mọi chuyến đã có
   phương án (và chuyến huỷ có đủ toạ độ) có `routePlan` theo đúng thứ tự điểm của seed, không ghi sự kiện; hai chuyến nháp và chuyến huỷ
-  `TRIP-004` (điểm Tân An chưa có toạ độ) thì không. **Trục của xe mẫu là số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất**
+  `TRIP-004` (điểm Tân An chưa có toạ độ) thì không. **Trục của xe mẫu là số theo cỡ xe, đã được nhóm xác nhận**
   (`twoAxles` ở `seed-vehicles.ts`; "Truck 6m" của Spec không khai): trục trước ở −100 cm, trục sau giữa hốc bánh; xe chở đủ tải dàn đều
   thùng không vượt trục nào; loại xe seed lấy giới hạn trục từ đó (`axleLimitsFromAxles`); thay số thật ở trang xe là đủ, không sửa code. Mở
   app sớm hơn việc "hôm nay" muộn nhất của seed thì mọi mốc giờ seed lùi cùng một khoảng (`seed-shift.ts`): lịch sử không có sự kiện ở tương
@@ -1887,8 +1887,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   Query (`useTripMonitoringQuery` `['trips', tripId, 'monitoring']`, `useFleetMonitoringQuery` `['trips', 'monitoring']`) — không `setInterval`
   riêng, gỡ màn là hết nhịp, không chuyến nào đang chạy thì không có nhịp. Ở Chi tiết chuyến chỉ `TripRouteCard` vẽ lại theo nhịp đó. E2E có
   giá trị đang chạy chờ tới trạng thái dừng (xe tới điểm), không chờ theo giờ (`e2e/live-tracking.spec.ts`).
-- **Giờ nghỉ bắt buộc trong ETA** (FE-BL-04). `ROUTING_CONSTANTS` có `MAX_CONTINUOUS_DRIVING_MINUTES` (240) và `REST_MINUTES` (15) — **đề xuất FE chờ
-  nghiệp vụ xác nhận** (PRD v2 mục 17.2); giới hạn lái theo ngày, theo tuần **chưa mô hình hoá**. Một chỗ tính duy nhất: `legWithRests(thời gian
+- **Giờ nghỉ bắt buộc trong ETA** (FE-BL-04). `ROUTING_CONSTANTS` có `MAX_CONTINUOUS_DRIVING_MINUTES` (240) và `REST_MINUTES` (15) — **đã chốt với nghiệp
+  vụ**: lái liên tục tối đa 4 giờ thì nghỉ 15 phút; giới hạn lái theo ngày, theo tuần **chưa mô hình hoá**. Một chỗ tính duy nhất: `legWithRests(thời gian
   chạy, bộ đếm lái liên tục)` chia chặng thành các đoạn lái xen nghỉ (đủ giờ lái ngay tại đích thì không nghỉ); dừng ở một điểm từ `REST_MINUTES`
   trở lên đặt lại bộ đếm (`drivenAfterStop`). `routeEta` (và `routePlan`) cộng giờ nghỉ vào ETA và `totalMinutes`, thêm `restCount` /
   `restMinutes` **chỉ khi có nghỉ** (`TripRoutePlan` cũng vậy) — `RoutePlanBar` nói "đã gồm n lần nghỉ bắt buộc (x)" cạnh dòng km · thời gian. Xe
@@ -1929,9 +1929,10 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   quản lý công ty. Mỗi sự cố thêm một khoảng giữ xe mô phỏng (`TripIncidents.holds` → tham số `delays` của `simulatedSnapshot`): xe đứng thêm
   **đúng số phút chậm**, ETA tự dời theo vị trí — không cộng lần hai. Sự cố `OPEN` quá 30 phút theo đồng hồ của kho thì kho tự chuyển quản lý ở lần
   đọc kế tiếp (`advanceTracking`, sự kiện hệ thống `exception.escalated`, ghi đúng mốc 30 phút). **Tuyến thay thế** (`@/domain/routing`
-  `rerouteOptions`, mock — hằng số ở `REROUTE_CONSTANTS`, chờ nghiệp vụ xác nhận): 2–3 đường tới **điểm kế tiếp** từ vị trí xe (đường tránh +15 %,
-  vành đai +30 %, cao tốc +50 % ở 70 km/h khi chặng còn từ 15 km), mang MOCK RESULT; chọn một thì khoảng giữ đang chạy bị cắt và xe đứng thêm phần
-  đường vòng chậm hơn đường nối thẳng (`delaysAfterReroute`), nhật ký `trip.rerouted`. **Chọn tuyến khác không đổi thứ tự điểm giao** (thứ tự chỉ
+  `rerouteOptions`, mock — hằng số ở `REROUTE_CONSTANTS`, đã chốt): 2–3 đường tới **điểm kế tiếp** từ vị trí xe (đường tránh +15 % ở
+  50 km/h, vành đai +30 % ở 55 km/h, cao tốc +50 % ở 80 km/h khi chặng còn từ 15 km), mang MOCK RESULT; chọn một thì khoảng giữ đang chạy bị cắt và
+  xe đứng thêm phần đường vòng chậm hơn đường nối thẳng (`delaysAfterReroute`; đường nhanh hơn — cao tốc — thì không đứng thêm, xe mô phỏng vẫn
+  chạy đường nối thẳng), nhật ký `trip.rerouted`. **Chọn tuyến khác không đổi thứ tự điểm giao** (thứ tự chỉ
   đổi qua `reorderRunningStops`) và đường vẽ vẫn nối thẳng. **Gia hạn**: trên sự cố `ESCALATED`, quản lý ghi đã liên hệ khách (bắt buộc) và nhập
   hạn mới cho một yêu cầu giao của chuyến — phải sau giờ của kho (`REQUIREMENT_DEADLINE_PAST`); hạn của điểm giao và mức hạn tính lại ngay
   (`refreshLiveEta`), sự cố giữ `ESCALATED` tới khi điều phối viên đánh dấu đã xử lý. Mã lỗi: `EXCEPTION_INVALID`, `EXCEPTION_STATUS_INVALID`,
@@ -2052,15 +2053,16 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `subscribeToPlan` / `topUpCredits` chỉ tạo thanh toán `PENDING`; `settlePayment(id, 'SUCCESS' | 'FAILED')` (việc của cổng thanh toán, sau này là
   màn giả lập) xử lý **đúng một lần** — kích hoạt gói + cấp credit tháng, nối kỳ gia hạn + cấp credit, hay cộng credit đã mua. Đăng ký chỉ khi chưa
   có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30); còn
-  `renewalNoticeDays` (3, đề xuất) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
+  `renewalNoticeDays` (7, đã chốt) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
   (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. **Gói đã hết hạn vẫn tiêu được số dư** (D-94): lần chạy tối ưu 3D
   vẫn giữ và trừ credit như thường nhưng chỉ ở hạng Cơ bản `EP_DBLF` (`effectiveAlgorithmTier`; mỗi lần `runCost` = `optimizationCost`, gói
   Ultimate hết hạn không còn không giới hạn) tới khi gói lại `ACTIVE`; nạp thêm thì không (`topUpCredits` → `SUBSCRIPTION_EXPIRED`, hộp nạp mờ
   nút kèm lý do — gia hạn trước, như máy chủ); `/goi-cuoc` vẫn hiện số dư. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
   `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Mỗi kỳ mới (đăng ký,
   gia hạn) đặt lại số dư về đúng credit tháng của kỳ — credit còn thừa, kể cả credit đã mua, không cộng dồn sang kỳ sau, như máy chủ (Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ: `SEED_PLANS` ở
-  `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit), Phương Nam gói
-  Basic (100 credit, đã dùng gần hết: còn 2 — đúng một lần chạy); sổ cái dựng từ các lần chạy của seed sau khi dời giờ và kỳ hiện tại bao giờ của kho (nên số dư của
+  `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Số của seed: Basic 1.200.000 đ / 3.000 credit, Pro 3.500.000 đ /
+  10.000 credit, Ultimate 7.900.000 đ / không giới hạn (vẫn mang cờ tạm). Seed: Long Bình gói Pro (10.000 credit, dư
+  nhiều), Phương Nam gói Basic (3.000 credit, đã dùng gần hết: còn 2 — đúng một lần chạy); sổ cái dựng từ các lần chạy của seed sau khi dời giờ và kỳ hiện tại bao giờ của kho (nên số dư của
   seed không đổi theo ngày chạy test). Nhật ký: nhóm `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit`
   (`purchased`, `lowBalance` — hệ thống ghi), đối tượng `company` (liên kết tới `/goi-cuoc` cho người có `billing.manage`).
   **Một lần chạy tối ưu 3D = 2 credit** (ba phương án vẫn một lần; một hằng `BILLING_CONSTANTS.optimizationCost` cho giữ, trừ, hoàn, chặn, như
@@ -2072,7 +2074,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `addRevision`) thì kho giữ và trừ ngay tại chỗ — hết credit hay chưa có gói là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test
   logic kho) mới lưu không tính. Lượt đã trừ hẳn **không hoàn được** (`CREDIT_NOT_RESERVED`) — hoàn chỉ dành cho lượt còn đang giữ; giữ và hoàn
   chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`). `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không
-  tốn credit. Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
+  tốn credit. Số dư sau khi giữ credit ≤ `lowCreditThreshold(gói)` (`Math.ceil(credit tháng × 0,25)`, đã chốt; gói không giới hạn không có ngưỡng, kể cả
+  khi đã hết hạn) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`; nối backend thì ngưỡng đọc ở `lowBalanceThreshold` của bảng giá máy chủ.
   Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ
   chối, huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`,
   `staleTime: 0`, làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu

@@ -7,7 +7,7 @@ import { fetchOptimizationCredit, runOptimization } from './optimization-api'
 /**
  * Credit của một lần chạy tối ưu 3D qua lớp `-api.ts` (FE-8-05, D-89): giữ khi bắt đầu, trừ khi lưu xong, hoàn khi lỗi hoặc huỷ — mỗi
  * lần chạy đúng một bộ giao dịch. Luật chặn (hết credit, gói hết hạn, gói không giới hạn) kiểm ở `billing.test.ts`. Kho dùng chung
- * không phiên: công ty mặc định Long Bình, gói Pro, 472 credit; một lần chạy 2 credit (kho có độ trễ giả nên mỗi lượt chạy mất vài giây).
+ * không phiên: công ty mặc định Long Bình, gói Pro, 9.972 credit; một lần chạy 2 credit (kho có độ trễ giả nên mỗi lượt chạy mất vài giây).
  */
 
 const TRIP_ID = 'TRIP-012'

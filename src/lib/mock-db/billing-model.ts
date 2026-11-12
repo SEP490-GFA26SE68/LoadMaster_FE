@@ -131,10 +131,10 @@ export type CreditReservation = { reference: string; cost: number }
 export const BILLING_CONSTANTS = {
   /** Một kỳ gói (ngày). */
   periodDays: 30,
-  /** Tự gia hạn tạo thanh toán Chờ chừng ấy ngày trước hạn (đề xuất — BE chạy cron hằng ngày, chưa chốt số ngày). */
-  renewalNoticeDays: 3,
-  /** Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty (đề xuất, chờ nhóm xác nhận). */
-  lowCreditThreshold: 10,
+  /** Tự gia hạn tạo thanh toán Chờ chừng ấy ngày trước hạn (đã chốt). */
+  renewalNoticeDays: 7,
+  /** Ngưỡng "Sắp hết credit" là tỉ lệ này của credit tháng của gói, làm tròn lên (`lowCreditThreshold`; đã chốt). */
+  lowCreditRatio: 0.25,
   /** Credit mỗi lần chạy tối ưu 3D (D-89, như INITIAL_OPTIMIZATION_CREDIT_COST của BE): giữ, trừ, hoàn và chặn đều theo số này; ba phương án vẫn một lần. */
   optimizationCost: 2,
   /** Gói nạp credit và giá mỗi credit (D-89). */
@@ -143,6 +143,13 @@ export const BILLING_CONSTANTS = {
 } as const
 
 export const isUnlimited = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => plan.monthlyCredits === null
+
+/**
+ * Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty: `ceil(credit tháng × 25 %)`. Gói không giới hạn không có
+ * ngưỡng (`null`) — không bao giờ báo, kể cả khi đã hết hạn. Nối backend thì ngưỡng đọc ở `lowBalanceThreshold` của bảng giá máy chủ.
+ */
+export const lowCreditThreshold = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>): number | null =>
+  plan.monthlyCredits === null ? null : Math.ceil(plan.monthlyCredits * BILLING_CONSTANTS.lowCreditRatio)
 
 /** Vì sao một lần chạy tối ưu bị chặn; chưa có gói (`SUBSCRIPTION_EXPIRED`) xét trước số dư. */
 export type CreditBlock = 'SUBSCRIPTION_EXPIRED' | 'INSUFFICIENT_CREDITS'

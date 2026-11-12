@@ -2,6 +2,7 @@ import {
   BILLING_CONSTANTS,
   creditBlock,
   isUnlimited,
+  lowCreditThreshold,
   runCost,
   PLAN_TIERS,
   TIER_ALGORITHM,
@@ -47,8 +48,9 @@ function reserveCredit(ctx: DbContext, trip: { id: string; companyId: string }):
   const cost = runCost(current as CurrentSubscription)
   const reference = nextId('JOB', [...ctx.state.creditTransactions.values()].map((item) => item.reference), 3)
   appendTransaction(companyId, { type: 'USAGE', amount: negated(cost), reference, usageStatus: 'RESERVED', tripId: trip.id })
-  // Số dư từ ngưỡng trở xuống thì báo quản trị công ty (đề xuất `lowCreditThreshold`); gói không giới hạn không bao giờ hết
-  if (cost > 0 && balance - cost <= BILLING_CONSTANTS.lowCreditThreshold) {
+  // Số dư từ ngưỡng (25 % credit tháng của gói) trở xuống thì báo quản trị công ty; gói không giới hạn không bao giờ báo
+  const threshold = lowCreditThreshold((current as CurrentSubscription).plan)
+  if (cost > 0 && threshold !== null && balance - cost <= threshold) {
     ctx.logSystem('credit.lowBalance', companyTarget(companyId), { balance: balance - cost }, companyId)
   }
   return { reference, cost }

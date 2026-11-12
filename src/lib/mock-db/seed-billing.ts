@@ -13,20 +13,20 @@ import type { Trip } from './types'
 
 /**
  * Gói cước, đăng ký, sổ cái credit và thanh toán của seed (FE-8-01). **Giá và hạn mức dưới đây là giá trị tạm** (`provisional`): nhóm
- * chưa chốt giá VND của ba gói và hạn mức credit tháng của Pro, Ultimate (PRD v2 mục 17.2) — chỉ Basic 100 credit/tháng lấy từ ví dụ
- * của backend. Màn gói cước ghi "Giá trị tạm — chờ chốt". Chốt số thật thì sửa ở **bảng này**, không ở chỗ nào khác.
+ * chưa chốt giá VND của ba gói và hạn mức credit tháng của Pro, Ultimate (PRD v2 mục 17.2). Màn gói cước ghi
+ * "Giá trị tạm — chờ chốt". Chốt số thật thì sửa ở **bảng này**, không ở chỗ nào khác.
  */
 export const SEED_PLANS: readonly SubscriptionPlan[] = [
   {
-    id: 'PLAN-001', name: 'Basic', tier: 'BASIC', priceVnd: 490_000, monthlyCredits: 100, algorithmTier: 'EP_DBLF',
+    id: 'PLAN-001', name: 'Basic', tier: 'BASIC', priceVnd: 1_200_000, monthlyCredits: 3_000, algorithmTier: 'EP_DBLF',
     features: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION'], active: true, provisional: true,
   },
   {
-    id: 'PLAN-002', name: 'Pro', tier: 'PRO', priceVnd: 1_490_000, monthlyCredits: 500, algorithmTier: 'EP_DBLF_GA',
+    id: 'PLAN-002', name: 'Pro', tier: 'PRO', priceVnd: 3_500_000, monthlyCredits: 10_000, algorithmTier: 'EP_DBLF_GA',
     features: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION', 'ADVANCED_ALGORITHM'], active: true, provisional: true,
   },
   {
-    id: 'PLAN-003', name: 'Ultimate', tier: 'ULTIMATE', priceVnd: 3_990_000, monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI',
+    id: 'PLAN-003', name: 'Ultimate', tier: 'ULTIMATE', priceVnd: 7_900_000, monthlyCredits: null, algorithmTier: 'EP_DBLF_GA_AI',
     features: ['OPTIMIZATION_3D', 'ROUTE_OPTIMIZATION', 'ADVANCED_ALGORITHM', 'UNLIMITED_CREDITS'], active: true, provisional: true,
   },
 ]
@@ -34,11 +34,11 @@ export const SEED_PLANS: readonly SubscriptionPlan[] = [
 /**
  * Công ty nào dùng gói nào, và lịch sử trước lần chạy đầu tiên của seed: gói đăng ký `leadDays` ngày trước lần chạy tối ưu đầu tiên của
  * công ty; `earlierUsage` là số lượt dùng credit **cũ hơn mọi chuyến của seed** (chuyến đã xong từ trước, không còn trong kho) — Phương
- * Nam đã dùng gần hết 100 credit của gói Basic nên số dư thấp (còn 2 — đúng một lần chạy — sau lần chạy duy nhất của seed).
+ * Nam đã dùng gần hết 3.000 credit của gói Basic nên số dư thấp (còn 2 — đúng một lần chạy — sau lần chạy duy nhất của seed).
  */
 const COMPANY_PLANS = [
   { companyId: LONG_BINH, planId: 'PLAN-002', leadDays: 1, earlierUsage: 0 },
-  { companyId: PHUONG_NAM, planId: 'PLAN-001', leadDays: 20, earlierUsage: 48 },
+  { companyId: PHUONG_NAM, planId: 'PLAN-001', leadDays: 20, earlierUsage: 1_498 },
 ] as const
 
 const DAY_MS = 24 * 60 * 60 * 1000

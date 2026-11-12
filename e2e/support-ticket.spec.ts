@@ -37,7 +37,7 @@ test('a dispatcher sends a ticket, customer support replies and closes it, and t
   const panel = page.getByRole('region', { name: 'Thông tin công ty', exact: true })
   await expect(panel).toContainText('Công ty TNHH Vận tải Long Bình')
   await expect(panel).toContainText('Pro')
-  await expect(panel.getByText('Số dư credit', { exact: true }).locator('xpath=following-sibling::dd')).toHaveText('472')
+  await expect(panel.getByText('Số dư credit', { exact: true }).locator('xpath=following-sibling::dd')).toHaveText('9.972')
   await thread.getByRole('combobox', { name: 'Trạng thái yêu cầu', exact: true }).click()
   await page.getByRole('option', { name: 'Đã đóng', exact: true }).click()
   await expect(thread.getByText('Phiếu hỗ trợ đã đóng (chỉ đọc) — không thể nhắn tin hay đổi trạng thái.', { exact: true })).toBeVisible()
