@@ -44,6 +44,9 @@ export function pickupParts({ actionType, after }: ServerAuditEntry, t: TFunctio
   if ((actionType === 'PICKUP_REQUESTED' || actionType === 'PICKUP_LOADED') && positive(after.packages)) {
     parts.push(t('serverAudit.details.pickupPackages', { count: after.packages }))
   }
+  if ((actionType === 'PICKUP_PACKAGES_DROPPED' || actionType === 'PICKUP_REJECTED') && positive(after.droppedPackages)) {
+    parts.push(t('serverAudit.details.pickupPackages', { count: after.droppedPackages }))
+  }
   if (actionType === 'PICKUP_REQUESTED' && typeof after.status === 'string' && isOneOf(PICKUP_CHECKS, after.status)) {
     parts.push(t(`serverAudit.pickupChecks.${after.status}`))
   }
