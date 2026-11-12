@@ -55,7 +55,7 @@ test('a vehicle is replaced as a whole on update and is gone after delete; both 
   const moreLoad = { ...(await db.getVehicle('VEHICLE-008')), maxPayloadKg: 7500 }
   expect(await db.updateVehicle(moreLoad)).toStrictEqual(moreLoad)
   expect(await db.getVehicle('VEHICLE-008')).toStrictEqual(moreLoad)
-  await db.deleteVehicle('VEHICLE-008')
+  expect(await db.deleteVehicle('VEHICLE-008')).toBe('DELETED')
   await expect(db.getVehicle('VEHICLE-008')).rejects.toMatchObject({ code: 'NOT_FOUND' })
   const missing = { collection: 'vehicles', id: 'VEHICLE-404' }
   await expect(db.updateVehicle({ ...moreLoad, id: 'VEHICLE-404' })).rejects.toMatchObject({ code: 'NOT_FOUND', params: missing })
@@ -87,13 +87,35 @@ test('a record is read by its id', async () => {
   expect(await createMockDb().getVehicle('VEHICLE-001')).toStrictEqual(TRUCK_6M_WITH_TYPE_LIMITS)
 })
 
-test('a vehicle that a trip still uses cannot be deleted', async () => {
+test('a vehicle on an unfinished trip cannot be deleted; only the unfinished trips are named', async () => {
   const db = createMockDb()
+  // TRIP-002 đã giao: không chặn, chỉ chuyến còn lập kế hoạch được nêu
   await expect(db.deleteVehicle('VEHICLE-002')).rejects.toMatchObject({
     code: 'VEHICLE_IN_USE',
-    params: { vehicleId: 'VEHICLE-002', tripIds: ['TRIP-2026-0914', 'TRIP-002'] },
+    params: { vehicleId: 'VEHICLE-002', tripIds: ['TRIP-2026-0914'] },
   })
   expect((await db.getVehicle('VEHICLE-002')).id).toBe('VEHICLE-002')
+})
+
+test('deleting a vehicle that only ran finished trips retires it, as on the server: it stays for the history but is read-only', async () => {
+  const db = createMockDb()
+  // VEHICLE-004 chỉ chạy TRIP-006 (đã giao)
+  expect(await db.deleteVehicle('VEHICLE-004')).toBe('RETIRED')
+  const vehicle = await db.getVehicle('VEHICLE-004')
+  expect((await db.listVehicleStates()).find((state) => state.vehicleId === 'VEHICLE-004')).toMatchObject({ status: 'retired' })
+  expect((await db.getTrip('TRIP-006')).vehicleId).toBe('VEHICLE-004')
+  expect(await db.deleteVehicle('VEHICLE-004')).toBe('RETIRED')
+  const retired = { code: 'VEHICLE_RETIRED', params: { vehicleId: 'VEHICLE-004' } }
+  await expect(db.updateVehicle({ ...vehicle, name: 'Đổi tên' })).rejects.toMatchObject(retired)
+  await expect(db.setVehicleMaintenance('VEHICLE-004', 'Thay lốp')).rejects.toMatchObject(retired)
+  await expect(db.changeTripVehicle('TRIP-2026-0914', 'VEHICLE-004')).rejects.toMatchObject(retired)
+  expect((await db.listEvents()).filter((event) => event.action === 'vehicle.retired')).toMatchObject([{ target: { type: 'vehicle', id: 'VEHICLE-004' } }])
+})
+
+test('a maintenance note is at most 500 characters, as on the server', async () => {
+  const db = createMockDb()
+  await expect(db.setVehicleMaintenance('VEHICLE-001', 'x'.repeat(501))).rejects.toMatchObject({ code: 'MAINTENANCE_NOTE_TOO_LONG', params: { max: 500 } })
+  expect(await db.setVehicleMaintenance('VEHICLE-001', 'x'.repeat(500))).toMatchObject({ status: 'maintenance', maintenance: { note: 'x'.repeat(500) } })
 })
 
 test('changing what a read returns does not change the stored record', async () => {

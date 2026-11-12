@@ -1421,7 +1421,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `outcome` `RETIRED`; còn chuyến chưa xong là 409 `VEHICLE_IN_USE`), bảo dưỡng `POST|DELETE /api/vehicles/{id}/maintenance` (xe đang chạy
   chuyến: `VEHICLE_BUSY`), sửa / xoá loại xe `PUT|DELETE /api/vehicle-types/{id}` (loại còn xe gắn: `VEHICLE_TYPE_IN_USE`, mục Xoá mờ kèm lý
   do); sửa xe hay giới hạn của loại làm phương án của chuyến Đã lập kế hoạch lỗi thời ở máy chủ; xe ngừng sử dụng chỉ đọc. Trạng thái xe ghi
-  chuyến đang dùng và ghi chú bảo dưỡng của máy chủ. `FLEET_CAPABILITIES` (`write`, `stateDetails` bật ở cả hai nguồn) chỉ còn ẩn khoảng hở;
+  chuyến đang dùng và ghi chú bảo dưỡng của máy chủ. Ngừng sử dụng có ở cả hai nguồn (bốn trạng thái của bộ lọc, thẻ đội xe của bảng điều
+  khiển). `FLEET_CAPABILITIES` (`write`, `stateDetails` bật ở cả hai nguồn) chỉ còn ẩn khoảng hở;
   hàm ghi dạng kho mẫu (`saveVehicle`, `saveVehicleType`, `setVehicleType`) vẫn từ chối `NOT_SUPPORTED`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
   (`doorUnknown`) và trang xe nói rõ.
 
@@ -1816,7 +1817,11 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   trên URL là slug không dấu (`nhap`, `da-lap-ke-hoach`, `dang-xep-hang`, `dang-van-chuyen`, `da-giao`, `da-huy`), giá trị cũ đọc sang slug mới
   (`normalizeStatusFilter`). Từ `loading` trở đi xe/điểm giao/kiện, tối ưu và Duyệt bị từ chối `TRIP_LOCKED`. Tiến độ kho (`loading.steps`) và
   giao (`delivery.stops`, `issues`) chỉ ghi qua hàm vận hành của kho (`startLoading`…`completeStop`). Bảo dưỡng xe lưu ngoài `VehicleConfig`
-  (`listVehicleStates`, D-04).
+  (`listVehicleStates`, D-04); ghi chú bảo dưỡng tối đa 500 ký tự như máy chủ (`MAINTENANCE_NOTE_MAX`, form và kho cùng kiểm,
+  `MAINTENANCE_NOTE_TOO_LONG`). **Xoá xe như máy chủ** (`deleteVehicle` trả `DELETED | RETIRED`): còn chuyến chưa xong (khác đã giao, đã huỷ)
+  là `VEHICLE_IN_USE` nêu đúng các chuyến đó; xe từng chạy chuyến chuyển sang Ngừng sử dụng (`DbState.retiredVehicles`, trạng thái
+  `retired`, nhật ký `vehicle.retired`) để lịch sử chuyến còn xe — không sửa, không bảo dưỡng, không gán cho chuyến nào (`VEHICLE_RETIRED`), không
+  có trong ô chọn xe của form chuyến và hộp Đổi xe; chỉ xe chưa từng có chuyến mới bị xoá hẳn. Màn báo đúng kết quả (`fleet.detail.retiredInstead`).
 - Người dùng và mật khẩu nằm trong kho; kho giữ **phiên** như cookie server (`authenticate`, `restoreSession`) và mọi hàm ghi thêm một sự kiện nhật
   ký `{ action, actorId, companyId, target, params }` — không lưu câu chữ, UI dịch nhánh `audit`. Lỗi của kho (`MockDbError`) hiện cho người
   dùng qua `dataErrorMessage(error, t)` (nhánh `dataErrors`, key trùng mã).

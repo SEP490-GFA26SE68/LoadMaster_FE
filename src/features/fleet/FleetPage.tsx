@@ -14,7 +14,7 @@ import { createFleetColumns } from './fleet-columns'
 import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
 import { useFleetCapabilities, useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
-import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
+import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
 import { FleetPage as BackendFleetPage } from './backend/FleetPage'
 import { usesBackend } from '@/lib/backend-config'
 
@@ -59,7 +59,7 @@ function StoreFleetPage() {
   const statesQuery = useVehicleStatesQuery()
   const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'name', desc: false } })
   const statusSlug = list.filters[STATUS_FILTER]
-  const statuses: readonly FleetStatus[] = caps.retired ? FLEET_STATUSES : VEHICLE_STATUSES
+  const statuses: readonly FleetStatus[] = FLEET_STATUSES
 
   const columns = useMemo(() => createFleetColumns(t), [t])
   const vehicles = useMemo(() => vehicleRows(vehiclesQuery.data ?? [], statesQuery.data ?? []), [vehiclesQuery.data, statesQuery.data])

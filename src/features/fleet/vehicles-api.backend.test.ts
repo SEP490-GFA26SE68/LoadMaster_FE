@@ -181,7 +181,7 @@ test('maintenance starts with a note and ends with a delete, returning the new s
 
 test('the store-shaped writes stay rejected without a network call; the server screens write through backend/', async () => {
   const { calls } = stubBackend({})
-  expect(FLEET_CAPABILITIES).toStrictEqual({ write: true, stateDetails: true, clearance: false, retired: true })
+  expect(FLEET_CAPABILITIES).toStrictEqual({ write: true, stateDetails: true, clearance: false })
   for (const call of [
     () => saveVehicle({ ...CONFIG_VEHICLE }),
     () => saveVehicleType({ name: 'Xe mới', cargoLengthCm: 400, cargoWidthCm: 200, cargoHeightCm: 200, payloadKg: 2000, maxCogOffsetRatio: 0.15 }),

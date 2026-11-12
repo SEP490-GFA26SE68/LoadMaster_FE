@@ -7,6 +7,8 @@ import type { MockDbErrorCode } from '@/lib/mock-db/errors'
 export const dataErrors = {
   NOT_FOUND: 'Không tìm thấy {id}.',
   VEHICLE_IN_USE: 'Xe {vehicleId} còn gắn với chuyến {tripIds} nên không xoá được.',
+  VEHICLE_RETIRED: 'Xe {vehicleId} đã ngừng sử dụng nên không dùng hay sửa được nữa.',
+  MAINTENANCE_NOTE_TOO_LONG: 'Ghi chú bảo dưỡng dài tối đa {max} ký tự.',
   VEHICLE_LOCKED: 'Xe {vehicleId} đang chạy chuyến {tripId} nên chưa sửa được.',
   VEHICLE_IN_MAINTENANCE: 'Xe {vehicleId} đang bảo dưỡng, hãy chọn xe khác.',
   REVISION_STALE: 'Phương án {revisionId} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',

@@ -4,6 +4,8 @@ import type { dataErrors as source } from '../vi/dataErrors'
 export const dataErrors = {
   NOT_FOUND: '{id} was not found.',
   VEHICLE_IN_USE: 'Vehicle {vehicleId} is still linked to trips {tripIds} and cannot be deleted.',
+  VEHICLE_RETIRED: 'Vehicle {vehicleId} is retired and can no longer be used or edited.',
+  MAINTENANCE_NOTE_TOO_LONG: 'The maintenance note can be at most {max} characters.',
   VEHICLE_LOCKED: 'Vehicle {vehicleId} is running trip {tripId} and cannot be edited yet.',
   VEHICLE_IN_MAINTENANCE: 'Vehicle {vehicleId} is in maintenance. Choose another vehicle.',
   REVISION_STALE: 'Plan {revisionId} is out of date: the vehicle or packages changed after it was optimized.',

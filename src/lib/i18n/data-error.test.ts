@@ -8,6 +8,8 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   NOT_FOUND: { collection: 'trips', id: 'TRIP-404' },
   VEHICLE_IN_USE: { vehicleId: 'VEHICLE-002', tripIds: ['TRIP-001', 'TRIP-002'] },
   VEHICLE_LOCKED: { vehicleId: 'VEHICLE-003', tripId: 'TRIP-010' },
+  VEHICLE_RETIRED: { vehicleId: 'VEHICLE-007' },
+  MAINTENANCE_NOTE_TOO_LONG: { max: 500 },
   VEHICLE_IN_MAINTENANCE: { vehicleId: 'VEHICLE-008' },
   REVISION_STALE: { revisionId: 'REV-027' },
   REVISION_NOT_COMPLETED: { revisionId: 'REV-003' },

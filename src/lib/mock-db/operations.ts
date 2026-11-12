@@ -13,6 +13,11 @@ export function isActivePhase(phase: TripPhase): boolean {
   return ACTIVE_PHASES.includes(phase)
 }
 
+/** Chuyến đã xong việc với xe: đã giao hoặc đã huỷ. */
+export function isFinishedPhase(phase: TripPhase): boolean {
+  return phase === 'completed' || phase === 'cancelled'
+}
+
 /**
  * Từ khi kho bắt đầu xếp, xe, điểm giao và kiện của chuyến bị khoá (D-45). Ngoại lệ duy nhất, ở **một** chỗ: duyệt yêu cầu nhận hàng dọc
  * đường chèn điểm nhận và điểm giao vào chuyến đang vận chuyển (`insertPickupIntoTrip`, FE-7-04, PRD v2 mục 7.1); mọi hàm sửa chuyến

@@ -86,7 +86,7 @@ export const fleet = {
     saved: 'Đã lưu xe {name}',
     deleted: 'Đã xoá xe {name}',
     saveFailed: 'Không lưu được xe. Thử lại.',
-    inUse: 'Xe đang được dùng ở chuyến {trips}, không xoá được.',
+    inUse: 'Xe còn ở chuyến chưa kết thúc {trips}, không xoá được.',
     deleteFailed: 'Không xoá được xe. Thử lại.',
     specTitle: 'Kích thước và tải trọng',
     obstaclesTitle: 'Vật cản trong thùng',
@@ -187,8 +187,7 @@ export const fleet = {
   },
   remove: {
     title: 'Xoá xe {name}?',
-    description: 'Xe bị xoá khỏi đội. Không hoàn tác được.',
-    descriptionServer: 'Xe chưa chạy chuyến nào thì bị xoá hẳn; xe đã có chuyến đã giao hoặc đã huỷ thì chuyển sang Ngừng sử dụng để giữ lịch sử.',
+    description: 'Xe chưa chạy chuyến nào thì bị xoá hẳn; xe đã có chuyến đã giao hoặc đã huỷ thì chuyển sang Ngừng sử dụng để giữ lịch sử.',
     cancel: 'Huỷ',
     confirm: 'Xoá xe',
   },
@@ -198,7 +197,7 @@ export const fleet = {
     openTrip: 'Xem chuyến {tripId}',
     maintenance: 'Xe đang bảo dưỡng từ {time} {date}: chưa gán được cho chuyến nào.',
     maintenanceNote: 'Ghi chú: {note}',
-    retired: 'Máy chủ ghi xe này đã ngừng sử dụng.',
+    retired: 'Xe đã ngừng sử dụng: vẫn còn trong lịch sử chuyến, không gán cho chuyến mới và không sửa được.',
   },
   /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, phần backend không trả. */
   backend: {

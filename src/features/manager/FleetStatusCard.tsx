@@ -38,9 +38,7 @@ export function FleetStatusCard({ vehicles, className }: { vehicles: DashboardSu
       </p>
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {FLEET_STATUSES.map((status) => {
-          // Trạng thái nguồn dữ liệu không có (Ngừng sử dụng ở kho mẫu) thì không có dòng, không vẽ 0
           const count = vehicles.byStatus[status]
-          if (count === undefined) return null
           const { icon: Icon, tint } = STATUS_GLYPH[status]
           return (
             <li key={status} className="flex items-center gap-3 text-body text-ink-2">

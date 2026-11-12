@@ -46,6 +46,10 @@ export type MockDbErrorParams = {
   VEHICLE_LOCKED: { vehicleId: string; tripId: string }
   /** Gán xe đang bảo dưỡng cho chuyến (D-53). */
   VEHICLE_IN_MAINTENANCE: { vehicleId: string }
+  /** Sửa, bảo dưỡng hay gán vào chuyến một xe đã Ngừng sử dụng. */
+  VEHICLE_RETIRED: { vehicleId: string }
+  /** Ghi chú bảo dưỡng dài quá `max` ký tự. */
+  MAINTENANCE_NOTE_TOO_LONG: { max: number }
   /** Duyệt revision đã lỗi thời: xe hoặc kiện của chuyến đổi sau khi tối ưu (D-31). */
   REVISION_STALE: { revisionId: string }
   /** Duyệt revision có `result.status` khác `COMPLETED`. */

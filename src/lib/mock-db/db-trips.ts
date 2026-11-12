@@ -45,11 +45,12 @@ function depotFields(depot: CompanyDepot, tripId: string): CompanyDepot {
  * phát và kho xuất phát (FE-4b-04, D-76): ngày chạy luôn là ngày của giờ xuất phát; kho đi mặc định là kho của công ty.
  */
 export function tripMethods(ctx: DbContext): TripMethods {
-  const { trips, maintenance, users, companies } = ctx.state
+  const { trips, maintenance, retiredVehicles, users, companies } = ctx.state
   const scope = ctx.scope.trips
 
   function assertVehicleUsable(vehicleId: string, companyId: string) {
     ctx.scope.vehicles.ref(vehicleId, companyId)
+    if (retiredVehicles.has(vehicleId)) throw new MockDbError('VEHICLE_RETIRED', { vehicleId })
     if (maintenance.has(vehicleId)) throw new MockDbError('VEHICLE_IN_MAINTENANCE', { vehicleId })
   }
 
