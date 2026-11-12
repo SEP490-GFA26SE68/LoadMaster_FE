@@ -2037,7 +2037,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   bị chắn. Kết quả `FreedZonePacking` (chỗ từng kiện theo chỉ số trong yêu cầu, kiện không xếp được, `before` / `after` khối lượng + trọng tâm +
   tải trục, `stackingIssues`, `blockedCount`) vào `PickupContext.packing` — nguồn của luật 4–7 và 10. **Duyệt** lưu `PickupRequest.layout`
   (`placements`, `unplaced`, `plannedAt`) — phương án đã duyệt (revision bất biến) không đổi — và ghi `pickup.reoptimized` (`placed`, `unplaced`);
-  việc này **không tốn credit**: backend chưa trả lời (Q-09), quyết định nằm ở một chỗ có chú thích, `db-pickups.ts`. Kiện không xếp được vẫn
+  việc này **không tốn credit** — đã quyết định (Q-09), như máy chủ; nằm ở một chỗ có chú thích, `db-pickups.ts`. Kiện không xếp được vẫn
   lên xe theo lý do vượt luật nhưng chưa có chỗ. Yêu cầu nhận sau coi kiện của yêu cầu `APPROVED` / `LOADED` trước là hàng đang chở: có chỗ thì là
   hộp trong `onboard` (tải trọng, trục, trọng tâm, vật cản, chắn lối), chưa có chỗ thì chỉ cộng khối lượng vào luật 3 (`PickupContext.looseKg`).
   Phương thức backend: `GET /api/trips/{id}/freed-zones`, `POST /api/v1/optimize/reoptimize-freed-zone`.
