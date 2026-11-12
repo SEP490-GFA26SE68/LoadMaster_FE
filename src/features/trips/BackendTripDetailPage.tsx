@@ -232,6 +232,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
             trip={trip}
             stops={stops}
             routePlan={routePlanQuery.data ?? null}
+            routePlanFailed={routePlanQuery.isError}
           />
 
           <BackendLoadPlansCard

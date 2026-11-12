@@ -416,17 +416,23 @@ export async function createBackendTrip({
 
 
 
+/** Tuyến đang dùng của chuyến; `null` khi chuyến chưa có tuyến (`ROUTE_PLAN_NOT_FOUND`), lỗi khác để lộ ra cho màn. */
+// GET /api/trips/{id}/route-plans/active
 export async function fetchBackendActiveRoutePlan(
   tripId: string,
-): Promise<BackendActiveRoutePlan> {
-  const response = await apiFetch<{
-    success: boolean
-    data: BackendActiveRoutePlan
-  }>(
-    `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
-  )
-
-  return response.data
+): Promise<BackendActiveRoutePlan | null> {
+  try {
+    const response = await apiFetch<{
+      success: boolean
+      data: BackendActiveRoutePlan
+    }>(
+      `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
+    )
+    return response.data
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'ROUTE_PLAN_NOT_FOUND') return null
+    throw error
+  }
 }
 
 

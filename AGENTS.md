@@ -1107,7 +1107,10 @@ số), đường tuyến và vị trí xe bằng MapLibre GL. Cùng lối với 
 dữ liệu và không tải chunk bản đồ; hình luôn `aria-hidden`, nội dung tương đương là danh sách điểm `sr-only`. Mốc là phần tử DOM của React,
 không dùng sprite hay font của style nền. Chi tiết chuyến (FE-4b-09) giữ hàng điểm giao của
 `trips/RouteDiagram.tsx` (kéo đổi thứ tự, lọc bảng kiện) và đặt `RouteMap` cao 256 px ngay dưới hàng đó, trong cùng card: kho rồi các điểm
-**có toạ độ** theo thứ tự đi; điểm chưa có toạ độ không có trên bản đồ.
+**có toạ độ** theo thứ tự đi; điểm chưa có toạ độ không có trên bản đồ. Đường của tuyến: chuyến của máy chủ vẽ theo
+polyline của tuyến đã lưu (`GET /api/trips/{id}/route-plans/active`, `route-plan-api.ts`), chưa có tuyến (`ROUTE_PLAN_NOT_FOUND`) hay chuyến
+của kho mẫu thì nối thẳng kho → điểm giao; đọc tuyến lỗi thì màn nói ra. **Không gọi dịch vụ chỉ đường công khai nào** (toạ độ của khách
+chỉ đi tới máy chủ của mình qua `api-client`).
 
 ## 8. Chuyển động
 

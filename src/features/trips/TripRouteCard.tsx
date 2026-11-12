@@ -51,7 +51,7 @@ export function TripRouteCard({ tripId, trip, eta, vehicleName, stops, editable,
     depot: { lat: trip.depot.lat, lng: trip.depot.lng },
     stops: mapStops.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
   }), [trip.depot.lat, trip.depot.lng, mapStops])
-  const routePathQuery = useTripRoutePathQuery(tripId, pathFallback, mapStops.length > 0)
+  const routePathQuery = useTripRoutePathQuery(tripId, pathFallback, mapStops.length > 0, false)
   const monitoringPath = useMemo(() => {
     const legs = monitoring?.routeLegs
     if (!legs?.length) return undefined

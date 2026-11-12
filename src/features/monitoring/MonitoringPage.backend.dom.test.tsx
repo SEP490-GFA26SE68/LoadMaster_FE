@@ -122,11 +122,12 @@ test('điều phối viên xem chuyến của backend: không liên kết chuy�
   await waitFor(() => expect(calls.some((call) => call.method === 'POST' && call.path === `/api/trips/${TRIP}/exceptions/31/resolve`)).toBe(true))
   await waitFor(() => expect(panel.queryByRole('button', { name: 'Đã xử lý' })).toBeNull())
 
-  // Chỉ lượt gọi máy chủ của app; bản đồ còn gọi dịch vụ chỉ đường để vẽ đường đi.
-  const paths = new Set(calls.filter((call) => call.path.startsWith('/api/')).map((call) => `${call.method} ${call.path}`))
+  // Chỉ máy chủ của app — bản đồ đọc tuyến đã lưu của chuyến, không gọi dịch vụ chỉ đường công khai nào
+  const paths = new Set(calls.map((call) => `${call.method} ${call.path}`))
   expect([...paths].sort()).toEqual([
     'GET /api/dispatcher/dashboard',
     `GET /api/trips/${TRIP}/location/history`,
+    `GET /api/trips/${TRIP}/route-plans/active`,
     'GET /api/trips/monitoring',
     `POST /api/trips/${TRIP}/exceptions/31/resolve`,
   ].sort())
