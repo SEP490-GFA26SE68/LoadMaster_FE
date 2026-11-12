@@ -154,6 +154,7 @@ export const apiErrors = {
   PLAN_IN_USE: 'Gói đang có hoặc từng có công ty dùng nên không xoá được.',
   ACTIVE_SUBSCRIPTION_ALREADY_EXISTS: 'Công ty đang có gói còn hiệu lực.',
   NO_ACTIVE_SUBSCRIPTION: 'Công ty chưa có gói còn hiệu lực.',
+  SUBSCRIPTION_EXPIRED: 'Gói cước đã hết hạn hoặc đã huỷ nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.',
   SUBSCRIPTION_NOT_RENEWABLE: 'Gói chưa tới kỳ gia hạn, đang dùng thử hoặc hợp đồng đã huỷ nên chưa gia hạn được.',
   CONTACT_ASSIGNEE_INVALID: 'Chỉ giao yêu cầu liên hệ cho quản trị hệ thống hoặc hỗ trợ khách hàng đang hoạt động.',
   TRIP_HAS_NO_PACKAGES: 'Chuyến chưa có kiện nào nên chưa có nhãn để in.',

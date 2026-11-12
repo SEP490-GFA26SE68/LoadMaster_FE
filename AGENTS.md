@@ -1226,7 +1226,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Gói cước và credit** (`billing`; `lib/billing-backend-api.ts`): backend chỉ trả gói `ACTIVE`; huỷ gói chỉ tắt `autoRenew` nên `ACTIVE` +
   `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit. Giá và luật credit **đọc từ máy chủ** `GET /api/credits/pricing`
   (`getCreditPricing`; app không giữ giá nào): hạng tính giá, giá một credit khi nạp, credit một lần tối ưu, số nạp ít nhất, gói hết hạn thì
-  không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
+  không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do; gói hết hạn giữa lúc hộp đang mở thì máy chủ từ chối 409
+  `SUBSCRIPTION_EXPIRED`, câu lỗi hiện ngay trong hộp và gói, điều kiện nạp đọc lại); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
   tối ưu lấy credit một lần chạy từ đó. Gói đã hết hạn (`subscriptionStatusOf` là `EXPIRED`: máy chủ báo `EXPIRED` / `CANCELLED`, hoặc
   `ACTIVE` đã quá hạn) vẫn chạy tối ưu bằng số dư như kho mẫu: thẻ Credit ghi hạng Cơ bản (`basicOnly`), chặn chỉ khi số dư dưới giá một
   lần chạy, không còn "không giới hạn" (`fetchBackendOptimizationCredit`). **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
