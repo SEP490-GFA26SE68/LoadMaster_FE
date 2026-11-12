@@ -14,7 +14,8 @@ vi.mock('@/lib/backend-config', () => ({
 
 /**
  * Báo cáo chuyến khi nhóm `trips` nối backend: đọc `GET /api/trips/{mã chuyến}/report`, cùng bố cục với bản kho mẫu nhưng chỉ số máy
- * chủ trả — không ô "Thời gian giao", không MOCK RESULT ngoài tuyến thay thế; chuyến chưa có báo cáo hiện câu của mã máy chủ.
+ * chủ trả — ô "Thời gian giao" chỉ khi máy chủ tính được, không MOCK RESULT ngoài tuyến thay thế; chuyến chưa có báo cáo hiện câu của mã
+ * máy chủ.
  */
 const REPORT = {
   tripId: 42, tripCode: 'TRIP-2026-0042', tripName: 'Tân Bình – Quận 7', status: 'DELIVERED', vehicleName: 'Hino 500', licensePlate: '51C-123.45',
@@ -74,6 +75,28 @@ test('the report shows only what the server counted, without MOCK RESULT', async
   expect(screen.getByText('SEAL-0091 · ghi lúc 06:50')).toBeInTheDocument()
   expect(screen.getByRole('rowheader', { name: 'Xếp hàng' }).closest('tr')).toHaveTextContent('91')
   expect(screen.getByText('Số liệu máy chủ đếm từ dữ liệu kho và tài xế đã ghi.')).toBeInTheDocument()
+})
+
+test('round 4 of the server: delivery time tile, completion time of each stop, QR and typed codes in separate columns', async () => {
+  stubBackend({
+    'GET /api/trips/TRIP-2026-0042/report': {
+      body: envelope({
+        ...REPORT,
+        deliveryMinutes: 280,
+        stops: REPORT.stops.map((stop, index) => ({ ...stop, completedAt: index === 0 ? '2026-11-10T08:20:00' : null })),
+        verificationMethods: [{ step: 'LOADING', qr: 7, code: 2, manual: 1 }],
+      }),
+    },
+  })
+  renderAt('/chuyen/TRIP-2026-0042/bao-cao')
+  expect(await screen.findByRole('group', { name: 'Thời gian giao' })).toHaveTextContent('4 giờ 40 phút')
+  expect(screen.getByRole('row', { name: /Cửa hàng Tân Bình/ })).toHaveTextContent('08:20')
+  expect(screen.getByRole('row', { name: /Siêu thị Quận 7/ })).toHaveTextContent('Đã xong')
+  expect(screen.getByRole('columnheader', { name: 'Quét QR' })).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: 'Gõ mã' })).toBeInTheDocument()
+  expect(screen.queryByRole('columnheader', { name: 'Bằng nhãn' })).toBeNull()
+  const loading = screen.getByRole('rowheader', { name: 'Xếp hàng' }).closest('tr')
+  expect(loading).toHaveTextContent('721')
 })
 
 test('a trip without a report shows the server reason', async () => {

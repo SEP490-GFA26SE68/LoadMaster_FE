@@ -24,12 +24,16 @@ type ReportDto = {
   driverName?: string | null
   departureTime?: Moment
   completedAt?: Moment
-  cancellation?: { reason?: string | null; fromStatus?: string | null } | null
+  /** Phút từ lúc xe xuất phát tới khi hoàn tất điểm cuối; chuyến cũ không ghi giờ xuất phát thì `null`. */
+  deliveryMinutes?: number | null
+  cancellation?: { reason?: string | null; fromStatus?: string | null; returned?: number | null } | null
   loading?: { startedAt?: Moment; completedAt?: Moment; sealNumber?: string | null; sealedAt?: Moment } | null
   overrideReason?: string | null
   stops?: StopDto[] | null
   packages?: { total: number; staged: number; loaded: number; damaged: number; delivered: number; returned: number; withIssue: number } | null
   verifications?: { step: string; label: number; manual: number }[] | null
+  /** Như `verifications` nhưng tách quét QR và gõ mã; máy chủ cũ không trả. */
+  verificationMethods?: { step: string; qr: number; code: number; manual: number }[] | null
   manualConfirmations?: ManualDto[] | null
   exceptions?: ExceptionDto[] | null
   reroutes?: RerouteDto[] | null
@@ -47,6 +51,7 @@ type StopDto = {
   issues: number
   plannedArrival?: Moment
   actualArrival?: Moment
+  completedAt?: Moment
   deadline?: Moment
   plannedStatus?: string | null
   arrivedOnTime?: boolean | null
@@ -100,6 +105,8 @@ export type ServerReportStop = {
   plannedStatus: DeadlineStatus | null
   arrivedOnTime: boolean | null
   completed: boolean
+  /** Giờ tài xế hoàn tất điểm; máy chủ cũ không trả thì `null` (vẫn biết đã xong hay chưa qua `completed`). */
+  completedAt: string | null
 }
 
 export type ServerManualConfirm = {
@@ -131,6 +138,8 @@ export type ServerTripException = {
   resolutionNote: string
 }
 
+export type ServerVerificationRow = { step: VerifyContext; label: number; qr: number | null; code: number | null; manual: number }
+
 export type ServerReroute = { stopNumber: number; route: string; distanceKm: number; durationMinutes: number; confirmedAt: string }
 
 export type ServerTripReport = {
@@ -140,12 +149,16 @@ export type ServerTripReport = {
   driverName: string | null
   plannedDeparture: string | null
   completedAt: string | null
-  cancellation: { reason: string; inTransit: boolean } | null
+  /** Thời gian giao (phút); `null` khi máy chủ không tính được — màn bỏ ô đó. */
+  deliveryMinutes: number | null
+  /** `returned`: số kiện thành Hoàn trả lúc huỷ khi đang vận chuyển, `null` khi máy chủ không ghi. */
+  cancellation: { reason: string; inTransit: boolean; returned: number | null } | null
   loading: { startedAt: string | null; completedAt: string | null; seal: { number: string; at: string | null } | null } | null
   overrideReason: string | null
   stops: ServerReportStop[]
   packages: NonNullable<ReportDto['packages']> | null
-  verifications: { step: VerifyContext; label: number; manual: number }[]
+  /** Đối chiếu theo bước; `qr` / `code` chỉ khi máy chủ tách hai cách (`verificationMethods`), không thì `null` và chỉ có `label`. */
+  verifications: ServerVerificationRow[]
   manualConfirms: ServerManualConfirm[]
   exceptions: ServerTripException[]
   reroutes: ServerReroute[]
@@ -179,6 +192,7 @@ function stopOf(stop: StopDto, index: number): ServerReportStop {
     plannedStatus: stop.plannedStatus ? (PLANNED_STATUS[stop.plannedStatus] ?? null) : null,
     arrivedOnTime: stop.arrivedOnTime ?? null,
     completed: stop.completed,
+    completedAt: iso(stop.completedAt),
   }
 }
 
@@ -222,6 +236,20 @@ function rerouteOf(reroute: RerouteDto): ServerReroute[] {
   return [{ stopNumber, route, distanceKm, durationMinutes, confirmedAt: isoFromBackend(confirmedAt) }]
 }
 
+/** Có `verificationMethods` thì dùng (tách quét QR, gõ mã); máy chủ cũ chỉ có `verifications` gộp hai cách thành "bằng nhãn". */
+function verificationsOf(dto: ReportDto): ServerVerificationRow[] {
+  if (dto.verificationMethods) {
+    return dto.verificationMethods.flatMap((row) => {
+      const step = oneOf(STEPS, row.step)
+      return step === null ? [] : [{ step, label: row.qr + row.code, qr: row.qr, code: row.code, manual: row.manual }]
+    })
+  }
+  return (dto.verifications ?? []).flatMap((row) => {
+    const step = oneOf(STEPS, row.step)
+    return step === null ? [] : [{ step, label: row.label, qr: null, code: null, manual: row.manual }]
+  })
+}
+
 export function serverTripReportOf(dto: ReportDto): ServerTripReport {
   const loading = dto.loading
   return {
@@ -231,8 +259,13 @@ export function serverTripReportOf(dto: ReportDto): ServerTripReport {
     driverName: dto.driverName?.trim() || null,
     plannedDeparture: iso(dto.departureTime),
     completedAt: iso(dto.completedAt),
+    deliveryMinutes: typeof dto.deliveryMinutes === 'number' ? dto.deliveryMinutes : null,
     cancellation: dto.cancellation
-      ? { reason: text(dto.cancellation.reason), inTransit: dto.cancellation.fromStatus === 'IN_TRANSIT' }
+      ? {
+          reason: text(dto.cancellation.reason),
+          inTransit: dto.cancellation.fromStatus === 'IN_TRANSIT',
+          returned: typeof dto.cancellation.returned === 'number' ? dto.cancellation.returned : null,
+        }
       : null,
     loading: loading
       ? {
@@ -244,10 +277,7 @@ export function serverTripReportOf(dto: ReportDto): ServerTripReport {
     overrideReason: dto.overrideReason?.trim() || null,
     stops: (dto.stops ?? []).map(stopOf).toSorted((a, b) => a.number - b.number),
     packages: dto.packages ?? null,
-    verifications: (dto.verifications ?? []).flatMap((row) => {
-      const step = oneOf(STEPS, row.step)
-      return step === null ? [] : [{ step, label: row.label, manual: row.manual }]
-    }),
+    verifications: verificationsOf(dto),
     manualConfirms: (dto.manualConfirmations ?? []).map(manualOf),
     exceptions: (dto.exceptions ?? []).map(exceptionOf),
     reroutes: (dto.reroutes ?? []).flatMap(rerouteOf),

@@ -77,11 +77,16 @@ function Fact({ label, mono = false, children }: { label: string; mono?: boolean
   )
 }
 
-/** Đối chiếu theo bước: bằng nhãn (quét hoặc gõ mã — máy chủ không tách) và xác nhận tay. Bước không có kiện nào thì bỏ dòng. */
+/**
+ * Đối chiếu theo bước: quét QR, gõ mã và xác nhận tay; máy chủ cũ không tách hai cách đầu thì một cột "Bằng nhãn". Bước không có kiện nào
+ * thì bỏ dòng.
+ */
 export function ServerTripReportVerifications({ report }: { report: ServerTripReport }) {
   const t = useT()
   const format = useFormat()
   const rows = report.verifications.filter((row) => row.label + row.manual > 0)
+  const split = report.verifications.length > 0 && report.verifications.every((row) => row.qr !== null && row.code !== null)
+  const cell = 'px-4.5 text-right font-mono text-ink-1 tabular-nums'
   return (
     <Card className={card}>
       <CardHeader>
@@ -91,7 +96,14 @@ export function ServerTripReportVerifications({ report }: { report: ServerTripRe
         <thead>
           <tr className="h-10 bg-table-head text-caption font-semibold text-ink-2">
             <th scope="col" className="px-4.5 text-left font-semibold">{t('tripReport.verify.step')}</th>
-            <th scope="col" className="px-4.5 text-right font-semibold">{t('tripReport.server.byLabel')}</th>
+            {split ? (
+              <>
+                <th scope="col" className="px-4.5 text-right font-semibold">{t('common.verifyMethods.QR')}</th>
+                <th scope="col" className="px-4.5 text-right font-semibold">{t('common.verifyMethods.CODE')}</th>
+              </>
+            ) : (
+              <th scope="col" className="px-4.5 text-right font-semibold">{t('tripReport.server.byLabel')}</th>
+            )}
             <th scope="col" className="px-4.5 text-right font-semibold">{t('common.verifyMethods.MANUAL')}</th>
           </tr>
         </thead>
@@ -99,13 +111,20 @@ export function ServerTripReportVerifications({ report }: { report: ServerTripRe
           {rows.map((row) => (
             <tr key={row.step} className="h-10 border-t border-line-soft">
               <th scope="row" className="px-4.5 text-left font-medium text-ink-1">{t(`common.verifyContexts.${row.step}`)}</th>
-              <td className="px-4.5 text-right font-mono text-ink-1 tabular-nums">{format.integer(row.label)}</td>
-              <td className="px-4.5 text-right font-mono text-ink-1 tabular-nums">{format.integer(row.manual)}</td>
+              {split ? (
+                <>
+                  <td className={cell}>{format.integer(row.qr ?? 0)}</td>
+                  <td className={cell}>{format.integer(row.code ?? 0)}</td>
+                </>
+              ) : (
+                <td className={cell}>{format.integer(row.label)}</td>
+              )}
+              <td className={cell}>{format.integer(row.manual)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="m-0 border-t border-line-soft px-4.5 py-2.5 text-note text-ink-3">{t('tripReport.server.verifyNote')}</p>
+      <p className="m-0 border-t border-line-soft px-4.5 py-2.5 text-note text-ink-3">{t(split ? 'tripReport.server.verifyMethodsNote' : 'tripReport.server.verifyNote')}</p>
     </Card>
   )
 }

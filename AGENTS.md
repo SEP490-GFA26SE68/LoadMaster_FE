@@ -1362,8 +1362,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`. **Báo cáo chuyến**
   (`ServerTripReportPage`, `server-trip-report-api.ts`): `GET /api/trips/{id}/report` (điều phối viên, quản lý công ty) cho chuyến đã giao hoặc
   huỷ lúc đang vận chuyển (`cancelledFromStatus` của Chi tiết chuyến; khác là `TRIP_REPORT_NOT_AVAILABLE`), cùng bố cục với bản kho mẫu,
-  không MOCK RESULT (trừ tuyến thay thế), không ô "Thời gian giao" (máy chủ không ghi giờ xe rời kho), cột Hoàn tất chỉ ghi đã xong hay
-  chưa; nút "Báo cáo chuyến" ở Chi tiết chuyến máy chủ cho mọi người xem được chuyến. Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
+  không MOCK RESULT (trừ tuyến thay thế); ô "Thời gian giao" theo `deliveryMinutes` (chuyến cũ không ghi giờ xe rời kho là `null` — không
+  có ô), cột Hoàn tất ghi `completedAt` của từng điểm (máy chủ cũ: đã xong hay chưa), bảng đối chiếu tách Quét QR / Gõ mã theo
+  `verificationMethods` (máy chủ cũ: một cột "Bằng nhãn"), chuyến huỷ lúc đang chạy nói số kiện hoàn trả (`cancellation.returned`); nút "Báo cáo chuyến" ở Chi tiết chuyến máy chủ cho mọi người xem được chuyến. Vị trí xe ở Chi tiết chuyến (`liveMonitoring`) và nút mở chuyến của Giám sát chỉ có khi
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —

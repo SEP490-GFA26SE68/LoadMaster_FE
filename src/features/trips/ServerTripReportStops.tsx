@@ -84,20 +84,25 @@ function columns(t: TFunction, format: Formatter) {
       meta: { align: 'right', width: '136px' } satisfies ColumnMeta,
       cell: (info) => <DeadlineCell stop={info.row.original} />,
     }),
-    // Máy chủ chỉ trả điểm đã hoàn tất hay chưa, không trả giờ hoàn tất
-    helper.accessor('completed', {
+    // Giờ hoàn tất của máy chủ; máy chủ cũ chỉ trả đã xong hay chưa
+    helper.display({
+      id: 'completed',
       header: t('tripReport.stops.completedAt'),
-      meta: { align: 'right', width: '104px' } satisfies ColumnMeta,
-      cell: (info) => (
-        <span className={info.getValue() ? 'text-caption text-ink-1' : 'text-caption text-ink-3'}>
-          {t(info.getValue() ? 'tripReport.server.stopDone' : 'tripReport.stops.notCompleted')}
-        </span>
-      ),
+      meta: { align: 'right', width: '124px' } satisfies ColumnMeta,
+      cell: (info) => {
+        const { completed, completedAt } = info.row.original
+        if (completedAt !== null) return <span className={mono}>{format.time(completedAt)} · {format.dayMonth(completedAt)}</span>
+        return (
+          <span className={completed ? 'text-caption text-ink-1' : 'text-caption text-ink-3'}>
+            {t(completed ? 'tripReport.server.stopDone' : 'tripReport.stops.notCompleted')}
+          </span>
+        )
+      },
     }),
   ])
 }
 
-/** Bảng theo điểm của báo cáo máy chủ: như bản kho mẫu, cột Hoàn tất ghi đã xong hay chưa (máy chủ không trả giờ hoàn tất). */
+/** Bảng theo điểm của báo cáo máy chủ: như bản kho mẫu; cột Hoàn tất ghi giờ hoàn tất, máy chủ cũ không trả giờ thì đã xong hay chưa. */
 export function ServerTripReportStops({ stops }: { stops: readonly ServerReportStop[] }) {
   const t = useT()
   const format = useFormat()
