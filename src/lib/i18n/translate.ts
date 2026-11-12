@@ -1,4 +1,3 @@
-import { en } from './en'
 import { INTL_LOCALES, type Locale } from './locale'
 import type {
   MessageKey,
@@ -11,10 +10,28 @@ import type {
 } from './types'
 import { vi } from './vi'
 
-const DICTIONARIES: Record<Locale, MessageTree> = { vi, en }
+/**
+ * `vi` là ngôn ngữ mặc định nên nằm sẵn trong bundle; ngôn ngữ khác tải lười thành chunk riêng (`loadLocale`), nên người dùng tiếng
+ * Việt không tải từ điển tiếng Anh. Kiểu của `en.ts` vẫn so với `vi` lúc build (thiếu / thừa key là lỗi TypeScript).
+ */
+const DICTIONARIES: Partial<Record<Locale, MessageTree>> = { vi }
+const LOADERS: Record<Exclude<Locale, 'vi'>, () => Promise<MessageTree>> = {
+  en: () => import('./en').then((module) => module.en),
+}
 
+export function isLocaleLoaded(locale: Locale): boolean {
+  return DICTIONARIES[locale] !== undefined
+}
+
+/** Tải từ điển của một ngôn ngữ (một lần); `vi` có sẵn. Gọi trước `createTranslator` của ngôn ngữ đó. */
+export async function loadLocale(locale: Locale): Promise<void> {
+  if (locale === 'vi' || isLocaleLoaded(locale)) return
+  DICTIONARIES[locale] = await LOADERS[locale]()
+}
+
+/** Ngôn ngữ chưa tải (`loadLocale`) thì dịch theo `vi` — `I18nProvider` chỉ đổi ngôn ngữ sau khi tải xong. */
 export function createTranslator(locale: Locale): TFunction {
-  const messages = DICTIONARIES[locale]
+  const messages = DICTIONARIES[locale] ?? vi
   const pluralRules = new Intl.PluralRules(INTL_LOCALES[locale])
   const numbers = new Intl.NumberFormat(INTL_LOCALES[locale])
 

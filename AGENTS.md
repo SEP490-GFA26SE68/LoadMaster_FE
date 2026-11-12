@@ -268,8 +268,8 @@ read-excel-file          — nhập kiện .xlsx: import('read-excel-file/browse
 dnd-kit                  — kéo thả thứ tự điểm giao, ghim kiện
 qrcode-generator         — mã hoá QR (MIT, không phụ thuộc) cho components/QrCode; quét QR dùng BarcodeDetector gốc
                            của trình duyệt trong components/QrScanDialog, không thêm thư viện quét
-maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một version; CHỈ import trong src/components/map, tải lười cùng CSS
-                           và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
+maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một version; CHỈ import trong src/components/map — chạy thư viện,
+                           CSS và đặt URL worker ở đúng một file maplibre-runtime.ts, hai chunk lười của bản đồ lấy từ đó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
 ```
@@ -871,7 +871,9 @@ format nhận locale đang chọn.
 
 - Từ điển TypeScript tự viết trong `src/lib/i18n/`. *(LM-080)* Mỗi nhánh cấp 1 một file ở `vi/<nhánh>.ts` và `en/<nhánh>.ts`;
   `vi.ts`/`en.ts` chỉ ghép — màn mới thêm nhánh bằng file mới, không sửa nhánh của màn khác. `vi` là nguồn chuẩn; `en` khai báo sao cho
-  **thiếu hoặc thừa key là lỗi TypeScript** lúc build.
+  **thiếu hoặc thừa key là lỗi TypeScript** lúc build. `vi` nằm sẵn trong bundle; `en` là chunk tải lười (`loadLocale`): `main.tsx`
+  tải ngôn ngữ đầu trước khi vẽ app, `I18nProvider` tải xong mới đổi ngôn ngữ, Vitest tải sẵn ở `src/test/setup-i18n.ts`. Hàm thuần cần
+  chữ của cả hai ngôn ngữ (dòng tiêu đề file nhập kiện) `await` `loadLocale` trước — `createTranslator` của ngôn ngữ chưa tải dịch theo `vi`.
 - Ngôn ngữ đọc theo thứ tự `?lang` → `sessionStorage` → `vi`. Không dùng `localStorage`.
   Đổi ngôn ngữ không tải lại trang, không mất dữ liệu đang nhập.
 - Chuỗi hiển thị viết qua `t()`, kể cả `aria-label`, `title`, `sr-only`.
@@ -2237,7 +2239,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 
 Mọi màn trong `app/App.tsx` đều `lazy()`. Nhờ đó Three.js chỉ tải khi mở màn 3D, thư viện biểu đồ
 chỉ tải khi mở màn cần nó, và máy tính bảng ở kho không gánh code của dispatcher.
-Thêm màn mới thì thêm theo đúng lối này.
+Thêm màn mới thì thêm theo đúng lối này. Từ điển `en` cũng là chunk riêng (mục 6). Kho mẫu (`lib/mock-db`) vẫn nằm trong
+bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ.
 
 ## 10. Khả năng truy cập
 

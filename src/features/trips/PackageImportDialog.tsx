@@ -9,7 +9,7 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { Trip } from '@/lib/mock-db'
 import { downloadBlob } from './download-file'
 import { previewImport, type ImportTable } from './package-import'
-import { importFragilityAliases, importHandlingAliases, importHeaderAliases } from './package-import-columns'
+import { importFragilityAliases, importHandlingAliases, importHeaderAliases, loadImportLocales } from './package-import-columns'
 import { importFileProblemMessage } from './package-import-messages'
 import { csvTemplateBlob, importTemplateRows, xlsxTemplateBlob } from './package-import-template'
 import { PackageDialogClose } from './PackageDialogClose'
@@ -80,7 +80,7 @@ export function PackageImportDialog({ trip, vehicle, open, onOpenChange }: {
     importMutation.reset()
     setFile({ status: 'reading', name: chosen.name })
     try {
-      const read = await readImportFile(chosen)
+      const [read] = await Promise.all([readImportFile(chosen), loadImportLocales()])
       if (readToken.current === token) setFile({ status: 'read', name: chosen.name, table: read })
     } catch {
       if (readToken.current === token) setFile({ status: 'unreadable', name: chosen.name })
