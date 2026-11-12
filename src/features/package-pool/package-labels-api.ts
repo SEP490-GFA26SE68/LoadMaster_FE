@@ -33,7 +33,8 @@ async function labelsOnBackend(ids: readonly string[], tripId: string | undefine
 
 /**
  * Nhãn của các kiện được chọn (bỏ mã không có trong kho hay của công ty khác). In lại giữ nguyên mã QR của kiện (D-71). Không chọn gì
- * thì không có nhãn nào — kho kiện có hàng nghìn kiện, không in "tất cả".
+ * thì không có nhãn nào — kho kiện có hàng nghìn kiện, không in "tất cả". Nhãn theo chuyến bỏ kiện nhận dọc đường (nguồn `PICKUP`), như
+ * máy chủ: nhãn của chúng in ở hộp duyệt yêu cầu nhận để gửi bên gửi; quét khi dỡ vẫn nhận ra chúng (`listTripLabels` giữ đủ).
  */
 // GET /api/packages · GET /api/packages/scan/{qrToken}
 export async function fetchPackageLabels({ ids, tripId }: LabelSelection): Promise<PackageLabel[]> {
@@ -45,7 +46,7 @@ export async function fetchPackageLabels({ ids, tripId }: LabelSelection): Promi
   const typeById = new Map(types.map((type) => [type.id, type]))
   const companyById = new Map(companies.map((company) => [company.id, company]))
   const byId = new Map(packages.map((pkg) => [pkg.id, pkg]))
-  const picked = wanted.flatMap((id) => byId.get(id) ?? [])
+  const picked = wanted.flatMap((id) => byId.get(id) ?? []).filter((pkg) => tripId === undefined || pkg.source !== 'PICKUP')
   return picked.map((pkg) => ({
     package: pkg,
     type: pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId),

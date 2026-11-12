@@ -1619,7 +1619,7 @@ cảnh báo `PACKAGE_CODE_EXISTS` không chặn. Còn một dòng lỗi thì nú
 4 mm), mỗi nhãn 93 × 134 mm — khổ PDF của backend chưa chốt. Nhãn có mã QR kèm mã chữ, mã của bên gửi, loại hàng, kích thước (cm), khối lượng
 (kg), điểm đến, mã của kho kiện, logo `mono`, tên loại kiện (nếu có) và công ty; kiện `FRAGILE` thêm khung "Hàng dễ vỡ". Không nền màu (in đen
 trắng), chữ dài xuống dòng chứ không cắt. Mọi cỡ trong nhãn là `em` của cỡ chữ gốc — bản in gốc 4 mm, bản xem trên màn gốc 16 px — nên hai bản
-một bố cục. Trang nhãn đọc kiện từ URL: `?kien=<mã,…>` hoặc `?chuyen=<mã chuyến>`; không chọn gì thì không có nhãn nào. In lại giữ nguyên mã QR.
+một bố cục. Trang nhãn đọc kiện từ URL: `?kien=<mã,…>` hoặc `?chuyen=<mã chuyến>` (nhãn theo chuyến bỏ kiện nhận dọc đường, như PDF của máy chủ — nhãn của chúng in ở hộp duyệt yêu cầu nhận; quét khi dỡ vẫn nhận ra chúng); không chọn gì thì không có nhãn nào. In lại giữ nguyên mã QR.
 Nút quay lại về nơi bấm in (`labelsBackTarget`): chuyến, Tra cứu kiện (`&tu=tra-cuu`), không thì Kho kiện; người không mở được đích đó về Tra cứu
 kiện.
 

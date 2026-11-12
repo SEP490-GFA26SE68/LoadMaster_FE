@@ -128,3 +128,21 @@ test('the warehouse reports a flagged package found: the flag is cleared and the
   getMockDb().restoreSession('US-0001')
   expect((await getMockDb().listEvents())[0]).toMatchObject({ action: 'package.found', actorId: 'US-0003', target: { type: 'package', id: flagged?.id } })
 })
+
+test('the labels of a trip leave out the packages picked up en route, as on the server; scanning still finds them', async () => {
+  const db = getMockDb()
+  const request = await db.createPickupRequest('TRIP-009', {
+    pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
+    delivery: { name: 'Kho Dĩ An', address: '1 Quốc lộ 1K, Dĩ An', lat: 10.9, lng: 106.73 },
+    packages: [{ packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }],
+  })
+  const approved = await db.approvePickupRequest('TRIP-009', request.id, { overrideReason: 'Khách quen' })
+  const picked = approved.packages
+  expect(picked.map((pkg) => pkg.source)).toStrictEqual(['PICKUP'])
+  expect((await db.listTripLabels('TRIP-009')).map((label) => label.poolPackageId)).toContain(picked[0]?.id)
+
+  const labels = await fetchPackageLabels({ tripId: 'TRIP-009' })
+  expect(labels.length).toBeGreaterThan(0)
+  expect(labels.filter((label) => label.package.source === 'PICKUP')).toStrictEqual([])
+  expect((await scanPackage(picked[0]?.qrToken ?? '')).package.id).toBe(picked[0]?.id)
+})
