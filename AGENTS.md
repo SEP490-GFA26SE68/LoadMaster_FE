@@ -1460,7 +1460,9 @@ Tên hàm trong `-api.ts` theo hành động của endpoint ở issue backend (F
 ngắn đó — repo công khai, không chép luật nghiệp vụ hay nội dung tài liệu nội bộ. Nối backend chỉ thay thân hàm.
 
 **Khoá Query:** mỗi feature một file hook `use*Query.ts` cạnh `-api.ts` của nó (ví dụ `['package-types']`, `['package-pool', …]`,
-`['requirements', …]`, `['vehicle-types', …]` — không đặt dưới `['vehicles', id]` để khỏi va mã xe). Dữ liệu gắn một chuyến (sẵn sàng tối
+`['requirements', …]`, `['vehicle-types', …]` — không đặt dưới `['vehicles', id]` để khỏi va mã xe). Danh sách yêu cầu giao chỉ có một
+khoá `['requirements', 'list']` (`REQUIREMENTS_LIST_KEY` của bản máy chủ): màn Yêu cầu giao, hộp đưa yêu cầu vào chuyến, form kiện và nhập
+file kiện đọc qua cùng hook, không tự đặt khoá khác. Dữ liệu gắn một chuyến (sẵn sàng tối
 ưu, yêu cầu giao đã vào chuyến `['trips', tripId, 'requirements']`, báo cáo, lần chạy, so sánh ba phương án của một lần chạy
 `['trips', tripId, 'run-comparison', runId]`) nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng; phần thêm cho chuyến ở file
 riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá **không cần mang người dùng hay công ty**:
