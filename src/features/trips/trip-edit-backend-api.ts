@@ -2,12 +2,15 @@
  * Lệnh ghi của Chi tiết chuyến khi nhóm `trips` nối backend. Hàm → endpoint:
  *   updateBackendTrip           → PATCH /api/trips/{id}
  *   cancelBackendTrip           → POST /api/trips/{id}/cancel
+ *   listBackendTripExceptions   → GET /api/trips/{id}/exceptions
  *   removeBackendRequirement    → DELETE /api/trips/{tripId}/delivery-requirements/{requirementId}
  * `tripId` là mã số của máy chủ. Máy chủ chỉ sửa chuyến Nháp / Đã lập kế hoạch (`TRIP_NOT_EDITABLE`), đổi xe mà xe không chở được
  * hàng của chuyến là 409 `VEHICLE_CANNOT_CARRY_CARGO`.
  */
 
+import { listExceptions } from '@/features/monitoring/monitoring-backend-api'
 import { api } from '@/lib/api-client'
+import type { TripException } from '@/lib/mock-db'
 import { backendLocalDateTime } from '@/lib/backend-time'
 
 /** Phần sửa của chuyến; trường vắng là giữ nguyên. `driverId: null` là bỏ tài xế. */
@@ -39,10 +42,21 @@ export async function updateBackendTrip(tripId: string, changes: BackendTripChan
   await api().patch<unknown>(tripPath(tripId), { body })
 }
 
-/** Huỷ chuyến Nháp / Đã lập kế hoạch / Đang xếp hàng; yêu cầu giao và kiện về Chờ xử lý. */
+/**
+ * Huỷ chuyến Nháp / Đã lập kế hoạch / Đang xếp hàng (yêu cầu giao và kiện về Chờ xử lý), hoặc Đang vận chuyển khi chuyến có sự cố cấp
+ * chuyến chưa xử lý (không có: 409 `TRIP_CANCEL_NEEDS_OPEN_EXCEPTION`; kiện chưa giao thành Hoàn trả). Trả số kiện hoàn trả, `null` khi
+ * máy chủ không ghi.
+ */
 // POST /api/trips/{id}/cancel
-export async function cancelBackendTrip(tripId: string, reason: string): Promise<void> {
-  await api().post<unknown>(`${tripPath(tripId)}/cancel`, { body: { reason: reason.trim() } })
+export async function cancelBackendTrip(tripId: string, reason: string): Promise<{ returned: number | null }> {
+  const trip = await api().post<{ cancelReturnedCount?: number | null } | null>(`${tripPath(tripId)}/cancel`, { body: { reason: reason.trim() } })
+  return { returned: typeof trip?.cancelReturnedCount === 'number' ? trip.cancelReturnedCount : null }
+}
+
+/** Sự cố cấp chuyến của chuyến: hộp huỷ chuyến Đang vận chuyển xem còn sự cố chưa xử lý không. */
+// GET /api/trips/{id}/exceptions
+export function listBackendTripExceptions(tripId: string): Promise<TripException[]> {
+  return listExceptions(tripId)
 }
 
 /** Gỡ yêu cầu giao khỏi chuyến Nháp / Đã lập kế hoạch: điểm giao của nó mất, tuyến bị bỏ (chuyến về Nháp). */

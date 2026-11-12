@@ -83,6 +83,7 @@ export const apiErrors = {
   INVALID_TRIP_STATUS_TRANSITION: 'The trip cannot move to this status.',
   TRIP_NOT_EDITABLE: 'The trip is already in operation and can no longer be edited.',
   TRIP_NOT_CANCELLABLE: 'A trip in this status cannot be cancelled.',
+  TRIP_CANCEL_NEEDS_OPEN_EXCEPTION: 'A trip in transit can only be cancelled while it has an unresolved trip exception. Report one on the Monitoring screen first.',
   TRIP_HAS_NO_STOPS: 'The trip has no delivery stops yet.',
   DELIVERY_REQUIREMENT_NOT_IN_TRIP: 'The delivery requirement is not on this trip.',
   VEHICLE_CANNOT_CARRY_CARGO: 'This vehicle cannot carry the cargo of the trip (size, volume or payload).',

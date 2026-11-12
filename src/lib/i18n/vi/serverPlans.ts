@@ -23,6 +23,11 @@ export const serverPlans = {
     keep: 'Không huỷ',
     confirm: 'Huỷ chuyến',
     done: 'Đã huỷ chuyến {code}',
+    /** Chuyến Đang vận chuyển: máy chủ chỉ huỷ khi có sự cố cấp chuyến chưa xử lý. */
+    inTransitDescription: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện chưa giao thành Hoàn trả, yêu cầu giao của chúng thành Giao thiếu; tài xế được báo.',
+    inTransitBlocked: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
+    inTransitNote: 'Xe đang trên đường: kiện chưa giao sẽ thành Hoàn trả.',
+    doneReturned: { one: 'Đã huỷ chuyến {code}: {count} kiện chưa giao thành Hoàn trả', other: 'Đã huỷ chuyến {code}: {count} kiện chưa giao thành Hoàn trả' },
   },
   removeRequirement: {
     open: 'Gỡ khỏi chuyến',

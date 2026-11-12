@@ -91,6 +91,7 @@ export const apiErrors = {
   INVALID_TRIP_STATUS_TRANSITION: 'Chuyến không chuyển được sang trạng thái này.',
   TRIP_NOT_EDITABLE: 'Chuyến đã sang pha vận hành, không sửa được nữa.',
   TRIP_NOT_CANCELLABLE: 'Chuyến ở trạng thái này không huỷ được.',
+  TRIP_CANCEL_NEEDS_OPEN_EXCEPTION: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
   TRIP_HAS_NO_STOPS: 'Chuyến chưa có điểm giao nào.',
   DELIVERY_REQUIREMENT_NOT_IN_TRIP: 'Yêu cầu giao không thuộc chuyến này.',
   VEHICLE_CANNOT_CARRY_CARGO: 'Xe này không chở được hàng của chuyến (kích thước, thể tích hoặc tải trọng).',

@@ -1322,7 +1322,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `/chuyen/:mã/sua` (`BackendTripEditPage`, `PATCH /api/trips/{id}`: tên, ngày giờ xuất phát, xe, tài xế, kho xuất phát — chỉ gửi trường
   đã đổi, `backend-trip-edit.ts`; máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch, trạng thái khác thấy một dòng lý do; máy chủ không trả mã
   kho nên ô kho mặc định "Giữ kho hiện tại"), "Đổi xe" ở Chi tiết chuyến cho chuyến Đã lập kế hoạch (`ChangeVehicleDialog`, như ở Planner),
-  huỷ kèm lý do (`POST …/cancel`; Chi tiết chuyến máy chủ hiện lý do huỷ), gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
+  huỷ kèm lý do (`POST …/cancel`; Chi tiết chuyến máy chủ hiện lý do huỷ và số kiện thành Hoàn trả `cancelReturnedCount`) — cả chuyến Đang
+  vận chuyển: hộp huỷ đọc `GET /api/trips/{id}/exceptions`, không còn sự cố `OPEN` / `ESCALATED` thì nút huỷ mờ kèm lý do (máy chủ 409
+  `TRIP_CANCEL_NEEDS_OPEN_EXCEPTION`), huỷ xong toast nói số kiện thành Hoàn trả —, gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
   `POST …/optimize-loading` (một lần chạy, trừ credit một lần theo giá máy chủ, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
   `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
   sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,

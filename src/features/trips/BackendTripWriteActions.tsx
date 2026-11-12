@@ -13,9 +13,12 @@ import { useRemoveBackendRequirementMutation } from './useTripEditBackendQuery'
 
 type Status = TripDetailApiResponse['status']
 
-/** Máy chủ chỉ sửa chuyến Nháp / Đã lập kế hoạch (`TRIP_NOT_EDITABLE`), huỷ thêm được chuyến Đang xếp hàng (`TRIP_NOT_CANCELLABLE`). */
+/**
+ * Máy chủ chỉ sửa chuyến Nháp / Đã lập kế hoạch (`TRIP_NOT_EDITABLE`), huỷ thêm được chuyến Đang xếp hàng và Đang vận chuyển — chuyến
+ * đang chạy chỉ khi có sự cố chưa xử lý, hộp huỷ tự xét (`TRIP_NOT_CANCELLABLE`, `TRIP_CANCEL_NEEDS_OPEN_EXCEPTION`).
+ */
 export const isEditableStatus = isBackendTripEditable
-export const isCancellableStatus = (status: Status) => isEditableStatus(status) || status === 'LOADING'
+export const isCancellableStatus = (status: Status) => isEditableStatus(status) || status === 'LOADING' || status === 'IN_TRANSIT'
 
 /**
  * Nút phụ của Chi tiết chuyến bản máy chủ; nơi gọi đã xét quyền `trips.edit`. "Sửa chuyến" mở form sửa (`/chuyen/:mã/sua`); chuyến Đã
@@ -47,7 +50,7 @@ export function BackendTripWriteActions({ trip }: { trip: TripDetailApiResponse 
       {trip.status === 'PLANNED' ? (
         <ChangeVehicleDialog tripId={String(trip.id)} open={changingVehicle} onOpenChange={setChangingVehicle} returnFocusTo={vehicleRef} />
       ) : null}
-      <BackendCancelTripDialog tripId={String(trip.id)} tripCode={trip.tripCode} open={cancelling} onOpenChange={setCancelling} />
+      <BackendCancelTripDialog tripId={String(trip.id)} tripCode={trip.tripCode} inTransit={trip.status === 'IN_TRANSIT'} open={cancelling} onOpenChange={setCancelling} />
     </>
   )
 }

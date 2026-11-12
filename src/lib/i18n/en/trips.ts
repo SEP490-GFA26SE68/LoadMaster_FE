@@ -852,6 +852,7 @@ export const trips = {
   server: {
     operations: 'Operations',
     cancelReason: 'The trip was cancelled. Reason: {reason}',
+    cancelReturned: { one: '{count} undelivered package became Returned.', other: '{count} undelivered packages became Returned.' },
     tripCode: 'Trip code',
     vehicle: 'Vehicle',
     driver: 'Driver',
