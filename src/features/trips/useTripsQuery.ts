@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { pollInterval } from '@/lib/polling'
 import type { CargoPackage } from '@/domain/models'
 import type { DeliveryStop } from '@/lib/mock-db'
 import { liveTripRefetchInterval } from './live-trip-refresh'
@@ -126,7 +127,7 @@ export function useCancelTripMutation(tripId: string) {
 export function useBackendTripDetailQuery(tripId: string) {
   return useQuery({
     queryKey: ['trips', tripId, 'backend-detail'], queryFn: () => fetchBackendTripDetail(tripId), enabled: tripId !== '',
-    refetchInterval: (query) => liveTripRefetchInterval(query.state.data?.trip.status), refetchOnWindowFocus: true,
+    refetchInterval: (query) => pollInterval(query, liveTripRefetchInterval(query.state.data?.trip.status)), refetchOnWindowFocus: true,
   })
 }
 
@@ -134,7 +135,7 @@ export function useTripDetailQuery(tripId: string) {
   // Chuyến đang xếp / đang giao: đọc lại theo nhịp 30 giây và khi focus lại cửa sổ (`live-trip-refresh.ts`)
   return useQuery({
     queryKey: ['trips', tripId, 'detail'], queryFn: () => fetchTripDetail(tripId), enabled: tripId !== '',
-    refetchInterval: (query) => liveTripRefetchInterval(query.state.data?.status), refetchOnWindowFocus: true,
+    refetchInterval: (query) => pollInterval(query, liveTripRefetchInterval(query.state.data?.status)), refetchOnWindowFocus: true,
   })
 }
 

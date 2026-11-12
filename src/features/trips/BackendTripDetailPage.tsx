@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileText, PackageOpen, Plus, Printer, Route } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -22,10 +21,10 @@ import { ManualConfirmCard } from './ManualConfirmCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { SERVER_SHORTAGES } from './shortage-backend-api'
 import { RealTripDetailHeader } from './TripDetailHeader'
-import { fetchBackendActiveRoutePlan, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
 import { backendTimeMs } from '@/lib/backend-time'
 import { isLiveTripStatus } from './live-trip-refresh'
-import { useBackendTripDetailQuery } from './useTripsQuery'
+import { useBackendActiveRoutePlanQuery, useBackendTripIdQuery } from './useBackendTripQuery'
+import { useBackendTripDetailQuery, useOptimizeBackendTripMutation } from './useTripsQuery'
 
 /**
  * Chi tiết chuyến khi nhóm `trips` nối backend (bản của nhóm): thông tin vận hành, điểm giao kèm giờ đến dự kiến và mức hạn, tuyến
@@ -35,12 +34,7 @@ import { useBackendTripDetailQuery } from './useTripsQuery'
 export function BackendTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
-  const resolved = useQuery({
-    queryKey: ['trips', tripId, 'backend-id'],
-    queryFn: () => resolveBackendTripId(tripId),
-    enabled: tripId !== '',
-    staleTime: Infinity,
-  })
+  const resolved = useBackendTripIdQuery(tripId)
   if (resolved.isPending) {
     return (
       <div role="status" aria-label={t('trips.detail.loading')} className="grid flex-1 place-items-center">
@@ -104,34 +98,17 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
 
   const [assigning, setAssigning] = useState(false)
 
-  const queryClient = useQueryClient()
-
-  const optimizeRoute = useMutation({
-    mutationFn: () => optimizeBackendTrip(tripId),
-
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['trips', tripId],
-      })
-
-      toast.success(t('trips.optimization.success'))
-    },
-
-    onError: (error) => {
-      toast.error(dataErrorMessage(error, t))
-    },
+  const optimizeRoute = useOptimizeBackendTripMutation(tripId)
+  const handleOptimizeRoute = () => optimizeRoute.mutate(undefined, {
+    onSuccess: () => toast.success(t('trips.optimization.success')),
+    onError: (error) => toast.error(dataErrorMessage(error, t)),
   })
 
 
   const query = useBackendTripDetailQuery(tripId)
 
 
-  const routePlanQuery = useQuery({
-    queryKey: ['trips', tripId, 'active-route-plan'],
-    queryFn: () => fetchBackendActiveRoutePlan(tripId),
-    enabled: tripId !== '',
-    retry: false,
-  })
+  const routePlanQuery = useBackendActiveRoutePlanQuery(tripId)
 
 
   if (query.isPending) {
@@ -191,7 +168,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                 type="button"
                 loading={optimizeRoute.isPending}
                 disabled={optimizeRoute.isPending}
-                onClick={() => optimizeRoute.mutate()}
+                onClick={handleOptimizeRoute}
               >
                 <Route className="size-4" />
                 {t('trips.optimization.run')}

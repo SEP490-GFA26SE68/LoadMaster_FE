@@ -10,7 +10,7 @@ import { HANDLING_CLASSES } from '@/domain/models'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { Package } from '@/lib/mock-db'
 import { EMPTY_PACKAGE, isPackageFormError, NO_PACKAGE_TYPE, packageFormSchema, toPackageInput, type PackageFormValues } from './package-form'
-import { PACKAGE_POOL_SUPPORT, useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
+import { useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
 
 type NumberField = 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg'
 
@@ -56,7 +56,7 @@ export function PackageFormDialog({ onClose, onDone }: {
             <Input
               label={t('sourcing.form.packageCode')}
               placeholder={t('sourcing.form.packageCodePlaceholder')}
-              hint={PACKAGE_POOL_SUPPORT.numericIds ? t('sourcing.form.packageCodeHintBackend') : t('sourcing.form.packageCodeHint')}
+              hint={t('sourcing.form.packageCodeHint')}
               className="font-mono"
               error={errorText(errors.packageCode?.message)}
               {...register('packageCode')}

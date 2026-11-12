@@ -268,18 +268,17 @@ read-excel-file          — nhập kiện .xlsx: import('read-excel-file/browse
 dnd-kit                  — kéo thả thứ tự điểm giao, ghim kiện
 qrcode-generator         — mã hoá QR (MIT, không phụ thuộc) cho components/QrCode; quét QR dùng BarcodeDetector gốc
                            của trình duyệt trong components/QrScanDialog, không thêm thư viện quét
-maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một version; CHỈ import trong src/components/map, tải lười cùng CSS
-                           và worker của nó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
+maplibre-gl              — bản đồ (FE-4b-07, D-75), khoá đúng một version; CHỈ import trong src/components/map — chạy thư viện,
+                           CSS và đặt URL worker ở đúng một file maplibre-runtime.ts, hai chunk lười của bản đồ lấy từ đó (không CDN). Nền Goong qua VITE_GOONG_MAPTILES_KEY; không có khoá thì nền trống
 lucide-react             — icon, KHÔNG dùng bộ khác
 sonner                   — toast
-motion                   — animation 2D
 ```
 
 Riêng cho 3D viewer (chỉ trong `src/features/viewer3d`):
 
 ```
 three  ·  @react-three/fiber  ·  @react-three/drei
-@react-three/postprocessing  ·  @react-spring/three
+@react-spring/three
 camera-controls (qua drei)
 ```
 
@@ -295,13 +294,13 @@ Bản đồ (FE-4b-07): màn import `RouteMap` từ `@/components/map`, không i
 OpenStreetMap** hay nguồn gạch nào ngoài Goong (D-75: không bảo đảm thể hiện Hoàng Sa, Trường Sa). Khoá map tiles chỉ nằm ở `.env.local`
 (mẫu: `.env.example`; mọi `.env*` khác bị `.gitignore` chặn); dev, CI và test chạy không khoá. Khoá REST của Goong không bao giờ ở FE.
 
-**Không dùng:** `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · `keycloak-js` (chuyển sang trang đăng nhập của Keycloak; app đăng nhập ngay trên màn của mình, mục 9).
+**Không dùng:** `@react-three/postprocessing` (chưa hiệu ứng nào cần; cờ `postprocessing` của `usePerformanceFlags` luôn tắt) · `framer-motion-3d` (deprecated, không hỗ trợ React 19) · Redux · Zustand (state dùng chung đi qua mock repository + TanStack Query, D-06) · thư viện i18n (từ điển tự viết, D-07) · axios (dùng fetch) · moment.js · thư viện UI khác · `keycloak-js` (chuyển sang trang đăng nhập của Keycloak; app đăng nhập ngay trên màn của mình, mục 9).
 
 ### Radix trực tiếp, không dùng shadcn CLI
 
 shadcn bản hiện tại sinh code trên **Base UI** chứ không phải Radix, và variant mặc định của nó lệch spec design (nút `h-8` thay vì 40/56px,
 `active:translate-y-px` vi phạm luật hover ở mục 5, `disabled:opacity-50` thay vì nền `--border`). Nên: cài thẳng `@radix-ui/react-*` cho phần cần
-hành vi và khả năng truy cập (Select, Dialog, DropdownMenu, Checkbox, Switch, RadioGroup, Tabs, Tooltip, ScrollArea, Separator, Slot), rồi **tự
+hành vi và khả năng truy cập (Select, Dialog, DropdownMenu, Checkbox, Switch, RadioGroup, Tabs, Tooltip, Slot), rồi **tự
 viết lớp giao diện** trong `components/ui/`. Không chạy `shadcn add`.
 
 ### TanStack Table v9
@@ -872,7 +871,9 @@ format nhận locale đang chọn.
 
 - Từ điển TypeScript tự viết trong `src/lib/i18n/`. *(LM-080)* Mỗi nhánh cấp 1 một file ở `vi/<nhánh>.ts` và `en/<nhánh>.ts`;
   `vi.ts`/`en.ts` chỉ ghép — màn mới thêm nhánh bằng file mới, không sửa nhánh của màn khác. `vi` là nguồn chuẩn; `en` khai báo sao cho
-  **thiếu hoặc thừa key là lỗi TypeScript** lúc build.
+  **thiếu hoặc thừa key là lỗi TypeScript** lúc build. `vi` nằm sẵn trong bundle; `en` là chunk tải lười (`loadLocale`): `main.tsx`
+  tải ngôn ngữ đầu trước khi vẽ app, `I18nProvider` tải xong mới đổi ngôn ngữ, Vitest tải sẵn ở `src/test/setup-i18n.ts`. Hàm thuần cần
+  chữ của cả hai ngôn ngữ (dòng tiêu đề file nhập kiện) `await` `loadLocale` trước — `createTranslator` của ngôn ngữ chưa tải dịch theo `vi`.
 - Ngôn ngữ đọc theo thứ tự `?lang` → `sessionStorage` → `vi`. Không dùng `localStorage`.
   Đổi ngôn ngữ không tải lại trang, không mất dữ liệu đang nhập.
 - Chuỗi hiển thị viết qua `t()`, kể cả `aria-label`, `title`, `sr-only`.
@@ -974,7 +975,8 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Nền Canvas luôn tối, kể cả khi phần còn lại của app sáng.
 - Target chức năng/performance là 1.000 placements với draw calls dưới 100, số mesh/nhãn không tăng tuyến tính theo cargo. Mục tiêu thiết bị thật: desktop hướng tới 60 FPS, tablet 45–60 FPS, phone khoảng ≥30 FPS bằng quality adaptation. Số đo SwiftShader không phải cam kết FPS trên thiết bị thật. Thêm `?debug` để đo trước khi thêm hiệu ứng.
 - Mọi hiệu ứng nâng cao (post-processing, shadow, AO) phải có cờ tắt được trong `usePerformanceFlags`. Ba tier `high / balanced / low` điều khiển DPR, bóng, viền chung, trang trí, bề mặt cargo và animation; viền kiện đang chọn luôn được giữ. Runtime bỏ qua idle, hạ tier sau 3 mẫu chậm (>28 ms), nâng sau 8 mẫu nhanh (<18 ms), cooldown 12 giây. Debug quality override khóa tier để đo lặp lại.
-- Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng `motion`.
+- Animation trong Canvas dùng `@react-spring/three`. Animation ngoài Canvas dùng CSS (transition, keyframes theo token `--dur-*`,
+  `--ease-*`); chỉ thêm thư viện animation 2D khi CSS không làm được.
 - Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`; FE-5b-07). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
 - Canvas phải có `touch-action: none` (đã đặt toàn cục trong `index.css`). Thiếu nó thì trên máy tính bảng kéo ngón tay sẽ cuộn trang thay vì xoay mô hình — lỗi chỉ lộ khi chạm tay, dùng chuột không thấy.
 - Ba lưu ý về camera: `fitToBox` của camera-controls **xoay camera** về nhìn thẳng mặt gần nhất nên làm mất góc chéo — dùng phép chiếu các góc bao theo preset và tỉ lệ khung; bounding sphere theo chiều dài làm góc cửa sau trên phone quá nhỏ. Resize panel giữ góc người dùng đang xoay. Vách thùng dùng mặt đơn pháp tuyến hướng vào trong để vách gần camera tự biến mất. `PCFSoftShadowMap` đã bị gỡ khỏi three r186, dùng `shadows="percentage"`.
@@ -1181,7 +1183,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nhập sai nhiều lần) `invalid-credentials`, tài khoản tắt `account-suspended`, mật khẩu tạm `password-change-required` (màn đưa sang
   `/quen-mat-khau`); client chưa bật direct grants `login-not-enabled`. Token truy cập chỉ trong bộ nhớ, tự làm mới khi còn dưới 20 giây (một
   lượt làm mới cho mọi lượt gọi cùng lúc); refresh token ở `sessionStorage` của tab để tải lại trang không bị đăng xuất. Tab mới xin refresh token
-  của tab đang đăng nhập qua `BroadcastChannel` `loadmaster-auth-v1` (chờ 300 ms); đăng xuất ở một tab đóng phiên ở Keycloak và báo mọi tab;
+  của tab đang đăng nhập qua `BroadcastChannel` `loadmaster-auth-v1` (chờ 300 ms) và chỉ nhận thư trả lời đúng mã hỏi ngẫu nhiên của nó;
+  đăng xuất ở một tab đóng phiên ở Keycloak và báo các tab **cùng mã phiên** (sinh mỗi lần đăng nhập, đi cùng refresh token, lưu ở
+  `sessionStorage`) — tab của phiên khác không đăng xuất theo;
   phiên hết giữa chừng (`onEnded`) đưa về màn đăng nhập. `useAuth().status` là `restoring` cho tới khi mở lại phiên xong và `RequireAuth` chưa
   quyết gì trong lúc đó. Hồ sơ đọc ở `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` /
   `COMPANY_ADMIN`, `MANAGER` / `COMPANY_MANAGER`); 404 là tài khoản Keycloak chưa gắn người dùng nào (`account-not-linked`), 401 là máy chủ không
@@ -1202,7 +1206,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   hàm nối có test với `fetch` giả: `vi.mock('@/lib/backend-config', …)` bật đúng nhóm, `fetch` giả qua `src/test/fake-backend.ts`
   (`stubBackend`, `envelope`, `page`); test màn ở chế độ backend đặt tên `*.backend.dom.test.tsx`.
 - **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
-  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu.
+  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu —
+  quá `maxPages` mà máy chủ chưa báo trang cuối là lỗi `LIST_TOO_LONG`, không cắt im lặng; chỉ đọc phần đầu thì gọi kèm `truncate`.
   Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
   giờ là giờ Việt Nam (ngày và giờ ngăn bằng `T` hay dấu cách — `@JsonFormat("yyyy-MM-dd HH:mm:ss")`), `Instant` có `Z`; so sánh mốc giờ bằng `backendTimeMs` (`NaN` khi không đọc được) — không tự nối `+07:00` vào chuỗi của máy chủ
   (Safari đọc ra `NaN` với dạng có dấu cách hay thiếu giây). Phong bì lỗi có `code` (tên `ErrorCode` của backend) thì
@@ -1211,8 +1216,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   mã nghiệp vụ — chỉ khi không có mã. Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`; mã app chưa có câu thì câu theo
   loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
-  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
-  (`useFleetCapabilities`), `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
+  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`),
+  `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
   Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;
@@ -1265,7 +1270,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (`GET /api/packages/export/labels/trip/{tripId}`; chuyến chưa có kiện `TRIP_HAS_NO_PACKAGES` thì trang nói rõ thay cho lỗi; mở từ nút "In nhãn QR" của Chi tiết chuyến máy chủ theo
   `labels.print`, chuyến chưa huỷ và đã có điểm giao). Chỉ xoá kiện Đã
   nhập; không liên kết tới chuyến.
-  Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện bỏ dòng Nguồn (`PACKAGE_POOL_SUPPORT.source`). Kiện kho bỏ khỏi chuyến
+  Nối backend thì route dựng thẳng Kho kiện, Loại kiện, In nhãn của `package-pool/backend/`; `package-pool-api.ts` chỉ còn nhánh máy chủ
+  cho tìm nhanh và Tra cứu kiện (đọc kiện, loại kiện, quét, gỡ cờ, báo tìm thấy — `PACKAGE_POOL_SUPPORT` là `fullSize`, `tripLinks`,
+  `numericIds` của Tra cứu kiện). Máy chủ không trả nguồn của kiện (nhập file hay thêm tay), nên chi tiết kiện không có dòng Nguồn. Kiện kho bỏ khỏi chuyến
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
   (`DELETE /api/packages/{id}/flag`, không cờ là `PACKAGE_NOT_FLAGGED`). Lượt quét cũng trả cờ, nên Tra cứu kiện hiện cờ, gỡ cờ cho điều phối
@@ -1440,9 +1447,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   chuyến: `VEHICLE_BUSY`), sửa / xoá loại xe `PUT|DELETE /api/vehicle-types/{id}` (loại còn xe gắn: `VEHICLE_TYPE_IN_USE`, mục Xoá mờ kèm lý
   do); sửa xe hay giới hạn của loại làm phương án của chuyến Đã lập kế hoạch lỗi thời ở máy chủ; xe ngừng sử dụng chỉ đọc. Trạng thái xe ghi
   chuyến đang dùng và ghi chú bảo dưỡng của máy chủ. Ngừng sử dụng có ở cả hai nguồn (bốn trạng thái của bộ lọc, thẻ đội xe của bảng điều
-  khiển). `FLEET_CAPABILITIES` (`write`, `stateDetails` bật ở cả hai nguồn) chỉ còn ẩn khoảng hở;
-  hàm ghi dạng kho mẫu (`saveVehicle`, `saveVehicleType`, `setVehicleType`) vẫn từ chối `NOT_SUPPORTED`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
-  (`doorUnknown`) và trang xe nói rõ.
+  khiển). Nối backend thì route dựng thẳng màn của `fleet/backend/`, `vehicle-types/backend/` (máy chủ chưa có khoảng hở nên form máy chủ
+  không có ô đó); `fleet/vehicles-api.ts`, `vehicle-types/vehicle-types-api.ts` chỉ còn là lớp kho mẫu, không nhánh backend. Tìm nhanh
+  đọc xe máy chủ qua `fetchVehicleRefs`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt
+  cắt lòng thùng (`doorUnknown`).
 
 ### Lớp dữ liệu
 
@@ -1453,7 +1461,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 3. Component chỉ gọi hook, không bao giờ gọi `-api.ts` trực tiếp.
 
 Không màn nào giữ dữ liệu nghiệp vụ ở `useState`: mọi màn đọc/ghi kho mock qua Query (ví dụ trạng thái xe đọc `useVehicleStatesQuery`,
-`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác; ghi bảo dưỡng vô hiệu hoá `['vehicles']`).
+`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác; ghi bảo dưỡng vô hiệu hoá `['vehicles']`). Nhịp đọc lại
+(`refetchInterval`) luôn bọc `pollInterval` (`lib/polling.ts`): lỗi liên tiếp thì nhịp giãn gấp đôi, năm lần thì dừng tới lần đọc được kế tiếp.
 
 Tên hàm trong `-api.ts` theo hành động của endpoint ở issue backend (FE-0-09). Mỗi hàm export có một dòng comment ghi endpoint ngay trên nó
 (`// POST /api/trips/{id}/optimize-route`), đầu file có bảng hàm → endpoint. Endpoint backend chưa có ghi "chưa có ở BE", kèm mã câu hỏi mở
@@ -2230,7 +2239,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 
 Mọi màn trong `app/App.tsx` đều `lazy()`. Nhờ đó Three.js chỉ tải khi mở màn 3D, thư viện biểu đồ
 chỉ tải khi mở màn cần nó, và máy tính bảng ở kho không gánh code của dispatcher.
-Thêm màn mới thì thêm theo đúng lối này.
+Thêm màn mới thì thêm theo đúng lối này. Từ điển `en` cũng là chunk riêng (mục 6). Kho mẫu (`lib/mock-db`) vẫn nằm trong
+bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ.
 
 ## 10. Khả năng truy cập
 

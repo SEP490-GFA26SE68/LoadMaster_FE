@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { pollInterval } from '@/lib/polling'
 import { LIVE_TRIP_REFRESH_MS } from './live-trip-refresh'
 import type { ShortageDecision } from '@/lib/mock-db'
 import { fetchStagingShortages, resolveStagingShortage, type ShortageRow } from './shortage-api'
@@ -15,7 +16,7 @@ export function useStagingShortagesQuery(tripId: string, server = false, live = 
     queryFn: () => (server ? fetchServerStagingShortages(tripId) : fetchStagingShortages(tripId)),
     enabled: tripId !== '',
     staleTime: 0,
-    refetchInterval: live ? LIVE_TRIP_REFRESH_MS : false,
+    refetchInterval: (query) => pollInterval(query, live && LIVE_TRIP_REFRESH_MS),
     refetchOnWindowFocus: live,
   })
 }

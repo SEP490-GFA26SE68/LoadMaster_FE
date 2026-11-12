@@ -1,5 +1,4 @@
 import { lazy, Suspense, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
@@ -12,10 +11,7 @@ import { VehicleForm } from './VehicleForm'
 import { VehicleStatusBadge } from './VehicleStatusBadge'
 import { fleetStateOf } from './vehicle-status'
 import { VehicleActions } from './VehicleActions'
-import {
-  fetchVehicleById,
-  fetchVehicleConfig,
-} from './vehicles-api'
+import { useVehicleConfigQuery, useVehicleQuery } from './useVehiclesQuery'
 
 const VehiclePreviewViewer = lazy(() =>
   import('@/features/viewer3d/VehiclePreviewViewer').then(
@@ -44,15 +40,8 @@ function BackendVehicleDetail({
   const t = useT()
   const [editing, setEditing] = useState(false)
 
-  const vehicleQuery = useQuery({
-    queryKey: ['backend', 'vehicle', vehicleId],
-    queryFn: () => fetchVehicleById(vehicleId),
-  })
-
-  const configQuery = useQuery({
-    queryKey: ['backend', 'vehicle-config', vehicleId],
-    queryFn: () => fetchVehicleConfig(vehicleId),
-  })
+  const vehicleQuery = useVehicleQuery(vehicleId)
+  const configQuery = useVehicleConfigQuery(vehicleId)
 
   if (vehicleQuery.isPending || configQuery.isPending) {
     return (

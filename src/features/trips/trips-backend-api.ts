@@ -642,7 +642,7 @@ export async function resolveBackendTripId(idOrCode: string): Promise<string> {
   const wanted = idOrCode.trim().toUpperCase()
   const rows = wanted === ''
     ? []
-    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1 })
+    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1, truncate: true })
   const listed = rows.find((row) => row.tripCode.toUpperCase() === wanted)
   if (!listed) throw new ApiError('TRIP_NOT_FOUND', { status: 404 })
   return String(listed.id)

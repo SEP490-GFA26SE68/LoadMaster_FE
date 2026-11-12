@@ -1,5 +1,6 @@
 import { backendConfig, type BackendConfig } from '@/lib/backend-config'
 import { AuthError } from './auth-api'
+import { browserRedirect, challengeOf, randomText, type RedirectPort } from './keycloak-browser'
 import {
   authorizationUrl,
   endKeycloakSession,
@@ -22,6 +23,11 @@ import {
  * Token truy cập chỉ nằm trong bộ nhớ. Refresh token nằm trong `sessionStorage` của tab (AGENTS.md cấm `localStorage`) để tải lại
  * trang không bị đăng xuất; tab mới mở xin refresh token của tab đang đăng nhập qua `BroadcastChannel`, nên mở liên kết sang tab
  * mới không phải đăng nhập lại.
+ *
+ * Kênh giữa các tab chỉ tới được ngữ cảnh cùng origin, nhưng tab không tin mọi thư trên đó: mỗi lần đăng nhập sinh một **mã phiên**
+ * ngẫu nhiên, đi cùng refresh token sang tab nhận phiên. Thư "đăng xuất" chỉ đóng tab có cùng mã phiên — tab của phiên khác (người
+ * khác đăng nhập ở tab khác) không bị đăng xuất theo. Tab mới chỉ nhận refresh token trả lời **đúng lần hỏi của nó** (mã hỏi ngẫu
+ * nhiên); thư trao phiên không ai hỏi bị bỏ, nên không tab nào cài được phiên của mình vào tab khác.
  */
 export type KeycloakSession = {
   /** Gọi một lần khi mở app: `true` khi mở lại được phiên (của chính tab, hoặc của một tab khác đang đăng nhập). */
@@ -43,8 +49,13 @@ export type KeycloakSession = {
   onEnded(listener: () => void): () => void
 }
 
-/** Thư các tab trao nhau. Refresh token chỉ đi giữa các tab cùng origin. */
-type TabMessage = { type: 'ask' } | { type: 'share'; refreshToken: string } | { type: 'logout' }
+/** Thư các tab trao nhau. Refresh token chỉ đi giữa các tab cùng origin, trả lời đúng mã hỏi; đăng xuất mang mã phiên. */
+type TabMessage =
+  | { type: 'ask'; nonce: string }
+  | { type: 'share'; nonce: string; refreshToken: string; session: string }
+  | { type: 'logout'; session: string }
+
+export type { RedirectPort } from './keycloak-browser'
 
 /** Kênh tối thiểu giữa các tab; app dùng `BroadcastChannel`, test truyền bản giả. */
 export type AuthTabChannel = {
@@ -62,13 +73,6 @@ export type KeycloakSessionDeps = {
   redirect?: RedirectPort | null
 }
 
-/** Chỗ dự phòng chạm vào trình duyệt: đọc URL hiện tại, chuyển trang, xoá `code` khỏi URL. Test truyền bản giả. */
-export type RedirectPort = {
-  href(): string
-  assign(url: string): void
-  replace(url: string): void
-}
-
 /** Đường dự phòng đang chờ Keycloak trả về: giữ trong `sessionStorage` của tab qua lần chuyển trang. */
 type PendingRedirect = { state: string; verifier: string; redirectUri: string }
 
@@ -76,30 +80,8 @@ const PKCE_KEY = 'loadmaster.dang-nhap-keycloak'
 /** Keycloak trả về màn đăng nhập; có người dùng rồi thì màn đó tự mở màn chính của vai trò. */
 const REDIRECT_PATH = '/dang-nhap'
 
-function browserRedirect(): RedirectPort | null {
-  if (typeof window === 'undefined') return null
-  return {
-    href: () => window.location.href,
-    assign: (url) => window.location.assign(url),
-    replace: (url) => window.history.replaceState(window.history.state, '', url),
-  }
-}
-
-function randomText(bytes: number): string {
-  return base64Url(crypto.getRandomValues(new Uint8Array(bytes)))
-}
-
-function base64Url(bytes: Uint8Array): string {
-  let text = ''
-  for (const byte of bytes) text += String.fromCharCode(byte)
-  return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-async function challengeOf(verifier: string): Promise<string> {
-  return base64Url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))))
-}
-
 const REFRESH_KEY = 'loadmaster.phien-keycloak'
+const SESSION_KEY = 'loadmaster.phien-keycloak-ma'
 const CHANNEL_NAME = 'loadmaster-auth-v1'
 /** Token của realm sống 60 giây: làm mới khi còn dưới ngần này. */
 const MIN_TOKEN_VALIDITY_MS = 20_000
@@ -108,8 +90,10 @@ const ASK_TIMEOUT_MS = 300
 
 function isTabMessage(value: unknown): value is TabMessage {
   if (typeof value !== 'object' || value === null || !('type' in value)) return false
-  if (value.type === 'share') return 'refreshToken' in value && typeof value.refreshToken === 'string'
-  return value.type === 'ask' || value.type === 'logout'
+  const text = (key: string) => typeof (value as Record<string, unknown>)[key] === 'string'
+  if (value.type === 'ask') return text('nonce')
+  if (value.type === 'share') return text('nonce') && text('refreshToken') && text('session')
+  return value.type === 'logout' && text('session')
 }
 
 function browserStorage(): KeycloakSessionDeps['storage'] {
@@ -145,31 +129,49 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
   let refreshing: Promise<string | null> | null = null
   let started: Promise<boolean> | undefined
 
-  const readRefreshToken = (): string | null => {
+  /** Mã phiên còn trong bộ nhớ khi `storage` không lưu được: phiên chỉ sống tới khi tải lại trang, như refresh token. */
+  let sessionInMemory: string | null = null
+  const read = (key: string): string | null => {
     try {
-      return storage?.getItem(REFRESH_KEY) ?? null
+      return storage?.getItem(key) ?? null
     } catch {
       return null
     }
   }
-  const writeRefreshToken = (value: string | null) => {
+  const write = (key: string, value: string | null) => {
     try {
-      if (value === null) storage?.removeItem(REFRESH_KEY)
-      else storage?.setItem(REFRESH_KEY, value)
+      if (value === null) storage?.removeItem(key)
+      else storage?.setItem(key, value)
     } catch {
       // Không lưu được thì phiên chỉ sống tới khi tải lại trang
     }
   }
+  const readRefreshToken = () => read(REFRESH_KEY)
+  const writeRefreshToken = (value: string | null) => write(REFRESH_KEY, value)
+  const readSession = () => read(SESSION_KEY) ?? sessionInMemory
+  const writeSession = (value: string | null) => {
+    sessionInMemory = value
+    write(SESSION_KEY, value)
+  }
 
-  function keep(tokens: KeycloakTokens) {
+  /** Giữ token; `session` là mã phiên mới (đăng nhập) — vắng khi chỉ làm mới: mã đang có giữ nguyên. */
+  function keep(tokens: KeycloakTokens, session?: string) {
     access = { token: tokens.accessToken, expiresAt: now() + tokens.expiresInSeconds * 1000 }
     writeRefreshToken(tokens.refreshToken)
+    if (session !== undefined) writeSession(session)
+    else if (readSession() === null) writeSession(randomText(16))
   }
 
   function forget() {
     access = null
     refreshing = null
     writeRefreshToken(null)
+    writeSession(null)
+  }
+
+  /** Báo các tab cùng phiên đăng xuất theo; tab của phiên khác bỏ qua thư này. */
+  function broadcastLogout(session: string | null) {
+    if (session !== null) channel?.postMessage({ type: 'logout', session })
   }
 
   /** Phiên mất từ bên ngoài: quên token và báo `AuthProvider` (chỉ khi tab đang có phiên). */
@@ -201,20 +203,22 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
     return refreshing
   }
 
-  function askOtherTabs(): Promise<string | null> {
+  /** Xin phiên của tab đang đăng nhập; chỉ nhận thư trả lời đúng mã hỏi của lần này. */
+  function askOtherTabs(): Promise<{ refreshToken: string; session: string } | null> {
     if (channel === null) return Promise.resolve(null)
+    const nonce = randomText(16)
     return new Promise((resolve) => {
       const stop = channel.subscribe((message) => {
-        if (message.type !== 'share') return
+        if (message.type !== 'share' || message.nonce !== nonce) return
         clearTimeout(timer)
         stop()
-        resolve(message.refreshToken)
+        resolve({ refreshToken: message.refreshToken, session: message.session })
       })
       const timer = setTimeout(() => {
         stop()
         resolve(null)
       }, ASK_TIMEOUT_MS)
-      channel.postMessage({ type: 'ask' })
+      channel.postMessage({ type: 'ask', nonce })
     })
   }
 
@@ -249,14 +253,17 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
     for (const name of ['code', 'state', 'session_state', 'iss', 'error', 'error_description']) url.searchParams.delete(name)
     port.replace(url.pathname + url.search + url.hash)
     if (pending === null || pending.state !== state || code === null) return false
-    keep(await requestCodeGrant(config, code, pending.verifier, pending.redirectUri))
+    keep(await requestCodeGrant(config, code, pending.verifier, pending.redirectUri), randomText(16))
     return true
   }
 
   channel?.subscribe((message) => {
     const refreshToken = readRefreshToken()
-    if (message.type === 'ask' && refreshToken !== null) channel.postMessage({ type: 'share', refreshToken })
-    if (message.type === 'logout') end()
+    const session = readSession()
+    if (message.type === 'ask' && refreshToken !== null && session !== null) {
+      channel.postMessage({ type: 'share', nonce: message.nonce, refreshToken, session })
+    }
+    if (message.type === 'logout' && session !== null && message.session === session) end()
   })
 
   return {
@@ -267,7 +274,8 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
         if (readRefreshToken() === null) {
           const shared = await askOtherTabs()
           if (shared === null) return false
-          writeRefreshToken(shared)
+          writeRefreshToken(shared.refreshToken)
+          writeSession(shared.session)
         }
         return (await refresh()) !== null
       })()
@@ -275,7 +283,7 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
     },
     async login(email, password) {
       try {
-        keep(await requestPasswordGrant(config, email, password))
+        keep(await requestPasswordGrant(config, email, password), randomText(16))
       } catch (error) {
         // Client chưa bật Direct Access Grants: đăng nhập ở trang của Keycloak thay vì báo lỗi cấu hình
         if (redirect !== null && error instanceof AuthError && error.code === 'login-not-enabled') await beginRedirect(redirect, email)
@@ -284,8 +292,9 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
     },
     async logout() {
       const refreshToken = readRefreshToken()
+      const session = readSession()
       forget()
-      channel?.postMessage({ type: 'logout' })
+      broadcastLogout(session)
       if (refreshToken !== null) await endKeycloakSession(config, refreshToken)
     },
     async token() {
@@ -300,8 +309,9 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
     refreshToken: () => refresh(),
     reject() {
       const refreshToken = readRefreshToken()
+      const session = readSession()
       end()
-      channel?.postMessage({ type: 'logout' })
+      broadcastLogout(session)
       // Đóng cả phiên ở Keycloak; hỏng thì thôi — tab này đã quên token
       if (refreshToken !== null) endKeycloakSession(config, refreshToken).catch(() => undefined)
     },

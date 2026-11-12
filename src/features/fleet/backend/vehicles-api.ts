@@ -1,10 +1,13 @@
 import { api, apiFetch } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
+import { vehicleNameOf } from '../fleet-dto'
 import { isoFromBackend } from '@/lib/backend-time'
 import type { TripVehicleConfigResponse } from '@/features/trips/trips-api'
 
 /**
  * Hàm → endpoint (nhóm `fleet`):
  *   fetchVehicles            → GET /api/vehicles
+ *   fetchVehicleRefs         → GET /api/vehicles (đủ mọi trang)
  *   saveVehicle              → POST /api/vehicles
  *   updateVehicle            → PUT /api/vehicles/{id}
  *   deleteVehicle            → DELETE /api/vehicles/{id}
@@ -159,6 +162,15 @@ export async function fetchVehicles(
     ...response,
     data: response.data.map(mapVehicle),
   }
+}
+
+/** Mã và tên mọi xe của công ty (đủ mọi trang) cho tìm nhanh; tên theo quy ước "Tên · biển số" của app. */
+// GET /api/vehicles
+export async function fetchVehicleRefs(): Promise<{ id: string; name: string }[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles')).map((vehicle) => ({
+    id: String(vehicle.id),
+    name: vehicleNameOf(vehicle.name, vehicle.licensePlate),
+  }))
 }
 
 export async function saveVehicle(

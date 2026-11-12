@@ -22,6 +22,9 @@ import {
   type TripLoadPlansDto,
 } from './load-plan-dto'
 
+/** Kiểu của app dựng từ DTO — màn import từ đây, không từ `load-plan-dto.ts`. */
+export type { LoadPlacement, LoadPlan, OptimizationJob } from './load-plan-dto'
+
 const tripPath = (tripId: string) => `/api/trips/${encodeURIComponent(tripId)}`
 const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`
 

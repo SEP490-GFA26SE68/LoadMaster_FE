@@ -2,12 +2,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ClipboardList, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Banner } from '@/components/Banner'
-import { fetchTripById } from '@/features/trips/trips-api'
 import { CoordinatePicker, parseCoordinates } from '@/components/map'
 import { Button } from '@/components/ui/Button'
 import {
@@ -26,17 +24,16 @@ import {
   type DeliveryRequirement,
 } from '@/lib/mock-db'
 
+import type { CreateCustomerInput } from './customers-api'
+import type { RequirementRow } from './requirements-api'
 import {
-  createCustomer,
-  fetchCustomers,
-  type CreateCustomerInput,
-} from './customers-api'
-import {
-  extendRequirementDeadline,
-  updateRequirementCoordinates,
-  updateRequirementSchedule,
-  type RequirementRow,
-} from './requirements-api'
+  useCreateCustomerMutation,
+  useCustomersQuery,
+  useExtendRequirementDeadlineMutation,
+  useRequirementTripQuery,
+  useUpdateRequirementCoordinatesMutation,
+  useUpdateRequirementScheduleMutation,
+} from './useRequirementFormQuery'
 import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
 import {
@@ -184,18 +181,12 @@ function RequirementForm({
   onClose: () => void
 }) {
   const t = useT()
-  const queryClient = useQueryClient()
   const current = row?.requirement
 
   const [extensionReason, setExtensionReason] = useState('')
 
 
-  const tripQuery = useQuery({
-    queryKey: ['trips', current?.tripId, 'status'],
-    queryFn: () => fetchTripById(current!.tripId!),
-    enabled: Boolean(current?.tripId),
-    retry: false,
-  })
+  const tripQuery = useRequirementTripQuery(current?.tripId)
 
   const tripStatus = current?.tripId
     ? tripQuery.data?.status
@@ -214,131 +205,21 @@ function RequirementForm({
     current.tripId !== undefined &&
     tripStatus === 'IN_TRANSIT'
 
-
-  const customers = useQuery({
-    queryKey: ['customers', 'list'],
-    queryFn: fetchCustomers,
-  })
-
-  const createCustomerMutation = useMutation({
-    mutationFn: createCustomer,
-    onSuccess: async (customer) => {
-      form.setValue('customerId', String(customer.id), {
-        shouldDirty: true,
-        shouldValidate: true,
-      })
-
-      setAddingCustomer(false)
-      setNewCustomer({
-        name: '',
-        contactPhone: '',
-        address: '',
-      })
-
-      await queryClient.invalidateQueries({
-        queryKey: ['customers'],
-      })
-
-      toast.success(t('requirements.customer.created'))
-    },
-  })
+  const customers = useCustomersQuery()
+  const createCustomerMutation = useCreateCustomerMutation()
 
   const create = useCreateRequirementMutation()
   const update = useUpdateRequirementMutation(current?.id ?? '')
   const mutation = current ? update : create
 
-  const updateCoordinates = useMutation({
-    mutationFn: ({
-      id,
-      lat,
-      lng,
-    }: {
-      id: string
-      lat: number
-      lng: number
-    }) =>
-      updateRequirementCoordinates(id, {
-        destinationLat: lat,
-        destinationLng: lng,
-      }),
-
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['requirements'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['trips'],
-        }),
-      ])
-
-      toast.success(t('requirements.form.coordinatesSaved'))
-      onClose()
-    },
-
-    onError: (error) => {
-      toast.error(dataErrorMessage(error, t))
-    },
-  })
-
-
-
-  const updateSchedule = useMutation({
-    mutationFn: ({
-      id,
-      deadline,
-      priority,
-    }: {
-      id: string
-      deadline?: string
-      priority: DeliveryRequirement['priority']
-    }) =>
-      updateRequirementSchedule(id, { deadline, priority }),
-
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['requirements'],
-      })
-      toast.success(t('requirements.form.savedSchedule'))
-      onClose()
-    },
-
-    onError: (error) => {
-      toast.error(dataErrorMessage(error, t))
-    },
-  })
-
-  const extendDeadline = useMutation({
-    mutationFn: ({
-      id,
-      newDeadline,
-      reason,
-    }: {
-      id: string
-      newDeadline: string
-      reason: string
-    }) =>
-      extendRequirementDeadline(id, { newDeadline, reason }),
-
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['requirements'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['trips'],
-        }),
-      ])
-      toast.success(t('requirements.form.deadlineExtended'))
-      onClose()
-    },
-
-    onError: (error) => {
-      toast.error(dataErrorMessage(error, t))
-    },
-  })
-
-
+  const updateCoordinates = useUpdateRequirementCoordinatesMutation()
+  const updateSchedule = useUpdateRequirementScheduleMutation()
+  const extendDeadline = useExtendRequirementDeadlineMutation()
+  const showError = (error: Error) => toast.error(dataErrorMessage(error, t))
+  const savedAndClose = (key: 'requirements.form.coordinatesSaved' | 'requirements.form.savedSchedule' | 'requirements.form.deadlineExtended') => () => {
+    toast.success(t(key))
+    onClose()
+  }
 
   const schema = useMemo(
     () => requirementSchema(t, current),
@@ -431,7 +312,14 @@ function RequirementForm({
       return
     }
 
-    createCustomerMutation.mutate(input)
+    createCustomerMutation.mutate(input, {
+      onSuccess: (customer) => {
+        form.setValue('customerId', String(customer.id), { shouldDirty: true, shouldValidate: true })
+        setAddingCustomer(false)
+        setNewCustomer({ name: '', contactPhone: '', address: '' })
+        toast.success(t('requirements.customer.created'))
+      },
+    })
   }
 
 
@@ -452,11 +340,10 @@ function RequirementForm({
       return
     }
 
-    updateCoordinates.mutate({
-      id: current.id,
-      lat: parsed.lat,
-      lng: parsed.lng,
-    })
+    updateCoordinates.mutate(
+      { id: current.id, lat: parsed.lat, lng: parsed.lng },
+      { onSuccess: savedAndClose('requirements.form.coordinatesSaved'), onError: showError },
+    )
   }
 
 
@@ -505,11 +392,10 @@ function RequirementForm({
 
     if (deadlineChanged && !deadline) return
 
-    updateSchedule.mutate({
-      id: current.id,
-      deadline: deadline ?? undefined,
-      priority: values.priority,
-    })
+    updateSchedule.mutate(
+      { id: current.id, deadline: deadline ?? undefined, priority: values.priority },
+      { onSuccess: savedAndClose('requirements.form.savedSchedule'), onError: showError },
+    )
   }
 
   function handleExtendDeadline() {
@@ -534,11 +420,10 @@ function RequirementForm({
       return
     }
 
-    extendDeadline.mutate({
-      id: current.id,
-      newDeadline,
-      reason,
-    })
+    extendDeadline.mutate(
+      { id: current.id, newDeadline, reason },
+      { onSuccess: savedAndClose('requirements.form.deadlineExtended'), onError: showError },
+    )
   }
 
 

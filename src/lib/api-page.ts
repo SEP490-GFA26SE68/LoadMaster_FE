@@ -1,20 +1,23 @@
-import { api, type ApiClient, type QueryValue } from './api-client'
+import { api, ApiError, type ApiClient, type QueryValue } from './api-client'
 
 /**
  * Đọc hết một danh sách phân trang của backend — màn của app tự lọc, sắp xếp và phân trang ở client như với kho mẫu. Backend trả ba
  * dạng: `PageResponse` (`{ success, data: T[], page, totalPages, last }`), phong bì bọc trang của Spring (`{ data: { content: T[],
  * last | page: { number, totalPages } } }`) và mảng (trần hoặc trong phong bì, không phân trang). Tham số trang là `page` (từ 0) và
- * `size`. Dừng ở trang cuối, hoặc sau `maxPages` trang để một backend lỗi không làm vòng lặp chạy mãi.
+ * `size`. Dừng ở trang cuối. Quá `maxPages` trang mà máy chủ chưa báo trang cuối thì ném `ApiError` `LIST_TOO_LONG` — không bao giờ
+ * trả một danh sách bị cắt mà màn tưởng là đủ (màn lọc, đếm, tìm trên nó); nơi gọi chỉ cần phần đầu danh sách thì đặt `truncate`.
  */
 export type FetchAllPagesOptions = {
   readonly query?: Readonly<Record<string, QueryValue>>
   readonly size?: number
   readonly maxPages?: number
+  /** Chỉ đọc `maxPages` trang đầu là ý của nơi gọi (ví dụ 50 giao dịch gần nhất): tới giới hạn thì trả phần đã đọc, không lỗi. */
+  readonly truncate?: boolean
 }
 
 export async function fetchAllPages<T>(
   path: string,
-  { query = {}, size = 200, maxPages = 50 }: FetchAllPagesOptions = {},
+  { query = {}, size = 200, maxPages = 50, truncate = false }: FetchAllPagesOptions = {},
   client: ApiClient = api(),
 ): Promise<T[]> {
   const items: T[] = []
@@ -23,7 +26,8 @@ export async function fetchAllPages<T>(
     items.push(...rows)
     if (last || rows.length === 0) return items
   }
-  return items
+  if (truncate) return items
+  throw new ApiError('LIST_TOO_LONG', { params: { path, maxPages, size } })
 }
 
 type Page<T> = { readonly rows: T[]; readonly last: boolean }

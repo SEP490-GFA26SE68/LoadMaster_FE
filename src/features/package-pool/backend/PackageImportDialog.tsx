@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT, type TFunction } from '@/lib/i18n'
-import { backendRowErrorOf, backendRowWarningOf } from '../package-pool-dto'
+import { backendRowErrorOf, backendRowWarningOf } from './package-import-api'
 import { rowIssueText } from '../PackageImportPreview'
 import { MAX_IMPORT_FILE_MB, MAX_IMPORT_ROWS } from './package-pool-import'
 import {

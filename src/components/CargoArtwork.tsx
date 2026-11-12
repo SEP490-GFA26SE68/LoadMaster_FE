@@ -81,14 +81,14 @@ export function CargoArtwork({ label, className }: { label: string; className?: 
           <feGaussianBlur stdDeviation="14" />
         </filter>
         <radialGradient id={`${svgId}-glow`} cx="50%" cy="50%" r="55%">
-          <stop offset="0" stopColor="#ffffff" stopOpacity=".08" />
-          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="0" stopColor="var(--n-0)" stopOpacity=".08" />
+          <stop offset="1" stopColor="var(--n-0)" stopOpacity="0" />
         </radialGradient>
       </defs>
 
       <rect width={frame.width} height={frame.height} fill={`url(#${svgId}-glow)`} />
 
-      <polygon points={shadow} fill="#000" opacity={0.55} filter={`url(#${svgId}-blur)`} />
+      <polygon points={shadow} fill="var(--cyan-950)" opacity={0.55} filter={`url(#${svgId}-blur)`} />
       {faces.map((face, index) => (
         <polygon
           key={index}

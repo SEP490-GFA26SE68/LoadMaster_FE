@@ -1,5 +1,4 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -16,7 +15,7 @@ import { ClipboardList } from 'lucide-react'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
 import { useRequirementsQuery } from '@/features/requirements/backend/useRequirementsQuery'
-import { assignBackendRequirementToTrip } from './trips-api'
+import { useAssignBackendRequirementMutation } from './useBackendTripQuery'
 
 type Props = {
   open: boolean
@@ -30,33 +29,16 @@ export function BackendRequirementAssignDialog({
   tripId,
 }: Props) {
   const t = useT()
-  const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const requirements = useRequirementsQuery({ enabled: open })
 
-  const assign = useMutation({
-    mutationFn: (requirementId: string) =>
-      assignBackendRequirementToTrip(tripId, requirementId),
-
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['trips', tripId, 'backend-detail'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['requirements'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['trips'],
-        }),
-      ])
-
-      toast.success(t('trips.assign.success'))
-      setSelectedId(null)
-      onOpenChange(false)
-    },
-  })
+  const assign = useAssignBackendRequirementMutation(tripId)
+  const handleAssigned = () => {
+    toast.success(t('trips.assign.success'))
+    setSelectedId(null)
+    onOpenChange(false)
+  }
 
   const pending = (requirements.data ?? []).filter(({ requirement }) =>
     requirement.status === 'PENDING' &&
@@ -175,7 +157,7 @@ export function BackendRequirementAssignDialog({
             disabled={!selectedId || assign.isPending}
             loading={assign.isPending}
             onClick={() => {
-              if (selectedId) assign.mutate(selectedId)
+              if (selectedId) assign.mutate(selectedId, { onSuccess: handleAssigned })
             }}
           >
             {t('trips.assign.confirm')}

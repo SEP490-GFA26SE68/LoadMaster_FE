@@ -16,9 +16,8 @@ import {
   TripDetailStepper,
 } from './TripDetailStepper'
 import type { TripDetail } from './trips-api'
-import { useQuery } from '@tanstack/react-query'
 import { backendDateTimeText } from './backend-date-text'
-import { fetchTripById } from './trips-api'
+import { useBackendTripHeaderQuery } from './useBackendTripQuery'
 
 /**
  * Dải trời của Chi tiết chuyến (V2.3 `ChiTietChuyen*.jpg`, LM-088, LM-103): đường dẫn "Chuyến hàng / mã", tên chuyến và chip trạng
@@ -126,11 +125,7 @@ export function RealTripDetailHeader({ tripId }: { tripId: string }) {
   const t = useT()
   const format = useFormat()
 
-  const query = useQuery({
-    queryKey: ['trips', tripId, 'backend-header'],
-    queryFn: () => fetchTripById(tripId),
-    enabled: tripId !== '',
-  })
+  const query = useBackendTripHeaderQuery(tripId)
 
   const trip = query.data
 

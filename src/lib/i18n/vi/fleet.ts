@@ -199,15 +199,6 @@ export const fleet = {
     maintenanceNote: 'Ghi chú: {note}',
     retired: 'Xe đã ngừng sử dụng: vẫn còn trong lịch sử chuyến, không gán cho chuyến mới và không sửa được.',
   },
-  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, phần backend không trả. */
-  backend: {
-    sourceNote: 'Xe đọc từ máy chủ. Máy chủ chưa trả chuyến đang dùng xe hay ghi chú bảo dưỡng, nên cột trạng thái chỉ có trạng thái.',
-    readOnly: 'Cấu hình đọc từ máy chủ và chỉ xem: lòng thùng, cửa, tải trọng, vật cản và trục là của loại xe đang gắn. Máy chủ chưa có lối sửa xe hay đưa xe vào bảo dưỡng.',
-    doorUnknown: 'Loại xe này chưa khai kích thước cửa sau: ô cửa đang hiện bằng mặt cắt lòng thùng.',
-    axlesUnknown: 'Loại xe này chưa khai vị trí và tải rỗng của trục trước, trục sau, nên chưa có trục để ước lượng tải trục.',
-    noCreate: 'Máy chủ chưa có lối thêm xe từ màn này: danh sách và cấu hình xe chỉ để xem.',
-    axleNames: { front: 'Trục trước', rear: 'Trục sau' },
-  },
   /** Bật/tắt bảo dưỡng (LM-089, D-53). */
   maintenance: {
     start: 'Đưa vào bảo dưỡng',
