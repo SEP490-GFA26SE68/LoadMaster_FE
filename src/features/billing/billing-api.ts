@@ -84,7 +84,11 @@ export type TopUpTerms = {
 
 // GET /api/credits/pricing
 export async function getTopUpTerms(): Promise<TopUpTerms> {
-  if (!ON_BACKEND) return { tier: null, priceVnd: BILLING_CONSTANTS.creditPriceVnd, minCredits: 1, maxBalance: null, allowed: true }
+  if (!ON_BACKEND) {
+    // Như máy chủ: chưa có gói thì nạp được, gói đã hết hạn thì không (gia hạn trước) — số dư vẫn dùng được ở hạng Cơ bản
+    const current = await getMockDb().getCurrentSubscription()
+    return { tier: null, priceVnd: BILLING_CONSTANTS.creditPriceVnd, minCredits: 1, maxBalance: null, allowed: current?.subscription.status !== 'EXPIRED' }
+  }
   const pricing = await getCreditPricing()
   return { tier: pricing.tier, priceVnd: pricing.priceVnd, minCredits: pricing.minTopUpCredits, maxBalance: null, allowed: pricing.topUpAllowed }
 }

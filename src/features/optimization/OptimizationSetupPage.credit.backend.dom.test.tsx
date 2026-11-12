@@ -77,13 +77,14 @@ test('one credit left is not enough for a run the server prices at two: Optimize
   expect(runButton()).toHaveAccessibleDescription('Không đủ credit cho lần chạy này — liên hệ quản trị công ty')
 })
 
-test('a plan the backend reports expired: the balance with the reason, not "no plan"; Optimize dimmed before the click', async () => {
+test('a plan the backend reports expired: the balance, not "no plan"; the run stays enabled at the Basic tier only', async () => {
   serve({ ...PRO, subscriptionId: null, planId: null, planName: null, tier: null, status: 'EXPIRED', startedAt: null, expiresAt: null, autoRenew: null, algorithmTier: null }, 40)
   renderSetup()
   const panel = within(await screen.findByRole('region', { name: 'Credit' }))
-  expect(await panel.findByRole('alert')).toHaveTextContent('Gói cước đã hết hạn — liên hệ quản trị công ty')
-  expect(panel.getByText('Lần chạy này dùng 2 credit · còn 40')).toBeInTheDocument()
+  expect(await panel.findByText('Lần chạy này dùng 2 credit · còn 40')).toBeInTheDocument()
   expect(panel.queryByText('Công ty chưa có gói cước.')).toBeNull()
-  expect(runButton()).toBeDisabled()
-  expect(runButton()).toHaveAccessibleDescription('Gói cước đã hết hạn — liên hệ quản trị công ty')
+  expect(panel.getByText('Hạng thuật toán lúc này')).toBeInTheDocument()
+  expect(panel.getByText('Gói đã hết hạn nên chỉ dùng hạng Cơ bản (EP + DBLF). Số dư credit vẫn dùng được.')).toBeInTheDocument()
+  expect(panel.queryByRole('alert')).toBeNull()
+  expect(runButton()).toBeEnabled()
 })

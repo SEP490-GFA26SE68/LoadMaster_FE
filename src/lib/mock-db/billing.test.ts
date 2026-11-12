@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { BILLING_CONSTANTS, createMockDb, creditBlock, type MockDb } from '@/lib/mock-db'
+import { BILLING_CONSTANTS, createMockDb, creditBlock, effectiveAlgorithmTier, type MockDb } from '@/lib/mock-db'
 import { runMockCandidates } from '@/services/optimization'
 
 /**
@@ -356,14 +356,39 @@ describe('credit of an optimization run', () => {
     expect(creditBlock(current, 2)).toBeNull()
   })
 
-  test('an expired plan blocks the run before the balance is looked at, and leaves the balance as it was', async () => {
+  test('an expired plan keeps its balance: runs still reserve credit (Basic tier only) until the balance is below one run', async () => {
     const { db, jump } = open(LONG_BINH_ADMIN)
     await db.cancelSubscription()
     jump(await expiryOf(db))
     db.restoreSession(LONG_BINH_DISPATCHER)
-    await expect(db.reserveOptimizationCredit('TRIP-012')).rejects.toMatchObject({ code: 'SUBSCRIPTION_EXPIRED' })
+    const current = await db.getCurrentSubscription()
+    expect(current?.subscription.status).toBe('EXPIRED')
+    expect(effectiveAlgorithmTier(current!)).toBe('EP_DBLF')
     expect(await balanceOf(db)).toBe(472)
-    expect(await db.listCreditTransactions()).toHaveLength(17)
+    const { cost } = await db.reserveOptimizationCredit('TRIP-012')
+    expect(cost).toBe(2)
+    expect(await balanceOf(db)).toBe(470)
+    expect(creditBlock(current, 1)).toBe('INSUFFICIENT_CREDITS')
+    // Nạp thêm vẫn phải gia hạn trước, như máy chủ
+    db.restoreSession(LONG_BINH_ADMIN)
+    await expect(db.topUpCredits(50)).rejects.toMatchObject({ code: 'SUBSCRIPTION_EXPIRED' })
+  })
+
+  test('an expired unlimited plan is no longer unlimited: each run costs the usual credit', async () => {
+    const session = open(PHUONG_NAM_DISPATCHER)
+    const { db, jump } = session
+    await switchPlan(session, PHUONG_NAM_ADMIN, ULTIMATE)
+    db.restoreSession(PHUONG_NAM_ADMIN)
+    await db.cancelSubscription()
+    jump(await expiryOf(db))
+    db.restoreSession(PHUONG_NAM_DISPATCHER)
+    expect(await db.getCreditBalance()).toStrictEqual({ balance: 2, unlimited: false })
+    expect((await db.reserveOptimizationCredit('TRIP-PN-001')).cost).toBe(2)
+    await expect(db.reserveOptimizationCredit('TRIP-PN-001')).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+  })
+
+  test('a company that never had a plan cannot run', () => {
+    expect(creditBlock(null, 1000)).toBe('SUBSCRIPTION_EXPIRED')
   })
 
   test('the unlimited plan records 0 credits for a run and for its refund, and reports an unlimited balance', async () => {

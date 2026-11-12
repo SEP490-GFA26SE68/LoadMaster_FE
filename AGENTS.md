@@ -1222,7 +1222,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit. Giá và luật credit **đọc từ máy chủ** `GET /api/credits/pricing`
   (`getCreditPricing`; app không giữ giá nào): hạng tính giá, giá một credit khi nạp, credit một lần tối ưu, số nạp ít nhất, gói hết hạn thì
   không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
-  tối ưu lấy credit một lần chạy từ đó. **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
+  tối ưu lấy credit một lần chạy từ đó. Gói đã hết hạn (`subscriptionStatusOf` là `EXPIRED`: máy chủ báo `EXPIRED` / `CANCELLED`, hoặc
+  `ACTIVE` đã quá hạn) vẫn chạy tối ưu bằng số dư như kho mẫu: thẻ Credit ghi hạng Cơ bản (`basicOnly`), chặn chỉ khi số dư dưới giá một
+  lần chạy, không còn "không giới hạn" (`fetchBackendOptimizationCredit`). **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
   `NO_SUBSCRIPTION | CANCELLED | TRIAL | NOT_DUE`) và thanh toán gói đang chờ — banner kèm nút Trả mở `/thanh-toan/ket-qua`; gói đã hết hạn có
   nút "Gia hạn gói …" (`POST /api/subscription/renew`, kể cả gói đã ngừng bán; 409 `SUBSCRIPTION_NOT_RENEWABLE`), gói còn hiệu lực vẫn gia hạn ở
   thẻ Gói hiện tại.
@@ -2049,7 +2051,10 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   màn giả lập) xử lý **đúng một lần** — kích hoạt gói + cấp credit tháng, nối kỳ gia hạn + cấp credit, hay cộng credit đã mua. Đăng ký chỉ khi chưa
   có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30); còn
   `renewalNoticeDays` (3, đề xuất) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
-  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
+  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. **Gói đã hết hạn vẫn tiêu được số dư** (D-94): lần chạy tối ưu 3D
+  vẫn giữ và trừ credit như thường nhưng chỉ ở hạng Cơ bản `EP_DBLF` (`effectiveAlgorithmTier`; mỗi lần `runCost` = `optimizationCost`, gói
+  Ultimate hết hạn không còn không giới hạn) tới khi gói lại `ACTIVE`; nạp thêm thì không (`topUpCredits` → `SUBSCRIPTION_EXPIRED`, hộp nạp mờ
+  nút kèm lý do — gia hạn trước, như máy chủ); `/goi-cuoc` vẫn hiện số dư. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
   `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Mỗi kỳ mới (đăng ký,
   gia hạn) đặt lại số dư về đúng credit tháng của kỳ — credit còn thừa, kể cả credit đã mua, không cộng dồn sang kỳ sau, như máy chủ (Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ: `SEED_PLANS` ở
   `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit), Phương Nam gói
@@ -2058,19 +2063,20 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   (`purchased`, `lowBalance` — hệ thống ghi), đối tượng `company` (liên kết tới `/goi-cuoc` cho người có `billing.manage`).
   **Một lần chạy tối ưu 3D = 2 credit** (ba phương án vẫn một lần; một hằng `BILLING_CONSTANTS.optimizationCost` cho giữ, trừ, hoàn, chặn, như
   `INITIAL_OPTIMIZATION_CREDIT_COST` của backend; nối `billing` thì số đọc từ `GET /api/credits/pricing`): `reserveOptimizationCredit(tripId)` giữ
-  credit lúc bắt đầu (gói hết hạn hoặc chưa có gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; số dư ít hơn một lần chạy: `INSUFFICIENT_CREDITS`; gói
-  không giới hạn ghi `0`), `saveOptimizationRun({
+  credit lúc bắt đầu (chưa từng có gói: `SUBSCRIPTION_EXPIRED`, xét trước số dư; số dư ít hơn một lần chạy: `INSUFFICIENT_CREDITS`; gói
+  không giới hạn còn hiệu lực ghi `0`; gói đã hết hạn không chặn — trừ như thường, hạng Cơ bản), `saveOptimizationRun({
   creditReference })` trừ hẳn khi lưu xong (mã không còn được giữ: `CREDIT_NOT_RESERVED`, không lưu gì), `refundOptimizationCredit(reference)` hoàn
   khi lỗi hoặc huỷ. **Kho tự tính credit, không tin nơi gọi** (`runCredit`): phiên đăng nhập lưu kết quả mà không kèm mã giữ (`saveOptimizationRun`,
-  `addRevision`) thì kho giữ và trừ ngay tại chỗ — hết credit hay gói hết hạn là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test
+  `addRevision`) thì kho giữ và trừ ngay tại chỗ — hết credit hay chưa có gói là từ chối, không lưu gì; chỉ kho không có phiên (dựng seed, test
   logic kho) mới lưu không tính. Lượt đã trừ hẳn **không hoàn được** (`CREDIT_NOT_RESERVED`) — hoàn chỉ dành cho lượt còn đang giữ; giữ và hoàn
   chỉ điều phối viên gọi được (`ROLE_NOT_ALLOWED`). `creditBlock` (luật thuần) là nguồn chung của kho và màn. Tối ưu tuyến, tìm tuyến khác không
   tốn credit. Số dư sau khi giữ credit ≤ `BILLING_CONSTANTS.lowCreditThreshold` (10, đề xuất) thì mỗi lần giữ ghi sự kiện hệ thống `credit.lowBalance`.
   Lớp `-api.ts` (`optimization-api.ts`): `runOptimization` giữ credit trước khi gọi service, trừ khi lưu xong, hoàn khi service lỗi, request bị từ
   chối, huỷ hoặc kho không lưu được — mỗi lần chạy đúng một bộ giao dịch; `fetchOptimizationCredit` (khoá `['billing', 'optimization-credit']`,
   `staleTime: 0`, làm mới sau mỗi lần chạy cùng `['billing']`, `['notifications']`) đọc gói và số dư cho **thẻ "Credit"** của Thiết lập tối ưu
-  (`SetupCreditPanel`): "Lần chạy này dùng 2 credit · còn N" (hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán của gói, và khi bị chặn thì
-  dòng credit mờ + lý do "Không đủ credit cho lần chạy này — liên hệ quản trị công ty" / "Gói cước đã hết hạn — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi
+  (`SetupCreditPanel`): "Lần chạy này dùng 2 credit · còn N" (hộp chạy hiện số còn lại sau khi giữ), hạng thuật toán **được dùng lúc này** (gói đã hết
+  hạn: "Hạng thuật toán lúc này" là Cơ bản kèm câu "Gói đã hết hạn nên chỉ dùng hạng Cơ bản…", `basicOnly`), và khi bị chặn thì
+  dòng credit mờ + lý do "Không đủ credit cho lần chạy này — liên hệ quản trị công ty" / "Công ty chưa có gói cước — …" ngay trên nút Tối ưu (`aria-describedby`) trước khi
   bấm. Màn chỉ điều phối viên (`optimization.run`) mở được nên chỉ có câu cho điều phối viên; nút "Nạp credit" của quản trị công ty ở `/goi-cuoc`.
 - **Danh mục gói cước `/nen-tang/goi`** (FE-8-02; `features/platform`, `subscriptionPlans.manage`, màn chính của quản lý nền tảng): bảng gói (hạng, giá
   `format.currency`, credit tháng hoặc "Không giới hạn", tên thuật toán của hạng, số công ty gắn với gói, công tắc đang bán, menu Sửa / Xoá), gói

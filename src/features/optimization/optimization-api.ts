@@ -15,7 +15,9 @@ import {
   creditBlock,
   getMockDb,
   MockDbError,
-  optimizationCost,
+  effectiveAlgorithmTier,
+  isLapsed,
+  runCost,
   type AlgorithmTier,
   type CreditBlock,
   type OptimizationRun,
@@ -95,18 +97,21 @@ export async function changeTripVehicle(tripId: string, vehicleId: string): Prom
 export type OptimizationCredit = {
   /** Tên và hạng thuật toán của gói; `null` khi công ty chưa có gói. */
   readonly planName: string | null
+  /** Hạng thuật toán **được dùng lúc này**: hạng của gói, hoặc Cơ bản khi gói đã hết hạn (`basicOnly`). */
   readonly algorithmTier: AlgorithmTier | null
-  /** Credit một lần chạy tốn: 1, gói không giới hạn 0. */
+  /** Credit một lần chạy tốn; gói không giới hạn 0. */
   readonly cost: number
   readonly balance: number
   readonly unlimited: boolean
-  /** Vì sao chưa chạy được (gói hết hạn xét trước số dư); `null` khi chạy được. Kho kiểm lại bằng cùng luật. */
+  /** Vì sao chưa chạy được (chưa có gói xét trước số dư); `null` khi chạy được. Kho kiểm lại bằng cùng luật. */
   readonly block: CreditBlock | null
   /**
    * Gói đã hết hạn mà nguồn không còn trả tên gói (backend chỉ trả trạng thái và số dư): thẻ vẫn nói số dư, không nói "chưa có gói".
    * Kho mẫu luôn trả tên gói nên không đặt trường này.
    */
   readonly lapsed?: boolean
+  /** Gói đã hết hạn: số dư vẫn dùng được nhưng chỉ ở hạng Cơ bản (`EP_DBLF`). */
+  readonly basicOnly?: boolean
 }
 
 // GET /api/subscription/current · GET /api/credits/balance
@@ -116,11 +121,12 @@ export async function fetchOptimizationCredit(): Promise<OptimizationCredit> {
   const [current, credit] = await Promise.all([db.getCurrentSubscription(), db.getCreditBalance()])
   return {
     planName: current?.plan.name ?? null,
-    algorithmTier: current?.plan.algorithmTier ?? null,
-    cost: current ? optimizationCost(current.plan) : 0,
+    algorithmTier: current ? effectiveAlgorithmTier(current) : null,
+    cost: current ? runCost(current) : 0,
     balance: credit.balance,
     unlimited: credit.unlimited,
     block: creditBlock(current, credit.balance),
+    basicOnly: current !== null && isLapsed(current),
   }
 }
 

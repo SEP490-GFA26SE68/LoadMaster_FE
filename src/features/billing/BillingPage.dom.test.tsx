@@ -85,7 +85,7 @@ test('topping up creates a pending payment and opens the simulated payment page'
   renderBilling(PHUONG_NAM_ADMIN)
   await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
   const dialog = await screen.findByRole('dialog')
-  expect(within(dialog).getAllByRole('radio').map((radio) => radio.closest('div')?.textContent)).toStrictEqual(['50 credit50.000 ₫', '500 credit500.000 ₫'])
+  expect((await within(dialog).findAllByRole('radio', {}, SLOW)).map((radio) => radio.closest('div')?.textContent)).toStrictEqual(['50 credit50.000 ₫', '500 credit500.000 ₫'])
   await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' }))
   expect(await screen.findByText(/Đang ở \?giao-dich=PAY-\d+/, {}, SLOW)).toBeInTheDocument()
 
