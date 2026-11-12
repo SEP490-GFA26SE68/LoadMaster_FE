@@ -1689,15 +1689,17 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp
   thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Chuyến **Đang vận chuyển** huỷ được **chỉ khi có sự cố cấp chuyến
   chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã
-  dỡ ở điểm chưa hoàn tất) thành `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù
+  dỡ ở điểm chưa hoàn tất; cộng kiện nhận dọc đường tài xế đã nhận lên xe ở điểm nhận chưa hoàn tất — `pickedIds`, đi qua `IN_TRANSIT`) thành
+  `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù
   tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại
   như đã ghi. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
   chuyển; hộp thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
-- **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
+- **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes, pickups })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
   (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo giờ đến thật, chưa đến thì
   mức hạn của tuyến — và số kiện hoàn trả; thêm số kiện đã soạn, bảng cách đối chiếu theo bước (lần đối chiếu mới nhất của từng kiện), xác
   nhận tay kèm người gửi và người duyệt, sự cố cấp chuyến, tuyến đã đổi (`listTripReroutes`, MOCK RESULT), lý do chở chung khác loại hàng.
-  Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Menu thao tác hiện
+  Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Kiện nhận dọc
+  đường đã lên xe (`pickups` — yêu cầu đã duyệt) tính vào số đã giao, hoàn trả (ở điểm giao của nó) và khối lượng đã giao như kiện của phương án. Menu thao tác hiện
   mục "Báo cáo chuyến" cho **mọi người xem được chuyến** (quản lý công ty mở từ đây) khi chuyến đã giao hoặc bị huỷ lúc đang vận chuyển; sửa,
   đổi xe, huỷ vẫn theo `trips.edit`. Bản in: chữ dài xuống dòng (`print:line-clamp-none`), không cắt.
 - Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts` (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua
@@ -2019,8 +2021,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   (`layout.unplaced`) chỉ liệt kê bằng DOM cạnh khung (`pickupCargo` của `DriverCargoViewer`) kèm lý do (`viewer.unplacedReasons`) — tài xế xếp
   theo hướng dẫn của điều phối viên. Số điểm của scene tài xế là số **hiện tại** (`adaptResult` đổi số của phương án qua `DeliveryStop.planNumber`),
   nên điểm giao dùng lại vẫn mang đủ hàng của phương án. Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm
-  của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt" đọc cả bước `PICKUP`. Giới hạn đã biết: hộp huỷ chuyến (`undeliveredCount`) và báo
-  cáo chuyến (khối lượng đã giao) chưa đếm kiện nhận.
+  của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt" đọc cả bước `PICKUP`. Hộp huỷ chuyến (`undeliveredCount`) và báo cáo chuyến đếm cả
+  kiện nhận đã lên xe.
 - **Tái tối ưu vùng trống — kiện nhận có chỗ thật** (FE-BL-01, D-88). `freedZones({ vehicle, zones, stops, onboardKg })` (`@/domain/pickup`, thuần)
   trả vùng của các điểm đã hoàn tất (`zones`: hộp suốt chiều rộng và cao lòng thùng, thể tích), `spans` (đoạn liền theo X — hai vùng kề nhau cùng
   trống thì gộp, kể cả khoảng đệm 10 cm), tổng thể tích và tải trọng còn nhận được. `reoptimizeFreedZone`

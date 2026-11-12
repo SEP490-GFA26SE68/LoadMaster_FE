@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createMockDb, type MockDb, type Package } from '@/lib/mock-db'
+import { createMockDb, tripReport, undeliveredCount, type MockDb, type Package } from '@/lib/mock-db'
 import { unloadStop } from '@/test/trip-flow'
 
 /**
@@ -96,4 +96,29 @@ test('at the delivery stop the pickup packages are unloaded like any package and
   expect(await Promise.all(packages.map(async (pkg) => (await db.getPackage(pkg.id)).status))).toStrictEqual(['DELIVERED', 'DELIVERED'])
   expect(await db.getPickupRequest(TRIP, 'PKR-002')).toMatchObject({ status: 'DELIVERED', deliveredAt: NOW.toISOString() })
   expect((await db.listEvents()).map((event) => event.action)).toEqual(expect.arrayContaining(['pickup.loaded', 'pickup.delivered']))
+})
+
+test('cancelling the trip while the pickup stop is still open returns the packages already picked up, and the cancel count and the trip report include them', async () => {
+  const { db, packages, token } = await atPickupStop()
+  const [first, second] = packages as [Package, Package]
+  // Một kiện quét lên xe, một kiện xác nhận tay đang chờ duyệt — cả hai đã ở trên xe; điểm nhận chưa hoàn tất
+  await db.confirmUnloadByQr(TRIP, 3, await token(first.id))
+  await db.confirmUnloadManually(TRIP, 3, { packageInstanceId: second.id, reason: 'LABEL_DAMAGED' })
+  await db.reportTripException(TRIP, { type: 'VEHICLE_BREAKDOWN', description: 'Xe hỏng hộp số', delayMinutes: 120 })
+  const before = await db.getTrip(TRIP)
+  const loaded = before.loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
+  const deliveredBefore = before.delivery?.stops.reduce((sum, stop) => sum + (stop.completedAt === undefined ? 0 : stop.unloadedIds.length), 0) ?? 0
+  expect(undeliveredCount(before)).toBe(loaded + 2 - deliveredBefore)
+
+  db.restoreSession(DISPATCHER)
+  const cancelled = await db.cancelTrip(TRIP, 'Xe hỏng giữa đường')
+  expect(await Promise.all([first, second].map(async (pkg) => (await db.getPackage(pkg.id)).status))).toStrictEqual(['RETURNED', 'RETURNED'])
+  const event = (await db.listEvents({ targetId: TRIP })).find((item) => item.action === 'trip.cancelled')
+  expect(event?.params.returned).toBe(undeliveredCount(before))
+
+  const plan = await db.getRevision(cancelled.loading?.revisionId ?? '')
+  const report = tripReport(cancelled, plan, { pickups: await db.listPickupRequests(TRIP) })
+  // Kiện nhận phải giao ở điểm 4: hoàn trả ở đó cùng kiện của phương án
+  expect(report.stops[3]?.returned).toBe((report.stops[3]?.planned ?? 0) + 2)
+  expect(report.packages.returned).toBe(report.stops.reduce((sum, stop) => sum + stop.returned, 0))
 })

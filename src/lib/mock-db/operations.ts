@@ -68,11 +68,15 @@ export function canCancelTrip(phase: TripPhase, exceptions: readonly Pick<TripEx
   return isCancellablePhase(phase) || (phase === 'delivering' && exceptions.some(isActiveException))
 }
 
-/** Kiện đã lên xe mà chưa giao: huỷ chuyến Đang vận chuyển thì chúng thành Hoàn trả. Kiện đã dỡ ở điểm chưa hoàn tất vẫn là chưa giao. */
+/**
+ * Kiện đã lên xe mà chưa giao: huỷ chuyến Đang vận chuyển thì chúng thành Hoàn trả. Kiện đã dỡ ở điểm chưa hoàn tất vẫn là chưa giao.
+ * Kiện nhận dọc đường tài xế đã nhận lên xe (`pickedIds`) tính như kiện kho đã xếp.
+ */
 export function undeliveredCount(trip: Pick<Trip, 'loading' | 'delivery'>): number {
   const loaded = trip.loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
+  const picked = trip.delivery?.stops.reduce((sum, stop) => sum + (stop.pickedIds?.length ?? 0), 0) ?? 0
   const delivered = trip.delivery?.stops.reduce((sum, stop) => sum + (stop.completedAt === undefined ? 0 : stop.unloadedIds.length), 0) ?? 0
-  return loaded - delivered
+  return loaded + picked - delivered
 }
 
 /** Bản đã duyệt mới nhất; `revisions` theo thứ tự kho trả (cũ trước). */
