@@ -1214,8 +1214,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   mã nghiệp vụ — chỉ khi không có mã. Câu của mọi mã ở nhánh `apiErrors`, màn hiện bằng `dataErrorMessage`; mã app chưa có câu thì câu theo
   loại lỗi HTTP, không phải câu "có lỗi" chung.
 - **Phần backend chưa có thì ẩn** (D-20): mỗi nhóm khai một bảng việc làm được theo nguồn — `PACKAGE_POOL_SUPPORT`, `BILLING_CAPABILITIES`,
-  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`), `FLEET_CAPABILITIES`
-  (`useFleetCapabilities`), `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
+  `CONTACTS_SOURCE`, `SUPPORT_SOURCE`, `DRIVER_CAPABILITIES`, `WAREHOUSE_CAPABILITIES`, `DASHBOARD_CAPABILITIES`, `MONITORING_CAPABILITIES` (`useMonitoringCapabilities`), `TRIPS_CAPABILITIES` (`useTripsCapabilities`),
+  `REGISTRATION_CAPABILITIES` (`useRegistrationQuery`) — component đọc bảng đó qua file hook để bỏ cột, nút, mục; hàm `-api.ts` của việc
   chưa có không gọi mạng (của tài xế thì từ chối `NOT_SUPPORTED`). Không vẽ số 0 hay ô trống thay dữ liệu backend không trả.
 - **Người dùng, công ty, hồ sơ** (`users`, `companies`): màn Người dùng đọc ghi `/api/users*`, bỏ kho và lần hoạt động (backend không có);
   Nhật ký đọc `GET /api/audit-logs` theo trang của máy chủ (`ServerAuditLogPage`; bộ lọc `tu`, `den`, `nguoi-lam`, `hanh-dong`, `cong-ty`, `q`;
@@ -1443,9 +1443,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   chuyến: `VEHICLE_BUSY`), sửa / xoá loại xe `PUT|DELETE /api/vehicle-types/{id}` (loại còn xe gắn: `VEHICLE_TYPE_IN_USE`, mục Xoá mờ kèm lý
   do); sửa xe hay giới hạn của loại làm phương án của chuyến Đã lập kế hoạch lỗi thời ở máy chủ; xe ngừng sử dụng chỉ đọc. Trạng thái xe ghi
   chuyến đang dùng và ghi chú bảo dưỡng của máy chủ. Ngừng sử dụng có ở cả hai nguồn (bốn trạng thái của bộ lọc, thẻ đội xe của bảng điều
-  khiển). `FLEET_CAPABILITIES` (`write`, `stateDetails` bật ở cả hai nguồn) chỉ còn ẩn khoảng hở;
-  hàm ghi dạng kho mẫu (`saveVehicle`, `saveVehicleType`, `setVehicleType`) vẫn từ chối `NOT_SUPPORTED`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt cắt lòng thùng
-  (`doorUnknown`) và trang xe nói rõ.
+  khiển). Nối backend thì route dựng thẳng màn của `fleet/backend/`, `vehicle-types/backend/` (máy chủ chưa có khoảng hở nên form máy chủ
+  không có ô đó); `fleet/vehicles-api.ts`, `vehicle-types/vehicle-types-api.ts` chỉ còn là lớp kho mẫu, không nhánh backend. Tìm nhanh
+  đọc xe máy chủ qua `fetchVehicleRefs`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt
+  cắt lòng thùng (`doorUnknown`).
 
 ### Lớp dữ liệu
 

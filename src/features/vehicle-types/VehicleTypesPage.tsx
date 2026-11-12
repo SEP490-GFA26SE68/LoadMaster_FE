@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { useFleetCapabilities } from '@/features/fleet/useVehiclesQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import type { VehicleAssignmentRow, VehicleTypeRow } from './vehicle-types-api'
@@ -32,8 +31,7 @@ import { usesBackend } from '@/lib/backend-config'
  */
 function StoreVehicleTypesPage() {
   const t = useT()
-  const caps = useFleetCapabilities()
-  const canEdit = useCan()('vehicleTypes.edit') && caps.write
+  const canEdit = useCan()('vehicleTypes.edit')
   const typesQuery = useVehicleTypesQuery()
   const vehiclesQuery = useVehicleAssignmentRowsQuery()
   const save = useSaveVehicleTypeMutation()
@@ -124,7 +122,7 @@ function StoreVehicleTypesPage() {
           <EmptyState
             mascot="empty"
             title={t('vehicleTypes.empty')}
-            description={caps.write ? t('vehicleTypes.emptyDescription') : t('vehicleTypes.emptyDescriptionBackend')}
+            description={t('vehicleTypes.emptyDescription')}
             action={addButton ?? undefined}
           />
         ) : (
@@ -169,13 +167,12 @@ function AssignCard({ rows, loading, columns }: {
 }) {
   const t = useT()
   const format = useFormat()
-  const caps = useFleetCapabilities()
   return (
     <Card className="relative flex-none overflow-hidden">
       <CardHeader>
         <CardTitle as="h2">{t('vehicleTypes.assign.title')}</CardTitle>
         <CardMeta>{format.integer(rows.length)}</CardMeta>
-        <p className="m-0 basis-full text-small text-ink-3">{caps.write ? t('vehicleTypes.assign.description') : t('vehicleTypes.assign.descriptionBackend')}</p>
+        <p className="m-0 basis-full text-small text-ink-3">{t('vehicleTypes.assign.description')}</p>
       </CardHeader>
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
