@@ -146,7 +146,7 @@ export const isUnlimited = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => p
 
 /**
  * Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty: `ceil(credit tháng × 25 %)`. Gói không giới hạn không có
- * ngưỡng (`null`) — không bao giờ báo, kể cả khi đã hết hạn. Nối backend thì ngưỡng đọc ở `lowBalanceThreshold` của bảng giá máy chủ.
+ * ngưỡng (`null`) — không bao giờ báo, kể cả khi đã hết hạn. Nối backend thì ngưỡng là `lowBalanceThreshold` của bảng giá máy chủ (`getCreditPricing`, cùng công thức) và máy chủ tự báo.
  */
 export const lowCreditThreshold = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>): number | null =>
   plan.monthlyCredits === null ? null : Math.ceil(plan.monthlyCredits * BILLING_CONSTANTS.lowCreditRatio)

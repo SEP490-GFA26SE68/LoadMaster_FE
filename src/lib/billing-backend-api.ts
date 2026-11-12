@@ -182,7 +182,9 @@ type CreditPricingDto = {
 
 /**
  * Giá và luật credit máy chủ áp cho công ty: hạng tính giá (chưa có gói tính như Basic), giá một credit khi nạp, credit một lần tối ưu
- * 3D, số credit nạp ít nhất, trần nạp một lần (`null`: không trần), nạp được không (gói đang hoạt động hoặc chưa có gói).
+ * 3D, số credit nạp ít nhất, trần nạp một lần (`null`: không trần), nạp được không (gói đang hoạt động hoặc chưa có gói), ngưỡng
+ * "Sắp hết credit" (25 % credit tháng của gói, làm tròn lên; `null` khi chưa có gói hoặc gói không giới hạn) — máy chủ tự ghi sự kiện
+ * `CREDIT_LOW_BALANCE` theo ngưỡng này, app không tính lại.
  */
 export type CreditPricing = {
   readonly tier: PlanTier
@@ -192,6 +194,7 @@ export type CreditPricing = {
   readonly maxTopUpCredits: number | null
   readonly unlimited: boolean
   readonly topUpAllowed: boolean
+  readonly lowBalanceThreshold: number | null
 }
 
 // GET /api/credits/pricing
@@ -206,6 +209,7 @@ export async function getCreditPricing(client: ApiClient = api()): Promise<Credi
     maxTopUpCredits: dto.maxTopUpCredits,
     unlimited: dto.unlimited === true,
     topUpAllowed: dto.topUpAllowed !== false,
+    lowBalanceThreshold: dto.lowBalanceThreshold ?? null,
   }
 }
 

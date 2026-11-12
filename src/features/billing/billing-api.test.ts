@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import type { CurrentSubscriptionDto, PlanDto } from '@/lib/billing-backend-api'
+import { getCreditPricing, type CurrentSubscriptionDto, type PlanDto } from '@/lib/billing-backend-api'
 import { envelope, failure, useFakeBackend } from '@/test/billing-backend-fetch'
 import {
   BILLING_CAPABILITIES,
@@ -64,6 +64,13 @@ test('giá nạp đọc từ bảng giá của máy chủ theo hạng gói, khô
   expect(backend.calls.map((call) => `${call.method} ${call.url} ${call.auth}`)).toStrictEqual(['GET http://be.test/api/credits/pricing Bearer token-1'])
   backend.replies = [pricing('BASIC', 400, false)]
   expect(await getTopUpTerms()).toStrictEqual({ tier: 'BASIC', priceVnd: 400, minCredits: 1, maxBalance: null, allowed: false })
+})
+
+test('ngưỡng "Sắp hết credit" đọc từ bảng giá của máy chủ; gói không giới hạn không có ngưỡng', async () => {
+  backend.replies = [pricing('PRO', 326)]
+  expect((await getCreditPricing()).lowBalanceThreshold).toBe(10)
+  backend.replies = [envelope({ tier: 'ULTIMATE', pricePerCreditVnd: 263, optimizationCost: 2, unlimited: true, topUpAllowed: true, lowBalanceThreshold: null })]
+  expect((await getCreditPricing()).lowBalanceThreshold).toBeNull()
 })
 
 test('gia hạn: đọc gói vừa dùng, có gia hạn được không và thanh toán gói còn chờ; giờ Việt Nam đổi sang ISO', async () => {
