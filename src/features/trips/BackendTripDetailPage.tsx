@@ -159,40 +159,42 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <RealTripDetailHeader tripId={tripId} />
 
-      <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pt-6 pb-8">
         <div className="flex flex-col gap-4">
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            {canOptimize && (
-              <Button
-                type="button"
-                loading={optimizeRoute.isPending}
-                disabled={optimizeRoute.isPending}
-                onClick={handleOptimizeRoute}
-              >
-                <Route className="size-4" />
-                {t('trips.optimization.run')}
-              </Button>
-            )}
-
-            {canReport ? (
-              <Button variant="secondary" asChild>
-                <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>
-                  <FileText className="size-4" aria-hidden />
-                  {t('tripReport.title')}
-                </Link>
-              </Button>
-            ) : null}
-            {canPrintLabels ? (
-              <Button variant="secondary" asChild>
-                <Link to={tripLabelsPath(trip.tripCode)}>
-                  <Printer className="size-4" aria-hidden />
-                  {t('trips.packages.printLabels')}
-                </Link>
-              </Button>
-            ) : null}
-            {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
-          </div>
+          {canOptimize || canReport || canPrintLabels || canWrite ? (
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {canOptimize && (
+                <Button
+                  type="button"
+                  loading={optimizeRoute.isPending}
+                  disabled={optimizeRoute.isPending}
+                  onClick={handleOptimizeRoute}
+                >
+                  <Route className="size-4" />
+                  {t('trips.optimization.run')}
+                </Button>
+              )}
+  
+              {canReport ? (
+                <Button variant="secondary" asChild>
+                  <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>
+                    <FileText className="size-4" aria-hidden />
+                    {t('tripReport.title')}
+                  </Link>
+                </Button>
+              ) : null}
+              {canPrintLabels ? (
+                <Button variant="secondary" asChild>
+                  <Link to={tripLabelsPath(trip.tripCode)}>
+                    <Printer className="size-4" aria-hidden />
+                    {t('trips.packages.printLabels')}
+                  </Link>
+                </Button>
+              ) : null}
+              {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
+            </div>
+          ) : null}
 
           {trip.status === 'CANCELLED' && trip.cancelReason ? (
             <Banner tone="warning">

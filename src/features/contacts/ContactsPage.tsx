@@ -85,19 +85,17 @@ export function ContactsPage() {
     },
   ]
   const contacts = query.data ?? []
-  const showTable = query.isSuccess && contacts.length > 0
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={showTable}
         title={t('contacts.page.title')}
         meta={query.isSuccess
           ? `${t('contacts.page.count', { count: contacts.length })} · ${t('contacts.page.countNew', { count: countNew(contacts) })}`
           : undefined}
         description={t('pageHero.contacts')}
       />
-      <div className={cn('min-h-0 flex-1 px-shell pb-6', showTable ? 'sky-overlap' : 'py-6', selected ? 'overflow-auto md:overflow-hidden' : 'overflow-auto')}>
+      <div className={cn('min-h-0 flex-1 px-shell py-6', selected ? 'overflow-auto md:overflow-hidden' : 'overflow-auto')}>
         {query.isPending ? (
           <div className="flex justify-center py-16"><Spinner label={t('contacts.page.loading')} /></div>
         ) : query.isError ? (

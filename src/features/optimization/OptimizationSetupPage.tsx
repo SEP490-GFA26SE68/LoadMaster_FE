@@ -155,7 +155,7 @@ function MockOptimizationSetupPage() {
           <Button variant="secondary" asChild><Link to="/chuyen">{t('optimization.back')}</Link></Button>
         </div>
       ) : (
-        <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pt-6 pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
           <div className="flex min-w-0 flex-col gap-4">
             {pinOffer ? <SetupPinsCard offer={pinOffer} keep={keepPins} onKeepChange={setKeepPins} issues={pinFaults} /> : null}
             {/* Một thẻ ba mục đánh số; nút chính giữ ở dải trời (AGENTS mục 5: một nút primary mỗi màn) */}

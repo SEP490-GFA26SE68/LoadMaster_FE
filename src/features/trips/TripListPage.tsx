@@ -69,7 +69,6 @@ function StoreTripListPage() {
   const tab = TRIP_LIST_TABS.find((item) => item.value === normalizeStatusFilter(status))?.key ?? status
   const hasTrips = trips.length > 0
   // Card đè lên dải trời chỉ khi thứ đầu tiên của vùng cuộn là thẻ nền đặc (bảng hoặc khung tải), không phải chữ trần
-  const overlap = query.isPending || (query.isSuccess && hasTrips)
 
   return (
     <Tabs
@@ -78,7 +77,6 @@ function StoreTripListPage() {
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap={overlap}
         title={t('trips.list.title')}
         description={hasTrips
           ? <TripListStats total={stats.all} transit={stats.IN_TRANSIT} review={canAct ? trips.filter(needsAction).length : undefined} />
@@ -97,7 +95,7 @@ function StoreTripListPage() {
           : <TripListTabs counts={hasTrips ? tabCounts : null} needAction={canAct ? tabRows.filter(needsAction).length : undefined} />}
       </PageHero>
 
-      <div className={overlap ? 'sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-7' : 'flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6'}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto px-shell pt-6 pb-7">
         {query.isPending ? (
           <TripListSkeleton />
         ) : query.isError ? (

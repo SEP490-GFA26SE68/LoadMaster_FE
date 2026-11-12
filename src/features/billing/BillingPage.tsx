@@ -210,7 +210,6 @@ export function BillingPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={!failed && !loading}
         title={t('billing.title')}
         description={t('pageHero.billing')}
         actions={
@@ -228,7 +227,7 @@ export function BillingPage() {
           )
         }
       />
-      <div className={failed || loading ? 'min-h-0 flex-1 overflow-auto px-shell py-6' : 'sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6'}>
+      <div className={failed || loading ? 'min-h-0 flex-1 overflow-auto px-shell py-6' : 'flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell py-6'}>
         {failed ? (
           <EmptyState
             mascot="error"

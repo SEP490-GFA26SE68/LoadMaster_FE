@@ -54,7 +54,6 @@ export function MonitoringPage() {
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap={hasTrips}
         title={t('monitoring.title')}
         meta={board.isSuccess ? t('monitoring.count', { count: trips.length }) : undefined}
         description={t('pageHero.monitoring')}
@@ -69,7 +68,7 @@ export function MonitoringPage() {
 
       {board.isSuccess ? <BoardSync shown={trips.map((trip) => trip.tripId).join(',')} /> : null}
       {caps.backend ? <EtaRiskToasts /> : null}
-      <div className={hasTrips ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {board.isPending ? (
           <div role="status" aria-label={t('monitoring.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : board.isError ? (

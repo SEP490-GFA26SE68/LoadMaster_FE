@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils'
  * - Hành động nằm trong cùng `<header>` với tiêu đề — test tìm nút theo `heading.closest('header')`. Trên dải trời, nút phụ dùng
  *   `variant="glass"`; nút chính giữ gradient cyan.
  * - `meta` là số đếm hoặc mã đi kèm tiêu đề (mono, nhỏ); `description` ẩn dưới 768 px.
- * - `overlap`: dải trời kéo thêm `--sky-overlap` (44px) ở đáy để card đầu tiên của vùng cuộn đè lên (vùng cuộn đặt `sky-overlap`).
- *   Chỉ bật khi thứ đầu tiên của vùng cuộn là card nền đặc — chữ trần trên nền trời tối không đọc được.
+ * - Nội dung của màn bắt đầu dưới dải trời, không đè lên dải: vùng cuộn có lề trên 24 px (`py-6`).
  *
  * - `crumbs`: đường dẫn nhỏ phía trên tiêu đề ("Chuyến hàng / TRIP-2026-0914"); mục có `to` là liên kết, mục cuối là chỗ đang đứng.
  * - `badge`: chip đứng cạnh tiêu đề (trạng thái chuyến), nằm ngoài `<h1>` để tên truy cập của tiêu đề giữ đúng chữ.
@@ -29,7 +28,6 @@ export function PageHero({
   back,
   crumbs,
   badge,
-  overlap = false,
   children,
 }: {
   title: string
@@ -39,7 +37,6 @@ export function PageHero({
   back?: { to: string; label: string }
   crumbs?: readonly { label: string; to?: string; mono?: boolean }[]
   badge?: ReactNode
-  overlap?: boolean
   children?: ReactNode
 }) {
   const t = useT()
@@ -48,7 +45,7 @@ export function PageHero({
     <header
       className={cn(
         'sky flex flex-none flex-col px-shell pt-4 max-sm:px-4',
-        children ? 'pb-0' : overlap ? 'pb-[calc(var(--sky-overlap)+20px)]' : 'pb-6',
+        children ? 'pb-0' : 'pb-6',
       )}
     >
       <div className="flex min-w-0 items-end gap-4">
@@ -90,7 +87,7 @@ export function PageHero({
         {actions ? <div className="flex flex-none items-center gap-2.5">{actions}</div> : null}
       </div>
 
-      {children ? <div className={cn('-mx-5 mt-3', overlap && 'pb-(--sky-overlap)')}>{children}</div> : null}
+      {children ? <div className="-mx-5 mt-3 pb-4">{children}</div> : null}
     </header>
   )
 }

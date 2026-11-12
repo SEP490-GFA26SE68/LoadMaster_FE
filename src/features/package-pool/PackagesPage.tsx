@@ -54,7 +54,6 @@ function StorePackagesPage() {
   const pending = packagesQuery.isPending || typesQuery.isPending
   const error = packagesQuery.error ?? typesQuery.error
   const hasRows = all.length > 0
-  const overlap = pending || (!error && hasRows)
 
   function handleAdded(created: Package) {
     setDialog(null)
@@ -107,7 +106,6 @@ function StorePackagesPage() {
   return (
     <Tabs value={tab} onValueChange={(value) => list.setFilter(STATUS_FILTER, slugFromTab(TABS.find((key) => key === value) ?? 'all'))} className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={overlap}
         title={t('sourcing.packages.title')}
         meta={packagesQuery.isSuccess ? t('sourcing.packages.count', { count: all.length }) : undefined}
         description={t('pageHero.packages')}
@@ -125,7 +123,7 @@ function StorePackagesPage() {
         ) : null}
       </PageHero>
 
-      <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
         ) : error ? (

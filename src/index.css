@@ -847,9 +847,8 @@
   }
 }
 
-/* Nội dung đè lên dải trời: vùng cuộn ngay dưới thanh tiêu đề kéo lên --sky-overlap, card đầu tiên nằm nửa trên dải
-   (ChuyenHang.html: .wrap { margin-top: -44px }). Vùng cuộn trong suốt nên dải trời của thanh tiêu đề hiện phía sau.
-   Thanh tiêu đề chừa thêm đúng khoảng đó ở đáy (PageHero). */
+/* Nội dung đè lên dải trời: phần ngay dưới dải kéo lên --sky-overlap, card đầu tiên nằm nửa trên dải. Chỉ còn ở hai trang công
+   khai và trang tài liệu (dải tự chừa khoảng đó ở đáy); màn trong khung ứng dụng không đè lên dải (AGENTS.md mục 5). */
 @utility sky-overlap {
   position: relative;
   margin-top: calc(var(--sky-overlap) * -1);

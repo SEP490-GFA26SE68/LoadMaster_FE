@@ -102,7 +102,6 @@ export function VehicleForm({ vehicle, readOnly = false, status, actions, notice
     <form noValidate onSubmit={form.handleSubmit(handleSave)} className="flex min-w-0 flex-1 flex-col">
       {/* V2.3 (ChiTietXe.jpg, ThemXe.jpg): tiêu đề là dữ liệu (tên xe) trên dải trời; Lưu là nút chính duy nhất, nằm trong form nên là nút submit */}
       <PageHero
-        overlap
         back={{ to: FLEET_PATH, label: t('fleet.detail.back') }}
         title={vehicle ? vehicle.name : t('fleet.detail.newTitle')}
         crumbs={[
@@ -136,7 +135,7 @@ export function VehicleForm({ vehicle, readOnly = false, status, actions, notice
         }
       />
 
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {/* Màn rộng: xem trước 3D là cột phải dính khi cuộn; màn hẹp: nằm cuối form (LM-042) */}
         {/* Cột xem trước rộng theo màn (34 %, ít nhất 400 px; từ 1.536 px là 40 %): ở 1.366 px cột form vẫn đủ chỗ cho bảng vật cản và bảng trục */}
         <div className="grid max-w-400 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(400px,34%)] 2xl:grid-cols-[minmax(0,1fr)_40%]">

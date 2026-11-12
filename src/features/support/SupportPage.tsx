@@ -122,17 +122,15 @@ export function SupportPage() {
       options: companies.map(({ id, name }) => ({ value: id, label: name })), secondary: true,
     },
   ]
-  const showTable = query.isSuccess && tickets.length > 0
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={showTable}
         title={t('support.page.title')}
         meta={query.isSuccess ? t('support.page.count', { count: tickets.length }) : undefined}
         description={t(SUPPORT_SOURCE.replies ? 'pageHero.support' : 'pageHero.supportStatusOnly')}
       />
-      <div className={showTable ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {query.isPending ? (
           <div role="status" aria-label={t('support.page.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (

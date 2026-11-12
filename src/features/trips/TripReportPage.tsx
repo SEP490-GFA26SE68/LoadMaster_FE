@@ -60,7 +60,6 @@ function StoreTripReportPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={query.isSuccess}
         title={t('tripReport.title')}
         meta={tripId}
         description={t('pageHero.tripReport')}
@@ -72,7 +71,7 @@ function StoreTripReportPage() {
           </Button>
         ) : null}
       />
-      <div className={query.isSuccess ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {body}
       </div>
       {printing && query.isSuccess ? (

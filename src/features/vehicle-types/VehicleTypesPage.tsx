@@ -102,14 +102,13 @@ function StoreVehicleTypesPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={typesQuery.isSuccess && types.length > 0}
         title={t('vehicleTypes.title')}
         meta={typesQuery.isSuccess ? t('vehicleTypes.count', { count: types.length, assigned }) : undefined}
         description={t('pageHero.vehicleTypes')}
         back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
         actions={types.length > 0 ? addButton : null}
       />
-      <div className={typesQuery.isSuccess && types.length > 0 ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {typesQuery.isPending ? (
           <div role="status" aria-label={t('vehicleTypes.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : typesQuery.isError ? (

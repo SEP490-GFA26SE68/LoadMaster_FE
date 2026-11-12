@@ -30,9 +30,8 @@ export function ProfilePage() {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <PageHero title={t('profile.title')} description={t('pageHero.profile')} overlap />
-      {/* Thứ đầu tiên của vùng cuộn là thẻ nền đặc nên được đè lên dải trời (`sky-overlap`) */}
-      <main className="sky-overlap min-h-0 flex-1 overflow-y-auto px-shell pb-6 max-sm:px-4">
+      <PageHero title={t('profile.title')} description={t('pageHero.profile')} />
+      <main className="min-h-0 flex-1 overflow-y-auto px-shell py-6 max-sm:px-4">
         <div className="grid grid-cols-1 items-start gap-4 pointer-coarse:text-body-lg lg:grid-cols-[288px_minmax(0,1fr)] lg:gap-5">
           <ProfileIdentity user={user} serverManaged={serverManaged} />
           <div className="flex min-w-0 flex-col gap-4 lg:gap-5">

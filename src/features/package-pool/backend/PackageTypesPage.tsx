@@ -52,7 +52,6 @@ export function PackageTypesPage() {
   const error = typesQuery.error
   const totalElements = typesQuery.data?.totalElements ?? 0
   const hasRows = totalElements > 0
-  const overlap = pending || (!error && hasRows)
 
   async function handleSubmit(input: PackageTypeInput) {
     const id = editing?.kind === 'edit' ? editing.row.id : undefined
@@ -81,7 +80,6 @@ export function PackageTypesPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={overlap}
         title={t('sourcing.packageTypes.title')}
         meta={
           typesQuery.isSuccess
@@ -94,7 +92,7 @@ export function PackageTypesPage() {
         back={{ to: '/kien-hang', label: t('sourcing.labels.back') }}
         actions={addButton}
       />
-      <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
         ) : error ? (

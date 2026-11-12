@@ -621,7 +621,7 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
 - **Tab**: `TabsList tone="light"` gạch chân `--cyan-500` trên nền trắng; `TabCount` Archivo, `tone="warn"` nền hổ phách; số của
   `TabCount` viết theo ngôn ngữ đang chọn ("2.714" · "2,714").
   `tone="sky"` là **nhóm tab kính** trong dải trời: khay `--sky-glass` viền bo 12, tab 36 px bo 10, tab mở là
-  kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề và cách card đè dải 16 px, số 0 mờ đi.
+  kính cyan của thanh điều hướng (`--nav-on`); khay căn trái theo tiêu đề, cách đáy dải 16 px, số 0 mờ đi.
 - **Hộp thoại**: bo 18, lớp phủ `--scrim`; `DialogHeader` có ô icon 40 px theo nghĩa; chân nền `--n-25`, nút dồn phải.
   **Tờ trượt từ đáy** (V2.3 đợt 6): `DialogContent sheet` là biến thể trình bày của chính hộp thoại Radix — dưới 768 px hộp thoại trượt
   lên từ đáy (bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội dung cuộn bên trong, cao tối đa `100dvh − 5rem`, dùng `dvh` để bàn phím ảo không che ô đang nhập,
@@ -664,7 +664,7 @@ Mẫu: `design/v2.3/screens/web/DoiXe.jpg`, `ChiTietXe.jpg`, `NguoiDung.jpg`, `M
 - **Ô mật khẩu** dùng `components/ui/PasswordInput`: nút mắt `type="button"` có `aria-pressed`, tên "Hiện mật khẩu" / "Ẩn mật khẩu"
   (`auth.passwordToggle`); khi đang hiện thì tắt soát chính tả / tự sửa chữ, và tự ẩn lại lúc form gửi đi. Tên truy cập của ô vẫn là chữ nhãn.
 - **Nhãn, gợi ý và lỗi của ô nhập** (`field-styles.tsx`) lên 16 px trên máy có con trỏ cảm ứng; máy bàn giữ 13 / 12,5 px.
-- **Hồ sơ**: thẻ nhận diện bên trái, hai thẻ form riêng bên phải, thẻ đầu đè lên dải trời (`overlap`). **Màn lỗi** 404 / 403 / lỗi tải dùng
+- **Hồ sơ**: thẻ nhận diện bên trái, hai thẻ form riêng bên phải, nằm dưới dải trời. **Màn lỗi** 404 / 403 / lỗi tải dùng
   `ErrorScreen`: card trắng bo 18 giữa trang, Lumo, chip mã, "Về màn chính" là nút chính; ngoài khung ứng dụng có dải trời mang logo.
 
 ### Thanh tiêu đề màn
@@ -698,8 +698,9 @@ không số, không trạng thái. Ngoại lệ (LM-103): dòng dưới tiêu đ
 dùng `PageHero` với tên tuyến, `crumbs` ("Chuyến hàng / TRIP-…"), `badge` (chip trạng thái, nằm ngoài `<h1>`) và `children` là bước tiến trình +
 banner theo pha. Thanh 56 px của Planner vẫn là header riêng theo lề `px-shell`. Không đưa hoạ tiết đường nét phía sau tiêu đề vào production.
 **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp `.sky` gắn ảnh vào khung nhìn (`background-attachment: fixed`), không
-phải một khối bọc. **Card đè lên dải**: `overlap` kéo dải thêm `--sky-overlap` (44 px) và vùng cuộn đặt `sky-overlap` (`margin-top: -44px`, lề trên
-0). Chỉ bật khi thứ đầu tiên của vùng cuộn là card nền đặc — chữ trần trên dải trời không đọc được (Bảng điều khiển có dòng chọn kỳ: chưa bật).
+phải một khối bọc. **Nội dung không đè lên dải**: màn trong khung ứng dụng bắt đầu ngay dưới dải trời — vùng cuộn có lề trên 24 px (`py-6`),
+`PageHero` không còn prop `overlap`; dải có tab của màn chừa 16 px dưới tab. Card đè lên dải (V2.3) đã bỏ theo quyết định của chủ sản phẩm
+(13/11/2026): card trượt lên che tiến trình và tab khi cuộn, nhìn lệch. Utility `sky-overlap` chỉ còn ở hai trang công khai và trang tài liệu.
 
 Lề ngang của thanh điều hướng, thanh tiêu đề và vùng cuộn dùng utility `px-shell` (`index.css`): 24 px, và khi cột rộng hơn `--shell-max` thì nội
 dung dừng ở `--shell-max`, căn giữa. Là padding chứ không phải một div `max-w` bọc ngoài, để vùng cuộn vẫn rộng hết cột (thanh cuộn ở mép) và nền
@@ -2290,7 +2291,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Chip "đang xếp" / "đang chạy" màu tím (mockup kho, tài xế); chữ 13 px, hộp "Báo sự cố" có dấu sao bắt buộc ở nhãn (màn tài xế) | Thang azure; chữ 16 px; nhãn không kèm dấu sao | Không dùng tím; mục 10; tên truy cập của nhãn giữ nguyên |
 | Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện); giờ đến của điểm ở dòng thứ hai dưới tên (dự kiến từ tuyến hoặc vị trí xe, hay giờ đã đến), một dòng nguồn + MOCK RESULT cho cả danh sách | Nhóm khác chưa có việc ở từng điểm; không bịa số; ở 360 px giờ và chip mức hạn không còn chỗ trên dòng tên |
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
-| Card đè lên dải trời ở màn Xếp xong, chờ duyệt lại | Card nằm dưới thanh, không đè | Chưa bật `sky-overlap` cho màn toàn màn hình kho |
+| Card đè lên dải trời (mọi màn có `PageHero`, màn Xếp xong, chờ duyệt lại) | Card nằm dưới dải, không đè | Quyết định của chủ sản phẩm: card che tiến trình và tab khi cuộn |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
 | Ma trận quyền 13 quyền × 5 vai trò | 37 quyền × 8 vai trò | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |

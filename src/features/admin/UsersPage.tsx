@@ -55,7 +55,6 @@ export function UsersPage() {
   return (
     <Tabs defaultValue="accounts" className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={isCompany ? t('admin.employees.title') : t('admin.users.title')}
         description={query.data ? heroCounts : t('pageHero.users')}
         actions={
@@ -72,7 +71,7 @@ export function UsersPage() {
         </TabsList>
       </PageHero>
 
-        <TabsContent value="accounts" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        <TabsContent value="accounts" className="min-h-0 flex-1 overflow-auto px-shell py-6">
           {query.isPending ? (
             <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
           ) : query.isError ? (
@@ -86,7 +85,7 @@ export function UsersPage() {
             <UsersTable users={users} viewer={currentUser} companies={companies.data} scope={scope} onAction={actions.handleAction} />
           )}
         </TabsContent>
-        <TabsContent value="permissions" className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        <TabsContent value="permissions" className="min-h-0 flex-1 overflow-auto px-shell py-6">
           <PermissionMatrix users={query.data} scope={scope} />
         </TabsContent>
 
