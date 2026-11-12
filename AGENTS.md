@@ -1879,8 +1879,12 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   giây kể từ điểm GPS cuối. **"Dùng GPS thật"** (FE-6-13, D-95) là công tắc trên màn điểm giao của tài xế khi chuyến Đang vận chuyển
   (`driver/DriverGpsToggle` + `useDeviceLocation`): `navigator.geolocation.watchPosition`, điểm đầu gửi ngay rồi vị trí mới nhất mỗi 30 giây qua
   `postDriverLocation`; `setDriverGps(tripId, bật)` của kho cho đồng hồ mô phỏng chạy theo giờ thật khi bật (giờ không nhảy) và, khi tắt, cho xe
-  mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Tài xế tắt, trình duyệt từ chối quyền, mất tín hiệu, kho từ chối điểm,
-  hoặc rời màn chuyến: thôi theo dõi, về mô phỏng, màn nói lý do; thiết bị không có định vị thì công tắc mờ kèm lý do. Màn nói rõ khi chưa có
+  mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Gửi hỏng **tạm thời** (`isTransientLocationError`: mất mạng, quá giờ,
+  máy chủ 5xx) **không** tắt chia sẻ: công tắc vẫn bật, dòng trạng thái ngắn "Chưa gửi được vị trí — đang thử lại", gửi lại ở nhịp kế rồi thưa dần
+  30 → 60 → 120 giây (trần 120 giây), gửi được là về nhịp 30 giây. Trình duyệt tạm mất tín hiệu GPS cũng giữ chia sẻ ("Mất tín hiệu GPS — gửi tiếp
+  khi có tín hiệu"), không gửi lại vị trí cũ, có vị trí mới là gửi ngay. Chỉ tài xế tắt, trình duyệt từ chối quyền, kho mẫu từ chối điểm hay máy
+  chủ trả 4xx (chuyến không còn Đang vận chuyển — `GPS_TRIP_NOT_IN_TRANSIT`), hoặc rời màn chuyến mới thôi theo dõi, về mô phỏng, màn nói lý do;
+  thiết bị không có định vị thì công tắc mờ kèm lý do. Màn nói rõ khi chưa có
   máy chủ vị trí chỉ hiện trong trình duyệt này. Test giả `navigator.geolocation` (`DriverGpsToggle.dom.test.tsx`); E2E dùng
   `context.setGeolocation`. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc
   lại theo `refreshMs` kho trả (thời gian thật tới điểm kế tiếp, ít nhất 1 giây; `null` khi chuyến không còn chạy) bằng `refetchInterval` của

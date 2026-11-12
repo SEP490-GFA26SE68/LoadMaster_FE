@@ -18,7 +18,8 @@ export function DriverGpsToggle({ tripId }: { tripId: string }) {
   const noteId = useId()
   const caps = useDriverCapabilities()
   const { supported, enabled, state, toggle } = useDeviceLocation(tripId)
-  const active = state.status === 'active'
+  // Đang thử gửi lại vẫn là đang chia sẻ GPS
+  const active = state.status === 'active' || state.status === 'retrying'
   // Backend không có xe mô phỏng: không gửi GPS thì không có vị trí nào, nên không có nhãn "Mô phỏng"
   const sourceShown = active || caps.simulatedPosition
   return (
@@ -60,15 +61,24 @@ function GpsStatus({ state, server }: { state: DeviceLocationState; server: bool
   const warn = state.status === 'off' && state.reason !== 'user'
   return (
     <p role="status" className={warn ? 'm-0 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-3 py-2 font-medium text-badge-warning-fg' : 'm-0 text-ink-2'}>
-      {state.status === 'requesting'
-        ? t('driver.gps.requesting')
-        : state.status === 'active'
-          ? t('driver.gps.sent', { time: format.time(state.sentAt) })
-          : state.reason === 'error'
-            ? t(server ? 'driver.gps.stoppedServer.error' : 'driver.gps.stopped.error', { message: dataErrorMessage(state.error, t) })
-            : server
-              ? t(`driver.gps.stoppedServer.${state.reason ?? 'user'}`)
-              : t(`driver.gps.stopped.${state.reason ?? 'user'}`)}
+      {gpsStatusText(state, server, t, format)}
     </p>
   )
+}
+
+/** Câu của dòng trạng thái. Đang thử gửi lại là một câu ngắn, không cảnh báo: chia sẻ vẫn bật, nhịp sau tự gửi lại. */
+function gpsStatusText(state: DeviceLocationState, server: boolean, t: ReturnType<typeof useT>, format: ReturnType<typeof useFormat>): string {
+  switch (state.status) {
+    case 'requesting':
+      return t('driver.gps.requesting')
+    case 'active':
+      return t('driver.gps.sent', { time: format.time(state.sentAt) })
+    case 'retrying':
+      return t(state.cause === 'send' ? 'driver.gps.retrying' : 'driver.gps.signalLost')
+    case 'off':
+      if (state.reason === 'error') {
+        return t(server ? 'driver.gps.stoppedServer.error' : 'driver.gps.stopped.error', { message: dataErrorMessage(state.error, t) })
+      }
+      return server ? t(`driver.gps.stoppedServer.${state.reason ?? 'user'}`) : t(`driver.gps.stopped.${state.reason ?? 'user'}`)
+  }
 }
