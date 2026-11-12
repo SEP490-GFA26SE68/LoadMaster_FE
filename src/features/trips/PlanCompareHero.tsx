@@ -5,8 +5,8 @@ import type { TripDetail } from './trips-api'
 
 /**
  * Dải trời của So sánh phương án (V2.3 `SoSanhPhuongAn.jpg`, LM-106): đường dẫn "Chuyến hàng / mã / So sánh phương án", tiêu đề và
- * chip trạng thái chuyến, dòng dữ liệu tên tuyến · số phương án đã lưu · xe (biển số mono). Card ma trận / trạng thái rỗng đè lên đáy
- * dải (`overlap`). So sánh theo lần chạy (FE-5b-06): truyền `run` thay `revisionCount` — dòng dữ liệu nói lần chạy và số phương án ứng
+ * chip trạng thái chuyến, dòng dữ liệu tên tuyến · số phương án đã lưu · xe (biển số mono). Card ma trận / trạng thái rỗng nằm dưới
+ * dải. So sánh theo lần chạy (FE-5b-06): truyền `run` thay `revisionCount` — dòng dữ liệu nói lần chạy và số phương án ứng
  * viên của nó.
  */
 export function PlanCompareHero({ tripId, detail, revisionCount, run }: {
@@ -19,7 +19,6 @@ export function PlanCompareHero({ tripId, detail, revisionCount, run }: {
   const title = t('trips.compare.title')
   return (
     <PageHero
-      overlap
       crumbs={[
         { label: t('trips.list.title'), to: '/chuyen' },
         { label: tripId, to: `/chuyen/${tripId}`, mono: true },

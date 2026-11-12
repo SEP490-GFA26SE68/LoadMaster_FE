@@ -90,7 +90,6 @@ export function VehicleForm({
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap
         back={{ to: FLEET_PATH, label: t('fleet.detail.back') }}
         title={vehicle ? vehicle.name : t('fleet.detail.newTitle')}
         crumbs={[
@@ -107,7 +106,7 @@ export function VehicleForm({
         }
       />
 
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         <div className="mx-auto w-full max-w-3xl">
           <Card className="flex min-w-0 flex-col rounded-xl shadow-sm">
             {notice}

@@ -76,7 +76,6 @@ export function PackageLookupPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('lookup.title')}
         description={t('pageHero.lookup')}
         actions={touch ? (
@@ -85,7 +84,7 @@ export function PackageLookupPage() {
           </Button>
         ) : null}
       />
-      <main className={cn('sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6', touch && 'text-body-lg')}>
+      <main className={cn('min-h-0 flex-1 overflow-auto px-shell py-6', touch && 'text-body-lg')}>
         <div className="flex max-w-220 flex-col gap-4">
           <Card className="flex flex-wrap items-start gap-3 p-5">
             <form noValidate className="flex min-w-64 flex-1 flex-wrap items-start gap-3" onSubmit={form.handleSubmit((values) => { setFoundId(null); show(values.code) })}>

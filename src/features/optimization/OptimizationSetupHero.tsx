@@ -26,7 +26,6 @@ export function OptimizationSetupHero({ tripId, setup, disabled, blockedReason, 
   const hintId = useId()
   return (
     <PageHero
-      overlap
       crumbs={[
         { label: t('trips.list.title'), to: '/chuyen' },
         { label: tripId, to: `/chuyen/${tripId}`, mono: true },

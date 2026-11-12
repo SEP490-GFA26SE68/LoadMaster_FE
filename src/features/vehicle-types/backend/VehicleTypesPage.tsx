@@ -124,7 +124,6 @@ export function VehicleTypesPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={typesQuery.isSuccess && hasTypes}
         title={t('vehicleTypes.title')}
         meta={
           typesQuery.isSuccess
@@ -140,11 +139,7 @@ export function VehicleTypesPage() {
       />
 
       <div
-        className={
-          typesQuery.isSuccess && hasTypes
-            ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6'
-            : 'min-h-0 flex-1 overflow-auto px-shell py-6'
-        }
+        className="min-h-0 flex-1 overflow-auto px-shell py-6"
       >
         {typesQuery.isPending ? (
           <div

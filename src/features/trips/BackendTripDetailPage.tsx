@@ -159,7 +159,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <RealTripDetailHeader tripId={tripId} />
 
-      <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pt-6 pb-8">
         <div className="flex flex-col gap-4">
 
           <div className="flex flex-wrap items-center justify-end gap-3">

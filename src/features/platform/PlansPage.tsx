@@ -100,18 +100,16 @@ export function PlansPage() {
       {t('platform.add')}
     </Button>
   )
-  const showTable = query.isSuccess && rows.length > 0
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={showTable}
         title={t('platform.title')}
         meta={query.isSuccess ? t('platform.count', { count: rows.length }) : undefined}
         description={t('pageHero.subscriptionPlans')}
         actions={rows.length > 0 ? addButton : null}
       />
-      <div className={showTable ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {query.isPending ? (
           <div role="status" aria-label={t('platform.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (

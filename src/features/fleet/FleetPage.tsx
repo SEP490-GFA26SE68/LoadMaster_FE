@@ -75,7 +75,6 @@ function StoreFleetPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('fleet.title')}
         description={vehiclesQuery.isSuccess ? <FleetHeroSummary vehicles={vehiclesQuery.data} /> : t('pageHero.fleet')}
         actions={
@@ -99,7 +98,7 @@ function StoreFleetPage() {
         }
       />
 
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {isPending ? (
           <div className="flex items-center justify-center py-16" role="status" aria-label={t('fleet.loading')}>
             <Spinner />
