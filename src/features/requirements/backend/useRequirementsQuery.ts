@@ -20,8 +20,15 @@ import { fetchRequirementPackageChoices } from './requirement-pool-api'
  * chuyến, hoặc đổi ưu tiên của yêu cầu đã vào chuyến — chuyến, revision, bảng điều khiển.
  */
 
-export function useRequirementsQuery() {
-  return useQuery({ queryKey: ['requirements', 'list'], queryFn: listDeliveryRequirements, staleTime: 0 })
+/**
+ * Khoá **duy nhất** của danh sách yêu cầu giao của máy chủ: màn Yêu cầu giao, hộp đưa yêu cầu vào chuyến, form kiện và nhập file kiện của
+ * kho kiện cùng đọc một bản cache. Danh sách của một chuyến nằm dưới `['trips', tripId, 'requirements']`.
+ */
+export const REQUIREMENTS_LIST_KEY = ['requirements', 'list'] as const
+
+/** `enabled`: hộp thoại chỉ đọc khi mở. */
+export function useRequirementsQuery({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: REQUIREMENTS_LIST_KEY, queryFn: listDeliveryRequirements, staleTime: 0, enabled })
 }
 
 export function useRequirementQuery(id: string) {

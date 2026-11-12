@@ -89,7 +89,7 @@ const HIGHLIGHTS = [
  */
 export function LoginPage() {
   const t = useT()
-  const { user, status, source, sessionError, signIn } = useAuth()
+  const { user, status, source, sessionError, sessionRetryable, retrySession, signIn } = useAuth()
   const viaKeycloak = source === 'keycloak'
   const navigate = useNavigate()
   const location = useLocation()
@@ -179,6 +179,12 @@ export function LoginPage() {
                     <Link to={passwordResetPath(form.getValues('email'))} className="font-semibold underline underline-offset-2">
                       {t('auth.login.setNewPassword')}
                     </Link>
+                  ) : null}
+                  {/* Phiên Keycloak còn, chỉ máy chủ chưa trả hồ sơ (mạng, 5xx): đọc lại, không phải nhập mật khẩu */}
+                  {serverError === null && sessionRetryable ? (
+                    <Button type="button" variant="secondary" size="sm" className={cn('self-start', TOUCH_CONTROL)} onClick={() => void retrySession()}>
+                      {t('auth.login.retrySession')}
+                    </Button>
                   ) : null}
                 </ServerError>
               ) : null}

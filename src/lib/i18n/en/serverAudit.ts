@@ -47,6 +47,7 @@ export const serverAudit = {
     PICKUP_REJECTED: 'Rejected an en-route pickup request',
     PICKUP_LOADED: 'Loaded en-route pickup packages',
     PICKUP_DELIVERED: 'Delivered en-route pickup packages',
+    PICKUP_PACKAGES_DROPPED: 'Dropped unloaded en-route pickup packages on trip cancellation',
     TRIP_STOPS_REORDERED: 'Reordered delivery stops on a running trip',
     STAGING_SHORTAGE_REPORTED: 'Warehouse reported a package missing while staging',
     STAGING_SHORTAGE_RESOLVED: 'Dispatcher decided on a package reported missing',

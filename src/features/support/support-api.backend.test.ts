@@ -206,6 +206,25 @@ test('the company panel reads the contract, balance and transactions of that com
   })
 })
 
+test('the company panel leaves out a part the server forbids, but a server error fails the read instead of hiding the part', async () => {
+  const contracts = envelope([])
+  const transactions = envelope({ content: [], last: true })
+  routes = {
+    'GET /api/contracts?companyId=1': contracts,
+    'GET /api/credits/balance?companyId=1': () => new Response('{}', { status: 403 }),
+    'GET /api/credits/transactions?companyId=1&page=0&size=20': transactions,
+  }
+  expect((await getSupportCompanyPanel('1', 'Công ty A')).credit).toBeNull()
+
+  routes = {
+    'GET /api/contracts?companyId=1': contracts,
+    'GET /api/credits/balance?companyId=1': () => new Response('{}', { status: 503 }),
+    'GET /api/credits/transactions?companyId=1&page=0&size=20': transactions,
+  }
+  const error = await getSupportCompanyPanel('1', 'Công ty A').catch((caught: unknown) => caught)
+  expect(isApiError(error) && [error.code, error.status]).toStrictEqual(['SERVER_ERROR', 503])
+})
+
 test('assigning a plan posts the contract and reads back what the backend applied', async () => {
   routes = {
     'POST /api/contracts': envelope({ id: 2, companyId: 1, companyName: 'Vận tải Long Bình', planId: 3, planName: 'Ultimate', planTier: 'ULTIMATE', status: 'ACTIVE', startedAt: null, expiresAt: null, autoRenew: true }),

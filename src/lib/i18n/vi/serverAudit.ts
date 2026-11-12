@@ -49,6 +49,7 @@ export const serverAudit = {
     PICKUP_REJECTED: 'Từ chối yêu cầu nhận hàng dọc đường',
     PICKUP_LOADED: 'Nhận hàng dọc đường lên xe',
     PICKUP_DELIVERED: 'Giao hàng nhận dọc đường',
+    PICKUP_PACKAGES_DROPPED: 'Bỏ kiện nhận dọc đường chưa lên xe khi huỷ chuyến',
     TRIP_STOPS_REORDERED: 'Đổi thứ tự điểm giao khi xe đang chạy',
     STAGING_SHORTAGE_REPORTED: 'Kho báo thiếu kiện khi soạn hàng',
     STAGING_SHORTAGE_RESOLVED: 'Điều phối quyết định kiện kho báo thiếu',

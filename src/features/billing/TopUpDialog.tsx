@@ -7,12 +7,15 @@ import { Input } from '@/components/ui/Input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import { BILLING_CONSTANTS, type PlanTier } from '@/lib/mock-db'
+import { isApiError } from '@/lib/api-client'
+import { BILLING_CONSTANTS, isMockDbError, type PlanTier } from '@/lib/mock-db'
 import { BILLING_CAPABILITIES, type TopUpTerms } from './billing-api'
 import { useTopUpTermsQuery } from './useBillingQuery'
 
 type TopUpProps = {
   pending: boolean
+  /** Lần nạp vừa rồi bị từ chối (gói vừa hết hạn — `SUBSCRIPTION_EXPIRED` —, máy chủ lỗi…): câu lỗi hiện trong hộp, hộp giữ nguyên. */
+  error?: unknown
   /** Số credit và thành tiền theo giá đang hiện. */
   onConfirm: (credits: number, amountVnd: number) => void
   /** Hạng gói đang dùng; `null` khi chưa có gói. Nối backend thì hạng tính giá là hạng máy chủ trả. */
@@ -32,6 +35,11 @@ export function TopUpDialog({ open, onOpenChange, ...props }: TopUpProps & { ope
       <DialogContent className="w-120">{open ? <TopUpForm {...props} /> : null}</DialogContent>
     </Dialog>
   )
+}
+
+/** Nạp bị từ chối vì gói đã hết hạn: điều kiện nạp đọc lại thì hộp đã có dòng cảnh báo cùng ý, không hiện thêm câu lỗi. */
+function isExpired(error: unknown): boolean {
+  return (isApiError(error) || isMockDbError(error)) && error.code === 'SUBSCRIPTION_EXPIRED'
 }
 
 function TopUpForm(props: TopUpProps) {
@@ -55,7 +63,7 @@ function TopUpForm(props: TopUpProps) {
   return <TopUpChoice {...props} terms={terms.data} />
 }
 
-function TopUpChoice({ pending, onConfirm, tier, balance, terms }: TopUpProps & { terms: TopUpTerms }) {
+function TopUpChoice({ pending, error, onConfirm, tier, balance, terms }: TopUpProps & { terms: TopUpTerms }) {
   const t = useT()
   const format = useFormat()
   const [credits, setCredits] = useState<number>(BILLING_CONSTANTS.topUpPacks[0])
@@ -69,6 +77,9 @@ function TopUpChoice({ pending, onConfirm, tier, balance, terms }: TopUpProps & 
       <DialogHeader icon={Coins} title={t('billing.topUpDialog.title')} description={t('billing.topUpDialog.description', { price: format.currency(priceVnd) })} />
       <div className="flex flex-col gap-4 px-7 py-5">
         {terms.allowed ? null : <Banner tone="warning">{t('billing.topUpDialog.notAllowed')}</Banner>}
+        {error === null || error === undefined || (!terms.allowed && isExpired(error)) ? null : (
+          <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
+        )}
         <p className="m-0 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-small text-amber-900">
           {t('billing.topUpDialog.monthlyResetWarning')}
         </p>

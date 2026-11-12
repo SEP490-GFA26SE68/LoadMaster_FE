@@ -167,7 +167,7 @@ export function TrialAccountLockedView() {
               await signAgreementMutation.mutateAsync(request)
               toast.success(t('support.trialLocked.signed'))
               setOpenSignDialog(false)
-              auth?.refreshUser?.()
+              await auth?.refreshUser()
             } catch (err) {
               toast.error(dataErrorMessage(err, t))
             }

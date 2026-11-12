@@ -27,6 +27,50 @@ async function failure(run: () => Promise<unknown>): Promise<ApiError> {
   throw new Error('lượt gọi không ném lỗi')
 }
 
+/** Máy chủ giả trả 401 cho mọi token trừ `accepted`; phiên giả làm mới ra `fresh`. */
+function clientWithSession(accepted: string | null, fresh: string | null | Error) {
+  const sent: (string | null)[] = []
+  const fetchImpl = vi.fn((_url: string, init: RequestInit) => {
+    const token = (init.headers as Record<string, string>).Authorization ?? null
+    sent.push(token)
+    return Promise.resolve(token === `Bearer ${accepted}` ? respond(200, { success: true, data: 'ok' }) : respond(401, undefined))
+  })
+  const refreshToken = vi.fn(() => (fresh instanceof Error ? Promise.reject(fresh) : Promise.resolve(fresh)))
+  const onUnauthorized = vi.fn()
+  const client = createApiClient({
+    baseUrl: 'http://api.test',
+    accessToken: () => Promise.resolve('OLD'),
+    refreshToken,
+    onUnauthorized,
+    fetch: fetchImpl as unknown as typeof fetch,
+    timeoutMs: 20,
+  })
+  return { client, sent, refreshToken, onUnauthorized }
+}
+
+test('a 401 refreshes the token once and sends the same call again; the session stays', async () => {
+  const { client, sent, onUnauthorized } = clientWithSession('NEW', 'NEW')
+  expect(await client.post('/api/x', { body: { a: 1 } })).toBe('ok')
+  expect(sent).toStrictEqual(['Bearer OLD', 'Bearer NEW'])
+  expect(onUnauthorized).not.toHaveBeenCalled()
+})
+
+test('still 401 with the refreshed token: the session is rejected and the call fails UNAUTHENTICATED', async () => {
+  const { client, sent, refreshToken, onUnauthorized } = clientWithSession(null, 'NEW')
+  expect((await failure(() => client.get('/api/x'))).code).toBe('UNAUTHENTICATED')
+  expect(sent).toStrictEqual(['Bearer OLD', 'Bearer NEW'])
+  expect([refreshToken.mock.calls.length, onUnauthorized.mock.calls.length]).toStrictEqual([1, 1])
+})
+
+test('a refresh that fails on the network, or a session already closed, does not retry or end the session here', async () => {
+  for (const fresh of [new TypeError('Failed to fetch'), null]) {
+    const { client, sent, onUnauthorized } = clientWithSession('NEW', fresh)
+    expect((await failure(() => client.get('/api/x'))).status).toBe(401)
+    expect(sent).toStrictEqual(['Bearer OLD'])
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  }
+})
+
 test('opens the backend envelope and returns its data, sending the session token', async () => {
   const { client, calls } = clientWith(respond(200, { success: true, data: { id: 7 } }))
   await expect(client.get('/api/users/me', { query: { page: 0, q: 'biên hoà', skip: undefined } })).resolves.toStrictEqual({ id: 7 })
