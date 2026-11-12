@@ -1271,7 +1271,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `DELIVERY_STOP_ALREADY_ARRIVED` là đã đến (đọc lại giờ đến của máy chủ). Chỉ giờ đến là "đã đến": `ARRIVED` không kèm giờ vẫn là chưa đến
   (máy chủ đòi giờ đến mới cho dỡ), và hoàn tất một điểm để điểm kế tiếp ở `PENDING`. Dỡ qua hộp đối chiếu đủ ba mức: quét QR hoặc gõ mã của kiện
   (`codeLabel` / `codeHint` riêng; `packageOfCode`: `qrToken`, `packageCode`, `trackingBarcode`, mã kho kiện in ở góc nhãn; không phân biệt hoa
-  thường; mã bên gửi trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`) → `POST …/packages/{id}/unload` (kiện máy chủ báo đã dỡ thì không gọi;
+  thường; mã bên gửi trùng nhiều kiện của điểm là `UNLOAD_CODE_AMBIGUOUS`) → `POST …/packages/{id}/unload` (thân `{ method: QR | CODE }` — quét hay gõ mã, như bước soạn; kiện máy chủ báo đã dỡ thì không gọi;
   409 là đã dỡ), hoặc **xác nhận tay** kèm lý do `POST /api/driver/packages/{id}/manual-unload` — kiện ghi đã dỡ chờ điều phối viên duyệt, còn chờ
   thì nút hoàn tất mờ kèm lý do và máy chủ từ chối `MANUAL_CONFIRM_PENDING`; bị từ chối thì kiện về chưa dỡ kèm lý do. "Báo sự cố" theo kiện
   `POST /api/driver/packages/{id}/issues` (`kind` viết hoa); khách từ chối thì kiện ở lại xe và thành hoàn trả (`RETURNED`) khi hoàn tất điểm. Sự cố, trạng
@@ -1287,7 +1287,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `GET /api/trips/{id}/manual-confirmations`, `POST …/{cid}/approve`, `POST …/{cid}/reject` — `{id}` là mã số hoặc mã chuyến; quản lý công ty chỉ
   xem). **Điểm nhận dọc đường** (máy chủ chèn lúc duyệt yêu cầu nhận): `current-stop` mang `stopType` (`DELIVERY` | `PICKUP`) và
   `pickupPackages` (kiện của các yêu cầu đã duyệt ở điểm, `picked`); màn đối chiếu từng kiện lên xe bằng quét QR hoặc gõ mã (không có xác nhận
-  tay ở điểm nhận — máy chủ chưa có) → `POST /api/driver/pickup-packages/{id}/pick` (409 `PICKUP_PACKAGE_ALREADY_PICKED`), hoàn tất điểm nhận khi
+  tay ở điểm nhận — máy chủ chưa có) → `POST /api/driver/pickup-packages/{id}/pick` (`{ method }` như khi dỡ; 409 `PICKUP_PACKAGE_ALREADY_PICKED`), hoàn tất điểm nhận khi
   mọi kiện đã lên xe (`PICKUP_STOP_INCOMPLETE`); kiện nhận giao ở điểm sau nằm trong `packages` của điểm đó và dỡ như kiện thường. Hộp "Nhận hàng
   dọc đường" của tờ "Thêm" gọi tên điểm theo mã điểm của `GET /api/driver/trips/{id}/stops` (`stopId`). `DRIVER_CAPABILITIES`
   (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông (trừ khi `notifications` nối), vị trí xe mô phỏng; nhận dọc đường (`pickups`) chỉ khi
@@ -1389,7 +1389,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   là `alreadyStaged`, không ghi), xác nhận tay `…/manual` (chỉ tính là đã soạn khi điều phối viên duyệt; còn chờ thì dòng ghi "chờ duyệt" và bước soạn chưa xong, bị từ
   chối thì về chưa soạn), "Báo thiếu" `…/shortage`; soạn đủ thì màn tự sang bước xếp (`STAGING_INCOMPLETE`).
   **Xếp**: đối chiếu bằng quét QR hoặc gõ mã (mã QR, mã vạch, mã kiện — tab kiểm vì máy chủ không kiểm) rồi
-  `POST /api/warehouse/placements/{id}/confirm`, xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
+  `POST /api/warehouse/placements/{id}/confirm` (`{ method: QR | CODE }`, như bước soạn), xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
   `…/damaged` (không kiện nào tựa lên thì bỏ lại kho — trạng thái `DAMAGED` —, có thì chuyến về Đã lập kế hoạch; số kiện tựa lên trên hộp
   thoại đếm như máy chủ, `restingCount`), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`; còn xác nhận tay chờ:
   nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong ghi / đổi số seal `POST …/tasks/{tripId}/seal` tới lúc xe rời kho

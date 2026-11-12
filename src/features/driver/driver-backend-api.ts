@@ -49,7 +49,8 @@ export type DriverStopScreen =
   | { readonly kind: 'notInTransit' }
 
 /** Mã gõ được ở điểm số `stopNumber`. */
-export type BackendUnloadInput = { readonly stopNumber: number; readonly code: string }
+/** `method`: quét QR hay gõ mã — máy chủ ghi vào lần đối chiếu (báo cáo chuyến tách hai cách); vắng là quét. */
+export type BackendUnloadInput = { readonly stopNumber: number; readonly code: string; readonly method?: 'QR' | 'CODE' }
 
 type Memory = {
   /** Mã chuyến theo mã số, của lần đọc danh sách gần nhất. */
@@ -161,7 +162,7 @@ export function createDriverBackend(client: () => ApiClient = api) {
   }
 
   // POST /api/driver/packages/{id}/unload?driverId=
-  async function unload(tripId: string, { stopNumber, code }: BackendUnloadInput): Promise<{ readonly packageInstanceId: string }> {
+  async function unload(tripId: string, { stopNumber, code, method = 'QR' }: BackendUnloadInput): Promise<{ readonly packageInstanceId: string }> {
     const { id, memory: store } = await mine()
     const dto = await stopOf(tripId, stopNumber)
     const pkg = packageOfCode(dto, code)
@@ -171,13 +172,13 @@ export function createDriverBackend(client: () => ApiClient = api) {
     if (isPickupPackage(dto, pkg.packageId)) {
       // Điểm nhận dọc đường: kiện đối chiếu lên xe; máy chủ trả mã của lý do (đã lên xe, không phải điểm nhận của kiện…)
       if (isUnloaded(dto, pkg.packageId)) throw new ApiError('PICKUP_PACKAGE_ALREADY_PICKED', { status: 409 })
-      await client().post<unknown>(`/api/driver/pickup-packages/${pkg.packageId}/pick`)
+      await client().post<unknown>(`/api/driver/pickup-packages/${pkg.packageId}/pick`, { body: { method } })
       store.stops.set(tripId, withUnloaded(dto, pkg.packageId))
       return { packageInstanceId }
     }
     if (isUnloaded(dto, pkg.packageId)) throw new ApiError('DUPLICATE_UNLOAD', { params: { code: pkg.label } })
     try {
-      await client().post<ConfirmUnloadDto>(`/api/driver/packages/${pkg.packageId}/unload`, { query: { driverId: id } })
+      await client().post<ConfirmUnloadDto>(`/api/driver/packages/${pkg.packageId}/unload`, { query: { driverId: id }, body: { method } })
     } catch (error) {
       // Đã dỡ ở máy khác sau lần đọc gần nhất: lần đọc lại (sau mỗi lệnh ghi) cho thấy kiện đã dỡ
       if (failedWith(error, 409)) throw new ApiError('DUPLICATE_UNLOAD', { status: 409, params: { code: pkg.label } })
