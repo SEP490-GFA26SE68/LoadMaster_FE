@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GeoPoint } from '@/domain/routing'
 import { getTripEta, optimizeTripRoute } from './route-api'
-import { getTripRoutePath } from './route-plan-api'
+import { getActiveRoutePlan, getTripRoutePath } from './route-plan-api'
 
 /**
  * Hook Query cho tuyến của chuyến (FE-4b-09). Khoá đọc nằm dưới `['trips', tripId]`: đổi thứ tự điểm, thêm / bớt điểm, đưa yêu cầu
@@ -29,6 +29,16 @@ export function useTripRoutePathQuery(
     queryFn: () => getTripRoutePath(tripId, fallback, onServer),
     enabled: enabled && tripId !== '',
     staleTime: 30_000,
+  })
+}
+
+/** Tuyến đang dùng kèm hướng dẫn từng chặng (dẫn đường của tài xế); `onServer` như `useTripRoutePathQuery`. */
+export function useActiveRoutePlanQuery(tripId: string, onServer: boolean) {
+  return useQuery({
+    queryKey: ['trips', tripId, 'route-plan'],
+    queryFn: () => getActiveRoutePlan(tripId, onServer),
+    enabled: tripId !== '',
+    staleTime: 15_000,
   })
 }
 

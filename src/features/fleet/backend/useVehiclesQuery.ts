@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import {
   deleteVehicle,
   endVehicleMaintenance,
+  fetchVehicleById,
+  fetchVehicleConfig,
   fetchVehicles,
   saveVehicle,
   startVehicleMaintenance,
@@ -48,6 +50,16 @@ export function useVehiclesQuery(
         vehicleTypeId,
       ),
   })
+}
+
+/** Một xe (`GET /api/vehicles/{id}`) cho trang xe. */
+export function useVehicleQuery(vehicleId: string) {
+  return useQuery({ queryKey: ['backend', 'vehicle', vehicleId], queryFn: () => fetchVehicleById(vehicleId) })
+}
+
+/** Cấu hình hình học của một xe (`GET /api/vehicles/{id}/config`) cho xem trước 3D. */
+export function useVehicleConfigQuery(vehicleId: string) {
+  return useQuery({ queryKey: ['backend', 'vehicle-config', vehicleId], queryFn: () => fetchVehicleConfig(vehicleId) })
 }
 
 /** Tạo xe mới (`id` vắng) hoặc sửa tên, biển số, loại của xe đang có. */

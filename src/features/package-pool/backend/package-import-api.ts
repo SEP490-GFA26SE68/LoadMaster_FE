@@ -1,5 +1,8 @@
 import { ApiError, apiFetch, apiFetchBlob, isApiError } from '@/lib/api-client'
 
+/** Câu của lỗi / cảnh báo dòng do máy chủ trả — màn đọc qua đây, không import file DTO. */
+export { backendRowErrorOf, backendRowWarningOf } from '../package-pool-dto'
+
 type ApiResponse<T> = {
   success: boolean
   message?: string

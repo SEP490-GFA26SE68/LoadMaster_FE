@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip'
-import type { LoadPlan } from '@/features/optimization/load-plan-dto'
+import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { useApproveBackendPlanMutation } from './useBackendPlanQuery'
 

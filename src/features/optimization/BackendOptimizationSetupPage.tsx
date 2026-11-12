@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { PackageOpen } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
@@ -7,7 +7,8 @@ import { Banner } from '@/components/Banner'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
-import { fetchBackendTripDetail, resolveBackendTripId } from '@/features/trips/trips-api'
+import { useBackendTripDetailQuery } from '@/features/trips/useTripsQuery'
+import { useBackendTripIdQuery } from '@/features/trips/useBackendTripQuery'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { BackendLoadPlansCard } from './BackendLoadPlansCard'
 import { BackendPinsCard } from './BackendPinsCard'
@@ -18,7 +19,7 @@ import { useOptimizationJobQuery, useStartLoadingOptimizationMutation, useTripLo
 export function BackendOptimizationSetupRoute() {
   const { tripId = '' } = useParams()
   const t = useT()
-  const resolved = useQuery({ queryKey: ['trips', tripId, 'backend-id'], queryFn: () => resolveBackendTripId(tripId), staleTime: Infinity })
+  const resolved = useBackendTripIdQuery(tripId)
   if (resolved.isError) return <p role="alert" className="px-shell py-8 text-body text-danger">{dataErrorMessage(resolved.error, t)}</p>
   if (resolved.data === undefined) return <div className="grid flex-1 place-items-center"><Spinner /></div>
   return <BackendOptimizationSetupPage tripId={resolved.data} />
@@ -35,7 +36,7 @@ function BackendOptimizationSetupPage({ tripId }: { tripId: string }) {
   const navigate = useNavigate()
   const client = useQueryClient()
   const reasonId = useId()
-  const detail = useQuery({ queryKey: ['trips', tripId, 'backend-detail'], queryFn: () => fetchBackendTripDetail(tripId) })
+  const detail = useBackendTripDetailQuery(tripId)
   const start = useStartLoadingOptimizationMutation(tripId)
   const [params] = useSearchParams()
   const keepFrom = params.get('giu-ghim')
