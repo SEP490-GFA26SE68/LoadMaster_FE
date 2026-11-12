@@ -1185,7 +1185,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phiên hết giữa chừng (`onEnded`) đưa về màn đăng nhập. `useAuth().status` là `restoring` cho tới khi mở lại phiên xong và `RequireAuth` chưa
   quyết gì trong lúc đó. Hồ sơ đọc ở `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` /
   `COMPANY_ADMIN`, `MANAGER` / `COMPANY_MANAGER`); 404 là tài khoản Keycloak chưa gắn người dùng nào (`account-not-linked`), 401 là máy chủ không
-  nhận token (`session-rejected`) — cả hai, và mọi lỗi khác của bước này, đóng luôn phiên Keycloak vừa mở. **Đặt mật khẩu mới**
+  nhận token (`session-rejected`) — cả hai, cùng vai trò lạ và tài khoản bị khoá, đóng luôn phiên Keycloak vừa mở. Lỗi **tạm thời** của bước này
+  (`isTransientApiError`: mất mạng, quá giờ, máy chủ 5xx) **giữ** phiên: màn đăng nhập nói không kết nối được máy chủ kèm nút "Thử lại"
+  (`retrySession`, `sessionRetryable`) đọc lại hồ sơ mà không phải nhập mật khẩu. Mọi lượt `api()` / `apiFetch` bị **401** với token đã gửi thì
+  làm mới token một lần (`session.refreshToken()`, bỏ qua hạn còn lại) và gửi lại đúng lượt đó; vẫn 401 thì `session.reject()` đóng phiên ở mọi
+  tab và ở Keycloak, `onEnded` đưa về màn đăng nhập; làm mới hỏng vì mạng thì trả nguyên 401, giữ phiên (`connectApiAuth(token, { refreshToken,
+  onUnauthorized })`). `refreshUser()` trả lời hứa và **ném** lỗi đọc lại cho nơi gọi báo ra (toast), người đang đứng giữ nguyên. **Đặt mật khẩu mới**
   (`password-reset-api.ts`): `POST /api/auth/password-reset/request` · `/verify` (trả `resetToken`) · `/reset`, công khai; máy chủ từ chối bằng
   400 kèm mã của lý do (`OTP_INCORRECT`, `OTP_EXPIRED`, `RESET_TOKEN_INVALID`…) và `resetErrorKey` nói đúng lý do; máy chủ cũ trả 400 không mã
   thì màn nói lý do theo bước.

@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 import { PageHero } from '@/components/PageHero'
 import { useAuth, useCurrentUser } from '@/features/auth/AuthProvider'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import { AccountPasswordCard } from './AccountPasswordCard'
 import { PasswordForm } from './PasswordForm'
 import { ProfileDetailsForm } from './ProfileDetailsForm'
@@ -23,8 +24,9 @@ export function ProfilePage() {
   const serverManaged = source === 'keycloak'
 
   useEffect(() => {
-    if (serverManaged) refreshUser()
-  }, [serverManaged, refreshUser])
+    // Đọc lại hỏng thì giữ người đang đứng và báo lỗi, không coi là đã đăng xuất
+    if (serverManaged) refreshUser().catch((error: unknown) => toast.error(dataErrorMessage(error, t)))
+  }, [serverManaged, refreshUser, t])
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">

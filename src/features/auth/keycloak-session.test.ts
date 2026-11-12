@@ -241,6 +241,42 @@ describe('keeping the session', () => {
   })
 })
 
+describe('a 401 from the server', () => {
+  test('refreshToken refreshes at once even when the token still looks valid; a network failure throws and keeps the session', async () => {
+    const keycloak = stubKeycloak()
+    const storage = memoryStorage()
+    const session = createKeycloakSession(CONFIG, { storage, channel: null, now })
+    await session.login('an@fastmove.vn', 'dung-mat-khau')
+
+    expect(await session.refreshToken()).toBe('access-2')
+    expect(await session.token()).toBe('access-2')
+    keycloak.fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(session.refreshToken()).rejects.toThrow()
+    expect([...storage.items.values()]).toStrictEqual(['refresh-2'])
+  })
+
+  test('reject ends the session in every tab and closes it at Keycloak', async () => {
+    const keycloak = stubKeycloak()
+    const hub = tabHub()
+    const storage = memoryStorage()
+    const first = createKeycloakSession(CONFIG, { storage, channel: hub.tab(), now })
+    const second = createKeycloakSession(CONFIG, { storage: memoryStorage(), channel: hub.tab(), now })
+    const firstEnded = vi.fn()
+    const secondEnded = vi.fn()
+    first.onEnded(firstEnded)
+    second.onEnded(secondEnded)
+    await first.login('an@fastmove.vn', 'dung-mat-khau')
+    expect(await second.start()).toBe(true)
+
+    first.reject()
+    expect(firstEnded).toHaveBeenCalledTimes(1)
+    expect(storage.items.size).toBe(0)
+    await vi.waitFor(() => expect(secondEnded).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(keycloak.calls.at(-1)?.url).toBe(LOGOUT_URL))
+    expect(await first.token()).toBeNull()
+  })
+})
+
 describe('several tabs of the same browser', () => {
   test('a new tab takes the session of a signed-in tab, and signing out in one tab signs every tab out', async () => {
     const keycloak = stubKeycloak()

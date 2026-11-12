@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { isApiError } from '@/lib/api-client'
+import { isApiError, isTransientApiError } from '@/lib/api-client'
 import { isMockDbError, type DriverLocationInput } from '@/lib/mock-db'
 import { postDriverLocation, setDriverGps } from './driver-api'
 
@@ -40,7 +40,7 @@ export function locationInput({ latitude, longitude, speed, heading }: Coordinat
  */
 export function isTransientLocationError(error: unknown): boolean {
   if (isMockDbError(error)) return false
-  if (isApiError(error)) return error.status === 0 || error.status >= 500
+  if (isApiError(error)) return isTransientApiError(error)
   return true
 }
 

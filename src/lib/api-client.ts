@@ -44,10 +44,22 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
 
+/** Lỗi tạm thời của máy chủ: không có phản hồi (mất mạng, quá giờ — `status` 0) hoặc máy chủ lỗi 5xx. Thử lại sau có thể được. */
+export function isTransientApiError(error: unknown): boolean {
+  return isApiError(error) && (error.status === 0 || error.status >= 500)
+}
+
 export type ApiClientOptions = {
   readonly baseUrl: string
   /** Token truy cập của phiên hiện tại; `null` khi chưa đăng nhập. */
   readonly accessToken: () => Promise<string | null>
+  /**
+   * Máy chủ trả 401 cho token vừa gửi: làm mới token một lần (bỏ qua hạn còn lại) rồi gửi lại đúng lượt đó. `null` khi không còn phiên;
+   * ném khi không làm mới được (mạng) — khi đó trả nguyên 401, phiên giữ nguyên.
+   */
+  readonly refreshToken?: () => Promise<string | null>
+  /** Lượt gửi lại bằng token mới vẫn bị 401: phiên không dùng được với máy chủ này nữa. */
+  readonly onUnauthorized?: () => void
   readonly fetch?: typeof fetch
   readonly timeoutMs?: number
 }
@@ -128,9 +140,38 @@ function failureOf(status: number, envelope: Envelope | null): ApiError {
 /** Gọi `fetch` hiện hành của trình duyệt ở từng lượt (không giữ tham chiếu lúc tạo client). */
 const browserFetch: typeof fetch = (input, init) => fetch(input, init)
 
-export function createApiClient({ baseUrl, accessToken, fetch: fetchImpl = browserFetch, timeoutMs = DEFAULT_TIMEOUT_MS }: ApiClientOptions): ApiClient {
-  async function send(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string): Promise<Response> {
-    const token = await accessToken()
+/**
+ * Gửi bằng token của phiên; 401 với token đã gửi thì làm mới token một lần và gửi lại. Vẫn 401 thì báo `onUnauthorized` (phiên kết thúc)
+ * và trả phản hồi đó cho nơi gọi đổi thành lỗi như mọi lần. Không làm mới được vì mạng thì trả nguyên 401, giữ phiên.
+ */
+async function sendWithRetry(
+  accessToken: () => Promise<string | null>,
+  refreshToken: (() => Promise<string | null>) | undefined,
+  onUnauthorized: (() => void) | undefined,
+  sendWith: (token: string | null) => Promise<Response>,
+): Promise<Response> {
+  const token = await accessToken()
+  const response = await sendWith(token)
+  if (response.status !== 401 || token === null || refreshToken === undefined) return response
+  let fresh: string | null
+  try {
+    fresh = await refreshToken()
+  } catch {
+    return response
+  }
+  // Keycloak đã đóng phiên: phiên tự báo kết thúc
+  if (fresh === null) return response
+  const retried = await sendWith(fresh)
+  if (retried.status === 401) onUnauthorized?.()
+  return retried
+}
+
+export function createApiClient({ baseUrl, accessToken, refreshToken, onUnauthorized, fetch: fetchImpl = browserFetch, timeoutMs = DEFAULT_TIMEOUT_MS }: ApiClientOptions): ApiClient {
+  function send(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string): Promise<Response> {
+    return sendWithRetry(accessToken, refreshToken, onUnauthorized, (token) => sendOnce(method, path, query, body, accept, token))
+  }
+
+  async function sendOnce(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string, token: string | null): Promise<Response> {
     const headers: Record<string, string> = { Accept: accept }
     if (body !== null && 'json' in body) headers['Content-Type'] = 'application/json'
     if (token !== null) headers.Authorization = `Bearer ${token}`
@@ -188,17 +229,31 @@ export function createApiClient({ baseUrl, accessToken, fetch: fetchImpl = brows
   }
 }
 
+/** Hai việc của phiên khi máy chủ trả 401: làm mới token ngay, và đóng phiên khi token mới vẫn bị từ chối. */
+export type ApiAuthRecovery = {
+  readonly refreshToken: () => Promise<string | null>
+  readonly onUnauthorized: () => void
+}
+
 let tokenSource: () => Promise<string | null> = () => Promise.resolve(null)
+let recovery: ApiAuthRecovery | null = null
 let client: ApiClient | undefined
 
-/** `AuthProvider` nối phiên đăng nhập vào client: mỗi lượt gọi hỏi lại token (phiên tự làm mới token sắp hết hạn). */
-export function connectApiAuth(accessToken: () => Promise<string | null>): void {
+/**
+ * `AuthProvider` nối phiên đăng nhập vào client: mỗi lượt gọi hỏi lại token (phiên tự làm mới token sắp hết hạn); có `onRejected` thì
+ * 401 được làm mới token một lần rồi gửi lại, vẫn 401 thì đóng phiên.
+ */
+export function connectApiAuth(accessToken: () => Promise<string | null>, onRejected: ApiAuthRecovery | null = null): void {
   tokenSource = accessToken
+  recovery = onRejected
 }
+
+const refreshFromSession = () => recovery?.refreshToken() ?? Promise.resolve(null)
+const rejectSession = () => recovery?.onUnauthorized()
 
 /** Client của backend theo `VITE_API_URL`, dùng trong `-api.ts` của feature đã nối backend. */
 export function api(): ApiClient {
-  client ??= createApiClient({ baseUrl: backendConfig.apiUrl, accessToken: () => tokenSource() })
+  client ??= createApiClient({ baseUrl: backendConfig.apiUrl, accessToken: () => tokenSource(), refreshToken: refreshFromSession, onUnauthorized: rejectSession })
   return client
 }
 
@@ -206,8 +261,11 @@ export function api(): ApiClient {
  * Lối gọi của các `-api.ts` viết theo `fetch` (nhánh nối backend của nhóm): nhận `RequestInit`, trả **nguyên thân** JSON (không mở phong
  * bì), cùng token, giới hạn thời gian và cách đổi lỗi thành `ApiError` như `api()`. Code mới dùng `api()`.
  */
-async function rawFetch(path: string, init: RequestInit, accept: string): Promise<Response> {
-  const token = await tokenSource()
+function rawFetch(path: string, init: RequestInit, accept: string): Promise<Response> {
+  return sendWithRetry(() => tokenSource(), refreshFromSession, rejectSession, (token) => rawFetchOnce(path, init, accept, token))
+}
+
+async function rawFetchOnce(path: string, init: RequestInit, accept: string, token: string | null): Promise<Response> {
   const headers = new Headers(init.headers)
   if (token !== null) headers.set('Authorization', `Bearer ${token}`)
   if (!headers.has('Accept')) headers.set('Accept', accept)
