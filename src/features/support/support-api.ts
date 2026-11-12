@@ -152,7 +152,7 @@ export async function getSupportCompanyPanel(companyId: string, companyName?: st
   const [contracts, balance, transactions] = await Promise.all([
     api().get<ContractDto[] | null>('/api/contracts', { query }),
     orNull(api().get<CreditBalanceDto>('/api/credits/balance', { query })),
-    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1 })),
+    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1, truncate: true })),
   ])
   const dto = latestContracts((contracts ?? []).filter((item) => String(item.companyId) === companyId))[0]
   const contract = dto === undefined ? null : contractOf(dto, new Date().toISOString())

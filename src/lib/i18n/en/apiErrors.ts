@@ -11,6 +11,7 @@ export const apiErrors = {
   NOT_FOUND: 'This item was not found on the server — it may have been deleted.',
   CONFLICT: 'The data is a duplicate or changed on the server. Reload and try again.',
   SERVER_ERROR: 'The server ran into an error. Try again later.',
+  LIST_TOO_LONG: 'The list on the server is too long to load at once. Narrow the filters or contact support.',
 
   UNCATEGORIZED_EXCEPTION: 'The server ran into an unknown error. Try again later.',
   INTERNAL_SERVER_ERROR: 'The server ran into an error. Try again later.',

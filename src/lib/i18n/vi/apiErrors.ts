@@ -14,6 +14,8 @@ export const apiErrors = {
   NOT_FOUND: 'Không tìm thấy dữ liệu này trên máy chủ — có thể đã bị xoá.',
   CONFLICT: 'Dữ liệu bị trùng hoặc đã thay đổi trên máy chủ. Tải lại rồi thử lại.',
   SERVER_ERROR: 'Máy chủ gặp lỗi. Thử lại sau.',
+  // FE tự dừng: danh sách máy chủ quá dài để đọc hết một lần (`fetchAllPages`)
+  LIST_TOO_LONG: 'Danh sách trên máy chủ quá dài để tải hết một lần. Thu hẹp bộ lọc hoặc báo đội hỗ trợ.',
 
   // Chung
   UNCATEGORIZED_EXCEPTION: 'Máy chủ gặp lỗi chưa xác định. Thử lại sau.',

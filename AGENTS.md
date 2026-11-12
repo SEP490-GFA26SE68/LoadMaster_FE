@@ -1202,7 +1202,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   hàm nối có test với `fetch` giả: `vi.mock('@/lib/backend-config', …)` bật đúng nhóm, `fetch` giả qua `src/test/fake-backend.ts`
   (`stubBackend`, `envelope`, `page`); test màn ở chế độ backend đặt tên `*.backend.dom.test.tsx`.
 - **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
-  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu.
+  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu —
+  quá `maxPages` mà máy chủ chưa báo trang cuối là lỗi `LIST_TOO_LONG`, không cắt im lặng; chỉ đọc phần đầu thì gọi kèm `truncate`.
   Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
   giờ là giờ Việt Nam (ngày và giờ ngăn bằng `T` hay dấu cách — `@JsonFormat("yyyy-MM-dd HH:mm:ss")`), `Instant` có `Z`; so sánh mốc giờ bằng `backendTimeMs` (`NaN` khi không đọc được) — không tự nối `+07:00` vào chuỗi của máy chủ
   (Safari đọc ra `NaN` với dạng có dấu cách hay thiếu giây). Phong bì lỗi có `code` (tên `ErrorCode` của backend) thì
