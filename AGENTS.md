@@ -1700,7 +1700,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   dỡ ở điểm chưa hoàn tất; cộng kiện nhận dọc đường tài xế đã nhận lên xe ở điểm nhận chưa hoàn tất — `pickedIds`, đi qua `IN_TRANSIT`) thành
   `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù
   tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại
-  như đã ghi. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
+  như đã ghi. Yêu cầu nhận dọc đường đã duyệt mà **chưa kiện nào lên xe** (không kiện nào ở `pickedIds`, mọi kiện còn `ASSIGNED`) thành
+  `REJECTED` với `rejectCause: 'TRIP_CANCELLED'` (`rejectUnpickedPickups`; thẻ yêu cầu nói "Tự từ chối vì chuyến đã huỷ…") và kiện kho kiện
+  của nó bị xoá — hàng còn ở chỗ bên gửi, không tính vào `returned`; máy chủ làm như vậy với lý do "Chuyến đã huỷ". Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
   chuyển; hộp thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
 - **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes, pickups })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
   (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo giờ đến thật, chưa đến thì
@@ -1955,7 +1957,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   (`PickupPackage`: mã của bên gửi, cm, kg, loại hàng), `status`, `validationResults` (kết quả `evaluatePickup`, rỗng khi chưa kiểm),
   `overrideReason?`, người và lúc tạo, `approvedBy` / `approvedAt` từ lúc `APPROVED`. Trạng thái **ghi thật**, chỉ `updatePickupStatus` đổi, theo
   bảng `PICKUP_TRANSITIONS`: `PENDING → VALIDATED | REJECTED | APPROVED` (duyệt kèm lý do vượt luật), `VALIDATED → APPROVED | REJECTED`, `APPROVED →
-  LOADED → DELIVERED`, `REJECTED` là trạng thái cuối; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Hàm của kho đều nhận mã chuyến và lọc công
+  LOADED → DELIVERED`, `REJECTED` là trạng thái cuối; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Ngoại lệ duy nhất, ngoài bảng: huỷ chuyến
+  Đang vận chuyển đưa `APPROVED` chưa nhận kiện nào về `REJECTED` (`rejectUnpickedPickups`, mục "Huỷ chuyến"). Hàm của kho đều nhận mã chuyến và lọc công
   ty qua chuyến như endpoint `/api/trips/{id}/pickup-requests` của backend: `listPickupRequests`, `getPickupRequest`, `createPickupRequest`,
   `updatePickupStatus(tripId, pickupId, status, details?)`, `validatePickupRequest`, `approvePickupRequest`, `rejectPickupRequest`.
   `DeliveryStop.kind` (`DELIVERY | PICKUP`) vắng nghĩa là `DELIVERY` (`stopKindOf`).

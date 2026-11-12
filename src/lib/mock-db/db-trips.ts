@@ -1,6 +1,7 @@
 import { vnClock, vnDate, vnTime } from './clock'
 import { found, nextId, put, sameData, type DbContext } from './db-context'
 import { releaseTripPackages, returnUndeliveredPackages } from './db-package-progress'
+import { rejectUnpickedPickups } from './db-pickup-packages'
 import { releaseTripRequirements } from './db-requirement-trips'
 import { advanceTracking } from './db-tracking'
 import { stopDemandsOf } from './db-trip-lines'
@@ -149,6 +150,8 @@ export function tripMethods(ctx: DbContext): TripMethods {
         if (current.phase === 'delivering') {
           // Vị trí xe ghi bù tới lúc huỷ; kiện chưa giao thành Hoàn trả và ở lại chuyến — yêu cầu giao của chúng đọc là giao thiếu
           advanceTracking(ctx, current)
+          // Yêu cầu nhận dọc đường đã duyệt mà chưa kiện nào lên xe: từ chối vì chuyến huỷ, kiện kho kiện của nó bị xoá
+          rejectUnpickedPickups(ctx, current)
           const returned = returnUndeliveredPackages(ctx, current)
           ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, returned, ...driver })
         } else {
