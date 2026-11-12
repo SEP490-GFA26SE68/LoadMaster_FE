@@ -11,7 +11,7 @@
  */
 
 import { fetchBackendMe } from '@/features/auth/me-api'
-import { api, ApiError } from '@/lib/api-client'
+import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import {
@@ -128,17 +128,22 @@ export async function setSupportTicketStatus(ticketId: string, status: TicketSta
   return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body: { status } }))
 }
 
+/**
+ * Phần phụ của khung công ty mà máy chủ không cho đọc (403) hoặc không có (404) thì là `null` — khung bỏ phần đó. Lỗi khác (mất mạng,
+ * máy chủ lỗi) ném tiếp để màn báo lỗi tải và cho thử lại, không giả như công ty không có số dư.
+ */
 async function orNull<T>(promise: Promise<T>): Promise<T | null> {
   try {
     return await promise
-  } catch {
-    return null
+  } catch (error) {
+    if (isApiError(error) && (error.status === 403 || error.status === 404)) return null
+    throw error
   }
 }
 
 /**
  * Gói, số dư và 20 giao dịch credit gần nhất của công ty — khung bên cạnh màn hỗ trợ. Backend: tên công ty theo hợp đồng, không có hợp
- * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch đọc hỏng thì là `null`.
+ * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch máy chủ không cho đọc (403) hay không có (404) thì là `null`, lỗi khác ném tiếp.
  */
 // GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
 export async function getSupportCompanyPanel(companyId: string, companyName?: string): Promise<SupportPanel> {
