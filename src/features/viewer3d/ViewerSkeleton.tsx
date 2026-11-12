@@ -65,7 +65,7 @@ export function ViewerSkeleton({
           </filter>
         </defs>
         <g transform="translate(300,196)">
-          <polygon points={scene.shadow} fill="#000" opacity={0.5} filter="url(#lm-sk-blur)" />
+          <polygon points={scene.shadow} fill="var(--cyan-950)" opacity={0.5} filter="url(#lm-sk-blur)" />
           {scene.faces.map((face, index) => (
             <polygon
               key={index}
