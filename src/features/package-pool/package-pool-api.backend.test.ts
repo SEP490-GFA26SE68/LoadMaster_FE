@@ -214,7 +214,6 @@ test('gỡ cờ: DELETE cờ duy nhất của kiện; ở Tra cứu kiện chỉ
   routes['DELETE /api/packages/3/flag'] = { body: envelope({ ...IMPORTED, flag: null }) }
   expect(await clearPackageFlag('3', 'DAMAGED')).toMatchObject({ id: '3', flags: [] })
   expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['DELETE /api/packages/3/flag'])
-  expect(PACKAGE_POOL_SUPPORT.flagClearer).toBe('trips.edit')
 })
 
 test('phần backend chưa có ở lớp này: ghi loại kiện (màn máy chủ tự ghi) không gọi mạng', async () => {

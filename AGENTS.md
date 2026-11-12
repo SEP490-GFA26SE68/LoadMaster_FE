@@ -48,7 +48,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `requirements.edit` — của **điều phối viên** (như backend); đưa yêu cầu vào chuyến / gỡ khỏi chuyến là sửa chuyến, theo `trips.edit` của điều
   phối viên; kho không xét vai trò cho các hàm yêu cầu giao (D-72). `packages.view` mở Kho kiện `/kien-hang` (nhân viên kho, điều phối viên, quản lý
   công ty); nút ghi của màn đó và `/loai-kien` theo `packages.manage` của **nhân viên kho** — backend giao `PACKAGE_MANAGE`, `PACKAGE_TYPE_MANAGE`
-  cho `WAREHOUSE_WORKER`; gỡ cờ kiện: điều phối viên hoặc nhân viên kho. Nhân viên kho còn có `/kho-khach-hang` (khách gửi hàng, `warehouse.operate`).
+  cho `WAREHOUSE_WORKER`; gỡ cờ kiện: chỉ điều phối viên (`trips.edit`, như máy chủ), "đã tìm thấy" kiện
+  mang cờ "Không tìm thấy": chỉ nhân viên kho. Nhân viên kho còn có `/kho-khach-hang` (khách gửi hàng, `warehouse.operate`).
   `labels.print` mở In nhãn `/kien-hang/nhan`, `packages.lookup` mở Tra cứu kiện `/tra-cuu-kien` — điều phối viên và nhân viên kho.
   `trialRequests.manage`: `/nen-tang/yeu-cau-dung-thu`; `subscriptionPlans.manage` còn mở `/nen-tang/lich-su-goi`.
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
@@ -1255,7 +1256,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   mang `flag` (`NOT_FOUND` thiếu lúc soạn, `DAMAGED` hỏng lúc xếp; máy chủ cũ không trả là không cờ): còn cờ thì máy chủ không cho vào yêu cầu
   giao / đơn khác (`PACKAGE_FLAGGED`); chi tiết kiện hiện cờ (`PackageFlagSection`) và điều phối viên gỡ bằng nút "Gỡ cờ"
   (`DELETE /api/packages/{id}/flag`, không cờ là `PACKAGE_NOT_FLAGGED`). Lượt quét cũng trả cờ, nên Tra cứu kiện hiện cờ, gỡ cờ cho điều phối
-  viên (`PACKAGE_POOL_SUPPORT.flagClearer` = `trips.edit`, kho mẫu là `packages.manage`) và nhân viên kho báo tìm thấy kiện
+  viên (`trips.edit`, ở cả hai nguồn) và nhân viên kho báo tìm thấy kiện
   `NOT_FOUND` bằng `POST /api/packages/{id}/found` (theo mã của kho). Chi tiết kiện có Lịch sử (`PackageHistorySection`): nhật ký của máy chủ
   về kiện `GET /api/packages/{id}/history` (đối tượng là kiện hoặc sự kiện mang mã kiện, mới nhất trước, 100 dòng), câu dịch như Nhật ký máy
   chủ (`serverAuditRow`); máy chủ không ghi lúc tạo kiện.
@@ -1627,8 +1628,8 @@ phân biệt hoa thường). Mã đang tra nằm trên URL (`?ma=`, kiện đã 
 khác: "Không tìm thấy" (`QR_UNKNOWN`), không lộ dữ liệu. Hành động theo vai trò (`lookupActions`): "In lại nhãn" (`labels.print`); điều phối
 viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến; nhân viên kho **quét** thấy kiện mang cờ "Không tìm thấy" thì cờ được gỡ ngay, **gõ mã** thì thẻ
 có nút "Đã tìm thấy kiện này" — cả hai gọi `reportPackageFound` (chỉ vai trò kho, chỉ cờ `NOT_FOUND`; máy chủ `POST /api/packages/{id}/found`), kho
-ghi sự kiện `package.found` và điều phối viên thấy ở chuông. Nút gỡ cờ của thẻ theo `PACKAGE_POOL_SUPPORT.flagClearer`: máy chủ chỉ cho điều
-phối viên gỡ cờ. "Quét mã QR" là nút chính của màn. Màn nằm trong khung ứng dụng; nhân viên kho (`warehouse.operate`) được nút, ô nhập
+ghi sự kiện `package.found` và điều phối viên thấy ở chuông. Nút gỡ cờ của thẻ và của chi tiết kiện theo `trips.edit`: kho mẫu và máy
+chủ chỉ cho điều phối viên gỡ cờ. "Quét mã QR" là nút chính của màn. Màn nằm trong khung ứng dụng; nhân viên kho (`warehouse.operate`) được nút, ô nhập
 56 px, chữ từ 16 px và nút "Về màn kho" trên dải trời.
 
 **Đối chiếu kiện, soạn → xếp → giao, huỷ chuyến**
