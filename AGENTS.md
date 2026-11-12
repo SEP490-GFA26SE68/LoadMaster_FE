@@ -1454,7 +1454,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 3. Component chỉ gọi hook, không bao giờ gọi `-api.ts` trực tiếp.
 
 Không màn nào giữ dữ liệu nghiệp vụ ở `useState`: mọi màn đọc/ghi kho mock qua Query (ví dụ trạng thái xe đọc `useVehicleStatesQuery`,
-`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác; ghi bảo dưỡng vô hiệu hoá `['vehicles']`).
+`['vehicles', 'states']`, `staleTime: 0` vì pha chuyến đổi ở màn khác; ghi bảo dưỡng vô hiệu hoá `['vehicles']`). Nhịp đọc lại
+(`refetchInterval`) luôn bọc `pollInterval` (`lib/polling.ts`): lỗi liên tiếp thì nhịp giãn gấp đôi, năm lần thì dừng tới lần đọc được kế tiếp.
 
 Tên hàm trong `-api.ts` theo hành động của endpoint ở issue backend (FE-0-09). Mỗi hàm export có một dòng comment ghi endpoint ngay trên nó
 (`// POST /api/trips/{id}/optimize-route`), đầu file có bảng hàm → endpoint. Endpoint backend chưa có ghi "chưa có ở BE", kèm mã câu hỏi mở

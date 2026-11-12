@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { pollInterval } from '@/lib/polling'
 import { LIVE_TRIP_REFRESH_MS } from './live-trip-refresh'
 import { approveManualConfirmation, fetchManualConfirmations, rejectManualConfirmation } from './manual-confirm-api'
 import { approveServerManualConfirmation, fetchServerManualConfirmations, rejectServerManualConfirmation } from './manual-confirm-backend-api'
@@ -14,7 +15,7 @@ export function useManualConfirmationsQuery(tripId: string, server = false, live
     queryFn: () => (server ? fetchServerManualConfirmations(tripId) : fetchManualConfirmations(tripId)),
     enabled: tripId !== '',
     staleTime: 0,
-    refetchInterval: live ? LIVE_TRIP_REFRESH_MS : false,
+    refetchInterval: (query) => pollInterval(query, live && LIVE_TRIP_REFRESH_MS),
     refetchOnWindowFocus: live,
   })
 }
