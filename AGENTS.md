@@ -1806,6 +1806,10 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - Chi tiết chuyến chỉ cho sửa khi `can('trips.edit') && phase === 'planning'` (LM-088); form sửa chuyến cũng chỉ mở ở `planning` và `updateTrip`
   từ chối `TRIP_LOCKED` ở mọi pha khác — như máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch (D-45). Lý do khoá hiện bằng `TripLockBanner` (chi tiết chuyến, Thiết lập tối ưu). Hộp thoại mở từ mục `DropdownMenu`
   dùng `modal={false}` cho menu để focus về đúng hộp thoại.
+- **Chi tiết chuyến tự đọc lại** khi chuyến Đang xếp hàng hoặc Đang vận chuyển (`live-trip-refresh.ts`): truy vấn chi tiết — kho mẫu
+  `useTripDetailQuery`, máy chủ `useBackendTripDetailQuery` (`['trips', tripId, 'backend-detail']`) — có `refetchInterval` 30 giây theo trạng thái đọc
+  được và `refetchOnWindowFocus`; thẻ "Xác nhận tay chờ duyệt" và "Kiện kho báo thiếu" nhận `live` để đọc lại cùng nhịp. Trạng thái khác: không
+  nhịp nào (mặc định của app vẫn không đọc lại khi focus).
 - **Pha và trạng thái chuyến** (LM-081 → LM-083, FE-0-05, FE-4b-09, D-81). Kho lưu **pha** chuyến `planning → loading → loaded → delivering →
   completed` (+ `cancelled`); `TripStatus` là 6 trạng thái của backend: `DRAFT`, `PLANNED`, `LOADING` (pha `loading`/`loaded`), `IN_TRANSIT`
   (`delivering`), `DELIVERED` (`completed`), `CANCELLED`. Pha `planning`: chuyến **đã tối ưu tuyến** (`Trip.routePlan`) là `PLANNED`, chưa là

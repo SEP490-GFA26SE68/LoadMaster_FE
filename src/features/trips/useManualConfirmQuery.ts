@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { LIVE_TRIP_REFRESH_MS } from './live-trip-refresh'
 import { approveManualConfirmation, fetchManualConfirmations, rejectManualConfirmation } from './manual-confirm-api'
 import { approveServerManualConfirmation, fetchServerManualConfirmations, rejectServerManualConfirmation } from './manual-confirm-backend-api'
 
@@ -7,12 +8,14 @@ import { approveServerManualConfirmation, fetchServerManualConfirmations, reject
  * hoặc từ chối đổi dòng phụ của chuyến ở mọi màn và tiến độ kho / tài xế đang đọc, nên làm mới cả chuyến, danh sách kho, bảng điều
  * khiển và chuông. `server`: xác nhận tay của máy chủ (Chi tiết chuyến của máy chủ, `tripId` là mã số) thay vì kho mẫu.
  */
-export function useManualConfirmationsQuery(tripId: string, server = false) {
+export function useManualConfirmationsQuery(tripId: string, server = false, live = false) {
   return useQuery({
     queryKey: ['trips', tripId, 'manual-confirms', server ? 'server' : 'store'],
     queryFn: () => (server ? fetchServerManualConfirmations(tripId) : fetchManualConfirmations(tripId)),
     enabled: tripId !== '',
     staleTime: 0,
+    refetchInterval: live ? LIVE_TRIP_REFRESH_MS : false,
+    refetchOnWindowFocus: live,
   })
 }
 
