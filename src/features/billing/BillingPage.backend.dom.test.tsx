@@ -153,6 +153,41 @@ test('topping up at the backend price shows monthly reset warning without cap an
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'MOCK' } })
 })
 
+test('the plan expires while the top-up dialog is open: the server refuses with SUBSCRIPTION_EXPIRED, the dialog says why and stays open', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  backend.routes['POST /api/credits/topup'] = () => {
+    // Máy chủ đã thấy gói hết hạn: đọc lại gói và điều kiện nạp cũng theo đó
+    serve({ ...ACTIVE, status: 'EXPIRED' }, 1200)
+    return new Response(JSON.stringify({ success: false, code: 'SUBSCRIPTION_EXPIRED', message: 'het han', data: null }), { status: 409 })
+  }
+  renderBilling()
+  await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
+  const dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' }))
+  expect(await within(dialog).findByText('Gói cước đã hết hạn nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.', {}, SLOW)).toBeInTheDocument()
+  await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' })).toBeDisabled(), SLOW)
+  expect(screen.queryByText('Đang ở', { exact: false })).toBeNull()
+})
+
+test('the server refuses a top-up with its code: the dialog shows the sentence of that code, then reopening clears it', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  backend.routes['POST /api/credits/topup'] = () =>
+    new Response(JSON.stringify({ success: false, code: 'SUBSCRIPTION_EXPIRED', message: 'het han', data: null }), { status: 409 })
+  renderBilling()
+  await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
+  let dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' }))
+  // Điều kiện nạp vẫn cho nạp nên câu lỗi của mã (apiErrors.SUBSCRIPTION_EXPIRED) hiện trong hộp
+  expect(await within(dialog).findByText('Gói cước đã hết hạn hoặc đã huỷ nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.', {}, SLOW)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }))
+  await user.click(screen.getByRole('button', { name: 'Nạp credit' }))
+  dialog = await screen.findByRole('dialog')
+  await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' })
+  expect(within(dialog).queryByText(/hết hạn hoặc đã huỷ/)).toBeNull()
+})
+
 test('an expired plan the backend no longer names: says so, offers the plans and subscribes through the gateway', async () => {
   const user = userEvent.setup()
   serve({ ...ACTIVE, subscriptionId: null, planId: null, planName: null, tier: null, status: 'EXPIRED', startedAt: null, expiresAt: null, autoRenew: null }, 0)

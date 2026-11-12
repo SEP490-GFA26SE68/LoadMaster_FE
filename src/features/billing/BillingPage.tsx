@@ -170,7 +170,8 @@ export function BillingPage() {
   }
 
   function handleTopUp(credits: number, amountVnd: number) {
-    topUp.mutate(credits, { onSuccess: (start) => openPayment(start, '', amountVnd), onError: showError })
+    // Lỗi nạp hiện ngay trong hộp nạp (`TopUpDialog error`), không thêm toast
+    topUp.mutate(credits, { onSuccess: (start) => openPayment(start, '', amountVnd) })
   }
 
   function handleRenew(target: Renewal) {
@@ -219,7 +220,7 @@ export function BillingPage() {
                 <LifeBuoy strokeWidth={1.5} />
                 {t('billing.support')}
               </Button>
-              <Button variant="primary" onClick={() => setTopUpOpen(true)}>
+              <Button variant="primary" onClick={() => { topUp.reset(); setTopUpOpen(true) }}>
                 <Coins strokeWidth={1.5} />
                 {t('billing.topUp')}
               </Button>
@@ -325,6 +326,7 @@ export function BillingPage() {
         open={topUpOpen}
         onOpenChange={setTopUpOpen}
         pending={topUp.isPending}
+        error={topUp.error}
         onConfirm={handleTopUp}
         tier={current?.plan.tier ?? null}
         balance={balance.data?.balance ?? 0}

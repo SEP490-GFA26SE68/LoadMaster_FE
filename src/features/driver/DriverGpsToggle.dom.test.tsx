@@ -1,6 +1,7 @@
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
+import { ApiError } from '@/lib/api-client'
 import { getMockDb } from '@/lib/mock-db'
 import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
 import { loadTrip } from '@/test/trip-flow'
@@ -127,21 +128,26 @@ test('permission denied: tracking stops, the switch goes back off with the reaso
   expect((await gpsPoints(tripId)).length).toBe(before)
 })
 
-test('a lost signal and turning it off both go back to simulation with a message; leaving the trip screen stops watching', async () => {
+test('a lost signal keeps sharing on and sends again on the next fix; turning it off goes back to simulation; leaving the screen stops watching', async () => {
   const tripId = await deliveringTrip()
   const geo = mockGeolocation()
+  const interval = holdSendInterval()
   const view = renderDriver(`/tai-xe/diem-giao?chuyen=${tripId}`)
   const toggle = await screen.findByRole('switch', SWITCH, LOAD)
   await userEvent.click(toggle)
   geo.fix(10.85, 106.75)
   expect(await screen.findByText(/^Đã gửi vị trí lúc/, {}, LOAD)).toBeInTheDocument()
+  const before = (await gpsPoints(tripId)).length
   geo.fail(2)
-  expect(await screen.findByText('Mất tín hiệu GPS: vị trí xe về mô phỏng. Bật lại khi có tín hiệu.')).toBeInTheDocument()
-  // Thôi theo dõi nằm ở phần dọn của effect, chạy sau lần vẽ đã hiện câu trên: chờ nó thay vì đọc ngay
-  await waitFor(() => expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['false', 0]))
+  expect(await screen.findByText('Mất tín hiệu GPS — gửi tiếp khi có tín hiệu.')).toBeInTheDocument()
+  expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['true', 1])
+  // mất tín hiệu thì nhịp 30 giây không gửi lại vị trí cũ; có vị trí mới là gửi ngay
+  interval.tick()
+  expect((await gpsPoints(tripId)).length).toBe(before)
+  geo.fix(10.9, 106.8)
+  await waitFor(async () => expect((await gpsPoints(tripId)).map((point) => point.lat).at(-1)).toBe(10.9), LOAD)
+  expect(await screen.findByText(/^Đã gửi vị trí lúc/, {}, LOAD)).toBeInTheDocument()
 
-  await userEvent.click(toggle)
-  expect(geo.watching()).toBe(1)
   await userEvent.click(toggle)
   expect(screen.getByText('Đã tắt GPS thật: vị trí xe về mô phỏng.')).toBeInTheDocument()
   expect(geo.watching()).toBe(0)
@@ -150,6 +156,49 @@ test('a lost signal and turning it off both go back to simulation with a message
   expect(geo.watching()).toBe(1)
   view.unmount()
   expect(geo.watching()).toBe(0)
+})
+
+test('a failed send keeps sharing on and retries with backoff (30 → 60 s); a later success shows the sent time again', async () => {
+  const tripId = await deliveringTrip()
+  const geo = mockGeolocation()
+  const interval = holdSendInterval()
+  const db = getMockDb()
+  const real = db.postDriverLocation.bind(db)
+  const sender = vi.spyOn(db, 'postDriverLocation')
+    .mockRejectedValueOnce(new ApiError('NETWORK_ERROR'))
+    .mockRejectedValueOnce(new ApiError('SERVER_ERROR', { status: 503 }))
+    .mockImplementation(real)
+  renderDriver(`/tai-xe/diem-giao?chuyen=${tripId}`)
+  const toggle = await screen.findByRole('switch', SWITCH, LOAD)
+  await userEvent.click(toggle)
+  geo.fix(10.85, 106.75)
+  expect(await screen.findByText('Chưa gửi được vị trí — đang thử lại.', {}, LOAD)).toBeInTheDocument()
+  expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['true', 1])
+  expect(screen.getByText('GPS', { exact: true })).toBeInTheDocument()
+
+  // hỏng lần đầu: thử lại ở nhịp kế (30 giây); hỏng lần hai: chờ hai nhịp (60 giây)
+  interval.tick()
+  await waitFor(() => expect(sender).toHaveBeenCalledTimes(2))
+  // Để hook ghi nhận lần hỏng thứ hai trước nhịp kế
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  interval.tick()
+  expect(sender).toHaveBeenCalledTimes(2)
+  interval.tick()
+  await waitFor(() => expect(sender).toHaveBeenCalledTimes(3))
+  expect(await screen.findByText(/^Đã gửi vị trí lúc/, {}, LOAD)).toBeInTheDocument()
+  expect(toggle).toBeChecked()
+})
+
+test('the server refusing the position (trip no longer in transit) stops sharing with the reason', async () => {
+  const tripId = await deliveringTrip()
+  const geo = mockGeolocation()
+  vi.spyOn(getMockDb(), 'postDriverLocation').mockRejectedValue(new ApiError('GPS_TRIP_NOT_IN_TRANSIT', { status: 400 }))
+  renderDriver(`/tai-xe/diem-giao?chuyen=${tripId}`)
+  const toggle = await screen.findByRole('switch', SWITCH, LOAD)
+  await userEvent.click(toggle)
+  geo.fix(10.85, 106.75)
+  expect(await screen.findByText('Không gửi được vị trí: vị trí xe về mô phỏng. Chuyến không ở trạng thái đang vận chuyển.', {}, LOAD)).toBeInTheDocument()
+  await waitFor(() => expect([toggle.getAttribute('aria-checked'), geo.watching()]).toStrictEqual(['false', 0]))
 })
 
 test('a device without geolocation shows the switch disabled with the reason', async () => {

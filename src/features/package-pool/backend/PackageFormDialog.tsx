@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
-import { useQuery } from '@tanstack/react-query'
-import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
+import { useRequirementsQuery } from '@/features/requirements/backend/useRequirementsQuery'
 
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
@@ -199,11 +198,7 @@ export function PackageFormDialog({
   const update = useUpdateCargoPackageMutation()
 
   const isEditing = editPackage !== undefined
-  const requirementsQuery = useQuery({
-    queryKey: ['requirements', 'warehouse', 'manual-create'],
-    queryFn: () => listDeliveryRequirements(),
-    enabled: !isEditing,
-  })
+  const requirementsQuery = useRequirementsQuery({ enabled: !isEditing })
 
   const availableRequirements = (requirementsQuery.data ?? []).filter(
     (row) =>

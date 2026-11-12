@@ -14,8 +14,7 @@ import {
   usePreviewPackageImportMutation,
 } from './usePackagePoolQuery'
 
-import { useQuery } from '@tanstack/react-query'
-import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
+import { useRequirementsQuery } from '@/features/requirements/backend/useRequirementsQuery'
 import { SelectField } from '@/components/ui/SelectField'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -52,10 +51,7 @@ export function PackageImportDialog({
     },
   })
 
-  const requirementsQuery = useQuery({
-    queryKey: ['requirements'],
-    queryFn: listDeliveryRequirements,
-  })
+  const requirementsQuery = useRequirementsQuery()
 
   const deliveryRequirementId = useWatch({ control: requirementForm.control, name: 'deliveryRequirementId' })
 

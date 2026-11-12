@@ -1185,7 +1185,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phiên hết giữa chừng (`onEnded`) đưa về màn đăng nhập. `useAuth().status` là `restoring` cho tới khi mở lại phiên xong và `RequireAuth` chưa
   quyết gì trong lúc đó. Hồ sơ đọc ở `GET /api/users/me`; mã vai trò backend đổi sang vai trò FE ở `backend-user.ts` (nhận cả `ADMIN` /
   `COMPANY_ADMIN`, `MANAGER` / `COMPANY_MANAGER`); 404 là tài khoản Keycloak chưa gắn người dùng nào (`account-not-linked`), 401 là máy chủ không
-  nhận token (`session-rejected`) — cả hai, và mọi lỗi khác của bước này, đóng luôn phiên Keycloak vừa mở. **Đặt mật khẩu mới**
+  nhận token (`session-rejected`) — cả hai, cùng vai trò lạ và tài khoản bị khoá, đóng luôn phiên Keycloak vừa mở. Lỗi **tạm thời** của bước này
+  (`isTransientApiError`: mất mạng, quá giờ, máy chủ 5xx) **giữ** phiên: màn đăng nhập nói không kết nối được máy chủ kèm nút "Thử lại"
+  (`retrySession`, `sessionRetryable`) đọc lại hồ sơ mà không phải nhập mật khẩu. Mọi lượt `api()` / `apiFetch` bị **401** với token đã gửi thì
+  làm mới token một lần (`session.refreshToken()`, bỏ qua hạn còn lại) và gửi lại đúng lượt đó; vẫn 401 thì `session.reject()` đóng phiên ở mọi
+  tab và ở Keycloak, `onEnded` đưa về màn đăng nhập; làm mới hỏng vì mạng thì trả nguyên 401, giữ phiên (`connectApiAuth(token, { refreshToken,
+  onUnauthorized })`). `refreshUser()` trả lời hứa và **ném** lỗi đọc lại cho nơi gọi báo ra (toast), người đang đứng giữ nguyên. **Đặt mật khẩu mới**
   (`password-reset-api.ts`): `POST /api/auth/password-reset/request` · `/verify` (trả `resetToken`) · `/reset`, công khai; máy chủ từ chối bằng
   400 kèm mã của lý do (`OTP_INCORRECT`, `OTP_EXPIRED`, `RESET_TOKEN_INVALID`…) và `resetErrorKey` nói đúng lý do; máy chủ cũ trả 400 không mã
   thì màn nói lý do theo bước.
@@ -1221,7 +1226,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Gói cước và credit** (`billing`; `lib/billing-backend-api.ts`): backend chỉ trả gói `ACTIVE`; huỷ gói chỉ tắt `autoRenew` nên `ACTIVE` +
   `autoRenew = false` hiện là "Đã huỷ"; Ultimate không giới hạn credit. Giá và luật credit **đọc từ máy chủ** `GET /api/credits/pricing`
   (`getCreditPricing`; app không giữ giá nào): hạng tính giá, giá một credit khi nạp, credit một lần tối ưu, số nạp ít nhất, gói hết hạn thì
-  không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
+  không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do; gói hết hạn giữa lúc hộp đang mở thì máy chủ từ chối 409
+  `SUBSCRIPTION_EXPIRED`, câu lỗi hiện ngay trong hộp và gói, điều kiện nạp đọc lại); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
   tối ưu lấy credit một lần chạy từ đó. Gói đã hết hạn (`subscriptionStatusOf` là `EXPIRED`: máy chủ báo `EXPIRED` / `CANCELLED`, hoặc
   `ACTIVE` đã quá hạn) vẫn chạy tối ưu bằng số dư như kho mẫu: thẻ Credit ghi hạng Cơ bản (`basicOnly`), chặn chỉ khi số dư dưới giá một
   lần chạy, không còn "không giới hạn" (`fetchBackendOptimizationCredit`). **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
@@ -1455,7 +1461,9 @@ Tên hàm trong `-api.ts` theo hành động của endpoint ở issue backend (F
 ngắn đó — repo công khai, không chép luật nghiệp vụ hay nội dung tài liệu nội bộ. Nối backend chỉ thay thân hàm.
 
 **Khoá Query:** mỗi feature một file hook `use*Query.ts` cạnh `-api.ts` của nó (ví dụ `['package-types']`, `['package-pool', …]`,
-`['requirements', …]`, `['vehicle-types', …]` — không đặt dưới `['vehicles', id]` để khỏi va mã xe). Dữ liệu gắn một chuyến (sẵn sàng tối
+`['requirements', …]`, `['vehicle-types', …]` — không đặt dưới `['vehicles', id]` để khỏi va mã xe). Danh sách yêu cầu giao chỉ có một
+khoá `['requirements', 'list']` (`REQUIREMENTS_LIST_KEY` của bản máy chủ): màn Yêu cầu giao, hộp đưa yêu cầu vào chuyến, form kiện và nhập
+file kiện đọc qua cùng hook, không tự đặt khoá khác. Dữ liệu gắn một chuyến (sẵn sàng tối
 ưu, yêu cầu giao đã vào chuyến `['trips', tripId, 'requirements']`, báo cáo, lần chạy, so sánh ba phương án của một lần chạy
 `['trips', tripId, 'run-comparison', runId]`) nằm dưới `['trips', tripId, …]` để mọi ghi của chuyến làm mới chúng; phần thêm cho chuyến ở file
 riêng (`trips/trip-extras-api.ts` + `useTripExtrasQuery.ts`) để không đụng `trips-api.ts`. Khoá **không cần mang người dùng hay công ty**:
@@ -1692,7 +1700,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   dỡ ở điểm chưa hoàn tất; cộng kiện nhận dọc đường tài xế đã nhận lên xe ở điểm nhận chưa hoàn tất — `pickedIds`, đi qua `IN_TRANSIT`) thành
   `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù
   tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại
-  như đã ghi. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
+  như đã ghi. Yêu cầu nhận dọc đường đã duyệt mà **chưa kiện nào lên xe** (không kiện nào ở `pickedIds`, mọi kiện còn `ASSIGNED`) thành
+  `REJECTED` với `rejectCause: 'TRIP_CANCELLED'` (`rejectUnpickedPickups`; thẻ yêu cầu nói "Tự từ chối vì chuyến đã huỷ…") và kiện kho kiện
+  của nó bị xoá — hàng còn ở chỗ bên gửi, không tính vào `returned`; máy chủ làm như vậy với lý do "Chuyến đã huỷ". Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
   chuyển; hộp thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
 - **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes, pickups })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
   (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo giờ đến thật, chưa đến thì
@@ -1879,8 +1889,12 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   giây kể từ điểm GPS cuối. **"Dùng GPS thật"** (FE-6-13, D-95) là công tắc trên màn điểm giao của tài xế khi chuyến Đang vận chuyển
   (`driver/DriverGpsToggle` + `useDeviceLocation`): `navigator.geolocation.watchPosition`, điểm đầu gửi ngay rồi vị trí mới nhất mỗi 30 giây qua
   `postDriverLocation`; `setDriverGps(tripId, bật)` của kho cho đồng hồ mô phỏng chạy theo giờ thật khi bật (giờ không nhảy) và, khi tắt, cho xe
-  mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Tài xế tắt, trình duyệt từ chối quyền, mất tín hiệu, kho từ chối điểm,
-  hoặc rời màn chuyến: thôi theo dõi, về mô phỏng, màn nói lý do; thiết bị không có định vị thì công tắc mờ kèm lý do. Màn nói rõ khi chưa có
+  mô phỏng ghi tiếp ngay từ nhịp kế rồi trả đồng hồ về tốc độ `?toc-do`. Gửi hỏng **tạm thời** (`isTransientLocationError`: mất mạng, quá giờ,
+  máy chủ 5xx) **không** tắt chia sẻ: công tắc vẫn bật, dòng trạng thái ngắn "Chưa gửi được vị trí — đang thử lại", gửi lại ở nhịp kế rồi thưa dần
+  30 → 60 → 120 giây (trần 120 giây), gửi được là về nhịp 30 giây. Trình duyệt tạm mất tín hiệu GPS cũng giữ chia sẻ ("Mất tín hiệu GPS — gửi tiếp
+  khi có tín hiệu"), không gửi lại vị trí cũ, có vị trí mới là gửi ngay. Chỉ tài xế tắt, trình duyệt từ chối quyền, kho mẫu từ chối điểm hay máy
+  chủ trả 4xx (chuyến không còn Đang vận chuyển — `GPS_TRIP_NOT_IN_TRANSIT`), hoặc rời màn chuyến mới thôi theo dõi, về mô phỏng, màn nói lý do;
+  thiết bị không có định vị thì công tắc mờ kèm lý do. Màn nói rõ khi chưa có
   máy chủ vị trí chỉ hiện trong trình duyệt này. Test giả `navigator.geolocation` (`DriverGpsToggle.dom.test.tsx`); E2E dùng
   `context.setGeolocation`. Vị trí nào hiện ra cũng kèm nhãn nguồn ("Mô phỏng" / "GPS"), giờ đến tính từ vị trí mang **MOCK RESULT**. Màn đọc
   lại theo `refreshMs` kho trả (thời gian thật tới điểm kế tiếp, ít nhất 1 giây; `null` khi chuyến không còn chạy) bằng `refetchInterval` của
@@ -1943,7 +1957,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   (`PickupPackage`: mã của bên gửi, cm, kg, loại hàng), `status`, `validationResults` (kết quả `evaluatePickup`, rỗng khi chưa kiểm),
   `overrideReason?`, người và lúc tạo, `approvedBy` / `approvedAt` từ lúc `APPROVED`. Trạng thái **ghi thật**, chỉ `updatePickupStatus` đổi, theo
   bảng `PICKUP_TRANSITIONS`: `PENDING → VALIDATED | REJECTED | APPROVED` (duyệt kèm lý do vượt luật), `VALIDATED → APPROVED | REJECTED`, `APPROVED →
-  LOADED → DELIVERED`, `REJECTED` là trạng thái cuối; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Hàm của kho đều nhận mã chuyến và lọc công
+  LOADED → DELIVERED`, `REJECTED` là trạng thái cuối; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Ngoại lệ duy nhất, ngoài bảng: huỷ chuyến
+  Đang vận chuyển đưa `APPROVED` chưa nhận kiện nào về `REJECTED` (`rejectUnpickedPickups`, mục "Huỷ chuyến"). Hàm của kho đều nhận mã chuyến và lọc công
   ty qua chuyến như endpoint `/api/trips/{id}/pickup-requests` của backend: `listPickupRequests`, `getPickupRequest`, `createPickupRequest`,
   `updatePickupStatus(tripId, pickupId, status, details?)`, `validatePickupRequest`, `approvePickupRequest`, `rejectPickupRequest`.
   `DeliveryStop.kind` (`DELIVERY | PICKUP`) vắng nghĩa là `DELIVERY` (`stopKindOf`).

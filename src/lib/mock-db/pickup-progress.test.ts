@@ -122,3 +122,31 @@ test('cancelling the trip while the pickup stop is still open returns the packag
   expect(report.stops[3]?.returned).toBe((report.stops[3]?.planned ?? 0) + 2)
   expect(report.packages.returned).toBe(report.stops.reduce((sum, stop) => sum + stop.returned, 0))
 })
+
+test('cancelling the trip before any pickup package is picked up rejects the request as trip-cancelled and removes its packages; outside the cancel APPROVED never becomes REJECTED', async () => {
+  const { db, packages } = await atPickupStop()
+  // Ngoài lối huỷ chuyến, bảng chuyển trạng thái vẫn chặn APPROVED → REJECTED
+  db.restoreSession(DISPATCHER)
+  await expect(db.updatePickupStatus(TRIP, 'PKR-002', 'REJECTED')).rejects.toMatchObject({ code: 'INVALID_PICKUP_STATUS_TRANSITION', params: { from: 'APPROVED' } })
+  await expect(db.rejectPickupRequest(TRIP, 'PKR-002', 'Bên gửi huỷ')).rejects.toMatchObject({ code: 'INVALID_PICKUP_STATUS_TRANSITION' })
+
+  db.restoreSession(DRIVER)
+  await db.reportTripException(TRIP, { type: 'VEHICLE_BREAKDOWN', description: 'Xe hỏng hộp số', delayMinutes: 120 })
+  const before = await db.getTrip(TRIP)
+  db.restoreSession(DISPATCHER)
+  const cancelled = await db.cancelTrip(TRIP, 'Xe hỏng giữa đường')
+
+  const request = await db.getPickupRequest(TRIP, 'PKR-002')
+  expect(request).toMatchObject({ status: 'REJECTED', rejectCause: 'TRIP_CANCELLED', rejectedAt: NOW.toISOString(), rejectedBy: DISPATCHER, packageIds: [] })
+  expect(request.rejectReason).toBeUndefined()
+  expect(request.layout).toBeUndefined()
+  // Hàng còn ở chỗ bên gửi: kiện kho kiện của yêu cầu bị xoá, không thành Hoàn trả
+  for (const pkg of packages) await expect(db.getPackage(pkg.id)).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  expect(await db.listPickupPackages(TRIP)).toStrictEqual([])
+  const event = (await db.listEvents({ targetId: TRIP })).find((item) => item.action === 'trip.cancelled')
+  expect(event?.params.returned).toBe(undeliveredCount(before))
+
+  const plan = await db.getRevision(cancelled.loading?.revisionId ?? '')
+  const report = tripReport(cancelled, plan, { pickups: await db.listPickupRequests(TRIP) })
+  expect(report.stops[3]?.returned).toBe(report.stops[3]?.planned)
+})

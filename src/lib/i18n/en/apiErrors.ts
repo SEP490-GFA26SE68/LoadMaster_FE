@@ -143,6 +143,7 @@ export const apiErrors = {
   PLAN_IN_USE: 'Companies use or have used this plan, so it cannot be deleted.',
   ACTIVE_SUBSCRIPTION_ALREADY_EXISTS: 'The company already has an active plan.',
   NO_ACTIVE_SUBSCRIPTION: 'The company has no active plan.',
+  SUBSCRIPTION_EXPIRED: 'The plan has expired or was cancelled, so credits cannot be topped up. Renew or choose a new plan first.',
   SUBSCRIPTION_NOT_RENEWABLE: 'The plan cannot be renewed yet: it is not in its renewal window, it is a trial, or the contract was cancelled.',
   CONTACT_ASSIGNEE_INVALID: 'A contact request can only be assigned to an active system administrator or customer supporter.',
   TRIP_HAS_NO_PACKAGES: 'The trip has no packages yet, so there are no labels to print.',

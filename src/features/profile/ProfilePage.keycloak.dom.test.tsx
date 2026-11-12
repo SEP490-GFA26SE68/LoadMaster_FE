@@ -9,12 +9,17 @@ import { I18nProvider } from '@/lib/i18n'
 import { getMockDb } from '@/lib/mock-db'
 import { ProfilePage } from './ProfilePage'
 
+const toastError = vi.hoisted(() => vi.fn())
+vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn(), warning: vi.fn(), info: vi.fn() } }))
+
 /** Hồ sơ khi đăng nhập bằng Keycloak: danh tính là của tài khoản trên máy chủ (`GET /api/users/me`), mật khẩu đổi bằng mã gửi qua email. */
 const session = {
   start: vi.fn(() => Promise.resolve(true)),
   login: vi.fn((_email: string, _password: string) => Promise.resolve()),
   logout: vi.fn(() => Promise.resolve()),
   token: vi.fn(() => Promise.resolve('TOKEN')),
+  refreshToken: vi.fn(() => Promise.resolve('TOKEN')),
+  reject: vi.fn(),
   onEnded: vi.fn(() => () => undefined),
 } satisfies KeycloakSession
 
@@ -77,6 +82,18 @@ test('the profile shows the server account, read again on opening, and links to 
   const link = within(screen.getByRole('region', { name: 'Mật khẩu' })).getByRole('link', { name: 'Đổi mật khẩu' })
   expect(link).toHaveAttribute('href', '/quen-mat-khau?email=kho%40loadmaster.vn')
   expect(link).not.toHaveAttribute('target')
+})
+
+test('reading the account again fails on the server: the account on screen stays and the error is said, not a sign-out', async () => {
+  const fetchMock = backendWith(['Trần Văn Kho'], null)
+  const first = fetchMock.getMockImplementation()
+  fetchMock.mockImplementationOnce((input, init) => first!(input, init))
+  fetchMock.mockImplementation(() => Promise.resolve({ ok: false, status: 503, text: () => Promise.resolve('') } as Response))
+  renderProfile()
+  const identity = await screen.findByRole('complementary', { name: 'Tài khoản' })
+  await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith('Máy chủ gặp lỗi. Thử lại sau.'))
+  expect(within(identity).getByRole('heading', { level: 2, name: 'Trần Văn Kho' })).toBeInTheDocument()
+  expect(session.logout).not.toHaveBeenCalled()
 })
 
 test('an account without a phone number on the server shows only the email', async () => {

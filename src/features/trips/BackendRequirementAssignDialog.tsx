@@ -1,5 +1,5 @@
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -15,7 +15,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { ClipboardList } from 'lucide-react'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
-import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
+import { useRequirementsQuery } from '@/features/requirements/backend/useRequirementsQuery'
 import { assignBackendRequirementToTrip } from './trips-api'
 
 type Props = {
@@ -33,11 +33,7 @@ export function BackendRequirementAssignDialog({
   const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const requirements = useQuery({
-    queryKey: ['requirements'],
-    queryFn: listDeliveryRequirements,
-    enabled: open,
-  })
+  const requirements = useRequirementsQuery({ enabled: open })
 
   const assign = useMutation({
     mutationFn: (requirementId: string) =>

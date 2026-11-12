@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { isApiError } from '@/lib/api-client'
+import { isMockDbError } from '@/lib/mock-db'
 import {
   BILLING_CAPABILITIES,
   cancelSubscription,
@@ -89,9 +91,16 @@ export function useCancelSubscriptionMutation() {
   return useMutation({ mutationFn: cancelSubscription, onSuccess: () => refresh(client) })
 }
 
+/** Gói vừa hết hạn giữa lúc mở hộp nạp (`SUBSCRIPTION_EXPIRED`): đọc lại gói và điều kiện nạp để màn và hộp thoại theo đúng máy chủ. */
 export function useTopUpMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (credits: number) => topUpCredits(credits), onSuccess: () => refresh(client) })
+  return useMutation({
+    mutationFn: (credits: number) => topUpCredits(credits),
+    onSuccess: () => refresh(client),
+    onError: (error) => {
+      if ((isApiError(error) || isMockDbError(error)) && error.code === 'SUBSCRIPTION_EXPIRED') void refresh(client)
+    },
+  })
 }
 
 export function useSettlePaymentMutation() {

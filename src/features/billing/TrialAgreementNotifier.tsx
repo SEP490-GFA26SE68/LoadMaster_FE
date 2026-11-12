@@ -40,7 +40,7 @@ export function TrialAgreementNotifier() {
       onSuccess: () => {
         setSignOpen(false)
         toast.success(t('billing.agreementSigned'))
-        refreshUser()
+        refreshUser().catch((error: unknown) => toast.error(dataErrorMessage(error, t)))
       },
       onError: (err) => {
         toast.error(dataErrorMessage(err, t))

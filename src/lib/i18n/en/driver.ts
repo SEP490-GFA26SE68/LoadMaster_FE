@@ -61,10 +61,11 @@ export const driver = {
     localOnly: 'No server yet: the position from this phone only shows in this browser.',
     requesting: 'Waiting for location permission and a GPS signal…',
     sent: 'Position sent at {time}. Sent again every 30 seconds.',
+    retrying: 'The position could not be sent yet — retrying.',
+    signalLost: 'GPS signal lost — sending resumes when there is a signal.',
     stopped: {
       user: 'Real GPS is off: the vehicle position is simulated again.',
       denied: 'The browser did not allow location: the vehicle position is simulated again. Allow location for this page, then turn it back on.',
-      lost: 'GPS signal lost: the vehicle position is simulated again. Turn it back on when there is a signal.',
       unsupported: 'This device has no location service: the vehicle position is simulated.',
       error: 'The position could not be sent: the vehicle position is simulated again. {message}',
     },
@@ -72,7 +73,6 @@ export const driver = {
     stoppedServer: {
       user: 'Real GPS is off: the position is no longer sent.',
       denied: 'The browser did not allow location: no position was sent. Allow location for this page, then turn it back on.',
-      lost: 'GPS signal lost: the position is no longer sent. Turn it back on when there is a signal.',
       unsupported: 'This device has no location service: the position cannot be sent.',
       error: 'The position could not be sent: sending has stopped. {message}',
     },

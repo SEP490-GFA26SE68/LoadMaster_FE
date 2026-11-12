@@ -32,7 +32,14 @@ export type KeycloakSession = {
   logout(): Promise<void>
   /** Token truy cập còn hạn (tự làm mới khi sắp hết); `null` khi không còn phiên. */
   token(): Promise<string | null>
-  /** Phiên hết giữa chừng — không làm mới được nữa, hoặc tab khác vừa đăng xuất. Trả hàm huỷ đăng ký. */
+  /**
+   * Làm mới token ngay, bỏ qua hạn còn lại — máy chủ vừa trả 401 cho token đang giữ. `null` khi Keycloak đã đóng phiên (phiên kết thúc,
+   * `onEnded` được báo); mạng hỏng thì ném và phiên giữ nguyên.
+   */
+  refreshToken(): Promise<string | null>
+  /** Máy chủ vẫn từ chối token vừa làm mới: đóng phiên ở mọi tab, báo `onEnded`. */
+  reject(): void
+  /** Phiên hết giữa chừng — không làm mới được nữa, tab khác vừa đăng xuất, hoặc máy chủ từ chối phiên. Trả hàm huỷ đăng ký. */
   onEnded(listener: () => void): () => void
 }
 
@@ -289,6 +296,14 @@ export function createKeycloakSession(config: BackendConfig['keycloak'] = backen
         // Mạng hỏng lúc làm mới: giữ phiên để lượt sau thử lại; lượt này đi không token và nhận 401
         return null
       }
+    },
+    refreshToken: () => refresh(),
+    reject() {
+      const refreshToken = readRefreshToken()
+      end()
+      channel?.postMessage({ type: 'logout' })
+      // Đóng cả phiên ở Keycloak; hỏng thì thôi — tab này đã quên token
+      if (refreshToken !== null) endKeycloakSession(config, refreshToken).catch(() => undefined)
     },
     onEnded(listener) {
       listeners.add(listener)
