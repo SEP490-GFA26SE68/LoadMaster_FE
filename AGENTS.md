@@ -2027,7 +2027,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `subscriptions`, `creditAccounts`, `creditTransactions`, `payments`). Danh mục gói (`SubscriptionPlan`: hạng `BASIC | PRO | ULTIMATE`, giá VND,
   credit tháng — `null` là không giới hạn, hạng thuật toán `EP_DBLF | EP_DBLF_GA | EP_DBLF_GA_AI`) là dữ liệu nền tảng, mọi phiên đọc được; gói
   của công ty, tài khoản credit, sổ cái và thanh toán thuộc công ty, đi qua `ctx.scope` (phiên nền tảng: `COMPANY_REQUIRED`; không phiên: công ty
-  mặc định). **Số dư = tổng sổ cái, không bao giờ âm**: chỉ `appendTransaction` đổi số dư. Giao dịch `MONTHLY_GRANT | PURCHASE | USAGE | REFUND`;
+  mặc định). **Số dư = tổng sổ cái kể từ lần cấp credit tháng gần nhất, không bao giờ âm**: chỉ `appendTransaction` đổi số dư. Giao dịch `MONTHLY_GRANT | PURCHASE | USAGE | REFUND`;
   lượt dùng `RESERVED → DEDUCTED | REFUNDED`, hoàn đúng một lần theo mã tham chiếu `JOB-NNN`. Vai trò: quản trị công ty đăng ký, huỷ, nạp credit,
   xử lý thanh toán (`ROLE_NOT_ALLOWED`, xét sau công ty); quản lý nền tảng sửa gói; đọc và giữ / hoàn credit của lần chạy không xét vai trò (quyền
   `optimization.run` chặn ở route). **Vòng đời theo đồng hồ của kho, không hẹn giờ**: mọi hàm chạm tới công ty gọi `settle` trước.
@@ -2036,8 +2036,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30); còn
   `renewalNoticeDays` (3, đề xuất) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
   (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
-  `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Credit tháng cộng dồn
-  sang kỳ sau (BE chưa xác nhận, Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ: `SEED_PLANS` ở
+  `provisional`) chỉ áp từ kỳ kế tiếp: thanh toán gia hạn chụp giá và credit lúc tạo, và thanh toán gia hạn đang chờ đổi theo. Mỗi kỳ mới (đăng ký,
+  gia hạn) đặt lại số dư về đúng credit tháng của kỳ — credit còn thừa, kể cả credit đã mua, không cộng dồn sang kỳ sau, như máy chủ (Q-27). **Giá và hạn mức Pro, Ultimate, giá ba gói là giá trị tạm** (`provisional: true`, một chỗ: `SEED_PLANS` ở
   `seed-billing.ts`; PRD v2 mục 17.2 chưa chốt) — màn gói cước ghi "Giá trị tạm — chờ chốt". Seed: Long Bình gói Pro (500 credit), Phương Nam gói
   Basic (100 credit, đã dùng gần hết: còn 2 — đúng một lần chạy); sổ cái dựng từ các lần chạy của seed sau khi dời giờ và kỳ hiện tại bao giờ của kho (nên số dư của
   seed không đổi theo ngày chạy test). Nhật ký: nhóm `subscription` (`subscribed`, `renewed`, `cancelled`, `expired` — hệ thống ghi) và `credit`

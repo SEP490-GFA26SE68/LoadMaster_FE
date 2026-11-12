@@ -61,7 +61,10 @@ export type CreditAccount = {
   /** `CA-NNN`. */
   id: string
   companyId: string
-  /** Luôn bằng tổng `amount` của sổ cái công ty và không bao giờ âm. */
+  /**
+   * Tổng `amount` của sổ cái công ty kể từ lần cấp credit tháng (`MONTHLY_GRANT`) gần nhất, không bao giờ âm: mỗi kỳ mới đặt lại số dư
+   * về đúng credit của kỳ đó, credit còn lại của kỳ trước không cộng dồn — như máy chủ (Q-27).
+   */
   balance: number
 }
 
@@ -112,7 +115,7 @@ export type PaymentTransaction = {
 
 export type CurrentSubscription = { subscription: CompanySubscription; plan: SubscriptionPlan }
 
-/** Số dư của công ty; gói không giới hạn thì `unlimited` (số dư thật vẫn là tổng sổ cái). */
+/** Số dư của công ty; gói không giới hạn thì `unlimited` (số dư thật vẫn tính theo sổ cái). */
 export type CreditBalance = { balance: number; unlimited: boolean }
 
 /** Phần gói được sửa (D-90): đổi giá, credit tháng áp dụng từ kỳ gia hạn kế tiếp của từng công ty. */

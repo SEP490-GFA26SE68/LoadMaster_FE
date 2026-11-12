@@ -64,19 +64,19 @@ describe('ledger and seed', () => {
   test.each([
     { user: LONG_BINH_ADMIN, balance: 472, rows: 17, usages: 15, plan: 'Pro' },
     { user: PHUONG_NAM_ADMIN, balance: 2, rows: 50, usages: 49, plan: 'Basic' },
-  ])('$plan company: balance is the sum of the ledger and never went below zero ($balance)', async ({ user, balance, rows, usages }) => {
+  ])('$plan company: balance is the sum of the ledger since the latest monthly grant and never went below zero ($balance)', async ({ user, balance, rows, usages }) => {
     const { db } = open(user)
     const ledger = await db.listCreditTransactions()
     expect(await balanceOf(db)).toBe(balance)
     expect(ledger).toHaveLength(rows)
     expect(ledger.filter((entry) => entry.type === 'USAGE')).toHaveLength(usages)
-    expect(ledger.reduce((sum, entry) => sum + entry.amount, 0)).toBe(balance)
-    // Cũ trước: số dư chạy qua từng giao dịch không bao giờ âm
+    // Cũ trước: số dư chạy qua từng giao dịch không bao giờ âm; cấp credit tháng đặt lại số dư
     let running = 0
     for (const entry of ledger.toReversed()) {
-      running += entry.amount
+      running = entry.type === 'MONTHLY_GRANT' ? entry.amount : running + entry.amount
       expect(running).toBeGreaterThanOrEqual(0)
     }
+    expect(running).toBe(balance)
   })
 
   test('every seeded run has exactly one usage at its own time; a failed run was refunded once', async () => {
@@ -135,7 +135,7 @@ describe('plan lifecycle on the store clock', () => {
     expect((await db.listCreditTransactions()).filter((entry) => entry.type === 'MONTHLY_GRANT' && entry.reference === payment.id)).toHaveLength(1)
   })
 
-  test('auto-renew makes one pending payment before the end; paying extends the period by 30 days and grants the monthly credits', async () => {
+  test('auto-renew makes one pending payment before the end; paying extends the period by 30 days and resets the balance to the monthly credits', async () => {
     const { db, jump } = open(PHUONG_NAM_ADMIN)
     const end = await expiryOf(db)
     jump(end, -(BILLING_CONSTANTS.renewalNoticeDays * DAY_MS + 1000))
@@ -148,7 +148,8 @@ describe('plan lifecycle on the store clock', () => {
 
     await db.settlePayment(renewal?.id ?? '', 'SUCCESS')
     expect(await expiryOf(db)).toBe(new Date(Date.parse(end) + BILLING_CONSTANTS.periodDays * DAY_MS).toISOString())
-    expect(await balanceOf(db)).toBe(102)
+    // Kỳ mới bắt đầu lại từ 100 credit: 2 credit còn lại của kỳ trước không cộng dồn, như máy chủ
+    expect(await balanceOf(db)).toBe(100)
     expect((await db.listEvents())[0]).toMatchObject({ action: 'subscription.renewed', companyId: 'LOG-002' })
   })
 
@@ -210,7 +211,7 @@ describe('plan lifecycle on the store clock', () => {
     db.restoreSession(PHUONG_NAM_ADMIN)
     expect((await db.listPayments())[0]).toMatchObject({ amountVnd: 600_000, credits: 130 })
     await db.settlePayment(renewal?.id ?? '', 'SUCCESS')
-    expect(await balanceOf(db)).toBe(132)
+    expect(await balanceOf(db)).toBe(130)
   })
 
   test.each([
