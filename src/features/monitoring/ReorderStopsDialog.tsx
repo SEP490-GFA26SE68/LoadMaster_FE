@@ -16,7 +16,7 @@ import { useReorderStopsMutation } from './useMonitoringQuery'
 /**
  * Hộp "Đổi thứ tự điểm giao" (FE-BL-03, D-87): điều phối viên đề xuất thứ tự mới cho các điểm chưa giao của chuyến đang chạy. Điểm đã
  * hoàn tất và điểm xe đã tới đứng nguyên (hiện khoá, không có nút dời). Kho kiểm lại khả năng dỡ của phương án như đã xếp: không đạt
- * thì không đổi gì và hộp nêu từng kiện bị chắn kèm điểm giao của nó, bằng chữ. Đạt thì đóng hộp; kiện bị che một phần chỉ là cảnh báo.
+ * thì không đổi gì và hộp nêu từng kiện bị chắn kèm điểm giao của nó, bằng chữ; điểm chưa có toạ độ cũng được nêu tên. Đạt thì đóng hộp; kiện bị che một phần chỉ là cảnh báo.
  * Mỗi lần mở bắt đầu từ thứ tự hiện tại. Máy chủ từ chối cùng mã, cùng tham số (mã điểm là mã số của máy chủ, như điểm của bảng).
  */
 export function ReorderStopsDialog({ trip, open, onOpenChange }: { trip: MonitoringTrip; open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -60,6 +60,7 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
 
   const failure = reorder.error
   const blocked = blockedCargo(failure)
+  const unlocated = missingStops(failure)
   const numberOf = (stopId: string) => trip.stops.findIndex((stop) => stop.id === stopId) + 1
   const nameOf = (stopId: string) => trip.stops.find((stop) => stop.id === stopId)?.name ?? stopId
 
@@ -117,6 +118,16 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
             </ul>
             <p className="m-0 mt-1.5 text-small">{t('monitoring.reorder.blocked.unchanged')}</p>
           </Banner>
+        ) : unlocated ? (
+          <Banner tone="danger">
+            <p className="m-0 font-semibold">{t('monitoring.reorder.missingCoordinates.title')}</p>
+            <ul aria-label={t('monitoring.reorder.missingCoordinates.list')} className="m-0 mt-1.5 flex list-disc flex-col gap-0.5 pl-5 text-small">
+              {unlocated.map((stopId) => (
+                <li key={stopId}>{t('monitoring.reorder.blocked.item', { number: numberOf(stopId), name: nameOf(stopId) })}</li>
+              ))}
+            </ul>
+            <p className="m-0 mt-1.5 text-small">{t('monitoring.reorder.blocked.unchanged')}</p>
+          </Banner>
         ) : failure ? (
           <Banner tone="warning">{dataErrorMessage(failure, t)}</Banner>
         ) : null}
@@ -134,6 +145,17 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
 }
 
 type BlockedCargo = MockDbErrorParams['STOP_ORDER_BLOCKS_CARGO']
+
+/**
+ * Điểm chưa có toạ độ khi kho mẫu hoặc máy chủ từ chối `MISSING_STOP_COORDINATES` — máy chủ trả `errors.stopIds` là mã số điểm, cùng mã với
+ * điểm của bảng; lỗi khác hoặc không kèm điểm là `null`.
+ */
+function missingStops(failure: unknown): string[] | null {
+  if (isMockDbError(failure) && failure.code === 'MISSING_STOP_COORDINATES') return (failure.params as MockDbErrorParams['MISSING_STOP_COORDINATES']).stopIds
+  if (!isApiError(failure) || failure.code !== 'MISSING_STOP_COORDINATES') return null
+  const { stopIds } = failure.params
+  return Array.isArray(stopIds) && stopIds.length > 0 ? stopIds.map(String) : null
+}
 
 /** Kiện bị che kín theo thứ tự mới — `packages` và `stopIds` song song — từ lỗi của kho mẫu hoặc của máy chủ; lỗi khác là `null`. */
 function blockedCargo(failure: unknown): Pick<BlockedCargo, 'packages' | 'stopIds'> | null {

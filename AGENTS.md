@@ -1304,7 +1304,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `ESCALATED`). Phản hồi không mang lần gia hạn nên dòng không có câu "Đã nhập hạn mới — chờ điều phối viên…". "Đổi thứ tự điểm" gửi
   `POST /api/trips/{id}/stops/reorder` (`{ stopIds }` mã số điểm của máy chủ; chỉ điều phối viên, chuyến Đang vận chuyển — `TRIP_NOT_IN_TRANSIT`):
   máy chủ kiểm cùng luật với kho mẫu, kiện bị che kín là 409 `STOP_ORDER_BLOCKS_CARGO` kèm `packages` / `stopIds` cùng dạng, che một phần trả
-  ở `partial`. `MONITORING_CAPABILITIES` ẩn
+  ở `partial`; thiếu toạ độ là 400 `MISSING_STOP_COORDINATES` kèm `errors.stopIds` (mã số điểm; chỉ xét điểm chưa hoàn tất và xe chưa
+  tới). `MONITORING_CAPABILITIES` ẩn
   mở chuyến và thẻ yêu cầu nhận dọc đường (trừ khi `trips` cùng nguồn); hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
   đang chọn là bản máy chủ khi nhóm `driver` cũng nối (mục Tài xế), không thì không có. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
   đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế theo nguồn
@@ -1880,7 +1881,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   thời gian chạy thuần (heuristic). Có BE thì ETA lấy từ Goong theo giao thông và thay công thức mock.
 - **Đổi thứ tự điểm giao khi xe đang chạy** (FE-BL-03, D-87). `reorderRunningStops(tripId, orderedStopIds)` (`db-trip-reorder.ts`) là **ngoại lệ thứ
   hai của `TRIP_LOCKED`** cho chuyến đã rời kho (thứ nhất: nhận hàng dọc đường), hẹp: một hàm, chỉ điều phối viên (`ROLE_NOT_ALLOWED`), chuyến
-  phải Đang vận chuyển (`TRIP_PHASE_INVALID`), mọi điểm có toạ độ (`MISSING_STOP_COORDINATES`); `updateTrip`, `changeTripVehicle`… vẫn từ chối.
+  phải Đang vận chuyển (`TRIP_NOT_IN_TRANSIT`, cùng mã với máy chủ), mọi điểm có toạ độ (`MISSING_STOP_COORDINATES`); `updateTrip`, `changeTripVehicle`… vẫn từ chối.
   Luật thứ tự thuần ở `checkProposedOrder`: phải là hoán vị **khác** thứ tự hiện tại (`STOP_ORDER_INVALID`); các điểm đầu danh sách đã hoàn tất,
   và điểm xe đã tới (`StopProgress.arrivedAt`) đứng nguyên (`STOP_NOT_MOVABLE`); điểm nhận dọc đường của yêu cầu `APPROVED` đứng trước điểm
   giao của nó (`PICKUP_AFTER_DELIVERY`). **Khả năng dỡ**: kho chạy `checkStopReorder` (`lifoIssues` của domain, thứ hạng giao thay số điểm) trên
@@ -1893,7 +1894,7 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   buộc thì đi tiếp sau khi nghỉ xong). Nhật ký `trip.stopsReordered { count, lateStops, driverId }` — chuông của tài xế **của chuyến đó**; màn
   tài xế đọc thứ tự mới từ `Trip.stops`. Màn: nút phụ "Đổi thứ tự điểm" ở đầu thẻ chuyến trên `/giam-sat` theo quyền `routes.optimize` (không
   thêm quyền mới; mờ kèm lý do khi dưới hai điểm chưa giao và chưa tới) mở `ReorderStopsDialog`: nút lên / xuống cho điểm tự do, điểm khoá hiện
-  "Đã giao xong" / "Xe đã tới"; bị từ chối vì kiện thì hộp liệt kê từng kiện kèm điểm của nó bằng chữ. Máy chủ: mục "Giám sát" của "Nối backend".
+  "Đã giao xong" / "Xe đã tới"; bị từ chối vì kiện thì hộp liệt kê từng kiện kèm điểm của nó bằng chữ, vì thiếu toạ độ thì liệt kê từng điểm chưa có toạ độ. Máy chủ: mục "Giám sát" của "Nối backend".
 - **Màn Giám sát `/giam-sat`** (FE-6-10; `monitoring.view`): `fetchMonitoringBoard` (`['trips', 'monitoring-board']`) đọc phần ít đổi — chuyến Đang
   vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc
   theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là

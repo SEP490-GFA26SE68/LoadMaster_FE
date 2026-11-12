@@ -13,6 +13,7 @@ export const dataErrors = {
   PATCH_UNKNOWN_INSTANCE: 'Package {packageInstanceId} is not in the plan.',
   TRIP_LOCKED: 'Trip {tripId} is already in operation and cannot be edited.',
   TRIP_INVALID: 'The trip is not valid: it needs a readable departure time, a departure depot with a name and coordinates, and named stops; coordinates, if any, need both latitude and longitude.',
+  TRIP_NOT_IN_TRANSIT: 'Trip {tripId} is no longer in transit.',
   TRIP_PHASE_INVALID: 'This action is not available in the current state of trip {tripId}.',
   NO_APPROVED_REVISION: 'Trip {tripId} has no approved plan.',
   INSTANCE_NOT_IN_PLAN: 'Package {packageInstanceId} is not in this plan or stop.',

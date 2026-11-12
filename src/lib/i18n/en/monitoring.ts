@@ -127,6 +127,10 @@ export const monitoring = {
       item: 'stop {number} · {name}',
       unchanged: 'The stop order stays as it is.',
     },
+    missingCoordinates: {
+      title: 'Not changed: these stops have no coordinates',
+      list: 'Stops without coordinates',
+    },
   },
   reroute: {
     title: 'Find another route for trip {id}',
