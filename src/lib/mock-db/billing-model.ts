@@ -131,10 +131,10 @@ export type CreditReservation = { reference: string; cost: number }
 export const BILLING_CONSTANTS = {
   /** Một kỳ gói (ngày). */
   periodDays: 30,
-  /** Tự gia hạn tạo thanh toán Chờ chừng ấy ngày trước hạn (đề xuất — BE chạy cron hằng ngày, chưa chốt số ngày). */
-  renewalNoticeDays: 3,
-  /** Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty (đề xuất, chờ nhóm xác nhận). */
-  lowCreditThreshold: 10,
+  /** Tự gia hạn tạo thanh toán Chờ chừng ấy ngày trước hạn (đã chốt). */
+  renewalNoticeDays: 7,
+  /** Ngưỡng "Sắp hết credit" là tỉ lệ này của credit tháng của gói, làm tròn lên (`lowCreditThreshold`; đã chốt). */
+  lowCreditRatio: 0.25,
   /** Credit mỗi lần chạy tối ưu 3D (D-89, như INITIAL_OPTIMIZATION_CREDIT_COST của BE): giữ, trừ, hoàn và chặn đều theo số này; ba phương án vẫn một lần. */
   optimizationCost: 2,
   /** Gói nạp credit và giá mỗi credit (D-89). */
@@ -144,21 +144,41 @@ export const BILLING_CONSTANTS = {
 
 export const isUnlimited = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => plan.monthlyCredits === null
 
-/** Vì sao một lần chạy tối ưu bị chặn; gói hết hạn xét trước số dư (số dư giữ nguyên, D-94). */
+/**
+ * Số dư từ ngưỡng này trở xuống thì báo "Sắp hết credit" cho quản trị công ty: `ceil(credit tháng × 25 %)`. Gói không giới hạn không có
+ * ngưỡng (`null`) — không bao giờ báo, kể cả khi đã hết hạn. Nối backend thì ngưỡng là `lowBalanceThreshold` của bảng giá máy chủ (`getCreditPricing`, cùng công thức) và máy chủ tự báo.
+ */
+export const lowCreditThreshold = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>): number | null =>
+  plan.monthlyCredits === null ? null : Math.ceil(plan.monthlyCredits * BILLING_CONSTANTS.lowCreditRatio)
+
+/** Vì sao một lần chạy tối ưu bị chặn; chưa có gói (`SUBSCRIPTION_EXPIRED`) xét trước số dư. */
 export type CreditBlock = 'SUBSCRIPTION_EXPIRED' | 'INSUFFICIENT_CREDITS'
 
 /**
  * Luật chặn lần chạy tối ưu 3D — kho (`reserveOptimizationCredit`) và màn Thiết lập tối ưu (trạng thái mờ trước khi bấm) dùng chung.
- * Công ty chưa có gói tính như gói hết hạn. Gói đã huỷ vẫn chạy được tới hết kỳ.
+ * Công ty chưa từng có gói thì chặn. Gói đã huỷ vẫn chạy được tới hết kỳ; gói đã hết hạn **không chặn** — số dư giữ nguyên (D-94) và
+ * vẫn chạy được, chỉ ở hạng Cơ bản (`effectiveAlgorithmTier`), mỗi lần tốn `runCost`.
  */
 export function creditBlock(current: CurrentSubscription | null, balance: number): CreditBlock | null {
-  if (current === null || current.subscription.status === 'EXPIRED') return 'SUBSCRIPTION_EXPIRED'
-  if (isUnlimited(current.plan)) return null
-  return balance < BILLING_CONSTANTS.optimizationCost ? 'INSUFFICIENT_CREDITS' : null
+  if (current === null) return 'SUBSCRIPTION_EXPIRED'
+  return balance < runCost(current) ? 'INSUFFICIENT_CREDITS' : null
 }
 
 /** Credit một lần chạy tốn: `BILLING_CONSTANTS.optimizationCost`, gói không giới hạn ghi 0 (D-89). */
 export const optimizationCost = (plan: Pick<SubscriptionPlan, 'monthlyCredits'>) => (isUnlimited(plan) ? 0 : BILLING_CONSTANTS.optimizationCost)
+
+/**
+ * Gói đã hết hạn (`EXPIRED` — kể cả gói đã huỷ sau hết kỳ): công ty **giữ số dư** và vẫn chạy tối ưu bằng số dư đó, nhưng chỉ ở hạng
+ * Cơ bản (`EP_DBLF`) và mỗi lần trừ credit như gói thường — "không giới hạn" của gói Ultimate không còn.
+ */
+export const isLapsed = (current: CurrentSubscription) => current.subscription.status === 'EXPIRED'
+
+/** Credit lần chạy này tốn theo gói lúc này: gói đã hết hạn luôn tốn `BILLING_CONSTANTS.optimizationCost`. */
+export const runCost = (current: CurrentSubscription) => (isLapsed(current) ? BILLING_CONSTANTS.optimizationCost : optimizationCost(current.plan))
+
+/** Hạng thuật toán được dùng lúc này: hạng của gói khi gói còn hiệu lực, hạng Cơ bản khi gói đã hết hạn. */
+export const effectiveAlgorithmTier = (current: CurrentSubscription): AlgorithmTier =>
+  isLapsed(current) ? TIER_ALGORITHM.BASIC : current.plan.algorithmTier
 
 /**
  * Trạng thái của gói **tính theo đồng hồ**, không ghi gì: gói còn `ACTIVE` / `CANCELLED` mà đã quá hạn thì là `EXPIRED`. Kho chỉ ghi

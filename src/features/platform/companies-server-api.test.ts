@@ -85,7 +85,7 @@ test('danh sách: đọc hết các trang công ty, ghép gói mới nhất và 
     {
       company: { id: '1', code: 'LM-LOGISTICS', name: 'Vận tải Long Bình', taxCode: 'TAX-LM-001', billingEmail: 'qtcongty@loadmaster.vn', status: 'ACTIVE', createdAt: '2026-10-16T21:05:16.181480Z' },
       // Giờ của hợp đồng là giờ Việt Nam của máy chủ, không kèm múi giờ
-      plan: { name: 'Pro', tier: 'PRO', status: 'ACTIVE', expiresAt: '2026-10-17T09:00:00+07:00' },
+      plan: { name: 'Pro', tier: 'PRO', status: 'ACTIVE', expiresAt: '2026-10-17T02:00:00.000Z' },
       userCount: 2,
       hasAdmin: true,
     },

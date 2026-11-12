@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import { BILLING_CONSTANTS, createMockDb, creditBlock, type MockDb } from '@/lib/mock-db'
+import { BILLING_CONSTANTS, createMockDb, creditBlock, effectiveAlgorithmTier, type MockDb } from '@/lib/mock-db'
 import { runMockCandidates } from '@/services/optimization'
 
 /**
  * Gói cước, sổ cái credit, thanh toán và vòng đời gói theo đồng hồ của kho (FE-8-01, FE-8-05; D-89, D-94). Đồng hồ là một biến test
  * đặt tay: kho không có hẹn giờ, việc tới hạn được xử lý khi có người đọc.
  *
- * Một lần chạy tốn `BILLING_CONSTANTS.optimizationCost` = 2 credit. Seed: Long Bình dùng gói Pro (500 credit, 15 lần chạy → 14 lượt dùng
- * thật cộng một lần hỏng đã hoàn: 500 − 28 = 472), Phương Nam dùng gói Basic (100 credit, đã dùng gần hết: 48 lượt cũ hơn seed cộng lần
+ * Một lần chạy tốn `BILLING_CONSTANTS.optimizationCost` = 2 credit. Seed: Long Bình dùng gói Pro (10.000 credit, 15 lần chạy → 14 lượt dùng
+ * thật cộng một lần hỏng đã hoàn: 10.000 − 28 = 9.972), Phương Nam dùng gói Basic (3.000 credit, đã dùng gần hết: 1.498 lượt cũ hơn seed cộng lần
  * chạy của `TRIP-PN-001`: còn 2 — đúng một lần chạy nữa).
  */
 
@@ -62,8 +62,8 @@ async function ledgerOf(db: MockDb, userId: string) {
 
 describe('ledger and seed', () => {
   test.each([
-    { user: LONG_BINH_ADMIN, balance: 472, rows: 17, usages: 15, plan: 'Pro' },
-    { user: PHUONG_NAM_ADMIN, balance: 2, rows: 50, usages: 49, plan: 'Basic' },
+    { user: LONG_BINH_ADMIN, balance: 9_972, rows: 17, usages: 15, plan: 'Pro' },
+    { user: PHUONG_NAM_ADMIN, balance: 2, rows: 1_500, usages: 1_499, plan: 'Basic' },
   ])('$plan company: balance is the sum of the ledger since the latest monthly grant and never went below zero ($balance)', async ({ user, balance, rows, usages }) => {
     const { db } = open(user)
     const ledger = await db.listCreditTransactions()
@@ -119,18 +119,18 @@ describe('plan lifecycle on the store clock', () => {
 
     // Đăng ký: chỉ tạo thanh toán chờ; trả xong mới kích hoạt gói và cấp credit tháng
     const payment = await db.subscribeToPlan(PRO)
-    expect(payment).toMatchObject({ purpose: 'SUBSCRIBE', status: 'PENDING', amountVnd: 1_490_000, planId: PRO, credits: 500 })
+    expect(payment).toMatchObject({ purpose: 'SUBSCRIBE', status: 'PENDING', amountVnd: 3_500_000, planId: PRO, credits: 10_000 })
     expect((await db.getCurrentSubscription())?.subscription.status).toBe('EXPIRED')
     const paid = await db.settlePayment(payment.id, 'SUCCESS')
     expect(paid.status).toBe('SUCCESS')
     const current = await db.getCurrentSubscription()
     expect(current?.subscription).toMatchObject({ status: 'ACTIVE', planId: PRO, autoRenew: true, startedAt: before })
     expect(Date.parse(current?.subscription.expiresAt ?? '') - Date.parse(before)).toBe(BILLING_CONSTANTS.periodDays * DAY_MS)
-    expect(await balanceOf(db)).toBe(500)
+    expect(await balanceOf(db)).toBe(10_000)
     // Xử lý một lần: thanh toán đã xong, gọi lại (kể cả với kết quả khác) không cộng lần hai
     await db.settlePayment(payment.id, 'SUCCESS')
     await db.settlePayment(payment.id, 'FAILED')
-    expect(await balanceOf(db)).toBe(500)
+    expect(await balanceOf(db)).toBe(10_000)
     expect((await db.listPayments())[0]).toMatchObject({ id: payment.id, status: 'SUCCESS' })
     expect((await db.listCreditTransactions()).filter((entry) => entry.type === 'MONTHLY_GRANT' && entry.reference === payment.id)).toHaveLength(1)
   })
@@ -143,13 +143,13 @@ describe('plan lifecycle on the store clock', () => {
 
     jump(end, -BILLING_CONSTANTS.renewalNoticeDays * DAY_MS)
     const [renewal] = await db.listPayments()
-    expect(renewal).toMatchObject({ purpose: 'RENEWAL', status: 'PENDING', amountVnd: 490_000, credits: 100, periodEnd: end })
+    expect(renewal).toMatchObject({ purpose: 'RENEWAL', status: 'PENDING', amountVnd: 1_200_000, credits: 3_000, periodEnd: end })
     expect(await db.listPayments()).toHaveLength(2)
 
     await db.settlePayment(renewal?.id ?? '', 'SUCCESS')
     expect(await expiryOf(db)).toBe(new Date(Date.parse(end) + BILLING_CONSTANTS.periodDays * DAY_MS).toISOString())
-    // Kỳ mới bắt đầu lại từ 100 credit: 2 credit còn lại của kỳ trước không cộng dồn, như máy chủ
-    expect(await balanceOf(db)).toBe(100)
+    // Kỳ mới bắt đầu lại từ 3.000 credit: 2 credit còn lại của kỳ trước không cộng dồn, như máy chủ
+    expect(await balanceOf(db)).toBe(3_000)
     expect((await db.listEvents())[0]).toMatchObject({ action: 'subscription.renewed', companyId: 'LOG-002' })
   })
 
@@ -275,12 +275,12 @@ describe('credit of an optimization run', () => {
     const { db } = open(LONG_BINH_DISPATCHER)
     const { reference, cost } = await db.reserveOptimizationCredit('TRIP-012')
     expect(cost).toBe(2)
-    expect(await balanceOf(db)).toBe(470)
+    expect(await balanceOf(db)).toBe(9_970)
     expect((await db.listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -2, reference, usageStatus: 'RESERVED', tripId: 'TRIP-012' })
 
     const { revisions } = await saveRun(db, reference)
     expect(revisions).toHaveLength(3)
-    expect(await balanceOf(db)).toBe(470)
+    expect(await balanceOf(db)).toBe(9_970)
     expect((await db.listCreditTransactions()).slice(0, 2)).toMatchObject([{ reference, usageStatus: 'DEDUCTED', refunded: false }, { type: 'USAGE', reference: 'JOB-015' }])
     expect((await db.listCreditTransactions())).toHaveLength(18)
   })
@@ -290,7 +290,7 @@ describe('credit of an optimization run', () => {
     const { reference } = await db.reserveOptimizationCredit('TRIP-012')
     await db.refundOptimizationCredit(reference)
     await db.refundOptimizationCredit(reference)
-    expect(await balanceOf(db)).toBe(472)
+    expect(await balanceOf(db)).toBe(9_972)
     const entries = (await db.listCreditTransactions()).filter((entry) => entry.reference === reference)
     expect(entries.map((entry) => [entry.type, entry.amount, entry.usageStatus, entry.refunded])).toStrictEqual([
       ['REFUND', 2, undefined, false],
@@ -309,14 +309,14 @@ describe('credit of an optimization run', () => {
     const { reference } = await db.reserveOptimizationCredit('TRIP-012')
     await saveRun(db, reference)
     await expect(db.refundOptimizationCredit(reference)).rejects.toMatchObject({ code: 'CREDIT_NOT_RESERVED' })
-    expect(await balanceOf(db)).toBe(470)
+    expect(await balanceOf(db)).toBe(9_970)
     expect((await db.listCreditTransactions()).filter((entry) => entry.reference === reference).map((entry) => [entry.type, entry.usageStatus])).toStrictEqual([['USAGE', 'DEDUCTED']])
   })
 
   test('a signed-in session that saves a run without a reserved credit is charged by the store; with none left nothing is saved', async () => {
     const { db } = open(LONG_BINH_DISPATCHER)
     await saveRun(db)
-    expect(await balanceOf(db)).toBe(470)
+    expect(await balanceOf(db)).toBe(9_970)
     expect((await db.listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -2, usageStatus: 'DEDUCTED', tripId: 'TRIP-012' })
 
     const empty = open(PHUONG_NAM_DISPATCHER).db
@@ -336,7 +336,7 @@ describe('credit of an optimization run', () => {
     db.restoreSession(LONG_BINH_ADMIN)
     await expect(db.reserveOptimizationCredit('TRIP-012')).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
     await expect(db.refundOptimizationCredit(reference)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })
-    expect(await balanceOf(db)).toBe(470)
+    expect(await balanceOf(db)).toBe(9_970)
   })
 
   test('with fewer credits left than one run costs the run is refused and nothing is written; running low tells the company admin', async () => {
@@ -356,14 +356,39 @@ describe('credit of an optimization run', () => {
     expect(creditBlock(current, 2)).toBeNull()
   })
 
-  test('an expired plan blocks the run before the balance is looked at, and leaves the balance as it was', async () => {
+  test('an expired plan keeps its balance: runs still reserve credit (Basic tier only) until the balance is below one run', async () => {
     const { db, jump } = open(LONG_BINH_ADMIN)
     await db.cancelSubscription()
     jump(await expiryOf(db))
     db.restoreSession(LONG_BINH_DISPATCHER)
-    await expect(db.reserveOptimizationCredit('TRIP-012')).rejects.toMatchObject({ code: 'SUBSCRIPTION_EXPIRED' })
-    expect(await balanceOf(db)).toBe(472)
-    expect(await db.listCreditTransactions()).toHaveLength(17)
+    const current = await db.getCurrentSubscription()
+    expect(current?.subscription.status).toBe('EXPIRED')
+    expect(effectiveAlgorithmTier(current!)).toBe('EP_DBLF')
+    expect(await balanceOf(db)).toBe(9_972)
+    const { cost } = await db.reserveOptimizationCredit('TRIP-012')
+    expect(cost).toBe(2)
+    expect(await balanceOf(db)).toBe(9_970)
+    expect(creditBlock(current, 1)).toBe('INSUFFICIENT_CREDITS')
+    // Nạp thêm vẫn phải gia hạn trước, như máy chủ
+    db.restoreSession(LONG_BINH_ADMIN)
+    await expect(db.topUpCredits(50)).rejects.toMatchObject({ code: 'SUBSCRIPTION_EXPIRED' })
+  })
+
+  test('an expired unlimited plan is no longer unlimited: each run costs the usual credit', async () => {
+    const session = open(PHUONG_NAM_DISPATCHER)
+    const { db, jump } = session
+    await switchPlan(session, PHUONG_NAM_ADMIN, ULTIMATE)
+    db.restoreSession(PHUONG_NAM_ADMIN)
+    await db.cancelSubscription()
+    jump(await expiryOf(db))
+    db.restoreSession(PHUONG_NAM_DISPATCHER)
+    expect(await db.getCreditBalance()).toStrictEqual({ balance: 2, unlimited: false })
+    expect((await db.reserveOptimizationCredit('TRIP-PN-001')).cost).toBe(2)
+    await expect(db.reserveOptimizationCredit('TRIP-PN-001')).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' })
+  })
+
+  test('a company that never had a plan cannot run', () => {
+    expect(creditBlock(null, 1000)).toBe('SUBSCRIPTION_EXPIRED')
   })
 
   test('the unlimited plan records 0 credits for a run and for its refund, and reports an unlimited balance', async () => {
@@ -385,7 +410,7 @@ describe('credit of an optimization run', () => {
     const { db } = open(LONG_BINH_DISPATCHER)
     await db.optimizeTripRoute('TRIP-012')
     await db.requestReroute('TRIP-009')
-    expect(await balanceOf(db)).toBe(472)
+    expect(await balanceOf(db)).toBe(9_972)
     expect(await db.listCreditTransactions()).toHaveLength(17)
   })
 })

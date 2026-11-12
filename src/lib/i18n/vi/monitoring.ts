@@ -34,6 +34,7 @@ export const monitoring = {
     vehicle: 'chuyến {trip}, {name} ({source})',
     note: 'Tuyến và điểm giao là của chuyến đang chọn; xe của chuyến khác chỉ hiện vị trí.',
     noPosition: 'Chuyến {id} còn điểm giao chưa có toạ độ nên chưa có vị trí xe.',
+    pathFailed: 'Không đọc được tuyến của chuyến {id} từ máy chủ — bản đồ nối thẳng các điểm.',
   },
   list: {
     title: 'Chuyến đang vận chuyển',

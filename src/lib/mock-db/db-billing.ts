@@ -2,7 +2,8 @@ import {
   BILLING_CONSTANTS,
   creditBlock,
   isUnlimited,
-  optimizationCost,
+  lowCreditThreshold,
+  runCost,
   PLAN_TIERS,
   TIER_ALGORITHM,
   TIER_FEATURES,
@@ -44,11 +45,12 @@ function reserveCredit(ctx: DbContext, trip: { id: string; companyId: string }):
   const block = creditBlock(current, balance)
   if (block === 'SUBSCRIPTION_EXPIRED') throw new MockDbError(block, { expiredAt: current?.subscription.expiresAt ?? null })
   if (block === 'INSUFFICIENT_CREDITS') throw new MockDbError(block, { balance })
-  const cost = optimizationCost((current as CurrentSubscription).plan)
+  const cost = runCost(current as CurrentSubscription)
   const reference = nextId('JOB', [...ctx.state.creditTransactions.values()].map((item) => item.reference), 3)
   appendTransaction(companyId, { type: 'USAGE', amount: negated(cost), reference, usageStatus: 'RESERVED', tripId: trip.id })
-  // Số dư từ ngưỡng trở xuống thì báo quản trị công ty (đề xuất `lowCreditThreshold`); gói không giới hạn không bao giờ hết
-  if (cost > 0 && balance - cost <= BILLING_CONSTANTS.lowCreditThreshold) {
+  // Số dư từ ngưỡng (25 % credit tháng của gói) trở xuống thì báo quản trị công ty; gói không giới hạn không bao giờ báo
+  const threshold = lowCreditThreshold((current as CurrentSubscription).plan)
+  if (cost > 0 && threshold !== null && balance - cost <= threshold) {
     ctx.logSystem('credit.lowBalance', companyTarget(companyId), { balance: balance - cost }, companyId)
   }
   return { reference, cost }
@@ -218,6 +220,9 @@ export function billingMethods(ctx: DbContext): BillingDb {
         const companyId = settledCompany()
         assertRole('companyAdmin')
         if (!(BILLING_CONSTANTS.topUpPacks as readonly number[]).includes(credits)) throw new MockDbError('TOPUP_INVALID', { credits })
+        // Như máy chủ: gói đã hết hạn thì gia hạn trước rồi mới nạp; chưa có gói vẫn nạp được
+        const current = currentOf(companyId)
+        if (current?.subscription.status === 'EXPIRED') throw new MockDbError('SUBSCRIPTION_EXPIRED', { expiredAt: current.subscription.expiresAt })
         return createPayment(companyId, 'TOPUP', { amountVnd: credits * BILLING_CONSTANTS.creditPriceVnd, credits })
       }),
 

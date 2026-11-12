@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { LIVE_TRIP_REFRESH_MS } from './live-trip-refresh'
 import type { ShortageDecision } from '@/lib/mock-db'
 import { fetchStagingShortages, resolveStagingShortage, type ShortageRow } from './shortage-api'
 import { fetchServerStagingShortages, resolveServerStagingShortage } from './shortage-backend-api'
@@ -8,12 +9,14 @@ import { fetchServerStagingShortages, resolveServerStagingShortage } from './sho
  * của điều phối viên đổi trạng thái chuyến ở mọi màn, kiện của kho kiện (cờ), yêu cầu giao (giao thiếu) và chuông, nên làm mới hết.
  * `server`: báo thiếu của máy chủ (Chi tiết chuyến của máy chủ, `tripId` là mã số) thay vì kho mẫu.
  */
-export function useStagingShortagesQuery(tripId: string, server = false) {
+export function useStagingShortagesQuery(tripId: string, server = false, live = false) {
   return useQuery({
     queryKey: ['trips', tripId, 'shortages', server ? 'server' : 'store'],
     queryFn: () => (server ? fetchServerStagingShortages(tripId) : fetchStagingShortages(tripId)),
     enabled: tripId !== '',
     staleTime: 0,
+    refetchInterval: live ? LIVE_TRIP_REFRESH_MS : false,
+    refetchOnWindowFocus: live,
   })
 }
 

@@ -81,7 +81,7 @@ function MockOptimizationSetupPage() {
   // Xếp 3D theo tuyến: chuyến phải đã tối ưu tuyến (Đã lập kế hoạch) — kho cũng từ chối `ROUTE_NOT_PLANNED`
   const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary, setup.trip.routePlan !== undefined) : null
   const formErrors = (errors.timeLimitSeconds ? 1 : 0) + (errors.randomSeed ? 1 : 0)
-  // Hết credit, gói hết hạn (FE-8-05): nút Tối ưu mờ kèm lý do trước khi bấm; kho cũng từ chối (`INSUFFICIENT_CREDITS`, `SUBSCRIPTION_EXPIRED`)
+  // Hết credit, chưa có gói (FE-8-05): nút Tối ưu mờ kèm lý do trước khi bấm; kho cũng từ chối (`INSUFFICIENT_CREDITS`, `SUBSCRIPTION_EXPIRED`)
   const creditBlock = creditQuery.data?.block ?? null
   const blockedReason = !locked && creditBlock !== null
     ? t(`optimization.credit.blocked.${creditBlock}`)

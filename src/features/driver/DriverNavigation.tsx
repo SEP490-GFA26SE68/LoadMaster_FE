@@ -88,10 +88,10 @@ export function DriverNavigation({
     () => ({ depot: { lat: depot.lat, lng: depot.lng }, stops: stops.map((stop) => ({ lat: stop.lat, lng: stop.lng })) }),
     [depot.lat, depot.lng, stops],
   )
-  const pathQuery = useTripRoutePathQuery(trip.id, pathFallback, stops.length > 0)
+  const pathQuery = useTripRoutePathQuery(trip.id, pathFallback, stops.length > 0, false)
   const planQuery = useQuery({
     queryKey: ['trips', trip.id, 'route-plan'],
-    queryFn: () => getActiveRoutePlan(trip.id),
+    queryFn: () => getActiveRoutePlan(trip.id, false),
     enabled: trip.id !== '',
     staleTime: 15_000,
   })

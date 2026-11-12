@@ -52,13 +52,15 @@ export const optimization = {
     },
     usageUnlimited: 'This run uses 0 credits · Unlimited',
     tier: 'Algorithm tier of the {plan} plan',
+    tierNow: 'Algorithm tier right now',
+    expiredBasic: 'The plan has expired, so only the Basic tier (EP + DBLF) applies. The credit balance can still be used.',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — not available yet',
     tierNote: 'The system picks the algorithm within your plan tier. The demo runs EP + DBLF (mock) for every tier.',
     noPlan: 'The company has no plan.',
     blocked: {
       INSUFFICIENT_CREDITS: 'Not enough credits for this run — contact your company administrator',
-      SUBSCRIPTION_EXPIRED: 'The plan has expired — contact your company administrator',
+      SUBSCRIPTION_EXPIRED: 'The company has no plan — contact your company administrator',
     },
   },
   limits: {

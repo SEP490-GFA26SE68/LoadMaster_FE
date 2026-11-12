@@ -5,7 +5,8 @@ import { fetchOptimizationCredit } from './optimization-api'
 
 /**
  * Thẻ Credit của Thiết lập tối ưu khi nhóm `billing` nối backend: gói và số dư đọc từ backend, cùng luật chặn với kho mẫu — chưa có gói
- * hoặc gói hết hạn chặn trước số dư, gói không giới hạn luôn chạy được, gói đã huỷ vẫn chạy tới hết kỳ.
+ * chặn trước số dư, gói không giới hạn luôn chạy được, gói đã huỷ vẫn chạy tới hết kỳ, gói đã hết hạn vẫn chạy bằng số dư nhưng chỉ ở hạng
+ * Cơ bản.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['billing']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -46,7 +47,7 @@ afterEach(() => {
 test('an active plan with credits: one run costs what the server pricing says, the tier of the plan, nothing blocks; every read carries the token', async () => {
   serve(PRO, 1200)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 2, balance: 1200, unlimited: false, block: null, lapsed: false,
+    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 2, balance: 1200, unlimited: false, block: null, lapsed: false, basicOnly: false,
   })
   expect(backend.calls.map((call) => `${call.method} ${call.url} ${call.auth}`).sort()).toStrictEqual([
     'GET http://be.test/api/credits/balance Bearer token-1',
@@ -69,27 +70,36 @@ test('a balance below the cost of one run blocks with INSUFFICIENT_CREDITS; a ca
 test('an unlimited plan costs nothing and never blocks, whatever the balance', async () => {
   serve({ ...PRO, planName: 'Ultimate', tier: 'ULTIMATE', algorithmTier: 'EP_DBLF_GA_AI' }, 0, true)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: 'Ultimate', algorithmTier: 'EP_DBLF_GA_AI', cost: 0, balance: 0, unlimited: true, block: null, lapsed: false,
+    planName: 'Ultimate', algorithmTier: 'EP_DBLF_GA_AI', cost: 0, balance: 0, unlimited: true, block: null, lapsed: false, basicOnly: false,
   })
 })
 
-test('a plan past its end that the backend still calls ACTIVE is expired: it keeps its name, the run is blocked', async () => {
+test('a plan past its end that the backend still calls ACTIVE is expired: it keeps its name, the balance still runs at the Basic tier', async () => {
   serve({ ...PRO, expiresAt: '2026-10-16T08:00:00' }, 1200)
-  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 2, balance: 1200, block: 'SUBSCRIPTION_EXPIRED', lapsed: false })
+  expect(await fetchOptimizationCredit()).toMatchObject({
+    planName: 'Pro', algorithmTier: 'EP_DBLF', cost: 2, balance: 1200, block: null, lapsed: false, basicOnly: true,
+  })
 })
 
-test('an expired plan the backend no longer names is lapsed: the balance stays, the run is blocked', async () => {
+test('an expired plan the backend no longer names is lapsed: the balance stays and runs at the Basic tier until it is below one run', async () => {
   serve(statusOnly('EXPIRED', 40), 40)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: null, algorithmTier: null, cost: 2, balance: 40, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: true,
+    planName: null, algorithmTier: 'EP_DBLF', cost: 2, balance: 40, unlimited: false, block: null, lapsed: true, basicOnly: true,
   })
+  serve(statusOnly('EXPIRED', 1), 1)
+  expect(await fetchOptimizationCredit()).toMatchObject({ block: 'INSUFFICIENT_CREDITS', basicOnly: true })
+})
+
+test('an expired Ultimate plan is no longer unlimited: each run costs the server price', async () => {
+  serve({ ...PRO, planName: 'Ultimate', tier: 'ULTIMATE', algorithmTier: 'EP_DBLF_GA_AI', status: 'EXPIRED' }, 5, true)
+  expect(await fetchOptimizationCredit()).toMatchObject({ algorithmTier: 'EP_DBLF', cost: 2, unlimited: false, block: null, basicOnly: true })
 })
 
 test('a company that never had a plan (or only a trial the app does not know) has no plan: costs nothing, blocked', async () => {
   for (const status of [null, 'TRIAL'] as const) {
     serve(statusOnly(status, 0), 0)
     expect(await fetchOptimizationCredit()).toStrictEqual({
-      planName: null, algorithmTier: null, cost: 0, balance: 0, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: false,
+      planName: null, algorithmTier: null, cost: 0, balance: 0, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: false, basicOnly: false,
     })
   }
 })

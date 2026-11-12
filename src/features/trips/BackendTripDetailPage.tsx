@@ -22,7 +22,10 @@ import { ManualConfirmCard } from './ManualConfirmCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { SERVER_SHORTAGES } from './shortage-backend-api'
 import { RealTripDetailHeader } from './TripDetailHeader'
-import { fetchBackendActiveRoutePlan, fetchBackendTripDetail, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
+import { fetchBackendActiveRoutePlan, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
+import { backendTimeMs } from '@/lib/backend-time'
+import { isLiveTripStatus } from './live-trip-refresh'
+import { useBackendTripDetailQuery } from './useTripsQuery'
 
 /**
  * Chi tiết chuyến khi nhóm `trips` nối backend (bản của nhóm): thông tin vận hành, điểm giao kèm giờ đến dự kiến và mức hạn, tuyến
@@ -64,8 +67,8 @@ function getDeadlineStatus(
 ): 'onTime' | 'late' | 'unknown' {
   if (!plannedArrival || !deadline) return 'unknown'
 
-  const arrivalMs = Date.parse(`${plannedArrival}+07:00`)
-  const deadlineMs = Date.parse(`${deadline}+07:00`)
+  const arrivalMs = backendTimeMs(plannedArrival)
+  const deadlineMs = backendTimeMs(deadline)
 
   if (!Number.isFinite(arrivalMs) || !Number.isFinite(deadlineMs)) {
     return 'unknown'
@@ -120,11 +123,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   })
 
 
-  const query = useQuery({
-    queryKey: ['trips', tripId, 'backend-detail'],
-    queryFn: () => fetchBackendTripDetail(tripId),
-    enabled: tripId !== '',
-  })
+  const query = useBackendTripDetailQuery(tripId)
 
 
   const routePlanQuery = useQuery({
@@ -161,6 +160,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   }
 
   const { trip, stops } = query.data
+  const live = isLiveTripStatus(trip.status)
   const canAssign =
     can('trips.edit') &&
     trip.status === 'DRAFT'
@@ -225,13 +225,14 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
           ) : null}
 
 
-          {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server /> : null}
-          {SERVER_SHORTAGES ? <MissingPackagesCard tripId={tripId} server /> : null}
+          {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server live={live} /> : null}
+          {SERVER_SHORTAGES ? <MissingPackagesCard tripId={tripId} server live={live} /> : null}
 
           <BackendTripRouteCard
             trip={trip}
             stops={stops}
             routePlan={routePlanQuery.data ?? null}
+            routePlanFailed={routePlanQuery.isError}
           />
 
           <BackendLoadPlansCard

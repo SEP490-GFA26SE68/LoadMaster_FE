@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { BackendTripDetailPage } from './BackendTripDetailPage'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
+import { isLiveTripStatus } from './live-trip-refresh'
 import { ManualConfirmCard } from './ManualConfirmCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { emptyPackage } from './package-defaults'
@@ -84,6 +85,7 @@ function StoreTripDetailPage() {
   const [stopFilter, setStopFilter] = useState<number | null>(null)
 
   const trip = query.data?.trip
+  const live = isLiveTripStatus(query.data?.status)
   const vehicle = query.data?.vehicle
   // Quản lý xem chuyến chỉ đọc (D-41); từ lúc kho bắt đầu xếp, xe, điểm giao và kiện bị khoá (D-45)
   const editable = can('trips.edit') && trip?.phase === 'planning'
@@ -166,8 +168,8 @@ function StoreTripDetailPage() {
 
             <div className="flex min-w-0 flex-col gap-3 xl:[grid-area:main]">
               {/* Việc chờ điều phối viên đứng trước bảng kiện: còn dòng ở đây thì kho / tài xế chưa đi tiếp được (FE-6-04) */}
-              <MissingPackagesCard tripId={tripId} />
-              <ManualConfirmCard tripId={tripId} />
+              <MissingPackagesCard tripId={tripId} live={live} />
+              <ManualConfirmCard tripId={tripId} live={live} />
               <PickupRequestsCard tripId={tripId} phase={trip.phase} stops={trip.stops} />
               <PackagesTable
                 packages={trip.packages}
