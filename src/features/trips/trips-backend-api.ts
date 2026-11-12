@@ -7,7 +7,9 @@
 import { apiFetch, ApiError } from '@/lib/api-client'
 import { fetchVehicles } from '@/features/fleet/backend/vehicles-api'
 import { fetchVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
-import { getMockDb, type VehicleStatus } from '@/lib/mock-db'
+import { getCachedCurrentUser } from '@/features/auth/auth-api'
+import { fetchCompanyWarehouses } from '@/features/company-warehouses/company-warehouses-api'
+import type { CompanyDepot, VehicleStatus } from '@/lib/mock-db'
 import { fetchAllPages } from '@/lib/api-page'
 import type { TripRow } from './trip-list'
 import type { TripFormOptions, VehicleOption } from './trips-api'
@@ -486,27 +488,37 @@ async function fetchEveryPage<T>(
 
   return result
 }
-// GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options
+/**
+ * Công ty và kho xuất phát của form chuyến lấy từ máy chủ, không từ kho mẫu: công ty là của người đăng nhập (`getCachedCurrentUser`),
+ * kho xuất phát mặc định là kho mặc định đang hoạt động của công ty (`GET /api/company-warehouses`). Nhóm `companies` chưa nối thì
+ * không có danh mục kho (`NOT_SUPPORTED`) và form không điền sẵn kho; lỗi khác của máy chủ để lộ ra.
+ */
+async function defaultServerDepot(): Promise<CompanyDepot | null> {
+  try {
+    const warehouses = await fetchCompanyWarehouses(true)
+    const chosen = warehouses.find((item) => item.isDefault && item.isActive && item.latitude !== null && item.longitude !== null)
+    if (!chosen || chosen.latitude === null || chosen.longitude === null) return null
+    return { name: chosen.warehouseName, address: chosen.address, lat: chosen.latitude, lng: chosen.longitude }
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'NOT_SUPPORTED') return null
+    throw error
+  }
+}
+
+// GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options · GET /api/company-warehouses?activeOnly=true
 export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
-  const [vehicles, vehicleTypes] = await Promise.all([
+  const [vehicles, vehicleTypes, drivers, depot] = await Promise.all([
     fetchEveryPage((page, size) => fetchVehicles(page, size)),
     fetchEveryPage((page, size) => fetchVehicleTypes(page, size)),
+    fetchDriverOptions(),
+    defaultServerDepot(),
   ])
 
   const typeById = new Map(
     vehicleTypes.map((type) => [type.id, type]),
   )
-
-  const db = getMockDb()
-
-  const [drivers, companies] = await Promise.all([
-    fetchDriverOptions(),
-    db.listCompanies(),
-  ])
-
-  const company = companies.find(
-    (item) => item.id === db.sessionUser()?.companyId,
-  ) ?? companies[0]
+  // Công ty của người đăng nhập bằng máy chủ — không phải công ty của kho mẫu
+  const companyId = getCachedCurrentUser()?.companyId
 
   const options: VehicleOption[] = vehicles.flatMap((vehicle) => {
     const type = typeById.get(vehicle.vehicleTypeId)
@@ -545,10 +557,10 @@ export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
       phone: '',
       role: 'driver' as const,
       status: 'active' as const,
-      companyId: company?.id,
+      companyId,
       lastActiveAt: null,
     })),
-    depot: company?.depot ?? null,
+    depot,
   }
 }
 
