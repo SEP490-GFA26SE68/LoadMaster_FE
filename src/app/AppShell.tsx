@@ -1,7 +1,9 @@
-import { Outlet } from 'react-router'
+import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { TrialAgreementNotifier } from '@/features/billing/TrialAgreementNotifier'
 import { TrialAccountLockedView } from '@/features/support/TrialAccountLockedView'
+import { TrialExpiredLockedView } from '@/features/support/TrialExpiredLockedView'
+import { isPlatformRole } from '@/types/user'
 import { NavRail } from './NavRail'
 
 /**
@@ -17,11 +19,30 @@ import { NavRail } from './NavRail'
 export function AppShell() {
   const auth = useAuthSafe()
   const user = auth?.user
+  const location = useLocation()
 
-  // Khi tài khoản bị gắn cờ do không ký thỏa thuận dịch vụ đúng hạn 72 giờ:
-  // Khóa toàn bộ các thanh điều hướng và trang nghiệp vụ, chỉ hiển thị giao diện tạo Support Ticket mở khóa
+  // 1. Khi tài khoản bị gắn cờ do không ký thỏa thuận dịch vụ đúng hạn 72 giờ:
+  // Khóa toàn bộ các thanh điều hướng và trang nghiệp vụ, chỉ hiển thị giao diện ký/tạo Support Ticket mở khóa
   if (user?.status === 'flagged') {
     return <TrialAccountLockedView />
+  }
+
+  // 2. Khi gói cước công ty hết hạn (subscriptionExpired):
+  if (user?.subscriptionExpired && !isPlatformRole(user.role)) {
+    // A. Nếu là vai trò nhân viên công ty (Manager, Dispatcher, Driver, Warehouse):
+    // Khóa toàn bộ các thanh điều hướng và trang nghiệp vụ, hiển thị TrialExpiredLockedView
+    if (user.role !== 'companyAdmin') {
+      return <TrialExpiredLockedView />
+    }
+
+    // B. Nếu là Company Admin: Chỉ cho phép truy cập duy nhất trang "Gói và Credit" (/goi-cuoc)
+    // Các trang thanh toán /thanh-toan/** cũng được phép để hoàn tất quy trình mua gói
+    const isBillingPath =
+      location.pathname === '/goi-cuoc' ||
+      location.pathname.startsWith('/thanh-toan')
+    if (!isBillingPath) {
+      return <Navigate to="/goi-cuoc" replace />
+    }
   }
 
   return (
