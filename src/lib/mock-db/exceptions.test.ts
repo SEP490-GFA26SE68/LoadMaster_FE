@@ -179,23 +179,23 @@ describe('finding another route: mock options to the next stop, the stop order n
     expect(proposal).toMatchObject({ tripId: 'TRIP-010', requestedAt: plus(T, 10 * MINUTE), stopId: 'STOP-01', stopNumber: 1, isMockResult: true })
     expect(proposal.options.map(({ index, route, distanceKm, durationMinutes }) => ({ index, route, distanceKm, durationMinutes }))).toStrictEqual([
       { index: 0, route: 'BYPASS', distanceKm: 19, durationMinutes: 23 },
-      { index: 1, route: 'RING_ROAD', distanceKm: 21.5, durationMinutes: 26 },
-      { index: 2, route: 'HIGHWAY', distanceKm: 24.8, durationMinutes: 21 },
+      { index: 1, route: 'RING_ROAD', distanceKm: 21.5, durationMinutes: 23 },
+      { index: 2, route: 'HIGHWAY', distanceKm: 24.8, durationMinutes: 19 },
     ])
-    expect(proposal.options.map((option) => near(option.eta, ['2026-09-14T03:32:49.475Z', '2026-09-14T03:35:48.102Z', '2026-09-14T03:31:15.909Z'][option.index] ?? ''))).toStrictEqual([true, true, true])
+    expect(proposal.options.map((option) => near(option.eta, ['2026-09-14T03:32:49.475Z', '2026-09-14T03:33:27.366Z', '2026-09-14T03:28:36.420Z'][option.index] ?? ''))).toStrictEqual([true, true, true])
     await expect(db.confirmReroute('TRIP-010', 7)).rejects.toMatchObject({ code: 'REROUTE_UNAVAILABLE' })
 
-    const reroute = await db.confirmReroute('TRIP-010', 2)
-    expect(reroute).toMatchObject({ index: 2, route: 'HIGHWAY', distanceKm: 24.8, durationMinutes: 21, stopNumber: 1, confirmedAt: plus(T, 10 * MINUTE), confirmedBy: null })
-    expect((await actionsOf(db, 'TRIP-010', 'trip.rerouted')).map((event) => event.params)).toStrictEqual([{ route: 'HIGHWAY', stopNumber: 1, totalKm: 24.8, totalMinutes: 21 }])
+    const reroute = await db.confirmReroute('TRIP-010', 0)
+    expect(reroute).toMatchObject({ index: 0, route: 'BYPASS', distanceKm: 19, durationMinutes: 23, stopNumber: 1, confirmedAt: plus(T, 10 * MINUTE), confirmedBy: null })
+    expect((await actionsOf(db, 'TRIP-010', 'trip.rerouted')).map((event) => event.params)).toStrictEqual([{ route: 'BYPASS', stopNumber: 1, totalKm: 19, totalMinutes: 23 }])
     // lần tìm đã dùng: xác nhận lại phải tìm tuyến lần nữa
-    await expect(db.confirmReroute('TRIP-010', 2)).rejects.toMatchObject({ code: 'REROUTE_UNAVAILABLE' })
+    await expect(db.confirmReroute('TRIP-010', 0)).rejects.toMatchObject({ code: 'REROUTE_UNAVAILABLE' })
 
-    // 03:40 — không đổi tuyến thì xe tới lúc 04:04:50; đi cao tốc tới lúc 03:31:16 như lựa chọn đã báo
+    // 03:40 — không đổi tuyến thì xe tới lúc 04:04:50; đi đường tránh tới lúc 03:32:49 như lựa chọn đã báo
     wall.set(plus(T, 40 * MINUTE))
     const after = await db.getTripMonitoring('TRIP-010')
     expect(after.stops[0]).toMatchObject({ stopId: 'STOP-01', number: 1, arrived: true })
-    expect(near(after.stops[0]?.eta, '2026-09-14T03:31:15.909Z')).toBe(true)
+    expect(near(after.stops[0]?.eta, '2026-09-14T03:32:49.475Z')).toBe(true)
     expect(after.reroute).toStrictEqual(reroute)
     expect((await db.getTrip('TRIP-010')).stops.map((stop) => stop.id)).toStrictEqual(['STOP-01', 'STOP-02', 'STOP-03'])
     // xe đang đứng ở điểm 1: tuyến khác là của chặng tới điểm 2
@@ -209,7 +209,7 @@ describe('finding another route: mock options to the next stop, the stop order n
     // còn 642.288 ms = 8,92 km đường: không có lựa chọn cao tốc
     expect((await db.requestReroute(tripId)).options.map(({ route, distanceKm, durationMinutes }) => ({ route, distanceKm, durationMinutes }))).toStrictEqual([
       { route: 'BYPASS', distanceKm: 10.3, durationMinutes: 12 },
-      { route: 'RING_ROAD', distanceKm: 11.6, durationMinutes: 14 },
+      { route: 'RING_ROAD', distanceKm: 11.6, durationMinutes: 13 },
     ])
     db.restoreSession(COMPANYMANAGER)
     await expect(db.requestReroute(tripId)).rejects.toMatchObject({ code: 'ROLE_NOT_ALLOWED' })

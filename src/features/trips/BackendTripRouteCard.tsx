@@ -12,12 +12,15 @@ type Props = {
     trip: TripDetailApiResponse
     stops: TripStopApiResponse[]
     routePlan: BackendActiveRoutePlan | null
+    /** Đọc tuyến đã lưu thất bại (khác "chưa có tuyến"): màn nói ra, bản đồ nối thẳng. */
+    routePlanFailed?: boolean
 }
 
 export function BackendTripRouteCard({
     trip,
     stops,
     routePlan,
+    routePlanFailed = false,
 }: Props) {
     const t = useT()
 
@@ -106,6 +109,12 @@ export function BackendTripRouteCard({
                     {stops.length} {t('trips.detail.stopUnit')}
                 </p>
             </div>
+
+            {routePlanFailed ? (
+                <p role="alert" className="border-b border-border px-5 py-3 text-sm text-danger">
+                    {t('backendTripRoute.routePlanFailed')}
+                </p>
+            ) : null}
 
             {hasDepotCoordinates ? (
                 <RouteMap

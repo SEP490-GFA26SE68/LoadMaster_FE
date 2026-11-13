@@ -21,9 +21,9 @@ export function CompanyProfilePage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       {/* Thứ đầu tiên của vùng cuộn là thẻ nền đặc — chỉ khi đã có dữ liệu mới đè lên dải trời */}
-      <PageHero title={t('companyProfile.title')} description={t('pageHero.companyProfile')} overlap={profile !== undefined} />
+      <PageHero title={t('companyProfile.title')} description={t('pageHero.companyProfile')} />
       {profile !== undefined ? (
-        <main className="sky-overlap min-h-0 flex-1 overflow-y-auto px-shell pb-6 max-sm:px-4">
+        <main className="min-h-0 flex-1 overflow-y-auto px-shell py-6 max-sm:px-4">
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[288px_minmax(0,1fr)] lg:gap-5">
             <CompanyProfileIdentity profile={profile} />
             <CompanyProfileForm key={profile.company.id} profile={profile} />

@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { RouteMap } from '@/components/map'
 import { nextGuidance, parseGuidanceSteps, remainingTo, type GeoPoint, type GuidanceStep, type NextGuidance } from '@/domain/routing'
-import { getActiveRoutePlan } from '@/features/trips/route-plan-api'
-import { useTripRoutePathQuery } from '@/features/trips/useRouteQuery'
+import { useActiveRoutePlanQuery, useTripRoutePathQuery } from '@/features/trips/useRouteQuery'
 import { useT, type MessageKey } from '@/lib/i18n'
 import type { DeliveryStop, Trip } from '@/lib/mock-db'
 
@@ -88,13 +86,8 @@ export function DriverNavigation({
     () => ({ depot: { lat: depot.lat, lng: depot.lng }, stops: stops.map((stop) => ({ lat: stop.lat, lng: stop.lng })) }),
     [depot.lat, depot.lng, stops],
   )
-  const pathQuery = useTripRoutePathQuery(trip.id, pathFallback, stops.length > 0)
-  const planQuery = useQuery({
-    queryKey: ['trips', trip.id, 'route-plan'],
-    queryFn: () => getActiveRoutePlan(trip.id),
-    enabled: trip.id !== '',
-    staleTime: 15_000,
-  })
+  const pathQuery = useTripRoutePathQuery(trip.id, pathFallback, stops.length > 0, false)
+  const planQuery = useActiveRoutePlanQuery(trip.id, false)
 
   const stepsBySequence = useMemo(() => {
     const map = new Map<number, GuidanceStep[]>()

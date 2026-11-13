@@ -182,8 +182,7 @@ export const trips = {
     cargoLaterTitle: 'Điểm giao và hàng hoá',
     cargoLater: 'Thêm ở Chi tiết chuyến sau khi tạo: đưa yêu cầu giao vào chuyến thì điểm giao tự sinh.',
     cargoLoaded: 'Kho đã xếp {loaded} / {total} kiện theo phương án',
-    lockedHint: 'Kho đã bắt đầu xếp hàng nên xe, kho xuất phát và điểm giao đã khoá; vẫn sửa được tên, ngày giờ xuất phát và tài xế.',
-    notEditable: 'Chuyến {id} đã rời kho hoặc đã kết thúc nên không sửa được nữa.',
+    notEditable: 'Chuyến {id} không sửa được nữa: kho đã bắt đầu xếp hàng hoặc chuyến đã kết thúc.',
     submitCreate: 'Tạo chuyến',
     submitEdit: 'Lưu thay đổi',
     cancel: 'Huỷ',
@@ -291,14 +290,12 @@ export const trips = {
     runBlocked: { noPackages: 'Chưa chạy được: chuyến chưa có kiện nào.' },
     /** Lý do chuyến không sửa được, theo pha (D-45). */
     locked: {
-      loading: 'Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.',
-      loaded: 'Kho đã xếp xong, xe chờ xuất phát nên xe, điểm giao và kiện đã khoá.',
+      loading: 'Kho đang xếp hàng theo phương án đã duyệt nên chuyến đã khoá, không sửa được nữa.',
+      loaded: 'Kho đã xếp xong, xe chờ xuất phát nên chuyến đã khoá, không sửa được nữa.',
       delivering: 'Chuyến đang giao hàng nên không sửa được nữa.',
       completed: 'Chuyến đã hoàn thành; màn này chỉ để xem.',
       cancelled: 'Chuyến đã huỷ lúc {time} {date}. Lý do: {reason}',
     },
-    /** Kho đang xếp / đã xếp xong: phần khung chuyến vẫn sửa được (D-45). */
-    stillEditable: 'Vẫn sửa được tên, ngày chạy và tài xế.',
     /** Chuyến đã huỷ: nhãn ở cuối banner. */
     readOnly: 'Chỉ xem',
     /** Bản đã duyệt lỗi thời (D-31): nói vì sao, lấy từ nhật ký (V2.3, quyết định 2). */
@@ -927,6 +924,9 @@ export const trips = {
   /** Chi tiết chuyến của máy chủ (`BackendTripDetailPage`): thẻ thông tin vận hành. */
   server: {
     operations: 'Thông tin vận hành',
+    cancelReason: 'Chuyến đã huỷ. Lý do: {reason}',
+    /** Chuyến huỷ lúc Đang vận chuyển: số kiện chưa giao thành Hoàn trả, máy chủ ghi lúc huỷ (`cancelReturnedCount`). */
+    cancelReturned: { one: '{count} kiện chưa giao thành Hoàn trả.', other: '{count} kiện chưa giao thành Hoàn trả.' },
     tripCode: 'Mã chuyến',
     vehicle: 'Xe vận chuyển',
     driver: 'Tài xế',

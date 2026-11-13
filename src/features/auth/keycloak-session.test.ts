@@ -10,6 +10,8 @@ import { createKeycloakSession, type AuthTabChannel, type RedirectPort } from '.
 const CONFIG = { url: 'http://kc.test', realm: 'loadmaster', clientId: 'loadmaster-web' }
 const TOKEN_URL = 'http://kc.test/realms/loadmaster/protocol/openid-connect/token'
 const LOGOUT_URL = 'http://kc.test/realms/loadmaster/protocol/openid-connect/logout'
+const REFRESH_KEY = 'loadmaster.phien-keycloak'
+const SESSION_KEY = 'loadmaster.phien-keycloak-ma'
 
 type KeycloakCall = { url: string; form: Record<string, string> }
 
@@ -90,7 +92,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('signing in on the app screen', () => {
-  test('trades email and password for tokens at the realm token endpoint and keeps only the refresh token in the tab storage', async () => {
+  test('trades email and password for tokens at the realm token endpoint and keeps only the refresh token and the session id in the tab storage', async () => {
     const keycloak = stubKeycloak()
     const storage = memoryStorage()
     const session = createKeycloakSession(CONFIG, { storage, channel: null, now })
@@ -107,7 +109,8 @@ describe('signing in on the app screen', () => {
     const init = keycloak.fetchMock.mock.calls[0]?.[1]
     expect(init?.headers).toStrictEqual({ 'Content-Type': 'application/x-www-form-urlencoded' })
     expect(await session.token()).toBe('access-1')
-    expect([...storage.items.values()]).toStrictEqual(['refresh-1'])
+    expect([...storage.items.keys()]).toStrictEqual([REFRESH_KEY, SESSION_KEY])
+    expect(storage.items.get(REFRESH_KEY)).toBe('refresh-1')
   })
 
   test.each([
@@ -191,7 +194,7 @@ describe('keeping the session', () => {
     clock += 15_000
     expect(await Promise.all([session.token(), session.token(), session.token()])).toStrictEqual(['access-2', 'access-2', 'access-2'])
     expect(keycloak.calls.filter((call) => call.form.grant_type === 'refresh_token')).toHaveLength(1)
-    expect([...storage.items.values()]).toStrictEqual(['refresh-2'])
+    expect(storage.items.get(REFRESH_KEY)).toBe('refresh-2')
   })
 
   test('reloading the page restores the session from the tab storage without asking for the password', async () => {
@@ -236,8 +239,44 @@ describe('keeping the session', () => {
     clock += 60_000
     keycloak.fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
     expect(await session.token()).toBeNull()
-    expect(storage.items.size).toBe(1)
+    expect(storage.items.get(REFRESH_KEY)).toBe('refresh-1')
     expect(await session.token()).toBe('access-2')
+  })
+})
+
+describe('a 401 from the server', () => {
+  test('refreshToken refreshes at once even when the token still looks valid; a network failure throws and keeps the session', async () => {
+    const keycloak = stubKeycloak()
+    const storage = memoryStorage()
+    const session = createKeycloakSession(CONFIG, { storage, channel: null, now })
+    await session.login('an@fastmove.vn', 'dung-mat-khau')
+
+    expect(await session.refreshToken()).toBe('access-2')
+    expect(await session.token()).toBe('access-2')
+    keycloak.fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(session.refreshToken()).rejects.toThrow()
+    expect(storage.items.get(REFRESH_KEY)).toBe('refresh-2')
+  })
+
+  test('reject ends the session in every tab and closes it at Keycloak', async () => {
+    const keycloak = stubKeycloak()
+    const hub = tabHub()
+    const storage = memoryStorage()
+    const first = createKeycloakSession(CONFIG, { storage, channel: hub.tab(), now })
+    const second = createKeycloakSession(CONFIG, { storage: memoryStorage(), channel: hub.tab(), now })
+    const firstEnded = vi.fn()
+    const secondEnded = vi.fn()
+    first.onEnded(firstEnded)
+    second.onEnded(secondEnded)
+    await first.login('an@fastmove.vn', 'dung-mat-khau')
+    expect(await second.start()).toBe(true)
+
+    first.reject()
+    expect(firstEnded).toHaveBeenCalledTimes(1)
+    expect(storage.items.size).toBe(0)
+    await vi.waitFor(() => expect(secondEnded).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(keycloak.calls.at(-1)?.url).toBe(LOGOUT_URL))
+    expect(await first.token()).toBeNull()
   })
 })
 
@@ -254,12 +293,64 @@ describe('several tabs of the same browser', () => {
     second.onEnded(secondEnded)
     expect(await second.start()).toBe(true)
     expect(await second.token()).toBe('access-2')
-    expect(secondStorage.items.size).toBe(1)
+    expect(secondStorage.items.get(REFRESH_KEY)).toBe('refresh-2')
+    expect(secondStorage.items.get(SESSION_KEY)).toBeDefined()
 
     await first.logout()
     expect(keycloak.calls.at(-1)).toStrictEqual({ url: LOGOUT_URL, form: { client_id: 'loadmaster-web', refresh_token: 'refresh-1' } })
     await vi.waitFor(() => expect(secondEnded).toHaveBeenCalledTimes(1))
     expect(await second.token()).toBeNull()
     expect(secondStorage.items.size).toBe(0)
+  })
+})
+
+describe('trusting only the right messages on the tab channel', () => {
+  test('signing out in a tab of another session leaves this tab signed in', async () => {
+    stubKeycloak()
+    const hub = tabHub()
+    const first = createKeycloakSession(CONFIG, { storage: memoryStorage(), channel: hub.tab(), now })
+    const other = createKeycloakSession(CONFIG, { storage: memoryStorage(), channel: hub.tab(), now })
+    const firstEnded = vi.fn()
+    first.onEnded(firstEnded)
+    await first.login('an@fastmove.vn', 'dung-mat-khau')
+    await other.login('an@fastmove.vn', 'dung-mat-khau')
+
+    await other.logout()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(firstEnded).not.toHaveBeenCalled()
+    expect(await first.token()).toBe('access-1')
+  })
+
+  test('a logout message without the session id, or with another one, is ignored', async () => {
+    stubKeycloak()
+    const hub = tabHub()
+    const storage = memoryStorage()
+    const session = createKeycloakSession(CONFIG, { storage, channel: hub.tab(), now })
+    const ended = vi.fn()
+    session.onEnded(ended)
+    await session.login('an@fastmove.vn', 'dung-mat-khau')
+
+    const rogue = hub.tab()
+    rogue.postMessage({ type: 'logout', session: 'doan-bua' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(ended).not.toHaveBeenCalled()
+
+    rogue.postMessage({ type: 'logout', session: storage.items.get(SESSION_KEY) ?? '' })
+    await vi.waitFor(() => expect(ended).toHaveBeenCalledTimes(1))
+  })
+
+  test('a new tab takes only the answer to its own question: a session nobody asked for is not installed', async () => {
+    stubKeycloak()
+    const hub = tabHub()
+    const rogue = hub.tab()
+    const storage = memoryStorage()
+    const fresh = createKeycloakSession(CONFIG, { storage, channel: hub.tab(), now })
+    // Tab lạ trả lời mọi câu hỏi bằng phiên của nó, nhưng sai mã hỏi
+    rogue.subscribe((message) => {
+      if (message.type === 'ask') rogue.postMessage({ type: 'share', nonce: 'khong-phai', refreshToken: 'refresh-la', session: 'phien-la' })
+    })
+
+    expect(await fresh.start()).toBe(false)
+    expect(storage.items.size).toBe(0)
   })
 })

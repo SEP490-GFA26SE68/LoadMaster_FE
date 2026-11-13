@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import {
   deleteVehicleType,
-  fetchVehicleAssignmentRows,
   fetchVehicleTypes,
   saveVehicleType,
-  setVehicleType,
   type VehicleTypeInput,
 } from './vehicle-types-api'
 
@@ -46,11 +44,6 @@ export function useVehicleTypesQuery(
   })
 }
 
-/** Mọi xe của đội kèm loại đang gắn — bảng "Gắn loại cho xe". */
-export function useVehicleAssignmentRowsQuery() {
-  return useQuery({ queryKey: [...KEY, 'vehicles'], queryFn: fetchVehicleAssignmentRows, staleTime: 0 })
-}
-
 export function useSaveVehicleTypeMutation() {
   const client = useQueryClient()
   return useMutation({
@@ -61,13 +54,5 @@ export function useSaveVehicleTypeMutation() {
 
 export function useDeleteVehicleTypeMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (id: string) => deleteVehicleType(id), onSuccess: () => client.invalidateQueries({ queryKey: KEY }) })
-}
-
-export function useSetVehicleTypeMutation() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: ({ vehicleId, vehicleTypeId }: { vehicleId: string; vehicleTypeId: string | null }) => setVehicleType(vehicleId, vehicleTypeId),
-    onSuccess: () => refreshLimits(client),
-  })
+  return useMutation({ mutationFn: (id: string) => deleteVehicleType(id), onSuccess: () => refreshLimits(client) })
 }

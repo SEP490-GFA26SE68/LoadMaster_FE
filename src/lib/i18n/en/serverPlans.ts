@@ -22,6 +22,10 @@ export const serverPlans = {
     keep: 'Keep trip',
     confirm: 'Cancel trip',
     done: 'Trip {code} cancelled',
+    inTransitDescription: 'The trip becomes Cancelled and cannot be reopened. Undelivered packages become Returned and their delivery requirements Delivered short; the driver is notified.',
+    inTransitBlocked: 'A trip in transit can only be cancelled while it has an unresolved trip exception. Report one on the Monitoring screen first.',
+    inTransitNote: 'The vehicle is on the road: undelivered packages will become Returned.',
+    doneReturned: { one: 'Trip {code} cancelled: {count} undelivered package became Returned', other: 'Trip {code} cancelled: {count} undelivered packages became Returned' },
   },
   removeRequirement: {
     open: 'Remove from trip',
@@ -50,7 +54,7 @@ export const serverPlans = {
   },
   setup: {
     title: 'Optimize loading',
-    description: 'One run uses 1 credit and produces three plans A · B · C, one per objective. The server picks the algorithm from the company plan.',
+    description: 'One run produces three plans A · B · C, one per objective, and is charged once at the server price. The server picks the algorithm from the company plan.',
     run: 'Run optimization',
     locked: 'The trip is already in operation: loading can no longer be optimized.',
     noStops: 'The trip has no delivery stops: add a delivery requirement first.',
@@ -58,7 +62,7 @@ export const serverPlans = {
     pins: {
       title: 'Keep pinned packages',
       switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
-      on: 'The plan opened from the Planner has {count} pinned packages. The server keeps their exact position and orientation in all three plans A · B · C and packs only the rest around them. Still one credit; if the pins cannot stand on their own the server refuses before running and charges no credit.',
+      on: 'The plan opened from the Planner has {count} pinned packages. The server keeps their exact position and orientation in all three plans A · B · C and packs only the rest around them. Still counted as one run; if the pins cannot stand on their own the server refuses before running and charges no credit.',
       off: 'Normal run: every package is packed again from scratch.',
       none: 'The plan opened from the Planner no longer has pinned packages: this is a normal run.',
     },

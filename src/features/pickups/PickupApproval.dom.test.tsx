@@ -110,3 +110,17 @@ test('the manager sees a request still waiting and the reason it cannot decide, 
   expect(item.queryByRole('button', { name: /Duyệt yêu cầu|Từ chối yêu cầu/ })).not.toBeInTheDocument()
   expect(screen.getByText('Chỉ điều phối viên duyệt hoặc từ chối yêu cầu nhận hàng.')).toBeInTheDocument()
 })
+
+test('a request approved but not yet picked up when the trip is cancelled shows as rejected because the trip was cancelled', async () => {
+  const db = getMockDb()
+  db.restoreSession('US-0001')
+  // PKR-002 đã duyệt ở test trên, chưa kiện nào lên xe
+  expect(await db.getPickupRequest('TRIP-009', 'PKR-002')).toMatchObject({ status: 'APPROVED' })
+  await db.reportTripException('TRIP-009', { type: 'VEHICLE_BREAKDOWN', description: 'Xe hỏng hộp số', delayMinutes: 60 })
+  await db.cancelTrip('TRIP-009', 'Xe hỏng giữa đường')
+  renderCard('dispatcher')
+  const item = within(await itemOf('PKR-002'))
+  await item.findByText('Đã từ chối', undefined, SLOW)
+  expect(item.getByText('Tự từ chối vì chuyến đã huỷ khi chưa nhận kiện nào.')).toBeInTheDocument()
+  expect(item.queryByText(/^Lý do từ chối/)).not.toBeInTheDocument()
+})

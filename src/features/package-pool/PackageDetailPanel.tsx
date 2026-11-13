@@ -10,7 +10,6 @@ import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { None, PackageStatusBadge } from './package-look'
 import type { PackageDetail } from './package-pool-api'
-import { PackageDeleteAction } from './PackageDeleteAction'
 import { PackageFlagsSection, PackageHistorySection } from './PackageDetailSections'
 import { labelsPath } from './packages-list'
 import { PACKAGE_POOL_SUPPORT, usePackageDetailQuery } from './usePackagePoolQuery'
@@ -21,8 +20,7 @@ const LINK = 'rounded-sm font-mono text-caption text-primary hover:text-primary-
  * Panel chi tiết kiện (FE-3b-03), cột phải của bảng kho kiện: mã QR (kèm mã chữ), thông tin kiện, yêu cầu giao và chuyến đang giữ kiện, cờ và
  * lịch sử. Lịch sử là `Package.history` kho ghi ở từng lần tạo, chuyển trạng thái, gắn và gỡ cờ — không suy ở màn. Điều phối viên
  * có nút In nhãn (`labels.print`) và Gỡ cờ (`packages.manage`); quản lý công ty chỉ đọc. Nền đặc, viền 1 px — bề mặt đọc lâu, không dùng kính.
- * Mở hoặc đổi kiện thì con trỏ về tiêu đề panel. Nối backend thì phần không có nguồn bị bỏ (`PACKAGE_POOL_SUPPORT`) và điều phối viên xoá
- * được kiện Đã nhập.
+ * Mở hoặc đổi kiện thì con trỏ về tiêu đề panel.
  */
 export function PackageDetailPanel({ id, packageId, onClose }: {
   id: string
@@ -86,37 +84,32 @@ export function PackageDetailPanel({ id, packageId, onClose }: {
             <PackageFacts detail={detail} />
           </section>
 
-          {PACKAGE_POOL_SUPPORT.flags ? <PackageFlagsSection titleId={titleId} pkg={pkg} /> : null}
-          {PACKAGE_POOL_SUPPORT.history ? <PackageHistorySection titleId={titleId} history={detail.history} /> : null}
-          {PACKAGE_POOL_SUPPORT.deletePackage && can('packages.manage') ? <PackageDeleteAction pkg={pkg} onDeleted={onClose} /> : null}
+          <PackageFlagsSection titleId={titleId} pkg={pkg} />
+          <PackageHistorySection titleId={titleId} history={detail.history} />
         </div>
       )}
     </aside>
   )
 }
 
-/** Thông tin kiện: chỉ trường nguồn dữ liệu có — backend chỉ trả chiều dài, không có loại kiện hay yêu cầu giao. */
+/** Thông tin kiện, loại kiện, yêu cầu giao và chuyến đang giữ kiện. */
 function PackageFacts({ detail }: { detail: PackageDetail }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
-  const { package: pkg, type, trip } = detail
-  const tripId = trip?.id ?? pkg.tripId
+  const { package: pkg, type } = detail
+  const tripId = pkg.tripId
   const canOpenTrip = can('trips.view') && PACKAGE_POOL_SUPPORT.tripLinks
   return (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
       <Field label={t('sourcing.detail.poolId')}><span className="font-mono text-caption">{pkg.id}</span></Field>
       <Field label={t('sourcing.form.handlingClass')}><HandlingClassChip handlingClass={pkg.handlingClass} /></Field>
-      {PACKAGE_POOL_SUPPORT.fullSize ? (
-        <Field label={t('sourcing.detail.dimensions')}><span className="font-mono text-caption tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span></Field>
-      ) : (
-        <Field label={t('sourcing.detail.length')}><span className="font-mono text-caption tabular-nums">{format.length(pkg.lengthCm)}</span></Field>
-      )}
+      <Field label={t('sourcing.detail.dimensions')}><span className="font-mono text-caption tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span></Field>
       <Field label={t('sourcing.detail.weight')}><span className="font-mono text-caption tabular-nums">{format.weight(pkg.weightKg)}</span></Field>
       <Field label={t('sourcing.detail.destination')} wide>{pkg.destination === '' ? <None /> : pkg.destination}</Field>
       <Field label={t('sourcing.detail.packageType')} wide>{type ? `${type.name} · ${type.id}` : t('sourcing.detail.packageTypeNone')}</Field>
-      {PACKAGE_POOL_SUPPORT.source ? <Field label={t('sourcing.detail.source')}>{t(`sourcing.detail.sources.${pkg.source}`)}</Field> : null}
-      {PACKAGE_POOL_SUPPORT.links && pkg.requirementId === undefined && pkg.tripId === undefined ? (
+      <Field label={t('sourcing.detail.source')}>{t(`sourcing.detail.sources.${pkg.source}`)}</Field>
+      {pkg.requirementId === undefined && pkg.tripId === undefined ? (
         <Field label={t('sourcing.packages.filters.link')}>{t('sourcing.detail.notLinked')}</Field>
       ) : null}
       {pkg.requirementId !== undefined ? (
@@ -126,7 +119,7 @@ function PackageFacts({ detail }: { detail: PackageDetail }) {
       ) : null}
       {tripId !== undefined ? (
         <Field label={t('sourcing.detail.trip')}>
-          {canOpenTrip ? <Link to={`/chuyen/${encodeURIComponent(tripId)}`} className={LINK}>{trip?.name ?? tripId}</Link> : <span className="font-mono text-caption">{trip?.name ?? tripId}</span>}
+          {canOpenTrip ? <Link to={`/chuyen/${encodeURIComponent(tripId)}`} className={LINK}>{tripId}</Link> : <span className="font-mono text-caption">{tripId}</span>}
         </Field>
       ) : null}
     </dl>

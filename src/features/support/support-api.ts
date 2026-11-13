@@ -2,7 +2,8 @@
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `support` nối backend thì gọi backend, không thì gọi kho mẫu:
  *   listSupportTickets       → GET /api/support-tickets (+ GET /api/users/me)
  *   createSupportTicket      → POST /api/support-tickets
- *   replyToSupportTicket     → GET /api/support-tickets, rồi PATCH /api/support-tickets/{id} (trao đổi ghi trong `resolutionNote`, Q-18)
+ *   getSupportTicketThread   → GET /api/support-tickets/{id}/replies (chỉ backend; kho mẫu: danh sách đã mang trao đổi)
+ *   replyToSupportTicket     → POST /api/support-tickets/{id}/replies
  *   setSupportTicketStatus   → PATCH /api/support-tickets/{id}
  *   getSupportCompanyPanel   → GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
  *   listCompanyContracts     → GET /api/contracts (chỉ backend)
@@ -10,7 +11,7 @@
  */
 
 import { fetchBackendMe } from '@/features/auth/me-api'
-import { api, ApiError } from '@/lib/api-client'
+import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import {
@@ -29,9 +30,7 @@ import {
   type SupportTicket,
   type TicketStatus,
 } from '@/lib/mock-db'
-import { isPlatformRole } from '@/types/user'
-import { noteOfReplies } from './support-chat'
-import { ticketCreateBody, ticketOf, type SupportTicketDto } from './support-dto'
+import { ticketCreateBody, ticketOf, threadOf, type SupportTicketDto, type SupportTicketThreadDto } from './support-dto'
 import { contractOf, latestContracts, panelOfMock, type CompanyContract, type ContractDto, type SupportPanel } from './support-panel-dto'
 import { ticketsToDisplay } from './ticket-view'
 
@@ -40,13 +39,14 @@ export type { CompanyContract, SupportPanel, SupportPanelPlan } from './support-
 const ON_BACKEND = usesBackend('support')
 
 /**
- * Việc màn làm được theo nguồn dữ liệu. Backend không có mốc hoạt động gần nhất (`activityTime`); tên công ty đi kèm yêu cầu thay cho
- * danh bạ công ty của kho mẫu (`companyDirectory`); có thêm trạng thái Đã giải quyết (`statuses`); Hỗ trợ khách hàng đổi gói cho công ty
- * khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó) và mở khoá tài khoản dùng thử bị gắn cờ (`trialUnlock`, kho mẫu không có
- * tài khoản dùng thử). Trao đổi và khung công ty có ở cả hai nguồn.
+ * Việc màn làm được theo nguồn dữ liệu. Backend: danh sách không mang trao đổi — màn đọc trao đổi của từng yêu cầu ở máy chủ (`threads`);
+ * tên công ty đi kèm yêu cầu thay cho danh bạ công ty của kho mẫu (`companyDirectory`); có thêm trạng thái Đã giải quyết (`statuses`); Hỗ
+ * trợ khách hàng đổi gói cho công ty khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó) và mở khoá tài khoản dùng thử bị gắn cờ
+ * (`trialUnlock`, kho mẫu không có tài khoản dùng thử). Trao đổi, mốc hoạt động gần nhất và khung công ty có ở cả hai nguồn.
  */
 export const SUPPORT_SOURCE: {
   readonly replies: boolean
+  readonly threads: boolean
   readonly companyPanel: boolean
   readonly activityTime: boolean
   readonly companyDirectory: boolean
@@ -55,8 +55,9 @@ export const SUPPORT_SOURCE: {
   readonly statuses: readonly TicketStatus[]
 } = {
   replies: true,
+  threads: ON_BACKEND,
   companyPanel: true,
-  activityTime: !ON_BACKEND,
+  activityTime: true,
   companyDirectory: !ON_BACKEND,
   planAssign: ON_BACKEND,
   trialUnlock: ON_BACKEND,
@@ -88,25 +89,36 @@ export async function createSupportTicket(input: NewSupportTicket): Promise<Supp
   return requiredTicketOf(await api().post<SupportTicketDto>('/api/support-tickets', { body: ticketCreateBody(input) }))
 }
 
+function requiredThreadOf(dto: SupportTicketThreadDto): SupportTicket {
+  const ticket = threadOf(dto)
+  if (ticket === null) throw new ApiError('SERVER_ERROR')
+  return ticket
+}
+
 /**
- * Người gửi hoặc Hỗ trợ khách hàng trả lời. Kho mẫu: yêu cầu đã đóng là `TICKET_CLOSED`. Backend: đọc lại yêu cầu ngay trước khi ghi
- * (không ghi đè lần trả lời người kia vừa gửi), nối lần trả lời rồi ghi cả trao đổi vào `resolutionNote`; tài khoản nền tảng trả lời yêu
- * cầu Mở thì yêu cầu sang Đang xử lý, như kho mẫu.
+ * Yêu cầu kèm cả trao đổi. Chỉ backend đọc riêng (danh sách của máy chủ không mang trao đổi); kho mẫu trả đúng yêu cầu trong danh sách.
+ * Yêu cầu của người khác (người của công ty) hay không có: `SUPPORT_TICKET_NOT_FOUND`.
  */
-// GET /api/support-tickets, rồi PATCH /api/support-tickets/{id}
+// GET /api/support-tickets/{id}/replies
+export async function getSupportTicketThread(ticketId: string): Promise<SupportTicket> {
+  if (!ON_BACKEND) {
+    const ticket = (await getMockDb().listSupportTickets()).find((item) => item.id === ticketId)
+    if (ticket === undefined) throw new ApiError('NOT_FOUND')
+    return ticket
+  }
+  return requiredThreadOf(await api().get<SupportTicketThreadDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}/replies`))
+}
+
+/**
+ * Người gửi hoặc Hỗ trợ khách hàng trả lời. Kho mẫu: yêu cầu đã đóng là `TICKET_CLOSED`. Backend ghi một dòng vào bảng trao đổi và trả cả
+ * trao đổi; máy chủ đổi trạng thái như kho mẫu (nhân sự nền tảng trả lời yêu cầu Mở thì nhận xử lý) và từ chối yêu cầu đã đóng
+ * (`SUPPORT_TICKET_CLOSED`) hay đang do người khác xử lý (`SUPPORT_TICKET_LOCKED`).
+ */
+// POST /api/support-tickets/{id}/replies
 export async function replyToSupportTicket(ticketId: string, text: string): Promise<SupportTicket> {
   if (!ON_BACKEND) return getMockDb().replyToSupportTicket(ticketId, text)
-  const [dtos, me] = await Promise.all([api().get<SupportTicketDto[]>('/api/support-tickets'), fetchBackendMe()])
-  const dto = dtos.find((item) => String(item.id) === ticketId)
-  const ticket = dto === undefined ? null : ticketOf(dto)
-  if (ticket === null) throw new ApiError('NOT_FOUND')
-  if (me.role === null) throw new ApiError('UNAUTHORIZED')
-  const reply = { authorId: me.id, authorName: me.fullName, authorRole: me.role, text: text.trim(), at: new Date().toISOString() }
-  const body = {
-    ...(isPlatformRole(me.role) && ticket.status === 'OPEN' ? { status: 'IN_PROGRESS' } : {}),
-    resolutionNote: noteOfReplies([...ticket.replies, reply]),
-  }
-  return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body }))
+  const body = { message: text.trim() }
+  return requiredThreadOf(await api().post<SupportTicketThreadDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}/replies`, { body }))
 }
 
 /** Hỗ trợ khách hàng đổi trạng thái, kể cả mở lại yêu cầu đã đóng. */
@@ -116,17 +128,22 @@ export async function setSupportTicketStatus(ticketId: string, status: TicketSta
   return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body: { status } }))
 }
 
+/**
+ * Phần phụ của khung công ty mà máy chủ không cho đọc (403) hoặc không có (404) thì là `null` — khung bỏ phần đó. Lỗi khác (mất mạng,
+ * máy chủ lỗi) ném tiếp để màn báo lỗi tải và cho thử lại, không giả như công ty không có số dư.
+ */
 async function orNull<T>(promise: Promise<T>): Promise<T | null> {
   try {
     return await promise
-  } catch {
-    return null
+  } catch (error) {
+    if (isApiError(error) && (error.status === 403 || error.status === 404)) return null
+    throw error
   }
 }
 
 /**
  * Gói, số dư và 20 giao dịch credit gần nhất của công ty — khung bên cạnh màn hỗ trợ. Backend: tên công ty theo hợp đồng, không có hợp
- * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch đọc hỏng thì là `null`.
+ * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch máy chủ không cho đọc (403) hay không có (404) thì là `null`, lỗi khác ném tiếp.
  */
 // GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
 export async function getSupportCompanyPanel(companyId: string, companyName?: string): Promise<SupportPanel> {
@@ -135,7 +152,7 @@ export async function getSupportCompanyPanel(companyId: string, companyName?: st
   const [contracts, balance, transactions] = await Promise.all([
     api().get<ContractDto[] | null>('/api/contracts', { query }),
     orNull(api().get<CreditBalanceDto>('/api/credits/balance', { query })),
-    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1 })),
+    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1, truncate: true })),
   ])
   const dto = latestContracts((contracts ?? []).filter((item) => String(item.companyId) === companyId))[0]
   const contract = dto === undefined ? null : contractOf(dto, new Date().toISOString())

@@ -16,7 +16,7 @@ import { MONITORING_CAPABILITIES } from './monitoring-capabilities'
 
 /**
  * Màn Giám sát nối backend (`usesBackend('monitoring')`): mỗi hàm gọi đúng endpoint của `MonitoringController`, đổi DTO sang kiểu của
- * màn; lỗi chưa kèm mã đọc theo mã HTTP; việc backend chưa có bị từ chối mà không gọi mạng. Giờ không múi giờ của backend là giờ Việt Nam.
+ * màn; lỗi chưa kèm mã đọc theo mã HTTP. Giờ không múi giờ của backend là giờ Việt Nam.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['monitoring']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -41,7 +41,7 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 
 test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, gia hạn, nhận dọc đường, xác nhận tay; chuyển quản lý có', () => {
   expect(MONITORING_CAPABILITIES).toEqual({
-    backend: true, openTrip: false, reorderStops: false, escalation: true, pickups: false, manualConfirm: false,
+    backend: true, openTrip: false, reorderStops: true, escalation: true, pickups: false, manualConfirm: false,
   })
 })
 
@@ -221,8 +221,25 @@ test('gia hạn: hạn mới gửi theo giờ Việt Nam không múi giờ, mã 
   expect(none.calls).toEqual([])
 })
 
-test('việc backend chưa có bị từ chối mà không gọi mạng', async () => {
-  const { calls } = stubBackend({})
-  expect(await codeOf(reorderRunningStops(TRIP, ['8', '9']))).toBe('NOT_SUPPORTED')
-  expect(calls).toEqual([])
+test('đổi thứ tự điểm gửi mã số điểm của máy chủ; kiện bị che một phần là cảnh báo, che kín là lỗi cùng dạng kho mẫu', async () => {
+  const { calls } = stubBackend({
+    [`POST /api/trips/${TRIP}/stops/reorder`]: {
+      body: envelope({ tripId: 7, tripCode: TRIP, stops: [{ stopId: 9, sequence: 2 }, { stopId: 8, sequence: 3 }], partial: [{ packageCode: 'PK-0012', stopId: 8 }] }),
+    },
+  })
+  expect(await reorderRunningStops(TRIP, ['9', '8'])).toEqual({ partial: [{ packageId: 'PK-0012', stopId: '8' }] })
+  expect(calls[0]?.body).toEqual({ stopIds: [9, 8] })
+
+  const details = { packages: ['PK-0012', 'PK-0013'], stopIds: ['8', '9'] }
+  stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 409, body: { success: false, code: 'STOP_ORDER_BLOCKS_CARGO', message: 'x', errors: details } } })
+  const error: unknown = await reorderRunningStops(TRIP, ['9', '8']).then(() => null, (reason: unknown) => reason)
+  expect(isApiError(error) && { code: error.code, params: error.params }).toEqual({ code: 'STOP_ORDER_BLOCKS_CARGO', params: details })
+  // Thiếu toạ độ: 400 kèm mã số các điểm thiếu, hộp đổi thứ tự nêu tên từng điểm
+  stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 400, body: { success: false, code: 'MISSING_STOP_COORDINATES', message: 'x', errors: { stopIds: ['9'] } } } })
+  const missing: unknown = await reorderRunningStops(TRIP, ['9', '8']).then(() => null, (reason: unknown) => reason)
+  expect(isApiError(missing) && { code: missing.code, params: missing.params }).toEqual({ code: 'MISSING_STOP_COORDINATES', params: { stopIds: ['9'] } })
+  for (const code of ['TRIP_NOT_IN_TRANSIT', 'STOP_NOT_MOVABLE', 'PICKUP_AFTER_DELIVERY']) {
+    stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 409, body: { success: false, code, message: 'x' } } })
+    expect(await codeOf(reorderRunningStops(TRIP, ['9', '8']))).toBe(code)
+  }
 })

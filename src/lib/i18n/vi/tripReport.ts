@@ -105,4 +105,19 @@ export const tripReport = {
     wholeStop: 'Cả điểm giao',
     none: 'Chuyến không có sự cố.',
   },
+  /** Báo cáo chuyến của máy chủ (nhóm `trips` nối backend): chỉ phần máy chủ trả. */
+  server: {
+    source: 'Số liệu máy chủ đếm từ dữ liệu kho và tài xế đã ghi.',
+    plannedDeparture: 'Giờ xuất phát kế hoạch',
+    total: 'Kiện của chuyến',
+    loaded: 'Đã xếp lên xe',
+    byLabel: 'Bằng nhãn',
+    verifyNote: 'Bằng nhãn gồm quét QR và gõ mã. Mỗi kiện tính theo lần đối chiếu mới nhất ở từng bước.',
+    verifyMethodsNote: 'Mỗi kiện tính theo lần đối chiếu mới nhất ở từng bước.',
+    deliveryTimeNote: 'Từ lúc tài xế xuất phát tới khi hoàn tất điểm cuối',
+    stopDone: 'Đã xong',
+    issuesNote: 'Sự cố tài xế báo theo kiện ở các điểm',
+    cancelledInTransit: 'Chuyến bị huỷ lúc đang vận chuyển. Lý do: {reason}',
+    cancelled: 'Chuyến đã huỷ. Lý do: {reason}',
+  },
 } as const

@@ -1,5 +1,4 @@
 import { lazy, Suspense, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
@@ -7,11 +6,12 @@ import { Button } from '@/components/ui/Button'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { adaptBackendVehicle } from '@/features/viewer3d/backend-scene-adapter'
 
+import { VehicleStateBanner } from '../VehicleStateBanner'
 import { VehicleForm } from './VehicleForm'
-import {
-  fetchVehicleById,
-  fetchVehicleConfig,
-} from './vehicles-api'
+import { VehicleStatusBadge } from './VehicleStatusBadge'
+import { fleetStateOf } from './vehicle-status'
+import { VehicleActions } from './VehicleActions'
+import { useVehicleConfigQuery, useVehicleQuery } from './useVehiclesQuery'
 
 const VehiclePreviewViewer = lazy(() =>
   import('@/features/viewer3d/VehiclePreviewViewer').then(
@@ -38,22 +38,10 @@ function BackendVehicleDetail({
   vehicleId: string
 }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
 
-  const [highlightedObstacleId, setHighlightedObstacleId] =
-    useState<string | null>(null)
-
-  const [toolbarHost, setToolbarHost] =
-    useState<HTMLDivElement | null>(null)
-
-  const vehicleQuery = useQuery({
-    queryKey: ['backend', 'vehicle', vehicleId],
-    queryFn: () => fetchVehicleById(vehicleId),
-  })
-
-  const configQuery = useQuery({
-    queryKey: ['backend', 'vehicle-config', vehicleId],
-    queryFn: () => fetchVehicleConfig(vehicleId),
-  })
+  const vehicleQuery = useVehicleQuery(vehicleId)
+  const configQuery = useVehicleConfigQuery(vehicleId)
 
   if (vehicleQuery.isPending || configQuery.isPending) {
     return (
@@ -68,7 +56,7 @@ function BackendVehicleDetail({
 
     return (
       <div className="flex flex-col gap-4 p-8">
-        <p role="alert" className="text-sm text-red-500">
+        <p role="alert" className="text-body text-danger">
           {dataErrorMessage(error, t)}
         </p>
         <Button variant="secondary" asChild>
@@ -84,15 +72,27 @@ function BackendVehicleDetail({
   const vehicle = vehicleQuery.data
   const config = configQuery.data
 
-  if (!vehicle || !config) {
-    return null
-  }
-
   if (String(config.vehicleId) !== vehicle.id) {
     return (
-      <p role="alert" className="p-8 text-sm text-red-500">
-        Vehicle configuration mismatch
+      <p role="alert" className="p-8 text-body text-danger">
+        {t('fleet.detail.detailNotAvailable')}
       </p>
+    )
+  }
+
+  if (editing) {
+    return (
+      <VehicleForm
+        key={vehicle.id}
+        vehicle={vehicle}
+        status={<VehicleStatusBadge status={vehicle.status} />}
+        onDone={() => setEditing(false)}
+        actions={(
+          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+            {t('fleet.detail.cancelEdit')}
+          </Button>
+        )}
+      />
     )
   }
 
@@ -100,7 +100,7 @@ function BackendVehicleDetail({
   const vehicleConfig = adaptBackendVehicle(config)
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 overflow-auto p-6">
       <div className="flex flex-wrap items-center gap-4">
         <Button variant="secondary" asChild>
           <Link to="/doi-xe">
@@ -109,7 +109,7 @@ function BackendVehicleDetail({
           </Link>
         </Button>
 
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold">
             {vehicle.name}
           </h1>
@@ -119,43 +119,14 @@ function BackendVehicleDetail({
             {vehicle.vehicleTypeName}
           </p>
         </div>
+
+        <VehicleStatusBadge status={vehicle.status} />
+        <VehicleActions vehicle={vehicle} onEdit={() => setEditing(true)} />
       </div>
 
-      <section className="flex flex-col gap-3">
-        <div ref={setToolbarHost} className="min-h-12" />
+      <VehicleStateBanner state={fleetStateOf(vehicle)} serverSource />
 
-        <div
-          className="relative h-[520px] overflow-hidden rounded-xl border border-border-dark bg-canvas-1"
-          role="region"
-          aria-label={t('fleet.preview.label')}
-        >
-          {HAS_WEBGL ? (
-            <Suspense
-              fallback={
-                <div className="p-6" role="status">
-                  {t('fleet.preview.loading')}
-                </div>
-              }
-            >
-              <VehiclePreviewViewer
-                vehicle={vehicleConfig}
-                frameVehicle={vehicleConfig}
-                toolbarHost={toolbarHost}
-                highlightedObstacleId={highlightedObstacleId}
-                onObstacleSelect={setHighlightedObstacleId}
-              />
-            </Suspense>
-          ) : (
-            <p className="p-6 text-sm text-text-2">
-              {t('fleet.preview.unsupported')}
-            </p>
-          )}
-        </div>
-
-        <p className="text-sm text-text-2">
-          {t('fleet.preview.hint')}
-        </p>
-      </section>
+      <VehiclePreviewSection vehicleConfig={vehicleConfig} />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DetailField
@@ -179,6 +150,52 @@ function BackendVehicleDetail({
         />
       </section>
     </div>
+  )
+}
+
+function VehiclePreviewSection({ vehicleConfig }: { vehicleConfig: ReturnType<typeof adaptBackendVehicle> }) {
+  const t = useT()
+  const [highlightedObstacleId, setHighlightedObstacleId] =
+    useState<string | null>(null)
+  const [toolbarHost, setToolbarHost] =
+    useState<HTMLDivElement | null>(null)
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div ref={setToolbarHost} className="min-h-12" />
+
+      <div
+        className="relative h-[520px] overflow-hidden rounded-xl border border-border-dark bg-canvas-1"
+        role="region"
+        aria-label={t('fleet.preview.label')}
+      >
+        {HAS_WEBGL ? (
+          <Suspense
+            fallback={
+              <div className="p-6" role="status">
+                {t('fleet.preview.loading')}
+              </div>
+            }
+          >
+            <VehiclePreviewViewer
+              vehicle={vehicleConfig}
+              frameVehicle={vehicleConfig}
+              toolbarHost={toolbarHost}
+              highlightedObstacleId={highlightedObstacleId}
+              onObstacleSelect={setHighlightedObstacleId}
+            />
+          </Suspense>
+        ) : (
+          <p className="p-6 text-sm text-text-2">
+            {t('fleet.preview.unsupported')}
+          </p>
+        )}
+      </div>
+
+      <p className="text-sm text-text-2">
+        {t('fleet.preview.hint')}
+      </p>
+    </section>
   )
 }
 

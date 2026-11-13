@@ -5,7 +5,10 @@ export const pricing = {
   title: 'Pricing',
   lede: 'The plans differ in credits per month and algorithm tier. Every plan includes 3D load optimization and route optimization.',
   cta: 'Talk to us',
-  creditNote: '1 credit is one 3D load optimization run, which gives three plans to compare. Route optimization uses no credits.',
+  creditNote: {
+    one: 'One 3D load optimization run uses {count} credit and gives three plans to compare. Route optimization uses no credits.',
+    other: 'One 3D load optimization run uses {count} credits and gives three plans to compare. Route optimization uses no credits.',
+  },
   perMonth: '/ month',
   credits: 'Credits per month',
   algorithm: 'Algorithm tier',

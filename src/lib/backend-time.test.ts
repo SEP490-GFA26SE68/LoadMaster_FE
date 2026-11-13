@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { isApiError } from './api-client'
-import { isoFromBackend } from './backend-time'
+import { backendTimeMs, isoFromBackend } from './backend-time'
 
 test('an Instant keeps its moment; digits after the milliseconds are cut, not rounded', () => {
   expect(isoFromBackend('2026-10-16T21:29:43.054948900Z')).toBe('2026-10-16T21:29:43.054Z')
@@ -30,4 +30,11 @@ test('anything else is a server error, not a wrong date on screen', () => {
     }
     expect(isApiError(error) && error.code).toBe('SERVER_ERROR')
   }
+})
+
+test('backendTimeMs reads every server form (space separator, no seconds) and is NaN instead of throwing', () => {
+  expect(backendTimeMs('2026-11-04 09:30:15')).toBe(Date.parse('2026-11-04T02:30:15.000Z'))
+  expect(backendTimeMs('2026-11-04T09:30')).toBe(Date.parse('2026-11-04T02:30:00.000Z'))
+  expect(backendTimeMs('2026-11-04T09:30:00.123456789Z')).toBe(Date.parse('2026-11-04T09:30:00.123Z'))
+  expect(backendTimeMs('17/10/2026')).toBeNaN()
 })

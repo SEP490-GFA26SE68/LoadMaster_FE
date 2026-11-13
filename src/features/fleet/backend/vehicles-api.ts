@@ -1,5 +1,22 @@
-import { apiFetch } from '@/lib/api-client'
+import { api, apiFetch } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
+import { vehicleNameOf } from '../fleet-dto'
+import { isoFromBackend } from '@/lib/backend-time'
 import type { TripVehicleConfigResponse } from '@/features/trips/trips-api'
+
+/**
+ * Hàm → endpoint (nhóm `fleet`):
+ *   fetchVehicles            → GET /api/vehicles
+ *   fetchVehicleRefs         → GET /api/vehicles (đủ mọi trang)
+ *   saveVehicle              → POST /api/vehicles
+ *   updateVehicle            → PUT /api/vehicles/{id}
+ *   deleteVehicle            → DELETE /api/vehicles/{id}
+ *   startVehicleMaintenance  → POST /api/vehicles/{id}/maintenance
+ *   endVehicleMaintenance    → DELETE /api/vehicles/{id}/maintenance
+ *   fetchVehicleById         → GET /api/vehicles/{id}
+ *   fetchVehicleConfig       → GET /api/vehicles/{id}/config
+ */
+
 export type VehicleApi = {
   id: number
   name: string
@@ -11,6 +28,10 @@ export type VehicleApi = {
   companyId: number
   companyName: string
   status: VehicleStatus
+  maintenanceNote?: string | null
+  maintenanceSince?: string | null
+  currentTripCode?: string | null
+  currentTripStatus?: string | null
 }
 
 export type Vehicle = {
@@ -25,6 +46,10 @@ export type Vehicle = {
   companyName: string
 
   status: VehicleStatus
+  /** Khi bảo dưỡng: ghi chú (có thể trống) và lúc bắt đầu (ISO). */
+  maintenance?: { readonly note: string; readonly since: string }
+  /** Khi đang chạy: mã chuyến và trạng thái chuyến của máy chủ (`LOADING` | `IN_TRANSIT`). */
+  currentTrip?: { readonly code: string; readonly status: string }
 }
 
 export type CreateVehicleInput = {
@@ -76,7 +101,13 @@ function mapVehicle(
     companyName:
       vehicle.companyName,
 
-    status: vehicle.status
+    status: vehicle.status,
+    ...(vehicle.status === 'MAINTENANCE' && vehicle.maintenanceSince
+      ? { maintenance: { note: vehicle.maintenanceNote?.trim() ?? '', since: isoFromBackend(vehicle.maintenanceSince) } }
+      : {}),
+    ...(vehicle.currentTripCode
+      ? { currentTrip: { code: vehicle.currentTripCode, status: vehicle.currentTripStatus ?? '' } }
+      : {}),
   }
 }
 
@@ -131,6 +162,15 @@ export async function fetchVehicles(
     ...response,
     data: response.data.map(mapVehicle),
   }
+}
+
+/** Mã và tên mọi xe của công ty (đủ mọi trang) cho tìm nhanh; tên theo quy ước "Tên · biển số" của app. */
+// GET /api/vehicles
+export async function fetchVehicleRefs(): Promise<{ id: string; name: string }[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles')).map((vehicle) => ({
+    id: String(vehicle.id),
+    name: vehicleNameOf(vehicle.name, vehicle.licensePlate),
+  }))
 }
 
 export async function saveVehicle(
@@ -188,4 +228,27 @@ export async function fetchVehicleConfig(
   )
 
   return response.data
+}
+/** Xoá xe: `DELETED` là đã xoá hẳn, `RETIRED` là xe còn trong lịch sử chuyến nên máy chủ chuyển sang Ngừng sử dụng. */
+export type VehicleDeleteOutcome = 'DELETED' | 'RETIRED'
+
+// PUT /api/vehicles/{id}
+export async function updateVehicle(id: string, input: CreateVehicleInput): Promise<Vehicle> {
+  return mapVehicle(await api().put<VehicleApi>(`/api/vehicles/${encodeURIComponent(id)}`, { body: toCreateVehicleRequest(input) }))
+}
+
+// DELETE /api/vehicles/{id}
+export async function deleteVehicle(id: string): Promise<VehicleDeleteOutcome> {
+  const result = await api().delete<{ outcome?: string } | null>(`/api/vehicles/${encodeURIComponent(id)}`)
+  return result?.outcome === 'RETIRED' ? 'RETIRED' : 'DELETED'
+}
+
+// POST /api/vehicles/{id}/maintenance
+export async function startVehicleMaintenance(id: string, note: string): Promise<Vehicle> {
+  return mapVehicle(await api().post<VehicleApi>(`/api/vehicles/${encodeURIComponent(id)}/maintenance`, { body: { note } }))
+}
+
+// DELETE /api/vehicles/{id}/maintenance
+export async function endVehicleMaintenance(id: string): Promise<Vehicle> {
+  return mapVehicle(await api().delete<VehicleApi>(`/api/vehicles/${encodeURIComponent(id)}/maintenance`))
 }

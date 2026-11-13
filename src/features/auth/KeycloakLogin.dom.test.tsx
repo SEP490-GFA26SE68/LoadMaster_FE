@@ -35,6 +35,8 @@ function fakeSession({ restored = false, refuse }: { restored?: boolean; refuse?
       return Promise.resolve()
     }),
     token: vi.fn(() => Promise.resolve(signedIn ? 'TOKEN' : null)),
+    refreshToken: vi.fn(() => Promise.resolve(signedIn ? 'TOKEN-2' : null)),
+    reject: vi.fn(),
     onEnded: vi.fn((listener: () => void) => {
       listeners.add(listener)
       return () => void listeners.delete(listener)
@@ -182,7 +184,6 @@ test.each([
     'Tài khoản đăng nhập được nhưng chưa gắn với người dùng nào trên máy chủ. Liên hệ quản trị viên của bạn.',
   ],
   ['a server that refuses the token', 401, undefined, { code: 'UNAUTHORIZED', message: 'Unauthorized' }, 'Máy chủ không chấp nhận phiên đăng nhập này. Báo quản trị viên hệ thống.'],
-  ['a backend that fails', 500, undefined, undefined, 'Không kết nối được máy chủ. Thử lại sau.'],
 ])('%s after Keycloak accepts the password closes the Keycloak session and shows the reason', async (_name, status, profile, failure, message) => {
   backendReturns(status, profile, failure)
   const { session } = fakeSession()
@@ -191,6 +192,57 @@ test.each([
   expect(await screen.findByRole('alert')).toHaveTextContent(message)
   // Để lại phiên thì tab giữ một phiên không dùng được, lần mở trang sau lại vấp đúng lỗi đó
   expect(session.logout).toHaveBeenCalledTimes(1)
+})
+
+test('a server that refuses the token is asked once more with a refreshed token before the session ends', async () => {
+  const fetchMock = backendReturns(401, undefined, { code: 'UNAUTHORIZED', message: 'Unauthorized' })
+  const { session } = fakeSession()
+  renderApp(session)
+  await signInWith('an@fastmove.vn', 'dung-mat-khau')
+  await screen.findByRole('alert')
+  const sent = fetchMock.mock.calls.map(([, init]) => new Headers(init?.headers).get('Authorization'))
+  expect(sent).toStrictEqual(['Bearer TOKEN', 'Bearer TOKEN-2'])
+  expect(session.refreshToken).toHaveBeenCalledTimes(1)
+  expect(session.reject).toHaveBeenCalledTimes(1)
+})
+
+test('a 401 that a refreshed token fixes signs in as usual', async () => {
+  const profile = { success: true, data: { id: 6, keycloakId: 'kc-6', username: 'an@fastmove.vn', email: 'an@fastmove.vn', fullName: 'Nguyễn Hoài An', phoneNumber: null, companyId: 2, status: 'ACTIVE', userRoleType: 'DISPATCHER' } }
+  vi.stubGlobal('fetch', vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+    const fresh = new Headers(init?.headers).get('Authorization') === 'Bearer TOKEN-2'
+    return Promise.resolve({ ok: fresh, status: fresh ? 200 : 401, text: () => Promise.resolve(fresh ? JSON.stringify(profile) : '') } as Response)
+  }))
+  const { session } = fakeSession()
+  renderApp(session, '/chuyen')
+  await signInWith('an@fastmove.vn', 'dung-mat-khau')
+  expect(await screen.findByText('Đang ở /chuyen — Nguyễn Hoài An (dispatcher)')).toBeInTheDocument()
+  expect(session.reject).not.toHaveBeenCalled()
+  expect(session.logout).not.toHaveBeenCalled()
+})
+
+test('a backend that fails (5xx) at sign-in keeps the Keycloak session and says the server cannot be reached', async () => {
+  backendReturns(500)
+  const { session } = fakeSession()
+  renderApp(session)
+  await signInWith('an@fastmove.vn', 'dung-mat-khau')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Không kết nối được máy chủ. Thử lại sau.')
+  expect(session.logout).not.toHaveBeenCalled()
+})
+
+test('a restored session whose profile read fails on the network stays open, and "Thử lại" reads the profile again', async () => {
+  const profile = { success: true, data: { id: 6, keycloakId: 'kc-6', username: 'an@fastmove.vn', email: 'an@fastmove.vn', fullName: 'Nguyễn Hoài An', phoneNumber: null, companyId: 2, status: 'ACTIVE', userRoleType: 'DISPATCHER' } }
+  let online = false
+  vi.stubGlobal('fetch', vi.fn(() => (online
+    ? Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(profile)) } as Response)
+    : Promise.reject(new TypeError('Failed to fetch')))))
+  const { session } = fakeSession({ restored: true })
+  renderApp(session, '/chuyen')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Không kết nối được máy chủ. Thử lại sau.')
+  expect(session.logout).not.toHaveBeenCalled()
+
+  online = true
+  await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+  expect(await screen.findByText('Đang ở /chuyen — Nguyễn Hoài An (dispatcher)')).toBeInTheDocument()
 })
 
 test('a session that ends mid-way (signed out in another tab) goes back to the login screen', async () => {

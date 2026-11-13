@@ -81,7 +81,7 @@ function MockOptimizationSetupPage() {
   // Xếp 3D theo tuyến: chuyến phải đã tối ưu tuyến (Đã lập kế hoạch) — kho cũng từ chối `ROUTE_NOT_PLANNED`
   const checklist = setup && summary ? buildSetupChecklist(setup.trip.packages, setup.vehicle, summary, setup.trip.routePlan !== undefined) : null
   const formErrors = (errors.timeLimitSeconds ? 1 : 0) + (errors.randomSeed ? 1 : 0)
-  // Hết credit, gói hết hạn (FE-8-05): nút Tối ưu mờ kèm lý do trước khi bấm; kho cũng từ chối (`INSUFFICIENT_CREDITS`, `SUBSCRIPTION_EXPIRED`)
+  // Hết credit, chưa có gói (FE-8-05): nút Tối ưu mờ kèm lý do trước khi bấm; kho cũng từ chối (`INSUFFICIENT_CREDITS`, `SUBSCRIPTION_EXPIRED`)
   const creditBlock = creditQuery.data?.block ?? null
   const blockedReason = !locked && creditBlock !== null
     ? t(`optimization.credit.blocked.${creditBlock}`)
@@ -155,7 +155,7 @@ function MockOptimizationSetupPage() {
           <Button variant="secondary" asChild><Link to="/chuyen">{t('optimization.back')}</Link></Button>
         </div>
       ) : (
-        <div className="sky-overlap grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-4 overflow-auto px-shell pt-6 pb-7 xl:grid-cols-[minmax(0,1fr)_416px]">
           <div className="flex min-w-0 flex-col gap-4">
             {pinOffer ? <SetupPinsCard offer={pinOffer} keep={keepPins} onKeepChange={setKeepPins} issues={pinFaults} /> : null}
             {/* Một thẻ ba mục đánh số; nút chính giữ ở dải trời (AGENTS mục 5: một nút primary mỗi màn) */}

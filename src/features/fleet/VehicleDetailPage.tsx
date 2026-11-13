@@ -1,15 +1,13 @@
-import { ChevronLeft, Info, Wrench } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronLeft, Wrench } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { FleetUnavailable } from './FleetUnavailable'
 import { MaintenanceDialog } from './MaintenanceDialog'
-import { useFleetCapabilities, useVehicleMaintenanceMutation, useVehicleQuery, useVehicleStateQuery } from './useVehiclesQuery'
+import { useVehicleMaintenanceMutation, useVehicleQuery, useVehicleStateQuery } from './useVehiclesQuery'
 import type { FleetVehicle, FleetVehicleState } from './vehicle-status'
 import { VehicleForm } from './VehicleForm'
 import { VehicleStateBanner } from './VehicleStateBanner'
@@ -20,17 +18,11 @@ import { usesBackend } from '@/lib/backend-config'
 /**
  * Trang cấu hình xe (D-17, D-38): `/doi-xe/moi` thêm xe mới, `/doi-xe/:vehicleId` sửa xe đang có.
  * Trạng thái xe (LM-089, D-53): xe đang chạy chuyến thì form chỉ đọc kèm thông báo chuyến nào; người có quyền sửa đội xe bật/tắt
- * bảo dưỡng bằng nút phụ trên thanh tiêu đề. Nguồn không cho thêm xe (`FLEET_CAPABILITIES.write`) thì không có trang thêm xe.
+ * bảo dưỡng bằng nút phụ trên thanh tiêu đề.
  */
 function StoreVehicleDetailPage() {
-  const t = useT()
-  const caps = useFleetCapabilities()
   const { vehicleId } = useParams()
-  const back = { to: '/doi-xe', label: t('fleet.detail.back') }
-
-  if (vehicleId === undefined) {
-    return caps.write ? <VehicleForm /> : <FleetUnavailable title={t('fleet.detail.newTitle')} back={back} reason={t('fleet.backend.noCreate')} />
-  }
+  if (vehicleId === undefined) return <VehicleForm />
   return <VehicleDetail vehicleId={vehicleId} />
 }
 
@@ -66,25 +58,12 @@ function VehicleDetail({ vehicleId }: { vehicleId: string }) {
   return <ExistingVehicle key={query.data.id} vehicle={query.data} state={stateQuery.data ?? null} />
 }
 
-/** Trục từ backend chưa có tên (backend chỉ có trục trước và trục sau): đặt tên theo ngôn ngữ đang chọn. */
-const BACKEND_AXLE_IDS = ['front', 'rear'] as const
-
 function ExistingVehicle({ vehicle, state }: { vehicle: FleetVehicle; state: FleetVehicleState | null }) {
   const t = useT()
-  const caps = useFleetCapabilities()
-  const canEdit = useCan()('fleet.edit') && caps.write
+  const canEdit = useCan()('fleet.edit')
   const maintenance = useVehicleMaintenanceMutation()
   const [dialogOpen, setDialogOpen] = useState(false)
   const running = state?.status === 'in_use'
-  const shown = useMemo(() => (caps.write ? vehicle : {
-    ...vehicle,
-    ...(vehicle.axles ? {
-      axles: vehicle.axles.map((axle) => {
-        const id = BACKEND_AXLE_IDS.find((key) => key === axle.id)
-        return axle.name === '' && id ? { ...axle, name: t(`fleet.backend.axleNames.${id}`) } : axle
-      }),
-    } : {}),
-  }), [caps.write, vehicle, t])
 
   function handleMaintenance(note: string | null) {
     maintenance.mutate({ id: vehicle.id, note }, {
@@ -108,37 +87,25 @@ function ExistingVehicle({ vehicle, state }: { vehicle: FleetVehicle; state: Fle
     </Button>
   )
 
-  const stateNotice = state && state.status !== 'available' ? <VehicleStateBanner state={state} /> : null
-  const notice = caps.write ? stateNotice : (
-    <div className="flex flex-col gap-3">
-      <Banner tone="info" icon={Info}>
-        <p>{t('fleet.backend.readOnly')}</p>
-        {vehicle.doorUnknown ? <p className="mt-1">{t('fleet.backend.doorUnknown')}</p> : null}
-        {vehicle.axles ? null : <p className="mt-1">{t('fleet.backend.axlesUnknown')}</p>}
-      </Banner>
-      {stateNotice}
-    </div>
-  )
+  const notice = state && state.status !== 'available' ? <VehicleStateBanner state={state} /> : null
 
   return (
     <>
       <VehicleForm
-        vehicle={shown}
+        vehicle={vehicle}
         readOnly={!canEdit || running}
         status={state ? <VehicleStatusBadge status={state.status} /> : null}
         actions={action}
         notice={notice}
       />
       {/* Ngoài form xe trong cây React: submit của hộp thoại không được lan tới nút Lưu (xem MaintenanceDialog). */}
-      {caps.write ? (
-        <MaintenanceDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          vehicleName={vehicle.name}
-          pending={maintenance.isPending}
-          onSubmit={handleMaintenance}
-        />
-      ) : null}
+      <MaintenanceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        vehicleName={vehicle.name}
+        pending={maintenance.isPending}
+        onSubmit={handleMaintenance}
+      />
     </>
   )
 }

@@ -1,5 +1,5 @@
 import { HANDLING_CLASSES, type FragilityLevel, type HandlingClass } from '@/domain/models'
-import { createTranslator, LOCALES } from '@/lib/i18n'
+import { createTranslator, isLocaleLoaded, loadLocale, LOCALES } from '@/lib/i18n'
 import { normalizeSearchText } from '@/lib/list-filter'
 
 /**
@@ -41,6 +41,13 @@ export function normalizeHeader(title: string): string {
   return normalizeSearchText(title.replace(/\([^)]*\)/g, ' ')).replace(/[^a-z0-9]/g, '')
 }
 
+/** Tiêu đề và nhãn đọc theo cả hai ngôn ngữ: tải từ điển lười (`en`) trước khi đọc file. Chưa tải đủ thì không giữ bảng đã dựng. */
+export function loadImportLocales(): Promise<void> {
+  return Promise.all(LOCALES.map(loadLocale)).then(() => undefined)
+}
+
+const cacheable = () => LOCALES.every(isLocaleLoaded)
+
 let headerAliases: ReadonlyMap<string, ImportField> | undefined
 let fragilityAliases: ReadonlyMap<string, FragilityLevel> | undefined
 let handlingAliases: ReadonlyMap<string, HandlingClass> | undefined
@@ -60,7 +67,7 @@ export function importHeaderAliases(): ReadonlyMap<string, ImportField> {
     const t = createTranslator(locale)
     for (const field of IMPORT_FIELDS) add(t(`trips.import.columns.${field}`), field)
   }
-  headerAliases = aliases
+  if (cacheable()) headerAliases = aliases
   return aliases
 }
 
@@ -75,7 +82,7 @@ export function importFragilityAliases(): ReadonlyMap<string, FragilityLevel> {
     const t = createTranslator(locale)
     for (const level of FRAGILITY_LEVELS) aliases.set(normalizeSearchText(t(`trips.form.fragilityLevels.${level}`)), level)
   }
-  fragilityAliases = aliases
+  if (cacheable()) fragilityAliases = aliases
   return aliases
 }
 
@@ -88,6 +95,6 @@ export function importHandlingAliases(): ReadonlyMap<string, HandlingClass> {
     const t = createTranslator(locale)
     for (const handlingClass of HANDLING_CLASSES) aliases.set(normalizeSearchText(t(`common.handlingClasses.${handlingClass}`)), handlingClass)
   }
-  handlingAliases = aliases
+  if (cacheable()) handlingAliases = aliases
   return aliases
 }

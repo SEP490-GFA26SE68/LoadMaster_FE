@@ -86,7 +86,7 @@ export const fleet = {
     saved: 'Đã lưu xe {name}',
     deleted: 'Đã xoá xe {name}',
     saveFailed: 'Không lưu được xe. Thử lại.',
-    inUse: 'Xe đang được dùng ở chuyến {trips}, không xoá được.',
+    inUse: 'Xe còn ở chuyến chưa kết thúc {trips}, không xoá được.',
     deleteFailed: 'Không xoá được xe. Thử lại.',
     specTitle: 'Kích thước và tải trọng',
     obstaclesTitle: 'Vật cản trong thùng',
@@ -95,6 +95,9 @@ export const fleet = {
     obstaclesCount: { one: '{count} vùng', other: '{count} vùng' },
     axlesHint: 'tuỳ chọn, dùng để ước lượng tải trục',
     detailNotAvailable: 'Chưa đọc được thông tin chi tiết của xe này.',
+    edit: 'Sửa thông tin xe',
+    cancelEdit: 'Huỷ sửa',
+    retiredInstead: 'Xe {name} còn trong lịch sử chuyến nên đã chuyển sang Ngừng sử dụng',
   },
   preview: {
     title: 'Xem trước 3D',
@@ -184,7 +187,7 @@ export const fleet = {
   },
   remove: {
     title: 'Xoá xe {name}?',
-    description: 'Xe bị xoá khỏi đội. Không hoàn tác được.',
+    description: 'Xe chưa chạy chuyến nào thì bị xoá hẳn; xe đã có chuyến đã giao hoặc đã huỷ thì chuyển sang Ngừng sử dụng để giữ lịch sử.',
     cancel: 'Huỷ',
     confirm: 'Xoá xe',
   },
@@ -194,16 +197,7 @@ export const fleet = {
     openTrip: 'Xem chuyến {tripId}',
     maintenance: 'Xe đang bảo dưỡng từ {time} {date}: chưa gán được cho chuyến nào.',
     maintenanceNote: 'Ghi chú: {note}',
-    retired: 'Máy chủ ghi xe này đã ngừng sử dụng.',
-  },
-  /** Đội xe và cấu hình xe khi nhóm `fleet` đọc từ backend: chỉ xem, phần backend không trả. */
-  backend: {
-    sourceNote: 'Xe đọc từ máy chủ. Máy chủ chưa trả chuyến đang dùng xe hay ghi chú bảo dưỡng, nên cột trạng thái chỉ có trạng thái.',
-    readOnly: 'Cấu hình đọc từ máy chủ và chỉ xem: lòng thùng, cửa, tải trọng, vật cản và trục là của loại xe đang gắn. Máy chủ chưa có lối sửa xe hay đưa xe vào bảo dưỡng.',
-    doorUnknown: 'Loại xe này chưa khai kích thước cửa sau: ô cửa đang hiện bằng mặt cắt lòng thùng.',
-    axlesUnknown: 'Loại xe này chưa khai vị trí và tải rỗng của trục trước, trục sau, nên chưa có trục để ước lượng tải trục.',
-    noCreate: 'Máy chủ chưa có lối thêm xe từ màn này: danh sách và cấu hình xe chỉ để xem.',
-    axleNames: { front: 'Trục trước', rear: 'Trục sau' },
+    retired: 'Xe đã ngừng sử dụng: vẫn còn trong lịch sử chuyến, không gán cho chuyến mới và không sửa được.',
   },
   /** Bật/tắt bảo dưỡng (LM-089, D-53). */
   maintenance: {

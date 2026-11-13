@@ -5,7 +5,8 @@ import { fetchOptimizationCredit } from './optimization-api'
 
 /**
  * Thẻ Credit của Thiết lập tối ưu khi nhóm `billing` nối backend: gói và số dư đọc từ backend, cùng luật chặn với kho mẫu — chưa có gói
- * hoặc gói hết hạn chặn trước số dư, gói không giới hạn luôn chạy được, gói đã huỷ vẫn chạy tới hết kỳ.
+ * chặn trước số dư, gói không giới hạn luôn chạy được, gói đã huỷ vẫn chạy tới hết kỳ, gói đã hết hạn vẫn chạy bằng số dư nhưng chỉ ở hạng
+ * Cơ bản.
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['billing']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -24,9 +25,14 @@ const statusOnly = (status: CurrentSubscriptionDto['status'], creditsBalance: nu
   creditsBalance, creditsMonthlyGrant: null, algorithmTier: null,
 })
 
-function serve(current: CurrentSubscriptionDto, balance: number, isUnlimited = false) {
+/** Bảng giá của máy chủ: một lần tối ưu 3D tốn `cost` credit (máy chủ hiện là 2). */
+function serve(current: CurrentSubscriptionDto, balance: number, isUnlimited = false, cost = 2) {
   backend.routes['GET /api/subscription/current'] = envelope(current)
   backend.routes['GET /api/credits/balance'] = envelope({ companyId: 1, balance, isUnlimited })
+  backend.routes['GET /api/credits/pricing'] = envelope({
+    tier: 'PRO', pricePerCreditVnd: 326, tierPrices: { BASIC: 400, PRO: 326, ULTIMATE: 263 }, optimizationCost: cost, rerunCost: 1,
+    minTopUpCredits: 1, maxTopUpCredits: null, unlimited: isUnlimited, topUpAllowed: true, lowBalanceThreshold: 10,
+  })
 }
 
 beforeEach(() => {
@@ -38,48 +44,62 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-test('an active plan with credits: one run costs 1 credit, the tier of the plan, nothing blocks; both reads carry the token', async () => {
+test('an active plan with credits: one run costs what the server pricing says, the tier of the plan, nothing blocks; every read carries the token', async () => {
   serve(PRO, 1200)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 1, balance: 1200, unlimited: false, block: null, lapsed: false,
+    planName: 'Pro', algorithmTier: 'EP_DBLF_GA', cost: 2, balance: 1200, unlimited: false, block: null, lapsed: false, basicOnly: false,
   })
   expect(backend.calls.map((call) => `${call.method} ${call.url} ${call.auth}`).sort()).toStrictEqual([
     'GET http://be.test/api/credits/balance Bearer token-1',
+    'GET http://be.test/api/credits/pricing Bearer token-1',
     'GET http://be.test/api/subscription/current Bearer token-1',
   ])
 })
 
-test('no credit left blocks with INSUFFICIENT_CREDITS; a cancelled plan (no auto-renew) still runs until its end', async () => {
+test('a balance below the cost of one run blocks with INSUFFICIENT_CREDITS; a cancelled plan (no auto-renew) still runs until its end', async () => {
   serve(PRO, 0)
-  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 1, balance: 0, block: 'INSUFFICIENT_CREDITS' })
-  serve({ ...PRO, autoRenew: false }, 3)
-  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 1, balance: 3, block: null })
+  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 2, balance: 0, block: 'INSUFFICIENT_CREDITS' })
+  serve(PRO, 1)
+  expect(await fetchOptimizationCredit()).toMatchObject({ cost: 2, balance: 1, block: 'INSUFFICIENT_CREDITS' })
+  serve({ ...PRO, autoRenew: false }, 2)
+  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 2, balance: 2, block: null })
+  serve(PRO, 2, false, 3)
+  expect(await fetchOptimizationCredit(), 'the app keeps no cost of its own').toMatchObject({ cost: 3, balance: 2, block: 'INSUFFICIENT_CREDITS' })
 })
 
 test('an unlimited plan costs nothing and never blocks, whatever the balance', async () => {
   serve({ ...PRO, planName: 'Ultimate', tier: 'ULTIMATE', algorithmTier: 'EP_DBLF_GA_AI' }, 0, true)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: 'Ultimate', algorithmTier: 'EP_DBLF_GA_AI', cost: 0, balance: 0, unlimited: true, block: null, lapsed: false,
+    planName: 'Ultimate', algorithmTier: 'EP_DBLF_GA_AI', cost: 0, balance: 0, unlimited: true, block: null, lapsed: false, basicOnly: false,
   })
 })
 
-test('a plan past its end that the backend still calls ACTIVE is expired: it keeps its name, the run is blocked', async () => {
+test('a plan past its end that the backend still calls ACTIVE is expired: it keeps its name, the balance still runs at the Basic tier', async () => {
   serve({ ...PRO, expiresAt: '2026-10-16T08:00:00' }, 1200)
-  expect(await fetchOptimizationCredit()).toMatchObject({ planName: 'Pro', cost: 1, balance: 1200, block: 'SUBSCRIPTION_EXPIRED', lapsed: false })
+  expect(await fetchOptimizationCredit()).toMatchObject({
+    planName: 'Pro', algorithmTier: 'EP_DBLF', cost: 2, balance: 1200, block: null, lapsed: false, basicOnly: true,
+  })
 })
 
-test('an expired plan the backend no longer names is lapsed: the balance stays, the run is blocked', async () => {
+test('an expired plan the backend no longer names is lapsed: the balance stays and runs at the Basic tier until it is below one run', async () => {
   serve(statusOnly('EXPIRED', 40), 40)
   expect(await fetchOptimizationCredit()).toStrictEqual({
-    planName: null, algorithmTier: null, cost: 1, balance: 40, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: true,
+    planName: null, algorithmTier: 'EP_DBLF', cost: 2, balance: 40, unlimited: false, block: null, lapsed: true, basicOnly: true,
   })
+  serve(statusOnly('EXPIRED', 1), 1)
+  expect(await fetchOptimizationCredit()).toMatchObject({ block: 'INSUFFICIENT_CREDITS', basicOnly: true })
+})
+
+test('an expired Ultimate plan is no longer unlimited: each run costs the server price', async () => {
+  serve({ ...PRO, planName: 'Ultimate', tier: 'ULTIMATE', algorithmTier: 'EP_DBLF_GA_AI', status: 'EXPIRED' }, 5, true)
+  expect(await fetchOptimizationCredit()).toMatchObject({ algorithmTier: 'EP_DBLF', cost: 2, unlimited: false, block: null, basicOnly: true })
 })
 
 test('a company that never had a plan (or only a trial the app does not know) has no plan: costs nothing, blocked', async () => {
   for (const status of [null, 'TRIAL'] as const) {
     serve(statusOnly(status, 0), 0)
     expect(await fetchOptimizationCredit()).toStrictEqual({
-      planName: null, algorithmTier: null, cost: 0, balance: 0, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: false,
+      planName: null, algorithmTier: null, cost: 0, balance: 0, unlimited: false, block: 'SUBSCRIPTION_EXPIRED', lapsed: false, basicOnly: false,
     })
   }
 })

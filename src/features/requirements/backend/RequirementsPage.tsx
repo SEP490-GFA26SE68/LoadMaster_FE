@@ -111,14 +111,13 @@ export function RequirementsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={all.length > 0}
         title={t('requirements.title')}
         meta={query.isSuccess && all.length > 0 ? t('requirements.pendingCount', { count: pending }) : undefined}
         description={t('pageHero.requirements')}
         actions={all.length > 0 ? createButton : null}
       />
 
-      <div className={all.length > 0 ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {query.isPending ? (
           <div role="status" aria-label={t('requirements.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (

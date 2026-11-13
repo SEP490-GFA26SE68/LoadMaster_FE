@@ -4,19 +4,19 @@ import type { GeoPoint } from './haversine'
 /**
  * Mock "tìm tuyến khác" khi có sự cố cấp chuyến (FE-6-11, D-87) — hàm thuần, kết quả là **mock**: các lựa chọn chỉ khác nhau ở con số,
  * đường vẽ vẫn nối thẳng. Mỗi lựa chọn là một đường vòng từ vị trí xe tới **điểm kế tiếp**: dài hơn đường nối thẳng theo
- * `distancePercent`, chạy với `speedKmh`. Thứ tự điểm giao không đổi — xe đang chạy chỉ đổi đường.
- * **Đề xuất FE — chờ nghiệp vụ xác nhận**, như `ROUTING_CONSTANTS`.
+ * `distancePercent`, chạy với `speedKmh`. Thứ tự điểm giao không đổi — xe đang chạy chỉ đổi đường. Các hằng số đã chốt với nghiệp vụ.
+ * Đường nhanh hơn đường nối thẳng (cao tốc trên chặng dài) có `extraMs` âm: xe mô phỏng không đứng thêm và vẫn chạy đường nối thẳng.
  */
 export const REROUTE_ROUTES = ['BYPASS', 'RING_ROAD', 'HIGHWAY'] as const
 export type RerouteRoute = (typeof REROUTE_ROUTES)[number]
 
 export const REROUTE_CONSTANTS = {
-  /** Đường tránh gần: dài hơn 15 %, cùng tốc độ trung bình. */
+  /** Đường tránh gần: dài hơn 15 %, cùng tốc độ trung bình (50 km/h). */
   BYPASS: { distancePercent: 115, speedKmh: ROUTING_CONSTANTS.AVERAGE_SPEED_KMH },
-  /** Đường vành đai: dài hơn 30 %, cùng tốc độ trung bình. */
-  RING_ROAD: { distancePercent: 130, speedKmh: ROUTING_CONSTANTS.AVERAGE_SPEED_KMH },
-  /** Cao tốc: dài hơn 50 % nhưng chạy 70 km/h; chỉ có khi chặng còn lại đủ dài. */
-  HIGHWAY: { distancePercent: 150, speedKmh: 70 },
+  /** Đường vành đai: dài hơn 30 %, chạy 55 km/h. */
+  RING_ROAD: { distancePercent: 130, speedKmh: 55 },
+  /** Cao tốc: dài hơn 50 % nhưng chạy 80 km/h; chỉ có khi chặng còn lại đủ dài. */
+  HIGHWAY: { distancePercent: 150, speedKmh: 80 },
   /** Chặng còn lại (quãng đường ước lượng) từ chừng này km mới có lựa chọn cao tốc. */
   HIGHWAY_MIN_KM: 15,
 } as const
@@ -27,7 +27,10 @@ export type RerouteOption = {
   readonly distanceKm: number
   /** Thời gian chạy tới điểm kế tiếp, phút nguyên. */
   readonly durationMinutes: number
-  /** Chậm hơn đường nối thẳng chừng này ms (số nguyên) — xe mô phỏng đứng thêm đúng khoảng đó rồi đi đường nối thẳng. */
+  /**
+   * Chậm hơn đường nối thẳng chừng này ms (số nguyên) — xe mô phỏng đứng thêm đúng khoảng đó rồi đi đường nối thẳng. Âm khi tuyến này
+   * nhanh hơn (cao tốc): xe mô phỏng không đứng thêm.
+   */
   readonly extraMs: number
   /** Giờ đến điểm kế tiếp nếu đi tuyến này từ lúc `at`, ISO 8601. */
   readonly eta: string

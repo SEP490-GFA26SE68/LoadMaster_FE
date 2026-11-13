@@ -6,7 +6,7 @@
  */
 
 import { fetchUsers } from '@/features/admin/users-api'
-import { fetchVehicles } from '@/features/fleet/vehicles-api'
+import { fetchVehicleRefs } from '@/features/fleet/backend/vehicles-api'
 import { fetchPackages, fetchPackageTypes } from '@/features/package-pool/package-pool-api'
 import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
 import { fetchTrips } from '@/features/trips/trips-api'
@@ -91,7 +91,7 @@ async function backendTrips(): Promise<SearchSources['trips']> {
 /** Xe của máy chủ: người xem không đọc được đội xe thì `quickSearchGroups` đã bỏ nhóm xe; máy chủ vẫn từ chối (403) thì nhóm không có kết quả. */
 async function backendVehicles(): Promise<SearchSources['vehicles']> {
   try {
-    return (await fetchVehicles()).map(({ id, name }) => ({ id, name }))
+    return await fetchVehicleRefs()
   } catch (error) {
     if (isApiError(error) && error.status === 403) return []
     throw error

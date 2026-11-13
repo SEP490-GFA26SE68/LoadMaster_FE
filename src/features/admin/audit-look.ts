@@ -60,6 +60,7 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'vehicle.created': 'blue',
   'vehicle.updated': 'blue',
   'vehicle.deleted': 'slate',
+  'vehicle.retired': 'slate',
   'vehicle.maintenanceOn': 'amber',
   'vehicle.maintenanceOff': 'green',
   'trip.created': 'blue',

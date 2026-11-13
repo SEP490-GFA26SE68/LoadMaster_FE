@@ -130,8 +130,8 @@ test('moving the run date keeps the time of day; a new departure time moves the 
   await expect(db.updateTrip(trip.id, { depot: { ...depot, lng: 181 } })).rejects.toMatchObject({ code: 'TRIP_INVALID', params: { tripId: trip.id, field: 'depot' } })
   await expect(db.updateTrip(trip.id, { departureAt: 'x' })).rejects.toMatchObject({ code: 'TRIP_INVALID', params: { field: 'departureAt' } })
 
-  // Kho đang xếp (TRIP-011): còn đổi giờ xuất phát, không đổi kho đi
-  expect((await db.updateTrip('TRIP-011', { departureAt: '2026-09-14T09:15:00+07:00' })).departureAt).toBe('2026-09-14T02:15:00.000Z')
+  // Kho đang xếp (TRIP-011): như máy chủ, không đổi giờ xuất phát hay kho đi nữa
+  await expect(db.updateTrip('TRIP-011', { departureAt: '2026-09-14T09:15:00+07:00' })).rejects.toMatchObject({ code: 'TRIP_LOCKED' })
   await expect(db.updateTrip('TRIP-011', { depot })).rejects.toMatchObject({ code: 'TRIP_LOCKED', params: { tripId: 'TRIP-011', phase: 'loading' } })
 })
 

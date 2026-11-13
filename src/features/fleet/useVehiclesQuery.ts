@@ -6,21 +6,14 @@ import {
   fetchVehicle,
   fetchVehicles,
   fetchVehicleStates,
-  FLEET_CAPABILITIES,
   saveVehicle,
   saveVehicleMaintenance,
-  type FleetCapabilities,
 } from './vehicles-api'
 
 /**
  * Hook Query của Đội xe (D-06): component chỉ gọi vào đây, không gọi `vehicles-api.ts`.
  * Ghi xong thì vô hiệu hoá cache danh sách và chi tiết, nên danh sách tự cập nhật mà không tải lại trang.
  */
-
-/** Việc Đội xe và Loại xe làm được với nguồn dữ liệu đang dùng: màn ẩn nút ghi, cột và câu mà nguồn không có (D-20). */
-export function useFleetCapabilities(): FleetCapabilities {
-  return FLEET_CAPABILITIES
-}
 
 const VEHICLES_KEY = ['vehicles'] as const
 /** Nằm dưới `['vehicles']`: ghi xe hay bảo dưỡng đều làm mới trạng thái. */

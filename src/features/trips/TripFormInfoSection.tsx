@@ -4,7 +4,6 @@ import { Badge, type BadgeDot, type BadgeTone } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { SelectField, type SelectOption } from '@/components/ui/SelectField'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { useRunDateText } from './trip-form-dates'
 import type { TripFormValues } from './trip-form.schema'
@@ -12,7 +11,7 @@ import { FieldMark, TripFormSection } from './TripFormSection'
 import type { VehicleOption } from './trips-api'
 
 /** Chip trạng thái xe trong ô thông số, cùng ngữ pháp chấm với Đội xe (`fleet/VehicleStatusBadge`): sẵn sàng xanh lá, đang phục vụ xanh lam. */
-const VEHICLE_STATUS: Record<VehicleStatus, { tone: BadgeTone; dot: BadgeDot }> = {
+const VEHICLE_STATUS: Record<VehicleOption['status'], { tone: BadgeTone; dot: BadgeDot }> = {
   available: { tone: 'success', dot: 'solid' },
   in_use: { tone: 'azure', dot: 'halo' },
   maintenance: { tone: 'neutral', dot: 'solid' },

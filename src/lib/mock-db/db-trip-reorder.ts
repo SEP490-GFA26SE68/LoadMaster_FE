@@ -69,7 +69,7 @@ export function reorderMethods(ctx: DbContext): ReorderDb {
         const trip = ctx.scope.trips.own(tripId)
         assertRole(ctx, 'dispatcher')
         const { delivery } = trip
-        if (trip.phase !== 'delivering' || !delivery) throw new MockDbError('TRIP_PHASE_INVALID', { tripId, phase: trip.phase })
+        if (trip.phase !== 'delivering' || !delivery) throw new MockDbError('TRIP_NOT_IN_TRANSIT', { tripId })
         const missing = stopsWithoutCoordinates(trip.stops)
         if (missing.length > 0) throw new MockDbError('MISSING_STOP_COORDINATES', { tripId, stopIds: missing.map((stop) => stop.stopId), stopNumbers: missing.map((stop) => stop.number) })
 

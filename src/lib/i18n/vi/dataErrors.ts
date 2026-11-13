@@ -7,6 +7,8 @@ import type { MockDbErrorCode } from '@/lib/mock-db/errors'
 export const dataErrors = {
   NOT_FOUND: 'Không tìm thấy {id}.',
   VEHICLE_IN_USE: 'Xe {vehicleId} còn gắn với chuyến {tripIds} nên không xoá được.',
+  VEHICLE_RETIRED: 'Xe {vehicleId} đã ngừng sử dụng nên không dùng hay sửa được nữa.',
+  MAINTENANCE_NOTE_TOO_LONG: 'Ghi chú bảo dưỡng dài tối đa {max} ký tự.',
   VEHICLE_LOCKED: 'Xe {vehicleId} đang chạy chuyến {tripId} nên chưa sửa được.',
   VEHICLE_IN_MAINTENANCE: 'Xe {vehicleId} đang bảo dưỡng, hãy chọn xe khác.',
   REVISION_STALE: 'Phương án {revisionId} đã lỗi thời: xe hoặc kiện đã đổi sau lần tối ưu.',
@@ -14,6 +16,7 @@ export const dataErrors = {
   PATCH_UNKNOWN_INSTANCE: 'Kiện {packageInstanceId} không có trong phương án.',
   TRIP_LOCKED: 'Chuyến {tripId} đã sang giai đoạn vận hành nên không sửa được.',
   TRIP_INVALID: 'Chuyến chưa hợp lệ: cần giờ xuất phát đọc được, kho xuất phát có tên và toạ độ, điểm giao có tên; toạ độ (nếu có) phải đủ vĩ độ và kinh độ.',
+  TRIP_NOT_IN_TRANSIT: 'Chuyến {tripId} không còn đang vận chuyển.',
   TRIP_PHASE_INVALID: 'Thao tác này không làm được ở trạng thái hiện tại của chuyến {tripId}.',
   NO_APPROVED_REVISION: 'Chuyến {tripId} chưa có phương án đã duyệt.',
   INSTANCE_NOT_IN_PLAN: 'Kiện {packageInstanceId} không thuộc phương án hoặc điểm giao này.',
@@ -108,7 +111,7 @@ export const dataErrors = {
   IMPORT_COLUMNS_MISSING: 'Dòng tiêu đề thiếu cột: {columns}. Tải file mẫu để xem đủ cột.',
   PACKAGE_IMPORT_INVALID: 'File còn {errors} dòng lỗi nên chưa nhập được dòng nào.',
   // Gói cước và credit (FE-8-01, FE-8-05)
-  INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  INSUFFICIENT_CREDITS: 'Không đủ credit cho lần chạy này — liên hệ quản trị công ty.',
   SUBSCRIPTION_EXPIRED: 'Gói cước của công ty đã hết hạn nên chưa chạy tối ưu được — liên hệ quản trị công ty.',
   SUBSCRIPTION_ACTIVE: 'Công ty đang có gói cước còn hiệu lực. Chỉ đăng ký gói mới khi gói hiện tại đã hết hạn.',
   SUBSCRIPTION_STATUS_INVALID: 'Công ty không có gói đang dùng để huỷ.',

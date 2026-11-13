@@ -40,7 +40,7 @@ test('the warehouse starts the latest approved plan, stages then loads every pac
   expect([tripStatus(loaded), tripSubStatus(loaded, revisions)]).toStrictEqual(['LOADING', { kind: 'loaded' }])
 })
 
-test('once loading starts, vehicle, stops and packages are locked; name, date and driver can still change (D-45)', async () => {
+test('once loading starts, the whole trip is locked like on the server: no edit, no approval, no new plan (D-45)', async () => {
   const db = await signedInDb()
   const trip = await db.startLoading('TRIP-2026-0914')
   const locked = { code: 'TRIP_LOCKED', params: { tripId: trip.id, phase: 'loading' } }
@@ -50,7 +50,8 @@ test('once loading starts, vehicle, stops and packages are locked; name, date an
   const [revision] = await db.listRevisions(trip.id)
   await expect(db.addRevision({ tripId: trip.id, request: revision!.request, result: revision!.result })).rejects.toMatchObject(locked)
   await expect(db.updateVehicle({ ...(await db.getVehicle('VEHICLE-002')), maxPayloadKg: 1 })).rejects.toMatchObject({ code: 'VEHICLE_LOCKED', params: { tripId: trip.id } })
-  expect((await db.updateTrip(trip.id, { name: 'Tuyến sáng', driverId: 'US-0006' })).name).toBe('Tuyến sáng')
+  await expect(db.updateTrip(trip.id, { name: 'Tuyến sáng', driverId: 'US-0006' })).rejects.toMatchObject(locked)
+  await expect(db.updateTrip(trip.id, { departureAt: '2026-09-14T09:15:00+07:00' })).rejects.toMatchObject(locked)
 })
 
 test('the warehouse cannot start a stale, unapproved or already started trip', async () => {

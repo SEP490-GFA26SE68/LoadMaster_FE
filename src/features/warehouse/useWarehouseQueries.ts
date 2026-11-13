@@ -30,12 +30,12 @@ export function useWarehouseTripQuery(tripId: string) {
 
 /**
  * Ghi của kho đổi trạng thái chuyến ở mọi màn: danh sách kho, chuyến, bảng điều khiển, đội xe (xe đang chạy chuyến, D-53).
- * Trả promise để mutation chỉ xong khi màn đã đọc lại dữ liệu mới — không có khoảnh khắc hiện lại kiện vừa ghi.
+ * Chỉ chờ khoá của màn kho (`['warehouse']`): mutation xong khi màn đã đọc lại dữ liệu mới — không có khoảnh khắc hiện lại kiện vừa ghi.
+ * Khoá của màn khác (và `extra`) chỉ bị đánh dấu cũ rồi đọc lại ngầm, để mỗi lần quét không phải chờ chúng.
  */
-function refreshAfterWrite(client: QueryClient) {
-  return Promise.all(
-    [['warehouse'], ['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey })),
-  )
+function refreshAfterWrite(client: QueryClient, extra: readonly (readonly string[])[] = []) {
+  for (const queryKey of [['trips'], ['dashboard'], ['vehicles'], ...extra]) void client.invalidateQueries({ queryKey })
+  return client.invalidateQueries({ queryKey: ['warehouse'] })
 }
 
 /** Bắt đầu xếp. Kể cả khi bị từ chối (ví dụ máy khác vừa bắt đầu trước), đọc lại để màn theo đúng pha trong kho. */
@@ -68,7 +68,7 @@ export function useReportDamagedMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (packageInstanceId: string) => reportDamagedPackage(tripId, packageInstanceId),
-    onSettled: () => Promise.all([refreshAfterWrite(client), client.invalidateQueries({ queryKey: ['package-pool'] })]),
+    onSettled: () => refreshAfterWrite(client, [['package-pool']]),
   })
 }
 

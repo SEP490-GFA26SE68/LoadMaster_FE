@@ -79,6 +79,28 @@ test('nothing in transit: one read, no toast, the bell is left alone', async () 
   expect(bellRefreshes()).toBe(0)
 })
 
+test('polls on the store rhythm only while a trip is in transit; with nothing in transit there is no interval at all', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  try {
+    fleet.mockResolvedValue([])
+    const idle = renderWatcher('dispatcher')
+    await waitFor(() => expect(fleet).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(fleet).toHaveBeenCalledTimes(1)
+    cleanup()
+    idle.client.clear()
+
+    fleet.mockReset()
+    fleet.mockResolvedValue([{ ...monitoring([])[0]!, refreshMs: 30_000 }])
+    renderWatcher('dispatcher')
+    await waitFor(() => expect(fleet).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(30_000)
+    await waitFor(() => expect(fleet).toHaveBeenCalledTimes(2))
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('the manager is told when an incident is sent up, not about late risk; the dispatcher is not told about the incident they sent up themselves', async () => {
   fleet.mockResolvedValue(monitoring([], [incident('EXC-001')]))
   const manager = renderWatcher('companyManager')

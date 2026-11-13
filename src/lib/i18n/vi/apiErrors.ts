@@ -14,6 +14,8 @@ export const apiErrors = {
   NOT_FOUND: 'Không tìm thấy dữ liệu này trên máy chủ — có thể đã bị xoá.',
   CONFLICT: 'Dữ liệu bị trùng hoặc đã thay đổi trên máy chủ. Tải lại rồi thử lại.',
   SERVER_ERROR: 'Máy chủ gặp lỗi. Thử lại sau.',
+  // FE tự dừng: danh sách máy chủ quá dài để đọc hết một lần (`fetchAllPages`)
+  LIST_TOO_LONG: 'Danh sách trên máy chủ quá dài để tải hết một lần. Thu hẹp bộ lọc hoặc báo đội hỗ trợ.',
 
   // Chung
   UNCATEGORIZED_EXCEPTION: 'Máy chủ gặp lỗi chưa xác định. Thử lại sau.',
@@ -91,6 +93,7 @@ export const apiErrors = {
   INVALID_TRIP_STATUS_TRANSITION: 'Chuyến không chuyển được sang trạng thái này.',
   TRIP_NOT_EDITABLE: 'Chuyến đã sang pha vận hành, không sửa được nữa.',
   TRIP_NOT_CANCELLABLE: 'Chuyến ở trạng thái này không huỷ được.',
+  TRIP_CANCEL_NEEDS_OPEN_EXCEPTION: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
   TRIP_HAS_NO_STOPS: 'Chuyến chưa có điểm giao nào.',
   DELIVERY_REQUIREMENT_NOT_IN_TRIP: 'Yêu cầu giao không thuộc chuyến này.',
   VEHICLE_CANNOT_CARRY_CARGO: 'Xe này không chở được hàng của chuyến (kích thước, thể tích hoặc tải trọng).',
@@ -110,7 +113,7 @@ export const apiErrors = {
   PLAN_HAS_NO_PLACEMENTS: 'Phương án không có kiện nào được xếp, không duyệt được.',
   OPTIMIZATION_JOB_NOT_FOUND: 'Không tìm thấy lần chạy tối ưu.',
   OPTIMIZATION_SERVICE_UNAVAILABLE: 'Dịch vụ tối ưu đang không phản hồi. Thử lại sau.',
-  INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty.',
+  INSUFFICIENT_CREDITS: 'Không đủ credit — liên hệ quản trị công ty.',
   PINNED_SET_INVALID: 'Kiện đã ghim không đứng vững (ra ngoài thùng, chồng nhau, lơ lửng hoặc vượt tải): chưa chạy và không trừ credit. Bỏ ghim kiện đó ở Planner hoặc tắt giữ ghim.',
   TRIP_ALREADY_LOADING: 'Chuyến đã bắt đầu xếp hàng.',
   TRIP_NOT_READY_FOR_LOADING: 'Chỉ bắt đầu xếp được chuyến Đã lập kế hoạch.',
@@ -153,6 +156,10 @@ export const apiErrors = {
   PLAN_IN_USE: 'Gói đang có hoặc từng có công ty dùng nên không xoá được.',
   ACTIVE_SUBSCRIPTION_ALREADY_EXISTS: 'Công ty đang có gói còn hiệu lực.',
   NO_ACTIVE_SUBSCRIPTION: 'Công ty chưa có gói còn hiệu lực.',
+  SUBSCRIPTION_EXPIRED: 'Gói cước đã hết hạn hoặc đã huỷ nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.',
+  SUBSCRIPTION_NOT_RENEWABLE: 'Gói chưa tới kỳ gia hạn, đang dùng thử hoặc hợp đồng đã huỷ nên chưa gia hạn được.',
+  CONTACT_ASSIGNEE_INVALID: 'Chỉ giao yêu cầu liên hệ cho quản trị hệ thống hoặc hỗ trợ khách hàng đang hoạt động.',
+  TRIP_HAS_NO_PACKAGES: 'Chuyến chưa có kiện nào nên chưa có nhãn để in.',
   PAYMENT_FAILED: 'Thanh toán không thành công.',
   PAYMENT_TRANSACTION_NOT_FOUND: 'Không tìm thấy giao dịch thanh toán.',
   INVALID_PAYMENT_SIGNATURE: 'Chữ ký thanh toán không hợp lệ.',
@@ -196,4 +203,17 @@ export const apiErrors = {
   PICKUP_PACKAGE_NOT_AT_STOP: 'Kiện này không phải kiện nhận ở điểm hiện tại.',
   PICKUP_PACKAGE_ALREADY_PICKED: 'Kiện này đã được nhận lên xe.',
   PICKUP_STOP_INCOMPLETE: 'Còn kiện nhận chưa đối chiếu lên xe — chưa hoàn tất điểm nhận được.',
+  // Đội xe, loại xe: sửa, xoá, bảo dưỡng
+  VEHICLE_IN_USE: 'Xe còn gắn với chuyến chưa kết thúc nên không xoá được.',
+  VEHICLE_BUSY: 'Xe đang phục vụ chuyến (đang xếp hàng hoặc đang vận chuyển) nên chưa đổi được.',
+  VEHICLE_RETIRED: 'Xe đã ngừng sử dụng, chỉ xem được.',
+  VEHICLE_TYPE_IN_USE: 'Loại xe còn gắn với xe nên không xoá được. Đổi loại cho các xe đó trước.',
+  LICENSE_PLATE_ALREADY_EXISTS: 'Biển số này đã có ở một xe khác.',
+  // Báo cáo chuyến, đổi thứ tự điểm khi xe đang chạy
+  TRIP_REPORT_NOT_AVAILABLE: 'Chuyến chưa có báo cáo: chỉ chuyến đã giao hoặc bị huỷ lúc đang vận chuyển mới có.',
+  TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển.',
+  STOP_ORDER_INVALID: 'Thứ tự điểm giao chưa hợp lệ: phải gồm đúng các điểm của chuyến và khác thứ tự hiện tại.',
+  STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
+  PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
+  STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
 } as const

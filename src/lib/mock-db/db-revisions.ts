@@ -78,7 +78,7 @@ export function revisionMethods(ctx: DbContext): RevisionMethods {
         const trip = ctx.scope.trips.own(tripId)
         assertPlanning(trip)
         // Lịch sử lần chạy (LM-104): kết quả lưu lẻ là một lần chạy một phương án
-        // Phiên đăng nhập lưu kết quả cũng tốn 1 credit như một lần chạy (`runCredit`); kho không phiên thì không
+        // Phiên đăng nhập lưu kết quả cũng tốn credit như một lần chạy (`runCredit`); kho không phiên thì không
         const credit = runCredit(ctx, trip)
         try {
           const stored = storeRun(ctx, { trip, request, jobId: result.jobId, algorithm: run.algorithm, plans: [{ objective: run.objective, result }] })

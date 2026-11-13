@@ -89,7 +89,7 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(values.map((value) => value.textContent)).toStrictEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
-  expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('500 credit mỗi tháng')
+  expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('10.000 credit mỗi tháng')
   expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
   expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')

@@ -81,17 +81,19 @@ export function newContactBody(input: NewGuestContact) {
   }
 }
 
+/** Một người nhận việc được của `GET /api/contact-guests/handlers`; `role` là mã vai trò của backend. */
+export type ContactHandlerDto = { readonly id: number; readonly fullName: string; readonly email: string; readonly role: string }
+
 /**
- * Thân `PATCH`: trường vắng giữ nguyên. Backend bỏ qua trường `null`, nên **không bỏ được người nhận việc** — màn không cho chọn
- * (`CONTACTS_SOURCE.canUnassign`); `note: ''` vẫn xoá ghi chú (backend lưu mọi chuỗi khác `null`).
+ * Thân `PATCH`: trường vắng giữ nguyên. Backend bỏ qua trường `null`, nên bỏ người nhận việc là cờ riêng `unassign: true`; `note: ''`
+ * vẫn xoá ghi chú (backend lưu mọi chuỗi khác `null`). Người nhận không thuộc hai vai trò xử lý liên hệ: 400 `CONTACT_ASSIGNEE_INVALID`.
  */
 export function contactPatchBody(patch: GuestContactPatch) {
   const assignee = patch.assignedToId
-  if (assignee === null) throw new Error('Backend chưa bỏ được người nhận việc của yêu cầu liên hệ')
-  if (assignee !== undefined && !NUMERIC_ID.test(assignee)) throw new Error(`Mã người nhận việc không phải mã backend: ${assignee}`)
+  if (assignee !== undefined && assignee !== null && !NUMERIC_ID.test(assignee)) throw new Error(`Mã người nhận việc không phải mã backend: ${assignee}`)
   return {
     ...(patch.status === undefined ? {} : { status: patch.status }),
-    ...(assignee === undefined ? {} : { assignedToId: Number(assignee) }),
+    ...(assignee === null ? { unassign: true } : assignee === undefined ? {} : { assignedToId: Number(assignee) }),
     ...(patch.note === undefined ? {} : { note: patch.note }),
   }
 }

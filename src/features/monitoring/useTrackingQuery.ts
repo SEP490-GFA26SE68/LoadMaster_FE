@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { pollInterval } from '@/lib/polling'
 import { getTripMonitoring, listTripMonitoring } from './monitoring-api'
 
 /**
  * Hook Query của giám sát (FE-6-08, FE-6-09). Kho không tự chạy: nó ghi điểm vị trí mới và tính lại ETA mỗi lần được đọc, nên màn đang
  * mở đọc lại theo `refreshMs` kho trả — thời gian thật tới điểm vị trí kế tiếp (30 giây ở giờ thật, ít nhất 1 giây khi tua nhanh).
  * Nhịp đó là `refetchInterval` của Query: không có `setInterval` riêng, gỡ màn là hết nhịp, tab ẩn thì nghỉ, và kho trả `null` (không
- * chuyến nào đang chạy) là dừng hẳn cho tới khi dữ liệu chuyến đổi. Khoá nằm dưới `['trips']`: mọi lần ghi của chuyến làm mới chúng.
+ * chuyến nào đang chạy) là dừng hẳn cho tới khi dữ liệu chuyến đổi; máy chủ lỗi liên tiếp thì nhịp giãn rồi dừng (`pollInterval`). Khoá nằm dưới `['trips']`: mọi lần ghi của chuyến làm mới chúng.
  */
 export function useTripMonitoringQuery(tripId: string, enabled: boolean) {
   return useQuery({
@@ -13,7 +14,7 @@ export function useTripMonitoringQuery(tripId: string, enabled: boolean) {
     queryFn: () => getTripMonitoring(tripId),
     enabled: enabled && tripId !== '',
     staleTime: 0,
-    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
+    refetchInterval: (query) => pollInterval(query, query.state.data?.refreshMs),
   })
 }
 
@@ -26,7 +27,7 @@ export function useFleetMonitoringQuery(enabled: boolean) {
     staleTime: 0,
     refetchInterval: (query) => {
       const waits = (query.state.data ?? []).flatMap((trip) => (trip.refreshMs === null ? [] : [trip.refreshMs]))
-      return waits.length > 0 ? Math.min(...waits) : false
+      return pollInterval(query, waits.length > 0 ? Math.min(...waits) : false)
     },
   })
 }

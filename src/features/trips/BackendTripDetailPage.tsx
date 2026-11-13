@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PackageOpen, Plus, Route } from 'lucide-react'
+import { FileText, PackageOpen, Plus, Printer, Route } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { Banner } from '@/components/Banner'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
+import { tripLabelsPath } from '@/features/package-pool/backend/packages-list'
 import { BackendLoadPlansCard } from '@/features/optimization/BackendLoadPlansCard'
 import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { serverTripPhase } from '@/features/pickups/pickup-stops'
@@ -20,7 +21,10 @@ import { ManualConfirmCard } from './ManualConfirmCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { SERVER_SHORTAGES } from './shortage-backend-api'
 import { RealTripDetailHeader } from './TripDetailHeader'
-import { fetchBackendActiveRoutePlan, fetchBackendTripDetail, optimizeBackendTrip, resolveBackendTripId } from './trips-api'
+import { backendTimeMs } from '@/lib/backend-time'
+import { isLiveTripStatus } from './live-trip-refresh'
+import { useBackendActiveRoutePlanQuery, useBackendTripIdQuery } from './useBackendTripQuery'
+import { useBackendTripDetailQuery, useOptimizeBackendTripMutation } from './useTripsQuery'
 
 /**
  * Chi tiết chuyến khi nhóm `trips` nối backend (bản của nhóm): thông tin vận hành, điểm giao kèm giờ đến dự kiến và mức hạn, tuyến
@@ -30,12 +34,7 @@ import { fetchBackendActiveRoutePlan, fetchBackendTripDetail, optimizeBackendTri
 export function BackendTripDetailPage() {
   const { tripId = '' } = useParams()
   const t = useT()
-  const resolved = useQuery({
-    queryKey: ['trips', tripId, 'backend-id'],
-    queryFn: () => resolveBackendTripId(tripId),
-    enabled: tripId !== '',
-    staleTime: Infinity,
-  })
+  const resolved = useBackendTripIdQuery(tripId)
   if (resolved.isPending) {
     return (
       <div role="status" aria-label={t('trips.detail.loading')} className="grid flex-1 place-items-center">
@@ -62,8 +61,8 @@ function getDeadlineStatus(
 ): 'onTime' | 'late' | 'unknown' {
   if (!plannedArrival || !deadline) return 'unknown'
 
-  const arrivalMs = Date.parse(`${plannedArrival}+07:00`)
-  const deadlineMs = Date.parse(`${deadline}+07:00`)
+  const arrivalMs = backendTimeMs(plannedArrival)
+  const deadlineMs = backendTimeMs(deadline)
 
   if (!Number.isFinite(arrivalMs) || !Number.isFinite(deadlineMs)) {
     return 'unknown'
@@ -99,38 +98,17 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
 
   const [assigning, setAssigning] = useState(false)
 
-  const queryClient = useQueryClient()
-
-  const optimizeRoute = useMutation({
-    mutationFn: () => optimizeBackendTrip(tripId),
-
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['trips', tripId],
-      })
-
-      toast.success(t('trips.optimization.success'))
-    },
-
-    onError: (error) => {
-      toast.error(dataErrorMessage(error, t))
-    },
+  const optimizeRoute = useOptimizeBackendTripMutation(tripId)
+  const handleOptimizeRoute = () => optimizeRoute.mutate(undefined, {
+    onSuccess: () => toast.success(t('trips.optimization.success')),
+    onError: (error) => toast.error(dataErrorMessage(error, t)),
   })
 
 
-  const query = useQuery({
-    queryKey: ['trips', tripId, 'backend-detail'],
-    queryFn: () => fetchBackendTripDetail(tripId),
-    enabled: tripId !== '',
-  })
+  const query = useBackendTripDetailQuery(tripId)
 
 
-  const routePlanQuery = useQuery({
-    queryKey: ['trips', tripId, 'active-route-plan'],
-    queryFn: () => fetchBackendActiveRoutePlan(tripId),
-    enabled: tripId !== '',
-    retry: false,
-  })
+  const routePlanQuery = useBackendActiveRoutePlanQuery(tripId)
 
 
   if (query.isPending) {
@@ -159,6 +137,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   }
 
   const { trip, stops } = query.data
+  const live = isLiveTripStatus(trip.status)
   const canAssign =
     can('trips.edit') &&
     trip.status === 'DRAFT'
@@ -170,39 +149,69 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
   const canWrite = can('trips.edit')
   const canRemoveRequirement = canWrite && isEditableStatus(trip.status)
   const canOptimizeLoading = can('optimization.run') && isEditableStatus(trip.status) && stops.length > 0
+  // Báo cáo chuyến: chuyến đã giao, hoặc bị huỷ lúc đang vận chuyển — mọi người xem được chuyến (như bản kho mẫu)
+  const canReport = trip.status === 'DELIVERED' || (trip.status === 'CANCELLED' && trip.cancelledFromStatus === 'IN_TRANSIT')
+  // Nhãn QR mọi kiện của chuyến (`GET /api/packages/export/labels/trip/{mã chuyến}`): chuyến có điểm giao là có kiện để in
+  const canPrintLabels = can('labels.print') && trip.status !== 'CANCELLED' && stops.length > 0
 
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <RealTripDetailHeader tripId={tripId} />
 
-      <div className="sky-overlap min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pb-8">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-shell pt-6 pb-8">
         <div className="flex flex-col gap-4">
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            {canOptimize && (
-              <Button
-                type="button"
-                loading={optimizeRoute.isPending}
-                disabled={optimizeRoute.isPending}
-                onClick={() => optimizeRoute.mutate()}
-              >
-                <Route className="size-4" />
-                {t('trips.optimization.run')}
-              </Button>
-            )}
+          {canOptimize || canReport || canPrintLabels || canWrite ? (
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {canOptimize && (
+                <Button
+                  type="button"
+                  loading={optimizeRoute.isPending}
+                  disabled={optimizeRoute.isPending}
+                  onClick={handleOptimizeRoute}
+                >
+                  <Route className="size-4" />
+                  {t('trips.optimization.run')}
+                </Button>
+              )}
+  
+              {canReport ? (
+                <Button variant="secondary" asChild>
+                  <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>
+                    <FileText className="size-4" aria-hidden />
+                    {t('tripReport.title')}
+                  </Link>
+                </Button>
+              ) : null}
+              {canPrintLabels ? (
+                <Button variant="secondary" asChild>
+                  <Link to={tripLabelsPath(trip.tripCode)}>
+                    <Printer className="size-4" aria-hidden />
+                    {t('trips.packages.printLabels')}
+                  </Link>
+                </Button>
+              ) : null}
+              {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
+            </div>
+          ) : null}
 
-            {canWrite ? <BackendTripWriteActions trip={trip} /> : null}
-          </div>
+          {trip.status === 'CANCELLED' && trip.cancelReason ? (
+            <Banner tone="warning">
+              {t('trips.server.cancelReason', { reason: trip.cancelReason })}
+              {typeof trip.cancelReturnedCount === 'number' ? <> {t('trips.server.cancelReturned', { count: trip.cancelReturnedCount })}</> : null}
+            </Banner>
+          ) : null}
 
 
-          {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server /> : null}
-          {SERVER_SHORTAGES ? <MissingPackagesCard tripId={tripId} server /> : null}
+          {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server live={live} /> : null}
+          {SERVER_SHORTAGES ? <MissingPackagesCard tripId={tripId} server live={live} /> : null}
 
           <BackendTripRouteCard
             trip={trip}
             stops={stops}
             routePlan={routePlanQuery.data ?? null}
+            routePlanFailed={routePlanQuery.isError}
           />
 
           <BackendLoadPlansCard

@@ -1,5 +1,7 @@
 
 import { matchesQuery } from '@/lib/list-filter'
+import type { TripPhase } from '@/lib/mock-db'
+import type { FleetStatus, FleetVehicleState } from '../vehicle-status'
 
 import type {
   Vehicle,
@@ -79,4 +81,29 @@ export function filterVehicleRows(
         query,
       ),
   )
+}
+
+const FLEET_STATUS_OF = {
+  AVAILABLE: 'available',
+  IN_TRIP: 'in_use',
+  MAINTENANCE: 'maintenance',
+  RETIRED: 'retired',
+} as const satisfies Record<VehicleStatus, FleetStatus>
+
+/** Trạng thái chuyến của máy chủ → pha chuyến để ô trạng thái ghi chuyến đang ở bước nào; trạng thái khác không ghi pha. */
+const TRIP_PHASE_OF: Readonly<Record<string, TripPhase>> = { LOADING: 'loading', IN_TRANSIT: 'delivering' }
+
+/**
+ * Xe của máy chủ → trạng thái dùng chung với màn kho mẫu (`VehicleStatusCell`, `VehicleStateBanner`): chuyến đang dùng xe (mã chuyến
+ * của máy chủ) và ghi chú, mốc bắt đầu bảo dưỡng.
+ */
+export function fleetStateOf(vehicle: Vehicle): FleetVehicleState {
+  const tripPhase = vehicle.currentTrip ? TRIP_PHASE_OF[vehicle.currentTrip.status] : undefined
+  return {
+    vehicleId: vehicle.id,
+    status: FLEET_STATUS_OF[vehicle.status],
+    ...(vehicle.status === 'IN_TRIP' && vehicle.currentTrip ? { tripId: vehicle.currentTrip.code } : {}),
+    ...(tripPhase ? { tripPhase } : {}),
+    ...(vehicle.status === 'MAINTENANCE' && vehicle.maintenance ? { maintenance: vehicle.maintenance } : {}),
+  }
 }

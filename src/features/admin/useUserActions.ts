@@ -69,7 +69,7 @@ export function useUserActions() {
     },
     async submitEdit(user: User, values: UserFormValues) {
       await updateUser.mutateAsync({ id: user.id, changes: values, current: user })
-      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser()
+      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser().catch((error: unknown) => toast.error(dataErrorMessage(error, t)))
       toast.success(t('admin.users.updated', { name: values.fullName }))
       setDialog((current) => (current?.kind === 'edit' && current.user.id === user.id ? null : current))
     },

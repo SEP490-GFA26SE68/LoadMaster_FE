@@ -8,7 +8,6 @@ export const vehicleTypes = {
   empty: 'Chưa có loại xe nào.',
   emptyDescription: 'Thêm loại xe để gom các xe cùng kích thước lòng thùng và tải trọng.',
   /** Nhóm `fleet` đọc từ backend: màn chỉ xem. */
-  emptyDescriptionBackend: 'Máy chủ chưa có loại xe nào của công ty. Màn này chỉ để xem.',
   loading: 'Đang tải loại xe',
   add: 'Thêm loại xe',
   toFleet: 'Về đội xe',
@@ -114,7 +113,6 @@ export const vehicleTypes = {
     title: 'Gắn loại cho xe',
     description: 'Mỗi xe gắn tối đa một loại. Gắn loại không đổi kích thước khai trong cấu hình xe; xe lấy giới hạn trục và độ lệch trọng tâm của loại.',
     /** Nhóm `fleet` đọc từ backend. */
-    descriptionBackend: 'Mỗi xe có đúng một loại, đọc từ máy chủ: lòng thùng, cửa, tải trọng, vật cản và trục của xe là của loại đó. Máy chủ chưa có lối đổi loại của xe.',
     vehicle: 'Xe',
     type: 'Loại xe',
     none: 'Chưa gắn loại',

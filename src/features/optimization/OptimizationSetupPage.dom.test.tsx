@@ -119,7 +119,7 @@ test('fixing the cargo and coming back enables Optimize without touching the set
 
 test('a trip the warehouse is loading cannot be optimized again: the banner says why and nothing can be changed (D-45)', async () => {
   renderSetup(undefined, 'TRIP-011')
-  expect(await screen.findByText('Kho đang xếp hàng theo phương án đã duyệt nên xe, điểm giao và kiện đã khoá.')).toBeInTheDocument()
+  expect(await screen.findByText('Kho đang xếp hàng theo phương án đã duyệt nên chuyến đã khoá, không sửa được nữa.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Tối ưu' })).toBeDisabled()
   expect(screen.getByRole('combobox', { name: 'Xe chở chuyến này' })).toBeDisabled()
 })

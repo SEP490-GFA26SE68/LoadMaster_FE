@@ -11,7 +11,7 @@ import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import type { Package } from '@/lib/mock-db'
+import { PACKAGE_STATUSES, type Package } from '@/lib/mock-db'
 import { PackageFormDialog } from './PackageFormDialog'
 import { PackageImportDialog } from './PackageImportDialog'
 import {
@@ -19,12 +19,12 @@ import {
   tabFromSlug, type PackageTab,
 } from './packages-list'
 import { PackagesTable } from './PackagesTable'
-import { PACKAGE_POOL_SUPPORT, usePackagesQuery, usePackageTypesQuery } from './usePackagePoolQuery'
+import { usePackagesQuery, usePackageTypesQuery } from './usePackagePoolQuery'
 import { PackagesPage as BackendPackagesPage } from './backend/PackagesPage'
 import { usesBackend } from '@/lib/backend-config'
 
-/** Tab của màn: Tất cả + các trạng thái nguồn dữ liệu có (backend không có Đã soạn, Đang vận chuyển, Hoàn trả). */
-const TABS: readonly PackageTab[] = ['all', ...PACKAGE_POOL_SUPPORT.statuses]
+/** Tab của màn: Tất cả + mọi trạng thái kiện. */
+const TABS: readonly PackageTab[] = ['all', ...PACKAGE_STATUSES]
 
 /**
  * Kho kiện `/kien-hang` (FE-3b-03, D-68) — kiện của công ty, mở theo `packages.view`: điều phối viên quản lý, quản lý công ty chỉ xem
@@ -54,7 +54,6 @@ function StorePackagesPage() {
   const pending = packagesQuery.isPending || typesQuery.isPending
   const error = packagesQuery.error ?? typesQuery.error
   const hasRows = all.length > 0
-  const overlap = pending || (!error && hasRows)
 
   function handleAdded(created: Package) {
     setDialog(null)
@@ -107,7 +106,6 @@ function StorePackagesPage() {
   return (
     <Tabs value={tab} onValueChange={(value) => list.setFilter(STATUS_FILTER, slugFromTab(TABS.find((key) => key === value) ?? 'all'))} className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={overlap}
         title={t('sourcing.packages.title')}
         meta={packagesQuery.isSuccess ? t('sourcing.packages.count', { count: all.length }) : undefined}
         description={t('pageHero.packages')}
@@ -125,7 +123,7 @@ function StorePackagesPage() {
         ) : null}
       </PageHero>
 
-      <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
         ) : error ? (
@@ -140,7 +138,7 @@ function StorePackagesPage() {
         ) : (
           <TabsContent value={tab} className="flex flex-col gap-3 outline-none">
             <PackagesTable all={all} rows={rows} list={list} tabbed={tab !== 'all'} selected={selected} onSelectedChange={setSelected} openId={openId} onOpenChange={setOpenId} />
-            <p className="text-caption text-ink-3">{PACKAGE_POOL_SUPPORT.listDestinations ? t('sourcing.packages.sourceNote') : t('sourcing.backend.sourceNote')}</p>
+            <p className="text-caption text-ink-3">{t('sourcing.packages.sourceNote')}</p>
           </TabsContent>
         )}
       </main>

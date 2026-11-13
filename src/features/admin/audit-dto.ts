@@ -5,7 +5,8 @@ import type { Role } from '@/types/user'
 
 /**
  * DTO của `GET /api/audit-logs` (`PageResponse<AuditLogResponse>`: `data` là mảng, số trang ở cùng cấp, `page` đếm từ 0) và phép đổi
- * sang dòng nhật ký của app. Chỉ `audit-backend-api.ts` import file này. Hàm thuần.
+ * sang dòng nhật ký của app. Chỉ lớp `-api` import file này: `audit-backend-api.ts`, và lịch sử kiện (`package-pool/backend/packages-api.ts`,
+ * cùng `AuditLogResponse`). Hàm thuần.
  */
 export type AuditLogDto = {
   readonly id: number

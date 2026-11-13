@@ -11,7 +11,7 @@ import { signedInAs } from '@/test/signed-in'
 import { BillingPage } from './BillingPage'
 
 /**
- * Gói cước và credit của công ty (FE-8-03). Seed: Long Bình gói Pro, 486 credit, 17 giao dịch credit và một thanh toán đã trả; Phương Nam
+ * Gói cước và credit của công ty (FE-8-03). Seed: Long Bình gói Pro, 9.972 credit, 17 giao dịch credit và một thanh toán đã trả; Phương Nam
  * gói Basic, 2 credit. Các test dùng chung kho nên chạy theo thứ tự: xem, nạp, gói không giới hạn, rồi các việc đổi trạng thái gói
  * (đồng hồ của kho là `Date`, giả `Date` để gói tới hạn mà không chờ).
  */
@@ -60,10 +60,10 @@ test('shows the plan, the balance and both histories of the company', async () =
   const plan = regionOf('Gói hiện tại')
   // Tên gói "Pro" đã nói hạng: không kèm nhãn hạng "Pro" lần nữa
   expect(plan.getAllByText('Pro')).toHaveLength(1)
-  for (const text of ['Giá trị tạm — chờ chốt', 'Đang hoạt động', '1.490.000 ₫', '500']) expect(plan.getByText(text)).toBeInTheDocument()
+  for (const text of ['Giá trị tạm — chờ chốt', 'Đang hoạt động', '3.500.000 ₫', '10.000']) expect(plan.getByText(text)).toBeInTheDocument()
   // Kho mẫu có gia hạn thật nên vẫn ghi dòng "Tự gia hạn" (backend không có)
   expect(plan.getByText('Tự gia hạn')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('486')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('9.972')).toBeInTheDocument()
   // Đang có gói còn hiệu lực: không có danh sách chọn gói
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 
@@ -77,7 +77,7 @@ test('shows the plan, the balance and both histories of the company', async () =
   await user.click(screen.getByRole('tab', { name: /Thanh toán/ }))
   await waitFor(() => expect(rowsOf()).toHaveLength(1))
   expect(within(rowsOf()[0] as HTMLElement).getAllByRole('cell').map((cell) => cell.textContent))
-    .toStrictEqual([expect.stringContaining('/'), 'PAY-001', 'Đăng ký gói', '1.490.000 ₫', 'Thành công', ''])
+    .toStrictEqual([expect.stringContaining('/'), 'PAY-001', 'Đăng ký gói', '3.500.000 ₫', 'Thành công', ''])
 })
 
 test('topping up creates a pending payment and opens the simulated payment page', async () => {
@@ -85,7 +85,7 @@ test('topping up creates a pending payment and opens the simulated payment page'
   renderBilling(PHUONG_NAM_ADMIN)
   await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
   const dialog = await screen.findByRole('dialog')
-  expect(within(dialog).getAllByRole('radio').map((radio) => radio.closest('div')?.textContent)).toStrictEqual(['50 credit50.000 ₫', '500 credit500.000 ₫'])
+  expect((await within(dialog).findAllByRole('radio', {}, SLOW)).map((radio) => radio.closest('div')?.textContent)).toStrictEqual(['50 credit50.000 ₫', '500 credit500.000 ₫'])
   await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' }))
   expect(await screen.findByText(/Đang ở \?giao-dich=PAY-\d+/, {}, SLOW)).toBeInTheDocument()
 
@@ -120,7 +120,7 @@ test('a renewal payment waiting to be paid has a banner with Pay; cancelling kee
     if (!found) throw new Error('chưa thấy dải thông báo gia hạn')
     return found
   }, SLOW)
-  expect(banner).toHaveTextContent('Thanh toán gia hạn gói Pro (1.490.000 ₫) đang chờ')
+  expect(banner).toHaveTextContent('Thanh toán gia hạn gói Pro (3.500.000 ₫) đang chờ')
   expect(within(banner).getByRole('link', { name: 'Trả' })).toHaveAttribute('href', expect.stringMatching(/^\/thanh-toan\/gia-lap\?giao-dich=PAY-\d+$/))
 
   await user.click(regionOf('Gói hiện tại').getByRole('button', { name: 'Huỷ gói' }))
@@ -146,5 +146,5 @@ test('an expired plan offers the plans on sale; subscribing creates a pending pa
   expect(within(choose).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toStrictEqual(['Đăng ký gói Basic', 'Đăng ký gói Pro', 'Đăng ký gói Ultimate'])
   await user.click(within(choose).getByRole('button', { name: 'Đăng ký gói Pro' }))
   expect(await screen.findByText(/Đang ở \?giao-dich=PAY-\d+/, {}, SLOW)).toBeInTheDocument()
-  expect((await getMockDb().listPayments())[0]).toMatchObject({ purpose: 'SUBSCRIBE', planId: 'PLAN-002', amountVnd: 1_490_000, status: 'PENDING' })
+  expect((await getMockDb().listPayments())[0]).toMatchObject({ purpose: 'SUBSCRIBE', planId: 'PLAN-002', amountVnd: 3_500_000, status: 'PENDING' })
 })

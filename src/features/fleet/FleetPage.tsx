@@ -13,8 +13,8 @@ import { useT } from '@/lib/i18n'
 import { createFleetColumns } from './fleet-columns'
 import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
-import { useFleetCapabilities, useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
-import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
+import { useVehicleStatesQuery, useVehiclesQuery } from './useVehiclesQuery'
+import { filterVehicleRows, FLEET_STATUSES, vehicleRows, VEHICLE_STATUS_SLUGS, type FleetStatus } from './vehicle-status'
 import { FleetPage as BackendFleetPage } from './backend/FleetPage'
 import { usesBackend } from '@/lib/backend-config'
 
@@ -23,12 +23,11 @@ const STATUS_FILTER = 'trang-thai'
 /** Chân thẻ danh sách (V2.3): trạng thái lấy từ đâu và cách đọc hình lòng thùng — màu vật cản, cạnh cửa sau. */
 function FleetLegend() {
   const t = useT()
-  const caps = useFleetCapabilities()
   return (
     <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 bg-surface px-4 py-3 text-small text-ink-3">
       <p className="flex min-w-0 items-start gap-2">
         <Info aria-hidden className="mt-0.5 size-4 flex-none" strokeWidth={1.5} />
-        <span>{caps.stateDetails ? t('fleet.sourceNote') : t('fleet.backend.sourceNote')} {t('fleet.legend.scale')}</span>
+        <span>{t('fleet.sourceNote')} {t('fleet.legend.scale')}</span>
       </p>
       <p className="flex flex-none items-center gap-4">
         <span className="flex items-center gap-1.5">
@@ -53,13 +52,12 @@ function FleetLegend() {
 function StoreFleetPage() {
   const t = useT()
   const navigate = useNavigate()
-  const caps = useFleetCapabilities()
-  const canEdit = useCan()('fleet.edit') && caps.write
+  const canEdit = useCan()('fleet.edit')
   const vehiclesQuery = useVehiclesQuery()
   const statesQuery = useVehicleStatesQuery()
   const list = useListUrlState({ filters: [STATUS_FILTER], defaultSort: { id: 'name', desc: false } })
   const statusSlug = list.filters[STATUS_FILTER]
-  const statuses: readonly FleetStatus[] = caps.retired ? FLEET_STATUSES : VEHICLE_STATUSES
+  const statuses: readonly FleetStatus[] = FLEET_STATUSES
 
   const columns = useMemo(() => createFleetColumns(t), [t])
   const vehicles = useMemo(() => vehicleRows(vehiclesQuery.data ?? [], statesQuery.data ?? []), [vehiclesQuery.data, statesQuery.data])
@@ -77,7 +75,6 @@ function StoreFleetPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('fleet.title')}
         description={vehiclesQuery.isSuccess ? <FleetHeroSummary vehicles={vehiclesQuery.data} /> : t('pageHero.fleet')}
         actions={
@@ -101,7 +98,7 @@ function StoreFleetPage() {
         }
       />
 
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {isPending ? (
           <div className="flex items-center justify-center py-16" role="status" aria-label={t('fleet.loading')}>
             <Spinner />

@@ -15,8 +15,9 @@ const mockAuthUser = vi.hoisted(() => ({
     role: 'companyAdmin',
     status: 'flagged' as const,
   },
+  logout: vi.fn(),
   signOut: vi.fn(),
-  refreshUser: vi.fn(),
+  refreshUser: vi.fn(() => Promise.resolve(null)),
 }))
 
 vi.mock('@/features/auth/AuthProvider', () => ({

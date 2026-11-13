@@ -16,6 +16,14 @@ export const billing = {
   pending: {
     RENEWAL: 'Thanh toán gia hạn gói {plan} ({amount}) đang chờ. Gói hết hạn ngày {date} nếu chưa trả.',
     SUBSCRIBE: 'Thanh toán đăng ký gói {plan} ({amount}) chưa hoàn tất.',
+    /** Chỉ khi nối backend: thanh toán gia hạn của gói đã hết hạn. */
+    RENEWAL_LAPSED: 'Thanh toán gia hạn gói {plan} ({amount}) đang chờ. Gói đã hết hạn ngày {date}; trả xong thì gói hoạt động lại.',
+  },
+  /** Chỉ khi nối backend: gói đã hết hạn gia hạn đúng gói đó, kể cả gói đã ngừng bán. */
+  renewal: {
+    lapsed: 'Gói {plan} đã hết hạn ngày {date}. Gia hạn đúng gói này ({amount} một kỳ) hoặc chọn gói khác bên dưới; số dư credit được giữ lại.',
+    notOnSale: 'Gói {plan} đã ngừng bán nhưng công ty đang dùng vẫn gia hạn được.',
+    renew: 'Gia hạn gói {plan}',
   },
   plan: {
     title: 'Gói hiện tại',
@@ -74,7 +82,7 @@ export const billing = {
   },
   credit: {
     balance: 'Số dư',
-    note: 'Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.',
+    note: 'Mỗi lần chạy tối ưu dùng {cost} credit, kể cả chạy lại giữ kiện đã ghim.',
     unlimitedNote: 'Gói không giới hạn nên số dư không bị trừ khi chạy tối ưu.',
   },
   cancelDialog: {
@@ -100,6 +108,9 @@ export const billing = {
     overCap: 'Số dư sau khi nạp ({total} credit) vượt trần {max} credit của hạng {tier}.',
     cancel: 'Huỷ',
     confirm: 'Tiếp tục thanh toán',
+    loading: 'Đang tải giá credit',
+    /** Chỉ khi nối backend: máy chủ không cho nạp khi gói đã hết hạn. */
+    notAllowed: 'Gói cước đã hết hạn nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.',
   },
   history: {
     title: 'Lịch sử',

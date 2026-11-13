@@ -1,14 +1,11 @@
-import { apiFetch } from '@/lib/api-client'
-
-import { compareText } from '@/lib/list-filter'
-import {
-  getMockDb,
-  type VehicleTypeAssignment,
-} from '@/lib/mock-db'
+import { api, apiFetch } from '@/lib/api-client'
 
 /**
- * Lớp dữ liệu loại xe (LM-104) — backend đã có CRUD thật `/api/vehicle-types` (Spring, `VehicleTypeController`); khi nối chỉ thay thân
- * các hàm ở đây. Xe gắn loại tuỳ chọn, lưu ngoài `VehicleConfig` (D-04).
+ * Loại xe đọc ghi máy chủ (nhóm `fleet`):
+ *   fetchVehicleTypes  → GET /api/vehicle-types
+ *   saveVehicleType    → POST /api/vehicle-types · PUT /api/vehicle-types/{id}
+ *   deleteVehicleType  → DELETE /api/vehicle-types/{id}
+ * Mọi xe của máy chủ đều có loại, gắn khi tạo hoặc sửa xe.
  */
 
 type PageResponse<T> = {
@@ -270,58 +267,21 @@ export async function fetchVehicleTypes(
   }
 }
 
-// chưa có ở BE
-export function fetchVehicleTypeAssignments(): Promise<VehicleTypeAssignment[]> {
-  return getMockDb().listVehicleTypeAssignments()
-}
-
-/** Mọi xe của đội (theo tên) kèm loại đang gắn. */
-// chưa có ở BE
-export async function fetchVehicleAssignmentRows(): Promise<VehicleAssignmentRow[]> {
-  const db = getMockDb()
-  const [vehicles, assignments] = await Promise.all([db.listVehicles(), db.listVehicleTypeAssignments()])
-  const typeOf = new Map(assignments.map((item) => [item.vehicleId, item.vehicleTypeId]))
-  return vehicles
-    .map((vehicle) => ({ vehicle: { id: vehicle.id, name: vehicle.name }, vehicleTypeId: typeOf.get(vehicle.id) ?? null }))
-    .toSorted((a, b) => compareText(a.vehicle.name, b.vehicle.name))
-}
-
-/** `id` vắng là loại mới (`VT-NNN`). Sai dữ liệu: `VEHICLE_TYPE_INVALID` kèm tên trường. */
-// POST /api/vehicle-types (tạo) · PUT /api/vehicle-types/{id} (sửa — kiểm lại phương thức khi nối)
+/** `id` vắng là loại mới. Sửa gửi lại cả bản ghi: số, cửa, vật cản như đang nhập; vị trí và tải rỗng của trục máy chủ giữ nguyên. */
+// POST /api/vehicle-types · PUT /api/vehicle-types/{id}
 export async function saveVehicleType(
   input: VehicleTypeInput,
   id?: string,
 ): Promise<VehicleType> {
-  if (id !== undefined) {
-    throw new Error(
-      'Update vehicle type API is not implemented yet',
-    )
-  }
-
-  const body =
-    await apiFetch<{
-      success: boolean
-      message?: string
-      data: VehicleTypeApi
-    }>(
-      '/api/vehicle-types',
-      {
-        method: 'POST',
-        body: JSON.stringify(
-          toCreateVehicleTypeRequest(input),
-        ),
-      },
-    )
-
-  return mapVehicleType(body.data)
+  const body = toCreateVehicleTypeRequest(input)
+  const saved = id === undefined
+    ? await api().post<VehicleTypeApi>('/api/vehicle-types', { body })
+    : await api().put<VehicleTypeApi>(`/api/vehicle-types/${encodeURIComponent(id)}`, { body })
+  return mapVehicleType(saved)
 }
 
+/** Loại còn xe gắn (kể cả xe ngừng sử dụng): máy chủ từ chối `VEHICLE_TYPE_IN_USE`. */
 // DELETE /api/vehicle-types/{id}
-export function deleteVehicleType(id: string): Promise<void> {
-  return getMockDb().deleteVehicleType(id)
-}
-
-// chưa có ở BE
-export function setVehicleType(vehicleId: string, vehicleTypeId: string | null): Promise<VehicleTypeAssignment | null> {
-  return getMockDb().setVehicleType(vehicleId, vehicleTypeId)
+export async function deleteVehicleType(id: string): Promise<void> {
+  await api().delete<unknown>(`/api/vehicle-types/${encodeURIComponent(id)}`)
 }

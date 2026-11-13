@@ -1,25 +1,32 @@
 import { Coins } from 'lucide-react'
 import { useState } from 'react'
+import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
-import { useFormat, useT } from '@/lib/i18n'
-import { BILLING_CONSTANTS, type PlanTier } from '@/lib/mock-db'
-import { BILLING_CAPABILITIES, topUpTerms } from './billing-api'
+import { Spinner } from '@/components/ui/Spinner'
+import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
+import { isApiError } from '@/lib/api-client'
+import { BILLING_CONSTANTS, isMockDbError, type PlanTier } from '@/lib/mock-db'
+import { BILLING_CAPABILITIES, type TopUpTerms } from './billing-api'
+import { useTopUpTermsQuery } from './useBillingQuery'
 
 type TopUpProps = {
   pending: boolean
-  onConfirm: (credits: number) => void
-  /** Hạng gói đang dùng (giá và trần nạp theo hạng khi nối backend); `null` khi chưa có gói. */
+  /** Lần nạp vừa rồi bị từ chối (gói vừa hết hạn — `SUBSCRIPTION_EXPIRED` —, máy chủ lỗi…): câu lỗi hiện trong hộp, hộp giữ nguyên. */
+  error?: unknown
+  /** Số credit và thành tiền theo giá đang hiện. */
+  onConfirm: (credits: number, amountVnd: number) => void
+  /** Hạng gói đang dùng; `null` khi chưa có gói. Nối backend thì hạng tính giá là hạng máy chủ trả. */
   tier: PlanTier | null
   /** Số dư hiện tại — trần nạp tính trên số dư sau khi nạp. */
   balance: number
 }
 
 /**
- * Nạp credit (FE-8-03, D-89): chọn gói 50 hoặc 500 credit; nối backend thì nhập được số tuỳ ý (`customTopUp`) và giá, trần số dư theo
- * hạng gói (`topUpTerms`). Xác nhận chỉ tạo thanh toán chờ và đưa sang trang thanh toán — credit chỉ được cộng khi thanh toán thành công.
+ * Nạp credit (FE-8-03, D-89): chọn gói 50 hoặc 500 credit; nối backend thì nhập được số tuỳ ý (`customTopUp`) và giá theo hạng gói đọc
+ * từ bảng giá của máy chủ (`useTopUpTermsQuery`); gói đã hết hạn thì không nạp được, hộp nói lý do. Xác nhận chỉ tạo thanh toán chờ và đưa sang trang thanh toán — credit chỉ được cộng khi thanh toán thành công.
  * Nội dung dựng lại mỗi lần mở (gói chọn sẵn là gói nhỏ nhất).
  */
 export function TopUpDialog({ open, onOpenChange, ...props }: TopUpProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -30,19 +37,49 @@ export function TopUpDialog({ open, onOpenChange, ...props }: TopUpProps & { ope
   )
 }
 
-function TopUpForm({ pending, onConfirm, tier, balance }: TopUpProps) {
+/** Nạp bị từ chối vì gói đã hết hạn: điều kiện nạp đọc lại thì hộp đã có dòng cảnh báo cùng ý, không hiện thêm câu lỗi. */
+function isExpired(error: unknown): boolean {
+  return (isApiError(error) || isMockDbError(error)) && error.code === 'SUBSCRIPTION_EXPIRED'
+}
+
+function TopUpForm(props: TopUpProps) {
+  const t = useT()
+  const terms = useTopUpTermsQuery()
+  if (terms.data === undefined) {
+    return (
+      <>
+        <DialogHeader icon={Coins} title={t('billing.topUpDialog.title')} />
+        <div className="flex justify-center px-7 py-8">
+          {terms.isError ? <Banner tone="danger" className="w-full">{dataErrorMessage(terms.error, t)}</Banner> : <Spinner label={t('billing.topUpDialog.loading')} />}
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">{t('billing.topUpDialog.cancel')}</Button>
+          </DialogClose>
+        </DialogFooter>
+      </>
+    )
+  }
+  return <TopUpChoice {...props} terms={terms.data} />
+}
+
+function TopUpChoice({ pending, error, onConfirm, tier, balance, terms }: TopUpProps & { terms: TopUpTerms }) {
   const t = useT()
   const format = useFormat()
   const [credits, setCredits] = useState<number>(BILLING_CONSTANTS.topUpPacks[0])
-  const { priceVnd, maxBalance } = topUpTerms(tier)
+  const { priceVnd, maxBalance, minCredits } = terms
   const left = maxBalance === null ? null : Math.max(0, maxBalance - balance)
   const overCap = left !== null && credits > left
-  const tierName = t(`common.planTiers.${tier ?? 'BASIC'}`)
+  const tierName = t(`common.planTiers.${terms.tier ?? tier ?? 'BASIC'}`)
   const pack = BILLING_CONSTANTS.topUpPacks.find((item) => item === credits)
   return (
     <>
       <DialogHeader icon={Coins} title={t('billing.topUpDialog.title')} description={t('billing.topUpDialog.description', { price: format.currency(priceVnd) })} />
       <div className="flex flex-col gap-4 px-7 py-5">
+        {terms.allowed ? null : <Banner tone="warning">{t('billing.topUpDialog.notAllowed')}</Banner>}
+        {error === null || error === undefined || (!terms.allowed && isExpired(error)) ? null : (
+          <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
+        )}
         <p className="m-0 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-small text-amber-900">
           {t('billing.topUpDialog.monthlyResetWarning')}
         </p>
@@ -66,7 +103,7 @@ function TopUpForm({ pending, onConfirm, tier, balance }: TopUpProps) {
               label={t('billing.topUpDialog.custom')}
               type="number"
               inputMode="numeric"
-              min={1}
+              min={minCredits}
               max={left ?? undefined}
               step={1}
               numeric
@@ -83,7 +120,7 @@ function TopUpForm({ pending, onConfirm, tier, balance }: TopUpProps) {
         <DialogClose asChild>
           <Button type="button" variant="secondary" disabled={pending}>{t('billing.topUpDialog.cancel')}</Button>
         </DialogClose>
-        <Button type="button" variant="primary" loading={pending} disabled={credits < 1 || overCap} onClick={() => onConfirm(credits)}>{t('billing.topUpDialog.confirm')}</Button>
+        <Button type="button" variant="primary" loading={pending} disabled={!terms.allowed || credits < minCredits || overCap} onClick={() => onConfirm(credits, credits * priceVnd)}>{t('billing.topUpDialog.confirm')}</Button>
       </DialogFooter>
     </>
   )

@@ -23,6 +23,11 @@ export const serverPlans = {
     keep: 'Không huỷ',
     confirm: 'Huỷ chuyến',
     done: 'Đã huỷ chuyến {code}',
+    /** Chuyến Đang vận chuyển: máy chủ chỉ huỷ khi có sự cố cấp chuyến chưa xử lý. */
+    inTransitDescription: 'Chuyến chuyển sang Đã huỷ và không mở lại được. Kiện chưa giao thành Hoàn trả, yêu cầu giao của chúng thành Giao thiếu; tài xế được báo.',
+    inTransitBlocked: 'Chuyến Đang vận chuyển chỉ huỷ được khi có sự cố cấp chuyến chưa xử lý. Báo sự cố ở màn Giám sát trước.',
+    inTransitNote: 'Xe đang trên đường: kiện chưa giao sẽ thành Hoàn trả.',
+    doneReturned: { one: 'Đã huỷ chuyến {code}: {count} kiện chưa giao thành Hoàn trả', other: 'Đã huỷ chuyến {code}: {count} kiện chưa giao thành Hoàn trả' },
   },
   removeRequirement: {
     open: 'Gỡ khỏi chuyến',
@@ -51,7 +56,7 @@ export const serverPlans = {
   },
   setup: {
     title: 'Tối ưu xếp hàng',
-    description: 'Một lần chạy dùng 1 credit và ra ba phương án A · B · C theo ba mục tiêu. Máy chủ chọn thuật toán theo gói cước của công ty.',
+    description: 'Một lần chạy ra ba phương án A · B · C theo ba mục tiêu và trừ credit một lần, theo giá của máy chủ. Máy chủ chọn thuật toán theo gói cước của công ty.',
     run: 'Chạy tối ưu',
     locked: 'Chuyến đã sang pha vận hành: không chạy tối ưu xếp hàng được nữa.',
     noStops: 'Chuyến chưa có điểm giao: đưa yêu cầu giao vào chuyến trước.',
@@ -59,7 +64,7 @@ export const serverPlans = {
     pins: {
       title: 'Giữ kiện đã ghim',
       switch: { one: 'Giữ nguyên chỗ {count} kiện đã ghim', other: 'Giữ nguyên chỗ {count} kiện đã ghim' },
-      on: 'Phương án mở từ Planner có {count} kiện đã ghim. Máy chủ giữ đúng vị trí và hướng của chúng trong cả ba phương án A · B · C, chỉ xếp các kiện còn lại quanh chúng. Vẫn một credit; bộ ghim không đứng vững thì máy chủ từ chối trước khi chạy, không trừ credit.',
+      on: 'Phương án mở từ Planner có {count} kiện đã ghim. Máy chủ giữ đúng vị trí và hướng của chúng trong cả ba phương án A · B · C, chỉ xếp các kiện còn lại quanh chúng. Vẫn tính là một lần chạy; bộ ghim không đứng vững thì máy chủ từ chối trước khi chạy, không trừ credit.',
       off: 'Chạy bình thường: mọi kiện được xếp lại từ đầu.',
       none: 'Phương án mở từ Planner không còn kiện nào đã ghim: lần chạy là bình thường.',
     },

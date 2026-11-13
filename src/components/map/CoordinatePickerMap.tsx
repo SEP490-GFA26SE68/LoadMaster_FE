@@ -1,12 +1,9 @@
-import { Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { useEffect, useRef } from 'react'
 import { useT } from '@/lib/i18n'
 import type { Coordinates } from './coordinates'
 import { GOONG_STYLE_URL } from './map-style'
+import { MapLibreMap, Marker, NavigationControl } from './maplibre-runtime'
 import { cn } from '@/lib/utils'
-setWorkerUrl(workerUrl)
 
 /** Tâm khi chưa có toạ độ: giữa vùng TP. Hồ Chí Minh – Đồng Nai – Bình Dương, như `RouteMapCanvas`. */
 const FALLBACK_CENTER: [number, number] = [106.8, 10.9]

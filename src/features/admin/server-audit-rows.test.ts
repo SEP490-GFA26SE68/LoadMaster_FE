@@ -70,4 +70,7 @@ test('nhận hàng dọc đường: số kiện, kết quả mười luật, ki�
   expect(approved.details).toBe('3 kiện nhận dọc đường · 1 kiện chưa có chỗ trên xe · Duyệt vượt luật')
   expect(row(entry('PICKUP_REJECTED', { reason: 'Xe đã đầy', driverId: 31 }), en).details).toBe('Reason: Xe đã đầy')
   expect(row({ ...entry('PICKUP_DELIVERED', { stopId: 9 }), entityName: 'PickupRequest' }).target).toBe('Yêu cầu nhận dọc đường')
+  const dropped = row(entry('PICKUP_PACKAGES_DROPPED', { droppedPackages: 2, reason: 'Chuyến đã huỷ', tripCancelled: true }))
+  expect(dropped.action).toBe('Bỏ kiện nhận dọc đường chưa lên xe khi huỷ chuyến')
+  expect(dropped.details).toContain('2 kiện nhận dọc đường')
 })

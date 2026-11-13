@@ -62,6 +62,7 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     vehicles: new Map(seed.vehicles.map((vehicle) => [vehicle.id, vehicle])),
     vehicleCompany: new Map(seed.vehicleCompany),
     maintenance: new Map(seed.maintenance),
+    retiredVehicles: new Map(),
     trips: new Map(seed.trips.map((trip) => [trip.id, trip])),
     revisions: new Map(seed.revisions.map((revision) => [revision.id, revision])),
     users: new Map(seed.users.map((user) => [user.id, user])),

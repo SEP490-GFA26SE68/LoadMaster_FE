@@ -6,7 +6,6 @@ export const vehicleTypes = {
   count: { one: '{count} vehicle type, set on {assigned} vehicles', other: '{count} vehicle types, set on {assigned} vehicles' },
   empty: 'No vehicle types yet.',
   emptyDescription: 'Add a vehicle type to group vehicles with the same cargo space and payload.',
-  emptyDescriptionBackend: 'The server has no vehicle types for your company yet. This screen is view-only.',
   loading: 'Loading vehicle types',
   add: 'Add vehicle type',
   toFleet: 'Back to fleet',
@@ -111,7 +110,6 @@ export const vehicleTypes = {
   assign: {
     title: 'Set a type on each vehicle',
     description: 'Each vehicle has at most one type. Setting a type does not change the sizes in the vehicle configuration.',
-    descriptionBackend: 'Each vehicle has exactly one type, read from the server: its cargo space, door, payload, obstacles and axles belong to that type. The server has no way to change a vehicle type yet.',
     vehicle: 'Vehicle',
     type: 'Vehicle type',
     none: 'No type',

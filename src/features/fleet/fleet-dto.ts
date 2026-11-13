@@ -1,7 +1,9 @@
 import { roundCm, roundKg } from '@/domain/geometry'
 import { DEFAULT_MAX_COG_OFFSET_RATIO, MAX_COG_OFFSET_RATIO_CEILING, type VehicleAxle, type VehicleObstacle } from '@/domain/models'
 import type { VehicleTypeEntry, VehicleTypeRow } from '@/features/vehicle-types/vehicle-types-api'
+import { isoFromBackend } from '@/lib/backend-time'
 import { compareText } from '@/lib/list-filter'
+import type { TripPhase } from '@/lib/mock-db'
 import type { FleetStatus, FleetVehicle, FleetVehicleState } from './vehicle-status'
 
 /**
@@ -20,6 +22,12 @@ export type BackendVehicle = {
   readonly licensePlate?: string | null
   readonly vehicleTypeId?: number | null
   readonly status?: string | null
+  /** Khi bảo dưỡng: ghi chú và lúc bắt đầu (`LocalDateTime`, giờ Việt Nam). */
+  readonly maintenanceNote?: string | null
+  readonly maintenanceSince?: string | null
+  /** Khi đang chạy: mã chuyến và trạng thái chuyến (`LOADING` | `IN_TRANSIT`). */
+  readonly currentTripCode?: string | null
+  readonly currentTripStatus?: string | null
 }
 
 /** Vật cản trong thùng của một loại xe: `x`, `y`, `z` là góc tính từ vách đầu thùng, vách trái và sàn (cm). */
@@ -171,9 +179,22 @@ export function configVehicleOf(config: BackendVehicleConfig): FleetVehicle {
 }
 
 /** Trạng thái xe của backend; trạng thái lạ thì không có (danh sách coi xe đó là Sẵn sàng như kho mẫu). Backend không trả chuyến hay ghi chú bảo dưỡng. */
+const TRIP_PHASES: Readonly<Record<string, TripPhase>> = { LOADING: 'loading', IN_TRANSIT: 'delivering' }
+
+/** Trạng thái xe kèm chuyến đang dùng xe (mã chuyến của máy chủ) và ghi chú, mốc bắt đầu bảo dưỡng; trạng thái lạ là `null`. */
 export function vehicleStateOf(vehicle: BackendVehicle): FleetVehicleState | null {
   const status = vehicle.status ? STATUSES[vehicle.status] : undefined
-  return status === undefined ? null : { vehicleId: String(vehicle.id), status }
+  if (status === undefined) return null
+  const tripPhase = vehicle.currentTripStatus ? TRIP_PHASES[vehicle.currentTripStatus] : undefined
+  return {
+    vehicleId: String(vehicle.id),
+    status,
+    ...(status === 'in_use' && vehicle.currentTripCode ? { tripId: vehicle.currentTripCode } : {}),
+    ...(status === 'in_use' && tripPhase ? { tripPhase } : {}),
+    ...(status === 'maintenance' && vehicle.maintenanceSince
+      ? { maintenance: { note: vehicle.maintenanceNote?.trim() ?? '', since: isoFromBackend(vehicle.maintenanceSince) } }
+      : {}),
+  }
 }
 
 /**

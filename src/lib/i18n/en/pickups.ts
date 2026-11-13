@@ -73,6 +73,7 @@ export const pickups = {
     recheckLabel: 'Check the ten rules of request {id} again',
     override: 'Override reason: {reason}',
     rejected: 'Rejection reason: {reason}',
+    rejectedTripCancelled: 'Rejected automatically: the trip was cancelled before any package was picked up.',
   },
   actions: {
     approve: 'Approve',

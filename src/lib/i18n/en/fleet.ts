@@ -88,6 +88,9 @@ export const fleet = {
     obstaclesCount: { one: '{count} zone', other: '{count} zones' },
     axlesHint: 'optional, used to estimate axle load',
     detailNotAvailable: 'The details of this vehicle could not be read.',
+    edit: 'Edit vehicle',
+    cancelEdit: 'Cancel editing',
+    retiredInstead: 'Vehicle {name} is part of past trips, so it was retired instead',
   },
   preview: {
     title: '3D preview',
@@ -175,7 +178,7 @@ export const fleet = {
   },
   remove: {
     title: 'Delete vehicle {name}?',
-    description: 'The vehicle is removed from the fleet. This cannot be undone.',
+    description: 'A vehicle that never ran a trip is deleted; one with delivered or cancelled trips is retired to keep the history.',
     cancel: 'Cancel',
     confirm: 'Delete vehicle',
   },
@@ -184,15 +187,7 @@ export const fleet = {
     openTrip: 'Open trip {tripId}',
     maintenance: 'In maintenance since {time} {date}: it cannot be assigned to any trip.',
     maintenanceNote: 'Note: {note}',
-    retired: 'The server marks this vehicle as retired.',
-  },
-  backend: {
-    sourceNote: 'Vehicles come from the server. The server does not return the trip using a vehicle or maintenance notes yet, so the status column shows the status only.',
-    readOnly: 'This configuration comes from the server and is view-only: the cargo space, door, payload, obstacles and axles belong to the assigned vehicle type. The server has no way to edit a vehicle or put it into maintenance yet.',
-    doorUnknown: 'This vehicle type has no rear door size yet: the door is shown as the cargo space cross-section.',
-    axlesUnknown: 'This vehicle type has no front and rear axle positions and empty loads yet, so there are no axles to estimate axle loads.',
-    noCreate: 'The server has no way to add a vehicle from this screen yet: the fleet list and vehicle configuration are view-only.',
-    axleNames: { front: 'Front axle', rear: 'Rear axle' },
+    retired: 'This vehicle is retired: it stays in the trip history but cannot be assigned to new trips or edited.',
   },
   maintenance: {
     start: 'Start maintenance',

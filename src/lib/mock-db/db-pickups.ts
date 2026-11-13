@@ -148,7 +148,7 @@ export function pickupMethods(ctx: DbContext): PickupsDb {
         const created = createPickupPackages(ctx, current, inserted.deliveryStopId)
         const { overrideReason: _earlier, ...kept } = current
         // Chỗ của kiện nhận (FE-BL-01): kiện không xếp được vẫn lên xe theo lý do vượt luật nhưng chưa có chỗ — tài xế đọc lý do.
-        // Tái tối ưu vùng trống chưa tốn credit: backend chưa trả lời có tính 1 credit hay không (Q-09), nên không gọi `reserveOptimizationCredit`.
+        // Tái tối ưu vùng trống không tốn credit (đã quyết định, Q-09; như máy chủ), nên không gọi `reserveOptimizationCredit`.
         const layout: PickupLayout = { placements: context.packing.placements, unplaced: context.packing.unplaced, plannedAt: ctx.nowIso() }
         const request = put(pickups, {
           ...kept, validationResults, status: 'APPROVED', approvedAt: ctx.nowIso(), approvedBy: ctx.state.session.userId,

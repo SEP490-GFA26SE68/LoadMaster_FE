@@ -34,6 +34,7 @@ export const monitoring = {
     vehicle: 'chuyến {trip}, {name} ({source})',
     note: 'Tuyến và điểm giao là của chuyến đang chọn; xe của chuyến khác chỉ hiện vị trí.',
     noPosition: 'Chuyến {id} còn điểm giao chưa có toạ độ nên chưa có vị trí xe.',
+    pathFailed: 'Không đọc được tuyến của chuyến {id} từ máy chủ — bản đồ nối thẳng các điểm.',
   },
   list: {
     title: 'Chuyến đang vận chuyển',
@@ -137,6 +138,10 @@ export const monitoring = {
       list: 'Kiện bị chắn',
       item: 'điểm {number} · {name}',
       unchanged: 'Thứ tự điểm giữ nguyên.',
+    },
+    missingCoordinates: {
+      title: 'Không đổi được: các điểm sau chưa có toạ độ',
+      list: 'Điểm chưa có toạ độ',
     },
   },
   /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */

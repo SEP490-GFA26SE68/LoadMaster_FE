@@ -36,10 +36,14 @@ export function useServerLoadingSessionQuery(tripId: string) {
   return useQuery({ queryKey: sessionKey(tripId), queryFn: () => fetchServerLoadingSession(tripId), staleTime: 0, retry: false })
 }
 
-/** Ghi của kho đổi trạng thái chuyến ở mọi màn đã đọc nó. Phiên mới đặt thẳng vào cache: không phải đọc lại. */
+/**
+ * Ghi của kho đổi trạng thái chuyến ở mọi màn đã đọc nó. Phiên mới đặt thẳng vào cache: không phải đọc lại. Chỉ chờ khoá của màn kho;
+ * chuyến và bảng điều khiển của màn khác chỉ bị đánh dấu cũ rồi đọc lại ngầm, để mỗi lần quét không phải chờ chúng.
+ */
 function settle(client: QueryClient, tripId: string, session: ServerLoadingSession | undefined) {
   if (session !== undefined) client.setQueryData(sessionKey(tripId), session)
-  const keys = [['warehouse', 'server', 'trips'], ['trips'], ['dashboard'], ...(session === undefined ? [sessionKey(tripId)] : [])]
+  for (const queryKey of [['trips'], ['dashboard']]) void client.invalidateQueries({ queryKey })
+  const keys = [['warehouse', 'server', 'trips'], ...(session === undefined ? [sessionKey(tripId)] : [])]
   return Promise.all(keys.map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 
@@ -51,7 +55,7 @@ export function useStartServerLoadingMutation(tripId: string) {
 export function useConfirmServerPlacementMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (placementId: string) => confirmServerPlacement(tripId, placementId),
+    mutationFn: ({ placementId, method }: { placementId: string; method: 'QR' | 'CODE' }) => confirmServerPlacement(tripId, placementId, method),
     onSuccess: (session) => settle(client, tripId, session),
   })
 }

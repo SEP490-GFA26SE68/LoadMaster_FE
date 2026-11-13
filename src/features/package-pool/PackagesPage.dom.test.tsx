@@ -121,7 +121,7 @@ test('the company manager reads the pool but gets no write button, no selection 
   expect(panel.queryByRole('link', { name: 'In nhãn QR' })).not.toBeInTheDocument()
 })
 
-test('the detail panel shows the QR code and the history the store kept; the dispatcher reads it without a flag action', async () => {
+test('the detail panel shows the QR code and the history the store kept; the dispatcher clears the flag there', async () => {
   const user = renderPool('dispatcher', '/kien-hang?co=khong-tim-thay')
   await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   // Bấm dòng mở panel; panel mở thì bảng nhường bốn cột đã có trong panel
@@ -139,8 +139,9 @@ test('the detail panel shows the QR code and the history the store kept; the dis
   const history = () => within(panel.getByRole('list', { name: 'Lịch sử' })).getAllByRole('listitem').map((item) => item.textContent)
   expect(history()).toStrictEqual(['Gắn cờ Không tìm thấy17:05 13/09/2026 · Nguyễn Thanh Tùng', 'Vào kho kiện: Nhập file16:20 13/09/2026 · Nguyễn Thanh Tùng'])
 
-  // Điều phối viên không còn `packages.manage` (ma trận của nhánh nhóm): không có nút gỡ cờ; kho mẫu vẫn chỉ cho điều phối viên gỡ cờ
-  expect(panel.queryByRole('button', { name: /^Gỡ cờ/ })).not.toBeInTheDocument()
+  // Như máy chủ, chỉ điều phối viên gỡ cờ (`trips.edit`)
+  await user.click(panel.getByRole('button', { name: 'Gỡ cờ Không tìm thấy' }))
+  await waitFor(() => expect(panel.queryByRole('button', { name: /^Gỡ cờ/ })).not.toBeInTheDocument(), SLOW)
 
   // Đóng panel: bảng trả đủ cột, con trỏ về nút mã kiện
   await user.click(panel.getByRole('button', { name: 'Đóng chi tiết kiện' }))
