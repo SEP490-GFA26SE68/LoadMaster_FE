@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
 
 import { compareText } from '@/lib/list-filter'
 import {
@@ -244,6 +245,11 @@ export type VehicleTypeRow = { readonly type: VehicleType; readonly vehicleIds: 
 export type VehicleAssignmentRow = { readonly vehicle: VehicleRef; readonly vehicleTypeId: string | null }
 
 // GET /api/vehicle-types (xe đang gắn loại: chưa có ở BE)
+/** Complete tenant-scoped catalog, bounded by the shared completeness guard. */
+export async function fetchAllVehicleTypes(): Promise<VehicleType[]> {
+  return (await fetchAllPages<VehicleTypeApi>('/api/vehicle-types', { size: 100 })).map(mapVehicleType)
+}
+
 export async function fetchVehicleTypes(
   page = 0,
   size = 20,

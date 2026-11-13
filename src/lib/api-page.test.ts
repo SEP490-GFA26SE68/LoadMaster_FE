@@ -33,10 +33,10 @@ test('a Spring page inside the envelope: content plus last, or the newer page bl
 
 test('a plain list (bare or enveloped) is read once, never paged again', async () => {
   const bare = clientReturning([{ id: 1 }, { id: 2 }])
-  await expect(fetchAllPages('/api/subscription/plans', { size: 1 }, bare.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
+  await expect(fetchAllPages('/api/subscription/plans', { size: 1, allowUnpaged: true }, bare.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
   expect(bare.urls).toHaveLength(1)
   const enveloped = clientReturning({ success: true, data: [{ id: 1 }] })
-  await expect(fetchAllPages('/api/users', { size: 1 }, enveloped.client)).resolves.toStrictEqual([{ id: 1 }])
+  await expect(fetchAllPages('/api/unpaged-fixture', { size: 1, allowUnpaged: true }, enveloped.client)).resolves.toStrictEqual([{ id: 1 }])
   expect(enveloped.urls).toHaveLength(1)
 })
 
@@ -46,5 +46,5 @@ test('stops after maxPages so a backend that never says "last" cannot loop forev
     { success: true, data: [{ id: 2 }], last: false },
     { success: true, data: [{ id: 3 }], last: false },
   )
-  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
+  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).rejects.toMatchObject({ code: 'DATASET_INCOMPLETE' })
 })

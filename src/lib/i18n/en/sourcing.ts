@@ -168,6 +168,7 @@ export const sourcing = {
       PLANNED: 'Planned',
       LOADED: 'Loaded',
       DELIVERED: 'Delivered',
+      RETURNED: 'Returned',
       CANCELLED: 'Cancelled',
     },
     events: {
@@ -251,7 +252,7 @@ export const sourcing = {
     lookup: 'Package lookup',
     added: 'Added package {code} to the pool.',
     search: 'Search by package code, destination, QR code, requirement, trip',
-    searchBackend: 'Search by package code or QR code',
+    searchBackend: 'Search package code, name, type, barcode or destination',
     tabs: { label: 'Filter by status', all: 'All' },
     addedMany: 'Successfully created {count} packages.',
     filters: {
@@ -321,8 +322,8 @@ export const sourcing = {
     sourceNote: 'Packages are read from the server. The server list has no width, height, destination, flags or delivery requirement yet, so the table shows the length only; open a package to see its destination and trip.',
   },
   server: {
-    statuses: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', CANCELLED: 'Cancelled' },
-    tabs: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', CANCELLED: 'Cancelled' },
+    statuses: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', RETURNED: 'Returned', CANCELLED: 'Cancelled' },
+    tabs: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', RETURNED: 'Returned', CANCELLED: 'Cancelled' },
     noPackageType: 'No package type',
     noRequirement: 'No delivery requirement yet',
     noCustomerName: 'No customer name yet',

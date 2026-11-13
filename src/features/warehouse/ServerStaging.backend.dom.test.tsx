@@ -23,7 +23,7 @@ let seal: string | null = null
 let calls: FakeCall[] = []
 
 const step = (placementId: number, sequence: number, barcode: string) => ({
-  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: null, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
+  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: barcode, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
   // Hai kiện nằm cạnh nhau trên sàn: không kiện nào tựa lên kiện nào
   posX: (sequence - 1) * 60, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, weightKg: 12.5, sequence,
   stopId: 31, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', ...rows[placementId],
@@ -132,7 +132,7 @@ test('soạn hàng: đối chiếu bằng mã gõ không cần thứ tự, báo 
     '/api/warehouse/tasks/7/staging/packages/1020/shortage',
     '/api/warehouse/tasks/7/staging/packages/1020/confirm',
   ])
-  expect(calls.find((call) => call.method === 'POST')?.body).toEqual({ method: 'CODE' })
+  expect(calls.find((call) => call.method === 'POST')?.body).toEqual({ method: 'CODE', code: 'lb-0001' })
 })
 
 test('soạn hàng: xác nhận tay chờ điều phối viên duyệt chưa tính là đã soạn, bước soạn chưa xong', async () => {

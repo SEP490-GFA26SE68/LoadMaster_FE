@@ -43,6 +43,10 @@ type PackageVerifyProps = {
    */
   codeLabel?: string
   codeHint?: string
+  /** Explicit execution action; existing verification callers keep their default label/queue. */
+  submitLabel?: string
+  queueWhilePending?: boolean
+  disabled?: boolean
 }
 
 type CodeValues = { code: string }
@@ -57,7 +61,7 @@ function initialMethod(methods: readonly VerifyMethod[]): VerifyMethod {
 /** Ô và nút của màn cảm ứng: 56 px, chữ 16 px (mục 10) — hộp này chỉ dùng ở kho (máy tính bảng) và tài xế (điện thoại). */
 const TOUCH_FIELD = 'h-14 w-full min-w-0 px-3 text-body-lg'
 
-function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, methods = VERIFY_METHODS, codeLabel, codeHint, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
+function VerifyBody({ inputRef, title, description, onVerify, candidates, onManual, result, pending = false, methods = VERIFY_METHODS, codeLabel, codeHint, submitLabel, queueWhilePending = true, disabled = false, onClose }: Omit<PackageVerifyProps, 'open' | 'onOpenChange'> & {
   inputRef: RefObject<HTMLInputElement | null>
   onClose: () => void
 }) {
@@ -80,8 +84,9 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
   }, [pending, onVerify])
 
   function submitCode(input: VerifyCode) {
+    if (disabled) return
     if (pending) {
-      if (!queued.current.some((entry) => entry.code === input.code)) queued.current.push(input)
+      if (queueWhilePending && !queued.current.some((entry) => entry.code === input.code)) queued.current.push(input)
     } else onVerify(input)
     // Chọn sẵn mã vừa gửi: gõ hay quét mã kế tiếp là thay chỗ, mã vẫn đọc được khi kho báo lỗi
     inputRef.current?.select()
@@ -141,7 +146,7 @@ function VerifyBody({ inputRef, title, description, onVerify, candidates, onManu
               <span id={`${codeId}-mo-ta`} className={codeError ? 'text-danger' : 'text-ink-3'}>{codeError ?? codeHint ?? t('qr.verify.codeHint')}</span>
             </div>
             {/* Đang chờ kho vẫn bấm được (Enter của ô cần nút gửi không khoá): mã mới vào hàng chờ */}
-            <Button type="submit" size="touch" className="self-end" loading={pending} disabled={false}>{t('qr.verify.codeSubmit')}</Button>
+            <Button type="submit" size="touch" className="self-end" loading={pending} disabled={disabled || (pending && !queueWhilePending)}>{submitLabel ?? t('qr.verify.codeSubmit')}</Button>
           </form>
         </TabsContent>
 

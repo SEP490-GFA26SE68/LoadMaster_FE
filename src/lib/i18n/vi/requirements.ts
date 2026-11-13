@@ -208,6 +208,7 @@ export const requirements = {
     receivedOf: '{received}/{expected} kiện',
     viewTrip: 'Xem chuyến #{code}',
     assignDescription: 'Máy chủ chỉ nhận yêu cầu vào chuyến Nháp và tự sinh hoặc gộp điểm giao theo địa chỉ của yêu cầu.',
+    linkedForAssignment: 'Đã liên kết {linkedCount}/{expectedCount} kiện. Máy chủ sẽ kiểm tra lại số kiện và điều kiện phân chuyến; số liên kết chưa bảo đảm mọi kiện đủ điều kiện.',
     noDraftTrips: 'Không có chuyến Nháp nào để nhận yêu cầu.',
     manageUnavailable: 'Máy chủ chưa cho sửa yêu cầu giao: ở đây chỉ thêm được toạ độ còn thiếu.',
   },

@@ -7,6 +7,8 @@ import {
   fetchAssignableTrips,
   getDeliveryRequirement,
   listDeliveryRequirements,
+  fetchRequirementsPage,
+  type RequirementListParams,
   updateDeliveryRequirement,
   type AssignRequirementInput,
 } from './requirements-api'
@@ -19,6 +21,10 @@ import {
 
 export function useRequirementsQuery() {
   return useQuery({ queryKey: ['requirements', 'list'], queryFn: listDeliveryRequirements, staleTime: 0 })
+}
+
+export function useRequirementsPageQuery(params: RequirementListParams) {
+  return useQuery({ queryKey: ['requirements', 'list', 'paged', params], queryFn: ({ signal }) => fetchRequirementsPage(params, signal), staleTime: 0 })
 }
 
 export function useRequirementQuery(id: string) {

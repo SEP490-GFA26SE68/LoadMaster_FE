@@ -48,7 +48,9 @@ async function withPlace(packages: readonly Package[]): Promise<PackageLookup[]>
 // GET /api/packages/scan/{qrToken}
 export async function scanPackage(token: string): Promise<PackageLookup> {
   if (ON_BACKEND) {
-    const found = lookupOf(await scanBackendPackage(token))
+    const scan = await scanBackendPackage(token)
+    if (!scan.qrToken || scan.qrToken.trim().toLowerCase() !== token.trim().toLowerCase()) unknown(token)
+    const found = lookupOf(scan)
     if (found === null) throw new ApiError('QR_UNKNOWN', { status: 404, params: { token } })
     return found
   }
@@ -57,38 +59,60 @@ export async function scanPackage(token: string): Promise<PackageLookup> {
   return found
 }
 
-/** Kiện không đọc được vì không có hoặc thuộc công ty khác (backend trả 404 / 403): không khớp, không lộ gì thêm. */
-function missing(error: unknown): null {
-  if (isUnknownPackage(error) || (isApiError(error) && (error.status === 404 || error.status === 403))) return null
-  throw error
+/** Không khớp định danh: không được mở một kiện khác do response sai contract. */
+function unknown(code: string): never {
+  throw new ApiError('QR_UNKNOWN', { status: 404, params: { token: code } })
 }
 
-/** Backend: khớp mã QR, mã của bên gửi và mã của kho (số); mỗi kiện khớp đọc thêm một lượt quét để có điểm đến, chuyến, điểm giao. */
-async function lookupOnBackend(code: string): Promise<PackageLookup[]> {
-  const value = code.trim()
-  const [byToken, byCode, byId] = await Promise.all([
-    isBackendQrToken(value) ? scanBackendPackage(value).then(lookupOf, missing) : null,
-    listBackendPackages(value),
-    /^\d+$/.test(value) ? readBackendPackage(value).catch(missing) : null,
-  ])
-  const found = new Map<string, PackageLookup>()
-  if (byToken) found.set(byToken.package.id, byToken)
-  const others = [...byCode, ...(byId ? [byId] : [])].filter((pkg, index, all) => !found.has(pkg.id) && all.findIndex((item) => item.id === pkg.id) === index)
-  const scanned = await Promise.all(others.map((pkg) => scanBackendPackage(pkg.qrToken).then(lookupOf, missing)))
-  for (const item of scanned) if (item) found.set(item.package.id, item)
-  if (found.size === 0) throw new ApiError('QR_UNKNOWN', { status: 404, params: { token: value } })
-  return [...found.values()].toSorted((a, b) => Number(b.package.id) - Number(a.package.id))
+const exactCode = (value: string) => value.trim().toLowerCase()
+
+/** Đọc chi tiết chỉ sau khi đã kiểm chứng loại mã; chi tiết phải giữ nguyên identity. */
+async function detailOf(pkg: Package, requireBusinessCode = false): Promise<PackageLookup> {
+  const scan = await scanBackendPackage(pkg.qrToken)
+  if (String(scan.id) !== pkg.id
+    || !scan.qrToken || exactCode(scan.qrToken) !== exactCode(pkg.qrToken)
+    || (requireBusinessCode && (typeof scan.packageCode !== 'string'
+      || exactCode(scan.packageCode) !== exactCode(pkg.packageCode ?? '')))) unknown(pkg.packageCode ?? pkg.id)
+  const found = lookupOf(scan)
+  return found ?? unknown(pkg.packageCode ?? pkg.id)
 }
 
 /**
- * Tra kiện theo mã người dùng gõ: mã QR, mã của bên gửi hoặc mã của kho. Mã của bên gửi trùng nhau thì trả mọi kiện khớp, mới nhất
- * trước; không khớp kiện nào của công ty: `QR_UNKNOWN`.
+ * Backend: mã thường là exact Package Code (kể cả chuỗi số).
+ * id:123 là nhánh ID nội bộ tường minh. UUID chỉ dùng QR nếu không có business code khớp.
+ * Không union các nhánh, không fallback khi server lỗi.
  */
-// GET /api/packages/scan/{qrToken} · GET /api/packages?packageCode= · GET /api/packages/{id}
+async function lookupOnBackend(code: string): Promise<PackageLookup[]> {
+  const value = code.trim()
+  if (!value) unknown(value)
+  const id = /^id:([1-9]\d*)$/i.exec(value)?.[1]
+  if (id) {
+    const pkg = await readBackendPackage(id)
+    if (pkg.id !== id) unknown(value)
+    return [await detailOf(pkg)]
+  }
+
+  const rows = await listBackendPackages(value)
+  const matching = new Map(rows
+    .filter(pkg => exactCode(pkg.packageCode ?? '') === exactCode(value))
+    .map(pkg => [pkg.id, pkg]))
+  if (matching.size > 0) {
+    const found = await Promise.all([...matching.values()].map(pkg => detailOf(pkg, true)))
+    return found.toSorted((a, b) => Number(b.package.id) - Number(a.package.id))
+  }
+  if (isBackendQrToken(value)) return [await scanPackage(value)]
+  return unknown(value)
+}
+
+/** Exact Package Code; backend hỗ trợ QR UUID và ID nội bộ tường minh id:123.
+ * Không có nhánh tracking barcode trong API hiện hành; không suy diễn barcode thành ID.
+ */
+// GET /api/packages?packageCode= · GET /api/packages/scan/{qrToken} · GET /api/packages/{id}
 export async function lookupPackages(code: string): Promise<PackageLookup[]> {
   if (ON_BACKEND) return lookupOnBackend(code)
   return withPlace(await getMockDb().lookupPackages(code))
 }
+
 
 /** Nhân viên kho quét thấy lại kiện mang cờ "Không tìm thấy" (D-92): gỡ cờ, kho ghi sự kiện để điều phối viên được báo. */
 // chưa có ở BE

@@ -1,11 +1,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ClipboardList, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { useCan } from '@/features/auth/useCan'
 import { Banner } from '@/components/Banner'
 import { fetchTripById } from '@/features/trips/trips-api'
 import { CoordinatePicker, parseCoordinates } from '@/components/map'
@@ -184,6 +186,10 @@ function RequirementForm({
   const t = useT()
   const queryClient = useQueryClient()
   const current = row?.requirement
+  const { user } = useAuth()
+  const can = useCan()
+  const canCreate = user?.role === 'dispatcher' && can('requirements.edit') && REQUIREMENT_SERVER_SUPPORT.create
+  const submitting = useRef(false)
 
   const [extensionReason, setExtensionReason] = useState('')
 
@@ -199,7 +205,7 @@ function RequirementForm({
     ? tripQuery.data?.status
     : undefined
 
-  // Hạn, ưu tiên và gia hạn đòi `DELIVERY_DEMAND_MANAGE` ở máy chủ: chờ quyền (`REQUIREMENT_SERVER_SUPPORT.manage`)
+  // CREATE support does not enable editing schedules or extending deadlines.
   const canEditSchedule =
     REQUIREMENT_SERVER_SUPPORT.manage &&
     current !== undefined &&
@@ -357,7 +363,7 @@ function RequirementForm({
     })
 
   const locked =
-    !REQUIREMENT_SERVER_SUPPORT.manage ||
+    (current ? !REQUIREMENT_SERVER_SUPPORT.manage : !canCreate) ||
     (current !== undefined &&
       (current.status !== 'PENDING' ||
         current.tripId !== undefined))
@@ -542,7 +548,8 @@ function RequirementForm({
 
 
   function handleSubmit(values: RequirementFormValues) {
-    if (locked) return
+    if (locked || submitting.current) return
+    submitting.current = true
 
     const done = (saved: DeliveryRequirement) => {
       toast.success(
@@ -557,12 +564,12 @@ function RequirementForm({
     if (current) {
       update.mutate(
         toChanges(values, current),
-        { onSuccess: done },
+        { onSuccess: done, onSettled: () => { submitting.current = false } },
       )
     } else {
       create.mutate(
         toInput(values),
-        { onSuccess: done },
+        { onSuccess: done, onSettled: () => { submitting.current = false } },
       )
     }
   }
@@ -897,6 +904,7 @@ function RequirementForm({
             type="submit"
             loading={mutation.isPending}
             disabled={
+              mutation.isPending ||
               customers.isPending ||
               customers.isError ||
               addingCustomer ||

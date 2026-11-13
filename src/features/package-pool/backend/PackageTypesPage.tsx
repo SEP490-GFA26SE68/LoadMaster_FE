@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-import { matchesQuery } from '@/lib/list-filter'
+import { serverSort } from './package-list-query'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
 import { useDeletePackageTypeMutation, usePackageTypesQuery, useSavePackageTypeMutation } from './usePackagePoolQuery'
@@ -40,15 +40,15 @@ export function PackageTypesPage() {
   const typesQuery = usePackageTypesQuery(
     list.pageIndex,
     list.pageSize,
+    { search: list.query, ...serverSort(list.sorting, 'types') },
   )
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<PackageTypeRow | null>(null)
   const rows = useMemo(() => typesQuery.data?.data ?? [], [typesQuery.data])
-  const visible = useMemo(() => rows.filter((row) => matchesQuery([row.name, row.id], list.query)), [rows, list.query])
   const columns = useMemo(() => packageTypeColumns(t, canEdit), [t, canEdit])
   const actions = useMemo(() => ({ onEdit: (row: PackageTypeRow) => setEditing({ kind: 'edit', row }), onDelete: setDeleting }), [])
 
-  const pending = typesQuery.isPending
+  const pending = typesQuery.isFetching
   const error = typesQuery.error
   const totalElements = typesQuery.data?.totalElements ?? 0
   const hasRows = totalElements > 0
@@ -95,11 +95,7 @@ export function PackageTypesPage() {
         actions={addButton}
       />
       <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
-        {pending ? (
-          <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
-        ) : error ? (
-          <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
-        ) : !hasRows ? (
+        {!pending && !error && !hasRows && !list.isFiltering ? (
           <EmptyState mascot="empty" title={t('sourcing.packageTypes.empty')} description={t('sourcing.packageTypes.emptyDescription')} action={addButton ?? undefined} />
         ) : (
           <div className="flex flex-col gap-3">
@@ -115,13 +111,15 @@ export function PackageTypesPage() {
               <div className="relative overflow-x-auto">
                 <div className="min-w-240">
                   <PackageTypeActionsContext value={actions}>
-                    <DataTable
-                      data={visible}
+                    {pending ? <div role="status" className="p-8"><Spinner /></div>
+                      : error ? <Banner tone="danger">{dataErrorMessage(error, t)}</Banner> : <DataTable
+                      data={rows}
                       columns={columns}
                       getRowId={(row) => row.id}
                       density="roomy"
                       appearance="paper"
                       serverPagination
+                      serverSorting
                       totalRows={typesQuery.data?.totalElements ?? 0}
                       pagination={{
                         pageIndex: list.pageIndex,
@@ -133,7 +131,7 @@ export function PackageTypesPage() {
                       onSortingChange={list.setSorting}
                       isFiltering={list.isFiltering}
                       onClearFilters={list.clearAll}
-                    />
+                    />}
                   </PackageTypeActionsContext>
                 </div>
               </div>

@@ -26,7 +26,7 @@ const step = (placementId: number, sequence: number, extra: Record<string, unkno
 })
 
 const SESSION = {
-  executionId: 1, loadPlanId: 3, tripId: 7, tripCode: 'TRIP-20261106-A1', vehicleInfo: null, licensePlate: '51C-284.19', vehicleTypeName: 'Isuzu',
+  obstacles: [], executionId: 1, loadPlanId: 3, tripId: 7, tripCode: 'TRIP-20261106-A1', vehicleInfo: null, licensePlate: '51C-284.19', vehicleTypeName: 'Isuzu',
   innerLength: 600, innerWidth: 240, innerHeight: 240, doorWidth: null, doorHeight: null, maxPayloadKg: 2500, totalPackages: 2, confirmedCount: 0, deviationCount: 0,
   pendingCount: 2, status: 'IN_PROGRESS', startedAt: '2026-11-06 10:00:00', completedAt: null,
   placements: [step(102, 2), step(101, 1)],
@@ -110,9 +110,9 @@ test('xác nhận, sai lệch, hoàn tất: đúng endpoint, rồi đọc lại 
     },
   })
   const backend = createWarehouseBackend()
-  expect((await backend.confirm('7', '101')).outcomes).toEqual({ 101: 'confirmed' })
+  expect((await backend.confirm('7', '101', { method: 'CODE', code: 'PK-101' })).outcomes).toEqual({ 101: 'confirmed' })
   const afterDeviation = await backend.deviation('7', '102', { x: 12.6, y: 0.4, z: 0, reason: '  vướng vách  ' })
-  expect(calls.find((call) => call.path.endsWith('/deviation'))?.body).toEqual({ actualPosX: 13, actualPosY: 0, actualPosZ: 0, reason: 'vướng vách' })
+  expect(calls.find((call) => call.path.endsWith('/deviation'))?.body).toEqual({ tripId: '7', actualPosX: 13, actualPosY: 0, actualPosZ: 0, reason: 'vướng vách' })
   expect(serverLoadingView(afterDeviation)).toMatchObject({ done: 2, total: 2, current: undefined })
   expect((await backend.complete('7')).completed).toBe(true)
 })
@@ -131,11 +131,12 @@ const PLACEMENT: ServerPlacement = {
   x: 0, y: 0, z: 0, lengthCm: 1, widthCm: 1, heightCm: 1, rotation: 0, weightKg: null, sequence: 1, stopSequence: 1, stopName: null,
 }
 
-test('mã quét hoặc gõ khớp mã QR, mã vạch, mã của bên gửi hoặc mã kho kiện, không phân biệt hoa thường', () => {
-  expect(codeMatches(PLACEMENT, '63ABD059-F710-4BF5-ABE1-A1C120F2C6D9')).toBe(true)
-  expect(codeMatches(PLACEMENT, ' lb-pk-0001 ')).toBe(true)
+test('CODE chỉ khớp Package Code, QR khớp nhãn QR/mã vạch; ID không phải bằng chứng', () => {
+  expect(codeMatches(PLACEMENT, '63ABD059-F710-4BF5-ABE1-A1C120F2C6D9', 'QR')).toBe(true)
+  expect(codeMatches(PLACEMENT, ' lb-pk-0001 ', 'QR')).toBe(true)
   expect(codeMatches(PLACEMENT, 'dh-88')).toBe(true)
-  expect(codeMatches(PLACEMENT, '1010')).toBe(true)
+  expect(codeMatches(PLACEMENT, '1010')).toBe(false)
+  expect(codeMatches(PLACEMENT, 'qr-101', 'CODE')).toBe(false)
   expect(codeMatches(PLACEMENT, 'LB-PK-0002')).toBe(false)
   expect(codeMatches(PLACEMENT, '  ')).toBe(false)
 })
@@ -158,4 +159,16 @@ test('khung 3D: dựng từ lòng thùng, tải trọng và chỗ, khối lượ
 
   expect(serverSessionScene({ ...session, box: null })).toBeNull()
   expect(serverSessionScene({ ...session, placements: session.placements.map((item) => ({ ...item, stopSequence: null })) })).toBeNull()
+})
+
+test.each(['CONFIRMED_ELSEWHERE', 'SUCCESS_WITHOUT_CONFIRMATION'])('confirm %s: GET must prove this placement is confirmed', async (kind) => {
+  const { calls } = stubBackend({
+    'POST /api/warehouse/placements/101/confirm': kind === 'CONFIRMED_ELSEWHERE'
+      ? { status: 409, body: { success: false, code: 'PLACEMENT_ALREADY_CONFIRMED' } }
+      : { body: envelope({ status: 'CONFIRMED' }) },
+    'GET /api/warehouse/tasks/7': { body: envelope(SESSION) },
+  })
+  await expect(createWarehouseBackend().confirm('7', '101', { method: 'CODE', code: 'PK-101' })).rejects.toMatchObject({ code: 'CONFLICT' })
+  expect(calls.map((call) => call.method)).toEqual(['POST', 'GET'])
+  expect(calls[0]?.body).toEqual({ tripId: '7', method: 'CODE', code: 'PK-101' })
 })

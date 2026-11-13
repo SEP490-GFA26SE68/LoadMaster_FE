@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api-client'
+import { fetchAllPages } from '@/lib/api-page'
 import type { TripVehicleConfigResponse } from '@/features/trips/trips-api'
 export type VehicleApi = {
   id: number
@@ -96,11 +97,23 @@ function toCreateVehicleRequest(
   }
 }
 
+export type VehicleListOptions = {
+  status?: VehicleStatus
+  sortBy?: string
+  sortDir?: 'ASC' | 'DESC'
+}
+
+export async function fetchAllVehicles(): Promise<Vehicle[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles', { size: 100 })).map(mapVehicle)
+}
+
 export async function fetchVehicles(
   page = 0,
   size = 20,
   search?: string,
   vehicleTypeId?: string,
+  options: VehicleListOptions = {},
+  signal?: AbortSignal,
 ): Promise<PageResponse<Vehicle>> {
   const params =
     new URLSearchParams({
@@ -122,9 +135,13 @@ export async function fetchVehicles(
     )
   }
 
+  for (const [key, value] of Object.entries(options)) {
+    if (value !== undefined && value !== '') params.set(key, value)
+  }
+
   const response =
     await apiFetch<PageResponse<VehicleApi>>(
-      `/api/vehicles?${params.toString()}`,
+      `/api/vehicles?${params.toString()}`, { signal },
     )
 
   return {

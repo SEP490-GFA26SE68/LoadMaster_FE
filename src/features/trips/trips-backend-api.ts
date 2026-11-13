@@ -5,10 +5,10 @@
  *   phần của nhóm (lập chuyến, tối ưu tuyến, gắn yêu cầu giao…) ở cuối file, tái xuất qua `trips-api.ts`
  */
 import { apiFetch, ApiError } from '@/lib/api-client'
-import { fetchVehicles } from '@/features/fleet/backend/vehicles-api'
-import { fetchVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
+import { fetchAllVehicles } from '@/features/fleet/backend/vehicles-api'
+import { fetchAllVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
 import { getMockDb, type VehicleStatus } from '@/lib/mock-db'
-import { fetchAllPages } from '@/lib/api-page'
+import { fetchAllPages, fetchFirstPage } from '@/lib/api-page'
 import type { TripRow } from './trip-list'
 import type { TripFormOptions, VehicleOption } from './trips-api'
 import { tripRowOf, type TripDto } from './trips-dto'
@@ -131,7 +131,7 @@ export async function fetchTripsPage({
   unassignedDriver,
   sortBy = 'departureTime',
   sortDir = 'desc',
-}: TripListParams): Promise<TripListPageResult> {
+}: TripListParams, signal?: AbortSignal): Promise<TripListPageResult> {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -166,7 +166,7 @@ export async function fetchTripsPage({
   }
 
   const response = await apiFetch<TripListApiResponse>(
-    `/api/trips?${params.toString()}`,
+    `/api/trips?${params.toString()}`, { signal },
   )
 
   return {
@@ -464,28 +464,11 @@ export async function optimizeBackendTrip(
   return response.data
 }
 
-async function fetchEveryPage<T>(
-  fetchPage: (page: number, size: number) => Promise<{
-    data: T[]
-    totalPages: number
-  }>,
-): Promise<T[]> {
-  const size = 100
-  const first = await fetchPage(0, size)
-  const result = [...first.data]
-
-  for (let page = 1; page < first.totalPages; page++) {
-    const response = await fetchPage(page, size)
-    result.push(...response.data)
-  }
-
-  return result
-}
 // GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options
 export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
   const [vehicles, vehicleTypes] = await Promise.all([
-    fetchEveryPage((page, size) => fetchVehicles(page, size)),
-    fetchEveryPage((page, size) => fetchVehicleTypes(page, size)),
+    fetchAllVehicles(),
+    fetchAllVehicleTypes(),
   ])
 
   const typeById = new Map(
@@ -617,10 +600,11 @@ export async function assignBackendRequirementToTrip(
 export async function resolveBackendTripId(idOrCode: string): Promise<string> {
   if (/^[1-9]\d*$/.test(idOrCode)) return idOrCode
   const wanted = idOrCode.trim().toUpperCase()
-  const rows = wanted === ''
-    ? []
-    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1 })
-  const listed = rows.find((row) => row.tripCode.toUpperCase() === wanted)
+  const page = wanted === ''
+    ? { rows: [] as TripDto[], complete: true }
+    : await fetchFirstPage<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE })
+  const listed = page.rows.find((row) => row.tripCode.toUpperCase() === wanted)
+  if (!listed && !page.complete) throw new ApiError('DATASET_INCOMPLETE')
   if (!listed) throw new ApiError('TRIP_NOT_FOUND', { status: 404 })
   return String(listed.id)
 }

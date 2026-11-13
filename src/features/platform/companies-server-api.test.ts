@@ -47,7 +47,7 @@ const LONG_BINH = {
 }
 const PHUONG_NAM = { ...LONG_BINH, id: 2, companyCode: 'FAST-MOVE', companyName: 'Logistics Phương Nam', taxCode: 'TAX-FM-001', status: 'SUSPENDED' }
 
-const springPage = (content: unknown[], last: boolean, number: number) => ({ content, last, number, size: 200, totalPages: 2, empty: false })
+const springPage = (content: unknown[], last: boolean, number: number) => ({ content, last, number, size: 200, totalPages: last ? number + 1 : number + 2, empty: content.length === 0 })
 
 const USER = {
   id: 6, keycloakId: 'kc-6', email: 'qtcongty@loadmaster.vn', fullName: 'Lý Thu Hà', phoneNumber: '0901234567', userRoleType: 'ADMIN',

@@ -10,11 +10,12 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useListUrlState } from '@/components/useListUrlState'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { requirementColumns } from './requirement-columns'
 import {
-  DUE_FROM_FILTER, DUE_TO_FILTER, filterRequirementRows, PRIORITY_FILTER, REQUIREMENT_FILTERS, REQUIREMENT_PRIORITY_ORDER, REQUIREMENT_PRIORITY_SLUGS,
+  DUE_FROM_FILTER, DUE_TO_FILTER, statusFromSlug, priorityFromSlug, PRIORITY_FILTER, REQUIREMENT_FILTERS, REQUIREMENT_PRIORITY_ORDER, REQUIREMENT_PRIORITY_SLUGS,
   REQUIREMENT_STATUS_ORDER, REQUIREMENT_STATUS_SLUGS, STATUS_FILTER, type RequirementFilterName,
 } from './requirement-list'
 import { RequirementAssignDialog } from './RequirementAssignDialog'
@@ -22,7 +23,7 @@ import { RequirementDetailDialog } from './RequirementDetailDialog'
 import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
-import { useDeleteRequirementMutation, useRequirementsQuery } from './useRequirementsQuery'
+import { useDeleteRequirementMutation, useRequirementsPageQuery } from './useRequirementsQuery'
 import { useNavigate } from 'react-router'
 import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
@@ -30,31 +31,39 @@ import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 
 /**
- * Yêu cầu giao `/yeu-cau-giao` (FE-4b-02, D-72) — thay màn Đơn hàng của Review 1. Quản lý công ty (`requirements.edit`) tạo, sửa, xoá:
- * nút chính "Tạo yêu cầu giao" trên dải trời. Điều phối viên (`requirements.view` + `trips.edit`) chỉ xem và đưa yêu cầu vào chuyến /
- * gỡ khỏi chuyến từ menu cuối dòng. Một thẻ gồm thanh tìm / lọc (trạng thái, ưu tiên, khoảng hạn) và bảng, mặc định sắp theo hạn gần
- * nhất trước; bấm mã yêu cầu mở chi tiết. Tìm, lọc, sắp xếp giữ trên URL (D-52).
+ * Backend requirements: Dispatcher can create using the verified CREATE capability.
+ * Existing list/detail/filter/assignment and coordinate-only editing are unchanged.
+ * Other management actions remain gated separately.
  */
 export function RequirementsPage() {
   const t = useT()
   const can = useCan()
   const navigate = useNavigate()
-  // Tạo, sửa, xoá chờ máy chủ giao quyền (`REQUIREMENT_SERVER_SUPPORT.manage`): điều phối viên vẫn thêm được toạ độ còn thiếu
+  // CREATE is verified separately; existing missing-coordinate actions remain available.
   const canEdit = can('requirements.edit')
-  const canManage = canEdit && REQUIREMENT_SERVER_SUPPORT.manage
+  const { user } = useAuth()
+  const canCreate = user?.role === 'dispatcher' && canEdit && REQUIREMENT_SERVER_SUPPORT.create
   const canAssign = can('trips.edit')
-  const query = useRequirementsQuery()
   const remove = useDeleteRequirementMutation()
   const list = useListUrlState({ filters: REQUIREMENT_FILTERS, defaultSort: { id: 'deadline', desc: false } })
+  const sort = list.sorting[0]
+  const query = useRequirementsPageQuery({
+    page: list.pageIndex, size: list.pageSize, search: list.query,
+    status: statusFromSlug(list.filters[STATUS_FILTER]) ?? undefined,
+    priority: priorityFromSlug(list.filters[PRIORITY_FILTER]) ?? undefined,
+    deadlineFrom: list.filters[DUE_FROM_FILTER] || undefined,
+    deadlineTo: list.filters[DUE_TO_FILTER] || undefined,
+    sortBy: sort?.id ?? 'deadline', sortDir: sort?.desc ? 'DESC' : 'ASC',
+  })
   const [editing, setEditing] = useState<Editing | null>(null)
   const [viewing, setViewing] = useState<string | null>(null)
   const [assigning, setAssigning] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<RequirementRow | null>(null)
 
-  const all = useMemo(() => query.data ?? [], [query.data])
-  const rows = useMemo(() => filterRequirementRows(all, list.query, list.filters), [all, list.query, list.filters])
+  const all = useMemo(() => query.data?.data ?? [], [query.data])
+  const rows = query.isFetching ? [] : all
   const columns = useMemo(() => requirementColumns(t), [t])
-  const pending = all.filter((row) => row.status === 'PENDING').length
+
 
   const table = useMemo<RequirementsTableContextValue>(() => ({
     canEdit,
@@ -96,7 +105,7 @@ export function RequirementsPage() {
     })
   }
 
-  const createButton = canManage ? (
+  const createButton = canCreate ? (
     <Button onClick={() => setEditing({ kind: 'create' })}>
       <Plus strokeWidth={1.5} />
       {t('requirements.add')}
@@ -108,24 +117,12 @@ export function RequirementsPage() {
       <PageHero
         overlap={all.length > 0}
         title={t('requirements.title')}
-        meta={query.isSuccess && all.length > 0 ? t('requirements.pendingCount', { count: pending }) : undefined}
+        meta={!query.isFetching && query.isSuccess ? t('requirements.count', { count: query.data.totalElements }) : undefined}
         description={t('pageHero.requirements')}
-        actions={all.length > 0 ? createButton : null}
+        actions={createButton}
       />
 
       <div className={all.length > 0 ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
-        {query.isPending ? (
-          <div role="status" aria-label={t('requirements.loading')} className="flex justify-center py-16"><Spinner /></div>
-        ) : query.isError ? (
-          <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
-        ) : all.length === 0 ? (
-          <EmptyState
-            mascot="empty"
-            title={t('requirements.empty')}
-            description={canManage ? t('requirements.emptyDescription') : t('requirements.emptyReadOnly')}
-            action={createButton ?? undefined}
-          />
-        ) : (
           <div className="flex flex-col gap-3">
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card">
               <FilterBar
@@ -139,11 +136,17 @@ export function RequirementsPage() {
                 onValueChange={list.setFilter}
                 onClear={list.clearAll}
               />
-              <div className="relative overflow-x-auto">
+              {query.isFetching ? <div role="status" aria-label={t('requirements.loading')} className="flex justify-center py-16"><Spinner /></div>
+                : query.isError ? <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
+                : all.length === 0 ? <EmptyState mascot="empty" title={t('requirements.empty')} description={canCreate ? t('requirements.emptyDescription') : t('requirements.emptyReadOnly')} />
+                : <div className="relative overflow-x-auto">
                 <div className="min-w-280">
                   <RequirementsTableContext value={table}>
                     <DataTable
                       data={rows}
+                      serverPagination
+                      serverSorting
+                      totalRows={query.data?.totalElements ?? 0}
                       columns={columns}
                       getRowId={(row) => row.requirement.id}
                       density="roomy"
@@ -156,11 +159,10 @@ export function RequirementsPage() {
                     />
                   </RequirementsTableContext>
                 </div>
-              </div>
+              </div>}
             </section>
             <p className="text-caption text-ink-3">{t('requirements.sourceNote')}</p>
           </div>
-        )}
       </div>
 
       <RequirementDetailDialog requirementId={viewing} onClose={() => setViewing(null)} />
@@ -185,7 +187,7 @@ export function RequirementsPage() {
         </>
       ) : null}
       {canAssign ? (
-        <RequirementAssignDialog open={assigning !== null} onOpenChange={(open) => { if (!open) setAssigning(null) }} requirementId={assigning ?? undefined} />
+        <RequirementAssignDialog open={assigning !== null} onOpenChange={(open) => { if (!open) setAssigning(null) }} requirementId={assigning ?? undefined} requirement={all.find(row => row.requirement.id === assigning)?.requirement} />
       ) : null}
     </div>
   )

@@ -179,6 +179,7 @@ export const sourcing = {
       PLANNED: 'Đã lập kế hoạch',
       LOADED: 'Đã xếp xe',
       DELIVERED: 'Đã giao',
+      RETURNED: 'Hoàn trả',
       CANCELLED: 'Đã hủy',
     },
     events: {
@@ -264,7 +265,7 @@ export const sourcing = {
     added: 'Đã thêm kiện {code} vào kho kiện.',
     search: 'Tìm theo mã kiện, điểm đến, mã QR, yêu cầu giao, chuyến',
     /** Khi nối máy chủ: danh sách của máy chủ không có điểm đến, yêu cầu giao, chuyến. */
-    searchBackend: 'Tìm theo mã kiện hoặc mã QR',
+    searchBackend: 'Tìm mã kiện, tên kiện, loại kiện, barcode hoặc điểm đến',
     tabs: { label: 'Lọc theo trạng thái', all: 'Tất cả' },
     addedMany: 'Đã tạo thành công {count} kiện hàng.',
     filters: {
@@ -341,8 +342,8 @@ export const sourcing = {
   },
   /** Màn Kho kiện khi đọc ghi máy chủ (`package-pool/backend`): nhãn, cột, trạng thái kiện của máy chủ, nhập file qua máy chủ. */
   server: {
-    statuses: { PENDING: 'Chờ xử lý', PLANNED: 'Đã lập kế hoạch', LOADED: 'Đã xếp xe', DELIVERED: 'Đã giao', CANCELLED: 'Đã huỷ' },
-    tabs: { PENDING: 'Chờ xử lý', PLANNED: 'Đã lập kế hoạch', LOADED: 'Đã xếp', DELIVERED: 'Đã giao', CANCELLED: 'Đã huỷ' },
+    statuses: { PENDING: 'Chờ xử lý', PLANNED: 'Đã lập kế hoạch', LOADED: 'Đã xếp xe', DELIVERED: 'Đã giao', RETURNED: 'Hoàn trả', CANCELLED: 'Đã huỷ' },
+    tabs: { PENDING: 'Chờ xử lý', PLANNED: 'Đã lập kế hoạch', LOADED: 'Đã xếp', DELIVERED: 'Đã giao', RETURNED: 'Hoàn trả', CANCELLED: 'Đã huỷ' },
     noPackageType: 'Không có loại kiện',
     noRequirement: 'Chưa có yêu cầu giao',
     noCustomerName: 'Chưa có tên khách hàng',

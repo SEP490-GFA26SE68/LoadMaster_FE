@@ -33,14 +33,14 @@ const TOUCH_FIELD = '[&_label]:text-body-lg [&_span]:text-body-lg'
  * thẻ kiện có nút xác nhận — gõ mã chưa chắc là đang cầm kiện. Nhân viên kho dùng máy tính bảng: nút 56 px, chữ từ 16 px, và nút về
  * màn kho trên dải trời. "Quét mã QR" là hành động chính của màn.
  *
- * Nối backend: máy chủ chỉ cho điều phối viên tra kiện, nên nhân viên kho thấy một câu lý do thay cho ô tra và nút quét; backend không
- * có cờ kiện nên không có bước gỡ cờ "Không tìm thấy".
+ * Nối backend: điều phối viên và nhân viên kho đọc theo packages.lookup; số thường là business code, ID dùng id:123.
+ * Backend không có cờ kiện nên không có bước gỡ cờ "Không tìm thấy".
  */
 export function PackageLookupPage() {
   const t = useT()
   const can = useCan()
   const touch = can('warehouse.operate')
-  const blocked = PACKAGE_POOL_SUPPORT.dispatcherOnly && !can('packages.manage')
+  const blocked = !can('packages.lookup')
   const [search, setSearch] = useSearchParams()
   const code = blocked ? '' : (search.get(CODE_PARAM)?.trim() ?? '')
   const [scanning, setScanning] = useState(false)
@@ -98,7 +98,7 @@ export function PackageLookupPage() {
                   <Input
                     label={t('lookup.codeLabel')}
                     placeholder={PACKAGE_POOL_SUPPORT.numericIds ? t('lookup.codePlaceholderBackend') : t('lookup.codePlaceholder')}
-                    hint={t('lookup.codeHint')}
+                    hint={t(PACKAGE_POOL_SUPPORT.numericIds ? 'lookup.codeHintBackend' : 'lookup.codeHint')}
                     error={form.formState.errors.code?.message}
                     autoComplete="off"
                     autoCapitalize="characters"
@@ -120,6 +120,8 @@ export function PackageLookupPage() {
 
           {blocked ? null : view.kind === 'idle' ? (
             <EmptyState icon={ScanLine} className={touch ? '[&_span]:text-body-lg' : undefined} title={t('lookup.idle.title')} description={t('lookup.idle.description')} />
+          ) : query.isError && !isUnknownPackage(query.error) ? (
+            <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>
           ) : view.kind === 'pending' ? (
             query.error
               ? <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>

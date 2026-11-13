@@ -18,7 +18,10 @@ const SCAN_BATCH = 6
 // GET /api/packages
 export async function listBackendPackages(packageCode?: string): Promise<Package[]> {
   const rows = await fetchAllPages<BackendPackage>('/api/packages', { query: { sort: 'id,asc', packageCode } })
-  return rows.flatMap((dto) => packageOf(dto) ?? [])
+  // Check the raw business field before packageOf's display-only fallback to ID.
+  const matching = packageCode === undefined ? rows : rows.filter(dto =>
+    typeof dto.packageCode === 'string' && dto.packageCode.trim().toLowerCase() === packageCode.trim().toLowerCase())
+  return matching.flatMap((dto) => packageOf(dto) ?? [])
 }
 
 /** Một kiện theo mã của kho; kiện đã huỷ (không có ở app) là `NOT_FOUND`. */

@@ -35,13 +35,13 @@ export function ServerStagingStep({ tripId, session }: { tripId: string; session
   }
 
   function handleVerify({ method, code }: VerifyCode) {
-    const placement = session.placements.find((item) => item.packageId !== null && codeMatches(item, code))
+    const placement = session.placements.find((item) => item.packageId !== null && codeMatches(item, code, method))
     if (placement?.packageId == null) {
       setResult({ tone: 'error', message: t('serverWarehouse.staging.codeUnknown', { code: code.trim() }) })
       return
     }
     const label = placementLabel(placement)
-    stage.mutate({ packageId: placement.packageId, method }, {
+    stage.mutate({ packageId: placement.packageId, method, code }, {
       // Kiện rời danh sách chưa soạn và số đã soạn tăng ngay trên màn: không toast thành công
       onSuccess: ({ alreadyStaged }) => setResult({
         tone: 'success',

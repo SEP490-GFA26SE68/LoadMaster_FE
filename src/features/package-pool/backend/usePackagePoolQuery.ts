@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import type { ListQuery, CargoListQuery } from './package-list-query'
 import { downloadBlob } from '@/features/trips/download-file'
 import {
   fetchPackages as fetchCargoPackages,
@@ -42,6 +43,7 @@ export const CARGO_PACKAGES_KEY = ['cargo-packages'] as const
 export function usePackageTypesQuery(
   page = 0,
   size = 25,
+  query: ListQuery = {},
 ) {
   return useQuery({
     queryKey: [
@@ -49,8 +51,9 @@ export function usePackageTypesQuery(
       'list',
       page,
       size,
+      query,
     ],
-    queryFn: () => fetchPackageTypes(page, size),
+    queryFn: ({ signal }) => fetchPackageTypes(page, size, query, signal),
   })
 }
 
@@ -174,6 +177,7 @@ export function useDownloadImportTemplateMutation() {
 export function useCargoPackagesQuery(
   page = 0,
   size = 25,
+  query: CargoListQuery = {},
 ) {
   return useQuery({
     queryKey: [
@@ -181,8 +185,9 @@ export function useCargoPackagesQuery(
       'list',
       page,
       size,
+      query,
     ],
-    queryFn: () => fetchCargoPackages(page, size),
+    queryFn: ({ signal }) => fetchCargoPackages(page, size, query, signal),
     staleTime: 0,
   })
 }

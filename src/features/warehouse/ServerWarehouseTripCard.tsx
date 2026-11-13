@@ -38,7 +38,10 @@ export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouse
         </dl>
       </div>
       {row.stage === 'stale' ? null : (
-        <div className="flex flex-none flex-col md:w-72">
+        <div className="flex flex-none flex-col gap-2 md:w-72 lg:w-auto lg:flex-row">
+          <Button asChild variant="secondary" size="touch">
+            <Link to={loadingSessionPath(row.id) + '&xem=3d'}>{t('serverWarehouse.guide.open')}</Link>
+          </Button>
           {row.stage === 'waiting' ? <StartButton tripId={row.id} primary={primary} /> : (
             <Button asChild variant={primary ? 'primary' : 'secondary'} size="touch" className={primary ? 'h-16 w-full' : 'w-full'}>
               <Link to={loadingSessionPath(row.id)}>{t(row.stage === 'loading' ? 'serverWarehouse.resume' : 'serverWarehouse.openLoaded')}</Link>

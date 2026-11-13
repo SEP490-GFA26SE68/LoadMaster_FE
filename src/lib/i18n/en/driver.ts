@@ -19,6 +19,8 @@ export const driver = {
   },
   exit: 'Leave driver screen',
   list: {
+    refresh: 'Refresh trip list',
+    freshnessHint: 'While trips are preparing, refreshes every 10 seconds for 20 minutes. Then use Refresh trip list.',
     title: 'My trips',
     groups: {
       inTransit: 'In transit',

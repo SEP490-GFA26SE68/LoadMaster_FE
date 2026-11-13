@@ -55,7 +55,7 @@ afterEach(() => {
 })
 
 const envelope = (data: unknown) => ({ success: true, message: 'ok', data })
-const page = (content: unknown[], last = true) => ({ content, last, number: 0, totalPages: 1 })
+const page = (content: unknown[], last = true, number = 0) => ({ content, last, number, totalPages: last ? number + 1 : number + 2 })
 
 const TOKEN_1 = '63abd059-f710-4bf5-abe1-a1c120f2c6d9'
 const TOKEN_3 = '301a4619-a65b-4540-8d12-2f7060b268d5'
@@ -70,7 +70,7 @@ const scanOf = (dto: typeof MANUAL | typeof IMPORTED, extra: object = {}) => env
 })
 
 test('danh sách: đọc mọi trang theo mã tăng dần, mm thành cm, bỏ kiện đã huỷ', async () => {
-  routes['GET /api/packages'] = (call) => (call.query.page === '0' ? { body: page([MANUAL, { ...MANUAL, id: 2, status: 'CANCELLED' }], false) } : { body: page([IMPORTED]) })
+  routes['GET /api/packages'] = (call) => (call.query.page === '0' ? { body: page([MANUAL, { ...MANUAL, id: 2, status: 'CANCELLED' }], false) } : { body: page([IMPORTED], true, 1) })
   const packages = await fetchPackages()
   expect(packages.map((pkg) => [pkg.id, pkg.lengthCm, pkg.status, pkg.source])).toEqual([['1', 120.5, 'IMPORTED', 'IMPORT'], ['3', 50, 'ASSIGNED', 'IMPORT']])
   expect(calls.map((call) => call.query)).toEqual([{ sort: 'id,asc', page: '0', size: '200' }, { sort: 'id,asc', page: '1', size: '200' }])
@@ -153,16 +153,15 @@ test('quét mã: mã viết hoa của ô quét đổi về chữ thường; khô
   expect(isUnknownPackage(error)).toBe(true)
 })
 
-test('tra theo mã gõ: mã QR, mã của bên gửi, mã của kho; kiện của công ty khác (403) không khớp', async () => {
+test('tra mã QR/business code hoặc ID tường minh id:1; mã số thường không tự chuyển thành ID', async () => {
   routes[`GET /api/packages/scan/${TOKEN_1}`] = { body: scanOf(MANUAL) }
   routes[`GET /api/packages/scan/${TOKEN_3}`] = { body: scanOf(IMPORTED) }
   routes['GET /api/packages'] = (call) => ({ body: page(call.query.packageCode === 'hk-7' ? [IMPORTED] : []) })
   routes['GET /api/packages/1'] = { body: MANUAL }
-  routes['GET /api/packages/5'] = { status: 403, body: { success: false, message: 'Bạn không có quyền' } }
 
   expect((await lookupPackages(TOKEN_3)).map((item) => item.package.id)).toEqual(['3'])
   expect((await lookupPackages('hk-7')).map((item) => [item.package.id, item.package.destination])).toEqual([['3', 'Kho 3']])
-  expect((await lookupPackages('1')).map((item) => item.package.id)).toEqual(['1'])
+  expect((await lookupPackages('id:1')).map((item) => item.package.id)).toEqual(['1'])
   await expect(lookupPackages('5')).rejects.toMatchObject({ code: 'QR_UNKNOWN' })
   await expect(lookupPackages('khong-co')).rejects.toMatchObject({ code: 'QR_UNKNOWN' })
 })

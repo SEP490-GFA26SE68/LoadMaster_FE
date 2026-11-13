@@ -198,3 +198,18 @@ test('assigning a plan posts the contract and reads back what the backend applie
   })
   expect(calls.map(({ key, body }) => ({ key, body }))).toStrictEqual([{ key: 'POST /api/contracts', body: { companyId: 1, planId: 3, autoRenew: true } }])
 })
+
+
+test('the recent transaction preview intentionally reads one page without claiming a complete ledger',async()=>{
+ routes={
+  'GET /api/contracts?companyId=1':envelope([]),
+  'GET /api/credits/balance?companyId=1':()=>new Response('{}',{status:403}),
+  'GET /api/credits/transactions?companyId=1&page=0&size=20':envelope({content:[
+   {id:101,amount:500,type:'PURCHASE',reference:'fixture',refunded:false,createdAt:'2026-10-19T10:00:00'},
+  ],number:0,totalPages:2,totalElements:21,last:false}),
+ }
+ const result=await getSupportCompanyPanel('1')
+ expect(result.transactions).toHaveLength(1)
+ expect(calls.filter(call=>call.key.startsWith('GET /api/credits/transactions'))).toHaveLength(1)
+ expect(calls.every(call=>call.key.startsWith('GET '))).toBe(true)
+})

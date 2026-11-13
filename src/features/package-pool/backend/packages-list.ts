@@ -34,13 +34,13 @@ export const PACKAGE_STATUS_SLUGS: Readonly<Record<PackageStatus, string>> = {
 }
 
 export type CargoPackageRow = CargoPackage & {
-  readonly type: ApiPackageType | undefined
+  readonly type: Pick<ApiPackageType, 'name' | 'typeCode'> | undefined
 }
 
 
 export function cargoPackageRows(
   packages: readonly CargoPackage[],
-  types: readonly ApiPackageType[],
+  types: readonly ApiPackageType[] = [],
 ): CargoPackageRow[] {
   const typeById = new Map(
     types.map((type) => [type.id, type]),
@@ -48,10 +48,9 @@ export function cargoPackageRows(
 
   return packages.map((pkg) => ({
     ...pkg,
-    type:
-      pkg.packageTypeId === undefined
-        ? undefined
-        : typeById.get(pkg.packageTypeId),
+    type: pkg.packageTypeName != null
+      ? { name: pkg.packageTypeName, typeCode: pkg.packageTypeCode ?? null }
+      : pkg.packageTypeId === undefined ? undefined : typeById.get(pkg.packageTypeId),
   }))
 }
 
@@ -62,6 +61,7 @@ export const CARGO_PACKAGE_STATUS_SLUGS: Readonly<
   PLANNED: 'da-lap-ke-hoach',
   LOADED: 'da-xep',
   DELIVERED: 'da-giao',
+  RETURNED: 'hoan-tra',
   CANCELLED: 'da-huy',
 }
 
@@ -73,6 +73,7 @@ export const CARGO_PACKAGE_TABS: readonly CargoPackageTab[] = [
   'PLANNED',
   'LOADED',
   'DELIVERED',
+  'RETURNED',
   'CANCELLED',
 ]
 

@@ -3,6 +3,7 @@ import type { LoadPlan } from '@/features/optimization/load-plan-dto'
 import { backendPlacementIds, backendPlanScene, type BackendSceneStop } from '@/features/viewer3d/backend-plan-scene'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-types'
 import type { ServerLoadingSession } from './warehouse-server-api'
+import { positionGuide } from './warehouse-position-guide'
 
 export type ServerSessionScene = {
   readonly model: ViewerSceneModel
@@ -17,7 +18,9 @@ export type ServerSessionScene = {
  */
 export function serverSessionScene(session: ServerLoadingSession): ServerSessionScene | null {
   const { box } = session
-  if (box === null || session.placements.length === 0) return null
+  if (box === null || session.placements.length === 0 || !session.loadPlanId || session.approved === false || session.stale === true) return null
+  if (session.obstacles == null) return null
+  if (session.placements.some((p) => { const guide = positionGuide(box, p); return guide.issue !== null || guide.axes === null || !Number.isInteger(p.sequence) || p.sequence < 1 })) return null
   if (session.placements.some((item) => item.stopSequence === null || item.stopSequence < 1)) return null
   const stops = new Map<number, BackendSceneStop>()
   for (const item of session.placements) {
@@ -25,8 +28,8 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
     if (!stops.has(sequence)) stops.set(sequence, { id: `stop-${sequence}`, sequence, name: item.stopName ?? '', deadline: null })
   }
   const plan: LoadPlan = {
-    id: session.tripId, tripId: session.tripId, jobId: null, objective: null, label: null, algorithmName: null, runAlgorithm: null, computationMs: null, name: null,
-    volumePercent: null, payloadPercent: null, approved: true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
+    id: session.loadPlanId, tripId: session.tripId, jobId: null, objective: null, label: null, algorithmName: null, runAlgorithm: null, computationMs: null, name: null,
+    volumePercent: null, payloadPercent: null, approved: session.approved ?? true, approvedByName: null, centerOfGravityCm: null, frontAxleLoadKg: null,
     rearAxleLoadKg: null, rehandlingCount: null, manuallyEdited: false, stale: false, stopZones: null, unplaced: [],
     placements: session.placements.map((item) => ({
       id: item.id,
@@ -44,7 +47,7 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
   }
   const vehicle: VehicleConfig = {
     id: session.tripId, name: session.vehicle, innerLengthCm: box.innerLengthCm, innerWidthCm: box.innerWidthCm, innerHeightCm: box.innerHeightCm,
-    maxPayloadKg: session.maxPayloadKg ?? 0, doorWidthCm: box.doorWidthCm, doorHeightCm: box.doorHeightCm, doorPosition: 'REAR', clearanceCm: 0, obstacles: [],
+    maxPayloadKg: session.maxPayloadKg ?? 0, doorWidthCm: box.doorWidthCm, doorHeightCm: box.doorHeightCm, doorPosition: 'REAR', clearanceCm: 0, obstacles: [...session.obstacles],
   }
   const model = backendPlanScene({ tripCode: session.code, plan, vehicle, stops: [...stops.values()] })
   const sceneIdOf = new Map([...backendPlacementIds(plan)].map(([sceneId, placementId]) => [placementId, sceneId]))

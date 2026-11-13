@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/components/DataTable'
+import { useListUrlState } from '@/components/useListUrlState'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
@@ -27,7 +28,7 @@ import { VehicleTypeDialog } from './VehicleTypeDialog'
 
 import {
   useSaveVehicleTypeMutation,
-  useVehicleTypesQuery,
+  useVehicleTypeCatalogQuery,
 } from './useVehicleTypesQuery'
 
 /**
@@ -43,12 +44,13 @@ export function VehicleTypesPage() {
   const t = useT()
   const canEdit = useCan()('vehicleTypes.edit')
 
-  const typesQuery = useVehicleTypesQuery()
+  const typesQuery = useVehicleTypeCatalogQuery()
+  const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
   const save = useSaveVehicleTypeMutation()
 
   const [creating, setCreating] = useState(false)
 
-  const types = typesQuery.data?.data ?? []
+  const types = typesQuery.data ?? []
 
   const typeColumns = useMemo(
     () => createTypeColumns(t),
@@ -105,7 +107,7 @@ export function VehicleTypesPage() {
         title={t('vehicleTypes.title')}
         meta={
           typesQuery.isSuccess
-            ? t('vehicleTypes.server.count', { count: typesQuery.data.totalElements })
+            ? t('vehicleTypes.server.count', { count: types.length })
             : undefined
         }
         description={t('pageHero.vehicleTypes')}
@@ -162,6 +164,9 @@ export function VehicleTypesPage() {
               <DataTable
                 data={types}
                 columns={typeColumns}
+                sorting={list.sorting}
+                onSortingChange={list.setSorting}
+                pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
                 getRowId={(row) => row.id}
                 density="spacious"
                 appearance="paper"
