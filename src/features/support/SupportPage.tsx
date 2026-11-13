@@ -19,7 +19,7 @@ import { TICKET_KINDS, type SupportTicket, type TicketStatus } from '@/lib/mock-
 import { CompanyChatCard } from './CompanyChatCard'
 import { CompanyPanel } from './CompanyPanel'
 import { recentCompanyChat } from './support-chat'
-import { createTicketColumns } from './support-columns'
+import { createTicketColumns, TicketCompanyNamesContext } from './support-columns'
 import { TicketThread } from './TicketThread'
 import { ticketCompanies, ticketLabel, withThread } from './ticket-view'
 import {
@@ -84,7 +84,7 @@ export function SupportPage() {
     && (kind === '' || ticket.kind === kind)
     && (status === '' || ticket.status === status)),
   [tickets, list.query, company, kind, status])
-  const columns = useMemo(() => createTicketColumns(t, format, companyNames, SUPPORT_SOURCE.activityTime), [t, format, companyNames])
+  const columns = useMemo(() => createTicketColumns(t, format, SUPPORT_SOURCE.activityTime), [t, format])
 
   const selectedId = params.get(SELECTED_PARAM)
   const listed = tickets.find((ticket) => ticket.id === selectedId)
@@ -156,21 +156,23 @@ export function SupportPage() {
                 onValueChange={list.setFilter}
                 onClear={list.clearAll}
               />
-              <DataTable
-                data={rows}
-                columns={columns}
-                getRowId={(ticket) => ticket.id}
-                getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60' : undefined)}
-                density="spacious"
-                appearance="paper"
-                onRowClick={select}
-                isRowSelected={(ticket) => ticket.id === selected?.id}
-                pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
-                emptyMessage={t('support.page.empty')}
-                isFiltering={list.isFiltering}
-                onClearFilters={list.clearAll}
-                noMatchMessage={t('support.page.noMatch')}
-              />
+              <TicketCompanyNamesContext value={companyNames}>
+                <DataTable
+                  data={rows}
+                  columns={columns}
+                  getRowId={(ticket) => ticket.id}
+                  getRowClassName={(ticket) => (ticket.status === 'CLOSED' ? 'bg-n-100/80 text-ink-3 opacity-60' : undefined)}
+                  density="spacious"
+                  appearance="paper"
+                  onRowClick={select}
+                  isRowSelected={(ticket) => ticket.id === selected?.id}
+                  pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+                  emptyMessage={t('support.page.empty')}
+                  isFiltering={list.isFiltering}
+                  onClearFilters={list.clearAll}
+                  noMatchMessage={t('support.page.noMatch')}
+                />
+              </TicketCompanyNamesContext>
             </section>
             <aside className="flex min-w-0 flex-col gap-4">
               {selected ? (
