@@ -26,9 +26,9 @@ test('the manager switches to 7 days and exports a three-sheet report named afte
     .toHaveCount(5)
   await expect(page.getByRole('figure', { name: 'Khối lượng đã giao theo xe', exact: true }).locator('.recharts-bar-rectangle').first())
     .toBeVisible()
-  // Thẻ đội xe (V2): ba trạng thái với nhãn của màn Đội xe, không theo kỳ; quản lý được xem đội xe nên có lối sang
+  // Thẻ đội xe (V2): bốn trạng thái (cả Ngừng sử dụng) với nhãn của màn Đội xe, không theo kỳ; quản lý được xem đội xe nên có lối sang
   const fleet = page.getByRole('region', { name: 'Trạng thái đội xe', exact: true })
-  await expect(fleet.getByRole('listitem')).toHaveText([/^\d+Sẵn sàng$/, /^\d+Đang phục vụ chuyến$/, /^\d+Bảo dưỡng$/])
+  await expect(fleet.getByRole('listitem')).toHaveText([/^\d+Sẵn sàng$/, /^\d+Đang phục vụ chuyến$/, /^\d+Bảo dưỡng$/, /^\d+Ngừng sử dụng$/])
   await expect(fleet.getByRole('link', { name: 'Xem đội xe', exact: true })).toHaveAttribute('href', '/doi-xe')
 
   await page.getByRole('button', { name: '7 ngày', exact: true }).click()
