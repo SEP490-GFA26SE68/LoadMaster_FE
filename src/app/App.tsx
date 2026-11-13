@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, type RouteObject } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
@@ -17,7 +17,8 @@ import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title
  * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D.
  */
 // Khung ứng dụng (thanh điều hướng, chuông, tìm nhanh và các `-api.ts` chúng đọc) tải lười: trang công khai và màn đăng nhập không cần nó
-const AppShell = lazy(() => import('./AppShell').then((m) => ({ default: m.AppShell })))
+const loadAppShell = () => import('./AppShell')
+const AppShell = lazy(() => loadAppShell().then((m) => ({ default: m.AppShell })))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
 const PasswordResetPage = lazy(() => import('@/features/auth/PasswordResetPage').then((m) => ({ default: m.PasswordResetPage })))
 const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then((m) => ({ default: m.DashboardPage })))
@@ -100,6 +101,14 @@ function RouteOutlet() {
   )
 }
 
+/** Màn đăng nhập tải sẵn khung ứng dụng trong lúc người dùng gõ: đăng nhập xong không phải chờ thêm chunk đó. */
+function LoginOutlet() {
+  useEffect(() => {
+    void loadAppShell()
+  }, [])
+  return <RouteOutlet />
+}
+
 /** Chờ chunk của khung ứng dụng: cùng vòng quay với lúc chờ chunk của màn, phủ cả khung nhìn. */
 function ShellFallback() {
   const t = useT()
@@ -136,7 +145,7 @@ export const routes: RouteObject[] = [
     children: [
       {
         path: '/dang-nhap',
-        element: <RouteOutlet />,
+        element: <LoginOutlet />,
         children: [{ index: true, element: <LoginPage />, handle: titled((t) => t('titles.login')) }],
       },
       {
