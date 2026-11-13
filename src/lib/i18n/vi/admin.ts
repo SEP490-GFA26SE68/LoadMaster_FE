@@ -34,6 +34,8 @@ export const admin = {
       title: 'Khoá tài khoản {name}?',
       description: 'Nhân viên này sẽ không thể đăng nhập vào hệ thống cho tới khi được mở khoá.',
     },
+    createdSuccess: 'Đã thêm nhân viên {name}. Thông tin tài khoản và mật khẩu tạm thời đã được gửi tới email {email}.',
+    resetSuccess: 'Đã đặt lại mật khẩu cho {name}. Mật khẩu tạm thời mới đã được gửi tới email {email}.',
   },
   users: {
     title: 'Người dùng',
