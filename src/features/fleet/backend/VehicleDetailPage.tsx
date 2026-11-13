@@ -56,7 +56,7 @@ function BackendVehicleDetail({
 
     return (
       <div className="flex flex-col gap-4 p-8">
-        <p role="alert" className="text-sm text-red-500">
+        <p role="alert" className="text-body text-danger">
           {dataErrorMessage(error, t)}
         </p>
         <Button variant="secondary" asChild>
@@ -74,7 +74,7 @@ function BackendVehicleDetail({
 
   if (String(config.vehicleId) !== vehicle.id) {
     return (
-      <p role="alert" className="p-8 text-sm text-red-500">
+      <p role="alert" className="p-8 text-body text-danger">
         {t('fleet.detail.detailNotAvailable')}
       </p>
     )

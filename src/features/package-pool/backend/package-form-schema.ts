@@ -107,12 +107,13 @@ const DEFAULT_VALUES: PackageFormValues = {
 }
 
 /**
- * Giá trị đầu của form: kiện đang sửa, hoặc mặc định của kiện mới. Kiện đang sửa không có `deliveryRequirementId` (ô đó chỉ có ở form thêm
- * kiện) — giữ đúng như trước khi tách file.
+ * Giá trị đầu của form: kiện đang sửa, hoặc mặc định của kiện mới. Ô yêu cầu giao chỉ có ở form thêm kiện nhưng schema vẫn đòi chuỗi:
+ * kiện đang sửa mang yêu cầu giao của nó (hoặc chuỗi rỗng), nếu không form chặn lưu ở một ô không hiện ra và không báo gì.
  */
 export function packageFormDefaults(editPackage: CargoPackage | undefined): DefaultValues<PackageFormValues> {
   if (!editPackage) return DEFAULT_VALUES
   return {
+    deliveryRequirementId: editPackage.deliveryRequirementId ?? '',
     packageCode: editPackage.packageCode ?? '',
     packageName: editPackage.packageName ?? '',
     quantity: 1,
@@ -137,9 +138,16 @@ export function packageFormDefaults(editPackage: CargoPackage | undefined): Defa
   }
 }
 
-/** Dữ liệu gửi máy chủ: có loại kiện thì không gửi kích thước (máy chủ lấy của loại kiện); sửa kiện không gửi yêu cầu giao và số lượng. */
-export function packageInputOf(values: PackageFormValues, { isEditing, hasPackageType }: { isEditing: boolean; hasPackageType: boolean }): CargoPackageInput {
+/**
+ * Dữ liệu gửi máy chủ: có loại kiện thì không gửi kích thước (máy chủ lấy của loại kiện); sửa kiện không gửi yêu cầu giao và số lượng.
+ * `PUT /api/packages/{id}` gán lại đơn của kiện theo `orderId` của thân gửi, nên sửa kiện gửi lại đúng đơn kiện đang có.
+ */
+export function packageInputOf(
+  values: PackageFormValues,
+  { isEditing, hasPackageType, orderId }: { isEditing: boolean; hasPackageType: boolean; orderId?: string },
+): CargoPackageInput {
   return {
+    ...(orderId ? { orderId } : {}),
     packageCode: values.packageCode.trim(),
     packageName: values.packageName.trim(),
     quantity: isEditing ? 1 : values.quantity,

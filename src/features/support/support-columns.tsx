@@ -1,4 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table'
+import { createContext, use } from 'react'
 import type { BaseTableFeatures, ColumnMeta } from '@/components/DataTable'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
@@ -9,12 +10,23 @@ import { ticketLabel } from './ticket-view'
 const helper = createColumnHelper<BaseTableFeatures, SupportTicket>()
 
 /**
- * Cột bảng yêu cầu hỗ trợ (FE-8-07). Ô không giữ trạng thái nên dựng cột theo ngôn ngữ và tên công ty được (AGENTS mục 5, Bảng dữ liệu);
+ * Tên công ty theo mã cho cột Công ty. Đi qua context chứ không vào định nghĩa cột: tên đổi mỗi lần danh sách yêu cầu đọc lại (nguồn
+ * backend dựng tên từ chính các yêu cầu), và dựng lại mảng cột là gỡ rồi gắn lại mọi ô (AGENTS mục 5, Bảng dữ liệu).
+ */
+export const TicketCompanyNamesContext = createContext<ReadonlyMap<string, string>>(new Map())
+
+function CompanyCell({ companyId }: { companyId: string }) {
+  const names = use(TicketCompanyNamesContext)
+  return <span className="line-clamp-2 whitespace-normal text-ink-1">{names.get(companyId) ?? companyId}</span>
+}
+
+/**
+ * Cột bảng yêu cầu hỗ trợ (FE-8-07). Chỉ dựng lại khi đổi ngôn ngữ; tên công ty đọc qua `TicketCompanyNamesContext`;
  * thứ tự là thứ tự kho trả — hoạt động gần nhất trước — nên không cột nào sắp xếp. Nguồn không có mốc hoạt động (backend,
  * `activityTime` sai) thì cột cuối là lúc gửi. Cột giờ có bề rộng riêng và ghi ngày, giờ thành hai dòng: không có bề rộng thì nó chỉ còn
  * phần thừa của các cột kia và bị cắt khi khung xử lý 420 px mở ở 1.366–1.440 px.
  */
-export function createTicketColumns(t: TFunction, format: Formatter, companyNames: ReadonlyMap<string, string>, activityTime: boolean) {
+export function createTicketColumns(t: TFunction, format: Formatter, activityTime: boolean) {
   const timeOf = (ticket: SupportTicket) => (activityTime ? ticket.updatedAt : ticket.createdAt)
   return helper.columns([
     helper.display({
@@ -35,7 +47,7 @@ export function createTicketColumns(t: TFunction, format: Formatter, companyName
       id: 'company',
       header: t('support.page.columns.company'),
       meta: { width: '20%' } satisfies ColumnMeta,
-      cell: (info) => <span className="line-clamp-2 whitespace-normal text-ink-1">{companyNames.get(info.row.original.companyId) ?? info.row.original.companyId}</span>,
+      cell: (info) => <CompanyCell companyId={info.row.original.companyId} />,
     }),
     helper.display({ id: 'kind', header: t('support.page.columns.kind'), meta: { width: '110px' } satisfies ColumnMeta, cell: (info) => <TicketKindBadge kind={info.row.original.kind} /> }),
     helper.display({ id: 'status', header: t('support.page.columns.status'), meta: { width: '140px' } satisfies ColumnMeta, cell: (info) => <TicketStatusBadge status={info.row.original.status} /> }),

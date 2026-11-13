@@ -65,11 +65,20 @@ export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
   })
 }
 
-/** Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). */
+/**
+ * Ghi của tài xế đổi trạng thái chuyến ở mọi màn: chuyến, bảng điều khiển, đội xe (xe hết chạy khi chuyến hoàn thành, D-53). Chỉ chờ
+ * khoá của màn tài xế (`['trips', 'driver']`): mutation xong khi màn đã đọc lại. Khoá chuyến của màn khác, bảng điều khiển và đội xe chỉ
+ * bị đánh dấu cũ rồi đọc lại ngầm, để mỗi lần quét dỡ không phải chờ chúng.
+ */
 function refreshAfterWrite(client: QueryClient, except?: (key: readonly unknown[]) => boolean) {
-  return Promise.all(
-    [['trips'], ['dashboard'], ['vehicles']].map((queryKey) => client.invalidateQueries({ queryKey, predicate: except ? (query) => !except(query.queryKey) : undefined })),
-  )
+  const keep = (key: readonly unknown[]) => !except?.(key)
+  void client.invalidateQueries({ queryKey: ['trips'], predicate: (query) => !isDriverKey(query.queryKey) && keep(query.queryKey) })
+  for (const queryKey of [['dashboard'], ['vehicles']]) void client.invalidateQueries({ queryKey })
+  return client.invalidateQueries({ queryKey: ['trips', 'driver'], predicate: (query) => keep(query.queryKey) })
+}
+
+function isDriverKey(key: readonly unknown[]): boolean {
+  return key[0] === 'trips' && key[1] === 'driver'
 }
 
 /** Khoá phương án đã xếp của khung 3D tài xế (`useDriverLoadPlanQuery`). */
