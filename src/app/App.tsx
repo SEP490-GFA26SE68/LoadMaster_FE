@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, type RouteObject } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
@@ -8,7 +8,6 @@ import { GUEST_REGISTRATION, landingPath, PUBLIC_HOME, REGISTRATION_SUCCESS, TRI
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
 import { StoreTripRoute } from '@/features/trips/StoreTripRoute'
-import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
 import { Providers } from './providers'
 import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title'
@@ -17,6 +16,9 @@ import { useRouteTitle, type RouteHandle, type TitleSource } from './route-title
  * Mỗi màn là một chunk riêng: dispatcher không tải code tài xế, tablet kho
  * không tải recharts của dashboard, và Three.js chỉ nằm trong màn 3D.
  */
+// Khung ứng dụng (thanh điều hướng, chuông, tìm nhanh và các `-api.ts` chúng đọc) tải lười: trang công khai và màn đăng nhập không cần nó
+const loadAppShell = () => import('./AppShell')
+const AppShell = lazy(() => loadAppShell().then((m) => ({ default: m.AppShell })))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
 const PasswordResetPage = lazy(() => import('@/features/auth/PasswordResetPage').then((m) => ({ default: m.PasswordResetPage })))
 const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then((m) => ({ default: m.DashboardPage })))
@@ -99,6 +101,24 @@ function RouteOutlet() {
   )
 }
 
+/** Màn đăng nhập tải sẵn khung ứng dụng trong lúc người dùng gõ: đăng nhập xong không phải chờ thêm chunk đó. */
+function LoginOutlet() {
+  useEffect(() => {
+    void loadAppShell()
+  }, [])
+  return <RouteOutlet />
+}
+
+/** Chờ chunk của khung ứng dụng: cùng vòng quay với lúc chờ chunk của màn, phủ cả khung nhìn. */
+function ShellFallback() {
+  const t = useT()
+  return (
+    <div className="flex h-dvh items-center justify-center bg-app" role="status" aria-label={t('common.loadingScreen')}>
+      <Spinner />
+    </div>
+  )
+}
+
 /** Nhóm route cần một quyền (D-41): thiếu quyền thì màn 403 thay cho màn đích, tab mang tên màn 403. */
 function guarded(permission: Permission, children: RouteObject[]): RouteObject {
   return { element: <RequirePermission permission={permission} />, handle: { permission } satisfies RouteHandle, children }
@@ -125,7 +145,7 @@ export const routes: RouteObject[] = [
     children: [
       {
         path: '/dang-nhap',
-        element: <RouteOutlet />,
+        element: <LoginOutlet />,
         children: [{ index: true, element: <LoginPage />, handle: titled((t) => t('titles.login')) }],
       },
       {
@@ -152,7 +172,11 @@ export const routes: RouteObject[] = [
         children: [
           // Màn desktop có nav rail.
           {
-            element: <AppShell />,
+            element: (
+              <Suspense fallback={<ShellFallback />}>
+                <AppShell />
+              </Suspense>
+            ),
             children: [
               {
                 element: <RouteOutlet />,

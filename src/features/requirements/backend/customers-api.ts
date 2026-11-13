@@ -43,17 +43,14 @@ export async function fetchCustomers(): Promise<Customer[]> {
     `/api/customers?page=0&size=${size}`,
   )
 
-  const customers = [...first.data]
+  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) =>
+      apiFetch<CustomerPageResponse>(`/api/customers?page=${index + 1}&size=${size}`),
+    ),
+  )
 
-  for (let page = 1; page < first.totalPages; page++) {
-    const response = await apiFetch<CustomerPageResponse>(
-      `/api/customers?page=${page}&size=${size}`,
-    )
-
-    customers.push(...response.data)
-  }
-
-  return customers
+  return [first, ...rest].flatMap((response) => response.data)
 }
 
 /**

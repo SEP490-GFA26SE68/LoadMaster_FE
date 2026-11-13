@@ -485,14 +485,9 @@ async function fetchEveryPage<T>(
 ): Promise<T[]> {
   const size = 100
   const first = await fetchPage(0, size)
-  const result = [...first.data]
-
-  for (let page = 1; page < first.totalPages; page++) {
-    const response = await fetchPage(page, size)
-    result.push(...response.data)
-  }
-
-  return result
+  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
+  const rest = await Promise.all(Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) => fetchPage(index + 1, size)))
+  return [first, ...rest].flatMap((response) => response.data)
 }
 /**
  * Công ty và kho xuất phát của form chuyến lấy từ máy chủ, không từ kho mẫu: công ty là của người đăng nhập (`getCachedCurrentUser`),

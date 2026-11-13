@@ -64,7 +64,9 @@ export function groupByType(packages: readonly RequirementPackage[], classGroupN
   for (const item of packages) {
     // Kiện đọc từ máy chủ chưa mang loại kiện: nhóm theo loại hàng
     const key = `class:${item.package.handlingClass}`
-    groups.set(key, [...(groups.get(key) ?? []), item])
+    const group = groups.get(key)
+    if (group) group.push(item)
+    else groups.set(key, [item])
   }
   return [...groups].map(([key, items]) => ({
     key,

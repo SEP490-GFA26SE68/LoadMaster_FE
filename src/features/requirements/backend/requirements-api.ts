@@ -115,12 +115,13 @@ export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
   if (!usesBackend('trips')) throw new ApiError('NOT_SUPPORTED')
   const size = 100
   const first = await apiFetch<RequirementPageApi>(`/api/delivery-requirements?page=0&size=${size}`)
-  const results = [...first.data]
-  for (let page = 1; page < first.totalPages; page++) {
-    const response = await apiFetch<RequirementPageApi>(`/api/delivery-requirements?page=${page}&size=${size}`)
-    results.push(...response.data)
-  }
-  return results.map(requirementRowFromApi)
+  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) =>
+      apiFetch<RequirementPageApi>(`/api/delivery-requirements?page=${index + 1}&size=${size}`),
+    ),
+  )
+  return [first, ...rest].flatMap((response) => response.data).map(requirementRowFromApi)
 }
 
 // GET /api/delivery-requirements/{id}
