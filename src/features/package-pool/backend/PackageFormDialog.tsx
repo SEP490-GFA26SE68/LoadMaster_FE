@@ -105,7 +105,7 @@ export function PackageFormDialog({ onClose, onDone, editPackage, onUpdated }: P
       return
     }
 
-    const input = packageInputOf(values, { isEditing, hasPackageType })
+    const input = packageInputOf(values, { isEditing, hasPackageType, orderId: editPackage?.orderId })
 
     try {
       if (editPackage) {
