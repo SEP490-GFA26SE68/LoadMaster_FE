@@ -157,7 +157,7 @@ export function PackageFormDialog({ onClose, onDone, editPackage, onUpdated }: P
               {!isEditing && numeric('quantity', t('sourcing.form.quantity'))}
               <SelectField control={control} name="packageTypeId" label={t('sourcing.form.packageType')} options={typeOptions} />
               {errors.packageTypeId?.message && (
-                <p role="alert" className="text-sm text-red-500">{errors.packageTypeId.message}</p>
+                <p role="alert" className="text-fine text-danger">{errors.packageTypeId.message}</p>
               )}
               {typesQuery.error && <Banner tone="danger">{dataErrorMessage(typesQuery.error, t)}</Banner>}
               <SelectField

@@ -205,7 +205,7 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
         {mutation.isError ? <p role="alert" className="text-caption text-danger md:col-span-2">{dataErrorMessage(mutation.error, t)}</p> : null}
       </div>
 
-      <DialogFooter className="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-6">
+      <DialogFooter className="shrink-0 border-t border-border px-4 py-3 sm:px-6">
         <Button type="button" variant="secondary" onClick={onClose}>{t('requirements.form.cancel')}</Button>
 
         {locked && canAddCoordinates ? (

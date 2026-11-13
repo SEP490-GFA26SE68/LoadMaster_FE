@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
@@ -31,11 +32,11 @@ export function PackageOrientationPicker({ values, uprightOnly, error, onToggle,
           className="w-full justify-between"
         >
           {values.length > 0 ? values.map((value) => `${value}`).join(', ') : t('sourcing.form.orientationSelect')}
-          <span aria-hidden="true">▾</span>
+          <ChevronDown aria-hidden className="size-4" strokeWidth={1.5} />
         </Button>
 
         {open && (
-          <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-bg p-3 shadow-lg">
+          <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-bg p-3 shadow-e2">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-medium">
                 {t('sourcing.form.orientation')}
@@ -84,7 +85,7 @@ export function PackageOrientationPicker({ values, uprightOnly, error, onToggle,
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-500">
+        <p role="alert" className="text-fine text-danger">
           {error}
         </p>
       )}
