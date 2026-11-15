@@ -54,6 +54,7 @@ const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) =>
 const SubscriptionHistoryPage = lazy(() => import('@/features/platform/SubscriptionHistoryPage').then((m) => ({ default: m.SubscriptionHistoryPage })))
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
+const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
 // Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
@@ -207,6 +208,7 @@ export const routes: RouteObject[] = [
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty
                   guarded('billing.manage', [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
+                    { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
                     { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
                   ]),

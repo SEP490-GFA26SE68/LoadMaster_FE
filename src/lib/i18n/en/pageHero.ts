@@ -20,6 +20,7 @@ export const pageHero = {
   tripReport: 'Packages delivered, issues, and loading and delivery times of the trip.',
   subscriptionPlans: 'The plans sold to companies: price, credits per month and the algorithm tier of each plan.',
   billing: 'The company’s plan, credit balance, history and payments.',
+  payroll: 'Set company pay rates, calculate driver earnings from trips, and lock each monthly payroll.',
   payment: 'Complete or cancel a transaction to subscribe, renew or top up credits.',
   paymentResult: 'Confirm a payment to subscribe or top up credits with the server.',
   companies: 'Companies using LoadMaster: plan, number of users, departure depot and first company administrator.',

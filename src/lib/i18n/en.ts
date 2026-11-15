@@ -39,6 +39,7 @@ import { monitoring } from './en/monitoring'
 import { pickups } from './en/pickups'
 import { platform } from './en/platform'
 import { billing } from './en/billing'
+import { payroll } from './en/payroll'
 import { payment } from './en/payment'
 import { companies } from './en/companies'
 import { companyProfile } from './en/companyProfile'
@@ -98,6 +99,7 @@ export const en = {
   pickups,
   platform,
   billing,
+  payroll,
   payment,
   companies,
   companyProfile,

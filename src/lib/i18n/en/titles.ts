@@ -39,6 +39,7 @@ export const titles = {
   subscriptionHistory: 'Subscription History',
   trialRequests: 'Trial account requests',
   billing: 'Plan and credits',
+  payroll: 'Driver payroll',
   payment: 'Simulated payment',
   paymentResult: 'Confirm payment',
   companies: 'Companies',
