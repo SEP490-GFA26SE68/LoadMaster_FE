@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { BILLING_CAPABILITIES } from './billing-api'
 import { CheckoutRow } from './CheckoutRow'
@@ -27,6 +28,7 @@ function PaymentResult() {
   const t = useT()
   const format = useFormat()
   const navigate = useNavigate()
+  const auth = useAuthSafe()
   const [params] = useSearchParams()
   const reference = params.get(PAYMENT_REFERENCE_PARAM) ?? ''
   const purpose = paymentPurposeOf(params.get(PAYMENT_KIND_PARAM))
@@ -38,6 +40,8 @@ function PaymentResult() {
     confirm.mutate({ reference, purpose: target }, {
       onSuccess: (result) => {
         if (result.status !== 'SUCCESS') return
+        // Gói vừa có hiệu lực thì công ty hết bị khoá theo gói cước (AGENTS.md mục 1): đọc lại hồ sơ để `AppShell` mở lại các màn
+        if (result.purpose === 'SUBSCRIBE') auth?.refreshUser().catch((error: unknown) => toast.error(dataErrorMessage(error, t)))
         toast.success(result.purpose === 'SUBSCRIBE'
           ? t('payment.toasts.SUBSCRIBE', { plan: result.planName })
           : t('payment.toasts.TOPUP', { credits: format.integer(result.credits) }))

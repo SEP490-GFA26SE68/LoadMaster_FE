@@ -62,6 +62,18 @@ test('identity comes from the backend; id and company stay those of the sample a
   }
   expect(userFromBackend(profile, 'dispatcher', standIn)).toStrictEqual({
     id: 'US-0001', fullName: 'Nguyễn Hoài An', email: 'an@fastmove.vn', phone: '', role: 'dispatcher', status: 'active',
-    lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001',
+    lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001', userType: 'OFFICIAL', subscriptionExpired: false,
   })
+})
+
+test('a trial account of a company whose plan has expired keeps both flags from the backend', () => {
+  const standIn: User = {
+    id: 'US-0001', fullName: 'Trần Thị Hoa', email: 'dieuphoi@loadmaster.vn', phone: '', role: 'dispatcher', status: 'active',
+    lastActiveAt: '2026-09-14T01:00:00.000Z', companyId: 'LOG-001',
+  }
+  const profile: BackendUserProfile = {
+    id: 6, keycloakId: 'kc-6', username: 'an@fastmove.vn', email: 'an@fastmove.vn', fullName: 'Nguyễn Hoài An', phoneNumber: null, companyId: 2,
+    userRoleType: 'DISPATCHER', status: 'ACTIVE', userType: 'TRIAL', subscriptionExpired: true,
+  }
+  expect(userFromBackend(profile, 'dispatcher', standIn)).toMatchObject({ userType: 'TRIAL', subscriptionExpired: true })
 })

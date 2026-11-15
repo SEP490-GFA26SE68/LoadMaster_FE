@@ -84,6 +84,13 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
   30 ngày sau khi hết hạn dùng thử. Chỉ quản trị công ty đọc và ký thoả thuận (`GET /api/agreements/my-agreement`, máy chủ chỉ cho vai trò
   đó): `useMyAgreementQuery` không gọi máy chủ với vai trò khác, nên banner, hộp ký và phần ký của màn khoá chỉ có ở quản trị công ty.
+- **Khoá theo gói cước** (chỉ khi đăng nhập bằng máy chủ; quyết định tạm của chủ sản phẩm 15/11/2026, sẽ xem lại): công ty **không có gói đang
+  hiệu lực** — chưa từng có gói, gói `EXPIRED`, hoặc gói đã quá `expiresAt` — thì máy chủ (`FlaggedUserEnforcementFilter`) trả 403
+  `SUBSCRIPTION_EXPIRED` cho mọi API nghiệp vụ của người công ty đó, và `GET /api/users/me` trả `subscriptionExpired: true`. App
+  (`AppShell`): quản lý công ty, điều phối viên, nhân viên kho, tài xế chỉ thấy màn khoá `TrialExpiredLockedView` (một nút Đăng xuất); quản trị
+  công ty chỉ còn `/goi-cuoc` và `/thanh-toan/**` (thanh điều hướng còn đúng mục "Gói và credit" và nút "Yêu cầu hỗ trợ") để gia hạn hoặc đăng
+  ký gói. Ba vai trò nền tảng không bị khoá. App di động khoá tài xế, nhân viên kho theo cùng cờ. Kho mẫu **không** khoá (D-94 còn ở kho mẫu,
+  mục 9 "Gói cước, credit, thanh toán") — đổi kho mẫu theo khi chủ sản phẩm chốt luật.
 - **Đăng nhập ở màn của app** — kho mẫu lẫn Keycloak: một form email + mật khẩu (mục 9 "Nối backend"). Ngoại lệ duy nhất: client của realm
   chưa bật Direct Access Grants (`login-not-enabled`) thì app chuyển sang trang đăng nhập của Keycloak (authorization code + PKCE S256, quay về
   `/dang-nhap`, `keycloak-session.ts`). Đăng nhập bằng máy chủ có thêm `/quen-mat-khau` (`PasswordResetPage`, ngoài `RequireAuth`, không đòi quyền): email → mã 6 chữ số
@@ -136,7 +143,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   làm ngoài công ty); việc trên tài khoản nền tảng không thuộc công ty nào.
 - **Màn công ty** `/nen-tang/cong-ty` (`companies.manage`, màn chính của quản trị hệ thống, FE-8-06): danh sách công ty (tên, gói, trạng thái gói,
   số người dùng), tạo công ty **kèm Quản trị công ty đầu tiên** (mật khẩu tạm hiện một lần, như màn Người dùng), sửa thông tin và kho xuất phát;
-  công ty mới chưa có gói. Chi tiết ở mục 9.
+  công ty mới chưa có gói — khi nối máy chủ, nhân viên của nó bị khoá tới khi quản trị công ty đăng ký gói ("Khoá theo gói cước" ở trên).
+  Chi tiết ở mục 9.
 - Kho **lọc dữ liệu theo công ty của phiên** (mục 9 "Lớp dữ liệu", FE-0-02, D-64): người của một công ty chỉ thấy xe, loại xe, loại kiện, kiện,
   yêu cầu giao, chuyến, phương án, người dùng và nhật ký của công ty mình; ba vai trò nền tảng bị mọi hàm dữ liệu vận hành từ chối
   (`COMPANY_REQUIRED`), chỉ đọc người dùng, nhật ký và danh sách công ty. Mỗi công ty có kho xuất phát kèm toạ độ (`Company.depot`).
@@ -1235,8 +1243,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   không nạp được (`topUpAllowed` — hộp nạp mờ nút kèm lý do; gói hết hạn giữa lúc hộp đang mở thì máy chủ từ chối 409
   `SUBSCRIPTION_EXPIRED`, câu lỗi hiện ngay trong hộp và gói, điều kiện nạp đọc lại); hộp nạp đọc qua `useTopUpTermsQuery` (`getTopUpTerms`), thẻ Credit của Thiết lập
   tối ưu lấy credit một lần chạy từ đó. Gói đã hết hạn (`subscriptionStatusOf` là `EXPIRED`: máy chủ báo `EXPIRED` / `CANCELLED`, hoặc
-  `ACTIVE` đã quá hạn) vẫn chạy tối ưu bằng số dư như kho mẫu: thẻ Credit ghi hạng Cơ bản (`basicOnly`), chặn chỉ khi số dư dưới giá một
-  lần chạy, không còn "không giới hạn" (`fetchBackendOptimizationCredit`). **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
+  `ACTIVE` đã quá hạn) thì công ty bị **khoá theo gói cước** (mục 1): điều phối viên không tới được Thiết lập tối ưu, nên nhánh hạng Cơ bản
+  (`basicOnly`) của `fetchBackendOptimizationCredit` chỉ còn chạy khi gói hết hạn giữa phiên, trước lần đọc hồ sơ kế tiếp. **Gia hạn** (`renewal`): `GET /api/subscription/renewal` nói gói vừa dùng, có gia hạn được không (lý do
   `NO_SUBSCRIPTION | CANCELLED | TRIAL | NOT_DUE`) và thanh toán gói đang chờ — banner kèm nút Trả mở `/thanh-toan/ket-qua`; gói đã hết hạn có
   nút "Gia hạn gói …" (`POST /api/subscription/renew`, kể cả gói đã ngừng bán; 409 `SUBSCRIPTION_NOT_RENEWABLE`), gói còn hiệu lực vẫn gia hạn ở
   thẻ Gói hiện tại.
@@ -2079,7 +2087,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   màn giả lập) xử lý **đúng một lần** — kích hoạt gói + cấp credit tháng, nối kỳ gia hạn + cấp credit, hay cộng credit đã mua. Đăng ký chỉ khi chưa
   có gói hoặc đã `EXPIRED` (`SUBSCRIPTION_ACTIVE`); huỷ → `CANCELLED`, còn hiệu lực tới hết kỳ (`BILLING_CONSTANTS.periodDays` = 30); còn
   `renewalNoticeDays` (7, đã chốt) ngày trước hạn mà gói `ACTIVE` tự gia hạn thì kho tạo một thanh toán `RENEWAL` `PENDING`; tới hạn mà chưa trả
-  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. **Gói đã hết hạn vẫn tiêu được số dư** (D-94): lần chạy tối ưu 3D
+  (hoặc đã huỷ) → `EXPIRED`, thanh toán chờ → `FAILED`, số dư giữ nguyên. **Gói đã hết hạn vẫn tiêu được số dư** (D-94; **chỉ kho mẫu** —
+  máy chủ khoá công ty không có gói đang hiệu lực, mục 1 "Khoá theo gói cước"): lần chạy tối ưu 3D
   vẫn giữ và trừ credit như thường nhưng chỉ ở hạng Cơ bản `EP_DBLF` (`effectiveAlgorithmTier`; mỗi lần `runCost` = `optimizationCost`, gói
   Ultimate hết hạn không còn không giới hạn) tới khi gói lại `ACTIVE`; nạp thêm thì không (`topUpCredits` → `SUBSCRIPTION_EXPIRED`, hộp nạp mờ
   nút kèm lý do — gia hạn trước, như máy chủ); `/goi-cuoc` vẫn hiện số dư. Giá và credit tháng mới của gói (`updateSubscriptionPlan`, hết cờ
