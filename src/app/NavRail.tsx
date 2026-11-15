@@ -131,7 +131,7 @@ export function NavRail() {
             className="flex h-9 items-center gap-1.5 rounded-md border border-cyan-300/40 bg-cyan-950/50 px-3 text-small font-semibold text-sky-text transition-colors hover:bg-cyan-900/60 focus-visible:outline-2 focus-visible:outline-cyan-300"
           >
             <LifeBuoy className="size-4 text-cyan-200" strokeWidth={1.75} aria-hidden />
-            <span>Yêu cầu hỗ trợ</span>
+            <span>{t('nav.supportRequests')}</span>
           </button>
         ) : null}
         {user && SUPPORT_SOURCE.planAssign && can(user.role, 'support.handle') ? (

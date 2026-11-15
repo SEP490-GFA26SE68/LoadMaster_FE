@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { ApiError, createApiClient } from './api-client'
+import { ApiError, connectApiAuth, createApiClient } from './api-client'
 
 type Call = { url: string; init: RequestInit }
 
@@ -95,6 +95,22 @@ test('sends a JSON body; without a session there is no Authorization header', as
 test('a business error keeps the backend code, the HTTP status and the parameters', async () => {
   const { client } = clientWith(respond(409, { success: false, code: 'USER_ALREADY_EXISTS', message: 'không hiện ra màn', errors: { email: 'a@b.vn' } }))
   expect(await failure(() => client.post('/api/users'))).toMatchObject({ code: 'USER_ALREADY_EXISTS', status: 409, params: { email: 'a@b.vn' } })
+})
+
+test('a 403 that locks the whole account asks the session to re-read the profile; any other 403 does not', async () => {
+  const onAccountLocked = vi.fn()
+  connectApiAuth(() => Promise.resolve('TOKEN'), { refreshToken: () => Promise.resolve(null), onUnauthorized: vi.fn(), onAccountLocked })
+  try {
+    for (const code of ['SUBSCRIPTION_EXPIRED', 'ACCOUNT_FLAGGED']) {
+      const { client } = clientWith(respond(403, { success: false, code }))
+      expect(await failure(() => client.get('/api/trips'))).toMatchObject({ code, status: 403 })
+    }
+    const { client } = clientWith(respond(403, { success: false, code: 'FORBIDDEN_COMPANY' }))
+    await failure(() => client.get('/api/trips/7'))
+    expect(onAccountLocked).toHaveBeenCalledTimes(2)
+  } finally {
+    connectApiAuth(() => Promise.resolve(null))
+  }
 })
 
 test('statuses without a code map to transport codes', async () => {

@@ -98,20 +98,18 @@ export function TrialAccountLockedView() {
             </div>
 
             {/* HERO SECTION: TỰ PHỤC VỤ KÝ THỎA THUẬN ĐỂ MỞ KHÓA NGAY */}
-            <div className="flex flex-col gap-4 rounded-xl border border-primary/40 bg-surface-subtle p-5 shadow-xs">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 rounded-lg border border-cyan-200 bg-surface p-5">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <FileSignature className="h-5 w-5" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tint-blue text-tint-blue-fg">
+                    <FileSignature className="h-5 w-5" strokeWidth={1.5} aria-hidden />
                   </div>
                   <div>
-                    <h2 className="text-body font-bold text-ink-strong">{t('support.trialLocked.signTitle')}</h2>
-                    <p className="text-caption text-ink-3">Mở khóa tự động 100% — Không cần chờ nhân viên duyệt</p>
+                    <h2 className="text-body font-semibold text-ink-strong">{t('support.trialLocked.signTitle')}</h2>
+                    <p className="text-caption text-ink-3">{t('support.trialLocked.signAuto')}</p>
                   </div>
                 </div>
-                <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-caption font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  Tự động kích hoạt
-                </span>
+                <Badge tone="success">{t('support.trialLocked.signAutoTag')}</Badge>
               </div>
 
               {agreement ? (
@@ -119,10 +117,10 @@ export function TrialAccountLockedView() {
                   <div className="font-semibold text-ink-strong">{agreement.title}</div>
                   <div className="mt-2 grid grid-cols-1 gap-1 text-caption text-ink-2 sm:grid-cols-2">
                     <div>
-                      <span className="text-ink-3">Doanh nghiệp:</span> {agreement.companyName}
+                      <span className="text-ink-3">{t('support.trialLocked.agreementCompany')}</span> {agreement.companyName}
                     </div>
                     <div>
-                      <span className="text-ink-3">Mã thỏa thuận:</span> {agreement.agreementCode}
+                      <span className="text-ink-3">{t('support.trialLocked.agreementCode')}</span> {agreement.agreementCode}
                     </div>
                   </div>
                 </div>
@@ -135,8 +133,8 @@ export function TrialAccountLockedView() {
                   className="w-full sm:w-auto"
                   onClick={() => setOpenSignDialog(true)}
                 >
-                  <FileSignature className="mr-2 h-4 w-4" />
-                  Ký thỏa thuận để mở khóa ngay
+                  <FileSignature strokeWidth={1.5} aria-hidden />
+                  {t('support.trialLocked.signUnlock')}
                 </Button>
               </div>
             </div>
@@ -150,19 +148,19 @@ export function TrialAccountLockedView() {
               >
                 <div className="flex items-center gap-2">
                   <HelpCircle className="h-4 w-4 text-ink-3" />
-                  <span>Cần trợ giúp kỹ thuật hoặc gặp sự cố khi ký?</span>
+                  <span>{t('support.trialLocked.helpToggle')}</span>
                 </div>
                 {showHelpSection ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
 
               {showHelpSection ? (
-                <div className="mt-3 flex flex-col gap-4 rounded-xl border border-border bg-surface-subtle p-4">
+                <div className="mt-3 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
                   {pendingTicket ? (
-                    <div className="flex flex-col gap-2 rounded-lg border border-azure-200 bg-azure-50/70 p-3 text-caption dark:border-azure-800 dark:bg-azure-950/30">
+                    <div className="flex flex-col gap-2 rounded-lg border border-azure-200 bg-azure-50 p-3 text-caption">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-azure-600" />
-                          <span className="font-semibold text-azure-900 dark:text-azure-200">
+                          <Clock className="h-4 w-4 text-azure-700" strokeWidth={1.5} aria-hidden />
+                          <span className="font-semibold text-azure-700">
                             {t('support.trialLocked.pendingTitle')}
                           </span>
                         </div>
@@ -174,12 +172,13 @@ export function TrialAccountLockedView() {
                   ) : (
                     <form onSubmit={handleSendSupportRequest} className="flex flex-col gap-3">
                       <div className="flex items-center gap-2 text-caption font-semibold text-ink-strong">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <Sparkles className="h-4 w-4 text-warning" strokeWidth={1.5} aria-hidden />
                         <span>{t('support.trialLocked.formTitle')}</span>
                       </div>
                       <div className="flex flex-col gap-1">
                         <label htmlFor="support-message" className="text-caption font-medium text-ink-2">
-                          Nội dung cần hỗ trợ *
+                          {t('support.trialLocked.helpLabel')}
+                          <span aria-hidden> *</span>
                         </label>
                         <Textarea
                           id="support-message"
@@ -187,7 +186,7 @@ export function TrialAccountLockedView() {
                           required
                           value={supportMessage}
                           onChange={(e) => setSupportMessage(e.target.value)}
-                          placeholder="Mô tả lỗi hoặc sự cố bạn gặp phải khi bấm ký..."
+                          placeholder={t('support.trialLocked.helpPlaceholder')}
                         />
                       </div>
                       <div className="flex justify-end">
@@ -197,7 +196,7 @@ export function TrialAccountLockedView() {
                           size="sm"
                           loading={createTicketMutation.isPending}
                         >
-                          Gửi yêu cầu hỗ trợ
+                          {t('support.trialLocked.helpSubmit')}
                         </Button>
                       </div>
                     </form>

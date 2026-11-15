@@ -1,5 +1,5 @@
 import { customerPlan } from './support-customer-plan'
-import { trialLocked } from './support-trial-locked'
+import { subscriptionLocked, trialLocked } from './support-trial-locked'
 
 /**
  * Yêu cầu hỗ trợ (FE-8-07, D-67): hộp thoại "Yêu cầu hỗ trợ" của người dùng công ty (mở từ menu tài khoản) và màn `/ho-tro` của Hỗ trợ
@@ -8,6 +8,7 @@ import { trialLocked } from './support-trial-locked'
 export const support = {
   customerPlan,
   trialLocked,
+  subscriptionLocked,
   kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán', TRIAL_ACCOUNT_UNLOCK: 'Mở khóa dùng thử' },
   statuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Hộp thoại của người dùng công ty. */

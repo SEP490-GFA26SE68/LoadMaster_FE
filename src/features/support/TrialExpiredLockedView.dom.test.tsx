@@ -23,28 +23,27 @@ vi.mock('@/features/auth/AuthProvider', () => ({
   useAuthSafe: () => mockAuth,
 }))
 
-describe('TrialExpiredLockedView - Màn hình khóa khi gói dùng thử công ty hết hạn', () => {
-  test('hiển thị thông báo gói cước dùng thử của doanh nghiệp đã hết hạn', () => {
+describe('TrialExpiredLockedView - Màn hình khóa khi gói cước của công ty hết hạn', () => {
+  test('hiển thị thông báo gói cước của doanh nghiệp đã hết hạn', () => {
     render(
       <I18nProvider>
         <TrialExpiredLockedView />
       </I18nProvider>,
     )
 
-    expect(screen.getByText(/Gói cước dùng thử của doanh nghiệp đã hết hạn/i)).toBeInTheDocument()
+    expect(screen.getByText(/Gói cước của doanh nghiệp đã hết hạn/i)).toBeInTheDocument()
     expect(screen.getByText(/Gói cước hết hạn/i)).toBeInTheDocument()
     expect(screen.getByText(/dispatcher@gamma.vn/i)).toBeInTheDocument()
   })
 
-  test('hiển thị hướng dẫn liên hệ Quản trị viên doanh nghiệp (Company Admin)', () => {
+  test('hiển thị hướng dẫn liên hệ Quản trị công ty', () => {
     render(
       <I18nProvider>
         <TrialExpiredLockedView />
       </I18nProvider>,
     )
 
-    expect(screen.getByText(/Quản trị viên doanh nghiệp/i)).toBeInTheDocument()
-    expect(screen.getByText(/Company Admin/i)).toBeInTheDocument()
+    expect(screen.getByText(/Liên hệ Quản trị công ty/i)).toBeInTheDocument()
   })
 
   test('cho phép người dùng bấm đăng xuất khỏi hệ thống', async () => {
@@ -60,5 +59,19 @@ describe('TrialExpiredLockedView - Màn hình khóa khi gói dùng thử công t
 
     await user.click(logoutButtons[0]!)
     expect(mockAuth.signOut).toHaveBeenCalled()
+  })
+
+  test('"Kiểm tra lại" đọc lại hồ sơ; gói vẫn chưa có hiệu lực thì nói tại chỗ', async () => {
+    const user = userEvent.setup()
+    mockAuth.refreshUser.mockResolvedValueOnce({ ...mockAuth.user, subscriptionExpired: true })
+    render(
+      <I18nProvider>
+        <TrialExpiredLockedView />
+      </I18nProvider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Kiểm tra lại' }))
+    expect(mockAuth.refreshUser).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('status')).toHaveTextContent('Doanh nghiệp vẫn chưa có gói cước đang hiệu lực.')
   })
 })

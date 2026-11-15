@@ -1,5 +1,5 @@
 import type { Dictionary } from '../types'
-import type { trialLocked as source } from '../vi/support-trial-locked'
+import type { subscriptionLocked as subscriptionSource, trialLocked as source } from '../vi/support-trial-locked'
 
 export const trialLocked = {
   badge: 'Account locked',
@@ -19,4 +19,25 @@ export const trialLocked = {
   signHint: 'Sign the agreement now to unlock the account.',
   signNow: 'Sign the agreement now',
   signed: 'Agreement signed. Your account has been reopened.',
+  signAuto: 'Signing reopens the account at once, no approval needed.',
+  signAutoTag: 'Reopens at once',
+  agreementCompany: 'Company:',
+  agreementCode: 'Agreement code:',
+  signUnlock: 'Sign the agreement to unlock now',
+  helpToggle: 'Need technical help or having trouble signing?',
+  helpLabel: 'What do you need help with',
+  helpPlaceholder: 'Describe the error or problem you hit when signing…',
+  helpSubmit: 'Send support request',
 } satisfies Dictionary<typeof source>
+
+export const subscriptionLocked = {
+  badge: 'Plan expired',
+  signOut: 'Sign out',
+  title: 'Your company’s plan has expired',
+  body: 'Your company has no active LoadMaster plan. Every operating feature (trips, dispatch, warehouse and load optimisation) is paused.',
+  nextTitle: 'Need to keep using the system?',
+  nextBody: 'Ask your company admin to renew or subscribe to a plan.',
+  signOutLong: 'Sign out of the system',
+  recheck: 'Check again',
+  stillLocked: 'Your company still has no active plan.',
+} satisfies Dictionary<typeof subscriptionSource>

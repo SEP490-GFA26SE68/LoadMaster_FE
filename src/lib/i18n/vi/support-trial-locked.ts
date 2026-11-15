@@ -21,4 +21,30 @@ export const trialLocked = {
   signHint: 'Ký thỏa thuận ngay bây giờ để mở khóa tài khoản.',
   signNow: 'Ký thỏa thuận ngay',
   signed: 'Đã ký thỏa thuận. Tài khoản của bạn đã được mở lại.',
+  signAuto: 'Ký xong là tài khoản mở lại ngay, không cần chờ duyệt.',
+  signAutoTag: 'Mở lại ngay',
+  agreementCompany: 'Doanh nghiệp:',
+  agreementCode: 'Mã thỏa thuận:',
+  signUnlock: 'Ký thỏa thuận để mở khóa ngay',
+  helpToggle: 'Cần trợ giúp kỹ thuật hoặc gặp sự cố khi ký?',
+  helpLabel: 'Nội dung cần hỗ trợ',
+  helpPlaceholder: 'Mô tả lỗi hoặc sự cố bạn gặp khi bấm ký…',
+  helpSubmit: 'Gửi yêu cầu hỗ trợ',
+} as const
+
+/**
+ * Màn khoá khi gói cước của công ty hết hạn hoặc công ty chưa có gói (`support/TrialExpiredLockedView`, chỉ khi nối backend): nhân viên
+ * công ty không dùng được màn nào, chỉ đăng xuất. Gắn vào `support.subscriptionLocked`.
+ */
+export const subscriptionLocked = {
+  badge: 'Gói cước hết hạn',
+  signOut: 'Đăng xuất',
+  title: 'Gói cước của doanh nghiệp đã hết hạn',
+  body: 'Doanh nghiệp của bạn chưa có gói cước đang hiệu lực trên LoadMaster. Mọi tính năng vận hành (chuyến hàng, điều phối, kho và tối ưu xếp hàng) đang tạm dừng.',
+  nextTitle: 'Cần tiếp tục sử dụng hệ thống?',
+  nextBody: 'Liên hệ Quản trị công ty của doanh nghiệp để gia hạn hoặc đăng ký gói cước.',
+  signOutLong: 'Đăng xuất khỏi hệ thống',
+  /** Đọc lại hồ sơ sau khi quản trị công ty đã gia hạn hoặc đăng ký gói. */
+  recheck: 'Kiểm tra lại',
+  stillLocked: 'Doanh nghiệp vẫn chưa có gói cước đang hiệu lực.',
 } as const
