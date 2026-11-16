@@ -37,10 +37,10 @@ test('a dispatcher sends a ticket, customer support replies and closes it, and t
   const panel = page.getByRole('region', { name: 'Thông tin công ty', exact: true })
   await expect(panel).toContainText('Công ty TNHH Vận tải Long Bình')
   await expect(panel).toContainText('Pro')
-  await expect(panel.getByText('Số dư credit', { exact: true }).locator('xpath=following-sibling::dd')).toHaveText('486')
+  await expect(panel.getByText('Số dư credit', { exact: true }).locator('xpath=following-sibling::dd')).toHaveText('9.972')
   await thread.getByRole('combobox', { name: 'Trạng thái yêu cầu', exact: true }).click()
   await page.getByRole('option', { name: 'Đã đóng', exact: true }).click()
-  await expect(thread.getByText('Yêu cầu đã đóng. Mở lại để trả lời tiếp.', { exact: true })).toBeVisible()
+  await expect(thread.getByText('Phiếu hỗ trợ đã đóng (chỉ đọc) — không thể nhắn tin hay đổi trạng thái.', { exact: true })).toBeVisible()
 
   // Người gửi: chuông có lần trả lời, yêu cầu của mình đã đóng và không còn ô trả lời
   await switchUser(page, 'dispatcher')

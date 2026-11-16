@@ -66,6 +66,10 @@ export const trialRegistration = {
     editInfo: 'Chỉnh sửa lại thông tin',
     contactSupport: 'Liên hệ hỗ trợ tư vấn',
   },
+  toasts: {
+    otpSent: 'Mã xác thực đã được gửi tới email của bạn.',
+    otpResent: 'Đã gửi lại mã xác thực.',
+  },
   validation: {
     companyNameRequired: 'Vui lòng nhập tên doanh nghiệp',
     taxCodeRequired: 'Vui lòng nhập mã số thuế',

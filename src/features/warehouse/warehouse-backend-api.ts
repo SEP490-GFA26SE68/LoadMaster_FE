@@ -81,10 +81,10 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     }
   }
 
-  // POST /api/warehouse/placements/{id}/confirm
-  async function confirm(tripId: string, placementId: string): Promise<ServerLoadingSession> {
+  // POST /api/warehouse/placements/{id}/confirm — `method`: quét QR hay gõ mã, máy chủ ghi vào lần đối chiếu (báo cáo chuyến tách hai cách)
+  async function confirm(tripId: string, placementId: string, method: 'QR' | 'CODE'): Promise<ServerLoadingSession> {
     try {
-      await client().post(`${placementPath(placementId)}/confirm`)
+      await client().post(`${placementPath(placementId)}/confirm`, { body: { method } })
     } catch (error) {
       // Đã xác nhận từ trước (lượt gọi trước mất phản hồi): đọc lại phiên, không báo lỗi
       if (!hasCode(error, 'PLACEMENT_ALREADY_CONFIRMED')) throw error

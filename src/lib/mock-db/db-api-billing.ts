@@ -69,10 +69,10 @@ export type BillingDb = {
   settlePayment(paymentId: string, outcome: 'SUCCESS' | 'FAILED'): Promise<PaymentTransaction>
 
   /**
-   * Giữ credit cho một lần chạy tối ưu 3D của chuyến `tripId` (D-89): gói hết hạn hoặc chưa có gói là `SUBSCRIPTION_EXPIRED`, hết
-   * credit là `INSUFFICIENT_CREDITS`, không ghi gì. Còn credit thì ghi giao dịch dùng `RESERVED` (-1; gói không giới hạn: 0) và trả mã
+   * Giữ credit cho một lần chạy tối ưu 3D của chuyến `tripId` (D-89): chưa có gói là `SUBSCRIPTION_EXPIRED`, hết
+   * credit là `INSUFFICIENT_CREDITS`, không ghi gì. Còn credit thì ghi giao dịch dùng `RESERVED` (`runCost`; gói không giới hạn còn hiệu lực: 0; gói đã hết hạn chỉ chạy hạng Cơ bản) và trả mã
    * tham chiếu: `saveOptimizationRun({ creditReference })` trừ hẳn, `refundOptimizationCredit` hoàn. Số dư từ ngưỡng
-   * `lowCreditThreshold` trở xuống thì kho ghi sự kiện hệ thống `credit.lowBalance` cho quản trị công ty.
+   * `lowCreditThreshold` (25 % credit tháng của gói, gói không giới hạn không có) trở xuống thì kho ghi sự kiện hệ thống `credit.lowBalance` cho quản trị công ty.
    */
   reserveOptimizationCredit(tripId: string): Promise<CreditReservation>
   /** Hoàn credit của lần chạy lỗi hoặc bị huỷ: đúng một lần theo tham chiếu, gọi lại không cộng lần hai. Mã lạ: `NOT_FOUND`. */

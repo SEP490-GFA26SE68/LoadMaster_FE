@@ -1,6 +1,7 @@
 import { vnClock, vnDate, vnTime } from './clock'
 import { found, nextId, put, sameData, type DbContext } from './db-context'
 import { releaseTripPackages, returnUndeliveredPackages } from './db-package-progress'
+import { rejectUnpickedPickups } from './db-pickup-packages'
 import { releaseTripRequirements } from './db-requirement-trips'
 import { advanceTracking } from './db-tracking'
 import { stopDemandsOf } from './db-trip-lines'
@@ -21,7 +22,6 @@ type TripMethods = Pick<MockDb, 'listTrips' | 'getTrip' | 'createTrip' | 'update
 const EDITABLE = ['name', 'scheduledDate', 'departureAt', 'depot', 'driverId', 'vehicleId', 'stops', 'packages'] as const satisfies readonly (keyof TripChanges)[]
 
 /** Pha `loading`/`loaded` vẫn đổi được tên, ngày giờ xuất phát, tài xế — xe, kho đi, điểm giao, kiện thì không (D-45). */
-const LOCKED_WHILE_LOADING: ReadonlySet<keyof TripChanges> = new Set(['vehicleId', 'depot', 'stops', 'packages'])
 
 /** Giờ xuất phát khi nơi tạo chuyến chỉ đưa ngày chạy (giờ Việt Nam). Form chuyến luôn gửi giờ người dùng chọn. */
 export const DEFAULT_DEPARTURE_TIME = '08:00'
@@ -46,11 +46,12 @@ function depotFields(depot: CompanyDepot, tripId: string): CompanyDepot {
  * phát và kho xuất phát (FE-4b-04, D-76): ngày chạy luôn là ngày của giờ xuất phát; kho đi mặc định là kho của công ty.
  */
 export function tripMethods(ctx: DbContext): TripMethods {
-  const { trips, maintenance, users, companies } = ctx.state
+  const { trips, maintenance, retiredVehicles, users, companies } = ctx.state
   const scope = ctx.scope.trips
 
   function assertVehicleUsable(vehicleId: string, companyId: string) {
     ctx.scope.vehicles.ref(vehicleId, companyId)
+    if (retiredVehicles.has(vehicleId)) throw new MockDbError('VEHICLE_RETIRED', { vehicleId })
     if (maintenance.has(vehicleId)) throw new MockDbError('VEHICLE_IN_MAINTENANCE', { vehicleId })
   }
 
@@ -108,12 +109,8 @@ export function tripMethods(ctx: DbContext): TripMethods {
         // Chỉ nhận các trường sửa được: trường kho quản lý trong một bản sao cũ bị trải vào `changes` không được ghi đè
         const changed = EDITABLE.filter((field) => requested[field] !== undefined && !sameData(requested[field], current[field]))
         if (changed.length === 0) return current
-        if (current.phase !== 'planning') {
-          const lockedNow = current.phase !== 'loading' && current.phase !== 'loaded'
-          if (lockedNow || changed.some((field) => LOCKED_WHILE_LOADING.has(field))) {
-            throw new MockDbError('TRIP_LOCKED', { tripId: id, phase: current.phase })
-          }
-        }
+        // Như máy chủ: chỉ chuyến còn lập kế hoạch (Nháp, Đã lập kế hoạch) sửa được; kho đã bắt đầu xếp thì khoá cả chuyến
+        if (current.phase !== 'planning') throw new MockDbError('TRIP_LOCKED', { tripId: id, phase: current.phase })
         if (changed.includes('vehicleId')) assertVehicleUsable(requested.vehicleId ?? current.vehicleId, current.companyId)
         if (changed.includes('driverId')) assertDriver(requested.driverId ?? null, current.companyId)
         let next: Trip = { ...current }
@@ -153,6 +150,8 @@ export function tripMethods(ctx: DbContext): TripMethods {
         if (current.phase === 'delivering') {
           // Vị trí xe ghi bù tới lúc huỷ; kiện chưa giao thành Hoàn trả và ở lại chuyến — yêu cầu giao của chúng đọc là giao thiếu
           advanceTracking(ctx, current)
+          // Yêu cầu nhận dọc đường đã duyệt mà chưa kiện nào lên xe: từ chối vì chuyến huỷ, kiện kho kiện của nó bị xoá
+          rejectUnpickedPickups(ctx, current)
           const returned = returnUndeliveredPackages(ctx, current)
           ctx.log('trip.cancelled', { type: 'trip', id }, { reason: trimmed, returned, ...driver })
         } else {

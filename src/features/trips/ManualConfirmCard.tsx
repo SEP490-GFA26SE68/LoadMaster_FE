@@ -19,13 +19,14 @@ import { useApproveManualConfirmMutation, useManualConfirmationsQuery, useReject
  *
  * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó, và các dòng ngang hàng nhau (mục 5: một nút chính mỗi màn). `server`: xác nhận
  * tay khi dỡ của máy chủ (Chi tiết chuyến của máy chủ khi luồng tài xế nối backend), mã đứng đầu dòng là mã in trên nhãn.
+ * `live`: chuyến đang xếp / đang giao — đọc lại theo nhịp 30 giây và khi focus lại cửa sổ (`live-trip-refresh.ts`).
  */
-export function ManualConfirmCard({ tripId, server = false }: { tripId: string; server?: boolean }) {
+export function ManualConfirmCard({ tripId, server = false, live = false }: { tripId: string; server?: boolean; live?: boolean }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
   const titleId = useId()
-  const query = useManualConfirmationsQuery(tripId, server)
+  const query = useManualConfirmationsQuery(tripId, server, live)
   const approve = useApproveManualConfirmMutation(tripId, server)
   const reject = useRejectManualConfirmMutation(tripId, server)
   const [rejecting, setRejecting] = useState<ManualConfirmRow | null>(null)

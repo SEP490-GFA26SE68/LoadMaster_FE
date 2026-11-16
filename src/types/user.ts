@@ -81,6 +81,8 @@ export type User = {
 
   companyId?: string
   companyName?: string
+  userType?: 'TRIAL' | 'OFFICIAL'
+  subscriptionExpired?: boolean
 }
 
 /** Chữ đầu của hai từ cuối trong tên; bỏ qua từ không bắt đầu bằng chữ cái ("(demo)", "-"). */

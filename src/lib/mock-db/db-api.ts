@@ -55,13 +55,19 @@ type CoreMockDb = {
   getVehicle(id: string): Promise<VehicleConfig>
   /** Kho cấp mã `VEHICLE-NNN` kế tiếp; `id` trong đầu vào (nếu có) bị bỏ. */
   createVehicle(input: Omit<VehicleConfig, 'id'>): Promise<VehicleConfig>
-  /** Thay toàn bộ cấu hình xe theo `vehicle.id`. Xe đang chạy chuyến (`loading`…`delivering`): `VEHICLE_LOCKED`. */
+  /** Thay toàn bộ cấu hình xe theo `vehicle.id`. Xe đang chạy chuyến (`loading`…`delivering`): `VEHICLE_LOCKED`; xe Ngừng sử dụng: `VEHICLE_RETIRED`. */
   updateVehicle(vehicle: VehicleConfig): Promise<VehicleConfig>
-  /** Còn chuyến dùng xe (kể cả chuyến đã xong): `VEHICLE_IN_USE`. */
-  deleteVehicle(id: string): Promise<void>
+  /**
+   * Như máy chủ: còn chuyến chưa xong dùng xe là `VEHICLE_IN_USE` (mã các chuyến đó); xe từng chạy chuyến (đã giao, đã huỷ) chuyển sang
+   * Ngừng sử dụng (`RETIRED`) thay vì bị xoá; xe chưa từng có chuyến bị xoá (`DELETED`).
+   */
+  deleteVehicle(id: string): Promise<'DELETED' | 'RETIRED'>
   /** Trạng thái mọi xe theo thứ tự `listVehicles`. */
   listVehicleStates(): Promise<VehicleState[]>
-  /** Bật (`note`) hoặc tắt (`null`) bảo dưỡng. Xe đang chạy chuyến: `VEHICLE_LOCKED`. */
+  /**
+   * Bật (`note`) hoặc tắt (`null`) bảo dưỡng. Xe đang chạy chuyến: `VEHICLE_LOCKED`; xe Ngừng sử dụng: `VEHICLE_RETIRED`; ghi chú dài hơn
+   * `MAINTENANCE_NOTE_MAX` ký tự: `MAINTENANCE_NOTE_TOO_LONG`.
+   */
   setVehicleMaintenance(id: string, note: string | null): Promise<VehicleState>
 
   /** Theo thứ tự tạo: chuyến seed trước. */

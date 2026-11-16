@@ -24,6 +24,7 @@ export function tripVehicleMethods(ctx: DbContext): TripVehicleMethods {
         if (tripStatus(trip) !== 'PLANNED') throw new MockDbError('TRIP_NOT_PLANNED', { tripId })
         const stored = ctx.scope.vehicles.ref(vehicleId, trip.companyId)
         if (vehicleId === trip.vehicleId) throw new MockDbError('VEHICLE_UNCHANGED', { vehicleId })
+        if (ctx.state.retiredVehicles.has(vehicleId)) throw new MockDbError('VEHICLE_RETIRED', { vehicleId })
         if (maintenance.has(vehicleId)) throw new MockDbError('VEHICLE_IN_MAINTENANCE', { vehicleId })
         const running = activeTripOf(trips.values(), vehicleId)
         if (running) throw new MockDbError('VEHICLE_BUSY', { vehicleId, tripId: running.id })

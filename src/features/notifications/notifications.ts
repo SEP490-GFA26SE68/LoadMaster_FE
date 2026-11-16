@@ -31,7 +31,7 @@ const ACCOUNT_ACTIONS: readonly AuditAction[] = [
  *   (`DRIVER_TRIP_ACTIONS`): chuyến mới hoặc kho soạn lại, xếp xong, chuyến tạm dừng vì quay về Đã lập kế hoạch, chuyến bị huỷ, đổi tài
  *   xế, quyết định với yêu cầu nhận hàng dọc đường, đổi thứ tự điểm giao.
  * - Quản trị công ty còn được báo "Sắp hết credit" (`credit.lowBalance`, FE-8-05): sự kiện của hệ thống khi số dư sau một lần chạy tối ưu
- *   xuống tới ngưỡng `BILLING_CONSTANTS.lowCreditThreshold` (đề xuất). Bấm mở màn gói cước `/goi-cuoc` (FE-8-03) để nạp thêm.
+ *   xuống tới ngưỡng `lowCreditThreshold` (25 % credit tháng của gói). Bấm mở màn gói cước `/goi-cuoc` (FE-8-03) để nạp thêm.
  * - Nhận hàng dọc đường (FE-7-03, FE-7-04): điều phối viên được báo khi có yêu cầu nhận mới (chính tài xế gửi); tài xế được báo quyết định
  *   duyệt / từ chối yêu cầu của **chuyến mình** (`DRIVER_TRIP_ACTIONS`, tham số `driverId` của sự kiện).
  * - Mọi vai trò công ty được báo khi Hỗ trợ khách hàng **trả lời yêu cầu hỗ trợ của chính mình** (`ticket.replied`, FE-8-07): lọc theo người gửi

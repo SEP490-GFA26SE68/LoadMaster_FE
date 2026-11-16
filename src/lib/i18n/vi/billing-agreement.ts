@@ -30,6 +30,13 @@ export const agreement = {
     },
     cancel: 'Huỷ',
     submit: 'Ký thoả thuận',
+    /** Bước xác nhận kép trước khi ký chính thức. */
+    doubleCheck: {
+      title: 'Xác nhận ký Thỏa thuận dịch vụ thử nghiệm',
+      description: 'Bạn đang thực hiện ký thỏa thuận điện tử cho {company}. Thỏa thuận sẽ có hiệu lực pháp lý ngay sau khi bạn xác nhận.',
+      confirm: 'Tôi xác nhận ký',
+      back: 'Quay lại',
+    },
   },
   view: {
     badgeSigned: 'Đã ký',

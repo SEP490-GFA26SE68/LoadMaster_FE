@@ -89,13 +89,27 @@ test('the dialog picks a customer company and applies a higher plan at once', as
   expect(assignBody()).toEqual({ companyId: 1, planId: 2, autoRenew: true })
 })
 
-test('the company panel reads the balance and recent credits in read-only mode without quick plan change', async () => {
+test('the company panel reads the balance and recent credits, and only offers higher tiers for quick change', async () => {
+  const user = userEvent.setup()
   contract = { ...CONTRACT, planId: 2, planName: 'Pro', planTier: 'PRO' }
   renderWith(<CompanyPanel companyId="1" ticketClosed={false} />)
 
   const panel = await screen.findByRole('region', { name: 'Thông tin công ty' })
   expect(await within(panel).findByText('2.450', {}, SLOW)).toBeInTheDocument()
   expect(within(panel).getByText('+500')).toBeInTheDocument()
-  expect(within(panel).getByText('Chỉ đọc')).toBeInTheDocument()
-  expect(within(panel).queryByLabelText('Đổi gói nhanh')).toBeNull()
+  const select = within(panel).getByLabelText('Đổi gói nhanh')
+  expect(await within(select).findByRole('option', { name: /Basic/ }, SLOW)).toBeDisabled()
+  expect(within(select).getByRole('option', { name: /Pro/ })).toBeDisabled()
+  expect(within(select).getByRole('option', { name: /Ultimate/ })).toBeEnabled()
+
+  await user.selectOptions(select, '3')
+  await user.click(within(panel).getByRole('button', { name: 'Cập nhật gói ngay' }))
+  await waitFor(() => expect(assignBody()).toEqual({ companyId: 1, planId: 3, autoRenew: true }))
+})
+
+test('a closed ticket blocks the quick plan change and says why', async () => {
+  renderWith(<CompanyPanel companyId="1" ticketClosed />)
+  const panel = await screen.findByRole('region', { name: 'Thông tin công ty' })
+  expect(await within(panel).findByText('Yêu cầu hỗ trợ đã đóng — mở lại yêu cầu trước khi đổi gói.', {}, SLOW)).toBeInTheDocument()
+  expect(within(panel).getByRole('button', { name: 'Cập nhật gói ngay' })).toBeDisabled()
 })

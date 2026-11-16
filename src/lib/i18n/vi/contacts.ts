@@ -81,7 +81,6 @@ export const contacts = {
     saved: 'Đã lưu yêu cầu {id}',
     unchanged: 'Chưa có gì thay đổi để lưu',
     handlersError: 'Chưa tải được danh sách người nhận việc. Tải lại trang để thử lại.',
-    unassignUnavailable: 'Yêu cầu đã có người nhận thì chỉ đổi được sang người khác, chưa để trống lại được.',
     companyCode: 'Mã công ty',
     taxCode: 'Mã số thuế',
     claim: 'Đảm nhận',

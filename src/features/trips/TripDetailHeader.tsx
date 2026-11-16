@@ -16,16 +16,15 @@ import {
   TripDetailStepper,
 } from './TripDetailStepper'
 import type { TripDetail } from './trips-api'
-import { useQuery } from '@tanstack/react-query'
 import { backendDateTimeText } from './backend-date-text'
-import { fetchTripById } from './trips-api'
+import { useBackendTripHeaderQuery } from './useBackendTripQuery'
 
 /**
  * Dải trời của Chi tiết chuyến (V2.3 `ChiTietChuyen*.jpg`, LM-088, LM-103): đường dẫn "Chuyến hàng / mã", tên chuyến và chip trạng
  * thái, dòng ngày chạy · xe · tài xế; phải là menu thao tác, "Chạy tối ưu", "Xem phương án 3D". Quyết định 1: chuyến đã có phương án
  * có cả hai nút — chính "Xem phương án 3D", phụ (kính) "Chạy tối ưu"; chuyến nháp chỉ "Chạy tối ưu" là nút chính (một nút chính mỗi
- * màn). Hành động bị chặn hoặc pha chỉ xem nói lý do ngay dưới nút. Trong dải: tiến trình rồi banner theo pha; card sơ đồ tuyến đè
- * lên đáy dải (`overlap`).
+ * màn). Hành động bị chặn hoặc pha chỉ xem nói lý do ngay dưới nút. Trong dải: tiến trình rồi banner theo pha; card sơ đồ tuyến nằm
+ * dưới dải.
  */
 export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: TripDetail | undefined }) {
   const t = useT()
@@ -55,7 +54,6 @@ export function TripDetailHeader({ tripId, detail }: { tripId: string; detail: T
 
   return (
     <PageHero
-      overlap
       crumbs={[{ label: t('trips.list.title'), to: '/chuyen' }, { label: tripId, mono: true }]}
       title={trip?.name ?? tripId}
       badge={detail ? (
@@ -126,17 +124,12 @@ export function RealTripDetailHeader({ tripId }: { tripId: string }) {
   const t = useT()
   const format = useFormat()
 
-  const query = useQuery({
-    queryKey: ['trips', tripId, 'backend-header'],
-    queryFn: () => fetchTripById(tripId),
-    enabled: tripId !== '',
-  })
+  const query = useBackendTripHeaderQuery(tripId)
 
   const trip = query.data
 
   return (
     <PageHero
-      overlap={false}
       crumbs={[
         { label: t('trips.list.title'), to: '/chuyen' },
         { label: trip?.tripCode ?? tripId, mono: true },

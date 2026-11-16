@@ -86,13 +86,13 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
     setVerifying(next)
   }
 
-  function handleVerify({ code }: VerifyCode) {
+  function handleVerify({ method, code }: VerifyCode) {
     if (current === undefined) return
     if (!codeMatches(current, code)) {
       setResult({ tone: 'error', message: t('serverWarehouse.session.codeUnmatched', { code: code.trim(), name: current.name }) })
       return
     }
-    confirm.mutate(current.id, {
+    confirm.mutate({ placementId: current.id, method }, {
       // Màn sang kiện kế tiếp ngay (thẻ, thanh tiến độ): không toast thành công; dòng kết quả trong hộp cho trình đọc màn hình
       onSuccess: () => setResult({ tone: 'success', message: t('serverWarehouse.session.confirmed', { name: current.name }) }),
       onError: (error) => setResult({ tone: 'error', message: dataErrorMessage(error, t) }),

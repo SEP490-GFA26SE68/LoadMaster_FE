@@ -27,6 +27,7 @@ export const PICKUP_TRANSITIONS: Readonly<Record<PickupStatus, readonly PickupSt
   DELIVERED: [],
 }
 
+/** Bảng trên là của điều phối viên và tài xế. Ngoại lệ duy nhất: huỷ chuyến đưa `APPROVED` chưa nhận kiện nào về `REJECTED` (`rejectUnpickedPickups`). */
 export function canTransitionPickup(from: PickupStatus, to: PickupStatus): boolean {
   return PICKUP_TRANSITIONS[from].includes(to)
 }
@@ -74,6 +75,11 @@ export type PickupRequest = {
   overrideReason?: string
   /** Lý do điều phối viên từ chối; từ lúc `REJECTED`. */
   rejectReason?: string
+  /**
+   * Yêu cầu bị từ chối không do điều phối viên: `TRIP_CANCELLED` — chuyến Đang vận chuyển bị huỷ khi chưa kiện nào của yêu cầu lên xe
+   * (`rejectUnpickedPickups`). Màn dịch mã, không có `rejectReason`.
+   */
+  rejectCause?: 'TRIP_CANCELLED'
   rejectedAt?: string
   rejectedBy?: string | null
   /** ISO 8601 */

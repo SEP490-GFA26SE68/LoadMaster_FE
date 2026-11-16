@@ -108,8 +108,6 @@ export function PackagesPage() {
 
   const hasRows = totalElements > 0
 
-  const overlap =
-    pending || (!error && hasRows)
 
 
   function handleAdded(created: CargoPackage[]) {
@@ -206,7 +204,6 @@ export function PackagesPage() {
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap={overlap}
         title={t('sourcing.packages.title')}
         meta={
           packagesQuery.isSuccess
@@ -244,11 +241,7 @@ export function PackagesPage() {
       </PageHero>
 
       <main
-        className={
-          overlap
-            ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6'
-            : 'min-h-0 flex-1 overflow-auto px-shell py-6'
-        }
+        className="min-h-0 flex-1 overflow-auto px-shell py-6"
       >
         {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card">

@@ -20,13 +20,14 @@ import { useResolveShortageMutation, useStagingShortagesQuery } from './useShort
  *
  * Mỗi dòng một cặp nút phụ: màn đã có nút chính của nó (mục 5: một nút chính mỗi màn). `server`: báo thiếu của máy chủ (Chi tiết chuyến
  * của máy chủ khi luồng kho nối backend), mã đứng đầu dòng là mã in trên nhãn.
+ * `live`: chuyến đang xếp / đang giao — đọc lại theo nhịp 30 giây và khi focus lại cửa sổ (`live-trip-refresh.ts`).
  */
-export function MissingPackagesCard({ tripId, server = false }: { tripId: string; server?: boolean }) {
+export function MissingPackagesCard({ tripId, server = false, live = false }: { tripId: string; server?: boolean; live?: boolean }) {
   const t = useT()
   const format = useFormat()
   const can = useCan()
   const titleId = useId()
-  const query = useStagingShortagesQuery(tripId, server)
+  const query = useStagingShortagesQuery(tripId, server, live)
   const resolve = useResolveShortageMutation(tripId, server)
   const [dropping, setDropping] = useState<ShortageRow | null>(null)
   const rows = query.data ?? []

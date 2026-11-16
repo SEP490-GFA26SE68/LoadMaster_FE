@@ -4,7 +4,7 @@ import { deadlineStatus } from '@/domain/routing'
 import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
 import { DEFAULT_MIN_SUPPORT_RATIO, type ConstraintEngineInput } from '@/domain/constraints'
 import type { OptimizationResult, PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
-import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
+import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plans-backend-api'
 import { ApiError } from '@/lib/api-client'
 import type { ScenePlacement, SceneStop, SceneUnplaced, SceneZone, ViewerSceneModel } from './scene-types'
 

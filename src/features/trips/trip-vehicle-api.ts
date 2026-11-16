@@ -14,7 +14,8 @@ const ON_BACKEND = usesBackend('trips')
 /** Một xe của công ty trong hộp thoại Đổi xe: trạng thái, và xe có chở được hàng của chuyến không (`vehicleFit`). */
 export type VehicleChoice = {
   readonly vehicle: VehicleConfig
-  readonly status: VehicleStatus
+  /** Xe Ngừng sử dụng không có trong hộp thoại. */
+  readonly status: Exclude<VehicleStatus, 'retired'>
   /** Chuyến xe đang chạy, khi `status` là `in_use`. */
   readonly busyTripId?: string
   /** Xe chuyến đang dùng. */
@@ -38,16 +39,18 @@ export async function fetchVehicleChoices(tripId: string): Promise<VehicleChoice
   const db = getMockDb()
   const [trip, vehicles, states] = await Promise.all([db.getTrip(tripId), db.listVehicles(), db.listVehicleStates()])
   const stateById = new Map(states.map((state) => [state.vehicleId, state]))
-  const choices = vehicles.map((vehicle): VehicleChoice => {
+  const choices = vehicles.flatMap((vehicle): VehicleChoice[] => {
     const state = stateById.get(vehicle.id)
     const status = state?.status ?? 'available'
+    // Xe Ngừng sử dụng không còn là lựa chọn nào, kể cả để nói lý do
+    if (status === 'retired') return []
     const current = vehicle.id === trip.vehicleId
     const fit = vehicleFit(vehicle, trip.packages)
-    return {
+    return [{
       vehicle, status, current, fit,
       ...(state?.tripId === undefined ? {} : { busyTripId: state.tripId }),
       selectable: !current && status === 'available' && fit.fits,
-    }
+    }]
   })
   return {
     cargo: {

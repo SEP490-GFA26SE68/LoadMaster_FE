@@ -112,6 +112,7 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, 
   const [unlocking, setUnlocking] = useState(false)
 
   const showUnlockAction =
+    SUPPORT_SOURCE.trialUnlock &&
     viewerIsSupport &&
     ticket.kind === 'TRIAL_ACCOUNT_UNLOCK' &&
     ticket.status !== 'RESOLVED' &&
@@ -145,15 +146,15 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, 
       </div>
 
       {showUnlockAction ? (
-        <div className="flex flex-col gap-2.5 rounded-lg border border-amber-300 bg-amber-50/70 p-3.5 dark:border-amber-700/50 dark:bg-amber-950/30">
+        <div className="flex flex-col gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-medium text-amber-950 dark:text-amber-200">
-              <KeyRound className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-2 font-medium text-ink-strong">
+              <KeyRound className="size-4 text-amber-700" strokeWidth={1.5} />
               <span>{t('support.page.unlock.action')}</span>
             </div>
             <Button
               type="button"
-              variant="primary"
+              variant="secondary"
               size="sm"
               disabled={pending || unlocking}
               onClick={() => setOpenUnlockDialog(true)}
@@ -161,7 +162,7 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, 
               {t('support.page.unlock.action')}
             </Button>
           </div>
-          <p className="m-0 text-caption text-amber-900/80 dark:text-amber-300/80">
+          <p className="m-0 text-caption text-ink-2">
             {t('support.page.unlock.dialogDescription')}
           </p>
 
@@ -213,7 +214,7 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, 
               </div>
             )
           ) : viewerIsSupport && ticket.lockedByOther ? (
-            <p role="status" className="m-0 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-small text-amber-800 pointer-coarse:text-body">
+            <p role="status" className="m-0 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-small text-amber-700 pointer-coarse:text-body">
               {t('support.thread.lockedByOther', { name: ticket.assignedToName ?? ticket.assignedToId ?? '' })}
             </p>
           ) : (

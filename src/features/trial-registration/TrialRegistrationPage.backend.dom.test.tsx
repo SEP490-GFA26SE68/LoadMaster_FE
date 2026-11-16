@@ -9,12 +9,18 @@ import { I18nProvider } from '@/lib/i18n'
 import { TrialRegistrationPage } from './TrialRegistrationPage'
 import * as api from './trial-registration-api'
 
+/** Trang chỉ chạy khi nhóm `registration` nối backend; đăng nhập vẫn là kho mẫu. */
+vi.mock('@/lib/backend-config', () => ({
+  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['registration']), keycloak: { url: '', realm: '', clientId: '' } },
+  usesBackend: (feature: string) => feature === 'registration',
+}))
+
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       <I18nProvider>
-        <AuthProvider>
+        <AuthProvider source="mock">
           <MemoryRouter initialEntries={['/dang-ky-trai-nghiem']}>
             <TrialRegistrationPage />
           </MemoryRouter>

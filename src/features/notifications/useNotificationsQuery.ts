@@ -1,4 +1,5 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { pollInterval } from '@/lib/polling'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { hasNotifications } from './notifications'
 import {
@@ -25,7 +26,7 @@ export function useNotificationsQuery() {
   return useQuery({
     queryKey: ['notifications', viewer?.id, viewer?.role],
     queryFn: viewer ? () => fetchNotifications(viewer) : skipToken,
-    refetchInterval: REFRESH_MS,
+    refetchInterval: (query) => pollInterval(query, REFRESH_MS),
     staleTime: 0,
   })
 }
@@ -36,7 +37,7 @@ export function useServerNotificationsQuery() {
   return useQuery({
     queryKey: ['notifications', 'server', viewer?.id, viewer?.role],
     queryFn: viewer ? fetchServerNotifications : skipToken,
-    refetchInterval: REFRESH_MS,
+    refetchInterval: (query) => pollInterval(query, REFRESH_MS),
     staleTime: 0,
   })
 }

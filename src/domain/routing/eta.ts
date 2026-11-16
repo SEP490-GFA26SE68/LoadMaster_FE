@@ -14,7 +14,7 @@ export const ROUTING_CONSTANTS = {
   /** Ngưỡng "sát hạn": ETA nằm trong khoảng này trước hạn thì là `AT_RISK`, phút. */
   AT_RISK_MARGIN_MINUTES: 30,
   /**
-   * Giờ nghỉ bắt buộc của tài xế (FE-BL-04). **Đề xuất FE — chờ nghiệp vụ xác nhận** (PRD v2 mục 17.2): lái liên tục quá chừng này thì
+   * Giờ nghỉ bắt buộc của tài xế (FE-BL-04), **đã chốt với nghiệp vụ** (4 giờ lái, 15 phút nghỉ): lái liên tục quá chừng này thì
    * phải nghỉ `REST_MINUTES` rồi mới lái tiếp. Dừng ở một điểm giao từ `REST_MINUTES` trở lên cũng tính là đã nghỉ (đặt lại bộ đếm lái
    * liên tục). **Chưa mô hình hoá** giới hạn lái theo ngày, theo tuần.
    */

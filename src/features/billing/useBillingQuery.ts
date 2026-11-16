@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { isApiError } from '@/lib/api-client'
+import { isMockDbError } from '@/lib/mock-db'
 import {
   BILLING_CAPABILITIES,
   cancelSubscription,
   getCreditBalance,
+  getRenewal,
   getSubscriptionView,
+  getTopUpTerms,
   listCreditTransactions,
   listInvoices,
   listPayments,
   listPlansOnSale,
+  renewSubscription,
   subscribe,
   topUpCredits,
 } from './billing-api'
@@ -47,6 +52,16 @@ export function usePlansOnSaleQuery() {
   return useQuery({ queryKey: [...KEY, 'plans-on-sale'], queryFn: listPlansOnSale, ...FRESH })
 }
 
+/** Giá nạp credit theo hạng gói (backend: bảng giá của máy chủ; kho mẫu: một giá). */
+export function useTopUpTermsQuery() {
+  return useQuery({ queryKey: [...KEY, 'top-up-terms'], queryFn: getTopUpTerms, ...FRESH })
+}
+
+/** Gói gia hạn được không và thanh toán gói còn chờ — chỉ backend (`BILLING_CAPABILITIES.renewal`). */
+export function useRenewalQuery() {
+  return useQuery({ queryKey: [...KEY, 'renewal'], queryFn: getRenewal, enabled: BILLING_CAPABILITIES.renewal, ...FRESH })
+}
+
 /** Giao dịch của trang thanh toán giả lập. */
 export function useCheckoutQuery(paymentId: string) {
   return useQuery({ queryKey: [...KEY, 'payment', paymentId], queryFn: () => fetchCheckout(paymentId), enabled: paymentId !== '', retry: false, ...FRESH })
@@ -66,14 +81,26 @@ export function useSubscribeMutation() {
   })
 }
 
+export function useRenewMutation() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: renewSubscription, onSuccess: () => refresh(client) })
+}
+
 export function useCancelSubscriptionMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: cancelSubscription, onSuccess: () => refresh(client) })
 }
 
+/** Gói vừa hết hạn giữa lúc mở hộp nạp (`SUBSCRIPTION_EXPIRED`): đọc lại gói và điều kiện nạp để màn và hộp thoại theo đúng máy chủ. */
 export function useTopUpMutation() {
   const client = useQueryClient()
-  return useMutation({ mutationFn: (credits: number) => topUpCredits(credits), onSuccess: () => refresh(client) })
+  return useMutation({
+    mutationFn: (credits: number) => topUpCredits(credits),
+    onSuccess: () => refresh(client),
+    onError: (error) => {
+      if ((isApiError(error) || isMockDbError(error)) && error.code === 'SUBSCRIPTION_EXPIRED') void refresh(client)
+    },
+  })
 }
 
 export function useSettlePaymentMutation() {

@@ -38,6 +38,8 @@ const OPERATION_LOOK: Partial<Record<AuditAction, { icon: LucideIcon; tone: KpiT
 /** Cùng việc ở máy chủ (`actionType`) mang cùng icon với kho mẫu. */
 export const SERVER_OPERATION_LOOK: Readonly<Record<string, { icon: LucideIcon; tone: KpiTone }>> = {
   LOADING_COMPLETED: { icon: PackageCheck, tone: 'azure' },
+  STAGING_SHORTAGE_REPORTED: { icon: PackageX, tone: 'amber' },
+  LOADING_DAMAGE_REPORTED: { icon: PackageX, tone: 'amber' },
   DELIVERY_ISSUE_REPORTED: { icon: TriangleAlert, tone: 'amber' },
   DELIVERY_ETA_RISK: { icon: Timer, tone: 'amber' },
   TRIP_COMPLETED: { icon: Flag, tone: 'green' },

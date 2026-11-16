@@ -113,8 +113,8 @@ test('the dispatcher watches the trip in transit, reports an incident, takes ano
   const options = await reroute.findAllByRole('radio', undefined, SLOW)
   expect(options.map((option) => option.closest('label')?.textContent)).toStrictEqual([
     'Đường tránh gần21,6 km · 26 phút · Đến điểm 3 lúc 12:25',
-    'Đường vành đai24,4 km · 29 phút · Đến điểm 3 lúc 12:29',
-    'Cao tốc28,2 km · 24 phút · Đến điểm 3 lúc 12:24',
+    'Đường vành đai24,4 km · 27 phút · Đến điểm 3 lúc 12:26',
+    'Cao tốc28,2 km · 21 phút · Đến điểm 3 lúc 12:21',
   ])
   expect(reroute.getByText('MOCK RESULT')).toBeInTheDocument()
   expect(reroute.getByText(/^Thứ tự điểm giao không đổi\./)).toBeInTheDocument()

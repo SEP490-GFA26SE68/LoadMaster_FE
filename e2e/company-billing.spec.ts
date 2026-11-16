@@ -4,7 +4,7 @@ import { navigateInApp, optimizeAndCompare, signInWith, signOutInApp } from './s
 /**
  * Gói cước và credit của công ty (FE-8-03, FE-8-04, D-89): quản trị công ty Phương Nam (gói Basic, còn 2 credit) nạp 50 credit qua
  * trang thanh toán giả lập — số dư lên 52, lịch sử credit có dòng Mua +50 và lịch sử thanh toán có giao dịch thành công —, rồi điều
- * phối viên của công ty thấy số dư mới ở Thiết lập tối ưu và chạy tối ưu được, mỗi lần chạy trừ một credit.
+ * phối viên của công ty thấy số dư mới ở Thiết lập tối ưu và chạy tối ưu được, mỗi lần chạy trừ 2 credit.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -37,15 +37,15 @@ test('a Phương Nam company admin tops up 50 credits through the simulated paym
   await expect(rows.nth(1)).toContainText('50.000 ₫')
   await expect(rows.nth(1)).toContainText('Thành công')
 
-  // Điều phối viên của công ty: số dư mới ở Thiết lập tối ưu, chạy được và bị trừ một credit
+  // Điều phối viên của công ty: số dư mới ở Thiết lập tối ưu, chạy được và bị trừ 2 credit
   await signOutInApp(page)
   await signInWith(page, 'dieuphoi@phuongnam.vn')
   const setup = '/chuyen/TRIP-PN-001/toi-uu'
   await navigateInApp(page, setup)
   const credit = page.getByRole('region', { name: 'Credit', exact: true })
-  await expect(credit).toContainText('Lần chạy này dùng 1 credit · còn 52')
+  await expect(credit).toContainText('Lần chạy này dùng 2 credit · còn 52')
   await optimizeAndCompare(page)
   await navigateInApp(page, setup)
-  await expect(credit).toContainText('Lần chạy này dùng 1 credit · còn 51')
+  await expect(credit).toContainText('Lần chạy này dùng 2 credit · còn 50')
   expect(browserErrors).toStrictEqual([])
 })

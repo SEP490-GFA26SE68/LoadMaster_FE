@@ -19,7 +19,7 @@ const TOUCH_SELECT = 'pointer-coarse:[&_button]:h-14 pointer-coarse:[&_button]:t
 /**
  * Form liên hệ của khách chưa có tài khoản (`POST /api/contact-guests`): họ tên, email, loại yêu cầu bắt buộc; số điện thoại, công ty,
  * gói quan tâm (gói đang bán) và nội dung tuỳ chọn. Lỗi của kho (mất mạng, dữ liệu sai) hiện bằng banner ngay trên nút gửi, dữ liệu đang
- * nhập giữ nguyên. Nút gửi là nút phụ: nút chính duy nhất của trang là "Nhận tư vấn" ở phần mở đầu (AGENTS mục 5).
+ * nhập giữ nguyên. Nút gửi là nút phụ: nút chính duy nhất của trang nằm ở phần mở đầu (AGENTS mục 5).
  */
 export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
   plans: readonly SubscriptionPlan[]

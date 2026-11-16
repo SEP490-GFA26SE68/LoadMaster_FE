@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronLeft, LifeBuoy, Plus, RotateCcw } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
@@ -14,8 +14,8 @@ import { TICKET_KINDS, type SupportTicket } from '@/lib/mock-db'
 import { ticketFormSchema, translateSupportError, type TicketFormValues } from './support-form'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
 import { TicketThread } from './TicketThread'
-import { ticketLabel } from './ticket-view'
-import { SUPPORT_SOURCE, useCreateTicketMutation, useReplyMutation, useSupportTicketsQuery } from './useSupportQuery'
+import { ticketLabel, withThread } from './ticket-view'
+import { SUPPORT_SOURCE, useCreateTicketMutation, useReplyMutation, useSupportTicketsQuery, useTicketThreadsQuery } from './useSupportQuery'
 
 /** Cỡ cảm ứng cho kho và tài xế mở hộp thoại từ nút tài khoản 56 px (AGENTS mục 5, 10). */
 const TOUCH_BUTTON = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
@@ -122,7 +122,10 @@ export function SupportTicketDialog({ onClose }: { onClose: () => void }) {
   const create = useCreateTicketMutation()
   const reply = useReplyMutation()
   const [view, setView] = useState<View>({ kind: 'list' })
-  const tickets = query.data ?? []
+  const listed = useMemo(() => query.data ?? [], [query.data])
+  // Backend: danh sách không mang trao đổi — đọc trao đổi của từng yêu cầu của mình (số lần trả lời, cuộc trao đổi đang mở)
+  const threads = useTicketThreadsQuery(useMemo(() => listed.map((ticket) => ticket.id), [listed]))
+  const tickets = useMemo(() => listed.map((ticket) => withThread(ticket, threads)), [listed, threads])
   const current = view.kind === 'ticket' ? tickets.find((ticket) => ticket.id === view.id) : undefined
 
   const back = (

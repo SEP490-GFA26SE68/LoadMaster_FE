@@ -6,7 +6,6 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { LABEL_SHEET } from './label-sheet'
 import type { PackageLabel as PackageLabelData } from './package-pool-api'
-import { PACKAGE_POOL_SUPPORT } from './usePackagePoolQuery'
 
 /** Bề rộng và chiều cao nhãn theo `em` của cỡ chữ gốc (`label-sheet.ts`): bản in gốc 4 mm, bản xem trên màn gốc 16 px. */
 const WIDTH_EM = LABEL_SHEET.labelWidthMm / LABEL_SHEET.baseMm
@@ -56,15 +55,9 @@ export function PackageLabel({ label, print = false }: { label: PackageLabelData
       </div>
 
       <div className="grid grid-cols-2 gap-[0.6em] border-t border-n-900 pt-[0.5em]">
-        {PACKAGE_POOL_SUPPORT.fullSize ? (
-          <Field name={t('qr.label.dimensions')}>
-            <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span>
-          </Field>
-        ) : (
-          <Field name={t('sourcing.detail.length')}>
-            <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.length(pkg.lengthCm)}</span>
-          </Field>
-        )}
+        <Field name={t('qr.label.dimensions')}>
+          <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.dimensions(pkg.lengthCm, pkg.widthCm, pkg.heightCm)}</span>
+        </Field>
         <Field name={t('qr.label.weight')}>
           <span className="font-mono text-[0.9em] leading-[1.2] font-semibold tabular-nums">{format.weight(pkg.weightKg)}</span>
         </Field>

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
 import { PackageFlagSection } from './PackageFlagSection'
 import { PackageFormDialog } from './PackageFormDialog'
+import { PackageHistorySection } from './PackageHistorySection'
 
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 
@@ -326,6 +327,8 @@ export function PackageDetailPanel({
               </Field>
             </dl>
           </section>
+
+          <PackageHistorySection titleId={titleId} packageId={pkg.id} />
 
         </div>
       )}

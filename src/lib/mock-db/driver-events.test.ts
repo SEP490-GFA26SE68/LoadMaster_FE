@@ -6,8 +6,9 @@ import { loadAll, stageAll } from '@/test/trip-flow'
 
 /**
  * Kho nêu tài xế của chuyến trong sự kiện (tham số `driverId` — chuông của tài xế đọc nó) chỉ khi chuyến đang hiện ở "Chuyến của tôi" của
- * họ: từ lúc kho bắt đầu soạn hàng (FE-6-01). Đổi tài xế lúc đó nêu cả người vừa bị thay (`previousDriverId`); chuyến đang xếp quay về Đã
- * lập kế hoạch (FE-6-02, FE-6-05) nêu tài xế để báo chuyến tạm dừng, và tới khi kho soạn lại, đổi tài xế hay huỷ chuyến vẫn nêu tài xế.
+ * họ: từ lúc kho bắt đầu soạn hàng (FE-6-01). Chuyến đang xếp khoá như máy chủ nên không đổi được tài xế; chuyến đang xếp quay về Đã lập
+ * kế hoạch (FE-6-02, FE-6-05) nêu tài xế để báo chuyến tạm dừng, và tới khi kho soạn lại, đổi tài xế (nêu cả người vừa bị thay,
+ * `previousDriverId`) hay huỷ chuyến vẫn nêu tài xế.
  * Kho neo 14/09.
  */
 
@@ -25,7 +26,7 @@ function storeAs(userId: string): MockDb {
 const paramsOf = async (db: MockDb, tripId: string, action: AuditEvent['action']) =>
   (await db.listEvents({ targetId: tripId })).find((event) => event.action === action)?.params
 
-test('starting to stage names the driver: the trip is new for them; changing the driver names nobody before that, the new and the replaced driver after', async () => {
+test('starting to stage names the driver: the trip is new for them; changing the driver names nobody before that and is refused after, like on the server', async () => {
   const db = storeAs(DISPATCHER)
   // Lập kế hoạch: chuyến chưa hiện với tài xế nào — lần đổi chỉ ghi trường đã sửa, trước → sau
   await db.updateTrip(TRIP, { driverId: 'US-0006' })
@@ -36,17 +37,9 @@ test('starting to stage names the driver: the trip is new for them; changing the
   await db.startLoading(TRIP)
   expect(await paramsOf(db, TRIP, 'loading.started')).toStrictEqual({ revisionId: 'REV-002', driverId: 'US-0004' })
 
+  // Kho đã bắt đầu xếp: chuyến khoá như máy chủ, không đổi được tài xế
   db.restoreSession(DISPATCHER)
-  await db.updateTrip(TRIP, { driverId: 'US-0006' })
-  expect(await paramsOf(db, TRIP, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: 'US-0004', after: 'US-0006', driverId: 'US-0006', previousDriverId: 'US-0004' })
-  await db.updateTrip(TRIP, { driverId: null })
-  expect(await paramsOf(db, TRIP, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: 'US-0006', after: '', previousDriverId: 'US-0006' })
-  await db.updateTrip(TRIP, { driverId: 'US-0007' })
-  expect(await paramsOf(db, TRIP, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: '', after: 'US-0007', driverId: 'US-0007' })
-  // Sửa trường khác lúc đang xếp không nêu tài xế nào
-  await db.updateTrip(TRIP, { name: 'Tuyến chiều' })
-  const renamed = await paramsOf(db, TRIP, 'trip.updated')
-  expect([renamed?.fields, renamed?.driverId, renamed?.previousDriverId]).toStrictEqual(['name', undefined, undefined])
+  await expect(db.updateTrip(TRIP, { driverId: 'US-0006' })).rejects.toMatchObject({ code: 'TRIP_LOCKED' })
 })
 
 test('a trip with no driver names nobody when the warehouse starts staging it', async () => {
@@ -153,7 +146,16 @@ test('a trip on hold after going back to planned is still known to its driver: c
 
   await db.updateTrip(tripId, { driverId: 'US-0006' })
   expect(await paramsOf(db, tripId, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: 'US-0007', after: 'US-0006', driverId: 'US-0006', previousDriverId: 'US-0007' })
+  // Bỏ tài xế chỉ nêu người bị thay; gán người mới chỉ nêu người mới
+  await db.updateTrip(tripId, { driverId: null })
+  expect(await paramsOf(db, tripId, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: 'US-0006', after: '', previousDriverId: 'US-0006' })
+  await db.updateTrip(tripId, { driverId: 'US-0007' })
+  expect(await paramsOf(db, tripId, 'trip.updated')).toStrictEqual({ fields: 'driverId', before: '', after: 'US-0007', driverId: 'US-0007' })
+  // Sửa trường khác không nêu tài xế nào
+  await db.updateTrip(tripId, { name: 'Tuyến chiều' })
+  const renamed = await paramsOf(db, tripId, 'trip.updated')
+  expect([renamed?.fields, renamed?.driverId, renamed?.previousDriverId]).toStrictEqual(['name', undefined, undefined])
   // Chuyến chưa lên xe kiện nào (đã về Đã lập kế hoạch): không có số kiện phải dỡ
   await db.cancelTrip(tripId, 'Khách huỷ đơn')
-  expect(await paramsOf(db, tripId, 'trip.cancelled')).toStrictEqual({ reason: 'Khách huỷ đơn', driverId: 'US-0006' })
+  expect(await paramsOf(db, tripId, 'trip.cancelled')).toStrictEqual({ reason: 'Khách huỷ đơn', driverId: 'US-0007' })
 })

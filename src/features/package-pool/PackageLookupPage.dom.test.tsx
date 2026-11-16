@@ -72,11 +72,10 @@ test('the dispatcher types a sender code and gets the package: every field, the 
   expect(within(card).getByText('Đã nhập')).toBeInTheDocument()
   expect(within(card).getByText('Không tìm thấy')).toBeInTheDocument()
   expect(within(card).getByRole('img', { name: `Mã QR ${token}` })).toBeInTheDocument()
-  // In lại nhãn giữ mã kiện; điều phối viên mở kiện ở Kho kiện, không có nút "đã tìm thấy" của kho. Gỡ cờ theo `packages.manage` —
-  // ma trận quyền của nhánh nhóm cho nhân viên kho, không cho điều phối viên
+  // In lại nhãn giữ mã kiện; điều phối viên mở kiện ở Kho kiện và gỡ cờ (như máy chủ), không có nút "đã tìm thấy" của kho
   expect(within(card).getByRole('link', { name: 'In lại nhãn' })).toHaveAttribute('href', '/kien-hang/nhan?kien=PK-0063&tu=tra-cuu')
   expect(within(card).getByRole('link', { name: 'Mở trong Kho kiện' })).toHaveAttribute('href', '/kien-hang?q=PK-0063')
-  expect(within(card).queryByRole('button', { name: /^Gỡ cờ/ })).not.toBeInTheDocument()
+  expect(within(card).getByRole('button', { name: 'Gỡ cờ Không tìm thấy' })).toBeInTheDocument()
   expect(within(card).queryByRole('button', { name: 'Đã tìm thấy kiện này' })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Về màn kho' })).not.toBeInTheDocument()
 })
@@ -132,8 +131,8 @@ test('the warehouse works on touch targets; typing the code of a flagged package
   await lookUp(user, 'BV-VIN-2609-05')
   const card = await screen.findByRole('region', { name: 'Kiện BV-VIN-2609-05' }, SLOW)
   expect(within(card).getByRole('link', { name: 'In lại nhãn' })).toHaveClass('h-14')
-  // Ma trận quyền của nhánh nhóm: nhân viên kho quản lý kho kiện (`packages.manage`), nên thấy nút gỡ cờ và mở được Kho kiện
-  expect(within(card).getByRole('button', { name: 'Gỡ cờ Không tìm thấy' })).toBeInTheDocument()
+  // Nhân viên kho mở được Kho kiện; gỡ cờ là việc của điều phối viên (như máy chủ), kho chỉ xác nhận đã tìm thấy
+  expect(within(card).queryByRole('button', { name: /^Gỡ cờ/ })).not.toBeInTheDocument()
   expect(within(card).getByRole('link', { name: 'Mở trong Kho kiện' })).toBeInTheDocument()
   expect(within(card).getByText('Kiện này đang mang cờ "Không tìm thấy". Nếu kiện đang ở trước mặt bạn, xác nhận để gỡ cờ.')).toBeInTheDocument()
   const events = (await getMockDb().listEvents()).length

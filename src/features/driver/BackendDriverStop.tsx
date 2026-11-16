@@ -3,6 +3,7 @@ import { useId, useState } from 'react'
 import { PackageVerify } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import type { StopRef } from '@/features/pickups/pickup-stops'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { DeliveryItemRow } from './DeliveryItemRow'
 import type { DriverStopScreen } from './driver-api'
@@ -18,7 +19,7 @@ import { StopMoreActions } from './StopMoreActions'
 import { StopNotices } from './StopNotices'
 import { StopProgress } from './StopProgress'
 import { useDeliveryStop } from './useDeliveryStop'
-import { useDriverStopScreenQuery, useDriverStopTimesQuery } from './useDriverQueries'
+import { useDriverStopRefsQuery, useDriverStopScreenQuery } from './useDriverQueries'
 import { useUnloadScan } from './useUnloadScan'
 
 /**
@@ -56,6 +57,8 @@ export function BackendDriverStop({ tripId }: { tripId: string }) {
  * Điểm nhận dọc đường (máy chủ chèn lúc duyệt): đối chiếu từng kiện nhận lên xe bằng quét QR hoặc gõ mã — máy chủ chưa có xác nhận tay ở
  * điểm nhận —, rồi hoàn tất điểm nhận; kiện nhận giao ở điểm sau dỡ như kiện thường.
  */
+const NO_STOPS: readonly StopRef[] = []
+
 function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<DriverStopScreen, { kind: 'stop' }> }) {
   const t = useT()
   const { view, stops } = screen
@@ -64,7 +67,7 @@ function BackendStopView({ tripId, screen }: { tripId: string; screen: Extract<D
   const [issueOpen, setIssueOpen] = useState(false)
   const pickupListId = useId()
   // Mã điểm của máy chủ: câu của luật nhận hàng gọi tên điểm theo mã này
-  const stopRefs = (useDriverStopTimesQuery(tripId).data?.stops ?? []).map((stop) => ({ id: stop.id ?? '', name: stop.name }))
+  const stopRefs = useDriverStopRefsQuery(tripId).data ?? NO_STOPS
   const arrived = view.arrivedAt !== undefined
   const pickupStop = view.stop.kind === 'PICKUP'
   // Backend báo cả điểm đã dỡ (kể cả kiện dỡ trước lần mở trang này): không còn gì để đối chiếu thì đóng hộp

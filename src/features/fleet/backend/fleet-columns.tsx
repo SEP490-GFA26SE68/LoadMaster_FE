@@ -115,9 +115,7 @@ export function createFleetColumns(t: TFunction) {
           width: '220px',
         } satisfies ColumnMeta,
         cell: (info) => (
-          <VehicleStatusCell
-            status={info.row.original.status}
-          />
+          <VehicleStatusCell vehicle={info.row.original} />
         ),
       },
     ),

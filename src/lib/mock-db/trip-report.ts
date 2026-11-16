@@ -3,6 +3,7 @@ import { roundKg } from '@/domain/geometry'
 import type { DeadlineStatus } from '@/domain/routing'
 import type { TripException, TripReroute } from './exception-model'
 import { leftOutIds, plannedStops } from './operations'
+import type { PickupRequest } from './pickup-model'
 import type { Cancellation, DeliveryIssue, Revision, Trip } from './types'
 import { latestVerifications, VERIFY_CONTEXTS, VERIFY_METHODS, type ManualConfirm, type PackageVerification, type VerifyContext, type VerifyMethod } from './verify-model'
 
@@ -18,7 +19,7 @@ export type TripReportStop = {
   qrConfirmed: number
   /**
    * Kiện của điểm này thành Hoàn trả (D-91): ở lại xe khi tài xế hoàn tất điểm, hoặc chưa giao khi chuyến bị huỷ lúc đang vận chuyển —
-   * kể cả kiện đã dỡ ở điểm chưa hoàn tất.
+   * kể cả kiện đã dỡ ở điểm chưa hoàn tất. Gồm cả kiện nhận dọc đường đã lên xe mà phải giao ở điểm này.
    */
   returned: number
   issues: number
@@ -57,7 +58,9 @@ export type TripReport = {
     /** Kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05). */
     damaged: number
     loadedByQr: number
-    /** Kiện đã giao: đã dỡ; chuyến bị huỷ lúc đang vận chuyển thì chỉ tính kiện của điểm đã hoàn tất. */
+    /**
+     * Kiện đã giao (kể cả kiện nhận dọc đường): đã dỡ; chuyến bị huỷ lúc đang vận chuyển thì chỉ tính kiện của điểm đã hoàn tất.
+     */
     delivered: number
     /** Tổng kiện Hoàn trả của các điểm. */
     returned: number
@@ -85,8 +88,24 @@ export type TripReport = {
   seal: { number: string; at: string } | null
 }
 
-/** Sự cố cấp chuyến và tuyến đã đổi của chuyến — kho giữ ngoài `Trip`. */
-export type TripReportIncidents = { exceptions?: readonly TripException[]; reroutes?: readonly TripReroute[] }
+/**
+ * Sự cố cấp chuyến, tuyến đã đổi và yêu cầu nhận dọc đường của chuyến — kho giữ ngoài `Trip`. Kiện của yêu cầu đã duyệt
+ * (`packageIds`, khối lượng ở `packages`) tính vào số kiện đã giao, hoàn trả và khối lượng đã giao như kiện của phương án.
+ */
+export type TripReportIncidents = {
+  exceptions?: readonly TripException[]
+  reroutes?: readonly TripReroute[]
+  pickups?: readonly Pick<PickupRequest, 'packageIds' | 'packages' | 'deliveryStopId'>[]
+}
+
+/** Kiện nhận dọc đường đã duyệt: mã kiện kho kiện, khối lượng, số điểm giao của nó. */
+function pickupItems(trip: Trip, pickups: TripReportIncidents['pickups']) {
+  return (pickups ?? []).flatMap((request) => {
+    const stopNumber = trip.stops.findIndex((stop) => stop.id === request.deliveryStopId) + 1
+    if (stopNumber === 0) return []
+    return (request.packageIds ?? []).map((id, index) => ({ id, weightKg: request.packages[index]?.weightKg ?? 0, stopNumber }))
+  })
+}
 
 function between(from: string | undefined, to: string | undefined): number | null {
   return from === undefined || to === undefined ? null : Date.parse(to) - Date.parse(from)
@@ -104,9 +123,15 @@ function verificationCounts(trip: Trip): TripReport['verifications'] {
 /** `plan`: bản kho làm theo (`trip.loading.revisionId`); chuyến chưa xếp thì `undefined` — báo cáo chỉ còn khung điểm giao. */
 export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'> | undefined, incidents: TripReportIncidents = {}): TripReport {
   const planned = plan ? plannedStops(plan, trip.stops) : new Map<string, number>()
-  const weightById = new Map(plan ? expandPackages(plan.request.packages).instances.map((i) => [i.packageInstanceId, i.weightKg]) : [])
+  const pickups = pickupItems(trip, incidents.pickups)
+  const weightById = new Map([
+    ...(plan ? expandPackages(plan.request.packages).instances.map((i) => [i.packageInstanceId, i.weightKg] as const) : []),
+    ...pickups.map((item) => [item.id, item.weightKg] as const),
+  ])
   const leftOut = leftOutIds(trip)
   const delivery = trip.delivery
+  // Kiện nhận đã lên xe ở điểm nhận (kể cả điểm nhận chưa hoàn tất)
+  const picked = new Set(delivery?.stops.flatMap((stop) => stop.pickedIds ?? []))
   const issues = delivery?.issues ?? []
   const cancelledInTransit = trip.cancellation?.fromPhase === 'delivering'
   const weightOf = (ids: Iterable<string>) => roundKg([...ids].reduce((sum, id) => sum + (weightById.get(id) ?? 0), 0))
@@ -116,6 +141,8 @@ export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'
     const number = index + 1
     const progress = delivery?.stops.find((item) => item.number === number)
     const items = [...planned].filter(([id, stopNumber]) => stopNumber === number && !leftOut.has(id)).map(([id]) => id)
+    const pickedHere = pickups.filter((item) => item.stopNumber === number && picked.has(item.id)).map((item) => item.id)
+    const onboard = [...items, ...pickedHere]
     const unloaded = new Set(progress?.unloadedIds)
     const settled = progress?.completedAt !== undefined
     if (settled || !cancelledInTransit) for (const id of unloaded) delivered.add(id)
@@ -128,7 +155,7 @@ export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'
       planned: items.length,
       unloaded: unloaded.size,
       qrConfirmed: progress?.qrConfirmedIds?.length ?? 0,
-      returned: settled ? items.filter((id) => !unloaded.has(id)).length : cancelledInTransit && delivery ? items.length : 0,
+      returned: settled ? onboard.filter((id) => !unloaded.has(id)).length : cancelledInTransit && delivery ? onboard.length : 0,
       issues: issues.filter((issue) => issue.stopNumber === number).length,
       plannedEta: route?.eta ?? null,
       arrivedAt,

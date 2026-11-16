@@ -1,9 +1,11 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { NewSupportTicket, TicketStatus } from '@/lib/mock-db'
+import { skipToken, useMutation, useQueries, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
+import type { NewSupportTicket, SupportTicket, TicketStatus } from '@/lib/mock-db'
 import {
+  SUPPORT_SOURCE,
   assignCompanyPlan,
   createSupportTicket,
   getSupportCompanyPanel,
+  getSupportTicketThread,
   listCompanyContracts,
   listSupportTickets,
   replyToSupportTicket,
@@ -22,6 +24,25 @@ export type { CompanyContract, SupportPanel, SupportPanelPlan } from './support-
  */
 export function useSupportTicketsQuery() {
   return useQuery({ queryKey: ['support', 'tickets'], queryFn: listSupportTickets, staleTime: 0 })
+}
+
+function threadsOf(results: readonly UseQueryResult<SupportTicket>[]): ReadonlyMap<string, SupportTicket> {
+  return new Map(results.flatMap((result) => (result.data === undefined ? [] : [[result.data.id, result.data] as const])))
+}
+
+/**
+ * Trao đổi của các yêu cầu đang vẽ, khoá `['support', 'thread', mã]` (mọi lần ghi làm mới cùng `['support']`). Chỉ khi danh sách không mang
+ * trao đổi (`SUPPORT_SOURCE.threads`, backend); kho mẫu không đọc gì và trả bảng rỗng. Ghép vào yêu cầu bằng `withThread`.
+ */
+export function useTicketThreadsQuery(ticketIds: readonly string[]): ReadonlyMap<string, SupportTicket> {
+  return useQueries({
+    queries: (SUPPORT_SOURCE.threads ? ticketIds : []).map((id) => ({
+      queryKey: ['support', 'thread', id],
+      queryFn: () => getSupportTicketThread(id),
+      staleTime: 0,
+    })),
+    combine: threadsOf,
+  })
 }
 
 /** Khung công ty của Hỗ trợ khách hàng; chưa chọn yêu cầu nào (`companyId` vắng) thì không đọc gì. */

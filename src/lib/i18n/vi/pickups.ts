@@ -77,6 +77,7 @@ export const pickups = {
     recheckLabel: 'Kiểm lại mười luật của yêu cầu {id}',
     override: 'Lý do vượt luật: {reason}',
     rejected: 'Lý do từ chối: {reason}',
+    rejectedTripCancelled: 'Tự từ chối vì chuyến đã huỷ khi chưa nhận kiện nào.',
   },
   actions: {
     approve: 'Duyệt',

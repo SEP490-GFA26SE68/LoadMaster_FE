@@ -166,7 +166,8 @@ export function packageMethods(ctx: DbContext): PackageMethods {
     clearPackageFlag: (id, flag: PackageFlag) =>
       ctx.respond(() => {
         const current = scope.own(id)
-        assertRole('dispatcher', 'warehouse')
+        // Như máy chủ: chỉ điều phối viên gỡ cờ; nhân viên kho gỡ cờ "Không tìm thấy" bằng `reportPackageFound`
+        assertRole('dispatcher')
         if (!current.flags.includes(flag)) throw new MockDbError('PACKAGE_FLAG_NOT_SET', { packageId: id, flag })
         ctx.log('package.flagCleared', { type: 'package', id }, { flag })
         return clearFlag(current, flag)

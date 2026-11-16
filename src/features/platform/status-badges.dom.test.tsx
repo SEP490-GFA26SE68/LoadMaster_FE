@@ -33,7 +33,7 @@ describe('Status Badges Internationalization (VI vs EN)', () => {
           <TrialStatusBadge status="REJECTED" />
         </I18nProvider>,
       )
-      expect(screen.getByText('Đã từ chối')).toBeInTheDocument()
+      expect(screen.getByText('Từ chối')).toBeInTheDocument()
     })
 
     test('renders correct English labels in EN mode', () => {
@@ -43,7 +43,7 @@ describe('Status Badges Internationalization (VI vs EN)', () => {
           <TrialStatusBadge status="PENDING" />
         </I18nProvider>,
       )
-      expect(screen.getByText('Awaiting review')).toBeInTheDocument()
+      expect(screen.getByText('Pending review')).toBeInTheDocument()
       unmount()
 
       const { unmount: unmount2 } = render(

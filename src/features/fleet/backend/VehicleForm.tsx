@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import { useSaveVehicleMutation } from './useVehiclesQuery'
 import { useVehicleTypesQuery } from '../../vehicle-types/backend/useVehicleTypesQuery'
 import {
@@ -29,6 +29,8 @@ type VehicleFormProps = {
   status?: ReactNode
   actions?: ReactNode
   notice?: ReactNode
+  /** Sửa xong (hoặc huỷ sửa): về trang xe thay vì về danh sách. */
+  onDone?: () => void
 }
 
 export function VehicleForm({
@@ -37,6 +39,7 @@ export function VehicleForm({
   status,
   actions,
   notice,
+  onDone,
 }: VehicleFormProps) {
   const t = useT()
   const navigate = useNavigate()
@@ -59,13 +62,15 @@ export function VehicleForm({
   )
 
   useEffect(() => {
-    if (done) void navigate(FLEET_PATH, { replace: true })
-  }, [done, navigate])
+    if (!done) return
+    if (onDone) onDone()
+    else void navigate(FLEET_PATH, { replace: true })
+  }, [done, navigate, onDone])
 
   function handleSave(values: VehicleFormValues) {
     if (readOnly || save.isPending) return
 
-    save.mutate(toVehicleInput(values), {
+    save.mutate({ input: toVehicleInput(values), id: vehicle?.id }, {
       onSuccess: (saved) => {
         toast.success(
           t(vehicle ? 'fleet.detail.saved' : 'fleet.detail.created', {
@@ -74,7 +79,7 @@ export function VehicleForm({
         )
         setDone(true)
       },
-      onError: () => toast.error(t('fleet.detail.saveFailed')),
+      onError: (error) => toast.error(dataErrorMessage(error, t)),
     })
   }
 
@@ -85,7 +90,6 @@ export function VehicleForm({
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap
         back={{ to: FLEET_PATH, label: t('fleet.detail.back') }}
         title={vehicle ? vehicle.name : t('fleet.detail.newTitle')}
         crumbs={[
@@ -102,7 +106,7 @@ export function VehicleForm({
         }
       />
 
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         <div className="mx-auto w-full max-w-3xl">
           <Card className="flex min-w-0 flex-col rounded-xl shadow-sm">
             {notice}

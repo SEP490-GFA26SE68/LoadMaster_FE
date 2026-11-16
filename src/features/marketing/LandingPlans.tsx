@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { PUBLIC_PRICING } from '@/features/auth/landing'
 import { useFormat, useT } from '@/lib/i18n'
-import type { SubscriptionPlan } from '@/lib/mock-db'
+import { BILLING_CONSTANTS, type SubscriptionPlan } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 import { SectionHeading } from './SectionHeading'
@@ -40,7 +40,7 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
 
 /**
  * Phần "Gói cước" của trang giới thiệu (`#goi-cuoc`): tóm tắt các gói đang bán (cùng truy vấn với Bảng giá và form liên hệ), câu nói một
- * lần chạy tối ưu 3D dùng một credit, và liên kết phụ "So sánh các gói" sang Bảng giá. Không nút đăng ký hay mua.
+ * lần chạy tối ưu 3D dùng bao nhiêu credit (`BILLING_CONSTANTS.optimizationCost`, như máy chủ), và liên kết phụ "So sánh các gói" sang Bảng giá. Không nút đăng ký hay mua.
  */
 export function LandingPlans() {
   const t = useT()
@@ -63,7 +63,7 @@ export function LandingPlans() {
       <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="m-0 flex items-start gap-3 text-body-lg text-ink-2">
           <Coins aria-hidden className="mt-0.5 size-5 flex-none text-primary" strokeWidth={1.5} />
-          {t('landing.plans.credit')}
+          {t('landing.plans.credit', { count: BILLING_CONSTANTS.optimizationCost })}
         </p>
         <Button asChild variant="secondary" size="lg" className={cn('flex-none', PUBLIC_TOUCH)}>
           <Link to={PUBLIC_PRICING}>

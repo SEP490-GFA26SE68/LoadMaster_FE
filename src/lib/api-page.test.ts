@@ -40,11 +40,18 @@ test('a plain list (bare or enveloped) is read once, never paged again', async (
   expect(enveloped.urls).toHaveLength(1)
 })
 
-test('stops after maxPages so a backend that never says "last" cannot loop forever', async () => {
-  const endless = clientReturning(
-    { success: true, data: [{ id: 1 }], last: false },
-    { success: true, data: [{ id: 2 }], last: false },
-    { success: true, data: [{ id: 3 }], last: false },
-  )
-  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
+const endlessPages = () => clientReturning(
+  { success: true, data: [{ id: 1 }], last: false },
+  { success: true, data: [{ id: 2 }], last: false },
+  { success: true, data: [{ id: 3 }], last: false },
+)
+
+test('a backend that never says "last" stops at maxPages with LIST_TOO_LONG, never a silently cut list', async () => {
+  const endless = endlessPages()
+  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).rejects.toMatchObject({ code: 'LIST_TOO_LONG', params: { maxPages: 2 } })
+  expect(endless.urls).toHaveLength(2)
+})
+
+test('truncate: reading only the first pages is what the caller wants, so the head comes back without an error', async () => {
+  await expect(fetchAllPages('/api/x', { maxPages: 2, truncate: true }, endlessPages().client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
 })

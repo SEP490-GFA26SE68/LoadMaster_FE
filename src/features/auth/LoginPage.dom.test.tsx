@@ -87,6 +87,8 @@ test('the quick sign-in box groups the demo accounts by platform and company; pi
   ])
   // Không dòng nào còn mang nhãn vai trò đã bỏ
   expect(screen.queryByText(/Nhà sản xuất|logistics/i)).not.toBeInTheDocument()
+  // Kho mẫu không có luồng đăng ký công khai (D-20): không lối vào nào dưới form
+  expect(screen.queryByRole('link', { name: /Đăng ký/ })).not.toBeInTheDocument()
 
   await user.click(within(screen.getByRole('group', { name: 'Công ty CP Giao nhận Phương Nam' })).getByRole('button', { name: /Quản lý công ty/ }))
   expect(screen.getByLabelText('Email')).toHaveValue('quanly@phuongnam.vn')

@@ -10,7 +10,7 @@ import { HANDLING_CLASSES } from '@/domain/models'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { Package } from '@/lib/mock-db'
 import { EMPTY_PACKAGE, isPackageFormError, NO_PACKAGE_TYPE, packageFormSchema, toPackageInput, type PackageFormValues } from './package-form'
-import { PACKAGE_POOL_SUPPORT, useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
+import { useCreatePackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
 
 type NumberField = 'lengthCm' | 'widthCm' | 'heightCm' | 'weightKg'
 
@@ -56,7 +56,7 @@ export function PackageFormDialog({ onClose, onDone }: {
             <Input
               label={t('sourcing.form.packageCode')}
               placeholder={t('sourcing.form.packageCodePlaceholder')}
-              hint={PACKAGE_POOL_SUPPORT.numericIds ? t('sourcing.form.packageCodeHintBackend') : t('sourcing.form.packageCodeHint')}
+              hint={t('sourcing.form.packageCodeHint')}
               className="font-mono"
               error={errorText(errors.packageCode?.message)}
               {...register('packageCode')}
@@ -80,18 +80,16 @@ export function PackageFormDialog({ onClose, onDone }: {
               error={errorText(errors.destination?.message)}
               {...register('destination')}
             />
-            {PACKAGE_POOL_SUPPORT.packageTypes ? (
-              <SelectField
-                control={control}
-                name="packageTypeId"
-                label={t('sourcing.form.packageType')}
-                hint={t('sourcing.form.packageTypeHint')}
-                options={[
-                  { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
-                  ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
-                ]}
-              />
-            ) : null}
+            <SelectField
+              control={control}
+              name="packageTypeId"
+              label={t('sourcing.form.packageType')}
+              hint={t('sourcing.form.packageTypeHint')}
+              options={[
+                { value: NO_PACKAGE_TYPE, label: t('sourcing.form.packageTypeNone') },
+                ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: `${type.name} · ${type.id}` })),
+              ]}
+            />
             {create.error ? <Banner tone="danger">{dataErrorMessage(create.error, t)}</Banner> : null}
           </div>
           <DialogFooter>

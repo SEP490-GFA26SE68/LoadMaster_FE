@@ -6,7 +6,7 @@ const FRONT_AXLE_X_CM = -100
 
 /**
  * Hai trục của xe tải 4×2 mẫu (FE-5b-05): trục sau đặt giữa hốc bánh của thùng (xe không có hốc bánh: hai phần ba chiều dài thùng).
- * Tải rỗng và tải tối đa là **số ước lượng theo cỡ xe, chưa đối chiếu thông số nhà sản xuất**: phần hai trục còn nhận được (tải tối đa −
+ * Tải rỗng và tải tối đa là **số theo cỡ xe, đã được nhóm xác nhận**: phần hai trục còn nhận được (tải tối đa −
  * tải rỗng) lớn hơn tải trọng xe khai, và xe chở đủ tải dàn đều thùng không vượt trục nào.
  */
 export function twoAxles(rearXCm: number, [frontEmptyKg, frontMaxKg]: [number, number], [rearEmptyKg, rearMaxKg]: [number, number]): VehicleAxle[] {

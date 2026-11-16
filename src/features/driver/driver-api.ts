@@ -216,7 +216,7 @@ export type UnloadVerifyInput = { readonly stopNumber: number; readonly method: 
  */
 // POST /api/driver/packages/{id}/unload?driverId=
 export function confirmUnloadByQr(tripId: string, { stopNumber, method, code }: UnloadVerifyInput): Promise<UnloadRecorded> {
-  if (ON_BACKEND) return backend().unload(tripId, { stopNumber, code })
+  if (ON_BACKEND) return backend().unload(tripId, { stopNumber, code, method })
   return getMockDb().confirmUnloadByQr(tripId, stopNumber, code, method)
 }
 

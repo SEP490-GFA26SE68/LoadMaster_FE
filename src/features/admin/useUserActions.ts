@@ -65,18 +65,32 @@ export function useUserActions() {
     handleAction,
     async submitCreate(values: UserFormValues) {
       const result = await createUser.mutateAsync(values)
+      const isCompany = currentUser !== null && userScopeOf(currentUser.role) === 'company'
+      if (isCompany) {
+        setDialog(null)
+        toast.success(t('admin.employees.createdSuccess', { name: values.fullName, email: values.email }))
+        return
+      }
       setDialog({ kind: 'password', result, reason: 'created' })
     },
     async submitEdit(user: User, values: UserFormValues) {
       await updateUser.mutateAsync({ id: user.id, changes: values, current: user })
-      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser()
+      if (currentUser !== null && isSameAccount(user, currentUser)) refreshUser().catch((error: unknown) => toast.error(dataErrorMessage(error, t)))
       toast.success(t('admin.users.updated', { name: values.fullName }))
       setDialog((current) => (current?.kind === 'edit' && current.user.id === user.id ? null : current))
     },
     resetPending: resetPassword.isPending,
     confirmReset(user: User) {
+      const isCompany = currentUser !== null && userScopeOf(currentUser.role) === 'company'
       resetPassword.mutate(user.id, {
-        onSuccess: (result) => setDialog({ kind: 'password', result, reason: 'reset' }),
+        onSuccess: (result) => {
+          if (isCompany) {
+            setDialog(null)
+            toast.success(t('admin.employees.resetSuccess', { name: user.fullName, email: user.email }))
+            return
+          }
+          setDialog({ kind: 'password', result, reason: 'reset' })
+        },
         onError: (error) => {
           toast.error(dataErrorMessage(error, t))
           setDialog((current) => (current?.kind === 'reset' && current.user.id === user.id ? null : current))

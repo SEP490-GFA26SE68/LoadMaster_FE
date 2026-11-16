@@ -129,7 +129,7 @@ function Comparison({ tripId, cards, canRun }: { tripId: string; cards: readonly
   )
 
   return (
-    <div className="sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6">
       <ComparisonMatrix cards={cards} best={best} selectedId={selected?.id} onSelect={setChosenId} footer={footer} />
     </div>
   )

@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import type { OptimizationJob } from './load-plan-dto'
+import type { OptimizationJob } from './load-plans-backend-api'
 import { RunFigure } from './RunFigure'
 import { runAlgorithmLabel } from './server-algorithms'
 

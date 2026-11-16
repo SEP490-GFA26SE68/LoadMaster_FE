@@ -1,32 +1,30 @@
 /**
  * Hàm → endpoint backend (FE-0-09); nối backend chỉ thay thân hàm. Nhóm `contacts` nối backend thì gọi backend, không thì gọi kho mẫu:
  *   listGuestContacts     → GET /api/contact-guests?status&requestType
- *   updateGuestContact    → PATCH /api/contact-guests/{id} (bỏ người nhận việc: chưa có ở BE)
+ *   updateGuestContact    → PATCH /api/contact-guests/{id} (bỏ người nhận việc: `unassign: true`)
  *   claimGuestContact     → PATCH /api/contact-guests/{id} (người đang đăng nhập nhận việc, trạng thái Đang xử lý)
  *   replyGuestContact     → POST /api/contact-guests/{id}/reply (chỉ backend)
  *   forwardContactToTrial → POST /api/trial-requests (chỉ backend)
- *   listContactHandlers   → GET /api/users/me + GET /api/users (danh sách người nhận việc: chưa có ở BE)
+ *   listContactHandlers   → GET /api/contact-guests/handlers
  *   listContactPlanNames  → GET /api/subscription/plans (nối backend: tên gói đi kèm yêu cầu, không gọi)
  */
 
 import { fetchBackendMe } from '@/features/auth/me-api'
 import { roleOfBackend } from '@/features/auth/backend-user'
 import { api, ApiError } from '@/lib/api-client'
-import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import { createTrialRequest, TRIAL_REQUESTS_SOURCE } from '@/features/platform/trial-requests-api'
 import { CONTACT_HANDLER_ROLES, getMockDb, type GuestContact, type GuestContactPatch } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
-import { contactPatchBody, guestContactOf, type ContactOfGuestDto } from './contact-dto'
+import { contactPatchBody, guestContactOf, type ContactHandlerDto, type ContactOfGuestDto } from './contact-dto'
 
 const ON_BACKEND = usesBackend('contacts')
 
 /**
- * Việc màn làm được theo nguồn dữ liệu: backend chưa bỏ được người nhận việc (`PATCH` bỏ qua `assignedToId: null`); gửi email trả lời
- * khách và chuyển đơn dùng thử sang quản lý nền tảng chỉ backend có (kho mẫu không gửi email, không có yêu cầu dùng thử).
+ * Việc màn làm được theo nguồn dữ liệu: gửi email trả lời khách và chuyển đơn dùng thử sang quản lý nền tảng chỉ backend có (kho mẫu không
+ * gửi email, không có yêu cầu dùng thử).
  */
 export const CONTACTS_SOURCE = {
-  canUnassign: !ON_BACKEND,
   canReply: ON_BACKEND,
   // Yêu cầu dùng thử thuộc nhóm `companies`: chỉ chuyển được khi nhóm đó cũng nối backend
   canForwardTrial: ON_BACKEND && TRIAL_REQUESTS_SOURCE.available,
@@ -40,7 +38,7 @@ export async function listGuestContacts(): Promise<GuestContact[]> {
   return contacts.flatMap((dto) => guestContactOf(dto) ?? [])
 }
 
-/** Đổi trạng thái, người nhận việc, ghi chú nội bộ. Trường vắng giữ nguyên; `assignedToId: null` bỏ người nhận (chỉ kho mẫu). */
+/** Đổi trạng thái, người nhận việc, ghi chú nội bộ. Trường vắng giữ nguyên; `assignedToId: null` bỏ người nhận. */
 // PATCH /api/contact-guests/{id}
 export async function updateGuestContact(contactId: string, patch: GuestContactPatch): Promise<GuestContact> {
   if (!ON_BACKEND) return getMockDb().updateGuestContact(contactId, patch)
@@ -89,8 +87,6 @@ export async function forwardContactToTrialRequest(contact: GuestContact, note: 
 
 export type ContactHandler = { readonly id: string; readonly name: string; readonly role: Role }
 
-type BackendUserRow = { readonly id: number; readonly fullName: string; readonly userRoleType: string; readonly status: string }
-
 const byName = (a: ContactHandler, b: ContactHandler) => a.name.localeCompare(b.name, 'vi')
 
 function isHandlerRole(role: Role | null): role is Role {
@@ -99,10 +95,10 @@ function isHandlerRole(role: Role | null): role is Role {
 }
 
 /**
- * Người nhận việc được: tài khoản đang hoạt động thuộc ba vai trò xử lý liên hệ, theo tên. Backend: Hỗ trợ khách hàng không có quyền đọc
- * danh sách người dùng (`USERS_READ`), nên danh sách của họ chỉ có chính mình; quản trị hệ thống và quản lý nền tảng đọc được cả ba vai trò.
+ * Người nhận việc được: tài khoản đang hoạt động thuộc hai vai trò xử lý liên hệ (`CONTACT_HANDLER_ROLES`), theo tên. Backend trả đúng tập
+ * đó cho cả quản trị hệ thống lẫn hỗ trợ khách hàng; vai trò app không biết bị bỏ.
  */
-// chưa có ở BE: GET /api/users/me + GET /api/users
+// GET /api/contact-guests/handlers
 export async function listContactHandlers(): Promise<ContactHandler[]> {
   if (!ON_BACKEND) {
     return (await getMockDb().listUsers())
@@ -110,16 +106,13 @@ export async function listContactHandlers(): Promise<ContactHandler[]> {
       .map((user) => ({ id: user.id, name: user.fullName, role: user.role }))
       .toSorted(byName)
   }
-  const me = await fetchBackendMe()
-  const readsUsers = me.role === 'systemAdmin' || me.role === 'systemManager'
-  const users = readsUsers ? await fetchAllPages<BackendUserRow>('/api/users', { size: 200 }) : []
-  const handlers = new Map<string, ContactHandler>()
-  if (isHandlerRole(me.role)) handlers.set(me.id, { id: me.id, name: me.fullName, role: me.role })
-  for (const user of users) {
-    const role = roleOfBackend(user.userRoleType)
-    if (user.status === 'ACTIVE' && isHandlerRole(role)) handlers.set(String(user.id), { id: String(user.id), name: user.fullName, role })
-  }
-  return [...handlers.values()].toSorted(byName)
+  const handlers = await api().get<ContactHandlerDto[]>('/api/contact-guests/handlers')
+  return handlers
+    .flatMap(({ id, fullName, role }) => {
+      const appRole = roleOfBackend(role)
+      return isHandlerRole(appRole) ? [{ id: String(id), name: fullName, role: appRole }] : []
+    })
+    .toSorted(byName)
 }
 
 /**

@@ -7,9 +7,12 @@ import {
   fetchAssignableTrips,
   getDeliveryRequirement,
   listDeliveryRequirements,
+  unassignRequirementFromTrip,
   updateDeliveryRequirement,
   type AssignRequirementInput,
+  type UnassignRequirementInput,
 } from './requirements-api'
+import { fetchRequirementPackageChoices } from './requirement-pool-api'
 
 /**
  * Hook Query của yêu cầu giao (FE-4b-02), khoá `['requirements', …]`. Trạng thái yêu cầu đổi theo chuyến và kiện (đang giao, đã giao,
@@ -17,12 +20,24 @@ import {
  * chuyến, hoặc đổi ưu tiên của yêu cầu đã vào chuyến — chuyến, revision, bảng điều khiển.
  */
 
-export function useRequirementsQuery() {
-  return useQuery({ queryKey: ['requirements', 'list'], queryFn: listDeliveryRequirements, staleTime: 0 })
+/**
+ * Khoá **duy nhất** của danh sách yêu cầu giao của máy chủ: màn Yêu cầu giao, hộp đưa yêu cầu vào chuyến, form kiện và nhập file kiện của
+ * kho kiện cùng đọc một bản cache. Danh sách của một chuyến nằm dưới `['trips', tripId, 'requirements']`.
+ */
+export const REQUIREMENTS_LIST_KEY = ['requirements', 'list'] as const
+
+/** `enabled`: hộp thoại chỉ đọc khi mở. */
+export function useRequirementsQuery({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: REQUIREMENTS_LIST_KEY, queryFn: listDeliveryRequirements, staleTime: 0, enabled })
 }
 
 export function useRequirementQuery(id: string) {
   return useQuery({ queryKey: ['requirements', 'one', id], queryFn: () => getDeliveryRequirement(id), enabled: id !== '', staleTime: 0 })
+}
+
+/** Kiện chọn được cho form (`requirementId` vắng là form tạo mới). */
+export function useRequirementPackageChoicesQuery(requirementId: string | undefined) {
+  return useQuery({ queryKey: ['requirements', 'pool-choices', requirementId ?? ''], queryFn: () => fetchRequirementPackageChoices(requirementId), staleTime: 0 })
 }
 
 export function useAssignableTripsQuery() {
@@ -54,4 +69,10 @@ export function useDeleteRequirementMutation() {
 export function useAssignRequirementMutation() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: AssignRequirementInput) => assignRequirementToTrip(input), onSuccess: () => refreshRequirements(client, true) })
+}
+
+/** Gỡ yêu cầu khỏi chuyến: chuyến mất điểm giao của yêu cầu, tuyến bỏ, phương án lỗi thời — làm mới cả chuyến. */
+export function useUnassignRequirementMutation() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: (input: UnassignRequirementInput) => unassignRequirementFromTrip(input), onSuccess: () => refreshRequirements(client, true) })
 }

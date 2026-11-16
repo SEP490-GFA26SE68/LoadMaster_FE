@@ -1,11 +1,14 @@
+import { roleOfBackend } from '@/features/auth/backend-user'
 import { isoFromBackend } from '@/lib/backend-time'
-import { BACKEND_TICKET_STATUSES, type NewSupportTicket, type SupportTicket, type TicketKind } from '@/lib/mock-db'
+import { BACKEND_TICKET_STATUSES, type NewSupportTicket, type SupportTicket, type TicketKind, type TicketReply } from '@/lib/mock-db'
+import { ROLES, type Role } from '@/types/user'
 import { repliesOfNote } from './support-chat'
 
 /**
  * DTO của `/api/support-tickets` (entity `SupportTicket` của backend) và phép đổi sang kiểu của app. Chỉ `support-api.ts` dùng — kiểu DTO
- * không đi ra khỏi lớp API. Backend chưa có bảng trao đổi: cả cuộc trao đổi là mảng JSON trong `resolutionNote` (`support-chat.ts`); trường
- * là chữ thường (đội hỗ trợ ghi tay) thì vẫn là ghi chú `resolutionNote`.
+ * không đi ra khỏi lớp API. Trao đổi nằm ở bảng của máy chủ (`/api/support-tickets/{id}/replies`); yêu cầu cũ còn mảng JSON trong
+ * `resolutionNote` (bản trước) thì danh sách đọc tạm mảng đó (`support-chat.ts`) tới khi màn đọc trao đổi của máy chủ; trường là chữ
+ * thường (đội hỗ trợ ghi tay) thì vẫn là ghi chú `resolutionNote`.
  */
 export type SupportTicketDto = {
   readonly id: number
@@ -24,6 +27,28 @@ export type SupportTicketDto = {
   readonly resolutionNote: string | null
   /** `LocalDateTime` không múi giờ (giờ của máy chủ), khác `resolvedAt` là `Instant`. */
   readonly createdAt: string
+  /** Lần hoạt động gần nhất (gửi, trả lời, đổi trạng thái); máy chủ cũ không trả. */
+  readonly updatedAt?: string | null
+}
+
+/**
+ * Một lần trả lời ở bảng trao đổi. `authorRole` là mã vai trò của máy chủ (`DISPATCHER`…); lần trả lời chép từ mảng JSON cũ giữ đúng chữ
+ * đã ghi (mã vai trò của FE) và không có `authorId`.
+ */
+export type TicketReplyDto = {
+  readonly id: number | null
+  readonly authorId: string | null
+  readonly authorName: string | null
+  readonly authorRole: string | null
+  readonly message: string
+  /** `yyyy-MM-dd HH:mm:ss`, giờ Việt Nam. */
+  readonly createdAt: string
+}
+
+/** `GET` / `POST /api/support-tickets/{id}/replies`: yêu cầu kèm cả trao đổi, theo thứ tự thời gian. */
+export type SupportTicketThreadDto = {
+  readonly ticket: SupportTicketDto
+  readonly replies: readonly TicketReplyDto[] | null
 }
 
 function filled(value: string | null): value is string {
@@ -44,8 +69,8 @@ const CATEGORY_OF_KIND: Readonly<Record<TicketKind, string>> = {
 }
 
 /**
- * Nhóm hay trạng thái backend mới mà FE chưa biết: không vào danh sách. Backend không có mốc hoạt động gần nhất nên `updatedAt` là lần
- * trả lời cuối, không có thì lúc gửi — màn nối backend hiện "Gửi lúc", không hiện "Cập nhật" (`SUPPORT_SOURCE.activityTime`).
+ * Nhóm hay trạng thái backend mới mà FE chưa biết: không vào danh sách. `updatedAt` là mốc hoạt động gần nhất của máy chủ; máy chủ cũ không
+ * trả thì là lần trả lời cuối của mảng cũ, không có thì lúc gửi.
  */
 export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
   const kind = kindOf(dto.category)
@@ -69,8 +94,26 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
     replies: replies ?? [],
     ...(replies === null && filled(dto.resolutionNote) ? { resolutionNote: dto.resolutionNote } : {}),
     createdAt,
-    updatedAt: replies?.at(-1)?.at ?? createdAt,
+    updatedAt: filled(dto.updatedAt ?? null) ? isoFromBackend(dto.updatedAt!) : (replies?.at(-1)?.at ?? createdAt),
   }
+}
+
+/** Vai trò người trả lời: mã của máy chủ, hoặc mã của FE với lần trả lời chép từ mảng cũ; vai trò lạ thì bỏ lần trả lời đó. */
+function replyRoleOf(code: string | null): Role | null {
+  if (code === null) return null
+  return roleOfBackend(code) ?? ROLES.find((role) => role === code) ?? null
+}
+
+function replyOf(dto: TicketReplyDto): TicketReply | null {
+  const authorRole = replyRoleOf(dto.authorRole)
+  if (authorRole === null) return null
+  return { authorId: dto.authorId ?? '', authorName: dto.authorName ?? '', authorRole, text: dto.message, at: isoFromBackend(dto.createdAt) }
+}
+
+/** Yêu cầu kèm trao đổi của máy chủ — thay mảng tạm đọc ở danh sách. */
+export function threadOf(dto: SupportTicketThreadDto): SupportTicket | null {
+  const ticket = ticketOf(dto.ticket)
+  return ticket === null ? null : { ...ticket, replies: (dto.replies ?? []).flatMap((reply) => replyOf(reply) ?? []) }
 }
 
 /** Mức ưu tiên backend theo loại: thanh toán Trung bình, kỹ thuật và mở khóa tài khoản Cao. */

@@ -158,9 +158,9 @@ describe('what cannot move, and who can ask', () => {
     { who: 'the manager', user: 'US-0002', trip: 'TRIP-009', code: 'ROLE_NOT_ALLOWED' },
     { who: 'the warehouse worker', user: 'US-0003', trip: 'TRIP-009', code: 'ROLE_NOT_ALLOWED' },
     { who: 'the driver of the trip', user: 'US-0006', trip: 'TRIP-009', code: 'ROLE_NOT_ALLOWED' },
-    { who: 'the dispatcher, on a trip still being planned', user: DISPATCHER, trip: 'TRIP-2026-0914', code: 'TRIP_PHASE_INVALID' },
-    { who: 'the dispatcher, on a trip being loaded', user: DISPATCHER, trip: 'TRIP-011', code: 'TRIP_PHASE_INVALID' },
-    { who: 'the dispatcher, on a delivered trip', user: DISPATCHER, trip: 'TRIP-001', code: 'TRIP_PHASE_INVALID' },
+    { who: 'the dispatcher, on a trip still being planned', user: DISPATCHER, trip: 'TRIP-2026-0914', code: 'TRIP_NOT_IN_TRANSIT' },
+    { who: 'the dispatcher, on a trip being loaded', user: DISPATCHER, trip: 'TRIP-011', code: 'TRIP_NOT_IN_TRANSIT' },
+    { who: 'the dispatcher, on a delivered trip', user: DISPATCHER, trip: 'TRIP-001', code: 'TRIP_NOT_IN_TRANSIT' },
   ])('$who: $code', async ({ user, trip, code }) => {
     await expect(seedDb(user).reorderRunningStops(trip, ['STOP-02', 'STOP-01'])).rejects.toMatchObject({ code })
   })

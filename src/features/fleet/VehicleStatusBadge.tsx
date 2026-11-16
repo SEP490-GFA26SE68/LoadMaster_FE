@@ -32,7 +32,8 @@ function stopRowClick(event: MouseEvent) {
  * chuyến, hoặc "Từ <ngày> · <ghi chú bảo dưỡng>" (ghi chú tối đa hai dòng, đủ câu ở `title` và ở trang cấu hình xe). Xe sẵn
  * sàng không có dòng phụ. Mã chuyến chỉ có ở kho mẫu: chuyến đọc backend thì mã là chữ thường (`tripLinkable`).
  */
-export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
+/** `serverSource`: trạng thái đọc từ máy chủ — mã chuyến là liên kết khi chuyến cũng đọc máy chủ (`tripLinkable`). */
+export function VehicleStatusCell({ state, serverSource = false }: { state: FleetVehicleState; serverSource?: boolean }) {
   const t = useT()
   const format = useFormat()
   const maintenance = state.maintenance
@@ -41,7 +42,7 @@ export function VehicleStatusCell({ state }: { state: FleetVehicleState }) {
       <VehicleStatusBadge status={state.status} />
       {state.status === 'in_use' && state.tripId ? (
         <span className="flex flex-wrap items-baseline gap-x-1.5 text-caption text-ink-3">
-          {tripLinkable(false) ? (
+          {tripLinkable(serverSource) ? (
             <Link
               to={`/chuyen/${state.tripId}`}
               onClick={stopRowClick}

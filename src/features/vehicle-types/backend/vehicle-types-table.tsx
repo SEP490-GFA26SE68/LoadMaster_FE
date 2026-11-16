@@ -206,13 +206,21 @@ function ActionsCell({
           </DropdownMenuItem>
         )}
 
+        {/* Loại còn gắn xe: máy chủ từ chối xoá (VEHICLE_TYPE_IN_USE), nên mục mờ đi kèm lý do ngay tại chỗ (LM-092) */}
         {canDelete && (
           <DropdownMenuItem
-            tone="danger"
+            tone={type.vehicleCount > 0 ? undefined : 'danger'}
+            disabled={type.vehicleCount > 0}
             onSelect={() => onDelete(type)}
+            className={type.vehicleCount > 0 ? 'h-auto items-start py-1.5' : undefined}
           >
             <Trash2 strokeWidth={1.5} aria-hidden />
-            {t('vehicleTypes.delete')}
+            <span className="flex min-w-0 flex-col">
+              <span>{t('vehicleTypes.delete')}</span>
+              {type.vehicleCount > 0 ? (
+                <span className="text-caption whitespace-normal text-text-3">{t('vehicleTypes.inUse', { count: type.vehicleCount })}</span>
+              ) : null}
+            </span>
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

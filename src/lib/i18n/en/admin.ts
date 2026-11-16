@@ -32,6 +32,8 @@ export const admin = {
       title: 'Lock account {name}?',
       description: 'This employee will not be able to log in to the system until unlocked.',
     },
+    createdSuccess: 'Added employee {name}. Account credentials and temporary password have been sent to {email}.',
+    resetSuccess: 'Password for {name} has been reset. A new temporary password has been sent to {email}.',
   },
   users: {
     title: 'Users',

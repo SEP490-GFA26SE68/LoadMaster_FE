@@ -72,12 +72,20 @@ export function settleStopPackages(ctx: DbContext, trip: Trip, stopNumber: numbe
 
 /**
  * Huỷ chuyến Đang vận chuyển (FE-6-07, D-91): kiện chưa giao — còn `IN_TRANSIT`, kể cả kiện đã dỡ ở điểm chưa hoàn tất — thành
- * `RETURNED` và ở lại chuyến. Trả số kiện vừa hoàn trả.
+ * `RETURNED` và ở lại chuyến. Kiện nhận dọc đường tài xế đã nhận lên xe ở điểm nhận **chưa hoàn tất** (`StopProgress.pickedIds`, còn
+ * `LOADED` — hoặc `ASSIGNED` khi xác nhận tay đang chờ duyệt) cũng đang trên xe nên cũng thành `RETURNED`, qua `IN_TRANSIT` theo bảng
+ * chuyển trạng thái. Kiện nhận chưa lên xe ở lại chỗ bên gửi, không đổi. Trả số kiện vừa hoàn trả.
  */
 export function returnUndeliveredPackages(ctx: DbContext, trip: Trip): number {
-  const undelivered = tripPackages(ctx, trip).filter(({ pkg }) => pkg.status === 'IN_TRANSIT')
-  for (const { pkg } of undelivered) movePackage(ctx, pkg, 'RETURNED')
-  return undelivered.length
+  const picked = new Set(trip.delivery?.stops.flatMap((stop) => stop.pickedIds ?? []))
+  const onboard = tripPackages(ctx, trip).filter(({ pkg }) => pkg.status === 'IN_TRANSIT' || (picked.has(pkg.id) && (pkg.status === 'LOADED' || pkg.status === 'ASSIGNED')))
+  for (const { pkg } of onboard) {
+    let current = pkg
+    if (current.status === 'ASSIGNED') current = movePackage(ctx, current, 'LOADED')
+    if (current.status === 'LOADED') current = movePackage(ctx, current, 'IN_TRANSIT')
+    movePackage(ctx, current, 'RETURNED')
+  }
+  return onboard.length
 }
 
 /** Huỷ chuyến trước khi xe chạy: kiện rời chuyến, về kho kiện. */

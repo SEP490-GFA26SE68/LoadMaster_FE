@@ -78,7 +78,6 @@ export const contacts = {
     saved: 'Saved request {id}',
     unchanged: 'Nothing has changed yet',
     handlersError: 'Could not load the people who can take requests. Reload the page to try again.',
-    unassignUnavailable: 'Once someone has taken a request, it can move to another person but not back to nobody.',
     companyCode: 'Company code',
     taxCode: 'Tax code',
     claim: 'Take it',

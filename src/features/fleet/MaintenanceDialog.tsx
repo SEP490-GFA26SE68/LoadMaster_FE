@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Textarea } from '@/components/ui/Textarea'
 import { useFormat, useT } from '@/lib/i18n'
+import { MAINTENANCE_NOTE_MAX } from '@/lib/mock-db'
 
-/** Ghi chú đủ cho một dòng trên danh sách và một đoạn ở trang xe; dài hơn nên ghi ở hệ thống bảo dưỡng riêng. */
-export const MAINTENANCE_NOTE_MAX = 200
+/** Cùng giới hạn với kho và máy chủ (500 ký tự): form chặn trước, kho và máy chủ vẫn kiểm lại. */
+export { MAINTENANCE_NOTE_MAX }
 
 /** Message là key từ điển (như form người dùng): hộp thoại dịch lúc hiển thị, đổi ngôn ngữ thì lỗi đổi theo. */
 const maintenanceSchema = z.object({

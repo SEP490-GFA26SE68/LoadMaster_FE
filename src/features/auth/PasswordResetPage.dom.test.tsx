@@ -20,6 +20,8 @@ const guest = {
   login: vi.fn(() => Promise.resolve()),
   logout: vi.fn(() => Promise.resolve()),
   token: vi.fn(() => Promise.resolve(null)),
+  refreshToken: vi.fn(() => Promise.resolve(null)),
+  reject: vi.fn(),
   onEnded: vi.fn(() => () => undefined),
 } satisfies KeycloakSession
 

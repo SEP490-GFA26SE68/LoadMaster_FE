@@ -110,7 +110,8 @@ test('xác nhận, sai lệch, hoàn tất: đúng endpoint, rồi đọc lại 
     },
   })
   const backend = createWarehouseBackend()
-  expect((await backend.confirm('7', '101')).outcomes).toEqual({ 101: 'confirmed' })
+  expect((await backend.confirm('7', '101', 'CODE')).outcomes).toEqual({ 101: 'confirmed' })
+  expect(calls.find((call) => call.path.endsWith('/101/confirm'))?.body).toEqual({ method: 'CODE' })
   const afterDeviation = await backend.deviation('7', '102', { x: 12.6, y: 0.4, z: 0, reason: '  vướng vách  ' })
   expect(calls.find((call) => call.path.endsWith('/deviation'))?.body).toEqual({ actualPosX: 13, actualPosY: 0, actualPosZ: 0, reason: 'vướng vách' })
   expect(serverLoadingView(afterDeviation)).toMatchObject({ done: 2, total: 2, current: undefined })

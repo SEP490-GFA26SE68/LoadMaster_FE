@@ -58,6 +58,8 @@ function keycloakSession(signedIn: boolean): KeycloakSession {
     login: vi.fn(() => Promise.resolve()),
     logout: vi.fn(() => Promise.resolve()),
     token: vi.fn(() => Promise.resolve(signedIn ? 'TOKEN' : null)),
+    refreshToken: vi.fn(() => Promise.resolve(signedIn ? 'TOKEN-2' : null)),
+    reject: vi.fn(),
     onEnded: vi.fn(() => () => undefined),
   }
 }

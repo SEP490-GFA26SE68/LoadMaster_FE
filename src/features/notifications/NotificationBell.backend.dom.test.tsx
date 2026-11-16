@@ -148,7 +148,7 @@ test('điều phối viên: yêu cầu nhận dọc đường của tài xế m�
   expect(menu).not.toHaveTextContent(/COMPLETED|LABEL_DAMAGED|VALIDATED|— →/)
 })
 
-test('tài xế: duyệt / từ chối nhận dọc đường nói bằng câu của tài xế và mở màn điểm giao', async () => {
+test('tài xế: duyệt / từ chối nhận dọc đường và đổi thứ tự điểm nói bằng câu của tài xế, mở màn điểm giao', async () => {
   stubBackend({
     'GET /api/notifications': {
       body: list([
@@ -160,12 +160,16 @@ test('tài xế: duyệt / từ chối nhận dọc đường nói bằng câu c
           id: 911, actionType: 'PICKUP_REJECTED', entityName: 'PickupRequest', entityId: '6', actorName: 'Điều phối', actorRole: 'DISPATCHER',
           newValues: { reason: 'Xe đã đầy', driverId: 31, pickupId: 6, tripId: 42 },
         }),
+        notification({
+          id: 912, actionType: 'TRIP_STOPS_REORDERED', entityName: 'Trip', actorName: 'Điều phối', actorRole: 'DISPATCHER',
+          oldValues: { stopIds: ['8', '9'] }, newValues: { count: 2, tripId: 42, driverId: 31 },
+        }),
       ]),
     },
   })
   renderBell('driver', 'touch')
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Thông báo, 2 chưa đọc' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Thông báo, 3 chưa đọc' }))
   const menu = await screen.findByRole('menu')
   const approved = within(menu).getByRole('menuitem', { name: /Điều phối đã duyệt nhận hàng dọc đường/ })
   expect(approved).toHaveAttribute('href', '/tai-xe/diem-giao?chuyen=42')
@@ -173,6 +177,8 @@ test('tài xế: duyệt / từ chối nhận dọc đường nói bằng câu c
   expect(approved).not.toHaveTextContent('Duyệt vượt luật')
   const rejected = within(menu).getByRole('menuitem', { name: /Yêu cầu nhận hàng dọc đường bị từ chối/ })
   expect(rejected).toHaveTextContent('Lý do: Xe đã đầy')
+  const reordered = within(menu).getByRole('menuitem', { name: /Điều phối đã đổi thứ tự điểm giao — xem lại tuyến/ })
+  expect(reordered).toHaveAttribute('href', '/tai-xe/diem-giao?chuyen=42')
 })
 
 test('nhân viên kho: chuyến bị huỷ lúc đang xếp mở phiên xếp bản máy chủ', async () => {

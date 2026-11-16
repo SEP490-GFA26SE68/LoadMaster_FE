@@ -29,6 +29,12 @@ export const agreement = {
     },
     cancel: 'Cancel',
     submit: 'Sign the agreement',
+    doubleCheck: {
+      title: 'Confirm signing the trial service agreement',
+      description: 'You are signing the electronic agreement for {company}. The agreement is legally binding as soon as you confirm.',
+      confirm: 'I confirm and sign',
+      back: 'Go back',
+    },
   },
   view: {
     badgeSigned: 'Signed',

@@ -157,7 +157,7 @@ export const landing = {
   plans: {
     title: 'Plans',
     lede: 'Choose by the number of 3D optimization runs a month. Route optimization uses no credits.',
-    credit: 'One 3D optimization run uses 1 credit and gives all three plans.',
+    credit: { one: 'One 3D optimization run uses {count} credit and gives all three plans.', other: 'One 3D optimization run uses {count} credits and gives all three plans.' },
     credits: '{count} credits a month',
     compare: 'Compare the plans',
     loading: 'Loading the plans',

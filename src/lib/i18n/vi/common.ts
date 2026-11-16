@@ -62,4 +62,10 @@ export const common = {
     to: 'Đến ngày',
     clear: 'Xoá lọc',
   },
+  /** Ô số điện thoại kèm mã vùng (`components/ui/PhoneInput`) của hai form đăng ký công khai. */
+  phoneInput: {
+    countryCode: 'Mã vùng',
+    countryList: 'Chọn mã vùng quốc gia',
+    countries: { VN: 'Việt Nam', SG: 'Singapore', US: 'Hoa Kỳ', JP: 'Nhật Bản', KR: 'Hàn Quốc' },
+  },
 } as const

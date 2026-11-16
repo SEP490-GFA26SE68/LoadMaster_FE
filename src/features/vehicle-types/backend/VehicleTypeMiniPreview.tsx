@@ -88,8 +88,7 @@ export function VehicleTypeMiniPreview({
                     width={boxWidth}
                     height={boxHeight}
                     rx={2}
-                    fill="#E7F5F7"
-                    stroke="#0F7180"
+                    className="fill-cyan-50 stroke-primary"
                     strokeWidth={1.6}
                 />
 
@@ -125,9 +124,9 @@ export function VehicleTypeMiniPreview({
                             y={offsetY + y * scale}
                             width={obstacleLength * scale}
                             height={obstacleWidth * scale}
-                            fill="#F59E0B"
+                            className="fill-(--obstacle)"
                             fillOpacity={0.75}
-                            stroke="#B45309"
+                            stroke="var(--line-strong)"
                             strokeWidth={0.7}
                         />
                     )
@@ -139,7 +138,7 @@ export function VehicleTypeMiniPreview({
                     y1={offsetY}
                     x2={offsetX}
                     y2={offsetY + boxHeight}
-                    stroke="#06B6D4"
+                    className="stroke-cyan-500"
                     strokeWidth={3}
                     strokeLinecap="round"
                 />

@@ -9,8 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { FleetUnavailable } from '@/features/fleet/FleetUnavailable'
-import { fleetReachable, useFleetCapabilities } from '@/features/fleet/useVehiclesQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import type { VehicleAssignmentRow, VehicleTypeRow } from './vehicle-types-api'
@@ -29,29 +27,11 @@ import { usesBackend } from '@/lib/backend-config'
 /**
  * Loại xe `/doi-xe/loai-xe` (LM-104). Bảng loại xe (tên, lòng thùng D × R × C cm, tải trọng kg, xe đang dùng) và bảng gắn loại cho từng
  * xe. Người có `vehicleTypes.edit` thêm / sửa / xoá loại (loại còn gắn xe không xoá được: mục Xoá mờ kèm lý do) và đổi loại của xe; người
- * chỉ có `fleet.view` xem. Nối backend (`FLEET_CAPABILITIES`): chỉ xem, chỉ điều phối viên đọc được — người khác thấy một dòng lý do và
- * màn không gọi backend.
+ * chỉ có `fleet.view` xem.
  */
 function StoreVehicleTypesPage() {
   const t = useT()
-  const can = useCan()
-  if (!fleetReachable(can)) {
-    return (
-      <FleetUnavailable
-        title={t('vehicleTypes.title')}
-        description={t('pageHero.vehicleTypes')}
-        back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
-        reason={t('fleet.backend.vehicleTypesDispatcherOnly')}
-      />
-    )
-  }
-  return <VehicleTypesCatalog />
-}
-
-function VehicleTypesCatalog() {
-  const t = useT()
-  const caps = useFleetCapabilities()
-  const canEdit = useCan()('vehicleTypes.edit') && caps.write
+  const canEdit = useCan()('vehicleTypes.edit')
   const typesQuery = useVehicleTypesQuery()
   const vehiclesQuery = useVehicleAssignmentRowsQuery()
   const save = useSaveVehicleTypeMutation()
@@ -122,14 +102,13 @@ function VehicleTypesCatalog() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={typesQuery.isSuccess && types.length > 0}
         title={t('vehicleTypes.title')}
         meta={typesQuery.isSuccess ? t('vehicleTypes.count', { count: types.length, assigned }) : undefined}
         description={t('pageHero.vehicleTypes')}
         back={{ to: '/doi-xe', label: t('vehicleTypes.toFleet') }}
         actions={types.length > 0 ? addButton : null}
       />
-      <div className={typesQuery.isSuccess && types.length > 0 ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {typesQuery.isPending ? (
           <div role="status" aria-label={t('vehicleTypes.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : typesQuery.isError ? (
@@ -142,7 +121,7 @@ function VehicleTypesCatalog() {
           <EmptyState
             mascot="empty"
             title={t('vehicleTypes.empty')}
-            description={caps.write ? t('vehicleTypes.emptyDescription') : t('vehicleTypes.emptyDescriptionBackend')}
+            description={t('vehicleTypes.emptyDescription')}
             action={addButton ?? undefined}
           />
         ) : (
@@ -187,13 +166,12 @@ function AssignCard({ rows, loading, columns }: {
 }) {
   const t = useT()
   const format = useFormat()
-  const caps = useFleetCapabilities()
   return (
     <Card className="relative flex-none overflow-hidden">
       <CardHeader>
         <CardTitle as="h2">{t('vehicleTypes.assign.title')}</CardTitle>
         <CardMeta>{format.integer(rows.length)}</CardMeta>
-        <p className="m-0 basis-full text-small text-ink-3">{caps.write ? t('vehicleTypes.assign.description') : t('vehicleTypes.assign.descriptionBackend')}</p>
+        <p className="m-0 basis-full text-small text-ink-3">{t('vehicleTypes.assign.description')}</p>
       </CardHeader>
       {loading ? (
         <div className="flex justify-center py-8"><Spinner /></div>

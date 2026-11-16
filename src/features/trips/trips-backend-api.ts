@@ -7,7 +7,9 @@
 import { apiFetch, ApiError } from '@/lib/api-client'
 import { fetchVehicles } from '@/features/fleet/backend/vehicles-api'
 import { fetchVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
-import { getMockDb, type VehicleStatus } from '@/lib/mock-db'
+import { getCachedCurrentUser } from '@/features/auth/auth-api'
+import { fetchCompanyWarehouses } from '@/features/company-warehouses/company-warehouses-api'
+import type { CompanyDepot, VehicleStatus } from '@/lib/mock-db'
 import { fetchAllPages } from '@/lib/api-page'
 import type { TripRow } from './trip-list'
 import type { TripFormOptions, VehicleOption } from './trips-api'
@@ -290,6 +292,11 @@ export type TripDetailApiResponse = {
   stopCount?: number | null
   packageCount?: number | null
   hasActiveRoutePlan?: boolean | null
+  /** Lý do huỷ và trạng thái lúc huỷ; chuyến huỷ trước khi máy chủ lưu hai cột này thì vắng. */
+  cancelReason?: string | null
+  cancelledFromStatus?: TripDetailApiResponse['status'] | null
+  /** Số kiện chưa giao thành Hoàn trả khi chuyến bị huỷ lúc Đang vận chuyển; huỷ ở pha khác hoặc máy chủ cũ thì vắng. */
+  cancelReturnedCount?: number | null
 }
 
 export type CreatedTrip = {
@@ -409,17 +416,23 @@ export async function createBackendTrip({
 
 
 
+/** Tuyến đang dùng của chuyến; `null` khi chuyến chưa có tuyến (`ROUTE_PLAN_NOT_FOUND`), lỗi khác để lộ ra cho màn. */
+// GET /api/trips/{id}/route-plans/active
 export async function fetchBackendActiveRoutePlan(
   tripId: string,
-): Promise<BackendActiveRoutePlan> {
-  const response = await apiFetch<{
-    success: boolean
-    data: BackendActiveRoutePlan
-  }>(
-    `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
-  )
-
-  return response.data
+): Promise<BackendActiveRoutePlan | null> {
+  try {
+    const response = await apiFetch<{
+      success: boolean
+      data: BackendActiveRoutePlan
+    }>(
+      `/api/trips/${encodeURIComponent(tripId)}/route-plans/active`,
+    )
+    return response.data
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'ROUTE_PLAN_NOT_FOUND') return null
+    throw error
+  }
 }
 
 
@@ -472,36 +485,41 @@ async function fetchEveryPage<T>(
 ): Promise<T[]> {
   const size = 100
   const first = await fetchPage(0, size)
-  const result = [...first.data]
-
-  for (let page = 1; page < first.totalPages; page++) {
-    const response = await fetchPage(page, size)
-    result.push(...response.data)
-  }
-
-  return result
+  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
+  const rest = await Promise.all(Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) => fetchPage(index + 1, size)))
+  return [first, ...rest].flatMap((response) => response.data)
 }
-// GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options
+/**
+ * Công ty và kho xuất phát của form chuyến lấy từ máy chủ, không từ kho mẫu: công ty là của người đăng nhập (`getCachedCurrentUser`),
+ * kho xuất phát mặc định là kho mặc định đang hoạt động của công ty (`GET /api/company-warehouses`). Nhóm `companies` chưa nối thì
+ * không có danh mục kho (`NOT_SUPPORTED`) và form không điền sẵn kho; lỗi khác của máy chủ để lộ ra.
+ */
+async function defaultServerDepot(): Promise<CompanyDepot | null> {
+  try {
+    const warehouses = await fetchCompanyWarehouses(true)
+    const chosen = warehouses.find((item) => item.isDefault && item.isActive && item.latitude !== null && item.longitude !== null)
+    if (!chosen || chosen.latitude === null || chosen.longitude === null) return null
+    return { name: chosen.warehouseName, address: chosen.address, lat: chosen.latitude, lng: chosen.longitude }
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'NOT_SUPPORTED') return null
+    throw error
+  }
+}
+
+// GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options · GET /api/company-warehouses?activeOnly=true
 export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
-  const [vehicles, vehicleTypes] = await Promise.all([
+  const [vehicles, vehicleTypes, drivers, depot] = await Promise.all([
     fetchEveryPage((page, size) => fetchVehicles(page, size)),
     fetchEveryPage((page, size) => fetchVehicleTypes(page, size)),
+    fetchDriverOptions(),
+    defaultServerDepot(),
   ])
 
   const typeById = new Map(
     vehicleTypes.map((type) => [type.id, type]),
   )
-
-  const db = getMockDb()
-
-  const [drivers, companies] = await Promise.all([
-    fetchDriverOptions(),
-    db.listCompanies(),
-  ])
-
-  const company = companies.find(
-    (item) => item.id === db.sessionUser()?.companyId,
-  ) ?? companies[0]
+  // Công ty của người đăng nhập bằng máy chủ — không phải công ty của kho mẫu
+  const companyId = getCachedCurrentUser()?.companyId
 
   const options: VehicleOption[] = vehicles.flatMap((vehicle) => {
     const type = typeById.get(vehicle.vehicleTypeId)
@@ -540,10 +558,10 @@ export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
       phone: '',
       role: 'driver' as const,
       status: 'active' as const,
-      companyId: company?.id,
+      companyId,
       lastActiveAt: null,
     })),
-    depot: company?.depot ?? null,
+    depot,
   }
 }
 
@@ -619,7 +637,7 @@ export async function resolveBackendTripId(idOrCode: string): Promise<string> {
   const wanted = idOrCode.trim().toUpperCase()
   const rows = wanted === ''
     ? []
-    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1 })
+    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1, truncate: true })
   const listed = rows.find((row) => row.tripCode.toUpperCase() === wanted)
   if (!listed) throw new ApiError('TRIP_NOT_FOUND', { status: 404 })
   return String(listed.id)

@@ -64,7 +64,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(within(screen.getByRole('region', { name: 'Cách hoạt động' })).getAllByRole('listitem')).toHaveLength(4)
   expect(screen.getByText(/đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn\.$/)).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)).toBeInTheDocument()
-  // Không có đăng ký hay mua gói ngay trên trang: tài khoản dùng thử chỉ mở qua yêu cầu liên hệ (loại "Đăng ký tài khoản dùng thử")
+  // Kho mẫu không có đăng ký hay mua gói ngay trên trang (hai luồng đăng ký chỉ có khi nối backend): tài khoản dùng thử mở qua yêu cầu liên hệ
   expect(screen.queryByRole('link', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Đăng ký|Mua gói|Dùng thử/ })).not.toBeInTheDocument()
 })
@@ -89,7 +89,7 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(values.map((value) => value.textContent)).toStrictEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
-  expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('500 credit mỗi tháng')
+  expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('10.000 credit mỗi tháng')
   expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
   expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')

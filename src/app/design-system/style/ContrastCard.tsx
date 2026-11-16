@@ -1,20 +1,20 @@
 import { Fragment } from 'react'
 import { useFormat, useT } from '@/lib/i18n'
-import { stopForeground } from '@/lib/stops'
+import { stopForegroundToken } from '@/lib/stops'
 import { readToken } from '@/lib/tokens'
 import { cn } from '@/lib/utils'
 import { contrastRatio } from '../contrast'
 import { SheetCard } from '../SheetLayout'
 
 type Token = `--${string}`
-/** Token (`--primary`) đọc từ CSS lúc chạy, hoặc màu `lib/stops` đang dùng thật (chữ trên mốc điểm giao không phải token). */
+/** Token (`--primary`) đọc từ CSS lúc chạy. */
 type Pair = { fg: string; bg: Token }
 
 type RowKey =
   | 'onPrimary' | 'link' | 'textSecondary' | 'badgeCyan' | 'badgeWarning' | 'badgeAzure' | 'badgeSuccess'
   | 'skyText' | 'onDanger' | 'control' | 'fieldBorder' | 'stops' | 'forbidden'
 
-const stopPair = (number: number): Pair => ({ fg: stopForeground(number), bg: `--stop-${number}` })
+const stopPair = (number: number): Pair => ({ fg: stopForegroundToken(number), bg: `--stop-${number}` })
 
 /**
  * Cặp màu được kiểm, ngưỡng WCAG của từng cặp: 4,5 cho chữ thường, 3 cho viền và điều khiển (1.4.11). Dòng cuối là cặp cấm — hiện

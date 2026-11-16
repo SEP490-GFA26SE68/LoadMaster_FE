@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { Switch } from '@/components/ui/Switch'
 import { useT } from '@/lib/i18n'
-import type { PlanInput, PlanPatch, PlanTier, SubscriptionPlan } from '@/lib/mock-db'
+import { PLAN_TIERS, type PlanInput, type PlanPatch, type PlanTier, type SubscriptionPlan } from '@/lib/mock-db'
 import {
   CREDITS_INVALID,
   CREDITS_POSITIVE,
@@ -28,9 +28,6 @@ import {
 } from './plan-form'
 
 const NUMERIC = { type: 'number', numeric: true, inputMode: 'numeric', step: 1 } as const
-
-/** Việc form làm được theo nguồn dữ liệu: công tắc "không giới hạn" hay credit theo hạng, công tắc mở bán, hạng chọn được khi thêm. */
-export type PlanFormCatalog = PlanFormRules & { readonly saleSwitch: boolean; readonly tiers: readonly PlanTier[] }
 
 /**
  * Ô credit tắt khi gói không giới hạn — theo công tắc, hoặc theo hạng khi `unlimitedByTier` (không có công tắc). Đọc công tắc và hạng bằng
@@ -65,24 +62,23 @@ function CreditsField({ form, error, rules }: { form: UseFormReturn<PlanFormInpu
 }
 
 /**
- * Thêm / sửa gói cước (FE-8-02, D-90). `plan` vắng là thêm gói: chọn hạng trong `catalog.tiers` (mở sẵn hạng chưa có gói đang bán —
- * `defaultTier`), có công tắc "Mở bán ngay" khi `catalog.saleSwitch`. Có `plan` là sửa: hạng chỉ đọc (đổi hạng làm lệch thuật toán và
+ * Thêm / sửa gói cước (FE-8-02, D-90). `plan` vắng là thêm gói: chọn hạng (mở sẵn hạng chưa có gói đang bán — `defaultTier`), có
+ * công tắc "Mở bán ngay"; `rules` chọn công tắc "không giới hạn" hay credit theo hạng. Có `plan` là sửa: hạng chỉ đọc (đổi hạng làm lệch thuật toán và
  * tính năng của công ty đang dùng), cờ bán là công tắc ở danh sách. Form nói rõ giá và credit mới áp dụng từ kỳ gia hạn kế tiếp. Kho
  * kiểm lại — `PLAN_TIER_TAKEN`, `PLAN_INVALID` hiện qua toast của màn. `code` là mã hiện ở tiêu đề khi sửa.
  */
-export function PlanFormDialog({ open, onOpenChange, plan, code, defaultTier, catalog, pending, onCreate, onUpdate }: {
+export function PlanFormDialog({ open, onOpenChange, plan, code, defaultTier, rules, pending, onCreate, onUpdate }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   plan: SubscriptionPlan | null
   code: string
   defaultTier: PlanTier
-  catalog: PlanFormCatalog
+  rules: PlanFormRules
   pending: boolean
   onCreate: (input: PlanInput) => void
   onUpdate: (planId: string, patch: PlanPatch) => void
 }) {
   const t = useT()
-  const rules: PlanFormRules = useMemo(() => ({ unlimitedByTier: catalog.unlimitedByTier }), [catalog.unlimitedByTier])
   const resolver = useMemo(() => zodResolver(planFormSchemaFor(rules)), [rules])
   const form = useForm<PlanFormInput, unknown, PlanFormValues>({ resolver })
   const { reset, register, control, formState: { errors } } = form
@@ -121,7 +117,7 @@ export function PlanFormDialog({ open, onOpenChange, plan, code, defaultTier, ca
                 control={control}
                 name="tier"
                 label={t('platform.form.tier')}
-                options={catalog.tiers.map((tier) => ({ value: tier, label: t(`common.planTiers.${tier}`) }))}
+                options={PLAN_TIERS.map((tier) => ({ value: tier, label: t(`common.planTiers.${tier}`) }))}
                 hint={t('platform.form.onSaleHint')}
               />
             )}
@@ -134,7 +130,7 @@ export function PlanFormDialog({ open, onOpenChange, plan, code, defaultTier, ca
               {...register('priceVnd', { valueAsNumber: true })}
             />
             <CreditsField form={form} error={errors.monthlyCredits !== undefined} rules={rules} />
-            {plan || !catalog.saleSwitch ? null : (
+            {plan ? null : (
               <Controller
                 control={control}
                 name="active"

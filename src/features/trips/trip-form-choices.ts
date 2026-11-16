@@ -10,7 +10,7 @@ import type { TripFormOptions } from './trips-api'
  * dùng, để form sửa không mất giá trị. Tài xế: người dùng vai trò tài xế đang hoạt động; tài xế đang gán mà tài khoản đã khoá vẫn
  * hiện, không chọn lại được.
  */
-export function tripFormChoices(data: TripFormOptions | undefined, existing: Trip | undefined, t: TFunction) {
+export function tripFormChoices(data: TripFormOptions | undefined, existing: Pick<Trip, 'vehicleId' | 'driverId'> | undefined, t: TFunction) {
   const vehicles: SelectOption[] = (data?.vehicles ?? []).map(({ vehicle, status }) => {
     const maintenance = status === 'maintenance'
     return {
