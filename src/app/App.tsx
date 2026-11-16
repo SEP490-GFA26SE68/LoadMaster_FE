@@ -56,6 +56,7 @@ const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) =>
 const SubscriptionHistoryPage = lazy(() => import('@/features/platform/SubscriptionHistoryPage').then((m) => ({ default: m.SubscriptionHistoryPage })))
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
+const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
 // Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
@@ -233,6 +234,10 @@ export const routes: RouteObject[] = [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
                     { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
+                  ]),
+                  // Bảng lương tài xế: quản lý công ty
+                  guarded('payroll.manage', [
+                    { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
                   ]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },

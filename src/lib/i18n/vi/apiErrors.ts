@@ -77,6 +77,15 @@ export const apiErrors = {
 
   // Chuyến, tuyến, phân tách hàng
   TRIP_NOT_FOUND: 'Không tìm thấy chuyến.',
+  PAYROLL_RATE_NOT_CONFIGURED: 'Công ty chưa cấu hình mức lương áp dụng cho tháng này.',
+  PAYROLL_RATE_ALREADY_EXISTS: 'Đã có phiên bản mức lương bắt đầu từ tháng này.',
+  PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).',
+  PAYROLL_PERIOD_NOT_FOUND: 'Chưa có bảng lương cho tháng này.',
+  PAYROLL_PERIOD_LOCKED: 'Bảng lương đã chốt nên không thể thay đổi hoặc tính lại.',
+  PAYROLL_DATA_INCOMPLETE: 'Chuyến có dữ liệu phương án khối lượng hoặc quãng đường còn thiếu.',
+  PAYROLL_INVALID_PERIOD: 'Kỳ lương không hợp lệ. Chọn tháng theo định dạng năm-tháng.',
+  PAYROLL_INVALID_DRIVER_ASSIGNMENT: 'Phân công tài xế nhận lương năng suất không hợp lệ.',
+  PAYROLL_INVALID_AMOUNT: 'Khối lượng, quãng đường và đơn giá phải là số không âm.',
   DELIVERY_REQUIREMENT_NOT_FOUND: 'Không tìm thấy yêu cầu giao.',
   DELIVERY_REQUIREMENT_NOT_PENDING: 'Chỉ xoá được yêu cầu còn chờ xếp chuyến và chưa giữ kiện nào.',
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'Yêu cầu giao không chuyển được sang trạng thái này.',

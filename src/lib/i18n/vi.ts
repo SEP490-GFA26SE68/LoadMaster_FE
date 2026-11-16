@@ -37,6 +37,7 @@ import { monitoring } from './vi/monitoring'
 import { pickups } from './vi/pickups'
 import { platform } from './vi/platform'
 import { billing } from './vi/billing'
+import { payroll } from './vi/payroll'
 import { payment } from './vi/payment'
 import { companies } from './vi/companies'
 import { companyProfile } from './vi/companyProfile'
@@ -104,6 +105,7 @@ export const vi = {
   pickups,
   platform,
   billing,
+  payroll,
   payment,
   companies,
   companyProfile,
