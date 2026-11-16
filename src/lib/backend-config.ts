@@ -11,7 +11,11 @@ export type AuthSource = 'mock' | 'keycloak'
  * `users` người dùng · `companies` công ty, thông tin công ty · `billing` gói cước, đăng ký, credit, hoá đơn, thanh toán ·
  * `platformOps` hợp đồng, báo cáo nền tảng · `contacts` liên hệ của khách · `support` yêu cầu hỗ trợ · `packages` kho kiện ·
  * `trips` lập chuyến, tuyến · `fleet` đội xe, loại xe · `monitoring` giám sát, bảng điều khiển · `driver` màn tài xế ·
+<<<<<<< Updated upstream
  * `warehouse` màn kho · `notifications` chuông thông báo · `payroll` bảng lương tài xế
+=======
+ * `warehouse` màn kho · `notifications` chuông thông báo · `registration` đăng ký công khai · `payroll` bảng lương tài xế
+>>>>>>> Stashed changes
  */
 export const BACKEND_FEATURES = [
   'users',
@@ -27,6 +31,10 @@ export const BACKEND_FEATURES = [
   'driver',
   'warehouse',
   'notifications',
+<<<<<<< Updated upstream
+=======
+  'registration',
+>>>>>>> Stashed changes
   'payroll',
 ] as const
 

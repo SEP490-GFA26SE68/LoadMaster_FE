@@ -19,7 +19,7 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
-| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), bảng lương tài xế `/bang-luong`, thông tin công ty `/cong-ty` |
 | Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập yêu cầu giao, lập chuyến, tối ưu, duyệt phương án, in nhãn QR |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn; quản lý kho kiện (thêm kiện, nhập file), loại kiện, khách gửi hàng |
@@ -28,8 +28,9 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 Backend là Spring Boot monolith + PostgreSQL, cộng một Python FastAPI service riêng cho tối ưu. Giao tiếp REST + WebSocket.
 
 **Trạng thái hiện tại:** mặc định toàn bộ dữ liệu là mẫu. Đặt `VITE_AUTH_SOURCE=keycloak` thì đăng nhập qua Keycloak của backend, và các
-nhóm đã nối — người dùng, nhật ký, công ty, gói cước và credit, liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn kho xếp hàng, màn tài xế
-(cả Xuất phát), màn Giám sát, bảng điều khiển — đọc ghi backend thật, chuyến (danh sách, Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh,
+nhóm đã nối — người dùng, nhật ký, công ty, gói cước và credit, bảng lương tài xế (đơn giá, tính và chốt tháng, phiếu lương), liên hệ của khách,
+yêu cầu hỗ trợ, kho kiện, màn kho xếp hàng, màn tài xế (cả Xuất phát), màn Giám sát, bảng điều khiển — đọc ghi backend thật, chuyến (danh sách,
+Chi tiết, sửa, huỷ, tối ưu xếp hàng, So sánh,
 Planner xem và Duyệt) theo máy chủ, đội xe và loại xe chỉ đọc (`VITE_API_FEATURES` chọn nhóm); phần máy chủ chưa có thì ẩn, chuông đọc
 máy chủ khi nhóm `notifications` nối (mục 9 "Nối backend"). Kho nằm trong bộ nhớ từng tab; các tab **cùng trình duyệt** dùng chung
 nó qua `BroadcastChannel` (mục 9, FE-BL-06): hai tab mở hai người dùng khác nhau thấy việc của nhau, nhưng không lưu bền (đóng hoặc tải lại
@@ -54,7 +55,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-02). `billing.manage`: `/goi-cuoc`, `/bang-luong`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
@@ -1142,7 +1143,12 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
+<<<<<<< Updated upstream
   `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+=======
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`. Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
+  tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+>>>>>>> Stashed changes
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
